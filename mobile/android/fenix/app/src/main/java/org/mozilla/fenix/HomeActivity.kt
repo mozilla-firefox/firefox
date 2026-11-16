@@ -1371,7 +1371,6 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
                     event = event,
                     currentFragment = currentFragment,
                     navController = navHost.navController,
-                    isMenuCustomizationEnabled = getSettings().isMenuCustomizationEnabled,
                 )
             ) {
                 return true
@@ -1928,26 +1927,16 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
             event: KeyEvent,
             currentFragment: Fragment?,
             navController: NavController,
-            isMenuCustomizationEnabled: Boolean,
         ): Boolean {
             val (expectedDestinationId, directions) =
                 when (currentFragment) {
                     is HomeFragment ->
                         R.id.homeFragment to
-                            when (isMenuCustomizationEnabled) {
-                                true -> HomeFragmentDirections.actionHomeFragmentToMenuFragment(MenuAccessPoint.Home)
-                                else -> NavGraphDirections.actionGlobalMenuDialogFragment(MenuAccessPoint.Home)
-                            }
+                            HomeFragmentDirections.actionHomeFragmentToMenuFragment(MenuAccessPoint.Home)
 
                     is BrowserFragment ->
                         R.id.browserFragment to
-                            when (isMenuCustomizationEnabled) {
-                                true ->
-                                    BrowserFragmentDirections.actionBrowserFragmentToMenuFragment(
-                                        MenuAccessPoint.Browser
-                                    )
-                                else -> NavGraphDirections.actionGlobalMenuDialogFragment(MenuAccessPoint.Browser)
-                            }
+                            BrowserFragmentDirections.actionBrowserFragmentToMenuFragment(MenuAccessPoint.Browser)
 
                     else -> return false
                 }

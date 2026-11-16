@@ -163,7 +163,6 @@ object BrowserToolbarStoreBuilder {
                                     navController = navController,
                                     closeTabDelegate = { activity.finishAndRemoveTask() },
                                     scope = lifecycleScope,
-                                    settings = components.settings,
                                     isSandboxCustomTab = isSandboxCustomTab,
                                 )
                             )

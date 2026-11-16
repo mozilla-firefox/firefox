@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
@@ -28,7 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -36,7 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CollectionItemInfo
@@ -48,7 +45,6 @@ import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
@@ -56,7 +52,6 @@ import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.modifier.thenConditional
 import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.R
-import org.mozilla.fenix.components.menu.MenuDialogTestTag.WEB_EXTENSION_ITEM
 import org.mozilla.fenix.compose.list.IconListItem
 import org.mozilla.fenix.compose.list.TextListItem
 import org.mozilla.fenix.theme.FirefoxTheme
@@ -222,87 +217,6 @@ internal fun MenuTextItem(
     )
 }
 
-/**
- * A Web extension menu item used to display an image with a title and a badge.
- *
- * @param label The label in the list item.
- * @param iconPainter [Painter] used to display an [Icon] before the list item.
- * @param iconTint Tint color to be applied on the [Icon].
- * @param enabled Controls the enabled state of the list item. When `false`, the list item will not be clickable.
- * @param badgeText WebExtension badge text.
- * @param description Second line under the label, shown in the error color.
- * @param index The index of the item within the column.
- * @param onClick Called when the user clicks on the item.
- * @param onSettingsClick Called when the user clicks on the settings icon.
- */
-@Suppress("LongParameterList")
-@Composable
-internal fun WebExtensionMenuItem(
-    label: String,
-    iconPainter: Painter,
-    iconTint: Color = Color.Unspecified,
-    enabled: Boolean?,
-    badgeText: String?,
-    description: String? = null,
-    index: Int = 0,
-    onClick: (() -> Unit)? = null,
-    onSettingsClick: (() -> Unit)? = null,
-) {
-    IconListItem(
-        label = label,
-        colors = ListItemDefaults.colors(supportingColor = MaterialTheme.colorScheme.error),
-        description = description,
-        enabled = enabled == true,
-        beforeIconTint = iconTint,
-        beforeIconPainter = iconPainter,
-        onClick = onClick,
-        modifier =
-            Modifier.testTag(WEB_EXTENSION_ITEM)
-                .clearAndSetSemantics {
-                    onClick?.let { role = Role.Button }
-                    contentDescription = listOfNotNull(label, description).joinToString(separator = ", ")
-                    collectionItemInfo =
-                        CollectionItemInfo(
-                            rowIndex = index,
-                            rowSpan = 1,
-                            columnIndex = 0,
-                            columnSpan = 1,
-                        )
-                    testTagsAsResourceId = true
-                }
-                .wrapContentSize()
-                .clip(shape = MaterialTheme.shapes.extraSmall)
-                .background(color = MaterialTheme.colorScheme.surfaceBright),
-        afterListAction = {
-            Row(
-                modifier = Modifier.padding(start = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.End),
-            ) {
-                if (!badgeText.isNullOrEmpty()) {
-                    Badge(badgeText = badgeText)
-                }
-
-                if (onSettingsClick != null) {
-                    VerticalDivider()
-
-                    IconButton(
-                        onClick = onSettingsClick,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(iconsR.drawable.mozac_ic_settings_24),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            contentDescription = null,
-                        )
-                    }
-                }
-            }
-        },
-    )
-}
-
 @Composable
 internal fun MenuBadgeItem(
     label: String,
@@ -337,8 +251,11 @@ internal fun MenuBadgeItem(
                 .semantics { disabled() }
                 .clip(shape = MaterialTheme.shapes.extraSmall)
                 .background(color = MaterialTheme.colorScheme.surfaceBright)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(
+                    horizontal = FirefoxTheme.layout.space.static200,
+                    vertical = FirefoxTheme.layout.space.static100,
+                ),
+        horizontalArrangement = Arrangement.spacedBy(FirefoxTheme.layout.space.static200),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -375,9 +292,12 @@ internal fun Badge(
             modifier
                 .clip(CircleShape)
                 .background(color = getBadgeColor(state))
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(
+                    horizontal = FirefoxTheme.layout.space.static200,
+                    vertical = FirefoxTheme.layout.space.static100,
+                ),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(FirefoxTheme.layout.space.static100),
     ) {
         Text(
             text = badgeText,
@@ -492,41 +412,17 @@ private fun getBadgeColor(state: MenuItemState): Color {
 
 @PreviewLightDark
 @Composable
-private fun WebExtensionMenuItemPreview() {
-    FirefoxTheme {
-        Column(modifier = Modifier.background(color = MaterialTheme.colorScheme.surface)) {
-            WebExtensionMenuItem(
-                label = "label",
-                iconPainter = painterResource(iconsR.drawable.mozac_ic_extension_fill_24),
-                iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
-                enabled = true,
-                badgeText = "17",
-                onClick = {},
-                onSettingsClick = {},
-            )
-            // Web extensions may have multi-colored assets with no tint.
-            WebExtensionMenuItem(
-                label = "colorful icon",
-                iconPainter = painterResource(iconsR.drawable.mozac_ic_shield_slash_multicolor_24),
-                iconTint = Color.Unspecified,
-                enabled = true,
-                badgeText = "17",
-                onClick = {},
-                onSettingsClick = {},
-            )
-        }
-    }
-}
-
-@PreviewLightDark
-@Composable
 private fun MenuItemPreview() {
     FirefoxTheme {
-        Column(modifier = Modifier.background(color = MaterialTheme.colorScheme.surface).padding(16.dp)) {
+        Column(
+            modifier =
+                Modifier.background(color = MaterialTheme.colorScheme.surface)
+                    .padding(FirefoxTheme.layout.space.static200)
+        ) {
             MenuGroup {
                 for (state in MenuItemState.entries) {
                     MenuItem(
-                        label = stringResource(id = R.string.browser_menu_translations),
+                        label = stringResource(id = R.string.browser_menu_translate_page_2),
                         beforeIconPainter = painterResource(id = iconsR.drawable.mozac_ic_translate_24),
                         state = state,
                         onClick = {},

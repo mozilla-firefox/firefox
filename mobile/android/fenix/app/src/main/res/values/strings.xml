@@ -213,8 +213,6 @@
     <string name="resync_button_content_description">Resync</string>
     <!-- Browser menu button that opens the find in page menu -->
     <string name="browser_menu_find_in_page">Find in page</string>
-    <!-- Browser menu button that opens the translations dialog, which has options to translate the current browser page. -->
-    <string name="browser_menu_translations">Translate page</string>
     <!-- Browser menu button that saves the current tab to a collection -->
     <string name="browser_menu_save_to_collection_2">Save to collection</string>
     <!-- Browser menu button that open a share menu to share the current site -->
@@ -249,8 +247,6 @@
     <string name="browser_menu_passwords">Passwords</string>
     <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
     <string name="browser_close_main_menu_handlebar_content_description">Close menu</string>
-    <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
-    <string name="browser_main_menu_content_description_navigation_header">Navigation</string>
     <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
     <string name="browser_custom_tab_menu_handlebar_content_description">Close custom tab menu sheet</string>
     <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
@@ -269,8 +265,6 @@
     <string name="browser_menu_translate_page_2">Translate page</string>
     <!-- Browser menu label for navigating to the summarization feature, which provides site summarization for the current visited page -->
     <string name="browser_menu_summarize_page">Summarize page</string>
-    <!-- Browser menu badge text for summarization feature -->
-    <string name="browser_menu_summarize_page_badge">New</string>
     <!-- Browser menu label for navigating to the Web Compat Reporter feature, which provides users the ability to send bug reports for broken sites. -->
     <string name="browser_menu_webcompat_reporter_2">Report broken site</string>
     <!-- Browser menu label for adding a tab to a tab group -->
@@ -289,8 +283,6 @@
     <string name="browser_menu_default_banner_title">Make %1$s your default</string>
     <!-- Label text within the set as default banner  -->
     <string name="browser_menu_default_banner_subtitle_2">Fast, private, and made for you.</string>
-    <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
-    <string name="browser_menu_recommended_extensions_content_description">More info</string>
 
     <!-- Extensions management fragment -->
     <!-- Text displayed when there are no extensions to be shown -->

@@ -88,36 +88,6 @@ class AboutHomeBindingTest {
         }
 
     @Test
-    fun `GIVEN menu dialog is shown WHEN URL is updated to ABOUT_HOME_URL THEN navigate to the homepage`() =
-        runTest(testDispatcher) {
-            val mockDestination: NavDestination = mockk()
-            every { mockDestination.id } returns R.id.menuDialogFragment
-            every { navController.currentDestination } returns mockDestination
-
-            val binding =
-                AboutHomeBinding(
-                    browserStore = browserStore,
-                    navController = navController,
-                    mainDispatcher = testDispatcher,
-                )
-
-            binding.start()
-
-            browserStore.dispatch(
-                ContentAction.UpdateUrlAction(
-                    sessionId = tab.id,
-                    url = ABOUT_HOME_URL,
-                )
-            )
-
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            assertEquals(ABOUT_HOME_URL, tab.content.url)
-
-            verify { navController.navigate(NavGraphDirections.actionGlobalHome()) }
-        }
-
-    @Test
     fun `GIVEN menu fragment is shown WHEN URL is updated to ABOUT_HOME_URL THEN navigate to the homepage`() =
         runTest(testDispatcher) {
             val mockDestination: NavDestination = mockk()
@@ -397,10 +367,10 @@ class AboutHomeBindingTest {
         }
 
     @Test
-    fun `GIVEN the menu dialog is shown and the selected tab is ABOUT_HOME_URL WHEN the binding is restarted THEN do not navigate to the homepage again`() =
+    fun `GIVEN the menu fragment is shown and the selected tab is ABOUT_HOME_URL WHEN the binding is restarted THEN do not navigate to the homepage again`() =
         runTest(testDispatcher) {
             val mockDestination: NavDestination = mockk()
-            every { mockDestination.id } returns R.id.menuDialogFragment
+            every { mockDestination.id } returns R.id.menuFragment
             every { navController.currentDestination } returns mockDestination
 
             val binding =

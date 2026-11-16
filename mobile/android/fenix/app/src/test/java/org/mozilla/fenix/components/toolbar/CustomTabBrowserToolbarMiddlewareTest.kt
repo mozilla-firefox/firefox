@@ -71,7 +71,6 @@ import org.junit.runner.RunWith
 import org.mozilla.fenix.GleanMetrics.Events
 import org.mozilla.fenix.GleanMetrics.Toolbar
 import org.mozilla.fenix.R
-import org.mozilla.fenix.browser.BrowserFragmentDirections
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction.URLCopiedToClipboard
 import org.mozilla.fenix.components.menu.MenuAccessPoint
@@ -130,7 +129,6 @@ class CustomTabBrowserToolbarMiddlewareTest {
     private val closeTabDelegate: () -> Unit = {}
     private val settings: Settings = mockk {
         every { shouldUseBottomToolbar } returns true
-        every { isMenuCustomizationEnabled } returns false
     }
 
     @Test
@@ -1105,8 +1103,8 @@ class CustomTabBrowserToolbarMiddlewareTest {
 
         verify {
             navController.navigate(
-                BrowserFragmentDirections.actionGlobalMenuDialogFragment(
-                    accesspoint = MenuAccessPoint.External,
+                ExternalAppBrowserFragmentDirections.actionExternalAppBrowserFragmentToMenuFragment(
+                    accessPoint = MenuAccessPoint.External,
                     customTabSessionId = customTabId,
                     isSandboxCustomTab = false,
                 ),
@@ -1135,8 +1133,8 @@ class CustomTabBrowserToolbarMiddlewareTest {
 
         verify {
             navController.navigate(
-                BrowserFragmentDirections.actionGlobalMenuDialogFragment(
-                    accesspoint = MenuAccessPoint.External,
+                ExternalAppBrowserFragmentDirections.actionExternalAppBrowserFragmentToMenuFragment(
+                    accessPoint = MenuAccessPoint.External,
                     customTabSessionId = customTabId,
                     isSandboxCustomTab = true,
                 ),
@@ -1149,30 +1147,6 @@ class CustomTabBrowserToolbarMiddlewareTest {
         assertEquals(SOURCE_ADDRESS_BAR, telemetry.extra?.get("source"))
         assertEquals(ACTION_MENU_CLICKED, telemetry.extra?.get("item"))
         assertEquals(SURFACE_CUSTOM_TAB, telemetry.extra?.get("surface"))
-    }
-
-    @Test
-    fun `GIVEN menu customization is enabled WHEN the menu button is clicked THEN navigate to customizable menu`() {
-        every { settings.isMenuCustomizationEnabled } returns true
-        val navController: NavController =
-            mockk(relaxed = true) {
-                every { currentDestination?.id } returns R.id.externalAppBrowserFragment
-            }
-        val middleware = buildMiddleware(navController = navController)
-        val toolbarStore = buildStore(middleware)
-
-        toolbarStore.dispatch(MenuClicked)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        verify {
-            navController.navigate(
-                ExternalAppBrowserFragmentDirections.actionExternalAppBrowserFragmentToMenuFragment(
-                    accessPoint = MenuAccessPoint.External,
-                    customTabSessionId = customTabId,
-                ),
-                null,
-            )
-        }
     }
 
     @Test
@@ -1260,7 +1234,6 @@ class CustomTabBrowserToolbarMiddlewareTest {
             navController = navController,
             closeTabDelegate = closeTabDelegate,
             scope = testScope,
-            settings = settings,
             isSandboxCustomTab = isSandboxCustomTab,
         )
 

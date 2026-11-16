@@ -210,9 +210,7 @@ class MenuFragment : BottomSheetDialogFragment() {
         val context = requireContext()
         val haptics = LocalHapticFeedback.current
         val isMenuCustomizationAllowed = remember {
-            args.accessPoint == MenuAccessPoint.Browser &&
-                context.components.settings.isMenuCustomizationEnabled &&
-                context.components.settings.isMenuCustomizationScreenEnabled
+            args.accessPoint == MenuAccessPoint.Browser && context.components.settings.isMenuCustomizationScreenEnabled
         }
 
         FirefoxTheme {

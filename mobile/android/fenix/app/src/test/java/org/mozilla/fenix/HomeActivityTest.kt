@@ -628,10 +628,10 @@ class HomeActivityTest {
     }
 
     @Test
-    fun `GIVEN home is shown and menu customization is enabled WHEN the menu key is pressed THEN open the customizable menu`() {
+    fun `GIVEN home is shown WHEN the menu key is pressed THEN open the menu`() {
         val navController = mockNavController(R.id.homeFragment)
 
-        assertTrue(handleMenuKeyPress(menuKeyDown(), mockk<HomeFragment>(), navController, true))
+        assertTrue(handleMenuKeyPress(menuKeyDown(), mockk<HomeFragment>(), navController))
 
         verify {
             navController.navigate(HomeFragmentDirections.actionHomeFragmentToMenuFragment(MenuAccessPoint.Home), null)
@@ -639,21 +639,10 @@ class HomeActivityTest {
     }
 
     @Test
-    fun `GIVEN home is shown and menu customization is disabled WHEN the menu key is pressed THEN open the legacy menu`() {
-        val navController = mockNavController(R.id.homeFragment)
-
-        assertTrue(handleMenuKeyPress(menuKeyDown(), mockk<HomeFragment>(), navController, false))
-
-        verify {
-            navController.navigate(NavGraphDirections.actionGlobalMenuDialogFragment(MenuAccessPoint.Home), null)
-        }
-    }
-
-    @Test
-    fun `GIVEN the browser is shown and menu customization is enabled WHEN the menu key is pressed THEN open the customizable menu`() {
+    fun `GIVEN the browser is shown WHEN the menu key is pressed THEN open the menu`() {
         val navController = mockNavController(R.id.browserFragment)
 
-        assertTrue(handleMenuKeyPress(menuKeyDown(), mockk<BrowserFragment>(), navController, true))
+        assertTrue(handleMenuKeyPress(menuKeyDown(), mockk<BrowserFragment>(), navController))
 
         verify {
             navController.navigate(
@@ -664,30 +653,19 @@ class HomeActivityTest {
     }
 
     @Test
-    fun `GIVEN the browser is shown and menu customization is disabled WHEN the menu key is pressed THEN open the legacy menu`() {
-        val navController = mockNavController(R.id.browserFragment)
-
-        assertTrue(handleMenuKeyPress(menuKeyDown(), mockk<BrowserFragment>(), navController, false))
-
-        verify {
-            navController.navigate(NavGraphDirections.actionGlobalMenuDialogFragment(MenuAccessPoint.Browser), null)
-        }
-    }
-
-    @Test
     fun `GIVEN the menu key is held down WHEN repeated presses arrive THEN consume them without opening the menu`() {
         val navController = mockNavController(R.id.homeFragment)
 
-        assertTrue(handleMenuKeyPress(menuKeyDown(repeatCount = 1), mockk<HomeFragment>(), navController, true))
+        assertTrue(handleMenuKeyPress(menuKeyDown(repeatCount = 1), mockk<HomeFragment>(), navController))
 
         verify(exactly = 0) { navController.navigate(any<NavDirections>(), any<NavOptions>()) }
     }
 
     @Test
     fun `GIVEN the menu is already open WHEN the menu key is pressed THEN consume the key press without opening the menu again`() {
-        val navController = mockNavController(R.id.menuDialogFragment)
+        val navController = mockNavController(R.id.menuFragment)
 
-        assertTrue(handleMenuKeyPress(menuKeyDown(), mockk<HomeFragment>(), navController, false))
+        assertTrue(handleMenuKeyPress(menuKeyDown(), mockk<HomeFragment>(), navController))
 
         verify(exactly = 0) { navController.navigate(any<NavDirections>(), any<NavOptions>()) }
     }
@@ -696,7 +674,7 @@ class HomeActivityTest {
     fun `GIVEN neither home nor the browser is shown WHEN the menu key is pressed THEN leave the key press unhandled`() {
         val navController = mockNavController(R.id.settingsFragment)
 
-        assertFalse(handleMenuKeyPress(menuKeyDown(), mockk<Fragment>(), navController, true))
+        assertFalse(handleMenuKeyPress(menuKeyDown(), mockk<Fragment>(), navController))
 
         verify(exactly = 0) { navController.navigate(any<NavDirections>(), any<NavOptions>()) }
     }

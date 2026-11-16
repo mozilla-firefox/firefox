@@ -23,8 +23,3 @@ internal fun SessionState.getTabUrl(): String? {
         else -> content.url
     }
 }
-
-/** Returns true if this [SessionState] is a [CustomTabSessionState]. */
-internal fun SessionState?.isCustomTab(): Boolean {
-    return this is CustomTabSessionState
-}

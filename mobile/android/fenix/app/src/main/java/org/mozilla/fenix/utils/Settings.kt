@@ -3457,9 +3457,6 @@ class Settings(
             default = { FxNimbus.features.addressbarFocusMode.value().enabled },
         )
 
-    /** Whether customizing the browser menu is allowed. */
-    val isMenuCustomizationEnabled = true
-
     /** Whether entering the browser menu customization screen is allowed. */
     var isMenuCustomizationScreenEnabled by
         booleanPreference(

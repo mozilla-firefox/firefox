@@ -45,7 +45,7 @@ internal fun SubmenuHeader(
 ) {
     Row(
         modifier =
-            Modifier.padding(start = 4.dp, end = 16.dp)
+            Modifier.padding(start = FirefoxTheme.layout.space.static50, end = FirefoxTheme.layout.space.static200)
                 .defaultMinSize(minHeight = 56.dp)
                 .verticalScroll(rememberScrollState()),
         verticalAlignment = Alignment.CenterVertically,

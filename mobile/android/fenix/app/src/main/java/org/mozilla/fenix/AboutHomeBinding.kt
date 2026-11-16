@@ -63,8 +63,7 @@ class AboutHomeBinding(
 
                 when (currentDestinationId) {
                     R.id.browserFragment,
-                    R.id.menuFragment,
-                    R.id.menuDialogFragment -> navController.navigate(NavGraphDirections.actionGlobalHome())
+                    R.id.menuFragment -> navController.navigate(NavGraphDirections.actionGlobalHome())
                     R.id.homeFragment -> Unit
                     else -> hasPendingHomepageNavigation = true
                 }

@@ -189,9 +189,6 @@
         android:id="@+id/action_global_tabSettingsFragment"
         app:destination="@id/tabsSettingsFragment" />
     <action
-        android:id="@+id/action_global_menuDialogFragment"
-        app:destination="@id/menu_dialog_graph" />
-    <action
         android:id="@+id/action_global_trustPanelFragment"
         app:destination="@id/trust_panel_graph" />
     <action
@@ -1812,72 +1809,6 @@
             <argument
                 android:name="modelSize"
                 app:argType="long" />
-        </dialog>
-    </navigation>
-
-    <navigation
-        android:id="@+id/menu_dialog_graph"
-        app:startDestination="@id/menuDialogFragment">
-        <argument
-            android:name="accesspoint"
-            app:argType="org.mozilla.fenix.components.menu.MenuAccessPoint" />
-        <argument
-            android:name="customTabSessionId"
-            android:defaultValue="@null"
-            app:nullable="true"
-            app:argType="string" />
-        <argument
-            android:name="isSandboxCustomTab"
-            android:defaultValue="false"
-            app:argType="boolean" />
-        <dialog
-            android:id="@+id/menuDialogFragment"
-            android:name="org.mozilla.fenix.components.menu.MenuDialogFragment">
-            <argument
-                android:name="accesspoint"
-                app:argType="org.mozilla.fenix.components.menu.MenuAccessPoint" />
-            <argument
-                android:name="customTabSessionId"
-                android:defaultValue="@null"
-                app:nullable="true"
-                app:argType="string" />
-            <argument
-                android:name="isSandboxCustomTab"
-                android:defaultValue="false"
-                app:argType="boolean" />
-            <action
-               android:id="@+id/action_menuDialogFragment_to_storiesFragment"
-                app:destination="@id/storiesFragment"
-                app:popUpTo="@id/storiesFragment"
-                app:popUpToInclusive="false"
-                app:launchSingleTop="true" />
-            <action
-                android:id="@+id/action_menuDialogFragment_to_translationsDialogFragment"
-                app:destination="@id/translationsDialogFragment" />
-            <action
-                android:id="@+id/action_menuDialogFragment_to_summarizationFragment"
-                app:destination="@id/summarizationFragment" />
-            <action
-                android:id="@+id/action_menuDialogFragment_to_createShortcutFragment"
-                app:destination="@id/createShortcutFragment" />
-            <action
-                android:id="@+id/action_menuDialogFragmen_to_addonDetailsFragment"
-                app:destination="@id/addonDetailsFragment" />
-            <action
-                android:id="@+id/action_menuDialogFragment_to_loginsListFragment"
-                app:destination="@id/savedLogins" />
-            <action
-                android:id="@+id/action_menuDialogFragment_to_webCompatReporterFragment"
-                app:destination="@id/webCompatReporterFragment" />
-            <action
-                android:id="@+id/action_menuDialogFragment_to_installedAddonDetailsFragment"
-                app:destination="@id/installedAddonDetailsFragment" />
-            <action
-                android:id="@+id/action_menuDialogFragment_to_ipProtectionFragment"
-                app:destination="@id/ipProtectionFragment" />
-            <action
-                android:id="@+id/action_menuDialogFragment_to_tabGroupFlowFragment"
-                app:destination="@id/tabGroupFlowFragment" />
         </dialog>
     </navigation>
 

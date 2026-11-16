@@ -20,7 +20,6 @@
     <ID>ClassAcronymCasing:TrustPanelAction.kt$TrustPanelAction.Navigate$QWAC : Navigate</ID>
     <ID>DisplayedTextCasing:UnsubmittedCrashDialog.kt$uppercase()</ID>
     <ID>ForbiddenSuppress:AccountSettingsFragment.kt$AccountSettingsFragment$@Suppress("LongMethod", "CyclomaticComplexMethod")</ID>
-    <ID>ForbiddenSuppress:AddonMenuItem.kt$@Suppress("LongMethod")</ID>
     <ID>ForbiddenSuppress:AddonPermissionsScreen.kt$@Suppress("LongParameterList", "LongMethod", "CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:AddonPopupBaseFragment.kt$AddonPopupBaseFragment$@Suppress("DEPRECATION", "LongMethod")</ID>
     <ID>ForbiddenSuppress:AddonsManagementFragment.kt$AddonsManagementFragment$@Suppress("CognitiveComplexMethod")</ID>
@@ -47,7 +46,6 @@
     <ID>ForbiddenSuppress:ContentRecommendationsReducer.kt$ContentRecommendationsReducer$@Suppress("LongMethod", "CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:Core.kt$Core$@Suppress("MagicNumber")</ID>
     <ID>ForbiddenSuppress:CustomTabBrowserToolbarMiddleware.kt$CustomTabBrowserToolbarMiddleware$@Suppress("LongMethod")</ID>
-    <ID>ForbiddenSuppress:CustomTabMenu.kt$@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:DataChoicesScreen.kt$@Suppress("CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:DebugDrawerRoute.kt$DebugDrawerRoute.Companion$@Suppress("LongParameterList", "LongMethod")</ID>
     <ID>ForbiddenSuppress:DebugOverlay.kt$@Suppress("LongMethod")</ID>
@@ -81,25 +79,16 @@
     <ID>ForbiddenSuppress:HomeFragment.kt$HomeFragment$@Suppress("LongMethod")</ID>
     <ID>ForbiddenSuppress:HomeFragment.kt$HomeFragment$@Suppress("LongMethod", "CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:Homepage.kt$@Suppress("LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod")</ID>
-    <ID>ForbiddenSuppress:InstalledAddonDetailsFragment.kt$InstalledAddonDetailsFragment$@SuppressWarnings("LongMethod")</ID>
     <ID>ForbiddenSuppress:ListItem.kt$@Suppress("CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:ListItem.kt$@Suppress("LongMethod")</ID>
     <ID>ForbiddenSuppress:LoginsMiddleware.kt$LoginsMiddleware$@Suppress("LongMethod", "CyclomaticComplexMethod")</ID>
-    <ID>ForbiddenSuppress:MainMenu.kt$@Suppress("LongMethod")</ID>
-    <ID>ForbiddenSuppress:MainMenu.kt$@Suppress("LongParameterList", "LongMethod", "CognitiveComplexMethod")</ID>
-    <ID>ForbiddenSuppress:MainMenu.kt$@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:MarketingDataOnboardingPage.kt$@Suppress("LongMethod")</ID>
     <ID>ForbiddenSuppress:Menu.kt$@Suppress("LongMethod", "CognitiveComplexMethod")</ID>
-    <ID>ForbiddenSuppress:MenuDialogFragment.kt$MenuDialogFragment$@Suppress("LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod")</ID>
-    <ID>ForbiddenSuppress:MenuDialogMiddleware.kt$MenuDialogMiddleware$@Suppress("LongParameterList", "CyclomaticComplexMethod")</ID>
     <ID>ForbiddenSuppress:MenuItemProvidersFactory.kt$MenuItemProvidersFactory$@Suppress("LongMethod", "CyclomaticComplexMethod")</ID>
-    <ID>ForbiddenSuppress:MenuNavigationMiddleware.kt$MenuNavigationMiddleware$@Suppress("CyclomaticComplexMethod", "LongMethod", "CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:MenuTelemetryMiddleware.kt$MenuTelemetryMiddleware$@Suppress("CyclomaticComplexMethod", "LongMethod", "CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:MetricController.kt$ReleaseMetricController$@Suppress("LongMethod", "CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:MetricsStorage.kt$DefaultMetricsStorage$@Suppress("CyclomaticComplexMethod")</ID>
     <ID>ForbiddenSuppress:MiddleSearchHomepage.kt$@Suppress("LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod")</ID>
-    <ID>ForbiddenSuppress:MoreSettingsSubmenu.kt$@Suppress("LongParameterList", "CognitiveComplexMethod")</ID>
-    <ID>ForbiddenSuppress:MozillaAccountMenuItem.kt$@SuppressWarnings("LongMethod")</ID>
     <ID>ForbiddenSuppress:NotificationManager.kt$NotificationManager$@SuppressWarnings("MagicNumber")</ID>
     <ID>ForbiddenSuppress:OnboardingFragment.kt$OnboardingFragment$@Suppress("LongMethod")</ID>
     <ID>ForbiddenSuppress:OnboardingScreen.kt$@Suppress("LongParameterList", "LongMethod")</ID>
@@ -123,7 +112,6 @@
     <ID>ForbiddenSuppress:SnackbarBinding.kt$SnackbarBinding$@Suppress("LongMethod", "CognitiveComplexMethod", "CyclomaticComplexMethod")</ID>
     <ID>ForbiddenSuppress:StartupStateProvider.kt$StartupStateProvider$@Suppress("MagicNumber")</ID>
     <ID>ForbiddenSuppress:Stories.kt$@Suppress("CyclomaticComplexMethod", "LongMethod", "CognitiveComplexMethod")</ID>
-    <ID>ForbiddenSuppress:String.kt$@Suppress("MagicNumber")</ID>
     <ID>ForbiddenSuppress:SyncedTabsList.kt$@SuppressWarnings("LongMethod", "CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:TabLayout.kt$@Suppress("LongParameterList", "LongMethod")</ID>
     <ID>ForbiddenSuppress:TabLayout.kt$@Suppress("LongParameterList", "LongMethod", "CognitiveComplexMethod")</ID>
@@ -193,13 +181,9 @@
     <ID>HardcodedPaddingUsage:CustomReviewPrompt.kt$(horizontal = 10.dp)</ID>
     <ID>HardcodedPaddingUsage:CustomReviewPrompt.kt$(horizontal = 20.dp)</ID>
     <ID>HardcodedPaddingUsage:CustomReviewPrompt.kt$(vertical = 16.dp)</ID>
-    <ID>HardcodedPaddingUsage:CustomTabMenu.kt$( start = 8.dp, top = if (isBottomToolbar) 0.dp else 8.dp, end = 8.dp, bottom = if (isBottomToolbar) 84.dp else 16.dp, )</ID>
-    <ID>HardcodedPaddingUsage:CustomTabMenu.kt$(top = 4.dp)</ID>
-    <ID>HardcodedPaddingUsage:CustomTabMenu.kt$(top = 8.dp, bottom = 4.dp)</ID>
     <ID>HardcodedPaddingUsage:DataChoicesScreen.kt$(top = 16.dp, bottom = 24.dp)</ID>
     <ID>HardcodedPaddingUsage:DebugDrawerHome.kt$(all = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:DebugOverlay.kt$(start = 16.dp)</ID>
-    <ID>HardcodedPaddingUsage:DismissibleItemBackground.kt$(horizontal = 32.dp)</ID>
     <ID>HardcodedPaddingUsage:DohSettingsScreen.kt$( start = 72.dp, top = 6.dp, end = 16.dp, bottom = 6.dp, )</ID>
     <ID>HardcodedPaddingUsage:DohSettingsScreen.kt$(8.dp)</ID>
     <ID>HardcodedPaddingUsage:DohSettingsScreen.kt$(vertical = 16.dp)</ID>
@@ -226,10 +210,6 @@
     <ID>HardcodedPaddingUsage:ExceptionsListScreen.kt$( vertical = 12.dp, horizontal = 16.dp, )</ID>
     <ID>HardcodedPaddingUsage:ExceptionsListScreen.kt$(horizontal = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:ExpandableListHeader.kt$(horizontal = 16.dp, vertical = 8.dp)</ID>
-    <ID>HardcodedPaddingUsage:ExperimentalHomepageHeader.kt$(all = 16.dp)</ID>
-    <ID>HardcodedPaddingUsage:ExperimentalHomepageHeader.kt$(bottom = 16.dp)</ID>
-    <ID>HardcodedPaddingUsage:ExperimentalHomepageHeader.kt$(start = 4.dp)</ID>
-    <ID>HardcodedPaddingUsage:ExtensionsMenuItem.kt$( start = if (count &gt; 0) 8.dp else 2.dp, top = 2.dp, bottom = 2.dp, end = 2.dp, )</ID>
     <ID>HardcodedPaddingUsage:FirefoxLabsScreen.kt$(horizontal = 16.dp, vertical = 24.dp)</ID>
     <ID>HardcodedPaddingUsage:FontSizeSlider.kt$(16.dp)</ID>
     <ID>HardcodedPaddingUsage:FontSizeSlider.kt$(6.dp)</ID>
@@ -238,10 +218,6 @@
     <ID>HardcodedPaddingUsage:FontSizeSlider.kt$(vertical = 6.dp)</ID>
     <ID>HardcodedPaddingUsage:Homepage.kt$(horizontal = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:Homepage.kt$(top = 16.dp)</ID>
-    <ID>HardcodedPaddingUsage:Homepage.kt$(top = 72.dp)</ID>
-    <ID>HardcodedPaddingUsage:HomepageHeader.kt$(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 32.dp)</ID>
-    <ID>HardcodedPaddingUsage:HomepagePillButton.kt$(16.dp)</ID>
-    <ID>HardcodedPaddingUsage:HomepagePillButton.kt$(all = 4.dp)</ID>
     <ID>HardcodedPaddingUsage:IPProtectionBottomSheet.kt$(8.dp)</ID>
     <ID>HardcodedPaddingUsage:IPProtectionBottomSheet.kt$(bottom = 16.dp, start = 16.dp, end = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:IPProtectionBottomSheet.kt$(horizontal = 8.dp, vertical = 4.dp)</ID>
@@ -253,20 +229,8 @@
     <ID>HardcodedPaddingUsage:InactiveTabs.kt$(start = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:InfoScreen.kt$( start = 72.dp, top = 6.dp, end = 16.dp, bottom = 6.dp, )</ID>
     <ID>HardcodedPaddingUsage:InfoScreen.kt$(end = 8.dp)</ID>
-    <ID>HardcodedPaddingUsage:LibraryMenuItem.kt$(horizontal = 4.dp, vertical = 12.dp)</ID>
     <ID>HardcodedPaddingUsage:LoginsTools.kt$(16.dp)</ID>
-    <ID>HardcodedPaddingUsage:MainMenu.kt$( start = 8.dp, top = if (accessPoint != MenuAccessPoint.Home &amp;&amp; (isBottomToolbar || isExpandedToolbarEnabled)) { 0.dp } else { 8.dp }, end = 8.dp, bottom = if (accessPoint != MenuAccessPoint.Home &amp;&amp; (isBottomToolbar || isExpandedToolbarEnabled)) { 84.dp } else { 16.dp }, )</ID>
-    <ID>HardcodedPaddingUsage:MainMenu.kt$(start = 40.dp)</ID>
     <ID>HardcodedPaddingUsage:ManagePrivacyPreferencesDialog.kt$(16.dp)</ID>
-    <ID>HardcodedPaddingUsage:MenuBanner.kt$(end = 16.dp)</ID>
-    <ID>HardcodedPaddingUsage:MenuBanner.kt$(start = 24.dp, top = 12.dp, bottom = 10.dp)</ID>
-    <ID>HardcodedPaddingUsage:MenuBanner.kt$(top = 8.dp, end = 12.dp)</ID>
-    <ID>HardcodedPaddingUsage:MenuDialogFragment.kt$MenuDialogFragment$(top = 16.dp, bottom = 16.dp)</ID>
-    <ID>HardcodedPaddingUsage:MenuItem.kt$(16.dp)</ID>
-    <ID>HardcodedPaddingUsage:MenuItem.kt$(horizontal = 16.dp, vertical = 8.dp)</ID>
-    <ID>HardcodedPaddingUsage:MenuItem.kt$(start = 16.dp)</ID>
-    <ID>HardcodedPaddingUsage:MenuNavigation.kt$(horizontal = 4.dp, vertical = 12.dp)</ID>
-    <ID>HardcodedPaddingUsage:MenuScaffold.kt$( start = 16.dp, top = 12.dp, end = 16.dp, bottom = 32.dp, )</ID>
     <ID>HardcodedPaddingUsage:MessageCard.kt$(all = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:MicrosurveyBottomSheet.kt$(bottom = 8.dp)</ID>
     <ID>HardcodedPaddingUsage:MicrosurveyBottomSheet.kt$(top = 8.dp)</ID>
@@ -285,7 +249,6 @@
     <ID>HardcodedPaddingUsage:NimbusExperiments.kt$( start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp, )</ID>
     <ID>HardcodedPaddingUsage:OnboardingScreen.kt$(bottom = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:PageSummariesSettingsFragment.kt$PageSummariesSettingsFragment$(horizontal = 16.dp)</ID>
-    <ID>HardcodedPaddingUsage:PrivateBrowsingDescription.kt$(horizontal = 24.dp)</ID>
     <ID>HardcodedPaddingUsage:PrivateSuggestionsCard.kt$( top = 20.dp, start = 20.dp, end = 20.dp, bottom = 10.dp, )</ID>
     <ID>HardcodedPaddingUsage:ProfilerReusableComposable.kt$(16.dp)</ID>
     <ID>HardcodedPaddingUsage:ProfilerReusableComposable.kt$(8.dp)</ID>
@@ -313,7 +276,6 @@
     <ID>HardcodedPaddingUsage:SelectFolderScreen.kt$(start = if (!showPadding) folder.startPadding else 0.dp)</ID>
     <ID>HardcodedPaddingUsage:SelectFolderScreen.kt$(vertical = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:SendToDevicesScreen.kt$( bottom = 16.dp, top = 8.dp, start = 16.dp, end = 16.dp, )</ID>
-    <ID>HardcodedPaddingUsage:SendToDevicesScreen.kt$(16.dp)</ID>
     <ID>HardcodedPaddingUsage:SendToDevicesScreen.kt$(vertical = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:SettingsSearchResultItem.kt$(horizontal = 16.dp, vertical = 8.dp)</ID>
     <ID>HardcodedPaddingUsage:SettingsSearchScreen.kt$(start = 16.dp, top = 12.dp, bottom = 6.dp)</ID>
@@ -323,10 +285,8 @@
     <ID>HardcodedPaddingUsage:SetupChecklist.kt$(24.dp)</ID>
     <ID>HardcodedPaddingUsage:SetupChecklist.kt$(horizontal = 16.dp, vertical = 12.dp)</ID>
     <ID>HardcodedPaddingUsage:Snackbar.kt$(all = 16.dp)</ID>
-    <ID>HardcodedPaddingUsage:StartupCrashScreen.kt$(horizontal = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:StoryCard.kt$(16.dp)</ID>
     <ID>HardcodedPaddingUsage:StoryCard.kt$(all = 8.dp)</ID>
-    <ID>HardcodedPaddingUsage:SubmenuHeader.kt$(start = 4.dp, end = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:SyncedTabsList.kt$(all = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:SyncedTabsList.kt$(all = 8.dp)</ID>
     <ID>HardcodedPaddingUsage:SyncedTabsList.kt$(horizontal = 16.dp)</ID>
@@ -358,7 +318,6 @@
     <ID>HardcodedPaddingUsage:TranslationToolbar.kt$(start = 16.dp, end = 2.dp)</ID>
     <ID>HardcodedPaddingUsage:TranslationToolbar.kt$(start = 8.dp)</ID>
     <ID>HardcodedPaddingUsage:TranslationsBottomSheet.kt$(top = 16.dp)</ID>
-    <ID>HardcodedPaddingUsage:TranslationsDialogBottomSheet.kt$( top = if (showPageSettings) { 12.dp } else { 0.dp } )</ID>
     <ID>HardcodedPaddingUsage:TranslationsDialogBottomSheet.kt$(16.dp)</ID>
     <ID>HardcodedPaddingUsage:TranslationsDialogBottomSheet.kt$(top = 12.dp)</ID>
     <ID>HardcodedPaddingUsage:TrustPanelFragment.kt$TrustPanelFragment$(top = 8.dp, bottom = 5.dp)</ID>
@@ -377,7 +336,6 @@
     <ID>HardcodedPaddingUsage:WallpaperOnboarding.kt$(horizontal = 32.dp, vertical = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:WebCompatReporter.kt$(vertical = 6.dp)</ID>
     <ID>HardcodedPaddingUsage:WebCompatReporterPreviewSheet.kt$(top = 72.dp)</ID>
-    <ID>HardcodedPaddingUsage:Wordmark.kt$(end = 10.dp)</ID>
     <ID>LongMethod:BookmarksReducer.kt$internal fun bookmarksReducer(state: BookmarksState, action: BookmarksAction)</ID>
     <ID>LongMethod:BookmarksScreen.kt$@Composable private fun BookmarksListTopBar(store: BookmarksStore)</ID>
     <ID>LongMethod:BrowserToolbarMiddleware.kt$BrowserToolbarMiddleware$@VisibleForTesting internal fun buildHomeAction( action: HomeToolbarAction, source: Source = Source.Unknown, ): Action</ID>
@@ -502,7 +460,6 @@
     <ID>UndocumentedPublicClass:HistoryFragmentStore.kt$HistoryFragmentState.Mode$Editing : Mode</ID>
     <ID>UndocumentedPublicClass:HistoryFragmentStore.kt$HistoryFragmentState.Mode$Normal : Mode</ID>
     <ID>UndocumentedPublicClass:HistoryFragmentStore.kt$HistoryFragmentState.Mode$Syncing : Mode</ID>
-    <ID>UndocumentedPublicClass:HistoryItemTimeGroup.kt$HistoryItemTimeGroup</ID>
     <ID>UndocumentedPublicClass:HistoryListItemViewHolder.kt$HistoryListItemViewHolder : ViewHolder</ID>
     <ID>UndocumentedPublicClass:HistoryMetadataGroupFragmentStore.kt$HistoryMetadataGroupFragmentAction$Delete : HistoryMetadataGroupFragmentAction</ID>
     <ID>UndocumentedPublicClass:HistoryMetadataGroupFragmentStore.kt$HistoryMetadataGroupFragmentAction$DeleteAll : HistoryMetadataGroupFragmentAction</ID>

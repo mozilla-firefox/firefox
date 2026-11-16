@@ -25,8 +25,6 @@ import org.mozilla.fenix.GleanMetrics.ReaderMode
 import org.mozilla.fenix.GleanMetrics.Translations
 import org.mozilla.fenix.components.menu.middleware.MenuTelemetryMiddleware
 import org.mozilla.fenix.components.menu.store.MenuAction
-import org.mozilla.fenix.components.menu.store.MenuState
-import org.mozilla.fenix.components.menu.store.MenuStore
 import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.tabgroups.flow.TabGroupFlowEntryPoint
 import org.robolectric.RobolectricTestRunner
@@ -575,12 +573,9 @@ class MenuTelemetryMiddlewareTest {
         assertEquals(1, event.testGetValue()!!)
     }
 
-    private fun createStore(
-        menuState: MenuState = MenuState(),
-        accessPoint: MenuAccessPoint = MenuAccessPoint.Browser,
-    ) =
-        MenuStore(
-            initialState = menuState,
+    private fun createStore(accessPoint: MenuAccessPoint = MenuAccessPoint.Browser) =
+        CustomizableMenuStore(
+            initialState = CustomizableMenuState(emptyList()),
             middleware = listOf(MenuTelemetryMiddleware(accessPoint = accessPoint)),
         )
 }

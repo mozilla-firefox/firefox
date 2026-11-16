@@ -27,25 +27,11 @@ sealed class MenuAction : MenuEvent {
     /** [MenuAction] dispatched when reader view customization controls should be displayed. */
     data object CustomizeReaderView : MenuAction()
 
-    /**
-     * [MenuAction] dispatched when a bookmark state is updated.
-     *
-     * @property bookmarkState The new [BookmarkState] to be updated.
-     */
-    data class UpdateBookmarkState(val bookmarkState: BookmarkState) : MenuAction()
-
     /** [MenuAction] dispatched when a site is to be added to shortcuts. */
     data object AddShortcut : MenuAction()
 
     /** [MenuAction] dispatched when a site is to be removed from shortcuts. */
     data object RemoveShortcut : MenuAction()
-
-    /**
-     * [MenuAction] dispatched when a pinned shortcut state is updated.
-     *
-     * @property isPinned The new [isPinned] state to be updated.
-     */
-    data class UpdatePinnedState(val isPinned: Boolean) : MenuAction()
 
     /** [MenuAction] dispatched to delete browsing data and quit the browser. */
     data object DeleteBrowsingDataAndQuit : MenuAction()
@@ -69,28 +55,6 @@ sealed class MenuAction : MenuEvent {
     data object DefaultBrowserMenuBannerDismissed : MenuAction()
 
     /**
-     * [MenuAction] dispatched when the extension state is updated.
-     *
-     * @property recommendedAddons The recommended [Addon]s to suggest.
-     */
-    data class UpdateExtensionState(val recommendedAddons: List<Addon>) : MenuAction()
-
-    /**
-     * [MenuAction] dispatched when browser web extension items list is updated.
-     *
-     * @property webExtensionBrowserMenuItem browserMenuItem The list of [WebExtensionMenuItem] to be shown in the menu.
-     */
-    data class UpdateWebExtensionBrowserMenuItems(val webExtensionBrowserMenuItem: List<WebExtensionMenuItem>) :
-        MenuAction()
-
-    /**
-     * [MenuAction] dispatched when installed addons list is updated.
-     *
-     * @property availableAddons The list of installed and enabled [Addon]s to be shown in the menu.
-     */
-    data class UpdateAvailableAddons(val availableAddons: List<Addon>) : MenuAction()
-
-    /**
      * [MenuAction] dispatched when an addon is to be installed.
      *
      * @property addon The [Addon] to install.
@@ -100,13 +64,6 @@ sealed class MenuAction : MenuEvent {
         val addon: Addon,
         val addonName: String? = null,
     ) : MenuAction()
-
-    /**
-     * [MenuAction] dispatched when an addon installation is in progress.
-     *
-     * @property addon The [Addon] to install.
-     */
-    data class UpdateInstallAddonInProgress(val addon: Addon) : MenuAction()
 
     /**
      * [MenuAction] dispatched when an addon installation was completed with success.
@@ -147,13 +104,6 @@ sealed class MenuAction : MenuEvent {
 
     /** [MenuAction] dispatched to record that the tab group menu item has been exposed to the user */
     data object OnTabGroupMenuItemExposed : MenuAction()
-
-    /**
-     * [MenuAction] dispatched to initialize the state of the summarize page menu.
-     *
-     * @property state The [SummarizationMenuState] to set up
-     */
-    data class InitializeSummarizationMenuState(val state: SummarizationMenuState) : MenuAction()
 
     /**
      * [MenuAction] dispatched to update the IP protection menu item state.

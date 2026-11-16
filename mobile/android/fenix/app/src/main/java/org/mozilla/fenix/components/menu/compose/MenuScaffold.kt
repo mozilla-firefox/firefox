@@ -6,7 +6,6 @@ package org.mozilla.fenix.components.menu.compose
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -18,9 +17,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import org.mozilla.fenix.theme.FirefoxTheme
 
 /**
  * A scaffold for a menu UI that implements the basic layout structure with [header] and [content].
@@ -41,7 +39,7 @@ internal fun MenuScaffold(
         header()
 
         Row(modifier = Modifier.verticalScroll(rememberScrollState()).fillMaxWidth()) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(FirefoxTheme.layout.space.static100))
         }
 
         if (scrollState.canScrollBackward) {
@@ -52,51 +50,14 @@ internal fun MenuScaffold(
             modifier =
                 Modifier.verticalScroll(scrollState)
                     .padding(
-                        start = 16.dp,
-                        top = 12.dp,
-                        end = 16.dp,
-                        bottom = 32.dp,
+                        start = FirefoxTheme.layout.space.static200,
+                        top = FirefoxTheme.layout.space.static150,
+                        end = FirefoxTheme.layout.space.static200,
+                        bottom = FirefoxTheme.layout.space.static400,
                     ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(FirefoxTheme.layout.space.static200),
         ) {
             content()
-        }
-    }
-}
-
-/**
- * A frame for the main menu UI that implements the basic layout structure with [header] and [content].
- *
- * @param modifier [Modifier] to be applied to the layout.
- * @param contentModifier [Modifier] to be applied to the content layout.
- * @param scrollState The [ScrollState] used for vertical scrolling.
- * @param header The Composable header block to render.
- * @param footer The Composable footer block to render.
- * @param content The Composable content block to render.
- */
-@Composable
-internal fun MenuFrame(
-    modifier: Modifier = Modifier,
-    contentModifier: Modifier = Modifier,
-    scrollState: ScrollState = rememberScrollState(),
-    header: @Composable () -> Unit = {},
-    footer: @Composable () -> Unit = {},
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Box(modifier = modifier) {
-        Column {
-            header()
-
-            Column(
-                modifier = Modifier.verticalScroll(scrollState).then(contentModifier),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                content()
-            }
-        }
-
-        Column(modifier = Modifier.align(Alignment.BottomCenter)) {
-            footer()
         }
     }
 }

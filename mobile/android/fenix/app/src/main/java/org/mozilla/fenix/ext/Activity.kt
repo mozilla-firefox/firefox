@@ -38,7 +38,6 @@ import org.mozilla.fenix.addons.AddonDetailsFragmentDirections
 import org.mozilla.fenix.addons.AddonPermissionsDetailsFragmentDirections
 import org.mozilla.fenix.addons.AddonsManagementFragmentDirections
 import org.mozilla.fenix.bookmarks.BookmarkFragmentDirections
-import org.mozilla.fenix.components.menu.MenuDialogFragmentDirections
 import org.mozilla.fenix.customtabs.EXTRA_IS_SANDBOX_CUSTOM_TAB
 import org.mozilla.fenix.customtabs.ExternalAppBrowserActivity
 import org.mozilla.fenix.debugsettings.gleandebugtools.GleanDebugToolsFragmentDirections
@@ -319,8 +318,6 @@ private fun getHomeNavDirections(from: BrowserDirection): NavDirections =
         BrowserDirection.FromAddonsManagementFragment -> AddonsManagementFragmentDirections.actionGlobalBrowser()
 
         BrowserDirection.FromTranslationsDialogFragment -> TranslationsDialogFragmentDirections.actionGlobalBrowser()
-
-        BrowserDirection.FromMenuDialogFragment -> MenuDialogFragmentDirections.actionGlobalBrowser()
 
         BrowserDirection.FromDownloadLanguagesPreferenceFragment ->
             DownloadLanguagesPreferenceFragmentDirections.actionGlobalBrowser()

@@ -21,12 +21,6 @@ enum class MenuAccessPoint {
     Preview,
 }
 
-/** Menu navigation destination. */
-enum class Route {
-    MainMenu,
-    CustomTabMenu,
-}
-
 /** Returns the [FenixFxAEntryPoint] equivalent from the given [MenuAccessPoint]. */
 internal fun MenuAccessPoint.toFenixFxAEntryPoint(): FenixFxAEntryPoint {
     return when (this) {
