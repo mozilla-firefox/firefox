@@ -49,3 +49,9 @@ experimental-features-group-custom-widgets =
 experimental-features-custom-widgets =
     .label = Custom widgets
 experimental-features-custom-widgets-description = Build your own widgets for { -firefox-home-brand-name } or your sidebar just by describing what you want. For example, a habit tracker, word count tool, or dad joke generator. Each widget stays on your device. We don’t store your prompts, widgets, or widget data, and we don’t use your data to train AI. <a data-l10n-name="connect">Share feedback</a>
+
+## Prompt shown in Widget Studio when nobody is signed in.
+
+widget-studio-sign-in-title = Sign in to create custom widgets
+widget-studio-sign-in-button =
+    .label = Sign in

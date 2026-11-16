@@ -47,3 +47,65 @@ widget-composer {
   margin-block-start: auto;
   padding: var(--space-large);
 }
+
+#sign-in-prompt {
+  --sign-in-background-color: light-dark(var(--color-violet-desaturated-10, var(--panel-background-color)), var(--panel-background-color));
+
+  display: grid;
+  grid-template-areas:
+    "title title"
+    "button button"
+    "image link";
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: auto auto 1fr;
+  gap: var(--space-medium) var(--space-small);
+  box-sizing: border-box;
+  flex-shrink: 0;
+  overflow: hidden;
+  margin-block-start: calc(var(--space-large) * 2 + var(--size-item-large));
+  margin-inline: var(--space-large);
+  padding-block: var(--space-medium) 0;
+  padding-inline: var(--space-medium);
+  border: var(--border-width) dashed var(--border-color);
+  border-radius: var(--border-radius-large);
+  background-color: var(--sign-in-background-color);
+  color: var(--text-color);
+
+  @media (forced-colors) {
+    background-color: var(--background-color-canvas);
+  }
+}
+
+#sign-in-title {
+  grid-area: title;
+  margin-block: initial;
+  font-size: var(--font-size-large);
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+#sign-in-button {
+  grid-area: button;
+}
+
+#sign-in-learn-more {
+  grid-area: link;
+  align-self: end;
+  justify-self: end;
+  text-align: end;
+  padding-block-end: var(--space-medium);
+  font-size: var(--font-size-large);
+  color: var(--link-color);
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+#sign-in-illustration {
+  grid-area: image;
+  align-self: end;
+  justify-self: start;
+  margin-block-start: calc(var(--space-xxlarge) * 2);
+  inline-size: 100%;
+  max-inline-size: var(--size-layout-small);
+  block-size: auto;
+}

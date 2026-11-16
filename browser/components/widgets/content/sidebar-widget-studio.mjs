@@ -71,6 +71,36 @@ export class SidebarWidgetStudio extends SidebarPage {
     this.composeButton.focus();
   }
 
+  #openLearnMore(e) {
+    e.preventDefault();
+    this.topWindow.openTrustedLinkIn(e.currentTarget.href, "tab");
+  }
+
+  signInTemplate() {
+    if (this.authentication.authenticated) {
+      return nothing;
+    }
+    return html`<section id="sign-in-prompt">
+      <h1 id="sign-in-title" data-l10n-id="widget-studio-sign-in-title"></h1>
+      <moz-button
+        id="sign-in-button"
+        type="primary"
+        data-l10n-id="widget-studio-sign-in-button"
+      ></moz-button>
+      <a
+        id="sign-in-learn-more"
+        is="moz-support-link"
+        support-page="firefox-new-tab-widgets"
+        @click=${this.#openLearnMore}
+      ></a>
+      <img
+        id="sign-in-illustration"
+        src="chrome://activity-stream/content/data/content/assets/mr-kit-smart-window.svg"
+        alt=""
+      />
+    </section>`;
+  }
+
   composerTemplate() {
     if (!this.authentication.authenticated) {
       return nothing;
@@ -103,6 +133,7 @@ export class SidebarWidgetStudio extends SidebarPage {
         data-l10n-id="sidebar-panel-header-close-button"
         @click=${this.#closePanel}
       ></moz-button>
+      ${this.signInTemplate()}
       <slot></slot>
       ${this.composerTemplate()}`;
   }
