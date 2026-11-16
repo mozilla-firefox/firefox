@@ -802,7 +802,6 @@ bool FinalizationQueueObject::cleanupQueuedRecords(
     JSContext* cx, HandleFinalizationQueueObject queue,
     HandleObject callbackArg) {
   MOZ_ASSERT(cx->compartment() == queue->compartment());
-  JS::AssertObjectIsNotGray(queue);
 
   // 2. If callback is undefined, set callback to
   //    finalizationRegistry.[[CleanupCallback]].
@@ -831,7 +830,7 @@ bool FinalizationQueueObject::cleanupQueuedRecords(
     FinalizationRecordObject* record = records->popCopy();
     MOZ_ASSERT(!record->isInRecordMap());
 
-    JS::AssertObjectIsNotGray(record);
+    JS::ExposeObjectToActiveJS(record);
 
     MOZ_ASSERT(record->isInQueue());
     record->setInQueue(false);
