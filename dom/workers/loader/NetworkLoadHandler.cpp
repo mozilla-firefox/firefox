@@ -183,20 +183,7 @@ nsresult NetworkLoadHandler::DataReceivedFromNetwork(nsIStreamLoader* aLoader,
       return NS_ERROR_NOT_AVAILABLE;
     }
 
-    (void)httpChannel->GetResponseHeader(
-        "content-security-policy"_ns,
-        policyContainerHeaders.mContentSecurityPolicy);
-
-    (void)httpChannel->GetResponseHeader(
-        "content-security-policy-report-only"_ns,
-        policyContainerHeaders.mContentSecurityPolicyReportOnly);
-
-    (void)httpChannel->GetResponseHeader(
-        "connection-allowlist"_ns, policyContainerHeaders.mConnectionAllowlist);
-
-    (void)httpChannel->GetResponseHeader(
-        "connection-allowlist-report-only"_ns,
-        policyContainerHeaders.mConnectionAllowlistReportOnly);
+    policyContainerHeaders = PolicyContainer::Headers::FromChannel(httpChannel);
 
     (void)httpChannel->GetResponseHeader("referrer-policy"_ns, tRPHeaderCValue);
 

@@ -27,6 +27,7 @@ class IntegrityPolicyWAICT;
 #define NS_POLICYCONTAINER_CONTRACTID "@mozilla.org/policycontainer;1"
 
 class nsIContentSecurityPolicy;
+class nsIHttpChannel;
 class nsIIntegrityPolicy;
 class nsIPrincipal;
 class nsIURI;
@@ -52,6 +53,9 @@ class PolicyContainer : public nsIPolicyContainer {
     nsCString mContentSecurityPolicyReportOnly;
     nsCString mConnectionAllowlist;
     nsCString mConnectionAllowlistReportOnly;
+
+    static Headers FromChannel(nsIHttpChannel* aChannel);
+    bool IsEmpty() const;
   };
 
   // Creates a Policy-Container for non-documents by parsing the provided
@@ -59,6 +63,15 @@ class PolicyContainer : public nsIPolicyContainer {
   static mozilla::Result<already_AddRefed<PolicyContainer>, nsresult>
   CreateForNonDocument(nsIPrincipal* aPrincipal, nsIURI* aSelfURI,
                        const Headers& aHeaders);
+
+  // Creates a Policy-Container for a subdocument or object load, which is only
+  // used for checking frame-ancestors before the document is created. Parser
+  // warnings are suppressed, because the headers get parsed again later.
+  static mozilla::Result<already_AddRefed<PolicyContainer>, nsresult>
+  CreateForFrameAncestorsCheck(nsIPrincipal* aPrincipal, nsIURI* aSelfURI,
+                               const nsACString& aReferrer,
+                               uint64_t aInnerWindowID,
+                               const Headers& aHeaders);
 
   static void ToArgs(const PolicyContainer* aPolicy,
                      mozilla::ipc::PolicyContainerArgs& aArgs);
@@ -115,6 +128,16 @@ class PolicyContainer : public nsIPolicyContainer {
   void SetIPAddressSpace(nsILoadInfo::IPAddressSpace aIPAddressSpace);
 
  private:
+  struct Options {
+    nsCString mReferrer;
+    uint64_t mInnerWindowID = 0;
+    bool mSuppressParserLogMessages = false;
+  };
+
+  static mozilla::Result<already_AddRefed<PolicyContainer>, nsresult>
+  CreateFromHeaders(nsIPrincipal* aPrincipal, nsIURI* aSelfURI,
+                    const Headers& aHeaders, const Options& aOptions);
+
   nsCOMPtr<nsIContentSecurityPolicy> mCSP;
   nsCOMPtr<nsIIntegrityPolicy> mIntegrityPolicy;
   RefPtr<mozilla::dom::IntegrityPolicyWAICT> mIntegrityPolicyWAICT;
