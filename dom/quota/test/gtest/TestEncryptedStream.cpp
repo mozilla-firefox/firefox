@@ -653,8 +653,7 @@ TEST_P(ParametrizedCryptTest, DummyCipherStrategy_IncompleteBlock) {
                            readData.Length(), &read));
 }
 
-TEST(DOM_Quota_EncryptedStream, DummyCipherStrategy_SerializeAfterClose)
-{
+TEST_F(DOM_Quota_EncryptedStream, DummyCipherStrategy_SerializeAfterClose) {
   using CipherStrategy = DummyCipherStrategy;
 
   nsCOMPtr<nsIInputStream> baseStream;
@@ -910,6 +909,204 @@ TEST_P(ParametrizedSeekCryptTest, NSSCipherStrategy_Seek) {
   DoSeekTest<NSSCipherStrategy>();
 }
 
+// Parameter to EncryptBlock to decide which type of corruption should be
+// applied, if any
+enum class EncryptBlockHeaderCorruption {
+  None,                   // No corruption
+  PayloadLengthZero,      // Falsely advertise 0 payload
+  PayloadLengthExceeded,  // Falsely advertise payload greater actual payload
+};
+
+// Returns the max payload for a given block size
+// It corresponds to the prefix and header. Header is 2 bytes (payload length)
+// but needs to fit within one block.
+constexpr size_t MaxPayload(size_t aBlockSize) {
+  return aBlockSize - NSSCipherStrategy::BlockPrefixLength -
+         NSSCipherStrategy::BasicBlockSize;
+}
+
+// Use aEnc cipher to encrypt a buffer of size aBlockSize, filled with
+// aPlainTextChar characters. The result is stored in aOut. Additionally, the
+// header could be corrupted to set a wrong value for the "PayloadLength" field.
+// By default, there is no corruption.
+static void EncryptBlock(
+    NSSCipherStrategy& aEnc, const unsigned char aPlainTextChar,
+    const size_t aBlockSize, nsTArray<uint8_t>& aOut,
+    EncryptBlockHeaderCorruption corrupt = EncryptBlockHeaderCorruption::None) {
+  using Block = EncryptedBlock<NSSCipherStrategy::BlockPrefixLength,
+                               NSSCipherStrategy::BasicBlockSize>;
+  const std::vector<uint8_t> plaintext(MaxPayload(aBlockSize), aPlainTextChar);
+  Block block(aBlockSize);
+  const auto prefix = NSSCipherStrategy::MakeBlockPrefix();
+  std::copy(prefix.cbegin(), prefix.cend(),
+            block.MutableCipherPrefix().begin());
+  ASSERT_EQ(NS_OK, aEnc.Cipher(block.MutableCipherPrefix(), Span(plaintext),
+                               block.MutablePayload()));
+  uint16_t payloadLength;
+  switch (corrupt) {
+    case EncryptBlockHeaderCorruption::None: {
+      payloadLength = plaintext.size();
+      break;
+    }
+    case EncryptBlockHeaderCorruption::PayloadLengthZero: {
+      payloadLength = 0;
+      break;
+    }
+    case EncryptBlockHeaderCorruption::PayloadLengthExceeded: {
+      payloadLength = plaintext.size() + 10;
+      break;
+    }
+    default: {
+      MOZ_ASSERT_UNREACHABLE("Shall not be reachable");
+    }
+  }
+  block.SetActualPayloadLength(payloadLength);
+  const auto whole = block.WholeBlock();
+  aOut.AppendElements(whole.Elements(), whole.Length());
+}
+
+class ParametrizedCorruptPayloadLengthTest
+    : public DOM_Quota_EncryptedStream,
+      public testing::WithParamInterface<EncryptBlockHeaderCorruption> {};
+
+// Regression test for bug 2054736. A block claiming ActualPayloadLength == 0
+// is never produced by EncryptingOutputStream and must be rejected as corrupted
+// content. The first (valid) block reads normally; the second (phantom) block
+// must fail with NS_ERROR_CORRUPTED_CONTENT.
+// Also test corrupted header where the payload header exceeds the actual
+// payload: this should also be considered as corrupted and rejected
+TEST_P(ParametrizedCorruptPayloadLengthTest, CorruptPayloadLengthBlock) {
+  using CipherStrategy = NSSCipherStrategy;
+  constexpr size_t kBlockSize = 4096;
+  constexpr size_t kMaxPayload = MaxPayload(kBlockSize);
+
+  auto keyOrErr = CipherStrategy::GenerateKey();
+  ASSERT_FALSE(keyOrErr.isErr());
+  const auto key = keyOrErr.unwrap();
+
+  CipherStrategy enc;
+  ASSERT_EQ(NS_OK,
+            enc.Init(CipherMode::Encrypt, CipherStrategy::SerializeKey(key)));
+  nsTArray<uint8_t> encrypted;
+  // Block 0: valid, full payload of 'A' bytes.
+  const unsigned char kBlock0Value = 'A';
+  EncryptBlock(enc, kBlock0Value, kBlockSize, encrypted);
+  // Block 1: encrypted normally, but with a corrupted ActualPayloadLength.
+  const unsigned char kBlock1Value = 'B';
+  EncryptBlock(enc, kBlock1Value, kBlockSize, encrypted, GetParam());
+
+  const auto baseInputStream =
+      MakeRefPtr<ArrayBufferInputStream>(Span<const uint8_t>(encrypted));
+
+  RefPtr<DecryptingInputStream<CipherStrategy>> decrypting =
+      MakeAndAddRef<DecryptingInputStream<CipherStrategy>>(
+          WrapNotNull(nsCOMPtr<nsIInputStream>{baseInputStream}), kBlockSize,
+          key);
+
+  // Seek has to reject the corrupted block too, even when seeking to the valid
+  // first block: any seek needs the decrypted stream size, which is computed by
+  // parsing the last block, i.e. the corrupted one here.
+  EXPECT_EQ(NS_ERROR_CORRUPTED_CONTENT,
+            decrypting->Seek(nsISeekableStream::NS_SEEK_SET, 0));
+
+  // First read: block 0 succeeds and returns the expected plaintext.
+  nsTArray<uint8_t> readBuf;
+  readBuf.SetLength(kMaxPayload);
+  uint32_t bytesRead = 0;
+  EXPECT_EQ(NS_OK, decrypting->Read(reinterpret_cast<char*>(readBuf.Elements()),
+                                    kMaxPayload, &bytesRead));
+  EXPECT_EQ(kMaxPayload, bytesRead);
+  EXPECT_THAT(readBuf, testing::Each(kBlock0Value));
+
+  // Second read: block 1 has an invalid ActualPayloadLength and must be
+  // rejected.
+  bytesRead = 0;
+  EXPECT_EQ(NS_ERROR_CORRUPTED_CONTENT,
+            decrypting->Read(reinterpret_cast<char*>(readBuf.Elements()),
+                             kMaxPayload, &bytesRead));
+  EXPECT_EQ(0u, bytesRead);
+}
+
+// Regression test for the second half of bug 2054736. No corrupted data is
+// involved at all: two entirely valid, full blocks are enough.
+// The sequence was Seek(EOF) -> Seek(last block before EOF) -> Read: this
+// would lead to returning uninitialized bytes before bug 2054736 was fixed
+// because the Seek operation didn't result in something being decrypted and
+// stored in mPlainBuffer.
+// Each block is filled with a distinct byte, so that the test tells apart
+// decrypting the block preceding EOF from decrypting some other block.
+TEST_F(DOM_Quota_EncryptedStream, SeekToEOF) {
+  using CipherStrategy = NSSCipherStrategy;
+  constexpr size_t kBlockSize = 4096;
+  constexpr size_t kMaxPayload = MaxPayload(kBlockSize);
+
+  auto keyOrErr = CipherStrategy::GenerateKey();
+  ASSERT_FALSE(keyOrErr.isErr());
+  const auto key = keyOrErr.unwrap();
+
+  CipherStrategy enc;
+  ASSERT_EQ(NS_OK,
+            enc.Init(CipherMode::Encrypt, CipherStrategy::SerializeKey(key)));
+
+  nsTArray<uint8_t> encrypted;
+  // Create two uncorrupted blocks
+  const unsigned char kBlock0Value = 'A';
+  EncryptBlock(enc, kBlock0Value, kBlockSize, encrypted);
+  const unsigned char kBlock1Value = 'B';
+  EncryptBlock(enc, kBlock1Value, kBlockSize, encrypted);
+
+  const auto baseInputStream =
+      MakeRefPtr<ArrayBufferInputStream>(Span<const uint8_t>(encrypted));
+
+  RefPtr<DecryptingInputStream<CipherStrategy>> decrypting =
+      MakeAndAddRef<DecryptingInputStream<CipherStrategy>>(
+          WrapNotNull(nsCOMPtr<nsIInputStream>{baseInputStream}), kBlockSize,
+          key);
+
+  // Seek exactly to the logical end of the stream. This is an ordinary, valid
+  // seek target and must succeed.
+  ASSERT_EQ(NS_OK, decrypting->Seek(nsISeekableStream::NS_SEEK_SET,
+                                    static_cast<int64_t>(kMaxPayload) * 2));
+  int64_t position = 0;
+  ASSERT_EQ(NS_OK, decrypting->Tell(&position));
+  EXPECT_EQ(static_cast<int64_t>(kMaxPayload) * 2, position);
+
+  // Seek back to the beginning of the second block, i.e. within the same
+  // block's range as above.
+  ASSERT_EQ(NS_OK, decrypting->Seek(nsISeekableStream::NS_SEEK_SET,
+                                    static_cast<int64_t>(kMaxPayload)));
+  ASSERT_EQ(NS_OK, decrypting->Tell(&position));
+  EXPECT_EQ(static_cast<int64_t>(kMaxPayload), position);
+
+  // The stream must serve the real, decrypted content of the block, not
+  // whatever was previously sitting in mPlainBuffer.
+  {
+    nsTArray<uint8_t> readBuf;
+    readBuf.SetLength(kMaxPayload);
+    uint32_t bytesRead = 0;
+    EXPECT_EQ(NS_OK,
+              decrypting->Read(reinterpret_cast<char*>(readBuf.Elements()),
+                               kMaxPayload, &bytesRead));
+    EXPECT_EQ(kMaxPayload, bytesRead);
+    EXPECT_THAT(readBuf, testing::Each(kBlock1Value));
+  }
+
+  // Seek back the beginning of the stream: reading the first block shall work
+  // too
+  ASSERT_EQ(NS_OK, decrypting->Seek(nsISeekableStream::NS_SEEK_SET, 0));
+
+  {
+    nsTArray<uint8_t> readBuf;
+    readBuf.SetLength(kMaxPayload);
+    uint32_t bytesRead = 0;
+    EXPECT_EQ(NS_OK,
+              decrypting->Read(reinterpret_cast<char*>(readBuf.Elements()),
+                               kMaxPayload, &bytesRead));
+    EXPECT_EQ(kMaxPayload, bytesRead);
+    EXPECT_THAT(readBuf, testing::Each(kBlock0Value));
+  }
+}
+
 // The data size 244 has been calculated as 256 (block size) minus 8
 // (DummyCipherStrategy::BlockPrefixLength) minus 4
 // (DummyCipherStrategy::BasicBlockSize).
@@ -945,6 +1142,12 @@ INSTANTIATE_TEST_SUITE_P(
         /* closeOnEOF */
         testing::Values(true, false)),
     TestParamToString);
+
+INSTANTIATE_TEST_SUITE_P(
+    DOM_Quota_EncryptedStream_ParametrizedCorruptPayload,
+    ParametrizedCorruptPayloadLengthTest,
+    testing::Values(EncryptBlockHeaderCorruption::PayloadLengthZero,
+                    EncryptBlockHeaderCorruption::PayloadLengthExceeded));
 
 INSTANTIATE_TEST_SUITE_P(
     DOM_IndexedDB_EncryptedStream_ParametrizedSeek, ParametrizedSeekCryptTest,
