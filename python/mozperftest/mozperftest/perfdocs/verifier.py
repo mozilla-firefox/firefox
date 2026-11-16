@@ -146,7 +146,7 @@ class Verifier:
                 return False
 
     def _validate_desc_harness_direction(
-        self, suite, test_list, yaml_content, global_descriptions
+        self, suite, test_list, yaml_content, global_descriptions, rel_yml_path
     ):
         """Validate that the tests have a description in the YAML.
 
@@ -200,7 +200,9 @@ class Verifier:
             # test description
             for test_name in new_mtests:
                 logger.warning(
-                    f"Could not find a test description for {test_name}",
+                    f"Could not find a test description for {test_name}. Add one "
+                    f"under the `{suite}` suite in the perfdocs YAML config: "
+                    f"{rel_yml_path}",
                     test_to_manifest[test_name],
                 )
 
@@ -269,7 +271,7 @@ class Verifier:
                 ).append(test)
 
     def _validate_metrics_harness_direction(
-        self, suite, test_list, yaml_content, global_metrics
+        self, suite, test_list, yaml_content, global_metrics, rel_yml_path
     ):
         """Validate that metrics in the harness are documented."""
         # Gather all the metrics being measured
@@ -288,7 +290,9 @@ class Verifier:
                 # Log a warning in all files that have this metric
                 for test in tests:
                     logger.warning(
-                        f"Missing description for the metric `{metric}` in test `{test}`",
+                        f"Missing description for the metric `{metric}` in test "
+                        f"`{test}`. Add one to the perfdocs YAML config: "
+                        f"{rel_yml_path}",
                         test_list[test].get(
                             "path", test_list[test].get("manifest", "")
                         ),
@@ -390,22 +394,32 @@ class Verifier:
                 warned.add(metric)
 
         # Check for any missing tests/suites
+        rel_yml_path = os.path.relpath(framework_info["yml_path"], self.workspace_dir)
         for suite, test_list in framework_info["test_list"].items():
             if not yaml_content["suites"].get(suite):
                 # Description doesn't exist for the suite
                 logger.warning(
-                    f"Missing suite description for {suite}",
+                    f"Missing suite description for {suite}. Add one to the "
+                    f"perfdocs YAML config: {rel_yml_path}",
                     [t.get("path") for _, t in test_list.items()],
                     False,
                 )
                 continue
 
             self._validate_desc_harness_direction(
-                suite, test_list, yaml_content, global_descriptions
+                suite,
+                test_list,
+                yaml_content,
+                global_descriptions,
+                rel_yml_path,
             )
 
             self._validate_metrics_harness_direction(
-                suite, test_list, yaml_content, global_metrics
+                suite,
+                test_list,
+                yaml_content,
+                global_metrics,
+                rel_yml_path,
             )
 
         self.metrics_info[framework_info["name"]] = global_metrics["global"]

@@ -432,7 +432,9 @@ def test_perfdocs_verifier_not_existing_tests_in_suites(
 
     expected = [
         "Could not find an existing test for DifferentName - bad test name?",
-        "Could not find a test description for Example",
+        "Could not find a test description for Example. Add one under the `suite` "
+        "suite in the perfdocs YAML config: "
+        f"{os.path.relpath(perfdocs_sample['config'], top_dir)}",
     ]
 
     assert logger.warning.call_count == 2
@@ -461,7 +463,8 @@ def test_perfdocs_verifier_missing_contents_in_suite(
 
     expected = (
         "Could not find an existing suite for InvalidSuite - bad suite name?",
-        "Missing suite description for suite",
+        "Missing suite description for suite. Add one to the perfdocs YAML config: "
+        f"{os.path.relpath(perfdocs_sample['config'], top_dir)}",
     )
 
     assert logger.warning.call_count == 2
@@ -623,6 +626,7 @@ def test_perfdocs_verifier_undocumented_metrics(
     assert len(logger.warning.call_args_list) == 1
     for args, _ in logger.warning.call_args_list:
         assert "Missing description for the metric" in args[0]
+        assert os.path.relpath(perfdocs_sample["config"], top_dir) in args[0]
 
 
 @pytest.mark.parametrize(
