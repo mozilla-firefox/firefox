@@ -48,6 +48,7 @@ from mozbuild.base import MachCommandConditions as conditions
 from mozbuild.util import (
     MOZBUILD_METRICS_PATH,
     ForwardingArgumentParser,
+    compiler_cache_env,
     ensure_l10n_central,
     get_latest_file,
 )
@@ -421,6 +422,7 @@ def _run_cargo_command(
     )
     if configured_path := command_context.substs.get("PATH"):
         env["PATH"] = configured_path
+    env.update(compiler_cache_env(command_context.substs))
     argv = compose_mach_cargo_argv(
         command,
         substs,

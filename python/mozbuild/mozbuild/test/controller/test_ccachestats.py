@@ -4,10 +4,11 @@
 
 import time
 import unittest
+from unittest import mock
 
 from mozunit import main
 
-from mozbuild.controller.building import CCacheStats
+from mozbuild.controller.building import BuildMonitor, CCacheStats
 
 TIMESTAMP = time.time()
 TIMESTAMP2 = time.time() + 10
@@ -859,6 +860,20 @@ cache_size_kibibyte\t18224250
             "cleanups performed                     364\n"
             "files in cache                      335104\n"
             "cache size                            17.4 Gbytes",
+        )
+
+    def test_stats_read_from_configured_cache_dir(self):
+        with mock.patch.object(
+            CCacheStats, "check_version_3_7_or_newer", return_value=False
+        ), mock.patch(
+            "subprocess.check_output", return_value=self.STAT0
+        ) as check_output, mock.patch.dict(
+            "os.environ", {"PATH": "/usr/bin"}, clear=True
+        ):
+            BuildMonitor.ccache_stats(mock.Mock(), "ccache", "/state/cache/ccache")
+        self.assertEqual(
+            check_output.call_args.kwargs["env"],
+            {"PATH": "/usr/bin", "CCACHE_DIR": "/state/cache/ccache"},
         )
 
 

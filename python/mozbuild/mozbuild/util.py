@@ -55,6 +55,15 @@ def sanitize_shell_env(env):
     return env
 
 
+def compiler_cache_env(substs):
+    return {
+        name: value
+        for name, value in substs.items()
+        if value
+        and (name.startswith("SCCACHE_") or name in ("CCACHE_DIR", "BUILDCACHE_DIR"))
+    }
+
+
 def get_rust_build_kind(substs, profile_suffix=""):
     # Cargo writes the artifacts of a custom profile to a directory named
     # after it.

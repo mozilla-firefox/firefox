@@ -191,6 +191,18 @@ ifdef SCCACHE_CLIENT_SIDE
 export SCCACHE_CLIENT_SIDE
 endif
 
+ifdef SCCACHE_DIR
+export SCCACHE_DIR
+endif
+
+ifdef CCACHE_DIR
+export CCACHE_DIR
+endif
+
+ifdef BUILDCACHE_DIR
+export BUILDCACHE_DIR
+endif
+
 -include $(topsrcdir)/$(MOZ_BUILD_APP)/app-config.mk
 
 ######################################################################

@@ -2163,5 +2163,59 @@ class Rust198Test(RustTest):
     VERSION = "1.98.0"
 
 
+def gen_invoke_compiler_cache(version_output):
+    def invoke_compiler_cache(stdin, args):
+        if tuple(args) == ("--version",):
+            return 0, version_output, ""
+        raise NotImplementedError("unsupported arguments")
+
+    return invoke_compiler_cache
+
+
+class CompilerCacheDirTest(BaseConfigureTest):
+    PATHS = {
+        "/usr/bin/sccache": gen_invoke_compiler_cache("sccache 0.10.0\n"),
+        "/usr/bin/ccache": gen_invoke_compiler_cache("ccache version 4.10\n"),
+        "/usr/bin/buildcache": gen_invoke_compiler_cache("BuildCache version 0.31\n"),
+    }
+    STATE_PATH = mozpath.abspath("/state")
+    TOOLS = ("sccache", "ccache", "buildcache")
+    CACHE_DIR_VARS = ("SCCACHE_DIR", "CCACHE_DIR", "BUILDCACHE_DIR")
+
+    def get_cache_dirs(self, ccache, environ={}):
+        environ = dict(
+            environ,
+            PATH=mozpath.abspath("/usr/bin"),
+            MOZBUILD_STATE_PATH=self.STATE_PATH,
+        )
+        args = ["--disable-bootstrap"]
+        if ccache:
+            args.append(f"--with-ccache={ccache}")
+        sandbox = self.get_sandbox(self.PATHS, {}, args, environ)
+        return {var: sandbox.get_config(var) for var in self.CACHE_DIR_VARS}
+
+    def test_default_dirs(self):
+        for ccache, var in zip(self.TOOLS, self.CACHE_DIR_VARS):
+            expected = dict.fromkeys(self.CACHE_DIR_VARS)
+            expected[var] = mozpath.join(self.STATE_PATH, "cache", ccache)
+            self.assertEqual(self.get_cache_dirs(ccache), expected)
+
+    def test_no_compiler_cache(self):
+        self.assertEqual(self.get_cache_dirs(None), dict.fromkeys(self.CACHE_DIR_VARS))
+
+    def test_explicit_dir(self):
+        environ = {var: f"/custom/{var}" for var in self.CACHE_DIR_VARS}
+        for ccache, var in zip(self.TOOLS, self.CACHE_DIR_VARS):
+            expected = dict.fromkeys(self.CACHE_DIR_VARS)
+            expected[var] = f"/custom/{var}"
+            self.assertEqual(self.get_cache_dirs(ccache, environ), expected)
+
+    def test_automation(self):
+        self.assertEqual(
+            self.get_cache_dirs("sccache", {"MOZ_AUTOMATION": "1"}),
+            dict.fromkeys(self.CACHE_DIR_VARS),
+        )
+
+
 if __name__ == "__main__":
     main()

@@ -322,6 +322,27 @@ class TestRunCargoCommand(unittest.TestCase):
         _, seen = self._run(environ={"PATH": "/usr/bin"})
         self.assertNotIn("PATH", seen["run_env"])
 
+    def test_configured_compiler_cache_substs_reach_the_environment(self):
+        _, seen = self._run(
+            live_substs={
+                "CARGO": "cargo",
+                "SCCACHE_BASEDIRS": "/src/",
+                "SCCACHE_DIR": "/state/cache/sccache",
+                "CCACHE_DIR": "/state/cache/ccache",
+                "BUILDCACHE_DIR": "/state/cache/buildcache",
+            }
+        )
+        self.assertEqual(
+            seen["run_env"],
+            {
+                "COMPOSED_ENV": "1",
+                "SCCACHE_BASEDIRS": "/src/",
+                "SCCACHE_DIR": "/state/cache/sccache",
+                "CCACHE_DIR": "/state/cache/ccache",
+                "BUILDCACHE_DIR": "/state/cache/buildcache",
+            },
+        )
+
     def _run_cargo(self, substs, cargo_command="check", package=None):
         from buildconfig import topsrcdir
 

@@ -226,6 +226,15 @@ delete the `preprocessor` directory in your sccache cache. sccache reads both
 variables when its server starts, so stop it (`sccache --stop-server`) after
 changing them.
 
+The build system also sets the local cache directory of sccache, ccache or
+buildcache to `cache/<tool>` in the mozbuild state directory (`~/.mozbuild` by
+default). Set `SCCACHE_DIR`, `CCACHE_DIR` or `BUILDCACHE_DIR` at configure
+time to override it. With the default directory, sccache ignores the
+`[cache.disk]` section of its configuration file, so set the cache size with
+`SCCACHE_CACHE_SIZE`. ccache and buildcache read their configuration from
+`ccache.conf` and `config.json` in that directory, and ccache commands run
+from a shell, such as `ccache -M`, need `CCACHE_DIR` set there too.
+
 ### buildcache
 
 [BuildCache](https://gitlab.com/bits-n-bites/buildcache) is another compiler

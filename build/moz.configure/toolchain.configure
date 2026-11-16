@@ -985,6 +985,32 @@ def sccache_client_side(client_side, using_sccache):
         return client_side[0]
 
 
+@template
+def compiler_cache_dir(env, name, using):
+    option(
+        env=env,
+        nargs=1,
+        help=f"Directory {name} stores its local cache in",
+    )
+
+    @depends(env, using, mozbuild_state_path, moz_automation)
+    @imports("os")
+    def cache_dir(value, using, mozbuild_state_path, moz_automation):
+        if not using:
+            return
+        if value:
+            return value[0]
+        if not moz_automation:
+            return os.path.join(mozbuild_state_path, "cache", name)
+
+    return cache_dir
+
+
+sccache_dir = compiler_cache_dir("SCCACHE_DIR", "sccache", using_sccache)
+ccache_dir = compiler_cache_dir("CCACHE_DIR", "ccache", using_ccache)
+buildcache_dir = compiler_cache_dir("BUILDCACHE_DIR", "buildcache", using_buildcache)
+
+
 # The base directories are handled further below, where the sysroot and SDK
 # paths they contain are known.
 option(
@@ -1350,29 +1376,32 @@ def sccache_basedirs(basedirs, default_basedirs, using_sccache):
 
 
 @template
-def sccache_config(**kwargs):
+def compiler_cache_config(**kwargs):
     """Set the given configuration items, and return a @depends function that
-    puts them in the environment. sccache reads its configuration from the
-    environment, and its server only does so when it starts, which can be from
-    one of the compiler checks below, so the variables need to be set before
-    that happens."""
+    puts them in the environment. The compiler cache tools read their
+    configuration from the environment, and the sccache server only does so
+    when it starts, which can be from one of the compiler checks below, so the
+    variables need to be set before that happens."""
     for name, value in kwargs.items():
         set_config(name, value)
 
     @depends(*kwargs.values())
     @imports("os")
-    def sccache_environment(*values):
+    def compiler_cache_environment(*values):
         for name, value in zip(kwargs, values):
             if value:
                 os.environ[name] = value
 
-    return sccache_environment
+    return compiler_cache_environment
 
 
-sccache_environment = sccache_config(
+compiler_cache_environment = compiler_cache_config(
     SCCACHE_BASEDIRS=sccache_basedirs,
     SCCACHE_CLIENT_SIDE=sccache_client_side,
+    SCCACHE_DIR=sccache_dir,
     SCCACHE_MAX_FRAME_LENGTH=sccache_max_frame_length,
+    CCACHE_DIR=ccache_dir,
+    BUILDCACHE_DIR=buildcache_dir,
 )
 
 
@@ -1512,7 +1541,7 @@ def compiler(
         winsysroot,
         msvc_sysroot_flags,
         host,
-        sccache_environment,
+        compiler_cache_environment,
     )
     @checking("whether %s can be used" % what, lambda x: bool(x))
     @imports(_from="mozshellutil", _import="quote")
@@ -1532,13 +1561,13 @@ def compiler(
         winsysroot,
         msvc_sysroot_flags,
         host,
-        sccache_environment,
+        compiler_cache_environment,
     ):
-        # This is only a dependency for its side effect of setting the sccache
-        # variables in the environment, which needs to happen before the
+        # This is only a dependency for its side effect of setting the compiler
+        # cache variables in the environment, which needs to happen before the
         # compiler wrapper is invoked. The statement below is only there to
         # appease configure's lint, which rejects unused dependencies.
-        sccache_environment
+        compiler_cache_environment
 
         wrapper = list(compiler_wrapper or ())
         flags = []

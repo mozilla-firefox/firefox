@@ -57,6 +57,7 @@ from ..telemetry import get_cpu_brand
 from ..testing import install_test_files
 from ..util import (
     FileAvoidWrite,
+    compiler_cache_env,
     construct_log_filename,
     is_running_under_coding_agent,
     resolve_target_to_make,
@@ -597,7 +598,7 @@ class BuildMonitor(MozbuildObject):
                 "Swap in/out (MB): {sin}/{sout}",
             )
 
-    def ccache_stats(self, ccache=None):
+    def ccache_stats(self, ccache=None, ccache_dir=None):
         ccache_stats = None
 
         if ccache is None:
@@ -605,9 +606,13 @@ class BuildMonitor(MozbuildObject):
         if ccache:
             # With CCache v3.7+ we can use --print-stats
             has_machine_format = CCacheStats.check_version_3_7_or_newer(ccache)
+            env = os.environ.copy()
+            if ccache_dir:
+                env["CCACHE_DIR"] = ccache_dir
             try:
                 output = subprocess.check_output(
                     [ccache, "--print-stats" if has_machine_format else "-s"],
+                    env=env,
                     universal_newlines=True,
                 )
                 ccache_stats = CCacheStats(output, has_machine_format)
@@ -1509,7 +1514,9 @@ class BuildDriver(MozbuildObject):
 
             if config.substs.get("MOZ_USING_CCACHE"):
                 ccache = config.substs.get("CCACHE")
-                ccache_start = monitor.ccache_stats(ccache)
+                ccache_start = monitor.ccache_stats(
+                    ccache, config.substs.get("CCACHE_DIR")
+                )
             else:
                 ccache_start = None
 
@@ -1663,11 +1670,7 @@ class BuildDriver(MozbuildObject):
                 # starts, so it needs the sccache variables in its environment.
                 # config.mk covers the sub-makes.
                 client_mk_env = dict(append_env or {})
-                client_mk_env.update(
-                    (name, value)
-                    for name, value in config.substs.items()
-                    if name.startswith("SCCACHE_")
-                )
+                client_mk_env.update(compiler_cache_env(config.substs))
                 status = self._run_client_mk(
                     line_handler=output.on_stdout_line,
                     stderr_line_handler=output.on_stderr_line,
@@ -1814,7 +1817,7 @@ class BuildDriver(MozbuildObject):
             print(FINDER_SLOW_MESSAGE % finder_percent)
 
         if config.substs.get("MOZ_USING_CCACHE"):
-            ccache_end = monitor.ccache_stats(ccache)
+            ccache_end = monitor.ccache_stats(ccache, config.substs.get("CCACHE_DIR"))
         else:
             ccache_end = None
 
