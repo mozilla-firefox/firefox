@@ -22,5 +22,7 @@ prefs = [
 
 ["browser_suppressTips.js"]
 skip-if = [
-  "verify", # This is a startup test. Verify runs tests multiple times after startup.
+  # This is a startup test. Verify and repeat run tests multiple times after startup.
+  "verify",
+  "repeat",
 ]
