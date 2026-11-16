@@ -119,17 +119,6 @@ static void moz_app_launch_context_class_init(MozAppLaunchContextClass* klass) {
 static void moz_app_launch_context_init(MozAppLaunchContext* self) {
   GAppLaunchContext* context = G_APP_LAUNCH_CONTEXT(self);
 
-  // GLib does not support xdg-activation before version 2.76,
-  // so set the environment variable manually.
-  // This only works when launching the proces directly, and does
-  // not work when going through the xdg-desktop-portal.
-  // For activation to work when using the portal, you need to use
-  // GLib 2.76 or newer.
-  if (self->activation_token && glib_check_version(2, 76, 0)) {
-    g_app_launch_context_setenv(context, "XDG_ACTIVATION_TOKEN",
-                                self->activation_token);
-  }
-
   // Unset this before launching third-party MIME handlers. Otherwise, if
   // Thunderbird sets this in its startup script (as it does in Debian and
   // Fedora), and Firefox does not set this in its startup script (it doesn't in
@@ -142,6 +131,14 @@ MozAppLaunchContext* moz_app_launch_context_new(const char* activation_token) {
   MozAppLaunchContext* self = MOZ_APP_LAUNCH_CONTEXT(
       g_object_new(MOZ_TYPE_APP_LAUNCH_CONTEXT, nullptr));
   self->activation_token = g_strdup(activation_token);
+
+  // GLib does not support xdg-activation before version 2.76,
+  // so set the environment variable manually.
+  if (self->activation_token && glib_check_version(2, 76, 0)) {
+    g_app_launch_context_setenv(G_APP_LAUNCH_CONTEXT(self),
+                                "XDG_ACTIVATION_TOKEN", self->activation_token);
+  }
+
   return self;
 }
 
