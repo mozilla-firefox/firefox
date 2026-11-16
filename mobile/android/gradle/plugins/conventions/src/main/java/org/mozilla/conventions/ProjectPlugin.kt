@@ -654,7 +654,6 @@ class ProjectPlugin : Plugin<Project> {
                 systemProperty("logging.test-mode", "true")
                 systemProperty("javax.net.ssl.trustStoreType", "JKS")
                 jvmArgs("--enable-native-access=ALL-UNNAMED")
-                jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
                 if (automation) {
                     systemProperty(
                         "robolectric.dependency.dir",
