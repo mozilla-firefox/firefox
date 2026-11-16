@@ -103,14 +103,14 @@ const EVENT_PAYLOAD_VALIDATORS = {
 const MENU_ACTION_ITEMS = [
   {
     key: "show-all-clues",
-    label: "Show clues",
+    l10nId: "newtab-crossword-widget-menu-show-clues",
     action: USER_ACTION_TYPES.SHOW_ALL_CLUES,
   },
   {
     // "Solve puzzle" only shows when the crossword is in the intro state or
     // in-progress, so it is hidden once the puzzle is completed.
     key: "solve-puzzle",
-    label: "Solve puzzle",
+    l10nId: "newtab-crossword-widget-menu-solve-puzzle",
     action: USER_ACTION_TYPES.REVEAL_GRID,
     hideWhenCompleted: true,
   },
@@ -380,9 +380,10 @@ function Crossword({
               data-l10n-id="newtab-widget-lists-label-new"
             ></moz-badge>
           )}
-          <h3 className="newtab-widget-title newtab-crossword-title">
-            Daily crossword
-          </h3>
+          <h3
+            className="newtab-widget-title newtab-crossword-title"
+            data-l10n-id="newtab-crossword-widget-title"
+          />
         </div>
         <div className="crossword-context-menu-wrapper">
           <WidgetMenuButton
@@ -400,10 +401,9 @@ function Crossword({
               <panel-item
                 key={item.key}
                 className={item.key}
+                data-l10n-id={item.l10nId}
                 onClick={() => handleMenuAction(item.action)}
-              >
-                {item.label}
-              </panel-item>
+              />
             ))}
 
             <WidgetMenuPoweredBy
@@ -447,9 +447,11 @@ function Crossword({
               widgetId="crossword"
               onHide={handleCrosswordHide}
             />
-            <panel-item className="learn-more" onClick={handleLearnMore}>
-              Learn more
-            </panel-item>
+            <panel-item
+              className="learn-more"
+              data-l10n-id="newtab-crossword-widget-menu-learn-more"
+              onClick={handleLearnMore}
+            />
           </panel-list>
         </div>
       </div>
@@ -458,7 +460,7 @@ function Crossword({
         <iframe
           ref={iframeRef}
           className="crossword-frame"
-          title="Crossword"
+          data-l10n-id="newtab-crossword-widget-frame"
           src={src}
           sandbox={FRAMED_WIDGET_SANDBOX}
         />

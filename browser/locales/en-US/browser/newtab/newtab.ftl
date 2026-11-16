@@ -975,10 +975,6 @@ newtab-crossword-widget-open-menu-button =
     .title = Open crossword menu
     .aria-label = Open crossword menu
 
-# Context menu item linking to the Particle website, the provider of the
-# crossword. “Particle” is a brand name and should not be translated.
-newtab-crossword-menu-powered-by-particle = Powered by Particle
-
 ## Strings introduced by the Nova redesign of the Timer widget
 
 # Variables:
