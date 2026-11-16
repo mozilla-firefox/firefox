@@ -32,8 +32,17 @@ function test() {
   let file3 = newFileInDirectory(dir3);
 
   // cleanup functions registration
-  registerCleanupFunction(function () {
+  registerCleanupFunction(async function () {
     Services.prefs.clearUserPref("browser.download.lastDir");
+    // Saving also stored the directory as a per-site content pref for
+    // test1.com, which a later run would otherwise start the picker in.
+    await new Promise(resolve =>
+      Cc["@mozilla.org/content-pref/service;1"]
+        .getService(Ci.nsIContentPrefService2)
+        .removeByName("browser.download.lastDir", null, {
+          handleCompletion: resolve,
+        })
+    );
     [dir1, dir2, dir3].forEach(dir => dir.remove(true));
     MockFilePicker.cleanup();
   });
