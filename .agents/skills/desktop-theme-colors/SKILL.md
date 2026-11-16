@@ -209,6 +209,22 @@ to an existing rule and the descendants a state repaints. Enumerate the elements
 a narrowed selector drops, or a widened one adds, with `desktop-theme-probing`'s
 `references/probe-recipes.md` §8 "Measure what a changed selector drops or adds".
 
+**When a patch changes a background, check that the text uses the counterpart
+designed for it.** Between tokens, the `use-paired-color-tokens` stylelint rule
+reports a missing or mismatched counterpart, and
+[its docs page](/code-quality/lint/linters/stylelint-plugin-mozilla/rules/use-paired-color-tokens.md)
+says which tokens pair.
+
+The rule can't see a system color pair (e.g. `-moz-dialog` with
+`-moz-dialogtext`), or text left on another surface's system color under a
+token background that has no counterpart, so check those from the diff.
+
+A passing ratio doesn't show that two colors pair. Colors from different pairs
+can resolve to the same value in one layer or on one platform and differ in
+another. For example, headless Linux resolves `-moz-dialogtext` to
+`CanvasText`'s value, so dialog text on a box background measures fine there.
+Report the mismatch whatever the ratio says.
+
 **Judge forced colors by pair membership, and `prefers-contrast` alone by ratio
 where a literal paints.** Under forced colors the user's palette only promises
 contrast within a pair, and a local simulation does not resolve to a Windows
