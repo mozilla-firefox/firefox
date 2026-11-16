@@ -451,6 +451,9 @@
       "chrome://browser/content/tabbrowser/drag-and-drop.mjs": [
         "../../../browser/components/tabbrowser/content/drag-and-drop.mjs"
       ],
+      "chrome://browser/content/tabbrowser/status-panel.mjs": [
+        "../../../browser/components/tabbrowser/content/status-panel.mjs"
+      ],
       "chrome://browser/content/tabbrowser/tab-bar-visibility.mjs": [
         "../../../browser/components/tabbrowser/content/tab-bar-visibility.mjs"
       ],

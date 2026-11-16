@@ -120,6 +120,9 @@ declare namespace BrowserWindow {
     removeListener(listener: MousePosListener): void;
   };
 
+  // tabbrowser/content/status-panel.mjs
+  var StatusPanel: typeof import("chrome://browser/content/tabbrowser/status-panel.mjs").StatusPanel;
+
   // tabbrowser/content/tab-bar-visibility.mjs
   var TabBarVisibility: typeof import("chrome://browser/content/tabbrowser/tab-bar-visibility.mjs").TabBarVisibility;
 }

@@ -38,4 +38,5 @@ declare const gClickAndHoldListenersOnElement: BrowserWindow["gClickAndHoldListe
 declare var FirefoxViewHandler: BrowserWindow["FirefoxViewHandler"];
 declare var XULBrowserWindow: BrowserWindow["XULBrowserWindow"];
 declare var MousePosTracker: BrowserWindow["MousePosTracker"];
+declare var StatusPanel: BrowserWindow["StatusPanel"];
 declare var TabBarVisibility: BrowserWindow["TabBarVisibility"];

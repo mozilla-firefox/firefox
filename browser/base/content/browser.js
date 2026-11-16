@@ -132,6 +132,7 @@ ChromeUtils.defineESModuleGetters(this, {
 ChromeUtils.defineESModuleGetters(
   this,
   {
+    StatusPanel: "chrome://browser/content/tabbrowser/status-panel.mjs",
     TabBarVisibility:
       "chrome://browser/content/tabbrowser/tab-bar-visibility.mjs",
   },

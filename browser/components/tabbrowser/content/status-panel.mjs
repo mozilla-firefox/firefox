@@ -2,23 +2,34 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-var StatusPanel = {
+/* global MousePosTracker, RTL_UI, XULBrowserWindow */
+
+const { XPCOMUtils } = ChromeUtils.importESModule(
+  "resource://gre/modules/XPCOMUtils.sys.mjs"
+);
+const lazy = XPCOMUtils.declareLazy({
+  BrowserHandler: {
+    service: "@mozilla.org/browser/clh;1",
+    iid: Ci.nsIBrowserHandler,
+  },
+});
+
+export const StatusPanel = {
   // This is useful for debugging (set to `true` in the interesting state for
   // the panel to remain in that state).
   _frozen: false,
 
   get panel() {
-    delete this.panel;
-    this.panel = document.getElementById("statuspanel");
-    this.panel.addEventListener(
-      "transitionend",
-      this._onTransitionEnd.bind(this)
+    let panel = /** @type {XULElement} */ (
+      document.getElementById("statuspanel")
     );
-    this.panel.addEventListener(
+    Object.defineProperty(this, "panel", { value: panel });
+    panel.addEventListener("transitionend", this._onTransitionEnd.bind(this));
+    panel.addEventListener(
       "transitioncancel",
       this._onTransitionEnd.bind(this)
     );
-    return this.panel;
+    return panel;
   },
 
   get isVisible() {
@@ -26,7 +37,7 @@ var StatusPanel = {
   },
 
   update() {
-    if (BrowserHandler.kiosk || this._frozen) {
+    if (lazy.BrowserHandler.kiosk || this._frozen) {
       return;
     }
     let text;
@@ -67,8 +78,11 @@ var StatusPanel = {
   },
 
   get _labelElement() {
-    delete this._labelElement;
-    return (this._labelElement = document.getElementById("statuspanel-label"));
+    let labelElement = /** @type {XULTextElement} */ (
+      document.getElementById("statuspanel-label")
+    );
+    Object.defineProperty(this, "_labelElement", { value: labelElement });
+    return labelElement;
   },
 
   set _label(val) {
@@ -115,7 +129,7 @@ var StatusPanel = {
   },
 
   getMouseTargetRect() {
-    let container = this.panel.parentNode;
+    let container = this.panel.parentElement;
     let panelRect = window.windowUtils.getBoundsWithoutFlushing(this.panel);
     let containerRect = window.windowUtils.getBoundsWithoutFlushing(container);
 
