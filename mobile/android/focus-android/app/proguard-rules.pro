@@ -1,7 +1,8 @@
+####################################################################################################
+# Keep Focus names readable in stack traces, while still allowing R8 to shrink and optimize Focus
+####################################################################################################
 
-# We do not want to obfuscate - It's just painful to debug without the right mapping file.
-# If we update this, we'll have to update our Sentry config to upload ProGuard mappings.
--dontobfuscate
+-keep,allowshrinking,allowoptimization class org.mozilla.focus.** { *; }
 
 
 ##### Default proguard settings:
