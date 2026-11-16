@@ -492,7 +492,9 @@ class MenubarModelDBus final : public MenuModel {
   // Brings the children of aParent in line with the children of aElement.
   // The dbusmenu protocol identifies items by id, and a new DbusmenuMenuitem
   // gets a new id. We try to reuse existing items for elements that are still
-  // around to prevent the menu from closing unexpectedly when the tree changes.
+  // around to prevent the menu from closing unexpectedly when the tree changes,
+  // and to make submenus work better in general (some clients don't re-fetch
+  // submenus on layout changes properly).
   static void SyncChildren(DbusmenuMenuitem* aParent,
                            const dom::Element& aElement,
                            bool aPlaceholderIfEmpty);
@@ -636,20 +638,57 @@ static void UpdateEnabled(DbusmenuMenuitem* aItem, const nsIContent* aContent) {
                                       !disabled);
 }
 
-// we rebuild the dbus model when elements are removed from the DOM,
-// so this isn't going to trigger for asynchronous
+enum class DBusItemKind : uint8_t {
+  MenuItem = 1,
+  Separator,
+  Submenu,
+  // An empty child, so that an empty submenu is still exposed as a submenu.
+  Placeholder,
+};
+
+// Helpers to manage DbusmenuMenuitem properties.
+namespace Props {
+#  define PROP(type_, ident_, name_, cast_)                                    \
+    [[maybe_unused]] static type_ ident_(DbusmenuMenuitem* aItem) {            \
+      return cast_<type_>(reinterpret_cast<uintptr_t>(                         \
+          g_object_get_data(G_OBJECT(aItem), name_)));                         \
+    }                                                                          \
+    static void Set##ident_(DbusmenuMenuitem* aItem, const type_ aValue) {     \
+      g_object_set_data(G_OBJECT(aItem), name_,                                \
+                        reinterpret_cast<gpointer>(cast_<uintptr_t>(aValue))); \
+    }
+
+PROP(dom::Element*, Element, "moz-menu-item-element", reinterpret_cast);
+PROP(DBusItemKind, Kind, "moz-menu-item-kind", static_cast);
+
+#  undef PROP
+
+static void ForgetElements(DbusmenuMenuitem* aItem) {
+  SetElement(aItem, nullptr);
+  for (GList* l = dbusmenu_menuitem_get_children(aItem); l; l = l->next) {
+    ForgetElements(static_cast<DbusmenuMenuitem*>(l->data));
+  }
+}
+
+}  // namespace Props
+
 static MOZ_CAN_RUN_SCRIPT void DBusActivationCallback(
-    DbusmenuMenuitem* aMenuitem, guint aTimestamp, gpointer aUserData) {
-  RefPtr element = static_cast<dom::Element*>(aUserData);
+    DbusmenuMenuitem* aMenuitem, guint aTimestamp, gpointer) {
+  RefPtr element = Props::Element(aMenuitem);
+  if (NS_WARN_IF(!element)) {
+    return;
+  }
   ActivateItem(*element);
 }
 
 static MOZ_CAN_RUN_SCRIPT bool DBusEventCallback(DbusmenuMenuitem* aMenuItem,
                                                  const gchar* name,
                                                  GVariant* variant,
-                                                 guint timestamp,
-                                                 gpointer aUserData) {
-  RefPtr element = static_cast<dom::Element*>(aUserData);
+                                                 guint timestamp, gpointer) {
+  RefPtr element = Props::Element(aMenuItem);
+  if (NS_WARN_IF(!element)) {
+    return false;
+  }
   if (strcmp(name, "opened") == 0) {
     FireEvent(element, eXULPopupShowing);
     FireEvent(element, eXULPopupShown);
@@ -660,44 +699,51 @@ static MOZ_CAN_RUN_SCRIPT bool DBusEventCallback(DbusmenuMenuitem* aMenuItem,
   return false;
 }
 
-enum class DBusItemKind : uint8_t {
-  MenuItem = 1,
-  Separator,
-  Submenu,
-  // An empty child, so that an empty submenu is still exposed as a submenu.
-  Placeholder,
-};
-
-// Returns the child of aParent at aPosition for aElement, reusing (and moving
-// if needed) a matching child from aChildren[aPosition..], or creating a new
-// one.
+// Returns the child of aParent at aPosition for aElement, reusing a matching
+// child from aChildren[aPosition..], or creating a new one.
 static DbusmenuMenuitem* GetOrCreateChild(
     DbusmenuMenuitem* aParent, nsTArray<RefPtr<DbusmenuMenuitem>>& aChildren,
     size_t aPosition, DBusItemKind aKind, const dom::Element* aElement) {
-  static const char kDBusItemElementKey[] = "moz-menu-item-element";
-
-  for (size_t i = aPosition; i < aChildren.Length(); ++i) {
-    DbusmenuMenuitem* item = aChildren[i];
-    if (g_object_get_data(G_OBJECT(item), kDBusItemElementKey) != aElement) {
-      continue;
-    }
-    if (i != aPosition) {
+  auto ReuseItem = [&](size_t aIndex) -> DbusmenuMenuitem* {
+    DbusmenuMenuitem* item = aChildren[aIndex];
+    dbusmenu_menuitem_property_remove(item, DBUSMENU_MENUITEM_PROP_VISIBLE);
+    if (aIndex != aPosition) {
       dbusmenu_menuitem_child_reorder(aParent, item, aPosition);
-      RefPtr<DbusmenuMenuitem> moved = std::move(aChildren[i]);
-      aChildren.RemoveElementAt(i);
+      RefPtr<DbusmenuMenuitem> moved = std::move(aChildren[aIndex]);
+      aChildren.RemoveElementAt(aIndex);
       aChildren.InsertElementAt(aPosition, std::move(moved));
     }
     return item;
+  };
+
+  // First try to reuse the item for our actual DOM element. If that's not
+  // around, then try to reuse a hidden or disconnected item.
+  Maybe<size_t> reusablePosition;
+  for (size_t i = aPosition; i < aChildren.Length(); ++i) {
+    DbusmenuMenuitem* item = aChildren[i];
+    const dom::Element* oldElement = Props::Element(item);
+    if (oldElement == aElement) {
+      return ReuseItem(i);
+    }
+    if (Props::Kind(item) != aKind) {
+      continue;
+    }
+    if (!reusablePosition && (!oldElement || !oldElement->IsInComposedDoc())) {
+      reusablePosition.emplace(i);
+    }
+  }
+  if (reusablePosition) {
+    Props::SetElement(aChildren[*reusablePosition], aElement);
+    return ReuseItem(*reusablePosition);
   }
   RefPtr<DbusmenuMenuitem> item = dont_AddRef(dbusmenu_menuitem_new());
-  g_object_set_data(G_OBJECT(item.get()), kDBusItemElementKey,
-                    const_cast<dom::Element*>(aElement));
+  Props::SetElement(item, aElement);
+  Props::SetKind(item, aKind);
   switch (aKind) {
     case DBusItemKind::MenuItem:
       g_signal_connect(G_OBJECT(item.get()),
                        DBUSMENU_MENUITEM_SIGNAL_ITEM_ACTIVATED,
-                       G_CALLBACK(DBusActivationCallback),
-                       const_cast<dom::Element*>(aElement));
+                       G_CALLBACK(DBusActivationCallback), nullptr);
       break;
     case DBusItemKind::Separator:
       dbusmenu_menuitem_property_set(item, DBUSMENU_MENUITEM_PROP_TYPE,
@@ -705,8 +751,7 @@ static DbusmenuMenuitem* GetOrCreateChild(
       break;
     case DBusItemKind::Submenu:
       g_signal_connect(G_OBJECT(item.get()), DBUSMENU_MENUITEM_SIGNAL_EVENT,
-                       G_CALLBACK(DBusEventCallback),
-                       const_cast<dom::Element*>(aElement));
+                       G_CALLBACK(DBusEventCallback), nullptr);
       break;
     case DBusItemKind::Placeholder:
       break;
@@ -768,9 +813,12 @@ void MenubarModelDBus::SyncChildren(DbusmenuMenuitem* aParent,
     GetOrCreate(DBusItemKind::Placeholder, nullptr);
   }
 
-  // Any remaining children are unused.
+  // Any remaining children are unused. Hide them so that they can be reused
+  // later if needed.
   for (DbusmenuMenuitem* child : Span(children).From(position)) {
-    dbusmenu_menuitem_child_delete(aParent, child);
+    Props::ForgetElements(child);
+    dbusmenu_menuitem_property_set_bool(child, DBUSMENU_MENUITEM_PROP_VISIBLE,
+                                        false);
   }
 }
 
