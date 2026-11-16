@@ -40,6 +40,7 @@ import "chrome://global/content/elements/moz-toggle.mjs";
 import "chrome://global/content/elements/moz-promo.mjs";
 
 const SITE_RULES_SETTINGS_PANE = "privacy-vpnsiterules";
+const PROMO_END_DATE = new Date(2027, 0, 31);
 
 /**
  * Custom element that implements a message bar and status card for IP protection.
@@ -404,13 +405,32 @@ export default class IPProtectionContentElement extends MozLitElement {
   }
 
   bandwidthUsageTemplate() {
-    return this.state.bandwidthUsage
-      ? html`<bandwidth-usage
-          remaining=${this.state.bandwidthUsage.remaining}
-          max=${this.state.bandwidthUsage.max}
-          numeric
-        ></bandwidth-usage>`
-      : null;
+    if (this.state.bandwidthUsage) {
+      return html`<bandwidth-usage
+        remaining=${this.state.bandwidthUsage.remaining}
+        max=${this.state.bandwidthUsage.max}
+        numeric
+      ></bandwidth-usage>`;
+    }
+
+    if (!this.state.bandwidthUnlimited) {
+      return null;
+    }
+
+    if (this.state.hasUpgraded) {
+      return html`<span
+        class="unlimited-bandwidth"
+        data-l10n-id="ipprotection-unlimited-bandwidth-upgraded"
+      ></span>`;
+    }
+
+    return html`<span
+      class="unlimited-bandwidth"
+      data-l10n-id="ipprotection-unlimited-bandwidth-promo"
+      data-l10n-args=${JSON.stringify({
+        endDate: PROMO_END_DATE.getTime(),
+      })}
+    ></span>`;
   }
 
   upgradeTemplate() {

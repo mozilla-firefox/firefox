@@ -26,6 +26,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///toolkit/components/ipprotection/IPPProxyManager.sys.mjs",
   IPPUsageHelper:
     "moz-src:///browser/components/ipprotection/IPPUsageHelper.sys.mjs",
+  UsageStates:
+    "moz-src:///browser/components/ipprotection/IPPUsageHelper.sys.mjs",
   IPProtectionServerlist:
     "moz-src:///toolkit/components/ipprotection/IPProtectionServerlist.sys.mjs",
   IPProtectionService:
@@ -150,6 +152,8 @@ export class IPProtectionPanel {
    * Data about the currently loaded site, including "isExclusion".
    * @property {object} bandwidthUsage
    *  An object containing the current and max usage
+   * @property {boolean} bandwidthUnlimited
+   *  True if the user has unlimited bandwidth, else false.
    * @property {boolean} isActivating
    *  True if the VPN service is in the process of connecting, else false.
    * @property {boolean} isActive
@@ -472,6 +476,7 @@ export class IPProtectionPanel {
       isSiteInclusionsEnabled: this.isInclusionsFeatureEnabled,
       siteData: this.#getSiteData(),
       bandwidthUsage: this.#getBandwidthUsage(),
+      bandwidthUnlimited: this.#isBandwidthUnlimited(),
       isActivating:
         lazy.IPPProxyManager.state === lazy.IPPProxyStates.ACTIVATING,
       isActive: lazy.IPPProxyManager.state === lazy.IPPProxyStates.ACTIVE,
@@ -1254,6 +1259,10 @@ export class IPProtectionPanel {
    *
    * @returns {object} An object with max and remaining as numbers
    */
+  #isBandwidthUnlimited() {
+    return lazy.IPPUsageHelper.state === lazy.UsageStates.UNLIMITED;
+  }
+
   #getBandwidthUsage() {
     if (
       lazy.BANDWIDTH_USAGE_ENABLED &&
@@ -1462,6 +1471,7 @@ export class IPProtectionPanel {
         isActive: lazy.IPPProxyManager.state === lazy.IPPProxyStates.ACTIVE,
         isEnrolling: lazy.IPProtectionService.authProvider.isEnrolling,
         bandwidthUsage: this.#getBandwidthUsage(),
+        bandwidthUnlimited: this.#isBandwidthUnlimited(),
         bandwidthWarning:
           lazy.IPProtectionService.state === lazy.IPProtectionStates.READY
             ? this.#shouldShowBandwidthWarning()
@@ -1510,7 +1520,11 @@ export class IPProtectionPanel {
       if (usage.unlimited) {
         Services.prefs.clearUserPref(BANDWIDTH_THRESHOLD_PREF);
         Services.prefs.clearUserPref(BANDWIDTH_RESET_DATE_PREF);
-        this.setState({ bandwidthUsage: null, bandwidthWarning: false });
+        this.setState({
+          bandwidthUsage: null,
+          bandwidthUnlimited: true,
+          bandwidthWarning: false,
+        });
         return;
       }
 
@@ -1528,7 +1542,10 @@ export class IPProtectionPanel {
         },
       });
     } else if (event.type == "IPPUsageHelper:StateChanged") {
-      this.setState({ bandwidthWarning: this.#shouldShowBandwidthWarning() });
+      this.setState({
+        bandwidthUnlimited: this.#isBandwidthUnlimited(),
+        bandwidthWarning: this.#shouldShowBandwidthWarning(),
+      });
     } else if (event.type == "IPProtection:UserShowLocations") {
       Glean.ipprotection.locationSelectorButtonClicked.record();
       this.showLocationSelector(

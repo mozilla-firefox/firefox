@@ -212,6 +212,13 @@ ipprotection-button-turn-vpn-on-1 = Turn on
 # Button while VPN is connecting
 ipprotection-button-connecting = Turning on…
 
+## Unlimited bandwidth disclaimer shown during a promotion or if the user has a Mozilla VPN subscription
+
+# Variables
+#   $endDate (date) - The date the promotion ends, formatted as month and day (e.g. "January 31")
+ipprotection-unlimited-bandwidth-promo = Unlimited bandwidth until { DATETIME($endDate, month: "long", day: "numeric") }
+ipprotection-unlimited-bandwidth-upgraded = Unlimited bandwidth
+
 ## Location controls
 
 # The button displays the selected VPN location.

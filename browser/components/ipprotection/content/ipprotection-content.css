@@ -44,7 +44,8 @@ ipprotection-status-card {
     width: 100%;
   }
 
-  bandwidth-usage {
+  bandwidth-usage,
+  .unlimited-bandwidth {
     margin: var(--space-large) var(--space-small) var(--space-medium);
     color: var(--text-color-deemphasized);
   }

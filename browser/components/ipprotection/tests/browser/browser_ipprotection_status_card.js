@@ -614,3 +614,108 @@ add_task(async function test_location_button_label_recommended_fallback() {
   await closePanel();
   await cleanupStatusCardTest();
 });
+
+function getBandwidthElement(content) {
+  return content.shadowRoot.querySelector(
+    "bandwidth-usage, .unlimited-bandwidth"
+  );
+}
+
+/**
+ * Tests that the promo string with the promo end date is shown when the user
+ * has unlimited bandwidth without a Mozilla VPN subscription.
+ */
+add_task(async function test_unlimited_bandwidth_promo() {
+  await setupStatusCardTest();
+
+  let content = await openPanel({
+    location: mockLocation,
+    isProtectionEnabled: true,
+    bandwidthUsage: null,
+    bandwidthUnlimited: true,
+    hasUpgraded: false,
+  });
+
+  let bandwidthEl = getBandwidthElement(content);
+
+  Assert.ok(bandwidthEl, "Bandwidth element should be rendered");
+  Assert.notEqual(
+    bandwidthEl.localName,
+    "bandwidth-usage",
+    "bandwidth-usage should not be rendered"
+  );
+  Assert.equal(
+    bandwidthEl.getAttribute("data-l10n-id"),
+    "ipprotection-unlimited-bandwidth-promo",
+    "Promo string should be shown"
+  );
+  Assert.deepEqual(
+    JSON.parse(bandwidthEl.getAttribute("data-l10n-args")),
+    { endDate: new Date(2027, 0, 31).getTime() },
+    "Promo end date should be passed as a timestamp"
+  );
+
+  await TestUtils.waitForCondition(
+    () => bandwidthEl.textContent,
+    "Waiting for the promo string to be localized"
+  );
+
+  await closePanel();
+  await cleanupStatusCardTest();
+});
+
+/**
+ * Tests that the upgraded string is shown when the user has unlimited
+ * bandwidth from a Mozilla VPN subscription.
+ */
+add_task(async function test_unlimited_bandwidth_upgraded() {
+  await setupStatusCardTest();
+
+  let content = await openPanel({
+    location: mockLocation,
+    isProtectionEnabled: true,
+    bandwidthUsage: null,
+    bandwidthUnlimited: true,
+    hasUpgraded: true,
+  });
+
+  let bandwidthEl = getBandwidthElement(content);
+
+  Assert.ok(bandwidthEl, "Bandwidth element should be rendered");
+  Assert.equal(
+    bandwidthEl.getAttribute("data-l10n-id"),
+    "ipprotection-unlimited-bandwidth-upgraded",
+    "Upgraded string should be shown"
+  );
+  Assert.ok(
+    !bandwidthEl.hasAttribute("data-l10n-args"),
+    "Upgraded string should not have l10n args"
+  );
+
+  await closePanel();
+  await cleanupStatusCardTest();
+});
+
+/**
+ * Tests that no bandwidth element is rendered when there is no usage
+ * data and the user does not have unlimited bandwidth.
+ */
+add_task(async function test_no_bandwidth_usage_not_unlimited() {
+  await setupStatusCardTest();
+
+  let content = await openPanel({
+    location: mockLocation,
+    isProtectionEnabled: true,
+    bandwidthUsage: null,
+    bandwidthUnlimited: false,
+    hasUpgraded: false,
+  });
+
+  Assert.ok(
+    !getBandwidthElement(content),
+    "No bandwidth element should be rendered"
+  );
+
+  await closePanel();
+  await cleanupStatusCardTest();
+});
