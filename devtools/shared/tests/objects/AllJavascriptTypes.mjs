@@ -225,7 +225,6 @@ const DOMAPIs = [
   {
     context: CONTEXTS.PAGE,
     expression: `myPolicy.createHTML("hello")`,
-    prefs: [["dom.security.trusted_types.enabled", true]],
   },
   {
     context: CONTEXTS.PAGE,

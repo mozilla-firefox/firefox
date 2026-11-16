@@ -5141,13 +5141,6 @@
   value: false
   mirror: always
 
-# If and only if true, support for Trusted Types
-# (https://w3c.github.io/trusted-types/dist/spec/) is enabled.
-- name: dom.security.trusted_types.enabled
-  type: RelaxedAtomicBool
-  value: true
-  mirror: always
-
 # If true, record the security.trusted_types_readiness Glean metric when a
 # document is destroyed.
 # Bug 2072122: Trusted Types readiness experiment only, to be removed together

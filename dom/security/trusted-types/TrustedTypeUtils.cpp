@@ -7,7 +7,6 @@
 #include "js/RootingAPI.h"
 #include "mozilla/ErrorResult.h"
 #include "mozilla/Maybe.h"
-#include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/dom/CSPViolationData.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/ElementBinding.h"
@@ -427,12 +426,6 @@ inline bool PrepareExecutionOfTrustedTypesDefaultPolicy(
     nsIGlobalObject*& aGlobalObject, nsPIDOMWindowInner*& aPIDOMWindowInner,
     RequireTrustedTypesForDirectiveState* aRequireTrustedTypesForDirectiveState,
     ErrorResult& aError) {
-  if (!StaticPrefs::dom_security_trusted_types_enabled()) {
-    // A trusted type might've been created before the pref was set to `false`,
-    // so we cannot assume aInput.IsString().
-    return false;
-  }
-
   // Exempt web extension content scripts from trusted types policies defined by
   // the page in which they are running.
   if (auto* principal = BasePrincipal::Cast(aPrincipalOrNull)) {
@@ -758,12 +751,6 @@ MOZ_CAN_RUN_SCRIPT const nsAString* GetTrustedTypesCompliantAttributeValue(
     aElement.OwnerDoc()->RecordTrustedTypesHTMLSink(IsTrustedHTML(aNewValue));
   }
 
-  if (!StaticPrefs::dom_security_trusted_types_enabled()) {
-    // A trusted type might've been created before the pref was set to `false`,
-    // so we cannot assume aNewValue.IsString().
-    return GetContent(aNewValue);
-  }
-
   // In the common situation of non-data document without any
   // require-trusted-types-for directive, we just return immediately.
   const NodeInfo* nodeInfo = aElement.NodeInfo();
@@ -842,8 +829,7 @@ bool HostGetCodeForEval(JSContext* aCx, JS::Handle<JSObject*> aCode,
                         JS::MutableHandle<JSString*> aOutCode) {
   JS::Rooted<JSObject*> obj(aCx, aCode);
   TrustedScript* trustedScript;
-  if (StaticPrefs::dom_security_trusted_types_enabled() &&
-      NS_SUCCEEDED(UNWRAP_OBJECT(TrustedScript, &obj, trustedScript))) {
+  if (NS_SUCCEEDED(UNWRAP_OBJECT(TrustedScript, &obj, trustedScript))) {
     JS::Rooted<JS::Value> code(aCx);
     if (!xpc::NonVoidStringToJsval(aCx, trustedScript->mData, &code)) {
       return false;
@@ -871,8 +857,7 @@ bool AreArgumentsTrustedForEnsureCSPDoesNotBlockStringCompilation(
   // https://html.spec.whatwg.org/multipage/webappapis.html#hostensurecancompilestrings(realm,-parameterstrings,-bodystring,-codestring,-compilationtype,-parameterargs,-bodyarg)
   // https://tc39.es/proposal-dynamic-code-brand-checks/#sec-hostensurecancompilestrings
   // https://html.spec.whatwg.org/#timer-initialisation-steps
-  if (!StaticPrefs::dom_security_trusted_types_enabled() ||
-      aCompilationType == JS::CompilationType::Undefined) {
+  if (aCompilationType == JS::CompilationType::Undefined) {
     return true;
   }
 

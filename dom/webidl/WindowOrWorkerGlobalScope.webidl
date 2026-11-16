@@ -84,7 +84,6 @@ partial interface mixin WindowOrWorkerGlobalScope {
 
 // https://w3c.github.io/trusted-types/dist/spec/#extensions-to-the-windoworworkerglobalscope-interface
 partial interface mixin WindowOrWorkerGlobalScope {
-  [Pref="dom.security.trusted_types.enabled"]
   readonly attribute TrustedTypePolicyFactory trustedTypes;
 };
 

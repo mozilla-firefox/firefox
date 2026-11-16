@@ -20,18 +20,7 @@
     <div id="content"></div>
 
     <script class="testbody" type="text/javascript">
-      function pushPref(preferenceName, value) {
-        return new Promise(resolve => {
-          const options = { set: [[preferenceName, value]] };
-          SpecialPowers.pushPrefEnv(options, resolve);
-        });
-      }
-
       add_task(async _ => {
-        await pushPref("dom.security.trusted_types.enabled", true);
-
-        // Append the CSP policy after enabling TrustedTypes, so that it is
-        // taken into account.
         document.head.insertAdjacentHTML(
           "beforeend",
           `<meta http-equiv="Content-Security-Policy" content="require-trusted-types-for 'script'">`

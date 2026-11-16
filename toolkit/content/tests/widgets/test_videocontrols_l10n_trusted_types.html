@@ -20,10 +20,7 @@
 
       add_task(async _ => {
         await pushPref("media.cache_size", 40000);
-        await pushPref("dom.security.trusted_types.enabled", true);
 
-        // Append the CSP policy after enabling TrustedTypes, so that it is
-        // taken into account.
         document.head.insertAdjacentHTML(
           "beforeend",
           `<meta http-equiv="Content-Security-Policy" content="require-trusted-types-for 'script'">`

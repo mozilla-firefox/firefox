@@ -350,8 +350,7 @@ bool ScriptElement::GetScriptType(nsAString& aType) {
 
 void ScriptElement::UpdateTrustWorthiness(
     MutationEffectOnScript aMutationEffectOnScript) {
-  if (aMutationEffectOnScript == MutationEffectOnScript::DropTrustWorthiness &&
-      StaticPrefs::dom_security_trusted_types_enabled()) {
+  if (aMutationEffectOnScript == MutationEffectOnScript::DropTrustWorthiness) {
     nsCOMPtr<nsIPrincipal> subjectPrincipal;
     if (JSContext* cx = nsContentUtils::GetCurrentJSContext()) {
       subjectPrincipal = nsContentUtils::SubjectPrincipal(cx);

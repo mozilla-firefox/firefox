@@ -5,10 +5,6 @@
 const server = createHttpServer({ hosts: ["example.com"] });
 server.registerDirectory("/data/", do_get_file("data"));
 
-add_setup(() => {
-  Services.prefs.setBoolPref("dom.security.trusted_types.enabled", true);
-});
-
 async function test_contentscript_trusted_types(manifest) {
   let extension = ExtensionTestUtils.loadExtension({
     manifest: {

@@ -1,12 +1,5 @@
 "use strict";
 
-add_setup(() => {
-  Services.prefs.setBoolPref("dom.security.trusted_types.enabled", true);
-  registerCleanupFunction(() => {
-    Services.prefs.clearUserPref("dom.security.trusted_types.enabled");
-  });
-});
-
 // Try DOM APIs with a global object that is not a Window. See bug 1942517.
 add_task(async function () {
   // DOMParser.parseFromString().

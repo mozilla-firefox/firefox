@@ -8,7 +8,6 @@
 #include <utility>
 
 #include "mozilla/Preferences.h"
-#include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/StaticPrefs_security.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/TrustedTypesConstants.h"
@@ -478,8 +477,7 @@ nsCSPBaseSrc* nsCSPParser::keywordSource() {
     return new nsCSPKeywordSrc(CSP_UTF16KeywordToEnum(mCurToken));
   }
 
-  if (StaticPrefs::dom_security_trusted_types_enabled() &&
-      CSP_IsKeyword(mCurToken, CSP_TRUSTED_TYPES_EVAL)) {
+  if (CSP_IsKeyword(mCurToken, CSP_TRUSTED_TYPES_EVAL)) {
     return new nsCSPKeywordSrc(CSP_UTF16KeywordToEnum(mCurToken));
   }
 
@@ -1116,11 +1114,7 @@ nsCSPDirective* nsCSPParser::directiveName() {
 
   // Check if it is a valid directive
   CSPDirective directive = CSP_StringToCSPDirective(mCurToken);
-  if (directive == nsIContentSecurityPolicy::NO_DIRECTIVE ||
-      (!StaticPrefs::dom_security_trusted_types_enabled() &&
-       (directive ==
-            nsIContentSecurityPolicy::REQUIRE_TRUSTED_TYPES_FOR_DIRECTIVE ||
-        directive == nsIContentSecurityPolicy::TRUSTED_TYPES_DIRECTIVE))) {
+  if (directive == nsIContentSecurityPolicy::NO_DIRECTIVE) {
     AutoTArray<nsString, 1> params = {mCurToken};
     logWarningErrorToConsole(nsIScriptError::warningFlag,
                              "couldNotProcessUnknownDirective", params);

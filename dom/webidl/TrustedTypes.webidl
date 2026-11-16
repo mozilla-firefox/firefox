@@ -7,25 +7,25 @@
  * It is augmented with Gecko-specific annotations.
  */
 
-[Exposed=(Window,Worker), Pref="dom.security.trusted_types.enabled"]
+[Exposed=(Window,Worker)]
 interface TrustedHTML {
   stringifier;
   DOMString toJSON();
 };
 
-[Exposed=(Window,Worker), Pref="dom.security.trusted_types.enabled"]
+[Exposed=(Window,Worker)]
 interface TrustedScript {
   stringifier;
   DOMString toJSON();
 };
 
-[Exposed=(Window,Worker), Pref="dom.security.trusted_types.enabled"]
+[Exposed=(Window,Worker)]
 interface TrustedScriptURL {
   stringifier;
   USVString toJSON();
 };
 
-[Exposed=(Window,Worker), Pref="dom.security.trusted_types.enabled"]
+[Exposed=(Window,Worker)]
 interface TrustedTypePolicy {
   readonly attribute DOMString name;
   [NewObject, Throws] TrustedHTML createHTML(DOMString input, any... arguments);
@@ -43,7 +43,7 @@ callback CreateHTMLCallback = DOMString? (DOMString input, any... arguments);
 callback CreateScriptCallback = DOMString? (DOMString input, any... arguments);
 callback CreateScriptURLCallback = USVString? (DOMString input, any... arguments);
 
-[Exposed=(Window,Worker), Pref="dom.security.trusted_types.enabled"]
+[Exposed=(Window,Worker)]
 interface TrustedTypePolicyFactory {
     [Throws] TrustedTypePolicy createPolicy(DOMString policyName , optional TrustedTypePolicyOptions policyOptions = {});
     boolean isHTML(any value);
