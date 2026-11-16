@@ -214,9 +214,7 @@ void WebRenderImageHost::UseRemoteTexture(bool aCalledInCallback) {
         break;
       }
       RemoteTextureMap::Get()->GetRemoteTexture(wrapper);
-      if (wrapper->IsReadyForRendering()) {
-        texture = mPendingRemoteTextureWrappers.front();
-      }
+      texture = mPendingRemoteTextureWrappers.front();
       mPendingRemoteTextureWrappers.pop_front();
     }
   } else {
