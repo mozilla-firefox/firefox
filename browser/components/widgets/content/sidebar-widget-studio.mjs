@@ -86,6 +86,8 @@ export class SidebarWidgetStudio extends SidebarPage {
         id="sign-in-button"
         type="primary"
         data-l10n-id="widget-studio-sign-in-button"
+        ?disabled=${this.authentication.pending}
+        @click=${() => this.authentication.signIn()}
       ></moz-button>
       <a
         id="sign-in-learn-more"
