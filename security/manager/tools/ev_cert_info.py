@@ -13,9 +13,7 @@ Usage:
     ./ev_cert_info.py [--oid OID] cert.cer
 
 Accepts DER (.cer/.crt) or PEM input; the format is auto-detected. The OID
-defaults to the CA/Browser Forum EV OID. If the OID is one already used in
-ExtendedValidation.cpp, its oidName description is filled in automatically;
-otherwise a <oidName> placeholder is emitted for you to complete.
+defaults to the CA/Browser Forum EV OID.
 
 Requires the cryptography package.
 """
@@ -28,29 +26,6 @@ import textwrap
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.x509.oid import NameOID
-
-# Known EV policy OIDs and their oidName descriptions, as used in
-# security/certverifier/ExtendedValidation.cpp. Keep in sync with that file.
-OID_NAMES = {
-    "1.2.156.112559.1.1.6.1": "GDCA EV OID",
-    "1.2.392.200091.100.721.1": "SECOM EV OID",
-    "1.2.616.1.113527.2.5.1.1": "Certum EV OID",
-    "1.3.6.1.4.1.4788.2.202.1": "D-TRUST EV OID",
-    "1.3.6.1.4.1.6449.1.2.1.5.1": "Comodo EV OID",
-    "1.3.6.1.4.1.7879.13.24.1": "T-Systems EV OID",
-    "1.3.6.1.4.1.8024.0.2.100.1.2": "QuoVadis EV OID",
-    "1.3.6.1.4.1.14777.6.1.1": "Izenpe EV OID 1",
-    "1.3.6.1.4.1.14777.6.1.2": "Izenpe EV OID 2",
-    "1.3.6.1.4.1.40869.1.1.22.3": "TWCA EV OID",
-    "1.3.159.1.17.1": "Actalis EV OID",
-    "2.16.156.112554.3": "CFCA EV OID",
-    "2.16.578.1.26.1.3.3": "Buypass EV OID",
-    "2.16.756.5.14.7.4.8": "WISeKey EV OID",
-    "2.16.840.1.114412.2.1": "DigiCert EV OID",
-    "2.16.840.1.114413.1.7.23.3": "Go Daddy EV OID a",
-    "2.16.840.1.114414.1.7.23.3": "Go Daddy EV OID b",
-    "2.23.140.1.1": "CA/Browser Forum EV OID",
-}
 
 DEFAULT_OID = "2.23.140.1.1"
 
@@ -117,12 +92,10 @@ def emit(path, oid):
     fp = cert.fingerprint(hashes.SHA256())
     issuer_der = cert.issuer.public_bytes()
     serial = serial_content_octets(cert.serial_number)
-    oid_name = OID_NAMES.get(oid, "<oidName>")
 
     print("  {")
     print(f"    // {format_name(cert.issuer)}")
     print(f'    "{oid}",')
-    print(f'    "{oid_name}",')
     print(format_fingerprint(fp))
     print(format_base64_literal(issuer_der))
     print(f'    "{base64.b64encode(serial).decode()}",')
