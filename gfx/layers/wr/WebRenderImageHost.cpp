@@ -47,10 +47,25 @@ WebRenderImageHost::~WebRenderImageHost() {
 
 void WebRenderImageHost::OnReleased() {
   ImageComposite::ClearImages();
-  if (!mPendingRemoteTextureWrappers.empty()) {
-    mPendingRemoteTextureWrappers.clear();
-  }
+  ClearPendingRemoteTextures();
   SetCurrentTextureHost(nullptr);
+}
+
+void WebRenderImageHost::ClearPendingRemoteTextures() {
+  mPendingRemoteTextureWrappers.clear();
+
+  if (!mWaitingReadyCallback) {
+    return;
+  }
+
+  mWaitingReadyCallback = false;
+  ++mReadyCallbackGeneration;
+  if (auto* remoteTextureMap = RemoteTextureMap::Get()) {
+    remoteTextureMap->CancelRemoteTextureReadyCheck(
+        RemoteTextureInfo(RemoteTextureId{0}, mReadyCallbackOwnerId,
+                          mReadyCallbackForPid),
+        this);
+  }
 }
 
 void WebRenderImageHost::UseTextureHost(
@@ -58,9 +73,7 @@ void WebRenderImageHost::UseTextureHost(
   CompositableHost::UseTextureHost(aTextures);
   MOZ_ASSERT(aTextures.Length() >= 1);
 
-  if (!mPendingRemoteTextureWrappers.empty()) {
-    mPendingRemoteTextureWrappers.clear();
-  }
+  ClearPendingRemoteTextures();
 
   if (mCurrentTextureHost &&
       mCurrentTextureHost->AsRemoteTextureHostWrapper()) {
@@ -136,8 +149,7 @@ void WebRenderImageHost::PushPendingRemoteTexture(
     MOZ_ASSERT(wrapper);
     if (wrapper->mOwnerId != aOwnerId || wrapper->mForPid != aForPid) {
       // Clear when RemoteTextureOwner is different.
-      mPendingRemoteTextureWrappers.clear();
-      mWaitingReadyCallback = false;
+      ClearPendingRemoteTextures();
       mWaitForRemoteTextureOwner = true;
     }
   }
@@ -169,22 +181,19 @@ void WebRenderImageHost::UseRemoteTexture(bool aCalledInCallback) {
     }
     MOZ_ASSERT(!mWaitingReadyCallback);
 
-    auto readyCallback = [self = RefPtr<WebRenderImageHost>(this)](
-                             const RemoteTextureInfo aInfo) {
+    // The callback may be for a texture being pushed, or for its owner going
+    // away or losing its context, so check the pending textures again
+    // regardless, unless the ready check has since been cancelled.
+    auto readyCallback = [self = RefPtr<WebRenderImageHost>(this),
+                          generation = mReadyCallbackGeneration](
+                             const RemoteTextureInfo&) {
       RefPtr<nsIRunnable> runnable = NS_NewRunnableFunction(
           "WebRenderImageHost::UseRemoteTexture",
-          [self = std::move(self), aInfo]() {
+          [self = std::move(self), generation]() {
             MOZ_RELEASE_ASSERT(CompositorThreadHolder::IsInCompositorThread());
 
-            if (self->mPendingRemoteTextureWrappers.empty()) {
-              return;
-            }
-
-            auto* wrapper = self->mPendingRemoteTextureWrappers.front()
-                                ->AsRemoteTextureHostWrapper();
-            MOZ_ASSERT(wrapper);
-            if (wrapper->mOwnerId != aInfo.mOwnerId ||
-                wrapper->mForPid != aInfo.mForPid) {
+            if (!self->mWaitingReadyCallback ||
+                self->mReadyCallbackGeneration != generation) {
               // obsoleted callback
               return;
             }
@@ -211,6 +220,8 @@ void WebRenderImageHost::UseRemoteTexture(bool aCalledInCallback) {
       mWaitingReadyCallback = !RemoteTextureMap::Get()->CheckRemoteTextureReady(
           wrapper->GetRemoteTextureInfo(), this, readyCallback);
       if (mWaitingReadyCallback) {
+        mReadyCallbackOwnerId = wrapper->mOwnerId;
+        mReadyCallbackForPid = wrapper->mForPid;
         break;
       }
       RemoteTextureMap::Get()->GetRemoteTexture(wrapper);
@@ -266,9 +277,7 @@ void WebRenderImageHost::RemoveTextureHost(TextureHost* aTexture) {
 void WebRenderImageHost::ClearImages(ClearImagesType aType) {
   ImageComposite::ClearImages();
   if (aType == ClearImagesType::All) {
-    if (!mPendingRemoteTextureWrappers.empty()) {
-      mPendingRemoteTextureWrappers.clear();
-    }
+    ClearPendingRemoteTextures();
     SetCurrentTextureHost(nullptr);
 
     if (GetAsyncRef()) {
