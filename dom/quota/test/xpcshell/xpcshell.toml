@@ -47,12 +47,12 @@ run-if = [
 
 ["make_unknownFiles.js"]
 run-if = [
-  "false", # Only used for recreating unknownFiles_profile.zip
+  "false", # Only used for recreating unknownFiles_profile.zip (test_unknownFiles.js)
 ]
 
 ["make_unsetLastAccessTime.js"]
 run-if = [
-  "false", # Only used for recreating unsetLastAccessTime_profile.zip
+  "false", # Only used for recreating unsetLastAccessTime_profile.zip (test_secondaryCacheValidity.js)
 ]
 
 ["test_allowListFiles.js"]

@@ -61,12 +61,35 @@ async function testSecondaryCacheValidity() {
   // using the make_secondaryCacheValidity.js script, which can be
   // executed like this:
   // mach xpcshell-test --interactive dom/quota/test/xpcshell/make_secondaryCacheValidity.js
-  // After running _execute_test() and quit(), additional manual steps are
-  // needed:
+  // Make sure to temporarly remove the `run-if = [ "false" ]` before executing
+  // this command
+  // Run _execute_test() and quit()
+  // Tweak the generated profile. It lives in your temporary profile dir used
+  // for tests, which is printed when the test starts ("profile dir is …")
   // 1. Remove the folder "storage/temporary".
   // 2. Remove the file "storage/ls-archive.sqlite".
   // 3. Remove the file "storage/default/http+++example42.com/cache/caches.sqlite-wal".
   // 4. Remove the file "storage/default/http+++example42.com/idb/2320029346mByDIdnedxe.sqlite-wal".
+  // For convenience below is the way to execute this from command line:
+  /*
+  # Run the generate script, passing _execute_test() and quit() so you don't
+  # have to type anything, and parsing the log with grep and awk to retrieve
+  # the profile directory
+  PROFILE_DIR=$(printf '_execute_test();\nquit();\n' | ./mach test \
+    --interactive dom/quota/test/xpcshell/make_secondaryCacheValidity.js | \
+    grep "profile dir is" | awk '{print $NF}')
+  : Go to profile dir
+  cd $PROFILE_DIR
+  : Remove the unneeded files
+  rm -r storage/temporary storage/ls-archive.sqlite \
+    storage/default/http+++example42.com/cache/caches.sqlite-wal \
+    storage/default/http+++example42.com/idb/2320029346mByDIdnedxe.sqlite-wal
+  : Package only storage.sqlite and storage/
+  zip -r -X secondaryCacheValidity_profile.zip storage.sqlite storage
+  : Copy the new profile
+  cd -
+  cp $PROFILE_DIR/secondaryCacheValidity_profile.zip dom/quota/test/xpcshell/
+  */
   installPackage("secondaryCacheValidity_profile");
 
   info("Initializing storage");

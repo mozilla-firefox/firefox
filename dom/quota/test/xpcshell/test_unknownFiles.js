@@ -44,6 +44,28 @@ async function testSteps() {
       // The file make_unknownFiles.js was run locally, specifically it was
       // temporarily enabled in xpcshell.toml and then executed:
       // mach test --interactive dom/quota/test/xpcshell/make_unknownFiles.js
+      // Make sure to temporarly remove the `run-if = [ "false" ]` before
+      // executing this command
+      // Run _execute_test() and quit()
+      // Tweak the generated profile. It lives in your temporary profile dir
+      // used for tests, which is printed when the test starts ("profile dir is …")
+      // For convenience below is the way to execute this from command line:
+      /*
+      # Run the generate script, passing _execute_test() and quit() so you don't
+      # have to type anything, and parsing the log with grep and awk to retrieve
+      # the profile directory
+      PROFILE_DIR=$(printf '_execute_test();\nquit();\n' | ./mach test \
+        --interactive dom/quota/test/xpcshell/make_unknownFiles.js | grep  \
+        "profile dir is" | awk '{print $NF}')
+      : Go to profile dir
+      cd $PROFILE_DIR
+      : Remove the transient SQLite files
+      rm -f storage/default/http+++example.com/cache/caches.sqlite-wal \
+        storage/default/http+++example.com/idb/2320029346mByDIdnedxe.sqlite-wal
+      zip -r -X unknownFiles_profile.zip storage.sqlite storage
+      cd -
+      cp $PROFILE_DIR/unknownFiles_profile.zip dom/quota/test/xpcshell/
+      */
       installPackage("unknownFiles_profile");
 
       if (mode.initializedStorage) {
@@ -95,7 +117,7 @@ async function testSteps() {
       request.result instanceof Ci.nsIQuotaOriginUsageResult,
       "The result is nsIQuotaOriginUsageResult instance"
     );
-    is(request.result.usage, 115025, "Correct total usage");
+    is(request.result.usage, 147793, "Correct total usage");
     is(request.result.fileUsage, 200, "Correct file usage");
   });
 
