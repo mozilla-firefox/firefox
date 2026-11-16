@@ -8,6 +8,9 @@ https://creativecommons.org/publicdomain/zero/1.0/ */
 const { TestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/TestUtils.sys.mjs"
 );
+const { NodeHTTP2Server } = ChromeUtils.importESModule(
+  "resource://testing-common/NodeServer.sys.mjs"
+);
 
 let h2Port;
 
@@ -16,9 +19,18 @@ const ALT_HOST = "alt1.example.com";
 
 add_setup(async function setup() {
   do_get_profile();
-  h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
+  let server = new NodeHTTP2Server();
+  await server.start();
+  registerCleanupFunction(async () => {
+    await server.stop();
+  });
+  await server.registerPathHandler("/altsvc-test", (req, res) => {
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Alt-Svc", "h2=" + req.headers["x-altsvc"]);
+    res.writeHead(200);
+    res.end("ok");
+  });
+  h2Port = server.port();
   Services.prefs.setBoolPref("network.http.altsvc.enabled", true);
   Services.prefs.setCharPref(
     "network.dns.localDomains",
