@@ -5,70 +5,63 @@
 package mozilla.components.service.merino.sports
 
 import androidx.annotation.WorkerThread
-import androidx.core.net.toUri
+import mozilla.appservices.merino.MerinoWrexhamApiException
+import mozilla.appservices.merino.WrexhamClient
+import mozilla.appservices.merino.WrexhamClientInterface
+import mozilla.appservices.merino.WrexhamConfig
+import mozilla.appservices.merino.WrexhamMatchesOptions
 import mozilla.components.concept.base.crash.Breadcrumb
 import mozilla.components.concept.base.crash.CrashReporting
-import mozilla.components.concept.fetch.Client
-import mozilla.components.concept.fetch.Request
-import mozilla.components.support.base.ext.fetchBodyOrNull
 import mozilla.components.support.base.log.logger.Logger
 
-internal const val MATCHES_ENDPOINT_URL = "https://merino.services.mozilla.com/api/v1/widgets/wrexham/matches"
-
 /**
- * Provides access to the Merino sports API.
+ * Provides access to the Merino sports API through the Application Services [WrexhamClient].
  *
- * @property client [Client] used for interacting with the Merino HTTP API.
- * @property matchesEndPointUrl The url of the matches endpoint to fetch from. Defaults to [MATCHES_ENDPOINT_URL].
+ * @property client The [WrexhamClientInterface] used to request the matches.
  * @property crashReporter [CrashReporting] instance used for recording caught exceptions.
  */
 class MerinoSportsProvider(
-    private val client: Client,
-    private val matchesEndPointUrl: String = MATCHES_ENDPOINT_URL,
+    private val client: Lazy<WrexhamClientInterface> = lazy { WrexhamClient(WrexhamConfig(baseHost = null)) },
     private val crashReporter: CrashReporting? = null,
 ) {
 
     private val logger = Logger("MerinoSportsProvider")
 
     /**
-     * Fetches the previous, current and upcoming matches from [matchesEndPointUrl].
+     * Fetches the previous, current and upcoming matches.
      *
      * @param limit Optional maximum number of previous and upcoming matches to return. The Merino service defaults to 5
-     *   when not provided.
+     *   when not provided or not positive.
      * @return The [MerinoMatches] or null if the request or deserialization failed.
      */
     @WorkerThread
     fun getMatches(limit: Int? = null): MerinoMatches? {
-        val request = Request(url = buildMatchesUrl(limit), conservative = true)
-
-        return client.fetchBodyOrNull(request = request, logger = logger)?.let { response ->
+        val response =
             try {
-                merinoSportsJson.decodeFromString<MerinoMatches>(response)
-            } catch (e: IllegalArgumentException) {
-                val message = "MerinoSportsProvider - Failed to deserialize matches"
+                client.value.getMatches(WrexhamMatchesOptions(limit = limit?.takeIf { it > 0 }?.toUInt()))
+            } catch (e: MerinoWrexhamApiException) {
+                val message = "MerinoSportsProvider - Failed to fetch matches"
                 logger.error(message = message, throwable = e)
                 crashReporter?.recordCrashBreadcrumb(Breadcrumb(message = message))
-                crashReporter?.submitCaughtException(e)
 
-                null
+                // Only report the unexpected errors to avoid reports of network-level failure (e.g. connection
+                // timeout, offline) or of Merino having no data to serve.
+                if (e is MerinoWrexhamApiException.Other) {
+                    crashReporter?.submitCaughtException(e)
+                }
+
+                return null
             }
+
+        return try {
+            merinoSportsJson.decodeFromString<MerinoMatches>(response)
+        } catch (e: IllegalArgumentException) {
+            val message = "MerinoSportsProvider - Failed to deserialize matches"
+            logger.error(message = message, throwable = e)
+            crashReporter?.recordCrashBreadcrumb(Breadcrumb(message = message))
+            crashReporter?.submitCaughtException(e)
+
+            null
         }
-    }
-
-    private fun buildMatchesUrl(limit: Int?): String {
-        if (limit == null) {
-            return matchesEndPointUrl
-        }
-
-        return matchesEndPointUrl
-            .toUri()
-            .buildUpon()
-            .appendQueryParameter(LIMIT_QUERY_PARAM, limit.toString())
-            .build()
-            .toString()
-    }
-
-    private companion object {
-        const val LIMIT_QUERY_PARAM = "limit"
     }
 }

@@ -13,10 +13,10 @@ android {
 }
 
 dependencies {
-    implementation project(':components:concept-fetch')
     implementation project(':components:support-base')
 
-    implementation libs.androidx.core
+    implementation ComponentsDependencies.mozilla_appservices_merino
+
     implementation libs.androidx.datastore
     implementation libs.androidx.work.runtime
     implementation libs.kotlinx.coroutines
