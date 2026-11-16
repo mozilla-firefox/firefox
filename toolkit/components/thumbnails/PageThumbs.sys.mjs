@@ -833,7 +833,7 @@ export var PageThumbsStorage = {
       if (
         !aNoOverwrite ||
         !DOMException.isInstance(err) ||
-        err.name !== "TypeMismatchError"
+        err.name !== "NoModificationAllowedError"
       ) {
         throw err;
       }
