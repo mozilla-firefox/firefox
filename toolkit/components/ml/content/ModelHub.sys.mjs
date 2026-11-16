@@ -180,24 +180,34 @@ class ModelOwner {
     }
 
     const hubRootUrl = `https://${this.hostname}/`;
-    const filePath = this.#getIconFilePath();
-    let possibleUrls;
 
-    if (this.hostname === MOCHITESTS_HOSTNAME) {
-      possibleUrls = ["chrome://global/content/ml/mozilla-logo.webp"];
-    } else {
-      // Attempt to fetch (org first, then user, then default)
-      possibleUrls = [
-        `${hubRootUrl}api/organizations/${this.owner}/avatar?redirect=true`,
-        `${hubRootUrl}api/users/${this.owner}/avatar?redirect=true`,
-        "chrome://global/content/ml/mozilla-logo.webp",
-      ];
+    const possibleUrls =
+      this.hostname === MOCHITESTS_HOSTNAME
+        ? ["chrome://global/content/ml/mozilla-logo.webp"]
+        : [
+            // Attempt to fetch (org first, then user, then default)
+            `${hubRootUrl}api/organizations/${this.owner}/avatar?redirect=true`,
+            `${hubRootUrl}api/users/${this.owner}/avatar?redirect=true`,
+            "chrome://global/content/ml/mozilla-logo.webp",
+          ];
+
+    for (const url of possibleUrls) {
+      try {
+        const fileObject = await lazy.OPFS.download({
+          source: url,
+          savePath: this.#getIconFilePath(),
+          deletePreviousVersions: false,
+          useCache: true,
+          ignoreCachingErrors: true,
+        });
+
+        return URL.createObjectURL(fileObject);
+      } catch (error) {
+        console.error(error);
+      }
     }
-    const opfsFile = new lazy.OPFS.File({
-      urls: possibleUrls,
-      localPath: filePath,
-    });
-    return opfsFile.getAsObjectURL();
+
+    throw new Error("Could not fetch the icon from the provided urls");
   }
 }
 
@@ -1230,7 +1240,9 @@ class IndexedDBCache {
       owner.pruneCache(),
       this.#deleteData(this.headersStoreName, [model, revision, file]),
       this.#deleteData(this.enginesStoreName, [model, revision, file]),
-      lazy.OPFS.remove(this.generateFilePathInOPFS({ model, revision, file })),
+      lazy.OPFS.remove(this.generateFilePathInOPFS({ model, revision, file }), {
+        ignoreErrors: true,
+      }),
     ]);
   }
 
@@ -2171,7 +2183,7 @@ export class ModelHub {
       const fileObject = await lazy.OPFS.download({
         savePath: localFilePath,
         deletePreviousVersions: false,
-        skipIfExists: false,
+        useCache: false,
         source: response,
         abortSignal,
         progressCallback: progressData => {
