@@ -486,10 +486,21 @@ gfxFontconfigFontEntry::AutoHBFace gfxFontconfigFontEntry::GetHBFace() {
       if (FcPatternGetInteger(pattern, FC_INDEX, 0, &index) != FcResultMatch) {
         index = 0;  // default to 0 if not found in pattern
       }
-      // Mask out possible variation-instance index stashed by fontconfig; we
-      // just want the face index within a collection file.
-      index &= 0xFFFF;
+      // Fontconfig uses the high 16 bits for the named instance index. We need
+      // to pass named instance index to HarfBuzz to apply the variations
+      // during shaping.
+      // HarfBuzz < 15.1.0 didn't strip the high 16 bits when validating the
+      // face count, so in old versions we mask out the high 16 bits when
+      // creating the face, then set the face index manually afterwards.
+#if HB_VERSION_ATLEAST(15, 1, 0)
       face = hb_face_create_from_file_or_fail((const char*)filename, index);
+#else
+      face = hb_face_create_from_file_or_fail((const char*)filename,
+                                              index & 0xFFFF);
+      if (face) {
+        hb_face_set_index(face, index);
+      }
+#endif
     } else {
       // If we have webfont user data, we can use hb_face_create to wrap that.
       if (const auto* ufd = GetUserFontData()) {
