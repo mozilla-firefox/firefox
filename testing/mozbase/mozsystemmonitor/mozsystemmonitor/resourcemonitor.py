@@ -551,6 +551,12 @@ class _ASanFallbackLogger:
         self._monitor._record_line_asan(data)
 
 
+def _test_id_str(test):
+    if isinstance(test, (list, tuple)):
+        return " ".join(test)
+    return test
+
+
 class SystemResourceMonitor:
     """Measures system resources.
 
@@ -648,6 +654,7 @@ class SystemResourceMonitor:
 
         self._active_phases = {}
         self._active_markers = {}
+        self._active_tests = {}
 
         # Counter used to correlate the several markers emitted for one TSan
         # report (one marker per labeled stack).
@@ -1735,6 +1742,10 @@ class SystemResourceMonitor:
         SystemResourceMonitor.instance.record_marker(name, start, end, data)
 
     @staticmethod
+    def _test_key(data):
+        return (data.get("subsuite") or "", _test_id_str(data["test"]))
+
+    @staticmethod
     def begin_test(data):
         """Begin tracking a test with enhanced metadata support.
 
@@ -1742,10 +1753,9 @@ class SystemResourceMonitor:
             data: Dictionary containing test data (e.g., {"test": "test_name", "time": timestamp})
         """
         if SystemResourceMonitor.instance and "test" in data:
-            test_name = data["test"]
-            SystemResourceMonitor.instance._active_markers[test_name] = (
-                SystemResourceMonitor.instance.get_monotonic_time_from_data(data)
-            )
+            SystemResourceMonitor.instance._active_tests[
+                SystemResourceMonitor._test_key(data)
+            ] = (SystemResourceMonitor.instance.get_monotonic_time_from_data(data), [])
 
     @staticmethod
     def end_test(data):
@@ -1756,16 +1766,22 @@ class SystemResourceMonitor:
                   - "test": test name
                   - "status": test status ("PASS", "OK", "FAIL", "TIMEOUT", "CRASH", etc.)
                   - "expected": the expected status if it differs from "status"
+                  - "known_intermittent": statuses the test is known to produce
                   - "message": A string describing the status.
         """
         if not SystemResourceMonitor.instance or "test" not in data:
             return
 
-        test_name = data["test"]
-        if test_name not in SystemResourceMonitor.instance._active_markers:
-            return
+        # Imported lazily: this module is also copied standalone into docker
+        # images, where moztest isn't available and no test record arrives.
+        from moztest.outcome import Outcome
 
-        start = SystemResourceMonitor.instance._active_markers.pop(test_name)
+        key = SystemResourceMonitor._test_key(data)
+        active = SystemResourceMonitor.instance._active_tests.pop(key, None)
+        if active is None:
+            return
+        start, subtest_outcomes = active
+        test_name = key[1]
         end = SystemResourceMonitor.instance.get_monotonic_time_from_data(data)
 
         # Create marker data with test information
@@ -1780,29 +1796,39 @@ class SystemResourceMonitor:
         if extra and "timeoutfactor" in extra:
             marker_data["timeoutfactor"] = extra["timeoutfactor"]
 
+        if key[0]:
+            marker_data["subsuite"] = key[0]
+
         status = data.get("status", "")
         if status:
             marker_data["status"] = status
             expected = data.get("expected")  # None if result was as expected
             if expected is not None:
                 marker_data["expected"] = expected
+            unexpected_subtests = sum(
+                1
+                for subtest_outcome in subtest_outcomes
+                if subtest_outcome in (Outcome.UNEXPECTED, Outcome.WILL_RETRY)
+            )
+            if unexpected_subtests:
+                marker_data["unexpected_subtests"] = unexpected_subtests
 
-            # Determine color based on whether result matches expectations
-            # Special handling for retry case where expected=status artificially
-            message = data.get("message", "")
-            will_retry = "will retry" in message.lower()
-
+            # A test with subtests ends OK when the harness ran it fine: its
+            # subtests decide whether it passed.
+            outcome = max([Outcome.from_log(data), *subtest_outcomes])
             if status in ("SKIP", "TIMEOUT"):
                 marker_data["color"] = "yellow"
-                if message:
-                    marker_data["message"] = message
             elif status in ("CRASH", "ERROR"):
                 marker_data["color"] = "red"
-            elif expected is None and not will_retry:
-                # Expected result - green (including expected failures)
-                marker_data["color"] = "green"
-            else:
+            elif outcome in (Outcome.UNEXPECTED, Outcome.WILL_RETRY):
                 marker_data["color"] = "orange"
+            elif outcome == Outcome.KNOWN_INTERMITTENT:
+                marker_data["color"] = "yellow"
+            else:
+                marker_data["color"] = "green"
+            message = data.get("message", "")
+            if message and marker_data["color"] != "green":
+                marker_data["message"] = message
 
         SystemResourceMonitor.instance.record_marker("test", start, end, marker_data)
 
@@ -1822,13 +1848,16 @@ class SystemResourceMonitor:
         if not SystemResourceMonitor.instance:
             return
 
+        from moztest.outcome import Outcome
+
         timestamp = SystemResourceMonitor.instance.get_monotonic_time_from_data(data)
 
         marker_data = {"type": "TestStatus"}
+        test_name = _test_id_str(data.get("test"))
+        outcome = None
 
         if data.get("action") == "process_output":
             line = data.get("data")
-            test_name = data.get("test")
             if line and SystemResourceMonitor.instance._parse_process_output(
                 line, timestamp, test_name, process=data.get("process")
             ):
@@ -1840,39 +1869,32 @@ class SystemResourceMonitor:
         else:
             # test_status and log actions
             status = (data.get("status") or data.get("level")).upper()
-            # mozlog omits "expected" when the result was the expected one, so
-            # an absent key is what marks a todo(), a fails-if, or a hit on an
-            # expectation file. Harnesses that will retry a failing test rewrite
-            # "expected" to match, and flag it with "will_retry".
-            expected = data.get("expected")
-            as_expected = (
-                expected is None or expected.upper() == status
-            ) and not data.get("will_retry")
             marker_name = status
-
-            # Determine color based on status
-            if status == "PASS":
-                if as_expected:
+            if data.get("action") == "test_status":
+                outcome = Outcome.from_log(data)
+            if status == "ERROR":
+                marker_data["color"] = "red"
+            elif outcome == Outcome.KNOWN_INTERMITTENT:
+                marker_name = f"KNOWN-INTERMITTENT-{status}"
+                marker_data["color"] = "yellow"
+            elif outcome == Outcome.EXPECTED:
+                if status == "PASS":
                     marker_data["color"] = "green"
-                else:
+                elif status != "SKIP":
+                    marker_name = f"KNOWN-{status}"
+                    marker_data["color"] = "yellow"
+            elif outcome is not None:
+                if status == "PASS":
                     # A todo() that passed; this fails the test.
                     marker_name = "UNEXPECTED-PASS"
-                    marker_data["color"] = "orange"
-            elif status == "FAIL":
-                if as_expected:
-                    marker_name = "KNOWN-FAIL"
-                    marker_data["color"] = "yellow"
-                else:
-                    marker_data["color"] = "orange"
-            elif status == "ERROR":
-                marker_data["color"] = "red"
+                marker_data["color"] = "orange"
 
             if subtest := data.get("subtest"):
                 marker_data["subtest"] = subtest
 
             message = data.get("message")
 
-        if test_name := data.get("test"):
+        if test_name:
             marker_data["test"] = test_name
 
         if message:
@@ -1883,28 +1905,32 @@ class SystemResourceMonitor:
 
         SystemResourceMonitor.record_event(marker_name, timestamp, marker_data)
 
-        # Check if this is a shutdown leak failure
-        if (
-            data.get("subtest") == "Shutdown"
-            and data.get("status") == "FAIL"
-            and (test_name := data.get("test"))
-            and message
-            and "leaked" in message
-            and "until shutdown" in message
-        ):
-            # Find the corresponding test marker and mark it as failed due to leak
-            # if it hasn't already failed for another reason
-            for marker in SystemResourceMonitor.instance.markers:
-                marker_name_type, marker_start, marker_end, marker_data, _ = marker
-                if (
-                    marker_name_type == "test"
-                    and marker_data.get("test") == test_name
-                    and marker_start <= timestamp <= marker_end
-                    and marker_data.get("status") == "PASS"
-                ):
-                    marker_data["color"] = "orange"
-                    marker_data["status"] = "FAIL"
-                    break
+        if not test_name or outcome in (None, Outcome.EXPECTED):
+            return
+        key = SystemResourceMonitor._test_key(data)
+        active = SystemResourceMonitor.instance._active_tests.get(key)
+        if active is not None:
+            active[1].append(outcome)
+        elif outcome == Outcome.UNEXPECTED:
+            # The test was reported passing before this status (a shutdown
+            # leak, a replayed log): fail its marker.
+            SystemResourceMonitor.instance._fail_test_marker(key, timestamp)
+
+    def _fail_test_marker(self, key, timestamp):
+        for marker in reversed(self.markers):
+            marker_type, marker_start, marker_end, marker_data, _ = marker
+            if (
+                marker_type == "test"
+                and (marker_data.get("subsuite") or "", marker_data.get("test")) == key
+                and marker_start <= timestamp <= marker_end
+                and marker_data.get("color") in ("green", "yellow")
+                and marker_data.get("status") not in ("SKIP", "TIMEOUT")
+            ):
+                marker_data["color"] = "orange"
+                marker_data["unexpected_subtests"] = (
+                    marker_data.get("unexpected_subtests", 0) + 1
+                )
+                break
 
     @staticmethod
     def crash(data):
@@ -2812,6 +2838,11 @@ class SystemResourceMonitor:
                             "hidden": True,
                         },
                         {
+                            "key": "subsuite",
+                            "label": "Subsuite",
+                            "format": "string",
+                        },
+                        {
                             "key": "status",
                             "label": "Status",
                             "format": "string",
@@ -2820,6 +2851,11 @@ class SystemResourceMonitor:
                             "key": "expected",
                             "label": "Expected",
                             "format": "string",
+                        },
+                        {
+                            "key": "unexpected_subtests",
+                            "label": "Unexpected subtests",
+                            "format": "integer",
                         },
                         {
                             "key": "message",

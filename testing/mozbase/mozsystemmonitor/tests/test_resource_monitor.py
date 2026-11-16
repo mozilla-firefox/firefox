@@ -817,6 +817,19 @@ class TestResourceMonitor(unittest.TestCase):
             message="a failure that will be retried",
             will_retry=True,
         )
+        self._test_status(
+            monitor,
+            status="FAIL",
+            expected="PASS",
+            known_intermittent=["FAIL"],
+            message="a known intermittent",
+        )
+        self._test_status(
+            monitor, status="TIMEOUT", expected="PASS", message="a subtest timeout"
+        )
+        self._test_status(
+            monitor, action="log", level="WARNING", message="a harness warning"
+        )
         monitor.stop()
 
         by_message = {
@@ -824,7 +837,7 @@ class TestResourceMonitor(unittest.TestCase):
             for _, name, data in monitor.events
             if data and data.get("type") == "TestStatus"
         }
-        self.assertEqual(len(by_message), 5)
+        self.assertEqual(len(by_message), 8)
 
         name, data = by_message["a todo"]
         self.assertEqual(name, "KNOWN-FAIL")
@@ -845,6 +858,264 @@ class TestResourceMonitor(unittest.TestCase):
         name, data = by_message["a failure that will be retried"]
         self.assertEqual(name, "FAIL")
         self.assertEqual(data["color"], "orange")
+
+        name, data = by_message["a known intermittent"]
+        self.assertEqual(name, "KNOWN-INTERMITTENT-FAIL")
+        self.assertEqual(data["color"], "yellow")
+
+        name, data = by_message["a subtest timeout"]
+        self.assertEqual(name, "TIMEOUT")
+        self.assertEqual(data["color"], "orange")
+
+        name, data = by_message["a harness warning"]
+        self.assertEqual(name, "WARNING")
+        self.assertNotIn("color", data)
+
+    def _record_time(self, monitor):
+        return (
+            time.monotonic() - monitor.start_time
+        ) * 1000 + monitor.start_timestamp * 1000
+
+    def _begin_test(self, monitor, test, **kwargs):
+        data = {
+            "action": "test_start",
+            "test": test,
+            "time": self._record_time(monitor),
+        }
+        data.update(kwargs)
+        SystemResourceMonitor.begin_test(data)
+
+    def _end_test(self, monitor, test, **kwargs):
+        data = {"action": "test_end", "test": test, "time": self._record_time(monitor)}
+        data.update(kwargs)
+        SystemResourceMonitor.end_test(data)
+
+    def _test_markers(self, monitor):
+        return [data for name, _, _, data, _ in monitor.markers if name == "test"]
+
+    def test_end_test_colors(self):
+        monitor = SystemResourceMonitor(poll_interval=0.25)
+        monitor.start()
+        self._begin_test(monitor, "ok.html")
+        self._test_status(monitor, test="ok.html", subtest="a", status="PASS")
+        self._end_test(monitor, "ok.html", status="OK")
+        self._begin_test(monitor, "subtest_fail.html")
+        self._test_status(monitor, test="subtest_fail.html", subtest="a", status="PASS")
+        self._test_status(
+            monitor,
+            test="subtest_fail.html",
+            subtest="b",
+            status="FAIL",
+            expected="PASS",
+            message="assert_equals failed",
+        )
+        self._end_test(monitor, "subtest_fail.html", status="OK")
+        self._begin_test(monitor, "subtest_intermittent.html")
+        self._test_status(
+            monitor,
+            test="subtest_intermittent.html",
+            subtest="a",
+            status="FAIL",
+            expected="PASS",
+            known_intermittent=["FAIL"],
+        )
+        self._end_test(monitor, "subtest_intermittent.html", status="OK")
+        self._begin_test(monitor, "timeout.html")
+        self._end_test(
+            monitor,
+            "timeout.html",
+            status="TIMEOUT",
+            expected="OK",
+            message="Test timed out",
+        )
+        self._begin_test(monitor, "unexpected_fail.html")
+        self._end_test(monitor, "unexpected_fail.html", status="FAIL", expected="PASS")
+        self._begin_test(monitor, "expected_fail.html")
+        self._end_test(monitor, "expected_fail.html", status="FAIL")
+        self._begin_test(monitor, "intermittent.html")
+        self._end_test(
+            monitor,
+            "intermittent.html",
+            status="FAIL",
+            expected="PASS",
+            known_intermittent=["FAIL"],
+        )
+        self._begin_test(monitor, "retry.js")
+        self._end_test(
+            monitor,
+            "retry.js",
+            status="FAIL",
+            message="Test failed or timed out, will retry",
+            will_retry=True,
+        )
+        self._begin_test(monitor, "crash.html")
+        self._end_test(monitor, "crash.html", status="CRASH", expected="OK")
+        monitor.stop()
+
+        by_test = {data["test"]: data for data in self._test_markers(monitor)}
+        self.assertEqual(len(by_test), 9)
+        self.assertEqual(by_test["ok.html"]["color"], "green")
+        self.assertNotIn("unexpected_subtests", by_test["ok.html"])
+        self.assertEqual(by_test["subtest_fail.html"]["color"], "orange")
+        self.assertEqual(by_test["subtest_fail.html"]["status"], "OK")
+        self.assertEqual(by_test["subtest_fail.html"]["unexpected_subtests"], 1)
+        self.assertEqual(by_test["subtest_intermittent.html"]["color"], "yellow")
+        self.assertNotIn("unexpected_subtests", by_test["subtest_intermittent.html"])
+        self.assertEqual(by_test["timeout.html"]["color"], "yellow")
+        self.assertEqual(by_test["timeout.html"]["message"], "Test timed out")
+        self.assertEqual(by_test["unexpected_fail.html"]["color"], "orange")
+        self.assertEqual(by_test["unexpected_fail.html"]["expected"], "PASS")
+        self.assertEqual(by_test["expected_fail.html"]["color"], "green")
+        self.assertEqual(by_test["intermittent.html"]["color"], "yellow")
+        self.assertEqual(by_test["retry.js"]["color"], "orange")
+        self.assertEqual(by_test["crash.html"]["color"], "red")
+
+    def test_end_test_keys_runs_by_subsuite_and_test_id(self):
+        monitor = SystemResourceMonitor(poll_interval=0.25)
+        monitor.start()
+        reftest = ["a.html", "==", "b.html"]
+        self._begin_test(monitor, reftest)
+        self._end_test(monitor, reftest, status="PASS")
+        self._begin_test(monitor, "x.html", subsuite="")
+        self._begin_test(monitor, "x.html", subsuite="private")
+        self._test_status(
+            monitor,
+            test="x.html",
+            subsuite="private",
+            subtest="a",
+            status="FAIL",
+            expected="PASS",
+        )
+        self._end_test(monitor, "x.html", subsuite="", status="OK")
+        self._end_test(monitor, "x.html", subsuite="private", status="OK")
+        monitor.stop()
+
+        markers = self._test_markers(monitor)
+        self.assertEqual(
+            [m["test"] for m in markers], ["a.html == b.html", "x.html", "x.html"]
+        )
+        self.assertEqual(markers[0]["name"], "a.html == b.html")
+        self.assertEqual(markers[0]["color"], "green")
+        self.assertEqual(markers[1]["color"], "green")
+        self.assertEqual(markers[2]["color"], "orange")
+        self.assertEqual(markers[2]["unexpected_subtests"], 1)
+
+    def test_status_after_end_fails_a_passed_test(self):
+        monitor = SystemResourceMonitor(poll_interval=0.25)
+        monitor.start()
+        start = self._record_time(monitor)
+        self._begin_test(monitor, "leak.html", time=start)
+        time.sleep(0.01)
+        end = self._record_time(monitor)
+        self._end_test(monitor, "leak.html", status="PASS", time=end)
+        self._test_status(
+            monitor,
+            test="leak.html",
+            subtest="Shutdown",
+            status="FAIL",
+            expected="PASS",
+            message="leaked until shutdown",
+            time=(start + end) / 2,
+        )
+        monitor.stop()
+
+        (marker,) = self._test_markers(monitor)
+        self.assertEqual(marker["color"], "orange")
+        self.assertEqual(marker["status"], "PASS")
+        self.assertEqual(marker["unexpected_subtests"], 1)
+
+    def test_status_after_end_fails_a_known_intermittent_test(self):
+        monitor = SystemResourceMonitor(poll_interval=0.25)
+        monitor.start()
+        start = self._record_time(monitor)
+        self._begin_test(monitor, "intermittent.html", time=start)
+        self._begin_test(monitor, "timeout.html", time=start)
+        time.sleep(0.01)
+        end = self._record_time(monitor)
+        self._end_test(
+            monitor,
+            "intermittent.html",
+            status="FAIL",
+            expected="PASS",
+            known_intermittent=["FAIL"],
+            time=end,
+        )
+        self._end_test(
+            monitor, "timeout.html", status="TIMEOUT", expected="OK", time=end
+        )
+        for test in ("intermittent.html", "timeout.html"):
+            self._test_status(
+                monitor,
+                test=test,
+                subtest="Shutdown",
+                status="FAIL",
+                expected="PASS",
+                time=(start + end) / 2,
+            )
+        monitor.stop()
+
+        by_test = {data["test"]: data for data in self._test_markers(monitor)}
+        self.assertEqual(by_test["intermittent.html"]["color"], "orange")
+        self.assertEqual(by_test["intermittent.html"]["status"], "FAIL")
+        self.assertEqual(by_test["intermittent.html"]["unexpected_subtests"], 1)
+        self.assertEqual(by_test["timeout.html"]["color"], "yellow")
+        self.assertNotIn("unexpected_subtests", by_test["timeout.html"])
+
+    def test_status_after_end_matches_the_subsuite(self):
+        monitor = SystemResourceMonitor(poll_interval=0.25)
+        monitor.start()
+        start = self._record_time(monitor)
+        self._begin_test(monitor, "x.html", subsuite="", time=start)
+        self._begin_test(monitor, "x.html", subsuite="private", time=start)
+        time.sleep(0.01)
+        end = self._record_time(monitor)
+        self._end_test(monitor, "x.html", subsuite="", status="PASS", time=end)
+        self._end_test(monitor, "x.html", subsuite="private", status="PASS", time=end)
+        self._test_status(
+            monitor,
+            test="x.html",
+            subsuite="private",
+            subtest="Shutdown",
+            status="FAIL",
+            expected="PASS",
+            time=(start + end) / 2,
+        )
+        monitor.stop()
+
+        default, private = self._test_markers(monitor)
+        self.assertNotIn("subsuite", default)
+        self.assertEqual(default["color"], "green")
+        self.assertEqual(private["subsuite"], "private")
+        self.assertEqual(private["color"], "orange")
+        self.assertEqual(private["unexpected_subtests"], 1)
+
+    def test_unexpected_error_subtest_fails_the_test(self):
+        monitor = SystemResourceMonitor(poll_interval=0.25)
+        monitor.start()
+        self._begin_test(monitor, "error.html")
+        self._test_status(
+            monitor, test="error.html", subtest="a", status="ERROR", expected="PASS"
+        )
+        self._end_test(monitor, "error.html", status="OK")
+        self._begin_test(monitor, "harness_error.js")
+        self._test_status(
+            monitor,
+            test="harness_error.js",
+            subtest="",
+            status="ERROR",
+            expected="ERROR",
+        )
+        self._end_test(monitor, "harness_error.js", status="PASS")
+        monitor.stop()
+
+        by_test = {data["test"]: data for data in self._test_markers(monitor)}
+        self.assertEqual(by_test["error.html"]["color"], "orange")
+        self.assertEqual(by_test["error.html"]["unexpected_subtests"], 1)
+        self.assertEqual(by_test["harness_error.js"]["color"], "green")
+        self.assertNotIn("unexpected_subtests", by_test["harness_error.js"])
+        self.assertEqual(
+            [e[2]["color"] for e in self._events(monitor, "ERROR")], ["red", "red"]
+        )
 
     def _process_output(self, monitor, line, process=None):
         data = {
