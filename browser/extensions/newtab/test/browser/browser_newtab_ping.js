@@ -20,6 +20,25 @@ add_setup(function () {
   });
 });
 
+/**
+ * Hide EventStateManager's real idle ticks from the feed. They fire on a
+ * deadline no test controls, and can say the user went idle in the middle of
+ * a test that stands in for a user who stays active.
+ *
+ * @param {object} TelemetryFeed the feed under test
+ * @returns {object} the stub, to restore before the test notifies idle itself
+ */
+function ignoreRealIdleTicks(TelemetryFeed) {
+  const stub = sandbox
+    .stub(TelemetryFeed, "observe")
+    .callsFake((subject, topic, data) => {
+      if (topic !== "user-interaction-inactive-non-synthesized") {
+        stub.wrappedMethod.call(TelemetryFeed, subject, topic, data);
+      }
+    });
+  return stub;
+}
+
 add_task(async function test_newtab_tab_close_sends_ping() {
   await SpecialPowers.pushPrefEnv({
     set: [["browser.newtabpage.activity-stream.telemetry", true]],
@@ -473,6 +492,7 @@ add_task(async function test_opened_page_dwell_time_follows_the_tab() {
 
   let fakeNow = 0;
   let nowStub = sandbox.stub(TelemetryFeed, "now").callsFake(() => fakeNow);
+  let observeStub = ignoreRealIdleTicks(TelemetryFeed);
   registerCleanupFunction(() => {
     Services.obs.notifyObservers(
       null,
@@ -520,6 +540,7 @@ add_task(async function test_opened_page_dwell_time_follows_the_tab() {
     "Measured from the page loading to the tab closing"
   );
 
+  observeStub.restore();
   nowStub.restore();
   await SpecialPowers.popPrefEnv();
 });
@@ -546,6 +567,7 @@ add_task(async function test_opened_page_dwell_time_ends_with_its_window() {
   let foregroundStub = sandbox
     .stub(TelemetryFeed, "isDwellTargetInForeground")
     .returns(true);
+  let observeStub = ignoreRealIdleTicks(TelemetryFeed);
 
   let win = await BrowserTestUtils.openNewBrowserWindow();
   let browser = win.gBrowser.selectedBrowser;
@@ -573,6 +595,7 @@ add_task(async function test_opened_page_dwell_time_ends_with_its_window() {
     "Measured from the page loading to the window closing"
   );
 
+  observeStub.restore();
   Services.obs.notifyObservers(
     null,
     "user-interaction-inactive-non-synthesized"
