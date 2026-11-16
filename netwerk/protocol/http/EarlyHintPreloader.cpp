@@ -511,6 +511,13 @@ bool EarlyHintPreloader::MatchesRequest(nsIURI* aURI,
     return false;
   }
 
+  // The embedder policy can change whether the request is sent with
+  // credentials and whether the response is acceptable.
+  if (mLoadInfo->GetLoadingEmbedderPolicy() !=
+      aLoadInfo->GetLoadingEmbedderPolicy()) {
+    return false;
+  }
+
   nsIPrincipal* loadingPrincipal = aLoadInfo->GetLoadingPrincipal();
   if (!loadingPrincipal) {
     return false;
