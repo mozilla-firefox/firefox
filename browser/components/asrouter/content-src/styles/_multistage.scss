@@ -267,6 +267,20 @@ html {
       }
     }
   }
+
+  .screen[pos='center-large'][fullscreen] {
+    .embedded-backup-restore-container {
+      margin: 0.5em 1em;
+    }
+
+    .info-tile {
+      background-color: light-dark(var(--color-violet-desaturated-10), var(--color-violet-desaturated-80));
+    }
+
+    .cta-paragraph-icon {
+      color: var(--icon-color-information);
+    }
+  }
 }
 
 .onboardingContainer {

@@ -52,6 +52,15 @@ describe("EmbeddedBackupRestore component", () => {
     );
   });
 
+  it("sets the layout attribute on restore-from-backup", () => {
+    wrapper = mount(<EmbeddedBackupRestore layout="center-large" />);
+
+    assert.equal(
+      wrapper.find("restore-from-backup").getDOMNode().getAttribute("layout"),
+      "center-large"
+    );
+  });
+
   it("calls AWFindBackupsInWellKnownLocations on mount", async () => {
     wrapper = mount(<EmbeddedBackupRestore />);
 

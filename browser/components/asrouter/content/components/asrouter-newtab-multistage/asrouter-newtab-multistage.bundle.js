@@ -3863,7 +3863,8 @@ const ConfirmationChecklist = props => {
 
 const EmbeddedBackupRestore = ({
   handleAction,
-  skipButton
+  skipButton,
+  layout
 }) => {
   const [recoveryInProgress, setRecoveryInProgress] = (0,external_React_namespaceObject.useState)(false);
   const ref = (0,external_React_namespaceObject.useRef)(null);
@@ -3902,6 +3903,7 @@ const EmbeddedBackupRestore = ({
   }, /*#__PURE__*/external_React_default().createElement("restore-from-backup", {
     aboutWelcomeEmbedded: "true",
     labelFontWeight: "600",
+    layout: layout,
     ref: ref
   }), skipButton ? /*#__PURE__*/external_React_default().createElement("div", {
     className: "action-buttons"
@@ -4368,7 +4370,8 @@ const ContentTiles = props => {
       content: {
         tiles: tile
       },
-      skipButton: props.content.skip_button
+      skipButton: props.content.skip_button,
+      layout: content.position
     }), tile.type === "fx_backup_file_path" && /*#__PURE__*/external_React_default().createElement(EmbeddedFxBackupOptIn, {
       handleAction: props.handleAction,
       isEncryptedBackup: content.isEncryptedBackup,

@@ -187,3 +187,57 @@
     }
   }
 }
+
+:host([aboutwelcomeembedded][layout="center-large"]) {
+  #restore-from-backup-wrapper {
+    #backup-filepicker-controls,
+    #password-entry-controls {
+      width: 100%;
+      margin-inline: auto;
+    }
+
+    #backup-filepicker {
+      max-width: unset;
+    }
+
+    .backup-message-bar {
+      --message-bar-background-color: light-dark(var(--color-violet-desaturated-10), var(--color-violet-desaturated-80));
+    }
+
+    #backup-filepicker-controls #backup-filepicker-input {
+      background-color: light-dark(var(--color-violet-desaturated-10), var(--color-violet-desaturated-80));
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      anchor-name: --backup-filepicker-input;
+
+      &:dir(ltr) {
+        direction: rtl;
+        padding-inline: var(--space-small) var(--space-xxlarge);
+        text-align: left;
+      }
+    }
+
+    #backup-filepicker:dir(ltr)::before {
+      content: "";
+      position: absolute;
+      position-anchor: --backup-filepicker-input;
+      top: anchor(top);
+      bottom: anchor(bottom);
+      left: anchor(left);
+      width: var(--space-xxlarge);
+      margin: 1px 0 1px 1px;
+      border-start-start-radius: var(--border-radius-medium);
+      border-end-start-radius: var(--border-radius-medium);
+      background: light-dark(var(--color-violet-desaturated-10), var(--color-violet-desaturated-80)) url("chrome://global/skin/icons/page-portrait.svg")
+        no-repeat var(--space-small) var(--space-small) / var(--icon-size);
+      -moz-context-properties: fill;
+      fill: currentColor;
+      pointer-events: none;
+    }
+
+    #restore-from-backup-button-group {
+      justify-content: center;
+    }
+  }
+}

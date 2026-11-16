@@ -397,6 +397,7 @@ export const ContentTiles = props => {
                 handleAction={props.handleAction}
                 content={{ tiles: tile }}
                 skipButton={props.content.skip_button}
+                layout={content.position}
               />
             )}
             {tile.type === "fx_backup_file_path" && (

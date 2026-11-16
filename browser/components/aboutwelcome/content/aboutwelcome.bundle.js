@@ -5317,7 +5317,8 @@ const ContentTiles = props => {
       content: {
         tiles: tile
       },
-      skipButton: props.content.skip_button
+      skipButton: props.content.skip_button,
+      layout: content.position
     }), tile.type === "fx_backup_file_path" && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_EmbeddedFxBackupOptIn__WEBPACK_IMPORTED_MODULE_9__.EmbeddedFxBackupOptIn, {
       handleAction: props.handleAction,
       isEncryptedBackup: content.isEncryptedBackup,
@@ -7056,7 +7057,8 @@ __webpack_require__.r(__webpack_exports__);
 
 const EmbeddedBackupRestore = ({
   handleAction,
-  skipButton
+  skipButton,
+  layout
 }) => {
   const [recoveryInProgress, setRecoveryInProgress] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false);
   const ref = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
@@ -7095,6 +7097,7 @@ const EmbeddedBackupRestore = ({
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("restore-from-backup", {
     aboutWelcomeEmbedded: "true",
     labelFontWeight: "600",
+    layout: layout,
     ref: ref
   }), skipButton ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     className: "action-buttons"

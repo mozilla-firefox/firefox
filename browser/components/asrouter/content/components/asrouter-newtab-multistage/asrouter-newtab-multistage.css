@@ -1439,6 +1439,15 @@ html {
 .onboardingContainer:has(.embedded-backup-restore-container) .screen[pos=split][fullscreen] .section-main .main-content .welcome-text h1, .onboardingContainer:has(.embedded-backup-restore-container) .screen[pos=split][fullscreen] .section-main .main-content .welcome-text h2 {
   max-width: 300px;
 }
+.onboardingContainer:has(.embedded-backup-restore-container) .screen[pos=center-large][fullscreen] .embedded-backup-restore-container {
+  margin: 0.5em 1em;
+}
+.onboardingContainer:has(.embedded-backup-restore-container) .screen[pos=center-large][fullscreen] .info-tile {
+  background-color: light-dark(var(--color-violet-desaturated-10), var(--color-violet-desaturated-80));
+}
+.onboardingContainer:has(.embedded-backup-restore-container) .screen[pos=center-large][fullscreen] .cta-paragraph-icon {
+  color: var(--icon-color-information);
+}
 
 .onboardingContainer {
   --grey-subtitle-1: light-dark(var(--color-gray-70), white);

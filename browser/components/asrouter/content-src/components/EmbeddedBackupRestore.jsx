@@ -6,7 +6,7 @@ import React, { useRef, useEffect, useState, useCallback } from "react";
 import { MultiStageUtils } from "../lib/multistage-utils.mjs";
 import { Localized } from "./MSLocalized";
 
-export const EmbeddedBackupRestore = ({ handleAction, skipButton }) => {
+export const EmbeddedBackupRestore = ({ handleAction, skipButton, layout }) => {
   const [recoveryInProgress, setRecoveryInProgress] = useState(false);
   const ref = useRef(null);
 
@@ -54,6 +54,7 @@ export const EmbeddedBackupRestore = ({ handleAction, skipButton }) => {
       <restore-from-backup
         aboutWelcomeEmbedded="true"
         labelFontWeight="600"
+        layout={layout}
         ref={ref}
       />
       {skipButton ? (

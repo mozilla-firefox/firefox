@@ -609,6 +609,39 @@
       restoreFromBackup.remove();
     });
 
+    add_task(async function test_center_large_path_keeps_ltr_order() {
+      let content = document.getElementById("content");
+      let restoreFromBackup = document.createElement("restore-from-backup");
+      content.appendChild(restoreFromBackup);
+
+      const path = "/Some/User/Documents/Firefox Backup/backup.html";
+      restoreFromBackup.aboutWelcomeEmbedded = true;
+      restoreFromBackup.backupServiceState = {
+        ...restoreFromBackup.backupServiceState,
+        backupFileToRestore: path,
+      };
+      await restoreFromBackup.updateComplete;
+
+      let textarea = restoreFromBackup.shadowRoot.querySelector("#backup-filepicker-input");
+      is(textarea.value, path, "Path is unchanged without the center-large layout");
+
+      restoreFromBackup.layout = "center-large";
+      await restoreFromBackup.updateComplete;
+
+      is(textarea.value, "‎" + path,
+        "Path is prefixed with a left-to-right mark in the center-large layout");
+
+      restoreFromBackup.backupServiceState = {
+        ...restoreFromBackup.backupServiceState,
+        backupFileToRestore: null,
+      };
+      await restoreFromBackup.updateComplete;
+
+      is(textarea.value, "", "No mark is added when no file is selected");
+
+      restoreFromBackup.remove();
+    });
+
     /**
      * Tests that when selectableProfilesAllowed is false (blocked by policy),
      * a warning message bar is displayed instead of the restore type radio group.
