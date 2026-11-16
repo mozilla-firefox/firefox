@@ -46,7 +46,6 @@ tasks:
         platforms:
             - win32-shippable   # Stub installer only
         run:
-            clone-with: hg
             using: mach
             mach: python python/mozrelease/mozrelease/attribute_builds.py
     macos:
@@ -56,7 +55,6 @@ tasks:
         platforms:
             - macosx64-shippable
         run:
-            clone-with: hg
             using: run-task
             cwd: "{checkout}"
             # Command defined in transforms

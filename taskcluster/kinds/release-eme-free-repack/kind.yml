@@ -43,7 +43,6 @@ task-defaults:
               type: directory
     run:
         using: run-task
-        clone-with: hg
         cwd: '{checkout}'
         command: $GECKO_PATH/taskcluster/scripts/release/partner-repack.sh
     extra:

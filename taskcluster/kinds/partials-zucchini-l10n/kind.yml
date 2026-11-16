@@ -64,7 +64,6 @@ tasks:
             chain-of-trust: true
             max-run-time: 5400
         run:
-            clone-with: hg
             using: run-task
             checkout: false
             # More parameters to be added in transform

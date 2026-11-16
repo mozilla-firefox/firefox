@@ -42,7 +42,6 @@ task-defaults:
     index:
         product: firefox
     run:
-        clone-with: hg
         using: run-task
         command: >-
             ./mach update-test

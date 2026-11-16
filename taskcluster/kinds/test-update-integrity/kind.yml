@@ -185,7 +185,6 @@ tasks:
             chain-of-trust: true
             max-run-time: 600
         run:
-            clone-with: hg
             using: run-task
             sparse-profile: "update-verify"
             cwd: "{checkout}"
