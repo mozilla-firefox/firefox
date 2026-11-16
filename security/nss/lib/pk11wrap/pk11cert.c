@@ -1208,6 +1208,12 @@ PK11_ImportCert(PK11SlotInfo *slot, CERTCertificate *cert,
         }
     }
 
+    if (!c->id.data) {
+        (void)nssToken_Destroy(token);
+        PORT_SetError(SEC_ERROR_UNSUPPORTED_KEYALG);
+        return SECFailure;
+    }
+
     if (key != CK_INVALID_HANDLE) {
         /* create an object for the key, ... */
         keyobj = nss_ZNEW(NULL, nssCryptokiObject);
@@ -1240,6 +1246,7 @@ PK11_ImportCert(PK11SlotInfo *slot, CERTCertificate *cert,
                                          PR_TRUE);
     if (!certobj) {
         if (NSS_GetError() == NSS_ERROR_INVALID_CERTIFICATE) {
+            (void)nssToken_Destroy(token);
             PORT_SetError(SEC_ERROR_REUSED_ISSUER_AND_SERIAL);
             return SECFailure;
         }

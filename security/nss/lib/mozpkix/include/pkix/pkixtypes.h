@@ -52,6 +52,17 @@ enum class NamedCurve {
   secp256r1 = 3,
 };
 
+enum class MLDSAParameterSet {
+  // id-ml-dsa-44 (OID 2.16.840.1.101.3.4.3.17, RFC 9881)
+  ml_dsa_44 = 1,
+
+  // id-ml-dsa-65 (OID 2.16.840.1.101.3.4.3.18, RFC 9881)
+  ml_dsa_65 = 2,
+
+  // id-ml-dsa-87 (OID 2.16.840.1.101.3.4.3.19, RFC 9881)
+  ml_dsa_87 = 3,
+};
+
 enum class EndEntityOrCA { MustBeEndEntity = 0, MustBeCA = 1 };
 
 enum class KeyUsage : uint8_t {
@@ -336,6 +347,26 @@ class TrustDomain {
   // verification of the public key validity as specified in NIST SP 800-56A.
   virtual Result VerifyECDSASignedData(Input data,
                                        DigestAlgorithm digestAlgorithm,
+                                       Input signature,
+                                       Input subjectPublicKeyInfo) = 0;
+
+  // Check that the given ML-DSA parameter set is acceptable for signatures.
+  //
+  // Return Success if the parameter set is acceptable,
+  // Result::ERROR_UNSUPPORTED_KEYALG if the parameter set is not acceptable,
+  // or another error code if another error occurred.
+  virtual Result CheckMLDSAParameterSetIsAcceptable(
+      EndEntityOrCA endEntityOrCA, MLDSAParameterSet parameterSet) = 0;
+
+  // Verify the given pure ML-DSA signature, with an empty context string
+  // (RFC 9881 Section 3), on the given data using the given ML-DSA public key.
+  // parameterSet is the parameter set named by the signature algorithm; the key
+  // must be for that parameter set.
+  //
+  // CheckMLDSAParameterSetIsAcceptable will be called before calling this
+  // function, so it is not necessary to repeat that check here.
+  virtual Result VerifyMLDSASignedData(Input data,
+                                       MLDSAParameterSet parameterSet,
                                        Input signature,
                                        Input subjectPublicKeyInfo) = 0;
 

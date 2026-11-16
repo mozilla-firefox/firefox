@@ -261,10 +261,11 @@ else
 endif
 endif
 
-# clear any CSTD and CXXSTD unless we're using GCC
+# Unless we're using GCC, use the compiler's default C standard, and give the
+# C++ standard in MSVC syntax (which clang-cl also accepts)
 ifndef NS_USE_GCC
         CSTD    =
-        CXXSTD  =
+        CXXSTD  = -std:c++17
 endif
 
 #

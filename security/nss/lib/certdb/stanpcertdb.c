@@ -467,7 +467,7 @@ CERT_NewTempCertificate(CERTCertDBHandle *handle, SECItem *derCert,
                    derSerial.data);
     PORT_Free(derSerial.data);
 
-    if (nssCertificate_SetCertKeyID(c) != PR_SUCCESS) {
+    if (nssCertificate_TryToSetCertKeyID(c) != PR_SUCCESS) {
         goto loser;
     }
 

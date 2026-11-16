@@ -1022,15 +1022,13 @@ stan_CreateNSSCertificateLocked(CERTCertificate *cc)
     }
 
     SECItem *keyID = pk11_mkcertKeyID(cc);
-    if (!keyID) {
-        nssArena_Destroy(arena);
-        return NULL;
-    }
-    nssItem_Create(arena, &c->id, keyID->len, keyID->data);
-    SECITEM_FreeItem(keyID, PR_TRUE);
-    if (!c->id.data || !c->id.size) {
-        nssArena_Destroy(arena);
-        return NULL;
+    if (keyID) {
+        nssItem_Create(arena, &c->id, keyID->len, keyID->data);
+        SECITEM_FreeItem(keyID, PR_TRUE);
+        if (!c->id.data || !c->id.size) {
+            nssArena_Destroy(arena);
+            return NULL;
+        }
     }
 
     NSSITEM_FROM_SECITEM(&c->encoding, &cc->derCert);

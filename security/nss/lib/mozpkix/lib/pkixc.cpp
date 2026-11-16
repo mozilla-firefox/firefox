@@ -142,6 +142,29 @@ class CodeSigningTrustDomain final : public TrustDomain {
         subjectPublicKeyInfo, nullptr);
   }
 
+  virtual Result CheckMLDSAParameterSetIsAcceptable(
+      EndEntityOrCA endEntityOrCA, MLDSAParameterSet parameterSet) override {
+    switch (parameterSet) {
+      case MLDSAParameterSet::ml_dsa_44:  // fall through
+      case MLDSAParameterSet::ml_dsa_65:  // fall through
+      case MLDSAParameterSet::ml_dsa_87:
+        return Success;
+    }
+
+    return Result::ERROR_UNSUPPORTED_KEYALG;
+  }
+
+  virtual Result VerifyMLDSASignedData(Input data,
+                                       MLDSAParameterSet parameterSet,
+                                       Input signature,
+                                       Input subjectPublicKeyInfo) override {
+    return VerifyMLDSASignedDataNSS(data,
+                                    parameterSet,
+                                    signature,
+                                    subjectPublicKeyInfo,
+                                    nullptr);
+  }
+
   virtual Result CheckValidityIsAcceptable(Time notBefore, Time notAfter,
                                            EndEntityOrCA endEntityOrCA,
                                            KeyPurposeId keyPurpose) override {

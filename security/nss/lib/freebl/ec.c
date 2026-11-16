@@ -630,8 +630,15 @@ SECStatus
 ED_VerifyMessage(ECPublicKey *key, const SECItem *signature,
                  const SECItem *msg)
 {
-    if (!msg || !signature || !signature->data || signature->len != Ed25519_SIGN_LEN) {
+    if (!msg || !signature) {
         PORT_SetError(SEC_ERROR_INVALID_ARGS);
+        return SECFailure;
+    }
+
+    /* A signature of the wrong length is a bad signature, not a bad
+     * argument. */
+    if (!signature->data || signature->len != Ed25519_SIGN_LEN) {
+        PORT_SetError(SEC_ERROR_BAD_SIGNATURE);
         return SECFailure;
     }
 

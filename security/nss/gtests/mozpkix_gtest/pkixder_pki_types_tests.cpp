@@ -23,6 +23,7 @@
  */
 
 #include <functional>
+#include <optional>
 #include <vector>
 
 #include "pkixgtest.h"
@@ -309,10 +310,14 @@ INSTANTIATE_TEST_SUITE_P(pkixder_DigestAlgorithmIdentifier_Invalid,
 struct ValidSignatureAlgorithmIdentifierValueTestInfo
 {
   PublicKeyAlgorithm publicKeyAlg;
-  DigestAlgorithm digestAlg;
+  // std::nullopt for signature algorithms that have no pre-hash step (i.e.
+  // pure ML-DSA).
+  std::optional<DigestAlgorithm> digestAlg;
   uint8_t der[MAX_ALGORITHM_OID_DER_LENGTH];
   size_t derLength;
-  bool explicitNullAllowed;
+  // The result of SignatureAlgorithmIdentifierValue when the parameters are
+  // an explicitly encoded NULL.
+  Result explicitNullResult;
 };
 
 static const ValidSignatureAlgorithmIdentifierValueTestInfo
@@ -324,28 +329,28 @@ static const ValidSignatureAlgorithmIdentifierValueTestInfo
     { 0x06, 0x08,
       0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x04 },
     10,
-    true,
+    Success,
   },
   { PublicKeyAlgorithm::ECDSA,
     DigestAlgorithm::sha384,
     { 0x06, 0x08,
       0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x03 },
     10,
-    true,
+    Success,
   },
   { PublicKeyAlgorithm::ECDSA,
     DigestAlgorithm::sha256,
     { 0x06, 0x08,
       0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x02 },
     10,
-    true,
+    Success,
   },
   { PublicKeyAlgorithm::ECDSA,
     DigestAlgorithm::sha1,
     { 0x06, 0x07,
       0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x01 },
     9,
-    true,
+    Success,
   },
 
   // RSA PKCS#1 1.5
@@ -354,21 +359,21 @@ static const ValidSignatureAlgorithmIdentifierValueTestInfo
     { 0x06, 0x09,
       0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x0d },
     11,
-    true,
+    Success,
   },
   { PublicKeyAlgorithm::RSA_PKCS1,
     DigestAlgorithm::sha384,
     { 0x06, 0x09,
       0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x0c },
     11,
-    true,
+    Success,
   },
   { PublicKeyAlgorithm::RSA_PKCS1,
     DigestAlgorithm::sha256,
     { 0x06, 0x09,
       0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x0b },
     11,
-    true,
+    Success,
   },
   { PublicKeyAlgorithm::RSA_PKCS1,
     DigestAlgorithm::sha1,
@@ -376,7 +381,7 @@ static const ValidSignatureAlgorithmIdentifierValueTestInfo
     { 0x06, 0x09,
       0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x05 },
     11,
-    true,
+    Success,
   },
   { PublicKeyAlgorithm::RSA_PKCS1,
     DigestAlgorithm::sha1,
@@ -384,7 +389,7 @@ static const ValidSignatureAlgorithmIdentifierValueTestInfo
     { 0x06, 0x05,
       0x2b, 0x0e, 0x03, 0x02, 0x1d },
     7,
-    true,
+    Success,
   },
 
   // RSA-PSS
@@ -397,7 +402,7 @@ static const ValidSignatureAlgorithmIdentifierValueTestInfo
       0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00,
       0xa2, 0x03, 0x02, 0x01, 0x20  },
     65,
-    false,
+    Result::ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED,
   },
 
   { PublicKeyAlgorithm::RSA_PSS,
@@ -409,7 +414,7 @@ static const ValidSignatureAlgorithmIdentifierValueTestInfo
       0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0x05, 0x00,
       0xa2, 0x03, 0x02, 0x01, 0x30 },
     65,
-    false,
+    Result::ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED,
   },
 
   { PublicKeyAlgorithm::RSA_PSS,
@@ -421,7 +426,36 @@ static const ValidSignatureAlgorithmIdentifierValueTestInfo
       0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00,
       0xa2, 0x03, 0x02, 0x01, 0x40 },
     65,
-    false,
+    Result::ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED,
+  },
+
+  // ML-DSA. These are "pure" (non-prehash) signature algorithms, so there is
+  // no digest algorithm to report. RFC 9881 Section 2 says that the parameters
+  // MUST be absent, so unlike for the other algorithms, an explicitly encoded
+  // NULL is rejected.
+  // python DottedOIDToCode.py --tlv id-ml-dsa-44 2.16.840.1.101.3.4.3.17
+  { PublicKeyAlgorithm::MLDSA_44,
+    std::nullopt,
+    { 0x06, 0x09,
+      0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x11 },
+    11,
+    Result::ERROR_BAD_DER,
+  },
+  // python DottedOIDToCode.py --tlv id-ml-dsa-65 2.16.840.1.101.3.4.3.18
+  { PublicKeyAlgorithm::MLDSA_65,
+    std::nullopt,
+    { 0x06, 0x09,
+      0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x12 },
+    11,
+    Result::ERROR_BAD_DER,
+  },
+  // python DottedOIDToCode.py --tlv id-ml-dsa-87 2.16.840.1.101.3.4.3.19
+  { PublicKeyAlgorithm::MLDSA_87,
+    std::nullopt,
+    { 0x06, 0x09,
+      0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x13 },
+    11,
+    Result::ERROR_BAD_DER,
   },
 };
 
@@ -441,12 +475,16 @@ TEST_P(pkixder_SignatureAlgorithmIdentifierValue_Valid, Valid)
     ASSERT_EQ(Success, input.Init(param.der, param.derLength));
     Reader reader(input);
     PublicKeyAlgorithm publicKeyAlg;
-    DigestAlgorithm digestAlg;
+    // Not empty, so that the ML-DSA cases check that it is cleared.
+    std::optional<DigestAlgorithm> digestAlg(DigestAlgorithm::sha1);
     ASSERT_EQ(Success,
               SignatureAlgorithmIdentifierValue(reader, publicKeyAlg,
                                                 digestAlg));
     ASSERT_EQ(param.publicKeyAlg, publicKeyAlg);
-    ASSERT_EQ(param.digestAlg, digestAlg);
+    ASSERT_EQ(param.digestAlg.has_value(), digestAlg.has_value());
+    if (param.digestAlg.has_value()) {
+      ASSERT_EQ(param.digestAlg.value(), digestAlg.value());
+    }
     ASSERT_EQ(Success, End(reader));
   }
 
@@ -459,15 +497,16 @@ TEST_P(pkixder_SignatureAlgorithmIdentifierValue_Valid, Valid)
   ASSERT_EQ(Success, input.Init(derWithNullParam, param.derLength + 2));
   Reader reader(input);
   PublicKeyAlgorithm publicKeyAlg;
-  DigestAlgorithm digestAlg;
-  ASSERT_EQ(param.explicitNullAllowed
-              ? Success
-              : Result::ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED,
+  std::optional<DigestAlgorithm> digestAlg;
+  ASSERT_EQ(param.explicitNullResult,
             SignatureAlgorithmIdentifierValue(reader, publicKeyAlg,
                                               digestAlg));
-  if (param.explicitNullAllowed) {
+  if (param.explicitNullResult == Success) {
     ASSERT_EQ(param.publicKeyAlg, publicKeyAlg);
-    ASSERT_EQ(param.digestAlg, digestAlg);
+    ASSERT_EQ(param.digestAlg.has_value(), digestAlg.has_value());
+    if (param.digestAlg.has_value()) {
+      ASSERT_EQ(param.digestAlg.value(), digestAlg.value());
+    }
     ASSERT_EQ(Success, End(reader));
   }
 }
@@ -535,6 +574,25 @@ static const InvalidAlgorithmIdentifierTestInfo
       0x05, 0x00 },
     13,
   },
+
+  // The pre-hash variants of ML-DSA are deliberately not supported.
+  // id-hash-ml-dsa-44-with-sha512 (2.16.840.1.101.3.4.3.32)
+  { { 0x06, 0x09,
+      0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x20 },
+    11,
+  },
+
+  // id-hash-ml-dsa-65-with-sha512 (2.16.840.1.101.3.4.3.33)
+  { { 0x06, 0x09,
+      0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x21 },
+    11,
+  },
+
+  // id-hash-ml-dsa-87-with-sha512 (2.16.840.1.101.3.4.3.34)
+  { { 0x06, 0x09,
+      0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x22 },
+    11,
+  },
 };
 
 class pkixder_SignatureAlgorithmIdentifier_Invalid
@@ -550,7 +608,7 @@ TEST_P(pkixder_SignatureAlgorithmIdentifier_Invalid, Invalid)
   ASSERT_EQ(Success, input.Init(param.der, param.derLength));
   Reader reader(input);
   der::PublicKeyAlgorithm publicKeyAlg;
-  DigestAlgorithm digestAlg;
+  std::optional<DigestAlgorithm> digestAlg;
   ASSERT_EQ(Result::ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED,
             SignatureAlgorithmIdentifierValue(reader, publicKeyAlg, digestAlg));
 }

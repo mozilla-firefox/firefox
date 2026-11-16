@@ -12,6 +12,7 @@
       'type': 'executable',
       'sources': [
         '<(DEPTH)/gtests/common/gtests.cc',
+        '<(DEPTH)/gtests/common/json_reader.cc',
         'pkixbuild_tests.cpp',
         'pkixc_tests.cpp',
         'pkixcert_extension_tests.cpp',
@@ -27,6 +28,7 @@
         'pkixder_pki_types_tests.cpp',
         'pkixder_universal_types_tests.cpp',
         'pkixgtest.cpp',
+        'pkixmldsa_tests.cpp',
         'pkixnames_tests.cpp',
         'pkixnss_tests.cpp',
         'pkixocsp_CreateEncodedOCSPRequest_tests.cpp',

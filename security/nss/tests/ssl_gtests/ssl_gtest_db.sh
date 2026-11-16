@@ -65,6 +65,7 @@ make_cert mldsa87 mldsa87 sign
 make_cert ecdh_ecdsa p256 kex
 make_cert rsa_ca rsa_ca ca
 make_cert rsa_chain rsa_chain sign
+make_cert rsa_chain_kex rsa_chain sign kex
 make_cert rsa_pss_ca rsapss_ca ca
 make_cert rsa_pss_chain rsapss_chain sign
 make_cert rsa_ca_rsa_pss_chain rsa_ca_rsapss_chain sign

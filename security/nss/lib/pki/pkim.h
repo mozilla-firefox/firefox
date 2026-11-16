@@ -163,8 +163,11 @@ nssCertificate_SetCertTrust(
     NSSCertificate *c,
     NSSTrust *trust);
 
+// Attempts to set the `id` field of the certificate. If the public key of the
+// certificate can't be decoded, `id` will be left empty and PR_SUCCESS will be
+// returned.
 NSS_EXTERN PRStatus
-nssCertificate_SetCertKeyID(
+nssCertificate_TryToSetCertKeyID(
     NSSCertificate *c);
 
 NSS_EXTERN nssDecodedCert *

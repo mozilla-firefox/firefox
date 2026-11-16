@@ -7,8 +7,8 @@
 #include "ssl.h"
 #include "sslimpl.h"
 
+#include "mozpkix/pkix.h"
 #include "mozpkix/pkixnss.h"
-#include "mozpkix/pkixutil.h"
 
 using namespace mozilla::pkix;
 

@@ -22,8 +22,6 @@ include $(CORE_DEPTH)/coreconf/config.mk
 
 ifeq (WINNT,$(OS_ARCH))
 OS_CFLAGS += -EHsc
-else
-CXXFLAGS += -std=c++0x
 endif
 
 #######################################################################

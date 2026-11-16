@@ -103,6 +103,8 @@ enum class TestDigestAlgorithmID {
   SHA256,
   SHA384,
   SHA512,
+  // For signature algorithms without a pre-hash step (i.e. pure ML-DSA).
+  NONE,
 };
 
 struct TestPublicKeyAlgorithm {
@@ -120,6 +122,7 @@ ByteString DSS_G();
 
 TestPublicKeyAlgorithm DSS();
 TestPublicKeyAlgorithm RSA_PKCS1();
+TestPublicKeyAlgorithm ML_DSA(MLDSAParameterSet parameterSet);
 
 struct TestSignatureAlgorithm {
   TestSignatureAlgorithm(const TestPublicKeyAlgorithm& publicKeyAlg,
@@ -136,6 +139,7 @@ TestSignatureAlgorithm md2WithRSAEncryption();
 TestSignatureAlgorithm md5WithRSAEncryption();
 TestSignatureAlgorithm sha1WithRSAEncryption();
 TestSignatureAlgorithm sha256WithRSAEncryption();
+TestSignatureAlgorithm mlDSA(MLDSAParameterSet parameterSet);
 
 // e.g. YMDHMS(2016, 12, 31, 1, 23, 45) => 2016-12-31:01:23:45 (GMT)
 mozilla::pkix::Time YMDHMS(uint16_t year, uint16_t month, uint16_t day,
@@ -300,6 +304,7 @@ class TestKeyPair {
 TestKeyPair* CloneReusedKeyPair();
 TestKeyPair* GenerateKeyPair();
 TestKeyPair* GenerateDSSKeyPair();
+TestKeyPair* GenerateMLDSAKeyPair(MLDSAParameterSet parameterSet);
 inline void DeleteTestKeyPair(TestKeyPair* keyPair) { delete keyPair; }
 typedef std::unique_ptr<TestKeyPair> ScopedTestKeyPair;
 
@@ -308,6 +313,8 @@ Result TestVerifyECDSASignedData(Input data, DigestAlgorithm digestAlgorithm,
 Result TestVerifyRSAPKCS1SignedData(Input data, DigestAlgorithm digestAlgorithm,
                                     Input signature,
                                     Input subjectPublicKeyInfo);
+Result TestVerifyMLDSASignedData(Input data, MLDSAParameterSet parameterSet,
+                                 Input signature, Input subjectPublicKeyInfo);
 Result TestDigestBuf(Input item, DigestAlgorithm digestAlg,
                      /*out*/ uint8_t* digestBuf, size_t digestBufLen);
 

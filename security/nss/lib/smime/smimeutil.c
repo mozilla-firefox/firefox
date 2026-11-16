@@ -712,7 +712,7 @@ NSS_SMIMEUtil_KeyDecodingAllowed(SECAlgorithmID *algid, SECKEYPrivateKey *key)
 }
 
 static SECOidTag
-nss_SMIME_FindCipherForSMIMECap(NSSSMIMECapability *cap)
+nss_SMIME_FindCipherForSMIMECap(PLArenaPool *poolp, NSSSMIMECapability *cap)
 {
     SECOidTag capIDTag;
 
@@ -726,13 +726,19 @@ nss_SMIME_FindCipherForSMIMECap(NSSSMIMECapability *cap)
         unsigned long key_bits;
         SECItem keyItem = { siBuffer, NULL, 0 };
 
-        rv = SEC_ASN1DecodeItem(NULL, &keyItem,
-                                SEC_ASN1_GET(SEC_IntegerTemplate), &cap->parameters);
+        /* The parameters were captured as an ANY by the QuickDER decode of
+         * the capabilities, so they are a single TLV with a DER length.
+         * For such input QuickDER and the streaming decoder accept the same
+         * INTEGERs and return the same contents. QuickDER is used because
+         * the profile comes from a remote sender. keyItem points into
+         * cap->parameters and needs no freeing. */
+        rv = SEC_QuickDERDecodeItem(poolp, &keyItem,
+                                    SEC_ASN1_GET(SEC_IntegerTemplate),
+                                    &cap->parameters);
         if (rv != SECSuccess) {
             return SEC_OID_UNKNOWN;
         }
         rv = SEC_ASN1DecodeInteger(&keyItem, &key_bits);
-        SECITEM_FreeItem(&keyItem, PR_FALSE);
         if (rv != SECSuccess) {
             return SEC_OID_UNKNOWN;
         }
@@ -836,7 +842,7 @@ smime_choose_cipher(CERTCertificate **rcerts)
                 int i;
                 /* walk the SMIME capabilities for this recipient */
                 for (i = 0; caps[i] != NULL; i++) {
-                    cipher = nss_SMIME_FindCipherForSMIMECap(caps[i]);
+                    cipher = nss_SMIME_FindCipherForSMIMECap(poolp, caps[i]);
                     c_index = smime_list_index_find(smime_algorithm_list, cipher);
                     if (c_index < cipher_count) {
                         /* found the cipher */

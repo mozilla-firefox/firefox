@@ -32,7 +32,7 @@
 extern const NSSError NSS_ERROR_NOT_FOUND;
 
 NSS_IMPLEMENT PRStatus
-nssCertificate_SetCertKeyID(NSSCertificate *c)
+nssCertificate_TryToSetCertKeyID(NSSCertificate *c)
 {
     c->id.data = NULL;
     c->id.size = 0;
@@ -41,7 +41,7 @@ nssCertificate_SetCertKeyID(NSSCertificate *c)
     SECITEM_FROM_NSSITEM(&secDER, &c->encoding);
     SECItem *keyID = pk11_mkcertKeyIDFromDER(&secDER);
     if (!keyID) {
-        return PR_FAILURE;
+        return PR_SUCCESS;
     }
     nssItem_Create(c->object.arena, &c->id, keyID->len, keyID->data);
     SECITEM_FreeItem(keyID, PR_TRUE);
@@ -91,8 +91,7 @@ nssCertificate_Create(
         nssArena_Release(arena, mark);
         return NULL;
     }
-    if ((!rvCert->id.data || !rvCert->id.size) &&
-        nssCertificate_SetCertKeyID(rvCert) != PR_SUCCESS) {
+    if (!rvCert->id.data && nssCertificate_TryToSetCertKeyID(rvCert) != PR_SUCCESS) {
         nssArena_Release(arena, mark);
         return NULL;
     }

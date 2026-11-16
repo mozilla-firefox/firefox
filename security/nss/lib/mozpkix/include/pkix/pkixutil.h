@@ -143,11 +143,6 @@ class BackCert final {
   void operator=(const BackCert&) = delete;
 };
 
-// Parse a DER-encoded certificate with BackCert::Init and return the
-// certificate's subjectPublicKeyInfo.
-Result FindSubjectPublicKeyInfo(Input certDER,
-                                /*out*/ Input& subjectPublicKeyInfo);
-
 class NonOwningDERArray final : public DERArray {
  public:
   NonOwningDERArray() : numItems(0) {

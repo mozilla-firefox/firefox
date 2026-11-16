@@ -160,6 +160,20 @@ class EverythingFailsByDefaultTrustDomain : public TrustDomain {
                       Result::FATAL_ERROR_LIBRARY_FAILURE);
   }
 
+  Result CheckMLDSAParameterSetIsAcceptable(EndEntityOrCA,
+                                            MLDSAParameterSet) override {
+    ADD_FAILURE();
+    return NotReached("CheckMLDSAParameterSetIsAcceptable should not be called",
+                      Result::FATAL_ERROR_LIBRARY_FAILURE);
+  }
+
+  Result VerifyMLDSASignedData(Input, MLDSAParameterSet, Input,
+                               Input) override {
+    ADD_FAILURE();
+    return NotReached("VerifyMLDSASignedData should not be called",
+                      Result::FATAL_ERROR_LIBRARY_FAILURE);
+  }
+
   Result CheckValidityIsAcceptable(Time, Time, EndEntityOrCA,
                                    KeyPurposeId) override {
     ADD_FAILURE();
@@ -204,6 +218,18 @@ class DefaultCryptoTrustDomain : public EverythingFailsByDefaultTrustDomain {
                                   Input subjectPublicKeyInfo) override {
     return TestVerifyRSAPKCS1SignedData(data, digestAlgorithm, signature,
                                         subjectPublicKeyInfo);
+  }
+
+  Result CheckMLDSAParameterSetIsAcceptable(EndEntityOrCA,
+                                            MLDSAParameterSet) override {
+    return Success;
+  }
+
+  Result VerifyMLDSASignedData(Input data, MLDSAParameterSet parameterSet,
+                               Input signature,
+                               Input subjectPublicKeyInfo) override {
+    return TestVerifyMLDSASignedData(data, parameterSet, signature,
+                                     subjectPublicKeyInfo);
   }
 
   Result CheckValidityIsAcceptable(Time, Time, EndEntityOrCA,

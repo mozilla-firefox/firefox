@@ -3,10 +3,12 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <memory>
+#include <vector>
 #include "prerror.h"
 #include "nss.h"
 #include "pk11pub.h"
 #include "pk11priv.h"
+#include "secerr.h"
 #include "sechash.h"
 
 #include "nss_scoped_ptrs.h"
@@ -23,6 +25,34 @@ struct Pkcs11SignatureTestParams {
   const DataBuffer data_;
   const DataBuffer signature_;
 };
+
+// A zero-length signature is never valid. It has to be reported as a bad
+// signature, not as an error in the arguments, which callers such as
+// mozilla::pkix take to mean an internal error.
+//
+// PK11_VerifyWithMechanism passes the signature to C_VerifySignatureInit,
+// which copies it. A copy of an empty signature has no buffer, so this also
+// covers C_Verify and C_VerifyFinal being called with a NULL, zero-length
+// signature.
+inline void VerifyEmptySignatureFails(SECKEYPublicKey* pub,
+                                      CK_MECHANISM_TYPE mech,
+                                      const SECItem* params = nullptr) {
+  std::vector<uint8_t> data(32, 0x2a);
+  SECItem dataItem = {siBuffer, data.data(),
+                      static_cast<unsigned int>(data.size())};
+
+  // Both an empty buffer and no buffer at all.
+  uint8_t buf[1] = {0};
+  for (uint8_t* sigData : {buf, static_cast<uint8_t*>(nullptr)}) {
+    SCOPED_TRACE(sigData ? "non-NULL signature data" : "NULL signature data");
+    SECItem sigItem = {siBuffer, sigData, 0};
+    PORT_SetError(0);
+    EXPECT_EQ(SECFailure, PK11_VerifyWithMechanism(pub, mech, params, &sigItem,
+                                                   &dataItem, nullptr));
+    EXPECT_EQ(SEC_ERROR_BAD_SIGNATURE, PORT_GetError())
+        << PORT_ErrorToName(PORT_GetError());
+  }
+}
 
 class Pk11SignatureTest : public ::testing::Test {
  protected:

@@ -72,6 +72,13 @@ TEST_P(Pkcs11EddsaTest, ImportPublicCreateSubjectPKInfo) {
   ASSERT_EQ(0, memcmp(der_spki->data, GetParam().spki_.data(), der_spki->len));
 }
 
+TEST_P(Pkcs11EddsaTest, EmptySignature) {
+  ScopedSECKEYPublicKey pub_key(ImportPublicKey(GetParam().spki_));
+  ASSERT_TRUE(pub_key);
+
+  VerifyEmptySignatureFails(pub_key.get(), mechanism());
+}
+
 INSTANTIATE_TEST_SUITE_P(EddsaSignVerify, Pkcs11EddsaTest,
                          ::testing::ValuesIn(kEddsaVectors));
 
@@ -175,6 +182,11 @@ class Pkcs11EddsaWycheproofTest : public ::testing::Test {
     SECStatus rv = PK11_VerifyWithMechanism(pub_key.get(), CKM_EDDSA, nullptr,
                                             &sig_item, &msg_item, nullptr);
     EXPECT_EQ(rv, vec.valid ? SECSuccess : SECFailure);
+    if (!vec.valid) {
+      // Including signatures of the wrong length.
+      EXPECT_EQ(SEC_ERROR_BAD_SIGNATURE, PORT_GetError())
+          << "test " << vec.id << ": " << PORT_ErrorToName(PORT_GetError());
+    }
   };
 };
 

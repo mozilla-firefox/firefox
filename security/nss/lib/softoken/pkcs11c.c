@@ -4369,6 +4369,12 @@ NSC_Verify(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData,
         /* VerifyFinal can't follow failed VerifyUpdate */
         if (CKR_OK == (crv = NSC_VerifyUpdate(hSession, pData, ulDataLen)))
             crv = NSC_VerifyFinal(hSession, pSignature, ulSignatureLen);
+    } else if (ulSignatureLen == 0) {
+        /* No signature is zero bytes long. pSignature may be NULL here, as
+         * NSC_VerifySignatureInit keeps an empty signature without a
+         * buffer, so don't pass it on. */
+        crv = CKR_SIGNATURE_LEN_RANGE;
+        sftk_TerminateOp(session, SFTK_VERIFY);
     } else {
         if (SECSuccess != (*context->verify)(context->cipherInfo, pSignature,
                                              ulSignatureLen, pData, ulDataLen))
@@ -4406,7 +4412,7 @@ NSC_VerifyFinal(CK_SESSION_HANDLE hSession,
 
     CHECK_FORK();
 
-    if (!pSignature)
+    if (!pSignature && ulSignatureLen != 0)
         return CKR_ARGUMENTS_BAD;
 
     /* make sure we're legal */
@@ -4414,7 +4420,12 @@ NSC_VerifyFinal(CK_SESSION_HANDLE hSession,
     if (crv != CKR_OK)
         return crv;
 
-    if (context->hashInfo) {
+    if (ulSignatureLen == 0) {
+        /* No signature is zero bytes long. pSignature may be NULL here, as
+         * NSC_VerifySignatureInit keeps an empty signature without a
+         * buffer. */
+        crv = CKR_SIGNATURE_LEN_RANGE;
+    } else if (context->hashInfo) {
         unsigned int digestLen;
         unsigned char tmpbuf[SFTK_MAX_MAC_LENGTH];
 

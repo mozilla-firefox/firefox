@@ -2,6 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <cstdio>
+#include <vector>
+
 #include "gtest/gtest.h"
 
 #include "cert.h"
@@ -9,6 +12,8 @@
 #include "nss.h"
 #include "secitem.h"
 #include "secerr.h"
+#include "secoid.h"
+#include "smime.h"
 #include "nss_scoped_ptrs.h"
 
 namespace nss_test {
@@ -116,6 +121,80 @@ TEST_F(SMimeProfileTest, FindSMimeProfileTempCert) {
   ASSERT_NE(nullptr, found->data);
   ASSERT_EQ(sizeof(profileData), found->len);
   EXPECT_EQ(0, memcmp(found->data, profileData, sizeof(profileData)));
+}
+
+// NSS_SMIMEUtil_FindBulkAlgForRecipients reads the key size of an RC2-CBC
+// capability from its parameter. The recipient's stored profile is
+// [RC2-CBC with the given parameter, AES-128-CBC]. If the parameter is a
+// usable key size, RC2 is listed first and wins; otherwise the RC2 entry is
+// ignored and AES-128 is chosen.
+class SMimeCipherChoiceTest : public ::testing::Test {
+ protected:
+  void ExpectChoice(const std::vector<uint8_t>& rc2Param, SECOidTag expectAlg,
+                    int expectKeySize) {
+    static const uint8_t kRc2Oid[] = {0x06, 0x08, 0x2a, 0x86, 0x48,
+                                      0x86, 0xf7, 0x0d, 0x03, 0x02};
+    static const uint8_t kAes128Cap[] = {0x30, 0x0b, 0x06, 0x09, 0x60,
+                                         0x86, 0x48, 0x01, 0x65, 0x03,
+                                         0x04, 0x01, 0x02};
+    std::vector<uint8_t> rc2Cap = {0x30, 0x00};
+    rc2Cap.insert(rc2Cap.end(), kRc2Oid, kRc2Oid + sizeof(kRc2Oid));
+    rc2Cap.insert(rc2Cap.end(), rc2Param.begin(), rc2Param.end());
+    rc2Cap[1] = rc2Cap.size() - 2;
+    std::vector<uint8_t> profileData = {0x30, 0x00};
+    profileData.insert(profileData.end(), rc2Cap.begin(), rc2Cap.end());
+    profileData.insert(profileData.end(), kAes128Cap,
+                       kAes128Cap + sizeof(kAes128Cap));
+    profileData[1] = profileData.size() - 2;
+
+    SECItem certDER = {siBuffer, kTestCertWithEmail,
+                       sizeof(kTestCertWithEmail)};
+    ScopedCERTCertificate cert(CERT_NewTempCertificate(
+        CERT_GetDefaultCertDB(), &certDER, nullptr, PR_FALSE, PR_TRUE));
+    ASSERT_NE(nullptr, cert.get());
+
+    // A stored profile is only replaced by a newer one.
+    static int saved = 0;
+    char timeData[14];
+    snprintf(timeData, sizeof(timeData), "2701010000%02dZ", saved++);
+    SECItem profileTime = {siBuffer, reinterpret_cast<uint8_t*>(timeData), 13};
+    SECItem emailProfile = {siBuffer, profileData.data(),
+                            static_cast<unsigned int>(profileData.size())};
+    ASSERT_EQ(SECSuccess,
+              CERT_SaveSMimeProfile(cert.get(), &emailProfile, &profileTime));
+
+    CERTCertificate* rcerts[] = {cert.get(), nullptr};
+    SECOidTag alg = SEC_OID_UNKNOWN;
+    int keySize = 0;
+    ASSERT_EQ(SECSuccess,
+              NSS_SMIMEUtil_FindBulkAlgForRecipients(rcerts, &alg, &keySize));
+    EXPECT_EQ(expectAlg, alg);
+    EXPECT_EQ(expectKeySize, keySize);
+  }
+};
+
+TEST_F(SMimeCipherChoiceTest, Rc2KeySize128) {
+  ExpectChoice({0x02, 0x02, 0x00, 0x80}, SEC_OID_RC2_CBC, 128);
+}
+
+TEST_F(SMimeCipherChoiceTest, Rc2KeySize64) {
+  ExpectChoice({0x02, 0x01, 0x40}, SEC_OID_RC2_CBC, 64);
+}
+
+TEST_F(SMimeCipherChoiceTest, Rc2UnsupportedKeySizeIgnored) {
+  ExpectChoice({0x02, 0x01, 0x38}, SEC_OID_AES_128_CBC, 128);
+}
+
+TEST_F(SMimeCipherChoiceTest, Rc2EmptyIntegerIgnored) {
+  ExpectChoice({0x02, 0x00}, SEC_OID_AES_128_CBC, 128);
+}
+
+TEST_F(SMimeCipherChoiceTest, Rc2ConstructedIntegerIgnored) {
+  ExpectChoice({0x22, 0x04, 0x02, 0x02, 0x00, 0x80}, SEC_OID_AES_128_CBC, 128);
+}
+
+TEST_F(SMimeCipherChoiceTest, Rc2NotAnIntegerIgnored) {
+  ExpectChoice({0x04, 0x02, 0x00, 0x80}, SEC_OID_AES_128_CBC, 128);
 }
 
 }  // namespace nss_test

@@ -526,52 +526,6 @@ ssl_auth()
   html "</TABLE><BR>"
 }
 
-ssl_stapling_sub()
-{
-    #verbose="-v"
-    testname=$1
-    SO=$2
-    value=$3
-
-    if [ "$NORM_EXT" = "Extended Test" ] ; then
-        # these tests use the ext_client directory for tstclnt,
-        # which doesn't contain the required "TestCA" for server cert
-        # verification, I don't know if it would be OK to add it...
-        echo "$SCRIPTNAME: skipping  $testname for $NORM_EXT"
-        return 0
-    fi
-
-    SAVE_SERVER_OPTIONS=${SERVER_OPTIONS}
-    SERVER_OPTIONS="${SERVER_OPTIONS} ${SO}"
-
-    SAVE_P_R_SERVERDIR=${P_R_SERVERDIR}
-    P_R_SERVERDIR=${P_R_SERVERDIR}/../stapling/
-
-    echo "${testname}"
-
-    start_selfserv
-
-    echo "tstclnt -4 -p ${PORT} -h ${HOSTADDR} -f -d ${P_R_CLIENTDIR} $verbose ${CLIENT_OPTIONS} \\"
-    echo "        -c v -T -O -F -M 1 -V ssl3:tls1.2 ${CLIENT_PW} < ${REQUEST_FILE}"
-    rm ${TMP}/$HOST.tmp.$$ 2>/dev/null
-    ${PROFTOOL} ${BINDIR}/tstclnt -4 -p ${PORT} -h ${HOSTADDR} -f ${CLIENT_OPTIONS} \
-            -d ${P_R_CLIENTDIR} $verbose -c v -T -O -F -M 1 -V ssl3:tls1.2 ${CLIENT_PW} < ${REQUEST_FILE} \
-            >${TMP}/$HOST.tmp.$$  2>&1
-    ret=$?
-    cat ${TMP}/$HOST.tmp.$$
-    rm ${TMP}/$HOST.tmp.$$ 2>/dev/null
-
-    # hopefully no workaround for bug #402058 needed here?
-    # (see commands in ssl_auth
-
-    html_msg $ret $value "${testname}" \
-            "produced a returncode of $ret, expected is $value"
-    kill_selfserv
-
-    SERVER_OPTIONS=${SAVE_SERVER_OPTIONS}
-    P_R_SERVERDIR=${SAVE_P_R_SERVERDIR}
-}
-
 ssl_stapling_stress()
 {
     testname="Stress OCSP stapling, server uses random status"
@@ -579,7 +533,7 @@ ssl_stapling_stress()
     value=0
 
     if [ "$NORM_EXT" = "Extended Test" ] ; then
-        # these tests use the ext_client directory for tstclnt,
+        # these tests use the ext_client directory for strsclnt,
         # which doesn't contain the required "TestCA" for server cert
         # verification, I don't know if it would be OK to add it...
         echo "$SCRIPTNAME: skipping  $testname for $NORM_EXT"
@@ -618,26 +572,6 @@ ssl_stapling_stress()
 ssl_stapling()
 {
   html_head "SSL Cert Status (OCSP Stapling) $NORM_EXT - server $SERVER_MODE/client $CLIENT_MODE"
-
-  # tstclnt Exit code:
-  # 0: have fresh and valid revocation data, status good
-  # 1: cert failed to verify, prior to revocation checking
-  # 2: missing, old or invalid revocation data
-  # 3: have fresh and valid revocation data, status revoked
-
-  # selfserv modes
-  # good, revoked, unkown: Include locally signed response. Requires: -A
-  # failure: Include OCSP failure status, such as "try later" (unsigned)
-  # badsig: use a good status but with an invalid signature
-  # corrupted: stapled cert status is an invalid block of data
-
-  ssl_stapling_sub "OCSP stapling, signed response, good status"     "-A TestCA -T good"      0
-  ssl_stapling_sub "OCSP stapling, signed response, revoked status"  "-A TestCA -T revoked"   3
-  ssl_stapling_sub "OCSP stapling, signed response, unknown status"  "-A TestCA -T unknown"   2
-  ssl_stapling_sub "OCSP stapling, unsigned failure response"        "-A TestCA -T failure"   2
-  ssl_stapling_sub "OCSP stapling, good status, bad signature"       "-A TestCA -T badsig"    2
-  ssl_stapling_sub "OCSP stapling, invalid cert status data"         "-A TestCA -T corrupted" 2
-  ssl_stapling_sub "Valid cert, Server doesn't staple"               ""                       2
 
   ssl_stapling_stress
 
@@ -989,9 +923,6 @@ ssl_policy_pkix_ocsp()
   #verbose="-v"
   html_head "Check that OCSP doesn't break if we disable sha1 $NORM_EXT - server $SERVER_MODE/client $CLIENT_MODE"
 
-  PKIX_SAVE=${NSS_DISABLE_LIBPKIX_VERIFY-"unset"}
-  unset NSS_DISABLE_LIBPKIX_VERIFY
-
   testname=""
 
   if [ ! -f "${P_R_SERVERDIR}/pkcs11.txt" ] ; then
@@ -1014,10 +945,6 @@ ssl_policy_pkix_ocsp()
   RET=$?
   html_msg $RET $RET_EXP "${testname}" \
            "produced a returncode of $RET, expected is $RET_EXP"
-
-  if [ "{PKIX_SAVE}" != "unset" ]; then
-      export NSS_DISABLE_LIBPKIX_VERIFY=${PKIX_SAVE}
-  fi
 
   cp ${P_R_SERVERDIR}/pkcs11.txt.sav ${P_R_SERVERDIR}/pkcs11.txt
 
@@ -1477,9 +1404,7 @@ ssl_run()
     do
         case "${SSL_RUN}" in
         "stapling")
-            if [ -z "$NSS_DISABLE_LIBPKIX" ]; then
-              ssl_stapling
-            fi
+            ssl_stapling
             ;;
         "signed_cert_timestamps")
             ssl_signed_cert_timestamps

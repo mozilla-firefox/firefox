@@ -221,7 +221,8 @@ tasks:
                 cc: [false]
                 modular: [false]
                 make-fips: [false]
-                # Only old make builds have -Ddisable_libpkix=0 and can run chain tests.
+                # chains.sh requires libpkix. Taskcluster GYP builds enable it
+                # since bug 1485533, except for static and fuzz builds.
                 make: [true]
         worker:
             env:

@@ -29,7 +29,6 @@
 #include "prnetdb.h"
 #include "nss.h"
 #include "nssb64.h"
-#include "ocsp.h"
 #include "ssl.h"
 #include "sslproto.h"
 #include "sslexp.h"
@@ -56,11 +55,6 @@
 #define ZERO_RTT_MAX (2 << 16)
 
 #define EXIT_CODE_HANDSHAKE_FAILED 254
-
-#define EXIT_CODE_SIDECHANNELTEST_GOOD 0
-#define EXIT_CODE_SIDECHANNELTEST_BADCERT 1
-#define EXIT_CODE_SIDECHANNELTEST_NODATA 2
-#define EXIT_CODE_SIDECHANNELTEST_REVOKED 3
 
 PRIntervalTime maxInterval = PR_INTERVAL_NO_TIMEOUT;
 
@@ -248,18 +242,6 @@ PrintParameterUsage()
     fprintf(stderr, "%-20s Enable the cert_status extension (OCSP stapling).\n", "-T");
     fprintf(stderr, "%-20s Enable the signed_certificate_timestamp extension.\n", "-U");
     fprintf(stderr, "%-20s Enable the delegated credentials extension.\n", "-B");
-    fprintf(stderr, "%-20s Require fresh revocation info from side channel.\n"
-                    "%-20s -F once means: require for server cert only\n"
-                    "%-20s -F twice means: require for intermediates, too\n"
-                    "%-20s (Connect, handshake with server, disable dynamic download\n"
-                    "%-20s  of OCSP/CRL, verify cert using CERT_PKIXVerifyCert.)\n"
-                    "%-20s Exit code:\n"
-                    "%-20s 0: have fresh and valid revocation data, status good\n"
-                    "%-20s 1: cert failed to verify, prior to revocation checking\n"
-                    "%-20s 2: missing, old or invalid revocation data\n"
-                    "%-20s 3: have fresh and valid revocation data, status revoked\n",
-            "-F", "", "", "", "", "", "", "", "", "");
-    fprintf(stderr, "%-20s Test -F allows 0=any (default), 1=only OCSP, 2=only CRL\n", "-M");
     fprintf(stderr, "%-20s Restrict ciphers\n", "-c ciphers");
     fprintf(stderr, "%-20s Print cipher values allowed for parameter -c and exit\n", "-Y");
     fprintf(stderr, "%-20s Enforce using an IPv4 destination address\n", "-4");
@@ -409,11 +391,6 @@ typedef struct
                          * peer's certificate and restart the handshake. */
     void *dbHandle;     /* Certificate database handle to use while
                          * authenticating the peer's certificate. */
-    PRBool testFreshStatusFromSideChannel;
-    PRErrorCode sideChannelRevocationTestResultCode;
-    PRBool requireDataForIntermediates;
-    PRBool allowOCSPSideChannelData;
-    PRBool allowCRLSideChannelData;
 } ServerCertAuth;
 
 /*
@@ -428,155 +405,6 @@ ownBadCertHandler(void *arg, PRFileDesc *socket)
     fprintf(stderr, "Bad server certificate: %d, %s\n", err,
             SECU_Strerror(err));
     return SECSuccess; /* override, say it's OK. */
-}
-
-#define EXIT_CODE_SIDECHANNELTEST_GOOD 0
-#define EXIT_CODE_SIDECHANNELTEST_BADCERT 1
-#define EXIT_CODE_SIDECHANNELTEST_NODATA 2
-#define EXIT_CODE_SIDECHANNELTEST_REVOKED 3
-
-static void
-verifyFromSideChannel(CERTCertificate *cert, ServerCertAuth *sca)
-{
-    PRUint64 revDoNotUse =
-        CERT_REV_M_DO_NOT_TEST_USING_THIS_METHOD;
-
-    PRUint64 revUseLocalOnlyAndSoftFail =
-        CERT_REV_M_TEST_USING_THIS_METHOD |
-        CERT_REV_M_FORBID_NETWORK_FETCHING |
-        CERT_REV_M_REQUIRE_INFO_ON_MISSING_SOURCE |
-        CERT_REV_M_IGNORE_MISSING_FRESH_INFO |
-        CERT_REV_M_STOP_TESTING_ON_FRESH_INFO;
-
-    PRUint64 revUseLocalOnlyAndHardFail =
-        CERT_REV_M_TEST_USING_THIS_METHOD |
-        CERT_REV_M_FORBID_NETWORK_FETCHING |
-        CERT_REV_M_REQUIRE_INFO_ON_MISSING_SOURCE |
-        CERT_REV_M_FAIL_ON_MISSING_FRESH_INFO |
-        CERT_REV_M_STOP_TESTING_ON_FRESH_INFO;
-
-    PRUint64 methodFlagsDoNotUse[2];
-    PRUint64 methodFlagsCheckSoftFail[2];
-    PRUint64 methodFlagsCheckHardFail[2];
-    CERTRevocationTests revTestsDoNotCheck;
-    CERTRevocationTests revTestsOverallSoftFail;
-    CERTRevocationTests revTestsOverallHardFail;
-    CERTRevocationFlags rev;
-    CERTValInParam cvin[2];
-    CERTValOutParam cvout[1];
-    SECStatus rv;
-
-    methodFlagsDoNotUse[cert_revocation_method_crl] = revDoNotUse;
-    methodFlagsDoNotUse[cert_revocation_method_ocsp] = revDoNotUse;
-
-    methodFlagsCheckSoftFail[cert_revocation_method_crl] =
-        sca->allowCRLSideChannelData ? revUseLocalOnlyAndSoftFail : revDoNotUse;
-    methodFlagsCheckSoftFail[cert_revocation_method_ocsp] =
-        sca->allowOCSPSideChannelData ? revUseLocalOnlyAndSoftFail : revDoNotUse;
-
-    methodFlagsCheckHardFail[cert_revocation_method_crl] =
-        sca->allowCRLSideChannelData ? revUseLocalOnlyAndHardFail : revDoNotUse;
-    methodFlagsCheckHardFail[cert_revocation_method_ocsp] =
-        sca->allowOCSPSideChannelData ? revUseLocalOnlyAndHardFail : revDoNotUse;
-
-    revTestsDoNotCheck.cert_rev_flags_per_method = methodFlagsDoNotUse;
-    revTestsDoNotCheck.number_of_defined_methods = 2;
-    revTestsDoNotCheck.number_of_preferred_methods = 0;
-    revTestsDoNotCheck.cert_rev_method_independent_flags =
-        CERT_REV_MI_TEST_ALL_LOCAL_INFORMATION_FIRST |
-        CERT_REV_MI_NO_OVERALL_INFO_REQUIREMENT;
-
-    revTestsOverallSoftFail.cert_rev_flags_per_method = 0; /* must define later */
-    revTestsOverallSoftFail.number_of_defined_methods = 2;
-    revTestsOverallSoftFail.number_of_preferred_methods = 0;
-    revTestsOverallSoftFail.cert_rev_method_independent_flags =
-        CERT_REV_MI_TEST_ALL_LOCAL_INFORMATION_FIRST |
-        CERT_REV_MI_NO_OVERALL_INFO_REQUIREMENT;
-
-    revTestsOverallHardFail.cert_rev_flags_per_method = 0; /* must define later */
-    revTestsOverallHardFail.number_of_defined_methods = 2;
-    revTestsOverallHardFail.number_of_preferred_methods = 0;
-    revTestsOverallHardFail.cert_rev_method_independent_flags =
-        CERT_REV_MI_TEST_ALL_LOCAL_INFORMATION_FIRST |
-        CERT_REV_MI_REQUIRE_SOME_FRESH_INFO_AVAILABLE;
-
-    rev.chainTests = revTestsDoNotCheck;
-    rev.leafTests = revTestsDoNotCheck;
-
-    cvin[0].type = cert_pi_revocationFlags;
-    cvin[0].value.pointer.revocation = &rev;
-    cvin[1].type = cert_pi_end;
-
-    cvout[0].type = cert_po_end;
-
-    /* Strategy:
-     *
-     * Verify with revocation checking disabled.
-     * On failure return 1.
-     *
-     * if result if "good", then continue testing.
-     *
-     * Verify with CERT_REV_M_FAIL_ON_MISSING_FRESH_INFO.
-     * If result is good, return 0.
-     *
-     * On failure continue testing, find out why it failed.
-     *
-     * Verify with CERT_REV_M_IGNORE_MISSING_FRESH_INFO
-     *
-     * If result is "good", then our previous test failed,
-     * because we don't have fresh revocation info, return 2.
-     *
-     * If result is still bad, we do have revocation info,
-     * and it says "revoked" or something equivalent, return 3.
-     */
-
-    /* revocation checking disabled */
-    rv = CERT_PKIXVerifyCert(cert, certificateUsageSSLServer,
-                             cvin, cvout, NULL);
-    if (rv != SECSuccess) {
-        sca->sideChannelRevocationTestResultCode =
-            EXIT_CODE_SIDECHANNELTEST_BADCERT;
-        return;
-    }
-
-    /* revocation checking, hard fail */
-    if (sca->allowOCSPSideChannelData && sca->allowCRLSideChannelData) {
-        /* any method is allowed. use soft fail on individual checks,
-         * but use hard fail on the overall check
-         */
-        revTestsOverallHardFail.cert_rev_flags_per_method = methodFlagsCheckSoftFail;
-    } else {
-        /* only one method is allowed. use hard fail on the individual checks.
-         * hard/soft fail is irrelevant on overall flags.
-         */
-        revTestsOverallHardFail.cert_rev_flags_per_method = methodFlagsCheckHardFail;
-    }
-    rev.leafTests = revTestsOverallHardFail;
-    rev.chainTests =
-        sca->requireDataForIntermediates ? revTestsOverallHardFail : revTestsDoNotCheck;
-    rv = CERT_PKIXVerifyCert(cert, certificateUsageSSLServer,
-                             cvin, cvout, NULL);
-    if (rv == SECSuccess) {
-        sca->sideChannelRevocationTestResultCode =
-            EXIT_CODE_SIDECHANNELTEST_GOOD;
-        return;
-    }
-
-    /* revocation checking, soft fail */
-    revTestsOverallSoftFail.cert_rev_flags_per_method = methodFlagsCheckSoftFail;
-    rev.leafTests = revTestsOverallSoftFail;
-    rev.chainTests =
-        sca->requireDataForIntermediates ? revTestsOverallSoftFail : revTestsDoNotCheck;
-    rv = CERT_PKIXVerifyCert(cert, certificateUsageSSLServer,
-                             cvin, cvout, NULL);
-    if (rv == SECSuccess) {
-        sca->sideChannelRevocationTestResultCode =
-            EXIT_CODE_SIDECHANNELTEST_NODATA;
-        return;
-    }
-
-    sca->sideChannelRevocationTestResultCode =
-        EXIT_CODE_SIDECHANNELTEST_REVOKED;
 }
 
 static void
@@ -685,44 +513,8 @@ ownAuthCertificate(void *arg, PRFileDesc *fd, PRBool checkSig,
     }
 
     if (!serverCertAuth->shouldPause) {
-        CERTCertificate *cert;
-        unsigned int i;
-        const SECItemArray *csa;
-
-        if (!serverCertAuth->testFreshStatusFromSideChannel) {
-            return SSL_AuthCertificate(serverCertAuth->dbHandle,
-                                       fd, checkSig, isServer);
-        }
-
-        /* No verification attempt must have happened before now,
-         * to ensure revocation data has been actively retrieved yet,
-         * or our test will produce incorrect results.
-         */
-
-        cert = SSL_RevealCert(fd);
-        if (!cert) {
-            exit(254);
-        }
-
-        csa = SSL_PeerStapledOCSPResponses(fd);
-        if (csa) {
-            for (i = 0; i < csa->len; ++i) {
-                PORT_SetError(0);
-                if (CERT_CacheOCSPResponseFromSideChannel(
-                        serverCertAuth->dbHandle, cert, PR_Now(),
-                        &csa->items[i], arg) != SECSuccess) {
-                    PORT_Assert(PR_GetError() != 0);
-                }
-            }
-        }
-
-        verifyFromSideChannel(cert, serverCertAuth);
-        CERT_DestroyCertificate(cert);
-        /* return success to ensure our caller will continue and we will
-         * reach the code that handles
-         * serverCertAuth->sideChannelRevocationTestResultCode
-         */
-        return SECSuccess;
+        return SSL_AuthCertificate(serverCertAuth->dbHandle,
+                                   fd, checkSig, isServer);
     }
 
     FPRINTF(stderr, "%s: using asynchronous certificate validation\n",
@@ -1439,9 +1231,6 @@ run()
     }
     opt.option = PR_SockOpt_Nonblocking;
     opt.value.non_blocking = PR_TRUE; /* default */
-    if (serverCertAuth.testFreshStatusFromSideChannel) {
-        opt.value.non_blocking = PR_FALSE;
-    }
     status = PR_SetSocketOption(s, &opt);
     if (status != PR_SUCCESS) {
         SECU_PrintError(progName, "error setting socket options");
@@ -1824,12 +1613,6 @@ run()
     }
 #endif
 
-    if (serverCertAuth.testFreshStatusFromSideChannel) {
-        SSL_ForceHandshake(s);
-        error = serverCertAuth.sideChannelRevocationTestResultCode;
-        goto done;
-    }
-
     /*
     ** Select on stdin and on the socket. Write data from stdin to
     ** socket, read data from socket and write to stdout.
@@ -1955,7 +1738,7 @@ done:
     return error;
 }
 
-const char *cmdLineOptions = "46A:BCDEFGHI:J:KL:M:N:OP:QR:STUV:W:X:YZa:bc:d:efgh:i:m:n:op:qr:st:uvw:x:z:";
+const char *cmdLineOptions = "46A:BCDEGHI:J:KL:N:OP:QR:STUV:W:X:YZa:bc:d:efgh:i:m:n:op:qr:st:uvw:x:z:";
 const PLLongOpt cmdLineLongOpts[] = {
     { .longOptName = "enable-rfc8701-grease", .longOption = 0, .valueRequired = PR_FALSE },
     { .longOptName = "enable-ch-extension-permutation", .longOption = 1, .valueRequired = PR_FALSE },
@@ -1983,11 +1766,6 @@ main(int argc, char **argv)
     serverCertAuth.shouldPause = PR_TRUE;
     serverCertAuth.isPaused = PR_FALSE;
     serverCertAuth.dbHandle = NULL;
-    serverCertAuth.testFreshStatusFromSideChannel = PR_FALSE;
-    serverCertAuth.sideChannelRevocationTestResultCode = EXIT_CODE_HANDSHAKE_FAILED;
-    serverCertAuth.requireDataForIntermediates = PR_FALSE;
-    serverCertAuth.allowOCSPSideChannelData = PR_TRUE;
-    serverCertAuth.allowCRLSideChannelData = PR_TRUE;
 
     progName = strrchr(argv[0], '/');
     if (!progName)
@@ -2053,14 +1831,6 @@ main(int argc, char **argv)
                 enablePostHandshakeAuth = PR_TRUE;
                 break;
 
-            case 'F':
-                if (serverCertAuth.testFreshStatusFromSideChannel) {
-                    /* parameter given twice or more */
-                    serverCertAuth.requireDataForIntermediates = PR_TRUE;
-                }
-                serverCertAuth.testFreshStatusFromSideChannel = PR_TRUE;
-                break;
-
             case 'G':
                 enableExtendedMasterSecret = PR_TRUE;
                 break;
@@ -2080,24 +1850,6 @@ main(int argc, char **argv)
 
             case 'L':
                 numConnections = atoi(optstate->value);
-                break;
-
-            case 'M':
-                switch (atoi(optstate->value)) {
-                    case 1:
-                        serverCertAuth.allowOCSPSideChannelData = PR_TRUE;
-                        serverCertAuth.allowCRLSideChannelData = PR_FALSE;
-                        break;
-                    case 2:
-                        serverCertAuth.allowOCSPSideChannelData = PR_FALSE;
-                        serverCertAuth.allowCRLSideChannelData = PR_TRUE;
-                        break;
-                    case 0:
-                    default:
-                        serverCertAuth.allowOCSPSideChannelData = PR_TRUE;
-                        serverCertAuth.allowCRLSideChannelData = PR_TRUE;
-                        break;
-                };
                 break;
 
             case 'N':
@@ -2318,12 +2070,6 @@ main(int argc, char **argv)
     if (!host || !portno) {
         fprintf(stderr, "%s: parameters -h and -p are mandatory\n", progName);
         Usage();
-    }
-
-    if (serverCertAuth.testFreshStatusFromSideChannel &&
-        serverCertAuth.shouldPause) {
-        fprintf(stderr, "%s: -F requires the use of -O\n", progName);
-        exit(1);
     }
 
     if (certDir && !openDB) {

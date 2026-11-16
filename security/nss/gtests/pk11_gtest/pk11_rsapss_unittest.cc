@@ -268,6 +268,25 @@ TEST_F(Pkcs11RsaPssTest, NoLeakWithInvalidExponent) {
   EXPECT_FALSE(privKey);
   EXPECT_FALSE(pub_key);
 }
+
+TEST_F(Pkcs11RsaPssTest, EmptySignature) {
+  PK11RSAGenParams rsaGenParams = {1024, 0x10001};
+  ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
+  SECKEYPublicKey* pub_keyRaw = nullptr;
+  ScopedSECKEYPrivateKey privKey(
+      PK11_GenerateKeyPair(slot.get(), CKM_RSA_PKCS_KEY_PAIR_GEN, &rsaGenParams,
+                           &pub_keyRaw, false, PK11_IsFIPS(), nullptr));
+  ASSERT_TRUE(!!privKey && pub_keyRaw);
+  ScopedSECKEYPublicKey pub_key(pub_keyRaw);
+
+  CK_RSA_PKCS_PSS_PARAMS pss_params = {CKM_SHA256, CKG_MGF1_SHA256,
+                                       SHA256_LENGTH};
+  SECItem params = {siBuffer, reinterpret_cast<unsigned char*>(&pss_params),
+                    sizeof(pss_params)};
+  VerifyEmptySignatureFails(pub_key.get(), CKM_RSA_PKCS_PSS, &params);
+  VerifyEmptySignatureFails(pub_key.get(), CKM_SHA256_RSA_PKCS_PSS, &params);
+}
+
 class Pkcs11RsaPssVectorTest
     : public Pkcs11RsaPssTest,
       public ::testing::WithParamInterface<Pkcs11SignatureTestParams> {};

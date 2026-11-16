@@ -327,6 +327,18 @@ TEST(RsaPkcs1Test, RequireNullParameter) {
 #endif
 }
 
+TEST(RsaPkcs1Test, EmptySignature) {
+  SECItem spki_item = {siBuffer, toUcharPtr(kSpki), sizeof(kSpki)};
+  ScopedCERTSubjectPublicKeyInfo cert_spki(
+      SECKEY_DecodeDERSubjectPublicKeyInfo(&spki_item));
+  ASSERT_TRUE(cert_spki);
+  ScopedSECKEYPublicKey pub_key(SECKEY_ExtractPublicKey(cert_spki.get()));
+  ASSERT_TRUE(pub_key);
+
+  VerifyEmptySignatureFails(pub_key.get(), CKM_RSA_PKCS);
+  VerifyEmptySignatureFails(pub_key.get(), CKM_SHA256_RSA_PKCS);
+}
+
 // Bug 2068388: public exponents wider than 32 bits must be rejected.
 TEST(RsaPkcs1Test, KeyGenPublicExponentTooLarge) {
 #if ULONG_MAX <= PR_UINT32_MAX

@@ -131,6 +131,15 @@ TEST_F(Pkcs11EcdsaSha256Test, ImportNoCurveOIDOrAlgorithmParams) {
   EXPECT_FALSE(ImportPrivateKey(k));
 };
 
+TEST_F(Pkcs11EcdsaSha256Test, EmptySignature) {
+  ScopedSECKEYPublicKey pub_key(
+      ImportPublicKey(DataBuffer(kP256Spki, sizeof(kP256Spki))));
+  ASSERT_TRUE(pub_key);
+
+  VerifyEmptySignatureFails(pub_key.get(), CKM_ECDSA);
+  VerifyEmptySignatureFails(pub_key.get(), CKM_ECDSA_SHA256);
+}
+
 // Importing a private key in PKCS#8 format must succeed when only the outer
 // AlgID struct contains the namedCurve parameters.
 TEST_F(Pkcs11EcdsaSha256Test, ImportOnlyAlgorithmParams) {

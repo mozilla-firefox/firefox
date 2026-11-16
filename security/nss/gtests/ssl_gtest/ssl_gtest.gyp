@@ -41,6 +41,7 @@
         'ssl_loopback_unittest.cc',
         'ssl_masking_unittest.cc',
         'ssl_misc_unittest.cc',
+        'ssl_ocsp_stapling_unittest.cc',
         'ssl_reconfig_unittest.cc',
         'ssl_option_unittest.cc',
         'ssl_peer_cert_unittest.cc',

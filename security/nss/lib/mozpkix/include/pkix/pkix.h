@@ -156,6 +156,11 @@ Result VerifyEncodedOCSPResponse(
 // requirement for another value. Empty extensions are also rejected.
 Result CheckTLSFeaturesAreSatisfied(Input& cert,
                                     const Input* stapledOCSPResponse);
+
+// Parse a DER-encoded certificate with BackCert::Init and return the
+// certificate's subjectPublicKeyInfo.
+Result FindSubjectPublicKeyInfo(Input certDER,
+                                /*out*/ Input& subjectPublicKeyInfo);
 }  // namespace pkix
 }  // namespace mozilla
 

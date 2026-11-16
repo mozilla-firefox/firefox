@@ -25,6 +25,7 @@
 #include "mozpkix/test/pkixtestutil.h"
 
 #include "mozpkix/pkixder.h"
+#include "mozpkix/pkixutil.h"
 #include "mozpkix/nss_scoped_ptrs.h"
 
 // python DottedOIDToCode.py --prefixdefine PREFIX_1_2_840_10040 1.2.840.10040
@@ -32,6 +33,9 @@
 
 // python DottedOIDToCode.py --prefixdefine PREFIX_1_2_840_10045 1.2.840.10045
 #define PREFIX_1_2_840_10045 0x2a, 0x86, 0x48, 0xce, 0x3d
+
+// python DottedOIDToCode.py --prefixdefine PREFIX_2_16_840_1_101_3_4_3 2.16.840.1.101.3.4.3
+#define PREFIX_2_16_840_1_101_3_4_3 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03
 
 // python DottedOIDToCode.py --prefixdefine PREFIX_1_2_840_113549 1.2.840.113549
 #define PREFIX_1_2_840_113549 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d
@@ -176,6 +180,24 @@ RSA_PKCS1()
   return TestPublicKeyAlgorithm(SimpleAlgID(rsaEncryption, NULLParam::YES));
 }
 
+// RFC 9881 Section 2
+TestPublicKeyAlgorithm
+ML_DSA(MLDSAParameterSet parameterSet)
+{
+  static const uint8_t id_ml_dsa_44[] = { PREFIX_2_16_840_1_101_3_4_3, 17 };
+  static const uint8_t id_ml_dsa_65[] = { PREFIX_2_16_840_1_101_3_4_3, 18 };
+  static const uint8_t id_ml_dsa_87[] = { PREFIX_2_16_840_1_101_3_4_3, 19 };
+  switch (parameterSet) {
+    case MLDSAParameterSet::ml_dsa_44:
+      return TestPublicKeyAlgorithm(SimpleAlgID(id_ml_dsa_44));
+    case MLDSAParameterSet::ml_dsa_65:
+      return TestPublicKeyAlgorithm(SimpleAlgID(id_ml_dsa_65));
+    case MLDSAParameterSet::ml_dsa_87:
+      return TestPublicKeyAlgorithm(SimpleAlgID(id_ml_dsa_87));
+    MOZILLA_PKIX_UNREACHABLE_DEFAULT_ENUM
+  }
+}
+
 // RFC 3279 Section 2.2.1
 TestSignatureAlgorithm md2WithRSAEncryption()
 {
@@ -206,6 +228,15 @@ TestSignatureAlgorithm sha256WithRSAEncryption()
   static const uint8_t oidValue[] = { PREFIX_1_2_840_113549, 1, 1, 11 };
   return TestSignatureAlgorithm(RSA_PKCS1(), TestDigestAlgorithmID::SHA256,
                                 SimpleAlgID(oidValue), true);
+}
+
+// RFC 9881 Section 2: the signature algorithm and the public key algorithm
+// have the same AlgorithmIdentifier.
+TestSignatureAlgorithm mlDSA(MLDSAParameterSet parameterSet)
+{
+  TestPublicKeyAlgorithm publicKeyAlg(ML_DSA(parameterSet));
+  return TestSignatureAlgorithm(publicKeyAlg, TestDigestAlgorithmID::NONE,
+                                publicKeyAlg.algorithmIdentifier, true);
 }
 
 } } } // namespace mozilla::pkix

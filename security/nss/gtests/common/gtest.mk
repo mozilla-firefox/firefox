@@ -31,6 +31,4 @@ ifeq (WINNT,$(OS_ARCH))
     # On windows, we need to create the parent directory
     # Needed because we include files from a subdirectory
     MAKE_OBJDIR = $(INSTALL) -D $(dir $@)
-else
-    CXXFLAGS += -std=c++0x
 endif

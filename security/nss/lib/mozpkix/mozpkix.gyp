@@ -23,6 +23,21 @@
         'lib/pkixtime.cpp',
         'lib/pkixverify.cpp',
       ],
+      # mozilla::pkix needs C++17. config.gypi selects it on other platforms,
+      # but gyp has no way to pass C++-only flags to MSVC, so these targets
+      # (which have no C sources) set it themselves.
+      'msvs_settings': {
+        'VCCLCompilerTool': {
+          'AdditionalOptions': [ '/std:c++17' ],
+        },
+      },
+      'direct_dependent_settings': {
+        'msvs_settings': {
+          'VCCLCompilerTool': {
+            'AdditionalOptions': [ '/std:c++17' ],
+          },
+        },
+      },
       'dependencies': [
         '<(DEPTH)/exports.gyp:nss_mozpkix_exports',
       ],
@@ -36,58 +51,6 @@
           ],
         }],
       ],
-    },
-    {
-      # The subset of mozpkix that libssl uses, so libssl3 links only these
-      # objects and none of the C++ runtime the rest of mozpkix needs.
-      'target_name': 'mozpkix_ssl',
-      'type': 'static_library',
-      'sources': [
-        'lib/pkixcert.cpp',
-        'lib/pkixder.cpp',
-        'lib/pkixnss.cpp',
-      ],
-      'dependencies': [
-        '<(DEPTH)/exports.gyp:nss_exports',
-        '<(DEPTH)/exports.gyp:nss_mozpkix_exports',
-      ],
-      'includes': [
-        'mozpkix_cxx.gypi',
-      ],
-      # These are libraries rather than ldflags, and apply to every dependent
-      # rather than only the final link, so that they also reach whatever the
-      # Mozilla build system links libssl into. It ignores ldflags and
-      # xcode_settings, and links libssl into libnss3 when it folds libraries.
-      'all_dependent_settings': {
-        'conditions': [
-          [ 'OS=="linux"', {
-            # The C++ link driver takes libgcc helpers such as __divdi3 from
-            # libgcc_s.so. Link the static libgcc ahead of it, as the C driver
-            # does.
-            'libraries': [
-              '-lgcc',
-            ],
-          }],
-          [ 'OS!="win" and OS!="mac" and OS!="ios"', {
-            # Drop the C++ runtime that the C++ link driver adds, which libssl
-            # doesn't use.
-            'libraries': [
-              '-Wl,--as-needed',
-            ],
-          }],
-          [ 'OS=="mac" or OS=="ios"', {
-            # Drop the unused libc++ that the C++ link driver adds.
-            'libraries': [
-              '-Wl,-dead_strip_dylibs',
-            ],
-          }],
-        ],
-      },
-      'variables': {
-        # For the Mozilla build system: link this as an archive, so binaries
-        # that also link mozpkix don't get these objects twice.
-        'no_expand_libs': 1,
-      },
     },
     {
       'target_name': 'mozpkix-testlib',
@@ -98,6 +61,12 @@
         'test-lib/pkixtestnss.cpp',
         'test-lib/pkixtestutil.cpp',
       ],
+      # See the mozpkix target.
+      'msvs_settings': {
+        'VCCLCompilerTool': {
+          'AdditionalOptions': [ '/std:c++17' ],
+        },
+      },
       'dependencies': [
         '<(DEPTH)/exports.gyp:nss_mozpkix_exports',
       ],
@@ -109,6 +78,71 @@
         }],
       ],
     },
+  ],
+  'conditions': [
+    [ 'mozpkix_only==0', {
+      'targets': [
+        {
+          # The subset of mozpkix that libssl uses, so libssl3 links only these
+          # objects and none of the C++ runtime the rest of mozpkix needs.
+          'target_name': 'mozpkix_ssl',
+          'type': 'static_library',
+          'sources': [
+            'lib/pkixcert.cpp',
+            'lib/pkixder.cpp',
+            'lib/pkixnss.cpp',
+          ],
+          'dependencies': [
+            '<(DEPTH)/exports.gyp:nss_exports',
+            '<(DEPTH)/exports.gyp:nss_mozpkix_exports',
+          ],
+          'includes': [
+            'mozpkix_cxx.gypi',
+          ],
+          # See the mozpkix target.
+          'msvs_settings': {
+            'VCCLCompilerTool': {
+              'AdditionalOptions': [ '/std:c++17' ],
+            },
+          },
+          # These are libraries rather than ldflags, and apply to every
+          # dependent rather than only the final link, so that they also reach
+          # whatever the Mozilla build system links libssl into. It ignores
+          # ldflags and xcode_settings, and links libssl into libnss3 when it
+          # folds libraries.
+          'all_dependent_settings': {
+            'conditions': [
+              [ 'OS=="linux"', {
+                # The C++ link driver takes libgcc helpers such as __divdi3
+                # from libgcc_s.so. Link the static libgcc ahead of it, as the
+                # C driver does.
+                'libraries': [
+                  '-lgcc',
+                ],
+              }],
+              [ 'OS!="win" and OS!="mac" and OS!="ios"', {
+                # Drop the C++ runtime that the C++ link driver adds, which
+                # libssl doesn't use.
+                'libraries': [
+                  '-Wl,--as-needed',
+                ],
+              }],
+              [ 'OS=="mac" or OS=="ios"', {
+                # Drop the unused libc++ that the C++ link driver adds.
+                'libraries': [
+                  '-Wl,-dead_strip_dylibs',
+                ],
+              }],
+            ],
+          },
+          'variables': {
+            # For the Mozilla build system: link this as an archive, so
+            # binaries that also link mozpkix don't get these objects twice.
+            'no_expand_libs': 1,
+          },
+        },
+      ],
+    }],
   ],
   'variables': {
     'module': 'nss',

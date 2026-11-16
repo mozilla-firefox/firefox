@@ -84,7 +84,9 @@ public:
                   /*out*/ ByteString& signature) const override
   {
     SECOidTag oidTag;
+    KeyType keyType;
     if (signatureAlgorithm.publicKeyAlg == RSA_PKCS1()) {
+      keyType = rsaKey;
       switch (signatureAlgorithm.digestAlg) {
         case TestDigestAlgorithmID::MD2:
           oidTag = SEC_OID_PKCS1_MD2_WITH_RSA_ENCRYPTION;
@@ -107,7 +109,23 @@ public:
         case TestDigestAlgorithmID::SHA512:
           oidTag = SEC_OID_PKCS1_SHA512_WITH_RSA_ENCRYPTION;
           break;
+        case TestDigestAlgorithmID::NONE:
+          return Result::FATAL_ERROR_INVALID_ARGS;
         MOZILLA_PKIX_UNREACHABLE_DEFAULT_ENUM
+      }
+    } else if (IsMLDSA(signatureAlgorithm.publicKeyAlg)) {
+      // This signs with the parameter set of this key pair, whichever one
+      // signatureAlgorithm names, so that tests can create signatures whose
+      // algorithm does not match the signer's key.
+      keyType = mldsaKey;
+      if (publicKeyAlg == ML_DSA(MLDSAParameterSet::ml_dsa_44)) {
+        oidTag = SEC_OID_ML_DSA_44;
+      } else if (publicKeyAlg == ML_DSA(MLDSAParameterSet::ml_dsa_65)) {
+        oidTag = SEC_OID_ML_DSA_65;
+      } else if (publicKeyAlg == ML_DSA(MLDSAParameterSet::ml_dsa_87)) {
+        oidTag = SEC_OID_ML_DSA_87;
+      } else {
+        return Result::FATAL_ERROR_INVALID_ARGS;
       }
     } else {
       abort();
@@ -144,11 +162,9 @@ public:
       static_cast<unsigned int>(subjectPublicKey.length())
     };
     SECKEYPrivateKey* privateKey;
-    // This should always be an RSA key (we'll have aborted above if we're not
-    // doing an RSA signature).
     if (PK11_ImportEncryptedPrivateKeyInfoAndReturnKey(
           slot.get(), &encryptedPrivateKeyInfo, &passwordItem, nullptr,
-          &publicValueItem, false, false, rsaKey, KU_ALL, &privateKey,
+          &publicValueItem, false, false, keyType, KU_ALL, &privateKey,
           nullptr) != SECSuccess) {
       return MapPRErrorCodeToResult(PR_GetError());
     }
@@ -174,6 +190,13 @@ public:
   }
 
 private:
+  static bool IsMLDSA(const TestPublicKeyAlgorithm& publicKeyAlg)
+  {
+    return publicKeyAlg == ML_DSA(MLDSAParameterSet::ml_dsa_44) ||
+           publicKeyAlg == ML_DSA(MLDSAParameterSet::ml_dsa_65) ||
+           publicKeyAlg == ML_DSA(MLDSAParameterSet::ml_dsa_87);
+  }
+
   const ByteString encryptedPrivateKey;
   const ByteString encryptionAlgorithm;
   const ByteString encryptionParams;
@@ -334,6 +357,42 @@ GenerateDSSKeyPair()
   return CreateTestKeyPair(DSS(), publicKey, privateKey);
 }
 
+TestKeyPair*
+GenerateMLDSAKeyPair(MLDSAParameterSet parameterSet)
+{
+  InitNSSIfNeeded();
+
+  ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
+  if (!slot) {
+    return nullptr;
+  }
+
+  CK_ML_DSA_PARAMETER_SET_TYPE ckParameterSet;
+  switch (parameterSet) {
+    case MLDSAParameterSet::ml_dsa_44:
+      ckParameterSet = CKP_ML_DSA_44;
+      break;
+    case MLDSAParameterSet::ml_dsa_65:
+      ckParameterSet = CKP_ML_DSA_65;
+      break;
+    case MLDSAParameterSet::ml_dsa_87:
+      ckParameterSet = CKP_ML_DSA_87;
+      break;
+    MOZILLA_PKIX_UNREACHABLE_DEFAULT_ENUM
+  }
+
+  SECKEYPublicKey* publicKeyTemp = nullptr;
+  ScopedSECKEYPrivateKey
+    privateKey(PK11_GenerateKeyPair(slot.get(), CKM_ML_DSA_KEY_PAIR_GEN,
+                                    &ckParameterSet, &publicKeyTemp, false,
+                                    true, nullptr));
+  if (!privateKey) {
+    return nullptr;
+  }
+  ScopedSECKEYPublicKey publicKey(publicKeyTemp);
+  return CreateTestKeyPair(ML_DSA(parameterSet), publicKey, privateKey);
+}
+
 Result
 TestVerifyECDSASignedData(Input data, DigestAlgorithm digestAlgorithm,
     Input signature, Input subjectPublicKeyInfo)
@@ -358,6 +417,15 @@ TestVerifyRSAPSSSignedData(Input data, DigestAlgorithm digestAlgorithm,
 {
   InitNSSIfNeeded();
   return VerifyRSAPSSSignedDataNSS(data, digestAlgorithm, signature,
+      subjectPublicKeyInfo, nullptr);
+}
+
+Result
+TestVerifyMLDSASignedData(Input data, MLDSAParameterSet parameterSet,
+    Input signature, Input subjectPublicKeyInfo)
+{
+  InitNSSIfNeeded();
+  return VerifyMLDSASignedDataNSS(data, parameterSet, signature,
       subjectPublicKeyInfo, nullptr);
 }
 
