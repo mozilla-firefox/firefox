@@ -221,11 +221,17 @@ ConfigureVideoEncoderSettings(const VideoCodecConfig& aConfig,
   if (aConfig.mName == kVp9CodecName) {
     webrtc::VideoCodecVP9 vp9_settings =
         webrtc::VideoEncoder::GetDefaultVp9Settings();
+    vp9_settings.automaticResizeOn = automatic_resize;
     if (!is_screencast) {
       // Always configure only 1 spatial layer for screencapture as libwebrtc
       // has some special requirements when SVC is active. For non-screencapture
       // the spatial layers are experimentally configurable via a pref.
       vp9_settings.numberOfSpatialLayers = aConduit->SpatialLayers();
+      // libwebrtc's VP9 quality scaling does not support several spatial
+      // layers.
+      if (vp9_settings.numberOfSpatialLayers > 1) {
+        vp9_settings.automaticResizeOn = false;
+      }
     }
     // VP9 denoising is disabled by default.
     vp9_settings.denoisingOn = codec_default_denoising ? false : denoising;
