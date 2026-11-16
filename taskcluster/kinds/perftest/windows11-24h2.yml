@@ -113,7 +113,6 @@ domcount:
             --browsertime-node ${MOZ_FETCHES_DIR}/node/node.exe
             --output $MOZ_FETCHES_DIR/../artifacts
 
-
 livesites:
     description: Live site performance testing
     variants: [http3]
@@ -587,7 +586,6 @@ ml-llama-smollm2-smoke: &ml-llama-smollm2-smoke
             --output $MOZ_FETCHES_DIR/../artifacts
             --hooks toolkit/components/ml/tests/tools/hooks_local_hub.py
             toolkit/components/ml/tests/browser/browser_ml_llama_smollm2_smoke.js
-
 
 ml-llama-smollm2-smoke-hwinference:
     <<: *ml-llama-smollm2-smoke
@@ -1086,7 +1084,6 @@ smartwindow-perf:
         cron: false
     run-on-projects: [mozilla-central]
     run:
-        clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
             cd $MOZ_FETCHES_DIR &&

@@ -28,7 +28,6 @@ tasks-from:
     - windows11-24h2-ref.yml
 
 task-defaults:
-    run-on-repo-type: [hg]
     attributes:
         retrigger: true
     run-on-projects: []
@@ -50,7 +49,6 @@ task-defaults:
               name: public/build
               path: artifacts
     run:
-        clone-with: hg
         run-as-root: true
         using: run-task
         checkout: false

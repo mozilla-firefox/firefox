@@ -680,7 +680,6 @@ ml-llama-smollm2-smoke: &ml-llama-smollm2-smoke
             --hooks toolkit/components/ml/tests/tools/hooks_local_hub.py
             toolkit/components/ml/tests/browser/browser_ml_llama_smollm2_smoke.js
 
-
 ml-llama-smollm2-smoke-hwinference:
     <<: *ml-llama-smollm2-smoke
     description: Structural smoke for the native llama.cpp backend with SmolLM2 360M Instruct GGUF in the HWInference utility process
@@ -1160,7 +1159,6 @@ smartwindow-perf:
         cron: false
     run-on-projects: [mozilla-central]
     run:
-        clone-with: hg
         command: >-
             mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
             cd $MOZ_FETCHES_DIR &&

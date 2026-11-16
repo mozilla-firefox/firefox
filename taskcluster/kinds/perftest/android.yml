@@ -20,7 +20,6 @@ task-defaults:
             PYTHONUNBUFFERED: "1"
 
     run:
-        clone-with: hg
         # script.py on the bitbar/lambda images imports mozdevice, and the
         # fetched CI python has no such module, so PYTHONPATH above resolves
         # it out of the extracted harness relative to this directory.
@@ -884,7 +883,6 @@ hw-p6-aarch64-shippable-startup-fenix-cold-view-nav-start:
             --android-install-apk $MOZ_FETCHES_DIR/target.arm64-v8a.apk
             --output $MOZ_FETCHES_DIR/../artifacts
             --perfherder
-
 
 hw-s24-aarch64-shippable-startup-fenix-cold-main-first-frame:
     worker-type: t-bitbar-gw-perf-s24
