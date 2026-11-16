@@ -2487,6 +2487,19 @@ export var StartupCache = {
   },
 
   save() {
+    // The cache is flushed by a profileBeforeChange blocker, so changes made
+    // once that phase has started can no longer be written.
+    if (
+      Services.startup.isInOrBeyondShutdownPhase(
+        Ci.nsIAppStartup.SHUTDOWN_PHASE_APPSHUTDOWN
+      )
+    ) {
+      Cu.reportError(
+        new Error("StartupCache changed too late in shutdown to be saved")
+      );
+      return;
+    }
+
     this._ensureDirectory();
 
     if (!this._saveTask) {
