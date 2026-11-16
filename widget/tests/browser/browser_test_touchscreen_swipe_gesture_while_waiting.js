@@ -178,6 +178,8 @@ add_task(async function test_second_finger_while_waiting_prevents_swipe() {
   ok(tab.linkedBrowser.webNavigation.canGoBack, "Back navigation is available");
 
   await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+    // Prevent overscroll effect.
+    content.document.documentElement.style.overscrollBehaviorX = "chain";
     // Resolved when all fingers are lifted for the second time (the first time
     // is touchend triggered by touchToKeepContentBusy()).
     content.wrappedJSObject.touchFinished = new content.Promise(resolve => {
