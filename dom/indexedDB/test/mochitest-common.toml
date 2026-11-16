@@ -363,7 +363,6 @@ skip-if = [
 
 ["test_sandbox.html"]
 skip-if = [
-  "os == 'mac' && os_version == '14.70' && arch == 'x86_64' && opt", # Bug 1930730 (secondary)
   "xorigin", # Sandbox principal doesn't match partitioned storage principal
 ]
 

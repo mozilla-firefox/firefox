@@ -10,6 +10,13 @@
 
 SimpleTest.waitForExplicitFinish();
 
+let phase = "init";
+SimpleTest.registerTimeoutFunction(() => {
+  info(`Timed out during: ${phase}`);
+});
+
+/* global step_done */
+
 // This runs inside a same-origin sandbox.
 // The intent being to show that the data store is the same.
 function storeValue() {
@@ -19,8 +26,10 @@ function storeValue() {
       var db = e.target.result;
       db.createObjectStore("store");
     };
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
       op.onsuccess = e => resolve(e.target.result);
+      op.onerror = () => reject(op.error);
+      op.onblocked = () => reject(new Error("open blocked"));
     });
   }
 
@@ -28,18 +37,19 @@ function storeValue() {
     return createDB_inner().then(db => {
       var tx = db.transaction("store", "readwrite");
       var store = tx.objectStore("store");
-      var op = store.add(v, k);
+      var op = store.put(v, k);
       return new Promise((resolve, reject) => {
         op.onsuccess = e => resolve(e.target.result);
         op.onerror = _ => reject(op.error);
-        tx.onabort = _ => reject(tx.error);
+        tx.oncomplete = () => db.close();
+        tx.onabort = _ => { db.close(); reject(tx.error); };
       });
     });
   }
 
   return add("x", [ 10, {} ])
     .then(_ => step_done(),
-          _ => ok(false, "failed to store"));
+          e => ok(false, "failed to store: " + e));
 }
 
 function createDB_outer() {
@@ -49,8 +59,10 @@ function createDB_outer() {
     var db = e.target.result;
     db.createObjectStore("store");
   };
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     op.onsuccess = e => resolve(e.target.result);
+    op.onerror = () => reject(op.error);
+    op.onblocked = () => reject(new Error("open blocked"));
   });
 }
 
@@ -60,24 +72,26 @@ function get(k) {
       var store = tx.objectStore("store");
       var op = store.get(k);
       return new Promise((resolve, reject) => {
-        op.onsuccess = e => resolve(e.target.result);
+        let result;
+        op.onsuccess = e => { result = e.target.result; };
         op.onerror = _ => reject(op.error);
-        tx.onabort = _ => reject(tx.error);
+        tx.oncomplete = () => { db.close(); resolve(result); };
+        tx.onabort = _ => { db.close(); reject(tx.error); };
       });
   });
 }
 
 function runInSandbox(sandbox, testFunc) {
   is(typeof testFunc, "function");
-  var resolvePromise;
-  // Step-done is defined in the sandbox and used in the add() function above.
-  /* global step_done */
-  var testPromise = new Promise(r => resolvePromise = r);
-  SpecialPowers.Cu.exportFunction(_ => resolvePromise(), sandbox,
-                                  { defineAs: "step_done" });
-  SpecialPowers.Cu.evalInSandbox("(" + testFunc.toString() + ")()" +
-                                 ".then(step_done);", sandbox);
-  return testPromise;
+  return new Promise((resolve, reject) => {
+    SpecialPowers.Cu.exportFunction(_ => resolve(), sandbox,
+                                    { defineAs: "step_done" });
+    SpecialPowers.Cu.exportFunction(msg => reject(new Error(msg)), sandbox,
+                                    { defineAs: "step_failed" });
+    SpecialPowers.Cu.evalInSandbox("(" + testFunc.toString() + ")()" +
+                                   ".then(step_done, e => step_failed(String(e)));",
+                                   sandbox);
+  });
 }
 
 // Use the window principal for the sandbox; location.origin is not sufficient.
@@ -86,9 +100,13 @@ var sb = new SpecialPowers.Cu.Sandbox(window,
 
 sb.ok = SpecialPowers.Cu.exportFunction(ok, sb);
 
+phase = "running sandbox";
 Promise.resolve()
   .then(_ => runInSandbox(sb, storeValue))
-  .then(_ => get("x"))
+  .then(_ => {
+    phase = "reading value";
+    return get("x");
+  })
   .then(x => {
     ok(x, "a value should be present");
     is(x.length, 2);
@@ -96,7 +114,8 @@ Promise.resolve()
     is(typeof x[1], "object");
     is(Object.keys(x[1]).length, 0);
   })
-  .then(_ => SimpleTest.finish());
+  .catch(e => ok(false, `${phase}: ${e}`))
+  .finally(() => SimpleTest.finish());
 
 </script>
 </body>
