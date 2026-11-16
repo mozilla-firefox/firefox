@@ -291,6 +291,11 @@ class nsCocoaWindow final : public nsIWidget {
   nsresult SynthesizeNativeTouchpadDoubleTap(LayoutDeviceIntPoint aPoint,
                                              uint32_t aModifierFlags) override;
 
+  nsresult SynthesizeNativeTouchpadPan(
+      TouchpadGesturePhase aEventPhase, LayoutDeviceIntPoint aPoint,
+      double aDeltaX, double aDeltaY, int32_t aModifierFlags,
+      nsISynthesizedEventCallback* aCallback) override;
+
   static bool DoHasPendingInputEvent();
   static uint32_t GetCurrentInputEventCount();
   static void UpdateCurrentInputEventCount();

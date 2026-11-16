@@ -627,6 +627,33 @@ nsresult nsCocoaWindow::SynthesizeNativeTouchpadDoubleTap(
   NS_OBJC_END_TRY_BLOCK_RETURN(NS_ERROR_FAILURE);
 }
 
+nsresult nsCocoaWindow::SynthesizeNativeTouchpadPan(
+    TouchpadGesturePhase aEventPhase, mozilla::LayoutDeviceIntPoint aPoint,
+    double aDeltaX, double aDeltaY, int32_t aModifierFlags,
+    nsISynthesizedEventCallback* aCallback) {
+  CGScrollPhase phase;
+  switch (aEventPhase) {
+    case PHASE_BEGIN:
+      phase = kCGScrollPhaseBegan;
+      break;
+    case PHASE_UPDATE:
+      phase = kCGScrollPhaseChanged;
+      break;
+    case PHASE_END:
+      phase = kCGScrollPhaseEnded;
+      break;
+    default: {
+      AutoSynthesizedEventCallbackNotifier notifier(aCallback);
+      return NS_ERROR_INVALID_ARG;
+    }
+  }
+
+  // Cocoa scroll deltas are positive when scrolling up / to the left.
+  return SynthesizeNativeMouseScrollEvent(
+      aPoint, phase, -aDeltaX, -aDeltaY, 0,
+      nsIWidget::NativeModifiers::NO_MODIFIERS, 0, aCallback);
+}
+
 bool nsCocoaWindow::SendEventToNativeMenuSystem(NSEvent* aEvent) {
   bool handled = false;
   if (RefPtr<nsMenuBarX> mb = GetMenuBar()) {

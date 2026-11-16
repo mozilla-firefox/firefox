@@ -503,7 +503,7 @@ async function synthesizeNativePanGestureEvent(
 
 // Sends a native touchpad pan event and resolve the returned promise once the
 // request has been successfully made to the OS.
-// NOTE: This works only on Windows and Linux.
+// NOTE: This works only on Windows, Linux and Mac.
 // You can specify nsIDOMWindowUtils.PHASE_BEGIN, PHASE_UPDATE and PHASE_END
 // for |aPhase|.
 async function promiseNativeTouchpadPanEventAndWaitForObserver(
@@ -514,7 +514,11 @@ async function promiseNativeTouchpadPanEventAndWaitForObserver(
   aDeltaY,
   aPhase
 ) {
-  if (getPlatform() != "windows" && getPlatform() != "linux") {
+  if (
+    getPlatform() != "windows" &&
+    getPlatform() != "linux" &&
+    getPlatform() != "mac"
+  ) {
     throw new Error(
       `promiseNativeTouchpadPanEventAndWaitForObserver doesn't work on ${getPlatform()}`
     );
@@ -1772,15 +1776,6 @@ const DefaultNativePanHandler = {
   delta: 50,
 };
 
-const NativePanHandlerForMac = {
-  // From https://developer.apple.com/documentation/coregraphics/cgscrollphase/kcgscrollphasebegan?language=occ , etc.
-  beginPhase: 1, // kCGScrollPhaseBegan
-  updatePhase: 2, // kCGScrollPhaseChanged
-  endPhase: 4, // kCGScrollPhaseEnded
-  promiseNativePanEvent: promiseNativePanGestureEventAndWaitForObserver,
-  delta: -50,
-};
-
 function getPanHandler() {
   if (SpecialPowers.isHeadless) {
     return DefaultNativePanHandler;
@@ -1789,9 +1784,8 @@ function getPanHandler() {
   switch (getPlatform()) {
     case "linux":
     case "windows":
-      return DefaultNativePanHandler;
     case "mac":
-      return NativePanHandlerForMac;
+      return DefaultNativePanHandler;
     default:
       throw new Error(
         "There's no native pan handler on platform " + getPlatform()
