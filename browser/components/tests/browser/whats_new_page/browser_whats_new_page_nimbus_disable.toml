@@ -6,4 +6,5 @@ prefs = ["startup.homepage_override_url_nimbus='https://www.firefox.com/en-US/wh
 ["browser_whats_new_page_nimbus_disable.js"]
 skip-if = [
   "verify-standalone",
+  "repeat",
 ]
