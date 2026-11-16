@@ -4,8 +4,6 @@
 
 #include "mozilla/layers/WebRenderBridgeChild.h"
 
-#include "PDMFactory.h"
-#include "gfxPlatform.h"
 #include "mozilla/StaticPrefs_gfx.h"
 #include "mozilla/layers/CompositableClient.h"
 #include "mozilla/layers/CompositorBridgeChild.h"
@@ -540,12 +538,6 @@ ipc::IShmemAllocator* WebRenderBridgeChild::GetShmemAllocator() {
 
 RefPtr<KnowsCompositor> WebRenderBridgeChild::GetForMedia() {
   MOZ_RELEASE_ASSERT(NS_IsMainThread());
-
-  // Ensure device initialization for video playback unless they are all remote.
-  // The devices are lazily initialized with WebRender to reduce memory usage.
-  if (!PDMFactory::AllDecodersAreRemote()) {
-    gfxPlatform::GetPlatform()->EnsureDevicesInitialized();
-  }
 
   return MakeAndAddRef<KnowsCompositorMediaProxy>(
       GetTextureFactoryIdentifier());

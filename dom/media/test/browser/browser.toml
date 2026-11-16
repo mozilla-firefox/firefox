@@ -39,6 +39,8 @@ skip-if = [
 
 ["browser_gmp_service_creation_race_callers.js"]
 
+["browser_rdd_pref_change_new_content_process.js"]
+
 ["browser_tab_visibility_and_play_time.js"]
 
 ["browser_telemetry_video_hardware_decoding_support.js"]
