@@ -118,6 +118,17 @@ def default_desktop_binary(app):
     return None
 
 
+def absolute_binary_argv(argv, binary):
+    """Append `--binary <binary>` to argv when `binary` is an absolute path.
+
+    argparse keeps the last value, so this overrides any earlier spelling
+    of the option (--binary, --bin, -b<path>, ...).
+    """
+    if not binary or not os.path.isabs(binary):
+        return argv
+    return argv + ["--binary", binary]
+
+
 def print_all_activities():
     all_activities = []
     for next_app in APPS:

@@ -12,7 +12,12 @@ sys.path.insert(0, raptor_dir)
 
 from argparse import ArgumentParser, Namespace
 
-from cmdline import create_parser, default_desktop_binary, verify_options
+from cmdline import (
+    absolute_binary_argv,
+    create_parser,
+    default_desktop_binary,
+    verify_options,
+)
 
 
 def test_verify_options(filedir):
@@ -404,6 +409,31 @@ def test_default_desktop_binary_not_installed():
     with mock.patch("cmdline.sys.platform", "darwin"):
         with mock.patch("cmdline.os.path.isfile", return_value=False):
             assert default_desktop_binary("chrome") is None
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["-t", "sp3", "--binary", "rel/ff"],
+        ["-t", "sp3", "-b", "rel/ff"],
+        ["-t", "sp3", "--binary=rel/ff"],
+        ["-t", "sp3", "--bin", "rel/ff"],
+        ["-t", "sp3", "--bina=rel/ff"],
+        ["-t", "sp3", "-brel/ff"],
+        ["-t", "sp3"],
+    ],
+)
+def test_absolute_binary_argv(argv):
+    result = absolute_binary_argv(argv, "/abs/ff")
+    assert result == argv + ["--binary", "/abs/ff"]
+    args, _ = create_parser().parse_known_args(result)
+    assert args.binary == "/abs/ff"
+
+
+@pytest.mark.parametrize("binary", [None, "org.mozilla.fenix"])
+def test_absolute_binary_argv_unchanged(binary):
+    argv = ["-t", "sp3", "--binary", "org.mozilla.fenix"]
+    assert absolute_binary_argv(argv, binary) == argv
 
 
 if __name__ == "__main__":
