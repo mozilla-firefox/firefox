@@ -15,3 +15,21 @@ CO01:
         - bad-firefox-excluded
     files:
         - brand-names-excluded.ftl
+TE01:
+    messages: []
+    files: []
+TE02:
+    messages: []
+    files: []
+TE03:
+    messages:
+        - excluded-single-quote
+    files: []
+TE04:
+    messages:
+        - excluded-double-quote
+    files:
+        - typography-excluded.ftl
+TE05:
+    messages: []
+    files: []

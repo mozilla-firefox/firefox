@@ -142,7 +142,7 @@ class Linter(visitor.Visitor):
 
     def visit_Attribute(self, node):
         # Only visit values for Attribute nodes, the identifier comes from dom.
-        super().generic_visit(node.value)
+        self.visit(node.value)
 
     def visit_FunctionReference(self, node):
         # We don't recurse into function references, the identifiers there are
@@ -230,45 +230,69 @@ class Linter(visitor.Visitor):
                 f"Identifiers must be at least {self.minimum_id_length} characters long (ID: {node.name}",
             )
 
+    def visit_Pattern(self, node):
+        # Check punctuation on the whole pattern, so that quotes and apostrophes
+        # split across placeables or HTML tags are detected. Placeables are
+        # replaced with a word, so that apostrophe checks still apply (e.g.
+        # "{ -brand-short-name }'s" is checked as "foo's").
+        parser = TextElementHTMLParser()
+        parser.feed(
+            "".join(
+                el.value if isinstance(el, ast.TextElement) else "foo"
+                for el in node.elements
+            )
+        )
+        parser.close()
+        text = "".join(parser.extracted_text)
+
+        # To check for apostrophes, first remove pairs of straight quotes
+        # used as delimiters.
+        cleaned_str = re.sub(self.single_quote_re, "", text)
+        checks = [
+            (
+                "TE01",
+                self.apostrophe_re.search(cleaned_str),
+                "Strings with apostrophes should use foo\u2019s instead of foo's.",
+            ),
+            (
+                "TE02",
+                self.incorrect_apostrophe_re.search(text),
+                "Strings with apostrophes should use foo\u2019s instead of foo\u2018s.",
+            ),
+            (
+                "TE03",
+                self.single_quote_re.search(text),
+                "Single-quoted strings should use Unicode \u2018foo\u2019 instead of 'foo'.",
+            ),
+            (
+                "TE04",
+                self.double_quote_re.search(text),
+                'Double-quoted strings should use Unicode \u201cfoo\u201d instead of "foo".',
+            ),
+            (
+                "TE05",
+                self.ellipsis_re.search(text),
+                "Strings with an ellipsis should use the Unicode \u2026 character"
+                " instead of three periods",
+            ),
+        ]
+        for rule, found, message in checks:
+            if found and not self.is_excluded(rule):
+                self.add_error(node, rule, message)
+
+        self.generic_visit(node)
+
+    def is_excluded(self, rule):
+        # Terms can only be excluded by file, as last_message_id is None for them.
+        return self.path in self.exclusions[rule]["files"] or (
+            self.last_message_id is not None
+            and self.last_message_id in self.exclusions[rule]["messages"]
+        )
+
     def visit_TextElement(self, node):
         parser = TextElementHTMLParser()
         parser.feed(node.value)
         for text in parser.extracted_text:
-            # To check for apostrophes, first remove pairs of straight quotes
-            # used as delimiters.
-            cleaned_str = re.sub(self.single_quote_re, "\1", node.value)
-            if self.apostrophe_re.search(cleaned_str):
-                self.add_error(
-                    node,
-                    "TE01",
-                    "Strings with apostrophes should use foo\u2019s instead of foo's.",
-                )
-            if self.incorrect_apostrophe_re.search(text):
-                self.add_error(
-                    node,
-                    "TE02",
-                    "Strings with apostrophes should use foo\u2019s instead of foo\u2018s.",
-                )
-            if self.single_quote_re.search(text):
-                self.add_error(
-                    node,
-                    "TE03",
-                    "Single-quoted strings should use Unicode \u2018foo\u2019 instead of 'foo'.",
-                )
-            if self.double_quote_re.search(text):
-                self.add_error(
-                    node,
-                    "TE04",
-                    'Double-quoted strings should use Unicode \u201cfoo\u201d instead of "foo".',
-                )
-            if self.ellipsis_re.search(text):
-                self.add_error(
-                    node,
-                    "TE05",
-                    "Strings with an ellipsis should use the Unicode \u2026 character"
-                    " instead of three periods",
-                )
-
             # If part of a message, check for brand names
             if (
                 self.last_message_id is not None
@@ -326,7 +350,7 @@ class Linter(visitor.Visitor):
         # We only want to visit the variant values, the identifiers in selectors
         # and keys are allowed to be free form.
         for variant in node.variants:
-            super().generic_visit(variant.value)
+            self.visit(variant.value)
 
         # Store the variable used for the SelectExpression, excluding functions
         # like PLATFORM()

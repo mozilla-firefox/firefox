@@ -2,7 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-# Warning: Only exclusions for identifiers (ID01) are currently allowed.
+# Exclusions are supported for identifiers (ID01, ID02), hard-coded brand
+# names (CO01), and typography (TE01-TE05). Messages are listed by ID, files
+# by path relative to the root of the repository.
 ---
 # Only add exceptions to this file if the ID is generated programmatically and
 # can't easily be changed to follow the naming convention.
@@ -203,3 +205,21 @@ CO01:
     files:
         - browser/locales/en-US/browser/profile/default-bookmarks.ftl
         - toolkit/locales/en-US/toolkit/about/aboutMozilla.ftl
+# Typography checks: apostrophes (TE01, TE02), quotes (TE03, TE04) and
+# ellipsis (TE05). Only add exceptions if the string must contain the ASCII
+# character, e.g. because it's code or a command shown to the user.
+TE01:
+    messages: []
+    files: []
+TE02:
+    messages: []
+    files: []
+TE03:
+    messages: []
+    files: []
+TE04:
+    messages: []
+    files: []
+TE05:
+    messages: []
+    files: []

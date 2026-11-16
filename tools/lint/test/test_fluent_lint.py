@@ -6,158 +6,149 @@ import mozunit
 LINTER = "fluent-lint"
 
 
+def assert_results(results, expected):
+    """Compare lint results with a list of (rule, lineno, column) tuples."""
+    assert [(r.rule, r.lineno, r.column) for r in results] == expected
+
+
 def test_lint_exclusions(lint, paths):
-    results = lint(paths("excluded.ftl"))
-    assert len(results) == 1
-    assert results[0].rule == "TE01"
-    assert results[0].lineno == 6
-    assert results[0].column == 20
+    assert_results(lint(paths("excluded.ftl")), [("TE01", 6, 20)])
 
 
 def test_lint_single_file(lint, paths):
     results = lint(paths("bad.ftl"))
-    assert len(results) == 13
-    assert results[0].rule == "ID01"
-    assert results[0].lineno == 1
-    assert results[0].column == 1
-    assert results[1].rule == "ID01"
-    assert results[1].lineno == 3
-    assert results[1].column == 1
-    assert results[2].rule == "TE01"
-    assert results[2].lineno == 5
-    assert results[2].column == 20
-    assert results[3].rule == "TE01"
-    assert results[3].lineno == 6
-    assert results[3].column == 24
-    assert results[4].rule == "TE02"
-    assert results[4].lineno == 7
-    assert results[4].column == 20
-    assert results[5].rule == "TE03"
-    assert results[5].lineno == 8
-    assert results[5].column == 20
-    assert results[6].rule == "TE04"
-    assert results[6].lineno == 11
-    assert results[6].column == 20
-    assert results[7].rule == "TE05"
-    assert results[7].lineno == 13
-    assert results[7].column == 16
-    assert results[8].rule == "TE03"
-    assert results[8].lineno == 17
-    assert results[8].column == 20
-    assert results[9].rule == "TE03"
-    assert results[9].lineno == 25
-    assert results[9].column == 18
-    assert results[10].rule == "ID02"
-    assert results[10].lineno == 32
-    assert results[10].column == 1
-    assert results[11].rule == "VC01"
+    assert_results(
+        results,
+        [
+            ("ID01", 1, 1),
+            ("ID01", 3, 1),
+            ("TE01", 5, 20),
+            ("TE01", 6, 24),
+            ("TE02", 7, 20),
+            ("TE03", 8, 20),
+            ("TE04", 11, 20),
+            ("TE05", 13, 16),
+            ("TE03", 17, 20),
+            ("TE03", 25, 18),
+            ("ID02", 32, 1),
+            ("VC01", 34, 1),
+            ("VC01", 44, 1),
+        ],
+    )
     assert "$tabCount" in results[11].message
-    assert results[12].rule == "VC01"
     assert "$url" in results[12].message
 
 
 def test_comment_group(lint, paths):
-    results = lint(paths("comment-group1.ftl"))
-    assert len(results) == 6
-    assert results[0].rule == "GC03"
-    assert results[0].lineno == 12
-    assert results[0].column == 1
-    assert results[1].rule == "GC02"
-    assert results[1].lineno == 16
-    assert results[1].column == 1
-    assert results[2].rule == "GC04"
-    assert results[2].lineno == 21
-    assert results[2].column == 1
-    assert results[3].rule == "GC03"
-    assert results[3].lineno == 26
-    assert results[3].column == 1
-    assert results[4].rule == "GC02"
-    assert results[4].lineno == 30
-    assert results[4].column == 1
-    assert results[5].rule == "GC01"
-    assert results[5].lineno == 35
-    assert results[5].column == 1
-
-    results = lint(paths("comment-group2.ftl"))
-    assert (len(results)) == 0
+    assert_results(
+        lint(paths("comment-group1.ftl")),
+        [
+            ("GC03", 12, 1),
+            ("GC02", 16, 1),
+            ("GC04", 21, 1),
+            ("GC03", 26, 1),
+            ("GC02", 30, 1),
+            ("GC01", 35, 1),
+        ],
+    )
+    assert_results(lint(paths("comment-group2.ftl")), [])
 
 
 def test_comment_resource(lint, paths):
-    results = lint(paths("comment-resource1.ftl"))
-    assert len(results) == 1
-    assert results[0].rule == "RC01"
-    assert results[0].lineno == 9
-    assert results[0].column == 1
-
-    results = lint(paths("comment-resource2.ftl"))
-    assert len(results) == 1
-    assert results[0].rule == "RC03"
-    assert results[0].lineno == 4
-    assert results[0].column == 1
-
-    results = lint(paths("comment-resource3.ftl"))
-    assert len(results) == 1
-    assert results[0].rule == "RC02"
-    assert results[0].lineno == 5
-    assert results[0].column == 1
-
-    results = lint(paths("comment-resource4.ftl"))
-    assert len(results) == 1
-    assert results[0].rule == "RC03"
-    assert results[0].lineno == 6
-    assert results[0].column == 1
-
-    results = lint(paths("comment-resource5.ftl"))
-    assert len(results) == 1
-    assert results[0].rule == "RC02"
-    assert results[0].lineno == 5
-    assert results[0].column == 1
-
-    results = lint(paths("comment-resource6.ftl"))
-    assert len(results) == 0
+    assert_results(lint(paths("comment-resource1.ftl")), [("RC01", 9, 1)])
+    assert_results(lint(paths("comment-resource2.ftl")), [("RC03", 4, 1)])
+    assert_results(lint(paths("comment-resource3.ftl")), [("RC02", 5, 1)])
+    assert_results(lint(paths("comment-resource4.ftl")), [("RC03", 6, 1)])
+    assert_results(lint(paths("comment-resource5.ftl")), [("RC02", 5, 1)])
+    assert_results(lint(paths("comment-resource6.ftl")), [])
 
 
 def test_brand_names(lint, paths):
     results = lint(paths("brand-names.ftl"), {"brand-files": ["test-brands.ftl"]})
-    assert len(results) == 11
-    assert results[0].rule == "CO01"
-    assert results[0].lineno == 1
-    assert results[0].column == 16
+    assert_results(
+        results,
+        [
+            ("CO01", 1, 16),
+            ("CO01", 4, 16),
+            ("CO01", 5, 17),
+            ("CO01", 6, 16),
+            ("CO01", 9, 16),
+            ("CO01", 10, 16),
+            ("CO01", 11, 17),
+            ("CO01", 12, 16),
+            ("CO01", 14, 20),
+            ("CO01", 15, 20),
+            ("CO01", 16, 20),
+        ],
+    )
     assert "Firefox" in results[0].message
     assert "Mozilla" not in results[0].message
     assert "Thunderbird" not in results[0].message
-    assert results[1].rule == "CO01"
-    assert results[1].lineno == 4
-    assert results[1].column == 16
 
-    results = lint(paths("brand-names-excluded.ftl"))
-    assert len(results) == 0
+    assert_results(lint(paths("brand-names-excluded.ftl")), [])
 
 
 def test_comment_variables(lint, paths):
     results = lint(paths("comment-variables1.ftl"))
-    assert len(results) == 4
-    assert results[0].rule == "VC01"
+    assert_results(
+        results,
+        [
+            ("VC01", 8, 1),
+            ("VC01", 19, 1),
+            ("VC01", 25, 1),
+            ("VC01", 48, 1),
+        ],
+    )
     assert "$var" in results[0].message
-    assert results[1].rule == "VC01"
     assert "$select1" in results[1].message
-    assert results[2].rule == "VC01"
     assert "$select2" in results[2].message
-    assert results[3].rule == "VC01"
     assert "$attr" in results[3].message
 
     results = lint(paths("comment-variables2.ftl"))
-    assert len(results) == 1
-    assert results[0].rule == "VC01"
+    assert_results(results, [("VC01", 27, 1)])
     assert "$term-message" in results[0].message
 
 
 def test_valid_attributes(lint, paths):
     results = lint(paths("valid-attributes.ftl"))
-    print(results)
-    assert len(results) == 1
-    assert results[0].rule == "VA01"
+    assert_results(results, [("VA01", 16, 5)])
     assert ".extralabel" in results[0].message
+
+
+def test_quotes_around_placeables(lint, paths):
+    assert_results(
+        lint(paths("quotes-placeables.ftl")),
+        [
+            ("TE04", 2, 29),
+            ("TE03", 4, 29),
+            ("TE04", 5, 25),
+            ("TE03", 6, 28),
+            ("TE01", 7, 29),
+            ("TE04", 9, 14),
+            ("TE04", 11, 27),
+            ("TE04", 17, 11),
+            ("TE04", 20, 25),
+            ("TE04", 22, 1),
+        ],
+    )
+
+
+def test_typography_exclusions(lint, paths):
+    assert_results(
+        lint(paths("typography-excluded.ftl")),
+        [
+            ("TE03", 1, 33),
+            ("TE05", 4, 29),
+        ],
+    )
+    assert_results(
+        lint(paths("typography-excluded-messages.ftl")),
+        [
+            ("TE03", 2, 38),
+            ("TE04", 3, 33),
+            ("TE04", 4, 26),
+        ],
+    )
 
 
 if __name__ == "__main__":
