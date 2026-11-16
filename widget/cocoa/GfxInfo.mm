@@ -534,6 +534,12 @@ nsresult GfxInfo::GetFeatureStatusImpl(
         // support for earlier OS versions. See bug 2053051.
         *aStatus = nsIGfxInfo::FEATURE_BLOCKED_OS_VERSION;
         aFailureId = "FEATURE_FAILURE_METAL_ANGLE_MACOS_VERSION";
+      } else if (mAdapterVendorID[0] ==
+                     GfxDriverInfo::GetDeviceVendor(DeviceVendor::NVIDIA) ||
+                 mAdapterVendorID[1] ==
+                     GfxDriverInfo::GetDeviceVendor(DeviceVendor::NVIDIA)) {
+        *aStatus = nsIGfxInfo::FEATURE_BLOCKED_DEVICE;
+        aFailureId = "FEATURE_FAILURE_METAL_ANGLE_NVIDIA";
       } else {
         *aStatus = nsIGfxInfo::FEATURE_STATUS_OK;
       }
