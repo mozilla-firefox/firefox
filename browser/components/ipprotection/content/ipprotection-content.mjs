@@ -8,7 +8,17 @@ import {
   BANDWIDTH,
   LINKS,
 } from "chrome://browser/content/ipprotection/ipprotection-constants.mjs";
-import { formatRemainingBandwidth } from "chrome://browser/content/ipprotection/ipprotection-utils.mjs";
+import {
+  countryName,
+  formatRemainingBandwidth,
+} from "chrome://browser/content/ipprotection/ipprotection-utils.mjs";
+
+const lazy = {};
+
+ChromeUtils.defineESModuleGetters(lazy, {
+  IPProtectionServerlist:
+    "moz-src:///toolkit/components/ipprotection/IPProtectionServerlist.sys.mjs",
+});
 
 const { ERRORS } = ChromeUtils.importESModule(
   "moz-src:///toolkit/components/ipprotection/IPPProxyManager.sys.mjs"
@@ -22,6 +32,8 @@ import "chrome://browser/content/ipprotection/ipprotection-unauthenticated.mjs";
 import "chrome://browser/content/ipprotection/ipprotection-status-card.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/ipprotection/ipprotection-status-box.mjs";
+// eslint-disable-next-line import-x/no-unassigned-import
+import "chrome://browser/content/ipprotection/bandwidth-usage.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://global/content/elements/moz-toggle.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
@@ -37,6 +49,8 @@ export default class IPProtectionContentElement extends MozLitElement {
     unauthenticatedEl: "ipprotection-unauthenticated",
     messagebarEl: "ipprotection-message-bar",
     statusCardEl: "ipprotection-status-card",
+    locationButtonEl: "#vpn-location-button",
+    bandwidthUsageEl: "bandwidth-usage",
     upgradeEl: "#upgrade-vpn-content",
     activeSubscriptionEl: "#active-subscription-vpn-content",
     supportLinkEl: "#vpn-support-link",
@@ -269,6 +283,59 @@ export default class IPProtectionContentElement extends MozLitElement {
       headingEl && descriptionEl ? [headingEl, descriptionEl] : null;
   }
 
+  handleLocationButtonClick(e) {
+    this.dispatchEvent(
+      new CustomEvent("IPProtection:UserShowLocations", {
+        bubbles: true,
+        composed: true,
+        detail: {
+          keyboardActivated: e.detail === 0,
+          locationButton: this.locationButtonEl,
+        },
+      })
+    );
+  }
+
+  locationSelectionButtonTemplate() {
+    let locationCode = this.state.location;
+    if (
+      locationCode &&
+      !this.state.isPremium &&
+      lazy.IPProtectionServerlist.getLocation(locationCode)?.country.locked
+    ) {
+      locationCode = "REC";
+    }
+
+    const country =
+      locationCode && locationCode !== "REC" ? countryName(locationCode) : null;
+
+    return html`
+      <moz-button
+        id="vpn-location-button"
+        class="toolbarbutton"
+        ?disabled=${this.state.isActivating}
+        closemenu="none"
+        @click=${this.handleLocationButtonClick}
+      >
+        <span class="location-btn-content">
+          ${country
+            ? html`<span
+                data-l10n-id="ipprotection-location-country-button"
+                data-l10n-args=${JSON.stringify({ country })}
+              ></span>`
+            : html`<span
+                data-l10n-id="ipprotection-recommended-location-button"
+              ></span>`}
+          <img
+            class="arrow-icon"
+            src="chrome://global/skin/icons/arrow-right.svg"
+            role="presentation"
+          />
+        </span>
+      </moz-button>
+    `;
+  }
+
   messageBarTemplate() {
     let messageId;
     let messageLink;
@@ -329,14 +396,21 @@ export default class IPProtectionContentElement extends MozLitElement {
     return html`
       <ipprotection-status-card
         .protectionEnabled=${this.canEnableConnection}
-        .location=${this.state.location}
-        .bandwidthUsage=${ifDefined(this.state.bandwidthUsage)}
         .hasExclusion=${hasExclusion}
         .isActivating=${this.state.isActivating}
-        .isPremium=${ifDefined(this.state.isPremium)}
         .hasUpgraded=${this.state.hasUpgraded}
       ></ipprotection-status-card>
     `;
+  }
+
+  bandwidthUsageTemplate() {
+    return this.state.bandwidthUsage
+      ? html`<bandwidth-usage
+          remaining=${this.state.bandwidthUsage.remaining}
+          max=${this.state.bandwidthUsage.max}
+          numeric
+        ></bandwidth-usage>`
+      : null;
   }
 
   upgradeTemplate() {
@@ -593,16 +667,20 @@ export default class IPProtectionContentElement extends MozLitElement {
 
   enrollingTemplate() {
     return html`
-      <div id="enrolling-container" aria-busy="true">
-        <span id="enrolling-header">
-          <span>
-            <div class="skeleton skeleton-title"></div>
-            <div class="skeleton skeleton-line"></div>
+      <div id="outer-enrolling-container" aria-busy="true">
+        <div id="enrolling-container">
+          <span id="enrolling-header">
+            <span>
+              <div class="skeleton skeleton-title"></div>
+            </span>
+            <div class="skeleton skeleton-image"></div>
           </span>
-          <div class="skeleton skeleton-image"></div>
-        </span>
-        <div class="skeleton skeleton-line-thick"></div>
-        <div class="skeleton skeleton-line-thick"></div>
+          <div class="skeleton skeleton-line-thick"></div>
+        </div>
+        <div class="skeleton skeleton-line-thick skeleton-line-outer"></div>
+        ${this.state.bandwidthUsage
+          ? html` <div class="skeleton skeleton-line"></div>`
+          : null}
       </div>
     `;
   }
@@ -630,9 +708,9 @@ export default class IPProtectionContentElement extends MozLitElement {
 
     if (this.state.isSiteInclusionsEnabled) {
       return html`
-        ${this.statusCardTemplate()}
+        ${this.statusCardTemplate()} ${this.locationSelectionButtonTemplate()}
         <div class="vpn-bottom-content">
-          ${this.siteRulesStatusTemplate()}
+          ${this.siteRulesStatusTemplate()} ${this.bandwidthUsageTemplate()}
           ${this.siteInclusionPromptTemplate()}
           ${this.siteRulesSettingsLinkTemplate()} ${this.footerTemplate()}
         </div>
@@ -640,7 +718,9 @@ export default class IPProtectionContentElement extends MozLitElement {
     }
 
     return html`
-      ${this.statusCardTemplate()} ${this.exclusionToggleTemplate()}
+      ${this.statusCardTemplate()}
+      ${this.locationSelectionButtonTemplate()}${this.bandwidthUsageTemplate()}
+      ${this.exclusionToggleTemplate()}
       <div class="vpn-bottom-content">${this.footerTemplate()}</div>
     `;
   }

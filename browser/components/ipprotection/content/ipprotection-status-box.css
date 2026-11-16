@@ -105,23 +105,9 @@
   flex-direction: column;
 }
 
-#bandwidth {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xsmall);
-  margin-top: var(--space-xsmall);
-}
-
 ::slotted([slot="content"]) {
   border-top: var(--border-width) solid var(--border-color-deemphasized);
   margin-top: var(--space-large);
-}
-
-::slotted([slot="content"].location-message) {
-  border: none;
-  margin-top: var(--space-small);
-  color: var(--text-color-deemphasized);
-  text-align: center;
 }
 
 ::slotted([slot="image"]) {
@@ -130,20 +116,8 @@
   width: var(--size-image-xsmall);
 }
 
-::slotted([slot="bandwidth"]) {
-  color: var(--text-color-deemphasized);
-  /* Increased font size used for bandwidth usage messaging to make usage state prominent when bandwidth is limited*/
-  font-size: var(--font-size-large);
-}
-
 ::slotted([slot="action"]) {
   margin-block-start: var(--space-xxlarge);
   --button-padding: var(--space-medium);
   width: 100%;
-}
-
-::slotted([slot="location-action"]) {
-  margin-block-start: var(--space-small);
-  width: 100%;
-  --button-padding: var(--space-medium);
 }

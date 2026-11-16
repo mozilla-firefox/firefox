@@ -125,7 +125,7 @@ add_task(async function test_keyboard_navigation_in_panel() {
 
   let statusCard = content.statusCardEl;
   let turnOnButton = statusCard.actionButtonEl;
-  let locationButton = statusCard.locationButtonEl;
+  let locationButton = content.locationButtonEl;
   let siteRulesButton = content.siteRulesEl;
 
   Assert.equal(

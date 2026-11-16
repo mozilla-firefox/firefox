@@ -4,19 +4,9 @@
 
 import { MozLitElement } from "chrome://global/content/lit-utils.mjs";
 import { html } from "chrome://global/content/vendor/lit.all.mjs";
-import { countryName } from "chrome://browser/content/ipprotection/ipprotection-utils.mjs";
 
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://global/content/elements/moz-toggle.mjs";
-// eslint-disable-next-line import-x/no-unassigned-import
-import "chrome://browser/content/ipprotection/bandwidth-usage.mjs";
-
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
-  IPProtectionServerlist:
-    "moz-src:///toolkit/components/ipprotection/IPProtectionServerlist.sys.mjs",
-});
 
 /**
  * Custom element that implements a status card for IP protection.
@@ -28,7 +18,6 @@ export default class IPProtectionStatusCard extends MozLitElement {
   static queries = {
     statusBoxEl: "ipprotection-status-box",
     actionButtonEl: 'moz-button[slot="action"]',
-    locationButtonEl: 'moz-button[slot="location-action"]',
   };
 
   static shadowRootOptions = {
@@ -39,8 +28,6 @@ export default class IPProtectionStatusCard extends MozLitElement {
   static properties = {
     protectionEnabled: { type: Boolean },
     enabledSince: { type: Object },
-    location: { type: Object },
-    bandwidthUsage: { type: Object },
     hasExclusion: { type: Boolean },
     isActivating: { type: Boolean },
   };
@@ -56,19 +43,6 @@ export default class IPProtectionStatusCard extends MozLitElement {
       new CustomEvent(type, {
         bubbles: true,
         composed: true,
-      })
-    );
-  }
-
-  handleLocationButtonClick(e) {
-    this.dispatchEvent(
-      new CustomEvent("IPProtection:UserShowLocations", {
-        bubbles: true,
-        composed: true,
-        detail: {
-          keyboardActivated: e.detail === 0,
-          locationButton: this.locationButtonEl,
-        },
       })
     );
   }
@@ -98,59 +72,6 @@ export default class IPProtectionStatusCard extends MozLitElement {
     }
   }
 
-  bandwidthUsageTemplate() {
-    return this.bandwidthUsage
-      ? html`<bandwidth-usage
-          slot="bandwidth"
-          remaining=${this.bandwidthUsage.remaining}
-          max=${this.bandwidthUsage.max}
-          numeric
-        ></bandwidth-usage>`
-      : null;
-  }
-
-  locationSelectionButtonTemplate() {
-    let countryObject;
-    if (this.location) {
-      countryObject = lazy.IPProtectionServerlist.getLocation(this.location);
-    }
-
-    if (!this.isPremium && countryObject?.country.locked) {
-      this.location = "REC";
-    }
-
-    const country =
-      this.location && this.location !== "REC"
-        ? countryName(this.location)
-        : null;
-
-    return html`
-      <moz-button
-        class="toolbarbutton"
-        slot="location-action"
-        ?disabled=${this.isActivating}
-        closemenu="none"
-        @click=${this.handleLocationButtonClick}
-      >
-        <span class="location-btn-content">
-          ${country
-            ? html`<span
-                data-l10n-id="ipprotection-location-country-button"
-                data-l10n-args=${JSON.stringify({ country })}
-              ></span>`
-            : html`<span
-                data-l10n-id="ipprotection-recommended-location-button"
-              ></span>`}
-          <img
-            class="arrow-icon"
-            src="chrome://global/skin/icons/arrow-right.svg"
-            role="presentation"
-          />
-        </span>
-      </moz-button>
-    `;
-  }
-
   statusTemplate({
     type,
     headerL10nId,
@@ -160,10 +81,6 @@ export default class IPProtectionStatusCard extends MozLitElement {
     iconSrc = null,
   }) {
     return html`
-      <link
-        rel="stylesheet"
-        href="chrome://browser/content/ipprotection/ipprotection-status-card.css"
-      />
       <ipprotection-status-box .headerL10nId=${headerL10nId} .type=${type}>
         ${iconSrc
           ? html`<img
@@ -173,7 +90,6 @@ export default class IPProtectionStatusCard extends MozLitElement {
               src=${iconSrc}
             />`
           : null}
-        ${this.bandwidthUsageTemplate()}
         <moz-button
           slot="action"
           type=${buttonType}
@@ -182,15 +98,6 @@ export default class IPProtectionStatusCard extends MozLitElement {
           ?disabled=${buttonDisabled}
           closemenu="none"
         ></moz-button>
-
-        ${this.locationSelectionButtonTemplate()}
-        ${!this.location || this.location === "REC"
-          ? html`<div
-              slot="content"
-              class="location-message"
-              data-l10n-id="ipprotection-recommended-location-description"
-            ></div>`
-          : null}
       </ipprotection-status-box>
     `;
   }

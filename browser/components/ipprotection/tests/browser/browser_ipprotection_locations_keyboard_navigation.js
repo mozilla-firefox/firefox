@@ -40,7 +40,7 @@ async function openLocationsSubview(state = {}, keyboardActivated = false) {
     IPProtectionPanel.MAIN_PANELVIEW
   );
   let content = mainView.querySelector(IPProtectionPanel.CONTENT_TAGNAME);
-  let locationButton = content?.statusCardEl?.locationButtonEl ?? null;
+  let locationButton = content?.locationButtonEl ?? null;
 
   let viewShownPromise = BrowserTestUtils.waitForEvent(
     locationsView,

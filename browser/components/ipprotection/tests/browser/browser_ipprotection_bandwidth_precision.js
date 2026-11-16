@@ -38,11 +38,7 @@ async function cleanupBandwidthPrecisionTest() {
 }
 
 async function getBandwidthEl(content) {
-  const statusCard = content.statusCardEl;
-  const statusBoxEl = statusCard.statusBoxEl;
-  const bandwidthEl = statusBoxEl.shadowRoot
-    .querySelector(`slot[name="bandwidth"]`)
-    .assignedElements()[0];
+  const bandwidthEl = content.bandwidthUsageEl;
   await bandwidthEl.updateComplete;
   return bandwidthEl;
 }

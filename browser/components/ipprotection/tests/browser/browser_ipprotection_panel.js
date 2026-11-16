@@ -169,18 +169,15 @@ add_task(async function test_close_panel() {
 });
 
 /**
- * Tests that clicking the location selection button in the status card opens
- * the locations subview.
+ * Tests that clicking the location selection button opens the locations
+ * subview.
  */
 add_task(async function test_location_button_opens_subview() {
   let content = await openPanel({
     isProtectionEnabled: true,
   });
 
-  let statusCard = content.statusCardEl;
-  Assert.ok(statusCard, "ipprotection-status-card should be present");
-
-  let locationButton = statusCard.locationButtonEl;
+  let locationButton = content.locationButtonEl;
   Assert.ok(locationButton, "Location selection button should be present");
 
   let subview = PanelMultiView.getViewNode(

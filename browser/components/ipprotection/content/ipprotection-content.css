@@ -40,6 +40,9 @@ ipprotection-status-card {
 
 .vpn-top-content {
   margin-block-start: var(--space-small);
+  moz-button {
+    --button-padding: var(--space-small);
+  }
 }
 
 .vpn-bottom-content {
@@ -56,6 +59,11 @@ ipprotection-status-card {
     @media not -moz-pref("browser.nova.enabled") {
       --button-border-radius: var(--border-radius-small);
     }
+  }
+
+  bandwidth-usage {
+    margin: var(--space-large) var(--space-small) var(--space-medium);
+    color: var(--text-color-deemphasized);
   }
 }
 
@@ -220,6 +228,7 @@ ipprotection-message-bar.vpn-top-content {
   height: var(--size-item-xsmall);
   width: var(--size-layout-small);
   border-radius: var(--space-xxsmall);
+  margin: var(--space-medium);
 }
 
 .skeleton-line-thick {
@@ -234,6 +243,10 @@ ipprotection-message-bar.vpn-top-content {
   @media -moz-pref("browser.nova.enabled") {
     padding-block: var(--space-xsmall);
     border-radius: var(--border-radius-circle);
+  }
+
+  &.skeleton-line-outer {
+    margin-block: var(--space-small);
   }
 }
 
@@ -283,7 +296,7 @@ ipprotection-message-bar.vpn-top-content {
   border: var(--border-width) solid var(--border-color-deemphasized);
   border-radius: var(--border-radius-medium);
   padding: var(--space-medium);
-  margin-block-end: var(--space-small);
+  margin-block-end: var(--space-xsmall);
 
   img {
     width: var(--icon-size-small);
@@ -309,4 +322,41 @@ ipprotection-message-bar.vpn-top-content {
 
 #site-rule-description {
   font-weight: var(--font-weight-semibold);
+}
+
+#vpn-location-button {
+  width: 100%;
+  --button-padding: var(--space-small);
+  margin-block-end: var(--space-xsmall);
+
+  &::part(moz-button-label) {
+    width: 100%;
+  }
+}
+
+.location-btn-content {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-medium);
+  width: 100%;
+
+  span {
+    grid-column: 2;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .arrow-icon {
+    grid-column: 3;
+    justify-self: end;
+    -moz-context-properties: fill, fill-opacity, stroke;
+    fill: currentColor;
+  }
+
+  :-moz-locale-dir(rtl) & .arrow-icon {
+    scale: -1 1;
+  }
 }

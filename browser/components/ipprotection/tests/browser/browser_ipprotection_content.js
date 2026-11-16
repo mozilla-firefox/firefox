@@ -236,26 +236,46 @@ add_task(async function test_enrolling_skeleton() {
   let content = await openPanel({
     unauthenticated: false,
     isEnrolling: true,
+    bandwidthUsage: null,
   });
 
-  let container = content.shadowRoot.querySelector("#enrolling-container");
+  let outerContainer = content.shadowRoot.querySelector(
+    "#outer-enrolling-container"
+  );
+  Assert.ok(outerContainer, "Outer enrolling container should be present");
+  let container = outerContainer.querySelector("#enrolling-container");
   Assert.ok(container, "Enrolling container should be present");
   Assert.ok(
     container.querySelector(".skeleton-title"),
     "Skeleton title element should be present"
   );
   Assert.ok(
-    container.querySelector(".skeleton-line"),
-    "Skeleton line element should be present"
+    container.querySelector(".skeleton-image"),
+    "Skeleton image element should be present"
   );
   Assert.equal(
     container.querySelectorAll(".skeleton-line-thick").length,
-    2,
-    "Two skeleton line thick elements should be present"
+    1,
+    "One skeleton line thick element should be inside the enrolling container"
   );
   Assert.ok(
-    container.querySelector(".skeleton-image"),
-    "Skeleton image element should be present"
+    outerContainer.querySelector(":scope > .skeleton-line-outer"),
+    "Outer skeleton line thick element should be present"
+  );
+  Assert.ok(
+    !outerContainer.querySelector(".skeleton-line"),
+    "Skeleton line should be hidden without bandwidth usage"
+  );
+
+  await setPanelState({
+    bandwidthUsage: { remaining: 1, max: 1 },
+  });
+
+  Assert.ok(
+    content.shadowRoot.querySelector(
+      "#outer-enrolling-container > .skeleton-line"
+    ),
+    "Skeleton line should be present with bandwidth usage"
   );
 
   Assert.ok(

@@ -30,10 +30,7 @@ add_task(async function test_location_selector_button_and_promo_clicked() {
     location: null,
   });
 
-  let statusCard = content.shadowRoot.querySelector("ipprotection-status-card");
-  Assert.ok(statusCard, "Status card should be present");
-
-  let locationButton = statusCard.locationButtonEl;
+  let locationButton = content.locationButtonEl;
   Assert.ok(locationButton, "Location selector button should be present");
 
   let locationsView = PanelMultiView.getViewNode(

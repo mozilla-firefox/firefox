@@ -318,10 +318,7 @@ add_task(async function test_IPPProxyManager_update_usage_on_stop() {
   await waitForProxyState(IPPProxyStates.READY);
   await usageChangePromise;
 
-  const statusBoxEl = statusCard.statusBoxEl;
-  const bandwidthEl = statusBoxEl.shadowRoot
-    .querySelector(`slot[name="bandwidth"]`)
-    .assignedElements()[0];
+  const bandwidthEl = content.bandwidthUsageEl;
   await bandwidthEl.updateComplete;
 
   Assert.equal(
