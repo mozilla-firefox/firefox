@@ -2268,6 +2268,8 @@ let interfaceNamesInGlobalScope = [
   // IMPORTANT: Do not change this list without review from a DOM peer!
   { name: "prompt", insecureContext: true },
   // IMPORTANT: Do not change this list without review from a DOM peer!
+  { name: "pushManager", insecureContext: false },
+  // IMPORTANT: Do not change this list without review from a DOM peer!
   { name: "queueMicrotask", insecureContext: true },
   // IMPORTANT: Do not change this list without review from a DOM peer!
   { name: "releaseEvents", insecureContext: true },
