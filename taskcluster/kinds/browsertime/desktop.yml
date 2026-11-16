@@ -1059,6 +1059,12 @@ browsertime-nav-bench:
                 windows.*:
                     - --browsertime-no-ffwindowrecorder
                     - --conditioned-profile=settled
+                linux.*shippable.*:
+                    - --conditioned-profile=settled
+                    - --power-profile=performance
+                linux.*nightlyasrelease.*:
+                    - --conditioned-profile=settled
+                    - --power-profile=performance
                 default:
                     - --conditioned-profile=settled
 
