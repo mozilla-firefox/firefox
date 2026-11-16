@@ -192,10 +192,6 @@ function createUserContextMenu(
   } = {}
 ) {
   target = target || event.target;
-  while (target.hasChildNodes()) {
-    target.firstChild.remove();
-  }
-
   MozXULElement.insertFTLIfNeeded("toolkit/global/contextual-identity.ftl");
   let docfrag = document.createDocumentFragment();
   let createSeparator = isPanelList
@@ -313,7 +309,7 @@ function createUserContextMenu(
     docfrag.appendChild(menuitem);
   }
 
-  target.appendChild(docfrag);
+  target.replaceChildren(docfrag);
   return true;
 }
 
