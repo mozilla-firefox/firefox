@@ -12,7 +12,7 @@ use fluent_fallback::generator::BundleGenerator;
 use rustc_hash::FxHashSet;
 use std::{
     cell::{Ref, RefCell, RefMut},
-    collections::HashSet,
+    collections::BTreeSet,
     rc::Rc,
 };
 use unic_langid::LanguageIdentifier;
@@ -314,9 +314,9 @@ impl<P, B> L10nRegistry<P, B> {
             .map(|source| (**source).clone()))
     }
 
-    /// Returns a unique list of locale names from all sources.
+    /// Returns a sorted, unique list of locale names from all sources.
     pub fn get_available_locales(&self) -> Result<Vec<LanguageIdentifier>, L10nRegistrySetupError> {
-        let mut result = HashSet::new();
+        let mut result = BTreeSet::new();
         let metasources = self.try_borrow_metasources()?;
         for source in metasources.filesources() {
             for locale in source.locales() {

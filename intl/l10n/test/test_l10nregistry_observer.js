@@ -53,3 +53,58 @@ add_task(async function test_topic_fires_on_global_registry_mutations() {
   await removed;
   Assert.ok(true, "Topic fired on removeSources");
 });
+
+/**
+ * Mutating sources whose locales are already available must not reorder the
+ * app locales nor fire intl:app-locales-changed (Bug 2062777).
+ */
+add_task(async function test_no_spurious_app_locales_changed() {
+  const globalReg = L10nRegistry.getInstance();
+  const LOCALES = [
+    "en-US",
+    "en-AU",
+    "en-CA",
+    "en-GB",
+    "en-IE",
+    "en-IN",
+    "en-NZ",
+    "en-ZA",
+  ];
+  const METASOURCE = "test-app-locales-metasource";
+  const makeSource = name =>
+    new L10nFileSource(name, METASOURCE, LOCALES, `/${name}/{locale}/`);
+
+  const originalRequested = Services.locale.requestedLocales;
+  registerCleanupFunction(() => {
+    globalReg.removeSources(["test-app-locales-base"]);
+    Services.locale.requestedLocales = originalRequested;
+  });
+
+  globalReg.registerSources([makeSource("test-app-locales-base")]);
+  Services.locale.requestedLocales = ["en-US"];
+  const appLocales = Services.locale.appLocalesAsBCP47;
+  Assert.deepEqual(
+    appLocales.toSorted(),
+    LOCALES.toSorted(),
+    "All English variants are negotiated as app locales"
+  );
+
+  let fired = 0;
+  const observer = () => fired++;
+  Services.obs.addObserver(observer, "intl:app-locales-changed");
+
+  for (let i = 0; i < 20; i++) {
+    const name = `test-app-locales-${i}`;
+    globalReg.registerSources([makeSource(name)]);
+    globalReg.removeSources([name]);
+  }
+
+  Services.obs.removeObserver(observer, "intl:app-locales-changed");
+
+  Assert.equal(fired, 0, "intl:app-locales-changed did not fire");
+  Assert.deepEqual(
+    Services.locale.appLocalesAsBCP47,
+    appLocales,
+    "App locales keep the same order"
+  );
+});

@@ -593,11 +593,9 @@ export var AboutNewTabResourceMapping = {
     // The TOPIC_LOCALES_CHANGED, TOPIC_LANGPACK_STARTUP, and
     // TOPIC_LANGPACK_SHUTDOWN handlers all call L10nRegistry.{register,
     // update,remove}Sources, and each of those calls fires
-    // intl:l10n-sources-changed (and, because LocaleService::
-    // SetAvailableLocales compares as an order-sensitive nsTArray against
-    // an array built from a Rust HashSet, spuriously fires
-    // intl:app-locales-changed too). Without this guard, those broadcasts can
-    // re-enter observe synchronously and the resulting cascade can pump
+    // intl:l10n-sources-changed (and intl:app-locales-changed too when the
+    // negotiated app locales change). Without this guard, those broadcasts
+    // can re-enter observe synchronously and the resulting cascade can pump
     // unbounded source mutations through the registry at startup,
     // exploding memory on installations with downloaded langpacks
     // (Flatpak/Snap/MSIX). The first invocation does its work; any

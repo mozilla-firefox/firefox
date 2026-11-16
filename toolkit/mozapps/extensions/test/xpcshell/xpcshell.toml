@@ -488,6 +488,12 @@ skip-if = [
   "os == 'android'", # Non-extension add-ons are not supported on Android, but test installs langpack.
 ]
 
+["test_webextension_langpack_update_locales.js"]
+tags = "webextensions"
+skip-if = [
+  "os == 'android'", # Non-extension add-ons are not supported on Android, but test installs langpack.
+]
+
 ["test_webextension_theme.js"]
 tags = "webextensions"
 skip-if = [
