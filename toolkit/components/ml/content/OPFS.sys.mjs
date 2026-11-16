@@ -248,6 +248,13 @@ export class OPFS {
         ? source
         : await lazy.Progress.fetchUrl(source.toString());
 
+      // Check if the current file exists, indicating a replacement download.
+      const isReplacementDownoad = await OPFS.getFileHandle(savePath, {
+        create: false,
+      })
+        .then(() => true)
+        .catch(() => false);
+
       try {
         const fileHandle = await OPFS.getFileHandle(savePath, { create: true });
 
@@ -262,6 +269,11 @@ export class OPFS {
 
         fileObject = await fileHandle.getFile();
       } catch (err) {
+        if (!isReplacementDownoad) {
+          // getFileHandle created the entry before any bytes were written.
+          await OPFS.remove(savePath, { ignoreErrors: true });
+        }
+
         if (ignoreCachingErrors && DOMException.isInstance(err)) {
           lazy.console.warn(
             `Caching Error when saving url  ${sourceToString(source)}. Returning the file without caching.`
@@ -296,6 +308,7 @@ export class OPFS {
           abortSignal,
         });
       }
+      await OPFS.remove(savePath, { ignoreErrors: true });
       throw new Error(message);
     }
 

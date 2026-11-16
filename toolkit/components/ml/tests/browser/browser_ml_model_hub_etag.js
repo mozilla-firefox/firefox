@@ -223,3 +223,63 @@ add_task(async function test_main_serves_cache_when_revalidation_fails() {
 
   await cleanup();
 });
+
+/**
+ * An interrupted update must preserve the cached copy for reads when
+ * revalidation is unavailable.
+ */
+add_task(async function test_main_preserves_cache_after_interrupted_update() {
+  const { hub, modelHub, args, served, cleanup } = await withModelHub({
+    modelFile: MAIN_FILE,
+  });
+
+  info("Cache the original file before the hub publishes an update.");
+  const [before, beforeHeaders] =
+    await modelHub.getModelFileAsArrayBuffer(args);
+  Assert.equal(decode(before), ORIGINAL_CONFIG, "The original file is cached.");
+  Assert.equal(beforeHeaders.ETag, served.etag, "The original ETag is cached.");
+
+  info("Publish a new ETag and interrupt the replacement body mid-transfer.");
+  const updated = hub.setFile({
+    ...MAIN_FILE,
+    content: UPDATED_CONFIG.repeat(4096),
+    failAfterBytes: 16 * 1024,
+  });
+  Assert.notEqual(
+    updated.etag,
+    served.etag,
+    "The hub now has a different ETag."
+  );
+
+  await Assert.rejects(
+    modelHub.getModelFileAsArrayBuffer(args),
+    /Failed to fetch the model file/,
+    "The interrupted replacement download rejects."
+  );
+  Assert.deepEqual(
+    requestCounts(hub, MAIN_FILE),
+    { head: 2, get: 2 },
+    "The changed ETag triggered a replacement GET."
+  );
+
+  info("Make revalidation fail and read the original cached file.");
+  hub.removeFile(MAIN_FILE);
+  const [after, afterHeaders] = await modelHub.getModelFileAsArrayBuffer(args);
+  Assert.equal(
+    decode(after),
+    ORIGINAL_CONFIG,
+    "The original cached bytes survive the interrupted replacement."
+  );
+  Assert.equal(
+    afterHeaders.ETag,
+    served.etag,
+    "The original cached ETag is preserved."
+  );
+  Assert.deepEqual(
+    requestCounts(hub, MAIN_FILE),
+    { head: 3, get: 2 },
+    "Failed revalidation falls back to the cache without another GET."
+  );
+
+  await cleanup();
+});
