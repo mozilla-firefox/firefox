@@ -283,7 +283,6 @@ tasks:
         description: 'Focus Nightly build for UI tests'
         dependencies:
             build-fat-aar: build-fat-aar-android-geckoview-fat-aar/opt
-        disable-optimization: true
         run:
             gradle-build-type: nightly
             gradle-build-name: focusNightly
@@ -386,7 +385,6 @@ tasks:
         description: 'Focus Nightly Android Test for debugging'
         dependencies:
             build-fat-aar: build-fat-aar-android-geckoview-fat-aar/opt
-        disable-optimization: true
         run:
             gradle-build-type: androidTest
             gradle-build-name: androidTest

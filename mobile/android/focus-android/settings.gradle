@@ -19,6 +19,7 @@ pluginManagement {
     includeBuild("../android-components/plugins/dependencies")
     includeBuild("../android-components/plugins/config")
     includeBuild("../gradle/plugins/nimbus-gradle-plugin")
+    includeBuild("../gradle/plugins/android-test-keep-rules")
 }
 
 plugins {

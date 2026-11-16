@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'org.mozilla.conventions.zip-test-reports'
+    id 'org.mozilla.android-test-keep-rules'
     id 'org.mozilla.nimbus-gradle-plugin'
     id 'jacoco'
     alias(libs.plugins.dependency.analysis)
@@ -76,6 +77,7 @@ android {
             shrinkResources = !project.hasProperty("disableOptimization")
             minifyEnabled = !project.hasProperty("disableOptimization")
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            testProguardFiles 'proguard-rules-android-test.pro'
             matchingFallbacks = ['release']
 
             // If building locally, just use debug signing. In official automation builds, the
@@ -97,12 +99,18 @@ android {
         }
         beta {
             initWith release
+            if (project.findProperty("testBuildType") == it.name) {
+                shrinkResources = false
+            }
             applicationIdSuffix ".beta"
             // This is used when the user selects text in other third-party apps. See https://github.com/mozilla-mobile/focus-android/issues/6478
             manifestPlaceholders = [textSelectionSearchAction: "@string/text_selection_search_action_focus_beta"]
         }
         nightly {
             initWith release
+            if (project.findProperty("testBuildType") == it.name) {
+                shrinkResources = false
+            }
             applicationIdSuffix ".nightly"
             // This is used when the user selects text in other third-party apps. See https://github.com/mozilla-mobile/focus-android/issues/6478
             manifestPlaceholders = [textSelectionSearchAction: "@string/text_selection_search_action_focus_nightly"]

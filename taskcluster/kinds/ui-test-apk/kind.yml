@@ -127,9 +127,13 @@ tasks:
                 app-name: focus
         description: 'UI tests on Nightly with firebase'
         dependencies:
+            build-apk: build-apk-focus-nightly-firebase
             signed-apk-debug-apk: signing-apk-focus-nightly-firebase
             signed-apk-android-test: signing-apk-focus-android-test-nightly
         fetches:
+            build-apk:
+                - artifact: mapping.txt
+                  extract: false
             signed-apk-debug-apk:
                 - artifact: target.arm64-v8a.apk
                   extract: false
@@ -138,8 +142,9 @@ tasks:
                   extract: false
         optimization:
             test-backstop: null
-        run-on-projects: [autoland-only]
-        flank-config: focus/arm-start-test.yml
+        run-on-projects: [mozilla-central-only]
+        flank-config: focus/arm-nightly-full.yml
+        mapping: true
         treeherder:
             symbol: focus-nightly(ui-test-arm-nightly)
 
