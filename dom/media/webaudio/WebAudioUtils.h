@@ -7,6 +7,7 @@
 
 #include <cmath>
 #include <limits>
+#include <numbers>
 #include <type_traits>
 
 #include "MediaSegment.h"
@@ -51,7 +52,9 @@ inline float ConvertLinearToDecibels(float aLinearValue, float aMinDecibels) {
  * Converts a decibel value to a linear value.
  */
 inline float ConvertDecibelsToLinear(float aDecibels) {
-  return fdlibm_powf(10.0f, 0.05f * aDecibels);
+  // Equivalent to 10^(dB / 20), but expf is much cheaper than powf.
+  constexpr float kLn10Over20 = std::numbers::ln10_v<float> / 20;
+  return fdlibm_expf(kLn10Over20 * aDecibels);
 }
 
 inline void FixNaN(float& aFloat) {
