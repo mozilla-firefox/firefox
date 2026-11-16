@@ -1683,6 +1683,9 @@ Tester.prototype = {
     // test_end is logged, otherwise the new windows created by addTab will be
     // tracked by ShutdownLeaks as belonging to the test and cause false leak reports.
     if (window.gBrowser) {
+      // Tests start with the selected browser focused. Restore that before
+      // replacing the tab, as focus left on a tab would move to the new one.
+      gBrowser.selectedBrowser.focus();
       gBrowser.addTab("about:blank", {
         skipAnimation: true,
         triggeringPrincipal:
