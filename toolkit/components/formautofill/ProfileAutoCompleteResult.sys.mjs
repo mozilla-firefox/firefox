@@ -9,6 +9,7 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   AutofillDataTypes: "resource://gre/modules/shared/AutofillDataTypes.sys.mjs",
   CreditCard: "resource://gre/modules/CreditCard.sys.mjs",
+  CreditCardRecord: "resource://gre/modules/shared/CreditCardRecord.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(
@@ -595,7 +596,11 @@ export class CreditCardResult extends ProfileAutoCompleteResult {
     // Skip results without a primary label.
     let labels = profiles
       .filter(profile => {
-        return !!profile[focusedFieldName];
+        return (
+          !!profile[focusedFieldName] ||
+          (focusedFieldName == "cc-csc" &&
+            lazy.CreditCardRecord.hasSecurityCode(profile))
+        );
       })
       .map(profile => {
         let primary = profile[focusedFieldName];

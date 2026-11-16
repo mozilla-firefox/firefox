@@ -50,7 +50,11 @@ add_setup(async function () {
 add_task(async function test_csc_round_trips_through_storage() {
   const cards = await getCreditCards();
   is(cards.length, 1, "One credit card is saved");
-  is(cards[0]["cc-csc"], "123", "cc-csc survives the storage round trip");
+  is(
+    await decryptCreditCardSecurityCode(cards[0]),
+    "123",
+    "cc-csc survives the storage round trip"
+  );
 
   // The saved field names are recomputed after the storage change setStorage
   // waits for, not before it.
@@ -125,7 +129,10 @@ add_task(async function test_no_cvv_while_json_store_serves() {
 
   const cards = await getCreditCards();
   is(cards.length, 1, "The card is served by the JSON store");
-  ok(!("cc-csc" in cards[0]), "The code the JSON store holds is not read");
+  ok(
+    !CreditCardRecord.hasSecurityCode(cards[0]),
+    "The code the JSON store holds is not read"
+  );
 
   await BrowserTestUtils.withNewTab(
     { gBrowser, url: CC_URL },

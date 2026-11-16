@@ -26,6 +26,10 @@
  *    a collection that hides a stored field on read reports it under
  *    `rawData`; one that hides nothing ignores them.
  *
+ *    `_get()` and `_getAll()` must never need an encryption key: get(),
+ *    getAll(), getSavedFieldNames(), notifyUsed() and removeAll() are built on
+ *    them, and run where nobody asked for a secret.
+ *
  * `static _instance = null` is worth declaring for the reader, though
  * `getInstance()` stores per subclass either way.
  *
@@ -447,7 +451,7 @@ export class RustAutofillAdapterBase {
     // recomputed when the store changes, not when what a read hides does, and
     // whether to offer a field is decided where it would be filled.
     const fieldNames = new Set();
-    for (const record of await this.getAll({ rawData: true, prompt: false })) {
+    for (const record of await this.getAll({ rawData: true })) {
       for (const [key, value] of Object.entries(record)) {
         if (value && !INTERNAL_FIELDS.has(key)) {
           fieldNames.add(key);

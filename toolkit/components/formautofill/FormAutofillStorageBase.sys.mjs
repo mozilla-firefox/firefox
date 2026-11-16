@@ -1896,6 +1896,29 @@ export class CreditCardsBase extends AutofillRecords {
     return lazy.OSKeyStore.decrypt(ciphertext, trigger, reauth);
   }
 
+  /**
+   * The cleartext of several fields of a stored record.
+   *
+   * A field this store does not keep encrypted, such as cc-csc, which it does
+   * not support, is always null.
+   *
+   * @param {object} record A record this store handed out.
+   * @param {Array<string>} fields The fields to read, from
+   *   CreditCardRecord.SECRET_FIELDS.
+   * @param {object} [options] As for decryptField.
+   * @returns {Promise<object>} Each field's cleartext, or null if the record
+   *   holds none.
+   */
+  async decryptFields(record, fields, options) {
+    const cleartext = {};
+    for (const field of fields) {
+      cleartext[field] = lazy.CreditCardRecord.hasCiphertextField(field)
+        ? await this.decryptField(record, field, options)
+        : null;
+    }
+    return cleartext;
+  }
+
   async _stripComputedFields(creditCard) {
     if (creditCard["cc-number-encrypted"]) {
       try {

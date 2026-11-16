@@ -12,6 +12,7 @@ import { FormAutofillUtils } from "resource://gre/modules/shared/FormAutofillUti
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   CreditCard: "resource://gre/modules/CreditCard.sys.mjs",
+  CreditCardRecord: "resource://gre/modules/shared/CreditCardRecord.sys.mjs",
   OSKeyStore: "resource://gre/modules/OSKeyStore.sys.mjs",
   formAutofillStorage: "resource://autofill/FormAutofillStorage.sys.mjs",
   ManageAddresses: "chrome://formautofill/content/manageDialog.mjs",
@@ -156,7 +157,8 @@ export class FormAutofillPreferences {
             "$2/$1"
           );
           const hasSecurityCode =
-            FormAutofill.isAutofillCreditCardCVVEnabled && !!record["cc-csc"];
+            FormAutofill.isAutofillCreditCardCVVEnabled &&
+            lazy.CreditCardRecord.hasSecurityCode(record);
           let l10nId = "payment-moz-box-item";
           if (hasSecurityCode) {
             l10nId = expDate
@@ -458,6 +460,53 @@ export class FormAutofillPreferences {
     return FormAutofillPreferences.openEditCreditCardDialog(creditCard, window);
   }
   /**
+   * Get the stored credit card as the edit dialog shows it, with the secrets
+   * the store keeps encrypted -- the number and the security code -- in the
+   * clear, so they can be edited.
+   *
+   * @param {object} creditCard A card as the collection handed it out.
+   * @returns {Promise<?object>} The card to show, or null if the user declined
+   *   to unlock its secrets. A secret that cannot be read is blanked, so the
+   *   user can enter it again.
+   */
+  static async decryptCreditCardForEditing(creditCard) {
+    try {
+      // The re-authentication openEditCreditCardDialog asks for has already
+      // happened, so this only reads. The trigger labels the telemetry of
+      // whichever store holds the key, and that store is what records it:
+      // reporting here as well would have a profile served by Rust also report
+      // an OS key store call it never made.
+      const secrets = await lazy.formAutofillStorage.creditCards.decryptFields(
+        creditCard,
+        lazy.CreditCardRecord.SECRET_FIELDS,
+        { trigger: "edit" }
+      );
+      const decrypted = { ...creditCard };
+      // Null means the record holds nothing encrypted under that field, so
+      // there is nothing to put in place of what it already holds.
+      for (const [field, value] of Object.entries(secrets)) {
+        if (value !== null) {
+          decrypted[field] = value;
+        }
+      }
+      return decrypted;
+    } catch (ex) {
+      if (ex.result == Cr.NS_ERROR_ABORT) {
+        return null;
+      }
+      // We've got ourselves a real error.
+      // Recover from encryption error so the user gets a chance to re-enter
+      // unencrypted credit card number.
+      console.error(ex);
+      const decrypted = { ...creditCard, "cc-number": "" };
+      if (lazy.CreditCardRecord.hasSecurityCode(creditCard)) {
+        decrypted["cc-csc"] = "";
+      }
+      return decrypted;
+    }
+  }
+
+  /**
    * Open the edit credit card dialog to create/edit a credit card.
    *
    * @param  {object} creditCard
@@ -493,38 +542,16 @@ export class FormAutofillPreferences {
       }
     }
 
-    let decryptedCCNumObj = {};
+    let decryptedCreditCard = {};
     if (creditCard) {
-      try {
-        // The re-authentication above has already happened, so this only
-        // reads. The trigger labels the telemetry of whichever store holds the
-        // key, and that store is what records it: reporting here as well would
-        // have a profile served by Rust also report an OS key store call it
-        // never made.
-        const number = await lazy.formAutofillStorage.creditCards.decryptField(
-          creditCard,
-          "cc-number",
-          { trigger: "edit" }
-        );
-        // Null means the record holds nothing encrypted under that field, so
-        // there is nothing to put in place of what it already carries.
-        if (number !== null) {
-          decryptedCCNumObj["cc-number"] = number;
-        }
-      } catch (ex) {
-        if (ex.result == Cr.NS_ERROR_ABORT) {
-          // User shouldn't be ask to reauth here, but it could happen.
-          // Return here and skip opening the dialog.
-          return;
-        }
-        // We've got ourselves a real error.
-        // Recover from encryption error so the user gets a chance to re-enter
-        // unencrypted credit card number.
-        decryptedCCNumObj["cc-number"] = "";
-        console.error(ex);
+      decryptedCreditCard =
+        await FormAutofillPreferences.decryptCreditCardForEditing(creditCard);
+      if (!decryptedCreditCard) {
+        // User shouldn't be asked to reauth here, but it could happen.
+        // Return here and skip opening the dialog.
+        return;
       }
     }
-    let decryptedCreditCard = Object.assign({}, creditCard, decryptedCCNumObj);
     window.gSubDialog.open(
       EDIT_CREDIT_CARD_URL,
       { features: "resizable=no" },

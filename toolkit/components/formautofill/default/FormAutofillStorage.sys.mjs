@@ -337,15 +337,14 @@ export class FormAutofillStorage extends FormAutofillStorageBase {
     }
 
     // Only an encrypted collection needs to know whether there is anything to
-    // copy. The Rust store decrypts every record it reads, so for a copy back
-    // this read fails when its key cannot decrypt them -- the token was reset,
-    // or key4.db replaced. A copy back goes ahead regardless, to fail and
-    // report in the migrator and still hand the profile back to JSON. Nothing
-    // here throws, which at startup would take autofill down with it.
+    // copy. A copy back goes ahead even when the Rust store's key cannot
+    // decrypt its numbers -- the token was reset, or key4.db replaced -- to fail
+    // and report in the migrator and still hand the profile back to JSON.
+    // Nothing here throws, which at startup would take autofill down with it.
     let anyRecord;
     if (hasEncryption) {
       try {
-        [anyRecord] = await source.getAll({ prompt: false });
+        [anyRecord] = await source.getAll();
       } catch (e) {
         lazy.logger.error(
           `Could not read the ${collectionName} to migrate.`,

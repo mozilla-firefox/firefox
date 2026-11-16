@@ -2146,11 +2146,19 @@ export let FormAutofillPrompter = {
     newRecord
   ) {
     let changedGUID = null;
-    if (oldRecord) {
-      changedGUID = oldRecord.guid;
-      await storage.update(changedGUID, newRecord, true);
-    } else {
-      changedGUID = await storage.add(newRecord);
+    try {
+      if (oldRecord) {
+        changedGUID = oldRecord.guid;
+        await storage.update(changedGUID, newRecord, true);
+      } else {
+        changedGUID = await storage.add(newRecord);
+      }
+    } catch (e) {
+      // The write needed a key the user declined to unlock.
+      if (e.result == Cr.NS_ERROR_ABORT) {
+        return;
+      }
+      throw e;
     }
     await storage.notifyUsed(changedGUID);
 

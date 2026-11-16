@@ -45,11 +45,9 @@ const AUTOFILL_STORE_FILE_NAME = "autofill.db";
  * a prompt either of them shows authenticates both, and two at once
  * authenticate it twice over. The guards below keep that apart.
  *
- * The store decrypts every card it reads, and asks for the key once per card,
- * so being asked is not a sign that anyone wants a number. Only an operation
+ * The store asks for the key once per number it decrypts. Only an operation
  * run through allowingPrompt() is shown a prompt; anything else is declined,
- * and reads its cards back with no number, as it would while the token is
- * locked.
+ * and fails as it would while the token is locked.
  */
 export class RustAutofillStorageAuthenticator extends PrimaryPasswordAuthenticator {
   // How many operations allowingPrompt() is running.

@@ -16,6 +16,7 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   AutofillDataTypes: "resource://gre/modules/shared/AutofillDataTypes.sys.mjs",
   CreditCard: "resource://gre/modules/CreditCard.sys.mjs",
+  CreditCardRecord: "resource://gre/modules/shared/CreditCardRecord.sys.mjs",
   FormAutofillUtils: "resource://gre/modules/shared/FormAutofillUtils.sys.mjs",
   formAutofillStorage: "resource://autofill/FormAutofillStorage.sys.mjs",
   FormAutofillPreferences:
@@ -398,7 +399,10 @@ export class ManageCreditCards extends ManageRecords {
       type: typeName,
     });
 
-    if (!FormAutofill.isAutofillCreditCardCVVEnabled || !creditCard["cc-csc"]) {
+    if (
+      !FormAutofill.isAutofillCreditCardCVVEnabled ||
+      !lazy.CreditCardRecord.hasSecurityCode(creditCard)
+    ) {
       return labelInfo;
     }
     return this.#withSecurityCodeLabel(labelInfo, creditCard);

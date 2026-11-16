@@ -9,8 +9,12 @@
  * that is not specific to this collection. What is here follows from the Rust
  * credit card schema: the store encrypts the number under its own key and
  * keeps the last four digits in the clear, so `cc-number` is written in the
- * clear and read back as a mask of those digits. A record this adapter hands
- * out never carries the number itself; #numberOf is where it is read.
+ * clear and read back as a mask of those digits. The security code is
+ * encrypted too; a record only says whether the card has one, as
+ * `hasSecurityCode`. A record this adapter hands out is built from a
+ * CreditCardCandidate and holds neither secret, except that
+ * getDuplicateRecords adds the security code for the save doorhanger to
+ * compare; #secretsOf is where they are read.
  */
 
 import {
@@ -71,7 +75,8 @@ const JS_TO_RUST_INTEGER_FIELD = {
 // as ccNumber, which the store encrypts, and read back as a mask of
 // ccNumberLast4; the migration compares it by the number each store decrypts
 // rather than by the mask -- see AutofillStorageMigrator.#verify. cc-csc is
-// stored encrypted as ccCvv and read back in the clear.
+// stored encrypted as ccCvv; a record reports only whether the card has one,
+// as hasSecurityCode.
 
 // The canonical fields: the ones this store has a column for. Unlike
 // VALID_CREDIT_CARD_FIELDS this has cc-csc, which the JSON store keeps only as
@@ -175,13 +180,12 @@ const MASK_CHARACTER = "•";
 // it.
 const isMasked = value => String(value ?? "").includes(MASK_CHARACTER);
 
-// The fields creditCardToJsRecord derives with CreditCardRecord.computeFields.
-const COMPUTED_FIELDS = [
-  "cc-given-name",
-  "cc-additional-name",
-  "cc-family-name",
-  "cc-exp",
-];
+// The fields this store keeps encrypted, and the CreditCard property holding
+// each one in the clear. Every field of CreditCardRecord.SECRET_FIELDS.
+const SECRET_FIELDS = new Map([
+  ["cc-number", "ccNumber"],
+  ["cc-csc", "ccCvv"],
+]);
 
 /**
  * The error a caller owes for a key NSS will not hand over: what crypto-SDR
@@ -218,8 +222,10 @@ function jsRecordToUpdatableCreditCardFields(record) {
 }
 
 /**
- * Convert a Rust `CreditCard` to a JS credit card record: stored fields,
- * metadata, schema version and computed fields.
+ * Convert a Rust `CreditCardCandidate` to a JS credit card record: stored
+ * fields, metadata, schema version and computed fields. The candidate holds
+ * no security code, only whether one is stored, which the record reports as
+ * `hasSecurityCode`.
  */
 function creditCardToJsRecord(creditCard) {
   const record = {
@@ -249,8 +255,8 @@ function creditCardToJsRecord(creditCard) {
       ) + creditCard.ccNumberLast4;
   }
 
-  if (creditCard.ccCvv) {
-    record["cc-csc"] = creditCard.ccCvv;
+  if (creditCard.hasCvv) {
+    record.hasSecurityCode = true;
   }
 
   record.timeCreated = creditCard.timeCreated;
@@ -326,12 +332,22 @@ export class RustAutofillCreditCardsAdapter extends RustAutofillAdapterBase {
     return store.countAllCreditCards();
   }
 
-  _get(store, guid) {
-    return this.#read(store, () => store.getCreditCard(guid), guid);
+  // Every record is built from a CreditCardCandidate, which holds no encrypted
+  // field and never needs the key. The store lists candidates but has no read
+  // for a single one.
+  // TODO: Bug 2091679 - read the one candidate once the store can.
+  async _get(store, guid) {
+    const candidate = (await this._getAll(store)).find(
+      card => card.guid == guid
+    );
+    if (!candidate) {
+      throw new lazy.NoSuchRecord(guid);
+    }
+    return candidate;
   }
 
   _getAll(store) {
-    return this.#read(store, () => store.getAllCreditCards());
+    return this.#read(store, () => store.listCreditCardCandidates());
   }
 
   _delete(store, guid) {
@@ -402,52 +418,15 @@ export class RustAutofillCreditCardsAdapter extends RustAutofillAdapterBase {
   // ---- Credit card specifics --------------------------------------------
 
   /**
-   * Reading a card decrypts its number, so with the token locked a read shows
-   * the primary password prompt.
-   *
-   * @param {string} guid
-   * @param {object} [options]
-   * @param {boolean} [options.rawData=false]
-   * @param {boolean} [options.prompt=true] Whether the read may prompt. A read
-   *   nobody asked for passes false, and rejects with NS_ERROR_ABORT while the
-   *   token is locked.
-   */
-  get(guid, { rawData = false, prompt = true } = {}) {
-    return prompt
-      ? this._allowingPrompt(() => super.get(guid, { rawData }))
-      : super.get(guid, { rawData });
-  }
-
-  /**
-   * @see get
-   * @param {object} [options]
-   * @param {boolean} [options.rawData=false]
-   * @param {boolean} [options.prompt=true]
-   */
-  getAll({ rawData = false, prompt = true } = {}) {
-    return prompt
-      ? this._allowingPrompt(() => super.getAll({ rawData }))
-      : super.getAll({ rawData });
-  }
-
-  /**
-   * Runs at startup and on every change, so it never prompts. With the token
-   * locked no card can be read, and every field is reported as saved for as
-   * long as there are cards: a form is then still offered autofill, and opening
-   * it is what asks for the primary password.
+   * As RustAutofillAdapterBase.getSavedFieldNames, except that a record says
+   * it has a security code with hasSecurityCode rather than holding cc-csc.
    */
   async getSavedFieldNames() {
-    try {
-      return await super.getSavedFieldNames();
-    } catch (e) {
-      if (e.result != Cr.NS_ERROR_ABORT) {
-        throw e;
-      }
-      if (!(await this.refreshCount())) {
-        return new Set();
-      }
-      return new Set([...this._validFields, ...COMPUTED_FIELDS]);
+    const fieldNames = await super.getSavedFieldNames();
+    if (fieldNames.delete("hasSecurityCode")) {
+      fieldNames.add("cc-csc");
     }
+    return fieldNames;
   }
 
   /**
@@ -464,68 +443,43 @@ export class RustAutofillCreditCardsAdapter extends RustAutofillAdapterBase {
   }
 
   /**
-   * The stored cards holding the number this record carries.
+   * Find the stored cards with the same card number as the given record.
    *
    * The counterpart of CreditCardsBase.getDuplicateRecords, comparing what it
-   * compares: the number itself. The mask keeps only the last four digits, so
-   * nothing a record carries answers the question, and the cards are read from
-   * the store as it hands them over rather than through getAll().
+   * compares: the full number. Records read from this store hold only a masked
+   * number, which keeps the last four digits, so the stored numbers have to be
+   * decrypted to be compared.
    *
-   * A card the store hands over without a number is passed over: it never had
-   * one, or it was scrubbed. So is a card whose number the unlocked key cannot
-   * decrypt. This runs on every credit card submission, and one such card must
-   * not cost the user the save prompt for a different one, or for the one that
-   * replaces it. A key that is unavailable stops the search: it is not one card
-   * that cannot be read, it is all of them.
+   * The store derives ccNumberLast4 from the number on every write, so only
+   * the cards ending in the same four digits can hold the number, and only
+   * those are decrypted, as logins decrypts only the candidates that match. A
+   * number no stored card ends in is answered without the key. This runs on
+   * every credit card submission, and a new card must not show the primary
+   * password prompt before the user has chosen to save it.
+   *
+   * A card without a number is passed over: it never had one, or it was
+   * scrubbed. So is a card whose number the unlocked key cannot decrypt: one
+   * such card must not cost the user the save prompt for a different one, or
+   * for the one that replaces it. A key that is unavailable stops the search:
+   * it is not one card that cannot be read, it is all of them.
+   *
+   * A duplicate holds its security code in the clear, read with its number:
+   * the caller compares it with the submitted one to decide what the update
+   * doorhanger offers -- see CreditCardSecurityCodeUpdateDoorhanger.isNeeded.
    *
    * @param {object} record A normalised credit card record.
    * @yields {object} Each stored record holding the same number.
    * @throws NS_ERROR_ABORT if the user declined to unlock the key.
    */
   async *getDuplicateRecords(record) {
-    if (!record["cc-number"]) {
-      return;
-    }
-    const store = await this._store();
-    let cards;
-    try {
-      cards = await this.#withKey(() => this._getAll(store));
-    } catch (e) {
-      if (!(e instanceof lazy.CryptoError)) {
-        throw e;
+    for await (const { candidate, secrets } of this.#duplicates(record)) {
+      const duplicate = this._recordFromRust(candidate);
+      // A read leaves hasSecurityCode out while codes are disabled.
+      if (duplicate.hasSecurityCode && secrets["cc-csc"]) {
+        duplicate["cc-csc"] = secrets["cc-csc"];
       }
-      cards = await this.#readableCards(store);
+      yield duplicate;
     }
-    for (const card of cards) {
-      if (card.ccNumber && card.ccNumber == record["cc-number"]) {
-        yield this._recordFromRust(card);
-      }
-    }
-  }
-
-  /**
-   * Every stored card the key can decrypt, read one at a time. The store fails
-   * a read of every card on any one it cannot decrypt, and that read has
-   * already recorded the store error, so these reads go to the store directly.
-   *
-   * @param {Store} store
-   * @returns {Promise<Array<CreditCard>>}
-   */
-  async #readableCards(store) {
-    const cards = [];
-    for (const { guid } of await store.listCreditCardCandidates()) {
-      try {
-        cards.push(await store.getCreditCard(guid));
-      } catch (e) {
-        if (
-          !(e instanceof lazy.CryptoError) &&
-          !(e instanceof lazy.NoSuchRecord)
-        ) {
-          throw e;
-        }
-      }
-    }
-    return cards;
   }
 
   /**
@@ -533,16 +487,59 @@ export class RustAutofillCreditCardsAdapter extends RustAutofillAdapterBase {
    * number: every field the record states has to agree. The counterpart of
    * CreditCardsBase.getMatchRecords.
    *
+   * The secrets are compared in the clear: the stored record does not hold
+   * them.
+   *
    * @param {object} record A normalised credit card record.
    * @yields {object} Each stored record the given one is a subset of.
    */
   async *getMatchRecords(record) {
-    const fields = this._validFields.filter(field => field != "cc-number");
-    for await (const stored of this.getDuplicateRecords(record)) {
+    const agrees = (field, value) => !record[field] || record[field] == value;
+    for await (const { candidate, secrets } of this.#duplicates(record)) {
+      const stored = this._recordFromRust(candidate);
       if (
-        fields.every(field => !record[field] || record[field] == stored[field])
+        this._validFields.every(field =>
+          agrees(
+            field,
+            SECRET_FIELDS.has(field) ? secrets[field] : stored[field]
+          )
+        )
       ) {
         yield stored;
+      }
+    }
+  }
+
+  /**
+   * What getDuplicateRecords and getMatchRecords share: the stored cards
+   * with the same number as this record, found as getDuplicateRecords
+   * describes. Each comes with its secrets, so that getMatchRecords can
+   * compare the security code without reading it again.
+   *
+   * @param {object} record A normalised credit card record.
+   * @yields {{candidate: CreditCardCandidate, secrets: object}} Each stored
+   *   card holding the same number, with its secrets from #secretsOf.
+   */
+  async *#duplicates(record) {
+    const number = record["cc-number"];
+    if (!number) {
+      return;
+    }
+    const last4 = String(number).slice(-4);
+    const candidates = (await this._getAll(await this._store())).filter(
+      candidate => candidate.ccNumberLast4 == last4
+    );
+    if (!candidates.length) {
+      return;
+    }
+    const secrets = await this.#secretsOf(
+      candidates.map(c => c.guid),
+      { skipUnreadable: true }
+    );
+    for (const candidate of candidates) {
+      const cardSecrets = secrets.get(candidate.guid);
+      if (cardSecrets?.["cc-number"] == number) {
+        yield { candidate, secrets: cardSecrets };
       }
     }
   }
@@ -565,14 +562,15 @@ export class RustAutofillCreditCardsAdapter extends RustAutofillAdapterBase {
   }
 
   /**
-   * Run a store read, telling a locked key from a lost one when it fails.
+   * Run a store read, telling a locked key from a lost one when it fails, and
+   * report the failure.
    *
-   * The store decrypts every number it hands over, and fails the whole read on
-   * one it cannot decrypt. With the token locked that is every card, and the
-   * caller owes NS_ERROR_ABORT. Otherwise the key cannot read what another key
-   * wrote -- the token was reset, or key4.db replaced -- and the CryptoError is
-   * passed on. The stored numbers are left as they are, as passwordmgr leaves
-   * logins it cannot decrypt.
+   * A read that decrypts fails as a whole on one number it cannot decrypt.
+   * With the token locked that is every card, and the caller owes
+   * NS_ERROR_ABORT. Otherwise the key cannot read what another key wrote --
+   * the token was reset, or key4.db replaced -- and the CryptoError is passed
+   * on. The stored numbers are left as they are, as passwordmgr leaves logins
+   * it cannot decrypt.
    *
    * @param {Store} store
    * @param {Function} operation An async function making the store call.
@@ -662,52 +660,112 @@ export class RustAutofillCreditCardsAdapter extends RustAutofillAdapterBase {
   }
 
   /**
-   * The number of a stored card, in the clear.
+   * The secrets of stored cards, in the clear.
    *
-   * With getDuplicateRecords, the only place this adapter reads a number. The
-   * store decrypts every card it hands over, and every record built from one
-   * carries a mask instead, so the number goes no further than the caller that
-   * asked for it.
+   * The only read in this adapter that decrypts, and so the only one that can
+   * show the primary password prompt. Only the secrets leave it, never a
+   * whole card: records are built from CreditCardCandidates.
    *
-   * @param {string} guid
-   * @returns {Promise<?string>} The number, or null if the store handed the
-   *   card over without one: it never had one, or it was scrubbed.
+   * @param {Array<string>} guids
+   * @param {object} [options]
+   * @param {boolean} [options.skipUnreadable] Leave out a card the unlocked
+   *   key cannot decrypt instead of failing the read.
+   * @returns {Promise<Map<string, object>>} Each card's SECRET_FIELDS, keyed
+   *   by field, null where the card has none: it never had one, or it was
+   *   scrubbed. A guid the store no longer holds is left out.
    * @throws NS_ERROR_ABORT if the user declined to unlock the key.
    */
-  async #numberOf(guid) {
-    const card = await this.#withKey(async () =>
-      this._get(await this._store(), guid)
-    );
-    return card.ccNumber || null;
+  #secretsOf(guids, { skipUnreadable = false } = {}) {
+    return this.#withKey(async () => {
+      const store = await this._store();
+      const secrets = new Map();
+      for (const guid of guids) {
+        try {
+          const card = await this.#read(
+            store,
+            () => store.getCreditCard(guid),
+            guid
+          );
+          secrets.set(
+            guid,
+            Object.fromEntries(
+              Array.from(SECRET_FIELDS, ([field, property]) => [
+                field,
+                card[property] || null,
+              ])
+            )
+          );
+        } catch (e) {
+          // #read reports a locked key as NS_ERROR_ABORT, so a CryptoError is
+          // a card this key cannot decrypt.
+          const skip =
+            e instanceof lazy.NoSuchRecord ||
+            (skipUnreadable && e instanceof lazy.CryptoError);
+          if (!skip) {
+            throw e;
+          }
+        }
+      }
+      return secrets;
+    });
   }
 
   /**
-   * The cleartext of an encrypted field of a stored record. The counterpart of
-   * CreditCardsBase.decryptField.
+   * The secrets of one stored card. See #secretsOf.
    *
-   * The record carries a mask rather than a ciphertext, so the number is read
-   * from the store by the record's guid. The key is the store's rather than the
-   * OS key store's, so OS re-authentication is a step of its own instead of
-   * something decrypting does on the way past.
+   * @param {string} guid
+   * @returns {Promise<object>} The card's SECRET_FIELDS, keyed by field.
+   * @throws NoSuchRecord if the store does not hold the card, or
+   *   NS_ERROR_ABORT if the user declined to unlock the key.
+   */
+  async #secretsOfCard(guid) {
+    const secrets = await this.#secretsOf([guid]);
+    if (!secrets.has(guid)) {
+      throw new lazy.NoSuchRecord(guid);
+    }
+    return secrets.get(guid);
+  }
+
+  /**
+   * The cleartext of encrypted fields of a stored record. The counterpart of
+   * CreditCardsBase.decryptFields.
+   *
+   * The record holds no ciphertext, so the secrets are read from the store by
+   * the record's guid, all of them in one read. What the record holds for
+   * them is for display and is not consulted. The key is the store's rather
+   * than the OS key store's, so OS re-authentication is a step of its own
+   * instead of something decrypting does on the way past.
    *
    * @param {object} record A record this store handed out.
-   * @param {string} field The field to read, e.g. "cc-number".
+   * @param {Array<string>} fields The fields to read, from SECRET_FIELDS.
    * @param {object} [options]
    * @param {string|false} [options.reauth] The OS re-authentication prompt to
-   *   show first, or false to read it without one. A `trigger` is accepted and
-   *   ignored: it labels the OS key store's telemetry, and this store does not
-   *   reach the OS key store.
-   * @returns {Promise<?string>} The cleartext, or null if the store holds none
-   *   for the record. Only a record this store handed out with a number carries
-   *   a mask, so one without holds none here, and nothing is asked of the user
-   *   for it.
-   * @throws NS_ERROR_ABORT if the user declined either prompt.
+   *   show first, or false to read them without one. A `trigger` is accepted
+   *   and ignored: it labels the OS key store's telemetry, and this store does
+   *   not reach the OS key store.
+   * @returns {Promise<object>} Each field's cleartext, or null if the store
+   *   holds none for the card, or it is a security code while codes are
+   *   disabled. A record with no guid is not one the store holds: it reads as
+   *   null throughout and asks nothing of the user.
+   * @throws NoSuchRecord if the store no longer holds the card, or
+   *   NS_ERROR_ABORT if the user declined either prompt.
    */
-  async decryptField(record, field, { reauth = false } = {}) {
-    // Refuses a field no store keeps encrypted.
-    lazy.CreditCardRecord.ciphertextField(field);
-    if (!isMasked(record[field])) {
-      return null;
+  async decryptFields(record, fields, { reauth = false } = {}) {
+    for (const field of fields) {
+      if (!SECRET_FIELDS.has(field)) {
+        throw new Error(`${field} is not stored encrypted`);
+      }
+    }
+    const cleartext = Object.fromEntries(fields.map(field => [field, null]));
+    // The security code is not handed out while codes are disabled, as every
+    // consumer read leaves it out then -- see
+    // CreditCardRecord.stripSecurityCodeWhenDisabled.
+    const wanted = fields.filter(
+      field =>
+        field != "cc-csc" || lazy.FormAutofill.isAutofillCreditCardCVVEnabled
+    );
+    if (!record.guid || !wanted.length) {
+      return cleartext;
     }
     // TODO: Bug 2073416 - authenticating the user does not belong here. This
     // store's key is NSS's, so the OS prompt guards nothing it reads; the
@@ -729,32 +787,53 @@ export class RustAutofillCreditCardsAdapter extends RustAutofillAdapterBase {
         );
       }
     }
-    return this.#numberOf(record.guid);
+    const secrets = await this.#secretsOfCard(record.guid);
+    for (const field of wanted) {
+      cleartext[field] = secrets[field];
+    }
+    return cleartext;
   }
 
   /**
-   * Restore the number, so a stored record can be merged with. Mirrors
+   * Decrypt a single field of a stored record. See decryptFields.
+   *
+   * @param {object} record
+   * @param {string} field
+   * @param {object} [options] As for decryptFields.
+   * @returns {Promise<?string>}
+   */
+  async decryptField(record, field, options) {
+    return (await this.decryptFields(record, [field], options))[field];
+  }
+
+  /**
+   * Restore the secrets, so a stored record can be merged with. Mirrors
    * CreditCardsBase._stripComputedFields: `cc-number` is held masked, so a
    * merge that kept the mask would write it as though it were the number.
    *
-   * The mask goes first and is put back only as a number the store read. A card
-   * can hold a mask with no number behind it -- scrubEncryptedData() blanks the
-   * ciphertext and keeps the last four digits -- and leaving the mask would
-   * store it as the number. _validateRecord refuses the update instead, unless
-   * the caller supplies a new number.
+   * What the record holds for a secret is for display, so it goes first, and
+   * is put back only as a value the store read. A card can have no number
+   * behind its mask -- scrubEncryptedData() blanks the ciphertext and keeps
+   * the last four digits -- and keeping the mask would store it as the number.
+   * _validateRecord refuses the update instead, unless the caller supplies a
+   * new number.
+   *
+   * The security code is restored the same way. It is in
+   * _fieldsKeptWhenOmitted, so an update that omits it writes back what is
+   * restored here, and without this would clear the stored code.
    *
    * @param {object} record The record, modified in place.
    * @throws NS_ERROR_ABORT if the user declined to unlock the key.
    */
   async _prepareStoredForMerge(record) {
-    const masked = record["cc-number"];
-    delete record["cc-number"];
-    if (!masked) {
-      return;
+    for (const field of SECRET_FIELDS.keys()) {
+      delete record[field];
     }
-    const number = await this.#numberOf(record.guid);
-    if (number) {
-      record["cc-number"] = number;
+    const secrets = await this.#secretsOfCard(record.guid);
+    for (const field of SECRET_FIELDS.keys()) {
+      if (secrets[field]) {
+        record[field] = secrets[field];
+      }
     }
   }
 
@@ -812,12 +891,13 @@ export class RustAutofillCreditCardsAdapter extends RustAutofillAdapterBase {
   async _recordForMigrationExport(record) {
     const exported = { ...record };
     delete exported["cc-csc"];
+    delete exported.hasSecurityCode;
     // A record that never had a number has no mask either, and crosses
     // unchanged.
     if (!exported["cc-number"]) {
       return exported;
     }
-    const number = await this.#numberOf(record.guid);
+    const number = (await this.#secretsOfCard(record.guid))["cc-number"];
     if (!number) {
       // The mask has no number behind it, so handing it over would have the
       // receiving store encrypt the mask in place of the card.

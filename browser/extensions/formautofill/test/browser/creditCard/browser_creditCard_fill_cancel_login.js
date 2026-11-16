@@ -75,3 +75,55 @@ add_task(async function test_fill_creditCard_but_cancel_login() {
     "Result was abort"
   );
 });
+
+add_task(async function test_fill_creditCard_after_cancelling_login() {
+  if (
+    !OSKeyStore.canReauth() ||
+    !OSKeyStoreTestUtils.canTestOSKeyStoreLogin()
+  ) {
+    todo(
+      OSKeyStore.canReauth() && OSKeyStoreTestUtils.canTestOSKeyStoreLogin(),
+      "Cannot test login cancel."
+    );
+    return;
+  }
+
+  await setStorage(TEST_CREDIT_CARD_2);
+  await BrowserTestUtils.withNewTab(
+    { gBrowser, url: CREDITCARD_FORM_URL },
+    async function (browser) {
+      // A declined OS prompt aborts that fill and nothing else.
+      let osKeyStoreLoginShown =
+        OSKeyStoreTestUtils.waitForOSKeyStoreLogin(false);
+      await openPopupOn(browser, "#cc-name");
+      let popupClosePromise = BrowserTestUtils.waitForPopupEvent(
+        browser.autoCompletePopup,
+        "hidden"
+      );
+      EventUtils.synthesizeMouseAtCenter(
+        getDisplayedPopupItems(browser)[0],
+        {}
+      );
+      await Promise.all([osKeyStoreLoginShown, popupClosePromise]);
+
+      osKeyStoreLoginShown = OSKeyStoreTestUtils.waitForOSKeyStoreLogin(true);
+      await openPopupOn(browser, "#cc-name");
+      const items = getDisplayedPopupItems(browser);
+      ok(items.length, "The card is still offered after the decline");
+      popupClosePromise = BrowserTestUtils.waitForPopupEvent(
+        browser.autoCompletePopup,
+        "hidden"
+      );
+      await BrowserTestUtils.synthesizeKey("VK_DOWN", {}, browser);
+      await BrowserTestUtils.synthesizeKey("VK_RETURN", {}, browser);
+      await Promise.all([osKeyStoreLoginShown, popupClosePromise]);
+      await waitForAutofill(
+        browser,
+        "#cc-number",
+        TEST_CREDIT_CARD_2["cc-number"]
+      );
+    }
+  );
+
+  await removeAllRecords();
+});
