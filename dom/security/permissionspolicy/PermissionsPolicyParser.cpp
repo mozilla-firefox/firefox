@@ -5,9 +5,11 @@
 #include "PermissionsPolicyParser.h"
 
 #include "mozilla/BasePrincipal.h"
+#include "mozilla/UniquePtr.h"
 #include "mozilla/dom/Feature.h"
 #include "mozilla/dom/PermissionsPolicyUtils.h"
 #include "mozilla/dom/PolicyTokenizer.h"
+#include "mozilla/dom/nsCSPParser.h"
 #include "mozilla/net/SFV.h"
 #include "nsIScriptError.h"
 #include "nsIURI.h"
@@ -151,26 +153,18 @@ bool PermissionsPolicyParser::ParsePolicyFromAttribute(
   return true;
 }
 
-// Temporary: this supports only exact origins. Bug 2068536 will replace it
-// with Permissions-Policy source-expression parsing.
 static bool AppendOriginToFeature(const nsACString& aValue, Document* aDocument,
                                   nsIPrincipal* aSelfOrigin,
                                   Feature& aFeature) {
-  nsCOMPtr<nsIURI> uri;
-  nsresult rv = NS_NewURI(getter_AddRefs(uri), aValue);
-  if (NS_FAILED(rv)) {
-    ReportToConsoleInvalidAllowValue(aDocument, NS_ConvertUTF8toUTF16(aValue));
+  NS_ConvertUTF8toUTF16 sourceExpression(aValue);
+  UniquePtr<nsCSPBaseSrc> source =
+      nsCSPParser::parseSingleSourceExpression(sourceExpression, aSelfOrigin);
+  if (!source) {
+    ReportToConsoleInvalidAllowValue(aDocument, sourceExpression);
     return false;
   }
 
-  nsCOMPtr<nsIPrincipal> origin = BasePrincipal::CreateContentPrincipal(
-      uri, BasePrincipal::Cast(aSelfOrigin)->OriginAttributesRef());
-  if (NS_WARN_IF(!origin)) {
-    ReportToConsoleInvalidAllowValue(aDocument, NS_ConvertUTF8toUTF16(aValue));
-    return false;
-  }
-
-  aFeature.AppendToAllowList(origin);
+  aFeature.AppendSourceExpression(std::move(source));
   return true;
 }
 
@@ -226,8 +220,7 @@ bool PermissionsPolicyParser::ParsePolicyFromHeader(
           continue;
         }
 
-        // 2.2 Parse quoted allowlist entries including origins
-        // TODO Bug 2068536: Support non-origin source expressions.
+        // 2.2 Parse quoted allowlist entries including source expressions.
         nsAutoCString source;
         if (NS_SUCCEEDED(item.GetValue<net::SFV::SFVString>(source))) {
           AppendOriginToFeature(source, aDocument, aSelfOrigin, feature);

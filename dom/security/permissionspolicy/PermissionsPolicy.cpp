@@ -204,6 +204,7 @@ void PermissionsPolicy::AppendToDeclaredAllowInAncestorChain(
       for (nsIPrincipal* principal : list) {
         featureInChain.AppendToAllowList(principal);
       }
+      featureInChain.AppendSourceExpressionsFromFeature(aFeature);
       continue;
     }
   }
@@ -389,6 +390,8 @@ void PermissionsPolicy::GetAllowlistForFeature(
 
         aList.AppendElement(NS_ConvertUTF8toUTF16(originNoSuffix));
       }
+
+      feature.GetSourceExpressions(aList);
       return;
     }
   }

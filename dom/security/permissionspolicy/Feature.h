@@ -5,13 +5,33 @@
 #ifndef mozilla_dom_Feature_h
 #define mozilla_dom_Feature_h
 
+#include "mozilla/RefPtr.h"
+#include "mozilla/UniquePtr.h"
+#include "mozilla/dom/nsCSPUtils.h"
 #include "nsCOMPtr.h"
+#include "nsISupportsImpl.h"
 #include "nsString.h"
 #include "nsTArray.h"
 
 class nsIPrincipal;
 
 namespace mozilla::dom {
+
+// Refcounted wrapper that lets Feature copies share a parsed source expression.
+class ParsedSourceExpression final {
+ public:
+  NS_INLINE_DECL_REFCOUNTING(ParsedSourceExpression)
+
+  explicit ParsedSourceExpression(UniquePtr<nsCSPBaseSrc> aSource)
+      : mSource(std::move(aSource)) {}
+
+  const nsCSPBaseSrc& Source() const { return *mSource; }
+
+ private:
+  ~ParsedSourceExpression() = default;
+
+  UniquePtr<nsCSPBaseSrc> mSource;
+};
 
 class Feature final {
  public:
@@ -31,7 +51,13 @@ class Feature final {
 
   void AppendToAllowList(nsIPrincipal* aPrincipal);
 
+  void AppendSourceExpression(UniquePtr<nsCSPBaseSrc> aSourceExpression);
+
+  void AppendSourceExpressionsFromFeature(const Feature& aOther);
+
   void GetAllowList(nsTArray<nsCOMPtr<nsIPrincipal>>& aList) const;
+
+  void GetSourceExpressions(nsTArray<nsString>& aList) const;
 
   bool AllowListContains(nsIPrincipal* aPrincipal) const;
 
@@ -56,6 +82,7 @@ class Feature final {
   Policy mPolicy;
 
   CopyableTArray<nsCOMPtr<nsIPrincipal>> mAllowList;
+  CopyableTArray<RefPtr<ParsedSourceExpression>> mSourceExpressions;
 };
 
 }  // namespace mozilla::dom
