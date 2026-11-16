@@ -1439,9 +1439,8 @@ void CanvasRenderingContext2D::OnShutdown() {
 }
 
 void CanvasRenderingContext2D::OnRemoteCanvasLost() {
-  // We only lose context / data if we are using remote canvas, which is only
-  // for accelerated targets.
-  if (!mBufferProvider || !mBufferProvider->IsAccelerated() || mIsContextLost) {
+  // We only lose context / data if we are using remote canvas.
+  if (!mBufferProvider || !mBufferProvider->IsRemote() || mIsContextLost) {
     return;
   }
 
@@ -1696,11 +1695,11 @@ bool CanvasRenderingContext2D::BorrowTarget(const IntRect& aPersistedRect,
                                             bool aNeedsClear) {
   // We are attempting to request a DrawTarget from the current
   // PersistentBufferProvider. However, if the provider needs to be refreshed,
-  // or if it is accelerated and the application has requested that we disallow
-  // acceleration, then we skip trying to use this provider so that it will be
+  // or if it is remote and the application has requested software rendering,
+  // then we skip trying to use this provider so that it will be
   // recreated by EnsureTarget later.
   if (!mBufferProvider || mBufferProvider->RequiresRefresh() ||
-      (mBufferProvider->IsAccelerated() && UseSoftwareRendering())) {
+      (mBufferProvider->IsRemote() && UseSoftwareRendering())) {
     return false;
   }
   mTarget = mBufferProvider->BorrowDrawTarget(aPersistedRect);
@@ -2001,7 +2000,7 @@ bool CanvasRenderingContext2D::TryAcceleratedTarget(
     // GPU process threads.
     return false;
   }
-  if (mBufferProvider && mBufferProvider->IsAccelerated() &&
+  if (mBufferProvider && mBufferProvider->IsRemote() &&
       mBufferProvider->RequiresRefresh()) {
     // If there is already a provider and we got here, then the provider needs
     // to be refreshed and we should avoid using acceleration in the future.
@@ -2021,7 +2020,7 @@ bool CanvasRenderingContext2D::TryAcceleratedTarget(
       return false;
     }
 
-    aOutProvider = PersistentBufferProviderAccelerated::Create(
+    aOutProvider = PersistentBufferProviderRemote::Create(
         GetSize(), GetSurfaceFormat(), renderer->AsKnowsCompositor());
   } else if (mOffscreenCanvas &&
              StaticPrefs::gfx_canvas_remote_allow_offscreen()) {
@@ -2030,7 +2029,7 @@ bool CanvasRenderingContext2D::TryAcceleratedTarget(
       return false;
     }
 
-    aOutProvider = PersistentBufferProviderAccelerated::Create(
+    aOutProvider = PersistentBufferProviderRemote::Create(
         GetSize(), GetSurfaceFormat(), imageBridge);
   }
 
@@ -6179,8 +6178,7 @@ void CanvasRenderingContext2D::DrawImage(const CanvasImageSource& aImage,
                         nsLayoutUtils::SFE_NO_RASTERIZING_VECTORS |
                         nsLayoutUtils::SFE_ALLOW_UNCROPPED_UNSCALED;
 
-    bool fastPath = mBufferProvider->IsAccelerated() &&
-                    mTarget->IsRecording() &&
+    bool fastPath = mBufferProvider->IsRemote() && mTarget->IsRecording() &&
                     !(NeedToApplyFilter() || NeedToDrawShadow());
 
     // Prefer handing the remote canvas a surface descriptor, and fall back to

@@ -47,6 +47,8 @@ class PersistentBufferProvider : public RefCounted<PersistentBufferProvider>,
 
   virtual bool IsShared() const { return false; }
   virtual bool IsAccelerated() const { return false; }
+  // Whether the canvas is drawn in another process.
+  virtual bool IsRemote() const { return false; }
 
   /**
    * Get a DrawTarget from the PersistentBufferProvider.
@@ -150,16 +152,17 @@ class PersistentBufferProviderBasic : public PersistentBufferProvider {
   RefPtr<gfx::SourceSurface> mSnapshot;
 };
 
-class PersistentBufferProviderAccelerated : public PersistentBufferProvider {
+class PersistentBufferProviderRemote : public PersistentBufferProvider {
  public:
-  MOZ_DECLARE_REFCOUNTED_VIRTUAL_TYPENAME(PersistentBufferProviderAccelerated,
+  MOZ_DECLARE_REFCOUNTED_VIRTUAL_TYPENAME(PersistentBufferProviderRemote,
                                           override)
 
-  static already_AddRefed<PersistentBufferProviderAccelerated> Create(
+  static already_AddRefed<PersistentBufferProviderRemote> Create(
       gfx::IntSize aSize, gfx::SurfaceFormat aFormat,
       KnowsCompositor* aKnowsCompositor);
 
   bool IsAccelerated() const override { return true; }
+  bool IsRemote() const override { return true; }
 
   already_AddRefed<gfx::DrawTarget> BorrowDrawTarget(
       const gfx::IntRect& aPersistedRect) override;
@@ -187,10 +190,10 @@ class PersistentBufferProviderAccelerated : public PersistentBufferProvider {
       CompositableForwarder* aForwarder) override;
 
  protected:
-  explicit PersistentBufferProviderAccelerated(
+  explicit PersistentBufferProviderRemote(
       RemoteTextureOwnerId aRemoteTextureOwnerId,
       const RefPtr<TextureClient>& aTexture);
-  ~PersistentBufferProviderAccelerated() override;
+  ~PersistentBufferProviderRemote() override;
 
   void Destroy();
 
