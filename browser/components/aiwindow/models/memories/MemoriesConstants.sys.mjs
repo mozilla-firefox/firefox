@@ -67,6 +67,70 @@ export const MAX_SESSIONS_FIRST_RUN = 50;
 export const MAX_SESSIONS_DELTA_RUN = 30;
 
 /**
+ * Memories generation run telemetry
+ */
+export const GENERATION_RUN_OUTCOME = Object.freeze({
+  SUCCESS: "success",
+  NO_SESSIONS: "no_sessions",
+  NO_CANDIDATES: "no_candidates",
+  ALL_FILTERED: "all_filtered",
+  ERROR: "error",
+});
+export const GENERATION_RUN_ERROR_STAGE = Object.freeze({
+  SOURCES: "sources",
+  GENERATION: "generation",
+  FILTER: "filter",
+  SAVE: "save",
+  MERGE: "merge",
+  OTHER: "other",
+});
+export const GENERATION_RUN_ERROR_TYPE = Object.freeze({
+  RATE_LIMITED: "rate_limited",
+  TRANSIENT: "transient",
+  SERVER_REJECTED: "server_rejected",
+  FIREFOX_INTERNAL: "firefox_internal",
+});
+export const GENERATION_RUN_MERGE_STATUS = Object.freeze({
+  NOT_REACHED: "not_reached",
+  NOT_RUN: "not_run",
+  BELOW_THRESHOLD: "below_threshold",
+  RAN: "ran",
+});
+
+/**
+ * Schema for memories generation telemetry statistics sent through a Glean event.
+ *
+ * @typedef {object} MemoriesGenerationRunStats
+ * @property {boolean} [generation_triggered] The scheduler decided to generate memories
+ * @property {number} [memories_before] Stored memories when generation started
+ * @property {boolean} [is_first_run] No earlier run had processed any activity
+ * @property {number} [history_rows_pulled] History rows read
+ * @property {number} [history_rows_kept] History rows left after filtering
+ * @property {number} [chat_messages_pulled] Chat messages read
+ * @property {number} [chat_messages_kept] Chat messages left after filtering
+ * @property {number} [sessions_built] Sessions built from the kept rows and messages
+ * @property {number} [sessions_skipped] Sessions dropped by the heuristic gate
+ * @property {number} [sessions_processed] Sessions sent for generation after the gate and cap
+ * @property {number} [sessions_processed_events] Count of visits, searches and chat messages across processed sessions
+ * @property {number} [sessions_processed_events_min] Count of events in the smallest processed session
+ * @property {number} [sessions_processed_events_max] Count of events in the largest processed session
+ * @property {number} [generation_batches] Generation batches attempted
+ * @property {number} [generation_batches_skipped] Batches skipped after a non-retryable error
+ * @property {number} [generation_candidates] Candidate memories generated
+ * @property {number} [filter_dropped] Candidates dropped by the quality and sensitivity filter
+ * @property {number} [save_new] Candidates saved as new memories
+ * @property {number} [save_updated] Candidates saved as updates to stored memories
+ * @property {string} [merge_status] One of {@link GENERATION_RUN_MERGE_STATUS}
+ * @property {number} [merge_groups_proposed] Merge groups the model proposed
+ * @property {number} [merge_groups_saved] Valid merge groups saved as merged memories
+ * @property {number} [merge_components_removed] Memories deleted because they were merged
+ * @property {number} [memories_after] Stored memories when the run ended
+ * @property {string} [outcome] One of {@link GENERATION_RUN_OUTCOME}
+ * @property {string} [error_stage] One of {@link GENERATION_RUN_ERROR_STAGE}
+ * @property {string} [error_type] One of {@link GENERATION_RUN_ERROR_TYPE}
+ */
+
+/**
  * Memory frecency constants
  */
 export const MEMORY_FRECENCY_MAX_DAYS = 7;

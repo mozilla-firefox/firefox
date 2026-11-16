@@ -13,6 +13,8 @@ import {
 import { BlockListManager } from "chrome://global/content/ml/Utils.sys.mjs";
 import { SensitiveInfoDetector } from "moz-src:///browser/components/aiwindow/models/memories/SensitiveInfoDetector.sys.mjs";
 
+/** @typedef {import("./MemoriesConstants.sys.mjs").MemoriesGenerationRunStats} MemoriesGenerationRunStats */
+
 // Chat fetch defaults
 const DEFAULT_MAX_RESULTS = 50;
 const DEFAULT_HALF_LIFE_DAYS = 7;
@@ -39,6 +41,8 @@ let _sensitiveInfoDetector = new SensitiveInfoDetector();
  *        Maximum number of most recent messages to return.
  * @param {number} [halfLifeDays=DEFAULT_HALF_LIFE_DAYS]
  *        Half-life in days for the freshness decay function.
+ * @param {MemoriesGenerationRunStats} [stats]
+ *        Stats object to record telemetry information
  * @returns {Promise<Array<{
  *   createdDate: number,
  *   role: string,
@@ -52,7 +56,8 @@ let _sensitiveInfoDetector = new SensitiveInfoDetector();
 export async function getRecentChats(
   startTime = 0,
   maxResults = DEFAULT_MAX_RESULTS,
-  halfLifeDays = DEFAULT_HALF_LIFE_DAYS
+  halfLifeDays = DEFAULT_HALF_LIFE_DAYS,
+  stats
 ) {
   // Underlying Chatstore uses Date type but MemoriesStore maintains in TS
   const startDate = new Date(startTime);
@@ -78,6 +83,11 @@ export async function getRecentChats(
     }
     return true;
   });
+
+  if (stats) {
+    stats.chat_messages_pulled = messages.length;
+    stats.chat_messages_kept = filtered.length;
+  }
 
   const chatMessages = filtered.map(msg => {
     const createdDate = msg.createdDate;

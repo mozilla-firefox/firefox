@@ -1217,12 +1217,35 @@ add_task(async function test_generateMemoriesFromSessions_caps_first_run() {
       "setLastSessionMemoryTimestamp"
     );
 
+    Services.fog.testResetFOG();
+    const stats = {};
     const { generationPrompts, keptSummaries, persisted } =
       await runSessionGenerationWithMockEngine({
         batchSize: BATCH_SIZE,
         maxBatchRetries: 1,
         initialMemoryGenerationRetryDelayMS: 1,
+        stats,
       });
+
+    // The sources are stubbed, so they report no counts.
+    assertMemoriesGenerationRunEvent(
+      {
+        is_first_run: true,
+        sessions_built: SESSION_COUNT,
+        sessions_skipped: 0,
+        sessions_processed: MAX_SESSIONS_FIRST_RUN,
+        sessions_processed_events: MAX_SESSIONS_FIRST_RUN,
+        sessions_processed_events_min: 1,
+        sessions_processed_events_max: 1,
+        generation_batches: EXPECTED_GENERATION_REQUESTS,
+        generation_batches_skipped: 0,
+        generation_candidates: EXPECTED_GENERATION_REQUESTS,
+        filter_dropped: 0,
+        save_new: EXPECTED_GENERATION_REQUESTS,
+        save_updated: 0,
+      },
+      { stats }
+    );
 
     const historyOpts = getRecentHistory.firstCall.args[0];
     Assert.equal(
@@ -1315,12 +1338,35 @@ add_task(async function test_generateMemoriesFromSessions_caps_delta_run() {
       "setLastSessionMemoryTimestamp"
     );
 
+    Services.fog.testResetFOG();
+    const stats = {};
     const { generationPrompts, keptSummaries, persisted } =
       await runSessionGenerationWithMockEngine({
         batchSize: BATCH_SIZE,
         maxBatchRetries: 1,
         initialMemoryGenerationRetryDelayMS: 1,
+        stats,
       });
+
+    // The sources are stubbed, so they report no counts.
+    assertMemoriesGenerationRunEvent(
+      {
+        is_first_run: false,
+        sessions_built: SESSION_COUNT,
+        sessions_skipped: 0,
+        sessions_processed: MAX_SESSIONS_DELTA_RUN,
+        sessions_processed_events: MAX_SESSIONS_DELTA_RUN,
+        sessions_processed_events_min: 1,
+        sessions_processed_events_max: 1,
+        generation_batches: EXPECTED_GENERATION_REQUESTS,
+        generation_batches_skipped: 0,
+        generation_candidates: EXPECTED_GENERATION_REQUESTS,
+        filter_dropped: 0,
+        save_new: EXPECTED_GENERATION_REQUESTS,
+        save_updated: 0,
+      },
+      { stats }
+    );
 
     // Guards against the run silently taking the first-run path, which would
     // apply the wrong cap and make the count below pass for the wrong reason.
@@ -2403,12 +2449,25 @@ add_task(async function test_mergeMemories_rejects_empty_statement() {
     reasoning: "Places recurring orders for espresso beans",
   });
 
-  const runPromise = MemoriesManager.mergeMemories(MERGE_ALL);
+  Services.fog.testResetFOG();
+  const stats = {};
+  const runPromise = MemoriesManager.mergeMemories({ ...MERGE_ALL, stats });
   await respondToMergeRequest(
     ["Prefers dark roast coffee", "Buys espresso beans monthly"],
     ""
   );
   await runPromise;
+
+  // The proposed group was invalid, so nothing was saved or removed.
+  assertMemoriesGenerationRunEvent(
+    {
+      merge_status: "ran",
+      merge_groups_proposed: 1,
+      merge_groups_saved: 0,
+      merge_components_removed: 0,
+    },
+    { stats }
+  );
 
   const memories = await MemoriesManager.getAllMemories();
   Assert.deepEqual(
@@ -2667,12 +2726,26 @@ add_task(
       reasoning: "Places recurring orders for espresso beans",
     });
 
-    const runPromise = MemoriesManager.mergeMemories(MERGE_ALL);
+    Services.fog.testResetFOG();
+    const stats = {};
+    const runPromise = MemoriesManager.mergeMemories({ ...MERGE_ALL, stats });
     await respondToMergeRequest(
       ["Prefers dark roast coffee", "Buys espresso beans monthly"],
       "Prefers dark roast coffee"
     );
     await runPromise;
+
+    // Saving the merged memory updated the matching component, so only the
+    // other component was removed.
+    assertMemoriesGenerationRunEvent(
+      {
+        merge_status: "ran",
+        merge_groups_proposed: 1,
+        merge_groups_saved: 1,
+        merge_components_removed: 1,
+      },
+      { stats }
+    );
 
     const memories = await MemoriesManager.getAllMemories();
     Assert.equal(

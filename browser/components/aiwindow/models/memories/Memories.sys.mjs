@@ -59,7 +59,12 @@ import {
   MEMORY_FRECENCY_MAX_DAYS,
   MEMORY_FRECENCY_DAY_HALFLIFE,
   MEMORY_DECAY_THRESHOLD,
+  GENERATION_RUN_OUTCOME,
+  GENERATION_RUN_ERROR_STAGE,
+  GENERATION_RUN_ERROR_TYPE,
 } from "./MemoriesConstants.sys.mjs";
+
+/** @typedef {import("./MemoriesConstants.sys.mjs").MemoriesGenerationRunStats} MemoriesGenerationRunStats */
 
 // Pipeline input key for unified session bundles.
 const SESSIONS = "sessions";
@@ -72,6 +77,35 @@ const MAX_RETRIES_PER_BATCH = 3;
 
 // Number of MS to wait before retrying a transient error
 const INITIAL_MEMORY_GENERATION_BATCH_RETRY_DELAY_MS = 12000;
+
+/**
+ * Records a failed stage on a generation run's stats.
+ *
+ * Only the first error is kept.
+ *
+ * @param {MemoriesGenerationRunStats} [stats]
+ * @param {string} stage  One of GENERATION_RUN_ERROR_STAGE
+ * @param {Error} error
+ */
+export function setGenerationRunError(stats, stage, error) {
+  if (!stats || stats.error_stage) {
+    return;
+  }
+  stats.outcome = GENERATION_RUN_OUTCOME.ERROR;
+  stats.error_stage = stage;
+  if (openAIEngine.is429Error(error)) {
+    stats.error_type = GENERATION_RUN_ERROR_TYPE.RATE_LIMITED;
+  } else if (openAIEngine.isRetryableError(error)) {
+    stats.error_type = GENERATION_RUN_ERROR_TYPE.TRANSIENT;
+  } else if (
+    typeof error?.status === "number" ||
+    /\d{3} status code/.test(error?.message ?? "")
+  ) {
+    stats.error_type = GENERATION_RUN_ERROR_TYPE.SERVER_REJECTED;
+  } else {
+    stats.error_type = GENERATION_RUN_ERROR_TYPE.FIREFOX_INTERNAL;
+  }
+}
 
 /**
  * Generates, filters, and deduplicates memories from a batch of unified session
@@ -96,6 +130,7 @@ const INITIAL_MEMORY_GENERATION_BATCH_RETRY_DELAY_MS = 12000;
  * @param {number} [opts.batchSize]             Max sessions per generation call
  * @param {number} [opts.maxBatchRetries]       Max retries per batch per generation call
  * @param {number} [opts.initialMemoryGenerationRetryDelayMS] Number of MS to delay before retrying a transient error
+ * @param {MemoriesGenerationRunStats} [opts.stats] Stats object to record telemetry information
  * @returns {Promise<{memories: Array<object>, processedThroughMs: number}>}
  *   `memories` is the final list of generated, filtered objects.
  *   `processedThroughMs` is the max `session_end_ms` the caller should
@@ -111,10 +146,14 @@ export async function runSessionMemoryPipeline(
     batchSize = MAX_SESSIONS_PER_BATCH,
     maxBatchRetries = MAX_RETRIES_PER_BATCH,
     initialMemoryGenerationRetryDelayMS = INITIAL_MEMORY_GENERATION_BATCH_RETRY_DELAY_MS,
+    stats = {},
   } = {}
 ) {
   const candidateMemories = [];
   let processedThroughMs = 0;
+  let lastBatchError;
+  stats.generation_batches = 0;
+  stats.generation_batches_skipped = 0;
 
   // Step 1: Per-batch generation. Accumulate candidates across all batches.
   for (let i = 0; i < sessions.length; i += batchSize) {
@@ -124,6 +163,7 @@ export async function runSessionMemoryPipeline(
       0
     );
 
+    stats.generation_batches++;
     let batchHandled = false;
     let lastRetryableError;
     for (let attempt = 0; attempt < maxBatchRetries; attempt++) {
@@ -152,6 +192,8 @@ export async function runSessionMemoryPipeline(
           "runSessionMemoryPipeline: batch generation failed; skipping past it",
           e
         );
+        stats.generation_batches_skipped++;
+        lastBatchError = e;
         batchHandled = true;
         break;
       }
@@ -159,11 +201,30 @@ export async function runSessionMemoryPipeline(
     if (!batchHandled) {
       // Retries exhausted on a transient error: propagate so the caller can
       // back off and retry. Watermark is not advanced.
+      setGenerationRunError(
+        stats,
+        GENERATION_RUN_ERROR_STAGE.GENERATION,
+        lastRetryableError
+      );
       throw lastRetryableError;
     }
   }
 
+  stats.generation_candidates = candidateMemories.length;
+  if (
+    stats.generation_batches &&
+    stats.generation_batches_skipped === stats.generation_batches
+  ) {
+    setGenerationRunError(
+      stats,
+      GENERATION_RUN_ERROR_STAGE.GENERATION,
+      lastBatchError
+    );
+    return { memories: [], processedThroughMs };
+  }
+
   if (!candidateMemories.length) {
+    stats.outcome ??= GENERATION_RUN_OUTCOME.NO_CANDIDATES;
     return { memories: [], processedThroughMs };
   }
 
@@ -171,11 +232,19 @@ export async function runSessionMemoryPipeline(
   const candidateSummaries = candidateMemories.map(
     memory => memory.memory_summary
   );
-  const filteredSummaries = await applyQualityAndSensitivityFilter(
-    conversation,
-    candidateSummaries
-  );
+  let filteredSummaries;
+  try {
+    filteredSummaries = await applyQualityAndSensitivityFilter(
+      conversation,
+      candidateSummaries
+    );
+  } catch (e) {
+    setGenerationRunError(stats, GENERATION_RUN_ERROR_STAGE.FILTER, e);
+    throw e;
+  }
   if (!filteredSummaries || !filteredSummaries.length) {
+    stats.filter_dropped = candidateMemories.length;
+    stats.outcome ??= GENERATION_RUN_OUTCOME.ALL_FILTERED;
     return { memories: [], processedThroughMs };
   }
 
@@ -184,6 +253,7 @@ export async function runSessionMemoryPipeline(
     candidateMemories,
     filteredSummaries
   );
+  stats.filter_dropped = candidateMemories.length - memories.length;
   return { memories, processedThroughMs };
 }
 

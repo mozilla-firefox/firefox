@@ -24,18 +24,14 @@ const {
 } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/memories/MemoriesConstants.sys.mjs"
 );
-const { ChatStore, ChatConversation, ChatMessage, MESSAGE_ROLE } =
-  ChromeUtils.importESModule(
-    "moz-src:///browser/components/aiwindow/ui/modules/ChatStore.sys.mjs"
-  );
+const { ChatStore } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/ui/modules/ChatStore.sys.mjs"
+);
 const { PURPOSES } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs"
 );
 const { AIWindowTestUtils, MockEngineManager } = ChromeUtils.importESModule(
   "resource://testing-common/AIWindowTestUtils.sys.mjs"
-);
-const { PlacesTestUtils } = ChromeUtils.importESModule(
-  "resource://testing-common/PlacesTestUtils.sys.mjs"
 );
 
 const PREF_FIRSTRUN_HAS_COMPLETED = "browser.smartwindow.firstrun.hasCompleted";
@@ -98,93 +94,6 @@ async function getUpdatedAt(id) {
     memoryIds: new Set([id]),
   });
   return memory?.updated_at ?? null;
-}
-
-/**
- * Store a user chat message at an exact `created_date` so tasks can place
- * messages on either side of the watermark boundary. Goes through the real
- * ChatStore, so the scheduler's chat trigger reads it back over real SQL.
- *
- * @param {number} createdDate  Message creation time in ms since epoch
- * @param {string} body         Message body
- */
-async function addChatMessage(createdDate, body) {
-  await ChatStore.updateConversation(
-    new ChatConversation({
-      title: body,
-      description: "",
-      pageUrl: new URL("https://example.com/chat"),
-      pageMeta: {},
-      messages: [
-        new ChatMessage({
-          createdDate,
-          ordinal: 0,
-          role: MESSAGE_ROLE.USER,
-          content: { body },
-          pageUrl: new URL("https://example.com/chat"),
-        }),
-      ],
-    })
-  );
-}
-
-/**
- * Store a page visit at an exact visit date so tasks can place visits on either
- * side of the watermark boundary.
- *
- * `getRecentHistory` reads page visits from moz_places_metadata rather than
- * moz_historyvisits, so the metadata row has to be written by hand. Its
- * `total_view_time` must exceed the source's own minimum viewtime filter for the
- * visit to be returned at all.
- *
- * @param {string} url            URL to record a visit for
- * @param {string} title          Page title, which cannot be null or the source
- *                                filters the visit out
- * @param {number} visitDateMs    Visit time in ms since epoch
- */
-async function writePageVisitToMozPlaces(url, title, visitDateMs) {
-  await PlacesUtils.history.insertMany([
-    { url, title, visits: [{ date: new Date(visitDateMs) }] },
-  ]);
-
-  await PlacesUtils.withConnectionWrapper(
-    "browser_MemoriesSchedulers-metadata",
-    async db => {
-      const rows = await db.execute(
-        "SELECT id FROM moz_places WHERE url_hash = hash(:url) AND url = :url",
-        { url }
-      );
-      await db.execute(
-        `INSERT INTO moz_places_metadata
-           (place_id, created_at, updated_at, total_view_time,
-            typing_time, key_presses, scrolling_time, scrolling_distance, document_type)
-         VALUES
-           (:place_id, :created_at, :created_at, 30000, 0, 0, 0, 0, 0)`,
-        {
-          place_id: rows[0].getResultByName("id"),
-          created_at: visitDateMs,
-        }
-      );
-    }
-  );
-}
-
-/**
- * Record a page visit and wait for the resulting "page-visited" notification to
- * have been dispatched, arming the scheduler's browsing trigger.
- *
- * @param {string} url  The URL to record a visit for
- */
-async function visitPage(url) {
-  const visited = new Promise(resolve => {
-    const listener = () => {
-      PlacesUtils.observers.removeListener(["page-visited"], listener);
-      resolve();
-    };
-    PlacesUtils.observers.addListener(["page-visited"], listener);
-  });
-  await PlacesTestUtils.addVisits(url);
-  await visited;
 }
 
 add_setup(async function () {
@@ -765,6 +674,11 @@ add_task(async function test_maintenance_failure_is_contained() {
       journeyMaintenance,
       journeys,
     }) => {
+      Services.fog.testResetFOG();
+      // Merge is stubbed, so record the status the real merge would.
+      merge.callsFake(async ({ stats } = {}) => {
+        stats.merge_status = "ran";
+      });
       // Stub getMemories to simulate a broken maintenance run
       sandbox
         .stub(MemoryStore, "getMemories")
@@ -801,6 +715,14 @@ add_task(async function test_maintenance_failure_is_contained() {
         maintenance.calledOnce,
         "A failed maintenance pass should not retry on the next tick but wait until enough time has elapsed based on its watermark."
       );
+
+      // The run is still recorded. The memory counts can't be read from the
+      // broken store, so they are left out rather than failing the run.
+      assertMemoriesGenerationRunEvent({
+        generation_triggered: true,
+        merge_status: "ran",
+        outcome: "success",
+      });
     }
   );
 });
@@ -1020,6 +942,11 @@ add_task(async function test_retryable_journey_failure_backs_off() {
   await withScheduler(
     { watermarkMs: Date.now() - COOLDOWN_MS - HOUR_MS },
     async ({ scheduler, sandbox, maintenance, generate, merge, journeys }) => {
+      Services.fog.testResetFOG();
+      // Merge is stubbed, so record the status the real merge would.
+      merge.callsFake(async ({ stats } = {}) => {
+        stats.merge_status = "ran";
+      });
       // Replace the spy with a stub to simulate a retryable journey failure
       journeys.restore();
       const failingJourneys = sandbox
@@ -1057,6 +984,16 @@ add_task(async function test_retryable_journey_failure_backs_off() {
         generate.calledOnce,
         "Memories should not be regenerated after a journey failure."
       );
+
+      // Journey generation isn't part of the run, so its failure doesn't
+      // change the recorded outcome.
+      assertMemoriesGenerationRunEvent({
+        generation_triggered: true,
+        memories_before: 1,
+        merge_status: "ran",
+        memories_after: 1,
+        outcome: "success",
+      });
     }
   );
 });

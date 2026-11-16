@@ -16,6 +16,14 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/models/memories/MemoriesConstants.sys.mjs",
   CONVERSATION:
     "moz-src:///browser/components/aiwindow/models/memories/MemoriesConstants.sys.mjs",
+  GENERATION_RUN_OUTCOME:
+    "moz-src:///browser/components/aiwindow/models/memories/MemoriesConstants.sys.mjs",
+  GENERATION_RUN_ERROR_STAGE:
+    "moz-src:///browser/components/aiwindow/models/memories/MemoriesConstants.sys.mjs",
+  GENERATION_RUN_MERGE_STATUS:
+    "moz-src:///browser/components/aiwindow/models/memories/MemoriesConstants.sys.mjs",
+  setGenerationRunError:
+    "moz-src:///browser/components/aiwindow/models/memories/Memories.sys.mjs",
   openAIEngine: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   JourneyManager:
     "moz-src:///browser/components/aiwindow/models/memories/journeys/JourneyManager.sys.mjs",
@@ -293,6 +301,10 @@ export class MemoriesSchedulers {
     this.#running = true;
     this.#stopInterval();
 
+    /** @type {import("./MemoriesConstants.sys.mjs").MemoriesGenerationRunStats | null} */
+    let runStats = null;
+    // Records all core generation pipeline steps (initial list and filtering) finished.
+    let runStepsDone = false;
     try {
       const now = Date.now();
 
@@ -354,6 +366,9 @@ export class MemoriesSchedulers {
       // If not enough evidence accumulated on this cycle, re-arm the trigger and wait {@link MEMORIES_SCHEDULER_COOLDOWN_MS}
       if (!shouldRunGeneration) {
         lazy.console.debug("No trigger met this interval; skipping.");
+        Glean.smartWindow.memoriesGenerationRun.record({
+          generation_triggered: false,
+        });
         this.#lastGenerationMs = Date.now();
         await lazy.MemoriesManager.setLastGenerationRunTimestamp(
           this.#lastGenerationMs
@@ -363,8 +378,14 @@ export class MemoriesSchedulers {
 
       // Run memories generation
       lazy.console.debug("Generating memories from sessions...");
+      runStats = {
+        generation_triggered: true,
+        memories_before: await this.#countMemories(),
+      };
       const persistedMemories =
-        await lazy.MemoriesManager.generateMemoriesFromSessions();
+        await lazy.MemoriesManager.generateMemoriesFromSessions({
+          stats: runStats,
+        });
       this.#lastGenerationMs = Date.now();
       await lazy.MemoriesManager.setLastGenerationRunTimestamp(
         this.#lastGenerationMs
@@ -378,11 +399,18 @@ export class MemoriesSchedulers {
       // through a merge pass, and it requires an LLM call
       if (persistedMemories.length) {
         lazy.console.debug("Merging memories...");
-        await lazy.MemoriesManager.mergeMemories();
+        await lazy.MemoriesManager.mergeMemories({ stats: runStats });
         lazy.console.debug("Merging memories complete.");
+        runStats.outcome ??= lazy.GENERATION_RUN_OUTCOME.SUCCESS;
       } else {
         lazy.console.debug("No new memories generated; skipping merge step.");
+        runStats.merge_status =
+          runStats.outcome === lazy.GENERATION_RUN_OUTCOME.ERROR
+            ? lazy.GENERATION_RUN_MERGE_STATUS.NOT_REACHED
+            : lazy.GENERATION_RUN_MERGE_STATUS.NOT_RUN;
       }
+
+      runStepsDone = true;
 
       // Generate novel journey metadata.
       const postMergeMemories = await lazy.MemoriesManager.getAllMemories({
@@ -398,6 +426,14 @@ export class MemoriesSchedulers {
         );
       }
     } catch (error) {
+      if (runStats && !runStepsDone) {
+        // Records some additional error outside those the individual steps handle
+        lazy.setGenerationRunError(
+          runStats,
+          lazy.GENERATION_RUN_ERROR_STAGE.OTHER,
+          error
+        );
+      }
       if (lazy.openAIEngine.is429Error(error)) {
         this.#backoffUntilMs = Date.now() + MEMORIES_SCHEDULER_COOLDOWN_MS;
         lazy.console.warn(
@@ -418,12 +454,32 @@ export class MemoriesSchedulers {
         lazy.console.error("Memories pipeline failed", error);
       }
     } finally {
+      if (runStats) {
+        // Gather final telemetry stats before wrapping up
+        runStats.merge_status ??= lazy.GENERATION_RUN_MERGE_STATUS.NOT_REACHED;
+        runStats.memories_after = await this.#countMemories();
+        Glean.smartWindow.memoriesGenerationRun.record(runStats);
+      }
       this.#running = false;
       if (!this.#destroyed && MemoriesSchedulers.#anySourceEnabled()) {
         this.#startInterval();
       }
     }
   };
+
+  /**
+   * Counts live memories for run telemetry.
+   *
+   * @returns {Promise<number|undefined>} The count, or undefined if it failed.
+   */
+  async #countMemories() {
+    try {
+      return (await lazy.MemoriesManager.getAllMemories()).length;
+    } catch (error) {
+      lazy.console.error("Failed to count memories for telemetry", error);
+      return undefined;
+    }
+  }
 
   /**
    * Cleans up scheduler resources: stops the interval, unsubscribes from Places

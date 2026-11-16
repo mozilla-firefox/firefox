@@ -408,3 +408,142 @@ async function callTool(mockEngine, conversation, { toolName, toolParams }) {
     )?.toolUIData,
   };
 }
+
+/**
+ * Store a user chat message at an exact `created_date` so tasks can place
+ * messages on either side of the watermark boundary. Goes through the real
+ * ChatStore, so the memories chat source reads it back over real SQL.
+ *
+ * @param {number} createdDate  Message creation time in ms since epoch
+ * @param {string} body         Message body
+ */
+async function addChatMessage(createdDate, body) {
+  const { ChatStore, ChatConversation, ChatMessage, MESSAGE_ROLE } =
+    ChromeUtils.importESModule(
+      "moz-src:///browser/components/aiwindow/ui/modules/ChatStore.sys.mjs"
+    );
+  await ChatStore.updateConversation(
+    new ChatConversation({
+      title: body,
+      description: "",
+      pageUrl: new URL("https://example.com/chat"),
+      pageMeta: {},
+      messages: [
+        new ChatMessage({
+          createdDate,
+          ordinal: 0,
+          role: MESSAGE_ROLE.USER,
+          content: { body },
+          pageUrl: new URL("https://example.com/chat"),
+        }),
+      ],
+    })
+  );
+}
+
+/**
+ * Store a page visit at an exact visit date so tasks can place visits on either
+ * side of the watermark boundary.
+ *
+ * `getRecentHistory` reads page visits from moz_places_metadata rather than
+ * moz_historyvisits, so the metadata row has to be written by hand. Its
+ * `total_view_time` must exceed the source's own minimum viewtime filter for the
+ * visit to be returned at all.
+ *
+ * @param {string} url            URL to record a visit for
+ * @param {string} title          Page title, which cannot be null or the source
+ *                                filters the visit out
+ * @param {number} visitDateMs    Visit time in ms since epoch
+ */
+async function writePageVisitToMozPlaces(url, title, visitDateMs) {
+  await PlacesUtils.history.insertMany([
+    { url, title, visits: [{ date: new Date(visitDateMs) }] },
+  ]);
+
+  await PlacesUtils.withConnectionWrapper(
+    "memories-test-metadata",
+    async db => {
+      const rows = await db.execute(
+        "SELECT id FROM moz_places WHERE url_hash = hash(:url) AND url = :url",
+        { url }
+      );
+      await db.execute(
+        `INSERT INTO moz_places_metadata
+           (place_id, created_at, updated_at, total_view_time,
+            typing_time, key_presses, scrolling_time, scrolling_distance, document_type)
+         VALUES
+           (:place_id, :created_at, :created_at, 30000, 0, 0, 0, 0, 0)`,
+        {
+          place_id: rows[0].getResultByName("id"),
+          created_at: visitDateMs,
+        }
+      );
+    }
+  );
+}
+
+/**
+ * Record a page visit and wait for the resulting "page-visited" notification to
+ * have been dispatched, arming the memories scheduler's browsing trigger.
+ *
+ * @param {string} url  The URL to record a visit for
+ */
+async function visitPage(url) {
+  const { PlacesTestUtils } = ChromeUtils.importESModule(
+    "resource://testing-common/PlacesTestUtils.sys.mjs"
+  );
+  const visited = new Promise(resolve => {
+    const listener = () => {
+      PlacesUtils.observers.removeListener(["page-visited"], listener);
+      resolve();
+    };
+    PlacesUtils.observers.addListener(["page-visited"], listener);
+  });
+  await PlacesTestUtils.addVisits(url);
+  await visited;
+}
+
+/**
+ * Return all memories generation Glean events
+ *
+ * @returns {Array<object>} The memories_generation_run events recorded
+ */
+function getMemoriesGenerationRunEvents() {
+  return Glean.smartWindow.memoriesGenerationRun.testGetValue() ?? [];
+}
+
+/**
+ * Assert that exactly one expected Glean run was recorded.
+ *
+ * Runs called directly, without the scheduler, record no event. For those,
+ * pass the stats object the run filled in, which is checked instead.
+ *
+ * @param {object} expected  Expected extra values the Glean run should include
+ * @param {object} [options]
+ * @param {object} [options.stats]  Stats from a direct call to check instead
+ *                                  of the recorded event
+ */
+function assertMemoriesGenerationRunEvent(expected, { stats } = {}) {
+  const toExtras = values =>
+    Object.fromEntries(
+      Object.entries(values).map(([key, value]) => [key, String(value)])
+    );
+  let actual;
+  if (stats) {
+    Assert.deepEqual(
+      getMemoriesGenerationRunEvents(),
+      [],
+      "A direct call records no run."
+    );
+    actual = toExtras(stats);
+  } else {
+    const events = getMemoriesGenerationRunEvents();
+    Assert.equal(events.length, 1, "One run should be recorded.");
+    actual = events[0].extra;
+  }
+  Assert.deepEqual(
+    actual,
+    toExtras(expected),
+    "The run should be recorded with the expected extras."
+  );
+}

@@ -11,12 +11,18 @@ import { BlockListManager } from "chrome://global/content/ml/Utils.sys.mjs";
 import { SensitiveInfoDetector } from "moz-src:///browser/components/aiwindow/models/memories/SensitiveInfoDetector.sys.mjs";
 import { sanitizeUntrustedContent } from "moz-src:///browser/components/aiwindow/models/ChatUtils.sys.mjs";
 
+/** @typedef {import("./MemoriesConstants.sys.mjs").MemoriesGenerationRunStats} MemoriesGenerationRunStats */
+
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   extractVectorFromTensor:
     "moz-src:///browser/components/aiwindow/models/SearchBrowsingHistory.sys.mjs",
   getPlacesSemanticHistoryManager:
     "resource://gre/modules/PlacesSemanticHistoryManager.sys.mjs",
+  GENERATION_RUN_ERROR_STAGE:
+    "moz-src:///browser/components/aiwindow/models/memories/MemoriesConstants.sys.mjs",
+  setGenerationRunError:
+    "moz-src:///browser/components/aiwindow/models/memories/Memories.sys.mjs",
 });
 
 const MS_PER_DAY = 86_400_000;
@@ -105,6 +111,9 @@ let _sensitiveInfoDetector = new SensitiveInfoDetector();
  *        sorting by most recent visit). Note that this caps the number
  *        of visits, not distinct URLs.
  *
+ * @param {MemoriesGenerationRunStats} [opts.stats]
+ *        Stats object to record telemetry information
+ *
  * @returns {Promise<Array<{
  *   url: string,
  *   urlHash: number,
@@ -129,6 +138,7 @@ export async function getRecentHistory(opts = {}) {
     days = DEFAULT_DAYS,
     maxResults = DEFAULT_MAX_RESULTS,
     minPageViewtime = DEFAULT_PAGE_VIEWTIME,
+    stats,
   } = opts;
 
   // Places stores visit_date in microseconds since epoch.
@@ -326,12 +336,21 @@ export async function getRecentHistory(opts = {}) {
             source,
           });
         }
+        if (stats) {
+          stats.history_rows_pulled = stmt.length;
+          stats.history_rows_kept = out.length;
+        }
         return out;
       }
     );
     return rows;
   } catch (error) {
     console.error("Failed to fetch Places history via SQL:", error);
+    lazy.setGenerationRunError(
+      stats,
+      lazy.GENERATION_RUN_ERROR_STAGE.SOURCES,
+      error
+    );
     return [];
   }
 }

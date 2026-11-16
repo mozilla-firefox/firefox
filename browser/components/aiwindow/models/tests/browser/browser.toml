@@ -11,6 +11,7 @@ prefs = [
 ["browser_DigestStore.js"]
 ["browser_JourneyManager.js"]
 ["browser_JourneyStore.js"]
+["browser_MemoriesGenerationRunTelemetry.js"]
 ["browser_MemoriesManager.js"]
 ["browser_MemoriesSchedulers.js"]
 ["browser_aitab.js"]
