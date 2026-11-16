@@ -5,6 +5,8 @@ subsuite = "mozbase"
 
 ["test_assertions.py"]
 
+["test_outcome.py"]
+
 ["test_resolve.py"]
 
 ["test_tsan.py"]
