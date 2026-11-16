@@ -101,6 +101,9 @@ interface FeatureSettingsHelper {
     /** Whether the Collections to Tab Groups migration runs. */
     var isCollectionsToTabGroupsMigrationEnabled: Boolean
 
+    /** Whether the Collections UI is hidden. */
+    var isCollectionsUiHidden: Boolean
+
     /** Whether Google Lens feature is enabled. */
     var isGoogleLensIntegrationEnabled: Boolean
 
