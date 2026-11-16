@@ -693,6 +693,13 @@ ClientWebGLContext::UseCompositableForwarder(
 void ClientWebGLContext::OnDestroyChild(dom::WebGLChild* aChild) {
   // Since NotLostData may be destructing at this point, the RefPtr to
   // WebGLChild may be unreliable. Instead, it must be explicitly passed in.
+  if (mOffscreenCanvas && mRemoteTextureOwnerId) {
+    if (RefPtr<layers::ImageBridgeChild> imageBridge =
+            layers::ImageBridgeChild::GetSingleton()) {
+      // Ensure FwdTransactionTracker is updated by ImageBridgeChild.
+      imageBridge->WaitFlushTasks();
+    }
+  }
   if (mRemoteTextureOwnerId && mFwdTransactionTracker &&
       mFwdTransactionTracker->IsUsed()) {
     (void)aChild->SendWaitForTxn(
