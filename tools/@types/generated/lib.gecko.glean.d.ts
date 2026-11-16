@@ -30,7 +30,6 @@ interface GleanImpl {
     bookmarksToolbarBookmarkAdded: GleanCounter;
     bookmarksToolbarBookmarkOpened: GleanCounter;
     totalTopVisits: Record<"false"|"true", GleanCounter>;
-    windowsStartSearchActivationCount: Record<"new_tab"|"startup", GleanCounter>;
     sessionrestoreInterstitial: Record<string, GleanCounter>;
     tabExplicitUnload: GleanEventWithExtras<{ all_tabs_unloaded?: string|boolean, memory_after?: string|number, memory_before?: string|number, tabs_unloaded?: string|number, time_to_unload_in_ms?: string|number, unload_selected_tab?: string|boolean }>;
     tabReloadCount: GleanCounter;

@@ -274,27 +274,6 @@ browser.engagement:
     expires: never
     telemetry_mirror: h#FX_TOTAL_TOP_VISITS
 
-  windows_start_search_activation_count:
-    type: labeled_counter
-    description: >
-      Counts Bing navigations on Windows that match the Windows Search pattern,
-      using the Bing base domain and `/search` path as heuristic signals. This
-      metric is intended as a proxy for Firefox activations originating from
-      Windows Start menu search.
-    bugs:
-      - https://bugzil.la/2026849
-      - https://bugzil.la/2068815
-    data_reviews:
-      - https://bugzil.la/2026849
-    notification_emails:
-      - install-update@mozilla.com
-    send_in_pings:
-      - metrics
-    expires: 163
-    labels:
-      - startup
-      - new_tab
-
 networking:
   captive_portal_banner_displayed:
     type: counter
