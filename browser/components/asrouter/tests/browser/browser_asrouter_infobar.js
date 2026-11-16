@@ -413,29 +413,32 @@ add_task(async function test_specialMessageAction_onLinkClick() {
   handleStub.restore();
 });
 
-add_task(async function test_showInfoBarMessage_skipsPrivateWindow() {
-  const { PrivateBrowsingUtils } = ChromeUtils.importESModule(
-    "resource://gre/modules/PrivateBrowsingUtils.sys.mjs"
+add_task(async function test_showInfoBarMessage_privateWindow() {
+  let message = (await PanelTestProvider.getMessages()).find(
+    m => m.id === "INFOBAR_ACTION_86"
   );
-  sinon.stub(PrivateBrowsingUtils, "isWindowPrivate").returns(true);
+  Assert.ok(message.id, "Found the message");
 
-  let browser = BrowserWindowTracker.getTopWindow().gBrowser.selectedBrowser;
-  let dispatch = sinon.stub();
+  let privateWin = await BrowserTestUtils.openNewBrowserWindow({
+    private: true,
+  });
+  let dispatchStub = sinon.stub();
 
-  let result = await InfoBar.showInfoBarMessage(
-    browser,
-    {
-      id: "Private Win Test",
-      content: { type: "global", buttons: [], text: "t", dismissable: true },
-    },
-    dispatch
+  let infobar = await InfoBar.showInfoBarMessage(
+    privateWin.gBrowser.selectedBrowser,
+    message,
+    dispatchStub
   );
 
-  Assert.equal(result, null);
-  Assert.equal(dispatch.callCount, 0);
+  Assert.ok(infobar?.notification, "Infobar is shown in a private window");
+  Assert.equal(dispatchStub.firstCall.args[0].type, "IMPRESSION");
+  Assert.equal(dispatchStub.firstCall.args[0].data.id, message.id);
 
-  // Cleanup
-  sinon.restore();
+  await BrowserTestUtils.closeWindow(privateWin);
+  await TestUtils.waitForCondition(
+    () => !InfoBar._activeInfobar,
+    "InfoBar._activeInfobar should be cleared when the window unloads"
+  );
 });
 
 add_task(async function test_non_dismissable_button_action() {

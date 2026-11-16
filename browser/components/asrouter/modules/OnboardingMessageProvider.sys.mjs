@@ -2874,7 +2874,7 @@ const BASE_MESSAGES = () => [
     },
     skip_in_tests: "fires on startup, may interfere with other tests",
     targeting:
-      "source == 'startup' && canRestoreLastSession && !activeNotifications && 'browser.startup.couldRestoreSession.count'|preferenceValue == 1",
+      "source == 'startup' && canRestoreLastSession && !activeNotifications && !isPrivateWindow && 'browser.startup.couldRestoreSession.count'|preferenceValue == 1",
   },
   {
     id: "RELAY_50_MASKS_ANNOUNCEMENT",

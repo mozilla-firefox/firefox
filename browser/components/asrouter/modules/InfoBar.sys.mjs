@@ -7,7 +7,6 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   ASRouter: "resource:///modules/asrouter/ASRouter.sys.mjs",
-  PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   RemoteL10n: "resource:///modules/asrouter/RemoteL10n.sys.mjs",
   SpecialMessageActions:
     "resource://messaging-system/lib/SpecialMessageActions.sys.mjs",
@@ -610,15 +609,12 @@ export const InfoBar = {
 
   /**
    * Helper to check the window's state and whether it's a
-   * private browsing window, a popup, taskbar tab or mini window.
+   * popup, taskbar tab or mini window.
    *
    * @returns {boolean} `true` if the window is valid for showing an infobar.
    */
   isValidInfobarWindow(win) {
     if (!win || win.closed) {
-      return false;
-    }
-    if (lazy.PrivateBrowsingUtils.isWindowPrivate(win)) {
       return false;
     }
     if (!win.toolbar?.visible) {
