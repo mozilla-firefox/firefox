@@ -79,11 +79,17 @@ def test_brand_names(lint, paths):
             ("CO01", 14, 20),
             ("CO01", 15, 20),
             ("CO01", 16, 20),
+            ("CO01", 32, 21),
+            ("CO01", 33, 21),
         ],
     )
     assert "Firefox" in results[0].message
     assert "Mozilla" not in results[0].message
     assert "Thunderbird" not in results[0].message
+    assert "Smart Window)" in results[11].message
+    assert "Smart Windows" not in results[11].message
+    assert "Smart Windows" in results[12].message
+    assert "Smart Window," not in results[12].message
 
     assert_results(lint(paths("brand-names-excluded.ftl")), [])
 

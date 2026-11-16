@@ -41,7 +41,7 @@ class Linter(visitor.Visitor):
     """
 
     def __init__(
-        self, path, config, exclusions, contents, offsets_and_lines, brand_names=[]
+        self, path, config, exclusions, contents, offsets_and_lines, brand_names=set()
     ):
         super().__init__()
         self.path = path
@@ -300,7 +300,7 @@ class Linter(visitor.Visitor):
                 and self.last_message_id not in self.exclusions["CO01"]["messages"]
             ):
                 found_brands = []
-                for brand in self.brand_names:
+                for brand in sorted(self.brand_names):
                     if re.search(rf"\b{re.escape(brand)}\b", text):
                         found_brands.append(brand)
                 if found_brands:
@@ -501,32 +501,50 @@ def get_exclusions(root):
         return exclusions
 
 
-def get_branding_list(root, brand_files):
-    class MessageExtractor(visitor.Visitor):
-        def __init__(self):
-            self.brands = []
-            self.last_message_id = None
+def get_term_brand_names(pattern):
+    """Return the brand names defined in a term's pattern.
 
-        def visit_Term(self, node):
-            self.last_message_id = node.id.name
-            self.generic_visit(node)
+    The pattern must be plain text, or a single select expression with
+    plain-text variants. For any other structure, including references to
+    other terms or nested select expressions, an empty list is returned.
+    """
 
-        def visit_TextElement(self, node):
-            if self.last_message_id:
-                self.brands += [node.value]
-                self.last_message_id = None
-            self.generic_visit(node)
+    def get_plain_text(pattern):
+        elements = pattern.elements
+        if len(elements) == 1 and isinstance(elements[0], ast.TextElement):
+            return elements[0].value
+        return None
 
-    extractor = MessageExtractor()
+    text = get_plain_text(pattern)
+    if text is not None:
+        return [text]
 
+    elements = pattern.elements
+    if not (
+        len(elements) == 1
+        and isinstance(elements[0], ast.Placeable)
+        and isinstance(elements[0].expression, ast.SelectExpression)
+    ):
+        return []
+
+    variants = [get_plain_text(v.value) for v in elements[0].expression.variants]
+    if None in variants:
+        return []
+    return variants
+
+
+def get_brand_names(root, brand_files):
+    brands = set()
     for brand_path in brand_files:
         brand_file = mozpath.join(root, brand_path)
         if os.path.exists(brand_file):
             with open(brand_file, encoding="utf-8") as f:
-                messages = parse(f.read())
-                extractor.visit(messages)
+                resource = parse(f.read())
+            for entry in resource.body:
+                if isinstance(entry, ast.Term):
+                    brands.update(get_term_brand_names(entry.value))
 
-    return list(set(extractor.brands))
+    return brands
 
 
 def lint(paths, config, fix=None, **lintargs):
@@ -534,7 +552,7 @@ def lint(paths, config, fix=None, **lintargs):
     files = list(expand_exclusions(paths, config, root))
     exclusions = get_exclusions(root)
     brand_files = config.get("brand-files")
-    brand_names = get_branding_list(root, brand_files)
+    brand_names = get_brand_names(root, brand_files)
     results = []
     for path in files:
         contents = open(path, encoding="utf-8").read()

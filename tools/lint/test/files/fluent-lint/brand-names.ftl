@@ -28,3 +28,13 @@ good-thunderbird2 = Welcome to { thunderbird-message }
 -brand-firefox = Firefox
 
 bland-message = No brands here.
+
+bad-smart-window1 = Open a new Smart Window
+bad-smart-window2 = Close all Smart Windows
+good-smart-window1 = Open a new { -smart-window-brand-name }
+good-smart-window2 = Close all { -smart-window-brand-name(plural-form: "true") }
+good-smart-window3 = Open a smart window in lowercase
+good-smart-window4 = Close all smart windows in lowercase
+good-unsupported-term = Unsupported Alpha Beta
+good-nested-term = Gamma Gammas Delta
+good-reference-term = Epsilon Zeta Eta
