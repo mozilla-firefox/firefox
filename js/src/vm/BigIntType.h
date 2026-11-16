@@ -271,15 +271,6 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
                      MutableHandle<BigInt*> quotient,
                      MutableHandle<BigInt*> remainder);
 
-  // When computing modulo by `m`, there is a short-cut if `|m|` is of the form
-  // `2^k - c`, where `c` is a single digit.  If we should use the "Crandall
-  // reduction" short-cut, store `k` and `c` and return true.
-  static bool shouldModuloByCrandallReduction(const BigInt* m, uint32_t* k,
-                                              Digit* c);
-  // Return `x % (2^k - c)`.
-  static BigInt* modCrandall(JSContext* cx, Handle<BigInt*> x, uint32_t k,
-                             Digit c);
-
   static bool powIntPtr(intptr_t x, intptr_t y, intptr_t* result);
 
   static int64_t toInt64(const BigInt* x);
@@ -426,15 +417,16 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
                                                            size_t charCount,
                                                            size_t* result);
 
-  static bool absoluteDivWithDigitDivisor(
-      JSContext* cx, Handle<BigInt*> x, Digit divisor,
-      const mozilla::Maybe<MutableHandle<BigInt*>>& quotient, Digit* remainder,
-      bool quotientNegative);
+  static bool absoluteDivWithDigitDivisor(JSContext* cx, Handle<BigInt*> x,
+                                          Digit divisor,
+                                          MutableHandle<BigInt*> quotient,
+                                          Digit* remainder,
+                                          bool quotientNegative);
   static void internalMultiplyAdd(const BigInt* source, Digit factor,
                                   Digit summand, unsigned, BigInt* result);
   static bool absoluteDivWithBigIntDivisor(
       JSContext* cx, Handle<BigInt*> dividend, Handle<BigInt*> divisor,
-      const mozilla::Maybe<MutableHandle<BigInt*>>& quotient,
+      MutableHandle<BigInt*> quotient,
       const mozilla::Maybe<MutableHandle<BigInt*>>& remainder,
       bool quotientNegative);
 
@@ -464,10 +456,11 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
   static void copyDigits(ConstDigits src, Digits dest);
   // Set all digits of `dest` to zero.
   static void zeroDigits(Digits dest);
-  // Store `src << shift` into `dest`. Return the bits shifted out of the top.
+  // Store `src << shift` into `dest`, which may be `src`. Return the bits
+  // shifted out of the top.
   static Digit leftShiftDigits(ConstDigits src, unsigned shift, Digits dest);
-  // Store `src >> shift` into `dest`. Shift the low bits of `high` into the
-  // top. Return the low bits of `src` that are shifted out.
+  // Store `src >> shift` into `dest`, which may be `src`. Shift the low bits of
+  // `high` into the top. Return the low bits of `src` that are shifted out.
   static Digit rightShiftDigits(ConstDigits src, unsigned shift, Digit high,
                                 Digits dest);
   // Knuth's Algorithm D (schoolbook division): compute `<q,u> = <u/v,u%v>`,
@@ -475,9 +468,18 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
   // the remainder. See the definition for full preconditions.
   static void divideDigitsInPlace(Digits u, ConstDigits v, Digits q,
                                   Digits qhatv);
+  // When computing modulo by `m`, there is a short-cut if `|m|` is of the form
+  // `2^k - c`, where `c` is a single digit.  If we should use the "Crandall
+  // reduction" short-cut, store `k` and `c` and return true.
+  static bool shouldModuloByCrandallReduction(ConstDigits m, uint32_t* k,
+                                              Digit* c);
   // Reduce `r` modulo `2^k - c` in place.
   static void modDigitsInPlaceByCrandallReduction(Digits r, uint32_t k,
                                                   Digit c);
+  // Reduce `u` modulo `m` in place, leaving the remainder in the low `m.size()`
+  // digits. `u` must have more digits than `m`, and its top digit must be zero,
+  // for normalization. Return false on OOM, without reporting it.
+  [[nodiscard]] static bool modDigitsInPlace(Digits u, ConstDigits m);
 
   static bool productGreaterThan(Digit factor1, Digit factor2, Digit high,
                                  Digit low);
