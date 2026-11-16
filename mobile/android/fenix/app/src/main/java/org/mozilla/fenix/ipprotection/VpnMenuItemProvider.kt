@@ -136,7 +136,6 @@ class VpnMenuItemProvider(
                     else -> Role.Switch
                 },
             onClickEvent = MenuAction.IPProtectionToggle,
-            debounceClicks = false,
             summary = dataLimitSummary,
             badge = MenuItemBadge(text = Text.Resource(status.badgeTextRes), state = status.badgeState),
             actionButton =

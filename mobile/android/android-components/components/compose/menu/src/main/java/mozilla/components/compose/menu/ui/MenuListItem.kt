@@ -68,7 +68,6 @@ import mozilla.components.ui.icons.R as iconsR
  * @param actionButton An optional action button to show.
  * @param trailingIcon An optional icon to show at the end of the menu item, as a hint of what clicking it does.
  * @param state The state of this menu item.
- * @param debounceClicks Whether to ignore a click made within a second of the previous one.
  */
 @Composable
 internal fun MenuListItem(
@@ -87,7 +86,6 @@ internal fun MenuListItem(
     actionButton: MenuItemActionButton? = null,
     @DrawableRes trailingIcon: Int? = null,
     state: MenuItemState = DEFAULT,
-    debounceClicks: Boolean = true,
 ) {
     LaunchedEffect(onShownEvent) {
         onShownEvent?.let {
@@ -131,7 +129,6 @@ internal fun MenuListItem(
                         onClickEvent = onClickEvent,
                         onLongClickEvent = null,
                         onInteraction = onInteraction,
-                        debounceClicks = debounceClicks,
                     )
                     .padding(
                         horizontal = AcornTheme.layout.space.dynamic200,

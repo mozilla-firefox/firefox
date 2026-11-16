@@ -79,7 +79,6 @@ data class ExpandableMenuItem(
  * @param actionButton An optional action button to show.
  * @param trailingIcon An optional icon to show at the end of the menu item, as a hint of what clicking it does.
  * @param state The state of this menu item.
- * @param debounceClicks Whether to ignore a click made within a second of the previous one.
  */
 data class StandardMenuItem(
     override val title: MenuItemTitle,
@@ -95,7 +94,6 @@ data class StandardMenuItem(
     val actionButton: MenuItemActionButton? = null,
     @DrawableRes val trailingIcon: Int? = null,
     override val state: MenuItemState = DEFAULT,
-    val debounceClicks: Boolean = true,
 ) : MenuItem()
 
 /**

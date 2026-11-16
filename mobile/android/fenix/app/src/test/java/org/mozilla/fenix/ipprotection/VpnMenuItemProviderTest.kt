@@ -331,7 +331,6 @@ class VpnMenuItemProviderTest {
             role = role,
             state = state,
             onClickEvent = MenuAction.IPProtectionToggle,
-            debounceClicks = false,
             badge = MenuItemBadge(text = Text.Resource(badgeTextRes), state = badgeState),
             actionButton =
                 MenuItemActionButton(

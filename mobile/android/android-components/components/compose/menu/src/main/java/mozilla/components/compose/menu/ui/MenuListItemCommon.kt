@@ -37,7 +37,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import mozilla.components.compose.base.badge.BADGE_SIZE_SMALL
 import mozilla.components.compose.base.badge.BadgedIcon
 import mozilla.components.compose.base.badge.StatusBadge
-import mozilla.components.compose.base.modifier.debouncedClickable
 import mozilla.components.compose.base.text.value
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.base.theme.information
@@ -174,7 +173,6 @@ internal fun MenuListItemIcon(
  * @param onClickEvent The [MenuEvent] to dispatch when the menu item is clicked.
  * @param onLongClickEvent The [MenuEvent] to dispatch when the menu item is long-clicked.
  * @param onInteraction The callback to invoke when the menu item is interacted with.
- * @param debounceClicks Whether to ignore a click made within a second of the previous one.
  */
 @Composable
 internal fun Modifier.menuItemClickableBehavior(
@@ -183,7 +181,6 @@ internal fun Modifier.menuItemClickableBehavior(
     onClickEvent: MenuEvent?,
     onLongClickEvent: MenuEvent?,
     onInteraction: (MenuEvent) -> Unit,
-    debounceClicks: Boolean = true,
 ): Modifier {
     val haptic = LocalHapticFeedback.current
     return if (onLongClickEvent != null) {
@@ -197,17 +194,10 @@ internal fun Modifier.menuItemClickableBehavior(
             role = role,
         )
     } else if (onClickEvent != null && state != DISABLED) {
-        if (debounceClicks) {
-            this.debouncedClickable(
-                onClick = { onInteraction(onClickEvent) },
-                role = role,
-            )
-        } else {
-            this.clickable(
-                onClick = { onInteraction(onClickEvent) },
-                role = role,
-            )
-        }
+        this.clickable(
+            onClick = { onInteraction(onClickEvent) },
+            role = role,
+        )
     } else if (state == DISABLED) {
         this.semantics {
             disabled()
