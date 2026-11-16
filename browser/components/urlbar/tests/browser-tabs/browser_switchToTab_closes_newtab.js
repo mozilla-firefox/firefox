@@ -10,6 +10,8 @@
 "use strict";
 
 add_task(async function test_switchToTab_closes() {
+  registerCleanupFunction(PlacesUtils.history.clear);
+
   let testURL =
     "http://example.org/browser/browser/components/urlbar/tests/browser/dummy_page.html";
 
