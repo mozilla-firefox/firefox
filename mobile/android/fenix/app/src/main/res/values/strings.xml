@@ -1562,6 +1562,9 @@
     <string name="add_to_new_tab_group_content_description">Add to new tab group</string>
     <!-- Label for adding to a new tab group. -->
     <string name="add_to_new_tab_group_title">New tab group</string>
+    <!-- Label to add a link in a new tab inside a tab group. -->
+    <string name="contextmenu_open_in_tab_group">Open in tab group</string>
+
     <!-- Subtitle for the number of tabs in a tab group.
     %1$d is the number of tabs in a tab group. -->
     <plurals name="tab_group_tabs_count_subtitle">

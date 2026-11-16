@@ -37,6 +37,18 @@ object NativeShareSheetContextMenuCandidate {
 
     /**
      * Returns the default list of context menu candidates for [BrowserFragment] when the native share sheet is enabled.
+     *
+     * @param context [Context] used for various system interactions.
+     * @param tabsUseCases [TabsUseCases] used for adding new tabs.
+     * @param contextMenuUseCases [ContextMenuUseCases] used to integrate other features.
+     * @param shareUseCases [ShareUseCases] used to share the long-pressed link.
+     * @param getShareItems Callback providing the [ShareData] items to share for a given URL.
+     * @param snackBarParentView The view in which to find a suitable parent for displaying the `Snackbar`.
+     * @param snackbarDelegate [SnackbarDelegate] used to actually show a `Snackbar`.
+     * @param downloadsLocation Callback providing the directory path where the file should be saved.
+     * @param navigateToShareFragment Lambda provided by the caller that provides navigation to the `ShareFragment`.
+     * @param additionalTabCandidates App-defined candidates rendered immediately after the built-in "open in tab"
+     *   items, so that all tab-opening options stay grouped together in the menu.
      */
     @Suppress("LongParameterList")
     fun defaultCandidates(
@@ -49,47 +61,58 @@ object NativeShareSheetContextMenuCandidate {
         snackbarDelegate: SnackbarDelegate = DefaultSnackbarDelegate(),
         downloadsLocation: () -> String,
         navigateToShareFragment: (currentTab: SessionState, hitTabUrl: String) -> Unit,
-    ): List<ContextMenuCandidate> =
-        listOf(
+        additionalTabCandidates: List<ContextMenuCandidate> = emptyList(),
+    ): List<ContextMenuCandidate> = buildList {
+        add(
             createOpenInNewTabCandidate(
                 context,
                 tabsUseCases,
                 snackBarParentView,
                 snackbarDelegate,
-            ),
+            )
+        )
+        add(
             createOpenInPrivateTabCandidate(
                 context,
                 tabsUseCases,
                 snackBarParentView,
                 snackbarDelegate,
-            ),
-            createCopyLinkCandidate(context, snackBarParentView, snackbarDelegate),
-            createCopyLinkTextCandidate(context, snackBarParentView, snackbarDelegate),
-            createDownloadLinkCandidate(context, contextMenuUseCases, downloadsLocation),
+            )
+        )
+        addAll(additionalTabCandidates)
+        add(createCopyLinkCandidate(context, snackBarParentView, snackbarDelegate))
+        add(createCopyLinkTextCandidate(context, snackBarParentView, snackbarDelegate))
+        add(createDownloadLinkCandidate(context, contextMenuUseCases, downloadsLocation))
+        add(
             createShareLinkCandidate(
                 context = context,
                 shareUseCases = shareUseCases,
                 shareItems = getShareItems,
                 navigateToShareFragment = navigateToShareFragment,
-            ),
-            createShareImageCandidate(context, contextMenuUseCases),
+            )
+        )
+        add(createShareImageCandidate(context, contextMenuUseCases))
+        add(
             createOpenImageInNewTabCandidate(
                 context,
                 tabsUseCases,
                 snackBarParentView,
                 snackbarDelegate,
-            ),
+            )
+        )
+        add(
             createCopyImageCandidate(
                 context,
                 contextMenuUseCases,
-            ),
-            createSaveImageCandidate(context, contextMenuUseCases, downloadsLocation),
-            createSaveVideoAudioCandidate(context, contextMenuUseCases, downloadsLocation),
-            createCopyImageLocationCandidate(context, snackBarParentView, snackbarDelegate),
-            createAddContactCandidate(context),
-            createShareEmailAddressCandidate(context),
-            createCopyEmailAddressCandidate(context, snackBarParentView, snackbarDelegate),
+            )
         )
+        add(createSaveImageCandidate(context, contextMenuUseCases, downloadsLocation))
+        add(createSaveVideoAudioCandidate(context, contextMenuUseCases, downloadsLocation))
+        add(createCopyImageLocationCandidate(context, snackBarParentView, snackbarDelegate))
+        add(createAddContactCandidate(context))
+        add(createShareEmailAddressCandidate(context))
+        add(createCopyEmailAddressCandidate(context, snackBarParentView, snackbarDelegate))
+    }
 
     private fun createShareLinkCandidate(
         context: Context,

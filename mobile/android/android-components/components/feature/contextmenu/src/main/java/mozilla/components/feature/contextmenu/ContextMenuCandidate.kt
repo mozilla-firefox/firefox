@@ -52,6 +52,9 @@ data class ContextMenuCandidate(
          * Returns the default list of context menu candidates.
          *
          * Use this list if you do not intend to customize the context menu items to be displayed.
+         *
+         * @param additionalTabCandidates App-defined candidates rendered immediately after the built-in "open in tab"
+         *   items, so that all tab-opening options stay grouped together in the menu.
          */
         fun defaultCandidates(
             context: Context,
@@ -60,42 +63,51 @@ data class ContextMenuCandidate(
             snackBarParentView: View,
             snackbarDelegate: SnackbarDelegate = DefaultSnackbarDelegate(),
             downloadsLocation: () -> String,
-        ): List<ContextMenuCandidate> =
-            listOf(
+            additionalTabCandidates: List<ContextMenuCandidate> = emptyList(),
+        ): List<ContextMenuCandidate> = buildList {
+            add(
                 createOpenInNewTabCandidate(
                     context,
                     tabsUseCases,
                     snackBarParentView,
                     snackbarDelegate,
-                ),
+                )
+            )
+            add(
                 createOpenInPrivateTabCandidate(
                     context,
                     tabsUseCases,
                     snackBarParentView,
                     snackbarDelegate,
-                ),
-                createCopyLinkCandidate(context, snackBarParentView, snackbarDelegate),
-                createCopyLinkTextCandidate(context, snackBarParentView, snackbarDelegate),
-                createDownloadLinkCandidate(context, contextMenuUseCases, downloadsLocation),
-                createShareLinkCandidate(context),
-                createShareImageCandidate(context, contextMenuUseCases),
+                )
+            )
+            addAll(additionalTabCandidates)
+            add(createCopyLinkCandidate(context, snackBarParentView, snackbarDelegate))
+            add(createCopyLinkTextCandidate(context, snackBarParentView, snackbarDelegate))
+            add(createDownloadLinkCandidate(context, contextMenuUseCases, downloadsLocation))
+            add(createShareLinkCandidate(context))
+            add(createShareImageCandidate(context, contextMenuUseCases))
+            add(
                 createOpenImageInNewTabCandidate(
                     context,
                     tabsUseCases,
                     snackBarParentView,
                     snackbarDelegate,
-                ),
+                )
+            )
+            add(
                 createCopyImageCandidate(
                     context,
                     contextMenuUseCases,
-                ),
-                createSaveImageCandidate(context, contextMenuUseCases, downloadsLocation),
-                createSaveVideoAudioCandidate(context, contextMenuUseCases, downloadsLocation),
-                createCopyImageLocationCandidate(context, snackBarParentView, snackbarDelegate),
-                createAddContactCandidate(context),
-                createShareEmailAddressCandidate(context),
-                createCopyEmailAddressCandidate(context, snackBarParentView, snackbarDelegate),
+                )
             )
+            add(createSaveImageCandidate(context, contextMenuUseCases, downloadsLocation))
+            add(createSaveVideoAudioCandidate(context, contextMenuUseCases, downloadsLocation))
+            add(createCopyImageLocationCandidate(context, snackBarParentView, snackbarDelegate))
+            add(createAddContactCandidate(context))
+            add(createShareEmailAddressCandidate(context))
+            add(createCopyEmailAddressCandidate(context, snackBarParentView, snackbarDelegate))
+        }
 
         /**
          * Context Menu item: "Open Link in New Tab".

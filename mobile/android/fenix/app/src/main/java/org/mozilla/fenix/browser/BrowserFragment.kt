@@ -538,7 +538,7 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
                 requireContext(),
                 { true },
             )
-
+        val tabGroupCandidates = listOf(createOpenInNewTabInGroupCandidate(context))
         return if (requireComponents.settings.nativeShareSheetEnabled && isSystemShareSheetSupported) {
             NativeShareSheetContextMenuCandidate.defaultCandidates(
                 context = context,
@@ -557,14 +557,9 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
                 },
                 snackBarParentView = view,
                 snackbarDelegate = ContextMenuSnackbarDelegate(),
-                downloadsLocation = {
-                    DownloadLocationManager(
-                            requireComponents.settings,
-                            requireContext().contentResolver,
-                        )
-                        .defaultLocation
-                },
+                downloadsLocation = ::defaultDownloadsLocation,
                 navigateToShareFragment = ::navigateToShareFragment,
+                additionalTabCandidates = tabGroupCandidates,
             )
         } else {
             ContextMenuCandidate.defaultCandidates(
@@ -573,13 +568,8 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
                 contextMenuUseCases = context.components.useCases.contextMenuUseCases,
                 snackBarParentView = view,
                 snackbarDelegate = ContextMenuSnackbarDelegate(),
-                downloadsLocation = {
-                    DownloadLocationManager(
-                            requireComponents.settings,
-                            requireContext().contentResolver,
-                        )
-                        .defaultLocation
-                },
+                downloadsLocation = ::defaultDownloadsLocation,
+                additionalTabCandidates = tabGroupCandidates,
             )
         } +
             createOpenInExternalAppCandidate(
@@ -620,6 +610,18 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
                 navOptions = NavOptions.Builder().setPopUpTo(popUpToId, false).build(),
             )
     }
+
+    private fun defaultDownloadsLocation() =
+        DownloadLocationManager(requireComponents.settings, requireContext().contentResolver).defaultLocation
+
+    private fun createOpenInNewTabInGroupCandidate(context: Context) =
+        TabGroupContextMenuCandidate.createOpenInNewTabInGroupCandidate(
+            resources = context.resources,
+            tabGroupsEnabled = context.components.settings.tabGroupsEnabled,
+            tabsUseCases = context.components.useCases.tabsUseCases,
+            tabDataCoordinator = context.components.tabDataCoordinator,
+            scope = viewLifecycleOwner.lifecycleScope,
+        )
 
     private fun createOpenWithGoogleLensCandidate(context: Context) =
         ContextMenuCandidate(
