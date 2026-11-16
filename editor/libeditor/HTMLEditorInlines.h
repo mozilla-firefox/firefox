@@ -66,10 +66,10 @@ Result<MoveNodeResult, nsresult> HTMLEditor::MoveSiblingsToEndWithTransaction(
                                      EditorDOMPoint::AtEndOf(aNewContainer));
 }
 
-Element* HTMLEditor::GetTableCellElementAt(
+Element* HTMLEditor::GetMaybeGeneratedTableCellElementAt(
     Element& aTableElement, const CellIndexes& aCellIndexes) const {
-  return GetTableCellElementAt(aTableElement, aCellIndexes.mRow,
-                               aCellIndexes.mColumn);
+  return GetMaybeGeneratedTableCellElementAt(aTableElement, aCellIndexes.mRow,
+                                             aCellIndexes.mColumn);
 }
 
 already_AddRefed<RangeItem>
