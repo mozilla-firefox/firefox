@@ -7,6 +7,8 @@ support-files = [
   "browser_elementindtd.dtd"
 ]
 
+["browser_file_url_buffer_boundaries.js"]
+
 ["browser_viewsource.js"]
 support-files = ["file_viewsource.html"]
 

@@ -430,9 +430,18 @@ class nsHtml5StreamParser final : public nsISupports {
 
   /**
    * When speculatively decoding from file: URL as UTF-8, redecode
-   * using fallback and then continue normally with the fallback.
+   * the buffered bytes using fallback. The caller is responsible
+   * for tokenizing the redecoded data.
    */
   [[nodiscard]] nsresult ReDecodeLocalFile() MOZ_REQUIRES(mTokenizerMutex);
+
+  /**
+   * When speculatively decoding from file: URL as UTF-8 and
+   * LOCAL_FILE_UTF_8_BUFFER_SIZE bytes have been buffered, guess the
+   * encoding and either commit to UTF-8 or redecode.
+   */
+  [[nodiscard]] nsresult CommitOrReDecodeLocalFile()
+      MOZ_REQUIRES(mTokenizerMutex);
 
   /**
    * Potentially guess the encoding using mozilla::EncodingDetector.

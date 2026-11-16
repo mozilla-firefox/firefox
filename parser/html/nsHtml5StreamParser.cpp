@@ -934,33 +934,32 @@ nsresult nsHtml5StreamParser::WriteStreamBytes(
       (void)totalRead;
       if (!mLookingForMetaCharset && mDecodingLocalFileWithoutTokenizing &&
           mNumBytesBuffered == LOCAL_FILE_UTF_8_BUFFER_SIZE) {
-        MOZ_ASSERT(!mStartedFeedingDetector);
-        for (auto&& buffer : mBufferedBytes) {
-          FeedDetector(buffer);
-        }
-        // If the file is exactly LOCAL_FILE_UTF_8_BUFFER_SIZE bytes long
-        // we end up not considering the EOF. That's not fatal, since we
-        // don't consider the EOF if the file is
-        // LOCAL_FILE_UTF_8_BUFFER_SIZE + 1 bytes long.
-        auto [encoding, source] = GuessEncoding(true);
-        mCharsetSource = source;
-        if (encoding != mEncoding) {
-          mEncoding = encoding;
-          nsresult rv = ReDecodeLocalFile();
-          if (NS_FAILED(rv)) {
-            return rv;
-          }
-        } else {
-          MOZ_ASSERT(mEncoding == UTF_8_ENCODING);
-          nsresult rv = CommitLocalFileToEncoding();
-          if (NS_FAILED(rv)) {
-            return rv;
-          }
-        }
+        return CommitOrReDecodeLocalFile();
       }
       return NS_OK;
     }
   }
+}
+
+[[nodiscard]] nsresult nsHtml5StreamParser::CommitOrReDecodeLocalFile() {
+  MOZ_ASSERT(mDecodingLocalFileWithoutTokenizing && !mLookingForMetaCharset);
+  MOZ_ASSERT(mNumBytesBuffered == LOCAL_FILE_UTF_8_BUFFER_SIZE);
+  MOZ_ASSERT(!mStartedFeedingDetector);
+  for (auto&& buffer : mBufferedBytes) {
+    FeedDetector(buffer);
+  }
+  // If the file is exactly LOCAL_FILE_UTF_8_BUFFER_SIZE bytes long
+  // we end up not considering the EOF. That's not fatal, since we
+  // don't consider the EOF if the file is
+  // LOCAL_FILE_UTF_8_BUFFER_SIZE + 1 bytes long.
+  auto [encoding, source] = GuessEncoding(true);
+  mCharsetSource = source;
+  if (encoding != mEncoding) {
+    mEncoding = encoding;
+    return ReDecodeLocalFile();
+  }
+  MOZ_ASSERT(mEncoding == UTF_8_ENCODING);
+  return CommitLocalFileToEncoding();
 }
 
 [[nodiscard]] nsresult nsHtml5StreamParser::ReDecodeLocalFile() {
@@ -991,9 +990,14 @@ nsresult nsHtml5StreamParser::WriteStreamBytes(
 
   mTreeBuilder->SetDocumentCharset(mEncoding, mCharsetSource, true);
 
-  // Decode again
+  // Decode again. The caller is responsible for tokenizing the
+  // re-decoded data, which allows this to run after the stream
+  // has ended.
   for (auto&& buffer : mBufferedBytes) {
-    DoDataAvailable(buffer);
+    nsresult rv = WriteStreamBytes(buffer);
+    if (NS_FAILED(rv)) {
+      return rv;
+    }
   }
 
   if (mMode == VIEW_SOURCE_HTML) {
@@ -1492,41 +1496,51 @@ void nsHtml5StreamParser::DoDataAvailableBuffer(
     mBufferedBytes.Clear();
     return;
   }
-  CheckedInt<size_t> bufferedPlusLength(aBuffer.Length());
-  bufferedPlusLength += mNumBytesBuffered;
-  if (!bufferedPlusLength.isValid()) {
-    MarkAsBroken(NS_ERROR_OUT_OF_MEMORY);
-    return;
-  }
-  // Ensure that WriteStreamBytes() sees buffers ending
-  // exactly at the two special boundaries.
-  bool metaBoundaryWithinBuffer =
-      mLookingForMetaCharset &&
-      mNumBytesBuffered < UNCONDITIONAL_META_SCAN_BOUNDARY &&
-      bufferedPlusLength.value() > UNCONDITIONAL_META_SCAN_BOUNDARY;
-  bool localFileLimitWithinBuffer =
-      mDecodingLocalFileWithoutTokenizing &&
-      mNumBytesBuffered < LOCAL_FILE_UTF_8_BUFFER_SIZE &&
-      bufferedPlusLength.value() > LOCAL_FILE_UTF_8_BUFFER_SIZE;
-  if (!metaBoundaryWithinBuffer && !localFileLimitWithinBuffer) {
-    // Truncation OK, because we just checked the range.
-    mNumBytesBuffered = bufferedPlusLength.value();
-    mBufferedBytes.AppendElement(std::move(aBuffer));
-    DoDataAvailable(mBufferedBytes.LastElement());
-  } else {
-    MOZ_RELEASE_ASSERT(
-        !(metaBoundaryWithinBuffer && localFileLimitWithinBuffer),
-        "How can Necko give us a buffer this large?");
+  // Ensure that WriteStreamBytes() (called from DoDataAvailable())
+  // sees buffers ending exactly at the two special boundaries. A
+  // single buffer may straddle both, so split repeatedly,
+  // re-evaluating the boundaries against the current state after
+  // each piece.
+  Span<const uint8_t> remaining = aBuffer.AsSpan();
+  for (;;) {
+    CheckedInt<size_t> bufferedPlusLength(remaining.Length());
+    bufferedPlusLength += mNumBytesBuffered;
+    if (!bufferedPlusLength.isValid()) {
+      MarkAsBroken(NS_ERROR_OUT_OF_MEMORY);
+      return;
+    }
+    bool metaBoundaryWithinBuffer =
+        mLookingForMetaCharset &&
+        mNumBytesBuffered < UNCONDITIONAL_META_SCAN_BOUNDARY &&
+        bufferedPlusLength.value() > UNCONDITIONAL_META_SCAN_BOUNDARY;
+    bool localFileLimitWithinBuffer =
+        mDecodingLocalFileWithoutTokenizing &&
+        mNumBytesBuffered < LOCAL_FILE_UTF_8_BUFFER_SIZE &&
+        bufferedPlusLength.value() > LOCAL_FILE_UTF_8_BUFFER_SIZE;
+    if (!metaBoundaryWithinBuffer && !localFileLimitWithinBuffer) {
+      if (remaining.Elements() == aBuffer.Elements()) {
+        mBufferedBytes.AppendElement(std::move(aBuffer));
+      } else {
+        Maybe<Buffer<uint8_t>> maybeTail = Buffer<uint8_t>::CopyFrom(remaining);
+        if (maybeTail.isNothing()) {
+          MarkAsBroken(NS_ERROR_OUT_OF_MEMORY);
+          return;
+        }
+        mBufferedBytes.AppendElement(std::move(*maybeTail));
+      }
+      // Truncation OK, because we just checked the range.
+      mNumBytesBuffered = bufferedPlusLength.value();
+      DoDataAvailable(mBufferedBytes.LastElement());
+      break;
+    }
     size_t boundary = metaBoundaryWithinBuffer
                           ? UNCONDITIONAL_META_SCAN_BOUNDARY
                           : LOCAL_FILE_UTF_8_BUFFER_SIZE;
     // Truncation OK, because the constant is small enough.
     size_t overBoundary = bufferedPlusLength.value() - boundary;
-    MOZ_RELEASE_ASSERT(overBoundary < aBuffer.Length());
-    size_t untilBoundary = aBuffer.Length() - overBoundary;
-    auto span = aBuffer.AsSpan();
-    auto head = span.To(untilBoundary);
-    auto tail = span.From(untilBoundary);
+    MOZ_RELEASE_ASSERT(overBoundary < remaining.Length());
+    size_t untilBoundary = remaining.Length() - overBoundary;
+    Span<const uint8_t> head = remaining.To(untilBoundary);
     MOZ_RELEASE_ASSERT(mNumBytesBuffered + untilBoundary == boundary);
     // The following copies may end up being useless, but optimizing
     // them away would add complexity.
@@ -1540,14 +1554,7 @@ void nsHtml5StreamParser::DoDataAvailableBuffer(
     DoDataAvailable(mBufferedBytes.LastElement());
     // Re-decode may have happened here.
 
-    Maybe<Buffer<uint8_t>> maybeTail = Buffer<uint8_t>::CopyFrom(tail);
-    if (maybeTail.isNothing()) {
-      MarkAsBroken(NS_ERROR_OUT_OF_MEMORY);
-      return;
-    }
-    mNumBytesBuffered += tail.Length();
-    mBufferedBytes.AppendElement(std::move(*maybeTail));
-    DoDataAvailable(mBufferedBytes.LastElement());
+    remaining = remaining.From(untilBoundary);
   }
   // Do this clean-up here to avoid use-after-free when
   // DoDataAvailable is passed a span pointing into an
@@ -2357,6 +2364,16 @@ bool nsHtml5StreamParser::ProcessLookingForMetaCharset(bool aEof) {
         MarkAsBroken(r.unwrapErr());
         return false;
       }
+    } else if (mNumBytesBuffered == LOCAL_FILE_UTF_8_BUFFER_SIZE) {
+      // WriteStreamBytes() already passed the boundary while
+      // mLookingForMetaCharset was still true.
+      nsresult rv = CommitOrReDecodeLocalFile();
+      if (NS_FAILED(rv)) {
+        MarkAsBroken(rv);
+        return false;
+      }
+      MOZ_ASSERT(!mBufferingBytes);
+      mBufferedBytes.Clear();
     }
   }
   return rewound;
