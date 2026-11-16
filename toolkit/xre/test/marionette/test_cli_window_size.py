@@ -4,6 +4,7 @@
 
 import copy
 
+from marionette_driver import Wait
 from marionette_harness import MarionetteTestCase
 
 BROWSER_DOC = "chrome://browser/content/browser.xhtml"
@@ -65,3 +66,29 @@ class TestCLIWindowSize(MarionetteTestCase):
 
         self.assertAlmostEqual(width, CLI_WIDTH, delta=5)
         self.assertAlmostEqual(height, CLI_HEIGHT, delta=5)
+
+    def test_start_maximized_overrides_persisted_sizemode(self):
+        with self.marionette.using_context("chrome"):
+            readback = self.marionette.execute_script(
+                """
+                let [doc, id] = arguments;
+                Services.xulStore.setValue(doc, id, "sizemode", "normal");
+                return Services.xulStore.getValue(doc, id, "sizemode");
+                """,
+                script_args=(BROWSER_DOC, MAIN_WINDOW),
+            )
+            self.assertEqual(readback, "normal")
+
+        self.marionette.quit()
+        self.marionette.instance.app_args = self.orig_args + ["-start-maximized"]
+        self.marionette.start_session()
+
+        # On X11 the maximize is a request the window manager acknowledges
+        # asynchronously, so poll rather than reading the state once.
+        with self.marionette.using_context("chrome"):
+            Wait(self.marionette, timeout=30).until(
+                lambda m: m.execute_script(
+                    "return window.windowState == window.STATE_MAXIMIZED;"
+                ),
+                message="window was not maximized with -start-maximized",
+            )

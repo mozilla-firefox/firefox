@@ -95,6 +95,8 @@ platform. A current list can always be printed with `firefox --help`.
      - Start the browser in kiosk mode.
    * - ``--kiosk-monitor <num>``
      - Place the kiosk browser window on the given monitor.
+   * - ``--start-maximized``
+     - Start the browser with the window maximized.
    * - ``--disable-pinch``
      - Disable touch-screen and touch-pad pinch gestures.
 ```

@@ -499,6 +499,16 @@ nsBrowserContentHandler.prototype = {
       gKiosk = true;
       Glean.browserStartup.kioskMode.set(true);
     }
+    if (cmdLine.handleFlag("start-maximized", false)) {
+      // Persisting this before the first window opens is what makes the window
+      // come up maximized rather than being resized after it is shown.
+      Services.xulStore.setValue(
+        AppConstants.BROWSER_CHROME_URL,
+        "main-window",
+        "sizemode",
+        "maximized"
+      );
+    }
     if (cmdLine.handleFlag("disable-pinch", false)) {
       let defaults = Services.prefs.getDefaultBranch(null);
       defaults.setBoolPref("apz.allow_zooming", false);
@@ -760,6 +770,8 @@ nsBrowserContentHandler.prototype = {
     info += "  --kiosk            Start the browser in kiosk mode.\n";
     info +=
       "  --kiosk-monitor <num> Place kiosk browser window on given monitor.\n";
+    info +=
+      "  --start-maximized  Start the browser with the window maximized.\n";
     info +=
       "  --disable-pinch    Disable touch-screen and touch-pad pinch gestures.\n";
     return info;

@@ -594,7 +594,8 @@ BrowserGlue.prototype = {
         cmdLine.findFlag("width", false) != -1 ||
         cmdLine.findFlag("height", false) != -1 ||
         cmdLine.findFlag("left", false) != -1 ||
-        cmdLine.findFlag("top", false) != -1
+        cmdLine.findFlag("top", false) != -1 ||
+        cmdLine.findFlag("start-maximized", false) != -1
       ) {
         return false;
       }
