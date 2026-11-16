@@ -1,14 +1,7 @@
 "use strict";
 // This test checks whether the new tab page color properties work.
 
-// @nova-cleanup(remove-pref): Remove novaEnabled detection
-// @nova-cleanup(remove-conditional): Remove novaEnabled check; always use .nova-outer-wrapper
-const outerWrapperClass = Services.prefs.getBoolPref(
-  "browser.newtabpage.activity-stream.nova.enabled",
-  false
-)
-  ? ".nova-outer-wrapper"
-  : ".outer-wrapper";
+const outerWrapperClass = ".nova-outer-wrapper";
 
 function waitForAboutNewTabReady(browser, url) {
   // Stop-gap fix for https://bugzilla.mozilla.org/show_bug.cgi?id=1697196#c24

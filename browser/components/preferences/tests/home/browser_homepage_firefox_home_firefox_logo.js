@@ -4,15 +4,11 @@
 "use strict";
 
 const HIDE_LOGO_PREF = "browser.newtabpage.activity-stream.hideLogo";
-const NOVA_PREF = "browser.newtabpage.activity-stream.nova.enabled";
 
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["identity.fxaccounts.account.device.name", ""],
-      // Toggle is only registered when Nova is enabled (hideLogo has no
-      // effect outside the Nova render path in Base.jsx).
-      [NOVA_PREF, true],
       // Default state: logo visible (hideLogo=false).
       [HIDE_LOGO_PREF, false],
     ],

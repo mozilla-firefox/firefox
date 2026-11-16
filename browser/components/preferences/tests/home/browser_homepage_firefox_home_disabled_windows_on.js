@@ -6,11 +6,6 @@
 const HOMEPAGE_PREF = "browser.startup.homepage";
 const NEWTAB_ENABLED_PREF = "browser.newtabpage.enabled";
 const DEFAULT_HOMEPAGE_URL = "about:home";
-// @nova-cleanup(remove-conditional): Delete this constant; the firefoxLogo gate in assertSectionEnabled below and the _classic task become unconditional after cleanup.
-const NOVA_ENABLED_PREF = "browser.newtabpage.activity-stream.nova.enabled";
-// @nova-cleanup(remove-conditional): Delete this constant; only used by the test_firefox_home_enabled_when_windows_is_home_classic task below.
-const CLASSIC_WEATHER_SYSTEM_PREF =
-  "browser.newtabpage.activity-stream.system.showWeather";
 
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
@@ -40,10 +35,7 @@ async function assertSectionEnabled(win) {
     "Message bar is hidden when New windows is Firefox Home"
   );
 
-  // firefoxLogo is only registered when Nova is enabled. With Nova on and the
-  // widgets container on, Weather is managed with the other widgets; without
-  // Nova it has its own row.
-  const novaEnabled = Services.prefs.getBoolPref(NOVA_ENABLED_PREF, false);
+  // With the widgets container on, Weather is managed with the other widgets.
   for (let settingId of [
     "webSearch",
     "widgets",
@@ -51,7 +43,7 @@ async function assertSectionEnabled(win) {
     "stories",
     "supportFirefox",
     "recentActivity",
-    ...(novaEnabled ? ["firefoxLogo"] : ["weatherStandalone"]),
+    "firefoxLogo",
   ]) {
     let control = await settingControlRenders(settingId, win);
     ok(
@@ -66,19 +58,3 @@ add_task(async function test_firefox_home_enabled_when_windows_is_home() {
   await assertSectionEnabled(win);
   BrowserTestUtils.removeTab(tab);
 });
-
-// @nova-cleanup(remove-conditional): Delete this entire add_task; covers the Classic newtab UI which is being removed.
-add_task(
-  async function test_firefox_home_enabled_when_windows_is_home_classic() {
-    await SpecialPowers.pushPrefEnv({
-      set: [
-        [NOVA_ENABLED_PREF, false],
-        [CLASSIC_WEATHER_SYSTEM_PREF, true],
-      ],
-    });
-
-    let { win, tab } = await openHomePreferences();
-    await assertSectionEnabled(win);
-    BrowserTestUtils.removeTab(tab);
-  }
-);

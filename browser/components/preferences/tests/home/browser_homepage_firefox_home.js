@@ -5,16 +5,8 @@
 
 const SHOW_SEARCH_PREF = "browser.newtabpage.activity-stream.showSearch";
 const SHOW_WEATHER_SYSTEM_PREF =
-  "browser.newtabpage.activity-stream.system.showWeather";
-const SHOW_WEATHER_PREF = "browser.newtabpage.activity-stream.showWeather";
-// @nova-cleanup(remove-pref): Delete this const, the _nova task suffixes and the
-// classic test_weather_widget_visibility / test_weather_toggle_functionality
-// tasks; the _nova variants become the only ones. SHOW_WEATHER_PREF and
-// SHOW_WEATHER_SYSTEM_PREF go with them, and the NOVA_ prefixes drop.
-const NOVA_ENABLED_PREF = "browser.newtabpage.activity-stream.nova.enabled";
-const NOVA_SHOW_WEATHER_SYSTEM_PREF =
   "browser.newtabpage.activity-stream.widgets.system.weather.enabled";
-const NOVA_SHOW_WEATHER_PREF =
+const SHOW_WEATHER_PREF =
   "browser.newtabpage.activity-stream.widgets.weather.enabled";
 // Weather only gets its own row when the Widgets group is hidden.
 const WIDGETS_SYSTEM_PREF =
@@ -98,7 +90,7 @@ add_task(async function test_web_search_toggle() {
 add_task(async function test_weather_widget_visibility() {
   await SpecialPowers.pushPrefEnv({
     set: [
-      [NOVA_ENABLED_PREF, false],
+      [WIDGETS_SYSTEM_PREF, false],
       [SHOW_WEATHER_SYSTEM_PREF, false],
     ],
   });
@@ -108,14 +100,14 @@ add_task(async function test_weather_widget_visibility() {
   let weatherWrapper = getSettingControl("weatherStandalone", win);
   ok(
     !weatherWrapper || BrowserTestUtils.isHidden(weatherWrapper),
-    "Weather control is hidden when system pref is false"
+    "Weather control is hidden when the weather system pref is false"
   );
 
   BrowserTestUtils.removeTab(tab);
 
   await SpecialPowers.pushPrefEnv({
     set: [
-      [NOVA_ENABLED_PREF, false],
+      [WIDGETS_SYSTEM_PREF, false],
       [SHOW_WEATHER_SYSTEM_PREF, true],
     ],
   });
@@ -123,10 +115,13 @@ add_task(async function test_weather_widget_visibility() {
   ({ win, tab } = await openHomePreferences());
 
   weatherWrapper = await settingControlRenders("weatherStandalone", win);
-  ok(weatherWrapper, "Weather control exists when system pref is true");
+  ok(
+    weatherWrapper,
+    "Weather control exists when the weather system pref is true"
+  );
   ok(
     BrowserTestUtils.isVisible(weatherWrapper),
-    "Weather control is visible when system pref is true"
+    "Weather control is visible when the weather system pref is true"
   );
 
   BrowserTestUtils.removeTab(tab);
@@ -135,7 +130,7 @@ add_task(async function test_weather_widget_visibility() {
 add_task(async function test_weather_toggle_functionality() {
   await SpecialPowers.pushPrefEnv({
     set: [
-      [NOVA_ENABLED_PREF, false],
+      [WIDGETS_SYSTEM_PREF, false],
       [SHOW_WEATHER_SYSTEM_PREF, true],
       [SHOW_WEATHER_PREF, true],
     ],
@@ -167,89 +162,6 @@ add_task(async function test_weather_toggle_functionality() {
   await waitForToggleState(toggle, true);
 
   ok(Services.prefs.getBoolPref(SHOW_WEATHER_PREF), "Weather pref is now true");
-  ok(toggle.pressed, "Weather toggle is now checked");
-
-  BrowserTestUtils.removeTab(tab);
-});
-
-add_task(async function test_weather_widget_visibility_nova() {
-  await SpecialPowers.pushPrefEnv({
-    set: [
-      [NOVA_ENABLED_PREF, true],
-      [WIDGETS_SYSTEM_PREF, false],
-      [NOVA_SHOW_WEATHER_SYSTEM_PREF, false],
-    ],
-  });
-
-  let { win, tab } = await openHomePreferences();
-
-  let weatherWrapper = getSettingControl("weatherStandalone", win);
-  ok(
-    !weatherWrapper || BrowserTestUtils.isHidden(weatherWrapper),
-    "Weather control is hidden when Nova system pref is false"
-  );
-
-  BrowserTestUtils.removeTab(tab);
-
-  await SpecialPowers.pushPrefEnv({
-    set: [
-      [NOVA_ENABLED_PREF, true],
-      [WIDGETS_SYSTEM_PREF, false],
-      [NOVA_SHOW_WEATHER_SYSTEM_PREF, true],
-    ],
-  });
-
-  ({ win, tab } = await openHomePreferences());
-
-  weatherWrapper = await settingControlRenders("weatherStandalone", win);
-  ok(weatherWrapper, "Weather control exists when Nova system pref is true");
-  ok(
-    BrowserTestUtils.isVisible(weatherWrapper),
-    "Weather control is visible when Nova system pref is true"
-  );
-
-  BrowserTestUtils.removeTab(tab);
-});
-
-add_task(async function test_weather_toggle_functionality_nova() {
-  await SpecialPowers.pushPrefEnv({
-    set: [
-      [NOVA_ENABLED_PREF, true],
-      [WIDGETS_SYSTEM_PREF, false],
-      [NOVA_SHOW_WEATHER_SYSTEM_PREF, true],
-      [NOVA_SHOW_WEATHER_PREF, true],
-    ],
-  });
-
-  let { win, tab } = await openHomePreferences();
-
-  let weatherControl = await settingControlRenders("weatherStandalone", win);
-  ok(weatherControl, "Weather control exists");
-
-  let toggle = weatherControl.querySelector("moz-toggle");
-  ok(toggle, "Weather toggle element exists");
-  ok(toggle.pressed, "Weather toggle is initially checked");
-
-  let prefChanged = waitForPrefChange(NOVA_SHOW_WEATHER_PREF, false);
-  toggle.click();
-  await prefChanged;
-  await waitForToggleState(toggle, false);
-
-  ok(
-    !Services.prefs.getBoolPref(NOVA_SHOW_WEATHER_PREF),
-    "Nova weather pref is now false"
-  );
-  ok(!toggle.pressed, "Weather toggle is now unchecked");
-
-  prefChanged = waitForPrefChange(NOVA_SHOW_WEATHER_PREF, true);
-  toggle.click();
-  await prefChanged;
-  await waitForToggleState(toggle, true);
-
-  ok(
-    Services.prefs.getBoolPref(NOVA_SHOW_WEATHER_PREF),
-    "Nova weather pref is now true"
-  );
   ok(toggle.pressed, "Weather toggle is now checked");
 
   BrowserTestUtils.removeTab(tab);

@@ -360,30 +360,6 @@ const HNT_NOVA_RESTORE_RECIPE =
     { isRollout: true }
   );
 
-add_task(async function testNovaNeverEnrolled() {
-  async function doTest(userBranchValue) {
-    info(
-      `Testing HNT nova restore when user never enrolled and pref is ${userBranchValue}`
-    );
-
-    const cleanupPref = setupPref(HNT_NOVA_PREF, null, userBranchValue);
-    const { cleanup } = await setupTest();
-
-    Assert.equal(
-      PrefUtils.getPref(HNT_NOVA_PREF),
-      userBranchValue,
-      "pref unchanged"
-    );
-
-    await cleanup();
-    cleanupPref();
-  }
-
-  for (const userBranchValue of [false, true]) {
-    await doTest(userBranchValue);
-  }
-});
-
 add_task(async function testNovaEnrolled() {
   async function doTest(enrolledInRestore, restoreActive = null) {
     info(

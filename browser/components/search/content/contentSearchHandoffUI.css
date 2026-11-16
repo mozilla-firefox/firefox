@@ -18,15 +18,6 @@
   --content-search-handoff-ui-fakefocus-box-shadow-outer: color-mix(in srgb, SelectedItem 25%, transparent);
 }
 
-/**
- * @nova-cleanup(remove-conditional): Remove this override once Nova ships for newtab.
- */
-@media not -moz-pref("browser.newtabpage.activity-stream.nova.enabled") {
-  :host {
-    --content-search-handoff-ui-border-radius: var(--border-radius-medium);
-  }
-}
-
 .fake-editable {
   height: 100%;
   opacity: 0;

@@ -6,11 +6,6 @@
 const HOMEPAGE_PREF = "browser.startup.homepage";
 const NEWTAB_ENABLED_PREF = "browser.newtabpage.enabled";
 const BLANK_HOMEPAGE_URL = "chrome://browser/content/blanktab.html";
-// @nova-cleanup(remove-conditional): Delete this constant; the firefoxLogo gate in assertSectionDisabled below and the _classic task become unconditional after cleanup.
-const NOVA_ENABLED_PREF = "browser.newtabpage.activity-stream.nova.enabled";
-// @nova-cleanup(remove-conditional): Delete this constant; only used by the test_firefox_home_disabled_when_both_off_classic task below.
-const CLASSIC_WEATHER_SYSTEM_PREF =
-  "browser.newtabpage.activity-stream.system.showWeather";
 
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
@@ -46,10 +41,7 @@ async function assertSectionDisabled(win) {
     "Disabled notice is visible when both settings are not Firefox Home"
   );
 
-  // firefoxLogo is only registered when Nova is enabled. With Nova on and the
-  // widgets container on, Weather is managed with the other widgets; without
-  // Nova it has its own row.
-  const novaEnabled = Services.prefs.getBoolPref(NOVA_ENABLED_PREF, false);
+  // With the widgets container on, Weather is managed with the other widgets.
   for (let settingId of [
     "webSearch",
     "widgets",
@@ -57,7 +49,7 @@ async function assertSectionDisabled(win) {
     "stories",
     "supportFirefox",
     "recentActivity",
-    ...(novaEnabled ? ["firefoxLogo"] : ["weatherStandalone"]),
+    "firefoxLogo",
   ]) {
     let control = await settingControlRenders(settingId, win);
     ok(
@@ -91,16 +83,25 @@ add_task(async function test_firefox_home_disabled_when_both_off() {
   BrowserTestUtils.removeTab(tab);
 });
 
-// @nova-cleanup(remove-conditional): Delete this entire add_task; covers the Classic newtab UI which is being removed.
-add_task(async function test_firefox_home_disabled_when_both_off_classic() {
+add_task(async function test_weather_standalone_disabled_when_both_off() {
+  // Weather only gets its own row when the Widgets group is hidden.
   await SpecialPowers.pushPrefEnv({
     set: [
-      [NOVA_ENABLED_PREF, false],
-      [CLASSIC_WEATHER_SYSTEM_PREF, true],
+      ["browser.newtabpage.activity-stream.widgets.system.enabled", false],
+      [
+        "browser.newtabpage.activity-stream.widgets.system.weather.enabled",
+        true,
+      ],
     ],
   });
 
   let { win, tab } = await openHomePreferences();
-  await assertSectionDisabled(win);
+  let control = await settingControlRenders("weatherStandalone", win);
+  ok(
+    control.controlEl.disabled,
+    "weatherStandalone is disabled when Firefox Home is not active"
+  );
+
   BrowserTestUtils.removeTab(tab);
+  await SpecialPowers.popPrefEnv();
 });

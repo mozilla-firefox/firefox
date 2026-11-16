@@ -20,9 +20,6 @@ add_setup(async function () {
     set: [
       ["browser.newtab.preload", false],
       ["browser.newtabpage.activity-stream.telemetry", true],
-      // @nova-cleanup(remove-pref): Nova is enabled by default starting in
-      // Firefox 151. Remove this pref override once 151 reaches Release.
-      ["browser.newtabpage.activity-stream.nova.enabled", true],
     ],
   });
   NewTabPagePreloading.removePreloadedBrowser(window);
