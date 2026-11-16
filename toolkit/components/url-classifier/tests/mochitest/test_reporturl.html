@@ -189,6 +189,11 @@ SpecialPowers.pushPrefEnv(
            ["browser.safebrowsing.only_top_level", false]]},
   test);
 
+// Clicking "ignore the risk" grants a session-long "safe-browsing" permission.
+SimpleTest.registerCleanupFunction(() => {
+  Services.perms.removeByType("safe-browsing");
+});
+
 function test() {
   (async function() {
     await classifierHelper.waitForInit();
