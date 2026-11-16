@@ -10,6 +10,7 @@
 
 #include "mozilla/ContentData.h"
 #include "mozilla/EventForwards.h"
+#include "mozilla/GRefPtr.h"
 #include "mozilla/GUniquePtr.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/TextEventDispatcherListener.h"
@@ -263,6 +264,54 @@ class IMContextWrapper final : public TextEventDispatcherListener {
 
   // If we're handling a key event, this is set to the event.
   GdkEventKey* mHandlingKeyEvent = nullptr;
+
+  // The reason of calling MaybeResetIME(). Currently, if the new reason is
+  // larger than the value, the reason of ResettingIMContextData will be
+  // overwritten. So, be careful about adding new value.
+  enum class ResetIMEReason : uint8_t {
+    // On focus change.
+    FocusChange,
+    // Requested by content or widget.
+    Request,
+    // On selection change caused not by composition.
+    SelectionChange,
+  };
+  friend auto format_as(ResetIMEReason aReason) {
+    switch (aReason) {
+      case ResetIMEReason::Request:
+        return "Reset";
+      case ResetIMEReason::SelectionChange:
+        return "SelectionChange";
+      case ResetIMEReason::FocusChange:
+        return "FocusChange";
+    }
+    return "<Illegal value>";
+  }
+  friend std::ostream& operator<<(std::ostream& aStream,
+                                  ResetIMEReason aReason) {
+    return aStream << format_as(aReason);
+  }
+
+  class ResettingIMContextData {
+   public:
+    ResettingIMContextData(GtkIMContext* aContext, ResetIMEReason aReason)
+        : mContext(aContext), mReason(aReason) {}
+    bool operator==(const GtkIMContext* aContext) const {
+      return mContext == aContext;
+    }
+
+    ResetIMEReason Reason() const { return mReason; }
+    void MaybeSetNewReason(ResetIMEReason aNewReason) {
+      if (aNewReason > mReason) {
+        mReason = aNewReason;
+      }
+    }
+
+   private:
+    const RefPtr<GtkIMContext> mContext;
+    ResetIMEReason mReason;
+  };
+  nsTArray<ResettingIMContextData> mResettingIMContexts;
 
   /**
    * GdkEventKeyQueue stores *copy* of GdkEventKey instances.  However, this
@@ -683,13 +732,12 @@ class IMContextWrapper final : public TextEventDispatcherListener {
   // with no composition.  If true, we update candidate window position
   // before key down
   bool mSetCursorPositionOnKeyEvent;
-  // mPendingResettingIMContext becomes true if selection change notification
-  // is received during composition but the selection change occurred before
-  // starting the composition.  In such case, we cannot notify IME of
-  // selection change during composition because we don't want to commit
-  // the composition in such case.  However, we should notify IME of the
-  // selection change after the composition is committed.
-  bool mPendingResettingIMContext;
+  // Set to true if selection change notification is received during composition
+  // but the selection change occurred before starting the composition.  In such
+  // case, we cannot notify IME of selection change during composition because
+  // we don't want to commit the composition in such case.  However, we should
+  // notify IME of the selection change after the composition is committed.
+  bool mResetIMContextAfterCompositionEnd = false;
   // mRetrieveSurroundingSignalReceived is true after "retrieve_surrounding"
   // signal is received until selection is changed in Gecko.
   bool mRetrieveSurroundingSignalReceived;
@@ -794,11 +842,11 @@ class IMContextWrapper final : public TextEventDispatcherListener {
   void Init();
 
   /**
-   * Reset the active context, i.e., if there is mComposingContext, reset it.
-   * Otherwise, reset current context.  Note that all native composition
+   * Maybe reset the active context, i.e., if there is mComposingContext, reset
+   * it. Otherwise, reset current context.  Note that all native composition
    * events during calling this will be ignored.
    */
-  void ResetIME();
+  void MaybeResetIME(ResetIMEReason);
 
   // Gets the current composition string by the native APIs.
   void GetCompositionString(GtkIMContext* aContext,

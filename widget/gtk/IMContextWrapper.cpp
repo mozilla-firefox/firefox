@@ -433,7 +433,6 @@ IMContextWrapper::IMContextWrapper(nsWindow* aOwnerWindow)
       mIsDeletingSurrounding(false),
       mLayoutChanged(false),
       mSetCursorPositionOnKeyEvent(true),
-      mPendingResettingIMContext(false),
       mRetrieveSurroundingSignalReceived(false),
       mMaybeInDeadKeySequence(false),
       mIsIMInAsyncKeyHandlingMode(false),
@@ -810,6 +809,7 @@ void IMContextWrapper::OnDestroyWindow(nsWindow* aWindow) {
   mLastFocusedWindow = nullptr;
   mInputContext.mIMEState.mEnabled = IMEEnabled::Disabled;
   mPendingKeyEvents.Clear();
+  mResettingIMContexts.Clear();
 
   MOZ_LOG(gIMELog, LogLevel::Debug,
           ("0x%p   OnDestroyWindow(), succeeded, Completely destroyed", this));
@@ -1317,25 +1317,61 @@ void IMContextWrapper::OnFocusChangeInGecko(bool aFocus) {
   }
 }
 
-void IMContextWrapper::ResetIME() {
-  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
-              "{} ResetIME(), mCompositionState={}, mIMEFocusState={}",
-              static_cast<void*>(this), GetCompositionStateName(),
-              mIMEFocusState);
+void IMContextWrapper::MaybeResetIME(ResetIMEReason aReason) {
+  const RefPtr<GtkIMContext> activeContext = GetActiveContext();
 
-  GtkIMContext* activeContext = GetActiveContext();
-  if (MOZ_UNLIKELY(!activeContext)) {
+  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
+              "{} MaybeResetIME(aReason={}), mCompositionState={}, "
+              "mIMEFocusState={}, activeContext={}",
+              static_cast<void*>(this), aReason, GetCompositionStateName(),
+              mIMEFocusState, static_cast<void*>(activeContext));
+
+  if (!activeContext) [[unlikely]] {
     MOZ_LOG(gIMELog, LogLevel::Error,
-            ("0x%p   ResetIME(), FAILED, there are no context", this));
+            ("0x%p   MaybeResetIME(), FAILED, there are no context", this));
     return;
   }
+
+  const auto index = mResettingIMContexts.IndexOf(activeContext);
+  constexpr auto kNoIndex = decltype(mResettingIMContexts)::NoIndex;
+  if (index != kNoIndex) [[unlikely]] {
+    ResettingIMContextData& data = mResettingIMContexts[index];
+    // If we're already calling gtk_im_context_reset() for the context due to a
+    // selection change, we shouldn't call it again because we may end up
+    // calling it recursively forever.
+    if (aReason == ResetIMEReason::SelectionChange &&
+        data.Reason() == aReason) {
+      MOZ_LOG_FMT(
+          gIMELog, LogLevel::Info,
+          "{}   MaybeResetIME() give up to call gtk_im_context_reset({}) for "
+          "avoiding infinite recursive calls",
+          static_cast<void*>(this), static_cast<void*>(activeContext));
+      return;
+    }
+    data.MaybeSetNewReason(aReason);
+  } else {
+    mResettingIMContexts.AppendElement(
+        ResettingIMContextData(activeContext, aReason));
+  }
+  // Delete new item from mResettingIMContexts if and only if we added new
+  // one above.
+  const auto maybeRemoveResettingIMContexts =
+      MakeScopeExit([self = RefPtr{this}, activeContext, index]() {
+        if (index != kNoIndex) {
+          return;
+        }
+        const auto newIndex = self->mResettingIMContexts.IndexOf(activeContext);
+        if (newIndex != kNoIndex) {
+          self->mResettingIMContexts.RemoveElementAt(newIndex);
+        }
+      });
 
   RefPtr<IMContextWrapper> kungFuDeathGrip(this);
   RefPtr<nsWindow> lastFocusedWindow(mLastFocusedWindow);
 
-  mPendingResettingIMContext = false;
+  mResetIMContextAfterCompositionEnd = false;
   MOZ_LOG_FMT(gIMELog, LogLevel::Info,
-              "{}   ResetIME() calling gtk_im_context_reset()...",
+              "{}   MaybeResetIME() calling gtk_im_context_reset()...",
               static_cast<void*>(this));
   gtk_im_context_reset(activeContext);
 
@@ -1345,8 +1381,8 @@ void IMContextWrapper::ResetIME() {
       NS_WARN_IF(lastFocusedWindow != mLastFocusedWindow) ||
       lastFocusedWindow->Destroyed()) {
     MOZ_LOG_FMT(gIMELog, LogLevel::Info,
-                "{}   ResetIME() called gtk_im_context_reset() and focused "
-                "window is changed, "
+                "{}   MaybeResetIME() called gtk_im_context_reset() and "
+                "focused window is changed, "
                 "activeContext={}, mCompositionState={}, mIMEFocusState={}",
                 static_cast<void*>(this), static_cast<void*>(activeContext),
                 GetCompositionStateName(), mIMEFocusState);
@@ -1357,7 +1393,7 @@ void IMContextWrapper::ResetIME() {
   GetCompositionString(activeContext, compositionString);
 
   MOZ_LOG_FMT(gIMELog, LogLevel::Info,
-              "{}   ResetIME() called gtk_im_context_reset(), "
+              "{}   MaybeResetIME() called gtk_im_context_reset(), "
               "activeContext={}, mCompositionState={}, compositionString={}, "
               "mIMEFocusState={}",
               static_cast<void*>(this), static_cast<void*>(activeContext),
@@ -1402,10 +1438,10 @@ nsresult IMContextWrapper::EndIMEComposition(nsWindow* aCaller) {
   // the request even if native IME will cause unexpected commit string.
   // So, we don't need to emulate commit or cancel composition with
   // proper composition events.
-  // XXX ResetIME() might not enough for finishing compositoin on some
-  //     environments.  We should emulate focus change too because some IMEs
-  //     may commit or cancel composition at blur.
-  ResetIME();
+  // XXX ReMaybeResetIMEsetIME() might not enough for finishing composition on
+  //     some environments.  We should emulate focus change too because some
+  //     IMEs may commit or cancel composition at blur.
+  MaybeResetIME(ResetIMEReason::Request);
 
   return NS_OK;
 }
@@ -1794,7 +1830,7 @@ void IMContextWrapper::OnSelectionChange(
       IsComposing() && !selectionChangeData.mOccurredDuringComposition &&
       !selectionChangeData.mCausedByComposition;
   if (occurredBeforeComposition) {
-    mPendingResettingIMContext = true;
+    mResetIMContextAfterCompositionEnd = true;
   }
 
   // When the selection change is caused by dispatching composition event,
@@ -1823,7 +1859,7 @@ void IMContextWrapper::OnSelectionChange(
     // have any content cache, so, it must not need the notification of
     // selection change.
     if (IsComposing() || retrievedSurroundingSignalReceived) {
-      ResetIME();
+      MaybeResetIME(ResetIMEReason::SelectionChange);
     }
   }
 
@@ -1934,8 +1970,8 @@ void IMContextWrapper::OnEndCompositionNative(GtkIMContext* aContext) {
     }
   }
 
-  if (mPendingResettingIMContext) {
-    ResetIME();
+  if (mResetIMContextAfterCompositionEnd) {
+    MaybeResetIME(ResetIMEReason::SelectionChange);
   }
 }
 
@@ -2442,9 +2478,9 @@ bool IMContextWrapper::MaybeDispatchKeyEventAsProcessedByIME(
              this));
     if (mComposingContext == oldComposingContext) {
       // Only when the context is still composing, we should call
-      // ResetIME() here.  Otherwise, it should've already been
+      // MaybeResetIME() here.  Otherwise, it should've already been
       // cleaned up.
-      ResetIME();
+      MaybeResetIME(ResetIMEReason::FocusChange);
     }
     return false;
   }
