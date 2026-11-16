@@ -128,6 +128,13 @@ async function stubRemoteSettingsDenyList(
   return rsSandbox;
 }
 
+// FirefoxRelay caches these lists until the next "sync", so restoring the stubs
+// alone would leave the stubbed lists in use by the tests that run after us.
+registerCleanupFunction(async () => {
+  await lazy.RemoteSettings("fxrelay-allowlist").emit("sync");
+  await lazy.RemoteSettings("fxrelay-denylist").emit("sync");
+});
+
 add_setup(async function () {
   gRelayACOptionsTitles = await new Localization([
     "browser/firefoxRelay.ftl",
