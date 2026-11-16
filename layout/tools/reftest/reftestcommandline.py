@@ -304,8 +304,8 @@ class ReftestArgumentsParser(argparse.ArgumentParser):
             metavar="TEST_PATH",
             nargs="*",
             help="Path to test file, manifest file, or directory containing "
-            "tests. For jstestbrowser, the relative path can be either from "
-            "topsrcdir or the staged area "
+            "tests. For jstestbrowser, the relative path should be from the "
+            "staged area "
             "($OBJDIR/dist/test-stage/jsreftest/tests)",
         )
 

@@ -217,10 +217,21 @@ class ReftestResolver:
         """
         rv = []
         default_manifest = self.defaultManifest(suite)
-        relative_path = None
         if not os.path.isabs(test_file):
-            relative_path = test_file
-            test_file = self.absManifestPath(test_file)
+            if suite == "jstestbrowser" and build_obj:
+                # We must use the pre-processed manifests, so resolve
+                # the path relative to staging directory where these
+                # were created.
+                test_file = os.path.join(
+                    build_obj.topobjdir,
+                    "dist",
+                    "test-stage",
+                    "jsreftest",
+                    "tests",
+                    test_file,
+                )
+            else:
+                test_file = self.absManifestPath(test_file)
 
         if os.path.isdir(test_file):
             for dirpath, dirnames, filenames in os.walk(test_file):
@@ -229,19 +240,6 @@ class ReftestResolver:
                     # We keep recursing into subdirectories which means that in the case
                     # of include directives we get the same manifest multiple times.
                     # However reftest.js will only read each manifest once
-
-            if (
-                len(rv) == 0
-                and relative_path
-                and suite == "jstestbrowser"
-                and build_obj
-            ):
-                # The relative path can be from staging area.
-                staged_js_dir = os.path.join(
-                    build_obj.topobjdir, "dist", "test-stage", "jsreftest"
-                )
-                staged_file = os.path.join(staged_js_dir, "tests", relative_path)
-                return self.findManifest(suite, staged_file, subdirs)
         elif test_file.endswith(".list"):
             if os.path.exists(test_file):
                 rv = [(test_file, None)]
