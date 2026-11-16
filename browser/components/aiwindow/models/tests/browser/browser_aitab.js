@@ -1018,6 +1018,40 @@ add_task(async function test_raw_content_builds_a_page_without_a_url() {
 });
 
 /**
+ * Inline content still builds a page when none of the URLs passed alongside it
+ * can be read, rather than the whole request failing on the unreadable pages.
+ */
+add_task(async function test_raw_content_builds_a_page_when_no_url_is_read() {
+  await withAITab(async ({ conversation, runWith }) => {
+    markPrivateAndUntrusted(conversation);
+    conversation.addSeenUrls([ATTACKER_URL]);
+
+    const { messages, toolResult } = await runWith({
+      focus: FOCUS,
+      raw_content: RAW_CONTENT,
+      url_list: [ATTACKER_URL],
+    });
+
+    const prompt = messages.at(-1).content;
+    Assert.ok(
+      prompt.includes(RAW_CONTENT),
+      "The inline content reaches the model."
+    );
+    Assert.ok(
+      prompt.includes("Access is not allowed"),
+      "The unreadable page is passed on as a failed read, not as content."
+    );
+    Assert.ok(
+      toolResult.message.startsWith("The page was created."),
+      `The tool reported success: ${toolResult.message}`
+    );
+
+    const [page] = await lazy.AITabStore.getAITabPagesByConvId(conversation.id);
+    await lazy.ConversationStore.deleteConversationById(page.toolConvId);
+  });
+});
+
+/**
  * Generate a page from raw_content holding a seen and an unseen URL, with the
  * model linking both, and return the links the stored page kept.
  *

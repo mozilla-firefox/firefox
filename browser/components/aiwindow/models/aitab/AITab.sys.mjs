@@ -1234,10 +1234,11 @@ export class AITab {
         return CANCELED_RESULT;
       }
 
-      // Nothing readable: report it instead of generating a page whose only
-      // source material is the refusal. A partial read still generates, from
-      // whichever URLs were allowed.
-      if (!contents.some(result => result.ok)) {
+      // Nothing readable and no inline content: report it instead of
+      // generating a page whose only source material is the refusal. A
+      // partial read, or inline content alongside unreadable pages, still
+      // generates from what is there.
+      if (!rawText && !contents.some(result => result.ok)) {
         return {
           error: "none of the requested pages could be read",
           code: "pages_unreadable",
