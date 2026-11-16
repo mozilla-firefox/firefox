@@ -10,6 +10,11 @@ Don’t hesitate to look at the {doc}`Getting Set Up To Work On The Firefox Code
 
 ## Before you start
 
+:::{important}
+Before getting started on coding, read our
+{doc}`contributor guidelines </setup/contributing_code>`.
+:::
+
 Please register and create your account for
 
 [Bugzilla](https://bugzilla.mozilla.org/) : web-based general-purpose bug tracking system.

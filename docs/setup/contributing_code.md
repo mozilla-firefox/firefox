@@ -25,23 +25,7 @@ term we use for all the code in the
 
 Please see the {ref}`Firefox Contributors Quick Reference <firefox-contributors-quick-reference>` for simple check list.
 
-## Finding something to work on
-
-Bugs listed as 'Assigned' are not usually a good place to start,
-unless you're sure you have something worthy to contribute. Someone
-else is already working on it!
-
-Even with no assignee, it is polite to check if someone has recently
-commented that they're looking at fixing the issue.
-
-Once you have found something to work on, go ahead and comment! Let
-the bug submitter, reviewer, and component owner know that you'd like
-to work on the bug. You might receive some extra information, and be
-made the assignee.
-
-(good-first-bug-guide)=
-
-### Find a bug we've identified as a good fit for new contributors
+## Find a bug we've identified as a good fit for contributors
 
 With millions of bugs filed in Bugzilla, it can be hard to know
 where to start, so we've created these bug categories to make getting
@@ -57,37 +41,81 @@ involved a little easier:
   few lines, but they're a great way to learn about setting up your
   development environment, navigating Bugzilla, and making
   contributions to the Mozilla codebase.
-- [Student Projects](https://bugzil.la/kw:student-project) - are
-  larger projects, such as might be suitable for a university student
-  for credit. Of course, if you are not a student, feel free to fix one
-  of these bugs. See [our project list](https://bugzil.la/kw:student-project).
 
-### Fix that one bug
+:::{note}
+If you're new, start with bugs with the `good-first-bug` keyword; after a few
+of those you can move on to bugs with the
+[good-next-bug](https://bugzilla.mozilla.org/buglist.cgi?keywords=good-next-bug&resolution=---)
+keyword or that have a
+[mentor assigned](https://bugzilla.mozilla.org/buglist.cgi?resolution=---&f1=bug_mentor&o1=isnotempty&keywords=good-first-bug%2C%20good-next-bug&keywords_type=nowords).
+:::
 
-If there's one particular bug you'd like to fix about Firefox, Thunderbird, or
-your other favorite Mozilla application, this can be a great place to
-start. There are a number of ways to do this:
+## How to select a good bug and get it assigned to you
 
-- [Search bugzilla](https://bugzilla.mozilla.org/query.cgi) for
-  relevant keywords. See pages on
-  [Bugzilla and Searching Bugzilla](https://bmo.readthedocs.io/en/latest/using/finding.html) for further
-  help
-- Learn the [bugzilla
-  component](https://bugzilla.mozilla.org/describecomponents.cgi),
-  with which your pet bug is implemented, using the components list.
-  Browse this component on bugzilla for related bugs
+The first step is to find an unassigned bug and express interest in fixing it.
+Even with no assignee, it is polite to check if someone has recently commented
+that they're looking at fixing the issue. If you find a bug that isn't assigned,
+keep in mind that the triage owner may not have time to mentor that bug, or to
+review patches.
 
-## Fixing your bug
+If no one has expressed interest before you, comment on the bug to ask to be
+assigned and wait for a reply before submitting a patch. If you don't receive a
+response within a few days, you can set a needinfo request for the mentor or triage owner,
+but keep in mind that responses may not be immediate: people may be
+on vacation or very busy, and don't work on weekends.
 
-We leave this in your hands. Here are some further resources to help:
+A bug having been filed, especially years ago, doesn't mean it is still relevant
+or that we'd accept patches for it. Oftentimes it is important to get
+context on the bug, and to understand whether it needs UX or product support,
+or if the triage owner or mentor has an opinion on how to implement it.
 
-- Check out
-  {ref}`Our Developer Guide and its parent document <working-on-firefox>`
-- Our {ref}`reviewer checklist <reviewer-checklist>` is very
-  useful, if you have a patch near completion, and seek a favorable
-  review
-- Utilize our build tool {doc}`/mach/index`, its linting,
-  static analysis, and other code checking features
+If the bug is about a defect, first confirm that it is still reproducible. Bugs
+can become stale, and the issue may already have been fixed by another patch
+that doesn't reference the bug.
+
+In the age of AI tooling, it is increasingly easy to generate a patch without
+having any of this context. This puts a large amount of responsibility on
+reviewers, and often on UX and product partners, and every new feature, setting
+or added logic increases the maintenance burden of Firefox.
+
+:::{warning}
+Patches for bugs where the triage owner or mentor hasn't agreed to the change,
+or for feature requests without Product/UX sign-off, may be declined. A large
+portion of our roadmap is planned in collaboration with our Product and UX
+teams, and not all changes can be accepted.
+:::
+
+(good-first-bug-guide)=
+
+## Quality expectations for patches
+
+To help reviewers give useful feedback and keep the code maintainable, patches
+should meet the following criteria before being submitted for review:
+
+- The change is scoped and should solve one issue clearly, without unrelated
+  refactors or drive-by changes.
+- The code is maintainable and consistent, following the project's existing
+  patterns, naming, structure, and {doc}`style rules </code-quality/coding-style/index>`.
+  Utilize our build tool {doc}`/mach/index`, its
+  {doc}`linting </code-quality/lint/usage>`,
+  {doc}`static analysis </code-quality/static-analysis/index>`, and other
+  {doc}`code checking features </code-quality/index>` to help with some of this.
+- The description should explain what changed and why, and the diff should be
+  small and clear enough for a reviewer to understand without reconstructing
+  intent.
+- Code should build cleanly, pass relevant checks, and include testing or
+  manual verification steps appropriate to the change.
+
+:::{warning}
+Partial, experimental, or AI-generated changes that the author cannot explain,
+validate, or finish are unlikely to be approved. See our
+{doc}`AI coding policy </contributing/ai-coding>`.
+:::
+
+{ref}`Our Developer Guide and its parent document <working-on-firefox>`
+contains additional information, such as the
+{ref}`reviewer checklist <reviewer-checklist>`, how to submit patches, and code
+review guidelines, which should be read before submitting a patch.
 
 ## Getting your code reviewed
 
