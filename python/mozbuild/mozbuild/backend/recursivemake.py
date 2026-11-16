@@ -917,9 +917,17 @@ class RecursiveMakeBackend(MakeBackend):
 
         for relobjdir, tier, input in self._post_process_dependencies:
             dep = self._target_per_file.get(input.full_path)
-            if dep:
-                rule = root_deps_mk.create_rule([mozpath.join(relobjdir, tier)])
-                rule.add_dependencies([mozpath.join(*dep)])
+            if not dep:
+                continue
+            producer_dir, producer_tier = dep
+            if producer_dir:
+                prerequisite = mozpath.join(producer_dir, producer_tier)
+            else:
+                prerequisite = mozpath.relpath(
+                    input.full_path, self.environment.topobjdir
+                )
+            rule = root_deps_mk.create_rule([mozpath.join(relobjdir, tier)])
+            rule.add_dependencies([prerequisite])
 
         root_mk = Makefile()
 

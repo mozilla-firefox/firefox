@@ -533,6 +533,15 @@ class TestRecursiveMakeBackend(BackendTester):
         lines = [l.strip() for l in open(root_deps_path).readlines()]
         self.assertIn("consumer/pre-compile: producer/pre-compile", lines)
 
+    def test_generated_files_extra_deps_root(self):
+        env = self._consume("generated-files-extra-deps-root", RecursiveMakeBackend)
+
+        root_deps_path = mozpath.join(env.topobjdir, "root-deps.mk")
+        with open(root_deps_path) as fh:
+            lines = [l.strip() for l in fh.readlines()]
+        self.assertIn("consumer/pre-compile: generated-header.h", lines)
+        self.assertNotIn("consumer/pre-compile: export", lines)
+
     def test_generated_files_host_tool(self):
         env = self._consume("generated-files-host-tool", RecursiveMakeBackend)
 

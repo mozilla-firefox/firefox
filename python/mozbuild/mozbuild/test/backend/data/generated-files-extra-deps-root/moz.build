@@ -1,0 +1,11 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+GENERATED_FILES += ["generated-header.h"]
+
+gen = GENERATED_FILES["generated-header.h"]
+gen.script = "generate-header.py"
+
+DIRS += [
+    "consumer",
+]
