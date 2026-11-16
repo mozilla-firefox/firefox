@@ -117,7 +117,8 @@ bool Feature::AllowListContains(nsIPrincipal* aPrincipal) const {
     return false;
   }
 
-  // 5. For each permissions-source-expression item in the allowlist’s expressions:
+  // 5. For each permissions-source-expression item in the allowlist’s
+  // expressions:
   for (const RefPtr<ParsedSourceExpression>& expression : mSourceExpressions) {
     // 5.1. If the result of running Does url match expression in origin with
     // redirect count? on url, item, origin, and 0 is true then return true.
