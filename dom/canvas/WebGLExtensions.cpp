@@ -1092,6 +1092,9 @@ WebGLExtensionTextureNorm16::WebGLExtensionTextureNorm16(WebGLContext* webgl)
   const auto fnAdd = [&](webgl::EffectiveFormat effFormat,
                          const bool renderable, const webgl::PackingInfo& pi) {
     auto& usage = *fua.EditUsage(effFormat);
+
+    usage.isFilterable = true;
+
     const auto& format = *usage.format;
 
     const auto dui =

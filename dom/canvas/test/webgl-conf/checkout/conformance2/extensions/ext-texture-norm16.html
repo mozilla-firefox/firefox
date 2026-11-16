@@ -206,6 +206,25 @@ function runTestExtension() {
   testNorm16Texture("RGBA", "RGBA", "SHORT", "INVALID_OPERATION");
 
   debug("");
+  debug("Texture filtering (LINEAR)");
+  gl.bindTexture(gl.TEXTURE_2D, textures[0]);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+  testNorm16Texture("R16_EXT", "RED", "UNSIGNED_SHORT");
+  testNorm16Texture("RG16_EXT", "RG", "UNSIGNED_SHORT");
+  testNorm16Texture("RGB16_EXT", "RGB", "UNSIGNED_SHORT");
+  testNorm16Texture("RGBA16_EXT", "RGBA", "UNSIGNED_SHORT");
+  testNorm16Texture("R16_SNORM_EXT", "RED", "SHORT");
+  testNorm16Texture("RG16_SNORM_EXT", "RG", "SHORT");
+  testNorm16Texture("RGB16_SNORM_EXT", "RGB", "SHORT");
+  testNorm16Texture("RGBA16_SNORM_EXT", "RGBA", "SHORT");
+
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+
+  debug("");
   debug("Texture renderability");
 
   testNorm16Render(ext.R16_EXT, gl.RED, gl.UNSIGNED_SHORT, 8);
