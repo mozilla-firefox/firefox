@@ -161,7 +161,7 @@ this.addonsSearchDetection = class extends ExtensionAPI {
                 return;
               }
 
-              fire.async();
+              fire.async().catch(() => {}); // ignore Message Manager disconnects
             };
 
             Services.obs.addObserver(
