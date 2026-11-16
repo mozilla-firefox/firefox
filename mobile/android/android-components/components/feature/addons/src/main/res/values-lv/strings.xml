@@ -57,6 +57,8 @@
   <string name="mozac_feature_addons_supported_checker_notification_content_two">Pievienot %1$s un %2$s %3$s</string>
   <!-- The content of the notification, this will be shown to the user when more than two newly supported add-ons are available. %1$s is the app name (in most cases Firefox). -->
   <string name="mozac_feature_addons_supported_checker_notification_content_more_than_two">Pievienot tos %1$s</string>
+  <!-- Text shown when attempting to install an add-on that can only be install via Enterprise Policies, which is not supported on Android.  %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_admin_install_only">%1$s nevarēja instalēt, jo to var instalēt tikai organizācija, kas izmanto uzņēmuma nostājas, kas šajā platformā netiek atbalstītas.</string>
   <!-- Text link to a sumo page for learning more about unsupported add-ons. -->
   <string name="mozac_feature_addons_unsupported_learn_more">Uzzināt vairāk</string>
   <!-- Displayed in the "Status" field for the updater when there was an error during the add-on update. -->

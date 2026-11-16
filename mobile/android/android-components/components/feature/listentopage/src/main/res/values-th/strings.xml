@@ -7,6 +7,8 @@
 -->
 
 <resources>
+  <!-- Title of the Listen to page lock-screen notification: displayed instead of the page title, when the page being read is in a Private tab (to protect the user's privacy) -->
+  <string name="mozac_feature_listentopage_private_tab_title">แท็บส่วนตัว</string>
   <!-- Listen to Page media player: content description for the button that closes the player. -->
   <string name="mozac_feature_listentopage_close">ปิด</string>
   <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->

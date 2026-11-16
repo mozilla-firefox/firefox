@@ -109,6 +109,10 @@
   <string name="mozac_feature_addons_supported_checker_notification_content_more_than_two">Onları %1$s səyyahına əlavə et</string>
   <!-- Text shown after successfully installed an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_successfully_installed">%1$s uğurla quraşdırıldı</string>
+  <!-- Text shown after failing to install an add-on (when add-on type isn't supported or an unknown has errored). %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_failed_to_install">%1$s quraşdırması uğursuz oldu</string>
+  <!-- Text shown after failed to enable an add-on. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_failed_to_enable">%1$s aktivləşdirilmədi</string>
   <!-- Text shown after successfully removed an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_successfully_removed" tools:ignore="UnusedResources">%1$s uğurla silindi</string>
   <!-- Text link to a sumo page for learning more about unsupported add-ons. -->

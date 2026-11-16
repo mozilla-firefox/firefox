@@ -39,6 +39,16 @@
     Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
   -->
   <string name="customize_menu">Pielāgot izvēlni</string>
+  <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+  <string name="customize_menu_cannot_hide_section">Nevar paslēpt šo sadaļu</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">Atiestatīt uz noklusējuma izvēlni?</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_message">Tas noņems pielāgojumus un ir neatgriezeniski.</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">Atiestatīt</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">Atcelt</string>
   <!--
     Content description (not visible, for screen readers etc.): Label for plus icon used to add extension.
     %1$s is the name of the extension (for example: ClearURLs).
@@ -66,6 +76,8 @@
   <string name="browser_menu_page_badge_text">Jaunums</string>
   <!-- Browser menu label for adding a tab to a tab group -->
   <string name="browser_menu_add_to_tab_group">Pievienot kopai</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">Pārvietot uz kopu</string>
   <!-- Link text for learning more about AI controls -->
   <string name="ai_controls_learn_more">Uzzināt vairāk</string>
   <!-- Title for the block AI enhancements toggle -->
@@ -112,6 +124,14 @@
   <string name="nova_onboarding_tou_body_line_3_link_text">Pārvaldīt iestatījumus</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">Iestatīt kā noklusējuma pārlūku</string>
+  <!-- Title of onboarding pairing card. Displayed when installing Firefox for Android by using a pairing link from Firefox for Desktop. "Scan" refers to scanning the QR code displayed on the computer. -->
+  <string name="nova_onboarding_sync_pairing_title">Jānolasa, lai pabeigtu savienošanu pārī ar datoru</string>
+  <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+  <string name="nova_onboarding_sync_pairing_body"><![CDATA[Nav kvadrātkoda? Datorā jādodas uz <b>firefox.com/pair</b>.]]></string>
+  <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+  <string name="nova_onboarding_sync_pairing_scan_button">Nolasīt pārī savienošanas kodu</string>
+  <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
+  <string name="nova_onboarding_sync_pairing_email_button">Pieteikties ar e-pasta adresi</string>
   <!-- Marketing onboarding body link text. -->
   <string name="nova_onboarding_marketing_body_link_text_1">Uzzināt vairāk</string>
   <!-- Text preview for smaller sized widgets -->
@@ -445,6 +465,12 @@
   <string name="notification_privacy_report_body_has_trackers">Turpini pārlūkot! %1$s turpinās aizturēt.</string>
   <!-- Headline text of the weekly privacy report notification for when no trackers have been blocked. %1$s is the app name (e.g. Firefox) -->
   <string name="notification_privacy_report_headline_no_trackers">%1$s aiztur izsekotājus, kamēr Tu pārlūko. Tie būs redzami šeit.</string>
+  <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_added_to_group">Pievienota “%1$s”</string>
+  <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_moved_to_group">Pārvietota uz “%1$s”</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">Apskatīt</string>
   <!-- Summary for Accessibility Text Automatic Size Scaling Preference -->
   <string name="preference_accessibility_auto_size_summary">Fonta izmērs atbildīs Taviem Android iestatījumiem. Atspējot, lai šeit pārvaldītu fonta lielumu.</string>
   <!-- Title for the downloads item in Delete browsing data -->
@@ -471,6 +497,8 @@
   <string name="preference_doh_learn_more">Uzzināt vairāk</string>
   <!-- Content description for the "Add Site" button -->
   <string name="preference_doh_add_site_description">Pievienot vietni</string>
+  <!-- Bullet point 4 for "Default Protection" information page under "DNS over HTTPS" -->
+  <string name="preference_doh_default_protection_info_4">Izslēgt, ja ir aktīvas VPN, vecāku kontroles vai uzņēmuma nostājas</string>
   <!-- Add button text for provider textfield under "DNS over HTTPS" -->
   <string name="preference_doh_provider_custom_dialog_add">Pievienot</string>
   <!-- Text displayed that links to adding website domain for "DNS over HTTPS" exceptions. -->

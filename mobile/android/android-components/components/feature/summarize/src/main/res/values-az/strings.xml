@@ -15,4 +15,6 @@
   <string name="mozac_summarize_shake_consent_off_device_negative_button">İndi deyil</string>
   <!-- Button text for the consent to download an on-device model denying download consent -->
   <string name="mozac_summarize_download_consent_button_negative">Ləğv et</string>
+  <!-- Button for the download error screen to cancel -->
+  <string name="mozac_summarize_download_error_negative_button">Ləğv et</string>
 </resources>
