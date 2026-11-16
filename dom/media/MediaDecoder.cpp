@@ -181,7 +181,12 @@ void MediaDecoder::SetOutputTracksPrincipal(
     const RefPtr<nsIPrincipal>& aPrincipal) {
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(mDecoderStateMachine, "Must be called after Load().");
-  mOutputPrincipal = MakePrincipalHandle(aPrincipal);
+  if (GetPrincipalFromHandle(mOutputPrincipal) == aPrincipal) {
+    // Every new handle has a new generation id, which downstream sees as a
+    // principal change. Keep the current handle if nothing really changed.
+    return;
+  }
+  mOutputPrincipal = PrincipalHandle(aPrincipal);
 }
 
 double MediaDecoder::GetDuration() {

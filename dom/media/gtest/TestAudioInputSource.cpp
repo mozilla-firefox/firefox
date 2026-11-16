@@ -43,8 +43,7 @@ TEST(TestAudioInputSource, StartAndStop)
   const AudioInputSource::Id sourceId = 1;
   const CubebUtils::AudioDeviceID deviceId = (CubebUtils::AudioDeviceID)1;
   const uint32_t channels = 2;
-  const PrincipalHandle testPrincipal =
-      MakePrincipalHandle(nsContentUtils::GetSystemPrincipal());
+  const PrincipalHandle testPrincipal(nsContentUtils::GetSystemPrincipal());
   const TrackRate sourceRate = 44100;
   const TrackRate targetRate = 48000;
 
@@ -112,8 +111,7 @@ TEST(TestAudioInputSource, DataOutputBeforeStartAndAfterStop)
   const AudioInputSource::Id sourceId = 1;
   const CubebUtils::AudioDeviceID deviceId = (CubebUtils::AudioDeviceID)1;
   const uint32_t channels = 2;
-  const PrincipalHandle testPrincipal =
-      MakePrincipalHandle(nsContentUtils::GetSystemPrincipal());
+  const PrincipalHandle testPrincipal(nsContentUtils::GetSystemPrincipal());
   const TrackRate sourceRate = 44100;
   const TrackRate targetRate = 48000;
 
@@ -195,8 +193,7 @@ TEST(TestAudioInputSource, ErrorCallback)
   const AudioInputSource::Id sourceId = 1;
   const CubebUtils::AudioDeviceID deviceId = (CubebUtils::AudioDeviceID)1;
   const uint32_t channels = 2;
-  const PrincipalHandle testPrincipal =
-      MakePrincipalHandle(nsContentUtils::GetSystemPrincipal());
+  const PrincipalHandle testPrincipal(nsContentUtils::GetSystemPrincipal());
   const TrackRate sourceRate = 44100;
   const TrackRate targetRate = 48000;
 
@@ -245,8 +242,7 @@ TEST(TestAudioInputSource, DeviceChangedCallback)
   const AudioInputSource::Id sourceId = 1;
   const CubebUtils::AudioDeviceID deviceId = (CubebUtils::AudioDeviceID)1;
   const uint32_t channels = 2;
-  const PrincipalHandle testPrincipal =
-      MakePrincipalHandle(nsContentUtils::GetSystemPrincipal());
+  const PrincipalHandle testPrincipal(nsContentUtils::GetSystemPrincipal());
   const TrackRate sourceRate = 44100;
   const TrackRate targetRate = 48000;
 
@@ -293,8 +289,7 @@ TEST(TestAudioInputSource, InputProcessing)
   const AudioInputSource::Id sourceId = 1;
   const CubebUtils::AudioDeviceID deviceId = (CubebUtils::AudioDeviceID)1;
   const uint32_t channels = 2;
-  const PrincipalHandle testPrincipal =
-      MakePrincipalHandle(nsContentUtils::GetSystemPrincipal());
+  const PrincipalHandle testPrincipal(nsContentUtils::GetSystemPrincipal());
   const TrackRate sourceRate = 44100;
   const TrackRate targetRate = 48000;
   using ProcessingPromise =

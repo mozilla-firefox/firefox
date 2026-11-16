@@ -9,6 +9,7 @@
 #include "MediaEnginePrefs.h"
 #include "MediaEventSource.h"
 #include "PerformanceRecorder.h"
+#include "PrincipalHandle.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/Logging.h"
 #include "mozilla/Preferences.h"
@@ -139,7 +140,7 @@ class LocalMediaDevice final : public nsIMediaDevice {
                     const MediaEnginePrefs& aPrefs, uint64_t aWindowId,
                     const char** aOutBadConstraint);
   void SetTrack(const RefPtr<mozilla::MediaTrack>& aTrack,
-                const nsMainThreadPtrHandle<nsIPrincipal>& aPrincipal);
+                const PrincipalHandle& aPrincipalHandle);
   nsresult Start();
   nsresult Reconfigure(const dom::MediaTrackConstraints& aConstraints,
                        const MediaEnginePrefs& aPrefs,

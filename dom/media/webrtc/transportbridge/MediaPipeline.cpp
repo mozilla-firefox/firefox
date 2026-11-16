@@ -1644,7 +1644,7 @@ class MediaPipelineReceiveVideo::PipelineListener
   }
 
   void RenderVideoFrame(const webrtc::VideoFrame& aVideoFrame) {
-    PrincipalHandle principal;
+    PrincipalHandle principal = PRINCIPAL_HANDLE_NONE;
     {
       MutexAutoLock lock(mMutex);
       if (mForceDropFrames) {

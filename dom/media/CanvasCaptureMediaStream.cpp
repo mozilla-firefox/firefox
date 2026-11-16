@@ -174,7 +174,7 @@ nsresult CanvasCaptureMediaStream::Init(const dom::Optional<double>& aFPS,
       MediaTrackGraph::REQUEST_DEFAULT_SAMPLE_RATE,
       MediaTrackGraph::DEFAULT_OUTPUT_DEVICE);
   SourceMediaTrack* source = graph->CreateSourceTrack(MediaSegment::VIDEO);
-  PrincipalHandle principalHandle = MakePrincipalHandle(aPrincipal);
+  PrincipalHandle principalHandle(aPrincipal);
   if (!aFPS.WasPassed()) {
     mOutputStreamDriver = new AutoDriver(source, principalHandle);
   } else if (aFPS.Value() < 0) {

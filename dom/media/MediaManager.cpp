@@ -3738,8 +3738,8 @@ RefPtr<GetUserMediaWindowListener> MediaManager::GetOrMakeWindowListener(
     MOZ_ASSERT(PrincipalHandleMatches(windowListener->GetPrincipalHandle(),
                                       principal));
   } else {
-    windowListener = new GetUserMediaWindowListener(
-        windowId, MakePrincipalHandle(principal));
+    windowListener =
+        new GetUserMediaWindowListener(windowId, PrincipalHandle(principal));
     AddWindowID(windowId, windowListener);
   }
   return windowListener;

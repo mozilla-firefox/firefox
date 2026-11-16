@@ -20,8 +20,7 @@ using testing::StrEq;
 TEST(TestVideoFrameContainer, UpdatePrincipalHandleForFrameID)
 {
   auto owner = std::make_unique<MockMediaDecoderOwner>();
-  PrincipalHandle principal =
-      MakePrincipalHandle(nsContentUtils::GetSystemPrincipal());
+  PrincipalHandle principal(nsContentUtils::GetSystemPrincipal());
   RefPtr container = new VideoFrameContainer(
       owner.get(),
       MakeAndAddRef<ImageContainer>(ImageUsageType::VideoFrameContainer,
