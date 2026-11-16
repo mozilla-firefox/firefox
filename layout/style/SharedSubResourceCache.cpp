@@ -30,22 +30,28 @@ namespace mozilla {
 
 namespace SharedSubResourceCacheUtils {
 
-void AddMemoryPressureObserver(nsIObserver* aObserver) {
+void AddMemoryPressureAndSafeBrowsingObserver(nsIObserver* aObserver) {
   nsCOMPtr<nsIObserverService> obsService = services::GetObserverService();
   if (!obsService) {
     return;
   }
   obsService->AddObserver(aObserver, "memory-pressure", false);
   obsService->AddObserver(aObserver, "memory-pressure-stop", false);
+  if (XRE_IsParentProcess()) {
+    obsService->AddObserver(aObserver, "safebrowsing-update-finished", false);
+  }
 }
 
-void RemoveMemoryPressureObserver(nsIObserver* aObserver) {
+void RemoveMemoryPressureAndSafeBrowsingObserver(nsIObserver* aObserver) {
   nsCOMPtr<nsIObserverService> obsService = services::GetObserverService();
   if (!obsService) {
     return;
   }
   obsService->RemoveObserver(aObserver, "memory-pressure");
   obsService->RemoveObserver(aObserver, "memory-pressure-stop");
+  if (XRE_IsParentProcess()) {
+    obsService->RemoveObserver(aObserver, "safebrowsing-update-finished");
+  }
 }
 
 void AddPerformanceEntryForCache(

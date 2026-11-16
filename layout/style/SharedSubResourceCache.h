@@ -48,8 +48,8 @@ class nsHttpResponseHead;
 
 namespace SharedSubResourceCacheUtils {
 
-void AddMemoryPressureObserver(nsIObserver* aObserver);
-void RemoveMemoryPressureObserver(nsIObserver* aObserver);
+void AddMemoryPressureAndSafeBrowsingObserver(nsIObserver* aObserver);
+void RemoveMemoryPressureAndSafeBrowsingObserver(nsIObserver* aObserver);
 
 }  // namespace SharedSubResourceCacheUtils
 
@@ -175,13 +175,15 @@ class SharedSubResourceCache {
     sSingleton = new Derived();
     sSingleton->Init();
     sSingleton->AddPrefCallback();
-    SharedSubResourceCacheUtils::AddMemoryPressureObserver(sSingleton);
+    SharedSubResourceCacheUtils::AddMemoryPressureAndSafeBrowsingObserver(
+        sSingleton);
     return sSingleton.get();
   }
 
   static void DeleteSingleton() {
     if (sSingleton) {
-      SharedSubResourceCacheUtils::RemoveMemoryPressureObserver(sSingleton);
+      SharedSubResourceCacheUtils::RemoveMemoryPressureAndSafeBrowsingObserver(
+          sSingleton);
       sSingleton->RemovePrefCallback();
     }
     sSingleton = nullptr;
@@ -292,6 +294,17 @@ class SharedSubResourceCache {
   // Subclass should implement nsIObserver and call this method.
   nsresult DoObserve(nsISupports* aSubject, const char* aTopic,
                      const char16_t* aData) {
+    if (strcmp(aTopic, "safebrowsing-update-finished") == 0) {
+      nsDependentString data(aData);
+      if (data.EqualsLiteral("success:mozilla")) {
+        // Classifiers provided by "mozilla" are applied to subresources.
+        // Classifiers provided by "google4" and "google5" are applied
+        // only to the document.
+        ClearAllProcessesForSafeBrowsingUpdate();
+      }
+      return NS_OK;
+    }
+
     if (ShouldIgnoreMemoryPressure()) {
       return NS_OK;
     }
@@ -347,6 +360,13 @@ class SharedSubResourceCache {
     ClearInProcess(/* aChrome = */ Some(false), Nothing(), Nothing(), Nothing(),
                    Nothing());
   }
+
+  // The safe browsing update notification is performed only in the parent
+  // process.
+  //
+  // Each subclass is responsible for handling IPC to clear the cache in all
+  // content process.
+  virtual void ClearAllProcessesForSafeBrowsingUpdate() = 0;
 
   void CancelPendingLoadsForLoader(Loader&);
 

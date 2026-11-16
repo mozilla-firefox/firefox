@@ -238,6 +238,10 @@ class SharedScriptCache final
     return Base::DoObserve(aSubject, aTopic, aData);
   }
 
+  void ClearAllProcessesForSafeBrowsingUpdate() override {
+    Clear(/* aChrome = */ Some(false));
+  }
+
   bool MaybeScheduleUpdateDiskCache();
   void UpdateDiskCache();
 
