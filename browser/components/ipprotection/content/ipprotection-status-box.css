@@ -4,16 +4,7 @@
 
 @import "chrome://global/skin/global.css";
 
-.disconnected,
-.generic-error,
-.paused,
-.connecting {
-  background-color: var(--background-color-box-info);
-}
-
 .connected {
-  background-color: var(--background-color-success);
-
   ::slotted([slot="image"]) {
     -moz-context-properties: fill;
     fill: var(--icon-color-success);
@@ -21,8 +12,6 @@
 }
 
 .excluded {
-  background-color: var(--background-color-success);
-
   ::slotted([slot="image"]) {
     -moz-context-properties: fill, stroke;
     fill: transparent;
@@ -45,8 +34,6 @@
 }
 
 .network-error {
-  background-color: var(--background-color-information);
-
   ::slotted([slot="image"]) {
     -moz-context-properties: fill;
     fill: var(--icon-color-information);
@@ -54,8 +41,6 @@
 }
 
 .catastrophic-error {
-  background-color: var(--background-color-critical);
-
   ::slotted([slot="image"]) {
     -moz-context-properties: fill;
     fill: var(--icon-color-critical);
@@ -65,16 +50,12 @@
 #content-container {
   display: flex;
   flex-direction: column;
-  border: var(--border-width) solid var(--card-border-color);
   border-radius: var(--border-radius-medium);
   padding: var(--space-medium);
-
-  @media -moz-pref("browser.nova.enabled") {
-    /* Use one neutral panel background for every state with Nova enabled. */
-    /* stylelint-disable-next-line stylelint-plugin-mozilla/no-base-design-tokens, stylelint-plugin-mozilla/use-design-tokens */
-    background-color: light-dark(var(--color-gray-0), var(--color-black-alpha-50));
-    border: var(--border-width) solid var(--border-color-deemphasized);
-  }
+  /* Use one neutral panel background for every state */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/no-base-design-tokens, stylelint-plugin-mozilla/use-design-tokens */
+  background-color: light-dark(var(--color-gray-0), var(--color-black-alpha-50));
+  border: var(--border-width) solid var(--border-color-deemphasized);
 
   @media (prefers-contrast) {
     background-color: var(--background-color-box);

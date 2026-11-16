@@ -4,16 +4,6 @@
 
 @import "chrome://global/skin/global.css";
 
-:host {
-  --skeleton-container-bg-color: var(--background-color-box-info);
-  --skeleton-placeholder-bg-color: var(--card-border-color);
-
-  @media -moz-pref("browser.nova.enabled") {
-    --skeleton-container-bg-color: light-dark(var(--color-gray-0), var(--color-black-alpha-50));
-    --skeleton-placeholder-bg-color: light-dark(var(--color-black-alpha-10), var(--color-white-alpha-20));
-  }
-}
-
 hr {
   border-style: solid none none none;
   border-color: var(--panel-separator-color);
@@ -24,13 +14,10 @@ hr {
   --panel-subview-body-padding-inline: 0;
   display: flex;
   flex-direction: column;
+  margin-inline: var(--space-small);
 
   hr {
     margin-block-end: var(--space-small);
-  }
-
-  @media -moz-pref("browser.nova.enabled") {
-    margin-inline: var(--space-small);
   }
 }
 
@@ -55,10 +42,6 @@ ipprotection-status-card {
     --button-padding: var(--space-small);
     --focus-outline-offset: calc(-1 * var(--focus-outline-width));
     width: 100%;
-
-    @media not -moz-pref("browser.nova.enabled") {
-      --button-border-radius: var(--border-radius-small);
-    }
   }
 
   bandwidth-usage {
@@ -131,9 +114,6 @@ ipprotection-status-card {
   padding-block-end: var(--space-small);
   padding-inline-start: var(--space-large);
   padding-inline-end: var(--space-large);
-  @media not -moz-pref("browser.nova.enabled") {
-    color: var(--text-color);
-  }
 }
 
 #unauthenticated-vpn-img {
@@ -169,10 +149,6 @@ ipprotection-status-card {
   --button-padding: var(--space-medium);
   margin: 0 auto;
   width: var(--size-layout-small);
-
-  @media not -moz-pref("browser.nova.enabled") {
-    width: 100%;
-  }
 }
 
 #unauthenticated-footer {
@@ -188,7 +164,8 @@ ipprotection-message-bar.vpn-top-content {
 }
 
 #enrolling-container {
-  background-color: var(--skeleton-container-bg-color);
+  --vpn-enrollment-background-color: light-dark(var(--color-gray-0), var(--color-black-alpha-50));
+  background-color: var(--vpn-enrollment-background-color);
   border: var(--border-width) solid var(--border-color-deemphasized);
   border-radius: var(--border-radius-medium);
   display: flex;
@@ -210,18 +187,14 @@ ipprotection-message-bar.vpn-top-content {
 }
 
 .skeleton {
-  background-color: var(--skeleton-placeholder-bg-color);
+  background-color: light-dark(var(--color-black-alpha-10), var(--color-white-alpha-20));
 }
 
 .skeleton-title {
   height: 1lh;
   width: var(--size-layout-xsmall);
   border-radius: var(--space-xxsmall);
-  margin-block: var(--space-medium) var(--space-small);
-
-  @media -moz-pref("browser.nova.enabled") {
-    margin-block: var(--space-xsmall) 0;
-  }
+  margin-block: var(--space-xsmall) 0;
 }
 
 .skeleton-line {
@@ -234,15 +207,11 @@ ipprotection-message-bar.vpn-top-content {
 .skeleton-line-thick {
   height: var(--button-min-height);
   width: 100%;
-  border-radius: var(--border-radius-small);
+  padding-block: var(--space-xsmall);
+  border-radius: var(--border-radius-circle);
 
   &:first-of-type {
     margin-block-start: var(--space-xxlarge);
-  }
-
-  @media -moz-pref("browser.nova.enabled") {
-    padding-block: var(--space-xsmall);
-    border-radius: var(--border-radius-circle);
   }
 
   &.skeleton-line-outer {

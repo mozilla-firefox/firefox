@@ -3016,11 +3016,6 @@ radiogroup:focus-visible > .subviewradio[focused="true"] {
   padding-top: 0;
   width: 28em;
 
-  @media not -moz-pref("browser.nova.enabled") {
-    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-    width: 400px;
-  }
-
   > .panel-header {
     margin: 0;
   }
@@ -3034,12 +3029,6 @@ radiogroup:focus-visible > .subviewradio[focused="true"] {
   }
 }
 
-@media not -moz-pref("browser.nova.enabled") {
-  #ipprotection-header-content {
-    color: var(--text-color);
-  }
-}
-
 #ipprotection-header-content,
 #ipprotection-experiment-badge {
   font-size: var(--font-size-large);
@@ -3048,10 +3037,6 @@ radiogroup:focus-visible > .subviewradio[focused="true"] {
 #ipprotection-experiment-badge {
   display: inline-block;
   color: var(--text-color-deemphasized);
-
-  @media not -moz-pref("browser.nova.enabled") {
-    margin-inline-start: var(--space-xsmall);
-  }
 }
 
 #PanelUI-ipprotection-locations {
