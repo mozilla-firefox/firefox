@@ -185,6 +185,39 @@ export class OPFS {
   }
 
   /**
+   * Remove a file's now-possibly-empty ancestor directories, since otherwise
+   * they accumulate for every model and revision ever downloaded.
+   *
+   * @param {string} path - The removed file's original path.
+   * @param {string} stopAt - Ancestor to leave alone, along with everything
+   *   above it.
+   * @returns {Promise<void>}
+   */
+  static async pruneEmptyDirectories(path, stopAt) {
+    const floor = stopAt.split("/").filter(Boolean).length;
+    let components = path.split("/").filter(Boolean).slice(0, -1);
+
+    while (components.length > floor) {
+      const dirPath = components.join("/");
+
+      try {
+        const dirHandle = await OPFS.getDirectoryHandle(dirPath);
+        const { done } = await dirHandle.keys().next();
+        if (!done) {
+          return;
+        }
+        await OPFS.remove(dirPath, { ignoreErrors: true });
+      } catch (error) {
+        if (error.name !== "NotFoundError") {
+          throw error;
+        }
+      }
+
+      components = components.slice(0, -1);
+    }
+  }
+
+  /**
    * @typedef {object} DownloadOptions
    *
    * @property {string | URL | Response} source - The source of the content. Either
