@@ -965,7 +965,7 @@ class PROT_ListManager {
     Services.obs.notifyObservers(
       null,
       "safebrowsing-update-finished",
-      "success"
+      "success:" + provider
     );
   }
 

@@ -49,7 +49,7 @@ function waitForUpdateSuccess() {
   return new Promise((resolve, reject) => {
     let observer = function (subject, topic, data) {
       Services.obs.removeObserver(observer, "safebrowsing-update-finished");
-      if (data == "success") {
+      if (data.startsWith("success")) {
         resolve();
       } else {
         reject(new Error("Update failed: " + data));

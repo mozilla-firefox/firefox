@@ -541,7 +541,7 @@ function waitUntilMetaDataSaved(expectedState, expectedChecksum, callback) {
 var gUpdateFinishedObserverEnabled = false;
 var gUpdateFinishedObserver = function (aSubject, aTopic, aData) {
   info("[" + aTopic + "] " + aData);
-  if (aData != "success") {
+  if (!aData.startsWith("success")) {
     updateError(aData);
   }
 };
