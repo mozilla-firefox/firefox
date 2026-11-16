@@ -34,7 +34,6 @@ task-defaults:
         tier: 1
     platform: lint/opt
     run:
-        clone-with: hg
         using: run-task
         cwd: '{checkout}'
     # Some libraries' update-actions need tooling the image doesn't have: gfx/angle
