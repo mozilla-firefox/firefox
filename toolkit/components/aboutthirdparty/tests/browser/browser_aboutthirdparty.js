@@ -253,49 +253,58 @@ add_task(async () => {
       "Mozilla Corporation",
       "The vendor name matches a value in TestShellEx.rc."
     );
+    // The page lists every load event of the session, so the events of
+    // earlier runs of this test in the same browser are listed too.
     const occurrencesRow = getDetailRow(card, "third-party-detail-occurrences");
-    Assert.equal(
-      Number(occurrencesRow.childNodes[1].textContent),
-      1,
-      "The module was loaded once."
-    );
+    const occurrences = Number(occurrencesRow.childNodes[1].textContent);
+    Assert.greaterOrEqual(occurrences, 1, "The module was loaded.");
     const durationRow = getDetailRow(card, "third-party-detail-duration");
     Assert.ok(
       Number(durationRow.childNodes[1].textContent),
       "The duration row shows a valid number."
     );
 
-    const eventTable = card.querySelector(".event-table");
-    const tableCells = eventTable.querySelectorAll("td");
+    const eventRows = card.querySelectorAll(".event-table > tbody > tr");
     Assert.equal(
-      tableCells.length,
-      3,
-      "The table has three cells as there is only one event."
+      eventRows.length,
+      occurrences,
+      "The table has one row per event."
     );
-    Assert.equal(
-      tableCells[0].querySelector(".process-type").getAttribute("data-l10n-id"),
-      "process-type-default",
-      "The module was loaded into the main process."
-    );
-    Assert.ok(
-      Number(tableCells[0].querySelector(".process-id").textContent),
-      "A valid process ID is displayed."
-    );
-    Assert.equal(
-      tableCells[1].querySelector(".event-duration").textContent,
-      durationRow.childNodes[1].textContent,
-      "The event's duration is the same as the average " +
-        "as there is only one event."
-    );
-    Assert.equal(
-      tableCells[1].querySelector(".tag-background").hidden,
-      true,
-      "The icon handler is loaded in the main thread."
-    );
-    Assert.equal(
-      tableCells[2].getAttribute("data-l10n-id"),
-      "third-party-status-loaded",
-      "The module was really loaded without being blocked."
+    let durationSum = 0;
+    for (const row of eventRows) {
+      const tableCells = row.querySelectorAll("td");
+      Assert.equal(
+        tableCells[0]
+          .querySelector(".process-type")
+          .getAttribute("data-l10n-id"),
+        "process-type-default",
+        "The module was loaded into the main process."
+      );
+      Assert.ok(
+        Number(tableCells[0].querySelector(".process-id").textContent),
+        "A valid process ID is displayed."
+      );
+      Assert.equal(
+        tableCells[1].querySelector(".tag-background").hidden,
+        true,
+        "The icon handler is loaded in the main thread."
+      );
+      Assert.equal(
+        tableCells[2].getAttribute("data-l10n-id"),
+        "third-party-status-loaded",
+        "The module was really loaded without being blocked."
+      );
+      durationSum += Number(
+        tableCells[1].querySelector(".event-duration").textContent
+      );
+    }
+    Assert.less(
+      Math.abs(
+        Number(durationRow.childNodes[1].textContent) -
+          durationSum / occurrences
+      ),
+      0.001,
+      "The average duration is the average of the events' durations."
     );
 
     const button = content.document.getElementById("button-copy-to-clipboard");
