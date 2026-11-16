@@ -47,6 +47,34 @@ add_setup(async function () {
   });
 });
 
+add_task(async function check_user_activated_download_is_not_spam() {
+  await task_resetState();
+
+  let tab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    TEST_PATH + "test_user_activated_download_page.html"
+  );
+
+  let publicList = await Downloads.getList(Downloads.PUBLIC);
+  let downloadFinished = promiseDownloadFinished(publicList);
+  await BrowserTestUtils.synthesizeMouseAtCenter(
+    "#download-button",
+    {},
+    tab.linkedBrowser
+  );
+  let download = await downloadFinished;
+
+  ok(download.succeeded, "Download started after a user click succeeded");
+  is(
+    PermissionTestUtils.testPermission(TEST_URI, "automatic-download"),
+    Services.perms.UNKNOWN_ACTION,
+    "A download started during user activation does not make the site prompt"
+  );
+
+  await publicList.removeFinished();
+  BrowserTestUtils.removeTab(tab);
+});
+
 add_task(async function check_download_spam_ui() {
   await task_resetState();
 
@@ -75,12 +103,6 @@ add_task(async function check_download_spam_ui() {
   let newTab = await BrowserTestUtils.openNewForegroundTab(
     browserWin.gBrowser,
     TEST_PATH + "test_spammy_page.html"
-  );
-
-  await BrowserTestUtils.synthesizeMouseAtCenter(
-    "body",
-    {},
-    newTab.linkedBrowser
   );
 
   info("Waiting on all blocked downloads");
@@ -154,14 +176,9 @@ add_task(async function check_download_spam_ui() {
     }
   );
 
-  let newTab2 = await BrowserTestUtils.openNewForegroundTab(
+  await BrowserTestUtils.openNewForegroundTab(
     browserWin2.gBrowser,
     TEST_PATH + "test_spammy_page.html"
-  );
-  await BrowserTestUtils.synthesizeMouseAtCenter(
-    "body",
-    {},
-    newTab2.linkedBrowser
   );
 
   info("Waiting on all blocked downloads in second window");

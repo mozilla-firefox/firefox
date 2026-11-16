@@ -1,0 +1,19 @@
+<!-- Any copyright is dedicated to the Public Domain.
+   - http://creativecommons.org/publicdomain/zero/1.0/ -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>User Activated Download Test</title>
+</head>
+<body>
+  <button id="download-button">Download</button>
+<script>
+document.getElementById("download-button").onclick = () => {
+  setTimeout(() => {
+    location.href = "foo.txt";
+  }, 0);
+};
+</script>
+</body>
+</html>

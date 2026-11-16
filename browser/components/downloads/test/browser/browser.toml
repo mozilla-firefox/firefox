@@ -25,7 +25,12 @@ support-files = [
 ]
 
 ["browser_download_spam_protection.js"]
-support-files = ["test_spammy_page.html"]
+support-files = [
+  "foo.txt",
+  "foo.txt^headers^",
+  "test_spammy_page.html",
+  "test_user_activated_download_page.html",
+]
 
 ["browser_download_starts_in_tmp.js"]
 
