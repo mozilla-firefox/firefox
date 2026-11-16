@@ -782,7 +782,7 @@ void XPCJSRuntime::BeginCycleCollectionCallback(CCReason aReason) {
 
   nsCOMPtr<nsIObserverService> obs = xpc::GetObserverService();
   if (obs) {
-    obs->NotifyObservers(nullptr, "cycle-collector-begin", nullptr);
+    obs->NotifyWhenScriptSafe(nullptr, "cycle-collector-begin", nullptr);
   }
 }
 
@@ -791,7 +791,7 @@ void XPCJSRuntime::EndCycleCollectionCallback(CycleCollectorResults& aResults) {
 
   nsCOMPtr<nsIObserverService> obs = xpc::GetObserverService();
   if (obs) {
-    obs->NotifyObservers(nullptr, "cycle-collector-end", nullptr);
+    obs->NotifyWhenScriptSafe(nullptr, "cycle-collector-end", nullptr);
   }
 }
 
@@ -817,10 +817,10 @@ void XPCJSRuntime::GCSliceCallback(JSContext* cx, JS::GCProgress progress,
   if (obs) {
     switch (progress) {
       case JS::GC_CYCLE_BEGIN:
-        obs->NotifyObservers(nullptr, "garbage-collector-begin", nullptr);
+        obs->NotifyWhenScriptSafe(nullptr, "garbage-collector-begin", nullptr);
         break;
       case JS::GC_CYCLE_END:
-        obs->NotifyObservers(nullptr, "garbage-collector-end", nullptr);
+        obs->NotifyWhenScriptSafe(nullptr, "garbage-collector-end", nullptr);
         break;
       default:
         break;

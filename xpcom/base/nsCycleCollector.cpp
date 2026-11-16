@@ -1299,6 +1299,8 @@ class nsCycleCollector : public nsIMemoryReporter {
 
   void NewSnowWhiteObjectAdded() { ++mKnownSnowWhiteCount; }
 
+  bool IsFreeingSnowWhite() const { return mFreeingSnowWhite; }
+
  private:
   void CheckThreadSafety();
   MOZ_CAN_RUN_SCRIPT
@@ -4466,4 +4468,9 @@ void nsCycleCollector_shutdown(bool aDoCollect) {
       sCollectorData.set(nullptr);
     }
   }
+}
+
+bool nsCycleCollector_isFreeingSnowWhite() {
+  CollectorData* data = sCollectorData.get();
+  return data && data->mCollector->IsFreeingSnowWhite();
 }

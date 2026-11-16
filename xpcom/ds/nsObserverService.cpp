@@ -6,6 +6,7 @@
 
 #include "MainThreadUtils.h"
 #include "mozilla/AppShutdown.h"
+#include "mozilla/CycleCollectedJSRuntime.h"
 #include "mozilla/Logging.h"
 #include "mozilla/ProfilerLabels.h"
 #include "mozilla/ProfilerMarkers.h"
@@ -14,6 +15,7 @@
 #include "mozilla/net/NeckoCommon.h"
 #include "nsComponentManagerUtils.h"
 #include "nsContentUtils.h"
+#include "nsCycleCollector.h"
 #include "nsEnumeratorUtils.h"
 #include "nsIConsoleService.h"
 #include "nsIObserver.h"
@@ -277,6 +279,13 @@ NS_IMETHODIMP nsObserverService::NotifyObservers(nsISupports* aSubject,
 
   MOZ_ASSERT(AppShutdown::IsNoOrLegalShutdownTopic(aTopic));
 
+#ifdef DEBUG
+  // Use NotifyWhenScriptSafe for anything that can run during the GC callback.
+  CycleCollectedJSRuntime* ccRuntime = CycleCollectedJSRuntime::Get();
+  MOZ_ASSERT_IF(ccRuntime, !ccRuntime->IsInGCCallback());
+  MOZ_ASSERT(!nsCycleCollector_isFreeingSnowWhite());
+#endif
+
   AUTO_PROFILER_MARKER_TEXT("NotifyObservers", OTHER, MarkerStack::Capture(),
                             nsDependentCString(aTopic));
   AUTO_PROFILER_LABEL_DYNAMIC_CSTR_NONSENSITIVE(
@@ -348,11 +357,20 @@ class NotifyWhenScriptSafeRunnable : public mozilla::Runnable {
 nsresult nsIObserverService::NotifyWhenScriptSafe(nsISupports* aSubject,
                                                   const char* aTopic,
                                                   const char16_t* aData) {
-  if (nsContentUtils::IsSafeToRunScript()) {
-    return NotifyObservers(aSubject, aTopic, aData);
+  // It's not safe to run script in the GC callback but there is no suitable
+  // scope to add a script blocker.
+  CycleCollectedJSRuntime* ccRuntime = CycleCollectedJSRuntime::Get();
+  if ((ccRuntime && ccRuntime->IsInGCCallback()) ||
+      nsCycleCollector_isFreeingSnowWhite()) {
+    return NS_DispatchToMainThread(MakeAndAddRef<NotifyWhenScriptSafeRunnable>(
+        this, aSubject, aTopic, aData));
   }
 
-  nsContentUtils::AddScriptRunner(MakeAndAddRef<NotifyWhenScriptSafeRunnable>(
-      this, aSubject, aTopic, aData));
-  return NS_OK;
+  if (!nsContentUtils::IsSafeToRunScript()) {
+    nsContentUtils::AddScriptRunner(MakeAndAddRef<NotifyWhenScriptSafeRunnable>(
+        this, aSubject, aTopic, aData));
+    return NS_OK;
+  }
+
+  return NotifyObservers(aSubject, aTopic, aData);
 }

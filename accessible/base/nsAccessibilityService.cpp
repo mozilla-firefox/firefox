@@ -2105,8 +2105,8 @@ void nsAccessibilityService::NotifyOfConsumersChange() {
 
   nsAutoString consumers;
   GetConsumers(consumers);
-  observerService->NotifyObservers(nullptr, "a11y-consumers-changed",
-                                   consumers.get());
+  observerService->NotifyWhenScriptSafe(nullptr, "a11y-consumers-changed",
+                                        consumers.get());
 }
 
 const mozilla::a11y::MarkupMapInfo* nsAccessibilityService::GetMarkupMapInfoFor(
