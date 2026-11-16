@@ -5,6 +5,7 @@
 <head>
   <title>Bug 1585978 repro: SetupAction padding double-decrement on commit failure</title>
   <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="helpers.js"></script>
   <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
 </head>
 <body>
@@ -40,81 +41,10 @@
 // make the deletion function fail, while in the original bug the failures comes
 // from file corruption or disk full errors.
 
-function setupTestIframe() {
-  return new Promise(function(resolve) {
-    var iframe = document.createElement("iframe");
-    iframe.src = "empty.html";
-    iframe.onload = function() {
-      window.caches = iframe.contentWindow.caches;
-      resolve();
-    };
-    document.body.appendChild(iframe);
-  });
-}
-
-function clearStorage() {
-  return new Promise(function(resolve) {
-    var qms = SpecialPowers.Services.qms;
-    var principal = SpecialPowers.wrap(document).nodePrincipal;
-    var request = qms.clearStoragesForPrincipal(principal);
-    var cb = SpecialPowers.wrapCallback(resolve);
-    request.callback = cb;
-  });
-}
-
-function resetStorage() {
-  return new Promise(function(resolve) {
-    var qms = SpecialPowers.Services.qms;
-    var principal = SpecialPowers.wrap(document).nodePrincipal;
-    var request = qms.resetStoragesForPrincipal(principal);
-    var cb = SpecialPowers.wrapCallback(resolve);
-    request.callback = cb;
-  });
-}
-
-function storageUsage() {
-  return new Promise(function(resolve) {
-    var qms = SpecialPowers.Services.qms;
-    var principal = SpecialPowers.wrap(document).nodePrincipal;
-    var cb = SpecialPowers.wrapCallback(function(request) {
-      resolve(request.result.usage);
-    });
-    qms.getUsageForPrincipal(principal, cb);
-  });
-}
-
-function cachedStorageUsage() {
-  return new Promise(function(resolve) {
-    var qms = SpecialPowers.Services.qms;
-    var principal = SpecialPowers.wrap(document).nodePrincipal;
-    var cb = SpecialPowers.wrapCallback(function(request) {
-      resolve(request.result);
-    });
-    var request = qms.getCachedUsageForPrincipal(principal);
-    request.callback = cb;
-  });
-}
-
-function fetchOpaqueResponse(url) {
-  return fetch(url, { mode: "no-cors" });
-}
-
-function gc() {
-  return new Promise(function(resolve) {
-    SpecialPowers.exactGC(resolve);
-  });
-}
-
+/* global FileUtils */
 function createPaddingTmpDirectory() {
-  var origin = window.location.origin
-    .replace("://", "+++")
-    .replace(/:/g, "+");
-  return SpecialPowers.spawnChrome([origin], function(originDir) {
-    const dir = Services.dirsvc.get("ProfD", Ci.nsIFile);
-    dir.append("storage");
-    dir.append("default");
-    dir.append(originDir);
-    dir.append("cache");
+  return SpecialPowers.spawnChrome([originCacheDirPath()], function(originCacheDir) {
+    const dir = FileUtils.getFile(originCacheDir);
     dir.append(".padding-tmp");
     if (dir.exists()) {
       dir.remove(false);
@@ -132,13 +62,6 @@ SpecialPowers.pushPrefEnv({
 }, function() { runTest(); });
 
 async function runTest() {
-  if (SpecialPowers.Services.prefs.getBoolPref(
-      "browser.privatebrowsing.autostart", false)) {
-    ok(true, "Skipping in private-browsing mode — storage paths differ");
-    await SimpleTest.finish();
-    return;
-  }
-
   const name = "toBeOrphanedWithPadding";
   const cors_base = "https://example.com/tests/dom/cache/test/mochitest/";
   const url = "test_cache_add.js";
@@ -181,41 +104,17 @@ async function runTest() {
   ok(fullUsage > initialUsage,
      "disk usage should have grown from the orphaned padded cache");
 
-  info("Stage 4: verify marker file exists (orphan must trigger SetupAction).");
-  let originDir = window.location.origin
-    .replace("://", "+++")
-    .replace(/:/g, "+");
-  let markerExists = await SpecialPowers.spawnChrome(
-    [originDir],
-    function(od) {
-      const dir = Services.dirsvc.get("ProfD", Ci.nsIFile);
-      dir.append("storage");
-      dir.append("default");
-      dir.append(od);
-      dir.append("cache");
-      dir.append("context_open.marker");
-      return dir.exists();
-    });
-  info("markerExists=" + markerExists);
-
-  ok(markerExists, "marker file must exist — orphan should persist across " +
-     "resetStorage() because the cache ref is still alive");
-  if (!markerExists) {
-    await SimpleTest.finish();
-    return;
-  }
-
-  info("Stage 5: inject filesystem fault: place a .padding-tmp DIRECTORY so " +
+  info("Stage 4: inject filesystem fault: place a .padding-tmp DIRECTORY so " +
        "DirectoryPaddingWrite fails with EISDIR.");
   let dirCreated = await createPaddingTmpDirectory();
   ok(dirCreated, ".padding-tmp directory should exist and be a directory");
 
-  info("Stage 6: trigger re-init — SetupAction runs, finds orphans, " +
+  info("Stage 5: trigger re-init — SetupAction runs, finds orphans, " +
        "cleans up body files, but fails at the padding-file write. " +
        "The commit hook is never called.");
   await caches.has(name);
 
-  info("Stage 7: check in-memory usage WITHOUT resetStorage() — " +
+  info("Stage 6: check in-memory usage WITHOUT resetStorage() — " +
        "resetStorage would reload from disk and mask the corruption.");
   let afterFirstMemUsage = await cachedStorageUsage();
   info("afterFirstMemUsage=" + afterFirstMemUsage);

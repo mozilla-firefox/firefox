@@ -24,6 +24,10 @@ function cacheClientDirName() {
   return "cache";
 }
 
+const { Sqlite } = ChromeUtils.importESModule(
+  "resource://gre/modules/Sqlite.sys.mjs"
+);
+
 // services required be initialized in order to run CacheStorage
 var ss = Services.storage;
 var sts = Cc["@mozilla.org/network/stream-transport-service;1"].getService(
@@ -161,6 +165,51 @@ function getCacheDir() {
   return getRelativeFile(
     `${storageDirName}/${defaultPersistenceDirName}/chrome/${cacheClientDirName()}`
   );
+}
+
+function getMorgueDir() {
+  const morgueDir = getCacheDir();
+  morgueDir.append("morgue");
+  return morgueDir;
+}
+
+function openCacheDatabase() {
+  const dbFile = getCacheDir();
+  dbFile.append("caches.sqlite");
+  return Sqlite.openConnection({ path: dbFile.path, readOnly: true });
+}
+
+// Returns the total disk usage tracked in the database, read through the given
+// Sqlite.sys.mjs connection to caches.sqlite.
+async function getTrackedTotalDiskUsage(conn) {
+  const [row] = await conn.execute(
+    "SELECT total_disk_usage FROM usage_info WHERE id = 1"
+  );
+  return row.getResultByIndex(0);
+}
+
+function getBodyFiles() {
+  const files = [];
+  for (const dir of getMorgueDir().directoryEntries) {
+    let entries;
+    try {
+      entries = dir.directoryEntries;
+    } catch (e) {
+      // A race condition can happen if the body files were deleted at the same
+      // time: if this is the case, just continue (ignoring files that don't
+      // exist anymore).
+      if (e.result == Cr.NS_ERROR_FILE_NOT_FOUND) {
+        continue;
+      }
+      throw e;
+    }
+    for (const file of entries) {
+      if (file.leafName.endsWith(".final")) {
+        files.push(file);
+      }
+    }
+  }
+  return files;
 }
 
 function getPrincipal(url, attrs) {

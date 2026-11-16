@@ -158,9 +158,9 @@ class Context final : public SafeRefCounted<Context>, public Stringifyable {
   void AddActivity(Activity& aActivity);
   void RemoveActivity(Activity& aActivity);
 
-  // Tell the Context that some state information has been orphaned in the
-  // data store and won't be cleaned up.  The Context will leave the marker
-  // in place to trigger cleanup the next times its opened.
+  // Tell the Context that some body files could not be deleted and are now
+  // unknown to the database.  The Context will leave the marker in place to
+  // trigger their cleanup the next time it's opened.
   void NoteOrphanedData();
 
  private:

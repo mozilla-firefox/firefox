@@ -152,6 +152,9 @@ class Manager final : public SafeRefCounted<Manager>, public Stringifyable {
   // Must be called by Context objects before they are destroyed.
   void RemoveContext(Context& aContext);
 
+  // Forwards to Context::NoteOrphanedData(), if the Context is still alive.
+  void NoteOrphanedData();
+
   // Marks the Manager "invalid".  Once the Context completes no new operations
   // will be permitted with this Manager.  New actors will get a new Manager.
   void NoteClosing();

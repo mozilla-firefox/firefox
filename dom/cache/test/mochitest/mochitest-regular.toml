@@ -5,5 +5,19 @@
 [DEFAULT]
 dupe-manifest = true
 tags = "dom-cache-api dom-cache-api-regular"
+run-if = [
+  "!xorigin", # Storage paths differ in a third-party (partitioned) context
+]
 
 ["include:mochitest-common.toml"]
+
+# We skip the next tests in private-browsing mode because the storage paths
+# differ
+["test_cache_orphaned_body_quota.html"]
+tags = "condprof inc-origin-init"
+
+["test_cache_orphaned_body_referenced_quota.html"]
+tags = "condprof inc-origin-init"
+
+["test_cache_orphaned_padding_underflow.html"]
+tags = "condprof inc-origin-init"

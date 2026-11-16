@@ -5,61 +5,12 @@
 <head>
   <title>Test Cache with QuotaManager Restart</title>
   <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="helpers.js"></script>
   <script type="text/javascript" src="large_url_list.js"></script>
   <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
 </head>
 <body>
 <script class="testbody" type="text/javascript">
-function setupTestIframe() {
-  return new Promise(function(resolve) {
-    var iframe = document.createElement("iframe");
-    iframe.src = "empty.html";
-    iframe.onload = function() {
-      window.caches = iframe.contentWindow.caches;
-      resolve();
-    };
-    document.body.appendChild(iframe);
-  });
-}
-
-function clearStorage() {
-  return new Promise(function(resolve) {
-    var qms = SpecialPowers.Services.qms;
-    var principal = SpecialPowers.wrap(document).nodePrincipal;
-    var request = qms.clearStoragesForPrincipal(principal);
-    var cb = SpecialPowers.wrapCallback(resolve);
-    request.callback = cb;
-  });
-}
-
-function storageUsage() {
-  return new Promise(function(resolve) {
-    var qms = SpecialPowers.Services.qms;
-    var principal = SpecialPowers.wrap(document).nodePrincipal;
-    var cb = SpecialPowers.wrapCallback(function(request) {
-      var result = request.result;
-      resolve(result.usage);
-    });
-    qms.getUsageForPrincipal(principal, cb);
-  });
-}
-
-function resetStorage() {
-  return new Promise(function(resolve) {
-    var qms = SpecialPowers.Services.qms;
-    var principal = SpecialPowers.wrap(document).nodePrincipal;
-    var request = qms.resetStoragesForPrincipal(principal);
-    var cb = SpecialPowers.wrapCallback(resolve);
-    request.callback = cb;
-  });
-}
-
-function gc() {
-  return new Promise(function(resolve) {
-    SpecialPowers.exactGC(resolve);
-  });
-}
-
 SimpleTest.waitForExplicitFinish();
 SpecialPowers.pushPrefEnv({
   "set": [["dom.caches.enabled", true],

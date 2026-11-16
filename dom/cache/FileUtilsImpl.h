@@ -56,7 +56,7 @@ nsresult BodyTraverseFilesForCleanup(
             // considered orphans.
             if (StringEndsWith(leafName, ".tmp"_ns)) {
               DebugOnly<nsresult> result = RemoveNsIFile(
-                  aDirectoryMetadata, *file, /* aTrackQuota */ true);
+                  aDirectoryMetadata, *file, /* aTrackQuota */ false);
               MOZ_ASSERT(NS_SUCCEEDED(result));
               return Ok{};
             }

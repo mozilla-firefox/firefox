@@ -42,7 +42,6 @@
 namespace mozilla::dom::cache {
 
 using mozilla::dom::quota::ClientDirectoryLock;
-using mozilla::dom::quota::CloneFileAndAppend;
 using mozilla::dom::quota::ScopedLogExtraInfo;
 
 namespace {
@@ -92,7 +91,8 @@ Result<Maybe<CipherKey>, nsresult> GetOrCreateCipherKey(
 // not worry about these details.
 class SetupAction final : public SyncDBAction {
  public:
-  SetupAction() : SyncDBAction(DBAction::Create) {}
+  explicit SetupAction(SafeRefPtr<Manager> aManager)
+      : SyncDBAction(DBAction::Create), mManager(std::move(aManager)) {}
 
   virtual nsresult RunSyncWithDBOnTarget(
       const CacheDirectoryMetadata& aDirectoryMetadata, nsIFile* aDBDir,
@@ -104,18 +104,15 @@ class SetupAction final : public SyncDBAction {
     // executes in its own transaction
     QM_TRY(MOZ_TO_RESULT(db::CreateOrMigrateSchema(*aDBDir, *aConn)));
 
-    // If the Context marker file exists, then the last session was
-    // not cleanly shutdown.  In these cases sqlite will ensure that
-    // the database is valid, but we might still orphan data.  Both
-    // Cache objects and body files can be referenced by DOM objects
-    // after they are "removed" from their parent.  So we need to
-    // look and see if any of these late access objects have been
-    // orphaned.
+    // Both Cache objects and body files can be referenced by DOM objects after
+    // they are "removed" from their parent, so their deletion is deferred: the
+    // entries stay in the database, marked as pending deletion, until their
+    // body files are gone.  Finish any deferred deletion that did not complete.
     //
     // Note, this must be done after any schema version updates to
     // ensure our DBSchema methods work correctly.
-    if (MarkerFileExists(aDirectoryMetadata)) {
-      NS_WARNING("Cache not shutdown cleanly! Cleaning up stale data...");
+
+    {
       mozStorageTransaction trans(aConn, false,
                                   mozIStorageConnection::TRANSACTION_IMMEDIATE);
 
@@ -131,27 +128,30 @@ class SetupAction final : public SyncDBAction {
           const CheckedInt64& overallDeletedPaddingSize,
           Reduce(
               orphanedCacheIdList, CheckedInt64(0),
-              [aConn, &aDirectoryMetadata, &aDBDir](
+              [conn = MOZ_KnownLive(aConn)](
                   CheckedInt64 oldValue, const Maybe<const CacheId&>& element)
                   -> Result<CheckedInt64, nsresult> {
                 QM_TRY_INSPECT(const auto& deletionInfo,
-                               db::DeleteCacheId(*aConn, *element));
-
-                QM_TRY(MOZ_TO_RESULT(
-                    BodyDeleteFiles(aDirectoryMetadata, *aDBDir,
-                                    deletionInfo.mDeletedBodyIdList)));
+                               db::DeleteCacheId(*conn, *element));
 
                 return oldValue + deletionInfo.mDeletedPaddingSize;
               }));
 
-      // Clean up orphaned body objects.
-      QM_TRY_UNWRAP(auto knownBodyIds, db::GetKnownBodyIds(*aConn));
+      // Clean up orphaned body objects, including the ones of the Cache
+      // objects deleted above.  Their disk usage is still accounted for, both
+      // in the database and by the QuotaManager.
+      QM_TRY_INSPECT(const auto& orphanedBodies,
+                     db::FindOrphanedBodies(*aConn));
 
-      // Note that this causes a scan of all cached files. See bug 1952550 that
-      // wants to reduce the probability to find the marker file above.
-      QM_TRY(MOZ_TO_RESULT(
-          BodyDeleteOrphanedFiles(aDirectoryMetadata, *aDBDir, knownBodyIds)));
+      QM_TRY(MOZ_TO_RESULT(db::DeleteAllOrphanedEntries(*aConn)));
 
+      QM_TRY(MOZ_TO_RESULT(db::DeleteEmptyOrphanedCaches(*aConn)));
+
+      const auto scope = overallDeletedPaddingSize.value() > 0
+                             ? Some(ScopedLogExtraInfo{
+                                   ScopedLogExtraInfo::kTagContextTainted,
+                                   "CacheSetupAction::PaddingUpdateFailed"_ns})
+                             : Nothing{};
       // Commit() explicitly here, because we want to ensure the padding file
       // has the correct content.
       // We'll restore padding file below, so just warn here if failure happens.
@@ -161,24 +161,45 @@ class SetupAction final : public SyncDBAction {
       // failure, but if we entered it and RestorePaddingFile succeeded, we
       // would have returned NS_OK. Now, we will never propagate a
       // MaybeUpdatePaddingFile failure.
-      const auto scope = overallDeletedPaddingSize.value() > 0
-                             ? Some(ScopedLogExtraInfo{
-                                   ScopedLogExtraInfo::kTagContextTainted,
-                                   "CacheSetupAction::PaddingUpdateFailed"_ns})
-                             : Nothing{};
-
       QM_WARNONLY_TRY(QM_TO_RESULT(MaybeUpdatePaddingFile(
           aDBDir, aConn, /* aIncreaceSize */ 0,
           overallDeletedPaddingSize.value(),
-          [&trans, &overallDeletedPaddingSize,
-           &aDirectoryMetadata]() -> nsresult {
+          [this, &trans, &overallDeletedPaddingSize, &aDirectoryMetadata,
+           aDBDir, &orphanedBodies]() -> nsresult {
             const nsresult rv = trans.Commit();
-            if (NS_SUCCEEDED(rv) && overallDeletedPaddingSize.value() > 0) {
-              DecreaseUsageForDirectoryMetadata(
-                  aDirectoryMetadata, overallDeletedPaddingSize.value());
+            if (NS_SUCCEEDED(rv)) {
+              if (overallDeletedPaddingSize.value() > 0) {
+                DecreaseUsageForDirectoryMetadata(
+                    aDirectoryMetadata, overallDeletedPaddingSize.value());
+              }
+              // The quota usage is decreased by what the database just
+              // dropped, then the body files are deleted, as in
+              // DeleteOrphanedBodyAction.
+              if (orphanedBodies.mDiskSize > 0) {
+                DecreaseUsageForDirectoryMetadata(aDirectoryMetadata,
+                                                  orphanedBodies.mDiskSize);
+              }
+              BodyDeleteFiles(aDirectoryMetadata, *aDBDir,
+                              orphanedBodies.mBodyIdList,
+                              /* aTrackQuota */ false, &mOrphanedData);
             }
             return rv;
           })));
+    }  // End of transaction
+
+    // If the context marker file exists, then the last session was not cleanly
+    // shutdown.  sqlite will ensure that the database is valid, but body files
+    // it does not know about may have been left behind: written but not yet
+    // recorded, or already forgotten but not yet deleted.  Either way they are
+    // not part of the quota usage, so they are removed without decreasing it.
+    if (MarkerFileExists(aDirectoryMetadata)) {
+      NS_WARNING("Cache not shutdown cleanly! Cleaning up stale data...");
+      QM_TRY_UNWRAP(auto knownBodyIds, db::GetKnownBodyIds(*aConn));
+
+      // Note that this causes a scan of all cached files. See bug 1952550 that
+      // wants to reduce the probability to find the marker file above.
+      QM_TRY(MOZ_TO_RESULT(
+          BodyDeleteOrphanedFiles(aDirectoryMetadata, *aDBDir, knownBodyIds)));
     }
 
     if (DirectoryPaddingFileExists(*aDBDir, DirPaddingFile::TMP_FILE) ||
@@ -188,50 +209,80 @@ class SetupAction final : public SyncDBAction {
 
     return NS_OK;
   }
+
+  virtual void CompleteOnInitiatingThread(nsresult aRv) override {
+    if (mOrphanedData) {
+      mManager->NoteOrphanedData();
+    }
+
+    // ensure we release the manager on the initiating thread
+    mManager = nullptr;
+  }
+
+ private:
+  SafeRefPtr<Manager> mManager;
+  bool mOrphanedData = false;
 };
 
 // ----------------------------------------------------------------------------
 
 // Action that is executed when we determine that content has stopped using
 // a body file that has been orphaned.
-class DeleteOrphanedBodyAction final : public Action {
+class DeleteOrphanedBodyAction final : public SyncDBAction {
  public:
   using DeletedBodyIdList = AutoTArray<nsID, 64>;
 
-  explicit DeleteOrphanedBodyAction(DeletedBodyIdList&& aDeletedBodyIdList)
-      : mDeletedBodyIdList(std::move(aDeletedBodyIdList)) {}
+  DeleteOrphanedBodyAction(SafeRefPtr<Manager> aManager,
+                           DeletedBodyIdList&& aDeletedBodyIdList)
+      : SyncDBAction(DBAction::Existing),
+        mManager(std::move(aManager)),
+        mDeletedBodyIdList(std::move(aDeletedBodyIdList)) {}
 
-  explicit DeleteOrphanedBodyAction(const nsID& aBodyId)
-      : mDeletedBodyIdList{aBodyId} {}
+  DeleteOrphanedBodyAction(SafeRefPtr<Manager> aManager, const nsID& aBodyId)
+      : SyncDBAction(DBAction::Existing),
+        mManager(std::move(aManager)),
+        mDeletedBodyIdList{aBodyId} {}
 
-  void RunOnTarget(SafeRefPtr<Resolver> aResolver,
-                   const Maybe<CacheDirectoryMetadata>& aDirectoryMetadata,
-                   Data*,
-                   const Maybe<CipherKey>& /*aMaybeCipherKey*/) override {
-    MOZ_DIAGNOSTIC_ASSERT(aResolver);
-    MOZ_DIAGNOSTIC_ASSERT(aDirectoryMetadata);
-    MOZ_DIAGNOSTIC_ASSERT(aDirectoryMetadata->mDir);
+  virtual nsresult RunSyncWithDBOnTarget(
+      const CacheDirectoryMetadata& aDirectoryMetadata, nsIFile* aDBDir,
+      mozIStorageConnection* aConn) override {
+    MOZ_DIAGNOSTIC_ASSERT(aDBDir);
 
-    // Note that since DeleteOrphanedBodyAction isn't used while the context is
-    // being initialized, we don't need to check for cancellation here.
+    mozStorageTransaction trans(aConn, false,
+                                mozIStorageConnection::TRANSACTION_IMMEDIATE);
 
-    const auto resolve = [&aResolver](const nsresult rv) {
-      aResolver->Resolve(rv);
-    };
+    QM_TRY(MOZ_TO_RESULT(trans.Start()));
 
-    QM_TRY_INSPECT(const auto& dbDir,
-                   CloneFileAndAppend(*aDirectoryMetadata->mDir, u"cache"_ns),
-                   QM_VOID, resolve);
+    QM_TRY_INSPECT(const int64_t& diskSize,
+                   db::DeleteOrphanedBodyIds(*aConn, mDeletedBodyIdList));
 
-    QM_TRY(MOZ_TO_RESULT(BodyDeleteFiles(*aDirectoryMetadata, *dbDir,
-                                         mDeletedBodyIdList)),
-           QM_VOID, resolve);
+    QM_TRY(MOZ_TO_RESULT(trans.Commit()));
 
-    aResolver->Resolve(NS_OK);
+    // The quota usage is decreased by exactly what the database dropped, so
+    // the two cannot drift apart whatever happens to the files. The files are
+    // deleted last, so that an interruption leaves files unknown to the
+    // database, which SetupAction removes without touching the quota usage.
+    if (diskSize > 0) {
+      DecreaseUsageForDirectoryMetadata(aDirectoryMetadata, diskSize);
+    }
+    BodyDeleteFiles(aDirectoryMetadata, *aDBDir, mDeletedBodyIdList,
+                    /* aTrackQuota */ false, &mOrphanedData);
+    return NS_OK;
+  }
+
+  virtual void CompleteOnInitiatingThread(nsresult aRv) override {
+    if (mOrphanedData) {
+      mManager->NoteOrphanedData();
+    }
+
+    // ensure we release the manager on the initiating thread
+    mManager = nullptr;
   }
 
  private:
+  SafeRefPtr<Manager> mManager;
   DeletedBodyIdList mDeletedBodyIdList;
+  bool mOrphanedData = false;
 };
 
 bool IsHeadRequest(const CacheRequest& aRequest,
@@ -975,7 +1026,8 @@ class Manager::CachePutAllAction final : public DBAction {
                          e.mResponseStream ? &e.mResponseBodyId : nullptr));
 
         const int64_t deletedPaddingSize = deletionInfo.mDeletedPaddingSize;
-        mDeletedBodyIdList = std::move(deletionInfo.mDeletedBodyIdList);
+        mDeletedBodyIdList.AppendElements(
+            std::move(deletionInfo.mDeletedBodyIdList));
 
         MOZ_DIAGNOSTIC_ASSERT(INT64_MAX - mDeletedPaddingSize >=
                               deletedPaddingSize);
@@ -1011,6 +1063,10 @@ class Manager::CachePutAllAction final : public DBAction {
     }
 
     mManager->NoteOrphanedBodyIdList(mDeletedBodyIdList);
+
+    if (mOrphanedData) {
+      mManager->NoteOrphanedData();
+    }
 
     if (mDeletedPaddingSize > 0) {
       DecreaseUsageForDirectoryMetadata(*mDirectoryMetadata,
@@ -1146,7 +1202,10 @@ class Manager::CachePutAllAction final : public DBAction {
 
     // Clean up any files we might have written before hitting the error.
     if (NS_FAILED(aRv)) {
-      BodyDeleteFiles(*mDirectoryMetadata, *mDBDir, mBodyIdWrittenList);
+      // These files were never recorded in the database, so only the on-disk
+      // size tells what the quota-tracked streams added to the usage.
+      BodyDeleteFiles(*mDirectoryMetadata, *mDBDir, mBodyIdWrittenList,
+                      /* aTrackQuota */ true, &mOrphanedData);
       if (mUpdatedPaddingSize > 0) {
         DecreaseUsageForDirectoryMetadata(*mDirectoryMetadata,
                                           mUpdatedPaddingSize);
@@ -1187,6 +1246,7 @@ class Manager::CachePutAllAction final : public DBAction {
   // Written to on target thread, accessed on initiating thread after target
   // thread activity is guaranteed complete
   nsTArray<nsID> mDeletedBodyIdList;
+  bool mOrphanedData = false;
 
   // accessed from any thread while mMutex locked
   Mutex mMutex MOZ_UNANNOTATED;
@@ -1559,9 +1619,7 @@ class Manager::StorageDeleteAction final : public Manager::BaseAction {
         const auto pinnedContext =
             SafeRefPtr{mManager->mContext, AcquireStrongRefFromRawPtr{}};
 
-        if (pinnedContext->IsCanceled()) {
-          pinnedContext->NoteOrphanedData();
-        } else {
+        if (!pinnedContext->IsCanceled()) {
           pinnedContext->CancelForCacheId(mCacheId);
           pinnedContext->Dispatch(MakeSafeRefPtr<DeleteOrphanedCacheAction>(
               mManager.clonePtr(), mCacheId));
@@ -1770,23 +1828,19 @@ void Manager::RemoveContext(Context& aContext) {
   // are closing before the Context is destroyed.
   MOZ_DIAGNOSTIC_ASSERT(mState == Closing);
 
-  // Before forgetting the Context, check to see if we have any outstanding
-  // cache or body objects waiting for deletion.  If so, note that we've
-  // orphaned data so it will be cleaned up on the next open.
-  if (std::any_of(
-          mCacheIdRefs.cbegin(), mCacheIdRefs.cend(),
-          [](const auto& cacheIdRef) { return cacheIdRef.mOrphaned; }) ||
-      std::any_of(mBodyIdRefs.cbegin(), mBodyIdRefs.cend(),
-                  [](const auto& bodyIdRef) { return bodyIdRef.mOrphaned; })) {
-    aContext.NoteOrphanedData();
-  }
-
   mContext = nullptr;
 
   // Once the context is gone, we can immediately remove ourself from the
   // Factory list.  We don't need to block shutdown by staying in the list
   // any more.
   Factory::Remove(*this);
+}
+
+void Manager::NoteOrphanedData() {
+  NS_ASSERT_OWNINGTHREAD(Manager);
+  if (mContext) {
+    mContext->NoteOrphanedData();
+  }
 }
 
 void Manager::NoteClosing() {
@@ -1831,16 +1885,10 @@ void Manager::ReleaseCacheId(CacheId aCacheId) {
       mCacheIdRefs.RemoveElementAt(foundIt);
       const auto pinnedContext =
           SafeRefPtr{mContext, AcquireStrongRefFromRawPtr{}};
-      // If the context is already gone, then orphan flag should have been
-      // set in RemoveContext().
-      if (orphaned && pinnedContext) {
-        if (pinnedContext->IsCanceled()) {
-          pinnedContext->NoteOrphanedData();
-        } else {
-          pinnedContext->CancelForCacheId(aCacheId);
-          pinnedContext->Dispatch(MakeSafeRefPtr<DeleteOrphanedCacheAction>(
-              SafeRefPtrFromThis(), aCacheId));
-        }
+      if (orphaned && pinnedContext && !pinnedContext->IsCanceled()) {
+        pinnedContext->CancelForCacheId(aCacheId);
+        pinnedContext->Dispatch(MakeSafeRefPtr<DeleteOrphanedCacheAction>(
+            SafeRefPtrFromThis(), aCacheId));
       }
     }
     MaybeAllowContextToClose();
@@ -1881,15 +1929,9 @@ void Manager::ReleaseBodyId(const nsID& aBodyId) {
       mBodyIdRefs.RemoveElementAt(foundIt);
       const auto pinnedContext =
           SafeRefPtr{mContext, AcquireStrongRefFromRawPtr{}};
-      // If the context is already gone, then orphan flag should have been
-      // set in RemoveContext().
-      if (orphaned && pinnedContext) {
-        if (pinnedContext->IsCanceled()) {
-          pinnedContext->NoteOrphanedData();
-        } else {
-          pinnedContext->Dispatch(
-              MakeSafeRefPtr<DeleteOrphanedBodyAction>(aBodyId));
-        }
+      if (orphaned && pinnedContext && !pinnedContext->IsCanceled()) {
+        pinnedContext->Dispatch(MakeSafeRefPtr<DeleteOrphanedBodyAction>(
+            SafeRefPtrFromThis(), aBodyId));
       }
     }
     MaybeAllowContextToClose();
@@ -2085,7 +2127,8 @@ void Manager::Init(Maybe<Manager&> aOldManager) {
   // per Manager now, this lets us cleanly call Factory::Remove() once the
   // Context goes away.
   SafeRefPtr<Context> ref = Context::Create(
-      SafeRefPtrFromThis(), mIOThread, MakeSafeRefPtr<SetupAction>(),
+      SafeRefPtrFromThis(), mIOThread,
+      MakeSafeRefPtr<SetupAction>(SafeRefPtrFromThis()),
       aOldManager ? SomeRef(*aOldManager->mContext) : Nothing());
   mContext = ref.unsafeGetRawPtr();
 }
@@ -2224,8 +2267,8 @@ void Manager::NoteOrphanedBodyIdList(const nsTArray<nsID>& aDeletedBodyIdList) {
   const auto pinnedContext = SafeRefPtr{mContext, AcquireStrongRefFromRawPtr{}};
   if (!deleteNowList.IsEmpty() && pinnedContext &&
       !pinnedContext->IsCanceled()) {
-    pinnedContext->Dispatch(
-        MakeSafeRefPtr<DeleteOrphanedBodyAction>(std::move(deleteNowList)));
+    pinnedContext->Dispatch(MakeSafeRefPtr<DeleteOrphanedBodyAction>(
+        SafeRefPtrFromThis(), std::move(deleteNowList)));
   }
 }
 

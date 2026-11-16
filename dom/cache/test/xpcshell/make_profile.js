@@ -44,7 +44,7 @@ function zip_profile(zipFile, profileDir) {
     if (entry.file.isDirectory()) {
       zipWriter.addEntryDirectory(
         entry.path,
-        entry.file.lastModifiedTime,
+        entry.file.lastModifiedTime * 1000,
         false
       );
     } else {
@@ -54,7 +54,7 @@ function zip_profile(zipFile, profileDir) {
       istream.init(entry.file, -1, -1, 0);
       zipWriter.addEntryStream(
         entry.path,
-        entry.file.lastModifiedTime,
+        entry.file.lastModifiedTime * 1000,
         Ci.nsIZipWriter.COMPRESSION_DEFAULT,
         istream,
         false
@@ -104,6 +104,7 @@ function resetQuotaManager() {
 function run_test() {
   do_test_pending();
   do_get_profile();
+  Cu.importGlobalProperties(["caches"]);
 
   var directoryService = Services.dirsvc;
   var profileDir = directoryService.get("ProfD", Ci.nsIFile);

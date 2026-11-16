@@ -1,0 +1,138 @@
+<!-- Any copyright is dedicated to the Public Domain.
+   - http://creativecommons.org/publicdomain/zero/1.0/ -->
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Body files unknown to the database must not affect the quota usage (bug 2075548)</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="helpers.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<script class="testbody" type="text/javascript">
+// CacheQuotaClient::InitOrigin derives body usage from the database. Body
+// files without an entry, left behind by an unclean shutdown before the
+// database recorded them, are not part of that usage and SetupAction's orphan
+// cleanup must remove them on the next access without decreasing the usage,
+// otherwise it drifts below the real value and can underflow.
+//
+// The unclean shutdown is simulated by planting a .final and a .tmp body file
+// plus the context_open.marker file while the storage is shut down.
+
+/* global FileUtils */
+
+// Body files live in morgue/<last uuid byte as decimal>/{uuid}.<final|tmp>.
+function plantOrphanBodiesAndMarker(finalBytes, tmpBytes) {
+  return SpecialPowers.spawnChrome([originCacheDirPath(), finalBytes, tmpBytes],
+    async function(originCacheDir, finalSize, tmpSize) {
+      // eslint-disable-next-line mozilla/reject-importGlobalProperties
+      Cu.importGlobalProperties(["IOUtils"]);
+
+      const cacheDir = FileUtils.getFile(originCacheDir);
+      if (!cacheDir.exists()) {
+        return { error: "cache directory missing: " + cacheDir.path };
+      }
+
+      async function writeBody(suffix, size) {
+        const uuidStr = Services.uuid.generateUUID().toString();
+        const lastByte = parseInt(uuidStr.slice(-3, -1), 16);
+        const subdir = cacheDir.clone();
+        subdir.append("morgue");
+        subdir.append(String(lastByte));
+        await IOUtils.makeDirectory(subdir.path);
+        const body = subdir.clone();
+        body.append(uuidStr + suffix);
+        await IOUtils.write(body.path, new Uint8Array(size));
+        return body;
+      }
+
+      const finalFile = await writeBody(".final", finalSize);
+      const tmpFile = await writeBody(".tmp", tmpSize);
+
+      const marker = cacheDir.clone();
+      marker.append("context_open.marker");
+      if (!marker.exists()) {
+        marker.create(Ci.nsIFile.NORMAL_FILE_TYPE, 0o644);
+      }
+
+      return {
+        finalPath: finalFile.path,
+        finalSize: finalFile.fileSize,
+        tmpPath: tmpFile.path,
+        tmpSize: tmpFile.fileSize,
+      };
+    });
+}
+
+function fileExists(path) {
+  return SpecialPowers.spawnChrome([path], function(p) {
+    // eslint-disable-next-line mozilla/reject-importGlobalProperties
+    Cu.importGlobalProperties(["IOUtils"]);
+    return IOUtils.exists(p);
+  });
+}
+
+SimpleTest.waitForExplicitFinish();
+SpecialPowers.pushPrefEnv({
+  "set": [["dom.caches.testing.enabled", true],
+          ["dom.quotaManager.testing", true],
+          // After an unclean shutdown the origin is dirty and gets initialized
+          // from disk. The test shuts the QuotaManager down cleanly instead, so
+          // force the initialization from disk rather than from the cached
+          // usage in storage.sqlite.
+          ["dom.quotaManager.loadQuotaFromCache", false]],
+}, function() { runTest(); });
+
+async function runTest() {
+  const name = "orphanedBodyQuota";
+  await setupTestIframe();
+
+  await clearStorage();
+
+  info("Storing one real entry so the origin has tracked usage");
+  const REAL_ENTRY_BYTES = 1536 * 1024;
+  let cache = await caches.open(name);
+  await cache.put(new Request("./real-entry"),
+                  new Response(randomString(REAL_ENTRY_BYTES)));
+  cache = null;
+
+  info("Shutting down quota manager");
+  await resetQuotaManager();
+
+  info("Measuring the usage before planting orphans");
+  const usageBeforeOrphans = await storageUsage();
+  ok(usageBeforeOrphans >= REAL_ENTRY_BYTES, "usage includes the real entry");
+
+  info("Planting orphans");
+  const ORPHAN_FINAL_BYTES = 512 * 1024;
+  const ORPHAN_TMP_BYTES = 256 * 1024;
+  const planted = await plantOrphanBodiesAndMarker(ORPHAN_FINAL_BYTES,
+                                                   ORPHAN_TMP_BYTES);
+  ok(!planted.error, "orphans planted, error: " + planted.error);
+  is(planted.finalSize, ORPHAN_FINAL_BYTES, "orphan .final has expected size");
+  is(planted.tmpSize, ORPHAN_TMP_BYTES, "orphan .tmp has expected size");
+
+  info("Re-initializing from disk");
+  const usageAfterReinit = await storageUsage();
+  is(usageAfterReinit, usageBeforeOrphans,
+     "usage after an unclean shutdown ignores the body files unknown to the database");
+
+  info("Triggering SetupAction's orphan cleanup");
+  await caches.has(name);
+
+  ok(!(await fileExists(planted.finalPath)), "orphan .final was removed");
+  ok(!(await fileExists(planted.tmpPath)), "orphan .tmp was removed");
+
+  info("Shutting down quota manager to measure the usage from disk");
+  await resetQuotaManager();
+
+  const usageAfterCleanup = await storageUsage();
+  is(usageAfterCleanup, usageBeforeOrphans,
+     "removing the unknown body files did not change the usage on disk");
+
+  await clearStorage();
+  SimpleTest.finish();
+}
+</script>
+</body>
+</html>

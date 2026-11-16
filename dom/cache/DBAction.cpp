@@ -84,20 +84,19 @@ void DBAction::RunOnTarget(
 
   // If there is no previous Action, then we must open one.
   if (!conn) {
-    QM_TRY_UNWRAP(conn,
-                  OpenConnection(*aDirectoryMetadata, *dbDir, aMaybeCipherKey),
-                  QM_VOID, resolveErr);
-    MOZ_DIAGNOSTIC_ASSERT(conn);
+    QM_TRY_INSPECT(const auto& rawConn,
+                   OpenConnection(*aDirectoryMetadata, *dbDir, aMaybeCipherKey),
+                   QM_VOID, resolveErr);
+    MOZ_DIAGNOSTIC_ASSERT(rawConn);
 
-    // Save this connection in the shared Data object so later Actions can
-    // use it.  This avoids opening a new connection for every Action.
+    // Use our special wrapped connection class. This will let us perform
+    // some clean up operations once the connection is closed.
+    conn = new Connection(rawConn);
+    // Save this connection in the shared Data object so later Actions can use
+    // it. This avoids opening a new connection and running cleanup operations
+    // for every Action.
     if (aOptionalData) {
-      // Since we know this connection will be around for as long as the
-      // Cache is open, use our special wrapped connection class.  This
-      // will let us perform certain operations once the Cache origin
-      // is closed.
-      nsCOMPtr<mozIStorageConnection> wrapped = new Connection(conn);
-      aOptionalData->SetConnection(wrapped);
+      aOptionalData->SetConnection(conn);
     }
   }
 

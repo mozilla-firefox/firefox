@@ -37,6 +37,34 @@ Result<DeletionInfo, nsresult> DeleteCacheId(mozIStorageConnection& aConn,
 Result<AutoTArray<CacheId, 8>, nsresult> FindOrphanedCacheIds(
     mozIStorageConnection& aConn);
 
+// Deletes the caches that are neither named in storage nor have any entry
+// left, which DeleteCacheId leaves behind when some entries were pending
+// deletion. Only safe when content cannot reference any cache, i.e. at setup.
+nsresult DeleteEmptyOrphanedCaches(mozIStorageConnection& aConn);
+
+struct OrphanedBodies {
+  nsTArray<nsID> mBodyIdList;
+  // Disk size the database records for the bodies, i.e. what usage_info drops
+  // once they are deleted. The quota usage must be decreased by the same
+  // amount.
+  int64_t mDiskSize = 0;
+};
+
+// Bodies of the entries pending deletion, whose body files are still on disk.
+Result<OrphanedBodies, nsresult> FindOrphanedBodies(
+    mozIStorageConnection& aConn);
+
+// Deletes all the entries pending deletion. Only safe when content cannot
+// reference any body, i.e. at setup. The body files must be deleted afterwards.
+nsresult DeleteAllOrphanedEntries(mozIStorageConnection& aConn);
+
+// Detaches the given bodies from the entries pending deletion and deletes the
+// entries that have no body left. Returns the disk size the database recorded
+// for the detached bodies, by which the quota usage must be decreased once the
+// transaction is committed. The body files must be deleted afterwards.
+Result<int64_t, nsresult> DeleteOrphanedBodyIds(
+    mozIStorageConnection& aConn, const nsTArray<nsID>& aBodyIdList);
+
 Result<int64_t, nsresult> FindOverallPaddingSize(mozIStorageConnection& aConn);
 
 Result<int64_t, nsresult> GetTotalDiskUsage(mozIStorageConnection& aConn);

@@ -1,0 +1,99 @@
+<!-- Any copyright is dedicated to the Public Domain.
+   - http://creativecommons.org/publicdomain/zero/1.0/ -->
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>The body file of an entry removed while content reads it stays in the quota usage until it is deleted (bug 2075548)</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="helpers.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<script class="testbody" type="text/javascript">
+// When an entry is removed from a Cache while content still reads its body,
+// the body file is kept until the read completes. If the storage shuts down
+// before that, the file is deleted by SetupAction's orphan cleanup on the next
+// access, with a matching decrease of the quota usage. The usage recomputed
+// from the database at origin initialization must therefore still include the
+// file, otherwise the decrease makes the usage drift below the real value and
+// can underflow. Conversely, once the file is deleted the database must no
+// longer account for it, otherwise the next initialization overcounts.
+
+SimpleTest.waitForExplicitFinish();
+SpecialPowers.pushPrefEnv({
+  "set": [["dom.caches.testing.enabled", true],
+          ["dom.quotaManager.testing", true],
+          // Make the QuotaManager restarts below initialize the origin from
+          // disk, as after a crash, rather than restore the usage cached in
+          // storage.sqlite by the clean shutdown.
+          ["dom.quotaManager.loadQuotaFromCache", false]],
+}, function() { runTest(); });
+
+async function runTest() {
+  const name = "orphanedBodyReferencedQuota";
+  const url = "./body";
+  const BODY_BYTES = 1024 * 1024;
+
+  await setupTestIframe();
+  await clearStorage();
+
+  info("Storing an entry");
+  const cache = await caches.open(name);
+  await cache.put(new Request(url), new Response(randomString(BODY_BYTES)));
+
+  const bodyFiles = await listBodyFiles();
+  is(bodyFiles.length, 1, "the entry has one body file");
+  const bodyFileSize = bodyFiles[0].size;
+  ok(bodyFileSize > BODY_BYTES / 2, "the body file has a plausible size");
+  ok(await markerFileExists(), "the marker file exists while the cache is open");
+
+  info("Removing the entry while its body is referenced");
+  const response = await cache.match(url);
+  ok(response, "the entry can be matched");
+  ok(await cache.delete(url), "the entry is removed");
+  ok(!(await cache.match(url)), "the removed entry cannot be matched");
+  is((await listBodyFiles()).length, 1,
+     "the body file is kept while the response references it");
+
+  info("Shutting the storage down while the body is still referenced");
+  await resetQuotaManager();
+  is((await listBodyFiles()).length, 1,
+     "the body file is still on disk after the shutdown");
+  ok(!(await markerFileExists()),
+     "the marker file was removed by the clean shutdown");
+
+  info("Re-initializing from disk: the kept body file must still be counted");
+  const databaseSize = await cacheDatabaseSize();
+  const usageAfterReinit = await storageUsage();
+  ok(usageAfterReinit >= databaseSize + bodyFileSize,
+     `usage after the shutdown (${usageAfterReinit}) includes the database ` +
+     `(${databaseSize}) and the kept body file (${bodyFileSize})`);
+
+  info("Triggering SetupAction's orphan cleanup");
+  ok(!(await caches.match(url)), "the removed entry stays invisible");
+  is((await listBodyFiles()).length, 0, "the kept body file was deleted");
+
+  const cachedAfterCleanup = await cachedStorageUsage();
+  ok(cachedAfterCleanup < usageAfterReinit,
+     `usage after the cleanup (${cachedAfterCleanup}) decreased`);
+  ok(cachedAfterCleanup >= await cacheDatabaseSize(),
+     `usage after the cleanup (${cachedAfterCleanup}) still covers the database`);
+
+  info("Re-initializing from disk: the deleted body file must be forgotten");
+  await resetQuotaManager();
+  const usageAfterCleanupReinit = await storageUsage();
+  const remainingBodyBytes = [...(await listBodyFiles())].reduce(
+    (total, file) => total + file.size, 0);
+  const databaseFilesSize = await cacheDatabaseSize(/* includeWal */ true);
+  is(usageAfterCleanupReinit, databaseFilesSize + remainingBodyBytes,
+     "usage recomputed after the cleanup matches the files left on disk");
+
+  // Keep the response alive until here so that the body stays referenced.
+  ok(!response.bodyUsed, "the stale response body was never read");
+
+  await clearStorage();
+  SimpleTest.finish();
+}
+</script>
+</body>
+</html>

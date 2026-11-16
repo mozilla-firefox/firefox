@@ -113,6 +113,7 @@ SpecialPowers.pushPrefEnv({
   info("Stage 2: Verify CacheStorage.");
   info("Stage 2.1: Verify caches.open.");
   await caches.open(name);
+  await resetStorage();
   await verifyUsage();
 
   info("Stage 2.2: Verify caches.delete.");

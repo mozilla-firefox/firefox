@@ -25,6 +25,7 @@ support-files = [
   "test_cache_https.js",
   "large_url_list.js",
   "empty.html",
+  "helpers.js",
   "idle_worker.js",
 ]
 
@@ -56,8 +57,6 @@ run-if = [
 scheme = "https"
 
 ["test_cache_orphaned_cache.html"]
-
-["test_cache_orphaned_padding_underflow.html"]
 
 ["test_cache_overwrite.html"]
 skip-if = [

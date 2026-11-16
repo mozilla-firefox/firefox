@@ -77,7 +77,7 @@ const int32_t kHackyDowngradeSchemaVersion = 25;
 const int32_t kHackyPaddingSizePresentVersion = 27;
 //
 // Update this whenever the DB schema is changed.
-const int32_t kLatestSchemaVersion = 32;
+const int32_t kLatestSchemaVersion = 33;
 // ---------
 // The following constants define the SQL schema.  These are defined in the
 // same order the SQL should be executed in CreateOrMigrateSchema().  They are
@@ -147,7 +147,8 @@ const char kTableEntries[] =
     "response_padding_size INTEGER NULL, "
     "request_body_disk_size INTEGER NULL, "
     "response_body_disk_size INTEGER NULL, "
-    "response_credentials INTEGER NOT NULL "
+    "response_credentials INTEGER NOT NULL, "
+    "pending_deletion INTEGER NOT NULL DEFAULT 0 "
     // New columns must be added at the end of table to migrate and
     // validate properly.
     ")";
@@ -163,6 +164,11 @@ const char kIndexEntriesRequest[] =
     "CREATE INDEX entries_request_match_index "
     "ON entries (cache_id, request_url_no_query_hash, "
     "request_url_query_hash)";
+
+// Index to support the queries on entries pending deletion.
+const char kIndexEntriesPendingDeletion[] =
+    "CREATE INDEX entries_pending_deletion_index "
+    "ON entries (pending_deletion) WHERE pending_deletion = 1";
 
 const char kTableRequestHeaders[] =
     "CREATE TABLE request_headers ("
@@ -430,6 +436,9 @@ static Result<std::tuple<nsTArray<nsID>, AutoTArray<IdCount, 16>, int64_t>,
               nsresult>
 DeleteAllCacheEntries(mozIStorageConnection& aConn, CacheId& aCacheId);
 
+static nsresult DeleteOrphanedEntriesWithoutBodies(
+    mozIStorageConnection& aConn);
+
 static Result<int32_t, nsresult> InsertSecurityInfo(
     mozIStorageConnection& aConn, nsICryptoHash& aCrypto,
     nsITransportSecurityInfo* aSecurityInfo);
@@ -539,6 +548,8 @@ nsresult CreateOrMigrateSchema(nsIFile& aDBDir, mozIStorageConnection& aConn) {
         MOZ_TO_RESULT(aConn.ExecuteSimpleSQL(nsLiteralCString(kTableEntries))));
     QM_TRY(MOZ_TO_RESULT(
         aConn.ExecuteSimpleSQL(nsLiteralCString(kIndexEntriesRequest))));
+    QM_TRY(MOZ_TO_RESULT(aConn.ExecuteSimpleSQL(
+        nsLiteralCString(kIndexEntriesPendingDeletion))));
     QM_TRY(MOZ_TO_RESULT(
         aConn.ExecuteSimpleSQL(nsLiteralCString(kTableRequestHeaders))));
     QM_TRY(MOZ_TO_RESULT(
@@ -666,11 +677,17 @@ Result<DeletionInfo, nsresult> DeleteCacheId(mozIStorageConnection& aConn,
 
   QM_TRY(MOZ_TO_RESULT(DeleteSecurityInfoList(aConn, deletedSecurityIdList)));
 
-  // Delete the remainder of the cache using cascade semantics.
+  // Delete the remainder of the cache using cascade semantics, unless entries
+  // pending deletion still reference it. In that case the row outlives the
+  // deletion until the next context open, where DeleteEmptyOrphanedCaches()
+  // removes it: at runtime, the row cannot be told apart from an empty
+  // orphaned cache that content still references.
   QM_TRY_INSPECT(const auto& state,
                  MOZ_TO_RESULT_INVOKE_MEMBER_TYPED(
                      nsCOMPtr<mozIStorageStatement>, aConn, CreateStatement,
-                     "DELETE FROM caches WHERE id=:id;"_ns));
+                     "DELETE FROM caches WHERE id=:id "
+                     "AND NOT EXISTS (SELECT 1 FROM entries "
+                     "WHERE cache_id=:id);"_ns));
 
   QM_TRY(MOZ_TO_RESULT(state->BindInt64ByName("id"_ns, aCacheId)));
 
@@ -692,6 +709,132 @@ Result<AutoTArray<CacheId, 8>, nsresult> FindOrphanedCacheIds(
           *state, [](auto& stmt) {
             QM_TRY_RETURN(MOZ_TO_RESULT_INVOKE_MEMBER(stmt, GetInt64, 0));
           })));
+}
+
+nsresult DeleteEmptyOrphanedCaches(mozIStorageConnection& aConn) {
+  MOZ_ASSERT(!NS_IsMainThread());
+
+  QM_TRY(MOZ_TO_RESULT(aConn.ExecuteSimpleSQL(
+      "DELETE FROM caches WHERE id NOT IN (SELECT cache_id FROM storage) "
+      "AND NOT EXISTS (SELECT 1 FROM entries WHERE cache_id=caches.id);"_ns)));
+
+  return NS_OK;
+}
+
+nsresult DeleteAllOrphanedEntries(mozIStorageConnection& aConn) {
+  MOZ_ASSERT(!NS_IsMainThread());
+
+  // entries_delete_trigger subtracts the body disk sizes from usage_info, and
+  // dependent records are removed via ON DELETE CASCADE.
+  QM_TRY(MOZ_TO_RESULT(aConn.ExecuteSimpleSQL(
+      "DELETE FROM entries WHERE pending_deletion=1;"_ns)));
+
+  return NS_OK;
+}
+
+Result<OrphanedBodies, nsresult> FindOrphanedBodies(
+    mozIStorageConnection& aConn) {
+  MOZ_ASSERT(!NS_IsMainThread());
+
+  QM_TRY_INSPECT(const auto& state,
+                 MOZ_TO_RESULT_INVOKE_MEMBER_TYPED(
+                     nsCOMPtr<mozIStorageStatement>, aConn, CreateStatement,
+                     "SELECT request_body_id, response_body_id, "
+                     "ifnull(request_body_disk_size, 0) + "
+                     "ifnull(response_body_disk_size, 0) "
+                     "FROM entries WHERE pending_deletion=1;"_ns));
+
+  OrphanedBodies orphanedBodies;
+  QM_TRY(quota::CollectWhileHasResult(
+      *state, [&orphanedBodies](auto& stmt) -> Result<Ok, nsresult> {
+        // extract up to 2 nsID structs per row
+        for (uint32_t i = 0; i < 2; ++i) {
+          QM_TRY_INSPECT(const bool& isNull,
+                         MOZ_TO_RESULT_INVOKE_MEMBER(stmt, GetIsNull, i));
+          if (!isNull) {
+            QM_TRY_INSPECT(const auto& id, ExtractId(stmt, i));
+            orphanedBodies.mBodyIdList.AppendElement(id);
+          }
+        }
+
+        QM_TRY_INSPECT(const int64_t& diskSize,
+                       MOZ_TO_RESULT_INVOKE_MEMBER(stmt, GetInt64, 2));
+        MOZ_ASSERT(diskSize >= 0);
+        orphanedBodies.mDiskSize += diskSize;
+
+        return Ok{};
+      }));
+
+  return orphanedBodies;
+}
+
+namespace {
+// Helper function for the SQL update for deleting orphan bodies.
+// Used by DeleteOrphanedBodyIds. Returns the disk size the database recorded
+// for the detached bodies.
+Result<int64_t, nsresult> DeleteOrphanedBodyIdsDb(
+    mozIStorageConnection& aConn, const nsLiteralCString& aBodyType,
+    const nsTArray<nsCString>& aBodyIds) {
+  MOZ_ASSERT(!NS_IsMainThread());
+  MOZ_ASSERT(aBodyType == "request_body" || aBodyType == "response_body");
+
+  const nsCString whereClause = "WHERE pending_deletion=1 AND "_ns + aBodyType +
+                                "_id IN carray(:ids);"_ns;
+
+  // Sum what entries_update_trigger will subtract from usage_info below.
+  QM_TRY_INSPECT(
+      const auto& sumState,
+      MOZ_TO_RESULT_INVOKE_MEMBER_TYPED(
+          nsCOMPtr<mozIStorageStatement>, aConn, CreateStatement,
+          "SELECT ifnull(SUM("_ns + aBodyType + "_disk_size), 0) "_ns +
+              "FROM entries "_ns + whereClause));
+  QM_TRY(MOZ_TO_RESULT(
+      sumState->BindArrayOfUTF8StringsByName("ids"_ns, aBodyIds)));
+  QM_TRY_INSPECT(const DebugOnly<bool> hasResult,
+                 MOZ_TO_RESULT_INVOKE_MEMBER(sumState, ExecuteStep));
+  MOZ_ASSERT(hasResult);
+  QM_TRY_INSPECT(const int64_t& diskSize,
+                 MOZ_TO_RESULT_INVOKE_MEMBER(*sumState, GetInt64, 0));
+  MOZ_ASSERT(diskSize >= 0);
+
+  // Detaching a body from its entry makes entries_update_trigger subtract its
+  // disk size from usage_info.
+  QM_TRY_INSPECT(const auto& state,
+                 MOZ_TO_RESULT_INVOKE_MEMBER_TYPED(
+                     nsCOMPtr<mozIStorageStatement>, aConn, CreateStatement,
+                     "UPDATE entries SET "_ns + aBodyType + "_id=NULL, "_ns +
+                         aBodyType + "_disk_size=0 "_ns + whereClause));
+  QM_TRY(
+      MOZ_TO_RESULT(state->BindArrayOfUTF8StringsByName("ids"_ns, aBodyIds)));
+  QM_TRY(MOZ_TO_RESULT(state->Execute()));
+
+  return diskSize;
+}
+}  // namespace
+
+Result<int64_t, nsresult> DeleteOrphanedBodyIds(
+    mozIStorageConnection& aConn, const nsTArray<nsID>& aBodyIdList) {
+  MOZ_ASSERT(!NS_IsMainThread());
+
+  int64_t diskSize = 0;
+
+  if (!aBodyIdList.IsEmpty()) {
+    nsTArray<nsCString> bodyIds(aBodyIdList.Length());
+    for (const nsID& bodyId : aBodyIdList) {
+      bodyIds.AppendElement(bodyId.ToString().get());
+    }
+
+    QM_TRY_INSPECT(const int64_t& requestDiskSize,
+                   DeleteOrphanedBodyIdsDb(aConn, "request_body"_ns, bodyIds));
+    QM_TRY_INSPECT(const int64_t& responseDiskSize,
+                   DeleteOrphanedBodyIdsDb(aConn, "response_body"_ns, bodyIds));
+
+    diskSize = requestDiskSize + responseDiskSize;
+  }
+
+  QM_TRY(MOZ_TO_RESULT(DeleteOrphanedEntriesWithoutBodies(aConn)));
+
+  return diskSize;
 }
 
 Result<int64_t, nsresult> FindOverallPaddingSize(mozIStorageConnection& aConn) {
@@ -1036,11 +1179,11 @@ Result<EntryIds, nsresult> QueryAll(mozIStorageConnection& aConn,
                                     CacheId aCacheId) {
   MOZ_ASSERT(!NS_IsMainThread());
 
-  QM_TRY_INSPECT(
-      const auto& state,
-      MOZ_TO_RESULT_INVOKE_MEMBER_TYPED(
-          nsCOMPtr<mozIStorageStatement>, aConn, CreateStatement,
-          "SELECT id FROM entries WHERE cache_id=:cache_id ORDER BY id;"_ns));
+  QM_TRY_INSPECT(const auto& state,
+                 MOZ_TO_RESULT_INVOKE_MEMBER_TYPED(
+                     nsCOMPtr<mozIStorageStatement>, aConn, CreateStatement,
+                     "SELECT id FROM entries WHERE cache_id=:cache_id "
+                     "AND pending_deletion=0 ORDER BY id;"_ns));
 
   QM_TRY(MOZ_TO_RESULT(state->BindInt64ByName("cache_id"_ns, aCacheId)));
 
@@ -1076,6 +1219,7 @@ Result<EntryIds, nsresult> QueryCache(mozIStorageConnection& aConn,
       "SELECT id, response_type, request_url_no_query, request_url_query "
       "FROM entries "
       "WHERE entries.cache_id=:cache_id "
+      "AND entries.pending_deletion=0 "
       "AND entries.request_url_no_query_hash=:url_no_query_hash ");
 
   if (!aParams.ignoreSearch()) {
@@ -1361,9 +1505,15 @@ static nsresult SelectAndDeleteEntriesInternal(
 
   aDeletedPaddingSizeOut += overallPaddingSize;
 
-  // Dependent records removed via ON DELETE CASCADE
+  // The entries are only marked as pending deletion, since content may still
+  // be reading their body files. They are deleted by DeleteOrphanedBodyIds()
+  // once the files are, and dependent records are removed via ON DELETE
+  // CASCADE at that point.
 
-  query = "DELETE FROM entries WHERE id IN ("_ns;
+  query =
+      "UPDATE entries SET pending_deletion=1, "
+      "response_security_info_id=NULL, response_padding_size=0 "
+      "WHERE id IN ("_ns;
   AppendListParamsToQuery(query, aEntryIdList.Length());
   query.AppendLiteral(")");
 
@@ -1401,15 +1551,17 @@ static nsresult DeleteEntriesInternal(
     // so split up larger operations.
     auto currLen = std::min(kMaxEntriesPerStatement, remaining);
 
-    SelectAndDeleteEntriesInternal(
+    QM_TRY(MOZ_TO_RESULT(SelectAndDeleteEntriesInternal(
         aConn, Span<const EntryId>(aEntryIdList.Elements() + currPos, currLen),
         aDeletedBodyIdListOut, aDeletedSecurityIdListOut,
-        aDeletedPaddingSizeOut);
+        aDeletedPaddingSizeOut)));
 
     remaining -= currLen;
     currPos += currLen;
 
   } while (remaining > 0);
+
+  QM_TRY(MOZ_TO_RESULT(DeleteOrphanedEntriesWithoutBodies(aConn)));
 
   return NS_OK;
 }
@@ -1457,7 +1609,8 @@ DeleteAllCacheEntries(mozIStorageConnection& aConn, CacheId& aCacheId) {
       "response_body_id, "
       "response_security_info_id, "
       "response_padding_size "
-      "FROM entries WHERE cache_id=:cache_id ORDER BY id;"_ns);
+      "FROM entries WHERE cache_id=:cache_id AND pending_deletion=0 "
+      "ORDER BY id;"_ns);
 
   QM_TRY_INSPECT(const auto& state, MOZ_TO_RESULT_INVOKE_MEMBER_TYPED(
                                         nsCOMPtr<mozIStorageStatement>, aConn,
@@ -1529,9 +1682,13 @@ DeleteAllCacheEntries(mozIStorageConnection& aConn, CacheId& aCacheId) {
         return Ok{};
       }));
 
-  // Dependent records removed via ON DELETE CASCADE
-
-  query = "DELETE FROM entries WHERE cache_id=:cache_id"_ns;
+  // Mark the entries as pending deletion. Do not delete them yet, since content
+  // may still be reading their body files.
+  // See SelectAndDeleteEntriesInternal() for details.
+  query =
+      "UPDATE entries SET pending_deletion=1, "
+      "response_security_info_id=NULL, response_padding_size=0 "
+      "WHERE cache_id=:cache_id AND pending_deletion=0;"_ns;
 
   {
     QM_TRY_INSPECT(const auto& state, MOZ_TO_RESULT_INVOKE_MEMBER_TYPED(
@@ -1542,7 +1699,20 @@ DeleteAllCacheEntries(mozIStorageConnection& aConn, CacheId& aCacheId) {
     QM_TRY(MOZ_TO_RESULT(state->Execute()));
   }
 
+  QM_TRY(MOZ_TO_RESULT(DeleteOrphanedEntriesWithoutBodies(aConn)));
+
   return result;
+}
+
+nsresult DeleteOrphanedEntriesWithoutBodies(mozIStorageConnection& aConn) {
+  MOZ_ASSERT(!NS_IsMainThread());
+
+  // Dependent records removed via ON DELETE CASCADE
+  QM_TRY(MOZ_TO_RESULT(aConn.ExecuteSimpleSQL(
+      "DELETE FROM entries WHERE pending_deletion=1 "
+      "AND request_body_id IS NULL AND response_body_id IS NULL;"_ns)));
+
+  return NS_OK;
 }
 
 Result<int32_t, nsresult> InsertSecurityInfo(
@@ -2498,6 +2668,8 @@ nsresult Validate(mozIStorageConnection& aConn) {
       Expect("security_info_hash_index", "index", kIndexSecurityInfoHash),
       Expect("entries", "table", kTableEntries),
       Expect("entries_request_match_index", "index", kIndexEntriesRequest),
+      Expect("entries_pending_deletion_index", "index",
+             kIndexEntriesPendingDeletion),
       Expect("request_headers", "table", kTableRequestHeaders),
       Expect("response_headers", "table", kTableResponseHeaders),
       Expect("response_headers_entry_id_index", "index",
@@ -2614,6 +2786,8 @@ nsresult MigrateFrom30To31(nsIFile& aDBDir, mozIStorageConnection& aConn,
                            bool& aRewriteSchema);
 nsresult MigrateFrom31To32(nsIFile& aDBDir, mozIStorageConnection& aConn,
                            bool& aRewriteSchema);
+nsresult MigrateFrom32To33(nsIFile& aDBDir, mozIStorageConnection& aConn,
+                           bool& aRewriteSchema);
 // Configure migration functions to run for the given starting version.
 constexpr Migration sMigrationList[] = {
     Migration{15, MigrateFrom15To16}, Migration{16, MigrateFrom16To17},
@@ -2624,8 +2798,7 @@ constexpr Migration sMigrationList[] = {
     Migration{25, MigrateFrom25To26}, Migration{26, MigrateFrom26To27},
     Migration{27, MigrateFrom27To28}, Migration{28, MigrateFrom28To29},
     Migration{29, MigrateFrom29To30}, Migration{30, MigrateFrom30To31},
-    Migration{31, MigrateFrom31To32},
-};
+    Migration{31, MigrateFrom31To32}, Migration{32, MigrateFrom32To33}};
 
 nsresult RewriteEntriesSchema(mozIStorageConnection& aConn) {
   QM_TRY(
@@ -3313,6 +3486,24 @@ nsresult MigrateFrom31To32(nsIFile& aDBDir, mozIStorageConnection& aConn,
       aConn.ExecuteSimpleSQL("DROP INDEX response_headers_name_index "_ns)));
 
   QM_TRY(MOZ_TO_RESULT(aConn.SetSchemaVersion(32)));
+
+  return NS_OK;
+}
+
+nsresult MigrateFrom32To33(nsIFile& aDBDir, mozIStorageConnection& aConn,
+                           bool& aRewriteSchema) {
+  MOZ_ASSERT(!NS_IsMainThread());
+
+  QM_TRY(MOZ_TO_RESULT(aConn.ExecuteSimpleSQL(
+      "ALTER TABLE entries "
+      "ADD COLUMN pending_deletion INTEGER NOT NULL DEFAULT 0;"_ns)));
+
+  QM_TRY(MOZ_TO_RESULT(
+      aConn.ExecuteSimpleSQL(nsLiteralCString(kIndexEntriesPendingDeletion))));
+
+  QM_TRY(MOZ_TO_RESULT(aConn.SetSchemaVersion(33)));
+
+  aRewriteSchema = true;
 
   return NS_OK;
 }

@@ -51,11 +51,20 @@ nsresult BodyMaybeUpdatePaddingSize(
     const CacheDirectoryMetadata& aDirectoryMetadata, nsIFile& aBaseDir,
     const nsID& aId, uint32_t aPaddingInfo, int64_t* aPaddingSizeInOut);
 
-nsresult BodyDeleteFiles(const CacheDirectoryMetadata& aDirectoryMetadata,
-                         nsIFile& aBaseDir, const nsTArray<nsID>& aIdList);
+// Delete the body files, which the database must no longer account for. With
+// aTrackQuota, the quota usage is decreased by the size of each file found on
+// disk, for files the database never recorded. Without it, the caller has
+// already decreased the usage by the sizes the database recorded. Any failure
+// sets aHasOrphanData, so the marker file is kept and the leftover files, now
+// unknown to both the database and the usage, are removed on the next open (see
+// BodyDeleteOrphanedFiles call in SetupAction).
+void BodyDeleteFiles(const CacheDirectoryMetadata& aDirectoryMetadata,
+                     nsIFile& aBaseDir, const nsTArray<nsID>& aIdList,
+                     bool aTrackQuota, bool* aHasOrphanData);
 
 // Traverse all cache directorys and do a cleanup, leaving only files that
-// belong to known body ids behind.
+// belong to known body ids behind. The removed files are unknown to the
+// database and thus not part of the quota usage, which is left untouched.
 nsresult BodyDeleteOrphanedFiles(
     const CacheDirectoryMetadata& aDirectoryMetadata, nsIFile& aBaseDir,
     nsTHashSet<nsID>& aKnownBodyIds);

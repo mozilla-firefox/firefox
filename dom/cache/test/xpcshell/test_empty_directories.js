@@ -24,9 +24,7 @@ async function setUpEnv() {
 
   // clean the cache directoy
   for (let dir of morgueDir.directoryEntries) {
-    for (let file of dir.directoryEntries) {
-      file.remove(false);
-    }
+    dir.remove(true);
   }
 
   await resetStorage();
@@ -65,7 +63,7 @@ add_task(async function testSteps() {
   let response = await cache.match(url);
   ok(!!response, "Upgrade from 25 to 26 do succeed");
 
-  info("Test 1 - DeleteOrphanedBodyFiles shouldn't leave an empty directoy");
+  info("Test 1 - BodyDeleteFiles shouldn't leave an empty directory");
 
   await cache.put(url, response.clone());
   // eslint-disable-next-line no-unused-vars

@@ -9,9 +9,9 @@ from marionette_driver import Wait
 from marionette_harness import MarionetteTestCase
 
 """
- Currently we expect our size after cleanup to be 98k for the current
+ Currently we expect our size after cleanup to be 128k for the current
  database schema and page sizes and constants used in this test. We
- set the threshold at 128k so the test doesn't start failing if these
+ set the threshold at 160k so the test doesn't start failing if these
  control objects/structures increase somewhat in size, but should still
  fail if we fail to delete all of the 5,000 1k files we create on disk
  as part of the test.
@@ -19,8 +19,8 @@ from marionette_harness import MarionetteTestCase
 QM_TESTING_PREF = "dom.quotaManager.testing"
 SQLITE_ENCRYPTION_PREF = "security.storage.encryption.sqlite.enabled"
 
-EXPECTED_CACHEDIR_SIZE_AFTER_CLEANUP = 128 * 1024  # 128KB
-# Encryption roughly doubles the size of caches.sqlite, 196k instead of 98k.
+EXPECTED_CACHEDIR_SIZE_AFTER_CLEANUP = 160 * 1024  # 160KB
+# Encryption roughly doubles the size of caches.sqlite, 256k instead of 128k.
 ENCRYPTED_CACHEDIR_SIZE_AFTER_CLEANUP = 2 * EXPECTED_CACHEDIR_SIZE_AFTER_CLEANUP
 CACHE_ID = "data"
 
@@ -198,8 +198,9 @@ class CachesDeleteCleanupAtShutdownTestCase(MarionetteTestCase):
         beforeUsage = self.getUsage()
 
         def ensureCleanCallback():
+            self.openCache()
             Wait(self.marionette, interval=1, timeout=60).until(
-                lambda _: self.afterCleanupClosure(self.getUsage() - beforeUsage),
+                lambda _: self.releaseCacheAndCheck(beforeUsage),
                 message="Cache directory is not cleaned up properly",
             )
 

@@ -5,73 +5,15 @@
 <head>
   <title>Test Cache generate padding size for opaque repsonse</title>
   <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="helpers.js"></script>
   <script type="text/javascript" src="large_url_list.js"></script>
   <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
 </head>
 <body>
 <script class="testbody" type="text/javascript">
-function setupTestIframe() {
-  return new Promise(function(resolve) {
-    var iframe = document.createElement("iframe");
-    iframe.src = "empty.html";
-    iframe.onload = function() {
-      window.caches = iframe.contentWindow.caches;
-      resolve();
-    };
-    document.body.appendChild(iframe);
-  });
-}
-
-function clearStorage() {
-  return new Promise(function(resolve) {
-    var qms = SpecialPowers.Services.qms;
-    var principal = SpecialPowers.wrap(document).nodePrincipal;
-    var request = qms.clearStoragesForPrincipal(principal);
-    var cb = SpecialPowers.wrapCallback(resolve);
-    request.callback = cb;
-  });
-}
-
-function resetStorage() {
-  return new Promise(function(resolve) {
-    var qms = SpecialPowers.Services.qms;
-    var principal = SpecialPowers.wrap(document).nodePrincipal;
-    var request = qms.resetStoragesForPrincipal(principal);
-    var cb = SpecialPowers.wrapCallback(resolve);
-    request.callback = cb;
-  });
-}
-
-function getStorageUsage() {
-  return new Promise(function(resolve) {
-    var qms = SpecialPowers.Services.qms;
-    var principal = SpecialPowers.wrap(document).nodePrincipal;
-    var cb = SpecialPowers.wrapCallback(function(request) {
-      var result = request.result;
-      resolve(result.usage);
-    });
-    qms.getUsageForPrincipal(principal, cb);
-  });
-}
-
-function getCachedStorageUsage() {
-  return new Promise(function(resolve) {
-    var qms = SpecialPowers.Services.qms;
-    var principal = SpecialPowers.wrap(document).nodePrincipal;
-    var cb = SpecialPowers.wrapCallback(function(request) {
-      var result = request.result;
-      resolve(result);
-    });
-    var request = qms.getCachedUsageForPrincipal(principal);
-    request.callback = cb;
-  });
-}
-
 async function verifyUsage() {
-  // This returns origin usage by calculating it from an in-memory object.
-  let memoryUsage = await getCachedStorageUsage();
-  // This returns origin usage by calculating it from file sizes on disk.
-  let diskUsage = await getStorageUsage();
+  let memoryUsage = await cachedStorageUsage();
+  let diskUsage = await storageUsage();
 
   is(memoryUsage, diskUsage,
      "In-memory usage and disk usage should be the same.");
@@ -88,10 +30,6 @@ async function waitForIOToComplete(cache, request) {
   return resetStorage();
 }
 
-function fetchOpaqueResponse(url) {
-  return fetch(url, { mode: "no-cors" });
-}
-
 // This test (and the underlying implementation being tested) relies on the
 // implementation details of sqlite. In particular, when using the obfuscating
 // VFS in private contexts [0][1], reserving 32 bytes per page [2] for the
@@ -99,13 +37,19 @@ function fetchOpaqueResponse(url) {
 // the serialized security info [3] exceeds 8119 bytes. The growth size is
 // 32KiB [4], which means that in private contexts, the given values that are
 // supposed to be equal here will be off by that amount.
+// More generally, free pages are only released past a one-chunk hysteresis
+// (see IncrementalVacuum in DBSchema.cpp), so whether the database shrinks
+// back to its previous size depends on the page layout, which changes with
+// the schema. Padding is a multiple of kRoundUpNumber (128KiB [5]), so a
+// one-chunk difference cannot hide a padding error.
 // [0] https://searchfox.org/firefox-main/rev/3aff965e839b7872bf48a9803b80669ca49276ac/dom/cache/Manager.cpp#79
 // [1] https://searchfox.org/firefox-main/rev/3aff965e839b7872bf48a9803b80669ca49276ac/storage/mozStorageConnection.cpp#1175
 // [2] https://searchfox.org/firefox-main/rev/1b3787c361452ef9c9e37d8ffd4c414135d547f5/storage/ObfuscatingVFS.cpp#309
 // [3] https://searchfox.org/firefox-main/rev/3aff965e839b7872bf48a9803b80669ca49276ac/security/manager/ssl/TransportSecurityInfo.cpp#114
 // [4] https://searchfox.org/firefox-main/rev/3aff965e839b7872bf48a9803b80669ca49276ac/dom/cache/DBSchema.cpp#255
+// [5] https://searchfox.org/firefox-main/rev/2ef09bbf347cd5c182552fdafb6d3e3da1864760/dom/cache/FileUtils.cpp#46
 function equalOrOffByOneGrowthChunk(a, b, message) {
-  if ((SpecialPowers.getBoolPref("browser.privatebrowsing.autostart") || SpecialPowers.getBoolPref("security.storage.encryption.sqlite.enabled")) && a != b) {
+  if (a != b) {
     b += 32768;
   }
   is(a, b, message);
@@ -215,7 +159,7 @@ SpecialPowers.pushPrefEnv({
 
   info("Stage 6: Verify the padding is removed once on caches.delete() and " +
        "cache.delete().");
-  // Add an opauqe response on other cache storage and then delete that storage.
+  // Add an opaque response on other cache storage and then delete that storage.
   cache = await caches.open(other_name);
   opaqueResponse = await fetchOpaqueResponse(cors_base + url);
   await cache.put(cors_base + url, opaqueResponse);
@@ -224,7 +168,7 @@ SpecialPowers.pushPrefEnv({
   // Force remove orphaned cached in the next action
   await resetStorage();
 
-  // Delete the opauqe repsonse on current cache storage.
+  // Delete the opaque repsonse on current cache storage.
   cache = await caches.open(name);
   await cache.delete(cors_base + url);
   await waitForIOToComplete(cache, url);
