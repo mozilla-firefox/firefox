@@ -309,6 +309,9 @@ class RemoteTextureMap {
   void UnregisterTextureOwners(const RemoteTextureOwnerIdSet& aOwnerIds,
                                const base::ProcessId aForPid);
 
+  // Forgets the pending ready checks of a process that has gone away.
+  void ClearDestroyedProcess(const base::ProcessId aForPid);
+
   void ClearRecycledTextures(
       const RemoteTextureOwnerIdSet& aOwnerIds, const base::ProcessId aForPid,
       const RefPtr<RemoteTextureRecycleBin>& aRecycleBin = nullptr);
@@ -471,6 +474,13 @@ class RemoteTextureMap {
       const MonitorAutoLock& aProofOfLock, const RemoteTextureOwnerId aOwnerId,
       const base::ProcessId aForPid);
 
+  // Whether the owner was registered and has since been unregistered, so it
+  // will never push another texture. This is only known while a
+  // RemoteTextureHostWrapper for the owner exists.
+  bool IsTextureOwnerGone(const MonitorAutoLock& aProofOfLock,
+                          const RemoteTextureOwnerId aOwnerId,
+                          const base::ProcessId aForPid);
+
   void NotifyTxn(const MonitorAutoLock& aProofOfLock,
                  const RemoteTextureOwnerId aOwnerId,
                  const base::ProcessId aForPid);
@@ -487,6 +497,17 @@ class RemoteTextureMap {
   std::map<std::pair<base::ProcessId, RemoteTextureOwnerId>,
            UniquePtr<TextureOwner>>
       mTextureOwners;
+
+  // Texture owners named by live RemoteTextureHostWrappers. This tells an owner
+  // that has been unregistered apart from one that is not registered yet, for
+  // as long as anything may still wait for it.
+  struct TextureOwnerConsumers {
+    uint32_t mWrapperCount = 0;
+    bool mWasRegistered = false;
+  };
+  std::map<std::pair<base::ProcessId, RemoteTextureOwnerId>,
+           TextureOwnerConsumers>
+      mTextureOwnerConsumers;
 
   std::map<std::pair<base::ProcessId, RemoteTextureId>,
            UniquePtr<RemoteTextureHostWrapperHolder>>
