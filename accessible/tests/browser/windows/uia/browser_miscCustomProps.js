@@ -48,3 +48,45 @@ addAccessibleTask(``, async function testIsWebContentRootBrowserUi() {
     "Browser UI IsWebContentRoot is false"
   );
 });
+
+/**
+ * Test the MathML property.
+ */
+addAccessibleTask(
+  `
+<math id="math" display="block"><mi id="mi">x</mi><mo>+</mo><mn id="mn">1</mn></math>
+<p id="p">p</p>
+  `,
+  async function testMathML(browser) {
+    await definePyVar("doc", `getDocUia()`);
+    await assignPyVarToUiaWithId("math");
+    is(
+      await runPython(`math.GetCurrentPropertyValue(uiaMathMLPropertyId)`),
+      `<math><mi id="mi">x</mi><mo>+</mo><mn id="mn">1</mn></math>`,
+      "math has correct MathML"
+    );
+    await assignPyVarToUiaWithId("mi");
+    ok(
+      !(await runPython(`mi.GetCurrentPropertyValue(uiaMathMLPropertyId)`)),
+      "mi has no MathML"
+    );
+    await assignPyVarToUiaWithId("p");
+    ok(
+      !(await runPython(`p.GetCurrentPropertyValue(uiaMathMLPropertyId)`)),
+      "p has no MathML"
+    );
+
+    info("Changing mn text");
+    const reordered = waitForEvent(EVENT_REORDER, "mn");
+    await invokeContentTask(browser, [], () => {
+      content.document.getElementById("mn").textContent = "2";
+    });
+    await reordered;
+    is(
+      await runPython(`math.GetCurrentPropertyValue(uiaMathMLPropertyId)`),
+      `<math><mi id="mi">x</mi><mo>+</mo><mn id="mn">2</mn></math>`,
+      "math has updated MathML"
+    );
+  },
+  { topLevel: true, iframe: true, remoteIframe: true }
+);

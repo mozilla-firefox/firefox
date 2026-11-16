@@ -27,6 +27,7 @@ enum class RelationType;
 struct UiaRegistrations {
   PROPERTYID mAccessibleActions = 0;
   PROPERTYID mIsWebContentRoot = 0;
+  PROPERTYID mMathML = 0;
 };
 
 /**

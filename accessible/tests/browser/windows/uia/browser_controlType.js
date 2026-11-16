@@ -7,11 +7,13 @@
 /* eslint-disable camelcase */
 const UIA_ButtonControlTypeId = 50000;
 const UIA_DocumentControlTypeId = 50030;
+const UIA_GroupControlTypeId = 50026;
 /* eslint-enable camelcase */
 
 addAccessibleTask(
   `
 <button id="button">button</button>
+<math id="math"><mi>x</mi></math>
   `,
   async function () {
     let controlType = await runPython(`
@@ -25,6 +27,11 @@ addAccessibleTask(
       return button.CurrentControlType
     `);
     is(controlType, UIA_ButtonControlTypeId, "button has correct control type");
+    controlType = await runPython(`
+      math = findUiaByDomId(doc, "math")
+      return math.CurrentControlType
+    `);
+    is(controlType, UIA_GroupControlTypeId, "math has correct control type");
   },
   { chrome: true, topLevel: true, iframe: true, remoteIframe: true }
 );

@@ -124,6 +124,15 @@ uiaIsWebContentRootPropertyId = uiaReg.RegisterProperty(
         )
     )
 )
+uiaMathMLPropertyId = uiaReg.RegisterProperty(
+    byref(
+        uiaCoreMod.UIAutomationPropertyInfo(
+            GUID("{FA170AB3-3229-4E7C-827F-DD05EE0481D9}"),
+            "MathML",
+            uiaCoreMod.UIAutomationType_String,
+        )
+    )
+)
 del uiaReg, uiaCoreMod
 
 _threadLocal = threading.local()
