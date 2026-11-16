@@ -172,7 +172,7 @@ private fun badgeState(status: IPProtectionStatus): MenuItemState =
         IPProtectionStatus.AwaitingService,
         IPProtectionStatus.Activating -> MenuItemState.ACTIVE
         IPProtectionStatus.ConnectionError -> MenuItemState.WARNING
-        IPProtectionStatus.DataLimitReached -> MenuItemState.DISABLED
+        IPProtectionStatus.DataLimitReached,
         IPProtectionStatus.Unavailable,
         IPProtectionStatus.Uninitialized,
         IPProtectionStatus.Disabled,

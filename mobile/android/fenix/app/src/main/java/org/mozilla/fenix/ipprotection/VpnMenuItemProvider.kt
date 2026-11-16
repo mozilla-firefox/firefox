@@ -197,7 +197,7 @@ private val IPProtectionStatus.badgeState: MenuItemState
             IPProtectionStatus.AwaitingService,
             IPProtectionStatus.Activating -> MenuItemState.ACTIVE
             IPProtectionStatus.ConnectionError -> MenuItemState.WARNING
-            IPProtectionStatus.DataLimitReached -> MenuItemState.DISABLED
+            IPProtectionStatus.DataLimitReached,
             IPProtectionStatus.Unavailable,
             IPProtectionStatus.Uninitialized,
             IPProtectionStatus.Disabled,

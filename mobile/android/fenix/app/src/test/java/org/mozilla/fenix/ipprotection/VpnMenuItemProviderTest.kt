@@ -283,7 +283,6 @@ class VpnMenuItemProviderTest {
         assertEquals(
             expectedItem(
                 badgeTextRes = R.string.ip_protection_menu_paused,
-                badgeState = MenuItemState.DISABLED,
                 state = MenuItemState.DISABLED,
             ),
             provider.itemsFlow.value.single(),
