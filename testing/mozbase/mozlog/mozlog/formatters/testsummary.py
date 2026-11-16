@@ -12,8 +12,9 @@ class TestSummaryFormatter(BaseFormatter):
     """Passthrough formatter that emits only:
       - `group_start`, `group_end`, `suite_start`, `suite_end`, `test_start`
         and `test_end` actions
-      - `test_status` actions where the status differs from the expected
-        status (i.e. the subtest result was unexpected)
+      - `test_status` actions whose status differs from the expected one
+        (unexpected or known intermittent subtest results), except those of
+        a run the harness will retry
       - `crash`, `asan_error`, `tsan_error` and `ubsan_error` actions
       - `log` actions of level ERROR or CRITICAL (failures not tied to a
         test, e.g. LeakSanitizer reports or harness errors)
@@ -65,7 +66,9 @@ class TestSummaryFormatter(BaseFormatter):
         if action not in self._ALLOWED_ACTIONS:
             return
         if action == "test_status" and (
-            "expected" not in data or data["expected"] == data.get("status")
+            "expected" not in data
+            or data["expected"] == data.get("status")
+            or data.get("will_retry")
         ):
             return
         if action == "log" and data.get("level") not in ("ERROR", "CRITICAL"):

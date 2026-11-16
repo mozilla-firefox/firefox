@@ -172,6 +172,29 @@ from mozlog.formatters import TestSummaryFormatter
             id="test_status_matching_expected_dropped",
         ),
         pytest.param(
+            {
+                "action": "test_status",
+                "test": "test_foo",
+                "subtest": "subtest1",
+                "status": "FAIL",
+                "expected": "PASS",
+                "known_intermittent": ["FAIL"],
+            },
+            True,
+            id="test_status_known_intermittent_kept",
+        ),
+        pytest.param(
+            {
+                "action": "test_status",
+                "test": "test_foo",
+                "subtest": "subtest1",
+                "status": "FAIL",
+                "will_retry": True,
+            },
+            False,
+            id="test_status_will_retry_dropped",
+        ),
+        pytest.param(
             {"action": "crash", "test": "test_foo", "signature": "sig"},
             True,
             id="crash_kept",
