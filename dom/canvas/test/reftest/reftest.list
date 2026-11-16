@@ -4,7 +4,7 @@ include filters/reftest.list
 include color_quads.list
 
 # WebGL Reftests!
-defaults pref(webgl.force-enabled,true) skip-if(Android)
+defaults pref(webgl.force-enabled,true)
 
 # Check that disabling works:
                           == webgl-disable-test.html?nogl wrapper.html?green.png
@@ -13,19 +13,19 @@ pref(webgl.disabled,true) == webgl-disable-test.html      wrapper.html?green.png
 # Basic WebGL tests:
 # Do we get pixels to the screen at all?
 # Neither of these should ever break.
-skip-if(Android) == webgl-clear-test.html wrapper.html?green.png
-skip-if(Android) == webgl-clear-test.html?readback wrapper.html?green.png
+== webgl-clear-test.html wrapper.html?green.png
+== webgl-clear-test.html?readback wrapper.html?green.png
 
 # Make sure that our choice of attribs doesn't break rendering.
-skip-if(Android) == webgl-clear-test.html?depth wrapper.html?green.png
-skip-if(Android) == webgl-clear-test.html?stencil wrapper.html?green.png
-skip-if(Android) == webgl-clear-test.html?depth&stencil wrapper.html?green.png
+== webgl-clear-test.html?depth wrapper.html?green.png
+== webgl-clear-test.html?stencil wrapper.html?green.png
+== webgl-clear-test.html?depth&stencil wrapper.html?green.png
 
 # Check that resize works:
-skip-if(Android) == webgl-resize-test.html  wrapper.html?green.png
+== webgl-resize-test.html  wrapper.html?green.png
 
 # Check that captureStream() displays in a local video element
-skip-if(Android) == webgl-capturestream-test.html?preserve wrapper.html?green.png
+== webgl-capturestream-test.html?preserve wrapper.html?green.png
 
 # IMPORTANT: Expected outcomes are evaluated left-to-right, and they replace eachother.
 # That means that if an unconditional status (`fuzzy()`) is to the right of another status
@@ -37,39 +37,39 @@ skip-if(Android) == webgl-capturestream-test.html?preserve wrapper.html?green.pn
 # Does we draw the correct colors in the correct places?
 # Combinations: PowerSet([readback, aa, preserve, premult, alpha]) x [frame=1,frame=6]
 # This is 2^6 = 64 combinations.
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=1&__&________&_______&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=1&aa&________&_______&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=1&__&preserve&_______&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=1&aa&preserve&_______&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=1&__&________&premult&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=1&aa&________&premult&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=1&__&preserve&premult&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=1&aa&preserve&premult&_____ wrapper.html?colors-no-alpha.png
-fuzzy(0-1,0-30000) skip-if(Android) == webgl-color-test.html?frame=1&__&________&_______&alpha wrapper.html?colors-non-premult.png
-fuzzy(0-1,0-30000) skip-if(Android) == webgl-color-test.html?frame=1&aa&________&_______&alpha wrapper.html?colors-non-premult.png
-fuzzy(0-1,0-30000) skip-if(Android) == webgl-color-test.html?frame=1&__&preserve&_______&alpha wrapper.html?colors-non-premult.png
-fuzzy(0-1,0-30000) skip-if(Android) == webgl-color-test.html?frame=1&aa&preserve&_______&alpha wrapper.html?colors-non-premult.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=1&__&________&premult&alpha wrapper.html?colors-premult.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=1&aa&________&premult&alpha wrapper.html?colors-premult.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=1&__&preserve&premult&alpha wrapper.html?colors-premult.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=1&aa&preserve&premult&alpha wrapper.html?colors-premult.png
+== webgl-color-test.html?frame=1&__&________&_______&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-test.html?frame=1&aa&________&_______&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-test.html?frame=1&__&preserve&_______&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-test.html?frame=1&aa&preserve&_______&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-test.html?frame=1&__&________&premult&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-test.html?frame=1&aa&________&premult&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-test.html?frame=1&__&preserve&premult&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-test.html?frame=1&aa&preserve&premult&_____ wrapper.html?colors-no-alpha.png
+fuzzy(0-1,0-30000) == webgl-color-test.html?frame=1&__&________&_______&alpha wrapper.html?colors-non-premult.png
+fuzzy(0-1,0-30000) == webgl-color-test.html?frame=1&aa&________&_______&alpha wrapper.html?colors-non-premult.png
+fuzzy(0-1,0-30000) == webgl-color-test.html?frame=1&__&preserve&_______&alpha wrapper.html?colors-non-premult.png
+fuzzy(0-1,0-30000) == webgl-color-test.html?frame=1&aa&preserve&_______&alpha wrapper.html?colors-non-premult.png
+== webgl-color-test.html?frame=1&__&________&premult&alpha wrapper.html?colors-premult.png
+== webgl-color-test.html?frame=1&aa&________&premult&alpha wrapper.html?colors-premult.png
+== webgl-color-test.html?frame=1&__&preserve&premult&alpha wrapper.html?colors-premult.png
+== webgl-color-test.html?frame=1&aa&preserve&premult&alpha wrapper.html?colors-premult.png
 
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=6&__&________&_______&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=6&aa&________&_______&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=6&__&preserve&_______&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=6&aa&preserve&_______&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=6&__&________&premult&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=6&aa&________&premult&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=6&__&preserve&premult&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=6&aa&preserve&premult&_____ wrapper.html?colors-no-alpha.png
-fuzzy(0-1,0-30000) skip-if(Android) == webgl-color-test.html?frame=6&__&________&_______&alpha wrapper.html?colors-non-premult.png
-fuzzy(0-1,0-30000) skip-if(Android) == webgl-color-test.html?frame=6&aa&________&_______&alpha wrapper.html?colors-non-premult.png
-fuzzy(0-1,0-30000) skip-if(Android) == webgl-color-test.html?frame=6&__&preserve&_______&alpha wrapper.html?colors-non-premult.png
-fuzzy(0-1,0-30000) skip-if(Android) == webgl-color-test.html?frame=6&aa&preserve&_______&alpha wrapper.html?colors-non-premult.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=6&__&________&premult&alpha wrapper.html?colors-premult.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=6&aa&________&premult&alpha wrapper.html?colors-premult.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=6&__&preserve&premult&alpha wrapper.html?colors-premult.png
-skip-if(Android)                                                                                                        == webgl-color-test.html?frame=6&aa&preserve&premult&alpha wrapper.html?colors-premult.png
+== webgl-color-test.html?frame=6&__&________&_______&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-test.html?frame=6&aa&________&_______&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-test.html?frame=6&__&preserve&_______&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-test.html?frame=6&aa&preserve&_______&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-test.html?frame=6&__&________&premult&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-test.html?frame=6&aa&________&premult&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-test.html?frame=6&__&preserve&premult&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-test.html?frame=6&aa&preserve&premult&_____ wrapper.html?colors-no-alpha.png
+fuzzy(0-1,0-30000) == webgl-color-test.html?frame=6&__&________&_______&alpha wrapper.html?colors-non-premult.png
+fuzzy(0-1,0-30000) == webgl-color-test.html?frame=6&aa&________&_______&alpha wrapper.html?colors-non-premult.png
+fuzzy(0-1,0-30000) == webgl-color-test.html?frame=6&__&preserve&_______&alpha wrapper.html?colors-non-premult.png
+fuzzy(0-1,0-30000) == webgl-color-test.html?frame=6&aa&preserve&_______&alpha wrapper.html?colors-non-premult.png
+== webgl-color-test.html?frame=6&__&________&premult&alpha wrapper.html?colors-premult.png
+== webgl-color-test.html?frame=6&aa&________&premult&alpha wrapper.html?colors-premult.png
+== webgl-color-test.html?frame=6&__&preserve&premult&alpha wrapper.html?colors-premult.png
+== webgl-color-test.html?frame=6&aa&preserve&premult&alpha wrapper.html?colors-premult.png
 
 == webgl-color-test.html?frame=1&readback&__&________&_______&_____ wrapper.html?colors-no-alpha.png
 == webgl-color-test.html?frame=1&readback&aa&________&_______&_____ wrapper.html?colors-no-alpha.png
@@ -106,39 +106,39 @@ fuzzy(0-1,0-30000) == webgl-color-test.html?frame=6&readback&aa&preserve&_______
 == webgl-color-test.html?frame=6&readback&aa&preserve&premult&alpha wrapper.html?colors-premult.png
 
 # OffscreenCanvas variant of the above.
-skip-if(Android) == webgl-color-offscreen-test.html?frame=1&__&________&_______&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=1&aa&________&_______&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=1&__&preserve&_______&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=1&aa&preserve&_______&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=1&__&________&premult&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=1&aa&________&premult&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=1&__&preserve&premult&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=1&aa&preserve&premult&_____ wrapper.html?colors-no-alpha.png
-fuzzy(0-1,0-30000) skip-if(Android) == webgl-color-offscreen-test.html?frame=1&__&________&_______&alpha wrapper.html?colors-non-premult.png
-fuzzy(0-1,0-30000) skip-if(Android) == webgl-color-offscreen-test.html?frame=1&aa&________&_______&alpha wrapper.html?colors-non-premult.png
-fuzzy(0-1,0-30000) skip-if(Android) == webgl-color-offscreen-test.html?frame=1&__&preserve&_______&alpha wrapper.html?colors-non-premult.png
-fuzzy(0-1,0-30000) skip-if(Android) == webgl-color-offscreen-test.html?frame=1&aa&preserve&_______&alpha wrapper.html?colors-non-premult.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=1&__&________&premult&alpha wrapper.html?colors-premult.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=1&aa&________&premult&alpha wrapper.html?colors-premult.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=1&__&preserve&premult&alpha wrapper.html?colors-premult.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=1&aa&preserve&premult&alpha wrapper.html?colors-premult.png
+== webgl-color-offscreen-test.html?frame=1&__&________&_______&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-offscreen-test.html?frame=1&aa&________&_______&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-offscreen-test.html?frame=1&__&preserve&_______&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-offscreen-test.html?frame=1&aa&preserve&_______&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-offscreen-test.html?frame=1&__&________&premult&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-offscreen-test.html?frame=1&aa&________&premult&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-offscreen-test.html?frame=1&__&preserve&premult&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-offscreen-test.html?frame=1&aa&preserve&premult&_____ wrapper.html?colors-no-alpha.png
+fuzzy(0-1,0-30000) == webgl-color-offscreen-test.html?frame=1&__&________&_______&alpha wrapper.html?colors-non-premult.png
+fuzzy(0-1,0-30000) == webgl-color-offscreen-test.html?frame=1&aa&________&_______&alpha wrapper.html?colors-non-premult.png
+fuzzy(0-1,0-30000) == webgl-color-offscreen-test.html?frame=1&__&preserve&_______&alpha wrapper.html?colors-non-premult.png
+fuzzy(0-1,0-30000) == webgl-color-offscreen-test.html?frame=1&aa&preserve&_______&alpha wrapper.html?colors-non-premult.png
+== webgl-color-offscreen-test.html?frame=1&__&________&premult&alpha wrapper.html?colors-premult.png
+== webgl-color-offscreen-test.html?frame=1&aa&________&premult&alpha wrapper.html?colors-premult.png
+== webgl-color-offscreen-test.html?frame=1&__&preserve&premult&alpha wrapper.html?colors-premult.png
+== webgl-color-offscreen-test.html?frame=1&aa&preserve&premult&alpha wrapper.html?colors-premult.png
 
-skip-if(Android) == webgl-color-offscreen-test.html?frame=6&__&________&_______&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=6&aa&________&_______&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=6&__&preserve&_______&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=6&aa&preserve&_______&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=6&__&________&premult&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=6&aa&________&premult&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=6&__&preserve&premult&_____ wrapper.html?colors-no-alpha.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=6&aa&preserve&premult&_____ wrapper.html?colors-no-alpha.png
-fuzzy(0-1,0-30000) skip-if(Android) == webgl-color-offscreen-test.html?frame=6&__&________&_______&alpha wrapper.html?colors-non-premult.png
-fuzzy(0-1,0-30000) skip-if(Android) == webgl-color-offscreen-test.html?frame=6&aa&________&_______&alpha wrapper.html?colors-non-premult.png
-fuzzy(0-1,0-30000) skip-if(Android) == webgl-color-offscreen-test.html?frame=6&__&preserve&_______&alpha wrapper.html?colors-non-premult.png
-fuzzy(0-1,0-30000) skip-if(Android) == webgl-color-offscreen-test.html?frame=6&aa&preserve&_______&alpha wrapper.html?colors-non-premult.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=6&__&________&premult&alpha wrapper.html?colors-premult.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=6&aa&________&premult&alpha wrapper.html?colors-premult.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=6&__&preserve&premult&alpha wrapper.html?colors-premult.png
-skip-if(Android) == webgl-color-offscreen-test.html?frame=6&aa&preserve&premult&alpha wrapper.html?colors-premult.png
+== webgl-color-offscreen-test.html?frame=6&__&________&_______&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-offscreen-test.html?frame=6&aa&________&_______&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-offscreen-test.html?frame=6&__&preserve&_______&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-offscreen-test.html?frame=6&aa&preserve&_______&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-offscreen-test.html?frame=6&__&________&premult&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-offscreen-test.html?frame=6&aa&________&premult&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-offscreen-test.html?frame=6&__&preserve&premult&_____ wrapper.html?colors-no-alpha.png
+== webgl-color-offscreen-test.html?frame=6&aa&preserve&premult&_____ wrapper.html?colors-no-alpha.png
+fuzzy(0-1,0-30000) == webgl-color-offscreen-test.html?frame=6&__&________&_______&alpha wrapper.html?colors-non-premult.png
+fuzzy(0-1,0-30000) == webgl-color-offscreen-test.html?frame=6&aa&________&_______&alpha wrapper.html?colors-non-premult.png
+fuzzy(0-1,0-30000) == webgl-color-offscreen-test.html?frame=6&__&preserve&_______&alpha wrapper.html?colors-non-premult.png
+fuzzy(0-1,0-30000) == webgl-color-offscreen-test.html?frame=6&aa&preserve&_______&alpha wrapper.html?colors-non-premult.png
+== webgl-color-offscreen-test.html?frame=6&__&________&premult&alpha wrapper.html?colors-premult.png
+== webgl-color-offscreen-test.html?frame=6&aa&________&premult&alpha wrapper.html?colors-premult.png
+== webgl-color-offscreen-test.html?frame=6&__&preserve&premult&alpha wrapper.html?colors-premult.png
+== webgl-color-offscreen-test.html?frame=6&aa&preserve&premult&alpha wrapper.html?colors-premult.png
 
 == webgl-color-offscreen-test.html?frame=1&readback&__&________&_______&_____ wrapper.html?colors-no-alpha.png
 == webgl-color-offscreen-test.html?frame=1&readback&aa&________&_______&_____ wrapper.html?colors-no-alpha.png
@@ -176,17 +176,17 @@ fuzzy(0-1,0-30000) == webgl-color-offscreen-test.html?frame=6&readback&aa&preser
 
 
 # Check for hanging bindings/state settings:
-skip-if(Android) == webgl-hanging-fb-test.html?__&________  wrapper.html?green.png
-skip-if(Android) == webgl-hanging-fb-test.html?aa&________  wrapper.html?green.png
-skip-if(Android) == webgl-hanging-fb-test.html?__&preserve  wrapper.html?green.png
-skip-if(Android) == webgl-hanging-fb-test.html?aa&preserve  wrapper.html?green.png
+== webgl-hanging-fb-test.html?__&________  wrapper.html?green.png
+== webgl-hanging-fb-test.html?aa&________  wrapper.html?green.png
+== webgl-hanging-fb-test.html?__&preserve  wrapper.html?green.png
+== webgl-hanging-fb-test.html?aa&preserve  wrapper.html?green.png
 == webgl-hanging-fb-test.html?readback&__&________  wrapper.html?green.png
 == webgl-hanging-fb-test.html?readback&aa&________  wrapper.html?green.png
 == webgl-hanging-fb-test.html?readback&__&preserve  wrapper.html?green.png
 == webgl-hanging-fb-test.html?readback&aa&preserve  wrapper.html?green.png
 
-skip-if(Android) == webgl-hanging-scissor-test.html?__  wrapper.html?green.png
-skip-if(Android) == webgl-hanging-scissor-test.html?aa  wrapper.html?green.png
+== webgl-hanging-scissor-test.html?__  wrapper.html?green.png
+== webgl-hanging-scissor-test.html?aa  wrapper.html?green.png
 == webgl-hanging-scissor-test.html?readback&__  wrapper.html?green.png
 == webgl-hanging-scissor-test.html?readback&aa  wrapper.html?green.png
 
