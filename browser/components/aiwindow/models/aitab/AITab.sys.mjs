@@ -1662,6 +1662,61 @@ export class AITab {
   }
 
   /**
+   * Rewrite shapes models commonly emit that the catalog rejects but whose
+   * meaning is unambiguous, so buildSurface can accept the page.
+   *
+   * @param {A2UISurface} surface - Modified in place.
+   * @returns {A2UISurface} `surface`.
+   */
+  static repairValidations(surface) {
+    return AITab.inlineListGroupItems(surface);
+  }
+
+  /**
+   * Replace each List group's `items` binding with a copy of the array it
+   * points to, whether the groups are literal or bound into the data model.
+   * Models carry the catalog's preference for bindings into ListGroup.items,
+   * the one content array the catalog requires to be literal. A binding that
+   * does not resolve to an array is left for validation to reject.
+   *
+   * @param {A2UISurface} surface - Modified in place.
+   * @returns {A2UISurface} `surface`.
+   */
+  static inlineListGroupItems(surface) {
+    const components = surface?.components;
+    if (!Array.isArray(components)) {
+      return surface;
+    }
+    const dataModel = surface.dataModel ?? {};
+    for (const comp of components) {
+      if (comp?.component != "List") {
+        continue;
+      }
+      let groups = comp.groups;
+      if (AITab.#isBinding(groups) && groups.path.startsWith("/")) {
+        groups = AITab.#resolvePath(dataModel, groups.path);
+      }
+      if (!Array.isArray(groups)) {
+        continue;
+      }
+      for (const group of groups) {
+        const items = group?.items;
+        if (!AITab.#isBinding(items) || !items.path.startsWith("/")) {
+          continue;
+        }
+        const resolved = AITab.#resolvePath(dataModel, items.path);
+        if (Array.isArray(resolved)) {
+          lazy.console.warn(
+            `inlining List "${comp.id}" group items bound to "${items.path}"`
+          );
+          group.items = structuredClone(resolved);
+        }
+      }
+    }
+    return surface;
+  }
+
+  /**
    * The inverse of expandSurfaceUrlTokens: replace the URLs in a stored surface
    * with tokens, so a surface the model wrote on an earlier turn can be handed
    * back to it under this turn's tokenizer.
@@ -1865,10 +1920,8 @@ export class AITab {
         };
       }
 
-      const surface = AITab.expandSurfaceUrlTokens(
-        parsed,
-        urlTokenizer,
-        allowedLinks
+      const surface = AITab.repairValidations(
+        AITab.expandSurfaceUrlTokens(parsed, urlTokenizer, allowedLinks)
       );
 
       const result = AITab.buildSurface(surface, env);

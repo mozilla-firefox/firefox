@@ -164,3 +164,100 @@ add_task(function test_unresolved_data_binding() {
     "an absolute binding path absent from dataModel is rejected"
   );
 });
+
+// A List whose single group binds its items into the data model, as models
+// emit it: ListGroup.items only accepts a literal array.
+function listGroupBindingSurface(items) {
+  return {
+    components: [
+      { id: "root", component: "Page", header: "hdr", children: ["list"] },
+      HEADER,
+      {
+        id: "list",
+        component: "List",
+        layout: "row",
+        groups: [{ items: { path: "/attractions" } }],
+      },
+    ],
+    dataModel: { attractions: items },
+  };
+}
+
+const ATTRACTIONS = Object.freeze([
+  { text: "CN Tower: Panoramic views, glass floor, and the EdgeWalk." },
+  { text: "Casa Loma: North America's only full-sized Gothic Revival castle." },
+  { text: "Toronto Islands: Car-free islands with beaches and parks." },
+]);
+
+add_task(function test_list_group_items_binding_is_inlined() {
+  const surface = listGroupBindingSurface(structuredClone(ATTRACTIONS));
+  Assert.ok(
+    !buildSurface(structuredClone(surface), gEnv).ok,
+    "a binding inside a List group is rejected as written"
+  );
+
+  const result = buildSurface(AITab.inlineListGroupItems(surface), gEnv);
+  Assert.ok(
+    result.ok,
+    `the inlined surface validates; errors: ${JSON.stringify(result.errors)}`
+  );
+  const [group] = result.surface.components.find(c => c.id == "list").groups;
+  Assert.deepEqual(group.items, ATTRACTIONS, "the bound items are inlined");
+  Assert.notStrictEqual(
+    group.items,
+    result.surface.dataModel.attractions,
+    "the inlined items are a copy of the data model array"
+  );
+});
+
+add_task(function test_items_binding_inside_bound_groups_is_inlined() {
+  const surface = listGroupBindingSurface(structuredClone(ATTRACTIONS));
+  surface.components[2].groups = { path: "/groups" };
+  surface.dataModel.groups = [
+    { heading: "Landmarks", items: { path: "/attractions" } },
+  ];
+  Assert.ok(
+    !buildSurface(structuredClone(surface), gEnv).ok,
+    "a binding inside a bound List group is rejected as written"
+  );
+
+  const result = buildSurface(AITab.inlineListGroupItems(surface), gEnv);
+  Assert.ok(
+    result.ok,
+    `the inlined surface validates; errors: ${JSON.stringify(result.errors)}`
+  );
+  Assert.deepEqual(
+    result.surface.components.find(c => c.id == "list").groups,
+    { path: "/groups" },
+    "the groups binding is kept"
+  );
+  const [group] = result.surface.dataModel.groups;
+  Assert.equal(group.heading, "Landmarks", "the group heading is kept");
+  Assert.deepEqual(group.items, ATTRACTIONS, "the bound items are inlined");
+  Assert.notStrictEqual(
+    group.items,
+    result.surface.dataModel.attractions,
+    "the inlined items are a copy of the data model array"
+  );
+});
+
+add_task(function test_unresolved_list_group_binding_is_left_unchanged() {
+  const surface = listGroupBindingSurface(structuredClone(ATTRACTIONS));
+  surface.components[2].groups[0].items = { path: "/missing" };
+  const before = structuredClone(surface);
+
+  AITab.inlineListGroupItems(surface);
+  Assert.deepEqual(surface, before, "an unresolved binding is not touched");
+  Assert.ok(
+    !buildSurface(surface, gEnv).ok,
+    "an unresolved binding inside a List group is still rejected"
+  );
+});
+
+add_task(function test_inlined_list_group_items_are_still_validated() {
+  const surface = listGroupBindingSurface([
+    { name: "CN Tower", desc: "Panoramic views." },
+  ]);
+  const result = buildSurface(AITab.inlineListGroupItems(surface), gEnv);
+  Assert.ok(!result.ok, "inlined items that are not ListItems are rejected");
+});

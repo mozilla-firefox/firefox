@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aitab.mozilla.org/catalogs/aitab/catalog.json",
   "catalogId": "https://aitab.mozilla.org/catalogs/aitab/catalog.json",
-  "version": "1.0",
+  "version": "1.1",
   "title": "AITab Catalog",
   "description": "A2UI-compatible custom component catalog for Firefox AITab pages. Adopts the A2UI 1.0 *component/UI model* — a surface is a FLAT list of components (an adjacency list) where each component is `{ \"id\", \"component\": <TypeName>, ...props }`, exactly one has id `root`, parent/child links are id references (never inlined), and all displayed data lives in a separate JSON `dataModel` addressed by JSON-Pointer bindings.  Bindable properties accept a literal value OR a `{ \"path\": \"/...\" }` binding. Repeating regions or non boilerplate information should in bound data in the dataModel section. `components` maps each AITab component name to its property schema. Anything clickable simply carries an `href` (a URL or in-app route).",
   "$defs": {
@@ -127,7 +127,11 @@
       "additionalProperties": false,
       "properties": {
         "heading": { "type": "string" },
-        "items": { "type": "array", "items": { "$ref": "#/$defs/ListItem" } }
+        "items": {
+          "description": "Always a literal array of list items, never a binding. To fill a List from the data model, bind the List's `groups` instead.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/ListItem" }
+        }
       }
     },
     "TimelineItem": {
