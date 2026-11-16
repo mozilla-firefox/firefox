@@ -893,14 +893,17 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
     @VisibleForTesting
     internal fun setupRefreshingSearchEngines(
         updatedCollections: List<String>,
+        settings: Settings = components.settings,
         browserStore: BrowserStore = components.core.store,
     ) {
-        val searchRelatedCollections =
-            listOf(
-                "search-config-v2",
-                "search-config-overrides-v2",
-                "search-config-icons",
-            )
+        val searchRelatedCollections = buildList {
+            add("search-config-v2")
+            add("search-config-overrides-v2")
+            add("search-config-icons")
+            if (settings.useSearchConfigV3) {
+                add("search-config-v3")
+            }
+        }
         if (searchRelatedCollections.any { it in updatedCollections }) {
             browserStore.dispatch(SearchConfigurationAvailabilityChanged(true))
         }
