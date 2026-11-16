@@ -71,47 +71,6 @@ add_task(async function testSendingMoreInfo() {
         etpCategory: getEtpCategory(),
       },
       frameworks: { fastclick: true, mobify: true, marfeel: true },
-      consoleLog: [
-        {
-          level: "error",
-          log(actual) {
-            // "Blocked loading mixed display content http://example.com/tests/image/test/mochitest/blue.png"
-            return (
-              Array.isArray(actual) &&
-              actual.length == 1 &&
-              actual[0].includes("blue.png")
-            );
-          },
-          pos: "0:1",
-          uri: REPORTABLE_PAGE_URL3,
-        },
-        {
-          level: "error",
-          log(actual) {
-            // "Blocked loading mixed active content http://tracking.example.org/browser/browser/base/content/test/browser-protectionsUI/benignPage.html",
-            return (
-              Array.isArray(actual) &&
-              actual.length == 1 &&
-              actual[0].includes("benignPage.html")
-            );
-          },
-          pos: "0:1",
-          uri: REPORTABLE_PAGE_URL3,
-        },
-        {
-          level: "warn",
-          log(actual) {
-            // "The resource at https://trackertest.org/ was blocked because content blocking is enabled.",
-            return (
-              Array.isArray(actual) &&
-              actual.length == 1 &&
-              actual[0].includes("trackertest.org")
-            );
-          },
-          pos: "0:1",
-          uri: REPORTABLE_PAGE_URL3,
-        },
-      ],
     });
   });
 });

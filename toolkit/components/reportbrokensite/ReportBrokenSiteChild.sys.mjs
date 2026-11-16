@@ -15,151 +15,6 @@ function RunScriptInFrame(win, script) {
   return Cu.evalInSandbox(script, sandbox, null, "sandbox eval code", 1);
 }
 
-class ConsoleLogHelper {
-  static PREVIEW_MAX_ITEMS = 10;
-  static LOG_LEVELS = ["debug", "info", "warn", "error"];
-
-  #windowId = undefined;
-
-  constructor(windowId) {
-    this.#windowId = windowId;
-  }
-
-  getLoggedMessages(alsoIncludePrivate = true) {
-    return this.getConsoleAPIMessages().concat(
-      this.getScriptErrors(alsoIncludePrivate)
-    );
-  }
-
-  getConsoleAPIMessages() {
-    const ConsoleAPIStorage = Cc[
-      "@mozilla.org/consoleAPI-storage;1"
-    ].getService(Ci.nsIConsoleAPIStorage);
-    let messages = ConsoleAPIStorage.getEvents(this.#windowId);
-    return messages.map(evt => {
-      const { columnNumber, filename, level, lineNumber, timeStamp } = evt;
-
-      const args = [];
-      for (const arg of evt.arguments) {
-        args.push(this.#getArgs(arg));
-      }
-
-      const message = {
-        level,
-        log: args,
-        uri: filename,
-        pos: `${lineNumber}:${columnNumber}`,
-      };
-
-      return { timeStamp, message };
-    });
-  }
-
-  getScriptErrors(alsoIncludePrivate) {
-    const messages = Services.console.getMessageArray();
-    return messages
-      .filter(message => {
-        if (message instanceof Ci.nsIScriptError) {
-          if (!alsoIncludePrivate && message.isFromPrivateWindow) {
-            return false;
-          }
-          if (this.#windowId && this.#windowId !== message.innerWindowID) {
-            return false;
-          }
-          return true;
-        }
-
-        // If this is not an nsIScriptError and we need to do window-based
-        // filtering we skip this message.
-        return false;
-      })
-      .map(error => {
-        const {
-          timeStamp,
-          errorMessage,
-          sourceName,
-          lineNumber,
-          columnNumber,
-          logLevel,
-        } = error;
-        const message = {
-          level: ConsoleLogHelper.LOG_LEVELS[logLevel],
-          log: [errorMessage],
-          uri: sourceName,
-          pos: `${lineNumber}:${columnNumber}`,
-        };
-        return { timeStamp, message };
-      });
-  }
-
-  #getPreview(value) {
-    switch (typeof value) {
-      case "symbol":
-        return value.toString();
-
-      case "function":
-        return "function ()";
-
-      case "object":
-        if (value === null) {
-          return null;
-        }
-        if (Array.isArray(value)) {
-          return `(${value.length})[...]`;
-        }
-        return "{...}";
-
-      case "undefined":
-        return "undefined";
-
-      default:
-        try {
-          structuredClone(value);
-        } catch (_) {
-          return `${value}` || "?";
-        }
-        return value;
-    }
-  }
-
-  #getArrayPreview(arr) {
-    const preview = [];
-    let count = 0;
-    for (const value of arr) {
-      if (++count > ConsoleLogHelper.PREVIEW_MAX_ITEMS) {
-        break;
-      }
-      preview.push(this.#getPreview(value));
-    }
-
-    return preview;
-  }
-
-  #getObjectPreview(obj) {
-    const preview = {};
-    let count = 0;
-    for (const key of Object.keys(obj)) {
-      if (++count > ConsoleLogHelper.PREVIEW_MAX_ITEMS) {
-        break;
-      }
-      preview[key] = this.#getPreview(obj[key]);
-    }
-
-    return preview;
-  }
-
-  #getArgs(value) {
-    if (typeof value === "object" && value !== null) {
-      if (Array.isArray(value)) {
-        return this.#getArrayPreview(value);
-      }
-      return this.#getObjectPreview(value);
-    }
-
-    return this.#getPreview(value);
-  }
-}
-
 const FrameworkDetector = {
   hasFastClickPageScript(window) {
     if (window.FastClick) {
@@ -220,33 +75,13 @@ export class ReportBrokenSiteChild extends JSWindowActorChild {
     const frameworks = FrameworkDetector.checkWindow(win);
     const { languages, userAgent } = win.navigator;
 
-    const info = {
+    return {
+      consoleLog: [],
       frameworks,
       languages,
       url: win.location.href,
       userAgent,
     };
-
-    try {
-      info.consoleLog = await this.#getConsoleLogs(docShell);
-    } catch (e) {
-      console.error("GetWebcompatInfo: Error getting console log", e);
-    }
-
-    return info;
-  }
-
-  async #getConsoleLogs() {
-    return this.#getLoggedMessages()
-      .flat()
-      .sort((a, b) => a.timeStamp - b.timeStamp)
-      .map(m => m.message);
-  }
-
-  #getLoggedMessages(alsoIncludePrivate = false) {
-    const windowId = this.contentWindow.windowGlobalChild.innerWindowId;
-    const helper = new ConsoleLogHelper(windowId, alsoIncludePrivate);
-    return helper.getLoggedMessages();
   }
 
   #formatReportDataForWebcompatCom({
