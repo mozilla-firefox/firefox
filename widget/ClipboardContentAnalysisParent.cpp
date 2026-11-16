@@ -15,11 +15,20 @@
 #include "nsIClipboard.h"
 #include "nsID.h"
 #include "nsITransferable.h"
+#include "nsQueryObject.h"
 
 namespace mozilla {
 namespace {
 using ClipboardResultPromise =
     MozPromise<dom::IPCTransferableData, nsresult, true>;
+
+// The clipboard service, or null if it isn't an nsBaseClipboard.
+static already_AddRefed<nsBaseClipboard> GetBaseClipboard() {
+  nsCOMPtr<nsIClipboard> clipboard =
+      do_GetService("@mozilla.org/widget/clipboard;1");
+  RefPtr<nsBaseClipboard> baseClipboard = do_QueryObject(clipboard);
+  return baseClipboard.forget();
+}
 
 static RefPtr<ClipboardResultPromise> GetClipboardImpl(
     const nsTArray<nsCString>& aTypes,
@@ -54,9 +63,8 @@ static RefPtr<ClipboardResultPromise> GetClipboardImpl(
   }
 
   // Retrieve clipboard
-  nsCOMPtr<nsIClipboard> clipboard =
-      do_GetService("@mozilla.org/widget/clipboard;1");
-  if (!clipboard) {
+  RefPtr<nsBaseClipboard> baseClipboard = GetBaseClipboard();
+  if (!baseClipboard) {
     return ClipboardResultPromise::CreateAndReject(NS_ERROR_FAILURE, __func__);
   }
 
@@ -77,16 +85,14 @@ static RefPtr<ClipboardResultPromise> GetClipboardImpl(
             singleTransferableToCheck.unwrapErr(), __func__);
       }
 
-      // Pass nullptr for the window here because we will be doing
-      // content analysis ourselves asynchronously (so it doesn't block
-      // main thread we're running on now)
+      // Skip content analysis here because we will be doing it ourselves
+      // asynchronously (so it doesn't block main thread we're running on now)
       nsCOMPtr singleTransferable = singleTransferableToCheck.unwrap();
       // Ideally we would be calling GetDataSnapshot() here to avoid blocking
-      // the main thread (and this would mean we could also pass in the window
-      // here so we wouldn't have to duplicate the Content Analysis code below).
-      // See bug 1908280.
-      nsresult rv =
-          clipboard->GetData(singleTransferable, aWhichClipboard, nullptr);
+      // the main thread (and this would mean we wouldn't have to duplicate the
+      // Content Analysis code below). See bug 1908280.
+      nsresult rv = baseClipboard->GetDataWithoutContentAnalysis(
+          singleTransferable, aWhichClipboard, window);
       if (NS_FAILED(rv)) {
         return ClipboardResultPromise::CreateAndReject(rv, __func__);
       }
@@ -102,15 +108,14 @@ static RefPtr<ClipboardResultPromise> GetClipboardImpl(
       }
     }
   } else {
-    // Pass nullptr for the window here because we will be doing
-    // content analysis ourselves asynchronously (so it doesn't block
-    // main thread we're running on now)
+    // Skip content analysis here because we will be doing it ourselves
+    // asynchronously (so it doesn't block main thread we're running on now)
     //
     // Ideally we would be calling GetDataSnapshot() here to avoid blocking the
-    // main thread (and this would mean we could also pass in the window here so
-    // we wouldn't have to duplicate the Content Analysis code below). See
-    // bug 1908280.
-    nsresult rv = clipboard->GetData(transferable, aWhichClipboard, nullptr);
+    // main thread (and this would mean we wouldn't have to duplicate the
+    // Content Analysis code below). See bug 1908280.
+    nsresult rv = baseClipboard->GetDataWithoutContentAnalysis(
+        transferable, aWhichClipboard, window);
     if (NS_FAILED(rv)) {
       return ClipboardResultPromise::CreateAndReject(rv, __func__);
     }
@@ -139,8 +144,8 @@ static RefPtr<ClipboardResultPromise> GetClipboardImpl(
           });
 
   contentanalysis::ContentAnalysis::CheckClipboardContentAnalysis(
-      static_cast<nsBaseClipboard*>(clipboard.get()), window, transferable,
-      aWhichClipboard, contentAnalysisCallback, aCheckAllContent);
+      baseClipboard, window, transferable, aWhichClipboard,
+      contentAnalysisCallback, aCheckAllContent);
   return resultPromise;
 }
 
@@ -223,8 +228,7 @@ static RefPtr<SetClipboardPromise> SetClipboardImpl(
     return SetClipboardPromise::CreateAndReject(NS_ERROR_FAILURE, __func__);
   }
 
-  nsCOMPtr<nsIClipboard> clipboard =
-      do_GetService("@mozilla.org/widget/clipboard;1");
+  RefPtr<nsBaseClipboard> clipboard = GetBaseClipboard();
   if (!clipboard) {
     return SetClipboardPromise::CreateAndReject(NS_ERROR_FAILURE, __func__);
   }
@@ -247,11 +251,9 @@ static RefPtr<SetClipboardPromise> SetClipboardImpl(
   // replaces) the clipboard contents when the verdict arrives, so all that is
   // needed here is to hear about the final result.
   auto resultPromise = MakeRefPtr<SetClipboardPromise::Private>(__func__);
-  static_cast<nsBaseClipboard*>(clipboard.get())
-      ->SetDataWithCompletion(trans, nullptr /* aOwner */, aWhichClipboard,
-                              window, [resultPromise](nsresult aRv) {
-                                resultPromise->Resolve(aRv, __func__);
-                              });
+  clipboard->SetDataWithCompletion(
+      trans, nullptr /* aOwner */, aWhichClipboard, window,
+      [resultPromise](nsresult aRv) { resultPromise->Resolve(aRv, __func__); });
   return resultPromise;
 }
 }  // namespace

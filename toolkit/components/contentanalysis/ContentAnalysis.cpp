@@ -2890,7 +2890,7 @@ void ContentAnalysis::CheckClipboardContentAnalysis(
   }
 
   mozilla::Maybe<uint64_t> cacheInnerWindowId =
-      aClipboard->GetClipboardCacheInnerWindowId(aClipboardType);
+      aClipboard->GetClipboardCacheInnerWindowId(aClipboardType, aWindow);
   RefPtr<mozilla::dom::WindowGlobalParent> sourceWindowGlobal;
   if (cacheInnerWindowId.isSome()) {
     sourceWindowGlobal = mozilla::dom::WindowGlobalParent::GetByInnerWindowId(
