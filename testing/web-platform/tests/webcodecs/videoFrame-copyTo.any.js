@@ -329,6 +329,39 @@ promise_test(async t => {
 }, 'Test invalid rect.');
 
 promise_test(async t => {
+  const frame = makeI420_4x2();
+  const options = {
+      rect: {x: 0, y: 0, width: 3, height: 2},
+  };
+  const expectedLayout = [
+      {offset: 0, stride: 3},
+      {offset: 6, stride: 2},
+      {offset: 8, stride: 2},
+  ];
+  const expectedData = new Uint8Array([
+      1, 2, 3,  // y
+      5, 6, 7,
+      9, 10,    // u
+      11, 12    // v
+  ]);
+  assert_equals(frame.allocationSize(options), expectedData.length, 'allocationSize()');
+  const data = new Uint8Array(expectedData.length);
+  const layout = await frame.copyTo(data, options);
+  assert_layout_equals(layout, expectedLayout);
+  assert_buffer_equals(data, expectedData);
+}, 'Test odd width rect.');
+
+promise_test(async t => {
+  const frame = makeI420_4x2();
+  const options = {
+      rect: {x: 1, y: 0, width: 2, height: 2},
+  };
+  assert_throws_js(TypeError, () => frame.allocationSize(options));
+  const data = new Uint8Array(12);
+  await promise_rejects_js(t, TypeError, frame.copyTo(data, options));
+}, 'Test rect with unaligned x.');
+
+promise_test(async t => {
   let init = {
     format: 'I420',
     timestamp: 1234,

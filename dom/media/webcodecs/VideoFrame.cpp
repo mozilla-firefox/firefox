@@ -770,6 +770,7 @@ static Result<CombinedBufferLayout, MediaResult> ComputeLayoutAndAllocationSize(
     MOZ_RELEASE_ASSERT(sourceTop.isValid());
 
     CheckedUint32 sourceHeight(aRect.Height());
+    sourceHeight += sampleSize.Height() - 1;
     sourceHeight /= sampleSize.Height();
     MOZ_RELEASE_ASSERT(sourceHeight.isValid());
 
@@ -786,6 +787,7 @@ static Result<CombinedBufferLayout, MediaResult> ComputeLayoutAndAllocationSize(
     }
 
     CheckedUint32 sourceWidthBytes(aRect.Width());
+    sourceWidthBytes += sampleSize.Width() - 1;
     sourceWidthBytes /= sampleSize.Width();
     MOZ_RELEASE_ASSERT(sourceWidthBytes.isValid());
     sourceWidthBytes *= aFormat.SampleBytes(p);
@@ -850,24 +852,6 @@ static Result<CombinedBufferLayout, MediaResult> ComputeLayoutAndAllocationSize(
   return CombinedBufferLayout(minAllocationSize, std::move(layouts));
 }
 
-// https://w3c.github.io/webcodecs/#videoframe-verify-rect-size-alignment
-static MediaResult VerifyRectSizeAlignment(const VideoFrame::Format& aFormat,
-                                           const gfx::IntRect& aRect) {
-  for (const VideoFrame::Format::Plane& p : aFormat.Planes()) {
-    const gfx::IntSize sample = aFormat.SampleSize(p);
-    if (aRect.Width() % sample.Width() != 0) {
-      return MediaResult(NS_ERROR_INVALID_ARG,
-                         "Mismatch between format and given rect's width"_ns);
-    }
-
-    if (aRect.Height() % sample.Height() != 0) {
-      return MediaResult(NS_ERROR_INVALID_ARG,
-                         "Mismatch between format and given rect's height"_ns);
-    }
-  }
-  return MediaResult(NS_OK);
-}
-
 // https://w3c.github.io/webcodecs/#videoframe-parse-videoframecopytooptions
 static Result<CombinedBufferLayout, MediaResult> ParseVideoFrameCopyToOptions(
     const VideoFrameCopyToOptions& aOptions, const gfx::IntRect& aVisibleRect,
@@ -882,11 +866,6 @@ static Result<CombinedBufferLayout, MediaResult> ParseVideoFrameCopyToOptions(
           error.Insert("rect's ", 0);
           return MediaResult(NS_ERROR_INVALID_ARG, error);
         })));
-
-    MediaResult r = VerifyRectSizeAlignment(aFormat, overrideRect.ref());
-    if (NS_FAILED(r.Code())) {
-      return Err(r);
-    }
   }
 
   gfx::IntRect parsedRect = MOZ_TRY(
