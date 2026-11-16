@@ -378,32 +378,31 @@ bool BackgroundParentImpl::DeallocPBackgroundLSSimpleRequestParent(
 
 BackgroundParentImpl::PBackgroundLocalStorageCacheParent*
 BackgroundParentImpl::AllocPBackgroundLocalStorageCacheParent(
-    const PrincipalInfo& aPrincipalInfo, const nsACString& aOriginKey,
-    const uint32_t& aPrivateBrowsingId) {
+    Tainted<NotNull<RefPtr<nsIPrincipal>>>& aPrincipal,
+    const nsACString& aOriginKey, const uint32_t& aPrivateBrowsingId) {
   AssertIsInMainProcess();
   AssertIsOnBackgroundThread();
 
+  auto principal = BackgroundParent::ValidatePrincipal(this, aPrincipal);
+  if (!principal) {
+    return nullptr;
+  }
+
   return mozilla::dom::AllocPBackgroundLocalStorageCacheParent(
-      aPrincipalInfo, aOriginKey, aPrivateBrowsingId);
+      *principal, aOriginKey, aPrivateBrowsingId);
 }
 
 mozilla::ipc::IPCResult
 BackgroundParentImpl::RecvPBackgroundLocalStorageCacheConstructor(
     PBackgroundLocalStorageCacheParent* aActor,
-    const PrincipalInfo& aPrincipalInfo, const nsACString& aOriginKey,
-    const uint32_t& aPrivateBrowsingId) {
+    Tainted<NotNull<RefPtr<nsIPrincipal>>>&& /* aPrincipal */,
+    const nsACString& aOriginKey, const uint32_t& aPrivateBrowsingId) {
   AssertIsInMainProcess();
   AssertIsOnBackgroundThread();
   MOZ_ASSERT(aActor);
 
-  if (!BackgroundParent::ValidatePrincipalInfo(this, aPrincipalInfo)) {
-    return IPC_FAIL(
-        this,
-        "Invalid aPrincipalInfo in PBackgroundLocalStorageCacheConstructor");
-  }
-
   return mozilla::dom::RecvPBackgroundLocalStorageCacheConstructor(
-      this, aActor, aPrincipalInfo, aOriginKey, aPrivateBrowsingId);
+      this, aActor, aOriginKey, aPrivateBrowsingId);
 }
 
 bool BackgroundParentImpl::DeallocPBackgroundLocalStorageCacheParent(

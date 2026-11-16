@@ -85,12 +85,14 @@ class BackgroundParentImpl : public PBackgroundParent {
       PBackgroundLSSimpleRequestParent* aActor) override;
 
   PBackgroundLocalStorageCacheParent* AllocPBackgroundLocalStorageCacheParent(
-      const PrincipalInfo& aPrincipalInfo, const nsACString& aOriginKey,
+      Tainted<NotNull<RefPtr<nsIPrincipal>>>& aPrincipal,
+      const nsACString& aOriginKey,
       const uint32_t& aPrivateBrowsingId) override;
 
   mozilla::ipc::IPCResult RecvPBackgroundLocalStorageCacheConstructor(
       PBackgroundLocalStorageCacheParent* aActor,
-      const PrincipalInfo& aPrincipalInfo, const nsACString& aOriginKey,
+      Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aPrincipal,
+      const nsACString& aOriginKey,
       const uint32_t& aPrivateBrowsingId) override;
 
   bool DeallocPBackgroundLocalStorageCacheParent(

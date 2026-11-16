@@ -73,33 +73,16 @@ void LocalStorageCacheChild::ActorDestroy(ActorDestroyReason aWhy) {
 }
 
 mozilla::ipc::IPCResult LocalStorageCacheChild::RecvObserve(
-    const PrincipalInfo& aPrincipalInfo,
-    const PrincipalInfo& aCachePrincipalInfo,
-    const uint32_t& aPrivateBrowsingId, const nsAString& aDocumentURI,
-    const nsAString& aKey, const nsAString& aOldValue,
-    const nsAString& aNewValue) {
+    NotNull<nsIPrincipal*> aPrincipal, const uint32_t& aPrivateBrowsingId,
+    const nsAString& aDocumentURI, const nsAString& aKey,
+    const nsAString& aOldValue, const nsAString& aNewValue) {
   AssertIsOnOwningThread();
 
-  auto principalOrErr = PrincipalInfoToPrincipal(aPrincipalInfo);
-  if (NS_WARN_IF(principalOrErr.isErr())) {
-    return IPC_FAIL_NO_REASON(this);
-  }
-
-  auto cachePrincipalOrErr = PrincipalInfoToPrincipal(aCachePrincipalInfo);
-  if (NS_WARN_IF(cachePrincipalOrErr.isErr())) {
-    return IPC_FAIL_NO_REASON(this);
-  }
-
-  nsCOMPtr<nsIPrincipal> principal = principalOrErr.unwrap();
-  nsCOMPtr<nsIPrincipal> cachePrincipal = cachePrincipalOrErr.unwrap();
-
-  if (StorageUtils::PrincipalsEqual(principal, cachePrincipal)) {
-    Storage::NotifyChange(/* aStorage */ nullptr, principal, aKey, aOldValue,
-                          aNewValue,
-                          /* aStorageType */ u"localStorage", aDocumentURI,
-                          /* aIsPrivate */ !!aPrivateBrowsingId,
-                          /* aImmediateDispatch */ true);
-  }
+  Storage::NotifyChange(/* aStorage */ nullptr, aPrincipal, aKey, aOldValue,
+                        aNewValue,
+                        /* aStorageType */ u"localStorage", aDocumentURI,
+                        /* aIsPrivate */ !!aPrivateBrowsingId,
+                        /* aImmediateDispatch */ true);
 
   return IPC_OK();
 }
@@ -570,10 +553,10 @@ mozilla::ipc::IPCResult SessionStorageManagerChild::RecvClearStoragesForOrigin(
   return IPC_OK();
 }
 
-LocalStorageCacheParent::LocalStorageCacheParent(
-    const mozilla::ipc::PrincipalInfo& aPrincipalInfo,
-    const nsACString& aOriginKey, uint32_t aPrivateBrowsingId)
-    : mPrincipalInfo(aPrincipalInfo),
+LocalStorageCacheParent::LocalStorageCacheParent(nsIPrincipal* aPrincipal,
+                                                 const nsACString& aOriginKey,
+                                                 uint32_t aPrivateBrowsingId)
+    : mPrincipal(aPrincipal),
       mOriginKey(aOriginKey),
       mPrivateBrowsingId(aPrivateBrowsingId),
       mActorDestroyed(false) {
@@ -629,15 +612,12 @@ mozilla::ipc::IPCResult LocalStorageCacheParent::RecvNotify(
   MOZ_ASSERT(array);
 
   for (LocalStorageCacheParent* localStorageCacheParent : *array) {
-    if (localStorageCacheParent != this) {
-      // When bug 1443925 is fixed, we can compare mPrincipalInfo against
-      // localStorageCacheParent->PrincipalInfo() here on the background thread
-      // instead of posting it to the main thread.  The advantage of doing so is
-      // that it would save an IPC message in the case where the principals do
-      // not match.
+    if (localStorageCacheParent != this &&
+        StorageUtils::PrincipalsEqual(mPrincipal,
+                                      localStorageCacheParent->Principal())) {
       (void)localStorageCacheParent->SendObserve(
-          mPrincipalInfo, localStorageCacheParent->PrincipalInfo(),
-          mPrivateBrowsingId, aDocumentURI, aKey, aOldValue, aNewValue);
+          WrapNotNull(mPrincipal.get()), mPrivateBrowsingId, aDocumentURI, aKey,
+          aOldValue, aNewValue);
     }
   }
 
@@ -1478,12 +1458,12 @@ mozilla::ipc::IPCResult SessionStorageManagerParent::RecvDeleteMe() {
  ******************************************************************************/
 
 PBackgroundLocalStorageCacheParent* AllocPBackgroundLocalStorageCacheParent(
-    const mozilla::ipc::PrincipalInfo& aPrincipalInfo,
-    const nsACString& aOriginKey, const uint32_t& aPrivateBrowsingId) {
+    nsIPrincipal* aPrincipal, const nsACString& aOriginKey,
+    const uint32_t& aPrivateBrowsingId) {
   ::mozilla::ipc::AssertIsOnBackgroundThread();
 
-  RefPtr<LocalStorageCacheParent> actor = new LocalStorageCacheParent(
-      aPrincipalInfo, aOriginKey, aPrivateBrowsingId);
+  RefPtr<LocalStorageCacheParent> actor =
+      new LocalStorageCacheParent(aPrincipal, aOriginKey, aPrivateBrowsingId);
 
   // Transfer ownership to IPDL.
   return actor.forget().take();
@@ -1491,9 +1471,8 @@ PBackgroundLocalStorageCacheParent* AllocPBackgroundLocalStorageCacheParent(
 
 mozilla::ipc::IPCResult RecvPBackgroundLocalStorageCacheConstructor(
     mozilla::ipc::PBackgroundParent* aBackgroundActor,
-    PBackgroundLocalStorageCacheParent* aActor,
-    const mozilla::ipc::PrincipalInfo& aPrincipalInfo,
-    const nsACString& aOriginKey, const uint32_t& aPrivateBrowsingId) {
+    PBackgroundLocalStorageCacheParent* aActor, const nsACString& aOriginKey,
+    const uint32_t& aPrivateBrowsingId) {
   ::mozilla::ipc::AssertIsOnBackgroundThread();
   MOZ_ASSERT(aActor);
 

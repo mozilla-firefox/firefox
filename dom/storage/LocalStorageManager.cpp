@@ -204,13 +204,6 @@ nsresult LocalStorageManager::GetStorageInternal(
       return NS_ERROR_FAILURE;
     }
 
-    ::mozilla::ipc::PrincipalInfo principalInfo;
-    rv = mozilla::ipc::PrincipalToPrincipalInfo(aStoragePrincipal,
-                                                &principalInfo);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return rv;
-    }
-
     uint32_t privateBrowsingId;
     rv = aStoragePrincipal->GetPrivateBrowsingId(&privateBrowsingId);
     if (NS_WARN_IF(NS_FAILED(rv))) {
@@ -231,7 +224,8 @@ nsresult LocalStorageManager::GetStorageInternal(
 
     MOZ_ALWAYS_TRUE(
         backgroundActor->SendPBackgroundLocalStorageCacheConstructor(
-            actor, principalInfo, originKey, privateBrowsingId));
+            actor, WrapNotNull(aStoragePrincipal), originKey,
+            privateBrowsingId));
 
     cache->SetActor(actor);
 #endif

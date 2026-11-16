@@ -78,8 +78,7 @@ class LocalStorageCacheChild final : public PBackgroundLocalStorageCacheChild {
   // IPDL methods are only called by IPDL.
   void ActorDestroy(ActorDestroyReason aWhy) override;
 
-  mozilla::ipc::IPCResult RecvObserve(const PrincipalInfo& aPrincipalInfo,
-                                      const PrincipalInfo& aCachePrincipalInfo,
+  mozilla::ipc::IPCResult RecvObserve(NotNull<nsIPrincipal*> aPrincipal,
                                       const uint32_t& aPrivateBrowsingId,
                                       const nsAString& aDocumentURI,
                                       const nsAString& aKey,
@@ -294,20 +293,20 @@ class SessionStorageManagerChild final
 
 class LocalStorageCacheParent final
     : public PBackgroundLocalStorageCacheParent {
-  const PrincipalInfo mPrincipalInfo;
+  const nsCOMPtr<nsIPrincipal> mPrincipal;
   const nsCString mOriginKey;
   uint32_t mPrivateBrowsingId;
   bool mActorDestroyed;
 
  public:
   // Created in AllocPBackgroundLocalStorageCacheParent.
-  LocalStorageCacheParent(const mozilla::ipc::PrincipalInfo& aPrincipalInfo,
+  LocalStorageCacheParent(nsIPrincipal* aPrincipal,
                           const nsACString& aOriginKey,
                           uint32_t aPrivateBrowsingId);
 
   NS_INLINE_DECL_REFCOUNTING(mozilla::dom::LocalStorageCacheParent)
 
-  const PrincipalInfo& PrincipalInfo() const { return mPrincipalInfo; }
+  nsIPrincipal* Principal() const { return mPrincipal; }
 
  private:
   // Reference counted.
@@ -572,14 +571,13 @@ class SessionStorageManagerParent final
 };
 
 PBackgroundLocalStorageCacheParent* AllocPBackgroundLocalStorageCacheParent(
-    const mozilla::ipc::PrincipalInfo& aPrincipalInfo,
-    const nsACString& aOriginKey, const uint32_t& aPrivateBrowsingId);
+    nsIPrincipal* aPrincipal, const nsACString& aOriginKey,
+    const uint32_t& aPrivateBrowsingId);
 
 mozilla::ipc::IPCResult RecvPBackgroundLocalStorageCacheConstructor(
     mozilla::ipc::PBackgroundParent* aBackgroundActor,
-    PBackgroundLocalStorageCacheParent* aActor,
-    const mozilla::ipc::PrincipalInfo& aPrincipalInfo,
-    const nsACString& aOriginKey, const uint32_t& aPrivateBrowsingId);
+    PBackgroundLocalStorageCacheParent* aActor, const nsACString& aOriginKey,
+    const uint32_t& aPrivateBrowsingId);
 
 bool DeallocPBackgroundLocalStorageCacheParent(
     PBackgroundLocalStorageCacheParent* aActor);

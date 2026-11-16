@@ -4,7 +4,9 @@
 
 include protocol PBackground;
 
-include PBackgroundSharedTypes;
+include "mozilla/dom/PermissionMessageUtils.h";
+
+[RefCounted, Tainted] using class nsIPrincipal from "nsIPrincipal.h";
 
 namespace mozilla {
 namespace dom {
@@ -23,13 +25,12 @@ parent:
                nsString newValue);
 
 child:
-  // The principalInfo and privateBrowsingId could instead be retained by the
+  // The principal and privateBrowsingId could instead be retained by the
   // LocalStorageCacheChild/LocalStorageCache instead of being re-transmitted.
   // However, these changes are a temporary optimization intended for uplift,
   // and this constant factor overhead is very small compared to the upside of
   // filtering.
-  async Observe(PrincipalInfo principalInfo,
-                PrincipalInfo cachePrincipalInfo,
+  async Observe(nsIPrincipal principal,
                 uint32_t privateBrowsingId,
                 nsString documentURI,
                 nsString key,

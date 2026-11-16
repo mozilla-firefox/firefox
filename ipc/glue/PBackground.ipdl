@@ -152,7 +152,7 @@ parent:
    */
   async PBackgroundLSSimpleRequest(LSSimpleRequestParams params);
 
-  async PBackgroundLocalStorageCache(PrincipalInfo principalInfo,
+  async PBackgroundLocalStorageCache(nsIPrincipal principal,
                                      nsCString originKey,
                                      uint32_t privateBrowsingId);
 
