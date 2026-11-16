@@ -149,15 +149,33 @@ nsresult EnumeratePortsWin32(SerialPortList& aPorts) {
         deviceInfoSet, &deviceInfo, &deviceDescriptionPropKey,
         &unusedPropertyType, reinterpret_cast<PBYTE>(friendlyName),
         friendlyNameSize, nullptr, 0);
-    if (!(succeeded && *friendlyName)) {
+    if (!(succeeded && friendlyName[0] != L'\0')) {
       deviceDescriptionPropKey = DEVPKEY_Device_FriendlyName;
       succeeded = SetupDiGetDevicePropertyW(
           deviceInfoSet, &deviceInfo, &deviceDescriptionPropKey,
           &unusedPropertyType, reinterpret_cast<PBYTE>(friendlyName),
           friendlyNameSize, nullptr, 0);
     }
-    if (!(succeeded && *friendlyName)) {
-      wcscpy_s(friendlyName, portName);
+
+    IPCSerialPortInfo info;
+    info.id() = nsString(portName);
+
+    if (succeeded && friendlyName[0] != L'\0') {
+      // Append the COM port to the friendly name if it is not already present.
+      // This ensures parity with Chromium's Web Serial API chooser (e.g.,
+      // "Device Name (COMx)").
+      if (wcsstr(friendlyName, portName) == nullptr) {
+        nsString name(friendlyName);
+        name.AppendLiteral(u" (");
+        name.Append(portName);
+        name.Append(u')');
+        info.friendlyName() = name;
+      } else {
+        info.friendlyName() = nsString(friendlyName);
+      }
+    } else {
+      // Fallback to just the port name if no friendly name was found.
+      info.friendlyName() = nsString(portName);
     }
     // SPDRP_HARDWAREID is of type REG_MULTI_SZ. We just are interested
     // in the first one, and since each string is null-terminated, we'll
@@ -166,10 +184,6 @@ nsresult EnumeratePortsWin32(SerialPortList& aPorts) {
     SetupDiGetDeviceRegistryPropertyW(
         deviceInfoSet, &deviceInfo, SPDRP_HARDWAREID, nullptr,
         reinterpret_cast<PBYTE>(hardwareId), sizeof(hardwareId), nullptr);
-
-    IPCSerialPortInfo info;
-    info.id() = nsString(portName);
-    info.friendlyName() = nsString(friendlyName);
 
     {
       nsString path(kDevicePathPrefix);
