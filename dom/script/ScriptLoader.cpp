@@ -2383,12 +2383,14 @@ nsresult ScriptLoader::AttemptOffThreadScriptCompile(
     return NS_OK;
   }
 
-  // Don't off-thread compile JSON or CSS modules.
+  // Don't off-thread compile JSON, CSS, or text modules.
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1912112 (JSON)
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1987143 (CSS)
+  // https://bugzilla.mozilla.org/show_bug.cgi?id=2090781 (Text)
   if (aRequest->IsModuleRequest() &&
       (aRequest->AsModuleRequest()->mModuleType == JS::ModuleType::JSON ||
-       aRequest->AsModuleRequest()->mModuleType == JS::ModuleType::CSS)) {
+       aRequest->AsModuleRequest()->mModuleType == JS::ModuleType::CSS ||
+       aRequest->AsModuleRequest()->mModuleType == JS::ModuleType::Text)) {
     return NS_OK;
   }
 
