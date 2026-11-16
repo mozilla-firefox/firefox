@@ -40,10 +40,6 @@ using GtkMenuPopupAtRect = void (*)(GtkMenu* menu, GdkWindow* rect_window,
                                     GdkGravity menu_anchor,
                                     const GdkEvent* trigger_event);
 
-static bool IsDisabled(const dom::Element& aElement) {
-  return aElement.GetBoolAttr(nsGkAtoms::disabled) ||
-         aElement.GetBoolAttr(nsGkAtoms::hidden);
-}
 static bool NodeIsRelevant(const nsINode& aNode) {
   return aNode.IsAnyOfXULElements(nsGkAtoms::menu, nsGkAtoms::menuseparator,
                                   nsGkAtoms::menuitem, nsGkAtoms::menugroup,
@@ -153,6 +149,8 @@ nsPrintfCString Actions::Register(const dom::Element& aMenuItem,
   } else {
     g_signal_connect(action, "activate", G_CALLBACK(ActivateSignal),
                      gpointer(&aMenuItem));
+    g_simple_action_set_enabled(action,
+                                !aMenuItem.GetBoolAttr(nsGkAtoms::disabled));
   }
   g_action_map_add_action(G_ACTION_MAP(mGroup.get()), G_ACTION(action.get()));
   return actionName;
@@ -290,8 +288,11 @@ void MenuModelGMenu::RecomputeModelFor(GMenu* aMenu, Actions& aActions,
 
   for (const nsIContent* child = aElement.GetFirstChild(); child;
        child = child->GetNextSibling()) {
-    if (child->IsXULElement(nsGkAtoms::menuitem) &&
-        !IsDisabled(*child->AsElement())) {
+    if (!child->IsElement() ||
+        child->AsElement()->GetBoolAttr(nsGkAtoms::hidden)) {
+      continue;
+    }
+    if (child->IsXULElement(nsGkAtoms::menuitem)) {
       nsAutoString label;
       child->AsElement()->GetAttr(nsGkAtoms::label, label);
       if (label.IsEmpty()) {
@@ -317,8 +318,9 @@ void MenuModelGMenu::RecomputeModelFor(GMenu* aMenu, Actions& aActions,
       FlushSectionMenu();
       continue;
     }
-    if (child->IsXULElement(nsGkAtoms::menu) &&
-        !IsDisabled(*child->AsElement())) {
+    if (child->IsXULElement(nsGkAtoms::menu)) {
+      // TODO: Support disabled submenus if needed. GTK only uses the regular
+      // action (not the submenu-action) for sensitivity.
       if (const auto* popup = GetMenuPopupChild(*child->AsElement())) {
         RefPtr<GMenu> submenu = dont_AddRef(g_menu_new());
         RecomputeModelFor(submenu, aActions, *popup);
@@ -769,8 +771,11 @@ void MenubarModelDBus::SyncChildren(DbusmenuMenuitem* aParent,
 
   for (const nsIContent* child = aElement.GetFirstChild(); child;
        child = child->GetNextSibling()) {
-    if (child->IsXULElement(nsGkAtoms::menuitem) &&
-        !IsDisabled(*child->AsElement())) {
+    if (!child->IsElement() ||
+        child->AsElement()->GetBoolAttr(nsGkAtoms::hidden)) {
+      continue;
+    }
+    if (child->IsXULElement(nsGkAtoms::menuitem)) {
       const dom::Element* element = child->AsElement();
       DbusmenuMenuitem* item = GetOrCreate(DBusItemKind::MenuItem, element);
       nsAutoString label;
@@ -790,14 +795,14 @@ void MenubarModelDBus::SyncChildren(DbusmenuMenuitem* aParent,
       GetOrCreate(DBusItemKind::Separator, child->AsElement());
       continue;
     }
-    if (child->IsXULElement(nsGkAtoms::menu) &&
-        !IsDisabled(*child->AsElement())) {
+    if (child->IsXULElement(nsGkAtoms::menu)) {
       if (const auto* popup = GetMenuPopupChild(*child->AsElement())) {
         DbusmenuMenuitem* submenu = GetOrCreate(DBusItemKind::Submenu, popup);
         nsAutoString label;
         child->AsElement()->GetAttr(nsGkAtoms::label, label);
         dbusmenu_menuitem_property_set(submenu, DBUSMENU_MENUITEM_PROP_LABEL,
                                        NS_ConvertUTF16toUTF8(label).get());
+        UpdateEnabled(submenu, child);
         dbusmenu_menuitem_property_set(submenu,
                                        DBUSMENU_MENUITEM_PROP_CHILD_DISPLAY,
                                        DBUSMENU_MENUITEM_CHILD_DISPLAY_SUBMENU);
