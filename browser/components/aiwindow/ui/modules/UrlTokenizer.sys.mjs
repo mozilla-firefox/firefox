@@ -179,14 +179,17 @@ export class UrlTokenizer {
       return text;
     }
     return text.replace(URL_REGEX, match => {
-      // Keep trailing sentence punctuation like "." or ")" outside the token,
-      // except a ")" that closes a "(" in the URL, as in "Function_(math)".
-      let url = match.replace(/[.,;:!?)\]}]+$/, "");
-      let unclosed = url.split("(").length - url.split(")").length;
+      // Keep trailing sentence punctuation like "." or ")" and markdown
+      // emphasis like "*" outside the token, except a ")" that closes a "("
+      // in the URL, as in "Function_(math)". Markdown-escaped "\(" and "\)"
+      // always belong to the URL.
+      let url = match.replace(/(?:(?<!\\)[.,;:!?)\]}*])+$/, "");
+      let unclosed = countUnescaped(url, "(") - countUnescaped(url, ")");
       while (unclosed-- > 0 && match[url.length] == ")") {
         url += ")";
       }
       const trailing = match.slice(url.length);
+      url = url.replace(/\\([()])/g, "$1");
       // If it doesn't parse, drop the scheme and keep the rest as plain text.
       return URL.parse(url)
         ? this.formatToken(url) + trailing
@@ -212,16 +215,61 @@ export class UrlTokenizer {
 }
 
 /**
+ * Counts the occurrences of `char` in `text` not escaped with a backslash.
+ *
+ * @param {string} text
+ * @param {string} char
+ * @returns {number}
+ */
+function countUnescaped(text, char) {
+  let count = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] == "\\") {
+      i++;
+    } else if (text[i] == char) {
+      count++;
+    }
+  }
+  return count;
+}
+
+/**
+ * Whether every ")" in `url` closes an earlier "(" and every "(" is closed.
+ *
+ * @param {string} url
+ * @returns {boolean}
+ */
+function hasBalancedParens(url) {
+  let depth = 0;
+  for (const char of url) {
+    if (char == "(") {
+      depth++;
+    } else if (char == ")" && --depth < 0) {
+      return false;
+    }
+  }
+  return depth == 0;
+}
+
+/**
  * Expands URL tokens (e.g. §url_token: GITHUB_COM_1§) in text using the provided
- * mapping. Any token not found in the mapping is left unchanged.
+ * mapping. Any token not found in the mapping is left unchanged. In a Markdown
+ * link destination, a URL with unbalanced parens has them escaped so the link
+ * isn't cut short.
  *
  * @param {string} text
  * @param {Map<string, string>} tokenToUrl - A tokenizer's `tokenToUrl` map.
  * @returns {string}
  */
 export function expandUrlTokens(text, tokenToUrl) {
-  return text.replace(URL_TOKEN_REGEX, (match, token) => {
-    return tokenToUrl.get(token) ?? match;
+  return text.replace(URL_TOKEN_REGEX, (match, token, offset) => {
+    const url = tokenToUrl.get(token);
+    if (url === undefined) {
+      return match;
+    }
+    return text.slice(0, offset).endsWith("](") && !hasBalancedParens(url)
+      ? url.replace(/[()]/g, "\\$&")
+      : url;
   });
 }
 

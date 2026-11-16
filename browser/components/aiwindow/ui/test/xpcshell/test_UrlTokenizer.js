@@ -138,7 +138,88 @@ add_task(function test_UrlTokenizer_tokenizeText_no_raw_urls() {
   }
 });
 
+add_task(function test_UrlTokenizer_tokenizeText_markdown_emphasis() {
+  const cases = [
+    {
+      text: "*Source: [EC](https://weather.gc.ca/f.html)*",
+      expected: "*Source: [EC](§url_token: WEATHER_GC_CA_F_HTML_1§)*",
+      url: "https://weather.gc.ca/f.html",
+    },
+    {
+      text: "**[EC](https://weather.gc.ca/f.html)**.",
+      expected: "**[EC](§url_token: WEATHER_GC_CA_F_HTML_1§)**.",
+      url: "https://weather.gc.ca/f.html",
+    },
+    {
+      text: "*[Math](https://en.wikipedia.org/wiki/Function_(mathematics))*",
+      expected:
+        "*[Math](§url_token: EN_WIKIPEDIA_ORG_WIKI_FUNCTION__MATHEMATICS__1§)*",
+      url: "https://en.wikipedia.org/wiki/Function_(mathematics)",
+    },
+  ];
+  for (const { text, expected, url } of cases) {
+    const tokenizer = new UrlTokenizer();
+    Assert.equal(tokenizer.tokenizeText(text), expected, text);
+    Assert.deepEqual([...tokenizer.tokenToUrl.values()], [url], text);
+  }
+});
+
+add_task(function test_UrlTokenizer_tokenizeText_markdown_escaped_parens() {
+  const cases = [
+    {
+      message: "An escaped unbalanced '(' is part of the URL.",
+      text: "[a](https://x.com/Foo_\\(bar)",
+      expected: "[a](§url_token: X_COM_FOO__BAR_1§)",
+      url: "https://x.com/Foo_(bar",
+    },
+    {
+      message: "An escaped unbalanced ')' is part of the URL.",
+      text: "[a](https://x.com/Foo_bar\\))",
+      expected: "[a](§url_token: X_COM_FOO_BAR__1§)",
+      url: "https://x.com/Foo_bar)",
+    },
+  ];
+  for (const { message, text, expected, url } of cases) {
+    const tokenizer = new UrlTokenizer();
+    Assert.equal(tokenizer.tokenizeText(text), expected, message);
+    Assert.deepEqual([...tokenizer.tokenToUrl.values()], [url], message);
+    Assert.equal(
+      expandUrlTokens(expected, tokenizer.tokenToUrl),
+      text,
+      `${message} Expanding restores the original Markdown.`
+    );
+  }
+});
+
 // expandUrlTokens tests
+
+add_task(function test_expandUrlTokens_unbalanced_parens() {
+  const mapping = new Map([
+    ["X_COM_1", "https://x.com/Foo_(bar"],
+    ["X_COM_2", "https://x.com/a)b(c"],
+    ["X_COM_3", "https://x.com/Foo_(bar)"],
+  ]);
+  Assert.equal(
+    expandUrlTokens("[a](§url_token: X_COM_1§)", mapping),
+    "[a](https://x.com/Foo_\\(bar)",
+    "Unbalanced parens in a link destination are escaped"
+  );
+  Assert.equal(
+    expandUrlTokens("[a](§url_token: X_COM_2§)", mapping),
+    "[a](https://x.com/a\\)b\\(c)",
+    "Parens that are out of order are escaped"
+  );
+  Assert.equal(
+    expandUrlTokens("[a](§url_token: X_COM_3§)", mapping),
+    "[a](https://x.com/Foo_(bar))",
+    "Balanced parens are left alone"
+  );
+  Assert.equal(
+    expandUrlTokens("See §url_token: X_COM_1§ now", mapping),
+    "See https://x.com/Foo_(bar now",
+    "A token outside a link destination is not escaped"
+  );
+});
 
 add_task(function test_expandUrlTokens_bare_token() {
   const mapping = new Map([["GITHUB_COM_1", "https://github.com/foo"]]);
