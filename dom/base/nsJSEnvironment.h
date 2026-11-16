@@ -142,6 +142,8 @@ class nsJSContext : public nsIScriptContext {
                                         JS::Value* aArgv);
 
  private:
+  void Destroy();
+
   JS::Heap<JSObject*> mWindowProxy;
 
   bool mGCOnDestruction;

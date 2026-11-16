@@ -483,6 +483,10 @@ nsJSContext::nsJSContext(bool aGCOnDestruction,
 nsJSContext::~nsJSContext() {
   mGlobalObjectRef = nullptr;
 
+  Destroy();
+}
+
+void nsJSContext::Destroy() {
   if (mGCOnDestruction) {
     sScheduler->PokeGC(JS::GCReason::NSJSCONTEXT_DESTROY, mWindowProxy);
   }
@@ -500,6 +504,7 @@ NS_IMPL_CYCLE_COLLECTION_TRACE_END
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(nsJSContext)
   tmp->mGCOnDestruction = false;
   tmp->mWindowProxy = nullptr;
+  tmp->Destroy();
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mGlobalObjectRef)
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(nsJSContext)
@@ -2079,21 +2084,26 @@ class nsJSArgArray final : public nsIJSArgArray {
   // nsIJSArgArray
   nsresult GetArgs(uint32_t* argc, void** argv) override;
 
+  void ReleaseJSObjects();
+
  protected:
   ~nsJSArgArray();
   JSContext* mContext;
-  FallibleTArray<JS::Heap<JS::Value>> mArgv;
-  bool mHeld = false;
+  JS::Heap<JS::Value>* mArgv;
+  uint32_t mArgc;
 };
 
 nsJSArgArray::nsJSArgArray(JSContext* aContext, uint32_t argc,
                            const JS::Value* argv, nsresult* prv)
-    : mContext(aContext) {
+    : mContext(aContext), mArgv(nullptr), mArgc(argc) {
   // copy the array - we don't know its lifetime, and ours is tied to xpcom
   // refcounting.
-  if (!mArgv.SetLength(argc, fallible)) {
-    *prv = NS_ERROR_OUT_OF_MEMORY;
-    return;
+  if (argc) {
+    mArgv = new (fallible) JS::Heap<JS::Value>[argc];
+    if (!mArgv) {
+      *prv = NS_ERROR_OUT_OF_MEMORY;
+      return;
+    }
   }
 
   // Callers are allowed to pass in a null argv even for argc > 0. They can
@@ -2102,16 +2112,20 @@ nsJSArgArray::nsJSArgArray(JSContext* aContext, uint32_t argc,
     for (uint32_t i = 0; i < argc; ++i) mArgv[i] = argv[i];
   }
 
-  if (!mArgv.IsEmpty()) {
+  if (argc > 0) {
     mozilla::HoldJSObjects(this);
-    mHeld = true;
   }
 
   *prv = NS_OK;
 }
 
-nsJSArgArray::~nsJSArgArray() {
-  if (mHeld) {
+nsJSArgArray::~nsJSArgArray() { ReleaseJSObjects(); }
+
+void nsJSArgArray::ReleaseJSObjects() {
+  delete[] mArgv;
+
+  if (mArgc > 0) {
+    mArgc = 0;
     mozilla::DropJSObjects(this);
   }
 }
@@ -2120,14 +2134,16 @@ nsJSArgArray::~nsJSArgArray() {
 NS_IMPL_CYCLE_COLLECTION_CLASS(nsJSArgArray)
 
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(nsJSArgArray)
-  tmp->mArgv.Clear();
+  tmp->ReleaseJSObjects();
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(nsJSArgArray)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
 NS_IMPL_CYCLE_COLLECTION_TRACE_BEGIN(nsJSArgArray)
-  for (uint32_t i = 0; i < tmp->mArgv.Length(); ++i) {
-    NS_IMPL_CYCLE_COLLECTION_TRACE_JS_MEMBER_CALLBACK(mArgv[i])
+  if (tmp->mArgv) {
+    for (uint32_t i = 0; i < tmp->mArgc; ++i) {
+      NS_IMPL_CYCLE_COLLECTION_TRACE_JS_MEMBER_CALLBACK(mArgv[i])
+    }
   }
 NS_IMPL_CYCLE_COLLECTION_TRACE_END
 
@@ -2141,23 +2157,21 @@ NS_IMPL_CYCLE_COLLECTING_ADDREF(nsJSArgArray)
 NS_IMPL_CYCLE_COLLECTING_RELEASE(nsJSArgArray)
 
 nsresult nsJSArgArray::GetArgs(uint32_t* argc, void** argv) {
-  *argv = (void*)mArgv.Elements();
-  *argc = mArgv.Length();
+  *argv = (void*)mArgv;
+  *argc = mArgc;
   return NS_OK;
 }
 
 // nsIArray impl
 NS_IMETHODIMP nsJSArgArray::GetLength(uint32_t* aLength) {
-  *aLength = mArgv.Length();
+  *aLength = mArgc;
   return NS_OK;
 }
 
 NS_IMETHODIMP nsJSArgArray::QueryElementAt(uint32_t index, const nsIID& uuid,
                                            void** result) {
   *result = nullptr;
-  if (index >= mArgv.Length()) {
-    return NS_ERROR_INVALID_ARG;
-  }
+  if (index >= mArgc) return NS_ERROR_INVALID_ARG;
 
   if (uuid.Equals(NS_GET_IID(nsIVariant)) ||
       uuid.Equals(NS_GET_IID(nsISupports))) {

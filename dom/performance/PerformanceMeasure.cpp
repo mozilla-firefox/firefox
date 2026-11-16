@@ -28,6 +28,7 @@ NS_IMPL_CYCLE_COLLECTION_CLASS(PerformanceMeasure)
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(PerformanceMeasure,
                                                 PerformanceEntry)
   tmp->mDetail.setUndefined();
+  mozilla::DropJSObjects(tmp);
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(PerformanceMeasure,
                                                   PerformanceEntry)
