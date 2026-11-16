@@ -61,7 +61,10 @@ async function loadExtension() {
     ),
   });
 
-  await AddonTestUtils.promiseShutdownManager({ clearL10nRegistry: false });
+  await AddonTestUtils.promiseShutdownManager({
+    clearOverrides: false,
+    clearL10nRegistry: false,
+  });
   await AddonTestUtils.promiseStartupManager();
 
   const addon = await AddonManager.getAddonByID(EXTENSION_ID);
