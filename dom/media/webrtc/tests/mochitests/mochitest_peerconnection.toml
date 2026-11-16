@@ -532,6 +532,10 @@ skip-if = [
 
 ["test_peerConnection_videoRenegotiationInactiveAnswer.html"]
 
+["test_peerConnection_vp9SpatialLayers.html"]
+
+["test_peerConnection_vp9SpatialLayersKeyFrame.html"]
+
 ["test_peerConnection_webAudio.html"]
 tags = "webaudio webrtc"
 scheme = "http"

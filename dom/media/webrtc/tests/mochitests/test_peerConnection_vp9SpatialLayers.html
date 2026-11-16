@@ -1,0 +1,182 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <script type="application/javascript" src="pc.js"></script>
+  <script type="application/javascript" src="/tests/dom/canvas/test/captureStream_common.js"></script>
+</head>
+<body>
+<pre id="test">
+<script type="application/javascript">
+  createHTML({
+    bug: "1832276",
+    title: "Receive VP9 with spatial layers at the resolution and content of the top layer",
+  });
+
+  // Large enough for libwebrtc to configure three spatial layers: 320x180,
+  // 640x360 and 1280x720.
+  const WIDTH = 1280;
+  const HEIGHT = 720;
+
+  const CASES = [
+    {spatial: 1, temporal: 1},
+    {spatial: 3, temporal: 1},
+    // As sent by Chrome in bug 1832276.
+    {spatial: 2, temporal: 2},
+    // Spatial layers corrupted the frames of VA-API decoding in bug 1858904.
+    {spatial: 3, temporal: 3},
+  ];
+
+  // The colour of the whole source alternates every second. libwebrtc's VP9
+  // encoder only sends key frames when asked to, so the changes are encoded as
+  // inter frames in every spatial layer.
+  function startColourSource(helper, colours) {
+    const canvas = helper.createAndAppendElement("canvas", "source");
+    const start = performance.now();
+    const {stop} = helper.startDrawing(() => {
+      const colour =
+        colours[Math.floor((performance.now() - start) / 1000) % colours.length];
+      helper.drawColor(canvas, colour,
+                       {offsetX: 0, offsetY: 0, width: WIDTH, height: HEIGHT});
+    });
+    return {
+      stream: canvas.captureStream(30),
+      stop: () => {
+        stop();
+        canvas.remove();
+      },
+    };
+  }
+
+  async function connect(pc1, pc2, track) {
+    pc1.onicecandidate = e => e.candidate && pc2.addIceCandidate(e.candidate);
+    pc2.onicecandidate = e => e.candidate && pc1.addIceCandidate(e.candidate);
+    const transceiver = pc1.addTransceiver(track, {direction: "sendonly"});
+    transceiver.setCodecPreferences(
+      RTCRtpReceiver.getCapabilities("video").codecs.filter(
+        c => c.mimeType == "video/VP9"
+      )
+    );
+    const ontrack = new Promise(r => (pc2.ontrack = r));
+    await pc1.setLocalDescription();
+    await pc2.setRemoteDescription(pc1.localDescription);
+    await pc2.setLocalDescription();
+    await pc1.setRemoteDescription(pc2.localDescription);
+    return (await ontrack).track;
+  }
+
+  async function checkOnlyTopLayerShown(video) {
+    const sizes = new Set();
+    try {
+      await timeout(new Promise(resolve => {
+        let frames = 0;
+        const onFrame = (now, {width, height}) => {
+          sizes.add(`${width}x${height}`);
+          if (++frames == 20) {
+            resolve();
+            return;
+          }
+          video.requestVideoFrameCallback(onFrame);
+        };
+        video.requestVideoFrameCallback(onFrame);
+      }), 10000, "Timed out");
+    } catch (e) {
+      ok(false, `Fewer than 20 frames were shown, sizes ${[...sizes]}`);
+    }
+    is([...sizes].join(), `${WIDTH}x${HEIGHT}`,
+       "Only frames of the top spatial layer are shown");
+  }
+
+  async function checkInboundFrameSize(pc) {
+    const stats = await pc.getStats();
+    let inboundCount = 0;
+    stats.forEach(stat => {
+      if (stat.type == "inbound-rtp" && stat.kind == "video") {
+        inboundCount++;
+        is(stat.frameWidth, WIDTH, "Inbound frameWidth is the top layer");
+        is(stat.frameHeight, HEIGHT, "Inbound frameHeight is the top layer");
+      }
+    });
+    is(inboundCount, 1, "One inbound video stream");
+  }
+
+  async function checkDecodedContent(helper, video) {
+    // A decoder that loses the references of a spatial layer, for example when
+    // it resets its state on a change of layer resolution, outputs corrupt
+    // frames after the first inter frame of that layer.
+    for (const colour of [helper.red, helper.blue, helper.red]) {
+      try {
+        await timeout(
+          helper.pixelMustBecome(video, colour, {
+            threshold: 64,
+            infoString: `Remote video becomes ${colour.name}`,
+          }),
+          10000,
+          "Timed out"
+        );
+      } catch (e) {
+        ok(false, `Remote video should become ${colour.name}, but is ` +
+           `${helper.getPixel(video)}`);
+        return;
+      }
+    }
+  }
+
+  async function runCase({spatial, temporal}) {
+    info(`Testing ${spatial} spatial and ${temporal} temporal layers`);
+    await pushPrefs(
+      // Only the libwebrtc VP9 encoder supports spatial layers.
+      ["media.webrtc.encoder_creation_strategy", 0],
+      ["media.peerconnection.video.svc.spatial", spatial],
+      ["media.peerconnection.video.svc.temporal", temporal],
+      ["media.peerconnection.video.lock_scaling", true],
+      // Start the bandwidth estimate, and not only the encoder, high enough for
+      // the top layer to be sent from the first frame.
+      ["media.peerconnection.video.min_bitrate_estimate", 2500],
+      ["media.peerconnection.video.start_bitrate", 2500],
+      ["media.peerconnection.video.max_bitrate", 5000],
+    );
+
+    const helper = new CaptureStreamTestHelper2D(WIDTH, HEIGHT);
+    const source = startColourSource(helper, [helper.red, helper.blue]);
+    const pc1 = new RTCPeerConnection();
+    const pc2 = new RTCPeerConnection();
+    const video = createMediaElement("video", "remote");
+    try {
+      const metadata = haveEvent(video, "loadedmetadata");
+      video.srcObject =
+        new MediaStream([await connect(pc1, pc2, source.stream.getVideoTracks()[0])]);
+      try {
+        await timeout(metadata, 10000, "Timed out");
+      } catch (e) {
+        ok(false, "Remote video should load its metadata");
+        return;
+      }
+      is(video.videoWidth, WIDTH, "First remote frame has the top layer width");
+      is(video.videoHeight, HEIGHT,
+         "First remote frame has the top layer height");
+
+      await checkOnlyTopLayerShown(video);
+      await checkInboundFrameSize(pc2);
+      if (!navigator.userAgent.includes("Android")) {
+        // TODO: enable on Android when bug 1526207 is fixed.
+        await checkDecodedContent(helper, video);
+      }
+    } finally {
+      pc1.close();
+      pc2.close();
+      video.srcObject = null;
+      video.remove();
+      source.stop();
+      await SpecialPowers.popPrefEnv();
+    }
+  }
+
+  runNetworkTest(async () => {
+    for (const c of CASES) {
+      await runCase(c);
+    }
+  });
+</script>
+</pre>
+</body>
+</html>
