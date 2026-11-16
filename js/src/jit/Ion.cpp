@@ -4,6 +4,7 @@
 
 #include "jit/Ion.h"
 
+#include "mozilla/BinarySearch.h"
 #include "mozilla/CheckedInt.h"
 #include "mozilla/DebugOnly.h"
 #include "mozilla/IntegerPrintfMacros.h"
@@ -83,6 +84,7 @@
 #  include <sys/system_properties.h>
 #endif
 
+using mozilla::BinarySearchIf;
 using mozilla::CheckedInt;
 using mozilla::DebugOnly;
 
@@ -867,6 +869,14 @@ void IonScript::copySafepointIndices(const CodegenSafepointIndex* si) {
 
 void IonScript::copyOsiIndices(const OsiIndex* oi) {
   memcpy(osiIndices(), oi, numOsiIndices() * sizeof(OsiIndex));
+
+#ifdef DEBUG
+  // getOsiIndex does a binary search.
+  for (size_t i = 1; i < numOsiIndices(); i++) {
+    MOZ_ASSERT(oi[i - 1].callPointDisplacement() <
+               oi[i].callPointDisplacement());
+  }
+#endif
 }
 
 void IonScript::copyRuntimeData(const uint8_t* data) {
@@ -934,14 +944,26 @@ const SafepointIndex* IonScript::getSafepointIndex(uint32_t disp) const {
 }
 
 const OsiIndex* IonScript::getOsiIndex(uint32_t disp) const {
-  const OsiIndex* end = osiIndices() + numOsiIndices();
-  for (const OsiIndex* it = osiIndices(); it != end; ++it) {
-    if (it->returnPointDisplacement() == disp) {
-      return it;
-    }
+  // OSI indices are recorded in code order, so they are sorted by
+  // displacement.
+  const OsiIndex* table = osiIndices();
+  size_t loc;
+  if (!BinarySearchIf(
+          table, 0, numOsiIndices(),
+          [disp](const OsiIndex& entry) {
+            uint32_t entryDisp = entry.returnPointDisplacement();
+            if (disp < entryDisp) {
+              return -1;
+            }
+            if (entryDisp < disp) {
+              return 1;
+            }
+            return 0;
+          },
+          &loc)) {
+    MOZ_CRASH("Failed to find OSI point return address");
   }
-
-  MOZ_CRASH("Failed to find OSI point return address");
+  return &table[loc];
 }
 
 const OsiIndex* IonScript::getOsiIndex(uint8_t* retAddr) const {
