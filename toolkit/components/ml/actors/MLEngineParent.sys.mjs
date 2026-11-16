@@ -56,6 +56,7 @@ export const LLAMA_CPP_VERSION = "74ade52741203e5c8f81eaf06a96cb1cfe15f2a3";
 const RS_INFERENCE_OPTIONS_COLLECTION = "ml-inference-options";
 const RS_ALLOW_DENY_COLLECTION = "ml-model-allow-deny-list";
 const TERMINATE_TIMEOUT = 5000;
+const MAX_CONSECUTIVE_CRASHES = 3;
 
 const RUNTIME_ROOT_IN_OPFS = "mlRuntimeFiles";
 
@@ -1059,6 +1060,14 @@ export class MLEngine {
   static #instances = new Map();
 
   /**
+   * Inference process crashes per engineId since its last successful run.
+   * Counted per engineId because reopening hands runs to a new engine.
+   *
+   * @type {Map<string, number>}
+   */
+  static #consecutiveCrashes = new Map();
+
+  /**
    * @type {MessagePort | null}
    */
   #port = null;
@@ -1091,7 +1100,9 @@ export class MLEngine {
 
   /**
    * "suspended" means the inference process shut the engine down for being
-   * idle, and runs are forwarded to a live engine with the same options.
+   * idle or crashed, and runs are forwarded to a live engine with the same
+   * options. "crashed" means it crashed MAX_CONSECUTIVE_CRASHES times in a row
+   * without a successful run, and runs are no longer forwarded.
    *
    * @type {"uninitialized" | "ready" | "error" | "closed" | "crashed" | "suspended"}
    */
@@ -1216,17 +1227,29 @@ export class MLEngine {
 
     if (
       aTopic === "ipc:content-shutdown" &&
-      childID === this.mlEngineParent.childID
+      childID === this.mlEngineParent.childID &&
+      this.engineStatus !== "closed"
     ) {
       const pid = aSubject.get("osPid");
       lazy.console.error(
         `Got abnormal shutdown of the inference process (pid=${pid})`
       );
+      if (this.#port !== null) {
+        MLEngine.#consecutiveCrashes.set(
+          this.engineId,
+          (MLEngine.#consecutiveCrashes.get(this.engineId) ?? 0) + 1
+        );
+      }
       this.#port = null;
       const err = new Error(
         `The inference process was shutdown (pid=${pid}), childId=${childID}`
       );
-      this.setEngineStatus("crashed");
+      this.setEngineStatus(
+        MLEngine.#consecutiveCrashes.get(this.engineId) >=
+          MAX_CONSECUTIVE_CRASHES
+          ? "crashed"
+          : "suspended"
+      );
       this.#rejectRequests(err);
       throw err;
     }
@@ -1487,6 +1510,7 @@ export class MLEngine {
             this.telemetry.recordRunInferenceFailure(error);
             request.reject(error);
           } else if (response) {
+            MLEngine.#consecutiveCrashes.delete(this.engineId);
             this.telemetry.recordRunInferenceSuccessFlow(
               this.engineId,
               response.metrics
@@ -1659,6 +1683,14 @@ export class MLEngine {
    * @returns {Promise<MLEngine<FeatureID>>}
    */
   async #resolveLiveEngine() {
+    if (
+      MLEngine.#consecutiveCrashes.get(this.engineId) >= MAX_CONSECUTIVE_CRASHES
+    ) {
+      this.setEngineStatus("crashed");
+      throw new Error(
+        `The inference process crashed ${MAX_CONSECUTIVE_CRASHES} times in a row, not reopening the engine.`
+      );
+    }
     const liveEnginePromise = lazy.EngineProcess.getMLEngineParent().then(
       async mlEngineParent => {
         const existingEngine = MLEngine.getInstance(this.engineId);

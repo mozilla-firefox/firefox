@@ -1009,6 +1009,153 @@ add_task(async function test_ml_engine_crash_rejects_runs() {
   await cleanup();
 });
 
+async function crashInferenceProcess() {
+  const shutdown = TestUtils.topicObserved("ipc:content-shutdown", subject =>
+    subject.QueryInterface(Ci.nsIPropertyBag2).get("abnormal")
+  );
+  await killInferenceProcess();
+  await shutdown;
+}
+
+/**
+ * An engine keeps serving runs after the inference process crashes.
+ */
+add_task(async function test_ml_engine_reopens_after_crash() {
+  const { cleanup, remoteClients } = await setup();
+
+  const engineInstance = await createEngine(MOZ_ECHO_OPTIONS_RAW);
+  const firstRun = engineInstance.run({ data: "Before crashing" });
+  await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+  await firstRun;
+
+  const terminatedEngine = await createEngine({
+    ...MOZ_ECHO_OPTIONS_RAW,
+    engineId: "terminated-engine",
+  });
+  await terminatedEngine.terminate();
+
+  await crashInferenceProcess();
+  Assert.equal(
+    terminatedEngine.engineStatus,
+    "closed",
+    "The crash leaves an explicitly terminated handle closed"
+  );
+  await Assert.rejects(
+    terminatedEngine.run({ data: "After terminating and crashing" }),
+    /Port does not exist/,
+    "run() does not reopen an explicitly terminated handle after a crash"
+  );
+  await Assert.rejects(
+    terminatedEngine
+      .runWithGenerator({ data: "After terminating and crashing" })
+      .next(),
+    /The port is null/,
+    "runWithGenerator() does not reopen an explicitly terminated handle after a crash"
+  );
+  Assert.equal(
+    engineInstance.engineStatus,
+    "suspended",
+    "The crashed engine reports it will reopen on the next run"
+  );
+
+  const runAfterCrash = engineInstance.run({ data: "After crashing" });
+  await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+  Assert.equal(
+    (await runAfterCrash).output.echo,
+    "After crashing",
+    "run() reopens the engine in a new inference process after a crash"
+  );
+
+  await crashInferenceProcess();
+  const generator = engineInstance.runWithGenerator({
+    data: "After crashing twice",
+  });
+  const generatorDone = (async () => {
+    let step;
+    do {
+      step = await generator.next();
+    } while (!step.done);
+    return step.value;
+  })();
+  await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+  Assert.equal(
+    (await generatorDone).output.echo,
+    "After crashing twice",
+    "runWithGenerator() reopens the engine after a second crash"
+  );
+
+  await EngineProcess.destroyMLEngine();
+  await cleanup();
+});
+
+/**
+ * An engine stops reopening once the inference process crashes three times in
+ * a row, and a successful run in between starts the count over.
+ */
+add_task(
+  async function test_ml_engine_stops_reopening_after_repeated_crashes() {
+    const { cleanup, remoteClients } = await setup();
+    const engineInstance = await createEngine(MOZ_ECHO_OPTIONS_RAW);
+    const firstRun = engineInstance.run({ data: "Before crashing" });
+    await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+    await firstRun;
+
+    await crashInferenceProcess();
+    const runAfterCrash = engineInstance.run({ data: "After crashing" });
+    await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+    await runAfterCrash;
+
+    await crashInferenceProcess();
+    for (const attempt of ["second", "third"]) {
+      const run = engineInstance.run({
+        data: `Crashes a ${attempt} time in a row`,
+        sleepTime: 5000,
+      });
+      await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+      await waitForEngineStatus(
+        {
+          mlEngineParent: await EngineProcess.getMLEngineParent(),
+          engineId: engineInstance.engineId,
+        },
+        "RUNNING"
+      );
+      await crashInferenceProcess();
+      await Assert.rejects(
+        run,
+        /inference process was shutdown/,
+        `The ${attempt} crash in a row rejects the run`
+      );
+    }
+
+    await Assert.rejects(
+      engineInstance.run({ data: "After three crashes in a row" }),
+      /crashed 3 times in a row/,
+      "run() stops reopening after three crashes in a row"
+    );
+    Assert.equal(
+      engineInstance.engineStatus,
+      "crashed",
+      "The engine reports it no longer reopens"
+    );
+    await Assert.rejects(
+      engineInstance
+        .runWithGenerator({ data: "After three crashes in a row" })
+        .next(),
+      /The port is null/,
+      "runWithGenerator() does not reopen a crashed engine either"
+    );
+    Assert.ok(
+      !ChromeUtils.getAllDOMProcesses().some(
+        process => process.remoteType == "inference"
+      ),
+      "No inference process was started again"
+    );
+
+    await EngineProcess.destroyMLEngine();
+    await cleanup();
+  }
+);
+
 /**
  * These status are visualized in about:inference, but aren't used for business
  * logic.
