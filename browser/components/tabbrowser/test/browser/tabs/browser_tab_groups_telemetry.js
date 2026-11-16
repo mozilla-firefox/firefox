@@ -1124,12 +1124,29 @@ add_task(async function test_groupInteractions() {
   );
   info("opening tab group context menu and changing tab group color");
   tabGroupContextMenu = await openTabGroupContextMenu(group);
-  win.document.getElementById("tab-group-editor-swatch-green").click();
+  EventUtils.synthesizeMouseAtCenter(
+    win.document.getElementById("tab-group-editor-swatch-green"),
+    {},
+    win
+  );
   await closeContextMenu(tabGroupContextMenu);
   Assert.equal(
     Glean.tabgroup.groupInteractions.change_color.testGetValue(),
     1,
     "tab group change_color count should have increased because the color changed"
+  );
+  info("clicking the already-selected color should not count as a change");
+  tabGroupContextMenu = await openTabGroupContextMenu(group);
+  EventUtils.synthesizeMouseAtCenter(
+    win.document.getElementById("tab-group-editor-swatch-green"),
+    {},
+    win
+  );
+  await closeContextMenu(tabGroupContextMenu);
+  Assert.equal(
+    Glean.tabgroup.groupInteractions.change_color.testGetValue(),
+    1,
+    "tab group change_color count should not increase when the color is unchanged"
   );
 
   Assert.equal(

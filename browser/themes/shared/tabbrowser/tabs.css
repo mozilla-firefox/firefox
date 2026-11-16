@@ -2508,54 +2508,41 @@ tab-group {
   }
 
   .tab-group-editor-swatches {
-    display: flex;
-    flex-flow: row nowrap;
-    justify-content: space-between;
+    display: block;
     margin: var(--panel-menuitem-margin);
     padding-block: var(--panel-menuitem-padding-block);
 
     @media -moz-pref("browser.nova.enabled") {
       padding-block: 0 var(--space-large);
     }
-  }
-
-  input[name="tab-group-color"] {
-    width: 0;
-    height: 0;
-    opacity: 0;
-    margin: 0;
-    position: absolute;
-    pointer-events: none;
-    top: -100px;
+    &::part(inputs) {
+      flex-flow: row nowrap;
+      justify-content: space-between;
+      gap: 0;
+    }
+    moz-visual-picker-item {
+      --visual-picker-item-border-color: transparent;
+      --visual-picker-item-border-width-checked: var(--focus-outline-width);
+      @media -moz-pref("browser.nova.enabled") {
+        --visual-picker-item-border-radius: var(--border-radius-circle);
+      }
+    }
   }
 
   .tab-group-editor-swatch {
+    display: block;
     font-size: 0;
-    width: 16px;
-    height: 16px;
-    padding: var(--focus-outline-offset);
-    border: var(--focus-outline-width) solid transparent;
-    border-radius: var(--border-radius-medium);
-    background-clip: content-box;
+    inline-size: 16px;
+    block-size: 16px;
+    margin: var(--focus-outline-offset);
     background-color: var(--tabgroup-swatch-color);
     @media -moz-pref("browser.nova.enabled") {
-      width: 20px;
-      height: 20px;
-      background-color: var(--tabgroup-swatch-color);
-      border-radius: var(--border-radius-circle);
+      inline-size: 20px;
+      block-size: 20px;
     }
 
-    input:checked + & {
-      border-color: var(--focus-outline-color);
-    }
-
-    input:disabled + & {
+    .tab-group-editor-swatches[disabled] & {
       opacity: 0.5;
-    }
-
-    input:focus-visible + & {
-      outline: 1px solid var(--focus-outline-color);
-      outline-offset: 1px;
     }
   }
 }

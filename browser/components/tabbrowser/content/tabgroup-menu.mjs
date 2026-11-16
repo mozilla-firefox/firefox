@@ -257,9 +257,9 @@ export class MozTabbrowserTabGroupMenu extends MozXULElement {
 
       <html:div id="tab-group-main" class="panel-subview-body">
         <html:div id="tab-group-properties-and-actions">
-          <html:div
+          <html:moz-visual-picker
+            name="tab-group-color"
             class="tab-group-editor-swatches"
-            role="radiogroup"
             data-l10n-id="tab-group-editor-color-selector"
           />
 
@@ -333,7 +333,6 @@ export class MozTabbrowserTabGroupMenu extends MozXULElement {
   #nameContainer;
   #nameField;
   #panel;
-  #swatches;
   #swatchesContainer;
   #defaultActions;
   #suggestionState = MozTabbrowserTabGroupMenu.State.CREATE_STANDARD_INITIAL;
@@ -761,34 +760,32 @@ export class MozTabbrowserTabGroupMenu extends MozXULElement {
   #populateSwatches() {
     this.#clearSwatches();
     for (let colorCode of MozTabbrowserTabGroupMenu.COLORS) {
-      let input = document.createElement("input");
-      input.id = `tab-group-editor-swatch-${colorCode}`;
-      input.type = "radio";
-      input.name = "tab-group-color";
-      input.value = colorCode;
-      let label = document.createElement("label");
-      label.classList.add("tab-group-editor-swatch");
-      label.setAttribute(
+      let item = /** @type {MozVisualPickerItem} */ (
+        document.createElement("moz-visual-picker-item")
+      );
+      item.id = `tab-group-editor-swatch-${colorCode}`;
+      item.value = colorCode;
+      let swatch = document.createElement("span");
+      swatch.classList.add("tab-group-editor-swatch");
+      swatch.setAttribute(
         "data-l10n-id",
         MozTabbrowserTabGroupMenu.MESSAGE_IDS[colorCode]
       );
-      label.htmlFor = input.id;
-      label.style.setProperty(
+      swatch.style.setProperty(
         "--tabgroup-swatch-color",
         `var(--tab-group-${colorCode})`
       );
-      label.style.setProperty(
+      swatch.style.setProperty(
         "--tabgroup-swatch-color-invert",
         `var(--tab-group-${colorCode}-invert)`
       );
-      this.#swatchesContainer.append(input, label);
-      this.#swatches.push(input);
+      item.append(swatch);
+      this.#swatchesContainer.append(item);
     }
   }
 
   #clearSwatches() {
     this.#swatchesContainer.innerHTML = "";
-    this.#swatches = [];
   }
 
   get createMode() {
@@ -817,13 +814,7 @@ export class MozTabbrowserTabGroupMenu extends MozXULElement {
   set activeGroup(group) {
     this.#activeGroup = group;
     this.#nameField.value = group ? group.label : "";
-    this.#swatches.forEach(node => {
-      if (group && node.value == group.color) {
-        node.checked = true;
-      } else {
-        node.checked = false;
-      }
-    });
+    this.#swatchesContainer.value = group ? group.color : null;
   }
 
   get nextUnusedColor() {
@@ -1090,13 +1081,13 @@ export class MozTabbrowserTabGroupMenu extends MozXULElement {
   }
 
   /**
-   * change handler for color input
+   * change handler for the color picker
    */
   on_change(aEvent) {
     if (aEvent.target.name != "tab-group-color") {
       return;
     }
-    if (this.activeGroup) {
+    if (this.activeGroup && this.activeGroup.color != aEvent.target.value) {
       this.activeGroup.color = aEvent.target.value;
       Glean.tabgroup.groupInteractions.change_color.add(1);
     }
@@ -1190,10 +1181,7 @@ export class MozTabbrowserTabGroupMenu extends MozXULElement {
 
     this.#nameField.disabled = state;
 
-    const swatches = this.#swatchesContainer.querySelectorAll("input");
-    swatches.forEach(input => {
-      input.disabled = state;
-    });
+    this.#swatchesContainer.disabled = state;
   }
 
   async #handleFirstDownloadAndSuggest() {

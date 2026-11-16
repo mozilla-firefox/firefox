@@ -71,6 +71,7 @@ add_task(async function test_tabGroupCreatePanel() {
 
   let tabgroupEditor = document.getElementById("tab-group-editor");
   let tabgroupPanel = tabgroupEditor.panel;
+  let swatches = tabgroupPanel.querySelector(".tab-group-editor-swatches");
   let nameField = tabgroupPanel.querySelector("#tab-group-name");
   let tab = BrowserTestUtils.addTab(gBrowser, "about:blank");
 
@@ -100,7 +101,7 @@ add_task(async function test_tabGroupCreatePanel() {
     "Create panel's input populated with correct name"
   );
   Assert.equal(
-    tabgroupPanel.querySelector("input[name='tab-group-color']:checked").value,
+    swatches.value,
     group.color,
     "Create panel's colorpicker has correct color pre-selected"
   );
@@ -146,16 +147,24 @@ add_task(async function test_tabGroupCreatePanel() {
     "Shopping",
     "Group label changed when input value changed"
   );
+  // moz-visual-picker-item re-dispatches click on its host, which has no
+  // accessible of its own.
+  AccessibilityUtils.setEnv({ mustHaveAccessibleRule: false });
   tabgroupPanel.querySelector("#tab-group-editor-swatch-red").click();
+  AccessibilityUtils.resetEnv();
   Assert.equal(
     group.color,
     "red",
     "Group color changed to red after clicking red swatch"
   );
   Assert.equal(
-    tabgroupPanel.querySelector("input[name='tab-group-color']:checked").value,
+    swatches.value,
     "red",
     "Red swatch radio selected after clicking red swatch"
+  );
+  Assert.ok(
+    tabgroupPanel.querySelector("#tab-group-editor-swatch-red").checked,
+    "Red swatch item is checked after clicking red swatch"
   );
 
   info(
