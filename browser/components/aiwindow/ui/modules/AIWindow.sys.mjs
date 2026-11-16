@@ -1698,7 +1698,7 @@ export const AIWindow = {
     const memories = await lazy.MemoryStore.getMemories();
     for (const memory of memories) {
       try {
-        await lazy.MemoryStore.hardDeleteMemory(memory.id);
+        await lazy.MemoryStore.hardDeleteMemory(memory.id, "other");
       } catch (err) {
         console.error("Failed to delete memory:", memory.id, err);
       }

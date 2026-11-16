@@ -4,6 +4,7 @@
 
 /** @typedef {import("./JourneyStore.sys.mjs").JourneyMetadata} JourneyMetadata */
 /** @typedef {import("../MemoriesConstants.sys.mjs").JourneysGenerationRunStats} JourneysGenerationRunStats */
+/** @typedef {import("../MemoriesConstants.sys.mjs").JourneysMaintenanceRunStats} JourneysMaintenanceRunStats */
 
 const JOURNEY_SUPPORTED_LOCALES = ["en"];
 
@@ -287,18 +288,31 @@ export const JourneyManager = {
   /**
    * Removes journey metadata whose corresponding memory is no longer live.
    *
-   * @returns {Promise<void>}
+   * @param {object} [options]
+   * @param {JourneysMaintenanceRunStats} [options.stats] - Stats object to
+   *   record telemetry information.
+   * @returns {Promise<{removed: number, isLocaleSupported: boolean}>} Number
+   *   of journeys deleted, and whether the app locale supports journeys.
    */
-  async runJourneyMaintenance() {
+  async runJourneyMaintenance({ stats = {} } = {}) {
+    const isLocaleSupported = this._isJourneyLocaleSupported();
     const memories = await lazy.MemoriesManager.getAllMemories({
       includeSoftDeleted: false,
     });
     const memoryIds = new Set(memories.map(memory => memory.id));
-    for (const journey of await lazy.JourneyStore.getAll()) {
-      if (!memoryIds.has(journey.memory_id)) {
-        await lazy.JourneyStore.deleteJourney(journey.memory_id);
+    const journeys = await lazy.JourneyStore.getAll();
+    stats.journeys_before = journeys.length;
+
+    let removed = 0;
+    for (const journey of journeys) {
+      if (
+        !memoryIds.has(journey.memory_id) &&
+        (await lazy.JourneyStore.deleteJourney(journey.memory_id))
+      ) {
+        removed++;
       }
     }
+    return { removed, isLocaleSupported };
   },
 
   /**

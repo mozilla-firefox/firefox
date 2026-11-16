@@ -22,11 +22,17 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/models/memories/MemoriesConstants.sys.mjs",
   GENERATION_RUN_MERGE_STATUS:
     "moz-src:///browser/components/aiwindow/models/memories/MemoriesConstants.sys.mjs",
+  MAINTENANCE_RUN_OUTCOME:
+    "moz-src:///browser/components/aiwindow/models/memories/MemoriesConstants.sys.mjs",
+  GENERATION_RUN_ERROR_TYPE:
+    "moz-src:///browser/components/aiwindow/models/memories/MemoriesConstants.sys.mjs",
   setGenerationRunError:
     "moz-src:///browser/components/aiwindow/models/memories/Memories.sys.mjs",
   openAIEngine: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   JourneyManager:
     "moz-src:///browser/components/aiwindow/models/memories/journeys/JourneyManager.sys.mjs",
+  JourneyStore:
+    "moz-src:///browser/components/aiwindow/models/memories/journeys/JourneyStore.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
@@ -311,21 +317,68 @@ export class MemoriesSchedulers {
       // Maintenance is on its own clock, so it runs regardless of the cooldown
       // and evidence accumulation checks that gate generation and merging.
       if (now - this.#lastMaintenanceMs >= MEMORIES_MAINTENANCE_INTERVAL_MS) {
+        /** @type {import("./MemoriesConstants.sys.mjs").MemoriesMaintenanceRunStats} */
+        const maintenanceStats = {};
         try {
           lazy.console.debug("Running memories maintenance...");
-          await lazy.MemoriesManager.runMemoryMaintenance();
+          await lazy.MemoriesManager.runMemoryMaintenance({
+            stats: maintenanceStats,
+          });
           lazy.console.debug("Memories maintenance complete.");
         } catch (error) {
           lazy.console.error("Failed to run memories maintenance", error);
+          // Records an error outside those runMemoryMaintenance handles
+          maintenanceStats.outcome ??= lazy.MAINTENANCE_RUN_OUTCOME.ERROR;
+          maintenanceStats.error_type ??=
+            lazy.GENERATION_RUN_ERROR_TYPE.FIREFOX_INTERNAL;
+        } finally {
+          maintenanceStats.memories_after = await this.#countForStats(
+            async () =>
+              (
+                await lazy.MemoriesManager.getAllMemories({
+                  includeSoftDeleted: true,
+                })
+              ).length,
+            "memories"
+          );
+          Glean.smartWindow.memoriesMaintenanceRun.record(maintenanceStats);
         }
+        /** @type {import("./MemoriesConstants.sys.mjs").JourneysMaintenanceRunStats} */
+        const journeyMaintenanceStats = {};
+        let recordJourneyMaintenance = true;
         try {
           lazy.console.debug("Running journey maintenance...");
-          await lazy.JourneyManager.runJourneyMaintenance();
+          const { removed, isLocaleSupported } =
+            await lazy.JourneyManager.runJourneyMaintenance({
+              stats: journeyMaintenanceStats,
+            });
+          // Only record telemetry if the locale supports Journeys
+          recordJourneyMaintenance = isLocaleSupported;
+          journeyMaintenanceStats.journeys_removed = removed;
+          journeyMaintenanceStats.outcome =
+            lazy.MAINTENANCE_RUN_OUTCOME.SUCCESS;
           lazy.console.debug("Journey maintenance complete.");
         } catch (error) {
           lazy.console.error("Failed to run journey maintenance", error);
+          journeyMaintenanceStats.outcome = lazy.MAINTENANCE_RUN_OUTCOME.ERROR;
+          journeyMaintenanceStats.error_type =
+            lazy.GENERATION_RUN_ERROR_TYPE.FIREFOX_INTERNAL;
         } finally {
           this.#lastMaintenanceMs = now;
+          if (recordJourneyMaintenance) {
+            journeyMaintenanceStats.journeys_after = await this.#countForStats(
+              async () => (await lazy.JourneyStore.getAll()).length,
+              "journeys"
+            );
+            journeyMaintenanceStats.journeys_eligible_after =
+              await this.#countForStats(
+                () => lazy.JourneyManager.countEligibleJourneys(),
+                "journeys"
+              );
+            Glean.smartWindow.journeysMaintenanceRun.record(
+              journeyMaintenanceStats
+            );
+          }
         }
       } else {
         lazy.console.debug(

@@ -660,11 +660,13 @@ export const MemoryStore = {
    * hard delete (remove from array).
    *
    * @param {string} id
-   * @param {string} trigger
-   * @param {number|null} inUse
+   * @param {string|null} [trigger] Where the user removed the memory
+   *   (assistant, settings). Null for removals the user didn't make, which
+   *   record no memory_removed_panel event.
+   * @param {number|null} [inUse]
    * @returns {Promise<boolean>}
    */
-  async hardDeleteMemory(id, trigger = "other", inUse = null) {
+  async hardDeleteMemory(id, trigger = null, inUse = null) {
     await this.ensureInitialized();
     const idx = gState.memories.findIndex(i => i.id === id);
     if (idx === -1) {
@@ -672,11 +674,13 @@ export const MemoryStore = {
     }
     gState.memories.splice(idx, 1);
     gJSONFile?.saveSoon();
-    Glean.smartWindow.memoryRemovedPanel.record({
-      memories: gState.memories.length,
-      trigger,
-      in_use: inUse,
-    });
+    if (trigger) {
+      Glean.smartWindow.memoryRemovedPanel.record({
+        memories: gState.memories.length,
+        trigger,
+        in_use: inUse,
+      });
+    }
     Services.obs.notifyObservers(null, MEMORY_STORE_CHANGED);
     updateMemoriesCountMetric();
     return true;

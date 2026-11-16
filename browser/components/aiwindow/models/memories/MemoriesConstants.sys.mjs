@@ -55,6 +55,12 @@ export const MEMORY_TYPE_TIERS = Object.freeze([
   }),
 ]);
 
+// Memory types list, strongest first
+export const MEMORY_TYPE_LADDER = Object.freeze([
+  ...MEMORY_TYPE_TIERS.map(tier => tier.type),
+  MEMORY_TYPE_SHORT_TERM_MEMORY,
+]);
+
 /**
  * Memory merge constants
  */
@@ -153,6 +159,44 @@ export const JOURNEYS_GENERATION_RUN_OUTCOME = Object.freeze({
  * @property {number} [journeys_eligible_after] Stored journeys that can be suggested when the run ended
  * @property {string} [outcome] One of {@link JOURNEYS_GENERATION_RUN_OUTCOME}
  * @property {string} [error_stage] One of {@link GENERATION_RUN_ERROR_STAGE}
+ * @property {string} [error_type] One of {@link GENERATION_RUN_ERROR_TYPE}
+ */
+
+/**
+ * Memories maintenance run telemetry
+ */
+export const MAINTENANCE_RUN_OUTCOME = Object.freeze({
+  SUCCESS: GENERATION_RUN_OUTCOME.SUCCESS,
+  ERROR: GENERATION_RUN_OUTCOME.ERROR,
+});
+
+/**
+ * Schema for memories maintenance telemetry statistics sent through a Glean event.
+ *
+ * @typedef {object} MemoriesMaintenanceRunStats
+ * @property {number} [memories_before] Stored memories when maintenance started, soft-deleted included
+ * @property {number} [soft_deleted_removed] Soft-deleted memories hard-deleted
+ * @property {number} [memories_skipped] Live memories not aged because they were aged less than a day ago
+ * @property {number} [memories_aged] Live memories aged, including those then deleted by decay
+ * @property {number} [promoted_to_long_term] Aged memories changed from short term to long term
+ * @property {number} [promoted_to_durable] Aged memories changed from short or long term to durable
+ * @property {number} [demoted_to_long_term] Aged memories changed from durable to long term
+ * @property {number} [demoted_to_short_term] Aged memories changed from durable or long term to short term
+ * @property {number} [memories_decayed] Aged memories hard-deleted by decay
+ * @property {number} [memories_after] Stored memories when the run ended, soft-deleted included
+ * @property {string} [outcome] One of {@link MAINTENANCE_RUN_OUTCOME}
+ * @property {string} [error_type] One of {@link GENERATION_RUN_ERROR_TYPE}
+ */
+
+/**
+ * Schema for journeys maintenance telemetry statistics sent through a Glean event.
+ *
+ * @typedef {object} JourneysMaintenanceRunStats
+ * @property {number} [journeys_before] Stored journeys when maintenance started, dismissed and snoozed included
+ * @property {number} [journeys_removed] Journeys deleted because their memory is gone
+ * @property {number} [journeys_after] Stored journeys when the run ended, dismissed and snoozed included
+ * @property {number} [journeys_eligible_after] Stored journeys that can be suggested when the run ended
+ * @property {string} [outcome] One of {@link MAINTENANCE_RUN_OUTCOME}
  * @property {string} [error_type] One of {@link GENERATION_RUN_ERROR_TYPE}
  */
 

@@ -1314,6 +1314,180 @@ smart_window:
           400 or 401), or firefox_internal (an exception in Firefox that did
           not come from the model service). Absent otherwise.
 
+  memories_maintenance_run:
+    type: event
+    description: |
+      Recorded once per memories scheduler check that runs memories
+      maintenance. Not recorded when the check is skipped by the
+      maintenance interval or a back-off. Maintenance runs whether or not
+      memories are generated in the same check, and memory generation and
+      journey maintenance are not included. The event summarizes the
+      maintenance run: permanently deleting memories the user deleted
+      via natural language command, ageing the usage counts of the remaining
+      memories at most once a day, updating their strength and type from those
+      counts, and deleting memories whose strength has decayed too far.
+      Only counts are recorded, never memory content.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2092619
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D342699
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - cdipersio@mozilla.com
+      - firefox-ai-and-ml@mozilla.com
+    expires: 175
+    extra_keys:
+      memories_before:
+        type: quantity
+        unit: count
+        description: >
+          Number of stored memories when maintenance started, including
+          memories the user deleted via natural language command. Absent
+          when counting them failed.
+      soft_deleted_removed:
+        type: quantity
+        unit: memories
+        description: >
+          Number of stored memories permanently deleted because the user had
+          deleted them via natural language command. Absent when the run
+          failed before deleting finished.
+      memories_skipped:
+        type: quantity
+        unit: memories
+        description: >
+          Number of remaining stored memories not aged because they were aged
+          less than a day ago. When the run stopped early on an error, only
+          the memories reached are counted. Absent when the run failed before
+          ageing.
+      memories_aged:
+        type: quantity
+        unit: memories
+        description: >
+          Number of remaining stored memories whose usage counts were aged and
+          whose strength and type were updated, including those then deleted
+          by decay. When the run stopped early on an error, only the memories
+          reached are counted. Absent when the run failed before ageing.
+      promoted_to_long_term:
+        type: quantity
+        unit: memories
+        description: >
+          Number of aged memories whose type changed from short term to long
+          term. Memories deleted by decay in the same run are not counted.
+          Absent when the run failed before ageing finished.
+      promoted_to_durable:
+        type: quantity
+        unit: memories
+        description: >
+          Number of aged memories whose type changed from short term or long
+          term to durable. Memories deleted by decay in the same run are not
+          counted. Absent when the run failed before ageing finished.
+      demoted_to_long_term:
+        type: quantity
+        unit: memories
+        description: >
+          Number of aged memories whose type changed from durable to long term.
+          Memories deleted by decay in the same run are not counted. Absent
+          when the run failed before ageing finished.
+      demoted_to_short_term:
+        type: quantity
+        unit: memories
+        description: >
+          Number of aged memories whose type changed from durable or long term
+          to short term. Memories deleted by decay in the same run are not
+          counted. Absent when the run failed before ageing finished.
+      memories_decayed:
+        type: quantity
+        unit: memories
+        description: >
+          Number of aged memories permanently deleted because their strength
+          decayed below the retention threshold. Absent when the run failed
+          before ageing finished.
+      memories_after:
+        type: quantity
+        unit: count
+        description: >
+          Number of stored memories when the run ended, counted the same way
+          as memories_before. Recorded on errors too. Absent when counting
+          them failed.
+      outcome:
+        type: string
+        description: >
+          How the run ended. One of: success (maintenance finished) or error.
+          On an error, the absent counts show the step that failed:
+          memories_before when reading memories, soft_deleted_removed when
+          permanently deleting memories the user deleted, and the type change
+          counts and memories_decayed when ageing.
+      error_type:
+        type: string
+        description: >
+          The kind of failure when outcome is error. One of: firefox_internal
+          (an exception in Firefox; maintenance makes no request to the model
+          service). Absent otherwise.
+
+  journeys_maintenance_run:
+    type: event
+    description: |
+      Recorded once per memories scheduler check that runs journey
+      maintenance, right after the memories maintenance recorded by
+      memories_maintenance_run. Not recorded when the check is skipped by the
+      maintenance interval or a back-off, or when the app locale does not
+      support journeys and the run succeeds. The event summarizes the
+      maintenance run: deleting stored journeys whose memory no longer exists
+      or was deleted by the user. Only counts are recorded, never memory or
+      journey content.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2092619
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D342699
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - cdipersio@mozilla.com
+      - firefox-ai-and-ml@mozilla.com
+    expires: 175
+    extra_keys:
+      journeys_before:
+        type: quantity
+        unit: count
+        description: >
+          Number of stored journeys when maintenance started, including
+          dismissed or snoozed journeys. Absent when counting them failed.
+      journeys_removed:
+        type: quantity
+        unit: journeys
+        description: >
+          Number of stored journeys deleted because their memory no longer
+          exists or was deleted by the user. Absent when the run failed before
+          deleting finished.
+      journeys_after:
+        type: quantity
+        unit: count
+        description: >
+          Number of stored journeys when the run ended, counted the same way
+          as journeys_before. Recorded on errors too. Absent when counting
+          them failed.
+      journeys_eligible_after:
+        type: quantity
+        unit: count
+        description: >
+          Number of stored journeys that can be suggested when the run ended:
+          not dismissed or snoozed, and their memory still exists. Recorded
+          on errors too. Absent when counting them failed.
+      outcome:
+        type: string
+        description: >
+          How the run ended. One of: success (maintenance finished) or error.
+          On an error, the absent counts show the step that failed:
+          journeys_before when reading memories or journeys, and
+          journeys_removed when deleting journeys.
+      error_type:
+        type: string
+        description: >
+          The kind of failure when outcome is error. One of: firefox_internal
+          (an exception in Firefox; maintenance makes no request to the model
+          service). Absent otherwise.
+
   onboarding_screen_impression:
     type: event
     description: |

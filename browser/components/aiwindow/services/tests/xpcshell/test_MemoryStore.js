@@ -474,6 +474,37 @@ add_task(async function test_hard_delete() {
   );
 });
 
+add_task(async function test_hard_delete_records_removal_only_with_trigger() {
+  Services.fog.initializeFOG();
+  Services.fog.testResetFOG();
+  await MemoryStore.ensureInitialized();
+
+  const background = await MemoryStore.addMemory({
+    memory_summary: "removed without a trigger",
+  });
+  const userRemoved = await MemoryStore.addMemory({
+    memory_summary: "removed from settings",
+  });
+
+  ok(
+    await MemoryStore.hardDeleteMemory(background.id),
+    "Memory without a trigger should be removed"
+  );
+  equal(
+    Glean.smartWindow.memoryRemovedPanel.testGetValue(),
+    null,
+    "Removal without a trigger should record no memory_removed_panel event"
+  );
+
+  ok(
+    await MemoryStore.hardDeleteMemory(userRemoved.id, "settings"),
+    "Memory with a trigger should be removed"
+  );
+  const events = Glean.smartWindow.memoryRemovedPanel.testGetValue();
+  equal(events?.length, 1, "Removal with a trigger should record one event");
+  equal(events[0].extra.trigger, "settings", "Event should carry the trigger");
+});
+
 add_task(async function test_updateMeta_and_persistence_roundtrip() {
   await MemoryStore.ensureInitialized();
 

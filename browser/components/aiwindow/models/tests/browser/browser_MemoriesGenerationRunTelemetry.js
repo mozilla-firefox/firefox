@@ -394,6 +394,13 @@ add_task(async function test_full_run() {
       memories_after: 5, // Number of memories in the store after the whole pipeline
       outcome: "success",
     });
+
+    // Memory maintenance runs should not trigger memory panel telemetry events
+    Assert.equal(
+      Glean.smartWindow.memoryRemovedPanel.testGetValue(),
+      null,
+      "Merge deletions should not be recorded as user removals."
+    );
   });
 });
 

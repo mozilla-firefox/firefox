@@ -44,7 +44,12 @@ import {
   GENERATION_RUN_OUTCOME,
   GENERATION_RUN_ERROR_STAGE,
   GENERATION_RUN_MERGE_STATUS,
+  MAINTENANCE_RUN_OUTCOME,
+  GENERATION_RUN_ERROR_TYPE,
   MEMORY_TYPE_PROFILE_FACT,
+  MEMORY_TYPE_DURABLE_MEMORY,
+  MEMORY_TYPE_LONG_TERM_MEMORY,
+  MEMORY_TYPE_LADDER,
   DEFAULT_RELEVANT_MEMORIES_TOP_K,
   DEFAULT_RELEVANT_MEMORIES_SIMILARITY_THRESHOLD,
 } from "moz-src:///browser/components/aiwindow/models/memories/MemoriesConstants.sys.mjs";
@@ -63,6 +68,7 @@ import { AIWindow } from "moz-src:///browser/components/aiwindow/ui/modules/AIWi
 import { EveryWindow } from "resource:///modules/EveryWindow.sys.mjs";
 
 /** @typedef {import("./MemoriesConstants.sys.mjs").MemoriesGenerationRunStats} MemoriesGenerationRunStats */
+/** @typedef {import("./MemoriesConstants.sys.mjs").MemoriesMaintenanceRunStats} MemoriesMaintenanceRunStats */
 
 const lazy = {};
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
@@ -94,6 +100,30 @@ async function countMemoriesForStats() {
   } catch (e) {
     lazy.console.error("Failed to count memories for telemetry", e);
     return undefined;
+  }
+}
+
+/**
+ * Returns the maintenance stats key counting a memory type change.
+ *
+ * @param {string} fromType Memory type before maintenance
+ * @param {string} toType Memory type after maintenance
+ * @returns {string|null} The key, or null when the type didn't move on
+ *   {@link MEMORY_TYPE_LADDER}.
+ */
+function getMaintenanceStatKeyForTypeChange(fromType, toType) {
+  const from = MEMORY_TYPE_LADDER.indexOf(fromType);
+  const to = MEMORY_TYPE_LADDER.indexOf(toType);
+  if (from === -1 || to === -1 || from === to) {
+    return null;
+  }
+  switch (toType) {
+    case MEMORY_TYPE_DURABLE_MEMORY:
+      return "promoted_to_durable";
+    case MEMORY_TYPE_LONG_TERM_MEMORY:
+      return to < from ? "promoted_to_long_term" : "demoted_to_long_term";
+    default:
+      return "demoted_to_short_term";
   }
 }
 
@@ -221,66 +251,107 @@ export class MemoriesManager {
    * If a memory is not deleted, we update its attributes. Attribute updates and the
    * decay check are per-memory daily: each memory tracks its own day in `updated_at`
    * and is skipped until a full day has elapsed for it.
+   *
+   * @param {object} [options]
+   * @param {MemoriesMaintenanceRunStats} [options.stats]
+   *   Stats object to record telemetry information.
    */
-  static async runMemoryMaintenance() {
+  static async runMemoryMaintenance({ stats = {} } = {}) {
     const now = Date.now();
 
     // Tracks whether the in-memory state of the MemoryStore changed while this function
     // is running to request a save at the end
     let changed = false;
 
-    // Pull all memories, including soft deleted ones
-    const allMemories = await MemoryStore.getMemories({
-      includeSoftDeleted: true,
-    });
+    try {
+      // Pull all memories, including soft deleted ones
+      const allMemories = await MemoryStore.getMemories({
+        includeSoftDeleted: true,
+      });
+      stats.memories_before = allMemories.length;
 
-    // Hard delete any soft deleted memories first
-    for (const memory of allMemories.filter(mem => mem.is_deleted)) {
-      await MemoryStore.hardDeleteMemory(memory.id);
-      changed = true;
-    }
-
-    // Filter for the remainder that aren't soft deleted
-    const liveMemories = allMemories.filter(memory => !memory.is_deleted);
-
-    for (const memory of liveMemories) {
-      const daysElapsed = Math.floor(
-        (now - memory.updated_at) / (24 * 60 * 60 * 1000)
-      );
-      // Skip if a full day hasn't passed since last update
-      if (daysElapsed < 1) {
-        continue;
+      // Hard delete any soft deleted memories first
+      let softDeletedRemoved = 0;
+      for (const memory of allMemories.filter(mem => mem.is_deleted)) {
+        if (await MemoryStore.hardDeleteMemory(memory.id)) {
+          softDeletedRemoved++;
+        }
+        changed = true;
       }
+      stats.soft_deleted_removed = softDeletedRemoved;
 
-      // Age the rolling usage window by however many whole days have elapsed
-      const shifted = {};
-      for (let day = 0; day < MEMORY_FRECENCY_MAX_DAYS; day++) {
-        const source = day - daysElapsed;
-        shifted[day] =
-          source >= 0 ? (memory.recent_accessed_counts[source] ?? 0) : 0;
+      // Filter for the remainder that aren't soft deleted
+      const liveMemories = allMemories.filter(memory => !memory.is_deleted);
+
+      stats.memories_skipped = 0;
+      stats.memories_aged = 0;
+      // Results of ageing, recorded only once every memory has been aged
+      const ageingResults = {
+        promoted_to_long_term: 0,
+        promoted_to_durable: 0,
+        demoted_to_long_term: 0,
+        demoted_to_short_term: 0,
+        memories_decayed: 0,
+      };
+      for (const memory of liveMemories) {
+        const daysElapsed = Math.floor(
+          (now - memory.updated_at) / (24 * 60 * 60 * 1000)
+        );
+        // Skip if a full day hasn't passed since last update
+        if (daysElapsed < 1) {
+          stats.memories_skipped++;
+          continue;
+        }
+
+        // Age the rolling usage window by however many whole days have elapsed
+        const shifted = {};
+        for (let day = 0; day < MEMORY_FRECENCY_MAX_DAYS; day++) {
+          const source = day - daysElapsed;
+          shifted[day] =
+            source >= 0 ? (memory.recent_accessed_counts[source] ?? 0) : 0;
+        }
+        memory.recent_accessed_counts = shifted;
+
+        // Update computed properties
+        const typeBefore = memory.type;
+        memory.frecency = computeMemoryFrecency(memory);
+        memory.strength = computeMemoryStrength(memory);
+        classifyMemoryAndCapStrength(memory);
+
+        // Set updated_at to now, starting this memory's next day
+        memory.updated_at = now;
+
+        changed = true;
+        stats.memories_aged++;
+
+        // If a memory should be deleted due to decay, hard delete it now that its strength is updated
+        if (isShouldDeleteMemoryDueToDecay(memory)) {
+          if (await MemoryStore.hardDeleteMemory(memory.id)) {
+            ageingResults.memories_decayed++;
+          }
+          continue;
+        }
+
+        const typeChangeKey = getMaintenanceStatKeyForTypeChange(
+          typeBefore,
+          memory.type
+        );
+        if (typeChangeKey) {
+          ageingResults[typeChangeKey]++;
+        }
       }
-      memory.recent_accessed_counts = shifted;
+      Object.assign(stats, ageingResults);
 
-      // Update computed properties
-      memory.frecency = computeMemoryFrecency(memory);
-      memory.strength = computeMemoryStrength(memory);
-      classifyMemoryAndCapStrength(memory);
-
-      // Set updated_at to now, starting this memory's next day
-      memory.updated_at = now;
-
-      changed = true;
-
-      // If a memory should be deleted due to decay, hard delete it now that its strength is updated
-      if (isShouldDeleteMemoryDueToDecay(memory)) {
-        await MemoryStore.hardDeleteMemory(memory.id);
+      // If anything was changed to the in-memory MemoryStore, save it to disk
+      if (changed) {
+        await MemoryStore.requestSave();
       }
+    } catch (e) {
+      stats.outcome = MAINTENANCE_RUN_OUTCOME.ERROR;
+      stats.error_type = GENERATION_RUN_ERROR_TYPE.FIREFOX_INTERNAL;
+      throw e;
     }
-
-    // If anything was changed to the in-memory MemoryStore, save it to disk
-    if (changed) {
-      await MemoryStore.requestSave();
-    }
+    stats.outcome = MAINTENANCE_RUN_OUTCOME.SUCCESS;
   }
 
   /**
@@ -799,8 +870,9 @@ export class MemoriesManager {
    * by UI to allow users to delete memories they no longer want stored.
    *
    * @param {string} memoryId       ID of the memory to hard-delete
-   * @param {string} trigger        What was the trigger (assistant, settings, other)
-   * @param {number|null} inUse     Number of memories still applied to the message after removal, or null if not triggered by assistant
+   * @param {string|null} [trigger] Where the user removed the memory (assistant, settings), or omitted for
+   *                                removals the user didn't make, which record no memory_removed_panel event
+   * @param {number|null} [inUse]   Number of memories still applied to the message after removal, or null if not triggered by assistant
    * @returns {Promise<boolean>}    True if the memory was found and deleted, false otherwise
    */
   static async hardDeleteMemoryById(memoryId, trigger, inUse) {

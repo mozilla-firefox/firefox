@@ -82,6 +82,31 @@ async function addDueMemory() {
   return { id: memory.id, updatedAt: memory.updated_at };
 }
 
+// The maintenance run recorded for a store holding one memory from
+// addDueMemory: aged, too young to change type, and kept.
+const DUE_MEMORY_MAINTENANCE_RUN = Object.freeze({
+  memories_before: 1,
+  soft_deleted_removed: 0,
+  memories_skipped: 0,
+  memories_aged: 1,
+  promoted_to_long_term: 0,
+  promoted_to_durable: 0,
+  demoted_to_long_term: 0,
+  demoted_to_short_term: 0,
+  memories_decayed: 0,
+  memories_after: 1,
+  outcome: "success",
+});
+
+// The journey maintenance run recorded when no journeys are stored.
+const EMPTY_JOURNEY_MAINTENANCE_RUN = Object.freeze({
+  journeys_before: 0,
+  journeys_removed: 0,
+  journeys_after: 0,
+  journeys_eligible_after: 0,
+  outcome: "success",
+});
+
 /**
  * Read a memory's maintenance clock after a tick.
  *
@@ -189,6 +214,7 @@ async function withScheduler(
   });
   await MemoriesManager.setLastSessionMemoryTimestamp(watermarkMs);
   await MemoriesManager.setLastGenerationRunTimestamp(lastGenerationMs);
+  Services.fog.testResetFOG();
 
   const sandbox = sinon.createSandbox();
   const maintenance = sandbox.spy(MemoriesManager, "runMemoryMaintenance");
@@ -325,6 +351,14 @@ add_task(async function test_maintenance_runs_when_cooldown_unmet() {
         memory.updatedAt,
         "The memory should have been aged while generation was held."
       );
+      assertGenerationRunEvent(
+        Glean.smartWindow.memoriesMaintenanceRun,
+        DUE_MEMORY_MAINTENANCE_RUN
+      );
+      assertGenerationRunEvent(
+        Glean.smartWindow.journeysMaintenanceRun,
+        EMPTY_JOURNEY_MAINTENANCE_RUN
+      );
     }
   );
 });
@@ -378,6 +412,17 @@ add_task(async function test_maintenance_runs_when_no_trigger_met() {
         null,
         "The orphaned journey should have been removed with no trigger armed."
       );
+      assertGenerationRunEvent(
+        Glean.smartWindow.memoriesMaintenanceRun,
+        DUE_MEMORY_MAINTENANCE_RUN
+      );
+      assertGenerationRunEvent(Glean.smartWindow.journeysMaintenanceRun, {
+        journeys_before: 1,
+        journeys_removed: 1, // The orphaned journey
+        journeys_after: 0,
+        journeys_eligible_after: 0,
+        outcome: "success",
+      });
     }
   );
 });
@@ -404,6 +449,14 @@ add_task(async function test_maintenance_skipped_within_interval() {
         journeyMaintenance.calledOnce,
         "Journey maintenance should run once across three back-to-back ticks."
       );
+      assertGenerationRunEvent(
+        Glean.smartWindow.memoriesMaintenanceRun,
+        DUE_MEMORY_MAINTENANCE_RUN
+      );
+      assertGenerationRunEvent(
+        Glean.smartWindow.journeysMaintenanceRun,
+        EMPTY_JOURNEY_MAINTENANCE_RUN
+      );
     }
   );
 });
@@ -422,6 +475,15 @@ add_task(async function test_maintenance_runs_again_after_interval() {
         maintenance.calledOnce,
         "Maintenance should run on first tick."
       );
+      assertGenerationRunEvent(
+        Glean.smartWindow.memoriesMaintenanceRun,
+        DUE_MEMORY_MAINTENANCE_RUN
+      );
+      assertGenerationRunEvent(
+        Glean.smartWindow.journeysMaintenanceRun,
+        EMPTY_JOURNEY_MAINTENANCE_RUN
+      );
+      Services.fog.testResetFOG();
 
       // Set maintenance watermark beyond check threshold, so it runs again
       scheduler.setLastMaintenanceMsForTesting(
@@ -438,6 +500,16 @@ add_task(async function test_maintenance_runs_again_after_interval() {
         journeyMaintenance.callCount,
         2,
         "Journey maintenance should run again once its interval has elapsed."
+      );
+      // The first run aged the memory, so the second skips it.
+      assertGenerationRunEvent(Glean.smartWindow.memoriesMaintenanceRun, {
+        ...DUE_MEMORY_MAINTENANCE_RUN,
+        memories_skipped: 1,
+        memories_aged: 0,
+      });
+      assertGenerationRunEvent(
+        Glean.smartWindow.journeysMaintenanceRun,
+        EMPTY_JOURNEY_MAINTENANCE_RUN
       );
     }
   );
@@ -477,6 +549,16 @@ add_task(async function test_maintenance_skipped_during_backoff() {
         await getUpdatedAt(memory.id),
         memory.updatedAt,
         "The memory should be untouched while backed off."
+      );
+      Assert.equal(
+        Glean.smartWindow.memoriesMaintenanceRun.testGetValue(),
+        null,
+        "No maintenance run should be recorded while backed off."
+      );
+      Assert.equal(
+        Glean.smartWindow.journeysMaintenanceRun.testGetValue(),
+        null,
+        "No journey maintenance run should be recorded while backed off."
       );
 
       scheduler.setBackoffUntilMsForTesting(0);
@@ -723,6 +805,18 @@ add_task(async function test_maintenance_failure_is_contained() {
         merge_status: "ran",
         outcome: "success",
       });
+      // The failed maintenance run is recorded once, with nothing counted.
+      assertGenerationRunEvent(Glean.smartWindow.memoriesMaintenanceRun, {
+        outcome: "error",
+        error_type: "firefox_internal",
+      });
+      // Journey maintenance reads memories from the same broken store. Only
+      // the stored journey count, which doesn't, is recorded.
+      assertGenerationRunEvent(Glean.smartWindow.journeysMaintenanceRun, {
+        journeys_after: 0,
+        outcome: "error",
+        error_type: "firefox_internal",
+      });
     }
   );
 });
@@ -780,6 +874,18 @@ add_task(async function test_journey_maintenance_failure_is_contained() {
       Assert.ok(
         failingJourneyMaintenance.calledOnce,
         "A failed journey maintenance pass should not retry on the next tick."
+      );
+      const events =
+        Glean.smartWindow.journeysMaintenanceRun.testGetValue() ?? [];
+      Assert.equal(
+        events.length,
+        1,
+        "Only the failed journey maintenance run should be recorded."
+      );
+      Assert.equal(
+        events[0].extra.outcome,
+        "error",
+        "A journey maintenance run that fails before reading anything is recorded as an error."
       );
     }
   );

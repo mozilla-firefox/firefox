@@ -925,7 +925,11 @@ add_task(async function test_runJourneyMaintenance() {
         dismissed: memoryId === "dismissed",
       });
     }
-    await JourneyManager.runJourneyMaintenance();
+    Assert.deepEqual(
+      await JourneyManager.runJourneyMaintenance(),
+      { removed: 2, isLocaleSupported: true },
+      "Maintenance reports the journeys it removed and the locale support"
+    );
     Assert.deepEqual(
       (await JourneyStore.getAll()).map(record => record.memory_id).sort(),
       ["dismissed", "live"],
