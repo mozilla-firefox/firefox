@@ -594,7 +594,10 @@ bool CanvasChild::EnsureDataSurfaceShmem(size_t aSizeRequired) {
   }
 
   if (ShouldGrowDataSurfaceShmem(aSizeRequired)) {
-    RecordEvent(RecordedPauseTranslation());
+    if (!mRecorder || mRecorder->HasFailed()) {
+      return false;
+    }
+
     auto shmemHandle = ipc::shared_memory::Create(aSizeRequired);
     if (!shmemHandle) {
       return false;
@@ -602,6 +605,13 @@ bool CanvasChild::EnsureDataSurfaceShmem(size_t aSizeRequired) {
 
     auto roMapping = shmemHandle.AsReadOnly().Map();
     if (!roMapping) {
+      return false;
+    }
+
+    // The translator only accepts the new buffer while paused, so we must not
+    // send it unless the pause was actually recorded.
+    RecordEvent(RecordedPauseTranslation());
+    if (mRecorder->HasFailed()) {
       return false;
     }
 

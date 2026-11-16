@@ -826,6 +826,12 @@ bool CanvasTranslator::TranslateRecording() {
       }
     }
 
+    // Playing the event may have deactivated us, in which case we must stop
+    // before ReadNextEvent overwrites the Failed state.
+    if (mHeader->readerState == State::Failed) {
+      return false;
+    }
+
     mHeader->processedCount++;
 
     if (mHeader->readerState == State::Paused || PauseUntilSync()) {
