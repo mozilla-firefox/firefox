@@ -14,8 +14,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import mozilla.components.browser.state.action.ContentAction
@@ -116,10 +120,10 @@ import org.mozilla.fenix.components.appstate.AppAction.SearchAction.SearchEnded
 import org.mozilla.fenix.components.appstate.AppAction.SearchAction.SearchStarted
 import org.mozilla.fenix.components.appstate.AppAction.SnackbarAction.SnackbarDismissed
 import org.mozilla.fenix.components.appstate.AppAction.URLCopiedToClipboard
-import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
-import org.mozilla.fenix.components.appstate.SupportedMenuNotifications.NotDefaultBrowser
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarState
 import org.mozilla.fenix.components.menu.MenuAccessPoint
+import org.mozilla.fenix.components.menu.MenuCustomizationRepository
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
 import org.mozilla.fenix.components.metrics.MetricsUtils
 import org.mozilla.fenix.components.metrics.toSearchAccessPoint
 import org.mozilla.fenix.components.share.ShareSource
@@ -262,6 +266,7 @@ internal object BrowserToolbarTestTags {
  * @param summarizationFeatureSettings Web content summarization settings.
  * @param translationsFeatureSettings Web content translations availability status.
  * @param listenSettings Listen to Page availability status.
+ * @param menuCustomizationRepository [MenuCustomizationRepository] persisting the user's browser menu customization.
  * @param navController [NavController] to use for navigating to other in-app destinations.
  * @param summarizationNavigator [SummarizationNavigator] used to navigate to the summarization screen.
  * @param browsingModeManager [BrowsingModeManager] for querying the current browsing mode.
@@ -293,6 +298,7 @@ class BrowserToolbarMiddleware(
     private val summarizationFeatureSettings: SummarizationFeatureDiscoveryConfiguration,
     private val translationsFeatureSettings: TranslationsEnabledSettings,
     private val listenSettings: ListenSettings,
+    private val menuCustomizationRepository: MenuCustomizationRepository? = null,
     private val navController: NavController,
     private val summarizationNavigator: SummarizationNavigator,
     private val browsingModeManager: BrowsingModeManager,
@@ -1013,8 +1019,15 @@ class BrowserToolbarMiddleware(
     }
 
     private fun observeMenuHighlightChanges(store: Store<BrowserToolbarState, BrowserToolbarAction>) {
-        appStore.observeWhileActive {
-            distinctUntilChangedBy { it.supportedMenuNotifications.shouldHighlightBrowserMenuButton() }
+        val customizationFlow = menuCustomizationRepository?.customizedMenuInfo ?: flowOf(null)
+        scope.launch {
+            combine(
+                    appStore.flow().map { it.supportedMenuNotifications }.distinctUntilChanged(),
+                    customizationFlow,
+                ) { notifications, customizationInfo ->
+                    BrowserMenuConfiguration.hasNotificationToShow(notifications, customizationInfo)
+                }
+                .distinctUntilChanged()
                 .collect {
                     updateEndBrowserActions(store)
                     updateNavigationActions(store)
@@ -1344,7 +1357,11 @@ class BrowserToolbarMiddleware(
                 ActionButtonRes(
                     drawableResId = iconsR.drawable.mozac_ic_more_vertical_round_24,
                     contentDescription = R.string.content_description_menu,
-                    highlighted = appStore.state.supportedMenuNotifications.shouldHighlightBrowserMenuButton(),
+                    highlighted =
+                        BrowserMenuConfiguration.hasNotificationToShow(
+                            appStore.state.supportedMenuNotifications,
+                            menuCustomizationRepository?.customizedMenuInfo?.value,
+                        ),
                     onClick = MenuClicked(source),
                 )
 
@@ -1662,6 +1679,4 @@ class BrowserToolbarMiddleware(
             FxNimbus.features.translations.value().mainFlowToolbarEnabled &&
             translationsFeatureSettings.isEnabled.first()
     }
-
-    private fun Set<SupportedMenuNotifications>.shouldHighlightBrowserMenuButton() = any { it != NotDefaultBrowser }
 }

@@ -22,6 +22,7 @@ import io.mockk.verify
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import mozilla.components.ExperimentalAndroidComponentsApi
@@ -151,7 +152,11 @@ import org.mozilla.fenix.components.appstate.AppState
 import org.mozilla.fenix.components.appstate.OrientationMode.Landscape
 import org.mozilla.fenix.components.appstate.OrientationMode.Portrait
 import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
+import org.mozilla.fenix.components.menu.CustomizedMenuInfo
 import org.mozilla.fenix.components.menu.MenuAccessPoint
+import org.mozilla.fenix.components.menu.MenuCustomizationRepository
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.LIBRARY_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.TOOLS_GROUP_ID
 import org.mozilla.fenix.components.search.BOOKMARKS_SEARCH_ENGINE_ID
 import org.mozilla.fenix.components.search.HISTORY_SEARCH_ENGINE_ID
 import org.mozilla.fenix.components.search.TABS_SEARCH_ENGINE_ID
@@ -3540,6 +3545,34 @@ class BrowserToolbarMiddlewareTest {
         }
 
     @Test
+    fun `GIVEN menu section for downloads is hidden WHEN download notification is added THEN menu button is not highlighted`() =
+        runTest(testDispatcher) {
+            val appStore = AppStore()
+            val customizedMenuInfoFlow =
+                MutableStateFlow(
+                    CustomizedMenuInfo(
+                        visibleSectionIds = listOf(TOOLS_GROUP_ID),
+                        hiddenSectionIds = listOf(LIBRARY_GROUP_ID),
+                    )
+                )
+            val menuCustomizationRepository: MenuCustomizationRepository = mockk()
+            every { menuCustomizationRepository.customizedMenuInfo } returns customizedMenuInfoFlow
+
+            val middleware =
+                buildMiddleware(
+                    appStore = appStore,
+                    menuCustomizationRepository = menuCustomizationRepository,
+                )
+            val toolbarStore = buildStore(middleware)
+
+            appStore.dispatch(AppAction.MenuNotification.AddMenuNotification(SupportedMenuNotifications.Downloads))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val updatedMenuButton = toolbarStore.state.displayState.browserActionsEnd[2] as ActionButtonRes
+            assertFalse(updatedMenuButton.highlighted)
+        }
+
+    @Test
     fun `GIVEN a default browser notification WHEN a downloads notification is added THEN the menu button is highlighted`() =
         runTest(testDispatcher) {
             val appStore =
@@ -4623,6 +4656,7 @@ class BrowserToolbarMiddlewareTest {
         summarizationSettingsCache: SummarizationFeatureDiscoveryConfiguration = this.summarizationFeatureSettings,
         translationsFeatureSettings: TranslationsEnabledSettings = this.translationsFeatureSettings,
         listenSettings: ListenSettings = ListenSettings.inMemory(available = false),
+        menuCustomizationRepository: MenuCustomizationRepository? = null,
         navController: NavController = this.navController,
         summarizationNavigator: SummarizationNavigator = this.summarizationNavigator,
         browsingModeManager: BrowsingModeManager = this.browsingModeManager,
@@ -4652,6 +4686,7 @@ class BrowserToolbarMiddlewareTest {
             summarizationFeatureSettings = summarizationSettingsCache,
             translationsFeatureSettings = translationsFeatureSettings,
             listenSettings = listenSettings,
+            menuCustomizationRepository = menuCustomizationRepository,
             navController = navController,
             summarizationNavigator = summarizationNavigator,
             browsingModeManager = browsingModeManager,

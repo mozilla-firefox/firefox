@@ -8,6 +8,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Test
+import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.ACCOUNTS_AND_SETTINGS_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.LIBRARY_GROUP_ID
@@ -305,6 +306,46 @@ class BrowserMenuConfigurationTest {
                 "tabs_controls",
             ),
             ids,
+        )
+    }
+
+    @Test
+    fun `GIVEN no customization WHEN checking notifications THEN return whether item is shown by default`() {
+        assertFalse(
+            BrowserMenuConfiguration.hasNotificationToShow(listOf(SupportedMenuNotifications.NotDefaultBrowser), null)
+        )
+        assertTrue(BrowserMenuConfiguration.hasNotificationToShow(listOf(SupportedMenuNotifications.Downloads), null))
+        assertTrue(BrowserMenuConfiguration.hasNotificationToShow(listOf(SupportedMenuNotifications.OpenInApp), null))
+        assertTrue(BrowserMenuConfiguration.hasNotificationToShow(listOf(SupportedMenuNotifications.Summarize), null))
+        assertTrue(
+            BrowserMenuConfiguration.hasNotificationToShow(listOf(SupportedMenuNotifications.ExtensionUpdate), null)
+        )
+    }
+
+    @Test
+    fun `GIVEN customization info WHEN checking notifications THEN check visible section ids`() {
+        val customization = menuInfo(shown = listOf(TOOLS_GROUP_ID))
+
+        assertFalse(
+            BrowserMenuConfiguration.hasNotificationToShow(
+                listOf(SupportedMenuNotifications.NotDefaultBrowser),
+                customization,
+            )
+        )
+        assertFalse(
+            BrowserMenuConfiguration.hasNotificationToShow(listOf(SupportedMenuNotifications.Downloads), customization)
+        )
+        assertTrue(
+            BrowserMenuConfiguration.hasNotificationToShow(listOf(SupportedMenuNotifications.OpenInApp), customization)
+        )
+        assertTrue(
+            BrowserMenuConfiguration.hasNotificationToShow(listOf(SupportedMenuNotifications.Summarize), customization)
+        )
+        assertTrue(
+            BrowserMenuConfiguration.hasNotificationToShow(
+                listOf(SupportedMenuNotifications.ExtensionUpdate),
+                customization,
+            )
         )
     }
 

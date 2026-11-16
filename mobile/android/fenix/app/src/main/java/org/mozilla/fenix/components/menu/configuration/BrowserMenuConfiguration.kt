@@ -5,6 +5,7 @@
 package org.mozilla.fenix.components.menu.configuration
 
 import androidx.annotation.VisibleForTesting
+import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.AddToHomeScreen
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Back
@@ -42,14 +43,14 @@ import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Row
 
 /** The sections of the menu shown while browsing. */
 object BrowserMenuConfiguration {
-    @VisibleForTesting internal val PAGE_CONTROLS_GROUP_ID = "page_controls"
-    @VisibleForTesting internal val READER_VIEW_GROUP_ID = "reader_view"
-    @VisibleForTesting internal val VPN_GROUP_ID = "vpn"
-    @VisibleForTesting internal val TOOLS_GROUP_ID = "tools"
-    @VisibleForTesting internal val LIBRARY_GROUP_ID = "library"
-    @VisibleForTesting internal val ACCOUNTS_AND_SETTINGS_GROUP_ID = "accounts_and_settings"
-    @VisibleForTesting internal val QUIT_GROUP_ID = "quit"
-    @VisibleForTesting internal val TABS_CONTROLS_GROUP_ID = "tabs_controls"
+    @VisibleForTesting internal const val PAGE_CONTROLS_GROUP_ID = "page_controls"
+    @VisibleForTesting internal const val READER_VIEW_GROUP_ID = "reader_view"
+    @VisibleForTesting internal const val VPN_GROUP_ID = "vpn"
+    @VisibleForTesting internal const val TOOLS_GROUP_ID = "tools"
+    @VisibleForTesting internal const val LIBRARY_GROUP_ID = "library"
+    @VisibleForTesting internal const val ACCOUNTS_AND_SETTINGS_GROUP_ID = "accounts_and_settings"
+    @VisibleForTesting internal const val QUIT_GROUP_ID = "quit"
+    @VisibleForTesting internal const val TABS_CONTROLS_GROUP_ID = "tabs_controls"
 
     /** Ids of the sections of the browser menu which the user cannot remove. */
     val REQUIRED_SECTION_IDS = setOf(ACCOUNTS_AND_SETTINGS_GROUP_ID)
@@ -219,5 +220,38 @@ object BrowserMenuConfiguration {
             true -> listOf(PAGE_CONTROLS_GROUP_ID) + rest
             else -> rest + PAGE_CONTROLS_GROUP_ID
         }
+    }
+
+    /**
+     * Whether any of [notifications] needs the user's attention on an item shown in the browser menu, so the menu
+     * button should be highlighted.
+     */
+    fun hasNotificationToShow(
+        notifications: Collection<SupportedMenuNotifications>,
+        customizationInfo: CustomizedMenuInfo?,
+    ): Boolean = notifications.any { isShown(it, customizationInfo) }
+
+    private fun isShown(notification: SupportedMenuNotifications, customizationInfo: CustomizedMenuInfo?): Boolean {
+        val item = notification.menuItem ?: return false
+        val section = allSections().find { it.containsItem(item) } ?: return false
+        return when (customizationInfo) {
+            null -> section.id !in HIDDEN_BY_DEFAULT_SECTION_IDS
+            else -> section.id in customizationInfo.visibleSectionIds
+        }
+    }
+
+    private val SupportedMenuNotifications.menuItem: FenixMenuItem?
+        get() =
+            when (this) {
+                is SupportedMenuNotifications.Downloads -> Downloads
+                is SupportedMenuNotifications.OpenInApp -> OpenInApp
+                is SupportedMenuNotifications.Summarize -> SummarizePage
+                is SupportedMenuNotifications.ExtensionUpdate -> Extensions
+                is SupportedMenuNotifications.NotDefaultBrowser,
+                is SupportedMenuNotifications.TabGroups -> null
+            }
+
+    private fun MenuSectionConfiguration.containsItem(targetItem: FenixMenuItem): Boolean = items.any { item ->
+        item == targetItem || (item is FenixExpandableMenuItem && targetItem in item.subMenuItems)
     }
 }
