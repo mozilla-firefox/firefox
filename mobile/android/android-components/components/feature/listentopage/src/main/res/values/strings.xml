@@ -73,4 +73,6 @@
   <string name="mozac_feature_listentopage_private_tab_title">Private tab</string>
   <!-- Message of the Listen to page lock-screen notification: displayed instead of the page URL, when the page being read is in a Private tab (to protect the user's privacy) -->
   <string name="mozac_feature_listentopage_private_tab_site">Website hidden</string>
+  <!-- Menu item in the Listen to page voice options menu that opens the Android system text-to-speech settings -->
+    <string name="mozac_feature_listentopage_voice_options_tts_settings">Text-to-speech settings</string>
 </resources>
