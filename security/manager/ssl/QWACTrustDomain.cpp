@@ -4,6 +4,7 @@
 
 #include "QWACTrustDomain.h"
 
+#include "CertVerifier.h"
 #include "mozpkix/pkixnss.h"
 #include "mozpkix/pkixutil.h"
 #include "qwac_trust_anchors/qwac_trust_anchors_ffi_generated.h"
@@ -164,6 +165,18 @@ pkix::Result QWACTrustDomain::VerifyECDSASignedData(
     Input data, DigestAlgorithm digestAlgorithm, Input signature,
     Input subjectPublicKeyInfo) {
   return VerifyECDSASignedDataNSS(data, digestAlgorithm, signature,
+                                  subjectPublicKeyInfo, nullptr);
+}
+
+pkix::Result QWACTrustDomain::CheckMLDSAParameterSetIsAcceptable(
+    EndEntityOrCA /*endEntityOrCA*/, MLDSAParameterSet parameterSet) {
+  return CheckMLDSAParameterSetIsEnabled(parameterSet);
+}
+
+pkix::Result QWACTrustDomain::VerifyMLDSASignedData(
+    Input data, MLDSAParameterSet parameterSet, Input signature,
+    Input subjectPublicKeyInfo) {
+  return VerifyMLDSASignedDataNSS(data, parameterSet, signature,
                                   subjectPublicKeyInfo, nullptr);
 }
 

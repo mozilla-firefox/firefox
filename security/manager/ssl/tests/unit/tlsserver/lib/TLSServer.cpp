@@ -503,7 +503,9 @@ SECStatus ConfigSecureServerWithNamedCert(
   }
 
   SSL_OptionSet(fd, SSL_NO_CACHE, false);
-  SSL_OptionSet(fd, SSL_ENABLE_SESSION_TICKETS, true);
+  // NSS can't protect session tickets with an ML-DSA server key, and fails the
+  // connection if it tries (bug 2065004).
+  SSL_OptionSet(fd, SSL_ENABLE_SESSION_TICKETS, key->keyType != mldsaKey);
   // Unconditionally enabling 0RTT makes test_session_resumption.js fail
   SSL_OptionSet(fd, SSL_ENABLE_0RTT_DATA, !!PR_GetEnv("MOZ_TLS_SERVER_0RTT"));
 

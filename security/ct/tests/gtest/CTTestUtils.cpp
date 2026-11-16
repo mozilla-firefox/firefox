@@ -805,6 +805,19 @@ class OCSPExtensionTrustDomain : public TrustDomain {
                                      subjectPublicKeyInfo, nullptr);
   }
 
+  pkix::Result CheckMLDSAParameterSetIsAcceptable(EndEntityOrCA,
+                                                  MLDSAParameterSet) override {
+    ADD_FAILURE();
+    return pkix::Result::FATAL_ERROR_LIBRARY_FAILURE;
+  }
+
+  pkix::Result VerifyMLDSASignedData(Input data, MLDSAParameterSet parameterSet,
+                                     Input signature,
+                                     Input subjectPublicKeyInfo) override {
+    return VerifyMLDSASignedDataNSS(data, parameterSet, signature,
+                                    subjectPublicKeyInfo, nullptr);
+  }
+
   pkix::Result CheckValidityIsAcceptable(Time, Time, EndEntityOrCA,
                                          KeyPurposeId) override {
     ADD_FAILURE();

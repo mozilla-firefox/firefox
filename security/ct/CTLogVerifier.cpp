@@ -96,6 +96,16 @@ class SignatureParamsTrustDomain final : public TrustDomain {
     return pkix::Result::FATAL_ERROR_LIBRARY_FAILURE;
   }
 
+  pkix::Result CheckMLDSAParameterSetIsAcceptable(EndEntityOrCA,
+                                                  MLDSAParameterSet) override {
+    return pkix::Result::ERROR_UNSUPPORTED_KEYALG;
+  }
+
+  pkix::Result VerifyMLDSASignedData(Input, MLDSAParameterSet, Input,
+                                     Input) override {
+    return pkix::Result::FATAL_ERROR_LIBRARY_FAILURE;
+  }
+
   pkix::Result CheckValidityIsAcceptable(Time, Time, EndEntityOrCA,
                                          KeyPurposeId) override {
     return pkix::Result::FATAL_ERROR_LIBRARY_FAILURE;
@@ -196,14 +206,16 @@ pkix::Result CTLogVerifier::VerifySignature(Input data, Input signature,
           der::PublicKeyAlgorithm::RSA_PKCS1,
           mozilla::glean::sct_signature_cache::total,
           mozilla::glean::sct_signature_cache::hits, data,
-          DigestAlgorithm::sha256, signature, spki, signatureCache, nullptr);
+          Some(DigestAlgorithm::sha256), signature, spki, signatureCache,
+          nullptr);
       break;
     case DigitallySigned::SignatureAlgorithm::ECDSA:
       rv = psm::VerifySignedDataWithCache(
           der::PublicKeyAlgorithm::ECDSA,
           mozilla::glean::sct_signature_cache::total,
           mozilla::glean::sct_signature_cache::hits, data,
-          DigestAlgorithm::sha256, signature, spki, signatureCache, nullptr);
+          Some(DigestAlgorithm::sha256), signature, spki, signatureCache,
+          nullptr);
       break;
     // We do not expect new values added to this enum any time soon,
     // so just listing all the available ones seems to be the easiest way

@@ -215,6 +215,16 @@ class ClientAuthCertNonverifyingTrustDomain final : public TrustDomain {
       pkix::Input subjectPublicKeyInfo) override {
     return pkix::Success;
   }
+  virtual mozilla::pkix::Result CheckMLDSAParameterSetIsAcceptable(
+      pkix::EndEntityOrCA endEntityOrCA,
+      pkix::MLDSAParameterSet parameterSet) override {
+    return pkix::Success;
+  }
+  virtual mozilla::pkix::Result VerifyMLDSASignedData(
+      pkix::Input data, pkix::MLDSAParameterSet, pkix::Input signature,
+      pkix::Input subjectPublicKeyInfo) override {
+    return pkix::Success;
+  }
   virtual mozilla::pkix::Result CheckValidityIsAcceptable(
       pkix::Time notBefore, pkix::Time notAfter,
       pkix::EndEntityOrCA endEntityOrCA,

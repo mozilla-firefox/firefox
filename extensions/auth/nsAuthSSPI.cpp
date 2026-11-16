@@ -366,16 +366,16 @@ nsresult nsAuthSSPI::MakeChannelBindings(mozilla::UniqueFreePtr<char>& aBuffer,
 
     // Parse the signature algorithm from the signed data
     der::PublicKeyAlgorithm publicKeyAlg;
-    DigestAlgorithm digestAlg;
+    std::optional<DigestAlgorithm> digestAlg;
     Reader signatureAlgorithmReader(cert.GetSignedData().algorithm);
     pkixResult = der::SignatureAlgorithmIdentifierValue(
         signatureAlgorithmReader, publicKeyAlg, digestAlg);
 
-    if (pkixResult != Success) {
+    if (pkixResult != Success || !digestAlg) {
       return;
     }
     // Map digest algorithms to hash algorithms for Extended Protection
-    switch (digestAlg) {
+    switch (*digestAlg) {
       case DigestAlgorithm::sha384:
         hashAlgorithm = nsICryptoHash::SHA384;
         hashSize = 48;  // SHA384 hash size

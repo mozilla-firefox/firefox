@@ -55,8 +55,5 @@ add_task(async function test_mldsa_disabled() {
 add_task(async function test_mldsa_enabled() {
   clearSessionCache();
   Services.prefs.setBoolPref("security.tls.enable_mldsa", true);
-  // ML-DSA is offered, so the handshake gets as far as verifying the
-  // certificate. That fails because mozilla::pkix doesn't understand ML-DSA
-  // public keys yet; this should become PRErrorCodeSuccess when it does.
-  await asyncConnectTo("ee.example.com", SEC_ERROR_UNSUPPORTED_KEYALG);
+  await asyncConnectTo("ee.example.com", PRErrorCodeSuccess);
 });

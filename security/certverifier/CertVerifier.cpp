@@ -1003,15 +1003,17 @@ Result CertVerifier::VerifySSLServerCert(
 // uniquely identifies it. This is done by prefixing each variable-length
 // component (data, signature, and subjectPublicKeyInfo) with
 // sizeof(pkix::Input::size_type) bytes (currently 2) indicating the length of
-// that component and concatenating them together, followed by one byte for the
-// digestAlgorithm. The concatenation is then hashed with sha512.
+// that component and concatenating them together, followed by the
+// publicKeyAlgorithm and, if present, the digestAlgorithm. The
+// publicKeyAlgorithm determines whether the digestAlgorithm is present, so the
+// encoding remains unambiguous. The concatenation is then hashed with sha512.
 // It should be computationally infeasible to find two distinct sets of inputs
 // that have the same sha512 hash (and if it were possible, then it would be
 // possible to break the signature scheme itself).
 void HashSignatureParams(pkix::Input data, pkix::Input signature,
                          pkix::Input subjectPublicKeyInfo,
                          pkix::der::PublicKeyAlgorithm publicKeyAlgorithm,
-                         pkix::DigestAlgorithm digestAlgorithm,
+                         const Maybe<pkix::DigestAlgorithm>& digestAlgorithm,
                          /*out*/ Maybe<nsTArray<uint8_t>>& sha512Hash) {
   sha512Hash.reset();
   Digest digest;
@@ -1049,9 +1051,10 @@ void HashSignatureParams(pkix::Input data, pkix::Input signature,
                         sizeof(publicKeyAlgorithm)))) {
     return;
   }
-  if (NS_FAILED(
-          digest.Update(reinterpret_cast<const uint8_t*>(&digestAlgorithm),
-                        sizeof(digestAlgorithm)))) {
+  if (digestAlgorithm.isSome() &&
+      NS_FAILED(
+          digest.Update(reinterpret_cast<const uint8_t*>(digestAlgorithm.ptr()),
+                        sizeof(*digestAlgorithm)))) {
     return;
   }
   nsTArray<uint8_t> result;
@@ -1065,8 +1068,12 @@ Result VerifySignedDataWithCache(
     der::PublicKeyAlgorithm publicKeyAlg,
     mozilla::glean::impl::DenominatorMetric telemetryDenominator,
     mozilla::glean::impl::NumeratorMetric telemetryNumerator, Input data,
-    DigestAlgorithm digestAlgorithm, Input signature,
+    const Maybe<DigestAlgorithm>& digestAlgorithm, Input signature,
     Input subjectPublicKeyInfo, SignatureCache* signatureCache, void* pinArg) {
+  if (digestAlgorithm.isSome() == der::IsMLDSA(publicKeyAlg)) {
+    MOZ_ASSERT_UNREACHABLE("inconsistent public key and digest algorithms");
+    return Result::FATAL_ERROR_INVALID_ARGS;
+  }
   telemetryDenominator.Add(1);
   Maybe<nsTArray<uint8_t>> sha512Hash;
   HashSignatureParams(data, signature, subjectPublicKeyInfo, publicKeyAlg,
@@ -1081,16 +1088,31 @@ Result VerifySignedDataWithCache(
   Result result;
   switch (publicKeyAlg) {
     case der::PublicKeyAlgorithm::ECDSA:
-      result = VerifyECDSASignedDataNSS(data, digestAlgorithm, signature,
+      result = VerifyECDSASignedDataNSS(data, *digestAlgorithm, signature,
                                         subjectPublicKeyInfo, pinArg);
       break;
     case der::PublicKeyAlgorithm::RSA_PKCS1:
-      result = VerifyRSAPKCS1SignedDataNSS(data, digestAlgorithm, signature,
+      result = VerifyRSAPKCS1SignedDataNSS(data, *digestAlgorithm, signature,
                                            subjectPublicKeyInfo, pinArg);
       break;
     case der::PublicKeyAlgorithm::RSA_PSS:
-      result = VerifyRSAPSSSignedDataNSS(data, digestAlgorithm, signature,
+      result = VerifyRSAPSSSignedDataNSS(data, *digestAlgorithm, signature,
                                          subjectPublicKeyInfo, pinArg);
+      break;
+    case der::PublicKeyAlgorithm::MLDSA_44:
+      result =
+          VerifyMLDSASignedDataNSS(data, MLDSAParameterSet::ml_dsa_44,
+                                   signature, subjectPublicKeyInfo, pinArg);
+      break;
+    case der::PublicKeyAlgorithm::MLDSA_65:
+      result =
+          VerifyMLDSASignedDataNSS(data, MLDSAParameterSet::ml_dsa_65,
+                                   signature, subjectPublicKeyInfo, pinArg);
+      break;
+    case der::PublicKeyAlgorithm::MLDSA_87:
+      result =
+          VerifyMLDSASignedDataNSS(data, MLDSAParameterSet::ml_dsa_87,
+                                   signature, subjectPublicKeyInfo, pinArg);
       break;
     default:
       MOZ_ASSERT_UNREACHABLE("unhandled public key algorithm");
@@ -1101,6 +1123,19 @@ Result VerifySignedDataWithCache(
     signature_cache_insert(signatureCache, sha512Hash.ref().Elements());
   }
   return result;
+}
+
+Result CheckMLDSAParameterSetIsEnabled(MLDSAParameterSet parameterSet) {
+  if (!StaticPrefs::security_tls_enable_mldsa()) {
+    return Result::ERROR_UNSUPPORTED_KEYALG;
+  }
+  switch (parameterSet) {
+    case MLDSAParameterSet::ml_dsa_44:  // fall through
+    case MLDSAParameterSet::ml_dsa_65:  // fall through
+    case MLDSAParameterSet::ml_dsa_87:
+      return Success;
+  }
+  return Result::ERROR_UNSUPPORTED_KEYALG;
 }
 
 }  // namespace psm

@@ -38,6 +38,7 @@ support-files = [
   "test_keysize_ev/**",
   "test_missing_intermediate/**",
   "test_mldsa/**",
+  "test_mldsa_verification/**",
   "test_name_constraints/**",
   "test_ocsp_url/**",
   "test_onecrl/**",
@@ -256,6 +257,8 @@ run-sequentially = ["true"] # hardcoded ports
 
 ["test_mldsa.js"]
 run-sequentially = ["true"] # hardcoded ports
+
+["test_mldsa_verification.js"]
 
 ["test_name_constraints.js"]
 

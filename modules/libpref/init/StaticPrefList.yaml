@@ -19763,6 +19763,7 @@
   mirror: always
   rust: true
 
+# Whether to enable ML-DSA in TLS and in certificate verification.
 - name: security.tls.enable_mldsa
   type: RelaxedAtomicBool
   value: false

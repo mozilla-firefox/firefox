@@ -322,13 +322,22 @@ mozilla::pkix::Result CertListContainsExpectedKeys(const CERTCertList* certList,
 // (data, digestAlgorithm, signature, subjectPublicKeyInfo) tuple has already
 // been verified and is in the cache, this skips the work of verifying the
 // signature (which is slow) and returns the already-known result.
+// digestAlgorithm must be Nothing() exactly when publicKeyAlg is an ML-DSA
+// algorithm.
 mozilla::pkix::Result VerifySignedDataWithCache(
     mozilla::pkix::der::PublicKeyAlgorithm publicKeyAlg,
     mozilla::glean::impl::DenominatorMetric telemetryDenominator,
     mozilla::glean::impl::NumeratorMetric telemetryNumerator,
-    mozilla::pkix::Input data, mozilla::pkix::DigestAlgorithm digestAlgorithm,
+    mozilla::pkix::Input data,
+    const Maybe<mozilla::pkix::DigestAlgorithm>& digestAlgorithm,
     mozilla::pkix::Input signature, mozilla::pkix::Input subjectPublicKeyInfo,
     SignatureCache* signatureCache, void* pinArg);
+
+// Returns Success if ML-DSA with the given parameter set is enabled for
+// certificate verification (see the pref security.tls.enable_mldsa), and
+// Result::ERROR_UNSUPPORTED_KEYALG otherwise.
+mozilla::pkix::Result CheckMLDSAParameterSetIsEnabled(
+    mozilla::pkix::MLDSAParameterSet parameterSet);
 
 }  // namespace psm
 }  // namespace mozilla

@@ -1395,7 +1395,7 @@ Result NSSCertDBTrustDomain::VerifyRSAPKCS1SignedData(
   return VerifySignedDataWithCache(
       der::PublicKeyAlgorithm::RSA_PKCS1,
       mozilla::glean::cert_signature_cache::total,
-      mozilla::glean::cert_signature_cache::hits, data, digestAlgorithm,
+      mozilla::glean::cert_signature_cache::hits, data, Some(digestAlgorithm),
       signature, subjectPublicKeyInfo, mSignatureCache, mPinArg);
 }
 
@@ -1405,7 +1405,7 @@ Result NSSCertDBTrustDomain::VerifyRSAPSSSignedData(
   return VerifySignedDataWithCache(
       der::PublicKeyAlgorithm::RSA_PSS,
       mozilla::glean::cert_signature_cache::total,
-      mozilla::glean::cert_signature_cache::hits, data, digestAlgorithm,
+      mozilla::glean::cert_signature_cache::hits, data, Some(digestAlgorithm),
       signature, subjectPublicKeyInfo, mSignatureCache, mPinArg);
 }
 
@@ -1427,8 +1427,36 @@ Result NSSCertDBTrustDomain::VerifyECDSASignedData(
   return VerifySignedDataWithCache(
       der::PublicKeyAlgorithm::ECDSA,
       mozilla::glean::cert_signature_cache::total,
-      mozilla::glean::cert_signature_cache::hits, data, digestAlgorithm,
+      mozilla::glean::cert_signature_cache::hits, data, Some(digestAlgorithm),
       signature, subjectPublicKeyInfo, mSignatureCache, mPinArg);
+}
+
+Result NSSCertDBTrustDomain::CheckMLDSAParameterSetIsAcceptable(
+    EndEntityOrCA /*endEntityOrCA*/, MLDSAParameterSet parameterSet) {
+  return CheckMLDSAParameterSetIsEnabled(parameterSet);
+}
+
+Result NSSCertDBTrustDomain::VerifyMLDSASignedData(
+    Input data, MLDSAParameterSet parameterSet, Input signature,
+    Input subjectPublicKeyInfo) {
+  der::PublicKeyAlgorithm publicKeyAlg;
+  switch (parameterSet) {
+    case MLDSAParameterSet::ml_dsa_44:
+      publicKeyAlg = der::PublicKeyAlgorithm::MLDSA_44;
+      break;
+    case MLDSAParameterSet::ml_dsa_65:
+      publicKeyAlg = der::PublicKeyAlgorithm::MLDSA_65;
+      break;
+    case MLDSAParameterSet::ml_dsa_87:
+      publicKeyAlg = der::PublicKeyAlgorithm::MLDSA_87;
+      break;
+    default:
+      return Result::FATAL_ERROR_INVALID_ARGS;
+  }
+  return VerifySignedDataWithCache(
+      publicKeyAlg, mozilla::glean::cert_signature_cache::total,
+      mozilla::glean::cert_signature_cache::hits, data, Nothing(), signature,
+      subjectPublicKeyInfo, mSignatureCache, mPinArg);
 }
 
 Result NSSCertDBTrustDomain::CheckValidityIsAcceptable(

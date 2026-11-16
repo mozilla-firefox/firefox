@@ -317,6 +317,18 @@ pkix::Result AppTrustDomain::VerifyECDSASignedData(
                                   subjectPublicKeyInfo, nullptr);
 }
 
+pkix::Result AppTrustDomain::CheckMLDSAParameterSetIsAcceptable(
+    EndEntityOrCA /*endEntityOrCA*/, MLDSAParameterSet parameterSet) {
+  return CheckMLDSAParameterSetIsEnabled(parameterSet);
+}
+
+pkix::Result AppTrustDomain::VerifyMLDSASignedData(
+    Input data, MLDSAParameterSet parameterSet, Input signature,
+    Input subjectPublicKeyInfo) {
+  return VerifyMLDSASignedDataNSS(data, parameterSet, signature,
+                                  subjectPublicKeyInfo, nullptr);
+}
+
 pkix::Result AppTrustDomain::CheckValidityIsAcceptable(
     Time /*notBefore*/, Time /*notAfter*/, EndEntityOrCA /*endEntityOrCA*/,
     KeyPurposeId /*keyPurpose*/) {
