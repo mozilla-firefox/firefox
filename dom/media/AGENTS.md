@@ -98,3 +98,9 @@ Read `dom/media/docs/Diagnostics.md` when you read a media bug report.
   `testing/web-platform/mozilla/tests/`.
 - The media files for the mochitests in `dom/media/test/` are listed in
   `dom/media/test/manifest.js`.
+- Do not leave unexplained magic numbers in a test. Name each value that has a
+  meaning and say where it comes from, for example a limit in a spec, a field
+  size in a codec or container format, a sample rate or block size, or a detail
+  of the code under test such as an alignment. Compute the values that depend
+  on it from that name instead of repeating literals, and assert the relation
+  where it can break, for example with a `static_assert`.
