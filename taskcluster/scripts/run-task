@@ -30,6 +30,7 @@ import os
 import random
 import re
 import shutil
+import signal
 import socket
 import stat
 import subprocess
@@ -126,11 +127,103 @@ def reap_zombies(main_subprocess):
                 main_subprocess._handle_exitstatus(status)
 
 
+# Shortly before a task exceeds its maxRunTime, run-task sends SIGTERM to the
+# task's processes, so that they can shut down and flush their logs before the
+# worker kills them. The SIGTERM is sent 5% of maxRunTime early, and at most
+# this many seconds early.
+MAX_RUN_TIME_ABORT_MARGIN = 60
+
+# Set once run-task has sent SIGTERM to the task's processes.
+max_run_time_abort = threading.Event()
+
+
+def ignore_sigterm(signum, frame):
+    """Ignores the SIGTERM that abort_task_processes() sends to the process
+    group of run-task, so that run-task keeps forwarding the output of its
+    command until it exits.
+
+    A handler rather than SIG_IGN, which the task's processes would inherit
+    across exec and then never get the SIGTERM.
+    """
+
+
+def abort_task_processes(max_run_time, margin):
+    """Sends SIGTERM to the task's processes, so that they can shut down and
+    flush their logs before the worker kills them when the task exceeds its
+    maxRunTime.
+
+    The signal is sent to the process group of run-task, which holds exactly
+    the task's processes: generic-worker starts run-task in a new process
+    group, and in docker it is PID 1. The worker later kills that group as a
+    whole. run-task ignores the signal itself, see ignore_sigterm().
+    """
+    max_run_time_abort.set()
+    print_line(
+        b"task",
+        b"run-task: the task is about to exceed its maxRunTime of %ds, sending "
+        b"SIGTERM %ds early\n" % (max_run_time, margin),
+    )
+    try:
+        os.killpg(os.getpgrp(), signal.SIGTERM)
+    except OSError as e:
+        print_line(
+            b"task", b"run-task: could not send SIGTERM: %s\n" % str(e).encode("utf-8")
+        )
+
+
+def schedule_max_run_time_abort():
+    """Arranges for abort_task_processes() to be called shortly before the
+    task exceeds its maxRunTime, which taskgraph passes in the
+    TASKCLUSTER_MAX_RUN_TIME environment variable.
+
+    The abort happens 5% of maxRunTime early, at most MAX_RUN_TIME_ABORT_MARGIN
+    seconds early. That is measured from now, so this must be called as soon
+    as run-task starts, which is also when the worker starts counting. It must
+    be called from the main thread, where the SIGTERM handler is installed.
+
+    Nothing is scheduled on Windows, where the worker kills the task's
+    processes.
+    """
+    value = os.environ.get("TASKCLUSTER_MAX_RUN_TIME")
+    if not value or not IS_POSIX:
+        return None
+    try:
+        max_run_time = int(value)
+    except ValueError:
+        max_run_time = 0
+    if max_run_time <= 0:
+        print_line(
+            b"setup",
+            b"ignoring invalid TASKCLUSTER_MAX_RUN_TIME: %s\n" % value.encode("utf-8"),
+        )
+        return None
+    margin = min(MAX_RUN_TIME_ABORT_MARGIN, max_run_time // 20)
+    if margin < 1:
+        return None
+    signal.signal(signal.SIGTERM, ignore_sigterm)
+    timer = threading.Timer(
+        max_run_time - margin, abort_task_processes, (max_run_time, margin)
+    )
+    timer.daemon = True
+    timer.start()
+    return timer
+
+
 def run_and_prefix_output(prefix, args, *, extra_env=None, cwd=None):
     """Runs a process and prefixes its output with the time.
 
-    Returns the process exit code.
+    Returns the process exit code, or 1 once the task has been aborted for
+    exceeding its maxRunTime, see abort_task_processes(). A process that
+    hasn't started by then isn't started at all.
     """
+    if max_run_time_abort.is_set():
+        print_line(
+            prefix,
+            b"run-task: the task was aborted for exceeding its maxRunTime, "
+            b"not executing %r\n" % (args,),
+        )
+        return 1
+
     print_line(
         prefix,
         b"executing %r%s\n" % (args, b"in %s" % (cwd.encode("utf-8"),) if cwd else b""),
@@ -182,7 +275,15 @@ def run_and_prefix_output(prefix, args, *, extra_env=None, cwd=None):
 
     if reaper_thread:
         reaper_thread.join()
-    return p.wait()
+    returncode = p.wait()
+    if max_run_time_abort.is_set():
+        print_line(
+            prefix,
+            b"run-task: the task was aborted for exceeding its maxRunTime, "
+            b"exiting with code 1\n",
+        )
+        return 1
+    return returncode
 
 
 def get_posix_user_group(user, group):
@@ -899,6 +1000,7 @@ def main(args):
 
     os.environ["TASK_WORKDIR"] = task_workdir
     print_line(b"setup", b"run-task started in %s\n" % task_workdir.encode("utf-8"))
+    schedule_max_run_time_abort()
     running_as_root = IS_POSIX and os.getuid() == 0
 
     # Set a reasonable limit to the number of open files.

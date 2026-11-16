@@ -6,11 +6,17 @@ import pytest
 from mozunit import main
 from taskgraph.config import GraphConfig
 
-from gecko_taskgraph.test.conftest import FakeParameters, FakeTransformConfig
+from gecko_taskgraph.test.conftest import (
+    FakeParameters,
+    FakeTransformConfig,
+    fake_load_graph_config,
+)
 from gecko_taskgraph.transforms import job  # noqa: F401
 from gecko_taskgraph.transforms.task import (
     TREEHERDER_ROOT_URL,
     _run_task_suffix,
+    build_docker_worker_payload,
+    build_generic_worker_payload,
     check_run_task_caches,
     get_default_priority,
     get_treeherder_link,
@@ -220,6 +226,61 @@ def test_try_task_config_env_no_env_config(run_transform):
     params = FakeParameters({"try_task_config": {}})
     result = list(run_transform(try_task_config_env, task, params=params))[0]
     assert result["worker"]["env"] == {"EXISTING": "value"}
+
+
+@pytest.mark.parametrize(
+    "build_payload,worker",
+    [
+        pytest.param(
+            build_docker_worker_payload,
+            {
+                "implementation": "docker-worker",
+                "docker-image": "example/image:latest",
+                "command": ["/builds/worker/bin/run-task", "--", "true"],
+                "env": {"EXISTING": "value"},
+                "max-run-time": 3600,
+                "volumes": [],
+                "caches": [],
+                "artifacts": [],
+                "retry-exit-status": [],
+                "purge-caches-exit-status": [],
+            },
+            id="docker-worker",
+        ),
+        pytest.param(
+            build_generic_worker_payload,
+            {
+                "implementation": "generic-worker",
+                "os": "linux",
+                "command": [["chmod", "+x", "run-task"], ["./run-task", "--", "true"]],
+                "env": {"EXISTING": "value"},
+                "max-run-time": 3600,
+                "os-groups": [],
+                "artifacts": [],
+                "mounts": [],
+                "retry-exit-status": [],
+            },
+            id="generic-worker",
+        ),
+    ],
+)
+def test_max_run_time_passed_to_task_env(build_payload, worker):
+    """run-task is told the maxRunTime of the task through its environment."""
+    config = FakeTransformConfig(
+        graph_config=fake_load_graph_config("/root"),
+        params=FakeParameters({
+            "level": "1",
+            "project": "example",
+            "repository_type": "hg",
+        }),
+    )
+    task = {"attributes": {}, "worker": worker, "worker-type": "t-linux"}
+    task_def = {"scopes": []}
+    build_payload(config, task, task_def)
+    payload = task_def["payload"]
+    assert payload["maxRunTime"] == 3600
+    assert payload["env"]["TASKCLUSTER_MAX_RUN_TIME"] == "3600"
+    assert payload["env"]["EXISTING"] == "value"
 
 
 def _test_paths_task(**attributes):
