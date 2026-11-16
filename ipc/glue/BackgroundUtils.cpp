@@ -398,32 +398,6 @@ Result<RedirectHistoryEntryInfo, nsresult> RHEntryToRHEntryInfo(
 nsresult LoadInfoToLoadInfoArgs(nsILoadInfo* aLoadInfo,
                                 LoadInfoArgs* outLoadInfoArgs) {
   nsresult rv = NS_OK;
-  Maybe<PrincipalInfo> loadingPrincipalInfo;
-  if (nsIPrincipal* loadingPrin = aLoadInfo->GetLoadingPrincipal()) {
-    loadingPrincipalInfo.emplace();
-    rv = PrincipalToPrincipalInfo(loadingPrin, loadingPrincipalInfo.ptr());
-    NS_ENSURE_SUCCESS(rv, rv);
-  }
-
-  PrincipalInfo triggeringPrincipalInfo;
-  rv = PrincipalToPrincipalInfo(aLoadInfo->TriggeringPrincipal(),
-                                &triggeringPrincipalInfo);
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  Maybe<PrincipalInfo> principalToInheritInfo;
-  if (nsIPrincipal* principalToInherit = aLoadInfo->PrincipalToInherit()) {
-    principalToInheritInfo.emplace();
-    rv = PrincipalToPrincipalInfo(principalToInherit,
-                                  principalToInheritInfo.ptr());
-    NS_ENSURE_SUCCESS(rv, rv);
-  }
-
-  Maybe<PrincipalInfo> topLevelPrincipalInfo;
-  if (nsIPrincipal* topLevenPrin = aLoadInfo->GetTopLevelPrincipal()) {
-    topLevelPrincipalInfo.emplace();
-    rv = PrincipalToPrincipalInfo(topLevenPrin, topLevelPrincipalInfo.ptr());
-    NS_ENSURE_SUCCESS(rv, rv);
-  }
 
   nsCOMPtr<nsIURI> resultPrincipalURI;
   (void)aLoadInfo->GetResultPrincipalURI(getter_AddRefs(resultPrincipalURI));
@@ -538,8 +512,9 @@ nsresult LoadInfoToLoadInfoArgs(nsILoadInfo* aLoadInfo,
   }
 
   *outLoadInfoArgs = LoadInfoArgs(
-      loadingPrincipalInfo, triggeringPrincipalInfo, principalToInheritInfo,
-      topLevelPrincipalInfo, resultPrincipalURI, triggeringRemoteType,
+      aLoadInfo->GetLoadingPrincipal(), aLoadInfo->TriggeringPrincipal(),
+      aLoadInfo->PrincipalToInherit(), aLoadInfo->GetTopLevelPrincipal(),
+      resultPrincipalURI, triggeringRemoteType,
       aLoadInfo->GetSandboxedNullPrincipalID(), aLoadInfo->GetSecurityFlags(),
       aLoadInfo->GetSandboxFlags(), aLoadInfo->GetTriggeringSandboxFlags(),
       aLoadInfo->GetTriggeringWindowId(),
@@ -628,34 +603,17 @@ nsresult LoadInfoArgsToLoadInfo(const LoadInfoArgs& loadInfoArgs,
                                 const RemoteType& aOriginRemoteType,
                                 nsINode* aCspToInheritLoadingContext,
                                 LoadInfo** outLoadInfo) {
-  nsCOMPtr<nsIPrincipal> loadingPrincipal;
-  if (loadInfoArgs.requestingPrincipalInfo().isSome()) {
-    auto loadingPrincipalOrErr =
-        PrincipalInfoToPrincipal(loadInfoArgs.requestingPrincipalInfo().ref());
-    if (NS_WARN_IF(loadingPrincipalOrErr.isErr())) {
-      return loadingPrincipalOrErr.unwrapErr();
-    }
-    loadingPrincipal = loadingPrincipalOrErr.unwrap();
-  }
+  nsCOMPtr<nsIPrincipal> loadingPrincipal = loadInfoArgs.requestingPrincipal();
 
-  auto triggeringPrincipalOrErr =
-      PrincipalInfoToPrincipal(loadInfoArgs.triggeringPrincipalInfo());
-  if (NS_WARN_IF(triggeringPrincipalOrErr.isErr())) {
-    return triggeringPrincipalOrErr.unwrapErr();
-  }
   nsCOMPtr<nsIPrincipal> triggeringPrincipal =
-      triggeringPrincipalOrErr.unwrap();
+      loadInfoArgs.triggeringPrincipal();
+  if (NS_WARN_IF(!triggeringPrincipal)) {
+    return NS_ERROR_UNEXPECTED;
+  }
 
   nsCOMPtr<nsIPrincipal> principalToInherit;
-  nsCOMPtr<nsIPrincipal> flattenedPrincipalToInherit;
-  if (loadInfoArgs.principalToInheritInfo().isSome()) {
-    auto principalToInheritOrErr =
-        PrincipalInfoToPrincipal(loadInfoArgs.principalToInheritInfo().ref());
-    if (NS_WARN_IF(principalToInheritOrErr.isErr())) {
-      return principalToInheritOrErr.unwrapErr();
-    }
-    flattenedPrincipalToInherit = principalToInheritOrErr.unwrap();
-  }
+  nsCOMPtr<nsIPrincipal> flattenedPrincipalToInherit =
+      loadInfoArgs.principalToInherit();
 
   if (XRE_IsContentProcess()) {
     auto targetBrowsingContextId = loadInfoArgs.frameBrowsingContextID()
@@ -678,19 +636,11 @@ nsresult LoadInfoArgsToLoadInfo(const LoadInfoArgs& loadInfoArgs,
       }
     }
   }
-  if (!principalToInherit && loadInfoArgs.principalToInheritInfo().isSome()) {
+  if (!principalToInherit) {
     principalToInherit = flattenedPrincipalToInherit;
   }
 
-  nsCOMPtr<nsIPrincipal> topLevelPrincipal;
-  if (loadInfoArgs.topLevelPrincipalInfo().isSome()) {
-    auto topLevelPrincipalOrErr =
-        PrincipalInfoToPrincipal(loadInfoArgs.topLevelPrincipalInfo().ref());
-    if (NS_WARN_IF(topLevelPrincipalOrErr.isErr())) {
-      return topLevelPrincipalOrErr.unwrapErr();
-    }
-    topLevelPrincipal = topLevelPrincipalOrErr.unwrap();
-  }
+  nsCOMPtr<nsIPrincipal> topLevelPrincipal = loadInfoArgs.topLevelPrincipal();
 
   nsCOMPtr<nsIURI> resultPrincipalURI(loadInfoArgs.resultPrincipalURI());
 
@@ -743,14 +693,8 @@ nsresult LoadInfoArgsToLoadInfo(const LoadInfoArgs& loadInfoArgs,
   } else {
     // Fill out (possibly redacted) ancestor principals for
     // Location.ancestorOrigins
-    for (const auto& principalInfo : loadInfoArgs.ancestorOrigins()) {
-      if (principalInfo.isNothing()) {
-        ancestorPrincipals.AppendElement(nullptr);
-      } else {
-        auto principal = PrincipalInfoToPrincipal(principalInfo.value());
-        // If this operation fail, we censor the origin.
-        ancestorPrincipals.AppendElement(principal.unwrapOr(nullptr));
-      }
+    for (const auto& principal : loadInfoArgs.ancestorOrigins()) {
+      ancestorPrincipals.AppendElement(principal);
     }
   }
 

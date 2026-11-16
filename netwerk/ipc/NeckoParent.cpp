@@ -63,7 +63,6 @@ using mozilla::dom::TCPServerSocketParent;
 using mozilla::dom::TCPSocketParent;
 using mozilla::dom::UDPSocketParent;
 using mozilla::ipc::LoadInfoArgsToLoadInfo;
-using mozilla::ipc::PrincipalInfo;
 #ifdef MOZ_PLACES
 using mozilla::places::PageIconProtocolHandler;
 #endif
@@ -123,28 +122,13 @@ static PBOverrideStatus PBOverrideStatusFromLoadContext(
 }
 
 static already_AddRefed<nsIPrincipal> GetRequestingPrincipal(
-    const LoadInfoArgs& aLoadInfoArgs) {
-  const Maybe<PrincipalInfo>& optionalPrincipalInfo =
-      aLoadInfoArgs.requestingPrincipalInfo();
-
-  if (optionalPrincipalInfo.isNothing()) {
-    return nullptr;
-  }
-
-  const PrincipalInfo& principalInfo = optionalPrincipalInfo.ref();
-
-  auto principalOrErr = PrincipalInfoToPrincipal(principalInfo);
-  return principalOrErr.isOk() ? principalOrErr.unwrap().forget() : nullptr;
-}
-
-static already_AddRefed<nsIPrincipal> GetRequestingPrincipal(
     const HttpChannelCreationArgs& aArgs) {
   if (aArgs.type() != HttpChannelCreationArgs::THttpChannelOpenArgs) {
     return nullptr;
   }
 
   const HttpChannelOpenArgs& args = aArgs.get_HttpChannelOpenArgs();
-  return GetRequestingPrincipal(args.loadInfo());
+  return do_AddRef(args.loadInfo().requestingPrincipal());
 }
 
 void NeckoParent::GetValidatedOriginAttributes(
@@ -392,7 +376,7 @@ static already_AddRefed<nsIPrincipal> GetRequestingPrincipal(
 
   const GeckoViewContentChannelOpenArgs& args =
       aArgs.get_GeckoViewContentChannelOpenArgs();
-  return GetRequestingPrincipal(args.loadInfo());
+  return do_AddRef(args.loadInfo().requestingPrincipal());
 }
 
 already_AddRefed<PGeckoViewContentChannelParent>

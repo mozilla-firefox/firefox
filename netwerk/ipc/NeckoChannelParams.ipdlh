@@ -119,10 +119,11 @@ struct InterceptionInfoArg
 
 struct LoadInfoArgs
 {
-  PrincipalInfo?              requestingPrincipalInfo;
-  PrincipalInfo               triggeringPrincipalInfo;
-  PrincipalInfo?              principalToInheritInfo;
-  PrincipalInfo?              topLevelPrincipalInfo;
+  nullable nsIPrincipal       requestingPrincipal;
+  // TODO(Bug 2091749): Make this non-nullable.
+  nullable nsIPrincipal       triggeringPrincipal;
+  nullable nsIPrincipal       principalToInherit;
+  nullable nsIPrincipal       topLevelPrincipal;
   nullable nsIURI             resultPrincipalURI;
   RemoteType                  triggeringRemoteType;
   nsID                        sandboxedNullPrincipalID;
@@ -224,7 +225,7 @@ struct LoadInfoArgs
   UserNavigationInvolvement   userNavigationInvolvement;
   PermissionsPolicyInfo?       containerPermissionsPolicyInfo;
   // https://html.spec.whatwg.org/#dom-location-ancestororigins
-  PrincipalInfo?[]             ancestorOrigins;
+  nullable nsIPrincipal[]     ancestorOrigins;
 };
 
 /**
