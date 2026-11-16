@@ -47,6 +47,10 @@ class UnscaledFontFreeType : public UnscaledFont {
   RefPtr<SharedFTFace> InitFace();
 
 #ifdef MOZ_WIDGET_ANDROID
+  static bool ValidateFontDescriptor(const uint8_t* aName, size_t aNameLength,
+                                     std::string& aResultName,
+                                     uint32_t& aIndex);
+
   static already_AddRefed<UnscaledFont> CreateFromFontDescriptor(
       const uint8_t* aData, uint32_t aDataLength, uint32_t aIndex);
 
@@ -92,7 +96,8 @@ class UnscaledFontFontconfig : public UnscaledFontFreeType {
   FontType GetType() const override { return FontType::FONTCONFIG; }
 
   static bool ValidateFontDescriptor(const uint8_t* aName, size_t aNameLength,
-                                     nsCString& aResultName, uint32_t& aIndex);
+                                     std::string& aResultName,
+                                     uint32_t& aIndex);
 
   static already_AddRefed<UnscaledFont> CreateFromFontDescriptor(
       const uint8_t* aData, uint32_t aDataLength, uint32_t aIndex);

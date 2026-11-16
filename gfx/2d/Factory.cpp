@@ -406,6 +406,33 @@ already_AddRefed<NativeFontResource> Factory::CreateNativeFontResource(
   }
 }
 
+bool Factory::ValidateUnscaledFontDescriptor(FontType aType,
+                                             const uint8_t* aName,
+                                             size_t aNameLength,
+                                             std::string& aResultName,
+                                             uint32_t& aIndex) {
+  switch (aType) {
+#ifdef WIN32
+    case FontType::DWRITE:
+      return true;
+#elif defined(XP_DARWIN)
+    case FontType::MAC:
+      return true;
+#elif defined(MOZ_WIDGET_GTK)
+    case FontType::FONTCONFIG:
+      return UnscaledFontFontconfig::ValidateFontDescriptor(
+          aName, aNameLength, aResultName, aIndex);
+#elif defined(MOZ_WIDGET_ANDROID)
+    case FontType::FREETYPE:
+      return UnscaledFontFreeType::ValidateFontDescriptor(aName, aNameLength,
+                                                          aResultName, aIndex);
+#endif
+    default:
+      gfxWarning() << "Invalid type specified for UnscaledFont font descriptor";
+      return false;
+  }
+}
+
 already_AddRefed<UnscaledFont> Factory::CreateUnscaledFontFromFontDescriptor(
     FontType aType, const uint8_t* aData, uint32_t aDataLength,
     uint32_t aIndex) {

@@ -55,7 +55,6 @@
 #  include "mozilla/widget/WinCompositorWidget.h"
 #endif
 #if defined(MOZ_WIDGET_GTK)
-#  include "mozilla/gfx/UnscaledFontFreeType.h"
 #  include "mozilla/widget/GtkCompositorWidget.h"
 #endif
 #ifdef MOZ_WIDGET_ANDROID
@@ -656,16 +655,29 @@ static bool ReadRawFont(const OpAddRawFont& aOp, wr::ShmSegmentsReader& aReader,
 
 static bool ValidateFontDescriptor(wr::Vec<uint8_t>& aBytes,
                                    uint32_t& aFontIndex) {
-#ifdef MOZ_WIDGET_GTK
-  nsCString path;
-  if (!UnscaledFontFontconfig::ValidateFontDescriptor(
-          aBytes.Data(), aBytes.Length(), path, aFontIndex)) {
+  gfx::FontType fontType =
+#ifdef WIN32
+      gfx::FontType::DWRITE
+#elif defined(XP_DARWIN)
+      gfx::FontType::MAC
+#elif defined(MOZ_WIDGET_GTK)
+      gfx::FontType::FONTCONFIG
+#elif defined(MOZ_WIDGET_ANDROID)
+      gfx::FontType::FREETYPE
+#else
+      gfx::FontType::UNKNOWN
+#endif
+      ;
+
+  std::string path;
+  if (!gfx::Factory::ValidateUnscaledFontDescriptor(
+          fontType, aBytes.Data(), aBytes.Length(), path, aFontIndex)) {
     return false;
   }
-  aBytes.Clear();
-  aBytes.PushBytes(
-      Range<uint8_t>((uint8_t*)path.BeginReading(), path.Length()));
-#endif
+  if (!path.empty()) {
+    aBytes.Clear();
+    aBytes.PushBytes(Range<uint8_t>((uint8_t*)path.c_str(), path.length()));
+  }
   return true;
 }
 

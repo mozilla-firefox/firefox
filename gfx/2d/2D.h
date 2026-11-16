@@ -2326,6 +2326,16 @@ class GFX2D_API Factory {
       void* aFontContext = nullptr);
 
   /**
+   * Validates the name of a font descriptor and returns the resulting
+   * overridden name and index, if applicable.
+   */
+  static bool ValidateUnscaledFontDescriptor(FontType aType,
+                                             const uint8_t* aName,
+                                             size_t aNameLength,
+                                             std::string& aResultName,
+                                             uint32_t& aIndex);
+
+  /**
    * This creates an unscaled font of the given type based on font descriptor
    * data retrieved from ScaledFont::GetFontDescriptor.
    */
