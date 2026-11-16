@@ -63,6 +63,8 @@ scheme = "http"
 
 ["test_queue_copyExternalImageToTexture.html"]
 
+["test_queue_copyExternalImageToTexture_imagebitmap.html"]
+
 ["test_queue_write.html"]
 
 ["test_queue_write_invalid_device.html"]

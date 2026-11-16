@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="/tests/SimpleTest/SimpleTest.js"></script>
+    <link rel="stylesheet" href="/tests/SimpleTest/test.css" />
+  </head>
+
+  <body>
+    <script type="text/javascript">
+      "use strict";
+
+      // copyTextureToBuffer() requires bytesPerRow to be a multiple of 256.
+      const BYTES_PER_ROW_ALIGNMENT = 256;
+      const BYTES_PER_PIXEL = 4;
+
+      const TRANSPARENT_BLACK = [0, 0, 0, 0];
+
+      async function getDevice() {
+        const adapter = await navigator.gpu.requestAdapter();
+        return adapter.requestDevice();
+      }
+
+      // Returns the pixels of aBitmap after copying it to a texture.
+      async function copyAndRead(aDevice, aBitmap, aPremultipliedAlpha) {
+        const { width, height } = aBitmap;
+        const texture = aDevice.createTexture({
+          size: [width, height],
+          format: "rgba8unorm",
+          usage:
+            GPUTextureUsage.COPY_DST |
+            GPUTextureUsage.COPY_SRC |
+            GPUTextureUsage.RENDER_ATTACHMENT,
+        });
+        aDevice.queue.copyExternalImageToTexture(
+          { source: aBitmap },
+          { texture, premultipliedAlpha: aPremultipliedAlpha },
+          [width, height]
+        );
+        const buffer = aDevice.createBuffer({
+          size: BYTES_PER_ROW_ALIGNMENT * height,
+          usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+        });
+        const encoder = aDevice.createCommandEncoder();
+        encoder.copyTextureToBuffer(
+          { texture },
+          { buffer, bytesPerRow: BYTES_PER_ROW_ALIGNMENT },
+          [width, height]
+        );
+        aDevice.queue.submit([encoder.finish()]);
+        await buffer.mapAsync(GPUMapMode.READ);
+        const rows = new Uint8Array(buffer.getMappedRange());
+        const pixels = [];
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const offset = y * BYTES_PER_ROW_ALIGNMENT + x * BYTES_PER_PIXEL;
+            pixels.push(Array.from(rows.subarray(offset, offset + BYTES_PER_PIXEL)));
+          }
+        }
+        buffer.unmap();
+        return pixels;
+      }
+
+      add_task(async function test_crop_outside_source_copies_transparent() {
+        const device = await getDevice();
+        const size = 4;
+        const canvas = new OffscreenCanvas(size, size);
+        const context = canvas.getContext("2d");
+        context.fillStyle = "rgba(200, 100, 50, 0.5)";
+        context.fillRect(0, 0, size, size);
+        for (const [name, options] of Object.entries({
+          default: {},
+          'premultiplyAlpha "none"': { premultiplyAlpha: "none" },
+        })) {
+          // The crop rect lies entirely to the right of the canvas.
+          const bitmap = await createImageBitmap(
+            canvas,
+            size * 2,
+            0,
+            size,
+            size,
+            options
+          );
+          is(bitmap.width, size, `${name}: bitmap width`);
+          const pixels = await copyAndRead(device, bitmap, false);
+          bitmap.close();
+          SimpleTest.isDeeply(
+            pixels,
+            new Array(size * size).fill(TRANSPARENT_BLACK),
+            `${name}: a crop rect outside the source copies transparent black`
+          );
+        }
+      });
+    </script>
+  </body>
+</html>
