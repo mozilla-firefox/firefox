@@ -2277,7 +2277,20 @@ add_task(async function test_IPPProxyManager_switch_from_active() {
     "suspend must be called before the re-initialize"
   );
 
+  Assert.deepEqual(
+    IPPProxyManager.location,
+    IPProtectionServerlist.getLocation("US"),
+    "location should follow the switch"
+  );
+
   await IPPProxyManager.stop();
+
+  Assert.equal(
+    IPPProxyManager.location,
+    null,
+    "location should be cleared when the proxy stops"
+  );
+
   IPProtectionService.uninit();
   sandbox.restore();
 });

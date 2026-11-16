@@ -260,6 +260,8 @@ class IPPProxyManagerSingleton extends EventTarget {
   #usage = null;
   /**@type {import("./IPPChannelFilter.sys.mjs").IPPChannelFilter | null} */
   #connection = null;
+  /** @type {{country: object, city: object} | null} */
+  #location = null;
   #networkErrorObserver = null;
   // If this is set, we're awaiting a proxy pass rotation.
   /** @type {{ promise: Promise<void>, controller: AbortController } | null} */
@@ -338,6 +340,13 @@ class IPPProxyManagerSingleton extends EventTarget {
     this.#pass = null;
     this.#usage = null;
     this.#cancelChannelFilter();
+  }
+
+  /**
+   * The location the active connection routes through, or null.
+   */
+  get location() {
+    return this.#location;
   }
 
   /**
@@ -689,6 +698,7 @@ class IPPProxyManagerSingleton extends EventTarget {
     lazy.logConsole.debug("Server:", server?.hostname);
 
     this.#connection.initialize(this.#pass, server);
+    this.#location = location;
 
     this.networkErrorObserver.start();
     this.networkErrorObserver.addIsolationKey(this.#connection.isolationKey);
@@ -766,6 +776,7 @@ class IPPProxyManagerSingleton extends EventTarget {
 
       this.networkErrorObserver.stop();
     }
+    this.#location = null;
     this.#errorType = null;
   }
 
@@ -822,6 +833,7 @@ class IPPProxyManagerSingleton extends EventTarget {
 
     this.#connection.suspend();
     this.#connection.initialize(this.#pass, server);
+    this.#location = location;
 
     this.networkErrorObserver.addIsolationKey(this.#connection.isolationKey);
 

@@ -9,6 +9,11 @@ const { IPProtectionPanel } = ChromeUtils.importESModule(
 const { IPProtectionServerlist } = ChromeUtils.importESModule(
   "moz-src:///toolkit/components/ipprotection/IPProtectionServerlist.sys.mjs"
 );
+const { ShellService } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/shell/ShellService.sys.mjs"
+);
+
+const EGRESS_LOCATION_PREF = "browser.ipProtection.egressLocation";
 
 /**
  * A class that mocks the IP Protection panel.
@@ -532,6 +537,98 @@ add_task(async function test_showing_checks_is_premium_once() {
   isPremiumStub.restore();
   ipProtectionPanel.uninit();
   Services.prefs.clearUserPref("browser.ipProtection.everOpenedPanel");
+});
+
+const LOCATIONS = {
+  REC: { country: { code: "REC", locked: false } },
+  CA: { country: { code: "CA", locked: true } },
+};
+
+/**
+ * Opens the panel with an active connection on `current`, the locked CA as
+ * the picked location, and premium coming from the default browser check.
+ *
+ * @param {object} options
+ * @param {string} options.current
+ *   Key in LOCATIONS of the location the connection routes through.
+ * @param {boolean} options.isDefaultBrowser
+ *   Whether Firefox is the default browser.
+ * @returns {Promise<sinon.SinonStub>} The IPPProxyManager.switch stub.
+ */
+async function showPanelWithLocation({ current, isDefaultBrowser }) {
+  let ipProtectionPanel = new IPProtectionPanel();
+  ipProtectionPanel.panel = new FakeIPProtectionPanelView();
+  let sandbox = sinon.createSandbox();
+  Services.prefs.setStringPref(EGRESS_LOCATION_PREF, "CA");
+  sandbox
+    .stub(IPProtectionService, "authProvider")
+    .get(() => ({ hasUpgraded: false }));
+  sandbox
+    .stub(ShellService, "isDefaultBrowserAsync")
+    .resolves(isDefaultBrowser);
+  sandbox
+    .stub(IPProtectionServerlist, "getLocation")
+    .callsFake(code => LOCATIONS[code] ?? null);
+  sandbox
+    .stub(IPProtectionServerlist, "getRecommendedLocation")
+    .returns(LOCATIONS.REC);
+  sandbox.stub(IPPProxyManager, "location").get(() => LOCATIONS[current]);
+  let switchStub = sandbox.stub(IPPProxyManager, "switch");
+
+  await ipProtectionPanel.showing(ipProtectionPanel.panel);
+
+  sandbox.restore();
+  ipProtectionPanel.uninit();
+  Services.prefs.clearUserPref(EGRESS_LOCATION_PREF);
+  Services.prefs.clearUserPref("browser.ipProtection.everOpenedPanel");
+  return switchStub;
+}
+
+/**
+ * Tests that opening the panel after losing default browser status moves a
+ * connection off a locked location.
+ */
+add_task(async function test_showing_leaves_locked_location() {
+  let switchStub = await showPanelWithLocation({
+    current: "CA",
+    isDefaultBrowser: false,
+  });
+
+  Assert.ok(switchStub.calledOnce, "The connection should be switched");
+  Assert.strictEqual(
+    switchStub.firstCall.args[0],
+    undefined,
+    "The connection should be switched to the recommended location"
+  );
+});
+
+/**
+ * Tests that opening the panel after becoming the default browser again moves
+ * the connection back to the picked locked location.
+ */
+add_task(async function test_showing_returns_to_locked_location() {
+  let switchStub = await showPanelWithLocation({
+    current: "REC",
+    isDefaultBrowser: true,
+  });
+
+  Assert.ok(
+    switchStub.calledOnceWithExactly("CA"),
+    "The connection should be switched back to the picked location"
+  );
+});
+
+/**
+ * Tests that opening the panel keeps a connection already on the location the
+ * panel shows.
+ */
+add_task(async function test_showing_keeps_matching_location() {
+  let switchStub = await showPanelWithLocation({
+    current: "CA",
+    isDefaultBrowser: true,
+  });
+
+  Assert.ok(switchStub.notCalled, "The connection should not be switched");
 });
 
 /**

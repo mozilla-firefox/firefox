@@ -586,9 +586,7 @@ export class IPProtectionPanel {
 
     // A connection kept up for the always-on sites is widened, not restarted.
     if (lazy.IPPProxyManager.state === lazy.IPPProxyStates.ACTIVE) {
-      if (country) {
-        lazy.IPPProxyManager.switch(country);
-      }
+      this.#followEgressLocation(country);
       lazy.IPPProxyManager.setMode(lazy.IPPMode.getDefault());
       return;
     }
@@ -612,6 +610,23 @@ export class IPProtectionPanel {
         showSiteInclusionPrompt: false,
       });
       this.toolbarButton?.updateState(null, { error: errorMessage });
+    }
+  }
+
+  /**
+   * Switches an active connection that doesn't route through the location the
+   * panel shows.
+   *
+   * @param {string} [country]
+   *   The resolved egress country, or undefined for the recommended location.
+   */
+  #followEgressLocation(country) {
+    const current = lazy.IPPProxyManager.location;
+    const wanted = country
+      ? lazy.IPProtectionServerlist.getLocation(country)
+      : lazy.IPProtectionServerlist.getRecommendedLocation();
+    if (current && wanted?.country.code !== current.country.code) {
+      lazy.IPPProxyManager.switch(country);
     }
   }
 
@@ -671,6 +686,12 @@ export class IPProtectionPanel {
 
     if (this.#showToken !== token) {
       return;
+    }
+
+    if (lazy.IPPProxyManager.location) {
+      this.#followEgressLocation(
+        await lazy.IPProtectionServerlist.resolveEgressCountry(() => isPremium)
+      );
     }
 
     if (this.initiatedUpgrade) {
