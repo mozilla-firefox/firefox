@@ -21,6 +21,7 @@ import org.mozilla.experiments.nimbus.NIMBUS_DATA_DIR
 import org.mozilla.experiments.nimbus.NimbusDeviceInfo
 import org.mozilla.experiments.nimbus.internal.JsonObject
 import org.mozilla.experiments.nimbus.internal.RecordedContext
+import org.mozilla.experiments.nimbus.internal.RecordedEnrollmentState
 import org.mozilla.experiments.nimbus.internal.getCalculatedAttributes
 import org.mozilla.fenix.GleanMetrics.NimbusSystem
 import org.mozilla.fenix.ext.components
@@ -72,6 +73,8 @@ class RecordedNimbusContext(
     val areNotificationsEnabled: Boolean,
     val areMarketingNotificationsEnabled: Boolean,
 ) : RecordedContext {
+    private var enrollmentState: RecordedEnrollmentState? = null
+
     /**
      * [getEventQueries] is called by the Nimbus SDK Rust code to retrieve the map of event queries. The are then
      * executed against the Nimbus SDK's EventStore to retrieve their values.
@@ -116,6 +119,20 @@ class RecordedNimbusContext(
                 userDisabledAi = userDisabledAi,
                 areNotificationsEnabled = areNotificationsEnabled,
                 areMarketingNotificationsEnabled = areMarketingNotificationsEnabled,
+                activeExperiments = NimbusSystem.RecordedNimbusContextObjectActiveExperiments(
+                    enrollmentState?.activeExperiments.orEmpty().sorted().toMutableList(),
+                ),
+                enrollments = NimbusSystem.RecordedNimbusContextObjectEnrollments(
+                    enrollmentState?.enrollments.orEmpty().sorted().toMutableList(),
+                ),
+                enrollmentsMap = NimbusSystem.RecordedNimbusContextObjectEnrollmentsMap(
+                    enrollmentState?.enrollmentsMap.orEmpty().entries.sortedBy { it.key }.map { (slug, branch) ->
+                        NimbusSystem.RecordedNimbusContextObjectEnrollmentsMapItem(
+                            experimentslug = slug,
+                            branchslug = branch,
+                        )
+                    }.toMutableList(),
+                ),
             )
         )
     }
@@ -129,6 +146,16 @@ class RecordedNimbusContext(
      */
     override fun setEventQueryValues(eventQueryValues: Map<String, Double>) {
         this.eventQueryValues = eventQueryValues
+    }
+
+    /**
+     * [setEnrollmentState] is called by the Nimbus SDK Rust code just before [record]. The [enrollmentState] is
+     * recorded to Glean. It is not added to [toJson], because the SDK already supplies it to the targeting context.
+     *
+     * @param [enrollmentState] Which experiments the client is enrolled in, and the branch for each.
+     */
+    override fun setEnrollmentState(enrollmentState: RecordedEnrollmentState) {
+        this.enrollmentState = enrollmentState
     }
 
     /**

@@ -7,8 +7,10 @@ package org.mozilla.fenix.experiments
 import android.os.Build
 import kotlin.test.assertNotNull
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
@@ -16,10 +18,12 @@ import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mozilla.experiments.nimbus.Nimbus
+import org.mozilla.experiments.nimbus.internal.RecordedEnrollmentState
 import org.mozilla.experiments.nimbus.internal.validateEventQueries
 import org.mozilla.fenix.GleanMetrics.NimbusSystem as GleanNimbus
 import org.mozilla.fenix.helpers.FenixGleanTestRule
@@ -155,6 +159,66 @@ class RecordedNimbusContextTest {
 
         assertEquals("addon@example.com", context.toJson().getJSONArray("addon_ids")[0])
         assertEquals("d10d0bf8-f5b5-c8b4-a8b2-2b9879e08c5d", context.toJson().getJSONArray("addon_ids")[1])
+    }
+
+    @Test
+    fun `GIVEN an enrollment state WHEN record called THEN it is recorded to Glean in a stable order`() {
+        var recordedValue: JsonElement? = null
+        val job =
+            Nimbus.Pings.nimbusTargetingContext.testBeforeNextSubmit {
+                recordedValue = GleanNimbus.recordedNimbusContext.testGetValue("nimbus-targeting-context")
+            }
+
+        val recordedContext = RecordedNimbusContext.createForTest()
+        recordedContext.setEnrollmentState(
+            RecordedEnrollmentState(
+                activeExperiments = listOf("exp-b", "exp-a"),
+                enrollments = listOf("exp-b", "exp-a"),
+                enrollmentsMap = mapOf("exp-b" to "treatment", "exp-a" to "control"),
+            ),
+        )
+        recordedContext.record()
+
+        Nimbus.Pings.nimbusTargetingContext.submit()
+        job.join()
+        val recorded = recordedValue?.jsonObject
+        assertNotNull(recorded)
+        val slugs = JsonArray(listOf(JsonPrimitive("exp-a"), JsonPrimitive("exp-b")))
+        assertEquals(slugs, recorded?.get("active_experiments"))
+        assertEquals(slugs, recorded?.get("enrollments"))
+        assertEquals(
+            JsonArray(
+                listOf(
+                    buildJsonObject {
+                        put("experimentSlug", "exp-a")
+                        put("branchSlug", "control")
+                    },
+                    buildJsonObject {
+                        put("experimentSlug", "exp-b")
+                        put("branchSlug", "treatment")
+                    },
+                ),
+            ),
+            recorded?.get("enrollments_map"),
+        )
+    }
+
+    @Test
+    fun `GIVEN an enrollment state WHEN serialized to JSON THEN the enrollment state is left out`() {
+        val context = RecordedNimbusContext.createForTest()
+        context.setEnrollmentState(
+            RecordedEnrollmentState(
+                activeExperiments = listOf("exp-a"),
+                enrollments = listOf("exp-a"),
+                enrollmentsMap = mapOf("exp-a" to "control"),
+            ),
+        )
+
+        val json = context.toJson()
+
+        assertFalse(json.has("active_experiments"))
+        assertFalse(json.has("enrollments"))
+        assertFalse(json.has("enrollments_map"))
     }
 
     @Test

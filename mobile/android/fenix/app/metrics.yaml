@@ -15760,6 +15760,27 @@ nimbus_system:
           type: array
           items:
             type: string
+        # Slugs of the experiments and rollouts the client is enrolled in
+        active_experiments:
+          type: array
+          items:
+            type: string
+        # Slugs of every experiment the client is enrolled in
+        enrollments:
+          type: array
+          items:
+            type: string
+        # Each enrolled experiment and the branch the client is on. A list of
+        # pairs, because an object metric cannot hold keys that are not known up front.
+        enrollments_map:
+          type: array
+          items:
+            type: object
+            properties:
+              experimentSlug:
+                type: string
+              branchSlug:
+                type: string
         tou_points:
           type: number
         are_notifications_enabled:
@@ -15779,6 +15800,7 @@ nimbus_system:
       - 'https://bugzilla.mozilla.org/show_bug.cgi?id=1992306'
       - 'https://bugzilla.mozilla.org/show_bug.cgi?id=2028993'
       - 'https://bugzilla.mozilla.org/show_bug.cgi?id=2036418'
+      - 'https://bugzilla.mozilla.org/show_bug.cgi?id=2088185'
     data_reviews:
       - 'https://bugzilla.mozilla.org/show_bug.cgi?id=1898552#c3'
       - 'https://phabricator.services.mozilla.com/D258942'
