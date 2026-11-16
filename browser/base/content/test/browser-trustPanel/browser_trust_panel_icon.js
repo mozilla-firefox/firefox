@@ -137,6 +137,19 @@ async function waitForContentBlockingLog(browser) {
   );
 }
 
+async function toggleTrackerCount() {
+  const popup = window.document.getElementById("trustpanel-popup");
+  if (popup?.state != "open") {
+    await UrlbarTestUtils.openTrustPanel(window);
+  }
+
+  EventUtils.synthesizeMouseAtCenter(
+    window.document.getElementById("trackercount-toggle"),
+    {},
+    window
+  );
+}
+
 add_task(async function test_breached_urlbar_icon_animation_logic() {
   let tab1;
   let tab2;
@@ -610,6 +623,172 @@ add_task(async function test_tracker_count_hidden_when_pref_disabled() {
   } finally {
     await BrowserTestUtils.removeTab(tab);
     await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_tracker_count_hidden_when_toggle_switched_off() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.trackerCount.enabled", true]],
+  });
+
+  await PlacesUtils.history.clear();
+
+  const tab = await BrowserTestUtils.openNewForegroundTab({
+    gBrowser,
+    opening: TRACKING_PAGE,
+    waitForLoad: true,
+  });
+
+  try {
+    await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+      content.postMessage("cryptomining", "*");
+    });
+
+    await waitForContentBlockingLog(tab.linkedBrowser);
+
+    Assert.ok(
+      trustIconContainer().classList.contains("has-blocked-trackers"),
+      "has-blocked-trackers class should appear when trackerCount.enabled is true"
+    );
+
+    const prefChangeFalsePromise = TestUtils.waitForPrefChange(
+      "browser.urlbar.trackerCount.enabled",
+      newPrefValue => {
+        if (newPrefValue) {
+          return false;
+        }
+        is(
+          newPrefValue,
+          false,
+          "trackerCount.enabled should be false after disabling it"
+        );
+        return true;
+      }
+    );
+
+    await toggleTrackerCount();
+    await prefChangeFalsePromise;
+
+    Assert.ok(
+      !trustIconContainer().classList.contains("has-blocked-trackers"),
+      "has-blocked-trackers class should not appear after toggling trackerCount.enabled off"
+    );
+
+    const prefChangeTruePromise = TestUtils.waitForPrefChange(
+      "browser.urlbar.trackerCount.enabled",
+      newPrefValue => {
+        if (!newPrefValue) {
+          return false;
+        }
+        is(
+          newPrefValue,
+          true,
+          "trackerCount.enabled should be true after re-enabling it"
+        );
+        return true;
+      }
+    );
+
+    await toggleTrackerCount();
+    await prefChangeTruePromise;
+
+    Assert.ok(
+      trustIconContainer().classList.contains("has-blocked-trackers"),
+      "has-blocked-trackers class should re-appear after toggling trackerCount.enabled on again"
+    );
+  } finally {
+    await BrowserTestUtils.removeTab(tab);
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_tracker_count_updated_after_enabling() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.trackerCount.enabled", false]],
+  });
+
+  await PlacesUtils.history.clear();
+
+  const tab = await BrowserTestUtils.openNewForegroundTab({
+    gBrowser,
+    opening: TRACKING_PAGE,
+    waitForLoad: true,
+  });
+
+  try {
+    await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+      content.postMessage("cryptomining", "*");
+    });
+
+    await waitForContentBlockingLog(tab.linkedBrowser);
+
+    Assert.ok(
+      !trustIconContainer().classList.contains("has-blocked-trackers"),
+      "has-blocked-trackers class should not be applied when trackerCount.enabled is false"
+    );
+
+    await toggleTrackerCount();
+
+    Assert.ok(
+      trustIconContainer().classList.contains("has-blocked-trackers"),
+      "has-blocked-trackers class should appear after toggling trackerCount.enabled on"
+    );
+    Assert.equal(
+      trackerCountShortform(),
+      "1",
+      "Trackers blocked before the pref was enabled are counted"
+    );
+  } finally {
+    await BrowserTestUtils.removeTab(tab);
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+// The pref can also be changed outside the panel, through the checkbox in
+// about:preferences. The icon, including its accessible name, must react to that
+// as well, since nothing else rewrites the count while the feature is off.
+add_task(async function test_pref_changed_outside_panel_updates_icon() {
+  await PlacesUtils.history.clear();
+
+  const tab = await BrowserTestUtils.openNewForegroundTab({
+    gBrowser,
+    opening: TRACKING_PAGE,
+    waitForLoad: true,
+  });
+
+  try {
+    await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+      content.postMessage("cryptomining", "*");
+    });
+
+    await waitForTrustIconClass(
+      "has-blocked-trackers",
+      "Waiting for has-blocked-trackers class"
+    );
+
+    await document.l10n.translateElements([trustIconContainer()]);
+    Assert.equal(
+      trustIconContainer().getAttribute("aria-label"),
+      "View site information (1 tracker blocked)",
+      "The tracker count is included in the accessible name"
+    );
+
+    Services.prefs.setBoolPref("browser.urlbar.trackerCount.enabled", false);
+
+    Assert.ok(
+      !trustIconContainer().classList.contains("has-blocked-trackers"),
+      "Disabling the pref elsewhere removes the tracker count from the icon"
+    );
+
+    await document.l10n.translateElements([trustIconContainer()]);
+    Assert.equal(
+      trustIconContainer().getAttribute("aria-label"),
+      "View site information",
+      "Disabling the pref elsewhere also hides the count from the accessible name"
+    );
+  } finally {
+    Services.prefs.clearUserPref("browser.urlbar.trackerCount.enabled");
+    await BrowserTestUtils.removeTab(tab);
   }
 });
 

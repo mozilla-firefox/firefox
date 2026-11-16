@@ -238,6 +238,22 @@ trustpanel:
           The newly selected HTTPS-Only Mode setting for the site: "on", "off"
           or "off-temporarily".
         type: string
+  tracker_count_toggled:
+    type: event
+    description: |
+      Event to record when a user toggles the tracker count through the Trust
+      Panel. Changes made outside the Trust Panel are not recorded.
+    bugs: *trustpanel_bugs
+    data_reviews: *trustpanel_data_reviews
+    notification_emails: *trustpanel_emails
+    expires: never
+    data_sensitivity:
+      - interaction
+    extra_keys:
+      enabled:
+        description: >
+          Whether the tracker count was enabled by this toggle.
+        type: boolean
   tracker_list_opened:
     type: event
     description: |

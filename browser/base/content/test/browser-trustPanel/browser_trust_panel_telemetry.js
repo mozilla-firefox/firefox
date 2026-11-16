@@ -217,6 +217,53 @@ add_task(async function test_etp_toggle_telemetry() {
   await BrowserTestUtils.removeTab(tab);
 });
 
+add_task(async function test_tracker_count_toggle_telemetry() {
+  Services.fog.testResetFOG();
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.trackerCount.enabled", true]],
+  });
+
+  const tab = await BrowserTestUtils.openNewForegroundTab({
+    gBrowser,
+    opening: TEST_ORIGIN,
+    waitForLoad: true,
+  });
+
+  try {
+    await UrlbarTestUtils.openTrustPanel(window);
+    const toggle = document.getElementById("trackercount-toggle");
+    await TestUtils.waitForCondition(
+      () => BrowserTestUtils.isVisible(toggle),
+      "Waiting for the tracker count toggle"
+    );
+
+    info("Turn the tracker count off");
+    let prefChanged = TestUtils.waitForPrefChange(
+      "browser.urlbar.trackerCount.enabled"
+    );
+    toggle.click();
+    await prefChanged;
+    Assert.deepEqual(eventExtras("trustpanel", "trackerCountToggled"), [
+      { enabled: "false" },
+    ]);
+
+    info("Turn the tracker count back on");
+    prefChanged = TestUtils.waitForPrefChange(
+      "browser.urlbar.trackerCount.enabled"
+    );
+    toggle.click();
+    await prefChanged;
+    Assert.deepEqual(eventExtras("trustpanel", "trackerCountToggled"), [
+      { enabled: "false" },
+      { enabled: "true" },
+    ]);
+  } finally {
+    await UrlbarTestUtils.closeTrustPanel(window);
+    await BrowserTestUtils.removeTab(tab);
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
 add_task(async function test_clear_cookies_cancelled_telemetry() {
   Services.fog.testResetFOG();
 

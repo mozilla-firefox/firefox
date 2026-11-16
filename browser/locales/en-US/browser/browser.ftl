@@ -1761,6 +1761,10 @@ trustpanel-etp-toggle-off =
 trustpanel-etp-description-enabled = If something looks broken on this site, try turning off protections.
 trustpanel-etp-description-disabled = { -brand-product-name } thinks companies should follow you less. We block as many trackers as we can when you turn on protections.
 
+trustpanel-trackercount-label = Show trackers blocked in address bar
+trustpanel-trackercount-toggle =
+    .aria-label = Show trackers blocked in address bar
+
 trustpanel-connection-label-secure = Connection secure
 trustpanel-connection-label-insecure = Connection not secure
 

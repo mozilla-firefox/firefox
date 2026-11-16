@@ -1084,7 +1084,8 @@
   }
 }
 
-#trustpanel-toggle-checkbox-container {
+#trustpanel-toggle-checkbox-container,
+#trackercount-toggle-checkbox-container {
   justify-content: space-between;
 }
 
@@ -1130,7 +1131,8 @@
   margin: var(--panel-menuitem-margin);
 }
 
-#trustpanel-toggle-section {
+#trustpanel-toggle-section,
+#trackercount-toggle-section {
   margin-block: var(--space-large);
   margin-inline: var(--panel-menuitem-margin-inline);
   padding-inline: var(--panel-menuitem-padding-inline);
