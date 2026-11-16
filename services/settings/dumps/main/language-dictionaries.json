@@ -1,646 +1,646 @@
 {
   "data": [
     {
-      "schema": 1672245423392,
       "dictionaries": [
         "en-US-mozilla@dictionaries.addons.mozilla.org"
       ],
       "id": "en-US",
-      "last_modified": 1673270322227
+      "last_modified": 1673270322227,
+      "schema": 1672245423392
     },
     {
-      "schema": 1569354115694,
       "dictionaries": [
         "ca-valencia@dictionaries.addons.mozilla.org"
       ],
       "id": "ca-valencia",
-      "last_modified": 1569410800356
+      "last_modified": 1569410800356,
+      "schema": 1569354115694
     },
     {
-      "schema": 1557258118159,
       "dictionaries": [
         "bn-BD@dictionaries.addons.mozilla.org"
       ],
       "id": "bn",
-      "last_modified": 1557402267392
+      "last_modified": 1557402267392,
+      "schema": 1557258118159
     },
     {
-      "schema": 1546371712765,
       "dictionaries": [
         "pt-BR@dictionaries.addons.mozilla.org"
       ],
       "id": "pt-BR",
-      "last_modified": 1546445786254
+      "last_modified": 1546445786254,
+      "schema": 1546371712765
     },
     {
-      "schema": 1539698850177,
       "dictionaries": [
         "xh-ZA@dictionaries.addons.mozilla.org"
       ],
       "id": "xh",
-      "last_modified": 1539698851548
+      "last_modified": 1539698851548,
+      "schema": 1539698850177
     },
     {
-      "schema": 1539698850177,
       "dictionaries": [
         "dictionary@vi.mozdev.org"
       ],
       "id": "vi",
-      "last_modified": 1539698851493
+      "last_modified": 1539698851493,
+      "schema": 1539698850177
     },
     {
-      "schema": 1539698850177,
       "dictionaries": [
         "uz@dellalibera.sf.net"
       ],
       "id": "uz",
-      "last_modified": 1539698851437
+      "last_modified": 1539698851437,
+      "schema": 1539698850177
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "ur@dictionaries.addons.mozilla.org"
       ],
       "id": "ur",
-      "last_modified": 1539698850171
+      "last_modified": 1539698850171,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "uk-ua@dictionaries.addons.mozilla.org"
       ],
       "id": "uk",
-      "last_modified": 1539698850116
+      "last_modified": 1539698850116,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "tr-fix@dictionaries.addons.mozilla.org"
       ],
       "id": "tr",
-      "last_modified": 1539698850060
+      "last_modified": 1539698850060,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "indlinux-telugu@lists.sourceforge.net"
       ],
       "id": "te",
-      "last_modified": 1539698850002
+      "last_modified": 1539698850002,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "mugunth@thamizha.com"
       ],
       "id": "ta",
-      "last_modified": 1539698849944
+      "last_modified": 1539698849944,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "swedish@dictionaries.addons.mozilla.org"
       ],
       "id": "sv-SE",
-      "last_modified": 1539698849888
+      "last_modified": 1539698849888,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "sr-RS@dictionaries.addons.mozilla.org"
       ],
       "id": "sr",
-      "last_modified": 1539698849834
+      "last_modified": 1539698849834,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "sq-AL@dictionaries.addons.mozilla.org"
       ],
       "id": "sq",
-      "last_modified": 1539698849779
+      "last_modified": 1539698849779,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "son-ML@dictionaries.addons.mozilla.org"
       ],
       "id": "son",
-      "last_modified": 1539698849726
+      "last_modified": 1539698849726,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "sl@dictionaries.addons.mozilla.org"
       ],
       "id": "sl",
-      "last_modified": 1539698849672
+      "last_modified": 1539698849672,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "sk@dictionaries.addons.mozilla.org"
       ],
       "id": "sk",
-      "last_modified": 1539698849619
+      "last_modified": 1539698849619,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "ru@dictionaries.addons.mozilla.org"
       ],
       "id": "ru",
-      "last_modified": 1539698849564
+      "last_modified": 1539698849564,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "ro-RO@www.archeus.ro"
       ],
       "id": "ro",
-      "last_modified": 1539698849510
+      "last_modified": 1539698849510,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "pt-PT@dictionaries.addons.mozilla.org"
       ],
       "id": "pt-PT",
-      "last_modified": 1539698849457
+      "last_modified": 1539698849457,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "pl@dictionaries.addons.mozilla.org"
       ],
       "id": "pl",
-      "last_modified": 1539698849351
+      "last_modified": 1539698849351,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "pa_IN@dellalibera.sf.net"
       ],
       "id": "pa-IN",
-      "last_modified": 1539698849297
+      "last_modified": 1539698849297,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "or_IN@dellalibera.sf.net"
       ],
       "id": "or",
-      "last_modified": 1539698849241
+      "last_modified": 1539698849241,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "nn-NO@dictionaries.addons.mozilla.org"
       ],
       "id": "nn-NO",
-      "last_modified": 1539698849187
+      "last_modified": 1539698849187,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "nl-NL@dictionaries.addons.mozilla.org"
       ],
       "id": "nl",
-      "last_modified": 1539698849133
+      "last_modified": 1539698849133,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "ne-NP@dictionaries.addons.mozilla.org"
       ],
       "id": "ne-NP",
-      "last_modified": 1539698849077
+      "last_modified": 1539698849077,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "nb-NO@dictionaries.addons.mozilla.org"
       ],
       "id": "nb-NO",
-      "last_modified": 1539698849022
+      "last_modified": 1539698849022,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "MyEja@xanda.org"
       ],
       "id": "ms",
-      "last_modified": 1539698848966
+      "last_modified": 1539698848966,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "mr-IN@dictionaries.addons.mozilla.org"
       ],
       "id": "mr",
-      "last_modified": 1539698848910
+      "last_modified": 1539698848910,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698847383,
       "dictionaries": [
         "mk-MK@dictionaries.addons.mozilla.org"
       ],
       "id": "mk",
-      "last_modified": 1539698848856
+      "last_modified": 1539698848856,
+      "schema": 1539698847383
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "lv-LV@dictionaries.addons.mozilla.org"
       ],
       "id": "lv",
-      "last_modified": 1539698847376
+      "last_modified": 1539698847376,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "lt@dictionaries.addons.mozilla.org"
       ],
       "id": "lt",
-      "last_modified": 1539698847321
+      "last_modified": 1539698847321,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "lo@dictionaries.addons.mozilla.org"
       ],
       "id": "lo",
-      "last_modified": 1539698847259
+      "last_modified": 1539698847259,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "ko-KR@dictionaries.addons.mozilla.org"
       ],
       "id": "ko",
-      "last_modified": 1539698847204
+      "last_modified": 1539698847204,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "kn@dictionaries.addons.mozilla.org"
       ],
       "id": "kn",
-      "last_modified": 1539698847151
+      "last_modified": 1539698847151,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "ka-GE@dictionaries.addons.mozilla.org"
       ],
       "id": "ka",
-      "last_modified": 1539698847096
+      "last_modified": 1539698847096,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "it-IT@dictionaries.addons.mozilla.org"
       ],
       "id": "it",
-      "last_modified": 1539698847039
+      "last_modified": 1539698847039,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "is@dictionaries.addons.mozilla.org"
       ],
       "id": "is",
-      "last_modified": 1539698846985
+      "last_modified": 1539698846985,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "id@ewesewes.net"
       ],
       "id": "id",
-      "last_modified": 1539698846932
+      "last_modified": 1539698846932,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "ia-xx@dictionaries.addons.mozilla.org"
       ],
       "id": "ia",
-      "last_modified": 1539698846878
+      "last_modified": 1539698846878,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "am@dictionaries.addons.mozilla.org"
       ],
       "id": "hy-AM",
-      "last_modified": 1539698846821
+      "last_modified": 1539698846821,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "hu@dictionaries.addons.mozilla.org"
       ],
       "id": "hu",
-      "last_modified": 1539698846767
+      "last_modified": 1539698846767,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "hsb@dictionaries.addons.mozilla.org"
       ],
       "id": "hsb",
-      "last_modified": 1539698846709
+      "last_modified": 1539698846709,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "hr-HR-2@dictionaries.addons.mozilla.org"
       ],
       "id": "hr",
-      "last_modified": 1539698846655
+      "last_modified": 1539698846655,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "hi-IN@dellalibera.sf.net"
       ],
       "id": "hi-IN",
-      "last_modified": 1539698846599
+      "last_modified": 1539698846599,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "he@dictionaries.addons.mozilla.org"
       ],
       "id": "he",
-      "last_modified": 1539698846544
+      "last_modified": 1539698846544,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "gu-IN@dellalibera.sf.net"
       ],
       "id": "gu-IN",
-      "last_modified": 1539698846488
+      "last_modified": 1539698846488,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "gl-es@dictionaries.addons.mozilla.org"
       ],
       "id": "gl",
-      "last_modified": 1539698846434
+      "last_modified": 1539698846434,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "gd-GB@dictionaries.addons.mozilla.org"
       ],
       "id": "gd",
-      "last_modified": 1539698846381
+      "last_modified": 1539698846381,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "ga-IE@dictionaries.addons.mozilla.org"
       ],
       "id": "ga-IE",
-      "last_modified": 1539698846327
+      "last_modified": 1539698846327,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "fy@dictionaries.addons.mozilla.org"
       ],
       "id": "fy-NL",
-      "last_modified": 1539698846271
+      "last_modified": 1539698846271,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "fr-dicollecte@dictionaries.addons.mozilla.org"
       ],
       "id": "fr",
-      "last_modified": 1539698846217
+      "last_modified": 1539698846217,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "fa@dictionaries.addons.mozilla.org"
       ],
       "id": "fa",
-      "last_modified": 1539698846162
+      "last_modified": 1539698846162,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "eu@dictionaries.addons.mozilla.org"
       ],
       "id": "eu",
-      "last_modified": 1539698846108
+      "last_modified": 1539698846108,
+      "schema": 1539698844602
     },
     {
-      "schema": 1539698844602,
       "dictionaries": [
         "et-EE@dictionaries.addons.mozilla.org"
       ],
       "id": "et",
-      "last_modified": 1539698846053
+      "last_modified": 1539698846053,
+      "schema": 1539698844602
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "diccionario@mozilla-mexico.org"
       ],
       "id": "es-MX",
-      "last_modified": 1539698844595
+      "last_modified": 1539698844595,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "es-es@dictionaries.addons.mozilla.org"
       ],
       "id": "es-ES",
-      "last_modified": 1539698844540
+      "last_modified": 1539698844540,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "es_cl@dictionaries.addons.mozilla.org"
       ],
       "id": "es-CL",
-      "last_modified": 1539698844485
+      "last_modified": 1539698844485,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "es-AR@dictionaries.addons.mozilla.org"
       ],
       "id": "es-AR",
-      "last_modified": 1539698844432
+      "last_modified": 1539698844432,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "eo-EO@dictionaries.addons.mozilla.org"
       ],
       "id": "eo",
-      "last_modified": 1539698844376
+      "last_modified": 1539698844376,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "marcoagpinto@mail.telepac.pt"
       ],
       "id": "en-GB",
-      "last_modified": 1539698844263
+      "last_modified": 1539698844263,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "en-CA@dictionaries.addons.mozilla.org"
       ],
       "id": "en-CA",
-      "last_modified": 1539698844210
+      "last_modified": 1539698844210,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "el-GR@dictionaries.addons.mozilla.org"
       ],
       "id": "el",
-      "last_modified": 1539698844158
+      "last_modified": 1539698844158,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "dsb@dictionaries.addons.mozilla.org"
       ],
       "id": "dsb",
-      "last_modified": 1539698844105
+      "last_modified": 1539698844105,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "de-CH@dictionaries.addons.mozilla.org",
         "de-DE@dictionaries.addons.mozilla.org",
         "de-AT@dictionaries.addons.mozilla.org"
       ],
       "id": "de",
-      "last_modified": 1539698844047
+      "last_modified": 1539698844047,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "danish@dictionaries.addons.mozilla.org"
       ],
       "id": "da",
-      "last_modified": 1539698843991
+      "last_modified": 1539698843991,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "cy-GB-1@dictionaries.addons.mozilla.org"
       ],
       "id": "cy",
-      "last_modified": 1539698843935
+      "last_modified": 1539698843935,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "cs@dictionaries.addons.mozilla.org"
       ],
       "id": "cs",
-      "last_modified": 1539698843864
+      "last_modified": 1539698843864,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "ca@dictionaries.addons.mozilla.org"
       ],
       "id": "ca",
-      "last_modified": 1539698843809
+      "last_modified": 1539698843809,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "br@dictionaries.addons.mozilla.org"
       ],
       "id": "br",
-      "last_modified": 1539698843755
+      "last_modified": 1539698843755,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "bn-BD@dictionaries.addons.mozilla.org"
       ],
       "id": "bn-BD",
-      "last_modified": 1539698843700
+      "last_modified": 1539698843700,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "bg-BG@dictionaries.addons.mozilla.org"
       ],
       "id": "bg",
-      "last_modified": 1539698843646
+      "last_modified": 1539698843646,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "be@dictionaries.addons.mozilla.org"
       ],
       "id": "be",
-      "last_modified": 1539698843592
+      "last_modified": 1539698843592,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "az@dictionaries.addons.mozilla.org"
       ],
       "id": "az",
-      "last_modified": 1539698843539
+      "last_modified": 1539698843539,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "asturianu@dictionaries.addons.mozilla.org"
       ],
       "id": "ast",
-      "last_modified": 1539698843485
+      "last_modified": 1539698843485,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "as-IN@dictionaries.addons.mozilla.org"
       ],
       "id": "as",
-      "last_modified": 1539698843431
+      "last_modified": 1539698843431,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "ar@dictionaries.addons.mozilla.org"
       ],
       "id": "ar",
-      "last_modified": 1539698843376
+      "last_modified": 1539698843376,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "an-ES@dictionaries.addons.mozilla.org"
       ],
       "id": "an",
-      "last_modified": 1539698843321
+      "last_modified": 1539698843321,
+      "schema": 1537961639183
     },
     {
-      "schema": 1537961639183,
       "dictionaries": [
         "af-ZA@dictionaries.addons.mozilla.org"
       ],
       "id": "af",
-      "last_modified": 1539698843264
+      "last_modified": 1539698843264,
+      "schema": 1537961639183
     }
   ],
   "timestamp": 1673270322227

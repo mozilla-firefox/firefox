@@ -1,7 +1,6 @@
 {
   "data": [
     {
-      "schema": 1710460807412,
       "appliesTo": [
         {
           "included": {
@@ -13,6 +12,9 @@
           }
         },
         {
+          "application": {
+            "minVersion": "124.0"
+          },
           "included": {
             "regions": [
               "be",
@@ -22,12 +24,18 @@
               "it",
               "nl"
             ]
-          },
-          "application": {
-            "minVersion": "124.0"
           }
         },
         {
+          "application": {
+            "distributions": [
+              "qwant-001",
+              "qwant-002"
+            ]
+          },
+          "default": "yes",
+          "orderHint": 2000,
+          "override": true,
           "params": {
             "searchUrlGetParams": [
               {
@@ -39,26 +47,17 @@
                 "value": "{searchTerms}"
               }
             ]
-          },
-          "default": "yes",
-          "override": true,
-          "orderHint": 2000,
-          "application": {
-            "distributions": [
-              "qwant-001",
-              "qwant-002"
-            ]
           }
         }
       ],
+      "id": "f59fddbc-580b-4672-9cda-32941ceec729",
+      "last_modified": 1710766850143,
+      "schema": 1710460807412,
       "webExtension": {
         "id": "qwant@search.mozilla.org"
-      },
-      "id": "f59fddbc-580b-4672-9cda-32941ceec729",
-      "last_modified": 1710766850143
+      }
     },
     {
-      "schema": 1707831978005,
       "appliesTo": [
         {
           "included": {
@@ -74,23 +73,23 @@
           }
         }
       ],
+      "id": "a620b506-c3ae-4332-97bb-190a73868580",
+      "last_modified": 1707833207283,
+      "schema": 1707831978005,
       "webExtension": {
         "id": "amazon@search.mozilla.org"
-      },
-      "id": "a620b506-c3ae-4332-97bb-190a73868580",
-      "last_modified": 1707833207283
+      }
     },
     {
-      "schema": 1707824831376,
       "appliesTo": [
         {
+          "application": {
+            "minVersion": "89.0a1"
+          },
           "included": {
             "regions": [
               "us"
             ]
-          },
-          "application": {
-            "minVersion": "89.0a1"
           },
           "telemetryId": "amazondotcom-us",
           "webExtension": {
@@ -100,29 +99,238 @@
           }
         },
         {
+          "application": {
+            "maxVersion": "89.0a1"
+          },
           "included": {
             "regions": [
               "us"
             ]
-          },
-          "application": {
-            "maxVersion": "89.0a1"
           }
         }
       ],
+      "id": "071c671c-7c1b-469d-a771-ab16ff6e8beb",
+      "last_modified": 1707833207280,
+      "schema": 1707824831376,
       "telemetryId": "amazondotcom",
       "webExtension": {
         "id": "amazondotcom@search.mozilla.org"
-      },
-      "id": "071c671c-7c1b-469d-a771-ab16ff6e8beb",
-      "last_modified": 1707833207280
+      }
     },
     {
-      "urls": {
-        "trending": {
-          "fullPath": "https://www.bing.com/osjson.aspx"
+      "appliesTo": [
+        {
+          "included": {
+            "locales": {
+              "matches": [
+                "ach",
+                "af",
+                "an",
+                "ar",
+                "ast",
+                "az",
+                "bs",
+                "ca",
+                "ca-valencia",
+                "cak",
+                "cs",
+                "cy",
+                "da",
+                "de",
+                "dsb",
+                "el",
+                "eo",
+                "es-CL",
+                "es-ES",
+                "es-MX",
+                "eu",
+                "fa",
+                "ff",
+                "fi",
+                "fr",
+                "fur",
+                "fy-NL",
+                "gd",
+                "gl",
+                "gn",
+                "gu-IN",
+                "he",
+                "hi-IN",
+                "hr",
+                "hsb",
+                "hy-AM",
+                "ia",
+                "id",
+                "is",
+                "it",
+                "ja-JP-macos",
+                "ja",
+                "ka",
+                "kab",
+                "km",
+                "kn",
+                "lij",
+                "lo",
+                "lt",
+                "meh",
+                "mk",
+                "ms",
+                "my",
+                "nb-NO",
+                "ne-NP",
+                "nl",
+                "nn-NO",
+                "oc",
+                "pa-IN",
+                "pt-BR",
+                "rm",
+                "ro",
+                "sc",
+                "sco",
+                "son",
+                "sq",
+                "sr",
+                "sv-SE",
+                "te",
+                "th",
+                "tl",
+                "tr",
+                "trs",
+                "uk",
+                "ur",
+                "uz",
+                "wo",
+                "xh",
+                "zh-CN"
+              ],
+              "startsWith": [
+                "bn",
+                "en"
+              ]
+            }
+          }
+        },
+        {
+          "application": {
+            "channel": [
+              "esr"
+            ]
+          },
+          "included": {
+            "locales": {
+              "matches": [
+                "ach",
+                "af",
+                "an",
+                "ar",
+                "ast",
+                "az",
+                "bs",
+                "ca",
+                "ca-valencia",
+                "cak",
+                "cs",
+                "cy",
+                "da",
+                "de",
+                "dsb",
+                "el",
+                "eo",
+                "es-CL",
+                "es-ES",
+                "es-MX",
+                "eu",
+                "fa",
+                "ff",
+                "fi",
+                "fr",
+                "fur",
+                "fy-NL",
+                "gd",
+                "gl",
+                "gn",
+                "gu-IN",
+                "he",
+                "hi-IN",
+                "hr",
+                "hsb",
+                "hy-AM",
+                "ia",
+                "id",
+                "is",
+                "it",
+                "ja-JP-macos",
+                "ja",
+                "ka",
+                "kab",
+                "km",
+                "kn",
+                "lij",
+                "lo",
+                "lt",
+                "meh",
+                "mk",
+                "ms",
+                "my",
+                "nb-NO",
+                "ne-NP",
+                "nl",
+                "nn-NO",
+                "oc",
+                "pa-IN",
+                "pt-BR",
+                "rm",
+                "ro",
+                "sc",
+                "sco",
+                "son",
+                "sq",
+                "sr",
+                "sv-SE",
+                "te",
+                "th",
+                "tl",
+                "tr",
+                "trs",
+                "uk",
+                "ur",
+                "uz",
+                "wo",
+                "xh",
+                "zh-CN"
+              ],
+              "startsWith": [
+                "bn",
+                "en"
+              ]
+            }
+          },
+          "params": {
+            "searchUrlGetParams": [
+              {
+                "name": "pc",
+                "value": "MOZR"
+              },
+              {
+                "name": "q",
+                "value": "{searchTerms}"
+              }
+            ]
+          },
+          "telemetryId": "bing-esr"
+        },
+        {
+          "application": {
+            "distributions": [
+              "MozillaOnline"
+            ]
+          },
+          "orderHint": 2500,
+          "override": true
         }
-      },
+      ],
+      "id": "7ec766f6-639a-4618-91bc-33eb3d4378c6",
+      "last_modified": 1707231832220,
       "params": {
         "searchUrlGetParams": [
           {
@@ -136,225 +344,16 @@
         ]
       },
       "schema": 1706313607068,
-      "appliesTo": [
-        {
-          "included": {
-            "locales": {
-              "matches": [
-                "ach",
-                "af",
-                "an",
-                "ar",
-                "ast",
-                "az",
-                "bs",
-                "ca",
-                "ca-valencia",
-                "cak",
-                "cs",
-                "cy",
-                "da",
-                "de",
-                "dsb",
-                "el",
-                "eo",
-                "es-CL",
-                "es-ES",
-                "es-MX",
-                "eu",
-                "fa",
-                "ff",
-                "fi",
-                "fr",
-                "fur",
-                "fy-NL",
-                "gd",
-                "gl",
-                "gn",
-                "gu-IN",
-                "he",
-                "hi-IN",
-                "hr",
-                "hsb",
-                "hy-AM",
-                "ia",
-                "id",
-                "is",
-                "it",
-                "ja-JP-macos",
-                "ja",
-                "ka",
-                "kab",
-                "km",
-                "kn",
-                "lij",
-                "lo",
-                "lt",
-                "meh",
-                "mk",
-                "ms",
-                "my",
-                "nb-NO",
-                "ne-NP",
-                "nl",
-                "nn-NO",
-                "oc",
-                "pa-IN",
-                "pt-BR",
-                "rm",
-                "ro",
-                "sc",
-                "sco",
-                "son",
-                "sq",
-                "sr",
-                "sv-SE",
-                "te",
-                "th",
-                "tl",
-                "tr",
-                "trs",
-                "uk",
-                "ur",
-                "uz",
-                "wo",
-                "xh",
-                "zh-CN"
-              ],
-              "startsWith": [
-                "bn",
-                "en"
-              ]
-            }
-          }
-        },
-        {
-          "params": {
-            "searchUrlGetParams": [
-              {
-                "name": "pc",
-                "value": "MOZR"
-              },
-              {
-                "name": "q",
-                "value": "{searchTerms}"
-              }
-            ]
-          },
-          "included": {
-            "locales": {
-              "matches": [
-                "ach",
-                "af",
-                "an",
-                "ar",
-                "ast",
-                "az",
-                "bs",
-                "ca",
-                "ca-valencia",
-                "cak",
-                "cs",
-                "cy",
-                "da",
-                "de",
-                "dsb",
-                "el",
-                "eo",
-                "es-CL",
-                "es-ES",
-                "es-MX",
-                "eu",
-                "fa",
-                "ff",
-                "fi",
-                "fr",
-                "fur",
-                "fy-NL",
-                "gd",
-                "gl",
-                "gn",
-                "gu-IN",
-                "he",
-                "hi-IN",
-                "hr",
-                "hsb",
-                "hy-AM",
-                "ia",
-                "id",
-                "is",
-                "it",
-                "ja-JP-macos",
-                "ja",
-                "ka",
-                "kab",
-                "km",
-                "kn",
-                "lij",
-                "lo",
-                "lt",
-                "meh",
-                "mk",
-                "ms",
-                "my",
-                "nb-NO",
-                "ne-NP",
-                "nl",
-                "nn-NO",
-                "oc",
-                "pa-IN",
-                "pt-BR",
-                "rm",
-                "ro",
-                "sc",
-                "sco",
-                "son",
-                "sq",
-                "sr",
-                "sv-SE",
-                "te",
-                "th",
-                "tl",
-                "tr",
-                "trs",
-                "uk",
-                "ur",
-                "uz",
-                "wo",
-                "xh",
-                "zh-CN"
-              ],
-              "startsWith": [
-                "bn",
-                "en"
-              ]
-            }
-          },
-          "application": {
-            "channel": [
-              "esr"
-            ]
-          },
-          "telemetryId": "bing-esr"
-        },
-        {
-          "override": true,
-          "orderHint": 2500,
-          "application": {
-            "distributions": [
-              "MozillaOnline"
-            ]
-          }
+      "urls": {
+        "trending": {
+          "fullPath": "https://www.bing.com/osjson.aspx"
         }
-      ],
+      },
       "webExtension": {
         "id": "bing@search.mozilla.org"
-      },
-      "id": "7ec766f6-639a-4618-91bc-33eb3d4378c6",
-      "last_modified": 1707231832220
+      }
     },
     {
-      "schema": 1701806001667,
       "appliesTo": [
         {
           "included": {
@@ -366,13 +365,76 @@
           }
         }
       ],
+      "id": "c50dcc87-0192-4461-bb88-17a55ba181c7",
+      "last_modified": 1701806851414,
+      "schema": 1701806001667,
       "webExtension": {
         "id": "seznam-cz@search.mozilla.org"
-      },
-      "id": "c50dcc87-0192-4461-bb88-17a55ba181c7",
-      "last_modified": 1701806851414
+      }
     },
     {
+      "appliesTo": [
+        {
+          "application": {
+            "distributions": [
+              "MozillaOnline"
+            ]
+          },
+          "default": "yes",
+          "orderHint": 3000,
+          "override": true,
+          "params": {
+            "searchUrlGetParams": [
+              {
+                "name": "ie",
+                "value": "utf-8"
+              },
+              {
+                "name": "wd",
+                "value": "{searchTerms}"
+              }
+            ],
+            "suggestUrlGetParams": [
+              {
+                "name": "ie",
+                "value": "utf-8"
+              },
+              {
+                "name": "action",
+                "value": "opensearch"
+              },
+              {
+                "name": "wd",
+                "value": "{searchTerms}"
+              }
+            ]
+          }
+        },
+        {
+          "included": {
+            "locales": {
+              "matches": [
+                "zh-CN"
+              ]
+            }
+          }
+        },
+        {
+          "default": "yes",
+          "included": {
+            "locales": {
+              "matches": [
+                "zh-CN"
+              ]
+            },
+            "regions": [
+              "cn"
+            ]
+          }
+        }
+      ],
+      "id": "52dd490a-89e8-45f2-96b0-f2c72e157526",
+      "last_modified": 1701806851411,
       "params": {
         "searchUrlGetParams": [
           {
@@ -400,93 +462,12 @@
         ]
       },
       "schema": 1701806000003,
-      "appliesTo": [
-        {
-          "params": {
-            "searchUrlGetParams": [
-              {
-                "name": "ie",
-                "value": "utf-8"
-              },
-              {
-                "name": "wd",
-                "value": "{searchTerms}"
-              }
-            ],
-            "suggestUrlGetParams": [
-              {
-                "name": "ie",
-                "value": "utf-8"
-              },
-              {
-                "name": "action",
-                "value": "opensearch"
-              },
-              {
-                "name": "wd",
-                "value": "{searchTerms}"
-              }
-            ]
-          },
-          "default": "yes",
-          "override": true,
-          "orderHint": 3000,
-          "application": {
-            "distributions": [
-              "MozillaOnline"
-            ]
-          }
-        },
-        {
-          "included": {
-            "locales": {
-              "matches": [
-                "zh-CN"
-              ]
-            }
-          }
-        },
-        {
-          "default": "yes",
-          "included": {
-            "locales": {
-              "matches": [
-                "zh-CN"
-              ]
-            },
-            "regions": [
-              "cn"
-            ]
-          }
-        }
-      ],
       "telemetryId": "baidu",
       "webExtension": {
         "id": "baidu@search.mozilla.org"
-      },
-      "id": "52dd490a-89e8-45f2-96b0-f2c72e157526",
-      "last_modified": 1701806851411
+      }
     },
     {
-      "urls": {
-        "trending": {
-          "query": "client=firefox&channel=ftr&q={searchTerms}",
-          "fullPath": "https://www.google.com/complete/search"
-        }
-      },
-      "params": {
-        "searchUrlGetParams": [
-          {
-            "name": "client",
-            "value": "firefox-b-d"
-          },
-          {
-            "name": "q",
-            "value": "{searchTerms}"
-          }
-        ]
-      },
-      "schema": 1687361570970,
       "appliesTo": [
         {
           "default": "yes-if-no-other",
@@ -503,15 +484,23 @@
           }
         },
         {
-          "override": true,
-          "orderHint": 2000,
           "application": {
             "distributions": [
               "MozillaOnline"
             ]
-          }
+          },
+          "orderHint": 2000,
+          "override": true
         },
         {
+          "application": {
+            "channel": [
+              "esr"
+            ]
+          },
+          "included": {
+            "everywhere": true
+          },
           "params": {
             "searchUrlGetParams": [
               {
@@ -524,25 +513,9 @@
               }
             ]
           },
-          "included": {
-            "everywhere": true
-          },
-          "application": {
-            "channel": [
-              "esr"
-            ]
-          },
           "telemetryId": "google-b-e"
         },
         {
-          "params": {
-            "searchUrlGetParams": [
-              {
-                "name": "q",
-                "value": "{searchTerms}"
-              }
-            ]
-          },
           "default": "yes",
           "included": {
             "regions": [
@@ -550,6 +523,14 @@
               "tr",
               "by",
               "kz"
+            ]
+          },
+          "params": {
+            "searchUrlGetParams": [
+              {
+                "name": "q",
+                "value": "{searchTerms}"
+              }
             ]
           },
           "telemetryId": "google-com-nocodes"
@@ -568,16 +549,9 @@
           }
         },
         {
-          "params": {
-            "searchUrlGetParams": [
-              {
-                "name": "client",
-                "value": "firefox-b-e"
-              },
-              {
-                "name": "q",
-                "value": "{searchTerms}"
-              }
+          "application": {
+            "channel": [
+              "esr"
             ]
           },
           "default": "no",
@@ -591,13 +565,32 @@
               "cn"
             ]
           },
-          "application": {
-            "channel": [
-              "esr"
+          "params": {
+            "searchUrlGetParams": [
+              {
+                "name": "client",
+                "value": "firefox-b-e"
+              },
+              {
+                "name": "q",
+                "value": "{searchTerms}"
+              }
             ]
           }
         },
         {
+          "extraParams": [
+            {
+              "condition": "pref",
+              "name": "channel",
+              "pref": "google_channel_us"
+            }
+          ],
+          "included": {
+            "regions": [
+              "us"
+            ]
+          },
           "params": {
             "searchUrlGetParams": [
               {
@@ -610,28 +603,33 @@
               }
             ]
           },
+          "suggestExtraParams": [
+            {
+              "condition": "pref",
+              "name": "channel",
+              "pref": "search_rich_suggestions"
+            }
+          ],
+          "telemetryId": "google-b-1-d"
+        },
+        {
+          "application": {
+            "channel": [
+              "esr"
+            ]
+          },
+          "extraParams": [
+            {
+              "condition": "pref",
+              "name": "channel",
+              "pref": "google_channel_us"
+            }
+          ],
           "included": {
             "regions": [
               "us"
             ]
           },
-          "extraParams": [
-            {
-              "name": "channel",
-              "pref": "google_channel_us",
-              "condition": "pref"
-            }
-          ],
-          "telemetryId": "google-b-1-d",
-          "suggestExtraParams": [
-            {
-              "name": "channel",
-              "pref": "search_rich_suggestions",
-              "condition": "pref"
-            }
-          ]
-        },
-        {
           "params": {
             "searchUrlGetParams": [
               {
@@ -644,39 +642,9 @@
               }
             ]
           },
-          "included": {
-            "regions": [
-              "us"
-            ]
-          },
-          "application": {
-            "channel": [
-              "esr"
-            ]
-          },
-          "extraParams": [
-            {
-              "name": "channel",
-              "pref": "google_channel_us",
-              "condition": "pref"
-            }
-          ],
           "telemetryId": "google-b-1-e"
         },
         {
-          "params": {
-            "searchUrlGetParams": [
-              {
-                "name": "client",
-                "value": "ubuntu"
-              },
-              {
-                "name": "q",
-                "value": "{searchTerms}"
-              }
-            ]
-          },
-          "override": true,
           "application": {
             "distributions": [
               "canonical",
@@ -689,9 +657,34 @@
               "value": "fs"
             }
           ],
+          "override": true,
+          "params": {
+            "searchUrlGetParams": [
+              {
+                "name": "client",
+                "value": "ubuntu"
+              },
+              {
+                "name": "q",
+                "value": "{searchTerms}"
+              }
+            ]
+          },
           "telemetryId": "google-canonical"
         },
         {
+          "application": {
+            "distributions": [
+              "canonical-002"
+            ]
+          },
+          "extraParams": [
+            {
+              "name": "channel",
+              "value": "fs"
+            }
+          ],
+          "override": true,
           "params": {
             "searchUrlGetParams": [
               {
@@ -704,21 +697,15 @@
               }
             ]
           },
-          "override": true,
-          "application": {
-            "distributions": [
-              "canonical-002"
-            ]
-          },
-          "extraParams": [
-            {
-              "name": "channel",
-              "value": "fs"
-            }
-          ],
           "telemetryId": "google-ubuntu-sn"
         },
         {
+          "application": {
+            "distributions": [
+              "mint-001"
+            ]
+          },
+          "override": true,
           "params": {
             "searchUrlGetParams": [
               {
@@ -731,15 +718,20 @@
               }
             ]
           },
-          "override": true,
+          "telemetryId": "google-b-lm"
+        },
+        {
           "application": {
             "distributions": [
               "mint-001"
             ]
           },
-          "telemetryId": "google-b-lm"
-        },
-        {
+          "included": {
+            "regions": [
+              "us"
+            ]
+          },
+          "override": true,
           "params": {
             "searchUrlGetParams": [
               {
@@ -752,42 +744,102 @@
               }
             ]
           },
-          "included": {
-            "regions": [
-              "us"
-            ]
-          },
-          "override": true,
-          "application": {
-            "distributions": [
-              "mint-001"
-            ]
-          },
           "telemetryId": "google-b-1-lm"
         }
       ],
       "extraParams": [
         {
+          "condition": "pref",
           "name": "channel",
-          "pref": "google_channel_row",
-          "condition": "pref"
-        }
-      ],
-      "telemetryId": "google-b-d",
-      "webExtension": {
-        "id": "google@search.mozilla.org"
-      },
-      "suggestExtraParams": [
-        {
-          "name": "channel",
-          "pref": "search_rich_suggestions",
-          "condition": "pref"
+          "pref": "google_channel_row"
         }
       ],
       "id": "cb8e7210-9f0b-48fa-8708-b9a03df79eea",
-      "last_modified": 1687526306160
+      "last_modified": 1687526306160,
+      "params": {
+        "searchUrlGetParams": [
+          {
+            "name": "client",
+            "value": "firefox-b-d"
+          },
+          {
+            "name": "q",
+            "value": "{searchTerms}"
+          }
+        ]
+      },
+      "schema": 1687361570970,
+      "suggestExtraParams": [
+        {
+          "condition": "pref",
+          "name": "channel",
+          "pref": "search_rich_suggestions"
+        }
+      ],
+      "telemetryId": "google-b-d",
+      "urls": {
+        "trending": {
+          "fullPath": "https://www.google.com/complete/search",
+          "query": "client=firefox&channel=ftr&q={searchTerms}"
+        }
+      },
+      "webExtension": {
+        "id": "google@search.mozilla.org"
+      }
     },
     {
+      "appliesTo": [
+        {
+          "included": {
+            "everywhere": true
+          }
+        },
+        {
+          "application": {
+            "channel": [
+              "esr"
+            ]
+          },
+          "extraParams": [
+            {
+              "condition": "purpose",
+              "name": "t",
+              "purpose": "searchbar",
+              "value": "ftsa"
+            }
+          ],
+          "included": {
+            "everywhere": true
+          },
+          "telemetryId": "ddg-esr"
+        },
+        {
+          "application": {
+            "distributions": [
+              "mint-001"
+            ]
+          },
+          "extraParams": [
+            {
+              "condition": "purpose",
+              "name": "t",
+              "purpose": "searchbar",
+              "value": "lm"
+            }
+          ],
+          "override": true
+        }
+      ],
+      "extraParams": [
+        {
+          "condition": "purpose",
+          "name": "t",
+          "purpose": "searchbar",
+          "value": "ffab"
+        }
+      ],
+      "id": "c0b26c0e-63e6-4235-b2ce-5f16b6a8bf87",
+      "last_modified": 1685625615515,
       "params": {
         "searchUrlGetParams": [
           {
@@ -797,65 +849,12 @@
         ]
       },
       "schema": 1685563823313,
-      "appliesTo": [
-        {
-          "included": {
-            "everywhere": true
-          }
-        },
-        {
-          "included": {
-            "everywhere": true
-          },
-          "application": {
-            "channel": [
-              "esr"
-            ]
-          },
-          "extraParams": [
-            {
-              "name": "t",
-              "value": "ftsa",
-              "purpose": "searchbar",
-              "condition": "purpose"
-            }
-          ],
-          "telemetryId": "ddg-esr"
-        },
-        {
-          "override": true,
-          "application": {
-            "distributions": [
-              "mint-001"
-            ]
-          },
-          "extraParams": [
-            {
-              "name": "t",
-              "value": "lm",
-              "purpose": "searchbar",
-              "condition": "purpose"
-            }
-          ]
-        }
-      ],
-      "extraParams": [
-        {
-          "name": "t",
-          "value": "ffab",
-          "purpose": "searchbar",
-          "condition": "purpose"
-        }
-      ],
       "telemetryId": "ddg",
       "webExtension": {
         "id": "ddg@search.mozilla.org"
-      },
-      "id": "c0b26c0e-63e6-4235-b2ce-5f16b6a8bf87",
-      "last_modified": 1685625615515
+      }
     },
     {
-      "schema": 1674842123977,
       "appliesTo": [
         {
           "included": {
@@ -1211,23 +1210,23 @@
           }
         },
         {
-          "override": true,
-          "orderHint": 1000,
           "application": {
             "distributions": [
               "MozillaOnline"
             ]
-          }
+          },
+          "orderHint": 1000,
+          "override": true
         }
       ],
+      "id": "3f3beb1d-e32e-40a4-b6ed-56741803e1d8",
+      "last_modified": 1675353179510,
+      "schema": 1674842123977,
       "webExtension": {
         "id": "wikipedia@search.mozilla.org"
-      },
-      "id": "3f3beb1d-e32e-40a4-b6ed-56741803e1d8",
-      "last_modified": 1675353179510
+      }
     },
     {
-      "schema": 1674842117992,
       "appliesTo": [
         {
           "included": {
@@ -1611,14 +1610,14 @@
           }
         }
       ],
+      "id": "cbe309e0-f638-4996-9dfc-ea5c19ef16e9",
+      "last_modified": 1675353179507,
+      "schema": 1674842117992,
       "webExtension": {
         "id": "ebay@search.mozilla.org"
-      },
-      "id": "cbe309e0-f638-4996-9dfc-ea5c19ef16e9",
-      "last_modified": 1675353179507
+      }
     },
     {
-      "schema": 1613395976252,
       "appliesTo": [
         {
           "included": {
@@ -1631,14 +1630,14 @@
           }
         }
       ],
+      "id": "1960ccff-4aab-48cd-9bf5-0eb2adde76f9",
+      "last_modified": 1613587855073,
+      "schema": 1613395976252,
       "webExtension": {
         "id": "wolnelektury-pl@search.mozilla.org"
-      },
-      "id": "1960ccff-4aab-48cd-9bf5-0eb2adde76f9",
-      "last_modified": 1613587855073
+      }
     },
     {
-      "schema": 1613395970632,
       "appliesTo": [
         {
           "included": {
@@ -1651,24 +1650,24 @@
           }
         }
       ],
+      "id": "d915b6bc-bbae-47a6-8323-1b2990ad0e57",
+      "last_modified": 1613587855067,
+      "schema": 1613395970632,
       "webExtension": {
         "id": "allegro-pl@search.mozilla.org"
-      },
-      "id": "d915b6bc-bbae-47a6-8323-1b2990ad0e57",
-      "last_modified": 1613587855067
+      }
     },
     {
-      "schema": 1596483697391,
       "appliesTo": [
         {
-          "default": "yes",
-          "included": {
-            "everywhere": true
-          },
           "application": {
             "distributions": [
               "gmx"
             ]
+          },
+          "default": "yes",
+          "included": {
+            "everywhere": true
           },
           "webExtension": {
             "locales": [
@@ -1678,14 +1677,14 @@
           }
         },
         {
-          "default": "yes",
-          "included": {
-            "everywhere": true
-          },
           "application": {
             "distributions": [
               "gmxcouk"
             ]
+          },
+          "default": "yes",
+          "included": {
+            "everywhere": true
           },
           "webExtension": {
             "locales": [
@@ -1694,14 +1693,14 @@
           }
         },
         {
-          "default": "yes",
-          "included": {
-            "everywhere": true
-          },
           "application": {
             "distributions": [
               "gmxes"
             ]
+          },
+          "default": "yes",
+          "included": {
+            "everywhere": true
           },
           "webExtension": {
             "locales": [
@@ -1710,14 +1709,14 @@
           }
         },
         {
-          "default": "yes",
-          "included": {
-            "everywhere": true
-          },
           "application": {
             "distributions": [
               "gmxfr"
             ]
+          },
+          "default": "yes",
+          "included": {
+            "everywhere": true
           },
           "webExtension": {
             "locales": [
@@ -1726,16 +1725,22 @@
           }
         }
       ],
+      "id": "1571e5fc-17e4-492b-b6d2-106d8669b6c8",
+      "last_modified": 1597327602800,
+      "schema": 1596483697391,
       "webExtension": {
         "id": "gmx@search.mozilla.org"
-      },
-      "id": "1571e5fc-17e4-492b-b6d2-106d8669b6c8",
-      "last_modified": 1597327602800
+      }
     },
     {
-      "schema": 1588177655532,
       "appliesTo": [
         {
+          "application": {
+            "distributions": [
+              "qwant-001",
+              "qwant-002"
+            ]
+          },
           "included": {
             "locales": {
               "matches": [
@@ -1743,86 +1748,80 @@
               ]
             }
           },
-          "orderHint": 1500,
-          "application": {
-            "distributions": [
-              "qwant-001",
-              "qwant-002"
-            ]
-          }
+          "orderHint": 1500
         }
       ],
+      "id": "f59fddbc-580b-4672-9cda-32941ceec730",
+      "last_modified": 1589299342073,
+      "schema": 1588177655532,
       "webExtension": {
         "id": "qwantjr@search.mozilla.org"
-      },
-      "id": "f59fddbc-580b-4672-9cda-32941ceec730",
-      "last_modified": 1589299342073
+      }
     },
     {
-      "schema": 1588177648193,
       "appliesTo": [
         {
-          "default": "yes",
-          "included": {
-            "everywhere": true
-          },
           "application": {
             "distributions": [
               "1und1"
             ]
-          }
-        }
-      ],
-      "webExtension": {
-        "id": "1und1@search.mozilla.org"
-      },
-      "id": "e98c663d-408d-4901-9666-66e67a3084b4",
-      "last_modified": 1589299342018
-    },
-    {
-      "schema": 1588177646165,
-      "appliesTo": [
-        {
+          },
           "default": "yes",
           "included": {
             "everywhere": true
-          },
+          }
+        }
+      ],
+      "id": "e98c663d-408d-4901-9666-66e67a3084b4",
+      "last_modified": 1589299342018,
+      "schema": 1588177648193,
+      "webExtension": {
+        "id": "1und1@search.mozilla.org"
+      }
+    },
+    {
+      "appliesTo": [
+        {
           "application": {
             "distributions": [
               "webde"
             ]
-          }
-        }
-      ],
-      "webExtension": {
-        "id": "webde@search.mozilla.org"
-      },
-      "id": "613d1391-4be5-4296-80e2-cfb740de6607",
-      "last_modified": 1589299342015
-    },
-    {
-      "schema": 1588016493937,
-      "appliesTo": [
-        {
+          },
           "default": "yes",
           "included": {
             "everywhere": true
-          },
+          }
+        }
+      ],
+      "id": "613d1391-4be5-4296-80e2-cfb740de6607",
+      "last_modified": 1589299342015,
+      "schema": 1588177646165,
+      "webExtension": {
+        "id": "webde@search.mozilla.org"
+      }
+    },
+    {
+      "appliesTo": [
+        {
           "application": {
             "distributions": [
               "mail.com"
             ]
+          },
+          "default": "yes",
+          "included": {
+            "everywhere": true
           }
         }
       ],
+      "id": "62d232d5-304e-4c35-a4da-46626a9b54c2",
+      "last_modified": 1589299342012,
+      "schema": 1588016493937,
       "webExtension": {
         "id": "mailcom@search.mozilla.org"
-      },
-      "id": "62d232d5-304e-4c35-a4da-46626a9b54c2",
-      "last_modified": 1589299342012
+      }
     },
     {
-      "schema": 1586273556552,
       "appliesTo": [
         {
           "included": {
@@ -1835,14 +1834,14 @@
           }
         }
       ],
+      "id": "8551c432-c68d-4934-836e-98513ae4b4a5",
+      "last_modified": 1586375636481,
+      "schema": 1586273556552,
       "webExtension": {
         "id": "rakuten@search.mozilla.org"
-      },
-      "id": "8551c432-c68d-4934-836e-98513ae4b4a5",
-      "last_modified": 1586375636481
+      }
     },
     {
-      "schema": 1582890773480,
       "appliesTo": [
         {
           "included": {
@@ -1854,14 +1853,14 @@
           }
         }
       ],
+      "id": "c1a6845f-015e-4e67-bc64-6e39a843643f",
+      "last_modified": 1583937832363,
+      "schema": 1582890773480,
       "webExtension": {
         "id": "azerdict@search.mozilla.org"
-      },
-      "id": "c1a6845f-015e-4e67-bc64-6e39a843643f",
-      "last_modified": 1583937832363
+      }
     },
     {
-      "schema": 1582890776067,
       "appliesTo": [
         {
           "included": {
@@ -1874,14 +1873,14 @@
           }
         }
       ],
+      "id": "64ce88a6-fd55-48d1-85a9-724c753f5721",
+      "last_modified": 1583937832356,
+      "schema": 1582890776067,
       "webExtension": {
         "id": "bok-NO@search.mozilla.org"
-      },
-      "id": "64ce88a6-fd55-48d1-85a9-724c753f5721",
-      "last_modified": 1583937832356
+      }
     },
     {
-      "schema": 1582890777775,
       "appliesTo": [
         {
           "included": {
@@ -1893,14 +1892,14 @@
           }
         }
       ],
+      "id": "d908d622-0387-4d36-8098-1a9e32c0c697",
+      "last_modified": 1583937832352,
+      "schema": 1582890777775,
       "webExtension": {
         "id": "ceneji@search.mozilla.org"
-      },
-      "id": "d908d622-0387-4d36-8098-1a9e32c0c697",
-      "last_modified": 1583937832352
+      }
     },
     {
-      "schema": 1582890779439,
       "appliesTo": [
         {
           "included": {
@@ -1912,14 +1911,14 @@
           }
         }
       ],
+      "id": "4e447f5a-9eb1-436e-8de1-9e4b4b709efb",
+      "last_modified": 1583937832348,
+      "schema": 1582890779439,
       "webExtension": {
         "id": "coccoc@search.mozilla.org"
-      },
-      "id": "4e447f5a-9eb1-436e-8de1-9e4b4b709efb",
-      "last_modified": 1583937832348
+      }
     },
     {
-      "schema": 1582890780276,
       "appliesTo": [
         {
           "included": {
@@ -1931,14 +1930,14 @@
           }
         }
       ],
+      "id": "0cdc44be-173a-4ca8-96e3-43e3000da75d",
+      "last_modified": 1583937832346,
+      "schema": 1582890780276,
       "webExtension": {
         "id": "daum-kr@search.mozilla.org"
-      },
-      "id": "0cdc44be-173a-4ca8-96e3-43e3000da75d",
-      "last_modified": 1583937832346
+      }
     },
     {
-      "schema": 1582890782823,
       "appliesTo": [
         {
           "included": {
@@ -1950,14 +1949,14 @@
           }
         }
       ],
+      "id": "1fc1b257-3e6b-4cfb-a323-64c1429bcf51",
+      "last_modified": 1583937832339,
+      "schema": 1582890782823,
       "webExtension": {
         "id": "ecosia@search.mozilla.org"
-      },
-      "id": "1fc1b257-3e6b-4cfb-a323-64c1429bcf51",
-      "last_modified": 1583937832339
+      }
     },
     {
-      "schema": 1582890784534,
       "appliesTo": [
         {
           "included": {
@@ -1969,14 +1968,14 @@
           }
         }
       ],
+      "id": "5cd4781c-2906-4fe7-9d4b-ea9ddbdc2c3b",
+      "last_modified": 1583937832334,
+      "schema": 1582890784534,
       "webExtension": {
         "id": "eudict@search.mozilla.org"
-      },
-      "id": "5cd4781c-2906-4fe7-9d4b-ea9ddbdc2c3b",
-      "last_modified": 1583937832334
+      }
     },
     {
-      "schema": 1582890785390,
       "appliesTo": [
         {
           "included": {
@@ -1988,14 +1987,14 @@
           }
         }
       ],
+      "id": "6491a2b8-c487-4798-a817-a0fd08b40ee2",
+      "last_modified": 1583937832332,
+      "schema": 1582890785390,
       "webExtension": {
         "id": "faclair-beag@search.mozilla.org"
-      },
-      "id": "6491a2b8-c487-4798-a817-a0fd08b40ee2",
-      "last_modified": 1583937832332
+      }
     },
     {
-      "schema": 1582890787961,
       "appliesTo": [
         {
           "included": {
@@ -2008,14 +2007,14 @@
           }
         }
       ],
+      "id": "f458e78b-9128-4027-b344-538f5661c148",
+      "last_modified": 1583937832325,
+      "schema": 1582890787961,
       "webExtension": {
         "id": "gulesider-NO@search.mozilla.org"
-      },
-      "id": "f458e78b-9128-4027-b344-538f5661c148",
-      "last_modified": 1583937832325
+      }
     },
     {
-      "schema": 1582890791315,
       "appliesTo": [
         {
           "included": {
@@ -2030,14 +2029,14 @@
           }
         }
       ],
+      "id": "03d60939-2c92-45b0-874f-11c8e6d0c2b9",
+      "last_modified": 1583937832316,
+      "schema": 1582890791315,
       "webExtension": {
         "id": "leo_ende_de@search.mozilla.org"
-      },
-      "id": "03d60939-2c92-45b0-874f-11c8e6d0c2b9",
-      "last_modified": 1583937832316
+      }
     },
     {
-      "schema": 1582890793008,
       "appliesTo": [
         {
           "included": {
@@ -2049,14 +2048,14 @@
           }
         }
       ],
+      "id": "8b4f2887-0c24-49ce-b467-2ba8cc9a4945",
+      "last_modified": 1583937832311,
+      "schema": 1582890793008,
       "webExtension": {
         "id": "longdo@search.mozilla.org"
-      },
-      "id": "8b4f2887-0c24-49ce-b467-2ba8cc9a4945",
-      "last_modified": 1583937832311
+      }
     },
     {
-      "schema": 1582890794722,
       "appliesTo": [
         {
           "included": {
@@ -2068,14 +2067,14 @@
           }
         }
       ],
+      "id": "9a404348-0998-42c4-9d87-45ef47672c95",
+      "last_modified": 1583937832306,
+      "schema": 1582890794722,
       "webExtension": {
         "id": "mapy-cz@search.mozilla.org"
-      },
-      "id": "9a404348-0998-42c4-9d87-45ef47672c95",
-      "last_modified": 1583937832306
+      }
     },
     {
-      "schema": 1582890796393,
       "appliesTo": [
         {
           "included": {
@@ -2120,14 +2119,14 @@
           }
         }
       ],
+      "id": "df070348-e771-4bd5-964e-d19d82c1384e",
+      "last_modified": 1583937832302,
+      "schema": 1582890796393,
       "webExtension": {
         "id": "mercadolibre@search.mozilla.org"
-      },
-      "id": "df070348-e771-4bd5-964e-d19d82c1384e",
-      "last_modified": 1583937832302
+      }
     },
     {
-      "schema": 1582890797236,
       "appliesTo": [
         {
           "included": {
@@ -2139,14 +2138,14 @@
           }
         }
       ],
+      "id": "53bf6974-0e60-4551-994f-2d5176a5d1c6",
+      "last_modified": 1583937832300,
+      "schema": 1582890797236,
       "webExtension": {
         "id": "mercadolivre@search.mozilla.org"
-      },
-      "id": "53bf6974-0e60-4551-994f-2d5176a5d1c6",
-      "last_modified": 1583937832300
+      }
     },
     {
-      "schema": 1582890799757,
       "appliesTo": [
         {
           "included": {
@@ -2158,14 +2157,14 @@
           }
         }
       ],
+      "id": "4135dc8f-f0bf-475b-b39f-74c4256572af",
+      "last_modified": 1583937832292,
+      "schema": 1582890799757,
       "webExtension": {
         "id": "naver-kr@search.mozilla.org"
-      },
-      "id": "4135dc8f-f0bf-475b-b39f-74c4256572af",
-      "last_modified": 1583937832292
+      }
     },
     {
-      "schema": 1582890801444,
       "appliesTo": [
         {
           "included": {
@@ -2177,14 +2176,14 @@
           }
         }
       ],
+      "id": "fa42b23a-30c5-46f3-8997-4a84029b5349",
+      "last_modified": 1583937832287,
+      "schema": 1582890801444,
       "webExtension": {
         "id": "odpiralni@search.mozilla.org"
-      },
-      "id": "fa42b23a-30c5-46f3-8997-4a84029b5349",
-      "last_modified": 1583937832287
+      }
     },
     {
-      "schema": 1582890806533,
       "appliesTo": [
         {
           "included": {
@@ -2196,14 +2195,14 @@
           }
         }
       ],
+      "id": "acc27094-9f0a-49af-868b-8b6ecbbda976",
+      "last_modified": 1583937832267,
+      "schema": 1582890806533,
       "webExtension": {
         "id": "pazaruvaj@search.mozilla.org"
-      },
-      "id": "acc27094-9f0a-49af-868b-8b6ecbbda976",
-      "last_modified": 1583937832267
+      }
     },
     {
-      "schema": 1582890808245,
       "appliesTo": [
         {
           "included": {
@@ -2215,14 +2214,14 @@
           }
         }
       ],
+      "id": "a3f1a5b6-cd8d-41b3-bb2b-de6bb1943a3d",
+      "last_modified": 1583937832261,
+      "schema": 1582890808245,
       "webExtension": {
         "id": "priberam@search.mozilla.org"
-      },
-      "id": "a3f1a5b6-cd8d-41b3-bb2b-de6bb1943a3d",
-      "last_modified": 1583937832261
+      }
     },
     {
-      "schema": 1582890809928,
       "appliesTo": [
         {
           "included": {
@@ -2234,14 +2233,14 @@
           }
         }
       ],
+      "id": "8a7de784-efa5-428f-9193-a0d3368b80d4",
+      "last_modified": 1583937832257,
+      "schema": 1582890809928,
       "webExtension": {
         "id": "prisjakt-sv-SE@search.mozilla.org"
-      },
-      "id": "8a7de784-efa5-428f-9193-a0d3368b80d4",
-      "last_modified": 1583937832257
+      }
     },
     {
-      "schema": 1582890814195,
       "appliesTo": [
         {
           "included": {
@@ -2253,14 +2252,14 @@
           }
         }
       ],
+      "id": "2d24515e-3e35-42ed-bf17-1388acfe80fa",
+      "last_modified": 1583937832245,
+      "schema": 1582890814195,
       "webExtension": {
         "id": "readmoo@search.mozilla.org"
-      },
-      "id": "2d24515e-3e35-42ed-bf17-1388acfe80fa",
-      "last_modified": 1583937832245
+      }
     },
     {
-      "schema": 1582890815048,
       "appliesTo": [
         {
           "included": {
@@ -2273,14 +2272,14 @@
           }
         }
       ],
+      "id": "e7dcde21-5b5e-4406-b602-0611130fd3a6",
+      "last_modified": 1583937832242,
+      "schema": 1582890815048,
       "webExtension": {
         "id": "salidzinilv@search.mozilla.org"
-      },
-      "id": "e7dcde21-5b5e-4406-b602-0611130fd3a6",
-      "last_modified": 1583937832242
+      }
     },
     {
-      "schema": 1582890819290,
       "appliesTo": [
         {
           "included": {
@@ -2292,14 +2291,14 @@
           }
         }
       ],
+      "id": "32eec495-ce07-4ce5-8d07-4cb32050459d",
+      "last_modified": 1583937832229,
+      "schema": 1582890819290,
       "webExtension": {
         "id": "tyda-sv-SE@search.mozilla.org"
-      },
-      "id": "32eec495-ce07-4ce5-8d07-4cb32050459d",
-      "last_modified": 1583937832229
+      }
     },
     {
-      "schema": 1582890820131,
       "appliesTo": [
         {
           "included": {
@@ -2311,14 +2310,14 @@
           }
         }
       ],
+      "id": "d0eab7e7-9084-4a43-b845-568dbe9f07dc",
+      "last_modified": 1583937832225,
+      "schema": 1582890820131,
       "webExtension": {
         "id": "vatera@search.mozilla.org"
-      },
-      "id": "d0eab7e7-9084-4a43-b845-568dbe9f07dc",
-      "last_modified": 1583937832225
+      }
     },
     {
-      "schema": 1582890820983,
       "appliesTo": [
         {
           "included": {
@@ -2349,14 +2348,14 @@
           }
         }
       ],
+      "id": "781f42f0-3a5c-4d14-8be2-665eefa65653",
+      "last_modified": 1583937832222,
+      "schema": 1582890820983,
       "webExtension": {
         "id": "wiktionary@search.mozilla.org"
-      },
-      "id": "781f42f0-3a5c-4d14-8be2-665eefa65653",
-      "last_modified": 1583937832222
+      }
     },
     {
-      "schema": 1582890822671,
       "appliesTo": [
         {
           "included": {
@@ -2369,14 +2368,14 @@
           }
         }
       ],
+      "id": "9e73a342-4e27-4e9f-8a29-be193d59236a",
+      "last_modified": 1583937832213,
+      "schema": 1582890822671,
       "webExtension": {
         "id": "yahoo-jp@search.mozilla.org"
-      },
-      "id": "9e73a342-4e27-4e9f-8a29-be193d59236a",
-      "last_modified": 1583937832213
+      }
     },
     {
-      "schema": 1582890823520,
       "appliesTo": [
         {
           "included": {
@@ -2389,11 +2388,12 @@
           }
         }
       ],
+      "id": "43559b11-05dc-4750-b131-afdbd9d25905",
+      "last_modified": 1583937832210,
+      "schema": 1582890823520,
       "webExtension": {
         "id": "yahoo-jp-auctions@search.mozilla.org"
-      },
-      "id": "43559b11-05dc-4750-b131-afdbd9d25905",
-      "last_modified": 1583937832210
+      }
     }
   ],
   "timestamp": 1710766850143
