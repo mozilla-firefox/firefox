@@ -1210,6 +1210,110 @@ smart_window:
           400 or 401), or firefox_internal (an exception in Firefox that did
           not come from the model service). Absent otherwise.
 
+  journeys_generation_run:
+    type: event
+    description: |
+      Recorded once per memories scheduler check that reaches journey
+      generation: after the memory generation and merging recorded by
+      memories_generation_run finish without an error, when at least one
+      memory is stored. Not recorded when the app locale does not support
+      journeys. The event summarizes the journey generation run (the "pick up
+      where you left off" headline and status for a memory): picking the most
+      recent memories that can have a journey and do not have one yet,
+      reading the browsing history pages and chats linked to them, generating
+      journeys from them in batches, and saving them. Only counts are
+      recorded, never memory, history, chat or journey content.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2091519
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D341594
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - cdipersio@mozilla.com
+      - firefox-ai-and-ml@mozilla.com
+    expires: 175
+    extra_keys:
+      memories_eligible:
+        type: quantity
+        unit: count
+        description: >
+          Number of stored memories that can have a journey and do not have
+          one yet: memories that are not sensitive and are linked to browsing
+          history. Counted before the limit on how many memories one run
+          processes. Absent when the run failed before selecting memories.
+      journey_memory_candidates:
+        type: quantity
+        unit: count
+        description: >
+          Number of those memories sent for journey generation: the most
+          recent eligible memories, up to the per-run limit, that still have
+          at least one linked browsing history page. When the run stopped
+          early on an error, only the batches reached are counted. Absent when
+          the run failed before selecting memories.
+      generation_batches:
+        type: quantity
+        unit: count
+        description: >
+          Number of batches of processed memories that were attempted, each
+          one model request plus any retries. Lower than the number of batches
+          planned when the run stopped early on an error. Absent when no
+          memory was processed.
+      generation_batches_skipped:
+        type: quantity
+        unit: count
+        description: >
+          Number of batches skipped because their request failed in a way that
+          retrying will not fix. The run continues with the remaining batches.
+          Absent when no memory was processed.
+      journeys_generated:
+        type: quantity
+        unit: journeys
+        description: >
+          Number of valid journeys the model returned for the processed
+          memories. A response that could not be read counts as none. Absent
+          when generation did not finish.
+      save_new:
+        type: quantity
+        unit: journeys
+        description: >
+          Number of those journeys saved. Every saved journey is new, since
+          memories that already have a journey are not processed. When the
+          run stopped early on an error, only the batches reached are
+          counted. Absent when no journey was generated to save.
+      journeys_eligible_after:
+        type: quantity
+        unit: count
+        description: >
+          Number of stored journeys that can be suggested when the run ended:
+          not dismissed or snoozed, and their memory still exists. Recorded
+          on errors too. Absent when counting them failed.
+      outcome:
+        type: string
+        description: >
+          How the run ended. One of: success (journeys were saved), no_memories
+          (no memory was left to process, either because none was eligible or
+          because none still had a linked browsing history page, so no model
+          request was made), no_candidates (generation returned no journeys),
+          or error.
+      error_stage:
+        type: string
+        description: >
+          The step that failed when outcome is error: sources (reading the
+          browsing history pages or chats linked to memories), generation
+          (including every batch being skipped), save (including every
+          generated journey being rejected), or other (anything else in the
+          run, such as reading stored journeys). Absent otherwise.
+      error_type:
+        type: string
+        description: >
+          The kind of failure when outcome is error. One of: rate_limited (the model
+          service returned HTTP 429), transient (a retryable failure such as a
+          timeout, a network error, or an HTTP 5xx), server_rejected (the model
+          service returned an HTTP status that retrying will not fix, such as
+          400 or 401), or firefox_internal (an exception in Firefox that did
+          not come from the model service). Absent otherwise.
+
   onboarding_screen_impression:
     type: event
     description: |

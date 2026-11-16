@@ -504,12 +504,14 @@ async function visitPage(url) {
 }
 
 /**
- * Return all memories generation Glean events
+ * Return all events recorded for a generation run metric
  *
- * @returns {Array<object>} The memories_generation_run events recorded
+ * @param {object} metric  Glean event metric, e.g.
+ *                         Glean.smartWindow.memoriesGenerationRun
+ * @returns {Array<object>} The events recorded
  */
-function getMemoriesGenerationRunEvents() {
-  return Glean.smartWindow.memoriesGenerationRun.testGetValue() ?? [];
+function getGenerationRunEvents(metric) {
+  return metric.testGetValue() ?? [];
 }
 
 /**
@@ -518,12 +520,14 @@ function getMemoriesGenerationRunEvents() {
  * Runs called directly, without the scheduler, record no event. For those,
  * pass the stats object the run filled in, which is checked instead.
  *
+ * @param {object} metric    Glean event metric, e.g.
+ *                           Glean.smartWindow.memoriesGenerationRun
  * @param {object} expected  Expected extra values the Glean run should include
  * @param {object} [options]
  * @param {object} [options.stats]  Stats from a direct call to check instead
  *                                  of the recorded event
  */
-function assertMemoriesGenerationRunEvent(expected, { stats } = {}) {
+function assertGenerationRunEvent(metric, expected, { stats } = {}) {
   const toExtras = values =>
     Object.fromEntries(
       Object.entries(values).map(([key, value]) => [key, String(value)])
@@ -531,13 +535,13 @@ function assertMemoriesGenerationRunEvent(expected, { stats } = {}) {
   let actual;
   if (stats) {
     Assert.deepEqual(
-      getMemoriesGenerationRunEvents(),
+      getGenerationRunEvents(metric),
       [],
       "A direct call records no run."
     );
     actual = toExtras(stats);
   } else {
-    const events = getMemoriesGenerationRunEvents();
+    const events = getGenerationRunEvents(metric);
     Assert.equal(events.length, 1, "One run should be recorded.");
     actual = events[0].extra;
   }

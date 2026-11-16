@@ -131,6 +131,32 @@ export const GENERATION_RUN_MERGE_STATUS = Object.freeze({
  */
 
 /**
+ * Journeys generation run telemetry
+ */
+export const JOURNEYS_GENERATION_RUN_OUTCOME = Object.freeze({
+  SUCCESS: GENERATION_RUN_OUTCOME.SUCCESS,
+  NO_MEMORIES: "no_memories",
+  NO_CANDIDATES: GENERATION_RUN_OUTCOME.NO_CANDIDATES,
+  ERROR: GENERATION_RUN_OUTCOME.ERROR,
+});
+
+/**
+ * Schema for journeys generation telemetry statistics sent through a Glean event.
+ *
+ * @typedef {object} JourneysGenerationRunStats
+ * @property {number} [memories_eligible] Memories that can have a journey and have none yet, before the cap
+ * @property {number} [journey_memory_candidates] Eligible memories sent for generation after the cap and URL resolution
+ * @property {number} [generation_batches] Generation batches attempted
+ * @property {number} [generation_batches_skipped] Batches skipped after a non-retryable error
+ * @property {number} [journeys_generated] Valid journeys the model returned
+ * @property {number} [save_new] Journeys saved
+ * @property {number} [journeys_eligible_after] Stored journeys that can be suggested when the run ended
+ * @property {string} [outcome] One of {@link JOURNEYS_GENERATION_RUN_OUTCOME}
+ * @property {string} [error_stage] One of {@link GENERATION_RUN_ERROR_STAGE}
+ * @property {string} [error_type] One of {@link GENERATION_RUN_ERROR_TYPE}
+ */
+
+/**
  * Memory frecency constants
  */
 export const MEMORY_FRECENCY_MAX_DAYS = 7;

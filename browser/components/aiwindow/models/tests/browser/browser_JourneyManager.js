@@ -1851,6 +1851,69 @@ add_task(async function has_eligible_journeys() {
   }
 });
 
+add_task(async function count_eligible_journeys() {
+  const originalAvailable = Services.locale.availableLocales;
+  const originalRequested = Services.locale.requestedLocales;
+  let memories = [];
+  try {
+    memories = await addJourneyTestMemories([
+      makeMemory("Compare hotels"),
+      makeMemory("Book flights"),
+      makeMemory("Rent a car"),
+      makeMemory("Pack for the trip"),
+      makeMemory("Deleted memory"),
+    ]);
+    const [hotels, flights, car, packing, deleted] = memories;
+
+    Assert.equal(
+      await JourneyManager.countEligibleJourneys(),
+      0,
+      "Empty store has no eligible journeys"
+    );
+
+    const now = Date.now();
+    for (const [memoryId, fields] of [
+      [hotels.id, {}], // Eligible
+      [flights.id, { dismissed: true }], // Dismissed forever
+      [car.id, { dismissed_until: now + 60_000 }], // Dismissed in the future
+      [packing.id, { dismissed_until: now - 60_000 }], // Expired dismissed, so now eligible
+      [deleted.id, {}], // Deleted
+      ["missing-memory", {}], // Bad ID
+    ]) {
+      await JourneyStore.addOrUpdateJourney({
+        memoryId,
+        headline: "Stored journey",
+        status: "In progress",
+        ...fields,
+      });
+    }
+    await MemoriesManager.softDeleteMemoryById(deleted.id);
+    Assert.equal(
+      await JourneyManager.countEligibleJourneys(),
+      2,
+      "Only unsuppressed journeys of live memories count, including an expired snooze"
+    );
+
+    Services.locale.availableLocales = ["en-US", "de"];
+    Services.locale.requestedLocales = ["de"];
+    Assert.equal(
+      Services.locale.appLocaleAsBCP47,
+      "de",
+      "The app locale should be German for this check"
+    );
+    Assert.equal(
+      await JourneyManager.countEligibleJourneys(),
+      0,
+      "A non-English locale has no eligible journeys"
+    );
+  } finally {
+    Services.locale.requestedLocales = originalRequested;
+    Services.locale.availableLocales = originalAvailable;
+    await JourneyStore.clear();
+    await cleanupJourneyTestMemories(memories);
+  }
+});
+
 add_task(function journey_suppression() {
   const now = 1000;
   for (const dismissed of [false, true]) {

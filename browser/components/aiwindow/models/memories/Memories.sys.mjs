@@ -65,6 +65,7 @@ import {
 } from "./MemoriesConstants.sys.mjs";
 
 /** @typedef {import("./MemoriesConstants.sys.mjs").MemoriesGenerationRunStats} MemoriesGenerationRunStats */
+/** @typedef {import("./MemoriesConstants.sys.mjs").JourneysGenerationRunStats} JourneysGenerationRunStats */
 
 // Pipeline input key for unified session bundles.
 const SESSIONS = "sessions";
@@ -83,7 +84,7 @@ const INITIAL_MEMORY_GENERATION_BATCH_RETRY_DELAY_MS = 12000;
  *
  * Only the first error is kept.
  *
- * @param {MemoriesGenerationRunStats} [stats]
+ * @param {MemoriesGenerationRunStats|JourneysGenerationRunStats} [stats] Stats object for telemetry
  * @param {string} stage  One of GENERATION_RUN_ERROR_STAGE
  * @param {Error} error
  */

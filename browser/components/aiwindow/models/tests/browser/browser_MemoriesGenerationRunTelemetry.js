@@ -314,13 +314,17 @@ add_task(async function test_generation_not_triggered() {
 
       // Cooldown has elapsed, but there are no new visits or chat messages.
       await scheduler.runNowForTesting();
-      assertMemoriesGenerationRunEvent({ generation_triggered: false });
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
+        generation_triggered: false,
+      });
 
       // The tick above restarted the cooldown, so new activity is not enough,
       // and nothing more is recorded.
       await visitPage("https://example.com/inside-cooldown");
       await scheduler.runNowForTesting();
-      assertMemoriesGenerationRunEvent({ generation_triggered: false });
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
+        generation_triggered: false,
+      });
     }
   );
 });
@@ -363,7 +367,7 @@ add_task(async function test_full_run() {
       await answerMerge([kept[1], kept[2]], "Hikes short trails on weekends");
     });
 
-    assertMemoriesGenerationRunEvent({
+    assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
       generation_triggered: true,
       memories_before: 0, // No memories in the store before generation ran
       is_first_run: true, // Flag that this is the first generation run
@@ -413,7 +417,7 @@ add_task(async function test_session_sizes() {
 
       await runTick(scheduler, () => answerGeneration([]));
 
-      assertMemoriesGenerationRunEvent({
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
         generation_triggered: true,
         memories_before: 0,
         is_first_run: false,
@@ -455,7 +459,7 @@ add_task(async function test_merge_below_threshold() {
         await answerFilter(["Plans beginner hikes near Denver"]);
       });
 
-      assertMemoriesGenerationRunEvent({
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
         generation_triggered: true,
         memories_before: 0,
         is_first_run: false, // Flag as not the first run
@@ -497,7 +501,7 @@ add_task(async function test_all_filtered() {
         await answerFilter([]);
       });
 
-      assertMemoriesGenerationRunEvent({
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
         generation_triggered: true,
         memories_before: 0,
         is_first_run: false,
@@ -534,7 +538,7 @@ add_task(async function test_no_candidates() {
 
       await runTick(scheduler, () => answerGeneration([]));
 
-      assertMemoriesGenerationRunEvent({
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
         generation_triggered: true,
         memories_before: 0,
         is_first_run: false,
@@ -569,7 +573,7 @@ add_task(async function test_no_sessions() {
 
       await scheduler.runNowForTesting();
 
-      assertMemoriesGenerationRunEvent({
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
         generation_triggered: true,
         memories_before: 0,
         is_first_run: false,
@@ -602,7 +606,7 @@ add_task(async function test_filter_server_rejected() {
         await rejectNextRequest(httpError(400));
       });
 
-      assertMemoriesGenerationRunEvent({
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
         generation_triggered: true,
         memories_before: 0,
         is_first_run: false,
@@ -645,7 +649,7 @@ add_task(async function test_filter_rate_limited() {
         await rejectNextRequest(httpError(429));
       });
 
-      assertMemoriesGenerationRunEvent({
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
         generation_triggered: true,
         memories_before: 0,
         is_first_run: false,
@@ -685,7 +689,7 @@ add_task(async function test_every_batch_failed() {
         rejectNextRequest(new Error("Simulated generation failure"))
       );
 
-      assertMemoriesGenerationRunEvent({
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
         generation_triggered: true,
         memories_before: 0,
         is_first_run: false,
@@ -728,7 +732,7 @@ add_task(async function test_merge_failed() {
         await rejectNextRequest(new Error("Simulated merge failure"));
       });
 
-      assertMemoriesGenerationRunEvent({
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
         generation_triggered: true,
         memories_before: 6,
         is_first_run: false,
@@ -775,7 +779,8 @@ add_task(async function test_one_batch_failed() {
     await run;
 
     // No outcome: the run did not fail, and success is set by the scheduler.
-    assertMemoriesGenerationRunEvent(
+    assertGenerationRunEvent(
+      Glean.smartWindow.memoriesGenerationRun,
       {
         is_first_run: true,
         history_rows_pulled: 6,
@@ -815,7 +820,8 @@ add_task(async function test_batch_rate_limited() {
     await Assert.rejects(run, /429/, "The rate limit is rethrown.");
 
     // No candidate count: generation did not finish.
-    assertMemoriesGenerationRunEvent(
+    assertGenerationRunEvent(
+      Glean.smartWindow.memoriesGenerationRun,
       {
         is_first_run: true,
         history_rows_pulled: 3,
@@ -859,7 +865,7 @@ add_task(async function test_sources_failed() {
         sandbox.restore();
       }
 
-      assertMemoriesGenerationRunEvent({
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
         generation_triggered: true,
         memories_before: 0,
         is_first_run: false,
@@ -893,7 +899,8 @@ add_task(async function test_history_source_failed() {
       sandbox.restore();
     }
 
-    assertMemoriesGenerationRunEvent(
+    assertGenerationRunEvent(
+      Glean.smartWindow.memoriesGenerationRun,
       {
         is_first_run: true,
         sessions_built: 0,
@@ -933,7 +940,7 @@ add_task(async function test_save_failed() {
         sandbox.restore();
       }
 
-      assertMemoriesGenerationRunEvent({
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
         generation_triggered: true,
         memories_before: 0,
         is_first_run: false,
@@ -984,7 +991,7 @@ add_task(async function test_other_failed() {
         sandbox.restore();
       }
 
-      assertMemoriesGenerationRunEvent({
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
         generation_triggered: true,
         memories_before: 0,
         is_first_run: false,
@@ -1034,7 +1041,7 @@ add_task(async function test_other_failed_after_early_outcome() {
         sandbox.restore();
       }
 
-      assertMemoriesGenerationRunEvent({
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
         generation_triggered: true,
         memories_before: 0,
         is_first_run: false,
@@ -1080,7 +1087,8 @@ add_task(async function test_setGenerationRunError() {
     info(`"${error.message}" should be classified as ${expectedType}.`);
     const stats = {};
     setGenerationRunError(stats, stage, error);
-    assertMemoriesGenerationRunEvent(
+    assertGenerationRunEvent(
+      Glean.smartWindow.memoriesGenerationRun,
       { outcome: "error", error_stage: stage, error_type: expectedType },
       { stats }
     );
@@ -1095,7 +1103,8 @@ add_task(async function test_setGenerationRunError() {
     new TypeError("Later failure")
   );
   info("The first error should be kept.");
-  assertMemoriesGenerationRunEvent(
+  assertGenerationRunEvent(
+    Glean.smartWindow.memoriesGenerationRun,
     { outcome: "error", error_stage: stage, error_type: "rate_limited" },
     { stats }
   );

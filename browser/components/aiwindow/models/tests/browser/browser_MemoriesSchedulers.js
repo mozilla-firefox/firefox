@@ -718,7 +718,7 @@ add_task(async function test_maintenance_failure_is_contained() {
 
       // The run is still recorded. The memory counts can't be read from the
       // broken store, so they are left out rather than failing the run.
-      assertMemoriesGenerationRunEvent({
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
         generation_triggered: true,
         merge_status: "ran",
         outcome: "success",
@@ -987,12 +987,20 @@ add_task(async function test_retryable_journey_failure_backs_off() {
 
       // Journey generation isn't part of the run, so its failure doesn't
       // change the recorded outcome.
-      assertMemoriesGenerationRunEvent({
+      assertGenerationRunEvent(Glean.smartWindow.memoriesGenerationRun, {
         generation_triggered: true,
         memories_before: 1,
         merge_status: "ran",
         memories_after: 1,
         outcome: "success",
+      });
+      // The stub throws before filling in any stats, so the scheduler records
+      // it as other.
+      assertGenerationRunEvent(Glean.smartWindow.journeysGenerationRun, {
+        journeys_eligible_after: 0,
+        outcome: "error",
+        error_stage: "other",
+        error_type: "transient",
       });
     }
   );

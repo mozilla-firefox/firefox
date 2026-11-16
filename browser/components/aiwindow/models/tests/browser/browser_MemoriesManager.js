@@ -1228,7 +1228,8 @@ add_task(async function test_generateMemoriesFromSessions_caps_first_run() {
       });
 
     // The sources are stubbed, so they report no counts.
-    assertMemoriesGenerationRunEvent(
+    assertGenerationRunEvent(
+      Glean.smartWindow.memoriesGenerationRun,
       {
         is_first_run: true,
         sessions_built: SESSION_COUNT,
@@ -1349,7 +1350,8 @@ add_task(async function test_generateMemoriesFromSessions_caps_delta_run() {
       });
 
     // The sources are stubbed, so they report no counts.
-    assertMemoriesGenerationRunEvent(
+    assertGenerationRunEvent(
+      Glean.smartWindow.memoriesGenerationRun,
       {
         is_first_run: false,
         sessions_built: SESSION_COUNT,
@@ -2459,7 +2461,8 @@ add_task(async function test_mergeMemories_rejects_empty_statement() {
   await runPromise;
 
   // The proposed group was invalid, so nothing was saved or removed.
-  assertMemoriesGenerationRunEvent(
+  assertGenerationRunEvent(
+    Glean.smartWindow.memoriesGenerationRun,
     {
       merge_status: "ran",
       merge_groups_proposed: 1,
@@ -2737,7 +2740,8 @@ add_task(
 
     // Saving the merged memory updated the matching component, so only the
     // other component was removed.
-    assertMemoriesGenerationRunEvent(
+    assertGenerationRunEvent(
+      Glean.smartWindow.memoriesGenerationRun,
       {
         merge_status: "ran",
         merge_groups_proposed: 1,

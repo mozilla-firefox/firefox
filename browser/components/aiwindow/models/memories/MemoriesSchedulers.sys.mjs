@@ -380,7 +380,10 @@ export class MemoriesSchedulers {
       lazy.console.debug("Generating memories from sessions...");
       runStats = {
         generation_triggered: true,
-        memories_before: await this.#countMemories(),
+        memories_before: await this.#countForStats(
+          async () => (await lazy.MemoriesManager.getAllMemories()).length,
+          "memories"
+        ),
       };
       const persistedMemories =
         await lazy.MemoriesManager.generateMemoriesFromSessions({
@@ -418,7 +421,31 @@ export class MemoriesSchedulers {
       });
       if (postMergeMemories.length) {
         lazy.console.debug("Generating novel journey metadata...");
-        await lazy.JourneyManager.generateAndPersistJourneys(postMergeMemories);
+        /** @type {import("./MemoriesConstants.sys.mjs").JourneysGenerationRunStats} */
+        const journeyStats = {};
+        try {
+          await lazy.JourneyManager.generateAndPersistJourneys(
+            postMergeMemories,
+            { stats: journeyStats }
+          );
+        } catch (error) {
+          // Records an error outside those generateAndPersistJourneys handles
+          lazy.setGenerationRunError(
+            journeyStats,
+            lazy.GENERATION_RUN_ERROR_STAGE.OTHER,
+            error
+          );
+          throw error;
+        } finally {
+          // No outcome means the run was skipped for an unsupported locale
+          if (journeyStats.outcome) {
+            journeyStats.journeys_eligible_after = await this.#countForStats(
+              () => lazy.JourneyManager.countEligibleJourneys(),
+              "journeys"
+            );
+            Glean.smartWindow.journeysGenerationRun.record(journeyStats);
+          }
+        }
         lazy.console.debug("Journey metadata generation complete.");
       } else {
         lazy.console.debug(
@@ -457,7 +484,10 @@ export class MemoriesSchedulers {
       if (runStats) {
         // Gather final telemetry stats before wrapping up
         runStats.merge_status ??= lazy.GENERATION_RUN_MERGE_STATUS.NOT_REACHED;
-        runStats.memories_after = await this.#countMemories();
+        runStats.memories_after = await this.#countForStats(
+          async () => (await lazy.MemoriesManager.getAllMemories()).length,
+          "memories"
+        );
         Glean.smartWindow.memoriesGenerationRun.record(runStats);
       }
       this.#running = false;
@@ -468,15 +498,17 @@ export class MemoriesSchedulers {
   };
 
   /**
-   * Counts live memories for run telemetry.
+   * Runs a count for run telemetry, logging failures instead of throwing.
    *
+   * @param {() => Promise<number>} countFn Returns the count.
+   * @param {string} label What is counted, for the error message.
    * @returns {Promise<number|undefined>} The count, or undefined if it failed.
    */
-  async #countMemories() {
+  async #countForStats(countFn, label) {
     try {
-      return (await lazy.MemoriesManager.getAllMemories()).length;
+      return await countFn();
     } catch (error) {
-      lazy.console.error("Failed to count memories for telemetry", error);
+      lazy.console.error(`Failed to count ${label} for telemetry`, error);
       return undefined;
     }
   }
