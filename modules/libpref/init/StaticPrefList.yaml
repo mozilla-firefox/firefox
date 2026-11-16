@@ -11252,12 +11252,9 @@
   mirror: always
 
 # Is support for CSS background-clip: border-area enabled?
-#
-# NOTE(emilio): Before enabling on content, we need to add support for dotted /
-# dashed / double borders to the codepath, see bug 2046372.
 - name: layout.css.background-clip.border-area.enabled
   type: RelaxedAtomicBool
-  value: false
+  value: true
   mirror: always
   rust: true
 
