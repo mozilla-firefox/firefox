@@ -2464,6 +2464,7 @@ Result<SavedRequest, nsresult> ReadRequest(mozIStorageConnection& aConn,
 void AppendListParamsToQuery(nsACString& aQuery, size_t aLen) {
   MOZ_ASSERT(!NS_IsMainThread());
 
+  aQuery.SetCapacity(aQuery.Length() + (aLen - 1) * 2 + 2);
   aQuery.AppendLiteral("?");
   for (size_t i = 1; i < aLen; ++i) {
     aQuery.AppendLiteral(",?");
