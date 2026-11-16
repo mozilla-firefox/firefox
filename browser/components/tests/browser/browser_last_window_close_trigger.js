@@ -170,6 +170,7 @@ add_task(async function test_cancels_dispatches_and_recloses() {
 });
 
 add_task(async function test_second_close_attempt_does_not_redispatch() {
+  Services.fog.testResetFOG();
   let sandbox = sinon.createSandbox();
   let win = await BrowserTestUtils.openNewBrowserWindow();
   stubAsLastWindow(sandbox, win);
