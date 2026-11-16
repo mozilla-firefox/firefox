@@ -203,11 +203,12 @@ export const MessageLoaderUtils = {
     return provider.messages;
   },
 
-  async _remoteLoaderCache(storage) {
+  async _remoteLoaderCache(routerStorage) {
     let allCached;
     try {
       allCached =
-        (await storage.get(MessageLoaderUtils.REMOTE_LOADER_CACHE_KEY)) || {};
+        (await routerStorage.get(MessageLoaderUtils.REMOTE_LOADER_CACHE_KEY)) ||
+        {};
     } catch (e) {
       // istanbul ignore next
       MessageLoaderUtils.reportError(e);
@@ -745,9 +746,9 @@ export const MessageLoaderUtils = {
    *
    * @param {Array} providers A list of activer AS Router providers
    */
-  async cleanupCache(providers, storage) {
+  async cleanupCache(providers, routerStorage) {
     const ids = providers.filter(p => p.type === "remote").map(p => p.id);
-    const cache = await MessageLoaderUtils._remoteLoaderCache(storage);
+    const cache = await MessageLoaderUtils._remoteLoaderCache(routerStorage);
     let dirty = false;
     for (let id in cache) {
       if (!ids.includes(id)) {
@@ -756,7 +757,10 @@ export const MessageLoaderUtils = {
       }
     }
     if (dirty) {
-      await storage.set(MessageLoaderUtils.REMOTE_LOADER_CACHE_KEY, cache);
+      await routerStorage.set(
+        MessageLoaderUtils.REMOTE_LOADER_CACHE_KEY,
+        cache
+      );
     }
   },
 
@@ -1200,7 +1204,7 @@ export class _ASRouter {
    * @memberof _ASRouter
    */
   async init({
-    storage,
+    storage: routerStorage,
     sendTelemetry,
     clearChildMessages,
     clearChildProviders,
@@ -1211,7 +1215,7 @@ export class _ASRouter {
       return null;
     }
     this.initializing = true;
-    this._storage = storage;
+    this._storage = routerStorage;
     this.ALLOWLIST_HOSTS = this._loadAllowHosts();
     this.clearChildMessages = this.toWaitForInitFunc(clearChildMessages);
     this.clearChildProviders = this.toWaitForInitFunc(clearChildProviders);
@@ -1275,7 +1279,7 @@ export class _ASRouter {
     await this._updateMessageProviders();
     await lazy.MessagingSystemAllowlists.ensureInit();
     await this.loadMessagesFromAllProviders();
-    await MessageLoaderUtils.cleanupCache(this.state.providers, storage);
+    await MessageLoaderUtils.cleanupCache(this.state.providers, routerStorage);
 
     lazy.SpecialMessageActions.blockMessageById = this.blockMessageById;
     Services.obs.addObserver(this._onLocaleChanged, TOPIC_INTL_LOCALE_CHANGED);
