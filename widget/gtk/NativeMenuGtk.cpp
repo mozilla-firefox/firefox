@@ -496,14 +496,13 @@ class MenubarModelDBus final : public MenuModel {
   // and to make submenus work better in general (some clients don't re-fetch
   // submenus on layout changes properly).
   static void SyncChildren(DbusmenuMenuitem* aParent,
-                           const dom::Element& aElement,
-                           bool aPlaceholderIfEmpty);
+                           const dom::Element& aElement);
 
   RefPtr<DbusmenuMenuitem> mRoot;
 };
 
 void MenubarModelDBus::RecomputeModel() {
-  SyncChildren(mRoot.get(), *Element(), false);
+  SyncChildren(mRoot.get(), *Element());
 }
 
 static const dom::Element* RelevantElementForKeys(
@@ -642,8 +641,6 @@ enum class DBusItemKind : uint8_t {
   MenuItem = 1,
   Separator,
   Submenu,
-  // An empty child, so that an empty submenu is still exposed as a submenu.
-  Placeholder,
 };
 
 // Helpers to manage DbusmenuMenuitem properties.
@@ -753,24 +750,21 @@ static DbusmenuMenuitem* GetOrCreateChild(
       g_signal_connect(G_OBJECT(item.get()), DBUSMENU_MENUITEM_SIGNAL_EVENT,
                        G_CALLBACK(DBusEventCallback), nullptr);
       break;
-    case DBusItemKind::Placeholder:
-      break;
   }
   dbusmenu_menuitem_child_add_position(aParent, item, aPosition);
   return aChildren.InsertElementAt(aPosition, std::move(item))->get();
 }
 
 void MenubarModelDBus::SyncChildren(DbusmenuMenuitem* aParent,
-                                    const dom::Element& aElement,
-                                    bool aPlaceholderIfEmpty) {
+                                    const dom::Element& aElement) {
   AutoTArray<RefPtr<DbusmenuMenuitem>, 32> children;
   for (GList* l = dbusmenu_menuitem_get_children(aParent); l; l = l->next) {
     children.AppendElement(static_cast<DbusmenuMenuitem*>(l->data));
   }
 
   size_t position = 0;
-  auto GetOrCreate = [&](DBusItemKind aKind, const dom::Element* aElement) {
-    return GetOrCreateChild(aParent, children, position++, aKind, aElement);
+  auto GetOrCreate = [&](DBusItemKind aKind, const dom::Element* aChild) {
+    return GetOrCreateChild(aParent, children, position++, aKind, aChild);
   };
 
   for (const nsIContent* child = aElement.GetFirstChild(); child;
@@ -804,13 +798,12 @@ void MenubarModelDBus::SyncChildren(DbusmenuMenuitem* aParent,
         child->AsElement()->GetAttr(nsGkAtoms::label, label);
         dbusmenu_menuitem_property_set(submenu, DBUSMENU_MENUITEM_PROP_LABEL,
                                        NS_ConvertUTF16toUTF8(label).get());
-        SyncChildren(submenu, *popup, true);
+        dbusmenu_menuitem_property_set(submenu,
+                                       DBUSMENU_MENUITEM_PROP_CHILD_DISPLAY,
+                                       DBUSMENU_MENUITEM_CHILD_DISPLAY_SUBMENU);
+        SyncChildren(submenu, *popup);
       }
     }
-  }
-
-  if (!position && aPlaceholderIfEmpty) {
-    GetOrCreate(DBusItemKind::Placeholder, nullptr);
   }
 
   // Any remaining children are unused. Hide them so that they can be reused
