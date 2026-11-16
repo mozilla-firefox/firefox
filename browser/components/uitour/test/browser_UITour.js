@@ -529,6 +529,14 @@ var tests = [
       );
 
       let defaults = Services.prefs.getDefaultBranch("distribution.");
+      let originalDistributionID = defaults.getCharPref("id", null);
+      registerCleanupFunction(() => {
+        if (originalDistributionID === null) {
+          defaults.deleteBranch("id");
+        } else {
+          defaults.setCharPref("id", originalDistributionID);
+        }
+      });
       let testDistributionID = "TestDistribution";
       defaults.setCharPref("id", testDistributionID);
       gContentAPI.getConfiguration("appinfo", result2 => {
@@ -562,6 +570,11 @@ var tests = [
 
       // Set profile reset date to 15 days ago.
       ProfileAge().then(profileAccessor => {
+        let originalTimes = { ...profileAccessor._times };
+        registerCleanupFunction(() => {
+          profileAccessor._times = originalTimes;
+          return profileAccessor.writeTimes();
+        });
         profileAccessor.recordProfileReset(
           Date.now() - 15 * 24 * 60 * 60 * 1000
         );
