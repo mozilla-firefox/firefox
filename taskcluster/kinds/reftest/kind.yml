@@ -128,6 +128,7 @@ tasks:
                 linux.*64-tsan(-qr)?/opt: 4
                 default: 1
         variants:
+            - geckoview-isolated-process
             - no-fission
             - webrender-sw+no-fission
             - webrender-sw
@@ -158,6 +159,10 @@ tasks:
                         android.*: ['mozilla-central']
                         default: []
                 inc-origin-init: []
+                geckoview-isolated-process:
+                    by-test-platform:
+                        android-em.*/debug: ['trunk']
+                        default: []
                 default:
                     by-test-platform:
                         .*-wayland/debug.*: []
@@ -180,7 +185,7 @@ tasks:
                     by-test-platform:
                         linux.*: 2
                         default: default
-                geckoview-isolated-process: 3
+                geckoview-isolated-process: 2
                 default:
                     by-test-platform:
                         android-hw-.*(-qr)?/.*: 2
@@ -295,6 +300,7 @@ tasks:
                 default: 8
         variants:
             - draw-snapshot
+            - geckoview-isolated-process
             - no-fission
             - no-gpu-process
             - webrender-dcomp-disabled
