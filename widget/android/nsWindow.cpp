@@ -66,6 +66,7 @@
 #include "mozilla/gfx/Logging.h"
 #include "mozilla/gfx/Swizzle.h"
 #include "mozilla/gfx/Types.h"
+#include "mozilla/glean/GeckoviewMetrics.h"
 #include "mozilla/ipc/Shmem.h"
 #include "mozilla/java/EventDispatcherWrappers.h"
 #include "mozilla/java/GeckoAppShellWrappers.h"
@@ -73,6 +74,7 @@
 #include "mozilla/java/GeckoResultWrappers.h"
 #include "mozilla/java/GeckoSessionNatives.h"
 #include "mozilla/java/GeckoSystemStateListenerWrappers.h"
+#include "mozilla/java/GeckoViewScrollCaptureCallbackWrappers.h"
 #include "mozilla/java/PanZoomControllerNatives.h"
 #include "mozilla/java/SessionAccessibilityWrappers.h"
 #include "mozilla/java/SurfaceControlManagerWrappers.h"
@@ -2666,6 +2668,75 @@ void GeckoViewSupport::RequestContentMetrics(
                 .Cast<jni::Throwable>());
         GVS_LOG("Error requesting content metrics - failed to query content");
       });
+}
+
+void GeckoViewSupport::RecordScrollCaptureTileResult(
+    const java::GeckoSession::Window::LocalRef& inst, int32_t aOutcome) {
+  MOZ_ASSERT(NS_IsMainThread());
+
+  using Label = glean::geckoview::ScrollCaptureTileResultLabel;
+  Maybe<Label> label;
+  switch (aOutcome) {
+    case java::GeckoViewScrollCaptureCallback::TILE_RESULT_SUCCESS:
+      label = Some(Label::eSuccess);
+      break;
+    case java::GeckoViewScrollCaptureCallback::TILE_RESULT_CANCELED_BEFORE:
+      label = Some(Label::eCanceledBefore);
+      break;
+    case java::GeckoViewScrollCaptureCallback::TILE_RESULT_CANCELED_INFLIGHT:
+      label = Some(Label::eCanceledInflight);
+      break;
+    case java::GeckoViewScrollCaptureCallback::TILE_RESULT_NO_METRICS:
+      label = Some(Label::eNoMetrics);
+      break;
+    case java::GeckoViewScrollCaptureCallback::TILE_RESULT_INVALID_SURFACE:
+      label = Some(Label::eInvalidSurface);
+      break;
+    case java::GeckoViewScrollCaptureCallback::TILE_RESULT_OUTSIDE_CONTENT:
+      label = Some(Label::eOutsideContent);
+      break;
+    case java::GeckoViewScrollCaptureCallback::TILE_RESULT_EMPTY_RECT:
+      label = Some(Label::eEmptyRect);
+      break;
+    case java::GeckoViewScrollCaptureCallback::TILE_RESULT_PAINT_ERROR:
+      label = Some(Label::ePaintError);
+      break;
+    default:
+      MOZ_ASSERT_UNREACHABLE(
+          "RecordScrollCaptureTileResult - unhandled outcome");
+      GVS_LOG("RecordScrollCaptureTileResult - unknown outcome %d", aOutcome);
+      return;
+  }
+
+  glean::geckoview::scroll_capture_tile_result.EnumGet(*label).Add(1);
+}
+
+void GeckoViewSupport::RecordScrollCaptureOutcome(
+    const java::GeckoSession::Window::LocalRef& inst, int32_t aOutcome) {
+  MOZ_ASSERT(NS_IsMainThread());
+
+  using Label = glean::geckoview::ScrollCaptureOutcomeLabel;
+  Maybe<Label> label;
+  switch (aOutcome) {
+    case java::GeckoViewScrollCaptureCallback::OUTCOME_COMPLETE:
+      label = Some(Label::eComplete);
+      break;
+    case java::GeckoViewScrollCaptureCallback::OUTCOME_PARTIAL:
+      label = Some(Label::ePartial);
+      break;
+    case java::GeckoViewScrollCaptureCallback::OUTCOME_FAILED:
+      label = Some(Label::eFailed);
+      break;
+    case java::GeckoViewScrollCaptureCallback::OUTCOME_CANCELED:
+      label = Some(Label::eCanceled);
+      break;
+    default:
+      MOZ_ASSERT_UNREACHABLE("RecordScrollCaptureOutcome - unhandled outcome");
+      GVS_LOG("RecordScrollCaptureOutcome - unknown outcome %d", aOutcome);
+      return;
+  }
+
+  glean::geckoview::scroll_capture_outcome.EnumGet(*label).Add(1);
 }
 
 }  // namespace widget

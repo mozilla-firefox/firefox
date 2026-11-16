@@ -58,6 +58,7 @@ classes_with_WrapForJNI = [
     "GeckoSystemStateListener",
     "GeckoThread",
     "GeckoViewInputStream",
+    "GeckoViewScrollCaptureCallback",
     "GeckoVRManager",
     "GeckoVideoInfo",
     "GeckoWebExecutor",

@@ -336,4 +336,41 @@ class ScrollCaptureTest : BaseSessionTest() {
             reader.close()
         }
     }
+
+    @WithDisplay(height = DISPLAY_HEIGHT, width = DISPLAY_WIDTH)
+    @Test
+    fun fullCaptureReportsComplete() {
+        assumeScrollCaptureSupported()
+        loadFullPage()
+        val callback = GeckoViewScrollCaptureCallback(Supplier { mainSession })
+        val reader = newImageReader()
+        try {
+            val session = newScrollCaptureSession(reader.surface, Rect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT))
+
+            val started = booleanArrayOf(false)
+            callback.onScrollCaptureStart(session, CancellationSignal()) { started[0] = true }
+            UiThreadUtils.waitForCondition({ started[0] }, WAIT_TIMEOUT_MS)
+
+            val captured = arrayOfNulls<Rect>(1)
+            callback.onScrollCaptureImageRequest(
+                session,
+                CancellationSignal(),
+                Rect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT),
+            ) { rect ->
+                captured[0] = rect
+            }
+            UiThreadUtils.waitForCondition({ captured[0] != null }, WAIT_TIMEOUT_MS)
+            assertFalse("Tile should render a non-empty rect", captured[0]!!.isEmpty)
+
+            // onScrollCaptureEnd computes the per-capture verdict from the tile tally.
+            callback.onScrollCaptureEnd {}
+            assertEquals(
+                "A full successful capture reports OUTCOME_COMPLETE",
+                GeckoViewScrollCaptureCallback.OUTCOME_COMPLETE,
+                callback.mLastCaptureOutcome,
+            )
+        } finally {
+            reader.close()
+        }
+    }
 }

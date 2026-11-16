@@ -135,6 +135,15 @@ class GeckoViewSupport final
                              jni::Object::Param aResult,
                              jni::Object::Param aMetrics);
 
+  // Record the outcome of a scroll capture image request as the
+  // geckoview.scroll_capture_tile_result labeled counter. aOutcome is one of
+  // the values defined in GeckoViewScrollCaptureCallback.
+  void RecordScrollCaptureTileResult(
+      const java::GeckoSession::Window::LocalRef& inst, int32_t aOutcome);
+
+  void RecordScrollCaptureOutcome(
+      const java::GeckoSession::Window::LocalRef& inst, int32_t aOutcome);
+
   // See nsIHapticFeedback::HapticFeedbackType for available effects.
   void PerformHapticFeedback(int32_t aEffect);
 };

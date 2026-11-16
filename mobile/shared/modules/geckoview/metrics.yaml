@@ -117,3 +117,59 @@ geckoview:
       - beth@mozilla.com
       - perf-telemetry-alerts@mozilla.com
     expires: never
+
+  scroll_capture_tile_result:
+    type: labeled_counter
+    description: >
+      Outcome of each scroll capture (long screenshot) image request handled by
+      GeckoViewScrollCaptureCallback. The "success" label counts rendered tiles;
+      the other labels are the cancellation and failure paths. "canceled_before"
+      is a request that arrived already canceled (session teardown or the user
+      dismissing the capture); "canceled_inflight" is a request canceled while
+      the native paint was running, which correlates with the paint being too
+      slow.
+    labels:
+      - success
+      - canceled_before
+      - canceled_inflight
+      - no_metrics
+      - invalid_surface
+      - outside_content
+      - empty_rect
+      - paint_error
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2075435
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2075435
+      - https://phabricator.services.mozilla.com/D336264
+    notification_emails:
+      - android-probes@mozilla.com
+    data_sensitivity:
+      - interaction
+    expires: never
+
+  scroll_capture_outcome:
+    type: labeled_counter
+    description: >
+      Per-capture verdict of each scroll capture (long screenshot) operation,
+      recorded once per capture in GeckoViewScrollCaptureCallback. "complete"
+      means every rendered tile succeeded; "partial" means at least one tile
+      rendered but at least one hit a hard failure; "failed" means no tile
+      rendered; "canceled" means the capture was canceled (session teardown, the
+      user dismissing it, or a tile that could not finish in time). This
+      complements scroll_capture_tile_result, which counts individual tiles.
+    labels:
+      - complete
+      - partial
+      - failed
+      - canceled
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2075435
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2075435
+      - https://phabricator.services.mozilla.com/D336264
+    notification_emails:
+      - android-probes@mozilla.com
+    data_sensitivity:
+      - interaction
+    expires: never

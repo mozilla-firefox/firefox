@@ -1575,6 +1575,15 @@ public class GeckoSession {
     public native void requestContentMetrics(
         GeckoResult<ContentMetrics> result, ContentMetrics metrics);
 
+    // Records the outcome of a scroll capture image request as the
+    // geckoview.scroll_capture_tile_result labeled counter. The outcome values match
+    // the switch in GeckoViewSupport::RecordScrollCaptureTileResult.
+    @WrapForJNI(calledFrom = "ui", dispatchTo = "proxy")
+    public native void recordScrollCaptureTileResult(final int outcome);
+
+    @WrapForJNI(calledFrom = "ui", dispatchTo = "proxy")
+    public native void recordScrollCaptureOutcome(final int outcome);
+
     @WrapForJNI(calledFrom = "gecko")
     private synchronized void onReady(final @Nullable NativeQueue queue) {
       // onReady is called the first time the Gecko window is ready, with a null queue
