@@ -11,6 +11,7 @@
 #include "mozilla/ipc/SharedMemoryMapping.h"
 #include "mozilla/layers/PCanvasChild.h"
 #include "mozilla/layers/SourceSurfaceSharedData.h"
+#include "nsITimer.h"
 
 class nsICanvasRenderingContextInternal;
 
@@ -192,6 +193,7 @@ class CanvasChild final : public PCanvasChild, public SupportsWeakPtr {
 
   RefPtr<dom::ThreadSafeWorkerRef> mWorkerRef;
   RefPtr<CanvasDrawEventRecorder> mRecorder;
+  nsCOMPtr<nsITimer> mDormantTimer;
 
   std::shared_ptr<ipc::ReadOnlySharedMemoryMapping> mDataSurfaceShmem;
   bool mDataSurfaceShmemAvailable = false;

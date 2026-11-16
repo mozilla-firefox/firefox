@@ -368,7 +368,12 @@ class CanvasDataShmemHolder {
 CanvasChild::CanvasChild(dom::ThreadSafeWorkerRef* aWorkerRef)
     : mWorkerRef(aWorkerRef) {}
 
-CanvasChild::~CanvasChild() { MOZ_ASSERT(!mWorkerRef); }
+CanvasChild::~CanvasChild() {
+  MOZ_ASSERT(!mWorkerRef);
+  if (mDormantTimer) {
+    mDormantTimer->Cancel();
+  }
+}
 
 static void NotifyCanvasDeviceChanged() {
   nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
@@ -453,6 +458,10 @@ void CanvasChild::ActorDestroy(ActorDestroyReason aWhy) {
 void CanvasChild::Destroy() {
   NS_ASSERT_OWNINGTHREAD(CanvasChild);
 
+  if (mDormantTimer) {
+    mDormantTimer->Cancel();
+  }
+
   if (CanSend()) {
     Send__delete__(this);
   }
@@ -482,10 +491,18 @@ void CanvasChild::EndTransaction() {
     // Schedule to drop free buffers if we have no non-empty transactions.
     if (!mDormant) {
       mDormant = true;
-      NS_DelayedDispatchToCurrentThread(
-          NewRunnableMethod("CanvasChild::DropFreeBuffersWhenDormant", this,
-                            &CanvasChild::DropFreeBuffersWhenDormant),
-          StaticPrefs::gfx_canvas_remote_drop_buffer_milliseconds());
+      if (!mDormantTimer) {
+        mDormantTimer = NS_NewTimer(GetCurrentSerialEventTarget());
+      }
+      if (mDormantTimer) {
+        mDormantTimer->InitWithNamedFuncCallback(
+            [](nsITimer*, void* aClosure) {
+              static_cast<CanvasChild*>(aClosure)->DropFreeBuffersWhenDormant();
+            },
+            this, StaticPrefs::gfx_canvas_remote_drop_buffer_milliseconds(),
+            nsITimer::TYPE_ONE_SHOT,
+            "CanvasChild::DropFreeBuffersWhenDormant"_ns);
+      }
     }
   }
 
