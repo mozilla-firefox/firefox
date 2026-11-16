@@ -954,7 +954,7 @@ impl<'a, T: Copy + peek_poke::Peek> ::std::iter::ExactSizeIterator for AuxIter<'
 struct CapturedTextRun {
     font_key: FontInstanceKey,
     glyph_options: Option<GlyphOptions>,
-    glyphs: Vec<GlyphInstance>,
+    glyphs: Vec<GlyphInstanceAu>,
 }
 
 #[derive(Clone, Debug)]
@@ -1142,9 +1142,10 @@ pub struct DisplayListBuilder {
     /// coordinates off the grid it declared, so normalization is not exact for
     /// them.
     off_grid_coords: u32,
-    /// Reused buffer for normalized glyph positions, to avoid a per-text-run
-    /// allocation when shifting glyphs by the external scroll offset.
-    glyph_scratch: Vec<GlyphInstance>,
+    /// Reused buffer for a text run's quantized, bounds-relative glyphs. It is
+    /// lent to each `TextRunKey` for the interner lookup, so a run that is
+    /// already interned costs no allocation.
+    glyph_scratch: Vec<GlyphInstanceAu>,
     /// While a shadow scope is open (between `push_shadow` and
     /// `pop_all_shadows`), the items pushed within it are captured here instead
     /// of being written straight to `payload.items_data`, so `pop_all_shadows`
@@ -1876,16 +1877,16 @@ impl DisplayListBuilder {
         let mut scratch = mem::take(&mut self.glyph_scratch);
         for split_glyphs in glyphs.chunks(MAX_TEXT_RUN_LENGTH) {
             scratch.clear();
-            scratch.extend(split_glyphs.iter().map(|g| GlyphInstance {
+            scratch.extend(split_glyphs.iter().map(|g| GlyphInstanceAu {
                 index: g.index,
-                point: g.point - bounds_origin,
+                point: (g.point - bounds_origin).to_au(),
             }));
 
             // One interned run per chunk, since each chunk becomes its own
             // primitive with its own glyph list.
             let text_run = if visible {
                 self.intern_text_run(
-                    &scratch,
+                    &mut scratch,
                     run_bounds,
                     &common,
                     font_key,
@@ -1912,10 +1913,12 @@ impl DisplayListBuilder {
     }
 
     /// Intern one run of glyphs and return the handle to record on its display
-    /// item. `glyphs` are already relative to the run's bounds origin.
+    /// item. `glyphs` are already relative to the run's bounds origin and
+    /// quantized; the buffer is moved into the key for the lookup and handed
+    /// back afterwards, so its capacity is kept.
     fn intern_text_run(
         &mut self,
-        glyphs: &[GlyphInstance],
+        glyphs: &mut Vec<GlyphInstanceAu>,
         bounds: LayoutRect,
         common: &di::CommonItemProperties,
         font_key: FontInstanceKey,
@@ -1938,18 +1941,14 @@ impl DisplayListBuilder {
             font_key,
             color: color.into(),
             glyph_options,
-            glyphs: glyphs
-                .iter()
-                .map(|glyph| GlyphInstanceAu {
-                    index: glyph.index,
-                    point: glyph.point.to_au(),
-                })
-                .collect(),
+            glyphs: mem::take(glyphs),
             shadow,
             requested_raster_space,
         };
 
-        self.interners.intern(&key)
+        let handle = self.interners.intern(&key);
+        *glyphs = key.glyphs;
+        handle
     }
 
     /// Normalize `stops` and describe the gradient they make.
@@ -3574,8 +3573,11 @@ impl DisplayListBuilder {
                 })
             }
             CapturedKey::Text(ref text) => {
+                let mut glyphs = mem::take(&mut self.glyph_scratch);
+                glyphs.clear();
+                glyphs.extend_from_slice(&text.glyphs);
                 let text_run = self.intern_text_run(
-                    &text.glyphs,
+                    &mut glyphs,
                     bounds,
                     &common,
                     text.font_key,
@@ -3583,6 +3585,7 @@ impl DisplayListBuilder {
                     text.glyph_options,
                     shadow_mode,
                 );
+                self.glyph_scratch = glyphs;
                 di::DisplayItem::Text(di::TextDisplayItem {
                     spatial_id: common.spatial_id,
                     clip_chain_id: common.clip_chain_id,
