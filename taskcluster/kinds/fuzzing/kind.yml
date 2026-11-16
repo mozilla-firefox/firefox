@@ -16,7 +16,6 @@ kind-dependencies:
     - build
 
 task-defaults:
-    run-on-repo-type: [hg]
     worker-type: b-linux
     description: Python Fuzzing Smoke Tests
     worker:
@@ -51,7 +50,6 @@ tasks:
                 LD_LIBRARY_PATH: /builds/worker/fetches
                 JSSHELL: ./js
         run:
-            clone-with: hg
             using: run-task
             command: >-
                 cd $MOZ_FETCHES_DIR &&
@@ -66,7 +64,6 @@ tasks:
         require-build:
             linux64/asan: build-linux64-asan-fuzzing/opt
         run:
-            clone-with: hg
             using: python-test
             subsuite: fuzzing
         fetches:
@@ -84,7 +81,6 @@ tasks:
         require-build:
             linux64/debug: build-linux64-fuzzing/debug
         run:
-            clone-with: hg
             using: python-test
             subsuite: fuzzing
         fetches:
@@ -102,7 +98,6 @@ tasks:
         require-build:
             linux64/tsan: build-linux64-tsan-fuzzing/opt
         run:
-            clone-with: hg
             using: python-test
             subsuite: fuzzing
         fetches:
@@ -120,7 +115,6 @@ tasks:
         require-build:
             windows2012-32/debug: build-win32-fuzzing/debug
         run:
-            clone-with: hg
             using: python-test
             subsuite: fuzzing
         run-on-projects: []
@@ -141,7 +135,6 @@ tasks:
         require-build:
             windows2012-64/asan: build-win64-asan-fuzzing/opt
         run:
-            clone-with: hg
             using: python-test
             subsuite: fuzzing
         run-on-projects: []
@@ -158,7 +151,6 @@ tasks:
         require-build:
             windows2012-64/debug: build-win64-fuzzing/debug
         run:
-            clone-with: hg
             using: python-test
             subsuite: fuzzing
         run-on-projects: []
@@ -179,7 +171,6 @@ tasks:
         require-build:
             windows2012-64/ccov: build-win64-fuzzing-ccov/opt
         run:
-            clone-with: hg
             using: python-test
             subsuite: fuzzing
         run-on-projects: []
@@ -196,7 +187,6 @@ tasks:
         require-build:
             osx-cross/asan: build-macosx64-asan-fuzzing/opt
         run:
-            clone-with: hg
             using: python-test
             subsuite: fuzzing
         run-on-projects: []
@@ -213,7 +203,6 @@ tasks:
         require-build:
             osx-cross/debug: build-macosx64-fuzzing/debug
         run:
-            clone-with: hg
             using: python-test
             subsuite: fuzzing
         run-on-projects: []
@@ -230,7 +219,6 @@ tasks:
         require-build:
             osx-cross-aarch64/asan: build-macosx64-aarch64-asan-fuzzing/opt
         run:
-            clone-with: hg
             using: python-test
             subsuite: fuzzing
         run-on-projects: []
@@ -247,7 +235,6 @@ tasks:
         require-build:
             osx-cross-aarch64/debug: build-macosx64-aarch64-fuzzing/debug
         run:
-            clone-with: hg
             using: python-test
             subsuite: fuzzing
         run-on-projects: []
