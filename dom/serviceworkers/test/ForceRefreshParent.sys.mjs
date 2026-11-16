@@ -8,6 +8,12 @@ export class ForceRefreshParent extends JSWindowActorParent {
     super();
   }
 
+  static resetState() {
+    cachedLoadCount = 0;
+    baseLoadCount = 0;
+    done = false;
+  }
+
   receiveMessage(msg) {
     // if done is called, ignore the msg.
     if (done) {

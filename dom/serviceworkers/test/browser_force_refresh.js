@@ -46,6 +46,9 @@ function test() {
         getRootDirectory(gTestPath) + "ForceRefreshParent.sys.mjs"
       );
 
+      // The module outlives this test, so clear the previous run's state.
+      ForceRefreshParent.resetState();
+
       // setup helper functions for ForceRefreshParent
       ForceRefreshParent.SimpleTest = SimpleTest;
       ForceRefreshParent.refresh = refresh;
