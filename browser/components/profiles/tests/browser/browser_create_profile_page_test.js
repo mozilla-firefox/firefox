@@ -513,12 +513,13 @@ add_task(async function test_new_profile_delete_telemetry() {
 
       // To test Glean is recorded without actually deleting the test profile,
       // cancel the "quit-application-requested" nsIObserver event.
-      let quitCanceled = false;
-      Services.obs.addObserver(subject => {
-        let cancelQuit = subject.QueryInterface(Ci.nsISupportsPRBool);
-        cancelQuit.data = true;
-        quitCanceled = true;
-      }, "quit-application-requested");
+      let quitCanceled = TestUtils.topicObserved(
+        "quit-application-requested",
+        subject => {
+          subject.QueryInterface(Ci.nsISupportsPRBool).data = true;
+          return true;
+        }
+      );
 
       await SpecialPowers.spawn(browser, [], async () => {
         let newProfileCard =
@@ -549,10 +550,7 @@ add_task(async function test_new_profile_delete_telemetry() {
         );
       });
 
-      await TestUtils.waitForCondition(
-        () => quitCanceled,
-        "We expect the quit to have been canceled"
-      );
+      await quitCanceled;
 
       await TestUtils.waitForCondition(
         () => pingSubmitted,
