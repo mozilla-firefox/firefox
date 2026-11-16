@@ -159,11 +159,16 @@ sleep 1
 
 function tapToFocusToolbar() {
     adb shell input tap $TOOLBAR_X_COORDINATE $TOOLBAR_Y_COORDINATE
-    sleep 2
+    sleep 4
 }
 
 function inputTextToToolbar() {
-    adb shell input text $1
+    local text=$1
+    while [ -n "$text" ]; do
+        adb shell input text "${text:0:4}"
+        text=${text:4}
+        sleep 0.5
+    done
     sleep 2
 }
 
