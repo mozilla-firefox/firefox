@@ -693,12 +693,13 @@ RemoteTextureMap::UnregisterTextureOwner(
   // unregistering.
   if (owner->mWaitForTxn) {
     owner->mDeferUnregister = GetCurrentSerialEventTarget();
-    // If another thread is waiting on this owner to produce textures,
-    // it must be notified that owner is going away.
-    if (!owner->mLatestTextureHost &&
-        owner->mWaitingTextureDataHolders.empty()) {
-      aProofOfLock.Notify();
-    }
+    // Anything waiting on this owner to produce textures must be notified
+    // that the owner is going away.
+    aProofOfLock.Notify();
+    // No more textures will be pushed, so anything waiting for one should
+    // check again.
+    GetAllRenderingReadyCallbacks(aProofOfLock, owner,
+                                  aRenderingReadyCallbacks);
     return nullptr;
   }
 
@@ -752,15 +753,12 @@ void RemoteTextureMap::UnregisterTextureOwner(
 
     releasingOwner = UnregisterTextureOwner(
         lock, aOwnerId, aForPid, releasingTextures, renderingReadyCallbacks);
-    if (!releasingOwner) {
-      return;
+    if (releasingOwner) {
+      mMonitor.Notify();
     }
-
-    mMonitor.Notify();
   }
 
-  const auto info =
-      RemoteTextureInfo(RemoteTextureId{0}, RemoteTextureOwnerId{0}, 0);
+  const auto info = RemoteTextureInfo(RemoteTextureId{0}, aOwnerId, aForPid);
   for (auto& callback : renderingReadyCallbacks) {
     callback(info);
   }
@@ -774,6 +772,7 @@ void RemoteTextureMap::UnregisterTextureOwners(
       releasingTextures;  // Release outside the monitor
   std::vector<std::function<void(const RemoteTextureInfo&)>>
       renderingReadyCallbacks;  // Call outside the monitor
+  std::vector<RemoteTextureInfo> renderingReadyInfos;
   {
     MonitorAutoLock lock(mMonitor);
 
@@ -782,19 +781,18 @@ void RemoteTextureMap::UnregisterTextureOwners(
               lock, id, aForPid, releasingTextures, renderingReadyCallbacks)) {
         releasingOwners.push_back(std::move(releasingOwner));
       }
+      while (renderingReadyInfos.size() < renderingReadyCallbacks.size()) {
+        renderingReadyInfos.emplace_back(RemoteTextureId{0}, id, aForPid);
+      }
     }
 
-    if (releasingOwners.empty()) {
-      return;
+    if (!releasingOwners.empty()) {
+      mMonitor.Notify();
     }
-
-    mMonitor.Notify();
   }
 
-  const auto info =
-      RemoteTextureInfo(RemoteTextureId{0}, RemoteTextureOwnerId{0}, 0);
-  for (auto& callback : renderingReadyCallbacks) {
-    callback(info);
+  for (size_t i = 0; i < renderingReadyCallbacks.size(); ++i) {
+    renderingReadyCallbacks[i](renderingReadyInfos[i]);
   }
 }
 
@@ -929,25 +927,44 @@ void RemoteTextureMap::ClearRecycledTextures(
 
 void RemoteTextureMap::NotifyContextLost(
     const RemoteTextureOwnerIdSet& aOwnerIds, const base::ProcessId aForPid) {
-  MonitorAutoLock lock(mMonitor);
+  std::vector<
+      std::pair<RemoteTextureInfo,
+                std::vector<std::function<void(const RemoteTextureInfo&)>>>>
+      renderingReadyCallbacks;  // Call outside the monitor
+  {
+    MonitorAutoLock lock(mMonitor);
 
-  bool changed = false;
-  for (const auto& id : aOwnerIds) {
-    const auto key = std::pair(aForPid, id);
-    auto it = mTextureOwners.find(key);
-    if (it == mTextureOwners.end()) {
-      MOZ_ASSERT_UNREACHABLE("unexpected to be called");
-      continue;
+    bool changed = false;
+    for (const auto& id : aOwnerIds) {
+      const auto key = std::pair(aForPid, id);
+      auto it = mTextureOwners.find(key);
+      if (it == mTextureOwners.end()) {
+        MOZ_ASSERT_UNREACHABLE("unexpected to be called");
+        continue;
+      }
+      auto& owner = it->second;
+      if (!owner->mIsContextLost) {
+        owner->mIsContextLost = true;
+        changed = true;
+
+        // No more textures are expected, so anything waiting for one should
+        // check again rather than wait for a push that may never come.
+        auto& entry = renderingReadyCallbacks.emplace_back(
+            RemoteTextureInfo(owner->mLatestPushedTextureId, id, aForPid),
+            std::vector<std::function<void(const RemoteTextureInfo&)>>());
+        GetAllRenderingReadyCallbacks(lock, owner.get(), entry.second);
+      }
     }
-    auto& owner = it->second;
-    if (!owner->mIsContextLost) {
-      owner->mIsContextLost = true;
-      changed = true;
+
+    if (changed) {
+      mMonitor.Notify();
     }
   }
 
-  if (changed) {
-    mMonitor.Notify();
+  for (auto& [info, callbacks] : renderingReadyCallbacks) {
+    for (auto& callback : callbacks) {
+      callback(info);
+    }
   }
 }
 
@@ -1341,8 +1358,9 @@ bool RemoteTextureMap::CheckRemoteTextureReady(
     return false;
   }
 
-  if (!owner || owner->mIsContextLost) {
-    // Owner is already removed or context lost. No need to wait texture ready.
+  if (!owner || owner->mIsContextLost || owner->mDeferUnregister) {
+    // Owner is already removed, context lost, or going away. No need to wait
+    // texture ready.
     return true;
   }
 
@@ -1405,6 +1423,10 @@ bool RemoteTextureMap::WaitRemoteTextureReady(const RemoteTextureInfo& aInfo) {
   const TimeDuration timeout = TimeDuration::FromMilliseconds(1000);
 
   while (owner->mLatestPushedTextureId < aInfo.mTextureId) {
+    if (owner->mDeferUnregister) {
+      // The owner is going away, so no more textures will be pushed.
+      return false;
+    }
     CVStatus status = mMonitor.Wait(timeout);
     if (status == CVStatus::Timeout) {
       MOZ_ASSERT_UNREACHABLE("unexpected to be called");
