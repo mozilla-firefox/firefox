@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <initializer_list>
 #include <iterator>
 
 #include "gtest/gtest.h"
