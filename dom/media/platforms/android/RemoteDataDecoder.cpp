@@ -20,7 +20,6 @@
 #include "VPXDecoder.h"
 #include "VideoUtils.h"
 #include "XiphExtradata.h"
-#include "mozilla/CheckedInt.h"
 #include "mozilla/EndianUtils.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/Mutex.h"
@@ -222,49 +221,11 @@ class RemoteVideoDecoder final : public RemoteDataDecoder {
         }
       }
 
-      Maybe<gfx::IntSize> imageSize;
-      {
-        int32_t left = 0, top = 0, right = 0, bottom = 0;
-        if (NS_SUCCEEDED(aFormat->GetInteger(u"crop-left"_ns, &left)) &&
-            NS_SUCCEEDED(aFormat->GetInteger(u"crop-top"_ns, &top)) &&
-            NS_SUCCEEDED(aFormat->GetInteger(u"crop-right"_ns, &right)) &&
-            NS_SUCCEEDED(aFormat->GetInteger(u"crop-bottom"_ns, &bottom))) {
-          const auto cropWidth = CheckedInt<int32_t>(right) - left + 1;
-          const auto cropHeight = CheckedInt<int32_t>(bottom) - top + 1;
-          if (left >= 0 && top >= 0 && cropWidth.isValid() &&
-              cropHeight.isValid() && cropWidth.value() > 0 &&
-              cropHeight.value() > 0) {
-            imageSize.emplace(cropWidth.value(), cropHeight.value());
-          } else {
-            MOZ_LOG_FMT(sAndroidDecoderModuleLog, LogLevel::Warning,
-                        "RemoteDataDecoder({})::{}: Ignoring invalid output "
-                        "crop left={} top={} right={} bottom={}",
-                        fmt::ptr(this), __func__, left, top, right, bottom);
-          }
-        }
-        int32_t width = 0, height = 0;
-        if (!imageSize &&
-            NS_SUCCEEDED(aFormat->GetInteger(java::sdk::MediaFormat::KEY_WIDTH,
-                                             &width)) &&
-            NS_SUCCEEDED(aFormat->GetInteger(java::sdk::MediaFormat::KEY_HEIGHT,
-                                             &height))) {
-          if (width > 0 && height > 0) {
-            imageSize.emplace(width, height);
-          } else {
-            MOZ_LOG_FMT(sAndroidDecoderModuleLog, LogLevel::Warning,
-                        "RemoteDataDecoder({})::{}: Ignoring invalid output "
-                        "size {}x{}",
-                        fmt::ptr(this), __func__, width, height);
-          }
-        }
-      }
-
       RunOnTaskQueue<RemoteVideoDecoder>(
           "RemoteVideoDecoder::HandleOutputFormatChanged",
-          [colorFormat, colorRange, colorSpace,
-           imageSize](RemoteVideoDecoder* aDecoder) {
+          [colorFormat, colorRange, colorSpace](RemoteVideoDecoder* aDecoder) {
             aDecoder->ProcessOutputFormatChange(colorFormat, colorRange,
-                                                colorSpace, imageSize);
+                                                colorSpace);
           });
     }
 
@@ -553,9 +514,8 @@ class RemoteVideoDecoder final : public RemoteDataDecoder {
       }
 
       RefPtr<layers::Image> img = new layers::SurfaceTextureImage(
-          mSurfaceHandle, mOutputImageSize.valueOr(inputInfo->mImageSize),
-          false /* NOT continuous */, gl::OriginPos::BottomLeft,
-          mConfig.HasAlpha(), forceBT709ColorSpace,
+          mSurfaceHandle, inputInfo->mImageSize, false /* NOT continuous */,
+          gl::OriginPos::BottomLeft, mConfig.HasAlpha(), forceBT709ColorSpace,
           /* aTransformOverride */ Nothing());
       img->AsSurfaceTextureImage()->RegisterSetCurrentCallback(
           std::move(releaseSample));
@@ -671,14 +631,12 @@ class RemoteVideoDecoder final : public RemoteDataDecoder {
 
   void ProcessOutputFormatChange(int32_t aColorFormat,
                                  Maybe<int32_t> aColorRange,
-                                 Maybe<int32_t> aColorSpace,
-                                 Maybe<gfx::IntSize> aImageSize) {
+                                 Maybe<int32_t> aColorSpace) {
     AssertOnTaskQueue();
 
     mColorFormat = Some(aColorFormat);
     mColorRange = aColorRange;
     mColorSpace = aColorSpace;
-    mOutputImageSize = aImageSize;
   }
 
   bool NeedsNewDecoder() const override {
@@ -699,9 +657,6 @@ class RemoteVideoDecoder final : public RemoteDataDecoder {
   Maybe<int32_t> mColorFormat;
   Maybe<int32_t> mColorRange;
   Maybe<int32_t> mColorSpace;
-  // The size of the decoded pictures, which can differ from the size the
-  // demuxer reported, for example with VP9 spatial layers.
-  Maybe<gfx::IntSize> mOutputImageSize;
   // Only accessed on mTaskQueue.
   // Tracking id for the performance recorder.
   const Maybe<TrackingId> mTrackingId;

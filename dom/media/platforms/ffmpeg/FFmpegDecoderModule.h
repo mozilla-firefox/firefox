@@ -216,21 +216,16 @@ class FFmpegDecoderModule : public PlatformDecoderModule {
       return media::DecodeSupportSet{};
     }
 
-    // SVC layers may be used in low latency use cases (WebRTC). Only MediaCodec
-    // decodes them, other decoders show only the lowest layer or corrupt
-    // frames.
-    const bool isLowLatencyVP9 =
-        VPXDecoder::IsVP9(mimeType) &&
-        aParams.mOptions.contains(CreateDecoderParams::Option::LowLatency);
-#ifndef MOZ_WIDGET_ANDROID
-    if (isLowLatencyVP9) {
+    if (VPXDecoder::IsVP9(mimeType) &&
+        aParams.mOptions.contains(CreateDecoderParams::Option::LowLatency)) {
+      // SVC layers are unsupported, and may be used in low latency use cases
+      // (WebRTC).
       MOZ_LOG_FMT(
           sPDMLog, LogLevel::Debug,
           "FFmpeg decoder rejects requested type '{}' due to low latency",
           PromiseFlatCString(mimeType).get());
       return media::DecodeSupportSet{};
     }
-#endif
 
     if (MP4Decoder::IsHEVC(mimeType) && !StaticPrefs::media_hevc_enabled()) {
       MOZ_LOG_FMT(
@@ -255,9 +250,7 @@ class FFmpegDecoderModule : public PlatformDecoderModule {
         audioCodec != AV_CODEC_ID_NONE ? audioCodec : videoCodec;
 
     media::DecodeSupportSet supports;
-    // Low latency VP9 only reaches here on Android. ffvpx would decode only its
-    // lowest spatial layer, so only MediaCodec is offered for it.
-    if (!isLowLatencyVP9 && IsSWDecodingSupported(codecId, aParams)) {
+    if (IsSWDecodingSupported(codecId, aParams)) {
       supports += media::DecodeSupport::SoftwareDecode;
     }
     if (IsHWDecodingSupported(codecId)) {
