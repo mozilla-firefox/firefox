@@ -265,6 +265,37 @@ void WebRenderImageHost::UseRemoteTexture(bool aCalledInCallback) {
   }
 }
 
+bool WebRenderImageHost::WaitForPendingRemoteTexture() {
+  MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());
+
+  if (!mWaitingReadyCallback || mPendingRemoteTextureWrappers.empty()) {
+    return false;
+  }
+
+  // Textures are pushed in order, so once the most recent pending texture is
+  // ready, so are the ones before it.
+  const RemoteTextureInfo front = mPendingRemoteTextureWrappers.front()
+                                      ->AsRemoteTextureHostWrapper()
+                                      ->GetRemoteTextureInfo();
+  const RemoteTextureInfo back = mPendingRemoteTextureWrappers.back()
+                                     ->AsRemoteTextureHostWrapper()
+                                     ->GetRemoteTextureInfo();
+  if (!RemoteTextureMap::Get()->WaitRemoteTextureReady(
+          RemoteTextureInfo(back.mTextureId, back.mOwnerId, back.mForPid,
+                            front.mWaitForRemoteTextureOwner))) {
+    return false;
+  }
+
+  mWaitingReadyCallback = false;
+  ++mReadyCallbackGeneration;
+  RemoteTextureMap::Get()->CancelRemoteTextureReadyCheck(
+      RemoteTextureInfo(RemoteTextureId{0}, mReadyCallbackOwnerId,
+                        mReadyCallbackForPid),
+      this);
+  UseRemoteTexture(/* aCalledInCallback */ true);
+  return true;
+}
+
 void WebRenderImageHost::CleanupResources() {
   ImageComposite::ClearImages();
   SetCurrentTextureHost(nullptr);

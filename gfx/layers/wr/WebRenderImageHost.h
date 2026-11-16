@@ -51,6 +51,10 @@ class WebRenderImageHost : public CompositableHost, public ImageComposite {
                                 const TextureFlags aFlags);
   void UseRemoteTexture(bool aCalledInCallback);
 
+  // If a remote texture ready check is pending, wait for the texture to be
+  // ready and use it. Returns true if it did.
+  bool WaitForPendingRemoteTexture();
+
   TextureHost* GetAsTextureHostForComposite(
       AsyncImagePipelineManager* aAsyncImageManager);
 

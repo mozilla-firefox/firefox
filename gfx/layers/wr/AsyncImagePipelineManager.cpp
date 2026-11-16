@@ -368,6 +368,20 @@ AsyncImagePipelineManager::UpdateWithoutExternalImage(
   return Some(aOp);
 }
 
+bool AsyncImagePipelineManager::WaitForPendingRemoteTextures() {
+  if (mDestroyed) {
+    return false;
+  }
+
+  bool waited = false;
+  for (const auto& entry : mAsyncImagePipelines) {
+    if (WebRenderImageHost* host = entry.GetData()->mImageHost) {
+      waited |= host->WaitForPendingRemoteTexture();
+    }
+  }
+  return waited;
+}
+
 void AsyncImagePipelineManager::ApplyAsyncImagesOfImageBridge(
     wr::TransactionBuilder& aSceneBuilderTxn,
     wr::TransactionBuilder& aFastTxn) {

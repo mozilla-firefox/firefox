@@ -118,6 +118,12 @@ class AsyncImagePipelineManager final {
                                 const wr::MixBlendMode& aMixBlendMode);
   void ApplyAsyncImagesOfImageBridge(wr::TransactionBuilder& aSceneBuilderTxn,
                                      wr::TransactionBuilder& aFastTxn);
+
+  // Waits for the remote textures that async image pipelines are waiting on to
+  // become ready, so that they are used by the next composite. Returns true if
+  // any were.
+  bool WaitForPendingRemoteTextures();
+
   void ApplyAsyncImageForPipeline(
       const wr::PipelineId& aPipelineId, wr::TransactionBuilder& aTxn,
       wr::TransactionBuilder& aTxnForImageBridge,

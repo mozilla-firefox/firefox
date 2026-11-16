@@ -2271,6 +2271,13 @@ mozilla::ipc::IPCResult WebRenderBridgeParent::RecvGetSnapshot(
     return IPC_FAIL_NO_REASON(this);
   }
 
+  // Snapshots must include async remote texture frames that are not ready yet,
+  // which would otherwise only be shown by a later composite. Applying them
+  // may update the scene, so do so before flushing the scene builds.
+  if (mLateInit->mAsyncImageManager->WaitForPendingRemoteTextures()) {
+    FlushFrameGeneration(wr::RenderReasons::SNAPSHOT);
+  }
+
   FlushSceneBuilds();
   FlushFrameGeneration(wr::RenderReasons::SNAPSHOT);
   mLateInit->mApi->Readback(start, size, bufferTexture->GetFormat(),
