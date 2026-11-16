@@ -162,27 +162,15 @@ ContentClassifierRequest::ContentClassifierRequest(nsIChannel* aChannel)
   mIsNonRecommendedAddon = IsNonRecommendedAddonFromLoadInfo(loadInfo);
   mAddonMayLoad = net::UrlClassifierCommon::AddonMayLoad(aChannel, uri);
 
-  // Unwrap nested URI schemes (jar:, view-source:, ...) before looking
-  // at the host, mirroring AsyncUrlChannelClassifier::FeatureData::
-  // InitializeList which calls NS_GetInnermostURI on the channel URI
-  // and then GetHost on that.
+  // Unwrap nested URI schemes (jar:, view-source:, ...) and match on the
+  // innermost URI, mirroring AsyncUrlChannelClassifier, which builds its
+  // lookup key from the innermost URI.
   nsCOMPtr<nsIURI> innermostURI = NS_GetInnermostURI(uri);
   if (!innermostURI) return;
 
   nsCString host;
-  if (innermostURI == uri) {
-    // A non-nested URI carries the normalized host in its spec.
-    rv = GetNormalizedHostAndSpec(uri, host, mUrl);
-    if (NS_FAILED(rv)) return;
-  } else {
-    // A nested URI keeps its spec as is, since its host belongs to the inner
-    // URI.
-    rv = uri->GetSpec(mUrl);
-    if (NS_FAILED(rv)) return;
-    rv = innermostURI->GetHost(host);
-    if (NS_FAILED(rv)) return;
-    NormalizeHostname(host);
-  }
+  rv = GetNormalizedHostAndSpec(innermostURI, host, mUrl);
+  if (NS_FAILED(rv)) return;
   // The filtering rules expect brackets of an IPv6 literal. We ensure the
   // brackets when getting the host.
   mHostname = host;
@@ -303,8 +291,11 @@ ContentClassifierRequest::ContentClassifierRequest(
   nsresult rv = NS_NewURI(getter_AddRefs(uri), aUrl);
   if (NS_FAILED(rv)) return;
 
+  nsCOMPtr<nsIURI> innermostURI = NS_GetInnermostURI(uri);
+  if (!innermostURI) return;
+
   nsCString host;
-  rv = GetNormalizedHostAndSpec(uri, host, mUrl);
+  rv = GetNormalizedHostAndSpec(innermostURI, host, mUrl);
   if (NS_FAILED(rv)) return;
   mHostname = host;
   nsContentUtils::MaybeFixIPv6Host(mHostname);
