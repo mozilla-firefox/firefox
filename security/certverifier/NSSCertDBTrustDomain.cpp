@@ -795,7 +795,7 @@ Result NSSCertDBTrustDomain::CheckRevocationByCRLite(
   // disabled we will pass unverified timestamps from embedded SCTs to CRLite.
   if (GetCertificateTransparencyMode() ==
       CertVerifier::CertificateTransparencyMode::Disabled) {
-    size_t decodingErrors;
+    size_t decodingErrors = 0;
     std::vector<SignedCertificateTimestamp> decodedSCTsFromExtension;
     DecodeSCTs(GetSCTListFromCertificate(), decodedSCTsFromExtension,
                decodingErrors);
