@@ -392,11 +392,31 @@ class IntentReceiverActivityTest {
             assertThat(actualIntent, hasComponent(AuthIntentReceiverActivity::class.java.name))
             assertThat(actualIntent, hasExtraWithKey(CustomTabsIntent.EXTRA_SESSION))
             assertTrue(actualIntent.getBooleanExtra(AuthCustomTabActivity.EXTRA_OPEN_HOME_ON_AUTHENTICATED, false))
-            assertEquals(url, actualIntent.dataString)
+            assertEquals(
+                "https://accounts.firefox.com/pair?embed=customtab#channel_id=test_id&channel_key=test_key&v=2",
+                actualIntent.dataString,
+            )
             assertTrue(activity.isFinishing)
             assertNull(Events.openedLink.testGetValue())
             coVerify(exactly = 0) { intentProcessors.intentProcessor.process(any()) }
             coVerify(exactly = 0) { intentProcessors.customTabIntentProcessor.process(any()) }
+        }
+
+    @Test
+    fun `GIVEN a pairing link with a query WHEN processing the intent THEN the embed parameter is appended after the existing query`() =
+        runTest {
+            val url = "https://accounts.firefox.com/pair?test=value#channel_id=test_id&channel_key=test_key&v=2"
+            val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+
+            val activity = Robolectric.buildActivity(IntentReceiverActivity::class.java, intent).get()
+            attachMocks(activity)
+            activity.processIntent(intent)
+
+            val actualIntent = shadowOf(activity).peekNextStartedActivity()
+            assertEquals(
+                "https://accounts.firefox.com/pair?test=value&embed=customtab#channel_id=test_id&channel_key=test_key&v=2",
+                actualIntent.dataString,
+            )
         }
 
     @Test
@@ -503,7 +523,10 @@ class IntentReceiverActivityTest {
 
             val actualIntent = shadowOf(activity).peekNextStartedActivity()
             assertThat(actualIntent, hasComponent(AuthIntentReceiverActivity::class.java.name))
-            assertEquals(url, actualIntent.dataString)
+            assertEquals(
+                "https://accounts.firefox.com/pair?embed=customtab#channel_id=test_id&channel_key=test_key&v=2",
+                actualIntent.dataString,
+            )
         }
 
     @Test
