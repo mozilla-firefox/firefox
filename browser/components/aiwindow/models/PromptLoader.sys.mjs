@@ -82,6 +82,8 @@ function getDefaultServiceType(feature) {
     return SERVICE_TYPES.MEMORIES;
   } else if (feature.startsWith("agent")) {
     return SERVICE_TYPES.AGENT;
+  } else if (feature.startsWith("conversation-suggestions")) {
+    return SERVICE_TYPES.CONVERSATION_STARTERS;
   }
   return SERVICE_TYPES.AI;
 }

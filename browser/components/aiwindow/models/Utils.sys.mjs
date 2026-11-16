@@ -226,6 +226,7 @@ export const SERVICE_TYPES = Object.freeze({
   AI: "ai",
   MEMORIES: "memories",
   AGENT: "agent",
+  CONVERSATION_STARTERS: "convo-starters",
   SW_ANSWER: "sw-answer",
   WIDGET_GENERATION: "widget-generation",
 });
@@ -238,8 +239,9 @@ export const PURPOSES = Object.freeze({
   SMART_FORM_FILL: "smart-form-fill",
   TITLE_GENERATION: "title-generation",
   TAB_GROUP_NAMING: "auto-tab-grouping",
-  CONVERSATION_STARTERS_SIDEBAR: "convo-starters-sidebar",
   MEMORY_GENERATION: "memory-generation",
+  // convo-starters
+  CONVERSATION_STARTERS_SIDEBAR: "convo-starters-sidebar",
   // agents
   MONITOR: "monitor",
   // aitab structured-page generation
