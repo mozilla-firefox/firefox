@@ -1891,43 +1891,6 @@ export class ModelHub {
   }
 
   /**
-   * Given an organization, model, and version, fetch a model file in the hub as a Response.
-   *
-   * @param {object} config
-   * @param {string} config.engineId - The model engine id
-   * @param {string} config.taskName - name of the inference task.
-   * @param {string} config.model - The model name (organization/name).
-   * @param {string} config.revision - The model revision.
-   * @param {string} config.file - The file name.
-   * @param {string} config.modelHubRootUrl - root url of the model hub
-   * @param {string} config.modelHubUrlTemplate - url template of the model hub
-   * @returns {Promise<Response>} The file content
-   */
-  async getModelFileAsResponse({
-    engineId,
-    taskName,
-    model,
-    revision,
-    file,
-    modelHubRootUrl,
-    modelHubUrlTemplate,
-  }) {
-    const [blob, headers] = await this.getModelFileAsBlob({
-      engineId,
-      taskName,
-      model,
-      revision,
-      file,
-      modelHubRootUrl,
-      modelHubUrlTemplate,
-    });
-
-    return new Response(blob.stream(), {
-      headers: /** @type {HeadersInit} */ (/** @type {unknown} */ (headers)),
-    });
-  }
-
-  /**
    * Given an organization, model, and version, fetch a model file in the hub as an blob.
    *
    * @param {object} config
