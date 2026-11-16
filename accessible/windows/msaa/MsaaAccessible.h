@@ -57,6 +57,13 @@ class MsaaAccessible : public ia2Accessible,
 
   static Accessible* GetAccessibleFrom(IUnknown* aUnknown);
 
+  /**
+   * Get the innerHTML of this accessible's element. For a RemoteAccessible,
+   * this is only cached for MathML math elements. aInnerHTML is left empty if
+   * the innerHTML isn't available.
+   */
+  void GetInnerHTML(nsAString& aInnerHTML);
+
   DECL_IUNKNOWN
 
   // IAccessible

@@ -549,7 +549,7 @@ class RemoteAccessible : public Accessible, public HyperTextAccessibleBase {
   friend class xpcAccessible;
   friend class CachedTableCellAccessible;
 #ifdef XP_WIN
-  friend class sdnAccessible;
+  friend class MsaaAccessible;
 #endif
 
   nsTArray<RefPtr<RemoteAccessible>> mChildren;

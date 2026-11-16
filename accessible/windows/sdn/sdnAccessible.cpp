@@ -144,27 +144,12 @@ sdnAccessible::get_innerHTML(BSTR __RPC_FAR* aInnerHTML) {
   if (!aInnerHTML) return E_INVALIDARG;
   *aInnerHTML = nullptr;
 
-  Accessible* acc = mMsaa->Acc();
-  if (!acc) {
+  if (!mMsaa->Acc()) {
     return CO_E_OBJNOTCONNECTED;
   }
 
   nsAutoString innerHTML;
-  if (RemoteAccessible* remoteAcc = acc->AsRemote()) {
-    if (remoteAcc->Document()->RequestDomainsIfInactive(
-            CacheDomain::InnerHTML)) {
-      return S_FALSE;
-    }
-    if (!remoteAcc->mCachedFields) {
-      return S_FALSE;
-    }
-    remoteAcc->mCachedFields->GetAttribute(CacheKey::InnerHTML, innerHTML);
-  } else {
-    if (dom::Element* el = acc->AsLocal()->Elm()) {
-      el->GetInnerHTML(innerHTML, IgnoreErrors());
-    }
-  }
-
+  mMsaa->GetInnerHTML(innerHTML);
   if (innerHTML.IsEmpty()) return S_FALSE;
 
   *aInnerHTML = ::SysAllocStringLen(innerHTML.get(), innerHTML.Length());
