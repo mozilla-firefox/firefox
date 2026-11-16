@@ -583,6 +583,7 @@ class H264 {
   static already_AddRefed<mozilla::MediaByteBuffer> CreateExtraData(
       uint8_t aProfile, uint8_t aConstraints, H264_LEVEL aLevel,
       const gfx::IntSize& aSize);
+  // aSPS and aPPS include their NAL unit headers.
   static void WriteExtraData(mozilla::MediaByteBuffer* aDestExtraData,
                              const uint8_t aProfile, const uint8_t aConstraints,
                              const uint8_t aLevel,

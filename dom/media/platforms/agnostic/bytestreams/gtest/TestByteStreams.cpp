@@ -977,6 +977,24 @@ TEST(H264, RecoveryPointSEIFrameType)
             H264::FrameType::I_FRAME_OTHER);
 }
 
+TEST(H264, WriteExtraDataPreservesNALUnits)
+{
+  const uint8_t sps[] = {0x27, 0x42, 0xC0, 0x1E, 0x80};
+  const uint8_t pps[] = {0x28, 0xCE};
+  auto extraData = MakeRefPtr<MediaByteBuffer>();
+  H264::WriteExtraData(extraData, sps[1], sps[2], sps[3], sps, pps);
+
+  ASSERT_EQ(extraData->Length(), 11u + std::size(sps) + std::size(pps));
+  EXPECT_EQ(BigEndian::readUint16(extraData->Elements() + 6), std::size(sps));
+  EXPECT_EQ(std::memcmp(extraData->Elements() + 8, sps, std::size(sps)), 0);
+  EXPECT_EQ((*extraData)[8 + std::size(sps)], 1u);
+  EXPECT_EQ(BigEndian::readUint16(extraData->Elements() + 9 + std::size(sps)),
+            std::size(pps));
+  EXPECT_EQ(std::memcmp(extraData->Elements() + 11 + std::size(sps), pps,
+                        std::size(pps)),
+            0);
+}
+
 TEST(H264, AnnexBExtractExtraDataForAVCC)
 {
   // First create an AnnexB config
@@ -1000,14 +1018,21 @@ TEST(H264, AnnexBExtractExtraDataForAVCC)
   auto res = AVCCConfig::Parse(avccExtradata);
   ASSERT_TRUE(res.isOk());
   auto avcc = res.unwrap();
-  EXPECT_EQ(avcc.NumSPS(), 1u);
+  ASSERT_EQ(avcc.NumSPS(), 1u);
   EXPECT_EQ(avcc.NumSPSExt(), 0u);
-  EXPECT_EQ(avcc.NumPPS(), 1u);
+  ASSERT_EQ(avcc.NumPPS(), 1u);
   EXPECT_EQ(avcc.NALUSize(), 4);
   EXPECT_EQ(avcc.mConfigurationVersion, 1u);
   EXPECT_EQ(avcc.mAVCProfileIndication, 100u);
   EXPECT_EQ(avcc.mProfileCompatibility, 0u);
   EXPECT_EQ(avcc.mAVCLevelIndication, 31u);
+  ASSERT_EQ(avcc.mSPSs[0].mNALU.Length(), 4u);
+  EXPECT_EQ(
+      std::memcmp(avcc.mSPSs[0].mNALU.Elements(), annexBBytesBuffer + 4, 4), 0);
+  ASSERT_EQ(avcc.mPPSs[0].mNALU.Length(), 2u);
+  EXPECT_EQ(
+      std::memcmp(avcc.mPPSs[0].mNALU.Elements(), annexBBytesBuffer + 12, 2),
+      0);
 }
 
 TEST(H264, DecodeSPSFromExtraData)
@@ -1149,6 +1174,7 @@ static RefPtr<MediaByteBuffer> BuildAVCCWithReorder(
     uint32_t aMaxDecBuffering, uint8_t aProfileIdc, uint8_t aConstraints) {
   RefPtr<MediaByteBuffer> sps = new MediaByteBuffer();
   BitWriter bw(sps);
+  bw.WriteU8(0x67);
   bw.WriteU8(aProfileIdc);   // profile_idc
   bw.WriteU8(aConstraints);  // constraint_set flags + reserved
   bw.WriteU8(0x1E);          // level_idc
@@ -1195,7 +1221,7 @@ static RefPtr<MediaByteBuffer> BuildAVCCWithReorder(
     }
   }
   bw.CloseWithRbspTrailing();
-  static const uint8_t pps[] = {0x00};
+  static const uint8_t pps[] = {0x68, 0x00};
   RefPtr<MediaByteBuffer> extraData = new MediaByteBuffer();
   H264::WriteExtraData(extraData.get(), aProfileIdc, aConstraints, 0x1E,
                        Span<const uint8_t>{sps->Elements(), sps->Length()},

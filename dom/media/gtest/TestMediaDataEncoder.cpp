@@ -819,6 +819,13 @@ TEST_F(MediaDataEncoderTest, H264AVCC) {
         if (frame->mExtraData && !frame->mExtraData->IsEmpty()) {
           EXPECT_TRUE(AnnexB::IsAVCC(frame));
           AVCCConfig config = AVCCConfig::Parse(frame).unwrap();
+          ASSERT_FALSE(config.mSPSs.IsEmpty());
+          for (const auto& sps : config.mSPSs) {
+            ASSERT_GE(sps.mNALU.Length(), 4u);
+            EXPECT_EQ(sps.mNALU[1], config.mAVCProfileIndication);
+            EXPECT_EQ(sps.mNALU[2], config.mProfileCompatibility);
+            EXPECT_EQ(sps.mNALU[3], config.mAVCLevelIndication);
+          }
           EXPECT_EQ(config.mAVCProfileIndication,
                     static_cast<decltype(config.mAVCProfileIndication)>(
                         kH264SpecificAVCC.mProfile));

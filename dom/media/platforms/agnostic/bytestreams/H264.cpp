@@ -1480,7 +1480,8 @@ bool H264::DecodeRecoverySEI(const mozilla::MediaByteBuffer* aSEI,
       EncodeNALUnit(sps->Elements(), sps->Length());
   extraData->Clear();
 
-  const uint8_t PPS[] = {0xeb, 0xef, 0x20};
+  encodedSPS->InsertElementAt(0, (0x3 << 5) | H264_NAL_SPS);
+  const uint8_t PPS[] = {0x68, 0xeb, 0xef, 0x20};
 
   WriteExtraData(
       extraData, aProfile, aConstraints, static_cast<uint8_t>(aLevel),
@@ -1494,6 +1495,9 @@ void H264::WriteExtraData(MediaByteBuffer* aDestExtraData,
                           const uint8_t aProfile, const uint8_t aConstraints,
                           const uint8_t aLevel, const Span<const uint8_t> aSPS,
                           const Span<const uint8_t> aPPS) {
+  MOZ_ASSERT(!aSPS.IsEmpty() && (aSPS[0] & 0x1f) == H264_NAL_SPS);
+  MOZ_ASSERT(!aPPS.IsEmpty() && (aPPS[0] & 0x1f) == H264_NAL_PPS);
+
   aDestExtraData->AppendElement(1);
   aDestExtraData->AppendElement(aProfile);
   aDestExtraData->AppendElement(aConstraints);
@@ -1501,15 +1505,13 @@ void H264::WriteExtraData(MediaByteBuffer* aDestExtraData,
   aDestExtraData->AppendElement(3);  // nalLENSize-1
   aDestExtraData->AppendElement(1);  // numPPS
   uint8_t c[2];
-  mozilla::BigEndian::writeUint16(&c[0], aSPS.Length() + 1);
+  mozilla::BigEndian::writeUint16(&c[0], aSPS.Length());
   aDestExtraData->AppendElements(c, 2);
-  aDestExtraData->AppendElement((0x00 << 7) | (0x3 << 5) | H264_NAL_SPS);
   aDestExtraData->AppendElements(aSPS.Elements(), aSPS.Length());
 
   aDestExtraData->AppendElement(1);  // numPPS
-  mozilla::BigEndian::writeUint16(&c[0], aPPS.Length() + 1);
+  mozilla::BigEndian::writeUint16(&c[0], aPPS.Length());
   aDestExtraData->AppendElements(c, 2);
-  aDestExtraData->AppendElement((0x00 << 7) | (0x3 << 5) | H264_NAL_PPS);
   aDestExtraData->AppendElements(aPPS.Elements(), aPPS.Length());
 }
 
