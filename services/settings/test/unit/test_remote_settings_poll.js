@@ -1285,3 +1285,26 @@ add_task(async function test_stale_startup_timestamp() {
   ]);
 });
 add_task(clear_state);
+
+add_task(async function test_stale_broadcast_timestamp() {
+  Services.prefs.setStringPref(PREF_LAST_ETAG, 42);
+
+  let error;
+  try {
+    await RemoteSettings.pollChanges({
+      trigger: "broadcast",
+      expectedTimestamp: "41",
+    });
+  } catch (e) {
+    error = e;
+  }
+
+  Assert.equal(error, undefined);
+  Assert.equal(Services.prefs.getStringPref(PREF_LAST_ETAG), "42");
+  assertTelemetryEvents([
+    {
+      value: UptakeTelemetry.STATUS.STALE_TIMESTAMP_ERROR,
+    },
+  ]);
+});
+add_task(clear_state);
