@@ -104,14 +104,12 @@ bool jit::EliminateBoundsChecks(const MIRGenerator* mir, MIRGraph& graph) {
             // array.new* with a constant length, work back to that constant
             // and use it.
             MDefinition* limit = bc->boundsCheckLimit();
-            if (!limit->isWasmLoadInternalField() ||
-                !limit->toWasmLoadInternalField()
-                     ->object()
-                     ->isWasmNewArrayObject()) {
+            if (!limit->isWasmLoadField() ||
+                !limit->toWasmLoadField()->base()->isWasmNewArrayObject()) {
               continue;
             }
-            MDefinition* numElements = limit->toWasmLoadInternalField()
-                                           ->object()
+            MDefinition* numElements = limit->toWasmLoadField()
+                                           ->base()
                                            ->toWasmNewArrayObject()
                                            ->numElements();
             if (!numElements->isConstant() ||
