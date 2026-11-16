@@ -1847,7 +1847,7 @@ class SystemResourceMonitor:
             expected = data.get("expected")
             as_expected = (
                 expected is None or expected.upper() == status
-            ) and not data.get("extra", {}).get("will_retry")
+            ) and not data.get("will_retry")
             marker_name = status
 
             # Determine color based on status

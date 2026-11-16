@@ -418,6 +418,42 @@ class TestStructuredLog(BaseStructuredTest):
         self.logger.test_end("test1", "OK")
         self.logger.suite_end()
 
+    def test_status_will_retry(self):
+        self.logger.suite_start([])
+        self.logger.test_start("test1")
+        self.logger.test_status("test1", "subtest name", "fail", will_retry=True)
+        self.assert_log_equals({
+            "action": "test_status",
+            "subtest": "subtest name",
+            "status": "FAIL",
+            "expected": "PASS",
+            "test": "test1",
+            "will_retry": True,
+        })
+        self.logger.test_end("test1", "FAIL", will_retry=True)
+        self.assert_log_equals({
+            "action": "test_end",
+            "status": "FAIL",
+            "expected": "OK",
+            "test": "test1",
+            "will_retry": True,
+        })
+        self.logger.suite_end()
+
+    def test_status_will_retry_false_omitted(self):
+        self.logger.suite_start([])
+        self.logger.test_start("test1")
+        self.logger.test_status("test1", "subtest name", "pass", will_retry=False)
+        self.assert_log_equals({
+            "action": "test_status",
+            "subtest": "subtest name",
+            "status": "PASS",
+            "test": "test1",
+        })
+        self.logger.test_end("test1", "OK", will_retry=False)
+        self.assert_log_equals({"action": "test_end", "status": "OK", "test": "test1"})
+        self.logger.suite_end()
+
     def test_status_not_started(self):
         self.logger.test_status("test_UNKNOWN", "subtest", "PASS")
         self.assertTrue(
@@ -913,6 +949,7 @@ class TestTypeConversions(BaseStructuredTest):
             "stack",
             {},
             [],
+            False,
             None,
             "unexpected",
         )

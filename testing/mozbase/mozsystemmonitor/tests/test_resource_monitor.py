@@ -815,7 +815,7 @@ class TestResourceMonitor(unittest.TestCase):
             monitor,
             status="FAIL",
             message="a failure that will be retried",
-            extra={"will_retry": True},
+            will_retry=True,
         )
         monitor.stop()
 

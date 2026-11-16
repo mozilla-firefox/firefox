@@ -134,6 +134,11 @@ emitted:
   : A list of known intermittent statuses for that test. Omitted if there are
     no intermittent statuses expected. (items in the list are string enum, same as `status`)
 
+  `will_retry`
+
+  : True when the harness will retry the test, so that this result does not
+    count towards the run. Omitted otherwise.
+
 `test_end`
 
 : Emitted to give the result of a test with no subtests, or the status
@@ -161,6 +166,11 @@ emitted:
 
   : A list of known intermittent statuses for that test. Omitted if there are
     no intermittent statuses expected. (items in the list are string enum, same as `status`)
+
+  `will_retry`
+
+  : True when the harness will retry the test, so that this result does not
+    count towards the run. Omitted otherwise.
 
 `process_output`
 

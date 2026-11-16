@@ -61,6 +61,8 @@ Allowed actions, and subfields:
       extra - Dictionary of harness-specific extra information e.g. debug info
       known_intermittent - List of known intermittent statuses that should
                            not fail a test. eg. ['FAIL', 'TIMEOUT']
+      will_retry - True when the harness will retry the test and this
+                   result does not count (optional)
       subsuite - Name of the subsuite to which test belongs (optional)
       group - Name of the test group for the incoming test (optional)
 
@@ -73,6 +75,8 @@ Allowed actions, and subfields:
                                  or absent if the subtest got the expected status
       known_intermittent - List of known intermittent statuses that should
                            not fail a test. eg. ['FAIL', 'TIMEOUT']
+      will_retry - True when the harness will retry the test and this
+                   result does not count (optional)
       subsuite - Name of the subsuite to which test belongs (optional)
       group - Name of the test group for the incoming test (optional)
 
@@ -549,6 +553,7 @@ class StructuredLogger:
         Unicode("stack", default=None, optional=True),
         Dict(Any, "extra", default=None, optional=True),
         List(SubStatus, "known_intermittent", default=None, optional=True),
+        Boolean("will_retry", default=False, optional=True),
         Unicode("subsuite", default=None, optional=True),
         Unicode("group", default=None, optional=True),
     )
@@ -565,6 +570,8 @@ class StructuredLogger:
         :param stack: Optional stack trace encountered during test execution.
         :param extra: Optional suite-specific data associated with the test result.
         :param known_intermittent: Optional list of string expected intermittent statuses
+        :param will_retry: Optional flag set when the harness will retry the test,
+                           so that this result does not count.
         :param subsuite: Optional name of the subsuite to which the test belongs.
         :param group: Optional name of the test group or manifest name (useful
                      when running in paralle)
@@ -591,6 +598,7 @@ class StructuredLogger:
         Unicode("stack", default=None, optional=True),
         Dict(Any, "extra", default=None, optional=True),
         List(Status, "known_intermittent", default=None, optional=True),
+        Boolean("will_retry", default=False, optional=True),
         Unicode("subsuite", default=None, optional=True),
         Unicode("group", default=None, optional=True),
     )
@@ -607,6 +615,8 @@ class StructuredLogger:
         :param message: Optonal string containing a message associated with the result.
         :param stack: Optional stack trace encountered during test execution.
         :param extra: Optional suite-specific data associated with the test result.
+        :param will_retry: Optional flag set when the harness will retry the test,
+                           so that this result does not count.
         :param subsuite: Optional name of the subsuite to which the test belongs.
         :param group: Optional name of the test group or manifest name (useful
                      when running in paralle)
