@@ -477,6 +477,11 @@ Preferences.addSetting({
 // Firefox newsletter settings
 Preferences.addSetting({
   id: "newsletterSignUp",
+  setup(emitChange) {
+    Services.obs.addObserver(emitChange, "intl:app-locales-changed");
+    return () =>
+      Services.obs.removeObserver(emitChange, "intl:app-locales-changed");
+  },
   visible: () => NEWSLETTER_LOCALES.has(Services.locale.appLocaleAsBCP47),
 });
 

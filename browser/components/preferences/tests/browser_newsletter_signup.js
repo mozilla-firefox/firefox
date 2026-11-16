@@ -6,6 +6,8 @@
 const EXPECTED_URL =
   "https://www.firefox.com/newsletter/?utm_source=firefox-settings&utm_campaign=newsletter-signup&utm_medium=referral&utm_content=about-firefox";
 
+const SUPPORTED_LOCALES = ["en-US", "en-CA", "en-GB", "de", "fr"];
+
 const initialAvailable = Services.locale.availableLocales;
 const initialRequested = Services.locale.requestedLocales;
 
@@ -22,33 +24,48 @@ add_setup(async function () {
   });
 });
 
-async function getNewsletterControl() {
-  await openPreferencesViaOpenPreferencesAPI("paneAbout", { leaveOpen: true });
-  return settingControlRenders("newsletterSignUp", gBrowser.contentWindow);
+async function setLocaleAndWaitForGroup(group, locale, hidden) {
+  let updated = BrowserTestUtils.waitForMutationCondition(
+    group,
+    { attributeFilter: ["data-hidden-by-setting-group"] },
+    () => group.hasAttribute("data-hidden-by-setting-group") == hidden
+  );
+  setLocale(locale);
+  await updated;
 }
 
-add_task(async function test_newsletter_visible_for_supported_locales() {
-  for (let locale of ["en-US", "en-CA", "en-GB", "de", "fr"]) {
+add_task(async function test_newsletter_visibility_follows_locale_changes() {
+  await openPreferencesViaOpenPreferencesAPI("paneAbout", { leaveOpen: true });
+  let control = await settingControlRenders(
+    "newsletterSignUp",
+    gBrowser.contentWindow
+  );
+  let group = control.closest("setting-group");
+
+  for (let locale of SUPPORTED_LOCALES) {
     setLocale(locale);
-    let control = await getNewsletterControl();
-    let group = control.closest("setting-group");
-    is_element_visible(group, `Newsletter settings are visible for ${locale}`);
+    await control.updateComplete;
+    is_element_visible(
+      control,
+      `Newsletter sign up link is visible for ${locale}`
+    );
     is(
       control.controlEl.href,
       EXPECTED_URL,
       "Newsletter link has the expected URL"
     );
-    BrowserTestUtils.removeTab(gBrowser.selectedTab);
   }
-});
 
-add_task(async function test_newsletter_hidden_for_unsupported_locale() {
-  setLocale("af");
-  let control = await getNewsletterControl();
-  let group = control.closest("setting-group");
+  await setLocaleAndWaitForGroup(group, "af", true);
   is_element_hidden(
     group,
     "Newsletter settings are hidden for unsupported locale"
+  );
+
+  await setLocaleAndWaitForGroup(group, SUPPORTED_LOCALES[0], false);
+  is_element_visible(
+    group,
+    "Newsletter settings are shown again after switching back to a supported locale"
   );
   BrowserTestUtils.removeTab(gBrowser.selectedTab);
 });
