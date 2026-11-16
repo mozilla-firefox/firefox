@@ -50,10 +50,10 @@ firefox-ci:
     always-target: false
     treeherder:
         symbol: ci
+    # The ci subsuite peaks near the 32 GB of the test workers and gets killed
+    # there from a git checkout, so it runs on the 64 GB build workers.
+    worker-type: b-linux-docker-amd
     run:
-        # Keep cloning from hg until bug 2080077: the ci subsuite hits the
-        # worker memory limit when run from a git checkout.
-        clone-with: hg
         using: python-test
         subsuite: ci
     when:
