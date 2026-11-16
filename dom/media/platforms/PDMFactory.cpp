@@ -255,6 +255,19 @@ class SupportChecker {
   }
 
   void AddMediaFormatChecker(const TrackInfo& aTrackConfig) {
+    if (aTrackConfig.IsAudio()) {
+      // Apply the AudioInfo limits whatever the AudioInfo subclass.
+      const bool isValid = aTrackConfig.GetAsAudioInfo()->AudioInfo::IsValid();
+      AddToCheckList([isValid]() {
+        if (!isValid) {
+          return CheckResult(
+              SupportChecker::Reason::kAudioFormatNotSupported,
+              MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR,
+                          RESULT_DETAIL("Unsupported audio configuration.")));
+        }
+        return CheckResult(SupportChecker::Reason::kSupported);
+      });
+    }
     if (aTrackConfig.IsVideo()) {
       auto mimeType = aTrackConfig.GetAsVideoInfo()->mMimeType;
       RefPtr<MediaByteBuffer> extraData =
