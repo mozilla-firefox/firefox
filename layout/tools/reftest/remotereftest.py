@@ -456,6 +456,7 @@ class RemoteReftest(RefTest):
             % str(datetime.datetime.now() - startTime)
         )
         self.outputHandler.finish()
+        self.device.pull_ccov()
         crashed = self.check_for_crashes(symbolsPath, rpm.last_test_seen)
         if crashed:
             status = 1

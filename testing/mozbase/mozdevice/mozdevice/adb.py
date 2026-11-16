@@ -3234,6 +3234,32 @@ class ADBDevice(ADBCommand):
                 copytree(local, original_local, dirs_exist_ok=True)
                 shutil.rmtree(temp_parent)
 
+    def pull_ccov(self):
+        self._logger.info("Trying to pull code coverage data.")
+
+        if self._target_gcov_prefix is not None and self._host_gcov_prefix is not None:
+            self._logger.info(
+                f"Pulling gcov data from {self._target_gcov_prefix} to {self._host_gcov_prefix}."
+            )
+            try:
+                self.pull(self._target_gcov_prefix, self._host_gcov_prefix)
+            except ADBError as e:
+                self._logger.warning(f"Unable to pull gcov artifacts due to {e}.")
+
+        if (
+            self._target_jscov_prefix is not None
+            and self._host_jscov_prefix is not None
+        ):
+            self._logger.info(
+                f"Pulling js coverage data from {self._target_jscov_prefix} to {self._host_jscov_prefix}."
+            )
+            try:
+                self.pull(self._target_jscov_prefix, self._host_jscov_prefix)
+            except ADBError as e:
+                self._logger.warning(
+                    f"Unable to pull js coverage artifacts due to {e}."
+                )
+
     def get_file(self, remote, offset=None, length=None, timeout=None):
         """Pull file from device and return the file's content
 

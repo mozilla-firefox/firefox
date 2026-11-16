@@ -406,6 +406,8 @@ class MochiRemote(MochitestDesktop):
         # test that was running; a manifest path can never be matched back to one.
         lastTestSeen = rpm.test_in_flight or currentManifest
 
+        self.device.pull_ccov()
+
         crashed = self.check_for_crashes(symbolsPath, lastTestSeen)
         if crashed:
             status = 1
