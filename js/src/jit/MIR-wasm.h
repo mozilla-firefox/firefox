@@ -2645,17 +2645,14 @@ class MWasmLoadField : public MBinaryInstruction, public NoTypePolicy::Data {
   wasm::MaybeTrapSiteDesc maybeTrap() const { return maybeTrap_; }
   wasm::MaybeRefType maybeRefType() const { return maybeRefType_; }
 
-  bool congruentTo(const MDefinition* ins) const override {
-    if (!ins->isWasmLoadField()) {
-      return false;
-    }
-    const MWasmLoadField* other = ins->toWasmLoadField();
-    return congruentIfOperandsEqual(other) && offset() == other->offset() &&
-           structFieldIndex() == other->structFieldIndex() &&
-           wideningOp() == other->wideningOp() &&
-           getAliasSet().flags() == other->getAliasSet().flags() &&
-           maybeRefType() == other->maybeRefType();
-  }
+  // True if wasm code cannot write this field once the object holding it has
+  // been created, because the struct type declares the field immutable.
+  // Conservatively false whenever the declaration can't be recovered.
+  bool isFieldImmutable() const;
+
+  HashNumber valueHash() const override;
+  bool congruentTo(const MDefinition* ins) const override;
+  MDefinition* foldsTo(TempAllocator& alloc) override;
 
   virtual AliasType mightAlias(const MDefinition* ins) const override;
 
@@ -2711,13 +2708,8 @@ class MWasmLoadInternalField : public MUnaryInstruction,
   wasm::MaybeTrapSiteDesc maybeTrap() const { return maybeTrap_; }
   AliasSet getAliasSet() const override { return AliasSet::None(); }
 
-  bool congruentTo(const MDefinition* ins) const override {
-    if (!ins->isWasmLoadInternalField()) {
-      return false;
-    }
-    const MWasmLoadInternalField* other = ins->toWasmLoadInternalField();
-    return congruentIfOperandsEqual(other) && offset() == other->offset();
-  }
+  HashNumber valueHash() const override;
+  bool congruentTo(const MDefinition* ins) const override;
 
 #ifdef JS_JITSPEW
   void getExtras(ExtrasCollector* extras) const override {
