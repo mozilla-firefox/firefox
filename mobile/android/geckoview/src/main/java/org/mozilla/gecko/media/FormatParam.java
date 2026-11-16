@@ -30,12 +30,15 @@ import java.nio.ByteBuffer;
  *   <li>{@link MediaFormat#KEY_COLOR_STANDARD}
  *   <li>"csd-0"
  *   <li>"csd-1"
+ *   <li>"crop-left", "crop-top", "crop-right" and "crop-bottom"
  * </ul>
  */
 public final class FormatParam implements Parcelable {
   // Keys for codec specific config bits not exposed in {@link MediaFormat}.
   private static final String KEY_CONFIG_0 = "csd-0";
   private static final String KEY_CONFIG_1 = "csd-1";
+  // Keys for the output crop rectangle, exposed in {@link MediaFormat} only from API 33.
+  private static final String[] KEYS_CROP = {"crop-left", "crop-top", "crop-right", "crop-bottom"};
 
   private MediaFormat mFormat;
 
@@ -127,6 +130,11 @@ public final class FormatParam implements Parcelable {
       mFormat.setInteger(
           MediaFormat.KEY_COLOR_STANDARD, bundle.getInt(MediaFormat.KEY_COLOR_STANDARD));
     }
+    for (final String key : KEYS_CROP) {
+      if (bundle.containsKey(key)) {
+        mFormat.setInteger(key, bundle.getInt(key));
+      }
+    }
   }
 
   @Override
@@ -188,6 +196,11 @@ public final class FormatParam implements Parcelable {
     if (mFormat.containsKey(MediaFormat.KEY_COLOR_STANDARD)) {
       bundle.putInt(
           MediaFormat.KEY_COLOR_STANDARD, mFormat.getInteger(MediaFormat.KEY_COLOR_STANDARD));
+    }
+    for (final String key : KEYS_CROP) {
+      if (mFormat.containsKey(key)) {
+        bundle.putInt(key, mFormat.getInteger(key));
+      }
     }
     return bundle;
   }
