@@ -120,7 +120,7 @@ TEST_F(RemoteTextureMapTest, UnregisteredOwnerIsNotWaitedFor) {
 
     auto called = std::make_shared<int>(0);
     EXPECT_TRUE(Map()->CheckRemoteTextureReady(WaitingInfo(textureId, ownerId),
-                                               Counter(called)));
+                                               this, Counter(called)));
     EXPECT_EQ(*called, 0);
   });
 }
@@ -145,7 +145,7 @@ TEST_F(RemoteTextureMapTest, NewWrapperForUnregisteredOwnerIsNotWaitedFor) {
 
     auto called = std::make_shared<int>(0);
     EXPECT_TRUE(Map()->CheckRemoteTextureReady(
-        WaitingInfo(lateTextureId, ownerId), Counter(called)));
+        WaitingInfo(lateTextureId, ownerId), this, Counter(called)));
   });
 }
 
@@ -157,7 +157,7 @@ TEST_F(RemoteTextureMapTest, NotYetRegisteredOwnerIsWaitedFor) {
     CreateWrapper(textureId, ownerId);
     auto called = std::make_shared<int>(0);
     EXPECT_FALSE(Map()->CheckRemoteTextureReady(WaitingInfo(textureId, ownerId),
-                                                Counter(called)));
+                                                this, Counter(called)));
 
     mClient->RegisterTextureOwner(ownerId);
     EXPECT_EQ(*called, 0);
@@ -176,7 +176,7 @@ TEST_F(RemoteTextureMapTest, ReleasedWrapperIsReady) {
 
     auto called = std::make_shared<int>(0);
     EXPECT_TRUE(Map()->CheckRemoteTextureReady(WaitingInfo(textureId, ownerId),
-                                               Counter(called)));
+                                               this, Counter(called)));
     EXPECT_EQ(*called, 0);
   });
 }
@@ -197,9 +197,34 @@ TEST_F(RemoteTextureMapTest, UnregisteredOwnerIsForgottenWithItsWrappers) {
     CreateWrapper(laterTextureId, ownerId);
     auto called = std::make_shared<int>(0);
     EXPECT_FALSE(Map()->CheckRemoteTextureReady(
-        WaitingInfo(laterTextureId, ownerId), Counter(called)));
-    Map()->SuppressRemoteTextureReadyCheck(
-        WaitingInfo(laterTextureId, ownerId));
+        WaitingInfo(laterTextureId, ownerId), this, Counter(called)));
+    Map()->CancelRemoteTextureReadyCheck(WaitingInfo(laterTextureId, ownerId),
+                                         this);
+  });
+}
+
+TEST_F(RemoteTextureMapTest, CancelOnlyCancelsTheRequestersChecks) {
+  RunOnCompositorThread([&] {
+    const auto ownerId = RemoteTextureOwnerId::GetNext();
+    const auto textureId = RemoteTextureId::GetNext();
+    auto requesterA = std::make_shared<int>(0);
+    auto requesterB = std::make_shared<int>(0);
+
+    CreateWrapper(textureId, ownerId);
+    EXPECT_FALSE(Map()->CheckRemoteTextureReady(WaitingInfo(textureId, ownerId),
+                                                requesterA.get(),
+                                                Counter(requesterA)));
+    EXPECT_FALSE(Map()->CheckRemoteTextureReady(WaitingInfo(textureId, ownerId),
+                                                requesterB.get(),
+                                                Counter(requesterB)));
+
+    Map()->CancelRemoteTextureReadyCheck(WaitingInfo(textureId, ownerId),
+                                         requesterA.get());
+
+    mClient->RegisterTextureOwner(ownerId);
+    mClient->PushDummyTexture(textureId, ownerId);
+    EXPECT_EQ(*requesterA, 0);
+    EXPECT_EQ(*requesterB, 1);
   });
 }
 
@@ -212,12 +237,12 @@ TEST_F(RemoteTextureMapTest, ContextLossWakesReadyChecks) {
     CreateWrapper(textureId, ownerId);
     auto called = std::make_shared<int>(0);
     EXPECT_FALSE(Map()->CheckRemoteTextureReady(WaitingInfo(textureId, ownerId),
-                                                Counter(called)));
+                                                this, Counter(called)));
 
     mClient->NotifyContextLost();
     EXPECT_EQ(*called, 1);
     EXPECT_TRUE(Map()->CheckRemoteTextureReady(WaitingInfo(textureId, ownerId),
-                                               Counter(called)));
+                                               this, Counter(called)));
   });
 }
 
@@ -232,13 +257,13 @@ TEST_F(RemoteTextureMapTest, DeferredUnregisterWakesReadyChecks) {
     CreateWrapper(textureId, ownerId);
     auto called = std::make_shared<int>(0);
     EXPECT_FALSE(Map()->CheckRemoteTextureReady(WaitingInfo(textureId, ownerId),
-                                                Counter(called)));
+                                                this, Counter(called)));
 
     EXPECT_TRUE(mClient->WaitForTxn(ownerId, kTestTxnType, 1));
     mClient->UnregisterTextureOwner(ownerId);
     EXPECT_EQ(*called, 1);
     EXPECT_TRUE(Map()->CheckRemoteTextureReady(WaitingInfo(textureId, ownerId),
-                                               Counter(called)));
+                                               this, Counter(called)));
 
     scheduler->NotifyTxn(1);
   });

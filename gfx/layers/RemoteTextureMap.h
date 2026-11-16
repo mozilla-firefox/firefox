@@ -340,13 +340,18 @@ class RemoteTextureMap {
                                           const RemoteTextureOwnerId aOwnerId,
                                           const base::ProcessId aForPid);
 
+  // Returns true if the texture is ready. Otherwise aCallback will be called
+  // once it should be checked again, unless aRequester cancels it with
+  // CancelRemoteTextureReadyCheck first.
   bool CheckRemoteTextureReady(
-      const RemoteTextureInfo& aInfo,
+      const RemoteTextureInfo& aInfo, const void* aRequester,
       std::function<void(const RemoteTextureInfo&)>&& aCallback);
 
   bool WaitRemoteTextureReady(const RemoteTextureInfo& aInfo);
 
-  void SuppressRemoteTextureReadyCheck(const RemoteTextureInfo& aInfo);
+  // Cancels the pending ready checks aRequester made for aInfo's owner.
+  void CancelRemoteTextureReadyCheck(const RemoteTextureInfo& aInfo,
+                                     const void* aRequester);
 
   UniquePtr<TextureData> GetRecycledTextureData(
       const RemoteTextureOwnerId aOwnerId, const base::ProcessId aForPid,
@@ -390,10 +395,12 @@ class RemoteTextureMap {
 
   struct RenderingReadyCallbackHolder {
     RenderingReadyCallbackHolder(
-        const RemoteTextureId aTextureId,
+        const RemoteTextureId aTextureId, const void* aRequester,
         std::function<void(const RemoteTextureInfo&)>&& aCallback);
 
     const RemoteTextureId mTextureId;
+    // Identifies who made the ready check, so it may be cancelled.
+    const void* const mRequester;
     // callback of RemoteTexture ready
     std::function<void(const RemoteTextureInfo&)> mCallback;
   };
@@ -438,7 +445,6 @@ class RemoteTextureMap {
     const RefPtr<TextureHost> mRemoteTextureHostWrapper;
     // Hold compositable ref of remote texture of the RemoteTextureId.
     CompositableTextureHostRef mRemoteTextureHost;
-    bool mReadyCheckSuppressed = false;
   };
 
   void UpdateTexture(const MonitorAutoLock& aProofOfLock,

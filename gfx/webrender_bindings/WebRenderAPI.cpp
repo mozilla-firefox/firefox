@@ -555,7 +555,7 @@ bool WebRenderAPI::CheckIsRemoteTextureReady(
   while (!aList->mList.empty() && isReady) {
     auto& front = aList->mList.front();
     isReady &= layers::RemoteTextureMap::Get()->CheckRemoteTextureReady(
-        front, callback);
+        front, this, callback);
     if (isReady) {
       aList->mList.pop();
     }
@@ -642,8 +642,8 @@ void WebRenderAPI::HandleWrTransactionEvents(RemoteTextureWaitType aType) {
           auto* list = front.RemoteTextureInfoList();
           while (!list->mList.empty()) {
             auto& front = list->mList.front();
-            layers::RemoteTextureMap::Get()->SuppressRemoteTextureReadyCheck(
-                front);
+            layers::RemoteTextureMap::Get()->CancelRemoteTextureReadyCheck(
+                front, this);
             list->mList.pop();
           }
         }

@@ -1322,7 +1322,7 @@ void RemoteTextureMap::UnregisterRemoteTextureHostWrapper(
 }
 
 bool RemoteTextureMap::CheckRemoteTextureReady(
-    const RemoteTextureInfo& aInfo,
+    const RemoteTextureInfo& aInfo, const void* aRequester,
     std::function<void(const RemoteTextureInfo&)>&& aCallback) {
   MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());
 
@@ -1351,7 +1351,7 @@ bool RemoteTextureMap::CheckRemoteTextureReady(
     WaitingTextureOwner* waitingOwner = mWaitingTextureOwners[key].get();
 
     auto callbackHolder = std::make_unique<RenderingReadyCallbackHolder>(
-        aInfo.mTextureId, std::move(aCallback));
+        aInfo.mTextureId, aRequester, std::move(aCallback));
     waitingOwner->mRenderingReadyCallbackHolders.push_back(
         std::move(callbackHolder));
 
@@ -1369,7 +1369,7 @@ bool RemoteTextureMap::CheckRemoteTextureReady(
   }
 
   auto callbackHolder = std::make_unique<RenderingReadyCallbackHolder>(
-      aInfo.mTextureId, std::move(aCallback));
+      aInfo.mTextureId, aRequester, std::move(aCallback));
   owner->mRenderingReadyCallbackHolders.push_back(std::move(callbackHolder));
 
   return false;
@@ -1452,25 +1452,49 @@ bool RemoteTextureMap::WaitRemoteTextureReady(const RemoteTextureInfo& aInfo) {
   return true;
 }
 
-void RemoteTextureMap::SuppressRemoteTextureReadyCheck(
-    const RemoteTextureInfo& aInfo) {
+void RemoteTextureMap::CancelRemoteTextureReadyCheck(
+    const RemoteTextureInfo& aInfo, const void* aRequester) {
   MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());
-  MonitorAutoLock lock(mMonitor);
 
-  // Clear if WaitingTextureOwner exists.
-  auto itWaiting =
-      mWaitingTextureOwners.find(std::pair(aInfo.mForPid, aInfo.mOwnerId));
-  if (itWaiting != mWaitingTextureOwners.end()) {
-    mWaitingTextureOwners.erase(itWaiting);
+  std::vector<UniquePtr<RenderingReadyCallbackHolder>> cancelled;
+  auto cancel =
+      [&](std::deque<UniquePtr<RenderingReadyCallbackHolder>>& aHolders) {
+        for (auto it = aHolders.begin(); it != aHolders.end();) {
+          if ((*it)->mRequester == aRequester) {
+            cancelled.push_back(std::move(*it));
+            it = aHolders.erase(it);
+          } else {
+            ++it;
+          }
+        }
+      };
+
+  {
+    MonitorAutoLock lock(mMonitor);
+
+    const auto key = std::pair(aInfo.mForPid, aInfo.mOwnerId);
+    auto itWaiting = mWaitingTextureOwners.find(key);
+    if (itWaiting != mWaitingTextureOwners.end()) {
+      cancel(itWaiting->second->mRenderingReadyCallbackHolders);
+      if (itWaiting->second->mRenderingReadyCallbackHolders.empty()) {
+        mWaitingTextureOwners.erase(itWaiting);
+      }
+    }
+
+    if (auto* owner = GetTextureOwner(lock, aInfo.mOwnerId, aInfo.mForPid)) {
+      cancel(owner->mRenderingReadyCallbackHolders);
+    }
   }
 
-  const auto key = std::pair(aInfo.mForPid, aInfo.mTextureId);
-  auto it = mRemoteTextureHostWrapperHolders.find(key);
-  if (it == mRemoteTextureHostWrapperHolders.end()) {
-    MOZ_ASSERT_UNREACHABLE("unexpected to be called");
+  if (cancelled.empty()) {
     return;
   }
-  it->second->mReadyCheckSuppressed = true;
+
+  // The callbacks may hold the last reference to aRequester, so release them
+  // after it is done with this call.
+  GetCurrentSerialEventTarget()->Dispatch(
+      NS_NewRunnableFunction("RemoteTextureMap::CancelRemoteTextureReadyCheck",
+                             [cancelled = std::move(cancelled)]() {}));
 }
 
 UniquePtr<TextureData> RemoteTextureMap::GetRecycledTextureData(
@@ -1572,9 +1596,11 @@ RemoteTextureMap::TextureDataHolder::TextureDataHolder(
       mResourceWrapper(std::move(aResourceWrapper)) {}
 
 RemoteTextureMap::RenderingReadyCallbackHolder::RenderingReadyCallbackHolder(
-    const RemoteTextureId aTextureId,
+    const RemoteTextureId aTextureId, const void* aRequester,
     std::function<void(const RemoteTextureInfo&)>&& aCallback)
-    : mTextureId(aTextureId), mCallback(std::move(aCallback)) {}
+    : mTextureId(aTextureId),
+      mRequester(aRequester),
+      mCallback(std::move(aCallback)) {}
 
 RemoteTextureMap::RemoteTextureHostWrapperHolder::
     RemoteTextureHostWrapperHolder(
