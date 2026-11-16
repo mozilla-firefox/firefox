@@ -2632,81 +2632,24 @@ class _SessionStore {
       //
       // We end spinning once:
       // 1. the flush duration exceeds 10 seconds before DELAY_CRASH_MS, or
-      // 2. 'oop-frameloader-crashed' (issued by BrowserParent::ActorDestroy
-      //    on abnormal frame shutdown) is observed, or
-      // 3. 'ipc:content-shutdown' (issued by ContentParent::ActorDestroy on
-      //    abnormal shutdown) is observed, or
-      // 4. #flushAllWindowsAsync completes (hopefully the normal case).
+      // 2. #flushAllWindowsAsync completes (hopefully the normal case).
+      //
+      // A content process crash does not end the wait. The flushes of the
+      // affected browsers settle, and the other browsers still flush.
 
       Glean.sessionRestore.shutdownType.async.add(1);
 
-      // Set up the list of promises that will signal a complete sessionstore
-      // shutdown: either all data is saved, or we crashed or the message IPC
-      // channel went away in the meantime.
-      let promises = [this.#flushAllWindowsAsync(progress)];
-
-      const observeTopic = topic => {
-        let deferred = Promise.withResolvers();
-        const observer = subject => {
-          // Skip abort on ipc:content-shutdown if not abnormal/crashed
-          subject.QueryInterface(Ci.nsIPropertyBag2);
-          switch (topic) {
-            case "ipc:content-shutdown":
-              if (subject.get("abnormal")) {
-                this.#log.debug(
-                  "Observed abnormal ipc:content-shutdown during shutdown"
-                );
-                Glean.sessionRestore.shutdownFlushAllOutcomes.abnormal_content_shutdown.add(
-                  1
-                );
-                deferred.resolve();
-              }
-              break;
-            case "oop-frameloader-crashed":
-              this.#log.debug(`Observed topic: ${topic} during shutdown`);
-              Glean.sessionRestore.shutdownFlushAllOutcomes.oop_frameloader_crashed.add(
-                1
-              );
-              deferred.resolve();
-              break;
-          }
-        };
-        const cleanup = () => {
-          try {
-            Services.obs.removeObserver(observer, topic);
-          } catch (ex) {
-            this.#log.error("Exception whilst flushing all windows", ex);
-          }
-        };
-        Services.obs.addObserver(observer, topic);
-        deferred.promise.then(cleanup, cleanup);
-        return deferred;
-      };
-
-      // Build a list of deferred executions that require cleanup once the
-      // Promise race is won.
       // Ensure that the timer fires earlier than the AsyncShutdown crash timer.
       let waitTimeMaxMs = Math.max(
         0,
         lazy.AsyncShutdown.DELAY_CRASH_MS - 10000
       );
-      let defers = [
-        this.#looseTimer(waitTimeMaxMs),
-
-        // FIXME: We should not be aborting *all* flushes when a single
-        // content process crashes here.
-        observeTopic("oop-frameloader-crashed"),
-        observeTopic("ipc:content-shutdown"),
-      ];
-      // Add these monitors to the list of Promises to start the race.
-      promises.push(...defers.map(deferred => deferred.promise));
+      let timer = this.#looseTimer(waitTimeMaxMs);
 
       let isDone = false;
-      Promise.race(promises)
+      Promise.race([this.#flushAllWindowsAsync(progress), timer.promise])
         .then(() => {
-          // When a Promise won the race, make sure we clean up the running
-          // monitors.
-          defers.forEach(deferred => deferred.reject());
+          timer.reject();
         })
         .finally(() => {
           isDone = true;
