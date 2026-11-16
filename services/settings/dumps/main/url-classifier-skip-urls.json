@@ -1,33 +1,33 @@
 {
   "data": [
     {
-      "schema": 1739267053591,
       "feature": "tracking-annotation",
-      "pattern": "bat.bing.com",
       "filter_expression": "env.version|versionCompare(\"133.0a1\") >= 0 && env.version|versionCompare(\"138.0a1\") < 0",
       "id": "03db3f6d-9e98-4624-86bb-7b5f3bfe2688",
-      "last_modified": 1739471652383
+      "last_modified": 1739471652383,
+      "pattern": "bat.bing.com",
+      "schema": 1739267053591
     },
     {
-      "schema": 1738108808211,
       "feature": "tracking-protection",
-      "pattern": "cdn.cookielaw.org",
       "id": "37b353b8-aef3-4040-aa73-465a3bffd64a",
-      "last_modified": 1738256382699
+      "last_modified": 1738256382699,
+      "pattern": "cdn.cookielaw.org",
+      "schema": 1738108808211
     },
     {
-      "schema": 1738230055283,
       "feature": "tracking-protection",
-      "pattern": "onetrust.com",
       "id": "8ac377ad-931f-40f6-85aa-968c8b485905",
-      "last_modified": 1738256382696
+      "last_modified": 1738256382696,
+      "pattern": "onetrust.com",
+      "schema": 1738230055283
     },
     {
-      "schema": 1700179207170,
       "feature": "fingerprinting-protection",
-      "pattern": "*.geetest.com",
       "id": "f2a88631-c444-49d1-b377-c25608ef0018",
-      "last_modified": 1701090424142
+      "last_modified": 1701090424142,
+      "pattern": "*.geetest.com",
+      "schema": 1700179207170
     }
   ],
   "timestamp": 1739471652383
