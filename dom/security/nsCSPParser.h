@@ -6,6 +6,7 @@
 #define nsCSPParser_h_
 
 #include "PolicyTokenizer.h"
+#include "mozilla/UniquePtr.h"
 #include "nsCSPContext.h"
 #include "nsCSPUtils.h"
 #include "nsIURI.h"
@@ -55,6 +56,14 @@ class nsCSPParser {
                                                  bool aSuppressLogMessages);
 
   /**
+   * Parses a single source expression outside of a CSP policy.
+   * We currently parse PermissionsPolicy source-expression
+   * using the same parser as CSP, that's why we need this
+   */
+  static mozilla::UniquePtr<nsCSPBaseSrc> parseSingleSourceExpression(
+      const nsAString& aSourceExpression, nsIPrincipal* aPrincipal);
+
+  /**
    * Check if given string is valid base64 as per CSP spec.
    * https://w3c.github.io/webappsec-csp/#grammardef-base64-value
    */
@@ -81,6 +90,7 @@ class nsCSPParser {
   void handleTrustedTypesDirective(nsCSPDirective* aDir);
   void sourceList(nsTArray<nsCSPBaseSrc*>& outSrcs);
   nsCSPBaseSrc* sourceExpression();
+  nsCSPBaseSrc* schemeOrHostSource();
   nsCSPSchemeSrc* schemeSource();
   nsCSPHostSrc* hostSource();
   nsCSPBaseSrc* keywordSource();
@@ -220,6 +230,10 @@ class nsCSPParser {
   // cache variable to let nsCSPHostSrc know that it's within
   // the frame-ancestors directive.
   bool mParsingFrameAncestorsDir;
+
+  // Permissions Policy ignores URL paths, unlike CSP.
+  // This flag should not be set for CSP.
+  bool mOriginOnly;
 
   policyTokens mTokens;
   nsIURI* mSelfURI;

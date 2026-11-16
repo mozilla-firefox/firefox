@@ -275,6 +275,7 @@ class nsCSPHostSrc : public nsCSPBaseSrc {
   void setScheme(const nsAString& aScheme);
   void setPort(const nsAString& aPort);
   void appendPath(const nsAString& aPath);
+  void clearPath() { mPath.Truncate(); }
 
   inline void setGeneratedFromSelfKeyword() const {
     mGeneratedFromSelfKeyword = true;

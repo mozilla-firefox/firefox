@@ -14,6 +14,7 @@
 #include "nsCOMPtr.h"
 #include "nsCSPUtils.h"
 #include "nsContentUtils.h"
+#include "nsIPrincipal.h"
 #include "nsIScriptError.h"
 #include "nsNetUtil.h"
 #include "nsReadableUtils.h"
@@ -55,6 +56,7 @@ nsCSPParser::nsCSPParser(policyTokens& aTokens, nsIURI* aSelfURI,
       mScriptSrc(nullptr),
       mStyleSrc(nullptr),
       mParsingFrameAncestorsDir(false),
+      mOriginOnly(false),
       mTokens(aTokens.Clone()),
       mSelfURI(aSelfURI),
       mPolicy(nullptr),
@@ -522,6 +524,11 @@ nsCSPHostSrc* nsCSPParser::hostSource() {
     delete cspHost;
     return nullptr;
   }
+  // flag only set for Permissions Policy source-expression
+  // because it matches origins instead of URLs
+  if (mOriginOnly) {
+    cspHost->clearPath();
+  }
   return cspHost;
 }
 
@@ -709,6 +716,10 @@ nsCSPBaseSrc* nsCSPParser::sourceExpression() {
     return cspUrlHash;
   }
 
+  return schemeOrHostSource();
+}
+
+nsCSPBaseSrc* nsCSPParser::schemeOrHostSource() {
   // We handle a single "*" as host here, to avoid any confusion when applying
   // the default scheme. However, we still would need to apply the default
   // scheme in case we would parse "*:80".
@@ -774,6 +785,29 @@ nsCSPBaseSrc* nsCSPParser::sourceExpression() {
   }
   // Error was reported in hostSource()
   return nullptr;
+}
+
+/* static */
+mozilla::UniquePtr<nsCSPBaseSrc> nsCSPParser::parseSingleSourceExpression(
+    const nsAString& aSourceExpression, nsIPrincipal* aPrincipal) {
+  MOZ_ASSERT(aPrincipal);
+
+  nsCOMPtr<nsIURI> selfURI = aPrincipal->GetURI();
+  if (!selfURI) {
+    return nullptr;
+  }
+
+  if (aSourceExpression.IsEmpty() ||
+      CSP_IsInvalidDirectiveValue(aSourceExpression)) {
+    return nullptr;
+  }
+
+  policyTokens tokens;
+  nsCSPParser parser(tokens, selfURI, nullptr, false, true);
+  parser.mCurToken = aSourceExpression;
+  parser.mOriginOnly = true;
+
+  return mozilla::UniquePtr<nsCSPBaseSrc>(parser.schemeOrHostSource());
 }
 
 void nsCSPParser::logWarningForIgnoringNoneKeywordToConsole() {
