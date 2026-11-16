@@ -659,6 +659,10 @@ struct arena_t : public BaseAllocClass {
                                    void* aClosure);
 
  public:
+  // If there are more than one spare chunks, then remove and return the one
+  // from the back of the list.
+  arena_chunk_t* GetExcessSpareChunk();
+
   void HardPurge();
 
   // Check mNumDirty against EffectiveMaxDirty and return the appropriate
