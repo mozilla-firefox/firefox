@@ -37,6 +37,10 @@ async function openTabContextMenu(tab = gBrowser.selectedTab) {
     tabContextMenu,
     "shown"
   );
+
+  // Make sure the tab is stable before interacting with it.
+  await BrowserTestUtils.allTabOpenAnimationsFinished(tab.documentGlobal);
+
   tab.scrollIntoView({ behavior: "instant" });
   EventUtils.synthesizeMouseAtCenter(
     tab,
