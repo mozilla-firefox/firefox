@@ -2648,7 +2648,7 @@ var CustomizableUIInternal = {
     // in a different toolbar.
     let node = document.getElementById(aId);
     if (node) {
-      let parent = node.parentNode;
+      let parent = node.parentElement;
       while (
         parent &&
         !(
@@ -2656,7 +2656,7 @@ var CustomizableUIInternal = {
           parent == aWindow.gNavToolbox.palette
         )
       ) {
-        parent = parent.parentNode;
+        parent = parent.parentElement;
       }
 
       if (parent) {
