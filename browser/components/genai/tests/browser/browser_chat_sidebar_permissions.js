@@ -415,6 +415,83 @@ add_task(async function test_hide_sidebar_cancels_notification() {
 });
 
 /**
+ * Switching to another sidebar panel and back keeps permission handling working
+ */
+add_task(async function test_switch_panels_and_back() {
+  const win = window;
+  const sidebar = win.SidebarController;
+  const panel = win.document.getElementById("notification-popup");
+  const principal =
+    Services.scriptSecurityManager.createContentPrincipalFromOrigin(ORIGIN_URL);
+  const hasBlockedIcon = () =>
+    !!sidebar.browser.contentDocument.querySelector(".blocked-permission-icon");
+
+  await openSidebar(win);
+
+  SitePermissions.setForPrincipal(
+    principal,
+    "microphone",
+    SitePermissions.BLOCK
+  );
+  await TestUtils.waitForCondition(
+    hasBlockedIcon,
+    "Blocked icon shown on perm-changed before switching panels"
+  );
+  resetPermissions();
+  await TestUtils.waitForCondition(
+    () => !hasBlockedIcon(),
+    "Blocked icon cleared on perm-changed before switching panels"
+  );
+
+  await sidebar.show("viewBookmarksSidebar");
+  Assert.equal(
+    sidebar.currentID,
+    "viewBookmarksSidebar",
+    "Switched to another panel"
+  );
+
+  await sidebar.show("viewGenaiChatSidebar");
+  const inner = sidebar.browser.contentDocument.querySelector("browser");
+  await TestUtils.waitForCondition(
+    () => inner.contentPrincipal?.origin === ORIGIN_URL,
+    "Waiting for provider page to load after switching back"
+  );
+  await SpecialPowers.spawn(inner, [], () =>
+    ContentTaskUtils.waitForCondition(
+      () => !!content.document.getElementById("request-mic"),
+      "Waiting for request-mic button"
+    )
+  );
+
+  info("Requesting mic after switching back");
+  const popupShown = BrowserTestUtils.waitForEvent(panel, "popupshown");
+  await clickRequestMic(inner);
+  await popupShown;
+  info("Dispatching sidebarbrowserchanged");
+  const popupHidden = BrowserTestUtils.waitForEvent(panel, "popuphidden");
+  win.dispatchEvent(new win.CustomEvent("sidebarbrowserchanged"));
+  await popupHidden;
+  Assert.notEqual(
+    panel.state,
+    "open",
+    "sidebarbrowserchanged still handled after switching back"
+  );
+
+  SitePermissions.setForPrincipal(
+    principal,
+    "microphone",
+    SitePermissions.BLOCK
+  );
+  await TestUtils.waitForCondition(
+    hasBlockedIcon,
+    "Blocked icon shown on perm-changed after switching back"
+  );
+
+  await sidebar.hide();
+  resetPermissions();
+});
+
+/**
  * Active sharing state updates UI
  */
 add_task(async function test_sharing_state_updates_ui() {

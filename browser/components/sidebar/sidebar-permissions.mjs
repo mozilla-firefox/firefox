@@ -75,7 +75,6 @@ export class SidebarPermissions {
   #currentPopupNotificationBrowser;
   #onPermissionStateChanged;
   #onSidebarBrowserChanged;
-  #onSidebarHideEvent;
   #securityChangeListener;
 
   constructor(win) {
@@ -106,6 +105,17 @@ export class SidebarPermissions {
     if (!this.#initialized) {
       this.#bindObservers();
 
+      win.addEventListener("unload", () => this.#uninit(), {
+        once: true,
+      });
+
+      this.#initialized = true;
+    }
+
+    // Re-bind on every init as onSidebarHidden will remove them
+    this.#bindObservers();
+
+    if (!this.#onSidebarBrowserChanged) {
       // Also listen to custom event as a hint, but verify with actual DOM check
       // this allows chat.js or other tools to trigger changes
       this.#onSidebarBrowserChanged = this.onContentBrowserChanged.bind(this);
@@ -113,12 +123,6 @@ export class SidebarPermissions {
         "sidebarbrowserchanged",
         this.#onSidebarBrowserChanged
       );
-
-      win.addEventListener("unload", () => this.#uninit(), {
-        once: true,
-      });
-
-      this.#initialized = true;
     }
 
     // Ensure SidebarPopupNotifications exists (may need to recreate after sidebar close/reopen)
@@ -132,11 +136,9 @@ export class SidebarPermissions {
     this.#sidebarPermissionUI.build();
     this.#setupSidebarPopupNotificationWrapper();
 
-    this.#onSidebarHideEvent = () => this.onSidebarHidden();
-    this.#browser.contentWindow?.addEventListener(
-      "SidebarWillHide",
-      this.#onSidebarHideEvent
-    );
+    this.#browser.contentWindow?.addEventListener("SidebarWillHide", this);
+    // Ensure onSidebarHidden gets called when switching to another sidebar panel
+    this.#browser.contentWindow?.addEventListener("unload", this);
 
     if (this.#contentBrowser && this.#onPermissionStateChanged) {
       this.#contentBrowser.removeEventListener(
@@ -229,11 +231,8 @@ export class SidebarPermissions {
       this.#onPermissionStateChanged = null;
     }
 
-    this.#browser?.contentWindow?.removeEventListener(
-      "SidebarWillHide",
-      this.#onSidebarHideEvent
-    );
-    this.#onSidebarHideEvent = null;
+    this.#browser?.contentWindow?.removeEventListener("SidebarWillHide", this);
+    this.#browser?.contentWindow?.removeEventListener("unload", this);
 
     // Clear references to prevent leaks
     this.#browser = null;
@@ -267,14 +266,6 @@ export class SidebarPermissions {
         true
       );
       this.#onPermissionStateChanged = null;
-    }
-
-    if (this.#browser?.contentWindow && this.#onSidebarHideEvent) {
-      this.#browser.contentWindow.removeEventListener(
-        "SidebarWillHide",
-        this.#onSidebarHideEvent
-      );
-      this.#onSidebarHideEvent = null;
     }
 
     // This makes sure the wrappers are removed even if hide event didn't fire
@@ -546,6 +537,15 @@ export class SidebarPermissions {
     switch (topic) {
       case "perm-changed":
         this.#onPermissionChanged(subject);
+        break;
+    }
+  }
+
+  handleEvent(event) {
+    switch (event.type) {
+      case "SidebarWillHide":
+      case "unload":
+        this.onSidebarHidden();
         break;
     }
   }
