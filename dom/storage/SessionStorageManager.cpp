@@ -13,7 +13,6 @@
 #include "mozilla/OriginAttributes.h"
 #include "mozilla/PrincipalHashKey.h"
 #include "mozilla/ScopeExit.h"
-#include "mozilla/StoragePrincipalHelper.h"
 #include "mozilla/dom/CanonicalBrowsingContext.h"
 #include "mozilla/dom/ContentChild.h"
 #include "mozilla/dom/LocalStorageCommon.h"
@@ -108,12 +107,8 @@ bool RecvLoadSessionStorageData(
   }
 
   for (const auto& cacheInit : aCacheCopyList) {
-    OriginAttributes attrs;
-    StoragePrincipalHelper::GetOriginAttributes(cacheInit.principalInfo(),
-                                                attrs);
-
     nsAutoCString originAttrs;
-    attrs.CreateSuffix(originAttrs);
+    cacheInit.principal()->OriginAttributesRef().CreateSuffix(originAttrs);
 
     manager->UpdateData(originAttrs, cacheInit.originKey(), cacheInit.data());
   }
@@ -863,14 +858,14 @@ void BackgroundSessionStorageManager::GetData(
     for (auto* cacheActor :
          managerActor->ManagedPBackgroundSessionStorageCacheParent()) {
       auto* cache = static_cast<SessionStorageCacheParent*>(cacheActor);
-      ::mozilla::ipc::PrincipalInfo info = cache->PrincipalInfo();
-
-      OriginAttributes attributes;
-      StoragePrincipalHelper::GetOriginAttributes(cache->PrincipalInfo(),
-                                                  attributes);
+      auto principalOrErr = PrincipalInfoToPrincipal(cache->PrincipalInfo());
+      if (NS_WARN_IF(principalOrErr.isErr())) {
+        continue;
+      }
+      RefPtr<nsIPrincipal> principal = principalOrErr.unwrap().forget();
 
       nsAutoCString originAttrs;
-      attributes.CreateSuffix(originAttrs);
+      principal->OriginAttributesRef().CreateSuffix(originAttrs);
 
       auto* record =
           GetOriginRecord(originAttrs, cache->OriginKey(), false, nullptr);
@@ -888,10 +883,9 @@ void BackgroundSessionStorageManager::GetData(
         continue;
       }
 
-      SSCacheCopy& cacheCopy = *aCacheCopyList.AppendElement();
-      cacheCopy.originKey() = cache->OriginKey();
-      cacheCopy.principalInfo() = info;
-      cacheCopy.data().SwapElements(data);
+      aCacheCopyList.AppendElement(
+          SSCacheCopy(nsCString(cache->OriginKey()),
+                      WrapNotNull(std::move(principal)), std::move(data)));
     }
   }
 }

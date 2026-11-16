@@ -4,7 +4,9 @@
 
 include protocol PBackground;
 include protocol PBackgroundSessionStorageManager;
-include PBackgroundSharedTypes;
+include "mozilla/dom/PermissionMessageUtils.h";
+
+[RefCounted, Tainted] using class nsIPrincipal from "nsIPrincipal.h";
 
 namespace mozilla {
 namespace dom {
@@ -36,7 +38,7 @@ union SSWriteInfo
 
 struct SSCacheCopy {
   nsCString originKey;
-  PrincipalInfo principalInfo;
+  nsIPrincipal principal;
   SSSetItemInfo[] data;
 };
 

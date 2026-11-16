@@ -21,6 +21,7 @@
 #include "mozilla/dom/PBackgroundStorageParent.h"
 #include "mozilla/dom/PSessionStorageObserverChild.h"
 #include "mozilla/dom/PSessionStorageObserverParent.h"
+#include "mozilla/ipc/PBackgroundSharedTypes.h"
 #include "nsTHashSet.h"
 
 namespace mozilla {
@@ -508,20 +509,22 @@ class SessionStorageObserverParent final : public PSessionStorageObserverParent,
 class SessionStorageCacheParent final
     : public PBackgroundSessionStorageCacheParent {
   friend class PBackgroundSessionStorageCacheParent;
-  const PrincipalInfo mPrincipalInfo;
+  const mozilla::ipc::PrincipalInfo mPrincipalInfo;
   const nsCString mOriginKey;
 
   RefPtr<SessionStorageManagerParent> mManagerActor;
   FlippedOnce<false> mLoadReceived;
 
  public:
-  SessionStorageCacheParent(const PrincipalInfo& aPrincipalInfo,
+  SessionStorageCacheParent(const mozilla::ipc::PrincipalInfo& aPrincipalInfo,
                             const nsACString& aOriginKey,
                             SessionStorageManagerParent* aActor);
 
   NS_INLINE_DECL_REFCOUNTING(mozilla::dom::SessionStorageCacheParent, override)
 
-  const PrincipalInfo& PrincipalInfo() const { return mPrincipalInfo; }
+  const mozilla::ipc::PrincipalInfo& PrincipalInfo() const {
+    return mPrincipalInfo;
+  }
   const nsACString& OriginKey() const { return mOriginKey; }
 
  private:

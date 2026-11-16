@@ -1619,7 +1619,7 @@ void SessionStoreUtils::RestoreSessionStorageFromParent(
     const Record<nsCString, Record<nsString, nsString>>& aSessionStorage) {
   nsTArray<SSCacheCopy> cacheInitList;
   for (const auto& originEntry : aSessionStorage.Entries()) {
-    nsCOMPtr<nsIPrincipal> storagePrincipal =
+    RefPtr<nsIPrincipal> storagePrincipal =
         BasePrincipal::CreateContentPrincipal(originEntry.mKey);
 
     nsCString originKey;
@@ -1628,16 +1628,16 @@ void SessionStoreUtils::RestoreSessionStorageFromParent(
       continue;
     }
 
-    SSCacheCopy& cacheInit = *cacheInitList.AppendElement();
-
-    cacheInit.originKey() = originKey;
-    PrincipalToPrincipalInfo(storagePrincipal, &cacheInit.principalInfo());
-
+    nsTArray<SSSetItemInfo> data;
     for (const auto& entry : originEntry.mValue.Entries()) {
-      SSSetItemInfo& setItemInfo = *cacheInit.data().AppendElement();
+      SSSetItemInfo& setItemInfo = *data.AppendElement();
       setItemInfo.key() = entry.mKey;
       setItemInfo.value() = entry.mValue;
     }
+
+    cacheInitList.AppendElement(
+        SSCacheCopy(std::move(originKey),
+                    WrapNotNull(std::move(storagePrincipal)), std::move(data)));
   }
 
   BackgroundSessionStorageManager::LoadData(aContext.Id(), cacheInitList);
@@ -1774,18 +1774,13 @@ nsresult SessionStoreUtils::ConstructSessionStorageValues(
   }
 
   for (const auto& value : aValues) {
-    auto storagePrincipal = PrincipalInfoToPrincipal(value.principalInfo());
-    if (storagePrincipal.isErr()) {
-      continue;
-    }
-
     auto entry = aRecord.Entries().AppendElement();
 
     if (!entry->mValue.Entries().SetCapacity(value.data().Length(), fallible)) {
       return NS_ERROR_FAILURE;
     }
 
-    if (NS_FAILED(storagePrincipal.inspect()->GetOrigin(entry->mKey))) {
+    if (NS_FAILED(value.principal()->GetOrigin(entry->mKey))) {
       return NS_ERROR_FAILURE;
     }
 
