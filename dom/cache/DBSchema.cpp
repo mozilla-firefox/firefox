@@ -2800,6 +2800,21 @@ constexpr Migration sMigrationList[] = {
     Migration{29, MigrateFrom29To30}, Migration{30, MigrateFrom30To31},
     Migration{31, MigrateFrom31To32}, Migration{32, MigrateFrom32To33}};
 
+constexpr bool IsMigrationListValid() {
+  int32_t expected = kFirstShippedSchemaVersion;
+  for (const auto& migration : sMigrationList) {
+    if (migration.mFromVersion != expected || !migration.mFunc) {
+      return false;
+    }
+    ++expected;
+  }
+  return expected == kLatestSchemaVersion;
+}
+
+static_assert(IsMigrationListValid(),
+              "sMigrationList must be contiguous, ordered, and go from "
+              "kFirstShippedSchemaVersion to kLatestSchemaVersion");
+
 nsresult RewriteEntriesSchema(mozIStorageConnection& aConn) {
   QM_TRY(
       MOZ_TO_RESULT(aConn.ExecuteSimpleSQL("PRAGMA writable_schema = ON"_ns)));
