@@ -32,7 +32,7 @@ class MerinoSportsUpdaterWorkerTest {
     fun `WHEN worker fetches matches THEN store them and return a success result`() = runTest {
         val provider: MerinoSportsProvider = mock()
         val storage = MerinoMatchesStorage.inMemory()
-        val matches = MerinoMatches()
+        val matches = MerinoMatches(previous = emptyList(), current = emptyList(), upcoming = emptyList())
         val worker = TestListenableWorkerBuilder<MerinoSportsUpdaterWorker>(testContext).build()
 
         MerinoSportsUseCases.initialize(provider, storage)

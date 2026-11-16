@@ -30,15 +30,17 @@ class MerinoSportsProvider(
     /**
      * Fetches the previous, current and upcoming matches.
      *
-     * @param limit Optional maximum number of previous and upcoming matches to return. The Merino service defaults to 5
-     *   when not provided or not positive.
+     * @param limit Optional maximum number of previous and upcoming matches to return, from [MIN_LIMIT] to [MAX_LIMIT].
+     *   A limit outside that range default to [MAX_LIMIT] matches for the request.
      * @return The [MerinoMatches] or null if the request or deserialization failed.
      */
     @WorkerThread
     fun getMatches(limit: Int? = null): MerinoMatches? {
         val response =
             try {
-                client.value.getMatches(WrexhamMatchesOptions(limit = limit?.takeIf { it > 0 }?.toUInt()))
+                client.value.getMatches(
+                    WrexhamMatchesOptions(limit = limit?.takeIf { it in MIN_LIMIT..MAX_LIMIT }?.toUInt())
+                )
             } catch (e: MerinoWrexhamApiException) {
                 val message = "MerinoSportsProvider - Failed to fetch matches"
                 logger.error(message = message, throwable = e)
@@ -63,5 +65,13 @@ class MerinoSportsProvider(
 
             null
         }
+    }
+
+    internal companion object {
+        /** The minimum number of previous and upcoming matches the Merino service accepts. */
+        internal const val MIN_LIMIT = 1
+
+        /** The maximum number of previous and upcoming matches the Merino service accepts. */
+        internal const val MAX_LIMIT = 5
     }
 }

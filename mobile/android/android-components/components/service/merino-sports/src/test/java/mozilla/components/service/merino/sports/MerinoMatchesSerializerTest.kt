@@ -57,12 +57,17 @@ class MerinoMatchesSerializerTest {
     fun `GIVEN unknown fields WHEN read THEN they are ignored`() = runTest {
         val input = """{"previous": [], "current": [], "upcoming": [], "new_field": true}"""
 
-        assertEquals(MerinoMatches(), MerinoMatchesSerializer.readFrom(ByteArrayInputStream(input.encodeToByteArray())))
+        assertEquals(
+            MerinoMatches(previous = emptyList(), current = emptyList(), upcoming = emptyList()),
+            MerinoMatchesSerializer.readFrom(ByteArrayInputStream(input.encodeToByteArray())),
+        )
     }
 
     private companion object {
         val MATCHES =
             MerinoMatches(
+                previous = emptyList(),
+                current = emptyList(),
                 upcoming =
                     listOf(
                         MerinoMatch(
@@ -70,11 +75,11 @@ class MerinoMatchesSerializerTest {
                             competition = MerinoCompetition(id = 34L, name = "Test League"),
                             kickoff = "2026-10-17T14:00:00Z",
                             homeTeam = MerinoTeam(id = 1L, name = "Team A", logoUrl = "https://example.com/a.png"),
-                            awayTeam = MerinoTeam(id = 2L, name = "Team B"),
+                            awayTeam = MerinoTeam(id = 2L, name = "Team B", logoUrl = "https://example.com/b.png"),
                             status = MerinoMatchStatus.SCHEDULED,
                             updatedAt = "2026-10-10T09:00:00Z",
                         )
-                    )
+                    ),
             )
     }
 }

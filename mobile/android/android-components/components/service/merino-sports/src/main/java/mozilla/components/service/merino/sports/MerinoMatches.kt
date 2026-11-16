@@ -10,15 +10,15 @@ import kotlinx.serialization.Serializable
 /**
  * Matches returned by the Merino sports matches API grouped by their state.
  *
- * @property previous Completed matches, newest first.
+ * @property previous Completed or canceled matches, newest first.
  * @property current Matches in progress, on a break, delayed or suspended.
  * @property upcoming Scheduled or postponed matches, earliest first.
  */
 @Serializable
 data class MerinoMatches(
-    val previous: List<MerinoMatch> = emptyList(),
-    val current: List<MerinoMatch> = emptyList(),
-    val upcoming: List<MerinoMatch> = emptyList(),
+    val previous: List<MerinoMatch>,
+    val current: List<MerinoMatch>,
+    val upcoming: List<MerinoMatch>,
 )
 
 /**
@@ -83,7 +83,7 @@ data class MerinoCompetition(
 data class MerinoTeam(
     val id: Long,
     val name: String,
-    @SerialName("logo_url") val logoUrl: String? = null,
+    @SerialName("logo_url") val logoUrl: String,
 )
 
 /** Current period during play of a match. */

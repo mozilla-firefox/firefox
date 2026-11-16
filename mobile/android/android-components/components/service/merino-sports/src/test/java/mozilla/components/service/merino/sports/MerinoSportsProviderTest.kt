@@ -105,7 +105,10 @@ class MerinoSportsProviderTest {
     fun `GIVEN every group is empty WHEN the matches are fetched THEN return empty matches`() {
         client = FakeWrexhamClient(matchesResponse = """{"previous": [], "current": [], "upcoming": []}""")
 
-        assertEquals(MerinoMatches(), provider().getMatches())
+        assertEquals(
+            MerinoMatches(previous = emptyList(), current = emptyList(), upcoming = emptyList()),
+            provider().getMatches(),
+        )
     }
 
     @Test
@@ -223,17 +226,55 @@ class MerinoSportsProviderTest {
         assertNull(assertNotNull(client.options).limit)
     }
 
-    private fun matchJson(status: String, period: String, extraField: Boolean = false): String {
+    @Test
+    fun `GIVEN a limit above the maximum is provided WHEN the matches are fetched THEN no limit is sent`() {
+        provider().getMatches(limit = MerinoSportsProvider.MAX_LIMIT + 1)
+
+        assertNull(assertNotNull(client.options).limit)
+    }
+
+    @Test
+    fun `GIVEN a response missing a match group WHEN the matches are fetched THEN return null and the crash report is submitted`() {
+        client = FakeWrexhamClient(matchesResponse = """{"previous": [], "current": []}""")
+
+        assertNull(provider().getMatches())
+        assertEquals(1, crashReporter.breadcrumbs.size)
+        assertIs<SerializationException>(crashReporter.exceptions.single())
+    }
+
+    @Test
+    fun `GIVEN a team missing its logo URL WHEN the matches are fetched THEN return null and the crash report is submitted`() {
+        client =
+            FakeWrexhamClient(
+                matchesResponse = matchJson(status = "InProgress", period = "Regular", homeLogoUrl = null)
+            )
+
+        assertNull(provider().getMatches())
+        assertEquals(1, crashReporter.breadcrumbs.size)
+        assertIs<SerializationException>(crashReporter.exceptions.single())
+    }
+
+    private fun matchJson(
+        status: String,
+        period: String,
+        extraField: Boolean = false,
+        homeLogoUrl: String? = "https://example.com/home.png",
+        awayLogoUrl: String? = "https://example.com/away.png",
+    ): String {
         val extra = if (extraField) """, "new_field": true""" else ""
+        val homeLogo = logoJson(homeLogoUrl)
+        val awayLogo = logoJson(awayLogoUrl)
         return """
             {
+              "previous": [],
+              "upcoming": [],
               "current": [
                 {
                   "id": 1,
                   "competition": {"id": 34, "name": "Test League"},
                   "kickoff": "2026-10-10T18:00:00Z",
-                  "home_team": {"id": 1, "name": "Home"},
-                  "away_team": {"id": 2, "name": "Away"},
+                  "home_team": {"id": 1, "name": "Home"$homeLogo},
+                  "away_team": {"id": 2, "name": "Away"$awayLogo},
                   "period": "$period",
                   "status": "$status",
                   "updated_at": "2026-10-10T18:45:00Z"$extra
@@ -242,6 +283,8 @@ class MerinoSportsProviderTest {
             }
             """
     }
+
+    private fun logoJson(logoUrl: String?) = logoUrl?.let { ", \"logo_url\": \"$it\"" }.orEmpty()
 
     private fun provider() = MerinoSportsProvider(client = lazyOf(client), crashReporter = crashReporter)
 

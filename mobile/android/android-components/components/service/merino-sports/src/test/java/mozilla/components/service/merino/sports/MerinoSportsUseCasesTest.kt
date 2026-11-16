@@ -27,7 +27,7 @@ class MerinoSportsUseCasesTest {
         runTest {
             val provider: MerinoSportsProvider = mock()
             val storage = MerinoMatchesStorage.inMemory()
-            val matches = MerinoMatches()
+            val matches = MerinoMatches(previous = emptyList(), current = emptyList(), upcoming = emptyList())
 
             MerinoSportsUseCases.initialize(provider, storage)
 
@@ -41,7 +41,7 @@ class MerinoSportsUseCasesTest {
     fun `GIVEN the provider fails to fetch matches WHEN refresh matches use case is called THEN keep the stored matches and return false`() =
         runTest {
             val provider: MerinoSportsProvider = mock()
-            val storedMatches = MerinoMatches()
+            val storedMatches = MerinoMatches(previous = emptyList(), current = emptyList(), upcoming = emptyList())
             val storage = MerinoMatchesStorage.inMemory(initialMatches = storedMatches)
 
             MerinoSportsUseCases.initialize(provider, storage)
