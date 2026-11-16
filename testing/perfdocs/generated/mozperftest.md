@@ -17,8 +17,9 @@ If the owner does not specify the Usage and Description, it's marked N/A.
 
 Performance tests for the accessibility engine
 
-browser_addManyIds.js
-=====================
+::::{dropdown} browser_addManyIds.js
+:class-container: anchor-id-browser-addmanyids-js
+
 
 :owner: Accessibility Team
 :name: browser_addManyIds.js
@@ -35,9 +36,11 @@ browser_addManyIds.js
  --verbose
 
 **Audit a11y performance when adding 10000 IDs to nodes in DOM.**
+::::
 
-browser_addManyNodes.js
-=======================
+::::{dropdown} browser_addManyNodes.js
+:class-container: anchor-id-browser-addmanynodes-js
+
 
 :owner: Accessibility Team
 :name: browser_addManyNodes.js
@@ -54,9 +57,11 @@ browser_addManyNodes.js
  --verbose
 
 **Audit a11y performance when adding 100000 nodes to DOM.**
+::::
 
-browser_bounds.js
-=================
+::::{dropdown} browser_bounds.js
+:class-container: anchor-id-browser-bounds-js
+
 
 :owner: Accessibility Team
 :name: browser_bounds.js
@@ -73,9 +78,11 @@ browser_bounds.js
  --verbose
 
 **Audit a11y performance when computing bounds for a framed (non-display:contents) accessible with 10000 children. Baseline counterpart to browser_displayContentsBounds.js.**
+::::
 
-browser_displayContentsBounds.js
-================================
+::::{dropdown} browser_displayContentsBounds.js
+:class-container: anchor-id-browser-displaycontentsbounds-js
+
 
 :owner: Accessibility Team
 :name: browser_displayContentsBounds.js
@@ -92,9 +99,11 @@ browser_displayContentsBounds.js
  --verbose
 
 **Audit a11y performance when computing bounds for a display:contents accessible with 10000 children.**
+::::
 
-browser_implicitRoleARIAExpanded.js
-===================================
+::::{dropdown} browser_implicitRoleARIAExpanded.js
+:class-container: anchor-id-browser-implicitroleariaexpanded-js
+
 
 :owner: Accessibility Team
 :name: browser_implicitRoleARIAExpanded.js
@@ -111,9 +120,11 @@ browser_implicitRoleARIAExpanded.js
  --verbose
 
 **Audit a11y performance when adding 10000 elements with implicit ARIA roles**
+::::
 
-browser_panManySVGShapes.js
-===========================
+::::{dropdown} browser_panManySVGShapes.js
+:class-container: anchor-id-browser-panmanysvgshapes-js
+
 
 :owner: Accessibility Team
 :name: browser_panManySVGShapes.js
@@ -130,9 +141,11 @@ browser_panManySVGShapes.js
  --verbose
 
 **Audit a11y performance when panning an SVG workspace containing 2000 transformed groups, each with an ARIA labelled path. Modelled on the Blockly workspace in bug 2059322.**
+::::
 
-browser_reflowPseudoelements.js
-===============================
+::::{dropdown} browser_reflowPseudoelements.js
+:class-container: anchor-id-browser-reflowpseudoelements-js
+
 
 :owner: Accessibility Team
 :name: browser_reflowPseudoelements.js
@@ -149,9 +162,11 @@ browser_reflowPseudoelements.js
  --verbose
 
 **Audit a11y performance when reflowing a table containing 15000 pseudoelements.**
+::::
 
-browser_removeManySpellingErrors.js
-===================================
+::::{dropdown} browser_removeManySpellingErrors.js
+:class-container: anchor-id-browser-removemanyspellingerrors-js
+
 
 :owner: Accessibility Team
 :name: browser_removeManySpellingErrors.js
@@ -168,9 +183,11 @@ browser_removeManySpellingErrors.js
  --verbose
 
 **Audit a11y performance when removing 500 spelling errors from content editable.**
+::::
 
-browser_testCSSVisibilityChange.js
-==================================
+::::{dropdown} browser_testCSSVisibilityChange.js
+:class-container: anchor-id-browser-testcssvisibilitychange-js
+
 
 :owner: Accessibility Team
 :name: browser_testCSSVisibilityChange.js
@@ -187,27 +204,31 @@ browser_testCSSVisibilityChange.js
  --verbose
 
 **Audit a11y performance when changing the CSS visibility of subtree's ancestor.**
+::::
 
 
 ## browser/base/content/test
 
 Performance tests from the 'browser/base/content/test' folder.
 
-perftest_browser_xhtml_dom.js
-=============================
+::::{dropdown} Dom-size
+:class-container: anchor-id-dom-size
+
 
 :owner: Browser Front-end team
 :name: Dom-size
 
 **Measures the size of the DOM**
+::::
 
 
 ## browser/components/aiwindow/ui/test/browser_perf
 
 Performance tests for Smart Window on Firefox Desktop
 
-browser_smartwindow_intent_perf.js
-==================================
+::::{dropdown} browser_smartwindow_intent_perf.js
+:class-container: anchor-id-browser-smartwindow-intent-perf-js
+
 
 :owner: GenAI Team
 :name: browser_smartwindow_intent_perf.js
@@ -224,9 +245,11 @@ browser_smartwindow_intent_perf.js
  --try-platform linux, mac, win
 
 **User-perceived latency and inference memory for the Smart Window intent classifier, driven through the production smartbar flow**
+::::
 
-browser_smartwindow_perf.js
-===========================
+::::{dropdown} browser_smartwindow_perf.js
+:class-container: anchor-id-browser-smartwindow-perf-js
+
 
 :owner: GenAI Team
 :name: browser_smartwindow_perf.js
@@ -242,14 +265,16 @@ browser_smartwindow_perf.js
  --try-platform linux, mac, win
 
 **User-perceived responsiveness of Smart Window across window states and profile sizes**
+::::
 
 
 ## browser/components/genai/tests/browser
 
 Performance tests for GenAI features on Firefox Desktop
 
-browser_link_preview_perf.js
-============================
+::::{dropdown} browser_link_preview_perf.js
+:class-container: anchor-id-browser-link-preview-perf-js
+
 
 :owner: GenAI Team
 :name: browser_link_preview_perf.js
@@ -266,14 +291,16 @@ browser_link_preview_perf.js
  --try-platform linux, mac, win
 
 **User-perceived latency and inference memory for Link Preview key points, driven through the production UI flow**
+::::
 
 
 ## browser/components/tabbrowser/test/browser/smarttabgrouping/performance
 
 End-to-end performance tests for Smart Tab Grouping
 
-browser_smart_tab_grouping_perf.js
-==================================
+::::{dropdown} browser_smart_tab_grouping_perf.js
+:class-container: anchor-id-browser-smart-tab-grouping-perf-js
+
 
 :owner: GenAI Team
 :name: browser_smart_tab_grouping_perf.js
@@ -290,14 +317,16 @@ browser_smart_tab_grouping_perf.js
  --try-platform linux, mac, win
 
 **End-to-end Smart Tab Grouping latency, measured through the tab group menu**
+::::
 
 
 ## browser/components/translations/tests/browser
 
 Performance tests for Translations models on Firefox Desktop
 
-browser_translations_perf_base.js
-=================================
+::::{dropdown} Full-Page Translations Base Model
+:class-container: anchor-id-full-page-translations-base-model
+
 
 :owner: Translations Team
 :name: Full-Page Translations Base Model
@@ -313,9 +342,11 @@ browser_translations_perf_base.js
  --try-platform linux, mac, win
 
 **Tests the performance of Full Page Translations with a base-architecture model**
+::::
 
-browser_translations_perf_basememory.js
-=======================================
+::::{dropdown} Full-Page Translations BaseMemory Model
+:class-container: anchor-id-full-page-translations-basememory-model
+
 
 :owner: Translations Team
 :name: Full-Page Translations BaseMemory Model
@@ -331,9 +362,11 @@ browser_translations_perf_basememory.js
  --try-platform linux, mac, win
 
 **Tests the performance of Full Page Translations with a base-memory-architecture model**
+::::
 
-browser_translations_perf_tiny.js
-=================================
+::::{dropdown} Full-Page Translations Tiny Model
+:class-container: anchor-id-full-page-translations-tiny-model
+
 
 :owner: Translations Team
 :name: Full-Page Translations Tiny Model
@@ -349,14 +382,16 @@ browser_translations_perf_tiny.js
  --try-platform linux, mac, win
 
 **Tests the performance of Full Page Translations with a tiny-architecture model**
+::::
 
 
 ## browser/components/urlbar/tests/browser-ml
 
 Performance tests for urlbar features on Firefox Desktop
 
-browser_quicksuggest_ml_perf.js
-===============================
+::::{dropdown} browser_quicksuggest_ml_perf.js
+:class-container: anchor-id-browser-quicksuggest-ml-perf-js
+
 
 :owner: GenAI Team
 :name: browser_quicksuggest_ml_perf.js
@@ -373,9 +408,11 @@ browser_quicksuggest_ml_perf.js
  --try-platform linux, mac, win
 
 **User-perceived latency and inference memory for ML-backed Firefox Suggest, driven through the production urlbar flow**
+::::
 
-browser_urlbar_semantic_history_perf.js
-=======================================
+::::{dropdown} browser_urlbar_semantic_history_perf.js
+:class-container: anchor-id-browser-urlbar-semantic-history-perf-js
+
 
 :owner: GenAI Team
 :name: browser_urlbar_semantic_history_perf.js
@@ -392,14 +429,16 @@ browser_urlbar_semantic_history_perf.js
  --try-platform linux, mac, win
 
 **User-perceived latency and inference memory for semantic history search, driven through history ingestion and the production urlbar flow**
+::::
 
 
 ## browser/extensions/formautofill/test/browser/performance
 
 Performance tests for Form Autofill on Firefox Desktop
 
-browser_formautofill_ml_perf.js
-===============================
+::::{dropdown} browser_formautofill_ml_perf.js
+:class-container: anchor-id-browser-formautofill-ml-perf-js
+
 
 :owner: Form Autofill Team
 :name: browser_formautofill_ml_perf.js
@@ -416,14 +455,16 @@ browser_formautofill_ml_perf.js
  --try-platform linux, mac, win
 
 **Integrated ML Autofill performance for the single- and double-engine classifiers**
+::::
 
 
 ## dom/media/webspeech/recognition/test
 
 Performance tests for on-device speech recognition
 
-browser_speech_recognition_perf.js
-==================================
+::::{dropdown} browser_speech_recognition_perf.js
+:class-container: anchor-id-browser-speech-recognition-perf-js
+
 
 :owner: Media Playback Team
 :name: browser_speech_recognition_perf.js
@@ -439,14 +480,16 @@ browser_speech_recognition_perf.js
  --try-platform linux, mac, win
 
 **Latency, real-time factor and memory of on-device speech recognition**
+::::
 
 
 ## dom/serviceworkers/test/performance
 
 Performance tests running through Mochitest for Service Workers
 
-test_caching.html
-=================
+::::{dropdown} Service Worker Caching
+:class-container: anchor-id-service-worker-caching
+
 
 :owner: DOM LWS
 :name: Service Worker Caching
@@ -461,9 +504,11 @@ test_caching.html
  --manifest-flavor plain
 
 **Test service worker caching.**
+::::
 
-test_fetch.html
-===============
+::::{dropdown} Service Worker Fetch
+:class-container: anchor-id-service-worker-fetch
+
 
 :owner: DOM LWS
 :name: Service Worker Fetch
@@ -478,9 +523,11 @@ test_fetch.html
  --manifest-flavor plain
 
 **Test cold and warm fetches.**
+::::
 
-test_registration.html
-======================
+::::{dropdown} Service Worker Registration
+:class-container: anchor-id-service-worker-registration
+
 
 :owner: DOM LWS
 :name: Service Worker Registration
@@ -495,9 +542,11 @@ test_registration.html
  --manifest-flavor plain
 
 **Test registration, activation, and unregistration.**
+::::
 
-test_update.html
-================
+::::{dropdown} Service Worker Update
+:class-container: anchor-id-service-worker-update
+
 
 :owner: DOM LWS
 :name: Service Worker Update
@@ -512,14 +561,16 @@ test_update.html
  --manifest-flavor plain
 
 **Test updating.**
+::::
 
 
 ## dom/webgpu/tests/mochitest
 
 Performance tests from the 'dom/webgpu/tests/mochitest' folder.
 
-test_queue_write_perf.html
-==========================
+::::{dropdown} Queue Write
+:class-container: anchor-id-queue-write
+
 
 :owner: Graphics Team
 :name: Queue Write
@@ -533,14 +584,16 @@ test_queue_write_perf.html
  --manifest-flavor plain
 
 **Test the performance of Queue.writeBuffer and Queue.writeTexture**
+::::
 
 
 ## intl/benchmarks/test/xpcshell
 
 Performance tests running through XPCShell for Intl code
 
-perftest_dateTimeFormat.js
-==========================
+::::{dropdown} IntlDateTimeFormat
+:class-container: anchor-id-intldatetimeformat
+
 
 :owner: Internationalization Team
 :name: Intl.DateTimeFormat
@@ -554,9 +607,11 @@ perftest_dateTimeFormat.js
  --verbose
 
 **Test the speed of the Intl.DateTimeFormat implementation.**
+::::
 
-perftest_locale.js
-==================
+::::{dropdown} IntlLocale
+:class-container: anchor-id-intllocale
+
 
 :owner: Internationalization Team
 :name: Intl.Locale
@@ -570,9 +625,11 @@ perftest_locale.js
  --verbose
 
 **Test the speed of the Intl.Locale implementation.**
+::::
 
-perftest_numberFormat.js
-========================
+::::{dropdown} IntlNumberFormat
+:class-container: anchor-id-intlnumberformat
+
 
 :owner: Internationalization Team
 :name: Intl.NumberFormat
@@ -586,9 +643,11 @@ perftest_numberFormat.js
  --verbose
 
 **Test the speed of the Intl.NumberFormat implementation.**
+::::
 
-perftest_pluralRules.js
-=======================
+::::{dropdown} IntlPluralRules
+:class-container: anchor-id-intlpluralrules
+
 
 :owner: Internationalization Team
 :name: Intl.PluralRules
@@ -602,84 +661,102 @@ perftest_pluralRules.js
  --verbose
 
 **Test the speed of the Intl.PluralRules implementation.**
+::::
 
 
 ## netwerk/test/perf
 
 Performance tests from the 'network/test/perf' folder.
 
-perftest_http3_cloudflareblog.js
-================================
+::::{dropdown} cloudflare
+:class-container: anchor-id-cloudflare
+
 
 :owner: Network Team
 :name: cloudflare
 
 **User-journey live site test for Cloudflare blog.**
+::::
 
-perftest_http3_controlled.js
-============================
+::::{dropdown} controlled
+:class-container: anchor-id-controlled
+
 
 :owner: Network Team
 :name: controlled
 :tags: throttlable
 
 **User-journey live site test for controlled server**
+::::
 
-perftest_http3_facebook_scroll.js
-=================================
+::::{dropdown} facebook-scroll
+:class-container: anchor-id-facebook-scroll
+
 
 :owner: Network Team
 :name: facebook-scroll
 
 **Measures the number of requests per second after a scroll.**
+::::
 
-perftest_http3_google_image.js
-==============================
+::::{dropdown} g-image
+:class-container: anchor-id-g-image
+
 
 :owner: Network Team
 :name: g-image
 
 **Measures the number of images per second after a scroll.**
+::::
 
-perftest_http3_google_search.js
-===============================
+::::{dropdown} g-search
+:class-container: anchor-id-g-search
+
 
 :owner: Network Team
 :name: g-search
 
 **User-journey live site test for google search**
+::::
 
-perftest_http3_lucasquicfetch.js
-================================
+::::{dropdown} lq-fetch
+:class-container: anchor-id-lq-fetch
+
 
 :owner: Network Team
 :name: lq-fetch
 
 **Measures the amount of time it takes to load a set of images.**
+::::
 
-perftest_http3_youtube_watch.js
-===============================
+::::{dropdown} youtube-noscroll
+:class-container: anchor-id-youtube-noscroll
+
 
 :owner: Network Team
 :name: youtube-noscroll
 
 **Measures quality of the video being played.**
+::::
 
-perftest_http3_youtube_watch_scroll.js
-======================================
+::::{dropdown} youtube-scroll
+:class-container: anchor-id-youtube-scroll
+
 
 :owner: Network Team
 :name: youtube-scroll
 
 **Measures quality of the video being played.**
+::::
 
 
 ## netwerk/test/unit
 
 Performance tests from the 'netwerk/test/unit' folder.
 
-test_dns_stress.js
-==================
+::::{dropdown} DNS Benchmark
+:class-container: anchor-id-dns-benchmark
+
 
 :owner: Network Team
 :name: DNS Benchmark
@@ -692,9 +769,11 @@ test_dns_stress.js
 **Benchmark for DNS resolver lock contention under low and high concurrency.**
 
 This test measures DNS resolver throughput by comparing baseline resolution times with low concurrency (within the thread pool) against performance under high concurrency (far exceeding the thread pool). It validates that the resolver scales with available threads rather than serializing all requests.
+::::
 
-test_trr_bench.js
-=================
+::::{dropdown} TRR Benchmark
+:class-container: anchor-id-trr-benchmark
+
 
 :owner: Network Team
 :name: TRR Benchmark
@@ -708,9 +787,11 @@ test_trr_bench.js
 **Benchmark for TRR (Trusted Recursive Resolver) DNS lookup performance under various load conditions.**
 
 This test measures TRR DNS lookup performance by comparing baseline DNS resolution times with low contention against performance under high contention with many concurrent requests. It validates that TRR requests maintain acceptable performance even when the network is busy with other requests.
+::::
 
-test_http3_perf.js
-==================
+::::{dropdown} http3 raw
+:class-container: anchor-id-http3-raw
+
 
 :owner: Network Team
 :name: http3 raw
@@ -726,70 +807,86 @@ test_http3_perf.js
  --try-platform linux, mac
 
 **XPCShell tests that verifies the lib integration against a local server**
+::::
 
 
 ## testing/performance
 
 Performance tests from the 'testing/performance' folder.
 
-perftest_bbc_link.js
-====================
+::::{dropdown} BBC Link
+:class-container: anchor-id-bbc-link
+
 
 :owner: Performance Team
 :name: BBC Link
 
 **Measures time to load BBC homepage**
+::::
 
-perftest_facebook.js
-====================
+::::{dropdown} Facebook
+:class-container: anchor-id-facebook
+
 
 :owner: Performance Team
 :name: Facebook
 
 **Measures time to log in to Facebook**
+::::
 
-perftest_jsconf_cold.js
-=======================
+::::{dropdown} JSConf (cold)
+:class-container: anchor-id-jsconf-cold
+
 
 :owner: Performance Team
 :name: JSConf (cold)
 
 **Measures time to load JSConf page (cold)**
+::::
 
-perftest_jsconf_warm.js
-=======================
+::::{dropdown} JSConf (warm)
+:class-container: anchor-id-jsconf-warm
+
 
 :owner: Performance Team
 :name: JSConf (warm)
 
 **Measures time to load JSConf page (warm)**
+::::
 
-perftest_politico_link.js
-=========================
+::::{dropdown} Politico Link
+:class-container: anchor-id-politico-link
+
 
 :owner: Performance Team
 :name: Politico Link
 
 **Measures time to load Politico homepage**
+::::
 
-perftest_youtube_link.js
-========================
+::::{dropdown} YouTube Link
+:class-container: anchor-id-youtube-link
+
 
 :owner: Performance Team
 :name: YouTube Link
 
 **Measures time to load YouTube video**
+::::
 
-perftest_pageload.js
-====================
+::::{dropdown} pageload
+:class-container: anchor-id-pageload
+
 
 :owner: Performance Team
 :name: pageload
 
 **Measures time to load mozilla page**
+::::
 
-perftest_perfstats.js
-=====================
+::::{dropdown} perfstats
+:class-container: anchor-id-perfstats
+
 
 :owner: Performance Team
 :name: perfstats
@@ -797,14 +894,16 @@ perftest_perfstats.js
 **Collect perfstats for the given site**
 
 This test launches browsertime with the perfStats option (will collect low-overhead timings, see Bug 1553254). The test currently runs a short user journey. A selection of popular sites are visited, first as cold pageloads, and then as warm.
+::::
 
 
 ## toolkit/components/ml/tests/browser
 
 Performance tests running through Mochitest for ML Models
 
-browser_ml_semantic_history_search_perf.js
-==========================================
+::::{dropdown} ML Semantic History Search
+:class-container: anchor-id-ml-semantic-history-search
+
 
 :owner: GenAI Team
 :name: ML Semantic History Search
@@ -820,9 +919,11 @@ browser_ml_semantic_history_search_perf.js
  --try-platform mac, win
 
 **Test for latency for ML Semantic Search History Feature**
+::::
 
-browser_ml_smart_tab_clustering_perf.js
-=======================================
+::::{dropdown} ML Smart Tab Clustering
+:class-container: anchor-id-ml-smart-tab-clustering
+
 
 :owner: GenAI Team
 :name: ML Smart Tab Clustering
@@ -838,9 +939,11 @@ browser_ml_smart_tab_clustering_perf.js
  --try-platform linux, mac, win
 
 **Testing Smart Tab Clustering**
+::::
 
-browser_ml_autofill_perf.js
-===========================
+::::{dropdown} browser_ml_autofill_perf.js
+:class-container: anchor-id-browser-ml-autofill-perf-js
+
 
 :owner: GenAI Team
 :name: browser_ml_autofill_perf.js
@@ -856,9 +959,11 @@ browser_ml_autofill_perf.js
  --try-platform linux, mac, win
 
 **Latency for the ML Autofill model (default single-model and opt-in two-engine)**
+::::
 
-browser_ml_engine_multi_perf.js
-===============================
+::::{dropdown} browser_ml_engine_multi_perf.js
+:class-container: anchor-id-browser-ml-engine-multi-perf-js
+
 
 :owner: GenAI Team
 :name: browser_ml_engine_multi_perf.js
@@ -874,9 +979,11 @@ browser_ml_engine_multi_perf.js
  --try-platform linux, mac, win
 
 **Testing model execution concurrently**
+::::
 
-browser_ml_engine_perf.js
-=========================
+::::{dropdown} browser_ml_engine_perf.js
+:class-container: anchor-id-browser-ml-engine-perf-js
+
 
 :owner: GenAI Team
 :name: browser_ml_engine_perf.js
@@ -892,9 +999,11 @@ browser_ml_engine_perf.js
  --try-platform linux, mac, win
 
 **Template test for latency for ml models**
+::::
 
-browser_ml_llama_smollm2_smoke.js
-=================================
+::::{dropdown} browser_ml_llama_smollm2_smoke.js
+:class-container: anchor-id-browser-ml-llama-smollm2-smoke-js
+
 
 :owner: GenAI Team
 :name: browser_ml_llama_smollm2_smoke.js
@@ -909,9 +1018,11 @@ browser_ml_llama_smollm2_smoke.js
  --try-platform linux, mac, win
 
 **Structural smoke for the native llama.cpp backend with SmolLM2 360M Instruct.**
+::::
 
-browser_ml_llama_summarizer_perf.js
-===================================
+::::{dropdown} browser_ml_llama_summarizer_perf.js
+:class-container: anchor-id-browser-ml-llama-summarizer-perf-js
+
 
 :owner: GenAI Team
 :name: browser_ml_llama_summarizer_perf.js
@@ -927,9 +1038,11 @@ browser_ml_llama_summarizer_perf.js
  --try-platform linux, mac, win
 
 **Summarization latency and memory for the SmolLM2 and Qwen3 models on llama.cpp**
+::::
 
-browser_ml_smart_tab_perf.js
-============================
+::::{dropdown} browser_ml_smart_tab_perf.js
+:class-container: anchor-id-browser-ml-smart-tab-perf-js
+
 
 :owner: GenAI Team
 :name: browser_ml_smart_tab_perf.js
@@ -945,9 +1058,11 @@ browser_ml_smart_tab_perf.js
  --try-platform linux, mac, win
 
 **Testing Smart Tab Models**
+::::
 
-browser_ml_suggest_feature_perf.js
-==================================
+::::{dropdown} browser_ml_suggest_feature_perf.js
+:class-container: anchor-id-browser-ml-suggest-feature-perf-js
+
 
 :owner: GenAI Team
 :name: browser_ml_suggest_feature_perf.js
@@ -963,9 +1078,11 @@ browser_ml_suggest_feature_perf.js
  --try-platform linux, mac, win
 
 **Template test for latency for ML suggest Feature**
+::::
 
-browser_ml_suggest_inference.js
-===============================
+::::{dropdown} browser_ml_suggest_inference.js
+:class-container: anchor-id-browser-ml-suggest-inference-js
+
 
 :owner: GenAI Team
 :name: browser_ml_suggest_inference.js
@@ -981,14 +1098,16 @@ browser_ml_suggest_inference.js
  --try-platform linux, mac, win
 
 **Template test for ML suggest Inference Model**
+::::
 
 
 ## toolkit/components/pdfjs/test
 
 Performance tests for PDF.js features on Firefox Desktop
 
-browser_pdfjs_alttext_perf.js
-=============================
+::::{dropdown} browser_pdfjs_alttext_perf.js
+:class-container: anchor-id-browser-pdfjs-alttext-perf-js
+
 
 :owner: GenAI Team
 :name: browser_pdfjs_alttext_perf.js
@@ -1005,14 +1124,16 @@ browser_pdfjs_alttext_perf.js
  --try-platform linux, mac, win
 
 **User-perceived latency and inference memory for PDF.js alt-text generation, driven through the production image-adding flow**
+::::
 
 
 ## toolkit/components/pdfjs/test/perf
 
 Performance tests for the PDF.js viewer UI on Firefox Desktop, using PDFs with empty pages
 
-browser_pdfjs_ui_interaction_perf.js
-====================================
+::::{dropdown} browser_pdfjs_ui_interaction_perf.js
+:class-container: anchor-id-browser-pdfjs-ui-interaction-perf-js
+
 
 :owner: PDF.js Team
 :name: browser_pdfjs_ui_interaction_perf.js
@@ -1029,9 +1150,11 @@ browser_pdfjs_ui_interaction_perf.js
  --try-platform linux, mac, win
 
 **Time for the PDF.js viewer to scroll, zoom and go to pages in PDFs with 100 and 1000 empty pages**
+::::
 
-browser_pdfjs_ui_open_perf.js
-=============================
+::::{dropdown} browser_pdfjs_ui_open_perf.js
+:class-container: anchor-id-browser-pdfjs-ui-open-perf-js
+
 
 :owner: PDF.js Team
 :name: browser_pdfjs_ui_open_perf.js
@@ -1047,14 +1170,16 @@ browser_pdfjs_ui_open_perf.js
  --try-platform linux, mac, win
 
 **Time for the PDF.js viewer to open PDFs with 1 and 1000 empty pages, from the navigation start**
+::::
 
 
 ## toolkit/components/places/tests/browser/performance
 
 Performance tests for Toolkit: Places
 
-browser_calculate_frecency_speed.js
-===================================
+::::{dropdown} Calculate Frecency Speed
+:class-container: anchor-id-calculate-frecency-speed
+
 
 :owner: Places
 :name: Calculate Frecency Speed
@@ -1071,14 +1196,16 @@ browser_calculate_frecency_speed.js
  --verbose
 
 **Audits the speed of running calculate_frecency.**
+::::
 
 
 ## toolkit/components/url-classifier/tests/performance
 
 Performance tests for the URL Classifier
 
-perftest_exceptionListLookup.js
-===============================
+::::{dropdown} UrlClassifierExceptionListLookup
+:class-container: anchor-id-urlclassifierexceptionlistlookup
+
 
 :owner: Privacy Team
 :name: UrlClassifier.ExceptionListLookup
@@ -1092,6 +1219,7 @@ perftest_exceptionListLookup.js
  --verbose
 
 **Test the speed of nsIUrlClassifierExceptionList#matches.**
+::::
 
 
 If you have any questions, please see this [wiki page](https://wiki.mozilla.org/TestEngineering/Performance#Where_to_find_us).
