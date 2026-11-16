@@ -24,11 +24,11 @@ nsresult BodyTraverseFilesForCleanup(
     MOZ_DIAGNOSTIC_ASSERT(NS_SUCCEEDED(rv));
     MOZ_DIAGNOSTIC_ASSERT(parentFile);
 
-    nsAutoCString nativeLeafName;
-    rv = parentFile->GetNativeLeafName(nativeLeafName);
+    nsAutoString leafName;
+    rv = parentFile->GetLeafName(leafName);
     MOZ_DIAGNOSTIC_ASSERT(NS_SUCCEEDED(rv));
 
-    MOZ_DIAGNOSTIC_ASSERT(StringEndsWith(nativeLeafName, "morgue"_ns));
+    MOZ_DIAGNOSTIC_ASSERT(StringEndsWith(leafName, kMorgueDirectory));
   }
 #endif
 

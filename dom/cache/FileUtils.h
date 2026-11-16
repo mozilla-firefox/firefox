@@ -10,6 +10,7 @@
 #include "mozIStorageConnection.h"
 #include "mozilla/dom/cache/Types.h"
 #include "nsStreamUtils.h"
+#include "nsString.h"
 #include "nsTArrayForwardDeclare.h"
 
 struct nsID;
@@ -17,8 +18,10 @@ class nsIFile;
 
 namespace mozilla::dom::cache {
 
-#define PADDING_FILE_NAME u".padding"
-#define PADDING_TMP_FILE_NAME u".padding-tmp"
+extern const nsLiteralString kCachesSQLiteFilename;
+extern const nsLiteralString kMorgueDirectory;
+extern const nsLiteralString kPaddingFilename;
+extern const nsLiteralString kPaddingTmpFilename;
 
 enum class DirPaddingFile { FILE, TMP_FILE };
 

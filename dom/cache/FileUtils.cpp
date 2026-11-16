@@ -39,6 +39,11 @@ using mozilla::dom::quota::nsIFileKind;
 using mozilla::dom::quota::QuotaManager;
 using mozilla::dom::quota::QuotaObject;
 
+const nsLiteralString kCachesSQLiteFilename = u"caches.sqlite"_ns;
+const nsLiteralString kMorgueDirectory = u"morgue"_ns;
+const nsLiteralString kPaddingFilename = u".padding"_ns;
+const nsLiteralString kPaddingTmpFilename = u".padding-tmp"_ns;
+
 namespace {
 
 // Const variable for generate padding size.
@@ -70,8 +75,6 @@ int64_t BodyGeneratePadding(int64_t aBodyFileSize, uint32_t aPaddingInfo);
 nsresult DirectoryPaddingWrite(nsIFile& aBaseDir,
                                DirPaddingFile aPaddingFileType,
                                int64_t aPaddingSize);
-
-const auto kMorgueDirectory = u"morgue"_ns;
 
 bool IsFileNotFoundError(const nsresult aRv) {
   return aRv == NS_ERROR_FILE_NOT_FOUND;
@@ -392,6 +395,11 @@ int64_t BodyGeneratePadding(const int64_t aBodyFileSize,
   return RoundUp(randomSize, kRoundUpNumber) - aBodyFileSize;
 }
 
+nsLiteralString GetPaddingFilename(const DirPaddingFile aPaddingFileType) {
+  return aPaddingFileType == DirPaddingFile::TMP_FILE ? kPaddingTmpFilename
+                                                      : kPaddingFilename;
+}
+
 nsresult DirectoryPaddingWrite(nsIFile& aBaseDir,
                                DirPaddingFile aPaddingFileType,
                                int64_t aPaddingSize) {
@@ -399,9 +407,7 @@ nsresult DirectoryPaddingWrite(nsIFile& aBaseDir,
 
   QM_TRY_INSPECT(
       const auto& file,
-      CloneFileAndAppend(aBaseDir, aPaddingFileType == DirPaddingFile::TMP_FILE
-                                       ? nsLiteralString(PADDING_TMP_FILE_NAME)
-                                       : nsLiteralString(PADDING_FILE_NAME)));
+      CloneFileAndAppend(aBaseDir, GetPaddingFilename(aPaddingFileType)));
 
   QM_TRY_INSPECT(const auto& outputStream, NS_NewLocalFileOutputStream(file));
 
@@ -663,9 +669,7 @@ bool DirectoryPaddingFileExists(nsIFile& aBaseDir,
                                 DirPaddingFile aPaddingFileType) {
   QM_TRY_INSPECT(
       const auto& file,
-      CloneFileAndAppend(aBaseDir, aPaddingFileType == DirPaddingFile::TMP_FILE
-                                       ? nsLiteralString(PADDING_TMP_FILE_NAME)
-                                       : nsLiteralString(PADDING_FILE_NAME)),
+      CloneFileAndAppend(aBaseDir, GetPaddingFilename(aPaddingFileType)),
       false);
 
   QM_TRY_RETURN(MOZ_TO_RESULT_INVOKE_MEMBER(file, Exists), false);
@@ -675,9 +679,8 @@ Result<int64_t, nsresult> DirectoryPaddingGet(nsIFile& aBaseDir) {
   MOZ_DIAGNOSTIC_ASSERT(
       !DirectoryPaddingFileExists(aBaseDir, DirPaddingFile::TMP_FILE));
 
-  QM_TRY_INSPECT(
-      const auto& file,
-      CloneFileAndAppend(aBaseDir, nsLiteralString(PADDING_FILE_NAME)));
+  QM_TRY_INSPECT(const auto& file,
+                 CloneFileAndAppend(aBaseDir, kPaddingFilename));
 
   QM_TRY_UNWRAP(auto stream, NS_NewLocalFileInputStream(file));
 
@@ -795,12 +798,10 @@ nsresult DirectoryPaddingFinalizeWrite(nsIFile& aBaseDir) {
   MOZ_DIAGNOSTIC_ASSERT(
       DirectoryPaddingFileExists(aBaseDir, DirPaddingFile::TMP_FILE));
 
-  QM_TRY_INSPECT(
-      const auto& file,
-      CloneFileAndAppend(aBaseDir, nsLiteralString(PADDING_TMP_FILE_NAME)));
+  QM_TRY_INSPECT(const auto& file,
+                 CloneFileAndAppend(aBaseDir, kPaddingTmpFilename));
 
-  QM_TRY(MOZ_TO_RESULT(
-      file->RenameTo(nullptr, nsLiteralString(PADDING_FILE_NAME))));
+  QM_TRY(MOZ_TO_RESULT(file->RenameTo(nullptr, kPaddingFilename)));
 
   return NS_OK;
 }
@@ -830,9 +831,7 @@ nsresult DirectoryPaddingDeleteFile(nsIFile& aBaseDir,
                                     DirPaddingFile aPaddingFileType) {
   QM_TRY_INSPECT(
       const auto& file,
-      CloneFileAndAppend(aBaseDir, aPaddingFileType == DirPaddingFile::TMP_FILE
-                                       ? nsLiteralString(PADDING_TMP_FILE_NAME)
-                                       : nsLiteralString(PADDING_FILE_NAME)));
+      CloneFileAndAppend(aBaseDir, GetPaddingFilename(aPaddingFileType)));
 
   QM_TRY(QM_OR_ELSE_WARN_IF(
       // Expression.

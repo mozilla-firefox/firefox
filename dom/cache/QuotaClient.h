@@ -37,8 +37,6 @@ nsresult RestorePaddingFile(nsIFile* aBaseDir, mozIStorageConnection* aConn);
 nsresult WipePaddingFile(const CacheDirectoryMetadata& aDirectoryMetadata,
                          nsIFile* aBaseDir);
 
-extern const nsLiteralString kCachesSQLiteFilename;
-
 }  // namespace mozilla::dom::cache
 
 #endif  // mozilla_dom_cache_QuotaClient_h

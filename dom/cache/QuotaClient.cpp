@@ -151,9 +151,6 @@ Result<int64_t, nsresult> GetTotalDiskUsageFromDB(
 
 }  // namespace
 
-const nsLiteralString kCachesSQLiteFilename = u"caches.sqlite"_ns;
-const nsLiteralString kMorgueDirectoryFilename = u"morgue"_ns;
-
 CacheQuotaClient::CacheQuotaClient() {
   AssertIsOnBackgroundThread();
   MOZ_DIAGNOSTIC_ASSERT(!sInstance);
@@ -212,7 +209,7 @@ Result<UsageInfo, nsresult> CacheQuotaClient::InitOrigin(
               *dir, DirPaddingFile::FILE)));
 
           QM_TRY_INSPECT(const auto& morgueDir,
-                         CloneFileAndAppend(*dir, kMorgueDirectoryFilename));
+                         CloneFileAndAppend(*dir, kMorgueDirectory));
 
           QM_TRY(MOZ_TO_RESULT(mozilla::dom::cache::RemoveNsIFileRecursively(
               Nothing(), *morgueDir,
@@ -281,7 +278,7 @@ Result<UsageInfo, nsresult> CacheQuotaClient::InitOrigin(
 
             switch (dirEntryKind) {
               case nsIFileKind::ExistsAsDirectory:
-                if (!leafName.EqualsLiteral("morgue")) {
+                if (!leafName.Equals(kMorgueDirectory)) {
                   NS_WARNING("Unknown Cache directory found!");
                 }
 
@@ -307,8 +304,8 @@ Result<UsageInfo, nsresult> CacheQuotaClient::InitOrigin(
                 }
 
                 // Ignore directory padding file
-                if (leafName.EqualsLiteral(PADDING_FILE_NAME) ||
-                    leafName.EqualsLiteral(PADDING_TMP_FILE_NAME)) {
+                if (leafName.Equals(kPaddingFilename) ||
+                    leafName.Equals(kPaddingTmpFilename)) {
                   break;
                 }
 
