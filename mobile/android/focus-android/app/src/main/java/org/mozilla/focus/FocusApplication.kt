@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.browser.state.action.SearchAction
+import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.preferences.Branch
 import mozilla.components.support.AppServicesInitializer
 import mozilla.components.support.AppServicesInitializer.Config as AppServiceConfig
@@ -48,6 +49,7 @@ import org.mozilla.focus.session.VisibilityLifeCycleCallback
 import org.mozilla.focus.telemetry.FactsProcessor
 import org.mozilla.focus.telemetry.ProfilerMarkerFactProcessor
 import org.mozilla.focus.utils.AppConstants
+import org.mozilla.focus.utils.Settings
 
 /** Focus application class. */
 open class FocusApplication : Application(), Provider {
@@ -271,8 +273,30 @@ open class FocusApplication : Application(), Provider {
     }
 
     private fun initializeRemoteSettingsSupport() {
-        GlobalRemoteSettingsDependencyProvider.initialize(components.remoteSettingsService)
+        GlobalRemoteSettingsDependencyProvider.initialize(
+            remoteSettingsService = components.remoteSettingsService,
+            onRemoteCollectionsUpdated = ::setupRefreshingSearchEngines,
+        )
         components.remoteSettingsSyncScheduler.registerForSync()
+    }
+
+    @VisibleForTesting
+    internal fun setupRefreshingSearchEngines(
+        updatedCollections: List<String>,
+        settings: Settings = components.settings,
+        browserStore: BrowserStore = components.store,
+    ) {
+        val searchRelatedCollections = buildList {
+            add("search-config-v2")
+            add("search-config-overrides-v2")
+            add("search-config-icons")
+            if (settings.useSearchConfigV3) {
+                add("search-config-v3")
+            }
+        }
+        if (searchRelatedCollections.any { it in updatedCollections }) {
+            browserStore.dispatch(SearchAction.SearchConfigurationAvailabilityChanged(true))
+        }
     }
 
     private fun setTheme(context: Context) {
