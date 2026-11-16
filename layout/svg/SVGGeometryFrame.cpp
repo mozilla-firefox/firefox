@@ -856,10 +856,9 @@ WebRenderCommandsResult SVGGeometryFrame::CreateWebRenderCommands(
   const bool backfaceVisible = !aItem->BackfaceIsHidden();
   const bool antialias = ShouldAntiAlias();
 
-  // Fills the shape with a solid color. A rounded shape is a WebRender border
-  // whose curve the border shader already anti-aliases, and it keeps the
-  // device pixel snapping that makes its cached corner textures composite
-  // exactly, so only the rect case carries the anti-aliasing flag.
+  // Fills the shape with a solid color. A rounded shape is a rect with a
+  // rounded rect clip, whose curve and edges the clip already anti-aliases, so
+  // only the rect case carries the anti-aliasing flag.
   auto pushSolidFill = [&](wr::ColorF aColor) {
     wr::LayoutRect wrRect = toDevice(shape.AsRect());
     if (shape.IsRect()) {

@@ -1,0 +1,51 @@
+# Reference for rounded-clip-direct.yaml: one corner radius is made slightly
+# non-uniform so that the clips go through an intermediate render task.
+---
+root:
+  items:
+    - type: clip
+      id: 1
+      complex:
+        - rect: [10.5, 10.25, 100, 80]
+          radius: [[20, 20], [20, 20], [20, 20], [20, 20.01]]
+    - type: clip
+      id: 2
+      complex:
+        - rect: [140, 10, 400, 300]
+          radius: [[30, 30], [30, 30], [30, 30], [30, 30.01]]
+    - type: clip
+      id: 3
+      complex:
+        - rect: [10, 120, 120, 120]
+          radius: [[16, 16], [16, 16], [16, 16], [16, 16.01]]
+    - type: rect
+      bounds: [0, 0, 120, 100]
+      color: green
+      clip-chain: [1]
+    - type: rect
+      bounds: [140, 10, 400, 300]
+      color: blue
+      clip-chain: [2]
+    - type: gradient
+      bounds: [10, 120, 120, 120]
+      start: [0, 0]
+      end: [120, 120]
+      stops: [0.0, red, 1.0, yellow]
+      clip-chain: [3]
+    - type: stacking-context
+      bounds: [0, 0, 300, 300]
+      transform: translate(5, 260) scale(1.5)
+      items:
+        - type: clip
+          id: 4
+          complex:
+            - rect: [10, 10, 80, 60]
+              radius: [[10, 10], [10, 10], [10, 10], [10, 10.01]]
+        - type: rect
+          bounds: [0, 0, 100, 100]
+          color: [0, 128, 128, 0.5]
+          clip-chain: [4]
+    # Keeps the rects above from covering the picture cache slice entirely.
+    - type: rect
+      bounds: [600, 400, 10, 10]
+      color: black

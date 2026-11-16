@@ -4,6 +4,8 @@
 
 /// This shader renders solid colors or simple images in a color or alpha target.
 
+#define WR_QUAD_ROUNDED_CLIP
+
 #include ps_quad,sample_color0
 
 #define v_flags_mode v_flags.x
@@ -56,6 +58,12 @@ vec4 pattern_fragment(vec4 color) {
 
 #if defined(SWGL_DRAW_SPAN)
 void swgl_drawSpanRGBA8() {
+    // The span functions can't apply the rounded clip. Fall back to the
+    // fragment shader.
+    if (rounded_clip_is_enabled()) {
+        return;
+    }
+
     if (v_flags_mode == SHADER_MODE_COLOR) {
         swgl_commitSolidRGBA8(v_color);
         return;

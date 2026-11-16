@@ -690,6 +690,27 @@ impl GpuBufferDataF for QuadSegment {
     }
 }
 
+/// A rounded rectangle clip with the same circular radius in every corner,
+/// applied directly by ps_quad when the quad has `QuadFlags::ROUNDED_RECT_CLIP`.
+///
+/// Expressed in the same space as the quad's bounds, which is the device space
+/// of the target surface. Matches QuadRoundedClip in ps_quad.glsl. Its blocks
+/// come right after the QuadPrimitive blocks, before any segment.
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "capture", derive(Serialize))]
+pub struct QuadRoundedClip {
+    pub rect: DeviceRect,
+    pub radius: f32,
+}
+
+impl GpuBufferDataF for QuadRoundedClip {
+    const NUM_BLOCKS: usize = 2;
+    fn write(&self, writer: &mut GpuBufferWriterF) {
+        writer.push_one(self.rect);
+        writer.push_one([self.radius, 0.0, 0.0, 0.0]);
+    }
+}
+
 
 /// The coordinate space that the clip geometry (the quad rect) is relative to.
 ///

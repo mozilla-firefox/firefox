@@ -21,11 +21,11 @@ scale(*) == blend-container.yaml blend-container-ref.yaml
 == raster-roots-tiled-mask.yaml raster-roots-tiled-mask-ref.yaml
 platform(linux,mac) == inverted-ellipse.yaml inverted-ellipse.png
 platform(linux,mac) == clip-2d-z-rotations.yaml clip-2d-z-rotations.png
-platform(linux,mac) == sc-mask-with-blur.yaml sc-mask-with-blur.png
+platform(linux,mac) fuzzy(1,40) == sc-mask-with-blur.yaml sc-mask-with-blur.png
 platform(linux,mac) == clip-between-picclip-and-lca.yaml clip-between-picclip-and-lca.png
 == negative-tiled-rounded-rect.yaml negative-tiled-rounded-rect-ref.yaml
 fuzzy(2,1300) == tiled-repeated.yaml tiled-repeated.png
-scale(*) fuzzy-if(platform(android),123,45) == tiled-thin-quads.yaml tiled-thin-quads-ref.yaml
+scale(*) fuzzy(1,10) fuzzy-if(platform(android),123,45) == tiled-thin-quads.yaml tiled-thin-quads-ref.yaml
 scale(*) == extreme-scale-rounded-rect.yaml extreme-scale-rounded-rect.yaml
 scale(*) == different-scale-rounded-rect.yaml different-scale-rounded-rect-ref.yaml
 == clip-radius-exceeds-rect.yaml clip-radius-exceeds-rect.png
@@ -40,3 +40,4 @@ fuzzy(86,4200) fuzzy-if(platform(swgl),108,4200) fuzzy-if(platform(android),108,
 == path-conflation.yaml path-conflation-ref.yaml
 == path-fill-direct.yaml path-fill-direct-ref.yaml
 fuzzy(106,4) == nested-rotation-elliptical-clip.yaml nested-rotation-elliptical-clip-ref.yaml
+fuzzy(2,500) if(not(platform(swgl)),color_targets(2)) if(platform(swgl),color_targets(3)) == rounded-clip-direct.yaml rounded-clip-direct-ref.yaml

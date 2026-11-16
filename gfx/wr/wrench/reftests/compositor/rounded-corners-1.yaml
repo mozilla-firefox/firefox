@@ -1,5 +1,5 @@
 # Since there is no clip-chain shared between the two prims, the rounded
-# clip will be applied to the primitive, causing allocation of a mask surface.
+# clip will be applied to the primitive instead of the compositor surface.
 # The second prim is clipped out to make it match the reference.
 ---
 root:

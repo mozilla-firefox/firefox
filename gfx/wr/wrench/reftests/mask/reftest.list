@@ -5,7 +5,7 @@ fuzzy(1,10) == nested-mask.yaml nested-mask-ref.yaml
 scale(*) != mask.yaml green.yaml
 scale(*) == aligned-layer-rect.yaml aligned-layer-rect-ref.yaml
 scale(*) == mask-transformed-to-empty-rect.yaml mask-transformed-to-empty-rect-ref.yaml
-platform(linux,mac) == rounded-corners.yaml rounded-corners.png
+platform(linux,mac) fuzzy(1,16) == rounded-corners.yaml rounded-corners.png
 scale(*) != mask.yaml out-of-bounds.yaml
 platform(linux,mac) fuzzy(1,17500) color_targets(3) alpha_targets(0) == mask-atomicity.yaml mask-atomicity-ref.yaml
 platform(linux,mac) fuzzy(1,17500) == mask-atomicity-tiling.yaml mask-atomicity-ref.yaml

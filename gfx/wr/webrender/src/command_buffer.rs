@@ -100,6 +100,10 @@ bitflags! {
         /// them with the red channel in the fragment shader. Used with multiply blending, on top
         /// of premultiplied alpha content, it has the effect of applying a mask to the content under ir.
         const IS_MASK = 1 << 4;
+
+        /// If true, a `QuadRoundedClip` follows the quad primitive's blocks in the
+        /// gpu buffer and the shader applies it directly.
+        const ROUNDED_RECT_CLIP = 1 << 5;
     }
 }
 

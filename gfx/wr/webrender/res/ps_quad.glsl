@@ -32,6 +32,13 @@
 /// - void pattern_vertex(PrimitiveInfo prim)
 /// - vec4 pattern_fragment(vec4 base_color)
 ///```
+///
+/// A shader that defines WR_QUAD_ROUNDED_CLIP before including ps_quad can apply
+/// a rounded rectangle clip with a uniform circular radius (QF_ROUNDED_RECT_CLIP).
+/// The clip is in the same space as the quad's bounds, which must be device space.
+/// Its two blocks sit between the quad primitive and the segments. A shader with a
+/// SWGL span function must call rounded_clip_is_enabled() and fall back to the
+/// fragment shader when it returns true.
 
 // Default to a sampler2D source if the shader was compiled without an
 // explicit texture-kind feature.
@@ -54,6 +61,14 @@ flat varying lowp ivec4 v_flags;
 varying highp vec2 vLocalPos;
 #endif
 
+#ifdef WR_QUAD_ROUNDED_CLIP
+// xy: center of the clip rect in the render target, in the same space as
+// gl_FragCoord. zw: half size of the clip rect minus the radius.
+flat varying highp vec4 v_rounded_clip;
+// x: radius, y: 1.0 if the clip is enabled.
+flat varying highp vec2 v_rounded_clip_radius;
+#endif
+
 #ifdef WR_VERTEX_SHADER
 
 #define EDGE_AA_LEFT    1
@@ -72,6 +87,7 @@ varying highp vec2 vLocalPos;
 #define QF_APPLY_DEVICE_CLIP    2
 #define QF_USE_AA_SEGMENTS      8
 #define QF_IS_MASK              16
+#define QF_ROUNDED_RECT_CLIP    32
 
 #define INVALID_SEGMENT_INDEX   0xff
 
@@ -107,16 +123,32 @@ struct QuadPrimitive {
     vec4 color;
 };
 
-QuadSegment fetch_segment(int base, int index) {
+QuadSegment fetch_segment(int base, int quad_flags, int index) {
     QuadSegment seg;
 
-    vec4 texels[2] = fetch_from_gpu_buffer_2f(base + 5 + index * 2);
+    int offset = (quad_flags & QF_ROUNDED_RECT_CLIP) != 0 ? 7 : 5;
+    vec4 texels[2] = fetch_from_gpu_buffer_2f(base + offset + index * 2);
 
     seg.rect = RectWithEndpoint(texels[0].xy, texels[0].zw);
     seg.uv_rect = RectWithEndpoint(texels[1].xy, texels[1].zw);
 
     return seg;
 }
+
+#ifdef WR_QUAD_ROUNDED_CLIP
+struct QuadRoundedClip {
+    RectWithEndpoint rect;
+    float radius;
+};
+
+QuadRoundedClip fetch_rounded_clip(int prim_address) {
+    vec4 texels[2] = fetch_from_gpu_buffer_2f(prim_address + 5);
+    return QuadRoundedClip(
+        RectWithEndpoint(texels[0].xy, texels[0].zw),
+        texels[1].x
+    );
+}
+#endif
 
 QuadPrimitive fetch_primitive(int index) {
     QuadPrimitive prim;
@@ -252,7 +284,7 @@ PrimitiveInfo quad_primive_info(void) {
         seg.rect = prim.bounds;
         seg.uv_rect = prim.uv_rect;
     } else {
-        seg = fetch_segment(qi.prim_address_f, qi.segment_index);
+        seg = fetch_segment(qi.prim_address_f, qi.quad_flags, qi.segment_index);
     }
 
     // The local space rect that we will draw, which is effectively:
@@ -350,6 +382,19 @@ PrimitiveInfo quad_primive_info(void) {
 
     v_color = prim.color;
 
+#ifdef WR_QUAD_ROUNDED_CLIP
+    if ((qi.quad_flags & QF_ROUNDED_RECT_CLIP) != 0) {
+        QuadRoundedClip clip = fetch_rounded_clip(qi.prim_address_f);
+        vec2 half_size = 0.5 * (clip.rect.p1 - clip.rect.p0);
+        vec2 center = clip.rect.p0 + half_size - task.content_origin + task.task_rect.p0;
+        v_rounded_clip = vec4(center, half_size - clip.radius);
+        v_rounded_clip_radius = vec2(clip.radius, 1.0);
+    } else {
+        v_rounded_clip = vec4(0.0);
+        v_rounded_clip_radius = vec2(0.0);
+    }
+#endif
+
     vec4 pattern_tx = prim.pattern_scale_offset;
     seg.rect = scale_offset_map_rect(pattern_tx, seg.rect);
 
@@ -414,6 +459,23 @@ void main() {
 #ifdef WR_FRAGMENT_SHADER
 vec4 pattern_fragment(vec4 base_color);
 
+#ifdef WR_QUAD_ROUNDED_CLIP
+bool rounded_clip_is_enabled() {
+    return v_rounded_clip_radius.y != 0.0;
+}
+
+float rounded_clip_fragment() {
+    // Signed distance to a rounded box centered on the origin, see
+    // https://www.shadertoy.com/view/4llXD7
+    // The position is in device pixels, so the AA range is one.
+    float radius = v_rounded_clip_radius.x;
+    vec2 q = abs(gl_FragCoord.xy - v_rounded_clip.xy) - v_rounded_clip.zw;
+    float dist = min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - radius;
+
+    return distance_aa(1.0, dist);
+}
+#endif
+
 float antialiasing_fragment() {
     float alpha = 1.0;
 #ifndef SWGL_ANTIALIAS
@@ -428,6 +490,12 @@ void main() {
     vec4 base_color = v_color;
     base_color *= antialiasing_fragment();
     vec4 output_color = pattern_fragment(base_color);
+#ifdef WR_QUAD_ROUNDED_CLIP
+    // Uniform per primitive.
+    if (rounded_clip_is_enabled()) {
+        output_color *= rounded_clip_fragment();
+    }
+#endif
 
     if (v_flags_is_mask != 0) {
         output_color = output_color.rrrr;

@@ -4,7 +4,7 @@ scale(*) == very-big-tile-size.yaml very-big-tile-size-ref.yaml
 scale(*) == tile-with-spacing.yaml tile-with-spacing-ref.yaml
 skip_on(android,device) fuzzy(1,331264) fuzzy-if(platform(win),1,686187) == tile-repeat-prim-or-decompose.yaml tile-repeat-prim-or-decompose-ref.yaml
 platform(linux,mac) options(allow-mipmaps) == downscale.yaml downscale.png
-skip_on(android,device) fuzzy-if(platform(swgl),1,20) == segments.yaml segments.png
+skip_on(android,device) fuzzy(1,16) fuzzy-if(platform(swgl),1,20) == segments.yaml segments.png
 platform(linux,mac) fuzzy(1,6200) == yuv.yaml yuv.png
 platform(linux,mac) fuzzy(1,6200) fuzzy-if(platform(swgl),1,205000) == yuv-clip.yaml yuv.png
 scale(*) skip_on(android,device) == tiled-clip-chain.yaml tiled-clip-chain-ref.yaml
