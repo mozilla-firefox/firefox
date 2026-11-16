@@ -13,8 +13,12 @@ class TestLogger:
             "thread": threadname,
             "pid": os.getpid(),
         }
-        directory = os.environ.get("MOZ_UPLOAD_DIR", ".")
-        self.fh = open(os.path.join(directory, threadname + "_raw.log"), "a")
+        # Only write the raw JSON log in automation, where it's uploaded as an
+        # artifact.
+        self.fh = None
+        directory = os.environ.get("MOZ_UPLOAD_DIR")
+        if directory:
+            self.fh = open(os.path.join(directory, threadname + "_raw.log"), "a")
 
     def _record(self, **kwargs):
         record = self.template.copy()
@@ -24,7 +28,8 @@ class TestLogger:
         return record
 
     def _log_obj(self, obj):
-        print(json.dumps(obj, sort_keys=True), file=self.fh)
+        if self.fh:
+            print(json.dumps(obj, sort_keys=True), file=self.fh)
 
     def _log(self, **kwargs):
         self._log_obj(self._record(**kwargs))
