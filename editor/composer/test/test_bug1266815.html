@@ -46,6 +46,8 @@ var helperAppDlgPromise = new Promise(function(resolve) {
       resolve();
       registrar.unregisterFactory(MOCK_HELPERAPP_DIALOG_CID,
                                   mockHelperAppService);
+      registrar.registerFactory(HELPERAPP_DIALOG_CID, "",
+                                HELPERAPP_DIALOG_CONTRACT_ID, null);
     },
     QueryInterface: ChromeUtils.generateQI(["nsIHelperAppLauncherDialog"]),
   };
