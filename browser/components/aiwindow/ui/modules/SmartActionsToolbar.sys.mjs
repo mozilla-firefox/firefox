@@ -183,6 +183,7 @@ function render(win, actions) {
   toolbar.replaceChildren(
     ...actions.map(action => {
       const button = doc.createElement("moz-button");
+      button.type = "toolbar";
       button.size = "small";
       button.iconSrc = action.iconSrc;
       button.label = action.label;
