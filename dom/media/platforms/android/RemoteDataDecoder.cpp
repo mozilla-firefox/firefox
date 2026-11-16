@@ -244,10 +244,10 @@ class RemoteVideoDecoder final : public RemoteDataDecoder {
         }
         int32_t width = 0, height = 0;
         if (!imageSize &&
-            NS_SUCCEEDED(aFormat->GetInteger(
-                java::sdk::MediaFormat::KEY_WIDTH, &width)) &&
-            NS_SUCCEEDED(aFormat->GetInteger(
-                java::sdk::MediaFormat::KEY_HEIGHT, &height))) {
+            NS_SUCCEEDED(aFormat->GetInteger(java::sdk::MediaFormat::KEY_WIDTH,
+                                             &width)) &&
+            NS_SUCCEEDED(aFormat->GetInteger(java::sdk::MediaFormat::KEY_HEIGHT,
+                                             &height))) {
           if (width > 0 && height > 0) {
             imageSize.emplace(width, height);
           } else {
