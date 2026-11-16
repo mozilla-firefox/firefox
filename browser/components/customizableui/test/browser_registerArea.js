@@ -12,11 +12,10 @@ add_task(async function test_overflowable_false() {
   registerCleanupFunction(removeCustomToolbars);
 
   const kToolbarId = "no-overflow-toolbar";
-  createToolbarWithPlacements(kToolbarId, ["spring"], {
+  let node = createToolbarWithPlacements(kToolbarId, ["spring"], {
     overflowable: false,
   });
 
-  let node = CustomizableUI.getWidget(kToolbarId).forWindow(window).node;
   Assert.ok(
     !node.hasAttribute("overflowable"),
     "Toolbar should not be overflowable"

@@ -356,9 +356,6 @@ tags = "fullscreen"
 ["browser_proton_toolbar_hide_toolbarbuttons.js"]
 
 ["browser_registerArea.js"]
-skip-if = [
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && opt && a11y_checks && swgl && verify-standalone",
-]
 
 ["browser_reload_tab.js"]
 
