@@ -10,6 +10,8 @@
 #include "PrincipalChangeObserver.h"
 #include "PrincipalHandle.h"
 #include "mozilla/DOMEventTargetHelper.h"
+#include "mozilla/StateMirroring.h"
+#include "mozilla/StateWatching.h"
 #include "mozilla/WeakPtr.h"
 #include "mozilla/dom/MediaStreamTrackBinding.h"
 #include "mozilla/dom/MediaTrackCapabilitiesBinding.h"
@@ -612,6 +614,12 @@ class MediaStreamTrack : public DOMEventTargetHelper, public SupportsWeakPtr {
   void NotifyPrincipalHandleChanged(const PrincipalHandle& aNewPrincipalHandle);
 
   /**
+   * Called on the main thread when mTrackEnded changes, i.e., when mTrack has
+   * ended in the MediaTrackGraph. Queues a task to end this track.
+   */
+  void OnTrackEnded();
+
+  /**
    * Called when this track's readyState transitions to "ended".
    * Notifies all MediaStreamTrackConsumers that this track ended.
    */
@@ -704,6 +712,9 @@ class MediaStreamTrack : public DOMEventTargetHelper, public SupportsWeakPtr {
   bool mEnabled;
   bool mMuted;
   dom::MediaTrackConstraints mConstraints;
+  WatchManager<MediaStreamTrack> mWatchManager;
+  // Mirrors mTrack's ended state from the MediaTrackGraph while we're live.
+  Mirror<bool> mTrackEnded;
 };
 
 }  // namespace dom

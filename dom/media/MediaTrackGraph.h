@@ -1113,7 +1113,8 @@ class MediaTrackGraph {
    * autoending is disabled, TrackUnionStream will continue to produce silence
    * for audio or the last video frame for video.
    */
-  ProcessedMediaTrack* CreateForwardedInputTrack(MediaSegment::Type aType);
+  ProcessedMediaTrack* CreateForwardedInputTrack(
+      MediaSegment::Type aType, MediaTrack::Flags aFlags = MediaTrack::Flags());
   /**
    * Create a track that will mix all its audio inputs.
    */

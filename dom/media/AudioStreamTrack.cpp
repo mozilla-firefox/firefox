@@ -141,8 +141,7 @@ void AudioStreamTrack::SetReadyState(MediaStreamTrackState aState) {
   // This state transition may occur in various situations, such as when the
   // track is stopped by a user action, or when mTrack is ended during its
   // ProcessInput (because its source has ended), which is then detected by
-  // MediaTrackGraph and ultimately notifies the ended-signal via MTGListener,
-  // reaching this point.
+  // MediaTrackGraph and reaches this point through the mirrored ended state.
   if (!mCrossGraphs.IsEmpty() && aState == MediaStreamTrackState::Ended) {
     MOZ_ASSERT(!Ended());
     LOG(LogLevel::Verbose,
