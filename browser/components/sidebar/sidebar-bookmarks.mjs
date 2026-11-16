@@ -7,10 +7,7 @@ const lazy = {};
 import { html, when } from "chrome://global/content/vendor/lit.all.mjs";
 
 import { SidebarPage } from "./sidebar-page.mjs";
-import {
-  navigateToLink,
-  escapeHtmlEntities,
-} from "chrome://browser/content/firefoxview/helpers.mjs";
+import { escapeHtmlEntities } from "chrome://browser/content/firefoxview/helpers.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/sidebar/sidebar-bookmark-list.mjs";
 
@@ -295,7 +292,7 @@ export class SidebarBookmarks extends SidebarPage {
 
     this.treeView.resetSelection();
     list.dispatchEvent(anchorEvent);
-    navigateToLink(e, row.url, { forceNewTab: false });
+    this.navigateToPlacesLink(e, row.url);
     Glean.sidebar.link.bookmarks.add(1);
   }
 

@@ -11,8 +11,6 @@ import {
   when,
   nothing,
 } from "chrome://global/content/vendor/lit.all.mjs";
-import { navigateToLink } from "chrome://browser/content/firefoxview/helpers.mjs";
-
 import { SidebarPage } from "./sidebar-page.mjs";
 
 ChromeUtils.defineESModuleGetters(lazy, {
@@ -407,7 +405,7 @@ export class SidebarHistory extends SidebarPage {
   }
 
   handleNavigateToLink(e) {
-    navigateToLink(e, e.originalTarget.url, { forceNewTab: false });
+    this.navigateToPlacesLink(e, e.originalTarget.url);
     Glean.sidebar.link.history.add(1);
     this.treeView.resetSelection();
     this.treeView.selectRowInList(e.currentTarget, e.originalTarget.guid);

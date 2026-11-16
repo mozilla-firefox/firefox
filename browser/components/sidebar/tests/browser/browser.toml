@@ -84,6 +84,8 @@ tags = "vertical-tabs"
 
 ["browser_opentabs_sidebar.js"]
 
+["browser_places_sidebar.js"]
+
 ["browser_resize_sidebar.js"]
 
 ["browser_resource_monitor_telemetry.js"]

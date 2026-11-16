@@ -206,6 +206,26 @@ export class SidebarPage extends MozLitElement {
   }
 
   /**
+   * Open the URL of a bookmark or history entry.
+   *
+   * @param {Event} e
+   *   The primary action event of the row.
+   * @param {string} url
+   *   The URL to open.
+   */
+  navigateToPlacesLink(e, url) {
+    let win = this.topWindow;
+    let where = lazy.PlacesUIUtils.whereToOpenUILink(
+      url,
+      e.detail.originalEvent,
+      win
+    );
+    win.openTrustedLinkIn(url, where, {
+      inBackground: lazy.PlacesUIUtils.loadUILinkInBackground,
+    });
+  }
+
+  /**
    * Handle a command if it is a common one that is used in multiple pages.
    * Commands specific to a page should be handled in a subclass.
    *
