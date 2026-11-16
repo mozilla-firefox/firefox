@@ -39,13 +39,6 @@ var CaptivePortalWatcher = {
     return Services.prefs.getCharPref("captivedetect.canonicalURL");
   },
 
-  get _browserBundle() {
-    delete this._browserBundle;
-    return (this._browserBundle = Services.strings.createBundle(
-      "chrome://browser/locale/browser.properties"
-    ));
-  },
-
   init() {
     Services.obs.addObserver(this, "captive-portal-login");
     Services.obs.addObserver(this, "captive-portal-login-abort");
@@ -324,9 +317,7 @@ var CaptivePortalWatcher = {
 
     let buttons = [
       {
-        label: this._browserBundle.GetStringFromName(
-          "captivePortal.showLoginPage2"
-        ),
+        "l10n-id": "captive-portal-show-login-page-button",
         callback: () => {
           this.ensureCaptivePortalTab();
 
@@ -335,10 +326,6 @@ var CaptivePortalWatcher = {
         },
       },
     ];
-
-    let message = this._browserBundle.GetStringFromName(
-      "captivePortal.infoMessage3"
-    );
 
     let closeHandler = aEventName => {
       if (aEventName == "dismissed") {
@@ -360,7 +347,7 @@ var CaptivePortalWatcher = {
     this._notificationPromise = gNotificationBox.appendNotification(
       this.PORTAL_NOTIFICATION_VALUE,
       {
-        label: message,
+        label: { "l10n-id": "captive-portal-info-message" },
         priority: gNotificationBox.PRIORITY_INFO_MEDIUM,
         eventCallback: closeHandler,
       },

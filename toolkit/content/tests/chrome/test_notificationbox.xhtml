@@ -47,6 +47,10 @@ var testtag_notificationbox_buttons_nopopup = [
 let testtag_notificationbox_button_l10n = [
   {
     "l10n-id": "test-id"
+  },
+  {
+    "l10n-id": "test-id-with-args",
+    "l10n-args": { hostName: "example" }
   }
 ];
 
@@ -177,8 +181,8 @@ var tests =
   },
   {
     /*
-    Ensures that buttons created with the "l10n-id" parameter have
-    their "l10n-id" assigned correctly.
+    Ensures that buttons created with the "l10n-id" and "l10n-args"
+    parameters have their "l10n-id" and "l10n-args" assigned correctly.
     */
     async test(nb, ntf) {
       ntf = await nb.appendNotification("note", {
@@ -187,8 +191,14 @@ var tests =
         priority: nb.PRIORITY_INFO_LOW,
       }, testtag_notificationbox_button_l10n);
       SimpleTest.is(ntf && ntf.localName == NOTIFICATION_LOCAL_NAME, true, "append notification");
-      const button = ntf.buttonContainer.querySelector(".notification-button");
+      const [button, buttonWithArgs] = ntf.buttonContainer.querySelectorAll(".notification-button");
       SimpleTest.is(button.dataset.l10nId, "test-id", "create notification button with correctly assigned l10n id");
+      SimpleTest.ok(!button.hasAttribute("data-l10n-args"), "button without l10n-args has no data-l10n-args");
+      SimpleTest.isDeeply(
+        document.l10n.getAttributes(buttonWithArgs),
+        { id: "test-id-with-args", args: { hostName: "example" } },
+        "create notification button with correctly assigned l10n id and args"
+      );
       return ntf;
     },
     result(nb, ntf) {

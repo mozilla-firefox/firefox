@@ -11,12 +11,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   URILoadingHelper: "resource:///modules/URILoadingHelper.sys.mjs",
 });
 
-ChromeUtils.defineLazyGetter(lazy, "browserBundle", () => {
-  return Services.strings.createBundle(
-    "chrome://browser/locale/browser.properties"
-  );
-});
-
 class SafeBrowsingNotificationBox {
   _currentURIBaseDomain = null;
 
@@ -192,12 +186,7 @@ export class BlockedSiteParent extends EscapablePageParent {
 
     let buttons = [
       {
-        label: lazy.browserBundle.GetStringFromName(
-          "safebrowsing.getMeOutOfHereButton.label"
-        ),
-        accessKey: lazy.browserBundle.GetStringFromName(
-          "safebrowsing.getMeOutOfHereButton.accessKey"
-        ),
+        "l10n-id": "safebrowsing-get-me-out-of-here-button",
         callback: () => {
           let browser = browsingContext.top.embedderElement;
           this.leaveErrorPage(browser, /* Never go back */ false);
@@ -212,19 +201,12 @@ export class BlockedSiteParent extends EscapablePageParent {
         ...blockedInfo,
         uri: uri.asciiSpec,
       });
-      title = lazy.browserBundle.GetStringFromName(
-        "safebrowsing.reportedAttackSite"
-      );
+      title = { "l10n-id": "safebrowsing-reported-attack-site-message" };
       // There's no button if we can not get report url, for example if the provider
       // of blockedInfo is not Google
       if (reportUrl) {
         buttons[1] = {
-          label: lazy.browserBundle.GetStringFromName(
-            "safebrowsing.notAnAttackButton.label"
-          ),
-          accessKey: lazy.browserBundle.GetStringFromName(
-            "safebrowsing.notAnAttackButton.accessKey"
-          ),
+          "l10n-id": "safebrowsing-not-an-attack-site-button",
           callback() {
             lazy.URILoadingHelper.openTrustedLinkIn(
               chromeWin,
@@ -239,19 +221,12 @@ export class BlockedSiteParent extends EscapablePageParent {
         ...blockedInfo,
         uri: uri.asciiSpec,
       });
-      title = lazy.browserBundle.GetStringFromName(
-        "safebrowsing.deceptiveSite"
-      );
+      title = { "l10n-id": "safebrowsing-deceptive-site-message" };
       // There's no button if we can not get report url, for example if the provider
       // of blockedInfo is not Google
       if (reportUrl) {
         buttons[1] = {
-          label: lazy.browserBundle.GetStringFromName(
-            "safebrowsing.notADeceptiveSiteButton.label"
-          ),
-          accessKey: lazy.browserBundle.GetStringFromName(
-            "safebrowsing.notADeceptiveSiteButton.accessKey"
-          ),
+          "l10n-id": "safebrowsing-not-a-deceptive-site-button",
           callback() {
             lazy.URILoadingHelper.openTrustedLinkIn(
               chromeWin,
@@ -262,15 +237,11 @@ export class BlockedSiteParent extends EscapablePageParent {
         };
       }
     } else if (reason === "unwanted") {
-      title = lazy.browserBundle.GetStringFromName(
-        "safebrowsing.reportedUnwantedSite"
-      );
+      title = { "l10n-id": "safebrowsing-reported-unwanted-site-message" };
       // There is no button for reporting errors since Google doesn't currently
       // provide a URL endpoint for these reports.
     } else if (reason === "harmful") {
-      title = lazy.browserBundle.GetStringFromName(
-        "safebrowsing.reportedHarmfulSite"
-      );
+      title = { "l10n-id": "safebrowsing-reported-harmful-site-message" };
       // There is no button for reporting errors since Google doesn't currently
       // provide a URL endpoint for these reports.
     }

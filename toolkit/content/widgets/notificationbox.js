@@ -111,6 +111,8 @@
      *          "l10n-id"
      *            Localization id for the <button>, to be used instead of
      *            specifying a separate label and access key.
+     *          "l10n-args"
+     *            Optional localization arguments for "l10n-id".
      *          callback:
      *            When the button is used, this is called with the arguments:
      *             1. The <notification-message> element.
@@ -607,7 +609,11 @@
           }
 
           if (localeId) {
-            document.l10n.setAttributes(buttonElem, localeId);
+            document.l10n.setAttributes(
+              buttonElem,
+              localeId,
+              button["l10n-args"]
+            );
           } else {
             buttonElem.setAttribute(link ? "value" : "label", button.label);
             if (typeof button.accessKey == "string") {
