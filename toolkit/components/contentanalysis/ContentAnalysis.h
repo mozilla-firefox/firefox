@@ -241,6 +241,14 @@ class ContentAnalysis final : public nsIContentAnalysis,
       mozilla::dom::WindowGlobalParent* aWindow, nsITransferable* aTransferable,
       ContentAnalysisCallback* aResolver);
 
+  // Whether aRequesting is web content in the page whose top-level document
+  // has inner window id aSourceTopInnerWindowId and whose document principal
+  // subsumes aSourcePrincipal. null, chrome and system-principal windows return
+  // false.
+  static bool IsSamePageAndSite(dom::WindowGlobalParent* aRequesting,
+                                uint64_t aSourceTopInnerWindowId,
+                                nsIPrincipal* aSourcePrincipal);
+
   using FilesAllowedPromise = MozPromise<nsCOMArray<nsIFile>, nsresult, true>;
   // Checks the passed in files in "batch mode", meaning that all requests will
   // be done even if some of them are BLOCKED.  Unlike the other Check

@@ -722,6 +722,93 @@ add_task(async function testCopyIgnoresSameTabBypass() {
   );
 });
 
+// The same-tab bypass only covers the copying page: after the tab navigates
+// to another URL on the same origin, a paste of the same clipboard data is
+// analyzed again. copyInterception says whether the copy itself goes through
+// content analysis first.
+async function testSameTabBypassEndsWithNavigation(copyInterception) {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [
+        "browser.contentanalysis.interception_point.clipboard_copy.enabled",
+        copyInterception,
+      ],
+      ["browser.contentanalysis.bypass_for_same_tab_operations", true],
+    ],
+  });
+  try {
+    mockCA.setupForTest(/* shouldAllowRequest */ true);
+    setClipboardText(PREVIOUS_CLIPBOARD_TEXT);
+
+    let tab = await openTestPage();
+    let browser = tab.linkedBrowser;
+
+    let execCommandResult = await SpecialPowers.spawn(browser, [], () => {
+      content.wrappedJSObject.selectCopySource();
+      return content.document.execCommand("copy");
+    });
+    is(execCommandResult, true, "the copy succeeded");
+    await waitForClipboardText(COPIED_PLAIN_TEXT);
+    is(
+      mockCA.calls.length,
+      copyInterception ? 1 : 0,
+      "the copy was analyzed only with copy interception on"
+    );
+
+    let pasteIntoTarget = async () => {
+      mockCA.setupForTest(/* shouldAllowRequest */ false);
+      await SpecialPowers.spawn(browser, [], () => {
+        let target = content.document.getElementById("pasteTarget");
+        target.textContent = "";
+        target.focus();
+        content.getSelection().collapse(target, 0);
+      });
+      await BrowserTestUtils.synthesizeKey("v", { accelKey: true }, browser);
+      return SpecialPowers.spawn(browser, [], () => {
+        return content.document.getElementById("pasteTarget").textContent;
+      });
+    };
+    let pasted = await pasteIntoTarget();
+    is(pasted, COPIED_PLAIN_TEXT, "the copying page pastes the copy");
+    is(mockCA.calls.length, 0, "the same-page paste was not analyzed");
+
+    let navigated = PAGE_URL + "?navigated";
+    BrowserTestUtils.startLoadingURIString(browser, navigated);
+    await BrowserTestUtils.browserLoaded(browser, false, navigated);
+
+    pasted = await pasteIntoTarget();
+    is(pasted, "", "the navigated page's paste is blocked by the check");
+    is(mockCA.calls.length, 1, "the paste was analyzed, not bypassed");
+    is(
+      mockCA.calls[0].reason,
+      Ci.nsIContentAnalysisRequest.eClipboardPaste,
+      "the request is the paste"
+    );
+    is(
+      mockCA.calls[0].url.spec,
+      navigated,
+      "the paste request has the new URL"
+    );
+    is(
+      mockCA.calls[0].textContent,
+      COPIED_PLAIN_TEXT,
+      "the paste request has the copied text"
+    );
+
+    BrowserTestUtils.removeTab(tab);
+  } finally {
+    await SpecialPowers.popPrefEnv();
+  }
+}
+
+add_task(async function testSameTabBypassEndsWithNavigationCopyAnalyzed() {
+  await testSameTabBypassEndsWithNavigation(/* copyInterception */ true);
+});
+
+add_task(async function testSameTabBypassEndsWithNavigationCopyNotAnalyzed() {
+  await testSameTabBypassEndsWithNavigation(/* copyInterception */ false);
+});
+
 // An allowed copy must not pre-approve the paste of the same data.
 
 add_task(async function testAllowedCopyDoesNotSeedPasteCache() {

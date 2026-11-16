@@ -124,11 +124,9 @@ bool SourceIsSameTab(nsIContentAnalysisRequest* aRequest) {
   RefPtr<mozilla::dom::WindowGlobalParent> windowGlobal;
   MOZ_ALWAYS_SUCCEEDS(
       aRequest->GetWindowGlobalParent(getter_AddRefs(windowGlobal)));
-  return windowGlobal->GetBrowsingContext()->Top() ==
-             sourceWindowGlobal->GetBrowsingContext()->Top() &&
-         windowGlobal->DocumentPrincipal() &&
-         windowGlobal->DocumentPrincipal()->Subsumes(
-             sourceWindowGlobal->DocumentPrincipal());
+  return mozilla::contentanalysis::ContentAnalysis::IsSamePageAndSite(
+      windowGlobal, sourceWindowGlobal->TopWindowContext()->InnerWindowId(),
+      sourceWindowGlobal->DocumentPrincipal());
 }
 
 // Only used to pick the wording of the dialogs, so that a blocked copy says
@@ -934,6 +932,26 @@ void ContentAnalysis::CachedClipboardResponse::SetCachedResponse(
   }
 
   mData.AppendElement(std::make_pair(aURI, aAction));
+}
+
+/* static */
+bool ContentAnalysis::IsSamePageAndSite(dom::WindowGlobalParent* aRequesting,
+                                        uint64_t aSourceTopInnerWindowId,
+                                        nsIPrincipal* aSourcePrincipal) {
+  if (!aRequesting || !aSourcePrincipal || !aSourceTopInnerWindowId) {
+    return false;
+  }
+  nsIPrincipal* principal = aRequesting->DocumentPrincipal();
+  dom::BrowsingContext* browsingContext = aRequesting->GetBrowsingContext();
+  // The system principal subsumes everything, so a parent-process or chrome
+  // window has to be ruled out explicitly rather than through Subsumes().
+  if (!principal || principal->IsSystemPrincipal() || !browsingContext ||
+      !browsingContext->IsContent()) {
+    return false;
+  }
+  dom::WindowContext* top = aRequesting->TopWindowContext();
+  return top && top->InnerWindowId() == aSourceTopInnerWindowId &&
+         principal->Subsumes(aSourcePrincipal);
 }
 
 NS_IMETHODIMP ContentAnalysis::SetCachedResponse(
