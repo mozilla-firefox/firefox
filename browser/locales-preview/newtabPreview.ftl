@@ -10,6 +10,8 @@
 # show.
 newtab-widget-placeholder = Watch this space
 
+newtab-wallpaper-category-title-predecessor = Predecessor
+
 ## Solitaire widget
 
 # Context menu item linking to the Yahoo website, the provider of the solitaire game.

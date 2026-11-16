@@ -42,6 +42,7 @@ export const NEWTAB_DARK_THEME = {
 export const WALLPAPER_CATEGORIES = {
   Abstracts: "abstracts",
   Celestial: "celestial",
+  Predecessor: "predecessor",
   Photographs: "photographs",
   SolidColors: "solid-colors",
   Firefox: "firefox",

@@ -408,6 +408,8 @@ export class _WallpaperCategories extends React.PureComponent {
         return "newtab-wallpaper-category-title-abstract";
       case WALLPAPER_CATEGORIES.Celestial:
         return "newtab-wallpaper-category-title-celestial";
+      case WALLPAPER_CATEGORIES.Predecessor:
+        return "newtab-wallpaper-category-title-predecessor";
       case WALLPAPER_CATEGORIES.Photographs:
         return "newtab-wallpaper-category-title-photographs";
       case WALLPAPER_CATEGORIES.SolidColors:

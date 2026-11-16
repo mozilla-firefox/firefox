@@ -471,6 +471,7 @@ export class WallpaperFeed {
       "firefox",
       "abstracts",
       "celestial",
+      "predecessor",
       "photographs",
       "solid-colors",
     ];
