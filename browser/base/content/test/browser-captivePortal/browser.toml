@@ -12,9 +12,6 @@ prefs = [
 ["browser_captivePortalTabReference.js"]
 
 ["browser_captivePortal_certErrorUI.js"]
-skip-if = [
-  "debug && verify-standalone",
-]
 
 ["browser_captivePortal_https_only.js"]
 
