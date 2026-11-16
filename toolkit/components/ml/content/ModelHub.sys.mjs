@@ -42,6 +42,36 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
  * }} HeadersRecord
  */
 
+/**
+ * @typedef {{
+ *   engineId: string,
+ *   taskName: string,
+ *   model: string,
+ *   revision: string,
+ *   file: string,
+ *   featureId: string,
+ *   sessionId: string,
+ *   modelHubRootUrl?: string,
+ *   modelHubUrlTemplate?: string,
+ *   progressCallback?: ?function(ProgressAndStatusCallbackParams):void,
+ *   telemetryData?: object,
+ *   abortSignal?: ?AbortSignal,
+ * }} GetModelDataAsFileConfig
+ */
+
+/**
+ * @typedef {{
+ *   promise: Promise<[string, ModelFileHeaders]>,
+ *   progressCallbacks: Map<object, function(ProgressAndStatusCallbackParams):void>,
+ *   controller: AbortController,
+ *   waiters: Set<object>,
+ *   downloadStarted: boolean,
+ *   downloadStartedAt: number,
+ *   duration: number,
+ *   lastProgress: ?ProgressAndStatusCallbackParams,
+ * }} InFlightDownload
+ */
+
 const lazy = XPCOMUtils.declareLazy({
   clearTimeout: "resource://gre/modules/Timer.sys.mjs",
   ObjectUtils: "resource://gre/modules/ObjectUtils.sys.mjs",
@@ -830,9 +860,13 @@ class IndexedDBCache {
         "readwrite"
       );
       const store = transaction.objectStore(storeName);
-      const request = store.put(data);
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve();
+      store.put(data);
+      transaction.oncomplete = () => resolve();
+      transaction.onabort = () =>
+        reject(
+          transaction.error ??
+            new DOMException("The transaction was aborted.", "AbortError")
+        );
     });
   }
 
@@ -1045,32 +1079,30 @@ class IndexedDBCache {
    * @param {string} config.model
    * @param {string} config.revision
    * @param {string} config.file
+   * @returns {Promise<void>}
    */
-  async #updateEngines({ engineId, model, revision, file }) {
-    // Add the consumer id to the set of consumer ids
-    const stored = /** @type {Array<EngineRecord>} */ (
-      await this.#getData({
-        storeName: this.enginesStoreName,
-        key: [model, revision, file],
-      })
-    );
-
-    let engineIds;
-
-    if (stored.length) {
-      engineIds = stored[0].engineIds || [];
-      if (!engineIds.includes(engineId)) {
-        engineIds.push(engineId);
-      }
-    } else {
-      engineIds = [engineId];
-    }
-
-    await this.#updateData(this.enginesStoreName, {
-      engineIds,
-      model,
-      revision,
-      file,
+  #updateEngines({ engineId, model, revision, file }) {
+    return new Promise((resolve, reject) => {
+      const transaction = this.#requireDB().transaction(
+        [this.enginesStoreName],
+        "readwrite"
+      );
+      const store = transaction.objectStore(this.enginesStoreName);
+      const getRequest = store.get([model, revision, file]);
+      transaction.oncomplete = () => resolve();
+      transaction.onabort = () =>
+        reject(
+          transaction.error ??
+            new DOMException("The transaction was aborted.", "AbortError")
+        );
+      getRequest.onsuccess = () => {
+        const stored = /** @type {EngineRecord} */ (getRequest.result);
+        const engineIds = stored?.engineIds ? [...stored.engineIds] : [];
+        if (!engineIds.includes(engineId)) {
+          engineIds.push(engineId);
+        }
+        store.put({ engineIds, model, revision, file });
+      };
     });
   }
 
@@ -1579,6 +1611,20 @@ export class ModelHub {
   #downloadStartTime = new Map();
 
   /**
+   * Protect against simultaneous downloads.
+   *
+   * @type {Map<string, InFlightDownload>}
+   */
+  #inFlightDownloads = new Map();
+
+  /**
+   * Tracks pending cleanups for file downloads by URL.
+   *
+   * @type {Map<string, Promise<void>>}
+   */
+  #pendingCleanups = new Map();
+
+  /**
    * Create an instance of ModelHub.
    *
    * @param {object} [config]
@@ -1967,6 +2013,7 @@ export class ModelHub {
    * @param {string} config.modelHubRootUrl - root url of the model hub
    * @param {string} config.modelHubUrlTemplate - url template of the model hub
    * @param {?function(ProgressAndStatusCallbackParams):void} [config.progressCallback] A function to call to indicate progress status.
+   * @param {?AbortSignal} [config.abortSignal] - AbortSignal to cancel the download.
    * @returns {Promise<[ArrayBuffer, ModelFileHeaders]>} The file content
    */
   async getModelFileAsArrayBuffer({
@@ -1978,6 +2025,7 @@ export class ModelHub {
     modelHubRootUrl,
     modelHubUrlTemplate,
     progressCallback,
+    abortSignal,
   }) {
     let [blob, headers] = await this.getModelFileAsBlob({
       engineId,
@@ -1988,6 +2036,7 @@ export class ModelHub {
       modelHubRootUrl,
       modelHubUrlTemplate,
       progressCallback,
+      abortSignal,
     });
 
     return [await blob.arrayBuffer(), headers];
@@ -2059,35 +2108,428 @@ export class ModelHub {
    * Given an organization, model, and version, fetch a model file in the hub
    * while supporting status callback.
    *
-   * @param {object} config
-   * @param {string} config.engineId - The model engine id
-   * @param {string} config.taskName - name of the inference task.
-   * @param {string} config.model - The model name (organization/name).
-   * @param {string} config.revision - The model revision.
-   * @param {string} config.file - The file name.
-   * @param {string} config.featureId - feature id for the model
-   * @param {string} config.sessionId - shared across the same session
-   * @param {string} [config.modelHubRootUrl] - root url of the model hub
-   * @param {string} [config.modelHubUrlTemplate] - url template of the model hub
-   * @param {?function(ProgressAndStatusCallbackParams):void} [config.progressCallback] A function to call to indicate progress status.
-   * @param {object} [config.telemetryData] - Additional telemetry data.
-   * @param {?AbortSignal} [config.abortSignal] - AbortSignal to cancel the download.
+   * @param {GetModelDataAsFileConfig} config
    * @returns {Promise<[string, ModelFileHeaders]>} The local path to the file content and headers.
    */
-  async getModelDataAsFile({
+  async getModelDataAsFile(config) {
+    const checkError = ModelHub.checkInput(
+      config.model,
+      config.revision,
+      config.file
+    );
+    if (checkError) {
+      throw checkError;
+    }
+
+    if (config.abortSignal?.aborted) {
+      throw (
+        config.abortSignal.reason ??
+        new DOMException("The operation was aborted.", "AbortError")
+      );
+    }
+
+    const key = this.#fileUrl({
+      model: config.model,
+      revision: config.revision,
+      file: config.file,
+      modelHubRootUrl: config.modelHubRootUrl,
+      modelHubUrlTemplate: config.modelHubUrlTemplate,
+    });
+
+    const pendingCleanup = this.#pendingCleanups.get(key);
+    if (pendingCleanup) {
+      await this.#raceAbort(pendingCleanup, config.abortSignal);
+    }
+
+    let inFlight = this.#inFlightDownloads.get(key);
+    if (!inFlight) {
+      // This code is a bit complex to satisfy TypeScript since the new InFlightDownload
+      // object must be captured by itself for the progressCallback.
+
+      /** @type {InFlightDownload} */
+      const capturedInFlight = {
+        promise:
+          /** @type {Promise<[string, ModelFileHeaders]>} */
+          (/** @type {unknown} */ (null)),
+        progressCallbacks: new Map(),
+        controller: new AbortController(),
+        waiters: new Set(),
+        downloadStarted: false,
+        downloadStartedAt: 0,
+        duration: 0,
+        lastProgress: null,
+      };
+
+      capturedInFlight.promise = this.#fetchModelDataAsFile(
+        {
+          ...config,
+          abortSignal: capturedInFlight.controller.signal,
+          progressCallback: rawProgress => {
+            capturedInFlight.lastProgress = rawProgress;
+            for (const callback of capturedInFlight.progressCallbacks.values()) {
+              try {
+                callback(rawProgress);
+              } catch (error) {
+                lazy.console.error("Progress callback threw:", error);
+              }
+            }
+          },
+        },
+        capturedInFlight
+      ).finally(() => {
+        // leave() may have already replaced this entry. Don't delete that one.
+        if (this.#inFlightDownloads.get(key) === capturedInFlight) {
+          this.#inFlightDownloads.delete(key);
+        }
+      });
+
+      inFlight = capturedInFlight;
+      this.#inFlightDownloads.set(key, inFlight);
+    }
+
+    return this.#joinInFlightDownload(key, inFlight, config);
+  }
+
+  /**
+   * Wait for a promise, but reject immediately with AbortError if the given
+   * signal fires first, without waiting for the promise itself to settle.
+   *
+   * @param {Promise<void>} promise
+   * @param {?AbortSignal} [abortSignal]
+   * @returns {Promise<void>}
+   */
+  #raceAbort(promise, abortSignal) {
+    if (!abortSignal) {
+      return promise;
+    }
+    if (abortSignal.aborted) {
+      return Promise.reject(
+        abortSignal.reason ??
+          new DOMException("The operation was aborted.", "AbortError")
+      );
+    }
+    return new Promise((resolve, reject) => {
+      const onAbort = () => {
+        reject(
+          abortSignal.reason ??
+            new DOMException("The operation was aborted.", "AbortError")
+        );
+      };
+      abortSignal.addEventListener("abort", onAbort, { once: true });
+      promise.then(
+        value => {
+          abortSignal.removeEventListener("abort", onAbort);
+          resolve(value);
+        },
+        error => {
+          abortSignal.removeEventListener("abort", onAbort);
+          reject(error);
+        }
+      );
+    });
+  }
+
+  /**
+   * Catch a caller up on progress it missed by joining after the shared
+   * fetch already started. Catches exceptions so a broken callback can't
+   * block delivery to the other callers.
+   *
+   * @param {InFlightDownload} inFlight
+   * @param {function(ProgressAndStatusCallbackParams):void} progressCallback
+   * @param {?AbortSignal} [abortSignal]
+   */
+  #replayProgressForJoiner(inFlight, progressCallback, abortSignal) {
+    const raw = inFlight.lastProgress;
+    if (!raw) {
+      return;
+    }
+    try {
+      progressCallback(
+        raw.cloneWith({
+          statusText: lazy.Progress.ProgressStatusText.INITIATE,
+          progress: null,
+          totalLoaded: null,
+          currentLoaded: null,
+          total: null,
+        })
+      );
+    } catch (error) {
+      lazy.console.error("Progress callback threw:", error);
+    }
+    if (
+      abortSignal?.aborted ||
+      raw.statusText === lazy.Progress.ProgressStatusText.INITIATE
+    ) {
+      return;
+    }
+    try {
+      progressCallback(
+        raw.cloneWith({
+          statusText: lazy.Progress.ProgressStatusText.SIZE_ESTIMATE,
+          currentLoaded: raw.totalLoaded,
+        })
+      );
+    } catch (error) {
+      lazy.console.error("Progress callback threw:", error);
+    }
+  }
+
+  /**
+   * @param {object} config
+   * @param {string} config.sessionId
+   * @param {string} config.featureId
+   * @param {string} config.engineId
+   * @param {string} config.model
+   * @param {string} config.revision
+   * @param {object} [config.telemetryData]
+   * @param {boolean} config.success
+   * @param {Error} [config.error]
+   * @param {number} config.duration
+   * @param {number} config.startedAt - When the shared download actually began.
+   */
+  #recordDownloadAttempt({
+    sessionId,
+    featureId,
     engineId,
-    taskName,
     model,
     revision,
-    file,
-    modelHubRootUrl,
-    modelHubUrlTemplate,
-    progressCallback,
-    abortSignal,
-    featureId,
-    sessionId,
     telemetryData = {},
+    success,
+    error,
+    duration,
+    startedAt,
   }) {
+    if (!this.#lastDownloadOk.has(sessionId)) {
+      this.#downloadStartTime.set(sessionId, startedAt);
+      Glean.firefoxAiRuntime.modelDownload.record({
+        modelDownloadId: sessionId,
+        featureId,
+        engineId,
+        modelId: model,
+        step: "start_download",
+        duration: 0,
+        modelRevision: revision,
+        error: "",
+        ...telemetryData,
+      });
+    }
+    this.#lastDownloadOk.set(sessionId, success);
+
+    Glean.firefoxAiRuntime.modelDownload.record({
+      modelDownloadId: sessionId,
+      featureId,
+      engineId,
+      modelId: model,
+      step: "start_file_download",
+      duration: 0,
+      modelRevision: revision,
+      error: "",
+      ...telemetryData,
+    });
+
+    Glean.firefoxAiRuntime.modelDownload.record({
+      modelDownloadId: sessionId,
+      featureId,
+      engineId,
+      modelId: model,
+      step: success ? "end_file_download_success" : "end_file_download_failed",
+      duration,
+      modelRevision: revision,
+      error: success ? "" : ((error?.cause ?? error)?.constructor?.name ?? ""),
+      ...telemetryData,
+    });
+  }
+
+  /**
+   * @param {string} key
+   * @param {InFlightDownload} inFlight
+   */
+  #registerPendingCleanup(key, inFlight) {
+    const cleanup = inFlight.promise.then(
+      () => {},
+      error => {
+        if (error?.name === "AbortError") {
+          return;
+        }
+        throw error;
+      }
+    );
+    this.#pendingCleanups.set(key, cleanup);
+    cleanup
+      .catch(() => {})
+      .finally(() => {
+        if (this.#pendingCleanups.get(key) === cleanup) {
+          this.#pendingCleanups.delete(key);
+        }
+      });
+  }
+
+  /**
+   * Join a download already in flight, tracking this caller's progress
+   * callback and abortSignal independently of every other caller sharing it.
+   *
+   * @param {string} key
+   * @param {InFlightDownload} inFlight
+   * @param {GetModelDataAsFileConfig} config
+   * @returns {Promise<[string, ModelFileHeaders]>}
+   */
+  #joinInFlightDownload(
+    key,
+    inFlight,
+    {
+      progressCallback,
+      abortSignal,
+      engineId,
+      taskName,
+      model,
+      revision,
+      file,
+      featureId,
+      sessionId,
+      telemetryData,
+    }
+  ) {
+    const waiter = {};
+    inFlight.waiters.add(waiter);
+    if (progressCallback) {
+      inFlight.progressCallbacks.set(waiter, progressCallback);
+      this.#replayProgressForJoiner(inFlight, progressCallback, abortSignal);
+    }
+
+    const recordEngineReference = async () => {
+      const hostname = new URL(key).hostname;
+      const cache = await this.#initCache();
+      await cache.updateTask({
+        engineId,
+        taskName,
+        model: `${hostname}/${model}`,
+        revision,
+        file,
+      });
+    };
+
+    /**
+     * @param {boolean} success
+     * @param {Error} [error]
+     */
+    const recordTelemetry = (success, error) => {
+      if (!inFlight.downloadStarted) {
+        return;
+      }
+      this.#recordDownloadAttempt({
+        sessionId,
+        featureId,
+        engineId,
+        model,
+        revision,
+        telemetryData,
+        success,
+        error,
+        duration: inFlight.duration,
+        startedAt: inFlight.downloadStartedAt,
+      });
+    };
+
+    /**
+     * Returns whether another waiter is still relying on the shared fetch.
+     */
+    const leave = () => {
+      inFlight.waiters.delete(waiter);
+      if (progressCallback) {
+        inFlight.progressCallbacks.delete(waiter);
+      }
+      if (inFlight.waiters.size) {
+        return true;
+      }
+      if (this.#inFlightDownloads.get(key) === inFlight) {
+        this.#inFlightDownloads.delete(key);
+      }
+      this.#registerPendingCleanup(key, inFlight);
+      inFlight.controller.abort();
+      return false;
+    };
+
+    if (!abortSignal) {
+      return inFlight.promise
+        .then(
+          async value => {
+            await recordEngineReference();
+            recordTelemetry(true);
+            return value;
+          },
+          error => {
+            recordTelemetry(false, error);
+            throw error;
+          }
+        )
+        .finally(leave);
+    }
+
+    return new Promise((resolve, reject) => {
+      let settled = false;
+
+      const onAbort = () => {
+        if (leave()) {
+          settled = true;
+          const abortError =
+            abortSignal.reason ??
+            new DOMException("The operation was aborted.", "AbortError");
+          recordTelemetry(false, abortError);
+          reject(abortError);
+        }
+      };
+
+      if (abortSignal.aborted) {
+        // An already-fired 'abort' event has nothing left to listen for.
+        onAbort();
+      } else {
+        abortSignal.addEventListener("abort", onAbort, { once: true });
+      }
+
+      inFlight.promise.then(
+        value => {
+          if (settled) {
+            return;
+          }
+          abortSignal.removeEventListener("abort", onAbort);
+          leave();
+          recordEngineReference().then(() => {
+            recordTelemetry(true);
+            resolve(value);
+          }, reject);
+        },
+        error => {
+          if (settled) {
+            return;
+          }
+          abortSignal.removeEventListener("abort", onAbort);
+          leave();
+          recordTelemetry(false, error);
+          reject(error);
+        }
+      );
+    });
+  }
+
+  /**
+   * @param {GetModelDataAsFileConfig} config
+   * @param {InFlightDownload} inFlight
+   * @returns {Promise<[string, ModelFileHeaders]>} The local path to the file content and headers.
+   */
+  async #fetchModelDataAsFile(
+    {
+      engineId,
+      taskName,
+      model,
+      revision,
+      file,
+      modelHubRootUrl,
+      modelHubUrlTemplate,
+      progressCallback,
+      abortSignal,
+    },
+    inFlight
+  ) {
     // Make sure inputs are clean. We don't sanitize them but throw an exception
     let checkError = ModelHub.checkInput(model, revision, file);
     if (checkError) {
@@ -2147,7 +2589,7 @@ export class ModelHub {
     };
 
     const statusInfo = {
-      metadata: { model, revision, file, url, taskName },
+      metadata: { model, revision, file, url },
       ok: true,
       id: url,
     };
@@ -2226,34 +2668,9 @@ export class ModelHub {
       })
     );
 
-    if (!this.#lastDownloadOk.has(sessionId)) {
-      this.#downloadStartTime.set(sessionId, ChromeUtils.now());
-      Glean.firefoxAiRuntime.modelDownload.record({
-        modelDownloadId: sessionId,
-        featureId,
-        engineId,
-        modelId: model,
-        step: "start_download",
-        duration: 0,
-        modelRevision: revision,
-        error: "",
-        ...telemetryData,
-      });
-    }
-    this.#lastDownloadOk.set(sessionId, false);
-
+    inFlight.downloadStarted = true;
     const start = ChromeUtils.now();
-    Glean.firefoxAiRuntime.modelDownload.record({
-      modelDownloadId: sessionId,
-      featureId,
-      engineId,
-      modelId: model,
-      step: "start_file_download",
-      duration: 0,
-      modelRevision: revision,
-      error: "",
-      ...telemetryData,
-    });
+    inFlight.downloadStartedAt = start;
 
     lazy.console.debug(`Fetching ${url}`);
     let caughtError;
@@ -2282,20 +2699,7 @@ export class ModelHub {
         },
       });
 
-      this.#lastDownloadOk.set(sessionId, true);
-      const end = ChromeUtils.now();
-      const duration = Math.floor(end - start);
-      Glean.firefoxAiRuntime.modelDownload.record({
-        modelDownloadId: sessionId,
-        featureId,
-        engineId,
-        modelId: model,
-        step: "end_file_download_success",
-        duration,
-        modelRevision: revision,
-        error: "",
-        ...telemetryData,
-      });
+      inFlight.duration = Math.floor(ChromeUtils.now() - start);
 
       const headers = this.extractHeaders(response);
       headers.fileSize = fileObject.size;
@@ -2322,20 +2726,7 @@ export class ModelHub {
       return [localFilePath, headers];
     } catch (error) {
       caughtError = error;
-      const end = ChromeUtils.now();
-      const duration = Math.floor(end - start);
-      Glean.firefoxAiRuntime.modelDownload.record({
-        modelDownloadId: sessionId,
-        featureId,
-        engineId,
-        modelId: model,
-        step: "end_file_download_failed",
-        duration,
-        modelRevision: revision,
-        error: error.constructor.name,
-        ...telemetryData,
-      });
-
+      inFlight.duration = Math.floor(ChromeUtils.now() - start);
       lazy.console.error(`Failed to fetch ${url}:`, error);
     }
 
