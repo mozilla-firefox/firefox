@@ -413,6 +413,10 @@ void HttpChannelChild::OnStartRequest(
   mSecurityInfo = aArgs.securityInfo();
 
   ipc::MergeParentLoadInfoForwarder(aArgs.loadInfoForwarder(), mLoadInfo);
+  if (aArgs.earlyHintResultPrincipalURI()) {
+    MOZ_ASSERT(mEarlyHintPreloaderId);
+    mLoadInfo->SetResultPrincipalURI(aArgs.earlyHintResultPrincipalURI());
+  }
 
   mIsFromCache = aArgs.isFromCache();
   mCacheEntryAvailable = aArgs.cacheEntryAvailable();

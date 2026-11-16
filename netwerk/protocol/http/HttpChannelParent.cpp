@@ -1293,6 +1293,10 @@ HttpChannelParent::OnStartRequest(nsIRequest* aRequest) {
   nsCOMPtr<nsILoadInfo> loadInfo = chan->LoadInfo();
   mozilla::ipc::LoadInfoToParentLoadInfoForwarder(loadInfo,
                                                   &args.loadInfoForwarder());
+  if (mEarlyHintPreloaderId) {
+    loadInfo->GetResultPrincipalURI(
+        getter_AddRefs(args.earlyHintResultPrincipalURI()));
+  }
 
   nsHttpResponseHead* responseHead = chan->GetResponseHead();
   bool useResponseHead = !!responseHead;
