@@ -26,7 +26,7 @@ class StorageActivityService final : public nsIStorageActivityService,
   NS_DECL_NSISTORAGEACTIVITYSERVICE
   NS_DECL_NSIOBSERVER
 
-  // Main-thread only.
+  // Thread-safe.
   static void SendActivity(nsIPrincipal* aPrincipal);
 
   // Thread-safe.

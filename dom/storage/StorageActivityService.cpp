@@ -32,11 +32,16 @@ static bool gStorageActivityShutdown = false;
 
 /* static */
 void StorageActivityService::SendActivity(nsIPrincipal* aPrincipal) {
-  MOZ_ASSERT(NS_IsMainThread());
-
   if (!aPrincipal || BasePrincipal::Cast(aPrincipal)->Kind() !=
                          BasePrincipal::eContentPrincipal) {
     // Only content principals.
+    return;
+  }
+
+  if (!NS_IsMainThread()) {
+    SchedulerGroup::Dispatch(NS_NewRunnableFunction(
+        "StorageActivityService::SendActivity",
+        [principal = nsCOMPtr{aPrincipal}]() { SendActivity(principal); }));
     return;
   }
 
@@ -57,24 +62,13 @@ void StorageActivityService::SendActivity(
     return;
   }
 
-  RefPtr<Runnable> r = NS_NewRunnableFunction(
-      "StorageActivityService::SendActivity", [aPrincipalInfo]() {
-        MOZ_ASSERT(NS_IsMainThread());
+  auto principalOrErr = mozilla::ipc::PrincipalInfoToPrincipal(aPrincipalInfo);
+  if (NS_WARN_IF(principalOrErr.isErr())) {
+    return;
+  }
 
-        auto principalOrErr =
-            mozilla::ipc::PrincipalInfoToPrincipal(aPrincipalInfo);
-
-        if (principalOrErr.isOk()) {
-          nsCOMPtr<nsIPrincipal> principal = principalOrErr.unwrap();
-          StorageActivityService::SendActivity(principal);
-        } else {
-          NS_WARNING(
-              "Could not obtain principal from "
-              "mozilla::ipc::PrincipalInfoToPrincipal");
-        }
-      });
-
-  SchedulerGroup::Dispatch(r.forget());
+  nsCOMPtr<nsIPrincipal> principal = principalOrErr.unwrap();
+  SendActivity(principal);
 }
 
 /* static */
@@ -182,19 +176,12 @@ void StorageActivityService::SendActivityToParent(nsIPrincipal* aPrincipal) {
     return;
   }
 
-  mozilla::ipc::PrincipalInfo principalInfo;
-  nsresult rv =
-      mozilla::ipc::PrincipalToPrincipalInfo(aPrincipal, &principalInfo);
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return;
-  }
-
   if (!::mozilla::ipc::BackgroundChild::ValidatePrincipal(aPrincipal, {})) {
     MOZ_ASSERT_UNREACHABLE("ValidatePrincipal failure in SendActivityToParent");
     return;
   }
 
-  actor->SendStorageActivity(principalInfo);
+  actor->SendStorageActivity(WrapNotNull(aPrincipal));
 }
 
 NS_IMETHODIMP

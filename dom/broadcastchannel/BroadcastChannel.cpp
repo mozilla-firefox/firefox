@@ -239,15 +239,8 @@ BroadcastChannel::UnpartitionedTestingChannel(const GlobalObject& aGlobal,
     return nullptr;
   }
 
-  PrincipalInfo unpartitionedPrincipalInfo;
-  aRv = PrincipalToPrincipalInfo(unpartitionedPrincipal,
-                                 &unpartitionedPrincipalInfo);
-  if (NS_WARN_IF(aRv.Failed())) {
-    return nullptr;
-  }
-
   PBroadcastChannelChild* actor = actorChild->SendPBroadcastChannelConstructor(
-      unpartitionedPrincipalInfo, origin, nsString(aChannel));
+      WrapNotNull(unpartitionedPrincipal.get()), origin, nsString(aChannel));
   if (!actor) {
     // The PBackground actor is shutting down, return a 'generic' error.
     aRv.Throw(NS_ERROR_FAILURE);
@@ -370,14 +363,8 @@ already_AddRefed<BroadcastChannel> BroadcastChannel::Constructor(
     return nullptr;
   }
 
-  PrincipalInfo storagePrincipalInfo;
-  aRv = PrincipalToPrincipalInfo(storagePrincipal, &storagePrincipalInfo);
-  if (NS_WARN_IF(aRv.Failed())) {
-    return nullptr;
-  }
-
   PBroadcastChannelChild* actor = actorChild->SendPBroadcastChannelConstructor(
-      storagePrincipalInfo, origin, nsString(aChannel));
+      WrapNotNull(storagePrincipal.get()), origin, nsString(aChannel));
   if (!actor) {
     // The PBackground actor is shutting down, return a 'generic' error.
     aRv.Throw(NS_ERROR_FAILURE);

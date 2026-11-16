@@ -761,14 +761,14 @@ bool BackgroundParentImpl::DeallocPCamerasParent(
   return true;
 }
 
-auto BackgroundParentImpl::AllocPUDPSocketParent(
-    const Maybe<PrincipalInfo>& /* unused */, const nsACString& /* unused */)
+auto BackgroundParentImpl::AllocPUDPSocketParent(nsIPrincipal* /* unused */,
+                                                 const nsACString& /* unused */)
     -> already_AddRefed<PUDPSocketParent> {
   return do_AddRef(new UDPSocketParent(this));
 }
 
 mozilla::ipc::IPCResult BackgroundParentImpl::RecvPUDPSocketConstructor(
-    PUDPSocketParent* aActor, const Maybe<PrincipalInfo>& aOptionalPrincipal,
+    PUDPSocketParent* aActor, nsIPrincipal* aPrincipal,
     const nsACString& aFilter) {
   AssertIsInMainProcess();
   AssertIsOnBackgroundThread();
@@ -777,7 +777,7 @@ mozilla::ipc::IPCResult BackgroundParentImpl::RecvPUDPSocketConstructor(
     return IPC_FAIL(this, "udp socket not enabled");
   }
 
-  if (aOptionalPrincipal.isSome()) {
+  if (aPrincipal) {
     // Support for checking principals (for non-mtransport use) will be handled
     // in bug 1167039
     return IPC_FAIL_NO_REASON(this);
@@ -803,8 +803,8 @@ mozilla::ipc::IPCResult BackgroundParentImpl::RecvPUDPSocketConstructor(
 
 mozilla::dom::PBroadcastChannelParent*
 BackgroundParentImpl::AllocPBroadcastChannelParent(
-    const PrincipalInfo& /*aPrincipalInfo*/, const nsACString& aOrigin,
-    const nsAString& aChannel) {
+    Tainted<NotNull<RefPtr<nsIPrincipal>>>& /*aPrincipal*/,
+    const nsACString& aOrigin, const nsAString& aChannel) {
   AssertIsInMainProcess();
   AssertIsOnBackgroundThread();
 
@@ -823,23 +823,20 @@ BackgroundParentImpl::AllocPBroadcastChannelParent(
 }
 
 mozilla::ipc::IPCResult BackgroundParentImpl::RecvPBroadcastChannelConstructor(
-    PBroadcastChannelParent* /*actor*/, const PrincipalInfo& aPrincipalInfo,
+    PBroadcastChannelParent* /*actor*/,
+    Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aPrincipal,
     const nsACString& aOrigin, const nsAString& /*aChannel*/) {
   AssertIsInMainProcess();
   AssertIsOnBackgroundThread();
 
-  auto principalOrErr = PrincipalInfoToPrincipal(aPrincipalInfo);
-  if (NS_WARN_IF(principalOrErr.isErr())) {
-    return IPC_FAIL(this, "PrincipalInfoToPrincipal failed");
-  }
-  nsCOMPtr<nsIPrincipal> principal = principalOrErr.unwrap();
-
-  if (!BackgroundParent::ValidatePrincipal(this, principal)) {
-    return IPC_FAIL(this, "Invalid principal for BroadcastChannel");
+  auto principal = BackgroundParent::ValidatePrincipal(this, aPrincipal);
+  if (!principal) {
+    return ContentParent::PrincipalValidationIpcFail(aPrincipal, this,
+                                                     "PBroadcastChannel");
   }
 
   nsAutoCString origin;
-  if (NS_FAILED(principal->GetOrigin(origin))) {
+  if (NS_FAILED((*principal)->GetOrigin(origin))) {
     return IPC_FAIL(this, "principal::GetOrigin failed");
   }
 
@@ -1314,12 +1311,14 @@ mozilla::ipc::IPCResult BackgroundParentImpl::RecvPClientManagerConstructor(
 }
 
 IPCResult BackgroundParentImpl::RecvStorageActivity(
-    const PrincipalInfo& aPrincipalInfo) {
-  if (!BackgroundParent::ValidatePrincipalInfo(this, aPrincipalInfo)) {
-    return IPC_FAIL(this, "Invalid principalInfo for StorageActivity");
+    Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aPrincipal) {
+  auto principal = BackgroundParent::ValidatePrincipal(this, aPrincipal);
+  if (!principal) {
+    return ContentParent::PrincipalValidationIpcFail(aPrincipal, this,
+                                                     "StorageActivity");
   }
 
-  dom::StorageActivityService::SendActivity(aPrincipalInfo);
+  dom::StorageActivityService::SendActivity(*principal);
   return IPC_OK();
 }
 

@@ -43,10 +43,8 @@ nsresult UDPSocketChild::Bind(nsIUDPSocketInternal* aSocket,
     if (!backgroundManager) {
       return NS_ERROR_NOT_AVAILABLE;
     }
-    // If we want to support a passed-in principal here we'd need to
-    // convert it to a PrincipalInfo
     MOZ_ASSERT(!aPrincipal);
-    if (!backgroundManager->SendPUDPSocketConstructor(this, Nothing(),
+    if (!backgroundManager->SendPUDPSocketConstructor(this, nullptr,
                                                       mFilterName)) {
       return NS_ERROR_FAILURE;
     }

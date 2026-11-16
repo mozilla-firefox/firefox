@@ -112,7 +112,7 @@ class BackgroundChildImpl : public PBackgroundChild {
   virtual bool DeallocPCamerasChild(PCamerasChild* aActor) override;
 
   virtual PBroadcastChannelChild* AllocPBroadcastChannelChild(
-      const PrincipalInfo& aPrincipalInfo, const nsACString& aOrigin,
+      NotNull<nsIPrincipal*> aPrincipal, const nsACString& aOrigin,
       const nsAString& aChannel) override;
 
   virtual bool DeallocPBroadcastChannelChild(

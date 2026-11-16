@@ -207,8 +207,8 @@ parent:
 
   async PCameras();
 
-  async PUDPSocket(PrincipalInfo? pInfo, nsCString filter);
-  async PBroadcastChannel(PrincipalInfo pInfo, nsCString origin, nsString channel);
+  async PUDPSocket([NoTaint="Bug 1167039"] nullable nsIPrincipal principal, nsCString filter);
+  async PBroadcastChannel(nsIPrincipal principal, nsCString origin, nsString channel);
 
   async PCookieStore();
 
@@ -272,7 +272,7 @@ parent:
 
   // This method is used to propagate storage activities from the child actor
   // to the parent actor. See StorageActivityService.
-  async StorageActivity(PrincipalInfo principalInfo);
+  async StorageActivity(nsIPrincipal principal);
 
   async PServiceWorker(IPCServiceWorkerDescriptor aDescriptor);
 
