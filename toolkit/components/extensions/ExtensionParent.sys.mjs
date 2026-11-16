@@ -352,6 +352,10 @@ const ProxyMessenger = {
 
   // TODO: Rework/simplify this and getSender/getTopBC after bug 1580766.
   async normalizeArgs(arg, sender) {
+    if (!sender.verified && (arg.documentId || arg.tabId)) {
+      return Promise.reject({ message: ERROR_NO_RECEIVERS });
+    }
+
     arg.extensionId = arg.extensionId || sender.extensionId;
     let extension = GlobalManager.extensionMap.get(arg.extensionId);
     if (!extension) {
