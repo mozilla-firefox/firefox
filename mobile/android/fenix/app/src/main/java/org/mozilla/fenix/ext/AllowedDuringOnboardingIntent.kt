@@ -23,8 +23,9 @@ fun Intent.isAllowedDuringOnboardingIntent(packageName: String): Boolean {
 }
 
 /**
- * Note: Continuous onboarding will make this check irrelevant and should be removed when it becomes the default in
- * https://bugzilla.mozilla.org/show_bug.cgi?id=2046788.
+ * Onboarding cards can start FxA authentication before onboarding completes, for example the sync pairing card's email
+ * sign-in, which opens `AuthCustomTabActivity`. Without this check the auth custom tab would show onboarding instead of
+ * the sign-in page. This can only be removed once no onboarding card launches FxA authentication.
  */
 private fun Intent.isIntentComponentSyncAuth(packageName: String) =
     component?.className == AUTH_CUSTOM_TAB_ACTIVITY_CLASS_NAME && component?.packageName == packageName
