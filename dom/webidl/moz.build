@@ -86,6 +86,9 @@ with Files("CredentialManagement.webidl"):
 with Files("Crypto.webidl"):
     BUG_COMPONENT = ("Core", "DOM: Security")
 
+with Files("CycleCollectorUnlinkTester.webidl"):
+    BUG_COMPONENT = ("Core", "Cycle Collector")
+
 with Files("Device*"):
     BUG_COMPONENT = ("Core", "DOM: Device Interfaces")
 
@@ -575,6 +578,7 @@ WEBIDL_FILES = [
     "CSSVariableReferenceValue.webidl",
     "CSSViewTransitionRule.webidl",
     "CustomElementRegistry.webidl",
+    "CycleCollectorUnlinkTester.webidl",
     "DataTransfer.webidl",
     "DataTransferItem.webidl",
     "DataTransferItemList.webidl",
