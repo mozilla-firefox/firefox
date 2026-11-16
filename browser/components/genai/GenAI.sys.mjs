@@ -2347,7 +2347,12 @@ export const GenAI = {
         const text = promptObj.label
           ? `${promptObj.label}: ${content}`
           : `${promptObj.value}\n\n${content}`;
-        aiWindowEl.submitChatMessage({ text, submitType: "shortcuts" });
+        aiWindowEl.submitChatMessage({
+          text,
+          submitType: "shortcuts",
+          untrustedInput: true,
+          privateData: true,
+        });
       }
       return;
     }

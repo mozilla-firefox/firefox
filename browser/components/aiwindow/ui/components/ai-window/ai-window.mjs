@@ -2332,6 +2332,10 @@ export class AIWindow extends MozLitElement {
    *   assistant message so it renders alongside the streamed response.
    * @param {string} [options.aitabSource] - Where an AI Tab page was requested
    *   from (tab_list, tab_group or fxms), for telemetry.
+   * @param {boolean} [options.untrustedInput=false] - Whether `text` includes
+   *   untrusted content, e.g. text selected on a web page.
+   * @param {boolean} [options.privateData=false] - Whether `text` includes
+   *   private data, e.g. content from the user's tabs.
    */
   submitChatMessage({
     text,
@@ -2345,6 +2349,8 @@ export class AIWindow extends MozLitElement {
     skipSystemPromptRefresh = false,
     assistantToolUIData,
     aitabSource = null,
+    untrustedInput = false,
+    privateData = false,
   }) {
     const trimmed = String(text ?? "").trim();
     if (!trimmed) {
@@ -2375,6 +2381,12 @@ export class AIWindow extends MozLitElement {
     if (this.#conversation) {
       this.#conversation.lastSubmitType = submitType;
       this.#conversation.aitabSource = aitabSource;
+      if (untrustedInput) {
+        this.#conversation.securityProperties.setUntrustedInput();
+      }
+      if (privateData) {
+        this.#conversation.securityProperties.setPrivateData();
+      }
     }
 
     this.#recordChatInteraction();
