@@ -21,7 +21,6 @@
   ChromeUtils.importESModule("chrome://browser/content/tabbrowser/address-footer.mjs", { global: "current" });
   Services.scriptloader.loadSubScript("chrome://browser/content/tabbrowser/status-panel.js", this);
   ChromeUtils.importESModule("chrome://browser/content/tabbrowser/tab.mjs", { global: "current" });
-  Services.scriptloader.loadSubScript("chrome://browser/content/tabbrowser/tab-bar-visibility.js", this);
   Services.scriptloader.loadSubScript("chrome://browser/content/tabbrowser/tab-context-menu.js", this);
   ChromeUtils.importESModule("chrome://browser/content/tabbrowser/tabgroup.mjs", { global: "current" });
   ChromeUtils.importESModule("chrome://browser/content/tabbrowser/tabgroup-menu.mjs", { global: "current" });

@@ -129,6 +129,15 @@ ChromeUtils.defineESModuleGetters(this, {
   ZoomUI: "resource:///modules/ZoomUI.sys.mjs",
 });
 
+ChromeUtils.defineESModuleGetters(
+  this,
+  {
+    TabBarVisibility:
+      "chrome://browser/content/tabbrowser/tab-bar-visibility.mjs",
+  },
+  { global: "current" }
+);
+
 ChromeUtils.defineLazyGetter(this, "fxAccounts", () => {
   return ChromeUtils.importESModule(
     "resource://gre/modules/FxAccounts.sys.mjs"

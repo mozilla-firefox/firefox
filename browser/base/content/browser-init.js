@@ -210,7 +210,7 @@ var gBrowserInit = {
 
     // Update the customtitlebar attribute so the window can be sized
     // correctly.
-    window.TabBarVisibility.update();
+    TabBarVisibility.update();
 
     if (
       Services.prefs.getBoolPref(

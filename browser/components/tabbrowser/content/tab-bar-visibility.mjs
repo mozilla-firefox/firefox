@@ -2,7 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-var TabBarVisibility = {
+/* global CustomTitlebar, gBrowser, gNavToolbox */
+
+export const TabBarVisibility = {
   _initialUpdateDone: false,
 
   update(force = false) {
@@ -31,7 +33,9 @@ var TabBarVisibility = {
 
     // Update the browser chrome.
 
-    let tabsToolbar = document.getElementById("TabsToolbar");
+    let tabsToolbar = /** @type {XULElement} */ (
+      document.getElementById("TabsToolbar")
+    );
 
     gNavToolbox.toggleAttribute("tabs-hidden", hideTabsToolbar);
     // Should the nav-bar and the toolbars underneath it look and function like
@@ -63,7 +67,8 @@ var TabBarVisibility = {
     // When a window will only ever have a single tab, only show the option to
     // close the tab. FileMenu simplifies its text since we don't need to
     // disambiguate from closing the window.
-    document.getElementById("menu_closeWindow").hidden =
-      isSingleTabWindow && hasSingleTab;
+    /** @type {XULElement} */ (
+      document.getElementById("menu_closeWindow")
+    ).hidden = isSingleTabWindow && hasSingleTab;
   },
 };

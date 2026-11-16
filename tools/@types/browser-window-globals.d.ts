@@ -119,4 +119,7 @@ declare namespace BrowserWindow {
     addListener(listener: MousePosListener): void;
     removeListener(listener: MousePosListener): void;
   };
+
+  // tabbrowser/content/tab-bar-visibility.mjs
+  var TabBarVisibility: typeof import("chrome://browser/content/tabbrowser/tab-bar-visibility.mjs").TabBarVisibility;
 }
