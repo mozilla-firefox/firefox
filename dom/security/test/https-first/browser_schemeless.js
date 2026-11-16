@@ -156,6 +156,10 @@ async function runTest(aInput, aDesc, aExpectedScheme) {
 
 add_task(async function () {
   requestLongerTimeout(10);
+  // Typed visits to https://example.com, from earlier tests or an earlier run
+  // of this one, would make the URL bar autofill "example.com" with https.
+  await PlacesUtils.history.clear();
+  registerCleanupFunction(() => PlacesUtils.history.clear());
   Services.fog.testResetFOG();
 
   await SpecialPowers.pushPrefEnv({
