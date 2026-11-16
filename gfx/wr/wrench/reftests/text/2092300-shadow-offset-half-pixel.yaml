@@ -1,0 +1,166 @@
+---
+# A shadow offset of exactly half a device pixel moves the shadow the way
+# pixel aligned content would have snapped on its own: -0.5 to 0 and 0.5 to 1,
+# whatever the shadowed content's sub-pixel phase (bug 2092300).
+root:
+  items:
+    - type: shadow
+      bounds: [0, 0, 400, 600]
+      blur-radius: 0
+      offset: [0, -0.5]
+      color: [0, 0, 0, 1]
+    - bounds: [0, 5, 300, 50]
+      text: "Shadow"
+      origin: [10, 40]
+      size: 30
+      color: [255, 255, 255, 1]
+    - type: pop-all-shadows
+    - type: shadow
+      bounds: [0, 0, 400, 600]
+      blur-radius: 0
+      offset: [0, -0.5]
+      color: [0, 0, 0, 1]
+    - bounds: [0, 50, 300, 50]
+      text: "Shadow"
+      origin: [10, 85.25]
+      size: 30
+      color: [255, 255, 255, 1]
+    - type: pop-all-shadows
+    - type: shadow
+      bounds: [0, 0, 400, 600]
+      blur-radius: 1.5
+      offset: [0, -0.5]
+      color: [0, 0, 0, 1]
+    - bounds: [0, 95, 300, 50]
+      text: "Shadow"
+      origin: [10, 130]
+      size: 30
+      color: [255, 255, 255, 1]
+    - type: pop-all-shadows
+    - type: shadow
+      bounds: [0, 0, 400, 600]
+      blur-radius: 1.5
+      offset: [0, -0.5]
+      color: [0, 0, 0, 1]
+    - bounds: [0, 140, 300, 50]
+      text: "Shadow"
+      origin: [10, 175.25]
+      size: 30
+      color: [255, 255, 255, 1]
+    - type: pop-all-shadows
+    - type: shadow
+      bounds: [0, 0, 400, 600]
+      blur-radius: 0
+      offset: [0, -0.5]
+      color: [0, 0, 0, 1]
+    - type: rect
+      bounds: [10, 220, 100, 10]
+      color: [255, 255, 255, 1]
+    - type: pop-all-shadows
+    - type: shadow
+      bounds: [0, 0, 400, 600]
+      blur-radius: 0
+      offset: [0, -0.5]
+      color: [0, 0, 0, 1]
+    - type: rect
+      bounds: [10, 240.25, 100, 10]
+      color: [255, 255, 255, 1]
+    - type: pop-all-shadows
+    - type: shadow
+      bounds: [0, 0, 400, 600]
+      blur-radius: 1.5
+      offset: [0, -0.5]
+      color: [0, 0, 0, 1]
+    - type: rect
+      bounds: [10, 260, 100, 10]
+      color: [255, 255, 255, 1]
+    - type: pop-all-shadows
+    - type: shadow
+      bounds: [0, 0, 400, 600]
+      blur-radius: 1.5
+      offset: [0, -0.5]
+      color: [0, 0, 0, 1]
+    - type: rect
+      bounds: [10, 280.25, 100, 10]
+      color: [255, 255, 255, 1]
+    - type: pop-all-shadows
+    - type: shadow
+      bounds: [0, 0, 400, 600]
+      blur-radius: 0
+      offset: [0, 0.5]
+      color: [0, 0, 0, 1]
+    - bounds: [0, 265, 300, 50]
+      text: "Shadow"
+      origin: [10, 300]
+      size: 30
+      color: [255, 255, 255, 1]
+    - type: pop-all-shadows
+    - type: shadow
+      bounds: [0, 0, 400, 600]
+      blur-radius: 0
+      offset: [0, 0.5]
+      color: [0, 0, 0, 1]
+    - bounds: [0, 310, 300, 50]
+      text: "Shadow"
+      origin: [10, 345.25]
+      size: 30
+      color: [255, 255, 255, 1]
+    - type: pop-all-shadows
+    - type: shadow
+      bounds: [0, 0, 400, 600]
+      blur-radius: 1.5
+      offset: [0, 0.5]
+      color: [0, 0, 0, 1]
+    - bounds: [0, 355, 300, 50]
+      text: "Shadow"
+      origin: [10, 390]
+      size: 30
+      color: [255, 255, 255, 1]
+    - type: pop-all-shadows
+    - type: shadow
+      bounds: [0, 0, 400, 600]
+      blur-radius: 1.5
+      offset: [0, 0.5]
+      color: [0, 0, 0, 1]
+    - bounds: [0, 400, 300, 50]
+      text: "Shadow"
+      origin: [10, 435.25]
+      size: 30
+      color: [255, 255, 255, 1]
+    - type: pop-all-shadows
+    - type: shadow
+      bounds: [0, 0, 400, 600]
+      blur-radius: 0
+      offset: [0, 0.5]
+      color: [0, 0, 0, 1]
+    - type: rect
+      bounds: [10, 480, 100, 10]
+      color: [255, 255, 255, 1]
+    - type: pop-all-shadows
+    - type: shadow
+      bounds: [0, 0, 400, 600]
+      blur-radius: 0
+      offset: [0, 0.5]
+      color: [0, 0, 0, 1]
+    - type: rect
+      bounds: [10, 500.25, 100, 10]
+      color: [255, 255, 255, 1]
+    - type: pop-all-shadows
+    - type: shadow
+      bounds: [0, 0, 400, 600]
+      blur-radius: 1.5
+      offset: [0, 0.5]
+      color: [0, 0, 0, 1]
+    - type: rect
+      bounds: [10, 520, 100, 10]
+      color: [255, 255, 255, 1]
+    - type: pop-all-shadows
+    - type: shadow
+      bounds: [0, 0, 400, 600]
+      blur-radius: 1.5
+      offset: [0, 0.5]
+      color: [0, 0, 0, 1]
+    - type: rect
+      bounds: [10, 540.25, 100, 10]
+      color: [255, 255, 255, 1]
+    - type: pop-all-shadows

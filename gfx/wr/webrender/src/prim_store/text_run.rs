@@ -537,7 +537,7 @@ impl TextRun {
 
             // As above for a shadow copy, but on the raster grid the pens snap to.
             let adjust = |v: f32, bias: f32| {
-                if bias == 0.5 { (v * glyph_raster_scale).round() / glyph_raster_scale - v } else { 0.0 }
+                if bias == 0.5 { (v * glyph_raster_scale + 0.5).floor() / glyph_raster_scale - v } else { 0.0 }
             };
             let pattern_rect = pattern_rect.translate(LayoutVector2D::new(
                 adjust(shadow_offset.x, snap_bias.x),

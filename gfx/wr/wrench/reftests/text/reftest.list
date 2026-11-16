@@ -130,3 +130,4 @@ scale(1.0) platform(linux) == 2056856-bitmap-pen.yaml 2056856-bitmap-pen-ref.yam
 # The pens snap in device space, so the .25 phase only holds at scale 1.
 scale(1.0) skip_on(android) == 2076646-shadow-offset-snap.yaml 2076646-shadow-offset-snap-ref.yaml
 scale(1.0) skip_on(android) == 2076646-shadow-offset-snap-scale.yaml 2076646-shadow-offset-snap-scale-ref.yaml
+scale(1.0) skip_on(android) == 2092300-shadow-offset-half-pixel.yaml 2092300-shadow-offset-half-pixel-ref.yaml

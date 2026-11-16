@@ -322,7 +322,8 @@ impl SpaceSnapper {
     /// Snap subsequent rects as shadow copies translated by `offset` (in the
     /// target's local space) from the content they shadow: the rect is
     /// snapped where the shadowed content is, then moved by `offset` rounded to
-    /// whole device pixels on the axes that snap. Snapping the copy on its own
+    /// whole device pixels on the axes that snap, with ties rounded up as the
+    /// glyph pens and positive rect edges are (bug 2092300). Snapping the copy on its own
     /// would let the visible offset flip between whole pixels with the
     /// content's sub-pixel phase (bug 2076646).
     pub fn set_shadow_offset(&mut self, offset: LayoutVector2D) {
@@ -340,7 +341,7 @@ impl SpaceSnapper {
         let o = self.shadow_offset;
         let (x, y) = if swap_xy { (o.y, o.x) } else { (o.x, o.y) };
         let adjust = |v: f32, scale: f32, snap: bool| {
-            if snap && scale != 0.0 { (v * scale).round() / scale - v } else { 0.0 }
+            if snap && scale != 0.0 { (v * scale + 0.5).floor() / scale - v } else { 0.0 }
         };
         let (ax, ay) = (adjust(x, scale_offset.scale.x, snap_x), adjust(y, scale_offset.scale.y, snap_y));
         Some(if swap_xy { Vector2D::new(ay, ax) } else { Vector2D::new(ax, ay) })
@@ -960,6 +961,56 @@ mod tests {
             // An unsnapped prim keeps its exact offset.
             let exact = shadow_snapper.snap_rect_rounded(&rect.translate(offset), SnapRounding::Exact);
             assert_eq!(exact, rect.translate(offset));
+        }
+    }
+
+    #[test]
+    fn test_shadow_offset_half_pixel_ties_round_up() {
+        // A half device pixel shadow offset moves the copy the way pixel
+        // aligned content would have snapped on its own: -0.5 to 0 and 0.5 to
+        // 1 (bug 2092300).
+        let mut cst = SceneSpatialTree::new();
+        let root = cst.root_reference_frame_index();
+        let mut st = SpatialTree::new();
+        st.apply_updates(cst.end_frame_and_get_pending_updates());
+        st.update_tree(&SceneProperties::new());
+
+        let surface = SurfaceInfo::new(
+            root,
+            root,
+            DeviceRect::from_origin_and_size(DevicePoint::zero(), DeviceSize::new(1000.0, 1000.0)),
+            &st,
+            DevicePixelScale::new(1.0),
+            (1.0, 1.0),
+            (1.0, 1.0),
+            (1.0, 1.0),
+            true,
+            false,
+        );
+
+        let mut snapper = SpaceSnapper::new(&surface, &st);
+        snapper.set_target_spatial_node(root, &st);
+
+        for (offset, expected) in [(-0.5, 0.0), (0.5, 1.0), (-1.5, -1.0), (1.5, 2.0)] {
+            let offset = LayoutVector2D::new(offset, offset);
+            let mut shadow_snapper = snapper.clone();
+            shadow_snapper.set_shadow_offset(offset);
+            for phase in [0.0, 0.25, 0.5, 0.75] {
+                let rect = LayoutRect::from_origin_and_size(
+                    LayoutPoint::new(10.0 + phase, 40.0 + phase),
+                    LayoutSize::new(40.0, 8.0),
+                );
+                let original = snapper.snap_rect(&rect);
+                let copy = shadow_snapper.snap_rect(&rect.translate(offset));
+                let delta = copy.min - original.min;
+                assert!(
+                    (delta.x - expected).abs() < 0.001 && (delta.y - expected).abs() < 0.001,
+                    "offset {:?} phase {}: copy is {:?} device pixels from the original",
+                    offset,
+                    phase,
+                    delta,
+                );
+            }
         }
     }
 }
