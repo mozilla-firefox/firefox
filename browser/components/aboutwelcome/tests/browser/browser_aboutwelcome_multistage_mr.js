@@ -1126,7 +1126,7 @@ add_task(
     sandbox
       .stub(ASRouterScreenUtils, "evaluateScreenTargeting")
       .resolves(false)
-      .withArgs("useEmbeddedMigrationWizard")
+      .withArgs("useEmbeddedMigrationWizard && !os.isLinux")
       .resolves(true)
       .withArgs(`backupRestoreEnabled && !(${EASY_SETUP_TARGETING})`)
       .resolves(true);

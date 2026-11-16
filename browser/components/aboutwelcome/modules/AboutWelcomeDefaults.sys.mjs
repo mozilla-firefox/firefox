@@ -559,7 +559,7 @@ const MR_ABOUT_WELCOME_DEFAULT = {
     },
     {
       id: "AW_IMPORT_SETTINGS_EMBEDDED",
-      targeting: "useEmbeddedMigrationWizard",
+      targeting: "useEmbeddedMigrationWizard && !os.isLinux",
       content: {
         fullscreen: true,
         tiles: { type: "migration-wizard" },
