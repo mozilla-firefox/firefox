@@ -5592,6 +5592,11 @@ setToDefaultPrompt:
     message:
       description: Message to show instead of the default prompt
       type: json
+    disablePrompt:
+      description: >-
+        Don't show the startup default browser prompt, either the built-in
+        prompt or the spotlight version.
+      type: boolean
 
 tabNotes:
   description: >-

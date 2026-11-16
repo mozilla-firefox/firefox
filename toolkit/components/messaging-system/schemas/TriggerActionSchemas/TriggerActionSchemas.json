@@ -238,6 +238,10 @@
                 "willShowDefaultPrompt": {
                   "type": "boolean",
                   "description": "When the source of the trigger is startup"
+                },
+                "defaultPromptSuppressed": {
+                  "type": "boolean",
+                  "description": "At startup, true when the default browser prompt would have shown but was disabled by the setToDefaultPrompt Nimbus feature"
                 }
               },
               "additionalProperties": false

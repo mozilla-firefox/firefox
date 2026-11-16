@@ -16,6 +16,9 @@ const { ExperimentAPI } = ChromeUtils.importESModule(
 const { Spotlight } = ChromeUtils.importESModule(
   "resource:///modules/asrouter/Spotlight.sys.mjs"
 );
+const { ASRouter } = ChromeUtils.importESModule(
+  "resource:///modules/asrouter/ASRouter.sys.mjs"
+);
 const CHECK_PREF = "browser.shell.checkDefaultBrowser";
 
 async function showAndWaitForModal(callback) {
@@ -208,6 +211,51 @@ add_task(async function showDefaultPrompt() {
 
   await doExperimentCleanup();
   await BrowserTestUtils.closeWindow(win2);
+});
+
+add_task(async function disablePromptSuppressesBothPrompts() {
+  let sandbox = sinon.createSandbox();
+  sandbox.stub(DefaultBrowserCheck, "willCheckDefaultBrowser").returns(true);
+  const promptStub = sandbox.stub(DefaultBrowserCheck, "prompt");
+  const showSpotlightStub = sandbox
+    .stub(Spotlight, "showSpotlightDialog")
+    .resolves(true);
+  const exposureSpy = sandbox.spy(
+    NimbusFeatures.setToDefaultPrompt,
+    "recordExposureEvent"
+  );
+  const triggerStub = sandbox.stub(ASRouter, "sendTriggerMessage").resolves();
+
+  await ExperimentAPI.ready();
+  let doExperimentCleanup = await NimbusTestUtils.enrollWithFeatureConfig(
+    {
+      featureId: NimbusFeatures.setToDefaultPrompt.featureId,
+      value: {
+        disablePrompt: true,
+        showSpotlightPrompt: true,
+        message: testSetDefaultSpotlight,
+      },
+    },
+    { slug: "test-disable-prompt", isRollout: true }
+  );
+
+  await BROWSER_GLUE._maybeShowDefaultBrowserPrompt();
+
+  Assert.equal(promptStub.callCount, 0, "Default prompt not shown");
+  Assert.equal(showSpotlightStub.callCount, 0, "Spotlight not shown");
+  Assert.equal(exposureSpy.callCount, 1, "Exposure still recorded");
+  Assert.deepEqual(
+    triggerStub.firstCall.args[0].context,
+    {
+      willShowDefaultPrompt: false,
+      defaultPromptSuppressed: true,
+      source: "startup",
+    },
+    "Trigger context reports the prompt as suppressed"
+  );
+
+  await doExperimentCleanup();
+  sandbox.restore();
 });
 
 add_task(async function promptStoresImpressionAndDisableTimestamps() {

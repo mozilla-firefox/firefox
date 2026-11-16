@@ -338,11 +338,16 @@ attribute `willShowDefaultPrompt` that can be used in targeting to avoid showing
 a message when the built-in default browser prompt is going to be displayed.
 This is important to avoid the negative UX of showing two promts back-to-back,
 especially if both prompts offer similar affordances.
+It also provides `defaultPromptSuppressed`, which is `true` when the prompt
+would have been displayed but was disabled through the `setToDefaultPrompt`
+Nimbus feature's `disablePrompt` variable. Messages replacing the prompt can
+target it to show exactly when the prompt would have.
 On the newtab/homepage, it reports the `source` as `newtab`.
 
 ```ts
 let source = "startup" | "newtab";
 let willShowDefaultPrompt = boolean | undefined;
+let defaultPromptSuppressed = boolean | undefined;
 ```
 
 #### Examples
