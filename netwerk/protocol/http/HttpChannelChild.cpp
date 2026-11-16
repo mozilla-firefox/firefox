@@ -417,6 +417,10 @@ void HttpChannelChild::OnStartRequest(
     MOZ_ASSERT(mEarlyHintPreloaderId);
     mLoadInfo->SetResultPrincipalURI(aArgs.earlyHintResultPrincipalURI());
   }
+  if (aArgs.earlyHintFinalURI()) {
+    MOZ_ASSERT(mEarlyHintPreloaderId);
+    mURI = aArgs.earlyHintFinalURI();
+  }
 
   mIsFromCache = aArgs.isFromCache();
   mCacheEntryAvailable = aArgs.cacheEntryAvailable();

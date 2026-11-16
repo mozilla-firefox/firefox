@@ -1296,6 +1296,7 @@ HttpChannelParent::OnStartRequest(nsIRequest* aRequest) {
   if (mEarlyHintPreloaderId) {
     loadInfo->GetResultPrincipalURI(
         getter_AddRefs(args.earlyHintResultPrincipalURI()));
+    chan->GetURI(getter_AddRefs(args.earlyHintFinalURI()));
   }
 
   nsHttpResponseHead* responseHead = chan->GetResponseHead();
