@@ -4376,7 +4376,7 @@
 # https://w3c.github.io/push-api/#declarative-push-message
 - name: dom.push.declarative.enabled
   type: RelaxedAtomicBool
-  value: false
+  value: true
   mirror: always
 
 # Indicate the deprecated aesgcm support in PushManager.supportedContentEncodings.
@@ -4392,7 +4392,7 @@
 # https://w3c.github.io/push-api/#extensions-to-the-serviceworkerregistration-interface
 - name: dom.push.window_pushmanager.enabled
   type: bool
-  value: false
+  value: true
   mirror: always
 
 # Whether QuotaExceededError is a DOMException derived interface carrying
