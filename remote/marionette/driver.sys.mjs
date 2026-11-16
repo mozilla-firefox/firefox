@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
+
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
@@ -69,6 +71,13 @@ ChromeUtils.defineESModuleGetters(lazy, {
 ChromeUtils.defineLazyGetter(lazy, "logger", () =>
   lazy.Log.get(lazy.Log.TYPES.MARIONETTE)
 );
+
+if (AppConstants.MOZ_CODE_COVERAGE) {
+  ChromeUtils.defineESModuleGetters(lazy, {
+    PerTestCoverageUtils:
+      "chrome://remote/content/marionette/PerTestCoverageUtils.sys.mjs",
+  });
+}
 
 /**
  * @typedef {import("chrome://remote/content/shared/WindowManager.sys.mjs").WindowRect} WindowRect
@@ -874,6 +883,10 @@ export class GeckoDriver {
     } else {
       this.currentSession.destroy();
       this.#currentSession = null;
+    }
+
+    if (AppConstants.MOZ_CODE_COVERAGE) {
+      lazy.PerTestCoverageUtils.afterSuiteSync();
     }
   }
 
