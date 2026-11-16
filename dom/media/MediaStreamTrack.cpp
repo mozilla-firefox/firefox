@@ -56,67 +56,6 @@ auto MediaStreamTrackSource::ApplyConstraints(
       __func__);
 }
 
-/**
- * MTGListener monitors PrincipalHandle changes of the media flowing through
- * the MediaTrackGraph.
- *
- * For changes to PrincipalHandle the following applies:
- *
- * When the main thread principal for a MediaStreamTrack changes, its principal
- * will be set to the combination of the previous principal and the new one.
- *
- * As a PrincipalHandle change later happens on the MediaTrackGraph thread, we
- * will be notified. If the latest principal on main thread matches the
- * PrincipalHandle we just saw on MTG thread, we will set the track's principal
- * to the new one.
- *
- * We know at this point that the old principal has been flushed out and data
- * under it cannot leak to consumers.
- *
- * In case of multiple changes to the main thread state, the track's principal
- * will be a combination of its old principal and all the new ones until the
- * latest main thread principal matches the PrincipalHandle on the MTG thread.
- */
-class MediaStreamTrack::MTGListener : public MediaTrackListener {
- public:
-  explicit MTGListener(MediaStreamTrack* aTrack) : mTrack(aTrack) {}
-
-  void DoNotifyPrincipalHandleChanged(
-      const PrincipalHandle& aNewPrincipalHandle) {
-    MOZ_ASSERT(NS_IsMainThread());
-
-    if (!mTrack) {
-      return;
-    }
-
-    mTrack->NotifyPrincipalHandleChanged(aNewPrincipalHandle);
-  }
-
-  void NotifyPrincipalHandleChanged(
-      MediaTrackGraph* aGraph,
-      const PrincipalHandle& aNewPrincipalHandle) override {
-    aGraph->DispatchToMainThreadStableState(
-        NewRunnableMethod<StoreCopyPassByConstLRef<PrincipalHandle>>(
-            "dom::MediaStreamTrack::MTGListener::"
-            "DoNotifyPrincipalHandleChanged",
-            this, &MTGListener::DoNotifyPrincipalHandleChanged,
-            aNewPrincipalHandle));
-  }
-
-  void NotifyRemoved(MediaTrackGraph* aGraph) override {
-    // `mTrack` is a WeakPtr and must be destroyed on main thread.
-    // We dispatch ourselves to main thread here in case the MediaTrackGraph
-    // is holding the last reference to us.
-    aGraph->DispatchToMainThreadStableState(
-        NS_NewRunnableFunction("MediaStreamTrack::MTGListener::mTrackReleaser",
-                               [self = RefPtr<MTGListener>(this)]() {}));
-  }
-
- protected:
-  // Main thread only.
-  WeakPtr<MediaStreamTrack> mTrack;
-};
-
 class MediaStreamTrack::TrackSink : public MediaStreamTrackSource::Sink {
  public:
   explicit TrackSink(MediaStreamTrack* aTrack) : mTrack(aTrack) {}
@@ -179,7 +118,9 @@ MediaStreamTrack::MediaStreamTrack(nsPIDOMWindowInner* aWindow,
       mConstraints(aConstraints),
       mWatchManager(this, AbstractThread::MainThread()),
       mTrackEnded(AbstractThread::MainThread(), false,
-                  "MediaStreamTrack::mTrackEnded") {
+                  "MediaStreamTrack::mTrackEnded"),
+      mTrackPrincipalHandle(AbstractThread::MainThread(), PRINCIPAL_HANDLE_NONE,
+                            "MediaStreamTrack::mTrackPrincipalHandle") {
   if (!Ended()) {
     GetSource().RegisterSink(mSink.get());
 
@@ -200,10 +141,11 @@ MediaStreamTrack::MediaStreamTrack(nsPIDOMWindowInner* aWindow,
     mTrack = graph->CreateForwardedInputTrack(
         mInputTrack->mType, mozilla::MediaTrack::Flag::EnableCanonicals);
     mPort = mTrack->AllocateInputPort(mInputTrack);
-    mMTGListener = new MTGListener(this);
-    AddListener(mMTGListener);
     mTrackEnded.Connect(&mTrack->CanonicalEnded());
     mWatchManager.Watch(mTrackEnded, &MediaStreamTrack::OnTrackEnded);
+    mTrackPrincipalHandle.Connect(&mTrack->CanonicalPrincipalHandle());
+    mWatchManager.Watch(mTrackPrincipalHandle,
+                        &MediaStreamTrack::OnPrincipalHandleChanged);
   }
 
   nsresult rv;
@@ -418,15 +360,35 @@ void MediaStreamTrack::PrincipalChanged() {
   }
 }
 
-void MediaStreamTrack::NotifyPrincipalHandleChanged(
-    const PrincipalHandle& aNewPrincipalHandle) {
+/**
+ * mTrackPrincipalHandle mirrors the PrincipalHandle of the media flowing
+ * through the MediaTrackGraph, and the following applies:
+ *
+ * When the main thread principal for a MediaStreamTrack changes, its principal
+ * will be set to the combination of the previous principal and the new one.
+ *
+ * As a PrincipalHandle change later happens on the MediaTrackGraph thread, we
+ * will be notified. If the latest principal on main thread matches the
+ * PrincipalHandle we just saw on MTG thread, we will set the track's principal
+ * to the new one.
+ *
+ * We know at this point that the old principal has been flushed out and data
+ * under it cannot leak to consumers.
+ *
+ * In case of multiple changes to the main thread state, the track's principal
+ * will be a combination of its old principal and all the new ones until the
+ * latest main thread principal matches the PrincipalHandle on the MTG thread.
+ */
+void MediaStreamTrack::OnPrincipalHandleChanged() {
+  MOZ_ASSERT(NS_IsMainThread());
+  const PrincipalHandle& newPrincipalHandle = mTrackPrincipalHandle;
   LOG(LogLevel::Info,
       ("MediaStreamTrack {} principalHandle changed on "
        "MediaTrackGraph thread to {}. Current principal: {}, "
        "pending: {}",
-       fmt::ptr(this), fmt::ptr(GetPrincipalFromHandle(aNewPrincipalHandle)),
+       fmt::ptr(this), fmt::ptr(GetPrincipalFromHandle(newPrincipalHandle)),
        fmt::ptr(mPrincipal.get()), fmt::ptr(mPendingPrincipal.get())));
-  if (PrincipalHandleMatches(aNewPrincipalHandle, mPendingPrincipal)) {
+  if (PrincipalHandleMatches(newPrincipalHandle, mPendingPrincipal)) {
     SetPrincipal(mPendingPrincipal);
     mPendingPrincipal = nullptr;
   }
@@ -540,11 +502,9 @@ void MediaStreamTrack::SetReadyState(MediaStreamTrackState aState) {
     if (mSource) {
       mSource->UnregisterSink(mSink.get());
     }
-    if (mMTGListener) {
-      RemoveListener(mMTGListener);
-    }
     mWatchManager.Shutdown();
     mTrackEnded.DisconnectIfConnected();
+    mTrackPrincipalHandle.DisconnectIfConnected();
     if (mPort) {
       mPort->Destroy();
     }
@@ -553,7 +513,6 @@ void MediaStreamTrack::SetReadyState(MediaStreamTrackState aState) {
     }
     mPort = nullptr;
     mTrack = nullptr;
-    mMTGListener = nullptr;
   }
 
   mReadyState = aState;

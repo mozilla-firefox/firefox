@@ -442,7 +442,6 @@ class MediaStreamTrack : public DOMEventTargetHelper, public SupportsWeakPtr {
   friend class mozilla::SourceStreamInfo;
   friend class mozilla::RemoteSourceStreamInfo;
 
-  class MTGListener;
   class TrackSink;
 
  public:
@@ -607,11 +606,12 @@ class MediaStreamTrack : public DOMEventTargetHelper, public SupportsWeakPtr {
   void OverrideEnded();
 
   /**
-   * Called by the MTGListener when this track's PrincipalHandle changes on
-   * the MediaTrackGraph thread. When the PrincipalHandle matches the pending
-   * principal we know that the principal change has propagated to consumers.
+   * Called on the main thread when mTrackPrincipalHandle changes, i.e., when
+   * the PrincipalHandle of the data in mTrack has changed in the
+   * MediaTrackGraph. When it matches the pending principal we know that the
+   * principal change has propagated to consumers.
    */
-  void NotifyPrincipalHandleChanged(const PrincipalHandle& aNewPrincipalHandle);
+  void OnPrincipalHandleChanged();
 
   /**
    * Called on the main thread when mTrackEnded changes, i.e., when mTrack has
@@ -702,7 +702,6 @@ class MediaStreamTrack : public DOMEventTargetHelper, public SupportsWeakPtr {
   const UniquePtr<TrackSink> mSink;
   nsCOMPtr<nsIPrincipal> mPrincipal;
   nsCOMPtr<nsIPrincipal> mPendingPrincipal;
-  RefPtr<MTGListener> mMTGListener;
   // Keep tracking MediaTrackListener and DirectMediaTrackListener,
   // so we can remove them in |Destory|.
   nsTArray<RefPtr<MediaTrackListener>> mTrackListeners;
@@ -715,6 +714,8 @@ class MediaStreamTrack : public DOMEventTargetHelper, public SupportsWeakPtr {
   WatchManager<MediaStreamTrack> mWatchManager;
   // Mirrors mTrack's ended state from the MediaTrackGraph while we're live.
   Mirror<bool> mTrackEnded;
+  // Mirrors the PrincipalHandle of mTrack's most recent data while we're live.
+  Mirror<PrincipalHandle> mTrackPrincipalHandle;
 };
 
 }  // namespace dom
