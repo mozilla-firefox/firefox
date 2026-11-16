@@ -440,12 +440,12 @@ function remoteSettingsFunction() {
       : lazy.gPrefs.getStringPref(PREF_SETTINGS_LAST_ETAG, "");
 
     if (
-      ["startup", "broadcast"].includes(trigger) &&
+      trigger == "startup" &&
       lastEtag &&
       expectedTimestamp &&
       lastEtag > expectedTimestamp
     ) {
-      // Push events can fire with a stale timestamp, let's skip sync.
+      // startup trigger event can fire with a stale timestamp when clients reconnect to push
       await lazy.UptakeTelemetry.report(
         lazy.UptakeTelemetry.STATUS.STALE_TIMESTAMP_ERROR,
         pollTelemetryArgs
