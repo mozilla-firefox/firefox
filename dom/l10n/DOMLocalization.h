@@ -94,6 +94,10 @@ class DOMLocalization : public intl::Localization {
   /**
    * Applies l10n translations on translatable elements.
    *
+   * `aRequestId` identifies the TranslateElements call the translations
+   * were formatted for. An element that already shows a translation from a
+   * later call is left alone.
+   *
    * If `aProto` gets passed, it'll be used to cache
    * the localized elements.
    *
@@ -102,7 +106,8 @@ class DOMLocalization : public intl::Localization {
    */
   bool ApplyTranslations(nsTArray<nsCOMPtr<Element>>& aElements,
                          nsTArray<Nullable<L10nMessage>>& aTranslations,
-                         nsXULPrototypeDocument* aProto, ErrorResult& aRv);
+                         nsXULPrototypeDocument* aProto, uint64_t aRequestId,
+                         ErrorResult& aRv);
 
   // `aSubtreeRoot` must itself be a subtree root, i.e. the result of
   // `nsINode::SubtreeRoot()`.

@@ -51,6 +51,9 @@ support-files = ["document_l10n/file_docl10n_proto_cache.xhtml"]
 
 ["dom_localization/test_translateElements.html"]
 
+["dom_localization/test_translateElements_superseded.html"]
+support-files = ["dom_localization/file_translateElements_held.sjs"]
+
 ["dom_localization/test_translateFragment.html"]
 
 ["dom_localization/test_translateRoots.html"]

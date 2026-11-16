@@ -1,0 +1,104 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test DOMLocalization.prototype.translateElements with requests resolving out of order</title>
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="chrome://mochikit/content/tests/SimpleTest/test.css">
+  <script type="application/javascript">
+  "use strict";
+  const SJS = "http://mochi.test:8888/chrome/dom/l10n/tests/mochitest/dom_localization/file_translateElements_held.sjs";
+
+  function createLocalization(resource) {
+    const reg = new L10nRegistry();
+    reg.registerSources([new L10nFileSource("held", "app", ["en-US"], `${SJS}?`)]);
+    return new DOMLocalization([resource], false, reg, ["en-US"]);
+  }
+
+  // Requests made after this get their own bundles, so they don't wait on
+  // `from` loading.
+  function switchResource(loc, from, to) {
+    loc.addResourceIds([to]);
+    loc.removeResourceIds([from]);
+  }
+
+  function text(elem) {
+    return elem.textContent.replace(/[\u2068\u2069]/g, "");
+  }
+
+  add_task(async function test_older_request_finishes_last() {
+    const loc = createLocalization("held.ftl");
+    const p = document.getElementById("args");
+    loc.setAttributes(p, "count", { n: 1 });
+    const older = loc.translateElements([p]);
+
+    switchResource(loc, "held.ftl", "fast.ftl");
+    loc.setAttributes(p, "count", { n: 2 });
+    await loc.translateElements([p]);
+    is(text(p), "Count: 2", "Newer translation is applied");
+
+    await fetch(`${SJS}?release`);
+    await older;
+    is(text(p), "Count: 2",
+       "Older translation finishing last does not overwrite the newer one");
+  });
+
+  add_task(async function test_same_attributes_older_bundles() {
+    const loc = createLocalization("held.ftl");
+    const p = document.getElementById("bundles");
+    loc.setAttributes(p, "count", { n: 1 });
+    const older = loc.translateElements([p]);
+
+    switchResource(loc, "held.ftl", "fast.ftl");
+    await loc.translateElements([p]);
+    is(text(p), "Count: 1", "Newer translation is applied");
+
+    await fetch(`${SJS}?release`);
+    await older;
+    is(text(p), "Count: 1",
+       "Translation from older bundles does not overwrite the newer one");
+  });
+
+  add_task(async function test_separate_localizations() {
+    const heldLoc = createLocalization("held.ftl");
+    const fastLoc = createLocalization("fast.ftl");
+    const p = document.getElementById("separate");
+    heldLoc.setAttributes(p, "count", { n: 1 });
+    const older = heldLoc.translateElements([p, p]);
+
+    fastLoc.setAttributes(p, "count", { n: 2 });
+    await fastLoc.translateElements([p]);
+    is(text(p), "Count: 2", "Newer translation is applied");
+
+    await fetch(`${SJS}?release`);
+    await older;
+    is(text(p), "Count: 2",
+       "Older translation from another localization does not overwrite the newer one");
+  });
+
+  add_task(async function test_older_request_finishes_first() {
+    const loc = createLocalization("fast.ftl");
+    const p = document.getElementById("first");
+    loc.setAttributes(p, "count", { n: 1 });
+    const older = loc.translateElements([p]);
+
+    switchResource(loc, "fast.ftl", "held.ftl");
+    loc.setAttributes(p, "count", { n: 2 });
+    const newer = loc.translateElements([p]);
+    await older;
+    is(text(p), "Count: 1",
+       "Older translation is applied while the newer one is pending");
+
+    await fetch(`${SJS}?release`);
+    await newer;
+    is(text(p), "Held: 2", "Newer translation is applied when it finishes");
+  });
+  </script>
+</head>
+<body>
+  <p id="args"></p>
+  <p id="bundles"></p>
+  <p id="separate"></p>
+  <p id="first"></p>
+</body>
+</html>
