@@ -201,6 +201,38 @@ add_task(async function test_wake_within_rotation_window_rotates() {
 });
 
 /**
+ * The wake handler rotates in network-error-tolerant mode so a post-wake outage
+ * keeps retrying instead of erroring out (the recovery itself is covered in
+ * test_IPProxyManager.js).
+ */
+add_task(async function test_wake_rotates_tolerant_of_network_errors() {
+  let sandbox = sinon.createSandbox();
+  setupStubs({ validProxyPass: true });
+  await startActiveProxy();
+
+  // Rotate to an expired pass while active so the next wake must rotate.
+  setupStubs({ validProxyPass: false });
+  await IPPProxyManager.rotateProxyPass();
+
+  const rotateSpy = sandbox.spy(IPPProxyManager, "rotateProxyPass");
+  setupStubs({ validProxyPass: true });
+
+  Services.obs.notifyObservers(null, SLEEP_TOPIC);
+  Services.obs.notifyObservers(null, WAKE_TOPIC);
+
+  Assert.deepEqual(
+    rotateSpy.firstCall?.args,
+    [{ abortOnNetworkError: false }],
+    "Wake rotates in network-error-tolerant mode"
+  );
+  await rotateSpy.returnValues[0];
+
+  await IPPProxyManager.stop();
+  IPProtectionService.uninit();
+  sandbox.restore();
+});
+
+/**
  * Sleep/wake observers are only registered while the proxy is ACTIVE.
  */
 add_task(async function test_observers_only_active_while_active() {

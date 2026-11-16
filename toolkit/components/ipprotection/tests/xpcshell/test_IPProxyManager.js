@@ -1391,49 +1391,106 @@ add_task(
   }
 );
 
-add_task(async function test_IPPProxyManager_rotation_retries_offline_errors() {
-  const { IPPNetworkUtils } = ChromeUtils.importESModule(
-    "moz-src:///toolkit/components/ipprotection/IPPNetworkUtils.sys.mjs"
-  );
+/**
+ * Wake recovery retries through network errors and recovers to ACTIVE once
+ * the request reaches Guardian. retryAfter is 0 so the retry loop is driven by
+ * promise resolution rather than wall-clock timers.
+ */
+add_task(async function test_wake_rotation_retries_network_errors() {
   let sandbox = sinon.createSandbox();
   setupStubs({ validProxyPass: true });
   try {
     await initServiceToReady();
     await IPPProxyManager.start();
 
-    Services.prefs.setIntPref(RETRY_AFTER_PREF, 5);
-    Services.prefs.setIntPref(TIMEOUT_PREF, 100);
+    Services.prefs.setIntPref(RETRY_AFTER_PREF, 0);
 
-    sandbox.stub(IPPNetworkUtils, "isOffline").get(() => true);
-    const fetchSpy = sandbox.spy(IPPDummyAuthProvider, "fetchProxyPass");
-    IPPDummyAuthProvider.setProxyPassError(new Error("network down"));
+    const validPass = new ProxyPass(createProxyPassToken());
+    const fetchStub = sandbox.stub(IPPDummyAuthProvider, "fetchProxyPass");
+    const networkError = { error: AUTH_ERRORS.NETWORK_ERROR, usage: null };
+    fetchStub.onCall(0).resolves(networkError);
+    fetchStub.onCall(1).resolves(networkError);
+    fetchStub.resolves({ status: 200, pass: validPass });
 
-    const errorEvent = waitForProxyState(IPPProxyStates.ERROR);
-    const result = await IPPProxyManager.rotateProxyPass();
-    await errorEvent;
+    const newPass = await IPPProxyManager.rotateProxyPass({
+      abortOnNetworkError: false,
+    });
 
     Assert.equal(
-      result,
-      null,
-      "Rotation should not surface an offline error directly"
+      newPass?.token,
+      validPass.token,
+      "Recovers with the pass fetched after retrying past the failures"
     );
-    Assert.greater(
-      fetchSpy.callCount,
-      1,
-      "An offline failure should be retried rather than thrown"
-    );
-    Assert.equal(
-      IPPProxyManager.state,
-      IPPProxyStates.ERROR,
-      "Proxy should move to ERROR when offline retries time out"
-    );
+    Assert.equal(IPPProxyManager.state, IPPProxyStates.ACTIVE, "Stays ACTIVE");
   } finally {
-    IPPDummyAuthProvider.setProxyPassError(null);
     sandbox.restore();
     await IPPProxyManager.stop(false).catch(() => {});
     IPProtectionService.uninit();
     Services.prefs.clearUserPref(RETRY_AFTER_PREF);
-    Services.prefs.clearUserPref(TIMEOUT_PREF);
+  }
+});
+
+/**
+ * In-session (default) rotation treats a network error as a real disconnect:
+ * it fails fast with a network error instead of retrying.
+ */
+add_task(async function test_insession_rotation_network_error_is_fatal() {
+  let sandbox = sinon.createSandbox();
+  setupStubs({ validProxyPass: true });
+  try {
+    await initServiceToReady();
+    await IPPProxyManager.start();
+
+    const fetchSpy = sandbox
+      .stub(IPPDummyAuthProvider, "fetchProxyPass")
+      .resolves({ error: AUTH_ERRORS.NETWORK_ERROR, usage: null });
+
+    const errorEvent = waitForProxyState(IPPProxyStates.ERROR);
+    await IPPProxyManager.rotateProxyPass();
+    await errorEvent;
+
+    Assert.equal(fetchSpy.callCount, 1, "Fatal in-session, not retried");
+    Assert.equal(
+      IPPProxyManager.errorType,
+      ERRORS.NETWORK,
+      "Surfaces a network error"
+    );
+  } finally {
+    sandbox.restore();
+    await IPPProxyManager.stop(false).catch(() => {});
+    IPProtectionService.uninit();
+  }
+});
+
+/**
+ * A thrown provider error is an auth failure, not a network error, so wake
+ * recovery fails fast with it instead of retrying.
+ */
+add_task(async function test_wake_rotation_thrown_error_is_fatal() {
+  let sandbox = sinon.createSandbox();
+  setupStubs({ validProxyPass: true });
+  try {
+    await initServiceToReady();
+    await IPPProxyManager.start();
+
+    const fetchStub = sandbox
+      .stub(IPPDummyAuthProvider, "fetchProxyPass")
+      .callsFake(() => Promise.reject(AUTH_ERRORS.LOGIN_NEEDED));
+
+    const errorEvent = waitForProxyState(IPPProxyStates.ERROR);
+    await IPPProxyManager.rotateProxyPass({ abortOnNetworkError: false });
+    await errorEvent;
+
+    Assert.equal(fetchStub.callCount, 1, "Fatal on wake, not retried");
+    Assert.equal(
+      IPPProxyManager.errorType,
+      AUTH_ERRORS.LOGIN_NEEDED,
+      "Surfaces the thrown error"
+    );
+  } finally {
+    sandbox.restore();
+    await IPPProxyManager.stop(false).catch(() => {});
+    IPProtectionService.uninit();
   }
 });
 

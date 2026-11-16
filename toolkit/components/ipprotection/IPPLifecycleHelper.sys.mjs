@@ -122,7 +122,11 @@ export class IPPLifeCycleHelperClass {
     if (channelFilter.canResume) {
       channelFilter.resume();
     } else {
-      lazy.IPPProxyManager.rotateProxyPass();
+      // The network is usually not back yet right after wake, so retry through
+      // network errors instead of erroring out.
+      lazy.IPPProxyManager.rotateProxyPass({
+        abortOnNetworkError: false,
+      }).catch(() => {});
     }
   }
 }
