@@ -872,10 +872,14 @@ void nsHttpConnection::Close(nsresult reason, bool aIsShutdown) {
     if (mIdleMonitoring) EndIdleMonitoring();
 
     // The connection and security errors clear out alt-svc mappings
-    // in case any previously validated ones are now invalid
+    // in case any previously validated ones are now invalid.
+    // Not for a connection running inside a tunnel: its errors can come from
+    // the tunnel being torn down rather than from the origin, so they say
+    // nothing about whether the origin's alternatives are still valid.
     if (((reason == NS_ERROR_NET_RESET) ||
          (NS_ERROR_GET_MODULE(reason) == NS_ERROR_MODULE_SECURITY)) &&
-        mConnInfo && !(mTransactionCaps & NS_HTTP_ERROR_SOFTLY)) {
+        mConnInfo && !mInSpdyTunnel &&
+        !(mTransactionCaps & NS_HTTP_ERROR_SOFTLY)) {
       gHttpHandler->ClearHostMapping(mConnInfo);
     }
     if (mTlsHandshaker->EarlyDataWasAvailable() &&
