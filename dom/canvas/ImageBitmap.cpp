@@ -831,11 +831,6 @@ already_AddRefed<SourceSurface> ImageBitmap::PrepareForDrawTarget(
   if (!mPictureRect.IsEqualEdges(surfRect)) {
     IntRect surfPortion = surfRect.Intersect(mPictureRect);
 
-    // the crop lies entirely outside the surface area, nothing to draw
-    if (surfPortion.IsEmpty()) {
-      return nullptr;
-    }
-
     IntPoint dest(std::max(0, surfPortion.X() - mPictureRect.X()),
                   std::max(0, surfPortion.Y() - mPictureRect.Y()));
 
@@ -868,7 +863,11 @@ already_AddRefed<SourceSurface> ImageBitmap::PrepareForDrawTarget(
       return nullptr;
     }
 
-    cropped->CopySurface(surface, surfPortion, dest);
+    // A crop that lies entirely outside the surface area leaves the target
+    // transparent black.
+    if (!surfPortion.IsEmpty()) {
+      cropped->CopySurface(surface, surfPortion, dest);
+    }
     surface = cropped->GetBackingSurface();
     hasCopied = true;
     if (NS_WARN_IF(!surface)) {
