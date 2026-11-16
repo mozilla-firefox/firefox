@@ -72,6 +72,7 @@ internal fun IPProtectionMenuItem(
             Role.Switch
         }
     val isEnabled = state.status != IPProtectionStatus.DataLimitReached
+    val defaultColors = ListItemDefaults.colors()
 
     IconListItem(
         label = stringResource(R.string.ip_protection_toggle_label),
@@ -87,10 +88,14 @@ internal fun IPProtectionMenuItem(
                         this.role = role
                     }
                 },
-        enabled = isEnabled,
-        colors = ListItemDefaults.colors(supportingColor = MaterialTheme.colorScheme.error),
+        colors =
+            ListItemDefaults.colors(
+                headlineColor = if (isEnabled) defaultColors.headlineColor else defaultColors.disabledHeadlineColor,
+                supportingColor = MaterialTheme.colorScheme.error,
+            ),
         description = descriptionText(state),
         minHeight = MENU_ITEM_MIN_HEIGHT,
+        beforeIconTint = if (isEnabled) defaultColors.leadingIconColor else defaultColors.disabledLeadingIconColor,
         beforeIconPainter = painterResource(iconsR.drawable.mozac_ic_globe_24),
         contentPaddingListItem = PaddingValues(start = FirefoxTheme.layout.space.dynamic200),
     ) {
