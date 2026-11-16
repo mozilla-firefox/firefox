@@ -342,9 +342,7 @@ class ResultsSink:
                     time=output.dt,
                     extra=getattr(output, "extra", None),
                 )
-                return
-
-            if dev_label:
+            elif dev_label:
 
                 def singular(label):
                     return "FIXED" if label == "FIXES" else label[:-1]

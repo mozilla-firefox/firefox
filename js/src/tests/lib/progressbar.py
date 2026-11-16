@@ -11,14 +11,23 @@ else:
 
 
 class NullProgressBar:
+    def __init__(self):
+        self.data = None
+        self.t0 = datetime.now()
+
     def update(self, current, data):
-        pass
+        self.data = dict(data)
 
     def poke(self):
         pass
 
     def finish(self, complete=True):
-        pass
+        if not self.data:
+            sys.stdout.write("Results: no tests run\n")
+            return
+        counts = ", ".join(f"{k}: {v}" for k, v in self.data.items())
+        dt = (datetime.now() - self.t0).total_seconds()
+        sys.stdout.write(f"Results: {counts} | {dt:.1f}s\n")
 
     def beginline(self):
         pass
