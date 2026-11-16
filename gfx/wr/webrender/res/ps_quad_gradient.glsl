@@ -4,8 +4,6 @@
 
 /// This shader renders any kind of css gradents in a color or alpha target.
 
-#define WR_QUAD_ROUNDED_CLIP
-
 #include ps_quad
 #include dithering
 
@@ -376,12 +374,6 @@ vec4 pattern_fragment(vec4 color) {
 
 #if defined(SWGL_DRAW_SPAN)
 void swgl_drawSpanRGBA8() {
-    // The span functions can't apply the rounded clip. Fall back to the
-    // fragment shader.
-    if (rounded_clip_is_enabled()) {
-        return;
-    }
-
     int kind = v_gradient_header.x;
     if (kind != GRADIENT_KIND_LINEAR && kind != GRADIENT_KIND_RADIAL) {
         return;
