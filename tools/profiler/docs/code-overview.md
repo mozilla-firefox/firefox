@@ -4,7 +4,7 @@ This is an overview of the code that implements the Profiler inside Firefox
 with some details around tricky subjects, or pointers to more detailed
 documentation and/or source code.
 
-It assumes familiarity with Firefox development, including Mercurial (hg), mach,
+It assumes familiarity with Firefox development, including git, mach,
 moz.build files, Try, Phabricator, etc.
 
 It also assumes knowledge of the user-visible part of the Firefox Profiler, that
