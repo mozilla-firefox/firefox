@@ -22,19 +22,6 @@ XPCOMUtils.defineLazyPreferenceGetter(
   false
 );
 
-ChromeUtils.defineLazyGetter(lazy, "l10n", function () {
-  return new Localization(
-    ["toolkit/contentanalysis/contentanalysis.ftl"],
-    true
-  );
-});
-
-ChromeUtils.defineLazyGetter(lazy, "clipboardHelper", function () {
-  return Cc["@mozilla.org/widget/clipboardhelper;1"].getService(
-    Ci.nsIClipboardHelper
-  );
-});
-
 export const ContentAnalysisUtils = {
   /**
    * Builds an nsIContentAnalysisRequest from the given parameters.
@@ -184,6 +171,11 @@ export const ContentAnalysisUtils = {
    * text (a prompt()'s default value, an alert()'s message), so those have to
    * opt in here, the same way they do for paste.
    *
+   * This works by taking over the copy and writing the text to the clipboard
+   * on behalf of the page's window. nsBaseClipboard then treats it like any
+   * copy from that page: it runs the content analysis check, and on block
+   * writes the placeholder notice.
+   *
    * @param {Element} element The DOM element to monitor.
    * @param {CanonicalBrowsingContext} browsingContext The browsing context the
    *        element's content came from. Used for the URL reported to the agent
@@ -193,7 +185,7 @@ export const ContentAnalysisUtils = {
     if (!element) {
       return;
     }
-    let caCopyChecker = async event => {
+    let caCopyChecker = event => {
       // Do not use a lazy service getter for this, because tests set up different
       // mocks, so if multiple tests run that call into this we can end up calling
       // into an old mock.
@@ -228,56 +220,52 @@ export const ContentAnalysisUtils = {
         return;
       }
 
-      // Stop the copy. We write to the clipboard ourselves once the agent has
-      // answered, so nothing reaches it before then.
+      // Stop the chrome copy; the write below replaces it.
       event.preventDefault();
       event.contentAnalysisHandled = true;
 
-      try {
-        const response = await contentAnalysis.analyzeContentRequests(
-          [
-            this.createContentAnalysisRequest(
-              {
-                analysisType: Ci.nsIContentAnalysisRequest.eDataCopied,
-                operationTypeForDisplay:
-                  Ci.nsIContentAnalysisRequest.eCopyClipboard,
-                reason: Ci.nsIContentAnalysisRequest.eClipboardCopy,
-                url: browsingContext
-                  ? contentAnalysis.getURIForBrowsingContext(browsingContext)
-                  : undefined,
-                windowGlobalParent: browsingContext?.currentWindowContext,
-              },
-              { textContent: data }
-            ),
-          ],
-          true
-        );
-        if (response.shouldAllowContent) {
-          // No window context, so this write is not analyzed a second time by
-          // nsBaseClipboard::SetData.
-          lazy.clipboardHelper.copyString(data);
-          if (isCut && isTextInput) {
-            element.value =
-              element.value.slice(0, startIndex) +
-              element.value.slice(endIndex);
-            element.focus();
-            element.setSelectionRange(startIndex, startIndex);
-          }
-          return;
+      const trans = Cc["@mozilla.org/widget/transferable;1"].createInstance(
+        Ci.nsITransferable
+      );
+      trans.init(null);
+      trans.addDataFlavor("text/plain");
+      const str = Cc["@mozilla.org/supports-string;1"].createInstance(
+        Ci.nsISupportsString
+      );
+      str.data = data;
+      trans.setTransferData("text/plain", str);
+
+      // Writing with the page's window context is what makes nsBaseClipboard
+      // analyze this as a copy from that page. The callback only fires once
+      // the verdict is in (NS_ERROR_CONTENT_BLOCKED on block), so a cut can
+      // wait for it before deleting anything: a blocked cut leaves the text in
+      // place, since it never reached the clipboard.
+      const request = Services.clipboard.asyncSetData(
+        Ci.nsIClipboard.kGlobalClipboard,
+        browsingContext?.currentWindowContext,
+        {
+          QueryInterface: ChromeUtils.generateQI([
+            "nsIAsyncClipboardRequestCallback",
+          ]),
+          onComplete(result) {
+            if (result === Cr.NS_OK) {
+              if (isCut && isTextInput) {
+                element.value =
+                  element.value.slice(0, startIndex) +
+                  element.value.slice(endIndex);
+                element.focus();
+                element.setSelectionRange(startIndex, startIndex);
+              }
+            } else if (result !== Cr.NS_ERROR_CONTENT_BLOCKED) {
+              console.error(
+                "Writing to the clipboard failed: ",
+                Components.Exception("", result)
+              );
+            }
+          },
         }
-        // Replace the clipboard contents, so the user can't silently paste
-        // whatever was there beforehand. Note that a blocked cut leaves the
-        // text in place since we weren't able to copy it to the clipboard
-        // and we don't want the user to lose their data. (although it is
-        // restorable with an undo, this may not be obvious)
-        lazy.clipboardHelper.copyString(
-          lazy.l10n.formatValueSync(
-            "contentanalysis-clipboard-copy-blocked-replacement"
-          )
-        );
-      } catch (error) {
-        console.error("Content analysis request returned error: ", error);
-      }
+      );
+      request.setData(trans, null);
     };
     element.addEventListener("copy", caCopyChecker);
     element.addEventListener("cut", caCopyChecker);
