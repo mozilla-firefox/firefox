@@ -114,6 +114,7 @@ menulist.folder-icon {
   min-width: 32px;
   min-height: 32px;
   padding: 0;
+  aspect-ratio: 1;
 }
 
 #bookmarkpropertiesdialog .expander-up {

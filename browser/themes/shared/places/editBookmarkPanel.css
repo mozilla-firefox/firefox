@@ -102,6 +102,8 @@
   background-color: var(--button-background-color);
   border: var(--button-border);
   border-radius: var(--button-border-radius);
+  padding: 0;
+  aspect-ratio: 1;
 
   &:hover {
     background-color: var(--button-background-color-hover);
