@@ -156,6 +156,17 @@ add_task(async function test_throw_error() {
   }
 });
 
+add_task(async function test_throw_dom_exception() {
+  try {
+    await worker.post("throwDOMException", ["error message", "NotFoundError"]);
+    Assert.ok(false, "should have thrown");
+  } catch (ex) {
+    Assert.ok(DOMException.isInstance(ex), "should be a DOMException");
+    Assert.equal(ex.name, "NotFoundError");
+    Assert.equal(ex.message, "error message");
+  }
+});
+
 add_task(async function test_terminate() {
   let previousWorker = worker._worker;
 

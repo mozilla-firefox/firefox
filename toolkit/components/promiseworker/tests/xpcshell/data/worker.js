@@ -44,4 +44,8 @@ var Agent = {
   throwError(msg) {
     throw new Error(msg);
   },
+
+  throwDOMException(msg, name) {
+    throw new DOMException(msg, name);
+  },
 };

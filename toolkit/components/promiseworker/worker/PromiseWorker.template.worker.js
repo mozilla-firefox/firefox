@@ -217,6 +217,7 @@ AbstractWorker.prototype = {
       this.log("Sending back DOM exception", exn.constructor.name);
       let error = {
         exn: exn.constructor.name,
+        name: exn.name,
         message: exn.message,
       };
       this.postMessage({ fail: error, id, durationMs });
