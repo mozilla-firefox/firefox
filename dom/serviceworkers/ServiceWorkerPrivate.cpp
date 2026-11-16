@@ -414,8 +414,7 @@ Result<IPCInternalRequest, nsresult> GetIPCInternalRequest(
   nsTArray<RedirectHistoryEntryInfo> redirectChain;
   for (const nsCOMPtr<nsIRedirectHistoryEntry>& redirectEntry :
        loadInfo->RedirectChain()) {
-    RedirectHistoryEntryInfo* entry = redirectChain.AppendElement();
-    MOZ_ALWAYS_SUCCEEDS(RHEntryToRHEntryInfo(redirectEntry, entry));
+    redirectChain.AppendElement(MOZ_TRY(RHEntryToRHEntryInfo(redirectEntry)));
   }
 
   bool isThirdPartyChannel;

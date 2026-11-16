@@ -104,14 +104,14 @@ struct PreferredAlternativeDataTypeParams
 
 struct RedirectHistoryEntryInfo
 {
-  PrincipalInfo       principalInfo;
+  nsIPrincipal        principal;
   nullable nsIURI     referrerUri;
   nsCString           remoteAddress;
 };
 
 struct InterceptionInfoArg
 {
-  PrincipalInfo?              triggeringPrincipalInfo;
+  nsIPrincipal                triggeringPrincipal;
   nsContentPolicyType         contentPolicyType;
   RedirectHistoryEntryInfo[]  redirectChain;
   bool                        fromThirdParty;

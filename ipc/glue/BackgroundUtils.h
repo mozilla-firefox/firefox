@@ -7,6 +7,7 @@
 
 #include "ipc/IPCMessageUtils.h"
 #include "mozilla/OriginAttributes.h"
+#include "mozilla/Result.h"
 #include "nsCOMPtr.h"
 #include "nscore.h"
 
@@ -125,9 +126,8 @@ already_AddRefed<nsIRedirectHistoryEntry> RHEntryInfoToRHEntry(
  * Convert an nsIRedirectHistoryEntry to a RedirectHistoryEntryInfo.
  */
 
-nsresult RHEntryToRHEntryInfo(
-    nsIRedirectHistoryEntry* aRHEntry,
-    mozilla::net::RedirectHistoryEntryInfo* aRHEntryInfo);
+Result<mozilla::net::RedirectHistoryEntryInfo, nsresult> RHEntryToRHEntryInfo(
+    nsIRedirectHistoryEntry* aRHEntry);
 
 /**
  * Convert a LoadInfo to LoadInfoArgs struct.

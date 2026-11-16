@@ -368,34 +368,31 @@ bool IsPrincipalInfoPrivate(const PrincipalInfo& aPrincipalInfo) {
 
 already_AddRefed<nsIRedirectHistoryEntry> RHEntryInfoToRHEntry(
     const RedirectHistoryEntryInfo& aRHEntryInfo) {
-  auto principalOrErr = PrincipalInfoToPrincipal(aRHEntryInfo.principalInfo());
-  if (NS_WARN_IF(principalOrErr.isErr())) {
-    return nullptr;
-  }
-
-  nsCOMPtr<nsIPrincipal> principal = principalOrErr.unwrap();
   nsCOMPtr<nsIRedirectHistoryEntry> entry = new nsRedirectHistoryEntry(
-      principal, aRHEntryInfo.referrerUri(), aRHEntryInfo.remoteAddress());
+      aRHEntryInfo.principal(), aRHEntryInfo.referrerUri(),
+      aRHEntryInfo.remoteAddress());
 
   return entry.forget();
 }
 
-nsresult RHEntryToRHEntryInfo(nsIRedirectHistoryEntry* aRHEntry,
-                              RedirectHistoryEntryInfo* aRHEntryInfo) {
+Result<RedirectHistoryEntryInfo, nsresult> RHEntryToRHEntryInfo(
+    nsIRedirectHistoryEntry* aRHEntry) {
   MOZ_ASSERT(aRHEntry);
-  MOZ_ASSERT(aRHEntryInfo);
 
-  nsresult rv;
-  aRHEntry->GetRemoteAddress(aRHEntryInfo->remoteAddress());
+  nsAutoCString remoteAddress;
+  MOZ_TRY(aRHEntry->GetRemoteAddress(remoteAddress));
 
-  rv = aRHEntry->GetReferrerURI(getter_AddRefs(aRHEntryInfo->referrerUri()));
-  NS_ENSURE_SUCCESS(rv, rv);
+  nsCOMPtr<nsIURI> referrerUri;
+  MOZ_TRY(aRHEntry->GetReferrerURI(getter_AddRefs(referrerUri)));
 
   nsCOMPtr<nsIPrincipal> principal;
-  rv = aRHEntry->GetPrincipal(getter_AddRefs(principal));
-  NS_ENSURE_SUCCESS(rv, rv);
+  MOZ_TRY(aRHEntry->GetPrincipal(getter_AddRefs(principal)));
+  if (NS_WARN_IF(!principal)) {
+    return Err(NS_ERROR_UNEXPECTED);
+  }
 
-  return PrincipalToPrincipalInfo(principal, &aRHEntryInfo->principalInfo());
+  return RedirectHistoryEntryInfo(WrapNotNull(principal), referrerUri,
+                                  remoteAddress);
 }
 
 nsresult LoadInfoToLoadInfoArgs(nsILoadInfo* aLoadInfo,
@@ -438,18 +435,14 @@ nsresult LoadInfoToLoadInfoArgs(nsILoadInfo* aLoadInfo,
   nsTArray<RedirectHistoryEntryInfo> redirectChainIncludingInternalRedirects;
   for (const nsCOMPtr<nsIRedirectHistoryEntry>& redirectEntry :
        aLoadInfo->RedirectChainIncludingInternalRedirects()) {
-    RedirectHistoryEntryInfo* entry =
-        redirectChainIncludingInternalRedirects.AppendElement();
-    rv = RHEntryToRHEntryInfo(redirectEntry, entry);
-    NS_ENSURE_SUCCESS(rv, rv);
+    redirectChainIncludingInternalRedirects.AppendElement(
+        MOZ_TRY(RHEntryToRHEntryInfo(redirectEntry)));
   }
 
   nsTArray<RedirectHistoryEntryInfo> redirectChain;
   for (const nsCOMPtr<nsIRedirectHistoryEntry>& redirectEntry :
        aLoadInfo->RedirectChain()) {
-    RedirectHistoryEntryInfo* entry = redirectChain.AppendElement();
-    rv = RHEntryToRHEntryInfo(redirectEntry, entry);
-    NS_ENSURE_SUCCESS(rv, rv);
+    redirectChain.AppendElement(MOZ_TRY(RHEntryToRHEntryInfo(redirectEntry)));
   }
 
   Maybe<IPCClientInfo> ipcClientInfo;
@@ -506,23 +499,19 @@ nsresult LoadInfoToLoadInfoArgs(nsILoadInfo* aLoadInfo,
   Maybe<InterceptionInfoArg> interceptionInfoArg;
   nsIInterceptionInfo* interceptionInfo = aLoadInfo->InterceptionInfo();
   if (interceptionInfo) {
-    Maybe<PrincipalInfo> triggeringPrincipalInfo;
-    if (interceptionInfo->TriggeringPrincipal()) {
-      triggeringPrincipalInfo.emplace();
-      rv = PrincipalToPrincipalInfo(interceptionInfo->TriggeringPrincipal(),
-                                    triggeringPrincipalInfo.ptr());
+    nsIPrincipal* triggeringPrincipal = interceptionInfo->TriggeringPrincipal();
+    if (NS_WARN_IF(!triggeringPrincipal)) {
+      return NS_ERROR_UNEXPECTED;
     }
 
     nsTArray<RedirectHistoryEntryInfo> redirectChain;
     for (const nsCOMPtr<nsIRedirectHistoryEntry>& redirectEntry :
          interceptionInfo->RedirectChain()) {
-      RedirectHistoryEntryInfo* entry = redirectChain.AppendElement();
-      rv = RHEntryToRHEntryInfo(redirectEntry, entry);
-      NS_ENSURE_SUCCESS(rv, rv);
+      redirectChain.AppendElement(MOZ_TRY(RHEntryToRHEntryInfo(redirectEntry)));
     }
 
     interceptionInfoArg = Some(InterceptionInfoArg(
-        triggeringPrincipalInfo, interceptionInfo->ContentPolicyType(),
+        WrapNotNull(triggeringPrincipal), interceptionInfo->ContentPolicyType(),
         redirectChain, interceptionInfo->FromThirdParty()));
   }
 
@@ -825,16 +814,6 @@ nsresult LoadInfoArgsToLoadInfo(const LoadInfoArgs& loadInfoArgs,
   if (loadInfoArgs.interceptionInfo().isSome()) {
     const InterceptionInfoArg& interceptionInfoArg =
         loadInfoArgs.interceptionInfo().ref();
-    nsCOMPtr<nsIPrincipal> triggeringPrincipal;
-    if (interceptionInfoArg.triggeringPrincipalInfo().isSome()) {
-      auto triggeringPrincipalOrErr = PrincipalInfoToPrincipal(
-          interceptionInfoArg.triggeringPrincipalInfo().ref());
-      if (NS_WARN_IF(triggeringPrincipalOrErr.isErr())) {
-        return triggeringPrincipalOrErr.unwrapErr();
-      }
-      triggeringPrincipal = triggeringPrincipalOrErr.unwrap();
-    }
-
     RedirectHistoryArray redirectChain;
     for (const RedirectHistoryEntryInfo& entryInfo :
          interceptionInfoArg.redirectChain()) {
@@ -845,8 +824,9 @@ nsresult LoadInfoArgsToLoadInfo(const LoadInfoArgs& loadInfoArgs,
     }
 
     interceptionInfo = new InterceptionInfo(
-        triggeringPrincipal, interceptionInfoArg.contentPolicyType(),
-        redirectChain, interceptionInfoArg.fromThirdParty());
+        interceptionInfoArg.triggeringPrincipal(),
+        interceptionInfoArg.contentPolicyType(), redirectChain,
+        interceptionInfoArg.fromThirdParty());
   }
 
   RefPtr<PolicyContainer> policyContainerToInherit;
