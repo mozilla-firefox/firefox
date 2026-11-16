@@ -3643,6 +3643,8 @@
     <string name="certificate_details_panel_secure_connection_title">Secure connection</string>
     <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
     <string name="certificate_details_panel_issued_to_label">Certificate issued to:</string>
+    <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+    <string name="certificate_details_panel_verified_by_label">Verified by:</string>
     <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
     <string name="certificate_details_panel_eu_trust_mark_content_description">EU trust mark</string>
     <!-- Text for displaying the total number of trackers blocked in the trackers blocked panel.

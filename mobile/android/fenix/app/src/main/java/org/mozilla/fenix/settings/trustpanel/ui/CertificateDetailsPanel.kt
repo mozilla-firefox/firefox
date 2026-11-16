@@ -35,6 +35,7 @@ import mozilla.components.compose.base.theme.Theme
 import mozilla.components.support.ktx.kotlin.tryGetHostFromUrl
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.menu.compose.MenuScaffold
+import org.mozilla.fenix.settings.trustpanel.store.CertificateDetails
 import org.mozilla.fenix.theme.FirefoxTheme
 
 private const val DARK_BACKGROUND_LUMINANCE = 0.5f
@@ -156,44 +157,29 @@ private fun CertificateDetailsHeader(
     }
 }
 
+private val previewCertificateDetails =
+    CertificateDetails(
+        subjectOrganization = "The Guardian",
+        subjectLocality = "London",
+        subjectCountry = "GB",
+        subjectCommonName = "www.theguardian.com",
+        issuerOrganization = "GlobalSign nv-sa",
+        issuerCommonName = "GlobalSign GCC R3 OV TLS CA 2024",
+    )
+
 @Composable
 private fun CertificateDetailsPanelPreviewContent(
     url: String = "https://www.theguardian.com",
     isQwac: Boolean = true,
+    certificateDetails: CertificateDetails = previewCertificateDetails,
 ) {
     Column(modifier = Modifier.background(color = MaterialTheme.colorScheme.surface)) {
         CertificateDetailsPanel(
             url = url,
             icon = null,
             isQwac = isQwac,
-            issuedTo = {
-                Column {
-                    Text(
-                        text = "Certificate issued to:",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = FirefoxTheme.typography.caption,
-                    )
-                    Text(
-                        text = "The Guardian\nLondon\nUK",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = FirefoxTheme.typography.body2,
-                    )
-                }
-            },
-            verifiedBy = {
-                Column {
-                    Text(
-                        text = "Verified by:",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = FirefoxTheme.typography.caption,
-                    )
-                    Text(
-                        text = "GlobalSign nv-sa",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = FirefoxTheme.typography.body2,
-                    )
-                }
-            },
+            issuedTo = { CertificateIssuedTo(certificateDetails = certificateDetails) },
+            verifiedBy = { CertificateVerifiedBy(certificateDetails = certificateDetails) },
         )
     }
 }
@@ -202,6 +188,23 @@ private fun CertificateDetailsPanelPreviewContent(
 @Composable
 private fun CertificateDetailsPanelPreview(@PreviewParameter(PreviewThemeProvider::class) theme: Theme) {
     FirefoxTheme(theme) { CertificateDetailsPanelPreviewContent() }
+}
+
+@Preview
+@Composable
+private fun CertificateDetailsPanelDomainValidatedPreview(@PreviewParameter(PreviewThemeProvider::class) theme: Theme) {
+    FirefoxTheme(theme) {
+        CertificateDetailsPanelPreviewContent(
+            url = "https://example.com",
+            isQwac = false,
+            certificateDetails =
+                CertificateDetails(
+                    subjectCommonName = "example.com",
+                    issuerOrganization = "Let's Encrypt",
+                    issuerCommonName = "R13",
+                ),
+        )
+    }
 }
 
 @Preview
