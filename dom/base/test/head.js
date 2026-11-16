@@ -263,7 +263,11 @@ async function runJSCacheTests(tests, { http } = {}) {
         }
         if (item.safeBrowsingNotififcation) {
           info("notify safe browsing update");
-          Services.obs.notifyObservers(null, "safebrowsing-update-finished", "success:mozilla");
+          Services.obs.notifyObservers(
+            null,
+            "safebrowsing-update-finished",
+            "success:mozilla"
+          );
         }
         if (item.clearDisk) {
           info("clear disk cache");
