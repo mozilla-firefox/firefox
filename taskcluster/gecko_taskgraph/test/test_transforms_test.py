@@ -908,5 +908,30 @@ def test_test_verify_path_without_paths(
     assert [t["chunks"] for t in tasks] == expected
 
 
+@pytest.mark.parametrize(
+    "suite,extra_options,expected",
+    (
+        pytest.param("web-platform-tests-reftest", [], ["--repeat=2"], id="wpt"),
+        pytest.param("mochitest-browser-chrome", [], ["--repeat=2"], id="mochitest"),
+        pytest.param("reftest", [], ["--repeat=2"], id="reftest"),
+        pytest.param("crashtest", [], ["--repeat=2"], id="crashtest"),
+        pytest.param("xpcshell", [], ["--repeat=2"], id="xpcshell"),
+        pytest.param("marionette", [], [], id="unsupported"),
+        pytest.param(
+            "web-platform-tests", ["--repeat=5"], ["--repeat=5"], id="existing_repeat"
+        ),
+    ),
+)
+def test_set_repeat_tests(
+    run_transform, make_test_task, suite, extra_options, expected
+):
+    task = make_test_task(
+        suite=suite, mozharness={"extra-options": list(extra_options)}
+    )
+    params = FakeParameters({"try_task_config": {"repeat-tests": 3}})
+    task = list(run_transform(other.set_repeat_tests, task, params=params))[0]
+    assert task["mozharness"]["extra-options"] == expected
+
+
 if __name__ == "__main__":
     mozunit.main()

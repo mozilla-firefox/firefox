@@ -1088,6 +1088,36 @@ class WorkerOverrides(TryConfig):
         return retVal
 
 
+class RepeatTests(TryConfig):
+    arguments = [
+        [
+            ["--repeat-tests"],
+            {
+                "action": RangeAction,
+                "min": 1,
+                "max": 20,
+                "default": None,
+                "type": int,
+                "help": "Run each test the specified number of times in each task "
+                "(mochitest, reftest, crashtest, xpcshell and web-platform-tests only).",
+            },
+        ],
+    ]
+
+    def try_config(self, repeat_tests, **kwargs):
+        if not repeat_tests:
+            return
+
+        if repeat_tests == 1:
+            print(
+                "warning: setting --repeat-tests to 1 is the same as not specifying it."
+            )
+
+        return {
+            "repeat-tests": repeat_tests,
+        }
+
+
 all_task_configs = {
     "artifact": Artifact,
     "browsertime": Browsertime,
@@ -1105,6 +1135,7 @@ all_task_configs = {
     "test-tag": Tag,
     "pernosco": Pernosco,
     "rebuild": Rebuild,
+    "repeat-tests": RepeatTests,
     "routes": Routes,
     "target-tasks-method": TargetTasksMethod,
     "worker-overrides": WorkerOverrides,

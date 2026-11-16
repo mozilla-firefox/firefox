@@ -1322,3 +1322,23 @@ def set_perfherder_extra_options(config, tasks):
         env = task.setdefault("worker", {}).setdefault("env", {})
         env.setdefault("PERFHERDER_EXTRA_OPTIONS", " ".join(options))
         yield task
+
+
+@transforms.add
+def set_repeat_tests(config, tasks):
+    repeat = config.params["try_task_config"].get("repeat-tests")
+    supported_suites = [
+        "mochitest",
+        "crashtest",
+        "reftest",
+        "web-platform-tests",
+        "xpcshell",
+    ]
+    for task in tasks:
+        if repeat and any(
+            task["suite"].startswith(suite) for suite in supported_suites
+        ):
+            extra = task["mozharness"].setdefault("extra-options", [])
+            if not any(a.startswith("--repeat") for a in extra):
+                extra.append(f"--repeat={repeat - 1}")
+        yield task

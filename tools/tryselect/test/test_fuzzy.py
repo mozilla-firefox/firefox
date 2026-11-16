@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 
 import mozunit
 import pytest
+from tryselect.selectors.fuzzy import FuzzyParser
 
 
 @pytest.mark.skipif(os.name == "nt", reason="fzf not installed on host")
@@ -252,6 +253,12 @@ def test_target_tasks_method_pre_filter(run_mach, capfd):
     expected_talos_tests = {"other", "xperf", "webgl"}
     for label in tasks:
         assert any(e in label for e in expected_talos_tests)
+
+
+def test_rebuild_and_repeat_tests_are_distinct():
+    args = FuzzyParser().parse_args(["--rebuild", "2", "--repeat-tests", "3"])
+    assert args.rebuild == 2
+    assert args.repeat_tests == 3
 
 
 if __name__ == "__main__":

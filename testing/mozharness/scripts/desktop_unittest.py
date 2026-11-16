@@ -300,7 +300,7 @@ class DesktopUnittest(TestingMixin, MercurialScript, MozbaseMixin, CodeCoverageM
                     "dest": "repeat",
                     "default": 0,
                     "help": "Repeat the tests the given number of times. Supported "
-                    "by mochitest, reftest, crashtest, ignored otherwise.",
+                    "by mochitest, reftest, crashtest, xpcshell, ignored otherwise.",
                 },
             ],
             [

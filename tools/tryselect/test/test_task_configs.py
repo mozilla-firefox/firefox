@@ -10,7 +10,9 @@ from argparse import ArgumentParser
 from textwrap import dedent
 
 import mozunit
+import msgspec
 import pytest
+from gecko_taskgraph.parameters import TryTaskConfig
 from tryselect import push, task_config
 from tryselect.task_config import (
     NON_COMPILED_SUFFIXES,
@@ -137,6 +139,11 @@ TASK_CONFIG_TESTS = {
         (["--rebuild", "0"], SystemExit),
         (["--rebuild", "21"], SystemExit),
     ],
+    "repeat-tests": [
+        ([], None),
+        (["--repeat-tests", "3"], {"try_task_config": {"repeat-tests": 3}}),
+        (["--repeat-tests", "21"], SystemExit),
+    ],
     "worker-overrides": [
         ([], None),
         (
@@ -220,6 +227,8 @@ def test_task_configs(config_patch_resolver, task_config, args, expected):
 
         params = cfg.get_parameters(**vars(args))
         assert params == expected
+        if params and "try_task_config" in params:
+            msgspec.convert(params["try_task_config"], TryTaskConfig)
 
 
 @pytest.fixture

@@ -121,6 +121,7 @@ class FuzzyParser(BaseTryParser):
         "pernosco",
         "pushdate",
         "rebuild",
+        "repeat-tests",
         "routes",
         "worker-overrides",
     ]

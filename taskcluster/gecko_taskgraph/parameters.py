@@ -51,6 +51,7 @@ class TryTaskConfig(Schema, kw_only=True):
     pernosco: Optional[bool] = None
     priority: Optional[Literal["lowest", "very-low", "low"]] = None
     rebuild: Optional[Union[int, dict[str, int]]] = None
+    repeat_tests: Optional[int] = None
     tasks_regex: Optional[TasksRegex] = None
     use_artifact_builds: Optional[bool] = None
     # Mapping of worker alias to worker pools to use for those aliases.
