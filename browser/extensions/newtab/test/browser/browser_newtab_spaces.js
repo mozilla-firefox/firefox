@@ -249,12 +249,8 @@ test_newtab({
       "Wait for the spaces container to render"
     );
 
-    const labels = Array.from(
-      container.querySelectorAll('[role="tab"]'),
-      tab => tab.textContent
-    );
     ok(
-      labels.some(label => label.includes("Stories")),
+      container.querySelector("#spaces-tab-stories"),
       "The Stories space comes back for a user who had stories off"
     );
 
@@ -296,12 +292,8 @@ test_newtab({
       "Wait for the spaces container to render"
     );
 
-    const labels = Array.from(
-      container.querySelectorAll('[role="tab"]'),
-      tab => tab.textContent
-    );
     ok(
-      !labels.some(label => label.includes("Stories")),
+      !container.querySelector("#spaces-tab-stories"),
       "A profile that had stories on at enrollment keeps its later opt-out"
     );
   },
