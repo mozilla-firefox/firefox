@@ -64,6 +64,7 @@ import org.mozilla.fenix.GleanMetrics.ShareSheet
 import org.mozilla.fenix.GleanMetrics.SitePermissions
 import org.mozilla.fenix.GleanMetrics.SyncedTabs
 import org.mozilla.fenix.GleanMetrics.TrackingProtection
+import org.mozilla.fenix.browser.TabGroupContextMenuCandidate
 import org.mozilla.fenix.components.metrics.ReleaseMetricController.Companion
 import org.mozilla.fenix.components.metrics.ReleaseMetricController.Companion.SHARE_LINK_CONTEXT_MENU_ITEM_ID
 import org.mozilla.fenix.helpers.FenixGleanTestRule
@@ -803,6 +804,28 @@ class MetricControllerTest {
         val tappedEvents = ContextMenu.itemTapped.testGetValue()
         assertEquals(1, tappedEvents?.size)
         assertEquals("share_link", tappedEvents?.single()?.extra?.get("named"))
+    }
+
+    @Test
+    fun `WHEN the open-in-tab-group context menu item is tapped THEN item_tapped is recorded as open_in_tab_group`() {
+        val controller = createReleaseMetricController()
+        val fact =
+            Fact(
+                Component.FEATURE_CONTEXTMENU,
+                mockk(relaxed = true),
+                ContextMenuFacts.Items.ITEM,
+                metadata = mapOf("item" to TabGroupContextMenuCandidate.OPEN_IN_TAB_GROUP_ID),
+            )
+
+        assertNull(ContextMenu.itemTapped.testGetValue())
+
+        with(controller) {
+            fact.process()
+        }
+
+        val tappedEvents = ContextMenu.itemTapped.testGetValue()
+        assertEquals(1, tappedEvents?.size)
+        assertEquals("open_in_tab_group", tappedEvents?.single()?.extra?.get("named"))
     }
 
     @Test

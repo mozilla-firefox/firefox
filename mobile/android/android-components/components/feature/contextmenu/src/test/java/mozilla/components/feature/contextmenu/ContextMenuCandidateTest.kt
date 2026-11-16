@@ -97,6 +97,37 @@ class ContextMenuCandidateTest {
     }
 
     @Test
+    fun `WHEN additional tab candidates are provided THEN they are added after the open in tab candidates`() {
+        val additionalCandidate =
+            ContextMenuCandidate(
+                id = "test.candidate",
+                label = "Test candidate",
+                showFor = { _, _ -> true },
+                action = { _, _ -> },
+            )
+
+        val candidates =
+            ContextMenuCandidate.defaultCandidates(
+                context = testContext,
+                tabsUseCases = mock(),
+                contextMenuUseCases = mock(),
+                snackBarParentView = mock(),
+                downloadsLocation = { "downloads" },
+                additionalTabCandidates = listOf(additionalCandidate),
+            )
+
+        assertEquals(
+            listOf(
+                "mozac.feature.contextmenu.open_in_new_tab",
+                "mozac.feature.contextmenu.open_in_private_tab",
+                "test.candidate",
+                "mozac.feature.contextmenu.copy_link",
+            ),
+            candidates.take(4).map { it.id },
+        )
+    }
+
+    @Test
     fun `Candidate 'Open Link in New Tab' showFor displayed in correct cases`() {
         val store = BrowserStore()
         val tabsUseCases = TabsUseCases(store)

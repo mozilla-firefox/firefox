@@ -618,8 +618,10 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
         TabGroupContextMenuCandidate.createOpenInNewTabInGroupCandidate(
             resources = context.resources,
             tabGroupsEnabled = context.components.settings.tabGroupsEnabled,
+            tabGroupsStripEnabled = context.components.settings.tabGroupsStripEnabled,
             tabsUseCases = context.components.useCases.tabsUseCases,
             tabDataCoordinator = context.components.tabDataCoordinator,
+            appStore = context.components.appStore,
             scope = viewLifecycleOwner.lifecycleScope,
         )
 

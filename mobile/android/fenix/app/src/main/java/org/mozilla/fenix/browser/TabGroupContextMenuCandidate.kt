@@ -20,6 +20,8 @@ import mozilla.components.feature.tabdata.coordinator.data.findTab
 import mozilla.components.feature.tabdata.coordinator.data.findTabGroup
 import mozilla.components.feature.tabs.TabsUseCases
 import org.mozilla.fenix.R
+import org.mozilla.fenix.components.AppStore
+import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.tabstray.data.TabGroupTheme
 
 /** Provides the "Open in new tab in group" context menu candidate for [BrowserFragment]. */
@@ -35,15 +37,19 @@ object TabGroupContextMenuCandidate {
      *
      * @param resources [Resources] used to obtain the title of menu item candidate.
      * @param tabGroupsEnabled [Boolean] Used to check whether the Tab Groups feature is enabled.
+     * @param tabGroupsStripEnabled Whether the Tab Groups strip is enabled, in which case no snackbar is shown.
      * @param tabsUseCases Used to open the link in a new tab.
      * @param tabDataCoordinator Used to resolve and update which group the new tab belongs to.
-     * @param scope Scope used to add the new tab to its group
+     * @param appStore Used to show the snackbar confirming which group the new tab was added to.
+     * @param scope Scope used to add the new tab to its group before the snackbar is shown.
      */
     fun createOpenInNewTabInGroupCandidate(
         resources: Resources,
         tabGroupsEnabled: Boolean,
+        tabGroupsStripEnabled: Boolean,
         tabsUseCases: TabsUseCases,
         tabDataCoordinator: TabDataCoordinator,
+        appStore: AppStore,
         scope: CoroutineScope,
     ) =
         ContextMenuCandidate(
@@ -60,6 +66,8 @@ object TabGroupContextMenuCandidate {
                         resources = resources,
                         tabsUseCases = tabsUseCases,
                         tabDataCoordinator = tabDataCoordinator,
+                        tabGroupsStripEnabled = tabGroupsStripEnabled,
+                        appStore = appStore,
                     )
                 }
             },
@@ -86,9 +94,11 @@ object TabGroupContextMenuCandidate {
      *
      * @param parentTab The [SessionState] the context menu was opened from.
      * @param hitResult The [HitResult] describing the long-pressed element.
-     * @param resources [Resources] used to name a newly created group.
+     * @param resources [Resources]used to name a newly created group.
      * @param tabsUseCases Used to open the link in a new tab.
      * @param tabDataCoordinator Used to resolve and update which group the new tab belongs to.
+     * @param tabGroupsStripEnabled Whether the Tab Groups strip is enabled, in which case no snackbar is shown.
+     * @param appStore Used to show the snackbar confirming which group the new tab was added to.
      */
     @VisibleForTesting
     internal suspend fun openLinkInActiveTabsGroup(
@@ -97,6 +107,8 @@ object TabGroupContextMenuCandidate {
         resources: Resources,
         tabsUseCases: TabsUseCases,
         tabDataCoordinator: TabDataCoordinator,
+        tabGroupsStripEnabled: Boolean,
+        appStore: AppStore,
     ) {
         val newTabId =
             tabsUseCases.addTab(
@@ -110,16 +122,25 @@ object TabGroupContextMenuCandidate {
 
         val snapshot = tabDataCoordinator.tabsSnapshot.filterNotNull().first()
         val parentGroup = snapshot.findTab(id = parentTab.id)?.tabGroupId?.let { snapshot.findTabGroup(id = it) }
+        val groupTitle =
+            parentGroup?.title
+                ?: resources.getString(R.string.create_tab_group_form_default_name, snapshot.tabGroups.size + 1)
 
-        if (parentGroup != null) {
-            tabDataCoordinator.addTabsToTabGroup(tabGroupId = parentGroup.id, tabIds = listOf(newTabId))
-        } else {
-            tabDataCoordinator.createTabGroup(
-                title = resources.getString(R.string.create_tab_group_form_default_name, snapshot.tabGroups.size + 1),
-                theme = TabGroupTheme.default.toStorageValue(),
-                tabIds = listOf(parentTab.id, newTabId),
-                anchorTabId = parentTab.id,
-            )
+        val tabGroupId =
+            if (parentGroup != null) {
+                tabDataCoordinator.addTabsToTabGroup(tabGroupId = parentGroup.id, tabIds = listOf(newTabId))
+                parentGroup.id
+            } else {
+                tabDataCoordinator.createTabGroup(
+                    title = groupTitle,
+                    theme = TabGroupTheme.default.toStorageValue(),
+                    tabIds = listOf(parentTab.id, newTabId),
+                    anchorTabId = parentTab.id,
+                )
+            }
+
+        if (!tabGroupsStripEnabled) {
+            appStore.dispatch(AppAction.TabAddedToGroup(groupTitle = groupTitle, groupId = tabGroupId))
         }
     }
 }
