@@ -21,6 +21,7 @@ import platform
 import pprint
 import re
 import shutil
+import signal
 import socket
 import ssl
 import stat
@@ -1521,6 +1522,11 @@ class ScriptMixin(PlatformMixin):
             )
         return exe
 
+    received_sigterm = False
+
+    def _on_sigterm(self, signum, frame):
+        self.received_sigterm = True
+
     def run_command(
         self,
         command,
@@ -1585,6 +1591,14 @@ class ScriptMixin(PlatformMixin):
         """
         if success_codes is None:
             success_codes = [0]
+        if self.received_sigterm:
+            level = error_level
+            if halt_on_failure:
+                level = FATAL
+            self.log(
+                "Not running command %s: received SIGTERM" % (command,), level=level
+            )
+            return -1
         if cwd is not None:
             if not os.path.isdir(cwd):
                 level = error_level
@@ -1621,6 +1635,11 @@ class ScriptMixin(PlatformMixin):
         else:
             parser = output_parser
 
+        # When a task is aborted, the command gets SIGTERM too: keep reading its
+        # output until it exits, rather than dying straight away.
+        previous_sigterm_handler = None
+        if os.name == "posix" and threading.current_thread() is threading.main_thread():
+            previous_sigterm_handler = signal.signal(signal.SIGTERM, self._on_sigterm)
         try:
             p = subprocess.Popen(
                 command,
@@ -1683,6 +1702,9 @@ class ScriptMixin(PlatformMixin):
                 level=level,
             )
             return -1
+        finally:
+            if previous_sigterm_handler is not None:
+                signal.signal(signal.SIGTERM, previous_sigterm_handler)
 
         if returncode not in success_codes:
             if throw_exception:

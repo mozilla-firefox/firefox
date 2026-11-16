@@ -80,6 +80,7 @@ from mochitest_options import (
     get_default_valgrind_suppression_files,
 )
 from mozlog import commandline, get_proxy_logger
+from mozprocess.termination import handle_termination
 from mozprofile import Profile
 from mozprofile.cli import KeyValueParseError, parse_key_value, parse_preferences
 from mozprofile.permissions import ServerLocations
@@ -2800,7 +2801,10 @@ toolbar#nav-bar {
 
         if hasattr(self, "virtualAudioNodeIdList"):
             for id in self.virtualAudioNodeIdList:
-                subprocess.check_output(["pw-cli", "destroy", str(id)])
+                try:
+                    subprocess.check_output(["pw-cli", "destroy", str(id)])
+                except (OSError, subprocess.CalledProcessError):
+                    self.log.error(f"Could not destroy pipewire node with id {id}")
             self.virtualAudioNodeIdList = []
 
     def dumpScreen(self, utilityPath):
@@ -3586,6 +3590,8 @@ toolbar#nav-bar {
             else:
                 result = self.doTests(options, testsToRun, manifestToFilter)
             if result == TBPL_RETRY:  # terminate task
+                return result
+            if result == -1:  # interrupted
                 return result
 
             if options.bisectChunk:
@@ -4818,13 +4824,25 @@ def run_test_harness(parser, options):
     if options.restartAfterFailure:
         options.runUntilFailure = True
 
-    if options.verify or options.verify_fission:
-        result = runner.verifyTests(options)
-    else:
-        result = runner.runTests(options)
-
-    runner.archiveMozLogs()
-    runner.message_logger.finish()
+    # Shortly before a task exceeds its maxRunTime, run-task sends SIGTERM to
+    # the task's processes, so that they can shut down before the worker kills
+    # them.
+    result = 1
+    try:
+        with handle_termination(
+            runner.log,
+            "Received SIGTERM, aborting the test run (the task is probably "
+            "about to exceed its maxRunTime)",
+        ):
+            if options.verify or options.verify_fission:
+                result = runner.verifyTests(options)
+            else:
+                result = runner.runTests(options)
+    finally:
+        # The task's other processes get SIGTERM too, so the harness's own
+        # cleanup may fail: end the suite whatever happens.
+        runner.archiveMozLogs()
+        runner.message_logger.finish()
     return result
 
 

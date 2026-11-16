@@ -20,4 +20,6 @@ skip-if = ["os == 'win'"]  # Bug 1493796
 
 ["test_run_and_wait.py"]
 
+["test_termination.py"]
+
 ["test_wait.py"]

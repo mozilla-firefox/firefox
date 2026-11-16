@@ -3,7 +3,10 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import os
+import signal
+import threading
 from functools import partial
+from unittest import mock
 
 import mozinfo
 import mozunit
@@ -405,6 +408,82 @@ def test_output_testfile_in_dupe_manifests(flavor, runtests, test_name, test_man
     lines = filter_action("test_status", lines)
     assert len(lines) == results["lines"]
     assert lines[0]["status"] == results["line_status"]
+
+
+@pytest.mark.skipif(mozinfo.isWin, reason="SIGTERM can't be handled on Windows")
+@pytest.mark.parametrize("flavor", ["plain"])
+def test_output_sigterm(flavor, runtests, test_name, monkeypatch):
+    # Run as in CI, where the harness continues with the tests that did not
+    # get to start in a new browser: it must not do so after a SIGTERM.
+    monkeypatch.setenv("MOZ_AUTOMATION", "1")
+    runtests_module = pytest.importorskip("runtests")
+    process_message = runtests_module.MessageLogger.process_message
+
+    def send_sigterm_on_test_start(self, message):
+        process_message(self, message)
+        if message["action"] == "test_start" and "hang" in message["test"]:
+            threading.Timer(1, os.kill, (os.getpid(), signal.SIGTERM)).start()
+
+    with mock.patch.object(
+        runtests_module.MessageLogger, "process_message", send_sigterm_on_test_start
+    ):
+        status, lines = runtests([test_name("hang"), test_name("pass")])
+    assert status != 0
+
+    assert not any(
+        l.get("message") == "Test is ok" and "hang" in l.get("test", "") for l in lines
+    ), "test finished before SIGTERM"
+    actions = [l["action"] for l in lines]
+    critical = [
+        i
+        for i, l in enumerate(lines)
+        if l["action"] == "log"
+        and l["level"] == "CRITICAL"
+        and l["message"].startswith("Received SIGTERM")
+    ]
+    assert len(critical) == 1
+    assert "suite_end" in actions[critical[0] :]
+    assert "test_start" not in actions[critical[0] :]
+    hang_start = next(
+        i
+        for i, l in enumerate(lines)
+        if l["action"] == "test_start" and "hang" in l["test"]
+    )
+    assert "test_start" not in actions[hang_start + 1 :]
+
+
+@pytest.mark.skipif(mozinfo.isWin, reason="SIGTERM can't be handled on Windows")
+@pytest.mark.parametrize("flavor", ["plain"])
+def test_sigterm_ends_suite_when_cleanup_fails(flavor, runtests, test_name):
+    runtests_module = pytest.importorskip("runtests")
+    process_message = runtests_module.MessageLogger.process_message
+    finish = runtests_module.MessageLogger.finish
+    finished = []
+
+    def send_sigterm_on_test_start(self, message):
+        process_message(self, message)
+        if message["action"] == "test_start":
+            threading.Timer(1, os.kill, (os.getpid(), signal.SIGTERM)).start()
+
+    def record_finish(self):
+        finished.append(True)
+        finish(self)
+
+    patches = (
+        mock.patch.object(
+            runtests_module.MessageLogger, "process_message", send_sigterm_on_test_start
+        ),
+        mock.patch.object(runtests_module.MessageLogger, "finish", record_finish),
+        mock.patch.object(
+            runtests_module.MochitestDesktop,
+            "cleanup",
+            side_effect=RuntimeError("cleanup failed"),
+        ),
+    )
+    with patches[0], patches[1], patches[2]:
+        with pytest.raises(RuntimeError, match="cleanup failed"):
+            runtests(test_name("hang"))
+    assert finished == [True]
 
 
 if __name__ == "__main__":

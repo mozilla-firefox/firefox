@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Test Hang</title>
+    <script src="/tests/SimpleTest/SimpleTest.js"></script>
+    <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+    <script type="application/javascript">
+      SimpleTest.waitForExplicitFinish();
+      SimpleTest.requestFlakyTimeout(
+        "Keeps the test running until the harness is aborted"
+      );
+      setTimeout(() => {
+        ok(true, "Test is ok");
+        SimpleTest.finish();
+      }, 60000);
+    </script>
+  </head>
+  <body></body>
+</html>

@@ -3,7 +3,10 @@ import json
 import os
 import re
 import shutil
+import signal
+import sys
 import tempfile
+import threading
 import types
 import unittest
 from unittest import mock
@@ -283,6 +286,26 @@ class TestScript(unittest.TestCase):
         )
         error_logsize = os.path.getsize("test_logs/test_error.log")
         self.assertTrue(error_logsize > 0, msg="bad dir error not hit")
+
+    @unittest.skipIf(os.name != "posix", "SIGTERM can't be handled on Windows")
+    def test_run_command_sigterm(self):
+        self.s = get_debug_script_obj()
+        done = os.path.join(self.tmpdir, "done")
+        command = [
+            sys.executable,
+            "-c",
+            "import pathlib, time; time.sleep(2); pathlib.Path(%r).touch()" % done,
+        ]
+        previous_handler = signal.getsignal(signal.SIGTERM)
+        sigterm = threading.Timer(0.5, os.kill, (os.getpid(), signal.SIGTERM))
+        sigterm.start()
+        self.assertEqual(self.s.run_command(command), 0)
+        sigterm.join()
+        self.assertTrue(os.path.exists(done), msg="command was interrupted")
+        self.assertEqual(signal.getsignal(signal.SIGTERM), previous_handler)
+        self.assertEqual(self.s.run_command([sys.executable, "-c", "pass"]), -1)
+        error_logsize = os.path.getsize("test_logs/test_error.log")
+        self.assertTrue(error_logsize > 0, msg="SIGTERM error not hit")
 
     def test_get_output_from_command_in_bad_dir(self):
         self.s = get_debug_script_obj()
