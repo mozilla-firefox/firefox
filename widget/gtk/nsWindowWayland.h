@@ -117,6 +117,8 @@ class nsWindowWaylandToplevel : public nsWindowWayland {
  protected:
   virtual ~nsWindowWaylandToplevel();
 
+  void CreateVSyncSource() override;
+  void DeleteVSyncSource() override;
   void EnableVSyncSource() override;
   void DisableVSyncSource() override;
   void WatchHiddenVSyncSource() override;

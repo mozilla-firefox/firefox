@@ -477,6 +477,28 @@ RefPtr<VsyncDispatcher> nsWindowWaylandToplevel::GetVsyncDispatcher() {
   return mWaylandVsyncDispatcher;
 }
 
+void nsWindowWaylandToplevel::CreateVSyncSource() {
+  // Initialize the window specific VsyncSource early in order to avoid races
+  // with BrowserParent::UpdateVsyncParentVsyncDispatcher().
+  // Only use for toplevel windows for now, see bug 1619246.
+  if (StaticPrefs::widget_wayland_vsync_enabled_AtStartup() &&
+      IsTopLevelWidget()) {
+    LOG_VSYNC("  create WaylandVsyncSource");
+    mWaylandVsyncSource = new WaylandVsyncSource(this);
+    mWaylandVsyncSource->Init();
+    mWaylandVsyncDispatcher = new VsyncDispatcher(mWaylandVsyncSource);
+    mWaylandVsyncSource->EnableVSyncSource();
+  }
+}
+
+void nsWindowWaylandToplevel::DeleteVSyncSource() {
+  if (mWaylandVsyncSource) {
+    mWaylandVsyncSource->Shutdown();
+    mWaylandVsyncSource = nullptr;
+  }
+  mWaylandVsyncDispatcher = nullptr;
+}
+
 void nsWindowWaylandToplevel::EnableVSyncSource() {
   if (mWaylandVsyncSource) {
     mWaylandVsyncSource->EnableVSyncSource();

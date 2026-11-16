@@ -6,10 +6,8 @@
 
 #include <dlfcn.h>
 
-#include "WaylandVsyncSource.h"
 #include "WidgetUtilsGtk.h"
 #include "mozilla/StaticPrefs_widget.h"
-#include "mozilla/VsyncDispatcher.h"
 #include "mozilla/gfx/Logging.h"
 #include "mozilla/webrender/WebRenderTypes.h"
 #include "nsAppShell.h"
@@ -243,19 +241,6 @@ void nsWindowWaylandToplevelGtk::CreateNative() {
 
   mSurfaceProvider.Initialize(this);
 
-  // Initialize the window specific VsyncSource early in order to avoid races
-  // with BrowserParent::UpdateVsyncParentVsyncDispatcher().
-  // Only use for toplevel windows for now, see bug 1619246.
-
-  if (StaticPrefs::widget_wayland_vsync_enabled_AtStartup() &&
-      IsTopLevelWidget()) {
-    LOG_VSYNC("  create WaylandVsyncSource");
-    mWaylandVsyncSource = new WaylandVsyncSource(this);
-    mWaylandVsyncSource->Init();
-    mWaylandVsyncDispatcher = new VsyncDispatcher(mWaylandVsyncSource);
-    mWaylandVsyncSource->EnableVSyncSource();
-  }
-
   if (IsPipWindow()) {
     // This avoids GTK from managing our top level surface role.
     // We'll handle it manually in OnMap().
@@ -314,15 +299,6 @@ void nsWindowWaylandToplevelGtk::DestroyNative() {
     mXdgToplevelRealizedID = 0;
   }
   MozClearPointer(mSessionRestoreToken, xdg_toplevel_session_v1_destroy);
-  ClearPipResources();
-
-  // Shut down our local vsync source
-  // Also drops reference to nsWindow::mSurface.
-  if (mWaylandVsyncSource) {
-    mWaylandVsyncSource->Shutdown();
-    mWaylandVsyncSource = nullptr;
-  }
-  mWaylandVsyncDispatcher = nullptr;
   UnlockNativePointer();
 }
 
@@ -395,6 +371,7 @@ bool nsWindowWaylandToplevelGtk::ApplyEnterLeaveMutterWorkaround() {
 }
 
 void nsWindowWaylandToplevelGtk::OnMapNative() { MaybeCreatePipResources(); }
+void nsWindowWaylandToplevelGtk::OnUnmapNative() { ClearPipResources(); }
 
 void nsWindowWaylandToplevelGtk::HideAndRemoveAppPopups() {
   // Hide back-to-front so child popups close before their parents.

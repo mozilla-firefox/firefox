@@ -37,6 +37,7 @@ class nsWindowWaylandToplevelGtk final : public nsWindowWaylandToplevel {
 
   void ConfigureToplevelWindowNative() override;
   void OnMapNative() override;
+  void OnUnmapNative() override;
 
   void NativeShow(bool aAction) override;
   void HideAndRemoveAppPopups();
