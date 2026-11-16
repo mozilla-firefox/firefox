@@ -338,21 +338,6 @@ MDefinition::AliasType MWasmLoadGlobalCell::mightAlias(
   return AliasType::MayAlias;
 }
 
-template <typename T>
-static wasm::MaybeRefType GetBaseRefTypeForWasmLoadOrStore(T ins) {
-  const MDefinition* structObject;
-  if (ins->base()->type() == MIRType::WasmStructData &&
-      ins->base()->isWasmLoadField()) {
-    // Struct data pointers have no ref type, but always come from some struct
-    // object, so go back to that base object if possible. (We cannot do this
-    // 100% of the time because of phis.)
-    structObject = ins->base()->toWasmLoadField()->base();
-  } else {
-    structObject = ins->base();
-  }
-  return structObject->wasmRefType().asNonNullable();
-}
-
 // Wasm loads and stores can be proven not to alias if their offsets are
 // different or their ref types are known and disjoint. (Disjoint alias sets
 // also mean no aliasing, but this is obvious because that's just what alias
@@ -375,11 +360,11 @@ MDefinition::AliasType MWasmLoadField::mightAlias(
   uint32_t insOffset;
   if (ins->isWasmStoreField()) {
     const MWasmStoreField* store = ins->toWasmStoreField();
-    insType = GetBaseRefTypeForWasmLoadOrStore(store);
+    insType = store->wasmObject()->wasmRefType().asNonNullable();
     insOffset = store->offset();
   } else if (ins->isWasmStoreFieldRef()) {
     const MWasmStoreFieldRef* store = ins->toWasmStoreFieldRef();
-    insType = GetBaseRefTypeForWasmLoadOrStore(store);
+    insType = store->wasmObject()->wasmRefType().asNonNullable();
     insOffset = store->offset();
   } else {
     // Safe default, but any other type of store that can operate on the same
@@ -388,7 +373,7 @@ MDefinition::AliasType MWasmLoadField::mightAlias(
     return AliasType::MayAlias;
   }
 
-  wasm::MaybeRefType thisType = GetBaseRefTypeForWasmLoadOrStore(this);
+  wasm::MaybeRefType thisType = wasmObject()->wasmRefType().asNonNullable();
   if (offset() != insOffset ||
       !wasm::MaybeRefType::mayHaveValuesInCommon(thisType, insType)) {
     return AliasType::NoAlias;
