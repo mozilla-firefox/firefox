@@ -8,4 +8,6 @@ run-if = ["os == 'mac'"]
 
 ["browser_aboutKeyboard.js"]
 
+["browser_aboutKeyboard_findSelection.js"]
+
 ["browser_aboutKeyboard_systemAssigned.js"]

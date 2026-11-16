@@ -101,6 +101,7 @@ customkeys-dev-profiler-toggle = Start/Stop the Performance Profiler
 customkeys-dev-profiler-capture = Capture a Performance Profile
 
 customkeys-edit-find-previous = Find Previous
+customkeys-edit-find-selection = Use Selection for Find
 
 customkeys-tools-screenshot = Take a Screenshot
 

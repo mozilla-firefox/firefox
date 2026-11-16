@@ -166,6 +166,9 @@ export class CustomKeysParent extends JSWindowActorParent {
     );
     add(cat, "key_findPrevious", "customkeys-edit-find-previous");
     add(cat, "key_findPrevious2", "customkeys-edit-find-previous");
+    if (isMac) {
+      add(cat, "key_findSelection", "customkeys-edit-find-selection");
+    }
     cat = keys[toolsCat];
     add(cat, "key_screenshot", "customkeys-tools-screenshot");
     const browserToolsCat =
