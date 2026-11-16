@@ -35,8 +35,20 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
   AIWindowUI:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindowUI.sys.mjs",
+  AuthProvider:
+    "moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs",
+  buildConversation:
+    "moz-src:///browser/components/aiwindow/models/PromptLoader.sys.mjs",
   generateConversationStartersSidebar:
     "moz-src:///browser/components/aiwindow/models/ConversationSuggestions.sys.mjs",
+  makeJSONSchemaBlob:
+    "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
+  MODEL_FEATURES: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
+  parseAndExtractJSON:
+    "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
+  renderPrompt: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
+  sanitizeUntrustedContent:
+    "moz-src:///browser/components/aiwindow/models/ChatUtils.sys.mjs",
 });
 
 XPCOMUtils.defineLazyPreferenceGetter(
@@ -50,6 +62,20 @@ XPCOMUtils.defineLazyPreferenceGetter(
   "browser.smartwindow.actionsToolbar.enabled",
   undefined,
   () => SmartActionsToolbar.updateAll()
+);
+// Template for the selected chat model, which answers with JSON actions that
+// each have a type, a label and an optional detail. Empty uses the sidebar
+// conversation starters instead.
+// TODO: Bug 2093449 - review the page content the default prompt includes
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "prompt",
+  "browser.smartwindow.actionsToolbar.prompt",
+  undefined,
+  () => {
+    loadedKeys = new WeakMap();
+    SmartActionsToolbar.updateAll();
+  }
 );
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
@@ -69,30 +95,127 @@ const windowStates = new WeakMap();
 let loadedKeys = new WeakMap();
 
 /**
- * Builds the toolbar action for each type of suggestion.
+ * Builds the toolbar action for each type of suggestion. Types that can run
+ * their label ignore the detail, so a generated detail can't make a button do
+ * something other than what it says.
  *
  * @type {Record<
  *   string,
- *   (win: ChromeWindow, suggestion: Suggestion) => ToolbarAction
+ *   (win: ChromeWindow, label: string, detail: string) => ToolbarAction
  * >}
  */
 const ACTION_TYPES = {
-  chat: (win, { label }) => {
-    const url = win.gBrowser.currentURI.spec;
-    return {
-      label,
-      iconSrc: "chrome://browser/content/aiwindow/assets/ask-icon.svg",
-      run: () =>
-        lazy.AIWindowUI.submitToNewSidebarChat(win, {
-          text: label,
-          submitType: "toolbar",
-          contextMentions: [
-            { type: "currentTab", url, label: win.gBrowser.selectedTab.label },
-          ],
-          contextPageUrl: URL.parse(url),
-        }),
-    };
+  chat: chatAction,
+  jump: jumpAction,
+  search: searchAction,
+};
+
+/**
+ * @param {ChromeWindow} win
+ * @param {string} label - Button text, also the message sent.
+ * @returns {ToolbarAction} Starts a sidebar chat about this page.
+ */
+function chatAction(win, label) {
+  const url = win.gBrowser.currentURI.spec;
+  return {
+    label,
+    iconSrc: "chrome://browser/content/aiwindow/assets/ask-icon.svg",
+    run: () =>
+      lazy.AIWindowUI.submitToNewSidebarChat(win, {
+        text: label,
+        submitType: "toolbar",
+        contextMentions: [
+          { type: "currentTab", url, label: win.gBrowser.selectedTab.label },
+        ],
+        contextPageUrl: URL.parse(url),
+      }),
+  };
+}
+
+/**
+ * @param {ChromeWindow} win
+ * @param {string} label - Button text.
+ * @param {string} text - The #id of a section the page links to, or text on
+ *   the page to scroll to and highlight.
+ * @returns {ToolbarAction} Scrolls to that part of the page.
+ */
+function jumpAction(win, label, text) {
+  const fragment = text.startsWith("#")
+    ? text
+    : `#:~:text=${encodeURIComponent(text.replace(/\s+/g, " ")).replace(/-/g, "%2D")}`;
+  return {
+    label,
+    iconSrc: "chrome://global/skin/icons/arrow-down.svg",
+    run: () => {
+      const browser = win.gBrowser.selectedBrowser;
+      browser.loadURI(
+        Services.io.newURI(win.gBrowser.currentURI.specIgnoringRef + fragment),
+        { triggeringPrincipal: browser.contentPrincipal }
+      );
+    },
+  };
+}
+
+/**
+ * @param {ChromeWindow} win
+ * @param {string} label - Button text, also the search terms.
+ * @returns {ToolbarAction} Searches with the default engine.
+ */
+function searchAction(win, label) {
+  return {
+    label,
+    iconSrc: "chrome://global/skin/icons/search-glass.svg",
+    // TODO: Bug 2092650 - proper search access point instead of the assistant
+    run: () => lazy.AIWindow.performSearch(label, win),
+  };
+}
+
+/**
+ * Readers for the placeholders a prompt can use, run in this order. Only the
+ * ones the prompt uses are read. {page_text|10000} keeps that many characters,
+ * {page_anchors|10} that many #ids the page links to on itself and
+ * {open_tabs|5} that many tabs. A {#key}...{/key} section is dropped when that
+ * value is empty. Page text goes first since it waits for the page to load, so
+ * the title read after it is the loaded one.
+ *
+ * @type {Record<
+ *   string,
+ *   (
+ *     win: ChromeWindow,
+ *     limit: number | undefined,
+ *     readPage: (sufficientLength?: number) => Promise<?object>
+ *   ) => string | number | Promise<string>
+ * >}
+ */
+const PROMPT_VALUES = {
+  page_text: async (win, limit, readPage) =>
+    (await readPage(limit))?.text.slice(0, limit) ?? "",
+  page_anchors: async (win, limit, readPage) => {
+    const page = win.gBrowser.currentURI.specIgnoringRef;
+    const anchors = new Set();
+    for (const href of (await readPage())?.links ?? []) {
+      const url = URL.parse(href);
+      if (url?.hash.length > 1 && url.href.slice(0, -url.hash.length) == page) {
+        anchors.add(url.hash);
+      }
+    }
+    return [...anchors].slice(0, limit).join("\n");
   },
+  title: win => lazy.sanitizeUntrustedContent(win.gBrowser.selectedTab.label),
+  url: win => win.gBrowser.currentURI.specIgnoringRef,
+  open_tabs: (win, limit) =>
+    win.gBrowser.tabs
+      .filter(tab => {
+        const uri = tab.linkedBrowser.currentURI;
+        return !tab.selected && (uri.schemeIs("http") || uri.schemeIs("https"));
+      })
+      .sort((a, b) => b.lastAccessed - a.lastAccessed)
+      .slice(0, limit)
+      .map(tab => `- ${lazy.sanitizeUntrustedContent(tab.label)}`)
+      .join("\n"),
+  n: () => lazy.actionCount,
+  locale: () => Services.locale.appLocaleAsBCP47,
+  date: () => new Date().toISOString().slice(0, 10),
 };
 
 /**
@@ -128,27 +251,102 @@ function contextKey(win) {
 /**
  * @param {ChromeWindow} win
  * @param {AbortSignal} signal
+ * @returns {Promise<Suggestion[]>}
+ */
+async function generateFromPrompt(win, signal) {
+  // Limit of each placeholder the prompt uses, if it has one.
+  const used = new Map();
+  const template = lazy.prompt.replace(
+    /\{(#?)(\w+)(?:\|(\d+))?\}/g,
+    (_match, section, key, limit) => {
+      used.set(key, limit ? Number(limit) : used.get(key));
+      return `{${section}${key}}`;
+    }
+  );
+  let extraction;
+  const readPage = sufficientLength =>
+    (extraction ??=
+      win.gBrowser.selectedBrowser.browsingContext.currentWindowGlobal
+        ?.getActor("PageExtractor")
+        .getText({
+          sufficientLength,
+          cleanWhitespace: true,
+          removeBoilerplate: true,
+          useSimpleText: true,
+        }));
+  const values = {};
+  for (const [key, read] of Object.entries(PROMPT_VALUES)) {
+    if (used.has(key)) {
+      values[key] = await read(win, used.get(key), readPage);
+    }
+  }
+  signal.throwIfAborted();
+  // TODO: Bug 2092649 - proper prompt feature instead of pref and chat model
+  const conversation = await lazy.buildConversation(lazy.MODEL_FEATURES.CHAT);
+  conversation.addUserMessage(lazy.renderPrompt(template, values));
+  const result = await conversation.run({
+    token: await lazy.AuthProvider.getToken(),
+    signal,
+    inferenceParams: {
+      response_format: lazy.makeJSONSchemaBlob("SmartActions", {
+        type: "object",
+        properties: {
+          actions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                type: { type: "string", enum: Object.keys(ACTION_TYPES) },
+                label: { type: "string" },
+                detail: { type: "string" },
+              },
+              required: ["type", "label"],
+            },
+          },
+        },
+        required: ["actions"],
+      }),
+    },
+  });
+  const actions = lazy.parseAndExtractJSON(result, {})?.actions;
+  return Array.isArray(actions)
+    ? actions.filter(
+        action =>
+          Object.hasOwn(ACTION_TYPES, action?.type) &&
+          typeof action.label == "string" &&
+          action.label.trim()
+      )
+    : [];
+}
+
+/**
+ * @param {ChromeWindow} win
+ * @param {AbortSignal} signal
  * @returns {Promise<ToolbarAction[]>}
  */
 async function suggestActions(win, signal) {
-  const suggestions = (
-    await lazy.generateConversationStartersSidebar(
-      [
-        {
-          title: win.gBrowser.selectedTab.label,
-          url: win.gBrowser.currentURI.spec,
-        },
-      ],
-      lazy.actionCount,
-      false,
-      null,
-      signal
-    )
-  ).map(({ text, type }) => ({ type, label: text }));
+  const suggestions = lazy.prompt
+    ? await generateFromPrompt(win, signal)
+    : (
+        await lazy.generateConversationStartersSidebar(
+          [
+            {
+              title: win.gBrowser.selectedTab.label,
+              url: win.gBrowser.currentURI.spec,
+            },
+          ],
+          lazy.actionCount,
+          false,
+          null,
+          signal
+        )
+      ).map(({ text, type }) => ({ type, label: text }));
   // Built after generating, so the page title has had time to load.
   return suggestions
     .slice(0, lazy.actionCount)
-    .map(suggestion => ACTION_TYPES[suggestion.type](win, suggestion));
+    .map(({ type, label, detail }) =>
+      ACTION_TYPES[type](win, label, detail?.trim?.() || label)
+    );
 }
 
 /**

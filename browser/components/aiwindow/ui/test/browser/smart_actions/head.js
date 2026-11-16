@@ -13,6 +13,7 @@ const { MockEngineManager } = ChromeUtils.importESModule(
   "resource://testing-common/AIWindowTestUtils.sys.mjs"
 );
 const TOOLBAR_PREF = "browser.smartwindow.actionsToolbar.enabled";
+const PROMPT_PREF = "browser.smartwindow.actionsToolbar.prompt";
 const CONSENT_PREF = "browser.smartwindow.tos.consentTime";
 const TOOLBAR_ID = "smart-actions-toolbar";
 const PAGE_URL = "https://example.com/";
@@ -24,7 +25,9 @@ add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
     set: [
       [TOOLBAR_PREF, true],
+      ["browser.smartwindow.actionsToolbar.actionCount", 3],
       [CONSENT_PREF, 1],
+      [PROMPT_PREF, ""],
       // The sidebar's own starter requests would share the mocked purpose.
       ["browser.smartwindow.sidebar.openByDefault", false],
     ],

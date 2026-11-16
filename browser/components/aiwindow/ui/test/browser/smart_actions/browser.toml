@@ -7,3 +7,6 @@ support-files = [
 ["browser_smart_actions_toolbar.js"]
 
 ["browser_smart_actions_toolbar_hiding.js"]
+
+["browser_smart_actions_toolbar_prompt.js"]
+support-files = ["test_smart_actions_toolbar_page.html"]
