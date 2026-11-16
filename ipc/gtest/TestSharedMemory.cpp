@@ -744,7 +744,7 @@ struct MemoryReportTracker {
   int64_t previous;
 };
 
-TEST(IPCSharedMemoryMapping, MemoryAllocationReporting)
+TEST(IPCSharedMemoryHandle, MemoryAllocationReporting)
 {
   MemoryReportTracker tracker("shmem-allocated");
 
