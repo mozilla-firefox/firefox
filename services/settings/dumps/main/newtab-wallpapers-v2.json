@@ -1,1365 +1,1365 @@
 {
   "data": [
     {
-      "order": 10,
-      "theme": "light",
-      "title": "firefox-orange",
-      "schema": 1793123672880,
-      "visible": true,
+      "attachment": {
+        "filename": "wallpaper-kit-peek.svg",
+        "hash": "305c81072af8a9fbd5226c18b971d1d478c549c12e51bdc14b6fe7b5798171d7",
+        "location": "main-workspace/newtab-wallpapers-v2/20260819200624--c01058f4-5b6c-4ac4-9708-54d5bee8f450--91a8634f-15b5-4b17-836b-de3225cb3b17.svg",
+        "mimetype": "image/svg+xml",
+        "size": 8810
+      },
+      "background_position": "center right",
       "category": "firefox",
       "fluent_id": "newtab-wallpaper-firefox-orange",
-      "attachment": {
-        "hash": "305c81072af8a9fbd5226c18b971d1d478c549c12e51bdc14b6fe7b5798171d7",
-        "size": 8810,
-        "filename": "wallpaper-kit-peek.svg",
-        "location": "main-workspace/newtab-wallpapers-v2/20260819200624--c01058f4-5b6c-4ac4-9708-54d5bee8f450--91a8634f-15b5-4b17-836b-de3225cb3b17.svg",
-        "mimetype": "image/svg+xml"
-      },
-      "visibility_group": "",
-      "background_position": "center right",
       "id": "c01058f4-5b6c-4ac4-9708-54d5bee8f450",
-      "last_modified": 1793244462428
+      "last_modified": 1793244462428,
+      "order": 10,
+      "schema": 1793123672880,
+      "theme": "light",
+      "title": "firefox-orange",
+      "visibility_group": "",
+      "visible": true
     },
     {
-      "order": 130,
-      "theme": "dark",
-      "title": "firefox-g-dark",
-      "schema": 1793243455789,
-      "visible": true,
+      "attachment": {
+        "filename": "desktop-wallpaper-g-dark-1920x1080.svg",
+        "hash": "669e42fa36e047c23225972e1a56be8287e0c119c3a184f678afd6efa4eb409c",
+        "location": "main-workspace/newtab-wallpapers-v2/20260819185340--94e8a3ce-1faf-4aa1-a52e-7e15c07ff627--d00502f9-f163-432d-bdb6-d54e7c36da10.svg",
+        "mimetype": "image/svg+xml",
+        "size": 8155
+      },
+      "background_position": "top left",
       "category": "firefox",
       "fluent_id": "newtab-wallpaper-firefox-peak-dark",
-      "attachment": {
-        "hash": "669e42fa36e047c23225972e1a56be8287e0c119c3a184f678afd6efa4eb409c",
-        "size": 8155,
-        "filename": "desktop-wallpaper-g-dark-1920x1080.svg",
-        "location": "main-workspace/newtab-wallpapers-v2/20260819185340--94e8a3ce-1faf-4aa1-a52e-7e15c07ff627--d00502f9-f163-432d-bdb6-d54e7c36da10.svg",
-        "mimetype": "image/svg+xml"
-      },
-      "visibility_group": "",
-      "background_position": "top left",
       "id": "94e8a3ce-1faf-4aa1-a52e-7e15c07ff627",
-      "last_modified": 1793244462425
+      "last_modified": 1793244462425,
+      "order": 130,
+      "schema": 1793243455789,
+      "theme": "dark",
+      "title": "firefox-g-dark",
+      "visibility_group": "",
+      "visible": true
     },
     {
-      "order": 90,
-      "theme": "dark",
-      "title": "firefox-c-dark",
-      "schema": 1793243380326,
-      "visible": true,
+      "attachment": {
+        "filename": "desktop-wallpaper-c-dark-1920x1080.svg",
+        "hash": "ce78182d597e078fcc3f2e0e1ef59b00bda1d2e6e89d8e68d8e21a64feac24b6",
+        "location": "main-workspace/newtab-wallpapers-v2/20260819201311--8611e834-7285-4b7b-8d56-06eab6a0a227--28518a88-2c98-44b7-ad17-00c6cb774914.svg",
+        "mimetype": "image/svg+xml",
+        "size": 10267
+      },
+      "background_position": "top left",
       "category": "firefox",
       "fluent_id": "newtab-wallpaper-firefox-side-kit-dark",
-      "attachment": {
-        "hash": "ce78182d597e078fcc3f2e0e1ef59b00bda1d2e6e89d8e68d8e21a64feac24b6",
-        "size": 10267,
-        "filename": "desktop-wallpaper-c-dark-1920x1080.svg",
-        "location": "main-workspace/newtab-wallpapers-v2/20260819201311--8611e834-7285-4b7b-8d56-06eab6a0a227--28518a88-2c98-44b7-ad17-00c6cb774914.svg",
-        "mimetype": "image/svg+xml"
-      },
-      "visibility_group": "",
-      "background_position": "top left",
       "id": "8611e834-7285-4b7b-8d56-06eab6a0a227",
-      "last_modified": 1793244462423
+      "last_modified": 1793244462423,
+      "order": 90,
+      "schema": 1793243380326,
+      "theme": "dark",
+      "title": "firefox-c-dark",
+      "visibility_group": "",
+      "visible": true
     },
     {
-      "order": 40,
-      "theme": "light",
-      "title": "firefox-desert-light",
-      "schema": 1793243156351,
-      "visible": true,
+      "attachment": {
+        "filename": "wallpaper-landscape1-kit-desert-light.svg",
+        "hash": "96b14ef5896ee5738e405e7d4f01c733d21dff56459f6aaff546f4e01f3fe135",
+        "location": "main-workspace/newtab-wallpapers-v2/20260819185224--dd9512ea-ea90-4d7b-9571-ab8fa3d52d51--c4c169fa-8c84-4cf3-87b5-46dad7dd43b7.svg",
+        "mimetype": "image/svg+xml",
+        "size": 24440
+      },
+      "background_position": "center left",
       "category": "firefox",
       "fluent_id": "newtab-wallpaper-firefox-desert-light",
-      "attachment": {
-        "hash": "96b14ef5896ee5738e405e7d4f01c733d21dff56459f6aaff546f4e01f3fe135",
-        "size": 24440,
-        "filename": "wallpaper-landscape1-kit-desert-light.svg",
-        "location": "main-workspace/newtab-wallpapers-v2/20260819185224--dd9512ea-ea90-4d7b-9571-ab8fa3d52d51--c4c169fa-8c84-4cf3-87b5-46dad7dd43b7.svg",
-        "mimetype": "image/svg+xml"
-      },
-      "visibility_group": "",
-      "background_position": "center left",
       "id": "dd9512ea-ea90-4d7b-9571-ab8fa3d52d51",
-      "last_modified": 1793244462420
+      "last_modified": 1793244462420,
+      "order": 40,
+      "schema": 1793243156351,
+      "theme": "light",
+      "title": "firefox-desert-light",
+      "visibility_group": "",
+      "visible": true
     },
     {
-      "order": 150,
-      "theme": "light",
-      "title": "firefox-g-light",
-      "schema": 1793243419363,
-      "visible": true,
+      "attachment": {
+        "filename": "desktop-wallpaper-g-light-1920x1080.svg",
+        "hash": "64bdcff7ed11c8bdc2b1845de7705e3da39159633d8426eff9847a503754a5ce",
+        "location": "main-workspace/newtab-wallpapers-v2/20260819185317--2b1b54e2-19e7-4846-9d5b-ebbede82747b--aa4df1eb-b009-467f-b17b-0b73194286c7.svg",
+        "mimetype": "image/svg+xml",
+        "size": 16009
+      },
+      "background_position": "top left",
       "category": "firefox",
       "fluent_id": "newtab-wallpaper-firefox-peak-light",
-      "attachment": {
-        "hash": "64bdcff7ed11c8bdc2b1845de7705e3da39159633d8426eff9847a503754a5ce",
-        "size": 16009,
-        "filename": "desktop-wallpaper-g-light-1920x1080.svg",
-        "location": "main-workspace/newtab-wallpapers-v2/20260819185317--2b1b54e2-19e7-4846-9d5b-ebbede82747b--aa4df1eb-b009-467f-b17b-0b73194286c7.svg",
-        "mimetype": "image/svg+xml"
-      },
-      "visibility_group": "",
-      "background_position": "top left",
       "id": "2b1b54e2-19e7-4846-9d5b-ebbede82747b",
-      "last_modified": 1793244462418
+      "last_modified": 1793244462418,
+      "order": 150,
+      "schema": 1793243419363,
+      "theme": "light",
+      "title": "firefox-g-light",
+      "visibility_group": "",
+      "visible": true
     },
     {
-      "order": 110,
-      "theme": "dark",
-      "title": "firefox-d-dark",
-      "schema": 1793243360724,
-      "visible": true,
+      "attachment": {
+        "filename": "desktop-wallpaper-d-dark-1920x1080.svg",
+        "hash": "e8b26d4e229b2a28eae74b7aa5631d8db431e3ee759d3238ec36a5d6d87169ab",
+        "location": "main-workspace/newtab-wallpapers-v2/20260819204733--1a0b388c-db2c-4f86-b953-0e5302573258--ce4d91e8-abc7-4f63-963f-83385d6cd86a.svg",
+        "mimetype": "image/svg+xml",
+        "size": 20430
+      },
+      "background_position": "top right",
       "category": "firefox",
       "fluent_id": "newtab-wallpaper-firefox-sitting-hill-dark",
-      "attachment": {
-        "hash": "e8b26d4e229b2a28eae74b7aa5631d8db431e3ee759d3238ec36a5d6d87169ab",
-        "size": 20430,
-        "filename": "desktop-wallpaper-d-dark-1920x1080.svg",
-        "location": "main-workspace/newtab-wallpapers-v2/20260819204733--1a0b388c-db2c-4f86-b953-0e5302573258--ce4d91e8-abc7-4f63-963f-83385d6cd86a.svg",
-        "mimetype": "image/svg+xml"
-      },
-      "visibility_group": "",
-      "background_position": "top right",
       "id": "1a0b388c-db2c-4f86-b953-0e5302573258",
-      "last_modified": 1793244462415
+      "last_modified": 1793244462415,
+      "order": 110,
+      "schema": 1793243360724,
+      "theme": "dark",
+      "title": "firefox-d-dark",
+      "visibility_group": "",
+      "visible": true
     },
     {
-      "order": 120,
-      "theme": "light",
-      "title": "firefox-d",
-      "schema": 1793243282277,
-      "visible": true,
+      "attachment": {
+        "filename": "desktop-wallpaper-d-light-1920x1080.svg",
+        "hash": "568ab8b0fed9027ac5036fcd20433025d09ff6fd4279c2ddca2180d94a47eaca",
+        "location": "main-workspace/newtab-wallpapers-v2/20260819201015--62aa72d9-b9f3-4f29-88f5-5120ee004e7c--4d48db83-de9c-44dd-bf12-20aa9152f6a5.svg",
+        "mimetype": "image/svg+xml",
+        "size": 20168
+      },
+      "background_position": "top right",
       "category": "firefox",
       "fluent_id": "newtab-wallpaper-firefox-sitting-hill-light",
-      "attachment": {
-        "hash": "568ab8b0fed9027ac5036fcd20433025d09ff6fd4279c2ddca2180d94a47eaca",
-        "size": 20168,
-        "filename": "desktop-wallpaper-d-light-1920x1080.svg",
-        "location": "main-workspace/newtab-wallpapers-v2/20260819201015--62aa72d9-b9f3-4f29-88f5-5120ee004e7c--4d48db83-de9c-44dd-bf12-20aa9152f6a5.svg",
-        "mimetype": "image/svg+xml"
-      },
-      "visibility_group": "",
-      "background_position": "top right",
       "id": "62aa72d9-b9f3-4f29-88f5-5120ee004e7c",
-      "last_modified": 1793244462413
+      "last_modified": 1793244462413,
+      "order": 120,
+      "schema": 1793243282277,
+      "theme": "light",
+      "title": "firefox-d",
+      "visibility_group": "",
+      "visible": true
     },
     {
-      "order": 30,
-      "theme": "dark",
-      "title": "firefox-desert-dark",
-      "schema": 1793243246331,
-      "visible": true,
+      "attachment": {
+        "filename": "wallpaper-landscape1-kit-desert-dark.svg",
+        "hash": "340c37f0ac9598af055ba6daa861e1b383617c6459f1c7dda63190374441cc34",
+        "location": "main-workspace/newtab-wallpapers-v2/20260819185205--36d49fb5-9fd4-4fa9-9504-2dd0b137d285--a6db06ef-39b8-4133-a41a-e198fbd6ae97.svg",
+        "mimetype": "image/svg+xml",
+        "size": 62905
+      },
+      "background_position": "center left",
       "category": "firefox",
       "fluent_id": "newtab-wallpaper-firefox-desert-dark",
-      "attachment": {
-        "hash": "340c37f0ac9598af055ba6daa861e1b383617c6459f1c7dda63190374441cc34",
-        "size": 62905,
-        "filename": "wallpaper-landscape1-kit-desert-dark.svg",
-        "location": "main-workspace/newtab-wallpapers-v2/20260819185205--36d49fb5-9fd4-4fa9-9504-2dd0b137d285--a6db06ef-39b8-4133-a41a-e198fbd6ae97.svg",
-        "mimetype": "image/svg+xml"
-      },
-      "visibility_group": "",
-      "background_position": "center left",
       "id": "36d49fb5-9fd4-4fa9-9504-2dd0b137d285",
-      "last_modified": 1793244462406
+      "last_modified": 1793244462406,
+      "order": 30,
+      "schema": 1793243246331,
+      "theme": "dark",
+      "title": "firefox-desert-dark",
+      "visibility_group": "",
+      "visible": true
     },
     {
-      "order": 60,
-      "theme": "light",
-      "title": "firefox-a-light",
-      "schema": 1793243619073,
-      "visible": true,
+      "attachment": {
+        "filename": "desktop-wallpaper-a-light-1920x1080.svg",
+        "hash": "01be7f29c851b15e4e5892e0b3b6539e1ac5d12f352119c0c054bafd9bf291b0",
+        "location": "main-workspace/newtab-wallpapers-v2/ddf2cbca-daef-4702-808b-131891b326dd.svg",
+        "mimetype": "image/svg+xml",
+        "size": 18870
+      },
+      "background_position": "top right",
       "category": "firefox",
       "fluent_id": "newtab-wallpaper-firefox-hills-light",
-      "attachment": {
-        "hash": "01be7f29c851b15e4e5892e0b3b6539e1ac5d12f352119c0c054bafd9bf291b0",
-        "size": 18870,
-        "filename": "desktop-wallpaper-a-light-1920x1080.svg",
-        "location": "main-workspace/newtab-wallpapers-v2/ddf2cbca-daef-4702-808b-131891b326dd.svg",
-        "mimetype": "image/svg+xml"
-      },
-      "visibility_group": "",
-      "background_position": "top right",
       "id": "25516fbc-54f6-4f7d-9b12-0188844109b4",
-      "last_modified": 1793244462404
+      "last_modified": 1793244462404,
+      "order": 60,
+      "schema": 1793243619073,
+      "theme": "light",
+      "title": "firefox-a-light",
+      "visibility_group": "",
+      "visible": true
     },
     {
-      "order": 80,
-      "theme": "light",
-      "title": "firefox-b-light",
-      "schema": 1793243499651,
-      "visible": true,
+      "attachment": {
+        "filename": "desktop-wallpaper-b-light-1920x1080.svg",
+        "hash": "7d10290ee82faf129c7524b80db95653391495a833945c4ea70e5947960b713d",
+        "location": "main-workspace/newtab-wallpapers-v2/b283ca51-354c-476f-9ee8-82f5a9ced0e2.svg",
+        "mimetype": "image/svg+xml",
+        "size": 286854
+      },
+      "background_position": "center right",
       "category": "firefox",
       "fluent_id": "newtab-wallpaper-firefox-tail-light",
-      "attachment": {
-        "hash": "7d10290ee82faf129c7524b80db95653391495a833945c4ea70e5947960b713d",
-        "size": 286854,
-        "filename": "desktop-wallpaper-b-light-1920x1080.svg",
-        "location": "main-workspace/newtab-wallpapers-v2/b283ca51-354c-476f-9ee8-82f5a9ced0e2.svg",
-        "mimetype": "image/svg+xml"
-      },
-      "visibility_group": "",
-      "background_position": "center right",
       "id": "e62aae2f-2f52-44a9-a5c5-ca68181185be",
-      "last_modified": 1793244462401
+      "last_modified": 1793244462401,
+      "order": 80,
+      "schema": 1793243499651,
+      "theme": "light",
+      "title": "firefox-b-light",
+      "visibility_group": "",
+      "visible": true
     },
     {
-      "order": 50,
-      "theme": "dark",
-      "title": "firefox-a",
-      "schema": 1793243582929,
-      "visible": true,
+      "attachment": {
+        "filename": "desktop-wallpaper-a-1920x1080.svg",
+        "hash": "dfdeb8a64fc3a5c9d160472bc10467acc3e3ffba51da05c7b222a1315dd8a1f4",
+        "location": "main-workspace/newtab-wallpapers-v2/e08c3e8c-4bda-48e4-8f36-a1d203f46536.svg",
+        "mimetype": "image/svg+xml",
+        "size": 19020
+      },
+      "background_position": "top right",
       "category": "firefox",
       "fluent_id": "newtab-wallpaper-firefox-hills-dark",
-      "attachment": {
-        "hash": "dfdeb8a64fc3a5c9d160472bc10467acc3e3ffba51da05c7b222a1315dd8a1f4",
-        "size": 19020,
-        "filename": "desktop-wallpaper-a-1920x1080.svg",
-        "location": "main-workspace/newtab-wallpapers-v2/e08c3e8c-4bda-48e4-8f36-a1d203f46536.svg",
-        "mimetype": "image/svg+xml"
-      },
-      "visibility_group": "",
-      "background_position": "top right",
       "id": "451090be-cdf1-49fc-b1f3-bd2f3b4ac34d",
-      "last_modified": 1793244462399
+      "last_modified": 1793244462399,
+      "order": 50,
+      "schema": 1793243582929,
+      "theme": "dark",
+      "title": "firefox-a",
+      "visibility_group": "",
+      "visible": true
     },
     {
-      "order": 70,
-      "theme": "dark",
-      "title": "firefox-b",
-      "schema": 1793243636833,
-      "visible": true,
+      "attachment": {
+        "filename": "desktop-wallpaper-b-1920x1080.svg",
+        "hash": "0483fd7bb1054d61301e9fcb2752009a6466f5213933f72dddd66ff909e239a2",
+        "location": "main-workspace/newtab-wallpapers-v2/6f7e2155-df50-4917-81fd-9c6f16e14965.svg",
+        "mimetype": "image/svg+xml",
+        "size": 286845
+      },
+      "background_position": "center right",
       "category": "firefox",
       "fluent_id": "newtab-wallpaper-firefox-tail-dark",
-      "attachment": {
-        "hash": "0483fd7bb1054d61301e9fcb2752009a6466f5213933f72dddd66ff909e239a2",
-        "size": 286845,
-        "filename": "desktop-wallpaper-b-1920x1080.svg",
-        "location": "main-workspace/newtab-wallpapers-v2/6f7e2155-df50-4917-81fd-9c6f16e14965.svg",
-        "mimetype": "image/svg+xml"
-      },
-      "visibility_group": "",
-      "background_position": "center right",
       "id": "1d43f5a1-64bd-4ad4-b825-88a89878662f",
-      "last_modified": 1793244462396
+      "last_modified": 1793244462396,
+      "order": 70,
+      "schema": 1793243636833,
+      "theme": "dark",
+      "title": "firefox-b",
+      "visibility_group": "",
+      "visible": true
     },
     {
-      "order": 20,
-      "theme": "light",
-      "title": "firefox-bold",
-      "schema": 1793243543433,
-      "visible": true,
+      "attachment": {
+        "filename": "wallpaperbold.avif",
+        "hash": "0e9e5554a18b4acc557efa408a8227ea8197100503b34c7713d8326bec9fc661",
+        "location": "main-workspace/newtab-wallpapers-v2/0fdf6f5d-8b70-473e-a0cd-50b4dbf87a4b.avif",
+        "mimetype": "image/avif",
+        "size": 152080
+      },
+      "background_position": "center right",
       "category": "firefox",
       "fluent_id": "newtab-wallpaper-firefox-colorful-sky",
-      "attachment": {
-        "hash": "0e9e5554a18b4acc557efa408a8227ea8197100503b34c7713d8326bec9fc661",
-        "size": 152080,
-        "filename": "wallpaperbold.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/0fdf6f5d-8b70-473e-a0cd-50b4dbf87a4b.avif",
-        "mimetype": "image/avif"
-      },
-      "visibility_group": "",
-      "background_position": "center right",
       "id": "25ac8c70-e0b6-4267-a7fc-c05ddeefbb11",
-      "last_modified": 1793244462394
+      "last_modified": 1793244462394,
+      "order": 20,
+      "schema": 1793243543433,
+      "theme": "light",
+      "title": "firefox-bold",
+      "visibility_group": "",
+      "visible": true
     },
     {
-      "order": 160,
-      "theme": "dark",
-      "title": "firefox-e",
-      "schema": 1793243660613,
-      "visible": true,
+      "attachment": {
+        "filename": "desktop-wallpaper-e-1920x1080.svg",
+        "hash": "fe1cb48a30da9b05ba14b550918f708953ee6e44fa5a878bcbc5d3d7963176ad",
+        "location": "main-workspace/newtab-wallpapers-v2/0b039df1-971b-445a-84f6-6a15da08940e.svg",
+        "mimetype": "image/svg+xml",
+        "size": 4567
+      },
+      "background_position": "bottom center",
       "category": "firefox",
       "fluent_id": "newtab-wallpaper-firefox-sky-dark",
-      "attachment": {
-        "hash": "fe1cb48a30da9b05ba14b550918f708953ee6e44fa5a878bcbc5d3d7963176ad",
-        "size": 4567,
-        "filename": "desktop-wallpaper-e-1920x1080.svg",
-        "location": "main-workspace/newtab-wallpapers-v2/0b039df1-971b-445a-84f6-6a15da08940e.svg",
-        "mimetype": "image/svg+xml"
-      },
-      "visibility_group": "",
-      "background_position": "bottom center",
       "id": "2e468f89-ac6a-474f-a789-5de0be601887",
-      "last_modified": 1793244462392
+      "last_modified": 1793244462392,
+      "order": 160,
+      "schema": 1793243660613,
+      "theme": "dark",
+      "title": "firefox-e",
+      "visibility_group": "",
+      "visible": true
     },
     {
-      "order": 100,
-      "theme": "light",
-      "title": "firefox-c",
-      "schema": 1793243399742,
-      "visible": true,
+      "attachment": {
+        "filename": "desktop-wallpaper-c-light-1920x1080.svg",
+        "hash": "049ff03eb918516a7dd4e795d7f9afc1bab6443ef6396b04c87e51caa722bc5b",
+        "location": "main-workspace/newtab-wallpapers-v2/20260819200245--429c288c-8d92-4baa-aefb-a04719882454--cd2122fe-b227-4003-8e18-3cd2cc1c6204.svg",
+        "mimetype": "image/svg+xml",
+        "size": 10269
+      },
+      "background_position": "top left",
       "category": "firefox",
       "fluent_id": "newtab-wallpaper-firefox-side-kit-light",
-      "attachment": {
-        "hash": "049ff03eb918516a7dd4e795d7f9afc1bab6443ef6396b04c87e51caa722bc5b",
-        "size": 10269,
-        "filename": "desktop-wallpaper-c-light-1920x1080.svg",
-        "location": "main-workspace/newtab-wallpapers-v2/20260819200245--429c288c-8d92-4baa-aefb-a04719882454--cd2122fe-b227-4003-8e18-3cd2cc1c6204.svg",
-        "mimetype": "image/svg+xml"
-      },
-      "visibility_group": "",
-      "background_position": "top left",
       "id": "429c288c-8d92-4baa-aefb-a04719882454",
-      "last_modified": 1793244462389
+      "last_modified": 1793244462389,
+      "order": 100,
+      "schema": 1793243399742,
+      "theme": "light",
+      "title": "firefox-c",
+      "visibility_group": "",
+      "visible": true
     },
     {
-      "order": 170,
-      "theme": "light",
-      "title": "firefox-f",
-      "schema": 1793243472341,
-      "visible": true,
+      "attachment": {
+        "filename": "desktop-wallpaper-f-1920x1080.svg",
+        "hash": "07e565c12279637b52212d1cf0d4f23039e743e6623896f7e72bc1e6f05be974",
+        "location": "main-workspace/newtab-wallpapers-v2/9b9d40c7-a3bf-4058-836a-2ce378e8daf5.svg",
+        "mimetype": "image/svg+xml",
+        "size": 6463
+      },
+      "background_position": "bottom center",
       "category": "firefox",
       "fluent_id": "newtab-wallpaper-firefox-sky-light",
-      "attachment": {
-        "hash": "07e565c12279637b52212d1cf0d4f23039e743e6623896f7e72bc1e6f05be974",
-        "size": 6463,
-        "filename": "desktop-wallpaper-f-1920x1080.svg",
-        "location": "main-workspace/newtab-wallpapers-v2/9b9d40c7-a3bf-4058-836a-2ce378e8daf5.svg",
-        "mimetype": "image/svg+xml"
-      },
-      "visibility_group": "",
-      "background_position": "bottom center",
       "id": "2bf99683-cde8-438b-9f8e-a1222dc7f59c",
-      "last_modified": 1793244462387
+      "last_modified": 1793244462387,
+      "order": 170,
+      "schema": 1793243472341,
+      "theme": "light",
+      "title": "firefox-f",
+      "visibility_group": "",
+      "visible": true
     },
     {
+      "attachment": {
+        "filename": "approved-proposal-3.avif",
+        "hash": "d83b909d6e1bf0db8cc5c583641e0367a6942b509e73041353e3fe0dfd233d8b",
+        "location": "main-workspace/newtab-wallpapers-v2/20260904203317--75b87498-000e-45fa-973b-299d19212ef9--15c05c49-ba17-47ba-a7ac-ca430d967d71.avif",
+        "mimetype": "image/avif",
+        "size": 637216
+      },
+      "background_position": "top right",
+      "category": "firefox",
+      "id": "75b87498-000e-45fa-973b-299d19212ef9",
+      "last_modified": 1789487753567,
       "order": 202,
+      "schema": 1789484884441,
       "theme": "dark",
       "title": "Wrexham",
-      "schema": 1789484884441,
-      "visible": true,
-      "category": "firefox",
-      "attachment": {
-        "hash": "d83b909d6e1bf0db8cc5c583641e0367a6942b509e73041353e3fe0dfd233d8b",
-        "size": 637216,
-        "filename": "approved-proposal-3.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/20260904203317--75b87498-000e-45fa-973b-299d19212ef9--15c05c49-ba17-47ba-a7ac-ca430d967d71.avif",
-        "mimetype": "image/avif"
-      },
       "visibility_group": "",
-      "background_position": "top right",
-      "id": "75b87498-000e-45fa-973b-299d19212ef9",
-      "last_modified": 1789487753567
+      "visible": true
     },
     {
-      "theme": "dark",
-      "title": "dark-fox-anniversary",
-      "schema": 1767652222492,
-      "category": "photographs",
-      "fluent_id": "newtab-wallpaper-dark-fox-anniversary",
       "attachment": {
-        "hash": "eeb9526e6bcdb29b6fd5b59273d1d48ab99c4aee3d9e72584bb9eee6790e2218",
-        "size": 291301,
         "filename": "dark-fox-anniversary-v2.avif",
+        "hash": "eeb9526e6bcdb29b6fd5b59273d1d48ab99c4aee3d9e72584bb9eee6790e2218",
         "location": "main-workspace/newtab-wallpapers-v2/d8b71c77-9985-41d2-b98e-51bebc60e595.avif",
-        "mimetype": "image/avif"
+        "mimetype": "image/avif",
+        "size": 291301
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@obkim",
-          "string": "Qijin Xu"
+          "string": "Qijin Xu",
+          "url": "https://unsplash.com/@obkim"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/brown-and-white-fox-fJyO0eo6_aI",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/brown-and-white-fox-fJyO0eo6_aI"
         }
       },
       "background_position": "top left",
+      "category": "photographs",
+      "fluent_id": "newtab-wallpaper-dark-fox-anniversary",
       "id": "7e6ab485-8f0d-463f-8f40-1bd77a82e034",
-      "last_modified": 1767716652308
+      "last_modified": 1767716652308,
+      "schema": 1767652222492,
+      "theme": "dark",
+      "title": "dark-fox-anniversary"
     },
     {
-      "theme": "light",
-      "title": "light-fox-anniversary",
-      "schema": 1767652175332,
-      "category": "photographs",
-      "fluent_id": "newtab-wallpaper-light-fox-anniversary",
       "attachment": {
-        "hash": "649c272fed6c4ba3d15c5179efc85a1c528d39a074259386cf91be89ea2f67f3",
-        "size": 140270,
         "filename": "light-fox-anniversary-v2.avif",
+        "hash": "649c272fed6c4ba3d15c5179efc85a1c528d39a074259386cf91be89ea2f67f3",
         "location": "main-workspace/newtab-wallpapers-v2/a5a041de-9275-4eb5-8f21-a0171c82d388.avif",
-        "mimetype": "image/avif"
+        "mimetype": "image/avif",
+        "size": 140270
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@sr_kike_",
-          "string": "Luis Enrique Ibarra"
+          "string": "Luis Enrique Ibarra",
+          "url": "https://unsplash.com/@sr_kike_"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/brown-and-white-fox-on-green-grass-field-during-daytime-SLOm_cfWTT4",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/brown-and-white-fox-on-green-grass-field-during-daytime-SLOm_cfWTT4"
         }
       },
       "background_position": "center left",
+      "category": "photographs",
+      "fluent_id": "newtab-wallpaper-light-fox-anniversary",
       "id": "77bf5044-7821-4125-b555-10f71af37fd4",
-      "last_modified": 1767716652304
+      "last_modified": 1767716652304,
+      "schema": 1767652175332,
+      "theme": "light",
+      "title": "light-fox-anniversary"
     },
     {
-      "theme": "dark",
-      "title": "dark-landscape",
-      "schema": 1767652229110,
-      "category": "photographs",
-      "fluent_id": "newtab-wallpaper-dark-aurora",
       "attachment": {
-        "hash": "dba39dab685c2bc6978354537c1bc8218a0abc455d0dd49c134c031264cfcd47",
-        "size": 437288,
         "filename": "dark-aurora.avif",
+        "hash": "dba39dab685c2bc6978354537c1bc8218a0abc455d0dd49c134c031264cfcd47",
         "location": "main-workspace/newtab-wallpapers-v2/10e23599-85bc-4660-ae06-7a67befbbcf9.avif",
-        "mimetype": "image/avif"
+        "mimetype": "image/avif",
+        "size": 437288
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@lightscape",
-          "string": "Lightscape"
+          "string": "Lightscape",
+          "url": "https://unsplash.com/@lightscape"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/northern-lights-over-snow-capped-mountian-LtnPejWDSAY",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/northern-lights-over-snow-capped-mountian-LtnPejWDSAY"
         }
       },
       "background_position": "center right",
+      "category": "photographs",
+      "fluent_id": "newtab-wallpaper-dark-aurora",
       "id": "f81d9d10-7f90-4d1d-ae2e-8d49e1cf993a",
-      "last_modified": 1767716652301
+      "last_modified": 1767716652301,
+      "schema": 1767652229110,
+      "theme": "dark",
+      "title": "dark-landscape"
     },
     {
-      "theme": "dark",
-      "title": "dark-panda",
-      "schema": 1767652132609,
+      "attachment": {
+        "filename": "dark-panda.avif",
+        "hash": "359ec1d08b10aec1ea6d5cb50ddb0ccbd7660301407ee2eb602cf877b1ab857a",
+        "location": "main-workspace/newtab-wallpapers-v2/6b8eb3cf-f232-4c7b-a179-afd174555134.avif",
+        "mimetype": "image/avif",
+        "size": 391823
+      },
+      "attribution": {
+        "name": {
+          "string": "Will Rust",
+          "url": "https://unsplash.com/@willrust"
+        },
+        "webpage": {
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/a-red-panda-yawns-in-a-tree-ERm7haDBW8k"
+        }
+      },
+      "background_position": "center left",
       "category": "photographs",
       "fluent_id": "newtab-wallpaper-dark-panda",
+      "id": "4374cca0-fd79-4626-b55f-ccbe1eb13e2f",
+      "last_modified": 1767716652298,
+      "schema": 1767652132609,
+      "theme": "dark",
+      "title": "dark-panda"
+    },
+    {
       "attachment": {
-        "hash": "359ec1d08b10aec1ea6d5cb50ddb0ccbd7660301407ee2eb602cf877b1ab857a",
-        "size": 391823,
-        "filename": "dark-panda.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/6b8eb3cf-f232-4c7b-a179-afd174555134.avif",
-        "mimetype": "image/avif"
+        "filename": "light-panda.avif",
+        "hash": "f9a34f02573401aea9366a9e97a4cdc92f925ad6ac8d56d0bedfaf0dff9e86b1",
+        "location": "main-workspace/newtab-wallpapers-v2/dfd3762e-f77d-4b6e-ac75-32eb2549ef40.avif",
+        "mimetype": "image/avif",
+        "size": 531549
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@willrust",
-          "string": "Will Rust"
+          "string": "Mohamed Elsayed",
+          "url": "https://unsplash.com/@_melsayed"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/a-red-panda-yawns-in-a-tree-ERm7haDBW8k",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/red-panda-on-snow-covered-ground-during-daytime-DWpR-BpKlw0"
         }
       },
       "background_position": "center left",
-      "id": "4374cca0-fd79-4626-b55f-ccbe1eb13e2f",
-      "last_modified": 1767716652298
-    },
-    {
-      "theme": "light",
-      "title": "light-panda",
-      "schema": 1767652165361,
       "category": "photographs",
       "fluent_id": "newtab-wallpaper-light-red-panda",
-      "attachment": {
-        "hash": "f9a34f02573401aea9366a9e97a4cdc92f925ad6ac8d56d0bedfaf0dff9e86b1",
-        "size": 531549,
-        "filename": "light-panda.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/dfd3762e-f77d-4b6e-ac75-32eb2549ef40.avif",
-        "mimetype": "image/avif"
-      },
-      "attribution": {
-        "name": {
-          "url": "https://unsplash.com/@_melsayed",
-          "string": "Mohamed Elsayed"
-        },
-        "webpage": {
-          "url": "https://unsplash.com/photos/red-panda-on-snow-covered-ground-during-daytime-DWpR-BpKlw0",
-          "string": "Unsplash"
-        }
-      },
-      "background_position": "center left",
       "id": "74260419-d829-42ef-bb9f-4d93be63472a",
-      "last_modified": 1767716652295
+      "last_modified": 1767716652295,
+      "schema": 1767652165361,
+      "theme": "light",
+      "title": "light-panda"
     },
     {
-      "theme": "light",
-      "title": "hot-air-balloons",
-      "schema": 1767652359090,
-      "category": "photographs",
-      "fluent_id": "newtab-wallpaper-hot-air-balloons",
       "attachment": {
-        "hash": "e95169a269ebae69c46b7202a3438903f7baf5485a878e13468ad0dc07414271",
-        "size": 297339,
         "filename": "hot%20air%20ballons.avif",
+        "hash": "e95169a269ebae69c46b7202a3438903f7baf5485a878e13468ad0dc07414271",
         "location": "main-workspace/newtab-wallpapers-v2/ade94d3a-9a02-4b30-848f-638725a05180.avif",
-        "mimetype": "image/avif"
+        "mimetype": "image/avif",
+        "size": 297339
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@sadswim",
-          "string": "ian dooley"
+          "string": "ian dooley",
+          "url": "https://unsplash.com/@sadswim"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/assorted-color-hot-air-balloons-during-daytime-DuBNA1QMpPA",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/assorted-color-hot-air-balloons-during-daytime-DuBNA1QMpPA"
         }
       },
       "background_position": "bottom center",
+      "category": "photographs",
+      "fluent_id": "newtab-wallpaper-hot-air-balloons",
       "id": "6c76fca3-3b93-41f1-b7f6-c863efcd3e91",
-      "last_modified": 1767716652275
+      "last_modified": 1767716652275,
+      "schema": 1767652359090,
+      "theme": "light",
+      "title": "hot-air-balloons"
     },
     {
-      "theme": "dark",
-      "title": "blue-purple",
-      "schema": 1756865736197,
-      "category": "abstracts",
-      "fluent_id": "newtab-wallpaper-abstract-blue-purple",
       "attachment": {
-        "hash": "2ce4d2b293611d478a57398e982e791c2ef6a628eb02c7ab11e47d8a001dfd02",
-        "size": 309538,
         "filename": "wavy%20shapes.avif",
+        "hash": "2ce4d2b293611d478a57398e982e791c2ef6a628eb02c7ab11e47d8a001dfd02",
         "location": "main-workspace/newtab-wallpapers-v2/036ac885-33cb-41db-bcbb-52dd49254a12.avif",
-        "mimetype": "image/avif"
+        "mimetype": "image/avif",
+        "size": 309538
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@martz90",
-          "string": "Martin Martz"
+          "string": "Martin Martz",
+          "url": "https://unsplash.com/@martz90"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/a-blue-and-purple-background-with-wavy-shapes-1hg6NpO0kIk",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/a-blue-and-purple-background-with-wavy-shapes-1hg6NpO0kIk"
         }
       },
+      "category": "abstracts",
+      "fluent_id": "newtab-wallpaper-abstract-blue-purple",
       "id": "b33cf5ec-52c4-4220-be05-1a3d4c998443",
-      "last_modified": 1762459339471
+      "last_modified": 1762459339471,
+      "schema": 1756865736197,
+      "theme": "dark",
+      "title": "blue-purple"
     },
     {
-      "theme": "light",
-      "title": "blue-flowers",
-      "schema": 1744047286143,
+      "attachment": {
+        "filename": "flowers.avif",
+        "hash": "4f20e391651c537e09c730c13c8a88408ade7bfc04e134987965718a491dd705",
+        "location": "main-workspace/newtab-wallpapers-v2/f5c362af-16df-488d-a8b2-bf8cf29d1c63.avif",
+        "mimetype": "image/avif",
+        "size": 214442
+      },
+      "attribution": {
+        "name": {
+          "string": "Sora Sagano",
+          "url": "https://unsplash.com/@sorasagano"
+        },
+        "webpage": {
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/closeup-photography-of-blue-petaled-flowers-on-bloom-F6ZzivdSQ5k"
+        }
+      },
       "category": "photographs",
       "fluent_id": "newtab-wallpaper-blue-flowers",
+      "id": "785549a0-c1c0-488b-9cc2-f7a18f3ba204",
+      "last_modified": 1744052577022,
+      "schema": 1744047286143,
+      "theme": "light",
+      "title": "blue-flowers"
+    },
+    {
       "attachment": {
-        "hash": "4f20e391651c537e09c730c13c8a88408ade7bfc04e134987965718a491dd705",
-        "size": 214442,
-        "filename": "flowers.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/f5c362af-16df-488d-a8b2-bf8cf29d1c63.avif",
-        "mimetype": "image/avif"
+        "filename": "palm%20trees.avif",
+        "hash": "5efec5a43ee0e3816cda1f35edb4e5c82f3ae8a554cb99ba13fc578fa45b3a23",
+        "location": "main-workspace/newtab-wallpapers-v2/32c50b87-9f4b-46cf-a467-f4aa768a1687.avif",
+        "mimetype": "image/avif",
+        "size": 440641
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@sorasagano",
-          "string": "Sora Sagano"
+          "string": "Prometey Sánchez Noskov",
+          "url": "https://unsplash.com/@soyprome"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/closeup-photography-of-blue-petaled-flowers-on-bloom-F6ZzivdSQ5k",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/silhouette-of-coconut-palm-trees-during-golden-hour-c6M7AoevSXE"
         }
       },
-      "id": "785549a0-c1c0-488b-9cc2-f7a18f3ba204",
-      "last_modified": 1744052577022
-    },
-    {
-      "theme": "dark",
-      "title": "palm-trees",
-      "schema": 1744047197627,
       "category": "photographs",
       "fluent_id": "newtab-wallpaper-palm-trees",
+      "id": "c28c67eb-4cd1-4775-8770-e0650015d19a",
+      "last_modified": 1744052577019,
+      "schema": 1744047197627,
+      "theme": "dark",
+      "title": "palm-trees"
+    },
+    {
       "attachment": {
-        "hash": "5efec5a43ee0e3816cda1f35edb4e5c82f3ae8a554cb99ba13fc578fa45b3a23",
-        "size": 440641,
-        "filename": "palm%20trees.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/32c50b87-9f4b-46cf-a467-f4aa768a1687.avif",
-        "mimetype": "image/avif"
+        "filename": "white%20sand.avif",
+        "hash": "27f42ef7095512570ac91ad165478ecb09d7343fcba161f1ed83d2edd767b547",
+        "location": "main-workspace/newtab-wallpapers-v2/7dcbd2c8-8982-4108-b044-fae72b46e97f.avif",
+        "mimetype": "image/avif",
+        "size": 354178
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@soyprome",
-          "string": "Prometey Sánchez Noskov"
+          "string": "John Fowler",
+          "url": "https://unsplash.com/@wildhoney"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/silhouette-of-coconut-palm-trees-during-golden-hour-c6M7AoevSXE",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/white-sand-RsRTIofe0HE"
         }
       },
-      "id": "c28c67eb-4cd1-4775-8770-e0650015d19a",
-      "last_modified": 1744052577019
-    },
-    {
-      "theme": "light",
-      "title": "sand-dunes",
-      "schema": 1744047082520,
       "category": "photographs",
       "fluent_id": "newtab-wallpaper-sand-dunes",
+      "id": "936f5914-d192-4f87-8481-c3e74e8adb5d",
+      "last_modified": 1744052577017,
+      "schema": 1744047082520,
+      "theme": "light",
+      "title": "sand-dunes"
+    },
+    {
       "attachment": {
-        "hash": "27f42ef7095512570ac91ad165478ecb09d7343fcba161f1ed83d2edd767b547",
-        "size": 354178,
-        "filename": "white%20sand.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/7dcbd2c8-8982-4108-b044-fae72b46e97f.avif",
-        "mimetype": "image/avif"
+        "filename": "blue%20starry%20night.avif",
+        "hash": "394babc1cfd55065c84720869214f50ba39376c1d03eedc0d53327e252825e96",
+        "location": "main-workspace/newtab-wallpapers-v2/7d98c7ab-274a-411d-95e4-84afd4e6203c.avif",
+        "mimetype": "image/avif",
+        "size": 290368
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@wildhoney",
-          "string": "John Fowler"
+          "string": "Mark Basarab",
+          "url": "https://unsplash.com/@markbasarabvisuals"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/white-sand-RsRTIofe0HE",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/blue-starry-night-1OtUkD_8svc"
         }
       },
-      "id": "936f5914-d192-4f87-8481-c3e74e8adb5d",
-      "last_modified": 1744052577017
-    },
-    {
-      "theme": "dark",
-      "title": "starry-canyon",
-      "schema": 1744046191375,
       "category": "photographs",
       "fluent_id": "newtab-wallpaper-starry-canyon",
+      "id": "2437199a-03d7-455b-a9ab-96b14c5b862d",
+      "last_modified": 1744052577014,
+      "schema": 1744046191375,
+      "theme": "dark",
+      "title": "starry-canyon"
+    },
+    {
       "attachment": {
-        "hash": "394babc1cfd55065c84720869214f50ba39376c1d03eedc0d53327e252825e96",
-        "size": 290368,
-        "filename": "blue%20starry%20night.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/7d98c7ab-274a-411d-95e4-84afd4e6203c.avif",
-        "mimetype": "image/avif"
+        "filename": "bridge.avif",
+        "hash": "ea3dafc1e5cb5b8b81b487b801b34fe3b1fd19d722982b06b9aa95f4b01f2f72",
+        "location": "main-workspace/newtab-wallpapers-v2/c1130d05-bb6b-448d-bc66-96df1eb088bb.avif",
+        "mimetype": "image/avif",
+        "size": 258311
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@markbasarabvisuals",
-          "string": "Mark Basarab"
+          "string": "Anders Jildén",
+          "url": "https://unsplash.com/@andersjilden"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/blue-starry-night-1OtUkD_8svc",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/grey-full-suspension-bridge-photography-during-daytime-AkUR27wtaxs"
         }
       },
-      "id": "2437199a-03d7-455b-a9ab-96b14c5b862d",
-      "last_modified": 1744052577014
-    },
-    {
-      "theme": "dark",
-      "title": "suspension-bridge",
-      "schema": 1744047008604,
       "category": "photographs",
       "fluent_id": "newtab-wallpaper-suspension-bridge",
+      "id": "de57da1c-94fb-4275-905a-b3bbd1f0f8a5",
+      "last_modified": 1744052577011,
+      "schema": 1744047008604,
+      "theme": "dark",
+      "title": "suspension-bridge"
+    },
+    {
       "attachment": {
-        "hash": "ea3dafc1e5cb5b8b81b487b801b34fe3b1fd19d722982b06b9aa95f4b01f2f72",
-        "size": 258311,
-        "filename": "bridge.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/c1130d05-bb6b-448d-bc66-96df1eb088bb.avif",
-        "mimetype": "image/avif"
+        "filename": "satellite%20image%20of%20river.avif",
+        "hash": "03a1416050bcf9533b3d2094fbe3f433029eafefa178ae0520a4d7e444168209",
+        "location": "main-workspace/newtab-wallpapers-v2/671df231-8415-4066-8144-0ddb31394a19.avif",
+        "mimetype": "image/avif",
+        "size": 374822
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@andersjilden",
-          "string": "Anders Jildén"
+          "string": "NASA",
+          "url": "https://unsplash.com/@nasa"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/grey-full-suspension-bridge-photography-during-daytime-AkUR27wtaxs",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/satellite-image-of-river-whDrFMucHkc"
         }
       },
-      "id": "de57da1c-94fb-4275-905a-b3bbd1f0f8a5",
-      "last_modified": 1744052577011
-    },
-    {
-      "theme": "light",
-      "title": "river",
-      "schema": 1744045761310,
       "category": "celestial",
       "fluent_id": "newtab-wallpaper-celestial-river",
+      "id": "fadd6058-24cf-4e41-b9b4-7608498f285c",
+      "last_modified": 1744046191288,
+      "schema": 1744045761310,
+      "theme": "light",
+      "title": "river"
+    },
+    {
       "attachment": {
-        "hash": "03a1416050bcf9533b3d2094fbe3f433029eafefa178ae0520a4d7e444168209",
-        "size": 374822,
-        "filename": "satellite%20image%20of%20river.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/671df231-8415-4066-8144-0ddb31394a19.avif",
-        "mimetype": "image/avif"
+        "filename": "black%20hole%20galaxy.avif",
+        "hash": "c6bcb286c3a289c21e9fae4602f8f9defc68b7c9f4888a4b7f0c9be6943826d7",
+        "location": "main-workspace/newtab-wallpapers-v2/9fa5c4e0-5f22-419e-b2eb-a3494520f5f2.avif",
+        "mimetype": "image/avif",
+        "size": 324019
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@nasa",
-          "string": "NASA"
+          "string": "Guillermo Ferla",
+          "url": "https://unsplash.com/@gferla"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/satellite-image-of-river-whDrFMucHkc",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/black-hole-galaxy-illustration-Oze6U2m1oYU"
         }
       },
-      "id": "fadd6058-24cf-4e41-b9b4-7608498f285c",
-      "last_modified": 1744046191288
-    },
-    {
-      "theme": "dark",
-      "title": "black-hole",
-      "schema": 1744045732063,
       "category": "celestial",
       "fluent_id": "newtab-wallpaper-celestial-black-hole",
+      "id": "7622072d-a734-4df7-a467-cde719b60875",
+      "last_modified": 1744046191285,
+      "schema": 1744045732063,
+      "theme": "dark",
+      "title": "black-hole"
+    },
+    {
       "attachment": {
-        "hash": "c6bcb286c3a289c21e9fae4602f8f9defc68b7c9f4888a4b7f0c9be6943826d7",
-        "size": 324019,
-        "filename": "black%20hole%20galaxy.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/9fa5c4e0-5f22-419e-b2eb-a3494520f5f2.avif",
-        "mimetype": "image/avif"
+        "filename": "stary%20sky.avif",
+        "hash": "438c81ca6545f7a76880b9036aff9732e0a9f234d5859e12213029485ce02bdd",
+        "location": "main-workspace/newtab-wallpapers-v2/43793431-0f4a-473b-b346-7c30df84af10.avif",
+        "mimetype": "image/avif",
+        "size": 404969
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@gferla",
-          "string": "Guillermo Ferla"
+          "string": "Aperture Vintage",
+          "url": "https://unsplash.com/@aperturevintage"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/black-hole-galaxy-illustration-Oze6U2m1oYU",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/starry-sky-Z6EpCdMcoUU"
         }
       },
-      "id": "7622072d-a734-4df7-a467-cde719b60875",
-      "last_modified": 1744046191285
-    },
-    {
-      "theme": "dark",
-      "title": "starry-sky",
-      "schema": 1744045755270,
       "category": "celestial",
       "fluent_id": "newtab-wallpaper-celestial-starry-sky",
+      "id": "eadb40b9-7d96-4173-994e-ecdb7aade866",
+      "last_modified": 1744046191283,
+      "schema": 1744045755270,
+      "theme": "dark",
+      "title": "starry-sky"
+    },
+    {
       "attachment": {
-        "hash": "438c81ca6545f7a76880b9036aff9732e0a9f234d5859e12213029485ce02bdd",
-        "size": 404969,
-        "filename": "stary%20sky.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/43793431-0f4a-473b-b346-7c30df84af10.avif",
-        "mimetype": "image/avif"
+        "filename": "moon%20eclipse.avif",
+        "hash": "3fa57c2d377a78cdc95ec097a4a4bc49fb126e7d6544c53b765410692d10843e",
+        "location": "main-workspace/newtab-wallpapers-v2/7fd1f326-58cf-4b5c-9737-e68a8c44dc51.avif",
+        "mimetype": "image/avif",
+        "size": 527364
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@aperturevintage",
-          "string": "Aperture Vintage"
+          "string": "Jongsun Lee",
+          "url": "https://unsplash.com/@sarahleejs"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/starry-sky-Z6EpCdMcoUU",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/moon-eclipse-F-pSZO_jeE8"
         }
       },
-      "id": "eadb40b9-7d96-4173-994e-ecdb7aade866",
-      "last_modified": 1744046191283
-    },
-    {
-      "theme": "dark",
-      "title": "lunar-eclipse",
-      "schema": 1744045768465,
       "category": "celestial",
       "fluent_id": "newtab-wallpaper-celestial-lunar-eclipse",
+      "id": "6c40ffd3-b8e3-48a2-a0a0-53517aa37557",
+      "last_modified": 1744046191280,
+      "schema": 1744045768465,
+      "theme": "dark",
+      "title": "lunar-eclipse"
+    },
+    {
       "attachment": {
-        "hash": "3fa57c2d377a78cdc95ec097a4a4bc49fb126e7d6544c53b765410692d10843e",
-        "size": 527364,
-        "filename": "moon%20eclipse.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/7fd1f326-58cf-4b5c-9737-e68a8c44dc51.avif",
-        "mimetype": "image/avif"
+        "filename": "lunar%20eclipse.avif",
+        "hash": "fc6235317973afa7b3f34b91e79525ec7716d54faf6c558ab226e5c982d8cd68",
+        "location": "main-workspace/newtab-wallpapers-v2/55b678ff-15c3-49d5-bdbc-40f8413cfb8a.avif",
+        "mimetype": "image/avif",
+        "size": 207752
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@sarahleejs",
-          "string": "Jongsun Lee"
+          "string": "Farzad Mohsenvand",
+          "url": "https://unsplash.com/@farzadme"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/moon-eclipse-F-pSZO_jeE8",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/lunar-eclipse-illustration-TbuescuqMjA"
         }
       },
-      "id": "6c40ffd3-b8e3-48a2-a0a0-53517aa37557",
-      "last_modified": 1744046191280
-    },
-    {
-      "theme": "dark",
-      "title": "eclipse-time-lapse",
-      "schema": 1744045738328,
       "category": "celestial",
       "fluent_id": "newtab-wallpaper-celestial-eclipse-time-lapse",
+      "id": "2868b784-19d5-4f9b-9f77-047917484b19",
+      "last_modified": 1744046191277,
+      "schema": 1744045738328,
+      "theme": "dark",
+      "title": "eclipse-time-lapse"
+    },
+    {
       "attachment": {
-        "hash": "fc6235317973afa7b3f34b91e79525ec7716d54faf6c558ab226e5c982d8cd68",
-        "size": 207752,
-        "filename": "lunar%20eclipse.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/55b678ff-15c3-49d5-bdbc-40f8413cfb8a.avif",
-        "mimetype": "image/avif"
+        "filename": "outer%20space.avif",
+        "hash": "3e157c2f848870ae89e6339339859ee0d485c03d09328a900fc10fd82e1be60c",
+        "location": "main-workspace/newtab-wallpapers-v2/fa93a1e0-fec5-4351-adc2-5692e5b2bf32.avif",
+        "mimetype": "image/avif",
+        "size": 346780
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@farzadme",
-          "string": "Farzad Mohsenvand"
+          "string": "NASA",
+          "url": "https://unsplash.com/@nasa"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/lunar-eclipse-illustration-TbuescuqMjA",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/photo-of-outer-space-Q1p7bh3SHj8"
         }
       },
-      "id": "2868b784-19d5-4f9b-9f77-047917484b19",
-      "last_modified": 1744046191277
-    },
-    {
-      "theme": "dark",
-      "title": "earth-night",
-      "schema": 1744045775887,
       "category": "celestial",
       "fluent_id": "newtab-wallpaper-celestial-earth-night",
+      "id": "ef098f84-05b0-4cb7-afee-fccd15e6c50c",
+      "last_modified": 1744046191274,
+      "schema": 1744045775887,
+      "theme": "dark",
+      "title": "earth-night"
+    },
+    {
       "attachment": {
-        "hash": "3e157c2f848870ae89e6339339859ee0d485c03d09328a900fc10fd82e1be60c",
-        "size": 346780,
-        "filename": "outer%20space.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/fa93a1e0-fec5-4351-adc2-5692e5b2bf32.avif",
-        "mimetype": "image/avif"
+        "filename": "black%20curve.avif",
+        "hash": "013b5e3a6d79b4aa740c7976b6ba61a867e47de47abe1195420ec164bfb3c73f",
+        "location": "main-workspace/newtab-wallpapers-v2/18c7861f-0c9d-48d4-a98c-fb8999e331bd.avif",
+        "mimetype": "image/avif",
+        "size": 202368
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@nasa",
-          "string": "NASA"
+          "string": "Pawel Czerwinski",
+          "url": "https://unsplash.com/@pawel_czerwinski"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/photo-of-outer-space-Q1p7bh3SHj8",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/a-close-up-of-a-cell-phone-with-a-black-background-UKSC-TQE7TA"
         }
       },
-      "id": "ef098f84-05b0-4cb7-afee-fccd15e6c50c",
-      "last_modified": 1744046191274
-    },
-    {
-      "theme": "dark",
-      "title": "black-waves",
-      "schema": 1742810343093,
       "category": "abstracts",
       "fluent_id": "newtab-wallpaper-abstract-black-waves",
+      "id": "0114fe5c-4401-40a9-b8a4-313580aeaa19",
+      "last_modified": 1743101895103,
+      "schema": 1742810343093,
+      "theme": "dark",
+      "title": "black-waves"
+    },
+    {
       "attachment": {
-        "hash": "013b5e3a6d79b4aa740c7976b6ba61a867e47de47abe1195420ec164bfb3c73f",
-        "size": 202368,
-        "filename": "black%20curve.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/18c7861f-0c9d-48d4-a98c-fb8999e331bd.avif",
-        "mimetype": "image/avif"
+        "filename": "white%20curve.avif",
+        "hash": "5ba6bb88912ce34b132b6809a25682d2d1cccdae1d877642d312e1644b86daa5",
+        "location": "main-workspace/newtab-wallpapers-v2/ea29bb39-223f-4c49-9362-b7caf75313af.avif",
+        "mimetype": "image/avif",
+        "size": 319578
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@pawel_czerwinski",
-          "string": "Pawel Czerwinski"
+          "string": "vackground.com",
+          "url": "https://unsplash.com/@vackground"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/a-close-up-of-a-cell-phone-with-a-black-background-UKSC-TQE7TA",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/an-abstract-white-background-with-a-curved-curve-0F2pC8_DwvM"
         }
       },
-      "id": "0114fe5c-4401-40a9-b8a4-313580aeaa19",
-      "last_modified": 1743101895103
-    },
-    {
-      "theme": "light",
-      "title": "white-curves",
-      "schema": 1741985132349,
       "category": "abstracts",
       "fluent_id": "newtab-wallpaper-abstract-white-curves",
+      "id": "8f3f9010-0e47-4924-88f3-342f73cfbbc3",
+      "last_modified": 1742232562516,
+      "schema": 1741985132349,
+      "theme": "light",
+      "title": "white-curves"
+    },
+    {
       "attachment": {
-        "hash": "5ba6bb88912ce34b132b6809a25682d2d1cccdae1d877642d312e1644b86daa5",
-        "size": 319578,
-        "filename": "white%20curve.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/ea29bb39-223f-4c49-9362-b7caf75313af.avif",
-        "mimetype": "image/avif"
+        "filename": "gradient%20purple%20blue.avif",
+        "hash": "3d9362a5a49aa9591a8892ef719207877df244503597a47a3c2b1d3f95beab6d",
+        "location": "main-workspace/newtab-wallpapers-v2/31dd47f1-a979-42a0-8351-33c2bb0b35cf.avif",
+        "mimetype": "image/avif",
+        "size": 237720
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@vackground",
-          "string": "vackground.com"
+          "string": "Milad Fakurian",
+          "url": "https://unsplash.com/@fakurian"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/an-abstract-white-background-with-a-curved-curve-0F2pC8_DwvM",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/purple-and-green-light-gradient-iFu2HILEng8"
         }
       },
-      "id": "8f3f9010-0e47-4924-88f3-342f73cfbbc3",
-      "last_modified": 1742232562516
-    },
-    {
-      "theme": "light",
-      "title": "purple-green",
-      "schema": 1741985417348,
       "category": "abstracts",
       "fluent_id": "newtab-wallpaper-abstract-purple-green",
-      "attachment": {
-        "hash": "3d9362a5a49aa9591a8892ef719207877df244503597a47a3c2b1d3f95beab6d",
-        "size": 237720,
-        "filename": "gradient%20purple%20blue.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/31dd47f1-a979-42a0-8351-33c2bb0b35cf.avif",
-        "mimetype": "image/avif"
-      },
-      "attribution": {
-        "name": {
-          "url": "https://unsplash.com/@fakurian",
-          "string": "Milad Fakurian"
-        },
-        "webpage": {
-          "url": "https://unsplash.com/photos/purple-and-green-light-gradient-iFu2HILEng8",
-          "string": "Unsplash"
-        }
-      },
       "id": "27c0d230-787e-4f98-bb9d-11e9994e4937",
-      "last_modified": 1742232562513
+      "last_modified": 1742232562513,
+      "schema": 1741985417348,
+      "theme": "light",
+      "title": "purple-green"
     },
     {
-      "theme": "light",
-      "title": "light-color",
-      "schema": 1721056774979,
+      "attachment": {
+        "filename": "light-color.avif",
+        "hash": "cd28bc282ba8dda5f6660389eb2a7ba66a57691504de2eba3405ec20eeddd5a0",
+        "location": "main-workspace/newtab-wallpapers-v2/a205885e-194a-41f9-ae47-e7da66a74041.avif",
+        "mimetype": "image/avif",
+        "size": 288837
+      },
       "category": "abstracts",
       "fluent_id": "newtab-wallpaper-light-color",
-      "attachment": {
-        "hash": "cd28bc282ba8dda5f6660389eb2a7ba66a57691504de2eba3405ec20eeddd5a0",
-        "size": 288837,
-        "filename": "light-color.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/a205885e-194a-41f9-ae47-e7da66a74041.avif",
-        "mimetype": "image/avif"
-      },
       "id": "8f896365-c4e8-497a-b8c1-c5033e4a7456",
-      "last_modified": 1721068497119
+      "last_modified": 1721068497119,
+      "schema": 1721056774979,
+      "theme": "light",
+      "title": "light-color"
     },
     {
-      "theme": "dark",
-      "title": "dark-color",
-      "schema": 1721057236130,
+      "attachment": {
+        "filename": "dark-color.avif",
+        "hash": "c433865edcc1eae2911f30caa95783adfe5642ec24e8bd41fcfc661276f93752",
+        "location": "main-workspace/newtab-wallpapers-v2/d357925c-b9cd-417e-8731-14272f28f556.avif",
+        "mimetype": "image/avif",
+        "size": 206755
+      },
+      "attribution": {
+        "name": {
+          "string": "Martin Martz",
+          "url": "https://unsplash.com/@martz90"
+        },
+        "webpage": {
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/a-close-up-of-a-cell-phone-with-a-blurry-background-uuNCR2NpiNE"
+        }
+      },
       "category": "abstracts",
       "fluent_id": "newtab-wallpaper-dark-color",
+      "id": "d4d8de2b-a32f-400d-83cc-ab136c197e7c",
+      "last_modified": 1721068497117,
+      "schema": 1721057236130,
+      "theme": "dark",
+      "title": "dark-color"
+    },
+    {
       "attachment": {
-        "hash": "c433865edcc1eae2911f30caa95783adfe5642ec24e8bd41fcfc661276f93752",
-        "size": 206755,
-        "filename": "dark-color.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/d357925c-b9cd-417e-8731-14272f28f556.avif",
-        "mimetype": "image/avif"
+        "filename": "light-sky.avif",
+        "hash": "40a84002cfaf92fd38300e3987146f7b2ec3f5255e0427afbd30a52d7830c0e8",
+        "location": "main-workspace/newtab-wallpapers-v2/45ecab20-ffb9-47b4-94ff-07a5f8b9f53f.avif",
+        "mimetype": "image/avif",
+        "size": 100634
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@martz90",
-          "string": "Martin Martz"
+          "string": "Rodion Kutsaiev",
+          "url": "https://unsplash.com/@frostroomhead"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/a-close-up-of-a-cell-phone-with-a-blurry-background-uuNCR2NpiNE",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/cloudy-sky-8P-uQaTd8rw"
         }
       },
-      "id": "d4d8de2b-a32f-400d-83cc-ab136c197e7c",
-      "last_modified": 1721068497117
-    },
-    {
-      "theme": "light",
-      "title": "light-sky",
-      "schema": 1718906680116,
       "category": "photographs",
       "fluent_id": "newtab-wallpaper-light-sky",
-      "attachment": {
-        "hash": "40a84002cfaf92fd38300e3987146f7b2ec3f5255e0427afbd30a52d7830c0e8",
-        "size": 100634,
-        "filename": "light-sky.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/45ecab20-ffb9-47b4-94ff-07a5f8b9f53f.avif",
-        "mimetype": "image/avif"
-      },
-      "attribution": {
-        "name": {
-          "url": "https://unsplash.com/@frostroomhead",
-          "string": "Rodion Kutsaiev"
-        },
-        "webpage": {
-          "url": "https://unsplash.com/photos/cloudy-sky-8P-uQaTd8rw",
-          "string": "Unsplash"
-        }
-      },
       "id": "c4033968-1a5e-4d8b-8961-994e2214db5d",
-      "last_modified": 1721056774861
+      "last_modified": 1721056774861,
+      "schema": 1718906680116,
+      "theme": "light",
+      "title": "light-sky"
     },
     {
-      "theme": "light",
-      "title": "abstract-green",
-      "schema": 1718875716751,
+      "attachment": {
+        "filename": "abstract-green.avif",
+        "hash": "0cdfae1997d508d8ae25a3f4d0169b38b31e317e588a971008134db2327ab246",
+        "location": "main-workspace/newtab-wallpapers-v2/13495d0e-f975-4218-b5f0-c841c69ce2e5.avif",
+        "mimetype": "image/avif",
+        "size": 68945
+      },
       "category": "abstracts",
       "fluent_id": "newtab-wallpaper-abstract-green",
-      "attachment": {
-        "hash": "0cdfae1997d508d8ae25a3f4d0169b38b31e317e588a971008134db2327ab246",
-        "size": 68945,
-        "filename": "abstract-green.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/13495d0e-f975-4218-b5f0-c841c69ce2e5.avif",
-        "mimetype": "image/avif"
-      },
       "id": "1bbf4d6a-1720-4462-a471-8ca90cb8cffa",
-      "last_modified": 1718906680010
+      "last_modified": 1718906680010,
+      "schema": 1718875716751,
+      "theme": "light",
+      "title": "abstract-green"
     },
     {
-      "theme": "light",
-      "title": "gradient-orange",
-      "schema": 1718906280424,
+      "attachment": {
+        "filename": "gradient-orange.avif",
+        "hash": "d99c7953bf5fd96fc9778cc6c663063aa7521e32db3d461efadb397be71b745f",
+        "location": "main-workspace/newtab-wallpapers-v2/bd424c86-6366-4f2b-b8dc-74d21439c1fb.avif",
+        "mimetype": "image/avif",
+        "size": 348323
+      },
       "category": "abstracts",
       "fluent_id": "newtab-wallpaper-gradient-orange",
-      "attachment": {
-        "hash": "d99c7953bf5fd96fc9778cc6c663063aa7521e32db3d461efadb397be71b745f",
-        "size": 348323,
-        "filename": "gradient-orange.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/bd424c86-6366-4f2b-b8dc-74d21439c1fb.avif",
-        "mimetype": "image/avif"
-      },
       "id": "d01275ae-cd01-42f1-9ccf-41734e939ee3",
-      "last_modified": 1718906680008
+      "last_modified": 1718906680008,
+      "schema": 1718906280424,
+      "theme": "light",
+      "title": "gradient-orange"
     },
     {
-      "theme": "light",
-      "title": "abstract-purple",
-      "schema": 1718906291053,
+      "attachment": {
+        "filename": "abstract-purple.avif",
+        "hash": "96fbb04dd5494fb8383541289d29c22ac08dcdee242a104a310f3526b902d8fd",
+        "location": "main-workspace/newtab-wallpapers-v2/6bf5c4ac-f55b-4de3-bbf5-1b0f2f56d488.avif",
+        "mimetype": "image/avif",
+        "size": 90925
+      },
       "category": "abstracts",
       "fluent_id": "newtab-wallpaper-abstract-purple",
-      "attachment": {
-        "hash": "96fbb04dd5494fb8383541289d29c22ac08dcdee242a104a310f3526b902d8fd",
-        "size": 90925,
-        "filename": "abstract-purple.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/6bf5c4ac-f55b-4de3-bbf5-1b0f2f56d488.avif",
-        "mimetype": "image/avif"
-      },
       "id": "92c5a286-da38-4135-ad41-6a3d659e3563",
-      "last_modified": 1718906680006
+      "last_modified": 1718906680006,
+      "schema": 1718906291053,
+      "theme": "light",
+      "title": "abstract-purple"
     },
     {
-      "theme": "light",
-      "title": "abstract-orange",
-      "schema": 1718906302556,
+      "attachment": {
+        "filename": "abstract-orange.avif",
+        "hash": "82b7a7378c27e82936e09fd747cb65ed28d9909b0469537c405c24961135c3d1",
+        "location": "main-workspace/newtab-wallpapers-v2/32531fc6-1ea3-46de-a93c-f8a0c2f01916.avif",
+        "mimetype": "image/avif",
+        "size": 39943
+      },
       "category": "abstracts",
       "fluent_id": "newtab-wallpaper-abstract-orange",
-      "attachment": {
-        "hash": "82b7a7378c27e82936e09fd747cb65ed28d9909b0469537c405c24961135c3d1",
-        "size": 39943,
-        "filename": "abstract-orange.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/32531fc6-1ea3-46de-a93c-f8a0c2f01916.avif",
-        "mimetype": "image/avif"
-      },
       "id": "f7f89c99-c258-48b8-ad99-1b45465a0034",
-      "last_modified": 1718906680004
+      "last_modified": 1718906680004,
+      "schema": 1718906302556,
+      "theme": "light",
+      "title": "abstract-orange"
     },
     {
-      "theme": "light",
-      "title": "abstract-blue-purple",
-      "schema": 1718906311906,
+      "attachment": {
+        "filename": "abstract-noodles.avif",
+        "hash": "7f80fd687288944a9e90b2b4d324a3e8b33e1575b9dbf21f953b06da26b7cac4",
+        "location": "main-workspace/newtab-wallpapers-v2/becfadf4-4c2d-4fad-bbbc-b060d12277e5.avif",
+        "mimetype": "image/avif",
+        "size": 26236
+      },
       "category": "abstracts",
       "fluent_id": "newtab-wallpaper-abstract-blue-purple",
-      "attachment": {
-        "hash": "7f80fd687288944a9e90b2b4d324a3e8b33e1575b9dbf21f953b06da26b7cac4",
-        "size": 26236,
-        "filename": "abstract-noodles.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/becfadf4-4c2d-4fad-bbbc-b060d12277e5.avif",
-        "mimetype": "image/avif"
-      },
       "id": "604378cd-ff54-4219-bed3-137889283c5e",
-      "last_modified": 1718906680002
+      "last_modified": 1718906680002,
+      "schema": 1718906311906,
+      "theme": "light",
+      "title": "abstract-blue-purple"
     },
     {
-      "theme": "light",
-      "title": "abstract-blue",
-      "schema": 1718906348500,
+      "attachment": {
+        "filename": "abstract-blue.avif",
+        "hash": "24d6733f3ff1aa1b0b23df697b3527d9d511964cdb30620184cf1bf6484f7d62",
+        "location": "main-workspace/newtab-wallpapers-v2/e1108381-5c19-4cb4-a630-69f9e45503fb.avif",
+        "mimetype": "image/avif",
+        "size": 182925
+      },
       "category": "abstracts",
       "fluent_id": "newtab-wallpaper-abstract-blue",
-      "attachment": {
-        "hash": "24d6733f3ff1aa1b0b23df697b3527d9d511964cdb30620184cf1bf6484f7d62",
-        "size": 182925,
-        "filename": "abstract-blue.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/e1108381-5c19-4cb4-a630-69f9e45503fb.avif",
-        "mimetype": "image/avif"
-      },
       "id": "081af855-daf4-4d11-9b43-b690e20acc1c",
-      "last_modified": 1718906679999
+      "last_modified": 1718906679999,
+      "schema": 1718906348500,
+      "theme": "light",
+      "title": "abstract-blue"
     },
     {
-      "theme": "dark",
-      "title": "dark-beach",
-      "schema": 1718636331169,
+      "attachment": {
+        "filename": "dark-beach.avif",
+        "hash": "7272b542d0b28513daa9c1bdb27ae09d606c189d1c144bc6d5b550b5020c67de",
+        "location": "main-workspace/newtab-wallpapers-v2/966b18ad-3733-41c4-92f6-c89cdf1381d0.avif",
+        "mimetype": "image/avif",
+        "size": 713257
+      },
+      "attribution": {
+        "name": {
+          "string": "Yousef Espanioly",
+          "url": "https://unsplash.com/@yespanioly"
+        },
+        "webpage": {
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/seashore-DA_tplYgTow"
+        }
+      },
       "category": "photographs",
       "fluent_id": "newtab-wallpaper-dark-city",
+      "id": "a01be688-31cf-4f68-ac3e-e2cec09cb15a",
+      "last_modified": 1718647623009,
+      "schema": 1718636331169,
+      "theme": "dark",
+      "title": "dark-beach"
+    },
+    {
       "attachment": {
-        "hash": "7272b542d0b28513daa9c1bdb27ae09d606c189d1c144bc6d5b550b5020c67de",
-        "size": 713257,
-        "filename": "dark-beach.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/966b18ad-3733-41c4-92f6-c89cdf1381d0.avif",
-        "mimetype": "image/avif"
+        "filename": "dark-mountain.avif",
+        "hash": "f5933a35945f5103ff98892f45ce03c59b2c3c1be35455faf45b10355492fd95",
+        "location": "main-workspace/newtab-wallpapers-v2/af6073d2-cbb2-4e28-b642-3327d14808b2.avif",
+        "mimetype": "image/avif",
+        "size": 308468
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@yespanioly",
-          "string": "Yousef Espanioly"
+          "string": "John Towner",
+          "url": "https://unsplash.com/@heytowner"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/seashore-DA_tplYgTow",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/aerial-photo-of-brown-moutains-JgOeRuGD_Y4"
         }
       },
-      "id": "a01be688-31cf-4f68-ac3e-e2cec09cb15a",
-      "last_modified": 1718647623009
-    },
-    {
-      "theme": "dark",
-      "title": "dark-mountain",
-      "schema": 1718637174316,
       "category": "photographs",
       "fluent_id": "newtab-wallpaper-dark-mountain",
+      "id": "2ccb7af0-28fc-48e6-9dbe-a1da930f7344",
+      "last_modified": 1718647623004,
+      "schema": 1718637174316,
+      "theme": "dark",
+      "title": "dark-mountain"
+    },
+    {
       "attachment": {
-        "hash": "f5933a35945f5103ff98892f45ce03c59b2c3c1be35455faf45b10355492fd95",
-        "size": 308468,
-        "filename": "dark-mountain.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/af6073d2-cbb2-4e28-b642-3327d14808b2.avif",
-        "mimetype": "image/avif"
+        "filename": "dark-sky.avif",
+        "hash": "6ab2a71c1d5866c10f6c8bb555b019ed6127a48112e410694bedf6fe8d5cdab9",
+        "location": "main-workspace/newtab-wallpapers-v2/e94b1e49-c518-40d6-98e3-dffab6cc370d.avif",
+        "mimetype": "image/avif",
+        "size": 461323
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@heytowner",
-          "string": "John Towner"
+          "string": "Felix Mittermeier",
+          "url": "https://unsplash.com/@felix_mittermeier"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/aerial-photo-of-brown-moutains-JgOeRuGD_Y4",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/lightning-strike-under-cloudy-sky-WLGHjbC0Cq4"
         }
       },
-      "id": "2ccb7af0-28fc-48e6-9dbe-a1da930f7344",
-      "last_modified": 1718647623004
-    },
-    {
-      "theme": "dark",
-      "title": "dark-sky",
-      "schema": 1718637445591,
       "category": "photographs",
       "fluent_id": "newtab-wallpaper-dark-sky",
+      "id": "1d182cca-5359-4126-a8c4-e5dc868fc21e",
+      "last_modified": 1718647622999,
+      "schema": 1718637445591,
+      "theme": "dark",
+      "title": "dark-sky"
+    },
+    {
       "attachment": {
-        "hash": "6ab2a71c1d5866c10f6c8bb555b019ed6127a48112e410694bedf6fe8d5cdab9",
-        "size": 461323,
-        "filename": "dark-sky.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/e94b1e49-c518-40d6-98e3-dffab6cc370d.avif",
-        "mimetype": "image/avif"
+        "filename": "light-beach.avif",
+        "hash": "ad65944319e9bb3fa4261e93d465cc51be35873608dfa71d46fe734ae4517c2a",
+        "location": "main-workspace/newtab-wallpapers-v2/56a7f3ae-70cc-45f2-82ec-1d39acdd3b8d.avif",
+        "mimetype": "image/avif",
+        "size": 465893
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@felix_mittermeier",
-          "string": "Felix Mittermeier"
+          "string": "Sean Oulashin",
+          "url": "https://unsplash.com/@oulashin"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/lightning-strike-under-cloudy-sky-WLGHjbC0Cq4",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/seashore-during-golden-hour-KMn4VEeEPR8"
         }
       },
-      "id": "1d182cca-5359-4126-a8c4-e5dc868fc21e",
-      "last_modified": 1718647622999
-    },
-    {
-      "theme": "light",
-      "title": "light-beach",
-      "schema": 1718637553213,
       "category": "photographs",
       "fluent_id": "newtab-wallpaper-light-beach",
+      "id": "edc18c37-9d75-4cca-a854-5bcab5275407",
+      "last_modified": 1718647622996,
+      "schema": 1718637553213,
+      "theme": "light",
+      "title": "light-beach"
+    },
+    {
       "attachment": {
-        "hash": "ad65944319e9bb3fa4261e93d465cc51be35873608dfa71d46fe734ae4517c2a",
-        "size": 465893,
-        "filename": "light-beach.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/56a7f3ae-70cc-45f2-82ec-1d39acdd3b8d.avif",
-        "mimetype": "image/avif"
+        "filename": "light-landscape.avif",
+        "hash": "e03ad82c9a5c6da8873cbdd21a5186a61c2eab9fe582f68e8da84cbb79b97885",
+        "location": "main-workspace/newtab-wallpapers-v2/d9289c5b-8c78-4b27-b5d8-afe7285ce7d1.avif",
+        "mimetype": "image/avif",
+        "size": 223179
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@oulashin",
-          "string": "Sean Oulashin"
+          "string": "Carolinie Cavalli",
+          "url": "https://unsplash.com/@caroliniecavalli"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/seashore-during-golden-hour-KMn4VEeEPR8",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/birds-eye-view-photography-of-mountain-Qw3w0oBH63s"
         }
       },
-      "id": "edc18c37-9d75-4cca-a854-5bcab5275407",
-      "last_modified": 1718647622996
-    },
-    {
-      "theme": "light",
-      "title": "light-landscape",
-      "schema": 1718638214844,
       "category": "photographs",
       "fluent_id": "newtab-wallpaper-light-landscape",
+      "id": "8039d4b1-18c9-4a7f-9ce7-9737b224d565",
+      "last_modified": 1718647622990,
+      "schema": 1718638214844,
+      "theme": "light",
+      "title": "light-landscape"
+    },
+    {
       "attachment": {
-        "hash": "e03ad82c9a5c6da8873cbdd21a5186a61c2eab9fe582f68e8da84cbb79b97885",
-        "size": 223179,
-        "filename": "light-landscape.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/d9289c5b-8c78-4b27-b5d8-afe7285ce7d1.avif",
-        "mimetype": "image/avif"
+        "filename": "light-mountain.avif",
+        "hash": "f9fdf49580f9221ba2583d0a818d60ae79b9fd50246ef36798a264e6645b6709",
+        "location": "main-workspace/newtab-wallpapers-v2/5344443f-f427-4029-bc6b-68bc22f83355.avif",
+        "mimetype": "image/avif",
+        "size": 541196
       },
       "attribution": {
         "name": {
-          "url": "https://unsplash.com/@caroliniecavalli",
-          "string": "Carolinie Cavalli"
+          "string": "Sead Dedić",
+          "url": "https://unsplash.com/@daesign"
         },
         "webpage": {
-          "url": "https://unsplash.com/photos/birds-eye-view-photography-of-mountain-Qw3w0oBH63s",
-          "string": "Unsplash"
+          "string": "Unsplash",
+          "url": "https://unsplash.com/photos/mountain-covered-with-snow-under-white-clouds-si8OYpuLVBY"
         }
       },
-      "id": "8039d4b1-18c9-4a7f-9ce7-9737b224d565",
-      "last_modified": 1718647622990
-    },
-    {
-      "theme": "light",
-      "title": "light-mountain",
-      "schema": 1718638685878,
       "category": "photographs",
       "fluent_id": "newtab-wallpaper-light-mountain",
-      "attachment": {
-        "hash": "f9fdf49580f9221ba2583d0a818d60ae79b9fd50246ef36798a264e6645b6709",
-        "size": 541196,
-        "filename": "light-mountain.avif",
-        "location": "main-workspace/newtab-wallpapers-v2/5344443f-f427-4029-bc6b-68bc22f83355.avif",
-        "mimetype": "image/avif"
-      },
-      "attribution": {
-        "name": {
-          "url": "https://unsplash.com/@daesign",
-          "string": "Sead Dedić"
-        },
-        "webpage": {
-          "url": "https://unsplash.com/photos/mountain-covered-with-snow-under-white-clouds-si8OYpuLVBY",
-          "string": "Unsplash"
-        }
-      },
       "id": "98d063e5-1481-4df2-abed-e22e86b24e98",
-      "last_modified": 1718647622988
+      "last_modified": 1718647622988,
+      "schema": 1718638685878,
+      "theme": "light",
+      "title": "light-mountain"
     },
     {
-      "theme": "light",
-      "title": "blue",
-      "schema": 1718643233937,
       "category": "solid-colors",
       "fluent_id": "newtab-wallpaper-blue",
-      "solid_color": "#76C1FF",
       "id": "02c24a73-67fd-4459-b77a-6550c365d8ee",
-      "last_modified": 1718647622963
+      "last_modified": 1718647622963,
+      "schema": 1718643233937,
+      "solid_color": "#76C1FF",
+      "theme": "light",
+      "title": "blue"
     },
     {
-      "theme": "light",
-      "title": "light-blue",
-      "schema": 1718643826574,
       "category": "solid-colors",
       "fluent_id": "newtab-wallpaper-light-blue",
-      "solid_color": "#D4E7F6",
       "id": "6beb382b-183d-428b-9b0e-c2f213d0c245",
-      "last_modified": 1718647622960
+      "last_modified": 1718647622960,
+      "schema": 1718643826574,
+      "solid_color": "#D4E7F6",
+      "theme": "light",
+      "title": "light-blue"
     },
     {
-      "theme": "light",
-      "title": "light-purple",
-      "schema": 1718643868872,
       "category": "solid-colors",
       "fluent_id": "newtab-wallpaper-light-purple",
-      "solid_color": "#D3A3F3",
       "id": "840007a0-7989-4a1c-a2a5-3fc422b9570d",
-      "last_modified": 1718647622958
+      "last_modified": 1718647622958,
+      "schema": 1718643868872,
+      "solid_color": "#D3A3F3",
+      "theme": "light",
+      "title": "light-purple"
     },
     {
-      "theme": "light",
-      "title": "light-green",
-      "schema": 1718643966390,
       "category": "solid-colors",
       "fluent_id": "newtab-wallpaper-light-green",
-      "solid_color": "#DAE8E0",
       "id": "13af9c00-685a-41a3-8b35-80936ccc6961",
-      "last_modified": 1718647622955
+      "last_modified": 1718647622955,
+      "schema": 1718643966390,
+      "solid_color": "#DAE8E0",
+      "theme": "light",
+      "title": "light-green"
     },
     {
-      "theme": "light",
-      "title": "green",
-      "schema": 1718644038276,
       "category": "solid-colors",
       "fluent_id": "newtab-wallpaper-green",
-      "solid_color": "#A8DF8E",
       "id": "18fd6f2c-0b3e-4b17-af01-6ad9d84eeee2",
-      "last_modified": 1718647622953
+      "last_modified": 1718647622953,
+      "schema": 1718644038276,
+      "solid_color": "#A8DF8E",
+      "theme": "light",
+      "title": "green"
     },
     {
-      "theme": "light",
-      "title": "beige",
-      "schema": 1718644062923,
       "category": "solid-colors",
       "fluent_id": "newtab-wallpaper-beige",
-      "solid_color": "#EDD5B8",
       "id": "59bd06d3-fa74-4059-ada2-046d48b71285",
-      "last_modified": 1718647622950
+      "last_modified": 1718647622950,
+      "schema": 1718644062923,
+      "solid_color": "#EDD5B8",
+      "theme": "light",
+      "title": "beige"
     },
     {
-      "theme": "light",
-      "title": "yellow",
-      "schema": 1718644107243,
       "category": "solid-colors",
       "fluent_id": "newtab-wallpaper-yellow",
-      "solid_color": "#FFF7B2",
       "id": "9b0e2e3c-bf01-4e06-b051-3b439ff32592",
-      "last_modified": 1718647622947
+      "last_modified": 1718647622947,
+      "schema": 1718644107243,
+      "solid_color": "#FFF7B2",
+      "theme": "light",
+      "title": "yellow"
     },
     {
-      "theme": "light",
-      "title": "orange",
-      "schema": 1718644150837,
       "category": "solid-colors",
       "fluent_id": "newtab-wallpaper-orange",
-      "solid_color": "#FEBE5E",
       "id": "47a48447-d3e8-4711-a74e-33dcbd64c889",
-      "last_modified": 1718647622945
+      "last_modified": 1718647622945,
+      "schema": 1718644150837,
+      "solid_color": "#FEBE5E",
+      "theme": "light",
+      "title": "orange"
     },
     {
-      "theme": "light",
-      "title": "pink",
-      "schema": 1718644200528,
       "category": "solid-colors",
       "fluent_id": "newtab-wallpaper-pink",
-      "solid_color": "#FA87CC",
       "id": "e3a76f3b-25ff-4285-b935-63de46bdd711",
-      "last_modified": 1718647622942
+      "last_modified": 1718647622942,
+      "schema": 1718644200528,
+      "solid_color": "#FA87CC",
+      "theme": "light",
+      "title": "pink"
     },
     {
-      "theme": "light",
-      "title": "light-pink",
-      "schema": 1718644236363,
       "category": "solid-colors",
       "fluent_id": "newtab-wallpaper-light-pink",
-      "solid_color": "#F4DBE9",
       "id": "6ab3849e-2e09-4751-9620-1e815e0a0c03",
-      "last_modified": 1718647622940
+      "last_modified": 1718647622940,
+      "schema": 1718644236363,
+      "solid_color": "#F4DBE9",
+      "theme": "light",
+      "title": "light-pink"
     },
     {
-      "theme": "light",
-      "title": "red",
-      "schema": 1718644265416,
       "category": "solid-colors",
       "fluent_id": "newtab-wallpaper-red",
-      "solid_color": "#9D242D",
       "id": "42c4e7e1-c108-45d1-bc5a-4aa0031e9a3e",
-      "last_modified": 1718647622937
+      "last_modified": 1718647622937,
+      "schema": 1718644265416,
+      "solid_color": "#9D242D",
+      "theme": "light",
+      "title": "red"
     },
     {
-      "theme": "dark",
-      "title": "dark-blue",
-      "schema": 1718644294471,
       "category": "solid-colors",
       "fluent_id": "newtab-wallpaper-dark-blue",
-      "solid_color": "#031A3E",
       "id": "289ec57a-9875-450e-b0cf-46436d75c11f",
-      "last_modified": 1718647622934
+      "last_modified": 1718647622934,
+      "schema": 1718644294471,
+      "solid_color": "#031A3E",
+      "theme": "dark",
+      "title": "dark-blue"
     },
     {
-      "theme": "dark",
-      "title": "dark-purple",
-      "schema": 1718644320019,
       "category": "solid-colors",
       "fluent_id": "newtab-wallpaper-dark-purple",
-      "solid_color": "#450A54",
       "id": "2bb4d4d4-ed76-450a-805c-e4d4af19f215",
-      "last_modified": 1718647622932
+      "last_modified": 1718647622932,
+      "schema": 1718644320019,
+      "solid_color": "#450A54",
+      "theme": "dark",
+      "title": "dark-purple"
     },
     {
-      "theme": "dark",
-      "title": "dark-green",
-      "schema": 1718644346535,
       "category": "solid-colors",
       "fluent_id": "newtab-wallpaper-dark-green",
-      "solid_color": "#19310D",
       "id": "35f8a180-8579-461d-be72-3d5d889dba62",
-      "last_modified": 1718647622929
+      "last_modified": 1718647622929,
+      "schema": 1718644346535,
+      "solid_color": "#19310D",
+      "theme": "dark",
+      "title": "dark-green"
     },
     {
-      "theme": "light",
-      "title": "brown",
-      "schema": 1718644381622,
       "category": "solid-colors",
       "fluent_id": "newtab-wallpaper-brown",
-      "solid_color": "#401F00",
       "id": "7a88dafb-3a82-4346-b34c-0b7d9232f497",
-      "last_modified": 1718647622926
+      "last_modified": 1718647622926,
+      "schema": 1718644381622,
+      "solid_color": "#401F00",
+      "theme": "light",
+      "title": "brown"
     }
   ],
   "timestamp": 1793244462428

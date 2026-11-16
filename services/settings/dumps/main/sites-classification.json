@@ -1,8 +1,6 @@
 {
   "data": [
     {
-      "type": "known-hijacker-v3",
-      "weight": 5,
       "criteria": [
         {
           "url": "https://search.avast.com/AV752/"
@@ -189,120 +187,120 @@
         }
       ],
       "id": "dc211d38-924a-4aec-8375-75f7d9abff56",
-      "last_modified": 1544035467383
+      "last_modified": 1544035467383,
+      "type": "known-hijacker-v3",
+      "weight": 5
     },
     {
-      "type": "search-engine-mozilla-tag",
-      "weight": 4,
       "criteria": [
         {
-          "sld": "google",
           "params": [
             {
               "key": "client",
               "prefix": "firefox"
             }
-          ]
+          ],
+          "sld": "google"
         },
         {
+          "hostname": "duckduckgo.com",
           "params": [
             {
               "key": "t",
               "prefix": "ff"
             }
-          ],
-          "hostname": "duckduckgo.com"
+          ]
         },
         {
+          "hostname": "baidu.com",
           "params": [
             {
               "key": "tn",
               "prefix": "monline_dg"
             }
-          ],
-          "hostname": "baidu.com"
+          ]
         },
         {
+          "hostname": "bing.com",
           "params": [
             {
               "key": "pc",
               "prefix": "MOZ"
             }
-          ],
-          "hostname": "bing.com"
+          ]
         },
         {
+          "hostname": "bing.com",
           "params": [
             {
               "key": "pc",
               "prefix": "MZ"
             }
-          ],
-          "hostname": "bing.com"
+          ]
         }
       ],
       "id": "351864eb-eca8-4c84-b036-b847d046c864",
-      "last_modified": 1539907365852
+      "last_modified": 1539907365852,
+      "type": "search-engine-mozilla-tag",
+      "weight": 4
     },
     {
-      "type": "search-engine-other-tag",
-      "weight": 3,
       "criteria": [
         {
-          "sld": "google",
           "params": [
             {
               "key": "client"
             }
-          ]
+          ],
+          "sld": "google"
         },
         {
+          "hostname": "duckduckgo.com",
           "params": [
             {
               "key": "t"
             }
-          ],
-          "hostname": "duckduckgo.com"
+          ]
         },
         {
+          "hostname": "baidu.com",
           "params": [
             {
               "key": "tn"
             }
-          ],
-          "hostname": "baidu.com"
+          ]
         },
         {
+          "hostname": "bing.com",
           "params": [
             {
               "key": "pc"
             }
-          ],
-          "hostname": "bing.com"
+          ]
         },
         {
+          "hostname": "search.yahoo.com",
           "params": [
             {
               "key": "fr"
             }
-          ],
-          "hostname": "search.yahoo.com"
+          ]
         },
         {
+          "hostname": "search.yahoo.com",
           "params": [
             {
               "key": "hsimp"
             }
-          ],
-          "hostname": "search.yahoo.com"
+          ]
         }
       ],
       "id": "9a3ed0f2-4207-4d03-8bed-6c38242dbdbd",
-      "last_modified": 1539907352029
+      "last_modified": 1539907352029,
+      "type": "search-engine-other-tag",
+      "weight": 3
     },
     {
-      "type": "search-engine",
-      "weight": 2,
       "criteria": [
         {
           "sld": "google"
@@ -324,11 +322,11 @@
         }
       ],
       "id": "c32a3278-e9ba-4090-8269-49d262fdea04",
-      "last_modified": 1539907334747
+      "last_modified": 1539907334747,
+      "type": "search-engine",
+      "weight": 2
     },
     {
-      "type": "news-portal",
-      "weight": 1,
       "criteria": [
         {
           "sld": "yahoo"
@@ -362,11 +360,11 @@
         }
       ],
       "id": "12743b39-7f79-4620-bc37-a87b8ab2ba46",
-      "last_modified": 1539907318995
+      "last_modified": 1539907318995,
+      "type": "news-portal",
+      "weight": 1
     },
     {
-      "type": "social-media",
-      "weight": 1,
       "criteria": [
         {
           "hostname": "facebook.com"
@@ -418,11 +416,11 @@
         }
       ],
       "id": "bdde6edd-83a5-4c34-b302-4810e9d10d04",
-      "last_modified": 1539907302037
+      "last_modified": 1539907302037,
+      "type": "social-media",
+      "weight": 1
     },
     {
-      "type": "ecommerce",
-      "weight": 1,
       "criteria": [
         {
           "sld": "amazon"
@@ -456,7 +454,9 @@
         }
       ],
       "id": "48ec9db9-0de1-49aa-9b82-1a2372dce31e",
-      "last_modified": 1539907283705
+      "last_modified": 1539907283705,
+      "type": "ecommerce",
+      "weight": 1
     }
   ],
   "timestamp": 1544035467383

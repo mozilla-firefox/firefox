@@ -1,8 +1,6 @@
 {
   "data": [
     {
-      "schema": 1774483206927,
-      "providerId": "google",
       "excludeParams": [
         {
           "key": "udm",
@@ -13,38 +11,38 @@
           "values": []
         }
       ],
-      "includeParams": [],
-      "searchPageRegexp": "^https://www\\.google\\.[^/]+/search\\b",
       "filter_expression": "env.version|versionCompare(\"148.0a1\")>=0",
       "id": "1a479a17-f8cf-4ce1-9086-41d1f3ef7b69",
-      "last_modified": 1775078290693
+      "includeParams": [],
+      "last_modified": 1775078290693,
+      "providerId": "google",
+      "schema": 1774483206927,
+      "searchPageRegexp": "^https://www\\.google\\.[^/]+/search\\b"
     },
     {
-      "schema": 1773705620356,
-      "providerId": "bing",
-      "searchPageRegexp": "^https://www\\.bing\\.com\\/search\\b",
       "id": "eb97a1c7-112c-4d61-bcc0-07feaaac4643",
-      "last_modified": 1773858354866
+      "last_modified": 1773858354866,
+      "providerId": "bing",
+      "schema": 1773705620356,
+      "searchPageRegexp": "^https://www\\.bing\\.com\\/search\\b"
     },
     {
-      "schema": 1719398671127,
-      "providerId": "qwant",
+      "id": "aa456ed6-cf07-4c2a-af58-bcfe7f03cfee",
       "includeParams": [
         {
+          "canBeMissing": true,
           "key": "t",
           "values": [
             "web"
-          ],
-          "canBeMissing": true
+          ]
         }
       ],
-      "searchPageRegexp": "^https://www\\.qwant\\.com/",
-      "id": "aa456ed6-cf07-4c2a-af58-bcfe7f03cfee",
-      "last_modified": 1719927826949
+      "last_modified": 1719927826949,
+      "providerId": "qwant",
+      "schema": 1719398671127,
+      "searchPageRegexp": "^https://www\\.qwant\\.com/"
     },
     {
-      "schema": 1719587527089,
-      "providerId": "duckduckgo",
       "excludeParams": [
         {
           "key": "iax"
@@ -56,18 +54,20 @@
           "key": "iaxm"
         }
       ],
+      "id": "ca94a030-39a0-48ed-a1d1-b003f2be1adb",
       "includeParams": [
         {
+          "canBeMissing": true,
           "key": "ia",
           "values": [
             "web"
-          ],
-          "canBeMissing": true
+          ]
         }
       ],
-      "searchPageRegexp": "^https://duckduckgo\\.com/",
-      "id": "ca94a030-39a0-48ed-a1d1-b003f2be1adb",
-      "last_modified": 1719927826946
+      "last_modified": 1719927826946,
+      "providerId": "duckduckgo",
+      "schema": 1719587527089,
+      "searchPageRegexp": "^https://duckduckgo\\.com/"
     }
   ],
   "timestamp": 1775078290693
