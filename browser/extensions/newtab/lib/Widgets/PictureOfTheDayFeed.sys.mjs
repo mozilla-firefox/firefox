@@ -19,13 +19,11 @@
  *   on, the widget addable / trainhop-enabled, and the user's enabled pref).
  *
  * Set as wallpaper:
- *   The "Set wallpaper" CTA - shown only when the feature gate pref
- *   (widgets.pictureOfTheDay.setAsWallpaper.enabled, or its trainhopConfig
- *   override) is on AND newtabWallpapers.enabled + customWallpaper.enabled are on
- *   - dispatches WIDGETS_PICTURE_SET_WALLPAPER. setWallpaper() then fetches the
- *   image, derives a theme, applies it as the custom wallpaper (newtabWallpapers.*),
- *   and records the picture's published date in
- *   widgets.pictureOfTheDay.wallpaperActive.
+ *   The "Set wallpaper" CTA - shown only when newtabWallpapers.enabled +
+ *   customWallpaper.enabled are on - dispatches WIDGETS_PICTURE_SET_WALLPAPER.
+ *   setWallpaper() then fetches the image, derives a theme, applies it as the
+ *   custom wallpaper (newtabWallpapers.*), and records the picture's published
+ *   date in widgets.pictureOfTheDay.wallpaperActive.
  *
  * State reset:
  *   The JSX shows the "already set" checkmark only while wallpaperActive equals the
@@ -40,9 +38,8 @@
  *   Merino also sends yesterday's picture as `previous`. While today's is the
  *   wallpaper the widget shows that one instead, and setWallpaper() takes its date.
  *
- * Two distinct prefs: setAsWallpaper.enabled is the config gate (does the CTA
- * exist); wallpaperActive stores the published date of the picture that is the
- * active wallpaper ("" = none).
+ * wallpaperActive stores the published date of the picture that is the active
+ * wallpaper ("" = none).
  */
 
 const lazy = {};

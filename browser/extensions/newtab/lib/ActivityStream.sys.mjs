@@ -947,14 +947,6 @@ export const PREFS_CONFIG = new Map([
     },
   ],
   [
-    "widgets.pictureOfTheDay.setAsWallpaper.enabled",
-    {
-      title:
-        "Whether the Picture of the day 'Set as wallpaper' feature/CTA is enabled",
-      value: true,
-    },
-  ],
-  [
     "widgets.pictureOfTheDay.dismissedDate",
     {
       title: "Published date of the Picture of the day the user dismissed",

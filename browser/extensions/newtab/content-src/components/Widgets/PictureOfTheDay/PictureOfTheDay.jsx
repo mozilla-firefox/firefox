@@ -32,24 +32,6 @@ const PICTURE_OF_THE_DAY_ENTRY = WIDGET_REGISTRY.find(
   w => w.id === "pictureOfTheDay"
 );
 
-// Whether the "Set as wallpaper" feature is enabled. The dedicated
-// widgetPictureOfTheDay trainhop object wins, then the legacy widgets.* key, then
-// the pref (each checked with !== undefined so a trainhop `false` can turn the
-// feature off even when the pref default is `true`).
-function resolveSetAsWallpaperEnabled(prefs) {
-  const dedicated =
-    prefs.trainhopConfig?.widgetPictureOfTheDay?.setAsWallpaperEnabled;
-  if (dedicated !== undefined) {
-    return dedicated;
-  }
-  const shared =
-    prefs.trainhopConfig?.widgets?.pictureOfTheDaySetAsWallpaperEnabled;
-  if (shared !== undefined) {
-    return shared;
-  }
-  return Boolean(prefs["widgets.pictureOfTheDay.setAsWallpaper.enabled"]);
-}
-
 // How long the confirmation checkmark shows after setting the wallpaper.
 const JUST_SET_CHECKMARK_MS = 2000;
 
@@ -88,11 +70,9 @@ const PictureOfTheDay = ({
       : todaysPicture;
   const widgetSize = resolveWidgetSize(PICTURE_OF_THE_DAY_ENTRY, prefs);
 
-  // Only offer the "Set wallpaper" CTA when the feature is enabled and wallpapers
-  // are on and custom wallpapers are allowed, since this action sets a custom
-  // wallpaper.
+  // Only offer the "Set wallpaper" CTA when wallpapers are on and custom
+  // wallpapers are allowed, since this action sets a custom wallpaper.
   const canSetWallpaper = Boolean(
-    resolveSetAsWallpaperEnabled(prefs) &&
     prefs["newtabWallpapers.enabled"] &&
     prefs["newtabWallpapers.customWallpaper.enabled"]
   );

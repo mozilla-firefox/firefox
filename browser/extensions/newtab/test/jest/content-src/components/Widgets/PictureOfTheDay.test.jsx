@@ -20,7 +20,6 @@ const mockState = {
       "widgets.system.pictureOfTheDay.enabled": true,
       "widgets.pictureOfTheDay.enabled": true,
       "widgets.pictureOfTheDay.size": "medium",
-      "widgets.pictureOfTheDay.setAsWallpaper.enabled": true,
       "newtabWallpapers.enabled": true,
       "newtabWallpapers.user.enabled": true,
       "newtabWallpapers.customWallpaper.enabled": true,
@@ -591,66 +590,6 @@ describe("PictureOfTheDay widget", () => {
         jest.fn(),
         {},
         withPrefs({ "newtabWallpapers.enabled": false })
-      );
-      expect(
-        container.querySelector(".picture-of-the-day-set-wallpaper")
-      ).toBeFalsy();
-    });
-
-    it("hides the Set wallpaper button when the feature is disabled", () => {
-      const { container } = renderWidget(
-        jest.fn(),
-        {},
-        withPrefs({ "widgets.pictureOfTheDay.setAsWallpaper.enabled": false })
-      );
-      expect(
-        container.querySelector(".picture-of-the-day-set-wallpaper")
-      ).toBeFalsy();
-    });
-
-    it("shows the Set wallpaper button when a trainhopConfig override enables the feature despite the pref being off", () => {
-      const { container } = renderWidget(
-        jest.fn(),
-        {},
-        withPrefs({
-          "widgets.pictureOfTheDay.setAsWallpaper.enabled": false,
-          trainhopConfig: {
-            widgets: { pictureOfTheDaySetAsWallpaperEnabled: true },
-          },
-        })
-      );
-      expect(
-        container.querySelector(".picture-of-the-day-set-wallpaper")
-      ).toBeTruthy();
-    });
-
-    it("shows the Set wallpaper button when the dedicated widgetPictureOfTheDay namespace enables the feature", () => {
-      const { container } = renderWidget(
-        jest.fn(),
-        {},
-        withPrefs({
-          "widgets.pictureOfTheDay.setAsWallpaper.enabled": false,
-          trainhopConfig: {
-            widgetPictureOfTheDay: { setAsWallpaperEnabled: true },
-          },
-        })
-      );
-      expect(
-        container.querySelector(".picture-of-the-day-set-wallpaper")
-      ).toBeTruthy();
-    });
-
-    it("lets the dedicated widgetPictureOfTheDay namespace win over the shared widgets key", () => {
-      const { container } = renderWidget(
-        jest.fn(),
-        {},
-        withPrefs({
-          "widgets.pictureOfTheDay.setAsWallpaper.enabled": true,
-          trainhopConfig: {
-            widgetPictureOfTheDay: { setAsWallpaperEnabled: false },
-            widgets: { pictureOfTheDaySetAsWallpaperEnabled: true },
-          },
-        })
       );
       expect(
         container.querySelector(".picture-of-the-day-set-wallpaper")

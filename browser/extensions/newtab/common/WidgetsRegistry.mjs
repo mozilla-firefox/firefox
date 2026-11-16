@@ -100,7 +100,6 @@
  *
  * To expose an extra pref-gated widget feature in that panel (e.g. an internal
  * feature that defaults off but QA/devs want to flip, such as
- * widgets.pictureOfTheDay.setAsWallpaper.enabled or
  * widgets.privacy.showVpnMessages), add an entry to the hand-maintained
  * WIDGET_EXTRA_FEATURES map in DiscoveryStreamAdmin.jsx keyed by widget id:
  *   privacy: [{ pref: "widgets.privacy.showVpnMessages", label: "VPN messages" }]

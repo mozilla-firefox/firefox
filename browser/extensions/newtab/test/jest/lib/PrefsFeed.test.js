@@ -1334,7 +1334,6 @@ describe("PrefsFeed", () => {
           type: "widgetPictureOfTheDay",
           payload: {
             enabled: true,
-            setAsWallpaperEnabled: true,
             size: "large",
           },
         },
@@ -1346,17 +1345,14 @@ describe("PrefsFeed", () => {
       feed.onTrainhopExperimentUpdated();
 
       // `enabled` overrides the user-facing enabled pref's default; `visible`
-      // (not present here) would reveal the widget separately; size and
-      // setAsWallpaperEnabled are read directly from trainhopConfig.
+      // (not present here) would reveal the widget separately; size is read
+      // directly from trainhopConfig.
       expect(setBoolPref).toHaveBeenCalledWith(
         "widgets.pictureOfTheDay.enabled",
         true
       );
       expect(calledNames(setBoolPref)).not.toContain(
         "widgets.system.pictureOfTheDay.enabled"
-      );
-      expect(calledNames(setBoolPref)).not.toContain(
-        "widgets.pictureOfTheDay.setAsWallpaper.enabled"
       );
     });
 

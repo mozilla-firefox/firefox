@@ -633,22 +633,6 @@ describe("<DiscoveryStreamAdminUI>", () => {
       expect(cleared).not.toContain("discoverystream.foo");
     });
 
-    it("should flip a bespoke widget feature pref from its toggle", () => {
-      const { container, dispatch } = renderWidgets({
-        "widgets.system.enabled": true,
-        "widgets.pictureOfTheDay.setAsWallpaper.enabled": false,
-      });
-      fireToggle(
-        container.querySelector(
-          '[id="widgets.pictureOfTheDay.setAsWallpaper.enabled"]'
-        ),
-        true
-      );
-      expect(dispatch).toHaveBeenCalledWith(
-        ac.SetPref("widgets.pictureOfTheDay.setAsWallpaper.enabled", true)
-      );
-    });
-
     it("should flip the privacy VPN messages pref from its toggle", () => {
       const { container, dispatch } = renderWidgets({
         "widgets.system.enabled": true,

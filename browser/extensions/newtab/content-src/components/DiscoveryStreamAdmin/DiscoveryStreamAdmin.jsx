@@ -50,12 +50,6 @@ const PREF_WIDGETS_SYSTEM_ENABLED = "widgets.system.enabled";
 // Each `pref` is the full activity-stream-relative pref; toggles reuse
 // handleWidgetToggle, which sets the pref named by the toggle's id.
 const WIDGET_EXTRA_FEATURES = {
-  pictureOfTheDay: [
-    {
-      pref: "widgets.pictureOfTheDay.setAsWallpaper.enabled",
-      label: "Set as wallpaper",
-    },
-  ],
   privacy: [{ pref: "widgets.privacy.showVpnMessages", label: "VPN messages" }],
 };
 
