@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.119
- * pdfjsBuild = 5430213a1
+ * pdfjsVersion = 7.0.158
+ * pdfjsBuild = bb1539a2c
  */
 
 ;// ./web/ui_utils.js
@@ -912,7 +912,7 @@ const {
 } = globalThis.pdfjsLib;
 
 ;// ./web/internal_evt.js
-const INTERNAL_EVT = "02e9fadb-e66a-446d-9c2b-ab89b74bd434";
+const INTERNAL_EVT = "02f6a0bf-1a62-4bf1-a37f-e3982fdce3bc";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -1756,7 +1756,9 @@ class Preferences extends BasePreferences {
       return;
     }
     viewerApp.eventBus.dispatch("download", {
-      source: window
+      source: window,
+      flatten: detail?.flatten ?? false,
+      intent: detail?.intent ?? "print"
     });
   };
   window.addEventListener("save", handleEvent);
@@ -5565,13 +5567,25 @@ class PDFRenderingQueue {
 
 
 
+const ACTIVATION_EVENTS = new Set(["Action", "Mouse Down", "Mouse Up"]);
+const DIALOG_EVENTS = new Set([...ACTIVATION_EVENTS, "Blur", "Focus", "Keystroke", "Validate"]);
+const STATIC_COMMANDS = new Set(["SaveAs", "WillPrintFinished", "WillSaveFinished", "clear", "error", "print", "println", "sandboxTripEnd"]);
+const LAYOUT_CHANGE_DELAY = 500;
 class PDFScriptingManager {
+  #activations = new Map();
   #closeCapability = null;
+  #consumedGestureId = 0;
   #destroyCapability = null;
   #docProperties = null;
   #eventAC = null;
   #eventBus = null;
   #externalServices = null;
+  #gesture = {
+    id: 0,
+    time: -Infinity,
+    type: ""
+  };
+  #lastLayoutChange = -Infinity;
   #objectIds = null;
   #pdfDocument = null;
   #pdfViewer = null;
@@ -5587,6 +5601,10 @@ class PDFScriptingManager {
     this.#eventBus = eventBus;
     this.#externalServices = externalServices;
     this.#docProperties = docProperties;
+    eventBus.on("sandboxlayoutchange", () => this.#markLayoutChange(), internalOpt);
+    eventBus.on("useractivationrequest", request => {
+      request.allowed = !this.#scripting || this.#consumeGesture(this.#getActivation(request));
+    }, internalOpt);
   }
   setViewer(pdfViewer) {
     this.#pdfViewer = pdfViewer;
@@ -5635,9 +5653,45 @@ class PDFScriptingManager {
         this.#updateFromSandbox(event.detail);
       }
     }, evtOpts);
-    eventBus.on("dispatcheventinsandbox", event => {
-      this.#scripting?.dispatchEventInSandbox(event.detail);
+    eventBus.on("dispatcheventinsandbox", info => {
+      const {
+        detail,
+        originalEvent,
+        scripted
+      } = info;
+      this.#dispatchEventInSandbox({
+        ...detail,
+        scripted: !!scripted,
+        allowDialog: !!originalEvent?.isTrusted && !scripted && DIALOG_EVENTS.has(detail?.name)
+      }, ACTIVATION_EVENTS.has(detail?.name) ? this.#getActivation(info) : null);
     }, evtOpts);
+    const listenerOpts = {
+      capture: true,
+      passive: true,
+      signal: this.#eventAC.signal
+    };
+    const startGesture = (event, type) => {
+      if (event.isTrusted) {
+        this.#gesture = {
+          id: this.#gesture.id + 1,
+          time: event.timeStamp,
+          type
+        };
+      }
+    };
+    window.addEventListener("pointerdown", event => startGesture(event, "pointer"), listenerOpts);
+    window.addEventListener("mousedown", event => {
+      if (event.isTrusted && this.#gesture.type === "pointer") {
+        this.#gesture.type = "mouse";
+      } else {
+        startGesture(event, "mouse");
+      }
+    }, listenerOpts);
+    window.addEventListener("keydown", event => {
+      if (!event.repeat) {
+        startGesture(event, "key");
+      }
+    }, listenerOpts);
     eventBus.on("pagechanging", ({
       pageNumber,
       previous
@@ -5695,9 +5749,12 @@ class PDFScriptingManager {
       await this.#destroyScripting();
       return;
     }
-    await this.#scripting?.dispatchEventInSandbox({
+    await this.#dispatchEventInSandbox({
       id: "doc",
-      name: "Open"
+      name: "Open",
+      allowDialog: true
+    }, {
+      isOpen: true
     });
     await this.#dispatchPageOpen(this.#pdfViewer.currentPageNumber, true);
     Promise.resolve().then(() => {
@@ -5706,13 +5763,70 @@ class PDFScriptingManager {
       }
     });
   }
+  async #dispatchEventInSandbox(detail, activation = null) {
+    if (!activation) {
+      await this.#scripting?.dispatchEventInSandbox(detail);
+      return;
+    }
+    const token = getUuid();
+    this.#activations.set(token, activation);
+    try {
+      await this.#scripting?.dispatchEventInSandbox({
+        ...detail,
+        activation: token
+      });
+    } finally {
+      this.#activations.delete(token);
+    }
+  }
+  #getActivation({
+    originalEvent,
+    scriptFocused
+  }) {
+    const {
+      id,
+      time,
+      type
+    } = this.#gesture;
+    if (!originalEvent?.isTrusted || navigator.userActivation?.isActive !== true || this.#lastLayoutChange === null || time - this.#lastLayoutChange < LAYOUT_CHANGE_DELAY || type === "key" && scriptFocused) {
+      return null;
+    }
+    return {
+      gestureId: id
+    };
+  }
+  #consumeGesture(activation) {
+    if (!activation || activation.gestureId <= this.#consumedGestureId) {
+      return false;
+    }
+    this.#consumedGestureId = activation.gestureId;
+    return true;
+  }
+  #consumeActivation(token, allowOpen) {
+    const activation = this.#activations.get(token);
+    if (!activation) {
+      return false;
+    }
+    this.#activations.delete(token);
+    return activation.isOpen ? allowOpen : this.#consumeGesture(activation);
+  }
+  #markLayoutChange() {
+    if (this.#lastLayoutChange === null) {
+      return;
+    }
+    this.#lastLayoutChange = null;
+    requestAnimationFrame(() => {
+      this.#lastLayoutChange = performance.now();
+    });
+  }
   async dispatchWillSave() {
     return this.#dispatchDocEventAndWait("WillSave");
   }
   async dispatchDidSave() {
     return this.#scripting?.dispatchEventInSandbox({
       id: "doc",
-      name: "DidSave"
+      name: "DidSave",
+      allowDialog: true
     });
   }
   async dispatchWillPrint() {
@@ -5728,7 +5842,8 @@ class PDFScriptingManager {
     try {
       await this.#scripting.dispatchEventInSandbox({
         id: "doc",
-        name
+        name,
+        allowDialog: true
       });
     } catch (ex) {
       const index = pendingEvents.indexOf(capability);
@@ -5742,7 +5857,8 @@ class PDFScriptingManager {
   async dispatchDidPrint() {
     return this.#scripting?.dispatchEventInSandbox({
       id: "doc",
-      name: "DidPrint"
+      name: "DidPrint",
+      allowDialog: true
     });
   }
   get destroyPromise() {
@@ -5767,6 +5883,9 @@ class PDFScriptingManager {
       value
     } = detail;
     if (!id) {
+      if (!STATIC_COMMANDS.has(command)) {
+        this.#markLayoutChange();
+      }
       switch (command) {
         case "clear":
           console.clear();
@@ -5784,8 +5903,14 @@ class PDFScriptingManager {
           pdfViewer.currentPageNumber = value + 1;
           break;
         case "print":
-          await pdfViewer.pagesPromise;
-          this.#eventBus.dispatch("print", {
+        case "SaveAs":
+          if (!this.#consumeActivation(detail.activation, command === "print")) {
+            break;
+          }
+          if (command === "print") {
+            await pdfViewer.pagesPromise;
+          }
+          this.#eventBus.dispatch(command === "print" ? "print" : "download", {
             source: this
           });
           break;
@@ -5796,11 +5921,6 @@ class PDFScriptingManager {
           if (!isInPresentationMode) {
             pdfViewer.currentScaleValue = value;
           }
-          break;
-        case "SaveAs":
-          this.#eventBus.dispatch("download", {
-            source: this
-          });
           break;
         case "FirstPage":
           pdfViewer.currentPageNumber = 1;
@@ -5942,6 +6062,7 @@ class PDFScriptingManager {
     this.#eventAC = null;
     this._pageOpenPending.clear();
     this._visitedPages.clear();
+    this.#activations.clear();
     this.#scripting = null;
     this.#ready = false;
     this.#destroyCapability?.resolve();
@@ -8904,7 +9025,7 @@ class PDFViewer {
   #savedPageViews = null;
   #deletedPageNumbers = null;
   constructor(options) {
-    const viewerVersion = "7.0.119";
+    const viewerVersion = "7.0.158";
     if (version !== viewerVersion) {
       throw new Error(`The API version "${version}" does not match the Viewer version "${viewerVersion}".`);
     }
@@ -10912,6 +11033,7 @@ const PDFViewerApplication = {
   _contentDispositionFilename: null,
   _contentLength: null,
   _saveInProgress: false,
+  _downloadOrSavePromise: null,
   _wheelUnusedTicks: 0,
   _wheelUnusedFactor: 1,
   _touchManager: null,
@@ -11578,7 +11700,10 @@ const PDFViewerApplication = {
     } catch {}
     this.downloadManager.download(data, this._downloadUrl, this._docFilename, this._isMergedDocument);
   },
-  async save() {
+  async save({
+    flatten = false,
+    intent = "print"
+  } = {}) {
     if (!this.downloadManager) {
       return;
     }
@@ -11589,10 +11714,19 @@ const PDFViewerApplication = {
     const {
       pdfDocument
     } = this;
+    const isPrinting = flatten && intent === "print";
     try {
-      await this.pdfScriptingManager.dispatchWillSave();
+      if (isPrinting) {
+        if (!(await this._dispatchWillPrintForSaving(pdfDocument))) {
+          return;
+        }
+      } else {
+        await this.pdfScriptingManager.dispatchWillSave();
+      }
       const data = await pdfDocument.saveDocument({
-        printToPDF: this.externalServices.printToPDF
+        printToPDF: this.externalServices.printToPDF,
+        flatten,
+        intent
       });
       this.downloadManager.download(data, this._downloadUrl, this._docFilename, true);
     } catch (reason) {
@@ -11603,7 +11737,7 @@ const PDFViewerApplication = {
     } finally {
       try {
         if (pdfDocument === this.pdfDocument) {
-          await this.pdfScriptingManager.dispatchDidSave();
+          await (isPrinting ? this.pdfScriptingManager.dispatchDidPrint() : this.pdfScriptingManager.dispatchDidSave());
         }
       } finally {
         this._saveInProgress = false;
@@ -11620,7 +11754,16 @@ const PDFViewerApplication = {
       });
     }
   },
-  async downloadOrSave() {
+  downloadOrSave(options) {
+    this._downloadOrSavePromise ??= this._downloadOrSave(options).finally(() => {
+      this._downloadOrSavePromise = null;
+    });
+    return this._downloadOrSavePromise;
+  },
+  async _downloadOrSave({
+    flatten = false,
+    intent = "print"
+  } = {}) {
     if (!this.downloadManager) {
       return;
     }
@@ -11638,16 +11781,31 @@ const PDFViewerApplication = {
           }
         });
         await this.onSavePages({
-          data: this.pdfThumbnailViewer.getStructuralChanges()
+          data: this.pdfThumbnailViewer.getStructuralChanges(),
+          flatten,
+          intent
         });
       } else {
-        await (this.pdfDocument?.annotationStorage.size > 0 ? this.save() : this.download());
+        const {
+          pdfDocument
+        } = this;
+        const mustSave = pdfDocument && (flatten || pdfDocument.annotationStorage.size > 0);
+        await (mustSave ? this.save({
+          flatten,
+          intent
+        }) : this.download());
       }
       delete this._mergedDocumentNeedsSaving;
     } finally {
       this.setTitle();
       classList.remove("wait");
     }
+  },
+  async _dispatchWillPrintForSaving(pdfDocument) {
+    try {
+      await this.pdfScriptingManager.dispatchWillPrint();
+    } catch {}
+    return pdfDocument === this.pdfDocument;
   },
   async _documentError(key, moreInfo = null) {
     this._unblockDocumentLoadEvent();
@@ -12346,12 +12504,31 @@ const PDFViewerApplication = {
     data: {
       pageInfos,
       copyLevels
-    }
+    },
+    flatten = false,
+    intent = "print"
   }) {
-    if (!this.downloadManager || !this.pdfDocument) {
+    const {
+      pdfDocument
+    } = this;
+    if (!this.downloadManager || !pdfDocument) {
       return;
     }
-    const modifiedPdfBytes = await this.pdfDocument.extractPages(pageInfos, copyLevels);
+    const isPrinting = flatten && intent === "print";
+    let modifiedPdfBytes;
+    try {
+      if (isPrinting && !(await this._dispatchWillPrintForSaving(pdfDocument))) {
+        return;
+      }
+      modifiedPdfBytes = await pdfDocument.extractPages(pageInfos, copyLevels, {
+        flatten,
+        intent
+      });
+    } finally {
+      if (isPrinting && pdfDocument === this.pdfDocument) {
+        await this.pdfScriptingManager.dispatchDidPrint();
+      }
+    }
     if (!modifiedPdfBytes) {
       console.error("Something wrong happened when saving the edited PDF.\nPlease file a bug.");
       return;

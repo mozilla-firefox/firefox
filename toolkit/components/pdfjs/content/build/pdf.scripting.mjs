@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.119
- * pdfjsBuild = 5430213a1
+ * pdfjsVersion = 7.0.158
+ * pdfjsBuild = bb1539a2c
  */
 /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
@@ -2747,7 +2747,9 @@ class EventDispatcher {
     const source = this.#objects[id];
     const event = globalThis.event = createEvent(baseEvent);
     let savedChange;
-    this.#userActivation();
+    if (!baseEvent.scripted) {
+      this.#userActivation();
+    }
     FieldInternals.prepareEvent(source, id, event);
     switch (name) {
       case "Keystroke":

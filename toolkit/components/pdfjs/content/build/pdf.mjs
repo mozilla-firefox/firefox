@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.119
- * pdfjsBuild = 5430213a1
+ * pdfjsVersion = 7.0.158
+ * pdfjsBuild = bb1539a2c
  */
 
 ;// ./src/shared/util.js
@@ -1379,7 +1379,7 @@ class XfaLayer {
           }
       }
     }
-    if (isHTMLAnchorElement) {
+    if (isHTMLAnchorElement && attributes.href) {
       linkService?.addLinkAttributes(html, attributes.href, attributes.newWindow);
     }
     if (storage && attributes.dataId) {
@@ -2058,7 +2058,7 @@ class FloatingToolbar {
 }
 
 ;// ./src/shared/internal_evt.js
-const INTERNAL_EVT = "02e9fadb-e66a-446d-9c2b-ab89b74bd434";
+const INTERNAL_EVT = "02f6a0bf-1a62-4bf1-a37f-e3982fdce3bc";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -2242,16 +2242,22 @@ class ImageManager {
     }
     return this.getFromUrl(data.url);
   }
-  getFromCanvas(id, canvas) {
+  getFromCanvas(id, canvas, rotation = 0) {
     this.#cache ||= new Map();
     let data = this.#cache.get(id);
     if (data?.bitmap) {
       data.refCounter += 1;
       return data;
     }
-    const offscreen = new OffscreenCanvas(canvas.width, canvas.height);
+    const {
+      width,
+      height
+    } = canvas;
+    const offscreen = rotation % 180 === 0 ? new OffscreenCanvas(width, height) : new OffscreenCanvas(height, width);
     const ctx = offscreen.getContext("2d");
-    ctx.drawImage(canvas, 0, 0);
+    ctx.translate(offscreen.width / 2, offscreen.height / 2);
+    ctx.rotate(rotation * Math.PI / 180);
+    ctx.drawImage(canvas, -width / 2, -height / 2);
     data = {
       bitmap: offscreen.transferToImageBitmap(),
       id: `image_${this.#baseId}_${this.#id++}`,
@@ -9443,6 +9449,7 @@ class CanvasExtraState {
   strokeAlpha = 1;
   lineWidth = 1;
   activeSMask = null;
+  blendMode = "source-over";
   transferMaps = "none";
   transferMapsFallback = null;
   minMax = F32_BBOX_INIT.slice();
@@ -10107,16 +10114,16 @@ class CanvasGraphics {
           break;
         case "BM":
           this.dependencyTracker?.recordSimpleData("globalCompositeOperation", opIdx);
-          this.ctx.globalCompositeOperation = value;
+          this.current.blendMode = value;
+          if (!this.inSMaskMode) {
+            this.ctx.globalCompositeOperation = value;
+          }
           break;
         case "SMask":
           this.dependencyTracker?.recordSimpleData("SMask", opIdx);
           this.current.activeSMask = value ? this.tempSMask : null;
-          if (this.current.activeSMask) {
-            this.current.activeSMask.blendMode = this.ctx.globalCompositeOperation;
-          }
           this.tempSMask = null;
-          this.checkSMaskState(opIdx);
+          this.checkSMaskState();
           break;
         case "TR":
           {
@@ -10163,14 +10170,18 @@ class CanvasGraphics {
     this._clearPreparedSMask();
     this._prepareSMaskCanvas(smask);
   }
-  checkSMaskState(opIdx) {
-    const inSMaskMode = this.inSMaskMode;
-    if (this.current.activeSMask && !inSMaskMode) {
-      this.beginSMaskMode(opIdx);
-    } else if (!this.current.activeSMask && inSMaskMode) {
-      this.endSMaskMode();
-    } else if (this.current.activeSMask && inSMaskMode) {
-      this._ensurePreparedSMask(this.current.activeSMask);
+  checkSMaskState() {
+    const {
+      activeSMask
+    } = this.current;
+    if (!activeSMask) {
+      if (this.inSMaskMode) {
+        this.endSMaskMode();
+      }
+    } else if (this.inSMaskMode) {
+      this._ensurePreparedSMask(activeSMask);
+    } else {
+      this.beginSMaskMode();
     }
   }
   _prepareSMaskCanvas(smask) {
@@ -10269,7 +10280,7 @@ class CanvasGraphics {
     this.canvasFactory.destroy(srcEntry);
     return preparedEntry;
   }
-  beginSMaskMode(opIdx) {
+  beginSMaskMode() {
     if (this.inSMaskMode) {
       throw new Error("beginSMaskMode called while already in smask mode");
     }
@@ -10285,7 +10296,7 @@ class CanvasGraphics {
     copyCtxState(this.suspendedCtx, ctx);
     mirrorContextOperations(ctx, this.suspendedCtx);
     this._ensurePreparedSMask(this.current.activeSMask);
-    this.setGState(opIdx, [["BM", "source-over"]]);
+    ctx.globalCompositeOperation = "source-over";
   }
   endSMaskMode() {
     if (!this.inSMaskMode) {
@@ -10294,6 +10305,7 @@ class CanvasGraphics {
     this.ctx._removeMirroring();
     copyCtxState(this.ctx, this.suspendedCtx);
     this.ctx = this.suspendedCtx;
+    this.ctx.globalCompositeOperation = this.current.blendMode;
     this.suspendedCtx = null;
     this.canvasFactory.destroy(this.smaskScratchCanvas);
     this.smaskScratchCanvas = null;
@@ -10545,7 +10557,7 @@ class CanvasGraphics {
     }
     ctx.save();
     ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = smask.blendMode || "source-over";
+    ctx.globalCompositeOperation = this.current.blendMode;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(layerCtx.canvas, layerOffsetX, layerOffsetY, layerWidth, layerHeight, layerOffsetX, layerOffsetY, layerWidth, layerHeight);
     ctx.restore();
@@ -10607,19 +10619,22 @@ class CanvasGraphics {
     this.ctx.restore();
     if (this.inSMaskMode) {
       copyCtxState(this.suspendedCtx, this.ctx);
+      this.ctx.globalCompositeOperation = "source-over";
       this.ctx.setTransform(this.suspendedCtx.getTransform());
     }
-    this.checkSMaskState(opIdx);
+    this.checkSMaskState();
     this.pendingClip = null;
     this._cachedScaleForStroking[0] = -1;
   }
   resetGraphicsState() {
     const {
+      blendMode,
       clipBox,
       transferMaps,
       transferMapsFallback
     } = this.current;
     const current = this.current = new CanvasExtraState(0, 0);
+    current.blendMode = blendMode;
     current.clipBox = clipBox;
     current.transferMaps = transferMaps;
     current.transferMapsFallback = transferMapsFallback;
@@ -14660,7 +14675,7 @@ class RendererWorker {
         terminateEarly("TypedArray transfer test failed.");
         return;
       }
-      const apiVersion = "7.0.119";
+      const apiVersion = "7.0.158";
       if (apiVersion !== data.workerVersion) {
         terminateEarly(`The API version "${apiVersion}" does not match the Worker version "${data.workerVersion}".`);
         return;
@@ -15295,7 +15310,7 @@ function getDocument(src = {}) {
   }
   const docParams = {
     docId,
-    apiVersion: "7.0.119",
+    apiVersion: "7.0.158",
     data,
     password,
     disableAutoFetch,
@@ -15535,8 +15550,8 @@ class PDFDocumentProxy {
   saveDocument(params) {
     return this._transport.saveDocument(params);
   }
-  extractPages(pageInfos, copyLevels = null) {
-    return this._transport.extractPages(pageInfos, copyLevels);
+  extractPages(pageInfos, copyLevels = null, options = {}) {
+    return this._transport.extractPages(pageInfos, copyLevels, options);
   }
   getDownloadInfo() {
     return this._transport.downloadInfoCapability.promise;
@@ -16220,6 +16235,12 @@ class WorkerTransport {
   get annotationStorage() {
     return shadow(this, "annotationStorage", new AnnotationStorage());
   }
+  #getFlattenIntent(intent) {
+    if (intent !== "display" && intent !== "print") {
+      warn(`Invalid flattening intent: ${intent}, using "print".`);
+    }
+    return intent === "display" ? RenderingIntentFlag.DISPLAY : RenderingIntentFlag.PRINT;
+  }
   getRenderingIntent(intent, annotationMode = AnnotationMode.ENABLE, printAnnotationStorage = null, isEditing = false, isOpList = false) {
     let renderingIntent = RenderingIntentFlag.DISPLAY;
     let annotationStorageSerializable = SerializableEmpty;
@@ -16481,9 +16502,11 @@ class WorkerTransport {
     return this.messageHandler.sendWithPromise("GetData", null);
   }
   saveDocument({
-    printToPDF = null
+    printToPDF = null,
+    flatten = false,
+    intent = "print"
   } = {}) {
-    if (this.annotationStorage.size <= 0) {
+    if (this.annotationStorage.size <= 0 && !flatten) {
       warn("saveDocument called while `annotationStorage` is empty, " + "please use the getData-method instead.");
     }
     const {
@@ -16496,15 +16519,22 @@ class WorkerTransport {
       numPages: this._numPages,
       annotationStorage: map,
       supportsPrintToPDF: this.#printToPDF !== null,
-      filename: this.#fullReader?.filename ?? null
+      filename: this.#fullReader?.filename ?? null,
+      flatten,
+      intent: this.#getFlattenIntent(intent)
     }, transfer).finally(() => {
       this.#printToPDF = null;
       this.annotationStorage.resetModified();
     });
   }
-  extractPages(pageInfos, copyLevels = null) {
+  extractPages(pageInfos, copyLevels = null, {
+    flatten = false,
+    intent = "print"
+  } = {}) {
     const params = {
-      pageInfos
+      pageInfos,
+      flatten,
+      intent: this.#getFlattenIntent(intent)
     };
     let transfer;
     const ImageBitmapCtor = globalThis.ImageBitmap;
@@ -16995,8 +17025,8 @@ class InternalRenderTask {
     }
   }
 }
-const version = "7.0.119";
-const build = "5430213a1";
+const version = "7.0.158";
+const build = "bb1539a2c";
 
 ;// ./src/display/editor/color_picker.js
 
@@ -17426,6 +17456,17 @@ class DOMSVGFactory extends BaseSVGFactory {
 const annotation_layer_DEFAULT_FONT_SIZE = 9;
 const GetElementsByNameSet = new WeakSet();
 const TIMEZONE_OFFSET = new Date().getTimezoneOffset() * 60 * 1000;
+const STATIC_SANDBOX_PROPERTIES = new Set(["bgColor", "borderColor", "charLimit", "clear", "editable", "fgColor", "fillColor", "formattedValue", "indices", "insert", "items", "multipleSelection", "print", "readonly", "remove", "required", "selRange", "strokeColor", "textColor", "userName", "value"]);
+const SAFE_NAMED_ACTIONS = new Set(["FirstPage", "Find", "GoBack", "GoForward", "GoToPage", "LastPage", "NextPage", "PrevPage"]);
+let isScriptFocusing = false;
+let scriptFocusedElement = null;
+function getUserEventInfo(event) {
+  return {
+    originalEvent: event,
+    scripted: isScriptFocusing,
+    scriptFocused: event.target === scriptFocusedElement
+  };
+}
 class AnnotationElementFactory {
   static create(parameters) {
     const subtype = parameters.data.annotationType;
@@ -17858,9 +17899,30 @@ class AnnotationElement {
         });
       },
       focus: event => {
-        setTimeout(() => event.target.focus({
-          preventScroll: false
-        }), 0);
+        setTimeout(() => {
+          const {
+            target
+          } = event;
+          isScriptFocusing = true;
+          try {
+            target.focus({
+              preventScroll: false
+            });
+          } finally {
+            isScriptFocusing = false;
+          }
+          this._notifyLayoutChange();
+          if (target.ownerDocument.activeElement === target && scriptFocusedElement !== target) {
+            scriptFocusedElement = target;
+            target.addEventListener("blur", () => {
+              if (scriptFocusedElement === target) {
+                scriptFocusedElement = null;
+              }
+            }, {
+              once: true
+            });
+          }
+        }, 0);
       },
       userName: event => {
         event.target.title = event.detail.userName;
@@ -17898,11 +17960,43 @@ class AnnotationElement {
       }
     });
   }
+  _dispatchDOMEventInSandbox(detail, event) {
+    this.linkService.eventBus?.dispatch("dispatcheventinsandbox", {
+      source: this,
+      detail,
+      ...getUserEventInfo(event)
+    });
+  }
+  _isUserActivation(event) {
+    const {
+      eventBus
+    } = this.linkService;
+    if (!this.enableScripting || !eventBus) {
+      return true;
+    }
+    const request = {
+      source: this,
+      ...getUserEventInfo(event),
+      allowed: false
+    };
+    eventBus.dispatch("useractivationrequest", request);
+    return request.allowed;
+  }
+  _notifyLayoutChange() {
+    this.linkService.eventBus?.dispatch("sandboxlayoutchange", {
+      source: this
+    });
+  }
   _dispatchEventFromSandbox(actions, jsEvent) {
     const commonActions = this._commonActions;
     for (const name of Object.keys(jsEvent.detail)) {
       const action = actions[name] || commonActions[name];
-      action?.(jsEvent);
+      if (action) {
+        action(jsEvent);
+        if (!STATIC_SANDBOX_PROPERTIES.has(name)) {
+          this._notifyLayoutChange();
+        }
+      }
     }
   }
   _setDefaultPropertiesFromJS(element) {
@@ -17915,15 +18009,13 @@ class AnnotationElement {
     }
     const commonActions = this._commonActions;
     for (const [actionName, detail] of Object.entries(storedData)) {
-      const action = commonActions[actionName];
-      if (action) {
-        const eventProxy = {
+      if (commonActions[actionName]) {
+        this._dispatchEventFromSandbox(commonActions, {
           detail: {
             [actionName]: detail
           },
           target: element
-        };
-        action(eventProxy);
+        });
         delete storedData[actionName];
       }
     }
@@ -18211,6 +18303,13 @@ class LinkAnnotationElement extends AnnotationElement {
     let isBound = false;
     if (data.url) {
       linkService.addLinkAttributes(link, data.url, data.newWindow);
+      for (const type of ["click", "auxclick"]) {
+        link.addEventListener(type, event => {
+          if (!this._isUserActivation(event)) {
+            event.preventDefault();
+          }
+        });
+      }
       isBound = true;
     } else if (data.action) {
       this._bindNamedAction(link, data.action, data.overlaidText);
@@ -18264,8 +18363,10 @@ class LinkAnnotationElement extends AnnotationElement {
   }
   _bindNamedAction(link, action, overlaidText = "") {
     link.href = this.linkService.getAnchorUrl("");
-    link.onclick = () => {
-      this.linkService.executeNamedAction(action);
+    link.onclick = event => {
+      if (SAFE_NAMED_ACTIONS.has(action) || this._isUserActivation(event)) {
+        this.linkService.executeNamedAction(action);
+      }
       return false;
     };
     if (overlaidText) {
@@ -18286,8 +18387,10 @@ class LinkAnnotationElement extends AnnotationElement {
         this.downloadManager?.openOrDownloadData(content, attachment.filename, dest);
       }
     };
-    link.onclick = () => {
-      openAttachment();
+    link.onclick = event => {
+      if (this._isUserActivation(event)) {
+        openAttachment();
+      }
       return false;
     };
     this.#setInternalLink();
@@ -18315,14 +18418,11 @@ class LinkAnnotationElement extends AnnotationElement {
       if (!jsName) {
         continue;
       }
-      link[jsName] = () => {
-        this.linkService.eventBus?.dispatch("dispatcheventinsandbox", {
-          source: this,
-          detail: {
-            id,
-            name
-          }
-        });
+      link[jsName] = event => {
+        this._dispatchDOMEventInSandbox({
+          id,
+          name
+        }, event);
         return false;
       };
     }
@@ -18345,8 +18445,8 @@ class LinkAnnotationElement extends AnnotationElement {
       }
       return;
     }
-    link.onclick = () => {
-      otherClickAction?.();
+    link.onclick = event => {
+      otherClickAction?.(event);
       const {
         fields: resetFormFields,
         refs: resetFormRefs,
@@ -18483,16 +18583,13 @@ class WidgetAnnotationElement extends AnnotationElement {
   _setEventListener(element, elementData, baseName, eventName, valueGetter) {
     if (baseName.includes("mouse")) {
       element.addEventListener(baseName, event => {
-        this.linkService.eventBus?.dispatch("dispatcheventinsandbox", {
-          source: this,
-          detail: {
-            id: this.data.id,
-            name: eventName,
-            value: valueGetter(event),
-            shift: event.shiftKey,
-            modifier: this._getKeyModifier(event)
-          }
-        });
+        this._dispatchDOMEventInSandbox({
+          id: this.data.id,
+          name: eventName,
+          value: valueGetter(event),
+          shift: event.shiftKey,
+          modifier: this._getKeyModifier(event)
+        }, event);
       });
     } else {
       element.addEventListener(baseName, event => {
@@ -18510,14 +18607,11 @@ class WidgetAnnotationElement extends AnnotationElement {
         if (!valueGetter) {
           return;
         }
-        this.linkService.eventBus?.dispatch("dispatcheventinsandbox", {
-          source: this,
-          detail: {
-            id: this.data.id,
-            name: eventName,
-            value: valueGetter(event)
-          }
-        });
+        this._dispatchDOMEventInSandbox({
+          id: this.data.id,
+          name: eventName,
+          value: valueGetter(event)
+        }, event);
       });
     }
   }
@@ -18803,18 +18897,15 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
           }
           elementData.lastCommittedValue = value;
           elementData.userValue = value;
-          this.linkService.eventBus?.dispatch("dispatcheventinsandbox", {
-            source: this,
-            detail: {
-              id,
-              name: "Keystroke",
-              value,
-              willCommit: true,
-              commitKey,
-              selStart: event.target.selectionStart,
-              selEnd: event.target.selectionEnd
-            }
-          });
+          this._dispatchDOMEventInSandbox({
+            id,
+            name: "Keystroke",
+            value,
+            willCommit: true,
+            commitKey,
+            selStart: event.target.selectionStart,
+            selEnd: event.target.selectionEnd
+          }, event);
         });
         const _blurListener = blurListener;
         blurListener = null;
@@ -18846,18 +18937,15 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
           }
           elementData.userValue = value;
           if (elementData.lastCommittedValue !== value) {
-            this.linkService.eventBus?.dispatch("dispatcheventinsandbox", {
-              source: this,
-              detail: {
-                id,
-                name: "Keystroke",
-                value,
-                willCommit: true,
-                commitKey: elementData.commitKey,
-                selStart: event.target.selectionStart,
-                selEnd: event.target.selectionEnd
-              }
-            });
+            this._dispatchDOMEventInSandbox({
+              id,
+              name: "Keystroke",
+              value,
+              willCommit: true,
+              commitKey: elementData.commitKey,
+              selStart: event.target.selectionStart,
+              selEnd: event.target.selectionEnd
+            }, event);
           }
           _blurListener(event);
         });
@@ -18907,18 +18995,15 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
                 break;
             }
             event.preventDefault();
-            this.linkService.eventBus?.dispatch("dispatcheventinsandbox", {
-              source: this,
-              detail: {
-                id,
-                name: "Keystroke",
-                value,
-                change: data || "",
-                willCommit: false,
-                selStart,
-                selEnd
-              }
-            });
+            this._dispatchDOMEventInSandbox({
+              id,
+              name: "Keystroke",
+              value,
+              change: data || "",
+              willCommit: false,
+              selStart,
+              selEnd
+            }, event);
           });
         }
         this._setEventListeners(element, elementData, [["focus", "Focus"], ["blur", "Blur"], ["mousedown", "Mouse Down"], ["mouseenter", "Mouse Enter"], ["mouseleave", "Mouse Exit"], ["mouseup", "Mouse Up"]], event => event.target.value);
@@ -19338,19 +19423,16 @@ class ChoiceWidgetAnnotationElement extends WidgetAnnotationElement {
           value: exportValue
         });
         event.preventDefault();
-        this.linkService.eventBus?.dispatch("dispatcheventinsandbox", {
-          source: this,
-          detail: {
-            id,
-            name: "Keystroke",
-            value: selectedValues,
-            change,
-            changeEx: exportValue,
-            willCommit: false,
-            commitKey: 1,
-            keyDown: false
-          }
-        });
+        this._dispatchDOMEventInSandbox({
+          id,
+          name: "Keystroke",
+          value: selectedValues,
+          change,
+          changeEx: exportValue,
+          willCommit: false,
+          commitKey: 1,
+          keyDown: false
+        }, event);
       });
       this._setEventListeners(selectElement, null, [["focus", "Focus"], ["blur", "Blur"], ["mousedown", "Mouse Down"], ["mouseenter", "Mouse Enter"], ["mouseleave", "Mouse Exit"], ["mouseup", "Mouse Up"], ["input", "Action"], ["input", "Validate"]], event => event.target.value);
     } else {
@@ -20505,7 +20587,7 @@ class FileAttachmentAnnotationElement extends AnnotationElement {
     } = FeatureTest.platform;
     container.addEventListener("keydown", evt => {
       if (evt.key === "Enter" && (isMac ? evt.metaKey : evt.ctrlKey)) {
-        this.#download();
+        this.#download(evt);
       }
     });
     if (!data.popupRef && this.hasPopupData) {
@@ -20523,7 +20605,10 @@ class FileAttachmentAnnotationElement extends AnnotationElement {
   addHighlightArea() {
     this.container.classList.add("highlightArea");
   }
-  async #download() {
+  async #download(event) {
+    if (!this._isUserActivation(event)) {
+      return;
+    }
     const {
       fileId,
       filename,
@@ -26251,7 +26336,7 @@ class StampEditor extends AnnotationEditor {
     const {
       id: bitmapId,
       bitmap
-    } = this._uiManager.imageManager.getFromCanvas(annotationElementId, canvas);
+    } = this._uiManager.imageManager.getFromCanvas(annotationElementId, canvas, this._initialData?.rotation);
     canvas.remove();
     if (bitmapId && this._uiManager.imageManager.isValidId(bitmapId)) {
       this.#bitmapId = bitmapId;
@@ -26511,7 +26596,7 @@ class StampEditor extends AnnotationEditor {
         ({
           id: bitmapId,
           bitmap
-        } = uiManager.imageManager.getFromCanvas(container.id, canvas));
+        } = uiManager.imageManager.getFromCanvas(container.id, canvas, rotation));
         canvas.remove();
       } else {
         missingCanvas = true;
@@ -26543,7 +26628,6 @@ class StampEditor extends AnnotationEditor {
     }
     const editor = await super.deserialize(data, parent, uiManager);
     const {
-      rect,
       bitmap,
       bitmapUrl,
       bitmapId,
@@ -26562,9 +26646,6 @@ class StampEditor extends AnnotationEditor {
       editor.#bitmapUrl = bitmapUrl;
     }
     editor.#isSvg = isSvg;
-    const [parentWidth, parentHeight] = editor.pageDimensions;
-    editor.width = (rect[2] - rect[0]) / parentWidth;
-    editor.height = (rect[3] - rect[1]) / parentHeight;
     if (accessibilityData) {
       editor.altTextData = accessibilityData;
     }

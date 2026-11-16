@@ -14,6 +14,7 @@
  */
 
 export class SandboxSupportBase {
+  #dispatch = null;
   constructor(win) {
     this.win = win;
     this.timeoutIds = new Map();
@@ -39,12 +40,34 @@ export class SandboxSupportBase {
     if (!this.commFun) {
       return;
     }
+    const dispatch = this.#dispatch;
+    this.#dispatch = null;
+    if (name === "dispatchEvent" && args) {
+      const {
+        activation = null,
+        ...event
+      } = args;
+      args = event;
+      this.#dispatch = {
+        activation,
+        canShowDialog: event.allowDialog === true
+      };
+    }
     try {
       args = this.exportValueToSandbox(args);
       this.commFun(name, args);
     } catch (e) {
       this.win.console.error(e);
+    } finally {
+      this.#dispatch = dispatch;
     }
+  }
+  #consumeDialog(...args) {
+    if (!this.#dispatch?.canShowDialog || args.some(arg => typeof arg !== "string")) {
+      return false;
+    }
+    this.#dispatch.canShowDialog = false;
+    return true;
   }
   createSandboxExternals() {
     const externals = {
@@ -85,13 +108,12 @@ export class SandboxSupportBase {
         this.timeoutIds.delete(callbackId);
       },
       alert: cMsg => {
-        if (typeof cMsg !== "string") {
-          return;
+        if (this.#consumeDialog(cMsg)) {
+          this.win.alert(cMsg);
         }
-        this.win.alert(cMsg);
       },
-      confirm: cMsg => typeof cMsg !== "string" ? false : this.win.confirm(cMsg),
-      prompt: (cQuestion, cDefault) => typeof cQuestion !== "string" || typeof cDefault !== "string" ? null : this.win.prompt(cQuestion, cDefault),
+      confirm: cMsg => this.#consumeDialog(cMsg) ? this.win.confirm(cMsg) : false,
+      prompt: (cQuestion, cDefault) => this.#consumeDialog(cQuestion, cDefault) ? this.win.prompt(cQuestion, cDefault) : null,
       parseURL: cUrl => {
         const url = new this.win.URL(cUrl);
         const props = ["hash", "host", "hostname", "href", "origin", "password", "pathname", "port", "protocol", "search", "searchParams", "username"];
@@ -100,6 +122,13 @@ export class SandboxSupportBase {
       send: data => {
         if (!data) {
           return;
+        }
+        const activation = this.#dispatch?.activation ?? null;
+        if (!data.id && (activation || "activation" in data)) {
+          data = {
+            ...data,
+            activation
+          };
         }
         const event = new this.win.CustomEvent("updatefromsandbox", {
           detail: this.importValueFromSandbox(data)

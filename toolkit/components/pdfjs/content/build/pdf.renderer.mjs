@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.119
- * pdfjsBuild = 5430213a1
+ * pdfjsVersion = 7.0.158
+ * pdfjsBuild = bb1539a2c
  */
 
 ;// ./src/shared/util.js
@@ -2867,6 +2867,7 @@ class CanvasExtraState {
   strokeAlpha = 1;
   lineWidth = 1;
   activeSMask = null;
+  blendMode = "source-over";
   transferMaps = "none";
   transferMapsFallback = null;
   minMax = F32_BBOX_INIT.slice();
@@ -3531,16 +3532,16 @@ class CanvasGraphics {
           break;
         case "BM":
           this.dependencyTracker?.recordSimpleData("globalCompositeOperation", opIdx);
-          this.ctx.globalCompositeOperation = value;
+          this.current.blendMode = value;
+          if (!this.inSMaskMode) {
+            this.ctx.globalCompositeOperation = value;
+          }
           break;
         case "SMask":
           this.dependencyTracker?.recordSimpleData("SMask", opIdx);
           this.current.activeSMask = value ? this.tempSMask : null;
-          if (this.current.activeSMask) {
-            this.current.activeSMask.blendMode = this.ctx.globalCompositeOperation;
-          }
           this.tempSMask = null;
-          this.checkSMaskState(opIdx);
+          this.checkSMaskState();
           break;
         case "TR":
           {
@@ -3587,14 +3588,18 @@ class CanvasGraphics {
     this._clearPreparedSMask();
     this._prepareSMaskCanvas(smask);
   }
-  checkSMaskState(opIdx) {
-    const inSMaskMode = this.inSMaskMode;
-    if (this.current.activeSMask && !inSMaskMode) {
-      this.beginSMaskMode(opIdx);
-    } else if (!this.current.activeSMask && inSMaskMode) {
-      this.endSMaskMode();
-    } else if (this.current.activeSMask && inSMaskMode) {
-      this._ensurePreparedSMask(this.current.activeSMask);
+  checkSMaskState() {
+    const {
+      activeSMask
+    } = this.current;
+    if (!activeSMask) {
+      if (this.inSMaskMode) {
+        this.endSMaskMode();
+      }
+    } else if (this.inSMaskMode) {
+      this._ensurePreparedSMask(activeSMask);
+    } else {
+      this.beginSMaskMode();
     }
   }
   _prepareSMaskCanvas(smask) {
@@ -3693,7 +3698,7 @@ class CanvasGraphics {
     this.canvasFactory.destroy(srcEntry);
     return preparedEntry;
   }
-  beginSMaskMode(opIdx) {
+  beginSMaskMode() {
     if (this.inSMaskMode) {
       throw new Error("beginSMaskMode called while already in smask mode");
     }
@@ -3709,7 +3714,7 @@ class CanvasGraphics {
     copyCtxState(this.suspendedCtx, ctx);
     mirrorContextOperations(ctx, this.suspendedCtx);
     this._ensurePreparedSMask(this.current.activeSMask);
-    this.setGState(opIdx, [["BM", "source-over"]]);
+    ctx.globalCompositeOperation = "source-over";
   }
   endSMaskMode() {
     if (!this.inSMaskMode) {
@@ -3718,6 +3723,7 @@ class CanvasGraphics {
     this.ctx._removeMirroring();
     copyCtxState(this.ctx, this.suspendedCtx);
     this.ctx = this.suspendedCtx;
+    this.ctx.globalCompositeOperation = this.current.blendMode;
     this.suspendedCtx = null;
     this.canvasFactory.destroy(this.smaskScratchCanvas);
     this.smaskScratchCanvas = null;
@@ -3969,7 +3975,7 @@ class CanvasGraphics {
     }
     ctx.save();
     ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = smask.blendMode || "source-over";
+    ctx.globalCompositeOperation = this.current.blendMode;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(layerCtx.canvas, layerOffsetX, layerOffsetY, layerWidth, layerHeight, layerOffsetX, layerOffsetY, layerWidth, layerHeight);
     ctx.restore();
@@ -4031,19 +4037,22 @@ class CanvasGraphics {
     this.ctx.restore();
     if (this.inSMaskMode) {
       copyCtxState(this.suspendedCtx, this.ctx);
+      this.ctx.globalCompositeOperation = "source-over";
       this.ctx.setTransform(this.suspendedCtx.getTransform());
     }
-    this.checkSMaskState(opIdx);
+    this.checkSMaskState();
     this.pendingClip = null;
     this._cachedScaleForStroking[0] = -1;
   }
   resetGraphicsState() {
     const {
+      blendMode,
       clipBox,
       transferMaps,
       transferMapsFallback
     } = this.current;
     const current = this.current = new CanvasExtraState(0, 0);
+    current.blendMode = blendMode;
     current.clipBox = clipBox;
     current.transferMaps = transferMaps;
     current.transferMapsFallback = transferMapsFallback;
@@ -7611,7 +7620,7 @@ class RendererMessageHandler {
     this.#connection = null;
   }
   static #sendReady(handler) {
-    const workerVersion = "7.0.119";
+    const workerVersion = "7.0.158";
     const testObj = new Uint8Array();
     handler.send("ready", {
       testObj,
