@@ -19,6 +19,3 @@ skip-if = [
 ]
 
 ["browser_privbrowsing_perwindowpb.js"]
-skip-if = [
-  "verify-standalone",
-]
