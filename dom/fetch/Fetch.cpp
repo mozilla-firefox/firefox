@@ -666,16 +666,10 @@ already_AddRefed<Promise> FetchRequest(nsIGlobalObject* aGlobal,
         mozilla::ipc::BackgroundChild::GetOrCreateForCurrentThread();
     (void)NS_WARN_IF(!backgroundChild->SendPFetchConstructor(actor));
 
-    FetchOpArgs ipcArgs;
-
-    ipcArgs.request() = IPCInternalRequest();
-    internalRequest->ToIPCInternalRequest(&(ipcArgs.request()),
-                                          backgroundChild);
-
-    ipcArgs.clientInfo() = clientInfo.ref().ToIPC();
     nsCOMPtr<nsPIDOMWindowInner> window = do_QueryInterface(aGlobal);
     nsCOMPtr<Document> doc;
     nsIPrincipal* principal;
+    bool isThirdPartyContext = false;
     // we don't check if we this request is invoked from a tracking script
     // we might add this capability in future.
     // See Bug 1892406
@@ -691,14 +685,11 @@ already_AddRefed<Promise> FetchRequest(nsIGlobalObject* aGlobal,
 
       ThirdPartyUtil* thirdPartyUtil = ThirdPartyUtil::GetInstance();
       if (!thirdPartyUtil) {
+        aRv.Throw(NS_ERROR_FAILURE);
         return nullptr;
       }
-      if (thirdPartyUtil) {
-        bool thirdParty = false;
-        (void)thirdPartyUtil->IsThirdPartyWindow(window->GetOuterWindow(),
-                                                 nullptr, &thirdParty);
-        ipcArgs.isThirdPartyContext() = thirdParty;
-      }
+      (void)thirdPartyUtil->IsThirdPartyWindow(window->GetOuterWindow(),
+                                               nullptr, &isThirdPartyContext);
     } else {
       principal = aGlobal->PrincipalOrNull();
       if (NS_WARN_IF(!principal)) {
@@ -711,22 +702,27 @@ already_AddRefed<Promise> FetchRequest(nsIGlobalObject* aGlobal,
       }
     }
 
+    Maybe<net::CookieJarSettingsArgs> cookieJarSettingsArgs;
     if (cookieJarSettings) {
       net::CookieJarSettingsArgs csArgs;
       net::CookieJarSettings::Cast(cookieJarSettings)->Serialize(csArgs);
-      ipcArgs.cookieJarSettings() = Some(csArgs);
+      cookieJarSettingsArgs = Some(csArgs);
     }
 
-    nsresult rv = PrincipalToPrincipalInfo(principal, &ipcArgs.principalInfo());
-    NS_ENSURE_SUCCESS(rv, nullptr);
-
-    ipcArgs.hasCSPEventListener() = false;
-    ipcArgs.isWorkerRequest() = false;
-
+    uint64_t associatedBrowsingContextID = 0;
     if (window && window->GetBrowsingContext()) {
-      ipcArgs.associatedBrowsingContextID() =
-          window->GetBrowsingContext()->Id();
+      associatedBrowsingContextID = window->GetBrowsingContext()->Id();
     }
+
+    FetchOpArgs ipcArgs(
+        IPCInternalRequest(), WrapNotNull(principal), /* workerScript */ ""_ns,
+        clientInfo.ref().ToIPC(), /* controller */ Nothing(),
+        std::move(cookieJarSettingsArgs), /* needOnDataAvailable */ false,
+        /* hasCSPEventListener */ false, associatedBrowsingContextID,
+        isThirdPartyContext, /* isWorkerRequest */ false,
+        /* isOn3PCBExceptionList */ false);
+    internalRequest->ToIPCInternalRequest(&(ipcArgs.request()),
+                                          backgroundChild);
 
     UniquePtr<SerializedStackHolder> stack = GetCurrentStackForNetMonitor(cx);
     if (stack) {
@@ -782,44 +778,38 @@ already_AddRefed<Promise> FetchRequest(nsIGlobalObject* aGlobal,
           mozilla::ipc::BackgroundChild::GetOrCreateForCurrentThread();
       (void)NS_WARN_IF(!backgroundChild->SendPFetchConstructor(actor));
 
-      FetchOpArgs ipcArgs;
-      ipcArgs.request() = IPCInternalRequest();
+      nsAutoCString workerScript;
+      if (worker->GetBaseURI()) {
+        worker->GetBaseURI()->GetAsciiSpec(workerScript);
+      }
+      Maybe<IPCServiceWorkerDescriptor> controller;
+      if (worker->GlobalScope()->GetController().isSome()) {
+        controller = Some(worker->GlobalScope()->GetController().ref().ToIPC());
+      }
+      Maybe<net::CookieJarSettingsArgs> cookieJarSettingsArgs;
+      if (worker->CookieJarSettings()) {
+        cookieJarSettingsArgs = Some(worker->CookieJarSettingsArgs());
+      }
+      bool hasCSPEventListener = !!worker->CSPEventListener();
+      if (hasCSPEventListener) {
+        actor->SetCSPEventListener(worker->CSPEventListener());
+      }
+
+      FetchOpArgs ipcArgs(
+          IPCInternalRequest(), WrapNotNull(worker->GetPrincipal()),
+          std::move(workerScript), clientInfo.ref().ToIPC(),
+          std::move(controller), std::move(cookieJarSettingsArgs),
+          /* needOnDataAvailable */ false, hasCSPEventListener,
+          worker->AssociatedBrowsingContextID(), worker->IsThirdPartyContext(),
+          /* isWorkerRequest */ true, worker->IsOn3PCBExceptionList());
       internalRequest->ToIPCInternalRequest(&(ipcArgs.request()),
                                             backgroundChild);
-
-      ipcArgs.principalInfo() = worker->GetPrincipalInfo();
-      ipcArgs.clientInfo() = clientInfo.ref().ToIPC();
-      if (worker->GetBaseURI()) {
-        worker->GetBaseURI()->GetAsciiSpec(ipcArgs.workerScript());
-      }
-      if (worker->GlobalScope()->GetController().isSome()) {
-        ipcArgs.controller() =
-            Some(worker->GlobalScope()->GetController().ref().ToIPC());
-      }
-      if (worker->CookieJarSettings()) {
-        ipcArgs.cookieJarSettings() = Some(worker->CookieJarSettingsArgs());
-      }
-      if (worker->CSPEventListener()) {
-        ipcArgs.hasCSPEventListener() = true;
-        actor->SetCSPEventListener(worker->CSPEventListener());
-      } else {
-        ipcArgs.hasCSPEventListener() = false;
-      }
-
-      ipcArgs.associatedBrowsingContextID() =
-          worker->AssociatedBrowsingContextID();
 
       if (worker->IsWatchedByDevTools()) {
         UniquePtr<SerializedStackHolder> stack;
         stack = GetCurrentStackForNetMonitor(cx);
         actor->SetOriginStack(std::move(stack));
       }
-
-      ipcArgs.isThirdPartyContext() = worker->IsThirdPartyContext();
-
-      ipcArgs.isOn3PCBExceptionList() = worker->IsOn3PCBExceptionList();
-
-      ipcArgs.isWorkerRequest() = true;
 
       actor->DoFetchOp(ipcArgs);
 

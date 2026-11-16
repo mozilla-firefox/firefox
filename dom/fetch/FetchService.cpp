@@ -17,7 +17,6 @@
 #include "mozilla/dom/PerformanceStorage.h"
 #include "mozilla/dom/PerformanceTiming.h"
 #include "mozilla/dom/ServiceWorkerDescriptor.h"
-#include "mozilla/ipc/BackgroundUtils.h"
 #include "mozilla/net/CookieJarSettings.h"
 #include "nsContentUtils.h"
 #include "nsIContentSecurityPolicy.h"
@@ -176,12 +175,7 @@ nsresult FetchService::FetchInstance::Initialize(FetchArgs&& aArgs) {
     FETCH_LOG(("FetchInstance::Initialize [%p] request[%p]", this,
                mRequest.unsafeGetRawPtr()));
 
-    auto principalOrErr = PrincipalInfoToPrincipal(
-        mArgs.as<MainThreadFetchArgs>().mPrincipalInfo);
-    if (principalOrErr.isErr()) {
-      return principalOrErr.unwrapErr();
-    }
-    mPrincipal = principalOrErr.unwrap();
+    mPrincipal = mArgs.as<MainThreadFetchArgs>().mPrincipal;
     nsresult rv = NS_NewLoadGroup(getter_AddRefs(mLoadGroup), mPrincipal);
     if (NS_WARN_IF(NS_FAILED(rv))) {
       return rv;
@@ -202,12 +196,7 @@ nsresult FetchService::FetchInstance::Initialize(FetchArgs&& aArgs) {
     FETCH_LOG(("FetchInstance::Initialize [%p] request[%p]", this,
                mRequest.unsafeGetRawPtr()));
 
-    auto principalOrErr =
-        PrincipalInfoToPrincipal(mArgs.as<WorkerFetchArgs>().mPrincipalInfo);
-    if (principalOrErr.isErr()) {
-      return principalOrErr.unwrapErr();
-    }
-    mPrincipal = principalOrErr.unwrap();
+    mPrincipal = mArgs.as<WorkerFetchArgs>().mPrincipal;
     nsresult rv = NS_NewLoadGroup(getter_AddRefs(mLoadGroup), mPrincipal);
     if (NS_WARN_IF(NS_FAILED(rv))) {
       return rv;

@@ -101,23 +101,16 @@ IPCResult FetchParent::RecvFetchOp(FetchOpArgs&& aArgs) {
     return IPC_OK();
   }
 
-  auto principalOrErr = PrincipalInfoToPrincipal(aArgs.principalInfo());
-  if (principalOrErr.isErr()) {
-    return IPC_FAIL(this, "RecvFetchOp failed deserializing principalInfo");
-  }
-  nsCOMPtr<nsIPrincipal> principal = principalOrErr.unwrap();
-
-  RefPtr<ThreadsafeContentParentHandle> contentHandle =
-      BackgroundParent::GetContentParentHandle(Manager());
-  if (contentHandle &&
-      StaticPrefs::dom_fetch_validatePrincipalForRemoteType()) {
+  mPrincipal = aArgs.principal();
+  if (RefPtr<ThreadsafeContentParentHandle> contentHandle =
+          BackgroundParent::GetContentParentHandle(Manager())) {
     // The inference process uses ChromeWorkers which have a system principal,
     // so system principals must be allowed there.
     EnumSet<ValidatePrincipalOptions> options;
     if (contentHandle->GetRemoteType().IsInference()) {
       options += ValidatePrincipalOptions::AllowSystemIfLoaded;
     }
-    if (!contentHandle->ValidatePrincipal(principal, options)) {
+    if (!contentHandle->ValidatePrincipal(mPrincipal, options)) {
       return IPC_FAIL(this,
                       "RecvFetchOp principal not allowed for remote type");
     }
@@ -126,26 +119,24 @@ IPCResult FetchParent::RecvFetchOp(FetchOpArgs&& aArgs) {
       return IPC_FAIL(
           this, "RecvFetchOp clientInfo principal not allowed for remote type");
     }
-  }
 
-  if (contentHandle &&
-      aArgs.request().contentPolicyType() ==
-          nsIContentPolicy::TYPE_INTERNAL_FORCE_ALLOWED_DTD &&
-      !StaticPrefs::dom_fetch_allow_force_allowed_dtd()) {
-    return IPC_FAIL(this,
-                    "RecvFetchOp FORCE_ALLOWED_DTD not allowed from content");
-  }
+    if (aArgs.request().contentPolicyType() ==
+            nsIContentPolicy::TYPE_INTERNAL_FORCE_ALLOWED_DTD &&
+        !StaticPrefs::dom_fetch_allow_force_allowed_dtd()) {
+      return IPC_FAIL(this,
+                      "RecvFetchOp FORCE_ALLOWED_DTD not allowed from content");
+    }
 
-  if (contentHandle && InternalRequest::IsNavigationContentPolicy(
-                           aArgs.request().contentPolicyType())) {
-    return IPC_FAIL(this,
-                    "RecvFetchOp navigation content policy type not allowed "
-                    "from content");
+    if (InternalRequest::IsNavigationContentPolicy(
+            aArgs.request().contentPolicyType())) {
+      return IPC_FAIL(this,
+                      "RecvFetchOp navigation content policy type not allowed "
+                      "from content");
+    }
   }
 
   mRequest = MakeSafeRefPtr<InternalRequest>(std::move(aArgs.request()));
   mIsWorkerFetch = aArgs.isWorkerRequest();
-  mPrincipalInfo = std::move(aArgs.principalInfo());
   mWorkerScript = aArgs.workerScript();
   mClientInfo = Some(ClientInfo(aArgs.clientInfo()));
   if (aArgs.controller().isSome()) {
@@ -224,12 +215,11 @@ IPCResult FetchParent::RecvFetchOp(FetchOpArgs&& aArgs) {
     if (self->mIsWorkerFetch) {
       self->mResponsePromises =
           fetchService->Fetch(AsVariant(FetchService::WorkerFetchArgs(
-              {self->mRequest.clonePtr(), self->mPrincipalInfo,
-               self->mWorkerScript, *self->mClientInfo, self->mController,
-               self->mCookieJarSettings, self->mNeedOnDataAvailable,
-               self->mCSPEventListener, self->mAssociatedBrowsingContextID,
-               self->mBackgroundEventTarget, self->mID,
-               self->mIsThirdPartyContext,
+              {self->mRequest.clonePtr(), self->mPrincipal, self->mWorkerScript,
+               *self->mClientInfo, self->mController, self->mCookieJarSettings,
+               self->mNeedOnDataAvailable, self->mCSPEventListener,
+               self->mAssociatedBrowsingContextID, self->mBackgroundEventTarget,
+               self->mID, self->mIsThirdPartyContext,
                MozPromiseRequestHolder<FetchServiceResponseEndPromise>(),
                self->mPromise, self->mIsOn3PCBExceptionList})));
     } else {
@@ -237,7 +227,7 @@ IPCResult FetchParent::RecvFetchOp(FetchOpArgs&& aArgs) {
       self->mResponsePromises =
           fetchService->Fetch(AsVariant(FetchService::MainThreadFetchArgs({
               self->mRequest.clonePtr(),
-              self->mPrincipalInfo,
+              self->mPrincipal,
               *self->mClientInfo,
               self->mCookieJarSettings,
               self->mNeedOnDataAvailable,

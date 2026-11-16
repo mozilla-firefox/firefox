@@ -11,7 +11,6 @@
 #include "mozilla/RefPtr.h"
 #include "mozilla/dom/PFetchParent.h"
 #include "mozilla/dom/SafeRefPtr.h"
-#include "mozilla/ipc/PBackgroundSharedTypes.h"
 #include "mozilla/net/NeckoChannelParams.h"
 #include "nsCOMPtr.h"
 #include "nsIContentSecurityPolicy.h"
@@ -88,7 +87,7 @@ class FetchParent final : public PFetchParent {
   SafeRefPtr<InternalRequest> mRequest;
   RefPtr<FetchServicePromises> mResponsePromises;
   RefPtr<GenericPromise::Private> mPromise;
-  PrincipalInfo mPrincipalInfo;
+  nsCOMPtr<nsIPrincipal> mPrincipal;
   nsCString mWorkerScript;
   Maybe<ClientInfo> mClientInfo;
   Maybe<ServiceWorkerDescriptor> mController;

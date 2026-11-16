@@ -11,12 +11,16 @@ include NeckoChannelParams;
 include PBackgroundSharedTypes;
 include PerformanceTimingTypes;
 
+include "mozilla/dom/PermissionMessageUtils.h";
+
+[RefCounted, Tainted] using class nsIPrincipal from "nsIPrincipal.h";
+
 namespace mozilla {
 namespace dom {
 
-struct FetchOpArgs{
+struct FetchOpArgs {
   IPCInternalRequest request;
-  PrincipalInfo principalInfo;
+  nsIPrincipal principal;
   nsCString workerScript;
   IPCClientInfo clientInfo;
   IPCServiceWorkerDescriptor? controller;

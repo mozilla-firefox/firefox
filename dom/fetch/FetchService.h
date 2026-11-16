@@ -11,7 +11,6 @@
 #include "mozilla/dom/FetchTypes.h"
 #include "mozilla/dom/PerformanceTimingTypes.h"
 #include "mozilla/dom/SafeRefPtr.h"
-#include "mozilla/ipc/PBackgroundSharedTypes.h"
 #include "mozilla/net/NeckoChannelParams.h"
 #include "nsIChannel.h"
 #include "nsIObserver.h"
@@ -106,7 +105,7 @@ class FetchService final : public nsIObserver {
   // Used for content process worker thread fetch()
   struct WorkerFetchArgs {
     SafeRefPtr<InternalRequest> mRequest;
-    mozilla::ipc::PrincipalInfo mPrincipalInfo;
+    nsCOMPtr<nsIPrincipal> mPrincipal;
     nsCString mWorkerScript;
     ClientInfo mClientInfo;
     Maybe<ServiceWorkerDescriptor> mController;
@@ -130,7 +129,7 @@ class FetchService final : public nsIObserver {
   // See Bug 1897129.
   struct MainThreadFetchArgs {
     SafeRefPtr<InternalRequest> mRequest;
-    mozilla::ipc::PrincipalInfo mPrincipalInfo;
+    nsCOMPtr<nsIPrincipal> mPrincipal;
     ClientInfo mClientInfo;
     Maybe<net::CookieJarSettingsArgs> mCookieJarSettings;
     bool mNeedOnDataAvailable;
