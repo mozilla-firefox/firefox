@@ -300,6 +300,7 @@ def test_install_requirements_file():
             "-m",
             "pip",
             "install",
+            "--no-build-isolation",
             "-r",
             "foo",
         ])

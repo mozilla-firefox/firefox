@@ -303,6 +303,7 @@ def install_requirements_file(
                 "-m",
                 "pip",
                 "install",
+                "--no-build-isolation",
                 "-r",
                 requirements_file,
             ])
