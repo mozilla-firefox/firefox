@@ -8902,6 +8902,13 @@ void LIRGenerator::visitWasmLoadField(MWasmLoadField* ins) {
   }
 }
 
+void LIRGenerator::visitWasmLoadInternalField(MWasmLoadInternalField* ins) {
+  LAllocation object = useRegisterAtStart(ins->object());
+  define(new (alloc()) LWasmLoadSlot(object, ins->offset(), ins->type(),
+                                     MWideningOp::None, ins->maybeTrap()),
+         ins);
+}
+
 void LIRGenerator::visitWasmLoadElement(MWasmLoadElement* ins) {
   LAllocation base = useRegister(ins->base());
   LAllocation index = useRegister(ins->index());
