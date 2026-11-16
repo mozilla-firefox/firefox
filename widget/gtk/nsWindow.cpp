@@ -4454,8 +4454,7 @@ nsresult nsWindow::Create(nsIWidget* aParent, const LayoutDeviceIntRect& aRect,
     // set it early.
     if (parentnsWindow) {
       WaylandSurfaceLock lock(mSurface);
-      mSurface->SetParentLocked(
-          lock, parentnsWindow->GetWaylandSurface());
+      mSurface->SetParentLocked(lock, parentnsWindow->GetWaylandSurface());
     }
   }
   container = moz_container_new(this, mSurface);
