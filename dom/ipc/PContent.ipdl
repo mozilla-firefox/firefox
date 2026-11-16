@@ -1917,7 +1917,8 @@ both:
      *
      * This message may only be sent to the parent in limited situations. If the
      * new BrowsingContext has a parent window, it must be owned by the
-     * embedding process, otherwise it must be owned by the opener, if set.
+     * embedding process, otherwise the opener window, if set, must belong to
+     * the sending process.
      */
     [LazySend] async CreateBrowsingContext(uint64_t aGroupId, BrowsingContextInitializer aInit);
 
