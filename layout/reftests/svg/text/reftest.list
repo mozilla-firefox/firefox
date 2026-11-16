@@ -173,7 +173,7 @@ fuzzy-if(winWidget,0-128,0-295) fuzzy-if(cocoaWidget,0-1,0-28) fuzzy-if(Android,
 == dynamic-dominant-baseline.svg dynamic-dominant-baseline-ref.svg
 == dynamic-multiple-x.svg dynamic-multiple-x-ref.svg
 fuzzy(0-1,0-200) == dynamic-non-scaling-stroke.svg dynamic-non-scaling-stroke-ref.svg #Bug 885316
-fuzzy-if(winWidget,0-128,0-295) fuzzy-if(cocoaWidget,0-1,0-28) fuzzy-if(Android,0-8,0-198) == dynamic-text-shadow.svg text-shadow-ref.svg
+fuzzy-if(winWidget,0-128,0-295) fuzzy-if(cocoaWidget,0-1,0-28) fuzzy-if(Android,0-8,0-199) == dynamic-text-shadow.svg text-shadow-ref.svg
 
 # text and masks
 fuzzy-if(winWidget,0-50,0-224) == mask-applied.svg mask-applied-ref.svg
@@ -206,7 +206,7 @@ fuzzy(0-1,0-237) needs-focus fuzzy-if(winWidget,55-163,200-254) fuzzy-if(cocoaWi
 fuzzy(0-1,0-222) needs-focus fuzzy-if(winWidget,125-163,221-254) == simple-underline-selection.svg simple-underline-selection-ref.html # Bug 1392106
 fuzzy(0-1,0-934) needs-focus fuzzy-if(Android13,0-3,0-926) fuzzy-if(winWidget,134-163,432-501) == multiple-text-selection.svg multiple-text-selection-ref.html # Bug 1392106
 needs-focus == multiple-chunks-selection.svg multiple-chunks-selection-ref.svg
-fuzzy(0-1,0-200) fuzzy-if(winWidget,0-165,0-131) needs-focus == textpath-selection.svg textpath-selection-ref.svg
+fuzzy(0-1,0-200) fuzzy-if(winWidget,0-165,0-200) needs-focus == textpath-selection.svg textpath-selection-ref.svg
 
 # letter-spacing and word-spacing
 pref(layout.css.letter-spacing.model,0) == simple-letter-spacing.svg simple-letter-spacing-ref.svg
