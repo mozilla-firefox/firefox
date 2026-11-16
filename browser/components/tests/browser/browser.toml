@@ -83,11 +83,6 @@ run-if = [
 
 ["browser_startup_homepage.js"]
 
-["browser_telemetry_activation.js"]
-run-if = [
-  "os == 'win'",
-]
-
 ["browser_to_handle_telemetry.js"]
 run-if = [
   "os == 'win'",
