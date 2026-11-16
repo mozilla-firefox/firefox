@@ -12,11 +12,13 @@ include HttpChannelParams;
 
 include "mozilla/dom/ReferrerInfoUtils.h";
 include "mozilla/net/NeckoMessageUtils.h";
+include "mozilla/dom/PermissionMessageUtils.h";
 include "mozilla/net/ClassOfService.h";
 
 using mozilla::OriginAttributes from "mozilla/ipc/BackgroundUtils.h";
 using mozilla::net::ClassOfService from "mozilla/net/ClassOfService.h";
 [RefCounted] using class nsIURI from "mozilla/ipc/URIUtils.h";
+[RefCounted, Tainted] using class nsIPrincipal from "nsIPrincipal.h";
 
 namespace mozilla {
 namespace net {
@@ -55,7 +57,7 @@ parent:
   // Child has detected a CORS check failure, so needs to tell the parent
   // to remove any matching entry from the CORS preflight cache.
   async RemoveCorsPreflightCacheEntry(nullable nsIURI uri,
-                                      PrincipalInfo requestingPrincipal,
+                                      [NoTaint="Bug 2090045"] nsIPrincipal requestingPrincipal,
                                       OriginAttributes originAttributes);
 
   // After receiving this message, the parent calls SendDeleteSelf, and makes

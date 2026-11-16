@@ -1089,17 +1089,12 @@ mozilla::ipc::IPCResult HttpChannelParent::RecvDocumentChannelCleanup(
 }
 
 mozilla::ipc::IPCResult HttpChannelParent::RecvRemoveCorsPreflightCacheEntry(
-    nsIURI* uri, const mozilla::ipc::PrincipalInfo& requestingPrincipal,
+    nsIURI* uri, NotNull<nsIPrincipal*> requestingPrincipal,
     const OriginAttributes& originAttributes) {
   if (!uri) {
     return IPC_FAIL_NO_REASON(this);
   }
-  auto principalOrErr = PrincipalInfoToPrincipal(requestingPrincipal);
-  if (NS_WARN_IF(principalOrErr.isErr())) {
-    return IPC_FAIL_NO_REASON(this);
-  }
-  nsCOMPtr<nsIPrincipal> principal = principalOrErr.unwrap();
-  nsCORSListenerProxy::RemoveFromCorsPreflightCache(uri, principal,
+  nsCORSListenerProxy::RemoveFromCorsPreflightCache(uri, requestingPrincipal,
                                                     originAttributes);
   return IPC_OK();
 }

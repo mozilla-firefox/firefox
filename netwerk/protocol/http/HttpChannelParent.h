@@ -195,7 +195,7 @@ class HttpChannelParent final : public nsIInterfaceRequestor,
   virtual mozilla::ipc::IPCResult RecvDocumentChannelCleanup(
       const bool& clearCacheEntry) override;
   virtual mozilla::ipc::IPCResult RecvRemoveCorsPreflightCacheEntry(
-      nsIURI* uri, const mozilla::ipc::PrincipalInfo& requestingPrincipal,
+      nsIURI* uri, NotNull<nsIPrincipal*> requestingPrincipal,
       const OriginAttributes& originAttributes) override;
   virtual mozilla::ipc::IPCResult RecvBytesRead(const int32_t& aCount) override;
   virtual mozilla::ipc::IPCResult RecvOpenOriginalCacheInputStream() override;
