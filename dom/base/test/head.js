@@ -246,6 +246,13 @@ async function runJSCacheTests(tests, { http } = {}) {
           });
         }
 
+        if (item.updateIntPref) {
+          // The consumer should include the pref name into the
+          // pushPrefEnv with a default value other than 10, so that the
+          // following triggers the pref callback, and the pref gets cleared
+          // later.
+          Services.prefs.setIntPref(item.updateIntPref, 10);
+        }
         if (item.clearMemory) {
           info("clear memory cache");
           ChromeUtils.clearResourceCache();

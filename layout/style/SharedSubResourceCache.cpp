@@ -4,6 +4,7 @@
 
 #include "SharedSubResourceCache.h"
 
+#include "mozilla/Preferences.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/Services.h"
 #include "mozilla/UniquePtr.h"

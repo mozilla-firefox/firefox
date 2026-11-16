@@ -174,6 +174,7 @@ class SharedSubResourceCache {
     MOZ_DIAGNOSTIC_ASSERT(!sSingleton);
     sSingleton = new Derived();
     sSingleton->Init();
+    sSingleton->AddPrefCallback();
     SharedSubResourceCacheUtils::AddMemoryPressureObserver(sSingleton);
     return sSingleton.get();
   }
@@ -181,6 +182,7 @@ class SharedSubResourceCache {
   static void DeleteSingleton() {
     if (sSingleton) {
       SharedSubResourceCacheUtils::RemoveMemoryPressureObserver(sSingleton);
+      sSingleton->RemovePrefCallback();
     }
     sSingleton = nullptr;
   }
@@ -309,6 +311,41 @@ class SharedSubResourceCache {
 
   virtual void ClearInProcessForMemoryPressure() {
     ClearInProcess(Nothing(), Nothing(), Nothing(), Nothing(), Nothing());
+  }
+
+  void AddPrefCallback() {
+    // URL classification (tracking protection etc) are handled inside
+    // nsHttpChannel.
+    // The cache reflects the policy for whether to block or not, and once
+    // the policy is modified, we should discard the cache, to avoid running
+    // a cached script which is supposed to be blocked.
+    Preferences::RegisterPrefixCallback(OnPrefChanged, "urlclassifier.");
+    Preferences::RegisterPrefixCallback(OnPrefChanged,
+                                        "privacy.trackingprotection.");
+  }
+
+  void RemovePrefCallback() {
+    Preferences::UnregisterPrefixCallback(OnPrefChanged, "urlclassifier.");
+    Preferences::UnregisterPrefixCallback(OnPrefChanged,
+                                          "privacy.trackingprotection.");
+  }
+
+  static void OnPrefChanged(const char* aPref, void* aData) {
+    if (!sSingleton) {
+      return;
+    }
+
+    // The preference callbacks are called on each process, and thus we don't
+    // have to clear other processes' cache.
+    //
+    // The URL classification should be applied only to the web content
+    // resources.
+    sSingleton->ClearInProcessForContentFilteringUpdate();
+  }
+
+  void ClearInProcessForContentFilteringUpdate() {
+    ClearInProcess(/* aChrome = */ Some(false), Nothing(), Nothing(), Nothing(),
+                   Nothing());
   }
 
   void CancelPendingLoadsForLoader(Loader&);
