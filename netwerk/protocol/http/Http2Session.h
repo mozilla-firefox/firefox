@@ -599,6 +599,10 @@ class Http2Session final : public ASpdySession,
   uint32_t mOutputQueueSent;
   UniquePtr<char[]> mOutputQueueBuffer;
 
+  // Whether |aCount| more bytes fit in the output queue, leaving
+  // kQueueReserved bytes for other frames.
+  bool OutputQueueHasRoom(uint32_t aCount) const;
+
   PRIntervalTime mPingThreshold;
   PRIntervalTime mLastReadEpoch;      // used for ping timeouts
   PRIntervalTime mLastDataReadEpoch;  // used for IdleTime()

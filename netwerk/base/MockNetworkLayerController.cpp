@@ -48,6 +48,18 @@ bool FindPausedTCPConnect(const NetAddr& aInput) {
   return controller->mPausedTCPConnects.Contains(addrPort);
 }
 
+bool FindPausedTCPWrite(const NetAddr& aInput) {
+  RefPtr<MockNetworkLayerController> controller = gController;
+  if (!controller) {
+    return false;
+  }
+
+  nsAutoCString addrPort;
+  aInput.ToAddrPortString(addrPort);
+  AutoReadLock lock(controller->mLock);
+  return controller->mPausedTCPWrites.Contains(addrPort);
+}
+
 bool FindBlockedUDPAddr(const NetAddr& aInput) {
   RefPtr<MockNetworkLayerController> controller = gController;
   if (!controller) {
@@ -157,6 +169,29 @@ NS_IMETHODIMP MockNetworkLayerController::ClearPausedTCPConnect() {
 
   AutoWriteLock lock(mLock);
   mPausedTCPConnects.Clear();
+  return NS_OK;
+}
+
+NS_IMETHODIMP MockNetworkLayerController::PauseTCPWrite(nsINetAddr* aAddr) {
+  MOZ_ASSERT(NS_IsMainThread());
+
+  NetAddr addr;
+  aAddr->GetNetAddr(&addr);
+  nsAutoCString addrPort;
+  addr.ToAddrPortString(addrPort);
+  {
+    AutoWriteLock lock(mLock);
+    mPausedTCPWrites.Insert(addrPort);
+  }
+
+  return NS_OK;
+}
+
+NS_IMETHODIMP MockNetworkLayerController::ClearPausedTCPWrite() {
+  MOZ_ASSERT(NS_IsMainThread());
+
+  AutoWriteLock lock(mLock);
+  mPausedTCPWrites.Clear();
   return NS_OK;
 }
 

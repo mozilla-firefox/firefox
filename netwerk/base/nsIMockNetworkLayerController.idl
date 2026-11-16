@@ -45,6 +45,18 @@ interface nsIMockNetworkLayerController : nsISupports
   void clearPausedTCPConnect();
 
   /**
+   * This method causes TCP writes to connections to the given address to fail
+   * with PR_WOULD_BLOCK_ERROR, as if the socket buffers were full, until the
+   * pause is cleared. The socket is not reported as writable meanwhile.
+   */
+  void pauseTCPWrite(in nsINetAddr aAddr);
+
+  /**
+   * Removes all entries from the TCP write pause list.
+   */
+  void clearPausedTCPWrite();
+
+  /**
    * This method prevents any UDP traffic to and from the given network address.
    */
   void blockUDPAddrIO(in nsINetAddr aAddr);

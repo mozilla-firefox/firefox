@@ -16,6 +16,7 @@ namespace mozilla::net {
 bool FindNetAddrOverride(const NetAddr& aInput, NetAddr& aOutput);
 bool FindBlockedTCPConnect(const NetAddr& aInput);
 bool FindPausedTCPConnect(const NetAddr& aInput);
+bool FindPausedTCPWrite(const NetAddr& aInput);
 bool FindBlockedUDPAddr(const NetAddr& aInput);
 bool FindFailedUDPAddr(const NetAddr& aInput);
 bool FindWouldBlockUDPAddr(const NetAddr& aInput);
@@ -37,6 +38,7 @@ class MockNetworkLayerController : public nsIMockNetworkLayerController {
   nsTHashMap<nsCStringHashKey, NetAddr> mNetAddrOverrides MOZ_GUARDED_BY(mLock);
   nsTHashSet<nsCStringHashKey> mBlockedTCPConnects MOZ_GUARDED_BY(mLock);
   nsTHashSet<nsCStringHashKey> mPausedTCPConnects MOZ_GUARDED_BY(mLock);
+  nsTHashSet<nsCStringHashKey> mPausedTCPWrites MOZ_GUARDED_BY(mLock);
   nsTHashSet<nsCStringHashKey> mBlockedUDPAddresses MOZ_GUARDED_BY(mLock);
   nsTHashSet<nsCStringHashKey> mFailedUDPAddresses MOZ_GUARDED_BY(mLock);
   nsTHashSet<nsCStringHashKey> mWouldBlockUDPAddresses MOZ_GUARDED_BY(mLock);
@@ -45,6 +47,7 @@ class MockNetworkLayerController : public nsIMockNetworkLayerController {
   friend bool FindNetAddrOverride(const NetAddr& aInput, NetAddr& aOutput);
   friend bool FindBlockedTCPConnect(const NetAddr& aInput);
   friend bool FindPausedTCPConnect(const NetAddr& aInput);
+  friend bool FindPausedTCPWrite(const NetAddr& aInput);
   friend bool FindBlockedUDPAddr(const NetAddr& aInput);
   friend bool FindFailedUDPAddr(const NetAddr& aInput);
   friend bool FindWouldBlockUDPAddr(const NetAddr& aInput);

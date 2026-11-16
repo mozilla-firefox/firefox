@@ -16999,6 +16999,17 @@
   value: 100
   mirror: always
 
+# The most an HTTP/2 session may buffer for writing, in bytes. The session
+# fails rather than growing its output queue beyond this.
+# The queue normally stays at a few tens of KB and only grows while the socket
+# can't be written to. 256 MB is far above that, and matches the largest IPC
+# message (IPC::Channel::kMaximumMessageSize), which bounds the request data a
+# content process can send.
+- name: network.http.http2.max_output_queue_size
+  type: RelaxedAtomicUint32
+  value: 256 * 1024 * 1024
+  mirror: always
+
 - name: network.http.http2.default-hpack-buffer
   type: RelaxedAtomicInt32
   value: 65536 # 64K

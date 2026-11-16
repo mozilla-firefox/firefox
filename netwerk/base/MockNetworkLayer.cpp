@@ -15,10 +15,12 @@ static PRDescIdentity sMockNetworkLayerIdentity;
 static PRIOMethods sMockNetworkLayeyMethods;
 static PRIOMethods* sMockNetworkLayeyMethodsPtr = nullptr;
 
-// Not used for now.
 class MockNetworkSecret {
  public:
   MockNetworkSecret() = default;
+
+  // The address the socket was asked to connect to.
+  NetAddr mPeerAddr;
 };
 
 static PRStatus MockNetworkConnect(PRFileDesc* fd, const PRNetAddr* addr,
@@ -30,6 +32,7 @@ static PRStatus MockNetworkConnect(PRFileDesc* fd, const PRNetAddr* addr,
   netAddr.ToAddrPortString(addrPort);
   SOCKET_LOG(
       ("MockNetworkConnect %p connect to [%s]\n", secret, addrPort.get()));
+  secret->mPeerAddr = netAddr;
   if (FindBlockedTCPConnect(netAddr)) {
     SOCKET_LOG(("MockNetworkConnect %p connect to [%s] blocked\n", secret,
                 addrPort.get()));
@@ -64,6 +67,12 @@ static PRInt32 MockNetworkSend(PRFileDesc* fd, const void* buf, PRInt32 amount,
   MockNetworkSecret* secret = reinterpret_cast<MockNetworkSecret*>(fd->secret);
   SOCKET_LOG(("MockNetworkSend %p\n", secret));
 
+  if (FindPausedTCPWrite(secret->mPeerAddr)) {
+    SOCKET_LOG(("MockNetworkSend %p write paused\n", secret));
+    PR_SetError(PR_WOULD_BLOCK_ERROR, 0);
+    return -1;
+  }
+
   PRInt32 rv =
       (fd->lower->methods->send)(fd->lower, buf, amount, flags, timeout);
   return rv;
@@ -88,6 +97,19 @@ static PRInt32 MockNetworkRecv(PRFileDesc* fd, void* buf, PRInt32 amount,
 
 static PRInt32 MockNetworkRead(PRFileDesc* fd, void* buf, PRInt32 amount) {
   return MockNetworkRecv(fd, buf, amount, 0, PR_INTERVAL_NO_WAIT);
+}
+
+static PRInt16 MockNetworkPoll(PRFileDesc* fd, PRInt16 in_flags,
+                               PRInt16* out_flags) {
+  MOZ_RELEASE_ASSERT(fd->identity == sMockNetworkLayerIdentity);
+
+  // Don't report a socket with paused writes as writable, or the caller would
+  // keep trying to write.
+  MockNetworkSecret* secret = reinterpret_cast<MockNetworkSecret*>(fd->secret);
+  if (FindPausedTCPWrite(secret->mPeerAddr)) {
+    in_flags &= ~PR_POLL_WRITE;
+  }
+  return fd->lower->methods->poll(fd->lower, in_flags, out_flags);
 }
 
 static PRStatus MockNetworkClose(PRFileDesc* fd) {
@@ -182,6 +204,7 @@ nsresult AttachMockNetworkLayer(PRFileDesc* fd) {
     sMockNetworkLayeyMethods.write = MockNetworkWrite;
     sMockNetworkLayeyMethods.recv = MockNetworkRecv;
     sMockNetworkLayeyMethods.read = MockNetworkRead;
+    sMockNetworkLayeyMethods.poll = MockNetworkPoll;
     sMockNetworkLayeyMethods.close = MockNetworkClose;
     sMockNetworkLayeyMethods.sendto = MockNetworkSendTo;
     sMockNetworkLayeyMethods.recvfrom = MockNetworkRecvFrom;
