@@ -499,6 +499,9 @@ add_task(async function test_override_ui_with_mixed_content() {
       "@mozilla.org/security/certoverride;1"
     ].getService(Ci.nsICertOverrideService);
     certOverrideService.clearValidityOverride("expired.example.com", 443, {});
+    // The page loaded through the exception is in the HTTP cache, and loading
+    // it from there would skip the certificate error.
+    Services.cache2.clear();
   });
 
   let url =
