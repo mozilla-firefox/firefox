@@ -214,6 +214,19 @@ BigInt* BigInt::createFromDigit(JSContext* cx, Digit d, bool isNegative,
   return res;
 }
 
+BigInt* BigInt::createFromPowerOfTwo(JSContext* cx, size_t n, bool isNegative,
+                                     gc::Heap heap) {
+  size_t digitLength = n / DigitBits + 1;
+  BigInt* res = createUninitialized(cx, digitLength, isNegative, heap);
+  if (!res) {
+    return nullptr;
+  }
+  Digits digits = res->unguardedDigits();
+  digits[digitLength - 1] = Digit(1) << (n % DigitBits);
+  zeroDigits(digits.First(digitLength - 1));
+  return res;
+}
+
 template <size_t N, class AllocPolicy>
 BigInt* BigInt::createFromDigitVector(
     JSContext* cx, const Vector<Digit, N, AllocPolicy>& digits,
@@ -504,16 +517,12 @@ void BigInt::inplaceMultiplyAdd(Digit factor, Digit summand) {
 
 inline int8_t BigInt::absoluteCompare(ConstDigits x, ConstDigits y) {
   MOZ_RELEASE_ASSERT(x.size() == y.size());
-  int i = x.size() - 1;
-  while (i >= 0 && x[i] == y[i]) {
-    i--;
+  for (size_t i = x.size(); i > 0; i--) {
+    if (x[i - 1] != y[i - 1]) {
+      return x[i - 1] > y[i - 1] ? 1 : -1;
+    }
   }
-
-  if (i < 0) {
-    return 0;
-  }
-
-  return x[i] > y[i] ? 1 : -1;
+  return 0;
 }
 
 inline int8_t BigInt::absoluteCompare(const BigInt* x, const BigInt* y) {
@@ -594,20 +603,9 @@ BigInt* BigInt::absoluteAdd(JSContext* cx, HandleBigInt x, HandleBigInt y,
     return nullptr;
   }
   {
-    auto leftDigits = left->digits();
-    auto rightDigits = right->digits();
-    auto resultDigits = result->digits();
-    Digit carry = 0;
-    unsigned i = 0;
-    for (; i < rightDigits.size(); i++) {
-      resultDigits[i] = digitAdd3(leftDigits[i], rightDigits[i], carry, &carry);
-    }
-
-    for (; i < leftDigits.size(); i++) {
-      resultDigits[i] = digitAdd(leftDigits[i], carry, &carry);
-    }
-
-    resultDigits[i] = carry;
+    Digits r = result->unguardedDigits();
+    r[left->digitLength()] =
+        addDigits(left->unguardedDigits(), right->unguardedDigits(), r);
   }
 
   return destructivelyTrimHighZeroDigits(cx, result);
@@ -641,22 +639,8 @@ BigInt* BigInt::absoluteSub(JSContext* cx, HandleBigInt x, HandleBigInt y,
   if (!result) {
     return nullptr;
   }
-  {
-    auto xDigits = x->digits();
-    auto yDigits = y->digits();
-    auto resultDigits = result->digits();
-    Digit borrow = 0;
-    unsigned i = 0;
-    for (; i < yDigits.size(); i++) {
-      resultDigits[i] = digitSub3(xDigits[i], yDigits[i], borrow, &borrow);
-    }
-
-    for (; i < xDigits.size(); i++) {
-      resultDigits[i] = digitSub(xDigits[i], borrow, &borrow);
-    }
-
-    MOZ_ASSERT(!borrow);
-  }
+  MOZ_ALWAYS_FALSE(subDigits(x->unguardedDigits(), y->unguardedDigits(),
+                             result->unguardedDigits()));
   return destructivelyTrimHighZeroDigits(cx, result);
 }
 
@@ -859,6 +843,15 @@ BigInt::Digit BigInt::inplaceAddDigits(Digits x, ConstDigits y) {
   return carry;
 }
 
+BigInt::Digit BigInt::inplaceDecrementDigits(Digits x) {
+  for (size_t i = 0; i < x.size(); i++) {
+    if (x[i]--) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
 BigInt::Digit BigInt::inplaceIncrementDigits(Digits x) {
   for (size_t i = 0; i < x.size(); i++) {
     if (++x[i]) {
@@ -866,6 +859,34 @@ BigInt::Digit BigInt::inplaceIncrementDigits(Digits x) {
     }
   }
   return 1;
+}
+
+BigInt::Digit BigInt::addDigits(ConstDigits x, ConstDigits y, Digits r) {
+  MOZ_RELEASE_ASSERT(y.size() <= x.size());
+  Digits out = r.First(x.size());
+  Digit carry = 0;
+  size_t i = 0;
+  for (; i < y.size(); i++) {
+    out[i] = digitAdd3(x[i], y[i], carry, &carry);
+  }
+  for (; i < x.size(); i++) {
+    out[i] = digitAdd(x[i], carry, &carry);
+  }
+  return carry;
+}
+
+BigInt::Digit BigInt::subDigits(ConstDigits x, ConstDigits y, Digits r) {
+  MOZ_RELEASE_ASSERT(y.size() <= x.size());
+  Digits out = r.First(x.size());
+  Digit borrow = 0;
+  size_t i = 0;
+  for (; i < y.size(); i++) {
+    out[i] = digitSub3(x[i], y[i], borrow, &borrow);
+  }
+  for (; i < x.size(); i++) {
+    out[i] = digitSub(x[i], borrow, &borrow);
+  }
+  return borrow;
 }
 
 void BigInt::copyDigits(ConstDigits src, Digits dest) {
@@ -1186,40 +1207,30 @@ BigInt* BigInt::absoluteXor(JSContext* cx, HandleBigInt x, HandleBigInt y) {
 
 BigInt* BigInt::absoluteAddOne(JSContext* cx, HandleBigInt x,
                                bool resultNegative) {
-  unsigned inputLength = x->digitLength();
-  // The addition will overflow into a new digit if all existing digits are
-  // at maximum.
-  bool willOverflow = true;
-  {
-    auto xDigits = x->digits();
-    for (unsigned i = 0; i < inputLength; i++) {
-      if (std::numeric_limits<Digit>::max() != xDigits[i]) {
-        willOverflow = false;
-        break;
-      }
-    }
+  unsigned length = x->digitLength();
+
+  if (length == 0) {
+    return createFromDigit(cx, 1, resultNegative);
   }
 
-  unsigned resultLength = inputLength + willOverflow;
-  BigInt* result = createUninitialized(cx, resultLength, resultNegative);
+  if (length == 1) {
+    Digit d = x->individualDigit(0);
+    if (d == Digit(-1)) {
+      return createFromPowerOfTwo(cx, DigitBits, resultNegative);
+    }
+    return createFromDigit(cx, d + 1, resultNegative);
+  }
+
+  BigInt* result = createUninitialized(cx, length, resultNegative);
   if (!result) {
     return nullptr;
   }
-  {
-    auto xDigits = x->digits();
-    auto resultDigits = result->digits();
-    Digit carry = 1;
-    for (unsigned i = 0; i < inputLength; i++) {
-      resultDigits[i] = digitAdd(xDigits[i], carry, &carry);
-    }
-    if (resultLength > inputLength) {
-      MOZ_ASSERT(carry == 1);
-      resultDigits[inputLength] = 1;
-    } else {
-      MOZ_ASSERT(!carry);
-    }
+  Digits resultDigits = result->unguardedDigits();
+  copyDigits(x->unguardedDigits(), resultDigits);
+  if (inplaceIncrementDigits(resultDigits)) {
+    return createFromPowerOfTwo(cx, length * DigitBits, resultNegative);
   }
-  return destructivelyTrimHighZeroDigits(cx, result);
+  return result;
 }
 
 BigInt* BigInt::absoluteSubOne(JSContext* cx, HandleBigInt x,
@@ -1241,15 +1252,9 @@ BigInt* BigInt::absoluteSubOne(JSContext* cx, HandleBigInt x,
   if (!result) {
     return nullptr;
   }
-  {
-    auto xDigits = x->digits();
-    auto resultDigits = result->digits();
-    Digit borrow = 1;
-    for (unsigned i = 0; i < length; i++) {
-      resultDigits[i] = digitSub(xDigits[i], borrow, &borrow);
-    }
-    MOZ_ASSERT(!borrow);
-  }
+  Digits resultDigits = result->unguardedDigits();
+  copyDigits(x->unguardedDigits(), resultDigits);
+  MOZ_ALWAYS_FALSE(inplaceDecrementDigits(resultDigits));
   return destructivelyTrimHighZeroDigits(cx, result);
 }
 
@@ -2513,15 +2518,7 @@ BigInt* BigInt::pow(JSContext* cx, HandleBigInt x, HandleBigInt y) {
                   "n * m can't overflow");
     n *= int(m);
 
-    int length = 1 + (n / DigitBits);
-    BigInt* result = createUninitialized(cx, length, resultNegative);
-    if (!result) {
-      return nullptr;
-    }
-    result->initializeDigitsToZero();
-    result->setIndividualDigit(length - 1, static_cast<Digit>(1)
-                                               << (n % DigitBits));
-    return result;
+    return createFromPowerOfTwo(cx, n, resultNegative);
   }
 
   RootedBigInt runningSquare(cx, x);
@@ -2738,14 +2735,7 @@ BigInt* BigInt::rshByAbsolute(JSContext* cx, HandleBigInt x, HandleBigInt y) {
   }
 
   // Incrementing overflowed: the result is -2**(DigitBits * resultLength).
-  result = createUninitialized(cx, resultLength + 1, /* isNegative = */ true);
-  if (!result) {
-    return nullptr;
-  }
-  resultDigits = result->unguardedDigits();
-  zeroDigits(resultDigits.First(resultLength));
-  resultDigits[resultLength] = 1;
-  return result;
+  return createFromPowerOfTwo(cx, DigitBits * resultLength, true);
 }
 
 // BigInt proposal section 1.1.9. BigInt::leftShift ( x, y )

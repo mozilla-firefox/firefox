@@ -235,6 +235,9 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
   static BigInt* createFromIntPtr(JSContext* cx, intptr_t n);
   static BigInt* createFromDigit(JSContext* cx, Digit d, bool isNegative,
                                  js::gc::Heap heap = js::gc::Heap::Default);
+  static BigInt* createFromPowerOfTwo(
+      JSContext* cx, size_t n, bool isNegative,
+      js::gc::Heap heap = js::gc::Heap::Default);
   static BigInt* createFromNonZeroRawUint64(JSContext* cx, uint64_t n,
                                             bool isNegative);
   template <size_t N, class AllocPolicy>
@@ -451,6 +454,12 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
   static Digit inplaceAddDigits(Digits x, ConstDigits y);
   // Add one to `x`, returning the carry.
   static Digit inplaceIncrementDigits(Digits x);
+  // Subtract one from `x`, returning the borrow.
+  static Digit inplaceDecrementDigits(Digits x);
+  // Store `x + y` into `r`, returning the carry.  |r| >= |x| >= |y|.
+  static Digit addDigits(ConstDigits x, ConstDigits y, Digits r);
+  // Store `x - y` into `r`, returning the borrow.  |r| >= |x| >= |y|.
+  static Digit subDigits(ConstDigits x, ConstDigits y, Digits r);
   // Copy `src` into `dest`, which has the same number of digits.
   static void copyDigits(ConstDigits src, Digits dest);
   // Set all digits of `dest` to zero.
