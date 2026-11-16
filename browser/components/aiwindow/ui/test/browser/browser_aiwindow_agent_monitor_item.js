@@ -3,8 +3,11 @@
 
 "use strict";
 
-const TEST_PAGE =
-  "chrome://mochitests/content/browser/browser/components/aiwindow/ui/test/browser/test_agent_monitor_item_page.html";
+/* import-globals-from head_agent_monitor_item.js */
+Services.scriptloader.loadSubScript(
+  getRootDirectory(gTestPath) + "head_agent_monitor_item.js",
+  this
+);
 
 const AGENT = {
   id: "agent-1",
@@ -15,23 +18,6 @@ const AGENT = {
   status: { label: "Active", kind: "watching" },
   cadence: "Auto · on-device",
 };
-
-async function openTestPage() {
-  const tab = await BrowserTestUtils.openNewForegroundTab(gBrowser, TEST_PAGE);
-  await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
-    await content.customElements.whenDefined("agent-monitor-item");
-  });
-  return { tab, browser: tab.linkedBrowser };
-}
-
-async function withTestPage(fn) {
-  const { tab, browser } = await openTestPage();
-  try {
-    await fn(browser);
-  } finally {
-    BrowserTestUtils.removeTab(tab);
-  }
-}
 
 async function setProps(browser, props) {
   await SpecialPowers.spawn(browser, [props], async properties => {

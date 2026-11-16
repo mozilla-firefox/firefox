@@ -134,6 +134,15 @@ ai-tasks-alert-pause-button = Pause
 ai-tasks-alert-resume-button = Resume
 ai-tasks-alert-check-now-button =
   .label = Check now
+# Button in the create form. Pressing it fills in the task name and the
+# "Notify me when" field with a suggestion, replacing what is there.
+ai-tasks-alert-suggest-button = Write it for me
+# Label of the "Write it for me" button while the suggestion is being written.
+# Screen readers also announce it when the writing starts.
+ai-tasks-alert-suggest-generating-button = Generating…
+# Label of the "Write it for me" button once it has filled in the form.
+# Pressing it again writes a new suggestion.
+ai-tasks-alert-suggest-retry-button = Retry
 
 ## Dialog Headers - Titles for alert dialogs
 
@@ -198,6 +207,8 @@ ai-tasks-alert-error-max-urls = { $maxUrls ->
 # Shown when creating or resuming a task is refused because the limit of
 # active tasks has been reached. Paused tasks don’t count toward the limit.
 ai-tasks-alert-error-active-limit = You’ve reached the limit of active tasks. Pause or delete one to add or resume another.
+# Shown next to the "Write it for me" button when no suggestion could be written
+ai-tasks-alert-error-suggestion-failed = Couldn’t write a suggestion. Try again.
 
 ## Accessibility - ARIA labels and accessibility text
 

@@ -250,6 +250,11 @@ export const FEATURES = {
   "agent-monitor": {
     engineId: "agent-monitor-engine",
   },
+  // Its own engine id, so a suggestion never replaces a running check's.
+  // see browser/components/aiwindow/models/agents/MonitorSetup.sys.mjs
+  "agent-monitor-setup": {
+    engineId: "agent-monitor-setup-engine",
+  },
   // see browser/components/aiwindow/models/search/SearchAgent.sys.mjs
   "search-answer-generation": {
     engineId: "smart-openai",

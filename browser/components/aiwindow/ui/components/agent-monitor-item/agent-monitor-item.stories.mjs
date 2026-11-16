@@ -50,6 +50,34 @@ const AGENT = {
   ],
 };
 
+const SAMPLE_SUGGESTIONS = [
+  {
+    title: "Sony WH-1000XM5 price",
+    condition: "The price drops below $278",
+  },
+  {
+    title: "Sony WH-1000XM5 back in silver",
+    condition: "The silver ones are back in stock",
+  },
+];
+
+// Stands in for the host: answers "Write it for me", differently on a retry
+function answerSuggestion(event) {
+  const card = event.target;
+  const { requestId, previousDrafts } = event.detail;
+  const suggestion =
+    SAMPLE_SUGGESTIONS[previousDrafts.length % SAMPLE_SUGGESTIONS.length];
+  setTimeout(
+    () =>
+      card.dispatchEvent(
+        new CustomEvent("agent-monitor-item:suggestion", {
+          detail: { requestId, ...suggestion },
+        })
+      ),
+    2000
+  );
+}
+
 const Template = ({ agent, mode, expanded, editing, showLastResult }) => html`
   <div style="max-width: 416px;">
     <agent-monitor-item
@@ -58,6 +86,7 @@ const Template = ({ agent, mode, expanded, editing, showLastResult }) => html`
       ?expanded=${expanded}
       ?editing=${editing}
       .showLastResult=${showLastResult}
+      @agent-monitor-item:request-suggestion=${answerSuggestion}
     ></agent-monitor-item>
   </div>
 `;

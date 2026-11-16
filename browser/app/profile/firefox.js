@@ -2508,6 +2508,9 @@ pref("browser.smartwindow.agent.monitorAnnouncement", false);
 // being met, and after this many days in total. Zero disables the rule.
 pref("browser.smartwindow.agent.expiry.noMatchDays", 60);
 pref("browser.smartwindow.agent.expiry.maxAgeDays", 90);
+// Lets "Write it for me" in the monitor create form fill in a generated task
+// name and condition.
+pref("browser.smartwindow.agent.suggestions.enabled", true);
 
 
 // Smart Window: Exa search endpoint, used by the search_the_web agentic flow (bug 2037948)

@@ -266,6 +266,47 @@ const MOCK_RS_RECORDS = [
       prompts: "Tabs:\n{titles}",
       version: "v2.0",
     },
+    // agent-monitor-setup resolves through the v2 modular path. Its prompts
+    // render what a suggestion is grounded in, so they need the placeholders
+    // and the block tags the real prompts have.
+    {
+      kind: "params",
+      feature: "agent-monitor-setup",
+      model: "test-model",
+      service_type: "agent",
+      purpose: "monitor",
+      parameters: {},
+      modules: [
+        { name: "system-instructions", version: "v1.0" },
+        { name: "user-data", version: "v1.0" },
+      ],
+      version: "v1.0",
+      is_default: true,
+    },
+    {
+      kind: "module",
+      feature: "agent-monitor-setup",
+      module: "system-instructions",
+      model: "test-model",
+      prompts: "Suggest a task name and a condition in {language}.",
+      version: "v1.0",
+    },
+    {
+      kind: "module",
+      feature: "agent-monitor-setup",
+      module: "user-data",
+      model: "test-model",
+      prompts: [
+        "{#pages}Pages to watch:\n{pages}\n{/pages}",
+        "{#existingTitles}Existing task names:\n{existingTitles}\n{/existingTitles}",
+        "{#memories}<memories>\n{memories}\n</memories>\n{/memories}",
+        "{#chatHistory}<recent_chat>\n{chatHistory}\n</recent_chat>\n{/chatHistory}",
+        "{#previousDrafts}<earlier_drafts>\n{previousDrafts}\n</earlier_drafts>\n{/previousDrafts}",
+        "{#pageText}<page_text>\n{pageText}\n</page_text>\n{/pageText}",
+        "Language: {language}",
+      ].join("\n"),
+      version: "v1.0",
+    },
     {
       kind: "module",
       feature: "browser-context",

@@ -39,6 +39,7 @@ import {
   installClientErrorListeners,
 } from "chrome://browser/content/aiwindow/modules/ClientErrorTelemetry.mjs";
 import { STATE_CHOOSE } from "chrome://browser/content/aiwindow/components/aitab-tool-ui.mjs";
+import { isBareAgentCommand } from "chrome://browser/content/aiwindow/modules/AgentCommands.mjs";
 
 /**
  * @typedef {import("chrome://browser/content/aiwindow/components/ai-action-confirmation.mjs").TabSelectionData} TabSelectionData
@@ -1560,6 +1561,24 @@ export class AIChatContent extends MozLitElement {
     });
   };
 
+  /**
+   * Whether the conversation has chat a monitor suggestion can draw on.
+   * Matches what formatChatHistoryForSuggestion keeps.
+   *
+   * @returns {boolean}
+   */
+  #hasChatForMonitorSuggestion() {
+    return this.conversationState.some(
+      msg =>
+        (msg?.role === "user" || msg?.role === "assistant") &&
+        typeof msg.body === "string" &&
+        !!msg.body.trim() &&
+        !msg.messageL10n &&
+        msg.toolUIData?.uiType !== UI_TYPES.AGENT_MONITOR &&
+        !(msg.role === "user" && isBareAgentCommand(msg.body))
+    );
+  }
+
   #renderAgentMonitorComponent(msg) {
     const { messageId, toolUIData, toolUIDraft } = msg;
     const toolCallId = toolUIData.toolCallId;
@@ -1568,6 +1587,7 @@ export class AIChatContent extends MozLitElement {
       mode=${toolUIData.properties?.mode ?? "create"}
       .agent=${toolUIData.properties?.agent}
       .draft=${toolUIDraft}
+      .hasChatContext=${this.#hasChatForMonitorSuggestion()}
       @agent-monitor-item:draft-change=${event =>
         this.#handleMonitorAction(
           event,

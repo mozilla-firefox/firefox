@@ -769,6 +769,11 @@ export class AIWindow extends MozLitElement {
     return this.#conversation;
   }
 
+  /** Whether the next message sent from this chat would use memories. */
+  get memoriesEnabled() {
+    return this.#memoriesToggled ?? this.#memoriesIconShown;
+  }
+
   #registerSwapDocShellsListener(win) {
     if (!win) {
       return;
@@ -2698,7 +2703,7 @@ export class AIWindow extends MozLitElement {
    */
   #createUserRoleOpts(contextMentions) {
     return new lazy.UserRoleOpts({
-      memoriesEnabled: this.#memoriesToggled ?? this.#memoriesIconShown,
+      memoriesEnabled: this.memoriesEnabled,
       memoriesFlagSource:
         this.#memoriesToggled == null
           ? lazy.MEMORIES_FLAG_SOURCE.GLOBAL

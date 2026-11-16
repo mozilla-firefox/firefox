@@ -8,6 +8,7 @@ with Files("**"):
 MOZ_SRC_FILES += [
     "Monitor.sys.mjs",
     "MonitorAgent.sys.mjs",
+    "MonitorSetup.sys.mjs",
     "MonitorStore.sys.mjs",
     "Schedule.sys.mjs",
 ]

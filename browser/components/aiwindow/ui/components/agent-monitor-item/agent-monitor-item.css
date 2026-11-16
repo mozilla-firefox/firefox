@@ -59,6 +59,51 @@
   gap: var(--space-small);
 }
 
+.create-top {
+  display: flex;
+  flex-direction: column;
+}
+
+/* The button drops under the title when the two don't fit on one row */
+.create-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-small);
+}
+
+.suggest-button {
+  margin-inline-start: auto;
+  max-width: 100%;
+}
+
+.suggest-status {
+  text-align: end;
+
+  > .error-message {
+    margin-block-start: var(--space-xsmall);
+    margin-inline-start: 0;
+    text-align: start;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .suggest-button.suggesting {
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+}
+
+/* For screen readers only: what the status line says while generating */
+.sr-only {
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
 .monitor-card-title {
   flex: 1;
   min-width: 0;

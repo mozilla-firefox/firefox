@@ -74,3 +74,15 @@ export function parseAgentCommand(value) {
     raw,
   };
 }
+
+/**
+ * Whether the input is a command with nothing after it, like "/watch". Such a
+ * message says what the user did, not what they are interested in.
+ *
+ * @param {string} value - Raw smartbar input or a user message
+ * @returns {boolean}
+ */
+export function isBareAgentCommand(value) {
+  const parsed = typeof value === "string" ? parseAgentCommand(value) : null;
+  return !!parsed && !parsed.prompt;
+}

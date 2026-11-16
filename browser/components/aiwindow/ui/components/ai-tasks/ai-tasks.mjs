@@ -527,6 +527,7 @@ export class AITasks extends MozLitElement {
           ? html`<agent-monitor-item
               mode="create"
               .maxWatchUrls=${this._constants.TOTAL_NUM_URLS_IN_MONITOR}
+              .canSuggest=${false}
             ></agent-monitor-item>`
           : nothing}
       </dialog>

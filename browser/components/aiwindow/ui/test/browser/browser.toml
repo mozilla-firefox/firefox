@@ -10,10 +10,12 @@ prefs = [
 ]
 support-files = [
   "head.js",
+  "head_agent_monitor_item.js",
   "head_aitab.js",
   "head_aiwindow_group_tabs_button.js",
   "head_smartformfill_autocomplete.js",
   "head_history_thumbnails.js",
+  "head_monitor_suggest.js",
   "head_smartformfill_form_review.js",
   "head_smartformfill_telemetry.js",
   "test_agent_monitor_item_page.html",
@@ -110,6 +112,8 @@ skip-if = [
 
 ["browser_aiwindow_agent_monitor_item.js"]
 
+["browser_aiwindow_agent_monitor_item_suggest.js"]
+
 ["browser_aiwindow_agentui_command.js"]
 
 ["browser_aiwindow_ai_action_confirmation.js"]
@@ -179,6 +183,12 @@ skip-if = [
 ["browser_aiwindow_monitor_button_panel.js"]
 
 ["browser_aiwindow_monitor_create.js"]
+
+["browser_aiwindow_monitor_suggest_chat.js"]
+
+["browser_aiwindow_monitor_suggest_chat_context.js"]
+
+["browser_aiwindow_monitor_suggest_panel.js"]
 
 ["browser_aiwindow_new_chat_button.js"]
 

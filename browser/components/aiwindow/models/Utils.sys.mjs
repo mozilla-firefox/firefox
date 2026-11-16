@@ -205,6 +205,7 @@ export const MODEL_FEATURES = Object.freeze({
   MEMORIES_CONTEXT: "memories-context",
   // agents
   AGENT_MONITOR: "agent-monitor",
+  AGENT_MONITOR_SETUP: "agent-monitor-setup",
   // search agent
   SEARCH_ANSWER_GENERATION: "search-answer-generation",
   // Exa /answers service. Not Remote Settings-backed — the model and service
@@ -287,6 +288,7 @@ export const FEATURE_MAJOR_VERSIONS = Object.freeze({
   [MODEL_FEATURES.BROWSER_CONTEXT]: 1,
   // agents
   [MODEL_FEATURES.AGENT_MONITOR]: 2,
+  [MODEL_FEATURES.AGENT_MONITOR_SETUP]: 1,
   // search agent
   [MODEL_FEATURES.SEARCH_ANSWER_GENERATION]: 1,
   // aitab structured-page generation. Paired with the `version` major in

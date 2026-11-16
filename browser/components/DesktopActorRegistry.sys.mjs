@@ -309,6 +309,7 @@ let JSWINDOWACTORS = {
         "moz-src:///browser/components/aiwindow/ui/actors/AgentMonitorItemChild.sys.mjs",
       events: {
         "agent-monitor-item:resolve-titles": { wantUntrusted: true },
+        "agent-monitor-item:request-suggestion": { wantUntrusted: true },
       },
     },
     allFrames: true,

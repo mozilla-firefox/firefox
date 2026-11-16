@@ -1158,6 +1158,8 @@ export const AIWindowTestUtils = {
    *   toolCall is set. Defaults to ["Tool complete."].
    * @property {Function} [onRequest] - Callback invoked with the parsed
    *   request body for every request to /v1/chat/completions.
+   * @property {string} [completion] - Content of the non-streaming response.
+   *   Defaults to "Mock response".
    */
 
   /**
@@ -1182,6 +1184,7 @@ export const AIWindowTestUtils = {
     toolCall = null,
     followupChunks = ["Tool complete."],
     onRequest,
+    completion = "Mock response",
   } = {}) {
     const server = new lazy.HttpServer();
 
@@ -1346,7 +1349,7 @@ export const AIWindowTestUtils = {
           choices: [
             {
               index: 0,
-              message: { role: "assistant", content: "Mock response" },
+              message: { role: "assistant", content: completion },
               finish_reason: "stop",
             },
           ],

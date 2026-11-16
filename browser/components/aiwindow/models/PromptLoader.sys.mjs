@@ -73,6 +73,7 @@ export const FEATURE_PURPOSES = Object.freeze({
   [MODEL_FEATURES.MEMORIES_MESSAGE_CLASSIFICATION_SYSTEM]:
     PURPOSES.MEMORY_GENERATION,
   [MODEL_FEATURES.AGENT_MONITOR]: PURPOSES.MONITOR,
+  [MODEL_FEATURES.AGENT_MONITOR_SETUP]: PURPOSES.MONITOR,
   [MODEL_FEATURES.SEARCH_ANSWER_GENERATION]: PURPOSES.CHAT,
   [MODEL_FEATURES.AITAB]: PURPOSES.AITAB,
 });
@@ -498,6 +499,38 @@ async function selectFeatureConfig(feature, opts = {}) {
   return mainConfig;
 }
 
+// Features whose generic record means "use the model of this other feature".
+const MODEL_SOURCE_FEATURES = new Map([
+  [MODEL_FEATURES.AGENT_MONITOR, MODEL_FEATURES.CHAT],
+  [MODEL_FEATURES.AGENT_MONITOR_SETUP, MODEL_FEATURES.AGENT_MONITOR],
+  [MODEL_FEATURES.AITAB, MODEL_FEATURES.CHAT],
+  [MODEL_FEATURES.RESUME_ACTIVITY_CONVERSATION, MODEL_FEATURES.CHAT],
+  [MODEL_FEATURES.RESUME_ACTIVITY_CONVERSATION_STARTER, MODEL_FEATURES.CHAT],
+]);
+
+/**
+ * Resolve the model a feature runs inference on. A generic record for a
+ * feature in MODEL_SOURCE_FEATURES takes the model its source feature resolves
+ * to.
+ *
+ * @param {string} feature
+ * @param {object} config - The feature's selected config record.
+ * @param {object} [opts]
+ * @param {string} [opts.modelChoiceIdOverride]
+ * @returns {Promise<string>}
+ */
+async function resolveInferenceModel(feature, config, opts = {}) {
+  const model = config.inference_model || config.model;
+  const sourceFeature = MODEL_SOURCE_FEATURES.get(feature);
+  if (model !== GENERIC_MODEL_NAME || !sourceFeature) {
+    return model;
+  }
+  const sourceConfig = await selectFeatureConfig(sourceFeature, {
+    modelChoiceIdOverride: opts.modelChoiceIdOverride,
+  });
+  return resolveInferenceModel(sourceFeature, sourceConfig, opts);
+}
+
 /**
  * Resolve the RS record for a feature and build a fresh openAIEngine +
  * inference parameters.
@@ -527,23 +560,7 @@ export async function buildEngineForFeature(feature, opts = {}) {
     Services.prefs.getStringPref(MODEL_CHOICE_PREF, "");
   const { baseURL, apiKey } = openAIEngine.resolveEndpointConfig(modelChoiceId);
 
-  // resolve the model to use for inference, this allows specific features to default to chat model
-  let model = mainConfig.inference_model || mainConfig.model;
-  const CHAT_MODEL_FALLBACK_FEATURES = new Set([
-    MODEL_FEATURES.AGENT_MONITOR,
-    MODEL_FEATURES.AITAB,
-    MODEL_FEATURES.RESUME_ACTIVITY_CONVERSATION,
-    MODEL_FEATURES.RESUME_ACTIVITY_CONVERSATION_STARTER,
-  ]);
-  if (
-    model === GENERIC_MODEL_NAME &&
-    CHAT_MODEL_FALLBACK_FEATURES.has(feature)
-  ) {
-    const chatConfig = await selectFeatureConfig(MODEL_FEATURES.CHAT, {
-      modelChoiceIdOverride: opts.modelChoiceIdOverride,
-    });
-    model = chatConfig.inference_model || chatConfig.model;
-  }
+  const model = await resolveInferenceModel(feature, mainConfig, opts);
 
   const engine = await openAIEngine.build({
     model,
