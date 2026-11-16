@@ -372,7 +372,6 @@ class nsWindow : public nsIWidget {
 
   static guint32 sLastButtonPressTime;
 
-  MozContainer* GetMozContainer() { return mContainer; }
   GdkWindow* GetGdkWindow() const { return mGdkWindow; }
   void SetGdkWindow(GdkWindow* aGdkWindow);
   GdkWindow* GetToplevelGdkWindow() const;

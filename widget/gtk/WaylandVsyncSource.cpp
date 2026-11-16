@@ -115,7 +115,7 @@ void WaylandVsyncSource::Init() {
 WaylandVsyncSource::WaylandVsyncSource(nsWindow* aWindow)
     : mMutex("WaylandVsyncSource"),
       mWindow(aWindow),
-      mWaylandSurface(MOZ_WL_SURFACE(aWindow->GetMozContainer())),
+      mWaylandSurface(aWindow->GetWaylandSurface()),
       mVsyncRate(TimeDuration::FromMilliseconds(1000.0 / 60.0)),
       mLastVsyncTimeStamp(TimeStamp::Now()),
       mHiddenWindowTimeout(1000 / StaticPrefs::layout_throttled_frame_rate()) {

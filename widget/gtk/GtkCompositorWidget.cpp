@@ -147,11 +147,11 @@ mozilla::layers::NativeLayerRoot* GtkCompositorWidget::GetNativeLayerRoot() {
   if (!mNativeLayerRoot) {
     LOG("GtkCompositorWidget::GetNativeLayerRoot [%p] create",
         (void*)mWidget.get());
-    MOZ_ASSERT(mWidget && mWidget->GetMozContainer());
-    mNativeLayerRoot = layers::NativeLayerRootWayland::Create(
-        MOZ_WL_SURFACE(mWidget->GetMozContainer()));
+    MOZ_DIAGNOSTIC_ASSERT(mWidget && mWidget->GetWaylandSurface());
+    RefPtr surface = mWidget->GetWaylandSurface();
+    surface->MarkAsRootSurface();
+    mNativeLayerRoot = layers::NativeLayerRootWayland::Create(surface);
     mNativeLayerRoot->Init();
-    MOZ_WL_SURFACE(mWidget->GetMozContainer())->MarkAsRootSurface();
   }
   return mNativeLayerRoot;
 }

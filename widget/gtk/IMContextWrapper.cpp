@@ -532,9 +532,7 @@ nsDependentCSubstring IMContextWrapper::GetIMName() const {
 }
 
 void IMContextWrapper::Init() {
-  MozContainer* container = mOwnerWindow->GetMozContainer();
-  MOZ_ASSERT(container, "container is null");
-  GdkWindow* gdkWindow = gtk_widget_get_window(GTK_WIDGET(container));
+  GdkWindow* gdkWindow = mOwnerWindow->GetGdkWindow();
 
   // Overwrite selection colors of the window before associating the window
   // with IM context since IME may look up selection colors via IM context

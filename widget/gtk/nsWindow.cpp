@@ -4455,7 +4455,7 @@ nsresult nsWindow::Create(nsIWidget* aParent, const LayoutDeviceIntRect& aRect,
     if (parentnsWindow) {
       WaylandSurfaceLock lock(mSurface);
       mSurface->SetParentLocked(
-          lock, MOZ_WL_SURFACE(parentnsWindow->GetMozContainer()));
+          lock, parentnsWindow->GetWaylandSurface());
     }
   }
   container = moz_container_new(this, mSurface);
@@ -7517,7 +7517,7 @@ UniquePtr<WaylandSurfaceLock> nsWindow::LockSurface() {
   if (mIsDestroyed || !mSurface) {
     return nullptr;
   }
-  return std::make_unique<WaylandSurfaceLock>(MOZ_WL_SURFACE(mContainer));
+  return std::make_unique<WaylandSurfaceLock>(mSurface);
 #else
   return nullptr;
 #endif

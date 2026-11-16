@@ -213,8 +213,7 @@ static bool moz_container_wayland_ensure_surface(MozContainer* container,
     nsWindow* parentWindow =
         static_cast<nsWindow*>(g_object_get_data(G_OBJECT(parent), "nsWindow"));
     MOZ_DIAGNOSTIC_ASSERT(parentWindow);
-    surface->SetParentLocked(lock,
-                             MOZ_WL_SURFACE(parentWindow->GetMozContainer()));
+    surface->SetParentLocked(lock, parentWindow->GetWaylandSurface());
   }
 
   if (!surface->MapLocked(lock, parentSurface,

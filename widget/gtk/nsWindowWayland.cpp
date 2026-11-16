@@ -941,7 +941,7 @@ void nsWindowWaylandPopup::WaylandPopupCloseOrphanedPopups() {
   nsWindowWaylandPopup* popup = this;
   bool dangling = false;
   while (popup) {
-    if (!dangling && !MOZ_WL_SURFACE(popup->GetMozContainer())->IsVisible()) {
+    if (!dangling && !popup->GetWaylandSurface()->IsVisible()) {
       LOG("  popup [%p] is waiting to show, close all child popups", popup);
       dangling = true;
     } else if (dangling) {
