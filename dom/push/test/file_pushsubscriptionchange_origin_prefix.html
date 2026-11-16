@@ -1,0 +1,38 @@
+<!doctype html>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<script src="/tests/dom/push/test/test_utils.js"></script>
+<script>
+let subscription;
+let registration;
+navigator.serviceWorker.onmessage = e => {
+  opener.postMessage({
+    ...e.data,
+    hostname: location.hostname,
+  }, "*");
+};
+setPushPermission(true).then(async () => {
+  registration = await navigator.serviceWorker.register("worker.js");
+  await waitForActive(registration);
+  subscription = await registration.pushManager.subscribe();
+  opener.postMessage({
+    hostname: location.hostname,
+    type: "subscribed",
+  }, "*");
+});
+onmessage = async e => {
+  if (e.data === "revokeAndGrantPermission") {
+    // Revoking permission and then granting it again fires a
+    // pushsubscriptionchange event.
+    await setPushPermission(false);
+    await setPushPermission(true);
+  } else if (e.data === "cleanup") {
+    await subscription.unsubscribe();
+    await registration.unregister();
+    opener.postMessage({
+      hostname: location.hostname,
+      type: "cleaned-up",
+    }, "*");
+  }
+};
+</script>
+<p>pushsubscriptionchange test document</p>
