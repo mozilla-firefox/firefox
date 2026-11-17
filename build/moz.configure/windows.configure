@@ -342,21 +342,6 @@ def check_w32API_version():
     )
 
 
-@depends(target)
-def cpu_arch_macro_definition(target):
-    if target.cpu == "x86":
-        return "_X86_"
-    elif target.cpu == "x86_64":
-        return "_AMD64_"
-    elif target.cpu == "aarch64":
-        return "_ARM64_"
-    else:
-        return "_CPU_ARCH_NOT_DEFINED"
-
-
-set_define(cpu_arch_macro_definition, True)
-
-
 check_w32API_version()
 
 
