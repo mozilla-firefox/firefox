@@ -484,6 +484,7 @@ VectorImage::RequestRefresh(const TimeStamp& aTime) {
     return;
   }
 
+  RefPtr<VectorImage> kungFuDeathGrip(this);
   PendingAnimationTracker* tracker = doc->GetPendingAnimationTracker();
   if (tracker && ShouldAnimate()) {
     tracker->TriggerPendingAnimationsOnNextTick(aTime);
@@ -719,6 +720,7 @@ VectorImage::GetFrameAtSize(const IntSize& aSize, uint32_t aWhichFrame,
 
   bool didCache;  // Was the surface put into the cache?
 
+  RefPtr<VectorImage> kungFuDeathGrip(this);
   AutoRestoreSVGState autoRestore(params, mSVGDocumentWrapper,
                                   /* aContextPaint */ false);
 
@@ -837,6 +839,7 @@ VectorImage::GetImageProvider(WindowRenderer* aRenderer,
   // generating blob keys and recording bindings. The recording won't happen
   // until the caller requests the key explicitly.
   RefPtr<ISurfaceProvider> provider;
+  RefPtr<VectorImage> kungFuDeathGrip(this);
   if (blobRecording) {
     provider = MakeRefPtr<BlobSurfaceProvider>(ImageKey(this), surfaceKey,
                                                mSVGDocumentWrapper, aFlags);
@@ -973,6 +976,8 @@ VectorImage::Draw(gfxContext* aContext, const nsIntSize& aSize,
   if (!mIsFullyLoaded) {
     return ImgDrawResult::NOT_READY;
   }
+
+  RefPtr<VectorImage> kungFuDeathGrip(this);
 
   if (mAnimationConsumers == 0 && mHaveAnimations) {
     SendOnUnlockedDraw(aFlags);
@@ -1363,6 +1368,7 @@ VectorImage::ResetAnimation() {
     return NS_OK;  // There are no animations to be reset.
   }
 
+  RefPtr<VectorImage> kungFuDeathGrip(this);
   mSVGDocumentWrapper->ResetAnimation();
 
   return NS_OK;
@@ -1455,6 +1461,10 @@ void VectorImage::OnSVGDocumentLoaded() {
              "These flags shouldn't get set until OnSVGDocumentLoaded. "
              "Duplicate calls to OnSVGDocumentLoaded?");
 
+  // ProgressTracker::SyncNotifyProgress may release us, so ensure we
+  // stick around long enough to complete our work.
+  RefPtr<VectorImage> kungFuDeathGrip(this);
+
   CancelAllListeners();
 
   // XXX Flushing is wasteful if embedding frame hasn't had initial reflow.
@@ -1470,10 +1480,6 @@ void VectorImage::OnSVGDocumentLoaded() {
 
   // Start listening to our image for rendering updates.
   mRenderingObserver = new SVGRootRenderingObserver(mSVGDocumentWrapper, this);
-
-  // ProgressTracker::SyncNotifyProgress may release us, so ensure we
-  // stick around long enough to complete our work.
-  RefPtr<VectorImage> kungFuDeathGrip(this);
 
   // Tell *our* observers that we're done loading.
   if (mProgressTracker) {
@@ -1606,6 +1612,7 @@ void VectorImage::MediaFeatureValuesChangedAllDocuments(
     return;
   }
 
+  RefPtr<VectorImage> kungFuDeathGrip(this);
   if (Document* doc = mSVGDocumentWrapper->GetDocument()) {
     if (RefPtr<nsPresContext> presContext = doc->GetPresContext()) {
       presContext->MediaFeatureValuesChanged(
