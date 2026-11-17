@@ -189,7 +189,7 @@ export class TelemetryPromptEngine {
 
     const result = await this.#engineInstance.run({
       token,
-      args: [{ role: "system", content: prompt }],
+      args: [{ role: "user", content: prompt }],
     });
 
     lazy.console.debug("Returning: ", result);
