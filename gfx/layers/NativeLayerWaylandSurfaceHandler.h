@@ -125,6 +125,7 @@ class NativeLayerWaylandSurfaceHandler {
 
  protected:
   friend class NativeLayerWaylandRender;
+  friend class NativeLayerRemoteWayland;
 
   void DiscardBackbuffersLocked(const widget::WaylandSurfaceLock* aProofOfLock,
                                 bool aForce);

@@ -32,7 +32,7 @@ class GpuFence;
 class NativeLayer;
 class NativeLayerCA;
 class NativeLayerRemoteMac;
-class NativeLayerWayland;
+class NativeLayerRemoteWayland;
 class NativeLayerRootCA;
 class NativeLayerRootWayland;
 class NativeLayerRootSnapshotter;
@@ -147,6 +147,9 @@ class NativeLayer {
 
   virtual NativeLayerCA* AsNativeLayerCA() { return nullptr; }
   virtual NativeLayerRemoteMac* AsNativeLayerRemoteMac() { return nullptr; }
+  virtual NativeLayerRemoteWayland* AsNativeLayerRemoteWayland() {
+    return nullptr;
+  }
   virtual NativeLayerWayland* AsNativeLayerWayland() { return nullptr; }
 
   // The size and opaqueness of a layer are supplied during layer creation and
