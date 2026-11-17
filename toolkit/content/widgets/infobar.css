@@ -79,14 +79,13 @@
   :host(.infobar) {
     --info-bar-background-color: transparent;
     --info-bar-box-shadow: none;
-    --message-bar-icon-container-align-items: center;
     --message-bar-icon-container-border: none;
     --message-bar-icon-container-border-radius-start-start: 0;
     --message-bar-icon-container-border-radius-start-end: 0;
     --message-bar-icon-container-border-radius-end-start: 0;
     --message-bar-icon-container-border-radius-end-end: 0;
     --message-bar-icon-container-padding: 0;
-    --message-bar-icon-container-padding-block-start: 0;
+    --message-bar-icon-container-padding-block-start: calc(1lh - var(--message-bar-icon-size) / 2 + 2px);
     --message-bar-icon-container-height: var(--message-bar-icon-size);
     --message-bar-container-padding-inline: 12px;
     --message-bar-content-padding-inline: 0;
@@ -99,9 +98,6 @@
 
     .icon-container {
       align-self: flex-start;
-      /* Lines up with the first line, not the whole block. text-container already pads itself down, so we have to match that. */
-      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-      margin-block-start: calc(1.5 * 1lh - var(--message-bar-icon-size));
     }
   }
 
