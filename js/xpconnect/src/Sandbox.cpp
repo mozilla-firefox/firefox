@@ -364,7 +364,7 @@ bool xpc::SandboxCreateFetch(JSContext* cx, JS::Handle<JSObject*> obj) {
          Headers_Binding::CreateAndDefineOnGlobal(cx);
 }
 
-static bool SandboxCreateStorage(JSContext* cx, JS::HandleObject obj) {
+bool xpc::SandboxCreateStorage(JSContext* cx, JS::Handle<JSObject*> obj) {
   MOZ_ASSERT(JS_IsGlobalObject(obj));
 
   nsIGlobalObject* native = xpc::NativeGlobal(obj);
