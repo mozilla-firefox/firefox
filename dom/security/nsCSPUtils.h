@@ -331,6 +331,11 @@ class nsCSPKeywordSrc : public nsCSPBaseSrc {
 
 /* =============== nsCSPNonceSource =========== */
 
+// The prefix of a nonce-source expression, e.g. 'nonce-abc'. It's not a
+// keyword-source, see the grammar in
+// https://w3c.github.io/webappsec-csp/#framework-directive-source-list.
+inline constexpr nsLiteralString kCSPNonceSourcePrefix = u"'nonce-"_ns;
+
 class nsCSPNonceSrc : public nsCSPBaseSrc {
  public:
   explicit nsCSPNonceSrc(const nsAString& aNonce);

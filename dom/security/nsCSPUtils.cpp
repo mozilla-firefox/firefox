@@ -979,7 +979,7 @@ bool nsCSPNonceSrc::visit(nsCSPSrcVisitor* aVisitor) const {
 }
 
 void nsCSPNonceSrc::toString(nsAString& outStr) const {
-  outStr.Append(CSP_EnumToUTF16Keyword(CSP_NONCE));
+  outStr.Append(kCSPNonceSourcePrefix);
   outStr.Append(mNonce);
   outStr.AppendLiteral("'");
 }
