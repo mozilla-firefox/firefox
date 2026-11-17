@@ -10,6 +10,8 @@ run-if = [
 ["test_attachments_downloader.js"]
 support-files = ["test_attachments_downloader/**"]
 
+["test_database_closed_connection.js"]
+
 ["test_remote_settings.js"]
 
 ["test_remote_settings_disabled_env.js"]

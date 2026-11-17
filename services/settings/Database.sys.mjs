@@ -526,6 +526,14 @@ async function openIDB() {
   let db = await gDBPromise;
   if (!gDB) {
     gDB = db;
+    // The connection can be closed without us asking for it, e.g. when storage
+    // is reset. Open it again next time instead of using a closed database.
+    db.onclose = () => {
+      if (gDB === db) {
+        gDB = null;
+        gDBPromise = null;
+      }
+    };
   }
 }
 
