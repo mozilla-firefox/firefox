@@ -808,7 +808,8 @@
                   { "const": "tree", "title": "Tree" },
                   { "const": "chill", "title": "Chill" },
                   { "const": "circle", "title": "Dot" },
-                  { "const": "fence", "title": "Fence" }
+                  { "const": "fence", "title": "Fence" },
+                  { "const": "robot", "title": "Robot" }
                 ]
               },
               "color": {

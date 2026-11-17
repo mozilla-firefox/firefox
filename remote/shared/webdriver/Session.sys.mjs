@@ -668,9 +668,7 @@ function getRemoteControlUserContextId() {
   return lazy.UserContextManager.createContext({
     // Use a color reminiscent of the color applied to the URL bar.
     color: "red",
-    // Bug 2074485: Add a new container icon matching the robot icon for the
-    // remote control panel. In the meantime, use a circle as a generic icon.
-    icon: "circle",
+    icon: "robot",
     name: REMOTE_CONTROL_CONTAINER_NAME,
   });
 }

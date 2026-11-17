@@ -110,6 +110,7 @@ const CONTAINER_ICONS = [
   { name: "chill", l10nId: "user-context-icon-chill" },
   { name: "circle", l10nId: "user-context-icon-circle" },
   { name: "fence", l10nId: "user-context-icon-fence" },
+  { name: "robot", l10nId: "user-context-icon-robot" },
 ];
 
 const lazy = {};

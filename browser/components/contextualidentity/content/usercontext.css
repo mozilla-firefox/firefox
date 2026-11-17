@@ -152,6 +152,10 @@
   --identity-icon: url("resource://usercontext-content/chill.svg");
 }
 
+.identity-icon-robot {
+  --identity-icon: url("resource://usercontext-content/robot.svg");
+}
+
 #userContext-indicator {
   height: 16px;
   width: 16px;
