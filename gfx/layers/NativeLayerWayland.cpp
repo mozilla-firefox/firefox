@@ -297,6 +297,8 @@ void NativeLayerRootWayland::Shutdown() {
     mRootSurface->ClearMapCallbackLocked(lock);
     mRootSurface->ClearUnmapCallbackLocked(lock);
     mRootSurface->ClearGdkCommitCallbackLocked(lock);
+    mRootSurface->SetVSyncCallbackStateHandlerLocked(lock, nullptr);
+    mRootSurface->SetVSyncEmulateCheckLocked(lock, nullptr, /* aForce */ true);
     mRootSurface->DisableDMABufFormatsLocked(lock);
   }
 
@@ -698,11 +700,15 @@ void NativeLayerRootWayland::VSyncCallbackHandler(uint32_t aTime,
                                                   bool aEmulated) {
   MOZ_DIAGNOSTIC_ASSERT(!aEmulated,
                         "VSyncCallbackHandler() is supposed to be HW only");
+  RefPtr<WaylandSurface> rootSurface = mRootSurface;
+  if (!rootSurface) {
+    return;
+  }
   {
     // Child layer wl_subsurface already requested next frame callback
     // and we need to commit to root surface too as we're in
     // wl_subsurface synced mode.
-    WaylandSurfaceLock lock(mRootSurface);
+    WaylandSurfaceLock lock(rootSurface);
   }
 
   if (aTime <= mLastFrameCallbackTime) {
@@ -717,9 +723,9 @@ void NativeLayerRootWayland::VSyncCallbackHandler(uint32_t aTime,
   LOG_VSYNC(
       "NativeLayerRootWayland::VSyncCallbackHandler() time %d emulated [%d]",
       aTime, aEmulated);
-  mRootSurface->VSyncCallbackHandler(nullptr, aTime,
-                                     /* aEmulated */ aEmulated,
-                                     /* aRoutedFromChildSurface */ true);
+  rootSurface->VSyncCallbackHandler(nullptr, aTime,
+                                    /* aEmulated */ aEmulated,
+                                    /* aRoutedFromChildSurface */ true);
 }
 
 // We don't need to lock access to GdkWindow() as we process all Gdk/Gtk
