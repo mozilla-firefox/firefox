@@ -9842,6 +9842,13 @@ static nsresult GetNextPrevLineFromBlockFrame(PeekOffsetStruct* aPos,
   const bool forceInEditableRegion =
       aPos->mOptions.contains(PeekOffsetOption::ForceEditableRegion);
   while (!found) {
+    // GetContentOffsetsFromPoint below can resolve bidi lazily (e.g. in SVG
+    // text), which destroys the block's cached line iterator.
+    it = aBlockFrame->GetLineIterator();
+    if (!it) {
+      return NS_ERROR_FAILURE;
+    }
+    countLines = it->GetNumLines();
     if (aPos->mDirection == eDirPrevious) {
       searchingLine--;
     } else {
