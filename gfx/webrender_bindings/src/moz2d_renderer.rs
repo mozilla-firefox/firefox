@@ -859,7 +859,7 @@ impl Moz2dBlobImageHandler {
         #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows")))]
         fn process_native_font_handle(key: FontKey, handle: &NativeFontHandle) {
             let cstr = CString::new(handle.path.as_os_str().as_bytes()).unwrap();
-            let size = cstr.to_bytes_with_nul().len();
+            let size = cstr.to_bytes().len();
             unsafe { AddNativeFontHandle(key, cstr.as_ptr() as *mut c_void, size, handle.index) };
         }
 
