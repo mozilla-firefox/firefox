@@ -90,6 +90,8 @@ support-files = ["ml_inference_session_memory.worker.mjs"]
 
 ["browser_ml_model_hub_delete.js"]
 
+["browser_ml_model_hub_denylist.js"]
+
 ["browser_ml_model_hub_download.js"]
 
 ["browser_ml_model_hub_download_failures.js"]
@@ -98,6 +100,8 @@ support-files = ["ml_inference_session_memory.worker.mjs"]
 support-files = ["ml_model_hub_echo_stub.worker.mjs"]
 
 ["browser_ml_model_hub_etag.js"]
+
+["browser_ml_model_hub_list.js"]
 
 ["browser_ml_native.js"]
 skip-if = [
