@@ -31,27 +31,27 @@ class ArrayBufferViewObject : public NativeObject {
   // a buffer. Otherwise, the buffer is implicit because the data
   // is held inline, and the buffer slot will store the pinned status
   // (FalseValue or TrueValue).
-  static constexpr size_t BUFFER_SLOT = 0;
-  static_assert(BUFFER_SLOT == JS_TYPEDARRAYLAYOUT_BUFFER_SLOT,
+  JS_DEFINE_TYPED_SLOT(0, BUFFER_SLOT, Object, Boolean);
+  static_assert(BUFFER_SLOT.index() == JS_TYPEDARRAYLAYOUT_BUFFER_SLOT,
                 "self-hosted code with burned-in constants must get the "
                 "right buffer slot");
 
   // Slot containing length of the view in number of typed elements.
-  static constexpr size_t LENGTH_SLOT = 1;
+  JS_DEFINE_TYPED_SLOT(1, LENGTH_SLOT, Private);
 
   // Offset of view within underlying (Shared)ArrayBufferObject.
-  static constexpr size_t BYTEOFFSET_SLOT = 2;
+  JS_DEFINE_TYPED_SLOT(2, BYTEOFFSET_SLOT, Private);
 
   // Pointer to raw buffer memory.
-  static constexpr size_t DATA_SLOT = 3;
+  JS_DEFINE_TYPED_SLOT(3, DATA_SLOT, Private, Undefined);
 
   static constexpr size_t RESERVED_SLOTS = 4;
 
   // Additional slots for views on resizable/growable (Shared)ArrayBufferObject.
 
-  static const uint8_t AUTO_LENGTH_SLOT = 4;
-  static const uint8_t INITIAL_LENGTH_SLOT = 5;
-  static const uint8_t INITIAL_BYTE_OFFSET_SLOT = 6;
+  JS_DEFINE_TYPED_SLOT(4, AUTO_LENGTH_SLOT, Boolean);
+  JS_DEFINE_TYPED_SLOT(5, INITIAL_LENGTH_SLOT, Private);
+  JS_DEFINE_TYPED_SLOT(6, INITIAL_BYTE_OFFSET_SLOT, Private);
 
   static constexpr size_t RESIZABLE_RESERVED_SLOTS = 7;
 
@@ -60,31 +60,31 @@ class ArrayBufferViewObject : public NativeObject {
 #endif
 
   static constexpr int bufferOffset() {
-    return NativeObject::getFixedSlotOffset(BUFFER_SLOT);
+    return NativeObject::getFixedSlotOffsetTyped(BUFFER_SLOT);
   }
   static constexpr int lengthOffset() {
-    return NativeObject::getFixedSlotOffset(LENGTH_SLOT);
+    return NativeObject::getFixedSlotOffsetTyped(LENGTH_SLOT);
   }
   static constexpr int byteOffsetOffset() {
-    return NativeObject::getFixedSlotOffset(BYTEOFFSET_SLOT);
+    return NativeObject::getFixedSlotOffsetTyped(BYTEOFFSET_SLOT);
   }
   static constexpr int dataOffset() {
-    return NativeObject::getFixedSlotOffset(DATA_SLOT);
+    return NativeObject::getFixedSlotOffsetTyped(DATA_SLOT);
   }
   static constexpr int autoLengthOffset() {
-    return NativeObject::getFixedSlotOffset(AUTO_LENGTH_SLOT);
+    return NativeObject::getFixedSlotOffsetTyped(AUTO_LENGTH_SLOT);
   }
   static constexpr int initialLengthOffset() {
-    return NativeObject::getFixedSlotOffset(INITIAL_LENGTH_SLOT);
+    return NativeObject::getFixedSlotOffsetTyped(INITIAL_LENGTH_SLOT);
   }
   static constexpr int initialByteOffsetOffset() {
-    return NativeObject::getFixedSlotOffset(INITIAL_BYTE_OFFSET_SLOT);
+    return NativeObject::getFixedSlotOffsetTyped(INITIAL_BYTE_OFFSET_SLOT);
   }
 
  private:
   void* dataPointerEither_() const {
     // Note, do not check whether shared or not
-    return maybePtrFromReservedSlot<void>(DATA_SLOT);
+    return maybePtrFromReservedSlotTyped<void>(DATA_SLOT);
   }
 
  public:
@@ -116,7 +116,7 @@ class ArrayBufferViewObject : public NativeObject {
     // dataPointerEither_() accessor above; in neither case does the
     // raw pointer escape untagged into C++ code.
     void* data = viewData.unwrap(/*safe - see above*/);
-    initReservedSlot(DATA_SLOT, PrivateValue(data));
+    initReservedSlotTyped(DATA_SLOT, PrivateValue(data));
   }
 
   SharedMem<void*> dataPointerShared() const {
@@ -133,7 +133,7 @@ class ArrayBufferViewObject : public NativeObject {
     return dataPointerEither_();
   }
 
-  Value bufferValue() const { return getFixedSlot(BUFFER_SLOT); }
+  Value bufferValue() const { return getFixedSlotTyped(BUFFER_SLOT); }
   bool hasBuffer() const { return bufferValue().isObject(); }
 
   ArrayBufferObject* bufferUnshared() const {
@@ -231,7 +231,7 @@ class ArrayBufferViewObject : public NativeObject {
       return false;
     }
 
-    setFixedSlot(BUFFER_SLOT, JS::BooleanValue(pin));
+    setFixedSlotTyped(BUFFER_SLOT, JS::BooleanValue(pin));
     return true;
   }
 
@@ -245,11 +245,11 @@ class ArrayBufferViewObject : public NativeObject {
 
  protected:
   size_t lengthSlotValue() const {
-    return size_t(getFixedSlot(LENGTH_SLOT).toPrivate());
+    return size_t(getFixedSlotTyped(LENGTH_SLOT).toPrivate());
   }
 
   size_t byteOffsetSlotValue() const {
-    return size_t(getFixedSlot(BYTEOFFSET_SLOT).toPrivate());
+    return size_t(getFixedSlotTyped(BYTEOFFSET_SLOT).toPrivate());
   }
 
   /**
@@ -275,7 +275,7 @@ class ArrayBufferViewObject : public NativeObject {
   size_t initialByteOffsetValue() const {
     // No assertion for resizable buffers here, because this method is called
     // from dataPointerOffset(), which can be called during tracing.
-    return size_t(getFixedSlot(INITIAL_BYTE_OFFSET_SLOT).toPrivate());
+    return size_t(getFixedSlotTyped(INITIAL_BYTE_OFFSET_SLOT).toPrivate());
   }
 
  public:
@@ -283,12 +283,12 @@ class ArrayBufferViewObject : public NativeObject {
 
   bool isAutoLength() const {
     MOZ_ASSERT(hasResizableBuffer());
-    return getFixedSlot(AUTO_LENGTH_SLOT).toBoolean();
+    return getFixedSlotTyped(AUTO_LENGTH_SLOT).toBoolean();
   }
 
   size_t initialLength() const {
     MOZ_ASSERT(hasResizableBuffer());
-    return size_t(getFixedSlot(INITIAL_LENGTH_SLOT).toPrivate());
+    return size_t(getFixedSlotTyped(INITIAL_LENGTH_SLOT).toPrivate());
   }
 
   size_t initialByteOffset() const {

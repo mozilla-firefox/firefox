@@ -2816,8 +2816,9 @@ uint64_t ICInterpretOps(uint64_t arg0, uint64_t arg1, ICStub* stub,
         ObjOperandId objId = cacheIRReader.objOperandId();
         ArrayBufferViewObject* abvo =
             reinterpret_cast<ArrayBufferViewObject*>(READ_REG(objId.id()));
-        size_t len = size_t(
-            abvo->getFixedSlot(ArrayBufferViewObject::LENGTH_SLOT).toPrivate());
+        size_t len =
+            size_t(abvo->getFixedSlotTyped(ArrayBufferViewObject::LENGTH_SLOT)
+                       .toPrivate());
         if (len > size_t(INT32_MAX)) {
           FAIL_IC();
         }
@@ -2830,8 +2831,9 @@ uint64_t ICInterpretOps(uint64_t arg0, uint64_t arg1, ICStub* stub,
         ObjOperandId objId = cacheIRReader.objOperandId();
         ArrayBufferViewObject* abvo =
             reinterpret_cast<ArrayBufferViewObject*>(READ_REG(objId.id()));
-        size_t len = size_t(
-            abvo->getFixedSlot(ArrayBufferViewObject::LENGTH_SLOT).toPrivate());
+        size_t len =
+            size_t(abvo->getFixedSlotTyped(ArrayBufferViewObject::LENGTH_SLOT)
+                       .toPrivate());
         retValue = DoubleValue(double(len)).asRawBits();
         PREDICT_RETURN();
         DISPATCH_CACHEOP();
@@ -4906,9 +4908,9 @@ uint64_t ICInterpretOps(uint64_t arg0, uint64_t arg1, ICStub* stub,
         ObjOperandId objId = cacheIRReader.objOperandId();
         ArrayBufferViewObject* abvo =
             reinterpret_cast<ArrayBufferViewObject*>(READ_REG(objId.id()));
-        size_t byteOffset =
-            size_t(abvo->getFixedSlot(ArrayBufferViewObject::BYTEOFFSET_SLOT)
-                       .toPrivate());
+        size_t byteOffset = size_t(
+            abvo->getFixedSlotTyped(ArrayBufferViewObject::BYTEOFFSET_SLOT)
+                .toPrivate());
         if (byteOffset > size_t(INT32_MAX)) {
           FAIL_IC();
         }
@@ -4921,9 +4923,9 @@ uint64_t ICInterpretOps(uint64_t arg0, uint64_t arg1, ICStub* stub,
         ObjOperandId objId = cacheIRReader.objOperandId();
         ArrayBufferViewObject* abvo =
             reinterpret_cast<ArrayBufferViewObject*>(READ_REG(objId.id()));
-        size_t byteOffset =
-            size_t(abvo->getFixedSlot(ArrayBufferViewObject::BYTEOFFSET_SLOT)
-                       .toPrivate());
+        size_t byteOffset = size_t(
+            abvo->getFixedSlotTyped(ArrayBufferViewObject::BYTEOFFSET_SLOT)
+                .toPrivate());
         retValue = DoubleValue(double(byteOffset)).asRawBits();
         PREDICT_RETURN();
         DISPATCH_CACHEOP();

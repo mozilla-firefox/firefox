@@ -2657,22 +2657,23 @@ void AllocateAndInitTypedArrayBuffer(JSContext* cx,
   // template object. If the slot isn't overwritten below, this value is used as
   // a signal to our JIT caller that the allocation failed.
   MOZ_RELEASE_ASSERT(
-      obj->getFixedSlot(TypedArrayObject::DATA_SLOT).isUndefined(),
+      obj->getFixedSlotTyped(TypedArrayObject::DATA_SLOT).isUndefined(),
       "DATA_SLOT initialized to UndefinedValue in JIT code");
 
   // The buffer and byte-offset slots are initialized to their default values.
-  MOZ_ASSERT(obj->getFixedSlot(TypedArrayObject::BUFFER_SLOT).isFalse(),
+  MOZ_ASSERT(obj->getFixedSlotTyped(TypedArrayObject::BUFFER_SLOT).isFalse(),
              "BUFFER_SLOT initialized to FalseValue in JIT code");
-  MOZ_ASSERT(obj->getFixedSlot(TypedArrayObject::BYTEOFFSET_SLOT) ==
+  MOZ_ASSERT(obj->getFixedSlotTyped(TypedArrayObject::BYTEOFFSET_SLOT) ==
                  PrivateValue(size_t(0)),
-             "BUFFER_SLOT initialized to PrivateValue(0) in JIT code");
+             "BYTEOFFSET_SLOT initialized to PrivateValue(0) in JIT code");
 
   // Negative numbers will bail out to the slow path, which in turn will raise
   // an invalid argument exception.
   constexpr size_t byteLengthLimit = TypedArrayObject::ByteLengthLimit;
   size_t bytesPerElement = obj->bytesPerElement();
   if (count < 0 || size_t(count) > byteLengthLimit / bytesPerElement) {
-    obj->setFixedSlot(TypedArrayObject::LENGTH_SLOT, PrivateValue(size_t(0)));
+    obj->setFixedSlotTyped(TypedArrayObject::LENGTH_SLOT,
+                           PrivateValue(size_t(0)));
     return;
   }
 
@@ -2680,7 +2681,7 @@ void AllocateAndInitTypedArrayBuffer(JSContext* cx,
   MOZ_ASSERT(nbytes <= byteLengthLimit);
 
   // Overwrite the slot with the length of the newly allocated typed array.
-  obj->setFixedSlot(TypedArrayObject::LENGTH_SLOT, PrivateValue(count));
+  obj->setFixedSlotTyped(TypedArrayObject::LENGTH_SLOT, PrivateValue(count));
 
   // If possible try to use the available inline space allocated through the
   // template object's alloc-kind.
@@ -2695,7 +2696,7 @@ void AllocateAndInitTypedArrayBuffer(JSContext* cx,
     }
 #endif
 
-    obj->initFixedSlot(TypedArrayObject::DATA_SLOT, PrivateValue(data));
+    obj->initFixedSlotTyped(TypedArrayObject::DATA_SLOT, PrivateValue(data));
     return;
   }
 
@@ -2713,7 +2714,7 @@ void AllocateAndInitTypedArrayBuffer(JSContext* cx,
   void* buf = cx->nursery().allocateZeroedBuffer(obj, nbytes,
                                                  js::ArrayBufferContentsArena);
   if (buf) {
-    InitReservedSlot(obj, TypedArrayObject::DATA_SLOT, buf, nbytes,
+    InitReservedSlot(obj, TypedArrayObject::DATA_SLOT.index(), buf, nbytes,
                      MemoryUse::TypedArrayElements);
   }
 }

@@ -67,9 +67,9 @@ void ArrayBufferViewObject::notifyBufferDetached() {
   MOZ_ASSERT(!bufferUnshared()->isImmutable());
   MOZ_ASSERT(!bufferUnshared()->isLengthPinned());
 
-  setFixedSlot(LENGTH_SLOT, PrivateValue(size_t(0)));
-  setFixedSlot(BYTEOFFSET_SLOT, PrivateValue(size_t(0)));
-  setFixedSlot(DATA_SLOT, UndefinedValue());
+  setFixedSlotTyped(LENGTH_SLOT, PrivateValue(size_t(0)));
+  setFixedSlotTyped(BYTEOFFSET_SLOT, PrivateValue(size_t(0)));
+  setFixedSlotTyped(DATA_SLOT, UndefinedValue());
 }
 
 void ArrayBufferViewObject::notifyBufferResized() {
@@ -89,7 +89,7 @@ void ArrayBufferViewObject::notifyBufferMoved(uint8_t* srcBufStart,
 
   if (srcBufStart != dstBufStart) {
     void* data = dstBufStart + dataPointerOffset();
-    setReservedSlotPrivateUnbarriered(DATA_SLOT, data);
+    setReservedSlotPrivateUnbarriered(DATA_SLOT.index(), data);
   }
 }
 
@@ -144,13 +144,13 @@ bool ArrayBufferViewObject::init(JSContext* cx,
     setIsSharedMemory();
   }
 
-  initFixedSlot(BYTEOFFSET_SLOT, PrivateValue(byteOffset));
-  initFixedSlot(LENGTH_SLOT, PrivateValue(length));
+  initFixedSlotTyped(BYTEOFFSET_SLOT, PrivateValue(byteOffset));
+  initFixedSlotTyped(LENGTH_SLOT, PrivateValue(length));
   if (buffer) {
-    initFixedSlot(BUFFER_SLOT, ObjectValue(*buffer));
+    initFixedSlotTyped(BUFFER_SLOT, ObjectValue(*buffer));
   } else {
     MOZ_ASSERT(!isSharedMemory());
-    initFixedSlot(BUFFER_SLOT, JS::FalseValue());
+    initFixedSlotTyped(BUFFER_SLOT, JS::FalseValue());
   }
 
   if (buffer) {
@@ -165,7 +165,7 @@ bool ArrayBufferViewObject::init(JSContext* cx,
     MOZ_ASSERT(length * bytesPerElement <=
                FixedLengthTypedArrayObject::INLINE_BUFFER_LIMIT);
     void* data = fixedData(FixedLengthTypedArrayObject::FIXED_DATA_START);
-    initReservedSlot(DATA_SLOT, PrivateValue(data));
+    initReservedSlotTyped(DATA_SLOT, PrivateValue(data));
     memset(data, 0, length * bytesPerElement);
 #ifdef DEBUG
     if (length == 0) {
@@ -206,9 +206,10 @@ bool ArrayBufferViewObject::initResizable(JSContext* cx,
                                           AutoLength autoLength) {
   MOZ_ASSERT(buffer->isResizable());
 
-  initFixedSlot(AUTO_LENGTH_SLOT, BooleanValue(static_cast<bool>(autoLength)));
-  initFixedSlot(INITIAL_LENGTH_SLOT, PrivateValue(length));
-  initFixedSlot(INITIAL_BYTE_OFFSET_SLOT, PrivateValue(byteOffset));
+  initFixedSlotTyped(AUTO_LENGTH_SLOT,
+                     BooleanValue(static_cast<bool>(autoLength)));
+  initFixedSlotTyped(INITIAL_LENGTH_SLOT, PrivateValue(length));
+  initFixedSlotTyped(INITIAL_BYTE_OFFSET_SLOT, PrivateValue(byteOffset));
 
   if (!init(cx, buffer, byteOffset, length, bytesPerElement)) {
     return false;
@@ -235,8 +236,8 @@ void ArrayBufferViewObject::computeResizableLengthAndByteOffset(
 
   // Out-of-bounds if the byteOffset exceeds the buffer length.
   if (byteOffsetStart > bufferByteLength) {
-    setFixedSlot(LENGTH_SLOT, PrivateValue(size_t(0)));
-    setFixedSlot(BYTEOFFSET_SLOT, PrivateValue(size_t(0)));
+    setFixedSlotTyped(LENGTH_SLOT, PrivateValue(size_t(0)));
+    setFixedSlotTyped(BYTEOFFSET_SLOT, PrivateValue(size_t(0)));
     return;
   }
 
@@ -249,14 +250,14 @@ void ArrayBufferViewObject::computeResizableLengthAndByteOffset(
     // Out-of-bounds if the byteOffset end index exceeds the buffer length.
     size_t byteOffsetEnd = byteOffsetStart + length * bytesPerElement;
     if (byteOffsetEnd > bufferByteLength) {
-      setFixedSlot(LENGTH_SLOT, PrivateValue(size_t(0)));
-      setFixedSlot(BYTEOFFSET_SLOT, PrivateValue(size_t(0)));
+      setFixedSlotTyped(LENGTH_SLOT, PrivateValue(size_t(0)));
+      setFixedSlotTyped(BYTEOFFSET_SLOT, PrivateValue(size_t(0)));
       return;
     }
   }
 
-  setFixedSlot(LENGTH_SLOT, PrivateValue(length));
-  setFixedSlot(BYTEOFFSET_SLOT, PrivateValue(byteOffsetStart));
+  setFixedSlotTyped(LENGTH_SLOT, PrivateValue(length));
+  setFixedSlotTyped(BYTEOFFSET_SLOT, PrivateValue(byteOffsetStart));
 }
 
 size_t ArrayBufferViewObject::bytesPerElement() const {
@@ -380,9 +381,9 @@ mozilla::Maybe<size_t> ArrayBufferViewObject::length() const {
 #if defined(DEBUG) || defined(JS_JITSPEW)
 void ArrayBufferViewObject::dumpOwnFields(js::JSONPrinter& json) const {
   json.formatProperty("length", "%zu",
-                      size_t(getFixedSlot(LENGTH_SLOT).toPrivate()));
+                      size_t(getFixedSlotTyped(LENGTH_SLOT).toPrivate()));
   json.formatProperty("byteOffset", "%zu",
-                      size_t(getFixedSlot(BYTEOFFSET_SLOT).toPrivate()));
+                      size_t(getFixedSlotTyped(BYTEOFFSET_SLOT).toPrivate()));
   void* data = dataPointerEither_();
   if (data) {
     json.formatProperty("data", "0x%p", data);
@@ -394,8 +395,8 @@ void ArrayBufferViewObject::dumpOwnFields(js::JSONPrinter& json) const {
 void ArrayBufferViewObject::dumpOwnStringContent(
     js::GenericPrinter& out) const {
   out.printf("length=%zu, byteOffset=%zu, ",
-             size_t(getFixedSlot(LENGTH_SLOT).toPrivate()),
-             size_t(getFixedSlot(BYTEOFFSET_SLOT).toPrivate()));
+             size_t(getFixedSlotTyped(LENGTH_SLOT).toPrivate()),
+             size_t(getFixedSlotTyped(BYTEOFFSET_SLOT).toPrivate()));
   void* data = dataPointerEither_();
   if (data) {
     out.printf("data=0x%p", data);

@@ -175,8 +175,8 @@ bool TypedArrayObject::ensureHasBuffer(JSContext* cx,
       RemoveCellMemory(tarray, nbytes, MemoryUse::TypedArrayElements);
     }
 
-    tarray->setFixedSlot(TypedArrayObject::DATA_SLOT,
-                         PrivateValue(buffer->dataPointer()));
+    tarray->setFixedSlotTyped(TypedArrayObject::DATA_SLOT,
+                              PrivateValue(buffer->dataPointer()));
   }
 
   MOZ_ASSERT(tarray->elements() == buffer->dataPointer());
@@ -186,7 +186,8 @@ bool TypedArrayObject::ensureHasBuffer(JSContext* cx,
   // Attaching the first view to an array buffer is infallible.
   MOZ_ALWAYS_TRUE(buffer->addView(cx, tarray));
 
-  tarray->setFixedSlot(TypedArrayObject::BUFFER_SLOT, ObjectValue(*buffer));
+  tarray->setFixedSlotTyped(TypedArrayObject::BUFFER_SLOT,
+                            ObjectValue(*buffer));
 
   return true;
 }
@@ -296,7 +297,7 @@ size_t FixedLengthTypedArrayObject::objectMoved(JSObject* obj, JSObject* old) {
           &buf, newObj, nbytes, nbytes, MemoryUse::TypedArrayElements,
           ArrayBufferContentsArena);
   if (result == Nursery::BufferMoved) {
-    newObj->setReservedSlot(DATA_SLOT, PrivateValue(buf));
+    newObj->setReservedSlotTyped(DATA_SLOT, PrivateValue(buf));
 
     // Set a forwarding pointer for the element buffers in case they were
     // preserved on the stack by Ion.
@@ -978,7 +979,7 @@ class FixedLengthTypedArrayObjectTemplate
 
     // Template objects don't need memory for their elements, since there
     // won't be any elements to store.
-    MOZ_ASSERT(tarray->getReservedSlot(DATA_SLOT).isUndefined());
+    MOZ_ASSERT(tarray->getReservedSlotTyped(DATA_SLOT).isUndefined());
 
     return tarray;
   }
@@ -1000,10 +1001,10 @@ class FixedLengthTypedArrayObjectTemplate
     // already detached ArrayBuffer. Initialize all slots as if a TypedArrray
     // had been created with a non-detached buffer and the buffer was detached
     // later.
-    obj->initFixedSlot(BUFFER_SLOT, ObjectValue(*buffer));
-    obj->initFixedSlot(LENGTH_SLOT, PrivateValue(size_t(0)));
-    obj->initFixedSlot(BYTEOFFSET_SLOT, PrivateValue(size_t(0)));
-    obj->initFixedSlot(DATA_SLOT, UndefinedValue());
+    obj->initFixedSlotTyped(BUFFER_SLOT, ObjectValue(*buffer));
+    obj->initFixedSlotTyped(LENGTH_SLOT, PrivateValue(size_t(0)));
+    obj->initFixedSlotTyped(BYTEOFFSET_SLOT, PrivateValue(size_t(0)));
+    obj->initFixedSlotTyped(DATA_SLOT, UndefinedValue());
 
     return obj;
   }
@@ -1011,10 +1012,11 @@ class FixedLengthTypedArrayObjectTemplate
   static void initTypedArraySlots(FixedLengthTypedArrayObject* tarray,
                                   int32_t len) {
     MOZ_ASSERT(len >= 0);
-    tarray->initFixedSlot(TypedArrayObject::BUFFER_SLOT, JS::FalseValue());
-    tarray->initFixedSlot(TypedArrayObject::LENGTH_SLOT, PrivateValue(len));
-    tarray->initFixedSlot(TypedArrayObject::BYTEOFFSET_SLOT,
-                          PrivateValue(size_t(0)));
+    tarray->initFixedSlotTyped(TypedArrayObject::BUFFER_SLOT, JS::FalseValue());
+    tarray->initFixedSlotTyped(TypedArrayObject::LENGTH_SLOT,
+                               PrivateValue(len));
+    tarray->initFixedSlotTyped(TypedArrayObject::BYTEOFFSET_SLOT,
+                               PrivateValue(size_t(0)));
 
 #ifdef DEBUG
     if (len == 0) {
@@ -1028,7 +1030,7 @@ class FixedLengthTypedArrayObjectTemplate
   static void initTypedArrayData(FixedLengthTypedArrayObject* tarray, void* buf,
                                  size_t nbytes, gc::AllocKind allocKind) {
     if (buf) {
-      InitReservedSlot(tarray, TypedArrayObject::DATA_SLOT, buf, nbytes,
+      InitReservedSlot(tarray, TypedArrayObject::DATA_SLOT.index(), buf, nbytes,
                        MemoryUse::TypedArrayElements);
     } else {
 #ifdef DEBUG
@@ -1038,7 +1040,7 @@ class FixedLengthTypedArrayObjectTemplate
 #endif
 
       void* data = tarray->fixedData(FIXED_DATA_START);
-      tarray->initReservedSlot(DATA_SLOT, PrivateValue(data));
+      tarray->initReservedSlotTyped(DATA_SLOT, PrivateValue(data));
       memset(data, 0, nbytes);
     }
   }
@@ -1164,20 +1166,21 @@ class ResizableTypedArrayObjectTemplate
       return nullptr;
     }
 
-    tarray->initFixedSlot(TypedArrayObject::BUFFER_SLOT, JS::FalseValue());
-    tarray->initFixedSlot(TypedArrayObject::LENGTH_SLOT,
-                          PrivateValue(size_t(0)));
-    tarray->initFixedSlot(TypedArrayObject::BYTEOFFSET_SLOT,
-                          PrivateValue(size_t(0)));
-    tarray->initFixedSlot(AUTO_LENGTH_SLOT, BooleanValue(false));
-    tarray->initFixedSlot(ResizableTypedArrayObject::INITIAL_LENGTH_SLOT,
-                          PrivateValue(size_t(0)));
-    tarray->initFixedSlot(ResizableTypedArrayObject::INITIAL_BYTE_OFFSET_SLOT,
-                          PrivateValue(size_t(0)));
+    tarray->initFixedSlotTyped(TypedArrayObject::BUFFER_SLOT, JS::FalseValue());
+    tarray->initFixedSlotTyped(TypedArrayObject::LENGTH_SLOT,
+                               PrivateValue(size_t(0)));
+    tarray->initFixedSlotTyped(TypedArrayObject::BYTEOFFSET_SLOT,
+                               PrivateValue(size_t(0)));
+    tarray->initFixedSlotTyped(AUTO_LENGTH_SLOT, BooleanValue(false));
+    tarray->initFixedSlotTyped(ResizableTypedArrayObject::INITIAL_LENGTH_SLOT,
+                               PrivateValue(size_t(0)));
+    tarray->initFixedSlotTyped(
+        ResizableTypedArrayObject::INITIAL_BYTE_OFFSET_SLOT,
+        PrivateValue(size_t(0)));
 
     // Template objects don't need memory for their elements, since there
     // won't be any elements to store.
-    MOZ_ASSERT(tarray->getReservedSlot(DATA_SLOT).isUndefined());
+    MOZ_ASSERT(tarray->getReservedSlotTyped(DATA_SLOT).isUndefined());
 
     return tarray;
   }
@@ -1254,15 +1257,15 @@ class ImmutableTypedArrayObjectTemplate
       return nullptr;
     }
 
-    tarray->initFixedSlot(TypedArrayObject::BUFFER_SLOT, JS::FalseValue());
-    tarray->initFixedSlot(TypedArrayObject::LENGTH_SLOT,
-                          PrivateValue(size_t(0)));
-    tarray->initFixedSlot(TypedArrayObject::BYTEOFFSET_SLOT,
-                          PrivateValue(size_t(0)));
+    tarray->initFixedSlotTyped(TypedArrayObject::BUFFER_SLOT, JS::FalseValue());
+    tarray->initFixedSlotTyped(TypedArrayObject::LENGTH_SLOT,
+                               PrivateValue(size_t(0)));
+    tarray->initFixedSlotTyped(TypedArrayObject::BYTEOFFSET_SLOT,
+                               PrivateValue(size_t(0)));
 
     // Template objects don't need memory for their elements, since there
     // won't be any elements to store.
-    MOZ_ASSERT(tarray->getReservedSlot(DATA_SLOT).isUndefined());
+    MOZ_ASSERT(tarray->getReservedSlotTyped(DATA_SLOT).isUndefined());
 
     return tarray;
   }

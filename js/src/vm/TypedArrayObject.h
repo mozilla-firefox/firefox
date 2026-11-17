@@ -167,7 +167,7 @@ class FixedLengthTypedArrayObject : public TypedArrayObject {
   bool hasInlineElements() const;
   void setInlineElements();
   uint8_t* elementsRaw() const {
-    return maybePtrFromReservedSlot<uint8_t>(DATA_SLOT);
+    return maybePtrFromReservedSlotTyped<uint8_t>(DATA_SLOT);
   }
   uint8_t* elements() const {
     assertZeroLengthArrayData();
