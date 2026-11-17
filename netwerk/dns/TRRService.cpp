@@ -468,11 +468,16 @@ void TRRService::AddEtcHosts(const nsTArray<nsCString>& aArray) {
 void TRRService::ReadEtcHostsFile() {
   DNSServiceBase::DoReadEtcHostsFile(
       [](const nsTArray<nsCString>* aArray) -> bool {
-        RefPtr<TRRService> service(sTRRServicePtr);
-        if (service && aArray) {
-          service->AddEtcHosts(*aArray);
+        if (!sTRRServicePtr) {
+          return false;
         }
-        return !!service;
+        return NS_SUCCEEDED(NS_DispatchToMainThread(NS_NewRunnableFunction(
+            "TRRService::ReadEtcHostsFile", [hosts = aArray->Clone()] {
+              RefPtr<TRRService> service(sTRRServicePtr);
+              if (service) {
+                service->AddEtcHosts(hosts);
+              }
+            })));
       });
 }
 
@@ -519,6 +524,7 @@ nsresult TRRService::Start() {
 
 TRRService::~TRRService() {
   MOZ_ASSERT(NS_IsMainThread(), "wrong thread");
+  sTRRServicePtr.compareExchange(this, nullptr);
   LOG(("Exiting TRRService\n"));
 }
 
