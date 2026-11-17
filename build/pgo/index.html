@@ -92,7 +92,23 @@
       }
 
       subWindow.close();
+      return gracePeriod === undefined && this.waitFor != "timeout"
+        ? "timeout"
+        : "done";
     }
+  }
+
+  // Tell profileserver.py how long an item took and whether it signalled
+  // completion, so that it records it in the task's resource usage profile.
+  async function reportItem(item, start, outcome) {
+    let params = new URLSearchParams({
+      url: item.url,
+      ms: Math.round(performance.now() - start),
+      outcome,
+    });
+    try {
+      await fetch(`/pgo-item?${params}`);
+    } catch (e) {}
   }
 
   function watchLoad(subWindow, callback) {
@@ -237,7 +253,9 @@
 
   window.onload = async function () {
     for (let item of items) {
-      await item.run();
+      let start = performance.now();
+      let outcome = await item.run();
+      await reportItem(item, start, outcome);
     }
     Quitter.quit();
   };

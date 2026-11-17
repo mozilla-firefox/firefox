@@ -9,6 +9,8 @@ import os
 import re
 import subprocess
 import sys
+import time
+from urllib.parse import parse_qs
 
 import mozcrash
 from mozbuild.base import BinaryNotFoundException, MozbuildObject
@@ -17,6 +19,7 @@ from mozhttpd import MozHttpd
 from mozprofile import FirefoxProfile, Preferences
 from mozprofile.permissions import ServerLocations
 from mozrunner import CLI, FirefoxRunner
+from pgo_metrics import record_marker, report_perfherder, stage, suite
 
 PORT = 8888
 
@@ -27,6 +30,40 @@ PATH_MAPPINGS = {
     # refer to scripts located in `../..`.
     "/talos": "testing/talos/talos",
 }
+
+
+# Training items, reported to Perfherder at the end and recorded as markers in
+# the task's resource usage profile.
+ITEMS = []
+
+
+def item_handler(request):
+    """Record an item of the training corpus, reported by index.html when it
+    is done."""
+    end = time.monotonic()
+    query = parse_qs(request.query)
+    url = query.get("url", ["?"])[0]
+    duration = int(query.get("ms", ["0"])[0]) / 1000
+    outcome = query.get("outcome", ["?"])[0]
+    ITEMS.append((url, duration, outcome))
+    record_marker("PGOItem", end - duration, end, f"{url} ({outcome})")
+    return (200, {"Content-Type": "text/plain"}, "")
+
+
+def item_suites():
+    return [
+        suite(
+            "pgo training items",
+            sum(duration for _, duration, _ in ITEMS),
+            # Perfherder names are limited to 80 characters.
+            [(url.partition("?")[0], duration) for url, duration, _ in ITEMS],
+            unit="s",
+        ),
+        suite(
+            "pgo training items timed out",
+            sum(1 for *_, outcome in ITEMS if outcome == "timeout"),
+        ),
+    ]
 
 
 BENCHMARK_DONE = (
@@ -165,6 +202,7 @@ if __name__ == "__main__":
                 os.path.join(webkit_dir, "webaudio", "webaudio-bench.js"),
                 after_anchor("window.postMessage(_data, '*');"),
             ),
+            {"method": "GET", "path": "/pgo-item$", "function": item_handler},
         ],
     )
     httpd.start(block=False)
@@ -276,8 +314,9 @@ if __name__ == "__main__":
             env=env,
             process_args=process_args,
         )
-        runner.start()
-        ret = runner.wait()
+        with stage("profile initialization"):
+            runner.start()
+            ret = runner.wait()
         if ret:
             print("Firefox exited with code %d during profile initialization" % ret)
             logfile = process_args.get("logfile")
@@ -314,8 +353,9 @@ if __name__ == "__main__":
             env=env,
             process_args=process_args,
         )
-        runner.start(debug_args=debug_args, interactive=interactive)
-        ret = runner.wait()
+        with stage("training run"):
+            runner.start(debug_args=debug_args, interactive=interactive)
+            ret = runner.wait()
         sp3_httpd.stop()
         if has_extended_corpus:
             js3_httpd.stop()
@@ -369,7 +409,8 @@ if __name__ == "__main__":
                 "-o",
                 merged_profdata,
             ] + profraw_files
-            rc = subprocess.call(merge_cmd)
+            with stage("llvm-profdata merge"):
+                rc = subprocess.call(merge_cmd)
             if rc != 0:
                 print("INFRA-ERROR: Failed to merge profile data. Corrupt profile?")
                 # exit with TBPL_RETRY
@@ -383,3 +424,12 @@ if __name__ == "__main__":
             if os.path.getsize(merged_profdata) == 0:
                 print(merged_profdata, "was created but it is empty", file=sys.stderr)
                 sys.exit(1)
+
+            if "UPLOAD_PATH" in env:
+                report_perfherder(
+                    llvm_profdata,
+                    profraw_files,
+                    merged_profdata,
+                    env["UPLOAD_PATH"],
+                    item_suites(),
+                )
