@@ -8,7 +8,7 @@
 #include "mozilla/RefPtr.h"
 #include "nsINamed.h"
 #include "nsISupports.h"
-#include "nsString.h"
+#include "nsTLiteralString.h"
 
 class nsFunctionInterfaceBase : public nsINamed {
  public:
