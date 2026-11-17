@@ -586,6 +586,24 @@ describe("usePointerReorder visuals", () => {
     expect(tiles[0].style.translate).toBe("");
   });
 
+  it("eases the lift scale back during the glide instead of snapping", () => {
+    const { tiles } = mount();
+    dragFirstTileTo(tiles, 150);
+    act(() => {
+      window.dispatchEvent(pointer("pointerup", { clientX: 150, clientY: 50 }));
+    });
+    expect(tiles[0].style.transition).toContain("scale");
+    expect(tiles[0].style.scale).toBe("1");
+
+    act(() => {
+      tiles[0].dispatchEvent(new Event("transitionend", { bubbles: true }));
+      // Checked before act flushes: the [data-dragging] scale must not paint
+      // for a frame between the inline scale clearing and the next render.
+      expect(tiles[0].hasAttribute("data-dragging")).toBe(false);
+      expect(tiles[0].style.scale).toBe("");
+    });
+  });
+
   it("glides back to the original cell on Escape, then clears the drag", () => {
     const { tiles } = mount();
     dragFirstTileTo(tiles, 150);

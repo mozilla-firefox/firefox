@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { flushSync } from "react-dom";
 import { createReorderFlip } from "content-src/lib/useReorderFlip.jsx";
 
 // macOS reports 4 for ui.dragThresholdX/Y; Windows and Linux take theirs from
@@ -133,8 +134,10 @@ function suppressNextClick() {
 }
 
 /**
- * Pointer-driven reorder for a container whose children are placed by CSS
- * `order`. The dragged child is moved by translating the real element rather
+ * Pointer-driven reorder for a container whose items are placed by CSS
+ * `order`. The items may be wrapped in `display: contents` elements, as
+ * OrderedSlots renders them; a wrapper has no box, so its item is still the
+ * grid item. The dragged item is moved by translating the real element rather
  * than by giving the browser a picture of it to drag, so anything inside it
  * keeps rendering for the whole drag. That is why this exists instead of HTML
  * drag and drop: `setDragImage` takes that picture through
@@ -280,6 +283,7 @@ export function usePointerReorder({
         d.endGlide?.();
         d.el.style.transition = "";
         d.el.style.translate = "";
+        d.el.style.scale = "";
         dragRef.current = null;
         setDraggedId(null);
         setTargetSlot(null);
@@ -296,7 +300,9 @@ export function usePointerReorder({
           if (evt && evt.target !== d.el) {
             return;
           }
-          settle();
+          // Renders now, so data-dragging and its scale go in the same frame as
+          // the inline scale.
+          flushSync(settle);
         };
         d.endGlide = () => {
           d.endGlide = null;
@@ -309,8 +315,9 @@ export function usePointerReorder({
         // Nothing fires when the item is already at its target, so a timer ends
         // the drag in that case.
         timer = window.setTimeout(done, DROP_GLIDE_MS * 2);
-        d.el.style.transition = `translate ${DROP_GLIDE_MS}ms ease`;
+        d.el.style.transition = `translate ${DROP_GLIDE_MS}ms ease, scale ${DROP_GLIDE_MS}ms ease`;
         d.el.style.translate = "";
+        d.el.style.scale = "1";
       };
 
       const listeners = [];

@@ -132,6 +132,21 @@ if (!globalThis.Element.prototype.setPointerCapture) {
   globalThis.Element.prototype.hasPointerCapture = () => false;
 }
 
+if (!globalThis.Element.prototype.moveBefore) {
+  // jsdom has no moveBefore. This one throws where the real one does, and
+  // otherwise inserts, since jsdom has no iframe or focus state to keep.
+  const { insertBefore } = globalThis.Node.prototype;
+  globalThis.Element.prototype.moveBefore = function (node, anchor) {
+    if (node.getRootNode() !== this.getRootNode()) {
+      throw new globalThis.DOMException(
+        "moveBefore needs the node and the parent in the same tree",
+        "HierarchyRequestError"
+      );
+    }
+    insertBefore.call(this, node, anchor);
+  };
+}
+
 if (globalThis.performance && !globalThis.performance.getEntriesByType) {
   Object.defineProperty(globalThis.performance, "getEntriesByType", {
     writable: true,

@@ -425,25 +425,25 @@
     // row 1 avoids edge cases with mixed-height widgets (e.g. a large widget
     // occupying multiple medium row-slots in one column).
     @include at-content-cols(8) {
-      &:has(> :nth-child(2)):not(:has(> :nth-child(3))) > .widgets-add-button {
+      &:has(> :nth-child(2)):not(:has(> :nth-child(3))) .widgets-add-button {
         display: flex;
       }
     }
 
     @include at-content-cols(12) {
-      &:has(> :nth-child(3)):not(:has(> :nth-child(4))) > .widgets-add-button {
+      &:has(> :nth-child(3)):not(:has(> :nth-child(4))) .widgets-add-button {
         display: flex;
       }
     }
 
     @include at-content-cols(16) {
-      &:has(> :nth-child(4)):not(:has(> :nth-child(5))) > .widgets-add-button {
+      &:has(> :nth-child(4)):not(:has(> :nth-child(5))) .widgets-add-button {
         display: flex;
       }
     }
 
     @include at-content-cols(20) {
-      &:has(> :nth-child(5)):not(:has(> :nth-child(6))) > .widgets-add-button {
+      &:has(> :nth-child(5)):not(:has(> :nth-child(6))) .widgets-add-button {
         display: flex;
       }
     }

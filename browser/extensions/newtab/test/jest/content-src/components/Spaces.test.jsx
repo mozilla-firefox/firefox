@@ -354,7 +354,7 @@ describe("Spaces with preview", () => {
       id: "widgets",
       content: (
         <div className="widgets-container">
-          <div data-testid="first-widget" />
+          <div className="widget-wrapper" data-testid="first-widget" />
         </div>
       ),
     },
@@ -382,6 +382,32 @@ describe("Spaces with preview", () => {
     expect(previewBox().style.getPropertyValue("--spaces-preview-anchor")).toBe(
       "--spaces-tab-widgets"
     );
+    expect(document.mozSetImageElement).toHaveBeenLastCalledWith(
+      "spaces-preview-item",
+      getByTestId("first-widget")
+    );
+  });
+
+  it("previews a slotted widget's wrapper, not its slot", () => {
+    const { getByTestId } = setupPreview({
+      spaces: PREVIEW_SPACES.map(space =>
+        space.id === "widgets"
+          ? {
+              ...space,
+              content: (
+                <div className="widgets-container">
+                  <div data-slot-key="lists" style={{ display: "contents" }}>
+                    <div
+                      className="widget-wrapper"
+                      data-testid="first-widget"
+                    />
+                  </div>
+                </div>
+              ),
+            }
+          : space
+      ),
+    });
     expect(document.mozSetImageElement).toHaveBeenLastCalledWith(
       "spaces-preview-item",
       getByTestId("first-widget")
@@ -441,7 +467,7 @@ describe("Spaces with preview", () => {
     document.mozSetImageElement = jest.fn();
     const widget = (
       <div className="widgets-container">
-        <div data-testid="widget" />
+        <div className="widget-wrapper" data-testid="widget" />
       </div>
     );
     const spacesWith = (ready, homeContent) => [
@@ -483,7 +509,7 @@ describe("Spaces with preview", () => {
       <>
         <SectionCard className={storyClass} data-testid="story" />
         <div className="widgets-container">
-          <div data-testid="widget" />
+          <div className="widget-wrapper" data-testid="widget" />
         </div>
       </>
     );
@@ -590,7 +616,7 @@ describe("Spaces with preview", () => {
               <>
                 <SectionCard className="ds-card col-1-large" />
                 <div className="widgets-container">
-                  <div data-testid="widget" />
+                  <div className="widget-wrapper" data-testid="widget" />
                 </div>
               </>
             ),

@@ -60,12 +60,21 @@ const LEGACY_WEATHER_FORECAST_STATE = {
 function renderWidgets(state, props = {}) {
   const store = createStore(combineReducers(reducers), state);
   jest.spyOn(store, "dispatch");
-  const { container } = render(
+  const { container, rerender } = render(
     <Provider store={store}>
       <Widgets {...props} />
     </Provider>
   );
-  return { container, store };
+  return {
+    container,
+    store,
+    rerender: nextProps =>
+      rerender(
+        <Provider store={store}>
+          <Widgets {...nextProps} />
+        </Provider>
+      ),
+  };
 }
 
 const PREF_WIDGETS_ENABLED = "widgets.enabled";
@@ -1938,22 +1947,22 @@ describe("<Widgets> maximize toggle size sync", () => {
   });
 });
 
-describe("<Widgets> header controls", () => {
-  // Everything isSideBySideActive gates on beyond the widget prefs
-  // makeNovaWidgetState already sets.
-  const SIDE_BY_SIDE = {
-    "pageLayouts.variant": "side-by-side-content-lead",
-    "feeds.section.topstories": true,
-    "feeds.system.topstories": true,
-    "widgets.system.enabled": true,
-  };
-  // An addable widget left off, so allWidgetsAdded is false and the tile is not
-  // suppressed for that unrelated reason.
-  const ONE_WIDGET_UNADDED = {
-    "widgets.system.clocks.enabled": true,
-    "widgets.clocks.enabled": false,
-  };
+// Everything isSideBySideActive gates on beyond the widget prefs
+// makeNovaWidgetState already sets.
+const SIDE_BY_SIDE = {
+  "pageLayouts.variant": "side-by-side-content-lead",
+  "feeds.section.topstories": true,
+  "feeds.system.topstories": true,
+  "widgets.system.enabled": true,
+};
+// An addable widget left off, so allWidgetsAdded is false and the tile is not
+// suppressed for that unrelated reason.
+const ONE_WIDGET_UNADDED = {
+  "widgets.system.clocks.enabled": true,
+  "widgets.clocks.enabled": false,
+};
 
+describe("<Widgets> header controls", () => {
   it("renders only the placeholder tile in the default full-width layout", () => {
     const { container } = renderWidgets(
       makeNovaWidgetState([["lists", "medium"]], ONE_WIDGET_UNADDED)
@@ -2267,6 +2276,255 @@ describe("<Widgets> auto-minimize layout", () => {
   });
 });
 
+const grid = container => container.querySelector("#widgets-container");
+const slotKeys = container =>
+  [...grid(container).children].map(c => c.dataset.slotKey);
+const setPref = (store, name, value) =>
+  act(() => store.dispatch({ type: at.PREF_CHANGED, data: { name, value } }));
+
+describe("<Widgets> grid slots", () => {
+  const twoWidgetsState = (extraPrefs = {}) =>
+    makeNovaWidgetState(
+      [
+        ["lists", "medium"],
+        ["focusTimer", "medium"],
+      ],
+      {
+        ...ONE_WIDGET_UNADDED,
+        "widgets.order": "focusTimer,lists",
+        ...extraPrefs,
+      }
+    );
+
+  it("puts every widget and the add button in its own slot, in order", () => {
+    const { container } = renderWidgets(twoWidgetsState());
+    expect(slotKeys(container)).toEqual([
+      "focusTimer",
+      "lists",
+      "widgets-add-button",
+    ]);
+  });
+
+  it("has no add button slot in side-by-side", () => {
+    const { container } = renderWidgets(twoWidgetsState(SIDE_BY_SIDE));
+    expect(slotKeys(container)).toEqual(["focusTimer", "lists"]);
+  });
+
+  it("slots only the widgets an explicit list names", () => {
+    const { container } = renderWidgets(twoWidgetsState(), {
+      widgetIds: ["lists"],
+    });
+    expect(slotKeys(container)).toEqual(["lists"]);
+  });
+
+  it("keeps two instances' slots apart", () => {
+    const store = createStore(
+      combineReducers(reducers),
+      makeNovaWidgetState(
+        [
+          ["lists", "medium"],
+          ["focusTimer", "medium"],
+          ["clocks", "medium"],
+        ],
+        { "widgets.order": "focusTimer,lists,clocks" }
+      )
+    );
+    const { container } = render(
+      <Provider store={store}>
+        <Widgets widgetIds={["lists", "focusTimer"]} />
+        <Widgets widgetIds={["clocks"]} />
+      </Provider>
+    );
+    const containers = [...container.querySelectorAll("#widgets-container")];
+    const keysOf = c => [...c.children].map(el => el.dataset.slotKey);
+    const nodes = containers.map(c => [
+      ...c.querySelectorAll("[data-widget-id]"),
+    ]);
+    expect(containers.map(keysOf)).toEqual([
+      ["focusTimer", "lists"],
+      ["clocks"],
+    ]);
+
+    setPref(store, "widgets.order", "lists,focusTimer,clocks");
+
+    expect(containers.map(keysOf)).toEqual([
+      ["lists", "focusTimer"],
+      ["clocks"],
+    ]);
+    containers.forEach((c, i) => {
+      for (const node of nodes[i]) {
+        expect(
+          c.querySelector(`[data-widget-id="${node.dataset.widgetId}"]`)
+        ).toBe(node);
+      }
+    });
+  });
+
+  it("a widgets.order change keeps every widget's DOM node", () => {
+    const { container, store } = renderWidgets(twoWidgetsState());
+    const nodes = [...grid(container).querySelectorAll("[data-widget-id]")];
+    setPref(store, "widgets.order", "lists,focusTimer");
+    expect(slotKeys(container)).toEqual([
+      "lists",
+      "focusTimer",
+      "widgets-add-button",
+    ]);
+    for (const node of nodes) {
+      expect(
+        grid(container).querySelector(
+          `[data-widget-id="${node.dataset.widgetId}"]`
+        )
+      ).toBe(node);
+    }
+  });
+
+  it("survives layout swaps on one mounted instance", () => {
+    const { container, store, rerender } = renderWidgets(twoWidgetsState());
+    const initialKeys = ["focusTimer", "lists", "widgets-add-button"];
+    const expectSlots = keys => {
+      expect(slotKeys(container)).toEqual(keys);
+      expect(grid(container).querySelectorAll("[data-slot-key]")).toHaveLength(
+        grid(container).children.length
+      );
+    };
+    expectSlots(initialKeys);
+    for (const [name, value] of Object.entries(SIDE_BY_SIDE)) {
+      setPref(store, name, value);
+    }
+    expectSlots(["focusTimer", "lists"]);
+    setPref(store, "pageLayouts.variant", undefined);
+    expectSlots(initialKeys);
+    setPref(store, "widgets.focusTimer.enabled", false);
+    expectSlots(["lists", "widgets-add-button"]);
+    setPref(store, "widgets.focusTimer.enabled", true);
+    expectSlots(initialKeys);
+
+    const lists = grid(container).querySelector('[data-widget-id="lists"]');
+    rerender({ widgetIds: ["lists"] });
+    expectSlots(["lists"]);
+    expect(grid(container).querySelector('[data-widget-id="lists"]')).toBe(
+      lists
+    );
+    rerender({ widgetIds: ["lists", "focusTimer"] });
+    expectSlots(["focusTimer", "lists"]);
+    expect(grid(container).querySelector('[data-widget-id="lists"]')).toBe(
+      lists
+    );
+    rerender({});
+    expectSlots(initialKeys);
+
+    setPref(store, "nova.enabled", false);
+    expect(grid(container).querySelector("[data-slot-key]")).toBeNull();
+    setPref(store, "nova.enabled", true);
+    expectSlots(initialKeys);
+    expect(grid(container).children).toHaveLength(3);
+    const nodes = [...grid(container).querySelectorAll("[data-widget-id]")];
+    setPref(store, "widgets.order", "lists,focusTimer");
+    expectSlots(["lists", "focusTimer", "widgets-add-button"]);
+    for (const node of nodes) {
+      expect(
+        grid(container).querySelector(
+          `[data-widget-id="${node.dataset.widgetId}"]`
+        )
+      ).toBe(node);
+    }
+  });
+
+  it("renders the startup cache inline, and the server renderer accepts it", () => {
+    const state = {
+      ...twoWidgetsState(),
+      App: {
+        ...INITIAL_STATE.App,
+        isForStartupCache: {
+          ...INITIAL_STATE.App.isForStartupCache,
+          App: true,
+        },
+      },
+    };
+    const { container, store } = renderWidgets(state);
+    expect(grid(container).querySelector("[data-slot-key]")).toBeNull();
+    expect(
+      container.querySelector("#widgets-container > .widget-wrapper")
+    ).toBeInTheDocument();
+    const { TextEncoder } = require("util");
+    const { MessageChannel } = require("worker_threads");
+    const previousTextEncoder = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "TextEncoder"
+    );
+    const previousMessageChannel = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "MessageChannel"
+    );
+    const channels = [];
+    try {
+      globalThis.TextEncoder ??= TextEncoder;
+      globalThis.MessageChannel ??= class extends MessageChannel {
+        constructor() {
+          super();
+          channels.push(this);
+        }
+      };
+      const { renderToString } = require("react-dom/server.browser");
+      let markup;
+      expect(() => {
+        markup = renderToString(
+          <Provider store={store}>
+            <Widgets />
+          </Provider>
+        );
+      }).not.toThrow();
+      expect(markup).toContain("widgets-container");
+      expect(markup).toContain('data-widget-id="lists"');
+    } finally {
+      for (const channel of channels) {
+        channel.port1.close();
+        channel.port2.close();
+      }
+      if (previousTextEncoder) {
+        Object.defineProperty(globalThis, "TextEncoder", previousTextEncoder);
+      } else {
+        delete globalThis.TextEncoder;
+      }
+      if (previousMessageChannel) {
+        Object.defineProperty(
+          globalThis,
+          "MessageChannel",
+          previousMessageChannel
+        );
+      } else {
+        delete globalThis.MessageChannel;
+      }
+    }
+  });
+
+  it("never moves a widget with insertBefore or appendChild on a reorder", () => {
+    const { container, store } = renderWidgets(twoWidgetsState());
+    const insertBefore = jest.spyOn(Node.prototype, "insertBefore");
+    const appendChild = jest.spyOn(Node.prototype, "appendChild");
+    try {
+      setPref(store, "widgets.order", "lists,focusTimer");
+      for (const spy of [insertBefore, appendChild]) {
+        expect(
+          spy.mock.calls.some(
+            ([node]) =>
+              node.matches?.(".widget-wrapper") ||
+              node.querySelector?.(".widget-wrapper")
+          )
+        ).toBe(false);
+      }
+      expect(slotKeys(container)).toEqual([
+        "lists",
+        "focusTimer",
+        "widgets-add-button",
+      ]);
+    } finally {
+      insertBefore.mockRestore();
+      appendChild.mockRestore();
+    }
+  });
+});
+
 // @experiment(remove) { bug 2069496 }
 describe("<Widgets> row ad slot", () => {
   const SPOC = {
@@ -2374,7 +2632,7 @@ describe("<Widgets> row ad slot", () => {
   it("renders right after the first widget", () => {
     const { container } = renderWidgets(adState());
     const cells = [
-      ...container.querySelectorAll("#widgets-container > .widget-wrapper"),
+      ...container.querySelectorAll("#widgets-container .widget-wrapper"),
     ];
 
     expect(cells[1]).toHaveClass("widgets-row-ad-cell");
@@ -2446,7 +2704,10 @@ describe("<Widgets> row ad slot", () => {
 
       const dragged = container.querySelector(".widget-wrapper[data-dragging]");
       expect(dragged).toHaveAttribute("data-widget-id", "stocks");
-      expect(dragged.nextElementSibling).toHaveClass("widgets-row-ad-cell");
+      expect(dragged.parentElement.nextElementSibling).toHaveAttribute(
+        "data-slot-key",
+        "widgets-row-ad"
+      );
     }
   );
 
@@ -2493,5 +2754,38 @@ describe("<Widgets> row ad slot", () => {
       expect(cell).toHaveClass("large-widget");
       expect(cell).not.toHaveClass("medium-widget");
     }
+  });
+
+  it("slots the row ad after the first widget", () => {
+    const { container } = renderWidgets(
+      adState({ "widgets.order": "clocks,lists,stocks" })
+    );
+    expect(slotKeys(container).slice(0, 4)).toEqual([
+      "clocks",
+      "widgets-row-ad",
+      "lists",
+      "stocks",
+    ]);
+  });
+
+  it("adds and removes the row ad slot as the variant changes", () => {
+    const { container, store } = renderWidgets(
+      adState({ "widgets.order": "clocks,lists,stocks" })
+    );
+    setPref(store, "pageLayouts.variant", "nova-full-width");
+    expect(slotKeys(container)).not.toContain("widgets-row-ad");
+    expect(grid(container).querySelectorAll("[data-slot-key]")).toHaveLength(
+      grid(container).children.length
+    );
+    setPref(store, "pageLayouts.variant", "widgets-ad-large");
+    expect(slotKeys(container).slice(0, 4)).toEqual([
+      "clocks",
+      "widgets-row-ad",
+      "lists",
+      "stocks",
+    ]);
+    expect(grid(container).querySelectorAll("[data-slot-key]")).toHaveLength(
+      grid(container).children.length
+    );
   });
 });
