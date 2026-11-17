@@ -22,6 +22,7 @@
 #include "mozilla/SSE.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/StaticPrefs_gfx.h"
+#include "mozilla/StaticPrefs_layers.h"
 #include "mozilla/StaticPrefs_media.h"
 #include "mozilla/XREAppData.h"
 #include "mozilla/gfx/Logging.h"
@@ -1359,12 +1360,20 @@ const nsTArray<RefPtr<GfxDriverInfo>>& GfxInfo::GetGfxDriverInfo() {
     // 1) we need to enable HDR early to use WEBRENDER_COMPOSITOR
     // 2) advertise HDR/WEBRENDER_COMPOSITOR at about:support
     bool hdrEnabled = false;
+
+    // However, the native compositor is required when Wayland gpu process is
+    // active.
+    bool nativeCompositorRequired = false;
 #ifdef MOZ_WAYLAND
     hdrEnabled = GdkIsWaylandDisplay() &&
                  ((WaylandDisplayGet()->IsHDREnabled() &&
                    WaylandDisplayGet()->GetFractionalScaleManager() &&
                    StaticPrefs::gfx_color_management_hdr()) ||
                   StaticPrefs::gfx_color_management_hdr_force_enabled());
+    nativeCompositorRequired =
+        GdkIsWaylandDisplay() &&
+        (StaticPrefs::layers_gpu_process_enabled_AtStartup() ||
+         StaticPrefs::layers_gpu_process_force_enabled_AtStartup());
 #endif
     if (!hdrEnabled) {
       APPEND_TO_DRIVER_BLOCKLIST(OperatingSystem::Linux, DeviceFamily::All,
@@ -1372,6 +1381,8 @@ const nsTArray<RefPtr<GfxDriverInfo>>& GfxInfo::GetGfxDriverInfo() {
                                  nsIGfxInfo::FEATURE_BLOCKED_DEVICE,
                                  DRIVER_COMPARISON_IGNORED, V(0, 0, 0, 0),
                                  "FEATURE_VIDEO_HDR_DISABLED", "");
+    }
+    if (!hdrEnabled && !nativeCompositorRequired) {
       APPEND_TO_DRIVER_BLOCKLIST(
           OperatingSystem::Linux, DeviceFamily::All,
           nsIGfxInfo::FEATURE_WEBRENDER_COMPOSITOR,

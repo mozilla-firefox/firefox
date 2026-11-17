@@ -65,7 +65,6 @@ class gfxPlatformGtk final : public gfxPlatform {
   void InitX11EGLConfig();
   void InitDmabufConfig();
   void InitPlatformHardwareVideoConfig() override;
-  void InitPlatformGPUProcessPrefs() override;
   void InitWebRenderConfig() override;
   void InitMesaThreading();
   void BuildContentDeviceData(mozilla::gfx::ContentDeviceData* aOut) override;
