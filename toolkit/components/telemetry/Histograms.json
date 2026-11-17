@@ -512,7 +512,7 @@
     "alert_emails": ["gijs@mozilla.com", "mak@mozilla.com"],
     "expires_in_version": "never",
     "kind": "enumerated",
-    "n_values": 15,
+    "n_values": 16,
     "releaseChannelCollection": "opt-out",
     "description": "The browser that data is pulled from. The values correspond to the internal browser ID (see MigrationUtils.sys.mjs)"
   },

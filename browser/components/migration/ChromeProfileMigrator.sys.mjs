@@ -15,6 +15,8 @@ import { MigratorBase } from "moz-src:///browser/components/migration/MigratorBa
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
+  ArcMigrationUtils:
+    "moz-src:///browser/components/migration/ArcMigrationUtils.sys.mjs",
   ChromeMigrationUtils:
     "moz-src:///browser/components/migration/ChromeMigrationUtils.sys.mjs",
   FileUtils: "resource://gre/modules/FileUtils.sys.mjs",
@@ -177,7 +179,9 @@ export class ChromeProfileMigrator extends MigratorBase {
       // Folders such as ~/Library are hidden in the file picker, so open it
       // in the folder that the user needs to select.
       if (originalDataPath) {
-        fp.displayDirectory = new lazy.FileUtils.File(originalDataPath);
+        fp.displayDirectory = new lazy.FileUtils.File(
+          this._getPermissionFolder(originalDataPath)
+        );
       }
       // Now wait for the filepicker to open and close. If the user picks
       // the local state folder, the OS should grant us read access to everything
@@ -193,12 +197,43 @@ export class ChromeProfileMigrator extends MigratorBase {
       this.#hasUserSelectedDataFolder = true;
       // Resources looked up before the folder was selected may be empty.
       this._resourcesByProfile = null;
-      let file = fp.file;
-      if (file && file.path != originalDataPath) {
-        this.#dataPathRemappings.set(originalDataPath, file.path);
+      let selectedDataPath =
+        fp.file && this._getDataPathFromPermissionFolder(fp.file.path);
+      if (selectedDataPath && selectedDataPath !== originalDataPath) {
+        this.#dataPathRemappings.set(originalDataPath, selectedDataPath);
       }
     }
     return true;
+  }
+
+  /**
+   * Returns the folder that the user is asked to select in getPermissions.
+   * Override this if the browser keeps data outside of its user data path.
+   *
+   * @param {string} dataPath
+   *   The user data path containing Local State.
+   * @returns {string}
+   */
+  _getPermissionFolder(dataPath) {
+    return dataPath;
+  }
+
+  /**
+   * Returns the user data path containing Local State, given the folder the
+   * user selected in getPermissions. If this differs from the default user
+   * data path, the migrator reads from it instead. Override this whenever
+   * _getPermissionFolder is overridden, so that the selected folder leads back
+   * to the user data path. For example, if _getPermissionFolder returns the
+   * parent of the user data path, this should append the user data folder name
+   * to the selected folder.
+   *
+   * @param {string} folder
+   *   The folder selected by the user in getPermissions.
+   * @returns {string}
+   *   The user data path inside the selected folder.
+   */
+  _getDataPathFromPermissionFolder(folder) {
+    return folder;
   }
 
   async canGetPermissions() {
@@ -1378,4 +1413,129 @@ export class VivaldiProfileMigrator extends ChromeProfileMigrator {
   _chromeUserDataPathSuffix = "Vivaldi";
   _keychainServiceName = "Vivaldi Safe Storage";
   _keychainAccountName = "Vivaldi";
+}
+
+/**
+ * Arc migrator. Arc is Chromium-based, but it keeps spaces, pinned tabs and
+ * folders in its own StorableSidebar.json file next to the Chromium user data
+ * directory. Arc has no regular bookmarks, so Favorites are imported as
+ * bookmarks and spaces as bookmark folders, instead of reading the Chromium
+ * Bookmarks file.
+ */
+export class ArcProfileMigrator extends ChromeProfileMigrator {
+  static get key() {
+    return "arc";
+  }
+
+  static get displayNameL10nID() {
+    return "migration-wizard-migrator-display-name-arc";
+  }
+
+  static get brandImage() {
+    return "chrome://browser/content/migration/brands/arc.png";
+  }
+
+  _chromeUserDataPathSuffix = "Arc";
+  _keychainServiceName = "Arc Safe Storage";
+  _keychainAccountName = "Arc";
+
+  _getPermissionFolder(dataPath) {
+    return PathUtils.parent(dataPath);
+  }
+
+  _getDataPathFromPermissionFolder(folder) {
+    return PathUtils.join(folder, "User Data");
+  }
+
+  async _getSidebarPath() {
+    const userDataPath = await this._getChromeUserDataPathIfExists();
+    if (!userDataPath) {
+      return null;
+    }
+    return PathUtils.join(
+      PathUtils.parent(userDataPath),
+      "StorableSidebar.json"
+    );
+  }
+
+  async getLastUsedDate() {
+    const dates = [await super.getLastUsedDate()];
+    const sidebarPath = await this._getSidebarPath();
+    if (sidebarPath) {
+      const info = await IOUtils.stat(sidebarPath).catch(() => null);
+      if (info) {
+        dates.push(new Date(info.lastModified));
+      }
+    }
+    return new Date(Math.max(...dates.map(date => date.getTime())));
+  }
+
+  async getResources(aProfile) {
+    let resources = (await super.getResources(aProfile)).filter(
+      r => r.type !== MigrationUtils.resourceTypes.BOOKMARKS
+    );
+    let userDataPath = await this._getChromeUserDataPathIfExists();
+    if (!userDataPath || !aProfile || !(await this.hasPermissions())) {
+      return resources;
+    }
+
+    let sidebarResource = await this._getSidebarResource(aProfile);
+    if (sidebarResource) {
+      resources.push(sidebarResource);
+    }
+    return resources;
+  }
+
+  /**
+   * Returns a bookmarks migration resource that imports a profile's Favorites
+   * and spaces from Arc's StorableSidebar.json onto the bookmarks toolbar.
+   *
+   * @param {object} aProfile The Chromium profile, whose `id` is its
+   *   directory name (e.g. "Default", "Profile 1").
+   * @returns {Promise<object|null>}
+   *   The resource, or null if the file is missing, unreadable or has nothing
+   *   to import for this profile.
+   */
+  async _getSidebarResource(aProfile) {
+    let sidebarPath = await this._getSidebarPath();
+    if (!sidebarPath) {
+      return null;
+    }
+    let bookmarks;
+    try {
+      let sidebarJSON = await IOUtils.readJSON(sidebarPath);
+      bookmarks = await lazy.ArcMigrationUtils.convertSidebarToBookmarks(
+        sidebarJSON,
+        aProfile.id
+      );
+    } catch (ex) {
+      if (!DOMException.isInstance(ex) || ex.name !== "NotFoundError") {
+        console.error("Could not read Arc spaces from", sidebarPath, ex);
+      }
+      return null;
+    }
+
+    if (!bookmarks.length) {
+      return null;
+    }
+
+    return {
+      type: MigrationUtils.resourceTypes.BOOKMARKS,
+
+      async migrate(aCallback) {
+        let success = false;
+        try {
+          await MigrationUtils.insertManyBookmarksWrapper(
+            bookmarks,
+            lazy.PlacesUtils.bookmarks.toolbarGuid,
+            { fixupOrSkipInvalidEntries: true }
+          );
+          success = true;
+        } catch (ex) {
+          console.error(ex);
+        }
+        aCallback(success);
+      },
+    };
+  }
 }

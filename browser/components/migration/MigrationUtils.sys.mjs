@@ -73,6 +73,11 @@ const MIGRATOR_MODULES = Object.freeze({
 
   // The following migrators are all variants of the ChromeProfileMigrator
 
+  ArcProfileMigrator: {
+    moduleURI:
+      "moz-src:///browser/components/migration/ChromeProfileMigrator.sys.mjs",
+    platforms: ["macosx", "win"],
+  },
   BraveProfileMigrator: {
     moduleURI:
       "moz-src:///browser/components/migration/ChromeProfileMigrator.sys.mjs",
@@ -873,11 +878,14 @@ class MigrationUtils {
     });
   }
 
-  insertManyBookmarksWrapper(bookmarks, parent) {
-    let insertionPromise = lazy.PlacesUtils.bookmarks.insertTree({
-      guid: parent,
-      children: bookmarks,
-    });
+  insertManyBookmarksWrapper(bookmarks, parent, options) {
+    let insertionPromise = lazy.PlacesUtils.bookmarks.insertTree(
+      {
+        guid: parent,
+        children: bookmarks,
+      },
+      options
+    );
     return insertionPromise.then(
       insertedItems => {
         this._importQuantities.bookmarks += insertedItems.length;
@@ -1251,6 +1259,7 @@ class MigrationUtils {
     opera: 12,
     "opera-gx": 14,
     vivaldi: 13,
+    arc: 15,
   });
 
   getSourceIdForTelemetry(sourceName) {

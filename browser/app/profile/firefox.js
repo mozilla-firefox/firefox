@@ -3022,6 +3022,7 @@ pref("browser.migrate.chrome.payment_methods.enabled", true);
 pref("browser.migrate.chrome.extensions.enabled", true);
 pref("browser.migrate.chrome.get_permissions.enabled", true);
 
+pref("browser.migrate.arc.enabled", true);
 pref("browser.migrate.chrome-beta.enabled", true);
 pref("browser.migrate.chrome-dev.enabled", true);
 pref("browser.migrate.chromium.enabled", true);

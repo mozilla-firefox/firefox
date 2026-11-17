@@ -21,6 +21,7 @@ XPIDL_SOURCES += [
 XPIDL_MODULE = "migration"
 
 MOZ_SRC_FILES += [
+    "ArcMigrationUtils.sys.mjs",
     "ChromeMigrationUtils.sys.mjs",
     "ChromeProfileMigrator.sys.mjs",
     "FileMigrators.sys.mjs",
