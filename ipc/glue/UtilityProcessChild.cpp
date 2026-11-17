@@ -14,6 +14,7 @@
 #include "mozilla/ipc/UtilityProcessSandboxing.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/RemoteMediaManagerParent.h"
+#include "mozilla/StaticPrefs_dom.h"
 
 #if defined(XP_LINUX) && defined(MOZ_SANDBOX)
 #  include "mozilla/Sandbox.h"
@@ -137,11 +138,13 @@ bool UtilityProcessChild::Init(mozilla::ipc::UntypedEndpoint&& aEndpoint,
 
   // Notify the parent process that we have finished our init and that it can
   // now resolve the pending promise of process startup
-  SendInitCompleted();
+  if (!StaticPrefs::dom_ipc_utilityProcess_testing_skipInitCompleted()) {
+    SendInitCompleted();
 
-  PROFILER_MARKER_UNTYPED(
-      "UtilityProcessChild::SendInitCompleted", IPC,
-      MarkerOptions(MarkerTiming::IntervalUntilNowFrom(mChildStartTime)));
+    PROFILER_MARKER_UNTYPED(
+        "UtilityProcessChild::SendInitCompleted", IPC,
+        MarkerOptions(MarkerTiming::IntervalUntilNowFrom(mChildStartTime)));
+  }
 
   RunOnShutdown(
       [sandboxKind = mSandbox] {

@@ -3974,6 +3974,13 @@
   value: 10000
   mirror: always
 
+# Testing only: utility processes never report that their init completed, so
+# their launch never completes.
+- name: dom.ipc.utilityProcess.testing.skipInitCompleted
+  type: bool
+  value: false
+  mirror: always
+
 # If this is true, keypress events for non-printable keys are dispatched only
 # for event listeners of the system event group in web content.
 - name: dom.keyboardevent.keypress.dispatch_non_printable_keys_only_system_group_in_content

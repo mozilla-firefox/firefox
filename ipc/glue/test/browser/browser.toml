@@ -45,6 +45,8 @@ skip-if = [
 
 ["browser_utility_hard_kill_delayed.js"] # bug 1754572: we really want hard_kill to be rust before hard_kill_delayed
 
+["browser_utility_launch_timeout.js"]
+
 ["browser_utility_memoryReport.js"]
 
 ["browser_utility_multipleAudio.js"]
