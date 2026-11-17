@@ -362,6 +362,9 @@ nsresult Http2Decompressor::DecodeHeaderBlock(const uint8_t* data,
   mSeenNonColonHeader = false;
   mIsPush = isPush;
   mSeenPseudoHeaders = 0;
+  mHeaderListSize = 0;
+  mMaxHeaderListSize = StaticPrefs::network_http_http2_max_header_list_size();
+  mHeaderListSizeExceeded = false;
 
   nsresult rv = NS_OK;
   nsresult softfail_rv = NS_OK;
@@ -412,6 +415,11 @@ nsresult Http2Decompressor::DecodeHeaderBlock(const uint8_t* data,
 
   if (NS_FAILED(rv)) {
     return rv;
+  }
+
+  if (mHeaderListSizeExceeded) {
+    LOG(("Http2Decompressor header list size exceeds %u", mMaxHeaderListSize));
+    return NS_ERROR_ILLEGAL_VALUE;
   }
 
   return softfail_rv;
@@ -488,6 +496,17 @@ static bool HasConnectionBasedAuth(const nsACString& headerValue) {
 
 nsresult Http2Decompressor::OutputHeader(const nsACString& name,
                                          const nsACString& value) {
+  // Once over the limit, keep decoding so the HPACK table stays in sync with
+  // the peer, but drop the output; DecodeHeaderBlock then fails the stream.
+  if (mMaxHeaderListSize && !mHeaderListSizeExceeded) {
+    uint32_t size = nvPair::Size(name, value);
+    mHeaderListSizeExceeded = size > mMaxHeaderListSize - mHeaderListSize;
+    mHeaderListSize += size;
+  }
+  if (mHeaderListSizeExceeded) {
+    return NS_OK;
+  }
+
   // exclusions
   if (!mIsPush &&
       (name.EqualsLiteral("connection") || name.EqualsLiteral("host") ||

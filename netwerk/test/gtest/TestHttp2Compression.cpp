@@ -19,6 +19,10 @@ using namespace mozilla::net;
 
 static const char kRejectDuplicatePseudoHeadersPref[] =
     "network.http.http2.reject_duplicate_pseudo_headers";
+static const char kMaxHeaderListSizePref[] =
+    "network.http.http2.max_header_list_size";
+// The Nightly default; set explicitly since other channels default to 0.
+static const uint32_t kMaxHeaderListSize = 256 * 1024;
 
 // HPACK static table entries (RFC 7541 Appendix A).
 static const uint8_t kStatus200 = 0x88;
@@ -32,6 +36,32 @@ static const uint8_t kLiteralStatus404[] = {0x08, 0x03, '4', '0', '4'};
 // Literal without indexing, literal name "foo", value "bar".
 static const uint8_t kLiteralFooBar[] = {0x00, 0x03, 'f', 'o', 'o',
                                          0x03, 'b',  'a', 'r'};
+
+// First entry of the dynamic table.
+static const uint8_t kDynamicIndex0 = 0xbe;
+
+// Appends a literal with a literal name "x" and a value of aValueLength bytes.
+// aPrefix is 0x40 for incremental indexing or 0x00 for no indexing.
+static void AppendLiteral(nsTArray<uint8_t>& aBlock, uint8_t aPrefix,
+                          uint32_t aValueLength) {
+  const uint8_t name[] = {aPrefix, 0x01, 'x'};
+  aBlock.AppendElements(name, sizeof(name));
+  // 7-bit prefix integer encoding (RFC 7541 Section 5.1).
+  if (aValueLength < 0x7f) {
+    aBlock.AppendElement(aValueLength);
+  } else {
+    aBlock.AppendElement(0x7f);
+    uint32_t rest = aValueLength - 0x7f;
+    while (rest >= 0x80) {
+      aBlock.AppendElement((rest & 0x7f) | 0x80);
+      rest >>= 7;
+    }
+    aBlock.AppendElement(rest);
+  }
+  for (uint32_t i = 0; i < aValueLength; ++i) {
+    aBlock.AppendElement('v');
+  }
+}
 
 // The decompressor asserts that it runs on the socket thread.
 static void RunOnSocketThread(std::function<void()>&& aFn) {
@@ -54,9 +84,11 @@ class Http2DecompressorTest : public ::testing::Test {
  protected:
   void SetUp() override {
     Preferences::SetBool(kRejectDuplicatePseudoHeadersPref, true);
+    Preferences::SetUint(kMaxHeaderListSizePref, kMaxHeaderListSize);
   }
   void TearDown() override {
     Preferences::ClearUser(kRejectDuplicatePseudoHeadersPref);
+    Preferences::ClearUser(kMaxHeaderListSizePref);
   }
 };
 
@@ -134,5 +166,73 @@ TEST_F(Http2DecompressorTest, PseudoHeadersResetBetweenBlocks) {
     nsTArray<uint8_t> block{kStatus200};
     ASSERT_EQ(Decode(decompressor, block, output), NS_OK);
     ASSERT_EQ(Decode(decompressor, block, output), NS_OK);
+  });
+}
+
+// Each field counts as name + value + 32 bytes (RFC 9113 Section 6.5.2), so
+// ":status: 200" uses 42 bytes and a literal "x" field with an N-byte value
+// uses N + 33 bytes.
+static const uint32_t kValueLengthAtLimit = kMaxHeaderListSize - 42 - 33;
+
+TEST_F(Http2DecompressorTest, HeaderListAtLimitAccepted) {
+  RunOnSocketThread([]() {
+    Http2Decompressor decompressor;
+    nsAutoCString output;
+    nsTArray<uint8_t> block{kStatus200};
+    AppendLiteral(block, 0x00, kValueLengthAtLimit);
+    EXPECT_EQ(Decode(decompressor, block, output), NS_OK);
+  });
+}
+
+TEST_F(Http2DecompressorTest, HeaderListOverLimitRejected) {
+  RunOnSocketThread([]() {
+    Http2Decompressor decompressor;
+    nsAutoCString output;
+    nsTArray<uint8_t> block{kStatus200};
+    AppendLiteral(block, 0x00, kValueLengthAtLimit + 1);
+    EXPECT_EQ(Decode(decompressor, block, output), NS_ERROR_ILLEGAL_VALUE);
+  });
+}
+
+TEST_F(Http2DecompressorTest, HeaderListOverLimitFromDynamicTableRejected) {
+  RunOnSocketThread([]() {
+    Http2Decompressor decompressor;
+    nsAutoCString output;
+    nsTArray<uint8_t> block{kStatus200};
+    AppendLiteral(block, 0x40, 4000);
+    // 1-byte references to the 4033-byte dynamic table entry.
+    for (int i = 0; i < 1000; ++i) {
+      block.AppendElement(kDynamicIndex0);
+    }
+    EXPECT_EQ(Decode(decompressor, block, output), NS_ERROR_ILLEGAL_VALUE);
+    EXPECT_LE(output.Length(), kMaxHeaderListSize);
+  });
+}
+
+TEST_F(Http2DecompressorTest, HeaderListLimitDisabled) {
+  Preferences::SetUint(kMaxHeaderListSizePref, 0);
+  RunOnSocketThread([]() {
+    Http2Decompressor decompressor;
+    nsAutoCString output;
+    nsTArray<uint8_t> block{kStatus200};
+    AppendLiteral(block, 0x00, kValueLengthAtLimit + 1);
+    EXPECT_EQ(Decode(decompressor, block, output), NS_OK);
+  });
+}
+
+TEST_F(Http2DecompressorTest, HeaderListOverLimitKeepsTableInSync) {
+  Preferences::SetUint(kMaxHeaderListSizePref, 100);
+  RunOnSocketThread([]() {
+    Http2Decompressor decompressor;
+    nsAutoCString output;
+    nsTArray<uint8_t> block{kStatus200};
+    AppendLiteral(block, 0x00, 100);
+    // Incremental entry after the limit was hit still goes in the table.
+    AppendLiteral(block, 0x40, 2);
+    EXPECT_EQ(Decode(decompressor, block, output), NS_ERROR_ILLEGAL_VALUE);
+
+    nsTArray<uint8_t> next{kStatus200, kDynamicIndex0};
+    ASSERT_EQ(Decode(decompressor, next, output), NS_OK);
+    EXPECT_TRUE(output.EqualsLiteral("HTTP/2 200\r\nx: vv\r\n"));
   });
 }

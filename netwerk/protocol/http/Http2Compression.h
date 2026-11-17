@@ -25,7 +25,10 @@ class nvPair {
   nvPair(const nsACString& name, const nsACString& value)
       : mName(name), mValue(value) {}
 
-  uint32_t Size() const { return mName.Length() + mValue.Length() + 32; }
+  static uint32_t Size(const nsACString& aName, const nsACString& aValue) {
+    return aName.Length() + aValue.Length() + 32;
+  }
+  uint32_t Size() const { return Size(mName, mValue); }
   size_t SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const;
   size_t SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const;
 
@@ -159,6 +162,10 @@ class Http2Decompressor final : public Http2BaseCompressor {
   bool mIsPush{false};
   // PseudoHeader bits for the pseudo-header fields seen in this block.
   uint8_t mSeenPseudoHeaders{0};
+  // Decoded size of this block, see network.http.http2.max_header_list_size.
+  uint32_t mHeaderListSize{0};
+  uint32_t mMaxHeaderListSize{0};
+  bool mHeaderListSizeExceeded{false};
 };
 
 class Http2Compressor final : public Http2BaseCompressor {
