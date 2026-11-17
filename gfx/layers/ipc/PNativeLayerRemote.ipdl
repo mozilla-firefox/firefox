@@ -12,6 +12,7 @@ using mozilla::gfx::RoundedRect from "mozilla/gfx/Point.h";
 using mozilla::gfx::IntSize from "mozilla/gfx/Point.h";
 using mozilla::gfx::Matrix4x4 from "mozilla/gfx/Matrix.h";
 [MoveOnly] using mozilla::layers::IOSurfacePort from "mozilla/layers/IOSurfacePort.h";
+include LayersSurfaces;
 
 namespace mozilla {
 namespace layers {
@@ -28,10 +29,15 @@ union NativeLayerCommand {
 
 union SurfaceTransfer {
   SurfaceTransferMacOS;
+  SurfaceTransferWayland;
 };
 
 struct SurfaceTransferMacOS {
   IOSurfacePort Surface;
+};
+
+struct SurfaceTransferWayland {
+  SurfaceDescriptorDMABuf? Surface;
 };
 
 struct CommandCreateLayer {
