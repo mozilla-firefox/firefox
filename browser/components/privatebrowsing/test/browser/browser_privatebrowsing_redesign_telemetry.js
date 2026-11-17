@@ -174,7 +174,7 @@ add_task(async function test_redesign_exposure_recorded() {
     ],
   });
 
-  let { win } = await openTabAndWaitForRender();
+  let { win, tab } = await openTabAndWaitForRender();
 
   // Flush on each poll: the exposure is recorded in the content process, so
   // the parent cannot see it until the child data is flushed.
@@ -184,6 +184,15 @@ add_task(async function test_redesign_exposure_recorded() {
       .testGetValue("events")
       ?.some(e => e.extra.feature_id === "privateWindowRedesign");
   }, "An exposure event is recorded for the redesign feature");
+
+  // The exposure is recorded once per content process, which outlives the
+  // test, so a later run in the same browser would see nothing recorded.
+  await SpecialPowers.spawn(tab, [], () => {
+    const { NimbusFeatures } = ChromeUtils.importESModule(
+      "resource://nimbus/ExperimentAPI.sys.mjs"
+    );
+    NimbusFeatures.privateWindowRedesign._didSendExposureEvent = false;
+  });
 
   await BrowserTestUtils.closeWindow(win);
   await SpecialPowers.popPrefEnv();
