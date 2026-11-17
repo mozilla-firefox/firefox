@@ -191,7 +191,18 @@ add_task(async function test_publicSuffix() {
       expect: {
         isKnownSuffix: false,
         getKnownSuffix: null,
-        // allowPlainSuffix defaults to false, so getDomain returns null.
+        getDomain: "banana",
+      },
+    });
+
+    testApi({
+      hostname: "banana",
+      getDomain_options: { allowPlainSuffix: true },
+      description: "no matching eTLD in PSL, single-label, using options",
+      expect: {
+        isKnownSuffix: false,
+        getKnownSuffix: null,
+        // allowUnknownSuffix defaults to false, so getDomain returns null.
         getDomain: null,
       },
     });

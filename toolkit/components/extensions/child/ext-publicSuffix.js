@@ -108,7 +108,11 @@ this.publicSuffix = class extends ExtensionAPI {
           // check for invalid characters
           const ascii = ensureValidHostname(hostname);
           if (!domain) {
-            if (!options.allowPlainSuffix) {
+            if (Services.eTLD.hasKnownPublicSuffixFromHost(ascii)) {
+              if (!options.allowPlainSuffix) {
+                return null;
+              }
+            } else if (!options.allowUnknownSuffix) {
               return null;
             }
             domain = ascii;
