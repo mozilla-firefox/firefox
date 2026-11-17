@@ -115,10 +115,10 @@ static already_AddRefed<TextureClient> CreateTexture(
 }
 
 // static
-already_AddRefed<PersistentBufferProviderAccelerated>
-PersistentBufferProviderAccelerated::Create(gfx::IntSize aSize,
-                                            gfx::SurfaceFormat aFormat,
-                                            KnowsCompositor* aKnowsCompositor) {
+already_AddRefed<PersistentBufferProviderRemote>
+PersistentBufferProviderRemote::Create(gfx::IntSize aSize,
+                                       gfx::SurfaceFormat aFormat,
+                                       KnowsCompositor* aKnowsCompositor) {
   if (!aKnowsCompositor || !aKnowsCompositor->GetTextureForwarder() ||
       !aKnowsCompositor->GetTextureForwarder()->IPCOpen()) {
     return nullptr;
@@ -127,7 +127,7 @@ PersistentBufferProviderAccelerated::Create(gfx::IntSize aSize,
   if (!DrawTargetWebgl::CanCreate(aSize, aFormat)) {
 #ifdef XP_WIN
     // Direct2D acceleration does not require DrawTargetWebgl, but still
-    // requires PersistentBufferProviderAccelerated.
+    // requires PersistentBufferProviderRemote.
     if (!TextureData::IsRemote(aKnowsCompositor, BackendSelector::Canvas,
                                aFormat, aSize)) {
       return nullptr;
@@ -151,25 +151,25 @@ PersistentBufferProviderAccelerated::Create(gfx::IntSize aSize,
     return nullptr;
   }
 
-  RefPtr<PersistentBufferProviderAccelerated> provider =
-      new PersistentBufferProviderAccelerated(
+  RefPtr<PersistentBufferProviderRemote> provider =
+      new PersistentBufferProviderRemote(
           recordedTextureData->mRemoteTextureOwnerId, texture);
   return provider.forget();
 }
 
-PersistentBufferProviderAccelerated::PersistentBufferProviderAccelerated(
+PersistentBufferProviderRemote::PersistentBufferProviderRemote(
     RemoteTextureOwnerId aRemoteTextureOwnerId,
     const RefPtr<TextureClient>& aTexture)
     : mRemoteTextureOwnerId(aRemoteTextureOwnerId), mTexture(aTexture) {
-  MOZ_COUNT_CTOR(PersistentBufferProviderAccelerated);
+  MOZ_COUNT_CTOR(PersistentBufferProviderRemote);
 }
 
-PersistentBufferProviderAccelerated::~PersistentBufferProviderAccelerated() {
-  MOZ_COUNT_DTOR(PersistentBufferProviderAccelerated);
+PersistentBufferProviderRemote::~PersistentBufferProviderRemote() {
+  MOZ_COUNT_DTOR(PersistentBufferProviderRemote);
   Destroy();
 }
 
-void PersistentBufferProviderAccelerated::Destroy() {
+void PersistentBufferProviderRemote::Destroy() {
   mSnapshot = nullptr;
   mDrawTarget = nullptr;
 
@@ -183,7 +183,7 @@ void PersistentBufferProviderAccelerated::Destroy() {
 }
 
 already_AddRefed<gfx::DrawTarget>
-PersistentBufferProviderAccelerated::BorrowDrawTarget(
+PersistentBufferProviderRemote::BorrowDrawTarget(
     const gfx::IntRect& aPersistedRect) {
   if (!mDrawTarget) {
     if (aPersistedRect.IsEmpty()) {
@@ -202,7 +202,7 @@ PersistentBufferProviderAccelerated::BorrowDrawTarget(
   return do_AddRef(mDrawTarget);
 }
 
-bool PersistentBufferProviderAccelerated::ReturnDrawTarget(
+bool PersistentBufferProviderRemote::ReturnDrawTarget(
     already_AddRefed<gfx::DrawTarget> aDT) {
   {
     RefPtr<gfx::DrawTarget> dt(aDT);
@@ -217,7 +217,7 @@ bool PersistentBufferProviderAccelerated::ReturnDrawTarget(
 }
 
 already_AddRefed<gfx::SourceSurface>
-PersistentBufferProviderAccelerated::BorrowSnapshot(gfx::DrawTarget* aTarget) {
+PersistentBufferProviderRemote::BorrowSnapshot(gfx::DrawTarget* aTarget) {
   if (mDrawTarget) {
     MOZ_ASSERT(mTexture->IsLocked());
   } else {
@@ -233,7 +233,7 @@ PersistentBufferProviderAccelerated::BorrowSnapshot(gfx::DrawTarget* aTarget) {
   return do_AddRef(mSnapshot);
 }
 
-void PersistentBufferProviderAccelerated::ReturnSnapshot(
+void PersistentBufferProviderRemote::ReturnSnapshot(
     already_AddRefed<gfx::SourceSurface> aSnapshot) {
   RefPtr<SourceSurface> snapshot = aSnapshot;
   MOZ_ASSERT(!snapshot || snapshot == mSnapshot);
@@ -244,7 +244,7 @@ void PersistentBufferProviderAccelerated::ReturnSnapshot(
   }
 }
 
-Maybe<SurfaceDescriptor> PersistentBufferProviderAccelerated::GetFrontBuffer() {
+Maybe<SurfaceDescriptor> PersistentBufferProviderRemote::GetFrontBuffer() {
   SurfaceDescriptor desc;
   if (mTexture->GetInternalData()->Serialize(desc)) {
     return Some(desc);
@@ -252,12 +252,12 @@ Maybe<SurfaceDescriptor> PersistentBufferProviderAccelerated::GetFrontBuffer() {
   return Nothing();
 }
 
-bool PersistentBufferProviderAccelerated::RequiresRefresh() const {
+bool PersistentBufferProviderRemote::RequiresRefresh() const {
   return mTexture->GetInternalData()->RequiresRefresh();
 }
 
 already_AddRefed<FwdTransactionTracker>
-PersistentBufferProviderAccelerated::UseCompositableForwarder(
+PersistentBufferProviderRemote::UseCompositableForwarder(
     CompositableForwarder* aForwarder) {
   return mTexture->GetInternalData()->UseCompositableForwarder(aForwarder);
 }
