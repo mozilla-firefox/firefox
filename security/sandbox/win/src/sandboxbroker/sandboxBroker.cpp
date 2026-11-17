@@ -1341,6 +1341,16 @@ void SandboxBroker::SetSecurityLevelForContentProcess(int32_t aSandboxLevel,
             result);
     }
   }
+
+  // Font file access is validated by the broker against the installed font
+  // files. This is added after the other rules here, so that paths they allow
+  // never wait for the font path set to be rebuilt. File processes already have
+  // read-only access to all files.
+  if (UseFontFileRule() && aSandboxLevel != 1 && !aIsFileProcess) {
+    result = config->AllowFontFileAccess();
+    MOZ_RELEASE_ASSERT(sandbox::SBOX_ALL_OK == result,
+                       "Failed to add font file rules.");
+  }
 }
 
 void SandboxBroker::SetSecurityLevelForGPUProcess(int32_t aSandboxLevel) {
