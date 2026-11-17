@@ -166,7 +166,18 @@ pub trait HIDDevice: FidoDevice + Read + Write {
 impl<T: HIDDevice> CtapVersionSupport for T {
     fn supports_ctap1(&self) -> bool {
         self.get_device_info()
-            .is_some_and(|i| !i.cap_flags.contains(Capability::NMSG))
+            .is_some_and(|i| {
+                if i.cap_flags.contains(Capability::NMSG) {
+                    let r = !i.cap_flags.contains(Capability::CBOR);
+                    if r {
+                        // https://bugzilla.mozilla.org/show_bug.cgi?id=2093140
+                        warn!("Authenticator set capability 'NMSG' but not 'CBOR', this is not CTAP2 compliant! Using as CTAP1-only.");
+                    }
+                    r
+                } else {
+                    true
+                }
+            })
     }
 
     fn supports_ctap2(&self) -> bool {
@@ -315,5 +326,59 @@ impl<T: HIDDevice + TestDevice> FidoDeviceIO for T {
             StatusCode::KeepaliveCancel,
             None,
         )))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{transport::device_selector::Device, CtapVersionSupport};
+
+    /// Test all possible capabilities flags.
+    #[test]
+    fn test_capabilities() {
+        // (name, capabilities, supports_ctap1, supports_ctap2)
+        let tests = [
+            ("capabilities/ctap1_only", 0x0, true, false),
+            ("capabilities/ctap1_wink", 0x1, true, false),
+            // CBOR (CTAP1 + CTAP2)
+            ("capabilities/both", 0x4, true, true),
+            ("capabilities/both_wink", 0x5, true, true),
+            ("capabilities/both_6", 0x6, true, true),
+            // NMSG (CTAP2 only)
+            ("capabilities/ctap2_only", 0xc, false, true),
+            ("capabilities/ctap2_wink", 0xd, false, true),
+            // Many Feitian authenticators set bit 0x2, which we should ignore.
+            ("capabilities/feitian", 0x7, true, true),
+            ("capabilities/feitian_multipass", 0xf, false, true),
+            // Don't have examples of these.
+            ("capabilities/ctap1_only_2", 0x2, true, false),
+            ("capabilities/ctap1_only_3", 0x3, true, false),
+            ("capabilities/ctap2_only_e", 0xe, false, true),
+            // "MitID chip" is a modified Feitian MultiPass FIDO issued by the Danish government.
+            // These are known to accept CTAP1 commands, but have invalid capability flags:
+            // https://bugzilla.mozilla.org/show_bug.cgi?id=2093140
+            ("capabilities/mitid_chip", 0xb, true, false),
+            // Invalid flag combinations, where we should fall back to CTAP1.
+            ("capabilities/invalid_8", 0x8, true, false),
+            ("capabilities/invalid_9", 0x9, true, false),
+            ("capabilities/invalid_a", 0xa, true, false),
+        ];
+
+        for (name, capabilities, supports_ctap1, supports_ctap2) in tests {
+            for extra_bits in 0u8..=0xf {
+                let capabilities = capabilities | (extra_bits << 4);
+                let device = Device::new_pre_inited_capabilities(name, capabilities);
+                assert_eq!(
+                    supports_ctap1,
+                    device.supports_ctap1(),
+                    "supports_ctap1: {name}, {capabilities:02x}"
+                );
+                assert_eq!(
+                    supports_ctap2,
+                    device.supports_ctap2(),
+                    "supports_ctap2: {name}, {capabilities:02x}"
+                );
+            }
+        }
     }
 }

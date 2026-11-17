@@ -103,6 +103,14 @@ impl Device {
         parameters: <Device as HIDDevice>::BuildParameters,
         capabilities: Capability,
     ) -> Device {
+        Self::new_pre_inited_capabilities(parameters, capabilities.bits())
+    }
+
+    /// Create a new, pre-initialized mock authenticator, with the `capabilities` as a raw [`u8`].
+    pub fn new_pre_inited_capabilities(
+        parameters: <Device as HIDDevice>::BuildParameters,
+        capabilities: u8,
+    ) -> Device {
         let mut device = Device::new(parameters).unwrap();
         let mut cid = [0u8; 4];
         thread_rng().fill_bytes(&mut cid);
@@ -119,18 +127,10 @@ impl Device {
         msg.extend(&cid);
         msg.push(2); // CTAPHID protocol version identifir
         msg.extend([1, 0, 0]); // Device version numbber
-        msg.push(capabilities.bits());
+        msg.push(capabilities);
         device.add_read(&msg, 0);
 
         HIDDevice::pre_init(&mut device).expect("pre_init");
-        assert_eq!(
-            capabilities.contains(Capability::NMSG),
-            !device.supports_ctap1()
-        );
-        assert_eq!(
-            capabilities.contains(Capability::CBOR),
-            device.supports_ctap2()
-        );
         device
     }
 }
