@@ -800,10 +800,10 @@ export class MLEngineParent extends JSProcessActorParent {
     const fileObject = await lazy.OPFS.download({
       savePath: `${RUNTIME_ROOT_IN_OPFS}/${localRoot}/${version}/${filename}`,
       deletePreviousVersions: true,
-      skipIfExists: true,
+      useCache: true,
       source: baseURL + location,
-      sha256Hash: hash,
-      fileSize: size,
+      expectedHash: hash,
+      expectedFileSize: size,
     });
 
     return fileObject.arrayBuffer();
