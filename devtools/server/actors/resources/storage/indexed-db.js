@@ -221,6 +221,9 @@ class IndexedDBStorageActor extends BaseStorageActor {
 
     for (const { name, storage } of names) {
       let metadata = await this.getDBMetaData(host, principal, name, storage);
+      if (!metadata) {
+        continue;
+      }
 
       metadata = this.patchMetadataMapsAndProtos(metadata);
 
@@ -470,10 +473,13 @@ class IndexedDBStorageActor extends BaseStorageActor {
         resolve(dbData);
       };
       request.onerror = ({ target }) => {
-        console.error(
-          `Error opening indexeddb database ${name} for host ${host}`,
-          target.error
-        );
+        // Ignore the AbortError: the database was deleted, see openWithPrincipal.
+        if (target.error.name != "AbortError") {
+          console.error(
+            `Error opening indexeddb database ${name} for host ${host}`,
+            target.error
+          );
+        }
         resolve(null);
       };
     });
@@ -525,9 +531,18 @@ class IndexedDBStorageActor extends BaseStorageActor {
    * database `name`.
    */
   openWithPrincipal(principal, name, storage) {
-    return indexedDBForStorage.openForPrincipal(principal, name, {
+    const request = indexedDBForStorage.openForPrincipal(principal, name, {
       storage,
     });
+    // An oldVersion of 0 means the database doesn't exist (anymore), e.g. the
+    // page deleted it. Abort so that inspecting storage doesn't create an
+    // empty database the page would then find instead of creating its own.
+    request.onupgradeneeded = event => {
+      if (event.oldVersion == 0) {
+        request.transaction.abort();
+      }
+    };
+    return request;
   }
 
   async removeDB(host, principal, dbName) {
@@ -962,7 +977,6 @@ class IndexedDBStorageActor extends BaseStorageActor {
       };
 
       request.onerror = () => {
-        db.close();
         resolve([]);
       };
     });
