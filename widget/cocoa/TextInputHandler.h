@@ -41,6 +41,9 @@ enum {
       0x34  // Enter on Powerbook's keyboard is different
 };
 
+// Whether aCharCode is an ASCII control character, including DEL.
+bool IsControlChar(uint32_t aCharCode);
+
 /**
  * TISInputSourceWrapper is a wrapper for the TISInputSourceRef.  If we get the
  * TISInputSourceRef from InputSourceID, we need to release the CFArray instance

@@ -420,8 +420,8 @@ static const char* GetWindowLevelName(NSInteger aWindowLevel) {
   }
 }
 
-static bool IsControlChar(uint32_t aCharCode) {
-  return aCharCode < ' ' || aCharCode == 0x7F;
+bool mozilla::widget::IsControlChar(uint32_t aCharCode) {
+  return aCharCode < ' ' || aCharCode == NSDeleteCharacter;
 }
 
 static std::ostream& operator<<(std::ostream& aStream, const NSRange& aRange) {

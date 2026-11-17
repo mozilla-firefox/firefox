@@ -85,9 +85,12 @@ bool nsMenuUtilsX::EventMatchesKeyEquivalent(
       mozilla::widget::TISInputSourceWrapper::CurrentInputSource();
   uint32_t unshifted = inputSource.CharForKeyCode(aEvent.keyCode, 0);
   uint32_t shifted = inputSource.CharForKeyCode(aEvent.keyCode, shiftKey);
-  if (!unshifted && !shifted) {
-    // A key without a character on the layout, such as a function key, is
-    // compared through the character AppKit gives the event for it.
+  // The layout gives function keys, arrows, Home, End and similar keys no
+  // character or a control character, while AppKit names them with its own
+  // characters, such as NSF14FunctionKey. Such keys are compared through the
+  // character AppKit gives the event.
+  if (mozilla::widget::IsControlChar(unshifted) &&
+      mozilla::widget::IsControlChar(shifted)) {
     NSString* characters = aEvent.charactersIgnoringModifiers;
     return characters.length == 1 && [characters characterAtIndex:0] == key &&
            eventFlags == requiredFlags;
