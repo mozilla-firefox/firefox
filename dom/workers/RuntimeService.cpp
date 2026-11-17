@@ -18,6 +18,7 @@
 #include "js/experimental/CTypes.h"  // JS::CTypesActivityType, JS::SetCTypesActivityCallback
 #include "js/friend/ErrorMessages.h"  // js::GetErrorMessage, JSMSG_*
 #include "jsfriendapi.h"
+#include "mozilla/AbstractThread.h"
 #include "mozilla/Atomics.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/CycleCollectedJSContext.h"
@@ -2400,21 +2401,31 @@ WorkerThreadPrimaryRunnable::Run() {
         PROFILER_SET_JS_CONTEXT(context.get());
 
         {
-          // We're on the worker thread here, and WorkerPrivate's refcounting is
-          // non-threadsafe: you can only do it on the parent thread.  What that
-          // means in practice is that we're relying on it being kept alive
-          // while we run.  Hopefully.
-          MOZ_KnownLive(mWorkerPrivate)->DoRunLoop(cx);
-          // The AutoJSAPI in DoRunLoop should have reported any exceptions left
-          // on cx.
-          MOZ_ASSERT(!JS_IsExceptionPending(cx));
+          // Makes the worker thread an AbstractThread with tail dispatch while
+          // the worker runs, so that e.g. state mirroring works on it.
+          // Lifecycle matches the main thread, where
+          // AbstractThread::ShutdownMainThread() runs before
+          // PROFILER_CLEAR_JS_CONTEXT() and the final cycle collection.
+          AutoXPCOMThreadWrapper abstractThread(
+              TailDispatchPolicy::ConsistentOrdering);
+
+          {
+            // We're on the worker thread here, and WorkerPrivate's refcounting
+            // is non-threadsafe: you can only do it on the parent thread.  What
+            // that means in practice is that we're relying on it being kept
+            // alive while we run.  Hopefully.
+            MOZ_KnownLive(mWorkerPrivate)->DoRunLoop(cx);
+            // The AutoJSAPI in DoRunLoop should have reported any exceptions
+            // left on cx.
+            MOZ_ASSERT(!JS_IsExceptionPending(cx));
+          }
+
+          mWorkerPrivate->ShutdownModuleLoader();
+
+          mWorkerPrivate->RunShutdownTasks();
+
+          BackgroundChild::CloseForCurrentThread();
         }
-
-        mWorkerPrivate->ShutdownModuleLoader();
-
-        mWorkerPrivate->RunShutdownTasks();
-
-        BackgroundChild::CloseForCurrentThread();
 
         PROFILER_CLEAR_JS_CONTEXT();
       }
