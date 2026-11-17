@@ -151,17 +151,20 @@ void EnsureUseCocoaDockAPI() {
   NS_OBJC_END_TRY_IGNORE_BLOCK;
 }
 
-void DisableAppNap() {
+// These defaults have to be registered early during startup, before the OS
+// reads them for the process.
+void RegisterEarlyUserDefaults() {
+  NSMutableDictionary* defaults = [NSMutableDictionary dictionary];
+
   // Prevent the parent process from entering App Nap. macOS does not put our
   // child processes into App Nap and, as a result, when the parent is in
   // App Nap, child processes continue to run normally generating IPC messages
   // for the parent which can end up being queued. This can cause the browser
   // to be unresponsive for a period of time after the App Nap until the parent
-  // process "catches up." NSAppSleepDisabled has to be set early during
-  // startup before the OS reads the value for the process.
-  [[NSUserDefaults standardUserDefaults] registerDefaults:@{
-    @"NSAppSleepDisabled" : @YES,
-  }];
+  // process "catches up."
+  defaults[@"NSAppSleepDisabled"] = @YES;
+
+  [[NSUserDefaults standardUserDefaults] registerDefaults:defaults];
 }
 
 void SetupMacApplicationDelegate(bool* gRestartedByOS) {
