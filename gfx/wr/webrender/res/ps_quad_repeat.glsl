@@ -4,6 +4,8 @@
 
 /// This shader repeats an image pattern.
 
+#define WR_QUAD_ROUNDED_CLIP
+
 #include ps_quad
 
 varying highp vec2 v_uv;
@@ -113,6 +115,12 @@ vec4 pattern_fragment(vec4 color) {
 
 #if defined(SWGL_DRAW_SPAN)
 void swgl_drawSpanRGBA8() {
+    // The span functions can't apply the rounded clip. Fall back to the
+    // fragment shader.
+    if (rounded_clip_is_enabled()) {
+        return;
+    }
+
     if (!swgl_isTextureRGBA8(sColor0)) {
         return;
     }
