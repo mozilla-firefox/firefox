@@ -3539,6 +3539,30 @@ class PromptFeatureTest {
         }
 
     @Test
+    fun `WHEN the always save security code toggle is reported THEN the credit card delegate is notified`() {
+        var reportedValue: Boolean? = null
+        val feature =
+            PromptFeature(
+                activity = mock(),
+                store = store,
+                fragmentManager = fragmentManager,
+                tabsUseCases = mock(),
+                fileUploadsDirCleaner = mock(),
+                isEmailMaskFeatureEnabled = { false },
+                isSuggestEmailMaskEnabled = { false },
+                onNeedToRequestPermissions = {},
+                creditCardDelegate =
+                    object : CreditCardDelegate {
+                        override val onSaveSecurityCodeChanged = { enabled: Boolean -> reportedValue = enabled }
+                    },
+            )
+
+        feature.onSaveSecurityCodeChanged(false)
+
+        assertEquals(false, reportedValue)
+    }
+
+    @Test
     fun `WHEN SaveCreditCard is handled THEN the credit card save prompt shown fact is emitted`() =
         runTest(testDispatcher) {
             val feature =

@@ -753,6 +753,10 @@ private constructor(
         }
     }
 
+    override fun onSaveSecurityCodeChanged(enabled: Boolean) {
+        creditCardDelegate.onSaveSecurityCodeChanged(enabled)
+    }
+
     /**
      * Invoked when a dialog is dismissed. This consumes the [PromptFeature] value from the session indicated by
      * [sessionId].
@@ -991,6 +995,8 @@ private constructor(
                         promptRequestUID = promptRequest.uid,
                         shouldDismissOnLoad = false,
                         creditCard = promptRequest.creditCard,
+                        isSecurityCodeSaveEnabled = creditCardDelegate.isSecurityCodeSaveEnabled(),
+                        saveSecurityCode = creditCardDelegate.saveSecurityCode(),
                     )
                 }
 

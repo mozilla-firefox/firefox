@@ -58,7 +58,8 @@ permalink: /changelog/
 * **service-sync-autofill**
   * `GeckoCreditCardsAddressesStorageDelegate` saves the security code from `CreditCardEntry`. [Bug 2089899](https://bugzilla.mozilla.org/show_bug.cgi?id=2089899)
 * **feature-prompts**
-  * **Behavior change**: The save credit card prompt no longer confirms the security code. [Bug 2089899](https://bugzilla.mozilla.org/show_bug.cgi?id=2089899)
+  * 🆕 Added `CreditCardDelegate.isSecurityCodeSaveEnabled`, `CreditCardDelegate.saveSecurityCode` and `CreditCardDelegate.onSaveSecurityCodeChanged`. When `isSecurityCodeSaveEnabled` is true, the save credit card prompt shows the security code and a "Save security codes" toggle. [Bug 2089899](https://bugzilla.mozilla.org/show_bug.cgi?id=2089899)
+  * **Behavior change**: When `isSecurityCodeSaveEnabled` is false, the save credit card prompt no longer confirms the security code. [Bug 2089899](https://bugzilla.mozilla.org/show_bug.cgi?id=2089899)
 
 # 161.0
 * **browser-state**

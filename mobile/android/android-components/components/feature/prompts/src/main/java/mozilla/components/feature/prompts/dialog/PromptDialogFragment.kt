@@ -53,6 +53,13 @@ internal interface Prompter {
     val loginExceptionStorage: LoginExceptions?
 
     /**
+     * Invoked when the user saves a credit card with the "Save security codes" toggle shown.
+     *
+     * @param enabled The state of the toggle.
+     */
+    fun onSaveSecurityCodeChanged(enabled: Boolean) = Unit
+
+    /**
      * Invoked when a dialog is dismissed. This consumes the [PromptRequest] indicated by [promptRequestUID] from the
      * session indicated by [sessionId].
      *

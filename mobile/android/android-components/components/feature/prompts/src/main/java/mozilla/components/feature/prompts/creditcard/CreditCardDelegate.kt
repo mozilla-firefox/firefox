@@ -23,4 +23,22 @@ interface CreditCardDelegate {
     /** Callback invoked when a user selects a credit card option from the select credit card prompt */
     val onSelectCreditCard: () -> Unit
         get() = {}
+
+    /**
+     * Whether the save credit card prompt shows the security code and the "Save security codes" toggle. When false, the
+     * prompt does not save the security code.
+     */
+    val isSecurityCodeSaveEnabled: () -> Boolean
+        get() = { false }
+
+    /** The stored state of the "Save security codes" toggle. */
+    val saveSecurityCode: () -> Boolean
+        get() = { true }
+
+    /**
+     * Callback invoked with the state of the "Save security codes" toggle when the user saves a credit card from the
+     * save credit card prompt. It is not invoked when the user dismisses the prompt.
+     */
+    val onSaveSecurityCodeChanged: (Boolean) -> Unit
+        get() = {}
 }

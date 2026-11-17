@@ -25,6 +25,9 @@ internal class TestPromptFeature : Prompter {
     var canceledPrompt: TestPrompt? = null
         private set
 
+    var saveSecurityCode: Boolean? = null
+        private set
+
     override fun onCancel(
         sessionId: String,
         promptRequestUID: String,
@@ -39,6 +42,10 @@ internal class TestPromptFeature : Prompter {
         value: Any?,
     ) {
         confirmedPrompt = TestPrompt(sessionId, promptRequestUID, value)
+    }
+
+    override fun onSaveSecurityCodeChanged(enabled: Boolean) {
+        saveSecurityCode = enabled
     }
 
     override fun onClear(sessionId: String, promptRequestUID: String) = Unit

@@ -16,7 +16,13 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.widget.AppCompatTextView
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.core.view.isVisible
+import androidx.fragment.compose.content
 import com.google.android.material.R as materialR
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -24,6 +30,7 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.concept.storage.CreditCardEntry
 import mozilla.components.concept.storage.CreditCardValidationDelegate.Result
 import mozilla.components.feature.prompts.R
@@ -39,6 +46,8 @@ import mozilla.components.support.utils.creditCardIssuerNetwork
 import mozilla.components.support.utils.ext.getParcelableCompat
 
 private const val KEY_CREDIT_CARD = "KEY_CREDIT_CARD"
+private const val KEY_SECURITY_CODE_SAVE_ENABLED = "KEY_SECURITY_CODE_SAVE_ENABLED"
+private const val KEY_SAVE_SECURITY_CODE = "KEY_SAVE_SECURITY_CODE"
 
 /**
  * [android.support.v4.app.DialogFragment] implementation to display a dialog that allows user to save a new credit card
@@ -51,7 +60,13 @@ internal class CreditCardSaveDialogFragment : PromptDialogFragment() {
         safeArguments.getParcelableCompat(KEY_CREDIT_CARD, CreditCardEntry::class.java)!!
     }
 
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) internal var confirmResult: Result = Result.CanBeCreated
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val isSecurityCodeSaveEnabled by lazy { safeArguments.getBoolean(KEY_SECURITY_CODE_SAVE_ENABLED) }
+
+    private val initialSaveSecurityCode by lazy { safeArguments.getBoolean(KEY_SAVE_SECURITY_CODE) }
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal var confirmResult: Result by mutableStateOf(Result.CanBeCreated)
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return BottomSheetDialog(requireContext(), R.style.MozDialogStyle).apply {
@@ -69,6 +84,26 @@ internal class CreditCardSaveDialogFragment : PromptDialogFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View {
+        if (isSecurityCodeSaveEnabled) {
+            return content {
+                var saveSecurityCode by rememberSaveable { mutableStateOf(initialSaveSecurityCode) }
+
+                LaunchedEffect(Unit) { checkIfCardIsNewOrSaved(creditCard) }
+
+                AcornTheme {
+                    CreditCardSaveDialogContent(
+                        creditCard = creditCard,
+                        appName = requireContext().appName,
+                        isUpdate = confirmResult is Result.CanBeUpdated,
+                        saveSecurityCode = saveSecurityCode,
+                        onSaveSecurityCodeChange = { saveSecurityCode = it },
+                        onSave = { onSaveClicked(saveSecurityCode) },
+                        onDismiss = ::onDismissClicked,
+                    )
+                }
+            }
+        }
+
         return LayoutInflater.from(requireContext())
             .inflate(
                 R.layout.mozac_feature_prompt_save_credit_card_prompt,
@@ -79,6 +114,10 @@ internal class CreditCardSaveDialogFragment : PromptDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        if (isSecurityCodeSaveEnabled) {
+            return
+        }
 
         view
             .findViewById<ImageView>(R.id.credit_card_logo)
@@ -94,7 +133,7 @@ internal class CreditCardSaveDialogFragment : PromptDialogFragment() {
         view.findViewById<TextView>(R.id.credit_card_expiration_date).text = creditCard.expiryDate
 
         view.findViewById<Button>(R.id.save_confirm).setOnClickListener {
-            onSaveClicked()
+            onSaveClicked(saveSecurityCode = false)
         }
 
         view.findViewById<Button>(R.id.save_cancel).setOnClickListener { onDismissClicked() }
@@ -102,13 +141,20 @@ internal class CreditCardSaveDialogFragment : PromptDialogFragment() {
         updateUI(view)
     }
 
-    /** Confirms the credit card without its security code, which this prompt does not save. */
+    /**
+     * Confirms the credit card. The security code is saved only when [isSecurityCodeSaveEnabled] and [saveSecurityCode]
+     * are true, and the toggle state is reported only when it was shown.
+     */
     @VisibleForTesting
-    internal fun onSaveClicked() {
+    internal fun onSaveClicked(saveSecurityCode: Boolean) {
+        val saveSecurityCode = isSecurityCodeSaveEnabled && saveSecurityCode
+        if (isSecurityCodeSaveEnabled) {
+            feature?.onSaveSecurityCodeChanged(saveSecurityCode)
+        }
         feature?.onConfirm(
             sessionId = sessionId,
             promptRequestUID = promptRequestUID,
-            value = creditCard.copy(cardCvv = null),
+            value = creditCard.copy(cardCvv = creditCard.cardCvv.takeIf { saveSecurityCode }),
         )
         dismiss()
         emitSaveUpdateFact()
@@ -209,6 +255,8 @@ internal class CreditCardSaveDialogFragment : PromptDialogFragment() {
             promptRequestUID: String,
             shouldDismissOnLoad: Boolean,
             creditCard: CreditCardEntry,
+            isSecurityCodeSaveEnabled: Boolean,
+            saveSecurityCode: Boolean,
         ): CreditCardSaveDialogFragment {
             val fragment = CreditCardSaveDialogFragment()
             val arguments = fragment.arguments ?: Bundle()
@@ -218,6 +266,8 @@ internal class CreditCardSaveDialogFragment : PromptDialogFragment() {
                 putString(KEY_PROMPT_UID, promptRequestUID)
                 putBoolean(KEY_SHOULD_DISMISS_ON_LOAD, shouldDismissOnLoad)
                 putParcelable(KEY_CREDIT_CARD, creditCard)
+                putBoolean(KEY_SECURITY_CODE_SAVE_ENABLED, isSecurityCodeSaveEnabled)
+                putBoolean(KEY_SAVE_SECURITY_CODE, saveSecurityCode)
             }
 
             fragment.arguments = arguments
