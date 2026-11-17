@@ -269,6 +269,7 @@ Maybe<InlinableCallData> FindInlinableCallData(ICCacheIRStub* stub) {
         uint32_t targetOffset = args.expectedOffset;
         uintptr_t rawScript = stubInfo->getStubRawWord(stubData, targetOffset);
         targetScript = reinterpret_cast<JSScript*>(rawScript);
+        targetFunction = nullptr;
         break;
       }
       case CacheOp::CallScriptedFunction: {
@@ -407,6 +408,7 @@ Maybe<InlinableGetterData> FindInlinableGetterData(ICCacheIRStub* stub) {
         uint32_t targetOffset = args.expectedOffset;
         uintptr_t rawScript = stubInfo->getStubRawWord(stubData, targetOffset);
         targetScript = reinterpret_cast<JSScript*>(rawScript);
+        targetFunction = nullptr;
         break;
       }
       case CacheOp::CallScriptedGetterResult: {
@@ -496,6 +498,7 @@ Maybe<InlinableSetterData> FindInlinableSetterData(ICCacheIRStub* stub) {
         uint32_t targetOffset = args.expectedOffset;
         uintptr_t rawScript = stubInfo->getStubRawWord(stubData, targetOffset);
         targetScript = reinterpret_cast<JSScript*>(rawScript);
+        targetFunction = nullptr;
         break;
       }
       case CacheOp::CallScriptedSetter: {
