@@ -288,7 +288,13 @@ void NodeChannel::OnChannelConnected(base::ProcessId aPeerPid) {
   // the channel has been connected to unblock completing the process launch.
   RefPtr<GeckoChildProcessHost> host(mChildProcessHost);
   if (host) {
-    host->OnChannelConnected(aPeerPid);
+    host->WhenProcessHandleReady()->Then(
+        XRE_GetAsyncIOEventTarget(), __func__,
+        [host](const ProcessHandlePromise::ResolveOrRejectValue& aResult) {
+          if (aResult.IsResolve()) {
+            host->OnChannelConnected();
+          }
+        });
   }
 }
 

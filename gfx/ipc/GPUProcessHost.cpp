@@ -151,10 +151,10 @@ void GPUProcessHost::OnProcessLaunchError(const base::LaunchError aError) {
   lock.Notify();
 }
 
-void GPUProcessHost::OnChannelConnected(base::ProcessId peer_pid) {
+void GPUProcessHost::OnChannelConnected() {
   MOZ_ASSERT(!NS_IsMainThread());
 
-  GeckoChildProcessHost::OnChannelConnected(peer_pid);
+  GeckoChildProcessHost::OnChannelConnected();
 
   NS_DispatchToMainThread(NS_NewRunnableFunction(
       "GPUProcessHost::OnChannelConnected", [self = RefPtr{this}]() {

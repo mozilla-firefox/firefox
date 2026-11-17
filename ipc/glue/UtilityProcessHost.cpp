@@ -145,11 +145,11 @@ UtilityProcessHost::LaunchPromise() {
   return mLaunchPromise;
 }
 
-void UtilityProcessHost::OnChannelConnected(base::ProcessId peer_pid) {
+void UtilityProcessHost::OnChannelConnected() {
   MOZ_ASSERT(!NS_IsMainThread());
   LOGD("[%p] UtilityProcessHost::OnChannelConnected", this);
 
-  GeckoChildProcessHost::OnChannelConnected(peer_pid);
+  GeckoChildProcessHost::OnChannelConnected();
 
   NS_DispatchToMainThread(NS_NewRunnableFunction(
       "UtilityProcessHost::OnChannelConnected", [this, self = RefPtr{this}]() {

@@ -162,10 +162,10 @@ void VRProcessParent::KillHard(const char* aReason) {
   SetAlreadyDead();
 }
 
-void VRProcessParent::OnChannelConnected(base::ProcessId peer_pid) {
+void VRProcessParent::OnChannelConnected() {
   MOZ_RELEASE_ASSERT(!NS_IsMainThread());
 
-  GeckoChildProcessHost::OnChannelConnected(peer_pid);
+  GeckoChildProcessHost::OnChannelConnected();
 
   NS_DispatchToMainThread(
       NewRunnableMethod("VRProcessParent::OnChannelConnectedTask", this,

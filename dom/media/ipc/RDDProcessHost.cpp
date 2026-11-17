@@ -120,10 +120,10 @@ RefPtr<GenericNonExclusivePromise> RDDProcessHost::LaunchPromise() {
   return mLaunchPromise;
 }
 
-void RDDProcessHost::OnChannelConnected(base::ProcessId peer_pid) {
+void RDDProcessHost::OnChannelConnected() {
   MOZ_ASSERT(!NS_IsMainThread());
 
-  GeckoChildProcessHost::OnChannelConnected(peer_pid);
+  GeckoChildProcessHost::OnChannelConnected();
 
   NS_DispatchToMainThread(NS_NewRunnableFunction(
       "RDDProcessHost::OnChannelConnected", [this, self = RefPtr{this}]() {
