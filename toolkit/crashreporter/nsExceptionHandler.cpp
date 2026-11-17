@@ -3468,6 +3468,19 @@ bool SetRemoteExceptionHandler(int& aArgc, char** aArgv) {
   return gExceptionHandler->IsOutOfProcess();
 }  // namespace CrashReporter
 
+static void AppendDumperError(AnnotationTable& aAnnotations,
+                              const nsACString& aError) {
+  if (aError.IsEmpty()) {
+    return;
+  }
+
+  nsCString& dumperError = aAnnotations[Annotation::DumperError];
+  if (!dumperError.IsEmpty()) {
+    dumperError.AppendLiteral("; ");
+  }
+  dumperError.Append(aError);
+}
+
 bool TakeMinidumpForChild(GeckoChildID aChildId, nsIFile** dump,
                           AnnotationTable& aAnnotations) {
   if (!GetEnabled()) {
@@ -3517,9 +3530,7 @@ bool TakeMinidumpForChild(GeckoChildID aChildId, nsIFile** dump,
     return false;
   }
 
-  if (error.Length() > 0) {
-    aAnnotations[Annotation::DumperError] = std::move(error);
-  }
+  AppendDumperError(aAnnotations, error);
 
   return true;
 }
@@ -3683,9 +3694,7 @@ bool CreateMinidumpsAndPair(GeckoChildID aId, ThreadId aTargetBlamedThread,
     return false;
   }
 
-  if (error.Length() > 0) {
-    aTargetAnnotations[Annotation::DumperError] = std::move(error);
-  }
+  AppendDumperError(aTargetAnnotations, error);
 
   targetMinidump.forget(aMainDumpOut);
 

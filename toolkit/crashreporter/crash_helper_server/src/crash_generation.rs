@@ -440,6 +440,16 @@ fn fold_annotations(
     to_merge: Result<Vec<CAnnotation>>,
 ) -> HashMap<u32, AnnotationData> {
     let mut merge_annotation = |annotation: CAnnotation| {
+        if annotation.id == CrashAnnotation::DumperError as u32 {
+            if let (Some(AnnotationData::String(prev)), AnnotationData::String(new)) =
+                (merged.get(&annotation.id), &annotation.data)
+            {
+                let combined = [prev.as_bytes(), b"; ", new.as_bytes()].concat();
+                let combined = CString::new(combined).expect("Should be a valid C string");
+                let _ = merged.insert(annotation.id, AnnotationData::String(combined));
+                return;
+            }
+        }
         let _ = merged.insert(annotation.id, annotation.data);
     };
 
@@ -582,6 +592,27 @@ mod tests {
             merged.get(&(CrashAnnotation::DumperError as u32)),
             Some(&AnnotationData::String(
                 CString::new("MissingMainProcessAnnotations").unwrap()
+            ))
+        );
+    }
+
+    #[test]
+    fn fold_annotations_multiple_errors() {
+        let merged = [
+            None.context("MissingMainProcessAnnotations"),
+            Ok(vec![make_error_annotation("PlatformError")]),
+            None.context("MissingChildProcessAnnotations"),
+        ]
+        .into_iter()
+        .fold(HashMap::new(), fold_annotations);
+
+        assert_eq!(
+            merged.get(&(CrashAnnotation::DumperError as u32)),
+            Some(&AnnotationData::String(
+                CString::new(
+                    "MissingMainProcessAnnotations; PlatformError; MissingChildProcessAnnotations"
+                )
+                .unwrap()
             ))
         );
     }
