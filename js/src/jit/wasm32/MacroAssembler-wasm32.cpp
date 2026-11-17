@@ -450,6 +450,14 @@ void MacroAssembler::call(ImmPtr imm) { MOZ_CRASH(); }
 
 void MacroAssembler::call(JitCode* c) { MOZ_CRASH(); }
 
+void MacroAssembler::tailJump(Register reg) { MOZ_CRASH(); }
+
+void MacroAssembler::tailJump(const Address& addr) { MOZ_CRASH(); }
+
+void MacroAssembler::tailJump(TrampolinePtr code) { MOZ_CRASH(); }
+
+void MacroAssembler::tailJump(JitCode* code) { MOZ_CRASH(); }
+
 void MacroAssembler::callWithABIPost(uint32_t stackAdjust, ABIType result) {
   MOZ_CRASH();
 }

@@ -150,6 +150,8 @@ BufferOffset Assembler::emitExtendedJumpTable() {
     //   clobbered by ldr and br as they are Assembler primitives, not
     //   MacroAssembler functions.
 
+    // These jumps may go to call targets, so they must branch through x16 or
+    // x17 (ScratchReg64 is x16) to be compatible with BTI.
     ldr(ScratchReg64, ptrdiff_t(8 / vixl::kInstructionSize));
     br(ScratchReg64);
 

@@ -735,6 +735,17 @@ void MacroAssembler::callAndPushReturnAddress(Register reg) { call(reg); }
 void MacroAssembler::callAndPushReturnAddress(Label* label) { call(label); }
 
 // ===============================================================
+// Tail jumps.
+
+void MacroAssembler::tailJump(Register reg) { jump(reg); }
+
+void MacroAssembler::tailJump(const Address& addr) { jump(addr); }
+
+void MacroAssembler::tailJump(TrampolinePtr code) { jump(code); }
+
+void MacroAssembler::tailJump(JitCode* code) { jump(code); }
+
+// ===============================================================
 // Patchable near/far jumps.
 
 CodeOffset MacroAssembler::farJumpWithPatch() {

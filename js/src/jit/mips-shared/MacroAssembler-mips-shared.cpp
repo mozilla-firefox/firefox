@@ -1867,6 +1867,20 @@ void MacroAssembler::call(JitCode* c) {
   callJitNoProfiler(scratch);
 }
 
+// ===============================================================
+// Tail jumps.
+
+void MacroAssembler::tailJump(Register reg) { jump(reg); }
+
+void MacroAssembler::tailJump(const Address& addr) { jump(addr); }
+
+void MacroAssembler::tailJump(TrampolinePtr code) { jump(code); }
+
+void MacroAssembler::tailJump(JitCode* code) { jump(code); }
+
+// ===============================================================
+// Patchable near/far jumps.
+
 CodeOffset MacroAssembler::nopPatchableToCall() {
   as_nop();  // lui
   as_nop();  // ori

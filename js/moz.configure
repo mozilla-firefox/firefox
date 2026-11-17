@@ -331,6 +331,35 @@ def js_hw_shstk(enabled, target, simulator):
 set_define("JS_HW_SHADOW_STACK", js_hw_shstk)
 
 
+# Hardware-enforced indirect target landing pad support
+# =======================================================
+option(
+    "--enable-js-hardware-indirect-targets",
+    help="Enable experimental hardware-enforced landing pads at JIT indirect targets (x86-64 IBT, ARM64 BTI)",
+)
+
+
+@depends("--enable-js-hardware-indirect-targets", target, simulator)
+def js_hw_indirect_targets(enabled, target, simulator):
+    if not enabled:
+        return
+
+    if target.cpu != "x86_64" and target.cpu != "aarch64":
+        die(
+            "--enable-js-hardware-indirect-targets is only supported on x86_64 and aarch64"
+        )
+
+    if simulator:
+        die(
+            "--enable-js-hardware-indirect-targets is not supported with a JIT simulator"
+        )
+
+    return True
+
+
+set_define("JS_HW_INDIRECT_TARGETS", js_hw_indirect_targets)
+
+
 # Profiling
 # =======================================================
 option(

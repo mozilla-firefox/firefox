@@ -1770,10 +1770,54 @@ void MacroAssembler::patchCall(uint32_t callerOffset, uint32_t calleeOffset) {
   bl(inst, relTarget00);
 }
 
+// ===============================================================
+// Tail jumps.
+
+void MacroAssembler::tailJump(Register reg) {
+#ifdef JS_HW_INDIRECT_TARGETS
+  // With BTI, an indirect branch to a call landing pad (BTI c) must use x16 or
+  // x17, which are the only registers in the scratch register pool. Move the
+  // target into one of them if needed.
+  if (reg != ScratchReg && reg != ScratchReg2) {
+    vixl::UseScratchRegisterScope temps(this);
+    const Register scratch = temps.AcquireX().asUnsized();
+    MOZ_ASSERT(scratch == ScratchReg || scratch == ScratchReg2);
+    movePtr(reg, scratch);
+    jump(scratch);
+    return;
+  }
+#endif
+  jump(reg);
+}
+
+void MacroAssembler::tailJump(const Address& addr) {
+  // Load the target into x16 or x17 (see comment in the above overload),
+  // avoiding the base register.
+  vixl::UseScratchRegisterScope temps(this);
+  temps.Exclude(toARMRegister(addr.base, 64));
+  const Register scratch = temps.AcquireX().asUnsized();
+  MOZ_ASSERT(scratch == ScratchReg || scratch == ScratchReg2);
+  loadPtr(addr, scratch);
+  jump(scratch);
+}
+
+// These use direct branches (which aren't subject to BTI) where possible.
+// Extended jump table entries for out-of-range targets already use x16.
+void MacroAssembler::tailJump(TrampolinePtr code) { jump(code); }
+
+void MacroAssembler::tailJump(JitCode* code) { jump(code); }
+
+// ===============================================================
+// Patchable near/far jumps.
+
 CodeOffset MacroAssembler::farJumpWithPatch() {
+  // Far jumps may go to call targets, so to be compatible with BTI they must
+  // branch through x16 or x17, which are the only scratch registers.
   vixl::UseScratchRegisterScope temps(this);
   const ARMRegister scratch = temps.AcquireX();
   const ARMRegister scratch2 = temps.AcquireX();
+  MOZ_ASSERT(scratch2.asUnsized() == ScratchReg ||
+             scratch2.asUnsized() == ScratchReg2);
 
   AutoForbidPoolsAndNops afp(this,
                              /* max number of instructions in scope = */ 7);

@@ -3630,6 +3630,20 @@ void MacroAssembler::call(JitCode* c) {
   as_jirl(ra, scratch, BOffImm16(0));
 }
 
+// ===============================================================
+// Tail jumps.
+
+void MacroAssembler::tailJump(Register reg) { jump(reg); }
+
+void MacroAssembler::tailJump(const Address& addr) { jump(addr); }
+
+void MacroAssembler::tailJump(TrampolinePtr code) { jump(code); }
+
+void MacroAssembler::tailJump(JitCode* code) { jump(code); }
+
+// ===============================================================
+// Patchable near/far jumps.
+
 CodeOffset MacroAssembler::nopPatchableToCall() {
   // LOONG64
   as_nop();  // lu12i_w

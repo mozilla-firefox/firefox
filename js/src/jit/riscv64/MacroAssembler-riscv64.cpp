@@ -3605,6 +3605,14 @@ void MacroAssembler::call(JitCode* c) {
   addPendingJump(bo, ImmPtr(c->raw()), RelocationKind::JITCODE);
 }
 
+void MacroAssembler::tailJump(Register reg) { jump(reg); }
+
+void MacroAssembler::tailJump(const Address& addr) { jump(addr); }
+
+void MacroAssembler::tailJump(TrampolinePtr code) { jump(code); }
+
+void MacroAssembler::tailJump(JitCode* code) { jump(code); }
+
 void MacroAssembler::callWithABIPre(uint32_t* stackAdjust, bool callFromWasm) {
   MOZ_ASSERT(inCall_);
   uint32_t stackForCall = abiArgs_.stackBytesConsumedSoFar();

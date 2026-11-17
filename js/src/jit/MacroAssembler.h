@@ -651,6 +651,23 @@ class MacroAssembler : public MacroAssemblerSpecific {
   void reserveVMFunctionOutParamSpace(const VMFunctionData& f);
   void loadVMFunctionOutParam(const VMFunctionData& f, const Address& addr);
 
+  // ===============================================================
+  // Tail jumps.
+
+  // Jump to a call target, i.e. code that is otherwise entered by a call.
+  // Unlike a call, this leaves the existing return address in place (on the
+  // stack or in the link register), so the target returns to it, like a tail
+  // call.
+  //
+  // These must be used instead of jump() for such transfers to support
+  // forward-edge CFI since call landing pads may restrict how they can be
+  // reached. For example, on ARM64 with BTI, an indirect jump to a call
+  // landing pad must go through x16 or x17.
+  void tailJump(Register reg) PER_SHARED_ARCH;
+  void tailJump(const Address& addr) PER_SHARED_ARCH;
+  void tailJump(TrampolinePtr code) PER_SHARED_ARCH;
+  void tailJump(JitCode* code) PER_SHARED_ARCH;
+
  public:
   // ===============================================================
   // Patchable near/far jumps.
