@@ -17,10 +17,10 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -51,6 +51,10 @@ import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.OptIn;
@@ -61,6 +65,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.IntentCompat;
 import androidx.preference.PreferenceManager;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -512,8 +517,46 @@ public class GeckoViewActivity extends AppCompatActivity
 
   private LinkedList<WebResponse> mPendingDownloads = new LinkedList<>();
 
-  private int mNextActivityResultCode = 10;
-  private HashMap<Integer, GeckoResult<Intent>> mPendingActivityResult = new HashMap<>();
+  private GeckoResult<Intent> mPendingIntentSenderResult;
+  private ActivityResultLauncher<IntentSenderRequest> mIntentSenderLauncher;
+  private final OnBackPressedCallback mBackPressedCallback =
+      new OnBackPressedCallback(true) {
+        @Override
+        public void handleOnBackPressed() {
+          final GeckoSession session = mTabSessionManager.getCurrentSession();
+          if (session == null) {
+            defaultBackPressed();
+            return;
+          }
+
+          if (mFullScreen) {
+            session.exitFullScreen();
+            return;
+          }
+
+          session
+              .processBackPressed()
+              .accept(
+                  handled -> {
+                    if (handled) {
+                      return;
+                    }
+
+                    if (mCanGoBack) {
+                      session.goBack();
+                      return;
+                    }
+
+                    defaultBackPressed();
+                  });
+        }
+
+        private void defaultBackPressed() {
+          setEnabled(false);
+          getOnBackPressedDispatcher().onBackPressed();
+          setEnabled(true);
+        }
+      };
 
   private boolean supportsPip() {
     return getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE);
@@ -600,8 +643,9 @@ public class GeckoViewActivity extends AppCompatActivity
   }
 
   @Override
-  public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode) {
-    super.onPictureInPictureModeChanged(isInPictureInPictureMode);
+  public void onPictureInPictureModeChanged(
+      boolean isInPictureInPictureMode, Configuration newConfig) {
+    super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
     GeckoSession s = (mGeckoView != null) ? mGeckoView.getSession() : null;
     if (s != null) {
       s.getCompositorController().onPipModeChanged(isInPictureInPictureMode);
@@ -920,9 +964,36 @@ public class GeckoViewActivity extends AppCompatActivity
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    getOnBackPressedDispatcher().addCallback(this, mBackPressedCallback);
+    mIntentSenderLauncher =
+        registerForActivityResult(
+            new ActivityResultContracts.StartIntentSenderForResult(),
+            activityResult -> {
+              final GeckoResult<Intent> result = mPendingIntentSenderResult;
+              mPendingIntentSenderResult = null;
+              if (result == null) {
+                return;
+              }
+              final Intent data = activityResult.getData();
+              if (activityResult.getResultCode() == Activity.RESULT_OK) {
+                result.complete(data);
+                return;
+              }
+              final Throwable error =
+                  data == null
+                      ? null
+                      : IntentCompat.getSerializableExtra(
+                          data,
+                          ActivityResultContracts.StartIntentSenderForResult
+                              .EXTRA_SEND_INTENT_EXCEPTION,
+                          Throwable.class);
+              result.completeExceptionally(
+                  error != null ? error : new RuntimeException("Unknown error"));
+            });
 
     // We might have been started because the user clicked on a notification
-    WebNotification notification = getIntent().getParcelableExtra("onClick");
+    WebNotification notification =
+        IntentCompat.getParcelableExtra(getIntent(), "onClick", WebNotification.class);
     if (notification != null) {
       getIntent().removeExtra("onClick");
       notification.click();
@@ -1070,45 +1141,32 @@ public class GeckoViewActivity extends AppCompatActivity
             mKillProcessOnDestroy = true;
             finish();
           });
-
-      sGeckoRuntime.setActivityDelegate(
-          pendingIntent -> {
-            final GeckoResult<Intent> result = new GeckoResult<>();
-            try {
-              final int code = mNextActivityResultCode++;
-              mPendingActivityResult.put(code, result);
-              GeckoViewActivity.this.startIntentSenderForResult(
-                  pendingIntent.getIntentSender(), code, null, 0, 0, 0);
-            } catch (IntentSender.SendIntentException e) {
-              result.completeExceptionally(e);
-            }
-            return result;
-          });
     }
+
+    sGeckoRuntime.setActivityDelegate(
+        pendingIntent -> {
+          if (mPendingIntentSenderResult != null) {
+            return GeckoResult.fromException(
+                new IllegalStateException("An activity result is already pending"));
+          }
+          try {
+            mIntentSenderLauncher.launch(
+                new IntentSenderRequest.Builder(pendingIntent.getIntentSender()).build());
+          } catch (final IllegalStateException e) {
+            return GeckoResult.fromException(e);
+          }
+          mPendingIntentSenderResult = new GeckoResult<>();
+          return mPendingIntentSenderResult;
+        });
 
     sExtensionManager.setExtensionDelegate(this);
 
     if (savedInstanceState == null) {
-      TabSession session = getIntent().getParcelableExtra("session");
-      if (session != null) {
-        connectSession(session);
-
-        if (!session.isOpen()) {
-          session.open(sGeckoRuntime);
-        }
-
-        mFullAccessibilityTree = session.getSettings().getFullAccessibilityTree();
-
-        mTabSessionManager.addSession(session);
-        session.open(sGeckoRuntime);
-        setGeckoViewSession(session);
-      } else {
-        session = createSession();
-        session.open(sGeckoRuntime);
-        mTabSessionManager.setCurrentSession(session);
-        mGeckoView.setSession(session);
-        sGeckoRuntime.getWebExtensionController().setTabActive(session, true);
-      }
+      final TabSession session = createSession();
+      session.open(sGeckoRuntime);
+      mTabSessionManager.setCurrentSession(session);
+      mGeckoView.setSession(session);
+      sGeckoRuntime.getWebExtensionController().setTabActive(session, true);
       loadFromIntent(getIntent());
     }
 
@@ -1383,31 +1441,6 @@ public class GeckoViewActivity extends AppCompatActivity
             mDesktopMode
                 ? GeckoSessionSettings.USER_AGENT_MODE_DESKTOP
                 : GeckoSessionSettings.USER_AGENT_MODE_MOBILE);
-  }
-
-  @Override
-  public void onBackPressed() {
-    GeckoSession session = mTabSessionManager.getCurrentSession();
-    if (mFullScreen && session != null) {
-      session.exitFullScreen();
-      return;
-    }
-
-    session
-        .processBackPressed()
-        .accept(
-            handled -> {
-              if (handled) {
-                return;
-              }
-
-              if (mCanGoBack && session != null) {
-                session.goBack();
-                return;
-              }
-
-              super.onBackPressed();
-            });
   }
 
   @Override
@@ -2038,7 +2071,8 @@ public class GeckoViewActivity extends AppCompatActivity
     }
 
     if (intent.hasExtra("onClick")) {
-      WebNotification notification = intent.getExtras().getParcelable("onClick");
+      WebNotification notification =
+          IntentCompat.getParcelableExtra(intent, "onClick", WebNotification.class);
       if (notification != null) {
         intent.removeExtra("onClick");
         notification.click();
@@ -2070,14 +2104,6 @@ public class GeckoViewActivity extends AppCompatActivity
       final BasicGeckoViewPrompt prompt =
           (BasicGeckoViewPrompt) mTabSessionManager.getCurrentSession().getPromptDelegate();
       prompt.onFileCallbackResult(resultCode, data);
-    } else if (mPendingActivityResult.containsKey(requestCode)) {
-      final GeckoResult<Intent> result = mPendingActivityResult.remove(requestCode);
-
-      if (resultCode == Activity.RESULT_OK) {
-        result.complete(data);
-      } else {
-        result.completeExceptionally(new RuntimeException("Unknown error"));
-      }
     } else {
       super.onActivityResult(requestCode, resultCode, data);
     }
