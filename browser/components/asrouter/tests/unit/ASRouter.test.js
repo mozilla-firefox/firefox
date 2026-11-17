@@ -87,6 +87,7 @@ describe("ASRouter", () => {
       storage: {
         get: getStub,
         set: sandbox.stub().returns(Promise.resolve()),
+        setWithResult: sandbox.stub().resolves(),
         setSharedMessageImpressions: sandbox.stub(),
         getSharedMessageImpressions: sandbox
           .stub()
@@ -855,6 +856,7 @@ describe("ASRouter", () => {
             action: "action_only_user_event",
             message_id: allowedMessage.id,
             event: "IMPRESSION",
+            event_context: { stored_impressions: 0 },
           },
         });
         assert.calledWithMatch(initParams.dispatchCFRAction, {
@@ -863,6 +865,18 @@ describe("ASRouter", () => {
         });
         assert.notCalled(addImpressionStub);
         assert.notCalled(blockMessageByIdStub);
+      });
+      it("reports how many impressions were already stored for the message", async () => {
+        await Router.setState({
+          messageImpressions: { [allowedMessage.id]: [1, 2] },
+        });
+        Router.routeCFRMessage(allowedMessage, browser, {});
+        await Promise.resolve(); // let dispatchCFRAction's async wrapper resolve
+
+        assert.calledWithMatch(initParams.dispatchCFRAction, {
+          type: "ACTION_ONLY_TELEMETRY",
+          data: { event_context: { stored_impressions: 2 } },
+        });
       });
       it("allowlists the SET_DEFAULT_BROWSER_OPEN_WITH action", () => {
         assert.isTrue(
@@ -2527,6 +2541,74 @@ describe("ASRouter", () => {
   });
 
   describe("impressions", () => {
+    describe("#addImpression save failures", () => {
+      const message = {
+        id: "foo",
+        provider: "bar",
+        groups: [],
+        frequency: { lifetime: 2 },
+      };
+      it("does not report an undesired event when the impression is saved", async () => {
+        const report = sandbox.spy(Router, "_reportFailedImpressionWrites");
+        await Router.addImpression(message);
+        await report.firstCall.returnValue;
+        await Promise.resolve(); // let dispatchCFRAction's async wrapper resolve
+
+        assert.neverCalledWithMatch(initParams.dispatchCFRAction, {
+          data: { event: "IMPRESSION_SAVE_FAILED" },
+        });
+      });
+      it("reports an undesired event when saving the impression fails", async () => {
+        Router._storage.setWithResult.rejects(
+          Object.assign(new Error("fail"), { name: "QuotaExceededError" })
+        );
+
+        const report = sandbox.spy(Router, "_reportFailedImpressionWrites");
+        await Router.addImpression(message);
+        await report.firstCall.returnValue;
+        await Promise.resolve(); // let dispatchCFRAction's async wrapper resolve
+
+        assert.deepEqual(Router.state.messageImpressions.foo, [0]);
+        assert.calledWithMatch(initParams.dispatchCFRAction, {
+          type: "AS_ROUTER_TELEMETRY_USER_EVENT",
+          data: {
+            action: "asrouter_undesired_event",
+            message_id: "foo",
+            event: "IMPRESSION_SAVE_FAILED",
+            event_context: {
+              error: "QuotaExceededError",
+              store: "messageImpressions",
+            },
+          },
+        });
+      });
+      it("reports one undesired event per store that failed", async () => {
+        await Router.setState({
+          groups: [
+            { id: "a", frequency: { lifetime: 3 } },
+            { id: "b", frequency: { lifetime: 3 } },
+          ],
+        });
+        Router._storage.setWithResult.rejects(new Error("fail"));
+
+        const report = sandbox.spy(Router, "_reportFailedImpressionWrites");
+        await Router.addImpression({ ...message, groups: ["a", "b"] });
+        await report.firstCall.returnValue;
+        await Promise.resolve(); // let dispatchCFRAction's async wrapper resolve
+
+        const failureEvents = initParams.dispatchCFRAction
+          .getCalls()
+          .map(call => call.args[0])
+          .filter(action => action.data?.event === "IMPRESSION_SAVE_FAILED");
+        assert.deepEqual(
+          failureEvents.map(action => action.data.event_context),
+          [
+            { error: "Error", store: "messageImpressions" },
+            { error: "Error", store: "groupImpressions" },
+          ]
+        );
+      });
+    });
     describe("#addImpression for groups", () => {
       it("should save an impression in each group-with-frequency in a message", async () => {
         const fooMessageImpressions = [0];
@@ -3565,6 +3647,36 @@ describe("ASRouter", () => {
             [0],
             "foo message impressions"
           );
+        });
+        it("reports an undesired event when the shared impression write fails", async () => {
+          Router._storage.setSharedMessageImpressions.resolves(false);
+          const message = {
+            id: "foo",
+            provider: "bar",
+            frequency: { lifetime: 3 },
+            profileScope: "single",
+          };
+
+          const report = sandbox.spy(Router, "_reportFailedImpressionWrites");
+          await Router.addImpression(message);
+          await report.firstCall.returnValue;
+          await Promise.resolve(); // let dispatchCFRAction's async wrapper resolve
+
+          assert.calledWithMatch(initParams.dispatchCFRAction, {
+            data: {
+              event: "IMPRESSION_SAVE_FAILED",
+              event_context: {
+                error: "WriteFailed",
+                store: "multiProfileMessageImpressions",
+              },
+            },
+          });
+          assert.neverCalledWithMatch(initParams.dispatchCFRAction, {
+            data: {
+              event: "IMPRESSION_SAVE_FAILED",
+              event_context: { store: "messageImpressions" },
+            },
+          });
         });
         it("should not add profileImpressions when profileScope is not set", async () => {
           const message = {

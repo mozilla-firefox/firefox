@@ -50,6 +50,7 @@ export class ASRouterStorage {
     );
     p.catch(() => {});
     this.#pendingWrites.add(p);
+    return p;
   }
 
   flush() {
@@ -68,7 +69,11 @@ export class ASRouterStorage {
         get: this._get.bind(this, storeName),
         getAll: this._getAll.bind(this, storeName),
         getAllKeys: this._getAllKeys.bind(this, storeName),
-        set: this._trackedSet.bind(this, storeName),
+        set: (key, value) => {
+          this._trackedSet(storeName, key, value);
+        },
+        // Like set, but returns a promise that rejects if the write fails.
+        setWithResult: this._trackedSet.bind(this, storeName),
         getSharedMessageImpressions:
           this.getSharedMessageImpressions.bind(this),
         getSharedMessageBlocklist: this.getSharedMessageBlocklist.bind(this),
@@ -104,10 +109,21 @@ export class ASRouterStorage {
     );
   }
 
+  async _getTransaction(storeName, mode) {
+    return (await this.db).transaction([storeName], mode);
+  }
+
   _set(storeName, key, value) {
-    return this._requestWrapper(async () =>
-      (await this._getStore(storeName, "readwrite")).put(value, key)
-    );
+    return this._requestWrapper(async () => {
+      const transaction = await this._getTransaction(storeName, "readwrite");
+      // Wait for the commit too, so a write that is accepted but fails to
+      // commit is reported as a failure.
+      const [result] = await Promise.all([
+        transaction.objectStore(storeName).put(value, key),
+        transaction.promiseComplete(),
+      ]);
+      return result;
+    });
   }
 
   _openDatabase() {

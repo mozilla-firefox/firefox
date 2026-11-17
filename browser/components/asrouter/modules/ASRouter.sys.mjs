@@ -1725,6 +1725,10 @@ export class _ASRouter {
             action: "action_only_user_event",
             message_id: message.id,
             event: "IMPRESSION",
+            event_context: {
+              stored_impressions:
+                this.state.messageImpressions[message.id]?.length ?? 0,
+            },
           },
         });
         // Add local impression record, used for enforcing frequency caps.
@@ -1836,25 +1840,30 @@ export class _ASRouter {
     // that have providers that have frequency
     if (message.frequency || groupsWithFrequency.length) {
       const time = Date.now();
-      return this.setState(state => {
-        const messageImpressions = this._addImpressionForItem(
+      const writes = [];
+      const stateUpdated = this.setState(state => {
+        const messageResult = this._addImpressionForItem(
           state.messageImpressions,
           message,
           "messageImpressions",
           time
         );
+        const messageImpressions = messageResult.impressions;
+        writes.push(messageResult.write);
         // Initialize this with state.groupImpressions, and then assign the
         // newly-updated copy to it during each iteration so that
         // all the changes get captured and either returned or passed into the
         // _addImpressionsForItem call on the next iteration.
         let { groupImpressions } = state;
         for (const group of groupsWithFrequency) {
-          groupImpressions = this._addImpressionForItem(
+          const groupResult = this._addImpressionForItem(
             groupImpressions,
             group,
             "groupImpressions",
             time
           );
+          groupImpressions = groupResult.impressions;
+          writes.push(groupResult.write);
         }
 
         let { multiProfileMessageImpressions } = state;
@@ -1863,12 +1872,14 @@ export class _ASRouter {
           message.profileScope === PROFILE_MESSAGE_SCOPE.SINGLE &&
           lazy.ASRouterTargeting.Environment.canCreateSelectableProfiles
         ) {
-          multiProfileMessageImpressions = this._addImpressionForItem(
+          const multiProfileResult = this._addImpressionForItem(
             state.multiProfileMessageImpressions,
             message,
             "multiProfileMessageImpressions",
             time
           );
+          multiProfileMessageImpressions = multiProfileResult.impressions;
+          writes.push(multiProfileResult.write);
         }
 
         return {
@@ -1877,16 +1888,57 @@ export class _ASRouter {
           multiProfileMessageImpressions,
         };
       });
+      this._reportFailedImpressionWrites(writes.filter(Boolean), message);
+      return stateUpdated;
     }
     return Promise.resolve();
   }
 
+  /**
+   * Report an undesired event for each store whose impression write failed.
+   *
+   * @param {Array<{store: string, promise: Promise}>} writes
+   *   `promise` rejects on failure, or resolves to false for shared database
+   *   writes.
+   * @param {object} message
+   */
+  async _reportFailedImpressionWrites(writes, message) {
+    const results = await Promise.allSettled(
+      writes.map(({ promise }) => promise)
+    );
+    const failures = new Map();
+    results.forEach(({ status, value, reason }, i) => {
+      const { store } = writes[i];
+      if (failures.has(store)) {
+        return;
+      }
+      if (status === "rejected") {
+        failures.set(store, reason?.name || "Error");
+      } else if (value === false) {
+        failures.set(store, "WriteFailed");
+      }
+    });
+    for (const [store, error] of failures) {
+      this.dispatchCFRAction?.({
+        type: lazy.MESSAGE_TYPE_HASH.AS_ROUTER_TELEMETRY_USER_EVENT,
+        data: {
+          action: "asrouter_undesired_event",
+          message_id: message.id,
+          event: "IMPRESSION_SAVE_FAILED",
+          event_context: { error, store },
+        },
+      });
+    }
+  }
+
   // Helper for addImpression - calculate the updated impressions object for the given
-  //                            item, then store it and return it
+  //                            item, then store it. Returns the impressions and
+  //                            the pending storage write (null if not stored).
   _addImpressionForItem(currentImpressions, item, impressionsString, time) {
     // The destructuring here is to avoid mutating passed parameters
     // (see https://redux.js.org/recipes/structuring-reducers/prerequisite-concepts#immutable-data-management)
     const impressions = { ...currentImpressions };
+    let write = null;
     if (item.frequency) {
       impressions[item.id] = [...(impressions[item.id] ?? []), time];
 
@@ -1898,15 +1950,21 @@ export class _ASRouter {
 
       if (impressionsString === "multiProfileMessageImpressions") {
         // Update shared db impressions for a message
-        this._storage.setSharedMessageImpressions(
-          item.id,
-          impressions[item.id]
-        );
+        write = {
+          store: impressionsString,
+          promise: this._storage.setSharedMessageImpressions(
+            item.id,
+            impressions[item.id]
+          ),
+        };
       } else {
-        this._storage.set(impressionsString, impressions);
+        write = {
+          store: impressionsString,
+          promise: this._storage.setWithResult(impressionsString, impressions),
+        };
       }
     }
-    return impressions;
+    return { impressions, write };
   }
 
   /**

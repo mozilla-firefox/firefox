@@ -110,6 +110,7 @@ describe("ASRouterStorage", () => {
   describe("#getDbTable", () => {
     let testStorage;
     let storeStub;
+    let transactionStub;
     beforeEach(() => {
       storeStub = {
         getAll: sandbox.stub().resolves(),
@@ -117,7 +118,12 @@ describe("ASRouterStorage", () => {
         get: sandbox.stub().resolves(),
         put: sandbox.stub().resolves(),
       };
+      transactionStub = {
+        objectStore: sandbox.stub().returns(storeStub),
+        promiseComplete: sandbox.stub().resolves(),
+      };
       sandbox.stub(storage, "_getStore").resolves(storeStub);
+      sandbox.stub(storage, "_getTransaction").resolves(transactionStub);
       testStorage = storage.getDbTable("storage_test");
     });
     it("should reverse key value parameters for put", async () => {
@@ -134,6 +140,75 @@ describe("ASRouterStorage", () => {
       await storage.flush();
 
       assert.calledTwice(storeStub.put);
+      assert.equal(storage.pendingWriteCount, 0);
+    });
+    it("set should not return the write, even if it fails", async () => {
+      storeStub.put.rejects(new Error("write failed"));
+
+      assert.isUndefined(testStorage.set("key", "value"));
+      assert.equal(storage.pendingWriteCount, 1);
+      await storage.flush();
+      assert.equal(storage.pendingWriteCount, 0);
+    });
+    it("setWithResult should resolve once the write completes", async () => {
+      const write = testStorage.setWithResult("key", "value");
+      assert.equal(storage.pendingWriteCount, 1);
+      await write;
+
+      assert.calledOnceWithExactly(storeStub.put, "value", "key");
+      assert.equal(storage.pendingWriteCount, 0);
+    });
+    it("setWithResult should write in a readwrite transaction and wait for it to commit", async () => {
+      let commit;
+      transactionStub.promiseComplete.returns(
+        new Promise(resolve => {
+          commit = resolve;
+        })
+      );
+      let done = false;
+      const write = testStorage.setWithResult("key", "value").then(() => {
+        done = true;
+      });
+      await storage._getTransaction.firstCall.returnValue;
+      await Promise.resolve();
+
+      assert.calledOnceWithExactly(
+        storage._getTransaction,
+        "storage_test",
+        "readwrite"
+      );
+      assert.calledOnceWithExactly(storeStub.put, "value", "key");
+      assert.isFalse(done, "not resolved before the transaction commits");
+
+      commit();
+      await write;
+      assert.isTrue(done);
+    });
+    it("setWithResult should reject and report if the transaction fails to commit", async () => {
+      transactionStub.promiseComplete.rejects(new Error("commit failed"));
+
+      const error = await testStorage.setWithResult("key", "value").then(
+        () => null,
+        e => e
+      );
+
+      assert.calledOnce(storeStub.put);
+      assert.equal(error?.message, "commit failed");
+      assert.calledWith(storage.telemetry.handleUndesiredEvent, {
+        event: "TRANSACTION_FAILED",
+      });
+      assert.equal(storage.pendingWriteCount, 0);
+    });
+    it("setWithResult should reject if the write fails, and flush should still settle", async () => {
+      storeStub.put.rejects(new Error("write failed"));
+      const write = testStorage.setWithResult("key", "value");
+
+      await storage.flush();
+      const error = await write.then(
+        () => null,
+        e => e
+      );
+      assert.equal(error?.message, "write failed");
       assert.equal(storage.pendingWriteCount, 0);
     });
     it("should return the correct value for get", async () => {
