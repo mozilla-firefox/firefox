@@ -68,7 +68,7 @@ xul|findbar {
   margin-inline-start: 8px;
   overflow-inline: hidden; /* Ensures the close button stays visible. */
   transition: opacity 150ms ease-in-out;
-  height: var(--findbar-container-height);
+  min-height: var(--findbar-container-height);
   padding-inline-start: var(--space-xsmall);
 }
 
