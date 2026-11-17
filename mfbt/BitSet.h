@@ -73,10 +73,10 @@ class BitSet {
  public:
   class Reference {
    public:
-    Reference(BitSet<N, StorageType>& aBitSet, size_t aPos)
+    constexpr Reference(BitSet<N, StorageType>& aBitSet, size_t aPos)
         : mBitSet(aBitSet), mPos(aPos) {}
 
-    Reference& operator=(bool aValue) {
+    constexpr Reference& operator=(bool aValue) {
       auto bit = Word(1) << (mPos % kBitsPerWord);
       auto& word = mBitSet.mStorage[mPos / kBitsPerWord];
       if (aValue) {
@@ -96,9 +96,9 @@ class BitSet {
 
   constexpr BitSet() : mStorage() {}
 
-  BitSet(const BitSet& aOther) { *this = aOther; }
+  constexpr BitSet(const BitSet& aOther) { *this = aOther; }
 
-  BitSet& operator=(const BitSet& aOther) {
+  constexpr BitSet& operator=(const BitSet& aOther) {
     for (size_t i = 0; i < std::size(mStorage); i++) {
       mStorage[i] = Word(aOther.mStorage[i]);
     }
@@ -131,7 +131,7 @@ class BitSet {
 
   constexpr bool operator[](size_t aPos) const { return test(aPos); }
 
-  Reference operator[](size_t aPos) {
+  constexpr Reference operator[](size_t aPos) {
     MOZ_ASSERT(aPos < N);
     return {*this, aPos};
   }

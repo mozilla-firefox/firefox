@@ -39,12 +39,12 @@
 
 namespace nsGkAtoms {
 
-inline nsStaticAtom* GetAtomByIndex(size_t aIndex) {
+constexpr nsStaticAtom* GetAtomByIndex(size_t aIndex) {
   MOZ_ASSERT(aIndex < kStaticAtomCount);
   return const_cast<nsStaticAtom*>(&detail::gGkAtoms.mAtoms[aIndex]);
 }
 
-inline size_t IndexOf(const nsStaticAtom* atom) {
+constexpr size_t IndexOf(const nsStaticAtom* atom) {
   nsStaticAtom* firstAtom = GetAtomByIndex(0);
   size_t ret = atom - firstAtom;
   MOZ_ASSERT(ret < kStaticAtomCount);

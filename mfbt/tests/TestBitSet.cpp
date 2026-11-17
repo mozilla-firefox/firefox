@@ -9,6 +9,19 @@
 using mozilla::Atomic;
 using mozilla::BitSet;
 
+static_assert([] {
+  BitSet<65, uint32_t> bits;
+  bits[0] = true;
+  bits[32] = true;
+  bits[64] = true;
+  auto copy = bits;
+  BitSet<65, uint32_t> assigned;
+  assigned = copy;
+  bits[32] = false;
+  return assigned.test(0) && assigned.test(32) && assigned.test(64) &&
+         !assigned.test(1) && !bits.test(32);
+}());
+
 template <typename Storage>
 class BitSetSuite {
   template <size_t N>

@@ -25,6 +25,7 @@
 #include "SVGMotionSMILAttr.h"
 #include "mozAutoDocUpdate.h"
 #include "mozilla/AlreadyAddRefed.h"
+#include "mozilla/BitSet.h"
 #include "mozilla/EventListenerManager.h"
 #include "mozilla/PresShell.h"
 #include "mozilla/RestyleManager.h"
@@ -949,7 +950,7 @@ bool SVGElement::IsNoNamespaceAttrMapped(const nsAtom* name) const {
     return SVGElementBase::IsNoNamespaceAttrMapped(name);
   }
 
-  static const MappedAttributeEntry attributes[] = {
+  static constexpr MappedAttributeEntry attributes[] = {
       // Properties that we don't support are commented out.
       // { nsGkAtoms::alignment_baseline },
       {nsGkAtoms::baseline_shift},
@@ -1011,9 +1012,17 @@ bool SVGElement::IsNoNamespaceAttrMapped(const nsAtom* name) const {
       {nsGkAtoms::writing_mode},
       {nullptr}};
 
-  static const MappedAttributeEntry* const map[] = {attributes};
+  static constexpr BitSet<nsGkAtoms::kStaticAtomCount> sMappedAttributes = [] {
+    BitSet<nsGkAtoms::kStaticAtomCount> mapped;
+    for (const MappedAttributeEntry* entry = attributes; entry->attribute;
+         ++entry) {
+      mapped[nsGkAtoms::IndexOf(entry->attribute)] = true;
+    }
+    return mapped;
+  }();
 
-  return FindAttributeDependence(name, map) ||
+  return (name->IsStatic() &&
+          sMappedAttributes.test(nsGkAtoms::IndexOf(name->AsStatic()))) ||
          SVGElementBase::IsNoNamespaceAttrMapped(name);
 }
 
