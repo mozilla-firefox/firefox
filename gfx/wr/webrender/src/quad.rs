@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-use api::{BorderRadius, ClipMode, ColorF, units::*};
+use api::{BorderRadius, ClipMode, ColorF, MAX_RENDER_TASK_SIZE, units::*};
 use euclid::{SideOffsets2D, Size2D, Transform3D, point2};
 
 use crate::ItemUid;
@@ -37,6 +37,7 @@ pub type LayoutOrDeviceRect = api::euclid::default::Box2D<f32>;
 
 const MIN_AA_SEGMENTS_SIZE: f32 = 4.0;
 const MIN_QUAD_SPLIT_SIZE: f32 = 256.0;
+const MAX_INDIRECT_TASK_SIZE: f32 = MAX_RENDER_TASK_SIZE as f32;
 // We merge compatible neighbor tiles in the same rows which means that allowing
 // more tiles on the x axis doesn't generally produce more tiles, but it allows
 // more precise segmentation.
@@ -956,6 +957,10 @@ fn prepare_quad_impl(
     }
 }
 
+fn exceeds_max_task_size(size: DeviceIntSize) -> bool {
+    size.width > MAX_RENDER_TASK_SIZE || size.height > MAX_RENDER_TASK_SIZE
+}
+
 fn prepare_indirect_pattern(
     prim_spatial_node_index: SpatialNodeIndex,
     raster_spatial_node_index: SpatialNodeIndex,
@@ -999,7 +1004,7 @@ fn prepare_indirect_pattern(
     }
 
     let task_size = clipped_surface_rect.size().try_cast::<i32>()?;
-    if task_size.is_empty() {
+    if task_size.is_empty() || exceeds_max_task_size(task_size) {
         return None;
     }
 
@@ -1161,6 +1166,9 @@ fn prepare_nine_patch(
                 let Some(task_size) = segment_device_rect.size().ceil().try_cast::<i32>() else {
                     continue;
                 };
+                if exceeds_max_task_size(task_size) {
+                    continue;
+                }
                 let task_id = add_render_task_with_mask(
                     pattern,
                     &local_bounds,
@@ -1435,6 +1443,10 @@ fn prepare_tiles(
             continue;
         }
 
+        if !is_direct && exceeds_max_task_size(tile_size) {
+            continue;
+        }
+
         if is_direct {
             scratch.frame.quad_direct_segments.push(QuadSegment {
                 rect: tile.rect.cast_unit(),
@@ -1536,7 +1548,12 @@ fn get_prim_render_strategy(
         let size = clips.coverage_rect().size();
         size.width > MIN_QUAD_SPLIT_SIZE || size.height > MIN_QUAD_SPLIT_SIZE
     } else {
-        false
+        // A primitive that can't be drawn in a single render task has to be
+        // split, even if it is not axis-aligned.
+        let size = clips.coverage_rect()
+            .intersection_unchecked(&clips.surface_clip_rect())
+            .size();
+        size.width > MAX_INDIRECT_TASK_SIZE || size.height > MAX_INDIRECT_TASK_SIZE
     };
 
     if !try_split_prim {
