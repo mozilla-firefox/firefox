@@ -4,7 +4,7 @@
 "use strict";
 
 /**
- * Build: <objdir>/dist/@types/lib.gecko.dom.d.ts,
+ * Build: <srcdir>/tools/@types/generated/lib.gecko.dom.d.ts,
  *
  * from:  <srcdir>/dom/webidl/*.webidl and
  *        <srcdir>/dom/chrome-webidl/*.webidl sources,

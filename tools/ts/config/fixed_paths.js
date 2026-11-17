@@ -9,7 +9,7 @@
  * build_paths.js script can't match automatically.
  *
  * If TypeScript or your editor can't find your (new) module in
- * `tools/@types/generated/tspaths.json` try running `mach ts paths` first.
+ * `tools/@types/generated/tspaths.json` try running `mach ts update` first.
  */
 exports.fixed = {
   "chrome://global/content/ml/NLPUtils.sys.mjs": [

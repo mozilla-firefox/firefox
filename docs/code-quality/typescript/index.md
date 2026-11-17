@@ -26,11 +26,9 @@ The TypeScript linter may be run on the directories where it is enabled using:
 
 ## Updating Gecko Type Definitions
 
-Updating types currently happens manually, although [we are in the process of
-automating it](https://bugzilla.mozilla.org/show_bug.cgi?id=1975513).
-
-In the meantime, developers using TypeScript must update the type definitions
-[manually using some scripts](updatingTypes.md).
+* The type definitions live in [tools/@types](https://searchfox.org/firefox-main/source/tools/@types).
+* The generation scripts live in [tools/ts](https://searchfox.org/firefox-main/source/tools/ts).
+* To update them, run `./mach ts update`. It generates the types from the source directory and does not need a build.
 
 ## Best Practices
 
@@ -81,7 +79,6 @@ The Lint & Formatting channel (#lint:mozilla.org) on Matrix is the best place
 
 enabling
 bestPractices
-updatingTypes
 ```
 
 [job visibility tiers]: https://wiki.mozilla.org/Sheriffing/Job_Visibility_Policy#Overview_of_the_Job_Visibility_Tiers

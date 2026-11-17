@@ -145,6 +145,7 @@ redirects:
     tools/lint: code-quality/lint
     tools/lint/coding-style: code-quality/coding-style
     tools/static-analysis/index.html: code-quality/static-analysis.html
+    code-quality/typescript/updatingTypes.html: code-quality/typescript/index.html
 
 # Please do not add more exceptions to these warnings. Generally they should be
 # fixable. If you need help please ask in the firefox-source-docs channel on Matrix.

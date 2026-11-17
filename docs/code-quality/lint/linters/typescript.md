@@ -32,7 +32,7 @@ See the [Usage guide] for more options.
 
 ### The TypeScript type information needs updating due to source code changes
 
-See [Updating Gecko Type Definitions](../../typescript/updatingTypes.md)
+See [Updating Gecko Type Definitions](../../typescript/index.md#updating-gecko-type-definitions)
 
 ### This code should neither be linted nor formatted
 

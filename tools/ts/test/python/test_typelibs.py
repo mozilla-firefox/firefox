@@ -43,6 +43,19 @@ class TestTypelibs(unittest.TestCase):
             ["a/nsIOne.idl"],
         )
 
+    def test_js_files(self):
+        self.assertEqual(
+            typelib_inputs.js_files([
+                "a/one.js",
+                "a/two.mjs",
+                "a/three.html",
+                "a/four.xhtml",
+                "a/five.jsx",
+                "testing/web-platform/b/six.js",
+            ]),
+            ["a/four.xhtml", "a/one.js", "a/three.html", "a/two.mjs"],
+        )
+
     def test_services_typelib(self):
         services = services_typelib.services_typelib(
             buildconfig.topsrcdir, [f"{DATA}/services/a/components.conf"]
@@ -135,6 +148,10 @@ class TestTypelibs(unittest.TestCase):
             xpidl_typelib.xpidl_typelib(
                 buildconfig.topsrcdir, ["a/nsIFoo.idl", "b/nsIFoo.idl"]
             )
+
+    def test_patterns_sorted(self):
+        for table in (typelib_inputs.JS_PATTERNS, typelib_inputs.WEBIDL_PATTERNS):
+            self.assertEqual(list(table), sorted(table))
 
     def test_idl_excluded_dirs_sorted(self):
         self.assertEqual(
