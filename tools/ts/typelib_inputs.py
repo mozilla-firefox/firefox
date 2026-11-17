@@ -4,6 +4,17 @@
 
 import mozpack.path as mozpath
 
+CONF_EXCLUDED_DIRS = (
+    "mobile",
+    "testing/web-platform",
+    "third_party",
+    "tools/ts/test",
+    "widget/android",
+    "widget/uikit",
+)
+
+CONF_PATTERNS = ("**/components.conf",)
+
 IDL_EXCLUDED_DIRS = (
     "accessible/interfaces/ia2",
     "accessible/interfaces/msaa",
@@ -27,6 +38,10 @@ def select_source_files(paths, patterns, excluded_dirs):
         if any(mozpath.match(path, pattern) for pattern in patterns)
         and not any(path.startswith(f"{d}/") for d in excluded_dirs)
     )
+
+
+def conf_files(paths):
+    return select_source_files(paths, CONF_PATTERNS, CONF_EXCLUDED_DIRS)
 
 
 def idl_files(paths):

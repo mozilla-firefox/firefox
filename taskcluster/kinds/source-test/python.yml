@@ -438,6 +438,7 @@ ts:
         files-changed:
             - 'tools/ts/*.py'
             - 'tools/ts/test/python/**'
+            - 'xpcom/components/gen_static_components.py'
             - 'xpcom/idl-parser/**'
 
 update-packaging:

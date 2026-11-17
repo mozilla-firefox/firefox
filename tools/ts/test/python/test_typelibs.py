@@ -10,6 +10,7 @@ import buildconfig
 import mozunit
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+import services_typelib
 import typelib_inputs
 import xpidl_typelib
 
@@ -40,6 +41,48 @@ class TestTypelibs(unittest.TestCase):
                 "third_party/b/nsITwo.idl",
             ]),
             ["a/nsIOne.idl"],
+        )
+
+    def test_services_typelib(self):
+        services = services_typelib.services_typelib(
+            buildconfig.topsrcdir, [f"{DATA}/services/a/components.conf"]
+        )
+
+        self.assertEqual(
+            services,
+            {"nsITsAll": "tsAll", "nsITsDefined": "tsDefined", "nsITsMac": "tsMac"},
+        )
+
+    def test_services_typelib_conflict(self):
+        with self.assertRaisesRegex(
+            Exception, "nsITsAll is exposed as both Services.tsAll and Services.tsOther"
+        ):
+            services_typelib.services_typelib(
+                buildconfig.topsrcdir,
+                [
+                    f"{DATA}/services/a/components.conf",
+                    f"{DATA}/services/b/components.conf",
+                ],
+            )
+
+    def test_conf_files(self):
+        self.assertEqual(
+            typelib_inputs.conf_files([
+                "a/components.conf",
+                "a/other.conf",
+                "third_party/b/components.conf",
+            ]),
+            ["a/components.conf"],
+        )
+
+    def test_services_tables_sorted(self):
+        self.assertEqual(
+            list(typelib_inputs.CONF_EXCLUDED_DIRS),
+            sorted(typelib_inputs.CONF_EXCLUDED_DIRS),
+        )
+        self.assertEqual(
+            list(services_typelib.PLATFORM_SUBSTS),
+            sorted(services_typelib.PLATFORM_SUBSTS),
         )
 
     def test_xpidl_typelib(self):
