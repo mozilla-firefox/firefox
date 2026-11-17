@@ -28,6 +28,13 @@ ChromeUtils.defineLazyGetter(lazy, "canUseLlamaCpp", () =>
 
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
+  "aiControlDefault",
+  "browser.ai.control.default",
+  "available",
+  () => LinkPreview.onAIControlPref()
+);
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
   "allowedLanguages",
   "browser.ml.linkPreview.allowedLanguages"
 );
@@ -49,6 +56,13 @@ XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "ignoreMs",
   "browser.ml.linkPreview.ignoreMs"
+);
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "keyPointsControl",
+  "browser.ai.control.linkPreviewKeyPoints",
+  "default",
+  () => LinkPreview.onAIControlPref()
 );
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
@@ -269,6 +283,7 @@ export const LinkPreview = {
 
   get canShowKeyPoints() {
     return (
+      !this._isBlockedByAIControl() &&
       this.canRunOnDevice &&
       this._isRegionSupported() &&
       this._isLocaleSupported() &&
@@ -387,6 +402,10 @@ export const LinkPreview = {
     }
   },
 
+  onAIControlPref() {
+    this.updateCardProperty("canShowKeyPoints", this.canShowKeyPoints);
+  },
+
   /**
    * Handles the preference change for opt-in state.
    * Updates all link preview cards with the new opt-in state.
@@ -487,8 +506,10 @@ export const LinkPreview = {
    */
   init(win) {
     // Access getters for side effects of observing pref changes
+    lazy.aiControlDefault;
     lazy.collapsed;
     lazy.enabled;
+    lazy.keyPointsControl;
     lazy.longPress;
     lazy.optin;
     lazy.shift;
@@ -875,6 +896,19 @@ export const LinkPreview = {
   },
 
   /**
+   * Checks if key points generation is disabled by the AI controls.
+   *
+   * @returns {boolean} True if disabled by either the global or key point specific control, false otherwise.
+   */
+  _isBlockedByAIControl() {
+    const state =
+      lazy.keyPointsControl == "default"
+        ? lazy.aiControlDefault
+        : lazy.keyPointsControl;
+    return state == "blocked";
+  },
+
+  /**
    * Checks if key points generation is disabled by policy.
    *
    * @returns {boolean} True if disabled by policy, false otherwise.
@@ -950,7 +984,7 @@ export const LinkPreview = {
   async generateKeyPoints(ogCard, _retry = false) {
     // Prevent keypoints if user not opt-in to link preview or user is set
     // keypoints to be collapsed.
-    if (!lazy.optin || lazy.collapsed) {
+    if (this._isBlockedByAIControl() || !lazy.optin || lazy.collapsed) {
       return;
     }
     this._abortController = new AbortController();

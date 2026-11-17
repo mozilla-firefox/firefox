@@ -612,3 +612,241 @@ add_task(async function test_no_optin_or_keypoints_in_unsupported_locale() {
   localeStub.restore();
   generateStub.restore();
 });
+
+/**
+ * Test that when key points are blocked by the AI control preference, the
+ * opt-in card is not shown and key points are hidden.
+ */
+add_task(async function test_blocked_control_hides_keypoints() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.ml.linkPreview.enabled", true],
+      ["browser.ml.linkPreview.optin", true],
+      ["browser.ml.linkPreview.collapsed", false],
+      ["browser.ai.control.default", "available"],
+      ["browser.ai.control.linkPreviewKeyPoints", "blocked"],
+    ],
+  });
+
+  const canRunStub = sinon.stub(LinkPreview, "canRunOnDevice").get(() => true);
+  const regionStub = sinon
+    .stub(LinkPreview, "_isRegionSupported")
+    .returns(true);
+  const localeStub = sinon
+    .stub(LinkPreview, "_isLocaleSupported")
+    .returns(true);
+  const generateStub = sinon.stub(LinkPreviewModel, "generateTextAI");
+
+  LinkPreview.keyboardComboActive = true;
+  XULBrowserWindow.setOverLink(
+    "https://example.com/browser/browser/components/genai/tests/browser/data/readableEn.html",
+    {}
+  );
+
+  let panel = await TestUtils.waitForCondition(() =>
+    document.getElementById("link-preview-panel")
+  );
+  await BrowserTestUtils.waitForEvent(panel, "popupshown");
+  const card = panel.querySelector("link-preview-card");
+  ok(card, "card created for link preview");
+  await card.updateComplete;
+
+  ok(
+    !LinkPreview.canShowKeyPoints,
+    "LinkPreview should indicate key points cannot be shown"
+  );
+  ok(
+    !card.shadowRoot.querySelector(".keypoints-header"),
+    "key points section is not rendered"
+  );
+  is(generateStub.callCount, 0, "key point generation is not invoked");
+  const modelOptinElement = card.shadowRoot.querySelector("model-optin");
+  ok(!modelOptinElement, "model-optin element should NOT be present");
+
+  panel.remove();
+  LinkPreview.keyboardComboActive = false;
+  generateStub.restore();
+  localeStub.restore();
+  regionStub.restore();
+  canRunStub.restore();
+  await SpecialPowers.popPrefEnv();
+});
+
+/**
+ * Test that the global AI control blocks key points when the feature-specific
+ * control is set to "default".
+ */
+add_task(async function test_global_control_blocks_default_keypoints() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.ml.linkPreview.enabled", true],
+      ["browser.ml.linkPreview.optin", true],
+      ["browser.ml.linkPreview.collapsed", false],
+      ["browser.ai.control.default", "blocked"],
+      ["browser.ai.control.linkPreviewKeyPoints", "default"],
+    ],
+  });
+
+  const canRunStub = sinon.stub(LinkPreview, "canRunOnDevice").get(() => true);
+  const regionStub = sinon
+    .stub(LinkPreview, "_isRegionSupported")
+    .returns(true);
+  const localeStub = sinon
+    .stub(LinkPreview, "_isLocaleSupported")
+    .returns(true);
+  const generateStub = sinon.stub(LinkPreviewModel, "generateTextAI");
+
+  LinkPreview.keyboardComboActive = true;
+  XULBrowserWindow.setOverLink(
+    "https://example.com/browser/browser/components/genai/tests/browser/data/readableEn.html",
+    {}
+  );
+
+  const panel = await TestUtils.waitForCondition(() =>
+    document.getElementById("link-preview-panel")
+  );
+  await BrowserTestUtils.waitForEvent(panel, "popupshown");
+  const card = panel.querySelector("link-preview-card");
+  ok(card, "card created for link preview");
+  await card.updateComplete;
+
+  ok(
+    !LinkPreview.canShowKeyPoints,
+    "global blocked control disables key points"
+  );
+  ok(
+    !card.shadowRoot.querySelector(".keypoints-header"),
+    "key points section is not rendered"
+  );
+  is(generateStub.callCount, 0, "key point generation is not invoked");
+  const modelOptinElement = card.shadowRoot.querySelector("model-optin");
+  ok(!modelOptinElement, "model-optin element should NOT be present");
+
+  panel.remove();
+  LinkPreview.keyboardComboActive = false;
+  generateStub.restore();
+  localeStub.restore();
+  regionStub.restore();
+  canRunStub.restore();
+  await SpecialPowers.popPrefEnv();
+});
+
+/**
+ * Test that the link preview AI control preference properly updates existing cards.
+ */
+add_task(async function test_keypoints_control_updates_existing_card() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.ml.linkPreview.enabled", true],
+      ["browser.ml.linkPreview.optin", true],
+      ["browser.ml.linkPreview.collapsed", false],
+      ["browser.ai.control.default", "available"],
+      ["browser.ai.control.linkPreviewKeyPoints", "default"],
+    ],
+  });
+
+  const canRunStub = sinon.stub(LinkPreview, "canRunOnDevice").get(() => true);
+  const regionStub = sinon
+    .stub(LinkPreview, "_isRegionSupported")
+    .returns(true);
+  const localeStub = sinon
+    .stub(LinkPreview, "_isLocaleSupported")
+    .returns(true);
+  const generateStub = sinon.stub(LinkPreviewModel, "generateTextAI");
+
+  LinkPreview.keyboardComboActive = true;
+  XULBrowserWindow.setOverLink(
+    "https://example.com/browser/browser/components/genai/tests/browser/data/readableEn.html",
+    {}
+  );
+
+  const panel = await TestUtils.waitForCondition(() =>
+    document.getElementById("link-preview-panel")
+  );
+  await BrowserTestUtils.waitForEvent(panel, "popupshown");
+
+  const card = panel.querySelector("link-preview-card");
+  ok(card, "card created for link preview");
+  await card.updateComplete;
+  is(card.canShowKeyPoints, true, "key points initially available");
+
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.ai.control.linkPreviewKeyPoints", "blocked"]],
+  });
+  await card.updateComplete;
+  is(card.canShowKeyPoints, false, "blocked control hides key points");
+
+  await SpecialPowers.popPrefEnv();
+  await card.updateComplete;
+  is(card.canShowKeyPoints, true, "default control shows key points again");
+
+  panel.remove();
+  LinkPreview.keyboardComboActive = false;
+  generateStub.restore();
+  localeStub.restore();
+  regionStub.restore();
+  canRunStub.restore();
+  await SpecialPowers.popPrefEnv();
+});
+
+/**
+ * Test that the global AI control preference properly updates existing cards.
+ */
+add_task(async function test_global_ai_control_updates_existing_card() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.ml.linkPreview.enabled", true],
+      ["browser.ml.linkPreview.optin", true],
+      ["browser.ml.linkPreview.collapsed", false],
+      ["browser.ai.control.default", "available"],
+      ["browser.ai.control.linkPreviewKeyPoints", "default"],
+    ],
+  });
+
+  const canRunStub = sinon.stub(LinkPreview, "canRunOnDevice").get(() => true);
+  const regionStub = sinon
+    .stub(LinkPreview, "_isRegionSupported")
+    .returns(true);
+  const localeStub = sinon
+    .stub(LinkPreview, "_isLocaleSupported")
+    .returns(true);
+  const generateStub = sinon.stub(LinkPreviewModel, "generateTextAI");
+
+  LinkPreview.keyboardComboActive = true;
+  XULBrowserWindow.setOverLink(
+    "https://example.com/browser/browser/components/genai/tests/browser/data/readableEn.html",
+    {}
+  );
+
+  const panel = await TestUtils.waitForCondition(() =>
+    document.getElementById("link-preview-panel")
+  );
+  await BrowserTestUtils.waitForEvent(panel, "popupshown");
+
+  const card = panel.querySelector("link-preview-card");
+  ok(card, "card created for link preview");
+  await card.updateComplete;
+  is(card.canShowKeyPoints, true, "global available default allows key points");
+
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.ai.control.default", "blocked"]],
+  });
+  await card.updateComplete;
+  is(card.canShowKeyPoints, false, "global blocked default hides key points");
+
+  await SpecialPowers.popPrefEnv();
+  await card.updateComplete;
+  is(
+    card.canShowKeyPoints,
+    true,
+    "global available default shows key points again"
+  );
+
+  panel.remove();
+  LinkPreview.keyboardComboActive = false;
+  generateStub.restore();
+  localeStub.restore();
+  regionStub.restore();
+  canRunStub.restore();
+  await SpecialPowers.popPrefEnv();
+});
