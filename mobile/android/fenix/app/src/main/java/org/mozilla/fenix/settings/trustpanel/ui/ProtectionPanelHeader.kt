@@ -23,9 +23,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.painterResource
@@ -62,6 +66,10 @@ internal const val SECURE_CONNECTION_LINK_TEST_TAG = "unified.trust.panel.secure
  * @param modifier [Modifier] to be applied to the layout.
  * @param onSecureConnectionClick Optional callback invoked when the "Secure connection" link is clicked to open the
  *   certificate details, or null to not show the link.
+ * @param focusSecureConnectionLink Whether to focus the "Secure connection" link, for example when returning from the
+ *   certificate details.
+ * @param onSecureConnectionLinkFocusHandled Invoked once the focus request has been handled, either by focusing the
+ *   "Secure connection" link or, if the link is not shown, by dropping the request.
  */
 @Composable
 internal fun ProtectionPanelHeader(
@@ -69,7 +77,16 @@ internal fun ProtectionPanelHeader(
     icon: Bitmap?,
     modifier: Modifier = Modifier,
     onSecureConnectionClick: (() -> Unit)? = null,
+    focusSecureConnectionLink: Boolean = false,
+    onSecureConnectionLinkFocusHandled: () -> Unit = {},
 ) {
+    LaunchedEffect(focusSecureConnectionLink, onSecureConnectionClick == null) {
+        // The link cannot be focused while it is hidden, so drop the request instead of focusing it once it reappears.
+        if (focusSecureConnectionLink && onSecureConnectionClick == null) {
+            onSecureConnectionLinkFocusHandled()
+        }
+    }
+
     Row(
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -114,6 +131,8 @@ internal fun ProtectionPanelHeader(
 
             SecureConnectionLink(
                 onClick = onSecureConnectionClick,
+                requestFocus = focusSecureConnectionLink,
+                onFocused = onSecureConnectionLinkFocusHandled,
                 modifier =
                     Modifier.layout { measurable, constraints ->
                         // Bound the link so that the website title keeps a share of the row at large font scales.
@@ -129,12 +148,23 @@ internal fun ProtectionPanelHeader(
 @Composable
 private fun SecureConnectionLink(
     onClick: () -> Unit,
+    requestFocus: Boolean,
+    onFocused: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(requestFocus) {
+        if (requestFocus) {
+            focusRequester.requestFocus()
+            onFocused()
+        }
+    }
+
     Row(
         modifier =
             modifier
                 .minimumInteractiveComponentSize()
+                .focusRequester(focusRequester)
                 .clip(MaterialTheme.shapes.small)
                 .clickable(
                     onClickLabel = stringResource(R.string.connection_security_panel_view_certificate_details),

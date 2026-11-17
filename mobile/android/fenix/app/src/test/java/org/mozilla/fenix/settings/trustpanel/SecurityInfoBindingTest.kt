@@ -29,6 +29,7 @@ class SecurityInfoBindingTest {
     private val otherCertificate: X509Certificate = mockk()
     private val updates = mutableListOf<TrustPanelAction.UpdateSecurityInfo>()
     private var hostChanged = false
+    private var sessionClosed = false
 
     @Test
     fun `WHEN binding starts THEN dispatch the security info of the session`() = runTest {
@@ -144,6 +145,29 @@ class SecurityInfoBindingTest {
         assertTrue(hostChanged)
     }
 
+    @Test
+    fun `WHEN the session is closed THEN report that the session is closed`() = runTest {
+        val browserStore = createBrowserStore()
+        startBinding(browserStore, sessionId = "a", urlHost = "a.example")
+
+        browserStore.dispatch(TabListAction.RemoveTabAction("a"))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(sessionClosed)
+        assertFalse(hostChanged)
+    }
+
+    @Test
+    fun `WHEN another tab is closed THEN do not report that the session is closed`() = runTest {
+        val browserStore = createBrowserStore()
+        startBinding(browserStore, sessionId = "a", urlHost = "a.example")
+
+        browserStore.dispatch(TabListAction.RemoveTabAction("b"))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(sessionClosed)
+    }
+
     private fun createBrowserStore() =
         BrowserStore(
             BrowserState(
@@ -186,6 +210,7 @@ class SecurityInfoBindingTest {
                 urlHost = urlHost,
                 onSecurityInfoUpdate = { updates.add(it) },
                 onHostChange = { hostChanged = true },
+                onSessionClosed = { sessionClosed = true },
                 mainDispatcher = testDispatcher,
             )
             .start()

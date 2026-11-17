@@ -31,4 +31,18 @@ class RouteTest {
         assertNull(Route.ProtectionPanel.previousRoute())
         assertNull(Route.ClearSiteDataDialog.previousRoute())
     }
+
+    @Test
+    fun `GIVEN routes that rebuild their content WHEN restored THEN they are kept`() {
+        assertEquals(Route.ProtectionPanel, Route.ProtectionPanel.restorableRoute())
+        assertEquals(Route.TrackersPanel, Route.TrackersPanel.restorableRoute())
+        assertEquals(Route.TrackersProtectionDashboard, Route.TrackersProtectionDashboard.restorableRoute())
+        assertEquals(Route.CertificateDetailsPanel, Route.CertificateDetailsPanel.restorableRoute())
+    }
+
+    @Test
+    fun `GIVEN routes that depend on state set when navigating to them WHEN restored THEN the route they were opened from is shown`() {
+        assertEquals(Route.TrackersPanel, Route.TrackerCategoryDetailsPanel.restorableRoute())
+        assertEquals(Route.ProtectionPanel, Route.ClearSiteDataDialog.restorableRoute())
+    }
 }

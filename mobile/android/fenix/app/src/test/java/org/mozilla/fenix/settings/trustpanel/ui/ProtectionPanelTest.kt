@@ -10,6 +10,8 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -183,6 +185,47 @@ class ProtectionPanelTest {
         composeTestRule.onNodeWithText(verifiedByPrefix, substring = true, useUnmergedTree = true).assertExists()
     }
 
+    @Test
+    fun `GIVEN returning from the certificate details THEN the secure connection link is focused once`() {
+        var focusedCount = 0
+        setProtectionPanel(
+            numberOfTrackersBlocked = 0,
+            showCertificateDetailsLink = true,
+            focusSecureConnectionLink = true,
+            onSecureConnectionLinkFocusHandled = { focusedCount++ },
+        )
+
+        composeTestRule.onNodeWithTag(SECURE_CONNECTION_LINK_TEST_TAG).assertIsFocused()
+        composeTestRule.runOnIdle { assertEquals(1, focusedCount) }
+    }
+
+    @Test
+    fun `GIVEN not returning from the certificate details THEN the secure connection link is not focused`() {
+        var focusedCount = 0
+        setProtectionPanel(
+            numberOfTrackersBlocked = 0,
+            showCertificateDetailsLink = true,
+            onSecureConnectionLinkFocusHandled = { focusedCount++ },
+        )
+
+        composeTestRule.onNodeWithTag(SECURE_CONNECTION_LINK_TEST_TAG).assertIsNotFocused()
+        composeTestRule.runOnIdle { assertEquals(0, focusedCount) }
+    }
+
+    @Test
+    fun `GIVEN returning from the certificate details WHEN the secure connection link is hidden THEN the focus request is dropped`() {
+        var handledCount = 0
+        setProtectionPanel(
+            numberOfTrackersBlocked = 0,
+            showCertificateDetailsLink = false,
+            focusSecureConnectionLink = true,
+            onSecureConnectionLinkFocusHandled = { handledCount++ },
+        )
+
+        composeTestRule.onNodeWithTag(SECURE_CONNECTION_LINK_TEST_TAG, useUnmergedTree = true).assertDoesNotExist()
+        composeTestRule.runOnIdle { assertEquals(1, handledCount) }
+    }
+
     private fun setProtectionPanel(
         numberOfTrackersBlocked: Int,
         isPrivate: Boolean = false,
@@ -191,6 +234,8 @@ class ProtectionPanelTest {
         certificate: X509Certificate? = null,
         onSecureConnectionClick: () -> Unit = {},
         showCertificateDetailsLink: Boolean = false,
+        focusSecureConnectionLink: Boolean = false,
+        onSecureConnectionLinkFocusHandled: () -> Unit = {},
     ) {
         composeTestRule.setContent {
             FirefoxTheme(theme = Theme.Light) {
@@ -222,6 +267,8 @@ class ProtectionPanelTest {
                     onViewCertificateClick = {},
                     onViewQWACClick = {},
                     onSecureConnectionClick = onSecureConnectionClick,
+                    focusSecureConnectionLink = focusSecureConnectionLink,
+                    onSecureConnectionLinkFocusHandled = onSecureConnectionLinkFocusHandled,
                     onIPProtectionToggle = {},
                     onIPProtectionNavigate = {},
                 )
