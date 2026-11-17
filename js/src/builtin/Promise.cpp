@@ -190,39 +190,39 @@ struct PromiseCombinatorElements;
 
 class PromiseCombinatorDataHolder : public NativeObject {
  protected:
-  enum {
-    Slot_Promise = 0,
-    Slot_RemainingElements,
-    Slot_ValuesArray,
-    Slot_ResolveOrRejectFunction,
-    SlotsCount,
-  };
+  JS_DEFINE_TYPED_SLOT(0, PROMISE_SLOT, Object);
+  JS_DEFINE_TYPED_SLOT(1, REMAINING_ELEMENTS_SLOT, Int32);
+  JS_DEFINE_TYPED_SLOT(2, VALUES_ARRAY_SLOT, Object);
+  JS_DEFINE_TYPED_SLOT(3, RESOLVE_OR_REJECT_FUNCTION_SLOT, Object);
+  static constexpr uint32_t SLOT_COUNT = 4;
 
  public:
   static const JSClass class_;
-  JSObject* promiseObj() { return &getFixedSlot(Slot_Promise).toObject(); }
+  JSObject* promiseObj() { return &getFixedSlotTyped(PROMISE_SLOT).toObject(); }
   JSObject* resolveOrRejectObj() {
-    return &getFixedSlot(Slot_ResolveOrRejectFunction).toObject();
+    return &getFixedSlotTyped(RESOLVE_OR_REJECT_FUNCTION_SLOT).toObject();
   }
-  Value valuesArray() { return getFixedSlot(Slot_ValuesArray); }
+  Value valuesArray() { return getFixedSlotTyped(VALUES_ARRAY_SLOT); }
   int32_t remainingCount() {
-    return getFixedSlot(Slot_RemainingElements).toInt32();
+    return getFixedSlotTyped(REMAINING_ELEMENTS_SLOT).toInt32();
   }
   int32_t increaseRemainingCount() {
-    int32_t remainingCount = getFixedSlot(Slot_RemainingElements).toInt32();
+    int32_t remainingCount =
+        getFixedSlotTyped(REMAINING_ELEMENTS_SLOT).toInt32();
     remainingCount++;
-    setFixedSlot(Slot_RemainingElements, Int32Value(remainingCount));
+    setFixedSlotTyped(REMAINING_ELEMENTS_SLOT, Int32Value(remainingCount));
     return remainingCount;
   }
   int32_t decreaseRemainingCount() {
-    int32_t remainingCount = getFixedSlot(Slot_RemainingElements).toInt32();
+    int32_t remainingCount =
+        getFixedSlotTyped(REMAINING_ELEMENTS_SLOT).toInt32();
     remainingCount--;
     MOZ_ASSERT(remainingCount >= 0, "unpaired calls to decreaseRemainingCount");
-    setFixedSlot(Slot_RemainingElements, Int32Value(remainingCount));
+    setFixedSlotTyped(REMAINING_ELEMENTS_SLOT, Int32Value(remainingCount));
     return remainingCount;
   }
   void setRemainingCount(int32_t count) {
-    setFixedSlot(Slot_RemainingElements, Int32Value(count));
+    setFixedSlotTyped(REMAINING_ELEMENTS_SLOT, Int32Value(count));
   }
 
   static PromiseCombinatorDataHolder* New(
@@ -233,30 +233,30 @@ class PromiseCombinatorDataHolder : public NativeObject {
 
 const JSClass PromiseCombinatorDataHolder::class_ = {
     "PromiseCombinatorDataHolder",
-    JSCLASS_HAS_RESERVED_SLOTS(SlotsCount),
+    JSCLASS_HAS_RESERVED_SLOTS(SLOT_COUNT),
 };
 
 // Specialized data holder for Promise.allKeyed and Promise.allSettledKeyed
 // that includes a slot for storing the keys array.
 class PromiseCombinatorKeyedDataHolder : public PromiseCombinatorDataHolder {
-  enum {
-    // Inherits Slot_Promise, Slot_RemainingElements, Slot_ValuesArray,
-    // and Slot_ResolveOrRejectFunction from PromiseCombinatorDataHolder.
+  // Inherits PROMISE_SLOT, REMAINING_ELEMENTS_SLOT, VALUES_ARRAY_SLOT,
+  // and RESOLVE_OR_REJECT_FUNCTION_SLOT from PromiseCombinatorDataHolder.
 
-    // Additional slot for keyed variant: starts after parent's last slot.
-    Slot_KeysList = PromiseCombinatorDataHolder::SlotsCount,
-    SlotsCount,
-  };
+  // Additional slot for keyed variant: starts after parent's last slot.
+  JS_DEFINE_TYPED_SLOT(PromiseCombinatorDataHolder::SLOT_COUNT, KEYS_LIST_SLOT,
+                       Object);
+  static constexpr uint32_t SLOT_COUNT =
+      PromiseCombinatorDataHolder::SLOT_COUNT + 1;
 
  public:
   static const JSClass class_;
 
   ListObject* keysList() {
-    return &getFixedSlot(Slot_KeysList).toObject().as<ListObject>();
+    return &getFixedSlotTyped(KEYS_LIST_SLOT).toObject().as<ListObject>();
   }
 
   ListObject* valuesList() {
-    return &getFixedSlot(Slot_ValuesArray).toObject().as<ListObject>();
+    return &getFixedSlotTyped(VALUES_ARRAY_SLOT).toObject().as<ListObject>();
   }
 
   static PromiseCombinatorKeyedDataHolder* New(
@@ -270,7 +270,7 @@ class PromiseCombinatorKeyedDataHolder : public PromiseCombinatorDataHolder {
 
 const JSClass PromiseCombinatorKeyedDataHolder::class_ = {
     "PromiseCombinatorKeyedDataHolder",
-    JSCLASS_HAS_RESERVED_SLOTS(SlotsCount),
+    JSCLASS_HAS_RESERVED_SLOTS(SLOT_COUNT),
 };
 
 // Smart pointer to the "F.[[Values]]" part of the state of a Promise.all or
@@ -407,11 +407,11 @@ PromiseCombinatorDataHolder* PromiseCombinatorDataHolder::New(
 
   cx->check(resultPromise, elements.value(), resolveOrReject);
 
-  dataHolder->initFixedSlot(Slot_Promise, ObjectValue(*resultPromise));
-  dataHolder->initFixedSlot(Slot_RemainingElements, Int32Value(1));
-  dataHolder->initFixedSlot(Slot_ValuesArray, elements.value());
-  dataHolder->initFixedSlot(Slot_ResolveOrRejectFunction,
-                            ObjectValue(*resolveOrReject));
+  dataHolder->initFixedSlotTyped(PROMISE_SLOT, ObjectValue(*resultPromise));
+  dataHolder->initFixedSlotTyped(REMAINING_ELEMENTS_SLOT, Int32Value(1));
+  dataHolder->initFixedSlotTyped(VALUES_ARRAY_SLOT, elements.value());
+  dataHolder->initFixedSlotTyped(RESOLVE_OR_REJECT_FUNCTION_SLOT,
+                                 ObjectValue(*resolveOrReject));
   return dataHolder;
 }
 
@@ -430,12 +430,12 @@ PromiseCombinatorKeyedDataHolder* PromiseCombinatorKeyedDataHolder::New(
   cx->check(values);
   cx->check(resolveOrReject);
 
-  dataHolder->setFixedSlot(Slot_Promise, ObjectValue(*resultPromise));
-  dataHolder->setFixedSlot(Slot_RemainingElements, Int32Value(1));
-  dataHolder->setFixedSlot(Slot_ValuesArray, ObjectValue(*values));
-  dataHolder->setFixedSlot(Slot_ResolveOrRejectFunction,
-                           ObjectValue(*resolveOrReject));
-  dataHolder->setFixedSlot(Slot_KeysList, ObjectValue(*keys));
+  dataHolder->initFixedSlotTyped(PROMISE_SLOT, ObjectValue(*resultPromise));
+  dataHolder->initFixedSlotTyped(REMAINING_ELEMENTS_SLOT, Int32Value(1));
+  dataHolder->initFixedSlotTyped(VALUES_ARRAY_SLOT, ObjectValue(*values));
+  dataHolder->initFixedSlotTyped(RESOLVE_OR_REJECT_FUNCTION_SLOT,
+                                 ObjectValue(*resolveOrReject));
+  dataHolder->initFixedSlotTyped(KEYS_LIST_SLOT, ObjectValue(*keys));
   return dataHolder;
 }
 
