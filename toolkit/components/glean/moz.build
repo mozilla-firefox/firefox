@@ -173,14 +173,6 @@ GeneratedFile(
 )
 
 GeneratedFile(
-    "/dist/@types/lib.gecko.glean.d.ts",
-    entry_point="ts_metrics_pings",
-    script="build_scripts/glean_parser_ext/run_glean_parser.py",
-    inputs=["!metrics_yamls.cached", "!pings_yamls.cached"],
-    flags=glean_parser_flags,
-)
-
-GeneratedFile(
     "GleanPings.h",
     "GleanJSPingsLookup.h",
     "GleanJSPingsLookup.cpp",

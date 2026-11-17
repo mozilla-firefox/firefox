@@ -279,12 +279,6 @@ GeneratedFile(
     inputs=extra_errors,
 )
 GeneratedFile(
-    "error_list.json",
-    script="ErrorList.py",
-    entry_point="error_list_json",
-    inputs=extra_errors,
-)
-GeneratedFile(
     "extra_xpc_msg.h",
     script="ErrorList.py",
     entry_point="extra_xpc_msg",

@@ -1804,7 +1804,6 @@ toolkit/components/uniffi-bindgen-gecko-js/fixtures/generated
 tools/@types/generated/
 tools/@types/subs/
 tools/browsertime/package.json
-tools/ts/error_list.json
 tools/ts/test/baselines/
 try_task_config.json
 xpcom/idl-parser/xpidl/fixtures/xpctest.d.json
