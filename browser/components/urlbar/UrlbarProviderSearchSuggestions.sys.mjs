@@ -345,7 +345,7 @@ export class UrlbarProviderSearchSuggestions extends UrlbarProvider {
       return /** @type {UrlbarResultCommand[]} */ ([
         {
           name: RESULT_MENU_COMMANDS.TRENDING_BLOCK,
-          l10n: { id: "urlbar-result-menu-trending-dont-show2" },
+          l10n: { id: "urlbar-result-menu-trending-dont-show3" },
         },
         {
           name: "separator",

@@ -218,7 +218,7 @@ ${
         <html:div id="urlbar-results"
                   class="urlbarView-results"
                   role="listbox"/>
-        <html:panel-list class="urlbarView-result-menu" accesskey-conflicts-bug="2073892"></html:panel-list>
+        <html:panel-list class="urlbarView-result-menu"></html:panel-list>
         <html:moz-urlbar-slot name="search-one-offs" />
       </html:div>
       <html:div class="smartbar-button-container">

@@ -218,7 +218,7 @@ export class AmpSuggestions extends SuggestProvider {
       commands.push({
         name: "show_less_frequently",
         l10n: {
-          id: "urlbar-result-menu-show-less-frequently2",
+          id: "urlbar-result-menu-show-less-frequently3",
         },
       });
     }

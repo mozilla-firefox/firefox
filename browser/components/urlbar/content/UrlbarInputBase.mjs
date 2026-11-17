@@ -229,7 +229,7 @@ ${
            popover="manual"
            role="group">
         <div class="urlbarView-background"/>
-        <panel-list class="urlbarView-result-menu" accesskey-conflicts-bug="2073892"></panel-list>
+        <panel-list class="urlbarView-result-menu"></panel-list>
         <div class="urlbarView-results"
              role="listbox"/>
         <moz-urlbar-slot name="search-one-offs" />

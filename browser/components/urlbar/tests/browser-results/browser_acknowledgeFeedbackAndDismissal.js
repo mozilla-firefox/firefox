@@ -486,7 +486,7 @@ class TestProvider extends UrlbarTestUtils.TestProvider {
       {
         name: FEEDBACK_COMMAND,
         l10n: {
-          id: "urlbar-result-menu-report-inaccurate-location2",
+          id: "urlbar-result-menu-report-inaccurate-location3",
         },
       },
       {
