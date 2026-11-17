@@ -7,17 +7,30 @@ package org.mozilla.gecko;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.content.Context;
+import android.content.ContextWrapper;
+import android.media.AudioDeviceInfo;
+import android.media.AudioManager;
 import android.os.Vibrator;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
+import org.robolectric.annotation.Config;
+import org.robolectric.shadows.AudioDeviceInfoBuilder;
 
 @RunWith(RobolectricTestRunner.class)
 public class GeckoAppShellTest {
@@ -29,10 +42,124 @@ public class GeckoAppShellTest {
     GeckoAppShell.setApplicationContext(mContext);
   }
 
+  @After
+  public void tearDown() {
+    GeckoAppShell.setCommunicationAudioModeOn(false);
+  }
+
+  private static AudioDeviceInfo device(final int type) {
+    return AudioDeviceInfoBuilder.newBuilder().setType(type).build();
+  }
+
+  @SuppressWarnings("deprecation")
+  private static boolean isBluetoothScoOn(final AudioManager audioManager) {
+    return audioManager.isBluetoothScoOn();
+  }
+
   private static Method vibrateMethod(final Class<?>... parameterTypes) throws Exception {
     final Method vibrate = GeckoAppShell.class.getDeclaredMethod("vibrate", parameterTypes);
     vibrate.setAccessible(true);
     return vibrate;
+  }
+
+  @Test
+  public void communicationModeRoutesToBluetoothSco() {
+    final AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+    final AudioDeviceInfo speaker = device(AudioDeviceInfo.TYPE_BUILTIN_SPEAKER);
+    final AudioDeviceInfo sco = device(AudioDeviceInfo.TYPE_BLUETOOTH_SCO);
+    shadowOf(audioManager).setAvailableCommunicationDevices(Arrays.asList(speaker, sco));
+
+    GeckoAppShell.setCommunicationAudioModeOn(true);
+    assertEquals(sco, audioManager.getCommunicationDevice());
+
+    GeckoAppShell.setCommunicationAudioModeOn(false);
+    assertNull(audioManager.getCommunicationDevice());
+  }
+
+  @Test
+  public void communicationModeOffClearsAfterRejectedRepeatRequest() {
+    final AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+    final AudioDeviceInfo sco = device(AudioDeviceInfo.TYPE_BLUETOOTH_SCO);
+    shadowOf(audioManager).setAvailableCommunicationDevices(Arrays.asList(sco));
+
+    GeckoAppShell.setCommunicationAudioModeOn(true);
+    shadowOf(audioManager).lockCommunicationDevice(true);
+    try {
+      GeckoAppShell.setCommunicationAudioModeOn(true);
+    } finally {
+      shadowOf(audioManager).lockCommunicationDevice(false);
+    }
+
+    GeckoAppShell.setCommunicationAudioModeOn(false);
+    assertNull(audioManager.getCommunicationDevice());
+  }
+
+  @Test
+  public void communicationModeIgnoresRejectedDevice() {
+    final AudioManager audioManager = spy(mContext.getSystemService(AudioManager.class));
+    final AudioDeviceInfo sco = device(AudioDeviceInfo.TYPE_BLUETOOTH_SCO);
+    doReturn(Arrays.asList(sco)).when(audioManager).getAvailableCommunicationDevices();
+    doThrow(new IllegalArgumentException()).when(audioManager).setCommunicationDevice(sco);
+    doReturn(sco).when(audioManager).getCommunicationDevice();
+    GeckoAppShell.setApplicationContext(
+        new ContextWrapper(mContext) {
+          @Override
+          public Object getSystemService(final String name) {
+            return Context.AUDIO_SERVICE.equals(name) ? audioManager : super.getSystemService(name);
+          }
+        });
+
+    GeckoAppShell.setCommunicationAudioModeOn(true);
+    GeckoAppShell.setCommunicationAudioModeOn(false);
+    verify(audioManager, never()).clearCommunicationDevice();
+  }
+
+  @Test
+  public void communicationModeOffKeepsLaterAppRoute() {
+    final AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+    final AudioDeviceInfo speaker = device(AudioDeviceInfo.TYPE_BUILTIN_SPEAKER);
+    final AudioDeviceInfo sco = device(AudioDeviceInfo.TYPE_BLUETOOTH_SCO);
+    shadowOf(audioManager).setAvailableCommunicationDevices(Arrays.asList(speaker, sco));
+
+    GeckoAppShell.setCommunicationAudioModeOn(true);
+    audioManager.setCommunicationDevice(speaker);
+
+    GeckoAppShell.setCommunicationAudioModeOn(false);
+    assertEquals(speaker, audioManager.getCommunicationDevice());
+  }
+
+  @Test
+  public void communicationModeOffKeepsOtherRoute() {
+    final AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+    final AudioDeviceInfo speaker = device(AudioDeviceInfo.TYPE_BUILTIN_SPEAKER);
+    shadowOf(audioManager).setAvailableCommunicationDevices(Arrays.asList(speaker));
+    audioManager.setCommunicationDevice(speaker);
+
+    GeckoAppShell.setCommunicationAudioModeOn(false);
+    assertEquals(speaker, audioManager.getCommunicationDevice());
+  }
+
+  @Test
+  public void communicationModeWithoutBluetoothSco() {
+    final AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+    shadowOf(audioManager)
+        .setAvailableCommunicationDevices(
+            Arrays.asList(device(AudioDeviceInfo.TYPE_BUILTIN_SPEAKER)));
+
+    GeckoAppShell.setCommunicationAudioModeOn(true);
+    assertNull(audioManager.getCommunicationDevice());
+  }
+
+  @Test
+  @Config(sdk = 30)
+  public void communicationModeUsesBluetoothScoBeforeApi31() {
+    final AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+
+    GeckoAppShell.setCommunicationAudioModeOn(true);
+    assertTrue(isBluetoothScoOn(audioManager));
+
+    GeckoAppShell.setCommunicationAudioModeOn(false);
+    assertFalse(isBluetoothScoOn(audioManager));
   }
 
   @Test

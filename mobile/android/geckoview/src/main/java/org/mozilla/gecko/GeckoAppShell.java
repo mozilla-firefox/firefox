@@ -28,6 +28,7 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.LinkProperties;
@@ -1479,19 +1480,52 @@ public class GeckoAppShell {
     }
 
     try {
-      if (on) {
-        Log.e(LOGTAG, "Setting communication mode ON");
-        // This shouldn't throw, but does throw NullPointerException on a very
-        // small number of devices.
-        am.startBluetoothSco();
-        am.setBluetoothScoOn(true);
+      Log.i(LOGTAG, "Setting communication mode " + (on ? "ON" : "OFF"));
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        setBluetoothCommunicationDevice(am, on);
       } else {
-        Log.e(LOGTAG, "Setting communication mode OFF");
-        am.stopBluetoothSco();
-        am.setBluetoothScoOn(false);
+        setBluetoothSco(am, on);
       }
-    } catch (final SecurityException | NullPointerException e) {
+    } catch (final SecurityException | NullPointerException | IllegalArgumentException e) {
       Log.e(LOGTAG, "could not set communication mode", e);
+    }
+  }
+
+  private static final Object sCommunicationDeviceLock = new Object();
+  private static boolean sBluetoothScoRequested;
+
+  @RequiresApi(Build.VERSION_CODES.S)
+  private static void setBluetoothCommunicationDevice(final AudioManager am, final boolean on) {
+    synchronized (sCommunicationDeviceLock) {
+      if (!on) {
+        if (sBluetoothScoRequested) {
+          final AudioDeviceInfo device = am.getCommunicationDevice();
+          if (device != null && device.getType() == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+            am.clearCommunicationDevice();
+          }
+          sBluetoothScoRequested = false;
+        }
+        return;
+      }
+      for (final AudioDeviceInfo device : am.getAvailableCommunicationDevices()) {
+        if (device.getType() == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+          sBluetoothScoRequested |= am.setCommunicationDevice(device);
+          return;
+        }
+      }
+    }
+  }
+
+  @SuppressWarnings("deprecation")
+  private static void setBluetoothSco(final AudioManager am, final boolean on) {
+    if (on) {
+      // This shouldn't throw, but does throw NullPointerException on a very
+      // small number of devices.
+      am.startBluetoothSco();
+      am.setBluetoothScoOn(true);
+    } else {
+      am.stopBluetoothSco();
+      am.setBluetoothScoOn(false);
     }
   }
 
