@@ -879,8 +879,7 @@ void AbsoluteContainingBlock::Reflow(nsContainerFrame* aDelegatingFrame,
   const WritingMode containerWM = aReflowInput.GetWritingMode();
   nsFrameList newPushedAbsoluteFrames;
   for (auto iter = mAbsoluteFrames.begin(); iter != mAbsoluteFrames.end();) {
-    // Advance the iterator first, so it's safe to move |kidFrame|.
-    nsIFrame* const kidFrame = *iter++;
+    nsIFrame* const kidFrame = *iter;
     bool reuseUnfragmentedAnchorPosReferences = false;
     Maybe<AnchorPosResolutionCache> anchorPosResolutionCache;
     if (kidFrame->HasAnchorPosReference()) {
@@ -920,6 +919,7 @@ void AbsoluteContainingBlock::Reflow(nsContainerFrame* aDelegatingFrame,
       MaybeMarkAncestorsAsHavingDescendantDependentOnItsStaticPos(
           kidFrame, aDelegatingFrame);
     }
+    bool kidFrameNeedsPush = false;
     if (kidNeedsReflow && !aPresContext->HasPendingInterrupt()) {
       const LogicalSize cbSize(containerWM,
                                unfragmentedContainingBlockRects->mLocal.Size());
@@ -930,7 +930,6 @@ void AbsoluteContainingBlock::Reflow(nsContainerFrame* aDelegatingFrame,
       const nsSize cbBorderBoxSize =
           (cbSize + border.Size(containerWM)).GetPhysicalSize(containerWM);
 
-      bool kidFrameNeedsPush = false;
       if (const auto* unfragPos =
               GetUnfragmentedPosition(aReflowInput, kidFrame);
           unfragPos && availBSize != NS_UNCONSTRAINEDSIZE) {
@@ -998,6 +997,8 @@ void AbsoluteContainingBlock::Reflow(nsContainerFrame* aDelegatingFrame,
 
       nsIFrame* nextFrame = kidFrame->GetNextInFlow();
       if (kidFrameNeedsPush) {
+        // Advance now before moving kidFrame.
+        iter++;
         StealFrame(kidFrame);
         kidFrame->AddStateBits(NS_FRAME_IS_PUSHED_OUT_OF_FLOW);
         newPushedAbsoluteFrames.AppendFrame(nullptr, kidFrame);
@@ -1024,10 +1025,8 @@ void AbsoluteContainingBlock::Reflow(nsContainerFrame* aDelegatingFrame,
         nextFrame->GetParent()->GetAbsoluteContainingBlock()->RemoveFrame(
             context, FrameChildListID::Absolute, nextFrame);
       }
-    } else {
-      if (aOverflowAreas) {
-        aDelegatingFrame->ConsiderChildOverflow(*aOverflowAreas, kidFrame);
-      }
+    } else if (aOverflowAreas) {
+      aDelegatingFrame->ConsiderChildOverflow(*aOverflowAreas, kidFrame);
     }
 
     // Make a CheckForInterrupt call, here, not just HasPendingInterrupt.  That
@@ -1048,6 +1047,9 @@ void AbsoluteContainingBlock::Reflow(nsContainerFrame* aDelegatingFrame,
       } else {
         kidFrame->AddStateBits(NS_FRAME_HAS_DIRTY_CHILDREN);
       }
+    }
+    if (!kidFrameNeedsPush) {
+      iter++;
     }
   }
 
