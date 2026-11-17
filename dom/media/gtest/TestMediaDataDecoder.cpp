@@ -7,6 +7,7 @@
 #include "H264.h"
 #include "ImageContainer.h"
 #include "MP4Demuxer.h"
+#include "MediaCodecsSupport.h"
 #include "MockMediaResource.h"
 #include "PDMFactory.h"
 #include "VideoUtils.h"
@@ -225,6 +226,104 @@ TEST(MediaDataDecoder, FFmpegFrameColorMetadataFallsBackToConfig)
   EXPECT_EQ(data->mColorPrimaries, kConfigColorPrimaries);
   EXPECT_EQ(data->mTransferFunction, kConfigTransferFunction);
 }
+
+// Creates a decoder for aInfo in this process, without wrappers. aArgs are
+// further CreateDecoderParams arguments, e.g. an image container.
+//
+// The decoder is created off the main thread, as in the decoder processes.
+// On Windows, Media Foundation decoders must be created in the multithreaded
+// COM apartment, which the main thread of the parent process is not in.
+template <typename... Args>
+static Result<RefPtr<MDD>, MediaResult> CreateDecoderInProcess(
+    const TrackInfo& aInfo, Args&&... aArgs) {
+  ScopedPrefSetter decoderPrefs({
+      {"media.gpu-process-decoder", false},
+      {"media.rdd-process.enabled", false},
+      {"media.utility-process.enabled", false},
+      {"media.prefer-non-ffvpx", false},
+  });
+  RefPtr<PDMFactory> factory = MakeRefPtr<PDMFactory>();
+  RefPtr<TaskQueue> taskQueue =
+      TaskQueue::Create(GetMediaThreadPool(MediaThreadType::SUPERVISOR),
+                        "CreateDecoderInProcess");
+  auto shutdownTaskQueue = MakeScopeExit([&] {
+    taskQueue->BeginShutdown();
+    taskQueue->AwaitShutdownAndIdle();
+  });
+  CreateDecoderParams params{
+      aInfo, std::forward<Args>(aArgs)...,
+      CreateDecoderParams::WrapperSet({/* No wrapper */})};
+  return WaitFor(InvokeAsync(taskQueue, __func__,
+                             [&] { return factory->CreateDecoder(params); }));
+}
+
+constexpr media::MediaCodec kAudioCodecs[] = {
+    media::MediaCodec::AAC,  media::MediaCodec::MP3,
+    media::MediaCodec::Opus, media::MediaCodec::Vorbis,
+    media::MediaCodec::FLAC, media::MediaCodec::Wave};
+
+static media::CodecDefinition CodecDefinitionOf(media::MediaCodec aCodec) {
+  for (const media::CodecDefinition& definition :
+       media::MCSInfo::GetAllCodecDefinitions()) {
+    if (definition.codec == aCodec) {
+      return definition;
+    }
+  }
+  MOZ_CRASH("Unknown codec");
+}
+
+struct ChannelsAndRate {
+  uint32_t mChannels;
+  uint32_t mRate;
+};
+
+constexpr ChannelsAndRate kInRangeAudioConfig = {2, 48000};
+constexpr ChannelsAndRate kOutOfRangeAudioConfigs[] = {
+    {0, kInRangeAudioConfig.mRate},
+    {AudioInfo::MAX_CHANNEL_COUNT + 1, kInRangeAudioConfig.mRate},
+    {kInRangeAudioConfig.mChannels, 0},
+    {kInRangeAudioConfig.mChannels, AudioInfo::MAX_RATE + 1},
+};
+
+// Creates a decoder for aCodec with aConfig in this process.
+static Result<RefPtr<MDD>, MediaResult> CreateAudioDecoder(
+    media::MediaCodec aCodec, const ChannelsAndRate& aConfig) {
+  AudioInfo info;
+  info.mMimeType = CodecDefinitionOf(aCodec).mimeTypeString;
+  info.mChannels = aConfig.mChannels;
+  info.mRate = aConfig.mRate;
+  return CreateDecoderInProcess(info);
+}
+
+class AudioConfigTest : public ::testing::TestWithParam<media::MediaCodec> {};
+
+TEST_P(AudioConfigTest, CreateDecoderRefusesOutOfRangeConfig) {
+  const media::MediaCodec codec = GetParam();
+  auto inRange = CreateAudioDecoder(codec, kInRangeAudioConfig);
+  if (inRange.isErr()) {
+    GTEST_SKIP() << CodecDefinitionOf(codec).commonName
+                 << " has no decoder on this platform";
+  }
+  WaitForResolve(inRange.unwrap()->Shutdown());
+
+  for (const ChannelsAndRate& config : kOutOfRangeAudioConfigs) {
+    auto created = CreateAudioDecoder(codec, config);
+    if (created.isOk()) {
+      WaitForResolve(created.unwrap()->Shutdown());
+      ADD_FAILURE() << "Created a decoder for " << config.mChannels
+                    << " channels at " << config.mRate << " Hz";
+      continue;
+    }
+    EXPECT_EQ(created.inspectErr().Code(), NS_ERROR_DOM_MEDIA_FATAL_ERR)
+        << config.mChannels << " channels at " << config.mRate << " Hz";
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    MediaDataDecoder, AudioConfigTest, ::testing::ValuesIn(kAudioCodecs),
+    [](const ::testing::TestParamInfo<media::MediaCodec>& aInfo) {
+      return std::string(CodecDefinitionOf(aInfo.param).commonName);
+    });
 
 #ifdef MOZ_APPLEMEDIA
 void CheckApple(VideoInfo& aVideoInfo, MDD::PropertyName aProperty) {
