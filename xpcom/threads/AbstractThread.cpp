@@ -6,7 +6,9 @@
 
 #include <memory>
 
+#include "mozilla/Atomics.h"
 #include "mozilla/ClearOnShutdown.h"
+#include "mozilla/DebugOnly.h"
 #include "mozilla/DelayedRunnable.h"
 #include "mozilla/MozPromise.h"  // We initialize the MozPromise logging in this file.
 #include "mozilla/ProfilerRunnable.h"
@@ -26,7 +28,7 @@ namespace mozilla {
 LazyLogModule gMozPromiseLog("MozPromise");
 LazyLogModule gStateWatchingLog("StateWatching");
 
-StaticRefPtr<AbstractThread> sMainThread;
+StaticAutoPtr<AutoXPCOMThreadWrapper> sMainThread;
 MOZ_THREAD_LOCAL(AbstractThread*) AbstractThread::sCurrentThreadTLS;
 
 class XPCOMThreadWrapper final : public AbstractThread,
@@ -34,22 +36,34 @@ class XPCOMThreadWrapper final : public AbstractThread,
                                  public nsIDirectTaskDispatcher {
  public:
   XPCOMThreadWrapper(nsIThreadInternal* aThread,
-                     enum TailDispatchPolicy aTailDispatchPolicy,
-                     bool aOnThread)
+                     enum TailDispatchPolicy aTailDispatchPolicy)
       : AbstractThread(aTailDispatchPolicy),
         mThread(aThread),
-        mDirectTaskDispatcher(do_QueryInterface(aThread)),
-        mOnThread(aOnThread) {
+        mDirectTaskDispatcher(do_QueryInterface(aThread)) {
     MOZ_DIAGNOSTIC_ASSERT(mThread && mDirectTaskDispatcher);
-    MOZ_DIAGNOSTIC_ASSERT(!aOnThread || IsCurrentThreadIn());
-    if (aOnThread) {
-      MOZ_ASSERT(!sCurrentThreadTLS.get(),
-                 "There can only be a single XPCOMThreadWrapper available on a "
-                 "thread");
-      // Set the default current thread so that GetCurrent() never returns
-      // nullptr.
-      sCurrentThreadTLS.set(this);
-    }
+    MOZ_DIAGNOSTIC_ASSERT(IsCurrentThreadIn());
+  }
+
+  // Makes this what GetCurrent() returns on mThread, until Unregister().
+  // mThread only.
+  void Register() {
+    MOZ_ASSERT(!sCurrentThreadTLS.get(),
+               "There can only be a single XPCOMThreadWrapper available on a "
+               "thread");
+    mUsageCount = 1;
+    sCurrentThreadTLS.set(this);
+  }
+
+  // Stops being the current thread on mThread, see AutoXPCOMThreadWrapper.
+  // mThread only.
+  void Unregister() {
+    MOZ_DIAGNOSTIC_ASSERT(IsCurrentThreadIn());
+    MOZ_DIAGNOSTIC_ASSERT(sCurrentThreadTLS.get() == this);
+    MOZ_ASSERT(!mTailDispatcher, "Tail tasks must have been dispatched by now");
+    DebugOnly<uint32_t> remaining = --mUsageCount;
+    MOZ_ASSERT(remaining == 0,
+               "Tasks accepted by the wrapper must have run by now");
+    sCurrentThreadTLS.set(nullptr);
   }
 
   NS_DECL_THREADSAFE_ISUPPORTS
@@ -64,34 +78,28 @@ class XPCOMThreadWrapper final : public AbstractThread,
       return currentThread->TailDispatcher().AddTask(this, r.forget());
     }
 
-    // At a certain point during shutdown, we stop processing events from the
-    // main thread event queue (this happens long after all _other_ XPCOM
-    // threads have been shut down). However, various bits of subsequent
-    // teardown logic (the media shutdown blocker and the final shutdown cycle
-    // collection) can trigger state watching and state mirroring notifications
-    // that result in dispatch to the main thread. This causes shutdown leaks,
-    // because the |Runner| wrapper below creates a guaranteed cycle
-    // (Thread->EventQueue->Runnable->Thread) until the event is processed. So
-    // if we put the event into a queue that will never be processed, we'll wind
-    // up with a leak.
-    //
-    // We opt to just release the runnable in that case. Ordinarily, this
-    // approach could cause problems for runnables that are only safe to be
-    // released on the target thread (and not the dispatching thread). This is
-    // why XPCOM thread dispatch explicitly leaks the runnable when dispatch
-    // fails, rather than releasing it. But given that this condition only
-    // applies very late in shutdown when only one thread remains operational,
-    // that concern is unlikely to apply.
-    //
-    // For the same reason, we also always specify `NS_DISPATCH_FALLIBLE` when
-    // dispatching to the underlying thread here, to ensure we consistently do
-    // not leak the runnable.
-    if (gXPCOMMainThreadEventsAreDoomed) {
-      return NS_ERROR_FAILURE;
+    while (true) {
+      uint32_t count = mUsageCount;
+      if (count == 0) {
+        // Unregistered.
+        return NS_ERROR_FAILURE;
+      }
+      if (mUsageCount.compareExchange(count, count + 1)) {
+        break;
+      }
     }
 
     RefPtr runner = MakeRefPtr<Runner>(this, r.forget());
-    return mThread->Dispatch(runner.forget(), NS_DISPATCH_FALLIBLE);
+    // Once mThread no longer processes events, like the main thread late in
+    // shutdown, dispatching fails instead of queueing a task that would never
+    // run. Dispatching fallibly releases the runner, on this thread, rather
+    // than leaking it, which would otherwise leak the cycle thread -> event
+    // queue -> Runner -> thread as well.
+    nsresult rv = mThread->Dispatch(runner.forget(), NS_DISPATCH_FALLIBLE);
+    if (NS_FAILED(rv)) {
+      --mUsageCount;
+    }
+    return rv;
   }
 
   // Prevent a GCC warning about the other overload of Dispatch being hidden.
@@ -180,14 +188,14 @@ class XPCOMThreadWrapper final : public AbstractThread,
   const RefPtr<nsIThreadInternal> mThread;
   const nsCOMPtr<nsIDirectTaskDispatcher> mDirectTaskDispatcher;
   std::unique_ptr<AutoTaskDispatcher> mTailDispatcher;
-  const bool mOnThread;
+
+  // Registration and every pending task counts as one.
+  // Users must have stopped dispatching before unregistration. Unregister
+  // checks that the count reaches zero.
+  Atomic<uint32_t, Relaxed> mUsageCount{0};
 
   ~XPCOMThreadWrapper() {
-    if (mOnThread) {
-      MOZ_DIAGNOSTIC_ASSERT(IsCurrentThreadIn(),
-                            "Must be destroyed on the thread it was created");
-      sCurrentThreadTLS.set(nullptr);
-    }
+    MOZ_ASSERT(mUsageCount == 0, "Wrappers are unregistered before they go");
   }
 
   void MaybeFireTailDispatcher() {
@@ -207,6 +215,7 @@ class XPCOMThreadWrapper final : public AbstractThread,
           mRunnable(aRunnable) {}
 
     NS_IMETHOD Run() override {
+      --mThread->mUsageCount;
       MOZ_ASSERT(mThread == AbstractThread::GetCurrent());
       MOZ_ASSERT(mThread->IsCurrentThreadIn());
       SerialEventTargetGuard guard(mThread);
@@ -303,7 +312,7 @@ bool AbstractThread::RequiresTailDispatchFromCurrentThread() const {
 
 AbstractThread* AbstractThread::MainThread() {
   MOZ_ASSERT(sMainThread);
-  return sMainThread;
+  return sMainThread ? sMainThread->get() : nullptr;
 }
 
 void AbstractThread::InitTLS() {
@@ -315,22 +324,29 @@ void AbstractThread::InitTLS() {
 void AbstractThread::InitMainThread() {
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(!sMainThread);
-  nsCOMPtr<nsIThreadInternal> mainThread =
-      do_QueryInterface(nsThreadManager::get().GetMainThreadWeak());
-  MOZ_DIAGNOSTIC_ASSERT(mainThread);
 
   if (!sCurrentThreadTLS.init()) {
     MOZ_CRASH();
   }
-  sMainThread = new XPCOMThreadWrapper(mainThread.get(),
-                                       TailDispatchPolicy::ConsistentOrdering,
-                                       true /* onThread */);
+  sMainThread =
+      new AutoXPCOMThreadWrapper(TailDispatchPolicy::ConsistentOrdering);
 }
 
 void AbstractThread::ShutdownMainThread() {
   MOZ_ASSERT(NS_IsMainThread());
   sMainThread = nullptr;
 }
+
+AutoXPCOMThreadWrapper::AutoXPCOMThreadWrapper(
+    TailDispatchPolicy aTailDispatchPolicy)
+    : mWrapper(new XPCOMThreadWrapper(nsThreadManager::get().GetCurrentThread(),
+                                      aTailDispatchPolicy)) {
+  mWrapper->Register();
+}
+
+AbstractThread* AutoXPCOMThreadWrapper::get() const { return mWrapper; }
+
+AutoXPCOMThreadWrapper::~AutoXPCOMThreadWrapper() { mWrapper->Unregister(); }
 
 void AbstractThread::DispatchStateChange(
     already_AddRefed<nsIRunnable> aRunnable) {

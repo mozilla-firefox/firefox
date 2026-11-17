@@ -7,6 +7,7 @@
 
 #include "mozilla/AlreadyAddRefed.h"
 #include "mozilla/DefineEnum.h"
+#include "mozilla/RefPtr.h"
 #include "mozilla/ThreadLocal.h"
 #include "nsISerialEventTarget.h"
 #include "nsISupports.h"
@@ -19,6 +20,7 @@ class nsIThread;
 namespace mozilla {
 
 class TaskDispatcher;
+class XPCOMThreadWrapper;
 
 MOZ_DEFINE_ENUM_CLASS_WITH_BASE_AND_TOSTRING(
     TailDispatchPolicy, uint8_t,
@@ -155,6 +157,39 @@ class AbstractThread : public nsISerialEventTarget {
   // AbstractThread to go through our tail dispatcher, and if so, how they
   // should be grouped together for different event targets.
   const TailDispatchPolicy mTailDispatcherPolicy;
+};
+
+/**
+ * Makes the current XPCOM thread an AbstractThread for the lifetime of this
+ * object. AbstractThread::GetCurrent() returns the same instance as get() while
+ * this is alive. Only one instance may exist per thread at a time.
+ *
+ * With a tail dispatch policy, tasks running on the XPCOM thread may use the
+ * tail dispatcher whether or not they were dispatched through the wrapper.
+ *
+ * Shutdown tasks registered with the wrapper are registered with the XPCOM
+ * thread directly, as they are with GetCurrentSerialEventTarget() from any task
+ * running on the XPCOM thread. They run when the XPCOM thread shuts down, which
+ * can be after this has gone away.
+ *
+ * On destruction the wrapper is unregistered from the XPCOM thread. The wrapper
+ * may outlive this through other references, but from then on it is not the
+ * current AbstractThread anywhere and dispatching to it fails.
+ */
+class AutoXPCOMThreadWrapper final {
+ public:
+  explicit AutoXPCOMThreadWrapper(TailDispatchPolicy aTailDispatchPolicy);
+  ~AutoXPCOMThreadWrapper();
+
+  AutoXPCOMThreadWrapper(const AutoXPCOMThreadWrapper&) = delete;
+  AutoXPCOMThreadWrapper(AutoXPCOMThreadWrapper&&) = delete;
+  AutoXPCOMThreadWrapper& operator=(const AutoXPCOMThreadWrapper&) = delete;
+  AutoXPCOMThreadWrapper& operator=(AutoXPCOMThreadWrapper&&) = delete;
+
+  AbstractThread* get() const;
+
+ private:
+  const RefPtr<XPCOMThreadWrapper> mWrapper;
 };
 
 }  // namespace mozilla

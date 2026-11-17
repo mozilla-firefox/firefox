@@ -78,6 +78,7 @@ UNIFIED_SOURCES += [
     "TestTokenizer.cpp",
     "TestUTF.cpp",
     "TestVariant.cpp",
+    "TestXPCOMThreadWrapper.cpp",
 ]
 
 # Bug 1894540 - Fails under TSAN
