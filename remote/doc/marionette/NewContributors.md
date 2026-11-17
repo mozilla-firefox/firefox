@@ -2,8 +2,7 @@
 
 This page is aimed at people who are new to Mozilla and want to contribute
 to Mozilla source code related to Marionette Python tests, WebDriver
-spec tests and related test harnesses and tools. Mozilla has both
-git and Mercurial repositories, but this guide only describes Mercurial.
+spec tests and related test harnesses and tools.
 
 If you run into issues or have doubts, check out the [Resources](#resources)
 section below and **don't hesitate to ask questions**. :) The goal of these
@@ -44,9 +43,9 @@ actual bug, yay!
 ## Getting the code, running tests
 
 Follow the documentation on [Contributing](Contributing.md) to get a sense of
-our projects, and which is of most interest for you. You will also learn how to
-get the Firefox source code, build your custom Firefox build, and how to run the
-tests.
+our projects, and which is of most interest for you. The {ref}`Firefox
+Contributors' Quick Reference <firefox-contributors-quick-reference>` explains
+how to get the Firefox source code, build it, and run the tests.
 
 ## Work on bugs and get code review
 
@@ -59,26 +58,12 @@ your patches are laid out in [Patches](Patches.md).
 * Search Mozilla's code repository with searchfox to find the [code for
   Marionette] and the [Marionette client/harness].
 
-* Another [guide for new contributors].  It has not been updated in a long
-  time but it's a good general resource if you ever get stuck on something.
-  The most relevant sections to you are about Bugzilla, Mercurial, Python and the
-  Development Process.
-
-* [Mercurial for Mozillians]
-
 * More general resources are available in this little [guide] :maja_zf wrote
   in 2015 to help a student get started with open source contributions.
 
 * Textbook about general open source practices: [Practical Open Source Software Exploration]
 
-* If you'd rather use git instead of hg, see [git workflow for
-  Gecko development] and/or [this blog post by :ato].
-
 [code for Marionette]: https://searchfox.org/firefox-main/source/remote/marionette/
 [Marionette client/harness]: https://searchfox.org/firefox-main/source/testing/marionette/
-[guide for new contributors]: https://ateam-bootcamp.readthedocs.org/en/latest/guide/index.html#new-contributor-guide
-[Mercurial for Mozillians]: https://mozilla-version-control-tools.readthedocs.org/en/latest/hgmozilla/index.html
 [guide]: https://gist.github.com/mjzffr/d2adef328a416081f543
 [Practical Open Source Software Exploration]: https://quaid.fedorapeople.org/TOS/Practical_Open_Source_Software_Exploration/html/index.html
-[git workflow for Gecko development]: https://github.com/glandium/git-cinnabar/wiki/Mozilla:-A-git-workflow-for-Gecko-development
-[this blog post by :ato]: https://sny.no/2016/03/geckogit

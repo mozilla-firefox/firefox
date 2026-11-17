@@ -8,27 +8,7 @@ for Marionette it will be done automatically.
 Once you have contributed a couple of patches, we are happy to sponsor you in
 {doc}`levelling up </contributing/levelling-up>`. With commit access level 1 you will have
 permission to use the [Firefox CI] to trigger your own “try runs” to test your
-changes.
-
-You can use the `remote-protocol` [try preset]:
-
-```shell
-% ./mach try --preset remote-protocol
-```
-
-This preset will schedule tests related to the Remote Protocol component on
-various platforms. You can reduce the number of tasks by filtering on platforms
-(e.g. linux) or build type (e.g. opt):
-
-```shell
-% ./mach try --preset remote-protocol -xq "'linux 'opt"
-```
-
-But you can also schedule tests by selecting relevant jobs yourself:
-
-```shell
-% ./mach try fuzzy
-```
+changes, as described in [Testing on Try].
 
 [Firefox CI]: https://treeherder.mozilla.org/
-[try preset]: /tools/try/presets
+[Testing on Try]: /remote/Testing.md#testing-on-try

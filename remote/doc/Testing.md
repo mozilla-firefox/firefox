@@ -110,6 +110,14 @@ To schedule all the Remote Protocol tests on try, you can use the
 % ./mach try --preset remote-protocol
 ```
 
+This preset will schedule tests related to the Remote Protocol component on
+various platforms. You can reduce the number of tasks by filtering on platforms
+(e.g. linux) or build type (e.g. opt):
+
+```shell
+% ./mach try --preset remote-protocol -xq "'linux 'opt"
+```
+
 But you can also schedule tests by selecting relevant jobs yourself:
 
 ```shell
@@ -121,6 +129,6 @@ But you can also schedule tests by selecting relevant jobs yourself:
 [Mocha]: https://mochajs.org/
 [exclusive tests]: https://mochajs.org/#exclusive-tests
 [track progress]: https://puppeteer.github.io/ispuppeteerfirefoxready/
-[try preset]: /tools/try/presets
+[try preset]: /tools/try/presets.md
 [TestExpectations.json]: https://searchfox.org/firefox-main/source/remote/test/puppeteer/test/TestExpectations.json
 [CanaryTestExpectations.json]: https://searchfox.org/firefox-main/source/remote/test/puppeteer/test/CanaryTestExpectations.json

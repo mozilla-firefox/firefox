@@ -46,5 +46,5 @@ cross-compile ARMv7 from a Linux host system is as follows:
       % cargo build --release --target armv7-unknown-linux-gnueabihf
       ```
 
-[central]: https://hg.mozilla.org/mozilla-central/
+[central]: https://github.com/mozilla-firefox/firefox
 [testing/geckodriver/.cargo/config.toml]: https://searchfox.org/firefox-main/source/testing/geckodriver/.cargo/config.toml

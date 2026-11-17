@@ -60,11 +60,11 @@ For a detailed list of changes included in each release, please refer to the [ch
 
 geckodriver is made available under the [Mozilla Public License].
 
-Its source code can be found in [mozilla-central] under testing/geckodriver.
+Its source code can be found in the [Firefox source tree] under testing/geckodriver.
 This GitHub repository is only used for issue tracking and making releases.
 
 [Mozilla Public License]: https://www.mozilla.org/en-US/MPL/2.0/
-[mozilla-central]: https://hg.mozilla.org/mozilla-central/file/tip/testing/geckodriver
+[Firefox source tree]: https://searchfox.org/firefox-main/source/testing/geckodriver
 
 ## Custom release builds
 
