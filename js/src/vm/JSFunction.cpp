@@ -1179,9 +1179,6 @@ const JSClass js::ExtendedFunctionClass = {
     &JSFunctionClassSpec,
 };
 
-const JSClass* const js::FunctionClassPtr = &FunctionClass;
-const JSClass* const js::FunctionExtendedClassPtr = &ExtendedFunctionClass;
-
 bool JSFunction::isDerivedClassConstructor() const {
   bool derived = hasBaseScript() && baseScript()->isDerivedClassConstructor();
   MOZ_ASSERT_IF(derived, isClassConstructor());
@@ -1736,18 +1733,18 @@ static bool NewFunctionEnvironmentIsWellFormed(JSContext* cx,
 
 static inline const JSClass* FunctionClassForAllocKind(
     gc::AllocKind allocKind) {
-  return (allocKind == gc::AllocKind::FUNCTION) ? FunctionClassPtr
-                                                : FunctionExtendedClassPtr;
+  return (allocKind == gc::AllocKind::FUNCTION) ? &FunctionClass
+                                                : &ExtendedFunctionClass;
 }
 
 static void AssertClassMatchesAllocKind(const JSClass* clasp,
                                         gc::AllocKind kind) {
 #ifdef DEBUG
   if (kind == gc::AllocKind::FUNCTION_EXTENDED) {
-    MOZ_ASSERT(clasp == FunctionExtendedClassPtr);
+    MOZ_ASSERT(clasp == &ExtendedFunctionClass);
   } else {
     MOZ_ASSERT(kind == gc::AllocKind::FUNCTION);
-    MOZ_ASSERT(clasp == FunctionClassPtr);
+    MOZ_ASSERT(clasp == &FunctionClass);
   }
 #endif
 }
