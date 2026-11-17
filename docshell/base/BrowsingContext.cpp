@@ -2527,6 +2527,11 @@ BrowsingContext::IPCInitializer BrowsingContext::GetIPCInitializer() {
   IPCInitializer init;
   init.mId = Id();
   init.mParentId = mParentWindow ? mParentWindow->Id() : 0;
+  if (RefPtr<BrowsingContext> opener = GetOpener()) {
+    if (WindowContext* openerWindow = opener->GetCurrentWindowContext()) {
+      init.mOpenerInnerWindowId = openerWindow->Id();
+    }
+  }
   init.mWindowless = mWindowless;
   init.mUseRemoteTabs = mUseRemoteTabs;
   init.mUseRemoteSubframes = mUseRemoteSubframes;
@@ -3832,6 +3837,7 @@ void IPDLParamTraits<dom::BrowsingContext::IPCInitializer>::Write(
   // Write actor ID parameters.
   WriteIPDLParam(aWriter, aActor, aInit.mId);
   WriteIPDLParam(aWriter, aActor, aInit.mParentId);
+  WriteIPDLParam(aWriter, aActor, aInit.mOpenerInnerWindowId);
   WriteIPDLParam(aWriter, aActor, aInit.mWindowless);
   WriteIPDLParam(aWriter, aActor, aInit.mUseRemoteTabs);
   WriteIPDLParam(aWriter, aActor, aInit.mUseRemoteSubframes);
@@ -3850,6 +3856,7 @@ bool IPDLParamTraits<dom::BrowsingContext::IPCInitializer>::Read(
   // Read actor ID parameters.
   if (!ReadIPDLParam(aReader, aActor, &aInit->mId) ||
       !ReadIPDLParam(aReader, aActor, &aInit->mParentId) ||
+      !ReadIPDLParam(aReader, aActor, &aInit->mOpenerInnerWindowId) ||
       !ReadIPDLParam(aReader, aActor, &aInit->mWindowless) ||
       !ReadIPDLParam(aReader, aActor, &aInit->mUseRemoteTabs) ||
       !ReadIPDLParam(aReader, aActor, &aInit->mUseRemoteSubframes) ||

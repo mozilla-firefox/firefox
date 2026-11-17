@@ -773,6 +773,7 @@ class BrowsingContext : public nsILoadContext, public nsWrapperCache {
     // deserialized before other BrowsingContext in the BrowsingContextGroup
     // have been initialized.
     uint64_t mParentId = 0;
+    uint64_t mOpenerInnerWindowId = 0;
     already_AddRefed<WindowContext> GetParent();
     already_AddRefed<BrowsingContext> GetOpener();
 
