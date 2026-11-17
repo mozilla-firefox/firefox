@@ -1511,17 +1511,23 @@ void FetchEventOp::ResolvedCallback(JSContext* aCx,
 
   mHandled->MaybeResolveWithUndefined();
 
-  ChildToParentSynthesizeResponseArgs synthesizeResponseArgs;
-  synthesizeResponseArgs.closure() = mRespondWithClosure.ref();
-  synthesizeResponseArgs.timeStamps() =
+  SynthesizeResponseArgs synthesizeResponseArgs;
+  ChildToParentSynthesizeResponseArgs& ipcArgs =
+      synthesizeResponseArgs.mIPCArgs;
+  ipcArgs.closure() = mRespondWithClosure.ref();
+  ipcArgs.timeStamps() =
       FetchEventTimeStamps(mFetchHandlerStart, mFetchHandlerFinish);
-  ir->ToChildToParentInternalResponse(
-      &synthesizeResponseArgs.internalResponse());
+  ir->ToChildToParentInternalResponse(&ipcArgs.internalResponse());
+
+  // Extract the body streams here on the worker thread rather than later on
+  // the Worker Launcher thread, since `ir` is still shared with the Response
+  // object at this point.
+  ir->GetUnfilteredBody(getter_AddRefs(synthesizeResponseArgs.mBody),
+                        &ipcArgs.internalResponse().bodySize());
+  synthesizeResponseArgs.mAlternativeBody = ir->TakeAlternativeBody();
 
   mRespondWithPromiseHolder.Resolve(
-      FetchEventRespondWithResult(
-          std::make_pair(std::move(ir), std::move(synthesizeResponseArgs))),
-      __func__);
+      FetchEventRespondWithResult(std::move(synthesizeResponseArgs)), __func__);
 }
 
 void FetchEventOp::RejectedCallback(JSContext* aCx,

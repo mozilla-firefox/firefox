@@ -54,9 +54,6 @@ class InternalResponse final : public AtomicSafeRefCounted<InternalResponse> {
   void ToChildToParentInternalResponse(
       ChildToParentInternalResponse* aIPCResponse);
 
-  void SerializeChildToParentInternalResponseBody(
-      ChildToParentInternalResponse* aIPCResponse);
-
   ParentToParentInternalResponse ToParentToParentInternalResponse();
 
   ParentToChildInternalResponse ToParentToChildInternalResponse(
