@@ -22,7 +22,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   createFileUrl: "chrome://global/content/ml/Utils.sys.mjs",
   DEFAULT_ENGINE_ID: "chrome://global/content/ml/EngineProcess.sys.mjs",
   FILE_REGEX: "chrome://global/content/ml/EngineProcess.sys.mjs",
-  isPrivateBrowsing: "chrome://global/content/ml/Utils.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "console", () => {
@@ -2276,12 +2275,6 @@ export class ModelHub {
    * @returns {Promise<Array<{name: string, revision: string}>>}
    */
   async listModels() {
-    if (lazy.isPrivateBrowsing()) {
-      lazy.console.debug(
-        "Returning an empty list of models for private windows"
-      );
-      return [];
-    }
     await this.#initCache();
     return this.cache.listModels();
   }
