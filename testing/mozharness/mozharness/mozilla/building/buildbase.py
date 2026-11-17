@@ -1172,6 +1172,9 @@ items from that key's value."
         build_metrics = self._load_build_resources()
         if build_metrics:
             perfherder_data["suites"].append(build_metrics)
+        elif "MOZ_AUTOMATION" in os.environ:
+            self.error("No build times recorded for Perfherder")
+            self.record_status(TBPL_FAILURE)
         perfherder_data["suites"].extend(self._load_sccache_stats())
 
         # Ensure all extra options for this configuration are present.
