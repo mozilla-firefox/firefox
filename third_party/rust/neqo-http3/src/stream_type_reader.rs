@@ -6,9 +6,10 @@
 
 use std::{cmp::min, time::Instant};
 
-use neqo_common::{Decoder, IncrementalDecoderUint, Role, qtrace};
+use neqo_common::{Decoder, IncrementalDecoderUint, Role};
 use neqo_qpack::{decoder::QPACK_UNI_STREAM_TYPE_DECODER, encoder::QPACK_UNI_STREAM_TYPE_ENCODER};
 use neqo_transport::{Connection, StreamId, StreamType};
+use tracing::trace;
 
 use crate::{
     CloseType, Error, Http3StreamType, ReceiveOutput, RecvStream, Res, Stream,
@@ -150,7 +151,7 @@ impl NewStreamHeadReader {
                 return Ok(None);
             };
 
-            qtrace!("Decoded uint {output}");
+            trace!("Decoded uint {output}");
             match self {
                 Self::ReadType {
                     role, stream_id, ..
@@ -174,7 +175,7 @@ impl NewStreamHeadReader {
                             return Self::map_stream_fin(*t);
                         }
                         (Ok(Some(t)), false) => {
-                            qtrace!("Decoded stream type {:?}", *t);
+                            trace!("Decoded stream type {:?}", *t);
                             *self = Self::Done;
                             return final_type;
                         }
@@ -189,7 +190,7 @@ impl NewStreamHeadReader {
                 }
                 Self::ReadId { .. } => {
                     *self = Self::Done;
-                    qtrace!("New Stream stream session_id={output}");
+                    trace!("New Stream stream session_id={output}");
                     if fin {
                         return Err(Error::HttpGeneralProtocol);
                     }

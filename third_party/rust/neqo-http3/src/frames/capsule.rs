@@ -4,15 +4,15 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use neqo_common::{Bytes, Encoder, qdebug, to_u64};
-use static_assertions::const_assert;
+use neqo_common::{Bytes, Encoder, to_u64};
+use tracing::debug;
 
 use super::{hframe::HFrameType, reader::FrameDecoder};
 use crate::Res;
 
 pub const CAPSULE_TYPE_DATAGRAM: HFrameType = HFrameType(0x00);
 
-const_assert!(neqo_transport::MAX_DATAGRAM_FRAME_SIZE <= to_u64(usize::MAX));
+const _: () = assert!(neqo_transport::MAX_DATAGRAM_FRAME_SIZE <= to_u64(usize::MAX));
 /// Limit on the declared length of a `DATAGRAM` capsule we'll buffer before decoding.
 #[expect(clippy::cast_possible_truncation, reason = "small value checked above")]
 pub const MAX_DATAGRAM_BYTES: usize = neqo_transport::MAX_DATAGRAM_FRAME_SIZE as usize;
@@ -23,6 +23,7 @@ pub enum Capsule {
 }
 
 impl Capsule {
+    #[must_use]
     pub const fn capsule_type(&self) -> u64 {
         match self {
             Self::Datagram { .. } => CAPSULE_TYPE_DATAGRAM.0,
@@ -53,7 +54,7 @@ impl FrameDecoder<Self> for Capsule {
         if frame_type == CAPSULE_TYPE_DATAGRAM
             && let Some(payload) = data
         {
-            qdebug!("Decoded Datagram Capsule len={}", payload.len());
+            debug!("Decoded Datagram Capsule len={}", payload.len());
             return Ok(Some(Self::Datagram {
                 payload: Bytes::from(payload.to_vec()),
             }));

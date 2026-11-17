@@ -8,8 +8,9 @@
 
 use std::time::Duration;
 
-use neqo_common::{qdebug, to_u64};
+use neqo_common::to_u64;
 use test_fixture::now;
+use tracing::debug;
 
 use super::make_cc_hystart;
 use crate::{
@@ -726,13 +727,13 @@ fn integration_full_slow_start_to_css_to_ca() {
             && !css_detected
         {
             css_detected = true;
-            qdebug!("CSS entered at ack_pn={ack_pn}, iteration={iteration}");
+            debug!("CSS entered at ack_pn={ack_pn}, iteration={iteration}");
         }
 
         // Detect CA: ssthresh has been set
         if ssthresh_before.is_none() && ssthresh_after.is_some() {
             ca_detected = true;
-            qdebug!("CA entered at ack_pn={ack_pn}, iteration={iteration}");
+            debug!("CA entered at ack_pn={ack_pn}, iteration={iteration}");
             // This assert makes sure that the ACK that we decided to move to CA on does not apply
             // exponential growth from slow start/CSS anymore.
             assert!(

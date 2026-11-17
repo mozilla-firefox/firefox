@@ -13,13 +13,14 @@ use std::{
     time::Instant,
 };
 
-use neqo_common::{Datagram, qtrace};
+use neqo_common::Datagram;
 use neqo_transport::{
     ConnectionIdGenerator, Output, OutputBatch, State,
     server::{ConnectionRef, Server, ValidateAddress},
 };
 use nss::{AntiReplay, Cipher, PrivateKey, PublicKey, ZeroRttChecker};
 use rustc_hash::FxHashMap as HashMap;
+use tracing::trace;
 
 use crate::{
     Http3Parameters, Http3StreamInfo, Res,
@@ -132,7 +133,7 @@ impl Http3Server {
         dgrams: I,
         now: Instant,
     ) -> Output {
-        self.process_multiple(dgrams, now, 1.try_into().expect(">0"))
+        self.process_multiple(dgrams, now, NonZeroUsize::MIN)
             .try_into()
             .expect("max_datagrams is 1")
     }
@@ -143,12 +144,12 @@ impl Http3Server {
         now: Instant,
         max_datagrams: NonZeroUsize,
     ) -> OutputBatch {
-        qtrace!("[{self}] Process");
+        trace!("[{self}] Process");
         let out = self.server.process_multiple_input(dgrams, now);
         self.process_http3(now);
         // Try again if input processing did not already produce a datagram.
         if let OutputBatch::DatagramBatch(d) = out {
-            qtrace!("[{self}] Send packet: {d:?}");
+            trace!("[{self}] Send packet: {d:?}");
             OutputBatch::DatagramBatch(d)
         } else {
             let out = self
@@ -171,7 +172,7 @@ impl Http3Server {
 
     /// Process HTTP3 layer.
     fn process_http3(&mut self, now: Instant) {
-        qtrace!("[{self}] Process http3 internal");
+        trace!("[{self}] Process http3 internal");
         #[expect(
             clippy::mutable_key_type,
             reason = "ActiveConnectionRef::Hash doesn't access any of the interior mutable types."
@@ -263,8 +264,9 @@ impl Http3Server {
                             remove = true;
                         }
                     }
-                    Http3ServerConnEvent::OutgoingDatagramSpaceAvailable => {
-                        self.events.datagram_space_available(conn.clone());
+                    Http3ServerConnEvent::OutgoingDatagramSpaceAvailable { session_id } => {
+                        self.events
+                            .datagram_space_available(conn.clone(), session_id);
                     }
                     Http3ServerConnEvent::PriorityUpdate {
                         stream_id,
@@ -920,6 +922,34 @@ mod tests {
         assert_not_closed(&hconn);
     }
 
+    // Server: a client GOAWAY carries a push ID (RFC 9114, Section 7.2.6).
+    #[test]
+    fn server_goaway_frame_accepted() {
+        let (mut hconn, mut peer_conn) = connect();
+        peer_conn.control_send(&[0x7, 0x1, 0x1]);
+        let out = peer_conn.process_output(now());
+        hconn.process(out.dgram(), now());
+        assert_not_closed(&hconn);
+    }
+
+    #[test]
+    fn server_goaway_push_id_not_increased() {
+        let (mut hconn, mut peer_conn) = connect();
+        peer_conn.control_send(&[0x7, 0x1, 0x2, 0x7, 0x1, 0x2, 0x7, 0x1, 0x1]);
+        let out = peer_conn.process_output(now());
+        hconn.process(out.dgram(), now());
+        assert_not_closed(&hconn);
+    }
+
+    #[test]
+    fn server_goaway_push_id_increased() {
+        let (mut hconn, mut peer_conn) = connect();
+        peer_conn.control_send(&[0x7, 0x1, 0x1, 0x7, 0x1, 0x2]);
+        let out = peer_conn.process_output(now());
+        hconn.process(out.dgram(), now());
+        assert_closed(&hconn, &Error::HttpId);
+    }
+
     // Server: receive unknown stream type
     // also test getting stream id that does not fit into a single byte.
     #[test]
@@ -1040,6 +1070,9 @@ mod tests {
 
     const RESPONSE_BODY: &[u8] = &[0x67, 0x68, 0x69];
 
+    // HEADERS frame carrying only `:method: GET`.
+    const REQUEST_METHOD_ONLY: &[u8] = &[0x01, 0x03, 0x00, 0x00, 0xd1];
+
     fn check_request_header(header: &[Header]) {
         let expected_request_header = &[
             Header::new(":method", "GET"),
@@ -1112,6 +1145,33 @@ mod tests {
         }
         assert_eq!(headers_frames, 1);
         assert_eq!(data_received, 1);
+    }
+
+    #[test]
+    fn server_malformed_request_reset() {
+        let (mut hconn, mut peer_conn) = connect();
+
+        let stream_id = peer_conn.stream_create(StreamType::BiDi).unwrap();
+        peer_conn
+            .stream_send(stream_id, REQUEST_METHOD_ONLY)
+            .unwrap();
+        let out = peer_conn.process_output(now());
+        let out = hconn.process(out.dgram(), now());
+        drop(peer_conn.process(out.dgram(), now()));
+
+        let app_error = Error::HttpMessage.code();
+        let events = peer_conn.events().collect::<Vec<_>>();
+        assert!(events.contains(&ConnectionEvent::SendStreamStopSending {
+            stream_id,
+            app_error
+        }));
+        assert!(events.contains(&ConnectionEvent::RecvStreamReset {
+            stream_id,
+            app_error
+        }));
+        assert!(hconn.events().any(|e| matches!(e,
+            Http3ServerEvent::StreamStopSending { stream, error }
+                if stream.stream_id() == stream_id && error == app_error)));
     }
 
     #[test]

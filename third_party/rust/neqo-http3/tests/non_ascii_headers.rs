@@ -28,7 +28,7 @@ fn echo_header(request_header_name: &str, response_header_name: &str, test_data:
         .fetch(
             now(),
             "GET",
-            ("https", "something.com", "/"),
+            &("https", "something.com", "/"),
             &[custom_header],
             Priority::default(),
         )

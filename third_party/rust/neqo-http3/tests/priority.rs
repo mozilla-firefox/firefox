@@ -57,7 +57,7 @@ fn priority_update() {
         .fetch(
             now(),
             "GET",
-            ("https", "something.com", "/"),
+            &("https", "something.com", "/"),
             &[Header::new("priority", "u=4,i")],
             Priority::new(4, true),
         )
@@ -114,7 +114,7 @@ fn priority_update_dont_send_for_cancelled_stream() {
         .fetch(
             now(),
             "GET",
-            ("https", "something.com", "/"),
+            &("https", "something.com", "/"),
             &[Header::new("priority", "u=5")],
             Priority::new(5, false),
         )

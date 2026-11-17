@@ -4,121 +4,50 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::{
-    io::Write as _,
-    sync::{Once, OnceLock},
-    time::{Duration, Instant},
+use std::sync::Once;
+
+use tracing::level_filters::LevelFilter;
+use tracing_subscriber::{
+    Layer as _, filter::Targets, layer::SubscriberExt as _, util::SubscriberInitExt as _,
 };
-
-use env_logger::Builder;
-
-fn since_start() -> Duration {
-    static START_TIME: OnceLock<Instant> = OnceLock::new();
-    #[expect(clippy::disallowed_methods, reason = "Logging needs to use real time")]
-    START_TIME.get_or_init(Instant::now).elapsed()
-}
 
 /// Initialize the logging system with optional level filtering.
 ///
-/// This function sets up the `env_logger` with a custom format that includes
-/// elapsed time since initialization. It can be called multiple times safely.
-pub fn init(level_filter: Option<log::LevelFilter>) {
+/// Neqo emits through `tracing`, printed by `tracing-subscriber`'s default
+/// formatter and filtered by `RUST_LOG`. With the `log-bridge` feature, records
+/// from dependencies that still use `log` are bridged into `tracing`. It can be
+/// called multiple times safely.
+pub fn init(level_filter: Option<LevelFilter>) {
     static INIT_ONCE: Once = Once::new();
 
-    if ::log::STATIC_MAX_LEVEL == ::log::LevelFilter::Off {
-        return;
-    }
-
     INIT_ONCE.call_once(|| {
-        let mut builder = Builder::from_env("RUST_LOG");
-        if let Some(filter) = level_filter {
-            builder.filter_level(filter);
-        }
-        builder.format(|buf, record| {
-            let elapsed = since_start();
-            writeln!(
-                buf,
-                "{}.{:03} {} {}",
-                elapsed.as_secs(),
-                elapsed.as_millis() % 1000,
-                record.level(),
-                record.args()
-            )
-        });
-        if let Err(e) = builder.try_init() {
-            eprintln!("Logging initialization error {e:?}");
-        } else {
-            ::log::debug!("Logging initialized");
-        }
+        init_tracing(level_filter);
     });
 }
 
-/// Log an error message using the neqo logging framework.
-///
-/// Automatically initializes logging in test builds before logging.
-/// Equivalent to `log::error!` but with automatic initialization.
-#[macro_export]
-#[clippy::format_args]
-macro_rules! qerror {
-    ($($arg:tt)*) => ( {
-        #[cfg(test)]
-        ::neqo_common::log::init(None);
-        ::log::error!($($arg)*);
-    } );
-}
-
-/// Log a warning message using the neqo logging framework.
-///
-/// Automatically initializes logging in test builds before logging.
-/// Equivalent to `log::warn!` but with automatic initialization.
-#[macro_export]
-#[clippy::format_args]
-macro_rules! qwarn {
-    ($($arg:tt)*) => ( {
-        #[cfg(test)]
-        ::neqo_common::log::init(None);
-        ::log::warn!($($arg)*);
-    } );
-}
-
-/// Log an informational message using the neqo logging framework.
-///
-/// Automatically initializes logging in test builds before logging.
-/// Equivalent to `log::info!` but with automatic initialization.
-#[macro_export]
-#[clippy::format_args]
-macro_rules! qinfo {
-    ($($arg:tt)*) => ( {
-        #[cfg(test)]
-        ::neqo_common::log::init(None);
-        ::log::info!($($arg)*);
-    } );
-}
-
-/// Log a debug message using the neqo logging framework.
-///
-/// Automatically initializes logging in test builds before logging.
-/// Equivalent to `log::debug!` but with automatic initialization.
-#[macro_export]
-#[clippy::format_args]
-macro_rules! qdebug {
-    ($($arg:tt)*) => ( {
-        #[cfg(test)]
-        ::neqo_common::log::init(None);
-        ::log::debug!($($arg)*);
-    } );
-}
-
-/// Log a trace message using the neqo logging framework.
-///
-/// Automatically initializes logging in test builds before logging.
-/// Equivalent to `log::trace!` but with automatic initialization.
-#[macro_export]
-#[clippy::format_args]
-macro_rules! qtrace {
-    ($($arg:tt)*) => ( {
-        #[cfg(test)]
-        ::neqo_common::log::init(None);
-        ::log::trace!($($arg)*);
-    } );
+fn init_tracing(level_filter: Option<LevelFilter>) {
+    if tracing::level_filters::STATIC_MAX_LEVEL == LevelFilter::OFF {
+        return;
+    }
+    let mut targets = std::env::var("RUST_LOG")
+        .ok()
+        .and_then(|directives| {
+            directives
+                .parse::<Targets>()
+                .map_err(|e| eprintln!("Invalid RUST_LOG {directives:?}: {e}"))
+                .ok()
+        })
+        .unwrap_or_else(|| Targets::new().with_default(LevelFilter::ERROR));
+    if let Some(filter) = level_filter {
+        targets = targets.with_default(filter);
+    }
+    // Write via `eprint!`, which the test harness captures.
+    let layer = tracing_subscriber::fmt::layer()
+        .with_test_writer()
+        .with_filter(targets);
+    if let Err(e) = tracing_subscriber::registry().with(layer).try_init() {
+        eprintln!("Tracing initialization error {e:?}");
+    } else {
+        tracing::debug!("Logging initialized");
+    }
 }

@@ -63,9 +63,7 @@ impl TryFrom<&mut Decoder<'_>> for Token {
     type Error = Error;
 
     fn try_from(d: &mut Decoder<'_>) -> Result<Self, Self::Error> {
-        Ok(Self(
-            d.decode(Self::LEN).ok_or(Error::NoMoreData)?.try_into()?,
-        ))
+        Ok(Self(*d.decode_array().ok_or(Error::NoMoreData)?))
     }
 }
 

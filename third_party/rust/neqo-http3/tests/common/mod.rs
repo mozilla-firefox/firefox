@@ -18,7 +18,7 @@ pub fn connect_and_send_request(close_sending_side: bool) -> (Http3Client, Http3
         .fetch(
             now(),
             "GET",
-            ("https", "something.com", "/"),
+            &("https", "something.com", "/"),
             &[],
             Priority::default(),
         )

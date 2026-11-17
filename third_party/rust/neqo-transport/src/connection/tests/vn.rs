@@ -12,13 +12,18 @@ use test_fixture::{
     datagram, now, split_datagram, strip_padding,
 };
 
+#[cfg(not(feature = "disable-encryption"))]
+use super::{super::Connection, assert_error, forged_server_initial};
 use super::{
     super::{CloseReason, ConnectionEvent, Output, State, ZeroRttState},
     CryptoWriter, connect, connect_fail, default_client, default_server, exchange_ticket,
     new_client, new_server, send_something,
 };
+#[cfg(not(feature = "disable-encryption"))]
+use crate::frame::FrameType;
 use crate::{
-    ConnectionParameters, Error, MIN_INITIAL_PACKET_SIZE, Stats, Version,
+    ConnectionParameters, ERROR_VERSION_NEGOTIATION, Error, MIN_INITIAL_PACKET_SIZE, Stats,
+    Version,
     connection::tests::{AT_LEAST_PTO, connect_rtt_idle_with_modifier},
     packet,
     tparams::{TransportParameter, TransportParameterId::*},
@@ -328,6 +333,27 @@ fn compatible_downgrade() {
     assert_eq!(server.version(), Version::Version1);
 }
 
+/// A client configured for version 1 but resuming from a version 2 ticket downgrades to version 1.
+#[test]
+fn compatible_downgrade_resumed() {
+    let mut client = default_client();
+    let mut server = default_server();
+    connect(&mut client, &mut server);
+    let token = exchange_ticket(&mut client, &mut server, now());
+
+    let mut client = default_client();
+    client.enable_resumption(now(), token).unwrap();
+    assert_eq!(client.version(), Version::Version2);
+    let mut server = new_server(ConnectionParameters::default().versions(
+        Version::Version2,
+        vec![Version::Version1, Version::Version2],
+    ));
+
+    connect(&mut client, &mut server);
+    assert_eq!(client.version(), Version::Version1);
+    assert_eq!(server.version(), Version::Version1);
+}
+
 /// Inject a Version Negotiation packet, which the client detects when it validates the
 /// server `version_negotiation` transport parameter.
 #[test]
@@ -352,7 +378,7 @@ fn version_negotiation_downgrade() {
         &mut client,
         &mut server,
         Error::VersionNegotiation,
-        Error::Peer(Error::VersionNegotiation.code()),
+        Error::Peer(ERROR_VERSION_NEGOTIATION),
     );
 }
 
@@ -378,7 +404,7 @@ fn invalid_server_version() {
     // The server effectively hasn't reacted here.
     match server.state() {
         State::Closed(err) => {
-            assert_eq!(*err, CloseReason::Transport(Error::CryptoAlert(47)));
+            assert_eq!(*err, CloseReason::Transport(Error::VersionNegotiation));
         }
         _ => panic!("invalid server state"),
     }
@@ -409,8 +435,8 @@ fn invalid_current_version_client() {
     connect_fail(
         &mut client,
         &mut server,
-        Error::Peer(Error::CryptoAlert(47).code()),
-        Error::CryptoAlert(47),
+        Error::Peer(Error::VersionNegotiation.code()),
+        Error::VersionNegotiation,
     );
 }
 
@@ -441,8 +467,33 @@ fn invalid_current_version_server() {
     connect_fail(
         &mut client,
         &mut server,
-        Error::CryptoAlert(47),
-        Error::Peer(Error::CryptoAlert(47).code()),
+        Error::VersionNegotiation,
+        Error::Peer(Error::VersionNegotiation.code()),
+    );
+}
+
+/// The server chooses a version that the client knows but did not offer.
+#[test]
+fn chosen_version_not_offered_by_client() {
+    let just_v1 =
+        ConnectionParameters::default().versions(Version::Version1, vec![Version::Version1]);
+    let mut client = new_client(just_v1.clone());
+    let mut server = new_server(just_v1);
+    server
+        .set_local_tparam(
+            VersionInformation,
+            TransportParameter::Versions {
+                current: Version::Version2.wire_version(),
+                other: vec![Version::Version2.wire_version()],
+            },
+        )
+        .unwrap();
+
+    connect_fail(
+        &mut client,
+        &mut server,
+        Error::VersionNegotiation,
+        Error::Peer(Error::VersionNegotiation.code()),
     );
 }
 
@@ -467,8 +518,8 @@ fn no_compatible_version() {
     connect_fail(
         &mut client,
         &mut server,
-        Error::Peer(Error::CryptoAlert(47).code()),
-        Error::CryptoAlert(47),
+        Error::Peer(Error::TransportParameter.code()),
+        Error::TransportParameter,
     );
 }
 
@@ -655,4 +706,67 @@ fn tls_hello_retry_request() {
     server.set_groups(&[TLS_GRP_EC_SECP256R1]).unwrap();
 
     connect(&mut client, &mut server);
+}
+
+/// A client with a known first packet number that has sent its `ClientHello`,
+/// and the first datagram it sent.
+#[cfg(not(feature = "disable-encryption"))]
+fn client_after_hello() -> (Connection, Vec<u8>) {
+    let mut client = new_client(ConnectionParameters::default().randomize_first_pn(false));
+    let ci = client.process_output(now()).dgram().unwrap().to_vec();
+    assert!(client.process_output(now()).dgram().is_some());
+    (client, ci)
+}
+
+/// A CRYPTO frame at offset 1, which leaves the client in `WaitVersion`.
+#[cfg(not(feature = "disable-encryption"))]
+fn crypto_with_gap() -> &'static [u64] {
+    &[FrameType::Crypto as u64, 1, 1, 0]
+}
+
+#[cfg(not(feature = "disable-encryption"))]
+fn ack(largest: packet::Number) -> [u64; 5] {
+    [FrameType::Ack.into(), largest, 0, 0, 0]
+}
+
+/// A client cannot switch back to a version it has switched away from.
+/// It closes the connection in the version it is using.
+#[cfg(not(feature = "disable-encryption"))]
+#[test]
+fn compatible_upgrade_and_back() {
+    let (mut client, ci) = client_after_hello();
+    let v2_pn = packet::Number::try_from(client.stats().packets_tx).unwrap();
+
+    let s1 = forged_server_initial(&ci, Version::Version2, 0, &[], crypto_with_gap());
+    let c1 = client.process(Some(datagram(s1)), now()).dgram();
+    assert_version(&c1.unwrap(), Version::Version2.wire_version());
+
+    let s2 = forged_server_initial(&ci, Version::Version2, 1, &[], &ack(v2_pn));
+    client.process_input(datagram(s2), now());
+
+    let s3 = forged_server_initial(&ci, Version::Version1, 2, &[], crypto_with_gap());
+    let close = client.process(Some(datagram(s3)), now()).dgram();
+    assert_error(&client, &CloseReason::Transport(Error::PacketNumberOverlap));
+    assert_eq!(client.version(), Version::Version2);
+    assert_version(&close.unwrap(), Version::Version2.wire_version());
+}
+
+/// Interleaved Initial packets can make the first version switch fail.
+/// The client closes the connection in the version it is using.
+#[cfg(not(feature = "disable-encryption"))]
+#[test]
+fn compatible_upgrade_interleaved() {
+    let (mut client, ci) = client_after_hello();
+    let first_pn = 0; // Due to `randomize_first_pn(false)`.
+
+    let s = [
+        forged_server_initial(&ci, Version::Version2, 0, &[], &ack(first_pn)),
+        forged_server_initial(&ci, Version::Version1, 1, &[], &[FrameType::Ping.into()]),
+        forged_server_initial(&ci, Version::Version2, 2, &[], crypto_with_gap()),
+    ]
+    .concat();
+    let close = client.process(Some(datagram(s)), now()).dgram();
+    assert_error(&client, &CloseReason::Transport(Error::PacketNumberOverlap));
+    assert_eq!(client.version(), Version::Version1);
+    assert_version(&close.unwrap(), Version::Version1.wire_version());
 }

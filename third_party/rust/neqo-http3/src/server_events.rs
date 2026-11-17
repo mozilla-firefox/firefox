@@ -12,8 +12,9 @@ use std::{
     time::Instant,
 };
 
-use neqo_common::{Header, event::Queue as EventQueue, qdebug};
+use neqo_common::{Header, event::Queue as EventQueue};
 use neqo_transport::{AppError, Connection, StreamId, server::ConnectionRef};
+use tracing::debug;
 
 use crate::{
     Http3StreamInfo, Priority, Res, connection::Http3State, connection_server::Http3ServerHandler,
@@ -107,7 +108,7 @@ impl StreamHandler {
     ///
     /// It may return `InvalidStreamId` if a stream does not exist anymore.
     pub fn stream_stop_sending(&self, app_error: AppError) -> Res<()> {
-        qdebug!(
+        debug!(
             "[{self}] stop sending stream_id:{} error:{app_error}",
             self.stream_info.stream_id()
         );
@@ -124,7 +125,7 @@ impl StreamHandler {
     ///
     /// It may return `InvalidStreamId` if a stream does not exist anymore.
     pub fn stream_reset_send(&self, app_error: AppError) -> Res<()> {
-        qdebug!(
+        debug!(
             "[{self}] reset send stream_id:{} error:{app_error}",
             self.stream_info.stream_id()
         );
@@ -156,7 +157,7 @@ impl StreamHandler {
     ///
     /// It may return `InvalidStreamId` if a stream does not exist anymore
     pub fn cancel_fetch(&self, app_error: AppError) -> Res<()> {
-        qdebug!("[{self}] reset error:{app_error}");
+        debug!("[{self}] reset error:{app_error}");
         self.handler.borrow_mut().cancel_fetch(
             self.stream_info.stream_id(),
             app_error,
@@ -206,7 +207,7 @@ impl Http3OrWebTransportStream {
     ///
     /// It may return `InvalidStreamId` if a stream does not exist anymore.
     pub fn send_data(&self, data: &[u8], now: Instant) -> Res<usize> {
-        qdebug!("[{self}] Set new response");
+        debug!("[{self}] Set new response");
         self.stream_handler.send_data(data, now)
     }
 
@@ -216,7 +217,7 @@ impl Http3OrWebTransportStream {
     ///
     /// It may return `InvalidStreamId` if a stream does not exist anymore.
     pub fn stream_close_send(&self, now: Instant) -> Res<()> {
-        qdebug!("[{self}] Set new response");
+        debug!("[{self}] Set new response");
         self.stream_handler.stream_close_send(now)
     }
 }
@@ -277,9 +278,11 @@ pub enum Http3ServerEvent {
         stream_id: StreamId,
         priority: Priority,
     },
-    /// The outgoing QUIC datagram queue has space again after having been full.
+    /// The outgoing QUIC datagram queue of session `session_id` has space again after having been
+    /// full.
     OutgoingDatagramSpaceAvailable {
         conn: ConnectionRef,
+        session_id: StreamId,
     },
     WebTransport(crate::webtransport::ServerEvent),
     ConnectUdp(crate::connect_udp::ServerEvent),
@@ -332,9 +335,9 @@ impl Http3ServerEvents {
     }
 
     /// Insert an `OutgoingDatagramSpaceAvailable` event.
-    pub(crate) fn datagram_space_available(&self, conn: ConnectionRef) {
+    pub(crate) fn datagram_space_available(&self, conn: ConnectionRef, session_id: StreamId) {
         self.events
-            .push(Http3ServerEvent::OutgoingDatagramSpaceAvailable { conn });
+            .push(Http3ServerEvent::OutgoingDatagramSpaceAvailable { conn, session_id });
     }
 
     /// Insert a `Data` event.

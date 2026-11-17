@@ -20,7 +20,7 @@ pub struct HFrameType(pub u64);
 ///
 /// A conservative reuse of the QPACK decoded-size limit: encoded size is usually smaller than
 /// decoded. Worst-case memory is bounded by the transport's stream concurrency limit, roughly
-/// `max_streams_bidi * MAX_HEADER_BYTES`.
+/// `max_streams_bidi * MAX_HEADER_BYTES` of buffered frames.
 pub const MAX_HEADER_BYTES: usize = neqo_qpack::reader::LiteralReader::MAX_LEN;
 
 /// Limit for frame types that carry at most a single varint.

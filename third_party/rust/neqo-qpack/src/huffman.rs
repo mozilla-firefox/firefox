@@ -6,7 +6,7 @@
 
 use crate::{
     Error, Res,
-    huffman_decode_helper::{HuffmanDecoderNode, huffman_decoder_root},
+    huffman_decode_helper::{HUFFMAN_DECODER_ROOT, HuffmanDecoderNode},
     huffman_table::HUFFMAN_TABLE,
 };
 
@@ -88,7 +88,7 @@ pub fn decode(input: &[u8]) -> Res<Vec<u8>> {
 }
 
 fn decode_character(reader: &mut BitReader) -> Res<Option<u16>> {
-    let mut node: &HuffmanDecoderNode = huffman_decoder_root();
+    let mut node: &HuffmanDecoderNode = &HUFFMAN_DECODER_ROOT;
     let mut i = 0;
     while node.value.is_none() {
         match reader.read_bit() {

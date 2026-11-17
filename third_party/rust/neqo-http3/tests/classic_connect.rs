@@ -8,7 +8,7 @@ use neqo_common::{event::Provider as _, header::HeadersExt as _};
 use neqo_http3::{Error, Header, Http3ClientEvent, Http3ServerEvent, Priority};
 use test_fixture::{default_http3_client, default_http3_server, exchange_packets, now};
 
-const AUTHORITY: &str = "something.com";
+const AUTHORITY: &str = "something.com:443";
 
 #[test]
 fn classic_connect() {
@@ -105,9 +105,23 @@ fn classic_connect_via_fetch_panics_in_debug() {
     let res = client.fetch(
         now(),
         "CONNECT",
-        ("https", AUTHORITY, "/"),
+        &("https", AUTHORITY, "/"),
         &[],
         Priority::default(),
     );
     assert_eq!(res, Err(Error::InvalidInput));
+}
+
+#[test]
+fn classic_connect_invalid_header_value() {
+    let mut client = default_http3_client();
+    let mut server = default_http3_server();
+    let out = test_fixture::connect_peers(&mut client, &mut server);
+    assert_eq!(server.process(out, now()).dgram(), None);
+
+    let headers = [Header::new("x", "a\rb")];
+    let res = client.connect(now(), AUTHORITY, &headers, Priority::default());
+    assert_eq!(res, Err(Error::InvalidInput));
+    let res = client.connect(now(), AUTHORITY, &[], Priority::default());
+    assert_eq!(res.unwrap(), 0);
 }

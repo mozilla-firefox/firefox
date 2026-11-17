@@ -9,17 +9,17 @@ use std::{
     fmt::{self, Debug, Display, Formatter},
     num::NonZeroUsize,
     rc::Rc,
-    str::from_utf8,
     time::{Duration, Instant},
 };
 
-use neqo_common::{Bytes, Encoder, Header, MessageType, Role, qdebug, qtrace, to_u64};
+use neqo_common::{Bytes, Encoder, Header, MessageType, Role, to_u64};
 use neqo_transport::{
     AppError, Connection, DatagramQueueCapacity, DatagramQueueOutcome, DatagramTracking, StreamId,
     StreamType,
     streams::{SendGroupId, SendOrder},
 };
 use rustc_hash::FxHashSet as HashSet;
+use tracing::{debug, trace};
 
 use crate::{
     CloseType, Error, Http3StreamType, HttpRecvStream, Priority, ReceiveOutput, RecvStream, Res,
@@ -204,7 +204,7 @@ impl Session {
     ///
     /// The function can only fail if supplied headers are not valid http headers.
     pub(crate) fn send_request(&mut self, headers: &[Header], conn: &mut Connection) -> Res<()> {
-        qdebug!("[{self}]: send_request {headers:?}");
+        debug!("[{self}]: send_request {headers:?}");
         self.control_stream_send
             .http_stream()
             .ok_or(Error::Internal)?
@@ -212,7 +212,7 @@ impl Session {
     }
 
     fn receive(&mut self, conn: &mut Connection, now: Instant) -> Res<(ReceiveOutput, bool)> {
-        qtrace!("[{self}] receive control data");
+        trace!("[{self}] receive control data");
         let (out, _) = self.control_stream_recv.receive(conn, now)?;
         debug_assert_eq!(out, ReceiveOutput::NoOutput);
         self.maybe_check_headers()?;
@@ -269,7 +269,7 @@ impl Session {
         // was refused, tell the sender it can resume.
         if self.datagram_capsule_blocked {
             self.datagram_capsule_blocked = false;
-            self.events.capsule_space_available();
+            self.events.capsule_space_available(self.id);
         }
     }
 
@@ -277,7 +277,7 @@ impl Session {
         if self.state.closing_state() {
             return;
         }
-        qdebug!("[{self}]: close session type={close_type:?}");
+        debug!("[{self}]: close session type={close_type:?}");
         self.state = State::Done;
         if !close_type.locally_initiated() {
             self.events.session_end(
@@ -300,7 +300,7 @@ impl Session {
             fin,
         }) = self.stream_event_listener.borrow_mut().get_headers()
         {
-            qtrace!("ExtendedConnect response headers {headers:?}, fin={fin}");
+            trace!("ExtendedConnect response headers {headers:?}, fin={fin}");
 
             if interim {
                 if fin {
@@ -320,7 +320,7 @@ impl Session {
                     .iter()
                     .find_map(|h| {
                         if h.name() == ":status" {
-                            from_utf8(h.value()).ok()?.parse::<u16>().ok()
+                            str::from_utf8(h.value()).ok()?.parse::<u16>().ok()
                         } else {
                             None
                         }
@@ -396,7 +396,10 @@ impl Session {
     ///
     /// It may return an error if the frame is not correctly decoded.
     pub(crate) fn read_control_stream(&mut self, conn: &mut Connection, now: Instant) -> Res<()> {
-        qdebug!("[{self}]: read_control_stream");
+        if self.state == State::Done {
+            return Ok(());
+        }
+        debug!("[{self}]: read_control_stream");
         if let Some(new_state) = self.protocol.read_control_stream(
             conn,
             &mut self.events,
@@ -429,7 +432,7 @@ impl Session {
         message: &str,
         now: Instant,
     ) -> Res<()> {
-        qdebug!("[{self}]: close_session");
+        debug!("[{self}]: close_session");
         self.enter_state(State::Done, conn, now);
 
         if let Some(close_frame) = self.protocol.close_frame(error, message) {
@@ -477,9 +480,9 @@ impl Session {
         send_group_id: SendGroupId,
         send_order: SendOrder,
     ) -> Res<DatagramQueueOutcome> {
-        qtrace!("[{self}] send_datagram state={:?}", self.state);
+        trace!("[{self}] send_datagram state={:?}", self.state);
         if self.state != State::Active {
-            qdebug!("[{self}]: cannot send datagram in {:?} state.", self.state);
+            debug!("[{self}]: cannot send datagram in {:?} state.", self.state);
             return Err(Error::Unavailable);
         }
 
@@ -488,10 +491,10 @@ impl Session {
                 // WebTransport only negotiates with a peer that supports QUIC
                 // DATAGRAM, and connect-udp always has the Capsule fallback.
                 debug_assert!(false, "no datagram path to the peer");
-                qdebug!("[{self}]: peer supports neither QUIC DATAGRAM nor the Capsule fallback");
+                debug!("[{self}]: peer supports neither QUIC DATAGRAM nor the Capsule fallback");
                 return Err(Error::Transport(neqo_transport::Error::NotAvailable));
             }
-            qtrace!("[{self}] remote_datagram_size is 0, trying HTTP DATAGRAM Capsule");
+            trace!("[{self}] remote_datagram_size is 0, trying HTTP DATAGRAM Capsule");
             // The Capsule path errors when the control stream's flow-control
             // window is exhausted, then emits a resume event once the stream is
             // writable again (see `stream_writable`).
@@ -508,7 +511,7 @@ impl Session {
         }
 
         if send_group_id != SendGroupId::new(0) && !self.validate_send_group(send_group_id) {
-            qdebug!("[{self}]: rejecting datagram with unregistered send group {send_group_id:?}");
+            debug!("[{self}]: rejecting datagram with unregistered send group {send_group_id:?}");
             return Err(Error::InvalidInput);
         }
 
@@ -539,7 +542,7 @@ impl Session {
             send_group_id,
             send_order,
         )?;
-        qtrace!("[{self}] enqueued datagram: {outcome:?}");
+        trace!("[{self}] enqueued datagram: {outcome:?}");
         match &outcome {
             DatagramQueueOutcome::Ok | DatagramQueueOutcome::MaxBufferedReached => {}
             DatagramQueueOutcome::Rejected => self.report_dropped(1),
@@ -628,7 +631,7 @@ impl Session {
 
     pub(crate) fn datagram(&self, datagram: Bytes) {
         if self.state != State::Active {
-            qdebug!("[{self}]: received datagram on {:?} session.", self.state);
+            debug!("[{self}]: received datagram on {:?} session.", self.state);
             return;
         }
 
@@ -639,7 +642,7 @@ impl Session {
                     .new_datagram(self.id, slice, self.protocol.connect_type());
             }
             Err(e) => {
-                qdebug!("[{self}]: received datagram with invalid context identifier: {e}");
+                debug!("[{self}]: received datagram with invalid context identifier: {e}");
             }
         }
     }
@@ -792,20 +795,20 @@ pub(crate) trait Protocol: Debug + Display {
         _state: State,
     ) -> Res<()> {
         let msg = "Protocol does not support adding streams";
-        qdebug!("{msg}");
+        debug!("{msg}");
         debug_assert!(false, "{msg}");
         Ok(())
     }
 
     fn remove_recv_stream(&mut self, _stream_id: StreamId) {
         let msg = "Protocol does not support removing recv streams";
-        qdebug!("{msg}");
+        debug!("{msg}");
         debug_assert!(false, "{msg}");
     }
 
     fn remove_send_stream(&mut self, _stream_id: StreamId) {
         let msg = "Protocol does not support removing send streams";
-        qdebug!("{msg}");
+        debug!("{msg}");
         debug_assert!(false, "{msg}");
     }
 

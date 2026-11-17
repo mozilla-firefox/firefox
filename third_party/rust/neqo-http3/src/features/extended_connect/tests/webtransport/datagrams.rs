@@ -271,7 +271,7 @@ fn outgoing_datagram_space_available_forwarded() {
     assert!(
         !wt.client
             .events()
-            .any(|e| matches!(e, Http3ClientEvent::OutgoingDatagramSpaceAvailable)),
+            .any(|e| matches!(e, Http3ClientEvent::OutgoingDatagramSpaceAvailable { .. })),
         "client resume event fired before the queue drained"
     );
 
@@ -294,13 +294,13 @@ fn outgoing_datagram_space_available_forwarded() {
     assert!(
         wt.client
             .events()
-            .any(|e| matches!(e, Http3ClientEvent::OutgoingDatagramSpaceAvailable)),
+            .any(|e| matches!(e, Http3ClientEvent::OutgoingDatagramSpaceAvailable { session_id: id } if id == session_id)),
         "OutgoingDatagramSpaceAvailable was not forwarded to the HTTP/3 client"
     );
     assert!(
         wt.server
             .events()
-            .any(|e| matches!(e, Http3ServerEvent::OutgoingDatagramSpaceAvailable { .. })),
+            .any(|e| matches!(e, Http3ServerEvent::OutgoingDatagramSpaceAvailable { session_id: id, .. } if id == session_id)),
         "OutgoingDatagramSpaceAvailable was not forwarded to the HTTP/3 server"
     );
 }
@@ -594,7 +594,7 @@ fn datagram_burst_exceeding_byte_budget_preserves_priority_through_a_live_connec
             Http3ServerEvent::WebTransport(ServerEvent::Datagram { session, datagram })
                 if session.stream_id() == session_id =>
             {
-                Some(u64::from_le_bytes(datagram.as_ref().try_into().unwrap()))
+                Some(u64::from_le_bytes(*datagram.as_ref().as_array().unwrap()))
             }
             _ => None,
         })
@@ -664,7 +664,7 @@ fn client_changing_the_max_buffered_limit_resumes_only_a_blocked_queue() {
         wt.client.connection_mut().events().any(|e| {
             matches!(
                 e,
-                neqo_transport::ConnectionEvent::OutgoingDatagramSpaceAvailable
+                neqo_transport::ConnectionEvent::OutgoingDatagramSpaceAvailable { .. }
             )
         })
     };
@@ -691,7 +691,7 @@ fn client_setters_work_before_the_connect_response() {
     let mut wt = WtTest::new();
     let session_id = wt
         .client
-        .webtransport_create_session(now(), ("https", "something.com", "/"), &[])
+        .webtransport_create_session(now(), &("https", "something.com", "/"), &[])
         .unwrap();
 
     wt.client

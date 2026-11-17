@@ -27,17 +27,12 @@ use windows::Win32::{
 
 use crate::default_err;
 
+#[derive(Default)]
 struct MibTablePtr(*mut MIB_IPINTERFACE_TABLE);
 
 impl MibTablePtr {
     const fn mut_ptr_ptr(&mut self) -> *mut *mut MIB_IPINTERFACE_TABLE {
         ptr::from_mut(&mut self.0)
-    }
-}
-
-impl Default for MibTablePtr {
-    fn default() -> Self {
-        Self(ptr::null_mut())
     }
 }
 

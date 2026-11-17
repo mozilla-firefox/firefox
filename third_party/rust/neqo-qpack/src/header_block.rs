@@ -10,7 +10,8 @@ use std::{
     ops::{Deref, Div as _},
 };
 
-use neqo_common::{Header, qtrace};
+use neqo_common::Header;
+use tracing::trace;
 
 use crate::{
     Error, Res,
@@ -23,7 +24,7 @@ use crate::{
     },
     qpack_send_buf::Encoder as _,
     reader::{LiteralReader, ReceiverBufferWrapper, parse_utf8},
-    table::{ADDITIONAL_TABLE_ENTRY_SIZE, DynamicTableEntry, HeaderTable},
+    table::{DynamicTableEntry, HeaderTable},
 };
 
 #[derive(Default, Debug, PartialEq, Eq)]
@@ -53,7 +54,7 @@ impl HeaderEncoder {
     }
 
     pub fn encode_indexed_static(&mut self, index: u64) {
-        qtrace!("[{self}] encode static index {index}");
+        trace!("[{self}] encode static index {index}");
         self.buf
             .encode_prefixed_encoded_int(HEADER_FIELD_INDEX_STATIC, index);
     }
@@ -69,7 +70,7 @@ impl HeaderEncoder {
     }
 
     pub fn encode_indexed_dynamic(&mut self, index: u64) {
-        qtrace!("[{self}] encode dynamic index {index}");
+        trace!("[{self}] encode dynamic index {index}");
         if index < self.base {
             self.buf
                 .encode_prefixed_encoded_int(HEADER_FIELD_INDEX_DYNAMIC, self.base - index - 1);
@@ -81,7 +82,7 @@ impl HeaderEncoder {
     }
 
     pub fn encode_literal_with_name_ref(&mut self, is_static: bool, index: u64, value: &[u8]) {
-        qtrace!(
+        trace!(
             "[{self}] encode literal with name ref - index={index}, static={is_static}, value={value:x?}"
         );
         if is_static {
@@ -105,7 +106,7 @@ impl HeaderEncoder {
     }
 
     pub fn encode_literal_with_name_literal(&mut self, name: &[u8], value: &[u8]) {
-        qtrace!("[{self}] encode literal with name literal - name={name:x?}, value={value:x?}");
+        trace!("[{self}] encode literal with name literal - name={name:x?}, value={value:x?}");
         self.buf
             .encode_literal(self.use_huffman, HEADER_FIELD_LITERAL_NAME_LITERAL, name);
         self.buf.encode_literal(self.use_huffman, NO_PREFIX, value);
@@ -131,10 +132,9 @@ impl HeaderEncoder {
                         )
                     }
                 });
-        qtrace!(
+        trace!(
             "[{self}] encode header block prefix max_dynamic_index_ref={:?}, base={}, enc_insert_cnt={enc_insert_cnt}, delta={delta}, prefix={prefix:?}",
-            self.max_dynamic_index_ref,
-            self.base
+            self.max_dynamic_index_ref, self.base
         );
 
         self.buf
@@ -203,7 +203,7 @@ impl<'a> HeaderDecoder<'a> {
         )?;
 
         if table.base() < self.req_insert_cnt {
-            qtrace!(
+            trace!(
                 "[{self}] decoding is blocked, requested inserts count={}",
                 self.req_insert_cnt
             );
@@ -241,14 +241,12 @@ impl<'a> HeaderDecoder<'a> {
                 unreachable!("All prefixes are covered");
             };
             remaining = remaining
-                .checked_sub(
-                    header.name().len() + header.value().len() + ADDITIONAL_TABLE_ENTRY_SIZE,
-                )
+                .checked_sub(header.field_size())
                 .ok_or(Error::Decompression)?;
             h.push(header);
         }
 
-        qtrace!("[{self}] done decoding header block");
+        trace!("[{self}] done decoding header block");
         Ok(HeaderDecoderResult::Headers(h))
     }
 
@@ -273,10 +271,9 @@ impl<'a> HeaderDecoder<'a> {
                 .checked_add(base_delta)
                 .ok_or(Error::Decompression)?
         };
-        qtrace!(
+        trace!(
             "[{self}] requested inserts count is {} and base is {}",
-            self.req_insert_cnt,
-            self.base
+            self.req_insert_cnt, self.base
         );
         Ok(())
     }
@@ -311,7 +308,7 @@ impl<'a> HeaderDecoder<'a> {
         let index = self
             .buf
             .read_prefixed_int(HEADER_FIELD_INDEX_STATIC.len())?;
-        qtrace!("[{self}] decoder static indexed {index}");
+        trace!("[{self}] decoder static indexed {index}");
         let entry = HeaderTable::get_static(index)?;
         Ok(Header::new(parse_utf8(entry.name())?, entry.value()))
     }
@@ -338,7 +335,7 @@ impl<'a> HeaderDecoder<'a> {
         let index = self
             .buf
             .read_prefixed_int(HEADER_FIELD_INDEX_DYNAMIC.len())?;
-        qtrace!("[{self}] decoder dynamic indexed {index}");
+        trace!("[{self}] decoder dynamic indexed {index}");
         let entry = self.dynamic_entry(table, index, false)?;
         Ok(Header::new(parse_utf8(entry.name())?, entry.value()))
     }
@@ -347,13 +344,13 @@ impl<'a> HeaderDecoder<'a> {
         let index = self
             .buf
             .read_prefixed_int(HEADER_FIELD_INDEX_DYNAMIC_POST.len())?;
-        qtrace!("[{self}] decode post-based {index}");
+        trace!("[{self}] decode post-based {index}");
         let entry = self.dynamic_entry(table, index, true)?;
         Ok(Header::new(parse_utf8(entry.name())?, entry.value()))
     }
 
     fn read_literal_with_name_ref_static(&mut self) -> Res<Header> {
-        qtrace!("[{self}] read literal with name reference to the static table");
+        trace!("[{self}] read literal with name reference to the static table");
 
         let index = self
             .buf
@@ -366,7 +363,7 @@ impl<'a> HeaderDecoder<'a> {
     }
 
     fn read_literal_with_name_ref_dynamic(&mut self, table: &HeaderTable) -> Res<Header> {
-        qtrace!("[{self}] read literal with name reference of the dynamic table");
+        trace!("[{self}] read literal with name reference of the dynamic table");
 
         let index = self
             .buf
@@ -379,7 +376,7 @@ impl<'a> HeaderDecoder<'a> {
     }
 
     fn read_literal_with_name_ref_dynamic_post(&mut self, table: &HeaderTable) -> Res<Header> {
-        qtrace!("[{self}] decoder literal with post-based index");
+        trace!("[{self}] decoder literal with post-based index");
 
         let index = self
             .buf
@@ -392,7 +389,7 @@ impl<'a> HeaderDecoder<'a> {
     }
 
     fn read_literal_with_name_literal(&mut self) -> Res<Header> {
-        qtrace!("[{self}] decode literal with name literal");
+        trace!("[{self}] decode literal with name literal");
 
         let name_bytes = self
             .buf
@@ -409,11 +406,8 @@ impl<'a> HeaderDecoder<'a> {
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
 
-    use super::{
-        ADDITIONAL_TABLE_ENTRY_SIZE, HeaderDecoder, HeaderDecoderResult, HeaderEncoder,
-        HeaderTable, LiteralReader,
-    };
-    use crate::Error;
+    use super::{HeaderDecoder, HeaderDecoderResult, HeaderEncoder, HeaderTable, LiteralReader};
+    use crate::{Error, table::ADDITIONAL_TABLE_ENTRY_SIZE};
 
     const INDEX_STATIC_TEST: &[(u64, &[u8], &str, &str)] = &[
         (0, &[0x0, 0x0, 0xc0], ":authority", ""),

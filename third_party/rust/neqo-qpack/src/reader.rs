@@ -4,12 +4,14 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::{mem, str};
+use std::{cmp::min, mem};
 
-use neqo_common::qdebug;
 use neqo_transport::{Connection, StreamId};
+use tracing::debug;
 
 use crate::{Error, Res, huffman, prefix::Prefix};
+
+const MAX_READ_SIZE: usize = 2048;
 
 pub trait ReadByte {
     /// # Errors
@@ -211,7 +213,7 @@ impl IntReader {
             b = s.read_byte()?;
 
             if (self.cnt == 63) && (b > 1 || (b == 1 && ((self.value >> 63) == 1))) {
-                qdebug!("Error decoding prefixed encoded int - IntegerOverflow");
+                debug!("Error decoding prefixed encoded int - IntegerOverflow");
                 return Err(Error::IntegerOverflow);
             }
             self.value += u64::from(b & 0x7f) << self.cnt;
@@ -235,6 +237,7 @@ enum LiteralReaderState {
         reader: IntReader,
     },
     ReadLiteral {
+        len: usize,
         offset: usize,
     },
     Done,
@@ -306,7 +309,7 @@ impl LiteralReader {
     /// When this object is complete.
     pub fn read<T: ReadByte + Reader>(&mut self, s: &mut T) -> Res<Vec<u8>> {
         loop {
-            qdebug!("state = {:?}", self.state);
+            debug!("state = {:?}", self.state);
             match &mut self.state {
                 LiteralReaderState::ReadHuffman => {
                     let b = s.read_byte()?;
@@ -317,24 +320,31 @@ impl LiteralReader {
                     };
                 }
                 LiteralReaderState::ReadLength { reader } => {
+                    // TODO: Reject literals larger than the table capacity (RFC 9204 §3.2.2).
                     let v = usize::try_from(reader.read(s)?)
                         .ok()
                         .filter(|&l| l <= Self::MAX_LEN)
                         .ok_or(Error::Decoding)?;
-                    self.literal.resize(v, 0x0);
-                    self.state = LiteralReaderState::ReadLiteral { offset: 0 };
+                    self.state = LiteralReaderState::ReadLiteral { len: v, offset: 0 };
                 }
-                LiteralReaderState::ReadLiteral { offset } => {
+                LiteralReaderState::ReadLiteral { len, offset } => {
+                    if *offset == self.literal.len() {
+                        let to_read = min(*len - *offset, MAX_READ_SIZE);
+                        self.literal.reserve_exact(to_read);
+                        self.literal.resize(*offset + to_read, 0);
+                    }
                     let amount = s.read(&mut self.literal[*offset..])?;
                     *offset += amount;
-                    if *offset == self.literal.len() {
+                    if *offset == *len {
                         self.state = LiteralReaderState::Done;
                         if self.use_huffman {
                             break Ok(huffman::decode(&self.literal)?);
                         }
                         break Ok(mem::take(&mut self.literal));
                     }
-                    break Err(Error::NeedMoreData);
+                    if amount == 0 {
+                        break Err(Error::NeedMoreData);
+                    }
                 }
                 LiteralReaderState::Done => {
                     panic!("Should not call read() in this state");
@@ -404,8 +414,8 @@ mod tests {
     use test_receiver::TestReceiver;
 
     use super::{
-        Error, IntReader, LiteralReader, ReadByte as _, ReceiverBufferWrapper, Res, huffman,
-        test_receiver,
+        Error, IntReader, LiteralReader, MAX_READ_SIZE, ReadByte as _, ReceiverBufferWrapper, Res,
+        huffman, test_receiver,
     };
     use crate::{prefix::Prefix, qpack_send_buf::Encoder as _};
 
@@ -729,6 +739,24 @@ mod tests {
         let (mut reader, mut test_receiver) = literal_reader_for_test(LiteralReader::MAX_LEN);
         let result = reader.read(&mut test_receiver).unwrap();
         assert_eq!(result.len(), LiteralReader::MAX_LEN);
+    }
+
+    #[test]
+    fn literal_length_alone_allocates_one_chunk() {
+        const PREFIX_LEN: u8 = 3;
+        let mut data = Encoder::default();
+        data.encode_prefixed_encoded_int(
+            Prefix::new(0x00, PREFIX_LEN + 1),
+            to_u64(LiteralReader::MAX_LEN),
+        );
+        let mut reader = LiteralReader::new_with_first_byte(data.as_ref()[0], PREFIX_LEN);
+        let mut test_receiver = TestReceiver::default();
+        test_receiver.write(&data.as_ref()[1..]);
+        assert_eq!(reader.read(&mut test_receiver), Err(Error::NeedMoreData));
+        assert_eq!(reader.literal.capacity(), MAX_READ_SIZE);
+        test_receiver.write(&[0; 2 * MAX_READ_SIZE]);
+        assert_eq!(reader.read(&mut test_receiver), Err(Error::NeedMoreData));
+        assert_eq!(reader.literal.capacity(), 3 * MAX_READ_SIZE);
     }
 
     #[test]

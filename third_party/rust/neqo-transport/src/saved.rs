@@ -6,7 +6,8 @@
 
 use std::{mem, time::Instant};
 
-use neqo_common::{Datagram, qdebug, qinfo};
+use neqo_common::Datagram;
+use tracing::{debug, info};
 
 use crate::crypto::Epoch;
 
@@ -46,10 +47,10 @@ impl SavedDatagrams {
         let store = self.store(epoch);
 
         if store.len() < Self::CAPACITY {
-            qdebug!("saving {epoch:?} datagram of {} bytes", d.len());
+            debug!("saving {epoch:?} datagram of {} bytes", d.len());
             store.push(SavedDatagram { d, t });
         } else {
-            qinfo!("not saving {epoch:?} datagram of {} bytes", d.len());
+            info!("not saving {epoch:?} datagram of {} bytes", d.len());
         }
     }
 

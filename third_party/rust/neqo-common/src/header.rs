@@ -6,7 +6,7 @@
 
 use std::{
     fmt::{self, Debug},
-    str::FromStr,
+    str::{FromStr, Utf8Error},
 };
 
 use thiserror::Error;
@@ -62,13 +62,19 @@ impl Header {
         &self.value
     }
 
+    /// Size of the field line, per RFC 9114, Section 4.2.2.
+    #[must_use]
+    pub const fn field_size(&self) -> usize {
+        self.name.len() + self.value.len() + 32
+    }
+
     /// Try to interpret the header value as UTF-8.
     ///
     /// # Errors
     ///
     /// Returns an error if the value contains invalid UTF-8.
-    pub fn value_utf8(&self) -> Result<&str, std::str::Utf8Error> {
-        std::str::from_utf8(&self.value)
+    pub fn value_utf8(&self) -> Result<&str, Utf8Error> {
+        str::from_utf8(&self.value)
     }
 }
 
@@ -146,8 +152,6 @@ impl FromStr for Header {
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
-    use std::str::from_utf8;
-
     use super::*;
 
     #[test]
@@ -194,7 +198,7 @@ mod tests {
         assert_eq!(header.value(), non_utf8_bytes.as_slice());
 
         // Verify that the value is indeed not valid UTF-8
-        assert!(from_utf8(header.value()).is_err());
+        assert!(str::from_utf8(header.value()).is_err());
         // Test the value_utf8() helper method
         assert!(header.value_utf8().is_err());
     }
@@ -209,8 +213,8 @@ mod tests {
         assert_eq!(header.value(), emoji_bytes.as_slice());
 
         // Verify we can convert back to UTF-8
-        let emoji_str = from_utf8(header.value()).unwrap();
-        assert_eq!(emoji_str, from_utf8(emoji_bytes).unwrap());
+        let emoji_str = str::from_utf8(header.value()).unwrap();
+        assert_eq!(emoji_str, str::from_utf8(emoji_bytes).unwrap());
         // Test the value_utf8() helper method
         assert_eq!(header.value_utf8().unwrap(), emoji_str);
     }

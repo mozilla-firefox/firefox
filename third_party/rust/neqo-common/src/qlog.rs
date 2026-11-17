@@ -139,7 +139,7 @@ impl Qlog {
             // `Error::Done` means "event was below the importance threshold" - not an actual error.
             Ok(()) | Err(Error::Done) => (),
             Err(e) => {
-                log::error!("Qlog event generation failed with error {e}; closing qlog.");
+                tracing::error!("Qlog event generation failed with error {e}; closing qlog.");
                 // Set the inner Option to None to disable future logging for other references.
                 *borrow = None;
                 // Explicitly drop the RefCell borrow to release the mutable borrow.
@@ -160,7 +160,7 @@ impl fmt::Debug for SharedStreamer {
 impl Drop for SharedStreamer {
     fn drop(&mut self) {
         if let Err(e) = self.streamer.finish_log() {
-            log::error!("Error dropping Qlog: {e}");
+            tracing::error!("Error dropping Qlog: {e}");
         }
     }
 }

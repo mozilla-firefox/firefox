@@ -6,17 +6,27 @@
 
 // This file implements functions necessary for address validation.
 
+#![cfg_attr(
+    fuzzing,
+    expect(
+        clippy::missing_errors_doc,
+        clippy::missing_panics_doc,
+        clippy::must_use_candidate,
+        reason = "`addr_valid` is only public API when fuzzing."
+    )
+)]
+
 use std::{
     net::{IpAddr, SocketAddr},
     time::{Duration, Instant},
 };
 
-use neqo_common::{Buffer, Decoder, Encoder, Role, expect_usize, qinfo, qtrace};
+use neqo_common::{Buffer, Decoder, Encoder, Role, expect_usize};
 use nss::{
     constants::{TLS_AES_128_GCM_SHA256, TLS_VERSION_1_3},
     selfencrypt::SelfEncrypt,
 };
-use static_assertions::const_assert;
+use tracing::{info, trace};
 
 use crate::{
     Res,
@@ -33,7 +43,7 @@ const TOKEN_IDENTIFIER_RETRY: &[u8] = &[0x52, 0x65, 0x74, 0x72, 0x79];
 /// corruption of individual bits in transit.
 const TOKEN_IDENTIFIER_NEW_TOKEN: &[u8] = &[0xad, 0x9a, 0x8b, 0x8d, 0x86];
 
-const_assert!(TOKEN_IDENTIFIER_RETRY.len() == TOKEN_IDENTIFIER_NEW_TOKEN.len());
+const _: () = assert!(TOKEN_IDENTIFIER_RETRY.len() == TOKEN_IDENTIFIER_NEW_TOKEN.len());
 
 /// The maximum number of tokens we'll save from `NEW_TOKEN` frames.
 /// This should be the same as the value of `MAX_TICKETS` in `nss`.
@@ -113,7 +123,7 @@ impl AddressValidation {
         now: Instant,
     ) -> Res<Vec<u8>> {
         const EXPIRATION_RETRY: Duration = Duration::from_secs(5);
-        const EXPIRATION_NEW_TOKEN: Duration = Duration::from_secs(60 * 60 * 24);
+        const EXPIRATION_NEW_TOKEN: Duration = Duration::from_hours(24);
 
         // TODO(mt) rotate keys on a fixed schedule.
         let retry = dcid.is_some();
@@ -166,7 +176,7 @@ impl AddressValidation {
     }
 
     pub fn set_validation(&mut self, validation: ValidateAddress) {
-        qtrace!("AddressValidation {self:p}: set to {validation:?}");
+        trace!("AddressValidation {self:p}: set to {validation:?}");
         self.validation = validation;
     }
 
@@ -188,7 +198,7 @@ impl AddressValidation {
             let d = dec.decode_uint::<u32>()?;
             let end = self.start_time + Duration::from_millis(u64::from(d));
             if end < now {
-                qtrace!("Expired token: {end:?} vs. {now:?}");
+                trace!("Expired token: {end:?} vs. {now:?}");
                 return None;
             }
         }
@@ -216,19 +226,19 @@ impl AddressValidation {
         peer_address: SocketAddr,
         now: Instant,
     ) -> AddressValidationResult {
-        qtrace!("AddressValidation {self:p}: validate {:?}", self.validation);
+        trace!("AddressValidation {self:p}: validate {:?}", self.validation);
 
         if token.is_empty() {
             if self.validation == ValidateAddress::Never {
-                qinfo!("AddressValidation: no token; accepting");
+                info!("AddressValidation: no token; accepting");
                 return AddressValidationResult::Pass;
             }
-            qinfo!("AddressValidation: no token; validating");
+            info!("AddressValidation: no token; validating");
             return AddressValidationResult::Validate;
         }
         if token.len() <= TOKEN_IDENTIFIER_RETRY.len() {
             // Treat bad tokens strictly.
-            qinfo!("AddressValidation: too short token");
+            info!("AddressValidation: too short token");
             return AddressValidationResult::Invalid;
         }
         let retry = Self::is_likely_retry(token);
@@ -241,7 +251,7 @@ impl AddressValidation {
                 if retry {
                     // This is from Retry, so we should have an ODCID >= 8.
                     if cid.len() >= 8 {
-                        qinfo!("AddressValidation: valid Retry token for {cid}");
+                        info!("AddressValidation: valid Retry token for {cid}");
                         AddressValidationResult::ValidRetry(cid)
                     } else {
                         panic!("AddressValidation: Retry token with small CID {cid}");
@@ -249,10 +259,10 @@ impl AddressValidation {
                 } else if cid.is_empty() {
                     // An empty connection ID means NEW_TOKEN.
                     if self.validation == ValidateAddress::Always {
-                        qinfo!("AddressValidation: valid NEW_TOKEN token; validating again");
+                        info!("AddressValidation: valid NEW_TOKEN token; validating again");
                         AddressValidationResult::Validate
                     } else {
-                        qinfo!("AddressValidation: valid NEW_TOKEN token; accepting");
+                        info!("AddressValidation: valid NEW_TOKEN token; accepting");
                         AddressValidationResult::Pass
                     }
                 } else {
@@ -264,16 +274,16 @@ impl AddressValidation {
                 // We've either lost the keys or we've received junk.
                 if retry {
                     // If this looked like a Retry, treat it as being bad.
-                    qinfo!("AddressValidation: invalid Retry token; rejecting");
+                    info!("AddressValidation: invalid Retry token; rejecting");
                     AddressValidationResult::Invalid
                 } else if self.validation == ValidateAddress::Never {
                     // We don't require validation, so OK.
-                    qinfo!("AddressValidation: invalid NEW_TOKEN token; accepting");
+                    info!("AddressValidation: invalid NEW_TOKEN token; accepting");
                     AddressValidationResult::Pass
                 } else {
                     // This might be an invalid NEW_TOKEN token, or a valid one
                     // for which we have since lost the keys.  Check again.
-                    qinfo!("AddressValidation: invalid NEW_TOKEN token; validating again");
+                    info!("AddressValidation: invalid NEW_TOKEN token; validating again");
                     AddressValidationResult::Validate
                 }
             }
@@ -332,7 +342,7 @@ impl NewTokenState {
         if let Self::Client { pending, old } = self {
             for t in old.iter().rev().chain(pending.iter().rev()) {
                 if t == &token {
-                    qinfo!("NewTokenState discarding duplicate NEW_TOKEN");
+                    info!("NewTokenState discarding duplicate NEW_TOKEN");
                     return;
                 }
             }

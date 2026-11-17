@@ -7,10 +7,10 @@
 use neqo_common::{
     Bytes, Header,
     event::{Provider as EventProvider, Queue as EventQueue},
-    qtrace,
 };
 use neqo_transport::{AppError, StreamId, StreamType};
 use nss::ResumptionToken;
+use tracing::trace;
 
 use crate::{
     CloseType, Error, Http3StreamInfo, HttpRecvStreamEvents, RecvStreamEvents, Res,
@@ -115,8 +115,9 @@ pub enum Http3ClientEvent {
     WebTransport(WebTransportEvent),
     /// `ConnectUdp` events
     ConnectUdp(ConnectUdpEvent),
-    /// The outgoing QUIC datagram queue has space again after having been full.
-    OutgoingDatagramSpaceAvailable,
+    /// The outgoing QUIC datagram queue of session `session_id` has space again after having been
+    /// full.
+    OutgoingDatagramSpaceAvailable { session_id: StreamId },
 }
 
 #[derive(Debug, Default, Clone)]
@@ -293,8 +294,8 @@ impl ExtendedConnectEvents for Http3ClientEvents {
         self.events.push(event);
     }
 
-    fn capsule_space_available(&self) {
-        self.datagram_space_available();
+    fn capsule_space_available(&self, session_id: StreamId) {
+        self.datagram_space_available(session_id);
     }
 }
 
@@ -310,9 +311,9 @@ impl Http3ClientEvents {
     /// `neqo-transport`'s [`ConnectionEvent::OutgoingDatagramSpaceAvailable`].
     ///
     /// [`ConnectionEvent::OutgoingDatagramSpaceAvailable`]: neqo_transport::ConnectionEvent::OutgoingDatagramSpaceAvailable
-    pub(crate) fn datagram_space_available(&self) {
+    pub(crate) fn datagram_space_available(&self, session_id: StreamId) {
         self.events
-            .push_unique(Http3ClientEvent::OutgoingDatagramSpaceAvailable);
+            .push_unique(Http3ClientEvent::OutgoingDatagramSpaceAvailable { session_id });
     }
 
     /// Add a new `AuthenticationNeeded` event
@@ -352,7 +353,10 @@ impl Http3ClientEvents {
     pub(crate) fn connection_state_change(&self, state: Http3State) {
         match state {
             // If closing, existing events no longer relevant.
-            Http3State::Closing { .. } | Http3State::Closed(_) => self.events.clear(),
+            // The session ticket in a queued resumption token cannot be retrieved again.
+            Http3State::Closing { .. } | Http3State::Closed(_) => self
+                .events
+                .remove_matching(|evt| !matches!(evt, Http3ClientEvent::ResumptionToken(_))),
             Http3State::Connected => {
                 self.events.remove_matching(|evt| {
                     matches!(evt, Http3ClientEvent::StateChange(Http3State::ZeroRtt))
@@ -408,7 +412,7 @@ impl Http3ClientEvents {
                         succeeded,
                     )));
             }
-            _ => qtrace!("HSetting {feature_type:?} {succeeded} not handled"),
+            _ => trace!("HSetting {feature_type:?} {succeeded} not handled"),
         }
     }
 }

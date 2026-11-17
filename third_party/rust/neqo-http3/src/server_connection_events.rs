@@ -44,8 +44,11 @@ pub enum Http3ServerConnEvent {
     },
     /// Connection state change.
     StateChange(Http3State),
-    /// The outgoing QUIC datagram queue has space again after having been full.
-    OutgoingDatagramSpaceAvailable,
+    /// The outgoing QUIC datagram queue of session `session_id` has space again after having been
+    /// full.
+    OutgoingDatagramSpaceAvailable {
+        session_id: StreamId,
+    },
     WebTransport(WebTransportEvent),
     ConnectUdp(ConnectUdpEvent),
 }
@@ -241,8 +244,8 @@ impl ExtendedConnectEvents for Http3ServerConnEvents {
         self.events.push(event);
     }
 
-    fn capsule_space_available(&self) {
-        self.datagram_space_available();
+    fn capsule_space_available(&self, session_id: StreamId) {
+        self.datagram_space_available(session_id);
     }
 }
 
@@ -259,9 +262,9 @@ impl Http3ServerConnEvents {
     /// `neqo-transport`'s [`ConnectionEvent::OutgoingDatagramSpaceAvailable`].
     ///
     /// [`ConnectionEvent::OutgoingDatagramSpaceAvailable`]: neqo_transport::ConnectionEvent::OutgoingDatagramSpaceAvailable
-    pub(crate) fn datagram_space_available(&self) {
+    pub(crate) fn datagram_space_available(&self, session_id: StreamId) {
         self.events
-            .push_unique(Http3ServerConnEvent::OutgoingDatagramSpaceAvailable);
+            .push_unique(Http3ServerConnEvent::OutgoingDatagramSpaceAvailable { session_id });
     }
 
     pub fn connection_state_change(&self, state: Http3State) {

@@ -10,9 +10,9 @@ use std::{
     time::Instant,
 };
 
-use neqo_common::qtrace;
 use neqo_transport::{Connection, StreamId, StreamType};
 use rustc_hash::FxHashMap as HashMap;
+use tracing::trace;
 
 use crate::{BufferedStream, Error, Http3StreamType, RecvStream, Res, frames::HFrame};
 
@@ -88,7 +88,7 @@ impl ControlStreamLocal {
 
     /// Create a control stream.
     pub fn create(&mut self, conn: &mut Connection) -> Res<()> {
-        qtrace!("[{self}] Create a control stream");
+        trace!("[{self}] Create a control stream");
         self.stream.init(conn.stream_create(StreamType::UniDi)?);
         self.stream
             .buffer(&[u8::try_from(HTTP3_UNI_STREAM_TYPE_CONTROL).map_err(|_| Error::Internal)?]);

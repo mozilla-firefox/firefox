@@ -10,18 +10,18 @@ use std::{
     fs::OpenOptions,
     io::Write as _,
     net::{SocketAddr, ToSocketAddrs as _},
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     time::{Duration, Instant},
 };
 
 use clap::{Parser, builder::TypedValueParser as _};
-use neqo_common::{qerror, qinfo};
 use neqo_transport::{
     CongestionControl, ConnectionParameters, DEFAULT_INITIAL_RTT, SlowStart, Stats, StreamType,
     Version, tparams::PreferredAddress,
 };
 use strum::VariantNames as _;
 use thiserror::Error;
+use tracing::{error, info, level_filters::LevelFilter};
 
 pub mod client;
 mod send_data;
@@ -98,6 +98,18 @@ impl Default for SharedArgs {
 }
 
 impl SharedArgs {
+    fn level_filter(&self) -> Option<LevelFilter> {
+        use clap_verbosity_flag::VerbosityFilter;
+        self.verbose.as_ref().map(|v| match v.filter() {
+            VerbosityFilter::Off => LevelFilter::OFF,
+            VerbosityFilter::Error => LevelFilter::ERROR,
+            VerbosityFilter::Warn => LevelFilter::WARN,
+            VerbosityFilter::Info => LevelFilter::INFO,
+            VerbosityFilter::Debug => LevelFilter::DEBUG,
+            VerbosityFilter::Trace => LevelFilter::TRACE,
+        })
+    }
+
     #[must_use]
     pub fn get_alpn(&self) -> &str {
         &self.alpn
@@ -329,12 +341,12 @@ pub(crate) fn report_stats(stats: &Stats, path: Option<&Path>) {
     let mut json = match json {
         Ok(json) => json,
         Err(e) => {
-            qerror!("Failed to serialize stats: {e}");
+            error!("Failed to serialize stats: {e}");
             return;
         }
     };
     let Some(path) = path else {
-        qinfo!("{json}");
+        info!("{json}");
         return;
     };
     json.push('\n'); // Append the record in one write.
@@ -344,8 +356,16 @@ pub(crate) fn report_stats(stats: &Stats, path: Option<&Path>) {
         .open(path)
         .and_then(|mut f| f.write_all(json.as_bytes()))
     {
-        qerror!("Failed to report stats to {}: {e}", path.display());
+        error!("Failed to report stats to {}: {e}", path.display());
     }
+}
+
+/// Join `path` onto `base`, or `None` if `path` has a component other than a plain name.
+pub(crate) fn contained_path(base: &Path, path: &str) -> Option<PathBuf> {
+    let path = Path::new(path);
+    path.components()
+        .all(|c| matches!(c, Component::Normal(_)))
+        .then(|| base.join(path))
 }
 
 /// A directory that deletes itself.
@@ -396,9 +416,9 @@ pub(crate) mod temp_dir {
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
-    use std::fs;
+    use std::{fs, path::Path};
 
-    use crate::{Stats, client, report_stats, server, temp_dir::TempDir};
+    use crate::{Stats, client, contained_path, report_stats, server, temp_dir::TempDir};
 
     #[tokio::test]
     #[cfg_attr(target_os = "netbsd", ignore = "FIXME: Test fails on NetBSD.")]
@@ -455,5 +475,22 @@ mod tests {
     fn report_stats_to_unwritable_path_is_not_fatal() {
         let dir = TempDir::new();
         report_stats(&Stats::default(), Some(&dir.path()));
+    }
+
+    #[test]
+    fn contained_path_stays_in_base() {
+        let base = Path::new("base");
+        assert_eq!(contained_path(base, "a/b"), Some(base.join("a").join("b")));
+        for path in ["..", "a/../../b", "/a"] {
+            assert_eq!(contained_path(base, path), None, "{path}");
+        }
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn contained_path_rejects_windows_separators_and_prefixes() {
+        for path in [r"..\a", r"a\..\..\b", r"C:\a", "C:a", r"\\s\h\a"] {
+            assert_eq!(contained_path(Path::new("base"), path), None, "{path}");
+        }
     }
 }

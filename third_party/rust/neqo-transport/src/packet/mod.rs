@@ -14,14 +14,13 @@ use std::{
 };
 
 use enum_map::Enum;
-use log::debug;
 use neqo_common::{
-    Buffer, Decoder, Encoder,
+    Buffer, Decoder, Encoder, MAX_VARINT,
     hex::{Hex, HexWithLen},
-    qtrace, qwarn,
 };
 use nss::{Mode, RecordProtectionOps as _, random};
 use strum::{EnumIter, FromRepr};
+use tracing::{debug, trace, warn};
 
 use crate::{
     Error, Res,
@@ -138,6 +137,8 @@ pub struct Builder<B> {
     limit: usize,
     /// Whether to pad the packet before construction.
     padding: bool,
+    /// Whether the packet contains padding.
+    padded: bool,
 }
 
 impl Builder<Vec<u8>> {
@@ -257,6 +258,7 @@ impl<B: Buffer> Builder<B> {
             },
             limit,
             padding: false,
+            padded: false,
         }
     }
 
@@ -303,6 +305,7 @@ impl<B: Buffer> Builder<B> {
             },
             limit,
             padding: false,
+            padded: false,
         }
     }
 
@@ -348,17 +351,23 @@ impl<B: Buffer> Builder<B> {
 
     /// Maybe pad with "PADDING" frames.
     /// Only does so if padding was needed and this is a short packet.
-    /// Returns true if padding was added.
+    /// Returns true if the packet contains padding.
     ///
     /// # Panics
     ///
     /// Cannot happen.
     pub fn pad(&mut self) -> bool {
-        if self.padding && !self.is_long() {
-            self.encoder.pad_to(self.limit, FrameType::Padding.into());
-            true
-        } else {
-            false
+        self.pad_before(0);
+        self.padded
+    }
+
+    /// Maybe pad with "PADDING" frames, so that a final frame of `len` bytes ends at the limit.
+    /// Only does so if padding was needed and this is a short packet.
+    pub fn pad_before(&mut self, len: usize) {
+        if self.padding && !self.is_long() && len < self.remaining() {
+            self.encoder
+                .pad_to(self.limit - len, FrameType::Padding.into());
+            self.padded = true;
         }
     }
 
@@ -478,7 +487,7 @@ impl<B: Buffer> Builder<B> {
     /// This will return an error if the packet is too large.
     pub fn build(mut self, crypto: &mut CryptoDxState) -> Res<Encoder<B>> {
         if self.len() > self.limit {
-            qwarn!("Packet contents are more than the limit");
+            warn!("Packet contents are more than the limit");
             debug_assert!(
                 false,
                 "Builder length ({}) is larger than limit ({}).",
@@ -493,7 +502,7 @@ impl<B: Buffer> Builder<B> {
             self.write_len(crypto.expansion());
         }
 
-        qtrace!(
+        trace!(
             "Packet build pn={} hdr={} body={}",
             self.pn,
             Hex::new(&self.encoder.as_ref()[self.header.clone()]),
@@ -519,7 +528,7 @@ impl<B: Buffer> Builder<B> {
             self.encoder.as_mut()[j] ^= mask[i];
         }
 
-        qtrace!("Packet built {}", Hex::new(&self.encoder));
+        trace!("Packet built {}", Hex::new(&self.encoder));
         Ok(self.encoder)
     }
 
@@ -865,9 +874,9 @@ impl<'a> Public<'a> {
     const fn decode_pn(expected: Number, pn: u64, w: usize) -> Number {
         let window = 1_u64 << (w * 8);
         let candidate = (expected & !(window - 1)) | pn;
-        if candidate + (window / 2) <= expected {
+        if candidate + (window / 2) <= expected && candidate + window <= MAX_VARINT {
             candidate + window
-        } else if candidate > expected + (window / 2) {
+        } else if candidate > expected + (window / 2) || candidate > MAX_VARINT {
             match candidate.checked_sub(window) {
                 Some(pn_sub) => pn_sub,
                 None => candidate,
@@ -886,9 +895,9 @@ impl<'a> Public<'a> {
         let sample = self
             .data
             .get(sample_offset..(sample_offset + SAMPLE_SIZE))
+            .and_then(<[u8]>::as_array)
             .ok_or(Error::NoMoreData)?;
-        let sample: &[u8; SAMPLE_SIZE] = sample.try_into()?;
-        qtrace!(
+        trace!(
             "{:?} unmask hdr={}",
             crypto.version(),
             Hex::new(&self.data[..sample_offset])
@@ -922,7 +931,7 @@ impl<'a> Public<'a> {
         hdrbytes.end = self.header_len + pn_len;
         pn_encoded >>= 8 * (MAX_PACKET_NUMBER_LEN - pn_len);
 
-        qtrace!("unmasked hdr={}", Hex::new(&self.data[hdrbytes.clone()]));
+        trace!("unmasked hdr={}", Hex::new(&self.data[hdrbytes.clone()]));
 
         let key_phase =
             self.packet_type == Type::Short && (first_byte & BIT_KEY_PHASE) == BIT_KEY_PHASE;
@@ -951,7 +960,7 @@ impl<'a> Public<'a> {
             if crypto.rx_pending(epoch) {
                 return Err((self, Error::KeysPending(epoch)).into());
             }
-            qtrace!("keys for {epoch:?} already discarded");
+            trace!("keys for {epoch:?} already discarded");
             return Err((self, Error::KeysDiscarded(epoch)).into());
         };
         // Note that this will dump early, which creates a side-channel.
@@ -1152,7 +1161,7 @@ pub const LIMIT: usize = 2048;
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
-    use neqo_common::Encoder;
+    use neqo_common::{Encoder, MAX_VARINT};
     use test_fixture::{fixture_init, now};
 
     use crate::{
@@ -1558,6 +1567,22 @@ mod tests {
         assert_eq!(builder.abort(), encoder_copy);
     }
 
+    #[test]
+    fn pad_full() {
+        let mut builder = Builder::short(
+            Encoder::default(),
+            true,
+            Some(ConnectionId::from(SERVER_CID)),
+            100,
+        );
+        builder.pn(0, 1);
+        builder.enable_padding(true);
+        builder.mark_full();
+        let len = builder.len();
+        assert!(!builder.pad());
+        assert_eq!(builder.len(), len);
+    }
+
     /// Given an encoder that already contains some QUIC packet(s), i.e. is
     /// filled close to the MTU, attempt to use the remaining insufficient space
     /// for another QUIC packet.
@@ -1833,13 +1858,11 @@ mod tests {
         assert_eq!(Public::decode_pn(0x80, 0xff, 1), 0xff);
         assert_eq!(Public::decode_pn(0x7ff, 0xfe, 1), 0x7fe);
 
-        // This is invalid by spec, as we are expected to check for overflow around 2^62-1,
-        // but we don't need to worry about overflow
-        // and hitting this is basically impossible in practice.
-        assert_eq!(
-            Public::decode_pn(0x3fff_ffff_ffff_ffff, 2, 4),
-            0x4000_0000_0000_0002
-        );
+        // When the expected value is high, the value doesn't go past 2^62-1.
+        let top = MAX_VARINT & !0xffff_ffff; // Start of the highest 4-byte window.
+        assert_eq!(Public::decode_pn(MAX_VARINT, 0xffff_ffff, 4), MAX_VARINT);
+        assert_eq!(Public::decode_pn(MAX_VARINT, 2, 4), top | 2);
+        assert_eq!(Public::decode_pn(MAX_VARINT + 1, 0, 4), top);
     }
 
     #[test]

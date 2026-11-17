@@ -16,7 +16,8 @@ use std::{
 };
 
 use enum_map::EnumMap;
-use neqo_common::{Buffer, Length, MAX_VARINT, Role, const_min_u64, qdebug, qtrace, to_u64};
+use neqo_common::{Buffer, Length, MAX_VARINT, Role, const_min_u64, to_u64};
+use tracing::{debug, trace};
 
 use crate::{
     Error, Res,
@@ -439,7 +440,7 @@ where
         }
 
         self.max_active = new_max_active;
-        qdebug!(
+        debug!(
             "Increasing max {subject} receive window by {} B, \
                 previous max_active: {} MiB, \
                 new max_active: {} MiB, \
@@ -500,10 +501,9 @@ impl ReceiverFlowControl<()> {
 
     pub fn consume(&mut self, count: u64) -> Res<()> {
         if self.consumed + count > self.max_allowed {
-            qtrace!(
+            trace!(
                 "Session RX window exceeded: consumed:{} new:{count} limit:{}",
-                self.consumed,
-                self.max_allowed
+                self.consumed, self.max_allowed
             );
             return Err(Error::FlowControl);
         }
@@ -575,7 +575,7 @@ impl ReceiverFlowControl<StreamId> {
         }
 
         if consumed > self.max_allowed {
-            qtrace!("Stream RX window exceeded: {consumed}");
+            trace!("Stream RX window exceeded: {consumed}");
             return Err(Error::FlowControl);
         }
         let new_consumed = consumed - self.consumed;
@@ -759,8 +759,9 @@ mod test {
         time::{Duration, Instant},
     };
 
-    use neqo_common::{Encoder, Role, qdebug, to_u64};
+    use neqo_common::{Encoder, Role, to_u64};
     use nss::random;
+    use tracing::debug;
 
     use super::{
         AutoTuneSubject, LocalStreamLimits, ReceiverFlowControl, RemoteStreamLimits,
@@ -1186,7 +1187,7 @@ mod test {
         );
 
         // Huge idle time.
-        now += Duration::from_secs(60 * 60); // 1h
+        now += Duration::from_hours(1);
         let consumed = fc.set_consumed(fc.next_limit()).unwrap();
         fc.add_retired(consumed);
 
@@ -1238,7 +1239,6 @@ mod test {
     }
 
     #[expect(clippy::cast_precision_loss, reason = "This is test code.")]
-    #[expect(clippy::too_many_lines, reason = "This is test code.")]
     #[test]
     fn auto_tuning_approximates_bandwidth_delay_product() -> Res<()> {
         const DATA_FRAME_SIZE: u64 = 1_500;
@@ -1286,8 +1286,7 @@ mod test {
             let mut next_send_time = now;
             loop {
                 // Sender receives window updates.
-                if recv_to_send.front().is_some_and(|(at, _)| *at <= now) {
-                    let (_, update) = recv_to_send.pop_front().unwrap();
+                if let Some((_, update)) = recv_to_send.pop_front_if(|(at, _)| *at <= now) {
                     sender_window += update;
                 }
 
@@ -1309,8 +1308,7 @@ mod test {
 
                 // Receiver receives data frames.
                 let mut receiver_progressed = false;
-                if send_to_recv.front().is_some_and(|(at, _)| *at <= now) {
-                    let (_, data) = send_to_recv.pop_front().unwrap();
+                if let Some((_, data)) = send_to_recv.pop_front_if(|(at, _)| *at <= now) {
                     bytes_received += data;
                     let consumed = fc.set_consumed(fc.retired() + data)?;
                     fc.add_retired(consumed);
@@ -1377,7 +1375,7 @@ mod test {
                 "{summary} Observed bandwidth is smaller than the link rate."
             );
 
-            qdebug!("{summary}");
+            debug!("{summary}");
         }
 
         Ok(())
@@ -1463,7 +1461,7 @@ mod test {
 
             // Stop if we've reached the maximum and it's not growing anymore
             if fc.max_active() == MAX_LOCAL_MAX_DATA && fc.max_active() == prev_max {
-                qdebug!(
+                debug!(
                     "Reached and stabilized at max window: {} MiB",
                     fc.max_active() / 1024 / 1024
                 );
@@ -1478,7 +1476,7 @@ mod test {
             fc.max_active() / 1024 / 1024
         );
 
-        qdebug!(
+        debug!(
             "Connection flow control window reached max: {} MiB",
             fc.max_active() / 1024 / 1024
         );

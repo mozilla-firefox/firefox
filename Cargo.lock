@@ -1011,7 +1011,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54381ae56ad222eea3f529c692879e9c65e07945ae48d3dc4d1cb18dbec8cf44"
 dependencies = [
  "clap",
- "log",
 ]
 
 [[package]]
@@ -3594,6 +3593,7 @@ dependencies = [
  "nss-rs",
  "socket2",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -5481,11 +5481,10 @@ dependencies = [
 [[package]]
 name = "mtu"
 version = "0.4.1"
-source = "git+https://github.com/mozilla/neqo?tag=v0.34.0#e302b43503f44e09f4257573dd320621516d1560"
+source = "git+https://github.com/mozilla/neqo?tag=v0.35.0#b500964cf4b7a39cceb029b8186123c58018dc19"
 dependencies = [
  "cfg_aliases",
  "libc",
- "static_assertions",
  "windows",
 ]
 
@@ -5563,8 +5562,8 @@ dependencies = [
 
 [[package]]
 name = "neqo-bin"
-version = "0.34.0"
-source = "git+https://github.com/mozilla/neqo?tag=v0.34.0#e302b43503f44e09f4257573dd320621516d1560"
+version = "0.35.0"
+source = "git+https://github.com/mozilla/neqo?tag=v0.35.0#b500964cf4b7a39cceb029b8186123c58018dc19"
 dependencies = [
  "cfg_aliases",
  "clap",
@@ -5573,7 +5572,6 @@ dependencies = [
  "hex",
  "http",
  "libc",
- "log",
  "neqo-common",
  "neqo-http3",
  "neqo-transport",
@@ -5587,34 +5585,34 @@ dependencies = [
  "test-fixture",
  "thiserror 2.0.12",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
 name = "neqo-common"
-version = "0.34.0"
-source = "git+https://github.com/mozilla/neqo?tag=v0.34.0#e302b43503f44e09f4257573dd320621516d1560"
+version = "0.35.0"
+source = "git+https://github.com/mozilla/neqo?tag=v0.35.0#b500964cf4b7a39cceb029b8186123c58018dc19"
 dependencies = [
  "enum-map",
- "env_logger",
  "libc",
  "log",
- "mach2 0.4.999",
+ "mach2 0.6.0",
  "qlog",
  "serde",
- "static_assertions",
  "strum",
  "thiserror 2.0.12",
+ "tracing",
+ "tracing-subscriber",
  "windows",
 ]
 
 [[package]]
 name = "neqo-http3"
-version = "0.34.0"
-source = "git+https://github.com/mozilla/neqo?tag=v0.34.0#e302b43503f44e09f4257573dd320621516d1560"
+version = "0.35.0"
+source = "git+https://github.com/mozilla/neqo?tag=v0.35.0#b500964cf4b7a39cceb029b8186123c58018dc19"
 dependencies = [
  "enumset",
  "http",
- "log",
  "neqo-common",
  "neqo-qpack",
  "neqo-transport",
@@ -5622,33 +5620,31 @@ dependencies = [
  "qlog",
  "rustc-hash 2.1.1",
  "sfv",
- "static_assertions",
  "strum",
  "thiserror 2.0.12",
+ "tracing",
 ]
 
 [[package]]
 name = "neqo-qpack"
-version = "0.34.0"
-source = "git+https://github.com/mozilla/neqo?tag=v0.34.0#e302b43503f44e09f4257573dd320621516d1560"
+version = "0.35.0"
+source = "git+https://github.com/mozilla/neqo?tag=v0.35.0#b500964cf4b7a39cceb029b8186123c58018dc19"
 dependencies = [
- "log",
  "neqo-common",
  "neqo-transport",
  "rustc-hash 2.1.1",
- "static_assertions",
  "thiserror 2.0.12",
+ "tracing",
 ]
 
 [[package]]
 name = "neqo-transport"
-version = "0.34.0"
-source = "git+https://github.com/mozilla/neqo?tag=v0.34.0#e302b43503f44e09f4257573dd320621516d1560"
+version = "0.35.0"
+source = "git+https://github.com/mozilla/neqo?tag=v0.35.0#b500964cf4b7a39cceb029b8186123c58018dc19"
 dependencies = [
  "enum-map",
  "enumset",
  "indexmap",
- "log",
  "mtu",
  "neqo-common",
  "nss-rs",
@@ -5657,21 +5653,21 @@ dependencies = [
  "serde",
  "serde_with",
  "smallvec",
- "static_assertions",
  "strum",
  "thiserror 2.0.12",
+ "tracing",
 ]
 
 [[package]]
 name = "neqo-udp"
-version = "0.34.0"
-source = "git+https://github.com/mozilla/neqo?tag=v0.34.0#e302b43503f44e09f4257573dd320621516d1560"
+version = "0.35.0"
+source = "git+https://github.com/mozilla/neqo?tag=v0.35.0#b500964cf4b7a39cceb029b8186123c58018dc19"
 dependencies = [
  "cfg_aliases",
  "libc",
- "log",
  "neqo-common",
  "quinn-udp",
+ "tracing",
  "windows",
 ]
 
@@ -6818,8 +6814,8 @@ checksum = "47091c86514c2e11452cb228dee77037334b99d92a23e4c69aa5982261f39247"
 dependencies = [
  "cfg_aliases",
  "libc",
- "log",
  "socket2",
+ "tracing",
  "windows-sys",
 ]
 
@@ -8512,6 +8508,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e672c95779cf947c5311f83787af4fa8fffd12fb27e4993211a84bdfd9610f9c"
 dependencies = [
  "once_cell",
+ "valuable",
+]
+
+[[package]]
+name = "tracing-log"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee855f1f400bd0e5c02d150ae5de3840039a3f54b025156404e34c23c03f47c3"
+dependencies = [
+ "log",
+ "once_cell",
+ "tracing-core",
 ]
 
 [[package]]
@@ -8523,6 +8531,7 @@ dependencies = [
  "sharded-slab",
  "thread_local",
  "tracing-core",
+ "tracing-log",
 ]
 
 [[package]]
@@ -9023,6 +9032,12 @@ dependencies = [
  "getrandom 0.2.999",
  "serde",
 ]
+
+[[package]]
+name = "valuable"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 
 [[package]]
 name = "vcpkg"

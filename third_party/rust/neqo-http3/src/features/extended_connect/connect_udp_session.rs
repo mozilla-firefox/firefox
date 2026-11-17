@@ -10,8 +10,9 @@ use std::{
     time::Instant,
 };
 
-use neqo_common::{Bytes, Decoder, Encoder, qdebug, qtrace};
+use neqo_common::{Bytes, Decoder, Encoder};
 use neqo_transport::{Connection, StreamId};
+use tracing::{debug, trace};
 
 use crate::{
     Error, RecvStream, Res, SendStream,
@@ -77,7 +78,7 @@ impl Protocol for Session {
                         events.new_datagram(self.session_id, slice, self.connect_type());
                     }
                     Err(e) => {
-                        qdebug!("[{self}]: received capsule with invalid context identifier: {e}");
+                        debug!("[{self}]: received capsule with invalid context identifier: {e}");
                     }
                 },
                 None => {}
@@ -147,7 +148,7 @@ impl Protocol for Session {
         // flow-control window has to hold both wrappers, not just the payload.
         let needed = SendMessage::data_frame_len(capsule.encoded_len());
         if conn.stream_avail_send_space(self.session_id)? < needed {
-            qdebug!("[{self}] datagram capsule exceeds control-stream flow-control space");
+            debug!("[{self}] datagram capsule exceeds control-stream flow-control space");
             // Ask to be told when the stream can hold a capsule this size again.
             // Repeated refusals overwrite this, so the event tracks the most recent
             // size rather than the largest; the sender retries and re-arms.
@@ -162,7 +163,7 @@ impl Protocol for Session {
         // Drop the watermark a previous refusal raised, so neqo-transport stops
         // suppressing writable events for other users of the control stream.
         conn.stream_set_writable_event_low_watermark(self.session_id, NonZeroUsize::MIN)?;
-        qtrace!("[{self}] sent datagram via HTTP DATAGRAM Capsule");
+        trace!("[{self}] sent datagram via HTTP DATAGRAM Capsule");
         Ok(())
     }
 }

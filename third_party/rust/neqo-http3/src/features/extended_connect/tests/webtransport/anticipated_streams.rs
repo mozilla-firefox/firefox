@@ -64,7 +64,7 @@ fn anticipated_uni_before_session_negotiated() {
     let before = client_max_streams_sent(&wt);
     let session_id = wt
         .client
-        .webtransport_create_session(now(), ("https", "something.com", "/"), &[])
+        .webtransport_create_session(now(), &("https", "something.com", "/"), &[])
         .unwrap();
     set_anticipated(
         &mut wt,

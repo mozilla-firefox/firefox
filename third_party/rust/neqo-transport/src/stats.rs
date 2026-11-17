@@ -15,9 +15,10 @@ use std::{
 };
 
 use enum_map::EnumMap;
-use neqo_common::{Dscp, Ecn, qdebug};
+use neqo_common::{Dscp, Ecn};
 use serde::{Serialize, Serializer, ser::SerializeMap as _};
 use serde_with::skip_serializing_none;
+use tracing::debug;
 
 use crate::{cc::CongestionTrigger, ecn, packet, version::Version};
 
@@ -432,7 +433,7 @@ impl Stats {
 
     pub fn pkt_dropped<A: AsRef<str>>(&mut self, reason: A) {
         self.dropped_rx += 1;
-        qdebug!(
+        debug!(
             "[{}] Dropped received packet: {}; Total: {}",
             self.info,
             reason.as_ref(),

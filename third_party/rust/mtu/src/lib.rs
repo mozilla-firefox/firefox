@@ -59,10 +59,10 @@ macro_rules! asserted_const_with_type {
             clippy::allow_attributes,
             clippy::cast_possible_truncation,
             clippy::cast_possible_wrap,
-            reason = "Guarded by the following `const_assert_eq!`."
+            reason = "Guarded by the following `assert!`."
         )]
         const $name: $t1 = $e as $t1;
-        const_assert_eq!($name as $t2, $e);
+        const _: () = assert!($name as $t2 == $e);
     };
 }
 
@@ -152,24 +152,23 @@ mod test {
     }
 
     const LOOPBACK: [NameMtu; 2] = // [IPv4, IPv6]
-        if cfg!(any(target_os = "macos", target_os = "freebsd")) {
-            [NameMtu(Some("lo0"), 16_384), NameMtu(Some("lo0"), 16_384)]
-        } else if cfg!(any(target_os = "linux", target_os = "android")) {
-            [NameMtu(Some("lo"), 65_536), NameMtu(Some("lo"), 65_536)]
-        } else if cfg!(target_os = "windows") {
-            [
+        cfg_select! {
+            any(target_os = "macos", target_os = "freebsd") => {
+                [NameMtu(Some("lo0"), 16_384), NameMtu(Some("lo0"), 16_384)]
+            }
+            any(target_os = "linux", target_os = "android") => {
+                [NameMtu(Some("lo"), 65_536), NameMtu(Some("lo"), 65_536)]
+            }
+            target_os = "windows" => [
                 NameMtu(Some("loopback_0"), 4_294_967_295),
                 NameMtu(Some("loopback_0"), 4_294_967_295),
-            ]
-        } else if cfg!(target_os = "openbsd") {
-            [NameMtu(Some("lo0"), 32_768), NameMtu(Some("lo0"), 32_768)]
-        } else if cfg!(target_os = "netbsd") {
-            [NameMtu(Some("lo0"), 33_624), NameMtu(Some("lo0"), 33_624)]
-        } else if cfg!(target_os = "solaris") {
-            // Note: Different loopback MTUs for IPv4 and IPv6?!
-            [NameMtu(Some("lo0"), 8_232), NameMtu(Some("lo0"), 8_252)]
-        } else {
-            unreachable!();
+            ],
+            target_os = "openbsd" => [NameMtu(Some("lo0"), 32_768), NameMtu(Some("lo0"), 32_768)],
+            target_os = "netbsd" => [NameMtu(Some("lo0"), 33_624), NameMtu(Some("lo0"), 33_624)],
+            target_os = "solaris" => {
+                // Note: Different loopback MTUs for IPv4 and IPv6?!
+                [NameMtu(Some("lo0"), 8_232), NameMtu(Some("lo0"), 8_252)]
+            }
         };
 
     // Non-loopback interface names are unpredictable, so we only check the MTU.

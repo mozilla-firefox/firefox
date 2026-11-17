@@ -1652,7 +1652,7 @@ pub extern "C" fn neqo_http3conn_fetch(
     match conn.conn.fetch(
         Instant::now(),
         method_tmp,
-        (scheme_tmp, host_tmp, path_tmp),
+        &(scheme_tmp, host_tmp, path_tmp),
         &hdrs,
         priority,
     ) {
@@ -2260,7 +2260,7 @@ pub extern "C" fn neqo_http3conn_event(
             Http3ClientEvent::DataWritable { stream_id } => Http3Event::DataWritable {
                 stream_id: stream_id.as_u64(),
             },
-            Http3ClientEvent::OutgoingDatagramSpaceAvailable => Http3Event::NoEvent,
+            Http3ClientEvent::OutgoingDatagramSpaceAvailable { .. } => Http3Event::NoEvent,
             Http3ClientEvent::StopSending { stream_id, error } => Http3Event::StopSending {
                 stream_id: stream_id.as_u64(),
                 error,
@@ -2587,7 +2587,7 @@ pub extern "C" fn neqo_http3conn_webtransport_create_session(
 
     match conn.conn.webtransport_create_session(
         Instant::now(),
-        ("https", host_tmp, path_tmp),
+        &("https", host_tmp, path_tmp),
         &hdrs,
     ) {
         Ok(id) => {
@@ -2622,7 +2622,7 @@ pub extern "C" fn neqo_http3conn_connect_udp_create_session(
 
     match conn
         .conn
-        .connect_udp_create_session(Instant::now(), ("https", host_tmp, path_tmp), &hdrs)
+        .connect_udp_create_session(Instant::now(), &("https", host_tmp, path_tmp), &hdrs)
     {
         Ok(id) => {
             *stream_id = id.as_u64();

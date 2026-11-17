@@ -6,10 +6,10 @@
 
 mod common;
 
-use std::{cell::RefCell, net::SocketAddr, rc::Rc, time::Duration};
+use std::{cell::RefCell, net::SocketAddr, num::NonZeroUsize, rc::Rc, time::Duration};
 
 use common::{connect, connected_server, default_server, find_ticket, generate_ticket, new_server};
-use neqo_common::{Datagram, Decoder, Encoder, Role, qtrace};
+use neqo_common::{Datagram, Decoder, Encoder, Role};
 use neqo_transport::{
     CloseReason, Connection, ConnectionParameters, Error, MIN_INITIAL_PACKET_SIZE, Output, State,
     StreamType, Version,
@@ -17,14 +17,15 @@ use neqo_transport::{
     version,
 };
 use nss::{
-    AllowZeroRtt, AuthenticationStatus, RecordProtectionOps as _, ZeroRttCheckResult,
-    ZeroRttChecker, generate_ech_keys,
+    AllowZeroRtt, AuthenticationStatus, RecordProtectionOps as _, TLS_AES_256_GCM_SHA384,
+    ZeroRttCheckResult, ZeroRttChecker, generate_ech_keys,
 };
 use test_fixture::{
     CountingConnectionIdGenerator, assertions, datagram, default_client,
     header_protection::{self, decode_initial_header, initial_aead_and_hp},
     new_client, now, split_datagram,
 };
+use tracing::trace;
 
 /// Take a pair of connections in any state and complete the handshake.
 /// The `datagram` argument is a packet that was received from the server.
@@ -773,8 +774,8 @@ fn closed() {
     let res = client.process_output(now());
     assert!(res.callback() > Duration::new(0, 0));
 
-    qtrace!("60s later");
-    let res = server.process_output(now() + Duration::from_secs(60));
+    trace!("60s later");
+    let res = server.process_output(now() + Duration::from_mins(1));
     assert_eq!(res, Output::None);
 }
 
@@ -944,7 +945,7 @@ fn saved_datagrams() {
         .process_multiple(
             vec![invalid_dgram(), valid_dgram, invalid_dgram()],
             now(),
-            1.try_into().expect("1>0"),
+            NonZeroUsize::MIN,
         )
         .dgram()
         .expect("first packet triggers first vn");
@@ -954,13 +955,37 @@ fn saved_datagrams() {
     // which does require an immediate response. It thereby has to save the
     // fourth (new) datagram for the next call.
     server
-        .process_multiple(Some(invalid_dgram()), now(), 1.try_into().expect("1>0"))
+        .process_multiple(Some(invalid_dgram()), now(), NonZeroUsize::MIN)
         .dgram()
         .expect("third packet triggers second vn");
 
     // Server processes the fourth datagram.
     server
-        .process_multiple(Vec::<Datagram>::new(), now(), 1.try_into().expect("1>0"))
+        .process_multiple(Vec::<Datagram>::new(), now(), NonZeroUsize::MIN)
         .dgram()
         .expect("fourth packet triggers third vn");
+}
+
+#[test]
+fn server_ciphers() {
+    let mut server = default_server();
+    server.set_ciphers([TLS_AES_256_GCM_SHA384]);
+    let mut client = default_client();
+    let server_instance = connect(&mut client, &mut server);
+
+    let client_cipher = client.tls_info().unwrap().cipher_suite();
+    assert_eq!(client_cipher, TLS_AES_256_GCM_SHA384);
+    let server_cipher = server_instance.borrow().tls_info().unwrap().cipher_suite();
+    assert_eq!(server_cipher, TLS_AES_256_GCM_SHA384);
+}
+
+#[test]
+fn server_ciphers_unknown() {
+    let mut server = default_server();
+    server.set_ciphers([0x0a0a]); // RFC 8701 GREASE value, unknown to NSS.
+    let mut client = default_client();
+
+    let initial = client.process_output(now()).dgram();
+    assert!(server.process(initial, now()).dgram().is_none());
+    assert!(!server.has_active_connections());
 }

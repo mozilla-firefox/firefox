@@ -9,8 +9,8 @@ use std::{
     mem,
 };
 
-use neqo_common::{qdebug, qtrace};
 use neqo_transport::StreamId;
+use tracing::{debug, trace};
 
 use crate::{
     Res,
@@ -95,7 +95,7 @@ impl DecoderInstructionReader {
     /// 2) `ClosedCriticalStream`
     /// 3) other errors will be translated to `DecoderStream` by the caller of this function.
     pub fn read_instructions<R: ReadByte>(&mut self, recv: &mut R) -> Res<DecoderInstruction> {
-        qdebug!("[{self}] read a new instruction");
+        debug!("[{self}] read a new instruction");
         loop {
             match &mut self.state {
                 DecoderInstructionReaderState::ReadInstruction => {
@@ -114,7 +114,7 @@ impl DecoderInstructionReader {
                 }
                 DecoderInstructionReaderState::ReadInt { reader } => {
                     let val = reader.read(recv)?;
-                    qtrace!("[{self}] varint read {val}");
+                    trace!("[{self}] varint read {val}");
                     match &mut self.instruction {
                         DecoderInstruction::InsertCountIncrement { increment: v } => {
                             *v = val;

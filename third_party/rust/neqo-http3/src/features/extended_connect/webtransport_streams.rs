@@ -6,10 +6,11 @@
 
 use std::{cell::RefCell, rc::Rc, time::Instant};
 
-use neqo_common::{Encoder, qdebug, to_u64};
+use neqo_common::{Encoder, to_u64};
 use neqo_transport::{
     Connection, Error as TransportError, StreamId, recv_stream, send_stream, streams::SendGroupId,
 };
+use tracing::debug;
 
 use super::session::Session;
 use crate::{
@@ -212,7 +213,7 @@ impl SendStream for WebTransportSendStream {
             // So defer reporting of errors to guarantee that the state transition completes.
             let mut res = conn.stream_commit(stream_id);
             if res == Err(TransportError::NotAvailable) {
-                qdebug!("[{conn}]: Peer supports webtransport, but not reliable reset: ignoring");
+                debug!("[{conn}]: Peer supports webtransport, but not reliable reset: ignoring");
                 // Old versions might need to work when reliable resets are not available.
                 // TODO: Remove this override when we remove support for old WebTransport versions.
                 res = Ok(());

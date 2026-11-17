@@ -6,9 +6,9 @@
 
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
-use neqo_common::qdebug;
 use nss::Error as CryptoError;
 use thiserror::Error;
+use tracing::debug;
 
 mod ackrate;
 #[cfg(fuzzing)]
@@ -94,6 +94,7 @@ pub type TransportError = u64;
 const ERROR_APPLICATION_CLOSE: TransportError = 12;
 const ERROR_CRYPTO_BUFFER_EXCEEDED: TransportError = 13;
 const ERROR_AEAD_LIMIT_REACHED: TransportError = 15;
+const ERROR_VERSION_NEGOTIATION: TransportError = 17;
 
 #[derive(Clone, Debug, PartialEq, PartialOrd, Ord, Eq, Error)]
 pub enum Error {
@@ -221,9 +222,10 @@ impl Error {
             Self::StreamLimit => 4,
             Self::StreamState => 5,
             Self::FinalSize => 6,
-            Self::FrameEncoding => 7,
+            Self::FrameEncoding | Self::UnknownFrameType => 7,
             Self::TransportParameter => 8,
-            Self::ProtocolViolation => 10,
+            Self::ConnectionIdLimitExceeded => 9,
+            Self::ProtocolViolation | Self::AckedUnsentPacket => 10,
             Self::InvalidToken => 11,
             Self::KeysExhausted => ERROR_AEAD_LIMIT_REACHED,
             Self::Application => ERROR_APPLICATION_CLOSE,
@@ -233,7 +235,7 @@ impl Error {
             // As we have a special error code for ECH fallbacks, we lose the alert.
             // Send the server "ech_required" directly.
             Self::EchRetry(_) => 0x100 + 121,
-            Self::VersionNegotiation => 0x53f8,
+            Self::VersionNegotiation => ERROR_VERSION_NEGOTIATION,
             // All the rest are internal errors.
             _ => 1,
         }
@@ -242,7 +244,7 @@ impl Error {
 
 impl From<CryptoError> for Error {
     fn from(err: CryptoError) -> Self {
-        qdebug!("Crypto operation failed {err:?}");
+        debug!("Crypto operation failed {err:?}");
         match err {
             CryptoError::EchRetry(config) => Self::EchRetry(config),
             _ => Self::Crypto(err),
@@ -294,8 +296,11 @@ mod tests {
             (Error::StreamState, 5),
             (Error::FinalSize, 6),
             (Error::FrameEncoding, 7),
+            (Error::UnknownFrameType, 7),
             (Error::TransportParameter, 8),
+            (Error::ConnectionIdLimitExceeded, 9),
             (Error::ProtocolViolation, 10),
+            (Error::AckedUnsentPacket, 10),
             (Error::InvalidToken, 11),
             (Error::KeysExhausted, 15),
             (Error::Application, 12),
@@ -303,7 +308,7 @@ mod tests {
             (Error::CryptoBufferExceeded, 13),
             (Error::CryptoAlert(0x2a), 0x12a),
             (Error::EchRetry(vec![]), 0x179),
-            (Error::VersionNegotiation, 0x53f8),
+            (Error::VersionNegotiation, 17),
             (Error::Internal, 1),
             (Error::TooManyPtos, 16),
         ] {

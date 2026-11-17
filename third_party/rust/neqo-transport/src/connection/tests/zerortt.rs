@@ -6,17 +6,18 @@
 
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
-use neqo_common::{event::Provider as _, qdebug, to_u64};
+use neqo_common::{event::Provider as _, to_u64};
 use nss::{AllowZeroRtt, AntiReplay};
 use test_fixture::{assertions, now};
+use tracing::debug;
 
 use super::{
     super::Connection, CountingConnectionIdGenerator, Output, connect, default_client,
-    default_server, exchange_ticket, new_server, resumed_server,
+    default_server, exchange_ticket, migration::NewConnectionIds, new_server, resumed_server,
 };
 use crate::{
-    ConnectionParameters, Error, MIN_INITIAL_PACKET_SIZE, StreamDataLimit, StreamType, Version,
-    events::ConnectionEvent,
+    ConnectionParameters, Error, MIN_INITIAL_PACKET_SIZE, State, StreamDataLimit, StreamType,
+    Version, events::ConnectionEvent,
 };
 
 #[test]
@@ -75,8 +76,9 @@ fn zero_rtt_send_recv() {
     let ack_frames = server.stats().frame_tx.ack;
     let server_process_0rtt = server.process(client_0rtt.dgram(), now());
     assert!(server_process_0rtt.dgram().is_some());
-    assert_eq!(server.stats().frame_tx.all(), all_frames + 3);
+    assert_eq!(server.stats().frame_tx.all(), all_frames + 4);
     assert_eq!(server.stats().frame_tx.ack, ack_frames + 1);
+    assert_eq!(server.stats().frame_tx.padding, 1); // In the 1-RTT packet.
 
     let server_stream_id = server
         .events()
@@ -394,7 +396,7 @@ fn zero_rtt_loss_accepted() {
         assertions::assert_coalesced_0rtt(&c0rtt.as_dgram_ref().unwrap()[..]);
 
         // Drop CI/0-RTT a number of times
-        qdebug!("Drop CI/0-RTT {i} extra times");
+        debug!("Drop CI/0-RTT {i} extra times");
         for _ in 0..i {
             now += client.process_output(now).callback();
             ci = client.process_output(now);
@@ -511,4 +513,53 @@ fn zero_rtt_no_time_threshold_loss_detection_before_first_ack() {
     // detection does not yet apply.
     assert!(client.process_output(now).dgram().is_none());
     assert_eq!(client.stats().lost, 0);
+}
+
+/// A `NEW_CONNECTION_ID` frame in 0-RTT can retire the connection ID from the handshake.
+#[test]
+fn zero_rtt_retire_handshake_cid() {
+    let mut client = default_client();
+    let mut server = default_server();
+    connect(&mut client, &mut server);
+
+    let token = exchange_ticket(&mut client, &mut server, now());
+    let mut client = default_client();
+    client
+        .enable_resumption(now(), token)
+        .expect("should set token");
+    let mut server = resumed_server(&client);
+
+    let client_hs = client.process_output(now());
+    let client_hs2 = client.process_output(now());
+    let delay = client.process_output(now()).callback();
+    let client_stream_id = client.stream_create(StreamType::UniDi).unwrap();
+    client.stream_send(client_stream_id, &[1, 2, 3]).unwrap();
+    let cid_gen = Rc::new(RefCell::new(CountingConnectionIdGenerator::default()));
+    let client_0rtt =
+        client.test_write_frames(NewConnectionIds::retire_all(cid_gen), now() + delay);
+
+    server.process_input(client_hs.dgram().unwrap(), now());
+    let server_hs = server.process(client_hs2.dgram(), now());
+    let server_hs2 = server.process_output(now());
+    let new_cid_before = server.stats().frame_rx.new_connection_id;
+    server.process_input(client_0rtt.dgram().unwrap(), now());
+    assert_eq!(
+        server.stats().frame_rx.new_connection_id,
+        new_cid_before + 1
+    );
+    assert_eq!(*server.state(), State::Handshaking);
+
+    client.process_input(server_hs.dgram().unwrap(), now());
+    let client_ack = client.process(server_hs2.dgram(), now());
+    let client_fin = client.process_output(now());
+    server.process_input(client_ack.dgram().unwrap(), now());
+    server.process_input(client_fin.dgram().unwrap(), now());
+    assert_eq!(*server.state(), State::Confirmed);
+
+    let retire_cid_before = server.stats().frame_tx.retire_connection_id;
+    assert!(server.process_output(now()).dgram().is_some());
+    assert_eq!(
+        server.stats().frame_tx.retire_connection_id,
+        retire_cid_before + 2 // The handshake CID and the client's first NEW_CONNECTION_ID.
+    );
 }

@@ -67,6 +67,7 @@ mod fuzzing {
         }
     }
 
+    #[expect(clippy::multiple_inherent_impl, reason = "Fuzzing-only API.")]
     impl Decoder {
         /// Processes encoder stream data from a byte buffer.
         /// This populates the dynamic table with header entries from encoder instructions.

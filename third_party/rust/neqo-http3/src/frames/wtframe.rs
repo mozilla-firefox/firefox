@@ -5,7 +5,6 @@
 // except according to those terms.
 
 use neqo_common::{Decoder, Encoder, to_u64};
-use static_assertions::const_assert;
 
 use super::hframe::HFrameType;
 use crate::{Error, Res, frames::reader::FrameDecoder};
@@ -17,7 +16,7 @@ pub enum WebTransportFrame {
     CloseSession { error: u32, message: String },
 }
 
-const_assert!(WebTransportFrame::CLOSE_MAX_MESSAGE_SIZE <= to_u64(usize::MAX) - 4);
+const _: () = assert!(WebTransportFrame::CLOSE_MAX_MESSAGE_SIZE <= to_u64(usize::MAX) - 4);
 
 impl WebTransportFrame {
     /// The frame type for WebTransport `CLOSE_SESSION`, as defined in

@@ -18,15 +18,13 @@ use std::{
     time::Instant,
 };
 
-use neqo_common::{
-    Datagram, Role, Tos, event::Provider as _, hex::Hex, qdebug, qerror, qinfo, qlog::Qlog, qtrace,
-    qwarn,
-};
+use neqo_common::{Datagram, Role, Tos, event::Provider as _, hex::Hex, qlog::Qlog};
 use nss::{
     AntiReplay, Cipher, PrivateKey, PublicKey, ZeroRttCheckResult, ZeroRttChecker,
     encode_ech_config,
 };
 use rustc_hash::FxHashSet as HashSet;
+use tracing::{debug, error, info, trace, warn};
 
 pub use crate::addr_valid::ValidateAddress;
 use crate::{
@@ -231,7 +229,7 @@ impl Server {
         dgram: Datagram<impl AsRef<[u8]> + AsMut<[u8]>>,
         now: Instant,
     ) -> Output {
-        qdebug!("[{self}] Handle initial");
+        debug!("[{self}] Handle initial");
         #[cfg(feature = "build-fuzzing-corpus")]
         Self::write_addr_valid_corpus(dgram.source(), &initial.token);
         let res = self
@@ -245,13 +243,13 @@ impl Server {
                 self.accept_connection(initial, dgram, Some(orig_dcid), now)
             }
             AddressValidationResult::Validate => {
-                qinfo!("[{self}] Send retry for {:?}", initial.dst_cid);
+                info!("[{self}] Send retry for {:?}", initial.dst_cid);
 
                 // > This Destination Connection ID MUST be at least 8 bytes in length.
                 //
                 // <https://www.rfc-editor.org/rfc/rfc9000.html#section-7.2>
                 if initial.dst_cid.len() < 8 {
-                    qerror!(
+                    error!(
                         "[{self}] DCID too short ({} bytes), dropping packet",
                         initial.dst_cid.len()
                     );
@@ -264,7 +262,7 @@ impl Server {
                     now,
                 );
                 let Ok(token) = res else {
-                    qerror!("[{self}] unable to generate token, dropping packet");
+                    error!("[{self}] unable to generate token, dropping packet");
                     return Output::None;
                 };
                 if let Some(new_dcid) = self.cid_generator.borrow_mut().generate_cid() {
@@ -277,11 +275,11 @@ impl Server {
                     );
                     packet.map_or_else(
                         |_| {
-                            qerror!("[{self}] unable to encode retry, dropping packet");
+                            error!("[{self}] unable to encode retry, dropping packet");
                             Output::None
                         },
                         |p| {
-                            qdebug!(
+                            debug!(
                                 "[{self}] type={:?} path:{} {}->{} {:?} len {}",
                                 packet::Type::Retry,
                                 initial.dst_cid,
@@ -299,7 +297,7 @@ impl Server {
                         },
                     )
                 } else {
-                    qerror!("[{self}] no connection ID for retry, dropping packet");
+                    error!("[{self}] no connection ID for retry, dropping packet");
                     Output::None
                 }
             }
@@ -319,7 +317,7 @@ impl Server {
                     now,
                 )
                 .unwrap_or_else(|e| {
-                    qerror!("failed to create Qlog: {e}");
+                    error!("failed to create Qlog: {e}");
                     Qlog::disabled()
                 })
             })
@@ -331,10 +329,13 @@ impl Server {
         initial: InitialDetails,
         orig_dcid: Option<ConnectionId>,
         now: Instant,
-    ) {
+    ) -> Res<()> {
         let zcheck = self.zero_rtt_checker.clone();
         if c.server_enable_0rtt(&self.anti_replay, zcheck).is_err() {
-            qwarn!("[{self}] Unable to enable 0-RTT");
+            warn!("[{self}] Unable to enable 0-RTT");
+        }
+        if !self.ciphers.is_empty() {
+            c.set_ciphers(&self.ciphers)?;
         }
         if let Some(odcid) = &orig_dcid {
             // There was a retry, so set the connection IDs for.
@@ -346,8 +347,9 @@ impl Server {
             && c.server_enable_ech(cfg.config, &cfg.public_name, &cfg.sk, &cfg.pk)
                 .is_err()
         {
-            qwarn!("[{self}] Unable to enable ECH");
+            warn!("[{self}] Unable to enable ECH");
         }
+        Ok(())
     }
 
     fn accept_connection(
@@ -357,7 +359,7 @@ impl Server {
         orig_dcid: Option<ConnectionId>,
         now: Instant,
     ) -> Output {
-        qinfo!(
+        info!(
             "[{self}] Accept connection {:?}",
             orig_dcid.as_ref().unwrap_or(&initial.dst_cid)
         );
@@ -375,13 +377,16 @@ impl Server {
 
         match sconn {
             Ok(mut c) => {
-                self.setup_connection(&mut c, initial, orig_dcid, now);
+                if let Err(e) = self.setup_connection(&mut c, initial, orig_dcid, now) {
+                    warn!("[{self}] Unable to set up connection: {e}");
+                    return Output::None;
+                }
                 let out = c.process(Some(dgram), now);
                 self.connections.push(Rc::new(RefCell::new(c)));
                 out
             }
             Err(e) => {
-                qwarn!("[{self}] Unable to create connection");
+                warn!("[{self}] Unable to create connection");
                 if e == crate::Error::VersionNegotiation {
                     crate::qlog::server_version_information_failed(
                         &mut self.create_qlog_trace(
@@ -435,17 +440,16 @@ impl Server {
     ) -> OutputBatch {
         let mut dgrams = dgrams.into_iter();
         while let Some(mut dgram) = dgrams.next() {
-            qtrace!("Process datagram: {}", Hex::new(&dgram[..]));
+            trace!("Process datagram: {}", Hex::new(&dgram[..]));
 
             // This is only looking at the first packet header in the datagram.
             // All packets in the datagram are routed to the same connection.
             let len = dgram.len();
             let destination = dgram.destination();
             let source = dgram.source();
-            let res =
-                Public::decode_server(&mut dgram[..], self.cid_generator.borrow().as_decoder());
+            let res = Public::decode_server(&mut dgram[..], &*self.cid_generator.borrow());
             let Ok((packet, _remainder)) = res else {
-                qtrace!("[{self}] Discarding {dgram:?}");
+                trace!("[{self}] Discarding {dgram:?}");
                 continue;
             };
 
@@ -461,7 +465,7 @@ impl Server {
 
             if packet.packet_type() == packet::Type::Short {
                 // TODO send a stateless reset here.
-                qtrace!("[{self}] Short header packet for an unknown connection");
+                trace!("[{self}] Short header packet for an unknown connection");
                 continue;
             }
 
@@ -474,18 +478,18 @@ impl Server {
                         .contains(&packet.version().expect("packet has version")))
             {
                 if len < MIN_INITIAL_PACKET_SIZE {
-                    qdebug!("[{self}] Unsupported version: too short");
+                    debug!("[{self}] Unsupported version: too short");
                     continue;
                 }
 
-                qdebug!("[{self}] Unsupported version: {:x}", packet.wire_version());
+                debug!("[{self}] Unsupported version: {:x}", packet.wire_version());
                 let vn = packet::Builder::version_negotiation(
                     &packet.scid()[..],
                     &packet.dcid()[..],
                     packet.wire_version(),
                     self.conn_params.get_versions().all(),
                 );
-                qdebug!(
+                debug!(
                     "[{self}] type={:?} path:{} {destination}->{source} {:?} len {}",
                     packet::Type::VersionNegotiation,
                     packet.dcid(),
@@ -513,7 +517,7 @@ impl Server {
             match packet.packet_type() {
                 packet::Type::Initial => {
                     if len < MIN_INITIAL_PACKET_SIZE {
-                        qdebug!("[{self}] Drop initial: too short");
+                        debug!("[{self}] Drop initial: too short");
                         continue;
                     }
                     // Copy values from `packet` because they are currently still borrowing from
@@ -528,14 +532,14 @@ impl Server {
                     }
                 }
                 packet::Type::ZeroRtt => {
-                    qdebug!(
+                    debug!(
                         "[{self}] Dropping 0-RTT for unknown connection {}",
                         ConnectionId::from(packet.dcid())
                     );
                 }
                 packet::Type::OtherVersion => unreachable!(),
                 _ => {
-                    qtrace!("[{self}] Not an initial packet");
+                    trace!("[{self}] Not an initial packet");
                 }
             }
         }
@@ -584,7 +588,7 @@ impl Server {
         dgrams: I,
         now: Instant,
     ) -> Output {
-        self.process_multiple(dgrams, now, 1.try_into().expect(">0"))
+        self.process_multiple(dgrams, now, NonZeroUsize::MIN)
             .try_into()
             .expect("max_datagrams is 1")
     }

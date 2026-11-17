@@ -5024,7 +5024,7 @@ delta = "0.3.0 -> 0.4.1"
 [[audits.mtu]]
 who = "Max Inden <mail@max-inden.de>"
 criteria = "safe-to-deploy"
-delta = "0.4.1 -> 0.4.1@git:e302b43503f44e09f4257573dd320621516d1560"
+delta = "0.4.1 -> 0.4.1@git:b500964cf4b7a39cceb029b8186123c58018dc19"
 importable = false
 
 [[audits.multiversion]]
@@ -7931,6 +7931,12 @@ delta = "0.8.2 -> 1.2.2"
 who = "Mike Hommey <mh+mozilla@glandium.org>"
 criteria = "safe-to-deploy"
 delta = "1.2.2 -> 1.3.0"
+
+[[audits.valuable]]
+who = "Max Inden <mail@max-inden.de>"
+criteria = "safe-to-deploy"
+delta = "0.1.0 -> 0.1.1"
+notes = "Edition/MSRV bump and Cargo.toml normalization, a check-cfg line in build.rs, refreshed generated target lists, a generic hasher on the HashMap impls, docs. No unsafe, no I/O."
 
 [[audits.void]]
 who = "Bobby Holley <bobbyholley@gmail.com>"

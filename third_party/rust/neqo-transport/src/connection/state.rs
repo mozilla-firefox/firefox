@@ -6,7 +6,7 @@
 
 use std::{cmp::min, rc::Rc, time::Instant};
 
-use neqo_common::{Buffer, Encoder};
+use neqo_common::{Buffer, Encoder, to_u64};
 
 use crate::{
     CloseReason, Error,
@@ -81,6 +81,8 @@ pub struct ClosingFrame {
     error: CloseReason,
     frame_type: FrameType,
     reason_phrase: Vec<u8>,
+    /// Packets received in the closing state.
+    received: usize,
 }
 
 impl ClosingFrame {
@@ -96,6 +98,7 @@ impl ClosingFrame {
             error,
             frame_type,
             reason_phrase,
+            received: 0,
         }
     }
 
@@ -112,6 +115,7 @@ impl ClosingFrame {
                 error: CloseReason::Transport(Error::Application),
                 frame_type: FrameType::Padding,
                 reason_phrase: Vec::new(),
+                received: self.received,
             })
         } else {
             None
@@ -127,29 +131,32 @@ impl ClosingFrame {
         if builder.remaining() < Self::MIN_LENGTH {
             return;
         }
+        let (frame, code, trigger) = match &self.error {
+            CloseReason::Transport(e) => (
+                FrameType::ConnectionCloseTransport,
+                e.code(),
+                Some(self.frame_type),
+            ),
+            CloseReason::Application(code) => (FrameType::ConnectionCloseApplication, *code, None),
+        };
         // Truncate the reason phrase if it doesn't fit.  As we send this frame in
         // multiple packet number spaces, limit the overall size to 256.
-        let available = min(256, builder.remaining());
+        let available = min(256, builder.remaining())
+            - Encoder::varint_len(frame.into())
+            - Encoder::varint_len(code)
+            - trigger.map_or(0, |t| Encoder::varint_len(t.into()));
         let reason = if available < Encoder::vvec_len(self.reason_phrase.len()) {
-            &self.reason_phrase[..available - 2]
+            &self.reason_phrase[..available - Encoder::varint_len(to_u64(available))]
         } else {
             &self.reason_phrase
         };
-        match &self.error {
-            CloseReason::Transport(e) => {
-                builder.encode_frame(FrameType::ConnectionCloseTransport, |b| {
-                    b.encode_varint(e.code());
-                    b.encode_varint(self.frame_type);
-                    b.encode_vvec(reason);
-                });
+        builder.encode_frame(frame, |b| {
+            b.encode_varint(code);
+            if let Some(trigger) = trigger {
+                b.encode_varint(trigger);
             }
-            CloseReason::Application(code) => {
-                builder.encode_frame(FrameType::ConnectionCloseApplication, |b| {
-                    b.encode_varint(*code);
-                    b.encode_vvec(reason);
-                });
-            }
-        }
+            b.encode_vvec(reason);
+        });
     }
 }
 
@@ -239,7 +246,10 @@ impl StateSignaling {
     /// If a close can be sent again, prepare to send it again.
     pub fn send_close(&mut self) {
         if let Self::CloseSent(Some(frame)) = self {
-            *self = Self::Closing(frame.clone());
+            frame.received += 1; // Rate limit (RFC 9000, Section 10.2.1).
+            if frame.received.is_power_of_two() {
+                *self = Self::Closing(frame.clone());
+            }
         }
     }
 
@@ -252,13 +262,55 @@ impl StateSignaling {
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
-    use super::{State, StateSignaling};
-    use crate::{CloseReason, Error};
+    use std::{cell::RefCell, rc::Rc};
+
+    use neqo_common::{Encoder, qlog::Qlog};
+    use test_fixture::{DEFAULT_ADDR, now};
+
+    use super::{ClosingFrame, State, StateSignaling};
+    use crate::{CloseReason, ConnectionParameters, Error, frame::FrameType, packet, path::Path};
 
     #[test]
     fn closing_frame_min_length() {
         // 1 (type) + 8 (error code) + 8 (frame type) + 2 (reason prefix) + 8 (reason capacity).
-        assert_eq!(super::ClosingFrame::MIN_LENGTH, 1 + 8 + 8 + 2 + 8);
+        assert_eq!(ClosingFrame::MIN_LENGTH, 1 + 8 + 8 + 2 + 8);
+    }
+
+    /// A truncated reason phrase leaves room for the rest of the frame.
+    #[test]
+    fn closing_frame_fits() {
+        let path = Rc::new(RefCell::new(Path::temporary(
+            DEFAULT_ADDR,
+            DEFAULT_ADDR,
+            &ConnectionParameters::default(),
+            Qlog::default(),
+            now(),
+        )));
+        let errors = [
+            (
+                CloseReason::Transport(Error::ProtocolViolation),
+                FrameType::AckFrequency,
+            ),
+            (CloseReason::Application(42), FrameType::Padding),
+            (CloseReason::Application((1 << 62) - 1), FrameType::Padding),
+        ];
+        for (error, frame_type) in errors {
+            for reason_len in [0, 37, 100, 254, 300] {
+                let reason = "x".repeat(reason_len);
+                let frame = ClosingFrame::new(Rc::clone(&path), error.clone(), frame_type, &reason);
+                for remaining in ClosingFrame::MIN_LENGTH..300 {
+                    let mut builder =
+                        packet::Builder::short(Encoder::default(), false, None::<&[u8]>, 1500);
+                    let start = builder.len();
+                    builder.set_limit(start + remaining);
+                    frame.write_frame(&mut builder);
+                    assert!(
+                        start < builder.len() && builder.len() <= builder.limit(),
+                        "{error:?} reason {reason_len} remaining {remaining}"
+                    );
+                }
+            }
+        }
     }
 
     fn assert_resets_to_reset(mut ss: StateSignaling) {
@@ -274,7 +326,7 @@ mod tests {
 
     #[test]
     fn state_predicates() {
-        let now = test_fixture::now();
+        let now = now();
         let err = CloseReason::Transport(Error::None);
         let closing = State::Closing {
             error: err.clone(),

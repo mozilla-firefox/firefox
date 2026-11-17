@@ -239,4 +239,4 @@ impl CongestionController for CongestionControlImplementation {
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
-mod tests;
+pub mod tests;

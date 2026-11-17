@@ -11,9 +11,9 @@
 
 [package]
 edition = "2024"
-rust-version = "1.90.0"
+rust-version = "1.95.0"
 name = "neqo-common"
-version = "0.34.0"
+version = "0.35.0"
 authors = ["The Neqo Authors <necko@mozilla.com>"]
 build = "build.rs"
 autolib = false
@@ -39,7 +39,10 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/mozilla/neqo/"
 
 [package.metadata.cargo-machete]
-ignored = ["criterion"]
+ignored = [
+    "criterion",
+    "log",
+]
 
 [[package.metadata.bench]]
 name = "decoder"
@@ -52,22 +55,20 @@ memory = false
 bench = [
     "test-fixture/bench",
     "log/release_max_level_warn",
+    "tracing/release_max_level_warn",
 ]
 build-fuzzing-corpus = [
     "hex/alloc",
     "sha1",
 ]
 ci = []
+log-bridge = ["tracing-subscriber/tracing-log"]
 test-fixture = []
 
 [lib]
 name = "neqo_common"
 path = "src/lib.rs"
 bench = false
-
-[[test]]
-name = "log"
-path = "tests/log.rs"
 
 [[bench]]
 name = "decoder"
@@ -77,10 +78,6 @@ required-features = ["bench"]
 
 [dependencies.enum-map]
 version = "2.7"
-default-features = false
-
-[dependencies.env_logger]
-version = "0.10"
 default-features = false
 
 [dependencies.hex]
@@ -109,10 +106,6 @@ version = "0.10"
 optional = true
 default-features = false
 
-[dependencies.static_assertions]
-version = "1.1"
-default-features = false
-
 [dependencies.strum]
 version = "0.27"
 features = ["derive"]
@@ -120,6 +113,19 @@ default-features = false
 
 [dependencies.thiserror]
 version = "2.0.12"
+default-features = false
+
+[dependencies.tracing]
+version = "0.1.37"
+features = ["std"]
+default-features = false
+
+[dependencies.tracing-subscriber]
+version = "0.3.20"
+features = [
+    "fmt",
+    "std",
+]
 default-features = false
 
 [dev-dependencies.criterion]
@@ -135,7 +141,7 @@ version = "0.2"
 default-features = false
 
 [target.'cfg(target_os = "macos")'.dependencies.mach2]
-version = "0.4.1"
+version = "0.6"
 default-features = false
 
 [target."cfg(windows)".dependencies.windows]
@@ -152,6 +158,7 @@ allow_attributes_without_reason = "warn"
 assert_is_empty = "allow"
 cfg_not_test = "warn"
 clone_on_ref_ptr = "warn"
+cognitive_complexity = "allow"
 create_dir = "warn"
 dbg_macro = "warn"
 empty_drop = "warn"

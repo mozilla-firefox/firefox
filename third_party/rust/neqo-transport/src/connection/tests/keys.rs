@@ -4,23 +4,26 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use neqo_common::{Datagram, qdebug};
+use neqo_common::Datagram;
 use test_fixture::{
     assertions::{is_handshake, is_initial},
     now, split_datagram,
 };
+use tracing::debug;
 
 use super::{
     super::{
         super::{CloseReason, ERROR_AEAD_LIMIT_REACHED},
         Connection, ConnectionParameters, Error, Output, State, StreamType,
     },
-    AT_LEAST_PTO, connect, connect_force_idle, default_client, default_server, maybe_authenticate,
-    send_and_receive, send_something,
+    AT_LEAST_PTO, assert_error, connect, connect_force_idle, default_client, default_server,
+    exchange_ticket, maybe_authenticate, resumed_server, send_and_receive, send_something,
 };
 use crate::{
     MIN_INITIAL_PACKET_SIZE,
+    connection::test_internal::FrameWriter,
     crypto::{OVERWRITE_INVOCATIONS, UPDATE_WRITE_KEYS_AT},
+    frame::FrameType,
     packet,
 };
 
@@ -50,14 +53,12 @@ fn assert_update_blocked(c: &mut Connection) {
 }
 
 fn overwrite_invocations(n: packet::Number) {
-    OVERWRITE_INVOCATIONS.with(|v| {
-        *v.borrow_mut() = Some(n);
-    });
+    OVERWRITE_INVOCATIONS.set(Some(n));
 }
 
 #[test]
 fn discarded_initial_keys() {
-    qdebug!("---- client: generate CH");
+    debug!("---- client: generate CH");
     let mut client = default_client();
     let c_hs_1 = client.process_output(now()).dgram();
     let c_hs_2 = client.process_output(now()).dgram();
@@ -65,14 +66,14 @@ fn discarded_initial_keys() {
     assert_eq!(c_hs_1.as_ref().unwrap().len(), client.plpmtu());
     assert_eq!(c_hs_2.as_ref().unwrap().len(), client.plpmtu());
 
-    qdebug!("---- server: CH -> SH, EE, CERT, CV, FIN");
+    debug!("---- server: CH -> SH, EE, CERT, CV, FIN");
     let mut server = default_server();
     server.process_input(c_hs_1.clone().unwrap(), now());
     let s_hs_1 = server.process(c_hs_2, now()).dgram();
     assert!(s_hs_1.is_some());
     let s_hs_2 = server.process_output(now()).dgram();
 
-    qdebug!("---- client: cert verification");
+    debug!("---- client: cert verification");
     client.process_input(s_hs_1.clone().unwrap(), now());
     let out = client.process(s_hs_2, now()).dgram();
     assert!(out.is_some());
@@ -92,7 +93,7 @@ fn discarded_initial_keys() {
     let (c_init, _c_hs) = split_datagram(c_hs_1.as_ref().unwrap());
     check_discarded(&mut server, &c_init, false, 0, 1);
 
-    qdebug!("---- client: SH..FIN -> FIN");
+    debug!("---- client: SH..FIN -> FIN");
     let c_fin = client.process_output(now()).dgram();
     assert!(c_fin.is_some());
 
@@ -466,4 +467,80 @@ fn initial_handshake_pto_padding() {
         }
     }
     assert!(found_coalesced);
+}
+
+/// Adds `HANDSHAKE_DONE` to the third packet: the 1-RTT packet after Initial and Handshake.
+#[derive(Default)]
+struct EarlyHandshakeDoneWriter {
+    packets: usize,
+}
+
+impl FrameWriter for EarlyHandshakeDoneWriter {
+    fn write_frames(&mut self, builder: &mut packet::Builder<&mut Vec<u8>>) {
+        const LONG_HEADER_PACKETS: usize = 2; // Initial and Handshake.
+        self.packets += 1;
+        if self.packets == LONG_HEADER_PACKETS + 1 {
+            builder.encode_varint(FrameType::HandshakeDone);
+        }
+    }
+}
+
+/// Delivers the server's flight with `HANDSHAKE_DONE` before the client sends any Handshake
+/// packet.
+fn early_handshake_done(client: &mut Connection, server: &mut Connection) {
+    let c1 = client.process_output(now()).dgram();
+    let c2 = client.process_output(now()).dgram();
+    server.process_input(c1.unwrap(), now());
+    let s1 = server.process(c2, now()).dgram();
+    let s2 = server.test_write_frames(EarlyHandshakeDoneWriter::default(), now());
+    client.process_input(s1.unwrap(), now());
+    client.process_input(s2.dgram().unwrap(), now());
+}
+
+#[test]
+fn early_handshake_done_resumption() {
+    let mut client = default_client();
+    let mut server = default_server();
+    connect(&mut client, &mut server);
+    let token = exchange_ticket(&mut client, &mut server, now());
+
+    let mut client = default_client();
+    client.enable_resumption(now(), token).unwrap();
+    let mut server = resumed_server(&client);
+    early_handshake_done(&mut client, &mut server);
+    assert_eq!(client.stats().frame_rx.handshake_done, 1);
+    assert_error(&client, &CloseReason::Transport(Error::ProtocolViolation));
+}
+
+/// The 1-RTT packet is saved until the client authenticates the server.
+#[test]
+fn early_handshake_done_authenticated() {
+    let mut client = default_client();
+    let mut server = default_server();
+    early_handshake_done(&mut client, &mut server);
+    assert_eq!(client.stats().saved_datagrams, 1);
+    assert!(maybe_authenticate(&mut client));
+    assert_eq!(client.stats().frame_rx.handshake_done, 1);
+    assert_error(&client, &CloseReason::Transport(Error::ProtocolViolation));
+}
+
+/// An ACK-only Handshake packet sent while authentication is pending drops Initial,
+/// but the client has still not sent its Finished.
+#[test]
+fn early_handshake_done_after_handshake_ack() {
+    let mut client = default_client();
+    let mut server = default_server();
+    let c1 = client.process_output(now()).dgram();
+    let c2 = client.process_output(now()).dgram();
+    server.process_input(c1.unwrap(), now());
+    let s1 = server.process(c2, now()).dgram();
+    let s2 = server.test_write_frames(EarlyHandshakeDoneWriter::default(), now());
+    let (s2_hs, s2_short) = split_datagram(&s2.dgram().unwrap());
+    client.process_input(s1.unwrap(), now());
+    client.process_input(s2_hs, now());
+    assert!(client.process_output(now()).dgram().is_some());
+    client.process_input(s2_short.unwrap(), now());
+    assert!(maybe_authenticate(&mut client));
+    assert_eq!(client.stats().frame_rx.handshake_done, 1);
+    assert_error(&client, &CloseReason::Transport(Error::ProtocolViolation));
 }

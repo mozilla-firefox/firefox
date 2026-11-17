@@ -77,7 +77,7 @@ fn webtransport_prerequisites() {
         assert!(
             client_off
                 .client
-                .webtransport_create_session(now(), URL, &[])
+                .webtransport_create_session(now(), &URL, &[])
                 .is_err()
         );
 
@@ -89,7 +89,7 @@ fn webtransport_prerequisites() {
         assert!(
             server_off
                 .client
-                .webtransport_create_session(now(), URL, &[])
+                .webtransport_create_session(now(), &URL, &[])
                 .is_err()
         );
     }

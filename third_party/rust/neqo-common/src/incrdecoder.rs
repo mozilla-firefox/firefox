@@ -4,7 +4,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::{cmp::min, mem};
+use std::{cmp::min, mem, num::NonZeroUsize};
 
 use crate::codec::Decoder;
 
@@ -103,14 +103,9 @@ pub struct IncrementalDecoderIgnore {
 
 impl IncrementalDecoderIgnore {
     /// Make a new ignoring decoder.
-    ///
-    /// # Panics
-    ///
-    /// If the amount to ignore is zero.
     #[must_use]
-    pub fn new(n: usize) -> Self {
-        assert_ne!(n, 0);
-        Self { remaining: n }
+    pub const fn new(n: NonZeroUsize) -> Self {
+        Self { remaining: n.get() }
     }
 
     #[must_use]
@@ -129,6 +124,8 @@ impl IncrementalDecoderIgnore {
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
+    use std::num::NonZeroUsize;
+
     use super::{
         Decoder, IncrementalDecoderBuffer, IncrementalDecoderIgnore, IncrementalDecoderUint,
     };
@@ -237,7 +234,7 @@ mod tests {
     fn ignore() {
         let db = Encoder::from_hex("12345678ff");
 
-        let decoder = IncrementalDecoderIgnore::new(4);
+        let decoder = IncrementalDecoderIgnore::new(NonZeroUsize::new(4).unwrap());
 
         for tail in 1..db.len() {
             let split = db.len() - tail;

@@ -29,10 +29,15 @@ pub struct LossInfo {
 }
 
 #[derive(Debug, Clone)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "Independent per-packet flags."
+)]
 pub struct Packet {
     pt: packet::Type,
     pn: packet::Number,
     ack_eliciting: bool,
+    padded: bool,
     time_sent: Instant,
     primary_path: bool,
     tokens: recovery::Tokens,
@@ -59,12 +64,20 @@ impl Packet {
             pn,
             time_sent,
             ack_eliciting,
+            padded: false,
             primary_path: true,
             tokens,
             loss_info: None,
             pto: false,
             len,
         }
+    }
+
+    /// Mark the packet as containing PADDING, which puts it in flight.
+    #[must_use]
+    pub const fn with_padding(mut self, padded: bool) -> Self {
+        self.padded = padded;
+        self
     }
 
     /// The type of this packet.
@@ -166,17 +179,15 @@ impl Packet {
     /// congestion controller is pending.
     /// Returns `true` if the packet counts as being "in flight",
     /// and has not previously been declared lost.
-    /// Note that this should count packets that contain only ACK and PADDING,
-    /// but we don't send PADDING, so we don't track that.
     #[must_use]
     pub const fn cc_outstanding(&self) -> bool {
-        self.ack_eliciting() && self.on_primary_path() && !self.lost()
+        self.cc_in_flight() && !self.lost()
     }
 
     /// Whether the packet should be tracked as in-flight.
     #[must_use]
     pub const fn cc_in_flight(&self) -> bool {
-        self.ack_eliciting() && self.on_primary_path()
+        (self.ack_eliciting() || self.padded) && self.on_primary_path()
     }
 
     /// Declare the packet as lost with the given trigger.  Returns `true` if
@@ -327,7 +338,7 @@ pub const fn make_packet(pn: packet::Number, sent_time: Instant, len: usize) -> 
 #[allow(
     clippy::allow_attributes,
     clippy::single_range_in_vec_init,
-    reason = "TODO: false positive in clippy 1.98-nightly; re-check when bumping MSRV"
+    reason = "Single-range ACK lists are intended."
 )]
 mod tests {
     use std::{
@@ -487,6 +498,22 @@ mod tests {
         let mut p = pkt(0);
         p.declare_lost(start_time(), LossTrigger::TimeThreshold);
         assert!(!p.pto()); // Lost packet returns false
+    }
+
+    #[test]
+    fn padding_counts_in_flight() {
+        let p = Packet::new(
+            packet::Type::Short,
+            0,
+            start_time(),
+            false,
+            recovery::Tokens::new(),
+            100,
+        );
+        assert!(!p.cc_in_flight());
+        let p = p.with_padding(true);
+        assert!(p.cc_in_flight());
+        assert!(p.cc_outstanding());
     }
 
     #[test]

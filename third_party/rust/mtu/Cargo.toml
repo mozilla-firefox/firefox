@@ -11,7 +11,7 @@
 
 [package]
 edition = "2024"
-rust-version = "1.90.0"
+rust-version = "1.95.0"
 name = "mtu"
 version = "0.4.1"
 authors = ["The Neqo Authors <necko@mozilla.com>"]
@@ -57,10 +57,6 @@ path = "tests/netns.rs"
 version = "0.2"
 default-features = false
 
-[dependencies.static_assertions]
-version = "1.1"
-default-features = false
-
 [build-dependencies.cfg_aliases]
 version = "0.2.2"
 default-features = false
@@ -84,6 +80,7 @@ allow_attributes_without_reason = "warn"
 assert_is_empty = "allow"
 cfg_not_test = "warn"
 clone_on_ref_ptr = "warn"
+cognitive_complexity = "allow"
 create_dir = "warn"
 dbg_macro = "warn"
 empty_drop = "warn"

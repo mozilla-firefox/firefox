@@ -4,10 +4,11 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::{cmp::max, collections::HashMap, fmt::Debug};
+use std::{cmp::max, collections::HashMap, fmt::Debug, num::NonZeroUsize};
 
-use neqo_common::{Role, event::Provider as _, qdebug, to_u64};
+use neqo_common::{Role, event::Provider as _, to_u64};
 use test_fixture::now;
+use tracing::debug;
 
 use super::{
     super::State, DEFAULT_STREAM_DATA, assert_error, connect, connect_force_idle, default_client,
@@ -62,7 +63,7 @@ fn transfer() {
     let mut server = default_server();
     connect_force_idle(&mut client, &mut server);
 
-    qdebug!("---- client sends");
+    debug!("---- client sends");
     // Send
     let client_stream_id = client.stream_create(StreamType::UniDi).unwrap();
     client.stream_send(client_stream_id, &[6; 100]).unwrap();
@@ -84,12 +85,12 @@ fn transfer() {
     assert_eq!(datagrams.len(), 4);
     assert_eq!(*client.state(), State::Confirmed);
 
-    qdebug!("---- server receives");
+    debug!("---- server receives");
     for d in datagrams {
         let out = server.process(Some(d), now());
         // With an RTT of zero, the server will acknowledge every packet immediately.
         assert!(out.as_dgram_ref().is_some());
-        qdebug!("Output={:0x?}", out.as_dgram_ref());
+        debug!("Output={:0x?}", out.as_dgram_ref());
     }
     assert_eq!(*server.state(), State::Confirmed);
 
@@ -122,7 +123,7 @@ fn sendorder_test(order_of_sendorder: &[Option<SendOrder>]) {
     let mut server = default_server();
     connect_force_idle(&mut client, &mut server);
 
-    qdebug!("---- client sends");
+    debug!("---- client sends");
     // open all streams and set the sendorders
     let mut ordered = Vec::new();
     let mut streams = Vec::<StreamId>::new();
@@ -149,10 +150,10 @@ fn sendorder_test(order_of_sendorder: &[Option<SendOrder>]) {
     }
     assert_eq!(*client.state(), State::Confirmed);
 
-    qdebug!("---- server receives");
+    debug!("---- server receives");
     for d in datagrams {
         let out = server.process(Some(d), now());
-        qdebug!("Output={:0x?}", out.as_dgram_ref());
+        debug!("Output={:0x?}", out.as_dgram_ref());
     }
     assert_eq!(*server.state(), State::Confirmed);
 
@@ -449,6 +450,49 @@ fn max_data() {
     ));
 }
 
+/// `MAX_DATA` wakes exactly the streams whose low watermark the previous limit did not exceed.
+#[test]
+fn max_data_low_watermark() {
+    const SMALL_MAX_DATA: usize = 1024;
+    const WATERMARK: usize = 100;
+
+    fn writable_after_max_data(client: &mut Connection, max_data: usize) -> Vec<StreamId> {
+        client.streams.handle_max_data(to_u64(max_data));
+        client
+            .events()
+            .filter_map(|e| match e {
+                ConnectionEvent::SendStreamWritable { stream_id } => Some(stream_id),
+                _ => None,
+            })
+            .collect()
+    }
+
+    let mut client = default_client();
+    let mut server = new_server(ConnectionParameters::default().max_data(to_u64(SMALL_MAX_DATA)));
+    connect(&mut client, &mut server);
+
+    let low = client.stream_create(StreamType::UniDi).unwrap();
+    let high = client.stream_create(StreamType::UniDi).unwrap();
+    assert_eq!(
+        client.stream_send(low, &[b'a'; SMALL_MAX_DATA]).unwrap(),
+        SMALL_MAX_DATA
+    );
+    _ = client.events().count();
+
+    let limit = SMALL_MAX_DATA + WATERMARK / 2;
+    assert_eq!(writable_after_max_data(&mut client, limit), [low, high]);
+
+    client
+        .stream_set_writable_event_low_watermark(high, NonZeroUsize::new(WATERMARK).unwrap())
+        .unwrap();
+    let limit = SMALL_MAX_DATA + WATERMARK;
+    assert_eq!(writable_after_max_data(&mut client, limit), [high]);
+    let limit = SMALL_MAX_DATA + WATERMARK * 3 / 2;
+    assert_eq!(writable_after_max_data(&mut client, limit), [high]);
+    let limit = SMALL_MAX_DATA + WATERMARK * 3;
+    assert!(writable_after_max_data(&mut client, limit).is_empty());
+}
+
 #[test]
 fn exceed_max_data() {
     const SMALL_MAX_DATA: usize = 1024;
@@ -527,7 +571,7 @@ fn do_not_accept_data_after_stop_sending() {
     );
 }
 
-struct Writer(Vec<u64>);
+pub(super) struct Writer(pub Vec<u64>);
 
 impl crate::connection::test_internal::FrameWriter for Writer {
     fn write_frames(&mut self, builder: &mut packet::Builder<&mut Vec<u8>>) {

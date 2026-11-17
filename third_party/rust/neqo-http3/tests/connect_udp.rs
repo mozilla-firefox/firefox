@@ -7,11 +7,12 @@
 #![cfg(test)]
 
 use http::Uri;
-use neqo_common::{Datagram, Tos, event::Provider as _, header::HeadersExt as _, qinfo};
+use neqo_common::{Datagram, Tos, event::Provider as _, header::HeadersExt as _};
 use neqo_http3::{
     ConnectUdpEvent, Error, Http3Client, Http3ClientEvent, Http3Parameters, Http3Server,
     Http3ServerEvent, Http3State, Priority, SessionAcceptAction,
     connect_udp::{ClientSession as _, ServerEvent, ServerSession},
+    features::extended_connect::session::CloseReason,
     webtransport::ClientSession as _,
 };
 use neqo_transport::{ConnectionParameters, DatagramQueueOutcome, StreamDataLimit, StreamType};
@@ -20,6 +21,7 @@ use test_fixture::{
     DEFAULT_ADDR, default_http3_client, default_http3_server, exchange_packets, fixture_init,
     http3_client_with_params, http3_server_with_params, now,
 };
+use tracing::info;
 
 const PING: &[u8] = b"ping";
 const PONG: &[u8] = b"pong";
@@ -138,20 +140,20 @@ fn exchange_packets_through_proxy(
 ) {
     let connect_udp_session_id = proxy_session.stream_id();
 
-    qinfo!("Processing client_inner");
+    info!("Processing client_inner");
     while let Some(dgram) = client_inner.process_output(now()).dgram() {
         _ = client_outer
             .connect_udp_send_datagram(connect_udp_session_id, dgram.as_ref(), None, now())
             .unwrap();
     }
 
-    qinfo!("Processing client_outer");
+    info!("Processing client_outer");
     let mut client_outer_dgrams = client_outer
         .process_multiple_output(now(), 64.try_into().unwrap())
         .dgram()
         .unwrap();
 
-    qinfo!("Processing proxy");
+    info!("Processing proxy");
     let proxy_out = proxy
         .process_multiple(
             client_outer_dgrams.iter_mut(),
@@ -175,7 +177,7 @@ fn exchange_packets_through_proxy(
         _ => None,
     });
 
-    qinfo!("Processing server");
+    info!("Processing server");
     let mut server_out = vec![];
     for dgram in server_dgrams {
         if let Some(dgram) = server.process(Some(dgram), now()).dgram() {
@@ -186,7 +188,7 @@ fn exchange_packets_through_proxy(
         server_out.push(dgram);
     }
 
-    qinfo!("Processing proxy");
+    info!("Processing proxy");
     for dgram in server_out {
         _ = proxy_session
             .send_datagram(dgram.as_ref(), None, now())
@@ -197,10 +199,10 @@ fn exchange_packets_through_proxy(
         proxy_out.push(dgram);
     }
 
-    qinfo!("Processing client_outer");
+    info!("Processing client_outer");
     client_outer.process_multiple_input(proxy_out, now());
 
-    qinfo!("Processing client_inner");
+    info!("Processing client_inner");
     let client_inner_dgrams = client_outer.events().filter_map(|event| {
         if let Http3ClientEvent::ConnectUdp(ConnectUdpEvent::Datagram {
             session_id,
@@ -482,12 +484,12 @@ fn server_stream_reset_results_in_client_session_close() {
     proxy_session.reset_send().unwrap();
     exchange_packets(&mut client, &mut proxy, false, None);
 
-    assert!(matches!(
-        client.next_event(),
-        Some(Http3ClientEvent::ConnectUdp(
-            ConnectUdpEvent::SessionClosed { .. }
-        ))
-    ));
+    let Some(Http3ClientEvent::ConnectUdp(ConnectUdpEvent::SessionClosed { reason, .. })) =
+        client.next_event()
+    else {
+        panic!("expected SessionClosed");
+    };
+    assert_eq!(reason, CloseReason::Error(Error::HttpNone.code()));
 }
 
 #[test]
@@ -497,7 +499,7 @@ fn connect_udp_operation_on_fetch_stream() {
         .fetch(
             now(),
             "GET",
-            ("https", "something.com", "/"),
+            &("https", "something.com", "/"),
             &[],
             Priority::default(),
         )
@@ -518,7 +520,7 @@ fn connect_udp_operation_on_fetch_stream() {
 fn session_lifecycle_with_http_datagram_capsule() {
     let (mut client, mut proxy, session_id, proxy_session) = establish_capsule_session(None);
 
-    qinfo!("Testing Capsule send (client -> server)");
+    info!("Testing Capsule send (client -> server)");
     assert_eq!(
         client.connect_udp_send_datagram(session_id, PING, None, now()),
         Ok(DatagramQueueOutcome::Ok)
@@ -539,9 +541,9 @@ fn session_lifecycle_with_http_datagram_capsule() {
         .unwrap();
     assert_eq!(session_id, id);
     assert_eq!(&datagram, PING);
-    qinfo!("Capsule decode successful (client -> server)");
+    info!("Capsule decode successful (client -> server)");
 
-    qinfo!("Testing Capsule receive (server -> client)");
+    info!("Testing Capsule receive (server -> client)");
     assert_eq!(
         proxy_session.send_datagram(PONG, None, now()),
         Ok(DatagramQueueOutcome::Ok)
@@ -565,9 +567,9 @@ fn session_lifecycle_with_http_datagram_capsule() {
         .unwrap();
     assert_eq!(session_id, id);
     assert_eq!(&datagram, PONG);
-    qinfo!("Capsule encode/decode successful (server -> client)");
+    info!("Capsule encode/decode successful (server -> client)");
 
-    qinfo!("Testing multiple datagrams via Capsules");
+    info!("Testing multiple datagrams via Capsules");
     for i in 0..5 {
         let mut payload = PING.to_vec();
         payload.push(i);
@@ -587,7 +589,7 @@ fn session_lifecycle_with_http_datagram_capsule() {
         }
     }
     assert_eq!(count, 5, "Should receive all 5 datagrams via Capsules");
-    qinfo!("Multiple Capsules transmitted successfully");
+    info!("Multiple Capsules transmitted successfully");
 
     client
         .connect_udp_close_session(session_id, 0, "capsule test complete", now())
@@ -614,7 +616,7 @@ fn session_lifecycle_with_http_datagram_capsule() {
         "No QUIC datagram frames should have been sent by client"
     );
 
-    qinfo!("HTTP DATAGRAM Capsule test completed successfully");
+    info!("HTTP DATAGRAM Capsule test completed successfully");
 }
 
 #[test]
@@ -712,7 +714,7 @@ fn outgoing_datagram_space_available_forwarded() {
     assert!(
         !client
             .events()
-            .any(|e| matches!(e, Http3ClientEvent::OutgoingDatagramSpaceAvailable)),
+            .any(|e| matches!(e, Http3ClientEvent::OutgoingDatagramSpaceAvailable { .. })),
         "resume event fired before the queue drained"
     );
 
@@ -720,7 +722,7 @@ fn outgoing_datagram_space_available_forwarded() {
     assert!(
         client
             .events()
-            .any(|e| matches!(e, Http3ClientEvent::OutgoingDatagramSpaceAvailable)),
+            .any(|e| matches!(e, Http3ClientEvent::OutgoingDatagramSpaceAvailable { session_id: id } if id == session_id)),
         "OutgoingDatagramSpaceAvailable was not forwarded through connect-udp"
     );
 }
@@ -759,7 +761,7 @@ fn server_session_has_the_built_in_max_buffered_datagrams() {
     assert!(
         proxy
             .events()
-            .any(|e| matches!(e, Http3ServerEvent::OutgoingDatagramSpaceAvailable { .. })),
+            .any(|e| matches!(e, Http3ServerEvent::OutgoingDatagramSpaceAvailable { session_id, .. } if session_id == proxy_session.stream_id())),
         "OutgoingDatagramSpaceAvailable was not forwarded to the connect-udp server"
     );
 }
@@ -877,7 +879,7 @@ fn datagram_capsule_flow_control_error_and_resume() {
     assert!(
         !client
             .events()
-            .any(|e| matches!(e, Http3ClientEvent::OutgoingDatagramSpaceAvailable)),
+            .any(|e| matches!(e, Http3ClientEvent::OutgoingDatagramSpaceAvailable { .. })),
         "resume event fired before the window reopened"
     );
 
@@ -887,7 +889,7 @@ fn datagram_capsule_flow_control_error_and_resume() {
     assert!(
         client
             .events()
-            .any(|e| matches!(e, Http3ClientEvent::OutgoingDatagramSpaceAvailable)),
+            .any(|e| matches!(e, Http3ClientEvent::OutgoingDatagramSpaceAvailable { session_id: id } if id == session_id)),
         "resume event not emitted after control-stream flow control reopened"
     );
 }
@@ -914,7 +916,7 @@ fn datagram_capsule_at_flow_control_boundary_is_refused_not_lost() {
     assert!(
         !client
             .events()
-            .any(|e| matches!(e, Http3ClientEvent::OutgoingDatagramSpaceAvailable)),
+            .any(|e| matches!(e, Http3ClientEvent::OutgoingDatagramSpaceAvailable { .. })),
         "resume event fired while the window was still closed"
     );
 
@@ -938,7 +940,7 @@ fn datagram_capsule_at_flow_control_boundary_is_refused_not_lost() {
     assert!(
         client
             .events()
-            .any(|e| matches!(e, Http3ClientEvent::OutgoingDatagramSpaceAvailable)),
+            .any(|e| matches!(e, Http3ClientEvent::OutgoingDatagramSpaceAvailable { session_id: id } if id == session_id)),
         "resume event not emitted after the window reopened"
     );
 }

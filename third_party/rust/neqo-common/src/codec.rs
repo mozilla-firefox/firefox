@@ -119,6 +119,11 @@ impl<'a> Decoder<'a> {
         Some(res)
     }
 
+    /// Decodes `N` bytes of arbitrary data as an array.
+    pub fn decode_array<const N: usize>(&mut self) -> Option<&'a [u8; N]> {
+        self.decode(N)?.as_array()
+    }
+
     pub(crate) fn decode_n(&mut self, n: usize) -> Option<u64> {
         debug_assert!(n > 0 && n <= 8);
         if self.remaining() < n {
@@ -484,6 +489,7 @@ impl<B: Buffer> Encoder<B> {
 impl Encoder<Vec<u8>> {
     /// Skip the first `n` bytes from the encoder buffer without copying.
     /// This advances the internal offset, making those bytes inaccessible.
+    /// Skipped bytes stay allocated until [`Self::compact`].
     ///
     /// # Panics
     ///
@@ -491,6 +497,21 @@ impl Encoder<Vec<u8>> {
     pub fn skip(&mut self, n: usize) {
         assert!(n <= self.len(), "Cannot skip beyond buffer length");
         self.start += n;
+    }
+
+    /// Get the allocated capacity of the underlying buffer.
+    #[must_use]
+    pub const fn capacity(&self) -> usize {
+        self.buf.capacity()
+    }
+
+    /// Release skipped bytes once they are at least as many as the remaining ones,
+    /// keeping the allocated capacity. This invalidates any outstanding [`Reservation`].
+    pub fn compact(&mut self) {
+        if self.start >= self.len() {
+            self.buf.drain(..self.start);
+            self.start = 0;
+        }
     }
 
     /// Static helper function for previewing the results of encoding without doing it.
@@ -801,6 +822,15 @@ mod tests {
         let mut dec = enc.as_decoder();
         assert_eq!(dec.decode(2).unwrap(), &[0x01, 0x23]);
         assert!(dec.decode(2).is_none());
+    }
+
+    #[test]
+    fn decode_array() {
+        let enc = Encoder::from_hex("012345");
+        let mut dec = enc.as_decoder();
+        assert_eq!(dec.decode_array(), Some(&[0x01, 0x23]));
+        assert!(dec.decode_array::<2>().is_none());
+        assert_eq!(dec.decode_array(), Some(&[0x45]));
     }
 
     #[test]
@@ -1374,6 +1404,22 @@ mod tests {
     fn encoder_skip_too_much() {
         let mut enc = Encoder::from_hex("0102");
         enc.skip(3);
+    }
+
+    #[test]
+    fn encoder_compact() {
+        let mut enc = Encoder::from_hex("010203040506");
+        let capacity = enc.buf.capacity();
+        enc.skip(2);
+        enc.compact();
+        assert_eq!((enc.start, enc.buf.len()), (2, 6));
+        enc.skip(1);
+        enc.compact();
+        assert_eq!((enc.start, enc.buf.as_slice()), (0, [4, 5, 6].as_slice()));
+        enc.skip(3);
+        enc.compact();
+        assert_eq!((enc.start, enc.buf.len()), (0, 0));
+        assert_eq!(enc.buf.capacity(), capacity);
     }
 
     /// [`Encoder::as_decoder`] should only expose the bytes actively encoded through this

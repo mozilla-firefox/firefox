@@ -6,12 +6,13 @@ edition = "2021"
 license = "MPL-2.0"
 
 [dependencies]
-neqo-bin = { tag = "v0.34.0", git = "https://github.com/mozilla/neqo" }
-neqo-transport = { tag = "v0.34.0", git = "https://github.com/mozilla/neqo", features = ["gecko"] }
-neqo-common = { tag = "v0.34.0", git = "https://github.com/mozilla/neqo" }
-neqo-http3 = { tag = "v0.34.0", git = "https://github.com/mozilla/neqo" }
-neqo-qpack = { tag = "v0.34.0", git = "https://github.com/mozilla/neqo" }
+neqo-bin = { tag = "v0.35.0", git = "https://github.com/mozilla/neqo" }
+neqo-transport = { tag = "v0.35.0", git = "https://github.com/mozilla/neqo", features = ["gecko"] }
+neqo-common = { tag = "v0.35.0", git = "https://github.com/mozilla/neqo" }
+neqo-http3 = { tag = "v0.35.0", git = "https://github.com/mozilla/neqo" }
+neqo-qpack = { tag = "v0.35.0", git = "https://github.com/mozilla/neqo" }
 log = "0.4.0"
+tracing = "0.1"
 base64 = "0.22"
 cfg-if = "1.0"
 http = "1.4"

@@ -55,22 +55,26 @@ macro_rules! create_prefix {
         };
     };
     ($n:ident, $v:expr, $l:expr) => {
-        static_assertions::const_assert!($l < 7);
-        static_assertions::const_assert!($v & ((1 << (8 - $l)) - 1) == 0);
-        pub const $n: Prefix = Prefix {
-            prefix: $v,
-            len: $l,
-            mask: ((1 << $l) - 1) << (8 - $l),
+        pub const $n: Prefix = {
+            assert!($l < 7);
+            assert!($v & ((1 << (8 - $l)) - 1) == 0);
+            Prefix {
+                prefix: $v,
+                len: $l,
+                mask: ((1 << $l) - 1) << (8 - $l),
+            }
         };
     };
     ($n:ident, $v:expr, $l:expr, $m:expr) => {
-        static_assertions::const_assert!($l < 7);
-        static_assertions::const_assert!($v & ((1 << (8 - $l)) - 1) == 0);
-        static_assertions::const_assert!((((1 << $l) - 1) << (8 - $l)) >= $m);
-        pub const $n: Prefix = Prefix {
-            prefix: $v,
-            len: $l,
-            mask: $m,
+        pub const $n: Prefix = {
+            assert!($l < 7);
+            assert!($v & ((1 << (8 - $l)) - 1) == 0);
+            assert!((((1 << $l) - 1) << (8 - $l)) >= $m);
+            Prefix {
+                prefix: $v,
+                len: $l,
+                mask: $m,
+            }
         };
     };
 }

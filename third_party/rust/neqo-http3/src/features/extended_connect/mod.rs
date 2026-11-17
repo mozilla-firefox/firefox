@@ -17,8 +17,9 @@ mod tests;
 
 use std::{cell::RefCell, fmt::Debug, mem, rc::Rc};
 
-use neqo_common::{Bytes, Header, Role, qdebug};
+use neqo_common::{Bytes, Header, Role};
 use neqo_transport::StreamId;
+use tracing::debug;
 
 use crate::{
     Http3StreamInfo, HttpRecvStreamEvents, RecvStreamEvents, Res, SendStreamEvents,
@@ -56,13 +57,14 @@ pub(crate) trait ExtendedConnectEvents: Debug {
         datagram: Bytes,
         connect_type: ExtendedConnectType,
     );
-    /// The control stream has flow-control space again after a datagram capsule
-    /// was refused with `FlowControlLimit`, so the sender can resume.
+    /// The control stream of `session_id` has flow-control space again after a
+    /// datagram capsule was refused with `FlowControlLimit`, so the sender can
+    /// resume.
     ///
     /// This is the HTTP DATAGRAM Capsule path only. On the QUIC datagram path the
     /// resume event instead originates in `neqo-transport` and is forwarded to
     /// the HTTP/3 event by the connection.
-    fn capsule_space_available(&self);
+    fn capsule_space_available(&self, session_id: StreamId);
 }
 
 #[derive(Debug, PartialEq, Copy, Clone, Eq, strum::Display)]
@@ -152,7 +154,7 @@ impl ExtendedConnectFeature {
             && self.enabled()
             && !transport_prereqs.reliable_reset
         {
-            qdebug!(
+            debug!(
                 "WebTransport negotiated without peer reliable reset; stream resets use RESET_STREAM"
             );
         }

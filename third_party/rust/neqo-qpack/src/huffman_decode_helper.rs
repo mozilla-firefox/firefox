@@ -4,24 +4,22 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
 use neqo_common::expect_usize;
 
 use crate::huffman_table::HUFFMAN_TABLE;
 
 // Since we're encoding the table length as a u16, we need to ensure that it fits.
-static_assertions::const_assert!(HUFFMAN_TABLE.len() <= u16::MAX as usize);
+const _: () = assert!(HUFFMAN_TABLE.len() <= u16::MAX as usize);
 
 pub struct HuffmanDecoderNode {
     pub next: [Option<Box<Self>>; 2],
     pub value: Option<u16>,
 }
 
-pub fn huffman_decoder_root() -> &'static HuffmanDecoderNode {
-    static ROOT: OnceLock<HuffmanDecoderNode> = OnceLock::new();
-    ROOT.get_or_init(|| make_huffman_tree(0, 0))
-}
+pub static HUFFMAN_DECODER_ROOT: LazyLock<HuffmanDecoderNode> =
+    LazyLock::new(|| make_huffman_tree(0, 0));
 
 fn make_huffman_tree(prefix: u32, len: u8) -> HuffmanDecoderNode {
     let mut found = false;
@@ -42,7 +40,7 @@ fn make_huffman_tree(prefix: u32, len: u8) -> HuffmanDecoderNode {
                 next: [None, None],
                 #[expect(
                     clippy::cast_possible_truncation,
-                    reason = "We've checked this in a `const_assert!` above."
+                    reason = "We've checked this in a const `assert!` above."
                 )]
                 value: Some(i as u16),
             }));

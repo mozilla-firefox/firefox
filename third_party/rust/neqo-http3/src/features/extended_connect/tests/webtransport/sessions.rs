@@ -4,7 +4,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use neqo_common::{Encoder, event::Provider as _, header::HeadersExt as _};
+use neqo_common::{Bytes, Encoder, event::Provider as _, header::HeadersExt as _};
 use neqo_transport::{
     StreamId, StreamType,
     streams::{SendGroupId, SendOrder},
@@ -12,8 +12,10 @@ use neqo_transport::{
 use test_fixture::now;
 
 use crate::{
-    Error, Header, Http3ClientEvent, Http3OrWebTransportStream, Http3Server, Http3ServerEvent,
-    Http3State, Priority, SessionAcceptAction, WebTransportEvent,
+    ConnectUdpEvent, Error, Header, Http3ClientEvent, Http3OrWebTransportStream, Http3Server,
+    Http3ServerEvent, Http3State, Http3StreamInfo, Http3StreamType, Priority, SessionAcceptAction,
+    WebTransportEvent,
+    connect_udp::ClientSession as _,
     features::extended_connect::{
         CloseReason,
         stats::SessionStats,
@@ -21,8 +23,9 @@ use crate::{
             WtTest, assert_wt, default_http3_client, default_http3_server, wt_default_parameters,
         },
     },
-    frames::WebTransportFrame,
-    webtransport::{ClientSession as _, ServerEvent},
+    frames::{WebTransportFrame, capsule::Capsule},
+    server_events::StreamHandler,
+    webtransport::{ClientSession as _, ServerEvent, ServerSession},
 };
 
 fn wt_with_session() -> (WtTest, StreamId) {
@@ -80,6 +83,62 @@ fn wt_session_reject() {
     let (wt_session_id, _wt_session) = wt.negotiate_wt_session(&accept_res);
 
     wt.check_session_closed_event_client(wt_session_id, &CloseReason::Status(404), Some(&headers));
+}
+
+#[test]
+fn wt_session_create_invalid_header_value() {
+    let mut wt = WtTest::new();
+    let headers = [Header::new("x", "a\rb")];
+    let target = ("https", "something.com", "/");
+    let client = &mut wt.client;
+    let res = client.webtransport_create_session(now(), &target, &headers);
+    assert_eq!(res, Err(Error::InvalidInput));
+    let first = StreamId::new(0);
+    let protocol = client.webtransport_session_protocol(first);
+    assert_eq!(protocol, Err(Error::InvalidStreamId));
+    assert_eq!(wt.create_wt_session().stream_id(), first);
+}
+
+fn session_response_invalid_header_value(accept: &SessionAcceptAction) {
+    let mut wt = WtTest::new();
+    let session_id = wt
+        .client
+        .webtransport_create_session(now(), &("https", "something.com", "/"), &[])
+        .unwrap();
+    wt.exchange_packets();
+    let session = wt
+        .server
+        .events()
+        .find_map(|e| match e {
+            Http3ServerEvent::WebTransport(ServerEvent::NewSession { session, .. }) => {
+                Some(session)
+            }
+            _ => None,
+        })
+        .unwrap();
+    let before = wt.client.transport_stats().frame_rx;
+    assert_eq!(session.response(accept, now()), Err(Error::InvalidInput));
+    wt.exchange_packets();
+    let after = wt.client.transport_stats().frame_rx;
+    assert_eq!(after.reset_stream, before.reset_stream + 1);
+    assert_eq!(after.stop_sending, before.stop_sending + 1);
+    assert!(wt.server.events().any(|e| matches!(e,
+        Http3ServerEvent::StreamReset { stream, error }
+            if stream.stream_id() == session_id && error == Error::HttpRequestRejected.code())));
+    let reason = CloseReason::Error(Error::HttpRequestRejected.code());
+    wt.check_session_closed_event_client(session_id, &reason, None);
+}
+
+#[test]
+fn wt_session_accept_with_invalid_header_value() {
+    let headers = vec![Header::new("x", "a\rb")];
+    session_response_invalid_header_value(&SessionAcceptAction::AcceptWith(headers));
+}
+
+#[test]
+fn wt_session_reject_invalid_header_value() {
+    let headers = vec![Header::new(":status", "404"), Header::new("x", "a\rb")];
+    session_response_invalid_header_value(&SessionAcceptAction::Reject(headers));
 }
 
 #[test]
@@ -159,7 +218,7 @@ fn wt_session_response_with_1xx() {
 
     let wt_session_id = wt
         .client
-        .webtransport_create_session(now(), ("https", "something.com", "/"), &[])
+        .webtransport_create_session(now(), &("https", "something.com", "/"), &[])
         .unwrap();
     wt.exchange_packets();
 
@@ -221,7 +280,7 @@ fn wt_session_respone_200_with_fin() {
 
     let wt_session_id = wt
         .client
-        .webtransport_create_session(now(), ("https", "something.com", "/"), &[])
+        .webtransport_create_session(now(), &("https", "something.com", "/"), &[])
         .unwrap();
     wt.exchange_packets();
     let mut wt_server_session = None;
@@ -259,6 +318,139 @@ fn wt_session_respone_200_with_fin() {
     assert!(wt.client.events().any(wt_session_close_event));
 
     assert_eq!(wt_session_id, wt_server_session.stream_id());
+}
+
+fn wt_session_request(wt: &mut WtTest) -> (StreamId, ServerSession) {
+    let wt_session_id = wt
+        .client
+        .webtransport_create_session(now(), &("https", "something.com", "/"), &[])
+        .unwrap();
+    wt.exchange_packets();
+    let wt_server_session = wt
+        .server
+        .events()
+        .find_map(|e| match e {
+            Http3ServerEvent::WebTransport(ServerEvent::NewSession { session, .. }) => {
+                Some(session)
+            }
+            _ => None,
+        })
+        .unwrap();
+    wt.client.events().for_each(drop);
+    (wt_session_id, wt_server_session)
+}
+
+fn send_headers_and_close_frame(wt_server_session: &ServerSession, headers: &[Header]) {
+    let mut enc = Encoder::default();
+    WebTransportFrame::CloseSession {
+        error: 1,
+        message: String::new(),
+    }
+    .encode(&mut enc);
+    wt_server_session.send_headers(headers).unwrap();
+    wt_server_session.send_data(enc.as_ref(), now()).unwrap();
+}
+
+fn wt_client_events(wt: &mut WtTest) -> Vec<WebTransportEvent> {
+    wt.client
+        .events()
+        .filter_map(|e| match e {
+            Http3ClientEvent::WebTransport(e) => Some(e),
+            _ => None,
+        })
+        .collect()
+}
+
+const fn rejected(stream_id: StreamId, headers: Vec<Header>) -> WebTransportEvent {
+    WebTransportEvent::SessionClosed {
+        stream_id,
+        reason: CloseReason::Status(403),
+        headers: Some(headers),
+    }
+}
+
+#[test]
+fn wt_session_reject_with_close_frame() {
+    let mut wt = WtTest::new();
+    let (wt_session_id, wt_server_session) = wt_session_request(&mut wt);
+    let headers = vec![Header::new(":status", "403")];
+    send_headers_and_close_frame(&wt_server_session, &headers);
+    wt.exchange_packets();
+
+    let closed = rejected(wt_session_id, headers);
+    assert_eq!(wt_client_events(&mut wt), [closed]);
+    let res = wt
+        .client
+        .webtransport_close_session(wt_session_id, 0, "", now());
+    assert_eq!(res, Err(Error::InvalidStreamId));
+}
+
+#[test]
+fn wt_session_reject_qpack_blocked_with_close_frame() {
+    let mut wt = WtTest::new();
+    let (other_id, other_server_session) = wt_session_request(&mut wt);
+    let (wt_session_id, wt_server_session) = wt_session_request(&mut wt);
+    let headers = vec![
+        Header::new(":status", "403"),
+        Header::new("my-header", "my-header"),
+    ];
+    let reject = SessionAcceptAction::Reject(headers.clone());
+    other_server_session.response(&reject, now()).unwrap();
+    let encoder_inst = wt.server.process_output(now()).dgram().unwrap();
+    send_headers_and_close_frame(&wt_server_session, &headers);
+    let response = wt.server.process_output(now()).dgram().unwrap();
+
+    wt.client.process_input(response, now());
+    assert_eq!(wt_client_events(&mut wt), []);
+    wt.client.process_input(encoder_inst, now());
+
+    let closed = [
+        rejected(wt_session_id, headers.clone()),
+        rejected(other_id, headers),
+    ];
+    assert_eq!(wt_client_events(&mut wt), closed);
+}
+
+#[test]
+fn connect_udp_session_reject_with_datagram_capsule() {
+    let params = wt_default_parameters().connect(true);
+    let mut wt = WtTest::new_with_params(params.clone(), params);
+    let wt_session = wt.create_wt_session();
+    let udp_session_id = wt
+        .client
+        .connect_udp_create_session(now(), &("https", "something.com", "/"), &[])
+        .unwrap();
+    wt.exchange_packets();
+    // No server API sends data after a non-2xx response, so borrow the WT handler's connection.
+    let udp_server_session = StreamHandler {
+        stream_info: Http3StreamInfo::new(udp_session_id, Http3StreamType::Http),
+        ..(*wt_session).clone()
+    };
+
+    let headers = vec![Header::new(":status", "403")];
+    let mut enc = Encoder::default();
+    Capsule::Datagram {
+        payload: Bytes::from(vec![0, 1]),
+    }
+    .encode(&mut enc);
+    udp_server_session.send_headers(&headers).unwrap();
+    udp_server_session.send_data(enc.as_ref(), now()).unwrap();
+    wt.exchange_packets();
+
+    let events: Vec<_> = wt
+        .client
+        .events()
+        .filter_map(|e| match e {
+            Http3ClientEvent::ConnectUdp(e) => Some(e),
+            _ => None,
+        })
+        .collect();
+    let closed = ConnectUdpEvent::SessionClosed {
+        stream_id: udp_session_id,
+        reason: CloseReason::Status(403),
+        headers: Some(headers),
+    };
+    assert_eq!(events, [closed]);
 }
 
 #[test]
@@ -416,7 +608,7 @@ fn wt_close_session_cannot_be_sent_at_once() {
         .fetch(
             now(),
             "GET",
-            ("https", "something.com", "/"),
+            &("https", "something.com", "/"),
             &[],
             Priority::default(),
         )
@@ -508,6 +700,31 @@ fn wt_goaway_draining_active_session() {
     assert!(!has_closed, "active session should not be closed by GOAWAY");
 }
 
+#[test]
+fn wt_goaway_keeps_streams_of_active_session() {
+    const BUF: &[u8] = &[0; 10];
+    let (mut wt, session_id) = wt_with_session();
+    let wt_stream = wt.create_wt_stream_client(session_id, StreamType::BiDi);
+    wt.send_data_client(wt_stream, BUF);
+    wt.receive_data_server(wt_stream, true, BUF, false);
+    wt.client.events().for_each(drop);
+
+    wt.server.send_goaway(wt_stream);
+    wt.exchange_packets();
+    assert_eq!(
+        wt.client.events().collect::<Vec<_>>(),
+        [
+            Http3ClientEvent::WebTransport(WebTransportEvent::Draining {
+                stream_id: session_id
+            }),
+            Http3ClientEvent::GoawayReceived
+        ]
+    );
+
+    wt.send_data_client(wt_stream, BUF);
+    wt.receive_data_server(wt_stream, false, BUF, false);
+}
+
 /// Repeated GOAWAYs with decreasing stream IDs (per RFC 9114 §5.2) should
 /// not produce duplicate Draining events for the same session.
 #[test]
@@ -540,6 +757,28 @@ fn wt_goaway_repeated_no_duplicate_draining() {
     assert_eq!(
         draining_count, 0,
         "second GOAWAY should not produce a duplicate Draining event"
+    );
+}
+
+#[test]
+fn wt_lower_goaway_rejects_drained_session() {
+    let (mut wt, session_id) = wt_with_session();
+    let first = StreamId::new(session_id.as_u64() + 4);
+    wt.server.send_goaway(first);
+    wt.exchange_packets();
+    wt.client.events().for_each(drop);
+
+    wt.server.send_goaway(session_id);
+    wt.exchange_packets();
+    assert_eq!(
+        wt.client.events().collect::<Vec<_>>(),
+        [Http3ClientEvent::WebTransport(
+            WebTransportEvent::SessionClosed {
+                stream_id: session_id,
+                reason: CloseReason::Error(Error::HttpRequestRejected.code()),
+                headers: None
+            }
+        )]
     );
 }
 
@@ -705,7 +944,7 @@ fn wt_session_protocol_non_webtransport_session() {
         .fetch(
             now(),
             "GET",
-            ("https", "something.com", "/"),
+            &("https", "something.com", "/"),
             &[],
             Priority::default(),
         )

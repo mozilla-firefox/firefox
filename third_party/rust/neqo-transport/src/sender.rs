@@ -8,7 +8,8 @@
 
 use std::time::{Duration, Instant};
 
-use neqo_common::{qdebug, qlog::Qlog};
+use neqo_common::qlog::Qlog;
+use tracing::debug;
 
 use crate::{
     ConnectionParameters, SlowStart, Stats,
@@ -161,7 +162,7 @@ impl PacketSender {
     fn maybe_update_pacer_mtu(&mut self) {
         let current_mtu = self.pmtud().plpmtu();
         if current_mtu != self.pacer.mtu() {
-            qdebug!(
+            debug!(
                 "PLPMTU changed from {} to {current_mtu}, updating pacer",
                 self.pacer.mtu()
             );
@@ -248,18 +249,18 @@ impl PacketSender {
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        net::{IpAddr, Ipv4Addr},
-        time::Duration,
-    };
+    use std::time::Duration;
 
     use neqo_common::to_u64;
     use test_fixture::now;
 
     use super::PacketSender;
     use crate::{
-        ConnectionParameters, SlowStart, cc::CongestionControl, pmtud::Pmtud, recovery::sent,
-        rtt::RttEstimate, stats::Stats,
+        ConnectionParameters, SlowStart,
+        cc::{CongestionControl, tests::pmtud},
+        recovery::sent,
+        rtt::RttEstimate,
+        stats::Stats,
     };
 
     #[test]
@@ -297,11 +298,7 @@ mod tests {
             let params = ConnectionParameters::default()
                 .congestion_control(cc)
                 .slow_start(ss);
-            let sender = PacketSender::new(
-                &params,
-                Pmtud::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), Some(1500)),
-                now,
-            );
+            let sender = PacketSender::new(&params, pmtud(), now);
             let description = sender.cc.to_string();
             assert!(
                 description.starts_with(expected_prefix),
@@ -314,11 +311,7 @@ mod tests {
 
     fn make_sender(pacing: bool) -> PacketSender {
         let params = ConnectionParameters::default().pacing(pacing);
-        PacketSender::new(
-            &params,
-            Pmtud::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), Some(1500)),
-            now(),
-        )
+        PacketSender::new(&params, pmtud(), now())
     }
 
     /// Send `n` packets at once, ACK them one RTT later, return (`cwnd_before`, `cwnd_after`).

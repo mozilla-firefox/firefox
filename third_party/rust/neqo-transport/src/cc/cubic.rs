@@ -11,7 +11,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use neqo_common::{qdebug, qtrace};
+use tracing::{debug, trace};
 
 use crate::{
     cc::{
@@ -279,7 +279,7 @@ impl Cubic {
                 0.0
             }
         };
-        qtrace!("[{self}] New epoch");
+        trace!("[{self}] New epoch");
     }
 
     #[cfg(test)]
@@ -339,6 +339,11 @@ impl WindowAdjustment for Cubic {
         // > slow start.
         //
         // <https://datatracker.ietf.org/doc/html/rfc9438#section-4.2-10>
+        //
+        // We are using `min_rtt` rather than `smoothed_rtt` to avoid growth being more aggressive
+        // when already under queueing delay. This is in line with what the Linux Kernel does:
+        //
+        // (https://github.com/torvalds/linux/blob/7e1392a42ea288d70a266f6553fe06f57f8647ea/net/ipv4/tcp_cubic.c#L265)
         //
         // In neqo the target congestion window is in bytes.
         let t = now.saturating_duration_since(t_epoch);
@@ -505,7 +510,7 @@ impl WindowAdjustment for Cubic {
             return;
         };
 
-        qdebug!(
+        debug!(
             "Spurious cong event: recovering cubic state from {} to {stored}",
             self.current
         );

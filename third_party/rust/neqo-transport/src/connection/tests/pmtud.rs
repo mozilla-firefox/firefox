@@ -5,21 +5,19 @@
 // except according to those terms.
 
 use std::{
-    cell::RefCell,
-    net::{IpAddr, Ipv6Addr, SocketAddr},
-    rc::Rc,
+    net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},
     time::Duration,
 };
 
-use neqo_common::Datagram;
-use test_fixture::{DEFAULT_ADDR_V4, fixture_init, now};
+use neqo_common::{Datagram, Tos};
+use test_fixture::{DEFAULT_ADDR, DEFAULT_ADDR_V4, fixture_init, now};
 
 use super::Connection;
 use crate::{
-    ConnectionParameters, Output, Pmtud, StreamType,
+    ConnectionParameters, Output, Pmtud, Stats, StreamType,
     connection::tests::{
-        CountingConnectionIdGenerator, DEFAULT_RTT, connect, default_server, fill_stream,
-        new_client, new_server, send_something,
+        DEFAULT_RTT, connect, default_server, fill_stream, new_client, new_client_with_addr,
+        new_server, send_something,
     },
 };
 
@@ -27,19 +25,12 @@ use crate::{
 #[test]
 fn gso_with_max_mtu() {
     neqo_common::log::init(None);
-    fixture_init();
-    let mut client = Connection::new_client(
-        test_fixture::DEFAULT_SERVER_NAME,
-        test_fixture::DEFAULT_ALPN,
-        Rc::new(RefCell::new(CountingConnectionIdGenerator::default())),
-        DEFAULT_ADDR_V4,
-        DEFAULT_ADDR_V4,
+    let mut client = new_client_with_addr(
         ConnectionParameters::default()
             .pmtud(true)
             .pmtud_iface_mtu(false),
-        now(),
-    )
-    .expect("create a default client");
+        DEFAULT_ADDR_V4,
+    );
 
     let mut server = default_server();
 
@@ -301,4 +292,58 @@ fn deferred_probe_respects_amplification_limit() {
 fn probe_waits_for_budget_covering_probe_size() {
     let (plpmtu, limit) = no_probe_on_unvalidated_path(400);
     assert!(plpmtu < limit);
+}
+
+const LOOPBACK: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 443);
+
+fn connected_loopback(params: ConnectionParameters) -> (Connection, Connection) {
+    let mut client = new_client_with_addr(params, LOOPBACK);
+    let mut server = default_server();
+    connect(&mut client, &mut server);
+    (client, server)
+}
+
+fn loopback_iface_mtu() -> usize {
+    mtu::interface_and_mtu(LOOPBACK.ip()).unwrap().1
+}
+
+#[test]
+fn iface_mtu_for_first_path() {
+    let client = new_client_with_addr(ConnectionParameters::default().pmtud(true), LOOPBACK);
+    assert_eq!(client.stats().pmtud_iface_mtu, loopback_iface_mtu());
+}
+
+#[test]
+fn no_iface_mtu_for_junk_from_unknown_address() {
+    let mut client = new_client(ConnectionParameters::default().pmtud(true));
+    let mut server = default_server();
+    connect(&mut client, &mut server);
+    let iface_mtu = client.stats().pmtud_iface_mtu;
+    client.process_input(
+        Datagram::new(LOOPBACK, DEFAULT_ADDR, Tos::default(), [0x40]),
+        now(),
+    );
+    assert_eq!(client.stats().pmtud_iface_mtu, iface_mtu);
+}
+
+/// PMTUD settles where it would if the path dropped packets above the interface MTU.
+#[test]
+fn iface_mtu_caps_pmtud() {
+    let (mut client, mut server) = connected_loopback(ConnectionParameters::default().pmtud(true));
+    drive_pmtud(&mut client, &mut server, usize::MAX, now());
+    let (mut lossy, mut server) = connected_loopback(
+        ConnectionParameters::default()
+            .pmtud(true)
+            .pmtud_iface_mtu(false),
+    );
+    let path_mtu = loopback_iface_mtu() - Pmtud::header_size(LOOPBACK.ip());
+    drive_pmtud(&mut lossy, &mut server, path_mtu, now());
+    assert_eq!(client.plpmtu(), lossy.plpmtu());
+}
+
+#[test]
+fn no_iface_mtu_without_pmtud() {
+    let iface_mtu = Stats::default().pmtud_iface_mtu;
+    let (client, _) = connected_loopback(ConnectionParameters::default().pmtud(false));
+    assert_eq!(client.stats().pmtud_iface_mtu, iface_mtu);
 }

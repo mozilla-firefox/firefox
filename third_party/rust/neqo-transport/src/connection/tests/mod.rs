@@ -15,9 +15,10 @@ use std::{
 };
 
 use enum_map::EnumMap;
-use neqo_common::{Datagram, Decoder, Role, event::Provider as _, qdebug, qtrace};
+use neqo_common::{Datagram, Decoder, Role, event::Provider as _};
 use nss::{AllowZeroRtt, AuthenticationStatus, ResumptionToken, random};
 use test_fixture::{DEFAULT_ADDR, fixture_init, new_neqo_qlog, now};
+use tracing::{debug, trace};
 
 use super::{CloseReason, Connection, ConnectionId, Output, State, test_internal};
 use crate::{
@@ -91,10 +92,6 @@ impl ConnectionIdGenerator for CountingConnectionIdGenerator {
         self.counter += 1;
         Some(ConnectionId::from(&r[..8]))
     }
-
-    fn as_decoder(&self) -> &dyn ConnectionIdDecoder {
-        self
-    }
 }
 
 // This is fabulous: because test_fixture uses the public API for Connection,
@@ -103,19 +100,23 @@ impl ConnectionIdGenerator for CountingConnectionIdGenerator {
 // test_fixture because they produce different - and incompatible - types.
 //
 // These are a direct copy of those functions.
-fn new_client_with_qlog(params: ConnectionParameters) -> (Connection, test_fixture::SharedVec) {
+fn new_client_with_addr(params: ConnectionParameters, addr: SocketAddr) -> Connection {
     fixture_init();
-    let (log, contents) = new_neqo_qlog();
-    let mut client = Connection::new_client(
+    Connection::new_client(
         test_fixture::DEFAULT_SERVER_NAME,
         test_fixture::DEFAULT_ALPN,
         Rc::new(RefCell::new(CountingConnectionIdGenerator::default())),
-        DEFAULT_ADDR,
-        DEFAULT_ADDR,
+        addr,
+        addr,
         params,
         now(),
     )
-    .expect("create a default client");
+    .expect("create a default client")
+}
+
+fn new_client_with_qlog(params: ConnectionParameters) -> (Connection, test_fixture::SharedVec) {
+    let (log, contents) = new_neqo_qlog();
+    let mut client = new_client_with_addr(params, DEFAULT_ADDR);
     client.set_qlog(log);
     (client, contents)
 }
@@ -137,6 +138,16 @@ fn zero_len_cid_client(local_addr: SocketAddr, remote_addr: SocketAddr) -> Conne
         remote_addr,
         ConnectionParameters::default(),
         now(),
+    )
+    .unwrap()
+}
+
+fn zero_len_cid_server() -> Connection {
+    Connection::new_server(
+        test_fixture::DEFAULT_KEYS,
+        test_fixture::DEFAULT_ALPN,
+        Rc::new(RefCell::new(EmptyConnectionIdGenerator::default())),
+        ConnectionParameters::default(),
     )
     .unwrap()
 }
@@ -210,21 +221,32 @@ impl test_internal::FrameWriter for CryptoWriter {
     }
 }
 
-/// The next datagram from `send`, waiting out pacing delays.
-fn next_dgram(now: &mut Instant, mut send: impl FnMut(Instant) -> Output) -> Option<Datagram> {
+/// The next datagram from `send`, waiting out pacing delays, or the output that ended the wait.
+fn next_dgram(
+    now: &mut Instant,
+    mut send: impl FnMut(Instant) -> Output,
+) -> Result<Datagram, Output> {
     loop {
         match send(*now) {
-            Output::Datagram(d) => return Some(d),
+            Output::Datagram(d) => return Ok(d),
             Output::Callback(t) if t < DEFAULT_RTT => *now += t,
-            _ => return None, // Too long to be pacing.
+            o => return Err(o), // Too long to be pacing.
         }
     }
 }
 
 /// Drain everything `c` will send, following a paced sender by advancing `now` over short delays.
-fn drain(c: &mut Connection, now: &mut Instant, mut deliver: impl FnMut(Datagram, Instant)) {
-    while let Some(d) = next_dgram(now, |t| c.process_output(t)) {
-        deliver(d, *now);
+/// Returns the output that ended the drain.
+fn drain(
+    c: &mut Connection,
+    now: &mut Instant,
+    mut deliver: impl FnMut(Datagram, Instant),
+) -> Output {
+    loop {
+        match next_dgram(now, |t| c.process_output(t)) {
+            Ok(d) => deliver(d, *now),
+            Err(o) => return o,
+        }
     }
 }
 
@@ -283,7 +305,7 @@ where
             did_ping[a.role()] = true;
         }
         input = output.and_then(&mut modifier);
-        qtrace!("handshake: t += {:?}", rtt / 2);
+        trace!("handshake: t += {:?}", rtt / 2);
         now += rtt / 2;
         #[allow(clippy::allow_attributes, // TODO: Switch to expect once MSRV>=1.99.
                 clippy::mut_mut, reason = "Correct here.")]
@@ -362,6 +384,44 @@ fn assert_error(c: &Connection, expected: &CloseReason) {
     }
 }
 
+/// A server Initial packet carrying `token` and `frames`, each encoded as a varint,
+/// forged with the Initial keys derived from the client's first datagram.
+#[cfg(not(feature = "disable-encryption"))]
+fn forged_server_initial(
+    client_initial: &[u8],
+    version: Version,
+    pn: packet::Number,
+    token: &[u8],
+    frames: &[u64],
+) -> Vec<u8> {
+    use neqo_common::Encoder;
+
+    use crate::crypto::{CryptoDxDirection, CryptoDxState};
+
+    // Skip the first byte and 4-byte version, then read the length-prefixed
+    // original Destination CID (the Initial-key seed) and Source CID (which the
+    // client expects as the Destination CID of packets sent back to it).
+    let mut dec = Decoder::from(&client_initial[5..]);
+    let seed = dec.decode_vec(1).unwrap();
+    let dcid = dec.decode_vec(1).unwrap();
+    let mut write =
+        CryptoDxState::new_initial(version, CryptoDxDirection::Write, "server in", seed, pn)
+            .unwrap();
+    let mut builder = packet::Builder::long(
+        Encoder::default(),
+        packet::Type::Initial,
+        version,
+        Some(dcid),
+        Some(b"fakescid"),
+        packet::LIMIT,
+    );
+    builder.initial_token(token);
+    builder.pn(pn, 1);
+    assert!(builder.write_varint_frame(frames));
+    builder.encode([0; 20]); // PADDING, for the header protection sample.
+    builder.build(&mut write).unwrap().into()
+}
+
 /// Pump datagrams between two peers until neither has anything more to send.
 fn exchange(a: &mut Connection, b: &mut Connection) {
     let mut d = a.process_output(now()).dgram();
@@ -372,18 +432,20 @@ fn exchange(a: &mut Connection, b: &mut Connection) {
     }
 }
 
+fn ticket_with_new_token(server: &mut Connection, now: Instant) -> Datagram {
+    let validation = AddressValidation::new(now, ValidateAddress::NoToken).unwrap();
+    let validation = Rc::new(RefCell::new(validation));
+    server.set_validation(&validation);
+    server.send_ticket(now, &[]).expect("can send ticket");
+    server.process_output(now).dgram().expect("ticket")
+}
+
 fn exchange_ticket(
     client: &mut Connection,
     server: &mut Connection,
     now: Instant,
 ) -> ResumptionToken {
-    let validation = AddressValidation::new(now, ValidateAddress::NoToken).unwrap();
-    let validation = Rc::new(RefCell::new(validation));
-    server.set_validation(&validation);
-    server.send_ticket(now, &[]).expect("can send ticket");
-    let ticket = server.process_output(now).dgram();
-    assert!(ticket.is_some());
-    client.process_input(ticket.unwrap(), now);
+    client.process_input(ticket_with_new_token(server, now), now);
     assert_eq!(*client.state(), State::Confirmed);
     get_tokens(client).pop().expect("should have token")
 }
@@ -419,7 +481,7 @@ where
     // Drain events from both as well.
     _ = client.events().count();
     _ = server.events().count();
-    qtrace!("----- connected and idle with RTT {rtt:?}");
+    trace!("----- connected and idle with RTT {rtt:?}");
     now
 }
 
@@ -443,7 +505,7 @@ fn fill_stream(c: &mut Connection, stream: StreamId) {
     const BLOCK_SIZE: usize = 4_096;
     loop {
         let bytes_sent = c.stream_send(stream, &[0x42; BLOCK_SIZE]).unwrap();
-        qtrace!("fill_cwnd wrote {bytes_sent} bytes");
+        trace!("fill_cwnd wrote {bytes_sent} bytes");
         if bytes_sent < BLOCK_SIZE {
             break;
         }
@@ -457,13 +519,13 @@ fn fill_stream(c: &mut Connection, stream: StreamId) {
 /// pacing, this looks at the congestion window to tell when to stop.
 /// Returns a list of datagrams and the new time.
 fn fill_cwnd(c: &mut Connection, stream: StreamId, mut now: Instant) -> (Vec<Datagram>, Instant) {
-    qtrace!("fill_cwnd starting cwnd: {}", cwnd_avail(c));
+    trace!("fill_cwnd starting cwnd: {}", cwnd_avail(c));
     fill_stream(c, stream);
 
     let mut total_dgrams = Vec::new();
     loop {
         let pkt = c.process_output(now);
-        qtrace!(
+        trace!(
             "fill_cwnd cwnd remaining={}, output: {pkt:?}",
             cwnd_avail(c)
         );
@@ -481,7 +543,7 @@ fn fill_cwnd(c: &mut Connection, stream: StreamId, mut now: Instant) -> (Vec<Dat
         }
     }
 
-    qtrace!(
+    trace!(
         "fill_cwnd sent {} bytes",
         total_dgrams.iter().map(Datagram::len).sum::<usize>()
     );
@@ -531,20 +593,19 @@ fn increase_cwnd(
 /// no ACK frame is generated.
 fn ack_bytes<D>(dest: &mut Connection, stream: StreamId, in_dgrams: D, now: Instant) -> Datagram
 where
-    D: IntoIterator<Item = Datagram>,
-    D::IntoIter: ExactSizeIterator,
+    D: IntoIterator<Item = Datagram, IntoIter: ExactSizeIterator>,
 {
     let mut srv_buf = [0; 4_096];
 
     let in_dgrams = in_dgrams.into_iter();
-    qdebug!("[{dest}] ack_bytes {} datagrams", in_dgrams.len());
+    debug!("[{dest}] ack_bytes {} datagrams", in_dgrams.len());
     for dgram in in_dgrams {
         dest.process_input(dgram, now);
     }
 
     loop {
         let (bytes_read, _fin) = dest.stream_recv(stream, &mut srv_buf).unwrap();
-        qtrace!("[{dest}] ack_bytes read {bytes_read} bytes");
+        trace!("[{dest}] ack_bytes read {bytes_read} bytes");
         if bytes_read == 0 {
             break;
         }
@@ -574,13 +635,13 @@ fn induce_persistent_congestion(
 ) -> Instant {
     // Note: wait some arbitrary time that should be longer than pto
     // timer. This is rather brittle.
-    qtrace!("[{client}] induce_persistent_congestion");
+    trace!("[{client}] induce_persistent_congestion");
     now += AT_LEAST_PTO;
 
     let mut pto_counts = [0; Stats::MAX_PTO_COUNTS];
     assert_eq!(client.stats.borrow().pto_counts, pto_counts);
 
-    qtrace!("[{client}] first PTO");
+    trace!("[{client}] first PTO");
     let (c_tx_dgrams, next_now) = fill_cwnd(client, stream, now);
     now = next_now;
     assert_eq!(c_tx_dgrams.len(), 2); // Two PTO packets
@@ -588,7 +649,7 @@ fn induce_persistent_congestion(
     pto_counts[0] = 1;
     assert_eq!(client.stats.borrow().pto_counts, pto_counts);
 
-    qtrace!("[{client}] second PTO");
+    trace!("[{client}] second PTO");
     now += AT_LEAST_PTO * 2;
     let (c_tx_dgrams, next_now) = fill_cwnd(client, stream, now);
     now = next_now;
@@ -598,7 +659,7 @@ fn induce_persistent_congestion(
     pto_counts[1] = 1;
     assert_eq!(client.stats.borrow().pto_counts, pto_counts);
 
-    qtrace!("[{client}] third PTO");
+    trace!("[{client}] third PTO");
     now += AT_LEAST_PTO * 4;
     let (c_tx_dgrams, next_now) = fill_cwnd(client, stream, now);
     now = next_now;
@@ -663,7 +724,7 @@ fn send_something_paced_with_modifier(
     let stream_id = sender.stream_create(StreamType::UniDi).unwrap();
     assert!(sender.stream_send(stream_id, DEFAULT_STREAM_DATA).is_ok());
     assert!(sender.stream_close_send(stream_id).is_ok());
-    qdebug!("[{sender}] send_something on {stream_id}");
+    debug!("[{sender}] send_something on {stream_id}");
     let dgram = match sender.process_output(now) {
         Output::Callback(t) => {
             assert!(allow_pacing, "send_something: unexpected delay");
@@ -756,13 +817,9 @@ fn assert_default_stats(stats: &Stats) {
 }
 
 fn assert_path_challenge_min_len(c: &Connection, d: &Datagram, now: Instant) {
-    let path = c.paths.find_path(
-        d.source(),
-        d.destination(),
-        &c.conn_params,
-        now,
-        &mut c.stats.borrow_mut(),
-    );
+    let path = c
+        .paths
+        .find_path(d.source(), d.destination(), &c.conn_params, now);
     if path.borrow().amplification_limit() < path.borrow().plpmtu() {
         // If the amplification limit is less than the PLPMTU, then the path
         // challenge will not have been padded.

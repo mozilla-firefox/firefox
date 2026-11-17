@@ -7,8 +7,9 @@
 use std::ops::{AddAssign, Deref, DerefMut, Sub};
 
 use enum_map::{Enum, EnumMap};
-use neqo_common::{Ecn, qdebug, qinfo};
+use neqo_common::{Ecn, to_u64};
 use serde::{Serialize, Serializer};
+use tracing::{debug, info};
 
 use crate::{Stats, packet, recovery::sent};
 
@@ -215,9 +216,9 @@ impl Info {
     pub(crate) fn on_packet_sent(&mut self, num_datagrams: usize, stats: &mut Stats) {
         if let ValidationState::Testing { probes_sent, .. } = &mut self.state {
             *probes_sent += num_datagrams;
-            qdebug!("ECN probing: sent {probes_sent} probes");
+            debug!("ECN probing: sent {probes_sent} probes");
             if *probes_sent >= TEST_COUNT {
-                qdebug!("ECN probing concluded with {probes_sent} probes sent");
+                debug!("ECN probing concluded with {probes_sent} probes sent");
                 self.state.set(ValidationState::Unknown, stats);
             }
         }
@@ -268,9 +269,7 @@ impl Info {
             // If we have lost all initial probes a bunch of times, we can conclude that the path
             // is not ECN capable and likely drops all ECN marked packets.
             if *probes_acked == 0 && *probes_lost == TEST_COUNT_INITIAL_PHASE {
-                qdebug!(
-                    "ECN validation failed, all {probes_lost} initial marked packets were lost"
-                );
+                debug!("ECN validation failed, all {probes_lost} initial marked packets were lost");
                 self.disable_ecn(stats, ValidationError::BlackHole);
             }
         }
@@ -304,6 +303,7 @@ impl Info {
             | ValidationState::Failed(_) => return,
             ValidationState::Unknown | ValidationState::Capable => {}
         }
+        self.largest_acked = largest_acked.pn();
 
         // RFC 9000, Section 13.4.2.1:
         //
@@ -314,9 +314,13 @@ impl Info {
         // > If an ACK frame newly acknowledges a packet that the endpoint sent with
         // > either the ECT(0) or ECT(1) codepoint set, ECN validation fails if the
         // > corresponding ECN counts are not present in the ACK frame.
+        let newly_acked_sent_with_ect0 =
+            to_u64(acked_packets.iter().filter(|p| p.ecn_marked_ect0()).count());
         let Some(ack_ecn) = ack_ecn else {
-            qinfo!("ECN validation failed, no ECN counts in ACK frame");
-            self.disable_ecn(stats, ValidationError::Bleaching);
+            if newly_acked_sent_with_ect0 > 0 {
+                info!("ECN validation failed, no ECN counts in ACK frame");
+                self.disable_ecn(stats, ValidationError::Bleaching);
+            }
             return;
         };
         let ack_ecn = *ack_ecn;
@@ -325,28 +329,21 @@ impl Info {
         // > ECN validation also fails if the sum of the increase in ECT(0) and ECN-CE counts is
         // > less than the number of newly acknowledged packets that were originally sent with an
         // > ECT(0) marking.
-        let newly_acked_sent_with_ect0: u64 = acked_packets
-            .iter()
-            .filter(|p| p.ecn_marked_ect0())
-            .count()
-            .try_into()
-            .expect("usize fits into u64");
         let ecn_diff = ack_ecn - self.baseline;
         let sum_inc = ecn_diff[Ecn::Ect0] + ecn_diff[Ecn::Ce];
         if sum_inc < newly_acked_sent_with_ect0 {
-            qinfo!(
+            info!(
                 "ECN validation failed, ACK counted {sum_inc} new marks, but {newly_acked_sent_with_ect0} of newly acked packets were sent with ECT(0)"
             );
             self.disable_ecn(stats, ValidationError::Bleaching);
         } else if ecn_diff[Ecn::Ect1] > 0 {
-            qinfo!("ECN validation failed, ACK counted ECT(1) marks that were never sent");
+            info!("ECN validation failed, ACK counted ECT(1) marks that were never sent");
             self.disable_ecn(stats, ValidationError::ReceivedUnsentECT1);
-        } else if self.state != ValidationState::Capable {
-            qinfo!("ECN validation succeeded, path is capable");
+        } else if self.state != ValidationState::Capable && newly_acked_sent_with_ect0 > 0 {
+            info!("ECN validation succeeded, path is capable");
             self.state.set(ValidationState::Capable, stats);
         }
         self.baseline = ack_ecn;
-        self.largest_acked = largest_acked.pn();
     }
 
     pub(crate) const fn is_marking(&self) -> bool {
@@ -371,11 +368,39 @@ impl Info {
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
-    use super::{Count, ValidationError, ValidationOutcome, ValidationState};
-    use crate::stats::Stats;
+    use test_fixture::now;
+
+    use super::{Count, Info, TEST_COUNT, ValidationError, ValidationOutcome, ValidationState};
+    use crate::{
+        packet,
+        recovery::{
+            Token,
+            sent::{Packet, make_packet},
+        },
+        stats::Stats,
+    };
 
     fn make_unknown() -> (ValidationState, Stats) {
         (ValidationState::Unknown, Stats::default())
+    }
+
+    fn make_unknown_info() -> (Info, Stats) {
+        let mut stats = Stats::default();
+        let mut info = Info::default();
+        info.start(&mut stats);
+        info.on_packet_sent(TEST_COUNT, &mut stats);
+        (info, stats)
+    }
+
+    fn make_marked_packet(pn: packet::Number) -> Packet {
+        Packet::new(
+            packet::Type::Short,
+            pn,
+            now(),
+            true,
+            vec![Token::EcnEct0],
+            100,
+        )
     }
 
     #[test]
@@ -416,5 +441,39 @@ mod tests {
         assert!(Count::new(0, 0, 0, 1).is_some()); // ce > 0
         assert!(!Count::new(1, 0, 0, 0).is_empty());
         assert!(!Count::new(1, 0, 0, 0).is_some()); // not_ect alone
+    }
+
+    #[test]
+    fn unknown_stays_unknown_without_marked_ack() {
+        let (mut info, mut stats) = make_unknown_info();
+        let unmarked = [make_packet(1, now(), 100)];
+        info.on_packets_acked(&unmarked, Some(&Count::default()), &mut stats);
+        assert_eq!(info.state, ValidationState::Unknown);
+    }
+
+    #[test]
+    fn unknown_stays_unknown_without_counts_or_marked_ack() {
+        let (mut info, mut stats) = make_unknown_info();
+        info.on_packets_acked(&[make_packet(1, now(), 100)], None, &mut stats);
+        assert_eq!(info.state, ValidationState::Unknown);
+    }
+
+    #[test]
+    fn marked_ack_without_counts_fails() {
+        let (mut info, mut stats) = make_unknown_info();
+        info.on_packets_acked(&[make_marked_packet(1)], None, &mut stats);
+        assert_eq!(
+            info.state,
+            ValidationState::Failed(ValidationError::Bleaching)
+        );
+    }
+
+    #[test]
+    fn reordered_ack_after_ack_without_counts() {
+        let (mut info, mut stats) = make_unknown_info();
+        info.on_packets_acked(&[make_packet(2, now(), 100)], None, &mut stats);
+        let marked = [make_marked_packet(1)];
+        info.on_packets_acked(&marked, Some(&Count::default()), &mut stats);
+        assert_eq!(info.state, ValidationState::Unknown);
     }
 }

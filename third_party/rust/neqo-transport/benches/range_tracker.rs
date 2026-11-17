@@ -52,7 +52,8 @@ fn coalesce(c: &mut Criterion, count: usize) {
                     black_box(used);
                 }
             },
-            BatchSize::SmallInput,
+            // Each input is up to ~330 KB; batching them leaves the routine reading cold memory.
+            BatchSize::PerIteration,
         );
     });
 }

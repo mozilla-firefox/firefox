@@ -18,7 +18,7 @@ impl Generator {
     ///
     /// Panics if the counter overflows `u64::MAX`.
     pub const fn next_id(&mut self) -> SendGroupId {
-        let id = self.0.checked_add(1).expect("SendGroup ID overflow");
+        let id = self.0.strict_add(1);
         self.0 = id;
         SendGroupId::new(id)
     }

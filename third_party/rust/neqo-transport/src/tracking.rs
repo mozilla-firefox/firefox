@@ -15,10 +15,10 @@ use std::{
 
 use enum_map::{Enum, EnumMap};
 use enumset::{EnumSet, EnumSetType};
-use log::{Level, log_enabled};
-use neqo_common::{Buffer, Ecn, Encoder, MAX_VARINT, Reservation, qdebug, qtrace, qwarn};
+use neqo_common::{Buffer, Ecn, Encoder, MAX_VARINT, Reservation};
 use nss::Epoch;
 use strum::{Display, EnumIter};
+use tracing::{debug, trace, warn};
 
 use crate::{
     Error, Res, Stats, ecn,
@@ -117,12 +117,12 @@ impl PacketRange {
         assert!(!self.contains(pn));
         // Only insert if this is adjacent the current range.
         if (self.largest + 1) == pn {
-            qtrace!("[{self}] Adding largest {pn}");
+            trace!("[{self}] Adding largest {pn}");
             self.largest += 1;
             self.ack_needed = true;
             InsertionResult::Largest
         } else if self.smallest == (pn + 1) {
-            qtrace!("[{self}] Adding smallest {pn}");
+            trace!("[{self}] Adding smallest {pn}");
             self.smallest -= 1;
             self.ack_needed = true;
             InsertionResult::Smallest
@@ -133,7 +133,7 @@ impl PacketRange {
 
     /// Maybe merge a higher-numbered range into this.
     fn merge_larger(&mut self, other: &Self) {
-        qdebug!("[{self}] Merging {other}");
+        debug!("[{self}] Merging {other}");
         // This only works if they are immediately adjacent.
         assert_eq!(self.largest + 1, other.smallest);
 
@@ -301,10 +301,10 @@ impl RecvdPackets {
         if self.ranges.len() > MAX_TRACKED_RANGES {
             let oldest = self.ranges.pop_back().ok_or(Error::Internal)?;
             if oldest.ack_needed {
-                qwarn!("[{self}] Dropping unacknowledged ACK range: {oldest}");
+                warn!("[{self}] Dropping unacknowledged ACK range: {oldest}");
                 stats.unacked_range_dropped += 1;
             } else {
-                qdebug!("[{self}] Drop ACK range: {oldest}");
+                debug!("[{self}] Drop ACK range: {oldest}");
             }
             self.min_tracked = oldest.largest + 1;
         }
@@ -321,7 +321,7 @@ impl RecvdPackets {
         stats: &mut Stats,
     ) -> Res<bool> {
         let next_in_order_pn = self.ranges.front().map_or(0, |r| r.largest + 1);
-        qtrace!("[{self}] received {pn}, next: {next_in_order_pn}");
+        trace!("[{self}] received {pn}, next: {next_in_order_pn}");
 
         self.add(pn)?;
         self.trim_ranges(stats)?;
@@ -352,7 +352,7 @@ impl RecvdPackets {
                 // of the change is very small.
                 self.ack_time.unwrap_or_else(|| now + self.ack_delay)
             };
-            qdebug!("[{self}] Set ACK timer to {ack_time:?}");
+            debug!("[{self}] Set ACK timer to {ack_time:?}");
             self.ack_time = Some(ack_time);
         }
         Ok(largest)
@@ -361,7 +361,7 @@ impl RecvdPackets {
     /// If we just received a PING frame, we should immediately acknowledge.
     pub fn immediate_ack(&mut self, now: Instant) {
         self.ack_time = Some(now);
-        qdebug!("[{self}] immediate_ack at {now:?}");
+        debug!("[{self}] immediate_ack at {now:?}");
     }
 
     /// Check if the packet is a duplicate.
@@ -587,10 +587,10 @@ impl AckTracker {
 
     /// Determine the earliest time that an ACK might be needed.
     pub fn ack_time(&self, now: Instant) -> Option<Instant> {
-        if log_enabled!(Level::Trace) {
+        if tracing::enabled!(tracing::Level::TRACE) {
             for (space, recvd) in &self.spaces {
                 if let Some(recvd) = recvd {
-                    qtrace!("ack_time for {space} = {:?}", recvd.ack_time());
+                    trace!("ack_time for {space} = {:?}", recvd.ack_time());
                 }
             }
         }
@@ -1242,9 +1242,9 @@ mod tests {
 
     #[test]
     fn ack_only_packet_sends_more_than_32_ranges() {
-        assert!(recovery::SendProfile::new_limited(0).ack_only());
+        assert!(recovery::SendProfile::new_limited(0, 1200).ack_only());
         assert_eq!(
-            recovery::SendProfile::new_limited(0).limit(),
+            recovery::SendProfile::new_limited(0, 1200).limit(),
             recovery::ACK_ONLY_SIZE_LIMIT - 1
         );
 

@@ -12,14 +12,18 @@ use std::{
     time::Instant,
 };
 
-use neqo_common::{Header, header::HeadersExt as _, qdebug, qinfo, qtrace};
+use neqo_common::{Header, header::HeadersExt as _};
 use neqo_qpack as qpack;
 use neqo_transport::{Connection, StreamId};
+use tracing::{debug, info, trace};
 
 use crate::{
     CloseType, Error, Http3StreamInfo, Http3StreamType, HttpRecvStream, HttpRecvStreamEvents,
     MessageType, Priority, ReceiveOutput, RecvStream, Res, Stream,
-    frames::{FrameReader, HFrame, StreamReaderConnectionWrapper, hframe::HFrameType},
+    frames::{
+        FrameReader, HFrame, StreamReaderConnectionWrapper,
+        hframe::{HFrameType, MAX_HEADER_BYTES},
+    },
     headers_checks::{headers_valid, is_interim},
     priority::PriorityHandler,
     qlog,
@@ -72,6 +76,7 @@ pub struct RecvMessage {
     qpack_decoder: Rc<RefCell<qpack::Decoder>>,
     conn_events: Box<dyn HttpRecvStreamEvents>,
     priority_handler: PriorityHandler,
+    interim_budget: usize,
 }
 
 impl Display for RecvMessage {
@@ -101,6 +106,7 @@ impl RecvMessage {
             qpack_decoder,
             conn_events,
             priority_handler,
+            interim_budget: MAX_HEADER_BYTES,
         }
     }
 
@@ -152,18 +158,26 @@ impl RecvMessage {
     }
 
     fn add_headers(&mut self, mut headers: Vec<Header>, fin: bool) -> Res<()> {
-        qtrace!("[{self}] Add new headers fin={fin}");
+        trace!("[{self}] Add new headers fin={fin}");
         let interim = match self.message_type {
             MessageType::Request => false,
             MessageType::Response => is_interim(&headers)?,
         };
         headers_valid(&headers, self.message_type)?;
-        if self.message_type == MessageType::Response {
-            headers.retain(Header::is_allowed_for_response);
-        }
 
         if fin && interim {
             return Err(Error::HttpGeneralProtocolStream);
+        }
+
+        if interim {
+            let size = headers.iter().map(Header::field_size).sum();
+            self.interim_budget = self
+                .interim_budget
+                .checked_sub(size)
+                .ok_or(Error::HttpExcessiveLoad)?;
+        }
+        if self.message_type == MessageType::Response {
+            headers.retain(Header::is_allowed_for_response);
         }
 
         let is_extended_connect = self.message_type == MessageType::Request
@@ -199,7 +213,7 @@ impl RecvMessage {
     fn set_state_to_close_pending(&mut self, post_readable_event: bool) -> Res<()> {
         // Stream has received fin. Depending on headers state set header_ready
         // or data_readable event so that app can pick up the fin.
-        qtrace!(
+        trace!(
             "[{self}] set_state_to_close_pending: state={:?}",
             self.state
         );
@@ -230,7 +244,7 @@ impl RecvMessage {
         now: Instant,
     ) -> Res<()> {
         loop {
-            qdebug!("[{self}] state={:?}", self.state);
+            debug!("[{self}] state={:?}", self.state);
             match &mut self.state {
                 // In the following 3 states we need to read frames.
                 RecvMessageState::WaitingForResponseHeaders { frame_reader }
@@ -245,7 +259,7 @@ impl RecvMessage {
                         }
                         (None, false) => break Ok(()),
                         (Some(frame), fin) => {
-                            qdebug!(
+                            debug!(
                                 "[{self}] recv frame: {frame:?}; state={:?} fin={fin}",
                                 self.state,
                             );
@@ -294,7 +308,7 @@ impl RecvMessage {
                             break Ok(());
                         }
                     } else {
-                        qinfo!("[{self}] decoding header is blocked");
+                        info!("[{self}] decoding header is blocked");
                         break Ok(());
                     }
                 }

@@ -10,10 +10,11 @@ use std::{
     time::Instant,
 };
 
-use neqo_common::{Bytes, Encoder, Header, Role, qtrace};
+use neqo_common::{Bytes, Encoder, Header, Role};
 use neqo_transport::{Connection, StreamId, streams::SendGroupId};
 use rustc_hash::FxHashSet as HashSet;
 use sfv::{BareItem, Item, Parser};
+use tracing::trace;
 
 use crate::{
     Error, Http3StreamInfo, Http3StreamType, RecvStream, Res, SendStream,
@@ -129,7 +130,7 @@ impl Protocol for Session {
                 now,
             )
             .map_err(|_| Error::HttpGeneralProtocolStream)?;
-        qtrace!("[{self}] Received frame: {f:?} fin={fin}");
+        trace!("[{self}] Received frame: {f:?} fin={fin}");
         if let Some(WebTransportFrame::CloseSession { error, message }) = f {
             events.session_end(
                 ExtendedConnectType::WebTransport,

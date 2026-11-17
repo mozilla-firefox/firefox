@@ -12,7 +12,8 @@ use std::{
     time::{Duration, Instant},
 };
 
-use neqo_common::{qdebug, to_u64};
+use neqo_common::to_u64;
+use tracing::debug;
 
 use crate::{cc::classic_cc::SlowStart, packet, rtt::RttEstimate, stats::CongestionControlStats};
 
@@ -112,7 +113,7 @@ impl Search {
         // BIN_DURATION = WINDOW_SIZE / W = initial_rtt * WINDOW_SIZE_FACTOR / W
         self.bin_duration = initial_rtt * Self::WINDOW_SIZE_FACTOR / Self::SCALE / Self::W as u32;
         if self.bin_duration.is_zero() {
-            qdebug!(
+            debug!(
                 "skipping initialization because bin_duration.is_zero() but bin_duration must be non-zero - initial_rtt: {initial_rtt:?}",
             );
             debug_assert!(
@@ -159,7 +160,7 @@ impl Search {
         //
         // <https://datatracker.ietf.org/doc/html/draft-chung-ccwg-search-09#name-handling-missed-bins-option>
         if passed_bins > Self::W {
-            qdebug!(
+            debug!(
                 "SEARCH: update_bins: resetting because we skipped {passed_bins} bins (limit {})",
                 Self::W
             );
@@ -243,23 +244,23 @@ impl Search {
         // so `prev_idx` might be too recent by a fraction of a bin. Said fraction is scaled to
         // `0..[Self::SCALE]` for interpolation in `compute_sent`.
         let (prev_idx, fraction) = self.calc_prev_idx(rtt, curr_idx);
-        qdebug!("SEARCH: evaluate: prev_idx {prev_idx} curr_idx {curr_idx} fraction {fraction}");
+        debug!("SEARCH: evaluate: prev_idx {prev_idx} curr_idx {curr_idx} fraction {fraction}");
 
         if prev_idx <= Self::W {
-            qdebug!("SEARCH: evaluate: not enough data for SEARCH evaluation (warming up)");
+            debug!("SEARCH: evaluate: not enough data for SEARCH evaluation (warming up)");
             return Outcome::WarmingUp;
         }
         if curr_idx - prev_idx >= Self::EXTRA_BINS {
-            qdebug!("SEARCH: evaluate: not enough data for SEARCH evaluation (RTT inflated)");
+            debug!("SEARCH: evaluate: not enough data for SEARCH evaluation (RTT inflated)");
             return Outcome::RttInflated(curr_idx - prev_idx);
         }
 
         let curr_delv = self.compute_delv(curr_idx - Self::W, curr_idx);
         let prev_sent = self.compute_sent(prev_idx - Self::W, prev_idx, fraction);
-        qdebug!("SEARCH: evaluate: curr_delv {curr_delv} prev_sent {prev_sent}");
+        debug!("SEARCH: evaluate: curr_delv {curr_delv} prev_sent {prev_sent}");
 
         if prev_sent == 0 {
-            qdebug!("SEARCH: evaluate: prev_sent is zero, can't evaluate");
+            debug!("SEARCH: evaluate: prev_sent is zero, can't evaluate");
             return Outcome::ZeroSent;
         }
 
@@ -268,13 +269,13 @@ impl Search {
             usize::try_from(diff * u64::from(Self::SCALE) / prev_sent).unwrap_or(usize::MAX);
 
         if norm_diff < Self::THRESH {
-            qdebug!(
+            debug!(
                 "SEARCH: evaluate: norm_diff {norm_diff} < THRESH {} --> continue",
                 Self::THRESH
             );
             return Outcome::Continue(norm_diff);
         }
-        qdebug!(
+        debug!(
             "SEARCH: evaluate: norm_diff {norm_diff} >= THRESH {} --> exit",
             Self::THRESH
         );
@@ -399,7 +400,7 @@ impl SlowStart for Search {
         if let Some(bin_end) = self.bin_end
             && now <= bin_end
         {
-            qdebug!("SEARCH: on_packets_acked: haven't reached current bin_end");
+            debug!("SEARCH: on_packets_acked: haven't reached current bin_end");
             return None;
         }
 

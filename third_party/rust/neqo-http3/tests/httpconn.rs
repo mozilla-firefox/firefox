@@ -10,7 +10,8 @@ mod common;
 
 use std::time::{Duration, Instant};
 
-use neqo_common::{Datagram, event::Provider as _, expect_usize, qtrace};
+use http::Uri;
+use neqo_common::{Datagram, event::Provider as _, expect_usize};
 use neqo_http3::{
     Header, Http3Client, Http3ClientEvent, Http3OrWebTransportStream, Http3Parameters, Http3Server,
     Http3ServerEvent, Http3State, Priority,
@@ -18,6 +19,7 @@ use neqo_http3::{
 use neqo_transport::{CloseReason, ConnectionParameters, Error, Output, StreamDataLimit};
 use nss::{AuthenticationStatus, ResumptionToken};
 use test_fixture::*;
+use tracing::trace;
 
 const RESPONSE_DATA: &[u8] = &[0x61, 0x62, 0x63];
 
@@ -150,12 +152,12 @@ fn simple_connect() {
 fn fetch() {
     let (mut hconn_c, mut hconn_s, dgram) = connect();
 
-    qtrace!("-----client");
+    trace!("-----client");
     let req = hconn_c
         .fetch(
             now(),
             "GET",
-            ("https", "something.com", "/"),
+            &("https", "something.com", "/"),
             &[],
             Priority::default(),
         )
@@ -163,17 +165,76 @@ fn fetch() {
     assert_eq!(req, 0);
     hconn_c.stream_close_send(req, now()).unwrap();
     let out = hconn_c.process(dgram, now());
-    qtrace!("-----server");
+    trace!("-----server");
     let out = hconn_s.process(out.dgram(), now());
     drop(hconn_c.process(out.dgram(), now()));
     process_server_events(&hconn_s, now());
     let out = hconn_s.process(None::<Datagram>, now());
 
-    qtrace!("-----client");
+    trace!("-----client");
     drop(hconn_c.process(out.dgram(), now()));
     let out = hconn_s.process(None::<Datagram>, now());
     drop(hconn_c.process(out.dgram(), now()));
     process_client_events(&mut hconn_c);
+}
+
+fn fetch_uri(uri: &str) -> (Http3Client, Http3Server, Http3OrWebTransportStream) {
+    let (mut hconn_c, mut hconn_s, dgram) = connect();
+    let uri = uri.parse::<Uri>().unwrap();
+    let req = hconn_c
+        .fetch(now(), "GET", &uri, &[], Priority::default())
+        .unwrap();
+    hconn_c.stream_close_send(req, now()).unwrap();
+    let out = hconn_c.process(dgram, now());
+    _ = hconn_s.process(out.dgram(), now());
+    let request = receive_request(&hconn_s).unwrap();
+    (hconn_c, hconn_s, request)
+}
+
+#[test]
+fn fetch_uri_drops_userinfo() {
+    fetch_uri("https://u:p@something.com/");
+}
+
+#[test]
+fn fetch_invalid() {
+    let (mut hconn_c, _hconn_s, _dgram) = connect();
+    for uri in ["/", "https://a.example/\x7f", "https://a.example/?\x7f"] {
+        let uri = uri.parse::<Uri>().unwrap();
+        let res = hconn_c.fetch(now(), "GET", &uri, &[], Priority::default());
+        assert_eq!(res, Err(neqo_http3::Error::InvalidInput));
+    }
+    let bad_header = [Header::new("x", "a\rb")];
+    for (target, headers) in [
+        (("https", "something.com", "/x#y"), &[][..]),
+        (("https", ":443", "/"), &[]),
+        (("https", "something.com:65536", "/"), &[]),
+        (("https", "something.com", "/"), &bad_header),
+    ] {
+        let res = hconn_c.fetch(now(), "GET", &target, headers, Priority::default());
+        assert_eq!(res, Err(neqo_http3::Error::InvalidInput));
+    }
+    let target = ("https", "something.com", "/s?a[]=1&q={x}|y");
+    let res = hconn_c.fetch(now(), "GET", &target, &[], Priority::default());
+    assert_eq!(res.unwrap(), 0);
+}
+
+#[test]
+fn response_invalid_header_value() {
+    let (_hconn_c, _hconn_s, request) = fetch_uri("https://something.com/");
+    let res = request.send_headers(&[Header::new(":status", "200"), Header::new("x", "a\rb")]);
+    assert_eq!(res, Err(neqo_http3::Error::InvalidInput));
+    let res = request.send_headers(&[Header::new(":status", "101")]);
+    assert_eq!(res, Err(neqo_http3::Error::InvalidInput));
+}
+
+#[test]
+fn response_invalid_status() {
+    let (_hconn_c, _hconn_s, request) = fetch_uri("https://something.com/");
+    for status in ["101", "abc"] {
+        let res = request.send_headers(&[Header::new(":status", status)]);
+        assert_eq!(res, Err(neqo_http3::Error::InvalidInput));
+    }
 }
 
 #[test]
@@ -184,7 +245,7 @@ fn response_103() {
         .fetch(
             now(),
             "GET",
-            ("https", "something.com", "/"),
+            &("https", "something.com", "/"),
             &[],
             Priority::default(),
         )
@@ -220,7 +281,7 @@ fn response_103() {
 }
 
 /// Test [`neqo_http3::SendMessage::send_data`] to set
-/// [`neqo_transport::SendStream::set_writable_event_low_watermark`].
+/// [`neqo_transport::Connection::stream_set_writable_event_low_watermark`].
 #[test]
 fn data_writable_events_low_watermark() -> Result<(), Box<dyn std::error::Error>> {
     const STREAM_LIMIT: u64 = 5000;
@@ -237,7 +298,7 @@ fn data_writable_events_low_watermark() -> Result<(), Box<dyn std::error::Error>
     let stream_id = hconn_c.fetch(
         now(),
         "GET",
-        ("https", "something.com", "/"),
+        &("https", "something.com", "/"),
         &[],
         Priority::default(),
     )?;
@@ -312,7 +373,7 @@ fn data_writable_events() {
         .fetch(
             now(),
             "GET",
-            ("https", "something.com", "/"),
+            &("https", "something.com", "/"),
             &[],
             Priority::default(),
         )
@@ -400,6 +461,40 @@ fn get_token(client: &mut Http3Client) -> ResumptionToken {
 }
 
 #[test]
+fn closing_keeps_resumption_token() {
+    let (mut hconn_c, mut hconn_s, _) = connect();
+    hconn_c.events().for_each(drop);
+    let conn = hconn_s
+        .events()
+        .find_map(|e| match e {
+            Http3ServerEvent::StateChange { conn, .. } => Some(conn),
+            _ => None,
+        })
+        .unwrap();
+    conn.borrow_mut().send_ticket(now(), &[]).unwrap();
+    let ticket = hconn_s.process_output(now()).dgram().unwrap();
+    conn.borrow_mut().close(now(), 42, "");
+    let close = hconn_s.process_output(now()).dgram().unwrap();
+
+    hconn_c.process_multiple_input([ticket, close], now());
+    let state = Http3State::Closing(CloseReason::Transport(Error::PeerApplication(42)));
+    assert_eq!(hconn_c.state(), state);
+    let events = hconn_c.events().collect::<Vec<_>>();
+    let [
+        Http3ClientEvent::ResumptionToken(token),
+        Http3ClientEvent::StateChange(state_change),
+    ] = &events[..]
+    else {
+        panic!("unexpected events {events:?}");
+    };
+    assert_eq!(*state_change, state);
+
+    let mut hconn_c = default_http3_client();
+    hconn_c.enable_resumption(now(), token).unwrap();
+    assert_eq!(hconn_c.state(), Http3State::ZeroRtt);
+}
+
+#[test]
 fn zerortt() {
     let (mut hconn_c, _, dgram) = connect();
     let token = get_token(&mut hconn_c);
@@ -416,7 +511,7 @@ fn zerortt() {
         .fetch(
             now(),
             "GET",
-            ("https", "something.com", "/"),
+            &("https", "something.com", "/"),
             &[],
             Priority::default(),
         )
@@ -481,12 +576,12 @@ fn fetch_noresponse_will_idletimeout() {
     let (dgram, mut now) =
         connect_peers_with_network_propagation_delay(&mut hconn_c, &mut hconn_s, 10);
 
-    qtrace!("-----client");
+    trace!("-----client");
     let req = hconn_c
         .fetch(
             now,
             "GET",
-            ("https", "something.com", "/"),
+            &("https", "something.com", "/"),
             &[],
             Priority::default(),
         )
@@ -494,7 +589,7 @@ fn fetch_noresponse_will_idletimeout() {
     assert_eq!(req, 0);
     hconn_c.stream_close_send(req, now).unwrap();
     let _out = hconn_c.process(dgram, now);
-    qtrace!("-----server");
+    trace!("-----server");
 
     let mut done = false;
     while !done {
@@ -576,7 +671,7 @@ fn server_reliable_reset() {
         .fetch(
             now(),
             "GET",
-            ("https", "something.com", "/"),
+            &("https", "something.com", "/"),
             &[],
             Priority::default(),
         )
@@ -645,7 +740,7 @@ fn server_reliable_reset_with_body() {
         .fetch(
             now(),
             "GET",
-            ("https", "something.com", "/"),
+            &("https", "something.com", "/"),
             &[],
             Priority::default(),
         )

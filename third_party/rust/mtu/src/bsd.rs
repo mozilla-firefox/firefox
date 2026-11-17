@@ -18,7 +18,6 @@ use libc::{
     AF_UNSPEC, PF_ROUTE, freeifaddrs, getifaddrs, getpid, if_indextoname, ifaddrs, in_addr,
     in6_addr, sockaddr, sockaddr_dl, sockaddr_in, sockaddr_in6, sockaddr_storage,
 };
-use static_assertions::{const_assert, const_assert_eq};
 
 #[cfg_attr(
     not(any(target_os = "netbsd", target_os = "solaris")),
@@ -75,17 +74,12 @@ asserted_const_with_type!(AF_LINK, AddressFamily, libc::AF_LINK, i32);
 asserted_const_with_type!(RTM_VERSION, u8, bindings::RTM_VERSION, u32);
 asserted_const_with_type!(RTM_GET, u8, bindings::RTM_GET, u32);
 
-const_assert!(size_of::<sockaddr_in>() + ALIGN <= u8::MAX as usize);
-const_assert!(size_of::<sockaddr_in6>() + ALIGN <= u8::MAX as usize);
-const_assert!(size_of::<rt_msghdr>() <= u8::MAX as usize);
+const _: () = assert!(size_of::<sockaddr_in>() + ALIGN <= u8::MAX as usize);
+const _: () = assert!(size_of::<sockaddr_in6>() + ALIGN <= u8::MAX as usize);
+const _: () = assert!(size_of::<rt_msghdr>() <= u8::MAX as usize);
 
+#[derive(Default)]
 struct IfAddrs(*mut ifaddrs);
-
-impl Default for IfAddrs {
-    fn default() -> Self {
-        Self(ptr::null_mut())
-    }
-}
 
 impl IfAddrs {
     fn new() -> Result<Self> {
@@ -123,12 +117,16 @@ struct IfAddrPtr<'a> {
 }
 
 impl IfAddrPtr<'_> {
-    fn addr(&self) -> sockaddr {
-        unsafe { *self.ifa_addr }
+    fn addr(&self) -> Option<sockaddr> {
+        if self.ifa_addr.is_null() {
+            None
+        } else {
+            Some(unsafe { *self.ifa_addr })
+        }
     }
 
-    fn name(&self) -> String {
-        unsafe { CStr::from_ptr(self.ifa_name).to_string_lossy().to_string() }
+    fn name(&self) -> &CStr {
+        unsafe { CStr::from_ptr(self.ifa_name) }
     }
 
     fn data(&self) -> Option<if_data> {
@@ -163,23 +161,19 @@ impl Iterator for IfAddrPtr<'_> {
 }
 
 fn if_name_mtu(idx: u32) -> Result<(String, Option<usize>)> {
-    let mut name = [0; libc::IF_NAMESIZE];
+    let mut name = [0u8; libc::IF_NAMESIZE];
     // if_indextoname writes into the provided buffer.
-    if unsafe { if_indextoname(idx, name.as_mut_ptr()).is_null() } {
+    if unsafe { if_indextoname(idx, name.as_mut_ptr().cast()).is_null() } {
         return Err(Error::last_os_error());
     }
-    // Convert to Rust string.
-    let name = unsafe {
-        CStr::from_ptr(name.as_ptr())
-            .to_str()
-            .map_err(Error::other)?
-    };
+    let name = CStr::from_bytes_until_nul(&name).map_err(Error::other)?;
     let mtu = IfAddrs::new()?
         .iter()
-        .find(|ifa| ifa.addr().sa_family == AF_LINK && ifa.name() == name)
+        .find(|ifa| ifa.addr().is_some_and(|sa| sa.sa_family == AF_LINK) && ifa.name() == name)
         .and_then(|ifa| ifa.data())
         .and_then(|ifa_data| usize::try_from(ifa_data.ifi_mtu).ok());
-    Ok((name.to_string(), mtu))
+    // Convert to Rust string.
+    Ok((name.to_str().map_err(Error::other)?.to_string(), mtu))
 }
 
 #[repr(C)]
@@ -210,7 +204,7 @@ impl From<IpAddr> for SockaddrStorage {
                     #[cfg(not(target_os = "solaris"))]
                     #[expect(
                         clippy::cast_possible_truncation,
-                        reason = "`sockaddr_in` len is <= u8::MAX per `const_assert!` above."
+                        reason = "`sockaddr_in` len is <= u8::MAX per `assert!` above."
                     )]
                     sin_len: size_of::<sockaddr_in>() as u8,
                     sin_family: AF_INET,
@@ -226,7 +220,7 @@ impl From<IpAddr> for SockaddrStorage {
                     #[cfg(not(target_os = "solaris"))]
                     #[expect(
                         clippy::cast_possible_truncation,
-                        reason = "`sockaddr_in6` len is <= u8::MAX per `const_assert!` above."
+                        reason = "`sockaddr_in6` len is <= u8::MAX per `assert!` above."
                     )]
                     sin6_len: size_of::<sockaddr_in6>() as u8,
                     sin6_family: AF_INET6,
@@ -276,7 +270,7 @@ impl RouteMessage {
             rtm: rt_msghdr {
                 #[expect(
                     clippy::cast_possible_truncation,
-                    reason = "`rt_msghdr` len + `ALIGN` is <= u8::MAX per `const_assert!` above."
+                    reason = "`rt_msghdr` len + `ALIGN` is <= u8::MAX per `assert!` above."
                 )]
                 rtm_msglen: (size_of::<rt_msghdr>() + sa_len) as u16,
                 rtm_version: RTM_VERSION,
@@ -342,7 +336,7 @@ fn if_index_mtu(remote: IpAddr) -> Result<(u16, Option<usize>)> {
         if len < size_of::<rt_msghdr>() {
             return Err(default_err());
         }
-        let (reply, mut sa) = buf.split_at(size_of::<rt_msghdr>());
+        let (reply, sa) = buf.split_at(size_of::<rt_msghdr>());
         let reply: rt_msghdr = reply.into();
         if !(reply.rtm_version == query_version
             && reply.rtm_pid == pid
@@ -366,19 +360,36 @@ fn if_index_mtu(remote: IpAddr) -> Result<(u16, Option<usize>)> {
             return Ok((reply.rtm_index, mtu));
         }
         // For others, we need to extract it from the sockaddrs.
-        for i in 0..RTAX_MAX {
-            if (reply.rtm_addrs & (1 << i)) == 0 {
-                continue;
-            }
-            let saddr = unsafe { ptr::read_unaligned(sa.as_ptr().cast::<sockaddr>()) };
-            if saddr.sa_family != AF_LINK {
-                (_, sa) = sa.split_at(sockaddr_len(saddr.sa_family)?);
-                continue;
-            }
-            let sdl = unsafe { ptr::read_unaligned(sa.as_ptr().cast::<sockaddr_dl>()) };
-            return Ok((sdl.sdl_index, mtu));
+        if let Some(index) = sdl_index(reply.rtm_addrs, sa)? {
+            return Ok((index, mtu));
         }
     }
+}
+
+/// Returns the interface index of the first `sockaddr_dl` among the sockaddrs in `sa` that
+/// `rtm_addrs` flags as present.
+fn sdl_index(rtm_addrs: i32, mut sa: &[u8]) -> Result<Option<u16>> {
+    for i in 0..RTAX_MAX {
+        if (rtm_addrs & (1 << i)) == 0 {
+            continue;
+        }
+        if sa.len() < size_of::<sockaddr>() {
+            return Err(default_err());
+        }
+        let saddr = unsafe { ptr::read_unaligned(sa.as_ptr().cast::<sockaddr>()) };
+        if saddr.sa_family != AF_LINK {
+            (_, sa) = sa
+                .split_at_checked(sockaddr_len(saddr.sa_family)?)
+                .ok_or_else(default_err)?;
+            continue;
+        }
+        if sa.len() < size_of::<sockaddr_dl>() {
+            return Err(default_err());
+        }
+        let sdl = unsafe { ptr::read_unaligned(sa.as_ptr().cast::<sockaddr_dl>()) };
+        return Ok(Some(sdl.sdl_index));
+    }
+    Ok(None)
 }
 
 pub fn interface_and_mtu_impl(remote: IpAddr) -> Result<(String, usize)> {
@@ -390,12 +401,87 @@ pub fn interface_and_mtu_impl(remote: IpAddr) -> Result<(String, usize)> {
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod test {
+    use std::mem::{offset_of, zeroed};
+
     use super::*;
+
+    const INDEX: u16 = 7;
+
+    fn is_default_err<T>(res: Result<T>) -> bool {
+        res.is_err_and(|e| format!("{e:?}") == format!("{:?}", default_err()))
+    }
+
+    /// Returns a zeroed sockaddr of `len` bytes with `family` at offset `at`.
+    fn sockaddr_bytes(len: usize, at: usize, family: AddressFamily) -> Vec<u8> {
+        let mut sa = vec![0; len];
+        sa[at..at + size_of::<AddressFamily>()].copy_from_slice(&family.to_ne_bytes());
+        sa
+    }
+
+    fn sin6() -> Vec<u8> {
+        let len = sockaddr_len(AF_INET6).unwrap();
+        sockaddr_bytes(len, offset_of!(sockaddr_in6, sin6_family), AF_INET6)
+    }
+
+    fn sdl() -> Vec<u8> {
+        let at = offset_of!(sockaddr_dl, sdl_family);
+        let mut sdl = sockaddr_bytes(size_of::<sockaddr_dl>(), at, AF_LINK);
+        let at = offset_of!(sockaddr_dl, sdl_index);
+        sdl[at..at + size_of::<u16>()].copy_from_slice(&INDEX.to_ne_bytes());
+        sdl
+    }
+
+    /// Returns `rtm_addrs` flagging the first `n` sockaddrs as present.
+    const fn addrs(n: u32) -> i32 {
+        (1 << n) - 1
+    }
 
     #[test]
     fn sockaddr_len_valid_and_invalid() {
         assert!(sockaddr_len(AF_INET).is_ok());
         assert!(sockaddr_len(AF_INET6).is_ok());
         assert!(sockaddr_len(AddressFamily::MAX).is_err());
+    }
+
+    #[test]
+    fn sdl_index_found() {
+        let sa = [sin6(), sdl()].concat();
+        let index = sdl_index(addrs(2), &sa).unwrap();
+        assert_eq!(index, Some(INDEX));
+    }
+
+    #[test]
+    fn sdl_index_none_flagged() {
+        assert_eq!(sdl_index(0, &[]).unwrap(), None);
+    }
+
+    #[test]
+    fn sdl_index_short_sockaddr() {
+        let sa = vec![0; size_of::<sockaddr>() - 1];
+        assert!(is_default_err(sdl_index(addrs(1), &sa)));
+    }
+
+    #[test]
+    fn sdl_index_short_skipped_sockaddr() {
+        let sa = sin6();
+        let sa = &sa[..sa.len() - 1];
+        assert!(is_default_err(sdl_index(addrs(1), sa)));
+    }
+
+    #[test]
+    fn sdl_index_short_sockaddr_dl() {
+        let sa = sdl();
+        let sa = &sa[..sa.len() - 1];
+        assert!(is_default_err(sdl_index(addrs(1), sa)));
+    }
+
+    #[test]
+    fn null_ifa_addr() {
+        let mut entry: ifaddrs = unsafe { zeroed() };
+        let ifa = IfAddrPtr {
+            ptr: ptr::from_mut(&mut entry),
+            _ref: PhantomData,
+        };
+        assert!(ifa.addr().is_none());
     }
 }

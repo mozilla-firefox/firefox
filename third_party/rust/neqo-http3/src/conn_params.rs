@@ -4,9 +4,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use neqo_common::qdebug;
 use neqo_qpack as qpack;
 use neqo_transport::ConnectionParameters;
+use tracing::debug;
 
 const WEBTRANSPORT_DEFAULT: bool = false;
 /// Do not support HTTP Extended CONNECT by default.
@@ -125,15 +125,15 @@ impl Http3Parameters {
         // and reliable stream reset (to deliver each stream's header even if the stream is
         // reset). Only enable it when all of those are configured locally.
         if !self.http3_datagram {
-            qdebug!("WebTransport disabled: SETTINGS_H3_DATAGRAM is not enabled");
+            debug!("WebTransport disabled: SETTINGS_H3_DATAGRAM is not enabled");
             return false;
         }
         if self.conn_params.get_datagram_size() == 0 {
-            qdebug!("WebTransport disabled: max_datagram_frame_size transport parameter is 0");
+            debug!("WebTransport disabled: max_datagram_frame_size transport parameter is 0");
             return false;
         }
         if !self.conn_params.reliable_stream_reset_enabled() {
-            qdebug!("WebTransport disabled: reset_stream_at transport parameter is disabled");
+            debug!("WebTransport disabled: reset_stream_at transport parameter is disabled");
             return false;
         }
         true
@@ -165,7 +165,7 @@ impl Http3Parameters {
     #[must_use]
     pub fn get_http3_datagram(&self) -> bool {
         if self.http3_datagram && self.conn_params.get_datagram_size() == 0 {
-            qdebug!(
+            debug!(
                 "HTTP/3 setting SETTINGS_H3_DATAGRAM is enabled but QUIC transport parameter max_datagram_frame_size is 0. Datagrams will be sent via HTTP DATAGRAM Capsules."
             );
         }

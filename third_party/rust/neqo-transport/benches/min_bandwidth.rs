@@ -86,7 +86,7 @@ fn gbit_bandwidth(ecn: bool) {
 
     let achieved_bandwidth = TRANSFER_AMOUNT as f64 * 8.0 / simulated_time.as_secs_f64();
     eprintln!(
-        // Not `qinfo!`: `--features bench` drops that level. Stderr keeps it out of `results.txt`.
+        // Not `info!`: `--features bench` drops that level. Stderr keeps it out of `results.txt`.
         "{name} achieved {a} Mb/s bandwidth (link rate {t})",
         a = achieved_bandwidth / MBIT as f64,
         t = LINK_BANDWIDTH / MBIT

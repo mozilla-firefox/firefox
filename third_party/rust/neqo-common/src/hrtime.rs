@@ -290,8 +290,7 @@ impl Time {
     pub fn get(period: Duration) -> Handle {
         thread_local!(static HR_TIME: RefCell<Weak<RefCell<Time>>> = RefCell::default());
 
-        HR_TIME.with(|r| {
-            let mut b = r.borrow_mut();
+        HR_TIME.with_borrow_mut(|b| {
             let hrt = b.upgrade().unwrap_or_else(|| {
                 let hrt = Rc::new(RefCell::new(Self::new()));
                 *b = Rc::downgrade(&hrt);

@@ -20,7 +20,7 @@ use std::{
 };
 
 use http::Uri as Url;
-use neqo_common::{Datagram, event::Provider, hex::Hex, qdebug, qerror, qinfo, qwarn};
+use neqo_common::{Datagram, event::Provider, hex::Hex};
 use neqo_http3::{Error, Http3Client, Http3ClientEvent, Http3Parameters, Http3State, Priority};
 use neqo_transport::{
     AppError, CloseReason, Connection, EmptyConnectionIdGenerator, OutputBatch,
@@ -28,6 +28,7 @@ use neqo_transport::{
 };
 use nss::{AuthenticationStatus, ResumptionToken};
 use rustc_hash::FxHashMap as HashMap;
+use tracing::{debug, error, info, warn};
 
 use super::{Args, CloseState, Res, get_output_file, qlog_new};
 use crate::{
@@ -127,6 +128,8 @@ impl TryFrom<Http3State> for CloseState {
 }
 
 impl super::Client for Http3Client {
+    const NO_ERROR: AppError = Error::HttpNone.code();
+
     fn is_closed(&self) -> Result<CloseState, CloseReason> {
         self.state().try_into()
     }
@@ -179,9 +182,9 @@ impl super::Handler for Handler {
                     ..
                 } => {
                     if self.url_handler.stream_handler(stream_id).is_some() {
-                        qdebug!("READ HEADERS[{stream_id}]: fin={fin} {headers:?}");
+                        debug!("READ HEADERS[{stream_id}]: fin={fin} {headers:?}");
                     } else {
-                        qwarn!("Data on unexpected stream: {stream_id}");
+                        warn!("Data on unexpected stream: {stream_id}");
                     }
                     if fin {
                         self.url_handler.on_stream_fin(client, stream_id);
@@ -191,7 +194,7 @@ impl super::Handler for Handler {
                     let mut stream_done = false;
                     match self.url_handler.stream_handler(stream_id) {
                         None => {
-                            qwarn!("Data on unexpected stream: {stream_id}");
+                            warn!("Data on unexpected stream: {stream_id}");
                         }
                         Some(handler) => loop {
                             let (sz, fin) =
@@ -221,7 +224,7 @@ impl super::Handler for Handler {
                 Http3ClientEvent::DataWritable { stream_id } => {
                     match self.url_handler.stream_handler(stream_id) {
                         None => {
-                            qwarn!("Data on unexpected stream: {stream_id}");
+                            warn!("Data on unexpected stream: {stream_id}");
                         }
                         Some(handler) => {
                             handler.process_data_writable(client, stream_id, now());
@@ -230,18 +233,18 @@ impl super::Handler for Handler {
                 }
                 Http3ClientEvent::StateChange(Http3State::Connected)
                 | Http3ClientEvent::RequestsCreatable => {
-                    qinfo!("{event:?}");
+                    info!("{event:?}");
                     self.url_handler.process_urls(client);
                 }
                 Http3ClientEvent::ZeroRttRejected => {
-                    qinfo!("{event:?}");
+                    info!("{event:?}");
                     // All 0-RTT data was rejected. We need to retransmit it.
                     self.url_handler.reinit();
                     self.url_handler.process_urls(client);
                 }
                 Http3ClientEvent::ResumptionToken(t) => self.token = Some(t),
                 _ => {
-                    qwarn!("Unhandled event {event:?}");
+                    warn!("Unhandled event {event:?}");
                 }
             }
         }
@@ -279,20 +282,20 @@ impl StreamHandler for DownloadStreamHandler {
     fn process_data_readable(&mut self, stream_id: StreamId, fin: bool, data: &[u8]) -> Res<()> {
         if let Some(out_file) = &mut self.out_file {
             out_file.write_all(data)?;
-        } else if log::log_enabled!(log::Level::Debug) {
+        } else if tracing::enabled!(tracing::Level::DEBUG) {
             if !self.output_read_data {
-                qdebug!("READ[{stream_id}]: {} bytes", data.len());
-            } else if let Ok(txt) = std::str::from_utf8(data) {
-                qdebug!("READ[{stream_id}]: {txt}");
+                debug!("READ[{stream_id}]: {} bytes", data.len());
+            } else if let Ok(txt) = str::from_utf8(data) {
+                debug!("READ[{stream_id}]: {txt}");
             } else {
-                qdebug!("READ[{stream_id}]: 0x{}", Hex::new(data));
+                debug!("READ[{stream_id}]: 0x{}", Hex::new(data));
             }
         }
 
         if fin {
             self.out_file.take().map_or_else(
                 || {
-                    qdebug!("<FIN[{stream_id}]>");
+                    debug!("<FIN[{stream_id}]>");
                     Ok(())
                 },
                 |mut out_file| out_file.flush(),
@@ -318,18 +321,18 @@ struct UploadStreamHandler {
 
 impl StreamHandler for UploadStreamHandler {
     fn process_data_readable(&mut self, stream_id: StreamId, _fin: bool, data: &[u8]) -> Res<()> {
-        if let Ok(txt) = std::str::from_utf8(data) {
+        if let Ok(txt) = str::from_utf8(data) {
             let trimmed_txt = txt.trim_end_matches(char::from(0));
             let parsed: usize = trimmed_txt.parse().map_err(|_| Error::InvalidInput)?;
             if parsed == self.data.len() {
-                qinfo!(
+                info!(
                     "Stream ID: {stream_id:?}, Upload time: {:?}",
                     now().duration_since(self.start)
                 );
             }
             Ok(())
         } else {
-            qerror!("Unexpected data [{stream_id}]: 0x{}", Hex::new(data));
+            error!("Unexpected data [{stream_id}]: 0x{}", Hex::new(data));
             Err(crate::client::Error::Http3(Error::InvalidInput))
         }
     }
@@ -344,7 +347,7 @@ impl StreamHandler for UploadStreamHandler {
             .data
             .send(|chunk| client.send_data(stream_id, chunk, now))
         {
-            SendResult::StreamClosed => qwarn!("Stream {stream_id} is closed"),
+            SendResult::StreamClosed => warn!("Stream {stream_id} is closed"),
             // Stream may be closed; ignore errors.
             SendResult::Done => _ = client.stream_close_send(stream_id, now),
             SendResult::MoreData => {}
@@ -393,7 +396,7 @@ impl UrlHandler {
             Priority::default(),
         ) {
             Ok(client_stream_id) => {
-                qdebug!("Successfully created stream id {client_stream_id} for {url}");
+                debug!("Successfully created stream id {client_stream_id} for {url}");
 
                 let handler: Box<dyn StreamHandler> = match self.args.method.as_str() {
                     "GET" => {
@@ -453,7 +456,14 @@ mod tests {
     use std::fs;
 
     use super::*;
-    use crate::temp_dir::TempDir;
+    use crate::{client::Client, temp_dir::TempDir};
+
+    /// RFC 9114, Section 8.1: HTTP/3 closes with `H3_NO_ERROR`; hq-interop keeps 0.
+    #[test]
+    fn no_error_codes() {
+        assert_eq!(<Http3Client as Client>::NO_ERROR, 0x100);
+        assert_eq!(<Connection as Client>::NO_ERROR, 0);
+    }
 
     /// A `fin` data event must make the download durable and release the handle immediately.
     #[test]
@@ -476,5 +486,26 @@ mod tests {
 
         assert_eq!(fs::read(&path).unwrap(), b"hello");
         assert!(handler.out_file.is_none(), "fin consumes the file handle");
+    }
+
+    #[test]
+    fn get_output_file_stays_in_output_dir() {
+        let dir = TempDir::new();
+        let out_dir = dir.path().join("out");
+        let outside = dir.path().join("outside");
+        let absolute = outside.to_str().unwrap().replace('\\', "/");
+        for url in [
+            "http://example.com/../outside".to_string(),
+            format!("http://example.com/{absolute}"),
+        ] {
+            let url = url.parse::<Url>().unwrap();
+            let file = get_output_file(&url, Some(&out_dir), &mut Vec::new());
+            assert!(file.is_none(), "{url}");
+        }
+        assert!(!outside.exists());
+
+        let url = "http://example.com/a/b".parse::<Url>().unwrap();
+        assert!(get_output_file(&url, Some(&out_dir), &mut Vec::new()).is_some());
+        assert!(out_dir.join("a").join("b").exists());
     }
 }

@@ -9,7 +9,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use neqo_common::qtrace;
+use tracing::trace;
 
 use crate::recovery;
 
@@ -55,7 +55,7 @@ impl IdleTimeout {
     pub fn expiry(&self, now: Instant, pto: Duration) -> Instant {
         let delay = max(self.timeout, pto * 3);
         let t = self.start(now) + delay;
-        qtrace!("IdleTimeout::expiry@{now:?} pto={pto:?} => {t:?}");
+        trace!("IdleTimeout::expiry@{now:?} pto={pto:?} => {t:?}");
         t
     }
 

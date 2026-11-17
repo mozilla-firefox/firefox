@@ -12,11 +12,12 @@ use std::{
     time::Instant,
 };
 
-use neqo_common::{Bytes, Header, qdebug, qinfo, qtrace};
+use neqo_common::{Bytes, Header};
 use neqo_transport::{
     Connection, DatagramQueueOutcome, DatagramTracking, StreamId, server::ConnectionRef,
     streams::SendGroupId,
 };
+use tracing::{debug, info, trace};
 
 use crate::{
     Error, Http3Client, Http3ServerEvent, Http3State, Http3StreamInfo, Http3StreamType, Res,
@@ -50,7 +51,7 @@ pub trait ClientSession {
     fn connect_udp_create_session<T: RequestTarget>(
         &mut self,
         now: Instant,
-        target: T,
+        target: &T,
         headers: &[Header],
     ) -> Res<StreamId>;
 
@@ -106,7 +107,7 @@ impl ClientSession for Http3Client {
     fn connect_udp_create_session<T: RequestTarget>(
         &mut self,
         now: Instant,
-        target: T,
+        target: &T,
         headers: &[Header],
     ) -> Res<StreamId> {
         let events = Box::new(self.client_events().clone());
@@ -141,7 +142,7 @@ impl ClientSession for Http3Client {
         id: I,
         now: Instant,
     ) -> Res<DatagramQueueOutcome> {
-        qtrace!("connect_udp_send_datagram session:{session_id:?}");
+        trace!("connect_udp_send_datagram session:{session_id:?}");
         let (conn, handler) = self.connection_and_handler();
         handler.connect_udp_send_datagram(conn, session_id, buf, id, now)
     }
@@ -153,7 +154,7 @@ trait Handler {
         &mut self,
         conn: &mut Connection,
         events: Box<dyn extended_connect::ExtendedConnectEvents>,
-        target: T,
+        target: &T,
         headers: &[Header],
     ) -> Res<StreamId>;
 
@@ -190,10 +191,10 @@ impl Handler for Http3Connection {
         &mut self,
         conn: &mut Connection,
         events: Box<dyn extended_connect::ExtendedConnectEvents>,
-        target: T,
+        target: &T,
         headers: &[Header],
     ) -> Res<StreamId> {
-        qinfo!("[{self}] Create ConnectUdp");
+        info!("[{self}] Create ConnectUdp");
         if !self.connect_udp_enabled() {
             return Err(Error::Unavailable);
         }
@@ -216,7 +217,7 @@ impl Handler for Http3Connection {
         accept_res: &SessionAcceptAction,
         now: Instant,
     ) -> Res<()> {
-        qtrace!("Respond to ConnectUdp session with accept={accept_res}");
+        trace!("Respond to ConnectUdp session with accept={accept_res}");
         if !self.connect_udp_enabled() {
             return Err(Error::Unavailable);
         }
@@ -242,7 +243,7 @@ impl Handler for Http3Connection {
         message: &str,
         now: Instant,
     ) -> Res<()> {
-        qtrace!("Close ConnectUdp session {session_id:?}");
+        trace!("Close ConnectUdp session {session_id:?}");
         self.extended_connect_close_session(
             conn,
             session_id,
@@ -375,7 +376,7 @@ impl ServerSession {
     ///
     /// It may return `InvalidStreamId` if a stream does not exist anymore.
     pub fn response(&self, accept: &SessionAcceptAction, now: Instant) -> Res<()> {
-        qdebug!("[{self}] Set a response for a ConnectUdp session");
+        debug!("[{self}] Set a response for a ConnectUdp session");
         self.stream_handler
             .handler
             .borrow_mut()
@@ -455,10 +456,11 @@ impl ServerSession {
     /// # Errors
     ///
     /// It may return `InvalidStreamId` if a stream does not exist anymore.
+    #[doc(hidden)]
     pub fn reset_send(&self) -> Res<()> {
         self.stream_handler.handler.borrow_mut().stream_reset_send(
             self.stream_id(),
-            0,
+            Error::HttpNone.code(),
             &mut self.stream_handler.conn.borrow_mut(),
         )
     }

@@ -9,8 +9,9 @@ use std::{
     time::{Duration, Instant},
 };
 
-use neqo_common::{Encoder, qtrace, qwarn};
+use neqo_common::Encoder;
 use test_fixture::now;
+use tracing::{trace, warn};
 
 use super::{
     super::{Connection, ConnectionParameters, IdleTimeout, Output, State},
@@ -280,6 +281,27 @@ fn idle_recv_packet() {
     assert!(matches!(client.state(), State::Closed(_)));
 }
 
+/// A duplicate packet does not restart the idle timer.
+#[test]
+fn idle_recv_duplicate_packet() {
+    let mut client = default_client();
+    let mut server = default_server();
+    connect_force_idle(&mut client, &mut server);
+
+    let mut now = now();
+    let dgram = send_something(&mut server, now);
+    client.process_input(dgram.clone(), now);
+
+    now += default_timeout() / 2;
+    let dups_rx = client.stats().dups_rx;
+    client.process_input(dgram, now);
+    assert_eq!(client.stats().dups_rx, dups_rx + 1);
+
+    now += default_timeout() / 2;
+    drop(client.process_output(now));
+    assert!(matches!(client.state(), State::Closed(_)));
+}
+
 /// Caching packets should not cause the connection to become idle.
 /// This requires a few tricks to keep the connection from going
 /// idle while preventing any progress on the handshake.
@@ -338,7 +360,7 @@ fn idle_caching() {
 
     let end = start + default_timeout() + (AT_LEAST_PTO / 2);
     // Now let the server Initial through, with the CRYPTO frame.
-    qwarn!("client ingests initial, finally");
+    warn!("client ingests initial, finally");
     drop(client.process(Some(server_initial), end));
     maybe_authenticate(&mut client);
     let dgram = client.process_output(end).dgram().unwrap();
@@ -359,7 +381,7 @@ fn create_stream_idle_rtt(
 ) -> (Instant, StreamId) {
     let check_idle = |endpoint: &mut Connection, now: Instant| {
         let delay = endpoint.process_output(now).callback();
-        qtrace!("[{endpoint}] idle timeout {delay:?}");
+        trace!("[{endpoint}] idle timeout {delay:?}");
         if rtt < default_timeout() / 4 {
             assert_eq!(default_timeout(), delay);
         } else {
@@ -643,7 +665,7 @@ fn keep_alive_large_rtt() {
     for endpoint in &mut [client, server] {
         endpoint.stream_keep_alive(stream, true).unwrap();
         let delay = endpoint.process_output(now).callback();
-        qtrace!("[{endpoint}] new delay {delay:?}");
+        trace!("[{endpoint}] new delay {delay:?}");
         assert!(delay > keep_alive_timeout());
         assert!(delay > rtt);
     }

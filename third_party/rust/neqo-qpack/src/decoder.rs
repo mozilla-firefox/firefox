@@ -6,8 +6,9 @@
 
 use std::fmt::{self, Display, Formatter};
 
-use neqo_common::{Encoder, Header, qdebug};
+use neqo_common::{Encoder, Header};
 use neqo_transport::{Connection, StreamId};
+use tracing::debug;
 
 use crate::{
     Error, Res, Settings,
@@ -42,7 +43,7 @@ impl Decoder {
     /// If settings include invalid values.
     #[must_use]
     pub fn new(qpack_settings: &Settings) -> Self {
-        qdebug!("Decoder: creating a new qpack decoder");
+        debug!("Decoder: creating a new qpack decoder");
         let mut send_buf = Encoder::default();
         send_buf.encode_varint(QPACK_UNI_STREAM_TYPE_DECODER);
         let max_blocked_streams = usize::from(qpack_settings.max_blocked_streams);
@@ -142,7 +143,7 @@ impl Decoder {
     }
 
     fn set_capacity(&mut self, cap: u64) -> Res<()> {
-        qdebug!("[{self}] received instruction capacity cap={cap}");
+        debug!("[{self}] received instruction capacity cap={cap}");
         if cap > self.max_table_size {
             return Err(Error::EncoderStream);
         }
@@ -157,8 +158,8 @@ impl Decoder {
     }
 
     pub fn cancel_stream(&mut self, stream_id: StreamId) {
-        if self.table.capacity() > 0 {
-            self.blocked_streams.retain(|(id, _)| *id != stream_id);
+        self.blocked_streams.retain(|(id, _)| *id != stream_id);
+        if self.max_table_size > 0 {
             DecoderInstruction::StreamCancellation { stream_id }.marshal(&mut self.send_buf);
         }
     }
@@ -185,8 +186,9 @@ impl Decoder {
                     self.send_buf.as_ref(),
                 )
                 .map_err(|_| Error::DecoderStream)?;
-            qdebug!("[{self}] {r} bytes sent");
+            debug!("[{self}] {r} bytes sent");
             self.send_buf.skip(r);
+            self.send_buf.compact();
         }
         Ok(())
     }
@@ -216,7 +218,7 @@ impl Decoder {
         #[cfg(feature = "build-fuzzing-corpus")]
         crate::fuzz::write_item_to_fuzzing_corpus(stream_id, buf);
 
-        qdebug!("[{self}] decode header block");
+        debug!("[{self}] decode header block");
         let mut decoder = HeaderDecoder::new(buf);
 
         match decoder.decode_header_block(&self.table, self.max_entries, self.table.base()) {
@@ -297,13 +299,16 @@ pub(crate) fn map_error(err: Error) -> Error {
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use neqo_common::{Header, to_u64};
-    use neqo_transport::{StreamId, StreamType};
-    use test_fixture::now;
+    use neqo_transport::{ConnectionParameters, StreamDataLimit, StreamId, StreamType};
+    use test_fixture::{
+        CountingConnectionIdGenerator, DEFAULT_ALPN, default_client, handshake, new_server, now,
+    };
 
     use super::{Connection, Decoder, Error, Res, map_error};
     use crate::Settings;
 
     const STREAM_0: StreamId = StreamId::new(0);
+    const BLOCKING_HEADER_BLOCK: &[u8] = &[0x02, 0x80, 0x10];
 
     struct TestDecoder {
         decoder: Decoder,
@@ -314,7 +319,23 @@ mod tests {
     }
 
     fn connect() -> TestDecoder {
-        let (mut conn, mut peer_conn) = test_fixture::connect();
+        connect_param(300)
+    }
+
+    fn connect_param(max_table_size_decoder: u64) -> TestDecoder {
+        connect_generic(max_table_size_decoder, None)
+    }
+
+    fn connect_generic(max_table_size_decoder: u64, max_data: Option<u64>) -> TestDecoder {
+        let (mut conn, mut peer_conn) = max_data.map_or_else(test_fixture::connect, |max| {
+            let mut conn = default_client();
+            let mut peer_conn = new_server::<CountingConnectionIdGenerator, &str>(
+                DEFAULT_ALPN,
+                ConnectionParameters::default().max_stream_data(StreamDataLimit::UniDi, max),
+            );
+            handshake(&mut conn, &mut peer_conn);
+            (conn, peer_conn)
+        });
 
         // create a stream
         let recv_stream_id = peer_conn.stream_create(StreamType::UniDi).unwrap();
@@ -323,7 +344,7 @@ mod tests {
         // create a decoder
         let mut decoder = Decoder::new(&Settings {
             max_table_size_encoder: 0,
-            max_table_size_decoder: 300,
+            max_table_size_decoder,
             max_blocked_streams: 100,
             max_tracked_streams: 4096,
         });
@@ -848,8 +869,6 @@ mod tests {
         // Section 2.1.2 allows no more blocked streams than the advertised
         // SETTINGS_QPACK_BLOCKED_STREAMS value; exceeding it is a connection error
         // of type QPACK_DECOMPRESSION_FAILED (Error::Decompression here).
-        const BLOCKING_HEADER_BLOCK: &[u8] = &[0x02, 0x80, 0x10];
-
         let mut decoder = Decoder::new(&Settings {
             max_table_size_encoder: 0,
             max_table_size_decoder: 300,
@@ -882,6 +901,61 @@ mod tests {
                 .decode_header_block(BLOCKING_HEADER_BLOCK, StreamId::new(0))
                 .is_err()
         );
+    }
+
+    #[test]
+    fn cancel_blocked_stream_before_capacity() {
+        let mut decoder = connect();
+        assert!(
+            decoder
+                .decoder
+                .decode_header_block(BLOCKING_HEADER_BLOCK, STREAM_0)
+                .unwrap()
+                .is_none()
+        );
+        decoder.decoder.cancel_stream(STREAM_0);
+        assert!(decoder.decoder.blocked_streams.is_empty());
+        send_instructions_and_check(&mut decoder, &[0x03, 0x40]);
+    }
+
+    #[test]
+    fn cancel_stream_max_table_size_zero() {
+        let mut decoder = connect_param(0);
+        decoder.decoder.cancel_stream(STREAM_0);
+        send_instructions_and_check(&mut decoder, &[0x03]);
+    }
+
+    /// A peer that keeps the decoder stream flow-control limited must not make the send buffer
+    /// grow with the total number of bytes sent.
+    #[test]
+    fn send_buf_bounded_when_flow_control_limited() {
+        const WINDOW: usize = 100;
+        let mut decoder = connect_generic(300, Some(to_u64(WINDOW)));
+
+        let mut total = 0;
+        let mut queue = 2 * WINDOW; // Keep more pending than the peer allows.
+        for _ in 0..100 {
+            for _ in 0..queue {
+                decoder.decoder.cancel_stream(STREAM_0);
+            }
+            let before = decoder.decoder.send_buf.len();
+            decoder.decoder.send(&mut decoder.conn).unwrap();
+            assert!(!decoder.decoder.send_buf.is_empty());
+            queue = before - decoder.decoder.send_buf.len();
+            total += queue;
+
+            let out = decoder.conn.process_output(now());
+            drop(decoder.peer_conn.process(out.dgram(), now()));
+            let mut buf = [0; 2 * WINDOW];
+            _ = decoder
+                .peer_conn
+                .stream_recv(decoder.send_stream_id, &mut buf)
+                .unwrap();
+            let out = decoder.peer_conn.process_output(now());
+            drop(decoder.conn.process(out.dgram(), now()));
+        }
+        assert!(total > 50 * WINDOW);
+        assert!(decoder.decoder.send_buf.capacity() < 8 * WINDOW);
     }
 
     #[test]

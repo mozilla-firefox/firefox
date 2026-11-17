@@ -11,9 +11,9 @@
 
 [package]
 edition = "2024"
-rust-version = "1.90.0"
+rust-version = "1.95.0"
 name = "neqo-udp"
-version = "0.34.0"
+version = "0.35.0"
 authors = ["The Neqo Authors <necko@mozilla.com>"]
 build = "build.rs"
 autolib = false
@@ -42,19 +42,12 @@ repository = "https://github.com/mozilla/neqo/"
 ignored = ["cfg_aliases"]
 
 [features]
-bench = [
-    "neqo-common/bench",
-    "log/release_max_level_warn",
-]
+bench = ["neqo-common/bench"]
 
 [lib]
 name = "neqo_udp"
 path = "src/lib.rs"
 bench = false
-
-[dependencies.log]
-version = "0.4"
-default-features = false
 
 [dependencies.neqo-common]
 path = "./../neqo-common"
@@ -62,9 +55,14 @@ path = "./../neqo-common"
 [dependencies.quinn-udp]
 version = "0.6"
 features = [
-    "log",
+    "tracing-log",
     "fast-apple-datapath",
 ]
+default-features = false
+
+[dependencies.tracing]
+version = "0.1.37"
+features = ["std"]
 default-features = false
 
 [build-dependencies.cfg_aliases]
@@ -89,6 +87,7 @@ allow_attributes_without_reason = "warn"
 assert_is_empty = "allow"
 cfg_not_test = "warn"
 clone_on_ref_ptr = "warn"
+cognitive_complexity = "allow"
 create_dir = "warn"
 dbg_macro = "warn"
 empty_drop = "warn"

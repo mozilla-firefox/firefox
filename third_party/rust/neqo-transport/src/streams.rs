@@ -8,11 +8,13 @@
 use std::{
     cell::RefCell,
     cmp::Ordering,
+    num::NonZeroUsize,
     rc::Rc,
     time::{Duration, Instant},
 };
 
-use neqo_common::{Buffer, Role, qdebug, qtrace};
+use neqo_common::{Buffer, Role};
+use tracing::{debug, trace};
 
 use crate::{
     AppError, ConnectionEvents, Error, Res,
@@ -233,10 +235,9 @@ impl Streams {
                 stream_id,
                 maximum_stream_data,
             } => {
-                qtrace!(
+                trace!(
                     "Stream {} Received MaxStreamData {}",
-                    *stream_id,
-                    *maximum_stream_data
+                    *stream_id, *maximum_stream_data
                 );
                 stats.max_stream_data += 1;
                 // Terminate connection with STREAM_STATE_ERROR if receive-only
@@ -256,12 +257,12 @@ impl Streams {
                 self.handle_max_streams(*stream_type, *maximum_streams);
             }
             Frame::DataBlocked { data_limit } => {
-                qdebug!("Received DataBlocked with data limit {data_limit}");
+                debug!("Received DataBlocked with data limit {data_limit}");
                 stats.data_blocked += 1;
                 self.handle_data_blocked();
             }
             Frame::StreamDataBlocked { stream_id, .. } => {
-                qtrace!("Received StreamDataBlocked");
+                trace!("Received StreamDataBlocked");
                 stats.stream_data_blocked += 1;
                 // Terminate connection with STREAM_STATE_ERROR if send-only
                 // stream (-transport 19.13)
@@ -592,9 +593,8 @@ impl Streams {
             return;
         };
 
-        for (_id, ss) in &mut self.send {
-            ss.maybe_emit_writable_event(previous_limit, current_limit);
-        }
+        self.send
+            .maybe_emit_writable_events(previous_limit, current_limit);
     }
 
     pub fn handle_data_blocked(&self) {
@@ -643,6 +643,15 @@ impl Streams {
     /// When the stream does not exist.
     pub fn get_send_stream_mut(&mut self, stream_id: StreamId) -> Res<&mut SendStream> {
         self.send.get_mut(stream_id)
+    }
+
+    pub(crate) fn set_writable_event_low_watermark(
+        &mut self,
+        stream_id: StreamId,
+        watermark: NonZeroUsize,
+    ) -> Res<()> {
+        self.send
+            .set_writable_event_low_watermark(stream_id, watermark)
     }
 
     /// # Errors

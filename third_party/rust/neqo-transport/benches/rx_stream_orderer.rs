@@ -49,7 +49,7 @@ fn inbound_with_loss(c: &mut Criterion) {
                 let mut drain = Vec::new();
                 let mut missing: VecDeque<u64> = VecDeque::new();
                 for i in 0..FRAMES {
-                    if i % 50 == 0 {
+                    if i.is_multiple_of(50) {
                         missing.push_back(i); // "drop" this frame
                     } else {
                         rx.inbound_frame(i * to_u64(CHUNK), &PAYLOAD).unwrap();
@@ -111,7 +111,7 @@ fn inbound_duplicates(c: &mut Criterion) {
                 let mut drain = Vec::new();
                 for i in 0..FRAMES {
                     rx.inbound_frame(i * to_u64(CHUNK), &PAYLOAD).unwrap();
-                    if i % 20 == 0 && i > 0 {
+                    if i.is_multiple_of(20) && i > 0 {
                         // Duplicate of the previous frame.
                         rx.inbound_frame((i - 1) * to_u64(CHUNK), &PAYLOAD).unwrap();
                     }

@@ -11,9 +11,9 @@
 
 [package]
 edition = "2024"
-rust-version = "1.90.0"
+rust-version = "1.95.0"
 name = "neqo-http3"
-version = "0.34.0"
+version = "0.35.0"
 authors = ["The Neqo Authors <necko@mozilla.com>"]
 build = false
 autolib = false
@@ -39,10 +39,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/mozilla/neqo/"
 
 [package.metadata.cargo-machete]
-ignored = [
-    "criterion",
-    "log",
-]
+ignored = ["criterion"]
 
 [[package.metadata.bench]]
 name = "streams_simulated"
@@ -63,7 +60,6 @@ bench = [
     "neqo-qpack/bench",
     "neqo-transport/bench",
     "test-fixture/bench",
-    "log/release_max_level_warn",
 ]
 build-fuzzing-corpus = [
     "neqo-common/build-fuzzing-corpus",
@@ -132,10 +128,6 @@ version = "1"
 features = ["std"]
 default-features = false
 
-[dependencies.log]
-version = "0.4"
-default-features = false
-
 [dependencies.neqo-common]
 path = "./../neqo-common"
 
@@ -166,10 +158,6 @@ version = "0.14"
 features = ["parsed-types"]
 default-features = false
 
-[dependencies.static_assertions]
-version = "1.1"
-default-features = false
-
 [dependencies.strum]
 version = "0.27"
 features = ["derive"]
@@ -177,6 +165,11 @@ default-features = false
 
 [dependencies.thiserror]
 version = "2.0.12"
+default-features = false
+
+[dependencies.tracing]
+version = "0.1.37"
+features = ["std"]
 default-features = false
 
 [dev-dependencies.criterion]
@@ -201,6 +194,7 @@ allow_attributes_without_reason = "warn"
 assert_is_empty = "allow"
 cfg_not_test = "warn"
 clone_on_ref_ptr = "warn"
+cognitive_complexity = "allow"
 create_dir = "warn"
 dbg_macro = "warn"
 empty_drop = "warn"

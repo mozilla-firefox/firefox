@@ -21,7 +21,8 @@ use std::{
     time::{Duration, Instant},
 };
 
-use neqo_common::{qtrace, to_u64};
+use neqo_common::to_u64;
+use tracing::trace;
 
 use crate::rtt::GRANULARITY;
 
@@ -89,7 +90,7 @@ impl Pacer {
         let packet = isize::try_from(self.p).expect("packet size fits into isize");
 
         if self.c >= packet {
-            qtrace!("[{self}] next {cwnd}/{rtt:?} no wait = {:?}", self.t);
+            trace!("[{self}] next {cwnd}/{rtt:?} no wait = {:?}", self.t);
             return self.t;
         }
 
@@ -100,7 +101,7 @@ impl Pacer {
         // from consecutive sub-granularity sends.  `saturating_mul` caps the
         // product safely regardless of the actual value.
         let Ok(deficit) = u64::try_from(packet - self.c) else {
-            qtrace!("[{self}] next {cwnd}/{rtt:?} deficit overflow");
+            trace!("[{self}] next {cwnd}/{rtt:?} deficit overflow");
             return self.t;
         };
         let rtt_ns = u64::try_from(rtt.as_nanos()).unwrap_or(u64::MAX);
@@ -113,12 +114,12 @@ impl Pacer {
             reason = "GRANULARITY is 1ms, fits in u64"
         )]
         if w_ns < GRANULARITY.as_nanos() as u64 {
-            qtrace!("[{self}] next {cwnd}/{rtt:?} below granularity ({w_ns}ns)");
+            trace!("[{self}] next {cwnd}/{rtt:?} below granularity ({w_ns}ns)");
             return self.t;
         }
 
         let nxt = self.t + Duration::from_nanos(w_ns);
-        qtrace!("[{self}] next {cwnd}/{rtt:?} wait {w_ns}ns = {nxt:?}");
+        trace!("[{self}] next {cwnd}/{rtt:?} wait {w_ns}ns = {nxt:?}");
         nxt
     }
 
@@ -158,7 +159,7 @@ impl Pacer {
             return;
         }
 
-        qtrace!("[{self}] spend {count} over {cwnd}, {rtt:?}");
+        trace!("[{self}] spend {count} over {cwnd}, {rtt:?}");
         // Increase the capacity by the elapsed fraction of the RTT times the
         // pacing rate, i.e. `(now - self.t) * SPEEDUP * cwnd / rtt`.
         let incr = Self::bytes_for(cwnd, rtt, now.saturating_duration_since(self.t))
@@ -169,8 +170,8 @@ impl Pacer {
         self.c = min(
             isize::try_from(self.m).unwrap_or(isize::MAX),
             self.c
-                .saturating_add(isize::try_from(incr).unwrap_or(isize::MAX))
-                .saturating_sub(isize::try_from(count).unwrap_or(isize::MAX)),
+                .saturating_add_unsigned(incr)
+                .saturating_sub_unsigned(count),
         );
         self.t = now;
     }

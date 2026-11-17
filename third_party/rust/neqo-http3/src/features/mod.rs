@@ -6,7 +6,7 @@
 
 use std::{fmt::Debug, mem};
 
-use neqo_common::qtrace;
+use tracing::trace;
 
 use crate::{
     client_events::Http3ClientEvents, features::extended_connect::ExtendedConnectType,
@@ -65,7 +65,7 @@ impl NegotiationState {
 
         let ft = *feature_type;
         let cb = mem::take(listener);
-        qtrace!("negotiate {ft:?}: {conditions_met}");
+        trace!("negotiate {ft:?}: {conditions_met}");
         *self = if conditions_met {
             Self::Negotiated
         } else {

@@ -10,7 +10,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use neqo_common::{qdebug, qtrace};
+use tracing::{debug, trace};
 
 use crate::{cc::classic_cc::SlowStart, packet, rtt::RttEstimate, stats::CongestionControlStats};
 
@@ -133,7 +133,7 @@ impl HyStart {
         self.last_round_min_rtt = self.current_round_min_rtt;
         self.current_round_min_rtt = None;
         self.rtt_sample_count = 0;
-        qdebug!(
+        debug!(
             "HyStart: start_next_round -> started new round with last_min_rtt: {:?}",
             self.last_round_min_rtt
         );
@@ -148,7 +148,7 @@ impl HyStart {
             return;
         }
         self.window_end = Some(sent_pn);
-        qdebug!(
+        debug!(
             "HyStart: maybe_set_window_end -> set window_end to {:?}",
             self.window_end
         );
@@ -235,7 +235,7 @@ impl SlowStart for HyStart {
     ) -> Option<usize> {
         self.collect_rtt_sample(rtt_est.latest_rtt());
 
-        qtrace!(
+        trace!(
             "HyStart: on_packets_acked -> pn={largest_acked}, rtt={:?}, cur_min={:?}, last_min={:?}, samples={}, in_css={}, css_rounds={}, window_end={:?}",
             rtt_est.latest_rtt(),
             self.current_round_min_rtt,
@@ -267,7 +267,7 @@ impl SlowStart for HyStart {
                     HyStartCssBaseline::EntryThreshold => last + rtt_thresh,
                 });
                 cc_stats.hystart_css_entries += 1;
-                qdebug!(
+                debug!(
                     "HyStart: on_packets_acked -> entered CSS because cur_min={current:?} >= last_min={last:?} + thresh={rtt_thresh:?}"
                 );
             }
@@ -287,11 +287,9 @@ impl SlowStart for HyStart {
             && let Some(baseline) = self.css_baseline_min_rtt
             && current < baseline
         {
-            qdebug!(
+            debug!(
                 "HyStart: on_packets_acked -> exiting CSS after {} rounds because cur_min={:?} < baseline_min={:?}",
-                self.css_round_count,
-                self.current_round_min_rtt,
-                self.css_baseline_min_rtt
+                self.css_round_count, self.current_round_min_rtt, self.css_baseline_min_rtt
             );
 
             self.css_baseline_min_rtt = None;
@@ -308,7 +306,7 @@ impl SlowStart for HyStart {
             return None;
         }
 
-        qtrace!(
+        trace!(
             "HyStart: on_packets_acked -> round ended because largest_acked={largest_acked} >= window_end={:?}",
             self.window_end
         );
@@ -323,7 +321,7 @@ impl SlowStart for HyStart {
         self.css_round_count += 1;
         cc_stats.hystart_css_rounds_finished += 1;
         let exit_slow_start = self.css_round_count >= Self::CSS_ROUNDS;
-        qdebug!(
+        debug!(
             "HyStart: on_packets_acked -> exit={exit_slow_start} because css_rounds={} >= {}",
             self.css_round_count,
             Self::CSS_ROUNDS

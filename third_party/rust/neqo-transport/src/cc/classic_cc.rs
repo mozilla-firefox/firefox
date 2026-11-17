@@ -12,8 +12,9 @@ use std::{
     time::{Duration, Instant},
 };
 
-use neqo_common::{const_max, const_min, qdebug, qinfo, qlog::Qlog, qtrace};
+use neqo_common::{const_max, const_min, qlog::Qlog};
 use rustc_hash::FxHashMap as HashMap;
+use tracing::{debug, info, trace};
 
 use super::CongestionController;
 use crate::{
@@ -302,7 +303,7 @@ where
         self.detect_spurious_congestion_event(acked_pkts, cc_stats);
 
         for pkt in acked_pkts {
-            qtrace!(
+            trace!(
                 "packet_acked this={self:p}, pn={}, ps={}, ignored={}, lost={}, rtt_est={rtt_est:?}",
                 pkt.pn(),
                 pkt.len(),
@@ -338,11 +339,9 @@ where
 
         if is_app_limited {
             self.congestion_control.on_app_limited();
-            qdebug!(
+            debug!(
                 "on_packets_acked this={self:p}, limited=1, bytes_in_flight={}, cwnd={}, phase={:?}, new_acked={new_acked}",
-                self.bytes_in_flight,
-                self.current.congestion_window,
-                self.current.phase
+                self.bytes_in_flight, self.current.congestion_window, self.current.phase
             );
             qlog::metrics_updated(
                 &mut self.qlog,
@@ -366,7 +365,7 @@ where
                 cc_stats,
                 now,
             ) {
-                qdebug!("Exited slow start by algorithm");
+                debug!("Exited slow start by algorithm");
                 cc_stats.slow_start_exit = Some(SlowStartExitStats {
                     reason: SlowStartExitReason::Heuristic,
                     detection_cwnd: self.current.congestion_window,
@@ -381,7 +380,7 @@ where
                     .slow_start
                     .calc_cwnd_increase(new_acked, self.max_datagram_size());
                 self.current.congestion_window += cwnd_increase;
-                qtrace!("[{self}] slow start += {cwnd_increase}");
+                trace!("[{self}] slow start += {cwnd_increase}");
 
                 // This can only happen after persistent congestion when we re-enter slow start
                 // while having a previously established `ssthresh` which has now
@@ -389,7 +388,7 @@ where
                 if let Some(ssthresh) = self.current.ssthresh
                     && self.current.congestion_window >= ssthresh
                 {
-                    qdebug!(
+                    debug!(
                         "Exited slow start because the threshold was reached, ssthresh: {ssthresh}",
                     );
                     // Clamp congestion window to ssthresh.
@@ -435,11 +434,9 @@ where
             now,
         );
 
-        qdebug!(
+        debug!(
             "[{self}] on_packets_acked this={self:p}, limited=0, bytes_in_flight={}, cwnd={}, phase={:?}, new_acked={new_acked}",
-            self.bytes_in_flight,
-            self.current.congestion_window,
-            self.current.phase
+            self.bytes_in_flight, self.current.congestion_window, self.current.phase
         );
     }
 
@@ -462,7 +459,7 @@ where
 
         for pkt in lost_packets {
             if pkt.cc_in_flight() {
-                qdebug!(
+                debug!(
                     "packet_lost this={self:p}, pn={}, ps={}",
                     pkt.pn(),
                     pkt.len()
@@ -478,7 +475,7 @@ where
                             time_sent: pkt.time_sent(),
                         },
                     );
-                    qdebug!(
+                    debug!(
                         "Spurious detection: added MaybeLostPacket: pn {}, type {:?}, time_sent {:?}",
                         pkt.pn(),
                         pkt.packet_type(),
@@ -523,11 +520,9 @@ where
             lost_packets_no_pmtud(),
             now,
         );
-        qdebug!(
+        debug!(
             "on_packets_lost this={self:p}, bytes_in_flight={}, cwnd={}, phase={:?}",
-            self.bytes_in_flight,
-            self.current.congestion_window,
-            self.current.phase
+            self.bytes_in_flight, self.current.congestion_window, self.current.phase
         );
         congestion || persistent_congestion
     }
@@ -554,7 +549,7 @@ where
                 [qlog::Metric::BytesInFlight(self.bytes_in_flight)],
                 now,
             );
-            qtrace!("[{self}] Ignore pkt with size {}", pkt.len());
+            trace!("[{self}] Ignore pkt with size {}", pkt.len());
         }
     }
 
@@ -571,7 +566,7 @@ where
         // Record the recovery time and exit any transient phase.
         if self.current.phase.transient() {
             self.current.recovery_start = Some(pkt.pn());
-            qdebug!("set recovery_start to pn={}", pkt.pn());
+            debug!("set recovery_start to pn={}", pkt.pn());
             self.current.phase.update();
         }
 
@@ -595,7 +590,7 @@ where
             self.first_app_limited = Some(pkt.pn() + 1);
         }
 
-        qdebug!(
+        debug!(
             "packet_sent this={self:p}, pn={}, ps={}",
             pkt.pn(),
             pkt.len()
@@ -682,7 +677,7 @@ where
         if self.current.phase == phase {
             return;
         }
-        qdebug!("[{self}] phase -> {phase:?}");
+        debug!("[{self}] phase -> {phase:?}");
         let old_state = self.current.phase;
         // Only emit a qlog event when a transition changes the qlog state.
         if !str::eq(old_state.into(), phase.into()) {
@@ -718,7 +713,7 @@ where
                 .remove(&(acked_packet.pn(), acked_packet.packet_type()))
                 .is_some()
             {
-                qdebug!(
+                debug!(
                     "Spurious detection: removed MaybeLostPacket with pn {}, type {:?}",
                     acked_packet.pn(),
                     acked_packet.packet_type(),
@@ -728,7 +723,7 @@ where
 
         // If all of them have been removed we detected a spurious congestion event.
         if self.maybe_lost_packets.is_empty() {
-            qdebug!(
+            debug!(
                 "Spurious detection: maybe_lost_packets emptied -> calling on_spurious_congestion_event"
             );
             self.on_spurious_congestion_event(cc_stats);
@@ -741,22 +736,17 @@ where
         // The `pto * 2` maximum age of the lost packets is taken from msquic's implementation:
         // <https://github.com/microsoft/msquic/blob/2623c07df62b4bd171f469fb29c2714b6735b676/src/core/loss_detection.c#L939-L943>
         let max_age = pto * 2;
-        self.maybe_lost_packets.retain(|(pn, pt), packet| {
-            let keep = now.saturating_duration_since(packet.time_sent) <= max_age;
-            if !keep {
-                qdebug!(
-                    "Spurious detection: cleaned up old MaybeLostPacket with pn {pn}, type {pt:?}"
-                );
-            }
-            keep
-        });
+        for ((pn, pt), _) in self
+            .maybe_lost_packets
+            .extract_if(|_, packet| now.saturating_duration_since(packet.time_sent) > max_age)
+        {
+            debug!("Spurious detection: cleaned up old MaybeLostPacket with pn {pn}, type {pt:?}");
+        }
     }
 
     fn on_spurious_congestion_event(&mut self, cc_stats: &mut CongestionControlStats) {
         let Some(stored) = self.stored.take() else {
-            qdebug!(
-                "[{self}] Spurious cong event -> ABORT, no stored params to restore available."
-            );
+            debug!("[{self}] Spurious cong event -> ABORT, no stored params to restore available.");
             return;
         };
 
@@ -764,21 +754,20 @@ where
         cc_stats.congestion_events.spurious += 1;
 
         if stored.congestion_window <= self.current.congestion_window {
-            qinfo!(
+            info!(
                 "[{self}] Spurious cong event -> IGNORED because stored.cwnd {} < self.cwnd {};",
-                stored.congestion_window,
-                self.current.congestion_window
+                stored.congestion_window, self.current.congestion_window
             );
             return;
         }
 
         if !self.spurious_recovery {
-            qinfo!("[{self}] Spurious cong event detected -> recovery disabled;");
+            info!("[{self}] Spurious cong event detected -> recovery disabled;");
             return;
         }
 
         self.congestion_control.restore_undo_state(cc_stats);
-        qdebug!(
+        debug!(
             "Spurious cong event: recovering cc params from {} to {stored}",
             self.current
         );
@@ -788,7 +777,7 @@ where
         if self.current.phase.in_slow_start() {
             cc_stats.slow_start_exit = None;
         }
-        qinfo!("[{self}] Spurious cong event -> RESTORED;");
+        info!("[{self}] Spurious cong event -> RESTORED;");
     }
 
     fn detect_persistent_congestion<'a>(
@@ -822,7 +811,7 @@ where
                 start = None;
             }
             last_pn = Some(p.pn());
-            if !p.cc_in_flight() {
+            if !p.ack_eliciting() || !p.on_primary_path() {
                 // Not interesting, keep looking.
                 continue;
             }
@@ -832,7 +821,7 @@ where
                     .checked_duration_since(t)
                     .expect("time is monotonic");
                 if elapsed > pc_period {
-                    qinfo!("[{self}] persistent congestion");
+                    info!("[{self}] persistent congestion");
                     self.current.congestion_window = self.cwnd_min();
                     self.current.acked_bytes = 0;
                     self.set_phase(
@@ -894,7 +883,7 @@ where
         // Start a new congestion event if lost or ECN CE marked packet was sent
         // after the start of the previous congestion recovery period.
         if !self.after_recovery_start(last_packet) {
-            qdebug!(
+            debug!(
                 "Called on_congestion_event during recovery -> don't react; last_packet {}, recovery_start {}",
                 last_packet.pn(),
                 self.current.recovery_start.unwrap_or(0)
@@ -918,10 +907,9 @@ where
         self.current.congestion_window = max(cwnd, self.cwnd_min());
         self.current.acked_bytes = acked_bytes;
         self.current.ssthresh = Some(self.current.congestion_window);
-        qinfo!(
+        info!(
             "[{self}] Cong event -> recovery; cwnd {}, ssthresh {:?}",
-            self.current.congestion_window,
-            self.current.ssthresh
+            self.current.congestion_window, self.current.ssthresh
         );
 
         match congestion_trigger {
@@ -978,22 +966,23 @@ where
 mod tests {
     use std::time::{Duration, Instant};
 
-    use neqo_common::{qinfo, to_u64};
+    use neqo_common::to_u64;
     use test_fixture::{new_neqo_qlog, now};
+    use tracing::info;
 
     use super::{
         ClassicCongestionController, PACING_BURST_SIZE, PERSISTENT_CONG_THRESH, SlowStart,
         WindowAdjustment,
     };
     use crate::{
-        MIN_INITIAL_PACKET_SIZE, Pmtud,
+        MIN_INITIAL_PACKET_SIZE,
         cc::{
             CWND_INITIAL_PKTS, ClassicSlowStart, CongestionController,
             CongestionTrigger::{self, Ecn, Loss},
             classic_cc::Phase,
             cubic::Cubic,
             new_reno::NewReno,
-            tests::{IP_ADDR, MTU, RTT, make_cc_cubic, make_cc_hystart, make_cc_newreno},
+            tests::{RTT, make_cc_cubic, make_cc_hystart, make_cc_newreno, pmtud},
         },
         packet,
         recovery::{self, sent},
@@ -1089,6 +1078,14 @@ mod tests {
     fn persistent_congestion_non_ack_eliciting() {
         persistent_congestion(&[lost(1, false, ZERO), lost(2, true, PC)], false);
         persistent_congestion(&[lost(1, true, ZERO), lost(2, false, PC)], false);
+    }
+
+    /// Padding doesn't make packets ack-eliciting.
+    #[test]
+    fn persistent_congestion_padded_non_ack_eliciting() {
+        let padded = |pn, t| lost(pn, false, t).with_padding(true);
+        persistent_congestion(&[padded(1, ZERO), lost(2, true, PC)], false);
+        persistent_congestion(&[lost(1, true, ZERO), padded(2, PC)], false);
     }
 
     /// Packets in the middle, of any type, are OK.
@@ -1457,7 +1454,7 @@ mod tests {
                 (ABOVE_APP_LIMIT_PKTS - i - 1) * cc.max_datagram_size()
             );
             // increase acked_bytes with each packet
-            qinfo!(
+            info!(
                 "{} {}",
                 cc.current.congestion_window,
                 cwnd + i * cc.max_datagram_size()
@@ -1734,7 +1731,7 @@ mod tests {
         let mut cc = ClassicCongestionController::new(
             ClassicSlowStart::default(),
             Cubic::default(),
-            Pmtud::new(IP_ADDR, MTU),
+            pmtud(),
             false,
         );
         let now = now();

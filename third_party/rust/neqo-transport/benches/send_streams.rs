@@ -58,23 +58,32 @@ fn make_streams_inner(n_streams: usize, all_have_data: bool, fair: bool) -> Send
     ss
 }
 
-fn do_write_frames(ss: &mut SendStreams) {
-    let mut builder = Builder::short(Encoder::default(), false, None::<&[u8]>, packet::LIMIT);
-    let mut tokens = recovery::Tokens::new();
-    let mut stats = FrameStats::default();
-    ss.write_frames(
-        TransmissionPriority::default(),
-        &mut builder,
-        &mut tokens,
-        &mut stats,
+type Input = (SendStreams, Builder<Vec<u8>>, recovery::Tokens, FrameStats);
+
+/// Allocates the packet builder and the outputs up front, so that only `write_frames` is timed.
+fn with_builder(ss: SendStreams) -> Input {
+    let builder = Builder::short(
+        Encoder::with_capacity(packet::LIMIT),
+        false,
+        None::<&[u8]>,
+        packet::LIMIT,
     );
-    black_box((builder, tokens, stats));
+    let tokens = recovery::Tokens::with_capacity(packet::LIMIT / DATA.len()); // One per STREAM frame.
+    (ss, builder, tokens, FrameStats::default())
 }
+
+fn do_write_frames((ss, builder, tokens, stats): &mut Input) {
+    ss.write_frames(TransmissionPriority::default(), builder, tokens, stats);
+    black_box(builder);
+}
+
+/// Few enough inputs per timed batch that they stay in cache, enough to amortize the timer.
+const BATCH: BatchSize = BatchSize::NumIterations(8);
 
 /// `SendStreams::write_frames` with 1 stream (baseline: no idle iteration).
 fn write_frames_1_stream(c: &mut Criterion) {
     c.bench_function("SendStreams::write_frames 1-stream", |b| {
-        b.iter_batched_ref(|| make_streams(1), do_write_frames, BatchSize::SmallInput);
+        b.iter_batched_ref(|| with_builder(make_streams(1)), do_write_frames, BATCH);
     });
 }
 
@@ -82,7 +91,7 @@ fn write_frames_1_stream(c: &mut Criterion) {
 /// Typical HTTP/3 connection: data stream + control + 2 QPACK + settings.
 fn write_frames_5_streams(c: &mut Criterion) {
     c.bench_function("SendStreams::write_frames 5-streams 1-active", |b| {
-        b.iter_batched_ref(|| make_streams(5), do_write_frames, BatchSize::SmallInput);
+        b.iter_batched_ref(|| with_builder(make_streams(5)), do_write_frames, BATCH);
     });
 }
 
@@ -90,7 +99,7 @@ fn write_frames_5_streams(c: &mut Criterion) {
 /// Amplifies the idle-iteration cost to make it measurable.
 fn write_frames_20_streams(c: &mut Criterion) {
     c.bench_function("SendStreams::write_frames 20-streams 1-active", |b| {
-        b.iter_batched_ref(|| make_streams(20), do_write_frames, BatchSize::SmallInput);
+        b.iter_batched_ref(|| with_builder(make_streams(20)), do_write_frames, BATCH);
     });
 }
 
@@ -100,9 +109,9 @@ fn write_frames_20_streams(c: &mut Criterion) {
 fn write_frames_5_fair_all_active(c: &mut Criterion) {
     c.bench_function("SendStreams::write_frames 5-fair-streams all-active", |b| {
         b.iter_batched_ref(
-            || make_fair_streams(5),
+            || with_builder(make_fair_streams(5)),
             do_write_frames,
-            BatchSize::SmallInput,
+            BATCH,
         );
     });
 }
@@ -113,9 +122,9 @@ fn write_frames_20_fair_all_active(c: &mut Criterion) {
         "SendStreams::write_frames 20-fair-streams all-active",
         |b| {
             b.iter_batched_ref(
-                || make_fair_streams(20),
+                || with_builder(make_fair_streams(20)),
                 do_write_frames,
-                BatchSize::SmallInput,
+                BATCH,
             );
         },
     );
@@ -171,9 +180,9 @@ fn write_frames_3_groups_9_streams(c: &mut Criterion) {
         "SendStreams::write_frames 3-groups 9-streams all-active",
         |b| {
             b.iter_batched_ref(
-                || make_grouped_streams(9, 3),
+                || with_builder(make_grouped_streams(9, 3)),
                 do_write_frames,
-                BatchSize::SmallInput,
+                BATCH,
             );
         },
     );
@@ -184,9 +193,9 @@ fn write_frames_3_groups_9_streams(c: &mut Criterion) {
 fn write_frames_5_sendordered(c: &mut Criterion) {
     c.bench_function("SendStreams::write_frames 5-sendordered no-group", |b| {
         b.iter_batched_ref(
-            || make_sendordered_streams(5),
+            || with_builder(make_sendordered_streams(5)),
             do_write_frames,
-            BatchSize::SmallInput,
+            BATCH,
         );
     });
 }
@@ -202,10 +211,10 @@ fn write_frames_3_groups_9_sendordered(c: &mut Criterion) {
                     ss.set_sendorder(id, Some(i.cast_signed()))
                         .expect("set_sendorder failed");
                 }
-                ss
+                with_builder(ss)
             },
             do_write_frames,
-            BatchSize::SmallInput,
+            BATCH,
         );
     });
 }

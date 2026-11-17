@@ -20,7 +20,7 @@ use std::{
     io,
     net::{SocketAddr, ToSocketAddrs as _},
     num::NonZeroUsize,
-    path::PathBuf,
+    path::{Path, PathBuf},
     pin::Pin,
     process::exit,
     rc::Rc,
@@ -33,7 +33,7 @@ use futures::{
     FutureExt as _,
     future::{Either, select, select_all},
 };
-use neqo_common::{Datagram, hex::Hex, qdebug, qerror, qinfo, qwarn};
+use neqo_common::{Datagram, hex::Hex};
 use neqo_http3::Http3Server;
 use neqo_transport::{
     Connection, OutputBatch, RandomConnectionIdGenerator, Version, server::ValidateAddress,
@@ -46,8 +46,9 @@ use nss::{
 };
 use thiserror::Error;
 use tokio::time::Sleep;
+use tracing::{debug, error, info, warn};
 
-use crate::{SharedArgs, now, report_stats, send_data::SendData};
+use crate::{SharedArgs, contained_path, now, report_stats, send_data::SendData};
 
 const ANTI_REPLAY_WINDOW: Duration = Duration::from_secs(10);
 
@@ -182,7 +183,7 @@ impl Args {
                     self.shared.quic_parameters.quic_version = vec![Version::Version1];
                 }
             } else {
-                qwarn!("Both -V and --qns-test were set. Ignoring testcase specific versions");
+                warn!("Both -V and --qns-test were set. Ignoring testcase specific versions");
             }
 
             // These are the default for all tests except http3.
@@ -196,7 +197,7 @@ impl Args {
                 "handshake" | "transfer" | "resumption" | "multiconnect" | "v2" | "ecn" => {}
                 "connectionmigration" => {
                     if self.shared.quic_parameters.preferred_address().is_none() {
-                        qerror!("No preferred addresses set for connectionmigration test");
+                        error!("No preferred addresses set for connectionmigration test");
                         exit(127);
                     }
                 }
@@ -291,7 +292,7 @@ pub(super) fn configure_server(server: &mut impl ServerConfig, args: &Args) {
     if args.ech {
         let (sk, pk) = generate_ech_keys().expect("should create ECH keys");
         server.enable_ech(random::<1>()[0], "public.example", &sk, &pk);
-        qinfo!("ECHConfigList: {}", Hex::new(server.ech_config()));
+        info!("ECHConfigList: {}", Hex::new(server.ech_config()));
     }
 }
 
@@ -305,13 +306,13 @@ pub(super) fn configure_server(server: &mut impl ServerConfig, args: &Args) {
 /// path bytes instead.
 pub(super) fn response_for_path(path: &str, is_qns_test: bool) -> Result<SendData, ()> {
     if is_qns_test {
-        if path.split('/').any(|segment| segment == "..") {
-            qerror!("Rejecting path with '..' component: {path}");
+        let Some(file_path) = contained_path(Path::new("/www"), path.trim_matches('/')) else {
+            error!("Rejecting path outside /www: {path}");
             return Err(());
-        }
-        let file_path: PathBuf = ["/www", path.trim_matches('/')].iter().collect();
+        };
+        // Reading the whole file is fine for QNS test mode.
         fs::read(file_path).map(SendData::from).map_err(|e| {
-            qerror!("Failed to read {path}: {e}");
+            error!("Failed to read {path}: {e}");
         })
     } else {
         Ok(path
@@ -406,7 +407,7 @@ impl<S: HttpServer + Unpin> Runner<S> {
             .min()
             .expect("At least one socket must be present")
             .try_into()
-            .inspect_err(|_| qerror!("Socket return GSO size of 0"))
+            .inspect_err(|_| error!("Socket return GSO size of 0"))
             .map_err(|_| io::Error::from(io::ErrorKind::Unsupported))?;
 
         loop {
@@ -432,7 +433,7 @@ impl<S: HttpServer + Unpin> Runner<S> {
                                 if e.raw_os_error() == Some(libc::EIO)
                                     && dgram.num_datagrams() > 1 =>
                             {
-                                qinfo!(
+                                info!(
                                     "`libc::sendmsg` failed with {e}; quinn-udp will halt segmentation offload"
                                 );
                                 // Drop the packets and let QUIC handle retransmission.
@@ -441,7 +442,7 @@ impl<S: HttpServer + Unpin> Runner<S> {
                             Err(e) if e.kind() == io::ErrorKind::ConnectionReset => {
                                 // See `read_and_process`. This call consumes the pending error,
                                 // so retry once, then let QUIC handle retransmission.
-                                qdebug!("Ignoring {e} on send, a peer probably closed its socket");
+                                debug!("Ignoring {e} on send, a peer probably closed its socket");
                                 if !retry_on_reset {
                                     break;
                                 }
@@ -452,7 +453,7 @@ impl<S: HttpServer + Unpin> Runner<S> {
                     }
                 }
                 OutputBatch::Callback(new_timeout) => {
-                    qdebug!("Setting timeout of {new_timeout:?}");
+                    debug!("Setting timeout of {new_timeout:?}");
                     *timeout = Some(Box::pin(tokio::time::sleep(new_timeout)));
                     break;
                 }
@@ -474,7 +475,7 @@ impl<S: HttpServer + Unpin> Runner<S> {
                     // like quinn does.
                     //
                     // <https://github.com/quinn-rs/quinn/blob/35fe3379205ed2ace0e6a858f60f3a8a2ff6510e/quinn/src/endpoint.rs#L925-L929>
-                    qdebug!("Ignoring {e} on receive, a peer probably closed its socket");
+                    debug!("Ignoring {e} on receive, a peer probably closed its socket");
                     continue;
                 }
                 Err(e) => return Err(e),
@@ -571,12 +572,7 @@ pub fn run(
     Pin<Box<dyn Future<Output = Res<()>> + 'static>>,
     Vec<SocketAddr>,
 )> {
-    neqo_common::log::init(
-        args.shared
-            .verbose
-            .as_ref()
-            .map(clap_verbosity_flag::Verbosity::log_level_filter),
-    );
+    neqo_common::log::init(args.shared.level_filter());
     args.update_for_tests();
     assert!(!args.key.is_empty(), "Need at least one key");
 
@@ -584,14 +580,14 @@ pub fn run(
 
     let hosts = args.listen_addresses();
     if hosts.is_empty() {
-        qerror!("No valid hosts defined");
+        error!("No valid hosts defined");
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "No hosts").into());
     }
     let sockets: Vec<crate::udp::Socket> = hosts
         .into_iter()
         .map(|host| {
             let socket = crate::udp::Socket::bind(host)?;
-            qinfo!("Server waiting for connection on: {}", socket.local_addr());
+            info!("Server waiting for connection on: {}", socket.local_addr());
 
             Ok(socket)
         })
@@ -625,7 +621,8 @@ pub fn run(
 pub(super) mod test_support {
     use std::fs;
 
-    use test_fixture::{ProcessServer, default_client, handshake_with_server, now};
+    use neqo_transport::{Connection, INITIAL_LOCAL_MAX_STREAM_DATA};
+    use test_fixture::{DEFAULT_ALPN, ProcessServer, default_client, handshake_with_server, now};
 
     use super::Args;
     use crate::temp_dir::TempDir;
@@ -635,27 +632,50 @@ pub(super) mod test_support {
         fn transport(&mut self) -> &mut dyn ProcessServer;
     }
 
+    /// [`Args`] for the ALPN that [`default_client`] offers.
+    pub(super) fn alpn_args() -> Args {
+        let mut args = Args::default();
+        args.shared.alpn = DEFAULT_ALPN[0].to_string();
+        args
+    }
+
+    /// Connect a [`default_client`] to `server`.
+    pub(super) fn connect<S: StatsServer>(server: &mut S) -> Connection {
+        let mut client = default_client();
+        handshake_with_server(&mut client, server.transport());
+        server.process_events(now());
+        let out = server.transport().process(None, now()); // NewSessionTicket
+        client.process_input(out.dgram().unwrap(), now());
+        client
+    }
+
+    /// Send `client`'s next datagram to `server` and handle the events.
+    pub(super) fn deliver<S: StatsServer>(server: &mut S, client: &mut Connection) {
+        let out = client.process_output(now());
+        _ = server.transport().process(out.dgram(), now());
+        server.process_events(now());
+    }
+
+    /// A path whose response exceeds the client's stream flow-control window.
+    pub(super) fn blocked_path() -> String {
+        format!("/{}", INITIAL_LOCAL_MAX_STREAM_DATA + 1)
+    }
+
     /// Connect to `make`'s server and close, returning the records it wrote.
     pub(super) fn reported_on_close<S: StatsServer>(make: impl FnOnce(&Args) -> S) -> usize {
         let dir = TempDir::new();
         let file = dir.path().join("stats.json");
 
-        let mut args = Args::default();
-        args.shared.alpn = test_fixture::DEFAULT_ALPN[0].to_string();
+        let mut args = alpn_args();
         args.shared.stats_file = Some(file.clone());
         let mut server = make(&args);
 
-        let mut client = default_client();
-        handshake_with_server(&mut client, server.transport());
-        server.process_events(now());
+        let mut client = connect(&mut server);
         assert!(!file.exists(), "must only report on close");
 
         client.close(now(), 0, "bye");
-        let out = client.process_output(now());
-        _ = server.transport().process(out.dgram(), now());
-
-        server.process_events(now()); // Twice: a repeat would append a line.
-        server.process_events(now());
+        deliver(&mut server, &mut client);
+        server.process_events(now()); // Again: a repeat would append a line.
         fs::read_to_string(&file).map_or(0, |s| s.lines().count())
     }
 }

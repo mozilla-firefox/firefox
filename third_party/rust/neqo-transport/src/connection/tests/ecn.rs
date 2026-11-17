@@ -4,7 +4,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::{convert::identity, time::Duration};
+use std::convert::identity;
 
 use neqo_common::{Datagram, Ecn, Tos, event::Provider as _};
 use strum::IntoEnumIterator as _;
@@ -18,12 +18,13 @@ use crate::{
     ConnectionEvent, ConnectionId, ConnectionParameters, Output, StreamType,
     connection::tests::{
         DEFAULT_RTT, assert_path_challenge_min_len, connect_force_idle,
-        connect_force_idle_with_modifier, default_client, default_server, handshake_with_modifier,
-        migration::get_cid, new_client, new_server, send_and_receive, send_something,
-        send_something_with_modifier, send_with_modifier_and_receive,
+        connect_force_idle_with_modifier, connect_rtt_idle, default_client, default_server,
+        handshake_with_modifier, migration::get_cid, new_client, new_server, send_and_receive,
+        send_something, send_something_with_modifier, send_with_modifier_and_receive,
     },
     ecn, packet,
     path::Path,
+    tracking::DEFAULT_LOCAL_ACK_DELAY,
 };
 
 fn assert_ecn_enabled(tos: Tos) {
@@ -402,12 +403,10 @@ pub fn migration_with_modifiers(
         let client_confirmation = client.process_output(now).dgram().unwrap();
         assert_v4_path(&client_confirmation, false);
 
-        // The server has now sent 2 packets, so it is blocked on the pacer. Wait.
-        let server_pacing = server.process_output(now).callback();
-        assert_ne!(server_pacing, Duration::new(0, 0));
-        // ... then confirm that the server sends on the new path still.
+        // At its delayed ACK time, if any, the server still sends on the new path.
+        let server_now = server.acks.ack_time(now).unwrap_or(now);
         let server_confirmation =
-            send_something_with_modifier(&mut server, now + server_pacing, new_path_modifier);
+            send_something_with_modifier(&mut server, server_now, new_path_modifier);
         assert_v4_path(&server_confirmation, false);
         client.process_input(server_confirmation, now);
 
@@ -614,4 +613,44 @@ fn ecn_migration_ce_drop_data() {
     // Migration failed, ECN on original path is still enabled.
     assert_ecn_enabled(after);
     assert!(!migrated);
+}
+
+/// RFC 9000 Section 13.2.1: CE-marked ack-eliciting packets are acknowledged immediately.
+#[test]
+fn ce_acked_immediately() {
+    let mut client = default_client();
+    let mut server = default_server();
+    let mut now = connect_rtt_idle(&mut client, &mut server, DEFAULT_RTT);
+    // The server last acknowledged more than an RTT ago, so it acknowledges at once.
+    let ack = send_and_receive(&mut client, &mut server, now).unwrap();
+    client.process_input(ack, now);
+
+    // Without a CE mark, the ACK is delayed.
+    assert!(send_and_receive(&mut client, &mut server, now).is_none());
+    let delay = server.process_output(now).callback();
+    assert_eq!(delay, DEFAULT_LOCAL_ACK_DELAY);
+    now += delay;
+    let ack = server.process_output(now).dgram().unwrap();
+    client.process_input(ack, now);
+
+    let acks = server.stats().frame_tx.ack;
+    send_with_modifier_and_receive(&mut client, &mut server, now, ce);
+    assert_eq!(server.stats().ecn_rx[packet::Type::Short][Ecn::Ce], 1);
+    assert_eq!(server.stats().frame_tx.ack, acks + 1);
+}
+
+/// RFC 9000 Section 13.2.1: a CE-marked packet that is not ack-eliciting does not elicit an ACK.
+#[test]
+fn ce_ack_only_not_acked() {
+    let mut client = default_client();
+    let mut server = default_server();
+    let mut now = connect_rtt_idle(&mut client, &mut server, DEFAULT_RTT);
+    let dgram = send_something(&mut server, now);
+    now += client.process(Some(dgram), now).callback();
+    let ack = client.process_output(now).dgram().unwrap();
+
+    server.process_input(ce(ack), now);
+    assert_eq!(server.stats().ecn_rx[packet::Type::Short][Ecn::Ce], 1);
+    assert_eq!(server.acks.ack_time(now), None);
+    assert!(server.process_output(now).dgram().is_none());
 }

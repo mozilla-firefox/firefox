@@ -11,7 +11,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use neqo_common::{Decoder, Ecn, hex::Hex, qinfo, qlog::Qlog, to_u64};
+use neqo_common::{Decoder, Ecn, hex::Hex, qlog::Qlog, to_u64};
 use qlog::events::{
     ApplicationError, EventData, RawInfo, TupleEndpointInfo,
     quic::{
@@ -24,6 +24,7 @@ use qlog::events::{
         TimerEventType, TimerType, TimerUpdated, TransportInitiator,
     },
 };
+use tracing::info;
 
 use crate::{
     CloseReason,
@@ -232,7 +233,7 @@ pub fn packet_io(qlog: &mut Qlog, meta: packet::MetaData, now: Instant) {
                 if let Ok(f) = Frame::decode(&mut d) {
                     frames.push(QuicFrame::from(f));
                 } else {
-                    qinfo!("qlog: invalid frame");
+                    info!("qlog: invalid frame");
                     break;
                 }
             }

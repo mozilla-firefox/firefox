@@ -81,12 +81,12 @@ fn chunk_hex<T: AsRef<[u8]>>(f: &mut fmt::Formatter<'_>, v: T) -> fmt::Result {
     const CHUNK_SIZE: usize = 128;
     let mut chunk = [0u8; CHUNK_SIZE * 2];
     for slice in v.as_ref().chunks(CHUNK_SIZE) {
-        for (i, &b) in slice.iter().enumerate() {
-            chunk[i * 2] = HEX[usize::from(b >> 4)];
-            chunk[i * 2 + 1] = HEX[usize::from(b & 0xf)];
+        let (pairs, _) = chunk.as_chunks_mut::<2>();
+        for (pair, &b) in pairs.iter_mut().zip(slice) {
+            *pair = [HEX[usize::from(b >> 4)], HEX[usize::from(b & 0xf)]];
         }
         // SAFETY: only ASCII hex is written to the chunk
-        f.write_str(unsafe { std::str::from_utf8_unchecked(&chunk[..slice.len() * 2]) })?;
+        f.write_str(unsafe { str::from_utf8_unchecked(&chunk[..slice.len() * 2]) })?;
     }
     Ok(())
 }

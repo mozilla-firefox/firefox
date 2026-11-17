@@ -77,8 +77,11 @@ pub enum ConnectionEvent {
         id: u64,
         outcome: OutgoingDatagramOutcome,
     },
-    /// The outgoing QUIC datagram queue has space again after having been full.
-    OutgoingDatagramSpaceAvailable,
+    /// The outgoing QUIC datagram queue of session `stream_id` has space again
+    /// after having been full.
+    OutgoingDatagramSpaceAvailable {
+        stream_id: StreamId,
+    },
     /// An update was received to SCONE throughput advice.
     /// The value is the approximate rate in bits per second; None = unknown.
     SconeUpdated(Option<NonZeroU64>),
@@ -172,9 +175,10 @@ impl ConnectionEvents {
 
     pub fn connection_state_change(&self, state: State) {
         // If closing, existing events no longer relevant.
-        match state {
-            State::Closing { .. } | State::Closed(_) => self.events.clear(),
-            _ => (),
+        // The session ticket in a queued resumption token cannot be retrieved again.
+        if state.closed() {
+            self.events
+                .remove_matching(|evt| !matches!(evt, ConnectionEvent::ResumptionToken(_)));
         }
         self.events.push_unique(ConnectionEvent::StateChange(state));
     }
@@ -206,9 +210,9 @@ impl ConnectionEvents {
         self.events.push(ConnectionEvent::Datagram(data.to_vec()));
     }
 
-    pub fn datagram_space_available(&self) {
+    pub fn datagram_space_available(&self, stream_id: StreamId) {
         self.events
-            .push_unique(ConnectionEvent::OutgoingDatagramSpaceAvailable);
+            .push_unique(ConnectionEvent::OutgoingDatagramSpaceAvailable { stream_id });
     }
 
     pub fn datagram_outcome(

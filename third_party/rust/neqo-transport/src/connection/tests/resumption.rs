@@ -6,7 +6,7 @@
 
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
-use neqo_common::{Datagram, Decoder, Role};
+use neqo_common::{Datagram, Decoder, Role, event::Provider as _};
 use nss::{AuthenticationStatus, RecordProtectionOps as _};
 use test_fixture::{
     assertions,
@@ -16,11 +16,13 @@ use test_fixture::{
 
 use super::{
     AT_LEAST_PTO, connect, connect_with_rtt, default_client, default_server, exchange_ticket,
-    get_tokens, new_client, resumed_server, send_something,
+    get_tokens, maybe_authenticate, new_client, resumed_server, send_something,
 };
 use crate::{
-    ConnectionParameters, DEFAULT_INITIAL_RTT, Error, MIN_INITIAL_PACKET_SIZE, State, Version,
+    Connection, ConnectionParameters, DEFAULT_INITIAL_RTT, Error, MIN_INITIAL_PACKET_SIZE, State,
+    StreamType, Version,
     addr_valid::{AddressValidation, ValidateAddress},
+    events::ConnectionEvent,
     frame::FrameType,
 };
 
@@ -313,6 +315,52 @@ fn take_token() {
     // But we should be able to get the token directly, and use it.
     let token = client.take_resumption_token(now()).unwrap();
     can_resume(token, false);
+}
+
+/// The server opens a bidirectional stream, then sends a session ticket.
+fn server_bidi_stream_then_ticket(client: &mut Connection, server: &mut Connection) {
+    let stream_id = server.stream_create(StreamType::BiDi).unwrap();
+    server.stream_send(stream_id, &[0]).unwrap();
+    let dgram = server.process_output(now()).dgram();
+    client.process_input(dgram.unwrap(), now());
+    _ = client.events().count();
+
+    server.send_ticket(now(), &[]).unwrap();
+    let dgram = server.process_output(now()).dgram();
+    client.process_input(dgram.unwrap(), now());
+}
+
+/// A session ticket can arrive after the server has opened a bidirectional stream.
+#[test]
+fn ticket_after_server_bidi_stream() {
+    let mut client = default_client();
+    let mut server = default_server();
+    connect(&mut client, &mut server);
+
+    server_bidi_stream_then_ticket(&mut client, &mut server);
+    let creatable = |e| matches!(e, ConnectionEvent::SendStreamCreatable { .. });
+    assert!(!client.events().any(creatable));
+}
+
+/// A session ticket can arrive before `HANDSHAKE_DONE`.
+#[test]
+fn ticket_before_handshake_done() {
+    let mut client = default_client();
+    let mut server = default_server();
+    let ch1 = client.process_output(now()).dgram();
+    let ch2 = client.process_output(now()).dgram();
+    server.process_input(ch1.unwrap(), now());
+    let dgram = server.process(ch2, now()).dgram();
+    let dgram = client.process(dgram, now()).dgram();
+    let dgram = server.process(dgram, now()).dgram();
+    let dgram = client.process(dgram, now()).dgram();
+    let dgram = server.process(dgram, now()).dgram();
+    assert!(maybe_authenticate(&mut client));
+    let fin = client.process(dgram, now()).dgram();
+    drop(server.process(fin, now())); // Contains HANDSHAKE_DONE.
+
+    server_bidi_stream_then_ticket(&mut client, &mut server);
+    assert_eq!(*client.state(), State::Connected);
 }
 
 /// If a version is selected and subsequently disabled, resumption fails.

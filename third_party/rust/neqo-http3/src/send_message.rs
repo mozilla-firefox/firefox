@@ -13,9 +13,10 @@ use std::{
     time::Instant,
 };
 
-use neqo_common::{Buffer, Encoder, Header, MessageType, qdebug, qtrace, to_u64};
+use neqo_common::{Buffer, Encoder, Header, MessageType, to_u64};
 use neqo_qpack as qpack;
 use neqo_transport::{Connection, StreamId};
+use tracing::{debug, trace};
 
 use crate::{
     BufferedStream, CloseType, Error, Http3StreamInfo, Http3StreamType, HttpSendStream, Res,
@@ -61,15 +62,15 @@ impl MessageState {
     fn new_headers(&mut self, headers: &[Header], message_type: MessageType) -> Res<()> {
         match &self {
             Self::WaitingForHeaders => {
-                // This is only a debug assertion because we expect that application will
-                // do the right thing here and performing the check costs.
-                debug_assert!(headers_valid(headers, message_type).is_ok());
                 match message_type {
                     MessageType::Request => {
-                        *self = Self::WaitingForData;
+                        *self = Self::WaitingForData; // Validated by `RequestDescription::new`.
                     }
                     MessageType::Response => {
-                        if !is_interim(headers)? {
+                        let interim = headers_valid(headers, message_type)
+                            .and_then(|()| is_interim(headers))
+                            .map_err(|_| Error::InvalidInput)?;
+                        if !interim {
                             *self = Self::WaitingForData;
                         }
                     }
@@ -127,7 +128,7 @@ impl SendMessage {
         encoder: Rc<RefCell<qpack::Encoder>>,
         conn_events: Box<dyn SendStreamEvents>,
     ) -> Self {
-        qdebug!("Create a request stream_id={stream_id}");
+        debug!("Create a request stream_id={stream_id}");
         Self {
             state: MessageState::WaitingForHeaders,
             stream_info: Http3StreamInfo::new(stream_id, Http3StreamType::Http),
@@ -160,7 +161,7 @@ impl SendMessage {
         conn: &mut Connection,
         stream_id: StreamId,
     ) {
-        qdebug!("Encoding headers");
+        debug!("Encoding headers");
         let header_block = qpack_encoder.encode_header_block(conn, headers, stream_id);
         let hframe = HFrame::Headers {
             header_block: header_block.to_vec(),
@@ -180,7 +181,7 @@ impl Stream for SendMessage {
 }
 impl SendStream for SendMessage {
     fn send_data(&mut self, conn: &mut Connection, buf: &[u8], now: Instant) -> Res<usize> {
-        qtrace!("[{self}] send_body: len={}", buf.len());
+        trace!("[{self}] send_body: len={}", buf.len());
 
         self.state.new_data()?;
 
@@ -212,7 +213,7 @@ impl SendStream for SendMessage {
             min(buf.len(), available - 9)
         };
 
-        qdebug!("[{self}] send_request_body: available={available} to_send={to_send}");
+        debug!("[{self}] send_request_body: available={available} to_send={to_send}");
 
         let data_frame = HFrame::Data {
             len: to_u64(to_send),
@@ -249,11 +250,11 @@ impl SendStream for SendMessage {
     fn send(&mut self, conn: &mut Connection, now: Instant) -> Res<()> {
         let sent = self.stream.send_buffer(conn, now)?;
 
-        qtrace!("[{self}] {sent} bytes sent");
+        trace!("[{self}] {sent} bytes sent");
         if !self.has_data_to_send() {
             if self.state.done() {
                 conn.stream_close_send(self.stream_id())?;
-                qtrace!("[{self}] done sending request");
+                trace!("[{self}] done sending request");
             } else {
                 // DataWritable is just a signal for an application to try to write more data,
                 // if writing fails it is fine. Therefore we do not need to properly check
@@ -269,7 +270,7 @@ impl SendStream for SendMessage {
         // the commitment would fall short, so fail rather than silently under-commit.
         self.stream.send_buffer(conn, now)?;
         if self.has_data_to_send() {
-            qdebug!("buffered data at neqo-http3 layer, failing to commit");
+            debug!("buffered data at neqo-http3 layer, failing to commit");
             return Err(Error::FlowControlLimit);
         }
         conn.stream_commit(self.stream_id())?;

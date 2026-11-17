@@ -8,36 +8,44 @@ use std::fmt::Debug;
 
 use http::Uri as Url;
 
+use crate::{Error, Res};
+
 pub trait RequestTarget: Debug {
-    fn scheme(&self) -> &str;
+    fn scheme(&self) -> Res<&str>;
     fn authority(&self) -> &str;
-    fn path(&self) -> &str;
+    fn path(&self) -> Res<&str>;
 }
 
-impl RequestTarget for &Url {
-    fn scheme(&self) -> &str {
-        self.scheme_str().unwrap_or("")
+impl RequestTarget for Url {
+    fn scheme(&self) -> Res<&str> {
+        self.scheme_str().ok_or(Error::InvalidInput)
     }
 
     fn authority(&self) -> &str {
-        Url::authority(self).map_or("", |a| a.as_str())
+        Self::authority(self).map_or("", |a| a.as_str().rsplit('@').next().unwrap_or_default())
     }
 
-    fn path(&self) -> &str {
-        Url::path(self)
+    fn path(&self) -> Res<&str> {
+        if self
+            .path_and_query()
+            .is_some_and(|p| p.as_str().bytes().any(|b| b.is_ascii_control()))
+        {
+            return Err(Error::InvalidInput);
+        }
+        Ok(Self::path(self))
     }
 }
 
 impl<'s, 'a, 'p> RequestTarget for (&'s str, &'a str, &'p str) {
-    fn scheme(&self) -> &'s str {
-        self.0
+    fn scheme(&self) -> Res<&'s str> {
+        Ok(self.0)
     }
 
     fn authority(&self) -> &'a str {
         self.1
     }
 
-    fn path(&self) -> &'p str {
-        self.2
+    fn path(&self) -> Res<&'p str> {
+        Ok(self.2)
     }
 }

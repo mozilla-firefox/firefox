@@ -6,7 +6,8 @@
 
 use std::time::Duration;
 
-use neqo_common::{Datagram, Ecn, qdebug, qinfo, to_u64};
+use neqo_common::{Datagram, Ecn, to_u64};
+use tracing::{debug, info};
 
 use super::{
     super::Output, CLIENT_HANDSHAKE_1RTT_PACKETS, DEFAULT_RTT, POST_HANDSHAKE_CWND, ack_bytes,
@@ -246,13 +247,13 @@ fn cc_cong_avoidance_recovery_period_to_cong_avoidance(congestion_control: Conge
     // Should be in CARP now.
     now += DEFAULT_RTT / 2;
     assert!(cwnd_before_loss > cwnd_after_loss);
-    qinfo!("moving to congestion avoidance {}", cwnd(&client));
+    info!("moving to congestion avoidance {}", cwnd(&client));
 
     for i in 0..6 {
-        qinfo!("iteration {i}");
+        info!("iteration {i}");
 
         let (c_tx_dgrams, next_now) = fill_cwnd(&mut client, stream_id, now);
-        qinfo!(
+        info!(
             "client sending {} bytes into cwnd of {}",
             c_tx_dgrams.iter().map(Datagram::len).sum::<usize>(),
             cwnd(&client)
@@ -389,7 +390,7 @@ fn ack_are_not_cc() {
 
     // The server hasn't received any of these packets yet, the server
     // won't ACK, but if it sends an ack-eliciting packet instead.
-    qdebug!("[{server}] Sending ack-eliciting");
+    debug!("[{server}] Sending ack-eliciting");
     let other_stream = server.stream_create(StreamType::BiDi).unwrap();
     assert_eq!(other_stream, 1);
     server.stream_send(other_stream, b"dropped").unwrap();
@@ -403,10 +404,10 @@ fn ack_are_not_cc() {
     assert!(ack_eliciting_packet.is_some());
 
     // The client can ack the server packet even if cc windows is full.
-    qdebug!("[{client}] Process ack-eliciting");
+    debug!("[{client}] Process ack-eliciting");
     let ack_pkt = client.process(ack_eliciting_packet, now).dgram();
     assert!(ack_pkt.is_some());
-    qdebug!("[{server}] Handle ACK");
+    debug!("[{server}] Handle ACK");
     let prev_ack_count = server.stats().frame_rx.ack;
     server.process_input(ack_pkt.unwrap(), now);
     assert_eq!(server.stats().frame_rx.ack, prev_ack_count + 1);
