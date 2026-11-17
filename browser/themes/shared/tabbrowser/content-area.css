@@ -993,14 +993,13 @@ address-footer {
 }
 
 #more-actions-manage-settings {
-  --manage-settings-start: calc(var(--selection-row-icon-inset) - var(--border-width));
-  --manage-settings-end: calc(var(--selection-row-switch-inset) + var(--size-item-large) + var(--space-medium));
-  --button-padding: var(--space-xsmall) var(--manage-settings-end) var(--space-xsmall) var(--manage-settings-start);
   --button-font-weight: normal;
-  --space-small: var(--selection-row-icon-inset);
 
-  &:dir(rtl) {
-    --button-padding: var(--space-xsmall) var(--manage-settings-start) var(--space-xsmall) var(--manage-settings-end);
+  &::part(button) {
+    gap: var(--selection-row-icon-inset);
+    padding-block: var(--space-xsmall);
+    padding-inline: calc(var(--selection-row-icon-inset) - var(--border-width))
+      calc(var(--selection-row-switch-inset) + var(--size-item-large) + var(--space-medium));
   }
 }
 
