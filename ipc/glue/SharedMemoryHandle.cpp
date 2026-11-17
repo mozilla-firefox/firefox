@@ -43,11 +43,9 @@ Atomic<uint64_t> AllocationReporter::allocated;
 
 NS_IMPL_ISUPPORTS(AllocationReporter, nsIMemoryReporter)
 
-static void RegisterAllocationMemoryReporter() {
-  static Atomic<bool> registered;
-  if (registered.compareExchange(false, true)) {
-    RegisterStrongMemoryReporter(MakeAndAddRef<AllocationReporter>());
-  }
+// Used in IPCModule.cpp
+nsresult RegisterHandleMemoryReporter() {
+  return RegisterStrongMemoryReporter(MakeAndAddRef<AllocationReporter>());
 }
 
 HandleBase::HandleBase() = default;
@@ -112,7 +110,6 @@ bool HandleBase::FromMessageReader(IPC::MessageReader* aReader) {
 }
 
 void HandleBase::SetSize(uint64_t aSize) {
-  RegisterAllocationMemoryReporter();
   mozilla::ipc::shared_memory::AllocationReporter::allocated -= mSize;
   mSize = aSize;
   mozilla::ipc::shared_memory::AllocationReporter::allocated += mSize;

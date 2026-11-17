@@ -21,6 +21,7 @@
 #include "mozilla/Services.h"
 #include "mozilla/URLPreloader.h"
 #include "mozilla/Variant.h"
+#include "mozilla/ipc/IPCModule.h"
 #include "nsArray.h"
 #include "nsCOMPtr.h"
 #include "nsCategoryManager.h"
@@ -356,6 +357,8 @@ nsresult nsComponentManagerImpl::Init() {
   nsCategoryManager::GetSingleton()->SuppressNotifications(false);
 
   RegisterWeakMemoryReporter(this);
+
+  mozilla::ipc::InitIPCModule();
 
   // NB: The logging preference watcher needs to be registered late enough in
   // startup that it's okay to use the preference system, but also as soon as
