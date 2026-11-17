@@ -18,6 +18,15 @@ const DENY_LOCALHOST = [
   { filter: "DENY", urlPrefix: "http://localhost/" },
 ];
 
+add_setup(function () {
+  // Guard against an earlier test leaking this env var and silently
+  // disabling the allow/deny list for every test below.
+  Assert.ok(
+    !Services.env.exists("MOZ_ALLOW_EXTERNAL_ML_HUB"),
+    "MOZ_ALLOW_EXTERNAL_ML_HUB is unset, so the allow/deny list applies."
+  );
+});
+
 async function withModelHub() {
   const hub = MLTestUtils.createMockModelHub();
   hub.setFile({ model: MODEL, revision: REVISION, file: FILE, content: "{}" });
