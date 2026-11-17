@@ -51,20 +51,20 @@ docker.RUN_TASK_FILES["run-task/run-task-setup.py"] = os.path.join(
 docker.RUN_TASK_FILES["run-task/run_task_resource_monitor.py"] = os.path.join(
     GECKO, "taskcluster", "scripts", "run_task_resource_monitor.py"
 )
-docker.RUN_TASK_FILES["run-task/resourcemonitor.py"] = os.path.join(
+docker.RUN_TASK_FILES["run-task/basemonitor.py"] = os.path.join(
     GECKO,
     "testing",
     "mozbase",
     "mozsystemmonitor",
     "mozsystemmonitor",
-    "resourcemonitor.py",
+    "basemonitor.py",
 )
 docker.RUN_TASK_SNIPPET = [
     "COPY run-task/run-task /builds/worker/bin/run-task-git\n",
     "COPY run-task/fetch-content /builds/worker/bin/fetch-content\n",
     "COPY run-task/run-task-setup.py /builds/worker/bin/run-task-setup.py\n",
     "COPY run-task/run_task_resource_monitor.py /builds/worker/bin/run_task_resource_monitor.py\n",
-    "COPY run-task/resourcemonitor.py /builds/worker/bin/mozsystemmonitor/resourcemonitor.py\n",
+    "COPY run-task/basemonitor.py /builds/worker/bin/mozsystemmonitor/basemonitor.py\n",
 ]
 
 # Don't use any of the upstream morphs.

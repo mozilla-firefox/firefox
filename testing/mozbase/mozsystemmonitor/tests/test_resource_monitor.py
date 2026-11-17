@@ -5,6 +5,7 @@
 import json
 import multiprocessing
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -20,12 +21,15 @@ try:
 except ImportError:
     psutil = None
 
-from mozsystemmonitor.resourcemonitor import (
+from mozsystemmonitor import basemonitor
+from mozsystemmonitor.basemonitor import (
     FORWARD_ENV,
-    SystemResourceMonitor,
     SystemResourceUsage,
-    _parse_hg_source_url,
     _process_sampling_interval,
+)
+from mozsystemmonitor.resourcemonitor import (
+    SystemResourceMonitor,
+    _parse_hg_source_url,
 )
 
 UBSAN_FILE = "/builds/worker/checkouts/gecko/third_party/llama.cpp/ggml/src/ggml-c.c"
@@ -2303,6 +2307,47 @@ def test_concurrent_forwarding_lines(tmp_path):
     records = [json.loads(line) for line in data.splitlines()]
     assert len(records) == 2000
     assert all(record[0] == "marker" for record in records)
+
+
+def test_base_monitor_standalone(tmp_path):
+    # run-task only has basemonitor.py, without the rest of the package.
+    package = tmp_path / "mozsystemmonitor"
+    package.mkdir()
+    (package / "__init__.py").touch()
+    shutil.copy(basemonitor.__file__, package)
+    forward_path = tmp_path / "forward.jsonl"
+    forward_path.touch()
+    script = (
+        "import sys\n"
+        f"sys.path.insert(0, {str(tmp_path)!r})\n"
+        "from mozsystemmonitor.basemonitor import BaseResourceMonitor\n"
+        f"m = BaseResourceMonitor(forward_to={str(forward_path)!r})\n"
+        "m.start()\n"
+        "m.record_event('event')\n"
+        "m.stop()\n"
+        "import json, time\n"
+        "m = BaseResourceMonitor(poll_interval=0.1)\n"
+        "m.start()\n"
+        "m.record_event('event')\n"
+        "with m.phase('phase'):\n"
+        "    time.sleep(0.3)\n"
+        "m.stop()\n"
+        "profile = m.as_profile()\n"
+        "assert 'mozsystemmonitor.resourcemonitor' not in sys.modules\n"
+        "json.dump(profile, sys.stdout)\n"
+    )
+    env = {k: v for k, v in os.environ.items() if k != FORWARD_ENV}
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        check=True,
+        env=env,
+        stdout=subprocess.PIPE,
+    )
+    records = [json.loads(line) for line in forward_path.read_bytes().splitlines()]
+    assert [record[:2] for record in records] == [["event", "event"]]
+    profile = json.loads(result.stdout)
+    markers = profile["threads"][0]["markers"]["data"]
+    assert any(m.get("type") == "Phase" and m.get("phase") == "phase" for m in markers)
 
 
 @pytest.mark.parametrize(

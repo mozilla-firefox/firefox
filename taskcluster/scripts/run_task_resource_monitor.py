@@ -83,9 +83,9 @@ def start_monitoring(profile_path):
     add_psutil_to_path()
 
     try:
-        from mozsystemmonitor.resourcemonitor import (
+        from mozsystemmonitor.basemonitor import (
             FORWARD_ENV,
-            SystemResourceMonitor,
+            BaseResourceMonitor,
             have_psutil,
         )
     except Exception as e:
@@ -111,7 +111,7 @@ def start_monitoring(profile_path):
         kind = "commit" if os.environ.get("GECKO_REPOSITORY_TYPE") == "git" else "rev"
         metadata["sourceURL"] = f"{repo}/{kind}/{os.environ['GECKO_HEAD_REV']}"
 
-    monitor = SystemResourceMonitor(poll_interval=0.1, metadata=metadata)
+    monitor = BaseResourceMonitor(poll_interval=0.1, metadata=metadata)
     monitor.start()
     if monitor.start_time is None:
         print_line(b"setup", b"not monitoring resource usage: psutil failed\n")

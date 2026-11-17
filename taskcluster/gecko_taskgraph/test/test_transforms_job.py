@@ -208,8 +208,8 @@ def test_generic_worker_run_task_resource_monitor(
         assert worker["env"]["RUN_TASK_STARTUP_HOOK"] == "run_task_resource_monitor.py"
     else:
         assert "RUN_TASK_STARTUP_HOOK" not in worker["env"]
-    assert mounts["./mozsystemmonitor/resourcemonitor.py"]["content"]["url"].endswith(
-        "/public/resourcemonitor.py"
+    assert mounts["./mozsystemmonitor/basemonitor.py"]["content"]["url"].endswith(
+        "/public/basemonitor.py"
     )
     deps = {
         path.rsplit("/", 1)[1]: mount

@@ -329,7 +329,7 @@ def taskgraph_decision(options, parameters, bugbug_result_path=None):
             scripts_dir / "run_task_resource_monitor.py": ARTIFACTS_DIR,
             Path(GECKO, "testing", "mozbase", "mozsystemmonitor")
             / "mozsystemmonitor"
-            / "resourcemonitor.py": ARTIFACTS_DIR,
+            / "basemonitor.py": ARTIFACTS_DIR,
         }
         for target, dest in to_copy.items():
             shutil.copy(target, dest)

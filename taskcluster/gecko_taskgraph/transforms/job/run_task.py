@@ -290,9 +290,9 @@ def generic_worker_run_task(config, job, taskdesc):
         worker["env"]["RUN_TASK_STARTUP_HOOK"] = "run_task_resource_monitor.py"
     worker["mounts"].append({
         "content": {
-            "url": script_url(config, "resourcemonitor.py"),
+            "url": script_url(config, "basemonitor.py"),
         },
-        "file": "./mozsystemmonitor/resourcemonitor.py",
+        "file": "./mozsystemmonitor/basemonitor.py",
     })
     for psutil_platform in psutil_platforms(job):
         fetch_label = f"fetch-{PSUTIL_FETCHES[psutil_platform]}"
