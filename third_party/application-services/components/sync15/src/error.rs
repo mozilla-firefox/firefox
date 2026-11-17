@@ -100,7 +100,7 @@ pub enum Error {
     SetupRace,
 
     #[cfg(feature = "sync-client")]
-    #[error("Client upgrade required; server storage version too new")]
+    #[error("Client upgrade required; server data is in a newer format")]
     ClientUpgradeRequired,
 
     // This means that our global state machine needs to enter a state (such as

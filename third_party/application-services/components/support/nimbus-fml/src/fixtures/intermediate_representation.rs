@@ -24,6 +24,7 @@ pub(crate) fn get_simple_homescreen_feature() -> FeatureManifest {
                     VariantDef::new("recent-explorations", "Tabs from another source"),
                     VariantDef::new("pocket", "Tabs from another source"),
                 ],
+                ..Default::default()
             },
         )]),
         obj_defs: Default::default(),

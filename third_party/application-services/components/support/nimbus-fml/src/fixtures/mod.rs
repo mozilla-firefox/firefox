@@ -21,11 +21,18 @@ impl EnumDef {
                 doc: format!("Documentation for {s}"),
             })
             .collect();
+
         Self {
             name: nm.to_string(),
             doc: format!("{nm} documentation"),
             variants,
+            no_lint: vec![],
         }
+    }
+
+    pub(crate) fn with_suppressed_lints(mut self, no_lint: &[&str]) -> Self {
+        self.no_lint = no_lint.iter().map(|s| String::from(*s)).collect();
+        self
     }
 
     pub(crate) fn into_map(value: &[Self]) -> BTreeMap<String, Self> {
@@ -39,7 +46,13 @@ impl ObjectDef {
             name: nm.to_string(),
             doc: nm.to_string(),
             props: props.into(),
+            no_lint: vec![],
         }
+    }
+
+    pub(crate) fn with_suppressed_lints(mut self, no_lint: &[&str]) -> Self {
+        self.no_lint = no_lint.iter().map(|s| String::from(*s)).collect();
+        self
     }
 
     pub(crate) fn into_map(value: &[Self]) -> BTreeMap<String, Self> {

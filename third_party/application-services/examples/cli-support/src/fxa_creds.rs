@@ -154,7 +154,7 @@ impl CliFxa {
         self.account.as_ref()
     }
 
-    /// Get everything needed to sync, built fresh from the current access token.
+    /// Get everything needed to sync.
     ///
     /// Returns `Ok(None)` if the sync scope key is not available (e.g., not logged in with
     /// `SYNC_SCOPE`). Returns `Err` for real errors.
@@ -164,7 +164,7 @@ impl CliFxa {
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("not logged in; call ensure_logged_in first"))?;
 
-        let token = account.get_access_token(SYNC_SCOPE, false)?;
+        let token = account.get_access_token(SYNC_SCOPE, true)?;
         let key = match token.key {
             Some(k) => k,
             None => {

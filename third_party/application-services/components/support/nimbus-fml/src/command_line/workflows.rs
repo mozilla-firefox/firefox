@@ -461,7 +461,7 @@ fn output_suppressed(stream: &mut impl WriteColor, report: &LintReport) -> Resul
     }
     output_note(
         stream,
-        &format!("{} issue(s) silenced by `no-lint`", report.suppressed,),
+        &format!("{} issue(s) silenced by `no-lint`", report.suppressed),
     )
 }
 

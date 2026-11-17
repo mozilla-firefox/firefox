@@ -1631,6 +1631,9 @@ data class SyncResult (
      * update the local state (ie, to ensure that their Sync UI correctly
      * reflects what engines are enabled and disabled), because these could
      * change after every sync.
+     * Always `None` when using `EngineChoicesModel::Device`, device's engine
+     * choices are local without remote updates. `None` means "no change", not
+     * "nothing declined".
      */
     var `declined`: List<kotlin.String>?
     , 

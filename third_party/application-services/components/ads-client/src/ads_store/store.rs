@@ -106,22 +106,28 @@ impl AdsStoreHolder {
         *self.fault.lock() = kind;
     }
 
-    /// Upsert the ads for a placement, replacing any ads already stored for it.
-    pub fn store_ad(&self, placement_id: &PlacementId, ads: &[Ad]) -> Result<(), FetchAdsError> {
+    // Upsert multiple ads for a singular placement, replacing any ads already stored for it.
+    pub fn store_ads(&self, placement_id: &PlacementId, ads: &[Ad]) -> Result<(), FetchAdsError> {
+        self.store_batch_ads([(placement_id, ads)])
+    }
+
+    /// Upsert multiple ads for many placements, replacing any ads already stored for it.
+    pub fn store_batch_ads<'a, K: AsRef<str>, V: AsRef<[Ad]>>(
+        &self,
+        ads_map: impl IntoIterator<Item = (K, V)>,
+    ) -> Result<(), FetchAdsError> {
         #[cfg(test)]
         if *self.fault.lock() == FaultKind::Store {
             return Err(open_database::Error::from(Self::forced_fault_error(
                 "forced store failure",
             )))?;
         }
-        let placement_id_str: &str = placement_id.as_ref();
-        let ad_body = serde_json::to_vec(&ads)?;
-        let size_bytes = ad_body.len();
-        let now = self.clock.now();
 
-        let (conn, _) = self.db.lock()?;
-        conn.execute(
-            "INSERT INTO ads (
+        let (mut conn, _) = self.db.lock()?;
+        let tx = conn.transaction().map_err(open_database::Error::from)?;
+        let mut stmt = tx
+            .prepare(
+                "INSERT INTO ads (
                 stored_at,
                 placement_id,
                 ad_body,
@@ -132,9 +138,26 @@ impl AdsStoreHolder {
                 stored_at=excluded.stored_at,
                 ad_body=excluded.ad_body,
                 size_bytes=excluded.size_bytes",
-            params![now.timestamp(), placement_id_str, ad_body, size_bytes,],
-        )
-        .map_err(open_database::Error::from)?;
+            )
+            .map_err(open_database::Error::from)?;
+
+        let now = self.clock.now();
+        for (placement_id, ads) in ads_map {
+            let placement_id_str: &str = placement_id.as_ref();
+            let ads: &[Ad] = ads.as_ref();
+            let ad_body = serde_json::to_vec(&ads)?;
+            let size_bytes = ad_body.len();
+            stmt.execute(params![
+                now.timestamp(),
+                placement_id_str,
+                ad_body,
+                size_bytes,
+            ])
+            .map_err(open_database::Error::from)?;
+        }
+        stmt.finalize().map_err(open_database::Error::from)?;
+        tx.commit().map_err(open_database::Error::from)?;
+
         Ok(())
     }
 
@@ -219,9 +242,9 @@ mod tests {
         let store = create_test_store();
         store.set_fault(FaultKind::Store);
 
-        let (placement, ad) = get_example_happy_image_ads("mock_billboard_1");
+        let (placement, ads) = get_example_happy_image_ads("mock_billboard_1");
 
-        let err = store.store_ad(&placement, &ad).unwrap_err();
+        let err = store.store_ads(&placement, &ads).unwrap_err();
         match err {
             FetchAdsError::Sqlite(open_database::Error::SqlError(
                 rusqlite::Error::SqliteFailure(_, Some(msg)),
@@ -237,8 +260,8 @@ mod tests {
         let store = create_test_store();
         store.set_fault(FaultKind::Trim);
 
-        let (placement, ad) = get_example_happy_image_ads("mock_billboard_1");
-        store.store_ad(&placement, &ad).unwrap();
+        let (placement, ads) = get_example_happy_image_ads("mock_billboard_1");
+        store.store_ads(&placement, &ads).unwrap();
 
         let err = store.trim_to_max_size(&ByteSize::b(1)).unwrap_err();
         match err {
@@ -252,12 +275,12 @@ mod tests {
     #[test]
     fn test_store_and_retrieve_ads() {
         let store = create_test_store();
-        let (placement, ad) = get_example_happy_image_ads("mock_billboard_1");
+        let (placement, ads) = get_example_happy_image_ads("mock_billboard_1");
 
-        store.store_ad(&placement, &ad).unwrap();
+        store.store_ads(&placement, &ads).unwrap();
 
         let retrieved = store.lookup(&placement).unwrap().unwrap();
-        assert_eq!(retrieved, ad);
+        assert_eq!(retrieved, ads);
     }
 
     #[test]
@@ -271,7 +294,7 @@ mod tests {
             .collect();
         assert!(ads.len() > 1);
 
-        store.store_ad(&placement, &ads).unwrap();
+        store.store_ads(&placement, &ads).unwrap();
 
         assert_eq!(store.lookup(&placement).unwrap(), Some(ads));
     }
@@ -285,10 +308,10 @@ mod tests {
             .into_values()
             .flatten()
             .collect();
-        store.store_ad(&placement, &ads).unwrap();
+        store.store_ads(&placement, &ads).unwrap();
 
         let refreshed = ads[..1].to_vec();
-        store.store_ad(&placement, &refreshed).unwrap();
+        store.store_ads(&placement, &refreshed).unwrap();
 
         assert_eq!(store.lookup(&placement).unwrap(), Some(refreshed));
     }
@@ -298,8 +321,8 @@ mod tests {
         let store = create_test_store();
 
         for i in 0..10 {
-            let (placement_id, ad) = get_example_happy_image_ads(&format!("mock_billboard_{i}"));
-            store.store_ad(&placement_id, &ad).unwrap();
+            let (placement_id, ads) = get_example_happy_image_ads(&format!("mock_billboard_{i}"));
+            store.store_ads(&placement_id, &ads).unwrap();
         }
 
         let total_size = store.current_total_size_bytes().unwrap();
@@ -318,12 +341,12 @@ mod tests {
     #[test]
     fn test_clear_all_ads() {
         let store = create_test_store();
-        let (placement_1, ad_1) = get_example_happy_image_ads("mock_billboard_1");
+        let (placement_1, ads_1) = get_example_happy_image_ads("mock_billboard_1");
 
-        store.store_ad(&placement_1, &ad_1).unwrap();
+        store.store_ads(&placement_1, &ads_1).unwrap();
 
-        let (placement_2, ad_2) = get_example_happy_image_ads("mock_billboard_2");
-        store.store_ad(&placement_2, &ad_2).unwrap();
+        let (placement_2, ads_2) = get_example_happy_image_ads("mock_billboard_2");
+        store.store_ads(&placement_2, &ads_2).unwrap();
 
         assert!(store.lookup(&placement_1).unwrap().is_some());
         assert!(store.lookup(&placement_2).unwrap().is_some());
@@ -339,11 +362,11 @@ mod tests {
     fn test_invalidate_ad_by_placement_id() {
         let store = create_test_store();
 
-        let (placement_1, ad_1) = get_example_happy_image_ads("mock_billboard_1");
-        let (placement_2, ad_2) = get_example_happy_image_ads("mock_billboard_2");
+        let (placement_1, ads_1) = get_example_happy_image_ads("mock_billboard_1");
+        let (placement_2, ads_2) = get_example_happy_image_ads("mock_billboard_2");
 
-        store.store_ad(&placement_1, &ad_1).unwrap();
-        store.store_ad(&placement_2, &ad_2).unwrap();
+        store.store_ads(&placement_1, &ads_1).unwrap();
+        store.store_ads(&placement_2, &ads_2).unwrap();
 
         assert!(store.lookup(&placement_1).unwrap().is_some());
         assert!(store.lookup(&placement_2).unwrap().is_some());
@@ -352,6 +375,21 @@ mod tests {
         assert_eq!(deleted, 1);
 
         assert!(store.lookup(&placement_1).unwrap().is_none());
+        assert!(store.lookup(&placement_2).unwrap().is_some());
+    }
+
+    #[test]
+    fn batch_add_adds_all_ads() {
+        let store = create_test_store();
+        let (placement_1, ads_1) = get_example_happy_image_ads("mock_billboard_1");
+        let (placement_2, ads_2) = get_example_happy_image_ads("mock_billboard_2");
+
+        let mut map = std::collections::HashMap::new();
+        map.insert(&placement_1, ads_1);
+        map.insert(&placement_2, ads_2);
+
+        store.store_batch_ads(map).unwrap();
+        assert!(store.lookup(&placement_1).unwrap().is_some());
         assert!(store.lookup(&placement_2).unwrap().is_some());
     }
 }

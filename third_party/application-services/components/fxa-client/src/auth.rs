@@ -104,20 +104,6 @@ impl FirefoxAccount {
         self.internal.lock().on_auth_issues()
     }
 
-    /// Reset the timer indicating time since last auth issues were encountered.
-    ///
-    /// **💾 This method alters the persisted account state.**
-    ///
-    /// Call this if we have encountered the [FxaState.AuthIssues] state as a result of a
-    /// failure happening (i.e. not as a result of initialization simply loading that state from a
-    /// previous failure).
-    /// Most likely, this should not need to be called externally except in testing since the state
-    /// machine's `transition` function should generally call the internal version of this function
-    /// when necessary.
-    pub fn reset_auth_recheck_timer(&self) {
-        self.internal.lock().reset_auth_recheck_timer()
-    }
-
     /// Used by the application to test auth token issues
     pub fn simulate_temporary_auth_token_issue(&self) {
         self.internal.lock().simulate_temporary_auth_token_issue()

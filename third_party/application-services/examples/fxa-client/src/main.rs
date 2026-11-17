@@ -144,7 +144,6 @@ fn main() -> Result<()> {
                 }
                 Command::Login { .. } => unreachable!(),
                 Command::ForceAuthIssues => {
-                    account.reset_auth_recheck_timer();
                     account.on_auth_issues();
                 }
             }

@@ -64,8 +64,8 @@ mod tests {
     fn test_clear_store() {
         let store: AdsStore = AdsStore::builder(IN_MEMORY_DB_PATH).build().unwrap();
 
-        let (placement_id, ad) = get_example_happy_image_ads("mock_billboard_1");
-        store.holder.store_ad(&placement_id, &ad).unwrap();
+        let (placement_id, ads) = get_example_happy_image_ads("mock_billboard_1");
+        store.holder.store_ads(&placement_id, &ads).unwrap();
 
         // Verify it's cached
         let retrieved = store.holder.lookup(&placement_id).unwrap();
@@ -83,10 +83,10 @@ mod tests {
     fn test_invalidate_by_id() {
         let store: AdsStore = AdsStore::builder(IN_MEMORY_DB_PATH).build().unwrap();
 
-        let (placement_1, ad_1) = get_example_happy_image_ads("mock_billboard_1");
-        let (placement_2, ad_2) = get_example_happy_image_ads("mock_billboard_2");
-        store.holder.store_ad(&placement_1, &ad_1).unwrap();
-        store.holder.store_ad(&placement_2, &ad_2).unwrap();
+        let (placement_1, ads_1) = get_example_happy_image_ads("mock_billboard_1");
+        let (placement_2, ads_2) = get_example_happy_image_ads("mock_billboard_2");
+        store.holder.store_ads(&placement_1, &ads_1).unwrap();
+        store.holder.store_ads(&placement_2, &ads_2).unwrap();
 
         assert!(store.holder.lookup(&placement_1).unwrap().is_some());
         assert!(store.holder.lookup(&placement_2).unwrap().is_some());

@@ -108,9 +108,16 @@ pub(crate) struct StateV2 {
     // The last LocalDevice info sent back from the server
     #[serde(default)]
     pub(crate) server_local_device_info: Option<LocalDevice>,
+
     #[serde(default)]
     pub(crate) logged_out_from_auth_issues: bool,
-    pub(crate) last_auth_check_time: Option<u64>,
+
+    // If we had a refresh token which we dropped due to auth issues, this
+    // is the set of scopes the refresh token had and what we should ask for
+    // when reauthenticating.
+    // Not yet wired up to the reauth flows, but we track the value now.
+    #[serde(default)]
+    pub(crate) last_refresh_token_scopes: HashSet<String>,
 }
 
 #[cfg(test)]

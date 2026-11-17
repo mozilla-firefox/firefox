@@ -24,9 +24,14 @@ pub(crate) struct EnumVariantBody {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
 pub(crate) struct EnumBody {
     pub(crate) description: String,
     pub(crate) variants: BTreeMap<String, EnumVariantBody>,
+    /// Lints this enum is excused from.
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) no_lint: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -56,12 +61,17 @@ pub(crate) struct FieldBody {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
 pub(crate) struct ObjectBody {
     pub(crate) description: String,
     // We need these in a deterministic order, so they are stable across multiple
     // runs of the same manifests.
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     pub(crate) fields: BTreeMap<String, FieldBody>,
+    /// Lints this object is excused from.
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) no_lint: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
@@ -429,6 +439,7 @@ impl ManifestFrontEnd {
                     name: nm.clone(),
                     doc: body.description.clone(),
                     props: fields,
+                    no_lint: body.no_lint.clone(),
                 },
             );
         }
@@ -456,6 +467,7 @@ impl ManifestFrontEnd {
                     name: name.clone(),
                     doc: body.description.clone(),
                     variants,
+                    no_lint: body.no_lint.clone(),
                 },
             );
         }

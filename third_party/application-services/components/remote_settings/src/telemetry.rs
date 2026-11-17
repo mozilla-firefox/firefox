@@ -34,7 +34,8 @@ impl fmt::Display for SyncStatus {
             SyncStatus::UpToDate => "up_to_date",
             SyncStatus::NetworkError => "network_error",
             SyncStatus::BackoffError => "backoff_error",
-            SyncStatus::SignatureError => "signature_error",
+            // We align the telemetry value with Desktop to simplify queries.
+            SyncStatus::SignatureError => "sign_retry_error",
             SyncStatus::CertificateError => "certificate_error",
             SyncStatus::ServerError => "server_error",
             SyncStatus::UnknownError => "unknown_error",

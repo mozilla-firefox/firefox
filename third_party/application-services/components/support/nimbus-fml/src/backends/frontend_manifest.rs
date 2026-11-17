@@ -104,6 +104,7 @@ impl From<ObjectDef> for ObjectBody {
         Self {
             description: value.doc,
             fields,
+            no_lint: value.no_lint.clone(),
         }
     }
 }
@@ -117,6 +118,7 @@ impl From<EnumDef> for EnumBody {
         Self {
             description: value.doc,
             variants,
+            no_lint: vec![],
         }
     }
 }

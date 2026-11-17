@@ -142,6 +142,12 @@ pub trait SetupStorageClient {
         xius: ServerTimestamp,
         global: &MetaGlobalRecord,
     ) -> error::Result<ServerTimestamp>;
+    /// Only used with EngineChoicesModel::Device
+    fn put_sync_ids(
+        &self,
+        xius: ServerTimestamp,
+        sync_ids: &SyncIdsRecord,
+    ) -> error::Result<ServerTimestamp>;
     fn put_crypto_keys(
         &self,
         xius: ServerTimestamp,
@@ -258,13 +264,7 @@ impl SetupStorageClient for Sync15StorageClient {
             } => {
                 // Unlike meta/global, a record we can't parse is not fatal - it
                 // just means we've nothing to adopt.
-                let record = match serde_json::from_str(&record.payload) {
-                    Ok(r) => Some(r),
-                    Err(e) => {
-                        warn!("Ignoring meta/syncids which failed to parse: {}", e);
-                        None
-                    }
-                };
+                let record = SyncIdsRecord::from_payload(&record.payload);
                 Sync15ClientResponse::Success {
                     record,
                     last_modified,
@@ -283,6 +283,15 @@ impl SetupStorageClient for Sync15StorageClient {
     ) -> error::Result<ServerTimestamp> {
         let bso = OutMetaGlobalBso::new(Guid::new("global").into(), global)?;
         self.put("storage/meta/global", xius, &bso)
+    }
+
+    fn put_sync_ids(
+        &self,
+        xius: ServerTimestamp,
+        sync_ids: &SyncIdsRecord,
+    ) -> error::Result<ServerTimestamp> {
+        let bso = OutgoingBso::new(Guid::new("syncids").into(), sync_ids)?;
+        self.put("storage/meta/syncids", xius, &bso)
     }
 
     fn put_crypto_keys(

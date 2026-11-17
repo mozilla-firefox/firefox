@@ -92,7 +92,7 @@ impl FirefoxAccount {
             last_seen_profile: None,
             access_token_cache: HashMap::new(),
             logged_out_from_auth_issues: false,
-            last_auth_check_time: None,
+            last_refresh_token_scopes: HashSet::new(),
         })
     }
 
@@ -262,10 +262,6 @@ impl FirefoxAccount {
         self.telemetry = FxaTelemetry::new();
     }
 
-    pub fn on_recovered_from_auth_issues(&mut self) {
-        self.state.on_recovered_from_auth_issues();
-    }
-
     pub fn simulate_network_error(&mut self) {
         self.client.simulate_network_error();
     }
@@ -276,19 +272,6 @@ impl FirefoxAccount {
 
     pub fn simulate_permanent_auth_token_issue(&mut self) {
         self.state.simulate_permanent_auth_token_issue()
-    }
-
-    /// Checks if enough time has passed since the last auth attempt that we should try checking the
-    /// auth again.
-    pub fn should_recheck_auth(&self) -> bool {
-        self.state.should_recheck_auth()
-    }
-
-    /// Set the last time we re-checked our authentication after a failure to the current time.
-    ///
-    /// **💾 This method alters the persisted account state.**
-    pub fn reset_auth_recheck_timer(&mut self) {
-        self.state.reset_auth_recheck_timer();
     }
 }
 
@@ -594,6 +577,38 @@ mod tests {
         // way, methods like `ensure_capabilities` and `set_device_name`, can re-use it and we
         // won't try to create a new device record.
         assert_eq!(fxa.state.current_device_id(), Some("original-device-id"));
+    }
+
+    #[test]
+    fn test_initial_state_with_sync_scope_requires_sync_key() {
+        nss_as::ensure_initialized();
+        let new_fxa = || {
+            let config = Config::new("https://stable.dev.lcip.org", "12345678", "https://foo.bar");
+            let mut fxa = FirefoxAccount::with_config(config);
+            fxa.state.force_refresh_token(RefreshToken {
+                token: "refresh_token".to_owned(),
+                scopes: HashSet::from([scopes::OLD_SYNC.to_owned()]),
+            });
+            fxa
+        };
+
+        // A missing sync key while holding the sync scope is AuthIssues.
+        let mut fxa = new_fxa();
+        let state = fxa
+            .process_event(crate::FxaEvent::Initialize {
+                device_config: DeviceConfig {
+                    name: "test".to_owned(),
+                    device_type: crate::DeviceType::Mobile,
+                    capabilities: vec![],
+                },
+            })
+            .unwrap();
+        assert_eq!(state, FxaState::AuthIssues);
+        assert!(fxa.state.refresh_token().is_none());
+        assert!(fxa
+            .state
+            .last_refresh_token_scopes()
+            .contains(scopes::OLD_SYNC));
     }
 
     #[test]

@@ -58,10 +58,12 @@ impl<'state> LocalCollStateMachine<'state> {
         let meta_global = &self.global_state.global;
         match from {
             LocalCollState::Unknown { assoc } => {
-                if meta_global.declined.contains(name) {
+                // With per-device engine choices, the account's declined engines
+                // are irrelevant - we sync whatever we were asked to.
+                if !self.global_state.per_device && meta_global.declined.contains(name) {
                     return Ok(LocalCollState::Declined);
                 }
-                match meta_global.engines.get(name) {
+                match self.global_state.engine_meta(name)? {
                     Some(engine_meta) => match assoc {
                         EngineSyncAssociation::Disconnected => Ok(LocalCollState::SyncIdChanged {
                             ids: CollSyncIds {
@@ -171,7 +173,7 @@ mod tests {
     use super::*;
     use crate::bso::{IncomingBso, OutgoingBso};
     use crate::engine::CollectionRequest;
-    use crate::record_types::{MetaGlobalEngine, MetaGlobalRecord};
+    use crate::record_types::{MetaGlobalEngine, MetaGlobalRecord, SyncIdsRecord};
     use crate::{CollectionName, telemetry};
     use anyhow::Result;
     use nss_as::ensure_initialized;
@@ -206,6 +208,9 @@ mod tests {
             meta_timestamp: ServerTimestamp::default(),
             keys,
             keys_timestamp: ServerTimestamp::default(),
+            per_device: false,
+            sync_ids: None,
+            sync_ids_timestamp: ServerTimestamp::default(),
         }
     }
 
@@ -364,6 +369,69 @@ mod tests {
         );
         let cs = LocalCollStateMachine::get_state(&engine, &gs, &root_key).expect("should work");
         assert!(cs.is_none(), "declined collection can sync");
+        assert_eq!(engine.get_num_resets(), 0);
+    }
+
+    fn per_device_global_state(root_key: &KeyBundle) -> GlobalState {
+        let mut gs = get_global_state(root_key);
+        gs.per_device = true;
+        gs.global.declined = vec!["tabs".to_string()];
+        gs.sync_ids = Some(SyncIdsRecord {
+            version: 1,
+            global_sync_id: Some("syncIDAAAAAA".into()),
+            engines: [(
+                "tabs".to_string(),
+                MetaGlobalEngine {
+                    version: 1,
+                    sync_id: "syncIDTABSRG".into(),
+                },
+            )]
+            .into_iter()
+            .collect(),
+            ..Default::default()
+        });
+        gs
+    }
+
+    #[test]
+    fn test_per_device_uses_sync_ids_and_ignores_declined() {
+        ensure_initialized();
+        let root_key = KeyBundle::new_random().expect("should work");
+        let gs = per_device_global_state(&root_key);
+        let engine = TestSyncEngine::new("tabs", EngineSyncAssociation::Disconnected);
+        let cs = LocalCollStateMachine::get_state(&engine, &gs, &root_key).expect("should work");
+        assert!(cs.is_some(), "collection can sync");
+        assert_eq!(
+            engine.assoc.replace(EngineSyncAssociation::Disconnected),
+            EngineSyncAssociation::Connected(CollSyncIds {
+                global: "syncIDAAAAAA".into(),
+                coll: "syncIDTABSRG".into(),
+            })
+        );
+    }
+
+    #[test]
+    fn test_per_device_fails_with_newer_sync_ids() {
+        ensure_initialized();
+        let root_key = KeyBundle::new_random().expect("should work");
+        let mut gs = per_device_global_state(&root_key);
+        gs.sync_ids.as_mut().unwrap().version = 2;
+        let engine = TestSyncEngine::new("tabs", EngineSyncAssociation::Disconnected);
+        let err = LocalCollStateMachine::get_state(&engine, &gs, &root_key).unwrap_err();
+        assert!(matches!(err, error::Error::ClientUpgradeRequired));
+        assert_eq!(engine.get_num_resets(), 0);
+    }
+
+    #[test]
+    fn test_per_account_ignores_sync_ids() {
+        ensure_initialized();
+        let root_key = KeyBundle::new_random().expect("should work");
+        let mut gs = per_device_global_state(&root_key);
+        gs.per_device = false;
+        gs.global.declined = vec![];
+        let engine = TestSyncEngine::new("tabs", EngineSyncAssociation::Disconnected);
+        let cs = LocalCollStateMachine::get_state(&engine, &gs, &root_key).expect("should work");
+        assert!(cs.is_none());
         assert_eq!(engine.get_num_resets(), 0);
     }
 }

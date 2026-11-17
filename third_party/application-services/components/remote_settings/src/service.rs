@@ -524,7 +524,7 @@ mod test {
             Some("settings-changes-monitoring".to_string())
         );
         assert_eq!(events[1].source, Some(format!("main/{collection}")));
-        assert_eq!(events[1].value, Some("signature_error".to_string()));
+        assert_eq!(events[1].value, Some("sign_retry_error".to_string()));
         assert_eq!(
             events[1].error_name,
             Some("IncompleteSignatureDataError".to_string())

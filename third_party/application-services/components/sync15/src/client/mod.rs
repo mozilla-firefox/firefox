@@ -21,6 +21,7 @@ mod state;
 mod status;
 mod storage_client;
 mod sync;
+mod sync_ids;
 mod sync_multiple;
 mod token;
 mod util;

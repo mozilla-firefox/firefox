@@ -634,6 +634,7 @@ pub struct EnumDef {
     pub name: String,
     pub doc: String,
     pub variants: Vec<VariantDef>,
+    pub no_lint: Vec<String>,
 }
 
 impl EnumDef {
@@ -679,6 +680,7 @@ pub struct ObjectDef {
     pub(crate) name: String,
     pub(crate) doc: String,
     pub(crate) props: Vec<PropDef>,
+    pub(crate) no_lint: Vec<String>,
 }
 
 impl ObjectDef {

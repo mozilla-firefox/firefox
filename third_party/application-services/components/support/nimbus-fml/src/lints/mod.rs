@@ -245,13 +245,14 @@ impl LintReport {
             self.report_issues(unreported, &allowed_lints, module.as_deref());
         }
 
-        let allowed_lints = HashSet::new();
-
         for object in fm.iter_object_defs() {
             let mut unreported = Vec::new();
             for linter in LINTERS {
                 linter.lint_object(object, &mut unreported);
             }
+
+            let allowed_lints: HashSet<&str> = object.no_lint.iter().map(String::as_str).collect();
+
             self.report_issues(unreported, &allowed_lints, module.as_deref());
         }
 
@@ -260,6 +261,10 @@ impl LintReport {
             for linter in LINTERS {
                 linter.lint_enum(enum_def, &mut unreported);
             }
+
+            let allowed_lints: HashSet<&str> =
+                enum_def.no_lint.iter().map(String::as_str).collect();
+
             self.report_issues(unreported, &allowed_lints, module.as_deref());
         }
 
@@ -268,7 +273,7 @@ impl LintReport {
             linter.lint_manifest(fm, &mut unreported);
         }
 
-        self.report_issues(unreported, &allowed_lints, module.as_deref());
+        self.report_issues(unreported, &HashSet::new(), module.as_deref());
     }
 
     fn report_issues(
@@ -538,5 +543,39 @@ mod unit_tests {
         // Metadata lints are expected; nothing else should fire.
         let report = lint_manifest(&fm);
         assert!(report.is_empty(), "unexpected issues: {:?}", report.issues);
+    }
+
+    #[test]
+    fn test_suppress_enum_lints() {
+        let fm = FeatureManifest {
+            enum_defs: EnumDef::into_map(&[EnumDef::new("Enum", &["foo"])
+                .with_suppressed_lints(&["TERSE_DESCRIPTION", "TRIVIAL_ENUM"])]),
+            ..Default::default()
+        };
+
+        let report = lint_manifest(&fm);
+        assert!(report.is_empty(), "unexpected issues: {:?}", report.issues);
+        assert_eq!(report.suppressed, 2, "enum lints suppressed");
+    }
+
+    #[test]
+    fn test_suppress_object_lints() {
+        let fm = FeatureManifest {
+            obj_defs: ObjectDef::into_map(&[ObjectDef::new(
+                "Object",
+                &[
+                    PropDef::with_doc("object-foo", "object-foo", &TypeRef::String, &json!(null)),
+                    PropDef::with_doc("object-bar", "object-bar", &TypeRef::String, &json!(null)),
+                ],
+            )
+            .with_suppressed_lints(&["TERSE_DESCRIPTION"])]),
+            ..Default::default()
+        };
+
+        let report = lint_manifest(&fm);
+        assert!(report.is_empty(), "unexpected issues: {:?}", report.issues);
+
+        // TERSE_DESCRIPTION applies to each variable as well as the object itself.
+        assert_eq!(report.suppressed, 3, "enum lints suppressed");
     }
 }

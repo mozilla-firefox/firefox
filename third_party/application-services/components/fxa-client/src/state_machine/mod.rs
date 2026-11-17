@@ -55,8 +55,6 @@ impl FirefoxAccount {
         self.auth_state = new_state.clone();
         if !was_in_auth_issues && matches!(new_state, FxaState::AuthIssues) {
             self.on_auth_issues();
-        } else if was_in_auth_issues && !matches!(new_state, FxaState::AuthIssues) {
-            self.on_recovered_from_auth_issues();
         }
         Ok(new_state)
     }
