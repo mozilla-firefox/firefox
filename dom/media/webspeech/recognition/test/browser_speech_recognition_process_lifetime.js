@@ -334,3 +334,87 @@ add_task(async function test_gives_up_after_max_restarts() {
 
   await SpecialPowers.popPrefEnv();
 });
+
+add_task(async function test_stalled_launch_fails_then_recovers() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      // The launch never completes, and is abandoned right away.
+      ["dom.ipc.utilityProcess.testing.skipInitCompleted", true],
+      ["dom.ipc.utilityProcess.startup_timeout_ms", 1],
+      ["media.webspeech.recognition.idle_shutdown_grace_ms", 0],
+      // Abandoned launches spend the restart budget, which earlier tasks may
+      // have partly spent already. Recovery is tested here, not the budget.
+      ["browser.ml.hwinference.max_restarts", 100],
+    ],
+  });
+
+  await BrowserTestUtils.withNewTab(PAGE, async browser => {
+    is(
+      await startSession(browser),
+      "error: service-not-allowed",
+      "A session whose process never came up fails instead of hanging"
+    );
+
+    await SpecialPowers.pushPrefEnv({
+      clear: [
+        ["dom.ipc.utilityProcess.testing.skipInitCompleted"],
+        ["dom.ipc.utilityProcess.startup_timeout_ms"],
+      ],
+    });
+
+    is(
+      await startSession(browser),
+      "start",
+      "The next session starts after an abandoned launch"
+    );
+
+    await SpecialPowers.popPrefEnv();
+  });
+
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function test_stalled_launch_spends_restart_budget() {
+  await waitForHWInferenceProcessCount(
+    0,
+    "The previous task's process shut down cleanly, restoring the budget"
+  );
+
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      // One restart, so a single abandoned launch spends the budget.
+      ["browser.ml.hwinference.max_restarts", 1],
+      // The launch never completes, and is abandoned right away.
+      ["dom.ipc.utilityProcess.testing.skipInitCompleted", true],
+      ["dom.ipc.utilityProcess.startup_timeout_ms", 1],
+      // Keeps the parent's connection count up across the failed session.
+      ["media.webspeech.recognition.idle_shutdown_grace_ms", 60000],
+    ],
+  });
+
+  await BrowserTestUtils.withNewTab(PAGE, async browser => {
+    is(
+      await startSession(browser),
+      "error: service-not-allowed",
+      "A session whose process never came up fails"
+    );
+
+    await SpecialPowers.pushPrefEnv({
+      clear: [
+        ["dom.ipc.utilityProcess.testing.skipInitCompleted"],
+        ["dom.ipc.utilityProcess.startup_timeout_ms"],
+      ],
+    });
+
+    is(
+      await startSession(browser),
+      "error: service-not-allowed",
+      "Session fails once the abandoned launch spent the restart budget"
+    );
+    is(await hwInferenceProcessCount(), 0, "The process was not relaunched");
+
+    await SpecialPowers.popPrefEnv();
+  });
+
+  await SpecialPowers.popPrefEnv();
+});

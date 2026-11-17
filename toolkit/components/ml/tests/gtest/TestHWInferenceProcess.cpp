@@ -23,6 +23,10 @@ namespace {
 using ipc::UtilityProcessKeepAlive;
 
 constexpr char kMaxRestartsPref[] = "browser.ml.hwinference.max_restarts";
+constexpr char kStartupTimeoutPref[] =
+    "dom.ipc.utilityProcess.startup_timeout_ms";
+constexpr char kSkipInitCompletedPref[] =
+    "dom.ipc.utilityProcess.testing.skipInitCompleted";
 
 // Generous for debug CI.
 constexpr uint32_t kStepTimeoutSeconds = 120;
@@ -71,7 +75,11 @@ bool Kill(const Maybe<base::ProcessId>& aPid) {
 class HWInferenceProcessTest : public mozilla::gtest::ipc::TestUtilityProcess {
  protected:
   void SetUp() override { Preferences::SetUint(kMaxRestartsPref, 3); }
-  void TearDown() override { Preferences::ClearUser(kMaxRestartsPref); }
+  void TearDown() override {
+    Preferences::ClearUser(kMaxRestartsPref);
+    Preferences::ClearUser(kStartupTimeoutPref);
+    Preferences::ClearUser(kSkipInitCompletedPref);
+  }
 
   bool WaitForExit() {
     return SpinUntil("Process exit", [&] { return !mProcess.IsUp(); });
@@ -205,6 +213,59 @@ TEST_F(HWInferenceProcessTest, RestartBudgetRefusesRelaunch) {
   EXPECT_FALSE(refused);
   EXPECT_FALSE(mProcess.Actor());
   EXPECT_EQ(AliveProcesses(), 0u);
+
+  NS_ProcessPendingEvents(nullptr);
+}
+
+// A launch every consumer let go of was cancelled, so it does not spend the
+// budget.
+TEST_F(HWInferenceProcessTest, CancelledLaunchKeepsBudget) {
+  Preferences::SetUint(kMaxRestartsPref, 1);
+
+  RefPtr<UtilityProcessKeepAlive> keepAlive = mProcess.Acquire();
+  ASSERT_TRUE(keepAlive);
+  RefPtr<HWInferenceParent> cancelled = mProcess.Actor();
+  ASSERT_TRUE(cancelled);
+
+  keepAlive = nullptr;
+  EXPECT_TRUE(WaitFor(cancelled->WhenReady()).isErr());
+  EXPECT_FALSE(mProcess.Actor()) << "the launch failure was not reported";
+
+  keepAlive = mProcess.Acquire();
+  ASSERT_TRUE(keepAlive)
+  << "the cancelled launch spent the budget";
+  ASSERT_TRUE(WaitForReady(mProcess).isOk());
+
+  keepAlive = nullptr;
+  EXPECT_TRUE(WaitForExit());
+
+  NS_ProcessPendingEvents(nullptr);
+}
+
+// A failed launch spends the budget even when the next acquire comes before
+// the actor hears about the failure.
+TEST_F(HWInferenceProcessTest, FailedLaunchSpendsBudgetBeforeNotification) {
+  Preferences::SetUint(kMaxRestartsPref, 1);
+  Preferences::SetBool(kSkipInitCompletedPref, true);
+  Preferences::SetUint(kStartupTimeoutPref, 1);
+
+  RefPtr<UtilityProcessKeepAlive> keepAlive = mProcess.Acquire();
+  ASSERT_TRUE(keepAlive);
+  RefPtr<HWInferenceParent> failed = mProcess.Actor();
+  ASSERT_TRUE(failed);
+
+  // The launch is torn down in a single event, and its failure reaches the
+  // actor only through events queued after it.
+  ASSERT_TRUE(
+      SpinUntil("Launch abandoned", [&] { return !keepAlive->IsAlive(); }));
+  ASSERT_EQ(mProcess.Actor().get(), failed.get())
+      << "the failure notification arrived before the acquire";
+
+  RefPtr<UtilityProcessKeepAlive> refused = mProcess.Acquire();
+  EXPECT_FALSE(refused) << "the failed launch did not spend the budget";
+  EXPECT_FALSE(mProcess.Actor());
+
+  EXPECT_TRUE(WaitFor(failed->WhenReady()).isErr());
 
   NS_ProcessPendingEvents(nullptr);
 }
