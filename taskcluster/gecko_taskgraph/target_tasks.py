@@ -1477,11 +1477,14 @@ def target_tasks_codereview(full_task_graph, parameters, graph_config):
 
     def filter(task):
         # Ending tasks
-        if task.label == "code-review-issues":
+        if task.kind == "code-review":
             return True
 
         # Analyzer tasks
-        if task.attributes.get("code-review") is True:
+        if (
+            task.attributes.get("code-review") is True
+            or task.attributes.get("code-review-build-test") is True
+        ):
             return True
 
         return False
