@@ -123,7 +123,9 @@ async function clickOnBookmark() {
     row = [...innerList.rowEls].find(({ title }) => title === TEST_TITLE);
     return row;
   }, "Waiting for the bookmark row");
+  AccessibilityUtils.setEnv({ focusableRule: false });
   EventUtils.synthesizeMouseAtCenter(row, {}, contentWindow);
+  AccessibilityUtils.resetEnv();
 }
 
 async function clickOnHistory() {
@@ -135,5 +137,7 @@ async function clickOnHistory() {
       .find(({ url }) => url == TEST_URL);
     return row;
   }, "Waiting for the history row");
+  AccessibilityUtils.setEnv({ focusableRule: false });
   EventUtils.synthesizeMouseAtCenter(row.mainEl, {}, contentWindow);
+  AccessibilityUtils.resetEnv();
 }
