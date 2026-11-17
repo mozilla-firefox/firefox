@@ -56,29 +56,15 @@ add_task(async function test_opfs_load_with_private_window_focused() {
     "The most recent browser window is private, while a non-private window is still open."
   );
 
-  let caughtError;
-  try {
-    await hub.getModelFileAsArrayBuffer({
-      ...MODEL_ARGS,
-      file: "tokenizer_config.json",
-    });
-  } catch (error) {
-    caughtError = error;
-  }
+  const [tokenizerFile] = await hub.getModelFileAsArrayBuffer({
+    ...MODEL_ARGS,
+    file: "tokenizer_config.json",
+  });
 
-  info(
-    `Loading a model file rejected with: ${caughtError?.name}: ${caughtError?.message}`
-  );
-
-  Assert.ok(
-    caughtError,
-    "Loading a model file fails while the most recent browser window is private."
-  );
-
-  Assert.equal(
-    caughtError?.name,
-    "SecurityError",
-    "The private window is refused access to OPFS."
+  Assert.greater(
+    tokenizerFile.byteLength,
+    0,
+    "A model file still loads while the most recent browser window is private."
   );
 
   await BrowserTestUtils.closeWindow(privateWindow);
