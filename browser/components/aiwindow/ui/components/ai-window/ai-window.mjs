@@ -3237,7 +3237,7 @@ export class AIWindow extends MozLitElement {
   }
 
   get modelName() {
-    return lazy.getCurrentModelName();
+    return this.selectedModelId;
   }
 
   #getConversationLastMessageAndCount(role, conversation = this.#conversation) {

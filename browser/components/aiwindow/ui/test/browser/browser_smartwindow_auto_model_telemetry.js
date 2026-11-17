@@ -32,9 +32,11 @@ const REQUEST_EVENTS = [
  * and returns the `model` extra of the first event of each kind.
  *
  * @param {string} modelChoice - Default model choice
+ * @param {string} [tabModelChoice] - Model choice picked for the tab in the
+ *   smartbar
  * @returns {Promise<{[event: string]: string}>}
  */
-async function runTurnAndCollectModels(modelChoice) {
+async function runTurnAndCollectModels(modelChoice, tabModelChoice) {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.firstrun.modelChoice", modelChoice],
@@ -50,6 +52,9 @@ async function runTurnAndCollectModels(modelChoice) {
     _clearModelsDataCacheForTesting();
     win = await openAIWindow();
     const browser = win.gBrowser.selectedBrowser;
+    if (tabModelChoice) {
+      await switchSmartbarModel(browser, tabModelChoice);
+    }
     Services.fog.testResetFOG();
     SmartWindowTelemetry._resetClientErrorDedupForTests();
 
@@ -113,5 +118,17 @@ add_task(async function test_preset_model_reported_everywhere() {
       [...CHOICE_EVENTS, ...REQUEST_EVENTS].map(name => [name, PRESET_MODEL])
     ),
     "Every event reports the preset model"
+  );
+});
+
+add_task(async function test_tab_auto_model_reported_over_default() {
+  const models = await runTurnAndCollectModels("3", "4");
+  Assert.deepEqual(
+    models,
+    Object.fromEntries([
+      ...CHOICE_EVENTS.map(name => [name, "auto"]),
+      ...REQUEST_EVENTS.map(name => [name, ROUTED_MODEL]),
+    ]),
+    "A tab's Auto choice is reported instead of the default model"
   );
 });
