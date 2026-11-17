@@ -154,6 +154,11 @@ class PolicyRule {
                       uint32_t number,
                       RuleOp comparison_op);
 
+  // Adds a font file match to the rule, see OP_FONT_FILE_MATCH.
+  // parameter: the expected index of the argument for this rule.
+  // Implemented in font_file_policy.cc.
+  bool AddFontFileMatch(uint8_t parameter);
+
   // Returns the number of opcodes generated so far.
   size_t GetOpcodeCount() const { return buffer_->opcode_count; }
 

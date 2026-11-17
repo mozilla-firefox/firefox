@@ -63,6 +63,8 @@ class ConfigBase final : public TargetConfig {
   ResultCode AllowFileAccess(FileSemantics semantics,
                              const wchar_t* pattern) override;
   ResultCode AllowRegistryRead(const wchar_t* pattern) final;
+  // Implemented in font_file_policy.cc.
+  ResultCode AllowFontFileAccess() final;
   ResultCode AllowExtraDll(const wchar_t* path) override;
   ResultCode SetFakeGdiInit() override;
   void AddDllToUnload(const wchar_t* dll_name) override;

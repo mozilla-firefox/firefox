@@ -1,0 +1,138 @@
+# HG changeset patch
+# User Bob Owen <bobowencode@gmail.com>
+# Date 1791219595 0
+#      Mon Oct 05 16:59:55 2026 +0000
+Add font file rules that are validated by Gecko.
+
+diff --git a/sandbox/win/src/filesystem_policy.cc b/sandbox/win/src/filesystem_policy.cc
+index debce2aeef39..20cf0ba6a70f 100644
+--- a/sandbox/win/src/filesystem_policy.cc
++++ b/sandbox/win/src/filesystem_policy.cc
+@@ -103,15 +103,11 @@ bool FileSystemPolicy::GenerateRules(const wchar_t* name,
+   PolicyRule query_full(result);
+ 
+   if (semantics == FileSemantics::kAllowReadonly) {
+-    // We consider all flags that are not known to be readonly as potentially
+-    // used for write.
+-    DWORD allowed_flags = FILE_READ_DATA | FILE_READ_ATTRIBUTES | FILE_READ_EA |
+-                          SYNCHRONIZE | FILE_EXECUTE | GENERIC_READ |
+-                          GENERIC_EXECUTE | READ_CONTROL;
+-    DWORD restricted_flags = ~allowed_flags;
+-    open.AddNumberMatch(IF_NOT, OpenFile::ACCESS, restricted_flags, AND);
++    open.AddNumberMatch(IF_NOT, OpenFile::ACCESS, kReadonlyRestrictedFlags,
++                        AND);
+     open.AddNumberMatch(IF, OpenFile::OPENONLY, true, EQUAL);
+-    create.AddNumberMatch(IF_NOT, OpenFile::ACCESS, restricted_flags, AND);
++    create.AddNumberMatch(IF_NOT, OpenFile::ACCESS, kReadonlyRestrictedFlags,
++                          AND);
+     create.AddNumberMatch(IF, OpenFile::OPENONLY, true, EQUAL);
+   }
+ 
+diff --git a/sandbox/win/src/filesystem_policy.h b/sandbox/win/src/filesystem_policy.h
+index ddf28a689e25..d7255e3fedea 100644
+--- a/sandbox/win/src/filesystem_policy.h
++++ b/sandbox/win/src/filesystem_policy.h
+@@ -19,6 +19,13 @@ namespace sandbox {
+ // This class centralizes most of the knowledge related to file system policy
+ class FileSystemPolicy {
+  public:
++  // For read-only access, we consider all flags that are not known to be
++  // read-only as potentially used for write.
++  static constexpr DWORD kReadonlyAllowedFlags =
++      FILE_READ_DATA | FILE_READ_ATTRIBUTES | FILE_READ_EA | SYNCHRONIZE |
++      FILE_EXECUTE | GENERIC_READ | GENERIC_EXECUTE | READ_CONTROL;
++  static constexpr DWORD kReadonlyRestrictedFlags = ~kReadonlyAllowedFlags;
++
+   // Creates the required low-level policy rules to evaluate a high-level
+   // policy rule for File IO, in particular open or create actions.
+   // 'name' is the file or directory name.
+diff --git a/sandbox/win/src/policy_engine_opcodes.cc b/sandbox/win/src/policy_engine_opcodes.cc
+index b5d023172332..9e2861ebe1e1 100644
+--- a/sandbox/win/src/policy_engine_opcodes.cc
++++ b/sandbox/win/src/policy_engine_opcodes.cc
+@@ -9,6 +9,7 @@
+ 
+ #include "base/check_op.h"
+ #include "base/compiler_specific.h"
++#include "sandbox/win/src/font_file_policy_opcode.h"
+ #include "sandbox/win/src/sandbox_nt_types.h"
+ #include "sandbox/win/src/sandbox_nt_util.h"
+ #include "sandbox/win/src/sandbox_types.h"
+@@ -401,6 +402,7 @@ EvalResult PolicyOpcode::EvaluateHelper(const ParameterSet* parameters,
+     OPCODE_EVAL(OP_NUMBER_MATCH, this, parameters, match);
+     OPCODE_EVAL(OP_NUMBER_AND_MATCH, this, parameters, match);
+     OPCODE_EVAL(OP_WSTRING_MATCH, this, parameters, match);
++    OPCODE_EVAL(OP_FONT_FILE_MATCH, this, parameters, match);
+     OPCODE_EVAL(OP_ACTION, this, parameters, match);
+     default:
+       return EVAL_ERROR;
+diff --git a/sandbox/win/src/policy_engine_opcodes.h b/sandbox/win/src/policy_engine_opcodes.h
+index 8eb45012e9a3..473a023e2b6d 100644
+--- a/sandbox/win/src/policy_engine_opcodes.h
++++ b/sandbox/win/src/policy_engine_opcodes.h
+@@ -76,6 +76,7 @@ enum OpcodeID : uint16_t {
+   OP_NUMBER_MATCH,        // Match a 32-bit integer as n == a.
+   OP_NUMBER_AND_MATCH,    // Match using bitwise AND; as in: n & a != 0.
+   OP_WSTRING_MATCH,       // Match a string for equality.
++  OP_FONT_FILE_MATCH,     // Match a string that is an allowed font file path.
+   OP_ACTION               // Evaluates to an action opcode.
+ };
+ 
+@@ -333,6 +334,12 @@ class OpcodeFactory {
+                                      uint32_t match,
+                                      uint32_t options);
+ 
++  // Creates an OpFontFileMatch opcode using the raw memory passed in the ctor.
++  // selected_param: index of the input argument. It must be a wstring or the
++  // evaluation result will generate a EVAL_ERROR.
++  // Implemented in font_file_policy_opcode.cc.
++  PolicyOpcode* MakeOpFontFileMatch(uint8_t selected_param, uint32_t options);
++
+  private:
+   // Constructs the common part of every opcode. selected_param is the index
+   // of the input param to use when evaluating the opcode.
+diff --git a/sandbox/win/src/policy_low_level.h b/sandbox/win/src/policy_low_level.h
+index 86d98aa83913..258091413664 100644
+--- a/sandbox/win/src/policy_low_level.h
++++ b/sandbox/win/src/policy_low_level.h
+@@ -154,6 +154,11 @@ class PolicyRule {
+                       uint32_t number,
+                       RuleOp comparison_op);
+ 
++  // Adds a font file match to the rule, see OP_FONT_FILE_MATCH.
++  // parameter: the expected index of the argument for this rule.
++  // Implemented in font_file_policy.cc.
++  bool AddFontFileMatch(uint8_t parameter);
++
+   // Returns the number of opcodes generated so far.
+   size_t GetOpcodeCount() const { return buffer_->opcode_count; }
+ 
+diff --git a/sandbox/win/src/sandbox_policy.h b/sandbox/win/src/sandbox_policy.h
+index 3227faf7489a..b73ecd5d014b 100644
+--- a/sandbox/win/src/sandbox_policy.h
++++ b/sandbox/win/src/sandbox_policy.h
+@@ -181,6 +181,11 @@ class [[clang::lto_visibility_public]] TargetConfig {
+   [[nodiscard]] virtual ResultCode AllowRegistryRead(
+       const wchar_t* pattern) = 0;
+ 
++  // Adds read-only policy rules for font files, which only match if the Gecko
++  // font file validator accepts the path. Because the validation is relatively
++  // expensive, this should be called after adding other file rules.
++  [[nodiscard]] virtual ResultCode AllowFontFileAccess() = 0;
++
+   // Adds a policy rule effective for processes spawned using this policy.
+   // Modules patching `path` exactly can still be loaded under
+   // Code-Integrity Guard (MITIGATION_FORCE_MS_SIGNED_BINS).
+diff --git a/sandbox/win/src/sandbox_policy_base.h b/sandbox/win/src/sandbox_policy_base.h
+index 592f0de02ba3..bf8af2c8bd32 100644
+--- a/sandbox/win/src/sandbox_policy_base.h
++++ b/sandbox/win/src/sandbox_policy_base.h
+@@ -63,6 +63,8 @@ class ConfigBase final : public TargetConfig {
+   ResultCode AllowFileAccess(FileSemantics semantics,
+                              const wchar_t* pattern) override;
+   ResultCode AllowRegistryRead(const wchar_t* pattern) final;
++  // Implemented in font_file_policy.cc.
++  ResultCode AllowFontFileAccess() final;
+   ResultCode AllowExtraDll(const wchar_t* path) override;
+   ResultCode SetFakeGdiInit() override;
+   void AddDllToUnload(const wchar_t* dll_name) override;

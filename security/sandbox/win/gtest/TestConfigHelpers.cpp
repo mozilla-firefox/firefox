@@ -64,6 +64,7 @@ class MockConfig : public TargetConfig {
   MOCK_METHOD(void, SetJobMemoryLimit, (size_t memory_limit), (override));
   MOCK_METHOD(ResultCode, AllowRegistryRead, (const wchar_t* pattern),
               (override));
+  MOCK_METHOD(ResultCode, AllowFontFileAccess, (), (override));
   MOCK_METHOD(ResultCode, AllowExtraDll, (const wchar_t* path), (override));
   MOCK_METHOD(ResultCode, SetFakeGdiInit, (), (override));
   MOCK_METHOD(void, AddDllToUnload, (const wchar_t* dll_name), (override));

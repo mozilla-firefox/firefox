@@ -9,6 +9,7 @@
 
 #include "base/check_op.h"
 #include "base/compiler_specific.h"
+#include "sandbox/win/src/font_file_policy_opcode.h"
 #include "sandbox/win/src/sandbox_nt_types.h"
 #include "sandbox/win/src/sandbox_nt_util.h"
 #include "sandbox/win/src/sandbox_types.h"
@@ -401,6 +402,7 @@ EvalResult PolicyOpcode::EvaluateHelper(const ParameterSet* parameters,
     OPCODE_EVAL(OP_NUMBER_MATCH, this, parameters, match);
     OPCODE_EVAL(OP_NUMBER_AND_MATCH, this, parameters, match);
     OPCODE_EVAL(OP_WSTRING_MATCH, this, parameters, match);
+    OPCODE_EVAL(OP_FONT_FILE_MATCH, this, parameters, match);
     OPCODE_EVAL(OP_ACTION, this, parameters, match);
     default:
       return EVAL_ERROR;
