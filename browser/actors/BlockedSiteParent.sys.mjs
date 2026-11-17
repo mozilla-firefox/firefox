@@ -254,16 +254,7 @@ export class BlockedSiteParent extends EscapablePageParent {
       buttons
     );
 
-    let activeSHEntry = browsingContext.activeSessionHistoryEntry;
-    if (!activeSHEntry) {
-      console.error("No active session history entry found");
-      return;
-    }
-
     // Allow users to override and continue through to the site.
-    browsingContext.loadURI(uri, {
-      triggeringPrincipal: activeSHEntry.triggeringPrincipal,
-      loadFlags: Ci.nsIWebNavigation.LOAD_FLAGS_BYPASS_CLASSIFIER,
-    });
+    browsingContext.reload(Ci.nsIWebNavigation.LOAD_FLAGS_BYPASS_CLASSIFIER);
   }
 }

@@ -4159,6 +4159,14 @@ nsresult nsDocShell::ReloadNavigable(
     return NS_OK;  // JS may not handle returning of an error code
   }
 
+  // Determine extra internal load flags which should be used for this reload
+  // based on `aReloadFlags`.
+  uint32_t internalLoadFlags = INTERNAL_LOAD_FLAGS_NONE;
+  if (aReloadFlags & LOAD_FLAGS_BYPASS_CLASSIFIER) {
+    internalLoadFlags |= INTERNAL_LOAD_FLAGS_BYPASS_CLASSIFIER;
+    aReloadFlags &= ~LOAD_FLAGS_BYPASS_CLASSIFIER;
+  }
+
   NS_ASSERTION(((aReloadFlags & INTERNAL_LOAD_FLAGS_LOADURI_SETUP_FLAGS) == 0),
                "Reload command not updated to use load flags!");
   NS_ASSERTION((aReloadFlags & EXTRA_LOAD_FLAGS) == 0,
@@ -4247,8 +4255,8 @@ nsresult nsDocShell::ReloadNavigable(
 
     ContentChild::GetSingleton()->SendNotifyOnHistoryReload(
         mBrowsingContext, aReloadFlags,
-        [docShell, doc, loadType, browsingContext, currentURI, referrerInfo,
-         loadGroup, stopDetector](
+        [docShell, doc, loadType, internalLoadFlags, browsingContext,
+         currentURI, referrerInfo, loadGroup, stopDetector](
             std::tuple<bool, Maybe<NotNull<RefPtr<nsDocShellLoadState>>>>&&
                 aResult) MOZ_CAN_RUN_SCRIPT {
           auto scopeExit = MakeScopeExit([loadGroup, stopDetector]() {
@@ -4279,13 +4287,14 @@ nsresult nsDocShell::ReloadNavigable(
                 gSHLog, LogLevel::Debug,
                 ("nsDocShell %p Reload - LoadHistoryEntry", docShell.get()));
             loadState.ref()->SetNotifiedBeforeUnloadListeners(true);
+            loadState.ref()->SetInternalLoadFlag(internalLoadFlags);
             docShell->LoadHistoryEntry(MOZ_KnownLive(loadState.ref().get()),
                                        loadType);
           } else {
             MOZ_LOG(gSHLog, LogLevel::Debug,
                     ("nsDocShell %p ReloadDocument", docShell.get()));
             ReloadDocument(docShell, doc, loadType, browsingContext, currentURI,
-                           referrerInfo,
+                           referrerInfo, internalLoadFlags,
                            /* aNotifiedBeforeUnloadListeners */ true);
           }
         },
@@ -4302,6 +4311,7 @@ nsresult nsDocShell::ReloadNavigable(
       if (loadState.isSome()) {
         MOZ_LOG(gSHLog, LogLevel::Debug,
                 ("nsDocShell %p Reload - LoadHistoryEntry", this));
+        loadState.ref()->SetInternalLoadFlag(internalLoadFlags);
         LoadHistoryEntry(MOZ_KnownLive(loadState.ref().get()), loadType);
       } else {
         MOZ_LOG(gSHLog, LogLevel::Debug,
@@ -4310,7 +4320,8 @@ nsresult nsDocShell::ReloadNavigable(
         RefPtr<BrowsingContext> bc = mBrowsingContext;
         nsCOMPtr<nsIURI> currentURI = mCurrentURI;
         nsCOMPtr<nsIReferrerInfo> referrerInfo = mReferrerInfo;
-        ReloadDocument(this, doc, loadType, bc, currentURI, referrerInfo);
+        ReloadDocument(this, doc, loadType, bc, currentURI, referrerInfo,
+                       internalLoadFlags);
       }
     }
   }
@@ -4334,13 +4345,14 @@ nsresult nsDocShell::ReloadDocument(nsDocShell* aDocShell, Document* aDocument,
                                     BrowsingContext* aBrowsingContext,
                                     nsIURI* aCurrentURI,
                                     nsIReferrerInfo* aReferrerInfo,
+                                    uint32_t aInternalLoadFlags,
                                     bool aNotifiedBeforeUnloadListeners) {
   if (!aDocument) {
     return NS_OK;
   }
 
   // Do not inherit owner from document
-  uint32_t flags = INTERNAL_LOAD_FLAGS_NONE;
+  uint32_t flags = aInternalLoadFlags;
   nsAutoString srcdoc;
   nsIURI* baseURI = nullptr;
   nsCOMPtr<nsIURI> originalURI;
