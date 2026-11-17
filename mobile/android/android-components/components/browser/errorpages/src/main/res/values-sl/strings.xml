@@ -131,7 +131,7 @@
   <string name="mozac_browser_errorpages_unknown_protocol_message"><![CDATA[<p>Naslov navaja protokol (npr. <q>wxyz://</q>), ki ga brskalnik ne pozna, zato se ne more pravilno povezati s spletnim mestom.</p>\n<ul>\n<li>Želite uporabiti večpredstavnost ali drugo nebesedilno storitev? Preverite morebitne dodatne programske zahteve spletnega mesta.</li>\n<li>Nekateri protokoli zahtevajo programsko opremo drugih izdelovalcev ali dodatke, preden jih lahko brskalnik uporablja.</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_file_not_found_title">Datoteke ni mogoče najti</string>
-  <string name="mozac_browser_errorpages_file_not_found_message"><![CDATA[<ul>\n<li>Morda je bila želena datoteka preimenovana, izbrisana ali prestavljena.</li>\n<li>Je njeno ime napačno črkovano, napisano z nepravilnimi velikimi in malimi črkami ali kako drugače narobe napisano?</li>\n<li>Imate ustrezna dovoljenja za dostop do želene datoteke?</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_file_not_found_message"><![CDATA[<ul>\n<li>Morda je bila želena datoteka preimenovana, izbrisana ali prestavljena.</li>\n<li>Je naslov napačno črkovan, napisan z nepravilnimi velikimi in malimi črkami ali kako drugače narobe napisan?</li>\n<li>Imate ustrezna dovoljenja za dostop do želene datoteke?</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_file_access_denied_title">Dostop do datoteke je bil zavrnjen</string>
   <string name="mozac_browser_errorpages_file_access_denied_message"><![CDATA[<ul>\n<li>Morda je bila odstranjena, premaknjena ali pa dovoljenja datoteke preprečujejo dostop.</li>\n</ul>]]></string>

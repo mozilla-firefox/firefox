@@ -23,4 +23,8 @@
   <string name="mozac_browser_awesomebar_stock_suggestion_increase">A ganhat %s %%</string>
   <!-- Description for the stock suggestion card when the stock is the same. -->
   <string name="mozac_browser_awesomebar_stock_suggestion_no_change">Cap de cambiament</string>
+  <!-- Description for the button to share the highlighted awesomebar element (URL, search query, etc.) -->
+  <string name="mozac_browser_awesomebar_share_website_details">Partejar</string>
+  <!-- Description for the button to edit the highlighted awesomebar element (URL, search query, etc.) -->
+  <string name="mozac_browser_awesomebar_edit_website_details">Modificar l’URL</string>
 </resources>

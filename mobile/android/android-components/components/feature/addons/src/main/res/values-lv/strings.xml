@@ -7,12 +7,18 @@
 -->
 
 <resources>
+  <!-- Description for the "browsingData" WebExtensions API permission. -->
+  <string name="mozac_feature_addons_permissions_browser_data_description">Notīrīt neseno pārlūkošanas vēsturi, sīkdatnes un saistītos datus</string>
   <!-- Description for the "declarativeNetRequest" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_declarative_net_request_description">Liegt saturu jebkurā lapā</string>
+  <!-- Description for the "browsingData" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
+  <string name="mozac_feature_addons_permissions_browsing_data_description_for_update">Notīrīt neseno pārlūkošanas vēsturi, sīkdatnes un saistītos datus.</string>
   <!-- Description for the "declarativeNetRequest" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_declarative_net_request_description_for_update">Liegt saturu jebkurā lapā.</string>
   <!-- The developer website (Homepage) of the add-on. -->
   <string name="mozac_feature_addons_home_page">Sākumlapa</string>
+  <!-- Displays a page with all the permissions of an add-on. -->
+  <string name="mozac_feature_addons_permissions">Atļaujas</string>
   <!-- This is the title of a dialog that asks the users if they to install or not an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_permissions_dialog_title_2">Pievienot %1$s</string>
   <!-- This is the title of a dialog that asks the users to grant optional permissions. %1$s is the add-on name. -->

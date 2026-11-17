@@ -89,7 +89,7 @@
   <!-- Description for the "topSites" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_top_sites_description">dostop do zgodovine brskanja</string>
   <!-- Description for the "trialML" WebExtensions API permission. -->
-  <string name="mozac_feature_addons_permissions_trial_ml_description">Prenesite in uporabljajte modele z umetno inteligenco na svoji napravi</string>
+  <string name="mozac_feature_addons_permissions_trial_ml_description">prenos in uporaba modelov z umetno inteligenco na svoji napravi</string>
   <!-- Description for the "userScripts" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_user_scripts_description">dovoljevanje dostopa do vaših podatkov nepotrjenim skriptom tretjih strani</string>
   <!-- Description for the "devtools" WebExtensions API permission. -->
@@ -227,7 +227,7 @@
   <!-- Long description for the searchTerms data collection permission -->
   <string name="mozac_feature_addons_permissions_data_collection_searchTerms_long_description">deljenje iskalnih poizvedb z razvijalcem razširitve</string>
   <!-- Long description for the technicalAndInteraction data collection permission -->
-  <string name="mozac_feature_addons_permissions_data_collection_technicalAndInteraction_long_description">Deli tehnične in interakcijske podatke z razvijalcem razširitve</string>
+  <string name="mozac_feature_addons_permissions_data_collection_technicalAndInteraction_long_description">deljenje tehničnih in interakcijskih podatkov z razvijalcem razširitve</string>
   <!-- Long description for the websiteActivity data collection permission -->
   <string name="mozac_feature_addons_permissions_data_collection_websiteActivity_long_description">deljenje dejavnosti spletnih strani z razvijalcem razširitve</string>
   <!-- Long description for the websiteContent data collection permission -->
@@ -308,6 +308,10 @@
   <string name="mozac_feature_addons_install_addon_content_description_2">Namesti %1$s</string>
   <!-- This is the label of a button to cancel an ongoing add-on installation. -->
   <string name="mozac_feature_addons_install_addon_dialog_cancel">Prekliči</string>
+  <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it installs the update. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_update_button">Posodobi</string>
+  <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it closes the dialog without updating (the update can still be performed later). -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_cancel_button">Prekliči</string>
   <!-- Indicates how many users have rated an add-on. %1$s will be replaced with number of reviews -->
   <string name="mozac_feature_addons_user_rating_count_2">Ocen: %1$s</string>
   <!-- Accessibility content description for the amount of stars that add-on has, where %1$.02f will be the amount of stars. -->
