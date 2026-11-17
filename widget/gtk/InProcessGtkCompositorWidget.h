@@ -12,15 +12,28 @@ class nsWindow;
 namespace mozilla {
 namespace widget {
 
-class InProcessGtkCompositorWidget final : public GtkCompositorWidget {
+class InProcessGtkCompositorWidget final
+    : public GtkCompositorWidget,
+      public PlatformCompositorWidgetDelegate {
  public:
   InProcessGtkCompositorWidget(const GtkCompositorWidgetInitData& aInitData,
                                const layers::CompositorOptions& aOptions,
                                nsWindow* aWindow);
 
-  // CompositorWidgetDelegate
+  CompositorWidgetDelegate* AsDelegate() override { return this; }
 
   void ObserveVsync(VsyncObserver* aObserver) override;
+
+  // PlatformCompositorWidgetDelegate
+
+  void NotifyClientSizeChanged(
+      const LayoutDeviceIntSize& aClientSize) override {
+    GtkCompositorWidget::NotifyClientSizeChanged(aClientSize);
+  }
+  void NotifyFullscreenChanged(bool aIsFullscreen) override {
+    GtkCompositorWidget::NotifyFullscreenChanged(aIsFullscreen);
+  }
+  void CleanupResources() override { GtkCompositorWidget::CleanupResources(); }
 };
 
 }  // namespace widget

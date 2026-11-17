@@ -7299,7 +7299,8 @@ void nsWindow::GetCompositorWidgetInitData(
 #endif
 
   *aInitData = mozilla::widget::GtkCompositorWidgetInitData(
-      GetX11Window(), displayName, GdkIsX11Display(), GetRoundedClientSize());
+      GetX11Window(), displayName, GdkIsX11Display(), GetRoundedClientSize(),
+      mozilla::ipc::Endpoint<mozilla::layers::PNativeLayerRemoteChild>());
 }
 
 nsresult nsWindow::SetSystemFont(const nsCString& aFontName) {

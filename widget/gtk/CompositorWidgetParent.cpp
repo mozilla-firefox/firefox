@@ -15,6 +15,8 @@ CompositorWidgetParent::CompositorWidgetParent(
     : GtkCompositorWidget(aInitData.get_GtkCompositorWidgetInitData(), aOptions,
                           nullptr) {
   MOZ_ASSERT(XRE_GetProcessType() == GeckoProcessType_GPU);
+  // We ignore aInitData, because it will be passed in
+  // later, using move semantics, in GtkCompositorWidget::Init.
 }
 
 CompositorWidgetParent::~CompositorWidgetParent() = default;

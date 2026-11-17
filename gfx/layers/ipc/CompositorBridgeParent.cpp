@@ -1643,7 +1643,7 @@ CompositorBridgeParent::AllocPCompositorWidgetParent(
 #endif
 }
 
-#ifdef XP_MACOSX
+#if defined(XP_MACOSX) || defined(MOZ_WAYLAND)
 mozilla::ipc::IPCResult
 CompositorBridgeParent::RecvPCompositorWidgetConstructor(
     PCompositorWidgetParent* actor, CompositorWidgetInitData&& aInitData) {
@@ -1651,11 +1651,10 @@ CompositorBridgeParent::RecvPCompositorWidgetConstructor(
       CompositorWidgetInitData::THeadlessCompositorWidgetInitData) {
     return IPC_OK();
   }
-  // macOS CocoaCompositorWidget (a superclass of the platform-specific
-  // CompositorWidgetParent) requires an extra step to pass aInitData
+  // macOS and Wayland compositors require an extra step to pass aInitData
   // with move semantics, because IPDL can't generate move semantics
-  // in the constructor. The macOS-specific aInitData contains an
-  // Endpoint, so it *must* use move semantics.
+  // in the constructor. These platform-specific aInitData contain an
+  // Endpoint, so they *must* use move semantics.
   auto* widget = static_cast<widget::CompositorWidgetParent*>(actor);
   widget->Init(std::move(aInitData));
   return IPC_OK();

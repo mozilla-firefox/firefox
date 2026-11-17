@@ -33,7 +33,7 @@ GtkCompositorWidget::GtkCompositorWidget(
     const layers::CompositorOptions& aOptions, RefPtr<nsWindow> aWindow)
     : CompositorWidget(aOptions),
       mWidget(std::move(aWindow)),
-      mClientSize(LayoutDeviceIntSize(aInitData.InitialClientSize()),
+      mClientSize(LayoutDeviceIntSize(aInitData.clientSize()),
                   "GtkCompositorWidget::mClientSize") {
 #if defined(MOZ_X11)
   if (GdkIsX11Display()) {
@@ -49,7 +49,7 @@ GtkCompositorWidget::GtkCompositorWidget(
         (void*)mWidget.get(), (void*)mWidget);
   }
 #endif
-  auto size = LayoutDeviceIntSize(aInitData.InitialClientSize());
+  auto size = LayoutDeviceIntSize(aInitData.clientSize());
   LOG("  client size %d x %d", size.width, size.height);
 }
 
@@ -143,6 +143,16 @@ LayoutDeviceIntRegion GtkCompositorWidget::GetTransparentRegion() {
 }
 
 #ifdef MOZ_WAYLAND
+void GtkCompositorWidget::Init(CompositorWidgetInitData&& aInitData) {
+  MOZ_ASSERT(XRE_IsGPUProcess());
+  // This method is only intended to be called from the GPU process,
+  // which is why it uses move semantics for aInitData.
+  GtkCompositorWidgetInitData gtkInitData(
+      std::move((aInitData).get_GtkCompositorWidgetInitData()));
+  auto size = mClientSize.Lock();
+  *size = gtkInitData.clientSize();
+}
+
 mozilla::layers::NativeLayerRoot* GtkCompositorWidget::GetNativeLayerRoot() {
   if (!mNativeLayerRoot) {
     LOG("GtkCompositorWidget::GetNativeLayerRoot [%p] create",

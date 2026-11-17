@@ -26,7 +26,6 @@ namespace widget {
 class PlatformCompositorWidgetDelegate : public CompositorWidgetDelegate {
  public:
   virtual void NotifyFullscreenChanged(bool aIsFullscreen) = 0;
-  virtual GtkCompositorWidget* AsGtkCompositorWidget() { return nullptr; };
 
   virtual void CleanupResources() = 0;
 
@@ -39,8 +38,7 @@ class PlatformCompositorWidgetDelegate : public CompositorWidgetDelegate {
 
 class GtkCompositorWidgetInitData;
 
-class GtkCompositorWidget : public CompositorWidget,
-                            public PlatformCompositorWidgetDelegate {
+class GtkCompositorWidget : public CompositorWidget {
  public:
   GtkCompositorWidget(const GtkCompositorWidgetInitData& aInitData,
                       const layers::CompositorOptions& aOptions,
@@ -62,7 +60,6 @@ class GtkCompositorWidget : public CompositorWidget,
 
   nsIWidget* RealWidget() override;
   GtkCompositorWidget* AsGTK() override { return this; }
-  CompositorWidgetDelegate* AsDelegate() override { return this; }
 
   EGLNativeWindowType GetEGLNativeWindow();
 
@@ -70,7 +67,7 @@ class GtkCompositorWidget : public CompositorWidget,
 
   // Suspend rendering of this remote widget and clear all resources.
   // Can be used when underlying window is hidden/unmapped.
-  void CleanupResources() override;
+  void CleanupResources();
 
   // Set EGLWindow size to avoid rendering artifacts
   void SetEGLNativeWindowSize(const LayoutDeviceIntSize& aEGLWindowSize);
@@ -79,13 +76,12 @@ class GtkCompositorWidget : public CompositorWidget,
   Window XWindow() const { return mProvider.GetXWindow(); }
 #endif
 #if defined(MOZ_WAYLAND)
+  void Init(CompositorWidgetInitData&& aInitData);
   mozilla::layers::NativeLayerRoot* GetNativeLayerRoot() override;
 #endif
 
-  // PlatformCompositorWidgetDelegate Overrides
-
-  void NotifyClientSizeChanged(const LayoutDeviceIntSize& aClientSize) override;
-  void NotifyFullscreenChanged(bool aIsFullscreen) override;
+  void NotifyClientSizeChanged(const LayoutDeviceIntSize& aClientSize);
+  void NotifyFullscreenChanged(bool aIsFullscreen);
 
   UniquePtr<WaylandSurfaceLock> LockSurface();
 

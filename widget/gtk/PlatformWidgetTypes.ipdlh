@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 include HeadlessWidgetTypes;
+include protocol PNativeLayerRemote;
 
 include "mozilla/GfxMessageUtils.h";
 
@@ -17,7 +18,8 @@ struct GtkCompositorWidgetInitData
   nsCString           XDisplayString;
   bool                IsX11Display;
 
-  LayoutDeviceIntSize InitialClientSize;
+  LayoutDeviceIntSize clientSize;
+  Endpoint<PNativeLayerRemoteChild> childEndpoint;
 };
 
 union CompositorWidgetInitData

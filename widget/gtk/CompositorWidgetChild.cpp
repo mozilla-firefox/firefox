@@ -23,6 +23,8 @@ bool CompositorWidgetChild::Initialize(
   return true;
 }
 
+void CompositorWidgetChild::Shutdown() { (void)Send__delete__(this); }
+
 mozilla::ipc::IPCResult CompositorWidgetChild::RecvObserveVsync() {
   mVsyncDispatcher->SetCompositorVsyncObserver(mVsyncObserver);
   return IPC_OK();
