@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+<script type="importmap">
+{
+  "imports": {
+    "app": "./preload_linked_bare.mjs"
+  }
+}
+</script>
+<link rel="modulepreload" href="./preload_linked_bare.mjs">
+<script type="module">
+  import value from "app";
+  parent.postMessage({ type: "loaded", value }, "*");
+</script>
+<script type="importmap">
+{
+  "imports": {
+    "app": "./preload_linked_bare.mjs"
+  }
+}
+</script>
+<script>
+  parent.postMessage({ type: "parsed" }, "*");
+</script>

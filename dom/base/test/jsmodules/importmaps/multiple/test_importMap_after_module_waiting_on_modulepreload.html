@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+<title>Test an import map parsed while an inline module waits on a modulepreload</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<script src="preload_linked_helpers.js"></script>
+<body>
+<script>
+  function waitForMessage(type) {
+    return new Promise(resolve => {
+      window.addEventListener("message", function listener(e) {
+        if (e.data.type == type) {
+          window.removeEventListener("message", listener);
+          resolve(e.data);
+        }
+      });
+    });
+  }
+
+  // The iframe document registers an import map, preloads a module with
+  // <link rel=modulepreload>, imports it from an inline module, and parses a
+  // second import map while the modulepreload is still being fetched.
+  add_task(async function testParserImportMapAfterModuleWaitingOnPreload() {
+    SpecialPowers.ChromeUtils.clearResourceCache({ types: ["script"] });
+
+    const preloadRequested =
+      waitForRequest("preload_linked_bare.mjs", { hold: true });
+    const parsed = waitForMessage("parsed");
+    const loaded = waitForMessage("loaded");
+
+    const iframe = document.createElement("iframe");
+    iframe.src = "file_importMap_after_module_waiting_on_modulepreload.html";
+    document.body.appendChild(iframe);
+
+    const preloadChannel = await preloadRequested;
+    await parsed;
+    preloadChannel.resume();
+
+    const { value } = await loaded;
+    is(value, "bare",
+       "The inline module waiting on the modulepreload should load");
+  });
+</script>
+</body>

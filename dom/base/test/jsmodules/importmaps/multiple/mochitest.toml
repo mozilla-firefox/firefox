@@ -1,6 +1,7 @@
 [DEFAULT]
 prefs = ["dom.multiple_import_maps.enabled=true"]
 support-files = [
+  "file_importMap_after_module_waiting_on_modulepreload.html",
   "preload_linked_bare.mjs",
   "preload_linked_chain_child.mjs",
   "preload_linked_chain_grandchild.mjs",
@@ -18,6 +19,8 @@ support-files = [
 ["test_bug_2054717.html"]
 
 ["test_bug_2058272.html"]
+
+["test_importMap_after_module_waiting_on_modulepreload.html"]
 
 ["test_importMap_with_waiter_on_fetching_preload.html"]
 
