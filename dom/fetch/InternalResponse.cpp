@@ -147,32 +147,6 @@ void InternalResponse::ToChildToParentInternalResponse(
                                                 UNKNOWN_BODY_SIZE, Nothing());
 }
 
-void InternalResponse::SerializeChildToParentInternalResponseBody(
-    ChildToParentInternalResponse* aIPCResponse) {
-  nsCOMPtr<nsIInputStream> body;
-  int64_t bodySize;
-  GetUnfilteredBody(getter_AddRefs(body), &bodySize);
-
-  if (body) {
-    aIPCResponse->body().emplace(ChildToParentStream());
-    aIPCResponse->bodySize() = bodySize;
-
-    DebugOnly<bool> ok = mozilla::ipc::SerializeIPCStream(
-        body.forget(), aIPCResponse->body()->stream(), /* aAllowLazy */ false);
-    MOZ_ASSERT(ok);
-  }
-
-  nsCOMPtr<nsIInputStream> alternativeBody = TakeAlternativeBody();
-  if (alternativeBody) {
-    aIPCResponse->alternativeBody().emplace(ChildToParentStream());
-
-    DebugOnly<bool> ok = mozilla::ipc::SerializeIPCStream(
-        alternativeBody.forget(), aIPCResponse->alternativeBody()->stream(),
-        /* aAllowLazy */ false);
-    MOZ_ASSERT(ok);
-  }
-}
-
 ParentToParentInternalResponse
 InternalResponse::ToParentToParentInternalResponse() {
   ParentToParentInternalResponse result(GetMetadata(), Nothing(),
