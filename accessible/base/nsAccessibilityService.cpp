@@ -926,14 +926,10 @@ void nsAccessibilityService::ComboboxOptionMaybeChanged(
 
   for (nsIContent* cur = aMutatingNode; cur; cur = cur->GetParent()) {
     if (cur->IsHTMLElement(nsGkAtoms::option)) {
-      if (LocalAccessible* accessible = document->GetAccessible(cur)) {
-        document->FireDelayedEvent(nsIAccessibleEvent::EVENT_NAME_CHANGE,
-                                   accessible);
-        break;
-      }
-      if (cur->IsHTMLElement(nsGkAtoms::select)) {
-        break;
-      }
+      HTMLComboboxAccessible::SelectedOptionLabelMaybeChanged(document, cur);
+    }
+    if (cur->IsHTMLElement(nsGkAtoms::select)) {
+      break;
     }
   }
 }

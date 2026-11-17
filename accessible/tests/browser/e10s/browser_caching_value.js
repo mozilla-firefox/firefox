@@ -422,6 +422,51 @@ addAccessibleTask(
       "First",
       "Select value correct after changing option back"
     );
+
+    p = waitForEvent(EVENT_TEXT_VALUE_CHANGE, "select");
+
+    await invokeContentTask(browser, [], () => {
+      content.document.getElementById("first_option").textContent =
+        "First Option";
+    });
+
+    await p;
+
+    is(
+      select.value,
+      "First Option",
+      "Select value correct after changing option text"
+    );
+
+    p = waitForEvent(EVENT_TEXT_VALUE_CHANGE, "select");
+
+    await invokeContentTask(browser, [], () => {
+      content.document.getElementById("first_option").firstChild.data =
+        "Firstly Option";
+    });
+
+    await p;
+
+    is(
+      select.value,
+      "Firstly Option",
+      "Select value correct after changing option text"
+    );
+
+    p = waitForEvent(EVENT_TEXT_VALUE_CHANGE, "select");
+
+    await invokeContentTask(browser, [], () => {
+      content.document.getElementById("first_option").label =
+        "First Option Label";
+    });
+
+    await p;
+
+    is(
+      select.value,
+      "First Option Label",
+      "Select value correct after changing option text"
+    );
   },
   { chrome: true, topLevel: true, iframe: true, remoteIframe: true }
 );

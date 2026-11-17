@@ -10,6 +10,7 @@
 #include "DocAccessible-inl.h"
 #include "EventTree.h"
 #include "HTMLImageMapAccessible.h"
+#include "HTMLSelectAccessible.h"
 #include "LocalAccessible-inl.h"
 #include "Relation.h"
 #include "TreeWalker.h"
@@ -989,6 +990,11 @@ void DocAccessible::AttributeChanged(dom::Element* aElement,
       ContentInserted(aElement, aElement->GetNextSibling());
       return;
     }
+
+    if (aAttribute == nsGkAtoms::label) {
+      HTMLComboboxAccessible::SelectedOptionLabelMaybeChanged(this, aElement);
+    }
+
     // The element doesn't have an Accessible, so ignore the attribute
     // change.
     return;

@@ -380,6 +380,22 @@ LocalAccessible* HTMLComboboxAccessible::SelectedOption() const {
   return nullptr;
 }
 
+// static
+void HTMLComboboxAccessible::SelectedOptionLabelMaybeChanged(
+    DocAccessible* aDoc, nsIContent* aContent) {
+  if (auto option = dom::HTMLOptionElement::FromNode(aContent)) {
+    if (option->Selected()) {
+      if (LocalAccessible* selectAcc =
+              aDoc->GetAccessible(option->GetSelect())) {
+        // If the option is selected (showing or not), emit a text value
+        // change event on the combobox.
+        aDoc->FireDelayedEvent(nsIAccessibleEvent::EVENT_TEXT_VALUE_CHANGE,
+                               selectAcc);
+      }
+    }
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // HTMLComboboxListAccessible
 ////////////////////////////////////////////////////////////////////////////////
