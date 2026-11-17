@@ -20,7 +20,7 @@ add_task(
 
     await ProfilerTestUtils.assertProfilerInactive();
 
-    await ProfilerTestUtils.startProfiler({ features: ["js"] });
+    await ProfilerTestUtils.startProfiler({ features: ["js", "jssources"] });
 
     let processShutdownPromise;
     const token = crypto.randomUUID().replace(/-/g, "");

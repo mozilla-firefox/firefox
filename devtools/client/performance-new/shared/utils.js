@@ -574,6 +574,12 @@ const featureDescriptions = [
       "Include all flow-related markers. These markers show the program flow better but " +
       "can cause more overhead in some places than normal.",
   },
+  {
+    name: "JavaScript Sources",
+    value: "jssources",
+    title: "Collect JavaScript source code information for profiled scripts.",
+    experimental: true,
+  },
 ];
 
 module.exports = {
