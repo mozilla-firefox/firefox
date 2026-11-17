@@ -14,10 +14,6 @@ These steps were verified to work as of June 2024.
 
 4. Follow the [Building Firefox On Linux](linux_build.md) instructions.
 
-   :::{note}
-   For Mercurial to work, you will need to follow the instructions for bash and restart WSL.
-   :::
-
 5. Run the following commands to install dependencies needed to build and run Firefox:
 
    ```

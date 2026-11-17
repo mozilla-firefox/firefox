@@ -8,13 +8,13 @@ if the error you're running into is a fatal one or not.
 
 This is a warning and can be ignored.
 [Watchman is a file watching service](https://facebook.github.io/watchman/)
-that can speed up some interactions with Git and Mercurial.
+that can speed up some interactions with Git.
 
 ## VSCode Java extension
 
 If you happen to have the Java extension installed in VSCode, there's
 a chance that the "Problems" tab in the integrated terminal will
-display an error about `Cannot run program [...]/mozilla-unified/mach`.
+display an error about `Cannot run program [...]/firefox/mach`.
 This is because the extension does not know how to parse the mozilla-central
 repository and specifically the `mach` command runner.
 This will not prevent you from building and running Firefox.

@@ -36,7 +36,7 @@ run:
 
 ```bash
 ./mach addtest --suite xpcshell path/to/test/test_example.js
-hg add path/to/test/test_example.js
+git add path/to/test/test_example.js
 ```
 
 This will automatically create the test file and add it to

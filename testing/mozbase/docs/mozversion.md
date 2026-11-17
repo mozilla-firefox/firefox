@@ -1,6 +1,6 @@
 # {mod}`mozversion` --- Get application information
 
-[mozversion](https://hg.mozilla.org/mozilla-central/file/tip/testing/mozbase/mozversion)
+[mozversion](https://searchfox.org/firefox-main/source/testing/mozbase/mozversion)
 provides version information such as the application name and the changesets
 that it has been built from. This is commonly used in reporting or for
 conditional logic based on the application under test.
@@ -29,7 +29,7 @@ Firefox for Android:
 
 ```
 version = mozversion.get_version(binary='path/to/firefox.apk')
-print version['application_changeset'] # gets hg revision of build
+print version['application_changeset'] # gets source revision of build
 ```
 
 ## Command Line Usage

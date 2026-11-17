@@ -232,12 +232,12 @@ occurring.
 ## Widget, Compositor, CompositorVsyncDispatcher, GeckoTouchDispatcher Shutdown Procedure
 
 When the [nsIWidget shuts
-down](https://hg.mozilla.org/mozilla-central/file/0df249a0e4d3/widget/nsIWidget.cpp#l182)
+down](https://github.com/mozilla-firefox/firefox/blob/1741f5a87fb42eeb5a047eea64574a960a2a0b0e/widget/nsBaseWidget.cpp#L182)
 \- It calls nsIWidget::DestroyCompositor on the *Gecko Main Thread*.
 During nsIWidget::DestroyCompositor, it first destroys the
 CompositorBridgeChild. CompositorBridgeChild sends a sync IPC call to
 CompositorBridgeParent::RecvStop, which calls
-[CompositorBridgeParent::Destroy](https://hg.mozilla.org/mozilla-central/file/ab0490972e1e/gfx/layers/ipc/CompositorParent.cpp#l509).
+[CompositorBridgeParent::Destroy](https://github.com/mozilla-firefox/firefox/blob/08c73afb6e8f6c0f6bbe754e93f33059d7085910/gfx/layers/ipc/CompositorParent.cpp#L509).
 During this time, the *main thread* is blocked on the parent process.
 CompositorBridgeParent::RecvStop runs on the *Compositor thread* and
 cleans up some resources, including setting the
@@ -259,7 +259,7 @@ destruction and the CompositorBridgeParent::DeferredDestroy releases a
 reference to the CompositorBridgeParent on the *Compositor Thread*.
 Finally, the CompositorBridgeParent itself is destroyed on the *main
 thread* once both references are gone due to explicit [main thread
-destruction](https://hg.mozilla.org/mozilla-central/file/50b95032152c/gfx/layers/ipc/CompositorParent.h#l148).
+destruction](https://github.com/mozilla-firefox/firefox/blob/be419eafa72df858a3a1ac73e0794782a70abd04/gfx/layers/ipc/CompositorParent.h#L148).
 
 With the `CompositorVsyncScheduler::Observer`, any accesses to the
 widget after nsIWidget::DestroyCompositor executes are invalid. Any
@@ -292,7 +292,7 @@ reference to the `CompositorVsyncDispatcher` during destruction. The
 `CompositorVsyncScheduler::Observer` has a race to be destroyed either
 during CompositorBridgeParent shutdown or from the
 `GeckoTouchDispatcher` which is destroyed on the main thread with
-[ClearOnShutdown](https://hg.mozilla.org/mozilla-central/file/21567e9a6e40/xpcom/base/ClearOnShutdown.h#l15).
+[ClearOnShutdown](https://github.com/mozilla-firefox/firefox/blob/a6f3234490eb65fa2c29195205b2579bbf621020/xpcom/base/ClearOnShutdown.h#L15).
 Whichever object, the CompositorBridgeParent or the
 `GeckoTouchDispatcher` is destroyed last will hold the last reference
 to the `CompositorVsyncDispatcher`, which destroys the object.
@@ -300,7 +300,7 @@ to the `CompositorVsyncDispatcher`, which destroys the object.
 ## Refresh Driver
 
 The Refresh Driver is ticked from a [single active
-timer](https://hg.mozilla.org/mozilla-central/file/ab0490972e1e/layout/base/nsRefreshDriver.cpp#l11).
+timer](https://github.com/mozilla-firefox/firefox/blob/08c73afb6e8f6c0f6bbe754e93f33059d7085910/layout/base/nsRefreshDriver.cpp#L11).
 The assumption is that there are multiple `RefreshDrivers` connected
 to a single `RefreshTimer`. There are two `RefreshTimers`: an active
 and an inactive `RefreshTimer`. Each Tab has its own

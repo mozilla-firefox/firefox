@@ -93,9 +93,9 @@ their management.
 
 - profile [documentation]
 
-[addonmanager]: https://hg.mozilla.org/mozilla-central/file/tip/testing/mozbase/mozprofile/mozprofile/addons.py
+[addonmanager]: https://searchfox.org/firefox-main/source/testing/mozbase/mozprofile/mozprofile/addons.py
 [addons]: https://developer.mozilla.org/en/addons
 [documentation]: http://support.mozilla.com/en-US/kb/Profiles
-[here]: https://hg.mozilla.org/mozilla-central/file/tip/testing/mozbase/mozprofile/mozprofile/permissions.py
-[mozprofile]: https://hg.mozilla.org/mozilla-central/file/tip/testing/mozbase/mozprofile
-[mozprofile.profile]: https://hg.mozilla.org/mozilla-central/file/tip/testing/mozbase/mozprofile/mozprofile/profile.py
+[here]: https://searchfox.org/firefox-main/source/testing/mozbase/mozprofile/mozprofile/permissions.py
+[mozprofile]: https://searchfox.org/firefox-main/source/testing/mozbase/mozprofile
+[mozprofile.profile]: https://searchfox.org/firefox-main/source/testing/mozbase/mozprofile/mozprofile/profile.py

@@ -13,7 +13,8 @@ This guide shows you how to build SpiderMonkey using `mach`, which is
 Mozilla's multipurpose build tool. This replaces old guides that advised
 running the "configure" script directly.
 
-These instructions assume you have a clone of `mozilla-unified` and are
+These instructions assume you have a clone of the
+[Firefox repository](https://github.com/mozilla-firefox/firefox) and are
 interested in building the JS shell.
 
 ## Developer (debug) build

@@ -7,7 +7,7 @@ specific check necessary for (e.g.) an operating system? Because
 information is not consolidated, checks are not done consistently, nor
 is it defined what we are checking for.
 
-[mozinfo](https://hg.mozilla.org/mozilla-central/file/tip/testing/mozbase/mozinfo)
+[mozinfo](https://searchfox.org/firefox-main/source/testing/mozbase/mozinfo)
 proposes to solve this problem. mozinfo is a bridge interface,
 making the underlying (complex) plethora of OS and architecture
 combinations conform to a subset of values of relevance to
@@ -20,7 +20,7 @@ service pack in use is available on the windows platform.
 mozinfo is a python package. Downloading the software and running
 `python setup.py develop` will allow you to do `import mozinfo`
 from python.
-[mozinfo.py](https://hg.mozilla.org/mozilla-central/file/tip/testing/mozbase/mozinfo/mozinfo/mozinfo.py)
+[mozinfo.py](https://searchfox.org/firefox-main/source/testing/mozbase/mozinfo/mozinfo/mozinfo.py)
 is the only file contained in this package,
 so if you need a single-file solution, you can just download or call
 this file through the web.

@@ -54,26 +54,12 @@ automatically selecting the appropriate formatter.
 
 ### Configuring the clang-format commit hook
 
-To run clang-format at commit phase, run `mach bootstrap` or just add
-the following line in the `hgrc` file:
-
-```ini
-[extensions]
-clang-format = ~/.mozbuild/version-control-tools/hgext/clang-format
-```
-
-We use a hg extension as they are more flexible than hooks.
-
-With git, the configuration is the following:
+To run clang-format at commit phase, the configuration is the following:
 
 ```
 # From the root git directory:
 $ ln -s $(pwd)/tools/lint/hooks_clang_format.py .git/hooks/pre-commit
 ```
-
-You'll likely need to install the `python-hglib` package for your OS,
-or else you may get errors like `abort: No module named hglib.client!`
-when you try to commit.
 
 ## Editor integration
 
@@ -173,31 +159,8 @@ You can find an {searchfox}`example of code not formatted <mozilla-central/rev/5
 
 ## Ignore lists
 
-To make sure that the blame/annotate features of Mercurial or git aren't
-affected. Two files are maintained to keep track of the reformatting
-commits.
-
-### With Mercurial
-
-The list is stored in
-
-<https://searchfox.org/firefox-main/source/.hg-annotate-ignore-revs>
-
-Commit messages should also contain the string
-
-`# ignore-this-changeset`
-
-The syntax in this file is generated using the following syntax:
-
-```
-$ hg log --template '{node} - {author|person} - {desc|strip|firstline}\n'
-```
-
-### With git
-
-The list is stored in
-<https://searchfox.org/firefox-main/source/.git-blame-ignore-revs>
-and contains git revisions for both gecko-dev and the git cinnabar
-repository.
+To make sure that the blame feature of git isn't affected, the reformatting
+commits are listed in
+<https://searchfox.org/firefox-main/source/.git-blame-ignore-revs>.
 
 [clang-format]: https://clang.llvm.org/docs/ClangFormat.html

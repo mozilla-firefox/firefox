@@ -30,7 +30,7 @@ In this case, `e10s` is a boolean.
 
 The test will download the build's `target.mozinfo.json`, then update the
 mozinfo dictionary with additional runtime information based on the task or
-runtime environment. This logic lives in [mozinfo](https://hg.mozilla.org/mozilla-central/file/default/testing/mozbase/mozinfo/mozinfo/mozinfo.py).
+runtime environment. This logic lives in [mozinfo](https://searchfox.org/firefox-main/source/testing/mozbase/mozinfo/mozinfo/mozinfo.py).
 
 ## How to Add a Keyword
 

@@ -67,7 +67,7 @@ build, so you must ensure that it is built before running the above
 command. A simple way to do this is to just run "mach gtest" which will
 rebuild libxul and run the tests. You can also extract the commands
 needed to just rebuild that libxul [from
-mach](https://hg.mozilla.org/mozilla-central/file/3673d2c688b4/python/mozbuild/mozbuild/mach_commands.py#l486)
+mach](https://github.com/mozilla-firefox/firefox/blob/27af76170bea0178230f8049a0cb21115c83798f/python/mozbuild/mozbuild/mach_commands.py#L486)
 and run those directly. Finally, note that you may have to run through
 the tests once for gdb to load all the relevant libraries and for
 breakpoint symbols to resolve properly.
@@ -145,11 +145,11 @@ tear down any dependencies you have in your test fixtures. Avoid
 writing integration tests and focus on testing individual units.
 :::
 
-See <https://hg.mozilla.org/mozilla-central/rev/ed612eec41a44867a> for an
+See <https://github.com/mozilla-firefox/firefox/commit/73a57970ab64977ee148a35dc3986030f315aace> for an
 example of how to add a simple test.
 
 If you're converting an existing C++ unit test to a GTest, [this
-commit](https://hg.mozilla.org/mozilla-central/rev/40740cddc131) may
+commit](https://github.com/mozilla-firefox/firefox/commit/04e6661ad1f06ddcae20c7c815120e3b1a5bcf8d) may
 serve as a useful reference.
 
 ### Setting prefs for a test

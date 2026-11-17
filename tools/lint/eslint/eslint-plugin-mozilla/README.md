@@ -2,7 +2,7 @@
 
 A collection of rules that help enforce JavaScript coding standard in the Mozilla project.
 
-These are primarily developed and used within the Firefox build system ([mozilla-central](https://hg.mozilla.org/mozilla-central/)), but are made available for other related projects to use as well.
+These are primarily developed and used within the Firefox build system ([mozilla-central](https://github.com/mozilla-firefox/firefox)), but are made available for other related projects to use as well.
 
 ## Usage
 

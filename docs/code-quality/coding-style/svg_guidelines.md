@@ -169,7 +169,7 @@ are usually context aware. Those kinds of shapes are visible but off the
 [SVG view
 box](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox).
 Here's [an
-example](https://hg.mozilla.org/mozilla-central/diff/9fb143f3b36a/browser/themes/shared/heartbeat-star-lit.svg)
+example](https://github.com/mozilla-firefox/firefox/commit/98a0627ca10db2158b2139d81b51010450b90e01#diff-4ce235904166c287661875f687a2d9829ac7eae333d6c0b14017153c52c5c3cb)
 of a file with offscreen shapes.
 
 On the other hand, the uncolored ones are easier to spot, since they
@@ -181,7 +181,7 @@ stroke.
 
 The root `<svg>` element can also host many useless attributes. Here's
 an
-[example](https://hg.mozilla.org/mozilla-central/diff/2d38fecce226/browser/components/loop/content/shared/img/icons-10x10.svg)
+[example](https://github.com/mozilla-firefox/firefox/commit/35889a9d0115ff66ad2b0acd1d3a874ead983c19#diff-20f30e0cc3eb6cc5f4f691dadc3d6d56d5671932c32bc51fe5b13bed1371e48f)
 taking into account the list below:
 
 - `version`
@@ -207,7 +207,7 @@ taking into account the list below:
 - `fill-rule` attribute when the element *is* a descendant of a
   `<clipPath>`
 - Unreferenced/Unused clip paths, masks or defs
-  ([example](https://hg.mozilla.org/mozilla-central/diff/2d38fecce226/toolkit/themes/shared/reader/RM-Plus-24x24.svg))
+  ([example](https://github.com/mozilla-firefox/firefox/commit/35889a9d0115ff66ad2b0acd1d3a874ead983c19#diff-c06dfa67283f8751f662b0aede71e65f4ef962bf51bdfe52a508fd8183244f55))
 
 ### Styling
 
@@ -224,16 +224,16 @@ taking into account the list below:
 Here are some examples for excessive number precision:
 
 - 5.000000e-02 → 0.05 (as seen
-  [here](https://hg.mozilla.org/mozilla-central/diff/2d38fecce226/browser/themes/shared/devtools/images/tool-network.svg#l1.31))
+  [here](https://github.com/mozilla-firefox/firefox/commit/35889a9d0115ff66ad2b0acd1d3a874ead983c19#diff-f214e9dd6db757884b209ee9b468ee8440acde68e53eece069dbb0f517d8a53b))
 - -3.728928e-10 → 0 (as seen
-  [here](https://hg.mozilla.org/mozilla-central/diff/2d38fecce226/browser/themes/shared/aboutNetError_alert.svg#l1.12))
+  [here](https://github.com/mozilla-firefox/firefox/commit/35889a9d0115ff66ad2b0acd1d3a874ead983c19#diff-241eaeb23ec5f505aa24654f8678ac5843a4f258ed52a82b78ddca4c8cacf852))
 - translate(0.000000, -1.000000) → translate(0, -1) (as seen
-  [here](https://hg.mozilla.org/mozilla-central/diff/2d38fecce226/browser/themes/shared/heartbeat-icon.svg#l1.13))
+  [here](https://github.com/mozilla-firefox/firefox/commit/35889a9d0115ff66ad2b0acd1d3a874ead983c19#diff-1d2d0b5c9d252aa4f82ef54b525aba4431772e079af0e4535aa275dd302b7326))
 
 As for descriptive IDs:
 
 - For gradients: SVG_ID1 → gradient1 (as seen
-  [here](https://hg.mozilla.org/mozilla-central/diff/2d38fecce226/browser/themes/shared/aboutNetError_alert.svg#l1.12))
+  [here](https://github.com/mozilla-firefox/firefox/commit/35889a9d0115ff66ad2b0acd1d3a874ead983c19#diff-241eaeb23ec5f505aa24654f8678ac5843a4f258ed52a82b78ddca4c8cacf852))
 
 #### Use of class names
 

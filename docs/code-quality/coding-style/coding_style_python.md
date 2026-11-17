@@ -49,10 +49,7 @@ Four spaces in Python code.
 
 ## Other advice
 
-- Install the
-  [mozext](https://hg.mozilla.org/hgcustom/version-control-tools/file/default/hgext/mozext)
-  Mercurial extension, and address every issue reported on commit
-  or the output of `hg critic`.
+- Run `./mach lint` on your changes and address every issue it reports.
 - Follow [PEP 8](https://www.python.org/dev/peps/pep-0008/). Please run {doc}`/code-quality/lint/linters/black` for this.
 - Do not place statements on the same line as `if/elif/else`
   conditionals to form a one-liner.

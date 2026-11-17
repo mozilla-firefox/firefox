@@ -158,5 +158,5 @@ strings still appear as you would expect.
 ## See Also
 
 - [Fluent for Firefox Developers](../../l10n/fluent/tutorial.md)
-- [A commit that created some preview strings](https://hg.mozilla.org/mozilla-central/rev/2f605492e2ba)
+- [A commit that created some preview strings](https://github.com/mozilla-firefox/firefox/commit/f680db26877b03660bec4fd1648e8f1cfb559f18)
   - [A commit that later moved those strings out of preview](https://github.com/mozilla-firefox/firefox/commit/74b69afbf45d3e97d4a4f8ed64bae3f976640ce3)

@@ -145,7 +145,7 @@ interface, you need to do the following:
    wrapper cache.
 
 See this [sample patch that migrates window.performance.\* to Web IDL
-bindings](https://hg.mozilla.org/mozilla-central/rev/dd08c10193c6).
+bindings](https://github.com/mozilla-firefox/firefox/commit/a3b31d18c5c80e600f97f1ad03e092102304eb27).
 
 <div class="note"><div class="admonition-title">Note</div>
 

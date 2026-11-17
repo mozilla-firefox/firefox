@@ -24,7 +24,7 @@ For incrementing counters, use the following:
 PerfStats::RecordMeasurementCount(PerfStats::Metric::MyMetric, incrementCount)
 ```
 
-[Here's an example of a patch where a new PerfStat was added and used.](https://hg.mozilla.org/mozilla-central/rev/3e85a73d1fa5c816fdaead66ecee603b38f9b725)
+[Here's an example of a patch where a new PerfStat was added and used.](https://github.com/mozilla-firefox/firefox/commit/1febdb96a6646021262d1f249f9afb1887bb7ff1)
 
 ## Enabling collection
 

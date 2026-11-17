@@ -504,7 +504,7 @@ let childActor = ChromeUtils.domProcessChild
 # And more
 
 [browserelementparent.sys.mjs]: https://searchfox.org/mozilla-central/source/toolkit/actors/BrowserElementParent.sys.mjs
-[context menu fission port]: https://hg.mozilla.org/mozilla-central/rev/adc60720b7b8
+[context menu fission port]: https://github.com/mozilla-firefox/firefox/commit/93bbd7c5a8e376222d5a7472bc509125f5cfca2e
 [electrolysis project]: https://wiki.mozilla.org/Electrolysis
 [ipc actors]: https://developer.mozilla.org/en-US/docs/Mozilla/IPDL/Tutorial
 [transferable]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Transferable_objects

@@ -50,7 +50,7 @@ additional key, value metadata to each test.
 ## Why have test manifests?
 
 It is desirable to have a unified format for test manifests for testing
-[mozilla-central](http://hg.mozilla.org/mozilla-central), etc.
+[mozilla-central](https://github.com/mozilla-firefox/firefox), etc.
 
 - It is desirable to be able to selectively enable or disable tests based on platform or other conditions. This should be easy to do. Currently, since many of the harnesses just crawl directories, there is no effective way of disabling a test except for removal from mozilla-central
 - It is desriable to do this in a universal way so that enabling and disabling tests as well as other tasks are easily accessible to a wider audience than just those intimately familiar with the specific test framework.
@@ -494,7 +494,7 @@ as well as file the corresponding bugs for the failures. This is particularly
 useful when "greening up" a new platform.
 
 You may verify the proposed changes from `skip-fails` output and examine
-any local manifest changes with `hg status`.
+any local manifest changes with `git status`.
 
 Be careful, this command will create bugs in Bugzilla. To avoid this, add
 `--bugzilla disable` to your command.

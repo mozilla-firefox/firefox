@@ -134,7 +134,7 @@ AstMatcher->addMatcher(
 
 ## Allow-listing existing callsites
 
-While it's not a great situation, you can set up an allow-list of existing callsites if you need to. A simple allow-list is demonstrated in [NoGetPrincipalURI](https://hg.mozilla.org/mozilla-central/rev/fb60b22ee6616521b386d90aec07b03b77905f4e). The [NoNewThreadsChecker](https://hg.mozilla.org/mozilla-central/rev/f400f164b3947b4dd54089a36ea31cca2d72805b) is an example of a more sophisticated way of setting up a larger allow-list.
+While it's not a great situation, you can set up an allow-list of existing callsites if you need to. A simple allow-list is demonstrated in [NoGetPrincipalURI](https://github.com/mozilla-firefox/firefox/commit/474f063d6d83c11180800ecd86484f2dcf25af87). The [NoNewThreadsChecker](https://github.com/mozilla-firefox/firefox/commit/403fbc5757af3ed47226928b66ce1d41ba36b148) is an example of a more sophisticated way of setting up a larger allow-list.
 
 ## Custom Annotations
 

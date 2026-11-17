@@ -25,5 +25,5 @@ To use it for your own code:
 2. Create an `.md` file, which may contain explanatory text as well as the API docs. The minimum will look something like
    {searchfox}`this <toolkit/mozapps/extensions/docs/AddonManager.md>`.
 3. Ensure your component is on the js_source_path here in the sphinx
-   config: <https://hg.mozilla.org/mozilla-central/file/72ee4800d415/tools/docs/conf.py#l46>
+   config: <https://github.com/mozilla-firefox/firefox/blob/966b5519aeda8c361b13c6b2d3a8021ea412bcc5/tools/docs/conf.py#L46>
 4. Run `mach doc` locally to generate the output and confirm that it looks correct.

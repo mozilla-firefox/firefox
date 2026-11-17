@@ -82,7 +82,7 @@ take >20 minutes to run on opt or >40 minutes on debug.
 
 You will need to create a commit (or `--amend` your previous commit if this is round 2 or 3):
 
-`hg commit -m "Bug <meta_bug_id> - Green up tests for <suite> on <platform>"`
+`git commit -m "Bug <meta_bug_id> - Green up tests for <suite> on <platform>"`
 
 ## Repeat 2 More Times
 

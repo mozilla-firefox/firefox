@@ -7,7 +7,7 @@ locally, trading bandwidth for time.
 
 Artifact builds will be useful to many developers who are not working
 with compiled code (see "Restrictions" below). Artifacts are typically
-fetched from [mozilla-central](https://hg.mozilla.org/mozilla-central/).
+fetched from [mozilla-central](https://github.com/mozilla-firefox/firefox).
 
 To automatically download and use pre-built binary artifacts, add the
 following lines into your {doc}`mozconfig </setup/configuring_build_options>`
@@ -42,13 +42,8 @@ mk_add_options MOZ_OBJDIR=./objdir-frontend-debug-artifact
 
 ## Prerequisites
 
-Artifact builds are supported for users of Mercurial and Git. Git
-artifact builds require a mozilla-central clone made with the help of
-[git-cinnabar](https://github.com/glandium/git-cinnabar). Please
-follow the instructions on the git-cinnabar project page to install
-git-cinnabar. Further information about using git-cinnabar to interact
-with Mozilla repositories can be found on [the project
-wiki](https://github.com/glandium/git-cinnabar/wiki/Mozilla:-A-git-workflow-for-Gecko-development).
+Artifact builds work with a clone of the
+[Firefox repository](https://github.com/mozilla-firefox/firefox), with Git or Jujutsu.
 
 ## Building
 

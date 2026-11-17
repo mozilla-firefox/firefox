@@ -13,15 +13,8 @@ more frequently.
 
 ## Configuring Watchman
 
-It's possible to bypass this penalty completely by using the file watching service [watchman]. If
-you use the `fsmonitor` mercurial extension, you already have `watchman` installed.
-
-:::{note}
-If you aren't using [fsmonitor] but end up installng watchman anyway, you
-might as well enable it for a faster Mercurial experience.
-:::
-
-Otherwise, [install watchman]. If using Linux you'll likely run into the [inotify limits] outlined
+It's possible to bypass this penalty completely by using the file watching service [watchman].
+[Install watchman]. If using Linux you'll likely run into the [inotify limits] outlined
 on that page due to the size of `mozilla-central`. You can [read this page] for more information
 on how to bump the limits permanently.
 
@@ -143,7 +136,6 @@ In the above two examples, replace `<path>` with the path of the watch, presumab
 `mozilla-central`. Using `.` works as well if that is already your working directory. For more
 information on managing triggers and a reference of other commands, see the [official docs].
 
-[fsmonitor]: https://www.mercurial-scm.org/wiki/FsMonitorExtension
 [inotify limits]: https://facebook.github.io/watchman/docs/install.html#linux-inotify-limits
 [install watchman]: https://facebook.github.io/watchman/docs/install.html
 [official docs]: https://facebook.github.io/watchman/docs/cmd/trigger.html

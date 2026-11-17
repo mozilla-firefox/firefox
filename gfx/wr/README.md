@@ -5,7 +5,7 @@
 WebRender is a GPU-based 2D rendering engine written in [Rust](https://www.rust-lang.org/). [Firefox](https://www.mozilla.org/firefox), the research web browser [Servo](https://github.com/servo/servo), and other GUI frameworks draw with it. It currently uses the OpenGL API internally.
 
 Note that the canonical home for this code is in gfx/wr folder of the
-mozilla-central repository at https://hg.mozilla.org/mozilla-central. The
+Firefox repository at https://github.com/mozilla-firefox/firefox. The
 Github repository at https://github.com/servo/webrender should be considered
 a downstream mirror, although it contains additional metadata (such as Github
 wiki pages) that do not exist in mozilla-central. Pull requests against the
