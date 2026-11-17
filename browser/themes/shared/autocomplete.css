@@ -31,6 +31,7 @@
 
   padding: var(--autocomplete-popup-padding);
   scrollbar-gutter: stable;
+  max-width: var(--size-layout-xlarge);
 
   &:not([pointerselected]) > richlistitem.autocomplete-row-item[selected] > autocomplete-row-item:not([subfocused]) {
     border-color: var(--focus-outline-color);
@@ -77,6 +78,7 @@
     --row-item-border-radius: var(--autocomplete-row-border-radius);
 
     flex: 1;
+    min-width: 0;
     border: var(--focus-outline-width) solid transparent;
     border-radius: var(--row-item-border-radius);
   }

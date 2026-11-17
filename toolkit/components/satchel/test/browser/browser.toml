@@ -11,6 +11,8 @@ support-files = [
 ["browser_close_tab.js"]
 
 
+["browser_popup_long_entries.js"]
+
 ["browser_popup_mouseover.js"]
 
 ["browser_popup_secondary_action.js"]
