@@ -1973,7 +1973,8 @@ void ModuleLoaderBase::RegisterImportMap(UniquePtr<ImportMap> aImportMap,
   //
   // The cancelled requests will still complete later so we have to check this
   // in SetModuleFetchFinishedAndGetWaitingRequests.
-  mFetchingModules.RemoveIf([](auto& iter) {
+  nsTArray<RefPtr<ModuleLoadRequest>> requestsToRestart;
+  mFetchingModules.RemoveIf([&](auto& iter) {
     LoadingRequest* loadingRequest = iter.Data();
     bool isPreload = loadingRequest->mRequest->mLoadContext->IsPreload();
     if (!isPreload) {
@@ -1982,12 +1983,31 @@ void ModuleLoaderBase::RegisterImportMap(UniquePtr<ImportMap> aImportMap,
 
     loadingRequest->mRequest->Cancel();
     for (const auto& request : loadingRequest->mWaiting) {
-      MOZ_DIAGNOSTIC_ASSERT(request->mLoadContext->IsPreload());
+      MOZ_DIAGNOSTIC_ASSERT_IF(!multiImportMapsEnabled,
+                               request->mLoadContext->IsPreload());
+
+      // With multiple import maps, non-preload requests may be waiting on a
+      // preload's fetch. They are restarted below rather than cancelled.
+      if (!request->mLoadContext->IsPreload()) {
+        if (request->IsFinished()) {
+          continue;
+        }
+        requestsToRestart.AppendElement(request);
+        continue;
+      }
       request->Cancel();
       request->NotifyModuleWaitFinished();
     }
     return true;
   });
+
+  for (const auto& request : requestsToRestart) {
+    nsresult rv = StartModuleLoad(request);
+    if (NS_FAILED(rv)) {
+      mLoader->ReportErrorToConsole(request, rv);
+      ResumeWaitingRequest(request, false);
+    }
+  }
 
   // When the pref of multiple import maps is enabled, the preloaded module
   // scripts are kept in the module map, and their module graphs have been reset
