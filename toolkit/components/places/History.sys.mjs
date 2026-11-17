@@ -1304,6 +1304,32 @@ var removeVisitsByFilter = async function (db, filter, onResult = null) {
   return !!visitsToRemove.length;
 };
 
+/**
+ * Removes all the visits to the given pages, and the pages that are not
+ * bookmarked, then cleans up their relations. The pages are removed before
+ * their visits, so the visits delete trigger doesn't have to update them.
+ *
+ * @param {OpenedConnection} db
+ *   The database.
+ * @param {object[]} pages
+ *   The pages to remove, as expected by cleanupPages.
+ */
+async function removePagesWithVisits(db, pages) {
+  let removableIds = pages.filter(p => !p.hasForeign).map(p => p.id);
+  if (removableIds.length) {
+    await db.executeCached(
+      `DELETE FROM moz_places
+       WHERE id IN carray(:ids) AND foreign_count = 0`,
+      { ids: removableIds }
+    );
+  }
+  await db.executeCached(
+    `DELETE FROM moz_historyvisits WHERE place_id IN carray(:ids)`,
+    { ids: pages.map(p => p.id) }
+  );
+  await cleanupPages(db, pages);
+}
+
 // Inner implementation of History.removeByFilter
 var removeByFilter = async function (db, filter, onResult = null) {
   // 1. Create fragment for date filtration
@@ -1388,15 +1414,8 @@ var removeByFilter = async function (db, filter, onResult = null) {
   }
 
   await db.executeTransaction(async function () {
-    // 4. Actually remove visits
-    let pageIds = pages.map(p => p.id);
-    await db.executeCached(
-      `DELETE FROM moz_historyvisits
-         WHERE place_id IN carray(:pageIds)`,
-      { pageIds }
-    );
-    // 5. Clean up and notify
-    await cleanupPages(db, pages);
+    // 4. Actually remove the pages and their visits.
+    await removePagesWithVisits(db, pages);
   });
 
   notifyCleanup(db, pages);
@@ -1463,15 +1482,8 @@ var remove = async function (db, { guids, urls }, onResult = null) {
   }
 
   await db.executeTransaction(async function () {
-    // 2. Remove all visits to these pages.
-    await db.execute(
-      `DELETE FROM moz_historyvisits
-       WHERE place_id IN carray(:ids)`,
-      { ids: pages.map(p => p.id) }
-    );
-
-    // 3. Clean up and notify
-    await cleanupPages(db, pages);
+    // 2. Remove the pages and all their visits.
+    await removePagesWithVisits(db, pages);
   });
 
   notifyCleanup(db, pages);
