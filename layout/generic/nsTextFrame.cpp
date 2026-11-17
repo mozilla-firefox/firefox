@@ -10722,6 +10722,7 @@ void nsTextFrame::SetLength(int32_t aLength, nsLineLayout* aLineLayout,
   // paragraph). In that case we need to copy the bidi levels from the first
   // frame that actually has text to give us.
   bool needBidiFromSource = GetContentLength() == 0;
+  bool bidiLevelsChanged = false;
 
   // Note that in the process we may end up removing some frames from
   // the flow if they end up empty.
@@ -10733,6 +10734,7 @@ void nsTextFrame::SetLength(int32_t aLength, nsLineLayout* aLineLayout,
       needBidiFromSource = false;
       if (f->HasAnyStateBits(NS_FRAME_IS_BIDI)) {
         FrameBidiData bidi = f->GetBidiData();
+        bidiLevelsChanged = GetBidiData().embeddingLevel != bidi.embeddingLevel;
         SetProperty(
             BidiDataProperty(),
             FrameBidiData{bidi.baseLevel, bidi.embeddingLevel, kBidiLevelNone});
@@ -10740,7 +10742,8 @@ void nsTextFrame::SetLength(int32_t aLength, nsLineLayout* aLineLayout,
       }
     }
     f->mContentOffset = end;
-    if (f->GetTextRun(nsTextFrame::eInflated) != mTextRun) {
+    if (bidiLevelsChanged ||
+        f->GetTextRun(nsTextFrame::eInflated) != mTextRun) {
       ClearTextRuns();
       f->ClearTextRuns();
     }
