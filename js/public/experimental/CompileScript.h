@@ -26,8 +26,19 @@ struct CompilationInput;
 namespace JS {
 using FrontendContext = js::FrontendContext;
 
+struct FrontendContextCreationOptions {
+  // Set to false to avoid sharing the compiled stencil's script data to the
+  // process global state.
+  //
+  // If the compiled stencils will never be instantiated in the process and
+  // they'll be discarded immediately, set this to false to avoid holding the
+  // data unnecessarily.
+  bool shareScriptData = true;
+};
+
 // Create a new front-end context.
-JS_PUBLIC_API JS::FrontendContext* NewFrontendContext();
+JS_PUBLIC_API JS::FrontendContext* NewFrontendContext(
+    const FrontendContextCreationOptions* options = nullptr);
 
 // Destroy a front-end context allocated with NewFrontendContext.
 JS_PUBLIC_API void DestroyFrontendContext(JS::FrontendContext* fc);
