@@ -125,7 +125,7 @@ struct nsWebBrowserPersist::OutputData {
         mOriginalLocation(aOriginalLocation),
         mStreamMutex("nsWebBrowserPersist::OutputData::mStreamMutex"),
         mSelfProgress(0),
-        mSelfProgressMax(10000),
+        mSelfProgressMax(-1),
         mCalcFileExt(aCalcFileExt) {}
   ~OutputData() {
     // Gaining this lock in the destructor is pretty icky. It should be OK
@@ -145,7 +145,7 @@ struct nsWebBrowserPersist::UploadData {
   int64_t mSelfProgressMax;
 
   explicit UploadData(nsIURI* aFile)
-      : mFile(aFile), mSelfProgress(0), mSelfProgressMax(10000) {}
+      : mFile(aFile), mSelfProgress(0), mSelfProgressMax(-1) {}
 };
 
 struct nsWebBrowserPersist::CleanupData {
@@ -351,6 +351,7 @@ nsWebBrowserPersist::nsWebBrowserPersist()
       mIsPrivate(false),
       mPersistFlags(kDefaultPersistFlags),
       mPersistResult(NS_OK),
+      mCompletedProgress(0),
       mTotalCurrentProgress(0),
       mTotalMaxProgress(0),
       mWrapColumn(72),
@@ -938,6 +939,12 @@ NS_IMETHODIMP nsWebBrowserPersist::OnStopRequest(nsIRequest* request,
       SendErrorStatusChange(true, status, request, data->mFile);
     }
 
+    // Data to upload is skipped, because its upload counts the same bytes.
+    nsCOMPtr<nsIFileURL> fileURL = do_QueryInterface(data->mFile);
+    if (fileURL) {
+      mCompletedProgress += data->mSelfProgress;
+    }
+
     // If there is a stream ref and we weren't canceled,
     // close it away from the main thread.
     // We don't do this when there's an error/cancelation,
@@ -971,6 +978,7 @@ NS_IMETHODIMP nsWebBrowserPersist::OnStopRequest(nsIRequest* request,
     // if we didn't find the data in mOutputMap, try mUploadList
     UploadData* upData = mUploadList.Get(keyPtr);
     if (upData) {
+      mCompletedProgress += upData->mSelfProgress;
       mUploadList.Remove(keyPtr);
     }
   }
@@ -2513,17 +2521,26 @@ nsresult nsWebBrowserPersist::FixRedirectedChannelEntry(
 }
 
 void nsWebBrowserPersist::CalcTotalProgress() {
-  mTotalCurrentProgress = 0;
-  mTotalMaxProgress = 0;
+  mTotalCurrentProgress = mCompletedProgress;
+  mTotalMaxProgress = mCompletedProgress;
+  bool isMaxUnknown = false;
 
   if (mOutputMap.Count() > 0) {
     // Total up the progress of each output stream
     for (const auto& data : mOutputMap.Values()) {
       // Only count toward total progress if destination file is local.
+      // Data to upload is skipped, because its upload counts the same bytes,
+      // but the total size stays unknown until it has been uploaded.
       nsCOMPtr<nsIFileURL> fileURL = do_QueryInterface(data->mFile);
       if (fileURL) {
         mTotalCurrentProgress += data->mSelfProgress;
-        mTotalMaxProgress += data->mSelfProgressMax;
+        if (data->mSelfProgressMax < 0) {
+          isMaxUnknown = true;
+        } else {
+          mTotalMaxProgress += data->mSelfProgressMax;
+        }
+      } else {
+        isMaxUnknown = true;
       }
     }
   }
@@ -2533,16 +2550,18 @@ void nsWebBrowserPersist::CalcTotalProgress() {
     for (const auto& data : mUploadList.Values()) {
       if (data) {
         mTotalCurrentProgress += data->mSelfProgress;
-        mTotalMaxProgress += data->mSelfProgressMax;
+        if (data->mSelfProgressMax < 0) {
+          isMaxUnknown = true;
+        } else {
+          mTotalMaxProgress += data->mSelfProgressMax;
+        }
       }
     }
   }
 
-  // XXX this code seems pretty bogus and pointless
-  if (mTotalCurrentProgress == 0 && mTotalMaxProgress == 0) {
-    // No output streams so we must be complete
-    mTotalCurrentProgress = 10000;
-    mTotalMaxProgress = 10000;
+  // A maximum of zero means that nothing has been counted yet.
+  if (isMaxUnknown || mTotalMaxProgress == 0) {
+    mTotalMaxProgress = -1;
   }
 }
 

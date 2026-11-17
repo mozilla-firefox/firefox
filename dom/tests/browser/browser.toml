@@ -144,6 +144,9 @@ support-files = [
 ["browser_persist_mixed_content_image.js"]
 support-files = ["test_mixed_content_image.html"]
 
+["browser_persist_progress.js"]
+support-files = ["file_browserPersist_progress.sjs"]
+
 ["browser_pointerlock_popup.js"]
 
 ["browser_pointerlock_sidebar.js"]

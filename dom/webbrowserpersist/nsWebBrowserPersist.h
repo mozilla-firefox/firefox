@@ -180,6 +180,9 @@ class nsWebBrowserPersist final : public nsIInterfaceRequestor,
   // a background thread when OnDataAvailable calls MakeOutputStreamFromFile.
   mozilla::Atomic<uint32_t> mPersistFlags;
   nsresult mPersistResult;
+  // Bytes transferred by finished requests, kept so that the total progress
+  // doesn't decrease once they are removed from mOutputMap and mUploadList.
+  int64_t mCompletedProgress;
   int64_t mTotalCurrentProgress;
   int64_t mTotalMaxProgress;
   int16_t mWrapColumn;
