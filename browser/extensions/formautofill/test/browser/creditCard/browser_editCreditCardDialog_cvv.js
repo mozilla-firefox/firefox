@@ -108,7 +108,10 @@ add_task(async function test_savingWithCaptureOffKeepsSecurityCode() {
   await setStorage(Object.assign({}, TEST_CREDIT_CARD_1, { "cc-csc": "123" }));
   await SpecialPowers.pushPrefEnv({ set: [[CVV_PREF, false]] });
   let [card] = await getCreditCards();
-  ok(!("cc-csc" in card), "The stored security code is not read back");
+  ok(
+    !CreditCardRecord.hasSecurityCode(card),
+    "The stored security code is not read back"
+  );
 
   await testDialog(
     EDIT_CREDIT_CARD_DIALOG_URL,
@@ -126,7 +129,11 @@ add_task(async function test_savingWithCaptureOffKeepsSecurityCode() {
   await SpecialPowers.popPrefEnv();
   [card] = await getCreditCards();
   is(card["cc-name"], TEST_CREDIT_CARD_1["cc-name"] + "test", "The edit saved");
-  is(card["cc-csc"], "123", "and the security code the form lacked is kept");
+  is(
+    await decryptCreditCardSecurityCode(card),
+    "123",
+    "and the security code the form lacked is kept"
+  );
 
   await removeAllRecords();
   await SpecialPowers.popPrefEnv();
@@ -136,7 +143,11 @@ add_task(async function test_clearingSecurityCodeRemovesIt() {
   await SpecialPowers.pushPrefEnv({ set: [[CVV_PREF, true]] });
   await setStorage(Object.assign({}, TEST_CREDIT_CARD_1, { "cc-csc": "123" }));
   let [card] = await getCreditCards();
-  is(card["cc-csc"], "123", "The security code is stored");
+  is(
+    await decryptCreditCardSecurityCode(card),
+    "123",
+    "The security code is stored"
+  );
 
   await testDialog(
     EDIT_CREDIT_CARD_DIALOG_URL,
@@ -153,7 +164,10 @@ add_task(async function test_clearingSecurityCodeRemovesIt() {
   );
 
   [card] = await getCreditCards();
-  ok(!("cc-csc" in card), "The cleared security code is removed");
+  ok(
+    !CreditCardRecord.hasSecurityCode(card),
+    "The cleared security code is removed"
+  );
 
   await removeAllRecords();
   await SpecialPowers.popPrefEnv();

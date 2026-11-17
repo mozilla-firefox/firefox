@@ -6,6 +6,7 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   AutofillDataTypes: "resource://gre/modules/shared/AutofillDataTypes.sys.mjs",
   AutofillTelemetry: "resource://gre/modules/shared/AutofillTelemetry.sys.mjs",
+  CreditCardRecord: "resource://gre/modules/shared/CreditCardRecord.sys.mjs",
   FormAutofillUtils: "resource://gre/modules/shared/FormAutofillUtils.sys.mjs",
   FormAutofill: "resource://autofill/FormAutofill.sys.mjs",
   formAutofillStorage: "resource://autofill/FormAutofillStorage.sys.mjs",
@@ -687,9 +688,12 @@ export class FormAutofillCreditCardSection extends FormAutofillSection {
     }
 
     // Never reveal the security code in the preview. The real value is still
-    // used when filling.
+    // used when filling. A record that only says it has one gives no length,
+    // so the preview shows the common one.
     if (profile["cc-csc"]) {
       profile["cc-csc"] = "*".repeat(profile["cc-csc"].toString().length);
+    } else if (lazy.CreditCardRecord.hasSecurityCode(profile)) {
+      profile["cc-csc"] = "***";
     }
 
     return true;
@@ -710,11 +714,11 @@ export class FormAutofillCreditCardSection extends FormAutofillSection {
       "autofill-use-payment-method-os-prompt-other"
     );
 
-    let decrypted;
+    let secrets;
     try {
-      decrypted = await this.getDecryptedString(
+      secrets = await this.getDecryptedFields(
         profile,
-        "cc-number",
+        lazy.CreditCardRecord.SECRET_FIELDS,
         promptMessage
       );
     } catch (ex) {
@@ -726,9 +730,14 @@ export class FormAutofillCreditCardSection extends FormAutofillSection {
       return false;
     }
 
+    // Null means the store holds nothing for the field, so there is nothing to
+    // put in place of what the profile holds.
+    if (secrets["cc-csc"] !== null) {
+      profile["cc-csc"] = secrets["cc-csc"];
+    }
+
+    const decrypted = secrets["cc-number"];
     if (decrypted === null) {
-      // The record holds no encrypted number, so the user was asked nothing
-      // and there is nothing to put in its place.
       return true;
     }
 
@@ -740,12 +749,12 @@ export class FormAutofillCreditCardSection extends FormAutofillSection {
     return true;
   }
 
-  async getDecryptedString(record, field, reauth) {
+  async getDecryptedFields(record, fields, reauth) {
     if (!lazy.FormAutofillUtils.getOSAuthEnabled()) {
       this.log.debug("Reauth is disabled");
       reauth = false;
     }
-    return lazy.formAutofillStorage.creditCards.decryptField(record, field, {
+    return lazy.formAutofillStorage.creditCards.decryptFields(record, fields, {
       reauth,
     });
   }

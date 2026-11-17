@@ -93,16 +93,34 @@ add_task(async function test_csc_modified_after_fill() {
         false
       );
 
+      // Typing in the security code field offers the saved cards again, as
+      // typing in the number field does.
       await TestUtils.waitForCondition(async () => {
         await Services.fog.testFlushAllChildren();
-        return Glean.creditcard.filledModifiedCcFormV2.testGetValue()?.length;
-      }, "Wait for the filled_modified event");
+        return (
+          Glean.creditcard.filledModifiedCcFormV2.testGetValue()?.length &&
+          Glean.creditcard.popupShownCcFormV2.testGetValue()?.length == 2
+        );
+      }, "Wait for the filled_modified event and the second popup");
+      await closePopup(browser);
     }
   );
 
+  const popups = Glean.creditcard.popupShownCcFormV2.testGetValue();
+  Assert.deepEqual(
+    popups.map(event => event.extra.field_name),
+    ["cc-name", "cc-csc"],
+    "The popup is shown on the name field, then on the security code field"
+  );
+  const fillFlowId =
+    Glean.creditcard.filledCcFormV2.testGetValue()[0].extra.value;
+  Assert.deepEqual(
+    popups.map(event => event.extra.value),
+    [fillFlowId, fillFlowId],
+    "Both popups belong to the session that filled the form"
+  );
   assertFormInteractionEventsInGlean([
     ccFormArgsv2("detected", buildccFormv2Extra({ cc_exp: "false" }, "true")),
-    ccFormArgsv2("popup_shown", { field_name: "cc-name" }),
     ccFormArgsv2(
       "filled",
       buildccFormv2Extra({ cc_exp: "unavailable" }, "filled")

@@ -501,15 +501,16 @@ add_task(async function test_an_unreadable_store_still_returns_to_json() {
   s = await enableRust(s);
   const before = migrationEvents().length;
 
-  // As a store whose key can no longer decrypt its cards answers a read.
+  // As a store whose key can no longer decrypt its cards answers the read of
+  // each number the copy back makes.
   const store = await rustStore();
-  store.getAllCreditCards = async () => {
+  store.getCreditCard = async () => {
     throw new CryptoError("decryption failed");
   };
   try {
     s = await disableRust(s);
   } finally {
-    delete store.getAllCreditCards;
+    delete store.getCreditCard;
   }
 
   Assert.ok(!getBool(ACTIVE_PREF), "the profile is back on JSON");
@@ -854,17 +855,17 @@ add_task(async function test_the_security_code_moves_into_rust_only() {
   Assert.ok(getBool(ACTIVE_PREF), "moved to Rust");
   Assert.deepEqual(divergenceEvents(), [], "no record came back different");
   Assert.equal(
-    (await s.creditCards.get(guids[0], { rawData: true }))["cc-csc"],
+    (await (await rustStore()).getCreditCard(guids[0])).ccCvv,
     "123",
     "the code came across"
   );
   Assert.equal(
-    (await s.creditCards.get(guids[0]))["cc-csc"],
+    (await s.creditCards.get(guids[0])).hasSecurityCode,
     undefined,
     "a consumer read hides it while CVV is off"
   );
   Assert.equal(
-    (await s.creditCards.get(guids[1], { rawData: true }))["cc-csc"],
+    (await s.creditCards.get(guids[1], { rawData: true })).hasSecurityCode,
     undefined,
     "an empty code came across as none"
   );

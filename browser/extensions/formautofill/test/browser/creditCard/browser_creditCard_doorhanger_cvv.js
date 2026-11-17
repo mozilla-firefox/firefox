@@ -350,7 +350,7 @@ add_task(async function test_save_with_toggle_on_stores_security_code() {
   is(creditCards.length, 1, "One credit card is saved");
   is(creditCards[0]["cc-name"], "User 1", "The card is saved");
   is(
-    creditCards[0]["cc-csc"],
+    await decryptCreditCardSecurityCode(creditCards[0]),
     "123",
     "The security code is saved along with the card"
   );
@@ -400,7 +400,7 @@ add_task(async function test_save_with_toggle_off_stores_no_security_code() {
   is(creditCards.length, 1, "One credit card is saved");
   is(creditCards[0]["cc-name"], "User 1", "The card is saved");
   ok(
-    !creditCards[0]["cc-csc"],
+    !CreditCardRecord.hasSecurityCode(creditCards[0]),
     "The security code is not saved once the toggle is off"
   );
 
@@ -476,7 +476,7 @@ add_task(
     is(creditCards.length, 1, "The existing card is updated");
     is(creditCards[0]["cc-name"], "Mark Smith", "The card is updated");
     is(
-      creditCards[0]["cc-csc"],
+      await decryptCreditCardSecurityCode(creditCards[0]),
       "123",
       "A form submitted with an empty security code keeps the stored one"
     );
@@ -640,7 +640,7 @@ add_task(async function test_update_keeps_the_stored_security_code() {
     is(creditCards.length, 1, "The existing card is updated");
     is(creditCards[0]["cc-name"], "Mark Smith", "The card is updated");
     is(
-      creditCards[0]["cc-csc"],
+      await decryptCreditCardSecurityCode(creditCards[0]),
       "123",
       `The stored security code is kept when "${securityCode}" is submitted`
     );
@@ -671,7 +671,10 @@ add_task(async function test_update_card_without_a_security_code() {
   const creditCards = await getCreditCards();
   is(creditCards.length, 1, "The existing card is updated");
   is(creditCards[0]["cc-name"], "Mark Smith", "The card is updated");
-  ok(!creditCards[0]["cc-csc"], "The card still has no security code");
+  ok(
+    !CreditCardRecord.hasSecurityCode(creditCards[0]),
+    "The card still has no security code"
+  );
 
   await removeAllRecords();
   await SpecialPowers.popPrefEnv();
@@ -800,7 +803,7 @@ add_task(async function test_save_new_or_changed_security_code() {
     const creditCards = await getCreditCards();
     is(creditCards.length, 1, "The existing card is updated");
     is(
-      creditCards[0]["cc-csc"],
+      await decryptCreditCardSecurityCode(creditCards[0]),
       "456",
       storedCode
         ? "The changed security code replaces the stored one"
@@ -882,7 +885,7 @@ add_task(async function test_security_code_toggle_switches_to_plain_update() {
   const creditCards = await getCreditCards();
   is(creditCards.length, 1, "The existing card is updated");
   is(
-    creditCards[0]["cc-csc"],
+    await decryptCreditCardSecurityCode(creditCards[0]),
     "123",
     "Updating with the toggle off keeps the stored security code"
   );
@@ -914,8 +917,11 @@ add_task(async function test_security_code_toggle_off_saves_new_card() {
   await SpecialPowers.pushPrefEnv({ set: [[ENABLED_PREF, true]] });
   const creditCards = await getCreditCards();
   is(creditCards.length, 2, "A new payment method is saved");
+  const codes = await Promise.all(
+    creditCards.map(card => decryptCreditCardSecurityCode(card))
+  );
   ok(
-    creditCards.every(card => card["cc-csc"] != "456"),
+    codes.every(code => code != "456"),
     "The new security code isn't saved"
   );
 
@@ -939,7 +945,11 @@ add_task(async function test_security_code_update_dismissed() {
 
   const creditCards = await getCreditCards();
   is(creditCards.length, 1, "No card is added");
-  is(creditCards[0]["cc-csc"], "123", "The stored security code is unchanged");
+  is(
+    await decryptCreditCardSecurityCode(creditCards[0]),
+    "123",
+    "The stored security code is unchanged"
+  );
 
   await removeAllRecords();
   await SpecialPowers.popPrefEnv();
@@ -1017,7 +1027,7 @@ add_task(
     await SpecialPowers.pushPrefEnv({ set: [[ENABLED_PREF, true]] });
     const creditCards = await getCreditCards();
     is(
-      creditCards[0]["cc-csc"],
+      await decryptCreditCardSecurityCode(creditCards[0]),
       "123",
       "Updating with the toggle off keeps the stored security code"
     );

@@ -37,6 +37,7 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   AddressComponent: "resource://gre/modules/shared/AddressComponent.sys.mjs",
+  CreditCardRecord: "resource://gre/modules/shared/CreditCardRecord.sys.mjs",
   AutocompleteRemoveRecord:
     "resource://gre/modules/AutocompleteRemoveRecord.sys.mjs",
   FormAutofillML: "resource://gre/modules/shared/FormAutofillML.sys.mjs",
@@ -915,10 +916,15 @@ export class FormAutofillParent extends JSWindowActorParent {
       return records;
     }
 
-    // We don't filter "cc-number"
+    // We don't filter "cc-number" or "cc-csc".
     if (collectionName == CREDITCARDS_COLLECTION_NAME) {
       if (fieldName == "cc-number") {
         return records.filter(record => !!record["cc-number"]);
+      }
+      if (fieldName == "cc-csc") {
+        return records.filter(record =>
+          lazy.CreditCardRecord.hasSecurityCode(record)
+        );
       }
     }
 
