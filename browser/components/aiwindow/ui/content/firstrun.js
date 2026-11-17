@@ -570,13 +570,50 @@ function createAIWindowConfig(modelData) {
   };
 }
 
-// [generateFromConversation, generateFromHistory] for each memories choice.
-const MEMORIES_PREF_VALUES = {
-  both: [true, true],
-  chats: [true, false],
-  browsing: [false, true],
-  none: [false, false],
+// prefs: [generateFromConversation, generateFromHistory] for each memories
+// choice; source: the telemetry value shared with the multi-stage flow.
+const MEMORIES_CHOICES = {
+  both: {
+    prefs: [true, true],
+    source: `${MEMORIES_CHATS_CHECKBOX_ID},${MEMORIES_BROWSING_CHECKBOX_ID}`,
+  },
+  chats: { prefs: [true, false], source: MEMORIES_CHATS_CHECKBOX_ID },
+  browsing: { prefs: [false, true], source: MEMORIES_BROWSING_CHECKBOX_ID },
+  none: { prefs: [false, false], source: "" },
 };
+
+const SINGLE_PAGE_MESSAGE_IDS = {
+  welcome: "AI_WINDOW_SINGLE_PAGE_0_WELCOME",
+  setup: "AI_WINDOW_SINGLE_PAGE_1_SETUP",
+};
+
+function setDefaultSource(isDefaultWindow) {
+  return isDefaultWindow ? SET_DEFAULT_CHECKBOX_ID : "";
+}
+
+function recordSinglePageImpression({ detail }) {
+  Glean.smartWindow.onboardingScreenImpression.record({
+    message_id: SINGLE_PAGE_MESSAGE_IDS[detail.screen],
+  });
+}
+
+function recordSinglePageChange({ detail: { field, value } }) {
+  switch (field) {
+    case "model":
+      Glean.smartWindow.onboardingModelSelected.record({ model: value });
+      break;
+    case "memories":
+      Glean.smartWindow.onboardingMemoriesSettings.record({
+        source: MEMORIES_CHOICES[value].source,
+      });
+      break;
+    case "defaultWindow":
+      Glean.smartWindow.onboardingSetdefaultSettings.record({
+        source: setDefaultSource(value),
+      });
+      break;
+  }
+}
 
 function getMemoriesChoice() {
   const fromConversation = Services.prefs.getBoolPref(
@@ -597,13 +634,18 @@ function getMemoriesChoice() {
 }
 
 function saveSinglePageOnboarding({ detail }) {
-  const [fromConversation, fromHistory] =
-    MEMORIES_PREF_VALUES[detail.memoriesChoice];
+  const { prefs, source } = MEMORIES_CHOICES[detail.memoriesChoice];
+  const [fromConversation, fromHistory] = prefs;
   Services.prefs.setStringPref(MODEL_PREF, detail.modelChoiceId);
   Services.prefs.setBoolPref(MEMORIES_FROM_CONVERSATION_PREF, fromConversation);
   Services.prefs.setBoolPref(MEMORIES_FROM_HISTORY_PREF, fromHistory);
   Services.prefs.setBoolPref(IS_DEFAULT_WINDOW_PREF, detail.isDefaultWindow);
   Services.prefs.setBoolPref(FIRST_RUN_COMPLETE_PREF, true);
+  Glean.smartWindow.onboardingComplete.record({
+    model: detail.modelChoiceId,
+    memory_source: source,
+    setdefault_source: setDefaultSource(detail.isDefaultWindow),
+  });
   topChromeWindow.openLinkIn(
     Services.urlFormatter.formatURL(
       Services.prefs.getStringPref(
@@ -643,6 +685,14 @@ async function renderFirstRun() {
       onboarding.addEventListener(
         "smartwindow-onboarding:save",
         saveSinglePageOnboarding
+      );
+      onboarding.addEventListener(
+        "smartwindow-onboarding:impression",
+        recordSinglePageImpression
+      );
+      onboarding.addEventListener(
+        "smartwindow-onboarding:change",
+        recordSinglePageChange
       );
       root.appendChild(onboarding);
       return;
