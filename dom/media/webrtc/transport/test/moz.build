@@ -34,12 +34,6 @@ if CONFIG["OS_TARGET"] != "WINNT":
         "stunserver.h",
     ]
 
-    if CONFIG["MOZ_SCTP"]:
-        SOURCES += [
-            "sctp_unittest.cpp",
-        ]
-
-
 for var in ("HAVE_STRDUP", "NR_SOCKET_IS_VOID_PTR", "SCTP_DEBUG"):
     DEFINES[var] = True
 
@@ -70,16 +64,6 @@ if CONFIG["OS_TARGET"] in ("DragonFly", "FreeBSD", "NetBSD", "OpenBSD"):
         "/dom/media/webrtc/transport/third_party/nrappkit/src/port/darwin/include",
     ]
 
-# SCTP DEFINES
-if CONFIG["OS_TARGET"] == "WINNT":
-    DEFINES["WIN"] = True
-    # for stun.h
-    DEFINES["WIN32"] = True
-    DEFINES["__Userspace_os_Windows"] = 1
-else:
-    # Works for Darwin, Linux, Android. Probably doesn't work for others.
-    DEFINES["__Userspace_os_%s" % CONFIG["OS_TARGET"]] = 1
-
 if CONFIG["OS_TARGET"] in ("Darwin", "Android"):
     DEFINES["GTEST_USE_OWN_TR1_TUPLE"] = 1
 
@@ -98,7 +82,6 @@ LOCAL_INCLUDES += [
     "/dom/media/webrtc/transport/third_party/nrappkit/src/share",
     "/dom/media/webrtc/transport/third_party/nrappkit/src/util/",
     "/dom/media/webrtc/transport/third_party/nrappkit/src/util/libekr",
-    "/netwerk/sctp/src/",
     "/xpcom/tests/",
 ]
 

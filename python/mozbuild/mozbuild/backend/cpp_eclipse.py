@@ -340,7 +340,6 @@ class CppEclipseBackend(CommonBackend):
                 assert d[:2] in {"-D", "-U"}
                 if d[:2] == "-U":
                     # gfx/harfbuzz/src uses -UDEBUG, at least on Mac
-                    # netwerk/sctp/src uses -U__APPLE__ on Mac
                     # XXX We should make this code smart enough to remove existing defines.
                     continue
                 d = d[2:]  # get rid of leading "-D"

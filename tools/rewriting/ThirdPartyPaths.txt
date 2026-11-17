@@ -148,8 +148,6 @@ mozglue/static/lz4/
 mozglue/static/xxhash/
 mozglue/tests/glibc_printf_tests/
 mozpkix/
-netwerk/sctp/src/
-netwerk/srtp/src/
 nsprpub/
 other-licenses/
 parser/expat/

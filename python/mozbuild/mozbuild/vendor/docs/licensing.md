@@ -142,9 +142,7 @@ checks against upstream, so it is the copy that stays current.
 
 A separate notice file earns its place when it is not a copy of a single
 shipped file. `media/libvpx` needs one because its notice is `LICENSE` plus the
-VP8 patent grant, which upstream keeps in `libvpx/PATENTS`; `netwerk/sctp`
-needs one because its notice reproduces the FreeBSD and Cisco copyright headers
-its sources carry, which upstream's `LICENSE.md` does not.
+VP8 patent grant, which upstream keeps in `libvpx/PATENTS`.
 
 ## Acknowledgements
 
