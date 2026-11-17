@@ -36,6 +36,7 @@
 #include "mozilla/glean/SecuritySandboxMetrics.h"
 #include "mozilla/ipc/LaunchError.h"
 #include "mozilla/ipc/UtilityProcessSandboxing.h"
+#include "mozilla/sandboxing/BrokerGeckoServices.h"
 #include "nsAppDirectoryServiceDefs.h"
 #include "nsCOMPtr.h"
 #include "nsDirectoryServiceDefs.h"
@@ -139,6 +140,17 @@ void SandboxBroker::Initialize(sandbox::BrokerServices* aBrokerServices,
 
   if (!aBinDir.IsEmpty()) {
     CacheAndStandardizeDir(aBinDir, sBinDir);
+  }
+
+  // This is exported by the executable, which might not export it if it is from
+  // a different version because of a broken installation.
+  auto setBrokerGeckoServices =
+      reinterpret_cast<sandboxing::SetBrokerGeckoServicesFn>(
+          ::GetProcAddress(::GetModuleHandleW(nullptr),
+                           sandboxing::kSetBrokerGeckoServicesName));
+  if (setBrokerGeckoServices) {
+    sandboxing::BrokerGeckoServices services;
+    setBrokerGeckoServices(&services);
   }
 
   // Clear statics on shutdown.
@@ -281,8 +293,9 @@ static void AddCachedWindowsDirRule(
 }
 
 /* static */
-void SandboxBroker::GeckoDependentInitialize() {
+void SandboxBroker::CacheGeckoDirs() {
   MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT(!sProfileDir, "CacheGeckoDirs should only be called once.");
 
   // Cache directory paths for use in policy rules, because the directory
   // service must be called on the main thread.

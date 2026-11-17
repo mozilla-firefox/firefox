@@ -6378,6 +6378,13 @@ nsresult XREMain::XRE_mainRun() {
       }
     }
 
+#if defined(MOZ_SANDBOX) && defined(XP_WIN)
+    // Now that the profile has been set, we can cache the directories needed
+    // for sandbox policy rules. Doing this before profile migration means that
+    // any sandboxed processes it launches also get these rules.
+    mozilla::SandboxBroker::CacheGeckoDirs();
+#endif
+
     // We'd like to initialize the JSContext *after* reading the user prefs.
     // Unfortunately that's not possible if we have to do profile migration
     // because that requires us to execute JS before reading user prefs.
@@ -6497,16 +6504,6 @@ nsresult XREMain::XRE_mainRun() {
         return NS_ERROR_OMNIJAR_OR_DIR_MISSING;
       }
     }
-
-#if defined(MOZ_SANDBOX) && defined(XP_WIN)
-    // Now that we have preferences and the directory provider, we can
-    // finish initializing SandboxBroker. This must happen before the GFX
-    // platform is initialized (which will launch the GPU process), which
-    // occurs when the "app-startup" category is started up below
-    //
-    // After this completes, we are ready to launch sandboxed processes
-    mozilla::SandboxBroker::GeckoDependentInitialize();
-#endif
 
     nsCOMPtr<nsIFile> workingDir;
     rv = NS_GetSpecialDirectory(NS_OS_CURRENT_WORKING_DIR,
