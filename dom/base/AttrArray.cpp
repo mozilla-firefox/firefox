@@ -14,12 +14,26 @@
 #include "mozilla/MathAlgorithms.h"
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/ServoBindings.h"
+#include "mozmemory.h"
 #include "nsContentUtils.h"  // nsAutoScriptBlocker
 #include "nsNodeInfoManager.h"
 #include "nsString.h"
+#include "nsThreadUtils.h"
 #include "nsUnicharUtils.h"
 
 using mozilla::CheckedUint32;
+
+// Attribute arrays belong to nodes, which only live on the main thread.
+static void* AllocateImpl(size_t aSize) {
+  MOZ_ASSERT(NS_IsMainThread());
+  static const arena_id_t sArena = [] {
+    arena_params_t params;
+    params.mFlags = ARENA_FLAG_THREAD_MAIN_THREAD_ONLY;
+    params.mLabel = "AttrArray";
+    return moz_create_arena_with_params(&params);
+  }();
+  return moz_arena_malloc(sArena, aSize);
+}
 
 AttrArray::Impl::~Impl() {
   for (InternalAttr& attr : Attrs()) {
@@ -306,8 +320,8 @@ nsresult AttrArray::EnsureCapacityToClone(const AttrArray& aOther) {
 
   // No need to use a CheckedUint32 because we are cloning. We know that we
   // have already allocated an AttrArray of this size.
-  Impl* impl =
-      static_cast<Impl*>(malloc(Impl::AllocationSizeForAttributes(attrCount)));
+  Impl* impl = static_cast<Impl*>(
+      AllocateImpl(Impl::AllocationSizeForAttributes(attrCount)));
   NS_ENSURE_TRUE(impl, NS_ERROR_OUT_OF_MEMORY);
 
   impl->mMappedAttributeBits = 0;
@@ -380,7 +394,9 @@ bool AttrArray::GrowTo(uint32_t aCapacity) {
     oldBloom = GetTaggedBloom();
   }
 
-  Impl* newImpl = static_cast<Impl*>(realloc(oldImpl, sizeInBytes.value()));
+  Impl* newImpl =
+      static_cast<Impl*>(oldImpl ? realloc(oldImpl, sizeInBytes.value())
+                                 : AllocateImpl(sizeInBytes.value()));
   if (!newImpl) {
     if (oldImpl) {
       SetImpl(oldImpl);
