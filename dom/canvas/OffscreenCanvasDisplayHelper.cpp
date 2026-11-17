@@ -343,7 +343,7 @@ void OffscreenCanvasDisplayHelper::MaybeQueueInvalidateElement() {
 void OffscreenCanvasDisplayHelper::InvalidateElement() {
   MOZ_ASSERT(NS_IsMainThread());
 
-  HTMLCanvasElement* canvasElement;
+  RefPtr<HTMLCanvasElement> canvasElement;
   gfx::IntSize size;
 
   {
