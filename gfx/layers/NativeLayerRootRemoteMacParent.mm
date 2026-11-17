@@ -135,7 +135,7 @@ mozilla::ipc::IPCResult NativeLayerRootRemoteMacParent::RecvFlush() {
 void NativeLayerRootRemoteMacParent::HandleCreateLayer(uint64_t aID,
                                                        IntSize aSize,
                                                        bool aOpaque) {
-  RefPtr<NativeLayerCA> layer =
+  RefPtr<NativeLayer> layer =
       mRealNativeLayerRoot->CreateLayerForSurfacePresentation(aSize, aOpaque);
   mKnownLayers.InsertOrUpdate(aID, layer);
 }

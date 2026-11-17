@@ -188,10 +188,10 @@ already_AddRefed<NativeLayer> NativeLayerRootCA::CreateLayerForColor(
   return layer.forget();
 }
 
-already_AddRefed<NativeLayerCA>
+already_AddRefed<NativeLayer>
 NativeLayerRootCA::CreateLayerForSurfacePresentation(const IntSize& aSize,
                                                      bool aIsOpaque) {
-  RefPtr<NativeLayerCA> layer = new NativeLayerCA(aSize, aIsOpaque);
+  RefPtr<NativeLayer> layer = new NativeLayerCA(aSize, aIsOpaque);
   return layer.forget();
 }
 

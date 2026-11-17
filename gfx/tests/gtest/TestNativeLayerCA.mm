@@ -33,7 +33,11 @@ class NativeLayerCAVideo : public ::testing::TestWithParam<bool> {
     mRootCALayer = [[CALayer layer] retain];
     mOffscreenRootCALayer = [[CALayer layer] retain];
     mRoot = NativeLayerRootCA::CreateForCALayer(mRootCALayer);
-    mLayer = mRoot->CreateLayerForSurfacePresentation(kVideoSize, true);
+    RefPtr<NativeLayer> layer =
+        mRoot->CreateLayerForSurfacePresentation(kVideoSize, true);
+    ASSERT_TRUE(layer);
+    mLayer = layer->AsNativeLayerCA();
+    ASSERT_TRUE(mLayer);
     mLayer->SetDisplayRect(IntRect(IntPoint(), kVideoSize));
     mRoot->AppendLayer(mLayer);
   }
