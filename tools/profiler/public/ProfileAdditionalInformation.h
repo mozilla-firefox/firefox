@@ -39,7 +39,13 @@ struct JSSourceEntry {
   JSSourceEntry(nsCString&& aId, ProfilerJSSourceData&& aSourceData)
       : id(std::move(aId)), sourceData(std::move(aSourceData)) {}
 
-  size_t SizeOf() const { return id.Length() + sourceData.SizeOf(); }
+  // Size of the data written inline in an IPC message. The source map URL and
+  // the source text are excluded, as they're sent in a BigBuffer, which uses
+  // shared memory above BigBuffer::kShmemThreshold.
+  size_t InlineIPCSize() const {
+    return id.Length() + 3 * sizeof(uint32_t) +
+           sourceData.filePathLength() * sizeof(char);
+  }
 };
 
 // This structure contains additional information gathered while generating the
@@ -52,11 +58,11 @@ struct ProfileGenerationAdditionalInformation {
       : mSharedLibraries(std::move(aSharedLibraries)),
         mJSSourceEntries(std::move(aJSSourceEntries)) {}
 
-  size_t SizeOf() const {
+  size_t InlineIPCSize() const {
     size_t size = mSharedLibraries.SizeOf();
 
     for (const auto& entry : mJSSourceEntries) {
-      size += entry.SizeOf();
+      size += entry.InlineIPCSize();
     }
 
     return size;
@@ -111,10 +117,10 @@ struct ProfileAndAdditionalInformation {
   ProfileAndAdditionalInformation& operator=(
       ProfileAndAdditionalInformation&&) = default;
 
-  size_t SizeOf() const {
+  size_t InlineIPCSize() const {
     size_t size = mProfile.Length();
     if (mAdditionalInformation.isSome()) {
-      size += mAdditionalInformation->SizeOf();
+      size += mAdditionalInformation->InlineIPCSize();
     }
     return size;
   }

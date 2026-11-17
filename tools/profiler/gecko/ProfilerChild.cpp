@@ -571,7 +571,7 @@ ProfileAndAdditionalInformation ProfilerChild::GrabShutdownProfile() {
   // which is limited by the maximum IPC message size.
   // TODO: IPC to change to shmem (bug 1780330), raising this limit to
   // JS::MaxStringLength.
-  if (len + additionalInfo.SizeOf() >=
+  if (len + additionalInfo.InlineIPCSize() >=
       size_t(IPC::Channel::kMaximumMessageSize)) {
     return ProfileAndAdditionalInformation(
         nsPrintfCString("*Profile from pid %u bigger (%zu) than IPC max (%zu)",

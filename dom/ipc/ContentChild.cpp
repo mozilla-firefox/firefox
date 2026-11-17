@@ -3190,7 +3190,8 @@ void ContentChild::ShutdownInternal() {
         CrashReporter::Annotation::ProfilerChildShutdownPhase,
         isProfiling ? "Profiling - SendShutdownProfile (sending)"
                     : "Not profiling - SendShutdownProfile (sending)");
-    if (const size_t len = shutdownProfileAndAdditionalInformation.SizeOf();
+    if (const size_t len =
+            shutdownProfileAndAdditionalInformation.InlineIPCSize();
         len >= size_t(IPC::Channel::kMaximumMessageSize)) {
       shutdownProfileAndAdditionalInformation.mProfile = nsPrintfCString(
           "*Profile from pid %u bigger (%zu) than IPC max (%zu)",

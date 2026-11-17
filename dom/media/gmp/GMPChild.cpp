@@ -747,7 +747,8 @@ mozilla::ipc::IPCResult GMPChild::RecvShutdown(ShutdownResolver&& aResolver) {
       CrashReporter::Annotation::ProfilerChildShutdownPhase,
       isProfiling ? "Profiling - SendShutdownProfile (resovling)"
                   : "Not profiling - SendShutdownProfile (resolving)");
-  if (const size_t len = shutdownProfileAndAdditionalInformation.SizeOf();
+  if (const size_t len =
+          shutdownProfileAndAdditionalInformation.InlineIPCSize();
       len >= size_t(IPC::Channel::kMaximumMessageSize)) {
     shutdownProfileAndAdditionalInformation.mProfile =
         nsPrintfCString("*Profile from pid %u bigger (%zu) than IPC max (%zu)",
