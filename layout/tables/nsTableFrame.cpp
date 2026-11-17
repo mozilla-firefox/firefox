@@ -2749,7 +2749,8 @@ nscoord nsTableFrame::CalcDesiredBSize(const ReflowInput& aReflowInput,
   return desiredBSize;
 }
 
-static void ResizeCells(nsTableFrame& aTableFrame) {
+static void ResizeCells(nsTableFrame& aTableFrame,
+                        const ReflowInput& aReflowInput) {
   auto rowGroups = aTableFrame.OrderedGroups().mRowGroups;
   WritingMode wm = aTableFrame.GetWritingMode();
   ReflowOutput tableDesiredSize(wm);
@@ -2763,11 +2764,33 @@ static void ResizeCells(nsTableFrame& aTableFrame) {
     groupDesiredSize.SetSize(wm, rgFrame->GetLogicalSize(wm));
     groupDesiredSize.SetOverflowAreasToDesiredBounds();
 
-    nsTableRowFrame* rowFrame = rgFrame->GetFirstRow();
-    while (rowFrame) {
+    nsTableRowFrame* rowFrame;
+    for (rowFrame = rgFrame->GetFirstRow(); rowFrame;
+         rowFrame = rowFrame->GetNextRow()) {
       rowFrame->DidResize();
+    }
+
+    // Orthogonal cell content depends on the final row sizes, so it needs to
+    // be reflowed now that they have changed.
+    Maybe<ReflowInput> rgReflowInput;
+    if (rgFrame->ReflowOrthogonalCells(aTableFrame.PresContext(), [&]() {
+          if (!rgReflowInput) {
+            const LogicalSize rgAvailSize(wm, rgFrame->ISize(wm),
+                                          NS_UNCONSTRAINEDSIZE);
+            rgReflowInput.emplace(aTableFrame.PresContext(), aReflowInput,
+                                  rgFrame, rgAvailSize);
+          }
+          return &*rgReflowInput;
+        })) {
+      for (rowFrame = rgFrame->GetFirstRow(); rowFrame;
+           rowFrame = rowFrame->GetNextRow()) {
+        rowFrame->DidResize();
+      }
+    }
+
+    for (rowFrame = rgFrame->GetFirstRow(); rowFrame;
+         rowFrame = rowFrame->GetNextRow()) {
       rgFrame->ConsiderChildOverflow(groupDesiredSize.mOverflowAreas, rowFrame);
-      rowFrame = rowFrame->GetNextRow();
     }
     rgFrame->FinishAndStoreOverflow(&groupDesiredSize);
     tableDesiredSize.mOverflowAreas.UnionWith(groupDesiredSize.mOverflowAreas +
@@ -2871,7 +2894,7 @@ void nsTableFrame::DistributeBSizeToRows(const ReflowInput& aReflowInput,
   }
 
   if (amountUsed >= aAmount) {
-    ResizeCells(*this);
+    ResizeCells(*this, aReflowInput);
     return;
   }
 
@@ -3053,7 +3076,7 @@ void nsTableFrame::DistributeBSizeToRows(const ReflowInput& aReflowInput,
     bOriginRG = bEndRG;
   }
 
-  ResizeCells(*this);
+  ResizeCells(*this, aReflowInput);
 }
 
 nscoord nsTableFrame::GetColumnISizeFromFirstInFlow(int32_t aColIndex) {

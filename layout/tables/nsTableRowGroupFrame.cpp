@@ -457,8 +457,8 @@ void nsTableRowGroupFrame::ReflowChildren(
 
   if (aReflowInput.mReflowInput.mFlags.mSpecialBSizeReflow) {
     DidResizeRows(aDesiredSize);
-    if (ReflowOrthogonalSpanningCells(aPresContext,
-                                      aReflowInput.mReflowInput)) {
+    if (ReflowOrthogonalCells(aPresContext,
+                              [&]() { return &aReflowInput.mReflowInput; })) {
       DidResizeRows(aDesiredSize);
     }
     if (isPaginated) {
@@ -466,8 +466,8 @@ void nsTableRowGroupFrame::ReflowChildren(
     }
   } else if (needToCalcRowBSizes) {
     CalculateRowBSizes(aPresContext, aDesiredSize, aReflowInput.mReflowInput);
-    if (ReflowOrthogonalSpanningCells(aPresContext,
-                                      aReflowInput.mReflowInput)) {
+    if (ReflowOrthogonalCells(aPresContext,
+                              [&]() { return &aReflowInput.mReflowInput; })) {
       DidResizeRows(aDesiredSize);
     }
     if (!reflowAllKids) {
@@ -476,10 +476,11 @@ void nsTableRowGroupFrame::ReflowChildren(
   }
 }
 
-bool nsTableRowGroupFrame::ReflowOrthogonalSpanningCells(
-    nsPresContext* aPresContext, const ReflowInput& aReflowInput) {
+bool nsTableRowGroupFrame::ReflowOrthogonalCells(
+    nsPresContext* aPresContext,
+    FunctionRef<const ReflowInput*()> aGetReflowInput) {
   nsTableFrame* tableFrame = GetTableFrame();
-  const WritingMode wm = aReflowInput.GetWritingMode();
+  const WritingMode wm = GetWritingMode();
   const bool borderCollapse = tableFrame->IsBorderCollapse();
   bool didReflow = false;
 
@@ -488,8 +489,7 @@ bool nsTableRowGroupFrame::ReflowOrthogonalSpanningCells(
     for (nsTableCellFrame* cell = row->GetFirstCell(); cell;
          cell = cell->GetNextCell()) {
       nsIFrame* inner = cell->Inner();
-      if (!inner->GetWritingMode().IsOrthogonalTo(wm) ||
-          tableFrame->GetEffectiveRowSpan(*cell) == 1) {
+      if (!inner->GetWritingMode().IsOrthogonalTo(wm)) {
         continue;
       }
       // After its final reflow the content fills the cell's block-size, so if
@@ -499,9 +499,10 @@ bool nsTableRowGroupFrame::ReflowOrthogonalSpanningCells(
         continue;
       }
       if (!rowReflowInput) {
-        const LogicalSize rowAvailSize(wm, aReflowInput.AvailableISize(),
+        const ReflowInput& rgReflowInput = *aGetReflowInput();
+        const LogicalSize rowAvailSize(wm, rgReflowInput.AvailableISize(),
                                        NS_UNCONSTRAINEDSIZE);
-        rowReflowInput.emplace(aPresContext, aReflowInput, row, rowAvailSize,
+        rowReflowInput.emplace(aPresContext, rgReflowInput, row, rowAvailSize,
                                Nothing(),
                                ReflowInput::InitFlag::CallerWillInit);
         InitChildReflowInput(aPresContext, borderCollapse, *rowReflowInput);
