@@ -113,6 +113,15 @@ class Http2Decompressor final : public Http2BaseCompressor {
   void GetMethod(nsACString& hdr) { hdr = mHeaderMethod; }
 
  private:
+  // Bits for mSeenPseudoHeaders.
+  enum PseudoHeader : uint8_t {
+    kPseudoHeaderStatus = 1 << 0,
+    kPseudoHeaderAuthority = 1 << 1,
+    kPseudoHeaderScheme = 1 << 2,
+    kPseudoHeaderPath = 1 << 3,
+    kPseudoHeaderMethod = 1 << 4,
+  };
+
   [[nodiscard]] nsresult DoIndexed();
   [[nodiscard]] nsresult DoLiteralWithoutIndex();
   [[nodiscard]] nsresult DoLiteralWithIncremental();
@@ -148,6 +157,8 @@ class Http2Decompressor final : public Http2BaseCompressor {
   uint32_t mDataLen{0};
   bool mSeenNonColonHeader{false};
   bool mIsPush{false};
+  // PseudoHeader bits for the pseudo-header fields seen in this block.
+  uint8_t mSeenPseudoHeaders{0};
 };
 
 class Http2Compressor final : public Http2BaseCompressor {

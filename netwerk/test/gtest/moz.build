@@ -17,6 +17,7 @@ UNIFIED_SOURCES += [
     "TestEtcHostsParsing.cpp",
     "TestHeaders.cpp",
     "TestHostRecordQueue.cpp",
+    "TestHttp2Compression.cpp",
     "TestHttp2WebTransport.cpp",
     "TestHttp3ConnectUDPStream.cpp",
     "TestHttp3WebTransportSession.cpp",

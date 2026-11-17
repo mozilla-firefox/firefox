@@ -17042,6 +17042,13 @@
   value: 0x7800000
   mirror: always
 
+# When true, an HTTP/2 header block that repeats a pseudo-header field is
+# treated as malformed, as required by RFC 9113 Section 8.3.
+- name: network.http.http2.reject_duplicate_pseudo_headers
+  type: RelaxedAtomicBool
+  value: true
+  mirror: always
+
 - name: network.http.move_to_pending_list_after_network_change
   type: RelaxedAtomicBool
   value: true

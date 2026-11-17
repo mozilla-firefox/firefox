@@ -14,6 +14,7 @@
 #include "Http2Compression.h"
 #include "Http2HuffmanIncoming.h"
 #include "Http2HuffmanOutgoing.h"
+#include "mozilla/StaticPrefs_network.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/glean/NetwerkProtocolHttpMetrics.h"
 #include "nsCharSeparatedTokenizer.h"
@@ -360,6 +361,7 @@ nsresult Http2Decompressor::DecodeHeaderBlock(const uint8_t* data,
   mHeaderMethod.Truncate();
   mSeenNonColonHeader = false;
   mIsPush = isPush;
+  mSeenPseudoHeaders = 0;
 
   nsresult rv = NS_OK;
   nsresult softfail_rv = NS_OK;
@@ -528,21 +530,43 @@ nsresult Http2Decompressor::OutputHeader(const nsACString& name,
     return NS_ERROR_ILLEGAL_VALUE;
   }
 
-  // Status comes first
+  uint8_t pseudoHeader = 0;
+  nsCString* pseudoHeaderValue = nullptr;
   if (name.EqualsLiteral(":status")) {
+    pseudoHeader = kPseudoHeaderStatus;
+    pseudoHeaderValue = &mHeaderStatus;
+  } else if (name.EqualsLiteral(":authority")) {
+    pseudoHeader = kPseudoHeaderAuthority;
+    pseudoHeaderValue = &mHeaderHost;
+  } else if (name.EqualsLiteral(":scheme")) {
+    pseudoHeader = kPseudoHeaderScheme;
+    pseudoHeaderValue = &mHeaderScheme;
+  } else if (name.EqualsLiteral(":path")) {
+    pseudoHeader = kPseudoHeaderPath;
+    pseudoHeaderValue = &mHeaderPath;
+  } else if (name.EqualsLiteral(":method")) {
+    pseudoHeader = kPseudoHeaderMethod;
+    pseudoHeaderValue = &mHeaderMethod;
+  }
+
+  if (pseudoHeader) {
+    // RFC 9113 Section 8.3: a repeated pseudo-header field is malformed.
+    if ((mSeenPseudoHeaders & pseudoHeader) &&
+        StaticPrefs::network_http_http2_reject_duplicate_pseudo_headers()) {
+      LOG(("HTTP Decompressor found duplicate pseudo-header %s",
+           PromiseFlatCString(name).get()));
+      return NS_ERROR_ILLEGAL_VALUE;
+    }
+    mSeenPseudoHeaders |= pseudoHeader;
+    *pseudoHeaderValue = value;
+  }
+
+  // Status comes first
+  if (pseudoHeader == kPseudoHeaderStatus) {
     nsAutoCString status("HTTP/2 "_ns);
     status.Append(value);
     status.AppendLiteral("\r\n");
     mOutput->Insert(status, 0);
-    mHeaderStatus = value;
-  } else if (name.EqualsLiteral(":authority")) {
-    mHeaderHost = value;
-  } else if (name.EqualsLiteral(":scheme")) {
-    mHeaderScheme = value;
-  } else if (name.EqualsLiteral(":path")) {
-    mHeaderPath = value;
-  } else if (name.EqualsLiteral(":method")) {
-    mHeaderMethod = value;
   }
 
   // http/2 transport level headers shouldn't be gatewayed into http/1
