@@ -16,8 +16,5 @@ support-files = [
 ["browser_bug839193.js"]
 
 ["browser_forgetThisSite.js"]
-skip-if = [
-  "verify-standalone",
-]
 
 ["browser_private_idb.js"]

@@ -17,6 +17,24 @@ const testPageURL2 = "http://" + domains[1] + addPath;
 const testPageURL3 = "http://" + domains[0] + getPath;
 const testPageURL4 = "http://" + domains[1] + getPath;
 
+// The Add page only reports a result from upgradeneeded, so a database left at
+// version 11 by a previous run would make it wait forever. Clear by site rather
+// than by the origins in `domains`, because HTTPS-First upgrades the
+// www.example.com page.
+registerCleanupFunction(async () => {
+  for (let site of ["mochi.test", "example.com"]) {
+    await new Promise(resolve =>
+      Services.clearData.deleteDataFromSite(
+        site,
+        {},
+        false,
+        Services.clearData.CLEAR_DOM_QUOTA,
+        resolve
+      )
+    );
+  }
+});
+
 add_task(async function test1() {
   requestLongerTimeout(2);
   // Avoids the prompt
