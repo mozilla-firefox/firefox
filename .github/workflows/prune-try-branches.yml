@@ -1,0 +1,116 @@
+name: Prune try branches
+on:
+  schedule:
+    - cron: "17 4 * * 0"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: List stale branches without deleting them
+        type: boolean
+        default: true
+      max_age_days:
+        description: Delete branches whose head commit is older than this many days
+        type: number
+        default: 30
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: prune-try-branches
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    if: contains(fromJSON('["mozilla-firefox/firefox-dev", "mozilla-firefox/firefox-dev-secure"]'), github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      DRY_RUN: ${{ inputs.dry_run || false }}
+      MAX_AGE_DAYS: ${{ inputs.max_age_days || 30 }}
+      BATCH_SIZE: 200
+      PREFIX: refs/heads/user/
+    steps:
+      - name: Find stale branches
+        run: |
+          set -euo pipefail
+
+          if (( MAX_AGE_DAYS < 7 )); then
+            echo "::error::max_age_days must be at least 7, got ${MAX_AGE_DAYS}"
+            exit 1
+          fi
+          cutoff="$(date -u -d "-${MAX_AGE_DAYS} days" +%Y-%m-%dT%H:%M:%SZ)"
+
+          gh api graphql --paginate \
+            -f owner="${GH_REPO%/*}" \
+            -f name="${GH_REPO#*/}" \
+            -f prefix="${PREFIX}" \
+            -f query='
+              query($owner: String!, $name: String!, $prefix: String!, $endCursor: String) {
+                repository(owner: $owner, name: $name) {
+                  refs(refPrefix: $prefix, first: 100, after: $endCursor) {
+                    pageInfo { hasNextPage endCursor }
+                    nodes {
+                      name
+                      target { oid ... on Commit { committedDate } }
+                      associatedPullRequests(states: OPEN) { totalCount }
+                    }
+                  }
+                }
+              }' \
+            --jq '.data.repository.refs.nodes[] | [.name, .target.oid, (.target.committedDate // ""), .associatedPullRequests.totalCount] | @tsv' \
+            > "${RUNNER_TEMP}/refs.tsv"
+
+          cd "$RUNNER_TEMP"
+          awk -F'\t' -v cutoff="$cutoff" '$3 != "" && $3 < cutoff' refs.tsv > old.tsv
+          awk -F'\t' '$4 == 0' old.tsv | cut -f1,2 > stale.tsv
+
+          total="$(wc -l < refs.tsv)"
+          old="$(wc -l < old.tsv)"
+          stale="$(wc -l < stale.tsv)"
+          {
+            echo "### Try branch pruning (${GH_REPO})"
+            echo
+            echo "- Branches under \`${PREFIX}\`: ${total}"
+            echo "- Head commit older than ${cutoff}: ${old}"
+            echo "- Kept for open pull requests: $(( old - stale ))"
+            echo "- To delete: ${stale}"
+            echo "- Dry run: ${DRY_RUN}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat "$GITHUB_STEP_SUMMARY"
+
+      - name: Delete stale branches
+        if: env.DRY_RUN != 'true'
+        run: |
+          set -euo pipefail
+
+          git init -q "${RUNNER_TEMP}/prune"
+          cd "${RUNNER_TEMP}/prune"
+          git remote add origin "https://github.com/${GH_REPO}.git"
+          auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          echo "::add-mask::${auth}"
+          git config http.https://github.com/.extraheader "AUTHORIZATION: basic ${auth}"
+
+          mapfile -t lines < "${RUNNER_TEMP}/stale.tsv"
+          failed=0
+          for (( i = 0; i < ${#lines[@]}; i += BATCH_SIZE )); do
+            args=()
+            for line in "${lines[@]:i:BATCH_SIZE}"; do
+              ref="${PREFIX}${line%%$'\t'*}"
+              oid="${line#*$'\t'}"
+              args+=("--force-with-lease=${ref}:${oid}" ":${ref}")
+            done
+            git push --porcelain --no-verify origin "${args[@]}" || failed=1
+          done
+
+          if (( failed )); then
+            echo "::error::Some deletions were rejected, most likely branches pushed to since they were listed"
+            exit 1
+          fi
+
+      - name: List stale branches (dry run)
+        if: env.DRY_RUN == 'true'
+        run: cut -f1 "${RUNNER_TEMP}/stale.tsv" | sed "s|^|${PREFIX}|"
