@@ -4471,10 +4471,9 @@ class FunctionCompiler {
     const TagOffsetVector& offsets = tagType->exceptionArgOffsets();
 
     // Get the data pointer from the exception object
-    auto* data = MWasmLoadField::New(
-        alloc(), exception, exception, WasmExceptionObject::offsetOfData(),
-        mozilla::Nothing(), MIRType::Pointer, MWideningOp::None,
-        AliasSet::Load(AliasSet::Any));
+    auto* data = MWasmLoadInternalField::New(
+        alloc(), exception, MIRType::Pointer,
+        WasmExceptionObject::offsetOfData(), mozilla::Nothing());
     if (!data) {
       return false;
     }
@@ -4625,10 +4624,9 @@ class FunctionCompiler {
     }
 
     // Load the data pointer from the object
-    auto* data = MWasmLoadField::New(
-        alloc(), exception, exception, WasmExceptionObject::offsetOfData(),
-        mozilla::Nothing(), MIRType::Pointer, MWideningOp::None,
-        AliasSet::Load(AliasSet::Any));
+    auto* data = MWasmLoadInternalField::New(
+        alloc(), exception, MIRType::Pointer,
+        WasmExceptionObject::offsetOfData(), mozilla::Nothing());
     if (!data) {
       return false;
     }
@@ -5080,10 +5078,8 @@ class FunctionCompiler {
     if (path.hasOOL()) {
       // The path has two components, of which the first (the IL component) is
       // the offset where the OOL pointer is stored.  Hence `path.ilOffset()`.
-      auto* loadDataPointer = MWasmLoadField::New(
-          alloc(), structObject, structObject, path.ilOffset(),
-          mozilla::Nothing(), MIRType::WasmStructData, MWideningOp::None,
-          AliasSet::Load(AliasSet::WasmStructOutlineDataPointer),
+      auto* loadDataPointer = MWasmLoadInternalField::New(
+          alloc(), structObject, MIRType::WasmStructData, path.ilOffset(),
           mozilla::Some(trapSiteDesc()));
       if (!loadDataPointer) {
         return false;
@@ -5126,10 +5122,8 @@ class FunctionCompiler {
     if (path.hasOOL()) {
       // The path has two components, of which the first (the IL component) is
       // the offset where the OOL pointer is stored.  Hence `path.ilOffset()`.
-      auto* loadDataPointer = MWasmLoadField::New(
-          alloc(), structObject, structObject, path.ilOffset(),
-          mozilla::Nothing(), MIRType::WasmStructData, MWideningOp::None,
-          AliasSet::Load(AliasSet::WasmStructOutlineDataPointer),
+      auto* loadDataPointer = MWasmLoadInternalField::New(
+          alloc(), structObject, MIRType::WasmStructData, path.ilOffset(),
           mozilla::Some(trapSiteDesc()));
       if (!loadDataPointer) {
         return nullptr;
@@ -5194,12 +5188,9 @@ class FunctionCompiler {
       MDefinition* arrayObject) {
     MOZ_ASSERT(arrayObject->type() == MIRType::WasmAnyRef);
 
-    auto* numElements = MWasmLoadField::New(
-        alloc(), arrayObject, arrayObject,
-        WasmArrayObject::offsetOfNumElements(), mozilla::Nothing(),
-        MIRType::Int32, MWideningOp::None,
-        AliasSet::Load(AliasSet::WasmArrayNumElements),
-        mozilla::Some(trapSiteDesc()));
+    auto* numElements = MWasmLoadInternalField::New(
+        alloc(), arrayObject, MIRType::Int32,
+        WasmArrayObject::offsetOfNumElements(), mozilla::Some(trapSiteDesc()));
     if (!numElements) {
       return nullptr;
     }
@@ -5213,11 +5204,9 @@ class FunctionCompiler {
   [[nodiscard]] MDefinition* getWasmArrayObjectData(MDefinition* arrayObject) {
     MOZ_ASSERT(arrayObject->type() == MIRType::WasmAnyRef);
 
-    auto* data = MWasmLoadField::New(
-        alloc(), arrayObject, arrayObject, WasmArrayObject::offsetOfData(),
-        mozilla::Nothing(), MIRType::WasmArrayData, MWideningOp::None,
-        AliasSet::Load(AliasSet::WasmArrayDataPointer),
-        mozilla::Some(trapSiteDesc()));
+    auto* data = MWasmLoadInternalField::New(
+        alloc(), arrayObject, MIRType::WasmArrayData,
+        WasmArrayObject::offsetOfData(), mozilla::Some(trapSiteDesc()));
     if (!data) {
       return nullptr;
     }

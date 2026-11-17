@@ -2613,26 +2613,14 @@ class MWasmLoadField : public MBinaryInstruction, public NoTypePolicy::Data {
     // Check the alias set is one of the expected kinds.
     MOZ_ASSERT(
         aliases.flags() ==
-            AliasSet::Load(AliasSet::WasmStructOutlineDataPointer).flags() ||
-        aliases.flags() ==
             AliasSet::Load(AliasSet::WasmStructInlineDataArea).flags() ||
         aliases.flags() ==
             AliasSet::Load(AliasSet::WasmStructOutlineDataArea).flags() ||
         aliases.flags() ==
-            AliasSet::Load(AliasSet::WasmArrayNumElements).flags() ||
-        aliases.flags() ==
-            AliasSet::Load(AliasSet::WasmArrayDataPointer).flags() ||
-        aliases.flags() ==
             AliasSet::Load(AliasSet::WasmArrayDataArea).flags() ||
         aliases.flags() == AliasSet::Load(AliasSet::Any).flags());
-    // Check the alias set is consistent with the result type.
-    MOZ_ASSERT(
-        (aliases.flags() ==
-         AliasSet::Load(AliasSet::WasmStructOutlineDataPointer).flags()) ==
-        (type == MIRType::WasmStructData));
-    MOZ_ASSERT((aliases.flags() ==
-                AliasSet::Load(AliasSet::WasmArrayDataPointer).flags()) ==
-               (type == MIRType::WasmArrayData));
+    MOZ_ASSERT(type != MIRType::WasmStructData &&
+               type != MIRType::WasmArrayData);
     setResultType(type);
     if (maybeTrap_) {
       // This is safe, but see bug 1992059 for associated details.
@@ -2681,6 +2669,65 @@ class MWasmLoadField : public MBinaryInstruction, public NoTypePolicy::Data {
 #endif
 
   ALLOW_CLONE(MWasmLoadField)
+};
+
+// Loads an internal field of a wasm object that wasm code never writes once
+// the object has been allocated: the out-of-line data pointer of a struct, the
+// data pointer or the length of an array, or the data pointer of an exception.
+// A moving GC may update the struct and array data pointers, but it also
+// updates their copies tracked in stack maps.
+//
+// `offset` must be representable as a 31-bit unsigned integer.
+class MWasmLoadInternalField : public MUnaryInstruction,
+                               public NoTypePolicy::Data {
+  uint32_t offset_;
+  wasm::MaybeTrapSiteDesc maybeTrap_;
+
+  MWasmLoadInternalField(MDefinition* object, MIRType type, size_t offset,
+                         wasm::MaybeTrapSiteDesc maybeTrap)
+      : MUnaryInstruction(classOpcode, object),
+        offset_(uint32_t(offset)),
+        maybeTrap_(std::move(maybeTrap)) {
+    MOZ_ASSERT(offset <= INT32_MAX);
+    MOZ_ASSERT(object->type() == MIRType::WasmAnyRef);
+    MOZ_ASSERT(type == MIRType::WasmStructData ||
+               type == MIRType::WasmArrayData || type == MIRType::Int32 ||
+               type == MIRType::Pointer);
+    setResultType(type);
+    if (maybeTrap_) {
+      // This is safe, but see bug 1992059 for associated details.
+      setGuard();
+    } else {
+      setMovable();
+    }
+  }
+
+ public:
+  INSTRUCTION_HEADER(WasmLoadInternalField)
+  TRIVIAL_NEW_WRAPPERS
+  NAMED_OPERANDS((0, object))
+
+  uint32_t offset() const { return offset_; }
+  wasm::MaybeTrapSiteDesc maybeTrap() const { return maybeTrap_; }
+  AliasSet getAliasSet() const override { return AliasSet::None(); }
+
+  bool congruentTo(const MDefinition* ins) const override {
+    if (!ins->isWasmLoadInternalField()) {
+      return false;
+    }
+    const MWasmLoadInternalField* other = ins->toWasmLoadInternalField();
+    return congruentIfOperandsEqual(other) && offset() == other->offset();
+  }
+
+#ifdef JS_JITSPEW
+  void getExtras(ExtrasCollector* extras) const override {
+    char buf[64];
+    SprintfLiteral(buf, "(offs=%lld)", (long long int)offset_);
+    extras->add(buf);
+  }
+#endif
+
+  ALLOW_CLONE(MWasmLoadInternalField)
 };
 
 // Loads a value from base pointer, given an index and element size. This field
