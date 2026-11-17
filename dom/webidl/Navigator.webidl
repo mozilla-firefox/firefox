@@ -234,8 +234,6 @@ partial interface Navigator {
   readonly attribute boolean isWebVRContentDetected;
   [ChromeOnly, Pref="dom.vr.enabled"]
   readonly attribute boolean isWebVRContentPresenting;
-  [ChromeOnly, Pref="dom.vr.enabled"]
-  undefined requestVRPresentation(VRDisplay display);
 };
 partial interface Navigator {
   [Throws, Pref="dom.vr.puppet.enabled"]

@@ -1928,8 +1928,6 @@ bool Navigator::IsWebVRContentPresenting() const {
   return win->IsVRContentPresenting();
 }
 
-void Navigator::RequestVRPresentation(VRDisplay& aDisplay) {}
-
 already_AddRefed<Promise> Navigator::RequestMIDIAccess(
     const MIDIOptions& aOptions, ErrorResult& aRv) {
   if (!mWindow) {
