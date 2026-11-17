@@ -1777,6 +1777,107 @@ class AutocompleteTest : BaseSessionTest() {
         mainSession.waitForRoundTrip()
     }
 
+    private fun submitCreditCardWithSecurityCode(securityCode: String) {
+        val values =
+            mapOf(
+                "name" to "MyCard",
+                "number" to "5105105105105100",
+                "expMonth" to "6",
+                "expYear" to "2034",
+                "csc" to securityCode,
+            )
+        for ((id, value) in values) {
+            mainSession.evaluateJS("document.querySelector('#form3 #$id').value = '$value'")
+            mainSession.evaluateJS("document.querySelector('#form3 #$id').focus()")
+        }
+        mainSession.evaluateJS("document.querySelector('#form3').requestSubmit()")
+    }
+
+    private fun storedCreditCardWithSecurityCode(securityCode: String) =
+        CreditCard.Builder()
+            .guid("test1")
+            .name("MyCard")
+            .number("5105105105105100")
+            .expirationMonth("6")
+            .expirationYear("2034")
+            .securityCode(securityCode)
+            .build()
+
+    @Test
+    fun creditCardSecurityCodeChangePromptsUpdate() {
+        sessionRule.setPrefsUntilTestEnd(mapOf("extensions.formautofill.creditCards.cvv.supported" to "on"))
+
+        mainSession.loadTestPath(CC_FORM_HTML_PATH)
+        mainSession.waitForPageStop()
+
+        sessionRule.delegateUntilTestEnd(
+            object : StorageDelegate {
+                override fun onCreditCardFetch(): GeckoResult<Array<CreditCard>> {
+                    return GeckoResult.fromValue(arrayOf(storedCreditCardWithSecurityCode("123")))
+                }
+
+                @AssertCalled
+                override fun onCreditCardSave(creditCard: CreditCard) {
+                    assertThat("Credit card guid should match", creditCard.guid, equalTo("test1"))
+                    assertThat("Security code should match", creditCard.securityCode, equalTo("456"))
+                }
+            }
+        )
+
+        sessionRule.delegateDuringNextWait(
+            object : PromptDelegate {
+                @AssertCalled
+                override fun onCreditCardSave(
+                    session: GeckoSession,
+                    request: AutocompleteRequest<CreditCardSaveOption>,
+                ): GeckoResult<PromptDelegate.PromptResponse> {
+                    val option = request.options[0]
+                    assertThat("Credit card guid should match", option.value.guid, equalTo("test1"))
+                    assertThat("Security code should match", option.value.securityCode, equalTo("456"))
+                    return GeckoResult.fromValue(request.confirm(option))
+                }
+            }
+        )
+
+        submitCreditCardWithSecurityCode("456")
+
+        sessionRule.waitUntilCalled(StorageDelegate::class, "onCreditCardSave")
+    }
+
+    @Test
+    fun creditCardSameSecurityCodeDoesNotPrompt() {
+        sessionRule.setPrefsUntilTestEnd(mapOf("extensions.formautofill.creditCards.cvv.supported" to "on"))
+
+        mainSession.loadTestPath(CC_FORM_HTML_PATH)
+        mainSession.waitForPageStop()
+
+        sessionRule.delegateUntilTestEnd(
+            object : StorageDelegate {
+                override fun onCreditCardFetch(): GeckoResult<Array<CreditCard>> {
+                    return GeckoResult.fromValue(arrayOf(storedCreditCardWithSecurityCode("123")))
+                }
+
+                @AssertCalled(false) override fun onCreditCardSave(creditCard: CreditCard) {}
+            }
+        )
+
+        sessionRule.delegateUntilTestEnd(
+            object : PromptDelegate {
+                @AssertCalled(false)
+                override fun onCreditCardSave(
+                    session: GeckoSession,
+                    request: AutocompleteRequest<CreditCardSaveOption>,
+                ): GeckoResult<PromptDelegate.PromptResponse> {
+                    return GeckoResult.fromValue(request.dismiss())
+                }
+            }
+        )
+
+        submitCreditCardWithSecurityCode("123")
+
+        mainSession.waitForRoundTrip()
+    }
+
     @Test
     fun creditCardUpdateAccept() {
         val ccName = "MyCard"

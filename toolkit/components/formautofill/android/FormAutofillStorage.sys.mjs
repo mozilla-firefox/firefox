@@ -11,6 +11,7 @@ import {
   CreditCardsBase,
   AddressesBase,
 } from "resource://autofill/FormAutofillStorageBase.sys.mjs";
+import { FormAutofill } from "resource://autofill/FormAutofill.sys.mjs";
 import { JSONFile } from "resource://gre/modules/JSONFile.sys.mjs";
 
 const lazy = {};
@@ -157,6 +158,30 @@ class CreditCards extends CreditCardsBase {
   async get(guid, { rawData = false } = {}) {
     await this._store.updateCreditCards();
     return super.get(guid, { rawData });
+  }
+
+  /**
+   * Like CreditCardsBase.getMatchRecords, but a submitted security code that
+   * differs from the stored one also prevents a match, so the user is offered
+   * to update the card. cc-csc is not in VALID_CREDIT_CARD_FIELDS, so the base
+   * comparison never looks at it.
+   *
+   * @param {object} record
+   *        The normalized credit card to match.
+   * @returns {object}
+   *          The first matching record in storage, null otherwise.
+   */
+  async *getMatchRecords(record) {
+    for await (const recordInStorage of super.getMatchRecords(record)) {
+      if (
+        !FormAutofill.isAutofillCreditCardCVVEnabled ||
+        !record["cc-csc"] ||
+        record["cc-csc"] == recordInStorage["cc-csc"]
+      ) {
+        yield recordInStorage;
+      }
+    }
+    return null;
   }
 
   /**
