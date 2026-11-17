@@ -3693,6 +3693,8 @@
     <string name="clear_site_data_dialog_negative_button_text">Cancel</string>
     <!-- Text for the connection security panel when the site is secure. -->
     <string name="connection_security_panel_secure">Secure connection</string>
+    <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+    <string name="connection_security_panel_view_certificate_details">view certificate details</string>
     <!-- Text for the connection security panel when the site is not secure. -->
     <string name="connection_security_panel_not_secure">Connection not secure</string>
     <!-- Text for the connection security panel when accessed from local PDF. -->

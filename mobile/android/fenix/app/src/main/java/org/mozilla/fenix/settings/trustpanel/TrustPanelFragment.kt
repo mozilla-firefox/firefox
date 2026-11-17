@@ -87,6 +87,8 @@ import org.mozilla.fenix.settings.trustpanel.store.TrustPanelState
 import org.mozilla.fenix.settings.trustpanel.store.TrustPanelStore
 import org.mozilla.fenix.settings.trustpanel.store.WebsiteInfoState
 import org.mozilla.fenix.settings.trustpanel.store.WebsitePermission
+import org.mozilla.fenix.settings.trustpanel.ui.CertificateDetailsPanel
+import org.mozilla.fenix.settings.trustpanel.ui.CertificateIssuedTo
 import org.mozilla.fenix.settings.trustpanel.ui.ClearSiteDataDialog
 import org.mozilla.fenix.settings.trustpanel.ui.ProtectionPanel
 import org.mozilla.fenix.settings.trustpanel.ui.TrackerCategoryDetailsPanel
@@ -301,14 +303,11 @@ class TrustPanelFragment : BottomSheetDialogFragment() {
                 }
 
                 BackHandler {
-                    when (contentState) {
-                        Route.TrackersPanel -> contentState = Route.ProtectionPanel
-
-                        Route.TrackerCategoryDetailsPanel -> contentState = Route.TrackersPanel
-
-                        Route.TrackersProtectionDashboard -> contentState = Route.TrackersPanel
-
-                        else -> this@TrustPanelFragment.dismissAllowingStateLoss()
+                    val previousRoute = contentState.previousRoute()
+                    if (previousRoute != null) {
+                        contentState = previousRoute
+                    } else {
+                        this@TrustPanelFragment.dismissAllowingStateLoss()
                     }
                 }
 
@@ -345,6 +344,10 @@ class TrustPanelFragment : BottomSheetDialogFragment() {
                                 isGlobalTrackingProtectionEnabled = isGlobalTrackingProtectionEnabled,
                                 isLocalPdf = args.isLocalPdf,
                                 isPrivate = sessionState?.content?.private ?: false,
+                                // With the QWAC UI, the certificate details are opened from the header instead of the
+                                // connection security group.
+                                showCertificateDetailsLink =
+                                    settings.isQwacUiEnabled && websiteInfoState.canOpenCertificateDetails,
                                 showIPProtection = showIpProtection,
                                 numberOfTrackersBlocked = numberOfTrackersBlocked,
                                 websitePermissions = websitePermissions.filter { it.isVisible },
@@ -372,6 +375,9 @@ class TrustPanelFragment : BottomSheetDialogFragment() {
                                 },
                                 onViewQWACClick = {
                                     store.dispatch(TrustPanelAction.Navigate.QWAC)
+                                },
+                                onSecureConnectionClick = {
+                                    contentState = Route.CertificateDetailsPanel
                                 },
                                 onIPProtectionToggle = {
                                     handleIPProtectionToggleAndRecordTelemetry(ipProtectionMenuState, components)
@@ -433,6 +439,16 @@ class TrustPanelFragment : BottomSheetDialogFragment() {
                                 onDismiss = {
                                     contentState = Route.TrackersPanel
                                 },
+                            )
+                        }
+
+                        Route.CertificateDetailsPanel -> {
+                            CertificateDetailsPanel(
+                                url = websiteInfoState.websiteUrl,
+                                icon = sessionState?.content?.icon,
+                                isQwac = websiteInfoState.isQwac,
+                                issuedTo = { CertificateIssuedTo(websiteInfoState.certificateDetails) },
+                                verifiedBy = {},
                             )
                         }
 
@@ -609,4 +625,16 @@ enum class Route {
     TrackerCategoryDetailsPanel,
     TrackersProtectionDashboard,
     ClearSiteDataDialog,
+    CertificateDetailsPanel,
 }
+
+/** Returns the route to go back to from this route, or null if going back dismisses the trust panel. */
+internal fun Route.previousRoute(): Route? =
+    when (this) {
+        Route.TrackersPanel,
+        Route.CertificateDetailsPanel -> Route.ProtectionPanel
+        Route.TrackerCategoryDetailsPanel,
+        Route.TrackersProtectionDashboard -> Route.TrackersPanel
+        Route.ProtectionPanel,
+        Route.ClearSiteDataDialog -> null
+    }

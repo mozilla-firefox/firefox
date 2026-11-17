@@ -9,7 +9,9 @@ import io.mockk.mockk
 import java.security.cert.X509Certificate
 import javax.security.auth.x500.X500Principal
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.mozilla.fenix.settings.trustpanel.store.CertificateDetails
 import org.mozilla.fenix.settings.trustpanel.store.WebsiteInfoState
@@ -63,6 +65,36 @@ class CertificateDetailsTest {
         val certificate = createCertificate(subject = "CN=example.com, O=Example", issuer = "CN=Issuer")
 
         assertEquals("Example", WebsiteInfoState(certificate = certificate).certificateDetails?.subjectOrganization)
+    }
+
+    @Test
+    fun `GIVEN a website with a QWAC that differs from its certificate THEN certificate details are mapped from the QWAC`() {
+        val certificate = createCertificate(subject = "CN=example.com, O=Example", issuer = "CN=Issuer")
+        val qwac = createCertificate(subject = "CN=example.com, O=Example Qualified", issuer = "CN=Qualified Issuer")
+
+        assertEquals(
+            "Example Qualified",
+            WebsiteInfoState(certificate = certificate, qwac = qwac).certificateDetails?.subjectOrganization,
+        )
+    }
+
+    @Test
+    fun `GIVEN a secure website with a certificate THEN the certificate details can be opened`() {
+        val certificate = createCertificate(subject = "CN=example.com", issuer = "CN=Issuer")
+
+        assertTrue(WebsiteInfoState(isSecured = true, certificate = certificate).canOpenCertificateDetails)
+    }
+
+    @Test
+    fun `GIVEN a secure website without a certificate THEN the certificate details cannot be opened`() {
+        assertFalse(WebsiteInfoState(isSecured = true, certificate = null).canOpenCertificateDetails)
+    }
+
+    @Test
+    fun `GIVEN an insecure website with a certificate THEN the certificate details cannot be opened`() {
+        val certificate = createCertificate(subject = "CN=example.com", issuer = "CN=Issuer")
+
+        assertFalse(WebsiteInfoState(isSecured = false, certificate = certificate).canOpenCertificateDetails)
     }
 
     @Test

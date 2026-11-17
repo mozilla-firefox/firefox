@@ -73,6 +73,7 @@ internal fun ProtectionPanel(
     showIPProtection: Boolean,
     numberOfTrackersBlocked: Int,
     isPrivate: Boolean,
+    showCertificateDetailsLink: Boolean,
     websitePermissions: List<WebsitePermission>,
     onTrackerBlockedMenuClick: () -> Unit,
     onTrackingProtectionToggleClick: () -> Unit,
@@ -82,6 +83,7 @@ internal fun ProtectionPanel(
     onToggleablePermissionClick: (WebsitePermission.Toggleable) -> Unit,
     onViewCertificateClick: () -> Unit,
     onViewQWACClick: () -> Unit,
+    onSecureConnectionClick: () -> Unit,
     onIPProtectionToggle: () -> Unit,
     onIPProtectionNavigate: () -> Unit,
 ) {
@@ -91,6 +93,7 @@ internal fun ProtectionPanel(
             ProtectionPanelHeader(
                 websiteInfoState = websiteInfoState,
                 icon = icon,
+                onSecureConnectionClick = onSecureConnectionClick.takeIf { showCertificateDetailsLink },
             )
         }
     ) {
@@ -117,12 +120,14 @@ internal fun ProtectionPanel(
             onIPProtectionNavigate = onIPProtectionNavigate,
         )
 
-        ConnectionSecurityMenuGroup(
-            websiteInfoState = websiteInfoState,
-            isLocalPdf = isLocalPdf,
-            onViewCertificateClick = onViewCertificateClick,
-            onViewQWACClick = onViewQWACClick,
-        )
+        if (!showCertificateDetailsLink) {
+            ConnectionSecurityMenuGroup(
+                websiteInfoState = websiteInfoState,
+                isLocalPdf = isLocalPdf,
+                onViewCertificateClick = onViewCertificateClick,
+                onViewQWACClick = onViewQWACClick,
+            )
+        }
 
         if (!isLocalPdf && !isPrivate) {
             MenuGroup {
@@ -448,22 +453,45 @@ private fun AutoplayDropdownMenu(
 private fun ProtectionPanelPreview(
     @PreviewParameter(ProtectionPanelBannerPreviewProvider::class) state: ProtectionPanelBannerPreviewState
 ) {
+    ProtectionPanelPreviewContent(
+        isSecured = state.isSecured,
+        isTrackingProtectionEnabled = state.isTrackingProtectionEnabled,
+    )
+}
+
+@PreviewLightDark
+@Composable
+private fun ProtectionPanelCertificateDetailsLinkPreview() {
+    ProtectionPanelPreviewContent(
+        isSecured = true,
+        isTrackingProtectionEnabled = true,
+        showCertificateDetailsLink = true,
+    )
+}
+
+@Composable
+private fun ProtectionPanelPreviewContent(
+    isSecured: Boolean,
+    isTrackingProtectionEnabled: Boolean,
+    showCertificateDetailsLink: Boolean = false,
+) {
     FirefoxTheme {
         Surface {
             ProtectionPanel(
                 websiteInfoState =
                     WebsiteInfoState(
-                        isSecured = state.isSecured,
+                        isSecured = isSecured,
                         websiteUrl = "https://www.mozilla.org",
                         websiteTitle = "Mozilla",
                         certificate = null,
                     ),
                 ipProtectionMenuState = IPProtectionMenuState(),
                 icon = null,
-                isTrackingProtectionEnabled = state.isTrackingProtectionEnabled,
+                isTrackingProtectionEnabled = isTrackingProtectionEnabled,
                 isGlobalTrackingProtectionEnabled = true,
                 isLocalPdf = false,
                 isPrivate = false,
+                showCertificateDetailsLink = showCertificateDetailsLink,
                 showIPProtection = true,
                 numberOfTrackersBlocked = 5,
                 websitePermissions =
@@ -482,6 +510,7 @@ private fun ProtectionPanelPreview(
                 onToggleablePermissionClick = {},
                 onViewCertificateClick = {},
                 onViewQWACClick = {},
+                onSecureConnectionClick = {},
                 onIPProtectionToggle = {},
                 onIPProtectionNavigate = {},
             )
