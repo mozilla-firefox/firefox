@@ -65,7 +65,7 @@
   background: var(--card-background-color);
 }
 
-iframe,
+::slotted(iframe),
 ::slotted(browser) {
   display: block;
   inline-size: 100%;
@@ -83,7 +83,7 @@ iframe,
     --widget-header-padding: 0;
   }
 
-  iframe,
+  ::slotted(iframe),
   ::slotted(browser) {
     border-radius: var(--border-radius-medium);
   }

@@ -670,6 +670,30 @@
         widget.remove();
       });
 
+      add_task(async function test_iframe_is_kept_when_the_widget_is_moved() {
+        const widget = createWidget({
+          supportsXULElements: false,
+          src: WIDGET_DOCUMENT,
+        });
+        await widget.updateComplete;
+        const frame = widget.frame;
+        is(frame.parentNode, widget, "the iframe is a child of the host");
+        is(frame.slot, "frame", "the iframe is slotted as the frame");
+
+        // A reload replaces the document, which drops the marker.
+        frame.contentDocument.documentElement.dataset.marker = "kept";
+        const container = widget.parentNode;
+        container.moveBefore(widget, null);
+        await widget.updateComplete;
+        is(widget.frame, frame, "same iframe after the move");
+        is(
+          frame.contentDocument.documentElement.dataset.marker,
+          "kept",
+          "the iframe document is not reloaded by the move"
+        );
+        widget.remove();
+      });
+
       add_task(async function test_browser_src_change() {
         const widget = createWidget({ src: WIDGET_DOCUMENT });
         await widget.updateComplete;

@@ -219,17 +219,23 @@ export class MozWidget extends MozLitElement {
 
   #setupIframe() {
     if (this.supportsXULElements || !this.src) {
+      this.#iframe?.remove();
       this.#iframe = null;
       return;
     }
     // A new iframe for each src gives each document its own window, so a
     // message from the one before it no longer matches.
     if (this.#iframe?.getAttribute("src") != this.src) {
+      this.#iframe?.remove();
       this.#iframe = this.ownerDocument.createElement("iframe");
       this.#iframe.setAttribute("sandbox", WIDGET_SANDBOX);
+      this.#iframe.setAttribute("slot", FRAME_SLOT);
       this.#iframe.addEventListener("load", this.#onFrameLoad);
       this.#iframe.addEventListener("error", this.#onFrameError);
       this.#iframe.src = this.src;
+      // A light DOM child, because moveBefore on the widget or one of its
+      // ancestors reloads an iframe that is inside a shadow root.
+      this.append(this.#iframe);
     }
     if (this.title) {
       this.#iframe.setAttribute("title", this.title);
@@ -300,12 +306,7 @@ export class MozWidget extends MozLitElement {
     if (!this.src) {
       return html`<slot></slot>`;
     }
-    if (this.#browser) {
-      return html`<slot name=${FRAME_SLOT}></slot>`;
-    }
-    // Use the manually created iframe since we don't want Lit creating
-    // potentially dangerous elements.
-    return this.#iframe;
+    return html`<slot name=${FRAME_SLOT}></slot>`;
   }
 
   #renderMenuButton() {
