@@ -21,7 +21,7 @@ This component grew quickly, and much of the existing code across this directory
 - JSDoc is enforced by eslint here (`require-jsdoc` and `valid-jsdoc` apply). Give every `@param` and `@property` a description unless the name makes it obvious.
 - TODO and FIXME comments must cite a bug number.
 - Prefer new, focused modules over growing the 1,500+ line files (`ai-window.mjs`, `ai-chat-content.mjs`, `AITab.sys.mjs`, `Tools.sys.mjs`, `AIWindow.sys.mjs`, `ChatStore.sys.mjs`, `SmartFormFillParent.sys.mjs`). Don't add a separate constants module either, since each extra file is another runtime load.
-- Storage: extend `ui/modules/SQLiteStoreBase.sys.mjs`. Legacy: `ChatStore` manages its own connection.
+- Storage: extend `ui/modules/SQLiteStoreBase.sys.mjs`.
 - Reviewers flag generated-code habits: comments that narrate the code, try/catch or `typeof` checks that can't fail, optional chaining on values that can't be null or undefined, needless default arguments, nested ternaries, layers of indirection and vague `normalize` helpers. Prefer existing shared helpers and fix them rather than working around them.
 
 ## UI components

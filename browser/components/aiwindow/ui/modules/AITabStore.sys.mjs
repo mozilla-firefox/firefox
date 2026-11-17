@@ -136,7 +136,7 @@ class AITabStore extends SQLiteStoreBase {
    * @returns {Promise<AITabRow|null>} The latest version, or null if no tab matches
    */
   async getBySlug(slug) {
-    await this.#ensureConnection();
+    await this.ensureDatabase();
 
     const rows = await this.connection.executeCached(GET_AITAB_BY_SLUG, {
       slug,
@@ -153,7 +153,7 @@ class AITabStore extends SQLiteStoreBase {
    * @returns {Promise<?object>} The matching version, or null if none exists
    */
   async getBySlugAndVersion(slug, version) {
-    await this.#ensureConnection();
+    await this.ensureDatabase();
 
     const rows = await this.connection.executeCached(
       GET_AITAB_BY_SLUG_AND_VERSION,
@@ -172,7 +172,7 @@ class AITabStore extends SQLiteStoreBase {
    * @returns {Promise<Array<number>>}
    */
   async getVersionsBySlug(slug) {
-    await this.#ensureConnection();
+    await this.ensureDatabase();
 
     const rows = await this.connection.executeCached(
       GET_AITAB_VERSIONS_BY_SLUG,
@@ -190,7 +190,7 @@ class AITabStore extends SQLiteStoreBase {
    * @returns {Promise<Array<object>>}
    */
   async getAITabPagesByConvId(convId) {
-    await this.#ensureConnection();
+    await this.ensureDatabase();
 
     const rows = await this.connection.executeCached(
       GET_AITAB_PAGES_BY_CONV_ID,
@@ -211,7 +211,7 @@ class AITabStore extends SQLiteStoreBase {
    * @param {number} version - The version to keep.
    */
   async deleteVersionsBefore(slug, version) {
-    await this.#ensureConnection();
+    await this.ensureDatabase();
 
     await this.connection.execute(DELETE_AITAB_VERSIONS_BEFORE, {
       slug,
@@ -236,7 +236,7 @@ class AITabStore extends SQLiteStoreBase {
    * @param {string} slug
    */
   async deleteBySlug(slug) {
-    await this.#ensureConnection();
+    await this.ensureDatabase();
 
     await this.connection.execute(DELETE_AITAB_PAGES_BY_SLUG, { slug });
   }
@@ -301,7 +301,7 @@ class AITabStore extends SQLiteStoreBase {
     },
     { expectNew }
   ) {
-    await this.#ensureConnection();
+    await this.ensureDatabase();
 
     const uuid = crypto.randomUUID();
     const now = Date.now() * 1000;
@@ -399,17 +399,6 @@ class AITabStore extends SQLiteStoreBase {
     // Enough same-titled pages to exhaust the numbered suffixes. Readability
     // is already lost by this point, so take a slug that needs no search.
     return `${dated}_${crypto.randomUUID().slice(0, 8)}`;
-  }
-
-  async #ensureConnection() {
-    await this.ensureDatabase().catch(e => {
-      this.log.error(
-        "Could not ensure a database connection.",
-        e.message,
-        e.stack
-      );
-      throw e;
-    });
   }
 }
 
