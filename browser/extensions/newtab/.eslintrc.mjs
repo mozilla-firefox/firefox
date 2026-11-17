@@ -105,10 +105,9 @@ export default [
       "content-src/components/WallpaperCategories/WallpaperCategories.jsx",
     ],
     rules: {
-      "jsx-a11y/anchor-has-content": "off",
-      "jsx-a11y/heading-has-content": "off",
-      "jsx-a11y/label-has-associated-control": "off",
-      "jsx-a11y/no-onchange": "off",
+      "jsx-a11y-x/anchor-has-content": "off",
+      "jsx-a11y-x/heading-has-content": "off",
+      "jsx-a11y-x/label-has-associated-control": "off",
     },
   },
   {

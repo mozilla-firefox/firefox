@@ -404,7 +404,7 @@ export class TopSiteLink extends React.PureComponent {
       >
         <div className="top-site-inner">
           {/* We don't yet support an accessible drag-and-drop implementation, see Bug 1552005 */}
-          {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+          {/* eslint-disable-next-line jsx-a11y-x/anchor-is-valid */}
           <a
             className="top-site-button"
             href={link.searchTopSite ? undefined : link.url}

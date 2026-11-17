@@ -74,7 +74,7 @@ function renderSegment(segment, index, handleAction) {
   }
   if (segment?.link_key) {
     return (
-      // eslint-disable-next-line jsx-a11y/anchor-is-valid
+      // eslint-disable-next-line jsx-a11y-x/anchor-is-valid
       <a
         key={index}
         value={segment.link_key}
@@ -143,14 +143,14 @@ export const LinkParagraph = props => {
 
   return (
     <Localized text={text}>
-      {/* eslint-disable jsx-a11y/no-noninteractive-element-interactions */}
+      {/* eslint-disable jsx-a11y-x/no-noninteractive-element-interactions */}
       <p
         className={paragraphClassName}
         onClick={handleParagraphAction}
         value="link_paragraph"
         onKeyPress={onKeyPress}
       >
-        {/* eslint-disable jsx-a11y/anchor-is-valid */}
+        {/* eslint-disable jsx-a11y-x/anchor-is-valid */}
         {text_content.link_keys?.map(link => (
           <a
             key={link}

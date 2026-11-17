@@ -4572,7 +4572,7 @@ const OnboardingVideo = props => {
     });
   };
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("video", {
-    // eslint-disable-line jsx-a11y/media-has-caption
+    // eslint-disable-line jsx-a11y-x/media-has-caption
     controls: true,
     autoPlay: autoplay,
     src: vidUrl,
@@ -4920,7 +4920,7 @@ function renderSegment(segment, index, handleAction) {
   if (segment?.link_key) {
     return (
       /*#__PURE__*/
-      // eslint-disable-next-line jsx-a11y/anchor-is-valid
+      // eslint-disable-next-line jsx-a11y-x/anchor-is-valid
       react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
         key: index,
         value: segment.link_key,

@@ -2013,7 +2013,7 @@ const OnboardingVideo = props => {
     });
   };
   return /*#__PURE__*/external_React_default().createElement("div", null, /*#__PURE__*/external_React_default().createElement("video", {
-    // eslint-disable-line jsx-a11y/media-has-caption
+    // eslint-disable-line jsx-a11y-x/media-has-caption
     controls: true,
     autoPlay: autoplay,
     src: vidUrl,
@@ -2324,7 +2324,7 @@ function renderSegment(segment, index, handleAction) {
   if (segment?.link_key) {
     return (
       /*#__PURE__*/
-      // eslint-disable-next-line jsx-a11y/anchor-is-valid
+      // eslint-disable-next-line jsx-a11y-x/anchor-is-valid
       external_React_default().createElement("a", {
         key: index,
         value: segment.link_key,

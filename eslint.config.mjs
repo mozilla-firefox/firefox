@@ -11,7 +11,7 @@ import lit from "eslint-plugin-lit";
 import mozilla from "eslint-plugin-mozilla";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
-import jsxA11y from "eslint-plugin-jsx-a11y";
+import jsxA11yX from "eslint-plugin-jsx-a11y-x";
 
 import fs from "fs";
 import globals from "globals";
@@ -520,7 +520,7 @@ let config = [
       ],
       excludedExtensions: ["json"],
     }),
-    ...jsxA11y.flatConfigs.recommended,
+    ...jsxA11yX.configs.recommended,
   },
   {
     name: "disable-no-insecure-url-for-http-testing",
