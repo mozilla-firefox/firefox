@@ -272,20 +272,20 @@ BrowserGlue.prototype = {
       case "handle-xul-text-link": {
         let linkHandled = subject.QueryInterface(Ci.nsISupportsPRBool);
         if (!linkHandled.data) {
+          // The caller reads linkHandled.data as soon as notifyObservers
+          // returns, so claim the link before waiting for a new window.
+          linkHandled.data = true;
           let win =
             lazy.BrowserWindowTracker.getTopWindow() ??
             (await lazy.BrowserWindowTracker.promiseOpenWindow());
-          if (win) {
-            data = JSON.parse(data);
-            let where = lazy.BrowserUtils.whereToOpenLink(data);
-            // Preserve legacy behavior of non-modifier left-clicks
-            // opening in a new selected tab.
-            if (where == "current") {
-              where = "tab";
-            }
-            win.openTrustedLinkIn(data.href, where);
-            linkHandled.data = true;
+          data = JSON.parse(data);
+          let where = lazy.BrowserUtils.whereToOpenLink(data);
+          // Preserve legacy behavior of non-modifier left-clicks
+          // opening in a new selected tab.
+          if (where == "current") {
+            where = "tab";
           }
+          win.openTrustedLinkIn(data.href, where);
         }
         break;
       }
