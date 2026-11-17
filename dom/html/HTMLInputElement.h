@@ -440,6 +440,11 @@ class HTMLInputElement final : public TextControlElement,
     SetHTMLBoolAttr(nsGkAtoms::alpha, aValue, aRv);
   }
 
+  bool EyeDropper() const;
+  void SetEyeDropper(bool aValue, ErrorResult& aRv) {
+    SetHTMLBoolAttr(nsGkAtoms::eyedropper, aValue, aRv);
+  }
+
   void GetAlt(nsAString& aValue) { GetHTMLAttr(nsGkAtoms::alt, aValue); }
   void SetAlt(const nsAString& aValue, ErrorResult& aRv) {
     SetHTMLAttr(nsGkAtoms::alt, aValue, aRv);
@@ -789,6 +794,7 @@ class HTMLInputElement final : public TextControlElement,
   void SetOpenState(bool aIsOpen);
 
   MOZ_CAN_RUN_SCRIPT void OpenColorPicker();
+  MOZ_CAN_RUN_SCRIPT void OpenEyeDropper();
 
   /*
    * Called from datetime input box binding when inner text fields are focused

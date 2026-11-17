@@ -54,6 +54,8 @@ support-files = ["file_double_submit.html"]
 
 ["test_input_click_clear_button_without_focus.html"]
 
+["test_input_color_eyedropper.html"]
+
 ["test_input_color_input_change_events.html"]
 
 ["test_input_color_picker_datalist.html"]

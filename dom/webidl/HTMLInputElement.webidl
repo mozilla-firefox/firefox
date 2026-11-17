@@ -317,3 +317,10 @@ partial interface HTMLInputElement {
   [Func="IsChromeOrUAWidget"]
   undefined setUserInputColor(InputPickerColor aColor);
 };
+
+// <input type=color eyedropper> proposal. Experimental, no spec yet.
+// https://github.com/mozilla/explainers/blob/main/eyedropper-input.md
+partial interface HTMLInputElement {
+  [CEReactions, Pure, SetterThrows, Pref="dom.input.color_eyedropper.enabled"]
+  attribute boolean eyeDropper;
+};

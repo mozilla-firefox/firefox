@@ -467,6 +467,7 @@ STATIC_ATOMS = [
     Atom("explicit_name", "explicit-name"),
     Atom("extends", "extends"),
     Atom("extensionElementPrefixes", "extension-element-prefixes"),
+    Atom("eyedropper", "eyedropper"),
     Atom("face", "face"),
     Atom("fallback", "fallback"),
     Atom("_false", "false"),

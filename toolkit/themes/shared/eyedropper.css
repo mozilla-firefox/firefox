@@ -1,0 +1,45 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* The eyedropper shown by EyeDropper.sys.mjs, in a popover in the browser
+   window's document. The magnifier and its label are built by
+   EyeDropperMagnifier.sys.mjs and mostly styled by eyedropper-common.css,
+   shared with the DevTools eyedropper.
+   EyeDropper.sys.mjs sets --eyedropper-page-left, --eyedropper-page-top,
+   --eyedropper-page-width and --eyedropper-page-height on the host, where the
+   page is. */
+
+@import url("resource://content-accessible/eyedropper-common.css");
+
+/* The popover holding the eyedropper, which covers the page and clips the
+   eyedropper to it, so that it is not drawn over the browser UI, rather than
+   looking like a popover. */
+:host {
+  position: fixed;
+  /* The position and size of the <browser>, which do not depend on the
+     direction. */
+  inset: var(--eyedropper-page-top) auto auto var(--eyedropper-page-left);
+  width: var(--eyedropper-page-width);
+  height: var(--eyedropper-page-height);
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  /* The magnifier is centered on the cursor, so it overflows near the edges.
+     Unlike the popover default of auto, this does not make the host a scroll
+     container. */
+  overflow: clip;
+  /* Hides the cursor over the whole page, rather than only over the magnifier,
+     which follows it a frame or two late. This works because the host, rather
+     than the <browser>, is what is under the cursor. */
+  cursor: none;
+}
+
+.eye-dropper-root {
+  position: absolute;
+}
+
+.eye-dropper-color-value {
+  font-size: 15px;
+}

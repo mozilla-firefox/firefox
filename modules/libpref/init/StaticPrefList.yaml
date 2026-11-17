@@ -3930,6 +3930,14 @@
   value: false
   mirror: always
 
+# Support for the `eyedropper` attribute on <input type=color>, letting the
+# picker sample a color from the page. Experimental, no spec yet.
+# See https://github.com/mozilla/explainers/blob/main/eyedropper-input.md.
+- name: dom.input.color_eyedropper.enabled
+  type: bool
+  value: false
+  mirror: always
+
 # How long a content process can take before closing its IPC channel
 # after shutdown is initiated.  If the process exceeds the timeout,
 # we fear the worst and kill it.

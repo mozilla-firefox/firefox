@@ -1,0 +1,151 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<script src="/tests/SimpleTest/EventUtils.js"></script>
+<link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<input type="color" eyedropper value="#ffffff">
+<div id="target" style="width: 100px; height: 100px; background:rgb(0,128,255)"></div>
+<script>
+
+async function waitForEyeDropperOpenOrClose(aOpen) {
+  const msg = `Wait for EyeDropper ${aOpen ? "open" : "close"}`;
+  await SimpleTest.promiseWaitForCondition(async () => {
+    let condition = await SpecialPowers.spawnChrome([aOpen], (aOpen) => {
+      const chromeDoc = browsingContext.topChromeWindow.document;
+      let eyeDropperHost = chromeDoc.querySelector(".eyedropper-host");
+      return !!eyeDropperHost?.matches(":popover-open") === aOpen;
+    });
+    if (condition) {
+      ok(true, msg);
+    }
+    return condition;
+  }, msg);
+}
+
+function synthesizeKeyFromParent(aKey) {
+  SpecialPowers.spawnChrome([aKey], (aKey) => {
+    EventUtils.synthesizeKey(aKey, {}, browsingContext.topChromeWindow);
+  });
+}
+
+function synthesizeMouseAtCenterOnIframe(aIframe, aSelector, aMouseEventType) {
+  SpecialPowers.spawn(aIframe, [aSelector, aMouseEventType], (aSelector, aMouseEventType) => {
+    let target = content.document.querySelector(aSelector);
+    info(`${target}`);
+    EventUtils.synthesizeMouseAtCenter(target, { type: aMouseEventType, asyncEnabled: true }, content);
+  });
+}
+
+async function waitForEvent(aTarget, aEventType) {
+  const msg = `Wait for ${aEventType} event`;
+  let eventReceived = false;
+  let handler = (e) => { eventReceived = true };
+  aTarget.addEventListener(aEventType, handler, {once: true});
+  await SimpleTest.promiseWaitForCondition(() => {
+    if (eventReceived) {
+      ok(true, msg);
+    }
+    return eventReceived;
+  }, msg);
+  aTarget.removeEventListener(aEventType, handler);
+}
+
+add_setup(async function setup() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["dom.input.color_eyedropper.enabled", true]],
+  });
+
+  let iframe = document.createElement("iframe");
+  iframe.src =
+    "https://example.net/document-builder.sjs?html=" +
+    encodeURIComponent(
+      `<input type="color" eyedropper value="#ffffff"><div style="width:100px;height:100px;background:rgb(0,255,128)"></div>`
+    );
+  document.body.appendChild(iframe);
+  await waitForEvent(iframe, "load");
+});
+
+add_task(async function open_from_showPicker() {
+  const input = document.querySelector("input");
+  const oldValue = input.value;
+  SpecialPowers.wrap(document).notifyUserGestureActivation();
+  input.showPicker();
+
+  await waitForEyeDropperOpenOrClose(true);
+
+  info("Press ESC to cancel");
+  synthesizeKeyFromParent("KEY_Escape");
+
+  await waitForEyeDropperOpenOrClose(false);
+  is(input.value, oldValue, "Check input value");
+});
+
+add_task(async function open_from_click() {
+  const input = document.querySelector("input");
+  const oldValue = input.value;
+  SpecialPowers.wrap(document).notifyUserGestureActivation();
+  input.click();
+
+  await waitForEyeDropperOpenOrClose(true);
+
+  info("Press ESC to cancel");
+  synthesizeKeyFromParent("KEY_Escape");
+
+  await waitForEyeDropperOpenOrClose(false);
+  is(input.value, oldValue, "Check input value");
+});
+
+add_task(async function open_from_mouse_click() {
+  const input = document.querySelector("input");
+  const oldValue = input.value;
+  synthesizeMouseAtCenter(input, {});
+
+  await waitForEyeDropperOpenOrClose(true);
+
+  info("Press ESC to cancel");
+  synthesizeKeyFromParent("KEY_Escape");
+
+  await waitForEyeDropperOpenOrClose(false);
+  is(input.value, oldValue, "Check input value");
+});
+
+add_task(async function pick_color_on_document() {
+  const input = document.querySelector("input");
+  synthesizeMouseAtCenter(input, {});
+  await waitForEyeDropperOpenOrClose(true);
+
+  let eventPromise = waitForEvent(input, "change");
+  const target = document.querySelector("#target");
+  synthesizeMouseAtCenter(target, { type: "mousemove", asyncEnabled: true });
+  synthesizeMouseAtCenter(target, { asyncEnabled: true });
+
+  await waitForEyeDropperOpenOrClose(false);
+  await eventPromise;
+
+  is(input.value, "#0080ff", "Check input value");
+});
+
+add_task(async function pick_color_on_iframe() {
+  const input = document.querySelector("input");
+  synthesizeMouseAtCenter(input, {});
+  await waitForEyeDropperOpenOrClose(true);
+
+  let eventPromise = waitForEvent(input, "change");
+  let iframe = document.querySelector("iframe");
+  synthesizeMouseAtCenterOnIframe(iframe, "div", "mousemove");
+  synthesizeMouseAtCenterOnIframe(iframe, "div", "mousedown");
+  synthesizeMouseAtCenterOnIframe(iframe, "div", "mouseup");
+
+  await waitForEyeDropperOpenOrClose(false);
+  await eventPromise;
+
+  is(input.value, "#00ff80", "Check input value");
+});
+
+</script>
+</body>
+</html>
