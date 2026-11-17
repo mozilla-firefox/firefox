@@ -128,6 +128,30 @@ void nsHtml5String::Release() {
 // static
 nsHtml5String nsHtml5String::FromBuffer(char16_t* aBuffer, int32_t aLength,
                                         nsHtml5TreeBuilder* aTreeBuilder) {
+  nsHtml5String value = FromBuffer(aBuffer, aLength, mozilla::fallible);
+  if (MOZ_LIKELY(value)) {
+    return value;
+  }
+  if (!aTreeBuilder) {
+    MOZ_CRASH("Out of memory.");
+  }
+  aTreeBuilder->MarkAsBroken(NS_ERROR_OUT_OF_MEMORY);
+  RefPtr<StringBuffer> buffer = StringBuffer::Alloc(2 * sizeof(char16_t));
+  if (!buffer) {
+    MOZ_CRASH(
+        "Out of memory so badly that couldn't even allocate placeholder.");
+  }
+  char16_t* data = reinterpret_cast<char16_t*>(buffer->Data());
+  data[0] = 0xFFFD;
+  data[1] = 0;
+  return nsHtml5String(reinterpret_cast<uintptr_t>(buffer.forget().take()) |
+                       eStringBuffer);
+}
+
+// static
+nsHtml5String nsHtml5String::FromBuffer(const char16_t* aBuffer,
+                                        int32_t aLength,
+                                        const mozilla::fallible_t&) {
   if (!aLength) {
     return nsHtml5String(eEmpty);
   }
@@ -137,18 +161,7 @@ nsHtml5String nsHtml5String::FromBuffer(char16_t* aBuffer, int32_t aLength,
   // copy.
   RefPtr<StringBuffer> buffer = StringBuffer::Create(aBuffer, aLength);
   if (MOZ_UNLIKELY(!buffer)) {
-    if (!aTreeBuilder) {
-      MOZ_CRASH("Out of memory.");
-    }
-    aTreeBuilder->MarkAsBroken(NS_ERROR_OUT_OF_MEMORY);
-    buffer = StringBuffer::Alloc(2 * sizeof(char16_t));
-    if (!buffer) {
-      MOZ_CRASH(
-          "Out of memory so badly that couldn't even allocate placeholder.");
-    }
-    char16_t* data = reinterpret_cast<char16_t*>(buffer->Data());
-    data[0] = 0xFFFD;
-    data[1] = 0;
+    return nullptr;
   }
   return nsHtml5String(reinterpret_cast<uintptr_t>(buffer.forget().take()) |
                        eStringBuffer);

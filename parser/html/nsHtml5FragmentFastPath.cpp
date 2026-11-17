@@ -13,6 +13,7 @@
 #include "mozilla/Array.h"
 #include "mozilla/ErrorResult.h"
 #include "mozilla/RandomNum.h"
+#include "mozilla/Result.h"
 #include "mozilla/Span.h"
 #include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/TextUtils.h"
@@ -484,7 +485,7 @@ class Parser {
           break;
         case Token::Kind::StartTag: {
           const TagInfo& tag = kTags[token.mTagIndex];
-          RefPtr<Element> element = CreateElement(token);
+          RefPtr<Element> element = MOZ_TRY(CreateElement(token));
           MOZ_TRY(Append(parents[depth], element));
           // https://html.spec.whatwg.org/#create-an-element-for-the-token
           //   20. If element is a resettable element and not a form-associated
@@ -1833,7 +1834,7 @@ class Parser {
     return Append(aParent, comment);
   }
 
-  already_AddRefed<Element> CreateElement(const Token& aToken) {
+  Result<RefPtr<Element>, nsresult> CreateElement(const Token& aToken) {
     RefPtr<NodeInfo>& nodeInfo = mNodeInfos[aToken.mTagIndex];
     if (!nodeInfo) {
       nodeInfo = mNodeInfoManager->GetNodeInfo(kTags[aToken.mTagIndex].mName,
@@ -1844,15 +1845,15 @@ class Parser {
         mTables.mElementNames[aToken.mTagIndex]->getHtmlCreator()(
             do_AddRef(nodeInfo), FROM_PARSER_FRAGMENT);
     if (aToken.mAttributeCount) {
-      SetAttributes(element, aToken);
+      MOZ_TRY(SetAttributes(element, aToken));
     }
-    return element.forget();
+    return element;
   }
 
   // Sets the attributes the way
   // nsHtml5TreeOperation::SetHTMLElementAttributesFast() does.
-  MOZ_CAN_RUN_SCRIPT_BOUNDARY void SetAttributes(Element* aElement,
-                                                 const Token& aToken) {
+  MOZ_CAN_RUN_SCRIPT_BOUNDARY nsresult SetAttributes(Element* aElement,
+                                                     const Token& aToken) {
     aElement->ReserveAttributeCount(aToken.mAttributeCount);
     // Element::SetNoNameSpaceAttrOnNewlyCreatedElement() may call AfterSetAttr
     // and its callers assume that the script is blocked.
@@ -1861,11 +1862,15 @@ class Parser {
     for (const AttributeToken& attribute :
          Span(mAttributes.begin() + aToken.mOffset, aToken.mAttributeCount)) {
       nsHtml5String value = MakeValue(attribute);
+      if (MOZ_UNLIKELY(!value)) {
+        return NS_ERROR_OUT_OF_MEMORY;
+      }
       aElement->SetNoNameSpaceAttrOnNewlyCreatedElement(
           MakeName(attribute), value, isPendingMappedAttributeEvaluation,
           scriptBlocker);
       value.Release();
     }
+    return NS_OK;
   }
 
   already_AddRefed<nsAtom> MakeName(const AttributeToken& aAttribute) {
@@ -1914,7 +1919,7 @@ class Parser {
       return nsHtml5String::FromAtom(
           NS_AtomizeMainThread(nsDependentSubstring(value, value + length)));
     }
-    return nsHtml5String::FromBuffer(value, length, nullptr);
+    return nsHtml5String::FromBuffer(value, length, fallible);
   }
 
   const char16_t* const mStart;

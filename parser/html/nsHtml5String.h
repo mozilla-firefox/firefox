@@ -5,6 +5,7 @@
 #ifndef nsHtml5String_h
 #define nsHtml5String_h
 
+#include "mozilla/fallible.h"
 #include "nsAtom.h"
 #include "nsString.h"
 
@@ -159,6 +160,10 @@ class nsHtml5String final {
 
   static nsHtml5String FromBuffer(char16_t* aBuffer, int32_t aLength,
                                   nsHtml5TreeBuilder* aTreeBuilder);
+
+  // Returns a logically null string on allocation failure.
+  static nsHtml5String FromBuffer(const char16_t* aBuffer, int32_t aLength,
+                                  const mozilla::fallible_t&);
 
   static nsHtml5String FromLiteral(const char* aLiteral);
 
