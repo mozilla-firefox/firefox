@@ -296,7 +296,16 @@ no-fission:
     when:
         $eval: '
                 "linux" in task["test-platform"]
-                || "android" in task["test-platform"]
+                || (
+                    "android" in task["test-platform"]
+                    && !(task["try-name"] in [
+                        "crashtest",
+                        "crashtest-qr",
+                        "jsreftest",
+                        "reftest",
+                        "reftest-qr"
+                    ])
+                )
                 '
     merge:
         mozharness:
