@@ -269,6 +269,9 @@ class Http2StreamBase : public nsAHttpSegmentReader,
   uint32_t mTxInlineFrameSize{0};
   uint32_t mTxInlineFrameUsed{0};
 
+  // A failure to queue a frame for writing, see TransmitFrame().
+  nsresult mTransmitError{NS_OK};
+
   uint32_t mPriority = 0;  // geckoish weight
 
   // Buffer for request header compression.

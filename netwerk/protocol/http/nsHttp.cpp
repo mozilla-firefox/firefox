@@ -10,6 +10,7 @@
 #include "nsHttp.h"
 #include "CacheControlParser.h"
 #include "PLDHashTable.h"
+#include "mozilla/CheckedInt.h"
 #include "mozilla/DataMutex.h"
 #include "mozilla/HashFunctions.h"
 #include "mozilla/OriginAttributes.h"
@@ -566,7 +567,11 @@ void localEnsureBuffer(UniquePtr<T[]>& buf, uint32_t newSize, uint32_t preserve,
   // what we need and then round the result up to a 4KB (page)
   // boundary.
 
-  objSize = (newSize + 2048 + 4095) & ~4095;
+  CheckedInt<uint32_t> size = CheckedInt<uint32_t>(newSize) + 2048 + 4095;
+  if (!size.isValid()) {
+    NS_ABORT_OOM(newSize);
+  }
+  objSize = size.value() & ~4095;
 
   static_assert(sizeof(T) == 1, "sizeof(T) must be 1");
   auto tmp = MakeUnique<T[]>(objSize);
