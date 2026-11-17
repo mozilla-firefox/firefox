@@ -354,6 +354,16 @@ NativeLayerRootWayland::CreateLayerForExternalTexture(bool aIsOpaque) {
   return MakeAndAddRef<NativeLayerWaylandExternal>(this, aIsOpaque);
 }
 
+already_AddRefed<NativeLayer>
+NativeLayerRootWayland::CreateLayerForSurfacePresentation(
+    const gfx::IntSize& aSize, bool aIsOpaque) {
+  LOG("NativeLayerRootWayland::CreateLayerForSurfacePresentation() [%d x %d] "
+      "nsWindow [%p] "
+      "opaque %d",
+      aSize.width, aSize.height, GetLoggingWidget(), aIsOpaque);
+  return MakeAndAddRef<NativeLayerWaylandPresentation>(this, aSize, aIsOpaque);
+}
+
 UniquePtr<NativeLayerRootSnapshotter>
 NativeLayerRootWayland::CreateSnapshotter() {
   if (!mGL) {
@@ -869,6 +879,14 @@ Maybe<gfx::RoundedRect> NativeLayerWayland::RoundedClipRect() {
 IntRect NativeLayerWayland::CurrentSurfaceDisplayRect() {
   WaylandSurfaceLock lock(mSurface);
   return mDisplayRect;
+}
+
+void NativeLayerWayland::SetDisplayRect(const IntRect& aDisplayRect) {
+  WaylandSurfaceLock lock(mSurface);
+  if (!mDisplayRect.IsEqualEdges(aDisplayRect)) {
+    mDisplayRect = aDisplayRect;
+    mState.mMutatedPlacement = true;
+  }
 }
 
 void NativeLayerWayland::SetScalelocked(
@@ -1506,6 +1524,75 @@ bool NativeLayerWaylandExternal::CommitFrontBufferToScreenLocked(
 
 NativeLayerWaylandExternal::~NativeLayerWaylandExternal() {
   LOG("NativeLayerWaylandExternal::~NativeLayerWaylandExternal()");
+}
+
+NativeLayerWaylandPresentation::NativeLayerWaylandPresentation(
+    NativeLayerRootWayland* aRootLayer, const gfx::IntSize& aSize,
+    bool aIsOpaque)
+    : NativeLayerWayland(aRootLayer, aSize, aIsOpaque) {}
+
+void NativeLayerWaylandPresentation::AttachExternalImage(
+    wr::RenderTextureHost* aExternalImage) {
+  MOZ_CRASH(
+      "NativeLayerWaylandPresentation::AttachExternalImage() not implemented.");
+}
+
+void NativeLayerWaylandPresentation::SetBufferToPresent(
+    RefPtr<widget::WaylandBuffer> aBuffer, const IntSize& aSize) {
+  WaylandSurfaceLock lock(mSurface);
+  LOG("NativeLayerWaylandPresentation::SetBufferToPresent() [%p] [%d x %d]",
+      aBuffer.get(), aSize.width, aSize.height);
+  if (mSize != aSize) {
+    mSize = aSize;
+    mState.mMutatedPlacement = true;
+  }
+  mFrontBuffer = std::move(aBuffer);
+  mState.mMutatedFrontBuffer = true;
+}
+
+void NativeLayerWaylandPresentation::DiscardBackbuffersLocked(
+    const WaylandSurfaceLock& aProofOfLock, bool aForce) {
+  LOG("NativeLayerWaylandPresentation::DiscardBackbuffersLocked()");
+  // An attached buffer is kept alive by the WaylandSurface until the
+  // compositor releases it.
+  mFrontBuffer = nullptr;
+}
+
+RefPtr<DrawTarget> NativeLayerWaylandPresentation::NextSurfaceAsDrawTarget(
+    const IntRect& aDisplayRect, const IntRegion& aUpdateRegion,
+    BackendType aBackendType) {
+  MOZ_CRASH(
+      "NativeLayerWaylandPresentation::NextSurfaceAsDrawTarget() not "
+      "implemented!");
+  return nullptr;
+}
+
+Maybe<GLuint> NativeLayerWaylandPresentation::NextSurfaceAsFramebuffer(
+    const IntRect& aDisplayRect, const IntRegion& aUpdateRegion,
+    bool aNeedsDepth) {
+  MOZ_CRASH(
+      "NativeLayerWaylandPresentation::NextSurfaceAsFramebuffer() "
+      "not implemented!");
+  return Nothing();
+}
+
+bool NativeLayerWaylandPresentation::IsFrontBufferChanged() {
+  return mState.mMutatedFrontBuffer;
+}
+
+bool NativeLayerWaylandPresentation::CommitFrontBufferToScreenLocked(
+    const WaylandSurfaceLock& aProofOfLock) {
+  LOG("NativeLayerWaylandPresentation::CommitFrontBufferToScreenLocked()");
+  if (auto* surface = mFrontBuffer->GetDMABufSurface()) {
+    surface->FenceWait(mRootLayer->gl());
+  }
+  mSurface->InvalidateLocked(aProofOfLock);
+  mSurface->AttachLocked(aProofOfLock, mFrontBuffer);
+  return true;
+}
+
+NativeLayerWaylandPresentation::~NativeLayerWaylandPresentation() {
+  LOG("NativeLayerWaylandPresentation::~NativeLayerWaylandPresentation()");
 }
 
 /* static */ UniquePtr<NativeLayerRootSnapshotterWayland>
