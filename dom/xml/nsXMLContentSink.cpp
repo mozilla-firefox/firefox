@@ -273,7 +273,7 @@ nsXMLContentSink::DidBuildModel(bool aTerminated) {
       // We're pretty-printing now.  See whether we should wait up on
       // stylesheet loads
       css::Loader* cssLoader = mDocument->GetExistingCSSLoader();
-      if (cssLoader && cssLoader->HasPendingLoads()) {
+      if (cssLoader && cssLoader->HasPendingNonDeferredLoads()) {
         cssLoader->AddObserver(this);
         // wait for those sheets to load
         startLayout = false;
@@ -423,7 +423,7 @@ nsXMLContentSink::StyleSheetLoaded(StyleSheet* aSheet, bool aWasDeferred,
   }
 
   if (mDocument->GetExistingCSSLoader() &&
-      !mDocument->GetExistingCSSLoader()->HasPendingLoads()) {
+      !mDocument->GetExistingCSSLoader()->HasPendingNonDeferredLoads()) {
     mDocument->GetExistingCSSLoader()->RemoveObserver(this);
     StartLayout(false);
     ScrollToRef();

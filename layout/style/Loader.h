@@ -395,16 +395,18 @@ class Loader final {
   bool IsDocumentAssociated() const { return mIsDocumentAssociated; }
 
   /**
-   * Return true if this loader has pending loads (ones that would send
-   * notifications to an nsICSSLoaderObserver attached to this loader).
+   * Return true if this loader has pending non-deferred loads (ones that would
+   * send notifications to an nsICSSLoaderObserver attached to this loader, and
+   * that are not deferred due to e.g. non-matching media).
+   *
    * If called from inside nsICSSLoaderObserver::StyleSheetLoaded, this will
-   * return false if and only if that is the last StyleSheetLoaded
-   * notification the CSSLoader knows it's going to send.  In other words, if
-   * two sheets load at once (via load coalescing, e.g.), HasPendingLoads()
-   * will return true during notification for the first one, and false
-   * during notification for the second one.
+   * return false if and only if that is the last StyleSheetLoaded notification
+   * the CSSLoader knows it's going to send.  In other words, if two sheets load
+   * at once (via load coalescing, e.g.), HasPendingNonDeferredLoads() will
+   * return true during notification for the first one, and false during
+   * notification for the second one.
    */
-  bool HasPendingLoads();
+  bool HasPendingNonDeferredLoads() const;
 
   /**
    * Add an observer to this loader.  The observer will be notified
