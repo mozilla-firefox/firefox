@@ -190,6 +190,9 @@ nsresult Http2StreamBase::ReadSegments(nsAHttpSegmentReader* reader,
       mSegmentReader = reader;
       rv = CallToReadData(count, countRead);
       mSegmentReader = nullptr;
+      if (NS_FAILED(mTransmitError)) {
+        break;
+      }
 
       LOG3(("Http2StreamBase::ReadSegments %p trans readsegments rv %" PRIx32
             " read=%d\n",
@@ -299,6 +302,10 @@ nsresult Http2StreamBase::ReadSegments(nsAHttpSegmentReader* reader,
       break;
   }
 
+  if (NS_FAILED(mTransmitError) &&
+      (NS_SUCCEEDED(rv) || rv == NS_BASE_STREAM_WOULD_BLOCK)) {
+    rv = mTransmitError;
+  }
   return rv;
 }
 
@@ -683,6 +690,10 @@ nsresult Http2StreamBase::TransmitFrame(const char* buf, uint32_t* countUsed,
   if (rv == NS_BASE_STREAM_WOULD_BLOCK) {
     MOZ_ASSERT(!forceCommitment, "forceCommitment with WOULD_BLOCK");
     session->TransactionHasDataToWrite(this);
+  } else if (NS_FAILED(rv)) {
+    // The request stream that called OnReadSegment drops this error, so
+    // ReadSegments reports it instead.
+    mTransmitError = rv;
   }
   if (NS_FAILED(rv)) {  // this will include WOULD_BLOCK
     return rv;
@@ -1207,8 +1218,12 @@ nsresult Http2StreamBase::OnReadSegment(const char* buf, uint32_t count,
       if (mOpenGenerated) {
         SetHTTPState(OPEN);
         AdjustInitialWindow();
-        // This version of TransmitFrame cannot block
+        // This version of TransmitFrame cannot block, but it fails when the
+        // output queue would grow beyond its limit.
         rv = TransmitFrame(nullptr, nullptr, true);
+        if (NS_FAILED(rv)) {
+          return rv;
+        }
         ChangeState(GENERATING_BODY);
         break;
       }
