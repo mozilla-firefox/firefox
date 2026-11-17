@@ -29,6 +29,19 @@ Use the bug's symptoms (from Bugzilla comments, user story, keywords, or live re
 - `ua_string` rewrites the outgoing `User-Agent` HTTP header, so the server sees it and so does `navigator.userAgent`. Use it when the breakage comes from the server.
 - The reusable UA scripts (`use_chrome_useragent.js`, `add_chrome_to_useragent.js`, `remove_firefox_from_useragent.js`, …) only change JS-visible properties; the header is unchanged. Use them if ua_string alone is insufficient to fix the breakage.
 
+#### Picking a `ua_string` value
+
+Before trying `["Chrome"]`, try these options one at a time, in this order, and stop at the first one that fixes the site:
+
+1. `["change_Firefox_to_FireFox"]` — for sites with case-sensitive Firefox sniffing.
+2. `["add_Chrome"]` — appends a Chrome token, keeping Firefox in the UA.
+3. `["Chrome_with_FxQuantum"]` — Chrome UA with an `FxQuantum` token, so the site can still identify Firefox.
+4. `["Chrome", "add_Firefox_as_Gecko"]` — Chrome UA with Firefox added back as a Gecko token.
+
+Only fall back to `["Chrome"]` (full Chrome UA) if none of these work.
+
+The full list of values is `ua_change_functions` in `lib/intervention_helpers.js`.
+
 ### Combining reusable scripts
 
 Start with the smallest combination that fixes the site, and add shims only if it still detects Firefox. Common pairings:
@@ -105,6 +118,8 @@ Both are also marked `@pytest.mark.asyncio`. Match the platform markers to the i
 - `["desktop"]` → `@pytest.mark.skip_platforms("android")`
 - `["android"]` → `@pytest.mark.only_platforms("android")`
 - specific OSes → `@pytest.mark.only_platforms(...)` with those OSes, e.g. `only_platforms("linux")`
+
+To wait, use `await client.stall(seconds)` rather than `asyncio.sleep(seconds)`.
 
 ### What's possible to test
 
