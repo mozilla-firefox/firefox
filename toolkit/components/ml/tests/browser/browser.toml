@@ -101,6 +101,8 @@ support-files = ["ml_model_hub_echo_stub.worker.mjs"]
 
 ["browser_ml_model_hub_list.js"]
 
+["browser_ml_model_hub_migration.js"]
+
 ["browser_ml_native.js"]
 skip-if = [
   "asan",
