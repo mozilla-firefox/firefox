@@ -34,6 +34,7 @@ import { createFileUrl } from "chrome://global/content/ml/Utils.sys.mjs";
 import { TextGenerationEngine } from "moz-src:///toolkit/components/ml/textgeneration/TextGenerationEngine.sys.mjs";
 import { BrowserTestUtils } from "resource://testing-common/BrowserTestUtils.sys.mjs";
 import { HttpServer } from "resource://testing-common/httpd.sys.mjs";
+import { setTimeout } from "resource://gre/modules/Timer.sys.mjs";
 
 /**
  * @param {TemplateStringsArray} strings
@@ -316,8 +317,12 @@ function createServer(markup, code) {
  * @property {number} [failTimes] - Serve `failStatus` for this many requests before
  *   serving the body.
  * @property {number} [failStatus] - Status to serve while failing. Default 500.
- * @property {boolean} [truncate] - Advertise the full Content-Length but send only
- *   half the bytes, so the client sees a short read rather than a small file.
+ * @property {number} [failAfterBytes] - Advertise the full Content-Length, then
+ *   stream the body in chunks and drop the connection once this many bytes have
+ *   been sent. Models a transfer that dies partway through: the client sees
+ *   real progress and then a partial-transfer error, rather than a short file.
+ *   Must be a positive multiple of 16384 below the body length; setFile throws
+ *   otherwise rather than rounding to a different interruption point.
  */
 
 /**
@@ -326,7 +331,7 @@ function createServer(markup, code) {
  * @property {string} etag
  * @property {number} failTimes
  * @property {number} failStatus
- * @property {boolean} truncate
+ * @property {?number} failAfterBytes
  * @property {number} attempts - Drives `failTimes`. Assertions should use
  *   requestCount() instead, which counts 404s and survives removeFile().
  */
@@ -987,6 +992,7 @@ export const MLTestUtils = {
    */
   createMockModelHub() {
     const urlTemplate = "{model}/resolve/{revision}";
+    const streamChunkSize = 16 * 1024;
 
     const server = new HttpServer();
     server.start(-1);
@@ -1038,42 +1044,51 @@ export const MLTestUtils = {
         return;
       }
 
-      // httpd.js overwrites Content-Length with the real body length on any
-      // non-async response, so the cases that need a Content-Length which
-      // disagrees with the body have to go through processAsync.
-      const needsAsync = entry.truncate || request.method === "HEAD";
-      if (needsAsync) {
-        response.processAsync();
-      }
+      const isHead = request.method === "HEAD";
+      const failAfterBytes = isHead ? null : entry.failAfterBytes;
+
+      // Bodies are always streamed asynchronously in explicit chunks below,
+      // so httpd.js can't compute Content-Length from a synchronous write.
+      response.processAsync();
 
       response.setStatusLine(request.httpVersion, 200, "");
       response.setHeader("ETag", entry.etag);
+      response.setHeader("Content-Length", String(entry.bytes.length));
 
-      if (needsAsync) {
-        response.setHeader("Content-Length", String(entry.bytes.length));
-      }
-
-      if (request.method !== "HEAD") {
-        const body = entry.truncate
-          ? entry.bytes.slice(0, Math.floor(entry.bytes.length / 2))
-          : entry.bytes;
-
-        if (body.length) {
-          const binaryOutputStream = Cc[
-            "@mozilla.org/binaryoutputstream;1"
-          ].createInstance(Ci.nsIBinaryOutputStream);
-          binaryOutputStream.setOutputStream(response.bodyOutputStream);
-          binaryOutputStream.writeByteArray(
-            /**
-             * @type {any} - The type expects a number[], while we are passing a Uint8Array.
-             */ (body)
-          );
+      /** @param {Uint8Array} chunk */
+      const write = chunk => {
+        if (!chunk.length) {
+          return;
         }
+        const binaryOutputStream = Cc[
+          "@mozilla.org/binaryoutputstream;1"
+        ].createInstance(Ci.nsIBinaryOutputStream);
+        binaryOutputStream.setOutputStream(response.bodyOutputStream);
+        binaryOutputStream.writeByteArray(
+          /**
+           * @type {any} - The type expects a number[], while we are passing a Uint8Array.
+           */ (chunk)
+        );
+      };
+
+      if (isHead) {
+        response.finish();
+        return;
       }
 
-      if (needsAsync) {
-        response.finish();
-      }
+      const limit = failAfterBytes ?? entry.bytes.length;
+      let offset = 0;
+      const pump = () => {
+        if (offset === limit) {
+          response.finish();
+          return;
+        }
+        const end = Math.min(offset + streamChunkSize, limit);
+        write(entry.bytes.subarray(offset, end));
+        offset = end;
+        setTimeout(pump, 0);
+      };
+      pump();
     };
 
     server.registerPrefixHandler("/", handler);
@@ -1101,7 +1116,7 @@ export const MLTestUtils = {
           content = "",
           failTimes = 0,
           failStatus = 500,
-          truncate = false,
+          failAfterBytes = null,
         } = spec;
 
         // Checked by typeof rather than `instanceof Uint8Array`, which is false
@@ -1110,6 +1125,19 @@ export const MLTestUtils = {
           typeof content === "string"
             ? new TextEncoder().encode(content)
             : content;
+
+        if (
+          failAfterBytes !== null &&
+          (failAfterBytes <= 0 ||
+            failAfterBytes >= bytes.length ||
+            failAfterBytes % streamChunkSize !== 0)
+        ) {
+          throw new Error(
+            `failAfterBytes must be a positive multiple of ${streamChunkSize} ` +
+              `below the ${bytes.length}-byte body, so the interruption point is ` +
+              `exact. Got ${failAfterBytes}.`
+          );
+        }
         const etag = spec.etag ?? `"mock-etag-${++etagCounter}"`;
 
         const hasher = Cc["@mozilla.org/security/hash;1"].createInstance(
@@ -1130,7 +1158,7 @@ export const MLTestUtils = {
           etag,
           failTimes,
           failStatus,
-          truncate,
+          failAfterBytes,
           attempts: 0,
         });
 
