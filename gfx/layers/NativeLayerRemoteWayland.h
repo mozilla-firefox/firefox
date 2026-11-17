@@ -102,6 +102,8 @@ class NativeLayerRemoteWayland final : public NativeLayer {
   // mDirtyChangedSurface is set when any of these change, or when the
   // value returned by FrontBuffer() changes:
   RefPtr<widget::WaylandBuffer> mExternalImage;
+  // Identifies the surface of the last attached external image.
+  uintptr_t mLastExternalSurface = 0;
   bool mIsDRM = false;
   bool mIsHDR = false;
   gfx::IntSize mSize;

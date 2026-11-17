@@ -9,7 +9,10 @@
 #include "mozilla/gfx/Logging.h"
 #include "mozilla/layers/LayersSurfaces.h"
 #include "mozilla/layers/SurfacePoolWayland.h"
+#include "mozilla/webrender/RenderLinuxTextureHost.h"
+#include "mozilla/webrender/RenderThread.h"
 #include "mozilla/widget/DMABufSurface.h"
+#include "mozilla/widget/SHMBufSurface.h"
 #include "mozilla/widget/WaylandBuffer.h"
 
 namespace mozilla {
@@ -50,8 +53,44 @@ void NativeLayerRemoteWayland::AttachExternalImage(
     wr::RenderTextureHost* aExternalImage) {
   MOZ_ASSERT(XRE_IsGPUProcess());
   MOZ_ASSERT(!mSurfaceHandler);
-  // TODO: Pull the DMABufSurface out of aExternalImage and store it in
-  // mExternalImage, along with its size, DRM and HDR state.
+
+  RefPtr<BufferSurface> surface;
+  if (auto* linuxHost = aExternalImage->AsRenderLinuxTextureHost()) {
+    surface = linuxHost->GetSurface();
+  }
+  if (!surface) {
+    gfxCriticalNoteOnce << "ExternalImage is not RenderLinuxTextureHost";
+    return;
+  }
+
+  auto lastSurface = reinterpret_cast<uintptr_t>(surface.get());
+  if (mLastExternalSurface == lastSurface) {
+    return;
+  }
+  mLastExternalSurface = lastSurface;
+
+  // The parent process can only present DMABuf surfaces.
+  if (auto* shmSurface = surface->GetAsSHMBufSurface()) {
+    surface = shmSurface->UploadToDMABufSurface(
+        wr::RenderThread::Get()->SingletonGL());
+    if (!surface) {
+      gfxCriticalNoteOnce << "SHM->DMABuf conversion failed.";
+      mExternalImage = nullptr;
+      mDirtyChangedSurface = true;
+      return;
+    }
+    surface->DisableRecycle();
+  }
+
+  IntSize size = surface->GetSize(0);
+  auto displayRect = IntRect(IntPoint{}, size);
+  mDirtyLayerInfo |= !mDisplayRect.IsEqualEdges(displayRect);
+  mDisplayRect = displayRect;
+  mSize = size;
+  mIsDRM = aExternalImage->IsFromDRMSource();
+  mIsHDR = surface->IsHDRSurface();
+  mExternalImage = widget::WaylandBuffer::Create(surface);
+  mDirtyChangedSurface = true;
 }
 
 RefPtr<GpuFence> NativeLayerRemoteWayland::GetGpuFence() { return nullptr; }
@@ -196,7 +235,9 @@ void NativeLayerRemoteWayland::FlushDirtyLayerInfoToCommandQueue() {
         // Hold a global reference while the descriptor is in flight, so the
         // buffer isn't recycled before the parent process imports it. The
         // parent releases this reference once it has imported the surface.
-        surface->GlobalRefAdd();
+        if (surface->GetGlobalRefCountFd()) {
+          surface->GlobalRefAdd();
+        }
         desc = Some(surfaceDesc.get_SurfaceDescriptorDMABuf());
       } else {
         gfxCriticalNoteOnce << "Failed to serialize DMABufSurface.";
