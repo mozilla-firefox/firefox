@@ -171,6 +171,11 @@ export const adjustCertInformation = cert => {
           createEntryItem("key-size", cert.subjectPublicKeyInfo.keysize),
           createEntryItem("curve", cert.subjectPublicKeyInfo.crv),
           createEntryItem("public-value", cert.subjectPublicKeyInfo.xy, true),
+          createEntryItem(
+            "public-value",
+            cert.subjectPublicKeyInfo.publicValue,
+            true
+          ),
           createEntryItem("exponent", cert.subjectPublicKeyInfo.e),
           createEntryItem("modulus", cert.subjectPublicKeyInfo.n, true),
         ].filter(elem => elem != null);

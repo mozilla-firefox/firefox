@@ -12,6 +12,9 @@ support-files = [
 
 ["browser_checkLongHex.js"]
 
+["browser_checkMLDSA.js"]
+support-files = ["mldsa44.pem"]
+
 ["browser_checkMissingCommonName.js"]
 
 ["browser_checkNonEmptyFields.js"]

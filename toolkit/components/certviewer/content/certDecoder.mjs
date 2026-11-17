@@ -23,8 +23,22 @@ const getTimeZone = () => {
   return timeZone;
 };
 
+const ML_DSA_PARAMETER_SETS = {
+  "2.16.840.1.101.3.4.3.17": "ML-DSA-44",
+  "2.16.840.1.101.3.4.3.18": "ML-DSA-65",
+  "2.16.840.1.101.3.4.3.19": "ML-DSA-87",
+};
+
 const getPublicKeyInfo = x509 => {
-  let publicKey = x509.subjectPublicKeyInfo.parsedKey;
+  let spki = x509.subjectPublicKeyInfo;
+  let mlDsaParameterSet = ML_DSA_PARAMETER_SETS[spki.algorithm.algorithmId];
+  if (mlDsaParameterSet) {
+    return {
+      kty: mlDsaParameterSet,
+      publicValue: hashify(spki.subjectPublicKey.valueBlock.valueHex),
+    };
+  }
+  let publicKey = spki.parsedKey;
   if (publicKey instanceof RSAPublicKey) {
     let modulusJSON = publicKey.modulus.toJSON();
     let modulusHex = modulusJSON.valueBlock.valueHex;
@@ -1124,6 +1138,7 @@ const strings = {
     "1.2.840.10045.4.3.2": "ECDSA with SHA-256",
     "1.2.840.10045.4.3.3": "ECDSA with SHA-384",
     "1.2.840.10045.4.3.4": "ECDSA with SHA-512",
+    ...ML_DSA_PARAMETER_SETS,
   },
 
   aia: {
