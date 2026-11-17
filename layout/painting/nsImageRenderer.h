@@ -7,10 +7,12 @@
 
 #include "Units.h"
 #include "mozilla/AspectRatio.h"
+#include "mozilla/Attributes.h"
 #include "mozilla/SurfaceFromElementResult.h"
 #include "nsStyleStruct.h"
 
 class gfxDrawable;
+class nsIFrame;
 
 namespace mozilla {
 class nsDisplayItem;
@@ -25,6 +27,21 @@ namespace wr {
 class DisplayListBuilder;
 class IpcResourceUpdateQueue;
 }  // namespace wr
+
+// What WebRender image emission needs from a display item, so that it can also
+// be used without one.
+struct MOZ_STACK_CLASS WebRenderImageItemInfo {
+  MOZ_IMPLICIT WebRenderImageItemInfo(nsDisplayItem* aItem);
+  WebRenderImageItemInfo(nsIFrame* aFrame, bool aBackfaceHidden,
+                         uint32_t aPerFrameKey)
+      : mFrame(aFrame),
+        mBackfaceHidden(aBackfaceHidden),
+        mPerFrameKey(aPerFrameKey) {}
+
+  nsIFrame* mFrame;
+  bool mBackfaceHidden;
+  uint32_t mPerFrameKey;
+};
 
 // A CSSSizeOrRatio represents a (possibly partially specified) size for use
 // in computing image sizes. Either or both of the width and height might be
@@ -209,9 +226,10 @@ class nsImageRenderer {
       nsPresContext* aPresContext, mozilla::wr::DisplayListBuilder& aBuilder,
       mozilla::wr::IpcResourceUpdateQueue& aResource,
       const mozilla::layers::StackingContextHelper& aSc,
-      mozilla::layers::RenderRootStateManager* aManager, nsDisplayItem* aItem,
-      const nsRect& aDest, const nsRect& aFill, const nsPoint& aAnchor,
-      const nsRect& aDirty, const nsSize& aRepeatSize, float aOpacity);
+      mozilla::layers::RenderRootStateManager* aManager,
+      const WebRenderImageItemInfo& aItem, const nsRect& aDest,
+      const nsRect& aFill, const nsPoint& aAnchor, const nsRect& aDirty,
+      const nsSize& aRepeatSize, float aOpacity);
 
   /**
    * Draw the image to a single component of a border-image style rendering.
@@ -288,10 +306,11 @@ class nsImageRenderer {
       nsPresContext* aPresContext, mozilla::wr::DisplayListBuilder& aBuilder,
       mozilla::wr::IpcResourceUpdateQueue& aResources,
       const mozilla::layers::StackingContextHelper& aSc,
-      mozilla::layers::RenderRootStateManager* aManager, nsDisplayItem* aItem,
-      const nsRect& aDirtyRect, const nsRect& aDest, const nsRect& aFill,
-      const nsPoint& aAnchor, const nsSize& aRepeatSize,
-      const mozilla::CSSIntRect& aSrc, float aOpacity = 1.0);
+      mozilla::layers::RenderRootStateManager* aManager,
+      const WebRenderImageItemInfo& aItem, const nsRect& aDirtyRect,
+      const nsRect& aDest, const nsRect& aFill, const nsPoint& aAnchor,
+      const nsSize& aRepeatSize, const mozilla::CSSIntRect& aSrc,
+      float aOpacity = 1.0);
 
   /**
    * Helper method for creating a gfxDrawable from mPaintServerFrame or

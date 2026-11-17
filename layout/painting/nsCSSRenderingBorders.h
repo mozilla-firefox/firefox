@@ -273,12 +273,12 @@ class nsCSSBorderImageRenderer final {
                                                 nsIFrame* aForFrame,
                                                 const nsRect& aDirtyRect);
   mozilla::image::ImgDrawResult CreateWebRenderCommands(
-      mozilla::nsDisplayItem* aItem, nsIFrame* aForFrame,
+      const mozilla::WebRenderImageItemInfo& aItem, nsIFrame* aForFrame,
       mozilla::wr::DisplayListBuilder& aBuilder,
       mozilla::wr::IpcResourceUpdateQueue& aResources,
       const mozilla::layers::StackingContextHelper& aSc,
       mozilla::layers::RenderRootStateManager* aManager,
-      mozilla::nsDisplayListBuilder* aDisplayListBuilder);
+      uint32_t aImageDecodeFlags);
 
   nsCSSBorderImageRenderer(const nsCSSBorderImageRenderer& aRhs);
   nsCSSBorderImageRenderer& operator=(const nsCSSBorderImageRenderer& aRhs);

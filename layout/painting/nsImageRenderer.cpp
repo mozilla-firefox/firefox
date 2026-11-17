@@ -649,14 +649,18 @@ ImgDrawResult nsImageRenderer::Draw(nsPresContext* aPresContext,
   return result;
 }
 
+WebRenderImageItemInfo::WebRenderImageItemInfo(nsDisplayItem* aItem)
+    : WebRenderImageItemInfo(aItem->Frame(), aItem->BackfaceIsHidden(),
+                             aItem->GetPerFrameKey()) {}
+
 ImgDrawResult nsImageRenderer::BuildWebRenderDisplayItems(
     nsPresContext* aPresContext, mozilla::wr::DisplayListBuilder& aBuilder,
     mozilla::wr::IpcResourceUpdateQueue& aResources,
     const mozilla::layers::StackingContextHelper& aSc,
-    mozilla::layers::RenderRootStateManager* aManager, nsDisplayItem* aItem,
-    const nsRect& aDirtyRect, const nsRect& aDest, const nsRect& aFill,
-    const nsPoint& aAnchor, const nsSize& aRepeatSize, const CSSIntRect& aSrc,
-    float aOpacity) {
+    mozilla::layers::RenderRootStateManager* aManager,
+    const WebRenderImageItemInfo& aItem, const nsRect& aDirtyRect,
+    const nsRect& aDest, const nsRect& aFill, const nsPoint& aAnchor,
+    const nsSize& aRepeatSize, const CSSIntRect& aSrc, float aOpacity) {
   if (!IsReady()) {
     MOZ_ASSERT_UNREACHABLE(
         "Ensure PrepareImage() has returned true before "
@@ -677,7 +681,7 @@ ImgDrawResult nsImageRenderer::BuildWebRenderDisplayItems(
 
       renderer.BuildWebRenderDisplayItems(aBuilder, aSc, aDest, aFill,
                                           aRepeatSize, aSrc,
-                                          !aItem->BackfaceIsHidden(), aOpacity);
+                                          !aItem.mBackfaceHidden, aOpacity);
       break;
     }
     case StyleImage::Tag::MozSymbolicIcon:
@@ -717,13 +721,13 @@ ImgDrawResult nsImageRenderer::BuildWebRenderDisplayItems(
 
       Maybe<wr::ImageKey> key =
           aManager->CommandBuilder().CreateImageProviderKey(
-              aItem, provider, drawResult, aResources);
+              aItem.mFrame, aItem.mPerFrameKey, provider, drawResult,
+              aResources);
       if (key.isNothing()) {
         break;
       }
 
-      auto rendering =
-          wr::ToImageRendering(aItem->Frame()->UsedImageRendering());
+      auto rendering = wr::ToImageRendering(aItem.mFrame->UsedImageRendering());
       wr::LayoutRect clip = wr::ToLayoutRect(clipRect);
 
       // If we provided a region to the provider, then it already took the
@@ -732,8 +736,8 @@ ImgDrawResult nsImageRenderer::BuildWebRenderDisplayItems(
 
       if (extendMode == ExtendMode::CLAMP) {
         // The image is not repeating. Just push as a regular image.
-        aBuilder.PushImage(dest, clip, !aItem->BackfaceIsHidden(), false,
-                           rendering, key.value(), true,
+        aBuilder.PushImage(dest, clip, !aItem.mBackfaceHidden, false, rendering,
+                           key.value(), true,
                            wr::ColorF{1.0f, 1.0f, 1.0f, aOpacity}, false, false,
                            rasterizedForDest);
       } else {
@@ -764,7 +768,7 @@ ImgDrawResult nsImageRenderer::BuildWebRenderDisplayItems(
         LayoutDeviceSize gapSize = LayoutDeviceSize::FromAppUnits(
             aRepeatSize - aDest.Size(), appUnitsPerDevPixel);
 
-        aBuilder.PushRepeatingImage(fill, clip, !aItem->BackfaceIsHidden(),
+        aBuilder.PushRepeatingImage(fill, clip, !aItem.mBackfaceHidden,
                                     stretchSize, wr::ToLayoutSize(gapSize),
                                     rendering, key.value(), true,
                                     wr::ColorF{1.0f, 1.0f, 1.0f, aOpacity});
@@ -777,7 +781,7 @@ ImgDrawResult nsImageRenderer::BuildWebRenderDisplayItems(
         const int32_t appUnitsPerDevPixel = aPresContext->AppUnitsPerDevPixel();
         auto fillRect = wr::ToLayoutRect(
             LayoutDeviceRect::FromAppUnits(aFill, appUnitsPerDevPixel));
-        aBuilder.PushRect(fillRect, fillRect, !aItem->BackfaceIsHidden(),
+        aBuilder.PushRect(fillRect, fillRect, !aItem.mBackfaceHidden,
                           /* aFoceAntiAliasing = */ false,
                           /* aIsCheckerboard = */ false,
                           wr::ToColorF(ToDeviceColor(color)));
@@ -937,9 +941,10 @@ ImgDrawResult nsImageRenderer::BuildWebRenderDisplayItemsForLayer(
     nsPresContext* aPresContext, mozilla::wr::DisplayListBuilder& aBuilder,
     mozilla::wr::IpcResourceUpdateQueue& aResources,
     const mozilla::layers::StackingContextHelper& aSc,
-    mozilla::layers::RenderRootStateManager* aManager, nsDisplayItem* aItem,
-    const nsRect& aDest, const nsRect& aFill, const nsPoint& aAnchor,
-    const nsRect& aDirty, const nsSize& aRepeatSize, float aOpacity) {
+    mozilla::layers::RenderRootStateManager* aManager,
+    const WebRenderImageItemInfo& aItem, const nsRect& aDest,
+    const nsRect& aFill, const nsPoint& aAnchor, const nsRect& aDirty,
+    const nsSize& aRepeatSize, float aOpacity) {
   if (!IsReady()) {
     MOZ_ASSERT_UNREACHABLE(
         "Ensure PrepareImage() has returned true before "
