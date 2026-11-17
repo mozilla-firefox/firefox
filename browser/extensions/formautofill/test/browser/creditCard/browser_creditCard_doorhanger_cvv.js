@@ -116,15 +116,9 @@ add_task(async function test_save_doorhanger_when_capture_is_off() {
       "credit-card-save-payment-method-doorhanger-description",
       "The description doesn't mention the security code"
     );
-
-    const toggle = content.querySelector("moz-toggle");
-    ok(toggle, "The security codes toggle is shown");
-    await toggle.updateComplete;
-    ok(!toggle.pressed, "The security codes toggle is off");
-    is(
-      toggle.getAttribute("data-l10n-id"),
-      "credit-card-doorhanger-dont-save-security-codes-toggle",
-      "The toggle says security codes aren't saved"
+    ok(
+      !content.querySelector("moz-toggle"),
+      "The security codes toggle isn't offered while saving them is off"
     );
     is(
       cardDetailsL10nId(content),
@@ -132,21 +126,48 @@ add_task(async function test_save_doorhanger_when_capture_is_off() {
       "The card details leave out the uncaptured security code"
     );
 
-    await clickToggle(toggle);
-    ok(
-      Services.prefs.getBoolPref(ENABLED_PREF),
-      "Turning the toggle on turns saving security codes back on"
-    );
-    is(
-      toggle.getAttribute("data-l10n-id"),
-      "credit-card-doorhanger-always-save-security-codes-toggle",
-      "The toggle says security codes are saved"
-    );
-
-    await clickDoorhangerButton(SECONDARY_BUTTON);
+    const onChanged = waitForStorageChangedEvents("add");
+    await clickDoorhangerButton(MAIN_BUTTON);
+    await onChanged;
   });
 
+  ok(
+    !Services.prefs.getBoolPref(ENABLED_PREF),
+    "Saving security codes stays off"
+  );
   await SpecialPowers.popPrefEnv();
+
+  const creditCards = await getCreditCards();
+  is(creditCards.length, 1, "One credit card is saved");
+  ok(!creditCards[0]["cc-csc"], "The security code isn't saved");
+
+  await removeAllRecords();
+});
+
+add_task(async function test_update_doorhanger_when_capture_is_off() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [SUPPORTED_PREF, "on"],
+      [ENABLED_PREF, false],
+    ],
+  });
+  await setStorage(TEST_CREDIT_CARD_1);
+
+  await withUpdateDoorhanger("123", async content => {
+    await checkPlainUpdateContent(content, { withSecurityCode: false });
+
+    const onChanged = waitForStorageChangedEvents("update");
+    await clickDoorhangerButton(MAIN_BUTTON);
+    await onChanged;
+  });
+  await SpecialPowers.popPrefEnv();
+
+  const creditCards = await getCreditCards();
+  is(creditCards.length, 1, "The existing card is updated");
+  is(creditCards[0]["cc-name"], "Mark Smith", "The card is updated");
+  ok(!creditCards[0]["cc-csc"], "The security code isn't saved");
+
+  await removeAllRecords();
 });
 
 add_task(async function test_save_doorhanger_while_json_store_serves() {
@@ -409,7 +430,7 @@ add_task(async function test_save_with_toggle_off_stores_no_security_code() {
   await SpecialPowers.popPrefEnv();
 });
 
-add_task(async function test_dismiss_saves_nothing_and_keeps_toggle() {
+add_task(async function test_dismiss_saves_nothing_and_keeps_toggle_off() {
   await SpecialPowers.pushPrefEnv({
     set: [
       [SUPPORTED_PREF, "on"],
@@ -431,20 +452,92 @@ add_task(async function test_dismiss_saves_nothing_and_keeps_toggle() {
   is((await getCreditCards()).length, 0, "Dismissing saves no card");
 
   await withDoorhanger(CC_VALUES, async content => {
-    const toggle = content.querySelector("moz-toggle");
-    await toggle.updateComplete;
-    ok(!toggle.pressed, "The toggle starts off, as it was left");
-    await clickToggle(toggle);
+    ok(
+      !content.querySelector("moz-toggle"),
+      "The toggle isn't offered once saving security codes is off"
+    );
     await clickDoorhangerButton(SECONDARY_BUTTON);
   });
 
   ok(
-    Services.prefs.getBoolPref(ENABLED_PREF),
-    "Dismissing keeps saving security codes turned on"
+    !Services.prefs.getBoolPref(ENABLED_PREF),
+    "Saving security codes stays off"
   );
   is((await getCreditCards()).length, 0, "Dismissing saves no card");
 
   await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function test_reopened_doorhanger_drops_toggle_once_off() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [SUPPORTED_PREF, "on"],
+      [ENABLED_PREF, true],
+    ],
+  });
+
+  await BrowserTestUtils.withNewTab(
+    { gBrowser, url: CREDITCARD_FORM_URL },
+    async function (browser) {
+      // Once hidden, the doorhanger is removed by the page load the form
+      // submission starts, so wait for that load before reopening it.
+      const onLoaded = BrowserTestUtils.browserLoaded(browser);
+      const onPopupShown = waitForPopupShown();
+      await focusUpdateSubmitForm(browser, {
+        focusSelector: "#cc-name",
+        newValues: CC_VALUES,
+      });
+      await onPopupShown;
+      await onLoaded;
+
+      const content = getNotification().querySelector(
+        ".credit-card-capture-content"
+      );
+      const toggle = content.querySelector("moz-toggle");
+      await toggle.updateComplete;
+      await clickToggle(toggle);
+      ok(
+        content.querySelector("moz-toggle"),
+        "The toggle stays while the doorhanger is open"
+      );
+
+      const { notification } = getNotification();
+      const onHidden = BrowserTestUtils.waitForPopupEvent(
+        PopupNotifications.panel,
+        "hidden"
+      );
+      PopupNotifications.panel.hidePopup();
+      await onHidden;
+
+      const onShown = waitForPopupShown();
+      notification.reshow();
+      await onShown;
+
+      const reopened = getNotification().querySelector(
+        ".credit-card-capture-content"
+      );
+      ok(
+        !reopened.querySelector("moz-toggle"),
+        "The reopened doorhanger doesn't offer the toggle once saving is off"
+      );
+
+      const onChanged = waitForStorageChangedEvents("add");
+      await clickDoorhangerButton(MAIN_BUTTON);
+      await onChanged;
+    }
+  );
+
+  ok(
+    !Services.prefs.getBoolPref(ENABLED_PREF),
+    "Saving security codes stays off"
+  );
+  await SpecialPowers.popPrefEnv();
+
+  const creditCards = await getCreditCards();
+  is(creditCards.length, 1, "One credit card is saved");
+  ok(!creditCards[0]["cc-csc"], "The security code isn't saved");
+
+  await removeAllRecords();
 });
 
 add_task(
