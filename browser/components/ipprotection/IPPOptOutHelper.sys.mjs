@@ -17,14 +17,36 @@ const WIDGET_ID = "ipprotection-button";
 /**
  * This class monitors the optedOut pref and if it sees an opted-out state, it
  * sets the state on IPProtectionService and removes the toolbar widget.
+ * If the widget is added back to the toolbar, the opted-out state is cleared.
  */
 class IPPOptedOutHelperSingleton {
+  #widgetListener = {
+    onWidgetAdded: widgetId => {
+      if (widgetId == WIDGET_ID) {
+        this.#clearOptedOut();
+      }
+    },
+    onAreaReset: () => {
+      if (lazy.CustomizableUI.getPlacementOfWidget(WIDGET_ID)) {
+        this.#clearOptedOut();
+      }
+    },
+  };
+
   init() {
     Services.prefs.addObserver(OPTED_OUT_PREF, this);
+    lazy.CustomizableUI.addListener(this.#widgetListener);
   }
 
   uninit() {
     Services.prefs.removeObserver(OPTED_OUT_PREF, this);
+    lazy.CustomizableUI.removeListener(this.#widgetListener);
+  }
+
+  #clearOptedOut() {
+    if (this.optedOut) {
+      Services.prefs.setBoolPref(OPTED_OUT_PREF, false);
+    }
   }
 
   initOnStartupCompleted() {}

@@ -30,3 +30,52 @@ add_task(async function test_opt_out() {
 
   Services.prefs.clearUserPref("browser.ipProtection.optedOut");
 });
+
+/**
+ * Tests that adding the widget back to the toolbar clears the optedOut pref
+ */
+add_task(async function test_opt_in_when_widget_added() {
+  Services.prefs.setBoolPref("browser.ipProtection.optedOut", true);
+
+  Assert.ok(
+    !CustomizableUI.getPlacementOfWidget(lazy.IPProtectionWidget.WIDGET_ID),
+    "ipprotection widget should not be placed"
+  );
+
+  CustomizableUI.addWidgetToArea(
+    lazy.IPProtectionWidget.WIDGET_ID,
+    CustomizableUI.AREA_NAVBAR
+  );
+
+  Assert.ok(
+    !Services.prefs.getBoolPref("browser.ipProtection.optedOut"),
+    "optedOut pref should be cleared after adding the widget"
+  );
+
+  Services.prefs.clearUserPref("browser.ipProtection.optedOut");
+});
+
+/**
+ * Tests that restoring the toolbar defaults clears the optedOut pref
+ */
+add_task(async function test_opt_in_when_toolbar_reset() {
+  Services.prefs.setBoolPref("browser.ipProtection.optedOut", true);
+
+  Assert.ok(
+    !CustomizableUI.getPlacementOfWidget(lazy.IPProtectionWidget.WIDGET_ID),
+    "ipprotection widget should not be placed"
+  );
+
+  CustomizableUI.reset();
+
+  Assert.ok(
+    CustomizableUI.getPlacementOfWidget(lazy.IPProtectionWidget.WIDGET_ID),
+    "ipprotection widget should be placed after reset"
+  );
+  Assert.ok(
+    !Services.prefs.getBoolPref("browser.ipProtection.optedOut"),
+    "optedOut pref should be cleared after restoring defaults"
+  );
+
+  Services.prefs.clearUserPref("browser.ipProtection.optedOut");
+});
