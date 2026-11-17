@@ -329,6 +329,12 @@ nsresult SMILAnimationFunction::InterpolateResult(const SMILValueArray& aValues,
     calcMode = SMILCalcMode::Discrete;
   }
 
+  auto ToIndex = [](double aScaledSimpleProgress,
+                    const SMILValueArray& aValues) {
+    return std::min((size_t)std::floor(aScaledSimpleProgress),
+                    aValues.Length() - 1);
+  };
+
   if (calcMode != SMILCalcMode::Discrete) {
     // Get the normalised progress between adjacent values
     const SMILValue* from = nullptr;
@@ -358,7 +364,7 @@ nsresult SMILAnimationFunction::InterpolateResult(const SMILValueArray& aValues,
               // SMILCalcMode::Spline
       double scaledSimpleProgress =
           ScaleSimpleProgress(simpleProgress, calcMode, aValues.Length() - 1);
-      uint32_t index = (uint32_t)std::floor(scaledSimpleProgress);
+      uint32_t index = ToIndex(scaledSimpleProgress, aValues);
       from = &aValues[index];
       to = &aValues[index + 1];
       intervalProgress =
@@ -385,12 +391,12 @@ nsresult SMILAnimationFunction::InterpolateResult(const SMILValueArray& aValues,
       // the to="" value), and honor keyTimes="" as well.
       double scaledSimpleProgress =
           ScaleSimpleProgress(simpleProgress, SMILCalcMode::Discrete, 2.0);
-      uint32_t index = (uint32_t)std::floor(scaledSimpleProgress);
+      uint32_t index = ToIndex(scaledSimpleProgress, aValues);
       aResult = index == 0 ? aBaseValue : aValues[0];
     } else {
       double scaledSimpleProgress = ScaleSimpleProgress(
           simpleProgress, SMILCalcMode::Discrete, aValues.Length());
-      uint32_t index = (uint32_t)std::floor(scaledSimpleProgress);
+      uint32_t index = ToIndex(scaledSimpleProgress, aValues);
       aResult = aValues[index];
 
       // For animation of CSS properties, normally when interpolating we perform
