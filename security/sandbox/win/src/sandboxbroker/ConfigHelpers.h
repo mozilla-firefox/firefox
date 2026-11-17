@@ -26,6 +26,8 @@ class SizeTrackingConfig {
   virtual sandbox::ResultCode AllowFileAccess(sandbox::FileSemantics aSemantics,
                                               const wchar_t* aPattern);
 
+  sandbox::ResultCode AllowFontFileAccess();
+
  private:
   sandbox::TargetConfig* mConfig;
   int32_t mRemainingSize;

@@ -433,4 +433,31 @@ TEST_F(UserFontConfigHelperTest, PathsTooLongOneOutsideUserProfile) {
   EXPECT_TRUE(CreateHelperAndCallAddRules());
 }
 
+TEST(SizeTrackingConfig, FontFileAccessAdded)
+{
+  StrictMock<MockConfig> config;
+  EXPECT_CALL(config, AllowFontFileAccess())
+      .WillOnce(::testing::Return(SBOX_ALL_OK));
+
+  sandboxing::SizeTrackingConfig trackingConfig(&config, 1);
+  EXPECT_EQ(trackingConfig.AllowFontFileAccess(), SBOX_ALL_OK);
+}
+
+TEST(SizeTrackingConfig, FontFileAccessNotAddedWhenNoSpace)
+{
+  StrictMock<MockConfig> config;
+  EXPECT_CALL(config,
+              AllowFileAccess(Eq(FileSemantics::kAllowReadonly), StrEq(L"a")))
+      .WillRepeatedly(::testing::Return(SBOX_ALL_OK));
+  EXPECT_CALL(config, AllowFontFileAccess()).Times(0);
+
+  // Fill the storage with rules that are smaller than the font file rules.
+  sandboxing::SizeTrackingConfig trackingConfig(&config, 1);
+  while (trackingConfig.AllowFileAccess(FileSemantics::kAllowReadonly, L"a") ==
+         SBOX_ALL_OK) {
+  }
+
+  EXPECT_EQ(trackingConfig.AllowFontFileAccess(), SBOX_ERROR_NO_SPACE);
+}
+
 }  // namespace mozilla

@@ -13,6 +13,7 @@
 #include <string>
 
 #include "ConfigHelpers.h"
+#include "FontFileValidator.h"
 #include "GfxDriverInfo.h"
 #include "WinUtils.h"
 #include "base/win/sid.h"
@@ -94,6 +95,10 @@ LazyLogModule sSandboxBrokerLog("SandboxBroker");
 // session.
 static StaticAutoPtr<nsTHashtable<nsCStringHashKey>> sLaunchErrors;
 
+// Whether the font file validator has been registered, which is required for
+// the font file rule to be used.
+static bool sFontFileValidatorRegistered = false;
+
 // This helper function is our version of SandboxWin::AddWin32kLockdownConfig
 // of Chromium, making sure the MITIGATION_WIN32K_DISABLE flag is set before
 // adding the SUBSYS_WIN32K_LOCKDOWN rule which is required by
@@ -150,7 +155,9 @@ void SandboxBroker::Initialize(sandbox::BrokerServices* aBrokerServices,
                            sandboxing::kSetBrokerGeckoServicesName));
   if (setBrokerGeckoServices) {
     sandboxing::BrokerGeckoServices services;
+    services.validateFontFile = sandboxing::ValidateFontFile;
     setBrokerGeckoServices(&services);
+    sFontFileValidatorRegistered = true;
   }
 
   // Clear statics on shutdown.
