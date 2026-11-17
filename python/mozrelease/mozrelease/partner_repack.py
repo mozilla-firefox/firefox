@@ -548,7 +548,7 @@ class RepackMac(RepackBase):
             Path(self.appName) / MAC_DEST_DIR,
         )
         shellCommand(tar_cmd)
-        gzip_command = "gzip %s" % self.uncompressed_build
+        gzip_command = f"gzip -3 {self.uncompressed_build}"
         shellCommand(gzip_command)
 
 
