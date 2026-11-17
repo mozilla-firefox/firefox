@@ -223,11 +223,9 @@ add_task(async function migratedFile() {
   // Check that the reserved userContextIdInternal.webextStorageLocal identity exists.
 
   const webextStorageLocalPrivateId =
-    ContextualIdentityService._defaultIdentities
-      .filter(
-        identity => identity.name === "userContextIdInternal.webextStorageLocal"
-      )
-      .pop().userContextId;
+    ContextualIdentityService.getPrivateIdentity(
+      "userContextIdInternal.webextStorageLocal"
+    ).userContextId;
 
   const privWebExtStorageLocal = cis.getPrivateIdentity(
     "userContextIdInternal.webextStorageLocal"
