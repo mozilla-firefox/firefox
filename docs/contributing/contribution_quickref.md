@@ -64,7 +64,7 @@ python3 bootstrap.py
 
 More information on {doc}`building Firefox for Windows </setup/windows_build>`.
 
-### To Setup Firefox On macOS and Linux
+### To Setup Firefox On macOS, Linux, or for Android
 
 ```shell
 curl -L https://raw.githubusercontent.com/mozilla-firefox/firefox/refs/heads/main/python/mozboot/bin/bootstrap.py -O
@@ -72,25 +72,10 @@ curl -L https://raw.githubusercontent.com/mozilla-firefox/firefox/refs/heads/mai
 python3 bootstrap.py
 ```
 
-More information on {doc}`building Firefox for Linux </setup/linux_build>` and {doc}`building Firefox for MacOS </setup/macos_build>`.
-
-### To Setup Firefox for Android
-
-```shell
-curl -L https://raw.githubusercontent.com/mozilla-firefox/firefox/refs/heads/main/python/mozboot/bin/bootstrap.py -O
-
-python3 bootstrap.py
-```
-
-More information on {doc}`building Firefox for Android </mobile/android/index>`
+More information on {doc}`building Firefox for Linux </setup/linux_build>`, {doc}`building Firefox for MacOS </setup/macos_build>`
+and {doc}`building Firefox for Android </mobile/android/index>`.
 
 ## To set up your editor
-
-:::{note}
-Visual Studio Code is the recommended editor for Firefox development.
-Not because it is better than the other editors but because we decided to
-focus our energy on a single editor.
-:::
 
 Setting up your editor is an important part of the contributing process. Having
 linting and other features integrated, saves you time and will help with reducing
@@ -123,8 +108,7 @@ The Firefox build system will download sccache automatically.
 :::{note}
 The default build is a compiled build with optimizations. Check out the
 {doc}`mozconfig file documentation </setup/configuring_build_options>`
-to see other build options. If you don't plan to change C++ or Rust code,
-an {doc}`artifact build <build/artifact_builds>` will be faster.
+to see other build options.
 :::
 
 To run it:
@@ -135,9 +119,9 @@ To run it:
 
 This command will open your locally built Firefox in a new window.
 
-{doc}`More information about building Firefox on Linux </setup/linux_build>` / {doc}`More information about building Firefox on MacOS </setup/macos_build>`
-
-If you encounter build errors, please reference the more detailed "Building Firefox" on your specific operating system document and specifically the "Troubleshooting" section.
+If you encounter build errors, please reference the more detailed "Building Firefox" document for your
+operating system ({doc}`Windows </setup/windows_build>`, {doc}`Linux </setup/linux_build>`
+or {doc}`macOS </setup/macos_build>`) and specifically its "Troubleshooting" section.
 
 (write-a-patch)=
 
@@ -183,17 +167,13 @@ For example, here is an example of a good commit message:
 "Bug 123456 - Null-check presentation shell so we don't crash when a button removes itself
 during its own onclick handler. r=person"
 
-To {doc}`find a reviewer or a review group <reviews>`, the easiest way is to run
-`mach file-info reviewers` on the files you modified:
+To find a reviewer or a review group, run `mach file-info reviewers` on the files you modified:
 
 ```shell
 ./mach file-info reviewers dom/media/mediasink/AudioSink.cpp
 ```
 
-It prints the reviewer groups covering those files, starting with the ones Phabricator
-would add on its own. Failing that, run `git log <modified-file>` on the relevant files,
-and look who usually is reviewing the actual changes (ie not reformat, renaming of
-variables, etc).
+See {doc}`reviews` for the full reviewer syntax and other ways of choosing a reviewer.
 
 To visualize your patch in the repository, run:
 
@@ -299,27 +279,17 @@ moz-phab submit <first_revision>::<last_revision>
 [More
 information on how to use Phabricator and MozPhab](https://moz-conduit.readthedocs.io/en/latest/phabricator-user.html)
 
-## To update the working directory
-
-If you're finished with a patch and would like to return to the tip to make a new patch:
-
-```shell
-git pull --rebase
-```
-
 ## To update a submitted patch
 
 It is rare that a reviewer will accept the first version of patch. Moreover,
 as the code review bot might suggest some improvements, changes to your patch
 may be required.
 
-If your patch is not loaded in your working directory, you first need to re-apply it:
+If your patch is not loaded in your working directory, you first need to
+{ref}`re-apply it <stack-quickref-re-applying-a-patch>`:
 
 ```shell
 moz-phab patch D<revision_id>
-
-# Or you can use the URL of the revision on Phabricator
-moz-phab patch https://phabricator.services.mozilla.com/D<revision_id>
 ```
 
 Make your changes in the working folder and run:
@@ -357,7 +327,8 @@ The submission step is the same as for the initial patch.
 
 ## Retrieve new changes from the repository
 
-To pull changes from the repository, run:
+To pull changes from the repository, for example when you're finished with a patch
+and would like to return to the tip to make a new one, run:
 
 ```shell
 # Git
@@ -382,8 +353,8 @@ The landing procedure will automatically close the review and the bug.
 
 ## Contributing to GeckoView
 
-Note that the GeckoView setup and contribution processes are different from those of Firefox;
-GeckoView setup and contribution docs live in [geckoview.dev](https://geckoview.dev).
+GeckoView is developed in this repository and follows the same process; see the
+{ref}`GeckoView Contributor Guide <geckoview-contributor-guide>` for the GeckoView-specific steps.
 
 ## More documentation about contribution
 

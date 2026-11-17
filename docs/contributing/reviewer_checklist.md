@@ -9,11 +9,8 @@ will lead to a smoother, more rapid process of review and acceptance.
 
 ## Tooling
 
-- Install the [MyQOnly
-  add-on](https://addons.mozilla.org/firefox/addon/myqonly/). This is
-  strongly recommended for anyone who reviews patches: it displays a
-  badge with the number of reviews waiting on you in Phabricator,
-  Bugzilla and GitHub, so requests don't sit unnoticed for days.
+- Reviewers should track their queue with the MyQOnly add-on, see
+  {ref}`keeping-track-of-your-review-queue`.
 
 ## Good web citizenship
 

@@ -45,7 +45,7 @@ about code changes take place in the associated code
 review, so be sure the bug describes the exact problem being solved.
 
 Please verify the bug is for the correct product and component. For more
-information, ask questions on the newsgroups, or on the #developers room
+information, ask questions in the #developers room
 on [chat.mozilla.org](https://chat.mozilla.org).
 
 The person working on a bug should be the 'assignee' of that bug in
@@ -70,9 +70,7 @@ proposed change is considered acceptable. They may want to look over any
 new user interface (UI review), functions (API review), or testcases for
 the proposed change.
 
-If module ownership is not clear, ask on the newsgroups or [on
-Matrix](https://chat.mozilla.org). See {doc}`reviews` for the other
-ways of identifying a suitable reviewer or review group.
+See {doc}`reviews` for how to identify a suitable reviewer or review group.
 
 ## Working on a patch
 
@@ -83,12 +81,8 @@ stored in our [git repository](https://github.com/mozilla-firefox/firefox).
 Each patch should represent a single complete change, separating
 distinct changes into multiple individual patches. If your change
 results in a large, complex patch, seek if it can be broken into
-[smaller, easy to understand patches representing complete
-steps](https://we.phorge.it/book/flavor/article/writing_reviewable_code/#many-small-commits),
-applied on top of each other. This makes it easier to review your
-changes, [leading to quicker
-reviews,](https://groups.google.com/group/mozilla.dev.planning/msg/2f99460f57f776ef?hl=en)
-and improved confidence in this review outcome.
+smaller, easy to understand patches applied on top of each other; see
+{doc}`reviewable-patch-series` and the {doc}`stack_quickref`.
 
 Also ensure that your commit message is formatted appropriately. A
 simple commit message should look like this:
@@ -126,9 +120,8 @@ linter tool which runs static analysis on our JavaScript, for best
 practices and common mistakes. See {doc}`/code-quality/lint/linters/eslint` for more information.
 
 Ensure that your change has not caused regressions, by running the
-automated test suite locally, or using the [Mozilla try
-server](https://wiki.mozilla.org/Build:TryServer). Module owners, or
-developers [on Matrix](https://chat.mozilla.org) may be willing to
+automated test suite locally, or using the {doc}`try server </tools/try/index>`.
+Module owners, or developers [on Matrix](https://chat.mozilla.org) may be willing to
 submit jobs for those currently without try server privileges.
 
 ## Submit the patch
@@ -198,15 +191,9 @@ A patch can be pushed (aka. 'landed') after it has been properly
 reviewed.
 
 :::{note}
-Be sure to build the application with the patch applied. This
-ensures it runs as expected, passing automated tests, and/or runs
-through the [try
-server](https://wiki.mozilla.org/Build:TryServerAsBranch). In the
-bug, please also mention you have completed this step.
-
 Submitting untested patches wastes the committer's time, and may burn
-the release tree. Please save everyone's time and effort by
-completing all necessary verifications.
+the release tree. Make sure the patch went through the [testing](#testing)
+step above, and mention in the bug that you have done so.
 :::
 
 Ask the reviewer to land the patch for you.

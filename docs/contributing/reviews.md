@@ -103,6 +103,8 @@ one before putting it in a commit message, run:
 ./mach file-info reviewer-groups
 ```
 
+(keeping-track-of-your-review-queue)=
+
 ## Keeping track of your review queue
 
 If you review patches, you are strongly encouraged to install the

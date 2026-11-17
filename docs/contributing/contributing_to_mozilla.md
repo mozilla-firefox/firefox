@@ -10,18 +10,13 @@ world, you're in the right place.
 ```
 
 The Mozilla community prides itself on being an open, accessible, and
-friendly community for new participants. If you have any difficulties
-getting involved or finding answers to your questions, please [come and
-ask your questions in our
-chatroom](https://chat.mozilla.org/#/room/#introduction:mozilla.org),
-where we can help you get started.
-
-We know even before you start contributing that getting set up to work
+friendly community for new participants. We know that getting set up to work
 on Firefox and finding a bug that's a good fit for your skills can be a
-challenge, and we're always looking for ways to improve this process: making
-Mozilla more open, accessible, and easier to participate with. If you're
-having any trouble following this documentation, or hit a barrier you
-can't get around, please join us in the Introduction room on Matrix.
+challenge, and we're always looking for ways to improve this process. If you
+have any difficulties getting involved, hit a barrier you can't get around, or
+can't find answers to your questions, please [come and ask in the
+Introduction room on Matrix](https://chat.mozilla.org/#/room/#introduction:mozilla.org),
+where we can help you get started.
 
 ## What skills do I need?
 

@@ -115,6 +115,8 @@ git remote update
 git rebase origin/main
 ```
 
+(stack-quickref-re-applying-a-patch)=
+
 ## Re-applying a patch to update it
 
 If you still have the commit for that revision in your working directory
