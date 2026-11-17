@@ -300,9 +300,6 @@ fail-if = [
 ["browser_webconsole_select_all.js"]
 
 ["browser_webconsole_show_subresource_security_errors.js"]
-skip-if = [
-  "verify",
-]
 
 ["browser_webconsole_shows_reqs_from_netmonitor.js"]
 

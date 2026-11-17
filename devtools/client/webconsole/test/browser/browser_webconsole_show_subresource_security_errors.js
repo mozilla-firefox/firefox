@@ -12,6 +12,10 @@ const TEST_DOC =
   "test/browser/test-subresource-security-error.html";
 const SAMPLE_MSG = "specified a header that could not be parsed successfully.";
 
+// STS headers are only processed on network responses, so if the test runs
+// again in the same browser, a cached script wouldn't log the warning.
+registerCleanupFunction(() => Services.cache2.clear());
+
 add_task(async function () {
   const hud = await openNewTabAndConsole(TEST_URI);
   await clearOutput(hud);
