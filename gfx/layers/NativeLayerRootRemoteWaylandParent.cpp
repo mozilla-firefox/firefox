@@ -7,6 +7,8 @@
 #include "mozilla/CheckedInt.h"
 #include "mozilla/gfx/Logging.h"
 #include "mozilla/layers/NativeLayerWayland.h"
+#include "mozilla/widget/DMABufSurface.h"
+#include "mozilla/widget/WaylandBuffer.h"
 #include "xpcpublic.h"
 
 namespace mozilla {
@@ -143,8 +145,11 @@ void NativeLayerRootRemoteWaylandParent::HandleCreateLayer(uint64_t aID,
 
 void NativeLayerRootRemoteWaylandParent::HandleCreateLayerForExternalTexture(
     uint64_t aID, bool aOpaque) {
+  // External images are rendered in the GPU process too, so they arrive here
+  // as surfaces to present. The size is set with each surface.
   RefPtr<NativeLayer> layer =
-      mRealNativeLayerRoot->CreateLayerForExternalTexture(aOpaque);
+      mRealNativeLayerRoot->CreateLayerForSurfacePresentation(IntSize(),
+                                                              aOpaque);
   mKnownLayers.InsertOrUpdate(aID, layer);
 }
 
@@ -201,16 +206,36 @@ void NativeLayerRootRemoteWaylandParent::HandleLayerInfo(
 void NativeLayerRootRemoteWaylandParent::HandleChangedSurface(
     uint64_t aID, const Maybe<SurfaceDescriptorDMABuf>& aDesc, bool aIsDRM,
     bool aIsHDR, IntSize aSize) {
+  // Import the surface first, even if the layer is unknown, so that the
+  // reference the GPU process holds while the surface is in flight is always
+  // released. Our imported surface holds its own reference until the Wayland
+  // compositor releases the buffer, which tells the GPU process when it can
+  // reuse it.
+  RefPtr<widget::WaylandBuffer> buffer;
+  if (aDesc) {
+    if (RefPtr<DMABufSurface> surface =
+            DMABufSurface::CreateDMABufSurface(SurfaceDescriptor(*aDesc))) {
+      surface->GlobalRefRelease();
+      buffer = widget::WaylandBuffer::Create(surface);
+    } else {
+      gfxCriticalNoteOnce << "Failed to import DMABufSurface from GPU process.";
+    }
+  }
+
   auto entry = mKnownLayers.MaybeGet(aID);
   if (!entry) {
     gfxWarning() << "Got a ChangedSurface for an unknown layer.";
     return;
   }
 
-  RefPtr<NativeLayerWayland> layer = (*entry)->AsNativeLayerWayland();
-  MOZ_ASSERT(layer, "All of our known layers should be NativeLayerWayland.");
-
-  // TODO: actually pass the surface.
+  NativeLayerWayland* layerWayland = (*entry)->AsNativeLayerWayland();
+  if (RefPtr<NativeLayerWaylandPresentation> layer =
+          layerWayland ? layerWayland->AsNativeLayerWaylandPresentation()
+                       : nullptr) {
+    layer->SetBufferToPresent(std::move(buffer), aSize);
+  } else {
+    gfxWarning() << "Got a ChangedSurface for a layer that can't present.";
+  }
 }
 
 }  // namespace layers
