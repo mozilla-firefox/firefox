@@ -30,9 +30,6 @@
     "Kelly Cochrane": {
       "bzmail": "kcochrane@mozilla.com"
     },
-    "Cieara Meador": {
-      "bzmail": "cmeador@mozilla.com"
-    },
     "Stephen Thompson": {
       "bzmail": "sthompson@mozilla.com"
     },
@@ -44,9 +41,6 @@
     },
     "DJ Walker": {
       "bzmail": "dwalker@mozilla.com"
-    },
-    "Chris DuPuis": {
-      "bzmail": "cdupuis@mozilla.com"
     },
     "Nicholas Rishel": {
       "bzmail": "nrishel@mozilla.com"
@@ -64,7 +58,6 @@
   "duty-start-dates": {
     "2025-06-01": "Jared Hirsch",
     "2025-07-01": "Kelly Cochrane",
-    "2025-08-01": "Cieara Meador",
     "2025-09-01": "Hanna Jones",
     "2025-10-01": "Stephen Thompson",
     "2025-11-01": "Emily McMinn",
@@ -72,7 +65,6 @@
     "2026-01-01": "DJ Walker",
     "2026-02-01": "Mark Banner",
     "2026-03-01": "Fred Chasen",
-    "2026-04-01": "Chris DuPuis",
     "2026-05-01": "Jared Hirsch",
     "2026-06-01": "Ed Lee",
     "2026-07-01": "Dan Mosedale",
