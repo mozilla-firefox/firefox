@@ -1700,8 +1700,14 @@ already_AddRefed<VideoFrame> VideoFrame::Constructor(
     return nullptr;
   }
 
-  RefPtr<layers::SourceSurfaceImage> image =
-      new layers::SourceSurfaceImage(surface.get());
+  auto imageResult = CreateImageFromSourceSurface(surface);
+  if (imageResult.isErr()) {
+    auto err = imageResult.unwrapErr();
+    aRv.ThrowTypeError(err.Message());
+    return nullptr;
+  }
+
+  RefPtr<layers::Image> image = imageResult.unwrap();
   auto r = InitializeFrameWithResourceAndSize(global, aInit, image.forget());
   if (r.isErr()) {
     aRv.ThrowTypeError(r.unwrapErr());
