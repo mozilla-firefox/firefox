@@ -74,5 +74,6 @@ PYTHON_UNITTEST_MANIFESTS += [
     "lint/test/python.toml",
     "rb/test/python.toml",
     "tryselect/test/python.toml",
+    "ts/test/python/python.toml",
     "update-packaging/test/python.toml",
 ]

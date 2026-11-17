@@ -1,0 +1,4 @@
+[DEFAULT]
+subsuite = "ts"
+
+["test_typelibs.py"]

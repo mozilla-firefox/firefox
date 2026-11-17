@@ -1,0 +1,5 @@
+/* Any copyright is dedicated to the Public Domain.
+ * http://creativecommons.org/publicdomain/zero/1.0/ */
+
+[scriptable, uuid(8b2e5c3a-1d3f-4b8e-9c61-2f0d7a4e5b10)]
+interface nsISupports {};

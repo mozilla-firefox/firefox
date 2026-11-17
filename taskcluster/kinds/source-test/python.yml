@@ -425,6 +425,21 @@ tryselect:
             - 'taskcluster/requirements.txt'
             - 'tools/tryselect/**'
 
+ts:
+    description: tools/ts unit tests
+    platform:
+        - linux2404-64/opt
+    treeherder:
+        symbol: ts
+    run:
+        using: python-test
+        subsuite: ts
+    when:
+        files-changed:
+            - 'tools/ts/*.py'
+            - 'tools/ts/test/python/**'
+            - 'xpcom/idl-parser/**'
+
 update-packaging:
     description: tools/update-packaging unit tests
     platform:

@@ -1,0 +1,10 @@
+/* Any copyright is dedicated to the Public Domain.
+ * http://creativecommons.org/publicdomain/zero/1.0/ */
+
+#include "nsITsSupports.idl"
+
+[scriptable, uuid(3f6a9d21-7c4b-4e0a-8d52-6b1e9f2c7a34)]
+interface nsITsChild : nsISupports
+{
+  readonly attribute long count;
+};
