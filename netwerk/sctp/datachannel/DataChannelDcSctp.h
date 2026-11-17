@@ -20,7 +20,7 @@ class DataChannelConnectionDcSctp : public DataChannelConnection,
                               MediaTransportHandler* aHandler);
 
   // DataChannelConnection API
-  void CloseAssociation() override;
+  void Destroy() override;
   bool RaiseStreamLimitTo(uint16_t aNewLimit) override;
   uint16_t GetStreamIdCeiling() const override;
   void OnTransportReady() override;

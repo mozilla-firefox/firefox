@@ -1,0 +1,65 @@
+schema: 1
+
+bugzilla:
+  product: Core
+  component: "WebRTC: Networking"
+
+origin:
+  name: sctp
+  description: userland SCTP stack
+
+  url: https://github.com/sctplab/usrsctp/blob/master/Manual.md
+
+  release: c625e21950600460cb5c6075616eb1622df2b06a (2026-10-07T14:32:40Z).
+  revision: c625e21950600460cb5c6075616eb1622df2b06a
+
+  license: BSD-3-Clause
+  license-file: LICENSE.md
+
+vendoring:
+  url: https://github.com/sctplab/usrsctp
+  source-hosting: github
+  tracking: commit
+
+  exclude:
+    - "meson*"
+    - "Makefile.*"
+    - "Manual.*"
+    - "CMake*"
+    - ".*"
+    - "*.py"
+    - "*.in"
+    - "*.ac"
+    - bootstrap
+    - cmake/
+    - fuzzer/
+    - programs/
+    - 'usrsctplib/Makefile.*'
+    - 'usrsctplib/meson.*'
+    - 'usrsctplib/CMake*'
+    - 'usrsctplib/netinet*/meson.*'
+
+  keep:
+    - moz.build
+    - restore_mod.sh
+
+  update-actions:
+    - action: move-dir
+      from: '{vendor_dir}/usrsctplib'
+      to: '{vendor_dir}'
+    - action: run-script
+      script: '{yaml_dir}/restore_mod.sh'
+      cwd: '{yaml_dir}'
+
+  patches:
+    - tsn-gap-check.patch
+    - flush-before-process-init.patch
+    - interleaving-supported-define.patch
+
+updatebot:
+  maintainer-phab: "#webrtc-reviewers"
+  maintainer-bz: rjesup@jesup.org
+  tasks:
+    - type: vendoring
+      enabled: true
+      frequency: release

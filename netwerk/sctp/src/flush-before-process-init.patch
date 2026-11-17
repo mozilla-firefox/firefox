@@ -1,0 +1,76 @@
+diff --git a/netinet/sctp_input.c b/netinet/sctp_input.c
+--- a/netinet/sctp_input.c
++++ b/netinet/sctp_input.c
+@@ -255,6 +255,8 @@
+ 	struct sctp_init *init;
+ 	struct sctp_association *asoc;
+ 	struct sctp_nets *lnet;
++	struct sctp_stream_reset_list *strrst, *nstrrst;
++	struct sctp_queued_to_read *sq, *nsq;
+ 	unsigned int i;
+ 
+ 	SCTP_TCB_LOCK_ASSERT(stcb);
+@@ -355,6 +357,27 @@
+ 	asoc->advanced_peer_ack_point = asoc->last_acked_seq;
+ 	/* open the requested streams */
+ 
++	/*
++	 * Flush inbound stream state carrying stream ids validated against the
++	 * old streamincnt before strmin is reallocated below; otherwise a later
++	 * drain of pending_reply_queue could index the new (smaller) strmin out
++	 * of bounds.
++	 */
++	TAILQ_FOREACH_SAFE(strrst, &asoc->resetHead, next_resp, nstrrst) {
++		TAILQ_REMOVE(&asoc->resetHead, strrst, next_resp);
++		SCTP_FREE(strrst, SCTP_M_STRESET);
++	}
++	TAILQ_FOREACH_SAFE(sq, &asoc->pending_reply_queue, next, nsq) {
++		TAILQ_REMOVE(&asoc->pending_reply_queue, sq, next);
++		if (sq->data) {
++			sctp_m_freem(sq->data);
++			sq->data = NULL;
++		}
++		sctp_free_remote_addr(sq->whoFrom);
++		sq->whoFrom = NULL;
++		sq->stcb = NULL;
++		sctp_free_a_readq(stcb, sq);
++	}
+ 	if (asoc->strmin != NULL) {
+ 		/* Free the old ones */
+ 		for (i = 0; i < asoc->streamincnt; i++) {
+@@ -1472,8 +1495,6 @@
+ 	struct sctp_asconf_addr *aparam, *naparam;
+ 	struct sctp_asconf_ack *aack, *naack;
+ 	struct sctp_tmit_chunk *chk, *nchk;
+-	struct sctp_stream_reset_list *strrst, *nstrrst;
+-	struct sctp_queued_to_read *sq, *nsq;
+ 	struct sctp_nets *net;
+ 	struct mbuf *op_err;
+ 	int init_offset, initack_offset, i;
+@@ -1985,22 +2006,11 @@
+ 			stcb->asoc.strmout[i].next_mid_unordered = 0;
+ 			stcb->asoc.strmout[i].sid = i;
+ 			stcb->asoc.strmout[i].last_msg_incomplete = 0;
+-		}
+-		TAILQ_FOREACH_SAFE(strrst, &asoc->resetHead, next_resp, nstrrst) {
+-			TAILQ_REMOVE(&asoc->resetHead, strrst, next_resp);
+-			SCTP_FREE(strrst, SCTP_M_STRESET);
+ 		}
+-		TAILQ_FOREACH_SAFE(sq, &asoc->pending_reply_queue, next, nsq) {
+-			TAILQ_REMOVE(&asoc->pending_reply_queue, sq, next);
+-			if (sq->data) {
+-				sctp_m_freem(sq->data);
+-				sq->data = NULL;
+-			}
+-			sctp_free_remote_addr(sq->whoFrom);
+-			sq->whoFrom = NULL;
+-			sq->stcb = NULL;
+-			sctp_free_a_readq(stcb, sq);
+-		}
++		/*
++		 * resetHead and pending_reply_queue are flushed by
++		 * sctp_process_init() below, where strmin is reallocated.
++		 */
+ 		TAILQ_FOREACH_SAFE(chk, &asoc->control_send_queue, sctp_next, nchk) {
+ 			TAILQ_REMOVE(&asoc->control_send_queue, chk, sctp_next);
+ 			if (chk->data) {

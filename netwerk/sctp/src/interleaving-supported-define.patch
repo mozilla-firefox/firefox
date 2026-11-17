@@ -1,0 +1,13 @@
+diff --git a/usrsctp.h b/usrsctp.h
+--- a/usrsctp.h
++++ b/usrsctp.h
+@@ -568,6 +568,9 @@
+ #define SCTP_PLUGGABLE_SS               0x00001203
+ #define SCTP_SS_VALUE                   0x00001204
+ 
++/* For I-DATA */
++#define SCTP_INTERLEAVING_SUPPORTED 0x00001206
++
+ /*
+  * read-only options
+  */

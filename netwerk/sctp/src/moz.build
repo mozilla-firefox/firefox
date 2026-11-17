@@ -1,0 +1,95 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+with Files("**"):
+    BUG_COMPONENT = ("Core", "WebRTC: Networking")
+
+EXPORTS.mozilla.net += [
+    'usrsctp.h',
+]
+
+# for socket
+OS_LIBS += CONFIG["SOCKET_LIBS"]
+
+UNIFIED_SOURCES += [
+    'netinet/sctp_auth.c',
+    'netinet/sctp_callout.c',
+    'netinet/sctp_cc_functions.c',
+    'netinet/sctp_crc32.c',
+    'netinet/sctp_indata.c',
+    'netinet/sctp_input.c',
+    'netinet/sctp_output.c',
+    'netinet/sctp_pcb.c',
+    'netinet/sctp_peeloff.c',
+    'netinet/sctp_sha1.c',
+    'netinet/sctp_ss_functions.c',
+    'netinet/sctp_sysctl.c',
+    'netinet/sctp_timer.c',
+    'netinet/sctp_userspace.c',
+    'netinet/sctp_usrreq.c',
+    'netinet/sctputil.c',
+    'netinet6/sctp6_usrreq.c',
+    'user_mbuf.c',
+    'user_recv_thread.c',
+    'user_socket.c',
+]
+
+SOURCES += [
+    'netinet/sctp_asconf.c',
+    'netinet/sctp_bsd_addr.c', # defines some macros (FREE, MALLOC) that clash
+    'user_environment.c',
+]
+
+Library('nksctp_s')
+
+# We allow warnings for third-party code that can be updated from upstream.
+AllowCompilerWarnings()
+
+FINAL_LIBRARY = 'xul'
+
+LOCAL_INCLUDES += [
+    '/dom/base',
+    '/netwerk/base',
+]
+
+for var in ('__Userspace__',
+            'SCTP_SIMPLE_ALLOCATOR',
+            'SCTP_PROCESS_LEVEL_LOCKS',
+            'SCTP_DEBUG'):
+    DEFINES[var] = 1
+
+if CONFIG['OS_TARGET'] in ('Linux', 'Android'):
+    DEFINES['_GNU_SOURCE'] = 1
+elif CONFIG['OS_TARGET'] == 'Darwin':
+    DEFINES['__APPLE_USE_RFC_2292'] = 1
+
+LICENSES += ["sctp"]
+LICENSES["sctp"].title = "SCTP Licenses"
+# Unlike the other vendored libraries, this cannot point at the library's own
+# LICENSE.md: the notice reproduces the copyright headers the sources carry --
+# FreeBSD, Cisco, the WIDE project -- which that file, covering the usrsctp
+# code alone, does not.
+LICENSES["sctp"].text = "LICENSE-NOTICE.txt"
+LICENSES["sctp"].notice = """
+<p>These licenses apply to certain files in the directory <code>netwerk/sctp/src/</code>.</p>
+"""
+
+LICENSED_UNDER += [
+    "sctp",
+]
+
+SOURCE_HEADERS += [
+	"user_atomic.h",
+	"user_environment.h",
+	"user_inpcb.h",
+	"user_ip6_var.h",
+	"user_ip_icmp.h",
+	"user_malloc.h",
+	"user_mbuf.h",
+	"user_queue.h",
+	"user_recv_thread.h",
+	"user_route.h",
+	"user_socketvar.h",
+	"user_uma.h",
+]

@@ -2439,13 +2439,10 @@ PeerConnectionImpl::Close() {
   if (mJsepSession) {
     mJsepSession->Close();
   }
-
-  nsTArray<RefPtr<GenericNonExclusivePromise>> preNetworkTeardownPromises;
-
   if (mDataConnection) {
     CSFLogInfo(LOGTAG, "%s: Destroying DataChannelConnection %p for %s",
                __FUNCTION__, (void*)mDataConnection.get(), mHandle.c_str());
-    preNetworkTeardownPromises.EmplaceBack(mDataConnection->Destroy());
+    mDataConnection->Destroy();
     mDataConnection =
         nullptr;  // it may not go away until the runnables are dead
   }
@@ -2494,16 +2491,19 @@ PeerConnectionImpl::Close() {
   mRtcpStateChangeListener.DisconnectIfExists();
 
   // Clear any resources held by libwebrtc through our Call instance.
+  RefPtr<GenericPromise> callDestroyPromise;
   if (mCall) {
     // Make sure the compiler does not get confused and try to acquire a
     // reference to this thread _after_ we null out mCall.
     auto callThread = mCall->mCallThread;
-    preNetworkTeardownPromises.EmplaceBack(
+    callDestroyPromise =
         InvokeAsync(callThread, __func__, [call = std::move(mCall)]() {
           call->Destroy();
-          return GenericNonExclusivePromise::CreateAndResolve(
+          return GenericPromise::CreateAndResolve(
               true, "PCImpl->WebRtcCallWrapper::Destroy");
-        }));
+        });
+  } else {
+    callDestroyPromise = GenericPromise::CreateAndResolve(true, __func__);
   }
 
   mFinalStatsQuery =
@@ -2521,23 +2521,15 @@ PeerConnectionImpl::Close() {
                                                                     __func__);
               });
 
-  preNetworkTeardownPromises.AppendElement(mFinalStatsQuery);
-
-  // In no particular order:
   // 1. Allow final stats query to complete.
   // 2. Tear down call, if necessary. We do this before we shut down the
   //    transport handler, so RTCP BYE can be sent.
-  // 3. Tear down DataChannel/SCTP, if necessary. This involves sending an SCTP
-  //    ABORT, so we do this before tearing down the transport handler.
-  //
-  // ...after all three of those steps are done:
-  // 4. Tear down the transport handler, and deregister from PeerConnectionCtx.
+  // 3. Tear down the transport handler, and deregister from PeerConnectionCtx.
   //    When we deregister from PeerConnectionCtx, our final stats (if any)
   //    will be stored.
-  // TODO(https://bugzilla.mozilla.org/show_bug.cgi?id=2094129):
-  // We need to handle STS shutdown better here.
-  GenericNonExclusivePromise::AllSettled(GetMainThreadSerialEventTarget(),
-                                         preNetworkTeardownPromises)
+  mFinalStatsQuery
+      ->Then(GetMainThreadSerialEventTarget(), __func__,
+             [callDestroyPromise]() mutable { return callDestroyPromise; })
       ->Then(
           GetMainThreadSerialEventTarget(), __func__,
           [this, self = RefPtr<PeerConnectionImpl>(this)]() mutable {

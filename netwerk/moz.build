@@ -20,7 +20,7 @@ DIRS += [
 ]
 
 if CONFIG["MOZ_SCTP"]:
-    DIRS += ["sctp/datachannel"]
+    DIRS += ["sctp/src", "sctp/datachannel"]
 
 if CONFIG["NECKO_WIFI"]:
     DIRS += ["wifi"]

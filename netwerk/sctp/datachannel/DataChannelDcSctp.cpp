@@ -36,13 +36,19 @@ uint16_t DataChannelConnectionDcSctp::GetStreamIdCeiling() const {
   return kDcSctpMaxStreams;
 }
 
-void DataChannelConnectionDcSctp::CloseAssociation() {
-  MOZ_ASSERT(mSTS->IsOnCurrentThread());
+void DataChannelConnectionDcSctp::Destroy() {
+  MOZ_ASSERT(NS_IsMainThread());
   DC_DEBUG(("%s: %p", __func__, this));
-  if (mDcSctp) {
-    mDcSctp->Close();
-    mDcSctp = nullptr;
-  }
+  DataChannelConnection::Destroy();
+  mSTS->Dispatch(NS_NewRunnableFunction(
+      "DataChannelConnectionDcSctp::Destroy",
+      [this, self = RefPtr<DataChannelConnectionDcSctp>(this)]() {
+        if (mDcSctp) {
+          mDcSctp->Close();
+          // Do we do this now?
+          mDcSctp = nullptr;
+        }
+      }));
 }
 
 bool DataChannelConnectionDcSctp::RaiseStreamLimitTo(uint16_t aNewLimit) {
@@ -316,7 +322,7 @@ void DataChannelConnectionDcSctp::OnAborted(ErrorKind aError,
   dom::RTCErrorParams params;
   params.errorInit.mErrorDetail = dom::RTCErrorDetailType::Sctp_failure;
   params.message = nsCString(aMessage.data(), aMessage.length());
-  CloseChannels_s(Some(std::move(params)));
+  CloseAll_s(Some(std::move(params)));
 }
 
 void DataChannelConnectionDcSctp::OnConnected() {
@@ -359,7 +365,7 @@ void DataChannelConnectionDcSctp::OnConnected() {
 void DataChannelConnectionDcSctp::OnClosed() {
   MOZ_ASSERT(mSTS->IsOnCurrentThread());
   DC_DEBUG(("%s: %p", __func__, this));
-  CloseChannels_s();
+  CloseAll_s();
 }
 
 void DataChannelConnectionDcSctp::OnConnectionRestarted() {
