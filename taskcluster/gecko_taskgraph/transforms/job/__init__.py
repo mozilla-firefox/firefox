@@ -16,7 +16,11 @@ from typing import Optional as TOptional
 
 import mozpack.path as mozpath
 from taskgraph.transforms.base import TransformSequence
-from taskgraph.transforms.run import rewrite_when_to_optimization
+from taskgraph.transforms.run import (
+    SecretsEntrySchema,
+    rewrite_when_to_optimization,
+    use_secrets,
+)
 from taskgraph.util import json
 from taskgraph.util.copy import deepcopy
 from taskgraph.util.python_path import import_sibling_modules
@@ -125,6 +129,8 @@ class JobDescriptionSchema(Schema, kw_only=True):
     when: TOptional[WhenSchema] = None
     # A list of artifacts to install from 'fetch' tasks.
     fetches: TOptional[dict[str, list[Union[str, FetchArtifactSchema]]]] = None
+    # A list of secrets for run-task to fetch before running the job.
+    secrets: TOptional[list[SecretsEntrySchema]] = None
     # A description of how to run this job.
     run: JobRunSchema
     worker_type: TaskDescriptionSchema.__annotations__["worker_type"]  # noqa: F821
@@ -172,6 +178,9 @@ def set_label(config, jobs):
         if job.get("name"):
             del job["name"]
         yield job
+
+
+transforms.add(use_secrets)
 
 
 @transforms.add
