@@ -3424,7 +3424,8 @@ bool HttpBaseChannel::ShouldFilterOpaqueResponse(
   }
 
   auto contentPolicy = mLoadInfo->InternalContentPolicyType();
-  if (contentPolicy == nsIContentPolicy::TYPE_PING) {
+  if (contentPolicy == nsIContentPolicy::TYPE_PING ||
+      contentPolicy == nsIContentPolicy::TYPE_BEACON) {
     return true;
   }
 
@@ -3607,7 +3608,7 @@ HttpBaseChannel::PerformOpaqueResponseSafelistCheckBeforeSniff() {
     return OpaqueResponse::Allow;
   }
 
-  // Filter opaque ping responses in the parent regardless of prefs, and opaque
+  // Filter opaque ping and beacon responses regardless of prefs, and opaque
   // fetch responses when 'browser.opaqueResponseBlocking.filterFetchResponse'
   // is `OpaqueResponseFilterFetch::All`, so their bodies don't reach content
   // processes. See
