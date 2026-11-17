@@ -862,51 +862,6 @@ add_task(async function test_smartbar_input_does_not_persist_model_choice() {
   }
 });
 
-const AUTO_MODEL_PREF = "browser.smartwindow.firstrun.singlePageWithAutoModel";
-/**
- * Opens a Smart Window with the Auto routing record in Remote Settings.
- *
- * @param {object} options
- * @param {boolean} options.enabled - Value of the Auto-Model pref
- * @param {string} [options.modelChoice] - Default model choice
- * @param {boolean} [options.withAutoRecord] - Whether Remote Settings has
- *   Auto's routing record
- * @param {(fixture: {win: Window, browser: MozBrowser, engineManager: MockEngineManager}) => Promise<void>} task
- */
-async function withAutoModelWindow(
-  { enabled, modelChoice = DEFAULT_MODEL_CHOICE_ID, withAutoRecord = true },
-  task
-) {
-  await SpecialPowers.pushPrefEnv({
-    set: [
-      [AUTO_MODEL_PREF, enabled],
-      ["browser.smartwindow.firstrun.modelChoice", modelChoice],
-    ],
-  });
-  let engineManager;
-  let win;
-  try {
-    _setRemoteClientForTesting({
-      get: async () =>
-        withAutoRecord
-          ? [...MOCK_RS_RECORDS, MOCK_AUTO_RS_RECORD]
-          : MOCK_RS_RECORDS,
-    });
-    _clearModelsDataCacheForTesting();
-    engineManager = new MockEngineManager();
-    win = await openAIWindow();
-    await task({ win, browser: win.gBrowser.selectedBrowser, engineManager });
-  } finally {
-    if (win) {
-      await BrowserTestUtils.closeWindow(win);
-    }
-    engineManager?.cleanupMocks();
-    _setRemoteClientForTesting({ get: async () => MOCK_RS_RECORDS });
-    _clearModelsDataCacheForTesting();
-    await SpecialPowers.popPrefEnv();
-  }
-}
-
 /**
  * Reads the smartbar model select button and panel items.
  *
@@ -953,7 +908,7 @@ async function getModelSelectContents(browser) {
 }
 
 add_task(async function test_auto_model_hidden_without_pref() {
-  await withAutoModelWindow({ enabled: false }, async ({ browser }) => {
+  await withModelChoiceWindow({ enabled: false }, async ({ browser }) => {
     const { items } = await getModelSelectContents(browser);
     Assert.ok(
       !items.some(item => item.icon === "auto"),
@@ -972,7 +927,7 @@ add_task(async function test_auto_model_hidden_without_pref() {
 });
 
 add_task(async function test_auto_model_listed_first_as_recommended() {
-  await withAutoModelWindow({ enabled: true }, async ({ browser }) => {
+  await withModelChoiceWindow({ enabled: true }, async ({ browser }) => {
     const { items } = await getModelSelectContents(browser);
     const [auto, ...presets] = items;
 
@@ -1012,7 +967,7 @@ add_task(async function test_auto_model_listed_first_as_recommended() {
 });
 
 add_task(async function test_auto_model_as_default() {
-  await withAutoModelWindow(
+  await withModelChoiceWindow(
     { enabled: true, modelChoice: "4" },
     async ({ browser }) => {
       await waitForSelectedModel(browser, "auto");
@@ -1034,7 +989,7 @@ add_task(async function test_auto_model_as_default() {
 });
 
 add_task(async function test_auto_model_default_kept_when_disabled() {
-  await withAutoModelWindow(
+  await withModelChoiceWindow(
     { enabled: false, modelChoice: AUTO_MODEL_CHOICE_ID },
     async ({ browser }) => {
       await waitForSelectedModel(browser, "auto");
@@ -1054,7 +1009,7 @@ add_task(async function test_auto_model_default_kept_when_disabled() {
 });
 
 add_task(async function test_auto_model_override_falls_back_when_disabled() {
-  await withAutoModelWindow({ enabled: true }, async ({ browser }) => {
+  await withModelChoiceWindow({ enabled: true }, async ({ browser }) => {
     const defaultModel = FALLBACK_MODELS[DEFAULT_MODEL_CHOICE_ID].model;
     await waitForSelectedModel(browser, defaultModel);
 
@@ -1074,7 +1029,7 @@ add_task(async function test_auto_model_override_falls_back_when_disabled() {
 });
 
 add_task(async function test_auto_model_offered_when_enabled() {
-  await withAutoModelWindow({ enabled: false }, async ({ browser }) => {
+  await withModelChoiceWindow({ enabled: false }, async ({ browser }) => {
     Services.prefs.setBoolPref(AUTO_MODEL_PREF, true);
     await TestUtils.waitForCondition(
       () =>
@@ -1092,8 +1047,8 @@ add_task(async function test_auto_model_offered_when_enabled() {
 });
 
 add_task(async function test_auto_model_not_offered_without_record() {
-  await withAutoModelWindow(
-    { enabled: true, withAutoRecord: false },
+  await withModelChoiceWindow(
+    { enabled: true, autoRecord: null },
     async ({ browser }) => {
       const { items } = await getModelSelectContents(browser);
       Assert.deepEqual(
@@ -1106,7 +1061,7 @@ add_task(async function test_auto_model_not_offered_without_record() {
 });
 
 add_task(async function test_sidebar_auto_override_cleared_when_disabled() {
-  await withAutoModelWindow({ enabled: true }, async ({ win }) => {
+  await withModelChoiceWindow({ enabled: true }, async ({ win }) => {
     const tabA = await BrowserTestUtils.openNewForegroundTab(
       win.gBrowser,
       "https://example.com/"
@@ -1143,7 +1098,7 @@ add_task(async function test_sidebar_auto_override_cleared_when_disabled() {
 });
 
 add_task(async function test_sidebar_background_auto_override_ignored() {
-  await withAutoModelWindow({ enabled: true }, async ({ win }) => {
+  await withModelChoiceWindow({ enabled: true }, async ({ win }) => {
     const tabA = await BrowserTestUtils.openNewForegroundTab(
       win.gBrowser,
       "https://example.com/"
@@ -1195,7 +1150,7 @@ add_task(async function test_switch_to_auto_loads_routed_model_prompt() {
     "loadSystemPrompt"
   );
   try {
-    await withAutoModelWindow(
+    await withModelChoiceWindow(
       { enabled: true },
       async ({ browser, engineManager }) => {
         Services.fog.testResetFOG();

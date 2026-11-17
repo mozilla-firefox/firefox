@@ -572,15 +572,18 @@ export async function resolveChatModelChoice(
       return null;
     }
 
-    const details =
-      choiceId === AUTO_MODEL_CHOICE_ID ? null : parseModelDetails(record);
+    const details = parseModelDetails(record);
+    const ownDetails = choiceId === AUTO_MODEL_CHOICE_ID ? null : details;
     return {
       model: record.model,
-      ownerName: details?.ownerName || record.owner_name || "",
-      labelId: details?.labelId ?? "",
-      shortName: details?.shortName ?? "",
-      brandName: details?.brandName ?? "",
-      ...(record.inference_model && { inferenceModel: record.inference_model }),
+      ownerName: ownDetails?.ownerName || record.owner_name || "",
+      labelId: ownDetails?.labelId ?? "",
+      shortName: ownDetails?.shortName ?? "",
+      brandName: ownDetails?.brandName ?? "",
+      ...(record.inference_model && {
+        inferenceModel: record.inference_model,
+        inferenceShortName: details?.shortName ?? "",
+      }),
     };
   } catch (error) {
     console.warn(
@@ -648,6 +651,7 @@ export async function getModelForChoice(choiceId = getCurrentModelChoiceId()) {
  * @property {string} [shortName] - Display name of the model collection
  * @property {string} [brandName] - Short brand name for the model
  * @property {string} [inferenceModel] - Model the request is routed to
+ * @property {string} [inferenceShortName] - Display name of inferenceModel
  */
 
 /**

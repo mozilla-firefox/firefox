@@ -3432,10 +3432,18 @@ export class AIWindow extends MozLitElement {
           newMessage.content?.args,
           cfg.link
         ),
+        modelName: this.#getAutoModelName(newMessage),
       };
     }
 
     return actor.dispatchMessageToChatContent(newMessage);
+  }
+
+  // Only the auto model shows the model it picked.
+  #getAutoModelName(message) {
+    return message.params?.modelChoiceId === lazy.AUTO_MODEL_CHOICE_ID
+      ? message.params.modelDisplayName
+      : null;
   }
 
   #maybeSetMemoriesCalloutData(newMessage) {

@@ -564,6 +564,7 @@ export async function buildEngineForFeature(feature, opts = {}) {
 
   const engine = await openAIEngine.build({
     model,
+    modelChoiceId,
     serviceType,
     purpose,
     flowId: opts.flowId ?? null,
