@@ -1122,11 +1122,7 @@ class Settings(
                 true
             }
             alwaysOpenTheLastTabWhenOpeningTheApp -> {
-                if (lastHomeActivity > lastBrowseActivity) {
-                    true
-                } else {
-                    false
-                }
+                !enableHomepageAsNewTab && lastHomeActivity > lastBrowseActivity
             }
             else -> {
                 false

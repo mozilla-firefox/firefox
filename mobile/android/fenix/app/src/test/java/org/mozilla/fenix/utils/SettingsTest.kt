@@ -755,10 +755,29 @@ class SettingsTest {
     }
 
     @Test
-    fun `GIVEN startOnHomeNever is selected WHEN calling shouldStartOnHome THEN return be false`() {
+    fun `GIVEN startOnHomeNever is selected and the homepage was accessed more recently than a webpage WHEN calling shouldStartOnHome THEN return true`() {
+        settings.enableHomepageAsNewTab = false
+
         settings.alwaysOpenTheLastTabWhenOpeningTheApp = true
         settings.alwaysOpenTheHomepageWhenOpeningTheApp = false
         settings.openHomepageAfterFourHoursOfInactivity = false
+
+        settings.lastHomeActivity = 100
+        settings.lastBrowseActivity = 99
+
+        assertTrue(settings.shouldStartOnHome())
+    }
+
+    @Test
+    fun `GIVEN startOnHomeNever is selected and a webpage was accessed more recently than the homepage WHEN calling shouldStartOnHome THEN return false`() {
+        settings.enableHomepageAsNewTab = false
+
+        settings.alwaysOpenTheLastTabWhenOpeningTheApp = true
+        settings.alwaysOpenTheHomepageWhenOpeningTheApp = false
+        settings.openHomepageAfterFourHoursOfInactivity = false
+
+        settings.lastHomeActivity = 99
+        settings.lastBrowseActivity = 100
 
         assertFalse(settings.shouldStartOnHome())
     }
@@ -795,6 +814,20 @@ class SettingsTest {
         every { localSetting.timeNowInMillis() } returns now
 
         assertFalse(localSetting.shouldStartOnHome())
+    }
+
+    @Test
+    fun `GIVEN homepage as new tab is enabled and startOnHomeNever is selected WHEN calling shouldStartOnHome THEN return false`() {
+        settings.enableHomepageAsNewTab = true
+
+        settings.openHomepageAfterFourHoursOfInactivity = false
+        settings.alwaysOpenTheLastTabWhenOpeningTheApp = true
+        settings.alwaysOpenTheHomepageWhenOpeningTheApp = false
+
+        settings.lastHomeActivity = 100
+        settings.lastBrowseActivity = 99
+
+        assertFalse(settings.shouldStartOnHome())
     }
 
     @Test
