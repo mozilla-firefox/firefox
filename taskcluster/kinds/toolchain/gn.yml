@@ -54,7 +54,7 @@ macosx64-aarch64-gn:
 win64-gn:
     treeherder:
         symbol: TW64(gn)
-    worker-type: b-win2022
+    worker-type: b-win2025
     worker:
         max-run-time: 3600
     run:

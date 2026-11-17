@@ -103,7 +103,7 @@ linux64-rust-android-1.95-dev:
 
 win64-rust-1.95-dev:
     description: "build rust from source"
-    worker-type: b-win2022
+    worker-type: b-win2025
     treeherder:
         symbol: TW64(rust-dev)
     run:
@@ -433,7 +433,7 @@ win64-rust-nightly-dev:
     attributes:
         cached_task: false
     description: "build rust from source"
-    worker-type: b-win2022
+    worker-type: b-win2025
     treeherder:
         symbol: TW64(rust-dev-nightly)
     run:

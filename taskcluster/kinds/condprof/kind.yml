@@ -32,7 +32,7 @@ task-defaults:
     use-python: default
 tasks:
     windows2012-64-firefox:
-        worker-type: b-win2022
+        worker-type: b-win2025
         description: Creates or updates conditioned profiles on Win64
         run-on-projects: ['mozilla-central']
         treeherder:

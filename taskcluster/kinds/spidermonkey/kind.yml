@@ -60,7 +60,7 @@ task-defaults:
     fetches:
         toolchain:
             by-worker-type:
-                .*-b-win2022:
+                .*-b-win202(2|5):
                     - win64-clang
                     - win64-rust
                 default:

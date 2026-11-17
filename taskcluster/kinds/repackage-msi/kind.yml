@@ -24,7 +24,7 @@ only-for-build-platforms:
 
 tasks:
     repackage-msi:
-        worker-type: 'b-win2022'
+        worker-type: 'b-win2025'
         from-deps:
             group-by: single-with-filters
         mozharness:

@@ -62,7 +62,7 @@ onnxruntime-x86_64-windows-msvc:
     description: "ONNX Runtime (win64 x64)"
     attributes:
         enable-full-crashsymbols: true
-    worker-type: b-win2022
+    worker-type: b-win2025
     worker:
         max-run-time: 7200
     treeherder:
@@ -85,7 +85,7 @@ onnxruntime-i686-windows-msvc:
     description: "ONNX Runtime (win32 x86)"
     attributes:
         enable-full-crashsymbols: true
-    worker-type: b-win2022
+    worker-type: b-win2025
     worker:
         max-run-time: 7200
     treeherder:
@@ -108,7 +108,7 @@ onnxruntime-aarch64-windows-msvc:
     description: "ONNX Runtime (win64 aarch64)"
     attributes:
         enable-full-crashsymbols: true
-    worker-type: b-win2022
+    worker-type: b-win2025
     worker:
         max-run-time: 7200
     treeherder:

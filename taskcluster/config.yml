@@ -649,6 +649,11 @@ workers:
             implementation: generic-worker
             os: windows
             worker-type: '{alias}'
+        b-win2025(|-xxlarge):
+            provisioner: '{trust-domain}-{level}'
+            implementation: generic-worker
+            os: windows
+            worker-type: '{alias}'
         b-win-aarch64:
             provisioner: '{trust-domain}-{level}'
             implementation: generic-worker

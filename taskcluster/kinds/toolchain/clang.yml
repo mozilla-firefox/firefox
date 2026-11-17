@@ -541,7 +541,7 @@ win64-clang-22-profile:
     description: "Clang-cl 22 toolchain build"
     treeherder:
         symbol: TW64(clang-22-profile)
-    worker-type: b-win2022
+    worker-type: b-win2025
     worker:
         max-run-time: 9000
     run:
@@ -1162,7 +1162,7 @@ win64-clang-23-profile:
     description: "Clang-cl 23 toolchain build"
     treeherder:
         symbol: TW64(clang-23-profile)
-    worker-type: b-win2022
+    worker-type: b-win2025
     worker:
         max-run-time: 9000
     run:
@@ -1832,7 +1832,7 @@ win64-clang-trunk-profile:
         cached_task: false
     treeherder:
         symbol: TW64(clang-trunk-profile)
-    worker-type: b-win2022
+    worker-type: b-win2025
     worker:
         max-run-time: 9000
     run:
