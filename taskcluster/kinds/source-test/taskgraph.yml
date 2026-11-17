@@ -14,12 +14,22 @@ diff:
         max-run-time: 2400
         env:
             TASKGRAPH_SERIAL: "1"
+            # On GitHub, run-task replaces the base revision with the merge base.
+            GECKO_BASE_REV: "{base_rev}"
+            GECKO_BASE_REF: "{base_ref}"
         # Uncomment to upload logs of the generations as artifacts.
         #     XDG_CACHE_HOME: "/builds/worker/artifacts/cache"
         artifacts:
             - type: directory
               name: public/taskgraph
               path: /builds/worker/artifacts
+    # Authenticates run-task's GitHub requests for the base revision.
+    secrets:
+        by-repository_type:
+            git:
+                - type: github-repo-token
+                  app: read
+            default: []
     attributes:
         code-review: true
     always-target: true
@@ -31,16 +41,19 @@ diff:
     task-context:
         from-parameters:
             base_rev: base_rev
+            base_ref: base_ref
+            repository_type: repository_type
         substitution-fields:
-            - run.command
-    run-on-repo-type: [hg]
+            - secrets
+            - worker.env.GECKO_BASE_REV
+            - worker.env.GECKO_BASE_REF
     run:
         clone-with: hg
         using: run-task
         cwd: '{checkout}'
         command: >-
             mkdir -p /builds/worker/artifacts/diffs &&
-            ./mach taskgraph target --fast -p "taskcluster/test/params" --force-local-files-changed -o "/builds/worker/artifacts/diffs/diff.txt" --diff {base_rev} &&
+            ./mach taskgraph target --fast -p "taskcluster/test/params" --force-local-files-changed -o "/builds/worker/artifacts/diffs/diff.txt" --diff "$GECKO_BASE_REV" &&
             python taskcluster/scripts/misc/summarize-tgdiff.py /builds/worker/artifacts/diffs/ 20
     when:
         files-changed:
