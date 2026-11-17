@@ -200,6 +200,16 @@ jobs:
       when:
           - {hour: 2, minute: 0}
 
+    - name: linux64-mold-debug
+      job:
+          type: decision-task
+          treeherder-symbol: linux64-mold-debug
+          target-tasks-method: linux64_mold_debug
+      run-on-projects:
+          - mozilla-central
+      when:
+          - {hour: 3, minute: 0}
+
     - name: updatebot-cron-job
       job:
           type: decision-task

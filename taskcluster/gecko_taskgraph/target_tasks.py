@@ -1323,6 +1323,12 @@ def target_tasks_build_linux64_clang_trunk_perf(
     return [l for l, t in full_task_graph.tasks.items() if filter(t.label)]
 
 
+@register_target_task("linux64_mold_debug")
+def target_tasks_linux64_mold_debug(full_task_graph, parameters, graph_config):
+    """Select the linux64 debug build linked with mold"""
+    return ["build-linux64-mold/debug"]
+
+
 # Run Updatebot's cron job 4 times daily.
 @register_target_task("updatebot_cron")
 def target_tasks_updatebot_cron(full_task_graph, parameters, graph_config):

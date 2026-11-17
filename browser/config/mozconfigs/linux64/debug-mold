@@ -1,0 +1,9 @@
+. "$topsrcdir/browser/config/mozconfigs/linux64/common-debug"
+
+ac_add_options --with-branding=browser/branding/nightly
+
+export PATH="$MOZ_FETCHES_DIR/mold:$PATH"
+mk_add_options "export PATH=$PATH"
+ac_add_options --enable-linker=mold
+
+. "$topsrcdir/build/mozconfig.common.override"
