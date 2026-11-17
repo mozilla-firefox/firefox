@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "mozilla/Assertions.h"
+#include "mozilla/DebugOnly.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/dom/FetchTypes.h"
 #include "mozilla/dom/InternalRequest.h"
@@ -34,12 +35,27 @@ nsresult GetIPCSynthesizeResponseArgs(
     ChildToParentSynthesizeResponseArgs* aIPCArgs,
     SynthesizeResponseArgs&& aArgs) {
   MOZ_ASSERT(RemoteWorkerService::Thread()->IsOnCurrentThread());
-  auto [internalResponse, ipcArgs] = std::move(aArgs);
+  *aIPCArgs = std::move(aArgs.mIPCArgs);
+  ChildToParentInternalResponse& response = aIPCArgs->internalResponse();
 
-  *aIPCArgs = std::move(ipcArgs);
+  if (aArgs.mBody) {
+    response.body().emplace(ChildToParentStream());
 
-  internalResponse->SerializeChildToParentInternalResponseBody(
-      &aIPCArgs->internalResponse());
+    DebugOnly<bool> ok = mozilla::ipc::SerializeIPCStream(
+        aArgs.mBody.forget(), response.body()->stream(),
+        /* aAllowLazy */ false);
+    MOZ_ASSERT(ok);
+  }
+
+  if (aArgs.mAlternativeBody) {
+    response.alternativeBody().emplace(ChildToParentStream());
+
+    DebugOnly<bool> ok = mozilla::ipc::SerializeIPCStream(
+        aArgs.mAlternativeBody.forget(), response.alternativeBody()->stream(),
+        /* aAllowLazy */ false);
+    MOZ_ASSERT(ok);
+  }
+
   return NS_OK;
 }
 
