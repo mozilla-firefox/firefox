@@ -1,5 +1,3 @@
-// |jit-test| --canonicalize-nan-at-uses=on
-
 load(libdir + "nans.js");
 
 // MMinMax::foldsTo, case 1:

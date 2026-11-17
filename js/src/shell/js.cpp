@@ -13394,7 +13394,7 @@ bool InitOptionParser(OptionParser& op) {
                         "Turn off bailout loop check") ||
       !op.addStringOption(
           '\0', "canonicalize-nan-at-uses", "on/off",
-          "Canonicalize NaN values at uses (default: off, on to enable") ||
+          "Canonicalize NaN values at uses (default: on, off to disable)") ||
       !op.addBoolOption('\0', "enable-stub-frame-pointers",
                         "Use frame pointers in baseline IC stubs and other "
                         "trampolines. No-op on x86.") ||

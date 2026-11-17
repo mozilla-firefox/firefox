@@ -1,5 +1,3 @@
-// |jit-test| --canonicalize-nan-at-uses=on
-
 load(libdir + "nans.js");
 
 // Math.hypot with 3 arguments.

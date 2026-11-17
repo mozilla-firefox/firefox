@@ -135,7 +135,7 @@ DefaultJitOptions::DefaultJitOptions() {
   SET_DEFAULT(disableObjectKeysScalarReplacement, false);
 
   // Toggles whether CanonicalizeNaN pass is globally disabled.
-  SET_DEFAULT(disableCanonicalizeNaNAtUses, true);
+  SET_DEFAULT(disableCanonicalizeNaNAtUses, false);
 
 #ifdef ENABLE_PORTABLE_BASELINE_INTERP
   // Whether the Portable Baseline Interpreter is enabled.

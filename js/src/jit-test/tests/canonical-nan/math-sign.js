@@ -1,5 +1,3 @@
-// |jit-test| --canonicalize-nan-at-uses=on
-
 load(libdir + "nans.js");
 
 // Math.sign with Float input, but specialized to return Int32.
@@ -27,4 +25,3 @@ testWithFloatTypedArrays(FloatArray => {
     }
   }
 });
-

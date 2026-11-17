@@ -1,4 +1,4 @@
-// |jit-test| --canonicalize-nan-at-uses=on; --fast-warmup
+// |jit-test| --fast-warmup
 
 load(libdir + "nans.js");
 

@@ -1,5 +1,3 @@
-// |jit-test| --canonicalize-nan-at-uses=on
-
 function f(f64, c, fn) {
   // Load maybe non-canonical NaN.
   var x = f64[0];

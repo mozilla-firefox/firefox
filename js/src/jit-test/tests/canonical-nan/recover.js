@@ -1,4 +1,4 @@
-// |jit-test| --canonicalize-nan-at-uses=on; --ion-limit-script-size=off
+// |jit-test| --ion-limit-script-size=off
 
 // See ion/dce-with-instructions.js for the setup to test recover instructions.
 
