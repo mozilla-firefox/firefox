@@ -72,6 +72,15 @@ async function withModelHub() {
       }
     },
 
+    /** @returns {Promise<boolean>} */
+    async isListed(modelHub) {
+      const models = await modelHub.listModels();
+      return models.some(
+        ({ name, revision }) =>
+          name === `${hostname}/${MODEL}` && revision === REVISION
+      );
+    },
+
     async cleanup() {
       for (const modelHub of created) {
         if (modelHub.cache) {
@@ -123,12 +132,10 @@ add_task(async function test_denied_hub_rejects_an_already_cached_file() {
 });
 
 /**
- * TODO: getModelDataAsFile deletes by bare model name, but the cache keys
- * entries by hostname (e.g. "localhost/acme/bert"), so the delete silently
- * fails to match and the denied file stays on disk. isModelAvailable deletes
- * correctly because it passes the hostname-qualified key.
+ * The cache-hit path purges what it refuses. The delete has to qualify the
+ * model name with the hub hostname, the way the cache stores it.
  */
-add_task(async function test_denied_hub_does_not_purge_the_cached_file() {
+add_task(async function test_denied_hub_purges_the_cached_file() {
   const hub = await withModelHub();
   const allowed = hub.make(null);
   await allowed.getModelFileAsArrayBuffer(hub.args);
@@ -141,13 +148,12 @@ add_task(async function test_denied_hub_does_not_purge_the_cached_file() {
   );
 
   Assert.ok(
-    await hub.opfsHasFile(denied),
-    "The denied file is still on disk after the read that was supposed to purge it."
+    !(await hub.opfsHasFile(denied)),
+    "The denied file was removed from disk by the read that refused it."
   );
-  Assert.deepEqual(
-    await denied.listModels(),
-    [{ taskName: TASK_NAME, name: `localhost/${MODEL}`, revision: REVISION }],
-    "It is also still listed as a cached model."
+  Assert.ok(
+    !(await hub.isListed(denied)),
+    "It is no longer listed as a cached model."
   );
 
   await hub.cleanup();
@@ -168,11 +174,7 @@ add_task(async function test_is_model_available_purges_a_denied_file() {
     !(await hub.opfsHasFile(denied)),
     "The denied file was removed from disk."
   );
-  Assert.deepEqual(
-    await denied.listModels(),
-    [],
-    "The model is no longer listed."
-  );
+  Assert.ok(!(await hub.isListed(denied)), "The model is no longer listed.");
 
   await hub.cleanup();
 });

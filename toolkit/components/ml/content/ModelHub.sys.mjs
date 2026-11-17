@@ -2149,7 +2149,7 @@ export class ModelHub {
     if (useCached) {
       if (!fileAllowed.allowed) {
         await cache.deleteModels({
-          model,
+          model: modelWithHostname,
           revision,
           deletedBy: "denylist",
         });
