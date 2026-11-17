@@ -29,7 +29,7 @@ final class GeckoBackgroundThread extends Thread {
     Looper.prepare();
 
     synchronized (GeckoBackgroundThread.class) {
-      handler = new Handler();
+      handler = new Handler(Looper.myLooper());
       GeckoBackgroundThread.class.notifyAll();
     }
 

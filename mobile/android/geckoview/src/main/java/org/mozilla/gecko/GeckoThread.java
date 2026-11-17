@@ -434,7 +434,7 @@ public class GeckoThread extends Thread {
     Looper.prepare();
     GeckoThread.msgQueue = Looper.myQueue();
     ThreadUtils.sGeckoThread = this;
-    ThreadUtils.sGeckoHandler = new Handler();
+    ThreadUtils.sGeckoHandler = new Handler(Looper.myLooper());
 
     // Preparation for pumpMessageLoop()
     final MessageQueue.IdleHandler idleHandler =

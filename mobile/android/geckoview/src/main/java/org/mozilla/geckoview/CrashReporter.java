@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.zip.GZIPOutputStream;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.mozilla.gecko.util.HardwareUtils;
 import org.mozilla.gecko.util.ProxySelector;
 
 /**
@@ -340,10 +341,11 @@ public class CrashReporter {
       annotations.put(CrashReport.Annotation.Android_Device, Build.DEVICE);
       annotations.put(CrashReport.Annotation.Android_Display, Build.DISPLAY);
       annotations.put(CrashReport.Annotation.Android_Fingerprint, Build.FINGERPRINT);
-      annotations.put(CrashReport.Annotation.Android_CPU_ABI, Build.CPU_ABI);
+      final String[] abis = HardwareUtils.getProcessAbis();
+      annotations.put(CrashReport.Annotation.Android_CPU_ABI, abis[0]);
       annotations.put(CrashReport.Annotation.Android_PackageName, context.getPackageName());
       try {
-        annotations.put(CrashReport.Annotation.Android_CPU_ABI2, Build.CPU_ABI2);
+        annotations.put(CrashReport.Annotation.Android_CPU_ABI2, abis.length > 1 ? abis[1] : "");
         annotations.put(CrashReport.Annotation.Android_Hardware, Build.HARDWARE);
       } catch (final Exception ex) {
         Log.e(LOGTAG, "Exception while sending SDK version 8 keys", ex);

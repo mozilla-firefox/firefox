@@ -226,7 +226,10 @@ public class SDKProcessor {
     final String outdir = args[2];
 
     final LintCliClient lintClient = new LintCliClient(LintClient.CLIENT_CLI);
-    sApiLookup = ApiLookup.get(lintClient);
+    sApiLookup = ApiLookup.getOrNull(lintClient, null);
+    if (sApiLookup == null) {
+      throw new IllegalStateException("Could not load the lint API database");
+    }
 
     for (int argIndex = 3; argIndex < args.length; argIndex += 2) {
       final String configFile = args[argIndex];
@@ -310,11 +313,14 @@ public class SDKProcessor {
 
   private static int getAPIVersion(Class<?> cls, Member m) {
     if (m instanceof Method || m instanceof Constructor) {
-      return sApiLookup.getMethodVersion(
-          cls.getName().replace('.', '/'), Utils.getMemberName(m), Utils.getSignature(m));
+      return sApiLookup
+          .getMethodVersions(
+              cls.getName().replace('.', '/'), Utils.getMemberName(m), Utils.getSignature(m))
+          .min();
     } else if (m instanceof Field) {
-      return sApiLookup.getFieldVersion(
-          Utils.getClassDescriptor(m.getDeclaringClass()), m.getName());
+      return sApiLookup
+          .getFieldVersions(Utils.getClassDescriptor(m.getDeclaringClass()), m.getName())
+          .min();
     } else {
       throw new IllegalArgumentException("expected member to be Method, Constructor, or Field");
     }

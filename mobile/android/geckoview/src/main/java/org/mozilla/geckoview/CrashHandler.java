@@ -19,6 +19,7 @@ import android.util.Log;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.pm.PackageInfoCompat;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -296,7 +297,10 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
       try {
         final PackageInfo pkgInfo = pkgMgr.getPackageInfo(pkgName, 0);
         extras.putString(CrashReport.Annotation.Version.toString(), pkgInfo.versionName);
-        extras.putInt(CrashReport.Annotation.BuildID.toString(), pkgInfo.versionCode);
+        // The int cast drops versionCodeMajor from the upper 32 bits, leaving versionCode.
+        extras.putInt(
+            CrashReport.Annotation.BuildID.toString(),
+            (int) PackageInfoCompat.getLongVersionCode(pkgInfo));
         extras.putLong(
             CrashReport.Annotation.InstallTime.toString(), pkgInfo.lastUpdateTime / 1000);
       } catch (final PackageManager.NameNotFoundException e) {

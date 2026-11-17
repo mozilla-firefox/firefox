@@ -40,6 +40,7 @@ import android.os.Debug;
 import android.os.LocaleList;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
@@ -739,7 +740,7 @@ public class GeckoAppShell {
   }
 
   private static Vibrator vibrator() {
-    return (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
+    return getApplicationContext().getSystemService(Vibrator.class);
   }
 
   @SuppressLint("MissingPermission")
@@ -747,9 +748,12 @@ public class GeckoAppShell {
   private static void vibrate(final long milliseconds) {
     sVibrationEndTime = System.nanoTime() + milliseconds * 1000000;
     try {
-      vibrator().vibrate(milliseconds);
+      vibrator()
+          .vibrate(VibrationEffect.createOneShot(milliseconds, VibrationEffect.DEFAULT_AMPLITUDE));
     } catch (final SecurityException ignore) {
       Log.w(LOGTAG, "No VIBRATE permission");
+    } catch (final IllegalArgumentException e) {
+      Log.e(LOGTAG, "Invalid vibration", e);
     }
   }
 
@@ -766,9 +770,11 @@ public class GeckoAppShell {
 
     sVibrationEndTime = System.nanoTime() + vibrationDuration * 1000000;
     try {
-      vibrator().vibrate(pattern, repeat);
+      vibrator().vibrate(VibrationEffect.createWaveform(pattern, repeat));
     } catch (final SecurityException ignore) {
       Log.w(LOGTAG, "No VIBRATE permission");
+    } catch (final IllegalArgumentException e) {
+      Log.e(LOGTAG, "Invalid vibration", e);
     }
   }
 
