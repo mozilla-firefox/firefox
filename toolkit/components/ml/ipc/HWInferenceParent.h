@@ -43,7 +43,8 @@ class HWInferenceParent final : public PHWInferenceParent {
     return ipc::UtilityActorName::HwInference;
   }
 
-  // Called by UtilityProcessManager once the process is up.
+  // Called by UtilityProcessManager once the process is up, or with null if it
+  // failed to launch.
   nsresult BindToUtilityProcess(
       const RefPtr<ipc::UtilityProcessParent>& aUtilityParent);
 

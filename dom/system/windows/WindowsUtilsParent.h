@@ -18,6 +18,10 @@ class WindowsUtilsParent final : public PWindowsUtilsParent {
 
   nsresult BindToUtilityProcess(
       RefPtr<mozilla::ipc::UtilityProcessParent> aUtilityParent) {
+    if (!aUtilityParent) {
+      return NS_ERROR_NOT_AVAILABLE;
+    }
+
     Endpoint<PWindowsUtilsParent> parentEnd;
     Endpoint<PWindowsUtilsChild> childEnd;
     nsresult rv = PWindowsUtils::CreateEndpoints(

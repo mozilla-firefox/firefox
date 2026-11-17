@@ -19,6 +19,10 @@ NS_IMPL_ISUPPORTS(PKCS11ModuleParent, nsIObserver)
 
 nsresult PKCS11ModuleParent::BindToUtilityProcess(
     const RefPtr<ipc::UtilityProcessParent>& aUtilityParent) {
+  if (!aUtilityParent) {
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+
   Endpoint<PPKCS11ModuleParent> parentEnd;
   Endpoint<PPKCS11ModuleChild> childEnd;
   nsresult rv = PPKCS11Module::CreateEndpoints(

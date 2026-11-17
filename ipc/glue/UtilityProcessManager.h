@@ -272,6 +272,8 @@ class UtilityProcessManager final : public UtilityProcessHost::Listener {
   // Core of both StartUtility() entry points: binds aActor to aProcess once
   // aLaunchPromise resolves. The launch promise is passed in rather than read
   // off aProcess because LaunchProcess() can reject without storing one there.
+  // If the launch fails while aActor is still unbound, this calls
+  // aActor->BindToUtilityProcess(nullptr) to let it know.
   template <typename Actor>
   RefPtr<LaunchPromise<Ok>> StartUtilityOnProcess(
       RefPtr<Actor> aActor, ProcessFields* aProcess,

@@ -28,6 +28,10 @@ WinFileDialogParent::~WinFileDialogParent() {
 
 PWinFileDialogParent::nsresult WinFileDialogParent::BindToUtilityProcess(
     mozilla::ipc::UtilityProcessParent* aUtilityParent) {
+  if (!aUtilityParent) {
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+
   Endpoint<PWinFileDialogParent> parentEnd;
   Endpoint<PWinFileDialogChild> childEnd;
   nsresult rv = PWinFileDialog::CreateEndpoints(

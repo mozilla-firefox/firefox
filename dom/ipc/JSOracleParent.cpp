@@ -56,9 +56,12 @@ RefPtr<JSOracleParent::JSOraclePromise> JSOracleParent::StartJSOracle() {
 
 nsresult JSOracleParent::BindToUtilityProcess(
     const RefPtr<mozilla::ipc::UtilityProcessParent>& aUtilityParent) {
+  if (!aUtilityParent) {
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+
   Endpoint<PJSOracleParent> parentEnd;
   Endpoint<PJSOracleChild> childEnd;
-  MOZ_ASSERT(aUtilityParent);
   if (NS_FAILED(PJSOracle::CreateEndpoints(
           mozilla::ipc::EndpointProcInfo::Current(),
           aUtilityParent->OtherEndpointProcInfo(), &parentEnd, &childEnd))) {

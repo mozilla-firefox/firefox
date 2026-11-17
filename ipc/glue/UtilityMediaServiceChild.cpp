@@ -57,6 +57,10 @@ UtilityMediaServiceChild::UtilityMediaServiceChild(SandboxingKind aKind)
 
 nsresult UtilityMediaServiceChild::BindToUtilityProcess(
     RefPtr<UtilityProcessParent> aUtilityParent) {
+  if (!aUtilityParent) {
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+
   Endpoint<PUtilityMediaServiceChild> utilityMediaServiceChildEnd;
   Endpoint<PUtilityMediaServiceParent> utilityMediaServiceParentEnd;
   nsresult rv = PUtilityMediaService::CreateEndpoints(
