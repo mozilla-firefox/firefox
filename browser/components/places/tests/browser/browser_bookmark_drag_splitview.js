@@ -72,6 +72,19 @@ add_task(async function test_dragging_splitview_bookmarks_toolbar() {
   let srcWindowUtils = EventUtils._getDOMWindowUtils(window);
   const srcDragSession = srcWindowUtils.dragSession;
   srcDragSession.endDragSession(true);
+  // endDragSession only fires dragend at the element whose dragstart began the
+  // session. synthesizeDragOver cancels that dragstart, so no element is
+  // recorded and no dragend fires. Without one the tab strip stays in its
+  // drag-and-drop mode, so fire it at the dragged split view ourselves.
+  EventUtils.sendDragEvent(
+    { type: "dragend", dataTransfer },
+    tab1.splitview,
+    window
+  );
+  Assert.ok(
+    !gBrowser.tabContainer.hasAttribute("movingtab"),
+    "tab strip state is no longer in drag-drop mode"
+  );
 
   await promiseItemAddedNotification;
 
