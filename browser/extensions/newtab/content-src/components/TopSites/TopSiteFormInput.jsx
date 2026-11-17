@@ -78,7 +78,7 @@ export function TopSiteFormInput({
           onChange={handleChange}
           data-l10n-id={placeholderId}
           // Set focus on error if the url field is valid or when the input is first rendered and is empty
-          // eslint-disable-next-line jsx-a11y/no-autofocus
+          // eslint-disable-next-line jsx-a11y-x/no-autofocus
           autoFocus={autoFocusOnOpen}
           disabled={loading}
         />

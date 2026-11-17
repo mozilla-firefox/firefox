@@ -18,7 +18,7 @@ export const OnboardingVideo = props => {
 
   return (
     <div>
-      <video // eslint-disable-line jsx-a11y/media-has-caption
+      <video // eslint-disable-line jsx-a11y-x/media-has-caption
         controls={true}
         autoPlay={autoplay}
         src={vidUrl}

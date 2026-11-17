@@ -189,8 +189,8 @@ export const SingleSelect = ({
                   key={value + (isSingleSelect ? "" : label)}
                   text={valOrObj(tooltip)}
                 >
-                  {/* eslint-disable jsx-a11y/label-has-associated-control */}
-                  {/* eslint-disable jsx-a11y/no-noninteractive-element-interactions */}
+                  {/* eslint-disable jsx-a11y-x/label-has-associated-control */}
+                  {/* eslint-disable jsx-a11y-x/no-noninteractive-element-interactions */}
                   <label
                     className={`select-item ${type} ${selected ? " selected" : ""}`}
                     ref={el => registerCard(value, el)}
