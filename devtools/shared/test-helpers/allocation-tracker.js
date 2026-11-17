@@ -88,6 +88,12 @@ exports.allocationTracker = function ({
         return false;
       }
       let ref = g.unsafeDereference();
+      // A window closed by a previous test may not be collected yet.
+      // Its `top` getter would throw, and it can't be related to the current test.
+      if (g.class == "Window" && ref.closed) {
+        logTracker("NEW GLOBAL: - : closed window");
+        return false;
+      }
       // If we are on a toolbox's iframe, typically each panel's iframe
       // retrieve the toolbox iframe via window.top
       if (g.class == "Window" && ref.top) {
