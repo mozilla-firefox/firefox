@@ -28,6 +28,9 @@ Store = "AsyncWrapped"
 "create_autofill_store_with_nss_keymanager" = "AsyncWrapped"
 "create_autofill_store_with_static_key_manager" = "AsyncWrapped"
 
+[fxcontainers]
+library_group = "ALL_PLATFORMS"
+
 [fxcontainers.async_wrappers]
 # ContainersStore keeps its data in memory behind a lock and delegates
 # persistence to ContainersCallback.persist, so no method performs I/O.

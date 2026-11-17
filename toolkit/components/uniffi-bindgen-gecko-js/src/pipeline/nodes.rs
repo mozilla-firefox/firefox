@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 use super::*;
-pub use crate::{filters, ConcurrencyMode};
+pub use crate::{filters, ConcurrencyMode, LibraryGroup};
 use askama::Template;
 use uniffi_bindgen::pipeline::general;
 
@@ -25,33 +25,36 @@ uniffi_pipeline::use_prev_node!(general::Type);
 #[map_node(from(general::Root))]
 #[map_node(root::map_root)]
 pub struct Root {
-    pub lib: LibraryRoot,
-    pub fixtures_lib: LibraryRoot,
+    pub libs: Vec<LibraryRoot>,
+    pub ffi_definition_blocks: Vec<FfiDefinitionBlock>,
     pub module_docs: Vec<ApiModuleDocs>,
 }
 
-/// Root node for a single library
-///
-/// We create one of these for the fixture crates and one for non-fixture crates
+/// Root node for the namespaces that are compiled under the same preprocessor condition
 #[derive(Debug, Clone, Node)]
 pub struct LibraryRoot {
-    // Is this for the fixtures library?
-    pub is_fixtures: bool,
+    // Builds this library is compiled into
+    pub group: LibraryGroup,
     // Namespaces for Rust crates
     pub namespaces: Vec<Namespace>,
     pub scaffolding_calls: Vec<ScaffoldingCall>,
     pub pointer_types: Vec<PointerType>,
     pub callback_interfaces: Vec<CppCallbackInterface>,
-    // FFI definitions to define for this library
-    //
-    // Note: for the fixtures library this will exclude FFI definitions that are also in the
-    // regular library to avoid duplicate definitions.
-    pub ffi_definitions: Vec<FfiDefinition>,
     // Callback return handler classes to define for this library
     //
-    // Note: for the fixtures library this will exclude FFI definitions that are also in the
-    // regular library to avoid duplicate definitions.
+    // Note: a handler shared by several libraries is only defined once, in the library for the
+    // union of their groups.
     pub cpp_callback_return_handlers: Vec<CppCallbackReturnHandlerClass>,
+}
+
+/// Consecutive FFI definitions that are compiled under the same preprocessor condition
+///
+/// A definition shared by several namespaces is only defined once, guarded by the union of their
+/// groups.
+#[derive(Debug, Clone, Node)]
+pub struct FfiDefinitionBlock {
+    pub group: LibraryGroup,
+    pub definitions: Vec<FfiDefinition>,
 }
 
 #[derive(Debug, Clone, MapNode, Node)]

@@ -18,9 +18,13 @@ harness = false
 [dependencies]
 uniffi = { workspace = true }
 
+fxcontainers = "0.1"
+
+mozilla-central-workspace-hack = { version = "0.1", features = ["gkrust-uniffi-components"], optional = true }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 ads-client = "0.1"
 autofill = { version = "0.1", features = ["keydb"] }
-fxcontainers = "0.1"
 context_id = "0.1"
 filter_adult = "0.1"
 tabs = "0.1"
@@ -36,8 +40,6 @@ breach-alerts = { version = "0.1" }
 db-crypto = { version = "0.1", features = ["keydb"] }
 
 rc_crypto = { path = "../../../../third_party/application-services/components/support/rc_crypto", optional = true }
-
-mozilla-central-workspace-hack = { version = "0.1", features = ["gkrust-uniffi-components"], optional = true }
 
 [features]
 # Should we depend on xpcom crates?

@@ -44,6 +44,18 @@ pub fn is_fixture_namespace(namespace_name: &str) -> bool {
     namespace_name.starts_with("uniffi_bindings_tests")
 }
 
+pub fn library_group(namespace: &general::Namespace, context: &Context) -> LibraryGroup {
+    if is_fixture_namespace(&namespace.name) {
+        LibraryGroup::FIXTURES
+    } else {
+        context
+            .config_map
+            .get(&namespace.crate_name)
+            .map(|config| config.library_group)
+            .unwrap_or_default()
+    }
+}
+
 pub fn format_module_name(source_name: &str) -> String {
     format!("Rust{}", source_name.to_upper_camel_case())
 }

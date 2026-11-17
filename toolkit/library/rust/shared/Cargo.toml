@@ -133,12 +133,12 @@ zlib-rs = { version = "0.6", features = ["avx512"], optional = true }
 gecko-trace = { path = "../../../components/gecko-trace" }
 
 sitecategories = { path = "../../../components/sitecategories" }
+gkrust-uniffi-components = { path = "../../../components/uniffi-bindgen-gecko-js/components/", features = ["xpcom", "mozbuild"] }
 
 [target.'cfg(any(target_os = "android", target_os = "macos", target_os = "ios", all(target_os = "windows", not(target_arch = "aarch64"))))'.dependencies]
 osclientcerts = { path = "../../../../security/manager/ssl/osclientcerts" }
 
 [target.'cfg(not(target_os = "android"))'.dependencies]
-gkrust-uniffi-components = { path = "../../../components/uniffi-bindgen-gecko-js/components/", features = ["xpcom", "mozbuild"] }
 remotecerts = {  path = "../../../../security/manager/ssl/remotecerts" }
 uniffi-bindgen-gecko-js-test-fixtures = { path = "../../../components/uniffi-bindgen-gecko-js/test-fixtures/", optional = true }
 viaduct = "0.1"
