@@ -28,6 +28,10 @@ NSString* GetTruncatedCocoaLabel(const nsString& aLabel, nsIContent* aContent);
 // otherwise the longest prefix that fits with an ellipsis appended.
 NSString* TruncateLabelToWidth(NSString* aLabel, NSFont* aFont,
                                CGFloat aMaxWidth);
+// Whether aEvent presses the key equivalent aKeyEquivalent with the modifiers
+// in aModifierMask, as a shortcut assigned in System Settings stores them.
+bool EventMatchesKeyEquivalent(NSEvent* aEvent, NSString* aKeyEquivalent,
+                               NSEventModifierFlags aModifierMask);
 uint8_t GeckoModifiersForNodeAttribute(const nsString& modifiersAttribute);
 unsigned int MacModifiersForGeckoModifiers(uint8_t geckoModifiers);
 already_AddRefed<nsMenuBarX> GetHiddenWindowMenuBar();
