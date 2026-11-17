@@ -19810,7 +19810,7 @@
 # Whether to enable ML-DSA in TLS and in certificate verification.
 - name: security.tls.enable_mldsa
   type: RelaxedAtomicBool
-  value: false
+  value: @IS_NIGHTLY_BUILD@
   mirror: always
 
 - name: security.tls.enable_certificate_compression_zlib
