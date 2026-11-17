@@ -593,7 +593,7 @@ void MacroAssemblerX86Shared::compareInt32x4(Assembler::Condition cond,
 void MacroAssemblerX86Shared::compareForEqualityInt64x2(
     FloatRegister lhs, Operand rhs, Assembler::Condition cond,
     FloatRegister output) {
-  static const SimdConstant allOnes = SimdConstant::SplatX4(-1);
+  const SimdConstant allOnes = SimdConstant::SplatX4(-1);
   switch (cond) {
     case Assembler::Condition::Equal:
       vpcmpeqq(rhs, lhs, output);
@@ -610,7 +610,7 @@ void MacroAssemblerX86Shared::compareForEqualityInt64x2(
 void MacroAssemblerX86Shared::compareForOrderingInt64x2(
     FloatRegister lhs, Operand rhs, Assembler::Condition cond,
     FloatRegister temp1, FloatRegister temp2, FloatRegister output) {
-  static const SimdConstant allOnes = SimdConstant::SplatX4(-1);
+  const SimdConstant allOnes = SimdConstant::SplatX4(-1);
   // The pseudo code is for (e.g. > comparison):
   //  __m128i pcmpgtq_sse2 (__m128i a, __m128i b) {
   //    __m128i r = _mm_and_si128(_mm_cmpeq_epi32(a, b), _mm_sub_epi64(b, a));
@@ -674,7 +674,7 @@ void MacroAssemblerX86Shared::compareForOrderingInt64x2AVX(
     FloatRegister lhs, FloatRegister rhs, Assembler::Condition cond,
     FloatRegister output) {
   MOZ_ASSERT(HasSSE42());
-  static const SimdConstant allOnes = SimdConstant::SplatX4(-1);
+  const SimdConstant allOnes = SimdConstant::SplatX4(-1);
   switch (cond) {
     case Assembler::Condition::GreaterThan:
       vpcmpgtq(Operand(rhs), lhs, output);
@@ -1324,8 +1324,7 @@ void MacroAssemblerX86Shared::truncSatFloat32x4ToInt32x4(FloatRegister src,
 
   // Make lanes in scratch == 0xFFFFFFFFh, if dest overflows during cvttps2dq,
   // otherwise 0.
-  static const SimdConstant minOverflowedInt =
-      SimdConstant::SplatX4(2147483648.f);
+  const SimdConstant minOverflowedInt = SimdConstant::SplatX4(2147483648.f);
   if (HasAVX()) {
     asMasm().vcmpgepsSimd128(minOverflowedInt, dest, scratch);
   } else {

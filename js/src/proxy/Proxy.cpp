@@ -821,7 +821,8 @@ bool Proxy::boxedValue_unbox(JSContext* cx, HandleObject proxy,
   return proxy->as<ProxyObject>().handler()->boxedValue_unbox(cx, proxy, vp);
 }
 
-JSObject* const TaggedProto::LazyProto = reinterpret_cast<JSObject*>(0x1);
+JSObject* const TaggedProto::LazyProto =
+    reinterpret_cast<JSObject*>(TaggedProto::LazyProtoBits);
 
 /* static */
 bool Proxy::getElements(JSContext* cx, HandleObject proxy, uint32_t begin,

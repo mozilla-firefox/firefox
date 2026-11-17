@@ -20,16 +20,17 @@ namespace js {
 // certain kinds of proxies.
 class TaggedProto {
  public:
+  static constexpr uintptr_t LazyProtoBits = 0x1;
   static JSObject* const LazyProto;
 
   TaggedProto() : proto(nullptr) {}
   TaggedProto(const TaggedProto& other) = default;
   explicit TaggedProto(JSObject* proto) : proto(proto) {}
 
-  bool isDynamic() const { return proto == LazyProto; }
+  bool isDynamic() const { return uintptr_t(proto) == LazyProtoBits; }
   bool isObject() const {
     /* Skip nullptr and LazyProto. */
-    return uintptr_t(proto) > uintptr_t(TaggedProto::LazyProto);
+    return uintptr_t(proto) > LazyProtoBits;
   }
   JSObject* toObject() const {
     MOZ_ASSERT(isObject());

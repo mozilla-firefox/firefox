@@ -30,8 +30,8 @@ class TempAllocator {
   // KiB. And with a ballast of 16 KiB, a chunk size of 32 KiB works well,
   // because TempAllocators with a peak allocation size of less than 16 KiB
   // (which is most of them) only have to allocate a single chunk.
-  static const size_t BallastSize;             // 16 KiB
-  static const size_t PreferredLifoChunkSize;  // 32 KiB
+  static constexpr size_t BallastSize = 16 * 1024;
+  static constexpr size_t PreferredLifoChunkSize = 32 * 1024;
 
   explicit TempAllocator(LifoAlloc* lifoAlloc) : lifoScope_(lifoAlloc) {
     lifoAlloc->setAsInfallibleByDefault();
