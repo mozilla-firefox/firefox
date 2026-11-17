@@ -75,6 +75,8 @@ firefox-appdir = "browser"
 
 ["test_Utils_RemoteSettings_ChatModelChoice.js"]
 
+["test_aitab_budget.js"]
+
 ["test_aitab_parse.js"]
 
 ["test_aitab_viewer.js"]

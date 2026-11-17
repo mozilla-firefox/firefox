@@ -66,7 +66,7 @@ const RAW_CONTENT = "Hostel Bairro Alto, 22 euros a night.";
 // pinned here rather than read back from the module.
 const MAX_INSTRUCTION_CHARS = 1500;
 const MAX_HISTORY_CHARS = 100000;
-const SOURCE_TEXT_BUDGET = 10000;
+const SOURCE_TEXT_BUDGET = 25000;
 
 // Appended past a cap, so an assertion can tell "cut here" from "cut at all".
 const OVERFLOW = "OVER-THE-CAP";
@@ -1180,7 +1180,7 @@ add_task(async function test_modify_instructions_are_capped() {
 add_task(async function test_source_budget_counts_urls_as_tokens() {
   await withAITab(async ({ conversation, runWith }) => {
     const items = Array.from(
-      { length: 300 },
+      { length: 1200 },
       (_, i) =>
         `https://www.example.com/travel/europe/portugal/lisbon/where-to-stay-${i}` +
         `?utm_source=newsletter&utm_medium=email word${i}.`
@@ -1217,6 +1217,50 @@ add_task(async function test_source_budget_counts_urls_as_tokens() {
       included + 1,
       "No URL is cut off at the budget."
     );
+    const [page] = await lazy.AITabStore.getAITabPagesByConvId(conversation.id);
+    await lazy.ConversationStore.deleteConversationById(page.toolConvId);
+  });
+});
+
+/**
+ * The source-text budget is shared, not split evenly: a short page keeps all
+ * of its text, and the budget it leaves over goes to the longer section.
+ */
+add_task(async function test_source_budget_left_by_short_page_is_shared() {
+  await withAITab(async ({ conversation, runWith }) => {
+    const words = Array.from({ length: 5000 }, (_, i) => `word${i}.`);
+    const { messages } = await runWith({
+      url_list: [SOURCE_URL],
+      raw_content: words.join(" "),
+      focus: FOCUS,
+    });
+
+    const userTurn = messages.at(-1).content;
+    Assert.ok(
+      userTurn.includes(SOURCE_MARKER),
+      "The short page reaches the model whole."
+    );
+
+    const included = words.findLastIndex((_, i) =>
+      userTurn.includes(` word${i}.`)
+    );
+    const rawLength = words.slice(0, included + 1).join(" ").length;
+    Assert.greater(
+      rawLength,
+      SOURCE_TEXT_BUDGET / 2,
+      "The long section gets more than an even share of the budget."
+    );
+    Assert.less(
+      included,
+      words.length - 1,
+      "The long section is still cut to fit the budget."
+    );
+    Assert.lessOrEqual(
+      rawLength,
+      SOURCE_TEXT_BUDGET,
+      "The long section stays within the budget."
+    );
+
     const [page] = await lazy.AITabStore.getAITabPagesByConvId(conversation.id);
     await lazy.ConversationStore.deleteConversationById(page.toolConvId);
   });

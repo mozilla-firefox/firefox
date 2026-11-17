@@ -107,10 +107,13 @@ const ROOT_ID = "root";
 // JSON Schema dialect the per-component validators declare.
 const JSON_SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema";
 
-// Total budget (characters) for page text sent to the model, split evenly
-// across the requested tabs so multi-tab requests don't overflow the prompt.
+// Total budget (characters) for the source text sent to the model, shared by
+// the requested tabs and any inline content so multi-tab requests don't
+// overflow the prompt. Sized so that ten long pages still get about 2,500
+// characters each: below that, facts further down a page never reach the
+// model, and above it generation gets slower without the page getting better.
 // Measured after URL tokenization, since URLs only reach the model as tokens.
-const SOURCE_TEXT_BUDGET = 10000;
+const SOURCE_TEXT_BUDGET = 25000;
 // Separator inserted between each page's text in the model prompt.
 const PAGE_BREAK = "\n\n<----- PAGE BREAK ---->\n\n";
 
@@ -879,7 +882,7 @@ export class AITab {
    *   on. Cut to MAX_INSTRUCTION_CHARS.
    * @param {string} [options.rawContent] - Content supplied inline rather than
    *   fetched, appended to the source text as its own PAGE_BREAK section.
-   *   Shares the same source-text budget as the pages.
+   *   Shares the source-text budget with the pages.
    * @param {string} [options.modifySlug] - Slug of the stored page to revise.
    * @param {string} [options.modifyInstructions] - What to change about it.
    *   Cut to MAX_INSTRUCTION_CHARS.
@@ -1204,6 +1207,45 @@ export class AITab {
   }
 
   /**
+   * The length of `text` once its URLs are tokenized, which is the length the
+   * source-text budget is measured in.
+   *
+   * @param {string} text
+   * @returns {number}
+   */
+  static #tokenizedLength(text) {
+    // Measures token lengths only, as in #truncateToBudget.
+    return new UrlTokenizer().tokenizeText(text).length;
+  }
+
+  /**
+   * Share `budget` among sections of the given lengths. A section shorter
+   * than an even share keeps all of its text, and what it leaves over is
+   * shared among the longer ones, so a short or unreadable page doesn't hold
+   * budget that a long page is cut for.
+   *
+   * @param {number[]} lengths - Each section's length, in the order the
+   *   sections are sent.
+   * @param {number} budget
+   * @returns {number[]} Each section's share, in the same order.
+   */
+  static shareBudget(lengths, budget) {
+    const shares = new Array(lengths.length).fill(0);
+    const shortestFirst = lengths
+      .map((_, index) => index)
+      .sort((a, b) => lengths[a] - lengths[b]);
+    let remaining = budget;
+    for (const [position, index] of shortestFirst.entries()) {
+      const evenShare = Math.floor(
+        remaining / (shortestFirst.length - position)
+      );
+      shares[index] = Math.min(lengths[index], evenShare);
+      remaining -= shares[index];
+    }
+    return shares;
+  }
+
+  /**
    * Read the material a surface is composed from: the readable text of each
    * requested URL, plus any content handed over inline, laid out as the
    * prompt's source sections and separated by PAGE_BREAK.
@@ -1246,12 +1288,17 @@ export class AITab {
       }
     }
 
-    // Split the source-text budget evenly across the sections the prompt will
-    // carry — one per requested tab, plus one for inline content — so the model
-    // prompt stays bounded no matter how many tabs are included. A modification
-    // can bring neither, in which case there is nothing to budget.
-    const sections = urls.length + (rawText ? 1 : 0);
-    const perTabBudget = Math.floor(SOURCE_TEXT_BUDGET / (sections || 1));
+    // Share the source-text budget among the sections the prompt will carry —
+    // one per requested tab, plus one for inline content — so the model prompt
+    // stays bounded no matter how many tabs are included. A modification can
+    // bring neither, in which case there is nothing to budget.
+    const texts = urls.map((url, index) => contents[index]?.content ?? "");
+    const budgets = AITab.shareBudget(
+      [...texts, ...(rawText ? [rawText] : [])].map(text =>
+        AITab.#tokenizedLength(text)
+      ),
+      SOURCE_TEXT_BUDGET
+    );
 
     /** @type {AITabSource[]} */
     const urlsUsed = [];
@@ -1260,7 +1307,7 @@ export class AITab {
       // Prefer the open tab's title for the heading; fall back to the URL.
       const tab = lazy.GetPageContent.getTabWithURL(url);
       const heading = tab?.label || url;
-      const text = contents[index]?.content ?? "";
+      const text = texts[index];
       // Best-effort og:image lookup ("" when none cached), gated on the same
       // access-control decision as the page text so a refused URL leaks no
       // image either.
@@ -1277,7 +1324,7 @@ export class AITab {
 
       // Trim each page's text to its share of the budget before sending to the
       // model.
-      const budgetedText = AITab.#truncateToBudget(text, perTabBudget);
+      const budgetedText = AITab.#truncateToBudget(text, budgets[index]);
       const headLines = [`## ${heading}`, `URL: ${url}`];
       // Omit the Image: line when absent so the model never echoes an empty
       // value.
@@ -1293,7 +1340,7 @@ export class AITab {
 
     if (rawText) {
       sourceParts.push(
-        `${RAW_CONTENT_HEADING}\n\n${AITab.#truncateToBudget(rawText, perTabBudget)}`
+        `${RAW_CONTENT_HEADING}\n\n${AITab.#truncateToBudget(rawText, budgets.at(-1))}`
       );
     }
 
