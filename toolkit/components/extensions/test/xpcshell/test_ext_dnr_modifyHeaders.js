@@ -346,6 +346,7 @@ add_task(async function requestHeaders_set_host_header() {
         makeModifyHostRule(1, "yes_host_permissions", "yes"),
         makeModifyHostRule(2, "no_host_permissions", "no"),
         makeModifyHostRule(3, "restricted_domain", "restricted"),
+        makeModifyHostRule(4, "guarded_domain", "guarded"),
       ],
     });
 
@@ -367,17 +368,33 @@ add_task(async function requestHeaders_set_host_header() {
       "Host header value ignored if new host is in restrictedDomains"
     );
 
+    browser.test.assertEq(
+      "dummy",
+      await (await fetch("http://dummy/host?guarded_domain")).text(),
+      "Host header value ignored if new host is guarded"
+    );
+
     browser.test.notifyPass();
   }
+  const { setEnterpriseGuards } = ChromeUtils.importESModule(
+    "resource://gre/modules/ExtensionPermissions.sys.mjs"
+  );
+  setEnterpriseGuards({ "*": { runtime_blocked_hosts: ["*://guarded/*"] } });
   const { messages } = await promiseConsoleOutput(async () => {
     await runAsDNRExtension({
       manifest: {
         // Note: host_permissions without "*://no/*".
-        host_permissions: ["*://dummy/*", "*://yes/*", "*://restricted/*"],
+        host_permissions: [
+          "*://dummy/*",
+          "*://yes/*",
+          "*://restricted/*",
+          "*://guarded/*",
+        ],
       },
       background,
     });
   });
+  setEnterpriseGuards({});
 
   AddonTestUtils.checkMessages(messages, {
     expected: [
@@ -388,6 +405,10 @@ add_task(async function requestHeaders_set_host_header() {
       {
         message:
           /Failed to apply modifyHeaders action to header "Host" \(DNR rule id 3 from ruleset "_session"\): Error: Unable to set host header to restricted url\./,
+      },
+      {
+        message:
+          /Failed to apply modifyHeaders action to header "Host" \(DNR rule id 4 from ruleset "_session"\): Error: Unable to set host header to guarded url\./,
       },
     ],
   });
