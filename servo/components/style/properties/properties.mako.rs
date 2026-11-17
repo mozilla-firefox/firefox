@@ -726,6 +726,12 @@ impl LonghandIdSet {
     }
 
     #[inline]
+    pub(super) fn late_group_first_line_only_inherited() -> &'static Self {
+        static LATE_GROUP_FIRST_LINE: LonghandIdSet = ${longhand_id_set(lambda p: (p.name in FIRST_LINE_RESTRICTIONS) and p.style_struct.inherited and not p.is_prioritary())};
+        &LATE_GROUP_FIRST_LINE
+    }
+
+    #[inline]
     pub(super) fn late_group() -> &'static Self {
         static LATE_GROUP: LonghandIdSet = ${longhand_id_set(lambda p: not p.is_prioritary())};
         &LATE_GROUP

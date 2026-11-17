@@ -70,13 +70,6 @@ pub enum CascadeReparenting<'a> {
     },
 }
 
-impl CascadeReparenting<'_> {
-    #[inline]
-    fn is_position_try(&self) -> bool {
-        matches!(self, Self::PositionTry { .. })
-    }
-}
-
 /// Performs the CSS cascade, computing new styles for an element from its parent style.
 ///
 /// The arguments are:
@@ -398,10 +391,16 @@ where
 
             if !using_cached_properties {
                 LonghandIdSet::late_group()
-            } else if cascade.cascade_reparenting.is_position_try() {
-                LonghandIdSet::late_group_position_try()
             } else {
-                LonghandIdSet::late_group_only_inherited()
+                match cascade.cascade_reparenting {
+                    CascadeReparenting::No => LonghandIdSet::late_group_only_inherited(),
+                    CascadeReparenting::PositionTry { .. } => {
+                        LonghandIdSet::late_group_position_try()
+                    },
+                    CascadeReparenting::FirstLine { .. } => {
+                        LonghandIdSet::late_group_first_line_only_inherited()
+                    },
+                }
             }
         },
     };
