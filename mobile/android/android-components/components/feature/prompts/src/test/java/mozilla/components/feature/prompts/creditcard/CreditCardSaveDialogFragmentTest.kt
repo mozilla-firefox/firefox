@@ -10,12 +10,17 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.view.isVisible
+import androidx.fragment.app.testing.launchFragment
+import androidx.lifecycle.Lifecycle
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.android.material.R as materialR
 import kotlin.test.assertNotNull
 import mozilla.components.concept.storage.CreditCardEntry
 import mozilla.components.concept.storage.CreditCardValidationDelegate
 import mozilla.components.feature.prompts.PromptFeature
 import mozilla.components.feature.prompts.R
+import mozilla.components.feature.prompts.dialog.TestPrompt
+import mozilla.components.feature.prompts.dialog.TestPromptFeature
 import mozilla.components.feature.prompts.facts.CreditCardAutofillDialogFacts
 import mozilla.components.support.base.Component
 import mozilla.components.support.base.facts.Action
@@ -329,5 +334,32 @@ class CreditCardSaveDialogFragmentTest {
                 fact.item,
             )
         }
+    }
+
+    @Test
+    fun `GIVEN a credit card with a security code WHEN save is clicked THEN the credit card is confirmed without it`() {
+        val feature = TestPromptFeature()
+        val scenario =
+            launchFragment<CreditCardSaveDialogFragment>(
+                initialState = Lifecycle.State.CREATED,
+                fragmentArgs =
+                    CreditCardSaveDialogFragment.newInstance(
+                            sessionId = sessionId,
+                            promptRequestUID = promptRequestUID,
+                            shouldDismissOnLoad = true,
+                            creditCard = creditCard.copy(cardCvv = "123"),
+                        )
+                        .requireArguments(),
+                themeResId = materialR.style.Theme_MaterialComponents,
+            )
+        scenario.onFragment { it.feature = feature }
+        scenario.moveToState(Lifecycle.State.RESUMED)
+
+        scenario.onFragment { it.onSaveClicked() }
+
+        assertEquals(
+            TestPrompt(sessionId, promptRequestUID, creditCard.copy(cardCvv = null)),
+            feature.confirmedPrompt,
+        )
     }
 }

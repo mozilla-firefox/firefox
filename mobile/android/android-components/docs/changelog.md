@@ -57,6 +57,8 @@ permalink: /changelog/
   * The credit card security code now passes between GeckoView and `CreditCardEntry`, and the stored security code goes to GeckoView when it fetches credit cards. [Bug 2089899](https://bugzilla.mozilla.org/show_bug.cgi?id=2089899)
 * **service-sync-autofill**
   * `GeckoCreditCardsAddressesStorageDelegate` saves the security code from `CreditCardEntry`. [Bug 2089899](https://bugzilla.mozilla.org/show_bug.cgi?id=2089899)
+* **feature-prompts**
+  * **Behavior change**: The save credit card prompt no longer confirms the security code. [Bug 2089899](https://bugzilla.mozilla.org/show_bug.cgi?id=2089899)
 
 # 161.0
 * **browser-state**

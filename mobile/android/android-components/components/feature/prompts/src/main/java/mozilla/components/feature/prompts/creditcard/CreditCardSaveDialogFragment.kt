@@ -94,24 +94,33 @@ internal class CreditCardSaveDialogFragment : PromptDialogFragment() {
         view.findViewById<TextView>(R.id.credit_card_expiration_date).text = creditCard.expiryDate
 
         view.findViewById<Button>(R.id.save_confirm).setOnClickListener {
-            feature?.onConfirm(
-                sessionId = sessionId,
-                promptRequestUID = promptRequestUID,
-                value = creditCard,
-            )
-            dismiss()
-            emitSaveUpdateFact()
+            onSaveClicked()
         }
 
-        view.findViewById<Button>(R.id.save_cancel).setOnClickListener {
-            feature?.onCancel(
-                sessionId = sessionId,
-                promptRequestUID = promptRequestUID,
-            )
-            dismiss()
-        }
+        view.findViewById<Button>(R.id.save_cancel).setOnClickListener { onDismissClicked() }
 
         updateUI(view)
+    }
+
+    /** Confirms the credit card without its security code, which this prompt does not save. */
+    @VisibleForTesting
+    internal fun onSaveClicked() {
+        feature?.onConfirm(
+            sessionId = sessionId,
+            promptRequestUID = promptRequestUID,
+            value = creditCard.copy(cardCvv = null),
+        )
+        dismiss()
+        emitSaveUpdateFact()
+    }
+
+    @VisibleForTesting
+    internal fun onDismissClicked() {
+        feature?.onCancel(
+            sessionId = sessionId,
+            promptRequestUID = promptRequestUID,
+        )
+        dismiss()
     }
 
     /** Emit the save or update fact based on the confirm action for the credit card. */
@@ -137,36 +146,39 @@ internal class CreditCardSaveDialogFragment : PromptDialogFragment() {
 
     /** Updates the dialog based on whether a save or update credit card state should be displayed. */
     private fun updateUI(view: View) =
-        view.toScope().launch(IO) {
-            val validationDelegate = feature?.creditCardValidationDelegate ?: return@launch
-            confirmResult = validationDelegate.shouldCreateOrUpdate(creditCard)
-
-            withContext(Main) {
-                when (confirmResult) {
-                    is Result.CanBeCreated ->
-                        setViewText(
-                            view = view,
-                            header =
-                                requireContext()
-                                    .getString(R.string.mozac_feature_prompts_save_credit_card_prompt_title),
-                            cancelButtonText = requireContext().getString(R.string.mozac_feature_prompt_not_now),
-                            confirmButtonText =
-                                requireContext().getString(R.string.mozac_feature_prompt_save_confirmation),
-                        )
-                    is Result.CanBeUpdated ->
-                        setViewText(
-                            view = view,
-                            header =
-                                requireContext()
-                                    .getString(R.string.mozac_feature_prompts_update_credit_card_prompt_title),
-                            cancelButtonText = requireContext().getString(R.string.mozac_feature_prompts_cancel),
-                            confirmButtonText =
-                                requireContext().getString(R.string.mozac_feature_prompt_update_confirmation),
-                            showMessageBody = false,
-                        )
-                }
+        view.toScope().launch(Main) {
+            when (checkIfCardIsNewOrSaved(creditCard) ?: return@launch) {
+                is Result.CanBeCreated ->
+                    setViewText(
+                        view = view,
+                        header =
+                            requireContext().getString(R.string.mozac_feature_prompts_save_credit_card_prompt_title),
+                        cancelButtonText = requireContext().getString(R.string.mozac_feature_prompt_not_now),
+                        confirmButtonText = requireContext().getString(R.string.mozac_feature_prompt_save_confirmation),
+                    )
+                is Result.CanBeUpdated ->
+                    setViewText(
+                        view = view,
+                        header =
+                            requireContext().getString(R.string.mozac_feature_prompts_update_credit_card_prompt_title),
+                        cancelButtonText = requireContext().getString(R.string.mozac_feature_prompts_cancel),
+                        confirmButtonText =
+                            requireContext().getString(R.string.mozac_feature_prompt_update_confirmation),
+                        showMessageBody = false,
+                    )
             }
         }
+
+    /**
+     * Finds out whether [card] is a new card or an update to a card that is already saved, and stores the answer in
+     * [confirmResult].
+     *
+     * @return The answer, or null when no validation delegate is attached.
+     */
+    private suspend fun checkIfCardIsNewOrSaved(card: CreditCardEntry): Result? {
+        val validationDelegate = feature?.creditCardValidationDelegate ?: return null
+        return withContext(IO) { validationDelegate.shouldCreateOrUpdate(card) }.also { confirmResult = it }
+    }
 
     /**
      * Updates the header and button text in the dialog.
