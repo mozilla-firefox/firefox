@@ -55,10 +55,10 @@ export class MiscDataBackupResource extends BackupResource {
     // one - specifically, the "snippets" table, as this contains information
     // on ASRouter impressions, blocked messages, message group impressions,
     // etc.
-    let storage = new lazy.ASRouterStorage({
+    let routerStorage = new lazy.ASRouterStorage({
       storeNames: [SNIPPETS_TABLE_NAME],
     });
-    let snippetsTable = await storage.getDbTable(SNIPPETS_TABLE_NAME);
+    let snippetsTable = await routerStorage.getDbTable(SNIPPETS_TABLE_NAME);
     let snippetsObj = {};
     for (let key of await snippetsTable.getAllKeys()) {
       snippetsObj[key] = await snippetsTable.get(key);
@@ -103,10 +103,10 @@ export class MiscDataBackupResource extends BackupResource {
     }
 
     let snippetsData = await IOUtils.readJSON(snippetsBackupFile);
-    let storage = new lazy.ASRouterStorage({
+    let asRouterStorage = new lazy.ASRouterStorage({
       storeNames: [SNIPPETS_TABLE_NAME],
     });
-    let snippetsTable = await storage.getDbTable(SNIPPETS_TABLE_NAME);
+    let snippetsTable = await asRouterStorage.getDbTable(SNIPPETS_TABLE_NAME);
     for (let key in snippetsData) {
       let value = snippetsData[key];
       await snippetsTable.set(key, value);
