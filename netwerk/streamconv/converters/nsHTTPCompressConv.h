@@ -12,6 +12,7 @@
 #  include "nsString.h"
 #  include "mozilla/Atomics.h"
 #  include "mozilla/Mutex.h"
+#  include "mozilla/RefPtr.h"
 
 #  include "zlib.h"
 
@@ -53,6 +54,7 @@ namespace mozilla {
 namespace net {
 
 class BrotliWrapper;
+class ChannelEventQueue;
 class ZstdWrapper;
 
 class nsHTTPCompressConv : public nsIStreamConverter,
@@ -109,6 +111,8 @@ class nsHTTPCompressConv : public nsIStreamConverter,
 
   nsresult do_OnDataAvailable(nsIRequest* request, uint64_t aSourceOffset,
                               const char* buffer, uint32_t aCount);
+  nsresult DoOnStopRequest(nsIRequest* request, nsresult aStatus);
+  void SetDispatchToMainThread();
 
   bool mCheckHeaderDone{false};
   Atomic<bool> mStreamEnded{false};
@@ -116,6 +120,7 @@ class nsHTTPCompressConv : public nsIStreamConverter,
   bool mDummyStreamInitialised{false};
   bool mFailUncleanStops;
   Atomic<bool> mDispatchToMainThread{false};
+  RefPtr<ChannelEventQueue> mMainThreadEventQueue;
 
   z_stream d_stream{};
   unsigned mLen{0}, hMode{0}, mSkipCount{0}, mFlags{0};
