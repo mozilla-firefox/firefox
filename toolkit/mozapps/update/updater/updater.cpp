@@ -5700,6 +5700,11 @@ int DoUpdate() {
       // generation scripts enforce the presence of the type declaration.
       if (NS_tstrcmp(token, NS_T("type")) == 0) {
         const NS_tchar* type = mstrtok(kQuote, &line);
+        if (!type) {
+          LOG(("DoUpdate: type value not found in manifest"));
+          free(buf);
+          return PARSE_ERROR;
+        }
         LOG(("UPDATE TYPE " LOG_S, type));
         if (NS_tstrcmp(type, NS_T("complete")) == 0) {
           rv = AddPreCompleteActions(&list);
