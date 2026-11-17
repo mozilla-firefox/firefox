@@ -218,6 +218,10 @@ nsresult HWInferenceParent::BindToUtilityProcess(
     const RefPtr<ipc::UtilityProcessParent>& aUtilityParent) {
   LOGD("{}", __func__);
   if (!aUtilityParent) {
+    mReadyPromise->Reject(NS_ERROR_NOT_AVAILABLE, __func__);
+    if (mOwner) {
+      mOwner->OnLaunchFailed(this);
+    }
     return NS_ERROR_NOT_AVAILABLE;
   }
 

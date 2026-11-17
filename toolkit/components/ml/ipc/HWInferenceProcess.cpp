@@ -65,13 +65,16 @@ already_AddRefed<ipc::UtilityProcessKeepAlive> HWInferenceProcess::Acquire() {
 
   // The keep-alive died before the actor heard about it. A crash destroys the
   // actor first, so an actor that can still send is going through a clean
-  // shutdown; an unbound one is a cancelled launch.
+  // shutdown; an unbound one is a launch that failed or was cancelled, whose
+  // notification has not arrived yet.
   if (mActor) {
     LOGD("{} - retiring the actor", __func__);
     if (mActor->CanSend()) {
       mRestarts = 0;
+      RetireActor(mActor);
+    } else {
+      OnLaunchFailed(mActor);
     }
-    RetireActor(mActor);
   }
 
   // Only a relaunch is refused: a spent budget must not take a working process
@@ -110,6 +113,17 @@ void HWInferenceProcess::OnActorDestroyed(
 
   // The reason is PUtilityProcess's: NormalShutdown is a clean shutdown.
   mRestarts = aReason == ipc::IProtocol::NormalShutdown ? 0 : mRestarts + 1;
+  RetireActor(aActor);
+}
+
+void HWInferenceProcess::OnLaunchFailed(HWInferenceParent* aActor) {
+  AssertIsOnMainThread();
+  MOZ_ASSERT(aActor == mActor);
+
+  // Without a keep-alive, every consumer let go: the launch was cancelled.
+  if (mKeepAlive) {
+    mRestarts++;
+  }
   RetireActor(aActor);
 }
 

@@ -46,12 +46,14 @@ class HWInferenceProcess final {
   void OnActorDestroyed(HWInferenceParent* aActor,
                         ipc::IProtocol::ActorDestroyReason aReason);
 
+  void OnLaunchFailed(HWInferenceParent* aActor);
+
   void RetireActor(HWInferenceParent* aActor);
 
   RefPtr<HWInferenceParent> mActor;
   WeakPtr<ipc::UtilityProcessKeepAlive> mKeepAlive;
 
-  // Crashes since the last clean shutdown.
+  // Crashes and failed launches since the last clean shutdown.
   uint32_t mRestarts = 0;
 };
 
