@@ -14,11 +14,13 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.activity.compose.BackHandler
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.core.view.isVisible
@@ -74,6 +76,9 @@ internal class CreditCardSaveDialogFragment : PromptDialogFragment() {
             setOnShowListener {
                 val bottomSheet = findViewById<View>(materialR.id.design_bottom_sheet) as FrameLayout
                 val behavior = BottomSheetBehavior.from(bottomSheet)
+                if (isSecurityCodeSaveEnabled) {
+                    behavior.peekHeight = context.resources.displayMetrics.heightPixels
+                }
                 behavior.state = BottomSheetBehavior.STATE_EXPANDED
             }
         }
@@ -86,20 +91,46 @@ internal class CreditCardSaveDialogFragment : PromptDialogFragment() {
     ): View {
         if (isSecurityCodeSaveEnabled) {
             return content {
+                var card by rememberSaveable { mutableStateOf(creditCard) }
+                var isEditing by rememberSaveable { mutableStateOf(false) }
                 var saveSecurityCode by rememberSaveable { mutableStateOf(initialSaveSecurityCode) }
 
-                LaunchedEffect(Unit) { checkIfCardIsNewOrSaved(creditCard) }
+                var checkedCard by remember { mutableStateOf<CreditCardEntry?>(null) }
+
+                LaunchedEffect(card) {
+                    checkIfCardIsNewOrSaved(card)
+                    checkedCard = card
+                }
+                LaunchedEffect(isEditing) { isCancelable = !isEditing }
+                BackHandler(enabled = isEditing) { isEditing = false }
 
                 AcornTheme {
-                    CreditCardSaveDialogContent(
-                        creditCard = creditCard,
-                        appName = requireContext().appName,
-                        isUpdate = confirmResult is Result.CanBeUpdated,
-                        saveSecurityCode = saveSecurityCode,
-                        onSaveSecurityCodeChange = { saveSecurityCode = it },
-                        onSave = { onSaveClicked(saveSecurityCode) },
-                        onDismiss = ::onDismissClicked,
-                    )
+                    if (isEditing) {
+                        CreditCardEditContent(
+                            creditCard = card,
+                            onSave = { editedCard ->
+                                card = editedCard
+                                isEditing = false
+                            },
+                            onCancel = { isEditing = false },
+                        )
+                    } else {
+                        CreditCardSaveDialogContent(
+                            creditCard = card,
+                            appName = requireContext().appName,
+                            isUpdate = confirmResult is Result.CanBeUpdated,
+                            saveSecurityCode = saveSecurityCode,
+                            onSaveSecurityCodeChange = { saveSecurityCode = it },
+                            onEditClick = { isEditing = true },
+                            onSave =
+                                if (checkedCard == card) {
+                                    { onSaveClicked(saveSecurityCode, card) }
+                                } else {
+                                    null
+                                },
+                            onDismiss = ::onDismissClicked,
+                        )
+                    }
                 }
             }
         }
@@ -142,11 +173,12 @@ internal class CreditCardSaveDialogFragment : PromptDialogFragment() {
     }
 
     /**
-     * Confirms the credit card. The security code is saved only when [isSecurityCodeSaveEnabled] and [saveSecurityCode]
-     * are true, and the toggle state is reported only when it was shown.
+     * Confirms [card], which is the credit card from Gecko or the user's edits of it. The security code is saved only
+     * when [isSecurityCodeSaveEnabled] and [saveSecurityCode] are true, and the toggle state is reported only when it
+     * was shown.
      */
     @VisibleForTesting
-    internal fun onSaveClicked(saveSecurityCode: Boolean) {
+    internal fun onSaveClicked(saveSecurityCode: Boolean, card: CreditCardEntry = creditCard) {
         val saveSecurityCode = isSecurityCodeSaveEnabled && saveSecurityCode
         if (isSecurityCodeSaveEnabled) {
             feature?.onSaveSecurityCodeChanged(saveSecurityCode)
@@ -154,7 +186,7 @@ internal class CreditCardSaveDialogFragment : PromptDialogFragment() {
         feature?.onConfirm(
             sessionId = sessionId,
             promptRequestUID = promptRequestUID,
-            value = creditCard.copy(cardCvv = creditCard.cardCvv.takeIf { saveSecurityCode }),
+            value = card.copy(cardCvv = card.cardCvv.takeIf { saveSecurityCode }),
         )
         dismiss()
         emitSaveUpdateFact()

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,11 +33,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import mozilla.components.compose.base.Switch
 import mozilla.components.compose.base.button.FilledButton
+import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.concept.storage.CreditCardEntry
 import mozilla.components.feature.prompts.R
 import mozilla.components.support.utils.creditCardIssuerNetwork
+import mozilla.components.ui.icons.R as iconsR
 
 // Bullet followed by a narrow space, with word joiners to prevent line breaks between mask characters.
 private const val SECURITY_CODE_MASK_CHAR = "\u2022\u2060\u2006\u2060"
@@ -49,9 +52,11 @@ private const val SECURITY_CODE_MASK_CHAR = "\u2022\u2060\u2006\u2060"
  * @param isUpdate Whether the credit card updates an already saved credit card.
  * @param saveSecurityCode The state of the "Save security codes" toggle.
  * @param onSaveSecurityCodeChange Invoked when the user changes the toggle.
- * @param onSave Invoked when the user saves the credit card.
+ * @param onEditClick Invoked when the user taps the edit button on the credit card.
+ * @param onSave Invoked when the user saves the credit card, or null to disable the Save button.
  * @param onDismiss Invoked when the user dismisses the prompt without saving.
  */
+@Suppress("LongParameterList")
 @Composable
 internal fun CreditCardSaveDialogContent(
     creditCard: CreditCardEntry,
@@ -59,7 +64,8 @@ internal fun CreditCardSaveDialogContent(
     isUpdate: Boolean,
     saveSecurityCode: Boolean,
     onSaveSecurityCodeChange: (Boolean) -> Unit,
-    onSave: () -> Unit,
+    onEditClick: () -> Unit,
+    onSave: (() -> Unit)?,
     onDismiss: () -> Unit,
 ) {
     Surface(color = MaterialTheme.colorScheme.surface) {
@@ -99,6 +105,7 @@ internal fun CreditCardSaveDialogContent(
             CreditCardDetails(
                 creditCard = creditCard,
                 showSecurityCode = saveSecurityCode && !creditCard.cardCvv.isNullOrEmpty(),
+                onEditClick = onEditClick,
             )
 
             Spacer(modifier = Modifier.height(AcornTheme.layout.space.static200))
@@ -122,7 +129,7 @@ internal fun CreditCardSaveDialogContent(
 @Composable
 private fun FooterButtons(
     isUpdate: Boolean,
-    onSave: () -> Unit,
+    onSave: (() -> Unit)?,
     onDismiss: () -> Unit,
 ) {
     Row(
@@ -144,7 +151,8 @@ private fun FooterButtons(
                         R.string.mozac_feature_prompt_save_confirmation
                     }
                 ),
-            onClick = onSave,
+            enabled = onSave != null,
+            onClick = { onSave?.invoke() },
         )
     }
 }
@@ -153,6 +161,7 @@ private fun FooterButtons(
 private fun CreditCardDetails(
     creditCard: CreditCardEntry,
     showSecurityCode: Boolean,
+    onEditClick: () -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -160,14 +169,25 @@ private fun CreditCardDetails(
         border = BorderStroke(AcornTheme.layout.border.default, MaterialTheme.colorScheme.outlineVariant),
         color = MaterialTheme.colorScheme.surface,
     ) {
-        Row(modifier = Modifier.padding(AcornTheme.layout.space.static200)) {
+        Row(
+            modifier =
+                Modifier.padding(
+                    start = AcornTheme.layout.space.static200,
+                    top = AcornTheme.layout.space.static200,
+                    bottom = AcornTheme.layout.space.static200,
+                    end = AcornTheme.layout.space.static50,
+                )
+        ) {
             Image(
                 painter = painterResource(creditCard.cardType.creditCardIssuerNetwork().icon),
                 contentDescription = null,
                 modifier = Modifier.size(AcornTheme.layout.size.static300),
             )
             Spacer(modifier = Modifier.width(AcornTheme.layout.space.static200))
-            Column(verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static25)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static25),
+            ) {
                 Text(
                     text = creditCard.obfuscatedCardNumber,
                     style = AcornTheme.typography.body1,
@@ -194,6 +214,16 @@ private fun CreditCardDetails(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+            }
+            IconButton(
+                onClick = onEditClick,
+                contentDescription = stringResource(R.string.mozac_feature_prompts_edit_credit_card_title),
+            ) {
+                Icon(
+                    painter = painterResource(iconsR.drawable.mozac_ic_edit_24),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
@@ -227,7 +257,7 @@ private fun SaveSecurityCodeToggle(
                 )
             }
             Spacer(modifier = Modifier.width(AcornTheme.layout.space.static200))
-            // The toggleable modifier on the row handles the change, so the whole row responds to taps.
+            // The toggleable modifier on the row handles this change.
             Switch(checked = checked, onCheckedChange = null)
         }
     }
@@ -254,6 +284,7 @@ private fun CreditCardSaveDialogContentPreview() {
             isUpdate = false,
             saveSecurityCode = true,
             onSaveSecurityCodeChange = {},
+            onEditClick = {},
             onSave = {},
             onDismiss = {},
         )
@@ -270,6 +301,7 @@ private fun CreditCardUpdateDialogContentPreview() {
             isUpdate = true,
             saveSecurityCode = false,
             onSaveSecurityCodeChange = {},
+            onEditClick = {},
             onSave = {},
             onDismiss = {},
         )

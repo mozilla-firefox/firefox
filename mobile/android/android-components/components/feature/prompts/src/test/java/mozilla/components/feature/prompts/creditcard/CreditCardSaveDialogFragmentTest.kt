@@ -428,4 +428,15 @@ class CreditCardSaveDialogFragmentTest {
         assertNull(feature.confirmedPrompt)
         assertEquals(TestPrompt(sessionId, promptRequestUID, null), feature.canceledPrompt)
     }
+
+    @Test
+    fun `GIVEN the user edited the credit card WHEN save is clicked THEN the edited credit card is confirmed`() {
+        val feature = TestPromptFeature()
+        val scenario = launchSecurityCodeFragment(feature, isSecurityCodeSaveEnabled = true)
+        val editedCard = creditCard.copy(name = "Firstname Lastname", expiryMonth = "8", cardCvv = "4567")
+
+        scenario.onFragment { it.onSaveClicked(saveSecurityCode = true, card = editedCard) }
+
+        assertEquals(TestPrompt(sessionId, promptRequestUID, editedCard), feature.confirmedPrompt)
+    }
 }
