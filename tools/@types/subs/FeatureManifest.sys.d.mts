@@ -143,6 +143,22 @@ export const FeatureManifest: {
                 };
                 description: string;
             };
+            highlightToSearchIgnoredSites: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+                description: string;
+            };
+            highlightToSearchDetectPageMenus: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+                description: string;
+            };
         };
     };
     searchConfiguration: {
@@ -385,7 +401,7 @@ export const FeatureManifest: {
                 fallbackPref: string;
                 description: string;
             };
-            quickSuggestAmpTopPickUseNovaIconSize: {
+            quickSuggestAmpTopPickScoreForLargeIcon: {
                 type: string;
                 setPref: {
                     branch: string;
@@ -578,6 +594,14 @@ export const FeatureManifest: {
                 };
                 description: string;
             };
+            semanticHistoryDomainScopedSearch: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+                description: string;
+            };
             semanticHistoryInSeparateGroup: {
                 type: string;
                 setPref: {
@@ -608,6 +632,14 @@ export const FeatureManifest: {
                 description: string;
             };
             suggestCalculator: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+                description: string;
+            };
+            temporalFeatureGate: {
                 type: string;
                 setPref: {
                     branch: string;
@@ -882,7 +914,6 @@ export const FeatureManifest: {
         description: string;
         owner: string;
         hasExposure: boolean;
-        exposureDescription: string;
         variables: {
             enabled: {
                 type: string;
@@ -1080,6 +1111,14 @@ export const FeatureManifest: {
         hasExposure: boolean;
         variables: {
             reportAdsEnabled: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+                description: string;
+            };
+            reportAdsNewReasonsEnabled: {
                 type: string;
                 setPref: {
                     branch: string;
@@ -1296,6 +1335,30 @@ export const FeatureManifest: {
                 description: string;
             };
             maxSubmissionDelayMs: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+                description: string;
+            };
+            minSubmissionDelayMs: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+                description: string;
+            };
+            dwellTimeEnabled: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+                description: string;
+            };
+            dwellTimeNoiseScale: {
                 type: string;
                 setPref: {
                     branch: string;
@@ -2914,6 +2977,22 @@ export const FeatureManifest: {
             };
         };
     };
+    protectionsPanelRedesign: {
+        description: string;
+        owner: string;
+        hasExposure: boolean;
+        exposureDescription: string;
+        variables: {
+            protectionsPanelRedesignGate: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+                description: string;
+            };
+        };
+    };
     backgroundTaskMessage: {
         description: string;
         owner: string;
@@ -3276,38 +3355,6 @@ export const FeatureManifest: {
                     pref: string;
                 };
             };
-            http3CCalgorithm: {
-                description: string;
-                type: string;
-                setPref: {
-                    branch: string;
-                    pref: string;
-                };
-            };
-            http3SlowStartAlgorithm: {
-                description: string;
-                type: string;
-                setPref: {
-                    branch: string;
-                    pref: string;
-                };
-            };
-            http3HyStartAlternativeCssBaseline: {
-                description: string;
-                type: string;
-                setPref: {
-                    branch: string;
-                    pref: string;
-                };
-            };
-            http3SpuriousRecovery: {
-                description: string;
-                type: string;
-                setPref: {
-                    branch: string;
-                    pref: string;
-                };
-            };
             enableOffMainThreadStreamDecompression: {
                 description: string;
                 type: string;
@@ -3317,22 +3364,6 @@ export const FeatureManifest: {
                 };
             };
             offMainThreadStreamDecompressionThreshold: {
-                description: string;
-                type: string;
-                setPref: {
-                    branch: string;
-                    pref: string;
-                };
-            };
-            dnsGracePeriod: {
-                description: string;
-                type: string;
-                setPref: {
-                    branch: string;
-                    pref: string;
-                };
-            };
-            dnsNegativeCacheExpiration: {
                 description: string;
                 type: string;
                 setPref: {
@@ -3403,6 +3434,77 @@ export const FeatureManifest: {
                 };
             };
             maxDnsCacheEntries: {
+                description: string;
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+            };
+            dnsGracePeriod: {
+                description: string;
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+            };
+            dnsNegativeCacheExpiration: {
+                description: string;
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+            };
+        };
+    };
+    networkingCongestionControl: {
+        description: string;
+        owner: string;
+        hasExposure: boolean;
+        variables: {
+            http3CCalgorithm: {
+                description: string;
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+            };
+            http3SlowStartAlgorithm: {
+                description: string;
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+            };
+            http3HyStartAlternativeCssBaseline: {
+                description: string;
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+            };
+            http3SpuriousRecovery: {
+                description: string;
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+            };
+            http3Abe: {
+                description: string;
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+            };
+            http3EcnMark: {
                 description: string;
                 type: string;
                 setPref: {
@@ -5056,6 +5158,29 @@ export const FeatureManifest: {
             };
         };
     };
+    speculationRulesPrefetch: {
+        description: string;
+        owner: string;
+        hasExposure: boolean;
+        variables: {
+            enabled: {
+                description: string;
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+            };
+            dryRun: {
+                description: string;
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+            };
+        };
+    };
     opaqueResponseBlocking: {
         description: string;
         owner: string;
@@ -5349,6 +5474,10 @@ export const FeatureManifest: {
                 type: string;
             };
             nimbusTargetingEnvironment: {
+                description: string;
+                type: string;
+            };
+            reducedEnrollmentStatusTelemetryEnabled: {
                 description: string;
                 type: string;
             };
@@ -5711,6 +5840,36 @@ export const FeatureManifest: {
             };
             prefs: {
                 type: string;
+                description: string;
+            };
+        };
+    };
+    generatedWidgets: {
+        description: string;
+        owner: string;
+        hasExposure: boolean;
+        variables: {
+            enabled: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+                description: string;
+            };
+        };
+    };
+    resourceMonitor: {
+        description: string;
+        owner: string;
+        hasExposure: boolean;
+        variables: {
+            enabled: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
                 description: string;
             };
         };
@@ -6507,14 +6666,6 @@ export const FeatureManifest: {
                     pref: string;
                 };
             };
-            preallocated_lowmem_mb: {
-                description: string;
-                type: string;
-                setPref: {
-                    branch: string;
-                    pref: string;
-                };
-            };
             priority_manager_enabled: {
                 description: string;
                 type: string;
@@ -6660,6 +6811,34 @@ export const FeatureManifest: {
                 };
                 description: string;
             };
+            aiTabMenus: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+                description: string;
+            };
+            authImpl: {
+                type: string;
+                enum: string[];
+                description: string;
+            };
+            guestMode: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+                enum: string[];
+                description: string;
+            };
+            smartbarIntent: {
+                type: string;
+                fallbackPref: string;
+                enum: string[];
+                description: string;
+            };
         };
     };
     smartWindowAgentWatch: {
@@ -6668,14 +6847,6 @@ export const FeatureManifest: {
         hasExposure: boolean;
         variables: {
             enabled: {
-                type: string;
-                setPref: {
-                    branch: string;
-                    pref: string;
-                };
-                description: string;
-            };
-            supportedRegions: {
                 type: string;
                 setPref: {
                     branch: string;
@@ -6917,6 +7088,21 @@ export const FeatureManifest: {
         };
     };
     nova: {
+        description: string;
+        owner: string;
+        hasExposure: boolean;
+        variables: {
+            enabled: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+                description: string;
+            };
+        };
+    };
+    trustedTypesReadinessTelemetry: {
         description: string;
         owner: string;
         hasExposure: boolean;

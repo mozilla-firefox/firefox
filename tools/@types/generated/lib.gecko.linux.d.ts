@@ -58,6 +58,42 @@ interface nsIOpenTabsProvider extends nsISupports {
   switchToOpenTab(url: string): void;
 }
 
+// https://searchfox.org/firefox-main/source/security/sandbox/linux/interfaces/mozISandboxReporter.idl
+
+/** <!-- binding_to(idl, interface_name, XPIDL_mozISandboxReport) --> */
+interface mozISandboxReport extends nsISupports {
+  /** <!-- binding_to(idl, attribute, XPIDL_mozISandboxReport_msecAgo) --> */
+  readonly msecAgo: u64;
+  /** <!-- binding_to(idl, attribute, XPIDL_mozISandboxReport_pid) --> */
+  readonly pid: i32;
+  /** <!-- binding_to(idl, attribute, XPIDL_mozISandboxReport_tid) --> */
+  readonly tid: i32;
+  /** <!-- binding_to(idl, attribute, XPIDL_mozISandboxReport_procType) --> */
+  readonly procType: string;
+  /** <!-- binding_to(idl, attribute, XPIDL_mozISandboxReport_syscall) --> */
+  readonly syscall: u32;
+  /** <!-- binding_to(idl, attribute, XPIDL_mozISandboxReport_numArgs) --> */
+  readonly numArgs: u32;
+  /** <!-- binding_to(idl, method, XPIDL_mozISandboxReport_getArg) --> */
+  getArg(aIndex: u32): string;
+}
+
+/** <!-- binding_to(idl, interface_name, XPIDL_mozISandboxReportArray) --> */
+interface mozISandboxReportArray extends nsISupports {
+  /** <!-- binding_to(idl, attribute, XPIDL_mozISandboxReportArray_begin) --> */
+  readonly begin: u64;
+  /** <!-- binding_to(idl, attribute, XPIDL_mozISandboxReportArray_end) --> */
+  readonly end: u64;
+  /** <!-- binding_to(idl, method, XPIDL_mozISandboxReportArray_getElement) --> */
+  getElement(aIndex: u64): mozISandboxReport;
+}
+
+/** <!-- binding_to(idl, interface_name, XPIDL_mozISandboxReporter) --> */
+interface mozISandboxReporter extends nsISupports {
+  /** <!-- binding_to(idl, method, XPIDL_mozISandboxReporter_snapshot) --> */
+  snapshot(): mozISandboxReportArray;
+}
+
 // https://searchfox.org/firefox-main/source/widget/nsIApplicationChooser.idl
 
 /** <!-- binding_to(idl, interface_name, XPIDL_nsIApplicationChooserFinishedCallback) --> */
@@ -101,13 +137,25 @@ interface nsITaskbarProgress extends nsISupports {
   setProgressState(state: nsTaskbarProgressState, currentValue?: u64, maxValue?: u64): void;
 }
 
+// https://searchfox.org/firefox-main/source/xpcom/base/nsIAvailableMemoryWatcherTestingLinux.idl
+
+/** <!-- binding_to(idl, interface_name, XPIDL_nsIAvailableMemoryWatcherTestingLinux) --> */
+interface nsIAvailableMemoryWatcherTestingLinux extends nsISupports {
+  /** <!-- binding_to(idl, method, XPIDL_nsIAvailableMemoryWatcherTestingLinux_setPSIPathForTesting) --> */
+  setPSIPathForTesting(aPSIPath: string): void;
+}
+
 interface nsIXPCComponents_Interfaces {
   nsIGNOMEShellService: nsJSIID<nsIGNOMEShellService, typeof nsIGNOMEShellService_DesktopEntryStatus>;
   nsIOpenTabsProvider: nsJSIID<nsIOpenTabsProvider>;
+  mozISandboxReport: nsJSIID<mozISandboxReport>;
+  mozISandboxReportArray: nsJSIID<mozISandboxReportArray>;
+  mozISandboxReporter: nsJSIID<mozISandboxReporter>;
   nsIApplicationChooserFinishedCallback: nsJSIID<nsIApplicationChooserFinishedCallback>;
   nsIApplicationChooser: nsJSIID<nsIApplicationChooser>;
   nsIGtkTaskbarProgress: nsJSIID<nsIGtkTaskbarProgress>;
   nsITaskbarProgress: nsJSIID<nsITaskbarProgress>;
+  nsIAvailableMemoryWatcherTestingLinux: nsJSIID<nsIAvailableMemoryWatcherTestingLinux>;
 }
 
 }  // global

@@ -1974,7 +1974,6 @@ export class DiscoveryStreamFeed {
    */
   recordStoriesFeedResult(label) {
     if (this.store.getState().Prefs.values[PREF_PRIVATE_PING_ENABLED]) {
-      // @ts-expect-error tools/@types/generated/lib.gecko.glean.d.ts predates this metric.
       Glean.newtabContent.storiesFeedResult?.[label]?.add(1);
     }
   }
@@ -1987,7 +1986,6 @@ export class DiscoveryStreamFeed {
    */
   recordStoriesFeedState(state) {
     if (this.store.getState().Prefs.values[PREF_PRIVATE_PING_ENABLED]) {
-      // @ts-expect-error tools/@types/generated/lib.gecko.glean.d.ts predates this metric.
       Glean.newtabContent.storiesFeedState?.set(state);
     }
   }
@@ -2161,7 +2159,6 @@ export class DiscoveryStreamFeed {
         let { surfaceId = "" } = feedResponse;
         if (surfaceId && !isPlausibleSurfaceId(surfaceId, locale, region)) {
           console.warn(`Ignoring implausible surfaceId: ${surfaceId}`);
-          // @ts-expect-error tools/@types/generated/lib.gecko.glean.d.ts predates this metric.
           Glean.newtabContent.surfaceIdRejected.record();
           surfaceId = "";
         }

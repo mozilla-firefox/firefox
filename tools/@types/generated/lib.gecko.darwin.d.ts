@@ -76,6 +76,42 @@ interface nsIMacShellService extends nsIShellService {
   getLaunchOnLoginEnabled(): boolean;
 }
 
+// https://searchfox.org/firefox-main/source/toolkit/xre/nsIASWebAuthSessionRequest.idl
+
+/** <!-- binding_to(idl, interface_name, XPIDL_nsIASWebAuthSessionRequest) --> */
+interface nsIASWebAuthSessionRequest extends nsISupports {
+  /** <!-- binding_to(idl, attribute, XPIDL_nsIASWebAuthSessionRequest_uuid) --> */
+  readonly uuid: string;
+  /** <!-- binding_to(idl, attribute, XPIDL_nsIASWebAuthSessionRequest_url) --> */
+  readonly url: string;
+  /** <!-- binding_to(idl, attribute, XPIDL_nsIASWebAuthSessionRequest_callbackScheme) --> */
+  readonly callbackScheme: string;
+  /** <!-- binding_to(idl, attribute, XPIDL_nsIASWebAuthSessionRequest_hasCallback) --> */
+  readonly hasCallback: boolean;
+  /** <!-- binding_to(idl, attribute, XPIDL_nsIASWebAuthSessionRequest_useEphemeralSession) --> */
+  readonly useEphemeralSession: boolean;
+  /** <!-- binding_to(idl, attribute, XPIDL_nsIASWebAuthSessionRequest_additionalHeaderNames) --> */
+  readonly additionalHeaderNames: string[];
+  /** <!-- binding_to(idl, method, XPIDL_nsIASWebAuthSessionRequest_getAdditionalHeader) --> */
+  getAdditionalHeader(name: string): string;
+  /** <!-- binding_to(idl, method, XPIDL_nsIASWebAuthSessionRequest_matchesCallbackURL) --> */
+  matchesCallbackURL(url: string): boolean;
+  /** <!-- binding_to(idl, method, XPIDL_nsIASWebAuthSessionRequest_complete) --> */
+  complete(callbackURL: string): void;
+  /** <!-- binding_to(idl, method, XPIDL_nsIASWebAuthSessionRequest_cancel) --> */
+  cancel(): void;
+}
+
+// https://searchfox.org/firefox-main/source/widget/nsICocoaAppShellTestUtils.idl
+
+/** <!-- binding_to(idl, interface_name, XPIDL_nsICocoaAppShellTestUtils) --> */
+interface nsICocoaAppShellTestUtils extends nsISupports {
+  /** <!-- binding_to(idl, method, XPIDL_nsICocoaAppShellTestUtils_postNativeTestEvent) --> */
+  postNativeTestEvent(): void;
+  /** <!-- binding_to(idl, attribute, XPIDL_nsICocoaAppShellTestUtils_lostNativeWakeups) --> */
+  readonly lostNativeWakeups: u32;
+}
+
 // https://searchfox.org/firefox-main/source/widget/nsIMacDockSupport.idl
 
 /** <!-- binding_to(idl, interface_name, XPIDL_nsIAppBundleLaunchOptions) --> */
@@ -122,14 +158,26 @@ interface nsIMacFinderProgress extends nsISupports {
 
 // https://searchfox.org/firefox-main/source/widget/nsIMacSharingService.idl
 
+/** <!-- binding_to(idl, interface_name, XPIDL_nsIMacShareCustomItemHandler) --> */
+type nsIMacShareCustomItemHandler = Callable<{
+  /** <!-- binding_to(idl, method, XPIDL_nsIMacShareCustomItemHandler_handle) --> */
+  handle(): void;
+}>
+
+/** <!-- binding_to(idl, interface_name, XPIDL_nsIMacShareCustomItem) --> */
+interface nsIMacShareCustomItem extends nsISupports {
+  /** <!-- binding_to(idl, attribute, XPIDL_nsIMacShareCustomItem_label) --> */
+  readonly label: string;
+  /** <!-- binding_to(idl, attribute, XPIDL_nsIMacShareCustomItem_icon) --> */
+  readonly icon: string;
+  /** <!-- binding_to(idl, attribute, XPIDL_nsIMacShareCustomItem_handler) --> */
+  readonly handler: nsIMacShareCustomItemHandler;
+}
+
 /** <!-- binding_to(idl, interface_name, XPIDL_nsIMacSharingService) --> */
 interface nsIMacSharingService extends nsISupports {
-  /** <!-- binding_to(idl, method, XPIDL_nsIMacSharingService_getSharingProviders) --> */
-  getSharingProviders(pageUrl: string): any;
-  /** <!-- binding_to(idl, method, XPIDL_nsIMacSharingService_shareUrl) --> */
-  shareUrl(serviceName: string, pageUrl: string, pageTitle: string): void;
-  /** <!-- binding_to(idl, method, XPIDL_nsIMacSharingService_openSharingPreferences) --> */
-  openSharingPreferences(): void;
+  /** <!-- binding_to(idl, method, XPIDL_nsIMacSharingService_shareUrlWithPicker) --> */
+  shareUrlWithPicker(anchor: Element, urls: string[], titles: string[], shareTitle: string, customItems: nsIMacShareCustomItem[], copyItem: nsIMacShareCustomItem): void;
 }
 
 // https://searchfox.org/firefox-main/source/widget/nsIMacUserActivityUpdater.idl
@@ -267,8 +315,8 @@ interface nsITouchBarUpdater extends nsISupports {
 interface nsIMacPreferencesReader extends nsISupports {
   /** <!-- binding_to(idl, method, XPIDL_nsIMacPreferencesReader_policiesEnabled) --> */
   policiesEnabled(): boolean;
-  /** <!-- binding_to(idl, method, XPIDL_nsIMacPreferencesReader_readPreferences) --> */
-  readPreferences(): any;
+  /** <!-- binding_to(idl, method, XPIDL_nsIMacPreferencesReader_readPolicySources) --> */
+  readPolicySources(): any;
 }
 
 // https://searchfox.org/firefox-main/source/xpcom/io/nsILocalFileMac.idl
@@ -297,10 +345,14 @@ interface nsIXPCComponents_Interfaces {
   nsIAccessibleMacEvent: nsJSIID<nsIAccessibleMacEvent>;
   nsIKeychainMigrationUtils: nsJSIID<nsIKeychainMigrationUtils>;
   nsIMacShellService: nsJSIID<nsIMacShellService>;
+  nsIASWebAuthSessionRequest: nsJSIID<nsIASWebAuthSessionRequest>;
+  nsICocoaAppShellTestUtils: nsJSIID<nsICocoaAppShellTestUtils>;
   nsIAppBundleLaunchOptions: nsJSIID<nsIAppBundleLaunchOptions>;
   nsIMacDockSupport: nsJSIID<nsIMacDockSupport>;
   nsIMacFinderProgressCanceledCallback: nsJSIID<nsIMacFinderProgressCanceledCallback>;
   nsIMacFinderProgress: nsJSIID<nsIMacFinderProgress>;
+  nsIMacShareCustomItemHandler: nsJSIID<nsIMacShareCustomItemHandler>;
+  nsIMacShareCustomItem: nsJSIID<nsIMacShareCustomItem>;
   nsIMacSharingService: nsJSIID<nsIMacSharingService>;
   nsIMacUserActivityUpdater: nsJSIID<nsIMacUserActivityUpdater>;
   nsITrashAppCallback: nsJSIID<nsITrashAppCallback>;
