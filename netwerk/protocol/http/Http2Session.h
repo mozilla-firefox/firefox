@@ -183,7 +183,8 @@ class Http2Session final : public ASpdySession,
     SETTINGS_TYPE_INITIAL_WINDOW = 4,
     // max frame size settings sender allows receipt of
     SETTINGS_TYPE_MAX_FRAME_SIZE = 5,
-    // 6 is SETTINGS_TYPE_MAX_HEADER_LIST - advisory, we ignore it
+    // max decoded header block size; advisory, we ignore the peer's value
+    SETTINGS_TYPE_MAX_HEADER_LIST = 6,
     // 7 is unassigned
     // if sender implements extended CONNECT
     SETTINGS_TYPE_ENABLE_CONNECT_PROTOCOL = 8,

@@ -1071,10 +1071,10 @@ void Http2Session::SendHello() {
   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
   LOG3(("Http2Session::SendHello %p\n", this));
 
-  // sized for magic + 6 settings and a session window update and 6 priority
+  // sized for magic + 7 settings and a session window update and 6 priority
   // frames 24 magic, 33 for settings (9 header + 4 settings @6), 13 for window
   // update, 6 priority frames at 14 (9 + 5) each
-  static const uint32_t maxSettings = 6;
+  static const uint32_t maxSettings = 7;
   static const uint32_t prioritySize =
       kPriorityGroupCount * (kFrameHeaderBytes + 5);
   static const uint32_t maxDataLen =
@@ -1140,6 +1140,19 @@ void Http2Session::SendHello() {
   NetworkEndian::writeUint32(
       packet + kFrameHeaderBytes + (6 * numberOfEntries) + 2, kMaxFrameData);
   numberOfEntries++;
+
+  uint32_t maxHeaderListSize =
+      StaticPrefs::network_http_http2_max_header_list_size();
+  if (maxHeaderListSize &&
+      StaticPrefs::network_http_http2_send_max_header_list_size()) {
+    NetworkEndian::writeUint16(
+        packet + kFrameHeaderBytes + (6 * numberOfEntries),
+        SETTINGS_TYPE_MAX_HEADER_LIST);
+    NetworkEndian::writeUint32(
+        packet + kFrameHeaderBytes + (6 * numberOfEntries) + 2,
+        maxHeaderListSize);
+    numberOfEntries++;
+  }
 
   bool disableRFC7540Priorities =
       !StaticPrefs::network_http_http2_enabled_deps() ||

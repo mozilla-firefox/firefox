@@ -985,6 +985,8 @@ head = "head_channels.js head_cache.js head_cookies.js head_trr.js head_http3.js
 ["test_http2_fin_buffered.js"]
 requesttimeoutfactor = 2  # Slow on Android
 
+["test_http2_max_header_list_size.js"]
+
 ["test_http2_output_queue_limit.js"]
 
 ["test_http2_proxy_concurrent_stream.js"]

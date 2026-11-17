@@ -17061,6 +17061,13 @@
 #endif
   mirror: always
 
+# When true and network.http.http2.max_header_list_size is non-zero, advertise
+# that limit to the server with SETTINGS_MAX_HEADER_LIST_SIZE.
+- name: network.http.http2.send_max_header_list_size
+  type: RelaxedAtomicBool
+  value: @IS_NIGHTLY_BUILD@
+  mirror: always
+
 - name: network.http.move_to_pending_list_after_network_change
   type: RelaxedAtomicBool
   value: true
