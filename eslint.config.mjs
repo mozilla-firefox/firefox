@@ -9,6 +9,7 @@ import { importX } from "eslint-plugin-import-x";
 import json from "@eslint/json";
 import lit from "eslint-plugin-lit";
 import mozilla from "eslint-plugin-mozilla";
+import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 
@@ -447,6 +448,48 @@ let config = [
     }),
     rules: {
       "mozilla/no-comparison-or-assignment-inside-ok": "off",
+    },
+  },
+  {
+    name: "react",
+    files: wrapPaths({
+      paths: [
+        "browser/components/aboutwelcome/**",
+        "browser/components/asrouter/**",
+        "browser/extensions/newtab/**",
+        "devtools/**",
+      ],
+      excludedExtensions: ["json"],
+    }),
+    plugins: { react },
+    settings: {
+      react: {
+        version: "16.2.0",
+      },
+    },
+    rules: {
+      "react/jsx-boolean-value": ["error", "always"],
+      "react/jsx-key": "error",
+      "react/jsx-no-bind": [
+        "error",
+        { allowArrowFunctions: true, allowFunctions: true },
+      ],
+      "react/jsx-no-comment-textnodes": "error",
+      "react/jsx-no-duplicate-props": "error",
+      "react/jsx-no-target-blank": "error",
+      "react/jsx-no-undef": "error",
+      "react/jsx-pascal-case": "error",
+      "react/jsx-uses-react": "error",
+      "react/jsx-uses-vars": "error",
+      "react/no-access-state-in-setstate": "error",
+      "react/no-danger": "error",
+      "react/no-deprecated": "error",
+      "react/no-did-mount-set-state": "error",
+      "react/no-did-update-set-state": "error",
+      "react/no-direct-mutation-state": "error",
+      "react/no-is-mounted": "error",
+      "react/no-unknown-property": "error",
+      "react/require-render-return": "error",
     },
   },
   {
