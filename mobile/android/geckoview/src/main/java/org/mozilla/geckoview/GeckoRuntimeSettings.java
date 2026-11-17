@@ -198,11 +198,10 @@ public final class GeckoRuntimeSettings extends RuntimeSettings {
     }
 
     /**
-     * Set whether the to report the full bit depth of the device.
+     * Set whether to report the full bit depth of the device.
      *
-     * <p>By default, 24 bits are reported for high memory devices and 16 bits for low memory
-     * devices. If set to true, the device's maximum bit depth is reported. On most modern devices
-     * this will be 32 bit screen depth.
+     * <p>By default, 24 bits are reported, covering only the color channels. If set to true, 32
+     * bits are reported, which also includes the alpha channel.
      *
      * @param enable A flag determining whether maximum screen depth should be used.
      * @return This Builder.

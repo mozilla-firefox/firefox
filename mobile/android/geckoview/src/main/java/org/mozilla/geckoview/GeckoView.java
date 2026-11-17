@@ -344,11 +344,6 @@ public class GeckoView extends FrameLayout implements GeckoDisplay.NewSurfacePro
         new ColorDrawable(Color.WHITE));
     setBackground(drawable);
 
-    // This will stop PropertyAnimator from creating a drawing cache (i.e. a
-    // bitmap) from a SurfaceView, which is just not possible (the bitmap will be
-    // transparent).
-    setWillNotCacheDrawing(false);
-
     mSurfaceWrapper = new SurfaceViewWrapper(getContext());
     mSurfaceWrapper.setBackgroundColor(Color.WHITE);
     addView(

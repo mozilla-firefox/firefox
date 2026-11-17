@@ -19,7 +19,6 @@ import android.content.res.Configuration;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
@@ -182,7 +181,6 @@ public class GeckoAppShell {
    */
   private static final int ADDITIONAL_SEARCH_HEADER_RAM_THRESHOLD_MEGABYTES = 1024;
 
-  private static int sScreenDepth;
   private static boolean sUseMaxScreenDepth;
   private static Float sScreenRefreshRate;
 
@@ -671,21 +669,12 @@ public class GeckoAppShell {
   /**
    * Returns the colour depth of the default screen. This will typically be 24 as by default it only
    * includes the bits used for color values, not alpha. However, if useMaxScreenDepth() has been
-   * enabled this will return the full depth.
+   * enabled this will return the full depth of 32, as Android screens always use RGBA_8888. See
+   * https://developer.android.com/reference/android/view/Display#getPixelFormat()
    */
   @WrapForJNI(calledFrom = "gecko")
   public static synchronized int getScreenDepth() {
-    if (sScreenDepth == 0) {
-      sScreenDepth = 24;
-      final Context applicationContext = getApplicationContext();
-      final PixelFormat info = new PixelFormat();
-      PixelFormat.getPixelFormatInfo(sScreenCompat.getDisplay(sDisplayId).getPixelFormat(), info);
-      if (info.bitsPerPixel >= 24) {
-        sScreenDepth = sUseMaxScreenDepth ? info.bitsPerPixel : 24;
-      }
-    }
-
-    return sScreenDepth;
+    return sUseMaxScreenDepth ? 32 : 24;
   }
 
   @WrapForJNI(calledFrom = "gecko")
