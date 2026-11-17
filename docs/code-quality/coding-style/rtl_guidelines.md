@@ -312,6 +312,12 @@ the document's locale direction, which follows the app locale and
 but `:-moz-locale-dir(rtl)` rules don't, so the page shows a mix of LTR and
 RTL styling.
 
+`:dir()` follows the `dir` attribute. Fluent sets it on the root of an HTML
+chrome document, such as `browser.xhtml`, from the app locale, but sets only
+`localedir` on a XUL root, so `:dir(rtl)` never matches in a XUL window.
+Setting `direction: rtl` in CSS makes neither pseudo-class match, so a test
+that flips direction that way doesn't reproduce what an RTL locale shows.
+
 An element with `dir="auto"`, a `<bdi>` element and text under
 `unicode-bidi: plaintext` take their direction from their own text
 rather than from the UI (see [Auto-directionality](#auto-directionality)).
