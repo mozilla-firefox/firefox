@@ -436,6 +436,8 @@ module.exports = {
         "testing/**",
         "**/test/**",
         "**/tests/**",
+        // Shared with the DevTools highlighters, which do not use design tokens
+        "toolkit/themes/shared/eyedropper-common.css",
         // UA Widgets should not use design tokens
         "toolkit/themes/shared/colorpicker-common.css",
         "toolkit/themes/shared/colorpicker.css",

@@ -46,6 +46,7 @@ CONTENT_ACCESSIBLE_FILES.media += [
 ]
 
 CONTENT_ACCESSIBLE_FILES += [
+    "shared/eyedropper-common.css",
     "shared/pictureinpicture/texttracks.css",
 ]
 

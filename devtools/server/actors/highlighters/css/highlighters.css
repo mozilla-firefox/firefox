@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+@import url("resource://content-accessible/eyedropper-common.css");
+
 :host {
   display: contents;
 }
@@ -562,113 +564,9 @@
 
 /* Eye Dropper */
 
-.eye-dropper-root {
-  --magnifier-width: 96px;
-  --magnifier-height: 96px;
-  /* Width accounts for all color formats (hsl being the longest) */
-  --label-width: 160px;
-  --label-height: 23px;
-  --background-color: #e0e0e0;
-  color: #333;
-
-  position: fixed;
-  /* Tool start position. This should match the X/Y defines in JS */
-  top: 100px;
-  left: 100px;
-
-  /* Prevent interacting with the page when hovering and clicking */
-  pointer-events: auto;
-
-  /* Offset the UI so it is centered around the pointer */
-  transform: translate(calc(var(--magnifier-width) / -2), calc(var(--magnifier-height) / -2));
-
-  filter: drop-shadow(0 0 1px rgb(0 0 0 / 0.4));
-
-  /* We don't need the UI to be reversed in RTL locales, otherwise the # would appear
-     to the right of the hex code. Force LTR */
-  direction: ltr;
-}
-
-.eye-dropper-canvas {
-  image-rendering: -moz-crisp-edges;
-  cursor: none;
-  width: var(--magnifier-width);
-  height: var(--magnifier-height);
-  border-radius: 50%;
-  box-shadow: 0 0 0 3px var(--background-color);
-  display: block;
-  transition: opacity 0.1s ease-in-out;
-}
-
-.eye-dropper-root[scrolling] .eye-dropper-canvas {
-  opacity: 0.75;
-}
-
-.eye-dropper-color-container {
-  background-color: var(--background-color);
-  border-radius: 2px;
-  width: var(--label-width);
-  height: var(--label-height);
-  position: relative;
-
-  --label-horizontal-center: translateX(calc((var(--magnifier-width) - var(--label-width)) / 2));
-  --label-horizontal-left: translateX(calc((-1 * var(--label-width) + var(--magnifier-width) / 2)));
-  --label-horizontal-right: translateX(calc(var(--magnifier-width) / 2));
-  --label-vertical-top: translateY(calc((-1 * var(--magnifier-height)) - var(--label-height)));
-
-  /* By default the color label container sits below the canvas.
-     Here we just center it horizontally */
-  transform: var(--label-horizontal-center);
-  transition:
-    transform 0.1s ease-in-out,
-    opacity 0.1s ease-in-out;
-}
-
-/* If there isn't enough space below the canvas, we move the label container to the top */
-.eye-dropper-root[top] .eye-dropper-color-container {
-  transform: var(--label-horizontal-center) var(--label-vertical-top);
-}
-.eye-dropper-root[scrolling] .eye-dropper-color-container {
-  opacity: 0;
-}
-
-/* If there isn't enough space right of the canvas to horizontally center the label
-   container, offset it to the left */
-.eye-dropper-root[left] .eye-dropper-color-container {
-  transform: var(--label-horizontal-left);
-}
-
-.eye-dropper-root[left][top] .eye-dropper-color-container {
-  transform: var(--label-horizontal-left) var(--label-vertical-top);
-}
-
-/* If there isn't enough space left of the canvas to horizontally center the label
-   container, offset it to the right */
-.eye-dropper-root[right] .eye-dropper-color-container {
-  transform: var(--label-horizontal-right);
-}
-
-.eye-dropper-root[right][top] .eye-dropper-color-container {
-  transform: var(--label-horizontal-right) var(--label-vertical-top);
-}
-
-.eye-dropper-color-preview {
-  width: 16px;
-  height: 16px;
-  position: absolute;
-  inset-inline-start: 3px;
-  inset-block-start: 3px;
-  box-shadow: 0 0 0 black;
-  border: solid 1px #fff;
-  forced-color-adjust: none;
-}
-
 .eye-dropper-color-value {
-  text-shadow: 1px 1px 1px #fff;
   font: var(--highlighter-font-family);
   font-size: var(--highlighter-font-size);
-  text-align: center;
-  padding: 4px 0;
 }
 
 /* Paused Debugger Overlay */
