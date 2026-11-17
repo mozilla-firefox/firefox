@@ -14,6 +14,10 @@ add_task(async function setup() {
 });
 
 async function run_test() {
+  // Create the profile before the child process starts, so the permission
+  // manager doesn't open its encrypted database during setup (bug 2093299).
+  do_get_profile();
+
   // test priority urgency and incremental with priority enabled
   Services.prefs.setBoolPref("network.http.http3.priority", true);
   Services.prefs.setBoolPref("network.http.priority_header.enabled", true);
