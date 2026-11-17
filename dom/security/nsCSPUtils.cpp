@@ -1237,6 +1237,74 @@ static nsTArray<SRIMetadata> ParseSRIMetadata(const nsAString& aMetadata) {
   return result;
 }
 
+// https://w3c.github.io/webappsec-csp/#match-integrity-metadata-to-source-list
+//
+// Steps 1 and 2 are done by the caller, which collects the integrity
+// expressions together with other information it needs from the source list.
+static bool DoesIntegrityMetadataMatchSourceList(
+    nsILoadInfo* aLoadInfo,
+    const nsTArray<nsCSPHashSrc*>& aIntegrityExpressions) {
+  // Step 3. If integrity expressions is empty, return "Does Not Match".
+  if (aIntegrityExpressions.IsEmpty()) {
+    return false;
+  }
+
+  // Step 4. Let integrity sources be the result of parsing metadata given
+  // integrity metadata.
+  //
+  // Note: For code-reuse we get request’s integrity metadata here instead of
+  // the caller.
+  nsAutoString integrityMetadata;
+  aLoadInfo->GetIntegrityMetadata(integrityMetadata);
+
+  nsTArray<SRIMetadata> integritySources = ParseSRIMetadata(integrityMetadata);
+
+  // Step 5. If integrity sources is "no metadata" or an empty set, return
+  // "Does Not Match".
+  if (integritySources.IsEmpty()) {
+    return false;
+  }
+
+  nsAutoCString sourceAlgorithmUTF8;
+  nsAutoCString sourceHashUTF8;
+  nsAutoString sourceAlgorithm;
+  nsAutoString sourceHash;
+  nsAutoString algorithm;
+  nsAutoString hash;
+
+  // Step 6. For each source of integrity sources:
+  for (const SRIMetadata& source : integritySources) {
+    source.GetAlgorithm(&sourceAlgorithmUTF8);
+    sourceAlgorithm = NS_ConvertUTF8toUTF16(sourceAlgorithmUTF8);
+    source.GetHash(0, &sourceHashUTF8);
+    sourceHash = NS_ConvertUTF8toUTF16(sourceHashUTF8);
+
+    // Step 6.1. If integrity expressions does not contain a source expression
+    // whose hash-algorithm is an ASCII case-insensitive match for source’s
+    // hash-algorithm, and whose base64-value is identical to source’s
+    // base64-value, return "Does Not Match".
+    bool found = false;
+    for (const nsCSPHashSrc* hashSrc : aIntegrityExpressions) {
+      hashSrc->getAlgorithm(algorithm);
+      hashSrc->getHash(hash);
+
+      // The nsCSPHashSrc constructor lowercases algorithm, so this is
+      // case-insensitive.
+      if (sourceAlgorithm == algorithm && sourceHash == hash) {
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      return false;
+    }
+  }
+
+  // Step 7. Return "Matches".
+  return true;
+}
+
 bool nsCSPDirective::permits(CSPDirective aDirective, nsILoadInfo* aLoadInfo,
                              nsIURI* aUri, bool aWasRedirected,
                              bool aReportOnly, bool aUpgradeInsecure) const {
@@ -1272,86 +1340,28 @@ bool nsCSPDirective::permits(CSPDirective aDirective, nsILoadInfo* aLoadInfo,
         return true;
       }
 
-      // Step 1.2. Let integrity expressions be the set of source expressions in
-      // directive’s value that match the hash-source grammar.
+      // Collect what the steps below need in one pass over the source list,
+      // including the integrity expressions of §6.7.2.4 step 2.
       nsTArray<nsCSPHashSrc*> integrityExpressions;
-      bool hasStrictDynamicKeyword =
-          false;  // Optimization to reduce number of iterations.
-      for (uint32_t i = 0; i < mSrcs.Length(); i++) {
-        if (mSrcs[i]->isHash()) {
-          integrityExpressions.AppendElement(
-              static_cast<nsCSPHashSrc*>(mSrcs[i]));
-        } else if (mSrcs[i]->isKeyword(CSP_STRICT_DYNAMIC)) {
+      bool hasStrictDynamicKeyword = false;
+      for (nsCSPBaseSrc* src : mSrcs) {
+        if (src->isHash()) {
+          integrityExpressions.AppendElement(static_cast<nsCSPHashSrc*>(src));
+        } else if (src->isKeyword(CSP_STRICT_DYNAMIC)) {
           hasStrictDynamicKeyword = true;
         }
       }
 
-      // Step 1.3. If integrity expressions is not empty:
-      if (!integrityExpressions.IsEmpty()) {
-        // Step 1.3.1. Let integrity sources be the result of executing the
-        // algorithm defined in [SRI 3.3.3 Parse metadata] on request’s
-        // integrity metadata.
-        nsAutoString integrityMetadata;
-        aLoadInfo->GetIntegrityMetadata(integrityMetadata);
-
-        nsTArray<SRIMetadata> integritySources =
-            ParseSRIMetadata(integrityMetadata);
-
-        // Step 1.3.2. If integrity sources is "no metadata" or an empty set,
-        // skip the remaining substeps.
-        if (!integritySources.IsEmpty()) {
-          // Step 1.3.3. Let bypass due to integrity match be true.
-          bool bypass = true;
-
-          nsAutoCString sourceAlgorithmUTF8;
-          nsAutoCString sourceHashUTF8;
-          nsAutoString sourceAlgorithm;
-          nsAutoString sourceHash;
-          nsAutoString algorithm;
-          nsAutoString hash;
-
-          // Step 1.3.4. For each source of integrity sources:
-          for (const SRIMetadata& source : integritySources) {
-            source.GetAlgorithm(&sourceAlgorithmUTF8);
-            sourceAlgorithm = NS_ConvertUTF8toUTF16(sourceAlgorithmUTF8);
-            source.GetHash(0, &sourceHashUTF8);
-            sourceHash = NS_ConvertUTF8toUTF16(sourceHashUTF8);
-
-            // Step 1.3.4.1 If directive’s value does not contain a source
-            // expression whose hash-algorithm is an ASCII case-insensitive
-            // match for source’s hash-algorithm, and whose base64-value is
-            // identical to source’s base64-value, then set bypass due to
-            // integrity match to false.
-            bool found = false;
-            for (const nsCSPHashSrc* hashSrc : integrityExpressions) {
-              hashSrc->getAlgorithm(algorithm);
-              hashSrc->getHash(hash);
-
-              // The nsCSPHashSrc constructor lowercases algorithm, so this
-              // is case-insensitive.
-              if (sourceAlgorithm == algorithm && sourceHash == hash) {
-                found = true;
-                break;
-              }
-            }
-
-            if (!found) {
-              bypass = false;
-              break;
-            }
-          }
-
-          // Step 1.3.5. If bypass due to integrity match is true, return
-          // "Allowed".
-          if (bypass) {
-            CSPUTILSLOG(
-                ("  Allowed by matching integrity metadata (script-like)"));
-            return true;
-          }
-        }
+      // Step 1.2. If the result of executing §6.7.2.4 Does integrity metadata
+      // match source list? on request’s integrity metadata and this
+      // directive’s value is "Matches", return "Allowed".
+      if (DoesIntegrityMetadataMatchSourceList(aLoadInfo,
+                                               integrityExpressions)) {
+        CSPUTILSLOG(("  Allowed by matching integrity metadata (script-like)"));
+        return true;
       }
 
-      // Step 1.4. If directive’s value contains a source expression that is an
+      // Step 1.3. If directive’s value contains a source expression that is an
       // ASCII case-insensitive match for the "'strict-dynamic'" keyword-source:
       if (hasStrictDynamicKeyword) {
         // GetParserCreatedScript() isn't set for XSLT.
@@ -1361,7 +1371,7 @@ bool nsCSPDirective::permits(CSPDirective aDirective, nsILoadInfo* aLoadInfo,
           return false;
         }
 
-        // Step 1.4.1  If the request’s parser metadata is "parser-inserted",
+        // Step 1.3.1. If the request’s parser metadata is "parser-inserted",
         // return "Blocked". Otherwise, return "Allowed".
         if (aLoadInfo->GetParserCreatedScript()) {
           CSPUTILSLOG(
