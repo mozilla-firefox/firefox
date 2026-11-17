@@ -7,8 +7,7 @@ add_task(async () => {
   const entries = 10000;
   const interval = 1;
   const threads = ["GeckoMain"];
-  // We need the jssources feature for sourceId to be included in the profile.
-  const features = ["js", "nostacksampling", "jssources"];
+  const features = ["js", "nostacksampling"];
 
   await Services.profiler.StartProfiler(entries, interval, features, threads);
 

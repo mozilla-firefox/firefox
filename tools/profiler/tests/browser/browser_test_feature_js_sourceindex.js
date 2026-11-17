@@ -11,7 +11,7 @@ add_task(async function test_profile_js_sources() {
   const url = BASE_URL + "simple.html";
   await BrowserTestUtils.withNewTab(url, async contentBrowser => {
     // Start profiling to capture JS sources
-    await ProfilerTestUtils.startProfiler({ features: ["js", "jssources"] });
+    await ProfilerTestUtils.startProfiler({ features: ["js"] });
 
     const contentPid = await SpecialPowers.spawn(
       contentBrowser,
@@ -112,7 +112,7 @@ add_task(async function test_profile_js_sources_with_tracing() {
   await BrowserTestUtils.withNewTab("about:blank", async contentBrowser => {
     // Start profiling with tracing to capture JS tracer frames
     await ProfilerTestUtils.startProfiler({
-      features: ["tracing", "jssources"],
+      features: ["tracing"],
     });
 
     await BrowserTestUtils.startLoadingURIString(contentBrowser, url);
@@ -164,7 +164,7 @@ add_task(async function test_profile_js_sources_location_format() {
 
   const url = BASE_URL + "simple.html";
   await BrowserTestUtils.withNewTab(url, async contentBrowser => {
-    await ProfilerTestUtils.startProfiler({ features: ["js", "jssources"] });
+    await ProfilerTestUtils.startProfiler({ features: ["js"] });
     const contentPid = await SpecialPowers.spawn(
       contentBrowser,
       [],
