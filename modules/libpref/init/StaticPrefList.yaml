@@ -8022,6 +8022,16 @@
   mirror: once
 #endif
 
+# [Windows] Whether the set of installed font file paths is built in the parent
+# process. When it is, the sandbox uses it to allow child processes to read
+# installed font files, rather than adding individual rules for each font.
+#if defined(XP_WIN)
+- name: gfx.font-path-set.enabled
+  type: bool
+  value: false
+  mirror: once
+#endif
+
 # Whether to load fonts (e.g. Twemoji Mozilla) bundled with the application:
 #  -1 - Auto behavior based on OS version (currently, disables loading on
 #       "low-memory" Android devices)

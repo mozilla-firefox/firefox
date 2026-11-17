@@ -64,6 +64,7 @@
 #include "mozilla/dom/ContentChild.h"
 #include "mozilla/gfx/DeviceManagerDx.h"
 #include "mozilla/gfx/DisplayConfigWindows.h"
+#include "mozilla/gfx/FontPathSet.h"
 #include "mozilla/gfx/GPUProcessManager.h"
 #include "mozilla/layers/DeviceAttachmentsD3D11.h"
 
@@ -224,6 +225,13 @@ gfxWindowsPlatform::gfxWindowsPlatform() {
   if (!IsWin32kLockedDown()) {
     RegisterStrongMemoryReporter(MakeAndAddRef<GPUAdapterReporter>());
     RegisterStrongMemoryReporter(MakeAndAddRef<D3DSharedTexturesReporter>());
+  }
+
+  // This must be enabled before the GPU process is launched and before the font
+  // list is created.
+  if (XRE_IsParentProcess() &&
+      StaticPrefs::gfx_font_path_set_enabled_AtStartup()) {
+    FontPathSet::Enable();
   }
 }
 

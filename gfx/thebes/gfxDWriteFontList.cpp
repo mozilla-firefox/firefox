@@ -21,6 +21,7 @@
 #include "mozilla/StaticPrefs_gfx.h"
 #include "mozilla/Utf16.h"
 #include "mozilla/dom/Document.h"
+#include "mozilla/gfx/FontPathSet.h"
 #include "mozilla/gfx/Logging.h"
 #include "mozilla/glean/GfxMetrics.h"
 #include "mozilla/intl/OSPreferences.h"
@@ -1667,6 +1668,10 @@ void gfxDWriteFontList::InitSharedFontListForPlatform() {
     return;
   }
 
+  // Rebuild the font path set from the new system font collection, before child
+  // processes can learn about any new fonts.
+  FontPathSet::RebuildFrom(mSystemFonts);
+
 #ifdef MOZ_BUNDLED_FONTS
   // We activate bundled fonts if the pref is > 0 (on) or < 0 (auto), only an
   // explicit value of 0 (off) will disable them.
@@ -1741,6 +1746,10 @@ nsresult gfxDWriteFontList::InitFontListForPlatform() {
         uint32_t(errSystemFontCollection));
     return NS_ERROR_FAILURE;
   }
+
+  // Rebuild the font path set from the new system font collection, before child
+  // processes can learn about any new fonts.
+  FontPathSet::RebuildFrom(mSystemFonts);
 
 #ifdef MOZ_BUNDLED_FONTS
   // Get bundled fonts before the system collection, so that in the case of
