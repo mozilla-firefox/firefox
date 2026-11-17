@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.158
- * pdfjsBuild = bb1539a2c
+ * pdfjsVersion = 7.0.164
+ * pdfjsBuild = 60aefc5b5
  */
 
 ;// ./src/shared/util.js
@@ -2058,7 +2058,7 @@ class FloatingToolbar {
 }
 
 ;// ./src/shared/internal_evt.js
-const INTERNAL_EVT = "02f6a0bf-1a62-4bf1-a37f-e3982fdce3bc";
+const INTERNAL_EVT = "aba9d0c1-a369-4fad-99e5-502c95cd1c89";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -11376,9 +11376,6 @@ class CanvasGraphics {
     unreachable("Should not call beginImageData");
   }
   paintFormXObjectBegin(opIdx, matrix, bbox) {
-    if (!this.contentVisible) {
-      return;
-    }
     this.save(opIdx);
     this.baseTransformStack.push(this.baseTransform);
     if (matrix) {
@@ -11396,9 +11393,6 @@ class CanvasGraphics {
     }
   }
   paintFormXObjectEnd(opIdx) {
-    if (!this.contentVisible) {
-      return;
-    }
     this.restore(opIdx);
     this.baseTransform = this.baseTransformStack.pop();
   }
@@ -14675,7 +14669,7 @@ class RendererWorker {
         terminateEarly("TypedArray transfer test failed.");
         return;
       }
-      const apiVersion = "7.0.158";
+      const apiVersion = "7.0.164";
       if (apiVersion !== data.workerVersion) {
         terminateEarly(`The API version "${apiVersion}" does not match the Worker version "${data.workerVersion}".`);
         return;
@@ -15310,7 +15304,7 @@ function getDocument(src = {}) {
   }
   const docParams = {
     docId,
-    apiVersion: "7.0.158",
+    apiVersion: "7.0.164",
     data,
     password,
     disableAutoFetch,
@@ -17025,8 +17019,8 @@ class InternalRenderTask {
     }
   }
 }
-const version = "7.0.158";
-const build = "bb1539a2c";
+const version = "7.0.164";
+const build = "60aefc5b5";
 
 ;// ./src/display/editor/color_picker.js
 

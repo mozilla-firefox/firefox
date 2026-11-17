@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.158
- * pdfjsBuild = bb1539a2c
+ * pdfjsVersion = 7.0.164
+ * pdfjsBuild = 60aefc5b5
  */
 
 ;// ./src/shared/util.js
@@ -4794,9 +4794,6 @@ class CanvasGraphics {
     unreachable("Should not call beginImageData");
   }
   paintFormXObjectBegin(opIdx, matrix, bbox) {
-    if (!this.contentVisible) {
-      return;
-    }
     this.save(opIdx);
     this.baseTransformStack.push(this.baseTransform);
     if (matrix) {
@@ -4814,9 +4811,6 @@ class CanvasGraphics {
     }
   }
   paintFormXObjectEnd(opIdx) {
-    if (!this.contentVisible) {
-      return;
-    }
     this.restore(opIdx);
     this.baseTransform = this.baseTransformStack.pop();
   }
@@ -7620,7 +7614,7 @@ class RendererMessageHandler {
     this.#connection = null;
   }
   static #sendReady(handler) {
-    const workerVersion = "7.0.158";
+    const workerVersion = "7.0.164";
     const testObj = new Uint8Array();
     handler.send("ready", {
       testObj,
