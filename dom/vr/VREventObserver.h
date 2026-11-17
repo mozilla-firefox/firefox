@@ -38,8 +38,6 @@ class VREventObserver final : public gfx::VRManagerEventObserver {
  private:
   ~VREventObserver();
 
-  bool IsWebVR(uint32_t aDisplayID) const;
-
   RefPtr<nsGlobalWindowInner> mWindow;
   bool mStopActivity;
 };

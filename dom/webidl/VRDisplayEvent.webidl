@@ -8,18 +8,3 @@ enum VRDisplayEventReason {
   "requested",
   "unmounted",
 };
-
-dictionary VRDisplayEventInit : EventInit {
-  required VRDisplay display;
-  VRDisplayEventReason reason;
-};
-
-[Pref="dom.vr.enabled",
- SecureContext,
- Exposed=Window]
-interface VRDisplayEvent : Event {
-  constructor(DOMString type, VRDisplayEventInit eventInitDict);
-
-  readonly attribute VRDisplay display;
-  readonly attribute VRDisplayEventReason? reason;
-};

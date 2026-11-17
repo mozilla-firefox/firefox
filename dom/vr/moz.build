@@ -7,7 +7,6 @@ with Files("**"):
 
 EXPORTS.mozilla.dom += [
     "VRDisplay.h",
-    "VRDisplayEvent.h",
     "VREventObserver.h",
     "VRServiceTest.h",
     "XRBoundedReferenceSpace.h",
@@ -30,7 +29,6 @@ EXPORTS.mozilla.dom += [
 
 UNIFIED_SOURCES = [
     "VRDisplay.cpp",
-    "VRDisplayEvent.cpp",
     "VREventObserver.cpp",
     "VRServiceTest.cpp",
     "XRBoundedReferenceSpace.cpp",

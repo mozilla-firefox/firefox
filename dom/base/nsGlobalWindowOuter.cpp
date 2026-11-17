@@ -162,8 +162,6 @@
 #include "mozilla/dom/Selection.h"
 #include "mozilla/dom/ServiceWorkerRegistration.h"
 #include "mozilla/dom/VRDisplay.h"
-#include "mozilla/dom/VRDisplayEvent.h"
-#include "mozilla/dom/VRDisplayEventBinding.h"
 #include "mozilla/dom/VREventObserver.h"
 #include "mozilla/dom/WebIDLGlobalNameHash.h"
 #include "mozilla/dom/WindowBinding.h"

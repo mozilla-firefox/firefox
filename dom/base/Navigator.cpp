@@ -66,7 +66,6 @@
 #include "mozilla/dom/URLSearchParams.h"
 #include "mozilla/dom/UserActivation.h"
 #include "mozilla/dom/VRDisplay.h"
-#include "mozilla/dom/VRDisplayEvent.h"
 #include "mozilla/dom/VRServiceTest.h"
 #include "mozilla/dom/WakeLockJS.h"
 #include "mozilla/dom/WindowContext.h"
@@ -1929,11 +1928,7 @@ bool Navigator::IsWebVRContentPresenting() const {
   return win->IsVRContentPresenting();
 }
 
-void Navigator::RequestVRPresentation(VRDisplay& aDisplay) {
-  nsGlobalWindowInner* win = nsGlobalWindowInner::Cast(mWindow);
-  win->DispatchVRDisplayActivate(aDisplay.DisplayId(),
-                                 VRDisplayEventReason::Requested);
-}
+void Navigator::RequestVRPresentation(VRDisplay& aDisplay) {}
 
 already_AddRefed<Promise> Navigator::RequestMIDIAccess(
     const MIDIOptions& aOptions, ErrorResult& aRv) {
