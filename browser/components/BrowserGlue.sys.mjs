@@ -73,6 +73,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   TelemetryReportingPolicy:
     "resource://gre/modules/TelemetryReportingPolicy.sys.mjs",
   TRRRacer: "resource:///modules/TRRPerformance.sys.mjs",
+  WeaveService: "moz-src:///services/sync/Weave.sys.mjs",
   WebChannel: "resource://gre/modules/WebChannel.sys.mjs",
   WebProtocolHandlerRegistrar:
     "moz-src:///browser/components/protocolhandler/WebProtocolHandlerRegistrar.sys.mjs",
@@ -109,12 +110,6 @@ if (AppConstants.ENABLE_WEBDRIVER) {
 }
 
 const PREF_PDFJS_ISDEFAULT_CACHE_STATE = "pdfjs.enabledCache.state";
-
-ChromeUtils.defineLazyGetter(
-  lazy,
-  "WeaveService",
-  () => Cc["@mozilla.org/weave/service;1"].getService().wrappedJSObject
-);
 
 if (AppConstants.MOZ_CRASHREPORTER) {
   ChromeUtils.defineESModuleGetters(lazy, {

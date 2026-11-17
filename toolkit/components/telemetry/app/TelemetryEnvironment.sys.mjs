@@ -25,6 +25,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/attribution/AttributionCode.sys.mjs",
   ProfileAge: "resource://gre/modules/ProfileAge.sys.mjs",
   SearchService: "moz-src:///toolkit/components/search/SearchService.sys.mjs",
+  WeaveService: "moz-src:///services/sync/Weave.sys.mjs",
   WindowsRegistry: "resource://gre/modules/WindowsRegistry.sys.mjs",
 });
 
@@ -1476,9 +1477,7 @@ EnvironmentCache.prototype = {
   async _updateServicesInfo() {
     let syncEnabled = false;
     let accountEnabled = false;
-    let weaveService =
-      Cc["@mozilla.org/weave/service;1"].getService().wrappedJSObject;
-    syncEnabled = weaveService && weaveService.enabled;
+    syncEnabled = lazy.WeaveService.enabled;
     if (syncEnabled) {
       // All sync users are account users, definitely.
       accountEnabled = true;

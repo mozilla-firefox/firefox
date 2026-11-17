@@ -13,6 +13,7 @@ const SCALAR_URLBAR = "browser.engagement.navigation.urlbar";
 ChromeUtils.defineESModuleGetters(this, {
   SyncedTabs: "resource://services-sync/SyncedTabs.sys.mjs",
   UrlbarTestUtils: "resource://testing-common/UrlbarTestUtils.sys.mjs",
+  WeaveService: "moz-src:///services/sync/Weave.sys.mjs",
 });
 
 function assertSearchTelemetryEmpty(search_hist) {
@@ -116,12 +117,9 @@ add_setup(async function () {
     },
   };
 
-  // Tell the Sync XPCOM service it is initialized.
-  let weaveXPCService = Cc["@mozilla.org/weave/service;1"].getService(
-    Ci.nsISupports
-  ).wrappedJSObject;
-  let oldWeaveServiceReady = weaveXPCService.ready;
-  weaveXPCService.ready = true;
+  // Tell the Sync service it is initialized.
+  let oldWeaveServiceReady = WeaveService.ready;
+  WeaveService.ready = true;
 
   sandbox
     .stub(SyncedTabs._internal, "getTabClients")
@@ -130,7 +128,7 @@ add_setup(async function () {
   // Make sure to restore the engine once we're done.
   registerCleanupFunction(async function () {
     sandbox.restore();
-    weaveXPCService.ready = oldWeaveServiceReady;
+    WeaveService.ready = oldWeaveServiceReady;
     SyncedTabs._internal = originalSyncedTabsInternal;
     Services.telemetry.canRecordExtended = oldCanRecord;
     await PlacesUtils.history.clear();

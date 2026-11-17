@@ -67,6 +67,7 @@ import {
   PREF_LAST_FXA_USER_UID,
   SCOPE_APP_SYNC,
 } from "resource://gre/modules/FxAccountsCommon.sys.mjs";
+import { WeaveService } from "moz-src:///services/sync/Weave.sys.mjs";
 
 const fxAccounts = getFxAccountsSingleton();
 
@@ -424,12 +425,9 @@ Sync11Service.prototype = {
     CommonUtils.nextTick(() => {
       this.status.ready = true;
 
-      // UI code uses the flag on the XPCOM service so it doesn't have
+      // UI code uses the flag on the service so it doesn't have
       // to load a bunch of modules.
-      let xps = Cc["@mozilla.org/weave/service;1"].getService(
-        Ci.nsISupports
-      ).wrappedJSObject;
-      xps.ready = true;
+      WeaveService.ready = true;
 
       Svc.Obs.notify("weave:service:ready");
     });

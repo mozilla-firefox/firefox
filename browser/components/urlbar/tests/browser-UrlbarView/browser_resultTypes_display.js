@@ -6,6 +6,9 @@
 const { SyncedTabs } = ChromeUtils.importESModule(
   "resource://services-sync/SyncedTabs.sys.mjs"
 );
+const { WeaveService } = ChromeUtils.importESModule(
+  "moz-src:///services/sync/Weave.sys.mjs"
+);
 
 const TEST_ENGINE_BASENAME = "searchSuggestionEngine.xml";
 
@@ -269,12 +272,9 @@ add_task(async function test_remote_tab_result() {
     },
   };
 
-  // Tell the Sync XPCOM service it is initialized.
-  let weaveXPCService = Cc["@mozilla.org/weave/service;1"].getService(
-    Ci.nsISupports
-  ).wrappedJSObject;
-  let oldWeaveServiceReady = weaveXPCService.ready;
-  weaveXPCService.ready = true;
+  // Tell the Sync service it is initialized.
+  let oldWeaveServiceReady = WeaveService.ready;
+  WeaveService.ready = true;
 
   sandbox
     .stub(SyncedTabs._internal, "getTabClients")
@@ -285,7 +285,7 @@ add_task(async function test_remote_tab_result() {
 
   registerCleanupFunction(async function () {
     sandbox.restore();
-    weaveXPCService.ready = oldWeaveServiceReady;
+    WeaveService.ready = oldWeaveServiceReady;
     SyncedTabs._internal = originalSyncedTabsInternal;
     await PlacesUtils.history.clear();
     await PlacesUtils.bookmarks.eraseEverything();

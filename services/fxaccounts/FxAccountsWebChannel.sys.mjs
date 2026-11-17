@@ -55,6 +55,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "resource://gre/modules/FxAccountsStorage.sys.mjs",
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   Weave: "resource://services-sync/main.sys.mjs",
+  WeaveService: "moz-src:///services/sync/Weave.sys.mjs",
   WebChannel: "resource://gre/modules/WebChannel.sys.mjs",
 });
 ChromeUtils.defineLazyGetter(lazy, "mpLocked", () => {
@@ -619,10 +620,7 @@ FxAccountsWebChannelHelpers.prototype = {
     // before we set the signed-in user.
     // XXX - probably not true any more, especially now we have observerPreloads
     // in FxAccounts.sys.mjs?
-    let xps =
-      this._weaveXPCOM ||
-      Cc["@mozilla.org/weave/service;1"].getService(Ci.nsISupports)
-        .wrappedJSObject;
+    let xps = this._weaveXPCOM || lazy.WeaveService;
     await xps.whenLoaded();
     return xps;
   },

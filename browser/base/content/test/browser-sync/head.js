@@ -2,13 +2,11 @@ ChromeUtils.defineESModuleGetters(this, {
   SearchService: "moz-src:///toolkit/components/search/SearchService.sys.mjs",
   sinon: "resource://testing-common/Sinon.sys.mjs",
   UIState: "resource://services-sync/UIState.sys.mjs",
+  WeaveService: "moz-src:///services/sync/Weave.sys.mjs",
 });
 
 function promiseSyncReady() {
-  let service = Cc["@mozilla.org/weave/service;1"].getService(
-    Ci.nsISupports
-  ).wrappedJSObject;
-  return service.whenLoaded();
+  return WeaveService.whenLoaded();
 }
 
 function setupSendTabMocks({

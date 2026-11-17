@@ -14,12 +14,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   FxAccounts: "resource://gre/modules/FxAccounts.sys.mjs",
   TRUSTED_FAVICON_SCHEMES: "moz-src:///toolkit/modules/FaviconUtils.sys.mjs",
   getMozRemoteImageURL: "moz-src:///toolkit/modules/FaviconUtils.sys.mjs",
-});
-
-// The Sync XPCOM service
-ChromeUtils.defineLazyGetter(lazy, "weaveXPCService", function () {
-  return Cc["@mozilla.org/weave/service;1"].getService(Ci.nsISupports)
-    .wrappedJSObject;
+  WeaveService: "moz-src:///services/sync/Weave.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "fxAccounts", () => {
@@ -186,7 +181,7 @@ let SyncedTabsInternal = {
     let result = [];
 
     // If Sync isn't ready, don't try and get anything.
-    if (!lazy.weaveXPCService.ready) {
+    if (!lazy.WeaveService.ready) {
       lazy.log.debug("Sync isn't yet ready, so returning an empty tab list");
       return result;
     }
@@ -342,7 +337,7 @@ let SyncedTabsInternal = {
 
   // Returns true if Sync is configured to Sync tabs, false otherwise
   get isConfiguredToSyncTabs() {
-    if (!lazy.weaveXPCService.ready) {
+    if (!lazy.WeaveService.ready) {
       lazy.log.debug("Sync isn't yet ready; assuming tab engine is enabled");
       return true;
     }

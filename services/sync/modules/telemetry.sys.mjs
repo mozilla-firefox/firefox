@@ -20,6 +20,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   TelemetryController: "resource://gre/modules/TelemetryController.sys.mjs",
   TelemetryUtils: "resource://gre/modules/TelemetryUtils.sys.mjs",
   Weave: "resource://services-sync/main.sys.mjs",
+  WeaveService: "moz-src:///services/sync/Weave.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "fxAccounts", () => {
@@ -30,11 +31,6 @@ ChromeUtils.defineLazyGetter(lazy, "fxAccounts", () => {
 
 import * as constants from "resource://services-sync/constants.sys.mjs";
 
-ChromeUtils.defineLazyGetter(
-  lazy,
-  "WeaveService",
-  () => Cc["@mozilla.org/weave/service;1"].getService().wrappedJSObject
-);
 const log = Log.repository.getLogger("Sync.Telemetry");
 
 const TOPICS = [

@@ -19,6 +19,7 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   LOGIN_FAILED_LOGIN_REJECTED: "resource://services-sync/constants.sys.mjs",
   Weave: "resource://services-sync/main.sys.mjs",
+  WeaveService: "moz-src:///services/sync/Weave.sys.mjs",
 });
 
 const TOPICS = [
@@ -217,10 +218,7 @@ const UIStateInternal = {
 
     // Referencing Weave.Service will implicitly initialize sync, and we don't
     // want to force that - so first check if it is ready.
-    let service = Cc["@mozilla.org/weave/service;1"].getService(
-      Ci.nsISupports
-    ).wrappedJSObject;
-    if (!service.ready) {
+    if (!lazy.WeaveService.ready) {
       return false;
     }
     // LOGIN_FAILED_LOGIN_REJECTED explicitly means "you must log back in".

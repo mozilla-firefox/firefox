@@ -3,6 +3,9 @@
 const { Weave } = ChromeUtils.importESModule(
   "resource://services-sync/main.sys.mjs"
 );
+const { WeaveService } = ChromeUtils.importESModule(
+  "moz-src:///services/sync/Weave.sys.mjs"
+);
 
 // A mock "Tabs" engine which autocomplete will use instead of the real
 // engine. We pass a constructor that Sync creates.
@@ -49,11 +52,8 @@ add_setup(async function () {
   // Tell Sync about the mocks.
   Weave.Service.engineManager.register(MockTabsEngine);
 
-  // Tell the Sync XPCOM service it is initialized.
-  let weaveXPCService = Cc["@mozilla.org/weave/service;1"].getService(
-    Ci.nsISupports
-  ).wrappedJSObject;
-  weaveXPCService.ready = true;
+  // Tell the Sync service it is initialized.
+  WeaveService.ready = true;
 
   registerCleanupFunction(async () => {
     Services.prefs.clearUserPref("services.sync.username");

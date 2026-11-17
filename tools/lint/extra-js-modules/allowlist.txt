@@ -190,7 +190,6 @@ services/settings/SyncHistory.sys.mjs
 services/settings/UptakeTelemetry.sys.mjs
 services/settings/Utils.sys.mjs
 services/settings/remote-settings.sys.mjs
-services/sync/Weave.sys.mjs
 services/sync/modules/SyncDisconnect.sys.mjs
 services/sync/modules/SyncedTabs.sys.mjs
 services/sync/modules/TabsStore.sys.mjs

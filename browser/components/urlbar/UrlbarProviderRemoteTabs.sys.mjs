@@ -17,17 +17,7 @@ const lazy = XPCOMUtils.declareLazy({
   UrlbarShared: "chrome://browser/content/urlbar/UrlbarShared.mjs",
   UrlbarTokenizer:
     "moz-src:///browser/components/urlbar/UrlbarTokenizer.sys.mjs",
-  weaveXPCService() {
-    try {
-      let service = Cc["@mozilla.org/weave/service;1"].getService(
-        Ci.nsISupports
-      );
-      return /** @type {any} */ (service).wrappedJSObject;
-    } catch (ex) {
-      // The app didn't build Sync.
-    }
-    return null;
-  },
+  WeaveService: "moz-src:///services/sync/Weave.sys.mjs",
   showRemoteIconsPref: {
     pref: "services.sync.syncedTabs.showRemoteIcons",
     default: true,
@@ -68,7 +58,7 @@ class _cache {
     // being signed in), don't reach in to Weave.Service as that may initialize
     // Sync unnecessarily - we'll get an observer notification later when it
     // becomes ready and has synced a list of tabs.
-    if (lazy.weaveXPCService.ready) {
+    if (lazy.WeaveService.ready) {
       let clients = await lazy.SyncedTabs.getTabClients();
       lazy.SyncedTabs.sortTabClientsByLastUsed(clients);
       for (let client of clients) {
@@ -143,9 +133,8 @@ export class UrlbarProviderRemoteTabs extends UrlbarProvider {
       lazy.syncUsernamePref &&
       lazy.UrlbarPrefs.get("suggest.remotetab") &&
       queryContext.sources.includes(lazy.UrlbarShared.RESULT_SOURCE.TABS) &&
-      lazy.weaveXPCService &&
-      lazy.weaveXPCService.ready &&
-      lazy.weaveXPCService.enabled
+      lazy.WeaveService.ready &&
+      lazy.WeaveService.enabled
     );
   }
 

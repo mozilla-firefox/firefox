@@ -24,6 +24,7 @@ ChromeUtils.defineESModuleGetters(this, {
     "moz-src:///toolkit/components/ipprotection/GuardianTypes.sys.mjs",
   UrlbarShared: "chrome://browser/content/urlbar/UrlbarShared.mjs",
   UrlbarTestUtils: "resource://testing-common/UrlbarTestUtils.sys.mjs",
+  WeaveService: "moz-src:///services/sync/Weave.sys.mjs",
 });
 
 const mockIdleService = {
@@ -491,11 +492,8 @@ add_task(async function test_openURL_isAddressBarUrlNavigation_remoteTab() {
     },
   };
 
-  const weaveXPCService = Cc["@mozilla.org/weave/service;1"].getService(
-    Ci.nsISupports
-  ).wrappedJSObject;
-  const oldWeaveServiceReady = weaveXPCService.ready;
-  weaveXPCService.ready = true;
+  const oldWeaveServiceReady = WeaveService.ready;
+  WeaveService.ready = true;
 
   await SpecialPowers.pushPrefEnv({
     set: [
@@ -551,7 +549,7 @@ add_task(async function test_openURL_isAddressBarUrlNavigation_remoteTab() {
   } finally {
     trigger.uninit();
     sandbox.restore();
-    weaveXPCService.ready = oldWeaveServiceReady;
+    WeaveService.ready = oldWeaveServiceReady;
     SyncedTabs._internal = originalSyncedTabsInternal;
     await SpecialPowers.popPrefEnv();
   }

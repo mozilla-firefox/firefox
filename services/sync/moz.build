@@ -34,7 +34,6 @@ EXTRA_JS_MODULES["services-sync"] += [
     "modules/telemetry.sys.mjs",
     "modules/UIState.sys.mjs",
     "modules/util.sys.mjs",
-    "Weave.sys.mjs",
 ]
 
 EXTRA_JS_MODULES["services-sync"].engines += [
@@ -60,10 +59,7 @@ EXTRA_JS_MODULES["services-sync"].stages += [
 
 MOZ_SRC_FILES += [
     "modules/stages/syncids.sys.mjs",
-]
-
-XPCOM_MANIFESTS += [
-    "components.conf",
+    "Weave.sys.mjs",
 ]
 
 TESTING_JS_MODULES.services.sync += [

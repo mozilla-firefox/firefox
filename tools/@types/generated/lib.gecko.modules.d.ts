@@ -613,6 +613,7 @@ export interface Modules {
   "moz-src:///services/crypto/modules/WeaveCrypto.sys.mjs": typeof import("moz-src:///services/crypto/modules/WeaveCrypto.sys.mjs"),
   "moz-src:///services/crypto/modules/jwcrypto.sys.mjs": typeof import("moz-src:///services/crypto/modules/jwcrypto.sys.mjs"),
   "moz-src:///services/crypto/modules/utils.sys.mjs": typeof import("moz-src:///services/crypto/modules/utils.sys.mjs"),
+  "moz-src:///services/sync/Weave.sys.mjs": typeof import("moz-src:///services/sync/Weave.sys.mjs"),
   "moz-src:///third_party/js/qrcode/qrcode.mjs": typeof import("moz-src:///third_party/js/qrcode/qrcode.mjs"),
   "moz-src:///toolkit/actors/AutoCompleteParent.sys.mjs": typeof import("moz-src:///toolkit/actors/AutoCompleteParent.sys.mjs"),
   "moz-src:///toolkit/actors/NetErrorParent.sys.mjs": typeof import("moz-src:///toolkit/actors/NetErrorParent.sys.mjs"),

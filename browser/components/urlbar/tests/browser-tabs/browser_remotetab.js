@@ -11,6 +11,9 @@
 const { SyncedTabs } = ChromeUtils.importESModule(
   "resource://services-sync/SyncedTabs.sys.mjs"
 );
+const { WeaveService } = ChromeUtils.importESModule(
+  "moz-src:///services/sync/Weave.sys.mjs"
+);
 
 const TEST_URL = `${TEST_BASE_URL}dummy_page.html`;
 
@@ -47,12 +50,9 @@ add_setup(async function () {
     },
   };
 
-  // Tell the Sync XPCOM service it is initialized.
-  let weaveXPCService = Cc["@mozilla.org/weave/service;1"].getService(
-    Ci.nsISupports
-  ).wrappedJSObject;
-  let oldWeaveServiceReady = weaveXPCService.ready;
-  weaveXPCService.ready = true;
+  // Tell the Sync service it is initialized.
+  let oldWeaveServiceReady = WeaveService.ready;
+  WeaveService.ready = true;
 
   await SpecialPowers.pushPrefEnv({
     set: [
@@ -67,7 +67,7 @@ add_setup(async function () {
 
   registerCleanupFunction(async () => {
     sandbox.restore();
-    weaveXPCService.ready = oldWeaveServiceReady;
+    WeaveService.ready = oldWeaveServiceReady;
     SyncedTabs._internal = originalSyncedTabsInternal;
   });
 });
