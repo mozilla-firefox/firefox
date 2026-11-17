@@ -39,6 +39,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   addPolicyPermission: "resource://gre/modules/PoliciesHelpers.sys.mjs",
   describePreferenceFailure: "resource://gre/modules/PoliciesHelpers.sys.mjs",
   reportFailure: "resource://gre/modules/PoliciesHelpers.sys.mjs",
+  SitePolicyUtils: "resource://gre/modules/SitePolicyUtils.sys.mjs",
 });
 
 const PREF_LOGLEVEL = "browser.policies.loglevel";
@@ -188,7 +189,11 @@ export var Policies = {
     onBeforeAddons(manager, param) {
       Services.obs.addObserver(function (subject) {
         let channel = subject.QueryInterface(Ci.nsIHttpChannel);
-        if (channel.URI.host.endsWith(".google.com")) {
+        if (
+          lazy.SitePolicyUtils.stripTrailingDots(channel.URI.host).endsWith(
+            ".google.com"
+          )
+        ) {
           channel.setRequestHeader("X-GoogApps-Allowed-Domains", param, true);
         }
       }, "http-on-modify-request");
