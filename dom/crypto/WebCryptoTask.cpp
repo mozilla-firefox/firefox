@@ -3868,6 +3868,37 @@ already_AddRefed<WebCryptoTask> WebCryptoTask::CreateDigestTask(
   return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
 }
 
+// "raw-secret" is an alias of "raw" for the symmetric algorithms of
+// [webcrypto], and "raw-public" is an alias of "raw" for its asymmetric ones.
+static nsString NormalizeRawFormat(const nsAString& aFormat,
+                                   const nsString& aAlgName) {
+  if (aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW_SECRET) &&
+      (aAlgName.EqualsLiteral(WEBCRYPTO_ALG_AES_CBC) ||
+       aAlgName.EqualsLiteral(WEBCRYPTO_ALG_AES_CTR) ||
+       aAlgName.EqualsLiteral(WEBCRYPTO_ALG_AES_GCM) ||
+       aAlgName.EqualsLiteral(WEBCRYPTO_ALG_AES_KW) ||
+       aAlgName.EqualsLiteral(WEBCRYPTO_ALG_HMAC) ||
+       aAlgName.EqualsLiteral(WEBCRYPTO_ALG_HKDF) ||
+       aAlgName.EqualsLiteral(WEBCRYPTO_ALG_PBKDF2))) {
+    return NS_LITERAL_STRING_FROM_CSTRING(WEBCRYPTO_KEY_FORMAT_RAW);
+  }
+  if (aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW_PUBLIC) &&
+      (aAlgName.EqualsLiteral(WEBCRYPTO_ALG_ECDH) ||
+       aAlgName.EqualsLiteral(WEBCRYPTO_ALG_ECDSA) ||
+       aAlgName.EqualsLiteral(WEBCRYPTO_ALG_ED25519) ||
+       aAlgName.EqualsLiteral(WEBCRYPTO_ALG_X25519))) {
+    return NS_LITERAL_STRING_FROM_CSTRING(WEBCRYPTO_KEY_FORMAT_RAW);
+  }
+  return nsString(aFormat);
+}
+
+static nsString ExportFormat(const nsAString& aFormat, const CryptoKey& aKey) {
+  if (aKey.GetKeyType() == CryptoKey::PRIVATE) {
+    return nsString(aFormat);
+  }
+  return NormalizeRawFormat(aFormat, aKey.Algorithm().mName);
+}
+
 already_AddRefed<WebCryptoTask> WebCryptoTask::CreateImportKeyTask(
     nsIGlobalObject* aGlobal, JSContext* aCx, const nsAString& aFormat,
     JS::Handle<JSObject*> aKeyData, const ObjectOrString& aAlgorithm,
@@ -3878,7 +3909,8 @@ already_AddRefed<WebCryptoTask> WebCryptoTask::CreateImportKeyTask(
       !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_PKCS8) &&
       !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_JWK) &&
       !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW_PUBLIC) &&
-      !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW_SEED)) {
+      !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW_SEED) &&
+      !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW_SECRET)) {
     return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_SYNTAX_ERR);
   }
 
@@ -3893,6 +3925,8 @@ already_AddRefed<WebCryptoTask> WebCryptoTask::CreateImportKeyTask(
     return MakeAndAddRef<FailureTask>(rv);
   }
 
+  const nsString format = NormalizeRawFormat(aFormat, algName);
+
   // SPEC-BUG: PBKDF2 is not supposed to be supported for this operation.
   // However, the spec should be updated to allow it.
   if (algName.EqualsLiteral(WEBCRYPTO_ALG_AES_CBC) ||
@@ -3903,7 +3937,7 @@ already_AddRefed<WebCryptoTask> WebCryptoTask::CreateImportKeyTask(
       algName.EqualsLiteral(WEBCRYPTO_ALG_HKDF) ||
       algName.EqualsLiteral(WEBCRYPTO_ALG_HMAC)) {
     return MakeAndAddRef<ImportSymmetricKeyTask>(
-        aGlobal, aCx, aFormat, aKeyData, aAlgorithm, aExtractable, aKeyUsages);
+        aGlobal, aCx, format, aKeyData, aAlgorithm, aExtractable, aKeyUsages);
   } else if (algName.EqualsLiteral(WEBCRYPTO_ALG_RSASSA_PKCS1) ||
              algName.EqualsLiteral(WEBCRYPTO_ALG_RSA_OAEP) ||
              algName.EqualsLiteral(WEBCRYPTO_ALG_RSA_PSS)) {
@@ -3911,12 +3945,12 @@ already_AddRefed<WebCryptoTask> WebCryptoTask::CreateImportKeyTask(
         aGlobal, aCx, aFormat, aKeyData, aAlgorithm, aExtractable, aKeyUsages);
   } else if (algName.EqualsLiteral(WEBCRYPTO_ALG_ECDH) ||
              algName.EqualsLiteral(WEBCRYPTO_ALG_ECDSA)) {
-    return MakeAndAddRef<ImportEcKeyTask>(aGlobal, aCx, aFormat, aKeyData,
+    return MakeAndAddRef<ImportEcKeyTask>(aGlobal, aCx, format, aKeyData,
                                           aAlgorithm, aExtractable, aKeyUsages);
   } else if (algName.EqualsLiteral(WEBCRYPTO_ALG_X25519) ||
              algName.EqualsLiteral(WEBCRYPTO_ALG_ED25519)) {
     return MakeAndAddRef<ImportOKPKeyTask>(
-        aGlobal, aCx, aFormat, aKeyData, aAlgorithm, aExtractable, aKeyUsages);
+        aGlobal, aCx, format, aKeyData, aAlgorithm, aExtractable, aKeyUsages);
   } else if (IsMLKEMAlgorithm(algName)) {
     return MakeAndAddRef<ImportMLKEMKeyTask>(
         aGlobal, aCx, aFormat, aKeyData, aAlgorithm, aExtractable, aKeyUsages);
@@ -3933,7 +3967,8 @@ already_AddRefed<WebCryptoTask> WebCryptoTask::CreateExportKeyTask(
       !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_PKCS8) &&
       !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_JWK) &&
       !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW_PUBLIC) &&
-      !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW_SEED)) {
+      !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW_SEED) &&
+      !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW_SECRET)) {
     return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_SYNTAX_ERR);
   }
 
@@ -3960,7 +3995,7 @@ already_AddRefed<WebCryptoTask> WebCryptoTask::CreateExportKeyTask(
       algName.EqualsLiteral(WEBCRYPTO_ALG_ED25519) ||
       algName.EqualsLiteral(WEBCRYPTO_ALG_X25519) ||
       IsMLKEMAlgorithm(algName)) {
-    return MakeAndAddRef<ExportKeyTask>(aFormat, aKey);
+    return MakeAndAddRef<ExportKeyTask>(ExportFormat(aFormat, aKey), aKey);
   }
   return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
 }
@@ -4150,7 +4185,8 @@ already_AddRefed<WebCryptoTask> WebCryptoTask::CreateWrapKeyTask(
       !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_PKCS8) &&
       !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_JWK) &&
       !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW_PUBLIC) &&
-      !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW_SEED)) {
+      !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW_SEED) &&
+      !aFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW_SECRET)) {
     return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_SYNTAX_ERR);
   }
 
@@ -4170,17 +4206,19 @@ already_AddRefed<WebCryptoTask> WebCryptoTask::CreateWrapKeyTask(
     return MakeAndAddRef<FailureTask>(rv);
   }
 
+  const nsString format = ExportFormat(aFormat, aKey);
+
   if (wrapAlgName.EqualsLiteral(WEBCRYPTO_ALG_AES_CBC) ||
       wrapAlgName.EqualsLiteral(WEBCRYPTO_ALG_AES_CTR) ||
       wrapAlgName.EqualsLiteral(WEBCRYPTO_ALG_AES_GCM)) {
-    return MakeAndAddRef<WrapKeyTask<AesTask>>(aCx, aFormat, aKey, aWrappingKey,
+    return MakeAndAddRef<WrapKeyTask<AesTask>>(aCx, format, aKey, aWrappingKey,
                                                wrapAlgName, aWrapAlgorithm);
   } else if (wrapAlgName.EqualsLiteral(WEBCRYPTO_ALG_AES_KW)) {
     return MakeAndAddRef<WrapKeyTask<AesKwTask>>(
-        aCx, aFormat, aKey, aWrappingKey, wrapAlgName, aWrapAlgorithm);
+        aCx, format, aKey, aWrappingKey, wrapAlgName, aWrapAlgorithm);
   } else if (wrapAlgName.EqualsLiteral(WEBCRYPTO_ALG_RSA_OAEP)) {
     return MakeAndAddRef<WrapKeyTask<RsaOaepTask>>(
-        aCx, aFormat, aKey, aWrappingKey, wrapAlgName, aWrapAlgorithm);
+        aCx, format, aKey, aWrappingKey, wrapAlgName, aWrapAlgorithm);
   }
 
   return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
@@ -4208,6 +4246,8 @@ already_AddRefed<WebCryptoTask> WebCryptoTask::CreateUnwrapKeyTask(
     return MakeAndAddRef<FailureTask>(rv);
   }
 
+  const nsString format = NormalizeRawFormat(aFormat, keyAlgName);
+
   CryptoOperationData dummy;
   RefPtr<ImportKeyTask> importTask;
   if (keyAlgName.EqualsASCII(WEBCRYPTO_ALG_AES_CBC) ||
@@ -4217,8 +4257,7 @@ already_AddRefed<WebCryptoTask> WebCryptoTask::CreateUnwrapKeyTask(
       keyAlgName.EqualsASCII(WEBCRYPTO_ALG_HKDF) ||
       keyAlgName.EqualsASCII(WEBCRYPTO_ALG_HMAC)) {
     importTask = MakeAndAddRef<ImportSymmetricKeyTask>(
-        aGlobal, aCx, aFormat, aUnwrappedKeyAlgorithm, aExtractable,
-        aKeyUsages);
+        aGlobal, aCx, format, aUnwrappedKeyAlgorithm, aExtractable, aKeyUsages);
   } else if (keyAlgName.EqualsASCII(WEBCRYPTO_ALG_RSASSA_PKCS1) ||
              keyAlgName.EqualsASCII(WEBCRYPTO_ALG_RSA_OAEP) ||
              keyAlgName.EqualsASCII(WEBCRYPTO_ALG_RSA_PSS)) {
@@ -4227,14 +4266,12 @@ already_AddRefed<WebCryptoTask> WebCryptoTask::CreateUnwrapKeyTask(
                                                  aExtractable, aKeyUsages);
   } else if (keyAlgName.EqualsLiteral(WEBCRYPTO_ALG_ECDH) ||
              keyAlgName.EqualsLiteral(WEBCRYPTO_ALG_ECDSA)) {
-    importTask = MakeAndAddRef<ImportEcKeyTask>(aGlobal, aCx, aFormat,
-                                                aUnwrappedKeyAlgorithm,
-                                                aExtractable, aKeyUsages);
+    importTask = MakeAndAddRef<ImportEcKeyTask>(
+        aGlobal, aCx, format, aUnwrappedKeyAlgorithm, aExtractable, aKeyUsages);
   } else if (keyAlgName.EqualsLiteral(WEBCRYPTO_ALG_ED25519) ||
              keyAlgName.EqualsLiteral(WEBCRYPTO_ALG_X25519)) {
-    importTask = MakeAndAddRef<ImportOKPKeyTask>(aGlobal, aCx, aFormat,
-                                                 aUnwrappedKeyAlgorithm,
-                                                 aExtractable, aKeyUsages);
+    importTask = MakeAndAddRef<ImportOKPKeyTask>(
+        aGlobal, aCx, format, aUnwrappedKeyAlgorithm, aExtractable, aKeyUsages);
   } else if (IsMLKEMAlgorithm(keyAlgName)) {
     importTask = MakeAndAddRef<ImportMLKEMKeyTask>(aGlobal, aCx, aFormat,
                                                    aUnwrappedKeyAlgorithm,
