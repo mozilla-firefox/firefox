@@ -941,7 +941,7 @@ bool gfxPlatformFontList::InitOtherFamilyNames(
 
   if (SharedFontList() && !XRE_IsParentProcess()) {
     if (NS_IsMainThread()) {
-      bool initialized;
+      bool initialized = false;
       dom::ContentChild::GetSingleton()->SendInitOtherFamilyNames(
           GetGeneration(), aDeferOtherFamilyNamesLoading, &initialized);
       mOtherFamilyNamesInitialized.compareExchange(false, initialized);
