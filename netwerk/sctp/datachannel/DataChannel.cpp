@@ -74,26 +74,27 @@ DataChannelConnection::~DataChannelConnection() {
   }
 }
 
-void DataChannelConnection::Destroy() {
+RefPtr<GenericNonExclusivePromise> DataChannelConnection::Destroy() {
   MOZ_ASSERT(NS_IsMainThread());
   DC_INFO(("%p: Destroying DataChannelConnection", this));
-  CloseAll();
 #ifdef MOZ_DIAGNOSTIC_ASSERT_ENABLED
   MOZ_DIAGNOSTIC_ASSERT(mSTS);
 #endif
   mListener = nullptr;
-  mSTS->Dispatch(
-      NS_NewCancelableRunnableFunction(
-          __func__,
-          [this, self = RefPtr<DataChannelConnection>(this)]() {
-            mPacketReceivedListener.DisconnectIfExists();
-            mStateChangeListener.DisconnectIfExists();
+  return InvokeAsync(
+      mSTS, __func__, [this, self = RefPtr<DataChannelConnection>(this)]() {
+        // We don't bother sending stream resets here, we want to close the
+        // association quickly.
+        CloseChannels_s();
+        CloseAssociation();
+        mPacketReceivedListener.DisconnectIfExists();
+        mStateChangeListener.DisconnectIfExists();
 #ifdef MOZ_DIAGNOSTIC_ASSERT_ENABLED
-            mShutdown = true;
-            DC_INFO(("Shutting down connection %p, id %p", this, (void*)mId));
+        mShutdown = true;
+        DC_INFO(("Shutting down connection %p, id %p", this, (void*)mId));
 #endif
-          }),
-      NS_DISPATCH_FALLIBLE);
+        return GenericNonExclusivePromise::CreateAndResolve(true, __func__);
+      });
 }
 
 Maybe<RefPtr<DataChannelConnection>> DataChannelConnection::Create(
@@ -102,8 +103,9 @@ Maybe<RefPtr<DataChannelConnection>> DataChannelConnection::Create(
     const uint16_t aLocalPort, const uint16_t aNumStreams) {
   MOZ_ASSERT(NS_IsMainThread());
 
-  RefPtr<DataChannelConnection> connection = new DataChannelConnectionDcSctp(aListener, aTarget,
-                                                 aHandler);  // Walks into a bar
+  RefPtr<DataChannelConnection> connection =
+      new DataChannelConnectionDcSctp(aListener, aTarget,
+                                      aHandler);  // Walks into a bar
   return connection->Init(aLocalPort, aNumStreams) ? Some(connection)
                                                    : Nothing();
 }
@@ -338,7 +340,8 @@ void DataChannelConnection::TransportStateChange(
                aState == TransportLayer::TS_NONE ||
                aState == TransportLayer::TS_ERROR) {
       DC_DEBUG(("%p: Transport is closed!", this));
-      CloseAll_s();
+      // CloseAssociation relies on network, no point in calling it
+      CloseChannels_s();
     }
   }
 }
@@ -366,18 +369,10 @@ void DataChannelConnection::OnPacketReceived(const std::string& aTransportId,
 }
 
 void DataChannelConnection::SendPacket(std::unique_ptr<MediaPacket>&& packet) {
-  mSTS->Dispatch(NS_NewCancelableRunnableFunction(
-                     "DataChannelConnection::SendPacket",
-                     [this, self = RefPtr<DataChannelConnection>(this),
-                      packet = std::move(packet)]() mutable {
-                       // DC_DEBUG(("%p: SCTP/DTLS sent %ld bytes",
-                       // this, len));
-                       if (!mTransportId.empty() && mTransportHandler) {
-                         mTransportHandler->SendPacket(mTransportId,
-                                                       std::move(*packet));
-                       }
-                     }),
-                 NS_DISPATCH_FALLIBLE);
+  MOZ_ASSERT(mSTS->IsOnCurrentThread());
+  if (!mTransportId.empty() && mTransportHandler) {
+    mTransportHandler->SendPacket(mTransportId, std::move(*packet));
+  }
 }
 
 already_AddRefed<DataChannel> DataChannelConnection::FindChannelByStream(
@@ -1171,24 +1166,18 @@ void DataChannelConnection::FinishClose_s(const RefPtr<DataChannel>& aChannel,
   aChannel->AnnounceClosed(std::move(aError));
 }
 
-void DataChannelConnection::CloseAll_s(Maybe<dom::RTCErrorParams> aError) {
+void DataChannelConnection::CloseChannels_s(Maybe<dom::RTCErrorParams> aError) {
+  DC_INFO(("%p: Closing all channels", this));
+
   // Make sure no more channels will be opened
   SetState(DataChannelConnectionState::Closed);
 
-  nsTArray<uint16_t> streamsToReset;
   // Close current channels
   // If there are runnables, they hold a strong ref and keep the channel
   // and/or connection alive (even if in a CLOSED state)
   for (auto& channel : mChannels.GetAll()) {
     DC_INFO(("%p: closing channel %p, stream %u", this, channel.get(),
              channel->mStream));
-    if (channel->mSendStreamNeedsReset) {
-      DC_INFO(("%p: channel %p needs to send reset", this, channel.get()));
-      channel->mSendStreamNeedsReset = false;
-      streamsToReset.AppendElement(channel->mStream);
-    }
-    // We do not wait for the reset to finish in this case; we won't be around
-    // to see the response.
     FinishClose_s(channel, aError);
   }
 
@@ -1202,24 +1191,6 @@ void DataChannelConnection::CloseAll_s(Maybe<dom::RTCErrorParams> aError) {
              channel->mStream));
     FinishClose_s(channel);  // also releases the ref on each iteration
   }
-
-  // It's more efficient to let the Resets queue in shutdown and then
-  // ResetStreams() here.
-  if (!streamsToReset.IsEmpty()) {
-    ResetStreams(streamsToReset);
-  }
-}
-
-void DataChannelConnection::CloseAll() {
-  MOZ_ASSERT(NS_IsMainThread());
-  DC_INFO(("%p: Closing all channels", this));
-
-  mSTS->Dispatch(NS_NewCancelableRunnableFunction(
-                     "DataChannelConnection::CloseAll",
-                     [this, self = RefPtr<DataChannelConnection>(this)]() {
-                       CloseAll_s();
-                     }),
-                 NS_DISPATCH_FALLIBLE);
 }
 
 void DataChannelConnection::MarkStreamAvailable(uint16_t aStream) {
