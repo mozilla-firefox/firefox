@@ -54,11 +54,7 @@ add_task(async function test_security_code_saved_with_the_card() {
   await SpecialPowers.pushPrefEnv({ set: [[ENABLED_PREF, true]] });
 
   const creditCard = await captureCard();
-  is(
-    await decryptCreditCardSecurityCode(creditCard),
-    "123",
-    "The submitted security code is saved"
-  );
+  is(creditCard["cc-csc"], "123", "The submitted security code is saved");
   is(creditCard["cc-name"], "User 1", "The rest of the card is saved as usual");
 
   await removeAllRecords();
@@ -70,7 +66,7 @@ add_task(async function test_security_code_dropped_when_capture_is_off() {
 
   const creditCard = await captureCard();
   ok(
-    !CreditCardRecord.hasSecurityCode(creditCard),
+    !("cc-csc" in creditCard),
     "The security code is left out of the saved card"
   );
 
@@ -88,7 +84,7 @@ add_task(async function test_security_code_dropped_before_rollout() {
 
   const creditCard = await captureCard();
   ok(
-    !CreditCardRecord.hasSecurityCode(creditCard),
+    !("cc-csc" in creditCard),
     "A user who is not in the rollout saves no security code"
   );
 
@@ -101,10 +97,7 @@ add_task(async function test_security_code_dropped_while_json_store_serves() {
   await SpecialPowers.pushPrefEnv({ set: [[ENABLED_PREF, true]] });
 
   const creditCard = await captureCard();
-  ok(
-    !CreditCardRecord.hasSecurityCode(creditCard),
-    "The JSON store does not save a security code"
-  );
+  ok(!("cc-csc" in creditCard), "The JSON store does not save a security code");
 
   await removeAllRecords();
   await SpecialPowers.popPrefEnv();
@@ -115,10 +108,7 @@ add_task(async function test_form_submitted_without_a_security_code() {
   await SpecialPowers.pushPrefEnv({ set: [[ENABLED_PREF, true]] });
 
   const creditCard = await captureCard("");
-  ok(
-    !CreditCardRecord.hasSecurityCode(creditCard),
-    "No security code is saved for the card"
-  );
+  ok(!creditCard["cc-csc"], "No security code is saved for the card");
 
   await removeAllRecords();
   await SpecialPowers.popPrefEnv();
@@ -152,11 +142,7 @@ add_task(async function test_security_code_added_to_a_saved_card() {
 
   const creditCards = await getCreditCards();
   is(creditCards.length, 1, "The saved card was updated, not duplicated");
-  is(
-    await decryptCreditCardSecurityCode(creditCards[0]),
-    "123",
-    "with the submitted security code"
-  );
+  is(creditCards[0]["cc-csc"], "123", "with the submitted security code");
 
   await removeAllRecords();
   await SpecialPowers.popPrefEnv();

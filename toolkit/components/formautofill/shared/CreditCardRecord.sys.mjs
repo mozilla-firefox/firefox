@@ -17,23 +17,9 @@ export class CreditCardRecord {
    * The fields a store keeps encrypted, mapped to the field its ciphertext is
    * kept under.
    */
-  static #ENCRYPTED_FIELDS = new Map([["cc-number", "cc-number-encrypted"]]);
-
-  /**
-   * The fields a store may keep encrypted, which only decryptFields reads in
-   * the clear.
-   */
-  static SECRET_FIELDS = Object.freeze(["cc-number", "cc-csc"]);
-
-  /**
-   * Whether a record keeps the ciphertext of this field.
-   *
-   * @param {string} field
-   * @returns {boolean}
-   */
-  static hasCiphertextField(field) {
-    return this.#ENCRYPTED_FIELDS.has(field);
-  }
+  static #ENCRYPTED_FIELDS = {
+    "cc-number": "cc-number-encrypted",
+  };
 
   /**
    * Where a record keeps the ciphertext of an encrypted field.
@@ -42,23 +28,11 @@ export class CreditCardRecord {
    * @returns {string} The field its ciphertext is kept under.
    */
   static ciphertextField(field) {
-    const ciphertextField = this.#ENCRYPTED_FIELDS.get(field);
+    const ciphertextField = this.#ENCRYPTED_FIELDS[field];
     if (!ciphertextField) {
       throw new Error(`${field} is not stored encrypted`);
     }
     return ciphertextField;
-  }
-
-  /**
-   * Whether a record has a security code. A record read from a store that
-   * keeps it encrypted says so with hasSecurityCode; any other record holds
-   * the code itself.
-   *
-   * @param {object} creditCard
-   * @returns {boolean}
-   */
-  static hasSecurityCode(creditCard) {
-    return Boolean(creditCard["cc-csc"] || creditCard.hasSecurityCode);
   }
 
   /**
@@ -70,7 +44,6 @@ export class CreditCardRecord {
   static stripSecurityCodeWhenDisabled(creditCard) {
     if (!FormAutofill.isAutofillCreditCardCVVEnabled) {
       delete creditCard["cc-csc"];
-      delete creditCard.hasSecurityCode;
     }
   }
 

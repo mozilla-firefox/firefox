@@ -166,7 +166,8 @@ function makeAuthenticator(answers) {
 }
 
 add_task(async function a_read_nothing_asked_for_is_never_prompted() {
-  // Only a caller that wants a number decides whether the user may be asked.
+  // The store decrypts every card it reads and asks for the key for each, so
+  // being asked says nothing about whether anyone wants a number.
   const authenticator = makeAuthenticator(["secret"]);
   await Assert.rejects(
     authenticator.getPrimaryPassword(),
