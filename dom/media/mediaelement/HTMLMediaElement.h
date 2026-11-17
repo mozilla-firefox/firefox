@@ -340,9 +340,7 @@ class HTMLMediaElement : public nsGenericHTMLElement,
   void QueueTask(RefPtr<nsMediaEventRunner> aRunner);
 
   // Triggers a recomputation of readyState.
-  void UpdateReadyState() override {
-    mWatchManager.ManualNotify(&HTMLMediaElement::UpdateReadyStateInternal);
-  }
+  void UpdateReadyState() override;
 
   // Dispatch events that were raised while in the bfcache
   nsresult DispatchPendingMediaEvents();

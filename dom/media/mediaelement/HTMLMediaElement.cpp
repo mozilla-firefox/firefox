@@ -6815,6 +6815,15 @@ bool HTMLMediaElement::IsCORSSameOrigin() {
          ShouldCheckAllowOrigin();
 }
 
+void HTMLMediaElement::UpdateReadyState() {
+  if (AppShutdown::IsInOrBeyond(ShutdownPhase::XPCOMShutdownFinal)) {
+    // The final shutdown cycle collection unbinds track elements without a
+    // current AbstractThread to notify on.
+    return;
+  }
+  mWatchManager.ManualNotify(&HTMLMediaElement::UpdateReadyStateInternal);
+}
+
 void HTMLMediaElement::UpdateReadyStateInternal() {
   if (!mDecoder && !mSrcStream) {
     // Not initialized - bail out.
