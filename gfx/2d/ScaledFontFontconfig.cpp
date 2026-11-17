@@ -530,19 +530,19 @@ bool ScaledFontFontconfig::HasVariationSettings() {
 
 bool UnscaledFontFontconfig::ValidateFontDescriptor(const uint8_t* aName,
                                                     size_t aNameLength,
-                                                    nsCString& aResultName,
+                                                    std::string& aResultName,
                                                     uint32_t& aIndex) {
   if (aNameLength == 0) {
     gfxWarning() << "Fontconfig font descriptor is truncated.";
     return false;
   }
 
-  nsCString path((const char*)aName, aNameLength);
+  std::string path((const char*)aName, aNameLength);
 
   // Use the given pathname/index in a fontconfig lookup to confirm this is a
   // known font; if not, we'll use whatever fallback it provides instead.
   FcPattern* pattern = FcPatternCreate();
-  FcPatternAddString(pattern, FC_FILE, (const FcChar8*)path.BeginReading());
+  FcPatternAddString(pattern, FC_FILE, (const FcChar8*)path.c_str());
   FcPatternAddInteger(pattern, FC_INDEX, aIndex);
   FcConfigSubstitute(nullptr, pattern, FcMatchPattern);
   FcDefaultSubstitute(pattern);
@@ -560,8 +560,8 @@ bool UnscaledFontFontconfig::ValidateFontDescriptor(const uint8_t* aName,
   char* file = nullptr;
   int index = 0;
   result = FcPatternGetString(match, FC_FILE, 0, (FcChar8**)&file);
-  if (result == FcResultMatch && !path.Equals(file)) {
-    gfxWarning() << "Font path " << path.get() << " invalid, using " << file;
+  if (result == FcResultMatch && path != file) {
+    gfxWarning() << "Font path " << path << " invalid, using " << file;
     path = file;
   }
   result = FcPatternGetInteger(match, FC_INDEX, 0, &index);
@@ -581,12 +581,12 @@ bool UnscaledFontFontconfig::ValidateFontDescriptor(const uint8_t* aName,
 
 already_AddRefed<UnscaledFont> UnscaledFontFontconfig::CreateFromFontDescriptor(
     const uint8_t* aData, uint32_t aDataLength, uint32_t aIndex) {
-  nsCString path;
+  std::string path;
   if (!ValidateFontDescriptor(aData, aDataLength, path, aIndex)) {
     return nullptr;
   }
 
-  return MakeAndAddRef<UnscaledFontFontconfig>(path.BeginReading(), aIndex);
+  return MakeAndAddRef<UnscaledFontFontconfig>(std::move(path), aIndex);
 }
 
 }  // namespace mozilla::gfx
