@@ -74,8 +74,7 @@ class ViewTimeline final : public ScrollTimeline {
                                           const double aPercentage) const;
 
   NonOwningAnimationTarget TimelineTarget() const override {
-    return NonOwningAnimationTarget{mSubject,
-                                    PseudoStyleRequest{mSubjectPseudoType}};
+    return NonOwningAnimationTarget{mSubject, mSubjectPseudoRequest};
   }
 
   bool IsReusableAnonymousTimeline(
@@ -85,11 +84,11 @@ class ViewTimeline final : public ScrollTimeline {
   ~ViewTimeline() = default;
   ViewTimeline(Document* aDocument, const ScrollerInfo& aScrollerInfo,
                StyleScrollAxis aAxis, Element* aSubject,
-               PseudoStyleType aSubjectPseudoType,
+               const PseudoStyleRequest& aSubjectPseudoRequest,
                const StyleViewTimelineInset& aInset, bool aIsAnonymous)
       : ScrollTimeline(aDocument, aScrollerInfo, aAxis),
         mSubject(aSubject),
-        mSubjectPseudoType(aSubjectPseudoType),
+        mSubjectPseudoRequest(aSubjectPseudoRequest),
         mIsAnonymous(aIsAnonymous),
         mInset(aInset) {}
 
@@ -193,9 +192,7 @@ class ViewTimeline final : public ScrollTimeline {
   // 2. For view-timeline property, the subject element is the element who
   //    defines this property.
   RefPtr<Element> mSubject;
-  // FIXME: Bug 1928437. We have to update mSubjectPseudoType to use
-  // PseudoStyleRequest.
-  PseudoStyleType mSubjectPseudoType;
+  PseudoStyleRequest mSubjectPseudoRequest;
   bool mIsAnonymous;
 
   // FIXME: Bug 1817073. view-timeline-inset is an animatable property. However,

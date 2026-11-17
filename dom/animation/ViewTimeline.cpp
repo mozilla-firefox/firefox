@@ -42,7 +42,7 @@ already_AddRefed<ViewTimeline> ViewTimeline::MakeNamed(
 
   // 2. Create timeline.
   return MakeAndAddRef<ViewTimeline>(aDocument, scroller, aAxis, aSubject,
-                                     aPseudoRequest.mType, aInset, false);
+                                     aPseudoRequest, aInset, false);
 }
 
 /* static */
@@ -51,9 +51,9 @@ already_AddRefed<ViewTimeline> ViewTimeline::MakeAnonymous(
     StyleScrollAxis aAxis, const StyleViewTimelineInset& aInset) {
   // view() finds the nearest scroll container from the animation target.
   auto scroller = ScrollerInfo::Anonymous(StyleScroller::Nearest, aTarget);
-  return MakeAndAddRef<ViewTimeline>(
-      aDocument, scroller, aAxis, aTarget.mElement,
-      aTarget.mPseudoRequest.mType, aInset, true);
+  return MakeAndAddRef<ViewTimeline>(aDocument, scroller, aAxis,
+                                     aTarget.mElement, aTarget.mPseudoRequest,
+                                     aInset, true);
 }
 
 JSObject* ViewTimeline::WrapObject(JSContext* aCx,
@@ -178,7 +178,8 @@ already_AddRefed<ViewTimeline> ViewTimeline::Constructor(
       subject, PseudoStyleRequest::NotPseudo());
 
   RefPtr<ViewTimeline> result = MakeAndAddRef<ViewTimeline>(
-      doc, scroller, axis, subject, PseudoStyleType::NotPseudo, inset, false);
+      doc, scroller, axis, subject, PseudoStyleRequest::NotPseudo(), inset,
+      false);
   if (subject) {
     // The values of subject, source, and currentTime are all computed when any
     // of them is requested or updated, per spec.
@@ -230,7 +231,7 @@ void ViewTimeline::ReplacePropertiesWith(
     const dom::ScopedTimelineName& aName, StyleScrollAxis aAxis,
     const StyleViewTimelineInset& aInset) {
   mSubject = aSubjectElement;
-  mSubjectPseudoType = aPseudoRequest.mType;
+  mSubjectPseudoRequest = aPseudoRequest;
   mAxis = aAxis;
   // FIXME: Bug 1817073. We assume it is a non-animatable value for now.
   mInset = aInset;
@@ -393,7 +394,7 @@ bool ViewTimeline::UpdateCachedCurrentTime() {
   // For now, this is just a hot fix.
   MOZ_ASSERT(mSubject, "We should have a subject to create this view timeline");
   const Element* subjectElement =
-      mSubject->GetPseudoElement(PseudoStyleRequest(mSubjectPseudoType));
+      mSubject->GetPseudoElement(mSubjectPseudoRequest);
   const nsIFrame* subject =
       subjectElement ? subjectElement->GetPrimaryFrame() : nullptr;
   if (!subject) {
