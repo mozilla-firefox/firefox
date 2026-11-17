@@ -45,7 +45,10 @@ add_task(async function () {
           const addRequest = transaction
             .objectStore("store")
             .add({ key: "hello", value: "world" });
-          addRequest.onsuccess = () => resolve();
+          addRequest.onsuccess = () => {
+            db.close();
+            resolve();
+          };
         };
       });
     });
