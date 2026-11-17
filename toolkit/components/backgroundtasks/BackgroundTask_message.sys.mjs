@@ -42,7 +42,8 @@
 // The following flags are intended for automated testing.
 //
 // --sentinel: bracket important output with given sentinel for easy parsing.
-// --randomizationId: set Nimbus/Normandy randomization ID for deterministic bucketing.
+// --randomizationId: set the Nimbus profile group ID (the `group_id`
+// randomization unit) for deterministic bucketing.
 // --disable-alerts-service: do not show system/OS-level alerts.
 // --no-experiments: don't talk to Remote Settings server at all.
 // --no-datareporting: set `datareporting.healthreport.uploadEnabled=false` in
@@ -58,8 +59,7 @@ import { BackgroundTasksUtils } from "resource://gre/modules/BackgroundTasksUtil
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  ClientEnvironmentBase:
-    "resource://gre/modules/components-utils/ClientEnvironment.sys.mjs",
+  ClientID: "resource://gre/modules/ClientID.sys.mjs",
   ExperimentAPI: "resource://nimbus/ExperimentAPI.sys.mjs",
   ExtensionUtils: "resource://gre/modules/ExtensionUtils.sys.mjs",
   IndexedDB: "resource://gre/modules/IndexedDB.sys.mjs",
@@ -227,17 +227,21 @@ async function handleCommandLine(commandLine) {
     }
   }
 
-  // Allow to override Nimbus randomization ID with `--randomizationId ...`.
+  // Allow to override the Nimbus profile group ID with `--randomizationId ...`.
   let randomizationId = commandLine.handleFlagWithParam(
     "randomizationId",
     CASE_INSENSITIVE
   );
   if (randomizationId) {
     console.log(`Saw --randomizationId: ${randomizationId}`);
-    Services.prefs.setCharPref("app.normandy.user_id", randomizationId);
+    try {
+      await lazy.ClientID.setProfileGroupID(randomizationId);
+    } catch (e) {
+      console.error(e);
+    }
   }
   outputInfo({
-    randomizationId: lazy.ClientEnvironmentBase.legacyRandomizationId,
+    randomizationId: await lazy.ClientID.getProfileGroupID(),
   });
 
   // Allow to override Nimbus experiments with `--experiments /path/to/data.json`.

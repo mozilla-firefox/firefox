@@ -86,7 +86,7 @@
       "start": 0,
       "total": 10000,
       "namespace": "firefox-desktop-backgroundTaskMessage-1",
-      "randomizationUnit": "normandy_id"
+      "randomizationUnit": "group_id"
     },
     "schemaVersion": "1.8.0",
     "userFacingName": "test-experiment",

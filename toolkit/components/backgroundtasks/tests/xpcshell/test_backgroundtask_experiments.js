@@ -7,8 +7,8 @@
 // 1.  We verify that we can forcefully opt-in to (particular branches of)
 //     experiments, that the resulting Firefox Messaging Experiment applies, and
 //     that the Firefox Messaging System respects lifetime frequency caps.
-// 2.  We verify that Nimbus randomization works with specific Normandy
-//     randomization IDs.
+// 2.  We verify that Nimbus randomization works with specific profile
+//     group IDs.
 // 3.  We verify that relevant opt-out prefs disable the Nimbus and Firefox
 //     Messaging System experience.
 
@@ -21,7 +21,7 @@ const { NimbusTestUtils } = ChromeUtils.importESModule(
 
 NimbusTestUtils.init(this);
 
-// These randomization IDs were extracted by hand from Firefox instances.
+// These profile group IDs were extracted by hand from Firefox instances.
 // Randomization is sufficiently stable to hard-code these IDs rather than
 // generating new ones at test time.
 const BRANCH_MAP = {
@@ -216,8 +216,8 @@ add_task(async function test_backgroundtask_caps() {
   Assert.ok(!("showAlert" in infoMap), "No alert shown");
 });
 
-// Test that background tasks are enrolled into branches based on the Normandy
-// randomization ID as expected.  Run the message task with a hard-coded list of
+// Test that background tasks are enrolled into branches based on the profile
+// group ID as expected.  Run the message task with a hard-coded list of
 // a single experiment and known randomization IDs, and verify that the enrolled
 // branches are as expected.
 add_task(async function test_backgroundtask_randomization() {
