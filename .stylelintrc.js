@@ -488,9 +488,14 @@ module.exports = {
       },
     },
     {
-      // non-logical properties make sense in devtools/ where physical positioning always makes sense
       name: "logical-properties-rule-off",
-      files: ["devtools/**"],
+      files: [
+        // non-logical properties make sense in devtools/ where physical positioning always makes sense
+        "devtools/**",
+        // the Windows WebBrowser engine does not support all logical properties
+        "browser/installer/windows/nsis/content/**",
+        "browser/branding/**/stubinstaller/**",
+      ],
       rules: {
         "csstools/use-logical": null,
       },

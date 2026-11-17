@@ -50,7 +50,7 @@ nav > div,
 #searchform,
 #searchresults,
 #top {
-  margin-left: var(--margin-left);
+  margin-inline-start: var(--margin-left);
 }
 
 #searchbox {
@@ -78,7 +78,7 @@ nav > div,
 }
 
 .card-container > .card:not(:last-child) {
-  margin-right: 10px;
+  margin-inline-end: 10px;
 }
 
 .card-container > .card > a {
