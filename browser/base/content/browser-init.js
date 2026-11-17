@@ -109,6 +109,27 @@ var gBrowserInit = {
     return !!this.getTabToAdopt();
   },
 
+  // True for windows whose browser UI is locked down: popups opened with a
+  // feature list, and taskbar tabs. Only valid once onBeforeInitialXULLayout()
+  // has set the "taskbartab" attribute.
+  get isPopupWindow() {
+    return (
+      !window.toolbar.visible ||
+      document.documentElement.hasAttribute("taskbartab")
+    );
+  },
+
+  // How much of the desktop this window takes over, 0 for windows that are not
+  // in kiosk mode. See browser.kiosk.lockdown in firefox.js. Only valid once
+  // onBeforeInitialXULLayout() has set the "taskbartab" attribute.
+  get kioskLockdown() {
+    if (!BrowserHandler.kiosk || this.isPopupWindow) {
+      return 0;
+    }
+    // The fallback mirrors the default in firefox.js.
+    return Services.prefs.getIntPref("browser.kiosk.lockdown", 2);
+  },
+
   onBeforeInitialXULLayout() {
     this._setupFirstContentWindowPaintPromise();
 
@@ -195,6 +216,20 @@ var gBrowserInit = {
       if (tabToAdopt.hasAttribute("cropped-mini-window")) {
         document.documentElement.setAttribute("cropped-mini-window", "true");
       }
+    }
+
+    // In macOS native fullscreen, moving the pointer to the top of the screen
+    // brings the menu bar back and moving it to the screen edge the Dock sits
+    // on brings the Dock back. A locked down kiosk window therefore opts out of
+    // native fullscreen and gets emulated fullscreen, which hides both.
+    // AppWindow reads these attributes right after this event, so they have to
+    // be set here rather than when we enter fullscreen.
+    let kioskLockdown = this.kioskLockdown;
+    if (kioskLockdown >= 1) {
+      document.documentElement.setAttribute("macnativefullscreen", "false");
+    }
+    if (kioskLockdown >= 2) {
+      document.documentElement.setAttribute("macpreventappswitching", "true");
     }
 
     // Run menubar initialization first, to avoid CustomTitlebar code picking
@@ -340,9 +375,8 @@ var gBrowserInit = {
     Services.obs.notifyObservers(window, "browser-window-before-show");
 
     if (
-      !window.toolbar.visible ||
-      window.document.documentElement.hasAttribute("taskbartab") ||
-      window.document.documentElement.hasAttribute("cropped-mini-window")
+      this.isPopupWindow ||
+      document.documentElement.hasAttribute("cropped-mini-window")
     ) {
       // adjust browser UI for popups
       gURLBar.readOnly = true;

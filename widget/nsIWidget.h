@@ -1103,6 +1103,15 @@ class nsIWidget : public nsSupportsWeakReference {
    */
   virtual void SetSupportsNativeFullscreen(bool aSupportsNativeFullscreen) {}
 
+  /**
+   * Keep the user from switching to another application while this window
+   * hides the OS chrome in fullscreen, as a locked down kiosk window does.
+   * Quitting stays available, so the machine can always be recovered.
+   *
+   * Ignored on child widgets and on non-Mac platforms.
+   */
+  virtual void SetPreventAppSwitching(bool aShouldPreventAppSwitching) {}
+
   enum WindowAnimationType {
     eGenericWindowAnimation,
     eDocumentWindowAnimation

@@ -5520,7 +5520,7 @@ void nsCocoaWindow::Destroy() {
 
   if (mInFullScreenMode && !mInNativeFullScreenMode) {
     // Keep these calls balanced for emulated fullscreen.
-    nsCocoaUtils::HideOSChromeOnScreen(false);
+    nsCocoaUtils::HideOSChromeOnScreen(false, mShouldPreventAppSwitching);
   }
 
   // Destroy the native window here (and not wait for that to happen in our
@@ -6780,7 +6780,7 @@ void nsCocoaWindow::ProcessTransitions() {
           // The order here matters. When we exit full screen mode, we need to
           // show the Dock first, otherwise the newly-created window won't have
           // its minimize button enabled. See bug 526282.
-          nsCocoaUtils::HideOSChromeOnScreen(true);
+          nsCocoaUtils::HideOSChromeOnScreen(true, mShouldPreventAppSwitching);
           nsIWidget::InfallibleMakeFullScreen(true);
           mSuppressSizeModeEvents = false;
           UpdateFullscreenState(true, false);
@@ -6816,7 +6816,8 @@ void nsCocoaWindow::ProcessTransitions() {
             // The order here matters. When we exit full screen mode, we need to
             // show the Dock first, otherwise the newly-created window won't
             // have its minimize button enabled. See bug 526282.
-            nsCocoaUtils::HideOSChromeOnScreen(false);
+            nsCocoaUtils::HideOSChromeOnScreen(false,
+                                               mShouldPreventAppSwitching);
             nsIWidget::InfallibleMakeFullScreen(false);
             mSuppressSizeModeEvents = false;
             UpdateFullscreenState(false, false);
@@ -7715,6 +7716,10 @@ void nsCocoaWindow::SetSupportsNativeFullscreen(
   }
 
   NS_OBJC_END_TRY_IGNORE_BLOCK;
+}
+
+void nsCocoaWindow::SetPreventAppSwitching(bool aShouldPreventAppSwitching) {
+  mShouldPreventAppSwitching = aShouldPreventAppSwitching;
 }
 
 void nsCocoaWindow::SetWindowAnimationType(

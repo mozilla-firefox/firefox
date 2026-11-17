@@ -444,6 +444,10 @@ var FullScreen = {
       "macOSNativeFullscreen",
       enterFS &&
         AppConstants.platform == "macosx" &&
+        // A locked down kiosk window opts out of native fullscreen, see
+        // gBrowserInit.onBeforeInitialXULLayout().
+        document.documentElement.getAttribute("macnativefullscreen") !=
+          "false" &&
         (Services.prefs.getBoolPref(
           "full-screen-api.macos-native-full-screen"
         ) ||
@@ -1064,13 +1068,13 @@ var FullScreen = {
   updateAutohideMenuitem(aItem) {
     aItem.toggleAttribute(
       "checked",
-      Services.prefs.getBoolPref("browser.fullscreen.autohide")
+      Services.prefs.getBoolPref("browser.fullscreen.autohide", false)
     );
   },
   setAutohide() {
     Services.prefs.setBoolPref(
       "browser.fullscreen.autohide",
-      !Services.prefs.getBoolPref("browser.fullscreen.autohide")
+      !Services.prefs.getBoolPref("browser.fullscreen.autohide", false)
     );
     // Try again to hide toolbar when we change the pref.
     FullScreen.hideNavToolbox(true);
@@ -1167,7 +1171,14 @@ var FullScreen = {
     if (this._isChromeCollapsed) {
       return;
     }
-    if (!Services.prefs.getBoolPref("browser.fullscreen.autohide")) {
+    // showNavToolbox() returns early for a kiosk window, so toolbars left up
+    // stay up for good. From lockdown level 1 the pref is therefore ignored.
+    // It is off by default on macOS, where honoring it would leave the tab
+    // strip and the URL bar on screen for the whole session.
+    if (
+      gBrowserInit.kioskLockdown < 1 &&
+      !Services.prefs.getBoolPref("browser.fullscreen.autohide", false)
+    ) {
       return;
     }
     // a popup menu is open in chrome: don't collapse chrome

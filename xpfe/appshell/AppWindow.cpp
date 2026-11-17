@@ -1445,6 +1445,11 @@ void AppWindow::SyncOneShotAttributesToWidget() {
     NS_ENSURE_TRUE_VOID(mWindow);
   }
 
+  // "macpreventappswitching" attribute
+  windowElement->GetAttribute(u"macpreventappswitching"_ns, attr);
+  mWindow->SetPreventAppSwitching(attr.EqualsLiteral("true"));
+  NS_ENSURE_TRUE_VOID(mWindow);
+
   // "macanimationtype" attribute
   windowElement->GetAttribute(u"macanimationtype"_ns, attr);
   if (attr.EqualsLiteral("document")) {

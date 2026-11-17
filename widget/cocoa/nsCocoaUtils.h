@@ -240,8 +240,12 @@ class nsCocoaUtils {
   static BOOL IsMomentumScrollEvent(NSEvent* aEvent);
   static BOOL EventHasPhaseInformation(NSEvent* aEvent);
 
-  // Hides the Menu bar and the Dock. Multiple hide/show requests can be nested.
-  static void HideOSChromeOnScreen(bool aShouldHide);
+  // Hides the Menu bar and the Dock. With aShouldPreventAppSwitching it also
+  // blocks the shortcuts for switching to another application, which would
+  // otherwise restore them. Requests nest, so every hide has to be matched by
+  // an unhide passing the same aShouldPreventAppSwitching.
+  static void HideOSChromeOnScreen(bool aShouldHide,
+                                   bool aShouldPreventAppSwitching);
 
   static already_AddRefed<nsIWidget> GetHiddenWindowWidget();
 

@@ -392,6 +392,16 @@ pref("browser.warnOnQuit", true);
   pref("browser.fullscreen.autohide", true);
 #endif
 
+// How much of the desktop kiosk mode takes over.
+//   0: only go fullscreen, and leave the toolbars to
+//      browser.fullscreen.autohide. On macOS that pref is off by default, so
+//      the tab strip and the URL bar stay visible.
+//   1: also hide the toolbars. On macOS, drop out of native fullscreen so that
+//      the menu bar and the Dock can be hidden as well.
+//   2: also keep the user from switching to another application, which on
+//      macOS would bring the menu bar and the Dock back. Quitting still works.
+pref("browser.kiosk.lockdown", 2);
+
 pref("browser.overlink-delay", 80);
 
 #if defined(XP_WIN)

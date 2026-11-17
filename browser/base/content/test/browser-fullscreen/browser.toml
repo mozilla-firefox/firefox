@@ -63,6 +63,8 @@ skip-if = [
 
 ["browser_fullscreen_keydown_reservation.js"]
 
+["browser_fullscreen_kiosk_lockdown.js"]
+
 ["browser_fullscreen_menus.js"]
 
 ["browser_fullscreen_newtab.js"]
