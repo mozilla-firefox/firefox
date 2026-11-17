@@ -3966,6 +3966,14 @@
 #endif
   mirror: always
 
+# How long a utility process launch can take, from spawning the process to the
+# child reporting that its init completed. If the launch exceeds the timeout,
+# we abandon it. A value of 0 disables the timeout entirely.
+- name: dom.ipc.utilityProcess.startup_timeout_ms
+  type: uint32_t
+  value: 10000
+  mirror: always
+
 # If this is true, keypress events for non-printable keys are dispatched only
 # for event listeners of the system event group in web content.
 - name: dom.keyboardevent.keypress.dispatch_non_printable_keys_only_system_group_in_content

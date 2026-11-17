@@ -679,11 +679,8 @@ UtilityProcessManager::CreateWinFileDialogActor() {
                 widget::filedialog::ProcessProxy(std::move(wfdp)),
                 __PRETTY_FUNCTION__);
           },
-          [self = RefPtr(this), startTime](LaunchError&& error) {
+          [startTime](LaunchError&& error) {
             LOGD("CreateWinFileDialogAsync() reject");
-            if (!self->IsShutdown()) {
-              MOZ_ASSERT_UNREACHABLE("failure when starting file-dialog actor");
-            }
             PROFILER_MARKER_TEXT(
                 "UtilityProcessManager::CreateWinFileDialogAsync", OTHER,
                 MarkerOptions(MarkerTiming::IntervalUntilNowFrom(startTime)),
@@ -714,8 +711,6 @@ UtilityProcessManager::StartPKCS11Module() {
         return RetPromise::CreateAndResolve(std::move(parent), __func__);
       },
       [](LaunchError&& aError) {
-        MOZ_ASSERT_UNREACHABLE(
-            "StartPKCS11Module: failure when starting actor");
         return RetPromise::CreateAndReject(std::move(aError), __func__);
       });
 }

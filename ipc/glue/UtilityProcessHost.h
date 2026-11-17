@@ -39,9 +39,9 @@ class UtilityProcessHost final : public mozilla::ipc::GeckoChildProcessHost {
    public:
     NS_INLINE_DECL_THREADSAFE_REFCOUNTING(UtilityProcessHost::Listener);
 
-    // The UtilityProcessHost has unexpectedly shutdown or had its connection
-    // severed. This is not called if an error occurs after calling
-    // Shutdown().
+    // The UtilityProcessHost has unexpectedly shutdown, had its connection
+    // severed, or did not complete its launch in time. This is not called if
+    // an error occurs after calling Shutdown().
     virtual void OnProcessUnexpectedShutdown(UtilityProcessHost* aHost) {}
   };
 
@@ -138,6 +138,10 @@ class UtilityProcessHost final : public mozilla::ipc::GeckoChildProcessHost {
   bool mShutdownRequested = false;
 
   nsCOMPtr<nsITimer> mForceKillTimer;
+
+  // Abandons the launch if it has not completed within
+  // dom.ipc.utilityProcess.startup_timeout_ms.
+  nsCOMPtr<nsITimer> mLaunchTimeoutTimer;
 
   MozPromiseHolder<ShutdownPromiseType> mShutdownPromise;
 
