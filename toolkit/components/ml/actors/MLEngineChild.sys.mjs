@@ -284,7 +284,7 @@ export class MLEngineChild extends JSProcessActorChild {
    * Retrieves a model file and headers by communicating with the parent actor.
    *
    * @param {object} config - The configuration accepted by the parent function.
-   * @returns {Promise<[string, object]>} The file local path and headers
+   * @returns {Promise<[Blob, object]>} The model file and headers
    */
   getModelFile(config) {
     return this.sendQuery("MLEngine:GetModelFile", config);
@@ -788,12 +788,12 @@ class EngineDispatcher {
  * the model hub root or an absolute URL.
  * @param {string | null | undefined} config.modelHubRootUrl - root url of the model hub. When not provided, uses the default from prefs.
  * @param {string | null | undefined} config.modelHubUrlTemplate - url template of the model hub. When not provided, uses the default from prefs.
- * @param {function(object):Promise<[string, object]>} config.getModelFileFn - A function that actually retrieves the model and headers.
+ * @param {function(object):Promise<[Blob, object]>} config.getModelFileFn - A function that actually retrieves the model and headers.
  * @param {string | null | undefined} config.featureId - The feature id
  * @param {string} config.sessionId - Shared across the same session.
  * @param {object} config.telemetryData - Additional telemetry data.
  * @returns {Promise<BasePromiseWorker.Meta>} A promise that resolves to a Meta object containing the URL, response headers,
- * and model path.
+ * and the model file as a blob.
  */
 async function getModelFile({
   engineId,
@@ -806,7 +806,7 @@ async function getModelFile({
   sessionId,
   telemetryData,
 }) {
-  const [data, headers] = await getModelFileFn({
+  const [blob, headers] = await getModelFileFn({
     engineId: engineId || lazy.DEFAULT_ENGINE_ID,
     taskName,
     url,
@@ -816,7 +816,7 @@ async function getModelFile({
     sessionId,
     telemetryData,
   });
-  return new lazy.BasePromiseWorker.Meta([url, headers, data], {});
+  return new lazy.BasePromiseWorker.Meta([url, headers, blob], {});
 }
 
 /**
@@ -835,7 +835,7 @@ class InferenceEngine {
    * @param {?ArrayBuffer} config.wasm
    * @param {PipelineOptions} config.pipelineOptions
    * @param {?function(ProgressAndStatusCallbackParams):void} config.notificationsCallback The callback to call for updating about notifications such as dowload progress status.
-   * @param {function(object):Promise<[string, object]>} config.getModelFileFn - A function that actually retrieves the model and headers.
+   * @param {function(object):Promise<[Blob, object]>} config.getModelFileFn - A function that actually retrieves the model and headers.
    * @param {function(object):Promise<void>} config.notifyModelDownloadCompleteFn - A function to notify that all files needing downloads are completed.
    * @returns {Promise<InferenceEngine>}
    */

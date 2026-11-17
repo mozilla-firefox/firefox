@@ -14,7 +14,6 @@
  * @typedef {object} Lazy
  * @property {typeof import("chrome://global/content/ml/Utils.sys.mjs").createFileUrl} createFileUrl
  * @property {typeof import("chrome://global/content/ml/Utils.sys.mjs").parseNpy} parseNpy
- * @property {typeof import("chrome://global/content/ml/OPFS.sys.mjs").OPFS} OPFS
  * @property {typeof import("chrome://global/content/ml/backends/ONNXPipeline.mjs").importTransformers} importTransformers
  * @property {typeof import("chrome://global/content/ml/EngineProcess.sys.mjs").QuantizationLevel} QuantizationLevel
  */
@@ -27,7 +26,6 @@ ChromeUtils.defineESModuleGetters(
   {
     createFileUrl: "chrome://global/content/ml/Utils.sys.mjs",
     parseNpy: "chrome://global/content/ml/Utils.sys.mjs",
-    OPFS: "chrome://global/content/ml/OPFS.sys.mjs",
     importTransformers: "chrome://global/content/ml/backends/ONNXPipeline.mjs",
     QuantizationLevel: "chrome://global/content/ml/EngineProcess.sys.mjs",
   },
@@ -236,17 +234,9 @@ export class StaticEmbeddingsPipeline {
         return new MockedResponse(new Uint8Array(mockedValue).buffer);
       }
       const modelFile = await worker.getModelFile({ url });
-      const filePath = modelFile.ok[2];
-      const opfsStart = ChromeUtils.now();
-      const fileHandle = await lazy.OPFS.getFileHandle(filePath);
-      const file = await fileHandle.getFile();
-      ChromeUtils.addProfilerMarker(
-        "MLEngine:OPFS",
-        { startTime: opfsStart },
-        `Retrieved model file from OPFS`
-      );
+      const blob = modelFile.ok[2];
 
-      let stream = file.stream();
+      let stream = blob.stream();
       if (compression) {
         const decompressionStream = new DecompressionStream("zstd");
         stream = stream.pipeThrough(decompressionStream);

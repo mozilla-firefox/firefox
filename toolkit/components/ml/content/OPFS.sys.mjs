@@ -6,24 +6,18 @@
  * @import { ProgressAndStatusCallbackParams } from "./Utils.sys.mjs"
  */
 
-// @ts-ignore
-const IN_WORKER = typeof importScripts !== "undefined";
-
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = XPCOMUtils.declareLazy(
-  {
-    console() {
-      return console.createInstance({
-        maxLogLevelPref: IN_WORKER ? "Error" : "browser.ml.logLevel",
-        logModule: "GeckoMLOPFS",
-      });
-    },
-    Progress: "chrome://global/content/ml/Utils.sys.mjs",
-    computeHash: "chrome://global/content/ml/Utils.sys.mjs",
+const lazy = XPCOMUtils.declareLazy({
+  console() {
+    return console.createInstance({
+      maxLogLevelPref: "browser.ml.logLevel",
+      logModule: "GeckoMLOPFS",
+    });
   },
-  IN_WORKER ? { global: "current" } : undefined
-);
+  Progress: "chrome://global/content/ml/Utils.sys.mjs",
+  computeHash: "chrome://global/content/ml/Utils.sys.mjs",
+});
 
 /**
  * Remove every entry (file or directory) in the given directory apart from the one
@@ -142,11 +136,9 @@ export class OPFS {
    * @returns {Promise<FileSystemDirectoryHandle>}
    */
   static async getDirectoryHandle(path = null, options) {
-    const currentNavigator =
-      globalThis.navigator ??
-      /** @type {Window} */ (Services.wm.getMostRecentBrowserWindow())
-        .navigator;
-    let directoryHandle = await currentNavigator.storage.getDirectory();
+    let directoryHandle = await /** @type {Window} */ (
+      Services.wm.getMostRecentBrowserWindow()
+    ).navigator.storage.getDirectory();
 
     if (!path) {
       return directoryHandle;
@@ -162,34 +154,6 @@ export class OPFS {
     }
 
     return directoryHandle;
-  }
-
-  /**
-   * Converts a file in OPFS and given headers to a Response object.
-   *
-   * @param {string} filePath
-   * @param {Record<string, unknown>} [headers]
-   * @returns {Promise<Response>}
-   */
-  static async toResponse(filePath, headers) {
-    /** @type {HeadersInit} */
-    let responseHeaders = {};
-
-    if (headers) {
-      // Headers are converted to strings, as the cache may hold int keys like fileSize.
-      for (let key in headers) {
-        if (headers[key] != null) {
-          responseHeaders[key] = headers[key].toString();
-        }
-      }
-    }
-
-    const file = await (await OPFS.getFileHandle(filePath)).getFile();
-
-    return new Response(file.stream(), {
-      status: 200,
-      headers: responseHeaders,
-    });
   }
 
   /**
