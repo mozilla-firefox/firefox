@@ -204,6 +204,9 @@ support-files = [
 ]
 
 ["browser_formless_submit_chrome.js"]
+skip-if = [
+  "macos_vm", # Bug 2088997 - fails only on the macOS tart VMs
+]
 
 ["browser_glean_pwmgr_form_autofill_result.js"]
 
