@@ -565,6 +565,7 @@ macosx1500-aarch64-vms-tests:
 
 macosx1470-64-tests:
     - cppunittest
+    - mochitest-speech-recognition
 
 macosx1015-64-qr-tests:
     - crashtest

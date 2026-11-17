@@ -12,6 +12,10 @@
 #include "nsXULAppAPI.h"
 #include "prlink.h"
 
+#if defined(XP_MACOSX) && defined(__x86_64__)
+#  include "nsCocoaFeatures.h"
+#endif
+
 #ifdef XP_WIN
 #  include <windows.h>
 #endif
@@ -212,7 +216,12 @@ bool LlamaRuntimeLinker::Init() {
   // be cached because the process cannot access the required directory.
   // https://bugzilla.mozilla.org/show_bug.cgi?id=2046856 is the fix for this:
   // running the inference workload in the HWInference process.
-  if (XRE_IsContentProcess()) {
+  bool disableMetal = XRE_IsContentProcess();
+#  if defined(__x86_64__)
+  // ggml Metal kernels assume SIMD widths that Intel Mac GPUs do not guarantee.
+  disableMetal = disableMetal || !nsCocoaFeatures::ProcessIsRosettaTranslated();
+#  endif
+  if (disableMetal) {
     sLlamaLib.ggml_backend_metal_disable();
   }
 #endif
