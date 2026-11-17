@@ -46,6 +46,13 @@ add_task(async function test_star_redirect() {
   await shownPromise;
 
   is(BookmarkingUI.status, BookmarkingUI.STATUS_STARRED, "The star is starred");
+
+  let bookmarkAdded = PlacesTestUtils.waitForNotification("bookmark-added");
+  let hiddenPromise = promisePopupHidden(bookmarkPanel);
+  bookmarkPanel.hidePopup();
+  await hiddenPromise;
+  let [event] = await bookmarkAdded;
+  is(event.url, secureURL, "The secure URL was bookmarked");
 });
 
 /**
