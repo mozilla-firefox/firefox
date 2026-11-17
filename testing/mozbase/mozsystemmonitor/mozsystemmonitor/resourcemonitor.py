@@ -113,6 +113,464 @@ _HG_SOURCE_URL_RE = re.compile(
 )
 
 
+# Marker schemas for the markers built from logs and test output.
+_MARKER_SCHEMAS = [
+    {
+        "name": "Test",
+        "tooltipLabel": "{marker.data.name}",
+        "tableLabel": "{marker.data.status} — {marker.data.test}",
+        "chartLabel": "{marker.data.name}",
+        "display": ["marker-chart", "marker-table"],
+        "colorField": "color",
+        "data": [
+            {
+                "key": "test",
+                "label": "Test Name",
+                "format": "string",
+            },
+            {
+                "key": "name",
+                "label": "Short Name",
+                "format": "string",
+                "hidden": True,
+            },
+            {
+                "key": "subsuite",
+                "label": "Subsuite",
+                "format": "string",
+            },
+            {
+                "key": "status",
+                "label": "Status",
+                "format": "string",
+            },
+            {
+                "key": "expected",
+                "label": "Expected",
+                "format": "string",
+            },
+            {
+                "key": "unexpected_subtests",
+                "label": "Unexpected subtests",
+                "format": "integer",
+            },
+            {
+                "key": "message",
+                "label": "Message",
+                "format": "string",
+            },
+            {
+                "key": "timeoutfactor",
+                "label": "Timeout Factor",
+                "format": "integer",
+            },
+            {
+                "key": "color",
+                "hidden": True,
+            },
+        ],
+    },
+    {
+        "name": "TestStatus",
+        "tableLabel": "{marker.data.message} — {marker.data.test} {marker.data.subtest}",
+        "display": ["marker-chart", "marker-table"],
+        "colorField": "color",
+        "data": [
+            {
+                "key": "message",
+                "label": "Message",
+                "format": "string",
+            },
+            {
+                "key": "test",
+                "label": "Test Name",
+                "format": "string",
+            },
+            {
+                "key": "subtest",
+                "label": "Subtest",
+                "format": "string",
+            },
+            {
+                "key": "color",
+                "hidden": True,
+            },
+        ],
+    },
+    {
+        "name": "Crash",
+        "tableLabel": "{marker.data.signature} — {marker.data.test}",
+        "display": ["marker-chart", "marker-table"],
+        "colorField": "color",
+        "data": [
+            {
+                "key": "signature",
+                "label": "Signature",
+                "format": "string",
+            },
+            {
+                "key": "reason",
+                "label": "Reason",
+                "format": "string",
+            },
+            {
+                "key": "test",
+                "label": "Test Name",
+                "format": "string",
+            },
+            {
+                "key": "minidump",
+                "label": "Minidump",
+                "format": "string",
+            },
+            {
+                "key": "color",
+                "hidden": True,
+            },
+        ],
+    },
+    {
+        "name": "LSanLeak",
+        "tooltipLabel": "{marker.data.kind} leak of {marker.data.bytes} in {marker.data.objects} object(s)",
+        "tableLabel": "{marker.data.kind} leak of {marker.data.bytes} in {marker.data.objects} object(s) — {marker.data.scope}",
+        "display": ["marker-chart", "marker-table"],
+        "colorField": "color",
+        "data": [
+            {
+                "key": "kind",
+                "label": "Kind",
+                "format": "string",
+            },
+            {
+                "key": "bytes",
+                "label": "Bytes",
+                "format": "bytes",
+            },
+            {
+                "key": "objects",
+                "label": "Objects",
+                "format": "integer",
+            },
+            {
+                "key": "scope",
+                "label": "Scope",
+                "format": "string",
+            },
+            {
+                "key": "allowed_match",
+                "label": "Allowed Match",
+                "format": "string",
+            },
+            {
+                "key": "color",
+                "hidden": True,
+            },
+        ],
+    },
+    {
+        "name": "LSanSummary",
+        "tooltipLabel": "{marker.data.bytes} in {marker.data.allocations} allocation(s)",
+        "tableLabel": "{marker.data.bytes} in {marker.data.allocations} allocation(s)",
+        "display": ["marker-chart", "marker-table"],
+        "colorField": "color",
+        "data": [
+            {
+                "key": "bytes",
+                "label": "Bytes",
+                "format": "bytes",
+            },
+            {
+                "key": "allocations",
+                "label": "Allocations",
+                "format": "integer",
+            },
+            {
+                "key": "allowed",
+                "label": "Allowed",
+                "format": "string",
+            },
+            {
+                "key": "color",
+                "hidden": True,
+            },
+        ],
+    },
+    {
+        "name": "TSanError",
+        "tooltipLabel": "{marker.data.kind} (report {marker.data.report_index}) — {marker.data.label}",
+        "tableLabel": "{marker.data.kind} (report {marker.data.report_index}) — {marker.data.label}",
+        "display": ["marker-chart", "marker-table"],
+        "colorField": "color",
+        "data": [
+            {
+                "key": "kind",
+                "label": "Kind",
+                "format": "string",
+            },
+            {
+                "key": "report_index",
+                "label": "Report",
+                "format": "integer",
+            },
+            {
+                "key": "pid",
+                "label": "PID",
+                "format": "integer",
+            },
+            {
+                "key": "scope",
+                "label": "Scope",
+                "format": "string",
+            },
+            {
+                "key": "description",
+                "label": "Description",
+                "format": "string",
+            },
+            {
+                "key": "color",
+                "hidden": True,
+            },
+            # Declared last so it renders directly above the stack.
+            {
+                "key": "label",
+                "label": "Stack",
+                "format": "string",
+            },
+        ],
+    },
+    {
+        "name": "AssertionFailure",
+        "tooltipLabel": "{marker.data.kind}: {marker.data.message}",
+        "tableLabel": "{marker.data.kind}: {marker.data.message} — {marker.data.file}:{marker.data.line}",
+        "chartLabel": "{marker.data.message}",
+        "display": ["marker-chart", "marker-table"],
+        "colorField": "color",
+        "data": [
+            {"key": "kind", "label": "Kind", "format": "string"},
+            {"key": "message", "label": "Message", "format": "string"},
+            {"key": "file", "format": "string", "hidden": True},
+            {"key": "line", "format": "integer", "hidden": True},
+            {"key": "fatal", "label": "Fatal", "format": "string"},
+            {"key": "process", "label": "Process", "format": "string"},
+            {"key": "pid", "label": "Process ID", "format": "integer"},
+            {"key": "thread", "label": "Thread", "format": "string"},
+            {"key": "test", "label": "Test", "format": "string"},
+            {"key": "color", "hidden": True},
+        ],
+    },
+    {
+        "name": "UBSanError",
+        "tooltipLabel": "{marker.data.message}",
+        "tableLabel": "{marker.data.message} — {marker.data.file}:{marker.data.line}",
+        "chartLabel": "{marker.data.message}",
+        "display": ["marker-chart", "marker-table"],
+        "colorField": "color",
+        "data": [
+            {"key": "kind", "label": "Kind", "format": "string"},
+            {"key": "message", "label": "Message", "format": "string"},
+            {"key": "file", "format": "string", "hidden": True},
+            {"key": "line", "format": "integer", "hidden": True},
+            {"key": "column", "format": "integer", "hidden": True},
+            {"key": "scope", "label": "Scope", "format": "string"},
+            {"key": "test", "label": "Test", "format": "string"},
+            {"key": "color", "hidden": True},
+        ],
+    },
+    {
+        "name": "ASanError",
+        "tooltipLabel": "{marker.data.message}",
+        "tableLabel": "{marker.data.kind} — {marker.data.location}",
+        "chartLabel": "{marker.data.kind}",
+        "display": ["marker-chart", "marker-table"],
+        "colorField": "color",
+        "data": [
+            {"key": "kind", "label": "Kind", "format": "string"},
+            {"key": "message", "label": "Message", "format": "string"},
+            {"key": "file", "format": "string", "hidden": True},
+            {"key": "line", "format": "integer", "hidden": True},
+            {"key": "column", "format": "integer", "hidden": True},
+            {"key": "location", "format": "string", "hidden": True},
+            {"key": "function", "label": "Function", "format": "string"},
+            {"key": "pid", "label": "Process ID", "format": "integer"},
+            {"key": "scope", "label": "Scope", "format": "string"},
+            {"key": "test", "label": "Test", "format": "string"},
+            {"key": "color", "hidden": True},
+        ],
+    },
+    {
+        "name": "MozLeakObject",
+        "tooltipLabel": "{marker.data.bytes_leaked} in {marker.data.count} {marker.data.name}",
+        "tableLabel": "{marker.data.process} leaked {marker.data.bytes_leaked} in {marker.data.count} {marker.data.name}",
+        "display": ["marker-chart", "marker-table"],
+        "colorField": "color",
+        "data": [
+            {
+                "key": "name",
+                "label": "Object",
+                "format": "string",
+            },
+            {
+                "key": "count",
+                "label": "Instances Leaked",
+                "format": "integer",
+            },
+            {
+                "key": "bytes_leaked",
+                "label": "Bytes Leaked",
+                "format": "bytes",
+            },
+            {
+                "key": "bytes_per_inst",
+                "label": "Bytes Per Instance",
+                "format": "bytes",
+            },
+            {
+                "key": "total_instances",
+                "label": "Total Instances",
+                "format": "integer",
+            },
+            {
+                "key": "allowed",
+                "label": "Allowed",
+                "format": "string",
+            },
+            {
+                "key": "process",
+                "label": "Process",
+                "format": "string",
+            },
+            {
+                "key": "scope",
+                "label": "Scope",
+                "format": "string",
+            },
+            {
+                "key": "color",
+                "hidden": True,
+            },
+        ],
+    },
+    {
+        "name": "MozLeakTotal",
+        "tableLabel": "{marker.data.process} — {marker.data.bytes} leaked",
+        "display": ["marker-chart", "marker-table"],
+        "colorField": "color",
+        "data": [
+            {
+                "key": "process",
+                "label": "Process",
+                "format": "string",
+            },
+            {
+                "key": "bytes",
+                "label": "Bytes",
+                "format": "bytes",
+            },
+            {
+                "key": "scope",
+                "label": "Scope",
+                "format": "string",
+            },
+            {
+                "key": "induced_crash",
+                "label": "Induced Crash",
+                "format": "string",
+            },
+            {
+                "key": "ignore_missing",
+                "label": "Ignore Missing",
+                "format": "string",
+            },
+            {
+                "key": "objects",
+                "label": "Leaked Objects",
+                "format": "list",
+            },
+            {
+                "key": "color",
+                "hidden": True,
+            },
+        ],
+    },
+    {
+        "name": "DocShell",
+        "tooltipLabel": "{marker.data.url}",
+        "tableLabel": "DOCSHELL {marker.data.pointer} [{marker.data.process} {marker.data.pid}: {marker.data.thread}] id = {marker.data.id} {marker.data.url}",
+        "chartLabel": "{marker.data.url}",
+        "display": ["marker-chart", "marker-table"],
+        "data": [
+            {"key": "url", "label": "URL", "format": "url"},
+            {"key": "id", "label": "ID", "format": "integer"},
+            {"key": "pointer", "label": "Address", "format": "string"},
+            {"key": "process", "label": "Process", "format": "string"},
+            {"key": "pid", "label": "Process ID", "format": "integer"},
+            {"key": "thread", "label": "Thread", "format": "string"},
+            {"key": "test", "label": "Test", "format": "string"},
+        ],
+    },
+    {
+        "name": "DOMWindow",
+        "tooltipLabel": "{marker.data.url}",
+        "tableLabel": "DOMWINDOW {marker.data.pointer} [{marker.data.process} {marker.data.pid}: {marker.data.thread}] serial = {marker.data.serial} outer = {marker.data.outer} {marker.data.url}",
+        "chartLabel": "{marker.data.url}",
+        "display": ["marker-chart", "marker-table"],
+        "data": [
+            {"key": "url", "label": "URL", "format": "url"},
+            {"key": "serial", "label": "Serial", "format": "integer"},
+            {"key": "pointer", "label": "Address", "format": "string"},
+            {"key": "outer", "label": "Outer", "format": "string"},
+            {"key": "process", "label": "Process", "format": "string"},
+            {"key": "pid", "label": "Process ID", "format": "integer"},
+            {"key": "thread", "label": "Thread", "format": "string"},
+            {"key": "test", "label": "Test", "format": "string"},
+        ],
+    },
+    {
+        "name": "jsError",
+        "tooltipLabel": "{marker.data.message}",
+        "tableLabel": "{marker.data.message} — {marker.data.file}:{marker.data.line}",
+        "chartLabel": "{marker.data.message}",
+        "display": ["marker-chart", "marker-table"],
+        "data": [
+            {"key": "message", "label": "Message", "format": "string"},
+            {"key": "file", "format": "string", "hidden": True},
+            {"key": "line", "format": "integer", "hidden": True},
+            {"key": "test", "label": "Test", "format": "string"},
+        ],
+    },
+    {
+        "name": "cppDebug",
+        "tooltipLabel": "{marker.data.message}",
+        "tableLabel": "{marker.data.message} — {marker.data.file}:{marker.data.line}",
+        "chartLabel": "{marker.data.message}",
+        "display": ["marker-chart", "marker-table"],
+        "colorField": "color",
+        "data": [
+            {"key": "message", "label": "Message", "format": "string"},
+            {"key": "file", "format": "string", "hidden": True},
+            {"key": "line", "format": "integer", "hidden": True},
+            {"key": "process", "label": "Process", "format": "string"},
+            {"key": "pid", "label": "Process ID", "format": "integer"},
+            {"key": "thread", "label": "Thread", "format": "string"},
+            {"key": "test", "label": "Test", "format": "string"},
+            {"key": "color", "hidden": True},
+        ],
+    },
+    {
+        "name": "console",
+        "tooltipLabel": "{marker.data.message}",
+        "tableLabel": "{marker.data.message}",
+        "chartLabel": "{marker.data.message}",
+        "display": ["marker-chart", "marker-table"],
+        "data": [
+            {"key": "message", "label": "Message", "format": "string"},
+            {"key": "test", "label": "Test", "format": "string"},
+        ],
+    },
+]
+
+
 def _parse_hg_source_url(source_url):
     """Return (prefix, rev) for an hg.mozilla.org sourceURL, or (None, None).
 
@@ -181,6 +639,8 @@ def _test_id_str(test):
 class SystemResourceMonitor(BaseResourceMonitor):
     """A BaseResourceMonitor that also turns structured log actions and test
     output into markers."""
+
+    marker_schemas = {schema["name"]: schema for schema in _MARKER_SCHEMAS}
 
     def __init__(self, poll_interval=1.0, metadata=None, forward_to=None):
         super().__init__(poll_interval, metadata, forward_to)

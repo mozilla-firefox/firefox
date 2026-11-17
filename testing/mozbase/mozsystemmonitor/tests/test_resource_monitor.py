@@ -2,6 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import json
+import os
+import tempfile
 import time
 import unittest
 
@@ -13,7 +16,7 @@ try:
 except ImportError:
     psutil = None
 
-from mozsystemmonitor.basemonitor import FORWARD_ENV
+from mozsystemmonitor.basemonitor import FORWARD_ENV, BaseResourceMonitor
 from mozsystemmonitor.resourcemonitor import (
     SystemResourceMonitor,
     _parse_hg_source_url,
@@ -1809,6 +1812,33 @@ class TestLsanLeakFrameRewrite(unittest.TestCase):
         self.assertEqual(len(leaks), 1)
         _, _, data = leaks[0]
         self.assertNotIn("stack", data)
+
+
+@unittest.skipIf(psutil is None, "Resource monitor requires psutil.")
+class TestForwarding(unittest.TestCase):
+    def setUp(self):
+        fd, self.forward_path = tempfile.mkstemp()
+        os.close(fd)
+        self.addCleanup(os.unlink, self.forward_path)
+
+    def test_forwarded_marker_schemas(self):
+        parent = BaseResourceMonitor(poll_interval=0.1)
+        parent.start()
+        parent.accept_forwarded(self.forward_path)
+
+        child = SystemResourceMonitor(forward_to=self.forward_path)
+        child.start()
+        for signature in ("first", "second"):
+            child.crash({"signature": signature, "time": time.time() * 1000})
+        child.stop()
+        parent.stop()
+
+        with open(self.forward_path) as fh:
+            kinds = [json.loads(line)[0] for line in fh]
+        self.assertEqual(kinds, ["schema", "event", "event"])
+        schemas = [s["name"] for s in parent.as_profile()["meta"]["markerSchema"]]
+        self.assertEqual(schemas.count("Crash"), 1)
+        self.assertNotIn("Test", schemas)
 
 
 if __name__ == "__main__":
