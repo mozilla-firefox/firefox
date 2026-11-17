@@ -220,8 +220,10 @@ class RaplDomain final : public BaseProfilerCount {
 };
 
 class RAPL {
-  bool mIsGpuSupported;  // Is the GPU domain supported by the processor?
-  bool mIsRamSupported;  // Is the RAM domain supported by the processor?
+  // Is the GPU domain supported by the processor?
+  bool mIsGpuSupported = false;
+  // Is the RAM domain supported by the processor?
+  bool mIsRamSupported = false;
 
   // The DRAM domain on Haswell servers has a fixed energy unit (1/65536 J ==
   // 15.3 microJoules) which is different to the power unit MSR. (See the
@@ -234,7 +236,7 @@ class RAPL {
   static constexpr double kQuirkyRamEnergyStatusUnits = 16;
 
   // The struct passed to diagCall64().
-  pkg_energy_statistics_t* mPkes;
+  pkg_energy_statistics_t* mPkes = nullptr;
 
   RaplDomain* mPkg = nullptr;
   RaplDomain* mCores = nullptr;
