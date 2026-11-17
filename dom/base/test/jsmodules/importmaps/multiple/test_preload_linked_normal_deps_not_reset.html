@@ -5,34 +5,6 @@
 <script src="preload_linked_helpers.js"></script>
 <body>
 <script>
-  const requestWaiters = new Map();
-
-  // When hold is true, the fetch will be suspended, this is used to simulate
-  // the ongoing fetch.
-  function waitForRequest(name, { hold = false } = {}) {
-    return new Promise(resolve => requestWaiters.set(name, { resolve, hold }));
-  }
-
-  const observer = {
-    observe(subject) {
-      const channel = subject.QueryInterface(SpecialPowers.Ci.nsIChannel);
-      const name = channel.URI.spec.split("?")[0].split("/").pop();
-      const waiter = requestWaiters.get(name);
-      if (!waiter) {
-        return;
-      }
-      requestWaiters.delete(name);
-      if (waiter.hold) {
-        channel.suspend();
-      }
-      waiter.resolve(channel);
-    },
-  };
-  SpecialPowers.addObserver(observer, "http-on-opening-request");
-  SimpleTest.registerCleanupFunction(() => {
-    SpecialPowers.removeObserver(observer, "http-on-opening-request");
-  });
-
   // preload_root.mjs and normal_root.mjs both import chain_root.mjs. An import
   // map is registered while the module graph of normal_root.mjs is still
   // loading; the chain modules it reuses from the preload must not be reset.

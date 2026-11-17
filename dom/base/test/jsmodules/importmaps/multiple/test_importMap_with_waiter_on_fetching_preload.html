@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+<title>Test registering an import map while a normal load waits on a preload fetch</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<script src="preload_linked_helpers.js"></script>
+<body>
+<script>
+  add_task(async function testDynamicImportWaitingOnPreload() {
+    SpecialPowers.ChromeUtils.clearResourceCache({ types: ["script"] });
+
+    const preloadRequested =
+      waitForRequest("preload_linked_chain_grandchild.mjs", { hold: true });
+    addPreload("./preload_linked_chain_grandchild.mjs");
+    const preloadChannel = await preloadRequested;
+
+    const pending = import("./preload_linked_chain_grandchild.mjs");
+    addImportMap({ "fetching-waiter-dynamic-unused": "./preload_linked_bare.mjs" });
+    preloadChannel.resume();
+
+    const ns = await pending;
+    is(ns.default, "chain-grandchild",
+       "Dynamic import waiting on a cancelled preload fetch should load");
+  });
+</script>
+</body>

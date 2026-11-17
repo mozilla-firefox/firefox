@@ -19,6 +19,8 @@ support-files = [
 
 ["test_bug_2058272.html"]
 
+["test_importMap_with_waiter_on_fetching_preload.html"]
+
 ["test_preload_linked_normal_deps_not_reset.html"]
 
 ["test_preload_linked_reset_clears_error.html"]
