@@ -328,7 +328,7 @@ migration-wizard-progress-success-passwords =
 # browser has completed.
 #
 # Variables:
-#  $maxAgeInDays (Number): the maximum number of days of history that might be imported.
+#  $maxAgeInDays (Number): the number of days of history imported.
 migration-wizard-progress-success-history =
     { $maxAgeInDays ->
         [one] From the last day
