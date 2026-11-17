@@ -61,30 +61,27 @@ XPCOMUtils.defineLazyPreferenceGetter(
  * // 4. Trigger loading of Sync.
  * service.ensureLoaded();
  */
-export function WeaveService() {
-  this.wrappedJSObject = this;
-  this.ready = false;
-}
+class _WeaveService {
+  wrappedJSObject = this;
+  ready = false;
+  classID = Components.ID("{74b89fb0-f200-4ae8-a3ec-dd164117f6de}");
 
-WeaveService.prototype = {
-  classID: Components.ID("{74b89fb0-f200-4ae8-a3ec-dd164117f6de}"),
-
-  QueryInterface: ChromeUtils.generateQI([
+  QueryInterface = ChromeUtils.generateQI([
     "nsIObserver",
     "nsISupportsWeakReference",
-  ]),
+  ]);
 
   get Weave() {
     const { Weave } = ChromeUtils.importESModule(
       "resource://services-sync/main.sys.mjs"
     );
     return Weave;
-  },
+  }
 
   ensureLoaded() {
     // Side-effect of accessing the service is that it is instantiated.
     this.Weave.Service;
-  },
+  }
 
   whenLoaded() {
     if (this.ready) {
@@ -98,7 +95,7 @@ WeaveService.prototype = {
     });
     this.ensureLoaded();
     return onReadyPromise;
-  },
+  }
 
   init() {
     // Force Weave service to load if it hasn't triggered from overlays
@@ -128,7 +125,7 @@ WeaveService.prototype = {
       10000,
       Ci.nsITimer.TYPE_ONE_SHOT
     );
-  },
+  }
 
   /**
    * Whether Sync appears to be enabled.
@@ -143,5 +140,7 @@ WeaveService.prototype = {
       !!lazy.syncUsername &&
       Services.prefs.getBoolPref("identity.fxaccounts.enabled")
     );
-  },
-};
+  }
+}
+
+export const Weave = new _WeaveService();
