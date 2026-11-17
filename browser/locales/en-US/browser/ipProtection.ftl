@@ -251,7 +251,11 @@ ipprotection-locations-subview-promo-button = Get { -mozilla-vpn-brand-name }
 #   $count (number) - The number of additional VPN locations available after setting Firefox as the default browser
 ipprotection-locations-subview-set-default-promo =
   .heading = More locations. More protection.
-  .message = Make { -brand-short-name } your default and get { $count } more locations. Your links open here, where VPN is built in.
+  .message =
+    { $count ->
+        [one] Make { -brand-short-name } your default and get { $count } more location. Your links open here, where VPN is built in.
+       *[other] Make { -brand-short-name } your default and get { $count } more locations. Your links open here, where VPN is built in.
+    }
 ipprotection-locations-subview-set-default-promo-button = Open links with { -brand-short-name }
 
 ## VPN paused state
