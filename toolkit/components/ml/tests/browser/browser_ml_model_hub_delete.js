@@ -286,13 +286,11 @@ add_task(async function test_delete_non_matching_revisions() {
 });
 
 /**
- * Deleting a model removes its files but not the directories that held them.
- *
- * TODO: #deleteFile calls OPFS.remove on the file path only, so the
- * model/revision directories are left behind. They are empty, but they
- * accumulate for every model and revision ever downloaded.
+ * Deleting a model removes the directories that held its files, which would
+ * otherwise accumulate for every model and revision ever downloaded. WEIGHTS
+ * sits in a subdirectory, so this covers pruning more than one level.
  */
-add_task(async function test_delete_leaves_empty_directories_behind() {
+add_task(async function test_delete_prunes_empty_directories() {
   const hub = await withModelHub();
   hub.serve({ file: WEIGHTS });
   await hub.download({ file: WEIGHTS });
@@ -308,8 +306,41 @@ add_task(async function test_delete_leaves_empty_directories_behind() {
     "The file itself is gone."
   );
   Assert.ok(
-    await hub.opfsHasDirectory({}),
-    "The directory that held it is still there, empty."
+    !(await hub.opfsHasDirectory({})),
+    "The directory that held it is gone too."
+  );
+
+  await hub.cleanup();
+});
+
+/**
+ * Pruning stops at the first directory that still holds something, so deleting
+ * one revision does not take the directories a sibling revision needs.
+ */
+add_task(async function test_delete_keeps_directories_a_sibling_needs() {
+  const hub = await withModelHub();
+  hub.serve({ file: WEIGHTS, revision: "v1" });
+  hub.serve({ file: WEIGHTS, revision: "v2" });
+  await hub.download({ file: WEIGHTS, revision: "v1" });
+  await hub.download({ file: WEIGHTS, revision: "v2" });
+
+  await hub.modelHub.deleteModels({
+    model: hub.qualified,
+    revision: "v1",
+    taskName: null,
+  });
+
+  Assert.ok(
+    !(await hub.opfsHasDirectory({ revision: "v1" })),
+    "The deleted revision's directory is pruned."
+  );
+  Assert.ok(
+    await hub.opfsHasFile({ file: WEIGHTS, revision: "v2" }),
+    "The sibling revision's file is untouched."
+  );
+  Assert.ok(
+    await hub.opfsHasDirectory({ revision: "v2" }),
+    "The sibling revision's directory survives, so pruning stopped in time."
   );
 
   await hub.cleanup();
