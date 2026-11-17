@@ -8292,16 +8292,17 @@ static nsIFrame* FindPreviousNonWhitespaceSibling(nsIFrame* aFrame) {
   return f;
 }
 
-// Returns whether aFrame is inside a table that is fragmented across pages.
-// Such tables can't deal with removals (see nsTableCellMap::Synchronize and
+// Returns the closest table fragmented across pages to aFrame, including
+// itself. Such tables can't deal with removals or insertions properly in
+// paginated contexts (see nsTableCellMap::Synchronize and
 // CreateContinuingTableFrame).
-static bool IsInFragmentedTable(nsIFrame* aFrame) {
-  for (nsIFrame* f = aFrame->GetParent(); f; f = f->GetParent()) {
+static nsIFrame* GetNearestFragmentedTable(nsIFrame* aFrame) {
+  for (nsIFrame* f = aFrame; f; f = f->GetParent()) {
     if (f->IsTableFrame() && (f->GetPrevInFlow() || f->GetNextInFlow())) {
-      return true;
+      return f;
     }
   }
-  return false;
+  return nullptr;
 }
 
 // Fragmented tables and replicated fixed-pos frames on subsequent pages
@@ -8319,7 +8320,7 @@ bool nsCSSFrameConstructor::ShouldRebuildFrameTreeForReplicatedFrames(
   nsIFrame* inFlowFrame = aFrame->HasAnyStateBits(NS_FRAME_OUT_OF_FLOW)
                               ? aFrame->GetPlaceholderFrame()
                               : aFrame;
-  return IsInFragmentedTable(inFlowFrame) ||
+  return GetNearestFragmentedTable(inFlowFrame) ||
          aFrame->IsInReplicatedFixedPosTree() ||
          aFrame->ContainsReplicatedFixedPosPlaceholders();
 }
@@ -11410,6 +11411,14 @@ bool nsCSSFrameConstructor::WipeInsertionParent(nsContainerFrame* aFrame) {
                   "Layout");
 
   const LayoutFrameType frameType = aFrame->Type();
+
+  if (aFrame->PresContext()->IsPaginated()) {
+    if (auto* table = GetNearestFragmentedTable(aFrame)) {
+      TRACE("Paginated fragmented table");
+      RecreateFramesForContent(table->GetContent(), InsertionKind::Async);
+      return true;
+    }
+  }
 
   // FIXME(emilio): This looks terribly inefficient if you insert elements deep
   // in a MathML subtree.
