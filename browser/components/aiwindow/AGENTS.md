@@ -25,7 +25,7 @@ This component grew quickly, and much of the existing code across this directory
 - Reviewers flag generated-code habits: comments that narrate the code, try/catch or `typeof` checks that can't fail, optional chaining on values that can't be null or undefined, needless default arguments, nested ternaries, layers of indirection and vague `normalize` helpers. Prefer existing shared helpers and fix them rather than working around them.
 
 ## UI components
-- Base new components on `MozLitElement`. Use a sibling CSS file with design tokens (the stylelint `use-design-tokens` rule applies everywhere except `ai-window.css`), `moz-*` reusable components, `data-l10n-id`, `static queries` and bubbling, composed `component:verb` events. Add a story. Good example: `ui/components/ai-clarifying-question/`. Don't use `ai-window.mjs` as a template.
+- Base new components on `MozLitElement`. Use a sibling CSS file with design tokens, `moz-*` reusable components, `data-l10n-id`, `static queries` and bubbling, composed `component:verb` events. Add a story. Good example: `ui/components/ai-clarifying-question/`. Don't use `ai-window.mjs` as a template.
 - Use logical properties and CSS nesting. Pair text and background colours in the same rule so high-contrast mode works.
 - Accessibility: support full keyboard navigation, show visible `:focus-visible` styles, use `title` alone rather than `title` plus `aria-label`, and give the safe button initial focus in destructive dialogs.
 - Strings: never hardcode English. Add translator comments for ambiguous words.
