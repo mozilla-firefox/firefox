@@ -2408,6 +2408,23 @@ class Settings(
         )
 
     /**
+     * Feature flag that indicates if the save credit card prompt can save the security code. The same value is passed
+     * to the engine so that Gecko captures the security code only when this is true.
+     */
+    var isCreditCardSecurityCodeEnabled by
+        booleanPreference(
+            key = appContext.getPreferenceKey(R.string.pref_key_credit_cards_enable_security_code),
+            default = { FxNimbus.features.creditCardSecurityCode.value().enabled },
+        )
+
+    /** Stores the user choice from the "Save security codes" toggle in the save credit card prompt. */
+    var shouldSaveCreditCardSecurityCode by
+        booleanPreference(
+            key = appContext.getPreferenceKey(R.string.pref_key_credit_cards_save_security_code),
+            default = true,
+        )
+
+    /**
      * Stores the user choice from the "Autofill Addresses" settings for whether save and autofill addresses should be
      * enabled or not. If set to `true` when the user focuses on address fields in a webpage an Android prompt is shown,
      * allowing the selection of an address details to be automatically filled in the webpage fields.

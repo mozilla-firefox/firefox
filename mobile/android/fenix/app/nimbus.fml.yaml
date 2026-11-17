@@ -1086,6 +1086,18 @@ features:
         type: Option<Int>
         default: 4
 
+  credit-card-security-code:
+    description: >
+      Feature to save and autofill credit card security codes (CVV). Fenix passes the value to Gecko through the
+      engine settings, so Gecko captures security codes exactly when Fenix shows them.
+    variables:
+      enabled:
+        description: >
+          If true, Gecko captures the security code from web forms, and the save credit card prompt shows the security
+          code and lets the user save it.
+        type: Boolean
+        default: false
+
   email-masks:
     description: Feature to enable Email Mask for users on Firefox on Android.
     variables:

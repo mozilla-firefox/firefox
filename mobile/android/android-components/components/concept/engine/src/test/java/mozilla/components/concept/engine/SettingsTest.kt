@@ -82,6 +82,8 @@ class SettingsTest {
             { settings.forceUserScalableContent = true },
             { settings.loginAutofillEnabled },
             { settings.loginAutofillEnabled = false },
+            { settings.creditCardSecurityCodeEnabled },
+            { settings.creditCardSecurityCodeEnabled = false },
             { settings.clearColor },
             { settings.clearColor = Color.BLUE },
             { settings.enterpriseRootsEnabled },
@@ -127,6 +129,7 @@ class SettingsTest {
         assertNull(settings.fontSizeFactor)
         assertFalse(settings.forceUserScalableContent)
         assertFalse(settings.loginAutofillEnabled)
+        assertFalse(settings.creditCardSecurityCodeEnabled)
         assertNull(settings.clearColor)
         assertFalse(settings.enterpriseRootsEnabled)
         assertFalse(settings.queryParameterStripping)
@@ -169,6 +172,7 @@ class SettingsTest {
                 fontSizeFactor = 2.0F,
                 forceUserScalableContent = true,
                 loginAutofillEnabled = true,
+                creditCardSecurityCodeEnabled = true,
                 clearColor = Color.BLUE,
                 enterpriseRootsEnabled = true,
                 queryParameterStripping = true,
@@ -206,6 +210,7 @@ class SettingsTest {
         assertFalse(defaultSettings.fontInflationEnabled!!)
         assertEquals(2.0F, defaultSettings.fontSizeFactor)
         assertTrue(defaultSettings.forceUserScalableContent)
+        assertTrue(defaultSettings.creditCardSecurityCodeEnabled)
         assertEquals(Color.BLUE, defaultSettings.clearColor)
         assertTrue(defaultSettings.enterpriseRootsEnabled)
         assertTrue(defaultSettings.queryParameterStripping)

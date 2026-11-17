@@ -15,8 +15,16 @@ exclude: true
 
 ## v162
 - [`setKeepActive`][162.1] now returns whether a `GeckoView` skipped deactivating the session while it was kept active. ([bug 2075323]({{bugzilla}}2075323))
+- Added experimental [`GeckoRuntimeSettings.Builder.creditCardSecurityCodeEnabled`][162.2],
+    [`GeckoRuntimeSettings.setCreditCardSecurityCodeEnabled`][162.3] and
+    [`GeckoRuntimeSettings.getCreditCardSecurityCodeEnabled`][162.4] to control whether credit card
+    security codes (CVV) are captured from web forms.
+    ([bug 2089899]({{bugzilla}}2089899))
 
 [162.1]: {{javadoc_uri}}/PictureInPictureController.SessionPictureInPicture.html#setKeepActive(boolean)
+[162.2]: {{javadoc_uri}}/GeckoRuntimeSettings.Builder.html#creditCardSecurityCodeEnabled(boolean)
+[162.3]: {{javadoc_uri}}/GeckoRuntimeSettings.html#setCreditCardSecurityCodeEnabled(boolean)
+[162.4]: {{javadoc_uri}}/GeckoRuntimeSettings.html#getCreditCardSecurityCodeEnabled()
 
 ## v161
 - Added [`Autocomplete.CreditCard.securityCode`][161.1] and
@@ -2129,4 +2137,4 @@ to allow adding gecko profiler markers.
 [65.24]: {{javadoc_uri}}/CrashReporter.html#sendCrashReport(android.content.Context,android.os.Bundle,java.lang.String)
 [65.25]: {{javadoc_uri}}/GeckoResult.html
 
-[api-version]: ccde81d0e432477362400f6aa77d50cfbb310242
+[api-version]: 84097c0827787aa49f849e05a64cc73edcb6b760

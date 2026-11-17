@@ -184,6 +184,18 @@ class SecretSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFra
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
 
+        requirePreference<SwitchPreferenceCompat>(R.string.pref_key_credit_cards_enable_security_code).apply {
+            isVisible = Config.channel.isNightlyOrDebug
+            isChecked = settings.isCreditCardSecurityCodeEnabled
+            onPreferenceChangeListener =
+                object : SharedPreferenceUpdater() {
+                    override fun onPreferenceChange(preference: Preference, newValue: Any?): Boolean {
+                        context.components.core.engine.settings.creditCardSecurityCodeEnabled = newValue as Boolean
+                        return super.onPreferenceChange(preference, newValue)
+                    }
+                }
+        }
+
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_hide_collections).apply {
             isChecked = settings.hideCollectionsUi
             onPreferenceChangeListener = SharedPreferenceUpdater()

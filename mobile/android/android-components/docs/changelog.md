@@ -8,6 +8,7 @@ permalink: /changelog/
 * **concept-engine**
   * Added an optional `title` to `HitResult.IMAGE_SRC`.
   * 🆕 Added `EngineSession.requestPictureInPicture` and `EngineSession.exitPictureInPicture` to ask the engine for a picture-in-picture window for the video a session is playing, and to tell it the window has been closed so it can release the state it holds. [Bug 2075323](https://bugzilla.mozilla.org/show_bug.cgi?id=2075323)
+  * 🆕 Added `Settings.creditCardSecurityCodeEnabled` to control whether credit card security codes (CVV) are captured from web forms. [Bug 2089899](https://bugzilla.mozilla.org/show_bug.cgi?id=2089899)
 * **support-utils**
   * 🆕 Added `String.validateCreditCardNumber()`, which checks that a credit card number has only digits, matches a known card network and passes the Luhn check. It moved here from Fenix. [Bug 2090313](https://bugzilla.mozilla.org/show_bug.cgi?id=2090313)
   * 🆕 Added `SwitchTabIntent`, holding the action and extra of the intent asking the app to bring the browser back on a tab. [Bug 2090245](https://bugzilla.mozilla.org/show_bug.cgi?id=2090245)

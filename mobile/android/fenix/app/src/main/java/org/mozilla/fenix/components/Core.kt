@@ -183,6 +183,7 @@ class Core(
                 suspendMediaWhenInactive = false,
                 forceUserScalableContent = context.components.settings.forceEnableZoom,
                 loginAutofillEnabled = context.components.settings.shouldAutofillLogins,
+                creditCardSecurityCodeEnabled = context.components.settings.isCreditCardSecurityCodeEnabled,
                 enterpriseRootsEnabled = context.components.settings.allowThirdPartyRootCerts,
                 clearColor =
                     ContextCompat.getColor(

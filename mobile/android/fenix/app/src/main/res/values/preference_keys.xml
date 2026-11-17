@@ -327,6 +327,10 @@
     <string name="pref_key_credit_cards" translatable="false">pref_key_credit_cards</string>
     <!-- Key for the "Save and autofill cards" preference in the "Autofill" fragment -->
     <string name="pref_key_credit_cards_save_and_autofill_cards" translatable="false">pref_key_credit_cards_save_and_autofill_cards</string>
+    <!-- Key for the feature flag that controls whether the save credit card prompt can save the security code -->
+    <string name="pref_key_credit_cards_enable_security_code" translatable="false">pref_key_credit_cards_enable_security_code</string>
+    <!-- Key for the user preference from the "Save security codes" toggle in the save credit card prompt -->
+    <string name="pref_key_credit_cards_save_security_code" translatable="false">pref_key_credit_cards_save_security_code</string>
     <!-- Key for the "Sync cards across devices" preference in the "Autofill" fragment -->
     <string name="pref_key_credit_cards_sync_cards_across_devices" translatable="false">pref_key_credit_cards_sync_cards_across_devices</string>
     <!-- Key for the "Manage cards" preference in the "Autofill" fragment -->

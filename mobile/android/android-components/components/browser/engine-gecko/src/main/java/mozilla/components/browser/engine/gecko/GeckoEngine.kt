@@ -1653,6 +1653,13 @@ class GeckoEngine(
                         runtime.settings.loginAutofillEnabled = value
                     }
 
+                override var creditCardSecurityCodeEnabled: Boolean
+                    @OptIn(ExperimentalGeckoViewApi::class) get() = runtime.settings.creditCardSecurityCodeEnabled
+                    @OptIn(ExperimentalGeckoViewApi::class)
+                    set(value) {
+                        runtime.settings.creditCardSecurityCodeEnabled = value
+                    }
+
                 @ExperimentalAndroidComponentsApi
                 override var firefoxRelay: Engine.FirefoxRelayMode?
                     @OptIn(ExperimentalGeckoViewApi::class)
@@ -2009,6 +2016,7 @@ class GeckoEngine(
                     this.forceUserScalableContent = it.forceUserScalableContent
                     this.clearColor = it.clearColor
                     this.loginAutofillEnabled = it.loginAutofillEnabled
+                    this.creditCardSecurityCodeEnabled = it.creditCardSecurityCodeEnabled
                     this.firefoxRelay = it.firefoxRelay
                     this.ipProtectionAuthProvider = it.ipProtectionAuthProvider
                     this.enterpriseRootsEnabled = it.enterpriseRootsEnabled

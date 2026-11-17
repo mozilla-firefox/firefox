@@ -1197,6 +1197,15 @@ abstract class BaseBrowserFragment :
                             override val onSelectCreditCard = {
                                 showBiometricPrompt(context)
                             }
+                            override val isSecurityCodeSaveEnabled = {
+                                context.components.settings.isCreditCardSecurityCodeEnabled
+                            }
+                            override val saveSecurityCode = {
+                                context.components.settings.shouldSaveCreditCardSecurityCode
+                            }
+                            override val onSaveSecurityCodeChanged = { enabled: Boolean ->
+                                context.components.settings.shouldSaveCreditCardSecurityCode = enabled
+                            }
                         },
                     addressDelegate =
                         object : AddressDelegate {

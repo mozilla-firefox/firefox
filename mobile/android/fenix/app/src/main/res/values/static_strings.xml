@@ -42,6 +42,9 @@
     <!-- Title for the secret setting that enables the "Check Archived Version" button on error pages. -->
     <string name="preferences_debug_settings_wayback_machine" translatable="false">Show Archived Version Button On Error Pages</string>
 
+    <!-- Title for the secret setting that lets the save credit card prompt save the security code. -->
+    <string name="preferences_debug_settings_credit_card_security_code" translatable="false">Save Credit Card Security Codes</string>
+
     <!-- Label for remote settings server preference -->
     <string name="preferences_debug_settings_remote_settings_server_label" translatable="false">Remote Settings Server (requires restart)</string>
     <!-- Label for Production server option -->
