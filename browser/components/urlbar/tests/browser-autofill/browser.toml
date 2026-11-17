@@ -25,6 +25,13 @@ https_first_disabled = true
 ["browser_firstResult.js"]
 
 ["browser_inputField_contextmenu_dismissal.js"]
+support-files = [
+  "../browser/add_search_engine_0.xml",
+  "../browser/add_search_engine_1.xml",
+  "../browser/add_search_engine_2.xml",
+  "../browser/add_search_engine_3.xml",
+  "../browser/add_search_engine_many.html",
+]
 
 ["browser_inputField_contextmenu_dismissal_telemetry.js"]
 
