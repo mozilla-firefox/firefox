@@ -20,7 +20,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 ChromeUtils.defineLazyGetter(lazy, "console", () =>
   console.createInstance({
     logModule: "AutoTabGrouping",
-    maxLogLevelPref: "browser.smartwindow.autoTabGrouping.loglevel",
+    maxLogLevelPref: "browser.smartwindow.autoTabGrouping.logLevel",
   })
 );
 

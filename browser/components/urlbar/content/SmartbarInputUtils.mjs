@@ -43,7 +43,7 @@ const lazy = XPCOMUtils.declareLazy({
 const logger = () =>
   UrlbarShared.getLogger({
     prefix: "SmartbarMentionsPanel",
-    maxLogLevelPref: "browser.smartwindow.smartbarMentions.loglevel",
+    maxLogLevelPref: "browser.smartwindow.smartbarMentions.logLevel",
   });
 
 // Debounce delay for the mention suggestions query.

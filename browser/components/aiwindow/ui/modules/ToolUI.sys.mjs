@@ -67,6 +67,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
   return console.createInstance({
     logModule: "ToolUI",
+    maxLogLevelPref: "browser.smartwindow.toolUI.logLevel",
   });
 });
 

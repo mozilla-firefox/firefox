@@ -79,7 +79,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 ChromeUtils.defineLazyGetter(lazy, "console", () =>
   console.createInstance({
     logModule: "JourneyManager",
-    maxLogLevelPref: "browser.smartwindow.memoriesLogLevel",
+    maxLogLevelPref: "browser.smartwindow.memories.logLevel",
   })
 );
 

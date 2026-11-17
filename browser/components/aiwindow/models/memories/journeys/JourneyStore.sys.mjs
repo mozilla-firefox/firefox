@@ -11,7 +11,7 @@ const lazy = {};
 ChromeUtils.defineLazyGetter(lazy, "console", () =>
   console.createInstance({
     logModule: "JourneyStore",
-    maxLogLevelPref: "browser.smartwindow.memoriesLogLevel",
+    maxLogLevelPref: "browser.smartwindow.memories.logLevel",
   })
 );
 

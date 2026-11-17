@@ -24,7 +24,7 @@ const lazy = XPCOMUtils.declareLazy({
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
   return console.createInstance({
     logModule: "LLMTelemetry",
-    maxLogLevelPref: "browser.smartwindow.telemetryLogLevel",
+    maxLogLevelPref: "browser.smartwindow.telemetry.logLevel",
   });
 });
 

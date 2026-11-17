@@ -9,7 +9,10 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 const lazy = {};
 
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
-  return console.createInstance({ logModule: "SmartFormFillDocument" });
+  return console.createInstance({
+    logModule: "SmartFormFillDocument",
+    maxLogLevelPref: "browser.smartwindow.smartformfill.logLevel",
+  });
 });
 
 ChromeUtils.defineESModuleGetters(lazy, {
