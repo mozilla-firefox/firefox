@@ -1341,10 +1341,8 @@ fn consume_unquoted_url<'a>(parser: &mut Parser<'a>) -> Result<Token<'a>, ()> {
                 b'\n' | b'\x0C' | b'\r' => {
                     parser.consume_newline();
                 }
-                b => {
-                    parser.consume_known_byte(b);
-                    return consume_bad_url(parser, start_pos);
-                }
+                // NOTE: No advance(), to deal correctly with escapes.
+                b => return consume_bad_url(parser, start_pos),
             }
         }
         UnquotedUrl(string)

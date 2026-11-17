@@ -422,7 +422,7 @@ ohttp = { git = "https://github.com/martinthomson/ohttp", rev = "600931b5a1e9477
 zip = { path = "third_party/rust/zip" }
 
 # Unpublished changes
-cssparser = { git = "https://github.com/servo/rust-cssparser", rev = "9f3ceddf398f5ce4ab76fdad1b42ccb6c578a926" }
+cssparser = { git = "https://github.com/servo/rust-cssparser", rev = "2436e4330d8fa0c5208c12c6d2306f5e2a43c71f" }
 
 # Patch libcrux-traits to avoid unnecessary unused dependencies and conflicts.
 libcrux-traits = { path = "build/rust/libcrux-traits" }
