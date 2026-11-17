@@ -7,9 +7,11 @@ package org.mozilla.fenix.session
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
+import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import java.util.Locale
+import mozilla.components.browser.state.selector.normalTabs
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.base.crash.CrashReporting
@@ -19,6 +21,8 @@ import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.IntentReceiverActivity
 import org.mozilla.fenix.R
+import org.mozilla.fenix.browser.browsingmode.BrowsingMode
+import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.customtabs.ExternalAppBrowserActivity
 import org.mozilla.fenix.ext.components
 
@@ -38,6 +42,14 @@ class PrivateNotificationService : AbstractPrivateNotificationService() {
     override val store: BrowserStore by lazy { components.core.store }
 
     override val notificationsDelegate: NotificationsDelegate by lazy { components.notificationsDelegate }
+
+    /**
+     * Finishes and removes the app's tasks if the app is in the background. Returns true if it was in the background.
+     */
+    @VisibleForTesting
+    internal var finishAndRemoveTaskIfInBackground: () -> Boolean = {
+        VisibilityLifecycleCallback.finishAndRemoveTaskIfInBackground(this)
+    }
 
     override fun NotificationCompat.Builder.buildNotification() {
         setSmallIcon(iconsR.drawable.mozac_ic_private_mode_fill_24)
@@ -74,43 +86,75 @@ class PrivateNotificationService : AbstractPrivateNotificationService() {
     @SuppressLint("MissingSuperCall")
     override fun erasePrivateTabs() {
         val inPrivateMode = store.state.selectedTab?.content?.private ?: false
+        val isHomepageAsNewTabEnabled = components.settings.enableHomepageAsNewTab
+        val appStore = components.appStore
+
+        // Use inPrivateMode to short circuit and not run finishAndRemoveTaskIfInBackground when not in private mode
+        val isInBackground = inPrivateMode && finishAndRemoveTaskIfInBackground()
+
+        if (inPrivateMode && isHomepageAsNewTabEnabled) {
+            if (isInBackground) {
+                switchToNormalMode()
+            } else {
+                // Update tabs tray visibility before removing all tabs so that HomepageTabBinding doesn't add a
+                // new tab.
+                appStore.dispatch(AppAction.UpdateTabsTrayVisibility(true))
+            }
+        }
 
         // Trigger use case directly for now (instead of calling super.erasePrivateTabs)
         // as otherwise SessionManager and the store will be out of sync.
         components.useCases.tabsUseCases.removePrivateTabs()
 
-        // If the app is in private mode we launch to the private mode home screen as a
-        // confirmation that all private tabs have been deleted. If we don't do this the user
+        // When Homepage as a New Tab is disabled, if the app is in private mode we launch to the private mode home
+        // screen as a confirmation that all private tabs have been deleted. If we don't do this the user
         // will end up on a new selected tab in normal mode which isn't desired.
         // If the app is in normal mode there's no reason to direct the user away to
         // private mode as all private tabs have been deleted.
-        if (inPrivateMode) {
-            if (components.settings.enableHomepageAsNewTab) {
-                // When Homepage as a New Tab is enabled, there must always be at least one tab, so reopen a
-                // new private homepage tab only if the user is in private browsing mode.
-                components.useCases.fenixBrowserUseCases.addNewHomepageTab(private = true)
+        // When Homepage as a New Tab is enabled, show the private tabs tray instead of the private
+        // homepage, or stay in the background in normal mode if the app is in the background.
+        if (inPrivateMode && (!isHomepageAsNewTabEnabled || !isInBackground)) {
+            startHomeActivityInPrivateMode(openToTabsTray = isHomepageAsNewTabEnabled, isInBackground = isInBackground)
+        }
+    }
 
-                // The reopened private tab keeps the notifications alive, so the
-                // one-shot erase action is never rebuilt by a service restart. Refresh the
-                // notification to ensure the erase action works for subsequent taps.
-                refreshNotification()
+    /**
+     * Switches to normal mode and selects the last accessed normal tab, so that the next launch opens it instead of
+     * creating a new private tab. Must be called before the private tabs are removed so the selection is kept.
+     */
+    private fun switchToNormalMode() {
+        components.settings.lastKnownMode = BrowsingMode.Normal
+        components.appStore.dispatch(AppAction.BrowsingModeManagerModeChanged(BrowsingMode.Normal))
+
+        store.state.normalTabs
+            .maxByOrNull { it.lastAccess }
+            ?.let {
+                components.useCases.tabsUseCases.selectTab(it.id)
             }
+    }
 
-            val homeScreenIntent =
-                Intent(this, HomeActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    putExtra(HomeActivity.PRIVATE_BROWSING_MODE, true)
+    private fun startHomeActivityInPrivateMode(openToTabsTray: Boolean, isInBackground: Boolean) {
+        val homeScreenIntent =
+            Intent(this, HomeActivity::class.java).apply {
+                // Reuse the running HomeActivity when opening the tabs tray. Recreating it would let the old tabs
+                // tray reset the tabs tray visibility after the new one is shown.
+                flags =
+                    if (openToTabsTray) {
+                        Intent.FLAG_ACTIVITY_NEW_TASK
+                    } else {
+                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
+                putExtra(HomeActivity.PRIVATE_BROWSING_MODE, true)
+                if (openToTabsTray) {
+                    putExtra(HomeActivity.OPEN_TO_TABS_TRAY, true)
                 }
-
-            if (VisibilityLifecycleCallback.finishAndRemoveTaskIfInBackground(this)) {
-                // Set start mode to be in background (recents screen)
-                homeScreenIntent.apply {
+                if (isInBackground) {
+                    // Set start mode to be in background (recents screen)
                     putExtra(HomeActivity.START_IN_RECENTS_SCREEN, true)
                 }
             }
 
-            startActivity(homeScreenIntent)
-        }
+        startActivity(homeScreenIntent)
     }
 
     override fun ignoreTaskComponentClasses(): List<String> =

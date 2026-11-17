@@ -171,6 +171,7 @@ import org.mozilla.fenix.home.intent.OpenHomeIntentProcessor
 import org.mozilla.fenix.home.intent.OpenPasswordManagerIntentProcessor
 import org.mozilla.fenix.home.intent.OpenRecentlyClosedIntentProcessor
 import org.mozilla.fenix.home.intent.OpenSpecificTabIntentProcessor
+import org.mozilla.fenix.home.intent.OpenTabsTrayIntentProcessor
 import org.mozilla.fenix.home.intent.SpeechProcessingIntentProcessor
 import org.mozilla.fenix.home.intent.StartSearchIntentProcessor
 import org.mozilla.fenix.home.topsites.DefaultPinnedSitesBinding
@@ -427,6 +428,7 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
             OpenSpecificTabIntentProcessor(this),
             OpenPasswordManagerIntentProcessor(),
             OpenRecentlyClosedIntentProcessor(),
+            OpenTabsTrayIntentProcessor(browsingModeManager = browsingModeManager),
         )
     }
 
@@ -1885,6 +1887,7 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
         const val OPEN_TO_BROWSER_AND_LOAD = "open_to_browser_and_load"
         const val LENS_RESULT_URL = "lens_result_url"
         const val OPEN_TO_SEARCH = "open_to_search"
+        const val OPEN_TO_TABS_TRAY = "open_to_tabs_tray"
         const val PRIVATE_BROWSING_MODE = "private_browsing_mode"
         const val START_IN_RECENTS_SCREEN = "start_in_recents_screen"
         const val OPEN_PASSWORD_MANAGER = "open_password_manager"
