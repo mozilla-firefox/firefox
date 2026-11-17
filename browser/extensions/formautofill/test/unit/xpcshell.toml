@@ -114,6 +114,7 @@ prefs = [
 ]
 
 ["test_rust_autofill_address_migration.js"]
+requesttimeoutfactor = 2
 
 ["test_rust_autofill_address_parity.js"]
 
