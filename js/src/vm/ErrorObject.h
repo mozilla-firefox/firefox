@@ -44,21 +44,19 @@ class ErrorObject : public NativeObject {
 
  protected:
   JS_DEFINE_TYPED_SLOT(0, STACK_SLOT, Object, Null);
-  JS_DEFINE_TYPED_SLOT(STACK_SLOT.index() + 1, ERROR_REPORT_SLOT, Private,
-                       Undefined);
-  static const uint32_t FILENAME_SLOT = ERROR_REPORT_SLOT.index() + 1;
-  static const uint32_t LINENUMBER_SLOT = FILENAME_SLOT + 1;
-  static const uint32_t COLUMNNUMBER_SLOT = LINENUMBER_SLOT + 1;
-  static const uint32_t MESSAGE_SLOT = COLUMNNUMBER_SLOT + 1;
-  static const uint32_t CAUSE_SLOT = MESSAGE_SLOT + 1;
-  JS_DEFINE_TYPED_SLOT(CAUSE_SLOT + 1, SOURCEID_SLOT, Int32);
+  JS_DEFINE_TYPED_SLOT(1, ERROR_REPORT_SLOT, Private, Undefined);
+  JS_DEFINE_UNTYPED_SLOT(2, FILENAME_SLOT);
+  JS_DEFINE_UNTYPED_SLOT(3, LINENUMBER_SLOT);
+  JS_DEFINE_UNTYPED_SLOT(4, COLUMNNUMBER_SLOT);
+  JS_DEFINE_UNTYPED_SLOT(5, MESSAGE_SLOT);
+  JS_DEFINE_UNTYPED_SLOT(6, CAUSE_SLOT);
+  JS_DEFINE_TYPED_SLOT(7, SOURCEID_SLOT, Int32);
 
-  static const uint32_t RESERVED_SLOTS = SOURCEID_SLOT.index() + 1;
+  static const uint32_t RESERVED_SLOTS = 8;
 
   // This slot is only used for errors that could be Wasm traps.
-  JS_DEFINE_TYPED_SLOT(SOURCEID_SLOT.index() + 1, WASM_TRAP_SLOT, Boolean);
-  static const uint32_t RESERVED_SLOTS_MAYBE_WASM_TRAP =
-      WASM_TRAP_SLOT.index() + 1;
+  JS_DEFINE_TYPED_SLOT(8, WASM_TRAP_SLOT, Boolean);
+  static const uint32_t RESERVED_SLOTS_MAYBE_WASM_TRAP = 9;
 
  public:
   static const JSClass classes[JSEXN_ERROR_LIMIT];
