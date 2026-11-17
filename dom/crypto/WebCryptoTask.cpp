@@ -3959,6 +3959,37 @@ already_AddRefed<WebCryptoTask> WebCryptoTask::CreateImportKeyTask(
   }
 }
 
+enum class CryptoOperation { Encrypt, WrapKey, ExportKey };
+
+static bool Supports(const nsString& aAlgName, CryptoOperation aOperation) {
+  switch (aOperation) {
+    case CryptoOperation::Encrypt:
+      return aAlgName.EqualsLiteral(WEBCRYPTO_ALG_AES_CBC) ||
+             aAlgName.EqualsLiteral(WEBCRYPTO_ALG_AES_CTR) ||
+             aAlgName.EqualsLiteral(WEBCRYPTO_ALG_AES_GCM) ||
+             aAlgName.EqualsLiteral(WEBCRYPTO_ALG_RSA_OAEP);
+    case CryptoOperation::WrapKey:
+      return aAlgName.EqualsLiteral(WEBCRYPTO_ALG_AES_KW);
+    case CryptoOperation::ExportKey:
+      return aAlgName.EqualsLiteral(WEBCRYPTO_ALG_AES_CBC) ||
+             aAlgName.EqualsLiteral(WEBCRYPTO_ALG_AES_CTR) ||
+             aAlgName.EqualsLiteral(WEBCRYPTO_ALG_AES_GCM) ||
+             aAlgName.EqualsLiteral(WEBCRYPTO_ALG_AES_KW) ||
+             aAlgName.EqualsLiteral(WEBCRYPTO_ALG_HMAC) ||
+             aAlgName.EqualsLiteral(WEBCRYPTO_ALG_RSASSA_PKCS1) ||
+             aAlgName.EqualsLiteral(WEBCRYPTO_ALG_RSA_OAEP) ||
+             aAlgName.EqualsLiteral(WEBCRYPTO_ALG_RSA_PSS) ||
+             aAlgName.EqualsLiteral(WEBCRYPTO_ALG_ECDSA) ||
+             aAlgName.EqualsLiteral(WEBCRYPTO_ALG_ECDH) ||
+             aAlgName.EqualsLiteral(WEBCRYPTO_ALG_ED25519) ||
+             aAlgName.EqualsLiteral(WEBCRYPTO_ALG_X25519) ||
+             (StaticPrefs::dom_webcrypto_encapsulation_enabled() &&
+              IsMLKEMAlgorithm(aAlgName));
+  }
+  MOZ_ASSERT_UNREACHABLE("Unknown CryptoOperation");
+  return false;
+}
+
 already_AddRefed<WebCryptoTask> WebCryptoTask::CreateExportKeyTask(
     const nsAString& aFormat, CryptoKey& aKey) {
   // Verify that the format is recognized
@@ -3972,32 +4003,20 @@ already_AddRefed<WebCryptoTask> WebCryptoTask::CreateExportKeyTask(
     return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_SYNTAX_ERR);
   }
 
-  // Verify that the key is extractable
+  // Step 6: "If the name member of the [[algorithm]] internal slot of key
+  // does not identify a registered algorithm that supports the export key
+  // operation, then throw a NotSupportedError."
+  if (!Supports(aKey.Algorithm().mName, CryptoOperation::ExportKey)) {
+    return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
+  }
+
+  // Step 7: "If the [[extractable]] internal slot of key is false, then throw
+  // an InvalidAccessError."
   if (!aKey.Extractable()) {
     return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_INVALID_ACCESS_ERR);
   }
 
-  // Verify that the algorithm supports export
-  // SPEC-BUG: PBKDF2 is not supposed to be supported for this operation.
-  // However, the spec should be updated to allow it.
-  nsString algName = aKey.Algorithm().mName;
-  if (algName.EqualsLiteral(WEBCRYPTO_ALG_AES_CBC) ||
-      algName.EqualsLiteral(WEBCRYPTO_ALG_AES_CTR) ||
-      algName.EqualsLiteral(WEBCRYPTO_ALG_AES_GCM) ||
-      algName.EqualsLiteral(WEBCRYPTO_ALG_AES_KW) ||
-      algName.EqualsLiteral(WEBCRYPTO_ALG_PBKDF2) ||
-      algName.EqualsLiteral(WEBCRYPTO_ALG_HMAC) ||
-      algName.EqualsLiteral(WEBCRYPTO_ALG_RSASSA_PKCS1) ||
-      algName.EqualsLiteral(WEBCRYPTO_ALG_RSA_OAEP) ||
-      algName.EqualsLiteral(WEBCRYPTO_ALG_RSA_PSS) ||
-      algName.EqualsLiteral(WEBCRYPTO_ALG_ECDSA) ||
-      algName.EqualsLiteral(WEBCRYPTO_ALG_ECDH) ||
-      algName.EqualsLiteral(WEBCRYPTO_ALG_ED25519) ||
-      algName.EqualsLiteral(WEBCRYPTO_ALG_X25519) ||
-      IsMLKEMAlgorithm(algName)) {
-    return MakeAndAddRef<ExportKeyTask>(ExportFormat(aFormat, aKey), aKey);
-  }
-  return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
+  return MakeAndAddRef<ExportKeyTask>(ExportFormat(aFormat, aKey), aKey);
 }
 
 already_AddRefed<WebCryptoTask> WebCryptoTask::CreateGenerateKeyTask(
@@ -4190,20 +4209,43 @@ already_AddRefed<WebCryptoTask> WebCryptoTask::CreateWrapKeyTask(
     return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_SYNTAX_ERR);
   }
 
-  // Ensure wrappingKey is usable for this operation
-  if (!aWrappingKey.HasUsage(CryptoKey::WRAPKEY)) {
-    return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_INVALID_ACCESS_ERR);
-  }
-
-  // Ensure key is extractable
-  if (!aKey.Extractable()) {
-    return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_INVALID_ACCESS_ERR);
-  }
-
   nsString wrapAlgName;
   nsresult rv = GetAlgorithmName(aCx, aWrapAlgorithm, wrapAlgName);
   if (NS_FAILED(rv)) {
     return MakeAndAddRef<FailureTask>(rv);
+  }
+
+  // Step 2: "Let normalizedAlgorithm be the result of normalizing an
+  // algorithm, with alg set to algorithm and op set to "wrapKey"."
+  // Step 3: "If an error occurred, let normalizedAlgorithm be the result of
+  // normalizing an algorithm, with alg set to algorithm and op set to
+  // "encrypt"."
+  if (!Supports(wrapAlgName, CryptoOperation::WrapKey) &&
+      !Supports(wrapAlgName, CryptoOperation::Encrypt)) {
+    return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
+  }
+
+  // Step 9: "If the name member of normalizedAlgorithm is not equal to the
+  // name attribute of the [[algorithm]] internal slot of wrappingKey then
+  // throw an InvalidAccessError."
+  // Step 10: "If the [[usages]] internal slot of wrappingKey does not contain
+  // an entry that is "wrapKey", then throw an InvalidAccessError."
+  if (!wrapAlgName.Equals(aWrappingKey.Algorithm().mName) ||
+      !aWrappingKey.HasUsage(CryptoKey::WRAPKEY)) {
+    return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_INVALID_ACCESS_ERR);
+  }
+
+  // Step 11: "If the algorithm identified by the [[algorithm]] internal slot
+  // of key does not support the export key operation, then throw a
+  // NotSupportedError."
+  if (!Supports(aKey.Algorithm().mName, CryptoOperation::ExportKey)) {
+    return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
+  }
+
+  // Step 12: "If the [[extractable]] internal slot of key is false, then
+  // throw an InvalidAccessError."
+  if (!aKey.Extractable()) {
+    return MakeAndAddRef<FailureTask>(NS_ERROR_DOM_INVALID_ACCESS_ERR);
   }
 
   const nsString format = ExportFormat(aFormat, aKey);

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ML-KEM keys cannot be exported when ML-KEM is disabled</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<link rel="stylesheet" href="/tests/SimpleTest/test.css"/>
+<script>
+"use strict";
+
+async function rejectsWith(promise, expected, message) {
+  try {
+    await promise;
+    ok(false, `${message}: expected ${expected}, but it resolved`);
+  } catch (e) {
+    is(e.name, expected, message);
+  }
+}
+
+add_task(async function test_mlkem_export_and_wrap_follow_pref() {
+  const alg = { name: "ML-KEM-768" };
+  const { publicKey, privateKey } = await crypto.subtle.generateKey(
+    alg, true, ["encapsulateKey", "decapsulateKey"]);
+  const wrappingKey = await crypto.subtle.generateKey(
+    { name: "AES-GCM", length: 256 }, false, ["wrapKey"]);
+  const wrapAlg = { name: "AES-GCM", iv: new Uint8Array(12) };
+
+  ok(await crypto.subtle.exportKey("raw-public", publicKey),
+     "exportKey works while ML-KEM is enabled");
+  ok(await crypto.subtle.wrapKey("raw-seed", privateKey, wrappingKey, wrapAlg),
+     "wrapKey works while ML-KEM is enabled");
+
+  // Keys created while the pref was on can outlive it, e.g. in IndexedDB.
+  await SpecialPowers.pushPrefEnv({
+    set: [["dom.webcrypto.encapsulation.enabled", false]],
+  });
+  await rejectsWith(crypto.subtle.generateKey(alg, true, ["encapsulateKey"]),
+                    "NotSupportedError", "generateKey with ML-KEM disabled");
+
+  for (const format of ["raw-public", "spki", "jwk"]) {
+    await rejectsWith(crypto.subtle.exportKey(format, publicKey),
+                      "NotSupportedError", `exportKey ${format} (public)`);
+  }
+  for (const format of ["raw-seed", "pkcs8", "jwk"]) {
+    await rejectsWith(crypto.subtle.exportKey(format, privateKey),
+                      "NotSupportedError", `exportKey ${format} (private)`);
+  }
+  await rejectsWith(
+    crypto.subtle.wrapKey("spki", publicKey, wrappingKey, wrapAlg),
+    "NotSupportedError", "wrapKey spki (public)");
+  await rejectsWith(
+    crypto.subtle.wrapKey("raw-seed", privateKey, wrappingKey, wrapAlg),
+    "NotSupportedError", "wrapKey raw-seed (private)");
+});
+</script>
+</head>
+<body></body>
+</html>

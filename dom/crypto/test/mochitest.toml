@@ -28,6 +28,8 @@ support-files = [
 
 ["test_WebCrypto_MLKEM.html"]
 
+["test_WebCrypto_MLKEM_Pref.html"]
+
 ["test_WebCrypto_Normalize.html"]
 
 ["test_WebCrypto_PBKDF2.html"]

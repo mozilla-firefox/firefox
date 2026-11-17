@@ -116,8 +116,8 @@ TestArray.addTest(
       iterations: 4096,
     };
 
-    crypto.subtle.importKey("raw", key, "PBKDF2", true, ["deriveBits"])
-      .then(util.cloneExportCompareKeys)
+    crypto.subtle.importKey("raw", key, "PBKDF2", false, ["deriveBits"])
+      .then(util.clone)
       .then(x => crypto.subtle.deriveBits(alg, x, 160))
       .then(complete(that), error(that));
   }
