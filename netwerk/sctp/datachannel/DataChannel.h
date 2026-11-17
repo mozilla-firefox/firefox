@@ -182,29 +182,32 @@ class DataChannelConnection : public net::NeckoTargetHolder {
 
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(DataChannelConnection)
 
-  // Called immediately after construction
+  // Called on main immediately after construction.
   virtual bool Init(const uint16_t aLocalPort, const uint16_t aNumStreams) = 0;
-  // Called when our transport is ready to send and recv
+  // Called on STS when our transport is ready to send and recv.
   virtual void OnTransportReady() = 0;
-  // This is called after an ACK comes in, to prompt subclasses to deliver
-  // anything they've buffered while awaiting the ACK.
+  // This is called on STS after an ACK comes in, to prompt subclasses to
+  // deliver anything they've buffered while awaiting the ACK.
   virtual void OnStreamOpen(uint16_t stream) = 0;
-  // Called when the base class wants to raise the stream limit
+  // Called on STS when the base class wants to raise the stream limit
   virtual bool RaiseStreamLimitTo(uint16_t aNewLimit) = 0;
-  // The exclusive upper bound on stream ids we will allocate. This is a
-  // per-stack constant (usrsctp grows toward it on demand; dcsctp announces the
-  // full range up front), and is safe to read from any thread.
+  // The exclusive upper bound on stream ids we will allocate, called on main.
+  // This is a per-stack constant (usrsctp grows toward it on demand; dcsctp
+  // announces the full range up front), and is safe to read from any thread.
   virtual uint16_t GetStreamIdCeiling() const = 0;
-  // Called when the base class wants to send a message; it is expected that
-  // this will eventually result in a call/s to SendSctpPacket once the SCTP
-  // packet is ready to be sent to the transport.
+  // Called on STS when the base class wants to send a message; it is expected
+  // that this will eventually result in a call/s to SendSctpPacket once the
+  // SCTP packet is ready to be sent to the transport.
   virtual int SendMessage(DataChannel& aChannel, OutgoingMsg&& aMsg) = 0;
-  // Called when the base class receives a packet from the transport
+  // Called on STS when the base class receives a packet from the transport
   virtual void OnSctpPacketReceived(const MediaPacket& packet) = 0;
-  // Called when the base class is closing streams
+  // Called on STS when the base class is closing streams
   virtual bool ResetStreams(nsTArray<uint16_t>& aStreams) = 0;
-  // Called when the SCTP connection is being shut down
-  virtual void Destroy();
+  // Called on STS to close the SCTP association as a whole (ie; send ABORT)
+  virtual void CloseAssociation() = 0;
+  // Called on main when the SCTP connection is being shut down
+  // Non-exclusive to make this more ergonomic for PeerConnectionImpl
+  RefPtr<GenericNonExclusivePromise> Destroy();
 
   // Call only when the remote SDP has a=max-message-size
   void SetMaxMessageSize(uint64_t aMaxMessageSize);
@@ -235,8 +238,7 @@ class DataChannelConnection : public net::NeckoTargetHolder {
   void EndOfStream(const RefPtr<DataChannel>& aChannel);
   void FinishClose_s(const RefPtr<DataChannel>& aChannel,
                      Maybe<dom::RTCErrorParams> aError = Nothing());
-  void CloseAll();
-  void CloseAll_s(Maybe<dom::RTCErrorParams> aError = Nothing());
+  void CloseChannels_s(Maybe<dom::RTCErrorParams> aError = Nothing());
   void MarkStreamAvailable(uint16_t aStream);
 
   nsISerialEventTarget* GetIOThread();
