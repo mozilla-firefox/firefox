@@ -41,6 +41,7 @@ tidy:
     worker-type: b-linux-docker-large-amd
     treeherder:
         symbol: cpp(clang-tidy)
+        tier: 1
     run:
         cwd: '{checkout}'
         command: >-
