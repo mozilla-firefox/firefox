@@ -1,0 +1,20 @@
+{
+  "label": "allstate.com",
+  "bugs": {
+    "1875540": {
+      "issue": "unsupported-warning",
+      "matches": ["*://*.allstate.com/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["all"],
+      "hide_messages": [
+        {
+          "container": "#warningMessagePanel",
+          "message": "Chrome"
+        }
+      ]
+    }
+  ]
+}
