@@ -37,7 +37,7 @@ using AddInnerConstT = typename AddInnerConst<T>::Type;
 //
 // Mutating an array which is being iterated is still wrong, and will either
 // cause elements to be missed or firefox to crash, but will not trigger memory
-// safety problems due to the release-mode bounds checking found in ElementAt.
+// safety problems due to the release-mode bounds checking in operator[].
 //
 // Dereferencing this iterator returns type Element. When Element is a reference
 // type, this iterator implements the full standard random access iterator spec,
@@ -93,13 +93,11 @@ class ArrayIterator {
   }
 
   // These operators depend on the release mode bounds checks in
-  // ArrayIterator::ElementAt for safety.
+  // array_type::operator[] for safety.
   value_type* operator->() const {
-    return const_cast<value_type*>(&mArray->ElementAt(mIndex));
+    return const_cast<value_type*>(&(*mArray)[mIndex]);
   }
-  Element operator*() const {
-    return const_cast<Element>(mArray->ElementAt(mIndex));
-  }
+  Element operator*() const { return const_cast<Element>((*mArray)[mIndex]); }
 
   iterator_type& operator++() {
     ++mIndex;

@@ -9,6 +9,7 @@ UNIFIED_SOURCES += [
     "TestSpan.cpp",
     "TestTainting.cpp",
     "TestUniquePtrExtensions.cpp",
+    "TestVectorRanges.cpp",
 ]
 
 SOURCES += [

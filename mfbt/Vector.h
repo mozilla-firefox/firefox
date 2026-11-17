@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "mozilla/AllocPolicy.h"
+#include "mozilla/ArrayIterator.h"
 #include "mozilla/ArrayUtils.h"  // for PointerRangeSize
 #include "mozilla/Assertions.h"
 #include "mozilla/Attributes.h"
@@ -535,6 +536,7 @@ class MOZ_NON_PARAM MOZ_GSL_OWNER Vector final : private AllocPolicy {
   static const size_t sMaxInlineStorage = MinInlineCapacity;
 
   using ElementType = T;
+  using index_type = size_t;
 
   explicit Vector(AllocPolicy);
   Vector() : Vector(AllocPolicy()) {}
@@ -636,58 +638,79 @@ class MOZ_NON_PARAM MOZ_GSL_OWNER Vector final : private AllocPolicy {
 
   operator mozilla::Span<T>() { return mozilla::Span{mBegin, mLength}; }
 
+  // Ranges keep their original endpoint and access the current storage of the
+  // Vector object from which they were created. That object must remain alive
+  // at the same address for the range's lifetime. Moving or swapping the
+  // Vector does not rebind an existing range to storage transferred to another
+  // Vector.
   class Range {
     friend class Vector;
-    T* mCur;
-    T* mEnd;
-    Range(T* aCur, T* aEnd) : mCur(aCur), mEnd(aEnd) {
-      MOZ_ASSERT(aCur <= aEnd);
-    }
+    using Iterator = ArrayIterator<T&, Vector>;
+    Iterator mCur;
+    index_type mEnd;
+    explicit Range(Vector& aVector)
+        : mCur(aVector, 0), mEnd(aVector.length()) {}
 
    public:
-    bool empty() const { return mCur == mEnd; }
-    size_t remain() const { return PointerRangeSize(mCur, mEnd); }
+    Range(const Range&) = default;
+    Range(Range&&) = default;
+    Range& operator=(const Range&) = delete;
+    Range& operator=(Range&&) = delete;
+
+    bool empty() const { return mCur.GetIndex() == mEnd; }
+    size_t remain() const { return mEnd - mCur.GetIndex(); }
     T& front() const {
-      MOZ_ASSERT(!empty());
+      MOZ_RELEASE_ASSERT(!empty());
       return *mCur;
     }
     void popFront() {
-      MOZ_ASSERT(!empty());
+      MOZ_RELEASE_ASSERT(!empty());
       ++mCur;
     }
     T popCopyFront() {
-      MOZ_ASSERT(!empty());
+      MOZ_RELEASE_ASSERT(!empty());
       return *mCur++;
     }
   };
 
   class ConstRange {
     friend class Vector;
-    const T* mCur;
-    const T* mEnd;
-    ConstRange(const T* aCur, const T* aEnd) : mCur(aCur), mEnd(aEnd) {
-      MOZ_ASSERT(aCur <= aEnd);
-    }
+    using Iterator = ArrayIterator<const T&, Vector>;
+    Iterator mCur;
+    index_type mEnd;
+    explicit ConstRange(const Vector& aVector)
+        : mCur(aVector, 0), mEnd(aVector.length()) {}
 
    public:
-    bool empty() const { return mCur == mEnd; }
-    size_t remain() const { return PointerRangeSize(mCur, mEnd); }
+    ConstRange(const ConstRange&) = default;
+    ConstRange(ConstRange&&) = default;
+    ConstRange& operator=(const ConstRange&) = delete;
+    ConstRange& operator=(ConstRange&&) = delete;
+
+    bool empty() const { return mCur.GetIndex() == mEnd; }
+    size_t remain() const { return mEnd - mCur.GetIndex(); }
     const T& front() const {
-      MOZ_ASSERT(!empty());
+      MOZ_RELEASE_ASSERT(!empty());
       return *mCur;
     }
     void popFront() {
-      MOZ_ASSERT(!empty());
+      MOZ_RELEASE_ASSERT(!empty());
       ++mCur;
     }
     T popCopyFront() {
-      MOZ_ASSERT(!empty());
+      MOZ_RELEASE_ASSERT(!empty());
       return *mCur++;
     }
   };
 
-  Range all() { return Range(begin(), end()); }
-  ConstRange all() const { return ConstRange(begin(), end()); }
+  Range all() {
+    MOZ_ASSERT(!mEntered);
+    return Range(*this);
+  }
+  ConstRange all() const {
+    MOZ_ASSERT(!mEntered);
+    return ConstRange(*this);
+  }
 
   /* mutators */
 

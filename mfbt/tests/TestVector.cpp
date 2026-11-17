@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <type_traits>
 #include <utility>
 
 #include "mozilla/IntegerRange.h"
@@ -85,7 +86,6 @@ void mozilla::detail::VectorTesting::testReserved() {
 }
 
 void mozilla::detail::VectorTesting::testConstRange() {
-#ifdef DEBUG
   Vector<int> vec;
 
   for (int i = 0; i < 10; i++) {
@@ -100,7 +100,6 @@ void mozilla::detail::VectorTesting::testConstRange() {
     MOZ_RELEASE_ASSERT(range.front() == i);
     range.popFront();
   }
-#endif
 }
 
 namespace {
@@ -775,7 +774,135 @@ static void TestVectorBeginNonNull() {
   MOZ_RELEASE_ASSERT(vbvec64.begin() != nullptr);
 }
 
+struct RangeValue {
+  int value;
+  explicit RangeValue(int aValue) : value(aValue) {}
+  RangeValue(const RangeValue&) = default;
+  RangeValue(RangeValue&& aOther) : value(aOther.value) { aOther.value = -1; }
+};
+
+template <size_t N>
+static void TestRangeStorageChanges() {
+  Vector<RangeValue, N> vec;
+  MOZ_RELEASE_ASSERT(vec.emplaceBack(10));
+  MOZ_RELEASE_ASSERT(vec.emplaceBack(20));
+  MOZ_RELEASE_ASSERT(vec.emplaceBack(30));
+  auto range = vec.all();
+  auto copy = range;
+  auto constRange = std::as_const(vec).all();
+  static_assert(std::is_same_v<decltype(range.front()), RangeValue&>);
+  static_assert(
+      std::is_same_v<decltype(constRange.front()), const RangeValue&>);
+  static_assert(std::is_copy_constructible_v<decltype(range)>);
+  static_assert(std::is_move_constructible_v<decltype(range)>);
+  static_assert(!std::is_copy_assignable_v<decltype(range)>);
+  static_assert(!std::is_move_assignable_v<decltype(range)>);
+  static_assert(std::is_copy_constructible_v<decltype(constRange)>);
+  static_assert(std::is_move_constructible_v<decltype(constRange)>);
+  static_assert(!std::is_copy_assignable_v<decltype(constRange)>);
+  static_assert(!std::is_move_assignable_v<decltype(constRange)>);
+  range.popFront();
+  constRange.popFront();
+
+  MOZ_RELEASE_ASSERT(vec.reserve(vec.capacity() + 1));
+  MOZ_RELEASE_ASSERT(range.remain() == 2);
+  MOZ_RELEASE_ASSERT(range.front().value == 20);
+  range.front().value = 21;
+  MOZ_RELEASE_ASSERT(vec[1].value == 21);
+  MOZ_RELEASE_ASSERT(constRange.popCopyFront().value == 21);
+  MOZ_RELEASE_ASSERT(copy.popCopyFront().value == 10);
+  MOZ_RELEASE_ASSERT(range.popCopyFront().value == 21);
+
+  MOZ_RELEASE_ASSERT(vec.emplaceBack(40));
+  MOZ_RELEASE_ASSERT(range.remain() == 1);
+  MOZ_RELEASE_ASSERT(range.popCopyFront().value == 30);
+  MOZ_RELEASE_ASSERT(range.empty());
+  MOZ_RELEASE_ASSERT(range.remain() == 0);
+  MOZ_RELEASE_ASSERT(vec.emplaceBack(50));
+  MOZ_RELEASE_ASSERT(range.empty());
+  MOZ_RELEASE_ASSERT(constRange.popCopyFront().value == 30);
+  MOZ_RELEASE_ASSERT(constRange.empty());
+
+  auto shrunkRange = vec.all();
+  auto shrunkConstRange = std::as_const(vec).all();
+  vec.shrinkTo(1);
+  vec.shrinkStorageToFit();
+  MOZ_RELEASE_ASSERT(shrunkRange.remain() == 5);
+  MOZ_RELEASE_ASSERT(shrunkRange.front().value == 10);
+  MOZ_RELEASE_ASSERT(shrunkConstRange.front().value == 10);
+  vec.clearAndFree();
+  MOZ_RELEASE_ASSERT(vec.emplaceBack(60));
+  MOZ_RELEASE_ASSERT(shrunkRange.front().value == 60);
+  MOZ_RELEASE_ASSERT(shrunkConstRange.front().value == 60);
+  shrunkRange.popFront();
+  MOZ_RELEASE_ASSERT(shrunkRange.remain() == 4);
+}
+
+static void TestRangeInErasePredicate() {
+  Vector<int> vec;
+  MOZ_RELEASE_ASSERT(vec.append(10));
+  MOZ_RELEASE_ASSERT(vec.append(20));
+  auto range = vec.all();
+  vec.eraseIf([&](int) {
+    MOZ_RELEASE_ASSERT(range.front() == 10);
+    return false;
+  });
+  MOZ_RELEASE_ASSERT(vec.length() == 2);
+}
+
+static void TestEmptyRanges() {
+  Vector<int> vec;
+  auto range = vec.all();
+  auto constRange = std::as_const(vec).all();
+  MOZ_RELEASE_ASSERT(range.empty());
+  MOZ_RELEASE_ASSERT(range.remain() == 0);
+  MOZ_RELEASE_ASSERT(constRange.empty());
+  MOZ_RELEASE_ASSERT(constRange.remain() == 0);
+  MOZ_RELEASE_ASSERT(vec.append(1));
+  MOZ_RELEASE_ASSERT(range.empty());
+  MOZ_RELEASE_ASSERT(constRange.empty());
+}
+
+struct RangeCopyObserver {
+  int value;
+  void (*onCopy)(void*) = nullptr;
+  void* closure = nullptr;
+  explicit RangeCopyObserver(int aValue) : value(aValue) {}
+  RangeCopyObserver(const RangeCopyObserver& aOther) : value(aOther.value) {
+    if (aOther.onCopy) {
+      aOther.onCopy(aOther.closure);
+    }
+  }
+};
+
+static void TestRangeCopyOrder() {
+  Vector<RangeCopyObserver> vec;
+  MOZ_RELEASE_ASSERT(vec.emplaceBack(10));
+  MOZ_RELEASE_ASSERT(vec.emplaceBack(20));
+  auto range = vec.all();
+  vec[0].closure = &range;
+  vec[0].onCopy = [](void* aClosure) {
+    auto& observed = *static_cast<decltype(range)*>(aClosure);
+    MOZ_RELEASE_ASSERT(observed.remain() == 1);
+    MOZ_RELEASE_ASSERT(observed.front().value == 20);
+  };
+  MOZ_RELEASE_ASSERT(range.popCopyFront().value == 10);
+  auto constRange = std::as_const(vec).all();
+  vec[0].closure = &constRange;
+  vec[0].onCopy = [](void* aClosure) {
+    auto& observed = *static_cast<decltype(constRange)*>(aClosure);
+    MOZ_RELEASE_ASSERT(observed.remain() == 1);
+    MOZ_RELEASE_ASSERT(observed.front().value == 20);
+  };
+  MOZ_RELEASE_ASSERT(constRange.popCopyFront().value == 10);
+}
+
 int main() {
+  TestRangeInErasePredicate();
+  TestRangeCopyOrder();
+  TestRangeStorageChanges<0>();
+  TestRangeStorageChanges<4>();
+  TestEmptyRanges();
   VectorTesting::testReserved();
   VectorTesting::testConstRange();
   VectorTesting::testEmplaceBack();
