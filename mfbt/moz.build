@@ -17,7 +17,6 @@ EXPORTS.mozilla = [
     "AllocPolicy.h",
     "AlreadyAddRefed.h",
     "Array.h",
-    "ArrayIterator.h",
     "ArrayUtils.h",
     "Assertions.h",
     "AtomicBitfields.h",
