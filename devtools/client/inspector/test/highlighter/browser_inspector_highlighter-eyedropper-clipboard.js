@@ -32,7 +32,7 @@ add_task(async function () {
   info(
     "Make sure to wait until the eyedropper is done taking a screenshot of the page"
   );
-  await waitForElementAttributeSet("root", "drawn", helper);
+  await waitForElementAttributeSet("container", "drawn", helper);
 
   await waitForClipboardPromise(() => {
     info("Activate the eyedropper so the background color is copied");
@@ -41,7 +41,7 @@ add_task(async function () {
 
   ok(true, "The clipboard contains the right value");
 
-  await waitForElementAttributeRemoved("root", "drawn", helper);
+  await waitForElementAttributeRemoved("container", "drawn", helper);
   await waitForElementAttributeSet("root", "hidden", helper);
   ok(true, "The eyedropper is now hidden");
 
