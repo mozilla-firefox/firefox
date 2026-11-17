@@ -8,7 +8,7 @@
 //! Linux uses error codes in `-4095..0`; we use rustc attributes to describe
 //! this restricted range of values.
 #![allow(unsafe_code)]
-#![cfg_attr(not(rustc_attrs), allow(unused_unsafe))]
+#![allow(unused_unsafe)]
 
 use crate::backend::c;
 use crate::backend::fd::RawFd;
@@ -46,8 +46,8 @@ use linux_raw_sys::errno;
 #[derive(Eq, PartialEq, Hash, Copy, Clone)]
 // Linux returns negated error codes, and we leave them in negated form, so
 // error codes are in `-4095..0`.
-#[cfg_attr(rustc_attrs, rustc_layout_scalar_valid_range_start(0xf001))]
-#[cfg_attr(rustc_attrs, rustc_layout_scalar_valid_range_end(0xffff))]
+//#[rustc_layout_scalar_valid_range_start(0xf001)]
+//#[rustc_layout_scalar_valid_range_end(0xffff)]
 pub struct Errno(u16);
 
 impl Errno {

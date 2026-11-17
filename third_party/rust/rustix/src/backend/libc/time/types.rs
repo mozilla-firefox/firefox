@@ -107,7 +107,7 @@ impl From<Itimerspec> for LibcItimerspec {
 pub(crate) fn as_libc_itimerspec_ptr(itimerspec: &Itimerspec) -> *const c::itimerspec {
     #[cfg(test)]
     {
-        assert_eq_size!(Itimerspec, c::itimerspec);
+        static_assertions::assert_eq_size!(Itimerspec, c::itimerspec);
     }
     crate::utils::as_ptr(itimerspec).cast::<c::itimerspec>()
 }
@@ -125,7 +125,7 @@ pub(crate) fn as_libc_itimerspec_mut_ptr(
 ) -> *mut c::itimerspec {
     #[cfg(test)]
     {
-        assert_eq_size!(Itimerspec, c::itimerspec);
+        static_assertions::assert_eq_size!(Itimerspec, c::itimerspec);
     }
     itimerspec.as_mut_ptr().cast::<c::itimerspec>()
 }
@@ -260,7 +260,7 @@ mod tests {
     ))]
     #[test]
     fn test_types() {
-        assert_eq_size!(TimerfdFlags, c::c_int);
-        assert_eq_size!(TimerfdTimerFlags, c::c_int);
+        static_assertions::assert_eq_size!(TimerfdFlags, c::c_int);
+        static_assertions::assert_eq_size!(TimerfdTimerFlags, c::c_int);
     }
 }

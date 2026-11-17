@@ -169,7 +169,7 @@ mod tests {
 
     #[test]
     fn test_layouts() {
-        assert_eq_size!(SocketAddrLen, c::socklen_t);
+        static_assertions::assert_eq_size!(SocketAddrLen, c::socklen_t);
 
         #[cfg(not(any(windows, target_os = "redox")))]
         assert_eq!(

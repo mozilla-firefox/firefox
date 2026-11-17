@@ -344,7 +344,7 @@ impl<'buf, 'slice, 'fd> SendAncillaryBuffer<'buf, 'slice, 'fd> {
         self.length = new_length;
 
         // Get the last header in the buffer.
-        let last_header = leap!(messages::Messages::new(buffer).last());
+        let (last_header, _) = leap!(messages::Messages::new(buffer).last());
 
         // Set the header fields.
         last_header.cmsg_len = unsafe { c::CMSG_LEN(source_len) } as _;
@@ -533,34 +533,48 @@ impl<'buf> AncillaryDrain<'buf> {
         }
     }
 
+    /// `space` is the number of bytes of buffer space at and after `msg`.
     fn advance(
         read_and_length: &mut Option<(&'buf mut usize, &'buf mut usize)>,
         msg: &c::cmsghdr,
+        space: usize,
     ) -> Option<RecvAncillaryMessage<'buf>> {
+        // Clamp the message length to the buffer. When `recvmsg` truncates
+        // control data to fit, Linux reduces `cmsg_len` to match what it
+        // wrote, but macOS leaves `cmsg_len` holding the untruncated length,
+        // so it can run past the end of the buffer.
+        let msg_len = (msg.cmsg_len as usize).min(space);
+
         // Advance the `read` pointer.
         if let Some((read, length)) = read_and_length {
-            let msg_len = msg.cmsg_len as usize;
             **read += msg_len;
             **length -= msg_len;
         }
 
-        Self::cvt_msg(msg)
+        Self::cvt_msg(msg, msg_len)
     }
 
     /// A closure that converts a message into a [`RecvAncillaryMessage`].
-    fn cvt_msg(msg: &c::cmsghdr) -> Option<RecvAncillaryMessage<'buf>> {
+    fn cvt_msg(msg: &c::cmsghdr, msg_len: usize) -> Option<RecvAncillaryMessage<'buf>> {
         unsafe {
-            // Get a pointer to the payload.
+            // Get a pointer to the payload. Use `msg_len` rather than
+            // `msg.cmsg_len`, as the message may have been truncated to fit
+            // in the buffer. If there isn't even a whole header, there's no
+            // message to report.
             let payload = c::CMSG_DATA(msg);
-            let payload_len = msg.cmsg_len as usize - c::CMSG_LEN(0) as usize;
-
-            // Get a mutable slice of the payload.
-            let payload: &'buf mut [u8] = slice::from_raw_parts_mut(payload, payload_len);
+            let payload_len = msg_len.checked_sub(c::CMSG_LEN(0) as usize)?;
 
             // Determine what type it is.
             let (level, msg_type) = (msg.cmsg_level, msg.cmsg_type);
             match (level as _, msg_type as _) {
                 (c::SOL_SOCKET, c::SCM_RIGHTS) => {
+                    // Truncation can leave a partial file descriptor at the
+                    // end of the payload; round down to whole descriptors.
+                    let payload_len = payload_len - payload_len % size_of::<OwnedFd>();
+
+                    // Get a mutable slice of the payload.
+                    let payload: &'buf mut [u8] = slice::from_raw_parts_mut(payload, payload_len);
+
                     // Create an iterator that reads out the file descriptors.
                     let fds = AncillaryIter::new(payload);
 
@@ -569,7 +583,7 @@ impl<'buf> AncillaryDrain<'buf> {
                 #[cfg(linux_kernel)]
                 (c::SOL_SOCKET, c::SCM_CREDENTIALS) => {
                     if payload_len >= size_of::<UCred>() {
-                        let ucred = payload.as_ptr().cast::<UCred>().read_unaligned();
+                        let ucred = payload.cast::<UCred>().read_unaligned();
                         Some(RecvAncillaryMessage::ScmCredentials(ucred))
                     } else {
                         None
@@ -586,7 +600,7 @@ impl<'buf> Iterator for AncillaryDrain<'buf> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.messages
-            .find_map(|ev| Self::advance(&mut self.read_and_length, ev))
+            .find_map(|(msg, space)| Self::advance(&mut self.read_and_length, msg, space))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -600,13 +614,13 @@ impl<'buf> Iterator for AncillaryDrain<'buf> {
         F: FnMut(B, Self::Item) -> B,
     {
         self.messages
-            .filter_map(|ev| Self::advance(&mut self.read_and_length, ev))
+            .filter_map(|(msg, space)| Self::advance(&mut self.read_and_length, msg, space))
             .fold(init, f)
     }
 
     fn count(mut self) -> usize {
         self.messages
-            .filter_map(|ev| Self::advance(&mut self.read_and_length, ev))
+            .filter_map(|(msg, space)| Self::advance(&mut self.read_and_length, msg, space))
             .count()
     }
 
@@ -615,7 +629,7 @@ impl<'buf> Iterator for AncillaryDrain<'buf> {
         Self: Sized,
     {
         self.messages
-            .filter_map(|ev| Self::advance(&mut self.read_and_length, ev))
+            .filter_map(|(msg, space)| Self::advance(&mut self.read_and_length, msg, space))
             .last()
     }
 
@@ -624,7 +638,7 @@ impl<'buf> Iterator for AncillaryDrain<'buf> {
         Self: Sized,
     {
         self.messages
-            .filter_map(|ev| Self::advance(&mut self.read_and_length, ev))
+            .filter_map(|(msg, space)| Self::advance(&mut self.read_and_length, msg, space))
             .collect()
     }
 }
@@ -951,12 +965,20 @@ mod messages {
     }
 
     impl<'a> Iterator for Messages<'a> {
-        type Item = &'a mut c::cmsghdr;
+        /// A message header, along with the number of bytes of buffer space
+        /// at and after it, which is an upper bound on the size of the
+        /// message.
+        type Item = (&'a mut c::cmsghdr, usize);
 
         #[inline]
         fn next(&mut self) -> Option<Self::Item> {
             // Get the current header.
             let header = self.header?;
+
+            // Compute the number of bytes of buffer space at and after this
+            // header.
+            let end = (self.msghdr.msg_control as usize) + (self.msghdr.msg_controllen as usize);
+            let space = end.saturating_sub(header.as_ptr() as usize);
 
             // Get the next header.
             self.header = NonNull::new(unsafe { c::CMSG_NXTHDR(&self.msghdr, header.as_ptr()) });
@@ -967,7 +989,7 @@ mod messages {
             }
 
             // SAFETY: The lifetime of `header` is tied to this.
-            Some(unsafe { &mut *header.as_ptr() })
+            Some((unsafe { &mut *header.as_ptr() }, space))
         }
 
         fn size_hint(&self) -> (usize, Option<usize>) {

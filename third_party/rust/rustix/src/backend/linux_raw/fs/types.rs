@@ -1,4 +1,6 @@
 use crate::ffi;
+#[allow(unused_imports)]
+use crate::types::Padding;
 use bitflags::bitflags;
 
 bitflags! {
@@ -67,9 +69,10 @@ bitflags! {
 }
 
 bitflags! {
-    /// `S_I*` constants for use with [`openat`], [`chmodat`], and [`fchmod`].
+    /// `S_I*` constants for use with [`openat`], [`openat2`], [`chmodat`], and [`fchmod`].
     ///
     /// [`openat`]: crate::fs::openat
+    /// [`openat2`]: crate::fs::openat2
     /// [`chmodat`]: crate::fs::chmodat
     /// [`fchmod`]: crate::fs::fchmod
     #[repr(transparent)]
@@ -533,35 +536,40 @@ bitflags! {
 
 bitflags! {
     /// `ST_*` constants for use with [`StatVfs`].
+    ///
+    /// These are the values the kernel reports in `statfs`'s `f_flags`,
+    /// which `statvfs` passes through unconverted. linux-raw-sys does not
+    /// define the `ST_*` names, and they are not all equal to the `MS_*`
+    /// ones: `ST_RELATIME` is `0x1000`, while `MS_RELATIME` is `1 << 21`.
     #[repr(transparent)]
     #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
     pub struct StatVfsMountFlags: u64 {
         /// `ST_MANDLOCK`
-        const MANDLOCK = linux_raw_sys::general::MS_MANDLOCK as u64;
+        const MANDLOCK = 0x0040;
 
         /// `ST_NOATIME`
-        const NOATIME = linux_raw_sys::general::MS_NOATIME as u64;
+        const NOATIME = 0x0400;
 
         /// `ST_NODEV`
-        const NODEV = linux_raw_sys::general::MS_NODEV as u64;
+        const NODEV = 0x0004;
 
         /// `ST_NODIRATIME`
-        const NODIRATIME = linux_raw_sys::general::MS_NODIRATIME as u64;
+        const NODIRATIME = 0x0800;
 
         /// `ST_NOEXEC`
-        const NOEXEC = linux_raw_sys::general::MS_NOEXEC as u64;
+        const NOEXEC = 0x0008;
 
         /// `ST_NOSUID`
-        const NOSUID = linux_raw_sys::general::MS_NOSUID as u64;
+        const NOSUID = 0x0002;
 
         /// `ST_RDONLY`
-        const RDONLY = linux_raw_sys::general::MS_RDONLY as u64;
+        const RDONLY = 0x0001;
 
         /// `ST_RELATIME`
-        const RELATIME = linux_raw_sys::general::MS_RELATIME as u64;
+        const RELATIME = 0x1000;
 
         /// `ST_SYNCHRONOUS`
-        const SYNCHRONOUS = linux_raw_sys::general::MS_SYNCHRONOUS as u64;
+        const SYNCHRONOUS = 0x0010;
 
         /// <https://docs.rs/bitflags/*/bitflags/#externally-defined-flags>
         const _ = !0;
@@ -639,7 +647,7 @@ pub struct Stat {
     pub st_mode: ffi::c_uint,
     pub st_uid: ffi::c_uint,
     pub st_gid: ffi::c_uint,
-    pub(crate) __pad0: ffi::c_uint,
+    pub(crate) __pad0: Padding<ffi::c_uint>,
     pub st_rdev: ffi::c_ulong,
     pub st_size: ffi::c_long,
     pub st_blksize: ffi::c_long,
@@ -650,7 +658,7 @@ pub struct Stat {
     pub st_mtime_nsec: ffi::c_ulong,
     pub st_ctime: ffi::c_long,
     pub st_ctime_nsec: ffi::c_ulong,
-    pub(crate) __unused: [ffi::c_long; 3],
+    pub(crate) __unused: Padding<[ffi::c_long; 3]>,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -665,10 +673,10 @@ pub struct Stat {
     pub st_uid: ffi::c_uint,
     pub st_gid: ffi::c_uint,
     pub st_rdev: ffi::c_ulong,
-    pub(crate) __pad1: ffi::c_ulong,
+    pub(crate) __pad1: Padding<ffi::c_ulong>,
     pub st_size: ffi::c_long,
     pub st_blksize: ffi::c_int,
-    pub(crate) __pad2: ffi::c_int,
+    pub(crate) __pad2: Padding<ffi::c_int>,
     pub st_blocks: ffi::c_long,
     pub st_atime: ffi::c_long,
     pub st_atime_nsec: ffi::c_ulong,
@@ -676,8 +684,8 @@ pub struct Stat {
     pub st_mtime_nsec: ffi::c_ulong,
     pub st_ctime: ffi::c_long,
     pub st_ctime_nsec: ffi::c_ulong,
-    pub(crate) __unused4: ffi::c_uint,
-    pub(crate) __unused5: ffi::c_uint,
+    pub(crate) __unused4: Padding<ffi::c_uint>,
+    pub(crate) __unused5: Padding<ffi::c_uint>,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -692,10 +700,10 @@ pub struct Stat {
     pub st_uid: ffi::c_uint,
     pub st_gid: ffi::c_uint,
     pub st_rdev: ffi::c_ulong,
-    pub(crate) __pad1: ffi::c_ulong,
+    pub(crate) __pad1: Padding<ffi::c_ulong>,
     pub st_size: ffi::c_long,
     pub st_blksize: ffi::c_int,
-    pub(crate) __pad2: ffi::c_int,
+    pub(crate) __pad2: Padding<ffi::c_int>,
     pub st_blocks: ffi::c_long,
     pub st_atime: ffi::c_long,
     pub st_atime_nsec: ffi::c_ulong,
@@ -703,8 +711,8 @@ pub struct Stat {
     pub st_mtime_nsec: ffi::c_ulong,
     pub st_ctime: ffi::c_long,
     pub st_ctime_nsec: ffi::c_ulong,
-    pub(crate) __unused4: ffi::c_uint,
-    pub(crate) __unused5: ffi::c_uint,
+    pub(crate) __unused4: Padding<ffi::c_uint>,
+    pub(crate) __unused5: Padding<ffi::c_uint>,
 }
 // This follows `stat`. powerpc64 defines a `stat64` but it's not used.
 #[repr(C)]
@@ -729,9 +737,9 @@ pub struct Stat {
     pub st_mtime_nsec: ffi::c_ulong,
     pub st_ctime: ffi::c_long,
     pub st_ctime_nsec: ffi::c_ulong,
-    pub(crate) __unused4: ffi::c_ulong,
-    pub(crate) __unused5: ffi::c_ulong,
-    pub(crate) __unused6: ffi::c_ulong,
+    pub(crate) __unused4: Padding<ffi::c_ulong>,
+    pub(crate) __unused5: Padding<ffi::c_ulong>,
+    pub(crate) __unused6: Padding<ffi::c_ulong>,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -745,7 +753,7 @@ pub struct Stat {
     pub st_mode: ffi::c_uint,
     pub st_uid: ffi::c_uint,
     pub st_gid: ffi::c_uint,
-    pub(crate) __pad1: ffi::c_uint,
+    pub(crate) __pad1: Padding<ffi::c_uint>,
     pub st_rdev: ffi::c_ulong,
     pub st_size: ffi::c_long, // Linux has `c_ulong` but we make it signed.
     pub st_atime: ffi::c_long,
@@ -756,7 +764,7 @@ pub struct Stat {
     pub st_ctime_nsec: ffi::c_ulong,
     pub st_blksize: ffi::c_ulong,
     pub st_blocks: ffi::c_long,
-    pub(crate) __unused: [ffi::c_ulong; 3],
+    pub(crate) __unused: Padding<[ffi::c_ulong; 3]>,
 }
 
 /// `struct statfs` for use with [`statfs`] and [`fstatfs`].
@@ -794,9 +802,9 @@ pub struct StatFs {
     #[cfg(any(target_arch = "arm", target_arch = "s390x"))]
     pub f_flags: ffi::c_uint,
     #[cfg(not(target_arch = "s390x"))]
-    pub(crate) f_spare: [ffi::c_long; 4],
+    pub(crate) f_spare: Padding<[ffi::c_long; 4]>,
     #[cfg(target_arch = "s390x")]
-    pub(crate) f_spare: [ffi::c_uint; 5],
+    pub(crate) f_spare: Padding<[ffi::c_uint; 5]>,
 }
 
 /// `fsid_t` for use with [`StatFs`].

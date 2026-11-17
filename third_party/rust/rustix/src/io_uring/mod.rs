@@ -1996,8 +1996,8 @@ mod tests {
         use sys as c;
 
         // `io_uring_ptr` is a replacement for `u64`.
-        assert_eq_size!(io_uring_ptr, u64);
-        assert_eq_align!(io_uring_ptr, u64);
+        static_assertions::assert_eq_size!(io_uring_ptr, u64);
+        static_assertions::assert_eq_align!(io_uring_ptr, u64);
 
         // Test that pointers are stored in `io_uring_ptr` in the way that
         // io_uring stores them in a `u64`.
@@ -2014,8 +2014,8 @@ mod tests {
         }
 
         // `io_uring_user_data` is a replacement for `u64`.
-        assert_eq_size!(io_uring_user_data, u64);
-        assert_eq_align!(io_uring_user_data, u64);
+        static_assertions::assert_eq_size!(io_uring_user_data, u64);
+        static_assertions::assert_eq_align!(io_uring_user_data, u64);
 
         // Test that `u64`s and pointers are properly stored in
         // `io_uring_user_data`.

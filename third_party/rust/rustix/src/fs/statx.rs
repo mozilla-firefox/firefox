@@ -2,6 +2,7 @@
 
 use crate::fd::AsFd;
 use crate::fs::AtFlags;
+use crate::types::Padding;
 use crate::{backend, io, path};
 use backend::c;
 use bitflags::bitflags;
@@ -24,7 +25,7 @@ pub struct Statx {
     pub stx_uid: u32,
     pub stx_gid: u32,
     pub stx_mode: u16,
-    pub(crate) __spare0: [u16; 1],
+    pub(crate) __spare0: Padding<[u16; 1]>,
     pub stx_ino: u64,
     pub stx_size: u64,
     pub stx_blocks: u64,
@@ -46,8 +47,8 @@ pub struct Statx {
     pub stx_atomic_write_segments_max: u32,
     pub stx_dio_read_offset_align: u32,
     pub stx_atomic_write_unit_max_opt: u32,
-    pub __spare2: [u32; 1usize],
-    pub __spare3: [u64; 8usize],
+    pub(crate) __spare2: Padding<[u32; 1usize]>,
+    pub(crate) __spare3: Padding<[u64; 8usize]>,
 }
 
 /// `struct statx_timestamp` for use with [`Statx`].
@@ -61,7 +62,7 @@ pub struct StatxTimestamp {
     /// Nanoseconds. Must be less than 1_000_000_000.
     pub tv_nsec: u32,
 
-    pub(crate) __reserved: i32,
+    pub(crate) __reserved: Padding<i32>,
 }
 
 bitflags! {

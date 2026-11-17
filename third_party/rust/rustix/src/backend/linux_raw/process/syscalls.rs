@@ -519,6 +519,15 @@ pub(crate) fn pivot_root(new_root: &CStr, put_old: &CStr) -> io::Result<()> {
 pub(crate) fn getgroups(buf: &mut [Gid]) -> io::Result<usize> {
     let len = buf.len().try_into().map_err(|_| io::Errno::NOMEM)?;
 
+    #[cfg(any(target_arch = "arm", target_arch = "sparc", target_arch = "x86"))]
+    unsafe {
+        ret_usize(syscall!(
+            __NR_getgroups32,
+            c_int(len),
+            slice_just_addr_mut(buf)
+        ))
+    }
+    #[cfg(not(any(target_arch = "arm", target_arch = "sparc", target_arch = "x86")))]
     unsafe {
         ret_usize(syscall!(
             __NR_getgroups,

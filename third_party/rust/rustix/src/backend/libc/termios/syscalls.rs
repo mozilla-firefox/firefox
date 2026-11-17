@@ -167,10 +167,9 @@ pub(crate) fn tcgetpgrp(fd: BorrowedFd<'_>) -> io::Result<Pid> {
     unsafe {
         let pid = ret_pid_t(c::tcgetpgrp(borrowed_fd(fd)))?;
 
-        // This doesn't appear to be documented, but on Linux, it appears
-        // `tcsetpgrp` can succeed and set the pid to 0 if we pass it a
-        // pseudo-terminal device fd. For now, translate it into `OPNOTSUPP`.
-        #[cfg(linux_kernel)]
+        // On some platforms, a pseudo-terminal without a foreground process
+        // group returns 0, which `Pid` cannot represent. Translate this into
+        // `OPNOTSUPP`, as in the linux_raw backend.
         if pid == 0 {
             return Err(io::Errno::OPNOTSUPP);
         }

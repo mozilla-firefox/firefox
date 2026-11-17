@@ -57,7 +57,7 @@ mod tests {
     #[test]
     fn test_layouts() {
         #[cfg(linux_raw_dep)]
-        assert_eq_size!(FsWord, linux_raw_sys::general::__fsword_t);
+        static_assertions::assert_eq_size!(FsWord, linux_raw_sys::general::__fsword_t);
 
         // Don't test against `__kernel_mode_t` on platforms where it's a
         // `u16`.
@@ -68,7 +68,7 @@ mod tests {
             target_arch = "avr",
             target_arch = "arm",
         )))]
-        assert_eq_size!(RawMode, linux_raw_sys::general::__kernel_mode_t);
+        static_assertions::assert_eq_size!(RawMode, linux_raw_sys::general::__kernel_mode_t);
 
         #[cfg(linux_raw_dep)]
         #[cfg(any(
@@ -77,7 +77,7 @@ mod tests {
             target_arch = "avr",
             target_arch = "arm",
         ))]
-        assert_eq_size!(u16, linux_raw_sys::general::__kernel_mode_t);
+        static_assertions::assert_eq_size!(u16, linux_raw_sys::general::__kernel_mode_t);
 
         let some_stat: Stat = unsafe { core::mem::zeroed() };
 

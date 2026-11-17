@@ -99,7 +99,6 @@
 #![deny(missing_docs)]
 #![allow(stable_features)]
 #![cfg_attr(linux_raw, deny(unsafe_code))]
-#![cfg_attr(rustc_attrs, feature(rustc_attrs))]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(all(wasi_ext, target_os = "wasi", feature = "std"), feature(wasi_ext))]
 #![cfg_attr(core_ffi_c, feature(core_ffi_c))]
@@ -114,7 +113,15 @@
     any(feature = "rustc-dep-of-std", core_intrinsics),
     feature(core_intrinsics)
 )]
-#![cfg_attr(asm_experimental_arch, feature(asm_experimental_arch))]
+#![cfg_attr(
+    all(
+        asm_experimental_arch,
+        not(target_arch = "s390x"),
+        not(target_arch = "powerpc"),
+        not(target_arch = "powerpc64")
+    ),
+    feature(asm_experimental_arch)
+)]
 #![cfg_attr(not(feature = "all-apis"), allow(dead_code))]
 // It is common in Linux and libc APIs for types to vary between platforms.
 #![allow(clippy::unnecessary_cast)]
@@ -153,16 +160,6 @@ extern crate rustc_std_workspace_alloc as alloc;
 #[cfg(all(feature = "alloc", not(feature = "rustc-dep-of-std")))]
 extern crate alloc;
 
-// Use `static_assertions` macros if we have them, or a polyfill otherwise.
-#[cfg(all(test, static_assertions))]
-#[macro_use]
-#[allow(unused_imports)]
-extern crate static_assertions;
-#[cfg(all(test, not(static_assertions)))]
-#[macro_use]
-#[allow(unused_imports)]
-mod static_assertions;
-
 pub mod buffer;
 #[cfg(not(windows))]
 #[macro_use]
@@ -180,6 +177,8 @@ pub(crate) mod check_types;
 pub(crate) mod bitcast;
 #[cfg(sanitize_memory)]
 pub(crate) mod msan;
+
+mod types;
 
 // linux_raw: Weak symbols are used by the use-libc-auxv feature for
 // glibc 2.15 support.
@@ -309,12 +308,21 @@ pub mod thread;
 pub mod time;
 
 // "runtime" is also a public API module, but it's only for libc-like users.
+//
+// People have been observed using it in the wild, so as a counter-measure,
+// it now has a name mangled with a random string that will rotate periodically.
 #[cfg(not(windows))]
 #[cfg(feature = "runtime")]
 #[cfg(linux_raw)]
 #[cfg_attr(not(document_experimental_runtime_api), doc(hidden))]
 #[cfg_attr(docsrs, doc(cfg(feature = "runtime")))]
-pub mod runtime;
+pub mod runtime_448b8ad740e2a26f;
+#[cfg(not(windows))]
+#[cfg(feature = "runtime")]
+#[cfg(linux_raw)]
+#[cfg_attr(not(document_experimental_runtime_api), doc(hidden))]
+#[cfg_attr(docsrs, doc(cfg(feature = "runtime")))]
+pub(crate) use runtime_448b8ad740e2a26f as runtime;
 
 // Declare "fs" as a non-public module if "fs" isn't enabled but we need it for
 // reading procfs.
@@ -383,6 +391,7 @@ mod signal;
 #[cfg(any(
     feature = "fs",
     feature = "event",
+    feature = "net",
     feature = "process",
     feature = "runtime",
     feature = "thread",

@@ -37,12 +37,12 @@ use core::mem::forget;
 /// instead, but this is not supported on all platforms.
 #[derive(Copy, Clone)]
 #[repr(transparent)]
-#[cfg_attr(rustc_attrs, rustc_layout_scalar_valid_range_start(0))]
+//#[rustc_layout_scalar_valid_range_start(0)]
 // libstd/os/raw/mod.rs assures me that every libstd-supported platform has a
 // 32-bit c_int. Below is -2, in two's complement, but that only works out
 // because c_int is 32 bits.
-#[cfg_attr(rustc_attrs, rustc_layout_scalar_valid_range_end(0xFF_FF_FF_FE))]
-#[cfg_attr(rustc_attrs, rustc_nonnull_optimization_guaranteed)]
+//#[rustc_layout_scalar_valid_range_end(0xFF_FF_FF_FE)]
+//#[rustc_nonnull_optimization_guaranteed]
 #[cfg_attr(staged_api, stable(feature = "io_safety", since = "1.63.0"))]
 pub struct BorrowedFd<'fd> {
     fd: RawFd,
@@ -61,13 +61,13 @@ pub struct BorrowedFd<'fd> {
 ///
 /// You can use [`AsFd::as_fd`] to obtain a [`BorrowedFd`].
 #[repr(transparent)]
-#[cfg_attr(rustc_attrs, rustc_layout_scalar_valid_range_start(0))]
+//#[rustc_layout_scalar_valid_range_start(0)]
 // libstd/os/raw/mod.rs assures me that every libstd-supported platform has a
 // 32-bit c_int. Below is -2, in two's complement, but that only works out
 // because c_int is 32 bits.
-#[cfg_attr(rustc_attrs, rustc_layout_scalar_valid_range_end(0xFF_FF_FF_FE))]
+//#[rustc_layout_scalar_valid_range_end(0xFF_FF_FF_FE)]
 #[cfg_attr(staged_api, unstable(feature = "io_safety", issue = "87074"))]
-#[cfg_attr(rustc_attrs, rustc_nonnull_optimization_guaranteed)]
+//#[rustc_nonnull_optimization_guaranteed]
 pub struct OwnedFd {
     fd: RawFd,
 }

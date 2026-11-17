@@ -10,6 +10,7 @@ use crate::backend::conv::ret_discarded_char_ptr;
 #[cfg(not(any(
     target_os = "espidf",
     target_os = "fuchsia",
+    target_os = "horizon",
     target_os = "redox",
     target_os = "vita",
     target_os = "wasi"
@@ -48,6 +49,7 @@ use crate::process::Signal;
 #[cfg(not(any(
     target_os = "espidf",
     target_os = "fuchsia",
+    target_os = "horizon",
     target_os = "vita",
     target_os = "wasi"
 )))]

@@ -11,9 +11,9 @@
 
 [package]
 edition = "2021"
-rust-version = "1.63"
+rust-version = "1.65"
 name = "rustix"
-version = "1.1.4"
+version = "1.1.6"
 authors = [
     "Dan Gohman <dev@sunfishcode.online>",
     "Jakub Konka <kubkon@jakubkonka.com>",
@@ -124,7 +124,6 @@ rustc-dep-of-std = [
     "core",
     "rustc-std-workspace-alloc",
     "linux-raw-sys/rustc-dep-of-std",
-    "bitflags/rustc-dep-of-std",
 ]
 shm = ["fs"]
 std = [
@@ -156,23 +155,23 @@ path = "benches/mod.rs"
 harness = false
 
 [dependencies.bitflags]
-version = "2.4.0"
+version = "2.9.2"
 default-features = false
 
 [dependencies.core]
-version = "1.0.0"
+version = "1.0.1"
 optional = true
 package = "rustc-std-workspace-core"
 
 [dependencies.rustc-std-workspace-alloc]
-version = "1.0.0"
+version = "1.0.1"
 optional = true
 
 [dev-dependencies.flate2]
 version = "1.0"
 
 [dev-dependencies.libc]
-version = "0.2.171"
+version = "0.2.182"
 
 [dev-dependencies.libc_errno]
 version = "0.3.10"
@@ -275,11 +274,9 @@ check-cfg = [
     "cfg(lower_upper_exp_for_non_zero)",
     "cfg(sanitize_memory)",
     "cfg(netbsdlike)",
-    "cfg(rustc_attrs)",
     "cfg(rustc_diagnostics)",
     "cfg(solarish)",
     "cfg(staged_api)",
-    "cfg(static_assertions)",
     "cfg(thumb_mode)",
     "cfg(wasi)",
     "cfg(wasi_ext)",

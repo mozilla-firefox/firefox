@@ -223,6 +223,11 @@ pub fn futimens<Fd: AsFd>(fd: Fd, times: &Timestamps) -> io::Result<()> {
 /// `posix_fallocate` and not the more general form, no `FallocateFlags` values
 /// are defined so it will always be empty.
 ///
+/// # Warning
+///
+/// On Apple platforms, if `offset + len` is less than the original file size,
+/// the file is truncated to that length.
+///
 /// # References
 ///  - [POSIX]
 ///  - [Linux `fallocate`]

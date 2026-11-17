@@ -109,9 +109,9 @@ mod tests {
     #[cfg(not(any(apple, target_os = "wasi")))]
     #[test]
     fn test_types() {
-        assert_eq_size!(PipeFlags, c::c_int);
+        static_assertions::assert_eq_size!(PipeFlags, c::c_int);
 
         #[cfg(linux_kernel)]
-        assert_eq_size!(SpliceFlags, c::c_int);
+        static_assertions::assert_eq_size!(SpliceFlags, c::c_int);
     }
 }

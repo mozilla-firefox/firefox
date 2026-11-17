@@ -474,30 +474,8 @@ mod readwrite_pv64v2 {
 ))]
 pub(super) use readwrite_pv64v2::{preadv64v2 as preadv2, pwritev64v2 as pwritev2};
 
-// Rust's libc crate lacks statx for Non-glibc targets.
-#[cfg(feature = "fs")]
-#[cfg(all(
-    linux_like,
-    linux_raw_dep,
-    not(any(
-        target_os = "emscripten",
-        target_env = "gnu",
-        all(target_arch = "loongarch64", target_env = "musl")
-    ))
-))]
-mod statx_flags {
-    pub(crate) use linux_raw_sys::general::{
-        STATX_ALL, STATX_ATIME, STATX_BASIC_STATS, STATX_BLOCKS, STATX_BTIME, STATX_CTIME,
-        STATX_DIOALIGN, STATX_GID, STATX_INO, STATX_MNT_ID, STATX_MODE, STATX_MTIME, STATX_NLINK,
-        STATX_SIZE, STATX_TYPE, STATX_UID,
-    };
-
-    pub(crate) use linux_raw_sys::general::{
-        STATX_ATTR_APPEND, STATX_ATTR_AUTOMOUNT, STATX_ATTR_COMPRESSED, STATX_ATTR_DAX,
-        STATX_ATTR_ENCRYPTED, STATX_ATTR_IMMUTABLE, STATX_ATTR_MOUNT_ROOT, STATX_ATTR_NODUMP,
-        STATX_ATTR_VERITY,
-    };
-}
+// Rust's libc crate > v0.2.189 may also define these constants,
+// so we use an explicit import.
 #[cfg(feature = "fs")]
 #[cfg(all(
     linux_like,
@@ -509,7 +487,30 @@ mod statx_flags {
         all(target_arch = "loongarch64", target_env = "musl")
     ))
 ))]
-pub(crate) use statx_flags::*;
+pub(crate) use linux_raw_sys::general::{
+    STATX_ALL, STATX_ATIME, STATX_BASIC_STATS, STATX_BLOCKS, STATX_BTIME, STATX_CTIME,
+    STATX_DIOALIGN, STATX_GID, STATX_INO, STATX_MNT_ID, STATX_MODE, STATX_MTIME, STATX_NLINK,
+    STATX_SIZE, STATX_TYPE, STATX_UID,
+};
+
+// Rust's libc crate > v0.2.189 may also define these constants,
+// so we use an explicit import.
+#[cfg(feature = "fs")]
+#[cfg(all(
+    linux_like,
+    linux_raw_dep,
+    not(any(
+        target_os = "android",
+        target_os = "emscripten",
+        target_env = "gnu",
+        all(target_arch = "loongarch64", target_env = "musl")
+    ))
+))]
+pub(crate) use linux_raw_sys::general::{
+    STATX_ATTR_APPEND, STATX_ATTR_AUTOMOUNT, STATX_ATTR_COMPRESSED, STATX_ATTR_DAX,
+    STATX_ATTR_ENCRYPTED, STATX_ATTR_IMMUTABLE, STATX_ATTR_MOUNT_ROOT, STATX_ATTR_NODUMP,
+    STATX_ATTR_VERITY,
+};
 
 #[cfg(feature = "fs")]
 #[cfg(target_os = "android")]
