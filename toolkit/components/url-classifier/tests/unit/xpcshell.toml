@@ -58,6 +58,10 @@ run-sequentially = ["true"] # shares the list manager singleton
 
 ["test_provider_url.js"]
 
+["test_realtime_key_service.js"]
+prefs = ["security.storage.encryption.sqlite.enabled=false"]
+tags = "remote-settings"
+
 ["test_rsListService.js"]
 prefs = ["security.storage.encryption.sqlite.enabled=false"]
 tags = "remote-settings"

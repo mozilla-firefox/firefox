@@ -1,0 +1,25 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+/**
+ * A service that provides the OHTTP key config for Safe Browsing real-time
+ * checks, served via Remote Settings. Parent process, main thread only.
+ *
+ * Once getKeyConfig() has been called, the service notifies the
+ * "safebrowsing-realtime-key-changed" topic whenever a Remote Settings sync
+ * changes the key config. Observers should call getKeyConfig() again to
+ * get the new value.
+ */
+[scriptable, uuid(00250d15-4576-4e5e-b9ed-4ccb7420204c)]
+interface nsIUrlClassifierRealTimeKeyService : nsISupports
+{
+  /**
+   * Return a Promise that resolves to a Uint8Array containing a single
+   * OHTTP Key Config (RFC 9458 Section 3.1), or to null if no valid key
+   * is available.
+   */
+  Promise getKeyConfig();
+};
