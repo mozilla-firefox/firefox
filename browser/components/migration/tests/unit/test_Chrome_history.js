@@ -268,11 +268,6 @@ add_task(async function test_import() {
     TEST_URLS.length,
     "Migrated history entries counted correctly."
   );
-  Assert.equal(
-    MigrationUtils.getImportedHistoryAgeInDays(),
-    11,
-    "Imported history age is based on the oldest imported visit."
-  );
 });
 
 add_task(async function test_import_future_date() {

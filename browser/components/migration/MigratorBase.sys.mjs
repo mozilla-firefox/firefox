@@ -422,7 +422,6 @@ export class MigratorBase {
       )) {
         lazy.MigrationUtils._importQuantities[resourceType] = 0;
       }
-      lazy.MigrationUtils._oldestImportedVisitDate = null;
       notify("Migration:Started");
       for (let [migrationType, itemResources] of resourcesGroupedByItems) {
         notify("Migration:ItemBeforeMigrate", migrationType);
