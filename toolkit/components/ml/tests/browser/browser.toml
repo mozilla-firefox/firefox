@@ -95,6 +95,8 @@ support-files = ["ml_inference_session_memory.worker.mjs"]
 ["browser_ml_model_hub_engine_e2e.js"]
 support-files = ["ml_model_hub_echo_stub.worker.mjs"]
 
+["browser_ml_model_hub_etag.js"]
+
 ["browser_ml_native.js"]
 skip-if = [
   "asan",
