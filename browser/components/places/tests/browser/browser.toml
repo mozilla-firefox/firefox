@@ -118,6 +118,9 @@ support-files = ["pageopeningwindow.html"]
 ["browser_bug427633_no_newfolder_if_noip.js"]
 
 ["browser_bug485100-change-case-loses-tag.js"]
+skip-if = [
+  "macos_vm", # Bug 2088997 - fails only on the macOS tart VMs
+]
 
 ["browser_bug631374_tags_selector_scroll.js"]
 support-files = ["favicon-normal16.png"]

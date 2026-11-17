@@ -347,6 +347,9 @@ skip-if = [
 ["browser_tab_groups_state.js"]
 
 ["browser_tab_groups_undo.js"]
+skip-if = [
+  "macos_vm", # Bug 2088997 - fails only on the macOS tart VMs
+]
 
 ["browser_tab_label_during_restore.js"]
 https_first_disabled = true

@@ -47,6 +47,9 @@ support-files = ["silence.ogg"]
 ["browser_ext_commands_openShortcutSettings.js"]
 
 ["browser_ext_commands_update.js"]
+skip-if = [
+  "macos_vm", # Bug 2084556 - frequent on the macOS tart VMs
+]
 
 ["browser_ext_connect_and_move_tabs.js"]
 
