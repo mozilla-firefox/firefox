@@ -147,7 +147,6 @@ module.exports = [
       "browser/extensions/newtab/content-src/styles/nova/activity-stream.scss",
       "browser/extensions/webcompat/about-compat/aboutCompat.css",
       "browser/themes/osx/places/organizer.css",
-      "browser/themes/shared/UITour.css",
       "browser/themes/shared/aiWindowSidebar.css",
       "browser/themes/shared/autocomplete.css",
       "browser/themes/shared/contextmenu.css",

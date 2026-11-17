@@ -4,6 +4,12 @@
 
 @namespace html url("http://www.w3.org/1999/xhtml");
 
+:root {
+  --uitour-highlight-background-color-base: var(--color-cyan-30);
+  --uitour-highlight-border-color-animation-start: var(--color-blue-40);
+  --uitour-highlight-border-color-animation-middle: var(--color-red-50);
+}
+
 /* UI Tour */
 
 @keyframes uitour-wobble {
@@ -32,13 +38,13 @@
 
 @keyframes uitour-color {
   from {
-    border-color: #5b9cd9;
+    border-color: var(--uitour-highlight-border-color-animation-start);
   }
   50% {
-    border-color: #ff0000;
+    border-color: var(--uitour-highlight-border-color-animation-middle);
   }
   to {
-    border-color: #5b9cd9;
+    border-color: var(--uitour-highlight-border-color-animation-start);
   }
 }
 
@@ -57,13 +63,14 @@
      and for the box-shadow of #UITourHighlight. */
   --panel-padding: 4px;
   /* Compensate the displacement caused by padding. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin: -4px;
 }
 
 #UITourHighlight {
-  background-color: rgba(0, 200, 215, 0.3);
-  min-height: 24px;
-  min-width: 24px;
+  background-color: color-mix(in srgb, var(--uitour-highlight-background-color-base) 30%, transparent);
+  min-height: var(--size-item-medium);
+  min-width: var(--size-item-medium);
 
   &.rounded-highlight {
     border-radius: var(--border-radius-small);
@@ -100,29 +107,30 @@
 
 #UITourTooltipTitleContainer {
   align-items: flex-start;
-  margin-bottom: 10px;
+  margin-bottom: var(--space-medium);
 }
 
 #UITourTooltipIcon {
   width: var(--icon-size-xxlarge);
   height: var(--icon-size-xxlarge);
-  margin-inline-end: 10px;
+  margin-inline-end: var(--space-medium);
 }
 
 #UITourTooltipTitle,
 #UITourTooltipDescription {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   max-width: 20rem;
 }
 
 #UITourTooltipTitle {
-  font-size: 1.45rem;
+  font-size: var(--font-size-heading-large);
   font-weight: var(--font-weight-bold);
   margin: 0;
 }
 
 #UITourTooltipDescription {
   margin-inline: 0;
-  font-size: 1.15rem;
+  font-size: var(--font-size-large);
   line-height: 1.8rem;
   margin-bottom: 0; /* Override global.css */
 }
@@ -133,7 +141,8 @@
   border: none;
   background-color: transparent;
   min-width: 0;
-  margin-inline-start: 4px;
+  margin-inline-start: var(--space-xsmall);
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin-top: -2px;
 }
 
@@ -146,13 +155,13 @@
   background-color: var(--panel-footer-background-color);
   color: var(--panel-footer-text-color);
   border-top: 1px solid var(--panel-separator-color);
-  margin: 10px -16px -16px;
-  padding: 16px;
+  margin: var(--space-medium) calc(-1 * var(--panel-padding)) calc(-1 * var(--panel-padding));
+  padding: var(--panel-padding);
 }
 
 #UITourTooltipButtons > label,
 #UITourTooltipButtons > button {
-  margin: 0 15px;
+  margin: 0 var(--space-large);
 }
 
 #UITourTooltipButtons > label:first-child,
@@ -166,32 +175,31 @@
 }
 
 #UITourTooltipButtons > button[image] > .button-box > .button-icon {
-  width: 16px;
-  height: 16px;
-  margin-inline-end: 5px;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  margin-inline-end: var(--space-xsmall);
 }
 
 #UITourTooltipButtons > label,
 #UITourTooltipButtons > button .button-text {
-  font-size: 1.15rem;
+  font-size: var(--font-size-large);
 }
 
 #UITourTooltipButtons > button:not(.button-link) {
   appearance: none;
-  background-color: rgb(251, 251, 251);
+  background-color: var(--button-background-color);
   border-radius: var(--border-radius-xsmall);
   border: 1px solid;
-  border-color: rgb(192, 192, 192);
-  color: rgb(71, 71, 71);
-  padding: 4px 30px;
+  border-color: var(--button-border-color);
+  color: var(--button-text-color);
+  padding: var(--space-xsmall) var(--space-xxlarge);
   transition-property: background-color, border-color;
   transition-duration: 150ms;
 }
 
 #UITourTooltipButtons > button:not(.button-link, :active):hover {
-  background-color: hsla(210, 4%, 10%, 0.15);
-  border-color: hsla(210, 4%, 10%, 0.15);
-  box-shadow: 0 1px 0 0 hsla(210, 4%, 10%, 0.05) inset;
+  background-color: var(--button-background-color-hover);
+  border-color: var(--button-border-color-hover);
 }
 
 #UITourTooltipButtons > label,
@@ -201,16 +209,15 @@
   border: none;
   box-shadow: none;
   color: var(--text-color-disabled);
-  padding-inline: 10px;
+  padding-inline: var(--space-medium);
 }
 
-/* The primary button gets the same color as the customize button. */
 #UITourTooltipButtons > button.button-primary {
-  background-color: rgb(116, 191, 67);
-  color: white;
-  padding-inline: 30px;
+  background-color: var(--button-background-color-primary);
+  color: var(--button-text-color-primary);
+  padding-inline: var(--space-xxlarge);
 }
 
 #UITourTooltipButtons > button.button-primary:not(:active):hover {
-  background-color: rgb(105, 173, 61);
+  background-color: var(--button-background-color-primary-hover);
 }
