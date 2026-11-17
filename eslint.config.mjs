@@ -10,6 +10,7 @@ import json from "@eslint/json";
 import lit from "eslint-plugin-lit";
 import mozilla from "eslint-plugin-mozilla";
 import reactHooks from "eslint-plugin-react-hooks";
+import jsxA11y from "eslint-plugin-jsx-a11y";
 
 import fs from "fs";
 import globals from "globals";
@@ -465,6 +466,18 @@ let config = [
       // errors, so that raised issues get addressed one way or the other.
       "react-hooks/exhaustive-deps": "error",
     },
+  },
+  {
+    name: "react-jsx-a11y",
+    files: wrapPaths({
+      paths: [
+        "browser/components/aboutwelcome/**",
+        "browser/components/asrouter/**",
+        "browser/extensions/newtab/**",
+      ],
+      excludedExtensions: ["json"],
+    }),
+    ...jsxA11y.flatConfigs.recommended,
   },
   {
     name: "disable-no-insecure-url-for-http-testing",
