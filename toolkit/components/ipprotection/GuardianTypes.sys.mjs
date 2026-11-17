@@ -205,7 +205,8 @@ export class ProxyPass extends EventTarget {
  * @property {string} token - The bearer token to authenticate with.
  * @property {() => void|Promise<void>} [onTokenRejected] - Invalidates the
  *   token after Guardian refused it, so that the caller can retry with a fresh
- *   one.
+ *   one. Awaited, but best effort: GuardianClient logs and swallows a failure
+ *   rather than letting it mask the 401 it was reacting to.
  */
 
 /**

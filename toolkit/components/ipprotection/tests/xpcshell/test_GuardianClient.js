@@ -848,6 +848,54 @@ add_task(async function test_handle_without_onTokenRejected() {
   }).forEach(test => add_task(test));
 });
 
+// An owner that fails to invalidate must not mask the 401 we were reacting to.
+add_task(async function test_onTokenRejected_failure_is_contained() {
+  const failures = [
+    {
+      name: "rejects",
+      hook: () => Promise.reject(new Error("no-auth-provider")),
+    },
+    {
+      name: "throws synchronously",
+      hook: () => {
+        throw new Error("no-auth-provider");
+      },
+    },
+    // What sendRequestForResult's onFinalize does on dispatcher teardown.
+    { name: "rejects with undefined", hook: () => Promise.reject() },
+  ];
+
+  AUTHENTICATED_METHODS.flatMap(({ name, path }) =>
+    failures.map(failure => async () => {
+      using serverWrapper = makeGuardianServer({ [path]: respondWith(401) });
+      // eslint-disable-next-line no-unused-vars
+      using _setup = setupGuardianClient(serverWrapper);
+      const client = new GuardianClient();
+
+      const baseline = await client[name](makeTokenHandle());
+
+      let thrown = null;
+      const contained = await client[name](makeTokenHandle(failure.hook)).catch(
+        error => {
+          thrown = error ?? new Error("rejected with a falsy value");
+          return null;
+        }
+      );
+
+      Assert.equal(
+        thrown,
+        null,
+        `${name}: a hook that ${failure.name} should not throw`
+      );
+      Assert.equal(
+        JSON.stringify(contained),
+        JSON.stringify(baseline),
+        `${name}: a hook that ${failure.name} should not change the result`
+      );
+    })
+  ).forEach(test => add_task(test));
+});
+
 add_task(async function test_parseGuardianSuccessURL() {
   const testcases = [
     {

@@ -2308,6 +2308,7 @@ package org.mozilla.geckoview {
   }
 
   public static interface IPProtectionController.AuthProvider {
+    method @NonNull @UiThread default public GeckoResult<Void> onTokenRejected(@NonNull String);
     method @NonNull @UiThread default public GeckoResult<String> onTokenRequest();
   }
 

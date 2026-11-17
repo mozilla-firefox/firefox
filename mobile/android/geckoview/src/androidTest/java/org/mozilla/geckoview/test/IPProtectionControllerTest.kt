@@ -237,7 +237,14 @@ class IPProtectionControllerTest : BaseSessionTest() {
 
     private class StubAuthProvider(private val token: GeckoResult<String> = GeckoResult.fromValue("stub-token")) :
         IPProtectionController.AuthProvider {
+        val rejectedTokens = mutableListOf<String>()
+
         override fun onTokenRequest(): GeckoResult<String> = token
+
+        override fun onTokenRejected(token: String): GeckoResult<Void> {
+            rejectedTokens.add(token)
+            return GeckoResult.fromValue(null)
+        }
     }
 
     @Test
@@ -284,12 +291,56 @@ class IPProtectionControllerTest : BaseSessionTest() {
     }
 
     private fun assertGetTokenError(expected: String) {
+        assertQueryError("GeckoView:IPProtection:GetToken", expected)
+    }
+
+    private fun assertQueryError(event: String, expected: String, message: GeckoBundle? = null) {
         val thrown =
             assertThrows(RuntimeException::class.java) {
-                sessionRule.waitForResult(EventDispatcher.getInstance().queryBundle("GeckoView:IPProtection:GetToken"))
+                sessionRule.waitForResult(EventDispatcher.getInstance().queryBundle(event, message))
             }
         val cause = thrown.cause as EventDispatcher.QueryException
         assertThat(cause.data.toString(), equalTo(expected))
+    }
+
+    private fun tokenBundle(token: String) = GeckoBundle().apply { putString("token", token) }
+
+    private fun rejectToken(message: GeckoBundle): GeckoResult<Void> =
+        EventDispatcher.getInstance().queryVoid("GeckoView:IPProtection:TokenRejected", message)
+
+    private fun assertRejectTokenError(expected: String, message: GeckoBundle) {
+        assertQueryError("GeckoView:IPProtection:TokenRejected", expected, message)
+    }
+
+    @Test
+    fun tokenRejectedEventIsRoutedToAuthProvider() {
+        val provider = StubAuthProvider()
+        ipProtectionController.setAuthProvider(provider)
+        sessionRule.waitForResult(rejectToken(tokenBundle("dead-token")))
+        assertThat(provider.rejectedTokens, equalTo(listOf("dead-token")))
+    }
+
+    // The callback must be answered on every path: Gecko awaits invalidation with
+    // no timeout, so dropping it would wedge the rejected request forever.
+    @Test
+    fun tokenRejectedEventAlwaysAnswers() {
+        ipProtectionController.setAuthProvider(null)
+        assertRejectTokenError("no_auth_provider", tokenBundle("dead-token"))
+
+        val provider = StubAuthProvider()
+        ipProtectionController.setAuthProvider(provider)
+        assertRejectTokenError("login_needed", GeckoBundle())
+
+        assertThat(provider.rejectedTokens.isEmpty(), equalTo(true))
+    }
+
+    // Unlike onTokenRequest, the default resolves rather than failing: an embedder
+    // whose tokens are owned elsewhere has nothing to invalidate.
+    @Test
+    fun tokenRejectedEventDefaultImplementationSucceeds() {
+        ipProtectionController.setAuthProvider(object : IPProtectionController.AuthProvider {})
+
+        sessionRule.waitForResult(rejectToken(tokenBundle("dead-token")))
     }
 
     @Test

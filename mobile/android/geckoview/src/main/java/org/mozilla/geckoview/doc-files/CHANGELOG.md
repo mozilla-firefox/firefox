@@ -20,11 +20,14 @@ exclude: true
     [`GeckoRuntimeSettings.getCreditCardSecurityCodeEnabled`][162.4] to control whether credit card
     security codes (CVV) are captured from web forms.
     ([bug 2089899]({{bugzilla}}2089899))
+- Added experimental [`IPProtectionController.AuthProvider#onTokenRejected`][162.5] so embedders can
+    drop an authentication token that was rejected and mint a fresh one for the next request.
 
 [162.1]: {{javadoc_uri}}/PictureInPictureController.SessionPictureInPicture.html#setKeepActive(boolean)
 [162.2]: {{javadoc_uri}}/GeckoRuntimeSettings.Builder.html#creditCardSecurityCodeEnabled(boolean)
 [162.3]: {{javadoc_uri}}/GeckoRuntimeSettings.html#setCreditCardSecurityCodeEnabled(boolean)
 [162.4]: {{javadoc_uri}}/GeckoRuntimeSettings.html#getCreditCardSecurityCodeEnabled()
+[162.5]: {{javadoc_uri}}/IPProtectionController.AuthProvider.html#onTokenRejected(java.lang.String)
 
 ## v161
 - Added [`Autocomplete.CreditCard.securityCode`][161.1] and
@@ -2137,4 +2140,4 @@ to allow adding gecko profiler markers.
 [65.24]: {{javadoc_uri}}/CrashReporter.html#sendCrashReport(android.content.Context,android.os.Bundle,java.lang.String)
 [65.25]: {{javadoc_uri}}/GeckoResult.html
 
-[api-version]: 84097c0827787aa49f849e05a64cc73edcb6b760
+[api-version]: 11f32dda08405905bd0733948cf79826ff755845

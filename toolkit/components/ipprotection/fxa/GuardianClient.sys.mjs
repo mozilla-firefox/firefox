@@ -224,7 +224,7 @@ export class GuardianClient {
     }
     const status = response.status;
     if (status === 401) {
-      await tokenHandle.onTokenRejected?.();
+      await this.#invalidateToken(tokenHandle);
     }
 
     let usage = null;
@@ -290,7 +290,7 @@ export class GuardianClient {
     }
     const status = response.status;
     if (status === 401) {
-      await tokenHandle.onTokenRejected?.();
+      await this.#invalidateToken(tokenHandle);
     }
     try {
       const entitlement = await Entitlement.fromResponse(response);
@@ -334,7 +334,7 @@ export class GuardianClient {
       return null;
     }
     if (response.status === 401) {
-      await tokenHandle.onTokenRejected?.();
+      await this.#invalidateToken(tokenHandle);
       return null;
     }
     try {
@@ -377,7 +377,7 @@ export class GuardianClient {
       return { ok: false, error: AUTH_ERRORS.NETWORK_ERROR };
     }
     if (response.status === 401) {
-      await tokenHandle.onTokenRejected?.();
+      await this.#invalidateToken(tokenHandle);
     }
     if (!response.ok) {
       return { ok: false, error: GuardianClient.toError(response.status) };
@@ -387,6 +387,20 @@ export class GuardianClient {
       return { ok: true, entitlement };
     } catch (error) {
       return { ok: false, error: AUTH_ERRORS.PARSE_ERROR };
+    }
+  }
+
+  /**
+   * Tells the token's owner that Guardian refused it. Best-effort cleanup: a
+   * failure here must not mask the 401 the caller still needs.
+   *
+   * @param {TokenHandle} tokenHandle
+   */
+  async #invalidateToken(tokenHandle) {
+    try {
+      await tokenHandle.onTokenRejected?.();
+    } catch (error) {
+      lazy.logConsole.warn("Failed to invalidate a rejected token:", error);
     }
   }
 
