@@ -348,6 +348,10 @@ class Shape : public gc::CellWithTenuredGCPointer<gc::TenuredCell, BaseShape> {
     SMALL_SLOTSPAN_MAX = 0x3ff,  // 10 bits.
     SMALL_SLOTSPAN_SHIFT = 11,
     SMALL_SLOTSPAN_MASK = uint32_t(SMALL_SLOTSPAN_MAX << SMALL_SLOTSPAN_SHIFT),
+
+    // For SharedShape: an empty initial shape that can be replaced in the
+    // initial shape table by SharedShape::insertInitialShape.
+    REPLACEABLE_INITIAL_SHAPE_BIT = 1 << 21,
   };
 
   uint32_t immutableFlags;   // Immutable flags, see above.
@@ -512,10 +516,7 @@ class NativeShape : public Shape {
 class SharedShape : public NativeShape {
   friend class js::gc::CellAllocator;
   SharedShape(BaseShape* base, ObjectFlags objectFlags, uint32_t nfixed,
-              SharedPropMap* map, uint32_t mapLength)
-      : NativeShape(Kind::Shared, base, objectFlags, nfixed, map, mapLength) {
-    initSmallSlotSpan();
-  }
+              SharedPropMap* map, uint32_t mapLength);
 
   static SharedShape* new_(JSContext* cx, Handle<BaseShape*> base,
                            ObjectFlags objectFlags, uint32_t nfixed,
@@ -569,6 +570,10 @@ class SharedShape : public NativeShape {
       return span;
     }
     return slotSpanSlow();
+  }
+
+  bool isReplaceableInitialShape() const {
+    return immutableFlags & REPLACEABLE_INITIAL_SHAPE_BIT;
   }
 
   /*

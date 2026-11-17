@@ -13,9 +13,14 @@
 #include "js/friend/WindowProxy.h"  // js::IsWindow
 #include "js/HashTable.h"
 #include "js/UniquePtr.h"
+#include "vm/ArrayObject.h"
+#include "vm/BoundFunctionObject.h"
+#include "vm/ErrorObject.h"
 #include "vm/JSContext.h"
 #include "vm/JSObject.h"
+#include "vm/RegExpObject.h"
 #include "vm/ShapeZone.h"
+#include "vm/StringObject.h"
 #include "vm/Watchtower.h"
 
 #include "gc/StableCellHasher-inl.h"
@@ -1111,6 +1116,24 @@ BaseShape* BaseShape::get(JSContext* cx, const JSClass* clasp, JS::Realm* realm,
   return nbase;
 }
 
+// Returns true for classes that use the SharedShape::insertInitialShape
+// mechanism.
+static bool HasCustomInitialShape(const JSClass* clasp) {
+  return clasp == &ArrayObject::class_ || ErrorObject::isErrorClass(clasp) ||
+         clasp == &RegExpObject::class_ || clasp == &StringObject::class_ ||
+         clasp == &BoundFunctionObject::class_;
+}
+
+SharedShape::SharedShape(BaseShape* base, ObjectFlags objectFlags,
+                         uint32_t nfixed, SharedPropMap* map,
+                         uint32_t mapLength)
+    : NativeShape(Kind::Shared, base, objectFlags, nfixed, map, mapLength) {
+  initSmallSlotSpan();
+  if (mapLength == 0 && HasCustomInitialShape(base->clasp())) {
+    immutableFlags |= REPLACEABLE_INITIAL_SHAPE_BIT;
+  }
+}
+
 // static
 SharedShape* SharedShape::new_(JSContext* cx, Handle<BaseShape*> base,
                                ObjectFlags objectFlags, uint32_t nfixed,
@@ -1250,16 +1273,18 @@ SharedShape* SharedShape::getInitialShape(JSContext* cx, const JSClass* clasp,
   auto ptr = MakeDependentAddPtr(
       cx, table, Lookup(clasp, realm, proto, nfixed, objectFlags));
   if (ptr) {
-    // Cache the result of this lookup on the prototype's shape.
-    if (proto.isObject()) {
+    // Cache the result of this lookup on the prototype's shape. Don't cache
+    // shapes that insertInitialShape can replace later.
+    SharedShape* shape = *ptr;
+    if (proto.isObject() && !shape->isReplaceableInitialShape()) {
       JSObject* protoObj = proto.toObject();
       Shape* protoShape = protoObj->shape();
       if (!protoShape->cache().isForAdd() &&
           RegisterShapeCache(cx, protoShape)) {
-        protoShape->cacheRef().setShapeWithProto(*ptr);
+        protoShape->cacheRef().setShapeWithProto(shape);
       }
     }
-    return *ptr;
+    return shape;
   }
 
   Rooted<TaggedProto> protoRoot(cx, proto);
@@ -1356,13 +1381,15 @@ SharedShape* SharedShape::getInitialOrPropMapShape(
 /* static */
 void SharedShape::insertInitialShape(JSContext* cx,
                                      Handle<SharedShape*> shape) {
+  MOZ_ASSERT(HasCustomInitialShape(shape->getObjectClass()));
+
   using Lookup = InitialShapeHasher::Lookup;
   Lookup lookup(shape->getObjectClass(), shape->realm(), shape->proto(),
                 shape->numFixedSlots(), shape->objectFlags());
 
   auto& table = cx->zone()->shapeZone().initialShapes;
   InitialShapeSet::Ptr p = table.lookup(lookup);
-  MOZ_ASSERT(p);
+  MOZ_RELEASE_ASSERT(p);
 
   // The metadata callback can end up causing redundant changes of the initial
   // shape.
@@ -1371,19 +1398,22 @@ void SharedShape::insertInitialShape(JSContext* cx,
     return;
   }
 
+  MOZ_ASSERT(initialShape->isReplaceableInitialShape());
+
   MOZ_ASSERT(initialShape->numFixedSlots() == shape->numFixedSlots());
   MOZ_ASSERT(initialShape->base() == shape->base());
   MOZ_ASSERT(initialShape->objectFlags() == shape->objectFlags());
 
   table.replaceKey(p, lookup, shape.get());
 
-  // Purge the prototype's shape cache entry.
+#ifdef DEBUG
+  // Replaceable initial shapes are never stored in the prototype's shape cache.
   if (shape->proto().isObject()) {
-    JSObject* protoObj = shape->proto().toObject();
-    if (protoObj->shape()->cache().isShapeWithProto()) {
-      protoObj->shape()->cacheRef().setNone();
-    }
+    ShapeCachePtr cache = shape->proto().toObject()->shape()->cache();
+    MOZ_ASSERT_IF(cache.isShapeWithProto(),
+                  cache.toShapeWithProto() != initialShape);
   }
+#endif
 }
 
 /* static */
