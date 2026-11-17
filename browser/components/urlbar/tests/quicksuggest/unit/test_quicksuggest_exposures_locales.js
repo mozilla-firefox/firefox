@@ -66,39 +66,63 @@ add_setup(async function () {
 });
 
 add_task(async function suggestEnabledLocales() {
+  let queries = [
+    {
+      query: "amp",
+      expectedResults: [
+        QuickSuggestTestUtils.ampResult({ suggestedIndex: -1 }),
+        makeExpectedExposureResult("test-exposure-bbb"),
+        makeExpectedExposureResult("test-exposure-aaa"),
+      ],
+    },
+    {
+      query: "wikipedia",
+      expectedResults: [
+        QuickSuggestTestUtils.wikipediaResult(),
+        makeExpectedExposureResult("test-exposure-bbb"),
+        makeExpectedExposureResult("test-exposure-aaa"),
+      ],
+    },
+    {
+      query: "aaa keyword",
+      expectedResults: [makeExpectedExposureResult("test-exposure-aaa")],
+    },
+    {
+      query: "aaa bbb keyword",
+      expectedResults: [
+        makeExpectedExposureResult("test-exposure-bbb"),
+        makeExpectedExposureResult("test-exposure-aaa"),
+      ],
+    },
+  ];
+
   let tests = [
     {
       homeRegion: "US",
       locales: ["en-US", "en-CA", "en-GB"],
       expectedQuickSuggestEnabled: true,
+      queries,
+    },
+    {
+      homeRegion: "CA",
+      locales: ["en-US", "en-CA", "en-GB"],
+      expectedQuickSuggestEnabled: true,
+      queries,
+    },
+    {
+      homeRegion: "CA",
+      locales: ["fr"],
+      expectedQuickSuggestEnabled: true,
+      expectedSponsoredEnabled: false,
       queries: [
         {
           query: "amp",
           expectedResults: [
-            QuickSuggestTestUtils.ampResult({ suggestedIndex: -1 }),
             makeExpectedExposureResult("test-exposure-bbb"),
             makeExpectedExposureResult("test-exposure-aaa"),
           ],
         },
-        {
-          query: "wikipedia",
-          expectedResults: [
-            QuickSuggestTestUtils.wikipediaResult(),
-            makeExpectedExposureResult("test-exposure-bbb"),
-            makeExpectedExposureResult("test-exposure-aaa"),
-          ],
-        },
-        {
-          query: "aaa keyword",
-          expectedResults: [makeExpectedExposureResult("test-exposure-aaa")],
-        },
-        {
-          query: "aaa bbb keyword",
-          expectedResults: [
-            makeExpectedExposureResult("test-exposure-bbb"),
-            makeExpectedExposureResult("test-exposure-aaa"),
-          ],
-        },
+        ...queries.filter(q => q.query != "amp"),
       ],
     },
   ];
@@ -147,12 +171,6 @@ add_task(async function suggestDisabledLocales() {
       queries,
     },
     {
-      homeRegion: "CA",
-      locales: ["en-US", "en-CA", "en-GB", "fr"],
-      expectedQuickSuggestEnabled: false,
-      queries,
-    },
-    {
       homeRegion: "XX",
       locales: ["de", "en-US", "fr"],
       expectedQuickSuggestEnabled: false,
@@ -169,6 +187,7 @@ async function doLocaleTest({
   homeRegion,
   locales,
   expectedQuickSuggestEnabled,
+  expectedSponsoredEnabled = expectedQuickSuggestEnabled,
   queries,
 }) {
   for (let locale of locales) {
@@ -181,7 +200,10 @@ async function doLocaleTest({
       callback: async () => {
         // Sanity-check prefs. At this point, the value of `quickSuggestEnabled`
         // will be the value of its fallback pref, `quicksuggest.enabled`.
-        assertSuggestPrefs(expectedQuickSuggestEnabled);
+        assertSuggestPrefs(
+          expectedQuickSuggestEnabled,
+          expectedSponsoredEnabled
+        );
         Assert.equal(
           UrlbarPrefs.get("quickSuggestEnabled"),
           expectedQuickSuggestEnabled,
@@ -197,7 +219,10 @@ async function doLocaleTest({
         await QuickSuggestTestUtils.forceSync();
 
         // All default- and user-branch Suggest prefs should remain the same.
-        assertSuggestPrefs(expectedQuickSuggestEnabled);
+        assertSuggestPrefs(
+          expectedQuickSuggestEnabled,
+          expectedSponsoredEnabled
+        );
 
         // But `quickSuggestEnabled` should be true, since we just installed
         // an experiment with it set to true.
@@ -224,21 +249,24 @@ async function doLocaleTest({
   }
 }
 
-function assertSuggestPrefs(expectedEnabled) {
-  let prefs = [
-    "browser.urlbar.quicksuggest.enabled",
-    "browser.urlbar.suggest.quicksuggest.all",
-    "browser.urlbar.suggest.quicksuggest.sponsored",
-  ];
-  for (let p of prefs) {
+function assertSuggestPrefs(
+  expectedEnabled,
+  expectedSponsored = expectedEnabled
+) {
+  let prefs = {
+    "browser.urlbar.quicksuggest.enabled": expectedEnabled,
+    "browser.urlbar.suggest.quicksuggest.all": expectedEnabled,
+    "browser.urlbar.suggest.quicksuggest.sponsored": expectedSponsored,
+  };
+  for (let [p, expected] of Object.entries(prefs)) {
     Assert.equal(
       Services.prefs.getDefaultBranch("").getBoolPref(p),
-      expectedEnabled,
+      expected,
       "Default-branch value should be correct: " + p
     );
     Assert.equal(
       Services.prefs.getBranch("").getBoolPref(p),
-      expectedEnabled,
+      expected,
       "User-branch value should be correct: " + p
     );
   }

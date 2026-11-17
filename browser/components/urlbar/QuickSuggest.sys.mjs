@@ -112,6 +112,9 @@ const SUGGEST_PREFS = Object.freeze({
 
       // EU expansion in 157 (bug 2066294)
       ...REGION_LOCALE_DEFAULTS_EU_157_BOOLEAN,
+
+      // CA expansion in 162 (bug 2090434)
+      CA: [null, true],
     },
   },
   "quicksuggest.online.available": {
@@ -144,6 +147,9 @@ const SUGGEST_PREFS = Object.freeze({
           ]
         )
       ),
+
+      // CA expansion in 162 (bug 2090434)
+      CA: [null, SETTINGS_UI.OFFLINE_ONLY],
     },
   },
   "suggest.quicksuggest.all": {
@@ -157,6 +163,9 @@ const SUGGEST_PREFS = Object.freeze({
 
       // EU expansion in 157 (bug 2066294)
       ...REGION_LOCALE_DEFAULTS_EU_157_BOOLEAN,
+
+      // CA expansion in 162 (bug 2090434)
+      CA: [null, true],
     },
   },
   "suggest.quicksuggest.sponsored": {
@@ -171,6 +180,9 @@ const SUGGEST_PREFS = Object.freeze({
 
       // EU expansion in 157 (bug 2066294)
       ...REGION_LOCALE_DEFAULTS_EU_157_BOOLEAN,
+
+      // CA expansion in 162 (bug 2090434)
+      CA: [EN_LOCALES, true],
     },
   },
 
@@ -193,6 +205,9 @@ const SUGGEST_PREFS = Object.freeze({
 
       // EU expansion in 157 (bug 2066294)
       ...REGION_LOCALE_DEFAULTS_EU_157_BOOLEAN,
+
+      // CA expansion in 162 (bug 2090434)
+      CA: [EN_LOCALES, true],
     },
   },
   "flightStatus.featureGate": {
@@ -249,6 +264,9 @@ const SUGGEST_PREFS = Object.freeze({
 
       // EU expansion in 157 (bug 2066294)
       ...REGION_LOCALE_DEFAULTS_EU_157_BOOLEAN,
+
+      // CA expansion in 162 (bug 2090434)
+      CA: [null, true],
     },
   },
   "yelp.featureGate": {
