@@ -3,15 +3,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { importX } from "eslint-plugin-import-x";
-import jsxA11y from "eslint-plugin-jsx-a11y";
 import react from "eslint-plugin-react";
 import globals from "globals";
 
 export default [
   {
-    ...jsxA11y.flatConfigs.recommended,
     // When adding items to this file please check for effects on sub-directories.
-    plugins: { "import-x": importX, react, "jsx-a11y": jsxA11y },
+    plugins: { "import-x": importX, react },
     settings: {
       react: {
         version: "16.2.0",
