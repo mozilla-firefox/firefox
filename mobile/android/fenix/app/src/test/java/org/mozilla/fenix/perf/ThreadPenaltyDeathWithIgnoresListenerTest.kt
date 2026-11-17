@@ -61,6 +61,24 @@ class ThreadPenaltyDeathWithIgnoresListenerTest {
     }
 
     @Test
+    fun `GIVEN we're on a Samsung WHEN provided a FreecessController violation THEN it will be ignored and logged`() {
+        every { mockManufacturerChecker.isSamsung() } returns true
+
+        every { violation.stackTrace } returns getFreecessControllerStackTrace()
+        listener.onThreadViolation(violation)
+
+        verify { logger.debug("Ignoring StrictMode ThreadPolicy violation", violation) }
+    }
+
+    @Test(expected = RuntimeException::class)
+    fun `GIVEN we're not on a Samsung WHEN provided a FreecessController violation THEN we throw an exception`() {
+        every { mockManufacturerChecker.isSamsung() } returns false
+
+        every { violation.stackTrace } returns getFreecessControllerStackTrace()
+        listener.onThreadViolation(violation)
+    }
+
+    @Test
     fun `GIVEN we're on a Samsung WHEN provided the EdmStorageProvider violation THEN it will be ignored and logged`() {
         every { mockManufacturerChecker.isSamsung() } returns true
 
@@ -121,6 +139,8 @@ class ThreadPenaltyDeathWithIgnoresListenerTest {
     }
 
     private fun getIdsControllerStackTrace() = StackTraces.getStackTraceFromLogcat("IdsControllerLogcat.txt")
+
+    private fun getFreecessControllerStackTrace() = StackTraces.getStackTraceFromLogcat("FreecessControllerLogcat.txt")
 
     private fun getEdmStorageProviderStackTrace() =
         StackTraces.getStackTraceFromLogcat("EdmStorageProviderBaseLogcat.txt")

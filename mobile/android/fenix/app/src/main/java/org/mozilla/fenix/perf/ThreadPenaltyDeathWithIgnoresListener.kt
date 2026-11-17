@@ -13,6 +13,7 @@ import mozilla.components.support.utils.BuildManufacturerChecker
 import mozilla.components.support.utils.ManufacturerChecker
 
 private const val FCQN_EDM_STORAGE_PROVIDER_BASE = "com.android.server.enterprise.storage.EdmStorageProviderBase"
+private const val FREECESS_CONTROLLER_CLASS = "com.android.server.am.FreecessController"
 private const val IDS_CONTROLLER_CLASS = "android.app.IdsController"
 private const val INSTRUMENTED_HOOKS_CLASS = "com.android.tools.deploy.instrument.InstrumentationHooks"
 private const val ACTIVITY_MANAGER_SERVICE_CLASS = "com.android.server.am.ActivityManagerService"
@@ -55,6 +56,7 @@ class ThreadPenaltyDeathWithIgnoresListener(
         isSamsungLgEdmStorageProviderStartupViolation(violation) ||
             containsInstrumentedHooksClass(violation) ||
             isSamsungIdsController(violation) ||
+            isSamsungFreecessController(violation) ||
             isXiaomiMultiLangHelperViolation(violation) ||
             isFinishAttachApplication(violation) ||
             containsInMemoryDexClassLoader(violation) ||
@@ -66,6 +68,13 @@ class ThreadPenaltyDeathWithIgnoresListener(
         // IdsController doesn't appear in Android code search so we match against it.
         // https://cs.android.com/search?q=IdsController
         return manufacturerChecker.isSamsung() && violation.stackTrace.any { it.className == IDS_CONTROLLER_CLASS }
+    }
+
+    private fun isSamsungFreecessController(violation: Violation): Boolean {
+        // See https://bugzilla.mozilla.org/show_bug.cgi?id=2094273
+        // Samsung's app freezer reads /proc in system_server while handling startActivity, and the
+        // DiskReadViolation is propagated back over binder to the calling app thread.
+        return manufacturerChecker.isSamsung() && violation.stackTrace.any { it.className == FREECESS_CONTROLLER_CLASS }
     }
 
     private fun isSamsungLgEdmStorageProviderStartupViolation(violation: Violation): Boolean {
