@@ -97,15 +97,20 @@ class CacheEncryptionFlipPurgeTestCase(MarionetteTestCase):
         # initial build finishes), and only as a side effect of an entry
         # operation. The write thresholds are lowered to 1 change / 0ms in
         # setUp, so keep writing entries until the index file appears on disk.
+        # Sample existence only once per iteration: each index rewrite removes
+        # the old file before renaming index.tmp over it, so a second check
+        # could hit that window.
         self.write_entry(URL)
         deadline = time.monotonic() + 30
         i = 0
-        while not self.index_path.exists() and time.monotonic() < deadline:
+        index_written = self.index_path.exists()
+        while not index_written and time.monotonic() < deadline:
             self.write_entry(f"{URL}-{i}")
             i += 1
             time.sleep(0.2)
+            index_written = self.index_path.exists()
         self.assertTrue(
-            self.index_path.exists(),
+            index_written,
             "the disk cache index file must be written to disk",
         )
 
