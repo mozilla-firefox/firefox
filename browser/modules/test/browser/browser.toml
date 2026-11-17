@@ -98,7 +98,31 @@ https_first_disabled = true
 
 ["browser_aswebauth_session.js"]
 run-if = ["os == 'mac'"]
-support-files = ["browser_aswebauth_form.sjs"]
+support-files = [
+  "browser_aswebauth_form.sjs",
+  "head_aswebauth.js",
+]
+
+["browser_aswebauth_session_cancel.js"]
+run-if = ["os == 'mac'"]
+support-files = [
+  "browser_aswebauth_form.sjs",
+  "head_aswebauth.js",
+]
+
+["browser_aswebauth_session_ephemeral.js"]
+run-if = ["os == 'mac'"]
+support-files = [
+  "browser_aswebauth_form.sjs",
+  "head_aswebauth.js",
+]
+
+["browser_aswebauth_session_window.js"]
+run-if = ["os == 'mac'"]
+support-files = [
+  "browser_aswebauth_form.sjs",
+  "head_aswebauth.js",
+]
 
 ["browser_taskbar_preview.js"]
 run-if = [
