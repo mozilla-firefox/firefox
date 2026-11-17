@@ -147,6 +147,9 @@ nsMenuX::nsMenuX(nsMenuParentX* aParent, nsMenuGroupOwnerX* aMenuGroupOwner,
   mNativeMenuItem = [[GeckoNSMenuItem alloc] initWithTitle:newCocoaLabelString
                                                     action:nil
                                              keyEquivalent:@""];
+  if (@available(macOS 27.0, *)) {
+    mNativeMenuItem.preferredImageVisibility = NSMenuItemImageVisibilityVisible;
+  }
   mNativeMenuItem.submenu = mNativeMenu;
 
   if (mNestingDepth > kMaxMenuNestingDepth) {

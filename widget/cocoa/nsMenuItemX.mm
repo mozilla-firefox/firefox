@@ -100,6 +100,10 @@ nsMenuItemX::nsMenuItemX(nsMenuX* aParent, const nsString& aLabel,
     mNativeMenuItem = [[GeckoNSMenuItem alloc] initWithTitle:newCocoaLabelString
                                                       action:nil
                                                keyEquivalent:@""];
+    if (@available(macOS 27.0, *)) {
+      mNativeMenuItem.preferredImageVisibility =
+          NSMenuItemImageVisibilityVisible;
+    }
 
     SetEnabled();
     SetChecked();
