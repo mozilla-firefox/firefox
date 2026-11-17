@@ -48,6 +48,8 @@ tags = "remote-settings"
 
 ["browser_asrouter_universal_infobar.js"]
 
+["browser_asrouter_universal_infobar_lifecycle.js"]
+
 ["browser_backup_restore_spotlight.js"]
 
 ["browser_bookmarks_bar_button.js"]
