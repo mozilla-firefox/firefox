@@ -2849,18 +2849,7 @@ class Document : public nsINode,
    * Returns whether this document is cookie averse. See
    * https://html.spec.whatwg.org/multipage/dom.html#cookie-averse-document-object
    */
-  bool IsCookieAverse() const {
-    // If we are a document that "has no browsing context."
-    if (!GetInnerWindow()) {
-      return true;
-    }
-
-    // If we are a document "whose URL's scheme is not a network scheme."
-    // NB: Explicitly allow file: URIs to store cookies.
-
-    return !net::SchemeIsHttpOrHttps(NodePrincipal()) &&
-           !NodePrincipal()->SchemeIs("file");
-  }
+  bool IsCookieAverse() const;
 
   bool IsLoadedAsData() const { return mLoadedAsData; }
 

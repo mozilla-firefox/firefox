@@ -10,6 +10,7 @@ add_task(async function () {
   // Disable the Local Mode notification as it forces the toolbox to resize
   // which cause some unexpected updates in the storage panel.
   await pushPref("devtools.local-mode.noticed", true);
+  await pushPref("network.cookie.blockFileScheme", false);
 
   const TESTPAGE = "storage-file-url.html";
 

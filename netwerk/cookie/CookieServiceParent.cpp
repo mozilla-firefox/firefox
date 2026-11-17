@@ -339,6 +339,10 @@ IPCResult CookieServiceParent::SetCookies(
     return IPC_FAIL(this, "aHost must not be null");
   }
 
+  if (!CookieCommons::IsSchemeSupported(aHost)) {
+    return IPC_OK();
+  }
+
   nsAutoCString baseDomain;
   bool requireHostMatch = false;
   if (NS_FAILED(CookieCommons::GetBaseDomain(mTLDService, aHost, baseDomain,

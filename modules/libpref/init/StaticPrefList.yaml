@@ -15073,6 +15073,14 @@
   value: false
   mirror: always
 
+# Whether to block cookies for file:// URLs. Cookies already stored for
+# file:// documents are kept in storage but are no longer exposed; they become
+# visible again if this pref is turned off.
+- name: network.cookie.blockFileScheme
+  type: RelaxedAtomicBool
+  value: @IS_NIGHTLY_BUILD@
+  mirror: always
+
 # Whether to support CHIPS(Cookies Having Independent Partitioned State).
 - name: network.cookie.CHIPS.enabled
   type: RelaxedAtomicBool

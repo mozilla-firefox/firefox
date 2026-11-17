@@ -156,22 +156,6 @@ networking:
       - edgul@mozilla.com
     expires: 168
 
-  cookie_file_present:
-    type: boolean
-    description: >
-      Whether this profile holds at least one cookie set by a file:// URL
-      document.
-    bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2069649
-    data_reviews:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2069649
-    data_sensitivity:
-      - technical
-    notification_emails:
-      - necko@mozilla.com
-      - baku@mozilla.com
-    expires: 166
-
   cookie_count_part_by_key:
     type: custom_distribution
     description: >

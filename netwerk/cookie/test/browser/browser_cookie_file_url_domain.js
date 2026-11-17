@@ -7,6 +7,7 @@
 registerCleanupFunction(() => {
   Services.cookies.removeAll();
   Services.prefs.clearUserPref("dom.security.https_first");
+  Services.prefs.clearUserPref("network.cookie.blockFileScheme");
   Services.prefs.clearUserPref("network.cookie.cookieBehavior");
   Services.prefs.clearUserPref(
     "network.cookieJarSettings.unblocked_for_testing"
@@ -15,6 +16,7 @@ registerCleanupFunction(() => {
 
 add_task(async function test_file_url_external_domain_rejected() {
   Services.prefs.setBoolPref("dom.security.https_first", false);
+  Services.prefs.setBoolPref("network.cookie.blockFileScheme", false);
   Services.prefs.setIntPref("network.cookie.cookieBehavior", 0);
   Services.prefs.setBoolPref(
     "network.cookieJarSettings.unblocked_for_testing",

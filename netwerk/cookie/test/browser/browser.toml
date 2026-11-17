@@ -31,6 +31,9 @@ support-files = ["chips.sjs"]
 ["browser_cookie_empty_name_value.js"]
 support-files = ["cookie_empty_name_value.sjs"]
 
+["browser_cookie_file_url_blocked.js"]
+support-files = ["file_cookie_domain.html"]
+
 ["browser_cookie_file_url_domain.js"]
 support-files = ["file_cookie_domain.html"]
 

@@ -803,7 +803,8 @@ bool CookieCommons::IsSchemeSupported(nsIURI* aURI) {
 // static
 bool CookieCommons::IsSchemeSupported(const nsACString& aScheme) {
   return aScheme.Equals("https") || aScheme.Equals("http") ||
-         aScheme.Equals("file");
+         (aScheme.Equals("file") &&
+          !StaticPrefs::network_cookie_blockFileScheme());
 }
 
 // static
