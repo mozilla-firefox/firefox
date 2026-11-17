@@ -119,12 +119,6 @@ SystemGlobal::Resolve(nsIXPConnectWrappedNative* wrapper, JSContext* cx,
       return NS_ERROR_FAILURE;
     }
     *resolvedp = true;
-  } else if (id == xpccx->GetStringID(XPCJSContext::IDX_STORAGE)) {
-    *_retval = xpc::SandboxCreateStorage(cx, obj);
-    if (!*_retval) {
-      return NS_ERROR_FAILURE;
-    }
-    *resolvedp = true;
   }
 
   return NS_OK;
@@ -143,8 +137,7 @@ SystemGlobal::NewEnumerate(nsIXPConnectWrappedNative* wrapper, JSContext* cx,
       !properties.append(xpccx->GetStringID(XPCJSContext::IDX_INDEXEDDB)) ||
       !properties.append(
           xpccx->GetStringID(XPCJSContext::IDX_STRUCTUREDCLONE)) ||
-      !properties.append(xpccx->GetStringID(XPCJSContext::IDX_LOCKS)) ||
-      !properties.append(xpccx->GetStringID(XPCJSContext::IDX_STORAGE))) {
+      !properties.append(xpccx->GetStringID(XPCJSContext::IDX_LOCKS))) {
     return NS_ERROR_FAILURE;
   }
 

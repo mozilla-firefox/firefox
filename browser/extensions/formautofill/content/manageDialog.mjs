@@ -105,8 +105,8 @@ class ManageRecords {
   }
 
   async _loadRecords() {
-    let autofillStorage = await this.getStorage();
-    let records = await autofillStorage.getAll();
+    let storage = await this.getStorage();
+    let records = await storage.getAll();
     // Sort by last used time starting with most recent
     records.sort((a, b) => {
       let aLastUsed = a.timeLastUsed || a.timeLastModified;
@@ -159,13 +159,13 @@ class ManageRecords {
    * @param  {Array<DOMElement>} options
    */
   async removeRecords(options) {
-    let autofillStorage = await this.getStorage();
+    let storage = await this.getStorage();
     // Pause listening to storage change event to avoid triggering `loadRecords`
     // when removing records
     Services.obs.removeObserver(this, "formautofill-storage-changed");
 
     for (let option of options) {
-      autofillStorage.remove(option.value);
+      storage.remove(option.value);
       option.remove();
     }
     this.updateButtonsStates(this._selectedOptions);

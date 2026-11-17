@@ -169,9 +169,9 @@ export var AboutHomeStartupCache = {
     });
 
     let lci = Services.loadContextInfo.default;
-    let cacheStorage = Services.cache2.diskCacheStorage(lci);
+    let storage = Services.cache2.diskCacheStorage(lci);
     try {
-      cacheStorage.asyncOpenURI(
+      storage.asyncOpenURI(
         this.aboutHomeURI,
         "",
         Ci.nsICacheStorage.OPEN_PRIORITY,

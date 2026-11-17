@@ -22,6 +22,7 @@ ChromeUtils.defineESModuleGetters(
     RemoteSettings: "resource://services-settings/remote-settings.sys.mjs",
     TranslationsParent: "resource://gre/actors/TranslationsParent.sys.mjs",
     FEATURES: "chrome://global/content/ml/EngineProcess.sys.mjs",
+    PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   },
   ES_MODULES_OPTIONS
 );
@@ -184,19 +185,6 @@ export class ProgressAndStatusCallbackParams {
         this[key] = params[key];
       }
     }
-  }
-
-  /**
-   * A copy of this event with the given fields changed. This instance is
-   * left untouched.
-   *
-   * @param {Partial<ProgressAndStatusCallbackParams>} changes
-   * @returns {ProgressAndStatusCallbackParams}
-   */
-  cloneWith(changes) {
-    const copy = new ProgressAndStatusCallbackParams(this);
-    copy.update(changes);
-    return copy;
   }
 }
 
@@ -541,8 +529,8 @@ export async function readResponseToWriter({
 
   // Pipes the response body through the progress stream into the writable stream and close the stream on completion/error.
   await response.body
-    .pipeThrough(progressStream, { signal: abortSignal ?? undefined })
-    .pipeTo(writableStream, { signal: abortSignal ?? undefined });
+    .pipeThrough(progressStream, { signal: abortSignal })
+    .pipeTo(writableStream, { signal: abortSignal });
 }
 
 // Create a "namespace" to make it easier to import multiple names.
@@ -1151,6 +1139,16 @@ export async function fileDisplayInfoForEngineIds(engineIds, files) {
 export function generateUUID() {
   lazy.console.debug("generating uuid");
   return crypto.randomUUID();
+}
+
+/**
+ * Checks if we are in private browsing mode
+ *
+ * @returns {boolean} True if we are in private browsing mode
+ */
+export function isPrivateBrowsing() {
+  const win = Services.wm.getMostRecentBrowserWindow() ?? null;
+  return lazy.PrivateBrowsingUtils.isWindowPrivate(win);
 }
 
 /**

@@ -817,6 +817,5 @@ export default {
     indexedDB: "readonly",
     structuredClone: "readonly",
     locks: "readonly",
-    storage: "readonly",
   },
 };

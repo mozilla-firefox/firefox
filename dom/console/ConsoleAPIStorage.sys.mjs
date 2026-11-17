@@ -182,13 +182,13 @@ ConsoleAPIStorageService.prototype = {
         _consoleStorage.set(aId, []);
       }
 
-      let events = _consoleStorage.get(aId);
+      let storage = _consoleStorage.get(aId);
 
-      events.push(aEvent);
+      storage.push(aEvent);
 
       // truncate
-      if (events.length > STORAGE_MAX_EVENTS) {
-        events.shift();
+      if (storage.length > STORAGE_MAX_EVENTS) {
+        storage.shift();
       }
     }
 
