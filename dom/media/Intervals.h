@@ -328,7 +328,8 @@ class IntervalSet {
     }
     // Most of our actual usage is adding an interval that will be outside the
     // range. We can speed up normalization here.
-    if (aInterval.RightOf(last)) {
+    if (last.mStart <= aInterval.mStart) {
+      MOZ_ASSERT(aInterval.RightOf(last));
       mIntervals.AppendElement(aInterval);
       return *this;
     }

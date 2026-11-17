@@ -817,3 +817,18 @@ TEST(IntervalSet, Substraction)
   EXPECT_EQ(6, i0[1].mStart);
   EXPECT_EQ(10, i0[1].mEnd);
 }
+
+TEST(IntervalSet, AddBeforeShortLastIntervalWithFuzz)
+{
+  IntIntervals i0;
+  i0 += IntInterval(0, 5);
+  i0 += IntInterval(387, 390, 1);
+  i0 += IntInterval(385, 386, 5);
+
+  EXPECT_EQ(2u, i0.Length());
+  EXPECT_EQ(0, i0[0].mStart);
+  EXPECT_EQ(5, i0[0].mEnd);
+  EXPECT_EQ(385, i0[1].mStart);
+  EXPECT_EQ(390, i0[1].mEnd);
+  EXPECT_EQ(390, i0.GetEnd());
+}
