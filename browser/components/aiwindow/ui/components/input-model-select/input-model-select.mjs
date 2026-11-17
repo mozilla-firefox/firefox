@@ -21,19 +21,30 @@ const { XPCOMUtils } = ChromeUtils.importESModule(
 );
 
 const CUSTOM_MODEL_NAME_PREF = "browser.smartwindow.model";
-const { getModelDisplayOrder } = window.IS_STORYBOOK
-  ? {
-      getModelDisplayOrder: () => ["3", "1", "2"],
-    }
-  : ChromeUtils.importESModule(
-      "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs"
-    );
+const { getModelDisplayOrder, AUTO_MODEL_CHOICE_ID, isAutoModelEnabled } =
+  window.IS_STORYBOOK
+    ? {
+        getModelDisplayOrder: () => ["3", "1", "2"],
+        AUTO_MODEL_CHOICE_ID: "4",
+        isAutoModelEnabled: () => false,
+      }
+    : ChromeUtils.importESModule(
+        "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs"
+      );
 
 const BUTTON_LABEL_L10N_IDS = {
   0: "aiwindow-input-model-select-button-label-custom",
   1: "aiwindow-input-model-select-button-label-fast",
   2: "aiwindow-input-model-select-button-label-allpurpose",
   3: "aiwindow-input-model-select-button-label-personal",
+  4: "aiwindow-input-model-select-button-label-auto",
+};
+const AUTO_MODEL_DETAILS_L10N_IDS = {
+  ...BUTTON_LABEL_L10N_IDS,
+  1: "aiwindow-input-model-select-fast-description",
+  2: "aiwindow-input-model-select-flexible-description",
+  3: "aiwindow-input-model-select-personal-description",
+  4: "aiwindow-input-model-select-auto-description",
 };
 
 /**
@@ -179,6 +190,9 @@ export class InputModelSelect extends MozLitElement {
     }
 
     const buttonLabel = this.#modelBrandName(selectedModel);
+    const detailsL10nIds = isAutoModelEnabled()
+      ? AUTO_MODEL_DETAILS_L10N_IDS
+      : BUTTON_LABEL_L10N_IDS;
 
     const panelListTemplate = html`<panel-list
       id=${this._menuId}
@@ -212,6 +226,13 @@ export class InputModelSelect extends MozLitElement {
                       class="model-item-label"
                       data-l10n-id=${this.#getButtonLabelL10nId(item.index)}
                     ></span>`}
+                ${item.index === AUTO_MODEL_CHOICE_ID &&
+                item.index !== this.defaultModelChoiceId
+                  ? html`<moz-badge
+                      type="new"
+                      data-l10n-id="aiwindow-input-model-select-recommended-badge"
+                    ></moz-badge>`
+                  : ""}
                 ${item.index === this.defaultModelChoiceId
                   ? html`<moz-badge
                       type="new"
@@ -221,7 +242,7 @@ export class InputModelSelect extends MozLitElement {
               </span>
               <span
                 class="model-item-details"
-                data-l10n-id=${this.#getButtonLabelL10nId(item.index)}
+                data-l10n-id=${detailsL10nIds[item.index]}
               ></span>
             </span>
             ${item.model === this.selectedModelId

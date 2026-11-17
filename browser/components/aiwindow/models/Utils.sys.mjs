@@ -572,13 +572,15 @@ export async function resolveChatModelChoice(
       return null;
     }
 
-    const details = parseModelDetails(record);
+    const details =
+      choiceId === AUTO_MODEL_CHOICE_ID ? null : parseModelDetails(record);
     return {
       model: record.model,
       ownerName: details?.ownerName || record.owner_name || "",
       labelId: details?.labelId ?? "",
       shortName: details?.shortName ?? "",
       brandName: details?.brandName ?? "",
+      ...(record.inference_model && { inferenceModel: record.inference_model }),
     };
   } catch (error) {
     console.warn(
@@ -645,6 +647,7 @@ export async function getModelForChoice(choiceId = getCurrentModelChoiceId()) {
  * @property {string} [labelId] - Fallback label identifier for the choice
  * @property {string} [shortName] - Display name of the model collection
  * @property {string} [brandName] - Short brand name for the model
+ * @property {string} [inferenceModel] - Model the request is routed to
  */
 
 /**
@@ -655,9 +658,12 @@ export async function getModelForChoice(choiceId = getCurrentModelChoiceId()) {
  */
 let _modelsDataCache = null;
 
+export const MODELS_DATA_CHANGED_TOPIC = "smartwindow-models-data-changed";
+
 export async function refreshModelsDataCache() {
   _modelsDataCache = null;
   await getAllModelsData();
+  Services.obs.notifyObservers(null, MODELS_DATA_CHANGED_TOPIC);
 }
 
 // The cache only holds models in getModelDisplayOrder(), which changes with the
