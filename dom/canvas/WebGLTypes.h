@@ -684,7 +684,7 @@ struct PaddedBase {
   T val = {};
 
  private:
-  [[maybe_unused]] uint8_t padding[Padding] = {};
+  uint8_t padding[Padding] = {};
 };
 
 template <class T>
