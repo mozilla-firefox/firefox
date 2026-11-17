@@ -1175,6 +1175,11 @@ Element* AutoClonedRangeArray::GetClosestAncestorAnyListElementOfRange() const {
 
 void AutoClonedRangeArray::RemoveCollapsedRanges(
     PreservePrimaryRangeIfAllRangesCollapsed aPreservePrimaryRange) {
+  if (mRanges.IsEmpty()) {
+    MOZ_ASSERT(!mAnchorFocusRange);
+    return;
+  }
+  MOZ_ASSERT(mAnchorFocusRange);
   for (const auto index : Reversed(IntegerRange(mRanges.Length()))) {
     if (mRanges[index]->Collapsed()) {
       mRanges.RemoveElementAt(index);
