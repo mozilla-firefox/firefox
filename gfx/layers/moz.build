@@ -259,12 +259,16 @@ if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
 if CONFIG["MOZ_WAYLAND"]:
     EXPORTS.mozilla.layers += [
         "NativeLayerRemoteWayland.h",
+        "NativeLayerRootRemoteWaylandChild.h",
+        "NativeLayerRootRemoteWaylandParent.h",
         "NativeLayerWayland.h",
         "NativeLayerWaylandSurfaceHandler.h",
         "SurfacePoolWayland.h",
     ]
     UNIFIED_SOURCES += [
         "NativeLayerRemoteWayland.cpp",
+        "NativeLayerRootRemoteWaylandChild.cpp",
+        "NativeLayerRootRemoteWaylandParent.cpp",
         "NativeLayerWayland.cpp",
         "NativeLayerWaylandSurfaceHandler.cpp",
         "SurfacePoolWayland.cpp",
