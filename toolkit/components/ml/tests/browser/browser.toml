@@ -88,6 +88,8 @@ support-files = ["ml_inference_session_memory.worker.mjs"]
 
 ["browser_ml_mock_llm_engine.js"]
 
+["browser_ml_model_hub_download.js"]
+
 ["browser_ml_native.js"]
 skip-if = [
   "asan",
