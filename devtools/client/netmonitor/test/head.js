@@ -32,11 +32,6 @@ const {
 } = require("resource://devtools/client/netmonitor/src/utils/format-utils.js");
 
 const {
-  getSortedRequests,
-  getRequestById,
-} = require("resource://devtools/client/netmonitor/src/selectors/index.js");
-
-const {
   getUnicodeUrl,
   getUnicodeHostname,
 } = require("resource://devtools/client/shared/unicode-url.js");
@@ -1257,12 +1252,18 @@ function getSettingsMenuItem(monitor, itemKey) {
 /**
  * Wait for lazy fields to be loaded in a request.
  *
- * @param {object} Store - redux store containing request list.
+ * @param {object} monitor - The netmonitor instance.
  * @param {Array} fields - array of strings which contain field names to be checked
  * @param {number} id - The id of the request whose data we need to wait for
  * @param {number} index - The position of the request in the sorted request list.
  */
-function waitForRequestData(store, fields, id, index = 0) {
+function waitForRequestData(monitor, fields, id, index = 0) {
+  const { store, windowRequire } = monitor.panelWin;
+
+  const { getSortedRequests, getRequestById } = windowRequire(
+    "devtools/client/netmonitor/src/selectors/index"
+  );
+
   return waitUntil(() => {
     let item;
     if (id) {
@@ -1298,7 +1299,7 @@ async function validateRequests(requests, monitor, options = {}) {
   const { allowDifferentOrder } = options;
   const { document, store, windowRequire } = monitor.panelWin;
 
-  const { getDisplayedRequests } = windowRequire(
+  const { getDisplayedRequests, getSortedRequests } = windowRequire(
     "devtools/client/netmonitor/src/selectors/index"
   );
   const sortedRequests = getSortedRequests(store.getState());

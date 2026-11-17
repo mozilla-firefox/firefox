@@ -56,7 +56,7 @@ add_task(async function () {
 
   let clonedItem = getSortedRequests(store.getState())[1];
 
-  await waitForRequestData(store, ["requestHeaders"], clonedItem.id);
+  await waitForRequestData(monitor, ["requestHeaders"], clonedItem.id);
 
   clonedItem = getSortedRequests(store.getState())[1];
 

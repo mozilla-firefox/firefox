@@ -127,7 +127,7 @@ add_task(async function () {
       "The HTTP version is incorrect."
     );
 
-    await waitForRequestData(store, ["requestHeaders", "responseHeaders"]);
+    await waitForRequestData(monitor, ["requestHeaders", "responseHeaders"]);
 
     is(
       tabpanel.querySelectorAll(".accordion-item").length,

@@ -46,6 +46,9 @@ add_task(async function testAuthRequestsDisplayedSeparately() {
 
   const { store, windowRequire } = monitor.panelWin;
   const Actions = windowRequire("devtools/client/netmonitor/src/actions/index");
+  const { getSortedRequests } = windowRequire(
+    "devtools/client/netmonitor/src/selectors/index"
+  );
   store.dispatch(Actions.batchEnable(false));
 
   const authURL = getUniqueAuthURL();

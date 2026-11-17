@@ -43,7 +43,7 @@ add_task(async function () {
   );
   clickOnRequestRow(firstRequest);
   await waitForHeaders;
-  await waitForRequestData(store, ["requestHeaders", "responseHeaders"]);
+  await waitForRequestData(monitor, ["requestHeaders", "responseHeaders"]);
   EventUtils.sendMouseEvent({ type: "contextmenu" }, firstRequest);
 
   // Open "New Request" form and resend.

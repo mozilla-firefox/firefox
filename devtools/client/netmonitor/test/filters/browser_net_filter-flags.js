@@ -143,7 +143,7 @@ const EXPECTED_REQUESTS = [
 
 add_task(async function () {
   const { monitor } = await initNetMonitor(FILTERING_URL, { requestCount: 1 });
-  const { document, store, windowRequire, connector } = monitor.panelWin;
+  const { document, store, windowRequire } = monitor.panelWin;
   const Actions = windowRequire("devtools/client/netmonitor/src/actions/index");
   const { getDisplayedRequests, getSortedRequests } = windowRequire(
     "devtools/client/netmonitor/src/selectors/index"
@@ -366,9 +366,7 @@ add_task(async function () {
 
   async function testContents(visibility, waitForAllResponseHeaders = false) {
     if (waitForAllResponseHeaders) {
-      await waitForRequestDataForAllRequests(store, connector, [
-        "responseHeaders",
-      ]);
+      await waitForRequestDataForAllRequests(monitor, ["responseHeaders"]);
     }
 
     const items = getSortedRequests(store.getState());
@@ -440,7 +438,12 @@ add_task(async function () {
   }
 });
 
-function waitForRequestDataForAllRequests(store, connector, fields) {
+function waitForRequestDataForAllRequests(monitor, fields) {
+  const { store, connector, windowRequire } = monitor.panelWin;
+  const { getSortedRequests } = windowRequire(
+    "devtools/client/netmonitor/src/selectors/index"
+  );
+
   return waitUntil(async () => {
     const requests = getSortedRequests(store.getState());
     for (const request of requests) {

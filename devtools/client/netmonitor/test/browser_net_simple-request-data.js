@@ -167,7 +167,7 @@ function test() {
     });
 
     expectEvent(TEST_EVENTS.RECEIVED_REQUEST_HEADERS, async () => {
-      await waitForRequestData(store, ["requestHeaders"]);
+      await waitForRequestData(monitor, ["requestHeaders"]);
 
       const requestItem = getSortedRequests(store.getState())[0];
 
@@ -198,7 +198,7 @@ function test() {
     });
 
     expectEvent(TEST_EVENTS.RECEIVED_REQUEST_COOKIES, async () => {
-      await waitForRequestData(store, ["requestCookies"]);
+      await waitForRequestData(monitor, ["requestCookies"]);
 
       const requestItem = getSortedRequests(store.getState())[0];
 
@@ -226,7 +226,7 @@ function test() {
     });
 
     expectEvent(TEST_EVENTS.RECEIVED_RESPONSE_HEADERS, async () => {
-      await waitForRequestData(store, ["responseHeaders"]);
+      await waitForRequestData(monitor, ["responseHeaders"]);
 
       const requestItem = getSortedRequests(store.getState())[0];
 
@@ -255,7 +255,7 @@ function test() {
     });
 
     expectEvent(TEST_EVENTS.RECEIVED_RESPONSE_COOKIES, async () => {
-      await waitForRequestData(store, ["responseCookies"]);
+      await waitForRequestData(monitor, ["responseCookies"]);
 
       const requestItem = getSortedRequests(store.getState())[0];
 
@@ -279,7 +279,7 @@ function test() {
     });
 
     expectEvent(TEST_EVENTS.STARTED_RECEIVING_RESPONSE, async () => {
-      await waitForRequestData(store, [
+      await waitForRequestData(monitor, [
         "httpVersion",
         "status",
         "statusText",
@@ -326,7 +326,7 @@ function test() {
     });
 
     expectEvent(EVENTS.PAYLOAD_READY, async () => {
-      await waitForRequestData(store, [
+      await waitForRequestData(monitor, [
         "transferredSize",
         "contentSize",
         "mimeType",
@@ -366,7 +366,7 @@ function test() {
     });
 
     expectEvent(EVENTS.UPDATING_EVENT_TIMINGS, async () => {
-      await waitForRequestData(store, ["eventTimings"]);
+      await waitForRequestData(monitor, ["eventTimings"]);
 
       const requestItem = getSortedRequests(store.getState())[0];
 
@@ -394,7 +394,7 @@ function test() {
     });
 
     expectEvent(EVENTS.RECEIVED_EVENT_TIMINGS, async () => {
-      await waitForRequestData(store, ["eventTimings"]);
+      await waitForRequestData(monitor, ["eventTimings"]);
 
       const requestItem = getSortedRequests(store.getState())[0];
 

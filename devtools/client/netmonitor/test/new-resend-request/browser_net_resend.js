@@ -131,9 +131,8 @@ async function testResendRequest() {
 
 async function resendRequestAndWaitForNewRequest(monitor, originalRequestItem) {
   const { document, store, windowRequire, connector } = monitor.panelWin;
-  const { getSelectedRequest, getDisplayedRequests } = windowRequire(
-    "devtools/client/netmonitor/src/selectors/index"
-  );
+  const { getSelectedRequest, getDisplayedRequests, getRequestById } =
+    windowRequire("devtools/client/netmonitor/src/selectors/index");
 
   info("Select the request to resend");
   const expectedNoOfRequestsAfterResend =
@@ -203,7 +202,7 @@ async function testOldEditAndResendPanel() {
 
   store.dispatch(Actions.selectRequest(origItemId));
   await waitForRequestData(
-    store,
+    monitor,
     ["requestHeaders", "requestPostData"],
     origItemId
   );

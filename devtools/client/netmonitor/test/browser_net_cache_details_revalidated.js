@@ -32,7 +32,10 @@ add_task(async function test_revalidated_document() {
     enableCache: true,
     requestCount: 1,
   });
-  const { store, connector } = monitor.panelWin;
+  const { store, connector, windowRequire } = monitor.panelWin;
+  const { getSortedRequests, getRequestById } = windowRequire(
+    "devtools/client/netmonitor/src/selectors/index"
+  );
 
   // Bug 2077785: Make sure that fetching the cache entry for the 304 request
   // several times does not timeout.
@@ -48,7 +51,7 @@ add_task(async function test_revalidated_document() {
     is(request.status, status, "The document has the expected response status");
 
     await connector.requestData(request.id, "responseContent");
-    await waitForRequestData(store, ["responseContent"], request.id);
+    await waitForRequestData(monitor, ["responseContent"], request.id);
     is(
       getRequestById(store.getState(), request.id).responseContent.content.text,
       body,

@@ -27,7 +27,7 @@ add_task(async function () {
   clickOnRequestRow(document.querySelectorAll(".request-list-item")[0]);
   await onHeadersOverview;
 
-  await waitForRequestData(store, ["requestHeaders", "responseHeaders"]);
+  await waitForRequestData(monitor, ["requestHeaders", "responseHeaders"]);
 
   document.querySelectorAll(".devtools-filterinput")[1].focus();
   EventUtils.synthesizeKey("con", {});
@@ -97,7 +97,7 @@ add_task(async function testFilterKeptWhenSelectingAnotherRequest() {
   );
   clickOnRequestRow(requestItems[0]);
   await onHeadersOverview;
-  await waitForRequestData(store, ["requestHeaders", "responseHeaders"]);
+  await waitForRequestData(monitor, ["requestHeaders", "responseHeaders"]);
 
   document.querySelector("#headers-panel .devtools-filterinput").focus();
   EventUtils.sendString("con");
@@ -110,7 +110,7 @@ add_task(async function testFilterKeptWhenSelectingAnotherRequest() {
     "The headers panel is empty until the headers are fetched"
   );
   await waitForRequestData(
-    store,
+    monitor,
     ["requestHeaders", "responseHeaders"],
     undefined,
     1

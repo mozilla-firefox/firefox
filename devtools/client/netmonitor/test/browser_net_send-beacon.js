@@ -37,7 +37,7 @@ add_task(async function () {
   );
 
   // Wait for updates of status, blockedReason fields
-  await waitForRequestData(store, ["status", "blockedReason"], null, 0);
+  await waitForRequestData(monitor, ["status", "blockedReason"], null, 0);
   const request = getSortedRequests(store.getState())[0];
   is(request.method, "POST", "The method is correct.");
   ok(request.url.endsWith("beacon_request"), "The URL is correct.");
@@ -58,7 +58,7 @@ add_task(async function () {
   );
   await onNetworkEvents;
 
-  await waitForRequestData(store, ["status", "blockedReason"], null, 2);
+  await waitForRequestData(monitor, ["status", "blockedReason"], null, 2);
   const lateRequest = getSortedRequests(store.getState())[2];
   is(lateRequest.method, "POST", "The method is correct.");
   ok(lateRequest.url.endsWith("beacon_late_request"), "The URL is correct.");

@@ -59,7 +59,7 @@ add_task(async function () {
     if (profile.id !== "Offline") {
       // There will be no event timing data for the Offline profile.
       info(`Wait for eventTimings for throttling profile ${profile.id}`);
-      await waitForRequestData(store, ["eventTimings"], requestItem.id);
+      await waitForRequestData(monitor, ["eventTimings"], requestItem.id);
 
       if (requestItem.eventTimings) {
         Assert.greater(

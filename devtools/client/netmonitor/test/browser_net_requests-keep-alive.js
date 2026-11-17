@@ -60,7 +60,7 @@ add_task(async function () {
   const onDomUpdated = waitForDOM(document, ".headers-overview");
   clickOnRequestRow(firstItem);
   await onDomUpdated;
-  await waitForRequestData(store, ["requestHeaders"]);
+  await waitForRequestData(monitor, ["requestHeaders"]);
 
   info("Check the connection header value");
   const requestHeaders = [

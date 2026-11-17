@@ -37,7 +37,7 @@ add_task(async function () {
   clickOnRequestRow(requestItems[0]);
   await waitForDOM(document, ".network-details-bar");
   clickOnSidebarTab(document, "request");
-  await waitForPostData(document, store, 0);
+  await waitForPostData(document, monitor, 0);
 
   document.querySelector("#request-panel .devtools-filterinput").focus();
   EventUtils.sendString("foo");
@@ -50,7 +50,7 @@ add_task(async function () {
 
   info("Select another request with post data");
   clickOnRequestRow(requestItems[2]);
-  await waitForPostData(document, store, 2);
+  await waitForPostData(document, monitor, 2);
 
   is(
     document.querySelector("#request-panel .devtools-filterinput").value,
@@ -62,8 +62,8 @@ add_task(async function () {
   await teardown(monitor);
 });
 
-async function waitForPostData(document, store, index) {
-  await waitForRequestData(store, ["requestPostData"], undefined, index);
+async function waitForPostData(document, monitor, index) {
+  await waitForRequestData(monitor, ["requestPostData"], undefined, index);
   await waitFor(() => document.querySelector("#request-panel .treeRow"));
 }
 

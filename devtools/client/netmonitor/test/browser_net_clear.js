@@ -82,7 +82,7 @@ add_task(async function () {
   store.dispatch(Actions.toggleNetworkDetails());
   const detailsPanelToggleButton = document.querySelector(".sidebar-toggle");
   // Wait for the details panel to finish fetching the headers information
-  await waitForRequestData(store, ["requestHeaders", "responseHeaders"]);
+  await waitForRequestData(monitor, ["requestHeaders", "responseHeaders"]);
 
   ok(
     detailsPanelToggleButton &&

@@ -34,7 +34,7 @@ add_task(async function () {
 });
 
 async function verifyHeaders(monitor) {
-  const { document, store } = monitor.panelWin;
+  const { document } = monitor.panelWin;
 
   info("Check if Request-Headers and Response-Headers are sorted");
 
@@ -42,7 +42,7 @@ async function verifyHeaders(monitor) {
   clickOnRequestRow(document.querySelectorAll(".request-list-item")[0]);
   await onDomUpdated;
 
-  await waitForRequestData(store, ["requestHeaders", "responseHeaders"]);
+  await waitForRequestData(monitor, ["requestHeaders", "responseHeaders"]);
 
   const expectedResponseHeaders = [
     "cache-control",

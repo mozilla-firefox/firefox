@@ -31,12 +31,12 @@ add_task(async function () {
   );
   clickOnRequestRow(document.querySelectorAll(".request-list-item")[0]);
   await waitForHeaders;
-  await waitForRequestData(store, ["requestHeaders", "responseHeaders"]);
+  await waitForRequestData(monitor, ["requestHeaders", "responseHeaders"]);
 
   // Click on the Cookies panel and wait till it's opened.
   info("Click on the Cookies panel");
   clickOnSidebarTab(document, "cookies");
-  await waitForRequestData(store, ["requestCookies", "responseCookies"]);
+  await waitForRequestData(monitor, ["requestCookies", "responseCookies"]);
 
   const events = Glean.devtoolsMain.sidepanelChangedNetmonitor.testGetValue();
   is(1, events.length);

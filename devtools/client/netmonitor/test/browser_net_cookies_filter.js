@@ -32,7 +32,7 @@ add_task(async function () {
   clickOnRequestRow(requestItems[0]);
   await waitForDOM(document, ".network-details-bar");
   clickOnSidebarTab(document, "cookies");
-  await waitForCookies(document, store, 0);
+  await waitForCookies(document, monitor, 0);
 
   document.querySelector("#cookies-panel .devtools-filterinput").focus();
   EventUtils.sendString("tom");
@@ -45,7 +45,7 @@ add_task(async function () {
 
   info("Select another request with cookies");
   clickOnRequestRow(requestItems[2]);
-  await waitForCookies(document, store, 2);
+  await waitForCookies(document, monitor, 2);
 
   is(
     document.querySelector("#cookies-panel .devtools-filterinput").value,
@@ -57,9 +57,9 @@ add_task(async function () {
   await teardown(monitor);
 });
 
-async function waitForCookies(document, store, index) {
+async function waitForCookies(document, monitor, index) {
   await waitForRequestData(
-    store,
+    monitor,
     ["requestCookies", "responseCookies"],
     undefined,
     index

@@ -62,7 +62,7 @@ add_task(async function () {
     content.fetch("data?size=100");
   });
 
-  await waitForRequestData(store, ["eventTimings"]);
+  await waitForRequestData(monitor, ["eventTimings"]);
   // The throttled request should be unblocked after disabling throttling.
   await onNetworkEvents;
 

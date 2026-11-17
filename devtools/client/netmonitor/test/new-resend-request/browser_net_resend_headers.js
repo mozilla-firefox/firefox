@@ -55,7 +55,7 @@ add_task(async function () {
   }
 
   // Wait until requestHeaders packet gets updated.
-  await waitForRequestData(store, ["requestHeaders"]);
+  await waitForRequestData(monitor, ["requestHeaders"]);
 
   item = getSortedRequests(store.getState())[0];
   is(item.method, "POST", "The request has the right method");

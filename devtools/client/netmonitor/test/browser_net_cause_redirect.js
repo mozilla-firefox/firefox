@@ -47,7 +47,7 @@ add_task(async function testStackTraceForRedirects() {
 
   for (const [i, { status }] of EXPECTED_REQUESTS.entries()) {
     // Wait for the status data for the request to get updated
-    await waitForRequestData(store, ["status"], null, i);
+    await waitForRequestData(monitor, ["status"], null, i);
     const item = getSortedRequests(store.getState())[i];
 
     is(

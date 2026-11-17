@@ -24,7 +24,7 @@ add_task(async function () {
   clickOnRequestRow(document.querySelectorAll(".request-list-item")[0]);
 
   info("Waiting for request and response headers");
-  await waitForRequestData(store, ["requestHeaders", "responseHeaders"]);
+  await waitForRequestData(monitor, ["requestHeaders", "responseHeaders"]);
 
   const headerLink = document.querySelector(".objectBox-string .url");
   const expectedURL =

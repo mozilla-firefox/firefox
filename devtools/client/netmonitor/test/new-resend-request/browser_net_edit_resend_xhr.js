@@ -184,7 +184,7 @@ add_task(async function () {
     info("Fetch the Headers for the original XHR request");
     let originalRequest = getSelectedRequest(store.getState());
     await connector.requestData(originalRequest.id, "requestHeaders");
-    await waitForRequestData(store, ["requestHeaders"]);
+    await waitForRequestData(monitor, ["requestHeaders"]);
     originalRequest = getSelectedRequest(store.getState());
 
     info("Resend the XHR request");
@@ -196,7 +196,7 @@ add_task(async function () {
     info("Fetch the Headers for the resent XHR request");
     let resentRequest = getSelectedRequest(store.getState());
     await connector.requestData(resentRequest.id, "requestHeaders");
-    await waitForRequestData(store, ["requestHeaders"]);
+    await waitForRequestData(monitor, ["requestHeaders"]);
     resentRequest = getSelectedRequest(store.getState());
 
     const originalRequestSecFetchModeHeader =

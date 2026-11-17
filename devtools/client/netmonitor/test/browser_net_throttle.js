@@ -46,7 +46,7 @@ async function throttleTest(options) {
   await triggerActivity(ACTIVITY_TYPE.RELOAD.WITH_CACHE_DISABLED);
   await onNetworkEvents;
 
-  await waitForRequestData(store, ["eventTimings"]);
+  await waitForRequestData(monitor, ["eventTimings"]);
 
   const requestItem = getSortedRequests(store.getState())[0];
   const reportedOneSecond = requestItem.eventTimings.timings.receive > 1000;
