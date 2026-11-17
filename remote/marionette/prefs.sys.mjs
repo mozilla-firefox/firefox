@@ -122,18 +122,18 @@ class MarionetteBranch extends Branch {
    * @returns {boolean}
    */
   get navigateAfterClickEnabled() {
-    return this.get("marionette.navigate-after-click.enabled", true);
+    return this.get("navigate-after-click.enabled", true);
   }
 
   /**
    * The `marionette.navigate-after-click.timeout` preference defines the
    * amount of milliseconds to wait for a potential navigation after a click
-   * event was dispatches via "WebDriver:ElementClick".
+   * event was dispatched via "WebDriver:ElementClick".
    *
    * @returns {number}
    */
   get navigateAfterClickTimeout() {
-    return this.get("marionette.navigate-after-click.timeout", 50);
+    return this.get("navigate-after-click.timeout", 50);
   }
 
   /**

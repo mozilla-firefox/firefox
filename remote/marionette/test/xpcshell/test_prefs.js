@@ -85,6 +85,8 @@ add_task(function test_EnvironmentPrefs_from() {
 
 add_task(function test_MarionettePrefs_getters() {
   equal(false, MarionettePrefs.clickToStart);
+  equal(true, MarionettePrefs.navigateAfterClickEnabled);
+  equal(50, MarionettePrefs.navigateAfterClickTimeout);
   equal(2828, MarionettePrefs.port);
 });
 
@@ -94,5 +96,20 @@ add_task(function test_MarionettePrefs_setters() {
     equal(777, MarionettePrefs.port);
   } finally {
     Services.prefs.clearUserPref("marionette.port");
+  }
+});
+
+add_task(function test_MarionettePrefs_navigateAfterClick() {
+  try {
+    Services.prefs.setBoolPref(
+      "marionette.navigate-after-click.enabled",
+      false
+    );
+    Services.prefs.setIntPref("marionette.navigate-after-click.timeout", 5000);
+    equal(false, MarionettePrefs.navigateAfterClickEnabled);
+    equal(5000, MarionettePrefs.navigateAfterClickTimeout);
+  } finally {
+    Services.prefs.clearUserPref("marionette.navigate-after-click.enabled");
+    Services.prefs.clearUserPref("marionette.navigate-after-click.timeout");
   }
 });
