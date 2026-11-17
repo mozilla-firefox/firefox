@@ -786,6 +786,7 @@ class HeadersPanel extends Component {
         SearchBox({
           delay: FILTER_SEARCH_DELAY,
           type: "filter",
+          initialValue: this.state.filterText,
           onChange: text => this.setState({ filterText: text }),
           placeholder: HEADERS_FILTER_TEXT,
         }),
