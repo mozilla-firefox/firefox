@@ -6,6 +6,7 @@
 #include "GLBlitHelper.h"
 #include "mozilla/gfx/DataSurfaceHelpers.h"
 #include "mozilla/webrender/RenderThread.h"
+#include "nsXULAppAPI.h"
 
 #ifdef MOZ_LOGGING
 #  undef LOG
@@ -132,6 +133,10 @@ RefPtr<WaylandBuffer> SurfacePoolWayland::ObtainBufferFromPool(
   if (aGL) {
     buffer = widget::WaylandBuffer::CreateDMABuf(
         LayoutDeviceIntSize::FromUnknownSize(aSize), aGL, aFormat);
+  } else if (XRE_IsGPUProcess()) {
+    // The parent process can only present DMABuf surfaces.
+    buffer = widget::WaylandBuffer::CreateMappableDMABuf(
+        LayoutDeviceIntSize::FromUnknownSize(aSize), aFormat);
   } else {
     buffer = widget::WaylandBuffer::CreateSHM(
         LayoutDeviceIntSize::FromUnknownSize(aSize), aFormat);

@@ -58,6 +58,9 @@ typedef enum {
   // and complex internal structure (tiling/compression/etc.)
   // so we can't do direct rendering to it.
   DMABUF_USE_MODIFIERS = 1 << 3,
+  // Surface is mapped for CPU rendering. Such surface is allocated by GBM
+  // with linear layout.
+  DMABUF_CPU_ACCESS = 1 << 4,
 } DMABufSurfaceFlags;
 
 class DMABufSurfaceRGBA;
@@ -86,10 +89,8 @@ class DMABufSurface : public BufferSurface {
   virtual int GetWidthAligned(int aPlane = 0) = 0;
   virtual int GetHeightAligned(int aPlane = 0) = 0;
 
-#ifdef MOZ_LOGGING
   bool IsMapped(int aPlane = 0) { return (mMappedRegion[aPlane] != nullptr); };
   void Unmap(int aPlane = 0);
-#endif
 
   DMABufSurface* GetAsDMABufSurface() override { return this; }
   already_AddRefed<mozilla::gfx::DataSourceSurface> GetAsSourceSurface()
@@ -178,10 +179,8 @@ class DMABufSurface : public BufferSurface {
   // for empty surface too.
   [[nodiscard]] bool ReleaseDMABuf();
 
-#ifdef MOZ_LOGGING
   void* MapInternal(uint32_t aX, uint32_t aY, uint32_t aWidth, uint32_t aHeight,
                     uint32_t* aStride, int aGbmFlags, int aPlane = 0);
-#endif
 
   virtual bool OpenFileDescriptorForPlane(
       mozilla::widget::DMABufDeviceLock* aDeviceLock, int aPlane) = 0;
@@ -200,11 +199,9 @@ class DMABufSurface : public BufferSurface {
   struct gbm_bo* mGbmBufferObject[BUFFER_SURFACE_PLANES]{};
   uint32_t mGbmBufferFlags = 0;
 
-#ifdef MOZ_LOGGING
   void* mMappedRegion[BUFFER_SURFACE_PLANES]{};
   void* mMappedRegionData[BUFFER_SURFACE_PLANES]{};
   uint32_t mMappedRegionStride[BUFFER_SURFACE_PLANES]{};
-#endif
 
   RefPtr<mozilla::gfx::FileHandleWrapper> mSyncFd;
   RefPtr<mozilla::gfx::FileHandleWrapper> mSemaphoreFd;
@@ -251,13 +248,17 @@ class DMABufSurfaceRGBA final : public DMABufSurface {
   // but it's always sampled as a single texture.
   int GetTextureCount() override { return 1; }
 
+  void* Map(uint32_t aX, uint32_t aY, uint32_t aWidth, uint32_t aHeight,
+            uint32_t* aStride = nullptr);
+  void* Map(uint32_t* aStride = nullptr);
+  // Maps the surface and returns a DrawTarget for it. The surface is
+  // unmapped when the DrawTarget is destroyed.
+  already_AddRefed<mozilla::gfx::DrawTarget> Lock() override;
+
 #ifdef MOZ_LOGGING
   void* MapReadOnly(uint32_t aX, uint32_t aY, uint32_t aWidth, uint32_t aHeight,
                     uint32_t* aStride = nullptr);
   void* MapReadOnly(uint32_t* aStride = nullptr);
-  void* Map(uint32_t aX, uint32_t aY, uint32_t aWidth, uint32_t aHeight,
-            uint32_t* aStride = nullptr);
-  void* Map(uint32_t* aStride = nullptr);
   void* GetMappedRegion(int aPlane = 0) { return mMappedRegion[aPlane]; };
   uint32_t GetMappedRegionStride(int aPlane = 0) {
     return mMappedRegionStride[aPlane];

@@ -32,6 +32,9 @@ class WaylandBuffer {
   static already_AddRefed<WaylandBuffer> CreateDMABuf(
       const LayoutDeviceIntSize& aSize, gl::GLContext* aGL,
       RefPtr<DRMFormat> aFormat);
+  // Creates a DMABuf buffer which can be mapped by Lock() for CPU rendering.
+  static already_AddRefed<WaylandBuffer> CreateMappableDMABuf(
+      const LayoutDeviceIntSize& aSize, RefPtr<DRMFormat> aFormat);
   static RefPtr<WaylandBuffer> CreateSHM(
       const LayoutDeviceIntSize& aSize,
       RefPtr<widget::DRMFormat> aFormat = nullptr);

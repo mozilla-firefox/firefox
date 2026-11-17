@@ -173,6 +173,26 @@ RefPtr<WaylandBuffer> WaylandBuffer::CreateSHM(
 }
 
 /* static */
+already_AddRefed<WaylandBuffer> WaylandBuffer::CreateMappableDMABuf(
+    const LayoutDeviceIntSize& aSize, RefPtr<DRMFormat> aFormat) {
+  RefPtr<WaylandBuffer> buffer = new WaylandBuffer(aSize);
+
+  LOGWAYLAND("WaylandBuffer::CreateMappableDMABuf() [%p] [%d x %d]",
+             (void*)buffer, aSize.width, aSize.height);
+
+  buffer->mBufferSurface = DMABufSurfaceRGBA::CreateDMABufSurface(
+      nullptr, aSize.width, aSize.height, DMABUF_ALPHA | DMABUF_CPU_ACCESS,
+      aFormat);
+  if (!buffer->mBufferSurface) {
+    LOGWAYLAND("  failed to create DMABufSurface");
+    return nullptr;
+  }
+
+  LOGWAYLAND("  created [%p]\n", buffer.get());
+  return buffer.forget();
+}
+
+/* static */
 already_AddRefed<WaylandBuffer> WaylandBuffer::CreateDMABuf(
     const LayoutDeviceIntSize& aSize, GLContext* aGL,
     RefPtr<DRMFormat> aFormat) {

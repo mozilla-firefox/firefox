@@ -152,12 +152,12 @@ void NativeLayerWaylandSurfaceHandler::ReadBackFrontBuffer(
             r, r, LOCAL_GL_NEAREST);
       }
     } else {
-      RefPtr<gfx::DataSourceSurface> dataSourceSurface =
-          gfx::CreateDataSourceSurfaceFromData(
-              mSize, mFrontBuffer->GetSurfaceFormat(),
-              (const uint8_t*)mFrontBuffer->GetImageData(),
-              mFrontBuffer->GetStride());
+      RefPtr<DrawTarget> frontDT = mFrontBuffer->Lock();
       RefPtr<DrawTarget> dt = mInProgressBuffer->Lock();
+      if (!frontDT || !dt) {
+        return;
+      }
+      RefPtr<gfx::SourceSurface> dataSourceSurface = frontDT->Snapshot();
 
       for (auto iter = copyRegion.RectIter(); !iter.Done(); iter.Next()) {
         IntRect r = iter.Get();
