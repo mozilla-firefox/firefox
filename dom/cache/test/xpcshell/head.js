@@ -204,7 +204,7 @@ function getBodyFiles() {
       throw e;
     }
     for (const file of entries) {
-      if (file.leafName.endsWith(".final")) {
+      if (file.leafName.endsWith(".final") || file.leafName.endsWith(".tmp")) {
         files.push(file);
       }
     }

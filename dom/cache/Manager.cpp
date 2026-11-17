@@ -979,9 +979,9 @@ class Manager::CachePutAllAction final : public DBAction {
     mozStorageTransaction trans(mConn, false,
                                 mozIStorageConnection::TRANSACTION_IMMEDIATE);
 
-    QM_TRY(MOZ_TO_RESULT(trans.Start()), QM_VOID);
-
     const nsresult rv = [this, &trans]() -> nsresult {
+      QM_TRY(MOZ_TO_RESULT(trans.Start()));
+
       QM_TRY(CollectEachInRange(mList, [this](Entry& e) -> nsresult {
         if (e.mRequestStream) {
           QM_TRY_UNWRAP(int64_t bodyDiskSize,

@@ -34,6 +34,10 @@ prefs = ["security.storage.encryption.sqlite.enabled=false"]
 # Bug 1996558: migrates a plaintext profile fixture that obfsvfs cannot read; runs with SQLite encryption off.
 prefs = ["security.storage.encryption.sqlite.enabled=false"]
 
+["test_put_transaction_failure.js"]
+# Opens caches.sqlite directly from the test, which obfsvfs encryption prevents.
+prefs = ["security.storage.encryption.sqlite.enabled=false"]
+
 ["test_schema_26_upgrade.js"]
 # Bug 1996558: migrates a plaintext profile fixture that obfsvfs cannot read; runs with SQLite encryption off.
 prefs = ["security.storage.encryption.sqlite.enabled=false"]
