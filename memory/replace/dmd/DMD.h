@@ -10,6 +10,7 @@
 
 #include <utility>
 
+#include "mozilla/Assertions.h"
 #include "mozilla/UniquePtr.h"
 #include "replace_malloc_bridge.h"
 
@@ -72,14 +73,7 @@ struct DMDFuncs {
   // static initializer ended up calling into DMD.
   class Singleton {
    public:
-    Singleton()
-        : mValue(ReplaceMalloc::GetDMDFuncs())
-#  ifdef DEBUG
-          ,
-          mInitialized(true)
-#  endif
-    {
-    }
+    Singleton() : mValue(ReplaceMalloc::GetDMDFuncs()) {}
 
     DMDFuncs* Get() {
       MOZ_ASSERT(mInitialized);
@@ -89,7 +83,7 @@ struct DMDFuncs {
    private:
     DMDFuncs* mValue;
 #  ifdef DEBUG
-    bool mInitialized;
+    bool mInitialized = true;
 #  endif
   };
 
