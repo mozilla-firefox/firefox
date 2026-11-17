@@ -143,6 +143,8 @@
   <string name="home_screen_shortcut_open_new_private_tab_2">Skedë e re private</string>
   <!-- Shortcut action to open Passwords screen -->
   <string name="home_screen_shortcut_passwords">Fjalëkalime</string>
+  <!-- Shortcut action to open uninstall survey -->
+  <string name="home_screen_shortcut_uninstall_survey">Të çinstalohet, pse?</string>
   <!--
     Recent Tabs
 
@@ -361,6 +363,8 @@
   <string name="ai_controls_banner_headline">Keni përherë një zgjedhje në %s</string>
   <!-- Link text for learning more about AI controls -->
   <string name="ai_controls_learn_more">Mësoni më tepër</string>
+  <!-- Title for the block AI enhancements toggle -->
+  <string name="ai_controls_block_ai_title">Blloko zgjerime IA</string>
   <!-- Link text to see what AI enhancements are and aren’t included -->
   <string name="ai_controls_see_whats_included">Shihni ç’përfshihet dhe s’përfshihet</string>
   <!-- Section header for the AI-powered features list -->
@@ -1080,8 +1084,12 @@
   <string name="preferences_sync_now">Njëkohësoje tani</string>
   <!-- Preference category for sync -->
   <string name="preferences_sync_category">Zgjidhni çfarë të njëkohësohet</string>
+  <!-- Preference category for sync controls -->
+  <string name="preferences_category_sync">Të dhëna të njëkohësuara</string>
   <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
   <string name="preferences_enable_sync_title">Njëkohësoje këtë pajisje</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Të dhënat tuaja janë kopjeruajtur dhe të përdorshme në pajisje të njëkohësuara.</string>
   <!-- Preference for syncing history -->
   <string name="preferences_sync_history">Historik</string>
   <!-- Preference for syncing bookmarks -->
@@ -1604,8 +1612,18 @@
   <string name="tab_group_three_dot_menu_close">Mbylle</string>
   <!-- Text shown on the Don't Ask Again checkbox button in the Ungroup tab group confirmation dialog. -->
   <string name="ungroup_tab_group_confirmation_dialog_dont_ask_again">Mos pyet sërish</string>
+  <!-- Text shown on the confirm button in the Ungroup tab group confirmation dialog. -->
+  <string name="ungroup_tab_group_confirmation_dialog_confirm">Hiqua grupin</string>
   <!-- Text shown on the cancel button in the Ungroup tab group confirmation dialog. -->
   <string name="ungroup_tab_group_confirmation_dialog_cancel">Anuloje</string>
+  <!-- Custom accessibility action to reorder a tab up rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_up">Ngjite skedën sipër</string>
+  <!-- Custom accessibility action to reorder a tab left rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_left">Shpjere skedën majtas</string>
+  <!-- Custom accessibility action to reorder a tab right rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_right">Shpjere skedën djathtas</string>
+  <!-- Custom accessibility action to reorder a tab down rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_down">Zbrite skedën poshtë</string>
   <!--
     Color labels for tab groups, used for accessibility and selection UI.
 
@@ -2237,6 +2255,8 @@
   <string name="qr_code_display_close">Mbylle</string>
   <!-- Label for the download button on the QR code display screen -->
   <string name="qr_code_display_download">Shkarkoje</string>
+  <!-- Toast shown when saving the QR code to Downloads fails -->
+  <string name="qr_code_download_failure">S’u arrit të ruhej kodi QR</string>
   <!-- Sub-header in the dialog to share a link to an app from the full list -->
   <string name="share_link_all_apps_subheader">Krejt veprimet</string>
   <!-- Sub-header in the dialog to share a link to an app from the most-recent sorted list -->
@@ -2253,6 +2273,8 @@
   <string name="sync_reconnect">Rilidhu për Njëkohësim</string>
   <!-- Label for the button in the share dialog that sends the tab to the selected sync devices -->
   <string name="sync_send_to_selected_devices">Dërgoje</string>
+  <!-- Content description announced when a device is selected in the share dialog -->
+  <string name="send_to_devices_device_selected_content_description">E përzgjedhur</string>
   <!-- Text displayed when sync is offline and cannot be accessed -->
   <string name="sync_offline">Jo në linjë</string>
   <!-- An option to connect additional devices -->
@@ -2880,6 +2902,8 @@
   <string name="ip_protection_toggle_label">VPN</string>
   <!-- Content description for the browser VPN settings screen top bar back button -->
   <string name="ip_protection_navigate_back_button_content_description">Shko mbrapsht</string>
+  <!-- Headline for the browser VPN promo card. %s is the name of the app (for example "Firefox"). -->
+  <string name="ip_protection_promo_headline">VPN e brendshme e %s-it</string>
   <!-- Link text that opens additional information about the browser VPN -->
   <string name="ip_protection_learn_more">Mësoni më tepër</string>
   <!-- Label for the monthly data allowance section on the browser VPN settings screen -->
@@ -2932,6 +2956,8 @@
   <string name="ip_protection_mozilla_vpn_upsell_button" tools:ignore="UnusedResources,BrandUsage">Merrni Mozilla VPN</string>
   <!-- Title for the browser VPN location picker screen. -->
   <string name="ip_protection_location_picker_title" tools:ignore="UnusedResources">Zgjidhni vendndodhje VPN-je</string>
+  <!-- Description for what it means to use the Recommended setting and let the app automatically pick the best server location. -->
+  <string name="ip_protection_location_fastest_description" tools:ignore="BrandUsage">Firefox-i gjen vendndodhjen më të shpejtë</string>
   <!-- Title for the browser VPN location selection screen (displayed in the app bar) -->
   <string name="ip_protection_locations_title">Zgjidhni vendndodhje VPN-je</string>
   <!-- Content description for the browser VPN location selection screen top bar back button -->
@@ -4154,6 +4180,17 @@
   <string name="wrex_widget_wallpapers">Sfonde</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Hiqe Widget-in</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">Njëmbëdhjetëmetërsha</string>
+  <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
+  <string name="wrex_widget_more_options_content_description">Më tepër mundësi</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s kundër %2$s, %3$s</string>
   <!--
     Privacy notice homepage banner
 
@@ -4210,6 +4247,8 @@
     in English.
   -->
   <string name="firefox_labs_title" tools:ignore="BrandUsage">Firefox Labs</string>
+  <!-- Banner title text on the Firefox Labs screen. -->
+  <string name="firefox_labs_banner_title_2">Provoni veçoritë tona eksperimentale!</string>
   <!-- Button text on the Firefox Labs screen for restoring all toggles back to the default settings. The button will turn off any experimental features. -->
   <string name="firefox_labs_restore_default_button_text">Rikthe parazgjedhjet</string>
   <!-- The title used in a confirmation dialog on the Firefox Labs screen when toggling "on" or "off" an experimental feature that requires a restart. -->
@@ -4246,6 +4285,8 @@
   <string name="pdf_tools_signature_clear_button">Spastroje</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">Shtoje</string>
+  <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
+  <string name="reader_mode_panel_listen_content_description">Lexim Me Zë</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->
   <string name="reader_mode_panel_media_player_content_description">Lojtës Mediash</string>
 </resources>
