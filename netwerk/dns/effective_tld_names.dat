@@ -5,8 +5,8 @@
 // Please pull this list from, and only from https://publicsuffix.org/list/public_suffix_list.dat,
 // rather than any other VCS sites. Pulling from any other URL is not guaranteed to be supported.
 
-// VERSION: 2026-11-14_18-45-38_UTC
-// COMMIT: dfe55f3548d0fe51c04b8d2903507a01fdec57ad
+// VERSION: 2026-11-16_22-30-55_UTC
+// COMMIT: e56d8b1472585675d92eb86b4e02a140a6ef11e0
 
 // Instructions on pulling and using this list can be found at https://publicsuffix.org/list/.
 
@@ -12416,6 +12416,10 @@ apigee.io
 // Submitted by Matt Saladna <matt@apisnetworks.com>
 panel.dev
 
+// AppDirect, Inc. : https://devs.ai/
+// Submitted by Devs.ai Developer Team <developer@devs.ai>
+apps.devs.ai
+
 // Apphud : https://apphud.com
 // Submitted by Alexander Selivanov <alex@apphud.com>
 siiites.com
@@ -12683,6 +12687,10 @@ cdn77-ssl.net
 c.cdn77.org
 rsc.cdn77.org
 ssl.origin.cdn77-secure.org
+
+// Ceero ApS : https://ceero.site
+// Submitted by Ceero ApS <abuse@ceero.eu>
+ceero.site
 
 // CentralNic : https://teaminternet.com/
 // Submitted by registry <gavin.brown@centralnic.com>
@@ -13878,6 +13886,10 @@ cdn-edges.net
 // GignoSystemJapan : http://gsj.bz
 // Submitted by GignoSystemJapan <kakutou-ec@gsj.bz>
 gsj.bz
+
+// Ginta : https://ginta.app/
+// Submitted by Povilas Adomas Brukas <support@ginta.app>
+ginta.page
 
 // GitBook Inc. : https://www.gitbook.com/
 // Submitted by Samy Pesse <devs@gitbook.com>
@@ -16049,6 +16061,10 @@ mafelo.net
 // Submitted by Solana Name Service <contact@sns.id>
 sol.site
 
+// Solid Labs : https://www.solidres.com/
+// Submitted by Solid Labs <contact@solidres.com>
+solidres.page
+
 // Sony Interactive Entertainment LLC : https://sie.com/
 // Submitted by David Coles <david.coles@sony.com>
 playstation-cloud.com
@@ -16372,6 +16388,10 @@ site.transip.me
 // Submitted by Triton Data Center staff <tickets@tritondatacenter.com>
 *.triton.zone
 
+// Tuna : https://tuna.am/
+// Submitted by Tuna Support <support@tuna.am>
+*.2na.am
+
 // Tunnelmole: https://tunnelmole.com
 // Submitted by Robbie Cahill <support@tunnelmole.com>
 tunnelmole.net
@@ -16650,6 +16670,10 @@ official.academy
 // Yola : https://www.yola.com/
 // Submitted by Stefano Rivera <stefano@yola.com>
 yolasite.com
+
+// Yunamo : https://yunamo.com/
+// Submitted by James <support@yunamo.com>
+loc.cc
 
 // Yunohost : https://yunohost.org
 // Submitted by Valentin Grimaud <security@yunohost.org>
