@@ -7373,7 +7373,7 @@ bool BaselineInterpreterGenerator::emitInterpreterLoop() {
     JitCode* handlerCode = runtime->jitRuntime()->debugTrapHandler(
         DebugTrapHandlerKind::Interpreter);
     debugTrapHandlerOffset_ = masm.currentOffset();
-    masm.jump(handlerCode);
+    masm.tailJump(handlerCode);
   }
 
   // Emit the table.

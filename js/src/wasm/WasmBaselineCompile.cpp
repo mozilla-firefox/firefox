@@ -1088,7 +1088,7 @@ void BaseCompiler::insertPerFunctionDebugStub() {
 
   // Jump to the per-module debug stub, which calls onwards to C++ land.
   masm.bind(&L);
-  masm.jump(Address(InstanceReg, Instance::offsetOfDebugStub()));
+  masm.tailJump(Address(InstanceReg, Instance::offsetOfDebugStub()));
 }
 
 void BaseCompiler::saveRegisterReturnValues(const ResultType& resultType) {

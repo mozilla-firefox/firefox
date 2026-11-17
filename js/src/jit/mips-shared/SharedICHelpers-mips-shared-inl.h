@@ -40,7 +40,7 @@ inline void EmitBaselineTailCallVM(TrampolinePtr target, MacroAssembler& masm,
   // it there through the stub calls).
   MOZ_ASSERT(ICTailCallReg == ra);
 
-  masm.jump(target);
+  masm.tailJump(target);
 }
 
 inline void EmitBaselineCallVM(TrampolinePtr target, MacroAssembler& masm) {

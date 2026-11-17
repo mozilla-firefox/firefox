@@ -3728,7 +3728,7 @@ bool wasm::GenerateProvisionalLazyJitEntryStub(MacroAssembler& masm,
   masm.popReturnAddress();
 #endif
 
-  masm.jump(ReturnReg);
+  masm.tailJump(ReturnReg);
 
 #ifdef JS_CODEGEN_ARM64
   // Undo the SP+PSP mode

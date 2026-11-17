@@ -37,7 +37,7 @@ inline void EmitBaselineTailCallVM(TrampolinePtr target, MacroAssembler& masm,
   // ICTailCallReg (lr) already contains the return address (as we keep
   // it there through the stub calls).
 
-  masm.jump(target);
+  masm.tailJump(target);
 }
 
 inline void EmitBaselineCallVM(TrampolinePtr target, MacroAssembler& masm) {

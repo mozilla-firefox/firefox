@@ -6906,7 +6906,7 @@ void JitRuntime::generateIonGenericCallStub(MacroAssembler& masm,
   }
 
   // Tail call the jit entry.
-  masm.jump(scratch2);
+  masm.tailJump(scratch2);
 
   // ********************
   // * Native functions *
@@ -14822,7 +14822,7 @@ void JitRuntime::generateLazyLinkStub(MacroAssembler& masm) {
 #else
   masm.pop(FramePointer);
 #endif
-  masm.jump(ReturnReg);
+  masm.tailJump(ReturnReg);
 }
 
 void JitRuntime::generateInterpreterStub(MacroAssembler& masm) {

@@ -71,7 +71,7 @@ inline void EmitStubGuardFailure(MacroAssembler& masm) {
   masm.loadPtr(Address(ICStubReg, ICCacheIRStub::offsetOfNext()), ICStubReg);
 
   // Return address is already loaded, just jump to the next stubcode.
-  masm.jump(Address(ICStubReg, ICStub::offsetOfStubCode()));
+  masm.tailJump(Address(ICStubReg, ICStub::offsetOfStubCode()));
 }
 
 }  // namespace jit
