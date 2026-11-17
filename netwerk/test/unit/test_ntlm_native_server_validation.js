@@ -142,8 +142,11 @@ function nodeMakeChallenge() {
     Buffer.alloc(4), // MsvAvEOL
   ]);
 
-  // UNICODE | NTLM | TARGET_TYPE_DOMAIN | TARGET_INFO
-  const flags = 0x00810201;
+  // UNICODE | REQUEST_TARGET | SIGN | NTLM | ALWAYS_SIGN | TARGET_TYPE_DOMAIN |
+  // EXTENDED_SESSIONSECURITY | TARGET_INFO | 128 | KEY_EXCH | 56
+  // Since KB5135557 SSPI offers SIGN and fails the type 2 with
+  // SEC_E_UNSUPPORTED_FUNCTION unless the server echoes the signing flags.
+  const flags = 0xe0898215;
   const header = Buffer.alloc(48);
   header.write("NTLMSSP\0", 0, "latin1");
   header.writeUInt32LE(2, 8);

@@ -1499,9 +1499,6 @@ run-if = [
 # run-if = [
 #   "os == 'win'",
 # ]
-skip-if = [
-  "os == 'win'", # Bug 2092666 - NTLM changes in Windows 11 updated November 2026 (KB 5135557)
-]
 
 ["test_ntlm_proxy_and_web_auth.js"]
 # Without this the Windows SSPI module handles the proxy challenge using the
@@ -1514,9 +1511,6 @@ prefs = ["network.auth.force-generic-ntlm=true"]
 prefs = ["network.auth.force-generic-ntlm=true"]
 
 ["test_ntlm_web_auth.js"]
-skip-if = [
-  "os == 'win'", # Bug 2092666 - NTLM changes in Windows 11 updated November 2026 (KB 5135557)
-]
 
 ["test_oblivious_http.js"]
 
