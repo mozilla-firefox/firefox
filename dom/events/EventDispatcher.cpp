@@ -433,13 +433,21 @@ void EventTargetChainItem::GetEventTargetParent(
     EventChainPreVisitor& aVisitor) {
   aVisitor.Reset();
   mTarget->GetEventTargetParent(aVisitor);
-  SetForceContentDispatch(aVisitor.mForceContentDispatch);
-  SetWantsWillHandleEvent(aVisitor.mWantsWillHandleEvent);
-  SetMayHaveListenerManager(aVisitor.mMayHaveListenerManager);
-  SetWantsPreHandleEvent(aVisitor.mWantsPreHandleEvent);
-  SetPreHandleEventOnly(aVisitor.mWantsPreHandleEvent && !aVisitor.mCanHandle);
-  SetRootOfClosedTree(aVisitor.mRootOfClosedTree);
-  SetItemInShadowTree(aVisitor.mItemInShadowTree);
+  // Read the visitor first, so the compiler can combine the bitfield writes.
+  const bool forceContentDispatch = aVisitor.mForceContentDispatch;
+  const bool wantsWillHandleEvent = aVisitor.mWantsWillHandleEvent;
+  const bool mayHaveListenerManager = aVisitor.mMayHaveListenerManager;
+  const bool wantsPreHandleEvent = aVisitor.mWantsPreHandleEvent;
+  const bool canHandle = aVisitor.mCanHandle;
+  const bool rootOfClosedTree = aVisitor.mRootOfClosedTree;
+  const bool itemInShadowTree = aVisitor.mItemInShadowTree;
+  SetForceContentDispatch(forceContentDispatch);
+  SetWantsWillHandleEvent(wantsWillHandleEvent);
+  SetMayHaveListenerManager(mayHaveListenerManager);
+  SetWantsPreHandleEvent(wantsPreHandleEvent);
+  SetPreHandleEventOnly(wantsPreHandleEvent && !canHandle);
+  SetRootOfClosedTree(rootOfClosedTree);
+  SetItemInShadowTree(itemInShadowTree);
   SetRetargetedRelatedTarget(aVisitor.mRetargetedRelatedTarget);
   SetRetargetedTouchTarget(std::move(aVisitor.mRetargetedTouchTargets));
   mItemFlags = aVisitor.mItemFlags;
