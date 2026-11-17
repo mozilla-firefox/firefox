@@ -2930,6 +2930,13 @@ export class AIWindow extends MozLitElement {
       this.#watchTabCloseForAbort(browsingContext, this.#abortController) ??
       (() => {});
     this.isGenerating = true;
+    const isAutoModel =
+      this.#selectedModelChoiceId === lazy.AUTO_MODEL_CHOICE_ID;
+    this.#showLoadingIndicator({ isDecidingModel: isAutoModel });
+    const onModelAnswer = () => {
+      conversation.off("chat-conversation:message-update", onModelAnswer);
+      this.#showLoadingIndicator({ isDecidingModel: false });
+    };
 
     const requestStart = ChromeUtils.now();
     let assistantMessage;
@@ -3017,6 +3024,11 @@ export class AIWindow extends MozLitElement {
         turnContext = this.#pendingFirstCharacterContext;
       }
 
+      // The model is picked once it answers, also with a tool call the action
+      // log doesn’t show.
+      if (isAutoModel) {
+        conversation.on("chat-conversation:message-update", onModelAnswer);
+      }
       const turnResult = await lazy.Chat.fetchWithHistory({
         conversation,
         browsingContext,
@@ -3066,6 +3078,7 @@ export class AIWindow extends MozLitElement {
       this.requestUpdate?.();
     } finally {
       stopWatchingTabClose();
+      conversation.off("chat-conversation:message-update", onModelAnswer);
       if (this.#abortController?.signal === signal) {
         this.isGenerating = false;
         this.#abortController = null;
@@ -3434,6 +3447,9 @@ export class AIWindow extends MozLitElement {
         ),
         modelName: this.#getAutoModelName(newMessage),
       };
+    } else if (newMessage.role === "assistant") {
+      // Auto model replies show the picked model even without tool calls.
+      newMessage.modelName = this.#getAutoModelName(newMessage);
     }
 
     return actor.dispatchMessageToChatContent(newMessage);
@@ -3814,10 +3830,13 @@ export class AIWindow extends MozLitElement {
   }
 
   showSearchingIndicator(isSearching, searchQuery) {
+    this.#showLoadingIndicator({ isSearching, searchQuery });
+  }
+
+  #showLoadingIndicator(state) {
     this.#dispatchMessageToChatContent({
       role: "loading",
-      isSearching,
-      searchQuery,
+      ...state,
       convId: this.conversationId,
       content: { body: "" },
     });

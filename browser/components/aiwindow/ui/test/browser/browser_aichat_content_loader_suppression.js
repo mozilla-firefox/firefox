@@ -7,8 +7,9 @@
  * The pending loader (chat-assistant-loader spinner) is only shown while the
  * assistant is generating AND there is nothing else on screen communicating
  * progress. It is suppressed once an action log is processing (its shimmering
- * label conveys progress) and once the assistant reply is streaming (its text
- * is visible). It is hidden entirely when the assistant is not generating.
+ * label conveys progress), while the auto model is picked (its action log
+ * stands in) and once the assistant reply is streaming (its text is visible).
+ * It is hidden entirely when the assistant is not generating.
  */
 add_task(async function test_loader_suppression_across_states() {
   await SpecialPowers.pushPrefEnv({
@@ -118,6 +119,81 @@ add_task(async function test_loader_suppression_across_states() {
       await settle();
 
       Assert.ok(!loader(), "Spinner is hidden once generation finishes");
+
+      // State 5: the auto model is picked -> its action log replaces the
+      // loader, then goes on to list the turn’s steps.
+      const actionCards = () =>
+        chatContent.shadowRoot.querySelectorAll("ai-action-result");
+      dispatch({
+        role: "loading",
+        convId: "c1",
+        isDecidingModel: true,
+        content: { body: "" },
+      });
+      dispatch({
+        role: "user",
+        convId: "c1",
+        ordinal: 4,
+        content: { body: "And now?" },
+      });
+      setGenerating(true);
+      await settle();
+
+      const card = actionCards()[1];
+      Assert.ok(card, "An action log shows while the model is picked");
+      Assert.equal(
+        card.wrappedJSObject.labelL10nId,
+        "action-log-deciding-model",
+        "The action log says the model is being picked"
+      );
+      Assert.ok(card.hasAttribute("is-loading"), "The action log is loading");
+      Assert.ok(!loader(), "The action log replaces the spinner");
+
+      dispatch({
+        role: "tool",
+        convId: "c1",
+        ordinal: 5,
+        content: { tool_call_id: "t2", name: "get_open_tabs", body: [] },
+        actionLog: {
+          uiType: "action-log",
+          pendingLabel: { l10nId: "action-log-getting-open-tabs" },
+          row: { labelL10nId: "action-log-got-open-tabs", items: [] },
+          modelName: "Model",
+        },
+      });
+      await settle();
+      Assert.equal(
+        actionCards()[1],
+        card,
+        "The same action log shows the tool"
+      );
+      Assert.equal(
+        card.wrappedJSObject.labelL10nId,
+        "action-log-getting-open-tabs",
+        "The action log shows the tool's pending label"
+      );
+
+      dispatch({
+        role: "assistant",
+        convId: "c1",
+        ordinal: 6,
+        id: "a2",
+        content: { body: "Still two tabs." },
+        memoriesApplied: [],
+        modelName: "Model",
+      });
+      await settle();
+      Assert.equal(
+        actionCards().length,
+        2,
+        "The model step joins the tool's log"
+      );
+      Assert.ok(!card.hasAttribute("is-loading"), "The action log completes");
+      Assert.deepEqual(
+        card.wrappedJSObject.labelL10nArgs,
+        { count: 2 },
+        "The model and the tool are counted as steps"
+      );
     });
   });
 });
