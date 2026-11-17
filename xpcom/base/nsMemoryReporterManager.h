@@ -312,9 +312,6 @@ class nsMemoryReporterManager final : public nsIMemoryReporterManager,
   // This is reinitialized each time a call to GetReports is initiated.
   PendingReportersState* mPendingReportersState;  // MainThread only
 
-  // Used in GetHeapAllocatedAsync() to run jemalloc_stats async.
-  nsCOMPtr<nsIEventTarget> mThreadPool MOZ_GUARDED_BY(mMutex);
-
   PendingProcessesState* GetStateForGeneration(uint32_t aGeneration);
   [[nodiscard]] static bool StartChildReport(
       mozilla::MemoryReportingProcess* aChild,
