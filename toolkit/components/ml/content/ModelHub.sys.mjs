@@ -915,12 +915,12 @@ class IndexedDBCache {
    */
   async fileExists({ model, revision, file }) {
     // First, check if the file is in the headers store
-    const fileMedataExists = this.#hasData({
+    const fileMetadataExists = await this.#hasData({
       storeName: this.headersStoreName,
       key: [model, revision, file],
     });
 
-    if (!fileMedataExists) {
+    if (!fileMetadataExists) {
       return false;
     }
 
