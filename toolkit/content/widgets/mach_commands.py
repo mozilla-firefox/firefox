@@ -88,6 +88,11 @@ def run_mach(command_context, cmd, **kwargs):
     )
 
 
+def ensure_npm_dependencies(command_context, prefix):
+    if run_mach(command_context, "npm", args=["ls", f"--prefix={prefix}"]):
+        run_mach(command_context, "npm", args=["ci", f"--prefix={prefix}"])
+
+
 def run_npm(command_context, args):
     return run_mach(
         command_context, "npm", args=[*args, "--prefix=browser/components/storybook"]
@@ -342,16 +347,7 @@ def buildtokens(command_context, import_figma, remote, fetch_figma, match, impor
     do_remote = remote or fetch_figma
     if (match or import_all or remote) and not do_import:
         raise UserError("--match, --all, and --remote require --import-figma.")
-    if run_mach(
-        command_context,
-        "npm",
-        args=["ls", "--prefix=toolkit/themes/shared/design-system"],
-    ):
-        run_mach(
-            command_context,
-            "npm",
-            args=["ci", "--prefix=toolkit/themes/shared/design-system"],
-        )
+    ensure_npm_dependencies(command_context, "toolkit/themes/shared/design-system")
     if do_import:
         fetch_args = [
             "run",
@@ -401,4 +397,11 @@ def buildtokens(command_context, import_figma, remote, fetch_figma, match, impor
         command_context,
         "npm",
         args=["run", "build", "--prefix=toolkit/themes/shared/design-system"],
+    )
+    stylelint_plugin = "tools/lint/stylelint/stylelint-plugin-mozilla"
+    ensure_npm_dependencies(command_context, stylelint_plugin)
+    run_mach(
+        command_context,
+        "npm",
+        args=["run", "update-docs", f"--prefix={stylelint_plugin}"],
     )
