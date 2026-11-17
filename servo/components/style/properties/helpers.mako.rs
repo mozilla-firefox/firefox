@@ -570,6 +570,34 @@ pub mod ${property.ident} {
                     _ => Err(())
                 }
             }
+
+            % for sub_property in shorthand.sub_properties:
+                % if not sub_property.vector:
+                #[inline]
+                pub fn ${sub_property.ident}_has_initial_specified_value(&self) -> bool {
+                    use longhands::${sub_property.ident}::get_initial_specified_value;
+                    % if sub_property.may_be_disabled_in(shorthand, engine):
+                        self.${sub_property.ident}.is_some_and(|value| value == &get_initial_specified_value())
+                    % else:
+                        self.${sub_property.ident} == &get_initial_specified_value()
+                    % endif
+                }
+
+                #[inline]
+                pub fn ${sub_property.ident}_if_non_initial(
+                    &self,
+                ) -> Option<&'a longhands::${sub_property.ident}::SpecifiedValue> {
+                    if self.${sub_property.ident}_has_initial_specified_value() {
+                        return None;
+                    }
+                    % if sub_property.may_be_disabled_in(shorthand, engine):
+                        self.${sub_property.ident}
+                    % else:
+                        Some(self.${sub_property.ident})
+                    % endif
+                }
+                % endif
+            % endfor
         }
 
         /// Parse the given shorthand and fill the result into the
