@@ -8,5 +8,5 @@ toolkit.jar:
   res/normandy/lib/ (./lib/*)
   res/normandy/schemas/ (./schemas/*.schema.json)
 
-% resource normandy-vendor %res/normandy/vendor/ contentaccessible=yes
+% resource normandy-vendor %res/normandy/vendor/
   res/normandy/vendor/ (./vendor/*)
