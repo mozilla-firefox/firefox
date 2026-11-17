@@ -1548,10 +1548,27 @@ MOZ_ALWAYS_INLINE void AssertValueIsNotGray(const Heap<Value>& value) {
 
 namespace JS {
 
-extern JS_PUBLIC_DATA const HandleValue NullHandleValue;
-extern JS_PUBLIC_DATA const HandleValue UndefinedHandleValue;
-extern JS_PUBLIC_DATA const HandleValue TrueHandleValue;
-extern JS_PUBLIC_DATA const HandleValue FalseHandleValue;
+namespace detail {
+
+inline constexpr Value NullValueStorage =
+    Value::fromTagAndPayload(JSVAL_TAG_NULL, 0);
+inline constexpr Value UndefinedValueStorage =
+    Value::fromTagAndPayload(JSVAL_TAG_UNDEFINED, 0);
+inline constexpr Value TrueValueStorage =
+    Value::fromTagAndPayload(JSVAL_TAG_BOOLEAN, true);
+inline constexpr Value FalseValueStorage =
+    Value::fromTagAndPayload(JSVAL_TAG_BOOLEAN, false);
+
+}  // namespace detail
+
+inline constexpr HandleValue NullHandleValue =
+    HandleValue::fromMarkedLocation(&detail::NullValueStorage);
+inline constexpr HandleValue UndefinedHandleValue =
+    HandleValue::fromMarkedLocation(&detail::UndefinedValueStorage);
+inline constexpr HandleValue TrueHandleValue =
+    HandleValue::fromMarkedLocation(&detail::TrueValueStorage);
+inline constexpr HandleValue FalseHandleValue =
+    HandleValue::fromMarkedLocation(&detail::FalseValueStorage);
 extern JS_PUBLIC_DATA const Handle<mozilla::Maybe<Value>> NothingHandleValue;
 
 }  // namespace JS

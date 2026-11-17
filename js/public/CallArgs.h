@@ -76,8 +76,6 @@ using JSNative = bool (*)(JSContext* cx, unsigned argc, JS::Value* vp);
 
 namespace JS {
 
-extern JS_PUBLIC_DATA const HandleValue UndefinedHandleValue;
-
 namespace detail {
 
 /*
