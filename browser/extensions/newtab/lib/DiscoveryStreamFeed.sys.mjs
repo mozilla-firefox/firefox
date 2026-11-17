@@ -1381,7 +1381,7 @@ export class DiscoveryStreamFeed {
 
     const spocPlacements = placementSpocsArray.map((placement, index) => ({
       placement,
-      count: countsSpocsArray[index],
+      count: countsSpocsArray[index] || 1,
       ...(iabPlacements[index] ? { content: iabPlacements[index] } : {}),
     }));
 
@@ -1420,7 +1420,7 @@ export class DiscoveryStreamFeed {
 
     return placementsArray.map((placement, index) => ({
       placement,
-      count: countsArray[index],
+      count: countsArray[index] || 1,
     }));
   }
 

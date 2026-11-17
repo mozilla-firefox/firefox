@@ -818,7 +818,7 @@ export class ContileIntegration {
                 flags: adsBackendConfig,
                 placements: placementsArray.map((placement, index) => ({
                   placement,
-                  count: countsArray[index],
+                  count: countsArray[index] || 1,
                 })),
                 blocks: blocksList,
                 ...(hasRelevance && { relevance }),

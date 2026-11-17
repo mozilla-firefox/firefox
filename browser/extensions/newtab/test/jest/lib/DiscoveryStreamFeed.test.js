@@ -1719,6 +1719,66 @@ describe("DiscoveryStreamFeed", () => {
         })
       );
     });
+    it("should fetch ads with mismatched spoc counts", async () => {
+      feed.store = createStore(combineReducers(reducers), {
+        Prefs: {
+          values: {
+            "unifiedAds.endpoint": "unifiedAdEndpoint/",
+            "unifiedAds.blockedAds": "",
+            "unifiedAds.spocs.enabled": true,
+            "discoverystream.placements.spocs":
+              "newtab_stories_1, newtab_stories_foo",
+            "discoverystream.placements.spocs.counts": "1",
+            "unifiedAds.ohttp.enabled": true,
+            adsBackendConfig: {
+              feature1: true,
+              feature2: false,
+            },
+          },
+        },
+      });
+
+      jest.spyOn(feed, "fetchFromEndpoint").mockResolvedValue({
+        newtab_stories_1: [
+          {
+            format: "spoc",
+            title: "ad title 1",
+          },
+        ],
+        newtab_stories_foo: [
+          {
+            format: "spoc",
+            title: "ad title foo",
+          },
+        ],
+      });
+
+      await feed.loadSpocs(feed.store.dispatch);
+
+      expect(feed.fetchFromEndpoint.mock.calls[1][0]).toBe(
+        "unifiedAdEndpoint/v1/ads"
+      );
+      expect(feed.fetchFromEndpoint.mock.calls[1][1].body).toBe(
+        JSON.stringify({
+          context_id: "ContextId",
+          flags: {
+            feature1: true,
+            feature2: false,
+          },
+          placements: [
+            {
+              placement: "newtab_stories_1",
+              count: 1,
+            },
+            {
+              placement: "newtab_stories_foo",
+              count: 1,
+            },
+          ],
+          blocks: [""],
+        })
+      );
+    });
     it("should use adsClient when enabled", async () => {
       expectConsoleError();
       jest.spyOn(feed.cache, "get").mockReturnValue(Promise.resolve());

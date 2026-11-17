@@ -4606,6 +4606,178 @@ add_task(async function test_ContileIntegration() {
     sandbox.restore();
   }
 
+  {
+    info("TopSitesFeed._fetchSites handles mismatched tile counts");
+    let { feed, fetchStub } = prepFeed(getTopSitesFeedForTest(sandbox));
+    const CONTEXT_ID = "ContextId";
+    sandbox.stub(ContextId, "request").returns(CONTEXT_ID);
+
+    Services.prefs.setStringPref(
+      "browser.newtabpage.activity-stream.discoverystream.ohttp.relayURL",
+      "https://relay.url"
+    );
+    Services.prefs.setStringPref(
+      "browser.newtabpage.activity-stream.discoverystream.ohttp.configURL",
+      "https://config.url"
+    );
+    Services.prefs.setBoolPref(
+      "browser.newtabpage.activity-stream.unifiedAds.ohttp.enabled",
+      true
+    );
+    feed.store.state.Prefs.values["unifiedAds.tiles.enabled"] = true;
+    feed.store.state.Prefs.values["unifiedAds.adsFeed.enabled"] = false;
+    feed.store.state.Prefs.values["unifiedAds.endpoint"] =
+      "https://test.endpoint/";
+    feed.store.state.Prefs.values["discoverystream.placements.tiles"] =
+      "1, foo";
+    feed.store.state.Prefs.values["discoverystream.placements.tiles.counts"] =
+      "1";
+    feed.store.state.Prefs.values["unifiedAds.blockedAds"] = "";
+    feed.store.state.Prefs.values.adsBackendConfig = {
+      feature1: true,
+      feature2: false,
+    };
+
+    const TEST_PREFLIGHT_UA_STRING = "Some test UA";
+    const TEST_PREFLIGHT_GEONAME_ID = "Some geo name";
+    const TEST_PREFLIGHT_GEO_LOCATION = "Some geo location";
+
+    fetchStub.resolves({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          normalized_ua: TEST_PREFLIGHT_UA_STRING,
+          geoname_id: TEST_PREFLIGHT_GEONAME_ID,
+          geo_location: TEST_PREFLIGHT_GEO_LOCATION,
+        }),
+    });
+
+    const fakeOhttpConfig = { config: "config" };
+    sandbox.stub(ObliviousHTTP, "getOHTTPConfig").resolves(fakeOhttpConfig);
+
+    const ohttpRequestStub = sandbox
+      .stub(ObliviousHTTP, "ohttpRequest")
+      .resolves({
+        ok: true,
+        status: 200,
+        headers: new Map([
+          ["cache-control", "private, max-age=859, stale-if-error=10463"],
+        ]),
+        json: () =>
+          Promise.resolve({
+            1: [
+              {
+                block_key: 12345,
+                name: "test 1",
+                url: "https://www.test.com",
+                image_url: "images/test-com.png",
+                callbacks: {
+                  click: "https://www.test-click.com",
+                  impression: "https://www.test-impression.com",
+                },
+              },
+            ],
+            foo: [
+              {
+                block_key: 54321,
+                name: "test foo",
+                url: "https://www.test.com",
+                image_url: "images/test-com.png",
+                callbacks: {
+                  click: "https://www.test-click.com",
+                  impression: "https://www.test-impression.com",
+                },
+              },
+            ],
+          }),
+      });
+
+    let fetched = await feed._contile._fetchSites();
+
+    Assert.ok(fetchStub.calledOnce, "The preflight request was made.");
+
+    Assert.ok(fetched);
+    Assert.ok(
+      ohttpRequestStub.calledOnce,
+      "ohttpRequest should be called once"
+    );
+    const callArgs = ohttpRequestStub.getCall(0).args;
+    Assert.equal(callArgs[0], "https://relay.url", "relay URL should match");
+    Assert.deepEqual(
+      callArgs[1],
+      fakeOhttpConfig,
+      "config should be passed through"
+    );
+
+    const sentHeaders = callArgs[3].headers;
+    Assert.equal(
+      typeof sentHeaders,
+      "object",
+      "headers should be a plain object"
+    );
+    Assert.ok(
+      // We use instanceof here since isInstance isn't available for
+      // Headers, it seems.
+      // eslint-disable-next-line mozilla/use-isInstance
+      !(sentHeaders instanceof Headers),
+      "headers should not be a Headers instance"
+    );
+
+    Assert.equal(
+      sentHeaders["x-user-agent"],
+      TEST_PREFLIGHT_UA_STRING,
+      "Sent the x-user-agent header from preflight"
+    );
+    Assert.equal(
+      sentHeaders["x-geoname-id"],
+      TEST_PREFLIGHT_GEONAME_ID,
+      "Sent the x-geoname-id header from preflight"
+    );
+    Assert.equal(
+      sentHeaders["x-geo-location"],
+      TEST_PREFLIGHT_GEO_LOCATION,
+      "Sent the x-geo-location header from preflight"
+    );
+
+    info("TopSitesFeed._fetchSites should not send cookies via OHTTP");
+    Assert.equal(callArgs[3].credentials, "omit", "should not send cookies");
+
+    Services.prefs.clearUserPref(
+      "browser.newtabpage.activity-stream.discoverystream.ohttp.relayURL"
+    );
+    Services.prefs.clearUserPref(
+      "browser.newtabpage.activity-stream.discoverystream.ohttp.configURL"
+    );
+    Services.prefs.clearUserPref(
+      "browser.newtabpage.activity-stream.unifiedAds.ohttp.enabled"
+    );
+
+    info("TopSitesFeed._fetchSites should include correct body");
+    Assert.equal(
+      callArgs[3].body,
+      JSON.stringify({
+        context_id: CONTEXT_ID,
+        flags: {
+          feature1: true,
+          feature2: false,
+        },
+        placements: [
+          {
+            placement: "1",
+            count: 1,
+          },
+          {
+            placement: "foo",
+            count: 1,
+          },
+        ],
+        blocks: ["duckduckgo"],
+      })
+    );
+    sandbox.restore();
+  }
+
   Services.prefs.clearUserPref(TOP_SITES_BLOCKED_SPONSORS_PREF);
 });
 
