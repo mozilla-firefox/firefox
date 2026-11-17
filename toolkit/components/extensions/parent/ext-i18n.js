@@ -6,7 +6,7 @@
 
 ChromeUtils.defineESModuleGetters(this, {
   LanguageDetector:
-    "moz-src:///toolkit/components/translations/LanguageDetector.sys.mjs",
+    "resource://gre/modules/translations/LanguageDetector.sys.mjs",
 });
 
 this.i18n = class extends ExtensionAPI {

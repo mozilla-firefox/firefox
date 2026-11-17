@@ -4,8 +4,7 @@
 
 import { clearTimeout, setTimeout } from "resource://gre/modules/Timer.sys.mjs";
 
-const WORKER_URL =
-  "moz-src:///toolkit/components/translations/cld2/cld-worker.js";
+const WORKER_URL = "resource://gre/modules/translations/cld-worker.js";
 
 /**
  * @import {DetectionResult} from "./translations.d.ts"

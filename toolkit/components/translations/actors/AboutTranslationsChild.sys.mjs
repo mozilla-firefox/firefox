@@ -13,7 +13,7 @@ ChromeUtils.defineLazyGetter(lazy, "console", () => {
 
 ChromeUtils.defineESModuleGetters(lazy, {
   LanguageDetector:
-    "moz-src:///toolkit/components/translations/LanguageDetector.sys.mjs",
+    "resource://gre/modules/translations/LanguageDetector.sys.mjs",
 });
 
 /**

@@ -13,7 +13,7 @@ const lazy = XPCOMUtils.declareLazy({
   ExtensionUserScriptsContent:
     "resource://gre/modules/ExtensionUserScriptsContent.sys.mjs",
   LanguageDetector:
-    "moz-src:///toolkit/components/translations/LanguageDetector.sys.mjs",
+    "resource://gre/modules/translations/LanguageDetector.sys.mjs",
   Schemas: "resource://gre/modules/Schemas.sys.mjs",
   WebNavigationFrames: "resource://gre/modules/WebNavigationFrames.sys.mjs",
 
