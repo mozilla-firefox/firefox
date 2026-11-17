@@ -10,6 +10,8 @@
 #include "WindowSurfaceProvider.h"
 #include "mozilla/DataMutex.h"
 #include "mozilla/UniquePtr.h"
+#include "mozilla/ipc/Endpoint.h"
+#include "mozilla/layers/NativeLayerRemoteChild.h"
 #include "mozilla/widget/CompositorWidget.h"
 
 class nsIWidget;
@@ -100,6 +102,10 @@ class GtkCompositorWidget : public CompositorWidget {
   RefPtr<nsWindow> mWidget;
 
  private:
+#ifdef MOZ_WAYLAND
+  void CreateNativeLayerRoot();
+#endif
+
   // This field is written to on the main thread and read from on the compositor
   // or renderer thread. During window resizing, this is subject to a (largely
   // benign) read/write race, see bug 1665726. The DataMutex doesn't prevent the
@@ -108,11 +114,15 @@ class GtkCompositorWidget : public CompositorWidget {
   // of the two.
   DataMutex<LayoutDeviceIntSize> mClientSize;
 
+  ipc::Endpoint<mozilla::layers::PNativeLayerRemoteChild> mChildEndpoint;
+
   // Holds rendering resources
   WindowSurfaceProvider mProvider;
 
 #ifdef MOZ_WAYLAND
-  RefPtr<mozilla::layers::NativeLayerRootWayland> mNativeLayerRoot;
+  // A NativeLayerRootWayland in the parent process, or a
+  // NativeLayerRootRemoteWaylandChild in the GPU process.
+  RefPtr<mozilla::layers::NativeLayerRoot> mNativeLayerRoot;
 #endif
 };
 

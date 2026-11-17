@@ -135,6 +135,11 @@ class TimeStamp;
 class CurrentX11TimeGetter;
 #endif
 
+namespace layers {
+class NativeLayerRootRemoteWaylandParent;
+class NativeLayerRootWayland;
+}  // namespace layers
+
 namespace widget {
 class DBusMenuBar;
 class Screen;
@@ -636,6 +641,12 @@ class nsWindow : public nsIWidget {
   void* mEGLWindow = nullptr;
 #ifdef MOZ_WAYLAND
   RefPtr<mozilla::widget::WaylandSurface> mSurface;
+  RefPtr<mozilla::layers::NativeLayerRootRemoteWaylandParent>
+      mNativeLayerRootRemoteWaylandParent;
+  // The "real" NativeLayerRoot that receives surfaces from the layers
+  // managed by mNativeLayerRootRemoteWaylandParent.
+  RefPtr<mozilla::layers::NativeLayerRootWayland>
+      mNativeLayerRootForRemoteWaylandParent;
 #endif
   RefPtr<gfxImageSurface> mDragPopupSurface;
   LayoutDeviceIntRegion mDragPopupSurfaceRegion;
@@ -802,6 +813,11 @@ class nsWindow : public nsIWidget {
   WindowRenderer* GetWindowRenderer() override;
   void DidGetNonBlankPaint() override;
 
+  void CreateCompositor(int aWidth, int aHeight) override;
+  void DestroyCompositor() override;
+#ifdef MOZ_WAYLAND
+  void CloseNativeLayerRootRemoteWaylandParent();
+#endif
   void SetCompositorWidgetDelegate(CompositorWidgetDelegate* delegate) override;
 
   void UpdateMozWindowActive();

@@ -70,6 +70,10 @@
 #include "mozilla/layers/IAPZCTreeManager.h"
 #include "mozilla/layers/KnowsCompositor.h"
 #include "mozilla/layers/LayersTypes.h"
+#ifdef MOZ_WAYLAND
+#  include "mozilla/layers/NativeLayerRootRemoteWaylandParent.h"
+#  include "mozilla/layers/NativeLayerWayland.h"
+#endif
 #include "mozilla/layers/WebRenderBridgeChild.h"
 #include "mozilla/layers/WebRenderLayerManager.h"
 #include "mozilla/widget/WindowOcclusionState.h"
@@ -6680,6 +6684,54 @@ void nsWindow::DidGetNonBlankPaint() {
       NS_TRANSPARENT);
 }
 
+void nsWindow::CreateCompositor(int aWidth, int aHeight) {
+  // Ensure we are on the parent process.
+  MOZ_ASSERT(XRE_IsParentProcess());
+
+  // It's possible we might reach this before the GPU process has even
+  // been started. Make sure the gfxPlatform is initialized, which is
+  // necessary to create the GPUProcessManager.
+  (void)gfxPlatform::GetPlatform();
+  MOZ_ASSERT(
+      mozilla::gfx::GPUProcessManager::Get(),
+      "Getting the gfxPlatform should have created the GPUProcessManager.");
+
+  // Do the rest of the compositor setup.
+  nsIWidget::CreateCompositor(aWidth, aHeight);
+}
+
+void nsWindow::DestroyCompositor() {
+#ifdef MOZ_WAYLAND
+  CloseNativeLayerRootRemoteWaylandParent();
+#endif
+  nsIWidget::DestroyCompositor();
+}
+
+#ifdef MOZ_WAYLAND
+void nsWindow::CloseNativeLayerRootRemoteWaylandParent() {
+  // The call to Bind was done on the compositor thread, so we need to close
+  // the actor on that thread. The real NativeLayerRoot is shut down on the
+  // main thread afterwards, so no command can reach it after shutdown.
+  RefPtr<NativeLayerRootRemoteWaylandParent> actor =
+      std::move(mNativeLayerRootRemoteWaylandParent);
+  RefPtr<NativeLayerRootWayland> root =
+      std::move(mNativeLayerRootForRemoteWaylandParent);
+  if (!actor) {
+    MOZ_ASSERT(!root);
+    return;
+  }
+  MOZ_ASSERT(CompositorThread());
+  CompositorThread()->Dispatch(NS_NewRunnableFunction(
+      "NativeLayerRootRemoteWaylandParent::Close",
+      [actor = std::move(actor), root = std::move(root)]() mutable {
+        actor->Close();
+        NS_DispatchToMainThread(NS_NewRunnableFunction(
+            "NativeLayerRootWayland::Shutdown",
+            [root = std::move(root)]() { root->Shutdown(); }));
+      }));
+}
+#endif
+
 /* nsWindow::SetCompositorWidgetDelegate() sets remote GtkCompositorWidget
  * to render into with compositor.
  *
@@ -7281,6 +7333,58 @@ nsWindow::GtkWindowDecoration nsWindow::GetSystemGtkWindowDecoration() {
   return sGtkWindowDecoration;
 }
 
+#ifdef MOZ_WAYLAND
+// Creates a NativeLayerRootRemoteWaylandParent which presents layers from the
+// GPU process to aRoot, binds it on the compositor thread, and returns the
+// child endpoint to send to the GPU process in aChildEndpoint.
+static RefPtr<NativeLayerRootRemoteWaylandParent>
+BindNativeLayerRootRemoteWaylandParent(
+    NativeLayerRootWayland* aRoot,
+    const mozilla::ipc::EndpointProcInfo& aGPUProcessInfo,
+    mozilla::ipc::Endpoint<PNativeLayerRemoteChild>* aChildEndpoint) {
+  // The "parent" endpoint connects to this process and the "child" endpoint
+  // connects to the GPU process.
+  mozilla::ipc::Endpoint<PNativeLayerRemoteParent> parentEndpoint;
+  auto rv = PNativeLayerRemote::CreateEndpoints(
+      mozilla::ipc::EndpointProcInfo::Current(), aGPUProcessInfo,
+      &parentEndpoint, aChildEndpoint);
+  MOZ_RELEASE_ASSERT(NS_SUCCEEDED(rv));
+  MOZ_RELEASE_ASSERT(parentEndpoint.IsValid());
+  MOZ_RELEASE_ASSERT(aChildEndpoint->IsValid());
+
+  auto nativeLayerRemoteParent =
+      MakeRefPtr<NativeLayerRootRemoteWaylandParent>(aRoot);
+
+  // Bind the parent endpoint compositor thread.
+  MOZ_ASSERT(CompositorThread());
+
+  Monitor monitor("nsWindow::GetCompositorWidgetInitData");
+  bool didBindParentEndpoint = false;
+
+  CompositorThread()->Dispatch(NS_NewRunnableFunction(
+      "nsWindow::GetCompositorWidgetInitData bind endpoint", [&] {
+        // Bind the endpoint. This has to happen before the child endpoint is
+        // sent to the GPU process.
+        MOZ_ALWAYS_TRUE(parentEndpoint.Bind(nativeLayerRemoteParent));
+        MonitorAutoLock lock(monitor);
+        didBindParentEndpoint = true;
+        lock.Notify();
+      }));
+
+  // Block until the parent endpoint is bound, so that the childEndpoint we
+  // return in our CompositorWidgetInitData is ready to be sent to the GPU
+  // process.
+  {
+    MonitorAutoLock lock(monitor);
+    while (!didBindParentEndpoint) {
+      lock.Wait();
+    }
+  }
+
+  return nativeLayerRemoteParent;
+}
+#endif
+
 void nsWindow::GetCompositorWidgetInitData(
     mozilla::widget::CompositorWidgetInitData* aInitData) {
   MOZ_DIAGNOSTIC_ASSERT(!mIsDestroyed);
@@ -7298,9 +7402,38 @@ void nsWindow::GetCompositorWidgetInitData(
   }
 #endif
 
+  mozilla::ipc::Endpoint<PNativeLayerRemoteChild> childEndpoint;
+#ifdef MOZ_WAYLAND
+  // If we already have an mNativeLayerRootRemoteWaylandParent, close it first.
+  // This happens when we retry after the previous compositor session failed
+  // to be created, or when we fall back to compositing in this process.
+  CloseNativeLayerRootRemoteWaylandParent();
+
+  // Layers are only remoted when compositing happens in the GPU process. When
+  // compositing happens in this process, GtkCompositorWidget creates its own
+  // NativeLayerRootWayland and the child endpoint stays empty.
+  auto* pm = mozilla::gfx::GPUProcessManager::Get();
+  mozilla::ipc::EndpointProcInfo gpuProcessInfo =
+      pm ? pm->GPUEndpointProcInfo()
+         : mozilla::ipc::EndpointProcInfo::Invalid();
+  if (GdkIsWaylandDisplay() &&
+      gpuProcessInfo != mozilla::ipc::EndpointProcInfo::Invalid()) {
+    MOZ_DIAGNOSTIC_ASSERT(GetWaylandSurface());
+    RefPtr surface = GetWaylandSurface();
+    surface->MarkAsRootSurface();
+    RefPtr<NativeLayerRootWayland> root =
+        NativeLayerRootWayland::Create(surface);
+    root->Init();
+    mNativeLayerRootRemoteWaylandParent =
+        BindNativeLayerRootRemoteWaylandParent(root, gpuProcessInfo,
+                                               &childEndpoint);
+    mNativeLayerRootForRemoteWaylandParent = std::move(root);
+  }
+#endif
+
   *aInitData = mozilla::widget::GtkCompositorWidgetInitData(
       GetX11Window(), displayName, GdkIsX11Display(), GetRoundedClientSize(),
-      mozilla::ipc::Endpoint<mozilla::layers::PNativeLayerRemoteChild>());
+      std::move(childEndpoint));
 }
 
 nsresult nsWindow::SetSystemFont(const nsCString& aFontName) {

@@ -14,6 +14,7 @@
 #endif
 
 #ifdef MOZ_WAYLAND
+#  include "mozilla/layers/NativeLayerRootRemoteWaylandChild.h"
 #  include "mozilla/layers/NativeLayerWayland.h"
 #endif
 
@@ -57,10 +58,12 @@ GtkCompositorWidget::~GtkCompositorWidget() {
   LOG("GtkCompositorWidget::~GtkCompositorWidget [%p]\n", (void*)mWidget.get());
   CleanupResources();
 #ifdef MOZ_WAYLAND
-  if (mNativeLayerRoot) {
+  if (RefPtr<layers::NativeLayerRootWayland> root =
+          mNativeLayerRoot ? mNativeLayerRoot->AsNativeLayerRootWayland()
+                           : nullptr) {
     NS_DispatchToMainThread(NS_NewRunnableFunction(
         "~GtkCompositorWidget::NativeLayerRootWayland::Shutdown()",
-        [root = RefPtr{mNativeLayerRoot}]() -> void { root->Shutdown(); }));
+        [root = std::move(root)]() -> void { root->Shutdown(); }));
   }
 #endif
   RefPtr<nsIWidget> widget = mWidget.forget();
@@ -96,9 +99,11 @@ void GtkCompositorWidget::NotifyClientSizeChanged(
 
 void GtkCompositorWidget::NotifyFullscreenChanged(bool aIsFullscreen) {
 #ifdef MOZ_WAYLAND
-  if (mNativeLayerRoot) {
+  if (auto* root = mNativeLayerRoot
+                       ? mNativeLayerRoot->AsNativeLayerRootWayland()
+                       : nullptr) {
     LOG("GtkCompositorWidget::NotifyFullscreenChanged() [%d]", aIsFullscreen);
-    mNativeLayerRoot->NotifyFullscreenChanged(aIsFullscreen);
+    root->NotifyFullscreenChanged(aIsFullscreen);
   }
 #endif
 }
@@ -151,19 +156,34 @@ void GtkCompositorWidget::Init(CompositorWidgetInitData&& aInitData) {
       std::move((aInitData).get_GtkCompositorWidgetInitData()));
   auto size = mClientSize.Lock();
   *size = gtkInitData.clientSize();
+  mChildEndpoint = std::move(gtkInitData.childEndpoint());
 }
 
 mozilla::layers::NativeLayerRoot* GtkCompositorWidget::GetNativeLayerRoot() {
   if (!mNativeLayerRoot) {
-    LOG("GtkCompositorWidget::GetNativeLayerRoot [%p] create",
-        (void*)mWidget.get());
-    MOZ_DIAGNOSTIC_ASSERT(mWidget && mWidget->GetWaylandSurface());
-    RefPtr surface = mWidget->GetWaylandSurface();
-    surface->MarkAsRootSurface();
-    mNativeLayerRoot = layers::NativeLayerRootWayland::Create(surface);
-    mNativeLayerRoot->Init();
+    CreateNativeLayerRoot();
+    MOZ_ASSERT(mNativeLayerRoot);
   }
   return mNativeLayerRoot;
+}
+
+void GtkCompositorWidget::CreateNativeLayerRoot() {
+  LOG("GtkCompositorWidget::CreateNativeLayerRoot");
+  if (XRE_IsGPUProcess()) {
+    auto root = MakeRefPtr<layers::NativeLayerRootRemoteWaylandChild>();
+    RefPtr<layers::NativeLayerRemoteChild> remoteChild = root->GetRemoteChild();
+    MOZ_ALWAYS_TRUE(mChildEndpoint.Bind(remoteChild));
+    mNativeLayerRoot = std::move(root);
+    return;
+  }
+
+  MOZ_DIAGNOSTIC_ASSERT(mWidget && mWidget->GetWaylandSurface());
+  RefPtr surface = mWidget->GetWaylandSurface();
+  surface->MarkAsRootSurface();
+  RefPtr<layers::NativeLayerRootWayland> root =
+      layers::NativeLayerRootWayland::Create(surface);
+  root->Init();
+  mNativeLayerRoot = std::move(root);
 }
 #endif
 
