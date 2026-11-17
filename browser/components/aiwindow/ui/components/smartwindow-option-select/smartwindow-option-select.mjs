@@ -142,9 +142,11 @@ export class SmartwindowOptionSelect extends MozLitElement {
         type="default"
         class="option-select-button"
         .menuId=${this._menuId}
-        .label=${this.#selectedOption?.buttonLabel ??
-        this.#selectedOption?.label ??
-        ""}
+        .label=${buttonL10n?.id
+          ? ""
+          : (this.#selectedOption?.buttonLabel ??
+            this.#selectedOption?.label ??
+            "")}
         data-l10n-id=${ifDefined(buttonL10n?.id)}
         data-l10n-args=${this.#l10nArgs(buttonL10n?.args)}
         .iconSrc=${this.#caretIcon}

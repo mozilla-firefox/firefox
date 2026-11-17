@@ -52,15 +52,27 @@ const MODEL_OPTIONS_BY_ID = {
   },
 };
 
+/**
+ * Builds the model options for the select. Options with an l10nId get their
+ * text from Fluent; the others use the model's name from Remote Settings.
+ *
+ * @param {object} models - Model data keyed by model choice id.
+ * @returns {object[]} Options for smartwindow-option-select.
+ */
 function getModelOptions(models) {
   return [...new Set([AUTO_MODEL_CHOICE_ID, ...getModelDisplayOrder()])]
     .filter(id => MODEL_OPTIONS_BY_ID[id])
-    .map(id => ({
-      ...MODEL_OPTIONS_BY_ID[id],
-      iconSrc: getModelIconSrc(id),
-      label: models[id]?.shortName,
-      buttonLabel: models[id]?.brandName,
-    }));
+    .map(id => {
+      const option = {
+        ...MODEL_OPTIONS_BY_ID[id],
+        iconSrc: getModelIconSrc(id),
+      };
+      if (!option.l10nId) {
+        option.label = models[id]?.shortName;
+        option.buttonLabel = models[id]?.brandName;
+      }
+      return option;
+    });
 }
 
 const MEMORIES_OPTIONS = [

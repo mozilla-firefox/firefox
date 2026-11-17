@@ -196,4 +196,33 @@ describe("smartwindow-option-select", () => {
       );
     });
   });
+
+  it("shows the plain-text label after switching from a Fluent option with the same label", async () => {
+    await SpecialPowers.spawn(browser, [], async () => {
+      const select = content.document.createElement(
+        "smartwindow-option-select"
+      );
+      content.document.body.append(select);
+      select.options = [
+        {
+          value: "auto",
+          l10nId: "smartwindow-onboarding-model-auto",
+          buttonLabel: "Qwen",
+        },
+        { value: "qwen", label: "Qwen 3 235B", buttonLabel: "Qwen" },
+      ];
+      select.value = "auto";
+      await select.updateComplete;
+      await ContentTaskUtils.waitForCondition(
+        () => select.button.textContent.trim() === "Auto",
+        "Closed button shows the Fluent label"
+      );
+      select.value = "qwen";
+      await select.updateComplete;
+      await ContentTaskUtils.waitForCondition(
+        () => select.button.label === "Qwen",
+        "Closed button shows the plain-text label"
+      );
+    });
+  });
 });
