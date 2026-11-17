@@ -325,6 +325,30 @@ const MOCK_RS_RECORDS = [
     },
   ]);
 
+// Auto's chat record, routing to an existing model choice like the real one.
+const MOCK_AUTO_RS_RECORD = (() => {
+  const {
+    AUTO_MODEL_CHOICE_ID,
+    FALLBACK_MODELS,
+    FEATURE_MAJOR_VERSIONS,
+    MODEL_FEATURES,
+  } = ChromeUtils.importESModule(
+    "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs"
+  );
+  return {
+    kind: "params",
+    feature: MODEL_FEATURES.CHAT,
+    model: "auto",
+    inference_model: FALLBACK_MODELS[1].model,
+    model_details: FALLBACK_MODELS[1],
+    model_choice_id: AUTO_MODEL_CHOICE_ID,
+    service_type: "ai",
+    purpose: "chat",
+    parameters: {},
+    version: `v${FEATURE_MAJOR_VERSIONS[MODEL_FEATURES.CHAT]}.0`,
+  };
+})();
+
 add_setup(async function () {
   if (parseInt(Services.env.get("MOZ_CHAOSMODE"), 16)) {
     // When running chaos mode in --verify test runs, the amount of time
