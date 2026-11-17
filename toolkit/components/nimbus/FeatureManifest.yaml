@@ -2380,6 +2380,21 @@ autofill-suppress-unrecognized-autocomplete:
         unclassified: it is offered no dropdown of its own, and it is not
         filled when autofill is triggered from another field in the same form.
 
+autocomplete-remove-records:
+  description: >-
+    Let users remove saved records directly from the autocomplete dropdown.
+  owner: klu@mozilla.com
+  hasExposure: false
+  variables:
+    enabled:
+      type: boolean
+      setPref:
+        branch: default
+        pref: browser.autocomplete.removeRecords.enabled
+      description: >-
+        If true, dropdown entries for saved logins, credit cards, addresses,
+        and form history show an action that removes that record.
+
 autofill-addresses-rust-storage:
   description: Application Services (Rust) storage backend for saved addresses
   owner: dlee@mozilla.com
