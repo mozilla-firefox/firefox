@@ -27,7 +27,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
 // If it stops being a singleton, the AsyncShutdown code at the bottom
 // of this file, as well as these globals, will need adjusting.
 let gShutdown = false;
-let gShutdownResolver = null;
 
 function isShuttingDown() {
   return gShutdown || Services.startup.shuttingDown;
@@ -53,17 +52,10 @@ class Worker {
     this.idleTimeoutId = null;
   }
 
-  async _execute(method, args = [], options = {}) {
-    // Check if we're shutting down.
-    if (method != "prepareShutdown" && isShuttingDown()) {
+  async _execute(method, args = []) {
+    if (isShuttingDown()) {
       throw new RemoteSettingsWorkerError("Remote Settings has shut down.");
     }
-    // Don't instantiate the worker to shut it down.
-    if (method == "prepareShutdown" && !this.worker) {
-      return null;
-    }
-
-    const { mustComplete = false } = options;
     // (Re)instantiate the worker if it was terminated.
     if (!this.worker) {
       this.worker = new ChromeWorker(this.source, { type: "module" });
@@ -89,18 +81,13 @@ class Worker {
     }
     return new Promise((resolve, reject) => {
       const callbackId = `${identifier}${++this.lastCallbackId}`;
-      this.callbacks.set(callbackId, { resolve, reject, mustComplete });
+      this.callbacks.set(callbackId, { resolve, reject });
       this.worker.postMessage({ callbackId, method, args });
     });
   }
 
   _onWorkerMessage(event) {
     const { callbackId, result, error } = event.data;
-    // If we're shutting down, we may have already rejected this operation
-    // and removed its callback from our map:
-    if (!this.callbacks.has(callbackId)) {
-      return;
-    }
     const { resolve, reject } = this.callbacks.get(callbackId);
     if (error) {
       reject(new RemoteSettingsWorkerError(error));
@@ -112,50 +99,35 @@ class Worker {
     // Terminate the worker when it's unused for some time.
     // But don't terminate it if an operation is pending.
     if (!this.callbacks.size) {
-      if (gShutdown) {
+      this.idleTimeoutId = setTimeout(() => {
         this.stop();
-        if (gShutdownResolver) {
-          gShutdownResolver();
-        }
-      } else {
-        this.idleTimeoutId = setTimeout(() => {
-          this.stop();
-        }, lazy.gMaxIdleMilliseconds);
-      }
+      }, lazy.gMaxIdleMilliseconds);
     }
   }
 
   /**
-   * Called at shutdown to abort anything the worker is doing that isn't
-   * critical.
+   * Called at shutdown to reject every pending request and terminate the
+   * worker. Terminating the worker aborts its ongoing IndexedDB transactions,
+   * which are atomic: a dump import is either fully committed or not at all.
    */
-  _abortCancelableRequests() {
-    // End all tasks that we can.
-    const callbackCopy = Array.from(this.callbacks.entries());
-    const error = new Error("Shutdown, aborting read-only worker requests.");
-    for (const [id, { reject, mustComplete }] of callbackCopy) {
-      if (!mustComplete) {
-        this.callbacks.delete(id);
-        reject(error);
-      }
+  _abortPendingRequests() {
+    const error = new RemoteSettingsWorkerError(
+      "Shutdown, aborting worker requests."
+    );
+    for (const { reject } of this.callbacks.values()) {
+      reject(error);
     }
-    // There might be nothing left now:
-    if (!this.callbacks.size) {
-      this.stop();
-      if (gShutdownResolver) {
-        gShutdownResolver();
-      }
-    }
-    // If there was something left, we'll stop as soon as we get messages from
-    // those tasks, too.
-    // Let's hurry them along a bit:
-    this._execute("prepareShutdown");
+    this.callbacks.clear();
+    this.stop();
   }
 
   stop() {
-    this.worker.terminate();
+    if (this.idleTimeoutId) {
+      clearTimeout(this.idleTimeoutId);
+      this.idleTimeoutId = null;
+    }
+    this.worker?.terminate();
     this.worker = null;
-    this.idleTimeoutId = null;
   }
 
   async canonicalStringify(records, timestamp) {
@@ -163,9 +135,7 @@ class Worker {
   }
 
   async importJSONDump(bucket, collection) {
-    return this._execute("importJSONDump", [bucket, collection], {
-      mustComplete: true,
-    });
+    return this._execute("importJSONDump", [bucket, collection]);
   }
 
   async checkFileHash(filepath, size, hash) {
@@ -188,33 +158,9 @@ class Worker {
 try {
   lazy.AsyncShutdown.profileBeforeChange.addBlocker(
     "Remote Settings profile-before-change",
-    async () => {
-      // First, indicate we've shut down.
+    () => {
       gShutdown = true;
-      // Then, if we have no worker or no callbacks, we're done.
-      if (
-        !RemoteSettingsWorker.worker ||
-        !RemoteSettingsWorker.callbacks.size
-      ) {
-        return null;
-      }
-      // Otherwise, there's something left to do. Set up a promise:
-      let finishedPromise = new Promise(resolve => {
-        gShutdownResolver = resolve;
-      });
-
-      // Try to cancel most of the work:
-      RemoteSettingsWorker._abortCancelableRequests();
-
-      // Return a promise that the worker will resolve.
-      return finishedPromise;
-    },
-    {
-      fetchState() {
-        const remainingCallbacks = RemoteSettingsWorker.callbacks;
-        const details = Array.from(remainingCallbacks.keys()).join(", ");
-        return `Remaining: ${remainingCallbacks.size} callbacks (${details}).`;
-      },
+      RemoteSettingsWorker._abortPendingRequests();
     }
   );
 } catch (ex) {

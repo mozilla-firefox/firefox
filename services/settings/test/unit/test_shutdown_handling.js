@@ -136,23 +136,18 @@ add_task(async function test_shutdown_worker() {
   Assert.equal(before, null);
 
   let records = [{}];
-  let importPromise = RemoteSettingsWorker._execute(
-    "_test_only_import",
-    ["main", "language-dictionaries", records, 0],
-    { mustComplete: true }
-  );
+  let importPromise = RemoteSettingsWorker._execute("_test_only_import", [
+    "main",
+    "language-dictionaries",
+    records,
+    0,
+  ]);
   let stringifyPromise = RemoteSettingsWorker.canonicalStringify(
     [],
     [],
     Date.now()
   );
-  // Change the idle time so we shut the worker down even though we can't
-  // set gShutdown from outside of the worker management code.
-  Services.prefs.setIntPref(
-    "services.settings.worker_idle_max_milliseconds",
-    1
-  );
-  RemoteSettingsWorker._abortCancelableRequests();
+  RemoteSettingsWorker._abortPendingRequests();
   await Assert.rejects(
     stringifyPromise,
     /Shutdown/,
@@ -160,16 +155,20 @@ add_task(async function test_shutdown_worker() {
   );
   await Assert.rejects(
     importPromise,
-    /shutting down/,
+    /Shutdown/,
     "Ensure imports get aborted during shutdown"
   );
-  const after = await client.db.getLastModified();
-  Assert.equal(after, null);
-  await TestUtils.waitForCondition(() => !RemoteSettingsWorker.worker);
   Assert.ok(
     !RemoteSettingsWorker.worker,
     "Worker should have been terminated."
   );
+  Assert.equal(
+    RemoteSettingsWorker.callbacks.size,
+    0,
+    "No callback should be left pending."
+  );
+  const after = await client.db.getLastModified();
+  Assert.equal(after, null);
 });
 
 // This test must remain the last task of this test file, because
