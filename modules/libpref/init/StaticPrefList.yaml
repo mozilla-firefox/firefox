@@ -8028,7 +8028,7 @@
 #if defined(XP_WIN)
 - name: gfx.font-path-set.enabled
   type: bool
-  value: false
+  value: @IS_NIGHTLY_BUILD@
   mirror: once
 #endif
 
