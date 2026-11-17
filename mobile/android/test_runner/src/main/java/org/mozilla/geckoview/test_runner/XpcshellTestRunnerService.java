@@ -57,7 +57,9 @@ public class XpcshellTestRunnerService extends Service {
 
     final Bundle extras = intent.getExtras();
     for (final String key : extras.keySet()) {
-      Log.i(LOGTAG, "Got extras " + key + "=" + extras.get(key));
+      @SuppressWarnings("deprecation")
+      final Object value = extras.get(key);
+      Log.i(LOGTAG, "Got extras " + key + "=" + value);
     }
 
     final ContentBlocking.SafeBrowsingProvider googleLegacy =

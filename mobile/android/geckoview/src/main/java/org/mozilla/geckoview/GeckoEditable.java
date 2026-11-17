@@ -2718,6 +2718,7 @@ import org.mozilla.geckoview.SessionTextInput.EditableListener.IMEState;
       final @NonNull KeyEvent event) {
     if (keyCode == KeyEvent.KEYCODE_UNKNOWN) {
       // KEYCODE_UNKNOWN means the characters are in KeyEvent.getCharacters()
+      @SuppressWarnings("deprecation")
       final String str = event.getCharacters();
       for (int i = 0; i < str.length(); i++) {
         final KeyEvent charEvent = getCharKeyEvent(str.charAt(i));
@@ -2747,8 +2748,9 @@ import org.mozilla.geckoview.SessionTextInput.EditableListener.IMEState;
   /** Get a key that represents a given character. */
   private static KeyEvent getCharKeyEvent(final char c) {
     final long time = SystemClock.uptimeMillis();
-    return new KeyEvent(
-        time, time, KeyEvent.ACTION_MULTIPLE, KeyEvent.KEYCODE_UNKNOWN, /* repeat */ 0) {
+    @SuppressWarnings("deprecation")
+    final int action = KeyEvent.ACTION_MULTIPLE;
+    return new KeyEvent(time, time, action, KeyEvent.KEYCODE_UNKNOWN, /* repeat */ 0) {
       @Override
       public int getUnicodeChar() {
         return c;

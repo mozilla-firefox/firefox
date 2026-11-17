@@ -36,6 +36,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.mozilla.gecko.GeckoAppShell;
 import org.mozilla.gecko.util.GeckoBundle;
+import org.mozilla.gecko.util.ThreadUtils;
 
 /** Handler for processing application crashes and sending crash reports. */
 public class CrashHandler implements Thread.UncaughtExceptionHandler {
@@ -183,14 +184,14 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
       Log.e(
           LOGTAG,
           ">>> REPORTING UNCAUGHT EXCEPTION FROM THREAD "
-              + thread.getId()
+              + ThreadUtils.getThreadId(thread)
               + " (\""
               + thread.getName()
               + "\")",
           exc);
 
       if (MAIN_THREAD != thread) {
-        Log.e(LOGTAG, "Main thread (" + MAIN_THREAD.getId() + ") stack:");
+        Log.e(LOGTAG, "Main thread (" + ThreadUtils.getThreadId(MAIN_THREAD) + ") stack:");
         for (final StackTraceElement ste : MAIN_THREAD.getStackTrace()) {
           Log.e(LOGTAG, "    " + ste.toString());
         }
@@ -519,7 +520,9 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
 
       final JSONObject json = new JSONObject();
       for (final String key : extras.keySet()) {
-        json.put(key, extras.get(key));
+        @SuppressWarnings("deprecation")
+        final Object value = extras.get(key);
+        json.put(key, value);
       }
 
       final BufferedWriter extraWriter = new BufferedWriter(new FileWriter(extraFile));

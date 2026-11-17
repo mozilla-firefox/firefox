@@ -317,16 +317,19 @@ public class GeckoThread extends Thread {
   }
 
   @SuppressLint("AppBundleLocaleChanges")
+  @SuppressWarnings("deprecation")
+  private static void useTraditionalChineseLocale(final Resources res) {
+    final Locale mappedLocale = Locale.TRADITIONAL_CHINESE;
+    Locale.setDefault(mappedLocale);
+    final Configuration config = res.getConfiguration();
+    config.locale = mappedLocale;
+    res.updateConfiguration(config, null);
+  }
+
   private static void initGeckoEnvironment() {
     final Context context = GeckoAppShell.getApplicationContext();
-    final Locale locale = Locale.getDefault();
-    final Resources res = context.getResources();
-    if (locale.toString().equalsIgnoreCase("zh_hk")) {
-      final Locale mappedLocale = Locale.TRADITIONAL_CHINESE;
-      Locale.setDefault(mappedLocale);
-      final Configuration config = res.getConfiguration();
-      config.locale = mappedLocale;
-      res.updateConfiguration(config, null);
+    if (Locale.getDefault().toString().equalsIgnoreCase("zh_hk")) {
+      useTraditionalChineseLocale(context.getResources());
     }
 
     if (!isChildProcess()) {

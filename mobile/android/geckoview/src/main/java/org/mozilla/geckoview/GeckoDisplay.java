@@ -696,6 +696,11 @@ public class GeckoDisplay {
       return insetsCompat.getInsets(WindowInsetsCompat.Type.ime()).bottom;
     }
 
+    return getSystemWindowInsetsBottom(insetsCompat);
+  }
+
+  @SuppressWarnings("deprecation")
+  private static int getSystemWindowInsetsBottom(@NonNull final WindowInsetsCompat insetsCompat) {
     return insetsCompat.getSystemWindowInsets().bottom;
   }
 

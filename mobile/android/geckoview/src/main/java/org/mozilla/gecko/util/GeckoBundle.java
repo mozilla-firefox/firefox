@@ -1019,6 +1019,7 @@ public final class GeckoBundle implements Parcelable {
     int i = 0;
 
     for (final String key : bundle.keySet()) {
+      @SuppressWarnings("deprecation")
       final Object value = bundle.get(key);
       keys[i] = key;
 

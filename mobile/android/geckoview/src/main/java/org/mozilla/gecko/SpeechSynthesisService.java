@@ -67,9 +67,12 @@ public class SpeechSynthesisService {
               Log.w(LOGTAG, "TextToSpeech is not initialized");
               return;
             }
+            @SuppressWarnings("deprecation")
             final Locale defaultLocale = tss.getDefaultLanguage();
             for (final Locale locale : getAvailableLanguages()) {
+              @SuppressWarnings("deprecation")
               final Set<String> features = tss.getFeatures(locale);
+              @SuppressWarnings("deprecation")
               final boolean isLocal =
                   features != null
                       && features.contains(TextToSpeech.Engine.KEY_FEATURE_EMBEDDED_SYNTHESIS);
@@ -174,6 +177,7 @@ public class SpeechSynthesisService {
               }
 
               @Override
+              @SuppressWarnings("deprecation")
               public void onError(final String utteranceId) {
                 dispatchError(utteranceId);
               }

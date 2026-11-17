@@ -247,7 +247,9 @@ public class GeckoSession {
         return;
       }
       if (mMagnifier == null) {
-        mMagnifier = new Magnifier(mView);
+        @SuppressWarnings("deprecation")
+        final Magnifier magnifier = new Magnifier(mView);
+        mMagnifier = magnifier;
       }
 
       if (mView instanceof MagnifiableSurfaceView) {

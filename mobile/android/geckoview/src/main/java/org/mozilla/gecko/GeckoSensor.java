@@ -30,6 +30,9 @@ import org.mozilla.gecko.annotation.WrapForJNI;
   private static final int ORIENTATION_SENSOR_DELAY = 16666; // 60Hz
   private static final int MOTION_SENSOR_DELAY = 16666; // 60Hz
 
+  @SuppressWarnings("deprecation")
+  private static final int SENSOR_TYPE_ORIENTATION = Sensor.TYPE_ORIENTATION;
+
   private static SensorListeners sListeners;
 
   private static Sensor gAccelerometerSensor;
@@ -55,7 +58,7 @@ import org.mozilla.gecko.annotation.WrapForJNI;
       switch (sensorType) {
         case Sensor.TYPE_ACCELEROMETER:
         case Sensor.TYPE_LINEAR_ACCELERATION:
-        case Sensor.TYPE_ORIENTATION:
+        case SENSOR_TYPE_ORIENTATION:
           if (sensorType == Sensor.TYPE_ACCELEROMETER) {
             halType = SENSOR_ACCELERATION;
           } else if (sensorType == Sensor.TYPE_LINEAR_ACCELERATION) {
@@ -157,7 +160,7 @@ import org.mozilla.gecko.annotation.WrapForJNI;
 
       case SENSOR_ORIENTATION:
         if (gOrientationSensor == null) {
-          gOrientationSensor = sm.getDefaultSensor(Sensor.TYPE_ORIENTATION);
+          gOrientationSensor = sm.getDefaultSensor(SENSOR_TYPE_ORIENTATION);
         }
         if (gOrientationSensor != null) {
           sm.registerListener(sListeners, gOrientationSensor, ORIENTATION_SENSOR_DELAY);

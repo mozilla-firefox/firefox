@@ -321,6 +321,7 @@ public class GeckoAppShell {
 
   // Permissions are explicitly checked when requesting content permission.
   @SuppressLint("MissingPermission")
+  @SuppressWarnings("deprecation")
   private static synchronized boolean updateLocationListeners() {
     final boolean shouldListen = locationListeningRequested && !locationPaused;
     final LocationManager lm = getLocationManager(getApplicationContext());
@@ -440,6 +441,7 @@ public class GeckoAppShell {
     public void onProviderEnabled(final String provider) {}
 
     @Override
+    @SuppressWarnings("deprecation")
     public void onStatusChanged(final String provider, final int status, final Bundle extras) {}
   }
 
@@ -460,6 +462,9 @@ public class GeckoAppShell {
   static final String WAKE_LOCK_VIDEO_PLAYING = "video-playing";
 
   static final int WAKE_LOCKS_COUNT = 2;
+
+  @SuppressWarnings("deprecation")
+  private static final int SCREEN_BRIGHT_WAKE_LOCK = PowerManager.SCREEN_BRIGHT_WAKE_LOCK;
 
   /** No one holds the wake-lock. */
   static final int WAKE_LOCK_STATE_UNLOCKED = 0;
@@ -493,9 +498,7 @@ public class GeckoAppShell {
       } else if (WAKE_LOCK_SCREEN.equals(lock) || WAKE_LOCK_VIDEO_PLAYING.equals(lock)) {
         // ON_AFTER_RELEASE is set, the user activity timer will be reset when the
         // WakeLock is released, causing the illumination to remain on a bit longer.
-        wl =
-            pm.newWakeLock(
-                PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE, lock);
+        wl = pm.newWakeLock(SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE, lock);
       } else {
         Log.w(LOGTAG, "Unsupported wake-lock: " + lock);
         return;
@@ -987,9 +990,10 @@ public class GeckoAppShell {
   @WrapForJNI(calledFrom = "gecko")
   private static boolean getShowPasswordSetting() {
     try {
+      @SuppressWarnings("deprecation")
+      final String setting = Settings.System.TEXT_SHOW_PASSWORD;
       final int showPassword =
-          Settings.System.getInt(
-              getApplicationContext().getContentResolver(), Settings.System.TEXT_SHOW_PASSWORD, 1);
+          Settings.System.getInt(getApplicationContext().getContentResolver(), setting, 1);
       return (showPassword > 0);
     } catch (final Exception e) {
       return true;
@@ -1261,6 +1265,7 @@ public class GeckoAppShell {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public Rect getScreenSize(final int displayId) {
       final Display disp = getDisplay(displayId);
       final Point size = new Point();
@@ -1324,6 +1329,7 @@ public class GeckoAppShell {
           }
 
           @Override
+          @SuppressWarnings("deprecation")
           public void onLowMemory() {}
         };
 
