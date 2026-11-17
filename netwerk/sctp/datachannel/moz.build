@@ -10,13 +10,11 @@ EXPORTS.mozilla.net += [
     "DataChannelDcSctp.h",
     "DataChannelLog.h",
     "DataChannelProtocol.h",
-    "DataChannelUsrsctp.h",
 ]
 
 SOURCES += [
     "DataChannel.cpp",
     "DataChannelDcSctp.cpp",
-    "DataChannelUsrsctp.cpp",
 ]
 
 include("/ipc/chromium/chromium-config.mozbuild")
@@ -28,14 +26,6 @@ LOCAL_INCLUDES += [
     "/dom/media/webrtc",
     "/dom/media/webrtc/transport",
     "/media/webrtc",
-    "/netwerk/sctp/src",
     "/third_party/abseil-cpp",
     "/third_party/libwebrtc",
 ]
-
-DEFINES["SCTP_DEBUG"] = 1
-
-if CONFIG["OS_TARGET"] == "WINNT":
-    DEFINES["__Userspace_os_Windows"] = 1
-else:
-    DEFINES["__Userspace_os_%s" % CONFIG["OS_TARGET"]] = 1

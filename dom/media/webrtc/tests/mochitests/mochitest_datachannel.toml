@@ -52,8 +52,6 @@ prefs = [
 ["test_dataChannel_dataOnlyBufferedAmountLow.html"]
 scheme = "http"
 
-["test_dataChannel_dcsctp_interop.html"]
-
 ["test_dataChannel_dtlsVersions.html"]
 
 ["test_dataChannel_hostnameObfuscation.html"]
