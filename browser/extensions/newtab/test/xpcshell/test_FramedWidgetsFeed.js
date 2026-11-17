@@ -7,7 +7,10 @@ ChromeUtils.defineESModuleGetters(this, {
   actionTypes: "resource://newtab/common/Actions.mjs",
   sinon: "resource://testing-common/Sinon.sys.mjs",
   FramedWidgetsFeed: "resource://newtab/lib/Widgets/FramedWidgetsFeed.sys.mjs",
+  MerinoTestUtils: "resource://testing-common/MerinoTestUtils.sys.mjs",
 });
+
+MerinoTestUtils.init(this);
 
 const PROD_ENDPOINT =
   "https://merino.services.mozilla.com/api/v1/widgets/frames";
@@ -387,4 +390,29 @@ add_task(async function test_skips_when_no_framed_widget_enabled() {
   Assert.ok(!lastUpdate(feed), "Does not broadcast");
   Assert.ok(!feed.loaded, "Stays unloaded");
   sandbox.restore();
+});
+
+add_task(async function test_merino_client_sends_source_and_locale() {
+  await MerinoTestUtils.server.start();
+  MerinoTestUtils.server.reset();
+
+  const client = new FramedWidgetsFeed().MerinoClient("FRAMED_TEST");
+  const { data, error } = await client.fetchFramedWidgets({
+    source: "newtab",
+    endpointUrl: MerinoTestUtils.server.url.toString(),
+    locale: "fr",
+  });
+
+  Assert.equal(error, null, "No error on a successful fetch");
+  Assert.ok(data, "The response body comes back as data");
+  Assert.equal(MerinoTestUtils.server.requests.length, 1, "One request made");
+  const [request] = MerinoTestUtils.server.requests;
+  const params = new URLSearchParams(request.queryString);
+  Assert.equal(params.get("source"), "newtab", "The source param is set");
+  Assert.equal(params.get("locale"), "fr", "The locale param is set");
+  Assert.equal(
+    request.getHeader("Accept-Language"),
+    "fr",
+    "The Accept-Language header is sent"
+  );
 });

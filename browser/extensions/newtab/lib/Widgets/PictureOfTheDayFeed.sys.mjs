@@ -9,7 +9,7 @@
  *
  * Fetch / render:
  *   Once per day this feed fetches the picture from Merino (via
- *   TemporaryMerinoClientShim), stores it in PersistentCache, maps the payload
+ *   NewTabMerinoWrapper), stores it in PersistentCache, maps the payload
  *   onto our internal shape with normalize(), and broadcasts it into the Redux
  *   store, where PictureOfTheDay.jsx renders it. The Merino backend refreshes the
  *   picture on a daily cron (around midnight PST); when a fresh image is not
@@ -44,9 +44,8 @@
 
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
+  NewTabMerinoWrapper: "resource://newtab/lib/NewTabMerinoWrapper.sys.mjs",
   PersistentCache: "resource://newtab/lib/PersistentCache.sys.mjs",
-  TemporaryMerinoClientShim:
-    "resource://newtab/lib/TemporaryMerinoClientShim.sys.mjs",
   calculateTheme: "resource://newtab/lib/Wallpapers/WallpaperThemeUtils.mjs",
 });
 
@@ -428,7 +427,7 @@ export class PictureOfTheDayFeed {
  * Thin wrappers around external tools so tests can stub them.
  */
 PictureOfTheDayFeed.prototype.MerinoClient = name => {
-  return new lazy.TemporaryMerinoClientShim(name);
+  return new lazy.NewTabMerinoWrapper(name);
 };
 PictureOfTheDayFeed.prototype.PersistentCache = (...args) => {
   return new lazy.PersistentCache(...args);

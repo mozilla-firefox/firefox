@@ -6,9 +6,8 @@
 
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
+  NewTabMerinoWrapper: "resource://newtab/lib/NewTabMerinoWrapper.sys.mjs",
   PersistentCache: "resource://newtab/lib/PersistentCache.sys.mjs",
-  TemporaryMerinoClientShim:
-    "resource://newtab/lib/TemporaryMerinoClientShim.sys.mjs",
 });
 
 import {
@@ -189,7 +188,7 @@ export class FramedWidgetsFeed {
  * Thin wrappers around external tools so tests can stub them.
  */
 FramedWidgetsFeed.prototype.MerinoClient = name => {
-  return new lazy.TemporaryMerinoClientShim(name);
+  return new lazy.NewTabMerinoWrapper(name);
 };
 FramedWidgetsFeed.prototype.PersistentCache = (...args) => {
   return new lazy.PersistentCache(...args);

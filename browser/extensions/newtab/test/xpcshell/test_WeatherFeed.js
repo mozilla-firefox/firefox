@@ -10,8 +10,6 @@ ChromeUtils.defineESModuleGetters(this, {
   GeolocationTestUtils:
     "resource://testing-common/GeolocationTestUtils.sys.mjs",
   MerinoTestUtils: "resource://testing-common/MerinoTestUtils.sys.mjs",
-  TemporaryMerinoClientShim:
-    "resource://newtab/lib/TemporaryMerinoClientShim.sys.mjs",
   WeatherFeed: "resource://newtab/lib/WeatherFeed.sys.mjs",
   Region: "resource://gre/modules/Region.sys.mjs",
 });
@@ -1106,67 +1104,4 @@ add_task(async function test_onPrefChanged_widgets_weather_enabled() {
   );
 
   sandbox.restore();
-});
-
-// HNT-2544: TemporaryMerinoClientShim should send Accept-Language on weather
-// requests so Merino/AccuWeather can return localized current conditions.
-add_task(async function test_shim_fetchWeatherReport_sends_accept_language() {
-  await MerinoTestUtils.server.start();
-  MerinoTestUtils.server.reset();
-
-  const client = new TemporaryMerinoClientShim("ACCEPT_LANGUAGE_REPORT");
-  // fetchWeatherReport() arms a long-lived Merino session timer. Cancel it so
-  // it doesn't outlive the test and leave a pending timer racing with shutdown.
-  registerCleanupFunction(() => client.resetSession());
-  await client.fetchWeatherReport({
-    source: "newtab",
-    city: "Yokohama",
-    region: "Kanagawa",
-    country: "JP",
-    endpointUrl: MerinoTestUtils.server.url.toString(),
-  });
-
-  Assert.equal(
-    MerinoTestUtils.server.requests.length,
-    1,
-    "fetchWeatherReport issued exactly one request"
-  );
-  Assert.ok(
-    MerinoTestUtils.server.requests[0].hasHeader("Accept-Language"),
-    "fetchWeatherReport sent an Accept-Language header"
-  );
-  Assert.equal(
-    MerinoTestUtils.server.requests[0].getHeader("Accept-Language"),
-    Services.locale.appLocaleAsBCP47,
-    "Accept-Language equals appLocaleAsBCP47"
-  );
-});
-
-add_task(async function test_shim_fetchHourlyForecasts_sends_accept_language() {
-  await MerinoTestUtils.server.start();
-  MerinoTestUtils.server.reset();
-
-  const client = new TemporaryMerinoClientShim("ACCEPT_LANGUAGE_HOURLY");
-  await client.fetchHourlyForecasts({
-    source: "newtab",
-    city: "Yokohama",
-    region: "Kanagawa",
-    country: "JP",
-    endpointUrl: MerinoTestUtils.server.url.toString(),
-  });
-
-  Assert.equal(
-    MerinoTestUtils.server.requests.length,
-    1,
-    "fetchHourlyForecasts issued exactly one request"
-  );
-  Assert.ok(
-    MerinoTestUtils.server.requests[0].hasHeader("Accept-Language"),
-    "fetchHourlyForecasts sent an Accept-Language header"
-  );
-  Assert.equal(
-    MerinoTestUtils.server.requests[0].getHeader("Accept-Language"),
-    Services.locale.appLocaleAsBCP47,
-    "Accept-Language equals appLocaleAsBCP47"
-  );
 });

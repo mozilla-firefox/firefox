@@ -6,9 +6,13 @@
 ChromeUtils.defineESModuleGetters(this, {
   actionTypes: "resource://newtab/common/Actions.mjs",
   sinon: "resource://testing-common/Sinon.sys.mjs",
+  MerinoClient: "moz-src:///browser/components/urlbar/MerinoClient.sys.mjs",
+  MerinoTestUtils: "resource://testing-common/MerinoTestUtils.sys.mjs",
   PictureOfTheDayFeed:
     "resource://newtab/lib/Widgets/PictureOfTheDayFeed.sys.mjs",
 });
+
+MerinoTestUtils.init(this);
 
 const ENDPOINT =
   "https://merino.services.mozilla.com/api/v1/rss/picture-of-the-day";
@@ -681,4 +685,86 @@ add_task(async function test_set_wallpaper_names_the_page_that_asked() {
   );
 
   sandbox.restore();
+});
+
+add_task(async function test_merino_client_sends_source_and_accept_language() {
+  await MerinoTestUtils.server.start();
+  MerinoTestUtils.server.reset();
+
+  const client = new PictureOfTheDayFeed().MerinoClient("POTD_TEST");
+  const { data, error } = await client.fetchPictureOfTheDay({
+    source: "newtab",
+    endpointUrl: MerinoTestUtils.server.url.toString(),
+    acceptLanguage: "fr",
+  });
+
+  Assert.equal(error, null, "No error on a successful fetch");
+  Assert.ok(data, "The response body comes back as data");
+  Assert.equal(MerinoTestUtils.server.requests.length, 1, "One request made");
+  const [request] = MerinoTestUtils.server.requests;
+  Assert.equal(
+    new URLSearchParams(request.queryString).get("source"),
+    "newtab",
+    "The source param is set"
+  );
+  Assert.equal(
+    request.getHeader("Accept-Language"),
+    "fr",
+    "The Accept-Language header is sent"
+  );
+
+  info("A failed response comes back as a load error");
+  MerinoTestUtils.server.response = { status: 500 };
+  const failed = await client.fetchPictureOfTheDay({
+    endpointUrl: MerinoTestUtils.server.url.toString(),
+  });
+  Assert.deepEqual(failed, { data: null, error: "load_error" });
+});
+
+add_task(async function test_merino_client_uses_platform_method_when_present() {
+  await MerinoTestUtils.server.start();
+  MerinoTestUtils.server.reset();
+
+  const result = { data: { title: "From MerinoClient" }, error: null };
+  const platformMethod = sinon.stub().resolves(result);
+  const original = Object.getOwnPropertyDescriptor(
+    MerinoClient.prototype,
+    "fetchPictureOfTheDay"
+  );
+  MerinoClient.prototype.fetchPictureOfTheDay = platformMethod;
+  try {
+    const client = new PictureOfTheDayFeed().MerinoClient("POTD_TEST");
+    const options = {
+      source: "newtab",
+      endpointUrl: MerinoTestUtils.server.url.toString(),
+      acceptLanguage: "fr",
+    };
+    const returned = await client.fetchPictureOfTheDay(options);
+
+    Assert.equal(returned, result, "MerinoClient's result is returned");
+    Assert.ok(
+      platformMethod.calledOnceWithExactly(options),
+      "MerinoClient's method gets the same options"
+    );
+    Assert.equal(
+      platformMethod.firstCall.thisValue,
+      client,
+      "MerinoClient's method runs on the wrapper"
+    );
+    Assert.equal(
+      MerinoTestUtils.server.requests.length,
+      0,
+      "The fallback copy makes no request"
+    );
+  } finally {
+    if (original) {
+      Object.defineProperty(
+        MerinoClient.prototype,
+        "fetchPictureOfTheDay",
+        original
+      );
+    } else {
+      delete MerinoClient.prototype.fetchPictureOfTheDay;
+    }
+  }
 });
