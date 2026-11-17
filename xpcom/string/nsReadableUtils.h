@@ -401,6 +401,7 @@ char16_t* UTF8ToNewUnicode(const nsACString& aSource, uint32_t* aUTF16Count,
 char16_t* CopyUnicodeTo(const nsAString& aSource, uint32_t aSrcOffset,
                         char16_t* aDest, uint32_t aLength);
 
+#if MOZ_HAS_JSRUST()
 /**
  * Replaces unpaired surrogates with U+FFFD in the argument.
  *
@@ -422,6 +423,7 @@ char16_t* CopyUnicodeTo(const nsAString& aSource, uint32_t aSrcOffset,
   mozilla::EnsureUtf16ValiditySpan(span.From(upTo + 1));
   return true;
 }
+#endif
 
 void ParseString(const nsACString& aSource, char aDelimiter,
                  nsTArray<nsCString>& aArray);
