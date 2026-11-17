@@ -23,6 +23,7 @@ NS_QUERYFRAME_TAIL_INHERITING(nsIFrame)
 void nsSplittableFrame::Init(nsIContent* aContent, nsContainerFrame* aParent,
                              nsIFrame* aPrevInFlow) {
   if (aPrevInFlow) {
+    MOZ_RELEASE_ASSERT(aPrevInFlow->PresContext() == PresContext());
     // Hook the frame into the flow
     SetPrevInFlow(aPrevInFlow);
     aPrevInFlow->SetNextInFlow(this);
