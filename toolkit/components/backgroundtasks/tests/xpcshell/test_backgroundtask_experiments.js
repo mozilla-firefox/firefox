@@ -240,6 +240,12 @@ add_task(async function test_backgroundtask_randomization() {
         ],
       });
 
+      Assert.equal(
+        infoMap.randomizationId,
+        branchDetails.randomizationId,
+        "Randomization ID is the one passed on the command line"
+      );
+
       // Verify that only the correct experiment and branch generated an impression.
       let impressions = infoMap.ASRouterState.messageImpressions;
       Assert.deepEqual(Object.keys(impressions), [
@@ -420,6 +426,12 @@ add_task(async function test_backgroundtask_Messaging_targeting() {
         treatmentARandomizationId,
       ],
     });
+
+    Assert.equal(
+      infoMap.randomizationId,
+      treatmentARandomizationId,
+      "Randomization ID is the one passed on the command line"
+    );
 
     // Verify that the given targeting generated the expected number of impressions.
     let impressions = infoMap.ASRouterState.messageImpressions;
