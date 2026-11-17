@@ -571,7 +571,7 @@ const { setTimeout } = ChromeUtils.importESModule(
   "resource://gre/modules/Timer.sys.mjs"
 );
 let { LanguageDetector, workerManager } = ChromeUtils.importESModule(
-  "resource://gre/modules/translations/LanguageDetector.sys.mjs"
+  "moz-src:///toolkit/components/translations/LanguageDetector.sys.mjs"
 );
 
 function check_result(result, langCode, expected) {

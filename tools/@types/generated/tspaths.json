@@ -6808,9 +6808,6 @@
       "resource://gre/modules/third_party/jsesc/jsesc.mjs": [
         "../../../toolkit/modules/third_party/jsesc/jsesc.mjs"
       ],
-      "resource://gre/modules/translations/LanguageDetector.sys.mjs": [
-        "../../../toolkit/components/translations/LanguageDetector.sys.mjs"
-      ],
       "resource://gre/modules/workers/PromiseWorker.js": [
         "../../../tools/@types/subs/PromiseWorker.d.ts"
       ],

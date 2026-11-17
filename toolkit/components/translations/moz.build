@@ -15,7 +15,7 @@ BROWSER_CHROME_MANIFESTS += ["tests/browser/browser.toml"]
 
 XPCSHELL_TESTS_MANIFESTS += ["tests/unit/xpcshell.toml"]
 
-EXTRA_JS_MODULES.translations = [
+MOZ_SRC_FILES += [
     "cld2/cld-worker.js",
     "cld2/cld-worker.js.mem",
     "LanguageDetector.sys.mjs",
