@@ -164,6 +164,13 @@ void RegisterEarlyUserDefaults() {
   // process "catches up."
   defaults[@"NSAppSleepDisabled"] = @YES;
 
+#ifdef NIGHTLY_BUILD
+  // On macOS 27, AppKit opts the Firefox, Firefox Beta and Developer Edition
+  // bundle identifiers into gesture recognizers that emulate mouse events and
+  // scrolling from touch input. Opt Nightly in as well.
+  defaults[@"NSApplicationRequiresGestureRecognizersFor3rdPartyToolKit"] = @YES;
+#endif
+
   [[NSUserDefaults standardUserDefaults] registerDefaults:defaults];
 }
 
