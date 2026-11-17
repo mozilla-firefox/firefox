@@ -404,8 +404,8 @@ function rectRelativeToScreen(aElement) {
 // guarantee anything; you probably want to use one of the other functions below
 // which actually wait for results.
 // aX and aY are relative to the top-left of |aTarget|'s bounding rect.
-// aDeltaX and aDeltaY are pixel deltas, and aObserver can be left undefined
-// if not needed.
+// aDeltaX and aDeltaY are pixel deltas, positive when scrolling to the left or
+// up, and aObserver can be left undefined if not needed.
 async function synthesizeNativeWheel(
   aTarget,
   aX,

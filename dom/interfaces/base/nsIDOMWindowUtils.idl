@@ -501,6 +501,11 @@ interface nsIDOMWindowUtils : nsISupports {
    * @param aNativeMessage
    *   On Windows:  WM_MOUSEWHEEL (0x020A), WM_MOUSEHWHEEL(0x020E),
    *                WM_VSCROLL (0x0115) or WM_HSCROLL (0x114).
+   * @param aDeltaX, aDeltaY
+   *   Positive values scroll to the left / up, on all platforms, where
+   *   applicable. (On Windows, for WM_VSCROLL and WM_HSCROLL, which are
+   *   scrollbar messages, the delta is a constant like SB_LINEUP so the
+   *   convention doesn't apply.)
    */
   void sendNativeMouseScrollEvent(in long aScreenX,
                                   in long aScreenY,

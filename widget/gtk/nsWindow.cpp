@@ -7049,8 +7049,8 @@ nsresult nsWindow::SynthesizeNativeMouseScrollEvent(
     return NS_OK;
   }
 
-  // The delta values are backwards on Linux compared to Windows and Cocoa,
-  // hence the negation.
+  // GDK deltas are positive when scrolling down / to the right, the opposite
+  // of the convention used by this function, hence the negation.
   CreateAndPutGdkScrollEvent(aPoint, -aDeltaX, -aDeltaY);
 
   return NS_OK;

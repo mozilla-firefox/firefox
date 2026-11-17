@@ -1716,12 +1716,14 @@ class nsIWidget : public nsSupportsWeakReference {
    *                          In device pixels, the origin at the top left of
    *                          the primary display.
    * @param aNativeMessage    Platform native message.
-   * @param aDeltaX           The delta value for X direction.  If the native
-   *                          message doesn't indicate X direction scrolling,
+   * @param aDeltaX           The delta value for X direction, positive when
+   *                          scrolling to the left.  If the native message
+   *                          doesn't indicate X direction scrolling, this
    *                          this may be ignored.
-   * @param aDeltaY           The delta value for Y direction.  If the native
-   *                          message doesn't indicate Y direction scrolling,
-   *                          this may be ignored.
+   * @param aDeltaY           The delta value for Y direction, positive when
+   *                          scrolling up.  If the native message doesn't
+   *                          indicate Y direction scrolling, this may be
+   *                          ignored.
    * @param aDeltaZ           The delta value for Z direction.  If the native
    *                          message doesn't indicate Z direction scrolling,
    *                          this may be ignored.

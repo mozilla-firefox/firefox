@@ -1479,6 +1479,12 @@ function runNextTest(aTests, aIndex) {
       var isVertical =
         ((test.message == WM_MOUSEWHEEL) || (test.message == WM_VSCROLL));
       var deltaX = !isVertical ? test.delta : 0;
+      if (test.message == WM_MOUSEHWHEEL) {
+        // test.delta is the native WM_MOUSEHWHEEL delta, which is positive when
+        // scrolling to the right, whereas sendNativeMouseScrollEvent() expects
+        // a positive deltaX when scrolling to the left.
+        deltaX = -deltaX;
+      }
       var deltaY = isVertical ? test.delta : 0;
       utils.sendNativeMouseScrollEvent(ptInScreen.x,
                                        ptInScreen.y,

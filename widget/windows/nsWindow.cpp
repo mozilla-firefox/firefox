@@ -6524,12 +6524,23 @@ nsresult nsWindow::SynthesizeNativeMouseScrollEvent(
     double aDeltaY, double aDeltaZ, nsIWidget::NativeModifiers aModifierFlags,
     uint32_t aAdditionalFlags, nsISynthesizedEventCallback* aCallback) {
   AutoSynthesizedEventCallbackNotifier notifier(aCallback);
+  int32_t delta;
+  switch (aNativeMessage) {
+    case WM_MOUSEWHEEL:
+    case WM_VSCROLL:
+      delta = static_cast<int32_t>(aDeltaY);
+      break;
+    case WM_MOUSEHWHEEL:
+      // WM_MOUSEHWHEEL deltas are positive when scrolling to the right, the
+      // opposite of the convention used by this function.
+      delta = -static_cast<int32_t>(aDeltaX);
+      break;
+    default:
+      delta = static_cast<int32_t>(aDeltaX);
+      break;
+  }
   return MouseScrollHandler::SynthesizeNativeMouseScrollEvent(
-      this, aPoint, aNativeMessage,
-      (aNativeMessage == WM_MOUSEWHEEL || aNativeMessage == WM_VSCROLL)
-          ? static_cast<int32_t>(aDeltaY)
-          : static_cast<int32_t>(aDeltaX),
-      aModifierFlags, aAdditionalFlags);
+      this, aPoint, aNativeMessage, delta, aModifierFlags, aAdditionalFlags);
 }
 
 nsresult nsWindow::SynthesizeNativeTouchpadPan(
