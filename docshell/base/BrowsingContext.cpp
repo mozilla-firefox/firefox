@@ -3144,6 +3144,11 @@ BrowsingContext::IPCInitializer BrowsingContext::GetIPCInitializer() {
   IPCInitializer init;
   init.mId = Id();
   init.mParentId = mParentWindow ? mParentWindow->Id() : 0;
+  if (RefPtr<BrowsingContext> opener = GetOpener()) {
+    if (WindowContext* openerWindow = opener->GetCurrentWindowContext()) {
+      init.mOpenerInnerWindowId = openerWindow->Id();
+    }
+  }
   init.mWindowless = mWindowless;
   init.mUseRemoteTabs = mUseRemoteTabs;
   init.mUseRemoteSubframes = mUseRemoteSubframes;
@@ -4647,6 +4652,7 @@ void ParamTraits<BrowsingContext::IPCInitializer>::Write(
   // Write actor ID parameters.
   WriteParam(aWriter, aInit.mId);
   WriteParam(aWriter, aInit.mParentId);
+  WriteParam(aWriter, aInit.mOpenerInnerWindowId);
   WriteParam(aWriter, aInit.mWindowless);
   WriteParam(aWriter, aInit.mUseRemoteTabs);
   WriteParam(aWriter, aInit.mUseRemoteSubframes);
@@ -4664,6 +4670,7 @@ bool ParamTraits<BrowsingContext::IPCInitializer>::Read(
   // Read actor ID parameters.
   return ReadParam(aReader, &aInit->mId) &&
          ReadParam(aReader, &aInit->mParentId) &&
+         ReadParam(aReader, &aInit->mOpenerInnerWindowId) &&
          ReadParam(aReader, &aInit->mWindowless) &&
          ReadParam(aReader, &aInit->mUseRemoteTabs) &&
          ReadParam(aReader, &aInit->mUseRemoteSubframes) &&
