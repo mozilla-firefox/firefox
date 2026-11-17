@@ -3,6 +3,7 @@
  * file, You can obtain one at <http://mozilla.org/MPL/2.0/>. */
 
 import globals from "globals";
+import react from "eslint-plugin-react";
 import mozilla from "eslint-plugin-mozilla";
 import { importX } from "eslint-plugin-import-x";
 import jestPlugin from "eslint-plugin-jest";
@@ -13,7 +14,7 @@ export default [
     ...jestPlugin.configs["flat/recommended"],
   },
   {
-    plugins: { jest: jestPlugin, mozilla, "import-x": importX },
+    plugins: { jest: jestPlugin, react, mozilla, "import-x": importX },
     languageOptions: {
       parserOptions: {
         ecmaVersion: "latest",
@@ -59,7 +60,14 @@ export default [
       "mozilla/reject-importGlobalProperties": "error",
       "mozilla/var-only-at-top-level": "error",
 
-      // React rules extending/overriding the top-level rules.
+      // Rules from the React plugin
+      "react/jsx-uses-react": "error",
+      "react/jsx-uses-vars": "error",
+      "react/no-danger": "error",
+      "react/no-did-mount-set-state": "error",
+      "react/no-did-update-set-state": "error",
+      "react/no-direct-mutation-state": "error",
+      "react/no-unknown-property": "error",
       "react/prop-types": "off",
       "react/sort-comp": [
         "error",

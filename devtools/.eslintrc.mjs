@@ -3,10 +3,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import globals from "globals";
+import react from "eslint-plugin-react";
 import mozilla from "eslint-plugin-mozilla";
 
 export default [
   {
+    plugins: { react },
     languageOptions: {
       globals: {
         exports: true,
@@ -25,9 +27,15 @@ export default [
       "mozilla/reject-importGlobalProperties": ["error", "everything"],
       "mozilla/var-only-at-top-level": "error",
 
-      // React rules extending/overriding the top-level rules.
-      "react/no-access-state-in-setstate": "off",
+      // Rules from the React plugin
       "react/display-name": "error",
+      "react/no-danger": "error",
+      "react/no-deprecated": "error",
+      "react/no-did-mount-set-state": "error",
+      "react/no-did-update-set-state": "error",
+      "react/no-direct-mutation-state": "error",
+      "react/no-unknown-property": "error",
+      "react/prefer-es6-class": ["off", "always"],
       "react/prop-types": "error",
       "react/sort-comp": [
         "error",
