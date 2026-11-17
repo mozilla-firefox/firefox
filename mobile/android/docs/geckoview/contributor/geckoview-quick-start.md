@@ -120,11 +120,8 @@ intermittent test failures are `--repeat N` and
 `--run-until-failure`, both of which do exactly what you’d expect.
 If a test is intermittently failing, consult [Debugging Intermittent Test Failures](/testing/debugging-intermittents/index.md) for additional tips.
 
-Other tests, such as mochitests, may be ran using:
-
-```
-./mach test <path-or-dir-to-test>
-```
+Other tests, such as mochitests, are run with `./mach test` as described in the
+{ref}`Firefox Contributors' Quick Reference <firefox-contributors-quick-reference>`.
 
 Core GeckoView lints are:
 
@@ -147,26 +144,7 @@ If your patch makes a GeckoView JavaScript module, you should run ESLint:
 ./mach lint -l eslint mobile/android/modules/geckoview/
 ```
 
-If your patch makes a C++ file change, you should run the C++ linter formatter:
-
-```
-./mach format <path/to/file.cpp>
-```
-
-If your patch makes a Python file change:
-
-```
-./mach lint --linter flake8
-./mach lint --linter black
-```
-
-Additionally, sometimes lints can be automatically detected and fixed on certain files, for example:
-
-```
-# Will attempt to detect the linter and fix any issues.
-# Note, using ``--fix`` will make code changes.
-./mach lint --fix <path-to-file>
-```
+For other languages, see {doc}`/code-quality/index`.
 
 #### Updating the changelog and API documentation
 
@@ -370,18 +348,9 @@ select "Artifacts and Debugging" and then open the log from "logcat-emulator-555
 
 #### Tagging a reviewer
 
-When submitting a patch to Phabricator, if you know who you want to
-review your patch, put their Phabricator handle against the
-`reviewers` field.
-
-If you don’t know who to tag for a review in the Phabricator submission
-message, leave the field blank and, after submission, follow the link to
-the patch in Phabricator and scroll to the bottom of the screen until
-you see the comment box.
-
-- Select the `Add Action` drop down and pick the `Change Reviewers` option.
-- In the presented box, add `geckoview-reviewers`. Selecting this group as the reviewer will notify all the members of the GeckoView team there is a patch to review.
-- Click `Submit` to submit the reviewer change request.
+Request review from the GeckoView team with `r=#geckoview-reviewers` in the commit
+message. See {doc}`/contributing/reviews` for the reviewer syntax and how to
+change reviewers after submission.
 
 #### GeckoView, Android Components, Fenix, Focus, and Reference Browser Dependency Substitution
 

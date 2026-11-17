@@ -32,21 +32,9 @@ the project's README.
 
 ## Filing issues
 
-We usually track our project's issues on GitHub (example: [focus-android][fa issues]).
-To file a bug:
-
-* Find your project's issues: these will be linked from the project's README
-or you can click directly into the issues from the project's home page
-* Create a new issue!
-
-To ensure we can understand, reproduce, and effectively triage your issues,
-**please fill out the provided template** when filing an issue! When issues
-are filed in a consistent style and include the information we need to
-make decisions, we're more likely to take action on these issues than if
-we don't understand them.
-
-*Be sure to include any extra information you find valuable!* For example, posting
-[your user agent](https://duckduckgo.com/?q=my+user+agent) can help us debug problems.
+Issues are tracked in [Bugzilla](https://bugzilla.mozilla.org/), in the
+`Firefox for Android`, `Focus` and `GeckoView` products. See
+{doc}`/contributing/filing-good-bugs` for what to include.
 
 ## Translating our apps
 
@@ -72,9 +60,9 @@ member to get started.
 
 ### Developer/repository documentation
 
-See an issue with our documentation, either in a project's repository or this
-`shared-docs` repository? Please file an issue or create a pull request
-to fix it yourself!
+See an issue with our documentation? It lives in this repository, so you can
+file a bug or {doc}`submit a patch </contributing/contribution_quickref>` to fix
+it yourself!
 
 ## Testing the app
 
@@ -91,6 +79,5 @@ information to the bug reports.
 See [CONTRIBUTING_code.md](./CONTRIBUTING_code.md).
 
 [Community Participation Guidelines]: https://www.mozilla.org/en-US/about/governance/policies/participation/
-[fa issues]: https://github.com/mozilla-mobile/focus-android/issues
 [fa pontoon]: https://pontoon.mozilla.org/projects/focus-for-android/
 [sumo]: https://support.mozilla.org/en-US/

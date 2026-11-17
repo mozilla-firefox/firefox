@@ -15,7 +15,7 @@ If you have any questions regarding Taskcluster or Taskgraph, feel free to join 
 
 ### How do I test some changes I make under the `taskcluster/` folder?
 
-The easy way: create a PR and you will get results in minutes. If you want to test your changes locally, have a look at the [README of Taskgraph](https://hg.mozilla.org/ci/taskgraph/file/tip/README.rst).
+The easy way: create a PR and you will get results in minutes. If you want to test your changes locally, have a look at the [README of Taskgraph](https://github.com/taskcluster/taskgraph/blob/main/README.rst).
 
 ### How do I see test results?
 

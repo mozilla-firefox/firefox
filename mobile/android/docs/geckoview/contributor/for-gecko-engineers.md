@@ -25,12 +25,9 @@ returning here only if actual GeckoView changes are needed. See, for
 example, {searchfox}`Fenix on Mozilla Central <mobile/android/fenix>`.
 
 What to do if this guide contains bugs or leads you astray: The quickest
-way to get a response is to ask generally on #gv on Mozilla Slack;
-
-# mobile on Mozilla IRC may also work for the time being, albeit likely
-
-with slower response times. If you believe the guide needs updating, it
-would also be good to file a ticket to request that.
+way to get a response is to ask generally on #gv on Mozilla Slack.
+If you believe the guide needs updating, it would also be good to file a bug
+to request that.
 
 ## Configuring the build system
 

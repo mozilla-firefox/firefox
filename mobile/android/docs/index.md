@@ -29,18 +29,8 @@ Additionally, for writing, submitting and updating a patch with git, you can ref
 
 Bootstrap configures everything for GeckoView and Fenix (Firefox for Android) development.
 
-- Ensure you have `mozilla-central` checked out. If this is the first
-  time you are doing this, it may take some time.
-
-```bash
-git checkout central/default
-```
-
-If you are on a mac, you will need to have the Xcode build tools
-installed. You can do this by either [installing
-Xcode](https://developer.apple.com/xcode/) or installing only the
-tools from the command line by running `xcode-select --install` and
-following the on screen instructions.
+If you are on a mac, follow the {doc}`macOS system preparation </setup/macos_build>`
+steps first, including installing the Xcode command-line tools.
 
 If you are on a newer mac with an Apple Silicon M2 or M3 processor,
 you also need to install rosetta for backwards compatilibilty:

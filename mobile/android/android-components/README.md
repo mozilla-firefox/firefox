@@ -270,8 +270,8 @@ _Sample apps using various components._
 ## Command line ##
 
 ```
-$ hg clone https://hg.mozilla.org/mozilla-central/
-$ cd mozilla-central/mobile/android/android-components
+$ git clone https://github.com/mozilla-firefox/firefox.git
+$ cd firefox/mobile/android/android-components
 $ ./gradlew assemble
 ```
 
