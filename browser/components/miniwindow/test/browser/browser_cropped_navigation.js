@@ -129,3 +129,73 @@ add_task(async function test_full_tab_navigation_stays() {
   assertNoMiniWindowsOpen();
   removeTestTabs(EXAMPLE_URL);
 });
+
+add_task(async function test_back_to_cropped_page_is_unframed() {
+  let tab = await BrowserTestUtils.openNewForegroundTab(gBrowser, REDIRECT_URL);
+  let browser = tab.linkedBrowser;
+  let homeWidth = await SpecialPowers.spawn(
+    browser,
+    [],
+    () => content.innerWidth
+  );
+
+  // Hold the layout wider than the origin tab so the override is detectable.
+  let miniWin = await popTabForTest(tab, {
+    ...croppedInfoFor(browser),
+    viewportWidth: homeWidth * 2,
+  });
+  let mini = [...MiniWindowManager._miniwindows][0];
+  await SimpleTest.promiseFocus(miniWin);
+
+  let resized = BrowserTestUtils.waitForEvent(miniWin, "resize");
+  miniWin.resizeTo(miniWin.outerWidth + 100, miniWin.outerHeight + 50);
+  await resized;
+
+  await SpecialPowers.spawn(mini.browser, [homeWidth * 2], async width => {
+    await ContentTaskUtils.waitForCondition(
+      () => content.innerWidth === width,
+      "the mini window holds the page at the crop's layout width"
+    );
+    Assert.notEqual(
+      content.windowUtils.getResolution(),
+      1,
+      "the page is zoomed onto the crop"
+    );
+  });
+
+  let closed = BrowserTestUtils.domWindowClosed(miniWin);
+  await BrowserTestUtils.synthesizeMouseAtCenter("#redirect", {}, mini.browser);
+  await closed;
+  assertNoMiniWindowsOpen();
+
+  let returned = await TestUtils.waitForCondition(
+    () => gBrowser.tabs.find(t => t.linkedBrowser.currentURI.spec === NEXT_URL),
+    "the tab came back and the navigation continued"
+  );
+  browser = returned.linkedBrowser;
+  await SpecialPowers.spawn(browser, [], () =>
+    ContentTaskUtils.waitForCondition(
+      () => content.document.readyState === "complete",
+      "the next page finished loading"
+    )
+  );
+
+  let shown = BrowserTestUtils.waitForContentEvent(browser, "pageshow");
+  browser.goBack();
+  await shown;
+
+  await SpecialPowers.spawn(browser, [homeWidth], width => {
+    Assert.equal(
+      content.windowUtils.getResolution(),
+      1,
+      "the page isn't zoomed after going back"
+    );
+    Assert.equal(
+      content.innerWidth,
+      width,
+      "the page lays out at the origin tab's width after going back"
+    );
+  });
+
+  removeTestTabs(EXAMPLE_URL);
+});
