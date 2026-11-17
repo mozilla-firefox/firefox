@@ -35,6 +35,7 @@ import org.mozilla.fenix.ext.increaseTapArea
 import org.mozilla.fenix.ext.navigateWithBreadcrumb
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.ext.showToolbar
+import org.mozilla.fenix.onboarding.OnboardingSyncFlowResult
 
 /** Settings screen allowing users to log into their Firefox account. */
 class TurnOnSyncFragment : Fragment(), AccountObserver, SystemInsetsPaddedFragment {
@@ -110,9 +111,11 @@ class TurnOnSyncFragment : Fragment(), AccountObserver, SystemInsetsPaddedFragme
     override fun onResume() {
         super.onResume()
 
-        if (
-            pairWithEmailStarted || requireComponents.backgroundServices.accountManager.authenticatedAccount() != null
-        ) {
+        val isAuthenticated = requireComponents.backgroundServices.accountManager.authenticatedAccount() != null
+        if (pairWithEmailStarted || isAuthenticated) {
+            if (isAuthenticated) {
+                OnboardingSyncFlowResult.setCompleted(findNavController())
+            }
             findNavController().popBackStack()
             return
         }
