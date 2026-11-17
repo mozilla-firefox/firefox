@@ -1296,20 +1296,30 @@ impl Renderer {
             // Only use supplied clear color for first content layer we encounter
             let clear_color = content_clear_color.take().unwrap_or(ColorF::TRANSPARENT);
 
-            if layer_mode == LayerMode::Swapchains {
-                if let Some(PartialPresentMode::Single { dirty_rect }) = partial_present_mode {
-                    let device_rect = DeviceRect::from_size(device_size.to_f32());
-                    let clipped_dirty_rect = dirty_rect.intersection_unchecked(&device_rect);
-                    if clipped_dirty_rect.is_empty() {
-                        continue;
-                    }
-                }
-            }
-
             let dirty_rect_storage;
             let dirty_rects: &[DeviceIntRect] = match partial_present_mode {
                 Some(PartialPresentMode::Single { dirty_rect }) => {
-                    dirty_rect_storage = [dirty_rect.to_i32()];
+                    let dirty_rect = if layer_mode == LayerMode::Swapchains {
+                        let device_rect = DeviceRect::from_size(device_size.to_f32());
+                        let clipped_dirty_rect = dirty_rect.intersection_unchecked(&device_rect);
+                        if clipped_dirty_rect.is_empty() {
+                            continue;
+                        }
+
+                        let dirty_rect = clipped_dirty_rect.to_i32();
+                        // Integer conversion can collapse a non-empty float rect.
+                        // Skip binding, drawing and presenting together so that
+                        // BeginDraw never receives an empty update rectangle.
+                        if dirty_rect.is_empty() {
+                            continue;
+                        }
+                        dirty_rect
+                    } else {
+                        dirty_rect.to_i32()
+                    };
+
+                    // Bind and present the same integer rectangle that we checked.
+                    dirty_rect_storage = [dirty_rect];
                     &dirty_rect_storage
                 }
                 None => &[],
