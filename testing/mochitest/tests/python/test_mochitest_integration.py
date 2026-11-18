@@ -188,14 +188,42 @@ def test_output_fail_verify(flavor, runtests, test_name, monkeypatch):
     assert "will_retry" not in lines[0].get("extra", {})
 
 
+@pytest.mark.parametrize("repeat", [0, 1])
+@pytest.mark.parametrize("flavor", ["plain", "browser-chrome"])
+def test_output_resume_after_quit(flavor, repeat, runtests, test_name, monkeypatch):
+    # The browser quits in the middle of a test, in the initial run and again
+    # in the retry. Both times the tests after it must still run.
+    monkeypatch.setenv("MOZ_AUTOMATION", "1")
+
+    tests = [test_name(n) for n in ("before_quit", "quit", "fail", "fail2")]
+    status, lines = runtests(tests, repeat=repeat, headless=True)
+
+    runs = repeat + 1
+    started = [os.path.basename(l["test"]) for l in filter_action("test_start", lines)]
+    assert {t: started.count(t) for t in tests} == {
+        test_name("before_quit"): runs,
+        test_name("quit"): 2,
+        test_name("fail"): 2 * runs,
+        test_name("fail2"): 2 * runs,
+    }
+
+    failures = {
+        os.path.basename(l["test"])
+        for l in filter_action("test_status", lines)
+        if l["status"] == "FAIL" and l.get("expected") == "PASS"
+    }
+    assert {test_name("fail"), test_name("fail2")} <= failures
+    assert status == 1
+
+
 @pytest.mark.parametrize("runFailures", ["selftest", ""])
 @pytest.mark.parametrize("flavor", ["plain", "browser-chrome"])
 def test_output_restart_after_failure(flavor, runFailures, runtests, test_name):
     extra_opts = {}
     # Both tests fail when runFailures="", so each triggers a browser restart
-    # on the initial run (2 launches). In CI the first failed test is also
-    # retried, adding one more launch before restartAfterFailure stops the run.
-    lines = 3 if not runFailures and IN_CI else 2
+    # on the initial run (2 launches). In CI each failed test is retried, and
+    # restartAfterFailure restarts the browser after each one (2 more launches).
+    lines = 4 if not runFailures and IN_CI else 2
     results = {
         "status": 0 if runFailures else 1,
         "tbpl_status": TBPL_SUCCESS if runFailures else TBPL_WARNING,

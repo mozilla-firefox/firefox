@@ -1114,7 +1114,7 @@ class MochitestDesktop:
         self.counttodo = 0
         self.countretry = 0
         self.failedTests = set()
-        self.tests_started = 0
+        self.tests_started = set()
 
         self.expectedError = {}
         self.result = {}
@@ -3551,6 +3551,11 @@ toolbar#nav-bar {
                 norm_paths.append(p)
         return norm_paths
 
+    def notStartedTests(self, tests):
+        """Returns the tests that didn't start, or [] if none of the tests started."""
+        remaining = [t for t in tests if t not in self.tests_started]
+        return remaining if len(remaining) < len(tests) else []
+
     def runMochitests(self, options, testsToRun, manifestToFilter=None):
         "This is a base method for calling other methods in this class for --bisect-chunk."
         # Making an instance of bisect class for --bisect-chunk option.
@@ -3570,6 +3575,7 @@ toolbar#nav-bar {
         if retry:
             self.message_logger.retry_mode = True
             self.failedTests = set()
+            allTests = list(testsToRun)
 
         while not finished:
             if options.bisectChunk:
@@ -3584,7 +3590,7 @@ toolbar#nav-bar {
                     )
                     bisection_log = 1
 
-            self.tests_started = 0
+            self.tests_started = set()
             if options.restartBetweenTests:
                 result = self.doTests(options, testsToRun[:1], manifestToFilter)
             else:
@@ -3613,10 +3619,10 @@ toolbar#nav-bar {
                 testsToRun = testsToRun[1:]
                 if not testsToRun:
                     status = -1
-            elif retry and 0 < self.tests_started < len(testsToRun):
+            elif retry and (remaining := self.notStartedTests(testsToRun)):
                 # A test timed out and the browser exited. Continue
                 # with the tests that didn't get to start.
-                testsToRun = testsToRun[self.tests_started :]
+                testsToRun = remaining
             else:
                 status = -1
 
@@ -3643,7 +3649,15 @@ toolbar#nav-bar {
                             return testRes
                         res = res or testRes
                 else:
-                    res = self.doTests(options, self.failedTests, manifestToFilter)
+                    res = 0
+                    retryTests = [t for t in allTests if t in self.failedTests]
+                    while retryTests:
+                        self.tests_started = set()
+                        testRes = self.doTests(options, retryTests, manifestToFilter)
+                        if testRes == TBPL_RETRY:
+                            return testRes
+                        res = res or testRes
+                        retryTests = self.notStartedTests(retryTests)
                 self.log.group_end(name="retry")
                 if res == TBPL_RETRY:
                     return res
@@ -4613,7 +4627,7 @@ toolbar#nav-bar {
 
         def count_structured(self, message):
             if message["action"] == "test_start":
-                self.harness.tests_started += 1
+                self.harness.tests_started.add(message["test"])
                 self.current_test = message["test"]
             elif message["action"] == "test_status":
                 if "expected" in message:
