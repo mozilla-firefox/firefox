@@ -163,7 +163,7 @@ tasks:
         loopback-video: true
         virtualization: virtual
         variants:
-            - aab+no-fission
+            - aab
             - conditioned_profile
             - xorigin
             - no-fission
@@ -197,7 +197,7 @@ tasks:
                         linux.*64-ccov/opt: ['mozilla-central']
                         android-em.*: ['trunk']
                         default: []
-                aab+no-fission:
+                aab:
                     by-test-platform:
                         android-em.*/debug: built-projects
                         default: []
@@ -218,7 +218,6 @@ tasks:
                         default: []
                 no-fission:
                     by-test-platform:
-                        android.*: built-projects
                         linux2404-64/debug: ['mozilla-central']
                         linux2404-64-asan/opt: ['mozilla-central']
                         linux2404-64(-shippable)?/opt: ['mozilla-central']
@@ -951,13 +950,13 @@ tasks:
             by-variant:
                 webrender-sw+no-fission:
                     by-test-platform:
-                        android-em.*/debug: built-projects
                         linux.*-asan.*: ['mozilla-central']
                         linux.*64/debug: ['mozilla-central']
                         linux.*64(-shippable)?/opt: ['mozilla-central']
                         default: []
                 webrender-sw:
                     by-test-platform:
+                        android-em.*/debug: built-projects
                         linux.*64/debug: built-projects
                         default: []
                 no-fission:
@@ -966,7 +965,6 @@ tasks:
                         .*-tsan/opt: []
                         .*-wayland.*: []
                         linux.*: ['mozilla-central']  # linux opt/debug/asan
-                        android.*: built-projects
                         default: []
                 geckoview-isolated-process:
                     by-test-platform:
@@ -1094,8 +1092,6 @@ tasks:
                 webrender-sw+no-fission:
                     by-test-platform:
                         .*hw-ref.*: []
-                        android-em-14.*/debug: []  # Bug 1984064
-                        android-em.*/debug: ['autoland', 'mozilla-central']
                         linux2404-64/.*: ['mozilla-central']
                         linux2404-64-shippable/opt: ['mozilla-central']
                         linux2404-64-asan/opt: ['mozilla-central']
@@ -1108,11 +1104,7 @@ tasks:
                         default: []
                 no-fission:
                     by-test-platform:
-                        android-hw-.*/opt: []
                         .*hw-ref.*: []
-                        android-hw-.*-arm7.*/(?:debug)?: ['trunk', 'mozilla-beta', 'mozilla-release']
-                        android-em-14.*/debug: []  # Bug 1984064
-                        android.*: built-projects
                         linux2404-64/.*: ['mozilla-central']
                         linux2404-64-shippable/opt: ['mozilla-central']
                         linux2404-64-asan/opt: ['mozilla-central']
@@ -1253,15 +1245,15 @@ tasks:
                         default: []
                 no-fission:
                     by-test-platform:
-                        android-hw-.*(?<!-shippable)(-qr)?/opt: ['mozilla-central', 'mozilla-beta', 'mozilla-release']
-                        android-hw.*aarch.*-shippable(-qr)?/opt: ['mozilla-central']
-                        android-hw.*aarch.*(-qr)?/debug: ['mozilla-central']
                         linux2404-64/debug: ['trunk']
                         linux2404-64(-shippable)?/opt: ['trunk']
                         linux2404-64-asan/opt: ['trunk']
                         default: []
                 default:
                     by-test-platform:
+                        android-hw-.*(?<!-shippable)(-qr)?/opt: ['mozilla-central', 'mozilla-beta', 'mozilla-release']
+                        android-hw.*aarch.*-shippable(-qr)?/opt: ['mozilla-central']
+                        android-hw.*aarch.*(-qr)?/debug: ['mozilla-central']
                         android.*: []
                         .*-tsan.*: []
                         default: built-projects
@@ -1301,15 +1293,15 @@ tasks:
                         default: []
                 no-fission:
                     by-test-platform:
-                        android-hw-.*(?<!-shippable)(-qr)?/opt: ['mozilla-central', 'mozilla-beta', 'mozilla-release']
-                        android-hw.*aarch.*-shippable(-qr)?/opt: ['mozilla-central']
-                        android-hw.*aarch.*(-qr)?/debug: ['mozilla-central']
                         linux2404-64/.*: ['trunk']
                         linux2404-64-shippable/opt: ['trunk']
                         linux2404-64-asan/opt: ['trunk']
                         default: []
                 default:
                     by-test-platform:
+                        android-hw-.*(?<!-shippable)(-qr)?/opt: ['mozilla-central', 'mozilla-beta', 'mozilla-release']
+                        android-hw.*aarch.*-shippable(-qr)?/opt: ['mozilla-central']
+                        android-hw.*aarch.*(-qr)?/debug: ['mozilla-central']
                         android.*: []
                         .*-tsan.*: []
                         default: built-projects
@@ -1352,15 +1344,15 @@ tasks:
                         default: []
                 no-fission:
                     by-test-platform:
-                        android-hw-.*(?<!-shippable)(-qr)?/opt: ['mozilla-central', 'mozilla-beta', 'mozilla-release']
-                        android-hw.*aarch.*-shippable(-qr)?/opt: ['mozilla-central']
-                        android-hw.*aarch.*(-qr)?/debug: ['mozilla-central']
                         linux2404-64/.*: ['trunk']
                         linux2404-64-shippable/opt: ['trunk']
                         linux2404-64-asan/opt: ['trunk']
                         default: []
                 default:
                     by-test-platform:
+                        android-hw-.*(?<!-shippable)(-qr)?/opt: ['mozilla-central', 'mozilla-beta', 'mozilla-release']
+                        android-hw.*aarch.*-shippable(-qr)?/opt: ['mozilla-central']
+                        android-hw.*aarch.*(-qr)?/debug: ['mozilla-central']
                         android.*: []
                         .*-tsan.*: []
                         .*-wayland.*: []

@@ -305,6 +305,7 @@ no-fission:
                         "reftest",
                         "reftest-qr"
                     ])
+                    && !("mochitest" in task["try-name"])
                 )
                 '
     merge:

@@ -163,7 +163,7 @@ android-fullstack:
         # Mochitests
         - "^test-android !shippable !cf !gli !iso      'em-14 'media | 'plain !repeat"
         - "^test-android !shippable !cf !gli !iso !swr 'hw 'media 'debug !repeat"
-        - "^test-android !shippable !cf !gli !iso !swr 'hw 'mochitest-webgl 'nofis"
+        - "^test-android !shippable !cf !gli !iso !swr 'hw 'mochitest-webgl"
         # Reftests
         - "^test-android !shippable !iso 'em-14 'geckoview-crashtest | 'geckoview-reftest !nogpu !ioi"
         # Web Platform Tests
@@ -189,7 +189,7 @@ android-geckoview:
         # Mochitests
         - "^test-android !shippable !cf !gli !iso      'em-14 'media | 'plain !repeat"
         - "^test-android !shippable !cf !gli !iso !swr 'hw 'media 'debug !repeat"
-        - "^test-android !shippable !cf !gli !iso !swr 'hw 'mochitest-webgl 'nofis"
+        - "^test-android !shippable !cf !gli !iso !swr 'hw 'mochitest-webgl"
         # Reftests
         - "^test-android !shippable !iso 'em-14 'geckoview-crashtest | 'geckoview-reftest !nogpu !ioi"
         # Web Platform Tests
