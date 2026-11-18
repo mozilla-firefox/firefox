@@ -246,3 +246,49 @@ add_task(async function testRemoteSettings() {
   // Clear the remote settings.
   await db.clear();
 });
+
+add_task(async function testUnregisterDuringInit() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["privacy.query_stripping.enabled", false],
+      ["privacy.query_stripping.strip_on_share.enabled", false],
+    ],
+  });
+  ok(
+    !(await urlQueryStrippingListService.testWaitForInit()),
+    "The service starts uninitialized."
+  );
+
+  // Register and unregister while init is pending.
+  let obs = new ListObserver();
+  urlQueryStrippingListService.registerAndRunObserver(obs);
+  urlQueryStrippingListService.unregisterObserver(obs);
+
+  // A full register and unregister cycle of another observer, so the
+  // cancelled registration has had time to complete.
+  let otherObs = new ListObserver();
+  let promise = waitForEvent(otherObs.updateEvent, "update");
+  urlQueryStrippingListService.registerAndRunObserver(otherObs);
+  await promise;
+  urlQueryStrippingListService.unregisterObserver(otherObs);
+  ok(
+    !urlQueryStrippingListService.testHasQPSObservers(),
+    "Unregistering while init is pending removes the observer."
+  );
+  ok(
+    !(await urlQueryStrippingListService.testWaitForInit()),
+    "The service shuts down once its observers are unregistered."
+  );
+
+  // Register, unregister and register again while init is pending.
+  urlQueryStrippingListService.registerAndRunObserver(obs);
+  urlQueryStrippingListService.unregisterObserver(obs);
+  urlQueryStrippingListService.registerAndRunObserver(obs);
+  ok(
+    await urlQueryStrippingListService.testWaitForInit(),
+    "Registering again while init is pending keeps the service initialized."
+  );
+
+  urlQueryStrippingListService.unregisterObserver(obs);
+  await SpecialPowers.popPrefEnv();
+});

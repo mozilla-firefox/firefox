@@ -393,9 +393,14 @@ export class URLQueryStrippingListService {
       pendingInit: this.#pendingInit,
     });
 
-    await this.#init();
+    // Add the observer before awaiting init so that an unregisterObserver call
+    // arriving while init is pending removes it and shuts the service down.
+    // The observer also gets the partial list updates made during init.
     this.observers.add(observer);
-    this._notifyObservers(observer);
+    await this.#init();
+    if (this.observers.has(observer)) {
+      this._notifyObservers(observer);
+    }
   }
 
   async registerAndRunObserverStripOnShare(observer) {
@@ -404,13 +409,19 @@ export class URLQueryStrippingListService {
       pendingInit: this.#pendingInit,
     });
 
-    await this.#init();
     this.stripOnShareObservers.add(observer);
-    await this._notifyStripOnShareObservers(observer);
+    await this.#init();
+    if (this.stripOnShareObservers.has(observer)) {
+      await this._notifyStripOnShareObservers(observer);
+    }
   }
 
   async unregisterObserver(observer) {
     this.observers.delete(observer);
+    // An observer may register again while init is pending.
+    if (this.#pendingInit) {
+      await this.#pendingInit;
+    }
 
     if (this.hasObservers) {
       lazy.logger.debug("Last observer unregistered, shutting down...");
@@ -420,6 +431,10 @@ export class URLQueryStrippingListService {
 
   async unregisterStripOnShareObserver(observer) {
     this.stripOnShareObservers.delete(observer);
+    // An observer may register again while init is pending.
+    if (this.#pendingInit) {
+      await this.#pendingInit;
+    }
 
     if (this.hasObservers) {
       lazy.logger.debug("Last observer unregistered, shutting down...");
