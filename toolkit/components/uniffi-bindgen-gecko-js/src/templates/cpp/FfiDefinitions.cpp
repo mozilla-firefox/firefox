@@ -3,9 +3,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 extern "C" {
-  {%- for block in root.ffi_definition_blocks %}
-{{ block.ifdef_start() }}
-  {%- for def in block.definitions %}
+  {%- for lib in root.libraries() %}
+{{ lib.ifdef_start() }}
+  {%- for def in lib.ffi_definitions %}
   {%- match def %}
   {%- when FfiDefinition::RustFunction(func) %}
   {{ func.return_type.type_name() }} {{ func.name.0 }}({{ func.arg_types()|join(", ") }});
@@ -19,6 +19,6 @@ extern "C" {
   };
   {%- endmatch %}
   {%- endfor %}
-{{ block.ifdef_end() }}
+{{ lib.ifdef_end() }}
   {%- endfor %}
 }
