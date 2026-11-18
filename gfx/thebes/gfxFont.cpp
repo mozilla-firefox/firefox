@@ -1057,6 +1057,10 @@ gfxFont::~gfxFont() {
 }
 
 void gfxFont::InitMetrics() {
+  if (mFontEntry->IsUnusable()) {
+    return;
+  }
+
   // Apply any size-adjust from the font enty to the given size; this may be
   // re-adjusted below if font-size-adjust is in effect.
   mAdjustedSize = GetAdjustedSize();

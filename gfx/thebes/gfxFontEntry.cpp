@@ -285,6 +285,9 @@ nsCString gfxFontEntry::RealFaceName() {
 
 already_AddRefed<gfxFont> gfxFontEntry::FindOrMakeFont(
     const gfxFontStyle* aStyle, gfxCharacterMap* aUnicodeRangeMap) {
+  if (mUnusable) {
+    return nullptr;
+  }
   RefPtr<gfxFont> font =
       gfxFontCache::GetCache()->Lookup(this, aStyle, aUnicodeRangeMap);
   if (font) {

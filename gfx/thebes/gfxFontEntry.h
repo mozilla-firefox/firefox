@@ -323,6 +323,9 @@ class gfxFontEntry {
   }
 
   inline bool HasCharacter(uint32_t ch) MOZ_EXCLUDES(mLock) {
+    if (mUnusable) {
+      return false;
+    }
     if (const auto* map = GetShmemCharacterMap()) {
       return map->test(ch);
     }
@@ -357,6 +360,13 @@ class gfxFontEntry {
   // gfxCharacterMap, even if empty, as other code assumes this pointer
   // can be safely dereferenced.
   virtual nsresult ReadCMAP(FontInfoData* aFontInfoData = nullptr);
+
+  // Marks the font as unusable, e.g. after its font file turned out to be
+  // unreadable, so that font selection skips it: HasCharacter returns false
+  // for every character from then on, FindOrMakeFont returns null, and none
+  // of its fonts is Valid() any more.
+  void MarkUnusable() { mUnusable = true; }
+  bool IsUnusable() const { return mUnusable; }
 
   bool TryGetSVGData(const gfxFont* aFont);
   bool HasSVGGlyph(uint32_t aGlyphId);
@@ -622,6 +632,9 @@ class gfxFontEntry {
   const SharedBitSet* GetShmemCharacterMap() const {
     return mShmemCharacterMap;
   }
+
+  // Set by MarkUnusable(), and never cleared.
+  mozilla::Atomic<bool, mozilla::Relaxed> mUnusable{false};
 
   mozilla::Atomic<const uint8_t*> mUVSData;
   const uint8_t* GetUVSData() const { return mUVSData; }

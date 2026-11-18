@@ -1552,7 +1552,9 @@ class gfxFont {
     delete this;
   }
 
-  bool Valid() const { return mIsValid; }
+  // Whether the font initialized successfully, and its font entry hasn't been
+  // found to be unusable since.
+  bool Valid() const { return mIsValid && !mFontEntry->IsUnusable(); }
 
   // options for the kind of bounding box to return from measurement
   typedef enum {
@@ -1911,7 +1913,7 @@ class gfxFont {
 
   gfxFontEntry* GetFontEntry() const { return mFontEntry.get(); }
   bool HasCharacter(uint32_t ch) const {
-    if (!mIsValid || (mUnicodeRangeMap && !mUnicodeRangeMap->test(ch))) {
+    if (!Valid() || (mUnicodeRangeMap && !mUnicodeRangeMap->test(ch))) {
       return false;
     }
     return mFontEntry->HasCharacter(ch);
@@ -1926,7 +1928,7 @@ class gfxFont {
   }
 
   uint16_t GetUVSGlyph(uint32_t aCh, uint32_t aVS) const {
-    if (!mIsValid) {
+    if (!Valid()) {
       return 0;
     }
     return mFontEntry->GetUVSGlyph(aCh, aVS);

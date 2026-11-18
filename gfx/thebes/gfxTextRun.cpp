@@ -2353,7 +2353,7 @@ already_AddRefed<gfxFont> gfxFontGroup::GetFirstValidFont(
   // we want the first font whose unicode-range does not exclude <space>,
   // regardless of whether it in fact supports the <space> character.
   auto isValidForChar = [](gfxFont* aFont, uint32_t aCh) -> bool {
-    if (!aFont) {
+    if (!aFont || !aFont->Valid()) {
       return false;
     }
     if (aCh == kCSSFirstAvailableFont) {

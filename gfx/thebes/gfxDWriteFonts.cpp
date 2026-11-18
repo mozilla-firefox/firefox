@@ -291,13 +291,20 @@ void gfxDWriteFont::UpdateClearTypeVars() {
 
 gfxFont* gfxDWriteFont::CopyWithAntialiasOption(
     AntialiasOption anAAOption) const {
+  if (!Valid()) {
+    return nullptr;
+  }
   auto entry = static_cast<gfxDWriteFontEntry*>(mFontEntry.get());
   RefPtr<UnscaledFontDWrite> unscaledFont =
       static_cast<UnscaledFontDWrite*>(mUnscaledFont.get());
   gfxFont* newFont =
       new gfxDWriteFont(unscaledFont, entry, &mStyle, mFontFace, anAAOption);
   newFont->InitMetrics();
-  return newFont->Valid() ? newFont : nullptr;
+  if (!newFont->Valid()) {
+    newFont->Destroy();
+    return nullptr;
+  }
+  return newFont;
 }
 
 bool gfxDWriteFont::GetFakeMetricsForArialBlack(
@@ -700,11 +707,10 @@ gfxFloat gfxDWriteFont::MeasureGlyphWidth(uint16_t aGlyph) {
   MOZ_SEH_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {
     // Exception (e.g. disk i/o error) occurred when DirectWrite tried to use
     // the font resource; possibly a failing drive or similar hardware issue.
-    // Mark the font as invalid, and wipe the fontEntry's charmap so that font
-    // selection will skip it; we'll use a fallback font instead.
-    mIsValid = false;
-    GetFontEntry()->mCharacterMap = new gfxCharacterMap(0);
-    GetFontEntry()->mShmemCharacterMap = nullptr;
+    // Mark the font entry as unusable, which also invalidates this font and
+    // its other instances, so that font selection will skip it; we'll use a
+    // fallback font instead.
+    GetFontEntry()->MarkUnusable();
     gfxCriticalError() << "Exception occurred measuring glyph width for "
                        << GetFontEntry()->Name().get();
   }
@@ -729,11 +735,10 @@ bool gfxDWriteFont::GetGlyphBounds(uint16_t aGID, gfxRect* aBounds,
   MOZ_SEH_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {
     // Exception (e.g. disk i/o error) occurred when DirectWrite tried to use
     // the font resource; possibly a failing drive or similar hardware issue.
-    // Mark the font as invalid, and wipe the fontEntry's charmap so that font
-    // selection will skip it; we'll use a fallback font instead.
-    mIsValid = false;
-    GetFontEntry()->mCharacterMap = new gfxCharacterMap(0);
-    GetFontEntry()->mShmemCharacterMap = nullptr;
+    // Mark the font entry as unusable, which also invalidates this font and
+    // its other instances, so that font selection will skip it; we'll use a
+    // fallback font instead.
+    GetFontEntry()->MarkUnusable();
     gfxCriticalError() << "Exception occurred measuring glyph bounds for "
                        << GetFontEntry()->Name().get();
   }
