@@ -1095,19 +1095,6 @@ ysod:
       hidden: The document is hidden.
       destroyed: The container of this document is destroyed.
 
-avif:
-  dav1d_get_picture:
-    objects: ["return_value"]
-    bug_numbers: [1690406]
-    description: Return value from dav1d_get_picture
-    products:
-      - firefox # event telemetry is not supported on fenix
-    record_in_processes: ["all"]
-    release_channel_collection: opt-out
-    expiry_version: never
-    notification_emails:
-      - media-alerts@mozilla.com
-
 service_request:
   bypass:
     description: >

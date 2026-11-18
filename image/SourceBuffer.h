@@ -376,7 +376,7 @@ class SourceBuffer final {
   /**
    * The maximum chunk capacity we'll allocate. This was historically the
    * maximum we would preallocate based on the network size. We may adjust it
-   * in the future based on the IMAGE_DECODE_CHUNKS telemetry to ensure most
+   * in the future based on the image_decode.chunks telemetry to ensure most
    * images remain in a single chunk.
    */
   static const size_t MAX_CHUNK_CAPACITY = 20 * 1024 * 1024;
