@@ -9,8 +9,10 @@ import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.text.intl.Locale
 import mozilla.components.compose.base.text.value
 import mozilla.components.compose.menu.R
@@ -19,27 +21,61 @@ import mozilla.components.compose.menu.ui.displayedInGrid
 
 /**
  * Make a group of the customize menu screen a single node for accessibility services, reading its name and the names of
- * its items then, for a group shown in the menu, its position among the shown groups. Its items and drag handle are not
- * separate nodes, and the dimmed items of hidden groups are not read as disabled.
+ * its items then, for a group shown in the menu, its position among the shown groups, with custom actions moving it.
+ * Its items and drag handle are not separate nodes, and the dimmed items of hidden groups are not read as disabled.
  *
  * @param group The group.
  * @param groups The groups of the screen, as last saved.
+ * @param onMove Called with the groups as moved by one of the custom actions, to save them.
  */
 @Composable
-internal fun Modifier.customizeMenuGroupSemantics(group: MenuItemsGroup, groups: CustomizeMenuGroups): Modifier {
+internal fun Modifier.customizeMenuGroupSemantics(
+    group: MenuItemsGroup,
+    groups: CustomizeMenuGroups,
+    onMove: (movedGroups: CustomizeMenuGroups) -> Unit,
+): Modifier {
     val itemNames = group.itemNames()
     val groupName = group.name?.value
     val label =
         groupName?.let { stringResource(R.string.mozac_menu_customize_named_section, it, itemNames) }
             ?: stringResource(R.string.mozac_menu_customize_unnamed_section, itemNames)
     val shownIndex = groups.shown.indexOfFirst { it.id == group.id }
+    val shownCount = groups.shown.size
     val description =
         if (shownIndex == -1) {
             label
         } else {
-            stringResource(R.string.mozac_menu_customize_shown_section, label, shownIndex + 1, groups.shown.size)
+            stringResource(R.string.mozac_menu_customize_shown_section, label, shownIndex + 1, shownCount)
         }
-    return this.clearAndSetSemantics { contentDescription = description }
+    val actions =
+        listOfNotNull(
+            moveAction(
+                label = stringResource(R.string.mozac_menu_customize_move_up),
+                movedGroups = groups.moveUp(group.id),
+                onMove = onMove,
+            ),
+            moveAction(
+                label = stringResource(R.string.mozac_menu_customize_move_down),
+                movedGroups = groups.moveDown(group.id),
+                onMove = onMove,
+            ),
+        )
+    return this.clearAndSetSemantics {
+        contentDescription = description
+        if (actions.isNotEmpty()) customActions = actions
+    }
+}
+
+/** The custom action labelled [label] moving the groups to [movedGroups], or `null` if it cannot move them. */
+private fun moveAction(
+    label: String,
+    movedGroups: CustomizeMenuGroups?,
+    onMove: (movedGroups: CustomizeMenuGroups) -> Unit,
+): CustomAccessibilityAction? = movedGroups?.let {
+    CustomAccessibilityAction(label) {
+        onMove(it)
+        true
+    }
 }
 
 /** The names of the items of this group shown in the customize menu screen, including the ones cut off from view. */

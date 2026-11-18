@@ -65,6 +65,20 @@ internal data class CustomizeMenuGroups(
             else -> this
         }
     }
+
+    /** Move the shown group with [id] above the shown group before it, or `null` if it is not shown or shown first. */
+    fun moveUp(id: String): CustomizeMenuGroups? {
+        val index = shown.indexOfFirst { it.id == id }
+        if (index < 1) return null
+        return moveGroup(id, shown[index - 1].id, placeAfter = false)
+    }
+
+    /** Move the shown group with [id] below the shown group after it, or `null` if it is not shown or shown last. */
+    fun moveDown(id: String): CustomizeMenuGroups? {
+        val index = shown.indexOfFirst { it.id == id }
+        if (index == -1 || index == shown.lastIndex) return null
+        return moveGroup(id, shown[index + 1].id, placeAfter = true)
+    }
 }
 
 private fun List<MenuItemsGroup>.withNextTo(

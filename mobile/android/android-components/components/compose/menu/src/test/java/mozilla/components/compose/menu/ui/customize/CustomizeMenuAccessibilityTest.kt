@@ -6,6 +6,7 @@ package mozilla.components.compose.menu.ui.customize
 
 import androidx.compose.ui.semantics.CollectionInfo
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
@@ -21,11 +22,16 @@ import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.data.StandardMenuItem
+import mozilla.components.compose.menu.store.CustomizableMenuAction
+import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.ui.MenuItemIconRes
+import mozilla.components.lib.state.Middleware
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.ui.icons.R as iconsR
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -38,6 +44,8 @@ class CustomizeMenuAccessibilityTest {
     private val hiddenSectionsTitle = testContext.getString(R.string.mozac_menu_customize_hidden_sections)
     private val preview = testContext.getString(R.string.mozac_menu_customize_preview)
     private val resetToDefault = testContext.getString(R.string.mozac_menu_customize_reset_to_default)
+    private val moveUp = testContext.getString(R.string.mozac_menu_customize_move_up)
+    private val moveDown = testContext.getString(R.string.mozac_menu_customize_move_down)
 
     @Test
     fun `THEN the titles above the shown sections and above the hidden sections are headings`() {
@@ -116,6 +124,79 @@ class CustomizeMenuAccessibilityTest {
             .assertExists()
     }
 
+    @Test
+    fun `GIVEN three shown sections THEN the first can be moved down, the middle one up and down and the last one up`() {
+        setContent(menuState(shown = listOf(row("First"), row("Middle"), row("Last")), hidden = listOf(row("Hidden"))))
+
+        assertEquals(listOf(moveDown), actionsOf("First"))
+        assertEquals(listOf(moveUp, moveDown), actionsOf("Middle"))
+        assertEquals(listOf(moveUp), actionsOf("Last"))
+    }
+
+    @Test
+    fun `GIVEN hidden sections THEN they cannot be moved up or down`() {
+        setContent(menuState(shown = listOf(row("Shown")), hidden = listOf(row("Hidden 1"), row("Hidden 2"))))
+
+        assertEquals(emptyList<String>(), actionsOf("Hidden 1"))
+        assertEquals(emptyList<String>(), actionsOf("Hidden 2"))
+    }
+
+    @Test
+    fun `WHEN a shown section is moved up THEN it is shown before the section that was before it`() {
+        val store = setContent(menuState(shown = listOf(row("First"), row("Second"), row("Third"))))
+
+        performAction("Third", moveUp)
+
+        assertEquals(listOf("First", "Third", "Second"), store.state.menuGroups.map { it.id })
+        assertTrue(store.state.hiddenGroupIds.isEmpty())
+        composeTestRule.onNodeWithContentDescription(shownSection("Third", 2, 3)).assertExists()
+    }
+
+    @Test
+    fun `WHEN a shown section is moved down THEN it is shown after the section that was after it AND the move is saved`() {
+        val actions = mutableListOf<CustomizableMenuAction>()
+        val store =
+            setContent(
+                menuState(shown = listOf(row("First"), row("Second")), hidden = listOf(row("Hidden"))),
+                middleware =
+                    listOf { _, next, action ->
+                        actions += action
+                        next(action)
+                    },
+            )
+
+        performAction("First", moveDown)
+
+        assertEquals(
+            MenuStructureChanged(
+                items = listOf(row("Second"), row("First"), row("Hidden")),
+                hiddenGroupIds = setOf("Hidden"),
+                movedGroupId = "First",
+            ),
+            actions.filterIsInstance<MenuStructureChanged>().single(),
+        )
+        assertEquals(listOf("Second", "First", "Hidden"), store.state.menuGroups.map { it.id })
+    }
+
+    private fun actionsOf(itemNames: String) =
+        composeTestRule
+            .onNode(section(itemNames))
+            .fetchSemanticsNode()
+            .config
+            .getOrElse(SemanticsActions.CustomActions) { emptyList() }
+            .map { it.label }
+
+    private fun performAction(itemNames: String, actionLabel: String) {
+        val action =
+            composeTestRule
+                .onNode(section(itemNames))
+                .fetchSemanticsNode()
+                .config[SemanticsActions.CustomActions]
+                .single { it.label == actionLabel }
+        composeTestRule.runOnIdle { action.action() }
+        composeTestRule.waitForIdle()
+    }
+
     /**
      * What the section with [itemNames] and [name], if any, reads when it is shown at [position] among [count] shown
      * sections.
@@ -131,15 +212,28 @@ class CustomizeMenuAccessibilityTest {
             testContext.getString(R.string.mozac_menu_customize_named_section, name, itemNames)
         }
 
+    /** The node of the section with [itemNames], read with its position if it is shown. */
+    private fun section(itemNames: String) =
+        SemanticsMatcher("Section with $itemNames") { node ->
+            val label = label(itemNames)
+            val description =
+                node.config.getOrElse(SemanticsProperties.ContentDescription) { emptyList() }.singleOrNull()
+            description == label || description?.startsWith("$label. ") == true
+        }
+
     private fun hasRole(role: Role) = SemanticsMatcher.expectValue(SemanticsProperties.Role, role)
 
-    private fun setContent(state: CustomizableMenuState) {
-        val store = CustomizableMenuStore(initialState = state)
+    private fun setContent(
+        state: CustomizableMenuState,
+        middleware: List<Middleware<CustomizableMenuState, CustomizableMenuAction>> = emptyList(),
+    ): CustomizableMenuStore {
+        val store = CustomizableMenuStore(initialState = state, middleware = middleware)
         composeTestRule.setContent {
             AcornTheme {
                 CustomizeMenuContent(store = store)
             }
         }
+        return store
     }
 
     private fun menuState(

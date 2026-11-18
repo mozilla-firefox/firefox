@@ -54,6 +54,7 @@ import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DROP_AR
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_SECTIONS
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.RESET_BUTTON
 import mozilla.components.compose.menu.ui.utils.customizeMenuPreviewData
+import mozilla.components.compose.menu.ui.utils.ext.saveMove
 import mozilla.components.lib.state.ext.observeAsComposableState
 
 /**
@@ -103,6 +104,9 @@ private fun CustomizeMenuList(
     val listState = rememberLazyListState()
     val dragState = rememberCustomizeMenuDragState(store, menuState, listState)
     val itemSpacing = AcornTheme.layout.space.static150
+    val onMove = { movedGroupId: String, movedGroups: CustomizeMenuGroups ->
+        store.saveMove(dragState.groups, movedGroupId, movedGroups)
+    }
 
     LazyColumn(
         modifier =
@@ -130,6 +134,7 @@ private fun CustomizeMenuList(
             dragState = dragState,
             firstIndex = 1,
             itemSpacing = itemSpacing,
+            onMove = onMove,
         )
 
         item(key = HIDDEN_SECTIONS) {
@@ -154,6 +159,7 @@ private fun CustomizeMenuList(
             dragState = dragState,
             firstIndex = dragState.firstHiddenIndex,
             itemSpacing = itemSpacing,
+            onMove = onMove,
             isHidden = true,
         )
 
