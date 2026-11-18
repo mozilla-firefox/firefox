@@ -1577,14 +1577,10 @@ async function switchSmartbarModel(browser, modelChoiceId) {
     );
     const modelSelect = smartbar.querySelector("input-model-select");
     const triggerButton = modelSelect.shadowRoot.querySelector("moz-button");
-    triggerButton.click();
-
     const panelList = modelSelect.shadowRoot.querySelector("panel-list");
-    await ContentTaskUtils.waitForMutationCondition(
-      panelList,
-      { attributes: true },
-      () => panelList.hasAttribute("open")
-    );
+    const shown = ContentTaskUtils.waitForEvent(panelList, "shown");
+    triggerButton.click();
+    await shown;
 
     const { getModelDisplayOrder } = ChromeUtils.importESModule(
       "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs"
