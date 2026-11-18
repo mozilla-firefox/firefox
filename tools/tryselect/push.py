@@ -118,6 +118,36 @@ def check_working_directory(push=True):
         sys.exit(1)
 
 
+VERIFY_PATH_RULE = (
+    "test-verify-path only accepts directories that contain a test manifest, "
+    "directly or in one of their direct subdirectories; the tests deeper below "
+    "them are verified too."
+)
+
+
+def check_test_verify_paths(labels, env):
+    """Exit when test-verify-path is selected with paths it refuses."""
+    if not any("test-verify-path" in label for label in labels):
+        return
+    paths = sorted({
+        path
+        for suite_paths in json.loads(env.get("MOZHARNESS_TEST_PATHS", "{}")).values()
+        for path in suite_paths
+    })
+    if not paths:
+        return
+
+    from .tasks import unverifiable_test_paths
+
+    rejected = unverifiable_test_paths(paths)
+    if rejected:
+        print(
+            f"error: cannot verify {', '.join(rejected)}: {VERIFY_PATH_RULE}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+
 def generate_try_task_config(method, labels, params=None, routes=None):
     params = params or {}
 
@@ -136,6 +166,8 @@ def generate_try_task_config(method, labels, params=None, routes=None):
 
     try_config = params.setdefault("try_task_config", {})
     try_config.setdefault("env", {})["TRY_SELECTOR"] = method
+
+    check_test_verify_paths(labels, try_config["env"])
 
     # In reality, the number of tasks will likely be much larger thanks to test
     # chunks being collapsed behind a wildcard. However because we use

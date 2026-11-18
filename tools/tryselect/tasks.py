@@ -379,3 +379,17 @@ def resolve_tests_by_suite(paths):
             remaining_paths_by_suite[key].remove(found_path)
 
     return suite_to_tests
+
+
+def unverifiable_test_paths(paths):
+    """Return the paths without a test manifest in them or in one of their
+    direct subdirectories."""
+    resolver = TestResolver.from_environment(cwd=here, loader_cls=TestManifestLoader)
+    _, tests = resolver.resolve_metadata(paths)
+    manifest_dirs = {
+        mozpath.dirname(mozpath.normpath(t["manifest_relpath"]))
+        for t in tests
+        if "manifest_relpath" in t
+    }
+    accepted = manifest_dirs | {mozpath.dirname(d) for d in manifest_dirs}
+    return sorted(p for p in paths if mozpath.normpath(p) not in accepted)

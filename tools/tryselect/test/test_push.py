@@ -163,6 +163,45 @@ def test_large_push_warning_message(capsys):
         assert "lowest priority" in captured.out
 
 
+@pytest.mark.parametrize(
+    "path,rejected", [("toolkit/components/bar/tests", False), ("browser", True)]
+)
+def test_test_verify_path_rule(patch_resolver, capsys, path, rejected):
+    patch_resolver(
+        [],
+        [
+            {
+                "srcdir_relpath": "toolkit/components/bar/tests/xpcshell/test_a.js",
+                "manifest_relpath": "toolkit/components/bar/tests/xpcshell/xpcshell.toml",
+            }
+        ],
+    )
+    params = {
+        "try_task_config": {
+            "env": {"MOZHARNESS_TEST_PATHS": json.dumps({"xpcshell": [path]})}
+        }
+    }
+    labels = ["test-linux2404-64/opt-test-verify-path-*"]
+
+    if rejected:
+        with pytest.raises(SystemExit):
+            push.generate_try_task_config("fuzzy", labels, params=params)
+        assert f"error: cannot verify {path}: " in capsys.readouterr().err
+    else:
+        push.generate_try_task_config("fuzzy", labels, params=params)
+
+
+def test_test_verify_path_rule_only_applies_to_test_verify_path(patch_resolver):
+    patch_resolver([], [])
+    params = {
+        "try_task_config": {
+            "env": {"MOZHARNESS_TEST_PATHS": json.dumps({"xpcshell": ["browser"]})}
+        }
+    }
+    labels = ["test-linux2404-64/opt-xpcshell-*", "test-linux2404-64/opt-test-verify"]
+    push.generate_try_task_config("fuzzy", labels, params=params)
+
+
 def test_write_task_config(tmp_path, capsys):
     """Test that --write-task-config writes try_task_config.json and doesn't push."""
     mock_vcs = MagicMock()
