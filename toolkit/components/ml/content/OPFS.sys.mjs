@@ -136,9 +136,7 @@ export class OPFS {
    * @returns {Promise<FileSystemDirectoryHandle>}
    */
   static async getDirectoryHandle(path = null, options) {
-    let directoryHandle = await /** @type {Window} */ (
-      Services.wm.getMostRecentBrowserWindow()
-    ).navigator.storage.getDirectory();
+    let directoryHandle = await globalThis.storage.getDirectory();
 
     if (!path) {
       return directoryHandle;
