@@ -62,11 +62,12 @@ internal fun LazyListScope.customizeMenuGroups(
             key = group.id,
             position = firstIndex + index,
             modifier =
-                Modifier.groupPlacement(
-                    isDragged = isDragged,
-                    dropTarget = dragState.dropTarget,
-                    itemSpacing = itemSpacing,
-                ),
+                Modifier.drawnOnlyInView(group.id, dragState)
+                    .groupPlacement(
+                        isDragged = isDragged,
+                        dropTarget = dragState.dropTarget,
+                        itemSpacing = itemSpacing,
+                    ),
         ) {
             CustomizeMenuGroupContent(
                 group = group,

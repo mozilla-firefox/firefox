@@ -133,7 +133,10 @@ private fun CustomizeMenuList(
                     remember(dragState.dropTarget) {
                         derivedStateOf { dragState.dropTarget.value == CustomizeMenuDropTarget.EmptyHiddenArea }
                     }
-                CustomizeMenuDropArea(isDropTarget = isDropTarget, modifier = Modifier.animateItem())
+                CustomizeMenuDropArea(
+                    isDropTarget = isDropTarget,
+                    modifier = Modifier.drawnOnlyInView(DROP_AREA, dragState).animateItem(),
+                )
             }
         }
 
@@ -149,7 +152,8 @@ private fun CustomizeMenuList(
             item(key = RESET_BUTTON) {
                 CustomizeMenuResetButton(
                     onClick = { store.dispatch(ResetToDefaultClicked) },
-                    modifier = Modifier.animateItem().padding(top = itemSpacing),
+                    modifier =
+                        Modifier.drawnOnlyInView(RESET_BUTTON, dragState).animateItem().padding(top = itemSpacing),
                 )
             }
         }
@@ -221,10 +225,15 @@ private fun CustomizeMenuDragBar(
  */
 @Composable
 private fun LazyItemScope.HiddenSectionsItem(dragState: CustomizeMenuDragState, itemSpacing: Dp) {
-    HiddenAreaSpace(dragState = dragState, itemSpacing = itemSpacing, modifier = Modifier.animateItem())
+    HiddenAreaSpace(
+        dragState = dragState,
+        itemSpacing = itemSpacing,
+        modifier = Modifier.drawnOnlyInView(HIDDEN_SECTIONS, dragState).animateItem(),
+    )
     CustomizeMenuHiddenSectionsTitle(
         modifier =
-            Modifier.animateItem()
+            Modifier.drawnOnlyInView(HIDDEN_SECTIONS, dragState)
+                .animateItem()
                 .padding(top = itemSpacing)
                 .dropLine(HIDDEN_SECTIONS, dragState.dropTarget, itemSpacing, placeAfter = true)
     )
