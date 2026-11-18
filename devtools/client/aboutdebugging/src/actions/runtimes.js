@@ -71,6 +71,10 @@ async function getRuntimeIcon(runtime, channel) {
     }
   }
 
+  if (runtime.type === RUNTIMES.THIS_FIREFOX) {
+    return "chrome://branding/content/about-logo.svg";
+  }
+
   switch (channel) {
     case "release":
       return "chrome://browser/content/logos/firefox.svg";
