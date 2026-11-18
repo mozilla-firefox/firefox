@@ -773,7 +773,49 @@ add_task(async function context_menu_nimbus() {
   await doCleanup();
   info("Check that the context menu doesn't open after unenrolling");
   await assertNoContextMenuOnFirstResult();
+  await SpecialPowers.popPrefEnv();
+});
 
+add_task(async function keep_urlbar_state_on_open_in_background_tab() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.tabs.loadInBackground", true]],
+  });
+  let testSearchEngine = await SearchTestUtils.installSearchExtension(
+    { name: "TestEngine" },
+    { skipUnload: true }
+  );
+
+  await UrlbarTestUtils.activateSearchModeSwitcherItem(
+    window,
+    "panel-item[data-engine-name=TestEngine]"
+  );
+  await UrlbarTestUtils.promiseAutocompleteResultPopup({
+    value: "foo",
+    window,
+    fireInputEvent: true,
+  });
+
+  let { element } = await UrlbarTestUtils.getDetailsOfResultAt(window, 0);
+  let menu = await openContextMenu(element.row);
+  let onNewTab = BrowserTestUtils.waitForNewTab(
+    gBrowser,
+    "https://example.com/?q=foo"
+  );
+  menu.querySelector("[data-open-in=tab]").click();
+  let newTab = await onNewTab;
+
+  Assert.notEqual(newTab, gBrowser.selectedTab);
+  Assert.ok(gURLBar.view.isOpen);
+  Assert.equal(gURLBar.value, "foo");
+  await UrlbarTestUtils.assertSearchMode(window, {
+    engineName: "TestEngine",
+    entry: "searchbutton",
+  });
+
+  BrowserTestUtils.removeTab(newTab);
+  await UrlbarTestUtils.exitSearchMode(window);
+  gURLBar.view.close();
+  await testSearchEngine.unload();
   await SpecialPowers.popPrefEnv();
 });
 
