@@ -11,6 +11,7 @@ ChromeUtils.defineESModuleGetters(
   {
     PromiseWorker: "resource://gre/modules/workers/PromiseWorker.mjs",
     getBackend: "chrome://global/content/ml/backends/Pipeline.mjs",
+    OPFS: "chrome://global/content/ml/OPFS.sys.mjs",
     generateUUID: "chrome://global/content/ml/Utils.sys.mjs",
   },
   { global: "current" }
@@ -35,7 +36,7 @@ export class MLEngineWorker {
    *
    * Attempts to match and retrieve a model file based on a provided key.
    * Fetches a model file by delegating the call to the worker's main thread.
-   * Then wraps the fetched blob into a response object compatible with Transformers.js expectations.
+   * Then wraps the fetched model file into a response object compatible with Transformers.js expectations.
    *
    * @param {string} key The unique identifier for the model to fetch.
    * @returns {Promise<Response|null>} A promise that resolves with a Response object containing the model file or null if not found.
@@ -51,14 +52,8 @@ export class MLEngineWorker {
       return null;
     }
 
-    const [, headers, blob] = res.ok;
-
-    // Null values are dropped, as Headers would otherwise stringify them to "null".
-    return new Response(blob.stream(), {
-      headers: Object.fromEntries(
-        Object.entries(headers).filter(([, value]) => value != null)
-      ),
-    });
+    // Transformers.js expects a response object, so we wrap the array buffer
+    return lazy.OPFS.toResponse(res.ok[2], res.ok[1]);
   }
 
   async getModelFile(args) {

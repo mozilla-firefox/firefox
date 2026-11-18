@@ -43,24 +43,24 @@ export class TabStateCache {
       data.storage = {};
     }
 
-    let storageData = data.storage;
+    let storage = data.storage;
     for (let domain of Object.keys(change)) {
       if (!change[domain]) {
         // We were sent null in place of the change object, which means
         // we should delete session storage entirely for this domain.
-        delete storageData[domain];
+        delete storage[domain];
       } else {
         for (let key of Object.keys(change[domain])) {
           let value = change[domain][key];
           if (value === null) {
-            if (storageData[domain] && storageData[domain][key]) {
-              delete storageData[domain][key];
+            if (storage[domain] && storage[domain][key]) {
+              delete storage[domain][key];
             }
           } else {
-            if (!storageData[domain]) {
-              storageData[domain] = {};
+            if (!storage[domain]) {
+              storage[domain] = {};
             }
-            storageData[domain][key] = value;
+            storage[domain][key] = value;
           }
         }
       }

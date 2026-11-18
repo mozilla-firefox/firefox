@@ -7,12 +7,12 @@ const { BreachAlertStorage } = ChromeUtils.importESModule(
   "resource://gre/modules/BreachAlertStore.sys.mjs"
 );
 
-let breachAlertStorage;
+let storage;
 
 add_setup(async () => {
-  breachAlertStorage = new BreachAlertStorage();
-  await breachAlertStorage.initialize();
-  registerCleanupFunction(() => breachAlertStorage.finalize());
+  storage = new BreachAlertStorage();
+  await storage.initialize();
+  registerCleanupFunction(() => storage.finalize());
 });
 
 add_task(async function test_set_and_get() {
@@ -20,9 +20,9 @@ add_task(async function test_set_and_get() {
     { breachName: "breach-1", timeDismissed: 1000 },
     { breachName: "breach-2", timeDismissed: 2000 },
   ];
-  await breachAlertStorage.setBreachAlertDismissals(dismissals);
+  await storage.setBreachAlertDismissals(dismissals);
 
-  const results = await breachAlertStorage.getBreachAlertDismissals([
+  const results = await storage.getBreachAlertDismissals([
     "breach-1",
     "breach-2",
   ]);
@@ -32,21 +32,19 @@ add_task(async function test_set_and_get() {
 });
 
 add_task(async function test_get_unknown_id_returns_empty() {
-  const results = await breachAlertStorage.getBreachAlertDismissals([
-    "unknown-breach",
-  ]);
+  const results = await storage.getBreachAlertDismissals(["unknown-breach"]);
   Assert.equal(results.length, 0);
 });
 
 add_task(async function test_clear_specific() {
-  await breachAlertStorage.setBreachAlertDismissals([
+  await storage.setBreachAlertDismissals([
     { breachName: "breach-a", timeDismissed: 1000 },
     { breachName: "breach-b", timeDismissed: 2000 },
   ]);
 
-  await breachAlertStorage.clearBreachAlertDismissals(["breach-a"]);
+  await storage.clearBreachAlertDismissals(["breach-a"]);
 
-  const remaining = await breachAlertStorage.getBreachAlertDismissals([
+  const remaining = await storage.getBreachAlertDismissals([
     "breach-a",
     "breach-b",
   ]);
@@ -55,14 +53,14 @@ add_task(async function test_clear_specific() {
 });
 
 add_task(async function test_clear_all() {
-  await breachAlertStorage.setBreachAlertDismissals([
+  await storage.setBreachAlertDismissals([
     { breachName: "breach-x", timeDismissed: 1000 },
     { breachName: "breach-y", timeDismissed: 2000 },
   ]);
 
-  await breachAlertStorage.clearAllBreachAlertDismissals();
+  await storage.clearAllBreachAlertDismissals();
 
-  const results = await breachAlertStorage.getBreachAlertDismissals([
+  const results = await storage.getBreachAlertDismissals([
     "breach-x",
     "breach-y",
   ]);
@@ -71,9 +69,5 @@ add_task(async function test_clear_all() {
 
 add_task(async function test_singleton() {
   const second = new BreachAlertStorage();
-  Assert.equal(
-    breachAlertStorage,
-    second,
-    "Constructor should return the same instance."
-  );
+  Assert.equal(storage, second, "Constructor should return the same instance.");
 });

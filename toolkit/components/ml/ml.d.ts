@@ -523,16 +523,6 @@ export interface ParsedModelHubUrl {
   modelWithHostname: string;
 }
 
-export interface ModelFileHeaders {
-  "Content-Type"?: string;
-  "Content-Length"?: string | number | null;
-  ETag?: string | null;
-  status?: number;
-  fileSize?: number;
-  lastUpdated?: number;
-  lastUsed?: number;
-}
-
 export interface SyncEvent {
   created: BaseRecord[];
   updated: Array<{ old: BaseRecord; new: BaseRecord }>;

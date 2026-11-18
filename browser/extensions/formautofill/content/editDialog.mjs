@@ -54,11 +54,11 @@ class AutofillEditDialog {
    * @param  {string} guid [optional]
    */
   async saveRecord(record, guid) {
-    let autofillStorage = await this.getStorage();
+    let storage = await this.getStorage();
     if (guid) {
-      await autofillStorage.update(guid, record);
+      await storage.update(guid, record);
     } else {
-      await autofillStorage.add(record);
+      await storage.add(record);
     }
   }
 

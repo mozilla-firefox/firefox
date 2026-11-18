@@ -13,6 +13,8 @@ async function require_module(id) {
 
     const depth = "../../../../";
 
+    Cu.importGlobalProperties(["storage"]);
+
     const { Utils } = ChromeUtils.importESModule(
       "resource://testing-common/dom/quota/test/modules/Utils.sys.mjs"
     );

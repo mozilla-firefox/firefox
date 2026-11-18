@@ -191,18 +191,18 @@ export class MozCachedOHTTPParent extends JSProcessActorParent {
     }
 
     const lci = Services.loadContextInfo.anonymous;
-    const cacheStorage = Services.cache2.diskCacheStorage(lci);
+    const storage = Services.cache2.diskCacheStorage(lci);
 
     // For read-only access, check existence first
     if (
       openFlags === Ci.nsICacheStorage.OPEN_READONLY &&
-      !cacheStorage.exists(uri, CACHE_ID_EXTENSION)
+      !storage.exists(uri, CACHE_ID_EXTENSION)
     ) {
       throw new Error("Cache entry does not exist.");
     }
 
     return new Promise((resolve, reject) => {
-      cacheStorage.asyncOpenURI(uri, CACHE_ID_EXTENSION, openFlags, {
+      storage.asyncOpenURI(uri, CACHE_ID_EXTENSION, openFlags, {
         onCacheEntryCheck: () => Ci.nsICacheEntryOpenCallback.ENTRY_WANTED,
         onCacheEntryAvailable: (entry, _isNew, status) => {
           if (Components.isSuccessCode(status)) {
