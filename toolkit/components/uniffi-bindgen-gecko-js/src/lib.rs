@@ -88,6 +88,81 @@ pub struct Config {
     pub async_wrappers: IndexMap<String, ConcurrencyMode>,
     #[serde(default)]
     custom_types: IndexMap<String, CustomTypeConfig>,
+    #[serde(default)]
+    pub library_group: LibraryGroup,
+}
+
+bitflags::bitflags! {
+    /// Builds that a crate's bindings are compiled into
+    ///
+    /// In `config.toml` this is written as the platforms joined by `|`, for example
+    /// `library_group = "DESKTOP | GECKOVIEW"`, or `library_group = "ALL_PLATFORMS"`.
+    ///
+    /// This only gates the generated C++ scaffolding. The Rust dependency in
+    /// `components/Cargo.toml`, the scaffolding re-export in `components/lib.rs` and the
+    /// `.sys.mjs` file in `components/moz.build` must be gated to match by hand.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    pub struct LibraryGroup: u8 {
+        /// Firefox desktop: Linux, macOS and Windows
+        const DESKTOP = 1 << 0;
+        /// GeckoView: Android and iOS
+        const GECKOVIEW = 1 << 1;
+        /// Only used for the UniFFI test fixtures, which are detected by their namespace name
+        const FIXTURES = 1 << 2;
+        const ALL_PLATFORMS = Self::DESKTOP.bits() | Self::GECKOVIEW.bits();
+    }
+}
+
+impl Default for LibraryGroup {
+    fn default() -> Self {
+        Self::DESKTOP
+    }
+}
+
+impl<'de> Deserialize<'de> for LibraryGroup {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        use serde::de::Error;
+        let text = String::deserialize(deserializer)?;
+        let group: Self = bitflags::parser::from_str_strict(&text)
+            .map_err(|e| D::Error::custom(format!("invalid library_group {text:?}: {e}")))?;
+        if group.contains(Self::FIXTURES) {
+            return Err(D::Error::custom(
+                "FIXTURES is reserved for the UniFFI test fixtures",
+            ));
+        }
+        if group.is_empty() {
+            return Err(D::Error::custom(
+                "library_group must contain at least one platform",
+            ));
+        }
+        Ok(group)
+    }
+}
+
+impl Serialize for LibraryGroup {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut text = String::new();
+        bitflags::parser::to_writer_strict(self, &mut text).map_err(serde::ser::Error::custom)?;
+        serializer.serialize_str(&text)
+    }
+}
+
+impl Node for LibraryGroup {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn to_box_any(self: Box<Self>) -> Box<dyn std::any::Any> {
+        self
+    }
+
+    fn visit_children<'a>(&'a self, _visitor: &mut dyn FnMut(&'a dyn Node)) {}
+
+    fn has_descendant_type<N: Node>(
+        _visited: &mut std::collections::HashSet<std::any::TypeId>,
+    ) -> bool {
+        false
+    }
 }
 
 /// Callable sync/async configuration, from `config.toml.`
@@ -217,4 +292,43 @@ fn root_and_pipeline(
 #[template(path = "cpp/UniFFIScaffolding.cpp", escape = "none")]
 struct CppScaffolding<'a> {
     root: &'a pipeline::Root,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse(toml: &str) -> Result<LibraryGroup, toml::de::Error> {
+        toml::from_str::<Config>(toml).map(|config| config.library_group)
+    }
+
+    #[test]
+    fn library_group_config() {
+        assert_eq!(parse("").unwrap(), LibraryGroup::DESKTOP);
+        assert_eq!(
+            parse(r#"library_group = "GECKOVIEW""#).unwrap(),
+            LibraryGroup::GECKOVIEW
+        );
+        assert_eq!(
+            parse(r#"library_group = "DESKTOP|GECKOVIEW""#).unwrap(),
+            LibraryGroup::ALL_PLATFORMS
+        );
+        assert_eq!(
+            parse(r#"library_group = "ALL_PLATFORMS""#).unwrap(),
+            LibraryGroup::ALL_PLATFORMS
+        );
+        for invalid in [
+            r#"library_group = "FIXTURES""#,
+            r#"library_group = "DESKTOP | FIXTURES""#,
+            r#"library_group = "ALL_PLATFORMS | FIXTURES""#,
+            r#"library_group = """#,
+            r#"library_group = "0x4""#,
+            r#"library_group = "desktop""#,
+            r#"library_group = "DESKTOP | ANDROID""#,
+            r#"library_group = "DESKTOP |""#,
+            r#"library_group = 1"#,
+        ] {
+            assert!(parse(invalid).is_err(), "{}", invalid);
+        }
+    }
 }

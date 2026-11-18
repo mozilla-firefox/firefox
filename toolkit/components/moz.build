@@ -106,8 +106,6 @@ if CONFIG["MOZ_BUILD_APP"] != "mobile/android":
         "aboutpdf",
         "narrate",
         "pictureinpicture",
-        "uniffi-js",
-        "uniffi-bindgen-gecko-js/components",
     ]
 
     # `output_category="uniffi-target"` dependencies for `mach uniffi generate`.
@@ -119,7 +117,14 @@ if CONFIG["MOZ_BUILD_APP"] != "mobile/android":
 if CONFIG["BUILD_CTYPES"]:
     DIRS += ["ctypes"]
 
-DIRS += ["autocomplete", "printingui", "satchel", "captivedetect"]
+DIRS += [
+    "autocomplete",
+    "printingui",
+    "satchel",
+    "captivedetect",
+    "uniffi-js",
+    "uniffi-bindgen-gecko-js/components",
+]
 
 if CONFIG["OS_TARGET"] != "Android":
     DIRS += ["terminator"]

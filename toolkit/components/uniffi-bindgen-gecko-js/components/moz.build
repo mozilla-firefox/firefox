@@ -3,34 +3,40 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 MOZ_SRC_FILES += [
-    "generated/RustAdsClient.sys.mjs",
-    "generated/RustAutofill.sys.mjs",
-    "generated/RustBreachAlerts.sys.mjs",
-    "generated/RustContextId.sys.mjs",
-    "generated/RustDbCrypto.sys.mjs",
-    "generated/RustFilterAdult.sys.mjs",
     "generated/RustFxcontainers.sys.mjs",
-    "generated/RustInitRustComponents.sys.mjs",
-    "generated/RustLogins.sys.mjs",
-    "generated/RustRelevancy.sys.mjs",
-    "generated/RustRemoteSettings.sys.mjs",
-    "generated/RustSearch.sys.mjs",
-    "generated/RustSuggest.sys.mjs",
-    "generated/RustSync15.sys.mjs",
-    "generated/RustTabs.sys.mjs",
-    "generated/RustTracing.sys.mjs",
-    "generated/RustViaduct.sys.mjs",
-    "generated/RustWebextstorage.sys.mjs",
 ]
 
 with Files("**"):
     BUG_COMPONENT = ("Toolkit", "UniFFI Bindings")
 
-RustLibrary(
-    "gkrust-uniffi-components", features=["mozbuild"], output_category="uniffi-target"
-)
-
-if CONFIG["MOZ_APPSERVICES_IN_TREE"]:
-    USE_LIBS += [
-        "megazord-so",
+if CONFIG["MOZ_WIDGET_TOOLKIT"] not in ("android", "uikit"):
+    MOZ_SRC_FILES += [
+        "generated/RustAdsClient.sys.mjs",
+        "generated/RustAutofill.sys.mjs",
+        "generated/RustBreachAlerts.sys.mjs",
+        "generated/RustContextId.sys.mjs",
+        "generated/RustDbCrypto.sys.mjs",
+        "generated/RustFilterAdult.sys.mjs",
+        "generated/RustInitRustComponents.sys.mjs",
+        "generated/RustLogins.sys.mjs",
+        "generated/RustRelevancy.sys.mjs",
+        "generated/RustRemoteSettings.sys.mjs",
+        "generated/RustSearch.sys.mjs",
+        "generated/RustSuggest.sys.mjs",
+        "generated/RustSync15.sys.mjs",
+        "generated/RustTabs.sys.mjs",
+        "generated/RustTracing.sys.mjs",
+        "generated/RustViaduct.sys.mjs",
+        "generated/RustWebextstorage.sys.mjs",
     ]
+
+    RustLibrary(
+        "gkrust-uniffi-components",
+        features=["mozbuild"],
+        output_category="uniffi-target",
+    )
+
+    if CONFIG["MOZ_APPSERVICES_IN_TREE"]:
+        USE_LIBS += [
+            "megazord-so",
+        ]

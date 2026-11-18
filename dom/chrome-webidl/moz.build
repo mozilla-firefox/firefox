@@ -129,10 +129,9 @@ GENERATED_EVENTS_WEBIDL_FILES = [
     "StyleSheetRemovedEvent.webidl",
 ]
 
-if CONFIG["MOZ_BUILD_APP"] != "mobile/android":
-    WEBIDL_FILES += [
-        "UniFFI.webidl",
-    ]
+WEBIDL_FILES += [
+    "UniFFI.webidl",
+]
 
 if CONFIG["MOZ_WIDGET_TOOLKIT"] != "android":
     WEBIDL_FILES += [

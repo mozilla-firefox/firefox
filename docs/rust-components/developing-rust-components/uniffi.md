@@ -45,13 +45,15 @@ Here's how you can create a new set of bindings using UniFFI:
    - **If the code exists in an external repo:**
      - Edit `toolkit/components/uniffi-bindgen-gecko-js/components/Cargo.toml` and add a dependency to your library URL
      - Run `mach vendor rust` to vendor in your Rust code
+   - By default components are only built on desktop: add the dependency to the
+     `cfg(not(any(target_os = "android", target_os = "ios")))` section. See [Platforms](#platforms) if your crate needs a different set of platforms.
 3. Configure your crate (optional)
    - Edit `toolkit/components/uniffi-bindgen-gecko-js/config.toml` and add an entry for your crate.
 4. Add scaffolding for your crate
    - Edit `toolkit/components/uniffi-bindgen-gecko-js/components/lib.rs` and add an entry for the uniffi scaffolding for your crate.
 5. Generate bindings code for your crate
    - Run `./mach uniffi generate`
-     - add your newly generated `Rust{udl-name}.sys.mjs` file to `toolkit/components/uniffi-bindgen-gecko-js/components/moz.build`
+     - add your newly generated `Rust{udl-name}.sys.mjs` file to the desktop-only list in `toolkit/components/uniffi-bindgen-gecko-js/components/moz.build`
    - Then simply import your module to the file you want to use it in and start using your APIs!
 
      Example from tabs module:
@@ -64,3 +66,32 @@ Here's how you can create a new set of bindings using UniFFI:
      ...
      this._rustStore = await lazy.TabsStore.init(path);
      ```
+
+### Platforms
+
+The platforms a crate's bindings are compiled into are set by `library_group` in its
+`toolkit/components/uniffi-bindgen-gecko-js/config.toml` entry. The value is a combination of
+`DESKTOP` (Linux, macOS and Windows) and `GECKOVIEW` (Android and iOS) joined by `|`, or
+`ALL_PLATFORMS`:
+
+```toml
+[my_crate]
+library_group = "DESKTOP | GECKOVIEW"
+```
+
+When `library_group` is missing it defaults to `DESKTOP`. The generated C++ scaffolding is
+guarded accordingly, but the Rust dependency and the `.sys.mjs` file have to be gated by hand to
+match: the `cfg` section in `components/Cargo.toml`, the scaffolding re-export in
+`components/lib.rs` and the list in `components/moz.build`.
+
+### GeckoView
+
+On Android and iOS the Rust components are normally consumed by the app through the Kotlin or Swift
+bindings, so only a few of them are linked into libxul. To make a component available to Gecko on
+those platforms too:
+
+- Add it to the platform-independent `[dependencies]` in `toolkit/components/uniffi-bindgen-gecko-js/components/Cargo.toml`.
+- Re-export its scaffolding in `reexport_appservices_uniffi_scaffolding` in `components/lib.rs`.
+- Add `library_group = "ALL_PLATFORMS"` to its entry in `toolkit/components/uniffi-bindgen-gecko-js/config.toml`, so
+  that its C++ scaffolding is not disabled on GeckoView.
+- List its `Rust{udl-name}.sys.mjs` file outside of the desktop-only block in `components/moz.build`.
