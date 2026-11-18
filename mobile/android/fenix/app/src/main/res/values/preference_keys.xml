@@ -411,8 +411,6 @@
     <string name="pref_key_should_migrate_wallpaper" translatable="false">pref_key_should_migrate_wallpaper</string>
     <string name="pref_key_should_migrate_wallpaper_card_colors" translatable="false">pref_key_should_migrate_wallpaper_card_colors</string>
 
-    <string name="pref_key_encryption_key_generated" translatable="false">pref_key_encryption_key_generated</string>
-
     <!-- Top Sites -->
     <string name="default_top_sites_added" translatable="false">pref_key_pocket_top_site_added</string>
     <string name="pref_key_removed_default_pinned_top_sites_migrated" translatable="false">pref_key_removed_default_pinned_top_sites_migrated</string>

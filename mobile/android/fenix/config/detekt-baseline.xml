@@ -743,7 +743,6 @@
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun incrementNumTimesPrivateModeOpened()</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun incrementSecureWarningCount()</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun incrementShowLoginsSecureWarningSyncCount()</ID>
-    <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun recordPasswordsEncryptionKeyGenerated()</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun setSitePermissionSettingListener(lifecycleOwner: LifecycleOwner, listener: () -&gt; Unit)</ID>
     <ID>UndocumentedPublicFunction:ShareCloseView.kt$ShareCloseInteractor$fun onShareClosed()</ID>
     <ID>UndocumentedPublicFunction:ShareCloseView.kt$ShareCloseView$fun setTabs(tabs: List&lt;ShareData&gt;)</ID>
