@@ -10,7 +10,7 @@ const { NimbusTestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/NimbusTestUtils.sys.mjs"
 );
 const { ContentRelevancyManager } = ChromeUtils.importESModule(
-  "resource://gre/modules/ContentRelevancyManager.sys.mjs"
+  "moz-src:///toolkit/components/contentrelevancy/ContentRelevancyManager.sys.mjs"
 );
 const { sinon } = ChromeUtils.importESModule(
   "resource://testing-common/Sinon.sys.mjs"

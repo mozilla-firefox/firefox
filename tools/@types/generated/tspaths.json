@@ -1075,6 +1075,9 @@
       "chrome://remote/content/components/RemoteAgent.sys.mjs": [
         "../../../remote/components/RemoteAgent.sys.mjs"
       ],
+      "chrome://remote/content/marionette/PerTestCoverageUtils.sys.mjs": [
+        "../../../tools/code-coverage/PerTestCoverageUtils.sys.mjs"
+      ],
       "chrome://remote/content/marionette/actors/MarionetteCommandsParent.sys.mjs": [
         "../../../remote/marionette/actors/MarionetteCommandsParent.sys.mjs"
       ],
@@ -5791,9 +5794,6 @@
       "resource://gre/modules/ContentDispatchChooser.sys.mjs": [
         "../../../toolkit/mozapps/handling/ContentDispatchChooser.sys.mjs"
       ],
-      "resource://gre/modules/ContentRelevancyManager.sys.mjs": [
-        "../../../toolkit/components/contentrelevancy/ContentRelevancyManager.sys.mjs"
-      ],
       "resource://gre/modules/CrashMonitor.sys.mjs": [
         "../../../toolkit/components/crashmonitor/CrashMonitor.sys.mjs"
       ],
@@ -6631,9 +6631,6 @@
       "resource://gre/modules/components-utils/mozjexl.sys.mjs": [
         "../../../toolkit/components/utils/mozjexl.sys.mjs"
       ],
-      "resource://gre/modules/contentrelevancy/private/InputUtils.sys.mjs": [
-        "../../../toolkit/components/contentrelevancy/private/InputUtils.sys.mjs"
-      ],
       "resource://gre/modules/ctypes.sys.mjs": [
         "../../../toolkit/components/ctypes/ctypes.sys.mjs"
       ],
@@ -6934,6 +6931,9 @@
       "resource://newtab/lib/NewTabInit.sys.mjs": [
         "../../../browser/extensions/newtab/lib/NewTabInit.sys.mjs"
       ],
+      "resource://newtab/lib/NewTabMerinoWrapper.sys.mjs": [
+        "../../../browser/extensions/newtab/lib/NewTabMerinoWrapper.sys.mjs"
+      ],
       "resource://newtab/lib/NewTabMessaging.sys.mjs": [
         "../../../browser/extensions/newtab/lib/NewTabMessaging.sys.mjs"
       ],
@@ -6987,9 +6987,6 @@
       ],
       "resource://newtab/lib/TelemetryFeed.sys.mjs": [
         "../../../browser/extensions/newtab/lib/TelemetryFeed.sys.mjs"
-      ],
-      "resource://newtab/lib/TemporaryMerinoClientShim.sys.mjs": [
-        "../../../browser/extensions/newtab/lib/TemporaryMerinoClientShim.sys.mjs"
       ],
       "resource://newtab/lib/TopSitesFeed.sys.mjs": [
         "../../../browser/extensions/newtab/lib/TopSitesFeed.sys.mjs"

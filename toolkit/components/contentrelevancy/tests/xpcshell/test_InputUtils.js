@@ -5,11 +5,11 @@
 
 ChromeUtils.defineESModuleGetters(this, {
   getFrecentRecentCombinedUrls:
-    "resource://gre/modules/contentrelevancy/private/InputUtils.sys.mjs",
+    "moz-src:///toolkit/components/contentrelevancy/private/InputUtils.sys.mjs",
   getMostRecentUrls:
-    "resource://gre/modules/contentrelevancy/private/InputUtils.sys.mjs",
+    "moz-src:///toolkit/components/contentrelevancy/private/InputUtils.sys.mjs",
   getTopFrecentUrls:
-    "resource://gre/modules/contentrelevancy/private/InputUtils.sys.mjs",
+    "moz-src:///toolkit/components/contentrelevancy/private/InputUtils.sys.mjs",
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
   PlacesTestUtils: "resource://testing-common/PlacesTestUtils.sys.mjs",
 });

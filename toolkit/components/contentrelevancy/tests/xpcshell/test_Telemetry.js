@@ -4,7 +4,7 @@
 "use strict";
 
 const { ContentRelevancyManager } = ChromeUtils.importESModule(
-  "resource://gre/modules/ContentRelevancyManager.sys.mjs"
+  "moz-src:///toolkit/components/contentrelevancy/ContentRelevancyManager.sys.mjs"
 );
 
 const PREF_CONTENT_RELEVANCY_ENABLED = "toolkit.contentRelevancy.enabled";

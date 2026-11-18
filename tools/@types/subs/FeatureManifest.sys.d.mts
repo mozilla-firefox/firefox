@@ -291,6 +291,11 @@ export const FeatureManifest: {
                 };
                 description: string;
             };
+            contextMenuFeatureGate: {
+                type: string;
+                fallbackPref: string;
+                description: string;
+            };
             deduplicationEnabled: {
                 type: string;
                 setPref: {
@@ -510,6 +515,11 @@ export const FeatureManifest: {
                 description: string;
             };
             resultExplanationsFeatureGate: {
+                type: string;
+                fallbackPref: string;
+                description: string;
+            };
+            resultTargetMenuFeatureGate: {
                 type: string;
                 fallbackPref: string;
                 description: string;
@@ -2297,6 +2307,21 @@ export const FeatureManifest: {
         };
     };
     "autofill-suppress-unrecognized-autocomplete": {
+        description: string;
+        owner: string;
+        hasExposure: boolean;
+        variables: {
+            enabled: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+                description: string;
+            };
+        };
+    };
+    "autocomplete-remove-records": {
         description: string;
         owner: string;
         hasExposure: boolean;
@@ -5934,6 +5959,10 @@ export const FeatureManifest: {
                 type: string;
             };
             message: {
+                description: string;
+                type: string;
+            };
+            disablePrompt: {
                 description: string;
                 type: string;
             };

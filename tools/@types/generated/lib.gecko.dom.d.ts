@@ -7270,13 +7270,6 @@ interface UtilityActorsDictionary {
     actorName?: WebIDLUtilityActorName;
 }
 
-interface VRDisplayEventInit extends EventInit {
-    /** <!-- binding_to(idl, attribute, WEBIDL_VRDisplayEventInit_display) --> */
-    display: VRDisplay;
-    /** <!-- binding_to(idl, attribute, WEBIDL_VRDisplayEventInit_reason) --> */
-    reason?: VRDisplayEventReason;
-}
-
 interface VRLayer {
     /** <!-- binding_to(idl, attribute, WEBIDL_VRLayer_leftBounds) --> */
     leftBounds?: number[] | Float32Array;
@@ -13720,6 +13713,21 @@ declare var CustomStateSet: {
     isInstance: IsInstance<CustomStateSet>;
 };
 
+/** <!-- binding_to(idl, class, WEBIDL_CycleCollectorUnlinkTester) --> */
+interface CycleCollectorUnlinkTester {
+    /** <!-- binding_to(idl, attribute, WEBIDL_CycleCollectorUnlinkTester_unlinked) --> */
+    readonly unlinked: boolean;
+    /** <!-- binding_to(idl, method, WEBIDL_CycleCollectorUnlinkTester_crashIfUnlinked) --> */
+    crashIfUnlinked(): void;
+}
+
+declare var CycleCollectorUnlinkTester: {
+    prototype: CycleCollectorUnlinkTester;
+    new(): CycleCollectorUnlinkTester;
+    /** <!-- binding_to(idl, attribute, WEBIDL_CycleCollectorUnlinkTester_isInstance) --> */
+    isInstance: IsInstance<CycleCollectorUnlinkTester>;
+};
+
 /** <!-- binding_to(idl, class, WEBIDL_DOMApplication) --> */
 interface DOMApplication {
 }
@@ -14951,7 +14959,6 @@ interface Document extends Node, ARIANotifyMixin, DocumentOrShadowRoot, FontFace
     createEvent(eventInterface: "UIEvent"): UIEvent;
     createEvent(eventInterface: "UIEvents"): UIEvent;
     createEvent(eventInterface: "UserProximityEvent"): UserProximityEvent;
-    createEvent(eventInterface: "VRDisplayEvent"): VRDisplayEvent;
     createEvent(eventInterface: "WebGLContextEvent"): WebGLContextEvent;
     createEvent(eventInterface: "WheelEvent"): WheelEvent;
     createEvent(eventInterface: "XRInputSourceEvent"): XRInputSourceEvent;
@@ -26290,8 +26297,6 @@ interface Navigator extends GlobalPrivacyControl, NavigatorAutomationInformation
     requestMIDIAccess(options?: MIDIOptions): Promise<MIDIAccess>;
     /** <!-- binding_to(idl, method, WEBIDL_Navigator_requestMediaKeySystemAccess) --> */
     requestMediaKeySystemAccess(keySystem: string, supportedConfigurations: MediaKeySystemConfiguration[]): Promise<MediaKeySystemAccess>;
-    /** <!-- binding_to(idl, method, WEBIDL_Navigator_requestVRPresentation) --> */
-    requestVRPresentation(display: VRDisplay): void;
     /** <!-- binding_to(idl, method, WEBIDL_Navigator_requestVRServiceTest) --> */
     requestVRServiceTest(): VRServiceTest;
     /** <!-- binding_to(idl, method, WEBIDL_Navigator_sendBeacon) --> */
@@ -36045,24 +36050,6 @@ declare var VRDisplayCapabilities: {
 };
 
 /**
- * <!-- binding_to(idl, class, WEBIDL_VRDisplayEvent) -->
- * Available only in secure contexts.
- */
-interface VRDisplayEvent extends Event {
-    /** <!-- binding_to(idl, attribute, WEBIDL_VRDisplayEvent_display) --> */
-    readonly display: VRDisplay;
-    /** <!-- binding_to(idl, attribute, WEBIDL_VRDisplayEvent_reason) --> */
-    readonly reason: VRDisplayEventReason | null;
-}
-
-declare var VRDisplayEvent: {
-    prototype: VRDisplayEvent;
-    new(type: string, eventInitDict: VRDisplayEventInit): VRDisplayEvent;
-    /** <!-- binding_to(idl, attribute, WEBIDL_VRDisplayEvent_isInstance) --> */
-    isInstance: IsInstance<VRDisplayEvent>;
-};
-
-/**
  * <!-- binding_to(idl, class, WEBIDL_VREyeParameters) -->
  * Available only in secure contexts.
  */
@@ -45450,7 +45437,6 @@ type TransferFunction = "hlg" | "pq" | "srgb";
 type UnderlineStyle = "dashed" | "dotted" | "none" | "solid" | "wavy";
 type UnderlineThickness = "none" | "thick" | "thin";
 type UniFFIScaffoldingCallCode = "error" | "internal-error" | "success";
-type VRDisplayEventReason = "mounted" | "navigation" | "requested" | "unmounted";
 type VREye = "left" | "right";
 type VideoColorPrimaries = "bt2020" | "bt470bg" | "bt709" | "smpte170m" | "smpte432";
 type VideoEncoderBitrateMode = "constant" | "quantizer" | "variable";

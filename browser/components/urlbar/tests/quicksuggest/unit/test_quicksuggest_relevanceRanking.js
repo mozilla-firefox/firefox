@@ -10,7 +10,7 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   ContentRelevancyManager:
-    "resource://gre/modules/ContentRelevancyManager.sys.mjs",
+    "moz-src:///toolkit/components/contentrelevancy/ContentRelevancyManager.sys.mjs",
   InterestVector:
     "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustRelevancy.sys.mjs",
 });

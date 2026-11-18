@@ -5,7 +5,7 @@
 
 ChromeUtils.defineESModuleGetters(this, {
   ContentRelevancyManager:
-    "resource://gre/modules/ContentRelevancyManager.sys.mjs",
+    "moz-src:///toolkit/components/contentrelevancy/ContentRelevancyManager.sys.mjs",
   Interest:
     "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustRelevancy.sys.mjs",
   InterestVector:

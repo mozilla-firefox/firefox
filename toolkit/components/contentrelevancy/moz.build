@@ -5,11 +5,8 @@
 with Files("**"):
     BUG_COMPONENT = ("Application Services", "Relevancy")
 
-EXTRA_JS_MODULES += [
+MOZ_SRC_FILES += [
     "ContentRelevancyManager.sys.mjs",
-]
-
-EXTRA_JS_MODULES["contentrelevancy/private"] += [
     "private/InputUtils.sys.mjs",
 ]
 

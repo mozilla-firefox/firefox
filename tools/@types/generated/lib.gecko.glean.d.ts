@@ -85,7 +85,6 @@ interface GleanImpl {
     cookieCountUnpartitioned: GleanCustomDistribution;
     cookieCreationFixupDiff: GleanCustomDistribution;
     cookieDbValidation: Record<"eOK"|"eRejectedAttributeDomainOversize"|"eRejectedAttributeExpiryOversize"|"eRejectedAttributePathOversize"|"eRejectedEmptyNameAndValue"|"eRejectedForNonSameSiteness"|"eRejectedHttpOnlyButFromScript"|"eRejectedInvalidCharName"|"eRejectedInvalidCharValue"|"eRejectedInvalidDomain"|"eRejectedInvalidPath"|"eRejectedInvalidPrefix"|"eRejectedNameValueOversize"|"eRejectedNoneRequiresSecure"|"eRejectedPartitionedRequiresSecure"|"eRejectedSecureButNonHttps", GleanCounter>;
-    cookieFilePresent: GleanBoolean;
     cookiePurgeEntryMax: GleanCustomDistribution;
     cookiePurgeMax: GleanCustomDistribution;
     cookieTimestampFixedCount: Record<"creationTime"|"lastAccessed", GleanCounter>;
@@ -322,11 +321,15 @@ interface GleanImpl {
     historyClick: GleanEventWithExtras<{ chat_id?: string, location?: string, message_seq?: string|number, position?: string|number, total?: string|number }>;
     historyDisplayed: GleanEventWithExtras<{ chat_id?: string, location?: string, message_seq?: string|number, reason?: string, total?: string|number }>;
     intentChangePreview: GleanEventWithExtras<{ chat_id?: string, current_intent?: string, location?: string, message_seq?: string|number }>;
+    journeysGenerationRun: GleanEventWithExtras<{ error_stage?: string, error_type?: string, generation_batches?: string|number, generation_batches_skipped?: string|number, journey_memory_candidates?: string|number, journeys_eligible_after?: string|number, journeys_generated?: string|number, memories_eligible?: string|number, outcome?: string, save_new?: string|number }>;
+    journeysMaintenanceRun: GleanEventWithExtras<{ error_type?: string, journeys_after?: string|number, journeys_before?: string|number, journeys_eligible_after?: string|number, journeys_removed?: string|number, outcome?: string }>;
     launchCommandInvoked: GleanEventWithExtras<{ auth_provider?: string, fxa?: string|boolean, new_window?: string|boolean, trigger?: string }>;
     linkClick: GleanEventWithExtras<{ chat_id?: string, location?: string, message_seq?: string|number }>;
     llmajBasedTelemetry: GleanEventWithExtras<{ attribute_name?: string, attribute_value?: string, chat_id?: string, chat_version?: string, judge_model?: string, model?: string, record_type?: string, telemetry_name?: string, telemetry_version?: string, trigger_sampled?: string|boolean, trigger_sampling_probability?: string|number, triggers?: string, turn_number?: string|number, uniform_sampled?: string|boolean, uniform_sampling_probability?: string|number }>;
     memoriesCount: Record<"conversation"|"history"|"session", GleanQuantity>;
+    memoriesGenerationRun: GleanEventWithExtras<{ chat_messages_kept?: string|number, chat_messages_pulled?: string|number, error_stage?: string, error_type?: string, filter_dropped?: string|number, generation_batches?: string|number, generation_batches_skipped?: string|number, generation_candidates?: string|number, generation_triggered?: string|boolean, history_rows_kept?: string|number, history_rows_pulled?: string|number, is_first_run?: string|boolean, memories_after?: string|number, memories_before?: string|number, merge_components_removed?: string|number, merge_groups_proposed?: string|number, merge_groups_saved?: string|number, merge_status?: string, outcome?: string, save_new?: string|number, save_updated?: string|number, sessions_built?: string|number, sessions_processed?: string|number, sessions_processed_events?: string|number, sessions_processed_events_max?: string|number, sessions_processed_events_min?: string|number, sessions_skipped?: string|number }>;
     memoriesLastUpdated: GleanDatetime;
+    memoriesMaintenanceRun: GleanEventWithExtras<{ demoted_to_long_term?: string|number, demoted_to_short_term?: string|number, error_type?: string, memories_after?: string|number, memories_aged?: string|number, memories_before?: string|number, memories_decayed?: string|number, memories_skipped?: string|number, outcome?: string, promoted_to_durable?: string|number, promoted_to_long_term?: string|number, soft_deleted_removed?: string|number }>;
     memoriesNuke: GleanEventNoExtras;
     memoriesOptin: Record<"generate_from_conversation"|"generate_from_history", GleanBoolean>;
     memoriesPanelDisplayed: GleanEventWithExtras<{ memories?: string|number, source?: string }>;
@@ -563,6 +566,7 @@ interface GleanImpl {
     securityInfoPageInfoOpened: GleanEventNoExtras;
     smartblockToggled: GleanEventWithExtras<{ is_block?: string|boolean, opening_reason?: string, shim_id?: string }>;
     trackerCountShown: GleanEventWithExtras<{ first_site_load_in_tab?: string|boolean, first_visit?: string|boolean }>;
+    trackerCountToggled: GleanEventWithExtras<{ enabled?: string|boolean }>;
     trackerListOpened: GleanEventNoExtras;
   }
 
@@ -5567,6 +5571,8 @@ interface GleanImpl {
     pageLoadTime: GleanTimingDistribution;
     pageReloadTime: GleanTimingDistribution;
     perDocumentSiteOrigins: GleanCustomDistribution;
+    scrollCaptureOutcome: Record<"canceled"|"complete"|"failed"|"partial", GleanCounter>;
+    scrollCaptureTileResult: Record<"canceled_before"|"canceled_inflight"|"empty_rect"|"invalid_surface"|"no_metrics"|"outside_content"|"paint_error"|"success", GleanCounter>;
   }
 
   zeroByteLoad: {

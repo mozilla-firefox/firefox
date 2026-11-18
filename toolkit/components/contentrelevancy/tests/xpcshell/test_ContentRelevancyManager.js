@@ -6,10 +6,11 @@
 ChromeUtils.defineESModuleGetters(this, {
   AsyncShutdown: "resource://gre/modules/AsyncShutdown.sys.mjs",
   ContentRelevancyManager:
-    "resource://gre/modules/ContentRelevancyManager.sys.mjs",
+    "moz-src:///toolkit/components/contentrelevancy/ContentRelevancyManager.sys.mjs",
   SharedRemoteSettingsService:
     "resource://gre/modules/RustSharedRemoteSettingsService.sys.mjs",
-  exposedForTesting: "resource://gre/modules/ContentRelevancyManager.sys.mjs",
+  exposedForTesting:
+    "moz-src:///toolkit/components/contentrelevancy/ContentRelevancyManager.sys.mjs",
   TestUtils: "resource://testing-common/TestUtils.sys.mjs",
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
   sinon: "resource://testing-common/Sinon.sys.mjs",
