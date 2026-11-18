@@ -44,15 +44,24 @@ ls -l /builds/worker/artifacts/nexus-logs/
 # GeckoView is built by this task and published to a local Maven repository, so
 # the passes rooted at the standalone Gradle builds resolve it from there. It is
 # not a cached dependency and is deliberately not packaged.
+#
+# The Nimbus Gradle plugin resolves nimbus-fml from ivy repositories, which
+# Nexus doesn't proxy; it is packaged from the Gradle cache below instead.
 python3 "$VERIFY_DEPENDENCIES" --inventories "$DEPENDENCY_INVENTORIES" \
     --unproxied org/mozilla/geckoview \
+    --unproxied org/mozilla/appservices/tools/nimbus-fml \
     android-gradle-dependencies/mozilla \
     android-gradle-dependencies/central \
     android-gradle-dependencies/google \
     android-gradle-dependencies/gradle-plugins
 
+# Laid out like archive.mozilla.org, which NIMBUS_FML_REPOSITORY expects.
 if [ -z "$MOZ_APPSERVICES_IN_TREE" ]; then
-    ls android-gradle-dependencies/nimbus-fml/*/nimbus-fml.zip
+    for zip in ${GRADLE_USER_HOME}/caches/modules-2/files-2.1/org.mozilla.appservices.tools/nimbus-fml/*/*/*.zip; do
+        version=$(basename "$(dirname "$(dirname "$zip")")")
+        mkdir -p "android-gradle-dependencies/nimbus-fml/$version"
+        cp "$zip" "android-gradle-dependencies/nimbus-fml/$version/nimbus-fml.zip"
+    done
 fi
 
 tar cavf /builds/worker/artifacts/android-gradle-dependencies.tar.zst android-gradle-dependencies

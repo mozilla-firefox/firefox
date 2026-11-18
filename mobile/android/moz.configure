@@ -214,11 +214,11 @@ check_host_bin_prog("EMBEDDED_UNIFFI_BINDGEN", "embedded-uniffi-bindgen")
 check_host_bin_prog("NIMBUS_FML", "nimbus-fml")
 
 option(
-    env="NIMBUS_FML_CACHE_DIR",
+    env="NIMBUS_FML_REPOSITORY",
     nargs=1,
-    help="Directory in which to create the nimbus-fml cache for nightly application-services",
+    help="Directory holding <version>/nimbus-fml.zip, checked before downloading the archive",
 )
-set_config("NIMBUS_FML_CACHE_DIR", depends_if("NIMBUS_FML_CACHE_DIR")(lambda v: v[0]))
+set_config("NIMBUS_FML_REPOSITORY", depends_if("NIMBUS_FML_REPOSITORY")(lambda v: v[0]))
 
 
 @depends(
