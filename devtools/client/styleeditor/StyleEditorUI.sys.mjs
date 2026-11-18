@@ -1123,6 +1123,10 @@ export class StyleEditorUI extends EventEmitter {
     }
 
     const editorPromise = editor.getSourceEditor().then(() => {
+      // Don't go further if the editor was destroyed in the meantime
+      if (!this.editors.includes(editor)) {
+        return;
+      }
       // line/col are null when the style editor is initialized and the first stylesheet
       // editor is selected. Unfortunately, this function might be called also when the
       // panel is opened from clicking on a CSS warning in the WebConsole panel, in which
