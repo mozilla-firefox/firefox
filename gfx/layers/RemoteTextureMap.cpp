@@ -1209,6 +1209,8 @@ bool RemoteTextureMap::WaitForTxn(const RemoteTextureOwnerId aOwnerId,
                                   const base::ProcessId aForPid,
                                   RemoteTextureTxnType aTxnType,
                                   RemoteTextureTxnId aTxnId) {
+  // Release the scheduler after unlocking: its destructor locks mMonitor.
+  RefPtr<RemoteTextureTxnScheduler> scheduler;
   MonitorAutoLock lock(mMonitor);
   auto* owner = GetTextureOwner(lock, aOwnerId, aForPid);
   if (!owner) {
@@ -1226,7 +1228,7 @@ bool RemoteTextureMap::WaitForTxn(const RemoteTextureOwnerId aOwnerId,
   const auto key = std::pair(aForPid, aTxnType);
   auto it = mTxnSchedulers.find(key);
   if (it != mTxnSchedulers.end()) {
-    RefPtr<RemoteTextureTxnScheduler> scheduler(it->second);
+    scheduler = RefPtr<RemoteTextureTxnScheduler>(it->second);
     if (scheduler) {
       if (scheduler->WaitForTxn(lock, aOwnerId, aTxnId)) {
         owner->mWaitForTxn = true;
