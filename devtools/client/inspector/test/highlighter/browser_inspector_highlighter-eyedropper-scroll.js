@@ -84,7 +84,7 @@ add_task(async function () {
       "scrolling"
     );
     const drawn = await highlighterTestFront.getEyeDropperElementAttribute(
-      "eye-dropper-root",
+      "eye-dropper-container",
       "drawn"
     );
     return scrolling === null && drawn === "true";
