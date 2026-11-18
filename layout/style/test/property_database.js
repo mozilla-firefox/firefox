@@ -8900,7 +8900,6 @@ var gCSSProperties = {
     type: CSS_TYPE_TRUE_SHORTHAND,
     subproperties: ["text-wrap-mode", "text-wrap-style"],
     applies_to_placeholder: true,
-    applies_to_cue: true,
     applies_to_marker: true,
     initial_values: ["wrap"],
     other_values: [
@@ -14417,7 +14416,6 @@ gCSSProperties["text-wrap-style"] = {
   inherited: true,
   type: CSS_TYPE_LONGHAND,
   applies_to_placeholder: true,
-  applies_to_cue: true,
   applies_to_marker: true,
   initial_values: ["auto"],
   other_values: ["stable", "balance"],
