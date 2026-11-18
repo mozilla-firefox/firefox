@@ -636,7 +636,7 @@ bool JitScript::ensureHasCachedBaselineJitData(JSContext* cx,
 bool JitScript::ensureHasCachedIonData(JSContext* cx, HandleScript script) {
   MOZ_ASSERT(script->jitScript() == this);
 
-  if (usesEnvironmentChain_.isSome()) {
+  if (usesEnvironmentChain_ != UsesEnvironmentChain::Unknown) {
     return true;
   }
 
@@ -644,7 +644,9 @@ bool JitScript::ensureHasCachedIonData(JSContext* cx, HandleScript script) {
     return false;
   }
 
-  usesEnvironmentChain_.emplace(ScriptUsesEnvironmentChain(script));
+  usesEnvironmentChain_ = ScriptUsesEnvironmentChain(script)
+                              ? UsesEnvironmentChain::Yes
+                              : UsesEnvironmentChain::No;
   return true;
 }
 

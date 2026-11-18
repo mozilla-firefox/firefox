@@ -371,7 +371,8 @@ class alignas(uintptr_t) JitScript final
 
   // Analysis data computed lazily the first time this script is compiled or
   // inlined by WarpBuilder.
-  mozilla::Maybe<bool> usesEnvironmentChain_;
+  enum class UsesEnvironmentChain : uint8_t { Unknown = 0, Yes, No };
+  UsesEnvironmentChain usesEnvironmentChain_ = UsesEnvironmentChain::Unknown;
 
   struct Flags {
     // True if this script entered Ion via OSR at a loop header.
@@ -497,7 +498,10 @@ class alignas(uintptr_t) JitScript final
   std::pair<CallObject*, NamedLambdaObject*> functionEnvironmentTemplates(
       JSFunction* fun) const;
 
-  bool usesEnvironmentChain() const { return *usesEnvironmentChain_; }
+  bool usesEnvironmentChain() const {
+    MOZ_RELEASE_ASSERT(usesEnvironmentChain_ != UsesEnvironmentChain::Unknown);
+    return usesEnvironmentChain_ == UsesEnvironmentChain::Yes;
+  }
 
   bool resetAllocSites(bool resetNurserySites, bool resetPretenuredSites);
   bool hasPretenuredAllocSites();
