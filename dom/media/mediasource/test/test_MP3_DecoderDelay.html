@@ -1,0 +1,172 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>MSE: the MPEG audio decoder delay doesn't delay audio/mpeg</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="text/javascript" src="mediasource.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+
+// flac_click.mp4 and mp3_click.mp3 hold 0.5 s of silence at 44.1 kHz with a
+// single sample click, at 0.45 s and 0.05 s respectively. FLAC has no decoder
+// delay, so the time between the clicks shows how late the MP3 audio is. LAME,
+// which encoded the MP3, delays it by 576 samples, and the decoder delay must
+// not delay it further. mp2_click.mp2 holds the same audio in Layer II, which
+// FFmpeg's encoder delays by 240 samples.
+const kRate = 44100;
+const kFLACDuration = 0.5;
+const kMP3 = { file: "mp3_click.mp3", encoderDelay: 576 };
+const kMP2 = { file: "mp2_click.mp2", encoderDelay: 240 };
+const kClickSpacing = 0.1 * kRate;
+const kFrameSamples = 1152;
+// The position of the click in the MP3 audio.
+const kMP3Click = 0.05 * kRate + kMP3.encoderDelay;
+
+// Each case appends the MPEG audio offset by `offset` samples from the end of
+// the FLAC audio, optionally dropping what precedes the end of the FLAC audio
+// with appendWindowStart, and what follows `windowEnd` samples of the MPEG
+// audio with appendWindowEnd.
+const kCases = [
+  { name: "MP3 after FLAC", mpeg: kMP3, offset: 0 },
+  {
+    name: "Encoder delay trimmed",
+    mpeg: kMP3,
+    offset: -kMP3.encoderDelay,
+    windowStart: true,
+  },
+  {
+    name: "Trimmed within the decoder delay of the end of a frame",
+    mpeg: kMP3,
+    offset: -(kFrameSamples - 100),
+    windowStart: true,
+  },
+  // The frame with the click needs the bit reservoir of the two frames before
+  // it, and only the last frame dropped before appendWindowStart is decoded.
+  {
+    name: "A frame dropped before appendWindowStart",
+    mpeg: kMP3,
+    offset: -kFrameSamples,
+    windowStart: true,
+  },
+  {
+    name: "Trimmed with appendWindowEnd after the click",
+    mpeg: kMP3,
+    offset: 0,
+    windowEnd: kMP3Click + 300,
+  },
+  { name: "Layer II after FLAC", mpeg: kMP2, offset: 0 },
+  {
+    name: "Layer II encoder delay trimmed",
+    mpeg: kMP2,
+    offset: -kMP2.encoderDelay,
+    windowStart: true,
+  },
+];
+
+const kRecorder = `registerProcessor("recorder", class extends AudioWorkletProcessor {
+  process(inputs) {
+    this.port.postMessage(inputs[0].length ? inputs[0][0].slice() : new Float32Array(128));
+    return true;
+  }
+});`;
+
+function findPeak(data, from, to) {
+  let peak = from;
+  for (let i = from; i < to; i++) {
+    if (Math.abs(data[i]) > Math.abs(data[peak])) {
+      peak = i;
+    }
+  }
+  return peak;
+}
+
+async function record(el) {
+  const ctx = new AudioContext({ sampleRate: kRate });
+  await ctx.audioWorklet.addModule(
+    URL.createObjectURL(new Blob([kRecorder], { type: "text/javascript" }))
+  );
+  const recorder = new AudioWorkletNode(ctx, "recorder");
+  const chunks = [];
+  let chunksAfterEnded = -1;
+  const recorded = new Promise(resolve => {
+    recorder.port.onmessage = e => {
+      chunks.push(e.data);
+      if (chunksAfterEnded >= 0 && ++chunksAfterEnded == 50) {
+        resolve();
+      }
+    };
+  });
+  ctx.createMediaElementSource(el).connect(recorder);
+  recorder.connect(ctx.destination);
+  el.play();
+  await once(el, "ended");
+  chunksAfterEnded = 0;
+  await recorded;
+  await ctx.close();
+
+  const data = new Float32Array(chunks.reduce((n, c) => n + c.length, 0));
+  let offset = 0;
+  for (const chunk of chunks) {
+    data.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return data;
+}
+
+async function measureClickSpacing(flac, mpeg, { offset, windowStart, windowEnd }) {
+  const ms = new MediaSource();
+  const el = document.createElement("audio");
+  el.src = URL.createObjectURL(ms);
+  await once(ms, "sourceopen");
+  const sb = ms.addSourceBuffer('audio/mp4; codecs="flac"');
+  await loadSegment(sb, flac);
+  sb.changeType("audio/mpeg");
+  const start = kFLACDuration + offset / kRate;
+  sb.timestampOffset = start;
+  if (windowStart) {
+    sb.appendWindowStart = kFLACDuration;
+  }
+  if (windowEnd !== undefined) {
+    sb.appendWindowEnd = start + windowEnd / kRate;
+  }
+  await loadSegment(sb, mpeg);
+  ms.endOfStream();
+
+  const data = await record(el);
+  el.removeAttribute("src");
+  el.load();
+
+  const first = findPeak(data, 0, data.length);
+  const guard = kClickSpacing / 2;
+  const before = findPeak(data, 0, Math.max(0, first - guard));
+  const after = findPeak(data, Math.min(data.length, first + guard), data.length);
+  const second = Math.abs(data[before]) > Math.abs(data[after]) ? before : after;
+  info(`Clicks at ${first} and ${second}`);
+  return Math.abs(second - first);
+}
+
+SimpleTest.waitForExplicitFinish();
+addMSEPrefs(["media.mediasource.mp3.enabled", true]);
+
+runWithMSE(async () => {
+  const flac = await fetchWithXHR("flac_click.mp4");
+  for (const c of kCases) {
+    const mpeg = await fetchWithXHR(c.mpeg.file);
+    const spacing = await measureClickSpacing(flac, mpeg, c);
+    isfuzzy(
+      spacing - kClickSpacing,
+      c.mpeg.encoderDelay + c.offset,
+      16,
+      `${c.name}: only the encoder delay and the offset delay the MPEG audio`
+    );
+  }
+  SimpleTest.finish();
+});
+
+</script>
+</pre>
+</body>
+</html>

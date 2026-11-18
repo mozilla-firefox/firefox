@@ -114,7 +114,8 @@ struct Mp3CodecSpecificData final {
   bool operator==(const Mp3CodecSpecificData& rhs) const = default;
 
   auto MutTiedFields() {
-    return std::tie(mEncoderDelayFrames, mEncoderPaddingFrames);
+    return std::tie(mEncoderDelayFrames, mEncoderPaddingFrames,
+                    mDecoderDelayFrames);
   }
 
   // The number of frames that should be skipped from the beginning of the
@@ -126,6 +127,11 @@ struct Mp3CodecSpecificData final {
   // stream.
   // See https://bugzilla.mozilla.org/show_bug.cgi?id=1566389 for more info.
   uint32_t mEncoderPaddingFrames{0};
+
+  // The number of frames by which the decoded audio lags the timestamps of the
+  // frames, when the demuxer's timestamps don't account for the decoder delay.
+  // MediaSourceTrackDemuxer moves the decoded audio earlier by it.
+  uint32_t mDecoderDelayFrames{0};
 };
 
 struct OpusCodecSpecificData {

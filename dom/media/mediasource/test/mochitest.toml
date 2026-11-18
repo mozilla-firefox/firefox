@@ -258,6 +258,8 @@ support-files = [
   "../../test/huge-id3.mp3",
   "../../test/small-shot.mp3",
   "../../test/vbr.mp3",
+  "flac_click.mp4",
+  "mp3_click.mp3",
   "mp3_crc.mp3",
   "mp1_tone.mp1",
   "mp2_click.mp2",
@@ -298,6 +300,9 @@ skip-if = [
 ["test_MP3_Append.html"]
 
 ["test_MP3_AppendWindow.html"]
+
+["test_MP3_DecoderDelay.html"]
+scheme = "https" # AudioWorklet needs a secure context.
 
 ["test_MP3_RemoveAndEvict.html"]
 

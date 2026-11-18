@@ -512,6 +512,13 @@ TEST(MPEGAudioByteStreamDemuxer, Samples)
   EXPECT_EQ(info->GetAsAudioInfo()->mChannels, 2u);
   // The byte stream format doesn't specify a duration.
   EXPECT_TRUE(info->mDuration.IsZero());
+  // The generated timestamps don't account for the decoder delay.
+  ASSERT_TRUE(
+      info->GetAsAudioInfo()->mCodecSpecificConfig.is<Mp3CodecSpecificData>());
+  EXPECT_EQ(info->GetAsAudioInfo()
+                ->mCodecSpecificConfig.as<Mp3CodecSpecificData>()
+                .mDecoderDelayFrames,
+            529u);
 
   // TrackBuffersManager evicts the initialization segment once the demuxer
   // is initialized.
@@ -565,6 +572,14 @@ TEST(MPEGAudioByteStreamDemuxer, Layer1)
   RefPtr<MediaTrackDemuxer> track =
       demuxer->GetTrackDemuxer(TrackInfo::kAudioTrack, 0);
   ASSERT_TRUE(track);
+  UniquePtr<TrackInfo> info = track->GetInfo();
+  ASSERT_TRUE(info->GetAsAudioInfo());
+  ASSERT_TRUE(
+      info->GetAsAudioInfo()->mCodecSpecificConfig.is<Mp3CodecSpecificData>());
+  EXPECT_EQ(info->GetAsAudioInfo()
+                ->mCodecSpecificConfig.as<Mp3CodecSpecificData>()
+                .mDecoderDelayFrames,
+            241u);
 
   resource->EvictAll();
   const Bytes frame = Frame(kLayer1Header, kLayer1FrameLength);

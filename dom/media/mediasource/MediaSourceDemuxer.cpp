@@ -18,10 +18,14 @@ extern mozilla::LogModule* GetMediaSourceLog();
 #define MSE_DEBUG(arg, ...)                                                  \
   DDMOZ_LOG_FMT(GetMediaSourceLog(), mozilla::LogLevel::Debug, "::{}: " arg, \
                 __func__, ##__VA_ARGS__)
+#define MSE_DEBUGV(arg, ...)                                                   \
+  DDMOZ_LOG_FMT(GetMediaSourceLog(), mozilla::LogLevel::Verbose, "::{}: " arg, \
+                __func__, ##__VA_ARGS__)
 
 namespace mozilla {
 
 typedef TrackInfo::TrackType TrackType;
+using media::TimeInterval;
 using media::TimeIntervals;
 using media::TimeUnit;
 
@@ -318,6 +322,7 @@ void MediaSourceTrackDemuxer::Reset() {
 
         self->mNextSample.reset();
         self->mReset = true;
+        self->mLastStreamID.reset();
         if (!self->mManager) {
           return;
         }
@@ -424,6 +429,7 @@ RefPtr<MediaSourceTrackDemuxer::SeekPromise> MediaSourceTrackDemuxer::DoSeek(
     seekTime = buffered[index].mStart;
   }
   seekTime = mManager->Seek(mType, seekTime, MediaSourceDemuxer::EOS_FUZZ);
+  mLastStreamID.reset();
   MediaResult result = NS_OK;
   RefPtr<MediaRawData> sample =
       mManager->GetSample(mType, TimeUnit::Zero(), result);
@@ -510,9 +516,74 @@ MediaSourceTrackDemuxer::DoGetSamples(int32_t aNumSamples) {
           mType, MediaSourceDemuxer::EOS_FUZZ);
     }
   }
+  CompensateDecoderDelay(sample);
   RefPtr<SamplesHolder> samples = new SamplesHolder;
   samples->AppendSample(std::move(sample));
   return SamplesPromise::CreateAndResolve(samples, __func__);
+}
+
+void MediaSourceTrackDemuxer::CompensateDecoderDelay(MediaRawData* aSample) {
+  TaskQueue().AssertOnCurrentThread();
+  MOZ_ASSERT(aSample->mTrackInfo);
+  const uint32_t streamID = aSample->mTrackInfo->GetID();
+  const bool decoderRestarts = mLastStreamID != Some(streamID);
+  mLastStreamID = Some(streamID);
+
+  const AudioInfo* info = aSample->mTrackInfo->GetAsAudioInfo();
+  if (!info || !info->mRate ||
+      !info->mCodecSpecificConfig.is<Mp3CodecSpecificData>()) {
+    return;
+  }
+  const uint32_t delayFrames =
+      info->mCodecSpecificConfig.as<Mp3CodecSpecificData>().mDecoderDelayFrames;
+  if (!delayFrames) {
+    return;
+  }
+  const TimeUnit delay(delayFrames, info->mRate);
+
+  // The interval of the frame and the part of it to keep, which differ when
+  // the frame was trimmed to the append window.
+  const TimeInterval frame = aSample->mOriginalPresentationWindow.valueOr(
+      TimeInterval(aSample->mTime, aSample->GetEndTime()));
+  const TimeInterval kept(aSample->mTime, aSample->GetEndTime());
+  const TimeInterval decoded(frame.mStart - delay, frame.mEnd - delay);
+
+  // The audio before the kept part of a frame is dropped, including what the
+  // decoder only outputs with the following frames. After a restart, so is
+  // what the decoder outputs before the first frame.
+  if (kept.mStart > frame.mStart) {
+    mTrimBefore = Some(kept.mStart);
+  } else if (decoderRestarts) {
+    mTrimBefore = Some(frame.mStart);
+  }
+  TimeInterval trimmed = decoded;
+  if (mTrimBefore) {
+    trimmed.mStart = std::clamp(*mTrimBefore, decoded.mStart, decoded.mEnd);
+    if (*mTrimBefore <= decoded.mEnd) {
+      mTrimBefore.reset();
+    }
+  }
+  if (kept.mEnd < frame.mEnd) {
+    trimmed.mEnd = std::clamp(kept.mEnd, trimmed.mStart, decoded.mEnd);
+  }
+
+  MSE_DEBUGV(
+      "stream={} decoderRestarts={} frame=[{},{}] kept=[{},{}] "
+      "decoded=[{},{}] trimmed=[{},{}]",
+      streamID, decoderRestarts, frame.mStart.ToMicroseconds(),
+      frame.mEnd.ToMicroseconds(), kept.mStart.ToMicroseconds(),
+      kept.mEnd.ToMicroseconds(), decoded.mStart.ToMicroseconds(),
+      decoded.mEnd.ToMicroseconds(), trimmed.mStart.ToMicroseconds(),
+      trimmed.mEnd.ToMicroseconds());
+
+  aSample->mTime = trimmed.mStart;
+  aSample->mDuration = trimmed.Length();
+  aSample->mTimecode = aSample->mTimecode - delay;
+  if (trimmed == decoded) {
+    aSample->mOriginalPresentationWindow.reset();
+  } else {
+    aSample->mOriginalPresentationWindow = Some(decoded);
+  }
 }
 
 RefPtr<MediaSourceTrackDemuxer::SkipAccessPointPromise>
@@ -562,5 +633,6 @@ void MediaSourceTrackDemuxer::DetachManager() {
 }
 
 #undef MSE_DEBUG
+#undef MSE_DEBUGV
 
 }  // namespace mozilla

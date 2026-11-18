@@ -143,6 +143,10 @@ class MediaSourceTrackDemuxer
   already_AddRefed<MediaRawData> GetSample(MediaResult& aError);
   // Return the timestamp of the next keyframe after mLastSampleIndex.
   media::TimeUnit GetNextRandomAccessPoint();
+  // Shift a sample of a track that declares a decoder delay, so that its
+  // decoded audio lines up with its timestamps, and trim the decoded audio to
+  // what the track buffer kept.
+  void CompensateDecoderDelay(MediaRawData* aSample);
 
   RefPtr<MediaSourceDemuxer> mParent;
 
@@ -165,6 +169,14 @@ class MediaSourceTrackDemuxer
   // Amount of pre-roll time when seeking.
   // Set to 80ms if track is Opus.
   const media::TimeUnit mPreRoll;
+
+  // The stream of the last sample returned since the decoder last restarted,
+  // as it does after a seek or a reset. A sample from another stream is
+  // decoded by a new decoder. Only accessed on TaskQueue.
+  Maybe<uint32_t> mLastStreamID;
+  // The time before which decoded audio is dropped, until the decoded audio
+  // reaches it. Only accessed on TaskQueue.
+  Maybe<media::TimeUnit> mTrimBefore;
 };
 
 }  // namespace mozilla

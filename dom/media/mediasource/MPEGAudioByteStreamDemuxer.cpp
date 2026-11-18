@@ -29,6 +29,19 @@ using media::TimeUnit;
 // Holds any MPEG audio frame.
 static constexpr size_t kMPEGAudioPeekSize = mpeg_audio::kMaxFrameLength;
 
+// MPEG audio decoders output the audio of a frame later than its timestamp.
+// MP3TrackDemuxer compensates for it as part of the encoder delay, but the
+// generated timestamps of the byte stream format can't account for it. The
+// MPEG audio standards don't state the delay. 529 is the conventional value
+// for Layer III, from LAME: its encoder.h gives decoders a delay of 528
+// samples (240 for the polyphase filterbank and 288 for the MDCT), and an
+// encoder and a decoder a total delay of the encoder's plus 528 + 1.
+static constexpr uint32_t kLayer3DecoderDelay = 529;
+// Layers I and II have no MDCT, which leaves the decoder's share of the
+// polyphase filterbank delay: 241 of the 481 samples that LAME observes
+// between an encoder and a decoder. Chromium uses 529 for every layer.
+static constexpr uint32_t kLayer1And2DecoderDelay = 241;
+
 static MediaResult InvalidMPEGAudioData() {
   return MediaResult(NS_ERROR_DOM_MEDIA_DEMUXER_ERR,
                      "Invalid MPEG audio byte stream");
@@ -89,6 +102,11 @@ bool MPEGAudioByteStreamTrackDemuxer::Init() {
   mInfo.mRate = mConfig.mSampleRate;
   mInfo.mChannels = mConfig.mChannels;
   mInfo.mBitDepth = 16;
+  Mp3CodecSpecificData mp3CodecSpecificData;
+  mp3CodecSpecificData.mDecoderDelayFrames =
+      mConfig.mLayer == 3 ? kLayer3DecoderDelay : kLayer1And2DecoderDelay;
+  mInfo.mCodecSpecificConfig =
+      AudioCodecSpecificVariant{std::move(mp3CodecSpecificData)};
   // The media segments are appended after the initialization segment.
   mOffset = sizeof(header);
   MSE_DEBUG("layer={} rate={} channels={}", mConfig.mLayer, mInfo.mRate,
