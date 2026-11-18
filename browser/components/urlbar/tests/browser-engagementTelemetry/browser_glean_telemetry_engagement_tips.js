@@ -85,9 +85,7 @@ add_task(async function selected_result_tip() {
 
       let newTab = await newTabOpened;
       await BrowserTestUtils.removeTab(newTab);
-    });
-
-    providersManager.unregisterProvider(provider);
+    }).finally(() => providersManager.unregisterProvider(provider));
   }
 });
 
@@ -167,6 +165,7 @@ add_task(async function learn_more_link() {
           titleL10n: { id: "urlbar-search-tips-confirm" },
           descriptionL10n: {
             id: "firefox-suggest-onboarding-main-accept-option-label",
+            parseMarkup: true,
           },
           descriptionLearnMoreTopic: "learn_more_link",
         },
@@ -179,7 +178,9 @@ add_task(async function learn_more_link() {
 
   await doTest(async () => {
     await openPopup("any");
-    let expectedURL = "http://127.0.0.1:8888/support-dummy/learn_more_link";
+    let expectedURL =
+      Services.urlFormatter.formatURLPref("app.support.baseURL") +
+      "learn_more_link";
     let newTabOpened = BrowserTestUtils.waitForNewTab(gBrowser, expectedURL);
     EventUtils.synthesizeKey("KEY_Tab");
     Assert.equal(
@@ -198,9 +199,7 @@ add_task(async function learn_more_link() {
     ]);
 
     await BrowserTestUtils.removeTab(newTab);
-  });
-
-  providersManager.unregisterProvider(provider);
+  }).finally(() => providersManager.unregisterProvider(provider));
 });
 
 async function doInterventionTest(keyword, type, dialog, expectedTelemetry) {

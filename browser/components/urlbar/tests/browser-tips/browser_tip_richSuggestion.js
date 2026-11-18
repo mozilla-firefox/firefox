@@ -163,7 +163,8 @@ add_task(async function learn_more() {
 
     if (topic) {
       info("Activate learn more link and check");
-      let expectedURL = `http://127.0.0.1:8888/support-dummy/${topic}`;
+      let expectedURL =
+        Services.urlFormatter.formatURLPref("app.support.baseURL") + topic;
       let newTabOpened = BrowserTestUtils.waitForNewTab(gBrowser, expectedURL);
 
       EventUtils.synthesizeKey("KEY_Tab");
