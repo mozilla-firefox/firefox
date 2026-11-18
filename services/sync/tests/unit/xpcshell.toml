@@ -290,6 +290,7 @@ run-sequentially = ["true"] # Frequent timeouts, bug 1395148
 ["test_service_sync_specified.js"]
 
 ["test_service_sync_updateEnabledEngines.js"]
+requesttimeoutfactor = 2  # Many tasks; near the timeout in chaos mode
 run-sequentially = ["true"] # Frequent timeouts, bug 1395148
 
 ["test_service_verifyLogin.js"]

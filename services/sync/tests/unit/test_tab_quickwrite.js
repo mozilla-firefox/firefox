@@ -218,3 +218,67 @@ add_task(async function test_tab_quickWrite_telemetry() {
 
   await promiseStopServer(server);
 });
+
+add_task(async function test_perDevice_disabling_uploads_empty_record() {
+  _("Disabling tabs with per-device choices empties our record.");
+  Services.prefs.setBoolPref("services.sync.perDeviceEngineChoices", true);
+  let { server, engine } = await prepareServer();
+  try {
+    await Service.sync({ engines: ["tabs"] });
+    let collection = server.getCollection("username", "tabs");
+    let id = Service.clientsEngine.localID;
+    Assert.equal(collection.cleartext(id).tabs.length, 1);
+
+    engine.enabled = false;
+    await engine.asyncObserver.promiseObserversComplete();
+    _("A record the server reports as failed is retried on the next sync.");
+    await withPatchedValue(
+      collection,
+      "post",
+      () => ({
+        modified: Date.now() / 1000,
+        success: [],
+        failed: { [id]: "x" },
+      }),
+      () => Service.sync({ engines: ["tabs"] })
+    );
+    Assert.equal(collection.cleartext(id).tabs.length, 1);
+
+    await Service.sync({ engines: ["tabs"] });
+    Assert.deepEqual(collection.cleartext(id).tabs, []);
+
+    _("Re-enabling uploads our tabs again.");
+    engine.enabled = true;
+    await engine.asyncObserver.promiseObserversComplete();
+    await Service.sync({ engines: ["tabs"] });
+    Assert.equal(collection.cleartext(id).tabs.length, 1);
+    Assert.ok(!("tabsDisabled" in collection.cleartext(id)));
+  } finally {
+    engine.enabled = true;
+    Services.prefs.clearUserPref("services.sync.perDeviceEngineChoices");
+    await promiseStopServer(server);
+  }
+});
+
+add_task(async function test_perDevice_empty_record_error_finishes_sync() {
+  _("An error uploading the empty record doesn't stop the sync finishing.");
+  Services.prefs.setBoolPref("services.sync.perDeviceEngineChoices", true);
+  let { server, engine } = await prepareServer();
+  try {
+    await Service.sync({ engines: ["tabs"] });
+    engine.enabled = false;
+    await engine.asyncObserver.promiseObserversComplete();
+    Svc.PrefBranch.clearUserPref("lastSync");
+    await withPatchedValue(
+      engine,
+      "getLastSync",
+      () => Promise.reject(new Error("oops")),
+      () => Service.sync({ engines: ["tabs"] })
+    );
+    Assert.ok(Svc.PrefBranch.prefHasUserValue("lastSync"));
+  } finally {
+    engine.enabled = true;
+    Services.prefs.clearUserPref("services.sync.perDeviceEngineChoices");
+    await promiseStopServer(server);
+  }
+});

@@ -215,6 +215,14 @@ EngineSynchronizer.prototype = {
         return;
       }
 
+      // Disabled engines are skipped above, but tabs still needs to empty its record.
+      await engineManager
+        .get("tabs")
+        ?.maybeUploadEmptyRecord()
+        .catch(ex =>
+          this._log.warn("Failed to upload an empty tabs record", ex)
+        );
+
       // Upload meta/global if any engines changed anything.
       let meta = await this.service.recordManager.get(this.service.metaURL);
       if (meta.isNew || meta.changed) {

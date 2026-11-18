@@ -22,6 +22,7 @@ import {
   SyncTelemetry,
 } from "resource://services-sync/telemetry.sys.mjs";
 import { BridgedEngine } from "resource://services-sync/bridged_engine.sys.mjs";
+import { Weave } from "resource://services-sync/main.sys.mjs";
 
 const lazy = {};
 
@@ -83,7 +84,14 @@ TabEngine.prototype = {
 
     // We shouldn't upload tabs past what the server will accept
     const maxPayloadSize = this.service.getMaxRecordPayloadSize();
-    let tabsInfo = await TabProvider.getLocalTabsInfo(maxPayloadSize);
+    let tabsInfo = this.enabled
+      ? await TabProvider.getLocalTabsInfo(maxPayloadSize)
+      : new lazy.LocalTabsInfo({
+          tabs: [],
+          tabGroups: new Map(),
+          windows: new Map(),
+          tabsDisabled: true,
+        });
 
     await this._rustStore.setLocalTabsInfo(tabsInfo);
 
@@ -182,6 +190,22 @@ TabEngine.prototype = {
   async removeClientData() {
     let url = this.engineURL + "/" + this.service.clientsEngine.localID;
     await this.service.resource(url).delete();
+  },
+
+  // Other clients only fetch changed records, so a delete wouldn't reach them.
+  async maybeUploadEmptyRecord() {
+    if (
+      !Weave.perDeviceEngineChoices ||
+      this.enabled ||
+      this.service.status.enforceBackoff ||
+      !(await this.getLastSync()) ||
+      this.locked
+    ) {
+      return;
+    }
+    if (await this._engineLock("tabs.js: emptyWrite", this._doQuickWrite)()) {
+      await this.resetLastSync();
+    }
   },
 
   async trackRemainingChanges() {
@@ -293,7 +317,7 @@ TabEngine.prototype = {
       );
       let coll = new Collection(this.engineURL, this._recordObj, this.service);
       let resp = await coll.postSingleRawRecord(record);
-      if (!resp.success) {
+      if (!resp.success || Object.keys(resp.obj.failed).length) {
         this._log.warn(`quick-write POST failed: ${resp.status}`);
         throw resp;
       }
