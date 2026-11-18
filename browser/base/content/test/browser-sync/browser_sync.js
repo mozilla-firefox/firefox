@@ -633,6 +633,61 @@ add_task(async function test_app_menu_signed_out_row() {
   await SpecialPowers.popPrefEnv();
 });
 
+// After a restart, UIState isn't ready when the window initializes, and it
+// never notifies for a user who is still signed out. The app menu must show
+// the signed-out row anyway, matching the account menu, unless startup guessed
+// that the user is signed in.
+add_task(async function test_app_menu_signed_out_row_before_ui_state_ready() {
+  await BrowserTestUtils.openNewForegroundTab(gBrowser, "https://example.com/");
+  gSync.updateAllUI({ status: UIState.STATUS_NOT_CONFIGURED });
+  ok(
+    !document.documentElement.hasAttribute("fxasignedout"),
+    "Starts in the never-signed-in state"
+  );
+
+  await SpecialPowers.pushPrefEnv({
+    set: [["services.sync.lastversion", "1.120.0"]],
+  });
+  const sandbox = sinon.createSandbox();
+  sandbox.stub(UIState, "isReady").returns(false);
+  sandbox
+    .stub(UIState, "get")
+    .returns({ status: UIState.STATUS_NOT_CONFIGURED });
+
+  document.documentElement.setAttribute("fxastatus", "signed_in");
+  gSync.maybeUpdateUIState();
+  ok(
+    !document.documentElement.hasAttribute("fxasignedout"),
+    "No signed-out update when startup guessed a signed-in user"
+  );
+
+  document.documentElement.setAttribute("fxastatus", "not_configured");
+  gSync.maybeUpdateUIState();
+  ok(
+    document.documentElement.hasAttribute("fxasignedout"),
+    "The root element reflects that the user signed out"
+  );
+
+  await openMainPanel();
+  ok(
+    BrowserTestUtils.isVisible(
+      PanelMultiView.getViewNode(document, "appMenu-fxa-signed-out-row")
+    ),
+    "The app menu shows the signed-out row"
+  );
+  ok(
+    BrowserTestUtils.isHidden(
+      PanelMultiView.getViewNode(document, "appMenu-fxa-sign-in-promo")
+    ),
+    "The app menu hides the never-signed-in promo"
+  );
+  await closeTabAndMainPanel();
+
+  sandbox.restore();
+  await SpecialPowers.popPrefEnv();
+  gSync.updateAllUI({ status: UIState.STATUS_NOT_CONFIGURED });
+});
+
 // The app menu's promo offers a "Sign in" link, which leads to the same place
 // the account menu's promo button does, and a dismiss button. Dismissing the
 // promo is permanent: the compact sign-in row is shown in its place from then

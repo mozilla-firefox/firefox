@@ -1396,6 +1396,15 @@ var gSync = {
       ) {
         this.updateAllUI(state);
       }
+    } else if (
+      this._hasSignedOutOfSync &&
+      document.documentElement.getAttribute("fxastatus") == "not_configured"
+    ) {
+      // UIState only notifies once ready if the status changed from its
+      // not-configured default, so a signed-out user would never get an
+      // update. Start from that default unless startup guessed a signed-in
+      // user, who will be notified.
+      this.updateAllUI(UIState.get());
     }
   },
 
