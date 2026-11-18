@@ -135,8 +135,8 @@ add_task(async function () {
   await closeTab(dbg, "content_script.js");
 
   await waitFor(
-    () => dbg.selectors.getAllThreads().length == 3,
-    "Ensure that we only get the main thread and the two content scripts thread"
+    () => dbg.selectors.getAllThreads().length == 4,
+    "Ensure that we get the two html documents and the two content scripts threads"
   );
   await waitFor(
     () => dbg.selectors.getSourceCount() == 4,
