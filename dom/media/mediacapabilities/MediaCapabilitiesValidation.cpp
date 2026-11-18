@@ -187,9 +187,18 @@ static ValidationResult CheckMIMETypeValidity(
   // (file, media-source) where such parameters have no defined semantics.
   // See: bug 2024767, https://github.com/w3c/media-capabilities/issues/235, and
   // https://github.com/w3c/media-capabilities/issues/238.
+  //
+  // In MediaSource, audio/mpeg allows a single codec too: its byte stream
+  // format says that the codecs parameter must not be used.
+  // https://w3c.github.io/mse-byte-stream-format-mpeg-audio/#mime-types
+  const bool isMediaSourceMPEGAudio =
+      aMediaType.is<MediaDecodingType>() &&
+      aMediaType.as<MediaDecodingType>() == MediaDecodingType::Media_source &&
+      mimetype == MEDIAMIMETYPE("audio/mpeg");
   const size_t numParams = aMime.GetParameterCount();
-  if (IsSingleCodecType(aMime) && numParams != 0 &&
-      !IsMediaTypeWebRTC(aMediaType)) {
+  if (((IsSingleCodecType(aMime) && !IsMediaTypeWebRTC(aMediaType)) ||
+       isMediaSourceMPEGAudio) &&
+      numParams != 0) {
     ValidationResult err = Err(ValidationError::SingleCodecHasParams);
     LOG(
         ("[Invalid MIME Validity #2, {}] Rejecting '{}' (single codec type "
@@ -200,7 +209,7 @@ static ValidationResult CheckMIMETypeValidity(
 
   // Step 3: If the combined type and subtype members of mimeType allow
   // multiple media codecs, run the following steps:
-  if (IsContainerType(aMime)) {
+  if (IsContainerType(aMime) && !isMediaSourceMPEGAudio) {
     // Step 3.1: If the parameters member of mimeType does not contain a single
     //            key named "codecs", return false.
     if ((numParams != 1) || !aMime.HaveCodecs()) {

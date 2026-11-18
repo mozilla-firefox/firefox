@@ -43,9 +43,33 @@ runWithMSE(async ms => {
   sb.changeType("audio/mpeg");
   is(sb.mode, "sequence", "changeType() to audio/mpeg sets mode to sequence");
 
+  // decodingInfo() agrees, although it requires a codecs parameter for
+  // audio/mpeg files.
+  const decodingInfo = contentType =>
+    navigator.mediaCapabilities.decodingInfo({
+      type: "media-source",
+      audio: { contentType },
+    });
+  ok(
+    (await decodingInfo("audio/mpeg")).supported,
+    "decodingInfo() supports audio/mpeg in MediaSource"
+  );
+  // A type that allows a single codec must have no parameters.
+  for (const type of ['audio/mpeg; codecs="mp3"', "audio/mpeg; foo=bar"]) {
+    await must_reject(
+      () => decodingInfo(type),
+      `decodingInfo() rejects ${type} in MediaSource`,
+      "TypeError"
+    );
+  }
+
   await SpecialPowers.pushPrefEnv({
     set: [["media.mediasource.mp3.enabled", false]],
   });
+  ok(
+    !(await decodingInfo("audio/mpeg")).supported,
+    "decodingInfo() doesn't support audio/mpeg when disabled"
+  );
   ok(
     !MediaSource.isTypeSupported("audio/mpeg"),
     "audio/mpeg is not supported when disabled"
