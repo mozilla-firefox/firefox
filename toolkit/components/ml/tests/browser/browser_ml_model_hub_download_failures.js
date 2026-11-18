@@ -153,9 +153,6 @@ async function withModelHub({
 
 /**
  * Ensure a failed transfer leaves a clean state.
- *
- * TODO: Currently OPFS does not correctly clean up after itself and leaves 0 byte
- * entries behind.
  */
 add_task(async function test_interrupted_transfer_rejects() {
   const { hub, modelHub, args, cleanup } = await withModelHub({
@@ -178,19 +175,10 @@ add_task(async function test_interrupted_transfer_rejects() {
   const entry = await opfsEntry(modelHub, PINNED_FILE);
   info(`OPFS entry after an interrupted transfer: ${JSON.stringify(entry)}`);
 
-  // TODO - Clean up.
   Assert.ok(
-    entry.exists,
-    "The OPFS entry outlives the failed download. OPFS.download creates it " +
-      "with getFileHandle({create: true}) before any bytes are written, and " +
-      "the error path in getModelDataAsFile does not remove it."
-  );
-  Assert.equal(
-    entry.size,
-    0,
-    "The entry is empty rather than holding the bytes that did arrive. Those " +
-      "went to the temporary file behind createWritable, which the OPFS swap " +
-      "discards when the stream aborts."
+    !entry.exists,
+    "The OPFS entry OPFS.download created before writing any bytes is removed " +
+      "again, rather than being left behind at zero length."
   );
   Assert.ok(
     !(await hasHeaders(modelHub, PINNED_FILE)),
@@ -202,9 +190,6 @@ add_task(async function test_interrupted_transfer_rejects() {
 
 /**
  * Test what happens when a download is intentionally cancelled.
- *
- * TODO: Currently OPFS does not correctly clean up after itself and leaves 0 byte
- * entries behind.
  */
 add_task(async function test_aborted_download_rejects() {
   const { hub, modelHub, args, cleanup } = await withModelHub({
@@ -241,12 +226,10 @@ add_task(async function test_aborted_download_rejects() {
     "The body was requested once, and an abort does not retry."
   );
 
-  // TODO - This should not leave an entry behind.
   const entry = await opfsEntry(modelHub, PINNED_FILE);
   info(`OPFS entry after an aborted download: ${JSON.stringify(entry)}`);
 
-  Assert.ok(entry.exists, "An aborted download also leaves an OPFS entry.");
-  Assert.equal(entry.size, 0, "The entry is empty.");
+  Assert.ok(!entry.exists, "An aborted download leaves no OPFS entry either.");
   Assert.ok(
     !(await hasHeaders(modelHub, PINNED_FILE)),
     "No headers row was written."
@@ -270,10 +253,9 @@ add_task(async function test_retry_after_interrupted_download_on_main() {
     /Failed to fetch the model file/,
     "The first attempt is cut off."
   );
-  Assert.equal(
-    (await opfsEntry(modelHub, MAIN_FILE)).size,
-    0,
-    "An empty entry is left behind, the same as for a pinned revision."
+  Assert.ok(
+    !(await opfsEntry(modelHub, MAIN_FILE)).exists,
+    "No entry is left behind, the same as for a pinned revision."
   );
 
   serveInFull();
