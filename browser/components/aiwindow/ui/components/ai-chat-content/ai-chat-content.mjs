@@ -148,6 +148,7 @@ export class AIChatContent extends MozLitElement {
     followUpSuggestions: { type: Array },
     errorObj: { type: Object },
     isSearching: { type: Boolean },
+    isDecidingModel: { type: Boolean },
     tokens: { type: Object },
     seenUrls: { type: Object },
     conversationId: { type: String },
@@ -177,6 +178,7 @@ export class AIChatContent extends MozLitElement {
     this.followUpSuggestions = [];
     this.errorObj = null;
     this.isSearching = false;
+    this.isDecidingModel = false;
 
     // Initialize UI render map
     this.#uiRenderMap = {
@@ -691,6 +693,7 @@ export class AIChatContent extends MozLitElement {
     this.assistantIsLoading = !!event.detail?.isGenerating;
     if (!this.assistantIsLoading) {
       this.isSearching = false;
+      this.isDecidingModel = false;
     }
     this.requestUpdate();
   }
@@ -960,14 +963,19 @@ export class AIChatContent extends MozLitElement {
   }
 
   handleLoadingEvent(event) {
-    const { isSearching } = event.detail;
+    const {
+      isSearching = this.isSearching,
+      isDecidingModel = this.isDecidingModel,
+    } = event.detail;
     this.#clearAssistantResponseAnnouncement();
     this.isSearching = !!isSearching;
+    this.isDecidingModel = !!isDecidingModel;
     this.requestUpdate();
   }
 
   handleErrorEvent(error) {
     this.isSearching = false;
+    this.isDecidingModel = false;
     this.errorObj = error;
     this.requestUpdate();
   }
@@ -1083,6 +1091,7 @@ export class AIChatContent extends MozLitElement {
       isRestored,
       historyResults = [],
       citations = [],
+      modelName,
     } = event.detail;
 
     const hasRenderableResponse = this.#isAIResponseValid(content, toolUIData);
@@ -1131,6 +1140,7 @@ export class AIChatContent extends MozLitElement {
       historyResultsMap,
       citations,
       isRestored,
+      modelName,
     };
 
     if (citations.length) {
@@ -1429,30 +1439,34 @@ export class AIChatContent extends MozLitElement {
   }
 
   /**
-   * Render a turn's tool calls as a single grouped action log container
+   * Render a turn’s steps as a single grouped action log container
    *
-   * @param {Array<object>} toolMsgs - one entry per tool call this turn
-   * @param {boolean} isComplete - whether the turn has finished
-   * @param {number} groupIndex - this group's index in the render items
+   * @param {object} item - An action-log render item
+   * @param {string} item.key
+   * @param {Array<object>} item.msgs - The turn’s tool messages
+   * @param {?string} item.modelName - The model shown as the first step
+   * @param {boolean} item.isComplete
    */
-  #renderActionLogGroup(toolMsgs, isComplete, groupIndex) {
-    const { modelName } = toolMsgs[0];
-    const finalMessage = {
-      l10nId: "action-log-completed-steps",
-      l10nArgs: { count: toolMsgs.length + (modelName ? 1 : 0) },
-    };
-    const summary = isComplete
-      ? finalMessage
-      : toolMsgs[toolMsgs.length - 1]?.pendingLabel;
-    const key = `action-log:${toolMsgs[0]?.id ?? toolMsgs[0]?.messageId ?? groupIndex}`;
+  #renderActionLogGroup({ key, msgs: toolMsgs, modelName, isComplete }) {
+    let summary;
+    if (isComplete) {
+      summary = {
+        l10nId: "action-log-completed-steps",
+        l10nArgs: { count: toolMsgs.length + (modelName ? 1 : 0) },
+      };
+    } else if (toolMsgs.length) {
+      summary = toolMsgs.at(-1).pendingLabel;
+    } else {
+      summary = { l10nId: "action-log-deciding-model" };
+    }
     return html`
       <ai-action-result
-        .conversationId=${toolMsgs[0].convId}
-        .turnIndex=${toolMsgs[0].turnIndex}
+        .conversationId=${toolMsgs[0]?.convId}
+        .turnIndex=${toolMsgs[0]?.turnIndex}
         .labelL10nId=${summary?.l10nId}
         .labelL10nArgs=${summary?.l10nArgs}
         .labelLink=${summary?.link ?? null}
-        .rows=${this.#buildGroupedActionLogRows(toolMsgs)}
+        .rows=${this.#buildGroupedActionLogRows(toolMsgs, modelName)}
         .isLoading=${!isComplete}
         .isExpanded=${this.#actionResultExpandState.get(key) ?? false}
         @action-result-toggle=${e =>
@@ -1945,6 +1959,14 @@ export class AIChatContent extends MozLitElement {
     // Whether an assistant response has streamed since the turn’s last action
     // log. Resets on every action log and turn.
     let replyStarted = false;
+    // Key the action log on the item above it, so it keeps its element from
+    // pending to complete.
+    const pushActionLog = item => {
+      const above = items.length
+        ? this.#renderItemKey(items.at(-1), items.length - 1)
+        : "";
+      items.push({ type: "action-log", key: `action-log:${above}`, ...item });
+    };
 
     // Commit the current turn's buffered action logs and assistant reply into
     // items. Action log render above the assistant message
@@ -1957,12 +1979,18 @@ export class AIChatContent extends MozLitElement {
 
       // Emit one grouped action-log item per turn carrying all the tool
       // messages of that turn. The renderer collapses them into a single
-      // <ai-action-result> with one row per tool.
-      if (pendingActionLogs.length) {
-        items.push({
-          type: "action-log",
+      // <ai-action-result> with one row per tool. Auto model replies get one
+      // without tool calls too, complete since the reply is showing.
+      const modelName =
+        pendingActionLogs[0]?.modelName ??
+        pendingAssistantParts.find(
+          part => !this.#isStandaloneAssistantMessage(part)
+        )?.modelName;
+      if (pendingActionLogs.length || modelName) {
+        pushActionLog({
           msgs: pendingActionLogs,
-          isComplete,
+          modelName,
+          isComplete: isComplete || !pendingActionLogs.length,
         });
       }
 
@@ -2038,6 +2066,14 @@ export class AIChatContent extends MozLitElement {
     // response generation.
     appendPendingAssistantTurn(!this.assistantIsLoading || replyStarted);
 
+    // While the model is picked the action log stands in for the loading indicator.
+    if (
+      this.isDecidingModel &&
+      this.conversationState.findLast(Boolean)?.role === "user"
+    ) {
+      pushActionLog({ msgs: [], isComplete: false });
+    }
+
     return items;
   }
 
@@ -2073,11 +2109,11 @@ export class AIChatContent extends MozLitElement {
    * Collect the per-tool rows for the grouped action log card
    *
    * @param {Array<object>} toolMsgs
+   * @param {?string} modelName
    * @returns {Array<{ labelL10nId?: string, labelL10nArgs?: object, label?: string, items: Array }>}
    */
-  #buildGroupedActionLogRows(toolMsgs) {
+  #buildGroupedActionLogRows(toolMsgs, modelName) {
     const rows = toolMsgs.map(msg => msg.row).filter(Boolean);
-    const { modelName } = toolMsgs[0];
     if (!modelName) {
       return rows;
     }
@@ -2094,10 +2130,10 @@ export class AIChatContent extends MozLitElement {
     return repeat(
       items,
       (item, i) => this.#renderItemKey(item, i),
-      (item, i) => {
-        const { type, msgs, msg, isComplete, contextPageUrl } = item;
+      item => {
+        const { type, msg, contextPageUrl } = item;
         if (type === "action-log") {
-          return this.#renderActionLogGroup(msgs, isComplete, i);
+          return this.#renderActionLogGroup(item);
         }
 
         const chips = this.#getVisibleChips(msg, contextPageUrl);
@@ -2108,8 +2144,7 @@ export class AIChatContent extends MozLitElement {
 
   #renderItemKey(item, i) {
     if (item.type === "action-log") {
-      const first = item.msgs?.[0];
-      return `action-log:${first?.toolCallId ?? first?.messageId ?? i}`;
+      return item.key;
     }
     const { msg } = item;
     // Key on the first part so the bubble survives the rest of its turn.
