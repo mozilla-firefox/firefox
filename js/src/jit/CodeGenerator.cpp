@@ -7632,13 +7632,21 @@ void CodeGenerator::emitAllocateSpaceForApply(T* apply, Register calleeReg,
 
     Label noUnderflow;
     if (apply->hasSingleTarget()) {
-      masm.branch32(Assembler::AboveOrEqual, argcreg,
-                    Imm32(apply->getSingleTarget()->nargs()), &noUnderflow);
+      uint32_t nargs = apply->getSingleTarget()->nargs();
+      MOZ_RELEASE_ASSERT(nargs <= JIT_ARGS_LENGTH_MAX);
+      masm.branch32(Assembler::AboveOrEqual, argcreg, Imm32(nargs),
+                    &noUnderflow);
     } else {
       masm.branchTestObjIsFunction(Assembler::NotEqual, calleeReg, scratch,
                                    calleeReg, &noUnderflow);
       masm.loadFunctionArgCount(calleeReg, scratch);
       masm.branch32(Assembler::AboveOrEqual, argcreg, scratch, &noUnderflow);
+
+      // If a function expects more arguments than the maximum number of
+      // arguments supported in jitcode, we will fall back to the VM, which
+      // can handle argument underflow itself.
+      masm.branch32(Assembler::Above, scratch, Imm32(JIT_ARGS_LENGTH_MAX),
+                    &noUnderflow);
     }
     masm.branchIfFunctionHasJitEntry(calleeReg, ool->entry());
     masm.bind(&noUnderflow);
@@ -7759,13 +7767,21 @@ void CodeGenerator::emitAllocateSpaceForConstructAndPushNewTarget(
 
     Label noUnderflow;
     if (construct->hasSingleTarget()) {
-      masm.branch32(Assembler::AboveOrEqual, argcreg,
-                    Imm32(construct->getSingleTarget()->nargs()), &noUnderflow);
+      uint32_t nargs = construct->getSingleTarget()->nargs();
+      MOZ_RELEASE_ASSERT(nargs <= JIT_ARGS_LENGTH_MAX);
+      masm.branch32(Assembler::AboveOrEqual, argcreg, Imm32(nargs),
+                    &noUnderflow);
     } else {
       masm.branchTestObjIsFunction(Assembler::NotEqual, calleeReg, scratch,
                                    calleeReg, &noUnderflow);
       masm.loadFunctionArgCount(calleeReg, scratch);
       masm.branch32(Assembler::AboveOrEqual, argcreg, scratch, &noUnderflow);
+
+      // If a function expects more arguments than the maximum number of
+      // arguments supported in jitcode, we will fall back to the VM, which
+      // can handle argument underflow itself.
+      masm.branch32(Assembler::Above, scratch, Imm32(JIT_ARGS_LENGTH_MAX),
+                    &noUnderflow);
     }
     masm.branchIfFunctionHasJitEntry(calleeReg, ool->entry());
     masm.bind(&noUnderflow);
@@ -8110,6 +8126,14 @@ void CodeGenerator::emitApplyGeneric(T* apply) {
 
   // Guard that calleereg is an interpreted function with a JSScript.
   masm.branchIfFunctionHasNoJitEntry(calleereg, &invoke);
+
+  // If the target expects more arguments than we support in jitcode,
+  // fall back to the VM.
+  if (!apply->hasSingleTarget()) {
+    masm.loadFunctionArgCount(calleereg, scratch);
+    masm.branch32(Assembler::Above, scratch, Imm32(JIT_ARGS_LENGTH_MAX),
+                  &invoke);
+  }
 
   // Guard that callee allows the [[Call]] or [[Construct]] operation required.
   if (constructing) {
