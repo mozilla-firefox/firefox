@@ -47,7 +47,7 @@ add_task(async function () {
     const scrollingAttributeValue =
       await highlighterTestFront.getEyeDropperElementAttribute(
         "eye-dropper-root",
-        "disabled"
+        "scrolling"
       );
     return scrollingAttributeValue !== null;
   });
@@ -55,10 +55,10 @@ add_task(async function () {
   is(
     await highlighterTestFront.getEyeDropperElementAttribute(
       "eye-dropper-root",
-      "disabled"
+      "scrolling"
     ),
     "",
-    "The eyedropper enters its disabled state"
+    "The eyedropper enters its scrolling state"
   );
 
   const scrollY = async () =>
@@ -79,15 +79,15 @@ add_task(async function () {
     "The page reaches the requested scroll position"
   );
   await TestUtils.waitForCondition(async () => {
-    const disabled = await highlighterTestFront.getEyeDropperElementAttribute(
+    const scrolling = await highlighterTestFront.getEyeDropperElementAttribute(
       "eye-dropper-root",
-      "disabled"
+      "scrolling"
     );
     const drawn = await highlighterTestFront.getEyeDropperElementAttribute(
-      "eye-dropper-container",
+      "eye-dropper-root",
       "drawn"
     );
-    return disabled === null && drawn === "true";
+    return scrolling === null && drawn === "true";
   }, "The screenshot is redrawn after scrolling ends");
 
   is(
@@ -98,10 +98,10 @@ add_task(async function () {
   is(
     await highlighterTestFront.getEyeDropperElementAttribute(
       "eye-dropper-root",
-      "disabled"
+      "scrolling"
     ),
     null,
-    "The eyedropper leaves its disabled state"
+    "The eyedropper leaves its scrolling state"
   );
   is(
     await highlighterTestFront.getEyeDropperColorValue(),

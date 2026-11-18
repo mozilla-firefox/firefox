@@ -7,11 +7,8 @@ import { InputPickerChildCommon } from "./InputPickerChildCommon.sys.mjs";
 export class ColorPickerChild extends InputPickerChildCommon {
   initialValue = null;
 
-  /**
-   * @param {string} aNamespace See InputPickerChildCommon.
-   */
-  constructor(aNamespace = "ColorPicker") {
-    super(aNamespace);
+  constructor() {
+    super("ColorPicker");
   }
 
   /**

@@ -2,16 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/** @import {InputPickerCallbacks} from "moz-src:///toolkit/actors/InputPickerParentCommon.sys.mjs" */
-
 export class InputPickerPanelCommon {
   #element;
   #filename;
   #pickerState;
   #type;
   #detail;
-  /** @type {InputPickerCallbacks} */
-  #callbacks;
   /** @type {AbortController} */
   #abortController;
 
@@ -35,16 +31,8 @@ export class InputPickerPanelCommon {
     return frame;
   }
 
-  /**
-   * @param {string} type The input element type
-   * @param {DOMRect} rect The input element rect, to anchor the panel to
-   * @param {object} detail The argument from the child actor's openPickerImpl
-   * @param {boolean} isDarkBackground
-   * @param {InputPickerCallbacks} callbacks
-   */
-  openPicker(type, rect, detail, isDarkBackground, callbacks) {
+  openPicker(type, rect, detail, isDarkBackground) {
     const impl = this.openPickerImpl(type);
-    this.#callbacks = callbacks;
     this.#pickerState = {};
     // TODO: Resize picker according to content zoom level
     this.#element.style.fontSize = "10px";
@@ -89,7 +77,7 @@ export class InputPickerPanelCommon {
 
   closePicker(clear) {
     if (clear) {
-      this.#callbacks.onValueCleared();
+      this.#element.dispatchEvent(new CustomEvent(`InputPickerValueCleared`));
     }
     this.#pickerState = {};
     this.#type = undefined;
@@ -119,7 +107,11 @@ export class InputPickerPanelCommon {
 
   sendPickerValueChanged() {
     let detail = this.sendPickerValueChangedImpl(this.#type, this.#pickerState);
-    this.#callbacks.onValueChanged(detail);
+    this.#element.dispatchEvent(
+      new CustomEvent(`InputPickerValueChanged`, {
+        detail,
+      })
+    );
   }
 
   /**
