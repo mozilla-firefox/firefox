@@ -47,6 +47,33 @@ load = [
   { type = "file", path = ".claude/skills/recomp-frontend-review/references/runsheet.md" },
 ]
 
+# Desktop theme: theme stylesheets and design-token files, excluding test-only
+# changes. On design-system files it fires alongside the design-system rule.
+[[rules]]
+name = "Desktop theme colors, layout and design tokens"
+description = "Color, high-contrast, dark-mode, layout and design-token checks for theme stylesheets and token files."
+when = { any_file = { include = [
+  "browser/themes/**",
+  "toolkit/themes/**",
+  "**/*.tokens.json",
+  "**/*.tokens.css",
+], exclude = [
+  "**/test/**",
+  "**/tests/**",
+  "toolkit/themes/shared/design-system/package.json",
+  "toolkit/themes/shared/design-system/package-lock.json",
+  "browser/themes/triage.json",
+], ext = [
+  ".css",
+  ".json",
+] } }
+load = [
+  { type = "file", path = ".claude/skills/desktop-theme/SKILL.md" },
+  { type = "file", path = ".claude/skills/desktop-theme-colors/SKILL.md" },
+  { type = "file", path = ".claude/skills/desktop-theme-layout/SKILL.md" },
+  { type = "file", path = ".claude/skills/desktop-theme-tokens/SKILL.md" },
+]
+
 # Web-standard implementation: native code behind WebIDL interfaces. Triggered
 # when a patch touches both a .webidl file and at least one native (.h/.cpp) file.
 [[rules]]
