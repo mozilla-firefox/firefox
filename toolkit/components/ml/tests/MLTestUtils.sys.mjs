@@ -34,6 +34,7 @@ import { createFileUrl } from "chrome://global/content/ml/Utils.sys.mjs";
 import { TextGenerationEngine } from "moz-src:///toolkit/components/ml/textgeneration/TextGenerationEngine.sys.mjs";
 import { BrowserTestUtils } from "resource://testing-common/BrowserTestUtils.sys.mjs";
 import { HttpServer } from "resource://testing-common/httpd.sys.mjs";
+import { setTimeout } from "resource://gre/modules/Timer.sys.mjs";
 
 /**
  * @param {TemplateStringsArray} strings
@@ -316,8 +317,15 @@ function createServer(markup, code) {
  * @property {number} [failTimes] - Serve `failStatus` for this many requests before
  *   serving the body.
  * @property {number} [failStatus] - Status to serve while failing. Default 500.
- * @property {boolean} [truncate] - Advertise the full Content-Length but send only
- *   half the bytes, so the client sees a short read rather than a small file.
+ * @property {number} [failAfterBytes] - Advertise the full Content-Length, then
+ *   stream the body in chunks and drop the connection once this many bytes have
+ *   been sent. Models a transfer that dies partway through: the client sees
+ *   real progress and then a partial-transfer error, rather than a short file.
+ *   Must be a positive multiple of 16384 below the body length; setFile throws
+ *   otherwise rather than rounding to a different interruption point.
+ * @property {number} [pauseAfterBytes] - Send only this many bytes, then hold
+ *   the connection open until resumeAfterPause() is called. Cannot be
+ *   combined with failAfterBytes.
  */
 
 /**
@@ -326,7 +334,9 @@ function createServer(markup, code) {
  * @property {string} etag
  * @property {number} failTimes
  * @property {number} failStatus
- * @property {boolean} truncate
+ * @property {?number} failAfterBytes
+ * @property {?number} pauseAfterBytes
+ * @property {?PromiseWithResolvers<void>} pauseGate
  * @property {number} attempts - Drives `failTimes`. Assertions should use
  *   requestCount() instead, which counts 404s and survives removeFile().
  */
@@ -988,6 +998,10 @@ export const MLTestUtils = {
   createMockModelHub() {
     const urlTemplate = "{model}/resolve/{revision}";
 
+    // The granularity at which an interrupted body is streamed, and therefore
+    // the granularity failAfterBytes is validated against.
+    const interruptChunkSize = 16 * 1024;
+
     const server = new HttpServer();
     server.start(-1);
     const { primaryHost, primaryPort } = server.identity;
@@ -1038,42 +1052,80 @@ export const MLTestUtils = {
         return;
       }
 
+      const isHead = request.method === "HEAD";
+      const failAfterBytes = isHead ? null : entry.failAfterBytes;
+      const pauseAfterBytes = isHead ? null : entry.pauseAfterBytes;
+      const interrupted = failAfterBytes !== null;
+      const paused = pauseAfterBytes !== null;
+
       // httpd.js overwrites Content-Length with the real body length on any
       // non-async response, so the cases that need a Content-Length which
       // disagrees with the body have to go through processAsync.
-      const needsAsync = entry.truncate || request.method === "HEAD";
-      if (needsAsync) {
+      if (isHead || interrupted || paused) {
         response.processAsync();
       }
 
       response.setStatusLine(request.httpVersion, 200, "");
       response.setHeader("ETag", entry.etag);
 
-      if (needsAsync) {
+      if (isHead || interrupted || paused) {
         response.setHeader("Content-Length", String(entry.bytes.length));
       }
 
-      if (request.method !== "HEAD") {
-        const body = entry.truncate
-          ? entry.bytes.slice(0, Math.floor(entry.bytes.length / 2))
-          : entry.bytes;
-
-        if (body.length) {
-          const binaryOutputStream = Cc[
-            "@mozilla.org/binaryoutputstream;1"
-          ].createInstance(Ci.nsIBinaryOutputStream);
-          binaryOutputStream.setOutputStream(response.bodyOutputStream);
-          binaryOutputStream.writeByteArray(
-            /**
-             * @type {any} - The type expects a number[], while we are passing a Uint8Array.
-             */ (body)
-          );
+      /** @param {Uint8Array} chunk */
+      const write = chunk => {
+        if (!chunk.length) {
+          return;
         }
+        const binaryOutputStream = Cc[
+          "@mozilla.org/binaryoutputstream;1"
+        ].createInstance(Ci.nsIBinaryOutputStream);
+        binaryOutputStream.setOutputStream(response.bodyOutputStream);
+        binaryOutputStream.writeByteArray(
+          /**
+           * @type {any} - The type expects a number[], while we are passing a Uint8Array.
+           */ (chunk)
+        );
+      };
+
+      if (isHead) {
+        response.finish();
+        return;
       }
 
-      if (needsAsync) {
-        response.finish();
+      if (interrupted) {
+        let offset = 0;
+        const pump = () => {
+          if (offset === failAfterBytes) {
+            response.finish();
+            return;
+          }
+          const end = offset + interruptChunkSize;
+          write(entry.bytes.subarray(offset, end));
+          offset = end;
+          setTimeout(pump, 0);
+        };
+        pump();
+        return;
       }
+
+      if (paused) {
+        write(entry.bytes.subarray(0, pauseAfterBytes));
+        entry.pauseGate ??= Promise.withResolvers();
+        entry.pauseGate.promise.then(() => {
+          // An aborted client may already be gone by the time this resumes, so wrap
+          // everything in try/catch blocks.
+          try {
+            write(entry.bytes.subarray(pauseAfterBytes));
+          } catch {}
+          try {
+            response.finish();
+          } catch {}
+        });
+        return;
+      }
+
+      write(entry.bytes);
     };
 
     server.registerPrefixHandler("/", handler);
@@ -1101,7 +1153,8 @@ export const MLTestUtils = {
           content = "",
           failTimes = 0,
           failStatus = 500,
-          truncate = false,
+          failAfterBytes = null,
+          pauseAfterBytes = null,
         } = spec;
 
         // Checked by typeof rather than `instanceof Uint8Array`, which is false
@@ -1110,6 +1163,33 @@ export const MLTestUtils = {
           typeof content === "string"
             ? new TextEncoder().encode(content)
             : content;
+
+        if (
+          failAfterBytes !== null &&
+          (failAfterBytes <= 0 ||
+            failAfterBytes >= bytes.length ||
+            failAfterBytes % interruptChunkSize !== 0)
+        ) {
+          throw new Error(
+            `failAfterBytes must be a positive multiple of ${interruptChunkSize} ` +
+              `below the ${bytes.length}-byte body, so the interruption point is ` +
+              `exact. Got ${failAfterBytes}.`
+          );
+        }
+        if (
+          pauseAfterBytes !== null &&
+          (pauseAfterBytes <= 0 || pauseAfterBytes >= bytes.length)
+        ) {
+          throw new Error(
+            `pauseAfterBytes must be a positive number below the ${bytes.length}-byte ` +
+              `body, so there is a remainder to resume. Got ${pauseAfterBytes}.`
+          );
+        }
+        if (failAfterBytes !== null && pauseAfterBytes !== null) {
+          throw new Error(
+            "failAfterBytes and pauseAfterBytes cannot be combined."
+          );
+        }
         const etag = spec.etag ?? `"mock-etag-${++etagCounter}"`;
 
         const hasher = Cc["@mozilla.org/security/hash;1"].createInstance(
@@ -1130,7 +1210,9 @@ export const MLTestUtils = {
           etag,
           failTimes,
           failStatus,
-          truncate,
+          failAfterBytes,
+          pauseAfterBytes,
+          pauseGate: null,
           attempts: 0,
         });
 
@@ -1153,6 +1235,23 @@ export const MLTestUtils = {
        */
       removeFile({ model, revision, file }) {
         return entries.delete(pathFor({ model, revision, file }));
+      },
+
+      /**
+       * Send the rest of a body paused by `pauseAfterBytes`.
+       *
+       * @param {object} triple
+       * @param {string} triple.model
+       * @param {string} triple.revision
+       * @param {string} triple.file
+       */
+      resumeAfterPause({ model, revision, file }) {
+        const entry = entries.get(pathFor({ model, revision, file }));
+        if (!entry || entry.pauseAfterBytes === null) {
+          throw new Error("That file has no pauseAfterBytes to resume.");
+        }
+        entry.pauseGate ??= Promise.withResolvers();
+        entry.pauseGate.resolve();
       },
 
       /**
