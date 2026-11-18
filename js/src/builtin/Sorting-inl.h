@@ -8,6 +8,7 @@
 #include "builtin/Sorting.h"
 
 #include "js/Conversions.h"
+#include "vm/ArgumentsObject.h"
 #include "vm/JSContext.h"
 #include "vm/JSFunction.h"
 #include "vm/JSObject.h"
@@ -33,6 +34,11 @@ void ArraySortData::init(JSObject* obj, JSObject* comparator, ValueVector&& vec,
     JSFunction* fun = &comparator->as<JSFunction>();
     if (!fun->hasJitEntry() || fun->isClassConstructor() ||
         fun->isTrampolineNative()) {
+      return ComparatorKind::Unoptimized;
+    }
+    // The trampoline pushes |undefined| for missing arguments, so don't call
+    // comparators with too many formals from JIT code.
+    if (fun->nargs() > JIT_ARGS_LENGTH_MAX) {
       return ComparatorKind::Unoptimized;
     }
     if (fun->realm() == cx->realm() && fun->nargs() <= ComparatorActualArgs) {
