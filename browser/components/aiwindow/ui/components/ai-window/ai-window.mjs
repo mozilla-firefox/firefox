@@ -76,10 +76,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   getCurrentModelName:
     "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
-  isAutoModelEnabled:
-    "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
-  MODELS_DATA_CHANGED_TOPIC:
-    "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   ToolUI: "moz-src:///browser/components/aiwindow/ui/modules/ToolUI.sys.mjs",
   AgentUI: "moz-src:///browser/components/aiwindow/ui/modules/AgentUI.sys.mjs",
   ACTION_LOG_UI_TYPE:
@@ -717,11 +713,7 @@ export class AIWindow extends MozLitElement {
     );
     Services.prefs.addObserver(
       PREF_CUSTOM_ENDPOINT,
-      this.#onAvailableModelsChanged
-    );
-    Services.obs.addObserver(
-      this.#onAvailableModelsChanged,
-      lazy.MODELS_DATA_CHANGED_TOPIC
+      this.#onCustomEndpointPrefChanged
     );
 
     // AboutNewTab populates its Top Sites store asynchronously, so on a fresh
@@ -979,11 +971,7 @@ export class AIWindow extends MozLitElement {
     );
     Services.prefs.removeObserver(
       PREF_CUSTOM_ENDPOINT,
-      this.#onAvailableModelsChanged
-    );
-    Services.obs.removeObserver(
-      this.#onAvailableModelsChanged,
-      lazy.MODELS_DATA_CHANGED_TOPIC
+      this.#onCustomEndpointPrefChanged
     );
 
     // Clean up Top Sites store observer
@@ -1070,23 +1058,19 @@ export class AIWindow extends MozLitElement {
    * Loads all available models.
    */
   async #loadAvailableModels() {
-    const {
-      0: customModel,
-      [lazy.AUTO_MODEL_CHOICE_ID]: autoModel,
-      ...presetModels
-    } = await lazy.getAllModelsData();
+    // TODO Bug 2083836: show the Auto model in the smartbar model picker.
+    const { [lazy.AUTO_MODEL_CHOICE_ID]: _unusedAuto, ...allModels } =
+      await lazy.getAllModelsData();
+    void _unusedAuto;
 
-    this.availableModels = {
-      // Only show custom model option if a custom endpoint has been configured
-      ...(lazy.openAIEngine.hasCustomEndpoint() && { 0: customModel }),
-      // Without its Remote Settings routing record, Auto would send requests
-      // with the generic model.
-      ...(((lazy.isAutoModelEnabled() && autoModel.inferenceModel) ||
-        lazy.getCurrentModelChoiceId() === lazy.AUTO_MODEL_CHOICE_ID) && {
-        [lazy.AUTO_MODEL_CHOICE_ID]: autoModel,
-      }),
-      ...presetModels,
-    };
+    // Only show custom model option if a custom endpoint has been configured
+    if (lazy.openAIEngine.hasCustomEndpoint()) {
+      this.availableModels = allModels;
+      return;
+    }
+    const { 0: _unusedCustom, ...presetModels } = allModels;
+    void _unusedCustom;
+    this.availableModels = presetModels;
   }
 
   /**
@@ -1122,9 +1106,8 @@ export class AIWindow extends MozLitElement {
     });
   };
 
-  #onAvailableModelsChanged = async () => {
+  #onCustomEndpointPrefChanged = async () => {
     await this.#loadAvailableModels();
-    this.#dropUnavailableAutoOverride();
     const defaultModelChoiceId = lazy.getCurrentModelChoiceId();
     if (
       !this.#hasModelChoiceOverride &&
@@ -1135,23 +1118,6 @@ export class AIWindow extends MozLitElement {
 
     this.#updateSmartbarModels(this.#smartbar);
   };
-
-  /**
-   * Ignores a tab's Auto override while Auto isn't offered, so the tab uses
-   * the default model.
-   */
-  #dropUnavailableAutoOverride() {
-    if (
-      !this.#hasModelChoiceOverride ||
-      this.#selectedModelChoiceId !== lazy.AUTO_MODEL_CHOICE_ID ||
-      !this.availableModels ||
-      lazy.AUTO_MODEL_CHOICE_ID in this.availableModels
-    ) {
-      return;
-    }
-    this.#hasModelChoiceOverride = false;
-    this.#setModelChoice(lazy.getCurrentModelChoiceId());
-  }
 
   /**
    * Sets the selected model choice.
@@ -1176,9 +1142,7 @@ export class AIWindow extends MozLitElement {
     // next send, so pass the freshly-selected model explicitly here.
     if (this.#conversation?.messages.length) {
       await this.#conversation.loadSystemPrompt({
-        model:
-          this.availableModels?.[modelChoiceId]?.inferenceModel ??
-          this.selectedModelId,
+        model: this.selectedModelId,
       });
     }
 
@@ -1198,7 +1162,6 @@ export class AIWindow extends MozLitElement {
   restoreModelChoiceOverride(modelChoiceId) {
     this.#hasModelChoiceOverride = modelChoiceId !== null;
     this.#setModelChoice(modelChoiceId ?? lazy.getCurrentModelChoiceId());
-    this.#dropUnavailableAutoOverride();
     this.#updateSmartbarModels(this.#smartbar);
   }
 
@@ -2930,13 +2893,6 @@ export class AIWindow extends MozLitElement {
       this.#watchTabCloseForAbort(browsingContext, this.#abortController) ??
       (() => {});
     this.isGenerating = true;
-    const isAutoModel =
-      this.#selectedModelChoiceId === lazy.AUTO_MODEL_CHOICE_ID;
-    this.#showLoadingIndicator({ isDecidingModel: isAutoModel });
-    const onModelAnswer = () => {
-      conversation.off("chat-conversation:message-update", onModelAnswer);
-      this.#showLoadingIndicator({ isDecidingModel: false });
-    };
 
     const requestStart = ChromeUtils.now();
     let assistantMessage;
@@ -3024,11 +2980,6 @@ export class AIWindow extends MozLitElement {
         turnContext = this.#pendingFirstCharacterContext;
       }
 
-      // The model is picked once it answers, also with a tool call the action
-      // log doesn’t show.
-      if (isAutoModel) {
-        conversation.on("chat-conversation:message-update", onModelAnswer);
-      }
       const turnResult = await lazy.Chat.fetchWithHistory({
         conversation,
         browsingContext,
@@ -3078,7 +3029,6 @@ export class AIWindow extends MozLitElement {
       this.requestUpdate?.();
     } finally {
       stopWatchingTabClose();
-      conversation.off("chat-conversation:message-update", onModelAnswer);
       if (this.#abortController?.signal === signal) {
         this.isGenerating = false;
         this.#abortController = null;
@@ -3123,7 +3073,6 @@ export class AIWindow extends MozLitElement {
       );
     }
     if (changedProps.has("availableModels")) {
-      this.#dropUnavailableAutoOverride();
       this.#setModelChoice(this.#selectedModelChoiceId);
       if (this.#smartbar) {
         this.#updateSmartbarModels(this.#smartbar);
@@ -3250,7 +3199,7 @@ export class AIWindow extends MozLitElement {
   }
 
   get modelName() {
-    return this.selectedModelId;
+    return lazy.getCurrentModelName();
   }
 
   #getConversationLastMessageAndCount(role, conversation = this.#conversation) {
@@ -3445,21 +3394,10 @@ export class AIWindow extends MozLitElement {
           newMessage.content?.args,
           cfg.link
         ),
-        modelName: this.#getAutoModelName(newMessage),
       };
-    } else if (newMessage.role === "assistant") {
-      // Auto model replies show the picked model even without tool calls.
-      newMessage.modelName = this.#getAutoModelName(newMessage);
     }
 
     return actor.dispatchMessageToChatContent(newMessage);
-  }
-
-  // Only the auto model shows the model it picked.
-  #getAutoModelName(message) {
-    return message.params?.modelChoiceId === lazy.AUTO_MODEL_CHOICE_ID
-      ? message.params.modelDisplayName
-      : null;
   }
 
   #maybeSetMemoriesCalloutData(newMessage) {
@@ -3830,13 +3768,10 @@ export class AIWindow extends MozLitElement {
   }
 
   showSearchingIndicator(isSearching, searchQuery) {
-    this.#showLoadingIndicator({ isSearching, searchQuery });
-  }
-
-  #showLoadingIndicator(state) {
     this.#dispatchMessageToChatContent({
       role: "loading",
-      ...state,
+      isSearching,
+      searchQuery,
       convId: this.conversationId,
       content: { body: "" },
     });
