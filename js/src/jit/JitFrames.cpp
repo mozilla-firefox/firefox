@@ -832,8 +832,9 @@ void HandleException(ResumeFromException* rfe) {
 
       // Invalidation state will be the same for all inlined scripts in the
       // frame.
-      IonScript* ionScript = nullptr;
-      bool invalidated = frame.checkInvalidation(&ionScript);
+      IonScript* rawIonScript = nullptr;
+      bool invalidated = frame.checkInvalidation(&rawIonScript);
+      RootedBuffer<IonScript> ionScript(cx, rawIonScript);
 
       // If we hit OOM or overrecursion while bailing out, we don't
       // attempt to bail out a second time for this Ion frame. Just unwind
