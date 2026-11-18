@@ -8,6 +8,8 @@ Driven by `mach android nimbus-cli`; see https://experimenter.info/nimbus-cli
 for what `nimbus-cli` itself does.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import os
@@ -18,8 +20,17 @@ import subprocess
 import tempfile
 import time
 import zipfile
+from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
+from typing import Literal
 from urllib.request import urlopen, urlretrieve
+
+
+class UpdateMode(Enum):
+    CHECK = "check"
+    FORCE = "force"
+
 
 INDEX = (
     "https://firefox-ci-tc.services.mozilla.com/api/index/v1/task/"
@@ -40,7 +51,8 @@ TARGETS = {
 UPDATE_INTERVAL = 24 * 60 * 60
 
 
-def _target():
+def _target_triple() -> str:
+    """Return the target triple (arch-venor-os) for the current machine."""
     system = platform.system()
     machine = platform.machine()
 
@@ -61,20 +73,23 @@ def _target():
     return target
 
 
-def _fetch_latest_version():
+def _fetch_latest_version() -> str:
+    """Fetch the latest published version of nimbus-cli."""
     with urlopen(f"{INDEX}/nimbus-cli.json") as response:
         return json.load(response)["version"]
 
 
-def _latest_version(command_context, install_root, exe, force_update):
+def _latest_version(command_context, install_root, exe, check_for_update) -> str:
     """Return the latest published nimbus-cli version.
 
-    The answer is recorded so that routine invocations don't pay for a network
-    round trip. Falls back to whatever is already installed when the lookup
-    fails, so a flaky network doesn't block a developer who is already set up.
+    The answer is recorded so that repeat invocations don't trigger network
+    requests.
+
+    If the lookup fails, this will fall back to the latest locally installed
+    version.
     """
     record = install_root / "latest.json"
-    if not force_update and record.exists():
+    if not check_for_update and record.exists():
         try:
             recorded = json.loads(record.read_text())
             if time.time() - recorded["checked"] < UPDATE_INTERVAL:
@@ -101,7 +116,7 @@ def _latest_version(command_context, install_root, exe, force_update):
     return version
 
 
-def _installed_versions(install_root, exe):
+def _installed_versions(install_root, exe) -> list[str]:
     if not install_root.is_dir():
         return []
 
@@ -164,23 +179,50 @@ def _install(command_context, version, target, binary):
     )
 
 
-def _binary(command_context, force_update=False):
-    target = _target()
+@dataclass
+class Binary:
+    """Information about a nimbus-cli binary."""
+
+    #: The path on disk to the binary.
+    path: Path
+
+    #: The version of the binary.
+    version: str
+
+    #: Whether or not the binary was updated.
+    updated: bool
+
+
+def _binary(command_context, update_mode: UpdateMode | None = None) -> Binary:
+    """Ensure the nimbus-cli binary exists and return it.
+
+    The binary will be downloaded if it does not already exist on-disk.
+    """
+    target = _target_triple()
     install_root = Path(command_context._mach_context.state_dir) / "nimbus-cli"
     exe = "nimbus-cli.exe" if platform.system() == "Windows" else "nimbus-cli"
 
-    version = _latest_version(command_context, install_root, exe, force_update)
-    binary = install_root / version / exe
-    if not binary.exists():
-        _install(command_context, version, target, binary)
+    updated = False
+    version = _latest_version(
+        command_context, install_root, exe, update_mode is not None
+    )
+    binary_path = install_root / version / exe
 
-    return binary
+    if not binary_path.exists() or update_mode == UpdateMode.FORCE:
+        _install(command_context, version, target, binary_path)
+        updated = True
+
+    return Binary(
+        path=binary_path,
+        version=version,
+        updated=updated,
+    )
 
 
-def run(command_context, args, force_update=False):
-    """Install nimbus-cli if needed, then run it with `args`."""
+def run(command_context, args) -> int:
+    """Install nimbus-cli if needed and then run it with `args`."""
     try:
-        binary = _binary(command_context, force_update=force_update)
+        binary = _binary(command_context).path
     except Exception as e:
         command_context.log(logging.ERROR, "nimbus-cli", {"error": str(e)}, "{error}")
         return 1
@@ -193,3 +235,30 @@ def run(command_context, args, force_update=False):
         pass_thru=True,
         ensure_exit_code=False,
     )
+
+
+def update(command_context, update_mode: Literal["check"] | Literal["force"]) -> int:
+    """Update nimbus-cli."""
+    try:
+        binary = _binary(command_context, update_mode=UpdateMode(update_mode))
+    except Exception as e:
+        command_context.log(logging.ERROR, "nimbus-cli", {"error": str(e)}, "{error}")
+        return 1
+
+    if not binary.updated:
+        command_context.log(
+            logging.INFO,
+            "nimbus-cli",
+            {"version": binary.version},
+            "Already up to date (version {version})",
+        )
+        command_context.log(
+            logging.INFO,
+            "nimbus-cli",
+            {
+                "path": str(binary.path),
+            },
+            "nimbus-cli is installed at {path}",
+        )
+
+    return 0
