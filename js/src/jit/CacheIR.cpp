@@ -565,6 +565,10 @@ static bool IsCacheableGetPropSlot(NativeObject* obj, NativeObject* holder,
   return prop.isDataProperty();
 }
 
+static bool TooManyFormalsForJitCall(const JSFunction* fun) {
+  return fun->nargs() > JIT_ARGS_LENGTH_MAX;
+}
+
 static NativeGetPropKind IsCacheableGetPropCall(NativeObject* obj,
                                                 NativeObject* holder,
                                                 PropertyInfo prop,
@@ -592,6 +596,9 @@ static NativeGetPropKind IsCacheableGetPropCall(NativeObject* obj,
 
   // Scripted functions and natives with JIT entry can use the scripted path.
   if (getter.hasJitEntry()) {
+    if (TooManyFormalsForJitCall(&getter)) {
+      return NativeGetPropKind::None;
+    }
     return NativeGetPropKind::ScriptedGetter;
   }
 
@@ -1733,7 +1740,7 @@ AttachDecision GetPropIRGenerator::tryAttachScriptedProxy(
       return AttachDecision::NoAction;
     }
 
-    if (!trapFn->hasJitEntry()) {
+    if (!trapFn->hasJitEntry() || TooManyFormalsForJitCall(trapFn)) {
       return AttachDecision::NoAction;
     }
 
@@ -4717,7 +4724,7 @@ static bool IsCacheableSetPropCallScripted(NativeObject* obj,
   }
 
   // Scripted functions and natives with JIT entry can use the scripted path.
-  return setter.hasJitEntry();
+  return setter.hasJitEntry() && !TooManyFormalsForJitCall(&setter);
 }
 
 static bool CanAttachSetter(JSContext* cx, jsbytecode* pc, JSObject* obj,
@@ -11528,6 +11535,9 @@ AttachDecision CallIRGenerator::tryAttachFunCall(HandleFunction callee) {
   if (target->isClassConstructor()) {
     return AttachDecision::NoAction;
   }
+  if (isScripted && TooManyFormalsForJitCall(target)) {
+    return AttachDecision::NoAction;
+  }
 
   CallFlags targetFlags(CallFlags::FunCall);
   if (mode_ == ICState::Mode::Specialized) {
@@ -11572,7 +11582,7 @@ AttachDecision CallIRGenerator::tryAttachFunCall(HandleFunction callee) {
     writer.guardNotClassConstructor(thisObjId);
 
     if (isScripted) {
-      writer.guardFunctionHasJitEntry(thisObjId);
+      writer.guardFunctionHasValidJitEntry(thisObjId);
       writer.callScriptedFunction(thisObjId, argcId, targetFlags,
                                   ClampFixedArgc(argc_));
     } else {
@@ -12995,6 +13005,9 @@ AttachDecision CallIRGenerator::tryAttachFunApply(HandleFunction calleeFunc) {
   if (target->isClassConstructor()) {
     return AttachDecision::NoAction;
   }
+  if (isScripted && TooManyFormalsForJitCall(target)) {
+    return AttachDecision::NoAction;
+  }
 
   CallFlags::ArgFormat format = CallFlags::Standard;
   if (argc_ < 2) {
@@ -13095,8 +13108,8 @@ AttachDecision CallIRGenerator::tryAttachFunApply(HandleFunction calleeFunc) {
     writer.guardNotClassConstructor(thisObjId);
 
     if (isScripted) {
-      // Guard that function is scripted.
-      writer.guardFunctionHasJitEntry(thisObjId);
+      // Guard that function is scripted and doesn't have too many formals.
+      writer.guardFunctionHasValidJitEntry(thisObjId);
       writer.callScriptedFunction(thisObjId, argcId, targetFlags, fixedArgc);
     } else {
       // Guard that function is native.
@@ -13953,7 +13966,7 @@ ScriptedThisResult CallIRGenerator::getThisShapeForScripted(
 }
 
 static bool CanOptimizeScriptedCall(JSFunction* callee, bool isConstructing) {
-  if (!callee->hasJitEntry()) {
+  if (!callee->hasJitEntry() || TooManyFormalsForJitCall(callee)) {
     return false;
   }
 
@@ -14057,9 +14070,9 @@ void CallIRGenerator::emitCallScriptedGuards(
                             thisShape, maybeAllocSite);
     }
   } else {
-    // Guard that object is a scripted function
+    // Guard that object is a scripted function without too many formals
     writer.guardClass(calleeObjId, GuardClassKind::JSFunction);
-    writer.guardFunctionHasJitEntry(calleeObjId);
+    writer.guardFunctionHasValidJitEntry(calleeObjId);
 
     if (isConstructing) {
       // If callee is not a constructor, we have to throw.
@@ -17205,7 +17218,7 @@ AttachDecision CloseIterIRGenerator::tryAttachScriptedReturn() {
   }
 
   JSFunction* callee = &calleeVal.toObject().as<JSFunction>();
-  if (!callee->hasJitEntry()) {
+  if (!callee->hasJitEntry() || TooManyFormalsForJitCall(callee)) {
     return AttachDecision::NoAction;
   }
   if (callee->isClassConstructor()) {

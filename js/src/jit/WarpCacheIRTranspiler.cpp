@@ -1269,11 +1269,17 @@ bool WarpCacheIRTranspiler::emitGuardNoDenseElements(ObjOperandId objId) {
   return true;
 }
 
-bool WarpCacheIRTranspiler::emitGuardFunctionHasJitEntry(ObjOperandId funId) {
+bool WarpCacheIRTranspiler::emitGuardFunctionHasValidJitEntry(
+    ObjOperandId funId) {
   MDefinition* fun = getOperand(funId);
   uint16_t expectedFlags = FunctionFlags::HasJitEntryFlags();
   uint16_t unexpectedFlags = 0;
 
+  // Note: the CacheIRCompiler checks if fun->nargs() > JIT_ARGS_LENGTH_MAX. In
+  // Ion, our generic call code is reachable via non-CacheIR paths that don't
+  // transpile this guard; for example, WarpBuilder::build_Call without a
+  // transpilable stub. It's therefore simpler to require that code to handle
+  // the args length check in all cases.
   auto* ins =
       MGuardFunctionFlags::New(alloc(), fun, expectedFlags, unexpectedFlags);
   add(ins);

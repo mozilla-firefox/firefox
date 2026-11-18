@@ -5505,16 +5505,24 @@ bool CacheIRCompiler::emitAssertNoAllocationMetadataBuilder(
   return true;
 }
 
-bool CacheIRCompiler::emitGuardFunctionHasJitEntry(ObjOperandId funId) {
+bool CacheIRCompiler::emitGuardFunctionHasValidJitEntry(ObjOperandId funId) {
   JitSpew(JitSpew_Codegen, "%s", __FUNCTION__);
   Register fun = allocator.useRegister(masm, funId);
+  AutoScratchRegister scratch(allocator, masm);
 
   FailurePath* failure;
   if (!addFailurePath(&failure)) {
     return false;
   }
 
-  masm.branchIfFunctionHasNoJitEntry(fun, failure->label());
+  masm.load32(Address(fun, JSFunction::offsetOfFlagsAndArgCount()), scratch);
+  masm.branchTest32(Assembler::Zero, scratch,
+                    Imm32(FunctionFlags::HasJitEntryFlags()), failure->label());
+
+  const uint32_t ShiftedJitArgsLengthMax = (JIT_ARGS_LENGTH_MAX + 1)
+                                           << JSFunction::ArgCountShift;
+  masm.branch32(Assembler::AboveOrEqual, scratch,
+                Imm32(ShiftedJitArgsLengthMax), failure->label());
   return true;
 }
 

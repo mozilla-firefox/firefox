@@ -851,7 +851,10 @@
     obj: ObjId
     offset: Int32Id
 
-- name: GuardFunctionHasJitEntry
+# Guards HasJitEntryFlags().
+# In ICs, also guards that nargs <= JIT_ARGS_LENGTH_MAX.
+# When transpiled to MIR, we enforce that elsewhere.
+- name: GuardFunctionHasValidJitEntry
   shared: true
   transpile: true
   cost_estimate: 1

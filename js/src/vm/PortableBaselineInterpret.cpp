@@ -41,6 +41,7 @@
 #include "proxy/DeadObjectProxy.h"
 #include "proxy/DOMProxy.h"
 #include "util/Unicode.h"
+#include "vm/ArgumentsObject.h"
 #include "vm/AsyncFunction.h"
 #include "vm/AsyncIteration.h"
 #include "vm/DateObject.h"
@@ -635,7 +636,7 @@ uint64_t ICInterpretOps(uint64_t arg0, uint64_t arg1, ICStub* stub,
     DECLARE_CACHEOP_CASE(LoadFixedSlot);
     DECLARE_CACHEOP_CASE(LoadDynamicSlot);
     DECLARE_CACHEOP_CASE(AssertNoAllocationMetadataBuilder);
-    DECLARE_CACHEOP_CASE(GuardFunctionHasJitEntry);
+    DECLARE_CACHEOP_CASE(GuardFunctionHasValidJitEntry);
     DECLARE_CACHEOP_CASE(GuardFunctionHasNoJitEntry);
     DECLARE_CACHEOP_CASE(GuardFunctionIsNonBuiltinCtor);
     DECLARE_CACHEOP_CASE(GuardFunctionIsConstructor);
@@ -1692,11 +1693,14 @@ uint64_t ICInterpretOps(uint64_t arg0, uint64_t arg1, ICStub* stub,
         DISPATCH_CACHEOP();
       }
 
-      CACHEOP_CASE(GuardFunctionHasJitEntry) {
+      CACHEOP_CASE(GuardFunctionHasValidJitEntry) {
         ObjOperandId funId = cacheIRReader.objOperandId();
         JSObject* fun = reinterpret_cast<JSObject*>(READ_REG(funId.id()));
         uint16_t flags = FunctionFlags::HasJitEntryFlags();
         if (!fun->as<JSFunction>().flags().hasFlags(flags)) {
+          FAIL_IC();
+        }
+        if (fun->as<JSFunction>().nargs() > JIT_ARGS_LENGTH_MAX) {
           FAIL_IC();
         }
         DISPATCH_CACHEOP();
