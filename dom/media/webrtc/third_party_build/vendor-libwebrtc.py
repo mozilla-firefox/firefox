@@ -103,6 +103,7 @@ def get_included_path_overrides():
         "sdk/android/src/java/org/webrtc/VideoEncoderWrapper.java",
         "sdk/android/src/java/org/webrtc/NV21Buffer.java",
         "sdk/android/src/java/org/webrtc/NativeLifecycleLock.java",
+        "sdk/android/src/java/org/webrtc/UsedReflectively.java",
         "sdk/android/api/org/webrtc/Environment.java",
         "sdk/android/api/org/webrtc/RendererCommon.java",
         "sdk/android/api/org/webrtc/RenderSynchronizer.java",
