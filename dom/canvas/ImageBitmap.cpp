@@ -229,13 +229,26 @@ static already_AddRefed<DataSourceSurface> CropAndCopyDataSourceSurface(
   }
 
   // Calculate the size of the new SourceSurface.
-  // We cannot keep using aSurface->GetFormat() to create new DataSourceSurface,
-  // since it might be SurfaceFormat::B8G8R8X8 which does not handle opacity,
-  // however the specification explicitly define that "If any of the pixels on
-  // this rectangle are outside the area where the input bitmap was placed, then
-  // they will be transparent black in output."
-  // So, instead, we force the output format to be SurfaceFormat::B8G8R8A8.
-  const SurfaceFormat format = SurfaceFormat::B8G8R8A8;
+  // We cannot keep using an opaque format like SurfaceFormat::B8G8R8X8 to
+  // create new DataSourceSurface, since it does not handle opacity, however the
+  // specification explicitly define that "If any of the pixels on this
+  // rectangle are outside the area where the input bitmap was placed, then they
+  // will be transparent black in output."
+  // So, instead, we use the format with alpha in the same channel order.
+  SurfaceFormat format = aSurface->GetFormat();
+  switch (format) {
+    case SurfaceFormat::B8G8R8X8:
+      format = SurfaceFormat::B8G8R8A8;
+      break;
+    case SurfaceFormat::R8G8B8X8:
+      format = SurfaceFormat::R8G8B8A8;
+      break;
+    case SurfaceFormat::X8R8G8B8:
+      format = SurfaceFormat::A8R8G8B8;
+      break;
+    default:
+      break;
+  }
   const int bytesPerPixel = BytesPerPixel(format);
   const IntSize dstSize =
       IntSize(positiveCropRect.width, positiveCropRect.height);
@@ -735,25 +748,45 @@ SurfaceFromElementResult ImageBitmap::SurfaceFrom(uint32_t aSurfaceFlags) {
       bool(aSurfaceFlags & nsLayoutUtils::SFE_ALLOW_NON_PREMULT);
   bool allowUncropped =
       bool(aSurfaceFlags & nsLayoutUtils::SFE_ALLOW_UNCROPPED_UNSCALED);
-  bool requiresPremult =
-      !allowNonPremult && mAlphaType == gfxAlphaType::NonPremult;
+  enum class Premultiplication { NotNeeded, Required, Skipped };
+  Premultiplication premultiplication = Premultiplication::NotNeeded;
+  if (mAlphaType == gfxAlphaType::NonPremult) {
+    premultiplication = allowNonPremult ? Premultiplication::Skipped
+                                        : Premultiplication::Required;
+  }
   bool requiresCrop = !allowUncropped && hasCropRect;
-  if (wantExactSize || requiresPremult || requiresCrop || mSurface) {
-    RefPtr<DrawTarget> dt = Factory::CreateDrawTarget(
-        BackendType::SKIA, IntSize(1, 1), SurfaceFormat::B8G8R8A8);
-    sfer.mSourceSurface = PrepareForDrawTarget(dt);
+  if (wantExactSize || requiresCrop ||
+      premultiplication == Premultiplication::Required) {
+    if (premultiplication == Premultiplication::Skipped) {
+      RefPtr<SourceSurface> surface = mData->GetAsSourceSurface();
+      RefPtr<DataSourceSurface> dataSurface =
+          surface ? surface->GetDataSurface() : nullptr;
+      if (dataSurface && hasCropRect) {
+        dataSurface = CropAndCopyDataSourceSurface(dataSurface, mPictureRect);
+      }
+      sfer.mSourceSurface = std::move(dataSurface);
+    } else {
+      RefPtr<DrawTarget> dt = Factory::CreateDrawTarget(
+          BackendType::SKIA, IntSize(1, 1), SurfaceFormat::B8G8R8A8);
+      sfer.mSourceSurface = PrepareForDrawTarget(dt);
+    }
 
     if (!sfer.mSourceSurface) {
       return sfer;
     }
 
-    MOZ_ASSERT(mSurface);
+    // mSurface caches the premultiplied result of PrepareForDrawTarget().
+    MOZ_ASSERT(premultiplication == Premultiplication::Skipped || mSurface);
 
     sfer.mSize = sfer.mIntrinsicSize = sfer.mSourceSurface->GetSize();
     sfer.mHasSize = true;
-    sfer.mAlphaType = IsOpaque(sfer.mSourceSurface->GetFormat())
-                          ? gfxAlphaType::Opaque
-                          : gfxAlphaType::Premult;
+    if (premultiplication == Premultiplication::Skipped) {
+      sfer.mAlphaType = gfxAlphaType::NonPremult;
+    } else {
+      sfer.mAlphaType = IsOpaque(sfer.mSourceSurface->GetFormat())
+                            ? gfxAlphaType::Opaque
+                            : gfxAlphaType::Premult;
+    }
     return sfer;
   }
 
