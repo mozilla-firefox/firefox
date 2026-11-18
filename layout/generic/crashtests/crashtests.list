@@ -631,7 +631,7 @@ load text-overflow-form-elements.html
 load text-overflow-iframe.html
 asserts(1-4) load 1225005.html # bug 682647 and bug 448083
 load 1230378.xhtml
-asserts(3) load 1231692-1.html
+asserts(3-7) load 1231692-1.html
 load 1233191.html
 load 1233607.html
 load 1234701-1.html
