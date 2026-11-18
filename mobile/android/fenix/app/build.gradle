@@ -476,8 +476,6 @@ nimbus {
             release: "release",
             benchmark: "nightly",
     ]
-    applicationServicesDir = gradle.hasProperty('localProperties.autoPublish.application-services.dir')
-            ? gradle.getProperty('localProperties.autoPublish.application-services.dir') : null
 }
 
 dependencies {

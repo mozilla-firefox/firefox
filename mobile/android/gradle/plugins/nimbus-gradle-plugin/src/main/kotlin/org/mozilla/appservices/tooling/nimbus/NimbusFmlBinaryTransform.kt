@@ -49,24 +49,19 @@ abstract class NimbusFmlBinaryTransform : TransformAction<NimbusFmlBinaryTransfo
 
     companion object {
         fun detectPlatform(providers: ProviderFactory): Provider<String> {
-            val osProvider = providers.systemProperty("os.name").map { it.lowercase() }
-            val archProvider = providers.systemProperty("os.arch").map { it.lowercase() }
-
-            return osProvider.zip(archProvider) { os, arch ->
-                val osPart = when {
-                    os.contains("win") -> "pc-windows-gnu"
-                    os.contains("nix") || os.contains("nux") || os.contains("aix") -> "unknown-linux"
-                    os.contains("mac") -> "apple-darwin"
-                    else -> "unknown"
+            return providers.systemProperty("os.name").zip(providers.systemProperty("os.arch")) { osName, osArch ->
+                val os = osName.lowercase()
+                val arch = when (osArch.lowercase()) {
+                    "x86_64", "amd64" -> "x86_64"
+                    "aarch64" -> "aarch64"
+                    else -> null
                 }
-
-                val archPart = when {
-                    arch.contains("x86_64") -> "x86_64"
-                    arch.contains("amd64") -> "x86_64"
-                    arch.contains("aarch") -> "aarch64"
-                    else -> "unknown"
+                when {
+                    os.contains("win") -> "x86_64-pc-windows-gnu"
+                    arch != null && os.contains("linux") -> "$arch-unknown-linux"
+                    arch != null && os.contains("mac") -> "$arch-apple-darwin"
+                    else -> throw GradleException("No nimbus-fml binary for os.name=$osName, os.arch=$osArch")
                 }
-                "$archPart-$osPart"
             }
         }
     }

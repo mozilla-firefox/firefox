@@ -14,6 +14,7 @@ import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.LocalState
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
@@ -35,8 +36,7 @@ abstract class NimbusFeaturesTask : DefaultTask() {
     @get:Inject
     abstract val execOperations: ExecOperations
 
-    @get:Input
-    @get:Optional
+    @get:Internal
     abstract val applicationServicesDir: Property<String>
 
     // `@InputFiles` instead of `@InputFile` because we don't want
@@ -70,15 +70,16 @@ abstract class NimbusFeaturesTask : DefaultTask() {
 
     @TaskAction
     fun generate() {
+        outputDir.get().asFile.listFiles()?.forEach {
+            if (!it.deleteRecursively()) throw GradleException("Could not delete $it")
+        }
         execOperations.exec {
             val localAppServices = applicationServicesDir.orNull
             if (localAppServices == null) {
                 val fmlBinaryFile = fmlBinary.orNull?.asFile
                 if (fmlBinaryFile == null || !fmlBinaryFile.exists()) {
                     throw GradleException(
-                        "`nimbus-fml` binary not found" +
-                        (if (fmlBinaryFile != null) " at $fmlBinaryFile" else "") +
-                        " and `nimbus.applicationServicesDir` is not set. Either build the project " +
+                        "`nimbus-fml` binary not found${fmlBinaryFile?.let { " at $it" }.orEmpty()}. Either build the project " +
                         "with `./mach build` or set `autoPublish.application-services.dir` in local.properties."
                     )
                 }

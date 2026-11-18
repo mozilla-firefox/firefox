@@ -45,14 +45,6 @@ abstract class NimbusPluginExtension {
      * Variants that are not in this map are used literally.
      */
     abstract val channels: MapProperty<String, String>
-
-    /**
-     * The directory where a local installation of application services can be found.
-     *
-     * This defaults to `null`, in which case the plugin uses the nimbus-fml binary built by
-     * `./mach build`, or the one from the application-services archive for this version.
-     */
-    abstract val applicationServicesDir: Property<String>
 }
 
 class NimbusPlugin : Plugin<Project> {
@@ -98,8 +90,10 @@ class NimbusPlugin : Plugin<Project> {
                 val generateTask = project.tasks.register("nimbusFeatures$taskSuffix", NimbusFeaturesTask::class.java) {
                     description = "Generate Kotlin data classes for Nimbus enabled features"
                     group = "Nimbus"
-                    applicationServicesDir.set(extension.applicationServicesDir)
-                    if (!applicationServicesDir.isPresent) {
+                    applicationServicesDir.set(project.gradle.extensions.extraProperties.properties["localProperties.autoPublish.application-services.dir"] as? String)
+                    if (applicationServicesDir.isPresent) {
+                        doNotTrackState("nimbus-fml is built from an application-services checkout Gradle doesn't track")
+                    } else {
                         fmlBinary.fileProvider(fmlBinaryFile)
                     }
                     inputFile.set(project.layout.projectDirectory.file(extension.manifestFile))
