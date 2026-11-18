@@ -1136,7 +1136,11 @@ class XPCShellTestThread(Thread):
                 and "MOZ_PROFILER_SHUTDOWN" not in self.env
             )
             if timeout_dump_armed:
-                root, ext = os.path.splitext(os.path.basename(name))
+                # Concurrent copies of a test have a "#<n>" id suffix.
+                base, _, copy_index = os.path.basename(name).partition("#")
+                root, ext = os.path.splitext(base)
+                if copy_index:
+                    root += f"_copy{copy_index}"
                 if self.is_retry:
                     root += "_retry"
                 filename = f"profile_{root}{ext}.json"
@@ -2515,6 +2519,11 @@ class XPCShellTests:
             """Helper function to evaluate run-sequentially conditions like skip-if/run-if"""
             return any(parse(e, strict=True, **values) for e in value.splitlines() if e)
 
+        def _must_run_sequentially(test_object):
+            return "run-sequentially" in test_object and _match_run_sequentially(
+                test_object["run-sequentially"], **mozinfo.info
+            )
+
         if not options.get("verify"):
             for test_object in self.alltests:
                 # Test identifiers are provided for the convenience of logging. These
@@ -2538,12 +2547,7 @@ class XPCShellTests:
                         mobileArgs=mobileArgs,
                         **kwargs,
                     )
-                    if (
-                        "run-sequentially" in test_object
-                        and _match_run_sequentially(
-                            test_object["run-sequentially"], **mozinfo.info
-                        )
-                    ) or self.sequential:
+                    if _must_run_sequentially(test_object) or self.sequential:
                         sequential_tests.append(test)
                     else:
                         tests_queue.append(test)
@@ -2571,10 +2575,7 @@ class XPCShellTests:
             # A retry would hide the intermittent failures we are looking for.
             kwargs["retry"] = False
 
-            def step1():
-                # Run tests sequentially. Parallel mode would also work, except that
-                # the logging system gets confused when 2 or more tests with the same
-                # name run at the same time.
+            def step_sequential():
                 sequential_tests = []
                 for i in range(VERIFY_REPEAT):
                     self.testCount += 1
@@ -2585,33 +2586,57 @@ class XPCShellTests:
                 )
                 return status
 
-            def step2():
-                # Run tests sequentially, with MOZ_CHAOSMODE enabled.
-                sequential_tests = []
-                self.env["MOZ_CHAOSMODE"] = "0xfb"
-
-                # for android, adjust flags to avoid slow down
-                if self.env.get("MOZ_ANDROID_DATA_DIR", ""):
-                    self.env["MOZ_CHAOSMODE"] = "0x3b"
-
-                # chaosmode runs really slow, allow tests extra time to pass
-                kwargs["harness_timeout"] = self.harness_timeout * 2
+            def step_parallel():
+                # Copies get distinct ids, as the logger rejects a test_start
+                # for a test that is already running.
+                tests_queue = deque()
                 for i in range(VERIFY_REPEAT):
                     self.testCount += 1
-                    test = testClass(test_object, mobileArgs=mobileArgs, **kwargs)
-                    sequential_tests.append(test)
-                status = self.runTestList(
-                    tests_queue, sequential_tests, testClass, mobileArgs, **kwargs
+                    test_copy = dict(test_object, id=f"{test_object['id']}#{i + 1}")
+                    tests_queue.append(
+                        testClass(test_copy, mobileArgs=mobileArgs, **kwargs)
+                    )
+                return self.runTestList(
+                    tests_queue, [], testClass, mobileArgs, **kwargs
                 )
-                kwargs["harness_timeout"] = self.harness_timeout
-                return status
+
+            def in_chaos_mode(step):
+                def chaos_step():
+                    self.env["MOZ_CHAOSMODE"] = "0xfb"
+
+                    # for android, adjust flags to avoid slow down
+                    if self.env.get("MOZ_ANDROID_DATA_DIR", ""):
+                        self.env["MOZ_CHAOSMODE"] = "0x3b"
+
+                    # chaosmode runs really slow, allow tests extra time to pass
+                    kwargs["harness_timeout"] = self.harness_timeout * 2
+                    try:
+                        return step()
+                    finally:
+                        del self.env["MOZ_CHAOSMODE"]
+                        kwargs["harness_timeout"] = self.harness_timeout
+
+                return chaos_step
+
+            step_chaos = in_chaos_mode(step_sequential)
+            step_chaos_parallel = in_chaos_mode(step_parallel)
 
             steps = [
-                ("1. Run each test %d times, sequentially." % VERIFY_REPEAT, step1),
                 (
-                    "2. Run each test %d times, sequentially, in chaos mode."
-                    % VERIFY_REPEAT,
-                    step2,
+                    f"1. Run each test {VERIFY_REPEAT} times, sequentially.",
+                    step_sequential,
+                ),
+                (
+                    f"2. Run each test {VERIFY_REPEAT} times, in parallel.",
+                    step_parallel,
+                ),
+                (
+                    f"3. Run each test {VERIFY_REPEAT} times, sequentially, in chaos mode.",
+                    step_chaos,
+                ),
+                (
+                    f"4. Run each test {VERIFY_REPEAT} times, in parallel, in chaos mode.",
+                    step_chaos_parallel,
                 ),
             ]
             startTime = datetime.now()
@@ -2631,6 +2656,15 @@ class XPCShellTests:
                             "all checks were run."
                         )
                         break
+                    if step in (step_parallel, step_chaos_parallel):
+                        if _must_run_sequentially(test_object):
+                            stepResults[descr] = (
+                                "Skipped due to run-sequentially annotation"
+                            )
+                            continue
+                        if self.sequential:
+                            stepResults[descr] = "Skipped, running sequentially"
+                            continue
                     self.log.info(":::")
                     self.log.info('::: Running test verification step "%s"...' % descr)
                     self.log.info(":::")
@@ -2691,6 +2725,11 @@ class XPCShellTests:
         for test in self.alltests:
             group = get_full_group_name(test)
             tests_by_manifest[group].append(test["id"])
+        # Concurrent copies of a test have ids of their own.
+        for test in tests_queue:
+            ids = tests_by_manifest[get_full_group_name(test.test_object)]
+            if test.test_object["id"] not in ids:
+                ids.append(test.test_object["id"])
 
         # Add missing manifests with empty test lists so they appear in
         # group_result output with SKIP status
