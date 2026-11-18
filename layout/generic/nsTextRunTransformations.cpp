@@ -156,7 +156,10 @@ void MergeCharactersInTextRun(gfxTextRun* aDest, gfxTextRun* aSrc,
        !iter.AtEnd(); iter.NextRun()) {
     const gfxTextRun::GlyphRun* run = iter.GlyphRun();
     if (offset >= aDest->GetLength()) {
-      MOZ_ASSERT_UNREACHABLE("bad offset in transformed textrun");
+      // Running out of destination is expected if a font change split a merge
+      // group, leaving only discarded continuation characters in this run.
+      MOZ_ASSERT(aCharsToMerge[iter.StringStart()],
+                 "bad offset in transformed textrun");
       break;
     }
     aDest->AddGlyphRun(run->mFont, run->mMatchType, offset, false,
