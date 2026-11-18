@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Spellcheck after modifying text nodes with DOM API</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css">
+</head>
+<body>
+<div contenteditable spellcheck="true" lang="en-US"><p id="checked">Some text <b>bold</b><!-- comment --> tail</p><p id="unchecked" spellcheck="false">Other text <b>bold</b> tail</p></div>
+<script>
+"use strict";
+
+const { maybeOnSpellCheck } = SpecialPowers.ChromeUtils.importESModule(
+  "resource://testing-common/AsyncSpellCheckTestHelper.sys.mjs"
+);
+
+function waitForTick() {
+  return new Promise(resolve =>
+    SimpleTest.executeSoon(
+      () => requestAnimationFrame(() => requestAnimationFrame(resolve))
+    )
+  );
+}
+
+async function waitForSpellCheck(aEditingHost) {
+  await waitForTick();
+  await new Promise(resolve => maybeOnSpellCheck(aEditingHost, resolve));
+}
+
+function getMisspelledWords(aSpellCheckSelection) {
+  const words = [];
+  for (let i = 0; i < aSpellCheckSelection.rangeCount; i++) {
+    words.push(aSpellCheckSelection.getRangeAt(i).toString());
+  }
+  return words.sort();
+}
+
+SimpleTest.waitForExplicitFinish();
+SimpleTest.waitForFocus(async () => {
+  const editingHost = document.querySelector("div[contenteditable]");
+  editingHost.focus();
+  getSelection().collapse(editingHost, 0);
+
+  const editor = SpecialPowers.wrap(window).docShell.editingSession.getEditorForWindow(window);
+  const inlineSpellChecker = editor.getInlineSpellChecker(true);
+  const selCon = editor.selectionController;
+  const spellCheckSelection = selCon.getSelection(selCon.SELECTION_SPELLCHECK);
+  await waitForSpellCheck(editingHost);
+  is(spellCheckSelection.rangeCount, 0, "There should be no misspelled words at start");
+
+  const comment = Array.from(document.getElementById("checked").childNodes).find(
+    node => node.nodeType == Node.COMMENT_NODE
+  );
+  comment.appendData(" wrongg ");
+  ok(
+    !inlineSpellChecker.spellCheckPending,
+    "Modifying a comment in spellchecked content should not schedule spellcheck"
+  );
+
+  // Modifying text which is not spellchecked should not schedule a spellcheck
+  // even if the parent of the text node has an element child.  Otherwise, a
+  // live Range per change would make modifying a lot of text nodes slow.
+  const unchecked = document.getElementById("unchecked");
+  unchecked.firstChild.appendData(" badd ");
+  unchecked.lastChild.data += " wrongg";
+  ok(
+    !inlineSpellChecker.spellCheckPending,
+    "Modifying text nodes in spellcheck=false should not schedule spellcheck"
+  );
+
+  // Modifying text which is spellchecked should still be checked even if
+  // the parent of the text node has an element child.
+  const checked = document.getElementById("checked");
+  checked.firstChild.appendData(" missspelled ");
+  checked.lastChild.data += " mistakke";
+  ok(
+    inlineSpellChecker.spellCheckPending,
+    "Modifying text nodes in spellcheck=true should schedule spellcheck"
+  );
+  for (let retry = 0; retry < 100 && spellCheckSelection.rangeCount < 2; retry++) {
+    await waitForSpellCheck(editingHost);
+  }
+  isDeeply(
+    getMisspelledWords(spellCheckSelection),
+    ["missspelled", "mistakke"],
+    "Only the misspelled words in spellcheck=true should be marked"
+  );
+  SimpleTest.finish();
+});
+</script>
+</body>
+</html>

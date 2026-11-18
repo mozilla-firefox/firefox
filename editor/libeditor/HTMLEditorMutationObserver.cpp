@@ -491,14 +491,16 @@ MOZ_CAN_RUN_SCRIPT_BOUNDARY void HTMLEditor::CharacterDataChanged(
   // We don't need to handle our own modifications
   // (If firing textupdate, then we do want to run spell check,
   //  since the textupdate handler may update the DOM arbitrarily.)
-  if (!mInlineSpellChecker || !aContent->IsEditable() ||
+  if (!mInlineSpellChecker || !aContent->IsText() || !aContent->IsEditable() ||
       (GetTopLevelEditSubAction() != EditSubAction::eNone &&
        !IsFiringTextUpdate())) {
     return;
   }
 
   nsIContent* parent = aContent->GetParent();
-  if (!parent || !parent->InclusiveDescendantMayNeedSpellchecking(this)) {
+  // Only the modified node is checked; an element sibling does not make it
+  // eligible for spellchecking.
+  if (!parent || !mozInlineSpellChecker::ShouldSpellCheckNode(this, aContent)) {
     return;
   }
 
