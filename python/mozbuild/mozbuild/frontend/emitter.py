@@ -1349,6 +1349,23 @@ class TreeMetadataEmitter(LoggingMixin):
         computed_as_flags = ComputedFlags(context, context["ASM_FLAGS"])
         computed_wasm_flags = ComputedFlags(context, context["WASM_FLAGS"])
 
+        # Set compiler and link flags according to whether we want a console.
+        if context.config.substs.get("TARGET_OS") == "WINNT":
+            if context.get("WINCONSOLE", True):
+                extra_win32_exe_ldflags = context.config.substs.get(
+                    "WIN32_CONSOLE_EXE_LDFLAGS", []
+                )
+                # TODO: Bug 2069767 - Keep MOZ_WINCONSOLE undefined by default:
+                # Output() in nsAppRunner.cpp only shows startup errors in a
+                # message box when it is undefined.
+                if "WINCONSOLE" in context:
+                    context["DEFINES"]["MOZ_WINCONSOLE"] = True
+            else:
+                extra_win32_exe_ldflags = context.config.substs.get(
+                    "WIN32_GUI_EXE_LDFLAGS", []
+                )
+            context["WIN32_EXE_LDFLAGS"] += extra_win32_exe_ldflags
+
         # Proxy some variables as-is until we have richer classes to represent
         # them. We should aim to keep this set small because it violates the
         # desired abstraction of the build definition away from makefiles.
@@ -1411,19 +1428,6 @@ class TreeMetadataEmitter(LoggingMixin):
 
         if "HOST_LDFLAGS" in context and context["HOST_LDFLAGS"]:
             computed_host_link_flags.resolve_flags("MOZBUILD", context["HOST_LDFLAGS"])
-
-        # Set compiler and link flags according to whether we want a console.
-        if context.config.substs.get("TARGET_OS") == "WINNT":
-            if context.get("WINCONSOLE", True):
-                context["WIN32_EXE_LDFLAGS"] += context.config.substs.get(
-                    "WIN32_CONSOLE_EXE_LDFLAGS", []
-                )
-                if "WINCONSOLE" in context:
-                    context["DEFINES"]["MOZ_WINCONSOLE"] = True
-            else:
-                context["WIN32_EXE_LDFLAGS"] += context.config.substs.get(
-                    "WIN32_GUI_EXE_LDFLAGS", []
-                )
 
         deffile = context.get("DEFFILE")
         if deffile and context.config.substs.get("OS_TARGET") == "WINNT":

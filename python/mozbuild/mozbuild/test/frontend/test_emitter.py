@@ -210,6 +210,29 @@ class TestEmitterBasic(unittest.TestCase):
         self.assertEqual(wanted, variables)
         self.maxDiff = maxDiff
 
+    def test_winconsole(self):
+        substs = {
+            "TARGET_OS": "WINNT",
+            "WIN32_CONSOLE_EXE_LDFLAGS": ["-mconsole"],
+            "WIN32_GUI_EXE_LDFLAGS": ["-mwindows"],
+        }
+        for fixture, wanted, defines in (
+            ("winconsole-true", ["-mconsole"], {"MOZ_WINCONSOLE": True}),
+            ("winconsole-false", ["-ENTRY:wmainCRTStartup", "-mwindows"], {}),
+            ("winconsole-default", ["-mconsole"], {}),
+        ):
+            objs = self.read_topsrcdir(self.reader(fixture, extra_substs=substs))
+            passthru = [o for o in objs if isinstance(o, VariablePassthru)]
+            self.assertEqual(len(passthru), 1)
+            self.assertEqual(passthru[0].variables, {"WIN32_EXE_LDFLAGS": wanted})
+            self.assertEqual(
+                [dict(o.defines) for o in objs if isinstance(o, Defines)],
+                [defines] if defines else [],
+            )
+        substs["TARGET_OS"] = "Linux"
+        objs = self.read_topsrcdir(self.reader("winconsole-true", extra_substs=substs))
+        self.assertEqual(objs, [])
+
     def test_compile_flags(self):
         reader = self.reader(
             "compile-flags", extra_substs={"WARNINGS_AS_ERRORS": "-Werror"}
