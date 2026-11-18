@@ -539,8 +539,8 @@ add_task(async function test_permission_removed() {
 });
 
 /**
- * Tests that backup regeneration occurs when persistent and session cookies are
- * removed.
+ * Tests that backup regeneration does not occur when persistent and session
+ * cookies are removed, since cookies are not included in backups.
  */
 add_task(async function test_cookies_removed() {
   for (let isSessionCookie of [false, true]) {
@@ -564,22 +564,22 @@ add_task(async function test_cookies_removed() {
       );
     }
 
-    await expectRegeneration(async () => {
+    await expectNoRegeneration(async () => {
       Services.cookies.remove(
         COOKIE_HOST,
         name,
         COOKIE_PATH,
         COOKIE_ORIGIN_ATTRIBUTES
       );
-    }, "Saw regeneration on single cookie removal.");
+    }, "Saw no regeneration on single cookie removal.");
 
     // Now remove all cookies for a particular host.
     addTestCookie(isSessionCookie);
     addTestCookie(isSessionCookie);
 
-    await expectRegeneration(async () => {
+    await expectNoRegeneration(async () => {
       Services.cookies.removeCookiesFromExactHost(COOKIE_HOST, "{}");
-    }, "Saw regeneration on cookie removal by host.");
+    }, "Saw no regeneration on cookie removal by host.");
 
     // Now remove all cookies.
     const COOKIES_TO_ADD = 10;
@@ -587,9 +587,9 @@ add_task(async function test_cookies_removed() {
       addTestCookie(isSessionCookie);
     }
 
-    await expectRegeneration(async () => {
+    await expectNoRegeneration(async () => {
       Services.cookies.removeAll();
-    }, "Saw regeneration on all cookie removal.");
+    }, "Saw no regeneration on all cookie removal.");
   }
 });
 

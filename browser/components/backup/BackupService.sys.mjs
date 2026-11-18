@@ -4709,8 +4709,6 @@ export class BackupService extends EventTarget {
     Services.obs.addObserver(this.#observer, "formautofill-storage-changed");
     Services.obs.addObserver(this.#observer, "sanitizer-sanitization-complete");
     Services.obs.addObserver(this.#observer, "perm-changed");
-    Services.obs.addObserver(this.#observer, "cookie-changed");
-    Services.obs.addObserver(this.#observer, "session-cookie-changed");
     Services.obs.addObserver(this.#observer, "newtab-linkBlocked");
     Services.obs.addObserver(this.#observer, "quit-application-granted");
     Services.prefs.addObserver(SANITIZE_ON_SHUTDOWN_PREF_NAME, this.#observer);
@@ -4746,8 +4744,6 @@ export class BackupService extends EventTarget {
       "sanitizer-sanitization-complete"
     );
     Services.obs.removeObserver(this.#observer, "perm-changed");
-    Services.obs.removeObserver(this.#observer, "cookie-changed");
-    Services.obs.removeObserver(this.#observer, "session-cookie-changed");
     Services.obs.removeObserver(this.#observer, "newtab-linkBlocked");
     Services.obs.removeObserver(this.#observer, "quit-application-granted");
     Services.prefs.removeObserver(
@@ -4808,23 +4804,6 @@ export class BackupService extends EventTarget {
       }
       case "perm-changed": {
         if (data == "deleted") {
-          this.#debounceRegeneration();
-        }
-        break;
-      }
-      case "cookie-changed":
-      // Intentional fall-through
-      case "session-cookie-changed": {
-        let notification = subject.QueryInterface(Ci.nsICookieNotification);
-        // A browsingContextId value of 0 means that this deletion was caused by
-        // chrome UI cookie deletion, which is what we care about. If it's not
-        // 0, then a site deleted its own cookie, which we ignore.
-        if (
-          (notification.action == Ci.nsICookieNotification.COOKIE_DELETED ||
-            notification.action ==
-              Ci.nsICookieNotification.ALL_COOKIES_CLEARED) &&
-          !notification.browsingContextId
-        ) {
           this.#debounceRegeneration();
         }
         break;
