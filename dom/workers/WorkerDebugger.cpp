@@ -227,6 +227,14 @@ WorkerDebugger::GetIsRemote(bool* aResult) {
 }
 
 NS_IMETHODIMP
+WorkerDebugger::GetIsOutOfProcess(bool* aResult) {
+  AssertIsOnMainThread();
+
+  *aResult = false;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 WorkerDebugger::GetIsInitialized(bool* aResult) {
   AssertIsOnMainThread();
 
