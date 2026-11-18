@@ -98,12 +98,11 @@ export function useFramedWidgetMessages({ widget, src, iframeRef, onMessage }) {
  * for widget_errors, and with ("load_timeout", true) when widget_ready doesn't
  * arrive in time. So a frame can't flood telemetry, each load reports a
  * non-terminal reason once and nothing after its first terminal error. A
- * terminal error means the widget is unusable. readyPayload is a new object
- * for every widget_ready, including one from a reload inside the frame.
+ * terminal error means the widget is unusable.
  *
  * @param {object} options - see useFramedWidgetMessages, without onMessage
  * @param {Function} options.onError - called with (reason, terminal)
- * @returns {{ready: boolean, readyPayload: object|null, variant: string|undefined}}
+ * @returns {{ready: boolean, variant: string|undefined}}
  */
 export function useFramedWidgetReady({ widget, src, iframeRef, onError }) {
   const [readyPayload, setReadyPayload] = useState(null);
@@ -154,11 +153,7 @@ export function useFramedWidgetReady({ widget, src, iframeRef, onError }) {
     },
   });
 
-  return {
-    ready,
-    readyPayload,
-    variant: resolveFrameVariant(widget, readyPayload?.variant),
-  };
+  return { ready, variant: resolveFrameVariant(widget, readyPayload?.variant) };
 }
 
 /**
