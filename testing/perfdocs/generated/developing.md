@@ -124,8 +124,6 @@ Before landing a patch for MozPerftest, make sure you run `perftest-test`:
 
 ```
 % ./mach perftest-test
-=> black [OK]
-=> flake8 [OK]
 => remove old coverage data [OK]
 => running tests [OK]
 => coverage
@@ -140,7 +138,7 @@ TOTAL                                            1614    240    85%
 [OK]
 ```
 
-The command will run `black`, `flake8` and also make sure that the test coverage has not regressed.
+The command will run the tests and also make sure that the test coverage has not regressed.
+Run `./mach lint python/mozperftest` separately to lint your changes.
 
-You can use the `-s` option to bypass flake8/black to speed up your workflow, but make
-sure you do a full tests run. You can also pass the name of one single test module.
+You can also pass the name of one single test module, which skips the coverage check.

@@ -598,10 +598,6 @@ def run_python_script(
     return run_script(cmd, module_args, verbose=verbose, display=display, label=label)
 
 
-def checkout_script(cmd, cmd_args=None, verbose=False, display=False, label=None):
-    return run_script(cmd, cmd_args, verbose, display, label)[0]
-
-
 def checkout_python_script(
     virtualenv_manager,
     module,

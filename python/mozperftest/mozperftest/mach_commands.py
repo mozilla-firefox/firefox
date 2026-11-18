@@ -101,13 +101,6 @@ def run_perftest(command_context, **kwargs):
     "tests", default=None, nargs="*", help="Tests to run. By default will run all"
 )
 @CommandArgument(
-    "-s",
-    "--skip-linters",
-    action="store_true",
-    default=False,
-    help="Skip flake8 and black",
-)
-@CommandArgument(
     "-v", "--verbose", action="store_true", default=False, help="Verbose mode"
 )
 @CommandArgument(
@@ -134,19 +127,10 @@ def run_tests(command_context, **kwargs):
 def _run_tests(command_context, **kwargs):
     from pathlib import Path
 
-    from mozperftest.utils import ON_TRY, checkout_python_script, checkout_script
+    from mozperftest.utils import ON_TRY, checkout_python_script
 
     venv = command_context.virtualenv_manager
-    skip_linters = kwargs.get("skip_linters", False)
     verbose = kwargs.get("verbose", False)
-
-    if not ON_TRY and not skip_linters and not kwargs.get("raptor"):
-        cmd = "./mach lint "
-        if verbose:
-            cmd += " -v"
-        cmd += " " + str(HERE)
-        if not checkout_script(cmd, label="linters", display=verbose, verbose=verbose):
-            raise AssertionError("Please fix your code.")
 
     # running pytest with coverage
     # coverage is done in three steps:
@@ -158,7 +142,7 @@ def _run_tests(command_context, **kwargs):
     tests = kwargs.get("tests", [])
     if tests == []:
         tests = str(tests_dir)
-        run_coverage_check = not skip_linters
+        run_coverage_check = True
     else:
         run_coverage_check = False
 
