@@ -122,44 +122,39 @@ private fun MarketingData.toOnboardingMarketingData() =
 
 /**
  * Mapper to convert [OnboardingPageUiData] to [OnboardingPageState] that is a param for [OnboardingPage] composable.
+ *
+ * @param onboardingPageUiData The onboarding page data to map.
+ * @param isSmallDevice Whether to apply layout optimizations for constrained screen heights.
+ * @param onAction Invoked with the [OnboardingAction] when the matching card button is clicked.
  */
-@Suppress("LongParameterList")
 internal fun mapToOnboardingPageState(
     onboardingPageUiData: OnboardingPageUiData,
     isSmallDevice: Boolean = false,
-    onMakeFirefoxDefaultClick: () -> Unit,
-    onMakeFirefoxDefaultSkipClick: () -> Unit,
-    onSignInButtonClick: () -> Unit,
-    onSignInSkipClick: () -> Unit,
-    onSyncPairingScanClick: () -> Unit,
-    onSyncPairingEmailClick: () -> Unit,
-    onSyncPairingSkipClick: () -> Unit,
-    onTermsOfServiceButtonClick: () -> Unit,
-    onMarketingDataContinueClick: () -> Unit = {},
+    onAction: (OnboardingAction) -> Unit,
 ): OnboardingPageState =
     when (onboardingPageUiData.type) {
         OnboardingPageUiData.Type.DEFAULT_BROWSER ->
             createOnboardingPageState(
                 onboardingPageUiData = onboardingPageUiData,
-                onPositiveButtonClick = onMakeFirefoxDefaultClick,
-                onNegativeButtonClick = onMakeFirefoxDefaultSkipClick,
+                onPositiveButtonClick = { onAction(OnboardingAction.DefaultBrowser.SetAsDefaultClicked) },
+                onNegativeButtonClick = { onAction(OnboardingAction.DefaultBrowser.SkipClicked) },
                 isSmallDevice = isSmallDevice,
             )
 
         OnboardingPageUiData.Type.SYNC_SIGN_IN ->
             createOnboardingPageState(
                 onboardingPageUiData = onboardingPageUiData,
-                onPositiveButtonClick = onSignInButtonClick,
-                onNegativeButtonClick = onSignInSkipClick,
+                onPositiveButtonClick = { onAction(OnboardingAction.SyncSignIn.SignInClicked) },
+                onNegativeButtonClick = { onAction(OnboardingAction.SyncSignIn.SkipClicked) },
                 isSmallDevice = isSmallDevice,
             )
 
         OnboardingPageUiData.Type.SYNC_PAIRING ->
             createOnboardingPageState(
                 onboardingPageUiData = onboardingPageUiData,
-                onPositiveButtonClick = onSyncPairingScanClick,
-                onNegativeButtonClick = onSyncPairingEmailClick,
-                onSkipClick = onSyncPairingSkipClick,
+                onPositiveButtonClick = { onAction(OnboardingAction.SyncPairing.ScanClicked) },
+                onNegativeButtonClick = { onAction(OnboardingAction.SyncPairing.EmailClicked) },
+                onSkipClick = { onAction(OnboardingAction.SyncPairing.SkipClicked) },
                 isSmallDevice = isSmallDevice,
                 primaryButtonLeadingIconRes = iconsR.drawable.mozac_ic_qr_code_24,
             )
@@ -167,15 +162,16 @@ internal fun mapToOnboardingPageState(
         OnboardingPageUiData.Type.TERMS_OF_SERVICE ->
             createOnboardingPageState(
                 onboardingPageUiData = onboardingPageUiData,
-                onPositiveButtonClick = onTermsOfServiceButtonClick,
+                onPositiveButtonClick = { onAction(OnboardingAction.TermsOfService.AcceptClicked) },
                 onNegativeButtonClick = {}, // No negative button option for terms of service.
                 isSmallDevice = isSmallDevice,
             )
 
+        // The Marketing Data page dispatches its own actions depending on the state of the checkbox.
         OnboardingPageUiData.Type.MARKETING_DATA ->
             createOnboardingPageState(
                 onboardingPageUiData = onboardingPageUiData,
-                onPositiveButtonClick = onMarketingDataContinueClick,
+                onPositiveButtonClick = {},
                 onNegativeButtonClick = {}, // No negative button option for marketing data.
                 isSmallDevice = isSmallDevice,
             )

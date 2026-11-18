@@ -6,11 +6,19 @@ package org.mozilla.fenix.onboarding.view
 
 import mozilla.components.ui.icons.R as iconsR
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.mozilla.fenix.R
-import org.mozilla.fenix.nimbus.MarketingCardVariant
 
 class OnboardingMapperTest {
+
+    private val actions = mutableListOf<OnboardingAction>()
+
+    private fun mapToState(onboardingPageUiData: OnboardingPageUiData) =
+        mapToOnboardingPageState(
+            onboardingPageUiData = onboardingPageUiData,
+            onAction = { action -> actions += action },
+        )
 
     @Test
     fun `GIVEN a default browser page WHEN mapToOnboardingPageState is called THEN creates the expected OnboardingPageState`() {
@@ -19,76 +27,50 @@ class OnboardingMapperTest {
                 imageRes = R.drawable.ic_onboarding_welcome,
                 title = "default browser title",
                 description = "default browser body with link text",
-                primaryButton = Action("default browser primary button text", unitLambda),
-                secondaryButton = Action("default browser secondary button text", unitLambda),
+                primaryButton = Action("default browser primary button text", noOp),
+                secondaryButton = Action("default browser secondary button text", noOp),
             )
 
-        val onboardingPageUiData =
-            OnboardingPageUiData(
-                type = OnboardingPageUiData.Type.DEFAULT_BROWSER,
-                imageRes = R.drawable.ic_onboarding_welcome,
-                title = "default browser title",
-                description = "default browser body with link text",
-                primaryButtonLabel = "default browser primary button text",
-                secondaryButtonLabel = "default browser secondary button text",
-            )
-        val actual =
-            mapToOnboardingPageState(
-                onboardingPageUiData = onboardingPageUiData,
-                onMakeFirefoxDefaultClick = unitLambda,
-                onMakeFirefoxDefaultSkipClick = unitLambda,
-                onSignInButtonClick = {},
-                onSignInSkipClick = {},
-                onSyncPairingScanClick = {},
-                onSyncPairingEmailClick = {},
-                onSyncPairingSkipClick = {},
-                onTermsOfServiceButtonClick = {},
-            )
-
-        assertEquals(expected, actual)
+        val state = mapToState(defaultBrowserPageUiData)
+        assertEquals(expected, state.withNoOpCallbacks())
     }
 
     @Test
-    fun `GIVEN a sync page WHEN mapToOnboardingPageState is called THEN creates the expected OnboardingPageState`() {
+    fun `GIVEN a default browser page WHEN its buttons are clicked THEN the default browser actions are dispatched`() {
+        val state = mapToState(defaultBrowserPageUiData)
+
+        assertEquals(
+            OnboardingAction.DefaultBrowser.SetAsDefaultClicked,
+            actionDispatchedBy(state.primaryButton.onClick),
+        )
+        assertEquals(OnboardingAction.DefaultBrowser.SkipClicked, actionDispatchedBy(state.secondaryButton!!.onClick))
+    }
+
+    @Test
+    fun `GIVEN a sync sign in page WHEN mapToOnboardingPageState is called THEN creates the expected OnboardingPageState`() {
         val expected =
             OnboardingPageState(
                 imageRes = R.drawable.ic_onboarding_sync,
                 title = "sync title",
                 description = "sync body",
-                primaryButton = Action("sync primary button text", unitLambda),
-                secondaryButton = Action("sync secondary button text", unitLambda),
+                primaryButton = Action("sync primary button text", noOp),
+                secondaryButton = Action("sync secondary button text", noOp),
             )
 
-        val onboardingPageUiData =
-            OnboardingPageUiData(
-                type = OnboardingPageUiData.Type.SYNC_SIGN_IN,
-                imageRes = R.drawable.ic_onboarding_sync,
-                title = "sync title",
-                description = "sync body",
-                primaryButtonLabel = "sync primary button text",
-                secondaryButtonLabel = "sync secondary button text",
-            )
-        val actual =
-            mapToOnboardingPageState(
-                onboardingPageUiData = onboardingPageUiData,
-                onMakeFirefoxDefaultClick = {},
-                onMakeFirefoxDefaultSkipClick = {},
-                onSignInButtonClick = unitLambda,
-                onSignInSkipClick = unitLambda,
-                onSyncPairingScanClick = {},
-                onSyncPairingEmailClick = {},
-                onSyncPairingSkipClick = {},
-                onTermsOfServiceButtonClick = {},
-            )
+        val state = mapToState(syncPageUiData)
+        assertEquals(expected, state.withNoOpCallbacks())
+    }
 
-        assertEquals(expected, actual)
+    @Test
+    fun `GIVEN a sync sign in page WHEN its buttons are clicked THEN the sync sign in actions are dispatched`() {
+        val state = mapToState(syncPageUiData)
+
+        assertEquals(OnboardingAction.SyncSignIn.SignInClicked, actionDispatchedBy(state.primaryButton.onClick))
+        assertEquals(OnboardingAction.SyncSignIn.SkipClicked, actionDispatchedBy(state.secondaryButton!!.onClick))
     }
 
     @Test
     fun `GIVEN a sync pairing page WHEN mapToOnboardingPageState is called THEN creates the expected OnboardingPageState`() {
-        val onScanClick = { dummyUnitFunc() }
-        val onEmailClick = { dummyUnitFunc() }
-        val onSkipClick = { dummyUnitFunc() }
         val expected =
             OnboardingPageState(
                 imageRes = R.drawable.nova_onboarding_sync_qr,
@@ -97,76 +79,82 @@ class OnboardingMapperTest {
                 primaryButton =
                     Action(
                         text = "sync pairing scan button text",
-                        onClick = onScanClick,
+                        onClick = noOp,
                         leadingIconRes = iconsR.drawable.mozac_ic_qr_code_24,
                     ),
-                secondaryButton = Action("sync pairing email button text", onEmailClick),
-                onSkipClick = onSkipClick,
+                secondaryButton = Action("sync pairing email button text", noOp),
+                onSkipClick = noOp,
             )
 
-        val actual =
-            mapToOnboardingPageState(
-                onboardingPageUiData = syncPairingPageUiData,
-                onMakeFirefoxDefaultClick = {},
-                onMakeFirefoxDefaultSkipClick = {},
-                onSignInButtonClick = {},
-                onSignInSkipClick = {},
-                onSyncPairingScanClick = onScanClick,
-                onSyncPairingEmailClick = onEmailClick,
-                onSyncPairingSkipClick = onSkipClick,
-                onTermsOfServiceButtonClick = {},
-            )
-
-        assertEquals(expected, actual)
+        val state = mapToState(syncPairingPageUiData)
+        assertEquals(expected, state.withNoOpCallbacks())
     }
 
     @Test
-    fun `GIVEN a marketing data collection opt out page WHEN mapToOnboardingPageState is called THEN creates the expected OnboardingPageState`() {
-        val marketingData =
-            OnboardingMarketingData(
-                marketingCardVariant = MarketingCardVariant.DEFAULT,
-                bodyOneText = "marketing data body one",
-                bodyOneLinkText = "marketing data body one link",
-                bodyTwoText = "marketing data body two",
+    fun `GIVEN a sync pairing page WHEN its buttons are clicked THEN the sync pairing actions are dispatched`() {
+        val state = mapToState(syncPairingPageUiData)
+
+        assertEquals(OnboardingAction.SyncPairing.ScanClicked, actionDispatchedBy(state.primaryButton.onClick))
+        assertEquals(OnboardingAction.SyncPairing.EmailClicked, actionDispatchedBy(state.secondaryButton!!.onClick))
+        assertEquals(OnboardingAction.SyncPairing.SkipClicked, actionDispatchedBy(state.onSkipClick!!))
+    }
+
+    @Test
+    fun `GIVEN a terms of service page WHEN mapToOnboardingPageState is called THEN creates the expected OnboardingPageState`() {
+        val expected =
+            OnboardingPageState(
+                imageRes = R.drawable.nova_onboarding_tou,
+                title = "terms of service title",
+                description = "terms of service body",
+                primaryButton = Action("terms of service primary button text", noOp),
+                termsOfService = termsOfServicePageUiData.termsOfService,
             )
 
+        val state = mapToState(termsOfServicePageUiData)
+        assertEquals(expected, state.withNoOpCallbacks())
+    }
+
+    @Test
+    fun `GIVEN a terms of service page WHEN its buttons are clicked THEN the terms of service actions are dispatched`() {
+        val state = mapToState(termsOfServicePageUiData)
+
+        assertEquals(OnboardingAction.TermsOfService.AcceptClicked, actionDispatchedBy(state.primaryButton.onClick))
+    }
+
+    @Test
+    fun `GIVEN a marketing data page WHEN mapToOnboardingPageState is called THEN creates the expected OnboardingPageState`() {
         val expected =
             OnboardingPageState(
                 imageRes = R.drawable.ic_high_five,
                 title = "marketing data title",
                 description = "marketing data body",
-                primaryButton = Action("marketing data button text", unitLambda),
-                marketingData = marketingData,
+                primaryButton = Action("marketing data button text", noOp),
+                marketingData = marketingDataPageUiData.marketingData,
             )
 
-        val onboardingPageUiData =
-            OnboardingPageUiData(
-                type = OnboardingPageUiData.Type.MARKETING_DATA,
-                imageRes = R.drawable.ic_high_five,
-                title = "marketing data title",
-                description = "marketing data body",
-                primaryButtonLabel = "marketing data button text",
-                marketingData = marketingData,
-            )
+        val state = mapToState(marketingDataPageUiData)
+        assertEquals(expected, state.withNoOpCallbacks())
+    }
 
-        val actual =
-            mapToOnboardingPageState(
-                onboardingPageUiData = onboardingPageUiData,
-                onMakeFirefoxDefaultClick = {},
-                onMakeFirefoxDefaultSkipClick = {},
-                onSignInButtonClick = {},
-                onSignInSkipClick = {},
-                onSyncPairingScanClick = {},
-                onSyncPairingEmailClick = {},
-                onSyncPairingSkipClick = {},
-                onTermsOfServiceButtonClick = {},
-                onMarketingDataContinueClick = unitLambda,
-            )
+    @Test
+    fun `GIVEN a marketing data page WHEN its primary button is clicked THEN no action is dispatched`() {
+        val state = mapToState(marketingDataPageUiData)
 
-        assertEquals(expected, actual)
+        assertNull(actionDispatchedBy(state.primaryButton.onClick))
+    }
+
+    private fun actionDispatchedBy(click: () -> Unit): OnboardingAction? {
+        actions.clear()
+        click()
+        return actions.singleOrNull()
     }
 }
 
-private val unitLambda = { dummyUnitFunc() }
+private val noOp: () -> Unit = {}
 
-private fun dummyUnitFunc() {}
+private fun OnboardingPageState.withNoOpCallbacks() =
+    copy(
+        primaryButton = primaryButton.copy(onClick = noOp),
+        secondaryButton = secondaryButton?.copy(onClick = noOp),
+        onSkipClick = onSkipClick?.let { noOp },
+    )

@@ -68,20 +68,7 @@ private val logger = Logger("OnboardingScreen")
  * @param isSyncFlowCompleted Whether a sync flow started from a sync page completed. When true, the onboarding moves to
  *   the next page or finishes.
  * @param onSyncFlowCompletedHandled Invoked when [isSyncFlowCompleted] has been handled.
- * @param onMakeFirefoxDefaultClick Invoked when positive button on default browser page is clicked.
- * @param onSkipDefaultClick Invoked when negative button on default browser page is clicked.
- * @param onSignInButtonClick Invoked when the positive button on the sign in page is clicked.
- * @param onSkipSignInClick Invoked when the negative button on the sign in page is clicked.
- * @param onSyncPairingScanClick Invoked when the scan button on the pairing sync page is clicked.
- * @param onSyncPairingEmailClick Invoked when the email button on the pairing sync page is clicked.
- * @param onSyncPairingSkipClick Invoked when the skip button on the pairing sync page is clicked.
- * @param termsOfServiceEventHandler Invoked when the primary button on the terms of service page is clicked.
- * @param onMarketingDataLearnMoreClick callback for when the user clicks the learn more text link
- * @param onMarketingOptInToggle callback for when the user toggles the opt-in checkbox
- * @param onMarketingDataContinueClick callback for when the user clicks the continue button on the marketing data opt
- *   out screen.
- * @param onMarketingDataSkipClick callback for when the user clicks the skip button on the marketing data opt out
- *   screen.
+ * @param onAction Invoked when the user interacts with an onboarding card.
  * @param onFinish Invoked when the onboarding is completed.
  * @param onImpression Invoked when a page in the pager is displayed.
  * @param currentIndex callback for when the current horizontal pager page changes
@@ -89,23 +76,12 @@ private val logger = Logger("OnboardingScreen")
  */
 @Composable
 @Suppress("LongParameterList", "LongMethod")
-fun OnboardingScreen(
+internal fun OnboardingScreen(
     pagesToDisplay: MutableList<OnboardingPageUiData>,
     initialPageIndex: Int,
     isSyncFlowCompleted: Boolean,
     onSyncFlowCompletedHandled: () -> Unit,
-    onMakeFirefoxDefaultClick: () -> Unit,
-    onSkipDefaultClick: () -> Unit,
-    onSignInButtonClick: () -> Unit,
-    onSkipSignInClick: () -> Unit,
-    onSyncPairingScanClick: () -> Unit,
-    onSyncPairingEmailClick: () -> Unit,
-    onSyncPairingSkipClick: () -> Unit,
-    termsOfServiceEventHandler: OnboardingTermsOfServiceEventHandler,
-    onMarketingDataLearnMoreClick: () -> Unit,
-    onMarketingOptInToggle: (optIn: Boolean) -> Unit,
-    onMarketingDataContinueClick: (allowMarketingDataCollection: Boolean) -> Unit,
-    onMarketingDataSkipClick: () -> Unit,
+    onAction: (OnboardingAction) -> Unit,
     onFinish: (pageType: OnboardingPageUiData) -> Unit,
     onImpression: (pageType: OnboardingPageUiData) -> Unit,
     currentIndex: (index: Int) -> Unit,
@@ -197,47 +173,24 @@ fun OnboardingScreen(
     OnboardingContent(
         pagesToDisplay = pages,
         pagerState = pagerState,
-        onMakeFirefoxDefaultClick = {
-            setToDefaultClick(
-                isSetToDefault = isSetToDefault,
-                scrollToNextPageOrDismiss = scrollToNextPageOrDismiss,
-                onMakeFirefoxDefaultClick = onMakeFirefoxDefaultClick,
-            )
-        },
-        onMakeFirefoxDefaultSkipClick = {
-            onSkipDefaultClick()
-            scrollToNextPageOrDismiss()
-        },
-        onSignInButtonClick = onSignInButtonClick,
-        onSignInSkipClick = {
-            onSkipSignInClick()
-            scrollToNextPageOrDismiss()
-        },
-        termsOfServiceEventHandler = termsOfServiceEventHandler,
-        onAgreeAndConfirmTermsOfService = {
-            termsOfServiceEventHandler.onAcceptTermsButtonClicked()
-            scrollToNextPageOrDismiss()
-        },
-        onMarketingDataLearnMoreClick = onMarketingDataLearnMoreClick,
-        onMarketingOptInToggle = onMarketingOptInToggle,
-        onMarketingDataContinueClick = { allowMarketingDataCollection ->
-            onMarketingDataContinueClick(allowMarketingDataCollection)
-            scrollToNextPageOrDismiss()
-        },
-        onMarketingDataSkipClick = {
-            onMarketingDataSkipClick()
-            scrollToNextPageOrDismiss()
-        },
-        onSyncPairingScanClick = onSyncPairingScanClick,
-        onSyncPairingEmailClick = {
-            onSyncPairingEmailClick()
-            scrollToNextPageOrDismiss()
-        },
-        onSyncPairingSkipClick = {
-            onSyncPairingSkipClick()
-            scrollToNextPageOrDismiss()
-        },
+        onAction = { action -> onCardAction(action, isSetToDefault, scrollToNextPageOrDismiss, onAction) },
     )
+}
+
+private fun onCardAction(
+    action: OnboardingAction,
+    isSetToDefault: Boolean,
+    scrollToNextPageOrDismiss: () -> Unit,
+    onAction: (OnboardingAction) -> Unit,
+) {
+    if (action == OnboardingAction.DefaultBrowser.SetAsDefaultClicked && isSetToDefault) {
+        scrollToNextPageOrDismiss()
+    } else {
+        onAction(action)
+        if (action.advancesToNextPage) {
+            scrollToNextPageOrDismiss()
+        }
+    }
 }
 
 /**
@@ -324,17 +277,30 @@ internal fun isSyncPage(
         else -> false
     }
 
-private fun setToDefaultClick(
-    isSetToDefault: Boolean,
-    scrollToNextPageOrDismiss: () -> Unit,
-    onMakeFirefoxDefaultClick: () -> Unit,
-) {
-    if (isSetToDefault) {
-        scrollToNextPageOrDismiss()
-    } else {
-        onMakeFirefoxDefaultClick()
-    }
-}
+/**
+ * Whether the pager should move to the next page right after [this] action is handled. Actions that return false either
+ * stay on the page or advance later once an external flow completes (default browser changed, sync pairing completed).
+ */
+@VisibleForTesting
+internal val OnboardingAction.advancesToNextPage: Boolean
+    get() =
+        when (this) {
+            OnboardingAction.DefaultBrowser.SetAsDefaultClicked -> false
+            OnboardingAction.DefaultBrowser.SkipClicked -> true
+            OnboardingAction.SyncSignIn.SignInClicked -> false
+            OnboardingAction.SyncSignIn.SkipClicked -> true
+            OnboardingAction.SyncPairing.EmailClicked -> true
+            OnboardingAction.SyncPairing.ScanClicked -> false
+            OnboardingAction.SyncPairing.SkipClicked -> true
+            is OnboardingAction.TermsOfService.TermsOfServiceLinkClicked -> false
+            is OnboardingAction.TermsOfService.PrivacyNoticeLinkClicked -> false
+            OnboardingAction.TermsOfService.ManagePrivacyPreferencesLinkClicked -> false
+            OnboardingAction.TermsOfService.AcceptClicked -> true
+            OnboardingAction.MarketingData.LearnMoreClicked -> false
+            is OnboardingAction.MarketingData.OptInToggled -> false
+            is OnboardingAction.MarketingData.ContinueClicked -> true
+            OnboardingAction.MarketingData.SkipClicked -> true
+        }
 
 private fun shouldLaunchEffectScrollToNextPage(
     isSignedIn: State<Boolean?>,
@@ -381,23 +347,10 @@ private fun scrollToNextCardFromSetToDefault(
 }
 
 @Composable
-@Suppress("LongParameterList", "LongMethod")
 private fun OnboardingContent(
     pagesToDisplay: List<OnboardingPageUiData>,
     pagerState: PagerState,
-    onMakeFirefoxDefaultClick: () -> Unit,
-    onMakeFirefoxDefaultSkipClick: () -> Unit,
-    onSignInButtonClick: () -> Unit,
-    onSignInSkipClick: () -> Unit,
-    onSyncPairingScanClick: () -> Unit,
-    onSyncPairingEmailClick: () -> Unit,
-    onSyncPairingSkipClick: () -> Unit,
-    termsOfServiceEventHandler: OnboardingTermsOfServiceEventHandler,
-    onAgreeAndConfirmTermsOfService: () -> Unit,
-    onMarketingOptInToggle: (optIn: Boolean) -> Unit,
-    onMarketingDataLearnMoreClick: () -> Unit,
-    onMarketingDataContinueClick: (allowMarketingDataCollection: Boolean) -> Unit,
-    onMarketingDataSkipClick: () -> Unit,
+    onAction: (OnboardingAction) -> Unit,
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val layout = getOnboardingLayout(this)
@@ -405,15 +358,8 @@ private fun OnboardingContent(
         val pageStates = pagesToDisplay.map { pageUiData ->
             mapToOnboardingPageState(
                 onboardingPageUiData = pageUiData,
-                onMakeFirefoxDefaultClick = onMakeFirefoxDefaultClick,
-                onMakeFirefoxDefaultSkipClick = onMakeFirefoxDefaultSkipClick,
-                onSignInButtonClick = onSignInButtonClick,
-                onSignInSkipClick = onSignInSkipClick,
-                onSyncPairingScanClick = onSyncPairingScanClick,
-                onSyncPairingEmailClick = onSyncPairingEmailClick,
-                onSyncPairingSkipClick = onSyncPairingSkipClick,
-                onTermsOfServiceButtonClick = onAgreeAndConfirmTermsOfService,
                 isSmallDevice = layout.isSmall,
+                onAction = onAction,
             )
         }
 
@@ -457,11 +403,7 @@ private fun OnboardingContent(
                 OnboardingPageForType(
                     type = pagesToDisplay[pageIndex].type,
                     state = pageStates[pageIndex],
-                    termsOfServiceEventHandler = termsOfServiceEventHandler,
-                    onMarketingDataLearnMoreClick = onMarketingDataLearnMoreClick,
-                    onMarketingOptInToggle = onMarketingOptInToggle,
-                    onMarketingDataContinueClick = onMarketingDataContinueClick,
-                    onMarketingDataSkipClick = onMarketingDataSkipClick,
+                    onAction = onAction,
                 )
             }
 
@@ -541,31 +483,17 @@ private fun OnboardingSkipButton(
 private fun OnboardingPageForType(
     type: OnboardingPageUiData.Type,
     state: OnboardingPageState,
-    termsOfServiceEventHandler: OnboardingTermsOfServiceEventHandler,
-    onMarketingDataLearnMoreClick: () -> Unit,
-    onMarketingOptInToggle: (optIn: Boolean) -> Unit,
-    onMarketingDataContinueClick: (allowMarketingDataCollection: Boolean) -> Unit,
-    onMarketingDataSkipClick: () -> Unit,
+    onAction: (OnboardingAction) -> Unit,
 ) {
     when (type) {
         OnboardingPageUiData.Type.DEFAULT_BROWSER,
         OnboardingPageUiData.Type.SYNC_PAIRING,
         OnboardingPageUiData.Type.SYNC_SIGN_IN -> OnboardingPage(state)
 
-        OnboardingPageUiData.Type.MARKETING_DATA ->
-            MarketingDataOnboardingPage(
-                state = state,
-                onMarketingDataLearnMoreClick = onMarketingDataLearnMoreClick,
-                onMarketingOptInToggle = onMarketingOptInToggle,
-                onMarketingDataContinueClick = onMarketingDataContinueClick,
-                onMarketingDataSkipClick = onMarketingDataSkipClick,
-            )
+        OnboardingPageUiData.Type.MARKETING_DATA -> MarketingDataOnboardingPage(state = state, onAction = onAction)
 
         OnboardingPageUiData.Type.TERMS_OF_SERVICE ->
-            TermsOfServiceOnboardingPage(
-                state,
-                termsOfServiceEventHandler,
-            )
+            TermsOfServiceOnboardingPage(pageState = state, onAction = onAction)
     }
 }
 
@@ -582,19 +510,7 @@ private fun OnboardingScreenPreview() {
                 rememberPagerState(initialPage = 0) {
                     pageCount
                 },
-            onMakeFirefoxDefaultClick = {},
-            onMakeFirefoxDefaultSkipClick = {},
-            onSignInButtonClick = {},
-            onSignInSkipClick = {},
-            onAgreeAndConfirmTermsOfService = {},
-            termsOfServiceEventHandler = object : OnboardingTermsOfServiceEventHandler {},
-            onMarketingDataLearnMoreClick = {},
-            onMarketingOptInToggle = {},
-            onMarketingDataContinueClick = {},
-            onMarketingDataSkipClick = {},
-            onSyncPairingScanClick = {},
-            onSyncPairingEmailClick = {},
-            onSyncPairingSkipClick = {},
+            onAction = {},
         )
     }
 }
@@ -616,19 +532,7 @@ private fun OnboardingScreenPairingPreview() {
         OnboardingContent(
             pagesToDisplay = listOf(syncPairingPageUiData),
             pagerState = rememberPagerState(initialPage = 0) { 1 },
-            onMakeFirefoxDefaultClick = {},
-            onMakeFirefoxDefaultSkipClick = {},
-            onSignInButtonClick = {},
-            onSignInSkipClick = {},
-            onAgreeAndConfirmTermsOfService = {},
-            termsOfServiceEventHandler = object : OnboardingTermsOfServiceEventHandler {},
-            onMarketingDataLearnMoreClick = {},
-            onMarketingOptInToggle = {},
-            onMarketingDataContinueClick = {},
-            onMarketingDataSkipClick = {},
-            onSyncPairingScanClick = {},
-            onSyncPairingEmailClick = {},
-            onSyncPairingSkipClick = {},
+            onAction = {},
         )
     }
 }

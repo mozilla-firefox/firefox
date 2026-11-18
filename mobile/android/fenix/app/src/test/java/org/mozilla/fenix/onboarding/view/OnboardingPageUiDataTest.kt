@@ -7,6 +7,7 @@ package org.mozilla.fenix.onboarding.view
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.mozilla.fenix.R
+import org.mozilla.fenix.nimbus.MarketingCardVariant
 
 class OnboardingPageUiDataTest {
 
@@ -95,6 +96,33 @@ val termsOfServicePageUiData =
         title = "terms of service title",
         description = "terms of service body",
         primaryButtonLabel = "terms of service primary button text",
+        termsOfService =
+            OnboardingTermsOfService(
+                lineOneText = "terms of service line one text",
+                lineOneLinkText = "terms of service line one link text",
+                lineOneLinkUrl = "terms of service line one link url",
+                lineTwoText = "terms of service line two text",
+                lineTwoLinkText = "terms of service line two link text",
+                lineTwoLinkUrl = "terms of service line two link url",
+                lineThreeText = "terms of service line three text",
+                lineThreeLinkText = "terms of service line three link text",
+            ),
+    )
+
+val marketingDataPageUiData =
+    OnboardingPageUiData(
+        type = OnboardingPageUiData.Type.MARKETING_DATA,
+        imageRes = R.drawable.ic_high_five,
+        title = "marketing data title",
+        description = "marketing data body",
+        primaryButtonLabel = "marketing data button text",
+        marketingData =
+            OnboardingMarketingData(
+                marketingCardVariant = MarketingCardVariant.DEFAULT,
+                bodyOneText = "marketing data body one",
+                bodyOneLinkText = "marketing data body one link",
+                bodyTwoText = "marketing data body two",
+            ),
     )
 
 private val allKnownPages =

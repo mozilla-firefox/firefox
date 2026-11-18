@@ -69,19 +69,13 @@ private val MARKETING_CONTENT_IMAGE_HEIGHT_TREATMENT_C = 130.dp
  * UI for an onboarding page that allows the user to opt out of marketing data analytics.
  *
  * @param state the UI state containing strings etc.
- * @param onMarketingDataLearnMoreClick callback for when the user clicks the learn more text link.
- * @param onMarketingOptInToggle callback for when the user toggles the opt-in checkbox.
- * @param onMarketingDataContinueClick callback for when the user clicks the continue button.
- * @param onMarketingDataSkipClick callback for when the user clicks the skip button.
+ * @param onAction Invoked when the user interacts with this page.
  */
 @Suppress("LongMethod")
 @Composable
-fun MarketingDataOnboardingPage(
+internal fun MarketingDataOnboardingPage(
     state: OnboardingPageState,
-    onMarketingDataLearnMoreClick: () -> Unit,
-    onMarketingOptInToggle: (optIn: Boolean) -> Unit,
-    onMarketingDataContinueClick: (allowMarketingDataCollection: Boolean) -> Unit,
-    onMarketingDataSkipClick: () -> Unit,
+    onAction: (OnboardingAction.MarketingData) -> Unit,
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceBright),
@@ -142,10 +136,12 @@ fun MarketingDataOnboardingPage(
                             MarketingDataView(
                                 marketingData = it,
                                 checkboxChecked = checkboxChecked,
-                                onMarketingDataLearnMoreClick = onMarketingDataLearnMoreClick,
+                                onMarketingDataLearnMoreClick = {
+                                    onAction(OnboardingAction.MarketingData.LearnMoreClicked)
+                                },
                                 onMarketingOptInToggle = { isChecked ->
                                     checkboxChecked = isChecked
-                                    onMarketingOptInToggle(isChecked)
+                                    onAction(OnboardingAction.MarketingData.OptInToggled(isChecked))
                                 },
                             )
                         }
@@ -169,12 +165,14 @@ fun MarketingDataOnboardingPage(
                     SecondaryButton(
                         state = state,
                         action = state.secondaryButton,
-                        onMarketingDataSkipClick = onMarketingDataSkipClick,
+                        onMarketingDataSkipClick = { onAction(OnboardingAction.MarketingData.SkipClicked) },
                         modifier = Modifier.weight(1f),
                     )
                     PrimaryButton(
                         state = state,
-                        onMarketingDataContinueClick = onMarketingDataContinueClick,
+                        onMarketingDataContinueClick = { allowMarketingDataCollection ->
+                            onAction(OnboardingAction.MarketingData.ContinueClicked(allowMarketingDataCollection))
+                        },
                         checkboxChecked = checkboxChecked,
                         modifier = Modifier.weight(1f),
                     )
@@ -182,7 +180,9 @@ fun MarketingDataOnboardingPage(
             } else {
                 PrimaryButton(
                     state = state,
-                    onMarketingDataContinueClick = onMarketingDataContinueClick,
+                    onMarketingDataContinueClick = { allowMarketingDataCollection ->
+                        onAction(OnboardingAction.MarketingData.ContinueClicked(allowMarketingDataCollection))
+                    },
                     checkboxChecked = checkboxChecked,
                     modifier = Modifier.width(width = FirefoxTheme.layout.size.maxWidth.small),
                 )
@@ -474,10 +474,7 @@ private fun MarketingDataOnboardingPagePreviewDefault() {
                             bodyOneLinkText = stringResource(id = R.string.nova_onboarding_marketing_body_link_text),
                         ),
                 ),
-            onMarketingDataLearnMoreClick = {},
-            onMarketingOptInToggle = {},
-            onMarketingDataContinueClick = {},
-            onMarketingDataSkipClick = {},
+            onAction = {},
         )
     }
 }
@@ -518,10 +515,7 @@ private fun MarketingDataOnboardingPageTreatmentCPreview(
                             bodyThreeText = bodyThreeText,
                         ),
                 ),
-            onMarketingDataLearnMoreClick = {},
-            onMarketingOptInToggle = {},
-            onMarketingDataContinueClick = {},
-            onMarketingDataSkipClick = {},
+            onAction = {},
         )
     }
 }

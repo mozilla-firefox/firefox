@@ -59,12 +59,12 @@ private val kitImageResources =
  * A Composable for displaying the terms of service onboarding page content.
  *
  * @param pageState The page content that's displayed.
- * @param eventHandler The event handler for all user interactions of this page.
+ * @param onAction Invoked when the user interacts with this page.
  */
 @Composable
-fun TermsOfServiceOnboardingPage(
+internal fun TermsOfServiceOnboardingPage(
     pageState: OnboardingPageState,
-    eventHandler: OnboardingTermsOfServiceEventHandler,
+    onAction: (OnboardingAction.TermsOfService) -> Unit,
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceBright),
@@ -102,7 +102,7 @@ fun TermsOfServiceOnboardingPage(
 
                         Spacer(Modifier.weight(1f))
 
-                        pageState.termsOfService?.let { BodyText(it, eventHandler) }
+                        pageState.termsOfService?.let { BodyText(it, onAction) }
 
                         Spacer(Modifier.height(26.dp))
                     }
@@ -208,7 +208,7 @@ private fun SubHeader(text: String) {
 @Composable
 private fun BodyText(
     termsOfService: OnboardingTermsOfService,
-    eventHandler: OnboardingTermsOfServiceEventHandler,
+    onAction: (OnboardingAction.TermsOfService) -> Unit,
 ) {
     with(termsOfService) {
         Column(modifier = Modifier.padding(horizontal = FirefoxTheme.layout.space.static100)) {
@@ -216,7 +216,10 @@ private fun BodyText(
                 LinkTextState(
                     text = lineOneLinkText,
                     url = lineOneLinkUrl,
-                    onClick = hapticOnLinkClick(eventHandler::onTermsOfServiceLinkClicked),
+                    onClick =
+                        hapticOnLinkClick { url ->
+                            onAction(OnboardingAction.TermsOfService.TermsOfServiceLinkClicked(url))
+                        },
                 )
             BodyLinkText(
                 lineOneText.updateFirstPlaceholder(lineOneLinkText),
@@ -227,7 +230,10 @@ private fun BodyText(
                 LinkTextState(
                     text = lineTwoLinkText,
                     url = lineTwoLinkUrl,
-                    onClick = hapticOnLinkClick(eventHandler::onPrivacyNoticeLinkClicked),
+                    onClick =
+                        hapticOnLinkClick { url ->
+                            onAction(OnboardingAction.TermsOfService.PrivacyNoticeLinkClicked(url))
+                        },
                 )
             BodyLinkText(
                 lineTwoText.updateFirstPlaceholder(lineTwoLinkText),
@@ -238,7 +244,10 @@ private fun BodyText(
                 LinkTextState(
                     text = lineThreeLinkText,
                     url = "", // No URL
-                    onClick = hapticOnLinkClick { eventHandler.onManagePrivacyPreferencesLinkClicked() },
+                    onClick =
+                        hapticOnLinkClick {
+                            onAction(OnboardingAction.TermsOfService.ManagePrivacyPreferencesLinkClicked)
+                        },
                 )
             BodyLinkText(
                 lineThreeText.updateFirstPlaceholder(lineThreeLinkText),
@@ -298,7 +307,7 @@ private fun OnboardingPagePreview() {
                             onClick = {},
                         ),
                 ),
-            eventHandler = object : OnboardingTermsOfServiceEventHandler {},
+            onAction = {},
         )
     }
 }

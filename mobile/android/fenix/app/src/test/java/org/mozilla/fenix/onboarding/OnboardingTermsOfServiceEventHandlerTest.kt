@@ -18,9 +18,9 @@ import org.robolectric.RobolectricTestRunner
 private const val TIME_IN_MILLIS = 1759926358L
 
 @RunWith(RobolectricTestRunner::class)
-class DefaultOnboardingTermsOfServiceEventHandlerTest {
+class OnboardingTermsOfServiceEventHandlerTest {
 
-    private lateinit var eventHandler: DefaultOnboardingTermsOfServiceEventHandler
+    private lateinit var eventHandler: OnboardingTermsOfServiceEventHandler
     private lateinit var telemetryRecorder: OnboardingTelemetryRecorder
     private lateinit var settings: Settings
 
@@ -38,7 +38,7 @@ class DefaultOnboardingTermsOfServiceEventHandlerTest {
         settings = Settings(testContext)
 
         eventHandler =
-            DefaultOnboardingTermsOfServiceEventHandler(
+            OnboardingTermsOfServiceEventHandler(
                 telemetryRecorder = telemetryRecorder,
                 openLink = { openLinkUrl = it },
                 showManagePrivacyPreferencesDialog = { showManagePrivacyPreferencesDialogCalled = true },
