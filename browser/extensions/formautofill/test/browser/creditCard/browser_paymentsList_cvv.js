@@ -39,7 +39,7 @@ add_task(async function test_indicationShownForSavedSecurityCode() {
   const row = await getPaymentRow();
   is(
     row.l10nId,
-    "payment-moz-box-item-with-security-code-2",
+    "payment-moz-box-item-with-security-code-3",
     "The row uses the string that notes a saved security code"
   );
   ok(
@@ -105,7 +105,7 @@ add_task(async function test_indicationWithoutExpiryDate() {
   const row = await getPaymentRow();
   is(
     row.l10nId,
-    "payment-moz-box-item-security-code-only-2",
+    "payment-moz-box-item-security-code-only-3",
     "A card with no expiry uses the indicator-only string"
   );
   is(row.l10nArgs.expDate, "", "There is no expiry date to show");

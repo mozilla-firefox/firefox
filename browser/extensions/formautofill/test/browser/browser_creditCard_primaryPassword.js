@@ -484,7 +484,7 @@ add_task(async function test_a_security_code_is_listed_without_a_prompt() {
   ).filter(item => item.id == "payment-item");
   Assert.equal(
     row.l10nId,
-    "payment-moz-box-item-with-security-code-2",
+    "payment-moz-box-item-with-security-code-3",
     "the settings list notes the saved security code"
   );
   Assert.equal(stop(), 0, "without a prompt");

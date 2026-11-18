@@ -162,8 +162,8 @@ export class FormAutofillPreferences {
           let l10nId = "payment-moz-box-item";
           if (hasSecurityCode) {
             l10nId = expDate
-              ? "payment-moz-box-item-with-security-code-2"
-              : "payment-moz-box-item-security-code-only-2";
+              ? "payment-moz-box-item-with-security-code-3"
+              : "payment-moz-box-item-security-code-only-3";
           }
 
           const config = {

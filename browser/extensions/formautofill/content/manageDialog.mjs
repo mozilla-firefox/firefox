@@ -429,7 +429,7 @@ export class ManageCreditCards extends ManageRecords {
       attribute => attribute.name == "aria-label"
     )?.value;
     return {
-      id: "credit-card-label-with-security-code-2",
+      id: "credit-card-label-with-security-code-3",
       args: {
         label: message?.value ?? "",
         ariaLabel: ariaLabel ?? message?.value ?? "",
