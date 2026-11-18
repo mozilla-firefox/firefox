@@ -59,7 +59,7 @@ private fun OnboardingCardData.shouldDisplayCard(
         jexlCache.getOrPut(condition) { jexlEvaluator(condition) }
     }
 
-    val hasDisqualifiers = allDisqualifiers.isNotEmpty() && allDisqualifiers.all { condition ->
+    val hasDisqualifiers = allDisqualifiers.any { condition ->
         jexlCache.getOrPut(condition) { jexlEvaluator(condition) }
     }
 
