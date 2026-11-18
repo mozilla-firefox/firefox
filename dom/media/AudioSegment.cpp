@@ -59,7 +59,10 @@ nsresult AudioSegment::Resample(nsAutoRef<SpeexResamplerState>& aResampler,
       SpeexResamplerState* state =
           speex_resampler_init(channels, aInRate, aOutRate,
                                SPEEX_RESAMPLER_QUALITY_DEFAULT, nullptr);
-      MOZ_ASSERT(state);
+      if (!state) {
+        Clear();
+        return NS_ERROR_DOM_MEDIA_OVERFLOW_ERR;
+      }
       aResampler.own(state);
       *aResamplerChannelCount = channels;
     }

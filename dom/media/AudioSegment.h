@@ -354,7 +354,8 @@ class AudioSegment final : public MediaSegmentBase<AudioSegment, AudioChunk> {
   // new resampler is created, and `aResamplerChannelCount` is updated with the
   // new channel count value.
   // Rates must be non-zero. Clears the segment and returns an error if the
-  // output size is not representable.
+  // output size is not representable or the sample rates are outside the range
+  // supported by the resampler.
   [[nodiscard]] nsresult ResampleChunks(
       nsAutoRef<SpeexResamplerState>& aResampler,
       uint32_t* aResamplerChannelCount, uint32_t aInRate, uint32_t aOutRate);
