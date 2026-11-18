@@ -725,9 +725,9 @@ IonScript* IonScript::New(JSContext* cx, IonCompilationId compilationId,
                 "IonScript has wrong size for SafepointIndex");
 
   CheckedInt<Offset> allocSize = sizeof(IonScript);
-  allocSize += CheckedInt<Offset>(constants) * sizeof(HeapPtr<Value>);
+  allocSize += CheckedInt<Offset>(constants) * sizeof(GCPtr<Value>);
   allocSize += CheckedInt<Offset>(runtimeSize);
-  allocSize += CheckedInt<Offset>(nurseryObjects) * sizeof(HeapPtr<JSObject*>);
+  allocSize += CheckedInt<Offset>(nurseryObjects) * sizeof(GCPtr<JSObject*>);
   allocSize += CheckedInt<Offset>(osiIndices) * sizeof(OsiIndex);
   allocSize += CheckedInt<Offset>(safepointIndices) * sizeof(SafepointIndex);
   allocSize += CheckedInt<Offset>(icEntries) * sizeof(uint32_t);
@@ -753,19 +753,19 @@ IonScript* IonScript::New(JSContext* cx, IonCompilationId compilationId,
 
   Offset offsetCursor = sizeof(IonScript);
 
-  MOZ_ASSERT(offsetCursor % alignof(HeapPtr<Value>) == 0);
-  script->initElements<HeapPtr<Value>>(offsetCursor, constants);
+  MOZ_ASSERT(offsetCursor % alignof(GCPtr<Value>) == 0);
+  script->initElements<GCPtr<Value>>(offsetCursor, constants);
   script->constantTableOffset_ = offsetCursor;
-  offsetCursor += constants * sizeof(HeapPtr<Value>);
+  offsetCursor += constants * sizeof(GCPtr<Value>);
 
   MOZ_ASSERT(offsetCursor % alignof(uint64_t) == 0);
   script->runtimeDataOffset_ = offsetCursor;
   offsetCursor += runtimeSize;
 
-  MOZ_ASSERT(offsetCursor % alignof(HeapPtr<JSObject*>) == 0);
-  script->initElements<HeapPtr<JSObject*>>(offsetCursor, nurseryObjects);
+  MOZ_ASSERT(offsetCursor % alignof(GCPtr<JSObject*>) == 0);
+  script->initElements<GCPtr<JSObject*>>(offsetCursor, nurseryObjects);
   script->nurseryObjectsOffset_ = offsetCursor;
-  offsetCursor += nurseryObjects * sizeof(HeapPtr<JSObject*>);
+  offsetCursor += nurseryObjects * sizeof(GCPtr<JSObject*>);
 
   MOZ_ASSERT(offsetCursor % alignof(OsiIndex) == 0);
   script->osiIndexOffset_ = offsetCursor;
@@ -985,18 +985,19 @@ void IonScript::addSizeOfIncludingThis(JS::Zone* zone, size_t* data) const {
 }
 
 void IonScript::Destroy(JS::Zone* zone, IonScript* script) {
-  // Destroy the HeapPtrs to ensure there are no pointers into the IonScript's
-  // nursery objects list or constants list in the store buffer. This is called
-  // when code is invalidated but not when being finalized by GC.
+  // Clear the GCPtrs to trigger barriers and ensure there are no pointers into
+  // the IonScript's nursery objects list or constants list in the store
+  // buffer. This is called when code is invalidated but not when being
+  // finalized by GC.
 
   MOZ_ASSERT_IF(script->method(), zone == script->method()->zone());
   MOZ_ASSERT(!CurrentThreadIsGCSweeping() && !CurrentThreadIsGCFinalizing());
 
   for (size_t i = 0, len = script->numNurseryObjects(); i < len; i++) {
-    script->nurseryObjects()[i].~HeapPtr<JSObject*>();
+    script->nurseryObjects()[i] = nullptr;
   }
   for (size_t i = 0, len = script->numConstants(); i < len; i++) {
-    script->getConstant(i).~HeapPtr<Value>();
+    script->getConstant(i) = UndefinedValue();
   }
 
   // Trigger write barrier since we are destroying this outside GC.

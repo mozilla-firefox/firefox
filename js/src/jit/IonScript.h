@@ -12,7 +12,7 @@
 
 #include "jstypes.h"
 
-#include "gc/Barrier.h"          // HeapPtr{JitCode,Object}
+#include "gc/Barrier.h"          // GCPtr{JitCode,Object}
 #include "jit/IonTypes.h"        // IonCompilationId
 #include "jit/JitCode.h"         // JitCode
 #include "jit/JitOptions.h"      // JitOptions
@@ -165,12 +165,12 @@ class MOZ_EMPTY_BASES alignas(8) IonScript final
   //
   // Table of constants referenced in snapshots. (JS::Value alignment)
   //
-  HeapPtr<Value>* constants() {
-    return offsetToPointer<HeapPtr<Value>>(constantTableOffset());
+  GCPtr<Value>* constants() {
+    return offsetToPointer<GCPtr<Value>>(constantTableOffset());
   }
   size_t numConstants() const {
-    return numElements<HeapPtr<Value>>(constantTableOffset(),
-                                       runtimeDataOffset());
+    return numElements<GCPtr<Value>>(constantTableOffset(),
+                                     runtimeDataOffset());
   }
 
   //
@@ -187,12 +187,12 @@ class MOZ_EMPTY_BASES alignas(8) IonScript final
   // List of (originally) nursery-allocated objects referenced from JIT code.
   // (JSObject* alignment)
   //
-  HeapPtr<JSObject*>* nurseryObjects() {
-    return offsetToPointer<HeapPtr<JSObject*>>(nurseryObjectsOffset());
+  GCPtr<JSObject*>* nurseryObjects() {
+    return offsetToPointer<GCPtr<JSObject*>>(nurseryObjectsOffset());
   }
   size_t numNurseryObjects() const {
-    return numElements<HeapPtr<JSObject*>>(nurseryObjectsOffset(),
-                                           osiIndexOffset());
+    return numElements<GCPtr<JSObject*>>(nurseryObjectsOffset(),
+                                         osiIndexOffset());
   }
   void* addressOfNurseryObject(uint32_t index) {
     MOZ_ASSERT(index < numNurseryObjects());
@@ -365,7 +365,7 @@ class MOZ_EMPTY_BASES alignas(8) IonScript final
   void notePurgedICScripts() { purgedICScripts_ = true; }
 
   void addSizeOfIncludingThis(JS::Zone* zone, size_t* data) const;
-  HeapPtr<Value>& getConstant(size_t index) {
+  GCPtr<Value>& getConstant(size_t index) {
     MOZ_RELEASE_ASSERT(index < numConstants());
     return constants()[index];
   }
