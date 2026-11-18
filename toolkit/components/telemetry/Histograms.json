@@ -188,59 +188,6 @@
     "kind": "boolean",
     "description": "Did the browser start after a successful shutdown"
   },
-  "CANVAS_2D_USED": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "boolean",
-    "description": "2D canvas used"
-  },
-  "CANVAS_WEBGL_ACCL_FAILURE_ID": {
-    "record_in_processes": ["main", "content", "gpu"],
-    "products": ["firefox", "fennec"],
-    "alert_emails": ["gfx-telemetry-alerts@mozilla.com", "rhunt@mozilla.com"],
-    "expires_in_version": "never",
-    "kind": "count",
-    "keyed": true,
-    "description": "Track the failure IDs that lead us to reject attempting to create an accelerated context. CANVAS_WEBGL_FAILURE_ID reports the overall WebGL status with the attempt to fallback.",
-    "bug_numbers": [1272808]
-  },
-  "CANVAS_WEBGL_FAILURE_ID": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "alert_emails": ["gfx-telemetry-alerts@mozilla.com", "rhunt@mozilla.com"],
-    "expires_in_version": "never",
-    "kind": "count",
-    "keyed": true,
-    "description": "WebGL runtime and dynamic failure IDs. This will record a count for each context creation success or failure. Each failure id is a unique identifier that can be traced back to a particular failure branch or blocklist rule.",
-    "bug_numbers": [1272808]
-  },
-  "CANVAS_WEBGL_SUCCESS": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "alert_emails": ["gfx-telemetry-alerts@mozilla.com", "rhunt@mozilla.com"],
-    "expires_in_version": "never",
-    "kind": "boolean",
-    "description": "WebGL1 creation success",
-    "releaseChannelCollection": "opt-out",
-    "bug_numbers": [1247327, 1529352]
-  },
-  "CANVAS_WEBGL_USED": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "boolean",
-    "description": "WebGL canvas used"
-  },
-  "CANVAS_WEBGL2_SUCCESS": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "alert_emails": ["gfx-telemetry-alerts@mozilla.com", "rhunt@mozilla.com"],
-    "expires_in_version": "never",
-    "kind": "boolean",
-    "description": "WebGL2 creation success",
-    "bug_numbers": [1247327]
-  },
   "TAB_COUNT": {
     "record_in_processes": ["main"],
     "products": ["firefox", "fennec"],
