@@ -1706,8 +1706,6 @@ nsresult PresShell::Initialize() {
   // time we do this!
   MOZ_ASSERT(!mFrameConstructor->GetRootFrame(),
              "How did that happen, exactly?");
-  FrameArena::SortFreeLists();
-
   ViewportFrame* rootFrame;
   {
     nsAutoScriptBlocker scriptBlocker;
