@@ -158,18 +158,46 @@ add_task(async function test_open_link_in_mini_window_from_context_menu() {
   let miniContextMenu = await openLinkContextMenu(
     miniWin,
     miniWin.gBrowser.selectedBrowser,
-    "https://example.com/"
+    "https://example.net/"
   );
+  let miniItem = miniWin.document.getElementById("context-openlinkminiwindow");
   Assert.ok(
-    miniWin.document.getElementById("context-openlinkminiwindow").hidden,
-    "Open Link in Mini Window item is hidden inside a mini window"
+    !miniItem.hidden,
+    "Open Link in Mini Window item is shown inside a mini window"
   );
-  let miniHidden = BrowserTestUtils.waitForEvent(
-    miniContextMenu,
-    "popuphidden"
+  let nestedWinPromise = BrowserTestUtils.waitForNewWindow({
+    url: "https://example.net/",
+  });
+  miniContextMenu.activateItem(miniItem);
+  let nestedWin = await nestedWinPromise;
+  let nested = [...MiniWindowManager._miniwindows].find(
+    m => m.miniWin === nestedWin
   );
-  miniContextMenu.hidePopup();
-  await miniHidden;
+  await TestUtils.waitForCondition(
+    () => nested.state == "active",
+    "Waiting for the nested mini window to activate"
+  );
+  Assert.equal(
+    nested.originWin,
+    window,
+    "A link opened from a mini window belongs to the browser window"
+  );
+
+  let tabCount = gBrowser.tabs.length;
+  nested.returnToOriginWin(true);
+  await BrowserTestUtils.domWindowClosed(nestedWin);
+  Assert.equal(
+    gBrowser.tabs.length,
+    tabCount + 1,
+    "Nested tab went back to the browser window"
+  );
+  Assert.equal(
+    gBrowser.selectedBrowser.currentURI.spec,
+    "https://example.net/",
+    "Returned tab is the nested link"
+  );
+  Assert.equal(mini.state, "active", "First mini window stays open");
+  BrowserTestUtils.removeTab(gBrowser.selectedTab);
 
   mini.close();
   await BrowserTestUtils.domWindowClosed(miniWin);
