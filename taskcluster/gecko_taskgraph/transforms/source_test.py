@@ -8,9 +8,11 @@ treeherder configuration and attributes for that platform.
 """
 
 import copy
+import logging
 import os
 from typing import Optional, Union
 
+from mozpack.path import match as mozpackmatch
 from taskgraph.transforms.base import TransformSequence
 from taskgraph.util.attributes import keymatch
 from taskgraph.util.schema import Schema, optionally_keyed_by, resolve_keyed_by
@@ -19,6 +21,11 @@ from taskgraph.util.yaml import load_yaml
 
 from gecko_taskgraph import GECKO
 from gecko_taskgraph.transforms.job import JobDescriptionSchema
+
+logger = logging.getLogger(__name__)
+
+# Linux rejects a single environment string over 128 KiB.
+MAX_ARG_STRLEN = 128 * 1024
 
 
 class SourceTestDescriptionSchema(Schema, forbid_unknown_fields=False, kw_only=True):
@@ -58,6 +65,10 @@ class SourceTestDescriptionSchema(Schema, forbid_unknown_fields=False, kw_only=T
     # run command and the files-changed patterns are built from this list, in
     # vendor_verify_members below.
     members: Optional[list[str]] = None
+    # Name of an environment variable to set, on git only, to the space
+    # separated changed files that match `when.files-changed`. The variable
+    # is empty when the list exceeds the environment size limit.
+    changed_files_env: Optional[str] = None
     # A list of artifacts to install from 'fetch' tasks.
     fetches: Optional[  # type: ignore
         dict[
@@ -322,6 +333,34 @@ def handle_code_review(config, jobs):
             env = job["worker"].setdefault("env", {})
             env["CODE_REVIEW"] = "1"
 
+        yield job
+
+
+@transforms.add
+def set_changed_files_env(config, jobs):
+    """
+    Pass the changed files that match `when.files-changed` to the task in the
+    environment variable named by `changed-files-env`. Git checkouts are
+    shallow, so the task cannot list the changed files on its own.
+    """
+    for job in jobs:
+        name = job.pop("changed-files-env", None)
+        if name and config.params["repository_type"] == "git":
+            patterns = (job.get("when") or {}).get("files-changed", [])
+            files = " ".join(
+                sorted(
+                    path
+                    for path in config.params["files_changed"]
+                    if any(mozpackmatch(path, pattern) for pattern in patterns)
+                )
+            )
+            if (size := len(f"{name}={files}".encode()) + 1) > MAX_ARG_STRLEN:
+                logger.warning(
+                    f"{job['name']}: {size} bytes of changed files exceed "
+                    f"the {MAX_ARG_STRLEN} byte environment limit, passing none"
+                )
+                files = ""
+            job["worker"].setdefault("env", {})[name] = files
         yield job
 
 
