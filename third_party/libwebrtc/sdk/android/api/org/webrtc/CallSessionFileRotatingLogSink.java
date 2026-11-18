@@ -10,12 +10,6 @@
 
 package org.webrtc;
 
-import org.jni_zero.NativeMethods;
-
-/**
- * Java wrapper for Logging::LogSink which is used to output logs to a call session file rotating
- * log sink.
- */
 public class CallSessionFileRotatingLogSink {
   private final NativeLifecycleLock lifecycleLock;
 
@@ -23,7 +17,7 @@ public class CallSessionFileRotatingLogSink {
     if (dirPath == null) {
       throw new IllegalArgumentException("dirPath may not be null.");
     }
-    return CallSessionFileRotatingLogSinkJni.get().getLogData(dirPath);
+    return nativeGetLogData(dirPath);
   }
 
   @SuppressWarnings("EnumOrdinal")
@@ -35,21 +29,15 @@ public class CallSessionFileRotatingLogSink {
     this.lifecycleLock =
         new NativeLifecycleLock(
             "CallSessionFileRotatingLogSink",
-            CallSessionFileRotatingLogSinkJni.get()
-                .addSink(dirPath, maxFileSize, severity.ordinal()));
+            nativeAddSink(dirPath, maxFileSize, severity.ordinal()));
   }
 
   public void dispose() {
     lifecycleLock.dispose(
-        nativeSink -> CallSessionFileRotatingLogSinkJni.get().deleteSink(nativeSink));
+        nativeSink -> nativeDeleteSink(nativeSink));
   }
 
-  @NativeMethods
-  interface Natives {
-    long addSink(String dirPath, int maxFileSize, int severity);
-
-    void deleteSink(long sink);
-
-    byte[] getLogData(String dirPath);
-  }
+  private static native long nativeAddSink(String dirPath, int maxFileSize, int severity);
+  private static native void nativeDeleteSink(long sink);
+  private static native byte[] nativeGetLogData(String dirPath);
 }

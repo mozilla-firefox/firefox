@@ -23,6 +23,7 @@ import android.os.Build;
 import android.os.Process;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import java.lang.System;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -35,7 +36,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.jni_zero.NativeMethods;
 import org.webrtc.CalledByNative;
 import org.webrtc.Logging;
 import org.webrtc.ThreadUtils;
@@ -131,6 +131,7 @@ class WebRtcAudioRecord {
       // Audio recording has started and the client is informed about it.
       doAudioRecordStateCallback(AUDIO_RECORD_START);
 
+      long lastTime = System.nanoTime();
       AudioTimestamp audioTimestamp = null;
       if (Build.VERSION.SDK_INT >= 24) {
         audioTimestamp = new AudioTimestamp();
@@ -153,9 +154,7 @@ class WebRtcAudioRecord {
                 captureTimeNs = audioTimestamp.nanoTime;
               }
             }
-            WebRtcAudioRecordJni.get()
-                .dataIsRecorded(
-                    nativeAudioRecord, WebRtcAudioRecord.this, bytesRead, captureTimeNs);
+            nativeDataIsRecorded(nativeAudioRecord, bytesRead, captureTimeNs);
           }
           if (audioSamplesReadyCallback != null) {
             // Copy the entire byte buffer array. The start of the byteBuffer is not necessarily
@@ -309,7 +308,7 @@ class WebRtcAudioRecord {
     // Rather than passing the ByteBuffer with every callback (requiring
     // the potentially expensive GetDirectBufferAddress) we simply have the
     // the native class cache the address to the memory once.
-    WebRtcAudioRecordJni.get().cacheDirectBufferAddress(nativeAudioRecord, this, byteBuffer);
+    nativeCacheDirectBufferAddress(nativeAudioRecord, byteBuffer);
 
     // Get the minimum buffer size required for the successful creation of
     // an AudioRecord object, in byte units.
@@ -528,14 +527,10 @@ class WebRtcAudioRecord {
     return (channels == 1 ? AudioFormat.CHANNEL_IN_MONO : AudioFormat.CHANNEL_IN_STEREO);
   }
 
-  @NativeMethods
-  interface Natives {
-    void cacheDirectBufferAddress(
-        long nativeAudioRecordJni, WebRtcAudioRecord caller, ByteBuffer byteBuffer);
-
-    void dataIsRecorded(
-        long nativeAudioRecordJni, WebRtcAudioRecord caller, int bytes, long captureTimestampNs);
-  }
+  private native void nativeCacheDirectBufferAddress(
+      long nativeAudioRecordJni, ByteBuffer byteBuffer);
+  private native void nativeDataIsRecorded(
+      long nativeAudioRecordJni, int bytes, long captureTimestampNs);
 
   // Sets all recorded samples to zero if `mute` is true, i.e., ensures that
   // the microphone is muted.

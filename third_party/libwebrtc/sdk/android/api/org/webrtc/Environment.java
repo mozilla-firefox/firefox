@@ -11,7 +11,6 @@
 package org.webrtc;
 
 import androidx.annotation.Nullable;
-import org.jni_zero.NativeMethods;
 
 /** Wrapper for the webrtc::Environment native class. */
 public final class Environment implements AutoCloseable {
@@ -45,24 +44,19 @@ public final class Environment implements AutoCloseable {
    * normally same as System.nanoTime(), but call this function to be safe.
    */
   public long getCurrentTimeNanos() {
-    return EnvironmentJni.get().currentTimeNanos(webrtcEnv);
+    return nativeCurrentTimeNanos(webrtcEnv);
   }
 
   @Override
   public void close() {
-    EnvironmentJni.get().free(webrtcEnv);
+    nativeFree(webrtcEnv);
   }
 
   private Environment(@Nullable String fieldTrials) {
-    this.webrtcEnv = EnvironmentJni.get().create(fieldTrials);
+    this.webrtcEnv = nativeCreate(fieldTrials);
   }
 
-  @NativeMethods
-  interface Natives {
-    long create(@Nullable String fieldTrials);
-
-    long currentTimeNanos(long webrtcEnv);
-
-    void free(long webrtcEnv);
-  }
+  private static native long nativeCreate(@Nullable String fieldTrials);
+  private static native long nativeCurrentTimeNanos(long webrtcEnv);
+  private static native void nativeFree(long webrtcEnv);
 }

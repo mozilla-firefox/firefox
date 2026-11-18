@@ -10,9 +10,6 @@
 
 package org.webrtc;
 
-import org.jni_zero.CalledByNative;
-import org.jni_zero.NativeMethods;
-
 /** Java wrapper for a C++ TurnCustomizer. */
 public class TurnCustomizer {
   private final NativeLifecycleLock lifecycleLock;
@@ -23,17 +20,14 @@ public class TurnCustomizer {
 
   public void dispose() {
     lifecycleLock.dispose(
-        nativeTurnCustomizer -> TurnCustomizerJni.get().freeTurnCustomizer(nativeTurnCustomizer));
+        nativeTurnCustomizer -> nativeFreeTurnCustomizer(nativeTurnCustomizer));
   }
+
+  private static native void nativeFreeTurnCustomizer(long turnCustomizer);
 
   /** Return a pointer to webrtc::TurnCustomizer. */
   @CalledByNative
   long getNativeTurnCustomizer() {
     return lifecycleLock.getNativePointer();
-  }
-
-  @NativeMethods
-  interface Natives {
-    void freeTurnCustomizer(long turnCustomizer);
   }
 }

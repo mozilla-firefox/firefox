@@ -10,23 +10,18 @@
 
 package org.webrtc;
 
-import org.jni_zero.NativeMethods;
-
 public class LibvpxVp9Encoder extends WrappedNativeVideoEncoder {
   @Override
   public long createNative(long webrtcEnvRef) {
-    return LibvpxVp9EncoderJni.get().create(webrtcEnvRef);
+    return nativeCreate(webrtcEnvRef);
   }
+
+  static native long nativeCreate(long webrtcEnvRef);
 
   @Override
   public boolean isHardwareEncoder() {
     return false;
   }
 
-  @NativeMethods
-  interface Natives {
-    long create(long webrtcEnvRef);
-
-    boolean isSupported();
-  }
+  static native boolean nativeIsSupported();
 }

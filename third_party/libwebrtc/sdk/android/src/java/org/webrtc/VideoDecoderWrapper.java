@@ -10,7 +10,7 @@
 
 package org.webrtc;
 
-import org.jni_zero.NativeMethods;
+import org.webrtc.VideoDecoder;
 
 /**
  * This class contains the Java glue code for JNI generation of VideoDecoder.
@@ -31,8 +31,7 @@ class VideoDecoderWrapper {
     public void onDecodedFrame(VideoFrame frame, Integer decodeTimeMs, Integer qp) {
       lifecycleLock.runIfAlive(
           (long nativeDecoder)
-              -> VideoDecoderWrapperJni.get().onDecodedFrame(
-                  nativeDecoder, frame, decodeTimeMs, qp));
+              -> nativeOnDecodedFrame(nativeDecoder, frame, decodeTimeMs, qp));
     }
 
     // Called by the native VideoDecoderWrapper. Blocks until an ongoing onDecodedFrame() call, if
@@ -48,9 +47,6 @@ class VideoDecoderWrapper {
     return new NativeDecoderCallback(nativeDecoder);
   }
 
-  @NativeMethods
-  interface Natives {
-    void onDecodedFrame(
-        long nativeVideoDecoderWrapper, VideoFrame frame, Integer decodeTimeMs, Integer qp);
-  }
+  private static native void nativeOnDecodedFrame(
+      long nativeVideoDecoderWrapper, VideoFrame frame, Integer decodeTimeMs, Integer qp);
 }

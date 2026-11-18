@@ -10,8 +10,6 @@
 
 package org.webrtc;
 
-import org.jni_zero.NativeMethods;
-
 /** Java wrapper for a C++ AudioTrackInterface */
 public class AudioTrack extends MediaStreamTrack {
   public AudioTrack(long nativeTrack) {
@@ -22,7 +20,7 @@ public class AudioTrack extends MediaStreamTrack {
    * Sets the volume for the underlying MediaSource. Volume is a gain value in the range 0 to 10.
    */
   public void setVolume(double volume) {
-    lifecycleLock.run(nativeTrack -> AudioTrackJni.get().setVolume(nativeTrack, volume));
+    lifecycleLock.run(nativeTrack -> nativeSetVolume(nativeTrack, volume));
   }
 
   /** Returns a pointer to webrtc::AudioTrackInterface. */
@@ -30,8 +28,5 @@ public class AudioTrack extends MediaStreamTrack {
     return getNativeMediaStreamTrack();
   }
 
-  @NativeMethods
-  interface Natives {
-    void setVolume(long track, double volume);
-  }
+  private static native void nativeSetVolume(long track, double volume);
 }

@@ -12,7 +12,6 @@ package org.webrtc;
 
 import androidx.annotation.Nullable;
 import java.nio.ByteBuffer;
-import org.jni_zero.NativeMethods;
 import org.webrtc.VideoFrame.I420Buffer;
 
 /** Implementation of VideoFrame.I420Buffer backed by Java direct byte buffers. */
@@ -186,49 +185,16 @@ public class JavaI420Buffer implements VideoFrame.I420Buffer {
     }
 
     JavaI420Buffer newBuffer = JavaI420Buffer.allocate(scaleWidth, scaleHeight);
-    JavaI420BufferJni.get()
-        .cropAndScaleI420(
-            buffer.getDataY(),
-            buffer.getStrideY(),
-            buffer.getDataU(),
-            buffer.getStrideU(),
-            buffer.getDataV(),
-            buffer.getStrideV(),
-            cropX,
-            cropY,
-            cropWidth,
-            cropHeight,
-            newBuffer.getDataY(),
-            newBuffer.getStrideY(),
-            newBuffer.getDataU(),
-            newBuffer.getStrideU(),
-            newBuffer.getDataV(),
-            newBuffer.getStrideV(),
-            scaleWidth,
-            scaleHeight);
+    nativeCropAndScaleI420(buffer.getDataY(), buffer.getStrideY(), buffer.getDataU(),
+        buffer.getStrideU(), buffer.getDataV(), buffer.getStrideV(), cropX, cropY, cropWidth,
+        cropHeight, newBuffer.getDataY(), newBuffer.getStrideY(), newBuffer.getDataU(),
+        newBuffer.getStrideU(), newBuffer.getDataV(), newBuffer.getStrideV(), scaleWidth,
+        scaleHeight);
     return newBuffer;
   }
 
-  @NativeMethods
-  interface Natives {
-    void cropAndScaleI420(
-        ByteBuffer srcY,
-        int srcStrideY,
-        ByteBuffer srcU,
-        int srcStrideU,
-        ByteBuffer srcV,
-        int srcStrideV,
-        int cropX,
-        int cropY,
-        int cropWidth,
-        int cropHeight,
-        ByteBuffer dstY,
-        int dstStrideY,
-        ByteBuffer dstU,
-        int dstStrideU,
-        ByteBuffer dstV,
-        int dstStrideV,
-        int scaleWidth,
-        int scaleHeight);
-  }
+  private static native void nativeCropAndScaleI420(ByteBuffer srcY, int srcStrideY,
+      ByteBuffer srcU, int srcStrideU, ByteBuffer srcV, int srcStrideV, int cropX, int cropY,
+      int cropWidth, int cropHeight, ByteBuffer dstY, int dstStrideY, ByteBuffer dstU,
+      int dstStrideU, ByteBuffer dstV, int dstStrideV, int scaleWidth, int scaleHeight);
 }

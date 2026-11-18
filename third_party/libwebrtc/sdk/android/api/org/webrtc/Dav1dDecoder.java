@@ -10,16 +10,11 @@
 
 package org.webrtc;
 
-import org.jni_zero.NativeMethods;
-
 public class Dav1dDecoder extends WrappedNativeVideoDecoder {
   @Override
   public long createNative(long webrtcEnvRef) {
-    return Dav1dDecoderJni.get().createDecoder();
+    return nativeCreateDecoder();
   }
 
-  @NativeMethods
-  interface Natives {
-    long createDecoder();
-  }
+  static native long nativeCreateDecoder();
 }

@@ -10,9 +10,8 @@
 
 package org.webrtc;
 
-import java.util.HashMap;
 import java.util.Map;
-import org.jni_zero.NativeMethods;
+import java.util.HashMap;
 
 /** Container for static helper functions related to dealing with H264 codecs. */
 class H264Utils {
@@ -45,11 +44,9 @@ class H264Utils {
 
   public static boolean isSameH264Profile(
       Map<String, String> params1, Map<String, String> params2) {
-    return H264UtilsJni.get().isSameH264Profile(params1, params2);
+    return nativeIsSameH264Profile(params1, params2);
   }
 
-  @NativeMethods
-  interface Natives {
-    boolean isSameH264Profile(Map<String, String> params1, Map<String, String> params2);
-  }
+  private static native boolean nativeIsSameH264Profile(
+      Map<String, String> params1, Map<String, String> params2);
 }
