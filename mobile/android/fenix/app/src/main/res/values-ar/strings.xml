@@ -180,6 +180,16 @@
     Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
   -->
   <string name="customize_menu">خصّص القائمة</string>
+  <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+  <string name="customize_menu_cannot_hide_section">لا يمكن إخفاء هذا القسم</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">صفّر إلى القائمة المبدئية؟</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_message">يؤدي هذا إلى إزالة التخصيصات ولا يمكن التراجع عنه.</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">صفّر</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">ألغِ</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">السابق</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -285,6 +295,8 @@
   <string name="browser_menu_summarize_page_badge">جديد</string>
   <!-- Browser menu label for navigating to the Web Compat Reporter feature, which provides users the ability to send bug reports for broken sites. -->
   <string name="browser_menu_webcompat_reporter_2">الإبلاغ عن موقع مُعطَّل</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">انقل إلى مجموعة</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">مترجمة</string>
   <!-- Browser menu label for the print feature -->
@@ -568,6 +580,12 @@
   <string name="nova_onboarding_sync_subtitle">يمكنك الوصول إلى علاماتك المرجعية وكلمات مرورك والمزيد على أي جهاز في لمح البصر. تبقى بياناتك الشخصية آمنة ومحمية بفضل التشفير.</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">ابدأ المزامنة</string>
+  <!-- Title of onboarding pairing card. Displayed when installing Firefox for Android by using a pairing link from Firefox for Desktop. "Scan" refers to scanning the QR code displayed on the computer. -->
+  <string name="nova_onboarding_sync_pairing_title">امسح ضوئيًا لإكمال عملية الاقتران بحاسوبك</string>
+  <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+  <string name="nova_onboarding_sync_pairing_body"><![CDATA[لا يوجد رمز QR؟ انتقل إلى <b>firefox.com/pair</b> على حاسوبك.]]></string>
+  <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+  <string name="nova_onboarding_sync_pairing_scan_button">امسح رمز الاقتران</string>
   <!-- Marketing onboarding title. -->
   <string name="nova_onboarding_marketing_title">ساعدنا في بناء شبكة إنترنت أفضل</string>
   <!--
@@ -2377,6 +2395,8 @@
   <string name="snackbar_private_tab_closed">إغلاق التبويب الخاص</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">تراجَع</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">اعرض</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned

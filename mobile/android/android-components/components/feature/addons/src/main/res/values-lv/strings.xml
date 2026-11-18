@@ -11,10 +11,20 @@
   <string name="mozac_feature_addons_permissions_browser_data_description">Notīrīt neseno pārlūkošanas vēsturi, sīkdatnes un saistītos datus</string>
   <!-- Description for the "declarativeNetRequest" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_declarative_net_request_description">Liegt saturu jebkurā lapā</string>
+  <!-- Description for the "downloads" WebExtensions API permission. -->
+  <string name="mozac_feature_addons_permissions_downloads_description">Lejupielādēt failus, lasīt un mainīt pārlūka vēsturi</string>
+  <!-- Description for the "downloads.open" WebExtensions API permission. -->
+  <string name="mozac_feature_addons_permissions_downloads_open_description">Atvērt ierīcē lejupielādētās datnes</string>
+  <!-- Description for the "trialML" WebExtensions API permission. -->
+  <string name="mozac_feature_addons_permissions_trial_ml_description">Lejupielādējiet un palaidiet MI modeļus savā ierīcē</string>
   <!-- Description for the "browsingData" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_browsing_data_description_for_update">Notīrīt neseno pārlūkošanas vēsturi, sīkdatnes un saistītos datus.</string>
   <!-- Description for the "declarativeNetRequest" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_declarative_net_request_description_for_update">Liegt saturu jebkurā lapā.</string>
+  <!-- Description for the "downloads" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
+  <string name="mozac_feature_addons_permissions_downloads_description_for_update">Lejupielādēt datnes, kā arī skatīt un mainīt pārlūka lejupielāžu vēsturi.</string>
+  <!-- Description for the "downloads.open" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
+  <string name="mozac_feature_addons_permissions_downloads_open_description_for_update">Atvērt ierīcē lejupielādētās datnes.</string>
   <!-- The developer website (Homepage) of the add-on. -->
   <string name="mozac_feature_addons_home_page">Sākumlapa</string>
   <!-- Displays a page with all the permissions of an add-on. -->
