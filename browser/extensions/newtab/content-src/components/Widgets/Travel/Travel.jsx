@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 // eslint-disable-next-line no-unused-vars
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import {
@@ -92,7 +92,7 @@ function Travel({
   const recordErrorRef = useRef(null);
   // The frame stays hidden until the widget's document sends widget_ready. A
   // load timeout or terminal widget_error hides the whole widget.
-  const { ready, variant } = useFramedWidgetReady({
+  const { ready, readyPayload, variant } = useFramedWidgetReady({
     widget: TRAVEL_ENTRY,
     src,
     iframeRef,
@@ -115,6 +115,26 @@ function Travel({
     widgetVariant: variant,
   });
   recordErrorRef.current = recordError;
+
+  useEffect(() => {
+    const frameWindow = iframeRef.current?.contentWindow;
+    if (!readyPayload || !frameWindow) {
+      return;
+    }
+    frameWindow.postMessage(
+      {
+        channel: `${TRAVEL_ENTRY.telemetryName}_widget`,
+        type: "action",
+        message: "interaction_state",
+        payload: { interacted: Boolean(hasInteracted) },
+        sentAt: new Date().toISOString(),
+      },
+      new URL(src).origin
+    );
+    // src is left out: a new document sends its own widget_ready.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readyPayload, hasInteracted]);
+
   // The frame's user events count as the user interacting once the frame is
   // showing, but only allowlisted ones reach Glean.
   useFramedWidgetMessages({

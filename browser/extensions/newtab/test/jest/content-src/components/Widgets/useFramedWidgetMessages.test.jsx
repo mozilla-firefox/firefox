@@ -123,9 +123,17 @@ describe("useFramedWidgetReady", () => {
 
   it("is ready after widget_ready, with its variant and no timeout", () => {
     const { result, onError } = renderReady();
-    expect(result.current).toEqual({ ready: false, variant: undefined });
+    expect(result.current).toEqual({
+      ready: false,
+      readyPayload: null,
+      variant: undefined,
+    });
     post(message("widget_ready", { protocol: 1, variant: "lagoon" }));
-    expect(result.current).toEqual({ ready: true, variant: "lagoon" });
+    expect(result.current).toEqual({
+      ready: true,
+      readyPayload: { protocol: 1, variant: "lagoon" },
+      variant: "lagoon",
+    });
     act(() => jest.advanceTimersByTime(FRAMED_WIDGET_LOAD_TIMEOUT_MS));
     expect(onError).not.toHaveBeenCalled();
   });
@@ -133,7 +141,7 @@ describe("useFramedWidgetReady", () => {
   it("drops a variant the widget doesn't list", () => {
     const { result } = renderReady();
     post(message("widget_ready", { protocol: 1, variant: "london" }));
-    expect(result.current).toEqual({ ready: true, variant: undefined });
+    expect(result.current).toMatchObject({ ready: true, variant: undefined });
   });
 
   it("reports a terminal load_timeout without widget_ready", () => {
