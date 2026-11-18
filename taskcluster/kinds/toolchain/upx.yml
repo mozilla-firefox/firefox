@@ -27,7 +27,7 @@ linux64-upx:
 win64-upx:
     treeherder:
         symbol: TW64(upx)
-    worker-type: b-win2022
+    worker-type: b-win2025
     fetches:
         toolchain:
             - win64-cmake

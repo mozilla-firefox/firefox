@@ -500,7 +500,7 @@ import org.mozilla.gecko.util.ThreadUtils;
               public void run() {
                 Looper.prepare();
                 synchronized (GeckoInputConnection.class) {
-                  sBackgroundHandler = new Handler();
+                  sBackgroundHandler = new Handler(Looper.myLooper());
                   GeckoInputConnection.class.notify();
                 }
                 Looper.loop();

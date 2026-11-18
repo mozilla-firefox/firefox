@@ -772,8 +772,9 @@ ImgDrawResult nsCSSRendering::CreateWebRenderCommandsForBorderWithStyleBorder(
     return result;
   }
 
-  return bir->CreateWebRenderCommands(aItem, aForFrame, aBuilder, aResources,
-                                      aSc, aManager, aDisplayListBuilder);
+  return bir->CreateWebRenderCommands(
+      WebRenderImageItemInfo(aItem), aForFrame, aBuilder, aResources, aSc,
+      aManager, aDisplayListBuilder->GetImageDecodeFlags());
 }
 
 static nsCSSBorderRenderer ConstructBorderRenderer(
@@ -2053,7 +2054,8 @@ ImgDrawResult nsCSSRendering::BuildWebRenderDisplayItemsForStyleImageLayer(
     const PaintBGParams& aParams, mozilla::wr::DisplayListBuilder& aBuilder,
     mozilla::wr::IpcResourceUpdateQueue& aResources,
     const mozilla::layers::StackingContextHelper& aSc,
-    mozilla::layers::RenderRootStateManager* aManager, nsDisplayItem* aItem) {
+    mozilla::layers::RenderRootStateManager* aManager,
+    const WebRenderImageItemInfo& aItem) {
   MOZ_ASSERT(aParams.frame,
              "Frame is expected to be provided to "
              "BuildWebRenderDisplayItemsForStyleImageLayer");
@@ -2815,8 +2817,9 @@ nsCSSRendering::BuildWebRenderDisplayItemsForStyleImageLayerWithSC(
     const PaintBGParams& aParams, mozilla::wr::DisplayListBuilder& aBuilder,
     mozilla::wr::IpcResourceUpdateQueue& aResources,
     const mozilla::layers::StackingContextHelper& aSc,
-    mozilla::layers::RenderRootStateManager* aManager, nsDisplayItem* aItem,
-    ComputedStyle* aBackgroundSC, const nsStyleBorder& aBorder) {
+    mozilla::layers::RenderRootStateManager* aManager,
+    const WebRenderImageItemInfo& aItem, ComputedStyle* aBackgroundSC,
+    const nsStyleBorder& aBorder) {
   MOZ_ASSERT(!(aParams.paintFlags & PAINTBG_MASK_IMAGE));
 
   nscoord appUnitsPerPixel = aParams.presCtx.AppUnitsPerDevPixel();

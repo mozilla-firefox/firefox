@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-use api::{BorderRadius, ClipMode, ColorF, units::*};
+use api::{BorderRadius, ClipMode, ColorF, MAX_RENDER_TASK_SIZE, units::*};
 use euclid::{SideOffsets2D, Size2D, Transform3D, point2};
 
 use crate::ItemUid;
@@ -15,7 +15,7 @@ use crate::batch::{BatchKey, BatchKind, BatchTextures};
 use crate::clip::{BorderClipKey, clamped_radius};
 use crate::command_buffer::{CommandBufferIndex, PrimitiveCommand, QuadFlags};
 use crate::frame_builder::FrameBuildingState;
-use crate::gpu_types::{PrimitiveInstanceData, QuadHeader, QuadInstance, QuadPrimitive, QuadSegment, ZBufferId};
+use crate::gpu_types::{PrimitiveInstanceData, QuadHeader, QuadInstance, QuadPrimitive, QuadRoundedClip, QuadSegment, ZBufferId};
 use crate::internal_types::TextureSource;
 use crate::pattern::{Pattern, PatternBuilder, PatternBuilderState, PatternKind, PatternShaderInput, TEXTURED_SHADER_MODE_COLOR};
 use crate::prim_store::{NinePatchDescriptor, PrimitiveScratchBuffer};
@@ -23,7 +23,7 @@ use crate::quad_clip::{QuadClip, QuadClipShape, QuadClipStack, QuadMaskTile};
 use crate::render_task::{RenderTask, RenderTaskAddress, RenderTaskKind};
 use crate::render_task_cache::{RenderTaskCacheKey, RenderTaskCacheKeyKind, RenderTaskParent};
 use crate::render_task_graph::{RenderTaskGraph, RenderTaskId, SubTaskRange};
-use crate::renderer::{BlendMode, GpuBufferAddress, GpuBufferBuilder, GpuBufferBuilderF, GpuBufferDataI};
+use crate::renderer::{BlendMode, GpuBufferAddress, GpuBufferBuilder, GpuBufferBuilderF, GpuBufferDataF, GpuBufferDataI};
 use crate::segment::EdgeMask;
 use crate::space::SpaceMapper;
 use crate::spatial_tree::{CoordinateSpaceMapping, SpatialNodeIndex, SpatialTree};
@@ -37,6 +37,7 @@ pub type LayoutOrDeviceRect = api::euclid::default::Box2D<f32>;
 
 const MIN_AA_SEGMENTS_SIZE: f32 = 4.0;
 const MIN_QUAD_SPLIT_SIZE: f32 = 256.0;
+const MAX_INDIRECT_TASK_SIZE: f32 = MAX_RENDER_TASK_SIZE as f32;
 // We merge compatible neighbor tiles in the same rows which means that allowing
 // more tiles on the x axis doesn't generally produce more tiles, but it allows
 // more precise segmentation.
@@ -223,6 +224,9 @@ pub enum QuadRenderStrategy {
     /// The quad is not affected by any mask and is drawn directly in the destination
     /// target.
     Direct,
+    /// The quad is drawn directly in the destination target and the shader applies
+    /// a rounded rectangle clip with a uniform circular radius in device space.
+    DirectRoundedClip(QuadRoundedClip),
     /// The quad is drawn entirely in an intermediate target and a mask is applied
     /// before compositing in the destination target.
     Indirect,
@@ -230,9 +234,13 @@ pub enum QuadRenderStrategy {
     /// The segments of the nine-patch that require a mask are rendered and masked in
     /// an intermediate target, while other segments are drawn directly in the destination
     /// target.
+    ///
+    /// If `direct_corners` is set, the corner segments are drawn directly in the
+    /// destination target with the rounded rectangle clip applied by the shader.
     NinePatch {
         radius: LayoutVector2D,
         clip_rect: LayoutRect,
+        direct_corners: Option<QuadRoundedClip>,
     },
     /// Split the primitive into coarse tiles so that each tile independently
     /// has the opportunity to be drawn directly in the destination target or
@@ -276,6 +284,7 @@ pub fn prepare_quad(
         },
     );
 
+    let rounded_clip_enabled = frame_state.quad_rounded_clip_enabled;
     let strategy = match cache_key {
         Some(_) => QuadRenderStrategy::Indirect,
         None => get_path_render_strategy(
@@ -285,12 +294,7 @@ pub fn prepare_quad(
             transform,
             spatial_tree,
             frame_state.path_rendering_enabled,
-        ).unwrap_or_else(|| get_prim_render_strategy(
-            transform.prim_spatial_node_index(),
-            clips,
-            transform.is_2d_scale_offset(),
-            spatial_tree,
-        )),
+        ).unwrap_or_else(|| get_prim_render_strategy(pattern.kind, clips, transform, spatial_tree, rounded_clip_enabled)),
     };
 
     prepare_quad_impl(
@@ -336,14 +340,10 @@ pub fn prepare_repeatable_quad(
     // coverage rect into account rather than the whole primitive's, but
     // for now it does the latter so we might as well not do the work
     // multiple times.
+    let rounded_clip_enabled = frame_state.quad_rounded_clip_enabled;
     let strategy = match cache_key {
         Some(_) => QuadRenderStrategy::Indirect,
-        None => get_prim_render_strategy(
-            transform.prim_spatial_node_index(),
-            clips,
-            transform.is_2d_scale_offset(),
-            spatial_tree,
-        ),
+        None => get_prim_render_strategy(pattern.kind, clips, transform, spatial_tree, rounded_clip_enabled),
     };
 
     let needs_repetition = stretch_size.width < desc.pattern_rect.width()
@@ -558,11 +558,13 @@ pub fn prepare_border_nine_patch(
         },
     );
 
+    // Each segment is drawn with a texture pattern.
     let strategy = get_prim_render_strategy(
-        transform.prim_spatial_node_index(),
+        PatternKind::ColorOrTexture,
         clips,
-        transform.is_2d_scale_offset(),
+        transform,
         spatial_tree,
+        frame_state.quad_rounded_clip_enabled,
     );
 
     // The indirect transform drives the resolution at which each segment is going
@@ -717,32 +719,61 @@ fn prepare_quad_impl(
         return;
     }
 
-    if let QuadRenderStrategy::Direct = strategy {
-        if pattern.is_opaque {
+    if let QuadRenderStrategy::Direct | QuadRenderStrategy::DirectRoundedClip(..) = strategy {
+        let rounded_clip = match strategy {
+            QuadRenderStrategy::DirectRoundedClip(clip) => Some(clip),
+            _ => None,
+        };
+
+        if pattern.is_opaque && rounded_clip.is_none() {
             quad_flags |= QuadFlags::IS_OPAQUE;
         }
+
+        // Rounded out so that the coverage includes every pixel that the clip's
+        // anti-aliasing touches.
+        let device_clip_rect = match rounded_clip {
+            Some(clip) => clip.rect.round_out(),
+            None => DeviceRect::max_rect(),
+        };
 
         let quad = create_quad_primitive(
             &local_bounds,
             &local_pattern_rect,
-            &DeviceRect::max_rect(),
+            &device_clip_rect,
             transform.as_2d_scale_offset(),
             round_edges,
             pattern,
         );
 
-        let main_prim_address = frame_state.frame_gpu_data.f32.push(&quad);
+        let main_prim_address = match rounded_clip {
+            Some(clip) => {
+                quad_flags |= QuadFlags::ROUNDED_RECT_CLIP;
+                let mut writer = frame_state.frame_gpu_data.f32.write_blocks(
+                    QuadPrimitive::NUM_BLOCKS + QuadRoundedClip::NUM_BLOCKS,
+                );
+                writer.push(&quad);
+                writer.push(&clip);
+                writer.finish()
+            }
+            None => frame_state.frame_gpu_data.f32.push(&quad),
+        };
 
         let device_bounds = match transform.as_2d_scale_offset() {
             // The exact device-space footprint of this quad. `local_bounds` is
             // the quad's own coverage rect, so a primitive split into several
             // quads gets a tight rect for each one rather than sharing the
             // primitive's.
-            Some(local_to_device) => local_to_device.map_rect(&local_bounds),
+            Some(local_to_device) => local_to_device
+                .map_rect(&local_bounds)
+                .intersection_unchecked(&device_clip_rect),
             // Not axis-aligned in device space, so there is no tight rect to
             // derive: bound the primitive's whole coverage rect.
             None => clips.coverage_rect(),
         };
+
+        if rounded_clip.is_some() && device_bounds.is_empty() {
+            return;
+        }
 
         // Only use AA edge instances if the drawn area is large enough to require it.
         // A batch with an inline backdrop readback must hold a single instance, so
@@ -817,7 +848,9 @@ fn prepare_quad_impl(
     }
 
     match strategy {
-        QuadRenderStrategy::Direct | QuadRenderStrategy::Path { .. } => {}
+        QuadRenderStrategy::Direct
+        | QuadRenderStrategy::DirectRoundedClip(..)
+        | QuadRenderStrategy::Path { .. } => {}
         QuadRenderStrategy::Indirect => {
             let (local_bounds, aa_flags) = clips.adjust_border_clip_coverage(
                 local_bounds, aa_flags, transform, &clipped_surface_rect,
@@ -934,13 +967,14 @@ fn prepare_quad_impl(
                 targets,
             );
         }
-        QuadRenderStrategy::NinePatch { clip_rect, radius } => {
+        QuadRenderStrategy::NinePatch { clip_rect, radius, direct_corners } => {
             prepare_nine_patch(
                 &local_bounds,
                 &local_pattern_rect,
                 &clipped_surface_rect,
                 &clip_rect,
                 radius,
+                direct_corners,
                 pattern,
                 quad_flags,
                 aa_flags,
@@ -954,6 +988,10 @@ fn prepare_quad_impl(
             );
         }
     }
+}
+
+fn exceeds_max_task_size(size: DeviceIntSize) -> bool {
+    size.width > MAX_RENDER_TASK_SIZE || size.height > MAX_RENDER_TASK_SIZE
 }
 
 fn prepare_indirect_pattern(
@@ -999,7 +1037,7 @@ fn prepare_indirect_pattern(
     }
 
     let task_size = clipped_surface_rect.size().try_cast::<i32>()?;
-    if task_size.is_empty() {
+    if task_size.is_empty() || exceeds_max_task_size(task_size) {
         return None;
     }
 
@@ -1043,6 +1081,7 @@ fn prepare_nine_patch(
     clipped_surface_rect: &DeviceRect,
     ninepatch_rect: &LayoutRect,
     radius: LayoutVector2D,
+    direct_corners: Option<QuadRoundedClip>,
     pattern: &Pattern,
     mut quad_flags: QuadFlags,
     aa_flags: EdgeMask,
@@ -1154,13 +1193,23 @@ fn prepare_nine_patch(
                 }
             };
 
-            if should_create_task(mode, x, y) {
+            if direct_corners.is_some() && should_create_task(mode, x, y) {
+                // Drawn directly with the rounded clip applied by the shader.
+                // The indirect segment list is unused in this mode.
+                scratch.frame.quad_indirect_segments.push(QuadSegment {
+                    rect: segment_device_rect.to_f32().cast_unit(),
+                    task_id: pattern.texture_input.task_id(),
+                });
+            } else if should_create_task(mode, x, y) {
                 // The segment rect can have a sub-pixel size where it meets the antialiased
                 // bounds of the primitive; round up so the task is never empty
                 // and covers the area that gets drawn.
                 let Some(task_size) = segment_device_rect.size().ceil().try_cast::<i32>() else {
                     continue;
                 };
+                if exceeds_max_task_size(task_size) {
+                    continue;
+                }
                 let task_id = add_render_task_with_mask(
                     pattern,
                     &local_bounds,
@@ -1199,13 +1248,28 @@ fn prepare_nine_patch(
             &device_bounds,
             &device_pattern_rect,
             pattern.is_opaque,
+            None,
             frame_state,
             targets,
             &scratch.frame.quad_direct_segments,
         );
     }
 
-    if !scratch.frame.quad_indirect_segments.is_empty() {
+    if let Some(clip) = direct_corners {
+        if !scratch.frame.quad_indirect_segments.is_empty() {
+            add_pattern_prim(
+                pattern,
+                local_to_device.inverse(),
+                &device_bounds,
+                &device_pattern_rect,
+                false,
+                Some(&clip),
+                frame_state,
+                targets,
+                &scratch.frame.quad_indirect_segments,
+            );
+        }
+    } else if !scratch.frame.quad_indirect_segments.is_empty() {
         add_composite_prim(
             pattern.blend_mode,
             &device_bounds,
@@ -1435,6 +1499,10 @@ fn prepare_tiles(
             continue;
         }
 
+        if !is_direct && exceeds_max_task_size(tile_size) {
+            continue;
+        }
+
         if is_direct {
             scratch.frame.quad_direct_segments.push(QuadSegment {
                 rect: tile.rect.cast_unit(),
@@ -1490,6 +1558,7 @@ fn prepare_tiles(
             &device_bounds,
             &device_pattern_rect,
             pattern.is_opaque,
+            None,
             frame_state,
             targets,
             &scratch.frame.quad_direct_segments,
@@ -1508,11 +1577,15 @@ fn prepare_tiles(
 }
 
 fn get_prim_render_strategy(
-    prim_spatial_node_index: SpatialNodeIndex,
+    pattern_kind: PatternKind,
     clips: &QuadClipStack,
-    prim_is_scale_offset: bool,
+    transform: &QuadTransformState,
     spatial_tree: &SpatialTree,
+    rounded_clip_enabled: bool,
 ) -> QuadRenderStrategy {
+    let prim_spatial_node_index = transform.prim_spatial_node_index();
+    let prim_is_scale_offset = transform.is_2d_scale_offset();
+
     for clip in clips.clips() {
         if let QuadClipShape::Border { key } = clip.shape {
             if prim_is_scale_offset && clips.len() == 1
@@ -1536,11 +1609,25 @@ fn get_prim_render_strategy(
         let size = clips.coverage_rect().size();
         size.width > MIN_QUAD_SPLIT_SIZE || size.height > MIN_QUAD_SPLIT_SIZE
     } else {
-        false
+        // A primitive that can't be drawn in a single render task has to be
+        // split, even if it is not axis-aligned.
+        let size = clips.coverage_rect()
+            .intersection_unchecked(&clips.surface_clip_rect())
+            .size();
+        size.width > MAX_INDIRECT_TASK_SIZE || size.height > MAX_INDIRECT_TASK_SIZE
+    };
+
+    let rounded_clip = if rounded_clip_enabled {
+        get_direct_rounded_clip(pattern_kind, clips, transform, spatial_tree)
+    } else {
+        None
     };
 
     if !try_split_prim {
-        return QuadRenderStrategy::Indirect;
+        return match rounded_clip {
+            Some(clip) => QuadRenderStrategy::DirectRoundedClip(clip),
+            None => QuadRenderStrategy::Indirect,
+        };
     }
 
     if prim_is_scale_offset && clips.len() == 1 {
@@ -1603,6 +1690,7 @@ fn get_prim_render_strategy(
                         return QuadRenderStrategy::NinePatch {
                             radius,
                             clip_rect,
+                            direct_corners: rounded_clip,
                         };
                     }
                 }
@@ -1610,7 +1698,78 @@ fn get_prim_render_strategy(
         }
     }
 
+    if let Some(clip) = rounded_clip {
+        return QuadRenderStrategy::DirectRoundedClip(clip);
+    }
+
     QuadRenderStrategy::Tiled
+}
+
+/// Returns the clip that ps_quad can apply directly, if the only clip that needs
+/// a mask is a rounded rectangle with the same circular radius in all corners.
+///
+/// The primitive and the clip must both map to the device space of the target
+/// with a 2D scale and offset, and the clip's scale must be the same on both axes
+/// so that its corners stay circular in device space.
+fn get_direct_rounded_clip(
+    pattern_kind: PatternKind,
+    clips: &QuadClipStack,
+    transform: &QuadTransformState,
+    spatial_tree: &SpatialTree,
+) -> Option<QuadRoundedClip> {
+    if !pattern_kind.supports_rounded_clip() || !transform.is_2d_scale_offset() {
+        return None;
+    }
+
+    let prim_spatial_node = transform.prim_spatial_node_index();
+    let raster_spatial_node = transform.raster_spatial_node_index();
+
+    let mut rounded_clip = None;
+    for clip in clips.clips() {
+        match clip.shape {
+            // Handled by the local clip rect in the vertex shader.
+            QuadClipShape::Rectangle { mode: ClipMode::Clip }
+                if spatial_tree.is_matching_coord_system(prim_spatial_node, clip.spatial_node) => {}
+            QuadClipShape::RoundedRectangle { ref radius, mode: ClipMode::Clip, .. }
+                if rounded_clip.is_none() => {
+                rounded_clip = Some((clip, radius));
+            }
+            _ => {
+                return None;
+            }
+        }
+    }
+
+    let (clip, radius) = rounded_clip?;
+
+    let radius = clamped_radius(radius, clip.rect.size());
+
+    if !radius.shapes_all_round() || !radius.has_uniform_radii() {
+        return None;
+    }
+
+    if !spatial_tree.can_get_relative_transform(clip.spatial_node, raster_spatial_node) {
+        return None;
+    }
+    let clip_to_raster = spatial_tree.get_relative_transform(clip.spatial_node, raster_spatial_node);
+    if !clip_to_raster.is_2d_scale_translation() {
+        return None;
+    }
+    let clip_to_device = ScaleOffset::from_transform(&clip_to_raster.into_transform())?
+        .then_scale(transform.device_pixel_scale().get());
+
+    let sx = clip_to_device.scale.x.abs();
+    let sy = clip_to_device.scale.y.abs();
+    if (sx - sy).abs() > sx.max(sy) * 0.001 {
+        return None;
+    }
+
+    let r = radius.top_left.width;
+
+    Some(QuadRoundedClip {
+        rect: clip_to_device.map_rect(&clip.rect),
+        radius: r * sx,
+    })
 }
 
 /// Selects `QuadRenderStrategy::Path` if the primitive can be drawn by filling
@@ -1928,6 +2087,7 @@ fn add_pattern_prim(
     coverage_rect: &DeviceRect,
     pattern_rect: &DeviceRect,
     is_opaque: bool,
+    rounded_clip: Option<&QuadRoundedClip>,
     frame_state: &mut FrameBuildingState,
     targets: &[CommandBufferIndex],
     segments: &[QuadSegment],
@@ -1938,6 +2098,7 @@ fn add_pattern_prim(
         pattern_rect.to_untyped(),
         pattern.base_color,
         pattern.texture_input.task_id(),
+        rounded_clip,
         segments,
         pattern_transform,
     );
@@ -1946,8 +2107,12 @@ fn add_pattern_prim(
 
     let mut quad_flags = QuadFlags::APPLY_RENDER_TASK_CLIP;
 
-    if is_opaque {
+    if is_opaque && rounded_clip.is_none() {
         quad_flags |= QuadFlags::IS_OPAQUE;
+    }
+
+    if rounded_clip.is_some() {
+        quad_flags |= QuadFlags::ROUNDED_RECT_CLIP;
     }
 
     frame_state.push_cmd(
@@ -2605,6 +2770,7 @@ fn write_prim_blocks(
         pattern_rect,
         pattern.base_color,
         pattern.texture_input.task_id(),
+        None,
         &[],
         pattern_transform,
     )
@@ -2626,6 +2792,7 @@ pub fn write_device_prim_blocks(
         pattern_rect.to_untyped(),
         pattern_base_color,
         pattern_texture_input,
+        None,
         segments,
         pattern_scale_offset
     )
@@ -2646,6 +2813,7 @@ pub fn write_layout_prim_blocks(
         pattern_rect.cast_unit(),
         pattern_base_color,
         pattern_texture_input,
+        None,
         segments,
         ScaleOffset::identity(),
     )
@@ -2658,10 +2826,14 @@ fn write_prim_blocks_impl(
     pattern_rect: LayoutOrDeviceRect,
     pattern_base_color: ColorF,
     pattern_texture_input: RenderTaskId,
+    rounded_clip: Option<&QuadRoundedClip>,
     segments: &[QuadSegment],
     pattern_scale_offset: ScaleOffset,
 ) -> GpuBufferAddress {
-    let mut writer = builder.write_blocks(5 + segments.len() * 2);
+    let clip_blocks = if rounded_clip.is_some() { QuadRoundedClip::NUM_BLOCKS } else { 0 };
+    let mut writer = builder.write_blocks(
+        QuadPrimitive::NUM_BLOCKS + clip_blocks + segments.len() * QuadSegment::NUM_BLOCKS,
+    );
 
     writer.push(&QuadPrimitive {
         bounds,
@@ -2670,6 +2842,10 @@ fn write_prim_blocks_impl(
         pattern_scale_offset,
         color: pattern_base_color.premultiplied(),
     });
+
+    if let Some(clip) = rounded_clip {
+        writer.push(clip);
+    }
 
     for segment in segments {
         writer.push(segment);

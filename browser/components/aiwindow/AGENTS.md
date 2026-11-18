@@ -16,16 +16,16 @@ This component grew quickly, and much of the existing code across this directory
 ## Current standard, and legacy to avoid
 - Imports: `moz-src:///` with `ChromeUtils.defineESModuleGetters`.
 - Prefs: put defaults only in `browser/app/profile/firefox.js`, and read them with `XPCOMUtils.defineLazyPreferenceGetter(lazy, name, pref)` without a default. Make tunable numbers prefs. Prefs that experiments control go through the `smartWindow*` features in `toolkit/components/nimbus/FeatureManifest.yaml`. Legacy: getters that pass a default, and direct `Services.prefs.get*` calls.
-- Logging: `console.createInstance({ prefix, maxLogLevelPref })` with a `browser.smartwindow.<area>.logLevel` pref that has a default in firefox.js. Legacy: bare `console.*` calls, `loglevel` spelling, prefs with no default.
+- Logging: `console.createInstance({ logModule, maxLogLevelPref })` with a `browser.smartwindow.<area>.logLevel` pref that has a default in firefox.js. Legacy: bare `console.*` calls.
 - Private members: `#` fields and methods. Legacy: `_name` methods.
 - JSDoc is enforced by eslint here (`require-jsdoc` and `valid-jsdoc` apply). Give every `@param` and `@property` a description unless the name makes it obvious.
 - TODO and FIXME comments must cite a bug number.
 - Prefer new, focused modules over growing the 1,500+ line files (`ai-window.mjs`, `ai-chat-content.mjs`, `AITab.sys.mjs`, `Tools.sys.mjs`, `AIWindow.sys.mjs`, `ChatStore.sys.mjs`, `SmartFormFillParent.sys.mjs`). Don't add a separate constants module either, since each extra file is another runtime load.
-- Storage: extend `ui/modules/SQLiteStoreBase.sys.mjs`. Legacy: `ChatStore` manages its own connection.
+- Storage: extend `ui/modules/SQLiteStoreBase.sys.mjs`.
 - Reviewers flag generated-code habits: comments that narrate the code, try/catch or `typeof` checks that can't fail, optional chaining on values that can't be null or undefined, needless default arguments, nested ternaries, layers of indirection and vague `normalize` helpers. Prefer existing shared helpers and fix them rather than working around them.
 
 ## UI components
-- Base new components on `MozLitElement`. Use a sibling CSS file with design tokens (the stylelint `use-design-tokens` rule applies everywhere except `ai-window.css`), `moz-*` reusable components, `data-l10n-id`, `static queries` and bubbling, composed `component:verb` events. Add a story. Good example: `ui/components/ai-clarifying-question/`. Don't use `ai-window.mjs` as a template.
+- Base new components on `MozLitElement`. Use a sibling CSS file with design tokens, `moz-*` reusable components, `data-l10n-id`, `static queries` and bubbling, composed `component:verb` events. Add a story. Good example: `ui/components/ai-clarifying-question/`. Don't use `ai-window.mjs` as a template.
 - Use logical properties and CSS nesting. Pair text and background colours in the same rule so high-contrast mode works.
 - Accessibility: support full keyboard navigation, show visible `:focus-visible` styles, use `title` alone rather than `title` plus `aria-label`, and give the safe button initial focus in destructive dialogs.
 - Strings: never hardcode English. Add translator comments for ambiguous words.

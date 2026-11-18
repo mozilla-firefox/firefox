@@ -29,7 +29,7 @@ linux64-7zz:
 win64-7zz:
     treeherder:
         symbol: TW64(7zz)
-    worker-type: b-win2022
+    worker-type: b-win2025
     run:
         toolchain-alias: win64-aarch64-7zz
     fetches:

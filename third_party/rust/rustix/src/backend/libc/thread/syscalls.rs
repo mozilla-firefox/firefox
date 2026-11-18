@@ -9,10 +9,11 @@ use crate::io;
 use crate::pid::Pid;
 #[cfg(not(any(
     apple,
-    freebsdlike,
+    target_os = "dragonfly",
     target_os = "emscripten",
     target_os = "espidf",
     target_os = "haiku",
+    target_os = "horizon",
     target_os = "openbsd",
     target_os = "redox",
     target_os = "vita",
@@ -50,7 +51,6 @@ weak!(fn __nanosleep64(*const LibcTimespec, *mut LibcTimespec) -> c::c_int);
     target_os = "dragonfly",
     target_os = "emscripten",
     target_os = "espidf",
-    target_os = "freebsd", // FreeBSD 12 has clock_nanosleep, but libc targets FreeBSD 11.
     target_os = "haiku",
     target_os = "horizon",
     target_os = "openbsd",
@@ -161,7 +161,6 @@ fn clock_nanosleep_relative_old(
     target_os = "dragonfly",
     target_os = "emscripten",
     target_os = "espidf",
-    target_os = "freebsd", // FreeBSD 12 has clock_nanosleep, but libc targets FreeBSD 11.
     target_os = "haiku",
     target_os = "horizon",
     target_os = "openbsd",
@@ -388,8 +387,13 @@ pub(crate) fn capset(
 #[cfg(linux_kernel)]
 #[inline]
 pub(crate) fn setuid_thread(uid: crate::ugid::Uid) -> io::Result<()> {
+    #[cfg(any(target_arch = "x86", target_arch = "arm", target_arch = "sparc"))]
+    const SYS: c::c_long = c::SYS_setuid32 as c::c_long;
+    #[cfg(not(any(target_arch = "x86", target_arch = "arm", target_arch = "sparc")))]
+    const SYS: c::c_long = c::SYS_setuid as c::c_long;
+
     syscall! {
-        fn setuid(uid: c::uid_t) via SYS_setuid -> c::c_int
+        fn setuid(uid: c::uid_t) via SYS -> c::c_int
     }
 
     unsafe { ret(setuid(uid.as_raw())) }
@@ -423,8 +427,13 @@ pub(crate) fn setresuid_thread(
 #[cfg(linux_kernel)]
 #[inline]
 pub(crate) fn setgid_thread(gid: crate::ugid::Gid) -> io::Result<()> {
+    #[cfg(any(target_arch = "x86", target_arch = "arm", target_arch = "sparc"))]
+    const SYS: c::c_long = c::SYS_setgid32 as c::c_long;
+    #[cfg(not(any(target_arch = "x86", target_arch = "arm", target_arch = "sparc")))]
+    const SYS: c::c_long = c::SYS_setgid as c::c_long;
+
     syscall! {
-        fn setgid(gid: c::gid_t) via SYS_setgid -> c::c_int
+        fn setgid(gid: c::gid_t) via SYS -> c::c_int
     }
 
     unsafe { ret(setgid(gid.as_raw())) }
@@ -695,8 +704,13 @@ pub(crate) fn futex_waitv(
 #[cfg(linux_kernel)]
 #[inline]
 pub(crate) fn setgroups_thread(groups: &[crate::ugid::Gid]) -> io::Result<()> {
+    #[cfg(any(target_arch = "x86", target_arch = "arm", target_arch = "sparc"))]
+    const SYS: c::c_long = c::SYS_setgroups32 as c::c_long;
+    #[cfg(not(any(target_arch = "x86", target_arch = "arm", target_arch = "sparc")))]
+    const SYS: c::c_long = c::SYS_setgroups as c::c_long;
+
     syscall! {
-        fn setgroups(size: c::size_t, list: *const c::gid_t) via SYS_setgroups -> c::c_int
+        fn setgroups(size: c::size_t, list: *const c::gid_t) via SYS -> c::c_int
     }
     ret(unsafe { setgroups(groups.len(), groups.as_ptr().cast()) })
 }

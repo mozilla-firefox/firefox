@@ -105,7 +105,7 @@ win64-custom-car:
     description: "Custom chromium-as-release build for Windows"
     treeherder:
         symbol: TW64(custom-car)
-    worker-type: b-win2022-xxlarge
+    worker-type: b-win2025-xxlarge
     worker:
         max-run-time: 10000
         env:

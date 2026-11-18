@@ -82,6 +82,20 @@ impl PatternKind {
     pub fn requires_backdrop_readback(&self) -> bool {
         *self == PatternKind::MixBlend
     }
+
+    /// Whether the pattern's shader can apply a `QuadRoundedClip` (see
+    /// WR_QUAD_ROUNDED_CLIP in ps_quad.glsl).
+    pub fn supports_rounded_clip(&self) -> bool {
+        matches!(
+            self,
+            PatternKind::ColorOrTexture
+            | PatternKind::TextureExternal
+            | PatternKind::TextureExternalBT709
+            | PatternKind::TextureRect
+            | PatternKind::Gradient
+            | PatternKind::Repeat
+        )
+    }
 }
 
 /// A 32bit payload used as input for the pattern-specific logic in the shader.

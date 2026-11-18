@@ -14,8 +14,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
 });
 ChromeUtils.defineLazyGetter(lazy, "console", () =>
   console.createInstance({
-    prefix: "DigestStore",
-    maxLogLevelPref: "browser.smartwindow.memoriesLogLevel",
+    logModule: "DigestStore",
+    maxLogLevelPref: "browser.smartwindow.memories.logLevel",
   })
 );
 

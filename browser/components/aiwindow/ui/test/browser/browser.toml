@@ -96,8 +96,6 @@ skip-if = [
 
 ["browser_aitab_blocks.js"]
 
-["browser_aitab_menu_triggers.js"]
-
 ["browser_aitab_page.js"]
 
 ["browser_aitab_store_integration.js"]

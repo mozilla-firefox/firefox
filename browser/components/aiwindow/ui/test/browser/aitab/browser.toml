@@ -15,9 +15,27 @@ skip-if = [
 ]
 
 ["browser_aitab_context_tab_limit.js"]
+support-files = [
+  "!/browser/components/aiwindow/ui/test/browser/head.js",
+  "!/browser/components/aiwindow/ui/test/browser/head_aitab.js",
+]
+["browser_aitab_context_urls.js"]
+support-files = [
+  "!/browser/components/aiwindow/ui/test/browser/head.js",
+  "!/browser/components/aiwindow/ui/test/browser/head_aitab.js",
+]
 ["browser_aitab_heading_font.js"]
-
+["browser_aitab_page_group_menu_triggers.js"]
+support-files = [
+  "!/browser/components/aiwindow/ui/test/browser/head.js",
+  "!/browser/components/aiwindow/ui/test/browser/head_aitab.js",
+  "!/browser/components/aiwindow/ui/test/browser/test_context_url_page.html",
+]
 ["browser_aitab_sidebar.js"]
 support-files = ["!/browser/components/aiwindow/ui/test/browser/head.js"]
-
+["browser_aitab_tab_menu_triggers.js"]
+support-files = [
+  "!/browser/components/aiwindow/ui/test/browser/head.js",
+  "!/browser/components/aiwindow/ui/test/browser/head_aitab.js",
+]
 ["browser_aitab_telemetry.js"]

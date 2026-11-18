@@ -34,6 +34,7 @@ use core::sync::atomic::AtomicU32;
 use crate::backend::thread::futex::Operation;
 use crate::backend::thread::syscalls::{futex_timeout, futex_val2};
 use crate::fd::{FromRawFd as _, OwnedFd, RawFd};
+use crate::types::Padding;
 use crate::{backend, io};
 
 pub use crate::clockid::ClockId;
@@ -532,7 +533,7 @@ pub struct Wait {
     pub flags: WaitFlags,
 
     /// Reserved for future use.
-    pub(crate) __reserved: u32,
+    pub(crate) __reserved: Padding<u32>,
 }
 
 impl Wait {
@@ -543,7 +544,7 @@ impl Wait {
             val: 0,
             uaddr: WaitPtr::new(ptr::null_mut()),
             flags: WaitFlags::empty(),
-            __reserved: 0,
+            __reserved: Padding::new(0),
         }
     }
 }

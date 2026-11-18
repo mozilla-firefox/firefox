@@ -156,6 +156,7 @@ use crate::net::xdp::{XdpMmapOffsets, XdpOptionsFlags, XdpStatistics, XdpUmemReg
     target_os = "emscripten",
     target_os = "espidf",
     target_os = "haiku",
+    target_os = "horizon",
     target_os = "netbsd",
     target_os = "nto",
     target_os = "vita",
@@ -1079,7 +1080,7 @@ pub fn set_ip_add_membership_with_ifindex<Fd: AsFd>(
 /// See the [module-level documentation] for more.
 ///
 /// [module-level documentation]: self#references-for-get_ip_-and-set_ip_-functions
-#[cfg(any(apple, freebsdlike, linux_like, solarish, target_os = "aix"))]
+#[cfg(any(apple, target_os = "freebsd", linux_like, solarish, target_os = "aix"))]
 #[inline]
 #[doc(alias = "IP_ADD_SOURCE_MEMBERSHIP")]
 pub fn set_ip_add_source_membership<Fd: AsFd>(
@@ -1101,7 +1102,7 @@ pub fn set_ip_add_source_membership<Fd: AsFd>(
 /// See the [module-level documentation] for more.
 ///
 /// [module-level documentation]: self#references-for-get_ip_-and-set_ip_-functions
-#[cfg(any(apple, freebsdlike, linux_like, solarish, target_os = "aix"))]
+#[cfg(any(apple, target_os = "freebsd", linux_like, solarish, target_os = "aix"))]
 #[inline]
 #[doc(alias = "IP_DROP_SOURCE_MEMBERSHIP")]
 pub fn set_ip_drop_source_membership<Fd: AsFd>(
@@ -1814,6 +1815,6 @@ mod tests {
 
         // Backend code needs to cast these to `c_int` so make sure that cast
         // isn't lossy.
-        assert_eq_size!(Timeout, c_int);
+        static_assertions::assert_eq_size!(Timeout, c_int);
     }
 }

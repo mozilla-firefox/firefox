@@ -400,7 +400,14 @@ pub(crate) fn capset(
 
 #[inline]
 pub(crate) fn setuid_thread(uid: crate::ugid::Uid) -> io::Result<()> {
-    unsafe { ret(syscall_readonly!(__NR_setuid, uid)) }
+    #[cfg(any(target_arch = "x86", target_arch = "arm", target_arch = "sparc"))]
+    unsafe {
+        ret(syscall_readonly!(__NR_setuid32, uid))
+    }
+    #[cfg(not(any(target_arch = "x86", target_arch = "arm", target_arch = "sparc")))]
+    unsafe {
+        ret(syscall_readonly!(__NR_setuid, uid))
+    }
 }
 
 #[inline]
@@ -421,7 +428,14 @@ pub(crate) fn setresuid_thread(
 
 #[inline]
 pub(crate) fn setgid_thread(gid: crate::ugid::Gid) -> io::Result<()> {
-    unsafe { ret(syscall_readonly!(__NR_setgid, gid)) }
+    #[cfg(any(target_arch = "x86", target_arch = "arm", target_arch = "sparc"))]
+    unsafe {
+        ret(syscall_readonly!(__NR_setgid32, gid))
+    }
+    #[cfg(not(any(target_arch = "x86", target_arch = "arm", target_arch = "sparc")))]
+    unsafe {
+        ret(syscall_readonly!(__NR_setgid, gid))
+    }
 }
 
 #[inline]
@@ -443,7 +457,14 @@ pub(crate) fn setresgid_thread(
 #[inline]
 pub(crate) fn setgroups_thread(gids: &[crate::ugid::Gid]) -> io::Result<()> {
     let (addr, len) = slice(gids);
-    unsafe { ret(syscall_readonly!(__NR_setgroups, len, addr)) }
+    #[cfg(any(target_arch = "x86", target_arch = "arm", target_arch = "sparc"))]
+    unsafe {
+        ret(syscall_readonly!(__NR_setgroups32, len, addr))
+    }
+    #[cfg(not(any(target_arch = "x86", target_arch = "arm", target_arch = "sparc")))]
+    unsafe {
+        ret(syscall_readonly!(__NR_setgroups, len, addr))
+    }
 }
 
 // `sched_getcpu` has special optimizations via the vDSO on some architectures.

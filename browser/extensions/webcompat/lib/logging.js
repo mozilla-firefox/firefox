@@ -13,4 +13,18 @@ const loggingPrefValue = browser.aboutConfigPrefs.getPref(
   false
 );
 
-const debugLog = loggingPrefValue ? console.debug : () => {};
+const debugLog = (function () {
+  if (!loggingPrefValue) {
+    return () => {};
+  }
+  if (browser.appConstants.getPlatform() == "android") {
+    // Escape console log entries ourselves so the remote debugger does not spam [Object object] (see bz2074120)
+    return function () {
+      console.debug.apply(
+        this,
+        [...arguments].map(a => (typeof a == "string" ? a : JSON.stringify(a)))
+      );
+    };
+  }
+  return console.debug;
+})();

@@ -1532,27 +1532,24 @@ void DisplayListBuilder::PushRoundedRect(const wr::LayoutRect& aBounds,
            ToString(aBounds).c_str(), ToString(aClip).c_str(),
            ToString(aRadii).c_str(), ToString(aColor).c_str());
 
-  // Draw the rounded rectangle as a border with rounded corners. We could also
-  // draw this as a rectangle clipped to a rounded rectangle, but:
-  // - clips are not cached; borders are
-  // - a simple border like this will be drawn as an image
-  // - Processing lots of clips is not WebRender's strong point.
-  //
-  // Made the borders thicker than one half the width/height, to avoid
-  // little white dots at the center at some magnifications.
-  wr::BorderSide side = {aColor, wr::BorderStyle::Solid};
-  float h = aBounds.width() * 0.6f;
-  float v = aBounds.height() * 0.6f;
-  wr::LayoutSideOffsets widths = {v, h, v, h};
-  wr::BorderRadius radii = {aRadii, aRadii, aRadii, aRadii,
-                            1.0f,   1.0f,   1.0f,   1.0f};
-  wr::LayoutSideOffsets inset = EmptyLayoutSideOffsets();
+  // Draw the rounded rectangle as a rectangle clipped to a rounded rectangle.
+  // WebRender applies clips with uniform circular radii directly when drawing
+  // the rectangle, without an intermediate clip mask.
+  wr::ComplexClipRegion region;
+  region.rect = aBounds;
+  region.radii = {aRadii, aRadii, aRadii, aRadii, 1.0f, 1.0f, 1.0f, 1.0f};
+  region.inset = EmptyLayoutSideOffsets();
+  region.mode = wr::ClipMode::Clip;
 
-  // Anti-aliased borders are required for rounded borders.
-  wr_dp_push_border(mWrState, aBounds, aClip, aIsBackfaceVisible,
-                    /* force_antialiasing = */ false,
-                    &mCurrentSpaceAndClipChain, wr::AntialiasBorder::Yes,
-                    widths, side, side, side, side, radii, inset);
+  auto clipId = DefineRoundedRectClip(Nothing(), region);
+  auto clipChainId =
+      DefineClipChain({&clipId, 1}, CurrentClipChainIdIfNotRoot());
+  auto spaceAndClip =
+      WrSpaceAndClipChain{mCurrentSpaceAndClipChain.space, clipChainId.id};
+
+  wr_dp_push_rect(mWrState, aBounds, aClip, aIsBackfaceVisible,
+                  /* force_antialiasing = */ false,
+                  /* is_checkerboard = */ false, &spaceAndClip, aColor);
 }
 
 void DisplayListBuilder::PushHitTest(

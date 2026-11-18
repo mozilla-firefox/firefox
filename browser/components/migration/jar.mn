@@ -16,6 +16,7 @@ browser.jar:
    content/browser/migration/brands/canary.png                (content/brands/canary.png)
    content/browser/migration/brands/edge.png                  (content/brands/edge.png)
    content/browser/migration/brands/edgebeta.png              (content/brands/edgebeta.png)
+   content/browser/migration/brands/arc.png                   (content/brands/arc.png)
 #endif
 
    content/browser/migration/brands/brave.png                 (content/brands/brave.png)

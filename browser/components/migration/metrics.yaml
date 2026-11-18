@@ -439,8 +439,8 @@ browser.migration:
       This metric was generated to correspond to the Legacy Telemetry enumerated
       histogram FX_MIGRATION_SOURCE_BROWSER.
     range_min: 0
-    range_max: 15
-    bucket_count: 16
+    range_max: 16
+    bucket_count: 17
     histogram_type: linear
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=731025

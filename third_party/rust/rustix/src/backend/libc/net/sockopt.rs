@@ -27,6 +27,7 @@ use crate::net::xdp::{XdpMmapOffsets, XdpOptionsFlags, XdpRingOffset, XdpStatist
     target_os = "emscripten",
     target_os = "espidf",
     target_os = "haiku",
+    target_os = "horizon",
     target_os = "netbsd",
     target_os = "nto",
     target_os = "vita",
@@ -233,18 +234,19 @@ pub(crate) fn set_socket_timeout(
                 return Err(io::Errno::INVAL);
             }
 
-            // Rust's musl libc bindings deprecated `time_t` while they
-            // transition to 64-bit `time_t`. What we want here is just
-            // “whatever type `timeval`'s `tv_sec` is”, so we're ok using
-            // the deprecated type.
+            let ts = crate::timespec::Timespec {
+                tv_sec: timeout
+                    .as_secs()
+                    .try_into()
+                    .unwrap_or(crate::timespec::Secs::MAX),
+                tv_nsec: timeout.subsec_nanos() as _,
+            };
+            let (sec, usec) = ts.to_sec_usec().unwrap_or((crate::timespec::Secs::MAX, 0));
             #[allow(deprecated)]
-            let tv_sec = timeout.as_secs().try_into().unwrap_or(c::time_t::MAX);
-
-            // `subsec_micros` rounds down, so we use `subsec_nanos` and
-            // manually round up.
+            let tv_sec = sec.try_into().unwrap_or(c::time_t::MAX);
             let mut timeout = c::timeval {
                 tv_sec,
-                tv_usec: ((timeout.subsec_nanos() + 999) / 1000) as _,
+                tv_usec: usec as _,
             };
             if timeout.tv_sec == 0 && timeout.tv_usec == 0 {
                 timeout.tv_usec = 1;
@@ -616,12 +618,12 @@ pub(crate) fn ipv6_multicast_loop(fd: BorrowedFd<'_>) -> io::Result<bool> {
 
 #[inline]
 pub(crate) fn set_ipv6_multicast_hops(fd: BorrowedFd<'_>, multicast_hops: u32) -> io::Result<()> {
-    setsockopt(fd, c::IPPROTO_IP, c::IPV6_MULTICAST_HOPS, multicast_hops)
+    setsockopt(fd, c::IPPROTO_IPV6, c::IPV6_MULTICAST_HOPS, multicast_hops)
 }
 
 #[inline]
 pub(crate) fn ipv6_multicast_hops(fd: BorrowedFd<'_>) -> io::Result<u32> {
-    getsockopt(fd, c::IPPROTO_IP, c::IPV6_MULTICAST_HOPS)
+    getsockopt(fd, c::IPPROTO_IPV6, c::IPV6_MULTICAST_HOPS)
 }
 
 #[inline]
@@ -652,7 +654,7 @@ pub(crate) fn set_ip_add_membership_with_ifindex(
     setsockopt(fd, c::IPPROTO_IP, c::IP_ADD_MEMBERSHIP, mreqn)
 }
 
-#[cfg(any(apple, freebsdlike, linux_like, solarish, target_os = "aix"))]
+#[cfg(any(apple, target_os = "freebsd", linux_like, solarish, target_os = "aix"))]
 #[inline]
 pub(crate) fn set_ip_add_source_membership(
     fd: BorrowedFd<'_>,
@@ -664,7 +666,7 @@ pub(crate) fn set_ip_add_source_membership(
     setsockopt(fd, c::IPPROTO_IP, c::IP_ADD_SOURCE_MEMBERSHIP, mreq_source)
 }
 
-#[cfg(any(apple, freebsdlike, linux_like, solarish, target_os = "aix"))]
+#[cfg(any(apple, target_os = "freebsd", linux_like, solarish, target_os = "aix"))]
 #[inline]
 pub(crate) fn set_ip_drop_source_membership(
     fd: BorrowedFd<'_>,
@@ -1324,7 +1326,7 @@ fn to_ip_mreqn(multiaddr: &Ipv4Addr, address: &Ipv4Addr, ifindex: i32) -> c::ip_
     }
 }
 
-#[cfg(any(apple, freebsdlike, linux_like, solarish, target_os = "aix"))]
+#[cfg(any(apple, target_os = "freebsd", linux_like, solarish, target_os = "aix"))]
 #[inline]
 fn to_imr_source(
     multiaddr: &Ipv4Addr,

@@ -338,6 +338,256 @@ MDefinition::AliasType MWasmLoadGlobalCell::mightAlias(
   return AliasType::MayAlias;
 }
 
+// Walks through cast/non-null/extern conversions to reach the definition that
+// denotes the wasm GC object. Two definitions that resolve to the same node
+// denote the same object.
+static MDefinition* ResolveWasmObject(MDefinition* def) {
+  for (;;) {
+    switch (def->op()) {
+      case MDefinition::Opcode::WasmRefCastConcrete:
+        def = def->toWasmRefCastConcrete()->ref();
+        break;
+      case MDefinition::Opcode::WasmRefCastAbstract:
+        def = def->toWasmRefCastAbstract()->ref();
+        break;
+      case MDefinition::Opcode::WasmRefCastInfallible:
+        def = def->toWasmRefCastInfallible()->ref();
+        break;
+      case MDefinition::Opcode::WasmRefAsNonNull:
+        def = def->toWasmRefAsNonNull()->ref();
+        break;
+      case MDefinition::Opcode::WasmRefConvertAnyExtern:
+        def = def->toWasmRefConvertAnyExtern()->ref();
+        break;
+      default:
+        return def;
+    }
+  }
+}
+
+static bool IsNewWasmGCObject(MDefinition* def) {
+  return def->isWasmNewStructObject() || def->isWasmNewArrayObject();
+}
+
+// Indicates that this object cannot alias a wasm GC object created in this
+// function.
+static bool CannotAliasNewWasmGCObject(MDefinition* def) {
+  return def->isWasmParameter() || def->isWasmNullConstant();
+}
+
+// True if `a` and `b`, both already passed through ResolveWasmObject, must
+// denote different objects at runtime.
+// This function is conservative.
+static bool WasmObjectsCannotAlias(MDefinition* a, MDefinition* b) {
+  if (a == b) {
+    return false;
+  }
+  // A newly allocated object is a distinct object from any other newly
+  // allocated object. It's also different from any object coming from outside
+  // this function, (a parameter, or a null ref).
+  if (IsNewWasmGCObject(a)) {
+    return IsNewWasmGCObject(b) || CannotAliasNewWasmGCObject(b);
+  }
+  if (IsNewWasmGCObject(b)) {
+    return CannotAliasNewWasmGCObject(a);
+  }
+  return false;
+}
+
+HashNumber MWasmLoadInternalField::valueHash() const {
+  // congruentTo sees through casts, so valueHash() must as well.
+  HashNumber hash = HashNumber(op());
+  hash = addU32ToHash(hash, ResolveWasmObject(object())->id());
+  hash = addU32ToHash(hash, uint32_t(type()));
+  hash = addU32ToHash(hash, offset_);
+  return hash;
+}
+
+bool MWasmLoadInternalField::congruentTo(const MDefinition* ins) const {
+  if (!ins->isWasmLoadInternalField()) {
+    return false;
+  }
+  const MWasmLoadInternalField* other = ins->toWasmLoadInternalField();
+  return type() == other->type() && offset() == other->offset() &&
+         ResolveWasmObject(object()) == ResolveWasmObject(other->object());
+}
+
+bool MWasmLoadField::isFieldImmutable() const {
+  AliasSet::Flag flags = AliasSet::Flag(getAliasSet().flags());
+  if (flags != AliasSet::WasmStructInlineDataArea &&
+      flags != AliasSet::WasmStructOutlineDataArea) {
+    return false;
+  }
+
+  MOZ_ASSERT(structFieldIndex().isSome());
+  // The object type is abstract when the object has the bottom type, for
+  // example a (ref null none) value.
+  wasm::MaybeRefType objectType = wasmObject()->wasmRefType();
+  if (objectType.isNothing() || !objectType.value().isTypeRef()) {
+    return false;
+  }
+  const wasm::StructType& structType =
+      objectType.value().typeDef()->structType();
+  return !structType.fields_[structFieldIndex().value()].isMutable;
+}
+
+// Wasm loads and stores can be proven not to alias if their offsets are
+// different or their ref types are known and disjoint. (Disjoint alias sets
+// also mean no aliasing, but this is obvious because that's just what alias
+// sets already do.)
+//
+// Different offsets -> NoAlias is true because each field (whether GC data or
+// internal data) has one and only one offset that is used to access it.
+// Disjoint types -> NoAlias is true because, well, types. When considering
+// types here, we exclude null because null loads and stores will trap anyway.
+//
+// For more rationale, see bug 2061530.
+MDefinition::AliasType MWasmLoadField::mightAlias(
+    const MDefinition* ins) const {
+  if (!(getAliasSet().flags() & ins->getAliasSet().flags())) {
+    return AliasType::NoAlias;
+  }
+  MOZ_ASSERT(!isEffectful() && ins->isEffectful());
+
+  uint32_t insOffset;
+  MDefinition* insObject;
+  if (ins->isWasmStoreField()) {
+    const MWasmStoreField* store = ins->toWasmStoreField();
+    insOffset = store->offset();
+    insObject = store->wasmObject();
+  } else if (ins->isWasmStoreFieldRef()) {
+    const MWasmStoreFieldRef* store = ins->toWasmStoreFieldRef();
+    insOffset = store->offset();
+    insObject = store->wasmObject();
+  } else if (isFieldImmutable()) {
+    // An immutable field can only be written by the MWasmStoreField(Ref)
+    // that initializes it after allocation. Therefore if we see any other
+    // potentially-aliasing "store", we know that its AliasSet is overly
+    // pessimistic and the "store" cannot in fact alias this load.
+    return AliasType::NoAlias;
+  } else {
+    // Safe default, but any other type of store that can operate on the same
+    // values as a (performance-sensitive) MWasmLoadField should probably be
+    // added above.
+    return AliasType::MayAlias;
+  }
+
+  wasm::MaybeRefType thisType = wasmObject()->wasmRefType().asNonNullable();
+  wasm::MaybeRefType insType = insObject->wasmRefType().asNonNullable();
+  if (offset() != insOffset ||
+      !wasm::MaybeRefType::mayHaveValuesInCommon(thisType, insType)) {
+    return AliasType::NoAlias;
+  }
+
+  if (WasmObjectsCannotAlias(ResolveWasmObject(wasmObject()),
+                             ResolveWasmObject(insObject))) {
+    return AliasType::NoAlias;
+  }
+
+  return AliasType::MayAlias;
+}
+
+HashNumber MWasmLoadField::valueHash() const {
+  // The default valueHash() hashes the IDs of all operands, but congruentTo
+  // only looks at the object, seeing through casts, so valueHash() must as
+  // well.
+  HashNumber hash = HashNumber(op());
+  hash = addU32ToHash(hash, uint32_t(type()));
+  hash = addU32ToHash(hash, ResolveWasmObject(wasmObject())->id());
+  hash = addU32ToHash(hash, offset_);
+  hash = addU32ToHash(hash, uint32_t(wideningOp_));
+  hash = addU32ToHash(hash, getAliasSet().flags());
+  if (MDefinition* dep = dependency()) {
+    hash = addU32ToHash(hash, dep->id());
+  }
+  return hash;
+}
+
+bool MWasmLoadField::congruentTo(const MDefinition* ins) const {
+  if (!ins->isWasmLoadField()) {
+    return false;
+  }
+  const MWasmLoadField* other = ins->toWasmLoadField();
+  // `structFieldIndex` is required: an inline field and an out-of-line field
+  // may have the same offset.
+  //
+  // A cast can narrow the type of a field, e.g. field 0 may be anyref before a
+  // cast and (ref $t) after it. `maybeRefType` is compared exactly, so two
+  // loads on either side of such a cast are never congruent and the narrower
+  // type of the load after the cast is not lost.
+  if (type() != other->type() || offset() != other->offset() ||
+      structFieldIndex() != other->structFieldIndex() ||
+      wideningOp() != other->wideningOp() ||
+      getAliasSet().flags() != other->getAliasSet().flags() ||
+      maybeRefType() != other->maybeRefType()) {
+    return false;
+  }
+  // The object, the alias set and the offset identify the location, so the
+  // base pointer is not compared. The base is either the object itself or a
+  // data pointer that is an MWasmLoadInternalField of it. Casts and
+  // conversions don't change the identity of the object, so loads through
+  // them read the same location.
+  return ResolveWasmObject(wasmObject()) ==
+         ResolveWasmObject(other->wasmObject());
+}
+
+MDefinition* MWasmLoadField::foldsTo(TempAllocator& alloc) {
+  // Store-to-load forwarding. Alias analysis has set dependency() to the last
+  // store this load might read from.
+  // If that store wrote exactly the location this load reads,
+  // the load returns the store value operand.
+  MDefinition* dep = dependency();
+  if (!dep || !dep->block()->dominates(block())) {
+    return this;
+  }
+
+  MDefinition* storeObject;
+  MDefinition* storeValue;
+  uint32_t storeOffset;
+  if (dep->isWasmStoreField()) {
+    MWasmStoreField* store = dep->toWasmStoreField();
+    if (store->narrowingOp() != MNarrowingOp::None) {
+      return this;
+    }
+    storeObject = store->wasmObject();
+    storeValue = store->value();
+    storeOffset = store->offset();
+  } else if (dep->isWasmStoreFieldRef()) {
+    MWasmStoreFieldRef* store = dep->toWasmStoreFieldRef();
+    storeObject = store->wasmObject();
+    storeValue = store->value();
+    storeOffset = store->offset();
+  } else {
+    return this;
+  }
+
+  if (storeOffset != offset() ||
+      dep->getAliasSet().flags() != getAliasSet().flags() ||
+      wideningOp() != MWideningOp::None || storeValue->type() != type()) {
+    return this;
+  }
+
+  if (ResolveWasmObject(wasmObject()) != ResolveWasmObject(storeObject)) {
+    return this;
+  }
+
+  // The store and the load may see the object through different casts, and a
+  // subtype can narrow the type of a field. The stored value is only
+  // forwarded if its type is a subtype of the type of the load, otherwise the
+  // value would get a wrong type. Missing type information prevents
+  // forwarding.
+  if (type() == MIRType::WasmAnyRef) {
+    wasm::MaybeRefType loadType = maybeRefType();
+    wasm::MaybeRefType valueType = storeValue->wasmRefType();
+    if (loadType.isNothing() || valueType.isNothing() ||
+        !wasm::RefType::isSubTypeOf(valueType.value(), loadType.value())) {
+      return this;
+    }
+  }
+
+  return storeValue;
+}
+
 HashNumber MWasmLoadInstanceDataField::valueHash() const {
   // Same comment as in MWasmLoadInstanceDataField::congruentTo() applies here.
   HashNumber hash = MUnaryInstruction::valueHash();

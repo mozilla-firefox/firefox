@@ -2455,7 +2455,7 @@ pref("browser.smartwindow.auth.guest.mode", "fetch");
 pref("browser.smartwindow.memories.generateFromHistory", true);
 pref("browser.smartwindow.memories.generateFromConversation", true);
 pref("browser.smartwindow.memories.hasSeenMemories", false);
-pref("browser.smartwindow.memoriesLogLevel", "Warn");
+pref("browser.smartwindow.memories.logLevel", "Warn");
 // Gates resume-activity ("pick up where you left off") starter generation.
 pref("browser.smartwindow.resumeActivity.enabled", true);
 // TODO Bug 2067871: remove once journey store is available.
@@ -2483,7 +2483,7 @@ pref("browser.smartwindow.autoTabGrouping.minCohesion", "0.15");
 pref("browser.smartwindow.autoTabGrouping.timeoutMs", 8000);
 pref("browser.smartwindow.autoTabGrouping.supportedLocales", "en,fr");
 pref("browser.smartwindow.autoTabGrouping.nonEnglishThresholdInt", 550);
-pref("browser.smartwindow.autoTabGrouping.loglevel", "Warn");
+pref("browser.smartwindow.autoTabGrouping.logLevel", "Warn");
 
 // Smart Window: Smart Form Fill (bug 2055009).
 pref("browser.smartwindow.smartformfill.enabled", true);
@@ -2542,15 +2542,24 @@ pref("browser.smartwindow.searchTheWebAnswers", false);
 pref("browser.smartwindow.location.enabled", true);
 
 // Smart Window Logging
+pref("browser.smartwindow.agentUI.logLevel", "Error");
 pref("browser.smartwindow.aiTabHistory.logLevel", "Error");
 pref("browser.smartwindow.aiTabStore.logLevel", "Error");
-pref("browser.smartwindow.chatHistory.loglevel", "Error");
-pref("browser.smartwindow.chatStore.loglevel", "Error");
+pref("browser.smartwindow.aiWindow.logLevel", "Error");
+pref("browser.smartwindow.auth.logLevel", "Warn");
+pref("browser.smartwindow.chatConversation.logLevel", "Error");
+pref("browser.smartwindow.chatHistory.logLevel", "Error");
+pref("browser.smartwindow.chatStore.logLevel", "Error");
 pref("browser.smartwindow.conversation.logLevel", "Error");
 pref("browser.smartwindow.conversationHistory.logLevel", "Error");
 pref("browser.smartwindow.conversationStore.logLevel", "Error");
-pref("browser.smartwindow.smartbarMentions.loglevel", "Error");
-pref("browser.smartwindow.telemetryLogLevel", "Error");
+pref("browser.smartwindow.monitorAgent.logLevel", "Error");
+pref("browser.smartwindow.monitorStore.logLevel", "Error");
+pref("browser.smartwindow.smartbarMentions.logLevel", "Error");
+pref("browser.smartwindow.smartformfill.logLevel", "Error");
+pref("browser.smartwindow.tabManagement.logLevel", "Error");
+pref("browser.smartwindow.telemetry.logLevel", "Error");
+pref("browser.smartwindow.toolUI.logLevel", "Error");
 
 pref("browser.widgets.generated.enabled", false);
 pref(
@@ -3022,6 +3031,7 @@ pref("browser.migrate.chrome.payment_methods.enabled", true);
 pref("browser.migrate.chrome.extensions.enabled", true);
 pref("browser.migrate.chrome.get_permissions.enabled", true);
 
+pref("browser.migrate.arc.enabled", true);
 pref("browser.migrate.chrome-beta.enabled", true);
 pref("browser.migrate.chrome-dev.enabled", true);
 pref("browser.migrate.chromium.enabled", true);

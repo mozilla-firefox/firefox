@@ -203,6 +203,41 @@ impl Timespec {
             })
             .and_then(|millis| c::c_int::try_from(millis).ok())
     }
+
+    /// Convert `Timespec` to seconds and microseconds, rounding up fractional
+    /// microseconds and carrying any overflow into seconds.
+    #[inline]
+    pub(crate) fn to_sec_usec(&self) -> Option<(Secs, u32)> {
+        let mut sec = self.tv_sec;
+        let mut usec = (self.tv_nsec + 999) / 1000;
+        if usec >= 1_000_000 {
+            sec = sec.checked_add(1)?;
+            usec -= 1_000_000;
+        }
+        Some((sec, usec as u32))
+    }
+
+    /// Convert from `Timespec` to `c::timeval`, rounding up fractional
+    /// microseconds and carrying any overflow into seconds.
+    #[cfg(all(any(libc, target_os = "wasi"), not(windows)))]
+    pub(crate) fn to_timeval(&self) -> crate::io::Result<c::timeval> {
+        let (sec, usec) = self.to_sec_usec().ok_or(crate::io::Errno::INVAL)?;
+        Ok(c::timeval {
+            tv_sec: sec.try_into().map_err(|_| crate::io::Errno::INVAL)?,
+            tv_usec: usec as _,
+        })
+    }
+
+    /// Convert from `Timespec` to `c::TIMEVAL`, rounding up fractional
+    /// microseconds and carrying any overflow into seconds.
+    #[cfg(windows)]
+    pub(crate) fn to_timeval(&self) -> crate::io::Result<c::TIMEVAL> {
+        let (sec, usec) = self.to_sec_usec().ok_or(crate::io::Errno::OPNOTSUPP)?;
+        Ok(c::TIMEVAL {
+            tv_sec: sec.try_into().map_err(|_| crate::io::Errno::OPNOTSUPP)?,
+            tv_usec: usec as _,
+        })
+    }
 }
 
 impl TryFrom<Timespec> for Duration {
@@ -307,7 +342,7 @@ impl From<Timespec> for LibcTimespec {
 pub(crate) fn as_libc_timespec_ptr(timespec: &Timespec) -> *const c::timespec {
     #[cfg(test)]
     {
-        assert_eq_size!(Timespec, c::timespec);
+        static_assertions::assert_eq_size!(Timespec, c::timespec);
     }
     crate::utils::as_ptr(timespec).cast::<c::timespec>()
 }
@@ -318,7 +353,7 @@ pub(crate) fn as_libc_timespec_mut_ptr(
 ) -> *mut c::timespec {
     #[cfg(test)]
     {
-        assert_eq_size!(Timespec, c::timespec);
+        static_assertions::assert_eq_size!(Timespec, c::timespec);
     }
     timespec.as_mut_ptr().cast::<c::timespec>()
 }
@@ -376,9 +411,11 @@ mod tests {
 
     #[test]
     fn test_sizes() {
-        assert_eq_size!(Secs, u64);
-        const_assert!(core::mem::size_of::<Timespec>() >= core::mem::size_of::<(u64, u32)>());
-        const_assert!(core::mem::size_of::<Nsecs>() >= 4);
+        static_assertions::assert_eq_size!(Secs, u64);
+        static_assertions::const_assert!(
+            core::mem::size_of::<Timespec>() >= core::mem::size_of::<(u64, u32)>()
+        );
+        static_assertions::const_assert!(core::mem::size_of::<Nsecs>() >= 4);
 
         let mut t = Timespec {
             tv_sec: 0,
@@ -394,12 +431,32 @@ mod tests {
         assert_eq!(t.tv_sec as u64, 0x1_0000_0000_u64);
     }
 
+    #[cfg(any(libc, target_os = "wasi", windows))]
+    #[test]
+    fn test_to_timeval() {
+        let ts = Timespec {
+            tv_sec: 4,
+            tv_nsec: 999_999_500,
+        };
+        let tv = ts.to_timeval().unwrap();
+        assert_eq!(tv.tv_sec, 5);
+        assert_eq!(tv.tv_usec, 0);
+
+        let ts2 = Timespec {
+            tv_sec: 2,
+            tv_nsec: 500_000_000,
+        };
+        let tv2 = ts2.to_timeval().unwrap();
+        assert_eq!(tv2.tv_sec, 2);
+        assert_eq!(tv2.tv_usec, 500_000);
+    }
+
     // Test that our workarounds are needed.
     #[cfg(fix_y2038)]
     #[test]
     #[allow(deprecated)]
     fn test_fix_y2038() {
-        assert_eq_size!(libc::time_t, u32);
+        static_assertions::assert_eq_size!(libc::time_t, u32);
     }
 
     // Test that our workarounds are not needed.
@@ -414,8 +471,8 @@ mod tests {
     #[cfg(linux_raw_dep)]
     #[test]
     fn test_against_kernel_timespec() {
-        assert_eq_size!(Timespec, linux_raw_sys::general::__kernel_timespec);
-        assert_eq_align!(Timespec, linux_raw_sys::general::__kernel_timespec);
+        static_assertions::assert_eq_size!(Timespec, linux_raw_sys::general::__kernel_timespec);
+        static_assertions::assert_eq_align!(Timespec, linux_raw_sys::general::__kernel_timespec);
         assert_eq!(
             memoffset::span_of!(Timespec, tv_sec),
             memoffset::span_of!(linux_raw_sys::general::__kernel_timespec, tv_sec)

@@ -6,7 +6,12 @@ use crate::backend;
 #[cfg(target_os = "linux")]
 use crate::backend::c;
 use crate::ffi::CStr;
-#[cfg(not(any(target_os = "espidf", target_os = "emscripten", target_os = "vita")))]
+#[cfg(not(any(
+    target_os = "espidf",
+    target_os = "emscripten",
+    target_os = "horizon",
+    target_os = "vita"
+)))]
 use crate::io;
 use core::fmt;
 

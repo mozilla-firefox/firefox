@@ -9,11 +9,6 @@
 export const CURRENT_SCHEMA_VERSION = 13;
 
 /**
- * The directory that the SQLite database lives in
- */
-export const DB_FOLDER_PATH = PathUtils?.profileDir ?? "./";
-
-/**
  * The name of the SQLite database file
  */
 export const DB_FILE_NAME = "chat-store.sqlite";

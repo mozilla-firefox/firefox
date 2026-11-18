@@ -175,9 +175,6 @@ def bootstrap(test_package_root):
             "marionette/mach_test_package_commands.py"
         ),
         "mochitest": MachCommandReference("mochitest/mach_test_package_commands.py"),
-        "geckoview-junit": MachCommandReference(
-            "mochitest/mach_test_package_commands.py"
-        ),
         "reftest": MachCommandReference("reftest/mach_test_package_commands.py"),
         "mach-commands": MachCommandReference(
             "python/mach/mach/commands/commandinfo.py"

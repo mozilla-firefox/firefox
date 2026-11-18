@@ -74,7 +74,7 @@ const lazy = {};
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
   return console.createInstance({
     logModule: "MemoriesManager",
-    maxLogLevelPref: "browser.smartwindow.memoriesLogLevel",
+    maxLogLevelPref: "browser.smartwindow.memories.logLevel",
   });
 });
 

@@ -31,6 +31,7 @@ preprocessed_intervention_files = [
     "bug1854165-Sites_relying_on_there_being_no_window.InstallTrigger.js",
     "bug1860417-www.samsung.com_images_fix.js",
     "bug1873166-nsandi.com-hide_browser_notice.css",
+    "bug1875540-allstate.com.js",
     "bug1886293-Future_PLC_websites-fix_trending_scrollbar.css",
     "bug1886566-quezoncity.gov.ph-fix_invisible_iframe.css",
     "bug1886616-www.six-group.com-unhide_selected_inputs.css",

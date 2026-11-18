@@ -299,7 +299,7 @@ public class GeckoResult<T> {
     if (ThreadUtils.isOnUiThread()) {
       mDispatcher = new HandlerDispatcher(ThreadUtils.getUiHandler());
     } else if (Looper.myLooper() != null) {
-      mDispatcher = new HandlerDispatcher(new Handler());
+      mDispatcher = new HandlerDispatcher(new Handler(Looper.myLooper()));
     } else if (XPCOMEventTarget.launcherThread().isOnCurrentThread()) {
       mDispatcher = new XPCOMEventTargetDispatcher(XPCOMEventTarget.launcherThread());
     } else {

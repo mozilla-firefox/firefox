@@ -24,6 +24,12 @@ run-if = [
   "os == 'win'",
 ]
 
+["test_Arc_spaces.js"]
+run-if = [
+  "os == 'mac'",
+  "os == 'win'",
+]
+
 ["test_BookmarksFileMigrator.js"]
 
 ["test_ChromeMigrationUtils.js"]

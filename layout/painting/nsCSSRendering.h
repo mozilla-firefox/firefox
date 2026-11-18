@@ -520,15 +520,15 @@ struct nsCSSRendering {
       mozilla::wr::IpcResourceUpdateQueue& aResources,
       const mozilla::layers::StackingContextHelper& aSc,
       mozilla::layers::RenderRootStateManager* aManager,
-      mozilla::nsDisplayItem* aItem);
+      const mozilla::WebRenderImageItemInfo& aItem);
 
   static ImgDrawResult BuildWebRenderDisplayItemsForStyleImageLayerWithSC(
       const PaintBGParams& aParams, mozilla::wr::DisplayListBuilder& aBuilder,
       mozilla::wr::IpcResourceUpdateQueue& aResources,
       const mozilla::layers::StackingContextHelper& aSc,
       mozilla::layers::RenderRootStateManager* aManager,
-      mozilla::nsDisplayItem* aItem, mozilla::ComputedStyle* mBackgroundSC,
-      const nsStyleBorder& aBorder);
+      const mozilla::WebRenderImageItemInfo& aItem,
+      mozilla::ComputedStyle* mBackgroundSC, const nsStyleBorder& aBorder);
 
   /**
    * Returns the rectangle covered by the given background layer image, taking

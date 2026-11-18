@@ -137,13 +137,13 @@ tasks:
             by-variant:
                 webrender-sw+no-fission:
                     by-test-platform:
-                        android-em.*/debug: built-projects
                         linux2404-64/.*: ['mozilla-central']
                         linux2404-64-shippable/opt: ['mozilla-central']
                         linux2404-64-asan/opt: ['mozilla-central']
                         default: []
                 webrender-sw:
                     by-test-platform:
+                        android-em.*/debug: built-projects
                         macosx.*64(-qr)?/debug: built-projects
                         linux.*64(-qr)?/debug: built-projects
                         linux.*64-tsan(-qr)?/opt: built-projects
@@ -156,7 +156,6 @@ tasks:
                         linux2404-64/.*: ['mozilla-central']
                         linux2404-64-shippable/opt: ['mozilla-central']
                         linux2404-64-asan/opt: ['mozilla-central']
-                        android.*: ['mozilla-central']
                         default: []
                 inc-origin-init: []
                 geckoview-isolated-process:
@@ -178,7 +177,6 @@ tasks:
             by-variant:
                 no-fission:
                     by-test-platform:
-                        android.*: 2
                         linux.*: 2
                         default: default
                 webrender-sw+no-fission:
@@ -201,12 +199,7 @@ tasks:
                 default: default
         test-manifest-loader: null  # don't load tests in the taskgraph
         chunks: 1
-        variants:
-            - no-fission
-        run-on-projects:
-            by-variant:
-                no-fission: built-projects
-                default: []
+        run-on-projects: built-projects
         max-run-time: 1200
         tier: 2
         virtualization: virtual
@@ -226,8 +219,6 @@ tasks:
         test-manifest-loader: null  # don't load tests in the taskgraph
         chunks:
             by-test-platform:
-                android-hw.*/debug: 12
-                android-hw.*/opt: 6
                 windows.*-asan.*/opt: 6
                 windows.*-ccov.*/opt: 5
                 windows.*/debug: 4
@@ -252,13 +243,9 @@ tasks:
                         linux2404-64/.*: ['mozilla-central']
                         linux2404-64-shippable/opt: ['mozilla-central']
                         linux2404-64-asan/opt: ['mozilla-central']
-                        android-hw-.*-aarch64(?:-shippable)?(-qr)?/.*: ['mozilla-central', 'release']
-                        android-hw-.*-arm7(?:-shippable)?(-qr)?/.*: ['mozilla-central', 'release']
-                        android.*: built-projects
                         default: []
                 default:
                     by-test-platform:
-                        android.*/.*: []
                         # Compositor shutdown crash in DisconnectApzcTreeManager
                         # on headless macOS aarch64 VM workers (Bug 2038639 family).
                         # opt builds finish before the crash window; debug consistently
@@ -317,13 +304,13 @@ tasks:
                         default: []
                 webrender-sw+no-fission:
                     by-test-platform:
-                        android-em.*/debug: built-projects
                         linux2404-64/debug: ['mozilla-central']
                         linux2404-64(-shippable)?/opt: ['mozilla-central']
                         linux2404-64-asan/opt: ['mozilla-central']
                         default: []
                 webrender-sw:
                     by-test-platform:
+                        android-em.*/debug: built-projects
                         linux2404-64/.*: built-projects
                         linux2404-64-asan/opt: built-projects
                         linux2404-64-tsan/opt: built-projects
@@ -335,13 +322,8 @@ tasks:
                         linux2404-64/debug: ['mozilla-central']
                         linux2404-64(-shippable)?/opt: ['mozilla-central']
                         linux2404-64-asan/opt: ['mozilla-central']
-                        android.*: ['mozilla-central']
                         default: []
                 geckoview-isolated-process:
-                    by-test-platform:
-                        android-em.*/debug: ['trunk']
-                        default: []
-                geckoview-isolated-process+no-fission:
                     by-test-platform:
                         android-em.*/debug: ['trunk']
                         default: []
@@ -376,7 +358,6 @@ tasks:
             by-variant:
                 no-fission:
                     by-test-platform:
-                        android.*: 2
                         linux.*: 2
                         default: default
                 webrender-sw+no-fission:
@@ -384,7 +365,6 @@ tasks:
                         linux.*: 2
                         default: default
                 geckoview-isolated-process: 2
-                geckoview-isolated-process+no-fission: 2
                 default: default
 
     reftest-qr:
@@ -397,13 +377,11 @@ tasks:
         chunks: 2
         test-manifest-loader: null  # don't load tests in the taskgraph
         variants:
-            - no-fission
             - no-gpu-process
-        run-without-variant: false
         run-on-projects:
             by-variant:
-                no-fission: built-projects
                 no-gpu-process: built-projects
+                default: built-projects
         max-run-time: 2400
         mozharness:
             chunked: true

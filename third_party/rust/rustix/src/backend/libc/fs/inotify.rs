@@ -62,11 +62,11 @@ bitflags! {
         /// `IN_DONT_FOLLOW`
         const DONT_FOLLOW = c::IN_DONT_FOLLOW;
         /// `IN_EXCL_UNLINK`
-        const EXCL_UNLINK = 1;
+        const EXCL_UNLINK = c::IN_EXCL_UNLINK;
         /// `IN_MASK_ADD`
-        const MASK_ADD = 1;
+        const MASK_ADD = c::IN_MASK_ADD;
         /// `IN_MASK_CREATE`
-        const MASK_CREATE = 1;
+        const MASK_CREATE = c::IN_MASK_CREATE;
         /// `IN_ONESHOT`
         const ONESHOT = c::IN_ONESHOT;
         /// `IN_ONLYDIR`

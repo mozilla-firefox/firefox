@@ -85,6 +85,7 @@ public class MagnifiableSurfaceView extends SurfaceView {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void setType(final int type) {
       mHolder.setType(type);
     }

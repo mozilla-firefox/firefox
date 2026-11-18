@@ -5,10 +5,10 @@
 package org.mozilla.gecko;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -19,6 +19,7 @@ import org.mozilla.gecko.util.ThreadUtils;
 
 public class SpeechSynthesisService {
   private static final String LOGTAG = "GeckoSpeechSynthesis";
+  private static final String VOICE_URI_PREFIX = "moz-tts:android:";
   // Object type is used to make it easier to remove android.speech dependencies using Proguard.
   private static Object sTTS;
 
@@ -66,15 +67,18 @@ public class SpeechSynthesisService {
               Log.w(LOGTAG, "TextToSpeech is not initialized");
               return;
             }
+            @SuppressWarnings("deprecation")
             final Locale defaultLocale = tss.getDefaultLanguage();
             for (final Locale locale : getAvailableLanguages()) {
+              @SuppressWarnings("deprecation")
               final Set<String> features = tss.getFeatures(locale);
+              @SuppressWarnings("deprecation")
               final boolean isLocal =
                   features != null
                       && features.contains(TextToSpeech.Engine.KEY_FEATURE_EMBEDDED_SYNTHESIS);
               final String localeStr = locale.toString();
               registerVoice(
-                  "moz-tts:android:" + localeStr,
+                  VOICE_URI_PREFIX + localeStr,
                   locale.getDisplayName(),
                   localeStr.replace("_", "-"),
                   !isLocal,
@@ -135,15 +139,27 @@ public class SpeechSynthesisService {
       return;
     }
 
-    final HashMap<String, String> params = new HashMap<String, String>();
-    params.put(TextToSpeech.Engine.KEY_PARAM_VOLUME, Float.toString(volume));
-    params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId);
+    final Bundle params = new Bundle();
+    params.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, volume);
     final TextToSpeech tss = (TextToSpeech) sTTS;
-    tss.setLanguage(new Locale(uri.substring("moz-tts:android:".length())));
+    tss.setLanguage(getVoiceLocale(uri));
     tss.setSpeechRate(rate);
     tss.setPitch(pitch);
-    final int speakRes = tss.speak(text, TextToSpeech.QUEUE_FLUSH, params);
+    final int speakRes = tss.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId);
     result.set(speakRes == TextToSpeech.SUCCESS);
+  }
+
+  /* package */ static Locale getVoiceLocale(final String uri) {
+    final String[] parts = uri.substring(VOICE_URI_PREFIX.length()).split("_#", 2);
+    final Locale.Builder builder =
+        new Locale.Builder().setLocale(Locale.forLanguageTag(parts[0].replace('_', '-')));
+    if (parts.length > 1) {
+      final String script = parts[1].split("[_-]", 2)[0];
+      if (script.length() == 4) {
+        builder.setScript(script);
+      }
+    }
+    return builder.build();
   }
 
   private static void setUtteranceListener() {
@@ -161,6 +177,7 @@ public class SpeechSynthesisService {
               }
 
               @Override
+              @SuppressWarnings("deprecation")
               public void onError(final String utteranceId) {
                 dispatchError(utteranceId);
               }

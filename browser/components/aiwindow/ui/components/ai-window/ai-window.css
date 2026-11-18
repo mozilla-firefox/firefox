@@ -18,7 +18,6 @@
   align-items: center;
   justify-items: center;
   width: 100%;
-  --smartbar-width: 100%;
 }
 
 :host([classic-mode]) {
@@ -42,6 +41,7 @@
    * minimum gap above the footer so it doesn't crowd short content. */
   grid-template-rows: 0 minmax(var(--space-xlarge), 1fr) auto auto auto auto auto auto minmax(var(--size-item-xlarge), 1fr) auto;
   align-content: stretch;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   box-shadow: var(--smartwindow-main-box-shadow);
 }
 
@@ -52,7 +52,6 @@
     "smartbar"
     "disclaimer";
   grid-template-rows: 1fr auto auto auto;
-  --smartbar-width: calc(100% - var(--space-large));
 }
 
 :host([mode="sidebar"]) .smartbar-glow {
@@ -115,10 +114,10 @@
 
   p {
     margin: 0;
-    max-inline-size: 270px;
+    max-inline-size: calc(var(--size-layout-medium) - 30px);
     color: var(--smart-page-empty-chat-message-font-color);
     font-size: var(--font-size-root);
-    font-weight: 400;
+    font-weight: var(--font-weight);
     line-height: 20px;
   }
 }
@@ -128,9 +127,15 @@
   height: var(--smartbar-height, auto);
   margin-block-end: var(--space-small);
   /* smartbar max width must be the same as the child context (ai-window-content.css) container */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   max-width: var(--smartwindow-content-max-width);
   position: relative;
-  width: var(--smartbar-width);
+  width: 100%;
+
+  :host([mode="sidebar"]) & {
+    width: -moz-available;
+    margin-inline: calc(var(--space-large) / 2);
+  }
 }
 
 #ai-window-smartbar {
@@ -205,6 +210,7 @@ smartwindow-prompts {
  * up with the input above it, and so overflow (for scrolling) triggers at
  * a consistent width instead of depending on the window's own width. */
 :host([mode="fullpage"]) smartwindow-prompts {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   max-width: var(--smartwindow-content-max-width);
 }
 
@@ -231,6 +237,7 @@ smartwindow-prompts {
   /* Center the row on the content column. */
   inset-inline: 0;
   margin-inline: auto;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   max-width: var(--smartwindow-content-max-width);
   padding-inline: 0;
 }
@@ -268,9 +275,11 @@ moz-button.close-sidebar-button {
         color-mix(in srgb, var(--color-violet-40) 50%, transparent) 100%
       );
       border: var(--border-width) solid transparent;
-      background:
-        image(var(--button-background-color-ghost)) padding-box,
-        var(--nova-border-gradient) border-box;
+      background-color: transparent;
+      background-image: image(var(--button-background-color-ghost)), var(--nova-border-gradient);
+      background-origin: padding-box, border-box;
+      background-clip: padding-box, border-box;
+      background-size: auto auto;
       color: var(--button-text-color-ghost);
     }
 
@@ -354,6 +363,7 @@ smartwindow-resume-section {
 
 /* Align the card grid with the content above it. */
 :host([mode="fullpage"]) smartwindow-resume-section {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   max-width: var(--smartwindow-content-max-width);
 }
 
@@ -366,7 +376,7 @@ smartwindow-footer {
 
 smartwindow-promo {
   grid-area: promo;
-  max-width: 580px;
+  max-width: calc(var(--size-layout-xlarge) + 80px);
   margin-block-end: calc(var(--space-small) + 20px);
 
   :host(.chat-active) & {

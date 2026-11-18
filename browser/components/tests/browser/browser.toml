@@ -83,6 +83,8 @@ run-if = [
 
 ["browser_startup_homepage.js"]
 
+["browser_text_link_without_browser_window.js"]
+
 ["browser_to_handle_telemetry.js"]
 run-if = [
   "os == 'win'",

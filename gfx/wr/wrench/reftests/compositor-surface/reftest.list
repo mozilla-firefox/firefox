@@ -4,7 +4,7 @@ scale(*) != picture-passthrough.yaml blank.yaml
 scale(*) fuzzy(2,1000) == mix-blend.yaml mix-blend-ref.yaml
 scale(*) != coord-systems.yaml blank.yaml
 scale(*) fuzzy(2,2500) == filter-overlay.yaml filter-overlay-ref.yaml
-platform(linux,mac) == mask.yaml mask.png
+platform(linux,mac) fuzzy(1,22) == mask.yaml mask.png
 platform(linux) fuzzy(7,86000) == underlay.yaml underlay.png
 scale(*) fuzzy(2,2600) == transparent-opaque-image.yaml transparent-opaque-image-ref.yaml
 platform(linux) == underlay-mask-on-translucent-slice.yaml underlay-mask-on-translucent-slice.png

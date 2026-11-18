@@ -18,6 +18,7 @@
 #include "mozilla/dom/WorkerRef.h"
 #include "nsNSSComponent.h"
 #include "nsProxyRelease.h"
+#include "nsTHashSet.h"
 #include "pk11pub.h"
 #include "secerr.h"
 
@@ -1277,10 +1278,19 @@ class ImportKeyTask : public WebCryptoTask {
 
     // Check 'key_ops'
     if (aJwk.mKey_ops.WasPassed()) {
+      const Sequence<nsString>& keyOps = aJwk.mKey_ops.Value();
+      // RFC 7517 section 4.3: duplicate key operation values are invalid.
+      nsTHashSet<nsString> seenOps(keyOps.Length());
+      for (const nsString& op : keyOps) {
+        if (!seenOps.EnsureInserted(op)) {
+          return false;
+        }
+      }
+
       nsTArray<nsString> usages;
       aKey->GetUsages(usages);
       for (size_t i = 0; i < usages.Length(); ++i) {
-        if (!aJwk.mKey_ops.Value().Contains(usages[i])) {
+        if (!keyOps.Contains(usages[i])) {
           return false;
         }
       }

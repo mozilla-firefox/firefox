@@ -55,7 +55,7 @@ pub fn tcgetwinsize<Fd: AsFd>(fd: Fd) -> io::Result<Winsize> {
 ///
 /// Also known as the `TIOCGPGRP` operation with `ioctl`.
 ///
-/// On Linux, if `fd` is a pseudo-terminal, the underlying system call here can
+/// If `fd` is a pseudo-terminal, the underlying system call here can
 /// return a pid of 0, which rustix's `Pid` type doesn't support. So rustix
 /// instead handles this case by failing with [`io::Errno::OPNOTSUPP`] if the
 /// pid is 0.

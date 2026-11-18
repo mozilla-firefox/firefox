@@ -19,6 +19,7 @@ import android.util.Log;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.pm.PackageInfoCompat;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -35,6 +36,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.mozilla.gecko.GeckoAppShell;
 import org.mozilla.gecko.util.GeckoBundle;
+import org.mozilla.gecko.util.ThreadUtils;
 
 /** Handler for processing application crashes and sending crash reports. */
 public class CrashHandler implements Thread.UncaughtExceptionHandler {
@@ -182,14 +184,14 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
       Log.e(
           LOGTAG,
           ">>> REPORTING UNCAUGHT EXCEPTION FROM THREAD "
-              + thread.getId()
+              + ThreadUtils.getThreadId(thread)
               + " (\""
               + thread.getName()
               + "\")",
           exc);
 
       if (MAIN_THREAD != thread) {
-        Log.e(LOGTAG, "Main thread (" + MAIN_THREAD.getId() + ") stack:");
+        Log.e(LOGTAG, "Main thread (" + ThreadUtils.getThreadId(MAIN_THREAD) + ") stack:");
         for (final StackTraceElement ste : MAIN_THREAD.getStackTrace()) {
           Log.e(LOGTAG, "    " + ste.toString());
         }
@@ -296,7 +298,10 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
       try {
         final PackageInfo pkgInfo = pkgMgr.getPackageInfo(pkgName, 0);
         extras.putString(CrashReport.Annotation.Version.toString(), pkgInfo.versionName);
-        extras.putInt(CrashReport.Annotation.BuildID.toString(), pkgInfo.versionCode);
+        // The int cast drops versionCodeMajor from the upper 32 bits, leaving versionCode.
+        extras.putInt(
+            CrashReport.Annotation.BuildID.toString(),
+            (int) PackageInfoCompat.getLongVersionCode(pkgInfo));
         extras.putLong(
             CrashReport.Annotation.InstallTime.toString(), pkgInfo.lastUpdateTime / 1000);
       } catch (final PackageManager.NameNotFoundException e) {
@@ -515,7 +520,9 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
 
       final JSONObject json = new JSONObject();
       for (final String key : extras.keySet()) {
-        json.put(key, extras.get(key));
+        @SuppressWarnings("deprecation")
+        final Object value = extras.get(key);
+        json.put(key, value);
       }
 
       final BufferedWriter extraWriter = new BufferedWriter(new FileWriter(extraFile));

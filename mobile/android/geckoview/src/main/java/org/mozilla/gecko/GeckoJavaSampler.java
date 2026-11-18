@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.mozilla.gecko.annotation.WrapForJNI;
 import org.mozilla.gecko.mozglue.JNIObject;
+import org.mozilla.gecko.util.ThreadUtils;
 import org.mozilla.geckoview.GeckoResult;
 
 /**
@@ -342,7 +343,7 @@ public class GeckoJavaSampler {
    * to its mutable state.
    */
   private static class SamplingRunnable implements Runnable {
-    private final long mMainThreadId = Looper.getMainLooper().getThread().getId();
+    private final long mMainThreadId = ThreadUtils.getThreadId(Looper.getMainLooper().getThread());
 
     // Sampling interval that is used by start and unpause
     public final int mInterval;
@@ -390,7 +391,7 @@ public class GeckoJavaSampler {
             continue;
           }
 
-          mSamples[mSamplePos] = new Sample(thread.getId(), stackTrace);
+          mSamples[mSamplePos] = new Sample(ThreadUtils.getThreadId(thread), stackTrace);
           mSamplePos += 1;
           if (mSamplePos == mSampleCount) {
             // Sample array is full now, go back to start of
@@ -453,13 +454,13 @@ public class GeckoJavaSampler {
 
     // See REPLACEMENT_MAIN_THREAD_NAME for why we do this.
     String adjustedThreadName =
-        thread.getId() == sSamplingRunnable.mMainThreadId
+        ThreadUtils.getThreadId(thread) == sSamplingRunnable.mMainThreadId
             ? REPLACEMENT_MAIN_THREAD_NAME
             : thread.getName();
 
     // To distinguish JVM threads from native threads, we append a JVM-specific suffix.
     adjustedThreadName += " (JVM)";
-    return new ThreadInfo(getAdjustedThreadId(thread.getId()), adjustedThreadName);
+    return new ThreadInfo(getAdjustedThreadId(ThreadUtils.getThreadId(thread)), adjustedThreadName);
   }
 
   @WrapForJNI
@@ -551,7 +552,7 @@ public class GeckoJavaSampler {
 
       final Set<Long> profiledThreadIds = new HashSet<>(aProfiledThreads.size());
       for (final Thread thread : aProfiledThreads) {
-        profiledThreadIds.add(thread.getId());
+        profiledThreadIds.add(ThreadUtils.getThreadId(thread));
       }
 
       // We use a temporary collection, rather than mutating the collection within the member
@@ -580,7 +581,7 @@ public class GeckoJavaSampler {
         return;
       }
 
-      final long threadId = Thread.currentThread().getId();
+      final long threadId = ThreadUtils.getThreadId(Thread.currentThread());
       if (!mProfiledThreadIds.contains(threadId)) {
         return;
       }

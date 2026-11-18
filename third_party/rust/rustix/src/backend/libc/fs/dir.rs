@@ -30,6 +30,8 @@ use crate::io;
 #[cfg(not(any(target_os = "fuchsia", target_os = "vita", target_os = "wasi")))]
 #[cfg(feature = "process")]
 use crate::process::fchdir;
+#[cfg(target_os = "openbsd")]
+use crate::types::Padding;
 use alloc::borrow::ToOwned as _;
 #[cfg(not(any(linux_like, target_os = "hurd")))]
 use c::readdir as libc_readdir;
@@ -408,7 +410,7 @@ struct libc_dirent {
     d_reclen: u16,
     d_type: u8,
     d_namlen: u8,
-    __d_padding: [u8; 4],
+    __d_padding: Padding<[u8; 4]>,
     d_name: [c::c_char; 256],
 }
 
@@ -421,8 +423,8 @@ fn check_dirent_layout(dirent: &c::dirent) {
     // Check that the basic layouts match.
     #[cfg(test)]
     {
-        assert_eq_size!(libc_dirent, c::dirent);
-        assert_eq_size!(libc_dirent, c::dirent);
+        static_assertions::assert_eq_size!(libc_dirent, c::dirent);
+        static_assertions::assert_eq_size!(libc_dirent, c::dirent);
     }
 
     // Check that the field offsets match.
@@ -434,7 +436,7 @@ fn check_dirent_layout(dirent: &c::dirent) {
                 d_reclen: 0_u16,
                 d_type: 0_u8,
                 d_namlen: 0_u8,
-                __d_padding: [0_u8; 4],
+                __d_padding: Default::default(),
                 d_name: [0 as c::c_char; 256],
             };
             let base = as_ptr(&z) as usize;

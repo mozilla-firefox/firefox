@@ -78,6 +78,7 @@ ChromeUtils.defineLazyGetter(lazy, "fluentStrings", () => {
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
   return console.createInstance({
     logModule: "ChatConversation",
+    maxLogLevelPref: "browser.smartwindow.chatConversation.logLevel",
   });
 });
 

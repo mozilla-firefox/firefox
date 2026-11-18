@@ -18,9 +18,7 @@ const lazy = XPCOMUtils.declareLazy({
   log: () =>
     console.createInstance({
       logModule: "AuthProvider",
-      maxLogLevel: Services.prefs.getBoolPref("browser.smartwindow.log", false)
-        ? "Debug"
-        : "Warn",
+      maxLogLevelPref: "browser.smartwindow.auth.logLevel",
     }),
 });
 

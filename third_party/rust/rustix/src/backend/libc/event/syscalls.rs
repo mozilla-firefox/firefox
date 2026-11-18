@@ -247,11 +247,7 @@ pub(crate) unsafe fn select(
     let timeout_data;
     let timeout_ptr = match timeout {
         Some(timeout) => {
-            // Convert from `Timespec` to `c::timeval`.
-            timeout_data = c::timeval {
-                tv_sec: timeout.tv_sec.try_into().map_err(|_| io::Errno::INVAL)?,
-                tv_usec: ((timeout.tv_nsec + 999) / 1000) as _,
-            };
+            timeout_data = timeout.to_timeval()?;
             &timeout_data
         }
         None => null(),
@@ -324,11 +320,7 @@ pub(crate) unsafe fn select(
     let timeout_data;
     let timeout_ptr = match timeout {
         Some(timeout) => {
-            // Convert from `Timespec` to `c::timeval`.
-            timeout_data = c::timeval {
-                tv_sec: timeout.tv_sec.try_into().map_err(|_| io::Errno::INVAL)?,
-                tv_usec: ((timeout.tv_nsec + 999) / 1000) as _,
-            };
+            timeout_data = timeout.to_timeval()?;
             &timeout_data
         }
         None => null(),

@@ -1,0 +1,17 @@
+{
+  "label": "uol.com.br",
+  "bugs": {
+    "2084993": {
+      "issue": "broken-interactive-elements",
+      "matches": ["*://www.uol.com.br/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["all"],
+      "content_scripts": {
+        "js": ["bug2084993-uol.com.br-fix-volume-slider.js"]
+      }
+    }
+  ]
+}

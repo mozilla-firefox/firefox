@@ -468,14 +468,20 @@ async function generateAnswer({
     // reads, so they are preserved on the next request.
     assistantMessage.content = {
       body: {
-        tool_calls: pageReadCalls.map(call => ({
-          id: call.id,
-          type: "function",
-          function: {
-            name: call.function.name,
-            arguments: call.function.arguments || "{}",
-          },
-        })),
+        tool_calls: pageReadCalls.map(call => {
+          const toolCall = {
+            id: call.id,
+            type: "function",
+            function: {
+              name: call.function.name,
+              arguments: call.function.arguments || "{}",
+            },
+          };
+          if (call.extra_content) {
+            toolCall.extra_content = call.extra_content;
+          }
+          return toolCall;
+        }),
       },
     };
 

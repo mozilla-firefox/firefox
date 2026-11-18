@@ -21,7 +21,7 @@ const DEFAULT_MAX_DB_SIZE_BYTES = 75 * 1024 * 1024;
  * @example
  * class MyStore extends SQLiteStoreBase {
  *   get logPrefix() { return "MyStore"; }
- *   get logLevelPref() { return "browser.mystore.loglevel"; }
+ *   get logLevelPref() { return "browser.mystore.logLevel"; }
  *   get shutdownBlockerName() { return "MyStore: Shutdown"; }
  *   get CURRENT_SCHEMA_VERSION() { return 1; }
  *   get databaseFileName() { return "my-store.sqlite"; }
@@ -38,6 +38,7 @@ export class SQLiteStoreBase {
 
   constructor() {
     this.#asyncShutdownBlocker = async () => {
+      await this.beforeShutdown();
       await this.#closeConnection();
     };
   }
@@ -97,13 +98,26 @@ export class SQLiteStoreBase {
   }
 
   /**
-   * Deletes a single record by its id during pruning.
+   * Deletes a batch of records by id during pruning.
    *
-   * @param {string} _id - The record id to delete
+   * @param {Array<string>} _ids - The record ids to delete
    */
-  async deletePrunableRecord(_id) {
-    throw new Error("Subclass must implement deletePrunableRecord");
+  async deletePrunableRecords(_ids) {
+    throw new Error("Subclass must implement deletePrunableRecords");
   }
+
+  // -- Lifecycle hooks (subclass may override) --
+
+  /**
+   * Runs at profile shutdown before the connection closes.
+   */
+  async beforeShutdown() {}
+
+  /**
+   * Runs whenever the connection is about to close, including when no
+   * connection is open, so pending writes can land first.
+   */
+  async beforeCloseConnection() {}
 
   // -- Public getters --
 
@@ -258,14 +272,7 @@ export class SQLiteStoreBase {
    * @returns {number}
    */
   async getDatabaseSize() {
-    await this.ensureDatabase().catch(e => {
-      this.log.error(
-        "Could not ensure a database connection.",
-        e.message,
-        e.stack
-      );
-      throw e;
-    });
+    await this.ensureDatabase();
 
     const stats = await IOUtils.stat(this.databaseFilePath);
     return stats.size;
@@ -275,6 +282,7 @@ export class SQLiteStoreBase {
    * Deletes all the database files
    */
   async destroyDatabase() {
+    await this.#promiseConn?.catch(() => {});
     await this.#removeDatabaseFiles();
     this.#promiseConn = null;
   }
@@ -313,30 +321,23 @@ export class SQLiteStoreBase {
    * below the target threshold.
    *
    * Subclasses must implement `findOldestPrunableRecords` and
-   * `deletePrunableRecord` for this to work.
+   * `deletePrunableRecords` for this to work.
    *
    * @param {number} [reduceByPercentage=0.05] - Percentage to reduce db size by
    * @param {number} [maxDbSizeBytes=this.maxDatabaseSizeBytes] - Db max size
+   * @param {number} [deleteBatchSize=50] - Number of records to delete at a time
    */
   async pruneDatabase(
     reduceByPercentage = 0.05,
-    maxDbSizeBytes = this.maxDatabaseSizeBytes
+    maxDbSizeBytes = this.maxDatabaseSizeBytes,
+    deleteBatchSize = 50
   ) {
-    await this.ensureDatabase().catch(e => {
-      this.log.error(
-        "Could not ensure a database connection.",
-        e.message,
-        e.stack
-      );
-      throw e;
-    });
+    await this.ensureDatabase();
 
     const dbExists = await IOUtils.exists(this.databaseFilePath);
     if (!dbExists) {
       return;
     }
-
-    const DELETE_BATCH_SIZE = 50;
 
     let dbSize = await this.getDbBytesInUse();
     if (dbSize < maxDbSizeBytes) {
@@ -359,15 +360,13 @@ export class SQLiteStoreBase {
       iterations++;
 
       const oldestRecords =
-        await this.findOldestPrunableRecords(DELETE_BATCH_SIZE);
+        await this.findOldestPrunableRecords(deleteBatchSize);
 
       if (!oldestRecords.length) {
         break;
       }
 
-      for (const record of oldestRecords) {
-        await this.deletePrunableRecord(record.id);
-      }
+      await this.deletePrunableRecords(oldestRecords.map(record => record.id));
 
       const newDbSize = await this.getDbBytesInUse();
       if (newDbSize >= dbSize) {
@@ -445,6 +444,8 @@ export class SQLiteStoreBase {
    * @private
    */
   async #closeConnection() {
+    await this.beforeCloseConnection();
+
     if (!this.#conn) {
       return;
     }

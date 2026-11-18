@@ -151,7 +151,7 @@ class DecoderDoctorDiagnostics {
   bool mIsKeySystemSupported = false;
   KeySystemIssue mKeySystemIssue = eUnset;
 
-  DecoderDoctorEvent mEvent;
+  DecoderDoctorEvent mEvent{};
 
   MediaResult mDecodeIssue = NS_OK;
   nsString mDecodeIssueMediaSrc;

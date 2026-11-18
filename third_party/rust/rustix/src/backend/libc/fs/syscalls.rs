@@ -49,11 +49,12 @@ use crate::fs::SealFlags;
     target_os = "wasi",
 )))]
 use crate::fs::StatFs;
-#[cfg(not(any(target_os = "espidf", target_os = "vita")))]
+#[cfg(not(any(target_os = "espidf", target_os = "horizon", target_os = "vita")))]
 use crate::fs::Timestamps;
 #[cfg(not(any(
     apple,
     target_os = "espidf",
+    target_os = "horizon",
     target_os = "redox",
     target_os = "vita",
     target_os = "wasi"
@@ -672,7 +673,7 @@ pub(crate) fn stat(path: &CStr) -> io::Result<Stat> {
     )))]
     unsafe {
         #[cfg(test)]
-        assert_eq_size!(Stat, c::stat);
+        static_assertions::assert_eq_size!(Stat, c::stat);
 
         let mut stat = MaybeUninit::<Stat>::uninit();
         ret(c::stat(c_str(path), stat.as_mut_ptr().cast()))?;
@@ -718,7 +719,7 @@ pub(crate) fn lstat(path: &CStr) -> io::Result<Stat> {
     )))]
     unsafe {
         #[cfg(test)]
-        assert_eq_size!(Stat, c::stat);
+        static_assertions::assert_eq_size!(Stat, c::stat);
 
         let mut stat = MaybeUninit::<Stat>::uninit();
         ret(c::lstat(c_str(path), stat.as_mut_ptr().cast()))?;
@@ -760,7 +761,7 @@ pub(crate) fn statat(dirfd: BorrowedFd<'_>, path: &CStr, flags: AtFlags) -> io::
     )))]
     unsafe {
         #[cfg(test)]
-        assert_eq_size!(Stat, c::stat);
+        static_assertions::assert_eq_size!(Stat, c::stat);
 
         let mut stat = MaybeUninit::<Stat>::uninit();
         ret(c::fstatat(
@@ -941,6 +942,7 @@ pub(crate) fn utimensat(
                 c::c_int
             ) -> c::c_int
         }
+        #[cfg(not(any(target_os = "tvos", target_os = "watchos")))]
         extern "C" {
             fn setattrlist(
                 path: *const ffi::c_char,
@@ -950,6 +952,7 @@ pub(crate) fn utimensat(
                 options: c::c_ulong,
             ) -> c::c_int;
         }
+        #[cfg(not(any(target_os = "tvos", target_os = "watchos")))]
         const FSOPT_NOFOLLOW: c::c_ulong = 0x0000_0001;
 
         // If we have `utimensat`, use it.
@@ -962,8 +965,14 @@ pub(crate) fn utimensat(
             ));
         }
 
+        // Return `NOSYS` on platforms where `utimensat` cannot be emulated
+        // because `fork` is unavailable.
+        #[cfg(any(target_os = "tvos", target_os = "watchos"))]
+        return Err(io::Errno::NOSYS);
+
         // Convert `times`. We only need this in the child, but do it before
         // calling `fork` because it might fail.
+        #[cfg(not(any(target_os = "tvos", target_os = "watchos")))]
         let (attrbuf_size, times, attrs) = times_to_attrlist(times)?;
 
         // `setattrlistat` was introduced in 10.13 along with `utimensat`, so
@@ -971,6 +980,7 @@ pub(crate) fn utimensat(
         // Emulate it using `fork`, and `fchdir` and [`setattrlist`].
         //
         // [`setattrlist`]: https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/setattrlist.2.html
+        #[cfg(not(any(target_os = "tvos", target_os = "watchos")))]
         match c::fork() {
             -1 => Err(io::Errno::IO),
             0 => {
@@ -1468,12 +1478,17 @@ pub(crate) fn fchown(fd: BorrowedFd<'_>, owner: Option<Uid>, group: Option<Gid>)
     // implementations, such as musl, add extra logic to `fchown` to emulate
     // support for `O_PATH`, which uses `/proc` outside our control and
     // interferes with our own use of `O_PATH`.
+    #[cfg(any(target_arch = "x86", target_arch = "arm", target_arch = "sparc"))]
+    const SYS: c::c_long = c::SYS_fchown32 as c::c_long;
+    #[cfg(not(any(target_arch = "x86", target_arch = "arm", target_arch = "sparc")))]
+    const SYS: c::c_long = c::SYS_fchown as c::c_long;
+
     syscall! {
         fn fchown(
             fd: c::c_int,
             owner: c::uid_t,
             group: c::gid_t
-        ) via SYS_fchown -> c::c_int
+        ) via SYS -> c::c_int
     }
     unsafe {
         let (ow, gr) = crate::ugid::translate_fchown_args(owner, group);
@@ -1563,7 +1578,7 @@ pub(crate) fn fstat(fd: BorrowedFd<'_>) -> io::Result<Stat> {
     )))]
     unsafe {
         #[cfg(test)]
-        assert_eq_size!(Stat, c::stat);
+        static_assertions::assert_eq_size!(Stat, c::stat);
 
         let mut stat = MaybeUninit::<Stat>::uninit();
         ret(c::fstat(borrowed_fd(fd), stat.as_mut_ptr().cast()))?;
@@ -1797,20 +1812,22 @@ pub(crate) fn fallocate(
     assert!(mode.is_empty());
 
     let new_len = offset.checked_add(len).ok_or(io::Errno::FBIG)?;
-    let mut store = c::fstore_t {
-        fst_flags: c::F_ALLOCATECONTIG,
+    let store = c::fstore_t {
+        // Allocate the full length or fail; don't accept partial success.
+        fst_flags: c::F_ALLOCATEALL,
         fst_posmode: c::F_PEOFPOSMODE,
         fst_offset: 0,
         fst_length: new_len,
         fst_bytesalloc: 0,
     };
     unsafe {
-        if c::fcntl(borrowed_fd(fd), c::F_PREALLOCATE, &store) == -1 {
-            // Unable to allocate contiguous disk space; attempt to allocate
-            // non-contiguously.
-            store.fst_flags = c::F_ALLOCATEALL;
-            let _ = ret_c_int(c::fcntl(borrowed_fd(fd), c::F_PREALLOCATE, &store))?;
-        }
+        ret(c::fcntl(borrowed_fd(fd), c::F_PREALLOCATE, &store))?;
+
+        // Apple platforms have no way to perform the `posix_fallocate`
+        // behavior of increasing the file size if `new_len` is greater
+        // than the file's original size, but not decreasing if it's
+        // less, so we just use `ftruncate`, which does decrease the
+        // size, and document it.
         ret(c::ftruncate(borrowed_fd(fd), new_len))
     }
 }
@@ -1898,7 +1915,7 @@ const SYS_OPENAT2: i32 = 437;
 #[cfg(all(linux_kernel, target_pointer_width = "64"))]
 const SYS_OPENAT2: i64 = 437;
 
-#[cfg(target_os = "linux")]
+#[cfg(linux_kernel)]
 pub(crate) fn sendfile(
     out_fd: BorrowedFd<'_>,
     in_fd: BorrowedFd<'_>,
@@ -2727,12 +2744,12 @@ mod tests {
     #[test]
     fn test_sizes() {
         #[cfg(linux_kernel)]
-        assert_eq_size!(c::loff_t, u64);
+        static_assertions::assert_eq_size!(c::loff_t, u64);
 
         // Assert that `Timestamps` has the expected layout. If we're not fixing
         // y2038, libc's type should match ours. If we are, it's smaller.
         #[cfg(not(fix_y2038))]
-        assert_eq_size!([c::timespec; 2], Timestamps);
+        static_assertions::assert_eq_size!([c::timespec; 2], Timestamps);
         #[cfg(fix_y2038)]
         assert!(core::mem::size_of::<[c::timespec; 2]>() < core::mem::size_of::<Timestamps>());
     }

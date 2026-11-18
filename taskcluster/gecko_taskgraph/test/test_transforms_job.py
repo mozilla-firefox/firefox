@@ -160,6 +160,7 @@ def test_use_gradle(transform):
         pytest.param("linux", "b-linux-docker-amd", "linux64", id="linux-x64"),
         pytest.param("windows", "b-win-aarch64", "win64", id="windows-arm"),
         pytest.param("windows", "b-win2022", "win64", id="windows-x64"),
+        pytest.param("windows", "b-win2025", "win64", id="windows2025-x64"),
     ],
 )
 def test_get_platform(worker_os, worker_type, expected):

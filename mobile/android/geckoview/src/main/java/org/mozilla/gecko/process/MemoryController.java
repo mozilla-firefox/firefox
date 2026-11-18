@@ -21,6 +21,7 @@ public class MemoryController implements ComponentCallbacks2 {
   private static final int MODERATE = 1;
   private static final int CRITICAL = 2;
 
+  @SuppressWarnings("deprecation")
   private int memoryLevelFromTrim(final int level) {
     if (level >= ComponentCallbacks2.TRIM_MEMORY_COMPLETE
         || level == ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL) {
@@ -39,6 +40,7 @@ public class MemoryController implements ComponentCallbacks2 {
   @Override
   public void onConfigurationChanged(final @NonNull Configuration newConfig) {}
 
+  @SuppressWarnings("deprecation")
   public void onLowMemory() {
     Log.i(LOGTAG, "onLowMemory");
     onMemoryNotification(CRITICAL);

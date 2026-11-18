@@ -720,13 +720,24 @@ export class PrefsFeed {
     // computed in main process
     values.isPrivateBrowsingEnabled = lazy.PrivateBrowsingUtils.enabled;
     values.platform = AppConstants.platform;
-    /**
-     * @backward-compat { version 161 }
-     * MozAdsReportReason only has SCAM, MISLEADING and OFFENSIVE from 161, so
-     * ReportContent keeps showing the legacy ad report reasons before that.
-     */
-    values.adsNewReportReasonsSupported =
-      Services.vc.compare(AppConstants.MOZ_APP_VERSION, "161.0a1") >= 0;
+    Object.assign(values, {
+      /**
+       * @backward-compat { version 161 }
+       * MozAdsReportReason only has SCAM, MISLEADING and OFFENSIVE from 161, so
+       * ReportContent keeps showing the legacy ad report reasons before that.
+       */
+      adsNewReportReasonsSupported:
+        Services.vc.compare(AppConstants.MOZ_APP_VERSION, "161.0a1") >= 0,
+      /**
+       * @backward-compat { version 162 }
+       * play-fill.svg and pause-fill.svg moved from chrome://global/skin/media/
+       * to resource://content-accessible/media/ in Firefox 162 (bug 2093279).
+       */
+      mediaIconsPath:
+        Services.vc.compare(AppConstants.MOZ_APP_VERSION, "162.0a1") >= 0
+          ? "resource://content-accessible/media"
+          : "chrome://global/skin/media",
+    });
 
     // Save the geo pref if we have it
     if (lazy.Region.home) {

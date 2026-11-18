@@ -16,6 +16,7 @@ import android.content.res.TypedArray;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.net.Uri;
 import android.provider.OpenableColumns;
 import android.text.InputType;
@@ -681,7 +682,8 @@ final class BasicGeckoViewPrompt implements GeckoSession.PromptDelegate {
                       false);
             }
             view.setBackgroundResource(android.R.drawable.editbox_background);
-            view.getBackground().setColorFilter(color, PorterDuff.Mode.MULTIPLY);
+            view.getBackground()
+                .setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
             return view;
           }
         };

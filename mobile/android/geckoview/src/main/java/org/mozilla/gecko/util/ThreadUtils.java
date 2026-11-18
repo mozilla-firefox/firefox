@@ -107,12 +107,12 @@ public final class ThreadUtils {
   private static void assertOnThreadComparison(
       final Thread expectedThread, final AssertBehavior behavior, final boolean expected) {
     final Thread currentThread = Thread.currentThread();
-    final long currentThreadId = currentThread.getId();
-    final long expectedThreadId = expectedThread.getId();
-
-    if ((currentThreadId == expectedThreadId) == expected) {
+    if ((currentThread == expectedThread) == expected) {
       return;
     }
+
+    final long currentThreadId = getThreadId(currentThread);
+    final long expectedThreadId = getThreadId(expectedThread);
 
     final String message;
     if (expected) {
@@ -149,7 +149,12 @@ public final class ThreadUtils {
     return isOnThread(getUiThread());
   }
 
+  @SuppressWarnings("deprecation")
+  public static long getThreadId(final Thread thread) {
+    return thread.getId();
+  }
+
   public static boolean isOnThread(final Thread thread) {
-    return (Thread.currentThread().getId() == thread.getId());
+    return Thread.currentThread() == thread;
   }
 }

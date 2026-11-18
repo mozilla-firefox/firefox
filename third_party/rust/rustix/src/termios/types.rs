@@ -2,6 +2,8 @@ use crate::backend::c;
 use crate::backend::termios::types;
 #[cfg(target_os = "nto")]
 use crate::ffi;
+#[cfg(target_os = "nto")]
+use crate::types::Padding;
 use crate::{backend, io};
 use bitflags::bitflags;
 
@@ -46,7 +48,7 @@ pub struct Termios {
     pub special_codes: SpecialCodes,
 
     #[cfg(target_os = "nto")]
-    pub(crate) __reserved: [ffi::c_uint; 3],
+    pub(crate) __reserved: Padding<[ffi::c_uint; 3]>,
 
     /// Line discipline.
     // On PowerPC, this field comes after `c_cc`.
@@ -341,37 +343,72 @@ bitflags! {
         const ONLRET = c::ONLRET;
 
         /// `OFILL`
-        #[cfg(not(bsd))]
+        #[cfg(not(any(
+            freebsdlike,
+            netbsdlike,
+        )))]
         const OFILL = c::OFILL;
 
         /// `OFDEL`
-        #[cfg(not(bsd))]
+        #[cfg(not(any(
+            freebsdlike,
+            netbsdlike,
+        )))]
         const OFDEL = c::OFDEL;
 
         /// `NLDLY`
-        #[cfg(not(any(bsd, solarish, target_os = "redox")))]
+        #[cfg(not(any(
+            freebsdlike,
+            netbsdlike,
+            solarish,
+            target_os = "redox",
+        )))]
         const NLDLY = c::NLDLY;
 
         /// `NL0`
-        #[cfg(not(any(bsd, solarish, target_os = "fuchsia", target_os = "redox")))]
+        #[cfg(not(any(
+            freebsdlike,
+            netbsdlike,
+            solarish,
+            target_os = "fuchsia",
+            target_os = "redox",
+        )))]
         const NL0 = c::NL0;
 
         /// `NL1`
-        #[cfg(not(any(bsd, solarish, target_os = "fuchsia", target_os = "redox")))]
+        #[cfg(not(any(
+            freebsdlike,
+            netbsdlike,
+            solarish,
+            target_os = "fuchsia",
+            target_os = "redox",
+        )))]
         const NL1 = c::NL1;
 
         /// `CRDLY`
-        #[cfg(not(any(bsd, solarish, target_os = "redox")))]
+        #[cfg(not(any(
+            freebsdlike,
+            netbsdlike,
+            solarish,
+            target_os = "redox",
+        )))]
         const CRDLY = c::CRDLY;
 
         /// `CR0`
-        #[cfg(not(any(bsd, solarish, target_os = "fuchsia", target_os = "redox")))]
+        #[cfg(not(any(
+            freebsdlike,
+            netbsdlike,
+            solarish,
+            target_os = "fuchsia",
+            target_os = "redox",
+        )))]
         const CR0 = c::CR0;
 
         /// `CR1`
         #[cfg(not(any(
             target_env = "musl",
-            bsd,
+            freebsdlike,
+            netbsdlike,
             solarish,
             target_os = "emscripten",
             target_os = "fuchsia",
@@ -382,7 +419,8 @@ bitflags! {
         /// `CR2`
         #[cfg(not(any(
             target_env = "musl",
-            bsd,
+            freebsdlike,
+            netbsdlike,
             solarish,
             target_os = "emscripten",
             target_os = "fuchsia",
@@ -393,7 +431,8 @@ bitflags! {
         /// `CR3`
         #[cfg(not(any(
             target_env = "musl",
-            bsd,
+            freebsdlike,
+            netbsdlike,
             solarish,
             target_os = "emscripten",
             target_os = "fuchsia",
@@ -423,7 +462,8 @@ bitflags! {
         /// `TAB1`
         #[cfg(not(any(
             target_env = "musl",
-            bsd,
+            freebsdlike,
+            netbsdlike,
             solarish,
             target_os = "emscripten",
             target_os = "fuchsia",
@@ -434,7 +474,8 @@ bitflags! {
         /// `TAB2`
         #[cfg(not(any(
             target_env = "musl",
-            bsd,
+            freebsdlike,
+            netbsdlike,
             solarish,
             target_os = "emscripten",
             target_os = "fuchsia",
@@ -445,7 +486,8 @@ bitflags! {
         /// `TAB3`
         #[cfg(not(any(
             target_env = "musl",
-            bsd,
+            freebsdlike,
+            netbsdlike,
             solarish,
             target_os = "emscripten",
             target_os = "fuchsia",
@@ -457,24 +499,35 @@ bitflags! {
         #[cfg(not(any(
             bsd,
             solarish,
-            target_os = "aix",
             target_os = "haiku",
             target_os = "redox",
         )))]
         const XTABS = c::XTABS;
 
         /// `BSDLY`
-        #[cfg(not(any(bsd, solarish, target_os = "redox")))]
+        #[cfg(not(any(
+            freebsdlike,
+            netbsdlike,
+            solarish,
+            target_os = "redox",
+        )))]
         const BSDLY = c::BSDLY;
 
         /// `BS0`
-        #[cfg(not(any(bsd, solarish, target_os = "fuchsia", target_os = "redox")))]
+        #[cfg(not(any(
+            freebsdlike,
+            netbsdlike,
+            solarish,
+            target_os = "fuchsia",
+            target_os = "redox",
+        )))]
         const BS0 = c::BS0;
 
         /// `BS1`
         #[cfg(not(any(
             target_env = "musl",
-            bsd,
+            freebsdlike,
+            netbsdlike,
             solarish,
             target_os = "emscripten",
             target_os = "fuchsia",
@@ -483,17 +536,29 @@ bitflags! {
         const BS1 = c::BS1;
 
         /// `FFDLY`
-        #[cfg(not(any(bsd, solarish, target_os = "redox")))]
+        #[cfg(not(any(
+            freebsdlike,
+            netbsdlike,
+            solarish,
+            target_os = "redox",
+        )))]
         const FFDLY = c::FFDLY;
 
         /// `FF0`
-        #[cfg(not(any(bsd, solarish, target_os = "fuchsia", target_os = "redox")))]
+        #[cfg(not(any(
+            freebsdlike,
+            netbsdlike,
+            solarish,
+            target_os = "fuchsia",
+            target_os = "redox",
+        )))]
         const FF0 = c::FF0;
 
         /// `FF1`
         #[cfg(not(any(
             target_env = "musl",
-            bsd,
+            freebsdlike,
+            netbsdlike,
             solarish,
             target_os = "emscripten",
             target_os = "fuchsia",
@@ -502,17 +567,29 @@ bitflags! {
         const FF1 = c::FF1;
 
         /// `VTDLY`
-        #[cfg(not(any(bsd, solarish, target_os = "redox")))]
+        #[cfg(not(any(
+            freebsdlike,
+            netbsdlike,
+            solarish,
+            target_os = "redox",
+        )))]
         const VTDLY = c::VTDLY;
 
         /// `VT0`
-        #[cfg(not(any(bsd, solarish, target_os = "fuchsia", target_os = "redox")))]
+        #[cfg(not(any(
+            freebsdlike,
+            netbsdlike,
+            solarish,
+            target_os = "fuchsia",
+            target_os = "redox",
+        )))]
         const VT0 = c::VT0;
 
         /// `VT1`
         #[cfg(not(any(
             target_env = "musl",
-            bsd,
+            freebsdlike,
+            netbsdlike,
             solarish,
             target_os = "emscripten",
             target_os = "fuchsia",
@@ -738,13 +815,7 @@ pub mod speed {
     pub const B230400: u32 = 230_400;
 
     /// `B460800`
-    #[cfg(not(any(
-        apple,
-        target_os = "aix",
-        target_os = "dragonfly",
-        target_os = "haiku",
-        target_os = "openbsd"
-    )))]
+    #[cfg(not(any(apple, target_os = "aix", target_os = "haiku", target_os = "openbsd")))]
     pub const B460800: u32 = 460_800;
 
     /// `B500000`
@@ -756,13 +827,7 @@ pub mod speed {
     pub const B576000: u32 = 576_000;
 
     /// `B921600`
-    #[cfg(not(any(
-        apple,
-        target_os = "aix",
-        target_os = "dragonfly",
-        target_os = "haiku",
-        target_os = "openbsd"
-    )))]
+    #[cfg(not(any(apple, target_os = "aix", target_os = "haiku", target_os = "openbsd")))]
     pub const B921600: u32 = 921_600;
 
     /// `B1000000`
@@ -868,7 +933,6 @@ pub mod speed {
             #[cfg(not(any(
                 apple,
                 target_os = "aix",
-                target_os = "dragonfly",
                 target_os = "haiku",
                 target_os = "nto",
                 target_os = "openbsd"
@@ -893,7 +957,6 @@ pub mod speed {
             #[cfg(not(any(
                 apple,
                 target_os = "aix",
-                target_os = "dragonfly",
                 target_os = "haiku",
                 target_os = "nto",
                 target_os = "openbsd"
@@ -1007,7 +1070,6 @@ pub mod speed {
             #[cfg(not(any(
                 apple,
                 target_os = "aix",
-                target_os = "dragonfly",
                 target_os = "haiku",
                 target_os = "nto",
                 target_os = "openbsd",
@@ -1032,7 +1094,6 @@ pub mod speed {
             #[cfg(not(any(
                 apple,
                 target_os = "aix",
-                target_os = "dragonfly",
                 target_os = "haiku",
                 target_os = "nto",
                 target_os = "openbsd"
@@ -1453,8 +1514,8 @@ mod tests {
         check_renamed_type!(OutputModes, tcflag_t);
         check_renamed_type!(ControlModes, tcflag_t);
         check_renamed_type!(LocalModes, tcflag_t);
-        assert_eq_size!(u8, libc::cc_t);
-        assert_eq_size!(types::tcflag_t, libc::tcflag_t);
+        static_assertions::assert_eq_size!(u8, libc::cc_t);
+        static_assertions::assert_eq_size!(types::tcflag_t, libc::tcflag_t);
 
         check_renamed_struct!(Winsize, winsize, ws_row, ws_col, ws_xpixel, ws_ypixel);
 
@@ -1482,14 +1543,14 @@ mod tests {
             // On everything except PowerPC, `termios` matches `termios2` except
             // for the addition of `c_ispeed` and `c_ospeed`.
             #[cfg(not(any(target_arch = "powerpc", target_arch = "powerpc64")))]
-            const_assert_eq!(
+            static_assertions::const_assert_eq!(
                 memoffset::offset_of!(Termios, input_speed),
                 core::mem::size_of::<c::termios>()
             );
 
             // On PowerPC, `termios2` is `termios`.
             #[cfg(any(target_arch = "powerpc", target_arch = "powerpc64"))]
-            assert_eq_size!(c::termios2, c::termios);
+            static_assertions::assert_eq_size!(c::termios2, c::termios);
         }
 
         #[cfg(not(linux_raw))]
@@ -1525,7 +1586,9 @@ mod tests {
                 )),
                 not(all(libc, target_os = "android"))
             )))]
-            const_assert!(core::mem::size_of::<Termios>() >= core::mem::size_of::<c::termios>());
+            static_assertions::const_assert!(
+                core::mem::size_of::<Termios>() >= core::mem::size_of::<c::termios>()
+            );
 
             check_renamed_struct_renamed_field!(Termios, termios, input_modes, c_iflag);
             check_renamed_struct_renamed_field!(Termios, termios, output_modes, c_oflag);
@@ -1572,8 +1635,8 @@ mod tests {
     )))]
     fn termios_legacy() {
         // Check that our doc aliases above are correct.
-        const_assert_eq!(c::EXTA, c::B19200);
-        const_assert_eq!(c::EXTB, c::B38400);
+        static_assertions::const_assert_eq!(c::EXTA, c::B19200);
+        static_assertions::const_assert_eq!(c::EXTB, c::B38400);
     }
 
     #[cfg(bsd)]
@@ -1581,10 +1644,10 @@ mod tests {
     fn termios_bsd() {
         // On BSD platforms we can assume that the `B*` constants have their
         // arbitrary integer speed value. Confirm this.
-        const_assert_eq!(c::B0, 0);
-        const_assert_eq!(c::B50, 50);
-        const_assert_eq!(c::B19200, 19200);
-        const_assert_eq!(c::B38400, 38400);
+        static_assertions::const_assert_eq!(c::B0, 0);
+        static_assertions::const_assert_eq!(c::B50, 50);
+        static_assertions::const_assert_eq!(c::B19200, 19200);
+        static_assertions::const_assert_eq!(c::B38400, 38400);
     }
 
     #[test]
@@ -1612,13 +1675,13 @@ mod tests {
         // When using `termios2`, we assume that we can add the optional actions
         // value to the ioctl request code. Test this assumption.
 
-        const_assert_eq!(c::TCSETS2, c::TCSETS2 + 0);
-        const_assert_eq!(c::TCSETSW2, c::TCSETS2 + 1);
-        const_assert_eq!(c::TCSETSF2, c::TCSETS2 + 2);
+        static_assertions::const_assert_eq!(c::TCSETS2, c::TCSETS2 + 0);
+        static_assertions::const_assert_eq!(c::TCSETSW2, c::TCSETS2 + 1);
+        static_assertions::const_assert_eq!(c::TCSETSF2, c::TCSETS2 + 2);
 
-        const_assert_eq!(c::TCSANOW - c::TCSANOW, 0);
-        const_assert_eq!(c::TCSADRAIN - c::TCSANOW, 1);
-        const_assert_eq!(c::TCSAFLUSH - c::TCSANOW, 2);
+        static_assertions::const_assert_eq!(c::TCSANOW - c::TCSANOW, 0);
+        static_assertions::const_assert_eq!(c::TCSADRAIN - c::TCSANOW, 1);
+        static_assertions::const_assert_eq!(c::TCSAFLUSH - c::TCSANOW, 2);
 
         // MIPS is different here.
         #[cfg(any(
@@ -1639,9 +1702,9 @@ mod tests {
             target_arch = "mips64r6"
         )))]
         {
-            const_assert_eq!(c::TCSANOW, 0);
-            const_assert_eq!(c::TCSADRAIN, 1);
-            const_assert_eq!(c::TCSAFLUSH, 2);
+            static_assertions::const_assert_eq!(c::TCSANOW, 0);
+            static_assertions::const_assert_eq!(c::TCSADRAIN, 1);
+            static_assertions::const_assert_eq!(c::TCSAFLUSH, 2);
         }
     }
 
@@ -1649,6 +1712,6 @@ mod tests {
     #[test]
     fn termios_cibaud() {
         // Test an assumption.
-        const_assert_eq!(c::CIBAUD, c::CBAUD << c::IBSHIFT);
+        static_assertions::const_assert_eq!(c::CIBAUD, c::CBAUD << c::IBSHIFT);
     }
 }

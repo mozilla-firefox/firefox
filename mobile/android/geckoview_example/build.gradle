@@ -45,6 +45,7 @@ android {
 dependencies {
     implementation project(path: ':geckoview')
 
+    implementation libs.androidx.activity
     implementation libs.androidx.annotation
     implementation libs.androidx.annotation.experimental
     implementation libs.androidx.appcompat

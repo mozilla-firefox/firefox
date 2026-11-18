@@ -37,7 +37,6 @@ module.exports = [
       "browser/components/aboutlogins/content/components/login-timeline.css",
       "browser/components/aboutlogins/content/components/menu-button.css",
       "browser/components/aboutlogins/content/components/remove-logins-dialog.css",
-      "browser/components/aiwindow/ui/components/ai-window/ai-window.css",
       "browser/components/asrouter/content-src/components/ASRouterAdmin/ASRouterAdmin.scss",
       "browser/components/asrouter/content-src/styles/_feature-callout.scss",
       "browser/components/asrouter/content-src/styles/_multistage.scss",

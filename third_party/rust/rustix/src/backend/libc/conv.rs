@@ -3,7 +3,10 @@
 //! for converting between rustix's types and libc types.
 
 use super::c;
-#[cfg(all(feature = "alloc", not(any(windows, target_os = "espidf"))))]
+#[cfg(all(
+    feature = "alloc",
+    not(any(windows, target_os = "espidf", target_os = "horizon"))
+))]
 use super::fd::IntoRawFd as _;
 use super::fd::{AsRawFd as _, BorrowedFd, FromRawFd as _, LibcFd, OwnedFd, RawFd};
 #[cfg(not(windows))]
@@ -35,7 +38,12 @@ pub(super) fn borrowed_fd(fd: BorrowedFd<'_>) -> LibcFd {
 
 #[cfg(all(
     feature = "alloc",
-    not(any(windows, target_os = "espidf", target_os = "redox"))
+    not(any(
+        windows,
+        target_os = "espidf",
+        target_os = "horizon",
+        target_os = "redox"
+    ))
 ))]
 #[inline]
 pub(super) fn owned_fd(fd: OwnedFd) -> LibcFd {

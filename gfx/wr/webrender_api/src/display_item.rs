@@ -646,6 +646,17 @@ impl BorderRadius {
         self.shape_bottom_left == 1.0 &&
         self.shape_bottom_right == 1.0
     }
+
+    pub fn has_uniform_radii(&self) -> bool {
+        let r = self.top_left.width;
+        self.top_left.height == r
+            && self.top_right.width == r
+            && self.top_right.height == r
+            && self.bottom_right.width == r
+            && self.bottom_right.height == r
+            && self.bottom_left.width == r
+            && self.bottom_left.height == r
+    }
 }
 
 #[repr(C)]

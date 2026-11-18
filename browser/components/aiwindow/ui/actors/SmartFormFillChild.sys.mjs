@@ -5,7 +5,10 @@
 const lazy = {};
 
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
-  return console.createInstance({ logModule: "SmartFormFillChild" });
+  return console.createInstance({
+    logModule: "SmartFormFillChild",
+    maxLogLevelPref: "browser.smartwindow.smartformfill.logLevel",
+  });
 });
 
 ChromeUtils.defineLazyGetter(lazy, "formFillController", function () {

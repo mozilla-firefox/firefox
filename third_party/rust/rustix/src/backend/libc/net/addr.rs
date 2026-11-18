@@ -289,6 +289,9 @@ impl fmt::Debug for SocketAddrUnix {
         }
         #[cfg(linux_kernel)]
         if let Some(name) = self.abstract_name() {
+            if let Ok(s) = core::str::from_utf8(name) {
+                return s.fmt(f);
+            }
             return name.fmt(f);
         }
         "(unnamed)".fmt(f)

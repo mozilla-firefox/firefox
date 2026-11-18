@@ -19,6 +19,7 @@ const lazy = {};
 ChromeUtils.defineLazyGetter(lazy, "console", () =>
   console.createInstance({
     logModule: "TabManagementService",
+    maxLogLevelPref: "browser.smartwindow.tabManagement.logLevel",
   })
 );
 

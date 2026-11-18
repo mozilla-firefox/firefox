@@ -93,7 +93,7 @@ class ConversationStore extends SQLiteStoreBase {
    * @param {Conversation} conversation
    */
   async updateConversation(conversation) {
-    await this.#ensureConnection();
+    await this.ensureDatabase();
 
     await this.connection
       .executeTransaction(async () => {
@@ -151,7 +151,7 @@ class ConversationStore extends SQLiteStoreBase {
    * @returns {Promise<?Conversation>} The conversation, or null if none exists
    */
   async findConversationById(id) {
-    await this.#ensureConnection();
+    await this.ensureDatabase();
 
     const rows = await this.connection.executeCached(GET_CONVERSATION_BY_ID, {
       conv_id: id,
@@ -175,7 +175,7 @@ class ConversationStore extends SQLiteStoreBase {
    * @param {string} id
    */
   async deleteConversationById(id) {
-    await this.#ensureConnection();
+    await this.ensureDatabase();
 
     await this.connection.execute(DELETE_CONVERSATION_BY_ID, { conv_id: id });
   }
@@ -224,17 +224,6 @@ class ConversationStore extends SQLiteStoreBase {
       usage: parseJSONOrNull(row.getResultByName("usage")),
       toolCallId: row.getResultByName("tool_call_id"),
       toolName: row.getResultByName("tool_name"),
-    });
-  }
-
-  async #ensureConnection() {
-    await this.ensureDatabase().catch(e => {
-      this.log.error(
-        "Could not ensure a database connection.",
-        e.message,
-        e.stack
-      );
-      throw e;
     });
   }
 }

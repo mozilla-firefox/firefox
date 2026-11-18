@@ -78,7 +78,6 @@ public final class SharedMemory implements Parcelable {
       mDescriptor = ParcelFileDescriptor.dup(fd);
       mSize = size;
       mId = id;
-      mBackedFile.allowPurging(false);
     } catch (final Exception e) {
       e.printStackTrace();
       close();

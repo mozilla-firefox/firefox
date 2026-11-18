@@ -822,8 +822,8 @@ mod tests {
         // check_types macros because we want to test compatibility with actual
         // libc, not the `crate::backend::c` which might be our own
         // implementation.
-        assert_eq_size!(Siginfo, libc::siginfo_t);
-        assert_eq_align!(Siginfo, libc::siginfo_t);
+        static_assertions::assert_eq_size!(Siginfo, libc::siginfo_t);
+        static_assertions::assert_eq_align!(Siginfo, libc::siginfo_t);
         assert_eq!(
             memoffset::span_of!(Siginfo, ..),
             memoffset::span_of!(Siginfo, __bindgen_anon_1)
@@ -842,8 +842,8 @@ mod tests {
         );
 
         // c-scape assumes rustix's `Stack` matches libc's. Similar to above.
-        assert_eq_size!(Stack, libc::stack_t);
-        assert_eq_align!(Stack, libc::stack_t);
+        static_assertions::assert_eq_size!(Stack, libc::stack_t);
+        static_assertions::assert_eq_align!(Stack, libc::stack_t);
         assert_eq!(
             memoffset::span_of!(Stack, ss_sp),
             memoffset::span_of!(libc::stack_t, ss_sp)
@@ -900,8 +900,8 @@ mod tests {
             sa_flags,
             sa_mask
         );
-        assert_eq_size!(KernelSigactionFlags, crate::ffi::c_ulong);
-        assert_eq_align!(KernelSigactionFlags, crate::ffi::c_ulong);
+        static_assertions::assert_eq_size!(KernelSigactionFlags, crate::ffi::c_ulong);
+        static_assertions::assert_eq_align!(KernelSigactionFlags, crate::ffi::c_ulong);
         check_renamed_type!(KernelSigrestore, __sigrestore_t);
         check_renamed_type!(KernelSighandler, __kernel_sighandler_t);
 

@@ -1,6 +1,6 @@
 [package]
 name = "rustix"
-version = "1.1.4"
+version = "1.1.6"
 authors = [
     "Dan Gohman <dev@sunfishcode.online>",
     "Jakub Konka <kubkon@jakubkonka.com>",
@@ -13,18 +13,18 @@ edition = "2021"
 keywords = ["api", "file", "network", "safe", "syscall"]
 categories = ["os::unix-apis", "date-and-time", "filesystem", "network-programming"]
 include = ["src", "build.rs", "Cargo.toml", "COPYRIGHT", "LICENSE*", "/*.md", "benches"]
-rust-version = "1.63"
+rust-version = "1.65"
 
 [hints]
 # Most users use a fraction of the rustix API surface area, so this reduces compilation times
 mostly-unused = true
 
 [dependencies]
-bitflags = { version = "2.4.0", default-features = false }
+bitflags = { version = "2.9.2", default-features = false }
 
 # Special dependencies used in rustc-dep-of-std mode.
-core = { version = "1.0.0", optional = true, package = "rustc-std-workspace-core" }
-rustc-std-workspace-alloc = { version = "1.0.0", optional = true } # not aliased here but in lib.rs because of name collision with the alloc feature
+core = { version = "1.0.1", optional = true, package = "rustc-std-workspace-core" }
+rustc-std-workspace-alloc = { version = "1.0.1", optional = true } # not aliased here but in lib.rs because of name collision with the alloc feature
 
 # Dependencies for platforms where linux_raw is supported, in addition to libc:
 #
@@ -69,7 +69,7 @@ default-features = false
 
 [dev-dependencies]
 tempfile = "3.5.0"
-libc = "0.2.171"
+libc = "0.2.182"
 libc_errno = { package = "errno", version = "0.3.10", default-features = false }
 serial_test = "2.0.0"
 memoffset = "0.9.0"
@@ -170,7 +170,7 @@ stdio = []
 # Enable `rustix::system::*`.
 system = ["linux-raw-sys/system"]
 
-# Enable `rustix::runtime::*`. ⚠ This API is undocumented and unstable and
+# Enable `rustix::runtime_*::*`. ⚠ This API is undocumented and unstable and
 # experimental and not intended for general-purpose use. ⚠
 runtime = ["linux-raw-sys/prctl"]
 
@@ -233,7 +233,6 @@ rustc-dep-of-std = [
     "core",
     "rustc-std-workspace-alloc",
     "linux-raw-sys/rustc-dep-of-std",
-    "bitflags/rustc-dep-of-std",
 ]
 
 # Enable `rustix::io::try_close`. The rustix developers do not intend the
@@ -264,11 +263,9 @@ check-cfg = [
     'cfg(lower_upper_exp_for_non_zero)',
     'cfg(sanitize_memory)',
     'cfg(netbsdlike)',
-    'cfg(rustc_attrs)',
     'cfg(rustc_diagnostics)',
     'cfg(solarish)',
     'cfg(staged_api)',
-    'cfg(static_assertions)',
     'cfg(thumb_mode)',
     'cfg(wasi)',
     'cfg(wasi_ext)',

@@ -28,9 +28,9 @@ import androidx.annotation.Nullable;
 import androidx.annotation.OptIn;
 import androidx.annotation.StringDef;
 import androidx.annotation.UiThread;
-import androidx.lifecycle.Lifecycle;
-import androidx.lifecycle.LifecycleObserver;
-import androidx.lifecycle.OnLifecycleEvent;
+import androidx.core.os.ParcelCompat;
+import androidx.lifecycle.DefaultLifecycleObserver;
+import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ProcessLifecycleOwner;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -158,23 +158,23 @@ public final class GeckoRuntime implements Parcelable {
       })
   public @interface CrashedProcessVisibility {}
 
-  private final class LifecycleListener implements LifecycleObserver {
+  private final class LifecycleListener implements DefaultLifecycleObserver {
     private boolean mPaused = false;
 
     public LifecycleListener() {}
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_CREATE)
-    void onCreate() {
+    @Override
+    public void onCreate(@NonNull final LifecycleOwner owner) {
       Log.d(LOGTAG, "Lifecycle: onCreate");
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_START)
-    void onStart() {
+    @Override
+    public void onStart(@NonNull final LifecycleOwner owner) {
       Log.d(LOGTAG, "Lifecycle: onStart");
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-    void onResume() {
+    @Override
+    public void onResume(@NonNull final LifecycleOwner owner) {
       Log.d(LOGTAG, "Lifecycle: onResume");
       if (mPaused) {
         // Do not trigger the first onResume event because it breaks nsAppShell::sPauseCount counter
@@ -214,8 +214,8 @@ public final class GeckoRuntime implements Parcelable {
       }
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-    void onPause() {
+    @Override
+    public void onPause(@NonNull final LifecycleOwner owner) {
       Log.d(LOGTAG, "Lifecycle: onPause");
       mPaused = true;
       // Pause listening for locations when in background
@@ -1254,7 +1254,9 @@ public final class GeckoRuntime implements Parcelable {
    */
   @AnyThread
   public void readFromParcel(final @NonNull Parcel source) {
-    mSettings = source.readParcelable(getClass().getClassLoader());
+    mSettings =
+        ParcelCompat.readParcelable(
+            source, getClass().getClassLoader(), GeckoRuntimeSettings.class);
   }
 
   /** Parcelable creator for GeckoRuntime instances. */

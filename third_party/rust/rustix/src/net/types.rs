@@ -740,7 +740,7 @@ impl AddressFamily {
     #[cfg(target_os = "freebsd")]
     pub const SLOW: Self = Self(c::AF_SLOW as _);
     /// `AF_SYS_CONTROL`
-    #[cfg(apple)]
+    #[cfg(target_os = "macos")]
     pub const SYS_CONTROL: Self = Self(c::AF_SYS_CONTROL as _);
     /// `AF_SYSTEM`
     #[cfg(apple)]
@@ -1116,6 +1116,7 @@ pub mod ipproto {
 }
 
 /// `SYSPROTO_*` constants.
+#[cfg(target_os = "macos")]
 pub mod sysproto {
     #[cfg(apple)]
     use {
@@ -1124,11 +1125,9 @@ pub mod sysproto {
     };
 
     /// `SYSPROTO_EVENT`
-    #[cfg(apple)]
     pub const EVENT: Protocol = Protocol(new_raw_protocol(c::SYSPROTO_EVENT as _));
 
     /// `SYSPROTO_CONTROL`
-    #[cfg(apple)]
     pub const CONTROL: Protocol = Protocol(new_raw_protocol(c::SYSPROTO_CONTROL as _));
 }
 
@@ -2114,14 +2113,14 @@ mod tests {
 
         // Backend code needs to cast these to `c_int` so make sure that cast isn't
         // lossy.
-        assert_eq_size!(RawProtocol, c_int);
-        assert_eq_size!(Protocol, c_int);
-        assert_eq_size!(Option<RawProtocol>, c_int);
-        assert_eq_size!(Option<Protocol>, c_int);
-        assert_eq_size!(RawSocketType, c_int);
-        assert_eq_size!(SocketType, c_int);
-        assert_eq_size!(SocketFlags, c_int);
-        assert_eq_size!(SocketAddrStorage, c::sockaddr_storage);
+        static_assertions::assert_eq_size!(RawProtocol, c_int);
+        static_assertions::assert_eq_size!(Protocol, c_int);
+        static_assertions::assert_eq_size!(Option<RawProtocol>, c_int);
+        static_assertions::assert_eq_size!(Option<Protocol>, c_int);
+        static_assertions::assert_eq_size!(RawSocketType, c_int);
+        static_assertions::assert_eq_size!(SocketType, c_int);
+        static_assertions::assert_eq_size!(SocketFlags, c_int);
+        static_assertions::assert_eq_size!(SocketAddrStorage, c::sockaddr_storage);
 
         // Rustix doesn't depend on `Option<Protocol>` matching the ABI of a raw
         // integer for correctness, but it should work nonetheless.
@@ -2135,13 +2134,13 @@ mod tests {
         }
 
         #[cfg(linux_kernel)]
-        assert_eq_size!(UCred, libc::ucred);
+        static_assertions::assert_eq_size!(UCred, libc::ucred);
 
         #[cfg(target_os = "linux")]
-        assert_eq_size!(super::xdp::XdpUmemReg, c::xdp_umem_reg);
+        static_assertions::assert_eq_size!(super::xdp::XdpUmemReg, c::xdp_umem_reg);
         #[cfg(target_os = "linux")]
-        assert_eq_size!(super::xdp::XdpOptions, c::xdp_options);
+        static_assertions::assert_eq_size!(super::xdp::XdpOptions, c::xdp_options);
         #[cfg(target_os = "linux")]
-        assert_eq_size!(super::xdp::XdpDesc, c::xdp_desc);
+        static_assertions::assert_eq_size!(super::xdp::XdpDesc, c::xdp_desc);
     }
 }

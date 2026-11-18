@@ -41,6 +41,7 @@
 #include "mozilla/layers/WebRenderDrawEventRecorder.h"
 #include "mozilla/layers/WebRenderLayerManager.h"
 #include "nsDisplayListInvalidation.h"
+#include "nsImageRenderer.h"
 #include "nsLayoutUtils.h"
 #include "nsTHashSet.h"
 
@@ -2423,13 +2424,14 @@ static wr::WrRotation ToWrRotation(VideoRotation aRotation) {
 }
 
 Maybe<wr::ImageKey> WebRenderCommandBuilder::CreateImageKey(
-    nsDisplayItem* aItem, ImageContainer* aContainer,
+    const WebRenderImageItemInfo& aItem, ImageContainer* aContainer,
     mozilla::wr::DisplayListBuilder& aBuilder,
     mozilla::wr::IpcResourceUpdateQueue& aResources,
     mozilla::wr::ImageRendering aRendering, const StackingContextHelper& aSc,
     gfx::IntSize& aSize, const Maybe<LayoutDeviceRect>& aAsyncImageBounds) {
   RefPtr<WebRenderImageData> imageData =
-      CreateOrRecycleWebRenderUserData<WebRenderImageData>(aItem);
+      CreateOrRecycleWebRenderUserData<WebRenderImageData>(aItem.mPerFrameKey,
+                                                           aItem.mFrame);
   MOZ_ASSERT(imageData);
 
   if (aContainer->IsAsync()) {
@@ -2443,7 +2445,7 @@ Maybe<wr::ImageKey> WebRenderCommandBuilder::CreateImageKey(
     imageData->CreateAsyncImageWebRenderCommands(
         aBuilder, aContainer, aSc, rect, scBounds,
         ToWrRotation(aContainer->GetRotation()), aRendering,
-        wr::MixBlendMode::Normal, !aItem->BackfaceIsHidden());
+        wr::MixBlendMode::Normal, !aItem.mBackfaceHidden);
     return Nothing();
   }
 
@@ -2458,12 +2460,12 @@ Maybe<wr::ImageKey> WebRenderCommandBuilder::CreateImageKey(
 }
 
 bool WebRenderCommandBuilder::PushImage(
-    nsDisplayItem* aItem, ImageContainer* aContainer,
+    const WebRenderImageItemInfo& aItem, ImageContainer* aContainer,
     mozilla::wr::DisplayListBuilder& aBuilder,
     mozilla::wr::IpcResourceUpdateQueue& aResources,
     const StackingContextHelper& aSc, const LayoutDeviceRect& aRect,
     const LayoutDeviceRect& aClip) {
-  auto rendering = wr::ToImageRendering(aItem->Frame()->UsedImageRendering());
+  auto rendering = wr::ToImageRendering(aItem.mFrame->UsedImageRendering());
   gfx::IntSize size;
   Maybe<wr::ImageKey> key =
       CreateImageKey(aItem, aContainer, aBuilder, aResources, rendering, aSc,
@@ -2479,18 +2481,19 @@ bool WebRenderCommandBuilder::PushImage(
 
   auto r = wr::ToLayoutRect(aRect);
   auto c = wr::ToLayoutRect(aClip);
-  aBuilder.PushImage(r, c, !aItem->BackfaceIsHidden(), false, rendering,
+  aBuilder.PushImage(r, c, !aItem.mBackfaceHidden, false, rendering,
                      key.value());
 
   return true;
 }
 
 Maybe<wr::ImageKey> WebRenderCommandBuilder::CreateImageProviderKey(
-    nsDisplayItem* aItem, image::WebRenderImageProvider* aProvider,
-    image::ImgDrawResult aDrawResult,
+    nsIFrame* aFrame, uint32_t aPerFrameKey,
+    image::WebRenderImageProvider* aProvider, image::ImgDrawResult aDrawResult,
     mozilla::wr::IpcResourceUpdateQueue& aResources) {
   RefPtr<WebRenderImageProviderData> imageData =
-      CreateOrRecycleWebRenderUserData<WebRenderImageProviderData>(aItem);
+      CreateOrRecycleWebRenderUserData<WebRenderImageProviderData>(aPerFrameKey,
+                                                                   aFrame);
   MOZ_ASSERT(imageData);
   return imageData->UpdateImageKey(aProvider, aDrawResult, aResources);
 }
@@ -2501,18 +2504,30 @@ bool WebRenderCommandBuilder::PushImageProvider(
     mozilla::wr::IpcResourceUpdateQueue& aResources,
     const LayoutDeviceRect& aRect, const LayoutDeviceRect& aClip,
     bool aRasterizedForRect, float aOpacity) {
-  Maybe<wr::ImageKey> key =
-      CreateImageProviderKey(aItem, aProvider, aDrawResult, aResources);
+  return PushImageProvider(
+      aItem->Frame(), aItem->GetPerFrameKey(), aItem->BackfaceIsHidden(),
+      aItem->GetType() == DisplayItemType::TYPE_SVG_GEOMETRY, aProvider,
+      aDrawResult, aBuilder, aResources, aRect, aClip, aRasterizedForRect,
+      aOpacity);
+}
+
+bool WebRenderCommandBuilder::PushImageProvider(
+    nsIFrame* aFrame, uint32_t aPerFrameKey, bool aBackfaceHidden,
+    bool aAntialiased, image::WebRenderImageProvider* aProvider,
+    image::ImgDrawResult aDrawResult, mozilla::wr::DisplayListBuilder& aBuilder,
+    mozilla::wr::IpcResourceUpdateQueue& aResources,
+    const LayoutDeviceRect& aRect, const LayoutDeviceRect& aClip,
+    bool aRasterizedForRect, float aOpacity) {
+  Maybe<wr::ImageKey> key = CreateImageProviderKey(
+      aFrame, aPerFrameKey, aProvider, aDrawResult, aResources);
   if (!key) {
     return false;
   }
 
-  bool antialiased = aItem->GetType() == DisplayItemType::TYPE_SVG_GEOMETRY;
-
-  auto rendering = wr::ToImageRendering(aItem->Frame()->UsedImageRendering());
+  auto rendering = wr::ToImageRendering(aFrame->UsedImageRendering());
   auto r = wr::ToLayoutRect(aRect);
   auto c = wr::ToLayoutRect(aClip);
-  aBuilder.PushImage(r, c, !aItem->BackfaceIsHidden(), antialiased, rendering,
+  aBuilder.PushImage(r, c, !aBackfaceHidden, aAntialiased, rendering,
                      key.value(), true, wr::ColorF{1.0f, 1.0f, 1.0f, aOpacity},
                      false, false, aRasterizedForRect);
 

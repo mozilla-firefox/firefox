@@ -80,6 +80,8 @@ use crate::buffer::Buffer;
 use crate::fd::{AsFd, OwnedFd};
 use crate::io;
 use crate::timespec::Timespec;
+#[cfg(target_pointer_width = "32")]
+use crate::types::Padding;
 use core::ffi::c_void;
 use core::hash::{Hash, Hasher};
 
@@ -276,7 +278,7 @@ impl EventData {
             sixty_four_bit_pointer: SixtyFourBitPointer {
                 pointer: value,
                 #[cfg(target_pointer_width = "32")]
-                _padding: 0,
+                _padding: Padding::new(0),
             },
         }
     }
@@ -321,13 +323,13 @@ impl Hash for EventData {
 struct SixtyFourBitPointer {
     #[cfg(target_endian = "big")]
     #[cfg(target_pointer_width = "32")]
-    _padding: u32,
+    _padding: Padding<u32>,
 
     pointer: *mut c_void,
 
     #[cfg(target_endian = "little")]
     #[cfg(target_pointer_width = "32")]
-    _padding: u32,
+    _padding: Padding<u32>,
 }
 
 #[cfg(test)]

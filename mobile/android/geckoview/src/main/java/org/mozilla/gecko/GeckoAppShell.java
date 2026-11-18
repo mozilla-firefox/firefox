@@ -19,7 +19,6 @@ import android.content.res.Configuration;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
@@ -29,6 +28,7 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.LinkProperties;
@@ -40,6 +40,7 @@ import android.os.Debug;
 import android.os.LocaleList;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
@@ -181,7 +182,6 @@ public class GeckoAppShell {
    */
   private static final int ADDITIONAL_SEARCH_HEADER_RAM_THRESHOLD_MEGABYTES = 1024;
 
-  private static int sScreenDepth;
   private static boolean sUseMaxScreenDepth;
   private static Float sScreenRefreshRate;
 
@@ -321,6 +321,7 @@ public class GeckoAppShell {
 
   // Permissions are explicitly checked when requesting content permission.
   @SuppressLint("MissingPermission")
+  @SuppressWarnings("deprecation")
   private static synchronized boolean updateLocationListeners() {
     final boolean shouldListen = locationListeningRequested && !locationPaused;
     final LocationManager lm = getLocationManager(getApplicationContext());
@@ -440,6 +441,7 @@ public class GeckoAppShell {
     public void onProviderEnabled(final String provider) {}
 
     @Override
+    @SuppressWarnings("deprecation")
     public void onStatusChanged(final String provider, final int status, final Bundle extras) {}
   }
 
@@ -460,6 +462,9 @@ public class GeckoAppShell {
   static final String WAKE_LOCK_VIDEO_PLAYING = "video-playing";
 
   static final int WAKE_LOCKS_COUNT = 2;
+
+  @SuppressWarnings("deprecation")
+  private static final int SCREEN_BRIGHT_WAKE_LOCK = PowerManager.SCREEN_BRIGHT_WAKE_LOCK;
 
   /** No one holds the wake-lock. */
   static final int WAKE_LOCK_STATE_UNLOCKED = 0;
@@ -493,9 +498,7 @@ public class GeckoAppShell {
       } else if (WAKE_LOCK_SCREEN.equals(lock) || WAKE_LOCK_VIDEO_PLAYING.equals(lock)) {
         // ON_AFTER_RELEASE is set, the user activity timer will be reset when the
         // WakeLock is released, causing the illumination to remain on a bit longer.
-        wl =
-            pm.newWakeLock(
-                PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE, lock);
+        wl = pm.newWakeLock(SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE, lock);
       } else {
         Log.w(LOGTAG, "Unsupported wake-lock: " + lock);
         return;
@@ -670,21 +673,12 @@ public class GeckoAppShell {
   /**
    * Returns the colour depth of the default screen. This will typically be 24 as by default it only
    * includes the bits used for color values, not alpha. However, if useMaxScreenDepth() has been
-   * enabled this will return the full depth.
+   * enabled this will return the full depth of 32, as Android screens always use RGBA_8888. See
+   * https://developer.android.com/reference/android/view/Display#getPixelFormat()
    */
   @WrapForJNI(calledFrom = "gecko")
   public static synchronized int getScreenDepth() {
-    if (sScreenDepth == 0) {
-      sScreenDepth = 24;
-      final Context applicationContext = getApplicationContext();
-      final PixelFormat info = new PixelFormat();
-      PixelFormat.getPixelFormatInfo(sScreenCompat.getDisplay(sDisplayId).getPixelFormat(), info);
-      if (info.bitsPerPixel >= 24) {
-        sScreenDepth = sUseMaxScreenDepth ? info.bitsPerPixel : 24;
-      }
-    }
-
-    return sScreenDepth;
+    return sUseMaxScreenDepth ? 32 : 24;
   }
 
   @WrapForJNI(calledFrom = "gecko")
@@ -739,7 +733,7 @@ public class GeckoAppShell {
   }
 
   private static Vibrator vibrator() {
-    return (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
+    return getApplicationContext().getSystemService(Vibrator.class);
   }
 
   @SuppressLint("MissingPermission")
@@ -747,9 +741,12 @@ public class GeckoAppShell {
   private static void vibrate(final long milliseconds) {
     sVibrationEndTime = System.nanoTime() + milliseconds * 1000000;
     try {
-      vibrator().vibrate(milliseconds);
+      vibrator()
+          .vibrate(VibrationEffect.createOneShot(milliseconds, VibrationEffect.DEFAULT_AMPLITUDE));
     } catch (final SecurityException ignore) {
       Log.w(LOGTAG, "No VIBRATE permission");
+    } catch (final IllegalArgumentException e) {
+      Log.e(LOGTAG, "Invalid vibration", e);
     }
   }
 
@@ -766,9 +763,11 @@ public class GeckoAppShell {
 
     sVibrationEndTime = System.nanoTime() + vibrationDuration * 1000000;
     try {
-      vibrator().vibrate(pattern, repeat);
+      vibrator().vibrate(VibrationEffect.createWaveform(pattern, repeat));
     } catch (final SecurityException ignore) {
       Log.w(LOGTAG, "No VIBRATE permission");
+    } catch (final IllegalArgumentException e) {
+      Log.e(LOGTAG, "Invalid vibration", e);
     }
   }
 
@@ -991,9 +990,10 @@ public class GeckoAppShell {
   @WrapForJNI(calledFrom = "gecko")
   private static boolean getShowPasswordSetting() {
     try {
+      @SuppressWarnings("deprecation")
+      final String setting = Settings.System.TEXT_SHOW_PASSWORD;
       final int showPassword =
-          Settings.System.getInt(
-              getApplicationContext().getContentResolver(), Settings.System.TEXT_SHOW_PASSWORD, 1);
+          Settings.System.getInt(getApplicationContext().getContentResolver(), setting, 1);
       return (showPassword > 0);
     } catch (final Exception e) {
       return true;
@@ -1265,6 +1265,7 @@ public class GeckoAppShell {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public Rect getScreenSize(final int displayId) {
       final Display disp = getDisplay(displayId);
       final Point size = new Point();
@@ -1328,6 +1329,7 @@ public class GeckoAppShell {
           }
 
           @Override
+          @SuppressWarnings("deprecation")
           public void onLowMemory() {}
         };
 
@@ -1484,19 +1486,52 @@ public class GeckoAppShell {
     }
 
     try {
-      if (on) {
-        Log.e(LOGTAG, "Setting communication mode ON");
-        // This shouldn't throw, but does throw NullPointerException on a very
-        // small number of devices.
-        am.startBluetoothSco();
-        am.setBluetoothScoOn(true);
+      Log.i(LOGTAG, "Setting communication mode " + (on ? "ON" : "OFF"));
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        setBluetoothCommunicationDevice(am, on);
       } else {
-        Log.e(LOGTAG, "Setting communication mode OFF");
-        am.stopBluetoothSco();
-        am.setBluetoothScoOn(false);
+        setBluetoothSco(am, on);
       }
-    } catch (final SecurityException | NullPointerException e) {
+    } catch (final SecurityException | NullPointerException | IllegalArgumentException e) {
       Log.e(LOGTAG, "could not set communication mode", e);
+    }
+  }
+
+  private static final Object sCommunicationDeviceLock = new Object();
+  private static boolean sBluetoothScoRequested;
+
+  @RequiresApi(Build.VERSION_CODES.S)
+  private static void setBluetoothCommunicationDevice(final AudioManager am, final boolean on) {
+    synchronized (sCommunicationDeviceLock) {
+      if (!on) {
+        if (sBluetoothScoRequested) {
+          final AudioDeviceInfo device = am.getCommunicationDevice();
+          if (device != null && device.getType() == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+            am.clearCommunicationDevice();
+          }
+          sBluetoothScoRequested = false;
+        }
+        return;
+      }
+      for (final AudioDeviceInfo device : am.getAvailableCommunicationDevices()) {
+        if (device.getType() == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+          sBluetoothScoRequested |= am.setCommunicationDevice(device);
+          return;
+        }
+      }
+    }
+  }
+
+  @SuppressWarnings("deprecation")
+  private static void setBluetoothSco(final AudioManager am, final boolean on) {
+    if (on) {
+      // This shouldn't throw, but does throw NullPointerException on a very
+      // small number of devices.
+      am.startBluetoothSco();
+      am.setBluetoothScoOn(true);
+    } else {
+      am.stopBluetoothSco();
+      am.setBluetoothScoOn(false);
     }
   }
 

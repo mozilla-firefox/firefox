@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>incomplete UTF-16 test</title>
+<title>localStorage removeItem on a fresh Storage object</title>
 <meta http-equiv="Content-type" content="text/html; charset=UTF-8" />
 
 <script src="/tests/SimpleTest/SimpleTest.js"></script>
@@ -14,9 +14,21 @@ function startTest()
   localStorage.setItem("test1", "value1");
   localStorage.setItem("test2", "value2");
   localStorage.setItem("test3", "value3");
-  
+
   is(localStorage.length, 3, "expected number of items");
 
+  // A new window gets its own Storage object, as a page reload would.
+  var iframe = document.createElement("iframe");
+  document.body.appendChild(iframe);
+  var storage = iframe.contentWindow.localStorage;
+
+  var test2 = storage.getItem("test2");
+  is(test2, "value2", "expected item");
+
+  storage.removeItem("test2");
+  is(storage.length, 2, "expected number of items");
+
+  localStorage.clear();
   SimpleTest.finish();
 }
 

@@ -17,7 +17,12 @@ mod exit;
 mod fcntl_getlk;
 #[cfg(not(target_os = "wasi"))] // WASI doesn't have get[gpu]id.
 mod id;
-#[cfg(not(any(target_os = "aix", target_os = "espidf", target_os = "vita")))]
+#[cfg(not(any(
+    target_os = "aix",
+    target_os = "horizon",
+    target_os = "espidf",
+    target_os = "vita"
+)))]
 mod ioctl;
 #[cfg(not(any(target_os = "espidf", target_os = "wasi")))]
 mod kill;
@@ -74,7 +79,12 @@ pub use exit::*;
 pub use fcntl_getlk::*;
 #[cfg(not(target_os = "wasi"))]
 pub use id::*;
-#[cfg(not(any(target_os = "aix", target_os = "espidf", target_os = "vita")))]
+#[cfg(not(any(
+    target_os = "aix",
+    target_os = "espidf",
+    target_os = "horizon",
+    target_os = "vita"
+)))]
 pub use ioctl::*;
 #[cfg(not(any(target_os = "espidf", target_os = "wasi")))]
 pub use kill::*;
@@ -103,6 +113,7 @@ pub use rlimit::*;
     target_os = "emscripten",
     target_os = "espidf",
     target_os = "fuchsia",
+    target_os = "horizon",
     target_os = "redox",
     target_os = "vita",
     target_os = "wasi"

@@ -8897,9 +8897,16 @@ void LIRGenerator::visitWasmLoadField(MWasmLoadField* ins) {
                                        ins->maybeTrap()),
            ins);
   }
-  if (ins->keepAlive() != ins->base()) {
-    add(new (alloc()) LKeepAliveObject(useKeepalive(ins->keepAlive())), ins);
+  if (ins->wasmObject() != ins->base()) {
+    add(new (alloc()) LKeepAliveObject(useKeepalive(ins->wasmObject())), ins);
   }
+}
+
+void LIRGenerator::visitWasmLoadInternalField(MWasmLoadInternalField* ins) {
+  LAllocation object = useRegisterAtStart(ins->object());
+  define(new (alloc()) LWasmLoadSlot(object, ins->offset(), ins->type(),
+                                     MWideningOp::None, ins->maybeTrap()),
+         ins);
 }
 
 void LIRGenerator::visitWasmLoadElement(MWasmLoadElement* ins) {
@@ -8944,8 +8951,8 @@ void LIRGenerator::visitWasmStoreField(MWasmStoreField* ins) {
                                      narrowingOp, ins->maybeTrap()),
         ins);
   }
-  if (ins->keepAlive() != ins->base()) {
-    add(new (alloc()) LKeepAliveObject(useKeepalive(ins->keepAlive())), ins);
+  if (ins->wasmObject() != ins->base()) {
+    add(new (alloc()) LKeepAliveObject(useKeepalive(ins->wasmObject())), ins);
   }
 }
 
@@ -8959,8 +8966,8 @@ void LIRGenerator::visitWasmStoreFieldRef(MWasmStoreFieldRef* ins) {
   add(new (alloc()) LWasmStoreRef(instance, base, value, temp(), offset,
                                   ins->maybeTrap(), ins->preBarrierKind()),
       ins);
-  if (ins->keepAlive() != ins->base()) {
-    add(new (alloc()) LKeepAliveObject(useKeepalive(ins->keepAlive())), ins);
+  if (ins->wasmObject() != ins->base()) {
+    add(new (alloc()) LKeepAliveObject(useKeepalive(ins->wasmObject())), ins);
   }
 }
 

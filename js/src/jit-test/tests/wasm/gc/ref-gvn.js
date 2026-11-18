@@ -1474,15 +1474,17 @@ if (getBuildConfiguration("jitspew")) {
       const ionJSON = wasmGetIon(code, 2);
       const unoptimized = wasmIonGetFirstMIRPass(ionJSON);
       const optimized = wasmIonGetLastMIRPass(ionJSON);
-      assertOpcodesInOrder(unoptimized, ["WasmRefTestConcrete", "Test", "WasmRefCastConcrete", "WasmLoadField", "WasmLoadField"]);
-      assertOpcodesInOrder(optimized, ["WasmRefTestConcrete", "Test", "WasmRefCastInfallible", "WasmLoadField", "WasmLoadField"]);
+      assertOpcodesInOrder(unoptimized, ["WasmLoadInternalField", "WasmLoadField", "WasmRefTestConcrete", "Test", "WasmRefCastConcrete", "WasmLoadInternalField", "WasmLoadField"]);
+      // In the optimized MIR, GVN removes the second WasmLoadInternalField, merging it with the first one.
+      assertOpcodesInOrder(optimized, ["WasmLoadInternalField", "WasmLoadField", "WasmRefTestConcrete", "Test", "WasmRefCastInfallible", "!WasmLoadInternalField", "WasmLoadField"]);
     }
     {
       const ionJSON = wasmGetIon(code, 3);
       const unoptimized = wasmIonGetFirstMIRPass(ionJSON);
       const optimized = wasmIonGetLastMIRPass(ionJSON);
-      assertOpcodesInOrder(unoptimized, ["WasmRefTestConcrete", "Test", "WasmRefCastConcrete", "WasmLoadField", "WasmLoadField"]);
-      assertOpcodesInOrder(optimized, ["WasmRefTestConcrete", "Test", "WasmRefCastInfallible", "WasmLoadField", "WasmLoadField"]);
+      assertOpcodesInOrder(unoptimized, ["WasmLoadInternalField", "WasmLoadField", "WasmRefTestConcrete", "Test", "WasmRefCastConcrete", "WasmLoadInternalField", "WasmLoadField"]);
+      // In the optimized MIR, GVN removes the second WasmLoadInternalField, merging it with the first one.
+      assertOpcodesInOrder(optimized, ["WasmLoadInternalField", "WasmLoadField", "WasmRefTestConcrete", "Test", "WasmRefCastInfallible", "!WasmLoadInternalField", "WasmLoadField"]);
     }
   }
 }
