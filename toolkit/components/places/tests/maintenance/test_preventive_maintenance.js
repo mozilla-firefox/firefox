@@ -1430,7 +1430,23 @@ tests.push({
               url: "http://www3.mozilla.org/favicon.ico",
               root: 1,
             },
+            {
+              favicon_id: 4,
+              url: "http://kept.mozilla.org/favicon.ico",
+              root: 1,
+            },
+            {
+              favicon_id: 5,
+              url: "http://nopages.mozilla.org/favicon.ico",
+              root: 1,
+            },
           ]
+        );
+
+        // An origin without pages doesn't keep its root icon.
+        await db.executeCached(
+          `INSERT INTO moz_origins (prefix, host, frecency)
+           VALUES ('http://', 'nopages.mozilla.org', 0)`
         );
 
         // Insert orphan page.
@@ -1444,6 +1460,8 @@ tests.push({
 
     // Insert a place using the existing favicon entry
     this._placeId = await addPlace("http://www.mozilla.org", 1);
+    // The www. origin has pages, so it keeps the root icon of its host.
+    await addPlace("http://www.kept.mozilla.org/page");
   },
 
   async check() {
@@ -1460,6 +1478,16 @@ tests.push({
     // Check that unused icon has been removed
     value = await PlacesTestUtils.getDatabaseValue("moz_icons", "id", {
       id: 3,
+    });
+    Assert.strictEqual(value, undefined);
+    // Check that the root icon of an origin with pages is still there
+    value = await PlacesTestUtils.getDatabaseValue("moz_icons", "id", {
+      id: 4,
+    });
+    Assert.notStrictEqual(value, undefined);
+    // Check that the root icon of an origin without pages has been removed
+    value = await PlacesTestUtils.getDatabaseValue("moz_icons", "id", {
+      id: 5,
     });
     Assert.strictEqual(value, undefined);
     // Check that the orphan page is gone.

@@ -668,17 +668,10 @@ export var PlacesDBUtils = {
         )`,
       },
 
-      // Remove icons whose origin is not in moz_origins, unless referenced.
+      // Remove orphan icons.
       {
         query: `DELETE FROM moz_icons WHERE id IN (
-          SELECT id FROM moz_icons WHERE root = 0
-          UNION ALL
-          SELECT id FROM moz_icons
-          WHERE root = 1
-            AND get_host_and_port(icon_url) NOT IN (SELECT host FROM moz_origins)
-            AND fixup_url(get_host_and_port(icon_url)) NOT IN (SELECT host FROM moz_origins)
-          EXCEPT
-          SELECT icon_id FROM moz_icons_to_pages
+          SELECT id FROM moz_orphan_icons
         )`,
       },
 

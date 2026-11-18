@@ -885,6 +885,17 @@ var cleanupPages = async function (db, pages) {
     return;
   }
 
+  // Collect the icons that may become orphans, before removing the pages they're
+  // related to.
+  let iconIds = [];
+  await db.executeCached(
+    `SELECT DISTINCT icon_id FROM moz_icons_to_pages
+     JOIN moz_pages_w_icons ON id = page_id
+     WHERE page_url_hash IN carray(:hashes)`,
+    { hashes: pagesToRemove.map(p => p.hash) },
+    row => iconIds.push(row.getResultByIndex(0))
+  );
+
   // Note, we are already in a transaction, since callers create it.
   // Check relations regardless, to avoid creating orphans in case of
   // async race conditions.
@@ -913,30 +924,76 @@ var cleanupPages = async function (db, pages) {
     { ids: pagesToRemove.map(p => p.id) }
   );
   // Hosts accumulated during the places delete are updated through a trigger
-  // (see nsPlacesTriggers.h).
+  // (see nsPlacesTriggers.h). Their root icons may become orphans.
+  let hosts = [];
+  await db.executeCached(
+    `SELECT DISTINCT fixup_url(host) FROM moz_updateoriginsdelete_temp`,
+    null,
+    row => hosts.push(row.getResultByIndex(0))
+  );
   await db.executeCached(`DELETE FROM moz_updateoriginsdelete_temp`);
 
-  await removeOrphanIcons(db);
+  await removeOrphanIconsByIds(db, iconIds);
+  await removeOrphanRootIconsByHosts(db, hosts);
 };
 
 /**
- * Remove icons whose origin is not in moz_origins, unless referenced.
+ * Remove the given icons if they're orphans, see moz_orphan_icons.
+ *
+ * @param {OpenedConnection} db
+ *   The database.
+ * @param {number[]} iconIds
+ *   Ids of icons that were related to removed pages.
+ */
+async function removeOrphanIconsByIds(db, iconIds) {
+  if (!iconIds.length) {
+    return;
+  }
+  await db.executeCached(
+    `DELETE FROM moz_icons WHERE id IN (
+       SELECT id FROM moz_orphan_icons WHERE id IN carray(:iconIds)
+     )`,
+    { iconIds }
+  );
+}
+
+/**
+ * Remove the root icons of the given hosts if they're orphans, see
+ * moz_orphan_icons.
+ *
+ * @param {OpenedConnection} db
+ *   The database.
+ * @param {string[]} hosts
+ *   Hosts of removed origins, as returned by fixup_url().
+ */
+async function removeOrphanRootIconsByHosts(db, hosts) {
+  if (!hosts.length) {
+    return;
+  }
+  await db.executeCached(
+    `DELETE FROM moz_icons WHERE id IN (
+       SELECT id FROM moz_orphan_icons WHERE id IN (
+         SELECT i.id FROM carray(:hosts) h
+         JOIN moz_icons i
+           ON i.fixed_icon_url_hash = hash(h.value || '/favicon.ico')
+          AND fixup_url(i.icon_url) = h.value || '/favicon.ico'
+         WHERE i.root = 1
+       )
+     )`,
+    { hosts }
+  );
+}
+
+/**
+ * Remove all the orphan icons, see moz_orphan_icons.
  *
  * @param {OpenedConnection} db
  *   The database.
  */
 function removeOrphanIcons(db) {
-  return db.executeCached(`
-    DELETE FROM moz_icons WHERE id IN (
-      SELECT id FROM moz_icons WHERE root = 0
-      UNION ALL
-      SELECT id FROM moz_icons
-      WHERE root = 1
-        AND get_host_and_port(icon_url) NOT IN (SELECT host FROM moz_origins)
-        AND fixup_url(get_host_and_port(icon_url)) NOT IN (SELECT host FROM moz_origins)
-      EXCEPT
-      SELECT icon_id FROM moz_icons_to_pages
-    )`);
+  return db.executeCached(
+    `DELETE FROM moz_icons WHERE id IN (SELECT id FROM moz_orphan_icons)`
+  );
 }
 
 /**

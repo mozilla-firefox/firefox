@@ -216,6 +216,25 @@
       "  PRIMARY KEY (prefix, host) "                     \
       ") WITHOUT ROWID")
 
+// Icons not related to any page. Root icons are used by all the pages of their
+// origin, so they are only orphans if no origin with pages is left for their
+// host, with or without www.
+#define CREATE_MOZ_ORPHAN_ICONS_VIEW                                    \
+  nsLiteralCString(                                                     \
+      "CREATE TEMP VIEW moz_orphan_icons AS "                           \
+      "SELECT id FROM moz_icons i "                                     \
+      "WHERE NOT EXISTS ( "                                             \
+      "  SELECT 1 FROM moz_icons_to_pages WHERE icon_id = i.id "        \
+      ") "                                                              \
+      "AND (root = 0 OR NOT EXISTS ( "                                  \
+      "  SELECT 1 FROM moz_origins o "                                  \
+      "  WHERE o.host IN ( "                                            \
+      "    fixup_url(get_host_and_port(i.icon_url)), "                  \
+      "    'www.' || fixup_url(get_host_and_port(i.icon_url)) "         \
+      "  ) "                                                            \
+      "  AND EXISTS (SELECT 1 FROM moz_places WHERE origin_id = o.id) " \
+      "))")
+
 // This table would not be strictly needed for functionality since it's just
 // mimicking moz_places, though it's great for database portability.
 // With this we don't have to take care into account a bunch of database

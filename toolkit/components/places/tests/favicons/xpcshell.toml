@@ -72,6 +72,8 @@ prefs = ["dom.security.https_first=false"]
 
 ["test_query_result_favicon_changed_on_child.js"]
 
+["test_remove_orphan_icons.js"]
+
 ["test_root_icons.js"]
 
 ["test_setFaviconForPage.js"]

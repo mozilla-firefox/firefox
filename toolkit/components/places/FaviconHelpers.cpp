@@ -695,6 +695,43 @@ class Favicon final : public nsIFavicon {
 };
 NS_IMPL_ISUPPORTS(Favicon, nsIFavicon)
 
+/**
+ * Removes the given icons if they're orphans, see moz_orphan_icons.
+ *
+ * @param aDB
+ *        Database connection.
+ * @param aIconIds
+ *        Ids of the icons that may have become orphans.
+ */
+nsresult RemoveOrphanIcons(const RefPtr<Database>& aDB,
+                           const nsTArray<int64_t>& aIconIds) {
+  if (aIconIds.IsEmpty()) {
+    return NS_OK;
+  }
+  nsCOMPtr<mozIStorageStatement> stmt = aDB->GetStatement(
+      "DELETE FROM moz_icons WHERE id IN ( "
+      "  SELECT id FROM moz_orphan_icons WHERE id IN carray(:icon_ids) "
+      ")");
+  NS_ENSURE_STATE(stmt);
+  mozStorageStatementScoper scoper(stmt);
+  nsresult rv = stmt->BindArrayOfIntegersByName("icon_ids"_ns, aIconIds);
+  NS_ENSURE_SUCCESS(rv, rv);
+  return stmt->Execute();
+}
+
+/**
+ * Executes a statement returning icon ids, and appends them to aIconIds.
+ */
+nsresult CollectIconIds(mozIStorageStatement* aStmt,
+                        nsTArray<int64_t>& aIconIds) {
+  bool hasResult = false;
+  nsresult rv;
+  while (NS_SUCCEEDED(rv = aStmt->ExecuteStep(&hasResult)) && hasResult) {
+    aIconIds.AppendElement(aStmt->AsInt64(0));
+  }
+  return rv;
+}
+
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -758,20 +795,20 @@ AsyncAssociateIconToPage::Run() {
   // Note that here we could also be in the process of adding further payloads
   // to a page, and we don't want to expire just added payloads. For this
   // reason we only remove expired payloads.
-  // Oprhan icons are not removed at this time because it'd be expensive. The
-  // privacy implications are limited, since history removal methods also expire
-  // orphan icons.
+  // Icons left orphan are removed once the new relations have been added.
+  nsTArray<int64_t> expiredIconIds;
   if (mPage.id > 0) {
     nsCOMPtr<mozIStorageStatement> stmt;
     stmt = DB->GetStatement(
         "DELETE FROM moz_icons_to_pages "
         "WHERE page_id = :page_id "
-        "AND expire_ms < strftime('%s','now','localtime','utc') * 1000 ");
+        "AND expire_ms < strftime('%s','now','localtime','utc') * 1000 "
+        "RETURNING icon_id");
     NS_ENSURE_STATE(stmt);
     mozStorageStatementScoper scoper(stmt);
     rv = stmt->BindInt64ByName("page_id"_ns, mPage.id);
     NS_ENSURE_SUCCESS(rv, rv);
-    rv = stmt->Execute();
+    rv = CollectIconIds(stmt, expiredIconIds);
     NS_ENSURE_SUCCESS(rv, rv);
   }
 
@@ -787,9 +824,7 @@ AsyncAssociateIconToPage::Run() {
     // other side, we could also be in the process of adding more payloads to
     // this page, and we should not expire the payloads we just added. For this,
     // we use the expiration field as an indicator and remove relations based on
-    // it being elapsed. We don't remove orphan icons at this time since it
-    // would have a cost. The privacy hit is limited since history removal
-    // methods already expire orphan icons.
+    // it being elapsed.
     if (mPage.id == 0) {
       // We need to create the page entry.
       nsCOMPtr<mozIStorageStatement> stmt;
@@ -831,6 +866,11 @@ AsyncAssociateIconToPage::Run() {
       NS_ENSURE_SUCCESS(rv, rv);
     }
   }
+
+  // This must happen after adding the new relations, since the icon may have
+  // been replaced by itself.
+  rv = RemoveOrphanIcons(DB, expiredIconIds);
+  NS_ENSURE_SUCCESS(rv, rv);
 
   mIcon.status |= ICON_STATUS_ASSOCIATED;
 
@@ -1118,31 +1158,44 @@ AsyncExpireFaviconsForPage::Run() {
     return (rv = NS_ERROR_UNEXPECTED);
   }
 
+  mozStorageTransaction transaction(
+      DB->MainConn(), false, mozIStorageConnection::TRANSACTION_IMMEDIATE);
+  (void)NS_WARN_IF(NS_FAILED(transaction.Start()));
+
   // Delete all icon associations for the given page, using the same page
   // lookup logic as FetchIconInfo: match the exact URL and, if it has a
   // fragment, also match the fragment-stripped URL (since bookmarks typically
   // point to the URL without fragment).
-  nsCOMPtr<mozIStorageStatement> stmt = DB->GetStatement(
-      "DELETE FROM moz_icons_to_pages WHERE page_id IN ( "
-      "  SELECT id FROM moz_pages_w_icons "
-      "  WHERE (page_url_hash = hash(:page_url) AND page_url = :page_url) "
-      "  OR (:hash_idx AND page_url_hash = hash(substr(:page_url, 0, "
-      ":hash_idx)) "
-      "      AND page_url = substr(:page_url, 0, :hash_idx)) "
-      ")");
-  if (MOZ_UNLIKELY(!stmt)) {
-    return (rv = NS_ERROR_UNEXPECTED);
+  nsTArray<int64_t> iconIds;
+  {
+    nsCOMPtr<mozIStorageStatement> stmt = DB->GetStatement(
+        "DELETE FROM moz_icons_to_pages WHERE page_id IN ( "
+        "  SELECT id FROM moz_pages_w_icons "
+        "  WHERE (page_url_hash = hash(:page_url) AND page_url = :page_url) "
+        "  OR (:hash_idx AND page_url_hash = hash(substr(:page_url, 0, "
+        ":hash_idx)) "
+        "      AND page_url = substr(:page_url, 0, :hash_idx)) "
+        ") RETURNING icon_id");
+    if (MOZ_UNLIKELY(!stmt)) {
+      return (rv = NS_ERROR_UNEXPECTED);
+    }
+    mozStorageStatementScoper scoper(stmt);
+    nsAutoCString spec;
+    rv = mPageURI->GetSpec(spec);
+    NS_ENSURE_SUCCESS(rv, rv);
+    int32_t hashIdx = spec.RFind("#") + 1;
+    rv = URIBinder::Bind(stmt, "page_url"_ns, spec);
+    NS_ENSURE_SUCCESS(rv, rv);
+    rv = stmt->BindInt32ByName("hash_idx"_ns, hashIdx);
+    NS_ENSURE_SUCCESS(rv, rv);
+    rv = CollectIconIds(stmt, iconIds);
+    NS_ENSURE_SUCCESS(rv, rv);
   }
-  mozStorageStatementScoper scoper(stmt);
-  nsAutoCString spec;
-  rv = mPageURI->GetSpec(spec);
+
+  rv = RemoveOrphanIcons(DB, iconIds);
   NS_ENSURE_SUCCESS(rv, rv);
-  int32_t hashIdx = spec.RFind("#") + 1;
-  rv = URIBinder::Bind(stmt, "page_url"_ns, spec);
-  NS_ENSURE_SUCCESS(rv, rv);
-  rv = stmt->BindInt32ByName("hash_idx"_ns, hashIdx);
-  NS_ENSURE_SUCCESS(rv, rv);
-  rv = stmt->Execute();
+
+  rv = transaction.Commit();
   NS_ENSURE_SUCCESS(rv, rv);
 
   return NS_OK;
