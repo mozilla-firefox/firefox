@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -123,12 +124,7 @@ private fun CustomizeMenuList(
         )
 
         item(key = HIDDEN_SECTIONS) {
-            CustomizeMenuHiddenSectionsTitle(
-                modifier =
-                    Modifier.animateItem()
-                        .padding(top = itemSpacing)
-                        .dropLine(HIDDEN_SECTIONS, dragState.dropTarget, itemSpacing)
-            )
+            HiddenSectionsItem(dragState = dragState, itemSpacing = itemSpacing)
         }
 
         if (!dragState.hasHiddenGroups) {
@@ -214,6 +210,24 @@ private fun CustomizeMenuDragBar(
             onClick = onPreviewClick,
         )
     }
+}
+
+/**
+ * The [HIDDEN_SECTIONS] item of the list: the space keeping the hidden sections in place while a shown group is
+ * dragged, then their title, each a node of the item of its own (see [HiddenAreaSpace]).
+ *
+ * @param dragState State of dragging the groups of the screen.
+ * @param itemSpacing Space between the items of the list.
+ */
+@Composable
+private fun LazyItemScope.HiddenSectionsItem(dragState: CustomizeMenuDragState, itemSpacing: Dp) {
+    HiddenAreaSpace(dragState = dragState, itemSpacing = itemSpacing, modifier = Modifier.animateItem())
+    CustomizeMenuHiddenSectionsTitle(
+        modifier =
+            Modifier.animateItem()
+                .padding(top = itemSpacing)
+                .dropLine(HIDDEN_SECTIONS, dragState.dropTarget, itemSpacing, placeAfter = true)
+    )
 }
 
 @Composable

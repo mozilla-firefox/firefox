@@ -41,6 +41,7 @@ import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.RESET_B
  * @property hasHiddenGroups Whether groups other than the dragged one are hidden. Otherwise the area to drag groups
  *   into to hide them is shown.
  * @property dropTarget Where the dragged group is moved to if the user lets go of it, if anywhere.
+ * @property draggedShownGroup Where the dragged group was when the drag started, if it was among the shown groups.
  */
 internal class CustomizeMenuDragState(
     val groups: CustomizeMenuGroups,
@@ -49,6 +50,7 @@ internal class CustomizeMenuDragState(
     val isDragging: Boolean,
     val hasHiddenGroups: Boolean,
     val dropTarget: State<CustomizeMenuDropTarget?>,
+    val draggedShownGroup: State<DraggedShownGroup?>,
 ) {
     /**
      * Index in the list of the first hidden group, after the drag bar, the shown groups, the hidden sections title and
@@ -56,6 +58,13 @@ internal class CustomizeMenuDragState(
      */
     val firstHiddenIndex = groups.hiddenSectionsIndex + if (hasHiddenGroups) 1 else 2
 }
+
+/**
+ * The group dragged, as it was in the list when the drag started, if it was among the shown groups.
+ *
+ * @property size Size of the group in the list.
+ */
+internal data class DraggedShownGroup(val size: Int)
 
 // Groups can be dropped next to these items.
 private val FIXED_ITEMS = setOf(HIDDEN_SECTIONS, DROP_AREA)
@@ -104,6 +113,8 @@ internal fun rememberCustomizeMenuDragState(
             derivedStateOf { groups.hidden.any { it.id != interactionState.draggedItem.key } }
         }
 
+    val draggedShownGroup = rememberDraggedShownGroup(interactionState, groups)
+
     val dropTarget =
         remember(interactionState, groups) {
             derivedStateOf {
@@ -140,8 +151,23 @@ internal fun rememberCustomizeMenuDragState(
         isDragging = isDragging,
         hasHiddenGroups = hasHiddenGroups,
         dropTarget = dropTarget,
+        draggedShownGroup = draggedShownGroup,
     )
 }
+
+/** Where the group dragged with [interactionState] was when the drag started, if it was among the shown [groups]. */
+@Composable
+private fun rememberDraggedShownGroup(
+    interactionState: ListInteractionState,
+    groups: CustomizeMenuGroups,
+): State<DraggedShownGroup?> =
+    remember(interactionState, groups) {
+        derivedStateOf {
+            (interactionState.draggedItem as? InteractionState.List.Active)
+                ?.takeIf { dragged -> groups.shown.any { it.id == dragged.key } }
+                ?.let { DraggedShownGroup(size = it.size) }
+        }
+    }
 
 /**
  * Lets the user feel it whenever the line, or the highlighted area, showing where the group dragged with

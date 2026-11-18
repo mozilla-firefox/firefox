@@ -147,17 +147,24 @@ internal fun CustomizeMenuGroups.drop(groupId: Any, target: CustomizeMenuDropTar
  * @param key Key of the list item this is applied to.
  * @param dropTarget Where the dragged group is dropped, read only when drawing.
  * @param itemSpacing Space between the items of the list.
+ * @param placeAfter Whether to draw the line only if the dragged group is dropped after the list item, or only if it is
+ *   dropped before it. Null to draw it either way.
  */
 @Composable
-internal fun Modifier.dropLine(key: Any, dropTarget: State<CustomizeMenuDropTarget?>, itemSpacing: Dp): Modifier =
-    dropLineAt {
-        val target = dropTarget.value as? CustomizeMenuDropTarget.NextTo
-        when {
-            target?.key != key -> null
-            target.placeAfter -> size.height + itemSpacing.toPx() / 2
-            else -> -itemSpacing.toPx() / 2
-        }
+internal fun Modifier.dropLine(
+    key: Any,
+    dropTarget: State<CustomizeMenuDropTarget?>,
+    itemSpacing: Dp,
+    placeAfter: Boolean? = null,
+): Modifier = dropLineAt {
+    val target = dropTarget.value as? CustomizeMenuDropTarget.NextTo
+    when {
+        target?.key != key -> null
+        placeAfter != null && target.placeAfter != placeAfter -> null
+        target.placeAfter -> size.height + itemSpacing.toPx() / 2
+        else -> -itemSpacing.toPx() / 2
     }
+}
 
 /**
  * Draw a line in the space between the items around where the dragged group was taken from, if dropped there. Applied
@@ -174,7 +181,7 @@ internal fun Modifier.inPlaceDropLine(dropTarget: State<CustomizeMenuDropTarget?
 
 /** Draw a line at the vertical offset returned by [lineY], if any. */
 @Composable
-private fun Modifier.dropLineAt(lineY: DrawScope.() -> Float?): Modifier {
+internal fun Modifier.dropLineAt(lineY: DrawScope.() -> Float?): Modifier {
     val color = MaterialTheme.colorScheme.tertiary
     val strokeWidth = AcornTheme.layout.border.heaviest
     val horizontalInset = AcornTheme.layout.space.static200

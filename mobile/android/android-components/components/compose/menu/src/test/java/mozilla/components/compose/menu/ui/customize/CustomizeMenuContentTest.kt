@@ -6,6 +6,7 @@ package mozilla.components.compose.menu.ui.customize
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -423,11 +424,13 @@ class CustomizeMenuContentTest {
     }
 
     @Test
-    fun `GIVEN a section taking so much space that the hide section area takes its place WHEN it is long pressed without moving THEN the user only feels the long press`() {
+    fun `GIVEN a section taking much space WHEN it is long pressed without moving THEN the hide section area stays where it is AND the user only feels the long press`() {
         setContent(menuState(shown = listOf(row("Shown"), row(id = "Tall", "Tall 1", "Tall 2", "Tall 3"))))
+        val dropAreaBefore = boundsOf(dragToHide)
 
         longPressAndMove(title = "Tall 1", to = { boundsOf("Tall 1").center })
 
+        assertEquals(dropAreaBefore, boundsOf(dragToHide))
         assertEquals(1, hapticFeedback.performed.size)
         release()
     }
@@ -455,6 +458,117 @@ class CustomizeMenuContentTest {
 
         assertTrue(boundsOf("Shown 2").top < shown1.bottom)
 
+        release()
+    }
+
+    @Test
+    fun `GIVEN hidden sections WHEN a shown section is dragged among the shown sections THEN the shown sections below it take its space AND the hidden sections stay where they are`() {
+        setContent(
+            menuState(
+                shown = listOf(row("Shown 1"), row("Shown 2")),
+                hidden = listOf(row("Hidden")),
+                isCustomized = true,
+            )
+        )
+        val before = hiddenAreaBounds(hiddenSectionsTitle, "Hidden", resetToDefault)
+        val shown2Before = boundsOf("Shown 2")
+
+        longPressAndMove(title = "Shown 1", to = { boundsOf("Shown 2").bottomCenter })
+
+        assertTrue(boundsOf("Shown 2").top < shown2Before.top)
+        assertEquals(before, hiddenAreaBounds(hiddenSectionsTitle, "Hidden", resetToDefault))
+
+        release()
+
+        assertEquals(before, hiddenAreaBounds(hiddenSectionsTitle, "Hidden", resetToDefault))
+    }
+
+    @Test
+    fun `GIVEN hidden sections WHEN a shown section is picked up, dragged among the shown sections and let go THEN the hidden sections title does not move at any frame`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2")), hidden = listOf(row("Hidden"))))
+        val titleBefore = boundsOf(hiddenSectionsTitle)
+        val shown2Before = boundsOf("Shown 2")
+        composeTestRule.mainClock.autoAdvance = false
+
+        composeTestRule.onRoot().performTouchInput { down(boundsOf("Shown 1").center) }
+        assertTitleStaysFor(frames = 60, at = titleBefore)
+        val step = (shown2Before.bottomCenter - boundsOf("Shown 1").center) / 10f
+        repeat(10) {
+            composeTestRule.onRoot().performTouchInput { moveBy(step) }
+            assertTitleStaysFor(frames = 3, at = titleBefore)
+        }
+        assertTrue(boundsOf("Shown 2").top < shown2Before.top)
+        composeTestRule.onRoot().performTouchInput { up() }
+        assertTitleStaysFor(frames = 60, at = titleBefore)
+    }
+
+    @Test
+    fun `GIVEN hidden sections WHEN the gesture dragging a shown section is cancelled THEN the hidden sections title does not move at any frame`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2")), hidden = listOf(row("Hidden"))))
+        val titleBefore = boundsOf(hiddenSectionsTitle)
+        longPressAndMove(title = "Shown 1", to = { boundsOf("Shown 2").bottomCenter })
+        composeTestRule.mainClock.autoAdvance = false
+
+        composeTestRule.onRoot().performTouchInput { cancel() }
+
+        assertTitleStaysFor(frames = 60, at = titleBefore)
+    }
+
+    @Test
+    fun `GIVEN hidden sections WHEN a shown section is dragged back to where it was THEN the hidden sections stay where they are`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2")), hidden = listOf(row("Hidden"))))
+        val before = hiddenAreaBounds()
+        val shown2 = boundsOf("Shown 2")
+
+        longPressAndMove(title = "Shown 2", to = { shown2.topCenter })
+
+        assertEquals(before, hiddenAreaBounds())
+        release()
+    }
+
+    @Test
+    fun `GIVEN hidden sections WHEN a shown section is dragged onto the bottom of the hidden sections title THEN the hidden sections stay where they are`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2")), hidden = listOf(row("Hidden"))))
+        val before = hiddenAreaBounds()
+
+        longPressAndMove(title = "Shown 1", to = { boundsOf(hiddenSectionsTitle).bottomCenter })
+
+        assertEquals(before, hiddenAreaBounds())
+        release()
+    }
+
+    @Test
+    fun `GIVEN hidden sections WHEN a shown section is dragged over them THEN the hidden sections title stays where it is`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2")), hidden = listOf(row("Hidden"))))
+        val titleBefore = boundsOf(hiddenSectionsTitle)
+
+        longPressAndMove(title = "Shown 1", to = { boundsOf("Hidden").topCenter })
+
+        assertEquals(titleBefore, boundsOf(hiddenSectionsTitle))
+        release()
+    }
+
+    @Test
+    fun `GIVEN no hidden sections WHEN a shown section is dragged among the shown sections THEN the hide section area and the reset button stay where they are`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2")), isCustomized = true))
+        val dropAreaBefore = boundsOf(dragToHide)
+        val resetBefore = boundsOf(resetToDefault)
+
+        longPressAndMove(title = "Shown 1", to = { boundsOf("Shown 2").bottomCenter })
+
+        assertEquals(dropAreaBefore, boundsOf(dragToHide))
+        assertEquals(resetBefore, boundsOf(resetToDefault))
+        release()
+    }
+
+    @Test
+    fun `GIVEN hidden sections WHEN a hidden section is dragged THEN the hidden sections below it take its space`() {
+        setContent(menuState(shown = listOf(row("Shown")), hidden = listOf(row("Hidden 1"), row("Hidden 2"))))
+        val hidden1 = boundsOf("Hidden 1")
+
+        longPressAndMove(title = "Hidden 1", to = { hidden1.center })
+
+        assertTrue(boundsOf("Hidden 2").top < hidden1.bottom)
         release()
     }
 
@@ -557,6 +671,19 @@ class CustomizeMenuContentTest {
     }
 
     private fun boundsOf(text: String) = composeTestRule.onNodeWithText(text).fetchSemanticsNode().boundsInRoot
+
+    /** Bounds of the nodes with [texts], by default the hidden sections title and the hidden section "Hidden". */
+    private fun hiddenAreaBounds(vararg texts: String = arrayOf(hiddenSectionsTitle, "Hidden")) = texts.map {
+        boundsOf(it)
+    }
+
+    /** Let the clock run for [frames] frames, checking at each that the hidden sections title is [at]. */
+    private fun assertTitleStaysFor(frames: Int, at: Rect) {
+        repeat(frames) {
+            composeTestRule.mainClock.advanceTimeByFrame()
+            assertEquals(at, boundsOf(hiddenSectionsTitle))
+        }
+    }
 
     private fun rootBounds() = composeTestRule.onRoot().fetchSemanticsNode().boundsInRoot
 
