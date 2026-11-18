@@ -1,0 +1,132 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>MSE: the append window and timestampOffset with audio/mpeg</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="text/javascript" src="mediasource.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+
+SimpleTest.waitForExplicitFinish();
+addMSEPrefs(["media.mediasource.mp3.enabled", true]);
+
+const EPSILON = 1e-6;
+// small-shot.mp3 has 12 frames of 1152 samples at 44.1 kHz.
+const duration = (12 * 1152) / 44100;
+
+async function withSourceBuffer(aTest) {
+  const ms = new MediaSource();
+  const audio = document.createElement("audio");
+  audio.src = URL.createObjectURL(ms);
+  await once(ms, "sourceopen");
+  await aTest(ms.addSourceBuffer("audio/mpeg"), ms);
+  audio.removeAttribute("src");
+  audio.load();
+}
+
+function checkRange(aSourceBuffer, aIndex, aStart, aEnd, aMessage) {
+  isfuzzy(
+    aSourceBuffer.buffered.start(aIndex),
+    aStart,
+    EPSILON,
+    `${aMessage}: start`
+  );
+  isfuzzy(aSourceBuffer.buffered.end(aIndex), aEnd, EPSILON, `${aMessage}: end`);
+}
+
+function checkBuffered(aSourceBuffer, aStart, aEnd, aMessage) {
+  is(aSourceBuffer.buffered.length, 1, `${aMessage}: one buffered range`);
+  if (aSourceBuffer.buffered.length == 1) {
+    checkRange(aSourceBuffer, 0, aStart, aEnd, aMessage);
+  }
+}
+
+runWithMSE(async () => {
+  const data = await fetchWithXHR("small-shot.mp3");
+
+  // Frames dropped before appendWindowStart still advance the generated
+  // timestamps, as in Chrome.
+  await withSourceBuffer(async sb => {
+    sb.appendWindowStart = 0.05;
+    await loadSegment(sb, data);
+    checkBuffered(sb, 0.05, duration, "appendWindowStart");
+    isfuzzy(
+      sb.timestampOffset,
+      duration,
+      EPSILON,
+      "timestampOffset after appendWindowStart"
+    );
+  });
+
+  // Including on a later append, where no discontinuity is detected among
+  // them, which would rewind the timestamps.
+  await withSourceBuffer(async sb => {
+    await loadSegment(sb, data);
+    sb.appendWindowStart = duration + 0.1;
+    await loadSegment(sb, data);
+    is(sb.buffered.length, 2, "later appendWindowStart: two buffered ranges");
+    if (sb.buffered.length == 2) {
+      checkRange(sb, 0, 0, duration, "later appendWindowStart: first range");
+      checkRange(
+        sb,
+        1,
+        duration + 0.1,
+        2 * duration,
+        "later appendWindowStart: second range"
+      );
+    }
+    isfuzzy(
+      sb.timestampOffset,
+      2 * duration,
+      EPSILON,
+      "timestampOffset after a later appendWindowStart"
+    );
+  });
+
+  // The dropped frames don't extend the duration.
+  await withSourceBuffer(async (sb, ms) => {
+    ms.duration = 0.1;
+    sb.appendWindowStart = 100;
+    await loadSegment(sb, data);
+    is(sb.buffered.length, 0, "appendWindowStart past the frames: no ranges");
+    isfuzzy(
+      sb.timestampOffset,
+      duration,
+      EPSILON,
+      "timestampOffset after dropping every frame"
+    );
+    is(ms.duration, 0.1, "Dropped frames don't change the duration");
+  });
+
+  await withSourceBuffer(async sb => {
+    sb.timestampOffset = -0.05;
+    await loadSegment(sb, data);
+    checkBuffered(sb, 0, duration - 0.05, "negative timestampOffset");
+  });
+
+  // Frames dropped after appendWindowEnd don't, so the next append follows on.
+  await withSourceBuffer(async sb => {
+    sb.appendWindowEnd = 0.15;
+    await loadSegment(sb, data);
+    checkBuffered(sb, 0, 0.15, "appendWindowEnd");
+    isfuzzy(
+      sb.timestampOffset,
+      0.15,
+      EPSILON,
+      "timestampOffset after appendWindowEnd"
+    );
+    sb.appendWindowEnd = Infinity;
+    await loadSegment(sb, data);
+    checkBuffered(sb, 0, 0.15 + duration, "append after appendWindowEnd");
+  });
+
+  SimpleTest.finish();
+});
+
+</script>
+</pre>
+</body>
+</html>

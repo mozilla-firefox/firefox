@@ -2286,6 +2286,22 @@ void TrackBuffersManager::ProcessFrames(TrackBuffer& aSamples,
         }
         trackBuffer.mNeedRandomAccessPoint = true;
         needDiscontinuityCheck = true;
+        // The coded frame processing algorithm only updates timestampOffset
+        // for generated timestamps after keeping a frame, so every frame
+        // following one dropped before appendWindowStart would be dropped too.
+        // Deliberately deviate from it as Chrome does, advancing past such
+        // frames. The last decode timestamp advances too, so that no
+        // discontinuity is detected among them, which would rewind
+        // timestampOffset (unlike Chrome). Frames dropped after
+        // appendWindowEnd still follow the spec (also unlike Chrome), so a
+        // following append continues from the window's end.
+        if (mSourceBufferAttributes->mGenerateTimestamps &&
+            sampleInterval.mEnd <= appendWindow.mStart) {
+          mSourceBufferAttributes->SetTimestampOffset(sampleInterval.mEnd);
+          if (trackBuffer.mLastDecodeTimestamp.isSome()) {
+            trackBuffer.mLastDecodeTimestamp = Some(decodeTimestamp);
+          }
+        }
         continue;
       }
     }

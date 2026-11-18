@@ -297,6 +297,8 @@ skip-if = [
 
 ["test_MP3_Append.html"]
 
+["test_MP3_AppendWindow.html"]
+
 ["test_MP3_RemoveAndEvict.html"]
 
 ["test_MP3_TypeSupport.html"]
