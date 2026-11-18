@@ -39,7 +39,7 @@ class BlockReflowState {
           mShouldApplyTextBoxTrimStart(false),
           mShouldApplyTextBoxTrimAtBlockEnd(false),
           mShouldApplyTextBoxTrimAtFragmentEnd(false),
-          mShouldApplyLineClamp(false),
+          mDoApplyLineClamp(false),
           mIsCurrentLineAdjacentToBStart(false),
           mShouldTrimInheritedBEndMargins(false) {}
 
@@ -102,8 +102,9 @@ class BlockReflowState {
 
     // line-clamp relies on certain dimensions, such as margins and
     // BStart being available, so it should only be applied after the first
-    // reflow.
-    bool mShouldApplyLineClamp : 1;
+    // reflow. Also acts as an output in cases none of the uninitialised values
+    // are needed and clamping is safe on first reflow.
+    bool mDoApplyLineClamp : 1;
 
     // Whether the current line can still adjoin the block-start content edge.
     // Initially true only for the first fragment; cleared when a preceding

@@ -605,6 +605,8 @@ class nsBlockFrame : public nsContainerFrame {
     bool mNeedFloatManager;
     // [out] Whether reflowing resulted in use of an overflow-wrap break.
     bool mUsedOverflowWrap = false;
+    // [out] Whether line-clamp was applied during this trial.
+    bool mDidApplyLineClamp = false;
     // Settings for the current trial.
     bool mBalancing = false;
     // Set when we are line clamping, driven by
@@ -633,6 +635,7 @@ class nsBlockFrame : public nsContainerFrame {
       mBlockEndEdgeOfChildren = 0;
       mContainerWidth = 0;
       mUsedOverflowWrap = false;
+      mDidApplyLineClamp = false;
     }
 
     // Adjust the inset amount, and reset state for a new trial.

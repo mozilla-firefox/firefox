@@ -2070,8 +2070,9 @@ void nsBlockFrame::Reflow(nsPresContext* aPresContext, ReflowOutput& aMetrics,
     reflowStatus =
         TrialReflow(aPresContext, aMetrics, aReflowInput, trialState);
 
-    if (IsLineClampRoot(this) && !trialState.mLineClamping) {
-      // `line-clamp: auto` containers need a second reflow, since that relies
+    if (IsLineClampRoot(this) && !trialState.mLineClamping &&
+        !trialState.mDidApplyLineClamp) {
+      // `line-clamp` containers may need a second reflow, since that relies
       // on BStart and margins being valid. As a result, we are enabling the
       // flag that allows `line-clamp` to happen, and reflowing again.
       trialState.mLineClamping = true;
@@ -2464,7 +2465,7 @@ nsReflowStatus nsBlockFrame::TrialReflow(nsPresContext* aPresContext,
   // mLineClamping is set for root, and mDimensionsReadyForLineClampAuto is used
   // to pass the flag down to descendants. We should apply line-clamp
   // in either case.
-  state.mFlags.mShouldApplyLineClamp =
+  state.mFlags.mDoApplyLineClamp =
       aTrialState.mLineClamping ||
       aReflowInput.mFlags.mDimensionsReadyForLineClamp;
 
@@ -2621,6 +2622,7 @@ nsReflowStatus nsBlockFrame::TrialReflow(nsPresContext* aPresContext,
   aTrialState.mBlockEndEdgeOfChildren =
       ComputeFinalSize(aReflowInput, state, aMetrics);
   aTrialState.mContainerWidth = state.ContainerSize().width;
+  aTrialState.mDidApplyLineClamp = state.mFlags.mDoApplyLineClamp;
 
   // Align content
   AlignContent(state, aMetrics, aTrialState.mBlockEndEdgeOfChildren);
@@ -2859,6 +2861,26 @@ Maybe<nscoord> nsBlockFrame::ApplySmallestLineClamp(
   return Some(picked.clampedBSize);
 }
 
+static bool HasBlockChildren(const nsBlockFrame* aFrame) {
+  for (auto& line : aFrame->Lines()) {
+    if (line.IsBlock()) {
+      // This check is somewhat conservative. There could be descendants that do
+      // not block clamping on first reflow (such as blocks which establish
+      // IFCs)
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool ShouldClamp(bool aShouldClamp, const nsBlockFrame* aThisFrame,
+                        const nsBlockFrame* aLineClampRoot) {
+  // We can safely apply line-clamp on the first reflow if this block has no
+  // descendants whose margins must be computed.
+  return aShouldClamp ||
+         (aThisFrame == aLineClampRoot && !HasBlockChildren(aThisFrame));
+}
+
 nscoord nsBlockFrame::ComputeFinalSize(const ReflowInput& aReflowInput,
                                        BlockReflowState& aState,
                                        ReflowOutput& aMetrics) {
@@ -2949,7 +2971,9 @@ nscoord nsBlockFrame::ComputeFinalSize(const ReflowInput& aReflowInput,
     // If `line-clamp: auto` is involved, we wait until the second reflow to
     // apply line-clamp
     nsBlockFrame* lineClampRoot = GetLineClampRoot();
-    if (lineClampRoot && aState.mFlags.mShouldApplyLineClamp) {
+    aState.mFlags.mDoApplyLineClamp =
+        ShouldClamp(aState.mFlags.mDoApplyLineClamp, this, lineClampRoot);
+    if (aState.mFlags.mDoApplyLineClamp) {
       const auto numberedLineClampTarget =
           FindLineClampNumberedTarget(lineClampRoot);
 
@@ -3009,7 +3033,9 @@ nscoord nsBlockFrame::ComputeFinalSize(const ReflowInput& aReflowInput,
     nscoord autoBSize =
         aReflowInput.ApplyMinMaxBSize(contentBSize, aState.mConsumedBSize);
     nsBlockFrame* lineClampRoot = GetLineClampRoot();
-    if (aState.mFlags.mShouldApplyLineClamp) {
+    aState.mFlags.mDoApplyLineClamp =
+        ShouldClamp(aState.mFlags.mDoApplyLineClamp, this, lineClampRoot);
+    if (aState.mFlags.mDoApplyLineClamp) {
       const auto numberedLineClampTarget =
           FindLineClampNumberedTarget(lineClampRoot);
 
@@ -5330,7 +5356,7 @@ void nsBlockFrame::ReflowBlockFrame(BlockReflowState& aState,
     }
 
     childReflowInput->mFlags.mDimensionsReadyForLineClamp =
-        aState.mFlags.mShouldApplyLineClamp;
+        aState.mFlags.mDoApplyLineClamp;
 
     nsFloatManager::SavedState floatManagerState;
     nsReflowStatus frameReflowStatus;
