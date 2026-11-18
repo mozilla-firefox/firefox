@@ -350,7 +350,7 @@ static OPUS_INLINE float celt_exp2(float x)
 #define celt_exp2_db celt_exp2
 #define celt_log2_db celt_log2
 
-#define celt_sin(x) celt_cos_norm2((0.5f*PI) * (x) - 1.0f)
+#define celt_sin(x) celt_cos_norm2((2.f/PI) * (x) - 1.0f)
 #define celt_log(x) (celt_log2(x) * 0.6931471805599453f)
 #define celt_exp(x) (celt_exp2((x) * 1.4426950408889634f))
 

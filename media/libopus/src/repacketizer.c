@@ -123,7 +123,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    int ext_begin=0, ext_len=0;
    int ext_count, total_ext_count;
    VARDECL(opus_extension_data, all_extensions);
-   SAVE_STACK;
+   ALLOC_STACK;
 
    if (begin<0 || begin>=end || end>rp->nb_frames)
    {
@@ -142,9 +142,12 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
 
    /* figure out total number of extensions */
    total_ext_count = nb_extensions;
-   for (i=begin;i<end;i++)
+   for (i=0;i<end;i++)
    {
-      int n = opus_packet_extensions_count(rp->paddings[i], rp->padding_len[i],
+      int n;
+      if (rp->padding_len[i] == 0 || i + rp->padding_nb_frames[i] <= begin)
+         continue;
+      n = opus_packet_extensions_count(rp->paddings[i], rp->padding_len[i],
        rp->padding_nb_frames[i]);
       if (n > 0) total_ext_count += n;
    }
@@ -156,24 +159,31 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    }
 
    /* incorporate any extensions from the repacketizer padding */
-   for (i=begin;i<end;i++)
+   for (i=0;i<end;i++)
    {
-      int j, ret;
+      int j, base, ret;
       opus_int32 frame_ext_count;
+      if (rp->padding_len[i] == 0 || i + rp->padding_nb_frames[i] <= begin)
+         continue;
+      base = ext_count;
       frame_ext_count = total_ext_count - ext_count;
       ret = opus_packet_extensions_parse(rp->paddings[i], rp->padding_len[i],
-         &all_extensions[ext_count], &frame_ext_count, rp->padding_nb_frames[i]);
+         &all_extensions[base], &frame_ext_count, rp->padding_nb_frames[i]);
       if (ret<0)
       {
          RESTORE_STACK;
          return OPUS_INVALID_PACKET;
       }
-      /* renumber the extension frame numbers */
+      /* filter to [begin, end) and renumber the extension frame numbers */
       for (j=0;j<frame_ext_count;j++)
       {
-         all_extensions[ext_count+j].frame += i-begin;
+         int f = i + all_extensions[base+j].frame;
+         if (f >= begin && f < end)
+         {
+            all_extensions[ext_count] = all_extensions[base+j];
+            all_extensions[ext_count++].frame = f - begin;
+         }
       }
-      ext_count += frame_ext_count;
    }
 
    ptr = data;
