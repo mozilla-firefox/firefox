@@ -1845,42 +1845,53 @@ static MOZ_ALWAYS_INLINE bool MaybeGetNativePropertyAndWriteToCache(
   }
 }
 
+// Handles a get from a valid cache entry that isn't a MissingOwnProperty entry.
+// Returns false for accessor properties, which can't be called here.
+static MOZ_ALWAYS_INLINE bool GetNativeDataPropertyFromCacheEntry(
+    NativeObject* nobj, const MegamorphicCacheEntry& entry, Value* vp) {
+  MOZ_ASSERT(!entry.isMissingOwnProperty());
+  if (entry.isDataProperty()) {
+    for (size_t i = 0, numHops = entry.numHops(); i < numHops; i++) {
+      nobj = &nobj->staticPrototype()->as<NativeObject>();
+    }
+    uint32_t offset = entry.slotOffset().offset();
+    if (entry.slotOffset().isFixedSlot()) {
+      size_t index = NativeObject::getFixedSlotIndexFromOffset(offset);
+      *vp = nobj->getFixedSlot(index);
+    } else {
+      size_t index = NativeObject::getDynamicSlotIndexFromOffset(offset);
+      *vp = nobj->getDynamicSlot(index);
+    }
+    return true;
+  }
+  if (entry.isMissingProperty()) {
+    vp->setUndefined();
+    return true;
+  }
+  MOZ_ASSERT(entry.isAccessorProperty());
+  return false;
+}
+
+// Like GetNativeDataPropertyPure, but for callers that haven't looked up the
+// megamorphic cache entry themselves: IC stubs on x86, which don't have enough
+// registers to do it, and the portable baseline interpreter. Uses the entry if
+// it's valid, and otherwise does the full lookup and caches the result where it
+// can.
 bool GetNativeDataPropertyPureWithCacheLookup(JSContext* cx, JSObject* obj,
                                               PropertyKey key,
                                               MegamorphicCacheEntry* entry,
                                               Value* vp) {
   AutoUnsafeCallWithABI unsafe;
 
-  // If we're on x86, we didn't have enough registers to populate this
-  // directly in Baseline JITted code, so we do the lookup here.
   Shape* receiverShape = obj->shape();
   MegamorphicCache& cache = cx->caches().megamorphicCache;
 
   if (cache.lookup(receiverShape, key, &entry)) {
     NativeObject* nobj = &obj->as<NativeObject>();
     VerifyCacheEntry(cx, nobj, key, *entry);
-    if (entry->isDataProperty()) {
-      for (size_t i = 0, numHops = entry->numHops(); i < numHops; i++) {
-        nobj = &nobj->staticPrototype()->as<NativeObject>();
-      }
-      uint32_t offset = entry->slotOffset().offset();
-      if (entry->slotOffset().isFixedSlot()) {
-        size_t index = NativeObject::getFixedSlotIndexFromOffset(offset);
-        *vp = nobj->getFixedSlot(index);
-      } else {
-        size_t index = NativeObject::getDynamicSlotIndexFromOffset(offset);
-        *vp = nobj->getDynamicSlot(index);
-      }
-      return true;
+    if (!entry->isMissingOwnProperty()) {
+      return GetNativeDataPropertyFromCacheEntry(nobj, *entry, vp);
     }
-    if (entry->isMissingProperty()) {
-      vp->setUndefined();
-      return true;
-    }
-    if (entry->isAccessorProperty()) {
-      return false;
-    }
-    MOZ_ASSERT(entry->isMissingOwnProperty());
   }
 
   return MaybeGetNativePropertyAndWriteToCache<NoGC>(cx, obj, key, entry, vp);
@@ -1988,11 +1999,18 @@ bool GetNativeDataPropertyByValuePure(JSContext* cx, JSObject* obj,
 
   Shape* receiverShape = obj->shape();
   MegamorphicCache& cache = cx->caches().megamorphicCache;
+  Value* res = vp + 1;
   if (!entry) {
-    cache.lookup(receiverShape, key, &entry);
+    // The JIT couldn't atomize the key inline, so it didn't probe the cache.
+    if (cache.lookup(receiverShape, key, &entry)) {
+      NativeObject* nobj = &obj->as<NativeObject>();
+      VerifyCacheEntry(cx, nobj, key, *entry);
+      if (!entry->isMissingOwnProperty()) {
+        return GetNativeDataPropertyFromCacheEntry(nobj, *entry, res);
+      }
+    }
   }
 
-  Value* res = vp + 1;
   return MaybeGetNativePropertyAndWriteToCache<NoGC>(cx, obj, key, entry, res);
 }
 
