@@ -13,15 +13,15 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mozilla.components.concept.fetch.Client
 import mozilla.components.concept.fetch.Request
-import mozilla.components.concept.fetch.isSuccess
 import mozilla.components.support.images.DesiredSize
 import mozilla.components.support.images.decoder.AndroidImageDecoder
+import mozilla.components.support.images.fetcher.ImageFetcher
+import mozilla.components.support.images.fetcher.ImageFetcherConfig
 
 /**
  * Loads an image from [url] using [Client] and makes it available in the inner [ImageLoaderScope].
@@ -155,19 +155,15 @@ private fun fetch(
             conservative = true,
         )
 
-    return try {
-        val response = client.fetch(request)
-        if (response.isSuccess) {
-            response.body.useStream { it.readBytes() }
-        } else {
-            response.close()
-            null
-        }
-    } catch (e: IOException) {
-        null
-    }
+    return ImageFetcher.fromClient(client)
+        .fetch(
+            request = request,
+            config = ImageFetcherConfig(maxSizeBytes = MAX_DOWNLOAD_BYTES),
+        )
+        .getOrNull()
 }
 
+private const val MAX_DOWNLOAD_BYTES = 1024 * 1024L
 private const val DEFAULT_CONNECT_TIMEOUT = 2L // Seconds
 private const val DEFAULT_READ_TIMEOUT = 10L // Seconds
 private const val DEFAULT_MAXIMUM_SCALE_FACTOR = 2.0f
