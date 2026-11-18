@@ -23,13 +23,13 @@ import mozilla.components.compose.draggable.ItemInteractionHandler
 import mozilla.components.compose.draggable.ListInteractionState
 import mozilla.components.compose.draggable.createListInteractionState
 import mozilla.components.compose.menu.store.CustomizableMenuAction.AttemptedRemovalOfMandatorySection
-import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DRAG_BAR
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DROP_AREA
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_SECTIONS
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.RESET_BUTTON
+import mozilla.components.compose.menu.ui.utils.ext.saveMove
 
 /**
  * State of dragging the groups of the customize menu screen.
@@ -233,23 +233,11 @@ internal class MoveGroupsHandler(
         val moved = movedGroups
         draggedGroupId = null
         movedGroups = null
-        if (groupId is String && moved != null) save(groupId, moved)
+        if (groupId is String && moved != null) store.saveMove(groups, groupId, moved)
     }
 
     override fun onDragCancel() {
         draggedGroupId = null
         movedGroups = null
-    }
-
-    private fun save(movedGroupId: String, movedGroups: CustomizeMenuGroups) {
-        if (movedGroups != groups) {
-            store.dispatch(
-                MenuStructureChanged(
-                    items = movedGroups.shown + movedGroups.hidden,
-                    hiddenGroupIds = movedGroups.hidden.map { it.id }.toSet(),
-                    movedGroupId = movedGroupId,
-                )
-            )
-        }
     }
 }
