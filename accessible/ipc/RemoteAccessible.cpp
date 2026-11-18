@@ -1875,7 +1875,9 @@ already_AddRefed<AccAttributes> RemoteAccessible::DefaultTextAttributes() {
 
     if (const AccAttributes* parentAttrs = parent->GetCachedTextAttributes()) {
       // Update our text attributes with any parent entries we don't have.
-      parentAttrs->CopyTo(result, true);
+      parentAttrs->CopyTo(result, [&result](nsAtom* attrName) {
+        return !result->HasAttribute(attrName);
+      });
     }
   }
 
@@ -2066,7 +2068,17 @@ already_AddRefed<AccAttributes> RemoteAccessible::Attributes() {
     }
 
     if (auto ariaAttrs = GetCachedARIAAttributes()) {
-      ariaAttrs->CopyTo(attributes);
+      ariaAttrs->CopyTo(attributes, [&](nsAtom* attrName) {
+        if ((attrName == nsGkAtoms::aria_roledescription ||
+             attrName == nsGkAtoms::aria_brailleroledescription) &&
+            IsGeneric()) {
+          // We only expose these attributes in accessibles with non generic
+          // roles. https://www.w3.org/TR/wai-aria-1.2/#aria-roledescription
+          return false;
+        }
+
+        return true;
+      });
     }
 
     nsAccUtils::SetLiveContainerAttributes(attributes, this);

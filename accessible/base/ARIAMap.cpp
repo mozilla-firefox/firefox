@@ -1479,6 +1479,7 @@ static const AttrCharacteristics gWAIUnivAttrMap[] = {
   {nsGkAtoms::aria_activedescendant,  ATTR_BYPASSOBJ                               },
   {nsGkAtoms::aria_atomic,   ATTR_BYPASSOBJ_IF_FALSE | ATTR_VALTOKEN | ATTR_GLOBAL },
   {nsGkAtoms::aria_busy,                               ATTR_VALTOKEN | ATTR_GLOBAL },
+  {nsGkAtoms::aria_brailleroledescription,  ATTR_BYPASSOBJ_IF_EMPTY                },
   {nsGkAtoms::aria_checked,           ATTR_BYPASSOBJ | ATTR_VALTOKEN               }, /* exposes checkable obj attr */
   {nsGkAtoms::aria_colcount,          ATTR_VALINT                                  },
   {nsGkAtoms::aria_colindex,          ATTR_VALINT                                  },
@@ -1515,6 +1516,7 @@ static const AttrCharacteristics gWAIUnivAttrMap[] = {
   {nsGkAtoms::aria_readonly,          ATTR_BYPASSOBJ | ATTR_VALTOKEN               },
   {nsGkAtoms::aria_relevant,          ATTR_GLOBAL                                  },
   {nsGkAtoms::aria_required,          ATTR_BYPASSOBJ | ATTR_VALTOKEN               },
+  {nsGkAtoms::aria_roledescription,   ATTR_BYPASSOBJ_IF_EMPTY                      },
   {nsGkAtoms::aria_rowcount,          ATTR_VALINT                                  },
   {nsGkAtoms::aria_rowindex,          ATTR_VALINT                                  },
   {nsGkAtoms::aria_selected,          ATTR_BYPASSOBJ | ATTR_VALTOKEN               },
@@ -1735,6 +1737,17 @@ bool AttrIterator::Next() {
           mAttrs->AttrValueIs(kNameSpaceID_None, mAttrAtom, nsGkAtoms::_false,
                               eCaseMatters)) {
         continue;  // only expose token based attribute if value is not 'false'.
+      }
+
+      if (mAttrCharacteristics & ATTR_BYPASSOBJ_IF_EMPTY) {
+        nsAutoString value;
+        mAttrs->GetAttr(kNameSpaceID_None, mAttrAtom, value);
+        value.CompressWhitespace();
+        if (value.IsEmpty()) {
+          // only expose token based attribute if value is not whitespace or an
+          // empty string.
+          continue;
+        }
       }
 
       return true;

@@ -720,13 +720,9 @@ class Accessible {
 
   /**
    * Returns true if this is a generic container element that has no meaning on
-   * its own.
+   * its own. A section that is an ePub aria role is not generic.
    */
-  bool IsGeneric() const {
-    role accRole = Role();
-    return accRole == roles::TEXT || accRole == roles::TEXT_CONTAINER ||
-           accRole == roles::SECTION;
-  }
+  bool IsGeneric() const;
 
   /**
    * Returns the nearest ancestor in the document which is not a generic

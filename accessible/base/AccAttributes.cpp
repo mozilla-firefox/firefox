@@ -200,9 +200,9 @@ bool AccAttributes::Equal(const AccAttributes* aOther) const {
   return true;
 }
 
-void AccAttributes::CopyTo(AccAttributes* aDest, bool aOnlyMissing) const {
+void AccAttributes::CopyTo(AccAttributes* aDest, CopyReq aCopyReq) const {
   for (auto iter = mData.ConstIter(); !iter.Done(); iter.Next()) {
-    if (aOnlyMissing && aDest->HasAttribute(iter.Key())) {
+    if (aCopyReq && !aCopyReq(iter.Key())) {
       continue;
     }
 

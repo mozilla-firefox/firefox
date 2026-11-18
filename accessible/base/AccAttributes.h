@@ -240,7 +240,8 @@ class AccAttributes {
    * If aOnlyMissing is true, don't copy entries if destination already has
    * a given key.
    */
-  void CopyTo(AccAttributes* aDest, bool aOnlyMissing = false) const;
+  using CopyReq = FunctionRef<bool(nsAtom* aAttrName)>;
+  void CopyTo(AccAttributes* aDest, CopyReq aCopyReq = nullptr) const;
 
   // An entry class for our iterator.
   class Entry {

@@ -437,6 +437,22 @@ void Accessible::GetPositionAndSetSize(int32_t* aPosInSet, int32_t* aSetSize) {
   }
 }
 
+bool Accessible::IsGeneric() const {
+  role accRole = Role();
+  if (accRole == roles::TEXT || accRole == roles::TEXT_CONTAINER) {
+    return true;
+  }
+
+  if (accRole == roles::SECTION) {
+    const nsRoleMapEntry* roleMapEntry = ARIARoleMap();
+    if ((!roleMapEntry || !roleMapEntry->IsOfType(eDPub))) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 bool Accessible::IsLinkValid() {
   MOZ_ASSERT(IsLink(), "IsLinkValid is called on not hyper link!");
 

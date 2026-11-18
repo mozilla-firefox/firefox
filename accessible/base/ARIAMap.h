@@ -103,28 +103,29 @@ const bool kUseNativeRole = false;
  */
 const uint8_t ATTR_BYPASSOBJ = 0x1 << 0;
 const uint8_t ATTR_BYPASSOBJ_IF_FALSE = 0x1 << 1;
+const uint8_t ATTR_BYPASSOBJ_IF_EMPTY = 0x1 << 2;
 
 /**
  * This mask indicates the attribute is expected to have an NMTOKEN or bool
  * value. (See for example usage in Accessible::Attributes())
  */
-const uint8_t ATTR_VALTOKEN = 0x1 << 2;
+const uint8_t ATTR_VALTOKEN = 0x1 << 3;
 
 /**
  * Indicate the attribute is global state or property (refer to
  * http://www.w3.org/TR/wai-aria/states_and_properties#global_states).
  */
-const uint8_t ATTR_GLOBAL = 0x1 << 3;
+const uint8_t ATTR_GLOBAL = 0x1 << 4;
 
 /**
  * Indicates that the attribute should have an integer value.
  */
-const uint8_t ATTR_VALINT = 0x1 << 4;
+const uint8_t ATTR_VALINT = 0x1 << 5;
 
 /**
  * Indicates that the attribute can have reflected elements.
  */
-const uint8_t ATTR_REFLECT_ELEMENTS = 0x1 << 5;
+const uint8_t ATTR_REFLECT_ELEMENTS = 0x1 << 6;
 
 ////////////////////////////////////////////////////////////////////////////////
 // State map entry

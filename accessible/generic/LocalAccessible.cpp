@@ -1154,6 +1154,15 @@ already_AddRefed<AccAttributes> LocalAccessible::Attributes() {
       // aria-placeholder.
       continue;
     }
+
+    if ((attribIter.AttrName() == nsGkAtoms::aria_roledescription ||
+         attribIter.AttrName() == nsGkAtoms::aria_brailleroledescription) &&
+        IsGeneric()) {
+      // We only expose these attributes in accessibles with non generic roles.
+      // https://www.w3.org/TR/wai-aria-1.2/#aria-roledescription
+      continue;
+    }
+
     attribIter.ExposeAttr(attributes);
   }
 
