@@ -308,6 +308,7 @@ namespace jit {
   _(RegExpHasCaptureGroups, js::RegExpHasCaptureGroups)                        \
   _(RegExpMatcherRaw, js::RegExpMatcherRaw)                                    \
   _(RegExpSearcherRaw, js::RegExpSearcherRaw)                                  \
+  _(ResumeGeneratorFromJit, js::jit::ResumeGeneratorFromJit)                   \
   _(SameValue, js::SameValue)                                                  \
   _(SetArrayLength, js::jit::SetArrayLength)                                   \
   _(SetElementMegamorphicNoCache, js::jit::SetElementMegamorphic<false>)       \

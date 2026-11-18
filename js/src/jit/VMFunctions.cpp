@@ -1215,6 +1215,15 @@ JSObject* CreateGenerator(JSContext* cx, HandleFunction callee,
                                          argsObj);
 }
 
+bool ResumeGeneratorFromJit(JSContext* cx, HandleObject obj, HandleValue value,
+                            int32_t resumeKind, MutableHandleValue rval) {
+  Rooted<AbstractGeneratorObject*> genObj(cx,
+                                          &obj->as<AbstractGeneratorObject>());
+  AutoRealm ar(cx, genObj);
+  return js::ResumeGenerator(cx, genObj, value, IntToResumeKind(resumeKind),
+                             rval);
+}
+
 bool NormalSuspend(JSContext* cx, HandleObject obj, BaselineFrame* frame,
                    uint32_t frameSize, const jsbytecode* pc) {
   MOZ_ASSERT(JSOp(*pc) == JSOp::InitialYield || JSOp(*pc) == JSOp::Yield ||

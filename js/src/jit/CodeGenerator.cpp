@@ -22228,6 +22228,12 @@ void CodeGenerator::visitGeneratorResume(LGeneratorResume* lir) {
   Register callee = ToRegister(lir->temp0());
   Register scratch = ToRegister(lir->temp1());
 
+  using Fn = bool (*)(JSContext*, HandleObject, HandleValue, int32_t,
+                      MutableHandleValue);
+  OutOfLineCode* ool = oolCallVM<Fn, jit::ResumeGeneratorFromJit>(
+      lir, ArgList(genObj, value, Imm32(resumeKind)),
+      StoreValueTo(ToOutValue(lir)));
+
   // Load callee. Note that JSOp::Resume is never used for modules.
   masm.unboxObject(
       Address(genObj, AbstractGeneratorObject::offsetOfCalleeOrModuleSlot()),
@@ -22236,6 +22242,11 @@ void CodeGenerator::visitGeneratorResume(LGeneratorResume* lir) {
   // The pushed argument Values are the formals (all |undefined|) and the resume
   // args stored after the formals.
   masm.loadFunctionArgCount(callee, scratch);
+
+  // Resume in the VM if there are too many formals to push here.
+  masm.branch32(Assembler::Above, scratch, Imm32(JIT_ARGS_LENGTH_MAX),
+                ool->entry());
+
   masm.alignJitStackBasedOnNArgs(scratch, /* countIncludesThis = */ false,
                                  /* extraArgs = */ ResumeFrameArgs::NumSlots);
 
@@ -22280,6 +22291,7 @@ void CodeGenerator::visitGeneratorResume(LGeneratorResume* lir) {
 
   masm.setFramePushed(frameSize());
   emitRestoreStackPointerFromFP();
+  masm.bind(ool->rejoin());
 }
 
 // The offset of a ResumeFrameArgs slot from the frame pointer.

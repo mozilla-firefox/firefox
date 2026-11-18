@@ -445,6 +445,12 @@ JSObject* CreateGeneratorFromFrame(JSContext* cx, BaselineFrame* frame);
 JSObject* CreateGenerator(JSContext* cx, HandleFunction, HandleScript,
                           HandleObject, HandleObject);
 
+// Resume a generator whose callee has too many formals to push them in JIT
+// code.
+[[nodiscard]] bool ResumeGeneratorFromJit(JSContext* cx, HandleObject obj,
+                                          HandleValue value, int32_t resumeKind,
+                                          MutableHandleValue rval);
+
 [[nodiscard]] bool NormalSuspend(JSContext* cx, HandleObject obj,
                                  BaselineFrame* frame, uint32_t frameSize,
                                  const jsbytecode* pc);

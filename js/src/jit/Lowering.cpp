@@ -7768,6 +7768,9 @@ void LIRGenerator::visitGeneratorResume(MGeneratorResume* ins) {
       tempFixed(CallTempReg3), tempFixed(CallTempReg4));
   defineReturn(lir, ins);
   assignSafepoint(lir, ins);
+
+  // The JIT call and the VM call share the safepoint.
+  lirGraph_.addExtraSafepointUses(1);
 }
 
 void LIRGenerator::visitCanSkipAwait(MCanSkipAwait* ins) {

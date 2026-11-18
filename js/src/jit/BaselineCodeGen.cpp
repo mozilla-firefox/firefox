@@ -6683,6 +6683,11 @@ bool BaselineCodeGen<Handler>::emit_Resume() {
   Register scratch1 = regs.takeAny();
   masm.loadFunctionArgCount(callee, scratch1);
 
+  // Resume in the VM if there are too many formals to push here.
+  Label vmResume, done;
+  masm.branch32(Assembler::Above, scratch1, Imm32(JIT_ARGS_LENGTH_MAX),
+                &vmResume);
+
   static_assert(sizeof(Value) == 8);
 #ifndef JS_CODEGEN_NONE
   static_assert(JitStackAlignment == 16 || JitStackAlignment == 8);
@@ -6788,6 +6793,27 @@ bool BaselineCodeGen<Handler>::emit_Resume() {
     masm.switchToBaselineFrameRealm(R2.scratchReg());
   }
   restoreInterpreterPCReg();
+  masm.jump(&done);
+
+  masm.bind(&vmResume);
+  {
+    masm.unboxInt32(frame.addressOfStackValue(-1), R2.scratchReg());
+    masm.loadValue(frame.addressOfStackValue(-2), R1);
+    masm.unboxObject(frame.addressOfStackValue(-3), R0.scratchReg());
+
+    prepareVMCall();
+    pushArg(R2.scratchReg());
+    pushArg(R1);
+    pushArg(R0.scratchReg());
+
+    using Fn = bool (*)(JSContext*, HandleObject, HandleValue, int32_t,
+                        MutableHandleValue);
+    if (!callVM<Fn, jit::ResumeGeneratorFromJit>()) {
+      return false;
+    }
+  }
+
+  masm.bind(&done);
   frame.popn(3);
   frame.push(R0);
   return true;
