@@ -667,6 +667,17 @@ gfxDWriteFont::GetMeasuringMode() const {
   return DWriteSettings::Get(GetForceGDIClassic()).MeasuringMode();
 }
 
+void gfxDWriteFont::HandleFontFaceException(const char* aOperation) {
+  // Exception (e.g. disk i/o error) occurred when DirectWrite tried to use
+  // the font resource; possibly a failing drive or similar hardware issue.
+  // Mark the font entry as unusable, which also invalidates this font and its
+  // other instances, so that font selection will skip it; we'll use a fallback
+  // font instead.
+  GetFontEntry()->MarkUnusable();
+  gfxCriticalError() << "Exception occurred " << aOperation << " for "
+                     << GetFontEntry()->Name().get();
+}
+
 gfxFloat gfxDWriteFont::MeasureGlyphWidth(uint16_t aGlyph) {
   MOZ_SEH_TRY {
     HRESULT hr;
@@ -705,14 +716,7 @@ gfxFloat gfxDWriteFont::MeasureGlyphWidth(uint16_t aGlyph) {
     }
   }
   MOZ_SEH_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {
-    // Exception (e.g. disk i/o error) occurred when DirectWrite tried to use
-    // the font resource; possibly a failing drive or similar hardware issue.
-    // Mark the font entry as unusable, which also invalidates this font and
-    // its other instances, so that font selection will skip it; we'll use a
-    // fallback font instead.
-    GetFontEntry()->MarkUnusable();
-    gfxCriticalError() << "Exception occurred measuring glyph width for "
-                       << GetFontEntry()->Name().get();
+    HandleFontFaceException("measuring glyph width");
   }
   return 0.0;
 }
@@ -733,14 +737,7 @@ bool gfxDWriteFont::GetGlyphBounds(uint16_t aGID, gfxRect* aBounds,
     return true;
   }
   MOZ_SEH_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {
-    // Exception (e.g. disk i/o error) occurred when DirectWrite tried to use
-    // the font resource; possibly a failing drive or similar hardware issue.
-    // Mark the font entry as unusable, which also invalidates this font and
-    // its other instances, so that font selection will skip it; we'll use a
-    // fallback font instead.
-    GetFontEntry()->MarkUnusable();
-    gfxCriticalError() << "Exception occurred measuring glyph bounds for "
-                       << GetFontEntry()->Name().get();
+    HandleFontFaceException("measuring glyph bounds");
   }
   return false;
 }
