@@ -651,6 +651,20 @@ add_task(async function checkTelemetryLoadEventForEntrypoint() {
     "recorded telemetry for showing the report contains correct entrypoint"
   );
 
+  await BrowserTestUtils.removeTab(tab);
+
+  tab = await BrowserTestUtils.openNewForegroundTab({
+    url: "about:protections",
+    gBrowser,
+  });
+
+  loadEvents = await waitForProtectionsEvents("showProtectionReport", 3);
+  is(
+    loadEvents.at(-1).extra.value,
+    "direct",
+    "a later load without an entrypoint is recorded as 'direct'"
+  );
+
   // Clean up.
   await BrowserTestUtils.removeTab(tab);
 });

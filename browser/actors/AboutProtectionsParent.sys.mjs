@@ -384,8 +384,13 @@ export class AboutProtectionsParent extends JSWindowActorParent {
         entrypoint = aMessage.data.entrypoint;
         break;
 
-      case "FetchEntryPoint":
-        return entrypoint;
+      case "FetchEntryPoint": {
+        // The entrypoint only applies to the load that follows the URL
+        // rewrite in protections.mjs; later loads are direct.
+        let value = entrypoint;
+        entrypoint = "direct";
+        return value;
+      }
 
       case "FetchVPNSubStatus":
         return this.VPNSubStatus();
