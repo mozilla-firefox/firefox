@@ -283,6 +283,15 @@ T* NewBuffer(Cell* owner, Args&&... args) {
                            std::forward<Args>(args)...);
 }
 
+template <typename T>
+  requires IsBufferType<T>
+void DeleteBuffer(Zone* zone, T* buffer) {
+  if (buffer) {
+    buffer->~T();
+    FreeBuffer(zone, buffer);
+  }
+}
+
 }  // namespace gc
 }  // namespace js
 
