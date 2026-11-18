@@ -42,32 +42,6 @@ GPU: Intel Iris Pro Graphics P580
 Power: 1500W Hot Plug redundant (1+1) power supply
 ```
 
-(hardware-mac-mini-r8)=
-
-#### [Apple Mac Mini R8](https://mana.mozilla.org/wiki/display/ROPS/Apple+Mac+Mini+R8)
-
-Intel based Mac Minis. All of them have EDID devices attached that set the resolution.
-
-* **Location**: MDC1
-* **Worker pools, and their platforms**:
-  * `releng-hardware/gecko-t-osx-1400-r8`
-    * `test-macosx1470-64-shippable/opt`
-    * `test-macosx1470-64/opt`
-  * `releng-hardware/gecko-t-osx-1015-r8`
-
-```text
-Model Name: Mac Mini
-Model Identifier: Macmini8,1
-Processor Name: 6-Core Intel Core i7 (i7-8700B)
-Processor Speed: 3.2 GHz
-Number of Processors: 1
-Total Number of Cores: 6
-L2 Cache (per Core): 256 KB
-L3 Cache: 12 MB
-Memory: 16 GB
-Disk: SSD 251 GB (251,000,193,024 bytes)
-```
-
 (hardware-mac-mini-m4)=
 
 #### Apple Silicon (M4)

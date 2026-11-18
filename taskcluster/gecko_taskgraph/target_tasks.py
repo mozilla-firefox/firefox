@@ -939,11 +939,6 @@ def target_tasks_general_perf_testing(full_task_graph, parameters, graph_config)
             # Bug 1961145 - Disable bing-search for test-windows11-64-24h2-shippable
             if "windows11" in platform and "bing-search" in try_name:
                 return False
-            # Bug 2074111 - Already running on macosx1500
-            if "macosx1470" in platform and (
-                "jetstream3" in try_name or "speedometer3" in try_name
-            ):
-                return False
             if "browsertime" in try_name:
                 if "chrome" in try_name:
                     # Bug 2049065: linux2404 chrome-unity-webgl is still broken

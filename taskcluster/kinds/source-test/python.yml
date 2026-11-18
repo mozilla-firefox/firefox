@@ -330,7 +330,6 @@ raptor:
     description: testing/raptor unit tests
     platform:
         - linux2404-64/opt
-        - macosx1470-64/opt
         - macosx1500-aarch64-vms/opt
         - windows11-64/opt
     treeherder:
@@ -517,7 +516,6 @@ mozperftest:
     description: mozperftest unit tests
     platform:
         - linux2404-64/opt
-        - macosx1470-64/opt
         - macosx1500-aarch64-vms/opt
         - windows11-64/opt
     treeherder:
@@ -529,9 +527,6 @@ mozperftest:
             by-platform:
                 linux2404-64/opt:
                     - linux64-node
-                    - browsertime
-                macosx1470-64/opt:
-                    - macosx64-node
                     - browsertime
                 macosx1500-aarch64-vms/opt:
                     - macosx64-aarch64-node

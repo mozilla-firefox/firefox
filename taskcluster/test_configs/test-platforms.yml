@@ -430,8 +430,6 @@ macosx2700-aarch64-shippable/opt:
 macosx1470-64-shippable/opt:
     build-platform: macosx64-shippable/opt
     test-sets:
-        - browsertime
-        - browsertime-profiling
         - macosx1470-64-tests
         - webgpu
         - web-platform-tests-backlog
@@ -442,7 +440,6 @@ macosx1470-64/opt:
         - macosx1470-64-tests
         - web-platform-tests-backlog
         - webgpu
-        - browsertime
 
 macosx1470-64/debug:
     build-platform: macosx64/debug

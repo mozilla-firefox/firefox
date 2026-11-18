@@ -23,7 +23,7 @@ task-defaults:
     limit-platforms:
         by-app:
             chrome:
-                - (?!macosx1470|macosx1500).*64.*shippable.*
+                - (?!macosx1500).*64.*shippable.*
             safari:
                 - macosx2700.*shippable.*
             safari-tp:
@@ -109,7 +109,7 @@ browsertime-tp6:
         limit-platforms:
             by-app:
                 chrome:
-                    - (?!macosx1470|macosx1500).*shippable.*
+                    - (?!macosx1500).*shippable.*
                 custom-car:
                     - macosx1500.*shippable.*
                     - linux.*shippable.*
@@ -223,7 +223,7 @@ browsertime-tp6-essential:
             by-app:
                 firefox:
                     by-test-platform:
-                        (?!macosx1470).*64(?!.*nightlyasrelease).*shippable.*: [autoland]
+                        .*64(?!.*nightlyasrelease).*shippable.*: [autoland]
                         default: []
                 default: []
         tier:
@@ -280,7 +280,7 @@ browsertime-tp7:
         limit-platforms:
             by-app:
                 chrome:
-                    - (?!macosx1470|macosx1500).*shippable.*
+                    - (?!macosx1500).*shippable.*
                 safari:
                     - macosx2700.*shippable.*
                 custom-car:
@@ -330,9 +330,9 @@ browsertime-benchmark:
                     media-capabilities:
                         - .*64.*shippable.*
                     (assorted-dom|matrix-react-bench|stylebench|unity-webgl|webaudio):
-                        - (?!macosx1470|macosx1500).*64.*shippable.*
+                        - (?!macosx1500).*64.*shippable.*
                     default:
-                        - (?!macosx1470).*64.*shippable.*
+                        - .*64.*shippable.*
             firefox:
                 by-subtest:
                     # Bug 2087634 - Hangs on macosx1500 in any browser; chrome is excluded above
@@ -672,7 +672,6 @@ browsertime-youtube-playback:
     limit-platforms:
         by-subtest:
             youtube-playback-av1-sfr:
-                - macosx1470-64-shippable/opt
                 - macosx1500-aarch64-shippable/opt
             default: []
     max-run-time:
@@ -793,7 +792,6 @@ browsertime-tp6-profiling:
         by-test-platform:
             linux.*shippable.*: [mozilla-central]
             windows.*shippable.*: [mozilla-central]
-            macosx1470.*shippable.*: [mozilla-central]
             macosx1500.*shippable.*: [mozilla-central]
             default: []
     tier:
@@ -861,7 +859,6 @@ browsertime-media-seek:
         by-app:
             chrome:
                 - linux.*shippable.*
-                - macosx1470.*shippable.*
                 - macosx1500.*shippable.*
             default: []
     max-run-time: 2700
@@ -1035,8 +1032,6 @@ browsertime-nav-bench:
         subtests: [nav-bench]
         run-visual-metrics: true
     description: Raptor (browsertime) navigation benchmark across 9 sites
-    limit-platforms:
-        - (?!macosx1470).*
     max-run-time: 3600
     run-on-projects:
         by-app:
@@ -1107,7 +1102,6 @@ browsertime-video-playback-latency:
         by-app:
             firefox:
                 by-test-platform:
-                    macosx1470.*shippable.*: [autoland, mozilla-central]
                     macosx1500.*shippable.*: [autoland, mozilla-central]
                     linux.*shippable.*: [autoland, mozilla-central]
                     default: []
@@ -1275,7 +1269,6 @@ browsertime-webcodecs:
                 by-test-platform:
                     linux.*shippable.*: [autoland, mozilla-central]
                     windows.*shippable.*: [autoland, mozilla-central]
-                    macosx1470.*shippable.*: [autoland, mozilla-central]
                     macosx1500.*shippable.*: [autoland, mozilla-central]
                     default: []
             default: []
@@ -1397,7 +1390,7 @@ browsertime-indexeddb:
     limit-platforms:
         by-app:
             chrome:
-                - (?!macosx1470|macosx1500).*shippable.*
+                - (?!macosx1500).*shippable.*
             custom-car:
                 - macosx1500.*shippable.*
                 - linux.*shippable.*
@@ -1523,14 +1516,12 @@ browsertime-hev3-connection:
             firefox:
                 by-test-platform:
                     linux2404-64-shippable/opt: [mozilla-central]
-                    macosx1470-64-shippable/opt: [mozilla-central]
                     macosx1500-aarch64-shippable/opt: [mozilla-central]
                     windows11-64-24h2-shippable/opt: [mozilla-central]
                     default: []
             chrome:
                 by-test-platform:
                     linux2404-64-shippable/opt: [mozilla-central]
-                    macosx1470-64-shippable/opt: [mozilla-central]
                     windows11-64-24h2-shippable/opt: [mozilla-central]
                     default: []
             default: []
