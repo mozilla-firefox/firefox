@@ -388,3 +388,165 @@ add_task(async function test_migration_allows_redownload_on_demand() {
   await deleteCache(modelHub.cache);
   await hub.cleanup();
 });
+
+const LEGACY_ENGINE_ID = "wllamapreview";
+const RENAMED_ENGINE_ID = "link-preview";
+const LEGACY_TASK_NAME = "wllama-text-generation";
+const RENAMED_TASK_NAME = "llama-text-generation";
+
+/**
+ * Bug 1967279: Verify the 6 -> 7 schema migration rewrites a row tagged with
+ * the old "wllamapreview" engineId to "link-preview" without dropping the
+ * underlying OPFS model file, so the renamed feature can still uninstall it.
+ */
+add_task(async function test_migration_renames_legacy_engine_id() {
+  const model = "org/link-preview";
+  const revision = "v1";
+  const file = "weights.bin";
+
+  // Seed a row under the pre-migration schema with the obsolete engineId.
+  let cache = await IndexedDBCache.init({ version: 6, reset: true });
+  await cache.put({
+    engineId: LEGACY_ENGINE_ID,
+    taskName: LEGACY_TASK_NAME,
+    model,
+    revision,
+    file,
+    data: createBlob(),
+    headers: null,
+  });
+  await cache.dispose();
+
+  // Reopen at the current schema version and confirm the rename happened.
+  cache = await IndexedDBCache.init({});
+
+  let listed = await cache.listFiles({ model, revision });
+  Assert.deepEqual(
+    listed.metadata.engineIds,
+    [RENAMED_ENGINE_ID],
+    "Migration should rewrite the legacy engineId to its replacement."
+  );
+  Assert.equal(
+    listed.files.length,
+    1,
+    "Migration must not drop the OPFS model file."
+  );
+
+  const opfsPath = cache.generateFilePathInOPFS({ model, revision, file });
+  const fileHandle = await SharedOPFS.getFileHandle(opfsPath);
+  Assert.notEqual(
+    fileHandle,
+    null,
+    "The model file exists in OPFS before uninstall."
+  );
+
+  // The uninstall path used by LinkPreview should now find and remove the row.
+  await cache.deleteFilesByEngine({ engineId: RENAMED_ENGINE_ID });
+  listed = await cache.listFiles({ model, revision });
+  Assert.deepEqual(
+    listed.files,
+    [],
+    "Uninstall via the new engineId removes the file from the cache listing."
+  );
+
+  await Assert.rejects(
+    SharedOPFS.getFileHandle(opfsPath),
+    error => error.name === "NotFoundError",
+    "Uninstall physically deletes the cached model file."
+  );
+
+  await deleteCache(cache);
+});
+
+/**
+ * Bug 1967279: If a row already carries both the legacy and the new engineId
+ * (e.g. a re-download happened before the migration), the rewrite must
+ * de-duplicate rather than leaving the stale id behind.
+ */
+add_task(async function test_migration_dedups_legacy_and_new_engine_ids() {
+  const model = "org/link-preview";
+  const revision = "v1";
+  const file = "weights.bin";
+
+  let cache = await IndexedDBCache.init({ version: 6, reset: true });
+  await cache.put({
+    engineId: LEGACY_ENGINE_ID,
+    taskName: LEGACY_TASK_NAME,
+    model,
+    revision,
+    file,
+    data: createBlob(),
+    headers: null,
+  });
+  await cache.put({
+    engineId: RENAMED_ENGINE_ID,
+    taskName: LEGACY_TASK_NAME,
+    model,
+    revision,
+    file,
+    data: createBlob(),
+    headers: null,
+  });
+  await cache.dispose();
+
+  cache = await IndexedDBCache.init({});
+  const listed = await cache.listFiles({ model, revision });
+  Assert.deepEqual(
+    listed.metadata.engineIds,
+    [RENAMED_ENGINE_ID],
+    "Migration should collapse duplicate ids to the new engineId only."
+  );
+
+  await deleteCache(cache);
+});
+
+/**
+ * Verify the 7 -> 8 schema migration re-keys task rows whose taskName was
+ * renamed, so already-downloaded model files keep hitting the cache instead
+ * of being downloaded again.
+ */
+add_task(async function test_migration_renames_legacy_task_name() {
+  const model = "org/link-preview";
+  const revision = "v1";
+  const file = "weights.bin";
+
+  // Seed a row under the pre-migration schema with the obsolete taskName.
+  let cache = await IndexedDBCache.init({ version: 7, reset: true });
+  await cache.put({
+    engineId: RENAMED_ENGINE_ID,
+    taskName: LEGACY_TASK_NAME,
+    model,
+    revision,
+    file,
+    data: createBlob(),
+    headers: null,
+  });
+  await cache.dispose();
+
+  // Reopen at the current schema version and confirm the row was re-keyed.
+  cache = await IndexedDBCache.init({});
+
+  let listed = await cache.listFiles({
+    taskName: RENAMED_TASK_NAME,
+    model,
+    revision,
+  });
+  Assert.equal(
+    listed.files.length,
+    1,
+    "Migration should re-key the row to the new taskName."
+  );
+
+  listed = await cache.listFiles({
+    taskName: LEGACY_TASK_NAME,
+    model,
+    revision,
+  });
+  Assert.deepEqual(
+    listed.files,
+    [],
+    "No row should remain under the old taskName."
+  );
+
+  await deleteCache(cache);
+});
