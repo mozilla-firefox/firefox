@@ -23,6 +23,9 @@ export default class IPProtectionLocationsElement extends MozLitElement {
     state: { type: Object, attribute: false },
   };
 
+  #isViewShown = false;
+  #seenPromos = new Set();
+
   constructor() {
     super();
     this.state = {};
@@ -34,15 +37,79 @@ export default class IPProtectionLocationsElement extends MozLitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    this.panelView = this.closest("panelview");
+    this.panelView?.addEventListener("ViewShown", this);
+    this.panelView?.addEventListener("ViewHiding", this);
     this.dispatchEvent(new CustomEvent("IPProtection:Init", { bubbles: true }));
   }
 
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.panelView?.removeEventListener("ViewShown", this);
+    this.panelView?.removeEventListener("ViewHiding", this);
+    this.panelView = null;
+  }
+
+  handleEvent(event) {
+    if (event.type == "ViewShown") {
+      this.#isViewShown = true;
+      this.#maybeRecordPromoSeen();
+    } else if (event.type == "ViewHiding") {
+      this.#isViewShown = false;
+      this.#seenPromos.clear();
+    }
+  }
+
+  updated(changedProperties) {
+    super.updated(changedProperties);
+    this.#maybeRecordPromoSeen();
+  }
+
+  #maybeRecordPromoSeen() {
+    let promo = this.#visiblePromo();
+    if (!this.#isViewShown || !promo || this.#seenPromos.has(promo)) {
+      return;
+    }
+    this.#seenPromos.add(promo);
+    Glean.ipprotection.promoSeen.record({ promo, entrypoint: "panel" });
+  }
+
+  /**
+   * @returns {"defaultbrowser"|"mozillavpn"|null}
+   *   The promo currently rendered in the subview, if any.
+   */
+  #visiblePromo() {
+    if (!this.state.location && !this.state.locationsList) {
+      return null;
+    }
+    // If the user has a Mozilla VPN subscription, show nothing
+    if (this.state?.hasUpgraded) {
+      return null;
+    }
+    // If the user does not have Firefox as default and is allowed to set it, show default promo
+    if (!this.state?.isDefaultBrowser && this.state?.canSetDefaultBrowser) {
+      return "defaultbrowser";
+    }
+    // If the user is not eligible for Mozilla VPN, show nothing
+    if (this.state?.upgradeNotAvailable) {
+      return null;
+    }
+    return "mozillavpn";
+  }
+
   handlePromoButtonClick(event) {
-    Glean.ipprotection.locationUpgradePromoClicked.record();
+    Glean.ipprotection.promoClicked.record({
+      promo: "mozillavpn",
+      entrypoint: "panel",
+    });
     event.target.documentGlobal.openWebLinkIn(LINKS.LOCATION_PROMO_URL, "tab");
   }
 
   handleSetDefaultPromoButtonClick() {
+    Glean.ipprotection.promoClicked.record({
+      promo: "defaultbrowser",
+      entrypoint: "panel",
+    });
     this.dispatchEvent(
       new CustomEvent("IPProtection:SetDefaultBrowser", { bubbles: true })
     );
@@ -71,16 +138,11 @@ export default class IPProtectionLocationsElement extends MozLitElement {
   }
 
   promoTemplate() {
-    // If the user has a Mozilla VPN subscription, show nothing
-    if (this.state?.hasUpgraded) {
-      return null;
-    }
-    // If the user does not have Firefox as default and is allowed to set it, show default promo
-    if (!this.state?.isDefaultBrowser && this.state?.canSetDefaultBrowser) {
+    let promo = this.#visiblePromo();
+    if (promo == "defaultbrowser") {
       return this.setDefaultPromoTemplate();
     }
-    // If the user is not eligible for Mozilla VPN, show nothing
-    if (this.state?.upgradeNotAvailable) {
+    if (promo != "mozillavpn") {
       return null;
     }
 

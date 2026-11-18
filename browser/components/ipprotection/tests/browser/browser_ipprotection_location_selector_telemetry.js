@@ -17,7 +17,7 @@ const MOCK_LOCATIONS_LIST = [
 /**
  * Tests that clicking the location selector button records
  * location_selector_button_clicked, and that clicking the promo upgrade
- * button records location_upgrade_promo_clicked.
+ * button opens the location promo URL.
  */
 add_task(async function test_location_selector_button_and_promo_clicked() {
   let isDefaultStub = sinon
@@ -85,16 +85,6 @@ add_task(async function test_location_selector_button_and_promo_clicked() {
     "openWebLinkIn should be called with the location promo URL"
   );
 
-  let promoClickedEvents =
-    Glean.ipprotection.locationUpgradePromoClicked.testGetValue();
-  Assert.equal(
-    promoClickedEvents.length,
-    1,
-    "should have recorded one location_upgrade_promo_clicked event"
-  );
-  Assert.equal(promoClickedEvents[0].category, "ipprotection");
-  Assert.equal(promoClickedEvents[0].name, "location_upgrade_promo_clicked");
-
   isDefaultStub.restore();
   Services.fog.testResetFOG();
   cleanupService();
@@ -159,4 +149,237 @@ add_task(async function test_location_changed() {
   await closePanel();
   cleanupService();
   Services.prefs.clearUserPref("browser.ipProtection.egressLocation");
+});
+
+async function showLocationsSubview() {
+  let locationsView = PanelMultiView.getViewNode(
+    document,
+    IPProtectionPanel.LOCATIONS_PANELVIEW
+  );
+  let viewShownPromise = BrowserTestUtils.waitForEvent(
+    locationsView,
+    "ViewShown"
+  );
+  IPProtection.getPanel(window).showLocationSelector();
+  await viewShownPromise;
+
+  let locationsEl = locationsView.querySelector(
+    IPProtectionPanel.LOCATIONS_TAGNAME
+  );
+  await locationsEl?.updateComplete;
+  return locationsEl;
+}
+
+async function goBackToMainView() {
+  let mainView = PanelMultiView.getViewNode(
+    document,
+    IPProtectionPanel.MAIN_PANELVIEW
+  );
+  let viewShownPromise = BrowserTestUtils.waitForEvent(mainView, "ViewShown");
+  IPProtection.getPanel(window).panelMultiView.goBack();
+  await viewShownPromise;
+}
+
+function getPromoExtras(metric) {
+  return (metric.testGetValue() ?? []).map(e => e.extra);
+}
+
+/**
+ * Tests that promo_seen is recorded once each time the locations subview is
+ * shown with the Mozilla VPN promo, not on every re-render, and that clicking
+ * the promo records promo_clicked.
+ */
+add_task(async function test_upgrade_promo_seen_and_clicked() {
+  let sandbox = sinon.createSandbox();
+  sandbox
+    .stub(IPProtection.getPanel(window), "isDefaultBrowser")
+    .resolves(true);
+  await openPanel({
+    isEnrolledAndEntitled: true,
+    hasUpgraded: false,
+    locationsList: MOCK_LOCATIONS_LIST,
+    location: null,
+  });
+
+  Services.fog.testResetFOG();
+  await Services.fog.testFlushAllChildren();
+
+  let locationsEl = await showLocationsSubview();
+  Assert.ok(
+    locationsEl.querySelector("moz-promo#locations-subview-promo"),
+    "Mozilla VPN promo should be present"
+  );
+  Assert.deepEqual(
+    getPromoExtras(Glean.ipprotection.promoSeen),
+    [{ promo: "mozillavpn", entrypoint: "panel" }],
+    "should record promo_seen when the subview is shown"
+  );
+
+  IPProtection.getPanel(window).setState({});
+  await locationsEl.updateComplete;
+  Assert.deepEqual(
+    getPromoExtras(Glean.ipprotection.promoSeen),
+    [{ promo: "mozillavpn", entrypoint: "panel" }],
+    "should not record promo_seen again on re-render"
+  );
+
+  await goBackToMainView();
+  locationsEl = await showLocationsSubview();
+  Assert.deepEqual(
+    getPromoExtras(Glean.ipprotection.promoSeen),
+    [
+      { promo: "mozillavpn", entrypoint: "panel" },
+      { promo: "mozillavpn", entrypoint: "panel" },
+    ],
+    "should record promo_seen again when the subview is reopened"
+  );
+
+  sandbox.stub(window, "openWebLinkIn");
+  let panelHiddenPromise = waitForPanelEvent(document, "popuphidden");
+  locationsEl
+    .querySelector("moz-promo#locations-subview-promo moz-button")
+    .click();
+  await panelHiddenPromise;
+
+  Assert.deepEqual(
+    getPromoExtras(Glean.ipprotection.promoClicked),
+    [{ promo: "mozillavpn", entrypoint: "panel" }],
+    "should record promo_clicked for the Mozilla VPN promo"
+  );
+
+  sandbox.restore();
+  Services.fog.testResetFOG();
+  cleanupService();
+});
+
+/**
+ * Tests that promo_seen and promo_clicked are recorded for the set default
+ * promo.
+ */
+add_task(async function test_set_default_promo_seen_and_clicked() {
+  let sandbox = sinon.createSandbox();
+  let isDefaultStub = sandbox
+    .stub(IPProtection.getPanel(window), "isDefaultBrowser")
+    .resolves(false);
+  sandbox.stub(SpecialMessageActions, "setDefaultBrowser").resolves();
+  await openPanel({
+    isEnrolledAndEntitled: true,
+    hasUpgraded: false,
+    locationsList: MOCK_LOCATIONS_LIST,
+    location: null,
+  });
+
+  Services.fog.testResetFOG();
+  await Services.fog.testFlushAllChildren();
+
+  let locationsEl = await showLocationsSubview();
+  let button = locationsEl.querySelector(
+    "moz-promo#locations-subview-set-default-promo moz-button"
+  );
+  Assert.ok(button, "set default promo button should be present");
+  Assert.deepEqual(
+    getPromoExtras(Glean.ipprotection.promoSeen),
+    [{ promo: "defaultbrowser", entrypoint: "panel" }],
+    "should record promo_seen for the set default promo"
+  );
+
+  isDefaultStub.resolves(true);
+  let panelHiddenPromise = waitForPanelEvent(document, "popuphidden");
+  button.click();
+  await panelHiddenPromise;
+
+  Assert.deepEqual(
+    getPromoExtras(Glean.ipprotection.promoClicked),
+    [{ promo: "defaultbrowser", entrypoint: "panel" }],
+    "should record promo_clicked for the set default promo"
+  );
+
+  sandbox.restore();
+  Services.fog.testResetFOG();
+  cleanupService();
+});
+
+/**
+ * Tests that promo_seen is recorded once per promo while the subview is
+ * shown, even if the visible promo switches back and forth.
+ */
+add_task(async function test_promo_seen_once_per_promo_when_switching() {
+  let sandbox = sinon.createSandbox();
+  sandbox
+    .stub(IPProtection.getPanel(window), "isDefaultBrowser")
+    .resolves(false);
+  await openPanel({
+    isEnrolledAndEntitled: true,
+    hasUpgraded: false,
+    locationsList: MOCK_LOCATIONS_LIST,
+    location: null,
+  });
+
+  Services.fog.testResetFOG();
+  await Services.fog.testFlushAllChildren();
+
+  let locationsEl = await showLocationsSubview();
+  Assert.ok(
+    locationsEl.querySelector("moz-promo#locations-subview-set-default-promo"),
+    "set default promo should be present"
+  );
+
+  let panel = IPProtection.getPanel(window);
+  panel.setState({ isDefaultBrowser: true });
+  await locationsEl.updateComplete;
+  Assert.ok(
+    locationsEl.querySelector("moz-promo#locations-subview-promo"),
+    "Mozilla VPN promo should be present"
+  );
+
+  panel.setState({ isDefaultBrowser: false });
+  await locationsEl.updateComplete;
+  Assert.ok(
+    locationsEl.querySelector("moz-promo#locations-subview-set-default-promo"),
+    "set default promo should be present again"
+  );
+
+  Assert.deepEqual(
+    getPromoExtras(Glean.ipprotection.promoSeen),
+    [
+      { promo: "defaultbrowser", entrypoint: "panel" },
+      { promo: "mozillavpn", entrypoint: "panel" },
+    ],
+    "should record promo_seen once per promo while the subview is shown"
+  );
+
+  await closePanel();
+  sandbox.restore();
+  Services.fog.testResetFOG();
+  cleanupService();
+});
+
+/**
+ * Tests that promo_seen is not recorded when no promo is shown.
+ */
+add_task(async function test_no_promo_seen_when_upgraded() {
+  await openPanel({
+    isEnrolledAndEntitled: true,
+    hasUpgraded: true,
+    locationsList: MOCK_LOCATIONS_LIST,
+    location: null,
+  });
+
+  Services.fog.testResetFOG();
+  await Services.fog.testFlushAllChildren();
+
+  let locationsEl = await showLocationsSubview();
+  Assert.ok(
+    !locationsEl.querySelector("moz-promo"),
+    "no promo should be shown for upgraded users"
+  );
+  Assert.equal(
+    Glean.ipprotection.promoSeen.testGetValue(),
+    null,
+    "should not record promo_seen when no promo is shown"
+  );
+
+  Services.fog.testResetFOG();
+  await closePanel();
+  cleanupService();
 });

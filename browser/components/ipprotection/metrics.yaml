@@ -183,22 +183,6 @@ ipprotection:
           The country code of the selected egress location, or "REC" if the
           recommended location was selected.
 
-  location_upgrade_promo_clicked:
-    type: event
-    description: >
-      Recorded when a user clicks the upgrade promo button in the locations
-      subview.
-    bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2035944
-    data_reviews:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2035944
-    data_sensitivity:
-      - interaction
-    notification_emails:
-      - kpatenio@mozilla.com
-      - vpn-telemetry@mozilla.com
-    expires: never
-
   rules_page_opened:
     type: event
     description: >
@@ -220,3 +204,56 @@ ipprotection:
         description: >
           Where the user opened the page from: "panel" for the button in the
           VPN panel, "settings" for the button in about:settings#privacy.
+
+  promo_seen:
+    type: event
+    description: >
+      Recorded when a promo is shown to the user in the VPN panel or in
+      settings.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2090329
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2090329
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - rking@mozilla.com
+      - vpn-telemetry@mozilla.com
+    expires: never
+    extra_keys:
+      promo:
+        type: string
+        description: >
+          Which promo was shown: "mozillavpn" for the Mozilla VPN promo,
+          "defaultbrowser" for the Set to Default promo.
+      entrypoint:
+        type: string
+        description: >
+          Where the promo was shown: "panel" for the VPN panel, "settings" for
+          about:settings.
+
+  promo_clicked:
+    type: event
+    description: >
+      Recorded when a user clicks a promo in the VPN panel or in settings.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2090329
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2090329
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - rking@mozilla.com
+      - vpn-telemetry@mozilla.com
+    expires: never
+    extra_keys:
+      promo:
+        type: string
+        description: >
+          Which promo was clicked: "mozillavpn" for the Mozilla VPN promo,
+          "defaultbrowser" for the Set to Default promo.
+      entrypoint:
+        type: string
+        description: >
+          Where the promo was clicked: "panel" for the VPN panel, "settings"
+          for about:settings.

@@ -1202,6 +1202,356 @@ add_task(async function test_vpn_promos_hidden_if_subscribed() {
 });
 
 /**
+ * Returns the recorded events of a promo metric for the given promo. The page
+ * may render with the real default browser state before the test stubs it, so
+ * events are filtered by promo rather than asserted as a whole.
+ *
+ * @param {object} metric - A Glean event metric.
+ * @param {string} promo - "mozillavpn" or "defaultbrowser".
+ * @returns {Array<object>}
+ */
+function getPromoEvents(metric, promo) {
+  return (metric.testGetValue() ?? []).filter(e => e.extra.promo == promo);
+}
+
+/**
+ * Waits for the VPN promos to reach the expected visibility.
+ *
+ * @param {Element} settingGroup
+ * @param {{vpn: boolean, setDefault: boolean}} expected
+ * @returns {Promise<{vpn: boolean, setDefault: boolean}>}
+ *   The promos visibility once it matches, or when waiting times out.
+ */
+async function waitForVpnPromos(settingGroup, expected) {
+  let promos = {
+    vpn: settingGroup.querySelector("#ipProtectionMozVPNPromo"),
+    setDefault: settingGroup.querySelector("#ipProtectionSetToDefaultPromo"),
+  };
+  await TestUtils.waitForCondition(() => {
+    let states = getPromoStates(promos);
+    return (
+      states.vpn == expected.vpn && states.setDefault == expected.setDefault
+    );
+  }, "Waiting for VPN promos visibility to update").catch(() => {});
+  return getPromoStates(promos);
+}
+
+/**
+ * Scrolls a promo into view and waits for its promo_seen event, which is only
+ * recorded once the promo is on screen.
+ *
+ * @param {Element} settingGroup
+ * @param {string} promoId - The id of the moz-promo element.
+ * @param {string} promo - "mozillavpn" or "defaultbrowser".
+ */
+async function scrollPromoIntoViewAndWaitForSeen(settingGroup, promoId, promo) {
+  settingGroup.querySelector(`#${promoId}`).scrollIntoView();
+  await TestUtils.waitForCondition(
+    () => getPromoEvents(Glean.ipprotection.promoSeen, promo).length,
+    `Waiting for promo_seen for the ${promo} promo`
+  ).catch(() => {});
+}
+
+// Test that promo_seen isn't recorded when the promo becomes visible while the
+// privacy pane isn't shown, and is recorded once the user opens the privacy
+// pane and sees it.
+add_task(async function test_promo_seen_waits_for_promo_on_screen() {
+  let sandbox = sinon.createSandbox();
+  await setupVpnPrefs({
+    feature: true,
+    siteInclusions: true,
+    entitlementCache: '{"subscribed": false}',
+  });
+  Services.fog.testResetFOG();
+
+  await BrowserTestUtils.withNewTab(
+    { gBrowser, url: "about:preferences#privacy" },
+    async function (browser) {
+      let win = browser.contentWindow;
+      let doc = browser.contentDocument;
+      let settingGroup = testSettingsGroupVisible(browser);
+      let fakeShellService = stubDefaultBrowser(browser, sandbox, false);
+      await waitForVpnPromos(settingGroup, { vpn: false, setDefault: true });
+
+      let paneShown = BrowserTestUtils.waitForEvent(doc, "paneshown");
+      win.gotoPref("paneGeneral");
+      await paneShown;
+
+      await fakeShellService.setDefaultBrowser();
+      let promoSetting = win.Preferences.getSetting("ipProtectionMozVPNPromo");
+      win.Preferences.getSetting("ipProtectionIsDefaultBrowser").onChange();
+      await TestUtils.waitForCondition(
+        () => promoSetting.visible,
+        "Waiting for the Mozilla VPN promo setting to be visible"
+      );
+      await settingGroup.updateComplete;
+      await new Promise(resolve =>
+        win.requestAnimationFrame(() => win.requestAnimationFrame(resolve))
+      );
+      Assert.ok(
+        !BrowserTestUtils.isVisible(
+          settingGroup.querySelector("#ipProtectionMozVPNPromo")
+        ),
+        "Mozilla VPN promo isn't on screen while the privacy pane is hidden"
+      );
+      Assert.equal(
+        getPromoEvents(Glean.ipprotection.promoSeen, "mozillavpn").length,
+        0,
+        "No promo_seen event recorded while the privacy pane isn't shown"
+      );
+
+      paneShown = BrowserTestUtils.waitForEvent(doc, "paneshown");
+      win.gotoPref("panePrivacy");
+      await paneShown;
+      await scrollPromoIntoViewAndWaitForSeen(
+        settingGroup,
+        "ipProtectionMozVPNPromo",
+        "mozillavpn"
+      );
+      Assert.equal(
+        getPromoEvents(Glean.ipprotection.promoSeen, "mozillavpn").length,
+        1,
+        "Recorded one promo_seen event once the promo is on screen"
+      );
+    }
+  );
+
+  sandbox.restore();
+  Services.fog.testResetFOG();
+  await SpecialPowers.popPrefEnv();
+});
+
+// Test that promo_seen is recorded once per page for the Mozilla VPN promo,
+// not on every re-render, and that clicking it records promo_clicked.
+add_task(async function test_vpn_promo_seen_and_clicked_telemetry() {
+  let sandbox = sinon.createSandbox();
+  await setupVpnPrefs({
+    feature: true,
+    siteInclusions: true,
+    entitlementCache: '{"subscribed": false}',
+  });
+  Services.fog.testResetFOG();
+
+  await BrowserTestUtils.withNewTab(
+    { gBrowser, url: "about:preferences#privacy" },
+    async function (browser) {
+      let win = browser.contentWindow;
+      let settingGroup = testSettingsGroupVisible(browser);
+      stubDefaultBrowser(browser, sandbox, true);
+      let promos = await waitForVpnPromos(settingGroup, {
+        vpn: true,
+        setDefault: false,
+      });
+      Assert.ok(promos.vpn, "Mozilla VPN promo is shown");
+      Assert.ok(!promos.setDefault, "Set to default promo is hidden");
+
+      await scrollPromoIntoViewAndWaitForSeen(
+        settingGroup,
+        "ipProtectionMozVPNPromo",
+        "mozillavpn"
+      );
+      let seenEvents = getPromoEvents(
+        Glean.ipprotection.promoSeen,
+        "mozillavpn"
+      );
+      Assert.equal(
+        seenEvents.length,
+        1,
+        "Recorded one promo_seen event for the Mozilla VPN promo"
+      );
+      Assert.deepEqual(
+        seenEvents[0].extra,
+        { promo: "mozillavpn", entrypoint: "settings" },
+        "promo_seen records the Mozilla VPN promo and the settings entrypoint"
+      );
+
+      let isDefaultSetting = win.Preferences.getSetting(
+        "ipProtectionIsDefaultBrowser"
+      );
+      isDefaultSetting.onChange();
+      await settingGroup.updateComplete;
+      isDefaultSetting.onChange();
+      await settingGroup.updateComplete;
+      Assert.equal(
+        getPromoEvents(Glean.ipprotection.promoSeen, "mozillavpn").length,
+        1,
+        "Re-rendering does not record promo_seen again"
+      );
+
+      let openLinkStub = sandbox.stub(window, "openTrustedLinkIn");
+      let button = settingGroup.querySelector("#mozVPNPromoButton");
+      button.scrollIntoView();
+      EventUtils.synthesizeMouseAtCenter(button, {}, win);
+      await TestUtils.waitForCondition(
+        () => openLinkStub.called,
+        "Waiting for the Mozilla VPN promo link to open"
+      );
+
+      let clickedEvents = getPromoEvents(
+        Glean.ipprotection.promoClicked,
+        "mozillavpn"
+      );
+      Assert.equal(
+        clickedEvents.length,
+        1,
+        "Recorded one promo_clicked event for the Mozilla VPN promo"
+      );
+      Assert.deepEqual(
+        clickedEvents[0].extra,
+        { promo: "mozillavpn", entrypoint: "settings" },
+        "promo_clicked records the Mozilla VPN promo and the settings entrypoint"
+      );
+      Assert.equal(
+        getPromoEvents(Glean.ipprotection.promoClicked, "defaultbrowser")
+          .length,
+        0,
+        "No promo_clicked event recorded for the set to default promo"
+      );
+    }
+  );
+
+  sandbox.restore();
+  Services.fog.testResetFOG();
+  await SpecialPowers.popPrefEnv();
+});
+
+// Test that promo_seen and promo_clicked are recorded for the set to default
+// promo, and that the Mozilla VPN promo records its own promo_seen when it
+// replaces the set to default promo.
+add_task(async function test_set_default_promo_seen_and_clicked_telemetry() {
+  let sandbox = sinon.createSandbox();
+  await setupVpnPrefs({
+    feature: true,
+    siteInclusions: true,
+    entitlementCache: '{"subscribed": false}',
+  });
+  Services.fog.testResetFOG();
+
+  await BrowserTestUtils.withNewTab(
+    { gBrowser, url: "about:preferences#privacy" },
+    async function (browser) {
+      let win = browser.contentWindow;
+      let settingGroup = testSettingsGroupVisible(browser);
+      let fakeShellService = stubDefaultBrowser(browser, sandbox, false);
+      let promos = await waitForVpnPromos(settingGroup, {
+        vpn: false,
+        setDefault: true,
+      });
+      Assert.ok(!promos.vpn, "Mozilla VPN promo is hidden");
+      Assert.ok(promos.setDefault, "Set to default promo is shown");
+
+      await scrollPromoIntoViewAndWaitForSeen(
+        settingGroup,
+        "ipProtectionSetToDefaultPromo",
+        "defaultbrowser"
+      );
+      let seenEvents = getPromoEvents(
+        Glean.ipprotection.promoSeen,
+        "defaultbrowser"
+      );
+      Assert.equal(
+        seenEvents.length,
+        1,
+        "Recorded one promo_seen event for the set to default promo"
+      );
+      Assert.deepEqual(
+        seenEvents[0].extra,
+        { promo: "defaultbrowser", entrypoint: "settings" },
+        "promo_seen records the set to default promo and the settings entrypoint"
+      );
+
+      let button = settingGroup.querySelector("#setToDefaultPromoButton");
+      button.scrollIntoView();
+      EventUtils.synthesizeMouseAtCenter(button, {}, win);
+      await TestUtils.waitForCondition(
+        () => fakeShellService.setDefaultBrowser.called,
+        "Waiting for the set to default promo to set the default browser"
+      );
+
+      let clickedEvents = getPromoEvents(
+        Glean.ipprotection.promoClicked,
+        "defaultbrowser"
+      );
+      Assert.equal(
+        clickedEvents.length,
+        1,
+        "Recorded one promo_clicked event for the set to default promo"
+      );
+      Assert.deepEqual(
+        clickedEvents[0].extra,
+        { promo: "defaultbrowser", entrypoint: "settings" },
+        "promo_clicked records the set to default promo and the settings entrypoint"
+      );
+
+      promos = await waitForVpnPromos(settingGroup, {
+        vpn: true,
+        setDefault: false,
+      });
+      Assert.ok(
+        promos.vpn,
+        "Mozilla VPN promo is shown once Firefox is default"
+      );
+      Assert.ok(
+        !promos.setDefault,
+        "Set to default promo is hidden once Firefox is default"
+      );
+      await scrollPromoIntoViewAndWaitForSeen(
+        settingGroup,
+        "ipProtectionMozVPNPromo",
+        "mozillavpn"
+      );
+      Assert.equal(
+        getPromoEvents(Glean.ipprotection.promoSeen, "mozillavpn").length,
+        1,
+        "Recorded one promo_seen event for the Mozilla VPN promo"
+      );
+      Assert.equal(
+        getPromoEvents(Glean.ipprotection.promoSeen, "defaultbrowser").length,
+        1,
+        "promo_seen for the set to default promo is still recorded once"
+      );
+    }
+  );
+
+  sandbox.restore();
+  Services.fog.testResetFOG();
+  await SpecialPowers.popPrefEnv();
+});
+
+// Test that promo_seen is not recorded when the user has upgraded.
+add_task(async function test_no_promo_seen_telemetry_if_subscribed() {
+  let sandbox = sinon.createSandbox();
+  await setupVpnPrefs({
+    feature: true,
+    siteInclusions: true,
+    entitlementCache: '{"subscribed": true}',
+  });
+  Services.fog.testResetFOG();
+
+  await BrowserTestUtils.withNewTab(
+    { gBrowser, url: "about:preferences#privacy" },
+    async function (browser) {
+      let settingGroup = testSettingsGroupVisible(browser);
+      stubDefaultBrowser(browser, sandbox, false);
+      let promos = await waitForVpnPromos(settingGroup, {
+        vpn: false,
+        setDefault: false,
+      });
+      Assert.ok(!promos.vpn, "Mozilla VPN promo is hidden");
+      Assert.ok(!promos.setDefault, "Set to default promo is hidden");
+      Assert.equal(
+        Glean.ipprotection.promoSeen.testGetValue(),
+        null,
+        "No promo_seen event recorded when no promo is shown"
+      );
+    }
+  );
+
+  sandbox.restore();
+  await SpecialPowers.popPrefEnv();
+});
+
+/**
  * Holds back only the shared DefaultBrowserHelper poll so the test decides
  * when each tick runs. The captured callbacks are the helper's own, so the
  * hash and visibility guard, the shell read and the listener notification all
