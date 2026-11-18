@@ -748,18 +748,6 @@ https://experimenter.info/nimbus-cli for the full documentation.""",
 )
 @CommandArgument("args", nargs=argparse.REMAINDER)
 def android_nimbus_cli(command_context, update=False, args=()):
-    if not conditions.is_android(command_context):
-        command_context.log(
-            logging.ERROR,
-            "nimbus-cli",
-            {},
-            "nimbus-cli drives Firefox for Android builds, but no Android build "
-            "was detected.\n"
-            "Switch to a Firefox for Android build context or use 'mach bootstrap'\n"
-            "to setup an Android build environment.",
-        )
-        return 1
-
     # mobile/android isn't a package, so load the implementation by path rather
     # than putting this directory on sys.path.
     nimbus_cli = load_source(
