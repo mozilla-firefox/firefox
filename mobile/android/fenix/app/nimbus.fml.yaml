@@ -210,7 +210,7 @@ features:
           enabled: true
       - channel: beta
         value:
-          enabled: false
+          enabled: true
 
   shake-to-summarize:
     description: A feature that can summarize the content of a page when you shake the screen.
