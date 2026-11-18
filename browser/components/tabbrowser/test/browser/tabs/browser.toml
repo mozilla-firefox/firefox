@@ -386,6 +386,8 @@ tags = "vertical-tabs"
 
 ["browser_preloading_tab_moving.js"]
 
+["browser_privilegedabout_popup_opener.js"]
+
 ["browser_privilegedmozilla_process_pref.js"]
 https_first_disabled = true
 

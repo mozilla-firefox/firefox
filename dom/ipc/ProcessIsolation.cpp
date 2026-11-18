@@ -566,6 +566,13 @@ static Result<RemoteType, nsresult> SpecialBehaviorRemoteType(
   }
 }
 
+// For some remote types, we implicitly treat top-level navigations to/from that
+// remote type as having a Cross-Origin-Opener-Policy mismatch, forcing a
+// browsing context group change.
+static bool IsRemoteTypeImplicitCOOP(const RemoteType& aRemoteType) {
+  return aRemoteType.IsNotRemote() || aRemoteType.IsPrivilegedAbout();
+}
+
 }  // namespace
 
 already_AddRefed<nsIURI> GetAboutReaderURL(nsIURI* aURI) {
@@ -884,9 +891,30 @@ Result<NavigationIsolationOptions, nsresult> IsolationOptionsForNavigation(
         behavior, aCurrentRemoteType, aParentWindow, originAttributes));
 
     if (options.mRemoteType != aCurrentRemoteType &&
-        (options.mRemoteType.IsNotRemote() ||
-         aCurrentRemoteType.IsNotRemote())) {
-      options.mReplaceBrowsingContext = true;
+        (IsRemoteTypeImplicitCOOP(options.mRemoteType) ||
+         IsRemoteTypeImplicitCOOP(aCurrentRemoteType))) {
+      if (!aParentWindow) {
+        MOZ_LOG(gProcessIsolationLog, LogLevel::Verbose,
+                ("Replacing context due to ImplicitCOOP remote type: %s -> %s",
+                 aCurrentRemoteType.Stringify().get(),
+                 options.mRemoteType.Stringify().get()));
+        options.mReplaceBrowsingContext = true;
+      } else {
+        // If we're loading an iframe, only allow framing ImplicitCOOP remote
+        // types within other ImplicitCOOP remote types.
+        //
+        // Note that NOT_REMOTE_TYPE cannot directly frame or be framed by
+        // remote content, so isn't considered here.
+        if (!options.mRemoteType.IsNotRemote() &&
+            !IsRemoteTypeImplicitCOOP(aParentWindow->GetRemoteType())) {
+          MOZ_LOG(gProcessIsolationLog, LogLevel::Verbose,
+                  ("Blocking framing of ImplicitCOOP remote type (%s) by "
+                   "non-ImplicitCOOP remote type (%s)",
+                   options.mRemoteType.Stringify().get(),
+                   aParentWindow->GetRemoteType().Stringify().get()));
+          return Err(NS_ERROR_DOM_SECURITY_ERR);
+        }
+      }
     }
 
     MOZ_LOG(
@@ -898,11 +926,13 @@ Result<NavigationIsolationOptions, nsresult> IsolationOptionsForNavigation(
     return options;
   }
 
-  // At this point we're definitely not going to be loading in the parent
+  // At this point we're definitely not going to be loading in an ImplicitCOOP
   // process anymore, so we're definitely going to be replacing BrowsingContext
-  // if we're in the parent process.
-  if (aCurrentRemoteType.IsNotRemote()) {
-    MOZ_ASSERT(!aParentWindow);
+  // if we're in an ImplicitCOOP process.
+  if (!aParentWindow && IsRemoteTypeImplicitCOOP(aCurrentRemoteType)) {
+    MOZ_LOG(gProcessIsolationLog, LogLevel::Verbose,
+            ("Replacing context due to ImplicitCOOP remote type: %s",
+             aCurrentRemoteType.Stringify().get()));
     options.mReplaceBrowsingContext = true;
   }
 
