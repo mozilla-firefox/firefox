@@ -17,8 +17,6 @@ import {
   Progress,
 } from "chrome://global/content/ml/Utils.sys.mjs";
 
-import { OPFS } from "chrome://global/content/ml/OPFS.sys.mjs";
-
 /**
  * Log level set by the pipeline.
  *
@@ -116,7 +114,7 @@ export class LlamaCppPipeline {
   ) {
     let startInitTime = ChromeUtils.now();
 
-    const modelFilePath = (
+    const modelBlob = (
       await mlEngineWorker.getModelFile({
         url: createFileUrl({
           model: modelId,
@@ -127,8 +125,6 @@ export class LlamaCppPipeline {
         }),
       })
     ).ok[2];
-
-    lazy.console.debug("Model local path is", { modelFilePath });
 
     let options = {};
 
@@ -167,16 +163,7 @@ export class LlamaCppPipeline {
       cache_type_k: cacheType,
       cache_type_v: cacheType,
       ...options,
-      modelFilePath,
     };
-
-    let opfsStart = ChromeUtils.now();
-    const modelBlob = await (await OPFS.getFileHandle(modelFilePath)).getFile();
-    ChromeUtils.addProfilerMarker(
-      "MLEngine:llama.cpp",
-      { startTime: opfsStart },
-      `Retrieve model file from OPFS`
-    );
 
     const generator = new LlamaRunner();
 
