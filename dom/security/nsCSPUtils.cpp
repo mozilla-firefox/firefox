@@ -961,19 +961,6 @@ nsCSPNonceSrc::nsCSPNonceSrc(const nsAString& aNonce) : mNonce(aNonce) {}
 
 nsCSPNonceSrc::~nsCSPNonceSrc() = default;
 
-bool nsCSPNonceSrc::allows(enum CSPKeyword aKeyword,
-                           const nsAString& aContentOrNonce) const {
-  CSPUTILSLOG(("nsCSPNonceSrc::allows, aKeyWord: %s, a aContentOrNonce: %s",
-               CSP_EnumToUTF8Keyword(aKeyword),
-               NS_ConvertUTF16toUTF8(aContentOrNonce).get()));
-
-  if (aKeyword != CSP_NONCE) {
-    return false;
-  }
-  // nonces can not be invalidated by strict-dynamic
-  return mNonce.Equals(aContentOrNonce);
-}
-
 bool nsCSPNonceSrc::visit(nsCSPSrcVisitor* aVisitor) const {
   return aVisitor->visitNonceSrc(*this);
 }
@@ -1186,12 +1173,8 @@ static bool DoesNonceMatchSourceList(nsILoadInfo* aLoadInfo,
   for (nsCSPBaseSrc* src : aSrcs) {
     // Step 3.1. If expression matches the nonce-source grammar, and nonce is
     // identical to expression’s base64-value part, return "Matches".
-    if (src->isNonce()) {
-      nsAutoString srcNonce;
-      static_cast<nsCSPNonceSrc*>(src)->getNonce(srcNonce);
-      if (srcNonce == nonce) {
-        return true;
-      }
+    if (src->isNonce() && static_cast<nsCSPNonceSrc*>(src)->nonce() == nonce) {
+      return true;
     }
   }
 
@@ -1403,6 +1386,20 @@ bool nsCSPDirective::allows(enum CSPKeyword aKeyword,
 
   for (uint32_t i = 0; i < mSrcs.Length(); i++) {
     if (mSrcs[i]->allows(aKeyword, aContentOrNonce)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// https://w3c.github.io/webappsec-csp/#match-element-to-source-list
+// Step 2.1. For each expression of list: If expression matches the
+// nonce-source grammar, and element has a nonce attribute whose value is
+// expression's base64-value part, return "Matches".
+bool nsCSPDirective::allowsByNonce(const nsAString& aNonce) const {
+  for (const nsCSPBaseSrc* src : mSrcs) {
+    if (src->isNonce() &&
+        static_cast<const nsCSPNonceSrc*>(src)->nonce() == aNonce) {
       return true;
     }
   }
@@ -1892,6 +1889,17 @@ bool nsCSPPolicy::allows(CSPDirective aDirective, enum CSPKeyword aKeyword,
   //    if there is a [script-src] or [default-src]
   // b) inline styles should only be blocked
   //    if there is a [style-src] or [default-src]
+  return true;
+}
+
+bool nsCSPPolicy::allowsByNonce(CSPDirective aDirective,
+                                const nsAString& aNonce) const {
+  if (nsCSPDirective* directive = matchingOrDefaultDirective(aDirective)) {
+    return directive->allowsByNonce(aNonce);
+  }
+
+  // No matching directive or default directive as fallback found, thus
+  // allowing the load, like allows().
   return true;
 }
 
