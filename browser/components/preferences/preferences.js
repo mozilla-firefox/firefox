@@ -379,6 +379,8 @@ const CONFIG_PANES = Object.freeze({
     groupIds: ["manageMemories"],
     module: "chrome://browser/content/preferences/config/aiFeatures.mjs",
     supportPage: "smart-window-memories",
+    visible: () =>
+      Services.prefs.getBoolPref("browser.smartwindow.enabled", false),
   },
   managePayments: {
     parent: "passwordsAutofill",
@@ -426,6 +428,8 @@ const CONFIG_PANES = Object.freeze({
       ? ["assistantDefaultGroup", "memoriesGroup", "assistantModelGroup"]
       : ["assistantDefaultGroup", "assistantModelGroup", "memoriesGroup"],
     module: "chrome://browser/content/preferences/config/aiFeatures.mjs",
+    visible: () =>
+      Services.prefs.getBoolPref("browser.smartwindow.enabled", false),
   },
   passwordsAutofill: {
     l10nId: "preferences-passwords-autofill-header",
@@ -793,7 +797,13 @@ async function gotoPref(
         'moz-page-nav-button[view="' + CSS.escape(category) + '"]'
       )
     );
-    if (!item || item.hidden) {
+    if (
+      !item ||
+      item.hidden ||
+      !SettingPaneManager.isVisible(
+        internalPrefCategoryNameToFriendlyName(category)
+      )
+    ) {
       unknownCategory = true;
       category = kDefaultCategoryInternalName;
       item = categories.querySelector(

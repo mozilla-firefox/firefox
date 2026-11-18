@@ -45,6 +45,19 @@ export const SettingPaneManager = {
   },
 
   /**
+   * Whether a registered pane and all of its parents are visible. Unknown
+   * panes are considered visible.
+   *
+   * @param {string} id
+   */
+  isVisible(id) {
+    if (!this._data.has(id)) {
+      return true;
+    }
+    return this.getWithParents(id).every(config => config.visible?.() ?? true);
+  },
+
+  /**
    * @param {string} id
    */
   importPane(id) {

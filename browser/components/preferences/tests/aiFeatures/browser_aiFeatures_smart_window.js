@@ -182,3 +182,39 @@ describe("settings AI Controls - Smart Window", () => {
     });
   });
 });
+
+describe("settings Smart Window sub-panes", () => {
+  for (let pane of ["personalizeSmartWindow", "manageMemories"]) {
+    it(`does not open #${pane} when Smart Window is disabled`, async () => {
+      await SpecialPowers.pushPrefEnv({
+        set: [["browser.smartwindow.enabled", false]],
+      });
+      await withPrefsPane(pane, async doc => {
+        Assert.notEqual(
+          doc.documentGlobal.gLastCategory.category,
+          `pane${pane[0].toUpperCase()}${pane.slice(1)}`,
+          `#${pane} falls back to another pane`
+        );
+      });
+      await SpecialPowers.popPrefEnv();
+    });
+  }
+
+  it("does not open sub-panes after Smart Window is disabled", async () => {
+    await withPrefsPane("ai", async doc => {
+      const win = doc.documentGlobal;
+      await SpecialPowers.pushPrefEnv({
+        set: [["browser.smartwindow.enabled", false]],
+      });
+      for (let pane of ["personalizeSmartWindow", "manageMemories"]) {
+        await win.gotoPref(pane);
+        Assert.notEqual(
+          win.gLastCategory.category,
+          `pane${pane[0].toUpperCase()}${pane.slice(1)}`,
+          `${pane} falls back to another pane`
+        );
+      }
+      await SpecialPowers.popPrefEnv();
+    });
+  });
+});
