@@ -393,10 +393,14 @@ promise_test(async t => {
           redV);
 
   let frame = new VideoFrame(data, init);
-  assert_equals(frame.codedWidth, init.visibleRect.width);
-  assert_equals(frame.codedHeight, init.visibleRect.height);
-  assert_equals(frame.visibleRect.x, 0);
-  assert_equals(frame.visibleRect.y, 0);
+  t.add_cleanup(() => frame.close());
+  // The constructor may retain, crop, or reposition the visible rectangle.
+  assert_greater_than_equal(frame.visibleRect.x, 0);
+  assert_greater_than_equal(frame.visibleRect.y, 0);
+  assert_greater_than_equal(
+      frame.codedWidth, frame.visibleRect.x + frame.visibleRect.width);
+  assert_greater_than_equal(
+      frame.codedHeight, frame.visibleRect.y + frame.visibleRect.height);
   assert_equals(frame.visibleRect.width, init.visibleRect.width);
   assert_equals(frame.visibleRect.height, init.visibleRect.height);
   assert_equals(frame.displayWidth, init.visibleRect.width);
@@ -410,8 +414,14 @@ promise_test(async t => {
   // of `data`, but it's simpler and works better with testharness.js operators
   // to just create a fresh packed version for direct comparison.
   let packed_data = new Uint8Array(frame.allocationSize(options));
-  fillYUV(packed_data, frame.codedWidth, frame.codedHeight, frame.visibleRect,
-          redY, redU, redV);
+  const packedRect = {
+    x: 0,
+    y: 0,
+    width: init.visibleRect.width,
+    height: init.visibleRect.height,
+  };
+  fillYUV(packed_data, packedRect.width, packedRect.height, packedRect, redY,
+          redU, redV);
 
   assert_array_equals(copied_data, packed_data, `Copied frame data incorrect.`);
 }, 'copyTo from byte data with non-default visibleRect');
