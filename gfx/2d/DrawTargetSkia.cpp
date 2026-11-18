@@ -1935,17 +1935,7 @@ static inline SkPixelGeometry GetSkPixelGeometry() {
   }
 }
 
-static Maybe<SkSurfaceProps> sSurfaceProps;
-
-static const SkSurfaceProps& GetSkSurfaceProps() {
-  if (!sSurfaceProps ||
-      sSurfaceProps->pixelGeometry() != GetSkPixelGeometry()) {
-    DrawTargetSkia::UpdateSurfaceProps();
-  }
-  return *sSurfaceProps;
-}
-
-void DrawTargetSkia::UpdateSurfaceProps() {
+static SkSurfaceProps GetSkSurfaceProps() {
   // Default to no enhanced contrast.
   SkScalar contrast = 0;
 
@@ -1969,8 +1959,7 @@ void DrawTargetSkia::UpdateSurfaceProps() {
   }
 #endif
 
-  sSurfaceProps =
-      Some(SkSurfaceProps(0, GetSkPixelGeometry(), contrast, gamma));
+  return SkSurfaceProps(0, GetSkPixelGeometry(), contrast, gamma);
 }
 
 template <typename T>
@@ -1995,7 +1984,7 @@ bool DrawTargetSkia::Init(const IntSize& aSize, SurfaceFormat aFormat) {
   if (stride.isNothing() || size_t(stride.value()) < info.minRowBytes64()) {
     return false;
   }
-  const SkSurfaceProps& props = GetSkSurfaceProps();
+  SkSurfaceProps props = GetSkSurfaceProps();
 
   size_t bufSize = BufferSizeFromStrideAndHeight(stride.value(), info.height());
   if (!bufSize) {
@@ -2067,7 +2056,7 @@ bool DrawTargetSkia::Init(unsigned char* aData, const IntSize& aSize,
     return false;
   }
 
-  const SkSurfaceProps& props = GetSkSurfaceProps();
+  SkSurfaceProps props = GetSkSurfaceProps();
   mSurface = AsRefPtr(SkSurfaces::WrapPixels(info, aData, aStride, &props));
   if (!mSurface) {
     return false;
@@ -2101,7 +2090,7 @@ bool DrawTargetSkia::Init(RefPtr<DataSourceSurface>&& aSurface) {
     return false;
   }
 
-  const SkSurfaceProps& props = GetSkSurfaceProps();
+  SkSurfaceProps props = GetSkSurfaceProps();
   mSurface = AsRefPtr(SkSurfaces::WrapPixels(
       MakeSkiaImageInfo(size, format), map->GetData(), map->GetStride(),
       DrawTargetSkia::ReleaseMappedSkSurface, map, &props));
