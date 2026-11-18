@@ -679,6 +679,9 @@ void gfxDWriteFont::HandleFontFaceException(const char* aOperation) {
 }
 
 gfxFloat gfxDWriteFont::MeasureGlyphWidth(uint16_t aGlyph) {
+  if (GetFontEntry()->IsUnusable()) {
+    return 0.0;
+  }
   MOZ_SEH_TRY {
     HRESULT hr;
     if (mFontFace1) {
@@ -723,6 +726,9 @@ gfxFloat gfxDWriteFont::MeasureGlyphWidth(uint16_t aGlyph) {
 
 bool gfxDWriteFont::GetGlyphBounds(uint16_t aGID, gfxRect* aBounds,
                                    bool aTight) {
+  if (GetFontEntry()->IsUnusable()) {
+    return false;
+  }
   MOZ_SEH_TRY {
     DWRITE_GLYPH_METRICS m;
     HRESULT hr = mFontFace->GetDesignGlyphMetrics(&aGID, 1, &m, FALSE);
