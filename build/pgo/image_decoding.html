@@ -1,0 +1,113 @@
+<!doctype html>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Image decoding</title>
+    <style>
+      img {
+        width: 120px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" width="256" height="256"></canvas>
+    <script>
+      // The images are listed in IMAGES in profileserver.py.
+      const ITERATIONS = 3;
+      const MIN_ANIMATION_TIME = 1500;
+
+      const ctx = document.getElementById("canvas").getContext("2d");
+
+      function nextFrame() {
+        return new Promise(resolve => requestAnimationFrame(resolve));
+      }
+
+      // A unique query string makes each <img> a new image cache entry, so it
+      // is decoded again rather than reused. The images are displayed smaller
+      // than their intrinsic size so that painting them also decodes at a
+      // smaller size.
+      async function decodeAndPaint(names, iteration) {
+        const imgs = names.map(name => {
+          const img = new Image();
+          img.src = `images/${name}?${iteration}`;
+          document.body.append(img);
+          return img;
+        });
+        const results = await Promise.allSettled(imgs.map(img => img.decode()));
+        results.forEach((result, i) => {
+          if (result.status == "rejected") {
+            console.error(`Failed to decode ${names[i]}: ${result.reason}`);
+          } else {
+            ctx.drawImage(imgs[i], 0, 0, 256, 256);
+          }
+        });
+        await nextFrame();
+        await nextFrame();
+        for (const img of imgs) {
+          img.remove();
+        }
+      }
+
+      async function decodeBlobs(names, blobs) {
+        for (let i = 0; i < blobs.length; i++) {
+          try {
+            const bitmap = await createImageBitmap(blobs[i]);
+            ctx.drawImage(bitmap, 0, 0, 256, 256);
+            bitmap.close();
+          } catch (e) {
+            console.error(`Failed to decode ${names[i]}: ${e}`);
+          }
+        }
+      }
+
+      function fetchBlobs(names) {
+        return Promise.all(
+          names.map(async name => (await fetch(`images/${name}`)).blob())
+        );
+      }
+
+      async function run() {
+        const list = await (await fetch("images/list.json")).json();
+
+        const animationStart = performance.now();
+        const animated = list.animated.map(name => {
+          const img = new Image();
+          img.src = `images/${name}`;
+          document.body.append(img);
+          return img;
+        });
+
+        const stillBlobs = await fetchBlobs(list.still);
+        for (let i = 0; i < ITERATIONS; i++) {
+          await decodeAndPaint(list.still, i);
+          await decodeBlobs(list.still, stillBlobs);
+        }
+        await decodeAndPaint(list.large, 0);
+        await decodeBlobs(list.large, await fetchBlobs(list.large));
+
+        const remaining =
+          MIN_ANIMATION_TIME - (performance.now() - animationStart);
+        if (remaining > 0) {
+          await new Promise(resolve => setTimeout(resolve, remaining));
+        }
+        for (const img of animated) {
+          img.remove();
+        }
+      }
+
+      window.onload = async () => {
+        try {
+          await run();
+        } catch (e) {
+          console.error(`Image PGO page failed: ${e}`);
+        }
+        if (window.opener) {
+          window.opener.postMessage({ pgoBenchmarkDone: true }, "*");
+        }
+      };
+    </script>
+  </body>
+</html>

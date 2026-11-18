@@ -7,3 +7,23 @@ path:testing/profiles/
 path:third_party/webkit/
 path:tools/quitter/
 path:taskcluster/scripts/misc
+# IMAGES in build/pgo/profileserver.py
+path:dom/media/test/reftest/uneven_frame_durations_3.8s_frame.png
+path:dom/xml/test/old/books/kerouac.gif
+path:image/test/browser/animated.gif
+path:image/test/gtest/blend.avif
+path:image/test/gtest/large-jxl-reference.webp
+path:image/test/gtest/large.avif
+path:image/test/gtest/large.jxl
+path:image/test/gtest/large.webp
+path:image/test/gtest/long-animated.jxl
+path:image/test/gtest/stackcheck.avif
+path:image/test/mochitest/infinite.webp
+path:layout/reftests/svg/big-image.jpeg
+path:testing/web-platform/tests/css/compositing/test-plan/test_template.png
+path:testing/web-platform/tests/html/semantics/embedded-content/the-img-element/3.jpg
+path:testing/web-platform/tests/html/semantics/embedded-content/the-img-element/resources/cat.jpg
+path:testing/web-platform/tests/jpegxl/resources/conformance_patches.jxl
+path:testing/web-platform/tests/jpegxl/resources/conformance_sunset_logo.png
+path:testing/web-platform/tests/jpegxl/resources/green_queen_vardct_e3.jxl
+path:testing/web-platform/tests/jpegxl/resources/issue648_palette0.jxl
