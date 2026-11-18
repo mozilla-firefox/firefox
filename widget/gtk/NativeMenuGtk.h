@@ -44,11 +44,14 @@ class NativeMenuGtk : public NativeMenu {
   RefPtr<dom::Element> Element() override;
 
   MOZ_CAN_RUN_SCRIPT void OnUnmap();
+  void QueueResizeToContent();
 
  protected:
   virtual ~NativeMenuGtk();
 
   MOZ_CAN_RUN_SCRIPT void FireEvent(EventMessage);
+
+  void ResizeToContent();
 
   // Fires the popuphiding / popuphidden events that OnUnmap() postponed.
   // Returns false if none were pending.
@@ -57,6 +60,7 @@ class NativeMenuGtk : public NativeMenu {
   bool mPoppedUp = false;
   // Whether OnUnmap() has run but FinishClose() has not yet.
   bool mClosePending = false;
+  bool mResizePending = false;
   RefPtr<GtkWidget> mNativeMenu;
   RefPtr<MenuModelGMenu> mMenuModel;
 };

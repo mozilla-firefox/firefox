@@ -189,8 +189,8 @@ class MenuModel : public nsStubMutationObserver {
 
   bool IsShowing() { return mShowing; }
   void WillShow() {
-    mShowing = true;
     RecomputeModelIfNeeded();
+    mShowing = true;
   }
   void DidHide() { mShowing = false; }
 
@@ -212,10 +212,13 @@ class MenuModel : public nsStubMutationObserver {
 
 class MenuModelGMenu final : public MenuModel {
  public:
-  explicit MenuModelGMenu(dom::Element* aElement) : MenuModel(aElement) {
+  MenuModelGMenu(dom::Element* aElement, NativeMenuGtk* aOwner)
+      : MenuModel(aElement), mOwner(aOwner) {
     mGMenu = dont_AddRef(g_menu_new());
     mActions.mGroup = dont_AddRef(g_simple_action_group_new());
   }
+
+  void DetachFromOwner() { mOwner = nullptr; }
 
   GMenuModel* GetModel() { return G_MENU_MODEL(mGMenu.get()); }
   GActionGroup* GetActionGroup() {
@@ -227,6 +230,8 @@ class MenuModelGMenu final : public MenuModel {
   static void RecomputeModelFor(GMenu* aMenu, Actions& aActions,
                                 const dom::Element& aElement);
 
+  // Weak, NativeMenuGtk owns us.
+  NativeMenuGtk* mOwner;
   RefPtr<GMenu> mGMenu;
   Actions mActions;
 };
@@ -346,6 +351,9 @@ void MenuModelGMenu::RecomputeModel() {
   mActions.Clear();
   g_menu_remove_all(mGMenu.get());
   RecomputeModelFor(mGMenu.get(), mActions, *mElement);
+  if (mShowing && mOwner) {
+    mOwner->QueueResizeToContent();
+  }
 }
 
 static GtkMenuPopupAtRect GetPopupAtRectFn() {
@@ -375,7 +383,7 @@ METHOD_SIGNAL(Unmap);
 #undef METHOD_SIGNAL
 
 NativeMenuGtk::NativeMenuGtk(dom::Element* aElement)
-    : mMenuModel(MakeRefPtr<MenuModelGMenu>(aElement)) {
+    : mMenuModel(MakeRefPtr<MenuModelGMenu>(aElement, this)) {
   // Floating, so no need to dont_AddRef.
   mNativeMenu = gtk_menu_new_from_model(mMenuModel->GetModel());
   gtk_widget_insert_action_group(mNativeMenu.get(), "menu",
@@ -384,7 +392,38 @@ NativeMenuGtk::NativeMenuGtk(dom::Element* aElement)
 }
 
 NativeMenuGtk::~NativeMenuGtk() {
+  mMenuModel->DetachFromOwner();
   g_signal_handlers_disconnect_by_data(mNativeMenu, this);
+}
+
+void NativeMenuGtk::QueueResizeToContent() {
+  if (mResizePending) {
+    return;
+  }
+  mResizePending = true;
+  NS_DispatchToCurrentThread(NewRunnableMethod(
+      "NativeMenuGtk::ResizeToContent", this, &NativeMenuGtk::ResizeToContent));
+}
+
+// GtkMenu pins the size of its toplevel once it has been placed, so content
+// changes while the menu is open don't resize it unless done manually.
+void NativeMenuGtk::ResizeToContent() {
+  mResizePending = false;
+  if (mClosePending || !mMenuModel->IsShowing() ||
+      !gtk_widget_get_mapped(mNativeMenu)) {
+    return;
+  }
+  GtkWidget* toplevel = gtk_widget_get_toplevel(mNativeMenu);
+  if (NS_WARN_IF(!GTK_IS_WINDOW(toplevel))) {
+    return;
+  }
+  GtkRequisition natural;
+  gtk_widget_get_preferred_size(toplevel, nullptr, &natural);
+  gtk_window_set_resizable(GTK_WINDOW(toplevel), TRUE);
+  gtk_window_resize(GTK_WINDOW(toplevel), natural.width, natural.height);
+  // re-constrain to the screen.
+  gtk_menu_reposition(GTK_MENU(mNativeMenu.get()));
+  gtk_window_set_resizable(GTK_WINDOW(toplevel), FALSE);
 }
 
 RefPtr<dom::Element> NativeMenuGtk::Element() { return mMenuModel->Element(); }
