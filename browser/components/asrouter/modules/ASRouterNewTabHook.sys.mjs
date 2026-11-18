@@ -37,9 +37,9 @@ class ASRouterNewTabHookInstance {
     this._parentProcessMessageHandler = messageHandler;
     this._router = router;
     if (!this._router.initialized) {
-      const storage = await createStorage();
+      const routerStorage = await createStorage();
       await this._router.init({
-        storage,
+        storage: routerStorage,
         sendTelemetry: this._parentProcessMessageHandler.handleTelemetry,
         dispatchCFRAction: this._parentProcessMessageHandler.handleCFRAction,
         clearChildMessages: this._clearChildMessages,
