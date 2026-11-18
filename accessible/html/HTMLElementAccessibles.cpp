@@ -197,8 +197,7 @@ bool HTMLSummaryAccessible::IsWidget() const { return true; }
 
 role HTMLHeaderOrFooterAccessible::NativeRole() const {
   // Only map header and footer if they are direct descendants of the body tag.
-  // If other sectioning or sectioning root elements, they become sectionheader
-  // or sectionfooter respectively.
+  // If other sectioning or sectioning root elements, they become sections.
   nsIContent* parent = mContent->GetParent();
   while (parent) {
     if (parent->IsAnyOfHTMLElements(
@@ -216,8 +215,7 @@ role HTMLHeaderOrFooterAccessible::NativeRole() const {
     return roles::LANDMARK;
   }
 
-  return mContent->IsHTMLElement(nsGkAtoms::footer) ? roles::SECTION_FOOTER
-                                                    : roles::SECTION_HEADER;
+  return roles::SECTION;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

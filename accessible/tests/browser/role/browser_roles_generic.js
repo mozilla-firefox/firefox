@@ -142,12 +142,7 @@ addAccessibleTask(
   <span id="aria_tree" role="tree"></span>
   <span id="aria_tree_mixed" role="tREe"></span>
   <span id="aria_treegrid" role="treegrid"></span>
-  <span id="aria_treegrid_mixed" role="tREEGRId"></span>
-  <span role="sectionfooter" id="aria_sectionfooter">sectionfooter</span>
-  <span role="sECTIONFOOTEr" id="aria_sectionfooter_mixed">sectionfooter</span>
-  <span role="sectionheader" id="aria_sectionheader">sectionheader</span>
-  <span role="sECTIONHEADEr" id="aria_sectionheader_mixed">sectionheader</span>
-`,
+  <span id="aria_treegrid_mixed" role="tREEGRId"></span>`,
   async function testARIARoleMap(browser, accDoc) {
     let getAcc = id => findAccessibleChildByID(accDoc, id);
     testRole(getAcc("aria_alert"), ROLE_ALERT);
@@ -282,10 +277,6 @@ addAccessibleTask(
     testRole(getAcc("aria_tree_mixed"), ROLE_OUTLINE);
     testRole(getAcc("aria_treegrid"), ROLE_TREE_TABLE);
     testRole(getAcc("aria_treegrid_mixed"), ROLE_TREE_TABLE);
-    testRole(getAcc("aria_sectionfooter"), ROLE_SECTION_FOOTER);
-    testRole(getAcc("aria_sectionfooter_mixed"), ROLE_SECTION_FOOTER);
-    testRole(getAcc("aria_sectionheader"), ROLE_SECTION_HEADER);
-    testRole(getAcc("aria_sectionheader_mixed"), ROLE_SECTION_HEADER);
   },
   { chrome: true, topLevel: true }
 );

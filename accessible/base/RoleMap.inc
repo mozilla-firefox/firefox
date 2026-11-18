@@ -1857,30 +1857,4 @@ ROLE(SEARCHBOX,
      IsAccessibilityElementRule::Yes,
      UIA_EditControlTypeId,
      eNameFromValueRule)
-
-ROLE(SECTION_FOOTER,
-     "section footer",
-     nsGkAtoms::sectionfooter,
-     ATK_ROLE_FOOTER,
-     NSAccessibilityGroupRole,
-     @"AXSectionFooter",
-     ROLE_SYSTEM_GROUPING,
-     ROLE_SYSTEM_GROUPING,
-     java::SessionAccessibility::CLASSNAME_VIEW,
-     IsAccessibilityElementRule::IfChildlessWithNameAndFocusable,
-     UIA_GroupControlTypeId,
-     eNameFromSubtreeIfReqRule)
-
-ROLE(SECTION_HEADER,
-     "section header",
-     nsGkAtoms::sectionheader,
-     ATK_ROLE_HEADER,
-     NSAccessibilityGroupRole,
-     @"AXSectionHeader",
-     ROLE_SYSTEM_GROUPING,
-     ROLE_SYSTEM_GROUPING,
-     java::SessionAccessibility::CLASSNAME_VIEW,
-     IsAccessibilityElementRule::IfChildlessWithNameAndFocusable,
-     UIA_GroupControlTypeId,
-     eNameFromSubtreeIfReqRule)
 // clang-format on
