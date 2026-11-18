@@ -5,9 +5,6 @@
 pub(crate) mod deeplink;
 mod features;
 mod fetch;
-mod fml_cli;
 pub(crate) mod info;
 #[cfg(feature = "server")]
 pub(crate) mod server;
-
-pub(crate) use fml_cli::fml_cli;

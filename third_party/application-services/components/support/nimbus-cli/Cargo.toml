@@ -1,6 +1,6 @@
 [package]
 name = "nimbus-cli"
-version = "0.6.0" # Keep in sync with nimbus-fml
+version = "0.7.0" # Keep in sync with nimbus-fml
 edition = "2024"
 authors = ["Nimbus SDK Engineering"]
 license = "MPL-2.0"
@@ -37,6 +37,7 @@ local-ip-address = { version = "0.5.4", optional = true }
 cfg-if = "1.0.0"
 termcolor = "1.4.1"
 tempfile = "3.1"
+maplit = "1.0.2"
 
 [dev-dependencies]
 # The server tests only talk plain HTTP to 127.0.0.1, so `default-features = false` keeps TLS and

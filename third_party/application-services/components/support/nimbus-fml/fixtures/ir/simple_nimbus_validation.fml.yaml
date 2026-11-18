@@ -1,0 +1,56 @@
+version: 1.0.0
+about:
+  description: A test fixture for simple type validation
+features:
+  nimbus-validation:
+    description: A simple validation feature
+    variables:
+      deeplink:
+        description: An example string property
+        type: String
+        default: deeplink://settings
+      enabled:
+        description: An example boolean property
+        type: Boolean
+        default: true
+      enum-list:
+        description: A list of enums
+        type: List<Position>
+        default:
+        - top
+        - bottom
+      enum-map:
+        description: A map of enums to booleans
+        type: Map<Position, Boolean>
+        default:
+          bottom: true
+          top: false
+      int-list:
+        description: A list of numbers
+        type: List<Int>
+        default:
+        - 1
+        - 2
+        - 3
+      menu-position:
+        description: Where to put the menu
+        type: Position
+        default: bottom
+      row-count:
+        description: An example integer property
+        type: Int
+        default: 2
+      string-map:
+        description: A map of string to enums
+        type: Map<String, Position>
+        default:
+          bar: top
+          foo: bottom
+enums:
+  Position:
+    description: Where to put the menu bar?
+    variants:
+      bottom:
+        description: The bottom of the screen
+      top:
+        description: The top of the screen

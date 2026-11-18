@@ -17,43 +17,45 @@ pub struct App {
     pub subcommand: Command,
 }
 
-#[derive(Subcommand)]
+#[derive(Clone, Subcommand)]
 pub enum Command {
     /// Generate feature structs against the Feature Variables API.
-    Generate(Generate),
+    Generate(GenerateArgs),
 
     /// Generate a version of this manifest compatible with Experimenter's format.
-    GenerateExperimenter(GenerateExperimenter),
+    GenerateExperimenter(GenerateExperimenterArgs),
 
     /// Get the input file, with the same rules that govern how FilePaths work.
-    Fetch(Fetch),
+    Fetch(FetchArgs),
 
     /// Create a single file out of the given manifest, suited for production environments where
     /// only one file is allowed, and only one channel is needed.
-    SingleFile(SingleFile),
+    SingleFile(SingleFileArgs),
 
     /// Validate an FML configuration and all of its channels.
-    Validate(Validate),
+    Validate(ValidateArgs),
 
     /// Check an FML configuration against the Nimbus feature design lints.
-    Lint(Lint),
+    Lint(LintArgs),
 
     /// Print out all the channels to stdout, as JSON or one-per-line
-    Channels(Channels),
+    Channels(ChannelsArgs),
 
     /// Prints out information about the manifest
-    Info(Info),
+    Info(InfoArgs),
 }
 
-#[derive(Args)]
-pub struct Generate {
-    /// Sets the input file to use
-    #[arg(value_name = "INPUT")]
-    pub input: String,
+#[derive(Args, Clone)]
+pub struct GenerateArgs {
+    /// The manifest to process.
+    ///
+    /// You can reference a manifest located in a GitHub repository with @user/repo/path/to/manifest.fml
+    #[arg(value_name = "MANIFEST")]
+    pub manifest: String,
 
     /// The file or directory where generated code is created
     #[arg(value_name = "OUTPUT")]
-    pub output: String,
+    pub output: PathBuf,
 
     /// The language of the output file
     #[arg(long)]
@@ -64,18 +66,20 @@ pub struct Generate {
     pub channel: String,
 
     #[command(flatten)]
-    pub loader_info: LoaderInfo,
+    pub loader_args: LoaderArgs,
 }
 
-#[derive(Args)]
-pub struct GenerateExperimenter {
-    /// Sets the input file to use
-    #[arg(value_name = "INPUT")]
-    pub input: String,
+#[derive(Args, Clone)]
+pub struct GenerateExperimenterArgs {
+    /// The manifest to process.
+    ///
+    /// You can reference a manifest located in a GitHub repository with @user/repo/path/to/manifest.fml
+    #[arg(value_name = "MANIFEST")]
+    pub manifest: String,
 
     /// The file or directory where generated code is created
     #[arg(value_name = "OUTPUT")]
-    pub output: String,
+    pub output: PathBuf,
 
     /// Deprecated: The channel to generate the defaults for. This can be omitted.
     #[arg(long)]
@@ -83,55 +87,63 @@ pub struct GenerateExperimenter {
     pub channel: Option<String>,
 
     #[command(flatten)]
-    pub loader_info: LoaderInfo,
+    pub loader_args: LoaderArgs,
 }
 
-#[derive(Args)]
-pub struct Fetch {
-    /// Sets the input file to use
-    #[arg(value_name = "INPUT")]
-    pub input: String,
+#[derive(Args, Clone)]
+pub struct FetchArgs {
+    /// The manifest to process.
+    ///
+    /// You can reference a manifest located in a GitHub repository with @user/repo/path/to/manifest.fml
+    #[arg(value_name = "MANIFEST")]
+    pub manifest: String,
 
     #[command(flatten)]
-    pub loader_info: LoaderInfo,
+    pub loader_args: LoaderArgs,
 }
 
-#[derive(Args)]
-pub struct SingleFile {
-    /// Sets the input file to use
-    #[arg(value_name = "INPUT")]
-    pub input: String,
+#[derive(Args, Clone)]
+pub struct SingleFileArgs {
+    /// The manifest to process.
+    ///
+    /// You can reference a manifest located in a GitHub repository with @user/repo/path/to/manifest.fml
+    #[arg(value_name = "MANIFEST")]
+    pub manifest: String,
 
     /// The file or directory where generated code is created
     #[arg(value_name = "OUTPUT")]
-    pub output: String,
+    pub output: PathBuf,
 
     /// The channel to generate the defaults for
     #[arg(long)]
     pub channel: Option<String>,
 
     #[command(flatten)]
-    pub loader_info: LoaderInfo,
+    pub loader_args: LoaderArgs,
 }
 
-#[derive(Args)]
-pub struct Validate {
-    /// Sets the input file to use
-    #[arg(value_name = "INPUT")]
-    pub input: String,
+#[derive(Args, Clone)]
+pub struct ValidateArgs {
+    /// The manifest to process.
+    ///
+    /// You can reference a manifest located in a GitHub repository with @user/repo/path/to/manifest.fml
+    #[arg(value_name = "MANIFEST")]
+    pub manifest: String,
 
     #[command(flatten)]
-    pub loader_info: LoaderInfo,
+    pub loader_args: LoaderArgs,
 }
 
-#[derive(Args)]
-pub struct Lint {
-    /// Sets the input file to use
-    #[arg(value_name = "INPUT", required_unless_present = "list")]
-    pub input: Option<String>,
+#[derive(Args, Clone)]
+pub struct LintArgs {
+    /// The manifest to process.
+    ///
+    /// You can reference a manifest located in a GitHub repository with @user/repo/path/to/manifest.fml
+    #[arg(value_name = "MANIFEST", required_unless_present = "list")]
+    pub manifest: Option<String>,
 
     #[command(flatten)]
-    pub loader_info: LoaderInfo,
+    pub loader_args: LoaderArgs,
 
     /// If present, then print the issues as JSON.
     #[arg(long, value_name = "PATH")]
@@ -142,25 +154,29 @@ pub struct Lint {
     pub list: bool,
 }
 
-#[derive(Args)]
-pub struct Channels {
-    /// Sets the input file to use
-    #[arg(value_name = "INPUT")]
-    pub input: String,
+#[derive(Args, Clone)]
+pub struct ChannelsArgs {
+    /// The manifest to process.
+    ///
+    /// You can reference a manifest located in a GitHub repository with @user/repo/path/to/manifest.fml
+    #[arg(value_name = "MANIFEST")]
+    pub manifest: String,
 
     #[command(flatten)]
-    pub loader_info: LoaderInfo,
+    pub loader_args: LoaderArgs,
 
     /// If present, then print the channels as JSON. If not, then print one per line.
     #[arg(long)]
     pub json: bool,
 }
 
-#[derive(Args)]
-pub struct Info {
-    /// Sets the input file to use
-    #[arg(value_name = "INPUT")]
-    pub input: String,
+#[derive(Args, Clone)]
+pub struct InfoArgs {
+    /// The manifest to process.
+    ///
+    /// You can reference a manifest located in a GitHub repository with @user/repo/path/to/manifest.fml
+    #[arg(value_name = "MANIFEST")]
+    pub manifest: String,
 
     /// The channel to generate the defaults for
     #[arg(long)]
@@ -171,7 +187,7 @@ pub struct Info {
     pub feature: Option<String>,
 
     #[command(flatten)]
-    pub loader_info: LoaderInfo,
+    pub loader_args: LoaderArgs,
 
     /// If present, then print the channels as JSON. If not, then print one per line.
     #[arg(long)]
@@ -184,8 +200,8 @@ pub enum Language {
     Kotlin,
 }
 
-#[derive(Args)]
-pub struct LoaderInfo {
+#[derive(Args, Clone)]
+pub struct LoaderArgs {
     /// The directory where downloaded files are cached
     #[arg(long)]
     pub cache_dir: Option<String>,
@@ -194,7 +210,7 @@ pub struct LoaderInfo {
     #[arg(long)]
     pub repo_file: Vec<String>,
 
-    /// If INPUT is a remote file, then use this as the tag or branch name.
+    /// If MANIFEST is a remote file, then use this as the tag or branch name.
     #[arg(long = "ref")]
     pub ref_: Option<String>,
 

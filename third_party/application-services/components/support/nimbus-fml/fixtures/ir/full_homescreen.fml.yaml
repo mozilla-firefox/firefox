@@ -1,0 +1,37 @@
+version: 1.0.0
+about:
+  description: An app menu with objects
+features:
+  homescreen:
+    description: Represents the homescreen feature
+    variables:
+      section-ordering:
+        description: The ordering of the sections on the homescreen
+        type: List<HomeScreenSection>
+        default:
+        - top-sites
+        - jump-back-in
+        - recently-saved
+      sections-enabled:
+        description: A map of booleans
+        type: Map<HomeScreenSection, Boolean>
+        default:
+          jump-back-in: false
+          pocket: false
+          recent-explorations: false
+          recently-saved: false
+          top-sites: true
+enums:
+  HomeScreenSection:
+    description: The sections of the homescreen
+    variants:
+      jump-back-in:
+        description: Jump back in section
+      pocket:
+        description: Tabs from another source
+      recent-explorations:
+        description: Tabs from another source
+      recently-saved:
+        description: Tabs that have been bookmarked recently
+      top-sites:
+        description: The original frecency sorted sites

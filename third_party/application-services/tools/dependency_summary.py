@@ -280,6 +280,14 @@ PACKAGE_METADATA_FIXUPS = {
             "fixup": "https://raw.githubusercontent.com/martinthomson/ohttp/main/LICENSE-APACHE",
         },
     },
+    # smallvec main is 2.x and has a different license (MIT only).
+    "smallvec": {
+        "license": {"check": "MIT OR Apache-2.0"},
+        "license_file": {
+            "check": None,
+            "fixup": "https://raw.githubusercontent.com/smallvec/smallvec/refs/heads/v1/LICENSE-APACHE",
+        }
+    },
     # These packages do not include their license file in their release distributions,
     # so we have to fetch it over the network. Each has been manually checked and resolved
     # to a final URL from which the file can be fetched (typically based on the *name* of

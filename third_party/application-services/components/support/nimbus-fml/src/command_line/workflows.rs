@@ -99,13 +99,7 @@ fn generate_struct_single(
     manifest_path: FilePath,
     cmd: &GenerateStructCmd,
 ) -> Result<()> {
-    let ir = load_feature_manifest(
-        files.clone(),
-        manifest_path,
-        cmd.load_from_ir,
-        Some(&cmd.channel),
-        false,
-    )?;
+    let ir = load_feature_manifest(files.clone(), manifest_path, Some(&cmd.channel), false)?;
     generate_struct_from_ir(&ir, cmd)
 }
 
@@ -113,10 +107,6 @@ fn generate_struct_from_ir(ir: &FeatureManifest, cmd: &GenerateStructCmd) -> Res
     let language = &cmd.language;
     ir.validate_manifest_for_lang(language)?;
     match language {
-        TargetLanguage::IR => {
-            let contents = serde_json::to_string_pretty(&ir)?;
-            std::fs::write(&cmd.output, contents)?;
-        }
         TargetLanguage::Kotlin => backends::kotlin::generate_struct(ir, cmd)?,
         TargetLanguage::Swift => backends::swift::generate_struct(ir, cmd)?,
         _ => unimplemented!(
@@ -130,13 +120,7 @@ fn generate_struct_from_ir(ir: &FeatureManifest, cmd: &GenerateStructCmd) -> Res
 pub(crate) fn generate_experimenter_manifest(cmd: &GenerateExperimenterManifestCmd) -> Result<()> {
     let files: FileLoader = TryFrom::try_from(&cmd.loader)?;
     let path = files.file_path(&cmd.manifest)?;
-    let ir = load_feature_manifest(
-        files,
-        path,
-        cmd.load_from_ir,
-        None,
-        cmd.loader.lax_gecko_pref_validation,
-    )?;
+    let ir = load_feature_manifest(files, path, None, cmd.loader.lax_gecko_pref_validation)?;
     backends::experimenter_manifest::generate_manifest(ir, cmd)?;
     Ok(())
 }
@@ -147,7 +131,6 @@ pub(crate) fn generate_single_file_manifest(cmd: &GenerateSingleFileManifestCmd)
     let fm = load_feature_manifest(
         files,
         path,
-        false,
         Some(&cmd.channel),
         cmd.loader.lax_gecko_pref_validation,
     )?;
@@ -159,16 +142,11 @@ pub(crate) fn generate_single_file_manifest(cmd: &GenerateSingleFileManifestCmd)
 fn load_feature_manifest(
     files: FileLoader,
     path: FilePath,
-    load_from_ir: bool,
     channel: Option<&str>,
     lax_gecko_pref_validation: bool,
 ) -> Result<FeatureManifest> {
-    let ir = if !load_from_ir {
-        let parser: Parser = Parser::new(files, path)?;
-        parser.get_intermediate_representation(channel)?
-    } else {
-        files.read_ir::<FeatureManifest>(&path)?
-    };
+    let parser: Parser = Parser::new(files, path)?;
+    let ir = parser.get_intermediate_representation(channel)?;
     ir.validate_manifest_with(lax_gecko_pref_validation)?;
     Ok(ir)
 }
@@ -532,7 +510,7 @@ pub(crate) fn print_channels(cmd: &PrintChannelsCmd) -> Result<()> {
 pub(crate) fn print_info(cmd: &PrintInfoCmd) -> Result<()> {
     let files: FileLoader = TryFrom::try_from(&cmd.loader)?;
     let path = files.file_path(&cmd.manifest)?;
-    let fm = load_feature_manifest(files, path.clone(), false, cmd.channel.as_deref(), false)?;
+    let fm = load_feature_manifest(files, path.clone(), cmd.channel.as_deref(), false)?;
     let info = if let Some(feature_id) = &cmd.feature {
         ManifestInfo::from_feature(&path, &fm, feature_id)?
     } else {
@@ -548,165 +526,20 @@ pub(crate) fn print_info(cmd: &PrintInfoCmd) -> Result<()> {
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
-
-    use anyhow::anyhow;
     use tempfile::NamedTempFile;
 
     use super::*;
-    use crate::frontend::AboutBlock;
     use crate::util::{join, pkg_dir};
 
     pub(crate) const MANIFEST_PATHS: &[&str] = &[
-        "fixtures/ir/simple_nimbus_validation.ir.json",
-        "fixtures/ir/simple_nimbus_validation.ir.json",
-        "fixtures/ir/with_objects.ir.json",
-        "fixtures/ir/full_homescreen.ir.json",
+        "fixtures/ir/simple_nimbus_validation.fml.yaml",
+        "fixtures/ir/simple_nimbus_validation.fml.yaml",
+        "fixtures/ir/with_objects.fml.yaml",
+        "fixtures/ir/full_homescreen.fml.yaml",
         "fixtures/fe/importing/simple/app.yaml",
         "fixtures/fe/importing/diamond/00-app.yaml",
         "fixtures/fe/gecko-pref.yaml",
     ];
-
-    #[allow(dead_code)]
-    pub(crate) fn generate_and_assert(
-        test_script: &str,
-        manifest: &str,
-        channel: &str,
-        is_ir: bool,
-    ) -> Result<()> {
-        let output = NamedTempFile::new()?;
-        let cmd = create_command_from_test(test_script, manifest, channel, is_ir, output.path())?;
-        generate_struct(&cmd)?;
-        run_script_with_generated_code(
-            &cmd.language,
-            &[cmd.output.as_path().display().to_string()],
-            test_script,
-        )?;
-        Ok(())
-    }
-
-    fn generate_struct_cli_overrides(from_cli: AboutBlock, cmd: &GenerateStructCmd) -> Result<()> {
-        let files: FileLoader = TryFrom::try_from(&cmd.loader)?;
-        let path = files.file_path(&cmd.manifest)?;
-        let mut ir =
-            load_feature_manifest(files, path, cmd.load_from_ir, Some(&cmd.channel), false)?;
-
-        // We do a dance here to make sure that we can override class names and package names during tests,
-        // and while we still have to support setting those options from the command line.
-        // We will deprecate setting classnames, package names etc, then we can simplify.
-        let from_file = ir.about;
-        let kotlin_about = from_cli.kotlin_about.or(from_file.kotlin_about);
-        let swift_about = from_cli.swift_about.or(from_file.swift_about);
-        let about = AboutBlock {
-            kotlin_about,
-            swift_about,
-            ..Default::default()
-        };
-        ir.about = about;
-
-        generate_struct_from_ir(&ir, cmd)
-    }
-
-    // Given a manifest.fml and script.kts in the tests directory generate
-    // a manifest.kt and run the script against it.
-    #[allow(dead_code)]
-    pub(crate) fn generate_and_assert_with_config(
-        test_script: &str,
-        manifest: &str,
-        channel: &str,
-        is_ir: bool,
-        config_about: AboutBlock,
-    ) -> Result<()> {
-        let output = NamedTempFile::new()?;
-        let cmd = create_command_from_test(test_script, manifest, channel, is_ir, output.path())?;
-        generate_struct_cli_overrides(config_about, &cmd)?;
-        run_script_with_generated_code(
-            &cmd.language,
-            &[cmd.output.as_path().display().to_string()],
-            test_script,
-        )?;
-        Ok(())
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn create_command_from_test(
-        test_script: &str,
-        manifest: &str,
-        channel: &str,
-        is_ir: bool,
-        output: &Path,
-    ) -> Result<GenerateStructCmd, crate::error::FMLError> {
-        let test_script = join(pkg_dir(), test_script);
-        let pbuf = PathBuf::from(&test_script);
-        let ext = pbuf
-            .extension()
-            .ok_or_else(|| anyhow!("Require a test_script with an extension: {}", test_script))?;
-        let language: TargetLanguage = ext.try_into()?;
-        let manifest_fml = join(pkg_dir(), manifest);
-        let loader = Default::default();
-        Ok(GenerateStructCmd {
-            manifest: manifest_fml,
-            output: output.into(),
-            load_from_ir: is_ir,
-            language,
-            channel: channel.into(),
-            loader,
-        })
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn generate_multiple_and_assert(
-        test_script: &str,
-        manifests: &[(&str, &str)],
-    ) -> Result<()> {
-        let cmds = manifests
-            .iter()
-            .map(|(manifest, channel)| {
-                let output = NamedTempFile::new()?;
-                let cmd =
-                    create_command_from_test(test_script, manifest, channel, false, output.path())?;
-                generate_struct(&cmd)?;
-                Ok(cmd)
-            })
-            .collect::<Result<Vec<_>>>()?;
-
-        let first = cmds
-            .first()
-            .expect("At least one manifests are always used");
-        let language = &first.language;
-
-        let manifests_out = cmds
-            .iter()
-            .map(|cmd| cmd.output.display().to_string())
-            .collect::<Vec<_>>();
-
-        run_script_with_generated_code(language, &manifests_out, test_script)?;
-        Ok(())
-    }
-
-    fn run_script_with_generated_code(
-        language: &TargetLanguage,
-        #[allow(unused_variables)] manifests_out: &[String],
-        #[allow(unused_variables)] test_script: &str,
-    ) -> Result<()> {
-        match language {
-            #[cfg(all(feature = "kotlin-tests", not(feature = "all-features-workaround")))]
-            TargetLanguage::Kotlin => {
-                backends::kotlin::test::run_script_with_generated_code(manifests_out, test_script)?
-            }
-
-            #[cfg(all(feature = "swift-tests", not(feature = "all-features-workaround")))]
-            TargetLanguage::Swift => backends::swift::test::run_script_with_generated_code(
-                manifests_out,
-                test_script.as_ref(),
-            )?,
-
-            _ => unimplemented!(),
-        }
-
-        #[allow(unreachable_code)]
-        Ok(())
-    }
 
     #[test]
     fn test_importing_simple_experimenter_manifest() -> Result<()> {
@@ -790,7 +623,6 @@ mod test {
             manifest,
             output: output.path().into(),
             language: TargetLanguage::ExperimenterYAML,
-            load_from_ir: false,
             channel: "app-debug".to_string(),
             loader: Default::default(),
         };
@@ -1104,13 +936,10 @@ mod test {
         output: &Path,
     ) -> Result<GenerateExperimenterManifestCmd> {
         let manifest = join(pkg_dir(), path);
-        let load_from_ir = manifest.ends_with(".ir.json");
         let loader = Default::default();
         Ok(GenerateExperimenterManifestCmd {
             manifest,
             output: output.into(),
-            language: TargetLanguage::ExperimenterYAML,
-            load_from_ir,
             loader,
         })
     }
@@ -1122,7 +951,7 @@ mod test {
         // Load the source file, and get the default_json()
         let files: FileLoader = TryFrom::try_from(&loader)?;
         let src = files.file_path(&manifest)?;
-        let fm = load_feature_manifest(files, src, false, Some(channel), false)?;
+        let fm = load_feature_manifest(files, src, Some(channel), false)?;
         let expected = fm.default_json();
 
         let output = NamedTempFile::new()?;
@@ -1139,7 +968,7 @@ mod test {
         // Reload the generated file, and get the default_json()
         let dest = FilePath::Local(output.path().into());
         let files: FileLoader = TryFrom::try_from(&loader)?;
-        let fm = load_feature_manifest(files, dest, false, Some(channel), false)?;
+        let fm = load_feature_manifest(files, dest, Some(channel), false)?;
         let observed = fm.default_json();
 
         // They should be the same.
@@ -1226,13 +1055,162 @@ mod test_jsonschema {
 
 #[cfg(all(
     test,
+    any(feature = "kotlin-tests", feature = "swift-tests"),
+    not(feature = "all-features-workaround")
+))]
+mod test_common {
+    //! Utilities shared by the kotlin and swift test modules.
+
+    use std::path::PathBuf;
+
+    use anyhow::anyhow;
+    use tempfile::NamedTempFile;
+
+    use super::*;
+    use crate::frontend::AboutBlock;
+    use crate::util::{join, pkg_dir};
+
+    pub(crate) fn generate_and_assert(
+        test_script: &str,
+        manifest: &str,
+        channel: &str,
+    ) -> Result<()> {
+        let output = NamedTempFile::new()?;
+        let cmd = create_command_from_test(test_script, manifest, channel, output.path())?;
+        generate_struct(&cmd)?;
+        run_script_with_generated_code(
+            &cmd.language,
+            &[cmd.output.as_path().display().to_string()],
+            test_script,
+        )?;
+        Ok(())
+    }
+
+    fn generate_struct_cli_overrides(from_cli: AboutBlock, cmd: &GenerateStructCmd) -> Result<()> {
+        let files: FileLoader = TryFrom::try_from(&cmd.loader)?;
+        let path = files.file_path(&cmd.manifest)?;
+        let mut ir = load_feature_manifest(files, path, Some(&cmd.channel), false)?;
+
+        // We do a dance here to make sure that we can override class names and package names during tests,
+        // and while we still have to support setting those options from the command line.
+        // We will deprecate setting classnames, package names etc, then we can simplify.
+        let from_file = ir.about;
+        let kotlin_about = from_cli.kotlin_about.or(from_file.kotlin_about);
+        let swift_about = from_cli.swift_about.or(from_file.swift_about);
+        let about = AboutBlock {
+            kotlin_about,
+            swift_about,
+            ..Default::default()
+        };
+        ir.about = about;
+
+        generate_struct_from_ir(&ir, cmd)
+    }
+
+    // Given a manifest.fml and script.kts in the tests directory generate
+    // a manifest.kt and run the script against it.
+    pub(crate) fn generate_and_assert_with_config(
+        test_script: &str,
+        manifest: &str,
+        channel: &str,
+        config_about: AboutBlock,
+    ) -> Result<()> {
+        let output = NamedTempFile::new()?;
+        let cmd = create_command_from_test(test_script, manifest, channel, output.path())?;
+        generate_struct_cli_overrides(config_about, &cmd)?;
+        run_script_with_generated_code(
+            &cmd.language,
+            &[cmd.output.as_path().display().to_string()],
+            test_script,
+        )?;
+        Ok(())
+    }
+
+    pub(crate) fn create_command_from_test(
+        test_script: &str,
+        manifest: &str,
+        channel: &str,
+        output: &Path,
+    ) -> Result<GenerateStructCmd, crate::error::FMLError> {
+        let test_script = join(pkg_dir(), test_script);
+        let pbuf = PathBuf::from(&test_script);
+        let ext = pbuf
+            .extension()
+            .ok_or_else(|| anyhow!("Require a test_script with an extension: {}", test_script))?;
+        let language: TargetLanguage = ext.try_into()?;
+        let manifest_fml = join(pkg_dir(), manifest);
+        let loader = Default::default();
+        Ok(GenerateStructCmd {
+            manifest: manifest_fml,
+            output: output.into(),
+            language,
+            channel: channel.into(),
+            loader,
+        })
+    }
+
+    pub(crate) fn generate_multiple_and_assert(
+        test_script: &str,
+        manifests: &[(&str, &str)],
+    ) -> Result<()> {
+        let cmds = manifests
+            .iter()
+            .map(|(manifest, channel)| {
+                let output = NamedTempFile::new()?;
+                let cmd = create_command_from_test(test_script, manifest, channel, output.path())?;
+                generate_struct(&cmd)?;
+                Ok(cmd)
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        let first = cmds
+            .first()
+            .expect("At least one manifests are always used");
+        let language = &first.language;
+
+        let manifests_out = cmds
+            .iter()
+            .map(|cmd| cmd.output.display().to_string())
+            .collect::<Vec<_>>();
+
+        run_script_with_generated_code(language, &manifests_out, test_script)?;
+        Ok(())
+    }
+
+    fn run_script_with_generated_code(
+        language: &TargetLanguage,
+        #[allow(unused_variables)] manifests_out: &[String],
+        #[allow(unused_variables)] test_script: &str,
+    ) -> Result<()> {
+        match language {
+            #[cfg(all(feature = "kotlin-tests", not(feature = "all-features-workaround")))]
+            TargetLanguage::Kotlin => {
+                backends::kotlin::test::run_script_with_generated_code(manifests_out, test_script)?
+            }
+
+            #[cfg(all(feature = "swift-tests", not(feature = "all-features-workaround")))]
+            TargetLanguage::Swift => backends::swift::test::run_script_with_generated_code(
+                manifests_out,
+                test_script.as_ref(),
+            )?,
+
+            _ => unimplemented!(),
+        }
+
+        #[allow(unreachable_code)]
+        Ok(())
+    }
+}
+
+#[cfg(all(
+    test,
     feature = "kotlin-tests",
     not(feature = "all-features-workaround")
 ))]
 mod kts_tests {
     use crate::frontend::{AboutBlock, KotlinAboutBlock};
 
-    use super::test::{
+    use super::test_common::{
         generate_and_assert, generate_and_assert_with_config, generate_multiple_and_assert,
     };
     use super::*;
@@ -1241,9 +1219,8 @@ mod kts_tests {
     fn test_simple_validation_code_from_ir() -> Result<()> {
         generate_and_assert(
             "test/simple_nimbus_validation.kts",
-            "fixtures/ir/simple_nimbus_validation.ir.json",
+            "fixtures/ir/simple_nimbus_validation.fml.yaml",
             "release",
-            true,
         )?;
         Ok(())
     }
@@ -1252,9 +1229,8 @@ mod kts_tests {
     fn test_with_objects_code_from_ir() -> Result<()> {
         generate_and_assert(
             "test/with_objects.kts",
-            "fixtures/ir/with_objects.ir.json",
+            "fixtures/ir/with_objects.fml.yaml",
             "release",
-            true,
         )?;
         Ok(())
     }
@@ -1263,9 +1239,8 @@ mod kts_tests {
     fn test_with_full_homescreen_from_ir() -> Result<()> {
         generate_and_assert(
             "test/full_homescreen.kts",
-            "fixtures/ir/full_homescreen.ir.json",
+            "fixtures/ir/full_homescreen.fml.yaml",
             "release",
-            true,
         )?;
         Ok(())
     }
@@ -1276,7 +1251,6 @@ mod kts_tests {
             "test/fenix_release.kts",
             "fixtures/fe/browser.yaml",
             "release",
-            false,
             AboutBlock {
                 kotlin_about: Some(KotlinAboutBlock {
                     package: "com.example.app".to_string(),
@@ -1295,7 +1269,6 @@ mod kts_tests {
             "test/fenix_nightly.kts",
             "fixtures/fe/browser.yaml",
             "nightly",
-            false,
             AboutBlock {
                 kotlin_about: Some(KotlinAboutBlock {
                     package: "com.example.app".to_string(),
@@ -1314,7 +1287,6 @@ mod kts_tests {
             "test/fenix_nightly.kts",
             "fixtures/fe/browser-with-prefs.yaml",
             "nightly",
-            false,
             AboutBlock {
                 kotlin_about: Some(KotlinAboutBlock {
                     package: "com.example.app".to_string(),
@@ -1333,7 +1305,6 @@ mod kts_tests {
             "test/dx_improvements_testing.kts",
             "fixtures/fe/dx_improvements.yaml",
             "testing",
-            false,
         )?;
         Ok(())
     }
@@ -1342,9 +1313,8 @@ mod kts_tests {
     fn test_with_app_menu_from_ir() -> Result<()> {
         generate_and_assert(
             "test/app_menu.kts",
-            "fixtures/ir/app_menu.ir.json",
+            "fixtures/ir/app_menu.fml.yaml",
             "release",
-            true,
         )?;
         Ok(())
     }
@@ -1355,7 +1325,6 @@ mod kts_tests {
             "test/bundled_resources.kts",
             "fixtures/fe/bundled_resouces.yaml",
             "testing",
-            false,
         )?;
         Ok(())
     }
@@ -1473,7 +1442,6 @@ mod kts_tests {
             "test/threadsafe_feature_holder.kts",
             "fixtures/fe/browser.yaml",
             "release",
-            false,
         )?;
         Ok(())
     }
@@ -1506,16 +1474,15 @@ mod kts_tests {
     not(feature = "all-features-workaround")
 ))]
 mod swift_tests {
-    use super::test::{generate_and_assert, generate_multiple_and_assert};
+    use super::test_common::{generate_and_assert, generate_multiple_and_assert};
     use super::*;
 
     #[test]
     fn test_with_app_menu_swift_from_ir() -> Result<()> {
         generate_and_assert(
             "test/app_menu.swift",
-            "fixtures/ir/app_menu.ir.json",
+            "fixtures/ir/app_menu.fml.yaml",
             "release",
-            true,
         )?;
         Ok(())
     }
@@ -1524,9 +1491,8 @@ mod swift_tests {
     fn test_with_objects_swift_from_ir() -> Result<()> {
         generate_and_assert(
             "test/with_objects.swift",
-            "fixtures/ir/with_objects.ir.json",
+            "fixtures/ir/with_objects.fml.yaml",
             "release",
-            true,
         )?;
         Ok(())
     }
@@ -1537,7 +1503,6 @@ mod swift_tests {
             "test/bundled_resources.swift",
             "fixtures/fe/bundled_resouces.yaml",
             "testing",
-            false,
         )?;
         Ok(())
     }
@@ -1548,7 +1513,6 @@ mod swift_tests {
             "test/fenix_release.swift",
             "fixtures/fe/browser.yaml",
             "release",
-            false,
         )?;
         Ok(())
     }
@@ -1559,7 +1523,6 @@ mod swift_tests {
             "test/fenix_nightly.swift",
             "fixtures/fe/browser.yaml",
             "nightly",
-            false,
         )?;
         Ok(())
     }
@@ -1570,7 +1533,6 @@ mod swift_tests {
             "test/firefox_ios_release.swift",
             "fixtures/fe/including/ios.yaml",
             "release",
-            false,
         )?;
         Ok(())
     }
@@ -1637,7 +1599,6 @@ mod swift_tests {
             "test/threadsafe_feature_holder.swift",
             "fixtures/fe/browser.yaml",
             "release",
-            false,
         )?;
         Ok(())
     }

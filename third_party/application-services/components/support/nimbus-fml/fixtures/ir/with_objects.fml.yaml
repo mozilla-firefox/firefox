@@ -1,0 +1,55 @@
+version: 1.0.0
+about:
+  description: A test fixture for objects
+features:
+  with-objects-feature:
+    description: A feature with objects feature
+    variables:
+      an-object:
+        description: A single object
+        type: ExampleObject
+        default:
+          a-string: yes
+          a-number: 1
+          nested:
+            property-source: example-object-property-via-constructor
+      an-object-with-feature-defaults:
+        description: A single object with defaults from the feature
+        type: ExampleObject
+        default:
+          a-string: yes
+          a-number: 2
+          nested:
+            property-source: example-object-property-via-constructor
+      an-object-with-new-defaults:
+        description: A single object with defaults from the constructor
+        type: ExampleObject
+        default:
+          a-string: 'YES: overridden from the CONSTRUCTOR!'
+          a-number: 2
+          nested:
+            property-source: an-object-with-new-defaults-constructor
+objects:
+  ExampleObject:
+    description: An example object
+    fields:
+      a-number:
+        description: A number
+        type: Int
+        default: 42
+      a-string:
+        description: A string
+        type: String
+        default: yes
+      nested:
+        description: The nesting of the nested object
+        type: Nested
+        default:
+          property-source: example-object-property-via-constructor
+  Nested:
+    description: An object for nesting in others
+    fields:
+      property-source:
+        description: This property is set by Nimbus, but where?
+        type: String
+        default: nested-object-property

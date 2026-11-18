@@ -21,5 +21,5 @@ use anyhow::Result;
 const SUPPORT_URL_LOADING: bool = true;
 
 fn main() -> Result<()> {
-    crate::command_line::do_main(std::env::args_os(), &std::env::current_dir()?)
+    crate::command_line::do_main()
 }

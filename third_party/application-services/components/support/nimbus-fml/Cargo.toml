@@ -1,6 +1,6 @@
 [package]
 name = "nimbus-fml"
-version = "0.6.0" # Keep in sync with nimbus-cli
+version = "0.7.0" # Keep in sync with nimbus-cli
 edition = "2024"
 authors = ["Nimbus SDK Engineering"]
 license = "MPL-2.0"

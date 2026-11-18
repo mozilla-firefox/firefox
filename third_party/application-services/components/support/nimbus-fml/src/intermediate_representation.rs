@@ -22,9 +22,7 @@ use crate::util::loaders::FilePath;
 pub enum TargetLanguage {
     Kotlin,
     Swift,
-    IR,
     ExperimenterYAML,
-    ExperimenterJSON,
 }
 
 impl TargetLanguage {
@@ -32,17 +30,7 @@ impl TargetLanguage {
         match self {
             TargetLanguage::Kotlin => "kt",
             TargetLanguage::Swift => "swift",
-            TargetLanguage::IR => "ir.json",
-            TargetLanguage::ExperimenterJSON => "json",
             TargetLanguage::ExperimenterYAML => "yaml",
-        }
-    }
-
-    pub fn from_extension(path: &str) -> AnyhowResult<TargetLanguage> {
-        if let Some((_, extension)) = path.rsplit_once('.') {
-            extension.try_into()
-        } else {
-            bail!("Unknown or unsupported target language: \"{}\"", path)
         }
     }
 }
@@ -53,9 +41,7 @@ impl TryFrom<&str> for TargetLanguage {
         Ok(match value.to_ascii_lowercase().as_str() {
             "kotlin" | "kt" | "kts" => TargetLanguage::Kotlin,
             "swift" => TargetLanguage::Swift,
-            "ir.json" => TargetLanguage::IR,
             "yaml" => TargetLanguage::ExperimenterYAML,
-            "json" => TargetLanguage::ExperimenterJSON,
             _ => bail!("Unknown or unsupported target language: \"{}\"", value),
         })
     }

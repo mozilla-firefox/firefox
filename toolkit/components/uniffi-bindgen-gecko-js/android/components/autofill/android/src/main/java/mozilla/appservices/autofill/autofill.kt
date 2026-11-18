@@ -773,6 +773,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_autofill_checksum_method_store_get_credit_card(
     ): Int
+    external fun uniffi_autofill_checksum_method_store_get_credit_card_candidate(
+    ): Int
     external fun uniffi_autofill_checksum_method_store_get_passport(
     ): Int
     external fun uniffi_autofill_checksum_method_store_list_credit_card_candidates(
@@ -931,6 +933,8 @@ internal object UniffiLib {
     external fun uniffi_autofill_fn_method_store_get_all_passports(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_autofill_fn_method_store_get_credit_card(`ptr`: Long,`guid`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_autofill_fn_method_store_get_credit_card_candidate(`ptr`: Long,`guid`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_autofill_fn_method_store_get_passport(`ptr`: Long,`guid`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -2391,6 +2395,13 @@ public interface StoreInterface {
     
     fun `getCreditCard`(`guid`: kotlin.String): CreditCard
     
+    /**
+     * A single stored credit card without its encrypted fields. Like
+     * `list_credit_card_candidates` this never touches the key; use
+     * `get_credit_card` when the number or CVV is needed.
+     */
+    fun `getCreditCardCandidate`(`guid`: kotlin.String): CreditCardCandidate
+    
     fun `getPassport`(`guid`: kotlin.String): Passport
     
     /**
@@ -2918,6 +2929,26 @@ open class Store: Disposable, AutoCloseable, StoreInterface
     callWithHandle {
     uniffiRustCallWithError(AutofillApiException) { _status ->
     UniffiLib.uniffi_autofill_fn_method_store_get_credit_card(
+        it,
+        
+        FfiConverterString.lower(`guid`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * A single stored credit card without its encrypted fields. Like
+     * `list_credit_card_candidates` this never touches the key; use
+     * `get_credit_card` when the number or CVV is needed.
+     */
+    @Throws(AutofillApiException::class)override fun `getCreditCardCandidate`(`guid`: kotlin.String): CreditCardCandidate {
+            return FfiConverterTypeCreditCardCandidate.lift(
+    callWithHandle {
+    uniffiRustCallWithError(AutofillApiException) { _status ->
+    UniffiLib.uniffi_autofill_fn_method_store_get_credit_card_candidate(
         it,
         
         FfiConverterString.lower(`guid`),_status)

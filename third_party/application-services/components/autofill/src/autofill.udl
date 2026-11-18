@@ -254,6 +254,12 @@ interface Store {
     [Throws=AutofillApiError]
     sequence<CreditCardCandidate> list_credit_card_candidates();
 
+    /// A single stored credit card without its encrypted fields. Like
+    /// `list_credit_card_candidates` this never touches the key; use
+    /// `get_credit_card` when the number or CVV is needed.
+    [Throws=AutofillApiError]
+    CreditCardCandidate get_credit_card_candidate(string guid);
+
     [Throws=AutofillApiError]
     i64 count_all_credit_cards();
 

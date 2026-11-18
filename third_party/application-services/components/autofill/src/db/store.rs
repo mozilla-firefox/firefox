@@ -228,6 +228,18 @@ impl Store {
             .collect())
     }
 
+    /// Get a single credit card without decrypting it.
+    ///
+    /// Like `list_credit_card_candidates()` this never touches the encryption
+    /// key, so it cannot prompt for a primary password. Use `get_credit_card()`
+    /// when the card's number or CVV is needed.
+    #[handle_error(Error)]
+    pub fn get_credit_card_candidate(&self, guid: String) -> ApiResult<CreditCardCandidate> {
+        let db = self.lock_db()?;
+        let credit_card = credit_cards::get_credit_card(&db.writer, &Guid::new(&guid))?;
+        Ok(CreditCardCandidate::from(credit_card))
+    }
+
     #[handle_error(Error)]
     pub fn count_all_credit_cards(&self) -> ApiResult<i64> {
         let count = credit_cards::count_all_credit_cards(&self.lock_db()?.writer)?;
@@ -815,6 +827,24 @@ mod tests {
         assert!(candidates[0].has_cvv);
         assert_eq!(candidates[1].cc_name, "john doe");
         assert!(!candidates[1].has_cvv);
+
+        let candidate = store
+            .get_credit_card_candidate(with_cvv.guid.to_string())
+            .unwrap();
+        assert_eq!(candidate.guid, with_cvv.guid.to_string());
+        assert_eq!(candidate.cc_name, "jane doe");
+        assert_eq!(candidate.cc_number_last_4, "7629");
+        assert!(candidate.has_cvv);
+        let candidate = store
+            .get_credit_card_candidate(without_cvv.guid.to_string())
+            .unwrap();
+        assert_eq!(candidate.cc_name, "john doe");
+        assert!(!candidate.has_cvv);
+
+        assert!(matches!(
+            store.get_credit_card_candidate(sync_guid::Guid::random().to_string()),
+            Err(crate::error::AutofillApiError::NoSuchRecord { .. })
+        ));
     }
 
     #[test]

@@ -2,158 +2,165 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use std::collections::HashMap;
+use std::fmt;
 use std::path::PathBuf;
+use std::sync::LazyLock;
 
 use anyhow::{Result, bail};
+use clap::ValueEnum;
+use maplit::hashmap;
 
 use crate::cli::Cli;
 use crate::version_utils::{is_before, pad_major, pad_major_minor, pad_major_minor_patch};
 use crate::{LaunchableApp, NimbusApp};
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ValueEnum)]
+#[allow(non_camel_case_types)]
+pub enum App {
+    Fenix,
+    #[value(name = "firefox_ios")]
+    FirefoxIos,
+}
+
+impl fmt::Display for App {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(match self {
+            Self::Fenix => "fenix",
+            Self::FirefoxIos => "firefox_ios",
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ValueEnum)]
+pub enum Channel {
+    Developer,
+    Nightly,
+    Beta,
+    Release,
+}
+
+impl fmt::Display for Channel {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(match self {
+            Self::Developer => "developer",
+            Self::Nightly => "nightly",
+            Self::Beta => "beta",
+            Self::Release => "release",
+        })
+    }
+}
+
+struct ApplicationConfig {
+    channels: HashMap<Channel, ChannelConfig>,
+}
+
+struct ChannelConfig {
+    package: &'static str,
+    scheme: &'static str,
+}
+
+static APPLICATIONS: LazyLock<HashMap<App, ApplicationConfig>> = LazyLock::new(|| {
+    hashmap! {
+        // Firefox for Android defines per channel deeplink schemes in the app/build.gradle.
+        // e.g. https://github.com/mozilla-mobile/firefox-android/blob/5d18e7ffe2f3e4505ea815d584d20e66ad10f515/fenix/app/build.gradle#L154
+        App::Fenix => ApplicationConfig {
+            channels: hashmap! {
+                Channel::Developer => ChannelConfig {
+                    package: "org.mozilla.fenix.debug",
+                    scheme: "fenix-dev",
+                },
+                Channel::Nightly => ChannelConfig {
+                    package: "org.mozilla.fenix",
+                    scheme: "fenix-nightly",
+                },
+                Channel::Beta => ChannelConfig {
+                    package: "org.mozilla.firefox_beta",
+                    scheme: "fenix-beta",
+                },
+                Channel::Release => ChannelConfig {
+                    package: "org.mozilla.firefox",
+                    scheme: "fenix",
+                },
+            },
+        },
+
+        // Firefox for iOS uses MOZ_PUBLIC_URL_SCHEME, which is always
+        // [`firefox`](https://github.com/mozilla-mobile/firefox-ios/blob/f1acc8a2232a736e65e235b811372ddbf3e802f8/Client/Configuration/Common.xcconfig#L24)
+        // and MOZ_INTERNAL_URL_SCHEME which is different per channel.
+        // e.g. https://github.com/mozilla-mobile/firefox-ios/blob/f1acc8a2232a736e65e235b811372ddbf3e802f8/Client/Configuration/Firefox.xcconfig#L12
+        // From inspection of the code, there are no different uses for the internal vs
+        // public, so very useful for launching the specific app on a phone where you
+        // have multiple versions installed.
+        App::FirefoxIos => ApplicationConfig {
+            channels: hashmap! {
+                Channel::Developer => ChannelConfig {
+                    package: "org.mozilla.ios.Fennec",
+                    scheme: "fennec",
+                },
+                Channel::Beta => ChannelConfig {
+                    package: "org.mozilla.ios.FirefoxBeta",
+                    scheme: "firefox-beta",
+                },
+                Channel::Release => ChannelConfig {
+                    package: "org.mozilla.ios.Firefox",
+                    scheme: "firefox-internal",
+                },
+            },
+        }
+    }
+});
+
 impl TryFrom<&Cli> for LaunchableApp {
     type Error = anyhow::Error;
     fn try_from(value: &Cli) -> Result<Self> {
-        Self::try_from_app_channel_device(
-            value.app.as_deref(),
-            value.channel.as_deref(),
-            value.device_id.as_deref(),
-        )
+        Self::try_from_app_channel_device(value.app, value.channel, value.device_id.as_deref())
     }
 }
 
 impl LaunchableApp {
     pub(crate) fn try_from_app_channel_device(
-        app: Option<&str>,
-        channel: Option<&str>,
+        app: Option<App>,
+        channel: Option<Channel>,
         device_id: Option<&str>,
     ) -> Result<Self> {
-        match (&app, &channel) {
+        let (app, channel) = match (app, channel) {
             (None, None) => anyhow::bail!(
-                "A value for --app and --channel must be specified. Supported apps are: fenix, focus_android, firefox_ios and focus_ios"
+                "A value for --app and --channel must be specified. Supported apps are: fenix, firefox_ios"
             ),
             (None, _) => anyhow::bail!(
-                "A value for --app must be specified. One of: fenix, focus_android, firefox_ios and focus_ios are currently supported"
+                "A value for --app must be specified. Supported apps are: fenix, firefox_ios"
             ),
             (_, None) => anyhow::bail!(
                 "A value for --channel must be specified. Supported channels are: developer, nightly, beta and release"
             ),
-            _ => (),
-        }
-
-        let app = app.unwrap();
-        let channel = channel.unwrap();
-
-        let prefix = match app {
-            "fenix" => Some("org.mozilla"),
-            "focus_android" => Some("org.mozilla"),
-            "firefox_ios" => Some("org.mozilla.ios"),
-            "focus_ios" => Some("org.mozilla.ios"),
-            _ => anyhow::bail!(
-                "Only --app values of fenix, focus_android, firefox_ios and focus_ios are currently supported"
-            ),
+            (Some(app), Some(channel)) => (app, channel),
         };
 
-        let suffix = match app {
-            "fenix" => Some(match channel {
-                "developer" => "fenix.debug",
-                "nightly" => "fenix",
-                "beta" => "firefox_beta",
-                "release" => "firefox",
-                _ => bail!(format!(
-                    "Application {} has no channel '{}'. Try one of developer, nightly, beta or release",
-                    app, channel
-                )),
-            }),
-            "focus_android" => Some(match channel {
-                "developer" => "focus.debug",
-                "nightly" => "focus.nightly",
-                "beta" => "focus.beta",
-                "release" => "focus",
-                _ => bail!(format!(
-                    "Application {} has no channel '{}'. Try one of developer, nightly, beta or release",
-                    app, channel
-                )),
-            }),
-            "firefox_ios" => Some(match channel {
-                "developer" => "Fennec",
-                "beta" => "FirefoxBeta",
-                "release" => "Firefox",
-                _ => bail!(format!(
-                    "Application {} has no channel '{}'. Try one of developer, beta or release",
-                    app, channel
-                )),
-            }),
-            "focus_ios" => Some(match channel {
-                "developer" => "Focus",
-                "beta" => "Focus",
-                "release" => "Focus",
-                _ => bail!(format!(
-                    "Application {} has no channel '{}'. Try one of developer, beta or release",
-                    app, channel
-                )),
-            }),
-            _ => None,
+        let app_cfg = &(*APPLICATIONS)[&app];
+        let Some(channel_cfg) = app_cfg.channels.get(&channel) else {
+            let supported_channels = app_cfg
+                .channels
+                .keys()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+                .join(", ");
+            bail!("Application {app} has no channel `{channel}'. Try one of {supported_channels}");
         };
 
-        // Scheme for deeplinks.
-        let scheme = match app {
-            "fenix" => Some(match channel {
-                // Firefox for Android defines per channel deeplink schemes in the app/build.gradle.
-                // e.g. https://github.com/mozilla-mobile/firefox-android/blob/5d18e7ffe2f3e4505ea815d584d20e66ad10f515/fenix/app/build.gradle#L154
-                "developer" => "fenix-dev",
-                "nightly" => "fenix-nightly",
-                "beta" => "fenix-beta",
-                "release" => "fenix",
-                _ => unreachable!(),
-            }),
-            "firefox_ios" => Some(match channel {
-                // Firefox for iOS uses MOZ_PUBLIC_URL_SCHEME, which is always
-                // [`firefox`](https://github.com/mozilla-mobile/firefox-ios/blob/f1acc8a2232a736e65e235b811372ddbf3e802f8/Client/Configuration/Common.xcconfig#L24)
-                // and MOZ_INTERNAL_URL_SCHEME which is different per channel.
-                // e.g. https://github.com/mozilla-mobile/firefox-ios/blob/f1acc8a2232a736e65e235b811372ddbf3e802f8/Client/Configuration/Firefox.xcconfig#L12
-                // From inspection of the code, there are no different uses for the internal vs
-                // public, so very useful for launching the specific app on a phone where you
-                // have multiple versions installed.
-                "developer" => "fennec",
-                "beta" => "firefox-beta",
-                "release" => "firefox-internal",
-                _ => unreachable!(),
-            }),
-            // Focus for iOS has two, firefox-focus and firefox-klar
-            // It's not clear if Focus's channels are configured for this
-            "focus_ios" => Some("firefox-focus"),
-
-            // Focus for Android provides no deeplinks.
-            _ => None,
-        }
-        .map(str::to_string);
-
-        Ok(match (app, prefix, suffix) {
-            ("fenix", Some(prefix), Some(suffix)) => Self::Android {
-                package_name: format!("{}.{}", prefix, suffix),
-                activity_name: ".App".to_string(),
-                device_id: device_id.map(str::to_string),
-                scheme,
-                open_deeplink: Some("open".to_string()),
+        Ok(match app {
+            App::Fenix => Self::Android {
+                package_name: channel_cfg.package.into(),
+                activity_name: ".App".into(),
+                device_id: device_id.map(Into::into),
+                scheme: channel_cfg.scheme.into(),
+                open_deeplink: "open".into(),
             },
-            ("focus_android", Some(prefix), Some(suffix)) => Self::Android {
-                package_name: format!("{}.{}", prefix, suffix),
-                activity_name: "org.mozilla.focus.activity.MainActivity".to_string(),
-                device_id: device_id.map(str::to_string),
-                scheme,
-                open_deeplink: None,
+            App::FirefoxIos => Self::Ios {
+                app_id: channel_cfg.package.into(),
+                device_id: device_id.unwrap_or("booted").into(),
+                scheme: channel_cfg.scheme.into(),
             },
-            ("firefox_ios", Some(prefix), Some(suffix)) => Self::Ios {
-                app_id: format!("{}.{}", prefix, suffix),
-                device_id: device_id.unwrap_or("booted").to_string(),
-                scheme,
-            },
-            ("focus_ios", Some(prefix), Some(suffix)) => Self::Ios {
-                app_id: format!("{}.{}", prefix, suffix),
-                device_id: device_id.unwrap_or("booted").to_string(),
-                scheme,
-            },
-            _ => unreachable!(),
         })
     }
 }

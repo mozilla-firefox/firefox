@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use percent_encoding::{AsciiSet, CONTROLS};
 
 use crate::protocol::StartAppProtocol;
@@ -28,21 +28,19 @@ impl LaunchableApp {
         app_protocol: &StartAppProtocol,
         open: &AppOpenArgs,
     ) -> Result<String> {
-        let deeplink = match (&open.deeplink, self.app_opening_deeplink()) {
-            (Some(deeplink), _) => deeplink.to_owned(),
-            (_, Some(deeplink)) => join_query(deeplink, "--nimbus-cli&--is-launcher"),
-            _ => anyhow::bail!("A deeplink must be provided"),
-        };
+        let deeplink = open.deeplink.to_owned().unwrap_or_else(|| {
+            join_query(self.app_opening_deeplink(), "--nimbus-cli&--is-launcher")
+        });
 
         let url = longform_deeplink_url(deeplink.as_str(), app_protocol)?;
 
         self.prepend_scheme(url.as_str())
     }
 
-    fn app_opening_deeplink(&self) -> Option<&str> {
+    fn app_opening_deeplink(&self) -> &str {
         match self {
-            Self::Android { open_deeplink, .. } => open_deeplink.as_deref(),
-            Self::Ios { .. } => Some("noop"),
+            Self::Android { open_deeplink, .. } => open_deeplink,
+            Self::Ios { .. } => "noop",
         }
     }
 
@@ -59,17 +57,11 @@ impl LaunchableApp {
         Ok(if deeplink.contains("://") {
             deeplink.to_string()
         } else {
-            let scheme = self.mandatory_scheme()?;
+            let scheme = match self {
+                Self::Android { scheme, .. } | Self::Ios { scheme, .. } => scheme,
+            };
             format!("{scheme}://{deeplink}")
         })
-    }
-
-    fn mandatory_scheme(&self) -> Result<&str> {
-        match self {
-            Self::Android { scheme, .. } | Self::Ios { scheme, .. } => scheme
-                .as_deref()
-                .ok_or_else(|| anyhow!("A scheme is not defined for this app")),
-        }
     }
 }
 
@@ -144,9 +136,10 @@ fn set_clipboard(contents: String) -> Result<(), Box<dyn std::error::Error + Sen
 
 #[cfg(test)]
 mod unit_tests {
+    use serde_json::json;
 
     use super::*;
-    use serde_json::json;
+    use crate::config::{App, Channel};
 
     #[test]
     fn test_url_noop() -> Result<()> {
@@ -247,8 +240,11 @@ mod unit_tests {
 
     #[test]
     fn test_deeplink_has_is_launcher_param_if_no_deeplink_is_specified() -> Result<()> {
-        let app =
-            LaunchableApp::try_from_app_channel_device(Some("fenix"), Some("developer"), None)?;
+        let app = LaunchableApp::try_from_app_channel_device(
+            Some(App::Fenix),
+            Some(Channel::Developer),
+            None,
+        )?;
 
         // No payload, or command line param for deeplink.
         let payload: StartAppProtocol = Default::default();

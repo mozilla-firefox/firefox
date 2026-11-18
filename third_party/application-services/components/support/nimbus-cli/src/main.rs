@@ -20,6 +20,7 @@ use anyhow::{Result, bail};
 use clap::Parser;
 
 use crate::cli::{Cli, CliCommand, ExperimentArgs, OpenArgs};
+use crate::config::App;
 use crate::sources::{ExperimentListSource, ExperimentSource, ManifestSource};
 
 pub(crate) static USER_AGENT: &str =
@@ -56,12 +57,12 @@ where
 
     // Validating the command line args. Most of this should be done with clap,
     // but for everything else there's:
-    cli.command.check_valid(cli.app.as_deref())?;
+    cli.command.check_valid(cli.app)?;
 
     // Validating experiments against manifests
     commands.push(AppCommand::try_validate(&cli)?);
 
-    if cli.command.should_kill(cli.app.as_deref()) {
+    if cli.command.should_kill(cli.app) {
         let app = LaunchableApp::try_from(&cli)?;
         commands.push(AppCommand::Kill { app });
     }
@@ -80,13 +81,13 @@ enum LaunchableApp {
         package_name: String,
         activity_name: String,
         device_id: Option<String>,
-        scheme: Option<String>,
-        open_deeplink: Option<String>,
+        scheme: String,
+        open_deeplink: String,
     },
     Ios {
         device_id: String,
         app_id: String,
-        scheme: Option<String>,
+        scheme: String,
     },
 }
 
@@ -116,13 +117,13 @@ impl NimbusApp {
 impl From<&Cli> for NimbusApp {
     fn from(value: &Cli) -> Self {
         Self {
-            channel: value.channel.clone(),
-            app_name: value.app.clone(),
+            channel: value.channel.as_ref().map(ToString::to_string),
+            app_name: value.app.as_ref().map(ToString::to_string),
         }
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[cfg_attr(test, derive(Debug, PartialEq))]
 enum AppCommand {
     ApplyFile {
         app: LaunchableApp,
@@ -172,8 +173,7 @@ enum AppCommand {
     },
 
     FmlPassthrough {
-        args: Vec<OsString>,
-        cwd: PathBuf,
+        cmd: nimbus_fml::command_line::CliCmd,
     },
 
     Info {
@@ -364,10 +364,11 @@ impl TryFrom<&Cli> for AppCommand {
 
                 AppCommand::FetchList { list, file: output }
             }
-            CliCommand::Fml { args } => {
-                let cwd = std::env::current_dir().expect("Current Working Directory is not set");
-                AppCommand::FmlPassthrough { args, cwd }
-            }
+
+            CliCommand::Fml { args } => AppCommand::FmlPassthrough {
+                cmd: nimbus_fml::command_line::CliCmd::from_args(args)?,
+            },
+
             CliCommand::Info { experiment, output } => AppCommand::Info {
                 experiment: ExperimentSource::try_from(&experiment)?,
                 output,
@@ -437,7 +438,7 @@ impl TryFrom<&Cli> for AppCommand {
 }
 
 impl CliCommand {
-    fn check_valid(&self, maybe_app: Option<&str>) -> Result<()> {
+    fn check_valid(&self, maybe_app: Option<App>) -> Result<()> {
         // Check validity of the OpenArgs.
         if let Some(open) = self.open_args() {
             if open.reset_app || !open.passthrough.is_empty() {
@@ -461,7 +462,7 @@ impl CliCommand {
 
             if let Some(app) = maybe_app {
                 match app {
-                    "fenix" => {
+                    App::Fenix => {
                         if !open.legacy_open_mode
                             && open.deeplink.is_some()
                             && !matches!(self, Self::Open { .. })
@@ -497,7 +498,7 @@ impl CliCommand {
         }
     }
 
-    fn should_kill(&self, maybe_app: Option<&str>) -> bool {
+    fn should_kill(&self, maybe_app: Option<App>) -> bool {
         if let Some(open) = self.open_args() {
             let using_links = open.pbcopy || open.pbpaste;
             let output_to_file = open.output.is_some();
@@ -509,10 +510,10 @@ impl CliCommand {
 
             if !open.legacy_open_mode {
                 match (maybe_app, &self) {
-                    (Some("fenix"), Self::Open { no_clobber, .. }) => {
+                    (Some(App::Fenix), Self::Open { no_clobber, .. }) => {
                         return !using_links && !no_clobber && !output_to_file;
                     }
-                    (Some("fenix"), _) => {
+                    (Some(App::Fenix), _) => {
                         return false;
                     }
                     _ => {}
@@ -573,14 +574,15 @@ impl AppOpenArgs {
 mod unit_tests {
     use crate::sources::ExperimentListFilter;
 
+    use super::config::Channel;
     use super::*;
 
     #[test]
     fn test_launchable_app() -> Result<()> {
-        fn cli(app: &str, channel: &str) -> Cli {
+        fn cli(app: App, channel: Channel) -> Cli {
             Cli {
-                app: Some(app.to_string()),
-                channel: Some(channel.to_string()),
+                app: Some(app),
+                channel: Some(channel),
                 device_id: None,
                 command: CliCommand::ResetApp,
             }
@@ -588,108 +590,55 @@ mod unit_tests {
         fn android(
             package: &str,
             activity: &str,
-            scheme: Option<&str>,
-            open_deeplink: Option<&str>,
+            scheme: &str,
+            open_deeplink: &str,
         ) -> LaunchableApp {
             LaunchableApp::Android {
                 package_name: package.to_string(),
                 activity_name: activity.to_string(),
                 device_id: None,
-                scheme: scheme.map(str::to_string),
-                open_deeplink: open_deeplink.map(str::to_string),
+                scheme: scheme.into(),
+                open_deeplink: open_deeplink.into(),
             }
         }
-        fn ios(id: &str, scheme: Option<&str>) -> LaunchableApp {
+        fn ios(id: &str, scheme: &str) -> LaunchableApp {
             LaunchableApp::Ios {
                 app_id: id.to_string(),
                 device_id: "booted".to_string(),
-                scheme: scheme.map(str::to_string),
+                scheme: scheme.into(),
             }
         }
 
         // Firefox for Android, a.k.a. fenix
         assert_eq!(
-            LaunchableApp::try_from(&cli("fenix", "developer"))?,
-            android(
-                "org.mozilla.fenix.debug",
-                ".App",
-                Some("fenix-dev"),
-                Some("open")
-            )
+            LaunchableApp::try_from(&cli(App::Fenix, Channel::Developer))?,
+            android("org.mozilla.fenix.debug", ".App", "fenix-dev", "open")
         );
         assert_eq!(
-            LaunchableApp::try_from(&cli("fenix", "nightly"))?,
-            android(
-                "org.mozilla.fenix",
-                ".App",
-                Some("fenix-nightly"),
-                Some("open")
-            )
+            LaunchableApp::try_from(&cli(App::Fenix, Channel::Nightly))?,
+            android("org.mozilla.fenix", ".App", "fenix-nightly", "open")
         );
         assert_eq!(
-            LaunchableApp::try_from(&cli("fenix", "beta"))?,
-            android(
-                "org.mozilla.firefox_beta",
-                ".App",
-                Some("fenix-beta"),
-                Some("open")
-            )
+            LaunchableApp::try_from(&cli(App::Fenix, Channel::Beta))?,
+            android("org.mozilla.firefox_beta", ".App", "fenix-beta", "open")
         );
         assert_eq!(
-            LaunchableApp::try_from(&cli("fenix", "release"))?,
-            android("org.mozilla.firefox", ".App", Some("fenix"), Some("open"))
+            LaunchableApp::try_from(&cli(App::Fenix, Channel::Release))?,
+            android("org.mozilla.firefox", ".App", "fenix", "open")
         );
 
         // Firefox for iOS
         assert_eq!(
-            LaunchableApp::try_from(&cli("firefox_ios", "developer"))?,
-            ios("org.mozilla.ios.Fennec", Some("fennec"))
+            LaunchableApp::try_from(&cli(App::FirefoxIos, Channel::Developer))?,
+            ios("org.mozilla.ios.Fennec", "fennec")
         );
         assert_eq!(
-            LaunchableApp::try_from(&cli("firefox_ios", "beta"))?,
-            ios("org.mozilla.ios.FirefoxBeta", Some("firefox-beta"))
+            LaunchableApp::try_from(&cli(App::FirefoxIos, Channel::Beta))?,
+            ios("org.mozilla.ios.FirefoxBeta", "firefox-beta")
         );
         assert_eq!(
-            LaunchableApp::try_from(&cli("firefox_ios", "release"))?,
-            ios("org.mozilla.ios.Firefox", Some("firefox-internal"))
-        );
-
-        // Focus for Android
-        assert_eq!(
-            LaunchableApp::try_from(&cli("focus_android", "developer"))?,
-            android(
-                "org.mozilla.focus.debug",
-                "org.mozilla.focus.activity.MainActivity",
-                None,
-                None,
-            )
-        );
-        assert_eq!(
-            LaunchableApp::try_from(&cli("focus_android", "nightly"))?,
-            android(
-                "org.mozilla.focus.nightly",
-                "org.mozilla.focus.activity.MainActivity",
-                None,
-                None,
-            )
-        );
-        assert_eq!(
-            LaunchableApp::try_from(&cli("focus_android", "beta"))?,
-            android(
-                "org.mozilla.focus.beta",
-                "org.mozilla.focus.activity.MainActivity",
-                None,
-                None,
-            )
-        );
-        assert_eq!(
-            LaunchableApp::try_from(&cli("focus_android", "release"))?,
-            android(
-                "org.mozilla.focus",
-                "org.mozilla.focus.activity.MainActivity",
-                None,
-                None,
-            )
+            LaunchableApp::try_from(&cli(App::FirefoxIos, Channel::Release))?,
+            ios("org.mozilla.ios.Firefox", "firefox-internal")
         );
 
         Ok(())
@@ -742,19 +691,19 @@ mod unit_tests {
 
     fn fenix() -> LaunchableApp {
         LaunchableApp::Android {
-            package_name: "org.mozilla.fenix.debug".to_string(),
-            activity_name: ".App".to_string(),
+            package_name: "org.mozilla.fenix.debug".into(),
+            activity_name: ".App".into(),
             device_id: None,
-            scheme: Some("fenix-dev".to_string()),
-            open_deeplink: Some("open".to_string()),
+            scheme: "fenix-dev".into(),
+            open_deeplink: "open".into(),
         }
     }
 
     fn firefox_ios() -> LaunchableApp {
         LaunchableApp::Ios {
-            app_id: "org.mozilla.ios.Fennec".to_string(),
-            device_id: "foobar".to_string(),
-            scheme: Some("fennec".to_string()),
+            app_id: "org.mozilla.ios.Fennec".into(),
+            device_id: "foobar".into(),
+            scheme: "fennec".into(),
         }
     }
 
@@ -840,7 +789,7 @@ mod unit_tests {
         }
     }
 
-    fn for_app(app: &str, list: ExperimentListSource) -> ExperimentListSource {
+    fn for_app(app: App, list: ExperimentListSource) -> ExperimentListSource {
         ExperimentListSource::Filtered {
             filter: ExperimentListFilter::for_app(app),
             inner: Box::new(list),
@@ -2165,7 +2114,7 @@ mod unit_tests {
             AppCommand::NoOp,
             AppCommand::FetchList {
                 list: for_app(
-                    "fenix",
+                    App::Fenix,
                     ExperimentListSource::FromRecipes {
                         recipes: vec![experiment("my-experiment")],
                     },
@@ -2192,7 +2141,7 @@ mod unit_tests {
             AppCommand::NoOp,
             AppCommand::FetchList {
                 list: for_app(
-                    "fenix",
+                    App::Fenix,
                     ExperimentListSource::FromRecipes {
                         recipes: vec![experiment("my-experiment-1"), experiment("my-experiment-2")],
                     },
@@ -2235,7 +2184,7 @@ mod unit_tests {
             AppCommand::NoOp,
             AppCommand::FetchList {
                 list: for_app(
-                    "fenix",
+                    App::Fenix,
                     ExperimentListSource::FromRemoteSettings {
                         endpoint: config::rs_production_server(),
                         is_preview: false,
@@ -2392,12 +2341,12 @@ mod unit_tests {
 
     #[test]
     fn test_list_filter() -> Result<()> {
-        let observed = get_commands_from_cli(["nimbus-cli", "--app", "my-app", "list"])?;
+        let observed = get_commands_from_cli(["nimbus-cli", "--app", "fenix", "list"])?;
         let expected = vec![
             AppCommand::NoOp,
             AppCommand::List {
                 list: for_app(
-                    "my-app",
+                    App::Fenix,
                     ExperimentListSource::FromRemoteSettings {
                         endpoint: config::rs_production_server(),
                         is_preview: false,
@@ -2425,7 +2374,7 @@ mod unit_tests {
         let observed = get_commands_from_cli([
             "nimbus-cli",
             "--app",
-            "my-app",
+            "fenix",
             "list",
             "--feature",
             "messaging",
@@ -2434,7 +2383,7 @@ mod unit_tests {
             AppCommand::NoOp,
             AppCommand::List {
                 list: for_app(
-                    "my-app",
+                    App::Fenix,
                     for_feature(
                         "messaging",
                         ExperimentListSource::FromRemoteSettings {

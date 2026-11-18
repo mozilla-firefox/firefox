@@ -9,7 +9,8 @@ use anyhow::{Error, Result, bail};
 use crate::intermediate_representation::TargetLanguage;
 use crate::util::loaders::LoaderConfig;
 
-pub(crate) enum CliCmd {
+#[derive(Debug, PartialEq)]
+pub enum CliCmd {
     Generate(GenerateStructCmd),
     GenerateExperimenter(GenerateExperimenterManifestCmd),
     GenerateSingleFileManifest(GenerateSingleFileManifestCmd),
@@ -21,55 +22,57 @@ pub(crate) enum CliCmd {
     PrintInfo(PrintInfoCmd),
 }
 
-#[derive(Clone)]
-pub(crate) struct GenerateStructCmd {
-    pub(crate) manifest: String,
-    pub(crate) output: PathBuf,
-    pub(crate) language: TargetLanguage,
-    pub(crate) load_from_ir: bool,
-    pub(crate) channel: String,
-    pub(crate) loader: LoaderConfig,
+#[derive(Debug, PartialEq)]
+pub struct GenerateStructCmd {
+    pub manifest: String,
+    pub output: PathBuf,
+    pub language: TargetLanguage,
+    pub channel: String,
+    pub loader: LoaderConfig,
 }
 
-pub(crate) struct GenerateExperimenterManifestCmd {
-    pub(crate) manifest: String,
-    pub(crate) output: PathBuf,
-    pub(crate) language: TargetLanguage,
-    pub(crate) load_from_ir: bool,
-    pub(crate) loader: LoaderConfig,
+#[derive(Debug, PartialEq)]
+pub struct GenerateExperimenterManifestCmd {
+    pub manifest: String,
+    pub output: PathBuf,
+    pub loader: LoaderConfig,
 }
 
-pub(crate) struct GenerateSingleFileManifestCmd {
-    pub(crate) manifest: String,
-    pub(crate) output: PathBuf,
-    pub(crate) channel: String,
-    pub(crate) loader: LoaderConfig,
+#[derive(Debug, PartialEq)]
+pub struct GenerateSingleFileManifestCmd {
+    pub manifest: String,
+    pub output: PathBuf,
+    pub channel: String,
+    pub loader: LoaderConfig,
 }
 
-pub(crate) struct ValidateCmd {
-    pub(crate) manifest: String,
-    pub(crate) loader: LoaderConfig,
+#[derive(Debug, PartialEq)]
+pub struct ValidateCmd {
+    pub manifest: String,
+    pub loader: LoaderConfig,
 }
 
-#[derive(Default)]
-pub(crate) struct LintCmd {
-    pub(crate) manifest: String,
-    pub(crate) loader: LoaderConfig,
-    pub(crate) code_review_json: Option<PathBuf>,
+#[derive(Debug, Default, PartialEq)]
+pub struct LintCmd {
+    pub manifest: String,
+    pub loader: LoaderConfig,
+    pub code_review_json: Option<PathBuf>,
 }
 
-pub(crate) struct PrintChannelsCmd {
-    pub(crate) manifest: String,
-    pub(crate) loader: LoaderConfig,
-    pub(crate) as_json: bool,
+#[derive(Debug, PartialEq)]
+pub struct PrintChannelsCmd {
+    pub manifest: String,
+    pub loader: LoaderConfig,
+    pub as_json: bool,
 }
 
-pub(crate) struct PrintInfoCmd {
-    pub(crate) manifest: String,
-    pub(crate) loader: LoaderConfig,
-    pub(crate) channel: Option<String>,
-    pub(crate) as_json: bool,
-    pub(crate) feature: Option<String>,
+#[derive(Debug, PartialEq)]
+pub struct PrintInfoCmd {
+    pub manifest: String,
+    pub loader: LoaderConfig,
+    pub channel: Option<String>,
+    pub as_json: bool,
+    pub feature: Option<String>,
 }
 
 impl TryFrom<&std::ffi::OsStr> for TargetLanguage {

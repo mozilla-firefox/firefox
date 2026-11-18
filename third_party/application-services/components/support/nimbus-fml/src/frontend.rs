@@ -107,9 +107,7 @@ impl AboutBlock {
         match lang {
             TargetLanguage::Kotlin => self.kotlin_about.is_some(),
             TargetLanguage::Swift => self.swift_about.is_some(),
-            TargetLanguage::IR => true,
             TargetLanguage::ExperimenterYAML => true,
-            TargetLanguage::ExperimenterJSON => true,
         }
     }
 

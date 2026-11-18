@@ -134,10 +134,9 @@ impl TryFrom<&Cli> for ExperimentListSource {
             _ => unreachable!(),
         };
 
-        let app = value.app.clone();
-        Ok(if let Some(app) = app {
+        Ok(if let Some(app) = value.app {
             ExperimentListSource::Filtered {
-                filter: ExperimentListFilter::for_app(app.as_str()),
+                filter: ExperimentListFilter::for_app(app),
                 inner: Box::new(list),
             }
         } else {
