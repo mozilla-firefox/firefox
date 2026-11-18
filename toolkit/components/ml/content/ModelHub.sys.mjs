@@ -121,7 +121,7 @@ const DEFAULT_DELETE_TIMEOUT_MS = 5000;
 const LOCAL_CHROME_PREFIX = "chrome://";
 
 // Default indexedDB revision.
-const DEFAULT_MODEL_REVISION = 8;
+const DEFAULT_MODEL_REVISION = 9;
 
 /**
  * One-shot engineId renames applied during the 6 -> 7 schema migration. Keys
@@ -365,6 +365,14 @@ class IndexedDBCache {
   #maxSize = lazy.DEFAULT_MAX_CACHE_SIZE;
 
   /**
+   * The dbName only changes in tests, but doing this as a Map keyed on the dbName
+   * makes it correct for a configurable dbName in cases that ever changes.
+   *
+   * @type {Map<string, Promise<void>>}
+   */
+  static #pendingRepairs = new Map();
+
+  /**
    * Private constructor to prevent direct instantiation.
    * Use IndexedDBCache.init to create an instance.
    *
@@ -500,9 +508,10 @@ class IndexedDBCache {
    * @param {IDBDatabase} db
    * @param {number} oldVersion
    * @param {IDBTransaction} transaction
-   * @returns {{destructive: boolean}} `destructive` is true when the migration
-   *   dropped object stores, in which case the on-disk OPFS cache must also be
-   *   cleared by the caller to stay consistent.
+   * @returns {{destructive: boolean, requiresRepair: boolean}} `destructive`
+   *   is true when the migration dropped object stores, in which case the
+   *   on-disk OPFS cache must also be cleared by the caller to stay
+   *   consistent.
    */
   #migrateStore(db, oldVersion, transaction) {
     const newVersion = db.version;
@@ -570,7 +579,11 @@ class IndexedDBCache {
           };
         }
 
-        return { destructive: false };
+        // Version 8 -> 9 does not rewrite anything in place. Instead it
+        // flags that #repairStaleEntries should run once OPFS is reachable,
+        // dropping headers/tasks rows and OPFS files left stale by bugs in
+        // earlier versions.
+        return { destructive: false, requiresRepair: oldVersion < 9 };
       }
 
       if (oldVersion < newVersion) {
@@ -584,9 +597,9 @@ class IndexedDBCache {
             db.deleteObjectStore(name);
           }
         }
-        return { destructive: true };
+        return { destructive: true, requiresRepair: false };
       }
-      return { destructive: false };
+      return { destructive: false, requiresRepair: false };
     } finally {
       lazy.console.debug("Migration done");
     }
@@ -621,7 +634,7 @@ class IndexedDBCache {
    */
   async #openDB() {
     let wasUpgraded = false;
-    let migrationResult = { destructive: false };
+    let migrationResult = { destructive: false, requiresRepair: false };
 
     /** @type {Promise<IDBDatabase>} */
     const opened = new Promise((resolve, reject) => {
@@ -723,7 +736,114 @@ class IndexedDBCache {
         ignoreErrors: true,
       });
     }
+    if (wasUpgraded && migrationResult.requiresRepair) {
+      this.db = db;
+      const repairPromise = this.#repairStaleEntries();
+      IndexedDBCache.#pendingRepairs.set(this.dbName, repairPromise);
+      try {
+        await repairPromise;
+      } finally {
+        if (IndexedDBCache.#pendingRepairs.get(this.dbName) === repairPromise) {
+          IndexedDBCache.#pendingRepairs.delete(this.dbName);
+        }
+      }
+    } else {
+      await IndexedDBCache.#pendingRepairs.get(this.dbName);
+    }
     return db;
+  }
+
+  /**
+   * The database 8 -> 9 migration fixes correctness issues for file handling. This
+   * repair step fixes stale file entries.
+   *
+   * @returns {Promise<void>}
+   */
+  async #repairStaleEntries() {
+    lazy.console.debug("Repairing stale cache entries after upgrade");
+
+    const headers = /** @type {Array<HeadersRecord>} */ (
+      await this.#getData({ storeName: this.headersStoreName })
+    );
+
+    const validPaths = new Set();
+    for (const { model, revision, file } of headers) {
+      const path = this.generateFilePathInOPFS({ model, revision, file });
+      let hasRealFile = false;
+      try {
+        const fileHandle = await lazy.OPFS.getFileHandle(path);
+        hasRealFile = (await fileHandle.getFile()).size > 0;
+      } catch (e) {
+        hasRealFile = false;
+      }
+
+      if (hasRealFile) {
+        validPaths.add(path);
+      } else {
+        await this.#deleteData(this.headersStoreName, [model, revision, file]);
+        await this.#deleteData(this.enginesStoreName, [model, revision, file]);
+      }
+    }
+
+    const tasks = /** @type {Array<TaskRecord>} */ (
+      await this.#getData({ storeName: this.taskStoreName })
+    );
+    for (const { taskName, model, revision, file } of tasks) {
+      const path = this.generateFilePathInOPFS({ model, revision, file });
+      if (!validPaths.has(path)) {
+        await this.#deleteData(this.taskStoreName, [
+          taskName,
+          model,
+          revision,
+          file,
+        ]);
+      }
+    }
+
+    await this.#pruneOrphanedFiles(this.dbName, validPaths);
+  }
+
+  /**
+   * Recursively clean up orphaned files. Part of the 8 -> 9 database migration.
+   *
+   * @param {string} dirPath
+   * @param {Set<string>} validPaths
+   * @returns {Promise<boolean>} True when `dirPath` itself ends up empty.
+   */
+  async #pruneOrphanedFiles(dirPath, validPaths) {
+    let dirHandle;
+    try {
+      dirHandle = await lazy.OPFS.getDirectoryHandle(dirPath);
+    } catch (e) {
+      return true;
+    }
+
+    const entries = [];
+    for await (const entry of dirHandle.entries()) {
+      entries.push(entry);
+    }
+
+    let isEmpty = true;
+    for (const [name, handle] of entries) {
+      const entryPath = `${dirPath}/${name}`;
+      if (handle.kind === "directory") {
+        const childIsEmpty = await this.#pruneOrphanedFiles(
+          entryPath,
+          validPaths
+        );
+        if (childIsEmpty) {
+          await dirHandle.removeEntry(name, { recursive: true });
+        } else {
+          isEmpty = false;
+        }
+      } else if (!validPaths.has(entryPath)) {
+        await dirHandle.removeEntry(name);
+      } else {
+        isEmpty = false;
+      }
+    }
+
+    return isEmpty;
   }
 
   /**
