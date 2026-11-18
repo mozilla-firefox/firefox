@@ -1,0 +1,41 @@
+schema: 1
+
+bugzilla:
+  product: "Core"
+  component: "WebRTC"
+
+origin:
+  name: jni_zero
+  description: Java annotations used by libwebrtc's Android Java sources
+
+  url: https://chromium.googlesource.com/chromium/src/+/main/third_party/jni_zero/
+
+  release: 192cc6b541c5887c44c33d442bafcd56d489c7f4 (Tue Oct 06 13:01:23 2026).
+  revision: 192cc6b541c5887c44c33d442bafcd56d489c7f4
+
+  license: BSD-3-Clause
+
+vendoring:
+  url: https://chromium.googlesource.com/chromium/src/
+  source-hosting: googlesource
+  flavor: individual-files
+  tracking: commit
+
+  skip-vendoring-steps:
+    - update-moz-build
+
+  individual-files-default-upstream: "third_party/jni_zero/"
+  individual-files-default-destination: "{vendor_dir}/"
+  individual-files-list:
+    - java/src/org/jni_zero/CalledByNative.java
+    - java/src/org/jni_zero/NativeMethods.java
+    - java/src/org/jni_zero/UsedReflectively.java
+    - LICENSE
+
+updatebot:
+  maintainer-phab: pehrsons
+  maintainer-bz: apehrson@mozilla.com
+  tasks:
+    - type: vendoring
+      enabled: true
+      frequency: release
