@@ -2,7 +2,7 @@
 
 ## Linter Requirements
 
-For a linter to be integrated into the mozilla-central tree, it needs to have:
+For a linter to be integrated into the Firefox source tree, it needs to have:
 
 - Any required dependencies should be installed as part of `./mach bootstrap`
 - A `./mach lint` interface

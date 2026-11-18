@@ -33,14 +33,14 @@ can call rust directly avoiding a C FFI layer.
    this artifact is.
 2. Every rust library that wants to be called or wants to call rust code
    directly will be included in libxul.so (which contains most of Gecko native
-   code), and vendored in mozilla-central. This includes, among others, Glean and
+   code), and vendored in the Firefox repository. This includes, among others, Glean and
    Nimbus.
 3. libxul.so will expose the necessary FFI symbols for the Kotlin wrappers
-   needed by the libraries vendored in mozilla-central in step (2).
+   needed by the libraries vendored in the Firefox repository in step (2).
 4. At every nightly / beta / release build of Gecko, we will generate an (or
    possibly many) additional librustcomponents.so artifacts that will be published
    as an AAR in maven.mozilla.org. This will also publish all the vendored
-   libraries in mozilla-central to maven, which will have a dependency on the
+   libraries in the Firefox repository to maven, which will have a dependency on the
    librustcomponents.so produced as part of this step. Doing this will ensure that
    both libxul.so and librustcomponents.so contain the exact same code and can be
    swapped freely in the dependency graph.
@@ -73,7 +73,7 @@ suggestions welcome).
 ## The good
 
 - We get automated integration with AC for free. When an update for a library
-  is pushed to mozilla-central, a new nightly build for GeckoView will be
+  is pushed to the `main` branch, a new nightly build for GeckoView will be
   produced which is already consumed by AC automatically (and indirectly into
   Fenix).
 - Publishing infrastructure to maven is already figured out, and we can reuse
@@ -95,7 +95,7 @@ suggestions welcome).
 
 ## The Bad
 
-- Libraries need to be vendored in mozilla-central. Dependencies will follow
+- Libraries need to be vendored in the Firefox repository. Dependencies will follow
   the Gecko train which might not be right for them, as some dependencies don’t
   really have a nightly vs stable version. - This could change in the future, as
   the integration gets deeper and updates to the library become more frequent /
@@ -107,7 +107,7 @@ suggestions welcome).
   Although this can be mitigated by providing flexible dependency on the library
   side (e.g. nimbus doesn’t need to depend on a specific version of - Glean and
   can accept whatever is in Gecko)
-- Code that doesn’t natively live in mozilla-central has double the work to get
+- Code that doesn’t natively live in the Firefox repository has double the work to get
   into a product - first a release process is needed from the native repo, then
   a phabricator process for the vendoring.
 
@@ -197,7 +197,7 @@ libxul.so).
 
 - The dependency to Glean is explicit and clear from an uninformed observer
   point of view.
-- Smaller scope, only Glean would need to be moved to mozilla-central
+- Smaller scope, only Glean would need to be moved to the Firefox repository
 
 #### Why we decided against
 
@@ -228,7 +228,7 @@ required from the Glean side.
 
 - **What’s the process to publish an update to the megazord?** When a team
   wants to publish an update to the megazord it will need to commit the update
-  to mozilla-central. A new build will be generated in the next nightly cycle,
+  to the `main` branch. A new build will be generated in the next nightly cycle,
   producing an updated version of the megazord. My understanding is that current
   megazord releases are stable (and don’t have beta/nightly cycles) so for
   external consumers, consuming the nightly build could be adequate, and provide
@@ -249,7 +249,7 @@ required from the Glean side.
   immediate need for such support knowing that it’s doable with a reasonable
   amount of work is enough for now.
 
-- **Vendoring in mozilla-central seems excessive.** I agree. This is an
+- **Vendoring in the Firefox repository seems excessive.** I agree. This is an
   unfortunate requirement stemming from a few assumptions (which could be
   challenged! We are choosing not to):
 
@@ -257,5 +257,5 @@ required from the Glean side.
   > - We want rust to call rust directly (without a C FFI layer)
   > - We want adding new libraries to be a painless experience
 
-  Because of the above, vendoring in mozilla-central seems to be the best if not
+  Because of the above, vendoring in the Firefox repository seems to be the best if not
   the only way to achieve our goals.

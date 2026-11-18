@@ -2,7 +2,7 @@
 
 These pages contain the documentation for Gecko's architecture for platform
 process and thread creation, communication and synchronization. They live
-in mozilla-central in the 'ipc/docs' directory.
+in the 'ipc/docs' directory of the Firefox repository.
 
 ```{toctree}
 :maxdepth: 3

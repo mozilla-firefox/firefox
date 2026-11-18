@@ -1,7 +1,7 @@
 # Editor / IDE integration
 
 You can use any editor or IDE to contribute to Firefox, as long as it can edit
-text files. However, there are some steps specific to mozilla-central that may
+text files. However, there are some steps specific to the Firefox repository that may
 be useful for a better development experience. This page attempts to document
 them.
 

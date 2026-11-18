@@ -50,9 +50,9 @@ additional key, value metadata to each test.
 ## Why have test manifests?
 
 It is desirable to have a unified format for test manifests for testing
-[mozilla-central](https://github.com/mozilla-firefox/firefox), etc.
+[Firefox code](https://github.com/mozilla-firefox/firefox), etc.
 
-- It is desirable to be able to selectively enable or disable tests based on platform or other conditions. This should be easy to do. Currently, since many of the harnesses just crawl directories, there is no effective way of disabling a test except for removal from mozilla-central
+- It is desirable to be able to selectively enable or disable tests based on platform or other conditions. This should be easy to do. Currently, since many of the harnesses just crawl directories, there is no effective way of disabling a test except for removal from the Firefox repository
 - It is desriable to do this in a universal way so that enabling and disabling tests as well as other tasks are easily accessible to a wider audience than just those intimately familiar with the specific test framework.
 - It is desirable to have other metadata on top of the test. For instance, let's say a test is marked as skipped. It would be nice to give the reason why.
 
@@ -607,10 +607,10 @@ through several design considerations.
   as libraries to read and edit it (e.g. `tomlkit`).
 - there should be a single file that may easily be
   transported. Traditionally, test harnesses have lived in
-  mozilla-central. This is less true these days and it is increasingly
-  likely that more tests will not live in mozilla-central going
+  the Firefox repository. This is less true these days and it is increasingly
+  likely that more tests will not live in the Firefox repository going
   forward. So `manifestparser.py` should be highly consumable. To
-  this end, it is a single file, as appropriate to mozilla-central,
+  this end, it is a single file, as appropriate to the Firefox repository,
   which is also a working python package deployed to PyPI for easy
   installation.
 

@@ -1,7 +1,7 @@
 # Accessibility
 
 These pages contain design documents for the accessibility implementation in Gecko.
-They live in the mozilla-central repository under the accessible/docs directory.
+They live in the Firefox repository under the accessible/docs directory.
 
 The [Accessibility page on the Mozilla Wiki](https://wiki.mozilla.org/Accessibility) contains general information about accessibility and the accessibility team at Mozilla.
 

@@ -36,7 +36,7 @@ profile:
 
 # How to download a conditioned profile
 
-From your mozilla-central root, run:
+From the root of your Firefox checkout, run:
 
 ```
 $ ./mach fetch-condprofile

@@ -1,6 +1,6 @@
 # Data Review
 
-**Everything that lands in mozilla-central that adds or expands data
+**Everything that lands in the Firefox repository that adds or expands data
 collection must go through the data review process.**
 
 The data review process is in place to ensure we follow Firefox's

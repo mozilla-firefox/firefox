@@ -2,7 +2,7 @@
 
 ## Running locally
 
-Running a test is as simple as calling it using `mach perftest` in a mozilla-central source
+Running a test is as simple as calling it using `mach perftest` in a Firefox source
 checkout:
 
 ```

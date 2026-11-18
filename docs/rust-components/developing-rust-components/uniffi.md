@@ -39,7 +39,7 @@ Here's how you can create a new set of bindings using UniFFI:
    - Follow the steps from the [UniFFI user guide](https://mozilla.github.io/uniffi-rs/0.27/) to add support to your crate.
    - UDL and proc-macros are both supported.
 2. Add your crate as a Firefox dependency (if it isn't already)
-   - **If the code will exist in the mozilla-central repo:**
+   - **If the code will exist in the Firefox repository:**
      - Create a new directory for the Rust crate
      - Edit `toolkit/components/uniffi-bindgen-gecko-js/components/Cargo.toml` and add a dependency to your library path
    - **If the code exists in an external repo:**

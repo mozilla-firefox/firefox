@@ -15,7 +15,7 @@ that can speed up some interactions with Git.
 If you happen to have the Java extension installed in VSCode, there's
 a chance that the "Problems" tab in the integrated terminal will
 display an error about `Cannot run program [...]/firefox/mach`.
-This is because the extension does not know how to parse the mozilla-central
+This is because the extension does not know how to parse the Firefox
 repository and specifically the `mach` command runner.
 This will not prevent you from building and running Firefox.
 

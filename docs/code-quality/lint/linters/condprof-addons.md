@@ -41,7 +41,7 @@ pushed on try or only applied locally (e.g. to run the tp6/tp6m webextensions pe
 third party extension installed to gather some metrics and/or GeckoProfiler data), then it can be
 safely ignored.
 
-On the contrary, if the patch or phabricator revision is meant to be landed on mozilla-central,
+On the contrary, if the patch or phabricator revision is meant to be landed in the Firefox repository,
 the linting error have to be fixed before or along landing the change, either by:
 
 - removing the addition to the customization file if it wasn't intended to include that addon to all runs

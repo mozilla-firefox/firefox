@@ -128,7 +128,7 @@ continuous integration processes**, and **Mozilla does not routinely
 test on these platforms**, nor do we block further development on the
 outcomes of those tests.
 
-At any given time a Firefox built from mozilla-central for these
+At any given time a Firefox built from source for these
 platforms may or may not work correctly or build at all.
 
 **Tier-3 Firefox platforms** include:

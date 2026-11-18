@@ -68,7 +68,7 @@ quarantine extended attribute from the downloaded Nightly:**
 
 ### Local Builds
 
-Local builds of mozilla-central do not enable Hardened Runtime and hence
+Local builds of Firefox do not enable Hardened Runtime and hence
 do not have debugging restrictions. As a result, some functionality will
 be permitted on local builds, but blocked on production builds which
 have Hardened Runtime enabled. [Bug

@@ -376,7 +376,7 @@ bot](https://github.com/mozilla/wpt-sync). This performs the following tasks:
 
 - Creates upstream PRs for changes in
   `testing/web-platform/tests` once they land on autoland, and
-  automatically merges them after they reach mozilla-central.
+  automatically merges them after they reach the `main` branch.
 - Runs merged upstream PRs through gecko CI to generate updated
   expectation metadata.
 - Updates the copy of web-platform-tests in the gecko tree with

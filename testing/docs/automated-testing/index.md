@@ -15,11 +15,12 @@ or on the relevant bug.
 
 ## Firefox Production
 
-These tests are found within the [mozilla-central](https://github.com/mozilla-firefox/firefox)
-tree, along with the product code.
+These tests are found within the
+[Firefox repository](https://github.com/mozilla-firefox/firefox),
+along with the product code.
 
 They are run when a changeset is pushed
-to [mozilla-central](https://github.com/mozilla-firefox/firefox),
+to the [`main` branch](https://github.com/mozilla-firefox/firefox/tree/main),
 [autoland](https://github.com/mozilla-firefox/firefox/tree/autoland), or
 {doc}`try </tools/try/index>`, with the results showing up on
 [Treeherder](https://treeherder.mozilla.org/). Not all tests will be run on

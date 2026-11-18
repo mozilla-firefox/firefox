@@ -6,7 +6,7 @@ This page explains interactions between Firefox and Flatpak packaging format.
 
 ## Where is the upstream
 
-The code reference itself is mozilla-central and the repackaging is under {searchfox}`the mach repackage flatpak command <python/mozbuild/mozbuild/repackaging/flatpak.py>`.
+The code reference itself is the Firefox repository and the repackaging is under {searchfox}`the mach repackage flatpak command <python/mozbuild/mozbuild/repackaging/flatpak.py>`.
 
 ## Where to report bugs
 

@@ -1,6 +1,6 @@
 # Fuzzing Interface
 
-The fuzzing interface is glue code living in mozilla-central in order to
+The fuzzing interface is glue code living in the Firefox repository in order to
 make it easier for developers and security researchers to test C/C++
 code with either [libFuzzer](https://llvm.org/docs/LibFuzzer.html) or
 [afl-fuzz](http://lcamtuf.coredump.cx/afl/).

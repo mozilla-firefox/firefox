@@ -24,12 +24,12 @@ same revision of mp4parse-rust.
 # Developing changes to mp4parse-rust crates
 
 Before committing changes to the github repository, it's a good idea to test
-them out in the context of mozilla-central. There are a number of ways to
+them out in the context of Firefox. There are a number of ways to
 achieve this with various trade-offs, but here are the two I recommend. Both
 start the same way:
 
 1. `git clone https://github.com/mozilla/mp4parse-rust` somewhere outside
-   mozilla-central. For example: /Users/your_username/src/mp4parse-rust.
+   the Firefox repository. For example: /Users/your_username/src/mp4parse-rust.
 
 ## For rapid iteration on local, uncommitted changes
 
@@ -44,12 +44,12 @@ start the same way:
 4. In the moz.build in this directory, in `ffi_generated.inputs`, change
    '/third_party/rust/mp4parse_capi' to
    '//Users/your_username/src/mp4parse-rust/mp4parse_capi'. Note the
-   double-slash, it's required to reference paths outside mozilla-central.
+   double-slash, it's required to reference paths outside the Firefox repository.
 5. Build and run the code or tests normally to exercise the code in
    /Users/your_username/src/mp4parse-rust.
 
 This is a fast way to try experiment with the rust code, but because it exists
-outside the mozilla-central tree, it cannot be used with try.
+outside the Firefox source tree, it cannot be used with try.
 
 ## For validation of local, committed changes
 
@@ -70,5 +70,5 @@ outside the mozilla-central tree, it cannot be used with try.
 
 This is a more thorough way to test local changes to the rust code since try
 is available, but it's slower than the `path` dependency approach above
-because every change must be committed and copied into the mozilla-central
-tree with `mach vendor rust`.
+because every change must be committed and copied into the Firefox
+source tree with `mach vendor rust`.

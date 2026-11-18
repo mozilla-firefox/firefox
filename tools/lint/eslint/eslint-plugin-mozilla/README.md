@@ -2,17 +2,17 @@
 
 A collection of rules that help enforce JavaScript coding standard in the Mozilla project.
 
-These are primarily developed and used within the Firefox build system ([mozilla-central](https://github.com/mozilla-firefox/firefox)), but are made available for other related projects to use as well.
+These are primarily developed and used within the Firefox build system ([the Firefox repository](https://github.com/mozilla-firefox/firefox)), but are made available for other related projects to use as well.
 
 ## Usage
 
-### Within mozilla-central:
+### Within the Firefox repository:
 
 ```sh
 $ ./mach eslint --setup
 ```
 
-### Outside mozilla-central:
+### Outside the Firefox repository:
 
 Install ESLint [ESLint](http://eslint.org):
 
@@ -77,7 +77,7 @@ Please file bugs in Bugzilla in the Lint and Formatting component of the Develop
 
 ## Tests
 
-The tests can only be run from within mozilla-central. To run the tests:
+The tests can only be run from within the Firefox repository. To run the tests:
 
 ```sh
 $ ./mach npm --prefix tools/lint/eslint/eslint-plugin-mozilla ci

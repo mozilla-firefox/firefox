@@ -81,7 +81,7 @@ Here is a sample fragment for a new API:
 
 The `schema` and `url` properties are simply URLs for the API schema
 and the code implementing the API. The `chrome:` URLs in the example above
-are typically created by adding entries to `jar.mn` in the mozilla-central
+are typically created by adding entries to `jar.mn` in the Firefox source
 directory where the API implementation is kept. The standard locations for
 API implementations are:
 

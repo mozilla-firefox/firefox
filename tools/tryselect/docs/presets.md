@@ -35,7 +35,7 @@ mach try --list-presets
 ## Editing and Sharing Presets
 
 Presets can be defined in one of two places, in your home directory or in a file checked into
-mozilla-central.
+the Firefox repository.
 
 ### Local Presets
 
@@ -48,7 +48,7 @@ Presets defined here are your own personal collection of presets. You can modify
 
 ### Shared Presets
 
-You can also check presets into mozilla-central in {searchfox}`tools/tryselect/try_presets.yml`. These presets
+You can also check presets into the Firefox repository in {searchfox}`tools/tryselect/try_presets.yml`. These presets
 will be available to all users of `mach try`, so please be mindful when editing this file. Make
 sure the name of the preset is scoped appropriately (i.e doesn't contain any team or module specific
 terminology). It is good practice to prefix the preset name with the name of the team or module that

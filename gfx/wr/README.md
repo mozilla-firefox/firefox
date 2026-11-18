@@ -8,10 +8,10 @@ Note that the canonical home for this code is in gfx/wr folder of the
 Firefox repository at https://github.com/mozilla-firefox/firefox. The
 Github repository at https://github.com/servo/webrender should be considered
 a downstream mirror, although it contains additional metadata (such as Github
-wiki pages) that do not exist in mozilla-central. Pull requests against the
+wiki pages) that do not exist in the Firefox repository. Pull requests against the
 Github repository are still being accepted, although once reviewed, they will
-be landed on mozilla-central first and then mirrored back. If you are familiar
-with the mozilla-central contribution workflow, filing bugs in
+be landed in the Firefox repository first and then mirrored back. If you are familiar
+with the Firefox contribution workflow, filing bugs in
 [Bugzilla](https://bugzilla.mozilla.org/enter_bug.cgi?product=Core&component=Graphics%3A%20WebRender)
 and submitting patches there would be preferred.
 

@@ -1,6 +1,6 @@
 # Testing Policy
 
-**Everything that lands in mozilla-central includes automated tests by default**. Every commit has tests that cover every major piece of functionality and expected input conditions.
+**Everything that lands in the Firefox repository includes automated tests by default**. Every commit has tests that cover every major piece of functionality and expected input conditions.
 
 One of the following Project Tags must be applied in Phabricator before landing, at the discretion of the reviewer:
 * `testing-approved` if it has sufficient automated test coverage.

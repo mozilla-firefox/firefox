@@ -3,7 +3,7 @@
 # User Guide
 
 Mach is the central entry point for most operations that can be performed in
-mozilla-central.
+the Firefox repository.
 
 ## Command Help
 

@@ -1,7 +1,7 @@
 # Ruff
 
 [Ruff](https://github.com/charliermarsh/ruff) is an extremely fast Python
-linter and formatter, written in Rust. It can process all of mozilla-central in
+linter and formatter, written in Rust. It can process all of the Firefox repository in
 under a second, and implements rule sets from a large array of Python linters
 and formatters, including:
 

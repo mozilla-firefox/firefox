@@ -162,7 +162,7 @@ below) if your code can be exercised in this way.
 
 **Fuzzing Interface**
 
-The fuzzing interface is glue code living in mozilla-central in order to make it
+The fuzzing interface is glue code living in the Firefox repository in order to make it
 easier for developers and security researchers to test C/C++ code with either libFuzzer or afl-fuzz.
 
 This interface offers a gtest (C++ unit test) level component based

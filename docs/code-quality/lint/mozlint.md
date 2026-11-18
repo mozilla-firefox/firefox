@@ -1,6 +1,6 @@
 # MozLint
 
-Linters are used in mozilla-central to help enforce coding style and avoid bad practices.
+Linters are used in the Firefox repository to help enforce coding style and avoid bad practices.
 Due to the wide variety of languages in use, this is not always an easy task.
 In addition, linters should be runnable from editors, from the command line, from review tools
 and from continuous integration. It's easy to see how the complexity of running all of these

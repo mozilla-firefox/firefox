@@ -4,7 +4,7 @@ Intermittent oranges are test failures which happen intermittently,
 in a seemingly random way. Many of such failures could be avoided by
 good test writing principles. This page tries to explain some of
 those principles for use by people who contribute tests, and also
-those who review them for inclusion into mozilla-central.
+those who review them for inclusion into the Firefox repository.
 
 They are also called flaky tests in other projects.
 

@@ -108,7 +108,7 @@ git rebase -i
 ## Rebasing the stack
 
 As the codebase moves fast, it can be necessary to pull changes from
-mozilla-central before landing the changes.
+the `main` branch before landing the changes.
 
 ```shell
 git remote update

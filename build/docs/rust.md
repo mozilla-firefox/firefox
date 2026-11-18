@@ -27,7 +27,7 @@ dependencies in a `Cargo.toml` file. If you don't, you will get a build error
 saying **"error: the lock file /home/njn/moz/mc3/Cargo.lock needs to be updated
 but --frozen was passed to prevent this"**.
 
-By default, all Cargo packages in the mozilla-central repository are part of
+By default, all Cargo packages in the Firefox repository are part of
 the same
 {searchfox}`workspace <toolkit/library/rust/shared/lib.rs>`
 and will share the `Cargo.lock` file and `target` directory in the root of
@@ -96,23 +96,23 @@ same thing, but use `HOST_RUST_PROGRAMS` instead of `RUST_PROGRAMS`.
 
 ## Where should I put my crate?
 
-If your crate's canonical home is mozilla-central, you can put it next to the
+If your crate's canonical home is the Firefox repository, you can put it next to the
 related code in the appropriate directory.
 
-If your crate is mirrored into mozilla-central from another repository, and
-will not be actively developed in mozilla-central, you can simply list it
+If your crate is mirrored into the Firefox repository from another repository, and
+will not be actively developed there, you can simply list it
 as a `crates.io`-style dependency with a version number, and let it be
 vendored into the `third_party/rust` directory.
 
-If your crate is mirrored into mozilla-central from another repository, but
+If your crate is mirrored into the Firefox repository from another repository, but
 will be actively developed in both locations, you should send mail to the
 dev-builds mailing list to start a discussion on how to meet your needs.
 
 ## Third-party crate dependencies
 
 Third-party dependencies for in-tree Rust crates are *vendored* into the
-`third_party/rust` directory of mozilla-central. This means that a copy of
-each third-party crate's code is committed into mozilla-central. As a result,
+`third_party/rust` directory of the Firefox repository. This means that a copy of
+each third-party crate's code is committed into the Firefox repository. As a result,
 building Firefox does not involve downloading any third-party crates.
 
 If you add a dependency on a new crate you must run `mach vendor rust` to
@@ -121,14 +121,14 @@ vendor the dependencies into that directory. (Note that `mach vendor rust`
 as on other platforms.)
 
 When it comes to checking the suitability of third-party code for inclusion
-into mozilla-central, keep the following in mind.
+into the Firefox repository, keep the following in mind.
 
 - `mach vendor rust` will check that the licenses of all crates are suitable.
 - `mach vendor rust` will run `cargo vet` to ensure that the crates have been audited. If not,
   you will have to audit them using `mach cargo vet` to check that the code looks reasonable
   (especially unsafe code) and that there are reasonable tests. All vendored crates must be audited.
 - Third-party crate tests aren't run, which means that large test fixtures will
-  bloat mozilla-central. Consider working with upstream to mark those test
+  bloat the Firefox repository. Consider working with upstream to mark those test
   fixtures with `[package] exclude = ...` as described
   [here](https://doc.rust-lang.org/cargo/reference/manifest.html#the-exclude-and-include-fields).
 - If you specify a dependency on a branch, pin it to a specific revision,
@@ -139,7 +139,7 @@ into mozilla-central, keep the following in mind.
 
 Note that all dependencies will be vendored, even ones that aren't used due to
 disabled features. It's possible that multiple versions of a crate will end up
-vendored into mozilla-central.
+vendored into the Firefox repository.
 
 ## Patching third-party crates
 
@@ -167,4 +167,4 @@ For an example of a more complex workflow involving a third-party crate, see
 {searchfox}`mp4parse-rust/README.md <media/mp4parse-rust/README.md>`.
 It describes the workflow for a crate that is hosted on GitHub, and for which
 changes are made via GitHub pull requests, but all pull requests must also be
-tested within mozilla-central before being merged.
+tested within the Firefox repository before being merged.

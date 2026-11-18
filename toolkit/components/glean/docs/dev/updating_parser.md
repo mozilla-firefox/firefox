@@ -34,7 +34,7 @@ You can find the currently used `glean_parser` version in the Glean SDK source t
 
 ## Using a local `glean_parser` development version
 
-To test out a new `glean_parser` in mozilla-central follow these steps:
+To test out a new `glean_parser` in Firefox, follow these steps:
 
 1. Remove `glean_parser` from the user-wide virtual environment.
    This can be found in a path like `~/.mozbuild/srcdirs/gecko-f5e3b9c6ded5/_virtualenvs/mach/lib/python3.10/site-packages/glean_parser`

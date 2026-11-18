@@ -19,7 +19,7 @@ You will need the following:
 - Node.js 10+ (On Mac, the best way to install Node.js is to use the install link on the [Node.js homepage])
 - npm (packaged with Node.js)
 
-To install node dependencies, run the following from the root of the mozilla-central repository.
+To install node dependencies, run the following from the root of the Firefox repository.
 (This command uses `mach` to call `npm` and `node` commands to ensure the correct versions of Node and npm are being referenced.)
 
 ```shell
@@ -40,7 +40,7 @@ in `browser/extensions/newtab/content-src` directory. These files will be compil
 
 ## Building assets and running Firefox
 
-The build generates the bundles and CSS into the objdir, so to build assets and run Firefox, run the following from the root of the mozilla-central repository:
+The build generates the bundles and CSS into the objdir, so to build assets and run Firefox, run the following from the root of the Firefox repository:
 
 ```shell
 ./mach build faster && ./mach run
@@ -88,7 +88,7 @@ it runs the following checks in order, stopping at the first failure:
    on staged files and blocks the commit if there are errors.
 3. **Tests** — optionally runs unit tests (configurable, disabled by default).
 
-To install the hook, run the following from the root of the mozilla-central repository:
+To install the hook, run the following from the root of the Firefox repository:
 
 ```shell
 ln -sf "$(git rev-parse --show-toplevel)/tools/lint/hooks_newtab.py" \

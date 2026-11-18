@@ -18,7 +18,7 @@
 The actual migrations are performed running Python modules called **migration
 recipes**, which contain directives on how to migrate strings, which files are
 involved, transformations to apply, etc. These recipes are stored in
-[mozilla-central](https://searchfox.org/firefox-main/source/python/l10n/fluent_migrations).
+[the Firefox repository](https://searchfox.org/firefox-main/source/python/l10n/fluent_migrations).
 
 When part of Firefox’s UI is migrated to Fluent, a migration recipe should be
 attached to the same patch that adds new strings to `.ftl` files.
@@ -26,7 +26,7 @@ attached to the same patch that adds new strings to `.ftl` files.
 Migration recipes can quickly become obsolete, because the referenced strings
 and files are removed from repositories as part of ongoing development.
 For these reasons, l10n-drivers periodically clean up the `fluent_migrations`
-folder in mozilla-central, keeping only recipes for 2
+folder in the Firefox repository, keeping only recipes for 2
 shipping versions (Nightly and Beta).
 
 :::{hint}
@@ -42,7 +42,7 @@ The migration recipe’s filename should start with a reference to the associate
 bug number, and include a brief description of the bug, e.g.
 {bash}`bug_1451992_preferences_applicationManager.py` is the migration recipe
 used to migrate the Application Manager window in preferences. It’s also
-possible to look at existing recipes in [mozilla-central](https://searchfox.org/firefox-main/source/python/l10n/fluent_migrations) for inspiration.
+possible to look at existing recipes in [the Firefox repository](https://searchfox.org/firefox-main/source/python/l10n/fluent_migrations) for inspiration.
 
 ## General Recipe Structure
 

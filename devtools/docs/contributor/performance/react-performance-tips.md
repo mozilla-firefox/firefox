@@ -50,7 +50,7 @@ don't use `shouldComponentUpdate`. What we call plain components here are either
 
 #### Notes on the use of JSX
 
-Because we don't use a build step in mozilla-central yet, some of our
+Because we don't use a build step in Firefox yet, some of our
 tools don't use JSX and use [factories](https://reactjs.org/docs/react-api.html#createfactory)
 instead:
 

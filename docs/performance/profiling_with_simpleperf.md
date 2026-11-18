@@ -14,7 +14,7 @@ format.
 
 `simpleperf` is in the Android NDK. It’s at `ndk-path/simpleperf/`.
 Make sure your Android NDK is somewhat recent. `r26c` seems to work well.
-If you have a mozilla-central checkout, you can run `./mach bootstrap` in it,
+If you have a Firefox checkout, you can run `./mach bootstrap` in it,
 pick `4. GeckoView/Firefox for Android`, accept all the licenses, and it
 will download the NDK to `~/.mozbuild/android-ndk-<version>`.
 

@@ -16,7 +16,7 @@ on your machine). They live in the team `testops-tools` repo (staged today from
 
 ## Running a test by hand
 
-Fenix in mozilla-central builds+runs through `./mach`, not `./gradlew`, from the repo root. To build and run
+Fenix in the Firefox repository builds+runs through `./mach`, not `./gradlew`, from the repo root. To build and run
 one instrumented efficiency test on a connected device:
 
 ```

@@ -6,9 +6,9 @@ Follow these step-by-step instructions to ensure you have the necessary requirem
 
 ## Setup Instructions
 
-### 1. Clone mozilla-central
+### 1. Clone the Firefox repository
 
-Ensure you have a local clone of mozilla-central.
+Ensure you have a local clone of the Firefox repository.
 If you don't have it yet, refer to [this link](https://firefox-source-docs.mozilla.org/contributing/contribution_quickref.html#bootstrap-a-copy-of-the-firefox-source-code).
 
 Building the project is not necessary for this setup.

@@ -10,7 +10,7 @@ process interspersed with some tips.
 ## Check for not-yet upstreamed changes
 
 Before vendoring a new Puppeteer release make sure that there are no Puppeteer
-specific changes in mozilla-central repository that haven't been upstreamed yet
+specific changes in the Firefox repository that haven't been upstreamed yet
 since the last vendor happened. Run the following command and check the listed
 bugs or related upstream code to verify:
 
@@ -34,7 +34,7 @@ repo. You can specify your local Firefox build when you do so:
 ## Prepare the Puppeteer Repository
 
 Clone the Puppeteer git repository and checkout the release tag you want
-to vendor into mozilla-central.
+to vendor into the Firefox repository.
 
 ```shell
 % git checkout tags/puppeteer-%version%
@@ -43,7 +43,7 @@ to vendor into mozilla-central.
 You might want to [install the project] at this point and make sure unit tests pass.
 Check the project's `package.json` for relevant testing commands.
 
-## Update the Puppeteer code in mozilla-central
+## Update the Puppeteer code in the Firefox repository
 
 You can run the following mach command to copy over the Puppeteer branch you
 just prepared. The mach command has flags to specify a local or remote
@@ -65,7 +65,7 @@ version control. If that is not the case then update the top-level
 
 ### Apply recurring patches
 
-Due to some discrepancies between mozilla-central and the upstream puppeteer
+Due to some discrepancies between the Firefox repository and the upstream puppeteer
 repository, some patches need to be manually applied every time we vendor a new
 version.
 

@@ -90,6 +90,6 @@ reflects `nsresult` codes into Rust.
 
 Unfortunately, rustdocs are [not yet generated and
 hosted](https://bugzilla.mozilla.org/show_bug.cgi?id=1428139) for crates within
-mozilla-central. Therefore, the crate links shown above link to files
+the Firefox repository. Therefore, the crate links shown above link to files
 containing the relevant rustdocs source where possible. However, you can
 generate docs locally using the `cargo doc` command described above.

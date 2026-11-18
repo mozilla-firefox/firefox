@@ -27,7 +27,7 @@ mach python $SCRIPT_DIR/GenerateWebIDLBindings.py -- runtime
 this command will generates a `.webdil` file named `dom/webidl/ExtensionRuntime.webidl`.
 
 :::{warning}
-This python script uses some python libraries part of mozilla-central `mach` command
+This python script uses some python libraries part of the Firefox `mach` command
 and so it has to be executed using `mach python` and any command line options that has
 to the passed to the `GenerateWebIDLBindings.py` script should be passed after the `--`
 one that ends `mach python` own command line options.
@@ -69,7 +69,7 @@ Overwrite dom/webidl/ExtensionRuntime.webidl? (Yes/No/Diff)
   `toolkit/components/extensions/webidl-api`:
 
   - if no files with the expected names is found the python script will generate an initial
-    boilerplate files and will store them in the expected mozilla-central directory.
+    boilerplate files and will store them in the expected Firefox source directory.
   - The Firefox developers are responsible to fill this initial boilerplate as needed and
     to apply the necessary changes (if any) when the webidl definitions are updated because
     of changes to the WebExtensions APIs JSONSchema.

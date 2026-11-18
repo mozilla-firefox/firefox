@@ -1,6 +1,6 @@
 # Linting
 
-Linters are used in mozilla-central to help enforce coding style and avoid bad practices.
+Linters are used in the Firefox repository to help enforce coding style and avoid bad practices.
 They cover a wide variety of languages and checks.
 
 ## Getting Help

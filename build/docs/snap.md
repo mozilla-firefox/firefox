@@ -6,7 +6,7 @@ This page explains interactions between Firefox and Snap packaging format.
 
 ## Where is the upstream
 
-The code reference itself is mozilla-central, but the packaging is being worked
+The code reference itself is the Firefox repository, but the packaging is being worked
 within the [Canonical's firefox-snap repository](https://github.com/canonical/firefox-snap/).
 
 This packaging includes a few more bits and dependencies, including compiler.

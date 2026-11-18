@@ -36,7 +36,7 @@ It calls into the `firefox-on-glean` crate to:
 
 ## FOG API
 
-This module provides the user-facing API for Glean inside mozilla-central.
+This module provides the user-facing API for Glean inside Firefox.
 
 * The code lives in `toolkit/components/glean/api`.
 * It is written in Rust.

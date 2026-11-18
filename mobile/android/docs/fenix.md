@@ -22,7 +22,7 @@ export ANDROID_HOME=$HOME/.mozbuild/android-sdk-<os_name>
 
 ## Build Fenix using command line
 
-From the root mozilla-central directory, build Fenix:
+From the root of the Firefox source directory, build Fenix:
 
 ```shell
 ./mach gradle fenix:assembleDebug

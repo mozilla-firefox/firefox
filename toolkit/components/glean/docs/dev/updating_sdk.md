@@ -6,7 +6,7 @@ and [`glean-core`][glean-core] crates on crates.io.
 [glean-crate]: https://crates.io/crates/glean
 [glean-core]: https://crates.io/crates/glean-core
 
-These two crates' versions are included in several places in mozilla-central.
+These two crates' versions are included in several places in the Firefox repository.
 To update them all, you should use the command
 `mach update-glean <version, like "54.1.0">`.
 
@@ -33,7 +33,7 @@ The following strategy can be followed to decide on version mismatches:
       Then you will have to update to that new Glean SDK version.
 * If the version of the **vendored dependency is older** (lower major or minor version), consider updating the vendored version to the newer one;
   seek review from the person who vendored that dependency in the first place;
-  if that is not possible or breaks mozilla-central build, then consider keeping both versions vendored in-tree; please note that this option will probably only be approved for small crates,
+  if that is not possible or breaks the Firefox build, then consider keeping both versions vendored in-tree; please note that this option will probably only be approved for small crates,
   and will require updating the `TOLERATED_DUPES` list in `mach vendor`
   (instructions are provided as you go).
 

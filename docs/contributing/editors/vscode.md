@@ -65,11 +65,11 @@ This is automatically done when running `./mach ide vscode` but may be
 changed manually.
 :::
 
-When using Git in mozilla-central, VS Code will treat your build directories as ordinary directories by default, causing some undesirable behavior including long indexing times, Go to Definition will open files in the build directory instead of the source tree, and Search Files by Name will find duplicate files from the source tree and the build directory (note: when using Git, VS Code will not do this since it reads `.gitignore`). You can follow these directions to have VS Code largely ignore your build directories:
+When using Git in the Firefox repository, VS Code will treat your build directories as ordinary directories by default, causing some undesirable behavior including long indexing times, Go to Definition will open files in the build directory instead of the source tree, and Search Files by Name will find duplicate files from the source tree and the build directory (note: when using Git, VS Code will not do this since it reads `.gitignore`). You can follow these directions to have VS Code largely ignore your build directories:
 
 1. Go to Preferences -> Settings
 2. Search "exclude" in the Settings
-3. (optional) Select "Workspace" below the search bar to only change this setting for the mozilla-central repository
+3. (optional) Select "Workspace" below the search bar to only change this setting for the Firefox repository
 4. Under "Files: Exclude", click "Add Pattern", type `obj-*` (assuming your build directory names start with the default text, `obj-`), and click "OK"
 5. Repeat the step above for the "Files: Watcher Exclude" setting
 6. Reload VS Code: the easiest way to do this is to quit and reopen it.

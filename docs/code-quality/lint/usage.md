@@ -146,7 +146,7 @@ See details on [how to set up your editor here](/contributing/editor.md)
 Editor integrations are highly recommended for linters, as they let you see
 errors in real time, and can help you fix issues before you compile or run tests.
 
-Although mozilla-central does not currently have an integration available for
+Although the Firefox repository does not currently have an integration available for
 `./mach lint`, there are various integrations available for some of the major
 linting tools that we use:
 

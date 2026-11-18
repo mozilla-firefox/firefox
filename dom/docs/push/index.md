@@ -46,7 +46,7 @@ sequenceDiagram
 
 ### Flow diagram for source code
 
-The source code for push is available under [`dom/push`](https://searchfox.org/firefox-main/source/dom/push) in mozilla-central.
+The source code for push is available under [`dom/push`](https://searchfox.org/firefox-main/source/dom/push) in the Firefox repository.
 
 The following flow diagram describes how different modules interact with each other to provide the push API to consumers.
 
@@ -133,7 +133,7 @@ See also:
 
 ### Flow diagram for source code
 
-The source code for push is available under the following paths in mozilla-central:
+The source code for push is available under the following paths in the Firefox repository:
 
 * [`dom/push/`](https://searchfox.org/firefox-main/source/dom/push/)
 * [`mobile/shared/components/geckoview/GeckoViewPush.sys.mjs`](https://searchfox.org/firefox-main/source/mobile/shared/components/geckoview/GeckoViewPush.sys.mjs)

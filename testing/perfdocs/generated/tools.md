@@ -4,7 +4,7 @@ You can run `perftest-tools` locally.
 
 ## Running locally
 
-You can run `mach perftest-tools` in a mozilla-central source
+You can run `mach perftest-tools` in a Firefox source
 checkout:
 
 ```

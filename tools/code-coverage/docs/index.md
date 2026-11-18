@@ -38,7 +38,7 @@ areas of code that should be tested, or code that is no longer used
 ## C/C++ Code Coverage on Firefox
 
 There are several ways to get C/C++ coverage information for
-mozilla-central, including creating your own coverage builds. The next
+Firefox, including creating your own coverage builds. The next
 sections describe the available options.
 
 ### Generate Code Coverage report from a try build (or any other CI build)

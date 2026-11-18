@@ -21,9 +21,9 @@ Bugzilla (whether or not the component in question uses an external
 issue tracker).*
 
 *Unless approved by Release Management, any GitHub managed code with
-open regressions will not be merged to mozilla-central. Even if the
+open regressions will not be merged to the primary Firefox repository. Even if the
 regression is not code that has been previously merged into
-mozilla-central.*
+the primary Firefox repository.*
 
 *All Firefox code managed in GitHub which uses GitHub to manage
 issues* [must use the shared
@@ -41,13 +41,13 @@ external tracker.
 
 The bug **must not** be RESOLVED until the code from the external
 repository containing the change set for the bug has landed in
-mozilla-central. When the change set lands in mozilla-central, the
+the primary Firefox repository. When the change set lands in the primary Firefox repository, the
 Bugzilla tracking bug should be set to RESOLVED FIXED and release status
 flags should be updated to reflect the release trains the fix has been
 landed or uplifted into.
 
 If the change set containing the patch for the regression is reverted
-from mozilla-central, for any reason, then the tracking bug for the
+from the primary Firefox repository, for any reason, then the tracking bug for the
 regression **must** be set to REOPENED and the release status flags
 updated accordingly.
 
@@ -56,7 +56,7 @@ any reason, the bug must be reopened and the status flags on the
 Bugzilla tracking bug updated.
 
 The team responsible for the component with the regression **should**
-strive to create a patch for mozilla-central which contains the fix for
+strive to create a patch for the primary Firefox repository which contains the fix for
 the bug alone, not a monolithic patch containing changes for several
 other bugs or features.
 
@@ -67,7 +67,7 @@ file](https://docs.google.com/document/d/12ihxPXBo9zBBaU_pBsPrc_wNHds4Upr-PwFfiS
 
 ### You must file a regression bug in Bugzilla
 
-*If the code with the regression has landed in mozilla-central, you must
+*If the code with the regression has landed in the primary Firefox repository, you must
 file a regression bug.*
 
 #### Example
@@ -92,7 +92,7 @@ whose code and issues are managed in GitHub.
 ##### Consequences
 
 *Until the regression is fixed or backed out of the GitHub repo, the
-project cannot merge code into mozilla-central*
+project cannot merge code into the primary Firefox repository*
 
 #### Example
 
@@ -110,11 +110,11 @@ managed in Bugzilla.
 ##### Consequences
 
 *Until the regression is fixed or backed out of the GitHub repo, the
-project cannot merge code into mozilla-central*
+project cannot merge code into the primary Firefox repository*
 
 ### Do not file a regression bug in Bugzilla
 
-*If the code with the regression has not landed in mozilla-central, you
+*If the code with the regression has not landed in the primary Firefox repository, you
 do not need to file a bug.*
 
 #### Example
@@ -130,5 +130,5 @@ branch. The code and issues are managed in their own GitHub project.
 
 ##### Consequence
 
-*Issue blocks merge of GitHub project with mozilla-central until
+*Issue blocks merge of GitHub project with the primary Firefox repository until
 resolved or backed out.*

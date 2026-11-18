@@ -7,7 +7,7 @@ locally, trading bandwidth for time.
 
 Artifact builds will be useful to many developers who are not working
 with compiled code (see "Restrictions" below). Artifacts are typically
-fetched from [mozilla-central](https://github.com/mozilla-firefox/firefox).
+fetched from CI for a branch matching your Firefox checkout.
 
 To automatically download and use pre-built binary artifacts, add the
 following lines into your {doc}`mozconfig </setup/configuring_build_options>`

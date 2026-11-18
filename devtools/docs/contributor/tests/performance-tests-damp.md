@@ -160,11 +160,11 @@ It will only display regressions and improvements with a medium or high confiden
 
 DAMP is based on top of a more generic test suite called [Talos](https://wiki.mozilla.org/Buildbot/Talos).
 Talos is a Mozilla test suite to follow all Firefox components performance.
-It is written in Python and here are [the sources](https://searchfox.org/firefox-main/source/testing/talos/) in mozilla-central.
+It is written in Python and here are [the sources](https://searchfox.org/firefox-main/source/testing/talos/) in the Firefox repository.
 Compared to the other test suites, it isn't run on the cloud, but on dedicated hardware.
 This is to ensure performance numbers are stable over time and between two runs.
 Talos runs various types of tests. More specifically, DAMP is a [Page loader test](https://wiki.mozilla.org/Buildbot/Talos/Tests#Page_Load_Tests).
-The [source code](http://searchfox.org/firefox-main/source/testing/talos/talos/tests/devtools/) for DAMP is also in mozilla-central.
+The [source code](http://searchfox.org/firefox-main/source/testing/talos/talos/tests/devtools/) for DAMP is also in the Firefox repository.
 See [Writing new performance test](./writing-perf-tests.md) for more information about the implementation of DAMP tests.
 
 ## How to see the performance trends?

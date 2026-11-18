@@ -161,7 +161,7 @@ to replace themselves with more than one node.
 
 ## Common Migration Recipe Patterns
 
-Every example below is taken from a recipe that landed in mozilla-central in
+Every example below is taken from a recipe that landed in the Firefox repository in
 `python/l10n/fluent_migrations`, but be aware that the folder is pruned
 intermittently, so they may no longer exist in tree. An archive of
 migration recipes can be found [here](https://github.com/mozilla-l10n/fluent-migrations).

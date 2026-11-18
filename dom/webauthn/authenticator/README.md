@@ -11,7 +11,7 @@ APIs (as there are on Android, iOS, [macOS][] and [Windows][hello]). It
 implements a subset of the CTAP protocol that is useful for a web browser.
 
 It was previously developed at https://github.com/mozilla/authenticator-rs and
-was imported into mozilla-central at version 0.6.1.
+was imported into the Firefox repository at version 0.6.1.
 
 [^1]: [macOS has its own platform WebAuthn API][macOS] (which also supports iCloud Keychain), but still allows direct, transport level communication with authenticators.
 

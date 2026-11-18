@@ -115,12 +115,12 @@ everything needed to do an ASAN build.
 #### Getting the source
 
 Using that or any later revision, all you need to do is to {doc}`get yourself
-a clone of mozilla-central </contributing/contribution_quickref>`.
+a clone of the Firefox repository </contributing/contribution_quickref>`.
 
 #### Adjusting the build configuration
 
 Create the build configuration file `mozconfig` with the following
-content in your mozilla-central directory:
+content in your Firefox source directory:
 
 ```
 # Combined .mozconfig file for ASan on Linux+Mac

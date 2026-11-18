@@ -61,7 +61,7 @@ especially when commenting in bugs with external reporters.
 - Do not push to Try servers if possible: this exposes the security
   issues for these high rated vulnerabilities to public viewing. In an
   ideal case, testing of patches is done locally before final check-in
-  to mozilla-central.
+  to the `main` branch.
 - If pushing to Try servers is necessary, **do not include the bug
   number in the patch**. Ideally, do not include tests in the push as
   the tests can illustrate the exact nature of the security problem
@@ -108,7 +108,7 @@ a developer without any explicit approval if:
 - The bug has a sec-high rating, is a cross-process bug, but that target process
   is the GPU, RDD, GMP, Utility, Socket, or other non-Parent process
 - The bug _is_ a parent process bug _but_ it is a recent regression on
-  mozilla-central. Meaning:
+  the `main` branch (Nightly). Meaning:
   - A specific regressing check-in has been identified
   - The developer can (**and has**) marked the status flags for ESR and
     Beta as "unaffected"

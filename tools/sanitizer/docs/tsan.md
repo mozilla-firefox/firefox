@@ -71,7 +71,7 @@ fixes for TSan on Firefox.
 Sanitizer support in Rust is genuinely experimental,
 so our build system only works with a specially patched version of Rust
 that we build in our CI. To install that specific version (or update to a newer
-version), run the following in the root of your mozilla-central checkout:
+version), run the following in the root of your Firefox checkout:
 
 ```
 ./mach artifact toolchain --from-build linux64-rust-dev
@@ -93,12 +93,12 @@ free to "install" the toolchain wherever you please.
 #### Getting the source
 
 Using that or any later revision, all you need to do is to {doc}`get yourself
-a clone of mozilla-central </contributing/contribution_quickref>`.
+a clone of the Firefox repository </contributing/contribution_quickref>`.
 
 #### Adjusting the build configuration
 
 Create the build configuration file `mozconfig` with the following
-content in your mozilla-central directory:
+content in your Firefox source directory:
 
 ```
 # Combined .mozconfig file for TSan on Linux+Mac

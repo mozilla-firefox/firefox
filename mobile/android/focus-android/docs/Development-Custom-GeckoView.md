@@ -4,7 +4,7 @@ If you are an engineer working on Gecko(View) then you might be interested in bu
 
 For this you will need to:
 
-* Checkout mozilla-central (or another branch)
+* Check out the `main` branch of the Firefox repository (or another branch)
 * Setup your system to build Firefox for Android
 * Package a GeckoView [AAR](https://developer.android.com/studio/projects/android-library.html)
 * Modify your Focus gradle configuration to use your custom GeckoView AAR.

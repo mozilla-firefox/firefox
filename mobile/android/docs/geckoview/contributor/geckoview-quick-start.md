@@ -229,7 +229,7 @@ If patch changes are made during review, be sure to re-generate new signatures a
 unstaging `api.txt` is the easiest way to accomplish this.
 
 A special situation is when a patch changing the API may need to be uplifted to an earlier
-branch of mozilla-central, for example, to the beta channel. To do this, follow the usual uplift
+branch of the Firefox repository, for example, to the beta channel. To do this, follow the usual uplift
 steps and make a version of the patch for uplift that is graphed onto the new target branch and
 rerun the API linter commands and update the CHANGELOG to the release it will be graphed onto.
 
@@ -354,7 +354,7 @@ change reviewers after submission.
 
 #### GeckoView, Android Components, Fenix, Focus, and Reference Browser Dependency Substitution
 
-Internal product dependency substitution is handled automatically in mozilla-central on full builds. When building, the substitution
+Internal product dependency substitution is handled automatically in the Firefox repository on full builds. When building, the substitution
 into these other products will happen automatically after `./mach build` is ran. However, in artifact builds, changes in
 Gecko or GeckoView will not consistently be reflected. If making changes to Gecko or GeckoView, it is **strongly** recommended
 to only use full builds as changes in Gecko or GeckoView may not be reflected when using artifact builds.

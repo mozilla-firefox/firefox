@@ -195,7 +195,7 @@ file if they are not.
 In a try push we allow to run jobs on new extension XPI files not part of the firefox-addons.tar archive, the new extension needs to be just
 added in the {searchfox}`webext.json <testing/condprofile/condprof/customization/webext.json>` condprof customization file in a patch part of the same stack of patches being pushed to try.
 
-On the contrary new extensions added to the {searchfox}`webext.json <testing/condprofile/condprof/customization/webext.json>` condprof customization file on mozilla-central patches will require the XPI file to be
+On the contrary new extensions added to the {searchfox}`webext.json <testing/condprofile/condprof/customization/webext.json>` condprof customization file in patches for the Firefox repository will require the XPI file to be
 added to the `firefox-addons.tar` archive and the {searchfox}`firefox-addons <taskcluster/kinds/fetch/browsertime.yml>` CI fetch config updated accordingly (missing to update the archive will
 trigger explicit linter errors, {doc}`see condprof-addons linter docs </code-quality/lint/linters/condprof-addons>`).
 

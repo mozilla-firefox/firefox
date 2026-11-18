@@ -1,7 +1,7 @@
 # Handling the evolution of Sync payloads
 
 (Note that this document has been written in the format of an [application-services ADR](https://github.com/mozilla/application-services/blob/main/docs/adr/0000-use-markdown-architectural-decision-records.md)
-but the relelvant teams decided that ultimately the best home for this doc is in mozilla-central)
+but the relevant teams decided that ultimately the best home for this doc is in the Firefox repository)
 
 * Status: Accepted
 * Deciders: sync team, credentials management team
@@ -21,7 +21,7 @@ are examples of such cases we can run into.
 This document describes our decision on how we will support payload evolution over time.
 
 Note that even though this document exists in the application-services repository, it should
-be considered to apply to all sync implementations, whether in this repository, in mozilla-central,
+be considered to apply to all sync implementations, whether in this repository, in the Firefox repository,
 or anywhere else.
 
 ## Definitions

@@ -192,11 +192,11 @@ luck, maybe try {doc}`logging </xpcom/logging>` or sprinkling assertions.
 
 ## I keep getting a SIGSYS, or SIGSEGV in JS/JIT code under gdb even though there is no crash when gdb is not attached. How do I fix it?
 
-Allow gdb to read mozilla-central's .gdbinit, located at `build/.gdbinit`. In
+Allow gdb to read the Firefox repository's .gdbinit, located at `build/.gdbinit`. In
 your own `.gdbinit`, add the line:
 
 ```
-add-auto-load-safe-path /path/to/mozilla-central
+add-auto-load-safe-path /path/to/your/firefox/clone
 ```
 
 ## How do I get useful stack traces inside system libraries?

@@ -113,7 +113,7 @@ There are many topics to cover here, but none are specific to about:debugging. H
 - [Try syntax selector](https://firefox-source-docs.mozilla.org/tools/try/selectors/syntax.html)
 - [Try fuzzy selector](https://firefox-source-docs.mozilla.org/tools/try/selectors/fuzzy.html)
 
-Below is an example of pushing to try using the try syntax selector. As the documentation says, this syntax is obscure and can be difficult to remember, but it is still widely used by developers in mozilla-central.
+Below is an example of pushing to try using the try syntax selector. As the documentation says, this syntax is obscure and can be difficult to remember, but it is still widely used by Firefox developers.
 
 ```
 ./mach try -b do -p linux64 -u xpcshell,mochitest-dt,mochitest-chrome --artifact

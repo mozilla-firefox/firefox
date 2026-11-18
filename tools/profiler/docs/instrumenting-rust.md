@@ -30,7 +30,7 @@ gecko-profiler = { path = "../../tools/profiler/rust-api" }
 ```
 
 Note that the relative path needs to be updated depending on the project's location
-in mozilla-central.
+in the Firefox repository.
 
 After updating `Cargo.toml`, `cargo update -p gkrust-shared` needs to be
 executed to update the `Cargo.lock` file.

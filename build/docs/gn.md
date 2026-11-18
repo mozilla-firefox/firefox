@@ -3,7 +3,7 @@
 # GN support in the build system
 
 {abbr}`GN (Generated Ninja)` is a third-party build tool used by chromium and
-some related projects that are vendored in mozilla-central. Rather than
+some related projects that are vendored in the Firefox repository. Rather than
 requiring `GN` to build or writing our own build definitions for these projects,
 we have support in the build system for translating GN configuration
 files into moz.build files. In most cases these moz.build files will be like any

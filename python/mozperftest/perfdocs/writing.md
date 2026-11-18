@@ -226,7 +226,7 @@ and collect various metrics.
 
 Full documentation is available [here](https://www.sitespeed.io/documentation/sitespeed.io/scripting/)
 
-The mozilla-central repository has a few performance tests script in
+The Firefox repository has a few performance tests script in
 `testing/performance` and more should be added in components in the future.
 
 By convention, a performance test is prefixed with **perftest\_** to be

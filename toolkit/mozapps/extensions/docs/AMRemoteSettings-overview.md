@@ -21,7 +21,7 @@ In practice this makes this feature a good choice when the remotely controlled <
 
 In general before changing controlled settings in the `"main/addons-manager-settings"` collection it is advisable to:
 
-- make sure to default value for the related <about:config> preferences has been changed in mozilla-central first,
+- make sure to default value for the related <about:config> preferences has been changed in the `main` branch first,
   and to let it ride the release train and get some backing time on release;
 - only after that consider changing the value controlled by `"main/addons-manager-settings"` collection,
   to set the same value on older Firefox releases where the previous default value was set.

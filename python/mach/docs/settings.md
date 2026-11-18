@@ -4,7 +4,7 @@
 
 Mach can read settings in from a set of configuration files. These
 configuration files are either named `machrc` or `.machrc` and
-are specified by the bootstrap script. In mozilla-central, these files
+are specified by the bootstrap script. In the Firefox repository, these files
 can live in `~/.mozbuild` and/or `topsrcdir`.
 
 Settings can be specified anywhere, and used both by mach core or

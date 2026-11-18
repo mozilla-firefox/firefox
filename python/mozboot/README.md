@@ -1,7 +1,7 @@
 # mozboot - Bootstrap your system to build Mozilla projects
 
 This package contains code used for bootstrapping a system to build
-mozilla-central.
+Firefox.
 
 This code is not part of the build system per se. Instead, it is related
 to everything up to invoking the actual build system.

@@ -155,7 +155,7 @@ information about the security vulnerability unnecessarily. Specifically:
      until four weeks after 54 goes live.
 
      The exception to this is if there is a security issue that doesn't
-     affect Firefox Release or ESR, only mozilla-central and/or other
+     affect Firefox Release or ESR, only Nightly and/or other
      development branches. Since the security problem was never
      released to the world, once the bug is fixed in all affected
      places, tests can be checked in to the various branches.

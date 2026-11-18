@@ -409,7 +409,7 @@ attribute. The pref is not the only input:
 ### Colors
 
 For common areas of the Firefox interface (panels, toolbar buttons,
-etc.), mozilla-central often comes with some useful CSS variables that
+etc.), Firefox often comes with some useful CSS variables that
 are adjusted with the correct values for different platform
 configurations, so using those CSS variables can definitively save some
 testing time, as you can assume they already work correctly.

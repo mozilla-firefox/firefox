@@ -29,7 +29,7 @@ manager](https://crates.io/).
 
 Configuration files used by the [Visual Studio Code
 IDE](https://code.visualstudio.com/) when working in the
-mozilla-central tree.
+Firefox source tree.
 
 ## accessible
 

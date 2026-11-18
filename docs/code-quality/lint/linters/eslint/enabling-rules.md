@@ -74,7 +74,7 @@ New rules should be added in one of the configurations in
 {searchfox}`eslint-plugin-mozilla <tools/lint/eslint/eslint-plugin-mozilla/lib/configs>`.
 
 These will then automatically be applied to the relevant places.
-eslint-plugin-mozilla is used by a few projects outside of mozilla-central,
+eslint-plugin-mozilla is used by a few projects outside of the Firefox repository,
 so they will pick up the rule addition when eslint-plugin-mozilla is next released.
 
 Where existing failures are disabled/turned to warnings, these should be handled

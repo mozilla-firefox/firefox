@@ -97,10 +97,10 @@ given its API namespace:
 generate_webidl_from_jsonschema
 ```
 
-## Wiring up new WebExtensions WebIDL files into mozilla-central
+## Wiring up new WebExtensions WebIDL files into the Firefox build
 
 After a new WebIDL definition has been generated, there are a few more steps to ensure that
-the new WebIDL binding is wired up into mozilla-central build system and to be able to
+the new WebIDL binding is wired up into the Firefox build system and to be able to
 complete successfully a full Gecko build that include the new bindings.
 
 For more in depth details about these next steps:

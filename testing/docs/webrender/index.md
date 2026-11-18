@@ -34,7 +34,7 @@ the commands do some subset of these things:
 The test scripts can be found in the `gfx/wr/ci-scripts/` folder and
 can be run directly from the `gfx/wr` folder if you have the
 prerequisite tools (compilers, libraries, etc.) installed. If you build
-mozilla-central you should already have these tools. On MacOS you may
+Firefox you should already have these tools. On MacOS you may
 need to do a `brew install cmake pkg-config` in order to get
 additional dependencies needed for building osmesa-src.
 

@@ -41,7 +41,7 @@ This are the [Playback Performance Tests](https://ytlr-cert.appspot.com/2019/mai
 
 - measuring: Rendering speed of various synthetic Web Audio API workloads
 - reporting: The time time it took to render the audio of each test case, and a geometric mean of the full test suite. Lower is better
-- data: Upstream is <https://github.com/padenot/webaudio-benchmark/>. Those benchmarks are run by other projects. Upstream is vendored in mozilla-central via an simple update script, at `third_party/webkit/PerformanceTests/webaudio`
+- data: Upstream is <https://github.com/padenot/webaudio-benchmark/>. Those benchmarks are run by other projects. Upstream is vendored in the Firefox repository via a simple update script, at `third_party/webkit/PerformanceTests/webaudio`
 
 ## Scenario Tests
 

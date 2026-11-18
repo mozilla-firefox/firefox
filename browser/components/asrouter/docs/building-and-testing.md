@@ -23,7 +23,7 @@ You will need the following:
 - Node.js 10+ (On Mac, the best way to install Node.js is to use the install link on the Node.js homepage.
 - npm (packaged with Node.js)
 
-To install dependencies, run the following from the root of the mozilla-central repository.
+To install dependencies, run the following from the root of the Firefox repository.
 (Using ``mach`` to call ``npm`` and ``node`` commands will ensure you're using the correct versions of Node and npm.)
 
 ```
@@ -47,7 +47,7 @@ into the bundle and css files.
 Building assets and running
 -----------------------------------
 
-To build assets and run Firefox, run the following from the root of the mozilla-central repository:
+To build assets and run Firefox, run the following from the root of the Firefox repository:
 
 ```
   ./mach npm run bundle --prefix=browser/components/aboutwelcome && ./mach build && ./mach run

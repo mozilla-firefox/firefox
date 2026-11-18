@@ -1,4 +1,4 @@
-# Wiring up new WebExtensions WebIDL files into mozilla-central
+# Wiring up new WebExtensions WebIDL files into the Firefox build
 
 ## Add a new entry in `dom/bindings/Bindings.conf`
 

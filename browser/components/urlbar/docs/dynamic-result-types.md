@@ -89,7 +89,7 @@ For help on implementing providers in general, see the address bar's
 [Architecture Overview](/browser/urlbar/overview.md#urlbarprovider).
 
 If you are creating the provider in the internal address bar implementation in
-mozilla-central, then don't forget to register it in a `ProvidersManager`
+Firefox, then don't forget to register it in a `ProvidersManager`
 instance.
 
 ### 2. Implement the provider's getViewTemplate method
@@ -162,7 +162,7 @@ for a description of this object.
 ### 4. Style the results
 
 If you are creating the provider in the internal address bar implementation in
-mozilla-central, then add styling to {searchfox}`dynamic-results.css <browser/themes/shared/urlbar/dynamic-results.css>`.
+Firefox, then add styling to {searchfox}`dynamic-results.css <browser/themes/shared/urlbar/dynamic-results.css>`.
 
 The rest of this section will discuss the CSS rules you need to use to style
 your results.
@@ -604,6 +604,6 @@ types.
 
 {searchfox}`Tab-to-Search Provider <browser/components/urlbar/UrlbarProviderTabToSearch.sys.mjs>`
 
-: This is a built-in provider in mozilla-central that uses dynamic result types.
+: This is a built-in provider in Firefox that uses dynamic result types.
 
 [aria]: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA

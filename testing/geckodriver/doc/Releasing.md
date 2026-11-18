@@ -4,7 +4,7 @@
 
 Releasing geckodriver is not as easy as it once used to be when the
 project’s canonical home was on GitHub.  Today geckodriver is hosted
-in [mozilla-central], and whilst we do want to make future releases
+in the [Firefox repository], and whilst we do want to make future releases
 from [Mozilla’s CI infrastructure], we are currently in between two
 worlds: development happens in m-c, but releases continue to be made
 from GitHub.
@@ -15,7 +15,7 @@ manual failures. It has subcommands for each individual step — run
 
 The steps to release geckodriver are as follows:
 
-[mozilla-central]: https://github.com/mozilla-firefox/firefox/tree/main
+[Firefox repository]: https://github.com/mozilla-firefox/firefox
 [Mozilla’s CI infrastructure]: https://treeherder.mozilla.org/
 [releasing script]: https://bugzilla.mozilla.org/show_bug.cgi?id=1911056
 
@@ -171,7 +171,7 @@ the final signed builds based on that merge.
 ### Release new in-tree dependency crates
 
 Make sure to wait until the complete patch series from above has been
-merged to mozilla-central. Then continue with the following steps.
+merged to the `main` branch. Then continue with the following steps.
 
 Before releasing geckodriver all dependency crates as
 [updated earlier](#update-in-tree-dependency-crates) have to be
@@ -190,7 +190,7 @@ change the dependency information.
 Do not release the geckodriver crate yet!
 
 Once all crates have been published observe the `/target/package/` folder under
-the root of the mozilla-central repository and remove all the folders related
+the root of the Firefox repository and remove all the folders related
 to the above published crates (it will save ~1GB disk space).
 
 ### Export to GitHub
@@ -198,7 +198,7 @@ to the above published crates (it will save ~1GB disk space).
 The canonical GitHub repository is <https://github.com/mozilla/geckodriver.git>
 so make sure you have a local clone of that.  It has three branches:
 _master_ which only contains the [README.md]; _old_ which was the
-state of the project when it was exported to mozilla-central; and
+state of the project when it was exported to the Firefox repository; and
 _release_, from where releases are made.
 
 Before we copy the code over to the GitHub repository we need to
@@ -256,7 +256,7 @@ Then push the changes, and create a pull request:
 ```
 
 As indicated above, the changes you make to this branch will not
-be upstreamed back into mozilla-central.  It is merely used as a
+be upstreamed back into the Firefox repository.  It is merely used as a
 place for external consumers to build their own version of geckodriver.
 
 [GPG key]: https://help.github.com/articles/signing-commits/
@@ -361,7 +361,7 @@ In detail follow these steps:
 ### Release the new webdriver crate
 
 Make sure to wait until the complete patch series from above has been
-merged to mozilla-central. Then continue with the following steps.
+merged to the `main` branch. Then continue with the following steps.
 
 To release the webdriver crate change into `testing/webdriver` and run the
 following command to publish the crate:
@@ -371,7 +371,7 @@ following command to publish the crate:
 ```
 
 Once published observe the `/target/package/` folder under
-the root of the mozilla-central repository and remove all the folders related
+the root of the Firefox repository and remove all the folders related
 to the webdriver crate.
 
 ### Verify the release
