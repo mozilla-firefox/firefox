@@ -157,6 +157,7 @@ export class PromptParent extends JSWindowActorParent {
 
     let browsingContext = this.browsingContext.top;
 
+    let browserId = browsingContext.browserId;
     let browser = browsingContext.embedderElement;
 
     let showOnSidebarBrowser = this.shouldShowPromptOnSidebarBrowser(browser);
@@ -309,12 +310,18 @@ export class PromptParent extends JSWindowActorParent {
 
       lazy.PromptUtils.propBagToObject(bag, args);
     } finally {
-      if (browsingContext.embedderElement) {
-        browsingContext.embedderElement.maybeLeaveModalState();
+      // We need to look up the BrowsingContext and embedder element from
+      // browserId, as we could have torn the tab out into a different window
+      // (meaning the embedder element is stale), and/or we could have performed
+      // a cross-group navigation (meaning the BrowsingContext is stale).
+      let closingEmbedder =
+        BrowsingContext.getCurrentTopByBrowserId(browserId)?.embedderElement;
+      if (closingEmbedder) {
+        closingEmbedder.maybeLeaveModalState();
         lazy.PromptUtils.fireDialogEvent(
-          win,
+          closingEmbedder.documentGlobal,
           "DOMModalDialogClosed",
-          browsingContext.embedderElement,
+          closingEmbedder,
           closingEventDetails
             ? {
                 ...closingEventDetails,
