@@ -10,6 +10,7 @@
 
 import { Log } from "resource://gre/modules/Log.sys.mjs";
 import { WBORecord } from "resource://services-sync/record.sys.mjs";
+import { VERSION_OUT_OF_DATE } from "resource://services-sync/constants.sys.mjs";
 
 const REGISTRY_VERSION = 1;
 
@@ -28,7 +29,6 @@ export class EngineSyncIDs {
   clearCache() {
     this._record = null;
     this._changed = false;
-    this._readOnly = false;
   }
 
   _empty() {
@@ -68,12 +68,11 @@ export class EngineSyncIDs {
 
     let payload = record.payload;
 
-    // Don't overwrite data from an unsupported format.
+    // Don't use or overwrite data from an unsupported format.
     if (payload?.version > REGISTRY_VERSION) {
-      this._log.warn("Ignoring a newer sync ID registry.", payload.version);
-      this._record = this._empty();
-      this._readOnly = true;
-      return;
+      let error = new Error("Newer sync ID registry: " + payload.version);
+      error.failureCode = VERSION_OUT_OF_DATE;
+      throw error;
     }
 
     // Reject generations from a previous account reset.
@@ -98,10 +97,7 @@ export class EngineSyncIDs {
 
   set(name, version, syncID) {
     let entry = this.get(name);
-    if (
-      this._readOnly ||
-      (entry?.version == version && entry?.syncID == syncID)
-    ) {
+    if (entry?.version == version && entry?.syncID == syncID) {
       return;
     }
     this._record.payload.engines[name] = { version, syncID };

@@ -964,6 +964,7 @@ add_task(async function test_perDevice_newerRegistryIsLeftAlone() {
     engine.enabled = true;
     await Service.sync();
 
+    Assert.equal(Service.status.engines.steam, VERSION_OUT_OF_DATE);
     Assert.deepEqual(
       syncIDsWBO.data,
       future,
