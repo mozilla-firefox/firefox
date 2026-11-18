@@ -3929,6 +3929,8 @@ pref("browser.ipProtection.bandwidth.enabled", true);
 pref("browser.ipProtection.bandwidth.maxInGb", 50);
 // Pref that stores the current egress location for the VPN
 pref("browser.ipProtection.egressLocation", "");
+// Pref that stores whether message announcing extra locations has been dismissed.
+pref("browser.ipProtection.locationUnlockMessageDismissed", false);
 // Pref that flips at 50%, 75%, and 90% bandwidth usage thresholds
 pref("browser.ipProtection.bandwidthThreshold", 0);
 // Tracks the highest bandwidth warning threshold (75 or 90) dismissed per surface.

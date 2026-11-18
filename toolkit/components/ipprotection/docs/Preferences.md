@@ -150,6 +150,11 @@ know what you are doing.
 : A country code of the currently selected VPN egress location,
   or a empty string for the default location.
 
+`browser.ipProtection.locationUnlockMessageDismissed` (boolean, default: `false`)
+
+: Tracks whether the message confirming the extra locations (given when Firefox becomes
+  the default browser) has been dismissed.
+
 `browser.ipProtection.egressLocationEnabled` (boolean, default: `false`)
 
 : Controls whether the VPN egress location is displayed in the status panel.

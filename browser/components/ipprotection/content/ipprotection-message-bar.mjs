@@ -19,8 +19,9 @@ ChromeUtils.defineESModuleGetters(lazy, {
  */
 export default class IPProtectionMessageBarElement extends MozLitElement {
   #MESSAGE_TYPE_MAP = new Map([
-    ["info", () => this.infoMessageTemplate()],
-    ["warning", () => this.warningMessageTemplate()],
+    ["infoLink", () => this.messageTemplate("info")],
+    ["success", () => this.messageTemplate("success")],
+    ["warning", () => this.messageTemplate("warning")],
   ]);
   DISMISS_EVENT = "ipprotection-message-bar:user-dismissed";
 
@@ -67,27 +68,26 @@ export default class IPProtectionMessageBarElement extends MozLitElement {
     );
   }
 
-  infoMessageTemplate() {
-    return html`
-      <moz-message-bar type="info" dismissable>
-        <span
-          slot="message"
-          data-l10n-id=${ifDefined(this.messageId)}
-          @click=${this.handleClickSettingsLink}
-        >
-          <a
-            data-l10n-name=${ifDefined(this.messageLinkl10nId)}
-            href=${ifDefined(this.messageLink)}
-          ></a>
-        </span>
-      </moz-message-bar>
-    `;
-  }
-
-  warningMessageTemplate() {
+  messageTemplate(type) {
+    if (this.messageLinkl10nId) {
+      return html`
+        <moz-message-bar type=${type} dismissable>
+          <span
+            slot="message"
+            data-l10n-id=${ifDefined(this.messageId)}
+            @click=${this.handleClickSettingsLink}
+          >
+            <a
+              data-l10n-name=${ifDefined(this.messageLinkl10nId)}
+              href=${ifDefined(this.messageLink)}
+            ></a>
+          </span>
+        </moz-message-bar>
+      `;
+    }
     return html`
       <moz-message-bar
-        type="warning"
+        type=${type}
         data-l10n-id=${ifDefined(this.messageId)}
         data-l10n-args=${ifDefined(this.messageLinkL10nArgs)}
         dismissable

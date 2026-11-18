@@ -5,6 +5,7 @@
 import { MozLitElement } from "chrome://global/content/lit-utils.mjs";
 import { html, ifDefined } from "chrome://global/content/vendor/lit.all.mjs";
 import {
+  ADDITIONAL_LOCATIONS_AVAILABLE,
   BANDWIDTH,
   LINKS,
 } from "chrome://browser/content/ipprotection/ipprotection-constants.mjs";
@@ -68,7 +69,6 @@ export default class IPProtectionContentElement extends MozLitElement {
 
   static properties = {
     state: { type: Object, attribute: false },
-    _showMessageBar: { type: Boolean, state: true },
     _messageDismissed: { type: Boolean, state: true },
   };
 
@@ -81,7 +81,6 @@ export default class IPProtectionContentElement extends MozLitElement {
 
     this.messageBarListener = this.#messageBarListener.bind(this);
     this.statusCardListener = this.#statusCardListener.bind(this);
-    this._showMessageBar = false;
     this._messageDismissed = false;
   }
 
@@ -184,7 +183,6 @@ export default class IPProtectionContentElement extends MozLitElement {
 
   #messageBarListener(event) {
     if (event.type === "ipprotection-message-bar:user-dismissed") {
-      this._showMessageBar = false;
       this._messageDismissed = true;
       this.state.error = "";
 
@@ -240,6 +238,16 @@ export default class IPProtectionContentElement extends MozLitElement {
         composed: true,
       })
     );
+  }
+
+  handleDismissLocationMessageBar(event) {
+    this.dispatchEvent(
+      new CustomEvent("IPProtection:DismissLocationMessageBar", {
+        bubbles: true,
+        composed: true,
+      })
+    );
+    event.stopPropagation();
   }
 
   handleClickSettingsButton(event) {
@@ -361,7 +369,7 @@ export default class IPProtectionContentElement extends MozLitElement {
       });
     } else if (this.state.onboardingMessage) {
       messageId = this.state.onboardingMessage;
-      messageType = "info";
+      messageType = "infoLink";
 
       switch (this.state.onboardingMessage) {
         case "ipprotection-message-continuous-onboarding-intro":
@@ -388,6 +396,43 @@ export default class IPProtectionContentElement extends MozLitElement {
         .bandwidthUsage=${ifDefined(this.state.bandwidthUsage)}
       ></ipprotection-message-bar>
     `;
+  }
+
+  additionalLocationMessageBarTemplate() {
+    const messageId = "ipprotection-message-default-browser-confirmation";
+    return html`
+      <ipprotection-message-bar
+        class="vpn-top-content"
+        type="success"
+        .messageId=${messageId}
+        .messageLinkL10nArgs=${JSON.stringify({
+          additionalLocationsCount: ADDITIONAL_LOCATIONS_AVAILABLE,
+        })}
+        @ipprotection-message-bar:user-dismissed=${this
+          .handleDismissLocationMessageBar}
+      ></ipprotection-message-bar>
+    `;
+  }
+
+  #showTopMessageBar() {
+    return (
+      (this.state.onboardingMessage || this.state.bandwidthWarning) &&
+      !this._messageDismissed &&
+      !this.state.unauthenticated &&
+      !this.state.paused &&
+      !this.state.error
+    );
+  }
+
+  #showSiteInclusionPrompt() {
+    return (
+      this.state.isSiteInclusionsEnabled &&
+      this.state.showSiteInclusionPrompt &&
+      this.state.siteData &&
+      !this.hasSiteInclusion &&
+      !this.hasSiteExclusion &&
+      this.canEnableConnection
+    );
   }
 
   statusCardTemplate() {
@@ -594,14 +639,7 @@ export default class IPProtectionContentElement extends MozLitElement {
   }
 
   siteInclusionPromptTemplate() {
-    if (
-      !this.state.isSiteInclusionsEnabled ||
-      !this.state.showSiteInclusionPrompt ||
-      !this.state.siteData ||
-      this.hasSiteInclusion ||
-      this.hasSiteExclusion ||
-      !this.canEnableConnection
-    ) {
+    if (!this.#showSiteInclusionPrompt()) {
       return null;
     }
 
@@ -726,53 +764,42 @@ export default class IPProtectionContentElement extends MozLitElement {
         <div class="vpn-bottom-content">${this.footerTemplate()}</div>`;
     }
 
+    const bottomMessageBar = this.state.showAdditionalLocationConfirmation
+      ? this.additionalLocationMessageBarTemplate()
+      : null;
+
+    const topMessageBar = this.#showTopMessageBar()
+      ? this.messageBarTemplate()
+      : null;
+
     if (this.state.isSiteInclusionsEnabled) {
       return html`
-        ${this.statusCardTemplate()} ${this.locationSelectionButtonTemplate()}
+        ${topMessageBar} ${this.statusCardTemplate()}
+        ${this.locationSelectionButtonTemplate()}
         <div class="vpn-bottom-content">
-          ${this.siteRulesStatusTemplate()} ${this.bandwidthUsageTemplate()}
-          ${this.siteInclusionPromptTemplate()}
+          ${bottomMessageBar} ${this.siteRulesStatusTemplate()}
+          ${this.bandwidthUsageTemplate()} ${this.siteInclusionPromptTemplate()}
           ${this.siteRulesSettingsLinkTemplate()} ${this.footerTemplate()}
         </div>
       `;
     }
 
     return html`
-      ${this.statusCardTemplate()}
-      ${this.locationSelectionButtonTemplate()}${this.bandwidthUsageTemplate()}
-      ${this.exclusionToggleTemplate()}
+      ${topMessageBar} ${this.statusCardTemplate()}
+      ${this.locationSelectionButtonTemplate()} ${bottomMessageBar}
+      ${this.bandwidthUsageTemplate()} ${this.exclusionToggleTemplate()}
       <div class="vpn-bottom-content">${this.footerTemplate()}</div>
     `;
   }
 
   render() {
-    if (
-      (this.state.onboardingMessage || this.state.bandwidthWarning) &&
-      !this._messageDismissed &&
-      !this.state.unauthenticated &&
-      !this.state.paused
-    ) {
-      this._showMessageBar = true;
-    } else if (
-      (!this.state.onboardingMessage && !this.state.bandwidthWarning) ||
-      this.state.paused
-    ) {
-      // Remove the message bar if we can no longer render messages before they were dismissed
-      // or when in the paused state.
-      this._showMessageBar = false;
-    }
-
-    const messageBar = this._showMessageBar ? this.messageBarTemplate() : null;
-
-    let content = html`${messageBar}${this.mainContentTemplate()}`;
-
     // TODO: Conditionally render post-upgrade subview within #ipprotection-content-wrapper - Bug 1973813
     return html`
       <link
         rel="stylesheet"
         href="chrome://browser/content/ipprotection/ipprotection-content.css"
       />
-      <div id="ipprotection-content-wrapper">${content}</div>
+      <div id="ipprotection-content-wrapper">${this.mainContentTemplate()}</div>
     `;
   }
 }

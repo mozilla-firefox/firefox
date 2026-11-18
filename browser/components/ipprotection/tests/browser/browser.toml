@@ -36,6 +36,8 @@ prefs = [
 
 ["browser_ipprotection_content_unauthenticated.js"]
 
+["browser_ipprotection_extra_locations_confirmation_message.js"]
+
 ["browser_ipprotection_header.js"]
 
 ["browser_ipprotection_infobar.js"]

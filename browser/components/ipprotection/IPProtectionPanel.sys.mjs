@@ -58,6 +58,8 @@ const BANDWIDTH_THRESHOLD_PREF = "browser.ipProtection.bandwidthThreshold";
 const BANDWIDTH_WARNING_DISMISSED_PREF =
   "browser.ipProtection.bandwidthWarningDismissedThreshold";
 const BANDWIDTH_RESET_DATE_PREF = "browser.ipProtection.bandwidthResetDate";
+const LOCATION_UNLOCK_MESSAGE_DISMISSED_PREF =
+  "browser.ipProtection.locationUnlockMessageDismissed";
 const EGRESS_LOCATION_PREF = "browser.ipProtection.egressLocation";
 const USER_OPENED_PREF = "browser.ipProtection.everOpenedPanel";
 const USER_OPENED_SINCE_160_PREF = "browser.ipProtection.openedPanelSince160";
@@ -170,6 +172,9 @@ export class IPProtectionPanel {
    * @property {boolean} showSiteInclusionPrompt
    * True if the prompt offering to always turn on VPN for the current site
    * should be shown, else false.
+   * @property {boolean} showAdditionalLocationConfirmation
+   * True if the message confirming additional locations should be shown,
+   * else false.
    */
 
   /**
@@ -485,6 +490,7 @@ export class IPProtectionPanel {
       isDefaultBrowser: false,
       canSetDefaultBrowser: false,
       showSiteInclusionPrompt: false,
+      showAdditionalLocationConfirmation: false,
     };
 
     // The progress listener to listen for page navigations.
@@ -688,6 +694,8 @@ export class IPProtectionPanel {
 
     const isDefaultBrowser = await this.isDefaultBrowser();
     const isPremium = await this.isPremium(isDefaultBrowser);
+    const shouldShowAdditionalLocationConfirmation =
+      await this.#shouldShowAdditionalLocationConfirmation();
 
     if (this.#showToken !== token) {
       return;
@@ -719,6 +727,8 @@ export class IPProtectionPanel {
       isSiteExceptionsEnabled: this.isExceptionsFeatureEnabled,
       isSiteInclusionsEnabled: this.isInclusionsFeatureEnabled,
       bandwidthWarning: this.#shouldShowBandwidthWarning(),
+      showAdditionalLocationConfirmation:
+        shouldShowAdditionalLocationConfirmation,
     });
 
     if (this.state.bandwidthWarning) {
@@ -970,6 +980,10 @@ export class IPProtectionPanel {
     view.addEventListener("keydown", this.#locationsKeyListener, {
       capture: true,
     });
+
+    if (this.state.showAdditionalLocationConfirmation) {
+      this.#hideLocationMessageBar();
+    }
   }
 
   /**
@@ -1042,6 +1056,10 @@ export class IPProtectionPanel {
       "IPProtection:DismissSiteInclusionPrompt",
       this.handleEvent
     );
+    doc.addEventListener(
+      "IPProtection:DismissLocationMessageBar",
+      this.handleEvent
+    );
   }
 
   #removePanelListeners(doc) {
@@ -1071,6 +1089,10 @@ export class IPProtectionPanel {
     doc.removeEventListener("IPProtection:SetDefaultBrowser", this.handleEvent);
     doc.removeEventListener(
       "IPProtection:DismissSiteInclusionPrompt",
+      this.handleEvent
+    );
+    doc.removeEventListener(
+      "IPProtection:DismissLocationMessageBar",
       this.handleEvent
     );
   }
@@ -1156,6 +1178,47 @@ export class IPProtectionPanel {
       return false;
     }
     return lazy.IPPUsageHelper.getDismissedThresholds().panel < threshold;
+  }
+
+  async #shouldShowAdditionalLocationConfirmation() {
+    if (lazy.IPProtectionService.state !== lazy.IPProtectionStates.READY) {
+      return false;
+    }
+
+    let hasDismissedLocationMessage = Services.prefs.getBoolPref(
+      LOCATION_UNLOCK_MESSAGE_DISMISSED_PREF,
+      true
+    );
+
+    if (hasDismissedLocationMessage) {
+      return false;
+    }
+
+    // If have paid VPN, never show it - these users already have access to all locations
+    if (this.state.hasUpgraded) {
+      return false;
+    }
+
+    let isDefaultBrowser = false;
+    try {
+      isDefaultBrowser = await lazy.ShellService.isDefaultBrowserAsync();
+    } catch (e) {
+      console.error(e);
+    }
+    return isDefaultBrowser;
+  }
+
+  async #updateAdditionalLocationConfirmation() {
+    const showLocationConfirmation =
+      await this.#shouldShowAdditionalLocationConfirmation();
+    this.setState({
+      showAdditionalLocationConfirmation: showLocationConfirmation,
+    });
+  }
+
+  #hideLocationMessageBar() {
+    Services.prefs.setBoolPref(LOCATION_UNLOCK_MESSAGE_DISMISSED_PREF, true);
+    this.setState({ showAdditionalLocationConfirmation: false });
   }
 
   #addProgressListener() {
@@ -1444,6 +1507,8 @@ export class IPProtectionPanel {
       this.setState({ showSiteInclusionPrompt: false });
     } else if (event.type == "IPProtection:DismissSiteInclusionPrompt") {
       this.setState({ showSiteInclusionPrompt: false });
+    } else if (event.type == "IPProtection:DismissLocationMessageBar") {
+      this.#hideLocationMessageBar();
     } else if (event.type == "IPProtection:ClickUpgrade") {
       // Let the service know that we tried upgrading at least once
       this.initiatedUpgrade = true;
@@ -1480,6 +1545,9 @@ export class IPProtectionPanel {
         showSiteInclusionPrompt:
           this.state.showSiteInclusionPrompt && !errorType && !paused,
       });
+
+      // Cannot put directly in setState b/c async
+      this.#updateAdditionalLocationConfirmation();
     } else if (
       event.type == "SiteRuleManager:RuleChanged" ||
       event.type == "TabSelect"
