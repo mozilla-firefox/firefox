@@ -145,7 +145,7 @@ class MiniWindowManagerClass {
     }
 
     Glean.miniWindow.created.record({
-      type: "full_tab",
+      type: miniwindow.type,
       entry_point: entryPoint,
       was_last_tab: false,
       concurrent_open: this._miniwindows.size,
@@ -190,7 +190,7 @@ class MiniWindowManagerClass {
 
     this._log.debug("pop: mini window opened");
     Glean.miniWindow.created.record({
-      type: cropInfo ? "fragment" : "full_tab",
+      type: miniwindow.type,
       entry_point: entryPoint,
       was_last_tab: wasLastTab,
       concurrent_open: this._miniwindows.size,

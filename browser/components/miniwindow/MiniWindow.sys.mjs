@@ -241,6 +241,19 @@ export class MiniWindow {
   }
 
   /**
+   * The flavour of this Mini Window: "fragment" for a cropped region,
+   * "url" for one opened from a URL, or "full_tab" for a popped tab.
+   *
+   * @returns {string}
+   */
+  get type() {
+    if (this.#cropped) {
+      return "fragment";
+    }
+    return this.#sourceTab ? "full_tab" : "url";
+  }
+
+  /**
    * The browser for the current Mini Window, or undefined before the popup
    * window exists.
    *
@@ -1075,7 +1088,7 @@ export class MiniWindow {
     }
 
     try {
-      let flavour = this.#cropped ? "fragment" : "full_tab";
+      let flavour = this.type;
       let openDuration = Math.round(ChromeUtils.now() - this.#createdAt);
       Glean.miniWindow.closed.record({
         type: flavour,
