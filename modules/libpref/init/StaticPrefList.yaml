@@ -12917,7 +12917,11 @@
 # Does the GMPlugin process use native event processing
 - name: media.gmp.use-native-event-processing
   type: RelaxedAtomicBool
-  value: @IS_NOT_XP_MACOSX@
+#if defined(XP_WIN) || defined(XP_MACOSX)
+  value: false
+#else
+  value: true
+#endif
   mirror: always
 
 #ifdef MOZ_WIDGET_ANDROID
