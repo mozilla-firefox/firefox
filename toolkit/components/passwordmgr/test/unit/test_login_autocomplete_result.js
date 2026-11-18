@@ -671,7 +671,6 @@ add_task(async function test_all_patterns() {
     },
   ];
 
-  LoginHelper.createLogger("LoginAutoCompleteResult");
   Services.prefs.setBoolPref("signon.showAutoCompleteFooter", true);
 
   expectedResults.forEach((pattern, testIndex) => {
