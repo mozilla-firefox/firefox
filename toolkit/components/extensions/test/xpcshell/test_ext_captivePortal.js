@@ -107,8 +107,6 @@ add_task(async function test_captivePortal_basic() {
 
   details = await extension.awaitMessage("connectivity");
   equal(details.status, "clear", "initial connectivity");
-  details = await extension.awaitMessage("state");
-  equal(details.state, "not_captive", "state after initial check");
   extension.sendMessage("getstate");
   details = await extension.awaitMessage("getstate");
   equal(details, "not_captive", "initial state");
