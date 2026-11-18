@@ -34,6 +34,8 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -204,7 +206,7 @@ private fun CustomizeMenuDragBar(
     ) {
         Text(
             text = stringResource(R.string.mozac_menu_customize_drag_to_reorder),
-            modifier = Modifier.weight(1f).basicMarquee(),
+            modifier = Modifier.weight(1f).basicMarquee().semantics { heading() },
             style = AcornTheme.typography.headline8,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
@@ -245,6 +247,7 @@ private fun CustomizeMenuHiddenSectionsTitle(modifier: Modifier = Modifier) {
         text = stringResource(R.string.mozac_menu_customize_hidden_sections),
         modifier =
             modifier
+                .semantics { heading() }
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = AcornTheme.layout.space.static600)
                 .padding(
