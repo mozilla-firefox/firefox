@@ -20,13 +20,13 @@ import android.os.Build;
 import android.os.Process;
 import androidx.annotation.Nullable;
 import java.nio.ByteBuffer;
+import org.jni_zero.NativeMethods;
 import org.webrtc.CalledByNative;
 import org.webrtc.Logging;
 import org.webrtc.ThreadUtils;
 import org.webrtc.audio.JavaAudioDeviceModule.AudioTrackErrorCallback;
 import org.webrtc.audio.JavaAudioDeviceModule.AudioTrackStartErrorCode;
 import org.webrtc.audio.JavaAudioDeviceModule.AudioTrackStateCallback;
-import org.webrtc.audio.LowLatencyAudioBufferManager;
 
 class WebRtcAudioTrack {
   private static final String TAG = "WebRtcAudioTrackExternal";
@@ -109,7 +109,7 @@ class WebRtcAudioTrack {
         // Get 10ms of PCM data from the native WebRTC client. Audio data is
         // written into the common ByteBuffer using the address that was
         // cached at construction.
-        nativeGetPlayoutData(nativeAudioTrack, sizeInBytes);
+        WebRtcAudioTrackJni.get().getPlayoutData(nativeAudioTrack, sizeInBytes);
         // Write data until all data has been written to the audio sink.
         // Upon return, the buffer position will have been advanced to reflect
         // the amount of data that was successfully written to the AudioTrack.
@@ -202,7 +202,7 @@ class WebRtcAudioTrack {
     // Rather than passing the ByteBuffer with every callback (requiring
     // the potentially expensive GetDirectBufferAddress) we simply have the
     // the native class cache the address to the memory once.
-    nativeCacheDirectBufferAddress(nativeAudioTrack, byteBuffer);
+    WebRtcAudioTrackJni.get().cacheDirectBufferAddress(nativeAudioTrack, byteBuffer);
 
     // Get the minimum buffer size required for the successful creation of an
     // AudioTrack object to be created in the MODE_STREAM mode.
@@ -542,9 +542,12 @@ class WebRtcAudioTrack {
     return (channels == 1 ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO);
   }
 
-  private static native void nativeCacheDirectBufferAddress(
-      long nativeAudioTrackJni, ByteBuffer byteBuffer);
-  private static native void nativeGetPlayoutData(long nativeAudioTrackJni, int bytes);
+  @NativeMethods
+  interface Natives {
+    void cacheDirectBufferAddress(long nativeAudioTrackJni, ByteBuffer byteBuffer);
+
+    void getPlayoutData(long nativeAudioTrackJni, int bytes);
+  }
 
   // Sets all samples to be played out to zero if `mute` is true, i.e.,
   // ensures that the speaker is muted.

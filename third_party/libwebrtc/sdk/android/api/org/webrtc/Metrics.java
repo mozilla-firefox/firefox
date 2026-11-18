@@ -12,6 +12,7 @@ package org.webrtc;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.jni_zero.NativeMethods;
 
 // Java-side of androidmetrics.cc
 //
@@ -68,14 +69,18 @@ public class Metrics {
   // Enables gathering of metrics (which can be fetched with getAndReset()).
   // Must be called before PeerConnectionFactory is created.
   public static void enable() {
-    nativeEnable();
+    MetricsJni.get().enable();
   }
 
   // Gets and clears native histograms.
   public static Metrics getAndReset() {
-    return nativeGetAndReset();
+    return MetricsJni.get().getAndReset();
   }
 
-  private static native void nativeEnable();
-  private static native Metrics nativeGetAndReset();
+  @NativeMethods
+  interface Natives {
+    void enable();
+
+    Metrics getAndReset();
+  }
 }

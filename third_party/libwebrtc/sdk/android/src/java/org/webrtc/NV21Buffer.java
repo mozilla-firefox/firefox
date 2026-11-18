@@ -12,6 +12,7 @@ package org.webrtc;
 
 import androidx.annotation.Nullable;
 import java.nio.ByteBuffer;
+import org.jni_zero.NativeMethods;
 
 public class NV21Buffer implements VideoFrame.Buffer {
   private final byte[] data;
@@ -57,13 +58,43 @@ public class NV21Buffer implements VideoFrame.Buffer {
   public VideoFrame.Buffer cropAndScale(
       int cropX, int cropY, int cropWidth, int cropHeight, int scaleWidth, int scaleHeight) {
     JavaI420Buffer newBuffer = JavaI420Buffer.allocate(scaleWidth, scaleHeight);
-    nativeCropAndScale(cropX, cropY, cropWidth, cropHeight, scaleWidth, scaleHeight, data, width,
-        height, newBuffer.getDataY(), newBuffer.getStrideY(), newBuffer.getDataU(),
-        newBuffer.getStrideU(), newBuffer.getDataV(), newBuffer.getStrideV());
+    NV21BufferJni.get()
+        .cropAndScale(
+            cropX,
+            cropY,
+            cropWidth,
+            cropHeight,
+            scaleWidth,
+            scaleHeight,
+            data,
+            width,
+            height,
+            newBuffer.getDataY(),
+            newBuffer.getStrideY(),
+            newBuffer.getDataU(),
+            newBuffer.getStrideU(),
+            newBuffer.getDataV(),
+            newBuffer.getStrideV());
     return newBuffer;
   }
 
-  private static native void nativeCropAndScale(int cropX, int cropY, int cropWidth, int cropHeight,
-      int scaleWidth, int scaleHeight, byte[] src, int srcWidth, int srcHeight, ByteBuffer dstY,
-      int dstStrideY, ByteBuffer dstU, int dstStrideU, ByteBuffer dstV, int dstStrideV);
+  @NativeMethods
+  interface Natives {
+    void cropAndScale(
+        int cropX,
+        int cropY,
+        int cropWidth,
+        int cropHeight,
+        int scaleWidth,
+        int scaleHeight,
+        byte[] src,
+        int srcWidth,
+        int srcHeight,
+        ByteBuffer dstY,
+        int dstStrideY,
+        ByteBuffer dstU,
+        int dstStrideU,
+        ByteBuffer dstV,
+        int dstStrideV);
+  }
 }

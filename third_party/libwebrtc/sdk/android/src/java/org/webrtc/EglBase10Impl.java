@@ -22,6 +22,7 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.egl.EGLContext;
 import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.egl.EGLSurface;
+import org.jni_zero.NativeMethods;
 
 /**
  * Holds EGL state and utility methods for handling an egl 1.0 EGLContext, an EGLDisplay,
@@ -72,7 +73,7 @@ class EglBase10Impl implements EglBase10 {
           }
         }
 
-        return nativeGetCurrentNativeEGLContext();
+        return EglBase10ImplJni.get().getCurrentNativeEGLContext();
       } finally {
         if (tempEglSurface != null) {
           egl.eglMakeCurrent(
@@ -456,5 +457,8 @@ class EglBase10Impl implements EglBase10 {
     return eglContext;
   }
 
-  private static native long nativeGetCurrentNativeEGLContext();
+  @NativeMethods
+  interface Natives {
+    long getCurrentNativeEGLContext();
+  }
 }

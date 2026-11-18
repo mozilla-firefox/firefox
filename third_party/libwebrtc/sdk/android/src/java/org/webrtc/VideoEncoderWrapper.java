@@ -12,7 +12,7 @@ package org.webrtc;
 
 // Explicit imports necessary for JNI generation.
 import androidx.annotation.Nullable;
-import org.webrtc.VideoEncoder;
+import org.jni_zero.NativeMethods;
 
 /**
  * This class contains the Java glue code for JNI generation of VideoEncoder.
@@ -49,7 +49,8 @@ class VideoEncoderWrapper {
     @Override
     public void onEncodedFrame(EncodedImage frame, VideoEncoder.CodecSpecificInfo info) {
       lifecycleLock.runIfAlive(
-          (long nativeEncoder) -> nativeOnEncodedFrame(nativeEncoder, frame));
+          (long nativeEncoder) ->
+              VideoEncoderWrapperJni.get().onEncodedFrame(nativeEncoder, frame));
     }
 
     // Called by the native VideoEncoderWrapper. Blocks until an ongoing onEncodedFrame() call, if
@@ -65,6 +66,8 @@ class VideoEncoderWrapper {
     return new NativeEncoderCallback(nativeEncoder);
   }
 
-  private static native void nativeOnEncodedFrame(
-      long nativeVideoEncoderWrapper, EncodedImage frame);
+  @NativeMethods
+  interface Natives {
+    void onEncodedFrame(long nativeVideoEncoderWrapper, EncodedImage frame);
+  }
 }

@@ -11,8 +11,8 @@
 package org.webrtc;
 
 import androidx.annotation.Nullable;
-import java.util.Arrays;
 import java.util.List;
+import org.jni_zero.NativeMethods;
 
 public class SoftwareVideoEncoderFactory implements VideoEncoderFactory {
   private static final String TAG = "SoftwareVideoEncoderFactory";
@@ -20,13 +20,13 @@ public class SoftwareVideoEncoderFactory implements VideoEncoderFactory {
   private final long nativeFactory;
 
   public SoftwareVideoEncoderFactory() {
-    this.nativeFactory = nativeCreateFactory();
+    this.nativeFactory = SoftwareVideoEncoderFactoryJni.get().createFactory();
   }
 
   @Nullable
   @Override
   public VideoEncoder createEncoder(VideoCodecInfo info) {
-    if (!nativeIsSupported(nativeFactory, info)) {
+    if (!SoftwareVideoEncoderFactoryJni.get().isSupported(nativeFactory, info)) {
       Logging.w(TAG, "Trying to create encoder for unsupported format. " + info);
       return null;
     }
@@ -34,7 +34,7 @@ public class SoftwareVideoEncoderFactory implements VideoEncoderFactory {
     return new WrappedNativeVideoEncoder() {
       @Override
       public long createNative(long webrtcEnvRef) {
-        return nativeCreate(nativeFactory, webrtcEnvRef, info);
+        return SoftwareVideoEncoderFactoryJni.get().create(nativeFactory, webrtcEnvRef, info);
       }
 
       @Override
@@ -46,14 +46,19 @@ public class SoftwareVideoEncoderFactory implements VideoEncoderFactory {
 
   @Override
   public VideoCodecInfo[] getSupportedCodecs() {
-    return nativeGetSupportedCodecs(nativeFactory).toArray(new VideoCodecInfo[0]);
+    return SoftwareVideoEncoderFactoryJni.get()
+        .getSupportedCodecs(nativeFactory)
+        .toArray(new VideoCodecInfo[0]);
   }
 
-  private static native long nativeCreateFactory();
+  @NativeMethods
+  interface Natives {
+    long createFactory();
 
-  private static native boolean nativeIsSupported(long factory, VideoCodecInfo info);
+    boolean isSupported(long factory, VideoCodecInfo info);
 
-  private static native long nativeCreate(long factory, long webrtcEnvRef, VideoCodecInfo info);
+    long create(long factory, long webrtcEnvRef, VideoCodecInfo info);
 
-  private static native List<VideoCodecInfo> nativeGetSupportedCodecs(long factory);
+    List<VideoCodecInfo> getSupportedCodecs(long factory);
+  }
 }

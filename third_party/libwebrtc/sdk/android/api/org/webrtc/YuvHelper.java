@@ -11,6 +11,7 @@
 package org.webrtc;
 
 import java.nio.ByteBuffer;
+import org.jni_zero.NativeMethods;
 
 /** Wraps libyuv methods to Java. All passed byte buffers must be direct byte buffers. */
 public class YuvHelper {
@@ -142,23 +143,53 @@ public class YuvHelper {
     dst.position(startV);
     final ByteBuffer dstV = dst.slice();
 
-    nativeI420Rotate(srcY, srcStrideY, srcU, srcStrideU, srcV, srcStrideV, dstY, dstWidth, dstU,
-        dstChromaWidth, dstV, dstChromaWidth, srcWidth, srcHeight, rotationMode);
+    YuvHelperJni.get()
+        .i420Rotate(
+            srcY,
+            srcStrideY,
+            srcU,
+            srcStrideU,
+            srcV,
+            srcStrideV,
+            dstY,
+            dstWidth,
+            dstU,
+            dstChromaWidth,
+            dstV,
+            dstChromaWidth,
+            srcWidth,
+            srcHeight,
+            rotationMode);
   }
 
   /** Helper method for copying a single colour plane. */
   public static void copyPlane(
       ByteBuffer src, int srcStride, ByteBuffer dst, int dstStride, int width, int height) {
-    nativeCopyPlane(
-        checkNotNull(src, "src"), srcStride, checkNotNull(dst, "dst"), dstStride, width, height);
+    YuvHelperJni.get()
+        .copyPlane(
+            checkNotNull(src, "src"),
+            srcStride,
+            checkNotNull(dst, "dst"),
+            dstStride,
+            width,
+            height);
   }
 
   /** Converts ABGR little endian (rgba in memory) to I420. */
   public static void ABGRToI420(ByteBuffer src, int srcStride, ByteBuffer dstY, int dstStrideY,
       ByteBuffer dstU, int dstStrideU, ByteBuffer dstV, int dstStrideV, int width, int height) {
-    nativeABGRToI420(checkNotNull(src, "src"), srcStride, checkNotNull(dstY, "dstY"), dstStrideY,
-        checkNotNull(dstU, "dstU"), dstStrideU, checkNotNull(dstV, "dstV"), dstStrideV, width,
-        height);
+    YuvHelperJni.get()
+        .abgrToI420(
+            checkNotNull(src, "src"),
+            srcStride,
+            checkNotNull(dstY, "dstY"),
+            dstStrideY,
+            checkNotNull(dstU, "dstU"),
+            dstStrideU,
+            checkNotNull(dstV, "dstV"),
+            dstStrideV,
+            width,
+            height);
   }
 
   /**
@@ -178,8 +209,22 @@ public class YuvHelper {
     if (width <= 0 || height <= 0) {
       throw new IllegalArgumentException("I420Copy: width and height should not be negative");
     }
-    nativeI420Copy(srcY, srcStrideY, srcU, srcStrideU, srcV, srcStrideV, dstY, dstStrideY, dstU,
-        dstStrideU, dstV, dstStrideV, width, height);
+    YuvHelperJni.get()
+        .i420Copy(
+            srcY,
+            srcStrideY,
+            srcU,
+            srcStrideU,
+            srcV,
+            srcStrideV,
+            dstY,
+            dstStrideY,
+            dstU,
+            dstStrideU,
+            dstV,
+            dstStrideV,
+            width,
+            height);
   }
 
   public static void I420ToNV12(ByteBuffer srcY, int srcStrideY, ByteBuffer srcU, int srcStrideU,
@@ -193,8 +238,20 @@ public class YuvHelper {
     if (width <= 0 || height <= 0) {
       throw new IllegalArgumentException("I420ToNV12: width and height should not be negative");
     }
-    nativeI420ToNV12(srcY, srcStrideY, srcU, srcStrideU, srcV, srcStrideV, dstY, dstStrideY, dstUV,
-        dstStrideUV, width, height);
+    YuvHelperJni.get()
+        .i420ToNV12(
+            srcY,
+            srcStrideY,
+            srcU,
+            srcStrideU,
+            srcV,
+            srcStrideV,
+            dstY,
+            dstStrideY,
+            dstUV,
+            dstStrideUV,
+            width,
+            height);
   }
 
   public static void I420Rotate(ByteBuffer srcY, int srcStrideY, ByteBuffer srcU, int srcStrideU,
@@ -207,8 +264,23 @@ public class YuvHelper {
     checkNotNull(dstY, "dstY");
     checkNotNull(dstU, "dstU");
     checkNotNull(dstV, "dstV");
-    nativeI420Rotate(srcY, srcStrideY, srcU, srcStrideU, srcV, srcStrideV, dstY, dstStrideY, dstU,
-        dstStrideU, dstV, dstStrideV, srcWidth, srcHeight, rotationMode);
+    YuvHelperJni.get()
+        .i420Rotate(
+            srcY,
+            srcStrideY,
+            srcU,
+            srcStrideU,
+            srcV,
+            srcStrideV,
+            dstY,
+            dstStrideY,
+            dstU,
+            dstStrideU,
+            dstV,
+            dstStrideV,
+            srcWidth,
+            srcHeight,
+            rotationMode);
   }
 
   private static <T> T checkNotNull(T obj, String description) {
@@ -218,19 +290,68 @@ public class YuvHelper {
     return obj;
   }
 
-  private static native void nativeCopyPlane(
-      ByteBuffer src, int srcStride, ByteBuffer dst, int dstStride, int width, int height);
-  private static native void nativeI420Copy(ByteBuffer srcY, int srcStrideY, ByteBuffer srcU,
-      int srcStrideU, ByteBuffer srcV, int srcStrideV, ByteBuffer dstY, int dstStrideY,
-      ByteBuffer dstU, int dstStrideU, ByteBuffer dstV, int dstStrideV, int width, int height);
-  private static native void nativeI420ToNV12(ByteBuffer srcY, int srcStrideY, ByteBuffer srcU,
-      int srcStrideU, ByteBuffer srcV, int srcStrideV, ByteBuffer dstY, int dstStrideY,
-      ByteBuffer dstUV, int dstStrideUV, int width, int height);
-  private static native void nativeI420Rotate(ByteBuffer srcY, int srcStrideY, ByteBuffer srcU,
-      int srcStrideU, ByteBuffer srcV, int srcStrideV, ByteBuffer dstY, int dstStrideY,
-      ByteBuffer dstU, int dstStrideU, ByteBuffer dstV, int dstStrideV, int srcWidth, int srcHeight,
-      int rotationMode);
-  private static native void nativeABGRToI420(ByteBuffer src, int srcStride, ByteBuffer dstY,
-      int dstStrideY, ByteBuffer dstU, int dstStrideU, ByteBuffer dstV, int dstStrideV, int width,
-      int height);
+  @NativeMethods
+  interface Natives {
+    void copyPlane(
+        ByteBuffer src, int srcStride, ByteBuffer dst, int dstStride, int width, int height);
+
+    void i420Copy(
+        ByteBuffer srcY,
+        int srcStrideY,
+        ByteBuffer srcU,
+        int srcStrideU,
+        ByteBuffer srcV,
+        int srcStrideV,
+        ByteBuffer dstY,
+        int dstStrideY,
+        ByteBuffer dstU,
+        int dstStrideU,
+        ByteBuffer dstV,
+        int dstStrideV,
+        int width,
+        int height);
+
+    void i420ToNV12(
+        ByteBuffer srcY,
+        int srcStrideY,
+        ByteBuffer srcU,
+        int srcStrideU,
+        ByteBuffer srcV,
+        int srcStrideV,
+        ByteBuffer dstY,
+        int dstStrideY,
+        ByteBuffer dstUV,
+        int dstStrideUV,
+        int width,
+        int height);
+
+    void i420Rotate(
+        ByteBuffer srcY,
+        int srcStrideY,
+        ByteBuffer srcU,
+        int srcStrideU,
+        ByteBuffer srcV,
+        int srcStrideV,
+        ByteBuffer dstY,
+        int dstStrideY,
+        ByteBuffer dstU,
+        int dstStrideU,
+        ByteBuffer dstV,
+        int dstStrideV,
+        int srcWidth,
+        int srcHeight,
+        int rotationMode);
+
+    void abgrToI420(
+        ByteBuffer src,
+        int srcStride,
+        ByteBuffer dstY,
+        int dstStrideY,
+        ByteBuffer dstU,
+        int dstStrideU,
+        ByteBuffer dstV,
+        int dstStrideV,
+        int width,
+        int height);
+  }
 }

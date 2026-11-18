@@ -17,6 +17,7 @@ import android.media.AudioManager;
 import android.os.Build;
 import androidx.annotation.RequiresApi;
 import java.util.concurrent.ScheduledExecutorService;
+import org.jni_zero.NativeMethods;
 import org.webrtc.JniCommon;
 import org.webrtc.Logging;
 
@@ -389,9 +390,18 @@ public class JavaAudioDeviceModule implements AudioDeviceModule {
   public long getNative(long webrtcEnvRef) {
     synchronized (nativeLock) {
       if (nativeAudioDeviceModule == 0) {
-        nativeAudioDeviceModule = nativeCreateAudioDeviceModule(context, audioManager, audioInput,
-            audioOutput, webrtcEnvRef, inputSampleRate, outputSampleRate, useStereoInput,
-            useStereoOutput);
+        nativeAudioDeviceModule =
+            JavaAudioDeviceModuleJni.get()
+                .createAudioDeviceModule(
+                    context,
+                    audioManager,
+                    audioInput,
+                    audioOutput,
+                    webrtcEnvRef,
+                    inputSampleRate,
+                    outputSampleRate,
+                    useStereoInput,
+                    useStereoOutput);
       }
       return nativeAudioDeviceModule;
     }
@@ -437,8 +447,17 @@ public class JavaAudioDeviceModule implements AudioDeviceModule {
     audioInput.setPreferredDevice(preferredInputDevice);
   }
 
-  private static native long nativeCreateAudioDeviceModule(Context context,
-      AudioManager audioManager, WebRtcAudioRecord audioInput, WebRtcAudioTrack audioOutput,
-      long webrtcEnvRef, int inputSampleRate, int outputSampleRate, boolean useStereoInput,
-      boolean useStereoOutput);
+  @NativeMethods
+  interface Natives {
+    long createAudioDeviceModule(
+        Context context,
+        AudioManager audioManager,
+        WebRtcAudioRecord audioInput,
+        WebRtcAudioTrack audioOutput,
+        long webrtcEnvRef,
+        int inputSampleRate,
+        int outputSampleRate,
+        boolean useStereoInput,
+        boolean useStereoOutput);
+  }
 }

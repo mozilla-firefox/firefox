@@ -29,6 +29,7 @@ if (is_android) {
       "//rtc_base:base_java",
       "//sdk/android:base_java",
       "//sdk/android:java_audio_device_module_java",
+      "//sdk/android:libjingle_peerconnection_metrics_default_java",
       "//sdk/android:video_java",
       "//third_party/androidx:androidx_core_core_java",
       "//third_party/androidx:androidx_legacy_legacy_support_v4_java",
@@ -87,6 +88,8 @@ if (is_android) {
       "//third_party/abseil-cpp/absl/memory",
       "//third_party/jni_zero",
     ]
+
+    java_targets = [ ":androidvoip" ]
   }
 
   android_resources("resources") {
