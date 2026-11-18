@@ -829,6 +829,17 @@ uiaRawElmProvider::GetPropertyValue(PROPERTYID aPropertyId,
       aPropertyValue->lVal = GetLiveSetting();
       return S_OK;
 
+    case UIA_LocalizedControlTypePropertyId: {
+      nsAutoString localized;
+      GetLocalizedControlType(localized);
+      if (!localized.IsEmpty()) {
+        aPropertyValue->vt = VT_BSTR;
+        aPropertyValue->bstrVal = ::SysAllocString(localized.get());
+        return S_OK;
+      }
+      break;
+    }
+
     case UIA_LocalizedLandmarkTypePropertyId: {
       nsAutoString landmark;
       GetLocalizedLandmarkType(landmark);
@@ -1639,6 +1650,19 @@ long uiaRawElmProvider::GetLandmarkType() const {
     return UIA_SearchLandmarkTypeId;
   }
   return UIA_CustomLandmarkTypeId;
+}
+
+void uiaRawElmProvider::GetLocalizedControlType(nsAString& aLocalized) const {
+  Accessible* acc = Acc();
+  MOZ_ASSERT(acc);
+  // The system computes this from ControlType and role, but it doesn't
+  // know about some newer roles.
+  const role accRole = acc->Role();
+  if (accRole == roles::SECTION_FOOTER) {
+    Accessible::TranslateString(u"sectionfooter"_ns, aLocalized);
+  } else if (accRole == roles::SECTION_HEADER) {
+    Accessible::TranslateString(u"sectionheader"_ns, aLocalized);
+  }
 }
 
 void uiaRawElmProvider::GetLocalizedLandmarkType(nsAString& aLocalized) const {

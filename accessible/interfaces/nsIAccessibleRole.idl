@@ -817,4 +817,14 @@ interface nsIAccessibleRole : nsISupports
    * A type of textbox intended for specifying search criteria.
    */
   const unsigned long ROLE_SEARCHBOX = 140;
+
+  /**
+   * Represents the footer of a section, like an article.
+   */
+  const unsigned long ROLE_SECTION_FOOTER = 141;
+
+  /**
+   * Represents the header of a section, like an article.
+   */
+  const unsigned long ROLE_SECTION_HEADER = 142;
 };

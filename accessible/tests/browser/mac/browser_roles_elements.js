@@ -52,6 +52,8 @@ addAccessibleTask(
   <div id="navigation" role="navigation"></div>
   <div id="search" role="search"></div>
   <div id="searchbox" role="searchbox"></div>
+  <div id="sectionfooter" role="sectionfooter"></div>
+  <div id="sectionheader" role="sectionheader"></div>
 
   <!-- DPub landmarks -->
   <div id="dPubNavigation" role="doc-index"></div>
@@ -159,6 +161,20 @@ addAccessibleTask(
     testRoleAndSubRole(accDoc, "navigation", null, "AXLandmarkNavigation");
     testRoleAndSubRole(accDoc, "search", null, "AXLandmarkSearch");
     testRoleAndSubRole(accDoc, "searchbox", null, "AXSearchField");
+    testRoleAndSubRole(
+      accDoc,
+      "sectionfooter",
+      "AXGroup",
+      "AXSectionFooter",
+      "section footer"
+    );
+    testRoleAndSubRole(
+      accDoc,
+      "sectionheader",
+      "AXGroup",
+      "AXSectionHeader",
+      "section header"
+    );
 
     // DPub roles map into two categories, sample one of each
     testRoleAndSubRole(
