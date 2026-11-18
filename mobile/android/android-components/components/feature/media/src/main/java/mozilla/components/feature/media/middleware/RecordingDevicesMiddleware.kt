@@ -5,15 +5,12 @@
 package mozilla.components.feature.media.middleware
 
 import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.os.Binder
 import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
+import kotlinx.coroutines.CoroutineScope
 import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.action.CustomTabListAction
@@ -27,16 +24,11 @@ import mozilla.components.lib.state.Store
 import mozilla.components.support.base.android.NotificationsDelegate
 import mozilla.components.support.base.android.OnPermissionGranted
 import mozilla.components.support.base.ids.SharedIdsHelper
-import mozilla.components.support.utils.ThreadUtils
-import mozilla.components.support.utils.ext.registerReceiverCompat
 import mozilla.components.ui.icons.R as iconsR
 
 private const val NOTIFICATION_TAG = "mozac.feature.media.recordingDevices"
 private const val NOTIFICATION_ID = 1
 private const val PENDING_INTENT_TAG = "mozac.feature.media.pendingintent"
-private const val ACTION_RECORDING_DEVICES_NOTIFICATION_DISMISSED =
-    "mozac.feature.media.recordingDevices.notificationDismissed"
-private const val NOTIFICATION_REMINDER_DELAY_MS = 5 * 60 * 1000L // 5 minutes
 
 /**
  * Middleware for displaying an ongoing notification while recording devices (camera, microphone) are used by web
@@ -45,8 +37,23 @@ private const val NOTIFICATION_REMINDER_DELAY_MS = 5 * 60 * 1000L // 5 minutes
 class RecordingDevicesMiddleware(
     private val context: Context,
     private val notificationsDelegate: NotificationsDelegate,
+    scope: CoroutineScope,
 ) : Middleware<BrowserState, BrowserAction> {
     private var isShowingNotification: Boolean = false
+
+    @Volatile private var isRecording: Boolean = false
+
+    @Volatile private var store: Store<BrowserState, BrowserAction>? = null
+
+    private val dismissReceiver =
+        NotificationDismissedReceiver(context, scope) {
+            store?.let {
+                synchronized(it) {
+                    isShowingNotification = false
+                    process(it, true)
+                }
+            }
+        }
 
     override fun invoke(
         store: Store<BrowserState, BrowserAction>,
@@ -54,6 +61,9 @@ class RecordingDevicesMiddleware(
         action: BrowserAction,
     ) {
         next(action)
+        if (this.store == null) {
+            this.store = store
+        }
 
         // Whenever the recording devices of a tab change or tabs get added/removed then process
         // the current list and show/hide the notification.
@@ -87,10 +97,6 @@ class RecordingDevicesMiddleware(
         updateNotification(
             recordingState,
             isReminder,
-            processRecordingState = {
-                isShowingNotification = false
-                process(store, true)
-            },
         )
     }
 
@@ -98,17 +104,21 @@ class RecordingDevicesMiddleware(
     internal fun updateNotification(
         recordingState: RecordingState,
         isReminder: Boolean = false,
-        processRecordingState: () -> Unit = {},
     ) {
+        isRecording = recordingState.isRecording
         if (recordingState.isRecording && !isShowingNotification) {
             showNotification(
                 context,
                 recordingState,
                 notificationsDelegate,
                 isReminder,
-                processRecordingState,
             ) {
-                isShowingNotification = true
+                if (isRecording) {
+                    dismissReceiver.register()
+                    isShowingNotification = true
+                } else {
+                    NotificationManagerCompat.from(context).cancel(NOTIFICATION_TAG, NOTIFICATION_ID)
+                }
             }
         } else if (!recordingState.isRecording && isShowingNotification) {
             hideNotification()
@@ -118,6 +128,7 @@ class RecordingDevicesMiddleware(
 
     private fun hideNotification() {
         NotificationManagerCompat.from(context).cancel(NOTIFICATION_TAG, NOTIFICATION_ID)
+        dismissReceiver.unregister()
     }
 
     private fun showNotification(
@@ -125,7 +136,6 @@ class RecordingDevicesMiddleware(
         recordingState: RecordingState,
         notificationsDelegate: NotificationsDelegate,
         isReminder: Boolean = false,
-        processRecordingState: () -> Unit,
         onPermissionGranted: OnPermissionGranted,
     ) {
         val channelId = MediaNotificationChannel.ensureChannelExists(context)
@@ -150,14 +160,6 @@ class RecordingDevicesMiddleware(
                 Intent(ACTION_RECORDING_DEVICES_NOTIFICATION_DISMISSED),
                 PendingIntent.FLAG_IMMUTABLE,
             )
-
-        val broadcastReceiver = NotificationDismissedReceiver(processRecordingState)
-
-        context.registerReceiverCompat(
-            broadcastReceiver,
-            IntentFilter(ACTION_RECORDING_DEVICES_NOTIFICATION_DISMISSED),
-            ContextCompat.RECEIVER_EXPORTED,
-        )
 
         val textResource =
             if (isReminder) {
@@ -187,20 +189,6 @@ class RecordingDevicesMiddleware(
             notification,
             onPermissionGranted = onPermissionGranted,
         )
-    }
-
-    internal class NotificationDismissedReceiver(private val processRecordingState: () -> Unit) : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val callingAppInfo = context.packageManager.getNameForUid(Binder.getCallingUid())
-            if (callingAppInfo.equals(context.packageName)) {
-                ThreadUtils.postToMainThreadDelayed(
-                    {
-                        processRecordingState.invoke()
-                    },
-                    NOTIFICATION_REMINDER_DELAY_MS,
-                )
-            }
-        }
     }
 }
 

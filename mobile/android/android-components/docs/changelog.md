@@ -61,6 +61,8 @@ permalink: /changelog/
 * **feature-prompts**
   * 🆕 Added `CreditCardDelegate.isSecurityCodeSaveEnabled`, `CreditCardDelegate.saveSecurityCode` and `CreditCardDelegate.onSaveSecurityCodeChanged`. When `isSecurityCodeSaveEnabled` is true, the save credit card prompt shows the security code, a "Save security codes" toggle, and an edit button that opens an edit card sheet. [Bug 2089899](https://bugzilla.mozilla.org/show_bug.cgi?id=2089899)
   * **Behavior change**: When `isSecurityCodeSaveEnabled` is false, the save credit card prompt no longer confirms the security code. [Bug 2089899](https://bugzilla.mozilla.org/show_bug.cgi?id=2089899)
+* **feature-media**
+    * ⚠️ **Breaking change**: `RecordingDevicesMiddleware` now requires an explicit `CoroutineScope` to be provided by callers. The constructor no longer supplies a default scope value, improving lifecycle ownership and scope management. [Bug 2086075](https://la.org/show_bug.cgi?id=2086075)
 
 # 161.0
 * **browser-state**
@@ -77,20 +79,6 @@ permalink: /changelog/
     * Added `String.toSnakeCase`, which returns a camelCase or PascalCase string in snake_case. [Bug 2084683](https://bugzilla.mozilla.org/show_bug.cgi?id=2084683)
 * **feature-app-links**
     * ⚠️ **Breaking change**: `launchInApp` on `AppLinksInterceptor`, `AppLinksUseCases` and `AppLinksFeature`, and `shouldPrompt` on `AppLinksFeature` now receive the url being opened so the decision can vary by host. [Bug 2083207](https://bugzilla.mozilla.org/show_bug.cgi?id=2083207)
-* **feature-session**
-    * `SwipeRefreshFeature` now disables pull-to-refresh while the observed tab is in fullscreen or showing a PDF. [Bug 2054920](https://bugzilla.mozilla.org/show_bug.cgi?id=2054920)
-* **support-utils**
-    * 🆕 Added `BuildMetadata`, which reads the R8/ProGuard mapping UUID and SHA-256 from the `build-metadata.properties` asset written by the `WriteBuildMetadata` Gradle task.
-* **feature-top-sites**
-    * **Breaking change**: Renamed `totalSites` to `targetSitesCount` in `TopSitesConfig` and `TopSitesStorage.getTopSites`, since it is the number of top sites to fill up to rather than a limit. [Bug 2075033](https://bugzilla.mozilla.org/show_bug.cgi?id=2075033)
-    * **Behavior change**: `DefaultTopSitesStorage.getTopSites` now returns all the pinned sites, even beyond `targetSitesCount`. The provided, frecent and default top sites still only fill the slots left within `targetSitesCount`, so the returned list can be longer than `targetSitesCount`. [Bug 2075033](https://bugzilla.mozilla.org/show_bug.cgi?id=2075033)
-* **concept-storage**
-    * Added `cardCvv`, the credit card security code, to `CreditCard`, `NewCreditCardFields` and `UpdatableCreditCardFields`. When `UpdatableCreditCardFields.cardCvv` is null, `CreditCardsAddressesStorage.updateCreditCard` keeps the stored security code, and an empty string removes it. [Bug 2085145](https://bugzilla.mozilla.org/show_bug.cgi?id=2085145)
-* **service-sync-autofill**
-    * `AutofillCreditCardsAddressesStorage` stores and returns the credit card security code. `updateCreditCard` no longer removes a stored security code that the caller did not set. [Bug 2085145](https://bugzilla.mozilla.org/show_bug.cgi?id=2085145)
-* **concept-storage**, **service-sync-logins**
-    * ⚠️ **Breaking change**: `LoginsStorage.delete` no longer returns whether the login existed. The value was unreliable for synced logins and no caller used it.
-    [Bug 2089864](https://bugzilla.mozilla.org/show_bug.cgi?id=2089864)
 
 # 160.0
 * **concept-engine**
@@ -116,17 +104,6 @@ permalink: /changelog/
     * Download filenames from `onExternalResponse` are now validated by Gecko with the same rules as desktop, so `GeckoEngineSession` no longer applies the `String.sanitizeFileName` helper from **support-ktx** to them. [Bug 1822968](https://bugzilla.mozilla.org/show_bug.cgi?id=1822968)
 * **compose-base**
     * 🆕 Added `Slider`, an Acorn implementation of the M3 Slider component for Jetpack Compose. [Bug 2067129](https://bugzilla.mozilla.org/show_bug.cgi?id=2067129)
-* **browser-state**
-    * 🆕 Added `BrowserState.pendingExtensionUpdates`, extension updates waiting for the user to grant new permissions, with actions to update, remove and request the review of them, and the `pendingExtensionUpdatesNeedingAttention` selector. [Bug 2067732](https://bugzilla.mozilla.org/show_bug.cgi?id=2067732)
-* **feature-addons**
-    * ⚠️ **Breaking change**: Extension updates that require new permissions are now reviewed in the app instead of in a system notification. `DefaultAddonUpdater` adds such an update to `BrowserState.pendingExtensionUpdates`, and the app removes it once it answers with `PendingExtensionUpdate.complete`. `AddonsManagerAdapter` shows a banner for it, and `PermissionsDialogFragment` can show its new permissions. [Bug 2067732](https://bugzilla.mozilla.org/show_bug.cgi?id=2067732)
-        * `DefaultAddonUpdater` takes a `BrowserStore` instead of a `NotificationsDelegate`.
-        * `PermissionsDialogFragment.newInstance` takes `mode: PermissionsDialogMode` instead of `forOptionalPermissions`, and an optional `promptInstanceId`.
-        * `AddonsManagerAdapter.bindMessageBars` and `CustomViewHolder.AddonViewHolder` take a new `messageBarUpdateView: ComposeView`, and `bindMessageBars` takes optional `pendingUpdateMessage`, `onReviewUpdateClicked` and `onCancelUpdateClicked`.
-        * Added `AddonsManagerAdapterDelegate.onReviewExtensionUpdateClicked` and `onCancelExtensionUpdateClicked`. Implement them, or the banner's buttons do nothing.
-        * Added the `PendingExtensionUpdateBanner` composable. feature-addons now uses Jetpack Compose and depends on `compose-base`.
-        * Removed `DefaultAddonUpdater.NotificationHandlerService`.
-        * Removed `Addon.permissionToTranslationForUpdate` and the `forUpdate` parameter of `Addon.localizePermissions`.
 
 # 159.0
 * **feature-readerview**

@@ -390,7 +390,7 @@ class Core(
                     searchExtraParams = searchExtraParams,
                     searchEngineSelectorConfig = getSearchEngineSelectorConfig(),
                 ),
-                RecordingDevicesMiddleware(context, context.components.notificationsDelegate),
+                RecordingDevicesMiddleware(context, context.components.notificationsDelegate, applicationScope),
                 PromptMiddleware(applicationScope),
                 AdsTelemetryMiddleware(adsTelemetry),
                 LastMediaAccessMiddleware(),

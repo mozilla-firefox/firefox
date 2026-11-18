@@ -237,7 +237,7 @@ class Components(
                         PromptMiddleware(applicationScope),
                         AdsTelemetryMiddleware(adsTelemetry),
                         BlockedTrackersMiddleware(context),
-                        RecordingDevicesMiddleware(context, notificationsDelegate),
+                        RecordingDevicesMiddleware(context, notificationsDelegate, applicationScope),
                         CfrMiddleware(appStore, settings),
                         FileUploadsDirCleanerMiddleware(fileUploadsDirCleaner),
                     ) +
