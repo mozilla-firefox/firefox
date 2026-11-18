@@ -63,6 +63,8 @@ permalink: /changelog/
   * **Behavior change**: When `isSecurityCodeSaveEnabled` is false, the save credit card prompt no longer confirms the security code. [Bug 2089899](https://bugzilla.mozilla.org/show_bug.cgi?id=2089899)
 * **feature-media**
     * ⚠️ **Breaking change**: `RecordingDevicesMiddleware` now requires an explicit `CoroutineScope` to be provided by callers. The constructor no longer supplies a default scope value, improving lifecycle ownership and scope management. [Bug 2086075](https://la.org/show_bug.cgi?id=2086075)
+* **service-firefox-accounts** and **concept-sync**
+    * 🆕 Added an optional parameter determining whether or not to ignore cache when calling `DeviceConstellation.refreshDevices`. [Bug 2088410](https://bugzilla.mozilla.org/show_bug.cgi?id=2088410)
 
 # 161.0
 * **browser-state**

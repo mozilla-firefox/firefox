@@ -66,6 +66,10 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
     private lateinit var accountManager: FxaAccountManager
     private lateinit var accountSettingsStore: AccountSettingsFragmentStore
     private lateinit var accountSettingsInteractor: AccountSettingsInteractor
+
+    private val deviceConstellation by lazy {
+        accountManager.authenticatedAccount()?.deviceConstellation()
+    }
     private val args by navArgs<AccountSettingsFragmentArgs>()
 
     private val isNewUiEnabled: Boolean
@@ -180,7 +184,9 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
                             } else {
                                 LastSyncTime.Success(getLastSynced(requireContext()))
                             },
-                        deviceName = requireComponents.backgroundServices.defaultDeviceName(requireContext()),
+                        deviceName =
+                            deviceConstellation?.state()?.currentDevice?.displayName
+                                ?: requireComponents.backgroundServices.defaultDeviceName(requireContext()),
                     )
                 ) {
                     AccountSettingsFragmentStore(it)
@@ -203,7 +209,6 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
         setupPreferenceListeners()
     }
 
-    @Suppress("LongMethod", "CyclomaticComplexMethod")
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         val isNewUiEnabled = requireComponents.settings.accountSettingsNewUi
         val layout =
@@ -283,15 +288,8 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
     }
 
     private fun setupDeviceNamePreferenceListeners() {
-        val deviceConstellation = accountManager.authenticatedAccount()?.deviceConstellation()
-
         requirePreference<EditTextPreference>(R.string.pref_key_sync_device_name).apply {
             onPreferenceChangeListener = getChangeListenerForDeviceName()
-            deviceConstellation?.state()?.currentDevice?.let { device ->
-                summary = device.displayName
-                text = device.displayName
-                accountSettingsStore.dispatch(AccountSettingsFragmentAction.UpdateDeviceName(device.displayName))
-            }
             setOnBindEditTextListener { editText ->
                 editText.filters = arrayOf(InputFilter.LengthFilter(DEVICE_NAME_MAX_LENGTH))
                 editText.minHeight = pixelSizeFor(R.dimen.account_settings_device_name_min_height)
@@ -493,7 +491,7 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
             // Trigger a sync.
             requireComponents.backgroundServices.accountManager.syncNow(SyncReason.User)
             // Poll for device events & update devices.
-            accountManager.authenticatedAccount()?.deviceConstellation()?.run {
+            deviceConstellation?.run {
                 refreshDevices()
                 pollForCommands()
             }
@@ -512,9 +510,8 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
         // This may fail, and we'll have a disparity in the UI until `updateDeviceName` is called.
         viewLifecycleOwner.lifecycleScope.launch(Main) {
             context?.let {
-                accountManager.authenticatedAccount()?.deviceConstellation()?.setDeviceName(newDeviceName, it)
+                deviceConstellation?.setDeviceName(newDeviceName, it)
             }
-            accountSettingsStore.dispatch(AccountSettingsFragmentAction.UpdateDeviceName(newDeviceName))
         }
         return true
     }
@@ -633,8 +630,9 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
         }
 
     private fun updateDeviceName(state: AccountSettingsFragmentState) {
-        val preferenceDeviceName = requirePreference<Preference>(R.string.pref_key_sync_device_name)
+        val preferenceDeviceName = requirePreference<EditTextPreference>(R.string.pref_key_sync_device_name)
         preferenceDeviceName.summary = state.deviceName
+        preferenceDeviceName.text = state.deviceName
     }
 
     private fun updateLastSyncTimePref(state: AccountSettingsFragmentState) {

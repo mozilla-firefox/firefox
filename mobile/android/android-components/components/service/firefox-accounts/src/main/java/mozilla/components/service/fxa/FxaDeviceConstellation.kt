@@ -148,7 +148,7 @@ class FxaDeviceConstellation(
             FxaDeviceSettingsCache(context).updateCachedName(name)
             // See the latest device (name) changes after changing it.
 
-            rename && refreshDevices()
+            rename && refreshDevices(ignoreCache = true)
         }
 
     override suspend fun setDevicePushSubscription(subscription: DevicePushSubscription) =
@@ -237,12 +237,12 @@ class FxaDeviceConstellation(
         notifyObservers { onEvents(events) }
     }
 
-    override suspend fun refreshDevices(): Boolean {
+    override suspend fun refreshDevices(ignoreCache: Boolean): Boolean {
         return withContext(scope.coroutineContext) {
             logger.info("Refreshing device list...")
 
             // Attempt to fetch devices, or bail out on failure.
-            val allDevices = fetchAllDevices() ?: return@withContext false
+            val allDevices = fetchAllDevices(ignoreCache) ?: return@withContext false
 
             // Find the current device.
             val currentDevice =
@@ -282,11 +282,12 @@ class FxaDeviceConstellation(
     /**
      * Get all devices in the constellation.
      *
+     * @param ignoreCache Whether to ignore the cache and refresh from the server.
      * @return A list of all devices in the constellation, or `null` on failure.
      */
-    private suspend fun fetchAllDevices(): List<Device>? {
+    private suspend fun fetchAllDevices(ignoreCache: Boolean): List<Device>? {
         return handleFxaExceptions(logger, "fetching all devices", { null }) {
-            account.getDevices().map { it.into() }
+            account.getDevices(ignoreCache = ignoreCache).map { it.into() }
         }
     }
 }

@@ -40,6 +40,7 @@ import mozilla.components.support.test.argumentCaptor
 import mozilla.components.support.test.expectException
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
+import mozilla.components.support.test.whenever
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -128,7 +129,7 @@ class FxaDeviceConstellationTest {
     fun `updating device name`() =
         runTest(testDispatcher) {
             val currentDevice = testDevice("currentTestDevice", true)
-            `when`(account.getDevices()).thenReturn(arrayOf(currentDevice))
+            `when`(account.getDevices(ignoreCache = anyBoolean())).thenReturn(arrayOf(currentDevice))
 
             // Can't update cached value in an empty cache
             try {
@@ -298,6 +299,27 @@ class FxaDeviceConstellationTest {
             val exceptionCaptor = argumentCaptor<Throwable>()
             verify(constellation.crashReporter!!, atLeast(0)).submitCaughtException(exceptionCaptor.capture())
             assertFalse(exceptionCaptor.allValues.any { it is SendCommandException.TabsNotClosed })
+        }
+
+    @Test
+    fun `refreshing constellation without cache should notify the observers with data from server`() =
+        runTest(testDispatcher) {
+            val cachedCurrentDevice = testDevice(id = "currentTestDevice", displayName = "Cached", current = true)
+            val freshCurrentDevice = testDevice(id = "currentTestDevice", displayName = "Fresh", current = true)
+            whenever(account.getDevices(ignoreCache = false)).thenReturn(arrayOf(cachedCurrentDevice))
+            whenever(account.getDevices(ignoreCache = true)).thenReturn(arrayOf(freshCurrentDevice))
+
+            var updatedConstellation: ConstellationState? = null
+            val observer =
+                object : DeviceConstellationObserver {
+                    override fun onDevicesUpdate(constellation: ConstellationState) {
+                        updatedConstellation = constellation
+                    }
+                }
+            constellation.registerDeviceObserver(observer, startedLifecycleOwner(), false)
+
+            constellation.refreshDevices(ignoreCache = true)
+            assertEquals("Fresh", updatedConstellation?.currentDevice?.displayName)
         }
 
     @Test
@@ -546,12 +568,13 @@ class FxaDeviceConstellationTest {
     private fun testDevice(
         id: String,
         current: Boolean,
+        displayName: String = "testName",
         expired: Boolean = false,
         subscribed: Boolean = true,
     ): NativeDevice {
         return NativeDevice(
             id = id,
-            displayName = "testName",
+            displayName = displayName,
             deviceType = RustDeviceType.MOBILE,
             isCurrentDevice = current,
             lastAccessTime = 123L,

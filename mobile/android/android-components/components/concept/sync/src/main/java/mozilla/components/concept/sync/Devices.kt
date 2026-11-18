@@ -83,9 +83,10 @@ interface DeviceConstellation : Observable<AccountEventsObserver> {
     /**
      * Refreshes [ConstellationState]. Registered [DeviceConstellationObserver] observers will be notified.
      *
+     * @param [ignoreCache] Whether to ignore the cache and refresh from the server.
      * @return A boolean success flag.
      */
-    suspend fun refreshDevices(): Boolean
+    suspend fun refreshDevices(ignoreCache: Boolean = false): Boolean
 
     /**
      * Polls for any pending [DeviceCommandIncoming] commands. In case of new commands, registered
