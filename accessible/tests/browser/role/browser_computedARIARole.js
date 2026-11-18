@@ -77,8 +77,8 @@ addAccessibleTask(
     // <section> only maps to the region ARIA role if it has a label.
     testComputedARIARole("htmlSection", "generic");
     // <header> only maps to the banner role if it is not a child of a
-    // sectioning element.
-    testComputedARIARole("htmlSectionHeader", "generic");
+    // sectioning element, otherwise it maps to a sectionheader role.
+    testComputedARIARole("htmlSectionHeader", "sectionheader");
     testComputedARIARole("htmlRegion", "region");
     // Gecko doesn't have a rowgroup role. Ensure we differentiate for
     // computedARIARole.

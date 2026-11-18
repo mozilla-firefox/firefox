@@ -211,6 +211,7 @@ class uiaRawElmProvider : public IAccessibleEx,
       std::initializer_list<RelationType> aTypes) const;
   Accessible* GetLabeledBy() const;
   long GetLandmarkType() const;
+  void GetLocalizedControlType(nsAString& aLocalized) const;
   void GetLocalizedLandmarkType(nsAString& aLocalized) const;
   long GetLiveSetting() const;
   bool IsWebContentRoot() const;

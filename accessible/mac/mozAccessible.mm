@@ -497,6 +497,8 @@ static constexpr RoleDescrMap sRoleDescrMap[] = {
     {@"AXLandmarkRegion", u"region"_ns},
     {@"AXLandmarkSearch", u"search"_ns},
     {@"AXSearchField", u"searchTextField"_ns},
+    {@"AXSectionFooter", u"sectionfooter"_ns},
+    {@"AXSectionHeader", u"sectionheader"_ns},
     {@"AXSummary", u"summary"_ns},
     {@"AXTabPanel", u"tabPanel"_ns},
     {@"AXTerm", u"term"_ns},

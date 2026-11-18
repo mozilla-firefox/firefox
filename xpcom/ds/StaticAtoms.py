@@ -1199,6 +1199,8 @@ STATIC_ATOMS = [
     Atom("scrollPosition", "scroll-position"),
     Atom("se", "se"),
     Atom("section", "section"),
+    Atom("sectionfooter", "sectionfooter"),
+    Atom("sectionheader", "sectionheader"),
     Atom("select", "select"),
     Atom("selected", "selected"),
     Atom("selectedcontent", "selectedcontent"),
