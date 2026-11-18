@@ -353,8 +353,8 @@ export class GenAIChild extends JSWindowActorChild {
             this.showShortcuts(
               selectionInfo,
               delay,
-              screenX * this.contentWindow.devicePixelRatio,
-              screenY * this.contentWindow.devicePixelRatio,
+              screenX,
+              screenY,
               pageMenu
             );
             if (pageMenu) {
@@ -415,21 +415,106 @@ export class GenAIChild extends JSWindowActorChild {
     }
   }
 
-  showShortcuts(
-    selectionInfo,
-    delay,
-    screenXDevPx,
-    screenYDevPx,
-    pageMenu = false
-  ) {
+  /**
+   * The last visible piece of text in a range.
+   *
+   * @param {Range} range
+   * @returns {{rect: DOMRect, rtl: boolean}|null}
+   */
+  #getRangeEnd(range) {
+    const root = range.commonAncestorContainer;
+    const walker = this.document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const endContainer = range.endContainer;
+    walker.currentNode = endContainer;
+    let node =
+      endContainer.nodeType == Node.TEXT_NODE
+        ? endContainer
+        : (walker.lastChild() ?? walker.previousNode());
+    while (node) {
+      const isEnd = node == range.endContainer;
+      const isStart = node == range.startContainer;
+      const empty =
+        (isEnd && range.endOffset == 0) ||
+        (isStart && range.startOffset == node.length);
+      if (!empty && range.intersectsNode(node)) {
+        const part = this.document.createRange();
+        part.selectNodeContents(node);
+        if (isEnd) {
+          part.setEnd(node, range.endOffset);
+        }
+        if (isStart) {
+          part.setStart(node, range.startOffset);
+        }
+        const rects = Array.from(part.getClientRects()).filter(r => r.width);
+        if (rects.length) {
+          const style = node.parentElement
+            ? this.contentWindow.getComputedStyle(node.parentElement)
+            : null;
+          return { rect: rects.at(-1), rtl: style?.direction == "rtl" };
+        }
+      }
+      node = walker.previousNode();
+    }
+    return null;
+  }
+
+  /**
+   * Where to anchor the menu, in screen coordinates. With the feature gate on
+   * it hangs from the end of the selection, as it does for a selection made
+   * straight through the text, whichever way the selection was made and
+   * wherever the pointer was released.
+   *
+   * @param {number} screenX pointer position in CSS pixels
+   * @param {number} screenY pointer position in CSS pixels
+   * @returns {{x: number, y: number, top?: number}} CSS pixels; `y` is the
+   *   bottom of the selection and `top` its top
+   */
+  #getMenuAnchor(screenX, screenY) {
+    const pointer = { x: screenX, y: screenY };
+    if (!lazy.highlightToSearchFeatureGate) {
+      return pointer;
+    }
+
+    const win = this.contentWindow;
+    const selection = win.getSelection();
+    if (!selection?.toString().trim() || !selection.rangeCount) {
+      return pointer;
+    }
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    if (!rect.width && !rect.height) {
+      return pointer;
+    }
+
+    const end = this.#getRangeEnd(range);
+    const left = win.mozInnerScreenX;
+    const viewportTop = win.mozInnerScreenY;
+    let x = screenX - left;
+    let bottom = rect.bottom;
+    if (end) {
+      x = end.rtl ? end.rect.left : end.rect.right;
+      bottom = end.rect.bottom;
+    }
+    const clamp = (value, max) => Math.min(Math.max(value, 0), max);
+    return {
+      x: left + clamp(x, win.innerWidth),
+      y: viewportTop + clamp(bottom, win.innerHeight),
+      top: viewportTop + clamp(rect.top, win.innerHeight),
+    };
+  }
+
+  showShortcuts(selectionInfo, delay, screenX, screenY, pageMenu = false) {
     this.shownSelection = selectionInfo.selection;
+    const dpr = this.contentWindow.devicePixelRatio;
+    const anchor = this.#getMenuAnchor(screenX, screenY);
     this.sendAsyncMessage("GenAI:ShowShortcuts", {
       ...selectionInfo,
       contentType: "selection",
       delay,
       pageMenu,
-      screenXDevPx,
-      screenYDevPx,
+      screenXDevPx: anchor.x * dpr,
+      screenYDevPx: anchor.y * dpr,
+      selectionTopDevPx: anchor.top === undefined ? null : anchor.top * dpr,
       // For the search action's loadSearch call, mirroring how the
       // context menu derives its own triggeringPrincipal/policyContainer.
       principal: this.document.nodePrincipal,
@@ -491,11 +576,12 @@ export class GenAIChild extends JSWindowActorChild {
       case "ShowSelectionMenu": {
         const selectionInfo = this.getSelectionInfo();
         if (selectionInfo.selection) {
+          const dpr = this.contentWindow.devicePixelRatio;
           this.showShortcuts(
             selectionInfo,
             0,
-            data.screenXDevPx,
-            data.screenYDevPx
+            data.screenXDevPx / dpr,
+            data.screenYDevPx / dpr
           );
         }
         return null;

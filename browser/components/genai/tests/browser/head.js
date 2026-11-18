@@ -59,6 +59,7 @@ function visibleBox(popup) {
     top: outer.y + content.top - client.top,
     bottom: outer.y + content.bottom - client.top,
     left: outer.x + content.left - client.left,
+    right: outer.x + content.right - client.left,
   };
 }
 

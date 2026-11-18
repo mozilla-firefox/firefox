@@ -68,6 +68,8 @@ add_task(async function test_show_menu_without_provider() {
   }
 });
 
+const RTL_PAGE = `data:text/html,<body style="margin:0"><p id="text" style="position:absolute;top:150px;left:500px;margin:0;font:20px/30px sans-serif">hi there</p></body>`;
+
 add_task(async function test_selection_menu_position_with_rtl_app_locale() {
   await SpecialPowers.pushPrefEnv({
     set: [
@@ -79,27 +81,26 @@ add_task(async function test_selection_menu_position_with_rtl_app_locale() {
 
   const panel = document.getElementById("selection-shortcut-action-panel");
 
-  await BrowserTestUtils.withNewTab("data:text/plain,hi", async browser => {
+  await BrowserTestUtils.withNewTab(RTL_PAGE, async browser => {
     await TestUtils.waitForCondition(
       () => getComputedStyle(browser).direction == "rtl",
       "Anchor resolved to RTL"
     );
 
-    const clickX = 300;
-    await selectAllAndMouseUp(browser, { releaseX: clickX, releaseY: 20 });
+    await selectNodeAndMouseUp(browser, { releaseX: 300, releaseY: 20 });
     await TestUtils.waitForCondition(
       () => panel.getAttribute("panelopen") === "true",
       "Selection menu opened"
     );
 
-    const browserRect = browser.getBoundingClientRect();
-    const panelRect = panel.getBoundingClientRect();
-    const clickViewportX = browserRect.left + clickX;
-    const margin = 10;
-    Assert.ok(
-      clickViewportX >= panelRect.left - margin &&
-        clickViewportX <= panelRect.right + margin,
-      `Popup (left=${panelRect.left}, right=${panelRect.right}) spans the click position (${clickViewportX}) even with an RTL app locale`
+    const selectionEndX = await SpecialPowers.spawn(browser, [], () => {
+      const rects = content.getSelection().getRangeAt(0).getClientRects();
+      return content.mozInnerScreenX + rects[rects.length - 1].right;
+    });
+    Assert.less(
+      Math.abs(visibleBox(panel).right - selectionEndX),
+      2,
+      "Popup ends at the end of the selection, mirrored for an RTL app locale"
     );
 
     const hidden = BrowserTestUtils.waitForEvent(panel, "popuphidden");
@@ -112,6 +113,290 @@ add_task(async function test_selection_menu_position_with_rtl_app_locale() {
     () => getComputedStyle(document.documentElement).direction == "ltr",
     "UI reverted to LTR"
   );
+});
+
+const POSITION_PAGE = `data:text/html,<body style="margin:0"><p id="text" style="position:absolute;top:150px;left:50px;width:300px;margin:0;font:20px/30px sans-serif">alpha beta gamma delta epsilon zeta eta theta iota kappa</p><p id="low" style="position:fixed;bottom:0;left:50px;margin:0;font:20px/30px sans-serif">omega</p></body>`;
+
+async function selectNodeAndMouseUp(
+  browser,
+  { id = "text", backward = false, releaseX = 60, releaseY = 10 } = {}
+) {
+  await SimpleTest.promiseFocus(browser);
+  await SpecialPowers.spawn(browser, [], () =>
+    content.getSelection().removeAllRanges()
+  );
+  await BrowserTestUtils.synthesizeMouse(
+    browser,
+    10,
+    10,
+    { type: "mousedown" },
+    browser
+  );
+  const selected = await SpecialPowers.spawn(
+    browser,
+    [id, backward],
+    (nodeId, isBackward) => {
+      const node = content.document.getElementById(nodeId).firstChild;
+      const selection = content.getSelection();
+      if (isBackward) {
+        selection.setBaseAndExtent(node, node.length, node, 0);
+      } else {
+        selection.setBaseAndExtent(node, 0, node, node.length);
+      }
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      const rects = range.getClientRects();
+      return {
+        top: content.mozInnerScreenY + rect.top,
+        bottom: content.mozInnerScreenY + rect.bottom,
+        endX: content.mozInnerScreenX + rects[rects.length - 1].right,
+      };
+    }
+  );
+  await BrowserTestUtils.synthesizeMouse(
+    browser,
+    releaseX,
+    releaseY,
+    { type: "mouseup" },
+    browser
+  );
+  return selected;
+}
+
+/**
+ * Check that the menu hangs below the selection however it was made, and
+ * isn't dragged to the pointer when the mouse was released outside the page.
+ */
+add_task(async function test_selection_menu_position_below_selection() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ...MORE_ACTIONS_PREFS,
+      ["browser.highlightToSearch.featureGate", true],
+    ],
+  });
+
+  await BrowserTestUtils.withNewTab(POSITION_PAGE, async browser => {
+    const panel = document.getElementById("selection-shortcut-action-panel");
+    const cases = [
+      { name: "forward", options: { releaseX: 200, releaseY: 220 } },
+      {
+        name: "backward",
+        options: { backward: true, releaseX: 60, releaseY: 155 },
+      },
+      {
+        name: "released above the page",
+        options: { backward: true, releaseX: 60, releaseY: -30 },
+      },
+      {
+        name: "released beside the page",
+        options: { releaseX: -50, releaseY: 220 },
+      },
+    ];
+    for (const { name, options } of cases) {
+      const selected = await selectNodeAndMouseUp(browser, options);
+      await TestUtils.waitForCondition(
+        () => panel.getAttribute("panelopen") === "true",
+        `Menu opened for the ${name} selection`
+      );
+      const box = visibleBox(panel);
+      Assert.greaterOrEqual(
+        box.top,
+        selected.bottom - 1,
+        `The menu starts below the ${name} selection`
+      );
+      Assert.less(
+        box.top,
+        selected.bottom + 20,
+        `The menu sits close under the ${name} selection`
+      );
+      Assert.less(
+        Math.abs(box.left - selected.endX),
+        2,
+        `The menu starts at the end of the ${name} selection`
+      );
+      await hideSelectionMenu(panel);
+    }
+  });
+
+  await SpecialPowers.popPrefEnv();
+});
+
+/**
+ * Check that a double click puts the menu at the end of the word, as it would
+ * be for that word selected by dragging, not where the pointer is.
+ */
+add_task(async function test_selection_menu_position_double_click() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ...MORE_ACTIONS_PREFS,
+      ["browser.highlightToSearch.featureGate", true],
+    ],
+  });
+
+  await BrowserTestUtils.withNewTab(POSITION_PAGE, async browser => {
+    const panel = document.getElementById("selection-shortcut-action-panel");
+    await SimpleTest.promiseFocus(browser);
+    const word = await SpecialPowers.spawn(browser, [], () => {
+      const node = content.document.getElementById("text").firstChild;
+      const range = content.document.createRange();
+      range.setStart(node, 6);
+      range.setEnd(node, 10);
+      const rect = range.getBoundingClientRect();
+      return {
+        centerX: rect.left + 2,
+        centerY: rect.top + rect.height / 2,
+      };
+    });
+    for (const clickCount of [1, 2]) {
+      for (const type of ["mousedown", "mouseup"]) {
+        await BrowserTestUtils.synthesizeMouse(
+          browser,
+          word.centerX,
+          word.centerY,
+          { type, clickCount },
+          browser
+        );
+      }
+    }
+    await TestUtils.waitForCondition(
+      () => panel.getAttribute("panelopen") === "true",
+      "Menu opened for the double-clicked word"
+    );
+    const selected = await SpecialPowers.spawn(browser, [], () => {
+      const range = content.getSelection().getRangeAt(0);
+      const rects = range.getClientRects();
+      return {
+        endX: content.mozInnerScreenX + rects[rects.length - 1].right,
+        bottom: content.mozInnerScreenY + range.getBoundingClientRect().bottom,
+      };
+    });
+    const box = visibleBox(panel);
+    Assert.less(
+      Math.abs(box.left - selected.endX),
+      2,
+      "The menu starts at the end of the double-clicked selection"
+    );
+    Assert.greaterOrEqual(
+      box.top,
+      selected.bottom - 1,
+      "The menu starts below the double-clicked selection"
+    );
+    await hideSelectionMenu(panel);
+  });
+
+  await SpecialPowers.popPrefEnv();
+});
+
+const EDGE_PAGE = `data:text/html,<body style="margin:0"><p id="right" style="position:absolute;top:150px;right:10px;margin:0;font:20px/30px sans-serif">right edge</p><p id="left" style="position:absolute;top:250px;left:10px;margin:0;font:20px/30px sans-serif">left edge</p></body>`;
+
+/**
+ * Check that the menu stays inside the page area when the selection ends near
+ * its edge, instead of covering a sidebar or leaving the window.
+ */
+add_task(async function test_selection_menu_position_stays_in_page() {
+  for (const rtl of [false, true]) {
+    await SpecialPowers.pushPrefEnv({
+      set: [
+        ...MORE_ACTIONS_PREFS,
+        ["browser.highlightToSearch.featureGate", true],
+        ...(rtl ? [["intl.l10n.pseudo", "bidi"]] : []),
+      ],
+    });
+    await BrowserTestUtils.withNewTab(EDGE_PAGE, async browser => {
+      const panel = document.getElementById("selection-shortcut-action-panel");
+      browser.style.marginInline = "300px";
+      await TestUtils.waitForCondition(
+        () => browser.getBoundingClientRect().left >= 300,
+        "The page area is narrower than the window, as with a sidebar"
+      );
+      const browserLeft = browser.screenX;
+      const browserRight = browserLeft + browser.getBoundingClientRect().width;
+      for (const id of ["right", "left"]) {
+        await selectNodeAndMouseUp(browser, { id });
+        await TestUtils.waitForCondition(
+          () => panel.getAttribute("panelopen") === "true",
+          `Menu opened for the ${id} edge selection`
+        );
+        const outer = panel.getOuterScreenRect();
+        await TestUtils.waitForCondition(
+          () => {
+            const rect = panel.getOuterScreenRect();
+            return rect.x >= browserLeft && rect.right <= browserRight;
+          },
+          `The menu is inside the page area for the ${id} edge selection${rtl ? " in RTL" : ""} (left=${outer.x}, right=${outer.right}, page ${browserLeft}-${browserRight})`
+        );
+        await hideSelectionMenu(panel);
+      }
+    });
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+/**
+ * Check that a selection with no room beneath it gets the menu above it.
+ */
+add_task(async function test_selection_menu_position_above_when_no_room() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ...MORE_ACTIONS_PREFS,
+      ["browser.highlightToSearch.featureGate", true],
+    ],
+  });
+
+  await BrowserTestUtils.withNewTab(POSITION_PAGE, async browser => {
+    const panel = document.getElementById("selection-shortcut-action-panel");
+    const selected = await selectNodeAndMouseUp(browser, {
+      id: "low",
+      releaseX: 60,
+      releaseY: 20,
+    });
+    await TestUtils.waitForCondition(
+      () => panel.getAttribute("panelopen") === "true",
+      "Menu opened for the selection at the bottom of the page"
+    );
+    Assert.lessOrEqual(
+      visibleBox(panel).bottom,
+      selected.top + 1,
+      "The menu sits above a selection with no room beneath it"
+    );
+    await hideSelectionMenu(panel);
+  });
+
+  await SpecialPowers.popPrefEnv();
+});
+
+/**
+ * Check that with the feature gate off the menu is still placed from the
+ * pointer.
+ */
+add_task(async function test_selection_menu_position_gate_off() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ...MORE_ACTIONS_PREFS,
+      ["browser.highlightToSearch.featureGate", false],
+    ],
+  });
+
+  await BrowserTestUtils.withNewTab(POSITION_PAGE, async browser => {
+    const panel = document.getElementById("selection-shortcut-action-panel");
+    const selected = await selectNodeAndMouseUp(browser, {
+      backward: true,
+      releaseX: 60,
+      releaseY: 155,
+    });
+    await TestUtils.waitForCondition(
+      () => panel.getAttribute("panelopen") === "true",
+      "Menu opened with the gate off"
+    );
+    Assert.less(
+      visibleBox(panel).top,
+      selected.bottom - 20,
+      "The menu follows the pointer at the start of the selection"
+    );
+    await hideSelectionMenu(panel);
+  });
+
+  await SpecialPowers.popPrefEnv();
 });
 
 /**

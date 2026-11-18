@@ -1551,12 +1551,35 @@ export const GenAI = {
         }
         shortcutPanel.startDisplay(isSmartWindow);
 
-        // Position the shortcuts relative to the browser's top-left corner
         const screenYBase = data.screenYDevPx / devicePixelRatio;
+        const screenX = data.screenXDevPx / devicePixelRatio;
+
+        if (
+          lazy.highlightToSearchFeatureGate &&
+          data.selectionTopDevPx != null
+        ) {
+          const menuHeight = 44;
+          const viewportHeight = browser.getBoundingClientRect().height;
+          const selectionTop = data.selectionTopDevPx / devicePixelRatio;
+          const fitsBelow =
+            screenYBase + menuHeight <= browser.screenY + viewportHeight;
+          const fitsAbove = selectionTop - menuHeight >= browser.screenY;
+          shortcutPanel.openPopupAtScreenRect(
+            fitsBelow ? "after_start" : "before_start",
+            screenX,
+            fitsBelow || !fitsAbove ? screenYBase : selectionTop,
+            0,
+            0,
+            false
+          );
+          keepPanelInBrowser(shortcutPanel, browser);
+          break;
+        }
+
+        // Position the shortcuts relative to the browser's top-left corner
         const safeSpace = window.outerHeight - 40;
         // Remove padding if the popup would be offscreen
         const bottomPadding = screenYBase > safeSpace ? 0 : 40;
-        const screenX = data.screenXDevPx / devicePixelRatio;
         const screenY = screenYBase + bottomPadding;
 
         const isRTL = Services.locale.isAppLocaleRTL;
@@ -2588,6 +2611,31 @@ function updateIgnoredSites() {
     .split(",")
     .map(site => site.trim().toLowerCase())
     .filter(site => site);
+}
+
+/**
+ * Once the panel is showing, move it back into the page area if its width put
+ * it over a sidebar or past the window edge.
+ *
+ * @param {XULPopupElement} panel
+ * @param {MozBrowser} browser
+ */
+function keepPanelInBrowser(panel, browser) {
+  const abort = new AbortController();
+  panel.addEventListener(
+    "popupshown",
+    () => {
+      const outer = panel.getOuterScreenRect();
+      const left = browser.screenX;
+      const right = left + browser.getBoundingClientRect().width;
+      const x = Math.max(left, Math.min(outer.x, right - outer.width));
+      if (x != outer.x) {
+        panel.moveTo(x, outer.y);
+      }
+    },
+    { once: true, signal: abort.signal }
+  );
+  panel.addEventListener("popuphidden", () => abort.abort(), { once: true });
 }
 
 /**
