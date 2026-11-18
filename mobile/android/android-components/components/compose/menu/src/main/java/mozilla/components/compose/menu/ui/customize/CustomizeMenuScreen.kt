@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -107,6 +108,7 @@ private fun CustomizeMenuList(
     val itemSpacing = AcornTheme.layout.space.static150
     val announcer = rememberA11yUpdatesAnnouncer()
     val onMove = { movedGroupId: String, movedGroups: CustomizeMenuGroups, moveAnnouncement: String ->
+        movedGroups.listIndexOf(movedGroupId)?.let { listState.moveAndKeepVisible(movedGroupId, it) }
         store.saveMove(dragState.groups, movedGroupId, movedGroups)
         announcer.announce(moveAnnouncement)
     }
@@ -180,6 +182,22 @@ private fun CustomizeMenuList(
     // Drawn over the list, important to be the last element here.
     // Will allow for accessibility services to be told of its updates, which they aren't if it is covered.
     announcer.LiveRegion()
+}
+
+/**
+ * Keep the item with [key] where it is in view, or bring it into view, once it moves to [index] in the list, for it to
+ * stay laid out and keep the focus of accessibility services.
+ */
+private fun LazyListState.moveAndKeepVisible(key: Any, index: Int) {
+    val layout = layoutInfo
+    val item = layout.visibleItemsInfo.firstOrNull { it.key == key }
+    if (item == null) {
+        requestScrollToItem(index)
+        return
+    }
+    val lastFullyVisibleOffset = (layout.viewportEndOffset - item.size).coerceAtLeast(layout.viewportStartOffset)
+    val offset = item.offset.coerceIn(layout.viewportStartOffset, lastFullyVisibleOffset)
+    requestScrollToItem(index, scrollOffset = -offset)
 }
 
 @Composable

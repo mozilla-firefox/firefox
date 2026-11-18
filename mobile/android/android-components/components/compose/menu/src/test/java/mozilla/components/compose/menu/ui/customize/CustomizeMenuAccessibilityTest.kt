@@ -12,11 +12,15 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
@@ -275,6 +279,45 @@ class CustomizeMenuAccessibilityTest {
     }
 
     @Test
+    fun `GIVEN more sections than fit on the screen WHEN a section is moved up or down THEN it stays the same node where it was on the screen`() {
+        setContent(menuState(shown = (1..10).map { row("Shown $it") }))
+        val before = composeTestRule.onNode(section("Shown 3")).fetchSemanticsNode()
+        val topBefore = before.boundsInRoot.top
+
+        performAction("Shown 3", moveDown)
+        performAction("Shown 3", moveDown)
+        performAction("Shown 3", moveUp)
+
+        val after = composeTestRule.onNode(section("Shown 3")).fetchSemanticsNode()
+        assertEquals(before.id, after.id)
+        assertEquals(topBefore, after.boundsInRoot.top)
+        composeTestRule.onNodeWithContentDescription(shownSection("Shown 3", 4, 10)).assertExists()
+    }
+
+    @Test
+    fun `GIVEN more sections than fit on the screen WHEN a section at the top is hidden THEN it stays the same node and is shown`() {
+        setContent(menuState(shown = (1..10).map { row("Shown $it") }, hidden = listOf(row("Hidden"))))
+        val before = composeTestRule.onNode(section("Shown 2")).fetchSemanticsNode()
+
+        performAction("Shown 2", hide)
+
+        composeTestRule.onNode(section("Shown 2")).assertIsDisplayed()
+        assertEquals(before.id, composeTestRule.onNode(section("Shown 2")).fetchSemanticsNode().id)
+    }
+
+    @Test
+    fun `GIVEN more sections than fit on the screen WHEN a hidden section at the bottom is added to the menu THEN it stays the same node and is shown`() {
+        setContent(menuState(shown = (1..10).map { row("Shown $it") }, hidden = (1..10).map { row("Hidden $it") }))
+        composeTestRule.onNode(hasScrollAction()).performScrollToNode(section("Hidden 10"))
+        val before = composeTestRule.onNode(section("Hidden 10")).fetchSemanticsNode()
+
+        performAction("Hidden 10", unhide)
+
+        composeTestRule.onNode(section("Hidden 10")).assertIsDisplayed()
+        assertEquals(before.id, composeTestRule.onNode(section("Hidden 10")).fetchSemanticsNode().id)
+    }
+
+    @Test
     fun `THEN the announcements are drawn over the list, for accessibility services to be told about them`() {
         setContent(menuState(shown = listOf(row("First"), row("Second"))))
 
@@ -311,6 +354,26 @@ class CustomizeMenuAccessibilityTest {
         performAction("First", hide)
 
         announcementNode().assert(announced)
+    }
+
+    @Test
+    fun `GIVEN a section partly below the screen WHEN it is moved down THEN it is fully shown`() {
+        setContent(menuState(shown = (1..10).map { row("Shown $it") }))
+        val screenBottom = composeTestRule.onRoot().getUnclippedBoundsInRoot().bottom
+        val partlyShown =
+            (1..10)
+                .map { "Shown $it" }
+                .filter { composeTestRule.onAllNodes(section(it)).fetchSemanticsNodes().isNotEmpty() }
+                .first {
+                    val bounds = composeTestRule.onNode(section(it)).getUnclippedBoundsInRoot()
+                    bounds.top < screenBottom && bounds.bottom > screenBottom
+                }
+
+        performAction(partlyShown, moveDown)
+
+        composeTestRule.onNode(section(partlyShown)).assertIsDisplayed()
+        val bottom = composeTestRule.onNode(section(partlyShown)).getUnclippedBoundsInRoot().bottom
+        assertTrue(bottom <= screenBottom)
     }
 
     private fun announcementNode() =

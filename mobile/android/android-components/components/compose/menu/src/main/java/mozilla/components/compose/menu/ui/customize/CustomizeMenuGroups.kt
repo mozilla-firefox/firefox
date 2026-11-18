@@ -35,6 +35,17 @@ internal data class CustomizeMenuGroups(
         get() = 1 + shown.size
 
     /**
+     * Index in the list of the group with [id], or `null` if there is none. A hidden group is right below the hidden
+     * sections title, as the area to drag groups into to hide them is shown only when no group is hidden.
+     */
+    fun listIndexOf(id: String): Int? {
+        val shownIndex = shown.indexOfFirst { it.id == id }
+        if (shownIndex != -1) return 1 + shownIndex
+        val hiddenIndex = hidden.indexOfFirst { it.id == id }
+        return if (hiddenIndex == -1) null else hiddenSectionsIndex + 1 + hiddenIndex
+    }
+
+    /**
      * Move a group next to another group, or to either side of [CustomizeMenuItemKey.HIDDEN_SECTIONS] to show it last
      * or hide it first. Mandatory groups cannot be hidden.
      *
