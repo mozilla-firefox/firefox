@@ -128,7 +128,7 @@ add_task(async function test_delete_model_removes_downloaded_files() {
 
   Assert.deepEqual(
     await hub.modelHub.listModels(),
-    [{ taskName: TASK_NAME, name: hub.qualified, revision: REVISION }],
+    [{ name: hub.qualified, revision: REVISION, tasks: [TASK_NAME] }],
     "The downloaded model is listed."
   );
   Assert.ok(await hub.opfsHasFile({ file: CONFIG }), "config.json is on disk.");
@@ -278,7 +278,7 @@ add_task(async function test_delete_non_matching_revisions() {
   );
   Assert.deepEqual(
     await hub.modelHub.listModels(),
-    [{ taskName: TASK_NAME, name: hub.qualified, revision: "v2" }],
+    [{ name: hub.qualified, revision: "v2", tasks: [TASK_NAME] }],
     "Only the kept revision is listed."
   );
 

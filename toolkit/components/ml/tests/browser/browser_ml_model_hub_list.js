@@ -79,7 +79,7 @@ add_task(async function test_list_models_reports_downloads() {
 
   Assert.deepEqual(
     await hub.modelHub.listModels(),
-    [{ taskName: TASK_NAME, name: hub.qualified, revision: REVISION }],
+    [{ name: hub.qualified, revision: REVISION, tasks: [TASK_NAME] }],
     "The downloaded model is listed under the hostname-qualified name."
   );
 
@@ -88,8 +88,8 @@ add_task(async function test_list_models_reports_downloads() {
   Assert.deepEqual(
     await hub.modelHub.listModels(),
     [
-      { taskName: TASK_NAME, name: hub.qualified, revision: REVISION },
-      { taskName: TASK_NAME, name: hub.qualified, revision: "v2" },
+      { name: hub.qualified, revision: REVISION, tasks: [TASK_NAME] },
+      { name: hub.qualified, revision: "v2", tasks: [TASK_NAME] },
     ],
     "Each revision is listed separately."
   );
@@ -98,27 +98,29 @@ add_task(async function test_list_models_reports_downloads() {
 });
 
 /**
- * listModels reports one row per model and revision, not per task.
- *
- * TODO: it walks the model/revision index with a "nextunique" cursor, which
- * keeps only the first record per index key in primary-key order. That key
- * starts with the task name, so when several tasks share a model the surviving
- * row names whichever task sorts first - download order has nothing to do with
- * it. A caller asking which tasks hold a model cannot tell from this.
+ * Several tasks can share one model. listModels names every task that
+ * holds it, so callers can tell when a model is still in use elsewhere.
  */
-add_task(async function test_list_models_collapses_tasks() {
+add_task(async function test_list_models_names_every_task() {
   const hub = await withModelHub();
   hub.serve({ file: CONFIG, size: CONFIG_BYTES });
 
-  // Downloaded in reverse alphabetical order, so the surviving row cannot be
+  // Downloaded in reverse alphabetical order, so the reported set cannot be
   // explained by which task got there first.
   await hub.download({ file: CONFIG, taskName: "task-zulu" });
   await hub.download({ file: CONFIG, taskName: "task-alpha" });
 
+  const models = await hub.modelHub.listModels();
+
   Assert.deepEqual(
-    await hub.modelHub.listModels(),
-    [{ taskName: "task-alpha", name: hub.qualified, revision: REVISION }],
-    "Two tasks share one row, named for the task that sorts first."
+    models.map(({ name, revision }) => ({ name, revision })),
+    [{ name: hub.qualified, revision: REVISION }],
+    "Two tasks sharing a model still make one row."
+  );
+  Assert.deepEqual(
+    [...models[0].tasks].sort(),
+    ["task-alpha", "task-zulu"],
+    "Both tasks holding the model are named."
   );
 
   await hub.cleanup();

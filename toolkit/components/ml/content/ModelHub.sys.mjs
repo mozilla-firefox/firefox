@@ -751,10 +751,11 @@ class IndexedDBCache {
    * @param {?string} [config.indexName]
    * @param {?function(IDBCursor):boolean} [config.filterFn] - A function to execute for each key found.
    *  It should return a truthy value to keep the key, and a falsy value otherwise.
+   * @param {IDBCursorDirection} config.direction
    *
    * @returns {Promise<Array<{primaryKey: any, key: any}>>}
    */
-  async #getKeys({ storeName, key, indexName, filterFn }) {
+  async #getKeys({ storeName, key, indexName, filterFn, direction }) {
     /** @type {Array<{primaryKey: any, key: any}>} */
     const keys = [];
     return new Promise((resolve, reject) => {
@@ -765,7 +766,7 @@ class IndexedDBCache {
       const store = transaction.objectStore(storeName);
       const request = (
         indexName ? store.index(indexName) : store
-      ).openKeyCursor(key ?? undefined, "nextunique");
+      ).openKeyCursor(key ?? undefined, direction);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
         const cursor = request.result;
@@ -1392,6 +1393,7 @@ class IndexedDBCache {
     const remainingFileKeys = await this.#getKeys({
       storeName: this.taskStoreName,
       indexName: this.#indices.modelRevisionFileIndex.name,
+      direction: "nextunique", // One row per model/revision, not per task.
     });
 
     const remainingFiles = new Set();
@@ -1456,6 +1458,7 @@ class IndexedDBCache {
       // Get all model/revision pairs associated with this task.
       const keysData = await this.#getKeys({
         storeName: this.taskStoreName,
+        direction: "nextunique", // One row per model/revision, not per task.
         ...this.#getFileQuery({ taskName, model, revision }),
       });
       modelRevisions = keysData.map(({ key }) => ({
@@ -1523,30 +1526,36 @@ class IndexedDBCache {
   /**
    * Lists all models stored in the cache.
    *
-   * @returns {Promise<Array<{name: string, revision: string}>>}
+   * @returns {Promise<Array<{name: string, revision: string, tasks: Array<string>}>>}
    *          An array of model identifiers.
    */
   async listModels() {
-    // Get all keys (model/revision pairs) from the underlying store.
     const modelRevisions = await this.#getKeys({
       storeName: this.taskStoreName,
       indexName: this.#indices.modelRevisionIndex.name,
+      // Keep every task's row, not just one per model/revision.
+      direction: "next",
     });
 
-    const models = [];
-    // Process each key entry.
+    /** @type {Map<string, {name: string, revision: string, tasks: Array<string>}>} */
+    const models = new Map();
+    // The primary key is [taskName, model, revision, file], so the same model
+    // appears once per task and file.
     for (const { primaryKey } of modelRevisions) {
-      const taskName = primaryKey[0];
-      const model = primaryKey[1];
-      const revision = primaryKey[2];
+      const [taskName, name, revision] = primaryKey;
+      const id = JSON.stringify([name, revision]);
 
-      models.push({
-        taskName,
-        name: model,
-        revision,
-      });
+      let model = models.get(id);
+      if (!model) {
+        model = { name, revision, tasks: [] };
+        models.set(id, model);
+      }
+      if (!model.tasks.includes(taskName)) {
+        model.tasks.push(taskName);
+      }
     }
-    return models;
+
+    return Array.from(models.values());
   }
 }
 
