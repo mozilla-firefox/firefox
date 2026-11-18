@@ -204,6 +204,11 @@ export class WebDriverBiDiConnection extends WebSocketConnection {
       // Handle static commands first
       if (module === "session" && command === "new") {
         const processedCapabilities = lazy.processCapabilities(params);
+        if (processedCapabilities === null) {
+          throw new lazy.error.SessionNotCreatedError(
+            "No matching capabilities found"
+          );
+        }
 
         result = await lazy.RemoteAgent.webDriverBiDi.createSession(
           processedCapabilities,
