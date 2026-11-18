@@ -556,7 +556,7 @@ export class MLEngineParent extends JSProcessActorParent {
       ...parsedUrl,
     });
 
-    const sizeMB = Math.round(headers.fileSize / (1024 * 1024));
+    const sizeMB = Math.round((headers.fileSize ?? 0) / (1024 * 1024));
     lazy.console.debug(
       `Model ${parsedUrl.model} was fetched from ${url}, size ${sizeMB}MiB`
     );
