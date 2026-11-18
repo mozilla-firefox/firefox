@@ -588,9 +588,10 @@ export class RemoteSettingsClient extends EventEmitter {
       }
       if (
         e instanceof RemoteSettingsClient.EmptyDatabaseError &&
-        emptyListFallback
+        (emptyListFallback || lazy.Utils.shouldSkipRemoteActivity)
       ) {
-        // If consumer requested an empty list fallback, no need to raise attention if no data in DB.
+        // If consumer requested an empty list fallback, or if remote activity is
+        // disabled (eg. in tests), no need to raise attention if no data in DB.
         lazy.console.debug(e);
       } else if (Services.startup.shuttingDown) {
         lazy.console.debug(
