@@ -11,6 +11,8 @@ prefs = [
 
 ["browser_chooser_panel.js"]
 
+["browser_context_menu_badge.js"]
+
 ["browser_cropped_navigation.js"]
 
 ["browser_framing.js"]

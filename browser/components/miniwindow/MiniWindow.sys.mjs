@@ -551,12 +551,15 @@ export class MiniWindow {
 
     closeButton?.removeAttribute("hidden");
     restoreButton?.removeAttribute("hidden");
-    closeButton?.addEventListener("command", () => this.close(), { signal });
+    if (restoreButton && !this.#sourceTab) {
+      doc.l10n.setAttributes(restoreButton, "mini-window-link-restore-button");
+    }
     restoreButton?.addEventListener(
       "command",
       () => this.returnToOriginWin(true),
       { signal }
     );
+    closeButton?.addEventListener("command", () => this.close(), { signal });
 
     this.#wireAudioButton();
   }

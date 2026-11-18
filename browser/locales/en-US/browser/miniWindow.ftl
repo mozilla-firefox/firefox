@@ -6,11 +6,18 @@ mini-window-close-button =
     .label = Close
     .tooltiptext = Close
 
-# Moves the tab in the mini window back to the original window
-# it came from.
+# These strings are used to label and tooltip the button that moves the
+# contents of a mini window into the window from where the mini window was
+# originally opened.
 mini-window-restore-button =
     .label = Put tab back
     .tooltiptext = Put tab back
+
+# Button appearing in a Mini Window that was opened from a link on a webpage.
+# Clicking the button will move the Mini Window tab to the window it was opened from.
+mini-window-link-restore-button =
+    .label = Move tab to window
+    .tooltiptext = Move tab to window
 
 ## These strings are used as the label and tooltip for the button that mutes
 ## and unmutes the mini window's tab. The button only appears while the tab is
