@@ -35,6 +35,9 @@ enum class GCUse {
   // This thread is currently collecting. Used when no finer detail is known.
   Unspecified,
 
+  // This thread is preparing for GC but hasn't started marking yet.
+  Preparing,
+
   // This thread is currently marking GC things. This thread could be the main
   // thread or a helper thread doing sweep-marking.
   Marking,
@@ -108,6 +111,9 @@ class GCContext {
 
   js::gc::GCUse gcUse() const { return gcUse_; }
   bool isCollecting() const { return gcUse() != js::gc::GCUse::None; }
+  bool isPreparing() const { return gcUse_ == js::gc::GCUse::Preparing; }
+  bool isMarking() const { return gcUse_ == js::gc::GCUse::Marking; }
+  bool isSweeping() const { return gcUse_ == js::gc::GCUse::Sweeping; }
   bool isFinalizing() const { return gcUse_ == js::gc::GCUse::Finalizing; }
 
 #ifdef DEBUG

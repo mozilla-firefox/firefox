@@ -8,7 +8,6 @@
 #include "mozilla/Assertions.h"
 #include "mozilla/Likely.h"
 #include "mozilla/Maybe.h"
-#include "mozilla/MemoryReporting.h"
 #include "mozilla/Span.h"
 
 #include <stddef.h>
@@ -231,8 +230,9 @@ inline bool CanResumeBaselineInterpreterAfterDebugModeOSR(
 //
 // Note: The arrays are arranged in order of descending alignment requires so
 // that padding is not required.
-class alignas(uintptr_t) BaselineScript final
-    : public TrailingArray<BaselineScript> {
+class MOZ_EMPTY_BASES alignas(uintptr_t) BaselineScript final
+    : public TrailingArray<BaselineScript>,
+      public gc::Buffer {
  private:
   // Code pointer containing the actual method.
   GCPtr<JitCode*> method_{nullptr};
@@ -341,7 +341,7 @@ class alignas(uintptr_t) BaselineScript final
   // any), but those objects won't be compiled.
   static BaselineScript* Copy(JSContext* cx, BaselineScript* bs);
 
-  static void Destroy(JS::GCContext* gcx, BaselineScript* script);
+  static void Destroy(JS::Zone* zone, BaselineScript* script);
 
   void trace(JSTracer* trc);
 
@@ -349,10 +349,7 @@ class alignas(uintptr_t) BaselineScript final
     return offsetof(BaselineScript, method_);
   }
 
-  void addSizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf,
-                              size_t* data) const {
-    *data += mallocSizeOf(this);
-  }
+  void addSizeOfIncludingThis(JS::Zone* zone, size_t* data) const;
 
   void setHasDebugInstrumentation() { flags_ |= HAS_DEBUG_INSTRUMENTATION; }
   bool hasDebugInstrumentation() const {
@@ -506,8 +503,7 @@ bool BaselineCompileFromBaselineInterpreter(JSContext* cx, BaselineFrame* frame,
 
 void FinishDiscardBaselineScript(JS::GCContext* gcx, JSScript* script);
 
-void AddSizeOfBaselineData(JSScript* script, mozilla::MallocSizeOf mallocSizeOf,
-                           size_t* data);
+void AddSizeOfBaselineData(JSScript* script, size_t* data);
 
 void ToggleBaselineProfiling(JSContext* cx, bool enable);
 
@@ -729,20 +725,9 @@ inline bool IsBaselineJitEnabled(JSContext* cx) {
 namespace JS {
 
 template <>
-struct DeletePolicy<js::jit::BaselineScript> {
-  explicit DeletePolicy(JSRuntime* rt) : rt_(rt) {}
-  void operator()(const js::jit::BaselineScript* script);
-
- private:
-  JSRuntime* rt_;
-};
-
-template <>
 struct GCPolicy<js::jit::BaselineScript*> {
   static void trace(JSTracer* trc, js::jit::BaselineScript** thingp,
-                    const char* name) {
-    (*thingp)->trace(trc);
-  }
+                    const char* name);
 };
 
 }  // namespace JS

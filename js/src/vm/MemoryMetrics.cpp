@@ -404,8 +404,7 @@ static void StatsCellCallback(JSRuntime* rt, void* data, JS::GCCellPtr cellptr,
         script->addSizeOfJitScript(rtStats->mallocSizeOf_,
                                    &realmStats.jitScripts,
                                    &realmStats.allocSites);
-        jit::AddSizeOfBaselineData(script, rtStats->mallocSizeOf_,
-                                   &realmStats.baselineData);
+        jit::AddSizeOfBaselineData(script, &realmStats.baselineData);
         realmStats.ionData +=
             jit::SizeOfIonData(script, rtStats->mallocSizeOf_);
       }

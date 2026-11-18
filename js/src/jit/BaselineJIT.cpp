@@ -6,7 +6,6 @@
 
 #include "mozilla/BinarySearch.h"
 #include "mozilla/CheckedInt.h"
-#include "mozilla/MemoryReporting.h"
 #include "mozilla/ScopeExit.h"
 
 #include <algorithm>
@@ -31,6 +30,7 @@
 #include "vm/Interpreter.h"
 
 #include "debugger/DebugAPI-inl.h"
+#include "gc/BufferAllocator-inl.h"
 #include "gc/GC-inl.h"
 #include "gc/WeakMap-inl.h"
 #include "jit/JitHints-inl.h"
@@ -449,7 +449,7 @@ MethodStatus jit::BaselineCompile(JSContext* cx, JSScript* script,
 
   mozilla::Maybe<JSAutoNullableRealm> ar;
   if (IsRealmIndependentBaselineCode(script)) {
-    // realm-independent scripts should not have a realm set
+    // Realm-independent scripts should not have a realm set.
     ar.emplace(cx, nullptr);
   }
   StackMacroAssembler masm(cx, temp);
@@ -781,12 +781,14 @@ BaselineScript* BaselineScript::New(
     return nullptr;
   }
 
-  // Allocate contiguous raw buffer.
-  void* raw = cx->pod_malloc<uint8_t>(size.value());
-  MOZ_ASSERT(uintptr_t(raw) % alignof(BaselineScript) == 0);
+  // Allocate contiguous buffer from the buffer allocator.
+  JS::Zone* zone = cx->zone();
+  void* raw = gc::AllocBuffer(zone, size.value(), /* nurseryOwned = */ false);
   if (!raw) {
+    ReportOutOfMemory(cx);
     return nullptr;
   }
+  MOZ_ASSERT(uintptr_t(raw) % alignof(BaselineScript) == 0);
   BaselineScript* script = new (raw)
       BaselineScript(warmUpCheckPrologueOffset, profilerEnterToggleOffset,
                      profilerExitToggleOffset, debugModeOSREpilogueOffset);
@@ -865,20 +867,28 @@ void BaselineScript::trace(JSTracer* trc) {
   TraceEdge(trc, &method_, "baseline-method");
 }
 
-void BaselineScript::Destroy(JS::GCContext* gcx, BaselineScript* script) {
+void BaselineScript::addSizeOfIncludingThis(JS::Zone* zone,
+                                            size_t* data) const {
+  *data += gc::GetAllocSize(zone, this);
+}
+
+void BaselineScript::Destroy(JS::Zone* zone, BaselineScript* script) {
   MOZ_ASSERT(!script->hasPendingIonCompileTask());
+  MOZ_ASSERT(!CurrentThreadIsGCSweeping() && !CurrentThreadIsGCFinalizing());
 
   // Trigger write barrier since we are destroying this outside GC.
   script->method_ = nullptr;
 
-  // This allocation is tracked by JSScript::setBaselineScriptImpl.
-  gcx->deleteUntracked(script);
+  // This calls the destructor to run assertions in field destructors. This
+  // doesn't happen when the baseline script is reclaimed by GC.
+  gc::DeleteBuffer(zone, script);
 }
 
-void JS::DeletePolicy<js::jit::BaselineScript>::operator()(
-    const js::jit::BaselineScript* script) {
-  BaselineScript::Destroy(rt_->gcContext(),
-                          const_cast<BaselineScript*>(script));
+void JS::GCPolicy<js::jit::BaselineScript*>::trace(
+    JSTracer* trc, js::jit::BaselineScript** thingp, const char* name) {
+  // Used to trace the JSRuntime::selfHostJitCache map.
+  TraceBufferRoot(trc, thingp, name);
+  (*thingp)->trace(trc);
 }
 
 const RetAddrEntry& BaselineScript::retAddrEntryFromReturnOffset(
@@ -1269,14 +1279,20 @@ void jit::FinishDiscardBaselineScript(JS::GCContext* gcx, JSScript* script) {
 
   BaselineScript* baseline =
       script->jitScript()->clearBaselineScript(gcx, script);
-  BaselineScript::Destroy(gcx, baseline);
+  MOZ_ASSERT(!baseline->hasPendingIonCompileTask());
+
+  if (gcx->isPreparing()) {
+    // We're discarding JIT code at the start of GC. The BaselineScript will be
+    // collected automatically.
+    return;
+  }
+
+  BaselineScript::Destroy(script->zone(), baseline);
 }
 
-void jit::AddSizeOfBaselineData(JSScript* script,
-                                mozilla::MallocSizeOf mallocSizeOf,
-                                size_t* data) {
+void jit::AddSizeOfBaselineData(JSScript* script, size_t* data) {
   if (script->hasBaselineScript()) {
-    script->baselineScript()->addSizeOfIncludingThis(mallocSizeOf, data);
+    script->baselineScript()->addSizeOfIncludingThis(script->zone(), data);
   }
 }
 

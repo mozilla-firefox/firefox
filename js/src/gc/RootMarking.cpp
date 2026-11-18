@@ -440,14 +440,14 @@ class AssertNoRootsTracer final : public JS::CallbackTracer {
 void js::gc::GCRuntime::finishRoots() {
   AutoNoteSingleThreadedRegion anstr;
 
+  rt->finishSelfHosting();
+
   rt->finishAtoms();
   restoreSharedAtomsZone();
 
   rootsHash.ref().clear();
 
   finishPersistentRoots();
-
-  rt->finishSelfHosting();
 
   for (ZonesIter zone(rt, WithAtoms); !zone.done(); zone.next()) {
     zone->finishRoots();

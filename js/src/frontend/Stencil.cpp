@@ -3124,8 +3124,8 @@ bool CompilationStencil::delazifySelfHostedFunction(
       }
       MOZ_ASSERT(!script->hasBaselineScript());
 
-      // JSScript destroys its BaselineScript on finalize, so we need another
-      // copy here (for now)
+      // BaselineScript is owned by the JSScript so we need to copy the cached
+      // value (for now).
       jit::BaselineScript* baselineScript =
           jit::BaselineScript::Copy(cx, v->value());
       if (!baselineScript) {
@@ -3154,6 +3154,8 @@ bool CompilationStencil::delazifySelfHostedFunction(
         return false;
       }
 
+      // Compile the BaselineScript. The JitCode will be allocated in the atoms
+      // zone and the BaselineScript will be allocated in the target zone.
       jit::BaselineOptions options(
           {jit::BaselineOption::ForceMainThreadCompilation});
       jit::MethodStatus result =
@@ -3163,13 +3165,16 @@ bool CompilationStencil::delazifySelfHostedFunction(
       }
       MOZ_ASSERT(script->hasBaselineScript());
 
+      // Make a copy of the BaselineScript in the atoms zone to put in the
+      // cache.
+      AutoAllocInAtomsZone ar(cx);
       jit::BaselineScript* baselineScript =
           jit::BaselineScript::Copy(cx, script->baselineScript());
       if (!baselineScript) {
         return false;
       }
       if (!jitCache.put(jitCacheKey, baselineScript)) {
-        jit::BaselineScript::Destroy(cx->gcContext(), baselineScript);
+        jit::BaselineScript::Destroy(cx->zone(), baselineScript);
         ReportOutOfMemory(cx);
         return false;
       }

@@ -2183,9 +2183,11 @@ void JSRuntime::finishSelfHosting() {
 }
 
 void JSRuntime::clearSelfHostedJitCache() {
+  // Cached BaselineScripts are always allocated in the atoms zone.
+  JS::Zone* zone = atomsZone();
   for (auto iter = selfHostJitCache.ref().iter(); !iter.done(); iter.next()) {
     jit::BaselineScript* baselineScript = iter.get().value();
-    jit::BaselineScript::Destroy(gcContext(), baselineScript);
+    jit::BaselineScript::Destroy(zone, baselineScript);
   }
   selfHostJitCache.ref().clear();
 }

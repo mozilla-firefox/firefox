@@ -514,7 +514,8 @@ struct JSRuntime {
   };
 
   // A cache for a self-hosted function's JitCode (managed through a
-  // BaselineScript) keyed by script name and debuggee status.
+  // BaselineScript) keyed by script name and debuggee status. Entries are
+  // always allocated in the atoms zone.
   js::MainThreadData<js::GCHashMap<JitCacheKey, js::jit::BaselineScript*,
                                    JitCacheKeyHasher, js::SystemAllocPolicy>>
       selfHostJitCache;

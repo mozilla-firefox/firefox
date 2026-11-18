@@ -217,6 +217,7 @@ class AutoSetThreadGCUseT : public AutoSetThreadGCUse {
 };
 
 using AutoSetThreadIsPerformingGC = AutoSetThreadGCUseT<GCUse::Unspecified>;
+using AutoSetThreadIsPreparing = AutoSetThreadGCUseT<GCUse::Preparing>;
 using AutoSetThreadIsMarking = AutoSetThreadGCUseT<GCUse::Marking>;
 using AutoSetThreadIsFinalizing = AutoSetThreadGCUseT<GCUse::Finalizing>;
 

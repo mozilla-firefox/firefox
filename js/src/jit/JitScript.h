@@ -335,7 +335,7 @@ class alignas(uintptr_t) JitScript final
   GCPtr<EnvironmentObject*> templateEnv_;
 
   // Baseline code for the script or nullptr.
-  GCStructPtr<BaselineScript*> baselineScript_;
+  GCBuffer<BaselineScript*> baselineScript_;
 
   // Ion code for this script. Either nullptr, IonDisabledScriptPtr,
   // IonCompilingScriptPtr or a valid IonScript*.
@@ -520,9 +520,6 @@ class alignas(uintptr_t) JitScript final
   // Methods to set baselineScript_ and state flags.
   void setBaselineScriptImpl(JSScript* script, BaselineScript* baselineScript,
                              ScriptState baselineState);
-  void setBaselineScriptImpl(JS::GCContext* gcx, JSScript* script,
-                             BaselineScript* baselineScript,
-                             ScriptState baselineState);
   void maybeRemoveFromCompileQueue(JSScript* script) {
     if (isBaselineQueued()) {
       script->realm()->jitRealm().removeFromCompileQueue(script);
@@ -553,11 +550,8 @@ class alignas(uintptr_t) JitScript final
     MOZ_ASSERT(hasBaselineScript());
   }
   [[nodiscard]] BaselineScript* clearBaselineScript(JS::GCContext* gcx,
-                                                    JSScript* script) {
-    BaselineScript* baseline = baselineScript();
-    setBaselineScriptImpl(gcx, script, nullptr, ScriptState::None);
-    return baseline;
-  }
+                                                    JSScript* script);
+  void clearBaselineScriptOnFinalize(JS::GCContext* gcx);
   bool isBaselineDisabled() const {
     checkBaselineState();
     return baselineState_ == ScriptState::Disabled;

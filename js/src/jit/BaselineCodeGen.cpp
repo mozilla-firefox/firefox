@@ -7,6 +7,7 @@
 #include "mozilla/Casting.h"
 #include "mozilla/FloatingPoint.h"
 
+#include "gc/Allocator.h"
 #include "gc/GC.h"
 #include "jit/BaselineCompileQueue.h"
 #include "jit/BaselineCompileTask.h"
@@ -364,17 +365,13 @@ bool BaselineCompiler::compileImpl() {
 
 bool BaselineCompiler::finishCompile(JSContext* cx) {
   Rooted<JSScript*> script(cx, handler.script());
-  bool isRealmIndependentJitCodeShared = IsRealmIndependentBaselineCode(script);
 
-  UniquePtr<BaselineScript> baselineScript(
-      nullptr, JS::DeletePolicy<BaselineScript>(cx->runtime()));
+  bool isRealmIndependentJitCodeShared = IsRealmIndependentBaselineCode(script);
+  MOZ_ASSERT_IF(isRealmIndependentJitCodeShared, !cx->zone());
+
+  BaselineScript* baselineScript = nullptr;
   JitCode* code = nullptr;
   {
-    mozilla::Maybe<AutoAllocInAtomsZone> ar;
-    if (isRealmIndependentJitCodeShared) {
-      ar.emplace(cx);
-    }
-
     AutoCreatedBy acb2(masm, "exception_tail");
     Linker linker(masm);
     if (masm.oom()) {
@@ -382,18 +379,32 @@ bool BaselineCompiler::finishCompile(JSContext* cx) {
       return false;
     }
 
-    code = linker.newCode(cx, CodeKind::Baseline);
-    if (!code) {
-      return false;
+    {
+      // Allocate the JitCode of cached self-hosted scripts in the atoms zone so
+      // that it can be shared.
+      mozilla::Maybe<AutoAllocInAtomsZone> enterAtomsZone;
+      if (isRealmIndependentJitCodeShared) {
+        enterAtomsZone.emplace(cx);
+      }
+
+      code = linker.newCode(cx, CodeKind::Baseline);
+      if (!code) {
+        return false;
+      }
     }
 
-    baselineScript.reset(BaselineScript::New(
+    // The BaselineScript is always allocated in the zone of the owning
+    // script. To cache self-hosted scripts we will make a copy in the atoms
+    // zone.
+    AutoRealm ar(cx, script);
+
+    baselineScript = BaselineScript::New(
         cx, warmUpCheckPrologueOffset_.offset(),
         profilerEnterFrameToggleOffset_.offset(),
         profilerExitFrameToggleOffset_.offset(),
         debugModeOSREpilogueOffset_.offset(), handler.retAddrEntries().length(),
         handler.osrEntries().length(), debugTrapEntries_.length(),
-        script->resumeOffsets().size()));
+        script->resumeOffsets().size());
     if (!baselineScript) {
       return false;
     }
@@ -402,15 +413,17 @@ bool BaselineCompiler::finishCompile(JSContext* cx) {
 
     JitSpew(JitSpew_BaselineScripts,
             "Created BaselineScript %p (raw %p) for %s:%u:%u",
-            (void*)baselineScript.get(), (void*)code->raw(), script->filename(),
+            (void*)baselineScript, (void*)code->raw(), script->filename(),
             script->lineno(), script->column().oneOriginValue());
 
     // If profiler instrumentation is enabled, toggle instrumentation on.
+    // This must happen in the scope of |linker| for code to be writable.
     if (cx->runtime()->jitRuntime()->isProfilerInstrumentationEnabled(
             cx->runtime())) {
       baselineScript->toggleProfilerInstrumentation(true);
     }
   }
+
   baselineScript->copyRetAddrEntries(handler.retAddrEntries().begin());
   baselineScript->copyOSREntries(handler.osrEntries().begin());
   baselineScript->copyDebugTrapEntries(debugTrapEntries_.begin());
@@ -440,7 +453,7 @@ bool BaselineCompiler::finishCompile(JSContext* cx) {
             "Added JitcodeGlobalEntry for baseline %sscript %s:%u:%u (%p)",
             isRealmIndependentJitCodeShared ? "shared realm-independent " : "",
             script->filename(), script->lineno(),
-            script->column().oneOriginValue(), baselineScript.get());
+            script->column().oneOriginValue(), baselineScript);
 
     if (!AddBaselineJitcodeGlobalEntry(cx, script, code,
                                        perfSpewer_.extractSourceInfo())) {
@@ -450,7 +463,7 @@ bool BaselineCompiler::finishCompile(JSContext* cx) {
 
   script->jitScript()->setIonThreshold(handler.baseWarmUpThreshold());
 
-  script->jitScript()->setBaselineScript(script, baselineScript.release());
+  script->jitScript()->setBaselineScript(script, baselineScript);
 
   perfSpewer_.saveProfile(cx, script, code);
 

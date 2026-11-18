@@ -1790,7 +1790,10 @@ static void ReportRealmStats(const JS::RealmStats& realmStats,
                              nsISupports* data, size_t* gcTotalOut = nullptr) {
   static const nsDependentCString addonPrefix("explicit/add-ons/");
 
-  size_t gcTotal = 0, sundriesGCHeap = 0, sundriesMallocHeap = 0;
+  size_t gcTotal = 0;
+  size_t sundriesGCHeap = 0;
+  size_t sundriesMallocHeap = 0;
+  size_t sundriesNonHeap = 0;
   nsAutoCString realmJSPathPrefix(extras.jsPathPrefix);
   nsAutoCString realmDOMPathPrefix(extras.domPathPrefix);
 
@@ -1828,13 +1831,13 @@ static void ReportRealmStats(const JS::RealmStats& realmStats,
       "JSScript instances. There is one per user-defined function in a "
       "script, and one for the top-level code in a script.");
 
-  ZRREPORT_BYTES(realmJSPathPrefix + "scripts/gc-buffers"_ns,
-                 realmStats.scriptsGCBuffers,
-                 "Various variable-length tables in JSScripts.");
+  ZRREPORT_NONHEAP_BYTES(realmJSPathPrefix + "scripts/gc-buffers"_ns,
+                         realmStats.scriptsGCBuffers,
+                         "Various variable-length tables in JSScripts.");
 
-  ZRREPORT_BYTES(realmJSPathPrefix + "baseline/data"_ns,
-                 realmStats.baselineData,
-                 "The Baseline JIT's compilation data (BaselineScripts).");
+  ZRREPORT_NONHEAP_BYTES(
+      realmJSPathPrefix + "baseline/data"_ns, realmStats.baselineData,
+      "The Baseline JIT's compilation data (BaselineScripts).");
 
   ZRREPORT_BYTES(realmJSPathPrefix + "alloc-sites"_ns, realmStats.allocSites,
                  "GC allocation site data associated with IC stubs.");
@@ -1884,6 +1887,15 @@ static void ReportRealmStats(const JS::RealmStats& realmStats,
         realmJSPathPrefix + "sundries/malloc-heap"_ns, KIND_HEAP,
         sundriesMallocHeap,
         "The sum of all 'malloc-heap' measurements that are too small to "
+        "be worth showing individually.");
+  }
+
+  if (sundriesNonHeap > 0) {
+    // We deliberately don't use ZRREPORT_NONHEAP_BYTES here.
+    REPORT_BYTES(
+        realmJSPathPrefix + "sundries/other-heap"_ns, KIND_NONHEAP,
+        sundriesNonHeap,
+        "The sum of all non-malloc/gc measurements that are too small to "
         "be worth showing individually.");
   }
 

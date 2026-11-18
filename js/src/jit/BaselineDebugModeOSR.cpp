@@ -583,7 +583,7 @@ static void UndoRecompileBaselineScriptsForDebugMode(
       BaselineScript* baselineScript =
           script->jitScript()->clearBaselineScript(cx->gcContext(), script);
       script->jitScript()->setBaselineScript(script, entry.oldBaselineScript);
-      BaselineScript::Destroy(cx->gcContext(), baselineScript);
+      BaselineScript::Destroy(script->zone(), baselineScript);
     }
   }
 }
@@ -681,7 +681,7 @@ bool jit::RecompileOnStackBaselineScriptsForDebugMode(
   for (UniqueScriptOSREntryIter iter(entries); !iter.done(); ++iter) {
     const DebugModeOSREntry& entry = iter.entry();
     if (entry.recompiled()) {
-      BaselineScript::Destroy(cx->gcContext(), entry.oldBaselineScript);
+      BaselineScript::Destroy(entry.script->zone(), entry.oldBaselineScript);
     }
   }
 

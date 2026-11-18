@@ -769,7 +769,7 @@ struct RealmStats {
   MACRO(Private, MallocHeap, objectsPrivate)    \
   MACRO(Other, GCHeapUsed, scriptsGCHeap)       \
   MACRO(Other, NonHeap, scriptsGCBuffers)       \
-  MACRO(Other, MallocHeap, baselineData)        \
+  MACRO(Other, NonHeap, baselineData)           \
   MACRO(Other, MallocHeap, allocSites)          \
   MACRO(Other, MallocHeap, cacheIRStubs)        \
   MACRO(Other, MallocHeap, ionData)             \
