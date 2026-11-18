@@ -10,6 +10,8 @@ module.exports = [
   "InstallTrigger",
   "containerName",
   "containerQuery",
+  "hand",
+  "hapticActuators",
   "mozInputSource",
   "mozOrientation",
   "mozPressure",
@@ -19,4 +21,5 @@ module.exports = [
   "onmozfullscreenerror",
   "onmozorientationchange",
   "onreadystatechange",
+  "pose",
 ];
