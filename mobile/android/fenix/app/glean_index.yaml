@@ -1,0 +1,14 @@
+---
+# File paths listed here should be relative to the Git repository root directory.
+#
+# This file is used in two places.
+# 1. build.gradle - This file is consumed and its contents used to generate the list of YAML files
+#    Glean parses.
+# 2. FOG updater probe scraper automation - https://github.com/mozilla/probe-scraper/blob/main/.github/workflows/update-fog.yml
+ping_files:
+  - mobile/android/fenix/app/pings.yaml
+tag_files:
+  - mobile/android/fenix/app/tags.yaml
+metrics_files:
+  - mobile/android/fenix/app/metrics.yaml
+  - mobile/android/fenix/app/longfox/metrics.yaml
