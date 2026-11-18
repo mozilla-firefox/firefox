@@ -423,6 +423,46 @@ tasks:
         definition: el-base
         parent: rocky10-arm64-raw
         arch: arm64
+    alma8-raw:
+        symbol: I(alm8-raw)
+        definition: el-raw
+        args:
+            BASE_IMAGE: almalinux:8.10
+    alma8-base:
+        symbol: I(alm8-base)
+        definition: el-base
+        parent: alma8-raw
+    alma8-arm64-raw:
+        symbol: I(alm8-a64-raw)
+        definition: el-raw
+        args:
+            BASE_IMAGE: almalinux:8.10
+        arch: arm64
+    alma8-arm64-base:
+        symbol: I(alm8-a64-base)
+        definition: el-base
+        parent: alma8-arm64-raw
+        arch: arm64
+    alma10-raw:
+        symbol: I(alm10-raw)
+        definition: el-raw
+        args:
+            BASE_IMAGE: almalinux:10.2
+    alma10-base:
+        symbol: I(alm10-base)
+        definition: el-base
+        parent: alma10-raw
+    alma10-arm64-raw:
+        symbol: I(alm10-a64-raw)
+        definition: el-raw
+        args:
+            BASE_IMAGE: almalinux:10.2
+        arch: arm64
+    alma10-arm64-base:
+        symbol: I(alm10-a64-base)
+        definition: el-base
+        parent: alma10-arm64-raw
+        arch: arm64
     android-build:
         symbol: I(agb)
         parent: debian12-base
