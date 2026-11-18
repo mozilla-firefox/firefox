@@ -5,6 +5,8 @@
 #include <gtest/gtest.h>
 #include <string.h>
 
+#include <algorithm>
+#include <random>
 #include <vector>
 
 #include "ContainerParser.h"
@@ -14,6 +16,10 @@
 #include "SourceBufferResource.h"
 #include "mozilla/gtest/MozAssertions.h"
 #include "mozilla/gtest/WaitFor.h"
+
+#ifdef FUZZING_INTERFACES
+#  include "FuzzingInterface.h"
+#endif
 
 using namespace mozilla;
 using namespace mozilla::mpeg_audio;
@@ -594,3 +600,182 @@ TEST(MPEGAudioByteStreamDemuxer, Layer1)
     EXPECT_EQ(list[i]->mDuration, TimeUnit(384, 44100));
   }
 }
+
+namespace {
+
+// As TrackBuffersManager::RecreateParser(true) does, after an initialization
+// segment.
+UniquePtr<ContainerParser> CreateParserWithInitData(
+    const MediaByteBuffer& aInitData) {
+  UniquePtr<ContainerParser> parser = CreateParser();
+  Parse(*parser, Bytes(aInitData.begin(), aInitData.end()));
+  return parser;
+}
+
+// Appends aData to MPEGAudioContainerParser in chunks, and demuxes each media
+// segment that it finds with MPEGAudioByteStreamDemuxer, as
+// TrackBuffersManager does. The first byte sets the chunk size. Returns false
+// if the demuxer disagrees with the parser about a media segment, which must
+// only hold complete frames with the current configuration.
+bool AppendAndDemux(Span<const uint8_t> aData) {
+  if (aData.IsEmpty()) {
+    return true;
+  }
+  const size_t chunkSize = 1 + aData[0] * 8;
+  aData = aData.From(1);
+
+  UniquePtr<ContainerParser> parser = CreateParser();
+  RefPtr<MediaByteBuffer> initData;
+  RefPtr<SourceBufferResource> resource;
+  RefPtr<MediaTrackDemuxer> track;
+  // The end of the data appended to resource.
+  int64_t appended = 0;
+  Bytes input;
+  // Whether input starts with a media segment, of which the first parsed
+  // bytes have been passed to the parser.
+  bool parsingMediaSegment = false;
+  size_t parsed = 0;
+
+  for (size_t offset = 0; offset < aData.Length(); offset += chunkSize) {
+    const Span<const uint8_t> chunk =
+        aData.Subspan(offset, std::min(chunkSize, aData.Length() - offset));
+    input.insert(input.end(), chunk.begin(), chunk.end());
+    while (!input.empty()) {
+      if (!parsingMediaSegment) {
+        if (size_t ignored =
+                parser->SkipIgnorableBytesAtStart(AsMediaSpan(input))) {
+          input.erase(input.begin(), input.begin() + ignored);
+          continue;
+        }
+        MediaResult rv = parser->IsInitSegmentPresent(AsMediaSpan(input));
+        if (NS_SUCCEEDED(rv)) {
+          parser = CreateParser();
+          if (Parse(*parser, input) != NS_ERROR_NOT_AVAILABLE ||
+              !parser->HasCompleteInitData()) {
+            return false;
+          }
+          initData = parser->InitData();
+          resource = new SourceBufferResource();
+          resource->AppendData(initData);
+          appended = int64_t(initData->Length());
+          RefPtr<MPEGAudioByteStreamDemuxer> demuxer =
+              new MPEGAudioByteStreamDemuxer(resource);
+          // The demuxer crashes this if it rejects the initialization
+          // segment.
+          WaitForResolve(demuxer->Init());
+          track = demuxer->GetTrackDemuxer(TrackInfo::kAudioTrack, 0);
+          resource->EvictAll();
+          parser = CreateParserWithInitData(*initData);
+          continue;
+        }
+        if (rv != NS_ERROR_NOT_AVAILABLE) {
+          // The append is rejected.
+          return true;
+        }
+        rv = parser->IsMediaSegmentPresent(AsMediaSpan(input));
+        if (rv == NS_ERROR_NOT_AVAILABLE) {
+          break;
+        }
+        if (NS_FAILED(rv)) {
+          return true;
+        }
+        parsingMediaSegment = true;
+        parsed = 0;
+      }
+
+      if (parsed < input.size()) {
+        if (Parse(*parser, Slice(input, parsed, input.size())) !=
+            NS_ERROR_NOT_AVAILABLE) {
+          return true;
+        }
+        parsed = input.size();
+      }
+      const MediaByteRange range = parser->MediaSegmentRange();
+      if (range.IsEmpty()) {
+        break;
+      }
+      // The parser's offsets count the initialization data it was created
+      // with.
+      if (range.mStart != int64_t(initData->Length()) ||
+          size_t(range.Length()) > input.size()) {
+        return false;
+      }
+      const size_t length = size_t(range.Length());
+      resource->AppendData(AsMediaSpan(Slice(input, 0, length)));
+      appended += int64_t(length);
+      while (true) {
+        auto samples = WaitFor(track->GetSamples(-1));
+        if (samples.isErr()) {
+          if (samples.inspectErr().Code() !=
+              NS_ERROR_DOM_MEDIA_WAITING_FOR_DATA) {
+            return false;
+          }
+          break;
+        }
+      }
+      const int64_t demuxed = track->GetEvictionOffset(TimeUnit::Zero());
+      if (demuxed != appended) {
+        return false;
+      }
+      resource->EvictBefore(demuxed);
+      input.erase(input.begin(), input.begin() + length);
+      parsingMediaSegment = false;
+      parser = CreateParserWithInitData(*initData);
+    }
+  }
+  return true;
+}
+
+}  // namespace
+
+TEST(MPEGAudioByteStream, MutatedStreams)
+{
+  const Bytes mono = Frame(kMonoHeader, kMonoFrameLength);
+  const Bytes mpeg2 = Frame(kMPEG2Header, kMPEG2FrameLength);
+  const Bytes layer2 = Frame(kLayer2Header, kLayer2FrameLength);
+  const Bytes layer1 = Frame(kLayer1Header, kLayer1FrameLength);
+  const std::vector<Bytes> streams = {
+      Concat({ID3v2(300), InfoFrame("Info"), StereoFrame(1), StereoFrame(2),
+              StereoFrame(3), ID3v1()}),
+      Concat({Text("ICY 200 OK\r\n\r\n"), StereoFrame(), StereoFrame(),
+              Garbage(50), StereoFrame(), StereoFrame(), StereoFrame(), mono,
+              mono, mono, mpeg2, mpeg2, layer2, layer2, layer1, layer1}),
+  };
+  for (const Bytes& stream : streams) {
+    for (uint8_t chunkSize : {0, 3, 50, 255}) {
+      Bytes input = Concat({{chunkSize}, stream});
+      EXPECT_TRUE(AppendAndDemux(AsSpan(input)));
+    }
+  }
+
+  std::mt19937 random(1169485);
+  for (int i = 0; i < 2000; ++i) {
+    Bytes input = streams[random() % streams.size()];
+    for (uint32_t edits = 1 + random() % 8; edits; --edits) {
+      const size_t at = random() % input.size();
+      switch (random() % 3) {
+        case 0:
+          input[at] = uint8_t(random());
+          break;
+        case 1:
+          input.insert(input.begin() + at, uint8_t(random()));
+          break;
+        default:
+          input.erase(input.begin() + at);
+          break;
+      }
+    }
+    input.insert(input.begin(), uint8_t(random()));
+    EXPECT_TRUE(AppendAndDemux(AsSpan(input))) << "mutation " << i;
+  }
+}
+
+#ifdef FUZZING_INTERFACES
+static int FuzzingRunMediaSourceMPEGAudio(const uint8_t* aData, size_t aSize) {
+  MOZ_RELEASE_ASSERT(AppendAndDemux(Span(aData, aSize)));
+  return 0;
+}
+
+MOZ_FUZZING_INTERFACE_RAW(nullptr, FuzzingRunMediaSourceMPEGAudio,
+                          MediaSourceMPEGAudio);
+#endif
