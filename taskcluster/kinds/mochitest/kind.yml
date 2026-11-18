@@ -802,7 +802,15 @@ tasks:
                         windows.*-64-[^-/]+/debug: ['autoland', 'mozilla-central']
                         windows.*-64-[^-/]+/opt: ['autoland']
                         default: []
-                repeat: []
+                repeat:
+                    by-test-platform:
+                        linux.*-64-shippable/opt: ['mozilla-central']
+                        linux.*-64/debug: ['autoland', 'mozilla-central']
+                        linux.*-64/opt: ['autoland']
+                        windows.*-64-[^-/]+-shippable/opt: ['mozilla-central']
+                        windows.*-64-[^-/]+/debug: ['autoland', 'mozilla-central']
+                        windows.*-64-[^-/]+/opt: ['autoland']
+                        default: []
                 http3:
                     by-test-platform:
                         linux2404-64/debug: built-projects
