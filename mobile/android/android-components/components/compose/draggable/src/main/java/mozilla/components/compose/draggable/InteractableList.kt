@@ -68,7 +68,9 @@ import kotlinx.coroutines.launch
  *   other than the dragged one, whether the dragged item went past the edge or not.
  * @param interceptInteractionMode Called with the dragged item and the interaction the list found for it, whenever the
  *   item is dragged, to return the interaction to use instead, for example to retarget it or to reject it with
- *   [InteractionMode.List.None]. The interaction it returns is shown and acted upon when the user lets go.
+ *   [InteractionMode.List.None]. The interaction it returns is optionally shown via a Rect parameter and acted upon
+ *   when the user lets go. Whatever it returns, an item dragged past the edge of the list scrolls it only if the list
+ *   found nothing to place it next to or drop it onto.
  */
 @Composable
 fun createListInteractionState(
@@ -214,7 +216,7 @@ interface ListInteractionState {
  *   a dragged item scrolls it, once the item went past the edge of the list there. `null` for a third of the first
  *   visible item other than the dragged one, whether the dragged item went past the edge or not.
  * @param interceptInteractionMode Called with the dragged item and the interaction found for it, whenever the item is
- *   dragged, to return the interaction to use instead.
+ *   dragged, to return the interaction to use instead. The list scrolls only for the interaction it found.
  */
 internal class ListInteractionStateImpl(
     private val listState: LazyListState,
@@ -437,10 +439,9 @@ internal class ListInteractionStateImpl(
         }
     }
 
-    private fun handleNoInteractionModeOnDrag(itemOffset: ListItemOffset) {
+    private fun handleNoInteractionModeOnDrag() {
         highlightedRect = null
         hoveredItem = InteractionState.List.None
-        scrollPastEdge(itemOffset)
     }
 
     /** Scroll the list if the dragged item went past its edge. */
@@ -484,12 +485,13 @@ internal class ListInteractionStateImpl(
                 dragAndDropEnabled = dragAndDropEnabled,
                 scrollZoneHeight = scrollZoneHeight,
             )
-        val mode = interceptInteractionMode(draggingItem, foundMode)
-        // An item dragged past the edge of the list scrolls it, also when it is retargeted to be dropped somewhere.
-        val wouldScroll = foundMode is InteractionMode.List.Scroll || foundMode is InteractionMode.List.None
-        if (wouldScroll && (mode is InteractionMode.List.Reordering || mode is InteractionMode.List.DragAndDrop)) {
+        // An item dragged past the edge of the list scrolls it only if the list found nothing to place it next to or
+        // drop it onto, or is already scrolling.
+        // Scrolling for a rejected one can keep it rejected all the way to the end of the list.
+        if (foundMode is InteractionMode.List.Scroll || foundMode is InteractionMode.List.None) {
             scrollPastEdge(itemOffset)
         }
+        val mode = interceptInteractionMode(draggingItem, foundMode)
         // Debounce duplicate reorder events.
         // Note that multiple duplicate scroll events are valid
         if (mode == interactionMode && interactionMode is InteractionMode.List.Reordering) {
@@ -507,7 +509,7 @@ internal class ListInteractionStateImpl(
 
             is InteractionMode.List.None,
             is InteractionMode.List.Scroll -> {
-                handleNoInteractionModeOnDrag(itemOffset = itemOffset)
+                handleNoInteractionModeOnDrag()
             }
         }
     }

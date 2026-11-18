@@ -1154,6 +1154,74 @@ class InteractableListTest {
         assertTrue(Mockito.mockingDetails(listState).invocations.any { it.method.name == "scroll" })
     }
 
+    @Test
+    fun `GIVEN the list finds nothing for the dragged item WHEN it goes past the end of the list THEN the list scrolls`() {
+        val listState = mockListState(listOf(mockListItem(key = TabKeys.TAB_ALPHA, index = 1, size = 10, offset = 0)))
+        val found = mutableListOf<InteractionMode.List>()
+        val reorderState =
+            fakeListInteractionState(listState, interceptInteractionMode = { _, mode -> mode.also { found += it } })
+
+        reorderState.onTouchSlopPassed(offset = 5f, shouldLongPress = false)
+        reorderState.dragDown(distance = 20f, preserveSelectMode = false)
+        scope.testScheduler.runCurrent()
+
+        assertIs<InteractionMode.List.None>(found.last())
+        assertTrue(Mockito.mockingDetails(listState).invocations.any { it.method.name == "scroll" })
+    }
+
+    @Test
+    fun `GIVEN the list finds a scroll area for the dragged item AND interceptInteractionMode rejects it WHEN it goes past the end of the list THEN the list still scrolls`() {
+        val listState =
+            mockListState(
+                listOf(mockListItem(key = TabKeys.TAB_ALPHA, index = 1, size = 10, offset = 0)),
+                totalItems = 5,
+            )
+        val found = mutableListOf<InteractionMode.List>()
+        val reorderState =
+            fakeListInteractionState(
+                listState,
+                interceptInteractionMode = { _, mode ->
+                    found += mode
+                    InteractionMode.List.None
+                },
+            )
+
+        reorderState.onTouchSlopPassed(offset = 5f, shouldLongPress = false)
+        reorderState.dragDown(distance = 20f, preserveSelectMode = false)
+        scope.testScheduler.runCurrent()
+
+        assertIs<InteractionMode.List.Scroll>(found.last())
+        assertTrue(Mockito.mockingDetails(listState).invocations.any { it.method.name == "scroll" })
+    }
+
+    @Test
+    fun `GIVEN interceptInteractionMode rejects the interaction found WHEN the item goes past the end of the list THEN the list does not scroll`() {
+        val listState =
+            mockListState(
+                listOf(
+                    mockListItem(key = TabKeys.TAB_ALPHA, index = 1, size = 10, offset = 0),
+                    mockListItem(key = TabKeys.TAB_BETA, index = 2, size = 10, offset = 10),
+                )
+            )
+        val found = mutableListOf<InteractionMode.List>()
+        val reorderState =
+            fakeListInteractionState(
+                listState,
+                dragAndDropEnabled = false,
+                interceptInteractionMode = { _, mode ->
+                    found += mode
+                    InteractionMode.List.None
+                },
+            )
+
+        reorderState.onTouchSlopPassed(offset = 5f, shouldLongPress = false)
+        reorderState.dragDown(distance = 20f, preserveSelectMode = false)
+        scope.testScheduler.runCurrent()
+
+        assertIs<InteractionMode.List.Reordering>(found.last())
+        assertFalse(Mockito.mockingDetails(listState).invocations.any { it.method.name == "scroll" })
+    }
+
     private fun twoTabReorderState(
         handler: ItemInteractionHandler = NoOpItemInteractionHandler,
         alphaTabOffset: Int,
