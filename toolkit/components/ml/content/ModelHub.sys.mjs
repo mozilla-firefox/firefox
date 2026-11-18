@@ -1465,37 +1465,40 @@ class IndexedDBCache {
     }
 
     // For each model/revision, query for headers data.
-    const fileDataPromises = modelRevisions.map(task =>
-      this.#getData({
-        storeName: this.headersStoreName,
-        indexName: this.#indices.modelRevisionIndex.name,
-        key: [task.model, task.revision],
-      })
-    );
-    const fileData = /** @type {Array<HeadersRecord>} */ (
-      (await Promise.all(fileDataPromises)).flat()
-    );
+    const fileDataPromises = modelRevisions.map(async task => {
+      const records = /** @type {Array<HeadersRecord>} */ (
+        await this.#getData({
+          storeName: this.headersStoreName,
+          indexName: this.#indices.modelRevisionIndex.name,
+          key: [task.model, task.revision],
+        })
+      );
+      return records.map(record => ({ record, task }));
+    });
+    const fileData = (await Promise.all(fileDataPromises)).flat();
 
     // Initialize aggregated metadata.
     let totalFileSize = 0;
     let aggregatedLastUsed = 0;
     let aggregatedUpdateDate = 0;
-    /** @type {Array<string>} */
-    let aggregatedEngineIds = [];
+    const aggregatedEngineIds = new Set();
 
     // Process each file entry.
     const files = [];
-    for (const { file: path, headers } of fileData) {
+    for (const { record, task } of fileData) {
+      const { file: path, headers } = record;
       const stored = /** @type {Array<EngineRecord>} */ (
         await this.#getData({
           storeName: this.enginesStoreName,
-          key: [model, revision, path],
+          key: [task.model, task.revision, path],
         })
       );
 
-      if (stored.length) {
-        aggregatedEngineIds = stored[0].engineIds || [];
+      const engineIds = stored.length ? (stored[0].engineIds ?? []) : [];
+      for (const engineId of engineIds) {
+        aggregatedEngineIds.add(engineId);
       }
+
       // Aggregate metadata.
       totalFileSize += headers.fileSize ?? 0;
       aggregatedLastUsed = Math.max(aggregatedLastUsed, headers.lastUsed ?? 0);
@@ -1503,7 +1506,7 @@ class IndexedDBCache {
         aggregatedUpdateDate,
         headers.lastUpdated ?? 0
       );
-      files.push({ path, headers, engineIds: /** @type {string[]} */ ([]) });
+      files.push({ path, headers, engineIds });
     }
 
     return {
@@ -1512,7 +1515,7 @@ class IndexedDBCache {
         totalSize: totalFileSize,
         lastUsed: aggregatedLastUsed,
         updateDate: aggregatedUpdateDate,
-        engineIds: aggregatedEngineIds,
+        engineIds: Array.from(aggregatedEngineIds),
       },
     };
   }
