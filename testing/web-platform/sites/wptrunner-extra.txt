@@ -1,0 +1,4 @@
+# Extra dependencies needed to actually run tests
+pypi-optional:PyGObject==3.48.2; sys_platform == 'linux' and python_version < '3.12':aamtests will not be runnable
+pypi-optional:PyGObject==3.56.3; sys_platform == 'linux' and python_version >= '3.12':aamtests will not be runnable
+pypi:pillow==11.3.0

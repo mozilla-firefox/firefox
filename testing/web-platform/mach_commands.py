@@ -480,7 +480,7 @@ def create_parser_testpaths():
     conditions=[conditions.is_firefox_or_android],
     description="Run web-platform-tests.",
     parser=create_parser_wpt,
-    virtualenv_name="wpt",
+    virtualenv_name="wptrunner",
 )
 def run_web_platform_tests(command_context, **params):
     if params["product"] is None:
@@ -535,7 +535,7 @@ def run_web_platform_tests(command_context, **params):
     conditions=[conditions.is_firefox_or_android],
     description="Run web-platform-tests.",
     parser=create_parser_wpt,
-    virtualenv_name="wpt",
+    virtualenv_name="wptrunner",
 )
 def run_wpt(command_context, **params):
     return run_web_platform_tests(command_context, **params)
