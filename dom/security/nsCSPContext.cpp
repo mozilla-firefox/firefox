@@ -731,7 +731,7 @@ nsCSPContext::GetAllowsInline(CSPDirective aDirective, bool aHasUnsafeHash,
     // aHasUnsafeHash is true for event handlers (type "script attribute"),
     // style= attributes (type "style attribute") and the javascript: protocol.
     if (!aHasUnsafeHash || unsafeHashesFlag) {
-      if (mPolicies[i]->allows(aDirective, CSP_HASH, content)) {
+      if (mPolicies[i]->allowsByHash(aDirective, content)) {
         continue;
       }
     }
