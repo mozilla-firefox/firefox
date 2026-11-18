@@ -18,6 +18,11 @@ const { MLUtils } = ChromeUtils.importESModule(
 const E2E_TEST_BASE_URL =
   "chrome://mochitests/content/browser/toolkit/components/ml/tests/browser/";
 
+// Don't leak this env var into later tests.
+registerCleanupFunction(() => {
+  Services.env.set("MOZ_ALLOW_EXTERNAL_ML_HUB", "");
+});
+
 /**
  * End to End test that the engine can be cancelled.
  */
