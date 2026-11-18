@@ -118,52 +118,6 @@ class MiniWindowManagerClass {
   }
 
   /**
-   * Open `url` in a new full-tab mini window.
-   *
-   * @param {Window} originWin - the browser window the mini window belongs to;
-   *   its tab goes back here when the mini window is restored. If this is a
-   *   mini window, the new one belongs to that mini window's originWin.
-   * @param {string} url - the URL to load.
-   * @param {string} entryPoint - where the open was initiated.
-   * @param {object} loadParams - openLinkIn params for the load; must include
-   *   triggeringPrincipal. Pass userContextId to keep the load in a container.
-   * @returns {Promise<object|null>} the MiniWindow, or null.
-   * @throws {Error} if loadParams has no triggeringPrincipal.
-   */
-  async openURL(originWin, url, entryPoint, loadParams) {
-    this._log.debug("openURL: We're about to open a mini window: ", { url });
-
-    if (!loadParams?.triggeringPrincipal) {
-      throw new Error("openURL: loadParams must include a triggeringPrincipal");
-    }
-
-    if (!this._enabled) {
-      return null;
-    }
-
-    originWin =
-      this._miniWindowForBrowser(originWin.gBrowser.selectedBrowser)
-        ?.originWin ?? originWin;
-    let miniwindow = new lazy.MiniWindow(this, originWin);
-    this.#register(miniwindow);
-    let open = await miniwindow.open(url, loadParams);
-
-    if (!open) {
-      this._log.debug("openURL: open failed, returning null");
-      this._unregister(miniwindow);
-      return null;
-    }
-
-    Glean.miniWindow.created.record({
-      type: miniwindow.type,
-      entry_point: entryPoint,
-      was_last_tab: false,
-      concurrent_open: this._miniwindows.size,
-    });
-    return miniwindow;
-  }
-
-  /**
    * Opens a tab in a new Mini Window. Optionally, pop's just a region
    * that is passed in for the tab.
    *
@@ -184,41 +138,15 @@ class MiniWindowManagerClass {
       return null;
     }
 
+    this.#ensureObservers();
+
     let originWin = browser.documentGlobal;
     let wasLastTab = originWin.gBrowser.tabs.length === 1;
 
     // Instantiate the per-window controller
     let miniwindow = new lazy.MiniWindow(this, originWin, tab, cropInfo);
-    this.#register(miniwindow);
-    let move = await miniwindow.move();
 
-    if (!move) {
-      this._log.debug("pop: move failed, returning null");
-      this._unregister(miniwindow);
-      return null;
-    }
-
-    this._log.debug("pop: mini window opened");
-    Glean.miniWindow.created.record({
-      type: miniwindow.type,
-      entry_point: entryPoint,
-      was_last_tab: wasLastTab,
-      concurrent_open: this._miniwindows.size,
-    });
-    return miniwindow;
-  }
-
-  /**
-   * Track `miniwindow` and hook its origin window. Must be called before the
-   * mini window starts opening.
-   *
-   * @param {object} miniwindow
-   */
-  #register(miniwindow) {
-    this.#ensureObservers();
-    let { originWin } = miniwindow;
-
-    // Register before the multi-tick open so the SSWindowClosing/quit
+    // Register before the multi-tick open() so the SSWindowClosing/quit
     // teardown below already knows about this popup if the origin window
     // starts closing while the popup is still opening.
     //
@@ -235,6 +163,22 @@ class MiniWindowManagerClass {
     if (!this.#originWinHooks.has(originWin)) {
       this.#hookOriginWin(originWin);
     }
+
+    let win = await miniwindow.open();
+    if (!win) {
+      this._log.debug("pop: open failed, returning null");
+      this._unregister(miniwindow);
+      return null;
+    }
+
+    this._log.debug("pop: mini window opened");
+    Glean.miniWindow.created.record({
+      type: cropInfo ? "fragment" : "full_tab",
+      entry_point: entryPoint,
+      was_last_tab: wasLastTab,
+      concurrent_open: this._miniwindows.size,
+    });
+    return miniwindow;
   }
 
   /**

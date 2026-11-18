@@ -22,8 +22,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   LoginHelper: "resource://gre/modules/LoginHelper.sys.mjs",
   LoginManagerContextMenu:
     "resource://gre/modules/LoginManagerContextMenu.sys.mjs",
-  MiniWindowManager:
-    "moz-src:///browser/components/miniwindow/MiniWindowManager.sys.mjs",
   NetUtil: "resource://gre/modules/NetUtil.sys.mjs",
   NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
@@ -539,25 +537,9 @@ export class nsContextMenu {
     let showSplitViews = Services.prefs.getBoolPref(
       "browser.tabs.splitView.enabled"
     );
-
-    // TODO: Bug 2094287 - Support opening links in a mini window from popups and Document
-    // Picture-in-Picture windows.
-    let showMiniWindow =
-      Services.prefs.getBoolPref("browser.mini-window.enabled", false) &&
-      this.window.toolbar.visible &&
-      !this.window.browsingContext.isDocumentPiP;
     let currentTabInSplitView = !!window.gBrowser?.selectedTab?.splitview;
     let showSmartWindow = lazy.AIWindow.isAIWindowEnabled();
     this.showItem("context-openlink", shouldShow && !isWindowPrivate);
-    let miniWindowItem = this.document.getElementById(
-      "context-openlinkminiwindow"
-    );
-    this.showItem(miniWindowItem, shouldShow && showMiniWindow);
-    this.#setFeatureBadge(
-      miniWindowItem,
-      shouldShow && showMiniWindow,
-      BADGE_TYPE.BETA
-    );
     this.showItem(
       "context-openlinkprivate",
       shouldShow && lazy.PrivateBrowsingUtils.enabled
@@ -1650,19 +1632,6 @@ export class nsContextMenu {
     };
 
     win.openLinkIn(this.linkURL, "tab", this._openLinkInParameters(params));
-  }
-
-  // Open linked-to URL in a new mini window.
-  openLinkInMiniWindow() {
-    lazy.MiniWindowManager.openURL(
-      this.window,
-      this.linkURL,
-      "link_context_menu",
-      this._openLinkInParameters({
-        userContextId: this.contentData.userContextId,
-        ...this._getGlobalHistoryOptions(),
-      })
-    );
   }
 
   // open URL in current tab

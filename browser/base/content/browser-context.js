@@ -49,9 +49,6 @@ document.addEventListener(
         case "context-openlinkinsplitview":
           gContextMenu.openLinkInSplitView(event);
           break;
-        case "context-openlinkminiwindow":
-          gContextMenu.openLinkInMiniWindow();
-          break;
         case "context-openlinkprivate":
           gContextMenu.openLinkInPrivateWindow();
           break;

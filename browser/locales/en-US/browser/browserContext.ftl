@@ -149,10 +149,6 @@ main-context-menu-open-link-new-window =
     .label = Open Link in New Window
     .accesskey = d
 
-main-context-menu-open-link-mini-window =
-    .label = Open Link in Mini Window
-    .accesskey = M
-
 main-context-menu-open-link-new-private-window =
     .label = Open Link in New Private Window
     .accesskey = P
