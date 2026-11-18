@@ -18,7 +18,9 @@ import org.mozilla.fenix.helpers.TestHelper.closeApp
 import org.mozilla.fenix.helpers.TestHelper.restartApp
 import org.mozilla.fenix.ui.efficiency.helpers.BaseTest
 import org.mozilla.fenix.ui.efficiency.selectors.HomeSelectors
+import org.mozilla.fenix.ui.efficiency.selectors.RecentlyClosedTabsSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.SearchBarSelectors
+import org.mozilla.fenix.ui.efficiency.selectors.SettingsTabsSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.TabDrawerSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.TabDrawerSelectors.DELETE_TAB_GROUP_DIALOG_CANCEL_BUTTON
 import org.mozilla.fenix.ui.efficiency.selectors.TabDrawerSelectors.DELETE_TAB_GROUP_DIALOG_DELETE_GROUP_BUTTON
@@ -545,6 +547,42 @@ class TabbedBrowsingTest : BaseTest() {
     fun verifyMergeTabGroupsViaSelectionListViewTest() {
         appContext.components.settings.gridTabView = false
         mergeTabGroupsViaSelection(isListViewEnabled = true)
+    }
+
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3909115
+    @Critical
+    @Test
+    fun verifyTabsTrayThreeDotMenuOptionsTest() {
+        val webPages = mockWebServer.genericAssets
+        MockBrowserDataHelper.createTabItem(webPages[0].url.toString())
+        MockBrowserDataHelper.createTabItem(webPages[1].url.toString())
+
+        on.tabDrawer
+            .navigateToPage()
+            .mozClick(TabDrawerSelectors.THREE_DOT_BUTTON)
+            .mozVerify(TabDrawerSelectors.SELECT_TABS_BUTTON)
+            .mozClick(TabDrawerSelectors.SELECT_TABS_BUTTON)
+            .mozVerify(TabDrawerSelectors.EXIT_MULTISELECT_BUTTON)
+            .mozPressBack()
+            .mozWaitUntilAbsent(TabDrawerSelectors.EXIT_MULTISELECT_BUTTON)
+            .mozVerify(TabDrawerSelectors.NORMAL_BROWSING_OPEN_TABS_BUTTON)
+
+        on.recentlyClosedTabs.navigateToPage().mozVerify(RecentlyClosedTabsSelectors.EMPTY_RECENTLY_CLOSED_TABS_LIST)
+        on.recentlyClosedTabs.mozPressBack()
+        on.tabDrawer.navigateToPage()
+
+        on.settingsTabs.navigateToPage().mozVerify(SettingsTabsSelectors.SETTINGS_TABS_TITLE)
+        on.settingsTabs.mozPressBack()
+        on.tabDrawer.navigateToPage()
+
+        on.tabDrawer
+            .mozClick(TabDrawerSelectors.THREE_DOT_BUTTON)
+            .mozVerify(TabDrawerSelectors.CLOSE_ALL_TABS_BUTTON)
+            .mozClick(TabDrawerSelectors.CLOSE_ALL_TABS_BUTTON)
+            .mozVerify(TabDrawerSelectors.CLOSE_ALL_TABS_CONFIRM_BUTTON)
+            .mozClick(TabDrawerSelectors.CLOSE_ALL_TABS_CONFIRM_BUTTON)
+        on.home.navigateToPage()
+        on.tabDrawer.navigateToPage().mozVerify(TabDrawerSelectors.EMPTY_NORMAL_TABS_LIST)
     }
 
     private fun mergeTabGroupsViaSelection(isListViewEnabled: Boolean) {

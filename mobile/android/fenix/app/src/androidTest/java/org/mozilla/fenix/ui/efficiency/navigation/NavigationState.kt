@@ -25,6 +25,9 @@ object NavigationFacts {
     val RETURN_SURFACE_BROWSER = NavigationFact("RETURN_SURFACE_BROWSER")
     val RETURN_SURFACE_HOME = NavigationFact("RETURN_SURFACE_HOME")
 
+    // Tabs settings opened from the tray goes back to the tray, not Settings; gates the back edge.
+    val TAB_SETTINGS_FROM_TRAY = NavigationFact("TAB_SETTINGS_FROM_TRAY")
+
     internal fun normalize(page: String, facts: Set<NavigationFact>): Set<NavigationFact> =
         when (page) {
             "BrowserPage" -> facts - RETURN_SURFACE_HOME + RETURN_SURFACE_BROWSER

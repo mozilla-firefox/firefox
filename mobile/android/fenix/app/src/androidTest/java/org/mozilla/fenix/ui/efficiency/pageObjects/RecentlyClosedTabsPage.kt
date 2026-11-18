@@ -13,6 +13,7 @@ import org.mozilla.fenix.ui.efficiency.selectors.HistorySelectors
 import org.mozilla.fenix.ui.efficiency.selectors.HomeSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.MainMenuSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.RecentlyClosedTabsSelectors
+import org.mozilla.fenix.ui.efficiency.selectors.TabDrawerSelectors
 
 class RecentlyClosedTabsPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRule, *>) :
     BasePage(composeRule) {
@@ -27,6 +28,17 @@ class RecentlyClosedTabsPage(composeRule: AndroidComposeTestRule<HomeActivityInt
                     NavigationStep.Click(HomeSelectors.MAIN_MENU_BUTTON),
                     NavigationStep.Click(MainMenuSelectors.HISTORY_BUTTON),
                     NavigationStep.Click(HistorySelectors.RECENTLY_CLOSED_TABS_BUTTON),
+                ),
+        )
+
+        // Opened from the tab manager's three-dot menu; back returns to the tray, so no return edge here.
+        builder.register(
+            from = "TabDrawerPage",
+            to = pageName,
+            steps =
+                listOf(
+                    NavigationStep.Click(TabDrawerSelectors.THREE_DOT_BUTTON),
+                    NavigationStep.Click(TabDrawerSelectors.RECENTLY_CLOSED_TABS_BUTTON),
                 ),
         )
 

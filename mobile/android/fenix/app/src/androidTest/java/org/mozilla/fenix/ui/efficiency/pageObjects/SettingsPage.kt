@@ -111,6 +111,8 @@ class SettingsPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRul
             from = pageName,
             to = "SettingsTabsPage",
             steps = listOf(NavigationStep.Click(SettingsSelectors.TABS_BUTTON)),
+            // Entered from Settings, so back returns here: clear any tray-entry marker.
+            invalidates = setOf(NavigationFacts.TAB_SETTINGS_FROM_TRAY),
         )
         builder.register(
             from = pageName,
