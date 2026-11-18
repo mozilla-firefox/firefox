@@ -1660,7 +1660,9 @@ bool jit::BailoutIonToBaseline(JSContext* cx, JitActivation* activation,
   // Ensure that all value locations are readable from the SnapshotIterator.
   // Get the RInstructionResults from the JitActivation if the frame got
   // recovered ahead of the bailout.
-  SnapshotIterator snapIter(iter, activation->bailoutData()->machineState());
+  Rooted<SnapshotIterator> rootedSnapIter(
+      cx, iter, activation->bailoutData()->machineState());
+  SnapshotIterator& snapIter = rootedSnapIter.get();
   if (!snapIter.initInstructionResults(recoverBailout)) {
     return false;
   }

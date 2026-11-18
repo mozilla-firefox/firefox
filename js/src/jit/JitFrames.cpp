@@ -1786,6 +1786,15 @@ SnapshotIterator::SnapshotIterator()
       ionScript_(nullptr),
       instructionResults_(nullptr) {}
 
+void SnapshotIterator::trace(JSTracer* trc) {
+  void* prior = ionScript_;
+  TraceBufferEdge(trc, &ionScript_, "SnapshotIterator::ionScript_");
+
+  // Interior pointers in snapshot_ and recover_ need to be updated if buffers
+  // can move.
+  MOZ_RELEASE_ASSERT(ionScript_ == prior);
+}
+
 uintptr_t SnapshotIterator::fromStack(int32_t offset) const {
   return ReadFrameSlot(fp_, offset);
 }
@@ -2469,17 +2478,22 @@ Value SnapshotIterator::maybeReadAllocByIndex(size_t index) {
 
 InlineFrameIterator::InlineFrameIterator(JSContext* cx,
                                          const JSJitFrameIter* iter)
-    : calleeTemplate_(cx), script_(cx), pc_(nullptr), numActualArgs_(0) {
+    : CustomAutoRooter(cx),
+      calleeTemplate_(nullptr),
+      script_(nullptr),
+      pc_(nullptr),
+      numActualArgs_(0) {
   resetOn(iter);
 }
 
 InlineFrameIterator::InlineFrameIterator(JSContext* cx,
                                          const InlineFrameIterator* iter)
-    : frame_(iter ? iter->frame_ : nullptr),
+    : CustomAutoRooter(cx),
+      frame_(iter ? iter->frame_ : nullptr),
       framesRead_(0),
       frameCount_(iter ? iter->frameCount_ : UINT32_MAX),
-      calleeTemplate_(cx),
-      script_(cx),
+      calleeTemplate_(nullptr),
+      script_(nullptr),
       pc_(nullptr),
       numActualArgs_(0) {
   if (frame_) {
@@ -2491,6 +2505,13 @@ InlineFrameIterator::InlineFrameIterator(JSContext* cx,
     framesRead_ = iter->framesRead_ - 1;
     findNextFrame();
   }
+}
+
+void InlineFrameIterator::trace(JSTracer* trc) {
+  start_.trace(trc);
+  si_.trace(trc);
+  TraceRoot(trc, &calleeTemplate_, "InlineFrameIterator::calleeTemplate_");
+  TraceRoot(trc, &script_, "InlineFrameIterator::script_");
 }
 
 void InlineFrameIterator::resetOn(const JSJitFrameIter* iter) {
@@ -2556,8 +2577,8 @@ void InlineFrameIterator::findNextFrame() {
 
     // Skip over non-argument slots, as well as |this|.
     bool skipNewTarget = IsConstructPC(pc_);
-    unsigned skipCount =
-        (si_.numAllocations() - 1) - numActualArgs_ - 1 - skipNewTarget;
+    unsigned skipCount = (si_.numAllocations() - 1) -
+                         numActualArgs_ - 1 - skipNewTarget;
     for (unsigned j = 0; j < skipCount; j++) {
       si_.skip();
     }

@@ -365,7 +365,7 @@ class RResumePoint;
 
 // Reads frame information in snapshot-encoding order (that is, outermost frame
 // to innermost frame).
-class SnapshotIterator {
+class MOZ_STACK_CLASS SnapshotIterator {
  protected:
   SnapshotReader snapshot_;
   RecoverReader recover_;
@@ -621,6 +621,8 @@ class SnapshotIterator {
   // allocation located at one index.
   Value maybeReadAllocByIndex(size_t index);
 
+  void trace(JSTracer* trc);
+
 #ifdef TRACK_SNAPSHOTS
   void spewBailingFrom() const { snapshot_.spewBailingFrom(); }
 #endif
@@ -628,7 +630,7 @@ class SnapshotIterator {
 
 // Reads frame information in callstack order (that is, innermost frame to
 // outermost frame).
-class InlineFrameIterator {
+class MOZ_STACK_CLASS InlineFrameIterator : public JS::CustomAutoRooter {
   const JSJitFrameIter* frame_;
   SnapshotIterator start_;
   SnapshotIterator si_;
@@ -647,10 +649,10 @@ class InlineFrameIterator {
   // allocation implies that the |calleeTemplate_| is the template JSFunction
   // from which the effective one would be derived and cached by the Recover
   // instruction result.
-  RootedFunction calleeTemplate_;
+  JSFunction* calleeTemplate_;
   RValueAllocation calleeRVA_;
 
-  RootedScript script_;
+  JSScript* script_;
   jsbytecode* pc_;
   uint32_t numActualArgs_;
 
@@ -857,6 +859,8 @@ class InlineFrameIterator {
     MOZ_ASSERT(frameCount_ != UINT32_MAX);
     return frameCount_;
   }
+
+  void trace(JSTracer* trc) override;
 };
 
 }  // namespace jit
