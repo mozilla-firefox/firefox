@@ -290,6 +290,12 @@ class MenuFragment : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        if (args.accessPoint == MenuAccessPoint.Preview) {
+            view.contentDescription = getString(R.string.browser_menu_preview_heading_content_description)
+            ViewCompat.setAccessibilityHeading(view, true)
+            ViewCompat.setScreenReaderFocusable(view, true)
+        }
+
         ipProtectionSnackbarBinding.set(
             feature =
                 IPProtectionSnackbarBinding(

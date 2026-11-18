@@ -257,6 +257,8 @@
     <string name="browser_menu_passwords">Passwords</string>
     <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
     <string name="browser_close_main_menu_handlebar_content_description">Close menu</string>
+    <!-- Content description (not visible, used by screen readers, etc.) for the heading of the menu opened from the customize menu screen to preview pending changes. It is read before the menu items. The items are shown for preview only and do nothing when tapped. -->
+    <string name="browser_menu_preview_heading_content_description">Menu preview. Items can’t be activated here.</string>
     <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
     <string name="browser_custom_tab_menu_handlebar_content_description">Close custom tab menu sheet</string>
     <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
