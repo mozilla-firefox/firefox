@@ -852,6 +852,23 @@ if (AppConstants.platform != "android") {
     safeForUntrustedWebProcess: true,
   };
 
+  JSWINDOWACTORS.EyeDropper = {
+    parent: {
+      esModuleURI: "moz-src:///toolkit/actors/EyeDropperParent.sys.mjs",
+    },
+
+    child: {
+      esModuleURI: "moz-src:///toolkit/actors/EyeDropperChild.sys.mjs",
+      events: {
+        MozOpenEyeDropper: {},
+      },
+    },
+
+    includeChrome: true,
+    allFrames: true,
+    safeForUntrustedWebProcess: true,
+  };
+
   // GeckoView implements WebChannel communication at the embedder-level.
   JSWINDOWACTORS.WebChannel = {
     parent: {

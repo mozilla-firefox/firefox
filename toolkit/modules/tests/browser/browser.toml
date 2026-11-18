@@ -4,6 +4,7 @@ support-files = [
   "file_FinderSample.html",
   "file_getSelectionDetails_inputs.html",
   "head.js",
+  "head_EyeDropper.js",
 ]
 
 ["browser_AsyncPrefs.js"]
@@ -14,6 +15,10 @@ support-files = [
 
 ["browser_CreditCard.js"]
 tags = "bleedover"
+
+["browser_EyeDropper.js"]
+
+["browser_EyeDropper_cancel.js"]
 
 ["browser_Finder.js"]
 

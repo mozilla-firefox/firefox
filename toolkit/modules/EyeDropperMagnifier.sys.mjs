@@ -31,7 +31,8 @@ export class EyeDropperMagnifier {
   #colorPreview = null;
 
   /**
-   * @param {Element} aContainer - The element to build the magnifier in.
+   * @param {Element | ShadowRoot} aContainer - The node to build the magnifier
+   *        in.
    * @param {object} aOptions
    * @param {number} aOptions.zoomLevel - How many times the image is magnified.
    * @param {number} aOptions.width - Width of the canvas.
@@ -54,7 +55,7 @@ export class EyeDropperMagnifier {
    * Builds the magnifier, keeping the ids and classes of the DevTools
    * eyedropper, which its code and tests rely on.
    *
-   * @param {Element} aContainer
+   * @param {Element | ShadowRoot} aContainer
    */
   #buildMarkup(aContainer) {
     const doc = aContainer.ownerDocument;
@@ -121,6 +122,15 @@ export class EyeDropperMagnifier {
    */
   get #centerCell() {
     return Math.floor(this.#cellsWide / 2);
+  }
+
+  /**
+   * Get color of center cell in the grid.
+   *
+   * @returns {{r: number, g: number, b: number} | null}
+   */
+  get color() {
+    return this.#centerColor;
   }
 
   /**

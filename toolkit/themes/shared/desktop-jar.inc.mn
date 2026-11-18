@@ -36,6 +36,7 @@
   skin/classic/global/design-system/tokens-platform.css    (../../shared/design-system/dist/tokens-platform.css)
   skin/classic/global/design-system/tokens-shared.css      (../../shared/design-system/dist/tokens-shared.css)
   skin/classic/global/error-pages.css                      (../../shared/error-pages.css)
+  skin/classic/global/eyedropper.css                       (../../shared/eyedropper.css)
   skin/classic/global/findbar.css                          (../../shared/findbar.css)
   skin/classic/global/global-shared.css                    (../../shared/global-shared.css)
   skin/classic/global/menu.css                             (../../shared/menu.css)
