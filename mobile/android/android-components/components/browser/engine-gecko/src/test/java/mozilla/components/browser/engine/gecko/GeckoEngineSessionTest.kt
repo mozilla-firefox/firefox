@@ -5068,7 +5068,7 @@ class GeckoEngineSessionTest {
         )
 
         val pdfFileSaver = mock<SessionPdfFileSaver>()
-        whenever(pdfFileSaver.save())
+        whenever(pdfFileSaver.save(false))
             .thenReturn(
                 GeckoResult.fromValue(
                     WebResponse.Builder("blob:resource://pdf.js/0123")
@@ -5117,7 +5117,7 @@ class GeckoEngineSessionTest {
                 .apply { currentTitle = "Mozilla" }
 
         val pdfFileSaver = mock<SessionPdfFileSaver>()
-        whenever(pdfFileSaver.save())
+        whenever(pdfFileSaver.save(false))
             .thenReturn(
                 GeckoResult.fromValue(
                     WebResponse.Builder("blob:resource://pdf.js/0123")
@@ -5140,7 +5140,7 @@ class GeckoEngineSessionTest {
     fun `GIVEN a PDF is showing the document WHEN requestPdfToShare THEN the response is given a filename`() {
         val engineSession = GeckoEngineSession(runtime = mock(), geckoSessionProvider = geckoSessionProvider)
         val pdfFileSaver = mock<SessionPdfFileSaver>()
-        whenever(pdfFileSaver.save())
+        whenever(pdfFileSaver.save(true))
             .thenReturn(
                 GeckoResult.fromValue(
                     WebResponse.Builder("blob:resource://pdf.js/0123")

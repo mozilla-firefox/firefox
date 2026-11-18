@@ -195,6 +195,7 @@ class FileSaver {
       "PDFJS:Child:handleEvent",
       {
         type: "save",
+        detail: { flatten: !!aData?.flatten },
       },
       "GeckoViewPdfJs"
     );

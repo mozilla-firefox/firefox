@@ -22,12 +22,16 @@ exclude: true
     ([bug 2089899]({{bugzilla}}2089899))
 - Added experimental [`IPProtectionController.AuthProvider#onTokenRejected`][162.5] so embedders can
     drop an authentication token that was rejected and mint a fresh one for the next request.
+- Added [`SessionPdfFileSaver.save(boolean)`][162.6] to save the current PDF with its annotations,
+    such as signatures, drawn into the page content. Form fields are flattened too, so they can no
+    longer be filled in. ([bug 2075337]({{bugzilla}}2075337))
 
 [162.1]: {{javadoc_uri}}/PictureInPictureController.SessionPictureInPicture.html#setKeepActive(boolean)
 [162.2]: {{javadoc_uri}}/GeckoRuntimeSettings.Builder.html#creditCardSecurityCodeEnabled(boolean)
 [162.3]: {{javadoc_uri}}/GeckoRuntimeSettings.html#setCreditCardSecurityCodeEnabled(boolean)
 [162.4]: {{javadoc_uri}}/GeckoRuntimeSettings.html#getCreditCardSecurityCodeEnabled()
 [162.5]: {{javadoc_uri}}/IPProtectionController.AuthProvider.html#onTokenRejected(java.lang.String)
+[162.6]: {{javadoc_uri}}/SessionPdfFileSaver.html#save(boolean)
 
 ## v161
 - Added [`Autocomplete.CreditCard.securityCode`][161.1] and
@@ -2140,4 +2144,4 @@ to allow adding gecko profiler markers.
 [65.24]: {{javadoc_uri}}/CrashReporter.html#sendCrashReport(android.content.Context,android.os.Bundle,java.lang.String)
 [65.25]: {{javadoc_uri}}/GeckoResult.html
 
-[api-version]: 11f32dda08405905bd0733948cf79826ff755845
+[api-version]: ff90a3b6c849b34f6068a5fffecda17b62be894f

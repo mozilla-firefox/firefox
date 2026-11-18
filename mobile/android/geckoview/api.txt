@@ -2674,6 +2674,7 @@ package org.mozilla.geckoview {
   @AnyThread public final class SessionPdfFileSaver {
     method @Nullable public static GeckoResult<WebResponse> createResponse(@NonNull GeckoSession, @NonNull String, @NonNull String, @NonNull String, boolean, boolean);
     method @NonNull public GeckoResult<WebResponse> save();
+    method @NonNull public GeckoResult<WebResponse> save(boolean);
   }
 
   public final class SessionTextInput {

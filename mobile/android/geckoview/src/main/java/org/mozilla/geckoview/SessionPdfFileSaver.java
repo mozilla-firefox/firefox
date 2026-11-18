@@ -8,6 +8,7 @@ import android.util.Log;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import org.mozilla.gecko.util.GeckoBundle;
 
 /**
  * {@code PdfFileSaver} instances returned by {@link GeckoSession#getPdfFileSaver()} performs save
@@ -30,10 +31,25 @@ public final class SessionPdfFileSaver {
    */
   @NonNull
   public GeckoResult<WebResponse> save() {
+    return save(false);
+  }
+
+  /**
+   * Save the current PDF.
+   *
+   * @param flatten Whether to flatten the layers, usually for preparation for printing. For
+   *     example, to combine annotation layers with the base PDF. Form fields are flattened too, so
+   *     the saved PDF can no longer be filled in.
+   * @return Result of the save operation as a {@link GeckoResult} object.
+   */
+  @NonNull
+  public GeckoResult<WebResponse> save(final boolean flatten) {
+    final GeckoBundle data = new GeckoBundle(1);
+    data.putBoolean("flatten", flatten);
     final GeckoResult<WebResponse> geckoResult = new GeckoResult<>();
     mSession
         .getEventDispatcher()
-        .queryBundle("GeckoView:PDFSave", null)
+        .queryBundle("GeckoView:PDFSave", data)
         .map(
             response -> {
               final GeckoResult<WebResponse> pdfResponse =

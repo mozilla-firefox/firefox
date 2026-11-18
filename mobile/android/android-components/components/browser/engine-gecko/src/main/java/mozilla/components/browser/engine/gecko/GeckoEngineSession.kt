@@ -313,7 +313,7 @@ class GeckoEngineSession(
         onResult: (Response) -> Unit,
         onException: (Throwable) -> Unit,
     ) {
-        pdfToDownload()
+        pdfToDownload(flatten = true)
             .then(
                 { webResponse ->
                     val body = webResponse?.body
@@ -363,17 +363,29 @@ class GeckoEngineSession(
     }
 
     /**
-     * Determines the correct PDF bytes to download. If the tab is showing a PDF, then the bytes should come directly
-     * from that PDF, else they should be generated for the page.
+     * Determines the correct PDF bytes to download or share. If the tab is showing a PDF, then the bytes should come
+     * directly from that PDF, else they should be generated for the page.
+     *
+     * @param flatten Whether a shown PDF should have its annotations drawn into the page content, for share targets
+     *   such as print services that may not render annotations. Form fields are flattened too, so they can no longer be
+     *   filled in. HTML pages generated as PDFs are always flattened.
+     * @return The PDF response.
      */
-    private fun pdfToDownload(): GeckoResult<WebResponse> =
+    private fun pdfToDownload(flatten: Boolean = false): GeckoResult<WebResponse> =
         geckoSession.isPdfJs.then(
-            { isPdfJs -> if (isPdfJs == true) visiblePdfDocument() else pageSavedAsPdf() },
+            { isPdfJs -> if (isPdfJs == true) visiblePdfDocument(flatten) else pageSavedAsPdf() },
             { pageSavedAsPdf() },
         )
 
-    /** Method to get the bytes from the shown PDF document. */
-    private fun visiblePdfDocument(): GeckoResult<WebResponse> = geckoSession.pdfFileSaver.save()
+    /**
+     * Method to get the bytes from the shown PDF document.
+     *
+     * @param flatten Whether a shown PDF should have its annotations drawn into the page content, for share targets
+     *   such as print services that may not render annotations. Form fields are flattened too, so they can no longer be
+     *   filled in.
+     * @return The PDF response.
+     */
+    private fun visiblePdfDocument(flatten: Boolean): GeckoResult<WebResponse> = geckoSession.pdfFileSaver.save(flatten)
 
     /** Method to generate a PDF from the content. */
     private fun pageSavedAsPdf(): GeckoResult<WebResponse> =
