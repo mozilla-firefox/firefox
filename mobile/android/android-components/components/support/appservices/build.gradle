@@ -26,7 +26,6 @@ dependencies {
     }
     implementation ComponentsDependencies.mozilla_appservices_init_rust_components
     implementation ComponentsDependencies.mozilla_appservices_rust_log_forwarder
-    implementation libs.kotlinx.serialization.json
     implementation libs.kotlinx.coroutines
 
     testImplementation project(':components:support-test')
