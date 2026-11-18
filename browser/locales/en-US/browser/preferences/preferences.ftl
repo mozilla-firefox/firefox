@@ -1545,27 +1545,25 @@ payment-moz-box-item =
 
 # Used in place of payment-moz-box-item when a security code is saved alongside
 # the card. Only the presence of a saved security code is ever shown, never the
-# code itself: "•••" stands for the hidden code, so keep it as is rather than
-# translating it into words.
+# code itself.
 # Variables:
 #   $cardNumber (string) - The obscured credit card number (for example: ********* 2423)
 #   $expDate (string) - The obscured expiry date of the credit card (for example: XX/2027)
 #   $securityCode (string) - The name of the card's security code, which depends
 #     on the card network (for example: CVV)
-payment-moz-box-item-with-security-code-2 =
+payment-moz-box-item-with-security-code-3 =
   .label = { $cardNumber }
-  .description = { $expDate } | { $securityCode } •••
+  .description = { $expDate } | { $securityCode } saved
 
-# Used in place of payment-moz-box-item-with-security-code-2 for a card that has
-# a saved security code but no expiry date to show alongside it. "•••" stands for
-# the hidden code.
+# Used in place of payment-moz-box-item-with-security-code-3 for a card that has
+# a saved security code but no expiry date to show alongside it.
 # Variables:
 #   $cardNumber (string) - The obscured credit card number (for example: ********* 2423)
 #   $securityCode (string) - The name of the card's security code, which depends
 #     on the card network (for example: CVV)
-payment-moz-box-item-security-code-only-2 =
+payment-moz-box-item-security-code-only-3 =
   .label = { $cardNumber }
-  .description = { $securityCode } •••
+  .description = { $securityCode } saved
 
 addresses-group =
     .label = Addresses and more

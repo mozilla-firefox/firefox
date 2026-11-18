@@ -65,8 +65,5 @@ credit-card-label-number-name-expiration-2 =
 #     string, which additionally names the card type
 #   $securityCode (String): The name of the card's security code, which depends
 #     on the card network (for example "CVV")
-#
-# In the visible label, "•••" stands for the hidden security code; keep it as is
-# rather than translating it into words.
-credit-card-label-with-security-code-2 = { $label } | { $securityCode } •••
+credit-card-label-with-security-code-3 = { $label } | { $securityCode } saved
     .aria-label = { $ariaLabel }, { $securityCode } saved

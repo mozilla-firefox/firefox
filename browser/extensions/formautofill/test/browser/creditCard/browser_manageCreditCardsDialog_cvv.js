@@ -94,7 +94,7 @@ add_task(async function test_indicationShownForSavedSecurityCode() {
     let l10nAttrs = win.document.l10n.getAttributes(option);
     is(
       l10nAttrs.id,
-      "credit-card-label-with-security-code-2",
+      "credit-card-label-with-security-code-3",
       "The label is wrapped by the security code string"
     );
     ok(
@@ -109,7 +109,7 @@ add_task(async function test_indicationShownForSavedSecurityCode() {
 
     await win.document.l10n.translateElements([option]);
     ok(
-      option.textContent.includes("CVV •••"),
+      option.textContent.includes("CVV saved"),
       `The row indicates a saved security code: ${option.textContent}`
     );
     ok(
@@ -149,7 +149,7 @@ add_task(async function test_noIndicationForEmptySecurityCode() {
 
     await win.document.l10n.translateElements([option]);
     ok(
-      !option.textContent.includes("CVV •••"),
+      !option.textContent.includes("CVV saved"),
       `The row carries no indication: ${option.textContent}`
     );
 
@@ -175,7 +175,7 @@ add_task(async function test_noIndicationWithoutSavedSecurityCode() {
 
     await win.document.l10n.translateElements([option]);
     ok(
-      !option.textContent.includes("CVV •••"),
+      !option.textContent.includes("CVV saved"),
       `The row carries no indication: ${option.textContent}`
     );
 
