@@ -2143,6 +2143,22 @@ class AccessibilityTest : BaseSessionTest() {
     }
 
     @Test
+    fun testBoundsFollowScreenOrigin() {
+        loadTestPage("test-tree")
+        waitForInitialFocus()
+
+        val originBounds = Rect()
+        createNodeInfo(View.NO_ID).getBoundsInScreen(originBounds)
+        assertThat("Root node bounds are not empty", originBounds.isEmpty, equalTo(false))
+
+        sessionRule.display!!.screenOriginChanged(100, 200)
+        val movedBounds = Rect()
+        createNodeInfo(View.NO_ID).getBoundsInScreen(movedBounds)
+        originBounds.offset(100, 200)
+        assertThat("Root node bounds follow the screen origin", movedBounds, equalTo(originBounds))
+    }
+
+    @Test
     fun testLoadUnloadIframeDoc() {
         mainSession.loadTestPath(REMOTE_IFRAME)
         waitForInitialFocus()

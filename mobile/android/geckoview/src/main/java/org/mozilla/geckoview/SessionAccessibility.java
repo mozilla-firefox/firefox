@@ -21,6 +21,7 @@ import android.view.ViewParent;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction;
 import android.view.accessibility.AccessibilityNodeInfo.CollectionInfo;
 import android.view.accessibility.AccessibilityNodeInfo.CollectionItemInfo;
 import android.view.accessibility.AccessibilityNodeInfo.RangeInfo;
@@ -191,7 +192,7 @@ public class SessionAccessibility {
                 + virtualDescendantId
                 + " mAttached="
                 + mAttached);
-        node = AccessibilityNodeInfo.obtain(mView, View.NO_ID);
+        node = obtainNodeInfo(View.NO_ID);
         if (mView.getDisplay() != null) {
           // When running junit tests we don't have a display
           mView.onInitializeAccessibilityNodeInfo(node);
@@ -359,15 +360,19 @@ public class SessionAccessibility {
       return super.findFocus(focus);
     }
 
+    @SuppressWarnings("deprecation")
+    private AccessibilityNodeInfo obtainNodeInfo(final int virtualViewId) {
+      return AccessibilityNodeInfo.obtain(mView, virtualViewId);
+    }
+
     private AccessibilityNodeInfo getNodeFromGecko(final int virtualViewId) {
       ThreadUtils.assertOnUiThread();
-      final AccessibilityNodeInfo node = AccessibilityNodeInfo.obtain(mView, virtualViewId);
+      final AccessibilityNodeInfo node = obtainNodeInfo(virtualViewId);
       nativeProvider.getNodeInfo(virtualViewId, node);
 
-      // We set the bounds in parent here because we need to use the client-to-screen matrix
-      // and it is only available in the UI thread.
+      // Convert to screen bounds here; the client-to-screen matrix is UI-thread only.
       final Rect bounds = new Rect();
-      node.getBoundsInParent(bounds);
+      node.getBoundsInScreen(bounds);
 
       final Matrix matrix = new Matrix();
       mSession.getClientToScreenMatrix(matrix);
@@ -591,6 +596,7 @@ public class SessionAccessibility {
       return;
     }
 
+    @SuppressWarnings("deprecation")
     final AccessibilityEvent event = AccessibilityEvent.obtain(eventType);
     event.setPackageName(GeckoAppShell.getApplicationContext().getPackageName());
     event.setSource(mView, sourceId);
@@ -781,8 +787,8 @@ public class SessionAccessibility {
           // When running junit tests we don't have a display
           mView.onInitializeAccessibilityNodeInfo(node);
         }
-        node.addAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD);
-        node.addAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+        node.addAction(AccessibilityAction.ACTION_SCROLL_BACKWARD);
+        node.addAction(AccessibilityAction.ACTION_SCROLL_FORWARD);
       } else {
         node.setParent(mView, parentId);
       }
@@ -813,17 +819,17 @@ public class SessionAccessibility {
       node.setLiveRegion(liveRegion);
 
       // Add actions
-      node.addAction(AccessibilityNodeInfo.ACTION_NEXT_HTML_ELEMENT);
-      node.addAction(AccessibilityNodeInfo.ACTION_PREVIOUS_HTML_ELEMENT);
-      node.addAction(AccessibilityNodeInfo.ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY);
-      node.addAction(AccessibilityNodeInfo.ACTION_NEXT_AT_MOVEMENT_GRANULARITY);
+      node.addAction(AccessibilityAction.ACTION_NEXT_HTML_ELEMENT);
+      node.addAction(AccessibilityAction.ACTION_PREVIOUS_HTML_ELEMENT);
+      node.addAction(AccessibilityAction.ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY);
+      node.addAction(AccessibilityAction.ACTION_NEXT_AT_MOVEMENT_GRANULARITY);
       node.setMovementGranularities(
           AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER
               | AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD
               | AccessibilityNodeInfo.MOVEMENT_GRANULARITY_LINE
               | AccessibilityNodeInfo.MOVEMENT_GRANULARITY_PARAGRAPH);
       if ((flags & FLAG_CLICKABLE) != 0) {
-        node.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+        node.addAction(AccessibilityAction.ACTION_CLICK);
       }
 
       // Set boolean properties
@@ -852,19 +858,21 @@ public class SessionAccessibility {
           node.setChecked(AccessibilityNodeInfo.CHECKED_STATE_PARTIAL);
         }
       } else {
-        node.setChecked((flags & FLAG_CHECKED) != 0);
+        setCheckedLegacy(node, (flags & FLAG_CHECKED) != 0);
       }
 
       if (mAccessibilityFocusedNode == id) {
-        node.addAction(AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS);
+        node.addAction(AccessibilityAction.ACTION_CLEAR_ACCESSIBILITY_FOCUS);
         node.setAccessibilityFocused(true);
       } else {
-        node.addAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS);
+        node.addAction(AccessibilityAction.ACTION_ACCESSIBILITY_FOCUS);
       }
       node.setFocused(mFocusedNode == id);
 
-      final Rect parentBounds = new Rect(bounds[0], bounds[1], bounds[2], bounds[3]);
-      node.setBoundsInParent(parentBounds);
+      final Rect clientBounds = new Rect(bounds[0], bounds[1], bounds[2], bounds[3]);
+      setBoundsInParent(node, clientBounds);
+      // Client bounds for now; getNodeFromGecko converts them to screen bounds on the UI thread.
+      node.setBoundsInScreen(clientBounds);
 
       for (final int childId : children) {
         node.addChild(mView, childId);
@@ -873,10 +881,10 @@ public class SessionAccessibility {
       node.setViewIdResourceName(viewIdResourceName);
 
       if ((flags & FLAG_EDITABLE) != 0) {
-        node.addAction(AccessibilityNodeInfo.ACTION_SET_SELECTION);
-        node.addAction(AccessibilityNodeInfo.ACTION_CUT);
-        node.addAction(AccessibilityNodeInfo.ACTION_COPY);
-        node.addAction(AccessibilityNodeInfo.ACTION_PASTE);
+        node.addAction(AccessibilityAction.ACTION_SET_SELECTION);
+        node.addAction(AccessibilityAction.ACTION_CUT);
+        node.addAction(AccessibilityAction.ACTION_COPY);
+        node.addAction(AccessibilityAction.ACTION_PASTE);
         node.setEditable(true);
       }
 
@@ -908,15 +916,25 @@ public class SessionAccessibility {
 
       if ((flags & FLAG_EXPANDABLE) != 0) {
         if ((flags & FLAG_EXPANDED) != 0) {
-          node.removeAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_EXPAND);
-          node.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_COLLAPSE);
+          node.removeAction(AccessibilityAction.ACTION_EXPAND);
+          node.addAction(AccessibilityAction.ACTION_COLLAPSE);
         } else {
-          node.removeAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_COLLAPSE);
-          node.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_EXPAND);
+          node.removeAction(AccessibilityAction.ACTION_COLLAPSE);
+          node.addAction(AccessibilityAction.ACTION_EXPAND);
         }
       }
 
       node.setContextClickable((flags & FLAG_CONTEXT_CLICKABLE) != 0);
+    }
+
+    @SuppressWarnings("deprecation")
+    private void setCheckedLegacy(final AccessibilityNodeInfo node, final boolean checked) {
+      node.setChecked(checked);
+    }
+
+    @SuppressWarnings("deprecation")
+    private void setBoundsInParent(final AccessibilityNodeInfo node, final Rect bounds) {
+      node.setBoundsInParent(bounds);
     }
 
     @WrapForJNI
@@ -926,6 +944,7 @@ public class SessionAccessibility {
         final int rowSpan,
         final int columnIndex,
         final int columnSpan) {
+      @SuppressWarnings("deprecation")
       final CollectionItemInfo collectionItemInfo =
           CollectionItemInfo.obtain(rowIndex, rowSpan, columnIndex, columnSpan, false);
       node.setCollectionItemInfo(collectionItemInfo);
@@ -938,6 +957,7 @@ public class SessionAccessibility {
         final int columnCount,
         final int selectionMode,
         final boolean isHierarchical) {
+      @SuppressWarnings("deprecation")
       final CollectionInfo collectionInfo =
           CollectionInfo.obtain(rowCount, columnCount, isHierarchical, selectionMode);
       node.setCollectionInfo(collectionInfo);
@@ -951,16 +971,17 @@ public class SessionAccessibility {
         final float max,
         final float current,
         final boolean makeSettable) {
+      @SuppressWarnings("deprecation")
       final RangeInfo rangeInfo = RangeInfo.obtain(rangeType, min, max, current);
       node.setRangeInfo(rangeInfo);
 
       if (makeSettable) {
         // Give it extra actions for adjusting its value.
         if (current > min) {
-          node.addAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+          node.addAction(AccessibilityAction.ACTION_SCROLL_FORWARD);
         }
         if (current < max) {
-          node.addAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD);
+          node.addAction(AccessibilityAction.ACTION_SCROLL_BACKWARD);
         }
       }
     }
