@@ -18,7 +18,10 @@ This skill owns getting a trustworthy number out of a running Firefox. The
 siblings own subjects: `desktop-theme-layout` geometry, `desktop-theme-colors`
 what a declaration paints in each color regime (forced colors, prefers-contrast,
 the color scheme), `desktop-theme-tokens` what a token resolves to,
-`desktop-theme-screenshots` the before/after image pair.
+`desktop-theme-screenshots` the before/after image pair. A review or a theme bug
+needs the subject sibling's rules, which this skill does not hold: if you loaded
+this skill first, load the subject sibling before going further, or
+`desktop-theme` to pick one.
 
 **Measure before you theorise, and after you fix.**
 
