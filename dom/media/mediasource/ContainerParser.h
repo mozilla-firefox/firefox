@@ -55,6 +55,18 @@ class ContainerParser : public DecoderDoctorLifeLogger<ContainerParser> {
 
   virtual int64_t GetRoundingError();
 
+  // Return true if initialization segments have no bytes of their own and are
+  // part of the media segment that follows them. InitData() then describes
+  // the initialization segment, and InitSegmentRange() is empty.
+  virtual bool HasImplicitInitSegment() const { return false; }
+
+  // Return the number of bytes at the start of aData that the byte stream
+  // format says must be ignored, for the segment parser loop to remove. It is
+  // only called while waiting for a segment, so a media segment must end
+  // before such bytes. The rest of a unit to ignore that extends past aData is
+  // ignored as it is appended.
+  virtual size_t SkipIgnorableBytesAtStart(const MediaSpan& aData) { return 0; }
+
   MediaByteBuffer* InitData();
 
   bool HasInitData() { return mHasInitData; }
@@ -64,7 +76,9 @@ class ContainerParser : public DecoderDoctorLifeLogger<ContainerParser> {
   // MediaByteRanges will be valid from when this call first succeeds.
   bool HasCompleteInitData();
   // Returns the byte range of the first complete init segment, or an empty
-  // range if not complete.
+  // range if not complete. It is always empty when HasImplicitInitSegment()
+  // is true, as the init segment then has no bytes of its own. Use
+  // HasCompleteInitData() and InitData() instead.
   MediaByteRange InitSegmentRange();
   // Returns the byte range of the first complete media segment header,
   // or an empty range if not complete.

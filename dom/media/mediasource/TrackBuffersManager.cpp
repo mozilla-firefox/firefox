@@ -525,6 +525,12 @@ void TrackBuffersManager::CompleteResetParserState() {
                "we must have an init segment");
     // The aim here is really to destroy our current demuxer.
     CreateDemuxerforMIMEType();
+    if (mParser->HasImplicitInitSegment()) {
+      // The next media segment carries its own initialization segment.
+      // Parsing the stored one would also parse it as media.
+      RecreateParser(false);
+      return;
+    }
     // Recreate our input buffer. We can't directly assign the initData buffer
     // to mInputBuffer as it will get modified in the Segment Parser Loop.
     mInputBuffer = Some(MediaSpan::WithCopyOf(mInitData));
@@ -944,9 +950,17 @@ void TrackBuffersManager::SegmentParserLoop() {
     // TODO
 
     // 3. Remove any bytes that the byte stream format specifications say must
-    // be ignored from the start of the input buffer. We do not remove bytes
-    // from our input buffer. Instead we enforce that our ContainerParser is
-    // able to skip over all data that is supposed to be ignored.
+    // be ignored from the start of the input buffer. This is only done while
+    // waiting for a segment, when the input buffer starts between segments.
+    // ContainerParsers that don't remove such bytes skip over them instead.
+    if (mSourceBufferAttributes->GetAppendState() ==
+        AppendState::WAITING_FOR_SEGMENT) {
+      if (size_t ignored = mParser->SkipIgnorableBytesAtStart(*mInputBuffer)) {
+        MSE_DEBUGV("Ignoring {} bytes", ignored);
+        mInputBuffer->RemoveFront(ignored);
+        continue;
+      }
+    }
 
     // 4. If the append state equals WAITING_FOR_SEGMENT, then run the following
     // steps:
@@ -1011,7 +1025,9 @@ void TrackBuffersManager::SegmentParserLoop() {
     // following steps:
     if (mSourceBufferAttributes->GetAppendState() ==
         AppendState::PARSING_INIT_SEGMENT) {
-      if (mParser->InitSegmentRange().IsEmpty()) {
+      if (mParser->HasImplicitInitSegment()
+              ? !mParser->HasCompleteInitData()
+              : mParser->InitSegmentRange().IsEmpty()) {
         mInputBuffer.reset();
         NeedMoreData();
         return;
