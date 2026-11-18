@@ -3153,13 +3153,8 @@ nsresult QuotaManager::LoadQuota() {
           // doing that. We just need to use correct group and last access
           // time before initializing quota for the given origin.
 
-          const bool needsRescan =
-#if defined(NIGHTLY_BUILD) || defined(DEBUG)
-              !fullOriginMetadata.CheckIfUsageIsConsistent(
-                  "LoadQuotaFromCache"_ns);
-#else
-              false;
-#endif
+          const bool needsRescan = !fullOriginMetadata.CheckIfUsageIsConsistent(
+              "LoadQuotaFromCache"_ns);
           if (fullOriginMetadata.mDirty || needsRescan) {
             aDirtyOrigins.AppendElement(std::move(fullOriginMetadata));
           } else if (IsBestEffortPersistenceType(
@@ -4434,11 +4429,8 @@ Result<Ok, nsresult> QuotaManager::InitializeOriginDirectory(
 
     if (StaticPrefs::dom_quotaManager_loadQuotaFromSecondaryCache() &&
         IsInitializableQuotaVersion(metadata.mQuotaVersion) &&
-        !metadata.mAccessed
-#if defined(NIGHTLY_BUILD) || defined(DEBUG)
-        && metadata.CheckIfUsageIsConsistent("InitializeOriginDirectory"_ns)
-#endif
-    ) {
+        !metadata.mAccessed &&
+        metadata.CheckIfUsageIsConsistent("InitializeOriginDirectory"_ns)) {
       QM_LOG(("Initializing quota for: %s", metadata.mOrigin.get()));
       InitQuotaForOrigin(metadata, /* aDirectoryExists */ true, aCacheMap);
 

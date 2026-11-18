@@ -17,12 +17,8 @@
 #include "mozilla/dom/quota/UsageInfo.h"
 #include "mozilla/glean/DomQuotaMetrics.h"
 
-#if defined(NIGHTLY_BUILD) || defined(DEBUG)
-#  define CHECK_USAGE() \
-    CheckIfUsageIsConsistent("OriginInfo::"_ns + nsDependentCString(__func__))
-#else
-#  define CHECK_USAGE()
-#endif
+#define CHECK_USAGE() \
+  CheckIfUsageIsConsistent("OriginInfo::"_ns + nsDependentCString(__func__))
 
 namespace mozilla::dom::quota {
 
@@ -61,11 +57,9 @@ OriginInfo::OriginInfo(GroupInfo* aGroupInfo, const nsACString& aOrigin,
   MOZ_COUNT_CTOR(OriginInfo);
 }
 
-#if defined(NIGHTLY_BUILD) || defined(DEBUG)
 bool OriginInfo::CheckIfUsageIsConsistent(const nsACString& context) const {
   return CheckClientUsagesConsistency(mClientUsages, mUsage, context);
 }
-#endif  // defined(NIGHTLY_BUILD) || defined(DEBUG)
 
 int64_t OriginInfo::LockedUsage() const {
   AssertCurrentThreadOwnsQuotaMutex();
