@@ -618,6 +618,14 @@ void SharedScriptCache::SaveToDiskCache() {
       continue;
     }
 
+    if (!item.mLoadedScript->HasDiskCacheReference()) {
+      // The other consumer can drop the disk cache reference while
+      // the ScriptEncodeAndCompressionTask is running off main thread.
+      item.mLoadedScript->DropSRIOrSRIAndSerializedStencil();
+      TRACE_FOR_TEST(item.mLoadedScript, "diskcache:failed");
+      continue;
+    }
+
     if (!ScriptLoader::SaveToDiskCache(item.mLoadedScript, item.mCompressed)) {
       item.mLoadedScript->DropDiskCacheReference();
       item.mLoadedScript->DropSRIOrSRIAndSerializedStencil();
