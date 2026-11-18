@@ -733,7 +733,6 @@ skip-if = [
 ["test_mediarecorder_principals.html"]
 skip-if = [
   "os == 'android'", # Bug 1694645
-  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1909908
 ]
 
 ["test_mediarecorder_record_4ch_audiocontext.html"]

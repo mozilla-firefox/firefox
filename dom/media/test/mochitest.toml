@@ -805,9 +805,6 @@ tags = "cloneelementvisually"
 tags = "cloneelementvisually"
 
 ["test_cloneElementVisually_resource_change.html"]
-skip-if = [
-  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1909908
-]
 tags = "cloneelementvisually os_integration"
 
 ["test_clone_media_element.html"]
