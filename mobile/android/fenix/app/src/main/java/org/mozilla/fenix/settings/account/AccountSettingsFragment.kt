@@ -71,6 +71,9 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
     private val isNewUiEnabled: Boolean
         get() = requireComponents.settings.accountSettingsNewUi
 
+    private val isSyncDecouplingEnabled: Boolean
+        get() = requireComponents.settings.syncDecouplingEnabled
+
     private val isAutofillSupported by lazy { requireComponents.settings.isAutofillSupported }
 
     // Navigate away from this fragment when we encounter auth problems or logout events.
@@ -216,11 +219,16 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
     private fun setPreferencesVisibility() {
         requirePreference<TwoStatePreference>(R.string.pref_key_sync_address).isVisible =
             requireComponents.settings.isAddressSyncEnabled
+
         SyncEngineUiData.entries
             .filter { it.needsPinWarning }
             .forEach { engineUiData ->
                 requirePreference<TwoStatePreference>(engineUiData.prefId).isVisible = isAutofillSupported
             }
+
+        if (isNewUiEnabled) {
+            requirePreference<Preference>(R.string.pref_key_sync_enable_sync).isVisible = isSyncDecouplingEnabled
+        }
     }
 
     override fun onDisplayPreferenceDialog(preference: Preference) {
@@ -298,7 +306,7 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
     }
 
     private fun setupDeviceSyncPreferenceListener() {
-        if (isNewUiEnabled) {
+        if (isNewUiEnabled && isSyncDecouplingEnabled) {
             requirePreference<TwoStatePreference>(R.string.pref_key_sync_enable_sync).apply {
                 setDeviceSyncSummary(isChecked)
 
