@@ -292,7 +292,7 @@ NSSLOWKEYPublicKey *
 nsslowkey_ConvertToPublicKey(NSSLOWKEYPrivateKey *privk)
 {
     NSSLOWKEYPublicKey *pubk;
-    SECItem publicValue;
+    SECItem publicValue = { siBuffer, NULL, 0 };
     PLArenaPool *arena;
 
     arena = PORT_NewArena(DER_DEFAULT_CHUNKSIZE);
@@ -418,25 +418,30 @@ nsslowkey_ConvertToPublicKey(NSSLOWKEYPrivateKey *privk)
                 if (privk->u.ec.publicValue.len == 0) {
                     /* Checking if it's an ed25519 or x25519 key.
                        If it's the case, we derive the public key using the private key. */
-                    SECOidTag privKeyOIDTag = SECOID_FindOIDTag(&privk->u.ec.ecParams.curveOID);
-                    if (privKeyOIDTag == SEC_OID_ED25519_PUBLIC_KEY) {
-                        PORT_Memset(&privk->u.ec.publicValue, 0, sizeof(privk->u.ec.publicValue));
-                        if (SECITEM_AllocItem(privk->arena, &privk->u.ec.publicValue, Ed25519_PUBLIC_KEYLEN) == NULL) {
+                    if (privk->u.ec.ecParams.name == ECCurve_Ed25519) {
+                        if (SECITEM_AllocItem(arena, &publicValue, Ed25519_PUBLIC_KEYLEN) == NULL) {
                             break;
                         }
 
-                        rv = ED_DerivePublicKey(&privk->u.ec.privateValue, &privk->u.ec.publicValue);
-                        if (rv != CKR_OK) {
+                        rv = ED_DerivePublicKey(&privk->u.ec.privateValue, &publicValue);
+                        if (rv != SECSuccess) {
                             break;
                         }
-                    } else if (privKeyOIDTag == SEC_OID_X25519) {
-                        PORT_Memset(&privk->u.ec.publicValue, 0, sizeof(privk->u.ec.publicValue));
-                        if (SECITEM_AllocItem(privk->arena, &privk->u.ec.publicValue, X25519_PUBLIC_KEYLEN) == NULL) {
+                        rv = SECITEM_CopyItem(privk->arena, &privk->u.ec.publicValue, &publicValue);
+                        if (rv != SECSuccess) {
+                            break;
+                        }
+                    } else if (privk->u.ec.ecParams.name == ECCurve25519) {
+                        if (SECITEM_AllocItem(arena, &publicValue, X25519_PUBLIC_KEYLEN) == NULL) {
                             break;
                         }
 
-                        rv = X25519_DerivePublicKey(&privk->u.ec.privateValue, &privk->u.ec.publicValue);
-                        if (rv != CKR_OK) {
+                        rv = X25519_DerivePublicKey(&privk->u.ec.privateValue, &publicValue);
+                        if (rv != SECSuccess) {
+                            break;
+                        }
+                        rv = SECITEM_CopyItem(privk->arena, &privk->u.ec.publicValue, &publicValue);
+                        if (rv != SECSuccess) {
                             break;
                         }
                     }

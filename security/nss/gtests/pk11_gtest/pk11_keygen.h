@@ -2,12 +2,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <vector>
+
 #include "nss.h"
 #include "secoid.h"
 
 #include "nss_scoped_ptrs.h"
 
 namespace nss_test {
+
+// CKA_EC_PARAMS for a named curve: the DER encoding of its OID.
+std::vector<uint8_t> EcParamsForCurve(SECOidTag curve_oid);
 
 class ParamHolder;
 

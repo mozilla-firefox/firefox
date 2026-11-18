@@ -658,6 +658,24 @@ CERTUTIL_GeneratePrivateKey(KeyType keytype, PK11SlotInfo *slot, int size,
             }
             params = &paramSet;
             break;
+        case kyberKey:
+            mechanism = CKM_ML_KEM_KEY_PAIR_GEN;
+            if (!pqgFile) {
+                fprintf(stderr, "ML-KEM keys require a parameter set (-q)\n");
+                return NULL;
+            }
+            if (PORT_Strcasecmp(pqgFile, "ML-KEM-512") == 0) {
+                paramSet = CKP_ML_KEM_512;
+            } else if (PORT_Strcasecmp(pqgFile, "ML-KEM-768") == 0) {
+                paramSet = CKP_ML_KEM_768;
+            } else if (PORT_Strcasecmp(pqgFile, "ML-KEM-1024") == 0) {
+                paramSet = CKP_ML_KEM_1024;
+            } else {
+                fprintf(stderr, "Unrecognized ML-KEM parameter set %s\n", pqgFile);
+                return NULL;
+            }
+            params = &paramSet;
+            break;
 
         default:
             return NULL;

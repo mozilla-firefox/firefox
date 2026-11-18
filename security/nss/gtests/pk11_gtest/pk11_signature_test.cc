@@ -42,7 +42,7 @@ ScopedSECKEYPrivateKey Pk11SignatureTest::ImportPrivateKey(
 }
 
 ScopedSECKEYPrivateKey Pk11SignatureTest::ImportEncryptedPrivateKey(
-    const DataBuffer& pkcs8) {
+    const DataBuffer& pkcs8, const SECItem* publicValue) {
   ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
   if (!slot) {
     ADD_FAILURE() << "No slot";
@@ -73,7 +73,7 @@ ScopedSECKEYPrivateKey Pk11SignatureTest::ImportEncryptedPrivateKey(
   int usageCount = 1;
   return ScopedSECKEYPrivateKey(PK11_UnwrapPrivKey(
       slot.get(), wrappingKey.get(), CKM_AES_CBC_PAD, &iv, encryptedKey.get(),
-      nullptr, nullptr, PR_FALSE, PR_TRUE, PK11_GetKeyType(mechanism(), 0),
+      nullptr, publicValue, PR_FALSE, PR_TRUE, PK11_GetKeyType(mechanism(), 0),
       usages, usageCount, nullptr));
 }
 

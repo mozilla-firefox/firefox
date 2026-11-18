@@ -135,29 +135,33 @@ class FfdheParamHolder : public ParamHolder {
   SECKEYDHParams params_;
 };
 
+std::vector<uint8_t> EcParamsForCurve(SECOidTag curve_oid) {
+  SECOidData* curve = SECOID_FindOIDByTag(curve_oid);
+  EXPECT_NE(nullptr, curve);
+  if (!curve) {
+    return {};
+  }
+  std::vector<uint8_t> params = {SEC_ASN1_OBJECT_ID,
+                                 static_cast<uint8_t>(curve->oid.len)};
+  params.insert(params.end(), curve->oid.data,
+                curve->oid.data + curve->oid.len);
+  return params;
+}
+
 /* Also used for EdDSA. */
 class EcParamHolder : public ParamHolder {
  public:
-  EcParamHolder(SECOidTag curve_oid) {
-    /* For the case of ED curve_oid contains a EdDSA OID. */
-    SECOidData* curve = SECOID_FindOIDByTag(curve_oid);
-    EXPECT_NE(nullptr, curve);
-
-    size_t plen = curve->oid.len + 2;
-    extra_.reset(new uint8_t[plen]);
-    extra_[0] = SEC_ASN1_OBJECT_ID;
-    extra_[1] = static_cast<uint8_t>(curve->oid.len);
-    memcpy(&extra_[2], curve->oid.data, curve->oid.len);
-
-    ec_params_ = {siBuffer, extra_.get(), static_cast<unsigned int>(plen)};
+  EcParamHolder(SECOidTag curve_oid) : params_(EcParamsForCurve(curve_oid)) {
+    ec_params_ = {siBuffer, params_.data(),
+                  static_cast<unsigned int>(params_.size())};
   }
   ~EcParamHolder() = default;
 
   void* get() override { return &ec_params_; }
 
  private:
+  std::vector<uint8_t> params_;
   SECKEYECParams ec_params_;
-  std::unique_ptr<uint8_t[]> extra_;
 };
 
 class KyberParamHolder : public ParamHolder {

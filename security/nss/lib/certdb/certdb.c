@@ -1250,6 +1250,7 @@ CERT_CheckKeyUsage(CERTCertificate *cert, unsigned int requiredUsage)
 
         switch (keyType) {
             case rsaKey:
+            case kyberKey: /* See RFC 9935, Section 5. */
                 requiredUsage |= KU_KEY_ENCIPHERMENT;
                 break;
             case rsaPssKey:
@@ -1258,7 +1259,6 @@ CERT_CheckKeyUsage(CERTCertificate *cert, unsigned int requiredUsage)
                 requiredUsage |= KU_DIGITAL_SIGNATURE;
                 break;
             case dhKey:
-            case kyberKey:
                 requiredUsage |= KU_KEY_AGREEMENT;
                 break;
             case ecKey:

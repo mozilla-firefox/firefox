@@ -343,8 +343,8 @@ PK11_CheckSSOPassword(PK11SlotInfo *slot, char *ssopw)
     /* get a rwsession */
     rwsession = PK11_GetRWSession(slot);
     if (rwsession == CK_INVALID_HANDLE) {
-        PORT_SetError(SEC_ERROR_BAD_DATA);
-        return rv;
+        // Error set by PK11_GetRWSession
+        return SECFailure;
     }
     haveMonitor = PK11_RWSessionHasLock(slot, rwsession);
 
@@ -419,9 +419,9 @@ PK11_InitPin(PK11SlotInfo *slot, const char *ssopw, const char *userpw)
     /* get a rwsession */
     rwsession = PK11_GetRWSession(slot);
     if (rwsession == CK_INVALID_HANDLE) {
-        PORT_SetError(SEC_ERROR_BAD_DATA);
         pk11_SetLastLoginCheck(slot, 0);
-        return rv;
+        // Error set by PK11_GetRWSession
+        return SECFailure;
     }
     haveMonitor = PK11_RWSessionHasLock(slot, rwsession);
 
@@ -509,8 +509,8 @@ PK11_ChangePW(PK11SlotInfo *slot, const char *oldpw, const char *newpw)
     /* get a rwsession */
     rwsession = PK11_GetRWSession(slot);
     if (rwsession == CK_INVALID_HANDLE) {
-        PORT_SetError(SEC_ERROR_BAD_DATA);
-        return rv;
+        // Error set by PK11_GetRWSession
+        return SECFailure;
     }
 
     crv = PK11_GETTAB(slot)->C_SetPIN(rwsession,

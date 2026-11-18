@@ -2733,9 +2733,6 @@ ssl3_SendRecord(sslSocket *ss,
         PORT_Assert(IS_DTLS(ss) &&
                     (ct == ssl_ct_handshake ||
                      ct == ssl_ct_change_cipher_spec));
-        spec = cwSpec;
-    } else {
-        spec = ss->ssl3.cwSpec;
     }
 
     while (nIn > 0) {
@@ -2743,6 +2740,7 @@ ssl3_SendRecord(sslSocket *ss,
         PRInt32 sent;
 
         ssl_GetSpecReadLock(ss);
+        spec = cwSpec ? cwSpec : ss->ssl3.cwSpec;
         rv = ssl_ProtectNextRecord(ss, spec, ct, pIn, nIn, &written);
         ssl_ReleaseSpecReadLock(ss);
         if (rv != SECSuccess) {

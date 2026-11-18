@@ -82,7 +82,8 @@ class Pk11SignatureTest : public ::testing::Test {
   }
 
   ScopedSECKEYPrivateKey ImportPrivateKey(const DataBuffer& pkcs8);
-  ScopedSECKEYPrivateKey ImportEncryptedPrivateKey(const DataBuffer& pkcs8);
+  ScopedSECKEYPrivateKey ImportEncryptedPrivateKey(
+      const DataBuffer& pkcs8, const SECItem* publicValue = nullptr);
   ScopedSECKEYPublicKey ImportPublicKey(const DataBuffer& spki);
 
   bool ComputeHash(const DataBuffer& data, DataBuffer* hash) {

@@ -1167,6 +1167,28 @@ sftkdb_PWCached(SFTKDBHandle *keydb)
     return rv;
 }
 
+/*
+ * Did reading an attribute fail only because its mac is missing or doesn't
+ * match? Anything else is a real error, also a mac we can't decode or check:
+ * it may come from a newer NSS.
+ */
+static PRBool
+sftk_isUnverifiableMac(SFTKDBHandle *handle, SFTKDBHandle *keyHandle,
+                       CK_OBJECT_HANDLE id, CK_ATTRIBUTE_TYPE type, CK_RV crv)
+{
+    if (crv == CKR_SIGNATURE_INVALID) {
+        return PORT_GetError() == SEC_ERROR_BAD_SIGNATURE;
+    }
+    // sdb reports a missing signature like a missing object.
+    if (crv == CKR_OBJECT_HANDLE_INVALID) {
+        unsigned char signData[SDB_MAX_META_DATA_LEN];
+        SECItem signText = { siBuffer, signData, sizeof(signData) };
+        return sftkdb_GetAttributeSignature(handle, keyHandle, id, type,
+                                            &signText) == CKR_OBJECT_HANDLE_INVALID;
+    }
+    return PR_FALSE;
+}
+
 static CK_RV
 sftk_updateMacs(PLArenaPool *arena, SFTKDBHandle *handle,
                 CK_OBJECT_HANDLE id, SECItem *newKey, int iterationCount)
@@ -1223,7 +1245,13 @@ sftk_updateMacs(PLArenaPool *arena, SFTKDBHandle *handle,
         if (authAttr.pValue == NULL) {
             return CKR_HOST_MEMORY;
         }
+        PORT_SetError(0);
         rv = sftkdb_GetAttributeValue(handle, id, &authAttr, 1);
+        // Re-signing would vouch for an unchecked value; leave it as is.
+        if (sftk_isUnverifiableMac(handle, keyHandle, id, authAttr.type, rv)) {
+            PORT_SetError(0);
+            continue;
+        }
         if (rv != CKR_OK) {
             return rv;
         }

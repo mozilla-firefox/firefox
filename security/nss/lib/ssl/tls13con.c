@@ -1233,12 +1233,12 @@ tls13_SendKeyUpdate(sslSocket *ss, tls13KeyUpdateRequest request, PRBool buffer)
     if (rv != SECSuccess) {
         goto loser; /* error code set by ssl3_FlushHandshake */
     }
-    ssl_ReleaseXmitBufLock(ss);
 
     rv = tls13_UpdateTrafficKeys(ss, ssl_secret_write);
     if (rv != SECSuccess) {
         goto loser; /* error code set by tls13_UpdateTrafficKeys */
     }
+    ssl_ReleaseXmitBufLock(ss);
 
     return SECSuccess;
 

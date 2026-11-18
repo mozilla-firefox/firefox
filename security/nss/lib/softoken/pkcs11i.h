@@ -798,6 +798,7 @@ extern CK_RV sftk_ConstrainAttribute(SFTKObject *object,
                                      CK_ATTRIBUTE_TYPE type, int minLength,
                                      int maxLength, int minMultiple);
 extern PRBool sftk_hasAttribute(SFTKObject *object, CK_ATTRIBUTE_TYPE type);
+extern SECOidTag sftk_quickGetECCCurveOid(SFTKObject *source);
 extern PRBool sftk_isTrue(SFTKObject *object, CK_ATTRIBUTE_TYPE type);
 extern void sftk_DeleteAttributeType(SFTKObject *object,
                                      CK_ATTRIBUTE_TYPE type);

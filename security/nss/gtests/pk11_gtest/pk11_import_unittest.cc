@@ -5,10 +5,12 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <memory>
+#include <vector>
 #include "nss.h"
 #include "pk11pub.h"
 #include "pk11pqg.h"
 #include "prerror.h"
+#include "secerr.h"
 #include "secoid.h"
 
 #include "cpputil.h"
@@ -414,6 +416,182 @@ TEST_F(Pk11KeyImportTestEC, CompressedPointNotOnCurve) {
   CK_OBJECT_HANDLE id =
       PK11_ImportPublicKey(slot.get(), pub_key.get(), PR_FALSE);
   ASSERT_NE(id, (unsigned int)CK_INVALID_HANDLE);
+}
+
+// A public key on |curve| that isn't in any slot yet, taken from a key pair
+// generated on it.
+static ScopedSECKEYPublicKey PublicKeyOnCurve(SECOidTag curve) {
+  CK_MECHANISM_TYPE mech;
+  switch (curve) {
+    case SEC_OID_ED25519_PUBLIC_KEY:
+      mech = CKM_EC_EDWARDS_KEY_PAIR_GEN;
+      break;
+    case SEC_OID_X25519:
+    case SEC_OID_CURVE25519:
+      mech = CKM_EC_MONTGOMERY_KEY_PAIR_GEN;
+      break;
+    default:
+      mech = CKM_EC_KEY_PAIR_GEN;
+      break;
+  }
+  ScopedSECKEYPrivateKey priv;
+  ScopedSECKEYPublicKey pub;
+  Pkcs11KeyPairGenerator(mech, curve).GenerateKey(&priv, &pub);
+  if (!pub) {
+    return nullptr;
+  }
+  return ScopedSECKEYPublicKey(SECKEY_CopyPublicKey(pub.get()));
+}
+
+// Create a session Edwards or Montgomery private key from just its curve and
+// a 32-byte private value.
+static ScopedSECKEYPrivateKey CreateRawKey(PK11SlotInfo* slot, CK_KEY_TYPE type,
+                                           SECOidTag curve) {
+  std::vector<uint8_t> params = EcParamsForCurve(curve);
+  std::vector<uint8_t> value(32, 0x42);
+  CK_OBJECT_CLASS keyClass = CKO_PRIVATE_KEY;
+  CK_BBOOL ckfalse = CK_FALSE;
+  CK_ATTRIBUTE templ[] = {
+      {CKA_CLASS, &keyClass, sizeof(keyClass)},
+      {CKA_KEY_TYPE, &type, sizeof(type)},
+      {CKA_TOKEN, &ckfalse, sizeof(ckfalse)},
+      {CKA_EC_PARAMS, params.data(), static_cast<CK_ULONG>(params.size())},
+      {CKA_VALUE, value.data(), static_cast<CK_ULONG>(value.size())}};
+  return ScopedSECKEYPrivateKey(PK11_CreatePrivateKeyFromTemplate(
+      slot, templ, PR_ARRAY_SIZE(templ), nullptr));
+}
+
+struct Pk11EcKeyTypeCurveParams {
+  CK_KEY_TYPE keyType;
+  SECOidTag curve;
+  bool accepted;
+};
+
+// Reject curves that do not match the key type, while accepting both the
+// RFC 8410 and legacy curve25519 OIDs for Montgomery keys.
+class Pk11EcKeyTypeCurveTest
+    : public ::testing::TestWithParam<Pk11EcKeyTypeCurveParams> {};
+
+TEST_P(Pk11EcKeyTypeCurveTest, CreatePrivateKey) {
+  if (PK11_IsFIPS()) {
+    GTEST_SKIP() << "FIPS tokens take no raw private key templates";
+  }
+  ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
+  ASSERT_TRUE(slot);
+
+  ScopedSECKEYPrivateKey key =
+      CreateRawKey(slot.get(), GetParam().keyType, GetParam().curve);
+  PRErrorCode err = PORT_GetError();
+  EXPECT_EQ(GetParam().accepted, !!key);
+  if (!GetParam().accepted) {
+    EXPECT_EQ(SEC_ERROR_INVALID_KEY, err) << PORT_ErrorToName(err);
+  }
+}
+
+TEST_P(Pk11EcKeyTypeCurveTest, ImportPublicKey) {
+  ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
+  ASSERT_TRUE(slot);
+
+  std::vector<uint8_t> params = EcParamsForCurve(GetParam().curve);
+  ScopedSECKEYPublicKey pub = PublicKeyOnCurve(GetParam().curve);
+  ASSERT_TRUE(pub);
+  pub->keyType = GetParam().keyType == CKK_EC_EDWARDS ? edKey : ecMontKey;
+  pub->u.ec.DEREncodedParams = {siBuffer, params.data(),
+                                static_cast<unsigned int>(params.size())};
+
+  CK_OBJECT_HANDLE id = PK11_ImportPublicKey(slot.get(), pub.get(), PR_FALSE);
+  PRErrorCode err = PORT_GetError();
+  EXPECT_EQ(GetParam().accepted, id != CK_INVALID_HANDLE);
+  if (!GetParam().accepted) {
+    EXPECT_EQ(SEC_ERROR_INVALID_KEY, err) << PORT_ErrorToName(err);
+  }
+}
+
+TEST_P(Pk11EcKeyTypeCurveTest, GenerateKeyPair) {
+  ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
+  ASSERT_TRUE(slot);
+
+  CK_MECHANISM_TYPE mech = GetParam().keyType == CKK_EC_EDWARDS
+                               ? CKM_EC_EDWARDS_KEY_PAIR_GEN
+                               : CKM_EC_MONTGOMERY_KEY_PAIR_GEN;
+  std::vector<uint8_t> paramsBuf = EcParamsForCurve(GetParam().curve);
+  SECItem params = {siBuffer, paramsBuf.data(),
+                    static_cast<unsigned int>(paramsBuf.size())};
+  SECKEYPublicKey* rawPub = nullptr;
+  // A FIPS token only generates sensitive private keys.
+  ScopedSECKEYPrivateKey priv(
+      PK11_GenerateKeyPair(slot.get(), mech, &params, &rawPub, PR_FALSE,
+                           PK11_IsFIPS() ? PR_TRUE : PR_FALSE, nullptr));
+  PRErrorCode err = PORT_GetError();
+  ScopedSECKEYPublicKey pub(rawPub);
+  EXPECT_EQ(GetParam().accepted, !!priv);
+  EXPECT_EQ(GetParam().accepted, !!pub);
+  if (!GetParam().accepted) {
+    EXPECT_EQ(SEC_ERROR_INVALID_KEY, err) << PORT_ErrorToName(err);
+  }
+}
+
+static const Pk11EcKeyTypeCurveParams kEcKeyTypeCurves[] = {
+    {CKK_EC_EDWARDS, SEC_OID_ED25519_PUBLIC_KEY, true},
+    {CKK_EC_EDWARDS, SEC_OID_X25519, false},
+    {CKK_EC_EDWARDS, SEC_OID_CURVE25519, false},
+    {CKK_EC_EDWARDS, SEC_OID_SECG_EC_SECP256R1, false},
+    {CKK_EC_MONTGOMERY, SEC_OID_X25519, true},
+    {CKK_EC_MONTGOMERY, SEC_OID_CURVE25519, true},
+    {CKK_EC_MONTGOMERY, SEC_OID_ED25519_PUBLIC_KEY, false},
+    {CKK_EC_MONTGOMERY, SEC_OID_SECG_EC_SECP256R1, false},
+};
+
+INSTANTIATE_TEST_SUITE_P(RejectMismatchedECKeyTypeAndCurve,
+                         Pk11EcKeyTypeCurveTest,
+                         ::testing::ValuesIn(kEcKeyTypeCurves));
+
+TEST_F(Pk11KeyImportTestEC, RejectInvalidECParamsLength) {
+  ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
+  ASSERT_TRUE(slot);
+
+  for (const auto& param : kEcKeyTypeCurves) {
+    if (!param.accepted) {
+      continue;
+    }
+    SCOPED_TRACE(param.curve);
+    std::vector<uint8_t> params = EcParamsForCurve(param.curve);
+    ScopedSECKEYPublicKey pub = PublicKeyOnCurve(param.curve);
+    ASSERT_TRUE(pub);
+    --params[1];
+    pub->u.ec.DEREncodedParams = {siBuffer, params.data(),
+                                  static_cast<unsigned int>(params.size())};
+    CK_OBJECT_HANDLE id = PK11_ImportPublicKey(slot.get(), pub.get(), PR_FALSE);
+    PRErrorCode err = PORT_GetError();
+    EXPECT_EQ(static_cast<CK_OBJECT_HANDLE>(CK_INVALID_HANDLE), id);
+    EXPECT_EQ(SEC_ERROR_INVALID_KEY, err) << PORT_ErrorToName(err);
+  }
+}
+
+// A Montgomery key named by the older curve25519 OID gets the same public key
+// as one named by the RFC 8410 OID.
+TEST_F(Pk11KeyImportTestEC, MontgomeryCurve25519PublicKey) {
+  if (PK11_IsFIPS()) {
+    GTEST_SKIP() << "FIPS tokens take no raw private key templates";
+  }
+  ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
+  ASSERT_TRUE(slot);
+
+  ScopedSECKEYPrivateKey x25519 =
+      CreateRawKey(slot.get(), CKK_EC_MONTGOMERY, SEC_OID_X25519);
+  ASSERT_TRUE(x25519);
+  ScopedSECKEYPrivateKey curve25519 =
+      CreateRawKey(slot.get(), CKK_EC_MONTGOMERY, SEC_OID_CURVE25519);
+  ASSERT_TRUE(curve25519);
+
+  ScopedSECKEYPublicKey x25519Pub(SECKEY_ConvertToPublicKey(x25519.get()));
+  ASSERT_TRUE(x25519Pub);
+  ScopedSECKEYPublicKey curve25519Pub(
+      SECKEY_ConvertToPublicKey(curve25519.get()));
+  ASSERT_TRUE(curve25519Pub) << PORT_ErrorToName(PORT_GetError());
+  EXPECT_EQ(ecMontKey, curve25519Pub->keyType);
+  EXPECT_TRUE(SECITEM_ItemsAreEqual(&x25519Pub->u.ec.publicValue,
+                                    &curve25519Pub->u.ec.publicValue));
 }
 
 }  // namespace nss_test

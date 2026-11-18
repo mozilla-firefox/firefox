@@ -1,0 +1,16 @@
+# Context for LLM-assisted code review (Review Helper).
+# Format: https://firefox-source-docs.mozilla.org/ai-agent-tools/code-review-context.html
+#
+# Validate changes with Firefox's standalone (stdlib-only) validator:
+#   https://github.com/mozilla-firefox/firefox/blob/main/tools/lint/python/review_context_schema.py
+#   python3 review_context_schema.py review-context.toml
+
+version = 1
+
+[[rules]]
+name = "NSS review guidance"
+description = "NSS review guidance: safety, ownership, secrets, compatibility, and tests."
+when = { any_file = { exclude = ["doc/**"] } }
+load = [
+  { type = "file", path = ".claude/skills/nss-review/SKILL.md" },
+]

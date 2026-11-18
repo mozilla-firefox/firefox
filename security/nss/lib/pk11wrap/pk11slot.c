@@ -1492,34 +1492,6 @@ PK11_InitToken(PK11SlotInfo *slot, PRBool loadCerts)
             PK11_FreeSlot(int_slot);
         }
     }
-    /* work around a problem in softoken where it incorrectly
-     * reports databases opened read only as read/write. */
-    if (slot->isInternal && !slot->readOnly) {
-        CK_SESSION_HANDLE session = CK_INVALID_HANDLE;
-
-        /* try to open a R/W session */
-        crv = PK11_GETTAB(slot)->C_OpenSession(slot->slotID,
-                                               CKF_RW_SESSION | CKF_SERIAL_SESSION, slot, pk11_notify, &session);
-        /* what a well behaved token should return if you open
-         * a RW session on a read only token */
-        if (crv == CKR_TOKEN_WRITE_PROTECTED) {
-            slot->readOnly = PR_TRUE;
-        } else if (crv == CKR_OK) {
-            CK_SESSION_INFO sessionInfo;
-
-            /* Because of a second bug in softoken, which silently returns
-             * a RO session, we need to check what type of session we got. */
-            crv = PK11_GETTAB(slot)->C_GetSessionInfo(session, &sessionInfo);
-            if (crv == CKR_OK) {
-                if ((sessionInfo.flags & CKF_RW_SESSION) == 0) {
-                    /* session was readonly, so this softoken slot must be readonly */
-                    slot->readOnly = PR_TRUE;
-                }
-            }
-            PK11_GETTAB(slot)
-                ->C_CloseSession(session);
-        }
-    }
 
     return SECSuccess;
 }
@@ -1648,9 +1620,6 @@ PK11_InitSlot(SECMODModule *mod, CK_SLOT_ID slotID, PK11SlotInfo *slot)
             }
             slot->hasRootCerts = PR_TRUE;
         }
-    }
-    if ((slotInfo.flags & CKF_USER_PIN_INITIALIZED) != 0) {
-        slot->flags |= CKF_USER_PIN_INITIALIZED;
     }
 }
 

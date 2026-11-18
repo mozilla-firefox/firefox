@@ -128,6 +128,73 @@ GetCertRequest(const SECItem *reqDER, void *pwarg)
     return certReq;
 }
 
+/* Build an unsigned certificate request for a bare ML-KEM
+ * SubjectPublicKeyInfo. ML-KEM keys cannot sign a request, so the caller is
+ * responsible for establishing possession of the private key. */
+static CERTCertificateRequest *
+MakeCertRequestFromKEMSPKI(const SECItem *spkiDER, CERTName *subject)
+{
+    CERTSubjectPublicKeyInfo *spki;
+    SECKEYPublicKey *pubk;
+    CERTCertificateRequest *certReq;
+
+    spki = SECKEY_DecodeDERSubjectPublicKeyInfo(spkiDER);
+    if (!spki) {
+        SECU_PrintError(progName, "unable to decode subject public key");
+        return NULL;
+    }
+    pubk = SECKEY_ExtractPublicKey(spki);
+    if (!pubk || pubk->keyType != kyberKey) {
+        PR_fprintf(PR_STDERR, "%s: --kem-pubkey requires an ML-KEM key\n",
+                   progName);
+        SECKEY_DestroyPublicKey(pubk);
+        SECKEY_DestroySubjectPublicKeyInfo(spki);
+        return NULL;
+    }
+    SECKEY_DestroyPublicKey(pubk);
+
+    certReq = CERT_CreateCertificateRequest(subject, spki, NULL);
+    SECKEY_DestroySubjectPublicKeyInfo(spki);
+    if (!certReq) {
+        SECU_PrintError(progName, "unable to make certificate request");
+    }
+    return certReq;
+}
+
+static SECStatus
+WritePublicKeyInfo(PRFileDesc *outFile, SECKEYPublicKey *pubk, PRBool ascii)
+{
+    SECItem *spkiDER;
+    SECStatus rv = SECFailure;
+
+    spkiDER = SECKEY_EncodeDERSubjectPublicKeyInfo(pubk);
+    if (!spkiDER) {
+        SECU_PrintError(progName, "unable to encode subject public key");
+        return SECFailure;
+    }
+    if (ascii) {
+        char *obuf = BTOA_ConvertItemToAscii(spkiDER);
+        if (obuf) {
+            if (PR_fprintf(outFile, "-----BEGIN PUBLIC KEY-----\n%s\n"
+                                    "-----END PUBLIC KEY-----\n",
+                           obuf) != (PRUint32)-1) {
+                rv = SECSuccess;
+            }
+            PORT_Free(obuf);
+        }
+    } else {
+        PRInt32 written = PR_Write(outFile, spkiDER->data, spkiDER->len);
+        if (written >= 0 && (PRUint32)written == spkiDER->len) {
+            rv = SECSuccess;
+        }
+    }
+    SECITEM_FreeItem(spkiDER, PR_TRUE);
+    if (rv != SECSuccess) {
+        SECU_PrintError(progName, "unable to write subject public key");
+    }
+    return rv;
+}
+
 static SECStatus
 AddCert(PK11SlotInfo *slot, CERTCertDBHandle *handle, char *name, char *trusts,
         const SECItem *certDER, PRBool emailcert, void *pwdata)
@@ -1145,6 +1212,9 @@ PrintSyntax()
         "\t\t [-6 | --extKeyUsage [extKeyUsageKeyword,...]] [-7 emailAddrs]\n"
         "\t\t [-8 dns-names] [-a]\n",
         progName);
+    FPS "\t%s -C -c issuer-name --kem-pubkey spki-file -s subject -o cert-file\n"
+        "\t\t [other -C options]\n",
+        progName);
     FPS "\t%s -D -n cert-name [-d certdir] [-P dbprefix]\n", progName);
     FPS "\t%s --rename -n cert-name --new-n new-cert-name\n"
         "\t\t [-d certdir] [-P dbprefix]\n", progName);
@@ -1164,7 +1234,9 @@ PrintSyntax()
         "\t\t [-z noisefile] [-d certdir] [-P dbprefix]\n", progName);
     FPS "\t%s -G [-h token-name] -k mldsa -q paramset [-f pwfile]\n"
         "\t\t [-z noisefile] [-d certdir] [-P dbprefix]\n", progName);
-    FPS "\t%s -K [-n key-name] [-h token-name] [-k dsa|ec|ed|rsa|mldsa|all]\n",
+    FPS "\t%s -G [-h token-name] -k mlkem -q paramset [-o spki-file] [-a]\n"
+        "\t\t [-f pwfile] [-z noisefile] [-d certdir] [-P dbprefix]\n", progName);
+    FPS "\t%s -K [-n key-name] [-h token-name] [-k dsa|ec|ed|rsa|mldsa|mlkem|all]\n",
          progName);
     FPS "\t\t [-f pwfile] [-X] [-d certdir] [-P dbprefix]\n");
     FPS "\t%s --upgrade-merge --source-dir upgradeDir --upgrade-id uniqueID\n",
@@ -1296,6 +1368,13 @@ luC(enum usage_level ul, const char *command)
         "   -c issuer-name");
     FPS "%-20s The BINARY certificate request file\n",
         "   -i cert-request ");
+    FPS "%-20s Instead of a cert request, issue the certificate for the\n"
+        "%-20s ML-KEM SubjectPublicKeyInfo in this file (see -G -o).\n"
+        "%-20s Requires -s.\n"
+        "%-20s No proof of possession of the private key is checked.\n",
+        "   --kem-pubkey spki-file", "", "", "");
+    FPS "%-20s Subject name for the certificate (with --kem-pubkey only)\n",
+        "   -s subject");
     FPS "%-20s Output binary cert to this file (default is stdout)\n",
         "   -o output-cert");
     FPS "%-20s Self sign\n",
@@ -1365,8 +1444,13 @@ luG(enum usage_level ul, const char *command)
         return;
     FPS "%-20s Name of token in which to generate key (default is internal)\n",
         "   -h token-name");
-    FPS "%-20s Type of key pair to generate (\"dsa\", \"ec\", \"rsa\" (default))\n",
-        "   -k key-type");
+    FPS "%-20s Type of key pair to generate (\"dsa\", \"ec\", \"ed\",\n"
+        "%-20s \"mldsa\", \"mlkem\", \"rsa\" (default))\n",
+        "   -k key-type", "");
+    FPS "%-20s Write the SubjectPublicKeyInfo of the new key to this file\n",
+        "   -o spki-file");
+    FPS "%-20s Write the SubjectPublicKeyInfo in PEM format\n",
+        "   -a");
     FPS "%-20s Key size in bits, (min %d, max %d, default %d) (not for ec)\n",
         "   -g key-size", MIN_KEY_BITS, MAX_KEY_BITS, DEFAULT_KEY_BITS);
     FPS "%-20s Set the public exponent value (3, 17, 65537) (rsa only)\n",
@@ -1404,6 +1488,9 @@ luG(enum usage_level ul, const char *command)
     FPS "%-20s ML-DSA parameter set (mldsa only)\n",
         "   -q paramset");
     FPS "%-20s valid values are ml-dsa-44,  ml-dsa-65, ml-dsa-87:\n", "");
+    FPS "%-20s ML-KEM parameter set (mlkem only)\n",
+        "   -q paramset");
+    FPS "%-20s valid values are ml-kem-512,  ml-kem-768, ml-kem-1024:\n", "");
     FPS "%-20s Key database directory (default is ~/.netscape)\n",
         "   -d keydir");
     FPS "%-20s Cert & Key database prefix\n",
@@ -1498,6 +1585,7 @@ luK(enum usage_level ul, const char *command)
                                                     " \"ec\","
                                                     " \"ed\","
                                                     " \"mldsa\","
+                                                    " \"mlkem\","
                                                     " \"rsa\")\n",
         "   -k key-type");
     FPS "%-20s The nickname of the key or associated certificate\n",
@@ -1663,6 +1751,10 @@ luR(enum usage_level ul, const char *command)
     FPS "%-20s See the \"-G\" option for a full list of supported names.\n",
         "");
     FPS "%-20s ML-DSA parameter set (mldsa only)\n",
+        "   -q paramset");
+    FPS "%-20s See the \"-G\" option for a full list of supported names.\n",
+        "");
+    FPS "%-20s ML-KEM parameter set (mlkem only)\n",
         "   -q paramset");
     FPS "%-20s See the \"-G\" option for a full list of supported names.\n",
         "");
@@ -1851,6 +1943,10 @@ luS(enum usage_level ul, const char *command)
     FPS "%-20s See the \"-G\" option for a full list of supported names.\n",
         "");
     FPS "%-20s ML-DSA parameter set (mldsa only)\n",
+        "   -q paramset");
+    FPS "%-20s See the \"-G\" option for a full list of supported names.\n",
+        "");
+    FPS "%-20s ML-KEM parameter set (mlkem only)\n",
         "   -q paramset");
     FPS "%-20s See the \"-G\" option for a full list of supported names.\n",
         "");
@@ -2165,6 +2261,7 @@ CreateCert(
     PK11SlotInfo *slot,
     char *issuerNickName,
     const SECItem *certReqDER,
+    CERTName *spkiSubject,
     SECKEYPrivateKey **selfsignprivkey,
     void *pwarg,
     SECOidTag hashAlgTag,
@@ -2188,8 +2285,13 @@ CreateCert(
     CERTCertExtension **CRexts;
 
     do {
-        /* Create a certrequest object from the input cert request der */
-        certReq = GetCertRequest(certReqDER, pwarg);
+        /* Create a certrequest object from the input cert request der, or,
+         * if a subject was given, from a bare SubjectPublicKeyInfo. */
+        if (spkiSubject) {
+            certReq = MakeCertRequestFromKEMSPKI(certReqDER, spkiSubject);
+        } else {
+            certReq = GetCertRequest(certReqDER, pwarg);
+        }
         if (certReq == NULL) {
             GEN_BREAK(SECFailure)
         }
@@ -2562,6 +2664,7 @@ enum certutilOpts {
     opt_Pss,
     opt_PssSign,
     opt_SimpleSelfSigned,
+    opt_KEMPubKey,
     opt_Help
 };
 
@@ -2686,6 +2789,8 @@ static const secuCommandFlag options_init[] = {
       "pss-sign" },
     { /* opt_SimpleSelfSigned    */ 0, PR_FALSE, 0, PR_FALSE,
       "simple-self-signed" },
+    { /* opt_KEMPubKey           */ 0, PR_TRUE, 0, PR_FALSE,
+      "kem-pubkey" },
 };
 #define NUM_OPTIONS ((sizeof options_init) / (sizeof options_init[0]))
 
@@ -2820,6 +2925,8 @@ certutil_main(int argc, char **argv, PRBool initialize)
             keytype = edKey;
         } else if (PL_strcmp(arg, "mldsa") == 0) {
             keytype = mldsaKey;
+        } else if (PL_strcmp(arg, "mlkem") == 0) {
+            keytype = kyberKey;
         } else if (PL_strcmp(arg, "all") == 0) {
             keytype = nullKey;
         } else {
@@ -2832,9 +2939,7 @@ certutil_main(int argc, char **argv, PRBool initialize)
 
     if (certutil.options[opt_KeySize].activated) {
         keysize = PORT_Atoi(certutil.options[opt_KeySize].arg);
-        /* mldsa limits are much different that rsa and dsa, don't
-         * do the check here */
-        if ((keytype != mldsaKey) &&
+        if ((keytype == rsaKey || keytype == dsaKey) &&
             ((keysize < MIN_KEY_BITS) || (keysize > MAX_KEY_BITS))) {
             PR_fprintf(PR_STDERR,
                        "%s -g:  Keysize must be between %d and %d.\n",
@@ -2843,6 +2948,11 @@ certutil_main(int argc, char **argv, PRBool initialize)
         }
         if (keytype == ecKey) {
             PR_fprintf(PR_STDERR, "%s -g:  Not for ec keys.\n", progName);
+            return 255;
+        }
+        if (keytype == kyberKey) {
+            PR_fprintf(PR_STDERR,
+                       "%s -g:  Not for mlkem keys, use -q.\n", progName);
             return 255;
         }
     }
@@ -2909,11 +3019,12 @@ certutil_main(int argc, char **argv, PRBool initialize)
     /*  -q PQG file or curve name */
     if (certutil.options[opt_PQGFile].activated) {
         if ((keytype != dsaKey) && (keytype != ecKey) && (keytype != edKey) &&
-            (keytype != mldsaKey)) {
+            (keytype != mldsaKey) && (keytype != kyberKey)) {
             PR_fprintf(PR_STDERR, "%s -q: specifies a PQG file for DSA keys"
                                   " (-k dsa)\n"
                                   " or a named curve for EC and ED keys (-k ec, ed)\n"
-                                  " or a parameter set for ML-DSA keys (-k mldsa)\n",
+                                  " or a parameter set for ML-DSA keys (-k mldsa)\n"
+                                  " or a parameter set for ML-KEM keys (-k mlkem)\n",
                        progName);
             return 255;
         }
@@ -3134,6 +3245,26 @@ certutil_main(int argc, char **argv, PRBool initialize)
         return 255;
     }
 
+    /*  --kem-pubkey replaces the cert request of -C, so it needs a subject and
+     *  an issuer: there is no private key to self-sign with. */
+    if (certutil.options[opt_KEMPubKey].activated) {
+        if (!certutil.commands[cmd_CreateNewCert].activated) {
+            PR_fprintf(PR_STDERR,
+                       "%s -%c: --kem-pubkey only works with -C.\n",
+                       progName, commandToRun);
+            return 255;
+        }
+        if (!subject || !certutil.options[opt_IssuerName].activated ||
+            certutil.options[opt_SelfSign].activated ||
+            certutil.options[opt_InputFile].activated) {
+            PR_fprintf(PR_STDERR,
+                       "%s -C: --kem-pubkey requires a subject (-s) and an issuer (-c),\n"
+                       "   and cannot be used with -x or -i.\n",
+                       progName);
+            return 255;
+        }
+    }
+
     /*  Using slotname == NULL for listing keys and certs on all slots,
      *  but only that. */
     if (!(certutil.commands[cmd_ListKeys].activated ||
@@ -3155,12 +3286,16 @@ certutil_main(int argc, char **argv, PRBool initialize)
     }
 
     /*  Open the input file.  */
-    if (certutil.options[opt_InputFile].activated) {
-        inFile = PR_Open(certutil.options[opt_InputFile].arg, PR_RDONLY, 0);
+    if (certutil.options[opt_InputFile].activated ||
+        certutil.options[opt_KEMPubKey].activated) {
+        const char *inFileName = certutil.options[opt_KEMPubKey].activated
+                                     ? certutil.options[opt_KEMPubKey].arg
+                                     : certutil.options[opt_InputFile].arg;
+        inFile = PR_Open(inFileName, PR_RDONLY, 0);
         if (!inFile) {
             PR_fprintf(PR_STDERR,
                        "%s:  unable to open \"%s\" for reading (%ld, %ld).\n",
-                       progName, certutil.options[opt_InputFile].arg,
+                       progName, inFileName,
                        PR_GetError(), PR_GetOSError());
             return 255;
         }
@@ -3616,6 +3751,10 @@ certutil_main(int argc, char **argv, PRBool initialize)
         /*  If all that was needed was keygen, exit.  */
         if (certutil.commands[cmd_GenKeyPair].activated) {
             rv = SECSuccess;
+            if (certutil.options[opt_OutputFile].activated) {
+                rv = WritePublicKeyInfo(outFile, pubkey,
+                                        certutil.options[opt_ASCIIForIO].activated);
+            }
             goto shutdown;
         }
     }
@@ -3789,7 +3928,9 @@ certutil_main(int argc, char **argv, PRBool initialize)
         certutil.commands[cmd_CreateNewCert].activated) {
         rv = CreateCert(certHandle, slot,
                         certutil.options[opt_IssuerName].arg,
-                        &certReqDER, &privkey, &pwdata, hashAlgTag,
+                        &certReqDER,
+                        certutil.options[opt_KEMPubKey].activated ? subject : NULL,
+                        &privkey, &pwdata, hashAlgTag,
                         serialNumber, warpmonths, validityMonths,
                         certutil.options[opt_ExtendedEmailAddrs].arg,
                         certutil.options[opt_ExtendedDNSNames].arg,

@@ -538,6 +538,54 @@ TEST_P(TlsKeyExchangeTest13, MultipleClientShares) {
   CheckKEXDetails(client_groups, shares);
 }
 
+// Resetting a client after it has sent a ClientHello must not carry the old
+// key shares into the next ClientHello.
+TEST_P(TlsKeyExchangeTest13, ResetHandshakeAfterClientHello) {
+  if (variant_ == ssl_variant_datagram) {
+    GTEST_SKIP() << "DTLS reset after ClientHello is fixed separately";
+  }
+  EnsureKeyShareSetup();
+  const std::vector<SSLNamedGroup> groups = {ssl_grp_ec_curve25519};
+  ConfigNamedGroups(groups);
+
+  client_->StartConnect();
+  client_->Handshake();
+  ASSERT_TRUE(shares_capture_->captured());
+  EXPECT_EQ(groups, GetShareDetails(shares_capture_));
+
+  EXPECT_EQ(SECSuccess, SSL_ResetHandshake(client_->ssl_fd(), PR_FALSE));
+  // SSL_ForceHandshake doesn't restart the handshake here, but a read does.
+  uint8_t buf[1];
+  EXPECT_GT(0, PR_Read(client_->ssl_fd(), buf, sizeof(buf)));
+  EXPECT_EQ(PR_WOULD_BLOCK_ERROR, PORT_GetError());
+
+  EXPECT_EQ(groups, GetShareDetails(shares_capture2_));
+  EXPECT_NE(shares_capture_->extension(), shares_capture2_->extension());
+}
+
+// A client imported from a model that has already sent a ClientHello must
+// generate its own key shares.
+TEST_P(TlsKeyExchangeTest13, ImportFromModelAfterClientHello) {
+  EnsureKeyShareSetup();
+  const std::vector<SSLNamedGroup> groups = {ssl_grp_ec_curve25519};
+  ConfigNamedGroups(groups);
+
+  client_->StartConnect();
+  client_->Handshake();
+  ASSERT_TRUE(shares_capture_->captured());
+  DataBuffer first_shares = shares_capture_->extension();
+
+  auto model = client_;
+  Reset();
+  ASSERT_TRUE(client_->EnsureTlsSetup(model->ssl_fd().get()));
+  EnsureKeyShareSetup();
+  server_->ConfigNamedGroups(groups);
+
+  Connect();
+  EXPECT_EQ(groups, GetShareDetails(shares_capture_));
+  EXPECT_NE(first_shares, shares_capture_->extension());
+}
+
 // Replace the point in the client key exchange message with an empty one
 class ECCClientKEXFilter : public TlsHandshakeFilter {
  public:

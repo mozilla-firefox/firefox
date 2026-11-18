@@ -200,6 +200,7 @@ SSL_ResetHandshake(PRFileDesc *s, PRBool asServer)
     ssl3_DestroyRemoteExtensions(&ss->ssl3.hs.echOuterExtensions);
     ssl3_ResetExtensionData(&ss->xtnData, ss);
     tls13_ResetHandshakePsks(ss, &ss->ssl3.hs.psks);
+    ssl_FreeEphemeralKeyPairs(ss);
 
     if (ss->ssl3.hs.echHpkeCtx) {
         PK11_HPKE_DestroyContext(ss->ssl3.hs.echHpkeCtx, PR_TRUE);

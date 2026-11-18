@@ -98,6 +98,12 @@ class SoftokenTest : public ::testing::Test {
   ScopedUniqueDirectory mNSSDBDir;
 };
 
+TEST_F(SoftokenTest, CheckKeySlotIsReadWrite) {
+  ScopedPK11SlotInfo keySlot(PK11_GetInternalKeySlot());
+  ASSERT_TRUE(keySlot);
+  ASSERT_FALSE(PK11_IsReadOnly(keySlot.get()));
+}
+
 TEST_F(SoftokenTest, CheckDefaultPbkdf2Iterations) {
   ScopedPK11SlotInfo slot(PK11_GetInternalKeySlot());
   ASSERT_TRUE(slot);
@@ -690,6 +696,100 @@ TEST_F(SoftokenTest, CreateObjectChangeToEmptyPassword) {
   EXPECT_NE(nullptr, obj);
 }
 
+// GLOB of the signature row of |type| of the cert DB object.
+static std::string sig_glob(CK_ATTRIBUTE_TYPE type) {
+  char glob[32];
+  snprintf(glob, sizeof(glob), "sig_cert_*_%08x", (unsigned int)type);
+  return glob;
+}
+
+// Runs |sql| on key4.db, ?1 and ?2 bound to the signature GLOBs of
+// CKA_TRUST_SERVER_AUTH and CKA_TRUST_EMAIL_PROTECTION.
+static void ExecOnKeyDB(const std::string& db_dir, const char* sql,
+                        int* changes, std::string* item1 = nullptr) {
+  std::string key_db = db_dir + "/key4.db";
+  std::string broken = sig_glob(CKA_TRUST_SERVER_AUTH);
+  std::string intact = sig_glob(CKA_TRUST_EMAIL_PROTECTION);
+  sqlite3* sql_db = NULL;
+  ASSERT_EQ(SQLITE_OK, sqlite3_open(key_db.c_str(), &sql_db));
+  sqlite3_stmt* statement = NULL;
+  int rv = sqlite3_prepare_v2(sql_db, sql, -1, &statement, NULL);
+  if (rv == SQLITE_OK) {
+    sqlite3_bind_text(statement, 1, broken.c_str(), -1, SQLITE_STATIC);
+    if (sqlite3_bind_parameter_count(statement) > 1) {
+      sqlite3_bind_text(statement, 2, intact.c_str(), -1, SQLITE_STATIC);
+    }
+    rv = sqlite3_step(statement);
+    if (rv == SQLITE_ROW && item1) {
+      item1->assign((const char*)sqlite3_column_blob(statement, 0),
+                    sqlite3_column_bytes(statement, 0));
+      rv = SQLITE_DONE;
+    }
+  }
+  *changes = sqlite3_changes(sql_db);
+  sqlite3_finalize(statement);
+  sqlite3_close(sql_db);
+  ASSERT_EQ(SQLITE_DONE, rv);
+}
+
+// Breaks the CKA_TRUST_SERVER_AUTH MAC with |break_mac_sql|, then changes the
+// password. A missing or non-matching MAC (bug 1592984) must neither fail the
+// change nor be re-signed; any other must fail it and leave all as it was.
+static void ChangePasswordWithBrokenTrustMac(const std::string& db_dir,
+                                             const char* break_mac_sql,
+                                             bool expect_success) {
+  ScopedPK11SlotInfo slot(PK11_GetInternalKeySlot());
+  ASSERT_TRUE(slot);
+  EXPECT_EQ(SECSuccess, PK11_InitPin(slot.get(), nullptr, kPassword));
+  ScopedPK11GenericObject obj(PK11_CreateGenericObject(
+      slot.get(), attributes, PR_ARRAY_SIZE(attributes), true));
+  ASSERT_NE(nullptr, obj);
+
+  const char* select_sql = "SELECT item1 FROM metaData WHERE id GLOB ?1;";
+  int changes = 0;
+  ASSERT_NO_FATAL_FAILURE(ExecOnKeyDB(db_dir, break_mac_sql, &changes));
+  ASSERT_EQ(1, changes);
+  std::string before, after;
+  ASSERT_NO_FATAL_FAILURE(ExecOnKeyDB(db_dir, select_sql, &changes, &before));
+
+  EXPECT_EQ(expect_success ? SECSuccess : SECFailure,
+            PK11_ChangePW(slot.get(), kPassword, kPassword2));
+  ASSERT_NO_FATAL_FAILURE(ExecOnKeyDB(db_dir, select_sql, &changes, &after));
+  EXPECT_EQ(before, after);
+  SECItem item = {siBuffer, NULL, 0};
+  EXPECT_EQ(SECFailure, PK11_ReadRawAttribute(PK11_TypeGeneric, obj.get(),
+                                              CKA_TRUST_SERVER_AUTH, &item));
+  SECITEM_FreeItem(&item, PR_FALSE);
+  EXPECT_EQ(SECSuccess,
+            PK11_ReadRawAttribute(PK11_TypeGeneric, obj.get(),
+                                  CKA_TRUST_EMAIL_PROTECTION, &item));
+  SECITEM_FreeItem(&item, PR_FALSE);
+  if (expect_success) {
+    EXPECT_EQ(SECSuccess, PK11_ChangePW(slot.get(), kPassword2, kNewPassword));
+  }
+}
+
+TEST_F(SoftokenTest, ChangePasswordWithMissingTrustMac) {
+  ChangePasswordWithBrokenTrustMac(
+      mNSSDBDir.GetPath(), "DELETE FROM metaData WHERE id GLOB ?1;", true);
+}
+
+TEST_F(SoftokenTest, ChangePasswordWithWrongTrustMac) {
+  // Well-formed, but made for another attribute.
+  ChangePasswordWithBrokenTrustMac(
+      mNSSDBDir.GetPath(),
+      "UPDATE metaData SET item1 = (SELECT item1 FROM metaData WHERE id GLOB "
+      "?2) WHERE id GLOB ?1;",
+      true);
+}
+
+// Might come from a newer NSS, so it must not be skipped.
+TEST_F(SoftokenTest, ChangePasswordWithUndecodableTrustMac) {
+  ChangePasswordWithBrokenTrustMac(
+      mNSSDBDir.GetPath(),
+      "UPDATE metaData SET item1 = x'00' WHERE id GLOB ?1;", false);
+}
+
 // We should be able to read CRLF, LF and CR.
 // During the Initialization of the NSS Database, is called a function to load
 // PKCS11 modules defined in pkcs11.txt. This file is read to get the
@@ -909,6 +1009,16 @@ TEST_F(SoftokenNoDBTest, NeedUserInitNoDB) {
   ASSERT_EQ(SECSuccess, NSS_Shutdown());
 }
 
+TEST_F(SoftokenNoDBTest, NeedUserInitNoDBAfterRestart) {
+  ASSERT_EQ(SECSuccess, NSS_NoDB_Init("."));
+  ScopedPK11SlotInfo slot(PK11_GetInternalKeySlot());
+  ASSERT_TRUE(slot);
+  ASSERT_EQ(SECSuccess, SECMOD_RestartModules(PR_TRUE));
+  EXPECT_EQ(PR_FALSE, PK11_NeedUserInit(slot.get()));
+  slot = nullptr;
+  ASSERT_EQ(SECSuccess, NSS_Shutdown());
+}
+
 SECStatus test_dh_value(const PQGParams* params, const SECItem* pub_key_value,
                         PRBool genFailOK, time_t* time) {
   SECKEYDHParams dh_params;
@@ -1112,6 +1222,46 @@ TEST_P(SoftokenDhValidate, DhVectors) {
 
 INSTANTIATE_TEST_SUITE_P(DhValidateCases, SoftokenDhValidate,
                          ::testing::ValuesIn(DH_TEST_VECTORS));
+
+class SoftokenReadOnlyTest : public ::testing::Test {
+ protected:
+  SoftokenReadOnlyTest() : mNSSDBDir("SoftokenReadOnlyTest.d-") {}
+  SoftokenReadOnlyTest(const std::string& prefix) : mNSSDBDir(prefix) {}
+
+  virtual void SetUp() {
+    std::string nssInitArg("sql:");
+    nssInitArg.append(mNSSDBDir.GetUTF8Path());
+    // First initialize in read-write mode to create the databases.
+    ASSERT_EQ(SECSuccess, NSS_Initialize(nssInitArg.c_str(), "", "", SECMOD_DB,
+                                         NSS_INIT_NOROOTINIT));
+    // Shut down and re-initialize in read-only mode.
+    ASSERT_EQ(SECSuccess, NSS_Shutdown());
+    ASSERT_EQ(SECSuccess,
+              NSS_Initialize(nssInitArg.c_str(), "", "", SECMOD_DB,
+                             NSS_INIT_NOROOTINIT | NSS_INIT_READONLY));
+  }
+
+  virtual void TearDown() {
+    ASSERT_EQ(SECSuccess, NSS_Shutdown());
+    const std::string& nssDBDirPath = mNSSDBDir.GetPath();
+    ASSERT_EQ(0, unlink((nssDBDirPath + "/cert9.db").c_str()));
+    ASSERT_EQ(0, unlink((nssDBDirPath + "/key4.db").c_str()));
+    ASSERT_EQ(0, unlink((nssDBDirPath + "/pkcs11.txt").c_str()));
+  }
+
+  ScopedUniqueDirectory mNSSDBDir;
+};
+
+TEST_F(SoftokenReadOnlyTest, CheckKeySlotIsReadOnly) {
+  ScopedPK11SlotInfo keySlot(PK11_GetInternalKeySlot());
+  ASSERT_TRUE(keySlot);
+  ASSERT_TRUE(PK11_IsReadOnly(keySlot.get()));
+
+  // PK11_InitPin needs a read-write session, so it attempts to open one. This
+  // should fail with an error indicating the token is read-only.
+  EXPECT_EQ(SECFailure, PK11_InitPin(keySlot.get(), nullptr, kPassword));
+  EXPECT_EQ(SEC_ERROR_READ_ONLY, PORT_GetError());
+}
 
 #ifndef NSS_FIPS_DISABLED
 

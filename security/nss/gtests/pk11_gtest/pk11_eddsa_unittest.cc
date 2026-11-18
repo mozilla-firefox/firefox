@@ -3,6 +3,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <memory>
+#include <vector>
 #include "nss.h"
 #include "pk11pub.h"
 #include "sechash.h"
@@ -81,6 +82,55 @@ TEST_P(Pkcs11EddsaTest, EmptySignature) {
 
 INSTANTIATE_TEST_SUITE_P(EddsaSignVerify, Pkcs11EddsaTest,
                          ::testing::ValuesIn(kEddsaVectors));
+
+class Pkcs11EddsaImportTest : public Pk11SignatureTest,
+                              public ::testing::WithParamInterface<uint8_t> {
+ protected:
+  Pkcs11EddsaImportTest() : Pk11SignatureTest(CKM_EDDSA) {}
+};
+
+TEST_P(Pkcs11EddsaImportTest, ImportPkcs8WrongLenPrivateKey) {
+  // PrivateKeyInfo for an all-zero Ed25519 key of L = GetParam() bytes:
+  //   30 <14+L>  02 01 00  30 05 06 03 2b 65 70  04 <2+L>  04 <L>  <key>
+  // All three lengths are set so the DER stays valid and only the key length
+  // check can reject it.
+  uint8_t pkcs8[49] = {0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06,
+                       0x03, 0x2b, 0x65, 0x70, 0x04, 0x22, 0x04, 0x20};
+  pkcs8[1] = 14 + GetParam();
+  pkcs8[13] = 2 + GetParam();
+  pkcs8[15] = GetParam();
+  DataBuffer privateKeyPkcs8(pkcs8, 16 + GetParam());
+  EXPECT_FALSE(ImportPrivateKey(privateKeyPkcs8));
+
+  uint8_t pub[32] = {1};
+  SECItem pubItem = {siBuffer, pub, sizeof(pub)};
+  EXPECT_FALSE(ImportEncryptedPrivateKey(privateKeyPkcs8, &pubItem));
+}
+
+TEST_P(Pkcs11EddsaImportTest, CreateWrongLenPrivateKey) {
+  if (PK11_IsFIPS()) {
+    GTEST_SKIP() << "FIPS tokens take no raw private key templates";
+  }
+  ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
+  ASSERT_TRUE(slot);
+  CK_OBJECT_CLASS keyClass = CKO_PRIVATE_KEY;
+  CK_KEY_TYPE keyType = CKK_EC_EDWARDS;
+  CK_BBOOL ckfalse = CK_FALSE;
+  uint8_t params[] = {0x06, 0x03, 0x2b, 0x65, 0x70};
+  std::vector<uint8_t> value(GetParam(), 0x42);
+  CK_ATTRIBUTE templ[] = {
+      {CKA_CLASS, &keyClass, sizeof(keyClass)},
+      {CKA_KEY_TYPE, &keyType, sizeof(keyType)},
+      {CKA_TOKEN, &ckfalse, sizeof(ckfalse)},
+      {CKA_EC_PARAMS, params, sizeof(params)},
+      {CKA_VALUE, value.data(), static_cast<CK_ULONG>(value.size())}};
+  ScopedSECKEYPrivateKey key(PK11_CreatePrivateKeyFromTemplate(
+      slot.get(), templ, PR_ARRAY_SIZE(templ), nullptr));
+  EXPECT_FALSE(key);
+}
+
+INSTANTIATE_TEST_SUITE_P(EddsaImport, Pkcs11EddsaImportTest,
+                         ::testing::Values(31, 33));
 
 class Pkcs11EddsaRoundtripTest
     : public Pk11SignatureTest,

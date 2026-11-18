@@ -366,18 +366,10 @@ ssl_CopySocketConfig(sslSocket *dst, sslSocket *src, PRBool replaceCallbacks)
             PR_APPEND_LINK(&sc->link, &dst->serverCerts);
         }
 
-        /* Ephemeral key pairs (free old, deep-copy new). */
-        ssl_FreeEphemeralKeyPairs(dst);
-        for (cursor = PR_NEXT_LINK(&src->ephemeralKeyPairs);
-             cursor != &src->ephemeralKeyPairs;
-             cursor = PR_NEXT_LINK(cursor)) {
-            sslEphemeralKeyPair *skp = ssl_CopyEphemeralKeyPair(
-                (sslEphemeralKeyPair *)cursor);
-            if (!skp) {
-                return SECFailure;
-            }
-            PR_APPEND_LINK(&skp->link, &dst->ephemeralKeyPairs);
-        }
+        /* Ephemeral key pairs are not copied from the model. A ClientHello
+         * would offer them alongside freshly generated ones, and RFC 9846,
+         * Section 4.3.8 forbids both duplicate groups and key share reuse
+         * across connections. */
 
         /* Extension hooks (free old, deep-copy new). */
         while (!PR_CLIST_IS_EMPTY(&dst->extensionHooks)) {

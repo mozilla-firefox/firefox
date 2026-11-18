@@ -78,7 +78,11 @@ class ScopedUniqueDirectory {
   }
 
   // NB: the directory must be empty upon destruction
-  ~ScopedUniqueDirectory() { assert(rmdir(mPath.c_str()) == 0); }
+  ~ScopedUniqueDirectory() {
+    int rv = rmdir(mPath.c_str());
+    assert(rv == 0);
+    (void)rv;
+  }
 
   const std::string& GetPath() { return mPath; }
   const std::string& GetUTF8Path() { return mUTF8Path; }

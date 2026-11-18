@@ -597,6 +597,12 @@ PK11_TraverseSlotCerts(SECStatus (*callback)(CERTCertificate *, SECItem *, void 
 }
 
 static void
+cert_destructor(void *el)
+{
+    (void)nssCertificate_Destroy((NSSCertificate *)el);
+}
+
+static void
 transfer_token_certs_to_collection(nssList *certList, NSSToken *token,
                                    nssPKIObjectCollection *collection)
 {
@@ -623,7 +629,6 @@ transfer_token_certs_to_collection(nssList *certList, NSSToken *token,
             }
             nssTokenArray_Destroy(tokens);
         }
-        CERT_DestroyCertificate(STAN_GetCERTCertificateOrRelease(certs[i]));
     }
     nss_ZFreeIf(certs);
 }
@@ -656,7 +661,6 @@ transfer_uri_certs_to_collection(nssList *certList, PK11URI *uri,
          */
         if (id && (id->len != certs[i]->id.size ||
                    memcmp(id->data, certs[i]->id.data, certs[i]->id.size))) {
-            CERT_DestroyCertificate(STAN_GetCERTCertificateOrRelease(certs[i]));
             continue;
         }
         tokens = nssPKIObject_GetTokens(&certs[i]->object, NULL);
@@ -703,7 +707,6 @@ transfer_uri_certs_to_collection(nssList *certList, PK11URI *uri,
             }
             nssTokenArray_Destroy(tokens);
         }
-        CERT_DestroyCertificate(STAN_GetCERTCertificateOrRelease(certs[i]));
     }
     nss_ZFreeIf(certs);
 }
@@ -758,6 +761,7 @@ find_certs_from_uri(const char *uriString, void *wincx)
     }
 
     transfer_uri_certs_to_collection(certList, uri, collection);
+    nssList_Clear(certList, cert_destructor);
 
     /* add the CKA_CLASS and CKA_TOKEN attributes manually */
     attributes[nattributes].type = CKA_CLASS;
@@ -942,6 +946,7 @@ find_certs_from_nickname(const char *nickname, void *wincx)
                                                           nickname,
                                                           certList);
         transfer_token_certs_to_collection(certList, token, collection);
+        nssList_Clear(certList, cert_destructor);
         instances = nssToken_FindCertificatesByNickname(token,
                                                         NULL,
                                                         nickname,
@@ -959,6 +964,7 @@ find_certs_from_nickname(const char *nickname, void *wincx)
                                                                       lowercaseName,
                                                                       certList);
                 transfer_token_certs_to_collection(certList, token, collection);
+                nssList_Clear(certList, cert_destructor);
                 instances = nssToken_FindCertificatesByEmail(token,
                                                              NULL,
                                                              lowercaseName,
@@ -2202,6 +2208,7 @@ PK11_TraverseCertsForSubjectInSlot(CERTCertificate *cert, PK11SlotInfo *slot,
     (void)nssTrustDomain_GetCertsForSubjectFromCache(td, &subject,
                                                      subjectList);
     transfer_token_certs_to_collection(subjectList, token, collection);
+    nssList_Clear(subjectList, cert_destructor);
     instances = nssToken_FindCertificatesBySubject(token, NULL,
                                                    &subject,
                                                    tokenOnly, 0, &nssrv);
@@ -2276,6 +2283,7 @@ PK11_TraverseCertsForNicknameInSlot(SECItem *nickname, PK11SlotInfo *slot,
     }
     (void)nssTrustDomain_GetCertsForNicknameFromCache(td, nick, nameList);
     transfer_token_certs_to_collection(nameList, token, collection);
+    nssList_Clear(nameList, cert_destructor);
     instances = nssToken_FindCertificatesByNickname(token, NULL,
                                                     nick,
                                                     tokenOnly, 0, &nssrv);
@@ -2351,6 +2359,7 @@ PK11_TraverseCertsInSlot(PK11SlotInfo *slot,
     }
     (void)nssTrustDomain_GetCertsFromCache(td, certList);
     transfer_token_certs_to_collection(certList, tok, collection);
+    nssList_Clear(certList, cert_destructor);
     instances = nssToken_FindObjects(tok, NULL, CKO_CERTIFICATE,
                                      tokenOnly, 0, &nssrv);
     nssPKIObjectCollection_AddInstances(collection, instances, 0);

@@ -112,12 +112,13 @@ struct sidCacheEntryStr {
             /*  4 */ PRInt32 certIndex;
             /*  4 */ PRInt32 srvNameIndex;
             /* 32 */ PRUint8 srvNameHash[SHA256_LENGTH]; /* SHA256 name hash */
+            /* 32 */ PRUint8 certHash[SHA256_LENGTH];    /* SHA256 cert hash */
             /*  2 */ PRUint16 namedCurve;
-        /*100 */ } ssl3;
+        /*132 */ } ssl3;
 
         /* force sizeof(sidCacheEntry) to be a multiple of cache line size */
         struct {
-            /*116 */ PRUint8 filler[116]; /* 92+116==208, a multiple of 16 */
+            /*148 */ PRUint8 filler[148]; /* 92+148==240, a multiple of 16 */
         } forceSize;
     } u;
 };
@@ -125,12 +126,14 @@ typedef struct sidCacheEntryStr sidCacheEntry;
 
 /* The length of this struct is supposed to be a power of 2, e.g. 4KB */
 struct certCacheEntryStr {
-    PRUint16 certLength;                     /*    2 */
-    PRUint16 sessionIDLength;                /*    2 */
-    PRUint8 sessionID[SSL3_SESSIONID_BYTES]; /*   32 */
-    PRUint8 cert[SSL_MAX_CACHED_CERT_LEN];   /* 4060 */
+    PRUint32 certLength;                   /*    4 */
+    PRUint8 certHash[SHA256_LENGTH];       /*   32 */
+    PRUint8 cert[SSL_MAX_CACHED_CERT_LEN]; /* 4060 */
 }; /* total   4096 */
 typedef struct certCacheEntryStr certCacheEntry;
+
+PR_STATIC_ASSERT(sizeof(sidCacheEntry) % 16 == 0);
+PR_STATIC_ASSERT(sizeof(certCacheEntry) == 4096);
 
 struct sidCacheLockStr {
     PRUint32 timeStamp;
@@ -341,13 +344,14 @@ UnlockSet(cacheDesc *cache, PRUint32 set)
 
 /************************************************************************/
 
-/* Put a certificate in the cache.  Update the cert index in the sce.
+/* Put a certificate in the cache.  Record its slot index and SHA-256 hash
+ * in the sce.
  */
 static PRUint32
 CacheCert(cacheDesc *cache, const SECItem *derCert, sidCacheEntry *sce)
 {
     PRUint32 now;
-    certCacheEntry cce;
+    certCacheEntry cce = { 0 };
 
     if ((derCert->len > SSL_MAX_CACHED_CERT_LEN) ||
         (derCert->len <= 0) ||
@@ -356,11 +360,12 @@ CacheCert(cacheDesc *cache, const SECItem *derCert, sidCacheEntry *sce)
         return 0;
     }
 
-    cce.sessionIDLength = sce->sessionIDLength;
-    PORT_Memcpy(cce.sessionID, sce->sessionID, cce.sessionIDLength);
-
     cce.certLength = derCert->len;
     PORT_Memcpy(cce.cert, derCert->data, cce.certLength);
+    if (HASH_HashBuf(HASH_AlgSHA256, cce.certHash, cce.cert,
+                     cce.certLength) != SECSuccess) {
+        return 0;
+    }
 
     /* get lock on cert cache */
     now = LockSidCacheLock(cache->certCacheLock, 0);
@@ -375,6 +380,8 @@ CacheCert(cacheDesc *cache, const SECItem *derCert, sidCacheEntry *sce)
 
         /* remember where we put it. */
         sce->u.ssl3.certIndex = ndx;
+        PORT_Memcpy(sce->u.ssl3.certHash, cce.certHash,
+                    sizeof(sce->u.ssl3.certHash));
 
         /* update the "next" cache entry index */
         sharedCache->nextCertCacheEntry =
@@ -683,10 +690,11 @@ ServerSessionIDLookup(PRTime sslNow, const PRIPv6Addr *addr,
             if (gotLock) {
                 pcce = &cache->certCacheData[cndx];
 
-                /* See if the cert's session ID matches the sce cache. */
-                if ((pcce->sessionIDLength == psce->sessionIDLength) &&
-                    !PORT_Memcmp(pcce->sessionID, psce->sessionID,
-                                 pcce->sessionIDLength)) {
+                /* Session IDs aren't unique, as ticket resumptions use the
+                ** client's, so compare cert hashes to detect slot reuse.
+                */
+                if (!PORT_Memcmp(pcce->certHash, psce->u.ssl3.certHash,
+                                 sizeof(pcce->certHash))) {
                     cce = *pcce;
                 } else {
                     /* The cert doesen't match the SID cache entry,
@@ -794,6 +802,9 @@ ssl_ServerCacheSessionID(sslSessionID *sid, PRTime creationTime)
         }
         if (sid->peerCertDER.data != NULL) {
             now = CacheCert(cache, &sid->peerCertDER, &sce);
+            if (!now) {
+                return;
+            }
         }
 
         set = SIDindex(cache, &sce.addr, sce.sessionID, sce.sessionIDLength);
@@ -1141,8 +1152,6 @@ SSL_SetMaxServerCacheLocks(PRUint32 maxLocks)
     return SECSuccess;
 }
 
-PR_STATIC_ASSERT(sizeof(sidCacheEntry) % 16 == 0);
-PR_STATIC_ASSERT(sizeof(certCacheEntry) == 4096);
 PR_STATIC_ASSERT(sizeof(srvNameCacheEntry) == 1072);
 
 static SECStatus

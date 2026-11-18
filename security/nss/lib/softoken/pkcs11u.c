@@ -2757,16 +2757,14 @@ sftk_GetHashTypeFromMechanism(CK_MECHANISM_TYPE mech)
     }
 }
 
-#ifdef NSS_HAS_FIPS_INDICATORS
-/**************** FIPS Indicator Utilities *************************/
 /* sigh, we probably need a version of this in secutil so that both
  * softoken and NSS can use it */
-static SECOidTag
+SECOidTag
 sftk_quickGetECCCurveOid(SFTKObject *source)
 {
     SFTKAttribute *attribute = sftk_FindAttribute(source, CKA_EC_PARAMS);
     unsigned char *encoded;
-    int len;
+    CK_ULONG len;
     SECItem oid;
     SECOidTag tag;
 
@@ -2787,6 +2785,8 @@ sftk_quickGetECCCurveOid(SFTKObject *source)
     return tag;
 }
 
+#ifdef NSS_HAS_FIPS_INDICATORS
+/**************** FIPS Indicator Utilities *************************/
 /* This function currently only returns valid lengths for
  * FIPS approved ECC curves. If we want to make this generic
  * in the future, that Curve determination can be done in

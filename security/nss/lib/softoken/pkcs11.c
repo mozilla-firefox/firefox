@@ -1099,6 +1099,26 @@ sftk_handleCrlObject(SFTKSession *session, SFTKObject *object)
     return CKR_OK;
 }
 
+/* Edwards keys require Ed25519; Montgomery keys require either X25519 OID. */
+static CK_RV
+sftk_verifyECParams(SFTKObject *object, CK_KEY_TYPE key_type)
+{
+    SECOidTag tag;
+
+    switch (key_type) {
+        case CKK_EC_EDWARDS:
+            tag = sftk_quickGetECCCurveOid(object);
+            return tag == SEC_OID_ED25519_PUBLIC_KEY ? CKR_OK : CKR_DOMAIN_PARAMS_INVALID;
+        case CKK_EC_MONTGOMERY:
+            tag = sftk_quickGetECCCurveOid(object);
+            return (tag == SEC_OID_X25519 || tag == SEC_OID_CURVE25519)
+                       ? CKR_OK
+                       : CKR_DOMAIN_PARAMS_INVALID;
+        default:
+            return CKR_OK;
+    }
+}
+
 /*
  * check the consistancy and initialize a Public Key Object
  */
@@ -1176,6 +1196,10 @@ sftk_handlePublicKeyObject(SFTKSession *session, SFTKObject *object,
             }
             if (!sftk_hasAttribute(object, CKA_EC_POINT)) {
                 return CKR_TEMPLATE_INCOMPLETE;
+            }
+            crv = sftk_verifyECParams(object, key_type);
+            if (crv != CKR_OK) {
+                return crv;
             }
             /* for ECDSA and EDDSA. Change if the structure of any of them is modified. */
             derive = (key_type == CKK_EC_EDWARDS) ? CK_FALSE : CK_TRUE;    /* CK_TRUE for ECDH */
@@ -1397,6 +1421,22 @@ sftk_handlePrivateKeyObject(SFTKSession *session, SFTKObject *object, CK_KEY_TYP
             }
             if (!sftk_hasAttribute(object, CKA_VALUE)) {
                 return CKR_TEMPLATE_INCOMPLETE;
+            }
+            crv = sftk_verifyECParams(object, key_type);
+            if (crv != CKR_OK) {
+                return crv;
+            }
+            if (key_type != CKK_EC) {
+                /* it has to be Ed25519 or X25519. */
+                CK_ULONG expectedLen = (key_type == CKK_EC_EDWARDS)
+                                           ? Ed25519_PRIVATE_KEYLEN
+                                           : X25519_PUBLIC_KEYLEN;
+                SFTKAttribute *value = sftk_FindAttribute(object, CKA_VALUE);
+                CK_ULONG valueLen = value ? value->attrib.ulValueLen : 0;
+                sftk_FreeAttribute(value);
+                if (valueLen != expectedLen) {
+                    return CKR_ATTRIBUTE_VALUE_INVALID;
+                }
             }
             /* for ECDSA and EDDSA. Change if the structure of any of them is modified. */
             derive = (key_type == CKK_EC_EDWARDS) ? CK_FALSE : CK_TRUE;  /* CK_TRUE for ECDH */
@@ -4346,15 +4386,6 @@ NSC_GetSlotInfo(CK_SLOT_ID slotID, CK_SLOT_INFO_PTR pInfo)
         }
     }
 
-    /* If there is no key database, this is for example the case when NSS was
-     * initialized with NSS_NoDbInit(), then there won't be any point in
-     * requesting a PIN. Set the CKF_USER_PIN_INITIALIZED bit so that
-     * PK11_NeedUserInit() doesn't indicate that a PIN is needed.
-     */
-    if (slot->keyDB == NULL) {
-        pInfo->flags |= CKF_USER_PIN_INITIALIZED;
-    }
-
     /* ok we really should read it out of the keydb file. */
     /* pInfo->hardwareVersion.major = NSSLOWKEY_DB_FILE_VERSION; */
     pInfo->hardwareVersion.major = SOFTOKEN_VMAJOR;
@@ -4429,7 +4460,11 @@ NSC_GetTokenInfo(CK_SLOT_ID slotID, CK_TOKEN_INFO_PTR pInfo)
     handle = sftk_getKeyDB(slot);
     pInfo->flags = CKF_RNG | CKF_DUAL_CRYPTO_OPERATIONS;
     if (handle == NULL) {
-        pInfo->flags |= CKF_WRITE_PROTECTED;
+        // handle will be null when there is no key database (for example, when
+        // NSS was initialized with NSS_NoDB_Init). There won't be any point in
+        // requesting a pin, so set CKF_USER_PIN_INITIALIZED so that
+        // PK11_NeedUserInit() doesn't indicate that a PIN is needed.
+        pInfo->flags |= CKF_WRITE_PROTECTED | CKF_USER_PIN_INITIALIZED;
         pInfo->ulMaxPinLen = 0;
         pInfo->ulMinPinLen = 0;
         pInfo->ulTotalPublicMemory = 0;
@@ -4475,6 +4510,9 @@ NSC_GetTokenInfo(CK_SLOT_ID slotID, CK_TOKEN_INFO_PTR pInfo)
                     }
                 }
             }
+        }
+        if (slot->readOnly) {
+            pInfo->flags |= CKF_WRITE_PROTECTED;
         }
         pInfo->ulMaxPinLen = SFTK_MAX_PIN;
         pInfo->ulMinPinLen = (CK_ULONG)slot->minimumPinLen;
@@ -4910,16 +4948,16 @@ NSC_OpenSession(CK_SLOT_ID slotID, CK_FLAGS flags,
     if (slot == NULL)
         return CKR_SLOT_ID_INVALID;
 
+    if (slot->readOnly && (flags & CKF_RW_SESSION)) {
+        return CKR_TOKEN_WRITE_PROTECTED;
+    }
+
     /* new session (we only have serial sessions) */
     session = sftk_NewSession(slotID, Notify, pApplication,
                               flags | CKF_SERIAL_SESSION);
     if (session == NULL)
         return CKR_HOST_MEMORY;
 
-    if (slot->readOnly && (flags & CKF_RW_SESSION)) {
-        /* NETSCAPE_SLOT_ID is Read ONLY */
-        session->info.flags &= ~CKF_RW_SESSION;
-    }
     PR_Lock(slot->slotLock);
     ++slot->sessionCount;
     if (session->info.flags & CKF_RW_SESSION) {

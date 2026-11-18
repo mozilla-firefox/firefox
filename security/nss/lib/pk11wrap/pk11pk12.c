@@ -1041,6 +1041,12 @@ PK11_ImportPrivateKeyInfoAndReturnKey(PK11SlotInfo *slot,
             PORT_SetError(SEC_ERROR_UNSUPPORTED_KEYALG);
             goto loser;
         }
+        unsigned int expectedLen = (lpk->keyType == edKey) ? ED25519_PRIVATE_KEY_BYTES
+                                                           : X25519_PUBLIC_KEY_BYTES;
+        if (lpk->u.ec.privateValue.len != expectedLen) {
+            PORT_SetError(SEC_ERROR_BAD_KEY);
+            goto loser;
+        }
 
         SECOidData *oid25519 = SECOID_FindOIDByTag(SECOID_GetAlgorithmTag(&pki->algorithm));
         if (!oid25519) {

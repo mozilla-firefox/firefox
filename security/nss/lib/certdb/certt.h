@@ -577,7 +577,7 @@ struct CERTIssuerAndSNStr {
 #define KU_DIGITAL_SIGNATURE_OR_NON_REPUDIATION (0x2000)
 
 /* This value will not occur in certs.  It is used internally for the case
- * when the key type is not know ahead of time and either key agreement or
+ * when the key type is not known ahead of time and either key agreement or
  * key encipherment are the correct value based on key type
  */
 #define KU_KEY_AGREEMENT_OR_ENCIPHERMENT (0x4000)

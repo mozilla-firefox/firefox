@@ -260,6 +260,23 @@ create_db()
     html_msg $? 0 "${SCENARIO}${TESTNAME}" 
 }
 
+############################ set_ctype_opt #############################
+# local shell function to convert the entity key type into certutil
+# options. A key type may name a parameter set, e.g. mldsa:ML-DSA-65.
+########################################################################
+set_ctype_opt()
+{
+    CTYPE_OPT=
+    if [ -n "${CTYPE}" ]; then
+        CTYPE_OPT="-k $(echo ${CTYPE} | cut -d: -f1)"
+        case "${CTYPE}" in
+        *:*)
+            CTYPE_OPT="${CTYPE_OPT} -q $(echo ${CTYPE} | cut -d: -f2)"
+            ;;
+        esac
+    fi
+}
+
 ########################### create_root_ca #############################
 # local shell function to generate self-signed root certificate
 ########################################################################
@@ -271,10 +288,7 @@ create_root_ca()
     set_cert_sn
     date >> ${NOISE_FILE} 2>&1
 
-    CTYPE_OPT=
-    if [ -n "${CTYPE}" ]; then
-        CTYPE_OPT="-k ${CTYPE}"
-    fi
+    set_ctype_opt
 
     echo "5
 6
@@ -304,6 +318,32 @@ n
     html_msg $? 0 "${SCENARIO}${TESTNAME}"
 }
 
+########################## set_req_extensions ##########################
+# local shell function to generate the extension options and input for
+# the certutil command that makes the certificate request
+########################################################################
+set_req_extensions()
+{
+    TYPE=$1
+
+    CA_FLAG="-2"
+    OPTIONS=
+
+    if [ "${TYPE}" != "EE" ]; then
+        EXT_DATA="y
+-1
+y
+"
+    else
+        EXT_DATA="n
+-1
+y
+"
+    fi
+
+    process_crldp
+}
+
 ########################### create_cert_req ############################
 # local shell function to generate certificate sign request
 ########################################################################
@@ -315,33 +355,24 @@ create_cert_req()
     ENTITY_DB=${ENTITY}DB
 
     REQ=${ENTITY}Req.der
+    KEM_PUBKEY=${ENTITY}Pub.der
 
     date >> ${NOISE_FILE} 2>&1
 
-    CTYPE_OPT=
-    if [ -n "${CTYPE}" ]; then
-        CTYPE_OPT="-k ${CTYPE}"
+    set_ctype_opt
+
+    if [ "$(echo ${CTYPE} | cut -d: -f1)" = "mlkem" ]; then
+        # An ML-KEM key can't sign a certificate request. Export its public
+        # key instead, and sign_cert will issue the certificate for it.
+        TESTNAME="Creating ${TYPE} public key ${KEM_PUBKEY}"
+        echo "${SCRIPTNAME}: ${TESTNAME}"
+        echo "certutil ${CTYPE_OPT} -G -d ${ENTITY_DB} -f ${ENTITY_DB}/dbpasswd -z ${NOISE_FILE} -o ${KEM_PUBKEY}"
+        ${BINDIR}/certutil ${CTYPE_OPT} -G -d ${ENTITY_DB} -f ${ENTITY_DB}/dbpasswd -z ${NOISE_FILE} -o ${KEM_PUBKEY}
+        html_msg $? 0 "${SCENARIO}${TESTNAME}"
+        return
     fi
 
-    CA_FLAG=
-    EXT_DATA=
-    OPTIONS=
-
-    if [ "${TYPE}" != "EE" ]; then
-        CA_FLAG="-2"
-        EXT_DATA="y
--1
-y
-"
-    else
-        CA_FLAG="-2"
-        EXT_DATA="n
--1
-y
-"
-    fi
-
-    process_crldp
+    set_req_extensions "${TYPE}"
 
     echo "${EXT_DATA}" > ${CU_DATA}
 
@@ -629,6 +660,7 @@ sign_cert()
     ENTITY_DB=${ENTITY}DB
     ISSUER_DB=${ISSUER}DB
     REQ=${ENTITY}Req.der
+    KEM_PUBKEY=${ENTITY}Pub.der
     CERT=${ENTITY}${ISSUER}.der
 
     set_cert_sn
@@ -641,15 +673,32 @@ sign_cert()
         EMAILS="${EMAILS}${ENTITY}@${ISSUER}"
     fi
 
+    # Without a certificate request (see create_cert_req), the extensions
+    # that would have been in the request are added here instead.
+    REQ_OPTIONS=
+    REQ_DATA=
+    if [ -f "${KEM_PUBKEY}" ]; then
+        set_req_extensions "${TYPE}"
+        REQ_OPTIONS="${CA_FLAG} ${OPTIONS}"
+        REQ_DATA="${EXT_DATA}"
+    fi
+
     process_extensions 
 
-    echo "${DATA}" > ${CU_DATA}
+    echo "${REQ_DATA}${DATA}" > ${CU_DATA}
 
     TESTNAME="Creating certficate ${CERT} signed by ${ISSUER}"
     echo "${SCRIPTNAME}: ${TESTNAME}"
-    echo "certutil -C -c ${ISSUER} -v 60 -d ${ISSUER_DB} -i ${REQ} -o ${CERT} -f ${ISSUER_DB}/dbpasswd -m ${CERT_SN} ${EMAIL_OPT} ${OPTIONS} < ${CU_DATA}"
-    print_cu_data
-    ${BINDIR}/certutil -C -c ${ISSUER} -v 60 -d ${ISSUER_DB} -i ${REQ} -o ${CERT} -f ${ISSUER_DB}/dbpasswd -m ${CERT_SN} ${EMAIL_OPT} ${OPTIONS} < ${CU_DATA}
+    if [ -f "${KEM_PUBKEY}" ]; then
+        SUBJECT="CN=${ENTITY} ${TYPE}, O=${ENTITY}, C=US"
+        echo "certutil -C -c ${ISSUER} -v 60 -d ${ISSUER_DB} --kem-pubkey ${KEM_PUBKEY} -s \"${SUBJECT}\" -o ${CERT} -f ${ISSUER_DB}/dbpasswd -m ${CERT_SN} ${EMAIL_OPT} ${REQ_OPTIONS} ${OPTIONS} < ${CU_DATA}"
+        print_cu_data
+        ${BINDIR}/certutil -C -c ${ISSUER} -v 60 -d ${ISSUER_DB} --kem-pubkey ${KEM_PUBKEY} -s "${SUBJECT}" -o ${CERT} -f ${ISSUER_DB}/dbpasswd -m ${CERT_SN} ${EMAIL_OPT} ${REQ_OPTIONS} ${OPTIONS} < ${CU_DATA}
+    else
+        echo "certutil -C -c ${ISSUER} -v 60 -d ${ISSUER_DB} -i ${REQ} -o ${CERT} -f ${ISSUER_DB}/dbpasswd -m ${CERT_SN} ${EMAIL_OPT} ${OPTIONS} < ${CU_DATA}"
+        print_cu_data
+        ${BINDIR}/certutil -C -c ${ISSUER} -v 60 -d ${ISSUER_DB} -i ${REQ} -o ${CERT} -f ${ISSUER_DB}/dbpasswd -m ${CERT_SN} ${EMAIL_OPT} ${OPTIONS} < ${CU_DATA}
+    fi
     html_msg $? 0 "${SCENARIO}${TESTNAME}"
 
     TESTNAME="Importing certificate ${CERT} to ${ENTITY_DB} database"
@@ -1255,6 +1304,12 @@ chains_ipsec()
     process_scenario "ipsec.cfg"
 }
 
+# process mlkem_leaf.cfg separately
+chains_mlkem_leaf()
+{
+    process_scenario "mlkem_leaf.cfg"
+}
+
 # process ocspd.cfg separately
 chains_ocspd()
 {
@@ -1292,6 +1347,7 @@ VERIFY_CLASSIC_ENGINE_TOO=
 chains_ocspd
 VERIFY_CLASSIC_ENGINE_TOO=1
 chains_ipsec
+chains_mlkem_leaf
 chains_run_httpserv get
 chains_method
 chains_stop_httpserv
