@@ -46,6 +46,8 @@ class CustomizeMenuAccessibilityTest {
     private val resetToDefault = testContext.getString(R.string.mozac_menu_customize_reset_to_default)
     private val moveUp = testContext.getString(R.string.mozac_menu_customize_move_up)
     private val moveDown = testContext.getString(R.string.mozac_menu_customize_move_down)
+    private val hide = testContext.getString(R.string.mozac_menu_customize_hide)
+    private val unhide = testContext.getString(R.string.mozac_menu_customize_unhide)
 
     @Test
     fun `THEN the titles above the shown sections and above the hidden sections are headings`() {
@@ -125,20 +127,60 @@ class CustomizeMenuAccessibilityTest {
     }
 
     @Test
-    fun `GIVEN three shown sections THEN the first can be moved down, the middle one up and down and the last one up`() {
+    fun `GIVEN three shown sections THEN each can be hidden, the first moved down, the middle one up and down and the last one up`() {
         setContent(menuState(shown = listOf(row("First"), row("Middle"), row("Last")), hidden = listOf(row("Hidden"))))
 
-        assertEquals(listOf(moveDown), actionsOf("First"))
-        assertEquals(listOf(moveUp, moveDown), actionsOf("Middle"))
-        assertEquals(listOf(moveUp), actionsOf("Last"))
+        assertEquals(listOf(moveDown, hide), actionsOf("First"))
+        assertEquals(listOf(moveUp, moveDown, hide), actionsOf("Middle"))
+        assertEquals(listOf(moveUp, hide), actionsOf("Last"))
     }
 
     @Test
-    fun `GIVEN hidden sections THEN they cannot be moved up or down`() {
+    fun `GIVEN hidden sections THEN they can only be added to the menu`() {
         setContent(menuState(shown = listOf(row("Shown")), hidden = listOf(row("Hidden 1"), row("Hidden 2"))))
 
-        assertEquals(emptyList<String>(), actionsOf("Hidden 1"))
-        assertEquals(emptyList<String>(), actionsOf("Hidden 2"))
+        assertEquals(listOf(unhide), actionsOf("Hidden 1"))
+        assertEquals(listOf(unhide), actionsOf("Hidden 2"))
+    }
+
+    @Test
+    fun `GIVEN a mandatory section THEN it can be moved up and down but not hidden`() {
+        setContent(
+            menuState(
+                shown = listOf(row("First"), row("Mandatory"), row("Last")),
+                mandatoryIds = setOf("Mandatory"),
+            )
+        )
+
+        assertEquals(listOf(moveUp, moveDown), actionsOf("Mandatory"))
+    }
+
+    @Test
+    fun `WHEN a shown section is hidden THEN it is the first hidden section`() {
+        val store = setContent(menuState(shown = listOf(row("First"), row("Second")), hidden = listOf(row("Hidden"))))
+
+        performAction("First", hide)
+
+        assertEquals(listOf("Second", "First", "Hidden"), store.state.menuGroups.map { it.id })
+        assertEquals(setOf("First", "Hidden"), store.state.hiddenGroupIds)
+        assertEquals(listOf(unhide), actionsOf("First"))
+    }
+
+    @Test
+    fun `WHEN a hidden section is added to the menu THEN it is the last shown section`() {
+        val store =
+            setContent(
+                menuState(
+                    shown = listOf(row("First"), row("Second")),
+                    hidden = listOf(row("Hidden 1"), row("Hidden 2")),
+                )
+            )
+
+        performAction("Hidden 2", unhide)
+
+        assertEquals(listOf("First", "Second", "Hidden 2", "Hidden 1"), store.state.menuGroups.map { it.id })
+        assertEquals(setOf("Hidden 1"), store.state.hiddenGroupIds)
+        composeTestRule.onNodeWithContentDescription(shownSection("Hidden 2", 3, 3)).assertExists()
     }
 
     @Test
@@ -239,10 +281,12 @@ class CustomizeMenuAccessibilityTest {
     private fun menuState(
         shown: List<MenuItemsGroup>,
         hidden: List<MenuItemsGroup> = emptyList(),
+        mandatoryIds: Set<String> = emptySet(),
         isCustomized: Boolean = false,
     ) =
         CustomizableMenuState(
             menuGroups = shown + hidden,
+            mandatoryGroupIds = mandatoryIds,
             hiddenGroupIds = hidden.map { it.id }.toSet(),
             isCustomized = isCustomized,
         )

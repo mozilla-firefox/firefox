@@ -79,6 +79,21 @@ internal data class CustomizeMenuGroups(
         if (index == -1 || index == shown.lastIndex) return null
         return moveGroup(id, shown[index + 1].id, placeAfter = true)
     }
+
+    /**
+     * Hide the shown group with [id] first among the hidden groups, or `null` if it is not shown or cannot be removed
+     * from the menu.
+     */
+    fun moveToHidden(id: String): CustomizeMenuGroups? {
+        if (shown.none { it.id == id } || id in mandatoryIds) return null
+        return moveGroup(id, CustomizeMenuItemKey.HIDDEN_SECTIONS, placeAfter = true)
+    }
+
+    /** Show the hidden group with [id] last among the shown groups, or `null` if it is not hidden. */
+    fun moveToShown(id: String): CustomizeMenuGroups? {
+        if (hidden.none { it.id == id }) return null
+        return moveGroup(id, CustomizeMenuItemKey.HIDDEN_SECTIONS, placeAfter = false)
+    }
 }
 
 private fun List<MenuItemsGroup>.withNextTo(

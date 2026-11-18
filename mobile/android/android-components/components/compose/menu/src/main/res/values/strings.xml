@@ -27,4 +27,8 @@
   <string name="mozac_menu_customize_move_up">Move up</string>
   <!-- Name of the action (not visible, used by screen readers, etc.) that moves a menu section down one position in the customize menu screen. -->
   <string name="mozac_menu_customize_move_down">Move down</string>
+  <!-- Name of the action (not visible, used by screen readers, etc.) that hides a section in the customize menu screen. -->
+  <string name="mozac_menu_customize_hide">Hide section</string>
+  <!-- Name of the action (not visible, used by screen readers, etc.) that shows a previously hidden menu section, placing it last among the visible sections in the customize menu screen. -->
+  <string name="mozac_menu_customize_unhide">Unhide section</string>
 </resources>

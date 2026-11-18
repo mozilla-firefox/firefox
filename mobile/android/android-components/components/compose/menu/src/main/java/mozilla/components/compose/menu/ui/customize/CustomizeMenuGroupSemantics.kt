@@ -59,6 +59,16 @@ internal fun Modifier.customizeMenuGroupSemantics(
                 movedGroups = groups.moveDown(group.id),
                 onMove = onMove,
             ),
+            moveAction(
+                label = stringResource(R.string.mozac_menu_customize_hide),
+                movedGroups = groups.moveToHidden(group.id),
+                onMove = onMove,
+            ),
+            moveAction(
+                label = stringResource(R.string.mozac_menu_customize_unhide),
+                movedGroups = groups.moveToShown(group.id),
+                onMove = onMove,
+            ),
         )
     return this.clearAndSetSemantics {
         contentDescription = description
