@@ -528,8 +528,8 @@ export async function readResponseToWriter({
 
   // Pipes the response body through the progress stream into the writable stream and close the stream on completion/error.
   await response.body
-    .pipeThrough(progressStream, { signal: abortSignal })
-    .pipeTo(writableStream, { signal: abortSignal });
+    .pipeThrough(progressStream, { signal: abortSignal ?? undefined })
+    .pipeTo(writableStream, { signal: abortSignal ?? undefined });
 }
 
 // Create a "namespace" to make it easier to import multiple names.
