@@ -29,11 +29,14 @@ with `ac_add_options --enable-js-shell` or specify it with `--binary`.
 class Benchmark(object):
     lower_is_better = True
     should_alert = True
+    subtests_should_alert = True
 
     def __init__(self, shell, args=None, shell_name=None):
         self.shell = shell
         self.args = args
         self.shell_name = shell_name
+        if shell_name == "v8":
+            self.should_alert = False
 
     @abstractproperty
     def unit(self):
@@ -95,6 +98,15 @@ class Benchmark(object):
         }
         self.suite = self.perfherder_data["suites"][0]
 
+    def add_subtest(self, name, value, **extra):
+        self.suite["subtests"].append({
+            "alertThreshold": 5,
+            "name": name,
+            "shouldAlert": self.should_alert and self.subtests_should_alert,
+            "value": value,
+            **extra,
+        })
+
     def _provision_benchmark_script(self):
         if os.path.isdir(self.path):
             return
@@ -133,7 +145,7 @@ class RunOnceBenchmark(Benchmark):
                 test_name = "{}-{}".format(self.name, score)
                 # pylint --py3k W1619
                 mean = sum(values) / len(values)
-                self.suite["subtests"].append({"name": test_name, "value": mean})
+                self.add_subtest(test_name, mean)
                 bench_total += int(sum(values))
         self.suite["value"] = bench_total
 
@@ -193,7 +205,7 @@ class Ares6(Benchmark):
                 # pylint --py3k W1619
                 mean = sum(values) / len(values)
                 test_name = "{}-{}".format(bench, score)
-                self.suite["subtests"].append({"name": test_name, "value": mean})
+                self.add_subtest(test_name, mean)
 
         if self.last_summary:
             self.suite["value"] = self.last_summary
@@ -231,6 +243,7 @@ class SixSpeed(RunOnceBenchmark):
 
 class SunSpider(RunOnceBenchmark):
     name = "sunspider"
+    subtests_should_alert = False
     path = os.path.join(
         "third_party", "webkit", "PerformanceTests", "SunSpider", "sunspider-0.9.1"
     )
@@ -303,11 +316,12 @@ class WebToolingBenchmark(Benchmark):
                 test_name = "{}-{}".format(self.name, score_name)
                 # pylint --py3k W1619
                 mean = sum(values) / len(values)
-                self.suite["subtests"].append({
-                    "lowerIsBetter": self.subtests_lower_is_better,
-                    "name": test_name,
-                    "value": mean,
-                })
+                self.add_subtest(
+                    test_name,
+                    mean,
+                    lowerIsBetter=self.subtests_lower_is_better,
+                    shouldAlert=self.should_alert and score_name != "mean",
+                )
                 if score_name == "mean":
                     bench_mean = mean
         self.suite["value"] = bench_mean
@@ -357,7 +371,12 @@ class Octane(RunOnceBenchmark):
                 test_name = "{}-{}".format(self.name, score_name)
                 # pylint --py3k W1619
                 mean = sum(values) / len(values)
-                self.suite["subtests"].append({"name": test_name, "value": mean})
+                self.add_subtest(
+                    test_name,
+                    mean,
+                    lowerIsBetter=self.lower_is_better,
+                    shouldAlert=self.should_alert and score_name != "score",
+                )
                 if score_name == "score":
                     bench_score = mean
         self.suite["value"] = bench_score
