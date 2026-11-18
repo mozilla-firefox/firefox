@@ -311,6 +311,7 @@ export class SidebarBookmarks extends SidebarPage {
             folderEl.textContent?.trim() ??
             "";
           const folderKind = folderEl.dataset.folderKind;
+          const { targetFolderGuid } = folderEl;
           const children = folderEl.querySelector(
             "sidebar-bookmark-list"
           )?.tabItems;
@@ -318,11 +319,14 @@ export class SidebarBookmarks extends SidebarPage {
             guid: folderEl.guid,
             title,
             children,
+            targetFolderGuid,
+            uri: folderEl.uri,
             isFolder: true,
             isEmpty,
             isRootFolder: lazy.PlacesUtils.isRootItem(folderEl.guid),
             isPlaceContainer:
-              folderKind === "place-container" || folderKind === "tags-root",
+              !targetFolderGuid &&
+              (folderKind === "place-container" || folderKind === "tags-root"),
             isTagContainer: folderKind === "tag-container",
             isTagsRoot: folderKind === "tags-root",
           };
@@ -339,6 +343,7 @@ export class SidebarBookmarks extends SidebarPage {
     const isBookmark = !isFolder && !isSeparator;
     const isEmpty = !!this.triggerNode.isEmpty;
     const isRootFolder = !!this.triggerNode.isRootFolder;
+    const isFolderShortcut = !!this.triggerNode.targetFolderGuid;
 
     if (!this.#contextMenuItems) {
       this.#initContextMenuItems();
@@ -394,6 +399,7 @@ export class SidebarBookmarks extends SidebarPage {
     for (const el of disabledForRootItems) {
       el.disabled = isRootFolder;
     }
+    editBookmark.disabled ||= isFolderShortcut;
 
     openInContainerTab.hidden =
       !isBookmark ||
@@ -887,7 +893,7 @@ export class SidebarBookmarks extends SidebarPage {
     const node = this.triggerNode;
     if (node.isFolder) {
       return {
-        guid: node.guid,
+        guid: this.#concreteGuid(node),
         getIndex: () => lazy.PlacesUtils.bookmarks.DEFAULT_INDEX,
       };
     }
@@ -920,7 +926,9 @@ export class SidebarBookmarks extends SidebarPage {
     const urls = [];
     for (const item of bookmarks) {
       if (item.isFolder) {
-        const tree = await lazy.PlacesUtils.promiseBookmarksTree(item.guid);
+        const tree = await lazy.PlacesUtils.promiseBookmarksTree(
+          this.#concreteGuid(item)
+        );
         urls.push(...this.#collectBookmarkUrls(tree));
       } else if (item.url) {
         urls.push(item.url);
@@ -946,7 +954,20 @@ export class SidebarBookmarks extends SidebarPage {
   }
 
   async #sortByName() {
-    await lazy.PlacesTransactions.SortByName(this.triggerNode.guid).transact();
+    await lazy.PlacesTransactions.SortByName(
+      this.#concreteGuid(this.triggerNode)
+    ).transact();
+  }
+
+  /**
+   * The guid of the folder whose contents a folder node shows: the target
+   * folder for a folder shortcut, or the folder itself otherwise.
+   *
+   * @param {object} node
+   * @returns {string}
+   */
+  #concreteGuid(node) {
+    return node.targetFolderGuid ?? node.guid;
   }
 
   #cutBookmarks(bookmarks) {
@@ -974,6 +995,16 @@ export class SidebarBookmarks extends SidebarPage {
       if (item.isSeparator) {
         return JSON.stringify({
           type: lazy.PlacesUtils.TYPE_X_MOZ_PLACE_SEPARATOR,
+        });
+      }
+      if (item.targetFolderGuid) {
+        return JSON.stringify({
+          type: lazy.PlacesUtils.TYPE_X_MOZ_PLACE,
+          itemGuid: item.guid,
+          concreteGuid: item.targetFolderGuid,
+          instanceId: lazy.PlacesUtils.instanceId,
+          title: item.title,
+          uri: item.uri,
         });
       }
       if (item.isFolder) {
@@ -1122,7 +1153,7 @@ export class SidebarBookmarks extends SidebarPage {
     // Otherwise, paste as a sibling right after the target bookmark.
     const insertionPoint = this.triggerNode.isFolder
       ? {
-          guid: this.triggerNode.guid,
+          guid: this.#concreteGuid(this.triggerNode),
           isTag: false,
           getIndex: async () => lazy.PlacesUtils.bookmarks.DEFAULT_INDEX,
         }

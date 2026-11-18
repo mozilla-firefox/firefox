@@ -240,6 +240,7 @@ export class SidebarBookmarkList extends SidebarTabList {
           @mouseenter=${e => this.#updateFolderTooltip(e, title)}
           .guid=${tabItem.guid}
           .targetFolderGuid=${tabItem.targetFolderGuid}
+          .uri=${tabItem.uri}
         >
           <span
             class="bookmark-folder-title text-truncated-ellipsis"
@@ -256,6 +257,7 @@ export class SidebarBookmarkList extends SidebarTabList {
           data-folder-kind=${ifDefined(folderKind)}
           .guid=${tabItem.guid}
           .targetFolderGuid=${tabItem.targetFolderGuid}
+          .uri=${tabItem.uri}
         >
           <summary
             draggable="true"
