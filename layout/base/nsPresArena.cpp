@@ -168,7 +168,12 @@ struct PresArenaSuperblock {
     MOZ_MAKE_MEM_UNDEFINED(aSb, kSuperblockSize);
     aSb->~PresArenaSuperblock();
 #if defined(XP_WIN) && !defined(MOZ_MEMORY)
-    _aligned_free(aSb);
+    // FIXME(emilio): In theory _aligned_free should be fine, and works on local
+    // asan builds, but on automation windows asan crashes, probably because the
+    // pages are already unmapped via MEM_DECOMMIT. Skip freeing these for now.
+    // This can be cleaned up if we take the patches from bug 2094410 mapping
+    // memory ourselves.
+    // _aligned_free(aSb);
 #else
     free(aSb);
 #endif
