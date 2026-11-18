@@ -71,6 +71,7 @@
 #  include "vtune/VTuneWrapper.h"
 #endif
 
+#include "gc/BufferAllocator-inl.h"
 #include "gc/GC-inl.h"
 #include "gc/StableCellHasher-inl.h"
 #include "jit/InlineScriptTree-inl.h"
@@ -740,13 +741,15 @@ IonScript* IonScript::New(JSContext* cx, IonCompilationId compilationId,
     return nullptr;
   }
 
-  void* raw = cx->pod_malloc<uint8_t>(allocSize.value());
-  MOZ_ASSERT(uintptr_t(raw) % alignof(IonScript) == 0);
-  if (!raw) {
+  JS::Zone* zone = cx->zone();
+  IonScript* script = NewSizedBuffer<IonScript>(
+      zone, allocSize.value(), /* nurseryOwned = */ false, compilationId,
+      localSlotsSize, argumentSlotsSize, frameSize);
+  if (!script) {
+    ReportOutOfMemory(cx);
     return nullptr;
   }
-  IonScript* script = new (raw)
-      IonScript(compilationId, localSlotsSize, argumentSlotsSize, frameSize);
+  MOZ_ASSERT(uintptr_t(script) % alignof(IonScript) == 0);
 
   Offset offsetCursor = sizeof(IonScript);
 
@@ -977,37 +980,31 @@ const OsiIndex* IonScript::getOsiIndex(uint8_t* retAddr) const {
   return getOsiIndex(disp);
 }
 
-void IonScript::Destroy(JS::GCContext* gcx, IonScript* script) {
-  // Trigger write barrier since we are destroying this outside GC.
-  script->method_ = nullptr;
+void IonScript::addSizeOfIncludingThis(JS::Zone* zone, size_t* data) const {
+  *data += gc::GetAllocSize(zone, this);
+}
 
+void IonScript::Destroy(JS::Zone* zone, IonScript* script) {
   // Destroy the HeapPtrs to ensure there are no pointers into the IonScript's
-  // nursery objects list or constants list in the store buffer. Because this
-  // can be called during sweeping when discarding JIT code, we have to lock the
-  // store buffer when we find a pointer that's (still) in the nursery.
-  mozilla::Maybe<gc::AutoLockSweepingLock> lock;
+  // nursery objects list or constants list in the store buffer. This is called
+  // when code is invalidated but not when being finalized by GC.
+
+  MOZ_ASSERT_IF(script->method(), zone == script->method()->zone());
+  MOZ_ASSERT(!CurrentThreadIsGCSweeping() && !CurrentThreadIsGCFinalizing());
+
   for (size_t i = 0, len = script->numNurseryObjects(); i < len; i++) {
-    JSObject* obj = script->nurseryObjects()[i];
-    if (lock.isNothing() && IsInsideNursery(obj)) {
-      lock.emplace(gcx->runtimeFromAnyThread());
-    }
     script->nurseryObjects()[i].~HeapPtr<JSObject*>();
   }
   for (size_t i = 0, len = script->numConstants(); i < len; i++) {
-    Value v = script->getConstant(i);
-    if (lock.isNothing() && v.isGCThing() && IsInsideNursery(v.toGCThing())) {
-      lock.emplace(gcx->runtimeFromAnyThread());
-    }
     script->getConstant(i).~HeapPtr<Value>();
   }
 
-  // This allocation is tracked by JSScript::setIonScriptImpl.
-  gcx->deleteUntracked(script);
-}
+  // Trigger write barrier since we are destroying this outside GC.
+  script->method_ = nullptr;
 
-void JS::DeletePolicy<js::jit::IonScript>::operator()(
-    const js::jit::IonScript* script) {
-  IonScript::Destroy(rt_->gcContext(), const_cast<IonScript*>(script));
+  // Call the destructor to run assertions in field destructors. This doesn't
+  // happen when the ion script is reclaimed by GC.
+  gc::DeleteBuffer(zone, script);
 }
 
 void IonScript::purgeICs(Zone* zone) {
@@ -2748,7 +2745,7 @@ void jit::Invalidate(JSContext* cx, const IonScriptKeyVector& invalid,
                                       resetUses);
     }
 
-    ionScript->decrementInvalidationCount(gcx);
+    ionScript->decrementInvalidationCount();
     numInvalidations--;
   }
 
@@ -2825,10 +2822,16 @@ void jit::FinishInvalidation(JS::GCContext* gcx, JSScript* script) {
   // In all cases, null out jitScript->ionScript_ to avoid re-entry.
   IonScript* ion = script->jitScript()->clearIonScript(gcx, script);
 
+  if (gcx->isPreparing()) {
+    // We're discarding JIT code at the start of GC. The IonScript will be
+    // collected automatically.
+    return;
+  }
+
   // If this script has Ion code on the stack, invalidated() will return
   // true. In this case we have to wait until destroying it.
   if (!ion->invalidated()) {
-    jit::IonScript::Destroy(gcx, ion);
+    jit::IonScript::Destroy(script->zone(), ion);
   }
 }
 
@@ -2846,13 +2849,10 @@ void jit::ForbidCompilation(JSContext* cx, JSScript* script) {
   script->disableIon();
 }
 
-size_t jit::SizeOfIonData(JSScript* script,
-                          mozilla::MallocSizeOf mallocSizeOf) {
+size_t jit::SizeOfIonData(JSScript* script) {
   size_t result = 0;
-
   if (script->hasIonScript()) {
-    result += script->ionScript()->sizeOfIncludingThis(mallocSizeOf);
+    script->ionScript()->addSizeOfIncludingThis(script->zone(), &result);
   }
-
   return result;
 }

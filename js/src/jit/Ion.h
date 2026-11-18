@@ -7,7 +7,6 @@
 
 #include "mozilla/Attributes.h"
 #include "mozilla/Likely.h"
-#include "mozilla/MemoryReporting.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -121,7 +120,7 @@ bool OffThreadCompilationAvailable(JSContext* cx);
 
 void ForbidCompilation(JSContext* cx, JSScript* script);
 
-size_t SizeOfIonData(JSScript* script, mozilla::MallocSizeOf mallocSizeOf);
+size_t SizeOfIonData(JSScript* script);
 
 inline bool IsIonEnabled(JSContext* cx) {
   if (MOZ_UNLIKELY(!IsBaselineJitEnabled(cx) || cx->options().disableIon())) {

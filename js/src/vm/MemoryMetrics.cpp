@@ -405,8 +405,7 @@ static void StatsCellCallback(JSRuntime* rt, void* data, JS::GCCellPtr cellptr,
                                    &realmStats.jitScripts,
                                    &realmStats.allocSites);
         jit::AddSizeOfBaselineData(script, &realmStats.baselineData);
-        realmStats.ionData +=
-            jit::SizeOfIonData(script, rtStats->mallocSizeOf_);
+        realmStats.ionData += jit::SizeOfIonData(script);
       }
       CollectScriptSourceStats<granularity>(closure, base->scriptSource());
       break;

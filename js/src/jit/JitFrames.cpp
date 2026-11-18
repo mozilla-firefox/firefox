@@ -845,7 +845,7 @@ void HandleException(ResumeFromException* rfe) {
         if (rfe->kind == ExceptionResumeKind::Bailout ||
             rfe->kind == ExceptionResumeKind::ForcedReturnIon) {
           if (invalidated) {
-            ionScript->decrementInvalidationCount(cx->gcContext());
+            ionScript->decrementInvalidationCount();
           }
           return;
         }
@@ -872,7 +872,7 @@ void HandleException(ResumeFromException* rfe) {
       // If invalidated, decrement the number of frames remaining on the
       // stack for the given IonScript.
       if (invalidated) {
-        ionScript->decrementInvalidationCount(cx->gcContext());
+        ionScript->decrementInvalidationCount();
       }
 
     } else if (frame.isBaselineJS()) {
@@ -1090,7 +1090,7 @@ static void TraceIonJSFrame(JSTracer* trc, const JSJitFrameIter& frame) {
     // This frame has been invalidated, meaning that its IonScript is no
     // longer reachable through the callee token (JSFunction/JSScript->ion
     // is now nullptr or recompiled). Manually trace it here.
-    ionScript->trace(trc);
+    TraceEdgeAndBuffer(trc, &ionScript, "ion-frame-ionscript");
   } else {
     ionScript = frame.ionScriptFromCalleeToken();
   }

@@ -4014,7 +4014,7 @@ JS::ubi::Base::Size JS::ubi::Concrete<BaseScript>::size(
     jit::AddSizeOfBaselineData(script, &baselineSize);
     size += baselineSize;
 
-    size += jit::SizeOfIonData(script, mallocSizeOf);
+    size += jit::SizeOfIonData(script);
   }
 
   MOZ_ASSERT(size > 0);

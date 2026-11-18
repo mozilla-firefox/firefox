@@ -1846,8 +1846,8 @@ static void ReportRealmStats(const JS::RealmStats& realmStats,
                  realmStats.cacheIRStubs,
                  "The JIT's IC stubs (excluding code).");
 
-  ZRREPORT_BYTES(realmJSPathPrefix + "ion-data"_ns, realmStats.ionData,
-                 "The IonMonkey JIT's compilation data (IonScripts).");
+  ZRREPORT_NONHEAP_BYTES(realmJSPathPrefix + "ion-data"_ns, realmStats.ionData,
+                         "The IonMonkey JIT's compilation data (IonScripts).");
 
   ZRREPORT_BYTES(realmJSPathPrefix + "jit-scripts"_ns, realmStats.jitScripts,
                  "JIT data associated with scripts.");

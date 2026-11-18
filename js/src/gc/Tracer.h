@@ -329,13 +329,16 @@ T* TraceBufferEdge(JSTracer* trc, T** bufferp, const char* name) {
   return static_cast<T*>(result.buffer);
 }
 template <typename T>
-void TraceEdgeAndBuffer(JSTracer* trc, GCBuffer<T>* bufferp, const char* name) {
-  static_assert(std::is_pointer_v<T>);
-  T* addr = bufferp->unbarrieredAddress();
-  T buffer = TraceBufferEdge(trc, addr, name);
+void TraceEdgeAndBuffer(JSTracer* trc, T** bufferp, const char* name) {
+  T* buffer = TraceBufferEdge(trc, bufferp, name);
   if (buffer) {
     buffer->trace(trc);
   }
+}
+template <typename T>
+void TraceEdgeAndBuffer(JSTracer* trc, GCBuffer<T>* bufferp, const char* name) {
+  static_assert(std::is_pointer_v<T>);
+  TraceEdgeAndBuffer(trc, bufferp->unbarrieredAddress(), name);
 }
 
 // As below but with manual barriers.

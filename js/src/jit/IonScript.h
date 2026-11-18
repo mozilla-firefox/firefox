@@ -50,7 +50,9 @@ class IonIC;
 // Note: These are arranged in order of descending alignment requirements to
 // avoid the need for padding. The `runtimeData` uses uint64_t alignement due to
 // its use of mozilla::AlignedStorage2.
-class alignas(8) IonScript final : public TrailingArray<IonScript> {
+class MOZ_EMPTY_BASES alignas(8) IonScript final
+    : public TrailingArray<IonScript>,
+      public gc::Buffer {
  private:
   // Offset (in bytes) from `this` to the start of each trailing array. Each
   // array ends where following one begins. There is no implicit padding (except
@@ -264,11 +266,10 @@ class alignas(8) IonScript final : public TrailingArray<IonScript> {
     return numElements<uint8_t>(recoversOffset(), endOffset());
   }
 
- private:
+ public:
   IonScript(IonCompilationId compilationId, uint32_t localSlotsSize,
             uint32_t argumentSlotsSize, uint32_t frameSize);
 
- public:
   static IonScript* New(JSContext* cx, IonCompilationId compilationId,
                         uint32_t localSlotsSize, uint32_t argumentSlotsSize,
                         uint32_t frameSize, size_t snapshotsListSize,
@@ -278,7 +279,7 @@ class alignas(8) IonScript final : public TrailingArray<IonScript> {
                         size_t icEntries, size_t runtimeSize,
                         size_t safepointsSize);
 
-  static void Destroy(JS::GCContext* gcx, IonScript* script);
+  static void Destroy(JS::Zone* zone, IonScript* script);
 
   void trace(JSTracer* trc);
   void traceWeak(JSTracer* trc);
@@ -363,9 +364,7 @@ class alignas(8) IonScript final : public TrailingArray<IonScript> {
   bool purgedICScripts() const { return purgedICScripts_; }
   void notePurgedICScripts() { purgedICScripts_ = true; }
 
-  size_t sizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf) const {
-    return mallocSizeOf(this);
-  }
+  void addSizeOfIncludingThis(JS::Zone* zone, size_t* data) const;
   HeapPtr<Value>& getConstant(size_t index) {
     MOZ_RELEASE_ASSERT(index < numConstants());
     return constants()[index];
@@ -410,11 +409,11 @@ class alignas(8) IonScript final : public TrailingArray<IonScript> {
 
   size_t invalidationCount() const { return invalidationCount_; }
   void incrementInvalidationCount() { invalidationCount_++; }
-  void decrementInvalidationCount(JS::GCContext* gcx) {
+  void decrementInvalidationCount() {
     MOZ_RELEASE_ASSERT(invalidationCount_);
     invalidationCount_--;
     if (!invalidationCount_) {
-      Destroy(gcx, this);
+      Destroy(method()->zone(), this);
     }
   }
   IonCompilationId compilationId() const { return compilationId_; }
@@ -586,18 +585,5 @@ struct IonScriptCounts {
 
 }  // namespace jit
 }  // namespace js
-
-namespace JS {
-
-template <>
-struct DeletePolicy<js::jit::IonScript> {
-  explicit DeletePolicy(JSRuntime* rt) : rt_(rt) {}
-  void operator()(const js::jit::IonScript* script);
-
- private:
-  JSRuntime* rt_;
-};
-
-}  // namespace JS
 
 #endif /* jit_IonScript_h */

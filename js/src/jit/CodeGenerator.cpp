@@ -91,6 +91,7 @@
 #include "wasm/WasmStubs.h"
 
 #include "builtin/Boolean-inl.h"
+#include "gc/BufferAllocator-inl.h"
 #include "jit/MacroAssembler-inl.h"
 #include "jit/shared/CodeGenerator-shared-inl.h"
 #include "jit/TemplateObject-inl.h"
@@ -17950,25 +17951,6 @@ bool CodeGenerator::link(JSContext* cx) {
 
   size_t numNurseryObjects = snapshot_->nurseryObjects().length();
 
-  IonScript* ionScript = IonScript::New(
-      cx, compilationId, graph.localSlotsSize(), argumentSlots, frameDepth_,
-      snapshots_.listSize(), snapshots_.RVATableSize(), recovers_.size(),
-      graph.numConstants(), numNurseryObjects, safepointIndices_.length(),
-      osiIndices_.length(), icList_.length(), runtimeData_.length(),
-      safepoints_.size());
-  if (!ionScript) {
-    return false;
-  }
-#ifdef DEBUG
-  ionScript->setICHash(snapshot_->icHash());
-#endif
-
-  auto freeIonScript = mozilla::MakeScopeExit([&ionScript] {
-    // Use js_free instead of IonScript::Destroy: the cache list is still
-    // uninitialized.
-    js_free(ionScript);
-  });
-
   Linker linker(masm);
   JitCode* code = linker.newCode(cx, CodeKind::Ion);
   if (!code) {
@@ -18035,6 +18017,20 @@ bool CodeGenerator::link(JSContext* cx) {
     code->setHasBytecodeMap();
   }
 
+  RootedBuffer<IonScript> ionScript(cx);
+  ionScript = IonScript::New(
+      cx, compilationId, graph.localSlotsSize(), argumentSlots, frameDepth_,
+      snapshots_.listSize(), snapshots_.RVATableSize(), recovers_.size(),
+      graph.numConstants(), numNurseryObjects, safepointIndices_.length(),
+      osiIndices_.length(), icList_.length(), runtimeData_.length(),
+      safepoints_.size());
+  if (!ionScript) {
+    return false;
+  }
+#ifdef DEBUG
+  ionScript->setICHash(snapshot_->icHash());
+#endif
+
   ionScript->setMethod(code);
 
   // If the Gecko Profiler is enabled, mark IonScript as having been
@@ -18042,6 +18038,9 @@ bool CodeGenerator::link(JSContext* cx) {
   if (isProfilerInstrumentationEnabled()) {
     ionScript->setHasProfilingInstrumentation();
   }
+
+  // NOTE: The address of the IonScript and interior pointers are embedded in
+  // the code below. This relies on the buffer allocator not moving buffers.
 
   Assembler::PatchDataWithValueCheck(
       CodeLocationLabel(code, invalidateEpilogueData_), ImmPtr(ionScript),
@@ -18147,7 +18146,6 @@ bool CodeGenerator::link(JSContext* cx) {
 
   // Transfer ownership of the IonScript to the JitScript. At this point enough
   // of the IonScript must be initialized for IonScript::Destroy to work.
-  freeIonScript.release();
   script->jitScript()->setIonScript(script, ionScript);
 
   return true;

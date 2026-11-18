@@ -190,8 +190,7 @@ void JSScript::releaseJitScriptOnFinalize(JS::GCContext* gcx) {
   MOZ_ASSERT(hasJitScript());
 
   if (hasIonScript()) {
-    IonScript* ion = jitScript()->clearIonScript(gcx, this);
-    jit::IonScript::Destroy(gcx, ion);
+    jitScript()->clearIonScriptOnFinalize(gcx);
   }
 
   if (hasBaselineScript()) {
@@ -208,10 +207,7 @@ void JitScript::trace(JSTracer* trc) {
 
   TraceEdgeAndBuffer(trc, &baselineScript_, "JitScript::baselineScript_");
 
-  IonScript* ionScript = ionScript_.getForTracing();
-  if (ionScript) {
-    ionScript->trace(trc);
-  }
+  TraceEdgeAndBuffer(trc, &ionScript_, "JitScript::ionScript_");
 
   TraceEdge(trc, &templateEnv_, "jitscript-template-env");
 
@@ -713,21 +709,31 @@ void JitScript::setIonScriptImpl(JS::GCContext* gcx, JSScript* script,
   MOZ_ASSERT_IF(ionState != ScriptState::Disabled,
                 !baselineScript()->hasPendingIonCompileTask());
 
-  JS::Zone* zone = script->zone();
+  Zone* zone = script->zone();
   if (hasIonScript()) {
-    gcx->removeCellMemory(script, ionScript_->allocBytes(),
-                          MemoryUse::IonScript);
     ionScript_.set(zone, nullptr);
   }
 
   ionScript_.set(zone, ionScript);
   ionState_ = ionState;
   MOZ_ASSERT_IF(hasIonScript(), hasBaselineScript());
-  if (hasIonScript()) {
-    AddCellMemory(script, ionScript_->allocBytes(), MemoryUse::IonScript);
-  }
 
   script->updateJitCodeRaw(gcx->runtime());
+}
+
+IonScript* JitScript::clearIonScript(JS::GCContext* gcx, JSScript* script) {
+  MOZ_ASSERT(!gcx->isMarking() && !gcx->isSweeping() && !gcx->isFinalizing());
+
+  IonScript* ion = ionScript();
+  setIonScriptImpl(gcx, script, nullptr, ScriptState::None);
+  return ion;
+}
+
+void JitScript::clearIonScriptOnFinalize(JS::GCContext* gcx) {
+  // No barrier is required if we are finalizing.
+  MOZ_ASSERT(gcx->isFinalizing());
+  ionScript_.unbarrieredSet(nullptr);
+  ionState_ = ScriptState::None;
 }
 
 #ifdef JS_STRUCTURED_SPEW
