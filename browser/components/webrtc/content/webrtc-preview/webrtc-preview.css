@@ -33,6 +33,7 @@ video {
 
 .centered {
   position: absolute;
+  /* logical properties don't work with the transform */
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);

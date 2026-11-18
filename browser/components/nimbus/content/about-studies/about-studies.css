@@ -45,11 +45,11 @@ button > .button-box {
 }
 
 .info-box-content > * {
-  margin-right: 10px;
+  margin-inline-end: 10px;
 }
 
 .info-box-content > *:last-child {
-  margin-right: 0;
+  margin-inline-end: 0;
 }
 
 .study-list {
@@ -84,11 +84,11 @@ button > .button-box {
 }
 
 .study > * {
-  margin-right: 15px;
+  margin-inline-end: 15px;
 }
 
 .study > *:last-child {
-  margin-right: 0;
+  margin-inline-end: 0;
 }
 
 .study-icon {
@@ -143,11 +143,11 @@ button > .button-box {
 }
 
 .study-header > * {
-  margin-right: 5px;
+  margin-inline-end: 5px;
 }
 
 .study-header > *:last-child {
-  margin-right: 0;
+  margin-inline-end: 0;
 }
 
 .study-description code {

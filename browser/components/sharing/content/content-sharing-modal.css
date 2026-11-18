@@ -17,6 +17,7 @@
 #plain-background {
   position: absolute;
   z-index: -2;
+  /* physical left maintains current behavior with the background image, which is incorrect in RTL: see bug 2091478 */
   left: 50%;
   width: 50%;
   height: 100%;

@@ -84,20 +84,6 @@ tbody:nth-child(4n + 1) {
   border-bottom: var(--border-width) solid var(--table-border-color) !important;
 }
 
-.icon {
-  background-position: center center;
-  background-repeat: no-repeat;
-  background-size: 16px;
-  -moz-context-properties: fill;
-  display: inline-block;
-  fill: var(--newtab-icon-primary-color);
-  height: 14px;
-  vertical-align: middle;
-  width: 14px;
-  margin-top: -0.125rem;
-  margin-left: 0.5rem;
-}
-
 .collapsible {
   cursor: pointer;
   border: none;
