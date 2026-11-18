@@ -411,13 +411,13 @@ void HTMLEditor::DoContentInserted(nsIContent* aChild,
         return;
       }
 
-      RefPtr<dom::Range> range = dom::Range::Create(aChild);
-      range->SelectNodesInContainer(container, aChild, endContent);
       DebugOnly<nsresult> rvIgnored =
-          mInlineSpellChecker->SpellCheckRangeIgnoringWordAtCaret(range);
+          mInlineSpellChecker->SpellCheckNodesIgnoringWordAtCaret(
+              *container, *aChild, *endContent);
       NS_WARNING_ASSERTION(
           rvIgnored == NS_ERROR_NOT_INITIALIZED || NS_SUCCEEDED(rvIgnored),
-          "mozInlineSpellChecker::SpellCheckRange() failed, but ignored");
+          "mozInlineSpellChecker::SpellCheckNodesIgnoringWordAtCaret() "
+          "failed, but ignored");
     }
   }
 }
@@ -502,10 +502,9 @@ MOZ_CAN_RUN_SCRIPT_BOUNDARY void HTMLEditor::CharacterDataChanged(
     return;
   }
 
-  RefPtr<dom::Range> range = dom::Range::Create(aContent);
-  range->SelectNodesInContainer(parent, aContent, aContent);
   DebugOnly<nsresult> rvIgnored =
-      mInlineSpellChecker->SpellCheckRangeIgnoringWordAtCaret(range);
+      mInlineSpellChecker->SpellCheckNodesIgnoringWordAtCaret(
+          *parent, *aContent, *aContent);
 }
 
 nsresult HTMLEditor::RunOrScheduleOnModifyDocument(

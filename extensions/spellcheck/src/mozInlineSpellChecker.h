@@ -185,6 +185,9 @@ class mozInlineSpellChecker final : public nsIInlineSpellChecker,
   // complete.
   int32_t mNumPendingSpellChecks;
 
+  // Shared with the queued status until ResumeCheck starts processing it.
+  RefPtr<mozilla::dom::Range> mPendingDOMMutationRange;
+
   // The number of calls to UpdateCurrentDictionary that haven't finished yet.
   int32_t mNumPendingUpdateCurrentDictionary;
 
@@ -262,7 +265,14 @@ class mozInlineSpellChecker final : public nsIInlineSpellChecker,
 
   nsresult CleanupRangesInSelection(mozilla::dom::Selection* aSelection);
 
-  nsresult SpellCheckRangeIgnoringWordAtCaret(mozilla::dom::Range* aRange);
+  /**
+   * Spellcheck aStartContent to aEndContent which are children of aContainer
+   * (inclusive) without the word at the caret.  This is called when web apps
+   * modify the DOM tree directly.
+   */
+  nsresult SpellCheckNodesIgnoringWordAtCaret(nsINode& aContainer,
+                                              nsIContent& aStartContent,
+                                              nsIContent& aEndContent);
 
   /**
    * @param aRange needs to be kept alive by the caller.

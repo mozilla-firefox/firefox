@@ -6809,6 +6809,14 @@
   value: false
   mirror: once
 
+# Threshold on all pending spellcheck operations (including dictionary updates
+# and async word checks) before DOM mutations share one dirty range. Zero or
+# negative values coalesce from the first mutation.
+- name: extensions.spellcheck.inline.dom-mutation-coalescing-threshold
+  type: int32_t
+  value: 32
+  mirror: always
+
 # Maximum number of misspelled words in a text.
 - name: extensions.spellcheck.inline.max-misspellings
   type: int32_t

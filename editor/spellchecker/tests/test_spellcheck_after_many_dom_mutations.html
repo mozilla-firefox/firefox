@@ -1,0 +1,140 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Spellcheck result after a lot of DOM mutations in a task</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css">
+</head>
+<body>
+<div contenteditable spellcheck="true" lang="en-US"></div>
+<script>
+"use strict";
+
+const { maybeOnSpellCheck } = SpecialPowers.ChromeUtils.importESModule(
+  "resource://testing-common/AsyncSpellCheckTestHelper.sys.mjs"
+);
+
+function waitForTick() {
+  return new Promise(resolve =>
+    SimpleTest.executeSoon(
+      () => requestAnimationFrame(() => requestAnimationFrame(resolve))
+    )
+  );
+}
+
+async function waitForMisspelledWords(aSpellCheckSelection, aEditingHost, aCount) {
+  for (let retry = 0; retry < 100; retry++) {
+    await waitForTick();
+    await new Promise(resolve => maybeOnSpellCheck(aEditingHost, resolve));
+    if (aSpellCheckSelection.rangeCount >= aCount) {
+      break;
+    }
+  }
+}
+
+// The word splitter treats a block without a frame as inline, so construct the
+// frames before the idle spellcheck runs.
+function flushLayout(aElement) {
+  aElement.getBoundingClientRect();
+}
+
+function getMisspelledWords(aSpellCheckSelection) {
+  const words = [];
+  for (let i = 0; i < aSpellCheckSelection.rangeCount; i++) {
+    words.push(aSpellCheckSelection.getRangeAt(i).toString());
+  }
+  return words.sort();
+}
+
+// Spellchecker ignores words containing digits.
+function suffix(aIndex) {
+  return String.fromCharCode("a".charCodeAt(0) + aIndex / 10);
+}
+
+SimpleTest.waitForExplicitFinish();
+SimpleTest.waitForFocus(async () => {
+  const editingHost = document.querySelector("div[contenteditable]");
+  for (const limit of [0, 2, 32]) {
+    await SpecialPowers.pushPrefEnv({set: [
+      ["extensions.spellcheck.inline.dom-mutation-coalescing-threshold", limit],
+    ]});
+    const numParagraphs = 100;
+    let html = "";
+    for (let i = 0; i < numParagraphs; i++) {
+      html += i % 10 ? `<p>This is a paragraph</p>` : `<p>This is a missspelled${suffix(i)} paragraph</p>`;
+    }
+    editingHost.innerHTML = html;
+    flushLayout(editingHost);
+    editingHost.focus();
+    getSelection().collapse(editingHost.firstChild.firstChild, 0);
+
+    const editor = SpecialPowers.wrap(window).docShell.editingSession.getEditorForWindow(window);
+    const selCon = editor.selectionController;
+    const spellCheckSelection = selCon.getSelection(selCon.SELECTION_SPELLCHECK);
+
+    const initialMisspelledWords = [];
+    for (let i = 0; i < numParagraphs; i += 10) {
+      initialMisspelledWords.push(`missspelled${suffix(i)}`);
+    }
+    initialMisspelledWords.sort();
+    await waitForMisspelledWords(spellCheckSelection, editingHost, initialMisspelledWords.length);
+    isDeeply(
+      getMisspelledWords(spellCheckSelection),
+      initialMisspelledWords,
+      "The initial misspelled words should be marked"
+    );
+
+    // Web apps like TinyMCE wrap the text of every paragraph with an inline
+    // element and may add new content with a lot of DOM API calls in a task.
+    // The misspelled words in the moved text nodes and in the new content should
+    // be marked after that.
+    for (const p of editingHost.querySelectorAll("p")) {
+      const text = p.firstChild;
+      const strong = document.createElement("strong");
+      p.insertBefore(strong, text);
+      strong.appendChild(text);
+    }
+    const expectedMisspelledWords = [...initialMisspelledWords];
+    for (let i = 0; i < numParagraphs; i += 10) {
+      const p = document.createElement("p");
+      editingHost.appendChild(p);
+      p.appendChild(document.createTextNode(`New wrongg${suffix(i)} paragraph`));
+      expectedMisspelledWords.push(`wrongg${suffix(i)}`);
+    }
+    // Modify the text of the last paragraph too.
+    editingHost.lastChild.firstChild.appendData(" badd");
+    expectedMisspelledWords.push("badd");
+    expectedMisspelledWords.sort();
+    flushLayout(editingHost);
+
+    await waitForMisspelledWords(spellCheckSelection, editingHost, expectedMisspelledWords.length);
+    isDeeply(
+      getMisspelledWords(spellCheckSelection),
+      expectedMisspelledWords,
+      "The misspelled words should be marked after a lot of DOM mutations"
+    );
+
+    // Extend the queued interval in both directions, then remove the paragraph
+    // at its end boundary before the idle check runs.
+    const paragraphs = editingHost.querySelectorAll("p");
+    paragraphs[50].firstChild.firstChild.appendData(" wronggmiddle");
+    paragraphs[90].firstChild.firstChild.appendData(" wronggright");
+    paragraphs[10].firstChild.firstChild.appendData(" wronggleft");
+    paragraphs[70].firstChild.firstChild.appendData(" wronggextra");
+    paragraphs[90].remove();
+    const afterRemoval = expectedMisspelledWords.filter(
+      word => word != `missspelled${suffix(90)}`
+    );
+    afterRemoval.push("wronggleft", "wronggmiddle", "wronggextra");
+    afterRemoval.sort();
+    await waitForMisspelledWords(spellCheckSelection, editingHost, afterRemoval.length);
+    isDeeply(getMisspelledWords(spellCheckSelection), afterRemoval,
+             `Coalesced changes and removal should be checked with limit ${limit}`);
+    await SpecialPowers.popPrefEnv();
+  }
+  SimpleTest.finish();
+});
+</script>
+</body>
+</html>

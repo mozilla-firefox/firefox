@@ -103,6 +103,8 @@ support-files = ["multiple_content_languages_subframe.html"]
 
 ["test_spellcheck_after_edit.html"]
 
+["test_spellcheck_after_many_dom_mutations.html"]
+
 ["test_spellcheck_after_pressing_navigation_key.html"]
 
 ["test_spellcheck_selection.html"]
