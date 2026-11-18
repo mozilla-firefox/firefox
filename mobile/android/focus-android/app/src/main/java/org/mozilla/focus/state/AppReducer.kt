@@ -5,6 +5,7 @@
 package org.mozilla.focus.state
 
 import androidx.annotation.VisibleForTesting
+import mozilla.components.browser.state.search.SearchAccessPoint
 import mozilla.components.feature.top.sites.TopSite
 import mozilla.components.lib.state.Reducer
 
@@ -21,6 +22,7 @@ object AppReducer : Reducer<AppState, AppAction> {
             is AppAction.FinishFirstRun -> finishFirstRun(state, action)
             is AppAction.Lock -> lock(state, action)
             is AppAction.Unlock -> unlock(state, action)
+            is AppAction.ResetHomeAccessPoint -> resetHomeAccessPoint(state)
             is AppAction.OpenSettings -> openSettings(state, action)
             is AppAction.NavigateUp -> navigateUp(state, action)
             is AppAction.OpenTab -> openTab(state, action)
@@ -43,7 +45,7 @@ object AppReducer : Reducer<AppState, AppAction> {
                     state,
                     action,
                 )
-            is AppAction.ShowHomeScreen -> showHomeScreen(state)
+            is AppAction.ShowHomeScreen -> showHomeScreen(state, action.accessPoint)
             is AppAction.ShowOnboardingSecondScreen -> showOnBoardingSecondScreen(state)
             is AppAction.OpenCrashList -> openCrashlist(state)
             is AppAction.ShowSearchWidgetSnackBar -> showSearchWidgetSnackBarChanged(state, action)
@@ -70,7 +72,7 @@ private fun noTabs(state: AppState): AppState {
     if (state.screen is Screen.Home || state.screen is Screen.FirstRun || state.screen is Screen.Locked) {
         return state
     }
-    return state.copy(screen = Screen.Home)
+    return state.copy(screen = Screen.Home())
 }
 
 /** The user wants to edit the URL of a tab. */
@@ -97,7 +99,7 @@ private fun finishFirstRun(state: AppState, action: AppAction.FinishFirstRun): A
     return if (action.tabId != null) {
         state.copy(screen = Screen.Browser(action.tabId, showTabs = false))
     } else {
-        state.copy(screen = Screen.Home)
+        state.copy(screen = Screen.Home())
     }
 }
 
@@ -120,11 +122,11 @@ internal fun showOnBoardingSecondScreen(state: AppState): AppState {
 
 /** Force showing the home screen. */
 @VisibleForTesting
-internal fun showHomeScreen(state: AppState): AppState {
-    if (state.screen is Screen.Home) {
+internal fun showHomeScreen(state: AppState, accessPoint: String): AppState {
+    if (state.screen == Screen.Home(accessPoint)) {
         return state
     }
-    return state.copy(screen = Screen.Home)
+    return state.copy(screen = Screen.Home(accessPoint))
 }
 
 /** Lock the application. */
@@ -133,19 +135,46 @@ internal fun lock(state: AppState, action: AppAction.Lock): AppState {
     if (state.screen is Screen.Locked) {
         return state
     }
-    return state.copy(screen = Screen.Locked(action.bundle))
+    val homeAccessPoint =
+        if (state.screen is Screen.Home) {
+            state.screen.accessPoint
+        } else {
+            SearchAccessPoint.DEFAULT
+        }
+    return state.copy(screen = Screen.Locked(action.bundle, homeAccessPoint))
 }
 
 /** Unlock the application. */
 private fun unlock(state: AppState, action: AppAction.Unlock): AppState {
-    if (state.screen !is Screen.Locked) {
+    val screen = state.screen
+    if (screen !is Screen.Locked) {
         return state
     }
 
     return if (action.tabId != null) {
         state.copy(screen = Screen.Browser(action.tabId, showTabs = false))
     } else {
-        state.copy(screen = Screen.Home)
+        state.copy(screen = Screen.Home(screen.homeAccessPoint))
+    }
+}
+
+/** Clear the search access point of the home screen, including the one to show once unlocked. */
+@VisibleForTesting
+internal fun resetHomeAccessPoint(state: AppState): AppState {
+    return when (val screen = state.screen) {
+        is Screen.Home ->
+            if (screen.accessPoint == SearchAccessPoint.DEFAULT) {
+                state
+            } else {
+                state.copy(screen = screen.copy(accessPoint = SearchAccessPoint.DEFAULT))
+            }
+        is Screen.Locked ->
+            if (screen.homeAccessPoint == SearchAccessPoint.DEFAULT) {
+                state
+            } else {
+                state.copy(screen = screen.copy(homeAccessPoint = SearchAccessPoint.DEFAULT))
+            }
+        else -> state
     }
 }
 
@@ -235,7 +264,7 @@ private fun navigateUp(state: AppState, action: AppAction.NavigateUp): AppState 
                 if (action.tabId != null) {
                     Screen.Browser(action.tabId, false)
                 } else {
-                    Screen.Home
+                    Screen.Home()
                 }
 
             is Screen.SitePermissionOptionsScreen -> {
@@ -244,7 +273,7 @@ private fun navigateUp(state: AppState, action: AppAction.NavigateUp): AppState 
 
             is Screen.Settings -> {
                 if (currentScreen.page == Screen.Settings.Page.Start) {
-                    if (action.tabId != null) Screen.Browser(action.tabId, false) else Screen.Home
+                    if (action.tabId != null) Screen.Browser(action.tabId, false) else Screen.Home()
                 } else {
                     val parentPage = settingsParentMap[currentScreen.page] ?: Screen.Settings.Page.Start
                     Screen.Settings(parentPage)

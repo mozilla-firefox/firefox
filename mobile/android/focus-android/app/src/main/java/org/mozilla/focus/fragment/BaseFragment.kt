@@ -21,7 +21,7 @@ abstract class BaseFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         hideToolbar()
-        view?.isInvisible = requireComponents.appStore.state.screen == Screen.Locked()
+        view?.isInvisible = requireComponents.appStore.state.screen is Screen.Locked
     }
 
     /** Cancels any ongoing animations on this fragment. */
@@ -34,7 +34,7 @@ abstract class BaseFragment : Fragment() {
 
     override fun onPause() {
         super.onPause()
-        view?.isInvisible = requireComponents.appStore.state.screen == Screen.Locked()
+        view?.isInvisible = requireComponents.appStore.state.screen is Screen.Locked
     }
 
     override fun onCreateAnimation(transit: Int, enter: Boolean, nextAnim: Int): Animation? {

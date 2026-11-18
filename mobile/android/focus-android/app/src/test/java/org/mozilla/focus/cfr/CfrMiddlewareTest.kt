@@ -52,7 +52,7 @@ class CfrMiddlewareTest {
 
         whenever(settings.shouldShowCfrForTrackingProtection).thenReturn(true)
 
-        val defaultScreen = org.mozilla.focus.state.Screen.Home
+        val defaultScreen = org.mozilla.focus.state.Screen.Home()
         appState = AppState(screen = defaultScreen, showEraseTabsCfr = false)
         whenever(appStore.state).thenAnswer { appState }
 

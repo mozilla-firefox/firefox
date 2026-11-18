@@ -7,6 +7,7 @@ package org.mozilla.focus.searchwidget
 import android.content.Context
 import android.os.Bundle
 import androidx.annotation.VisibleForTesting
+import mozilla.components.browser.state.search.SearchAccessPoint
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.concept.engine.EngineSession.LoadUrlFlags
 import mozilla.components.feature.search.widget.BaseVoiceSearchActivity
@@ -84,7 +85,7 @@ object ExternalIntentNavigation {
         return when (searchWidgetIntent == true) {
             true -> {
                 SearchWidget.newTabButton.record(NoExtras())
-                context.components.appStore.dispatch(AppAction.ShowHomeScreen)
+                context.components.appStore.dispatch(AppAction.ShowHomeScreen(SearchAccessPoint.WIDGET))
                 true
             }
             else -> false
@@ -106,8 +107,9 @@ object ExternalIntentNavigation {
                     context.components.tabsUseCases.addTab(
                         url =
                             SearchUtils.createSearchUrl(
-                                context,
-                                voiceSearchText,
+                                context = context,
+                                text = voiceSearchText,
+                                accessPoint = SearchAccessPoint.WIDGET,
                             ),
                         source = SessionState.Source.External.ActionSend(null),
                         searchTerms = voiceSearchText,

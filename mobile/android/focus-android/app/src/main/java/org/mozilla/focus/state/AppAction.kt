@@ -5,6 +5,7 @@
 package org.mozilla.focus.state
 
 import android.os.Bundle
+import mozilla.components.browser.state.search.SearchAccessPoint
 import mozilla.components.feature.top.sites.TopSite
 import mozilla.components.lib.state.Action
 import org.mozilla.focus.settings.permissions.permissionoptions.SitePermission
@@ -35,6 +36,9 @@ sealed class AppAction : Action {
     /** The app should get unlocked. */
     data class Unlock(val tabId: String?) : AppAction()
 
+    /** Clears the search access point of the home screen, including the one to show once unlocked. */
+    internal object ResetHomeAccessPoint : AppAction()
+
     /** Action for opening the settings screen at a specific settings [page]. */
     data class OpenSettings(val page: Screen.Settings.Page) : AppAction()
 
@@ -52,8 +56,12 @@ sealed class AppAction : Action {
 
     internal object ShowOnboardingSecondScreen : AppAction()
 
-    /** Forces showing the home screen. */
-    internal object ShowHomeScreen : AppAction()
+    /**
+     * Forces showing the home screen.
+     *
+     * @property accessPoint The search access point used for searches started from this screen.
+     */
+    internal data class ShowHomeScreen(val accessPoint: String = SearchAccessPoint.DEFAULT) : AppAction()
 
     /** Opens the tab with the given [tabId] and actively switches to the browser screen if needed. */
     data class OpenTab(val tabId: String) : AppAction()

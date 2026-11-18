@@ -67,7 +67,7 @@ class MenuMiddlewareTest {
     private val otherTab = createTab("https://example.com", id = "other")
     private val browserStore = BrowserStore(BrowserState(tabs = listOf(tab, otherTab), selectedTabId = otherTab.id))
     private val shortcut = TopSite.Pinned(1, "Mozilla", tab.content.url, null)
-    private val appStore = AppStore(AppState(screen = Screen.Home, topSites = listOf(shortcut)))
+    private val appStore = AppStore(AppState(screen = Screen.Home(), topSites = listOf(shortcut)))
     private val groups = MutableStateFlow<List<MenuItemsGroup>>(emptyList())
     private val handled = mutableListOf<String>()
     private var dismissCount = 0

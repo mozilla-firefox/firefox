@@ -47,7 +47,7 @@ import org.robolectric.RobolectricTestRunner
 class BrowserMenuTest {
     private val tab = createTab("https://mozilla.org", id = "tab", private = true)
     private val browserState = BrowserState(tabs = listOf(tab), selectedTabId = tab.id)
-    private val appState = AppState(screen = Screen.Home)
+    private val appState = AppState(screen = Screen.Home())
     private val action = Action("Report broken site…", true, null, null, null, null) {}
     private val extension =
         WebExtensionState(

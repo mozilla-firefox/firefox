@@ -63,7 +63,7 @@ class HomeScreenTest {
     @Test
     fun `test checkIfPinningSupported when state is null`() =
         runTest(testDispatcher) {
-            val appState = AppState(Screen.Home)
+            val appState = AppState(Screen.Home())
             `when`(appStore.state).thenReturn(appState)
 
             `when`(shortcutManager.isRequestPinShortcutSupported).thenReturn(true)
@@ -83,7 +83,7 @@ class HomeScreenTest {
     @Test
     fun `test checkIfPinningSupported when state is not null`() =
         runTest(testDispatcher) {
-            val appState = AppState(Screen.Home, isPinningSupported = true)
+            val appState = AppState(Screen.Home(), isPinningSupported = true)
             `when`(appStore.state).thenReturn(appState)
 
             HomeScreen.checkIfPinningSupported(

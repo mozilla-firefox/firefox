@@ -7,6 +7,7 @@ package org.mozilla.focus.state
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import java.util.UUID
+import mozilla.components.browser.state.search.SearchAccessPoint
 import mozilla.components.feature.top.sites.TopSite
 import mozilla.components.lib.state.State
 import org.mozilla.focus.autocomplete.AutocompleteAddFragment
@@ -59,6 +60,8 @@ data class AppState(
     val isPinningSupported: Boolean? = null,
 ) : State
 
+private const val HOME_ID = "HOME"
+
 /**
  * A group of screens that the app can display.
  *
@@ -76,8 +79,15 @@ sealed class Screen {
     /** Screen to show content on about:crashes */
     object CrashListScreen : Screen()
 
-    /** The home screen. */
-    object Home : Screen()
+    /**
+     * The home screen.
+     *
+     * @property accessPoint The search access point used for searches started from this screen.
+     */
+    data class Home(val accessPoint: String = SearchAccessPoint.DEFAULT) : Screen() {
+        // When the access point changes, the id stays the same and it is treated as the same screen.
+        override val id: String = HOME_ID
+    }
 
     /**
      * Browser screen.
@@ -102,8 +112,12 @@ sealed class Screen {
      *
      * @property bundle it is used for app navigation. If the user can unlock with success he should be redirected to a
      *   certain screen.It comes from the external intent.
+     * @property homeAccessPoint The search access point of the home screen to show once unlocked.
      */
-    data class Locked(val bundle: Bundle? = null) : Screen()
+    data class Locked(
+        val bundle: Bundle? = null,
+        val homeAccessPoint: String = SearchAccessPoint.DEFAULT,
+    ) : Screen()
 
     /** Screen for site permission options. */
     data class SitePermissionOptionsScreen(val sitePermission: SitePermission) : Screen()

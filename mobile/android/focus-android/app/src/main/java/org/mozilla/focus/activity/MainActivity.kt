@@ -316,7 +316,9 @@ open class MainActivity : EdgeToEdgeActivity() {
     }
 
     private fun handleAppNavigation(intent: SafeIntent) {
-        if (components.appStore.state.screen == Screen.Locked()) {
+        components.appStore.dispatch(AppAction.ResetHomeAccessPoint)
+
+        if (components.appStore.state.screen is Screen.Locked) {
             components.appStore.dispatch(AppAction.Lock(intent.extras))
         } else if (settings.getAppLaunchCount() == 0) {
             setSplashScreenPreDrawListener(intent)

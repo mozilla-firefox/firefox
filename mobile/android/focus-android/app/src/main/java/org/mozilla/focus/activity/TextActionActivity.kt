@@ -8,6 +8,7 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.core.net.toUri
+import mozilla.components.browser.state.search.SearchAccessPoint
 import mozilla.components.feature.search.ext.buildSearchUrl
 import mozilla.components.feature.search.ext.waitForSelectedOrDefaultSearchEngine
 import mozilla.components.support.utils.SafeIntent
@@ -24,7 +25,7 @@ class TextActionActivity : Activity() {
         val searchText = searchTextCharSequence?.toString() ?: ""
 
         components.store.waitForSelectedOrDefaultSearchEngine { searchEngine ->
-            val searchUrl = searchEngine?.buildSearchUrl(searchText).toString()
+            val searchUrl = searchEngine?.buildSearchUrl(searchText, SearchAccessPoint.CONTEXT).toString()
             val searchIntent = Intent(this, IntentReceiverActivity::class.java)
             searchIntent.action = Intent.ACTION_VIEW
             searchIntent.putExtra(EXTRA_TEXT_SELECTION, true)

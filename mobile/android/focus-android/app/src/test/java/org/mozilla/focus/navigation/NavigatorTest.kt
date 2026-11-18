@@ -9,6 +9,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import mozilla.components.browser.state.search.SearchAccessPoint
 import mozilla.components.support.test.any
 import org.junit.After
 import org.junit.Before
@@ -35,7 +36,7 @@ class NavigatorTest {
 
     private lateinit var stateFlow: MutableStateFlow<AppState>
 
-    private val homeScreen = Screen.Home
+    private val homeScreen = Screen.Home()
     private val browserScreen = Screen.Browser(tabId = "tab1", false)
     private val settingsScreen = Screen.Settings(Screen.Settings.Page.Start)
     private val otherBrowserScreen = Screen.Browser(tabId = "tab2", false)
@@ -96,6 +97,21 @@ class NavigatorTest {
             testDispatcher.scheduler.advanceUntilIdle()
 
             verify(navigation, times(1)).navigateToBrowser(browserScreen.tabId)
+            verifyNoMoreInteractions(navigation)
+        }
+
+    @Test
+    fun `does not navigate again when only the home screen access point changes`() =
+        runTest(testDispatcher.scheduler) {
+            stateFlow.value = AppState(screen = homeScreen)
+            navigator.start()
+            testDispatcher.scheduler.advanceUntilIdle()
+            verify(navigation).navigateToHome()
+
+            stateFlow.value = AppState(screen = Screen.Home(accessPoint = SearchAccessPoint.WIDGET))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify(navigation, times(1)).navigateToHome()
             verifyNoMoreInteractions(navigation)
         }
 
