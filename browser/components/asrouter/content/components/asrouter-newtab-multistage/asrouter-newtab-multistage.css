@@ -4358,7 +4358,6 @@ html {
   --button-min-height-small: var(--button-min-height);
   --button-padding-block-small: var(--space-xxsmall);
   --button-padding-inline-small: var(--space-medium);
-  line-height: 1;
 }
 @media (forced-colors: none) and (prefers-contrast: no-preference) {
   .onboardingContainer .carousel-nav moz-segmented-control {
