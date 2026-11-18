@@ -108,9 +108,12 @@ urlbar-result-menu-manage-firefox-suggest2 = Manage { -firefox-suggest-brand-nam
 # user tell Firefox that the location is not accurate. Typically the location
 # will be a city name, or a city name combined with the name of its parent
 # administrative division (e.g., a province, prefecture, or state).
-urlbar-result-menu-report-inaccurate-location2 = Report inaccurate location
-urlbar-result-menu-show-less-frequently2 = Show less frequently
-urlbar-result-menu-dont-show-weather-suggestions2 = Don’t show weather suggestions
+urlbar-result-menu-report-inaccurate-location3 = Report inaccurate location
+    .accesskey = R
+urlbar-result-menu-show-less-frequently3 = Show less frequently
+    .accesskey = f
+urlbar-result-menu-dont-show-weather-suggestions3 = Don’t show weather suggestions
+    .accesskey = n
 
 # Shown in the urlbar input field context menu to dismiss an adaptive autofill
 # suggestion.
@@ -270,8 +273,9 @@ search-one-offs-add-engine =
     .aria-label = Add search engine “{ $engineName }”
 # When more than 5 engines are offered by a web page, they are grouped in a
 # submenu using this as its label.
-search-one-offs-add-engine-menu =
+search-one-offs-add-engine-menu2 =
     .label = Add search engine
+    .accesskey = h
 
 ## Local search mode one-off buttons
 ## Variables:
@@ -809,7 +813,8 @@ urlbar-result-realtime-opt-in-dismiss = Dismiss
 urlbar-result-realtime-opt-in-dismiss-all2 = Don’t show these suggestions
 
 # This string is shown in the result menu.
-urlbar-result-menu-dont-show-market2 = Don’t show market suggestions
+urlbar-result-menu-dont-show-market3 = Don’t show market suggestions
+    .accesskey = n
 
 # A message that replaces a result when the user dismisses Market suggestions.
 urlbar-result-dismissal-acknowledgment-market = Thanks for your feedback. You won’t see market suggestions anymore.
@@ -997,8 +1002,8 @@ urlbar-group-trending =
   .label = Trending on { $engine }
 
 # The result menu labels shown next to trending results.
-urlbar-result-menu-trending-dont-show2 = Don’t show trending searches
-  .accesskey = D
+urlbar-result-menu-trending-dont-show3 = Don’t show trending searches
+    .accesskey = n
 
 # A message that replaces a result when the user dismisses all suggestions of a
 # particular type.

@@ -1,0 +1,15 @@
+diff --git a/src/resample.c b/src/resample.c
+index b2efcca3a1f6..82e8aa5b225a 100644
+--- a/src/resample.c
++++ b/src/resample.c
+@@ -633,7 +633,9 @@ static int update_filter(SpeexResamplerState *st)
+       st->cutoff = quality_map[st->quality].downsample_bandwidth * st->den_rate / st->num_rate;
+       if (multiply_frac(&st->filt_len,st->filt_len,st->num_rate,st->den_rate) != RESAMPLER_ERR_SUCCESS)
+          goto fail;
+-      /* Round up to make sure we have a multiple of 8 for SSE */
++      /* Round up to a multiple of 8 for SSE, without wrapping to zero. */
++      if (st->filt_len > UINT32_MAX - 7)
++         goto fail;
+       st->filt_len = ((st->filt_len-1)&(~0x7))+8;
+       if (2*st->den_rate < st->num_rate)
+          st->oversample >>= 1;

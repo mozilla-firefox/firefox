@@ -18,10 +18,8 @@ class mozIStorageStatement;
 
 namespace mozilla::dom::quota {
 
-#if defined(NIGHTLY_BUILD) || defined(DEBUG)
 bool CheckClientUsagesConsistency(const ClientUsageArray& aClientUsages,
                                   int64_t aUsage, const nsACString& aContext);
-#endif  // defined(NIGHTLY_BUILD) || defined(DEBUG)
 
 struct PrincipalMetadata {
   nsCString mSuffix;
@@ -244,9 +242,7 @@ struct FullOriginMetadata : OriginMetadata, OriginStateMetadata {
 
   nsresult BindToStatement(mozIStorageStatement* aStatement) const;
 
-#if defined(NIGHTLY_BUILD) || defined(DEBUG)
   bool CheckIfUsageIsConsistent(const nsACString& aContext) const;
-#endif  // defined(NIGHTLY_BUILD) || defined(DEBUG)
 };
 
 struct OriginUsageMetadata : FullOriginMetadata {

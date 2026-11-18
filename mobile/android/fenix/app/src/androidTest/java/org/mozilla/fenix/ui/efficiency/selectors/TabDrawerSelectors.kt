@@ -210,6 +210,13 @@ object TabDrawerSelectors : SelectorContainer {
             description = "Recently closed tabs menu button",
         )
 
+    val TAB_SETTINGS_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TAG,
+            value = TabsTrayTestTag.TAB_SETTINGS,
+            description = "Tab settings menu button",
+        )
+
     // "Close all tabs" only arms a confirmation dialog; this is its confirm button. Skipping it leaves every
     // tab open, which silently invalidates any later "no tabs" or search-group assertion.
     val CLOSE_ALL_TABS_CONFIRM_BUTTON =

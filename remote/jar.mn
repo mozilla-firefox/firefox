@@ -92,6 +92,7 @@ remote.jar:
   content/shared/webdriver/Accessibility.sys.mjs (shared/webdriver/Accessibility.sys.mjs)
   content/shared/webdriver/Actions.sys.mjs (shared/webdriver/Actions.sys.mjs)
   content/shared/webdriver/Assert.sys.mjs (shared/webdriver/Assert.sys.mjs)
+  content/shared/webdriver/BrowserVersion.sys.mjs (shared/webdriver/BrowserVersion.sys.mjs)
   content/shared/webdriver/Capabilities.sys.mjs (shared/webdriver/Capabilities.sys.mjs)
   content/shared/webdriver/Certificates.sys.mjs (shared/webdriver/Certificates.sys.mjs)
   content/shared/webdriver/ConnectionPrompt.sys.mjs (shared/webdriver/ConnectionPrompt.sys.mjs)

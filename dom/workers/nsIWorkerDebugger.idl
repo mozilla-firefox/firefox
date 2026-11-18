@@ -31,6 +31,11 @@ interface nsIWorkerDebugger : nsISupports
 
   readonly attribute boolean isRemote;
 
+  // True if the worker runs in a different process than this debugger object.
+  // Messages received from such a worker come from a less privileged process
+  // and must not be trusted.
+  readonly attribute boolean isOutOfProcess;
+
   readonly attribute boolean isInitialized;
 
   readonly attribute nsIWorkerDebugger parent;

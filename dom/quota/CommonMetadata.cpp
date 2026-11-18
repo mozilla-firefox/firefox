@@ -12,7 +12,6 @@
 
 namespace mozilla::dom::quota {
 
-#if defined(NIGHTLY_BUILD) || defined(DEBUG)
 bool CheckClientUsagesConsistency(const ClientUsageArray& aClientUsages,
                                   int64_t aUsage, const nsACString& aContext) {
   QuotaManager* quotaManager = QuotaManager::Get();
@@ -52,7 +51,6 @@ bool FullOriginMetadata::CheckIfUsageIsConsistent(
     const nsACString& aContext) const {
   return CheckClientUsagesConsistency(mClientUsages, mOriginUsage, aContext);
 }
-#endif  // defined(NIGHTLY_BUILD) || defined(DEBUG)
 
 nsresult FullOriginMetadata::BindToStatement(
     mozIStorageStatement* aStatement) const {

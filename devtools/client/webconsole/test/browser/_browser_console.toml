@@ -60,9 +60,6 @@ skip-if = [
 ["browser_console_eager_eval.js"]
 
 ["browser_console_eager_eval_resolve.js"]
-skip-if = [
-  "verify",
-]
 
 ["browser_console_enable_network_monitoring.js"]
 skip-if = [

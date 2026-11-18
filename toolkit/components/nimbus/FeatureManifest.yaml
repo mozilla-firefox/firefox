@@ -2435,6 +2435,32 @@ autofill-credit-cards-rust-storage:
         branch: user
         pref: extensions.formautofill.creditCards.storage.rust.enabled
 
+autofill-credit-cards-drop-undecryptable:
+  description: >-
+    Leave saved credit cards whose number cannot be decrypted out of the
+    migration to the Rust autofill store, instead of failing the migration.
+  owner: dlee@mozilla.com
+  hasExposure: false
+  variables:
+    enabled:
+      description: >-
+        If true, a migration leaves out credit cards whose number cannot be
+        decrypted when another card's number decrypted in the same attempt, or
+        once afterAttempts attempts have failed and the last of them failed to
+        decrypt a card too. If false, such cards fail the migration.
+      type: boolean
+      setPref:
+        branch: user
+        pref: extensions.formautofill.creditCards.storage.rust.dropUndecryptable
+    afterAttempts:
+      description: >-
+        How many migration attempts must have failed before cards whose number
+        cannot be decrypted are left out even when no other card decrypted.
+      type: int
+      setPref:
+        branch: user
+        pref: extensions.formautofill.creditCards.storage.rust.dropUndecryptableAfterAttempts
+
 shellService:
   description: "Interface with OS, e.g., pinning and set default"
   owner: desktop-integrations@mozilla.com

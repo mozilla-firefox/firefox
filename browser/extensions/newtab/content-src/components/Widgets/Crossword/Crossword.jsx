@@ -26,6 +26,7 @@ import { WidgetHideMenuItem } from "../WidgetPlacement";
 import { useWidgetTelemetry } from "../useWidgetTelemetry";
 import { WidgetMenuButton } from "../WidgetMenuButton";
 import { WidgetMenuPoweredBy } from "../WidgetMenuPoweredBy";
+import { useSrcAfterPageShown } from "../usePageVisible";
 
 const USER_ACTION_TYPES = {
   ...WIDGET_USER_ACTIONS,
@@ -141,11 +142,12 @@ function Crossword({
 }) {
   const prefs = useSelector(state => state.Prefs.values);
   const framedWidgets = useSelector(state => state.FramedWidgets);
-  const { src, state: frameState } = resolveWidgetFrame(
+  const { src: frameSrc, state: frameState } = resolveWidgetFrame(
     CROSSWORD_ENTRY,
     prefs,
     framedWidgets
   );
+  const src = useSrcAfterPageShown(frameSrc);
   const widgetSize = resolveWidgetSize(CROSSWORD_ENTRY, prefs);
   const hasInteracted = prefs[PREF_CROSSWORD_INTERACTION];
   const iframeRef = useRef(null);

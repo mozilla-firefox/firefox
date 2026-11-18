@@ -248,11 +248,6 @@ prefs = [
 ]
 
 ["test_underflowedCacheRescan.js"]
-# The rescan logic is gated on NIGHTLY_BUILD || DEBUG in C++.
-run-if = [
-  "nightly_build",
-  "debug",
-]
 # dom.storage.testing is needed for LocalStorageUtils.createStorage() to work
 # from an xpcshell (non-content) context, and dom.storage.client_validation
 # needs to be disabled since it can't be satisfied from such a context either.

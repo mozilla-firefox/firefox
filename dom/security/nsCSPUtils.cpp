@@ -1035,7 +1035,7 @@ bool nsCSPHashSrc::allows(enum CSPKeyword aKeyword,
   rv = hasher->Finish(true, hash);
   NS_ENSURE_SUCCESS(rv, false);
 
-  return NS_ConvertUTF16toUTF8(mHash).Equals(hash);
+  return mHash.EqualsASCII(hash.get(), hash.Length());
 }
 
 bool nsCSPHashSrc::visit(nsCSPSrcVisitor* aVisitor) const {

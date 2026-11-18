@@ -19,6 +19,7 @@ import { WidgetMenuFooter } from "../WidgetMenuFooter";
 import { WidgetMenuPoweredBy } from "../WidgetMenuPoweredBy";
 import { SizeSubmenu } from "../SizeSubmenu";
 import { useWidgetTelemetry } from "../useWidgetTelemetry";
+import { useSrcAfterPageShown } from "../usePageVisible";
 
 const USER_ACTION_TYPES = {
   ...WIDGET_USER_ACTIONS,
@@ -49,11 +50,12 @@ const Horoscopes = ({
 }) => {
   const prefs = useSelector(state => state.Prefs.values);
   const framedWidgets = useSelector(state => state.FramedWidgets);
-  const { src, state: frameState } = resolveWidgetFrame(
+  const { src: frameSrc, state: frameState } = resolveWidgetFrame(
     HOROSCOPES_ENTRY,
     prefs,
     framedWidgets
   );
+  const src = useSrcAfterPageShown(frameSrc);
 
   const widgetSize = resolveWidgetSize(HOROSCOPES_ENTRY, prefs);
 

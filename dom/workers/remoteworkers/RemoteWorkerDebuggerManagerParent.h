@@ -11,6 +11,10 @@
 
 namespace mozilla::dom {
 
+class ContentParent;
+class ThreadsafeContentParentHandle;
+class WorkerDebuggerManager;
+
 class RemoteWorkerDebuggerManagerParent final
     : public PRemoteWorkerDebuggerManagerParent {
   friend class PRemoteWorkerDebuggerManagerParent;
@@ -19,10 +23,13 @@ class RemoteWorkerDebuggerManagerParent final
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(RemoteWorkerDebuggerManagerParent,
                                         final)
 
+  // aProcess is null when the child endpoint lives in the parent process.
   static RefPtr<RemoteWorkerDebuggerManagerParent> CreateForProcess(
+      ContentParent* aProcess,
       mozilla::ipc::Endpoint<PRemoteWorkerDebuggerManagerChild>* aChildEp);
 
-  RemoteWorkerDebuggerManagerParent();
+  explicit RemoteWorkerDebuggerManagerParent(
+      ThreadsafeContentParentHandle* aProcess);
 
   mozilla::ipc::IPCResult RecvRegister(
       const RemoteWorkerDebuggerInfo& aDebuggerInfo,
@@ -30,6 +37,18 @@ class RemoteWorkerDebuggerManagerParent final
 
  private:
   ~RemoteWorkerDebuggerManagerParent();
+
+  // May clear the window id of a dedicated worker whose owner window is gone.
+  bool ValidateDebuggerInfo(RemoteWorkerDebuggerInfo& aDebuggerInfo);
+
+  enum class OwnerWindow { Valid, Gone, Invalid };
+  OwnerWindow CheckOwnerWindowID(uint64_t aWindowID);
+
+  bool IsIdUsableByThisProcess(WorkerDebuggerManager* aManager,
+                               const nsString& aId);
+
+  // Null when the child endpoint lives in the parent process.
+  const RefPtr<ThreadsafeContentParentHandle> mProcess;
 };
 
 }  // end of namespace mozilla::dom

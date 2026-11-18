@@ -78,12 +78,11 @@ firefox-suggest-weather-high-low = High: { $high }°{ $unit } · Low: { $low }°
 
 ## These strings are used as labels of menu items in the result menu.
 
-firefox-suggest-command-dont-show-this2 = Don’t show this
 firefox-suggest-command-dont-show-mdn2 = Don’t show { -mdn-brand-short-name } suggestions
+    .accesskey = n
 firefox-suggest-command-not-interested2 = Not interested
-firefox-suggest-command-dont-show-this-suggestion2 = Don’t show this suggestion
-firefox-suggest-command-dont-show-any-suggestions2 = Don’t show any suggestions
 firefox-suggest-command-dont-show-addons2 = Don’t show { -brand-product-name } extension suggestions
+    .accesskey = n
 
 ## These strings are used for Yelp suggestions in the urlbar.
 
@@ -201,7 +200,8 @@ urlbar-result-yelp-realtime-opt-in-title = Find great places nearby and more
 urlbar-result-yelp-realtime-opt-in-description = Get suggestions for nearby places and services — plus updates on stocks, sports scores, and more from our partners by sharing search query data with { -vendor-short-name }. <a data-l10n-name="learn-more-link">Learn more</a>
 
 # This string is shown in the result menu.
-urlbar-result-menu-dont-show-yelp-realtime2 = Don’t show { -yelp-brand-name } suggestions
+urlbar-result-menu-dont-show-yelp-realtime3 = Don’t show { -yelp-brand-name } suggestions
+    .accesskey = n
 
 # A message that replaces a result when the user dismisses Yelp realtime
 # suggestions.
@@ -246,7 +246,8 @@ urlbar-result-aria-group-yelp-realtime =
 ## and the status like delayed, etc.
 
 # This string is shown in the result menu.
-urlbar-result-menu-dont-show-flight-status2 = Don’t show flight status suggestions
+urlbar-result-menu-dont-show-flight-status3 = Don’t show flight status suggestions
+    .accesskey = n
 
 # A message that replaces a result when the user dismisses flight status
 # suggestions.
@@ -327,7 +328,8 @@ urlbar-result-sports-status-live = Live
 urlbar-result-sports-status-final = Final
 
 # This string is shown in the result menu.
-urlbar-result-menu-dont-show-sports2 = Don’t show sports suggestions
+urlbar-result-menu-dont-show-sports3 = Don’t show sports suggestions
+    .accesskey = n
 
 # A message that replaces a result when the user dismisses sports suggestions.
 urlbar-result-dismissal-acknowledgment-sports = Thanks for your feedback. You won’t see sports suggestions anymore.
@@ -346,7 +348,7 @@ urlbar-group-temporal-seasonal =
 
 # This string is shown in the result menu.
 urlbar-result-menu-dont-show-temporal-seasonal = Don’t show seasonal searches
-  .accesskey = D
+  .accesskey = n
 
 # A message that replaces a result when the user dismisses temporal search
 # suggestions.

@@ -5,6 +5,8 @@ head = "head.js"
 
 ["test_Assert.js"]
 
+["test_BrowserVersion.js"]
+
 ["test_Capabilities.js"]
 
 ["test_Errors.js"]

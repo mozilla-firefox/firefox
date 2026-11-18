@@ -8,6 +8,7 @@ import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import { getChosenOption, WIDGET_SOURCES } from "common/WidgetsRegistry.mjs";
 import { MozWidgetCard } from "./MozWidgetCard";
 import { useWidgetTelemetry } from "./useWidgetTelemetry";
+import { usePageShown } from "./usePageVisible";
 import { useSizeSubmenu } from "../../lib/utils";
 
 const ERROR_MESSAGE = "widget_error";
@@ -85,10 +86,16 @@ export function FramedWidgetCard(props) {
 
   // The frame keeps the URL it first loaded. A change to only its fragment is
   // passed with location.replace() instead, since changing the frame's URL
-  // would add a session history entry to the tab.
+  // would add a session history entry to the tab. MozWidgetCard loads nothing
+  // until the page is shown, so until then the whole URL can change.
   const cardRef = useRef(null);
+  const pageShown = usePageShown();
   const [loadedSrc, setLoadedSrc] = useState(frameSrc);
-  if (withoutFragment(loadedSrc) !== withoutFragment(frameSrc)) {
+  if (
+    pageShown
+      ? withoutFragment(loadedSrc) !== withoutFragment(frameSrc)
+      : loadedSrc !== frameSrc
+  ) {
     setLoadedSrc(frameSrc);
   }
   const shownSrcRef = useRef(frameSrc);

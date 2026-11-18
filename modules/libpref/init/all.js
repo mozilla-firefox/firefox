@@ -4166,6 +4166,17 @@ pref("extensions.formautofill.creditCards.storage.rust.migrationTestAttempts", 0
 // Firefox, which gives up after a budget: the enabled pref above is then
 // treated as false while this stays at the budget.
 pref("extensions.formautofill.creditCards.storage.rust.migrationAttempts", 0);
+// How many of those attempts in a row failed with a card whose number would not
+// decrypt. Managed by Firefox.
+pref("extensions.formautofill.creditCards.storage.rust.migrationUndecryptableAttempts", 0);
+// Whether the migration may leave out cards whose number would not decrypt,
+// rather than failing on them. Set through the Nimbus feature
+// autofill-credit-cards-drop-undecryptable.
+pref("extensions.formautofill.creditCards.storage.rust.dropUndecryptable", false);
+// Once that many attempts have failed, the last of them failing to decrypt a
+// card too, cards whose number would not decrypt are left out of the migration
+// rather than failing it.
+pref("extensions.formautofill.creditCards.storage.rust.dropUndecryptableAfterAttempts", 3);
 pref("extensions.formautofill.creditCards.supported", "on");
 pref("extensions.formautofill.creditCards.enabled", true);
 pref("extensions.formautofill.creditCards.ignoreAutocompleteOff", true);

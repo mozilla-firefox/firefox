@@ -64,3 +64,4 @@ vendoring:
     - 03_set-skip-frac.patch
     - 04_hugemem.patch
     - 05_set-rate-overflow-no-return.patch
+    - 06_filter-length-rounding-overflow.patch

@@ -1,0 +1,126 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <title>WebVTT : the ::cue pseudo-element styles the cue box</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="manifest.js"></script>
+  <script src="cue_layout_helpers.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+  <style>
+    ::cue {
+      font: 20px/1 serif;
+      color: transparent;
+      background-color: rgb(0, 255, 0);
+    }
+    #all-background-properties::cue {
+      background-image: linear-gradient(blue, blue);
+      background-repeat: no-repeat;
+      background-size: 10px 20px;
+      background-position-x: 5px;
+      background-clip: content-box;
+      background-origin: border-box;
+      background-attachment: fixed;
+      background-blend-mode: multiply;
+    }
+    /* ::cue does not take these, also not from an important rule. */
+    #not-allowed::cue {
+      display: inline !important;
+      position: static !important;
+      width: 1px !important;
+      margin-left: 7px !important;
+    }
+  </style>
+</head>
+<body>
+<script class="testbody" type="text/javascript">
+/**
+ * https://w3c.github.io/webvtt/#the-cue-pseudo-element
+ * ::cue matches the list of WebVTT Node Objects, which is the block that holds
+ * the lines of the cue, so its font sets the height of those lines. Only the
+ * background properties go to the cue background box, the inline box around
+ * the cue text.
+ */
+add_task(async function testCueFontSizesTheCueLines() {
+  const video = createVideo();
+  const [cueBox] = await showCues(video, [new VTTCue(0, 10, "One line")]);
+  is(lineBlockOf(cueBox), cueBox, "the ::cue element holds the cue lines");
+  is(computedStyle(cueBox).fontSize, "20px",
+     "the ::cue font applies to the block that holds the cue lines");
+  is(cueBox.getBoundingClientRect().height, 20,
+     "one line of the cue box is as tall as the ::cue line height");
+  removeNodeAndSource(video);
+});
+
+add_task(async function testCueBackgroundPaintsOnlyTheInlineBox() {
+  const video = createVideo();
+  const [cueBox] = await showCues(video, [new VTTCue(0, 10, "One line")]);
+  const cueRect = cueBox.getBoundingClientRect();
+  const textRect = backgroundBoxOf(cueBox).getBoundingClientRect();
+  const y = textRect.top + textRect.height / 2;
+  ok(textRect.left - cueRect.left > 4,
+     "the cue box is wider than the cue text");
+  is(pixelAt(textRect.right - 2, y), "rgb(0, 255, 0)",
+     "the ::cue background is painted behind the cue text");
+  isnot(pixelAt(cueRect.left + 2, y), "rgb(0, 255, 0)",
+        "the ::cue background is not painted on the rest of the cue box");
+  removeNodeAndSource(video);
+});
+
+add_task(async function testEveryBackgroundPropertyGoesToTheBackgroundBox() {
+  const video = createVideo();
+  video.id = "all-background-properties";
+  const [cueBox] = await showCues(video, [new VTTCue(0, 10, "One line")]);
+  const backgroundBox = computedStyle(backgroundBoxOf(cueBox));
+  // Each entry is [property, value from the ::cue rule].
+  const properties = [
+    ["background-color", "rgb(0, 255, 0)"],
+    ["background-image", "linear-gradient(rgb(0, 0, 255), rgb(0, 0, 255))"],
+    ["background-repeat", "no-repeat"],
+    ["background-size", "10px 20px"],
+    ["background-position-x", "5px"],
+    ["background-clip", "content-box"],
+    ["background-origin", "border-box"],
+    ["background-attachment", "fixed"],
+    ["background-blend-mode", "multiply"],
+  ];
+  for (const [property, value] of properties) {
+    is(backgroundBox.getPropertyValue(property), value,
+       `${property} of ::cue applies to the cue background box`);
+  }
+  removeNodeAndSource(video);
+});
+
+add_task(async function testCueRootTakesOnlyTheCueProperties() {
+  const video = createVideo();
+  video.id = "not-allowed";
+  const [cueBox] = await showCues(video, [new VTTCue(0, 10, "One line")]);
+  const style = computedStyle(cueBox);
+  is(style.display, "block", "display of ::cue does not apply to the cue root");
+  is(style.position, "absolute",
+     "position of ::cue does not apply to the cue root");
+  isnot(style.width, "1px", "width of ::cue does not apply to the cue root");
+  is(style.marginLeft, "0px",
+     "margin-left of ::cue does not apply to the cue root");
+  removeNodeAndSource(video);
+});
+
+// Following are helper functions.
+function lineBlockOf(cueBox) {
+  let element = textBoxOf(cueBox);
+  while (computedStyle(element).display == "inline") {
+    element = element.parentNode;
+  }
+  return element;
+}
+
+function pixelAt(x, y) {
+  const canvas = SpecialPowers.snapshotRect(
+    window, { left: Math.floor(x), top: Math.floor(y), width: 1, height: 1 },
+    "white");
+  const [r, g, b] = canvas.getContext("2d").getImageData(0, 0, 1, 1).data;
+  return `rgb(${r}, ${g}, ${b})`;
+}
+</script>
+</body>
+</html>

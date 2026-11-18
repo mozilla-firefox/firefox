@@ -97,3 +97,32 @@ add_task(async function test_credit_cards_follow_nimbus() {
     "extensions.formautofill.creditCards.storage.rust.active"
   );
 });
+
+add_task(async function test_dropping_undecryptable_cards_follows_nimbus() {
+  const enabledPref =
+    "extensions.formautofill.creditCards.storage.rust.dropUndecryptable";
+  const afterAttemptsPref =
+    "extensions.formautofill.creditCards.storage.rust.dropUndecryptableAfterAttempts";
+  Assert.ok(!Services.prefs.getBoolPref(enabledPref), "off by default");
+
+  const doCleanup = await NimbusTestUtils.enrollWithFeatureConfig(
+    {
+      featureId: "autofill-credit-cards-drop-undecryptable",
+      value: { enabled: true, afterAttempts: 5 },
+    },
+    { isRollout: true }
+  );
+  Assert.ok(Services.prefs.getBoolPref(enabledPref), "enabled sets its pref");
+  Assert.equal(
+    Services.prefs.getIntPref(afterAttemptsPref),
+    5,
+    "afterAttempts sets its pref"
+  );
+
+  await doCleanup();
+  Assert.ok(
+    !Services.prefs.prefHasUserValue(enabledPref) &&
+      !Services.prefs.prefHasUserValue(afterAttemptsPref),
+    "Unenrolling clears both"
+  );
+});

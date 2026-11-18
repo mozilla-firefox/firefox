@@ -26,6 +26,7 @@ import {
   useFramedWidgetReady,
   useFramedWidgetSize,
 } from "../useFramedWidgetMessages";
+import { useSrcAfterPageShown } from "../usePageVisible";
 
 const USER_ACTION_TYPES = {
   ...WIDGET_USER_ACTIONS,
@@ -56,11 +57,12 @@ function Travel({
 }) {
   const prefs = useSelector(state => state.Prefs.values);
   const framedWidgets = useSelector(state => state.FramedWidgets);
-  const { src, state: frameState } = resolveWidgetFrame(
+  const { src: frameSrc, state: frameState } = resolveWidgetFrame(
     TRAVEL_ENTRY,
     prefs,
     framedWidgets
   );
+  const src = useSrcAfterPageShown(frameSrc);
   const widgetSize = resolveWidgetSize(TRAVEL_ENTRY, prefs);
   const hasInteracted = prefs["widgets.travel.interaction"];
 

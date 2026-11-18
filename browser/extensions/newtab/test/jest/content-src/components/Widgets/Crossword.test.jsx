@@ -279,6 +279,39 @@ describe("<Crossword>", () => {
       });
       expect(container.querySelector("article.crossword")).toBeNull();
     });
+
+    // A preloaded newtab renders while hidden; a puzzle loaded then would show
+    // its state from before the user solved it in another tab.
+    it("waits for a hidden page to be shown before loading the puzzle", () => {
+      const setVisibility = value => {
+        Object.defineProperty(document, "visibilityState", {
+          configurable: true,
+          value,
+        });
+        fireEvent(document, new Event("visibilitychange"));
+      };
+      try {
+        setVisibility("hidden");
+        const { container } = renderCrossword();
+        const frame = container.querySelector("iframe.crossword-frame");
+        expect(frame).not.toHaveAttribute("src");
+
+        setVisibility("visible");
+        expect(frame).toHaveAttribute(
+          "src",
+          "https://prod-games-particle.merino.prod.webservices.mozgcp.net/index.html"
+        );
+
+        // Hiding the page again keeps the loaded puzzle.
+        setVisibility("hidden");
+        expect(frame).toHaveAttribute(
+          "src",
+          "https://prod-games-particle.merino.prod.webservices.mozgcp.net/index.html"
+        );
+      } finally {
+        setVisibility("visible");
+      }
+    });
   });
 
   describe("change size action", () => {

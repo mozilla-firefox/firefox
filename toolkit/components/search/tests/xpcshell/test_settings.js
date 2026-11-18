@@ -528,7 +528,7 @@ async function settings_write_check(disableFn) {
   // Wait for two periods of the normal delay to ensure we still do not write.
   await new Promise(r =>
     // eslint-disable-next-line mozilla/no-arbitrary-setTimeout
-    setTimeout(r, SearchSettings.SETTNGS_INVALIDATION_DELAY * 2)
+    setTimeout(r, SearchSettings.SETTINGS_INVALIDATION_DELAY * 2)
   );
 
   Assert.ok(
@@ -548,7 +548,7 @@ async function settings_write_check(disableFn) {
 
 add_task(async function test_settings_write_prevented_during_init() {
   await settings_write_check(disable => {
-    let status = disable ? "success" : "failed";
+    let status = disable ? "not initialized" : "success";
     SearchService.forceInitializationStatusForTests(status);
   });
 });

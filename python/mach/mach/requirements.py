@@ -172,6 +172,7 @@ def _parse_mach_env_requirements(
             _parse_requirements_definition_file(
                 topsrcdir / params,
                 is_thunderbird_packages_txt,
+                True,
             )
         elif action == "pypi":
             if is_thunderbird_packages_txt:
@@ -220,7 +221,7 @@ def _parse_mach_env_requirements(
             raise Exception(f"Unknown requirements definition action: {action}")
 
     def _parse_requirements_definition_file(
-        requirements_path: Path, is_thunderbird_packages_txt
+        requirements_path: Path, is_thunderbird_packages_txt, recursive=False
     ):
         """Parse requirements file into list of requirements"""
         if not requirements_path.is_file():
@@ -231,15 +232,22 @@ def _parse_mach_env_requirements(
         with open(requirements_path) as requirements_file:
             lines = [line for line in requirements_file]
 
+        start_line = 1
         first_line = lines[0].strip()
         if not first_line.startswith("requires-python:"):
+            if not recursive:
+                raise ValueError(
+                    f"{requirements_path}:1: Please ensure the first line specifies a Python requirement in the form "
+                    f"'requires-python:<specifier>' (for example: 'requires-python:>=3.8').\n"
+                    f"See https://packaging.python.org/en/latest/specifications/version-specifiers/#id5 for details."
+                )
+        elif recursive:
             raise ValueError(
-                f"{requirements_path}:1: Please ensure the first line specifies a Python requirement in the form "
-                f"'requires-python:<specifier>' (for example: 'requires-python:>=3.8').\n"
-                f"See https://packaging.python.org/en/latest/specifications/version-specifiers/#id5 for details."
+                f"{requirements_path}:1 Files included using 'packages.txt:' actions must not start with a "
+                f"Python requirement specifier (i.e. a 'requires-python:<specifier>' line)"
             )
 
-        for number, line in enumerate(lines, start=1):
+        for number, line in enumerate(lines, start=start_line):
             _parse_requirements_line(
                 requirements_path, line, number, is_thunderbird_packages_txt
             )

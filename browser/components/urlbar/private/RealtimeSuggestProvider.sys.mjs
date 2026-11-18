@@ -113,7 +113,7 @@ export class RealtimeSuggestProvider extends SuggestProvider {
 
   get notInterestedCommandL10n() {
     return {
-      id: `urlbar-result-menu-dont-show-${this.realtimeTypeForFtl}2`,
+      id: `urlbar-result-menu-dont-show-${this.realtimeTypeForFtl}3`,
     };
   }
 
@@ -553,7 +553,7 @@ export class RealtimeSuggestProvider extends SuggestProvider {
       commands.push({
         name: "show_less_frequently",
         l10n: {
-          id: "urlbar-result-menu-show-less-frequently2",
+          id: "urlbar-result-menu-show-less-frequently3",
         },
       });
     }

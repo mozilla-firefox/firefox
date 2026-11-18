@@ -69,9 +69,11 @@ async function readContextMenuItems(win) {
 
   let dismiss = cxmenu.querySelector(`[anonid="${DISMISS_ID}"]`);
   let forget = cxmenu.querySelector(`[anonid="${FORGET_ID}"]`);
+  let addEngineMenu = cxmenu.querySelector('[anonid="add-engine-menu"]');
   let state = {
     dismissHidden: !dismiss || dismiss.hidden,
     forgetHidden: !forget || forget.hidden,
+    addEngineMenuHidden: !addEngineMenu || addEngineMenu.hidden,
   };
 
   let closePromise = BrowserTestUtils.waitForEvent(cxmenu, "popuphidden");
@@ -262,6 +264,33 @@ add_task(async function forget_item_hidden_for_origin_autofill() {
   Assert.ok(forgetHidden, "Forget should be hidden for origin autofill");
 
   await UrlbarTestUtils.promisePopupClose(window);
+  await PlacesUtils.history.clear();
+});
+
+add_task(async function context_menu_items_on_page_offering_engines() {
+  await PlacesUtils.history.clear();
+  await addAdaptiveHistoryEntry(ADAPTIVE_URL, ADAPTIVE_INPUT);
+
+  let url = getRootDirectory(gTestPath) + "add_search_engine_many.html";
+  await BrowserTestUtils.withNewTab(url, async browser => {
+    await TestUtils.waitForCondition(() => !!browser.mIconURL);
+
+    await showAutofillFor(window, SEARCH_STRING);
+    let { result } = await UrlbarTestUtils.getDetailsOfResultAt(window, 0);
+    Assert.equal(
+      result.autofill?.type,
+      "adaptive_url",
+      "Pre-condition: heuristic is adaptive_url autofill"
+    );
+
+    let { dismissHidden, forgetHidden, addEngineMenuHidden } =
+      await readContextMenuItems(window);
+    Assert.ok(!dismissHidden, "Dismiss should be visible");
+    Assert.ok(!forgetHidden, "Forget should be visible");
+    Assert.ok(!addEngineMenuHidden, "Add search engine menu should be visible");
+
+    await UrlbarTestUtils.promisePopupClose(window);
+  });
   await PlacesUtils.history.clear();
 });
 

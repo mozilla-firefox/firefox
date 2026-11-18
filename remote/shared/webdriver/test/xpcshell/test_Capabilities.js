@@ -7,6 +7,9 @@
 const { AppInfo } = ChromeUtils.importESModule(
   "chrome://remote/content/shared/AppInfo.sys.mjs"
 );
+const { updateAppInfo } = ChromeUtils.importESModule(
+  "resource://testing-common/AppInfo.sys.mjs"
+);
 const {
   Capabilities,
   mergeCapabilities,
@@ -19,6 +22,10 @@ const {
 } = ChromeUtils.importESModule(
   "chrome://remote/content/shared/webdriver/Capabilities.sys.mjs"
 );
+
+add_setup(function () {
+  updateAppInfo({ name: "Firefox", version: "123.0" });
+});
 
 add_task(function test_Timeouts_ctor() {
   let ts = new Timeouts();
@@ -770,20 +777,71 @@ add_task(function test_processCapabilities() {
     })
   );
   deepEqual(
-    { browserName: "Firefox" },
-    processCapabilities({
-      capabilities: { firstMatch: [{ browserName: "Firefox" }] },
-    })
-  );
-  deepEqual(
-    { acceptInsecureCerts: true, browserName: "Firefox" },
+    { browserName: "firefox" },
     processCapabilities({
       capabilities: {
-        alwaysMatch: { acceptInsecureCerts: true },
-        firstMatch: [{ browserName: "Firefox" }],
+        firstMatch: [{ browserName: "firefox" }],
       },
     })
   );
+  deepEqual(
+    {
+      acceptInsecureCerts: true,
+      browserName: "firefox",
+    },
+    processCapabilities({
+      capabilities: {
+        alwaysMatch: { acceptInsecureCerts: true },
+        firstMatch: [{ browserName: "firefox" }],
+      },
+    })
+  );
+});
+
+add_task(function test_processCapabilities_matching() {
+  const actual = new Capabilities(true);
+  for (const name of ["browserName", "browserVersion", "platformName"]) {
+    const match = { [name]: actual.get(name) };
+    const mismatch = { [name]: "not-a-match" };
+    for (const [firstMatch, expected] of [
+      [[match], match],
+      [[mismatch, match], match],
+      [[match, {}], match],
+      [[mismatch, mismatch], null],
+    ]) {
+      deepEqual(
+        processCapabilities({ capabilities: { firstMatch } }),
+        expected
+      );
+    }
+    Assert.throws(
+      () =>
+        processCapabilities({
+          capabilities: { firstMatch: [match, { [name]: 42 }] },
+        }),
+      /InvalidArgumentError/
+    );
+  }
+
+  for (const handler of ["accept", "dismiss", "ignore"]) {
+    const candidate = { unhandledPromptBehavior: { alert: handler } };
+    deepEqual(
+      processCapabilities({ capabilities: { alwaysMatch: candidate } }),
+      candidate
+    );
+  }
+  for (const capabilities of [
+    { firstMatch: [{}, { unhandledPromptBehavior: { alert: "invalid" } }] },
+    {
+      alwaysMatch: { browserName: "firefox" },
+      firstMatch: [{}, { browserName: "not-a-match" }],
+    },
+  ]) {
+    Assert.throws(
+      () => processCapabilities({ capabilities }),
+      /InvalidArgumentError/
+    );
+  }
 });
 
 // use Proxy.toJSON to test marshal

@@ -94,7 +94,6 @@ tags = "overflowable-toolbar"
 tags = "overflowable-toolbar"
 skip-if = [
   "devedition",
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11'",
 ]
 
 ["browser_918049_skipintoolbarset_dnd.js"]

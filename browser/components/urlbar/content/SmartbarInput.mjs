@@ -218,7 +218,7 @@ ${
         <html:div id="urlbar-results"
                   class="urlbarView-results"
                   role="listbox"/>
-        <html:panel-list class="urlbarView-result-menu" accesskey-conflicts-bug="2073892"></html:panel-list>
+        <html:panel-list class="urlbarView-result-menu"></html:panel-list>
         <html:moz-urlbar-slot name="search-one-offs" />
       </html:div>
       <html:div class="smartbar-button-container">
@@ -5509,23 +5509,6 @@ ${
         // breakout-extend once it's open keeps it from showing (bug 2037468).
         this.view.close();
 
-        // The edit context menu is shared with other inputs in chrome, and
-        // only the items we add here conflict, so mark it for this opening
-        // alone, removing the marker again when closed.
-        let popup = this.#editContextMenu.popup;
-        popup.setAttribute("accesskey-conflicts-bug", "2073891");
-        popup.addEventListener(
-          "popuphidden",
-          () => {
-            // An opening that got superseded before it finished still fires
-            // popuphidden while the menu is open.
-            if (popup.state == "closed") {
-              popup.removeAttribute("accesskey-conflicts-bug");
-            }
-          },
-          { once: true }
-        );
-
         let enabled = this.#pasteAndGoEnabled();
         pasteAndGo.toggleAttribute("disabled", !enabled);
         if (!enabled) {
@@ -7916,6 +7899,7 @@ class AddSearchEngineHelper {
     elt.setAttribute("anonid", `add-engine-${index}`);
     elt.classList.add("menuitem-iconic");
     elt.classList.add("context-menu-add-engine");
+    elt.setAttribute("auto-accesskey", "digit");
     doc.l10n.setAttributes(elt, "search-one-offs-add-engine", {
       engineName: engine.title,
     });
@@ -7935,7 +7919,7 @@ class AddSearchEngineHelper {
     elt.setAttribute("anonid", "add-engine-menu");
     elt.classList.add("menu-iconic");
     elt.classList.add("context-menu-add-engine");
-    doc.l10n.setAttributes(elt, "search-one-offs-add-engine-menu");
+    doc.l10n.setAttributes(elt, "search-one-offs-add-engine-menu2");
     if (engine.icon) {
       elt.setAttribute("image", ChromeUtils.encodeURIForSrcset(engine.icon));
     }

@@ -8,6 +8,7 @@ support-files = [
   "bad-signature.vtt",
   "basic.vtt",
   "bug883173.vtt",
+  "cue_layout_helpers.js",
   "long.vtt",
   "manifest.js",
   "parser.vtt",
@@ -58,6 +59,8 @@ skip-if = [
 ["test_trackevent.html"]
 
 ["test_vttparser.html"]
+
+["test_webvtt_cue_pseudo_element.html"]
 
 ["test_webvtt_empty_displaystate.html"]
 

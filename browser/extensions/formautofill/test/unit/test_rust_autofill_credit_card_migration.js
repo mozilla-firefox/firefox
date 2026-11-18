@@ -63,6 +63,12 @@ const ATTEMPTS_PREF =
   "extensions.formautofill.creditCards.storage.rust.migrationAttempts";
 const TEST_ATTEMPTS_PREF =
   "extensions.formautofill.creditCards.storage.rust.migrationTestAttempts";
+const DROP_PREF =
+  "extensions.formautofill.creditCards.storage.rust.dropUndecryptable";
+const DROP_AFTER_PREF =
+  "extensions.formautofill.creditCards.storage.rust.dropUndecryptableAfterAttempts";
+const UNDECRYPTABLE_ATTEMPTS_PREF =
+  "extensions.formautofill.creditCards.storage.rust.migrationUndecryptableAttempts";
 
 const CVV_SUPPORTED_PREF = "extensions.formautofill.creditCards.cvv.supported";
 const CVV_ENABLED_PREF = "extensions.formautofill.creditCards.cvv.enabled";
@@ -70,6 +76,8 @@ const CVV_ENABLED_PREF = "extensions.formautofill.creditCards.cvv.enabled";
 const getBool = (pref, def = false) => Services.prefs.getBoolPref(pref, def);
 
 const getInt = (pref, def = 0) => Services.prefs.getIntPref(pref, def);
+
+const dropAfterAttempts = () => getInt(DROP_AFTER_PREF);
 
 function setSecurityCodeEnabled(enabled) {
   if (enabled) {
@@ -89,6 +97,9 @@ registerCleanupFunction(() => {
     TEST_VERSION_PREF,
     TEST_ATTEMPTS_PREF,
     ATTEMPTS_PREF,
+    DROP_PREF,
+    DROP_AFTER_PREF,
+    UNDECRYPTABLE_ATTEMPTS_PREF,
     CVV_SUPPORTED_PREF,
     CVV_ENABLED_PREF,
   ]) {
@@ -129,6 +140,11 @@ async function setupStorageWithCards(fileName, names) {
   Services.prefs.clearUserPref(TEST_VERSION_PREF);
   Services.prefs.clearUserPref(TEST_ATTEMPTS_PREF);
   Services.prefs.clearUserPref(ATTEMPTS_PREF);
+  Services.prefs.clearUserPref(DROP_AFTER_PREF);
+  Services.prefs.clearUserPref(UNDECRYPTABLE_ATTEMPTS_PREF);
+  // Off by default and turned on through Nimbus; on here so the tests can
+  // exercise the rules that decide what is dropped.
+  Services.prefs.setBoolPref(DROP_PREF, true);
   Services.fog.testResetFOG();
   RustAutofillCreditCardsAdapter._instance = null;
 
@@ -159,6 +175,13 @@ const disableRust = s => restart(s, { [ENABLED_PREF]: false });
 
 const migrationEvents = () =>
   Glean.formautofillCreditcards.migrateToRust.testGetValue() ?? [];
+
+// A copy into Rust empties the store first, so every source record is either
+// migrated, failed, or dropped.
+const droppedBy = event =>
+  Number(event.extra.source_total) -
+  Number(event.extra.migrated) -
+  Number(event.extra.failed);
 
 const divergenceEvents = () =>
   Glean.formautofillCreditcards.migrateRecordDivergence.testGetValue() ?? [];
@@ -348,6 +371,361 @@ add_task(async function test_unreadable_numbers_fail_the_attempt() {
   // Readable again, the next launch migrates normally.
   s = await restart(s);
   Assert.ok(getBool(ACTIVE_PREF), "and the next launch migrates");
+
+  await s._finalize();
+});
+
+// Makes the numbers of the given cards fail to decrypt with `result` for as
+// long as it is installed. Returns the function that restores the key store.
+function breakNumbers(s, guids, { result = Cr.NS_ERROR_FAILURE } = {}) {
+  const broken = new Set(
+    guids.map(
+      guid =>
+        s.creditCards._data.find(r => r.guid == guid)["cc-number-encrypted"]
+    )
+  );
+  const realDecrypt = OSKeyStore.decrypt;
+  OSKeyStore.decrypt = async function (cipher, ...args) {
+    if (broken.has(cipher)) {
+      throw Components.Exception("", result);
+    }
+    return realDecrypt.call(this, cipher, ...args);
+  };
+  return () => (OSKeyStore.decrypt = realDecrypt);
+}
+
+add_task(async function test_a_card_that_never_decrypts_is_dropped() {
+  let { s, guids } = await setupStorageWithCards("cc-mig-drop-one.json", [
+    "Ann One",
+    "Bob Two",
+  ]);
+
+  // Ann's number decrypts, so the key store works and Bob's is encrypted under
+  // a key it no longer holds.
+  const restore = breakNumbers(s, [guids[1]]);
+  try {
+    s = await enableRust(s);
+  } finally {
+    restore();
+  }
+
+  Assert.ok(getBool(ACTIVE_PREF), "the first attempt migrates");
+  const event = migrationEvents().at(-1);
+  Assert.equal(event.extra.attempt, "0");
+  Assert.equal(event.extra.result, "ok", "and reports success");
+  Assert.equal(event.extra.failed, "0", "with nothing failed");
+  Assert.equal(droppedBy(event), 1, "and the unreadable card dropped");
+  Assert.equal(event.extra.drop_reason, "others_decrypted");
+  Assert.equal(event.extra.error_message, "NS_ERROR_FAILURE");
+  Assert.equal(getInt(ATTEMPTS_PREF), 0, "spending no attempt");
+  Assert.deepEqual(
+    (await s.creditCards.getAll()).map(c => c.guid),
+    [guids[0]],
+    "Rust serves only the readable card"
+  );
+  Assert.equal(await rustNumber(guids[0]), NUMBERS["Ann One"]);
+
+  await s._finalize();
+});
+
+add_task(async function test_enough_failed_attempts_drop_unreadable_cards() {
+  let { s, guids } = await setupStorageWithCards("cc-mig-last-attempt.json", [
+    "Bob Two",
+  ]);
+
+  // No number decrypts, so nothing tells the card from the key store as the
+  // problem until enough attempts have failed.
+  const restore = breakNumbers(s, guids);
+  try {
+    Services.prefs.setIntPref(ATTEMPTS_PREF, dropAfterAttempts() - 1);
+    s = await enableRust(s);
+    Assert.ok(!getBool(ACTIVE_PREF), "an earlier attempt still fails");
+    const earlier = migrationEvents().at(-1);
+    Assert.equal(earlier.extra.failed, "1");
+    Assert.equal(droppedBy(earlier), 0);
+    Assert.equal(earlier.extra.drop_reason, undefined);
+    Assert.equal(getInt(ATTEMPTS_PREF), dropAfterAttempts());
+
+    s = await restart(s);
+  } finally {
+    restore();
+  }
+
+  Assert.ok(getBool(ACTIVE_PREF), "the next attempt migrates");
+  const event = migrationEvents().at(-1);
+  Assert.equal(event.extra.attempt, String(dropAfterAttempts()));
+  Assert.equal(event.extra.result, "ok", "and reports success");
+  Assert.equal(event.extra.failed, "0", "with nothing failed");
+  Assert.equal(droppedBy(event), 1, "and the unreadable card dropped");
+  Assert.equal(event.extra.drop_reason, "attempt_threshold");
+  Assert.equal(getInt(ATTEMPTS_PREF), 0, "the budget is cleared");
+  Assert.equal((await s.creditCards.getAll()).length, 0, "Rust serves none");
+
+  await s._finalize();
+});
+
+add_task(async function test_the_attempt_threshold_is_a_pref() {
+  let { s, guids } = await setupStorageWithCards("cc-mig-drop-pref.json", [
+    "Bob Two",
+  ]);
+
+  // One failed attempt is enough here, where the default would want three.
+  Services.prefs.setIntPref(DROP_AFTER_PREF, 1);
+  const restore = breakNumbers(s, guids);
+  try {
+    s = await enableRust(s);
+    Assert.ok(!getBool(ACTIVE_PREF), "the first attempt fails");
+    s = await restart(s);
+  } finally {
+    restore();
+  }
+
+  Assert.ok(getBool(ACTIVE_PREF), "the second attempt migrates");
+  const event = migrationEvents().at(-1);
+  Assert.equal(event.extra.attempt, "1");
+  Assert.equal(droppedBy(event), 1, "with the unreadable card dropped");
+  Assert.equal(event.extra.drop_reason, "attempt_threshold");
+
+  await s._finalize();
+});
+
+add_task(
+  async function test_the_threshold_waits_for_a_second_decryption_failure() {
+    let { s, guids } = await setupStorageWithCards(
+      "cc-mig-threshold-pair.json",
+      ["Bob Two"]
+    );
+
+    // A decryption failure, then a failure of another kind that takes the
+    // attempts to the threshold.
+    Services.prefs.setIntPref(ATTEMPTS_PREF, dropAfterAttempts() - 2);
+    let restore = breakNumbers(s, guids);
+    try {
+      s = await enableRust(s);
+    } finally {
+      restore();
+    }
+    Assert.equal(
+      getInt(UNDECRYPTABLE_ATTEMPTS_PREF),
+      1,
+      "a decryption failure"
+    );
+
+    restore = failCopiesIntoRust();
+    try {
+      s = await restart(s);
+    } finally {
+      restore();
+    }
+    Assert.equal(getInt(ATTEMPTS_PREF), dropAfterAttempts(), "reaches the bar");
+    Assert.equal(getInt(UNDECRYPTABLE_ATTEMPTS_PREF), 0, "but is forgotten");
+
+    // Past the threshold, a decryption failure that follows another kind still
+    // fails, and only the one after it drops the card.
+    restore = breakNumbers(s, guids);
+    try {
+      s = await restart(s);
+      Assert.ok(
+        !getBool(ACTIVE_PREF),
+        "the first decryption failure still fails"
+      );
+      Assert.equal(droppedBy(migrationEvents().at(-1)), 0);
+      Assert.equal(migrationEvents().at(-1).extra.drop_reason, undefined);
+      Assert.equal(getInt(UNDECRYPTABLE_ATTEMPTS_PREF), 1, "and is counted");
+
+      s = await restart(s);
+    } finally {
+      restore();
+    }
+
+    Assert.ok(getBool(ACTIVE_PREF), "the second migrates");
+    const event = migrationEvents().at(-1);
+    Assert.equal(droppedBy(event), 1, "with the unreadable card dropped");
+    Assert.equal(event.extra.drop_reason, "attempt_threshold");
+    Assert.equal(getInt(ATTEMPTS_PREF), 0, "the budget is cleared");
+    Assert.equal(getInt(UNDECRYPTABLE_ATTEMPTS_PREF), 0, "and so is the count");
+
+    await s._finalize();
+  }
+);
+
+add_task(async function test_two_attempts_short_of_the_cap_still_drop() {
+  let { s, guids } = await setupStorageWithCards("cc-mig-near-cap.json", [
+    "Bob Two",
+  ]);
+
+  // Past the threshold with no decryption failure counted yet: the cap still
+  // leaves room for one to be counted and the next to drop the card.
+  Services.prefs.setIntPref(ATTEMPTS_PREF, MAX_ATTEMPTS - 2);
+  const restore = breakNumbers(s, guids);
+  try {
+    s = await enableRust(s);
+    Assert.ok(!getBool(ACTIVE_PREF), "the first decryption failure fails");
+    s = await restart(s);
+  } finally {
+    restore();
+  }
+
+  Assert.ok(getBool(ACTIVE_PREF), "the last attempt migrates");
+  const event = migrationEvents().at(-1);
+  Assert.equal(event.extra.attempt, String(MAX_ATTEMPTS - 1));
+  Assert.equal(droppedBy(event), 1, "with the unreadable card dropped");
+  Assert.equal(event.extra.drop_reason, "attempt_threshold");
+
+  await s._finalize();
+});
+
+add_task(async function test_nothing_is_dropped_while_disabled() {
+  let { s, guids } = await setupStorageWithCards("cc-mig-drop-off.json", [
+    "Ann One",
+    "Bob Two",
+  ]);
+
+  // Ann decrypts and the attempt threshold holds, so either rule would drop
+  // Bob if dropping were enabled.
+  Services.prefs.setBoolPref(DROP_PREF, false);
+  Services.prefs.setIntPref(ATTEMPTS_PREF, dropAfterAttempts());
+  Services.prefs.setIntPref(UNDECRYPTABLE_ATTEMPTS_PREF, 1);
+  const restore = breakNumbers(s, [guids[1]]);
+  try {
+    s = await enableRust(s);
+  } finally {
+    restore();
+  }
+
+  Assert.ok(!getBool(ACTIVE_PREF), "the profile stays on JSON");
+  const event = migrationEvents().at(-1);
+  Assert.equal(event.extra.failed, "1", "with the unreadable card failed");
+  Assert.equal(droppedBy(event), 0, "rather than dropped");
+  Assert.equal(event.extra.drop_reason, undefined);
+
+  await s._finalize();
+});
+
+add_task(async function test_a_cancelled_unlock_is_never_dropped() {
+  let { s, guids } = await setupStorageWithCards("cc-mig-last-abort.json", [
+    "Ann One",
+    "Bob Two",
+  ]);
+
+  const restore = breakNumbers(s, [guids[1]], { result: Cr.NS_ERROR_ABORT });
+  try {
+    Services.prefs.setIntPref(ATTEMPTS_PREF, dropAfterAttempts());
+    s = await enableRust(s);
+  } finally {
+    restore();
+  }
+
+  Assert.ok(!getBool(ACTIVE_PREF), "the profile stays on JSON");
+  const event = migrationEvents().at(-1);
+  Assert.equal(event.extra.failed, "1", "with the card failed");
+  Assert.equal(droppedBy(event), 0, "rather than dropped");
+  Assert.equal(event.extra.drop_reason, undefined);
+
+  await s._finalize();
+});
+
+add_task(async function test_other_export_errors_are_never_dropped() {
+  let { s } = await setupStorageWithCards("cc-mig-last-export.json", [
+    "Ann One",
+  ]);
+
+  const proto = Object.getPrototypeOf(s.creditCards);
+  proto._recordForMigrationExport = async function () {
+    throw new Error("export failed");
+  };
+  try {
+    Services.prefs.setIntPref(ATTEMPTS_PREF, dropAfterAttempts());
+    s = await enableRust(s);
+  } finally {
+    delete proto._recordForMigrationExport;
+  }
+
+  Assert.ok(!getBool(ACTIVE_PREF), "the profile stays on JSON");
+  const event = migrationEvents().at(-1);
+  Assert.equal(event.extra.result, "error", "reported as a failure");
+  Assert.equal(event.extra.failed, "1", "with the card failed");
+  Assert.equal(droppedBy(event), 0, "rather than dropped");
+  Assert.equal(event.extra.drop_reason, undefined);
+  Assert.equal(
+    getInt(ATTEMPTS_PREF),
+    dropAfterAttempts() + 1,
+    "spending an attempt"
+  );
+
+  await s._finalize();
+});
+
+add_task(async function test_another_card_decrypting_is_the_reason_reported() {
+  let { s, guids } = await setupStorageWithCards("cc-mig-reason-order.json", [
+    "Ann One",
+    "Bob Two",
+  ]);
+
+  // Nothing decrypts on the first attempt, so on the second the attempt
+  // threshold holds as well, but Ann decrypting is the stronger evidence.
+  Services.prefs.setIntPref(DROP_AFTER_PREF, 1);
+  let restore = breakNumbers(s, guids);
+  try {
+    s = await enableRust(s);
+  } finally {
+    restore();
+  }
+  restore = breakNumbers(s, [guids[1]]);
+  try {
+    s = await restart(s);
+  } finally {
+    restore();
+  }
+
+  Assert.ok(getBool(ACTIVE_PREF), "the second attempt migrates");
+  const event = migrationEvents().at(-1);
+  Assert.equal(droppedBy(event), 1, "with the unreadable card dropped");
+  Assert.equal(event.extra.drop_reason, "others_decrypted");
+
+  await s._finalize();
+});
+
+add_task(async function test_a_dry_run_reports_no_drop_reason() {
+  let { s, guids } = await setupStorageWithCards("cc-mig-dry-drop.json", [
+    "Ann One",
+    "Bob Two",
+  ]);
+
+  const restore = breakNumbers(s, [guids[1]]);
+  try {
+    s = await restart(s, { [TEST_MODE_PREF]: true });
+  } finally {
+    restore();
+  }
+
+  const event = migrationEvents().at(-1);
+  Assert.equal(droppedBy(event), 1, "the dry run drops the card as well");
+  Assert.equal(event.extra.drop_reason, undefined, "but reports no reason");
+
+  await s._finalize();
+});
+
+add_task(async function test_a_failed_migration_reports_no_drop_reason() {
+  let { s, guids } = await setupStorageWithCards("cc-mig-reason-failed.json", [
+    "Ann One",
+    "Bob Two",
+  ]);
+
+  // Bob is left out, but the copy fails anyway, so the profile keeps him.
+  const restore = breakNumbers(s, [guids[1]]);
+  const restoreCopies = failCopiesIntoRust();
+  try {
+    s = await enableRust(s);
+  } finally {
+    restore();
+    restoreCopies();
+  }
+
+  Assert.ok(!getBool(ACTIVE_PREF), "the profile stays on JSON");
+  const event = migrationEvents().at(-1);
+  Assert.equal(event.extra.result, "error");
+  Assert.equal(event.extra.drop_reason, undefined, "and reports no reason");
 
   await s._finalize();
 });

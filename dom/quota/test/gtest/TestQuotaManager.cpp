@@ -4268,8 +4268,6 @@ TEST_F(TestQuotaManagerAndClearStorage,
   EXPECT_FALSE(persistedMetadata->mDirty);
 }
 
-// CheckIfUsageIsConsistent is only defined in nightly and debug builds.
-#if defined(NIGHTLY_BUILD) || defined(DEBUG)
 TEST_F(TestQuotaManager, CheckIfUsageIsConsistentNoUnderflow) {
   PerformOnIOThread([]() {
     FullOriginMetadata fullOriginMetadata = GetFullOriginMetadata(
@@ -4303,6 +4301,5 @@ TEST_F(TestQuotaManager, CheckIfUsageIsConsistentDetectsMismatch) {
     EXPECT_FALSE(fullOriginMetadata.CheckIfUsageIsConsistent("Test"_ns));
   });
 }
-#endif
 
 }  // namespace mozilla::dom::quota::test
