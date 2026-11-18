@@ -62,11 +62,13 @@ static bool CheckFrame(InterpreterFrame* fp) {
     return false;
   }
 
-  if (fp->isFunctionFrame() && TooManyActualArguments(fp->numActualArgs())) {
-    // Fall back to the interpreter to avoid running out of stack space.
-    JitSpew(JitSpew_BaselineAbort, "Too many arguments (%u)",
-            fp->numActualArgs());
-    return false;
+  if (fp->isFunctionFrame()) {
+    uint32_t pushedArgs = std::max(fp->numActualArgs(), fp->numFormalArgs());
+    if (TooManyActualArguments(pushedArgs)) {
+      // Fall back to the interpreter to avoid running out of stack space.
+      JitSpew(JitSpew_BaselineAbort, "Too many arguments (%u)", pushedArgs);
+      return false;
+    }
   }
 
   return true;

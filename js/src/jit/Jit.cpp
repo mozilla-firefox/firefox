@@ -70,8 +70,9 @@ static EnterJitStatus JS_HAZ_JSNATIVE_CALLER EnterJit(JSContext* cx,
   if (state.isInvoke()) {
     const CallArgs& args = state.asInvoke()->args();
     numActualArgs = args.length();
-
-    if (TooManyActualArguments(numActualArgs)) {
+    size_t numFormals = args.callee().as<JSFunction>().nargs();
+    size_t numPushedArgs = std::max(numActualArgs, numFormals);
+    if (TooManyActualArguments(numPushedArgs)) {
       // Fall back to the C++ interpreter to avoid running out of stack space.
       return EnterJitStatus::NotEntered;
     }
@@ -90,6 +91,10 @@ static EnterJitStatus JS_HAZ_JSNATIVE_CALLER EnterJit(JSContext* cx,
   } else if (state.isGeneratorResume()) {
     GeneratorResumeState& resumeState = *state.asGeneratorResume();
     AbstractGeneratorObject* genObj = resumeState.generator();
+    if (!genObj->isModuleGenerator() &&
+        TooManyActualArguments(genObj->callee().nargs())) {
+      return EnterJitStatus::NotEntered;
+    }
     ResumeFrameArgs::init(resumeArgv, resumeState.resumeValue(),
                           ObjectValue(*genObj), resumeState.resumeKind(),
                           genObj->resumeIndex());
