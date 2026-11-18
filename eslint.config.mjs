@@ -583,6 +583,22 @@ let config = [
       ],
     },
   },
+  {
+    name: "aiwindow-literal-fluent-ids",
+    files: ["browser/components/aiwindow/**"],
+    ignores: ["browser/components/aiwindow/**/test*/**"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            ':matches(TemplateLiteral[expressions.length>0][quasis.0.value.raw=/^(ai|smart)\\w*-[\\w-]*$/], BinaryExpression[operator="+"][left.value=/^(ai|smart)\\w*-[\\w-]*$/], TemplateElement[value.raw=/data-l10n-id="?(ai|smart)\\w*-[\\w-]*$/])',
+          message:
+            "Write Fluent IDs in full so they can be searched for. Passing a complete ID through a variable is fine; building one from parts is not.",
+        },
+      ],
+    },
+  },
 
   ...wrapPathsInConfig(subdirConfigs),
   ...wrapPathsInConfig(repositoryGlobals),

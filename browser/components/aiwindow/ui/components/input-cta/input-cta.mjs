@@ -12,6 +12,19 @@ import { MozLitElement } from "chrome://global/content/lit-utils.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://global/content/elements/moz-button.mjs";
 
+const SUBMIT_LABEL_IDS = {
+  chat: "aiwindow-input-cta-submit-label-chat",
+  navigate: "aiwindow-input-cta-submit-label-navigate",
+  search: "aiwindow-input-cta-submit-label-search",
+  stop: "aiwindow-input-cta-submit-label-stop",
+};
+
+const MENU_LABEL_IDS = {
+  chat: "aiwindow-input-cta-menu-label-chat",
+  navigate: "aiwindow-input-cta-menu-label-navigate",
+  search: "aiwindow-input-cta-menu-label-search",
+};
+
 /**
  * @typedef {object} SearchEngineInfo
  * @property {string} name - The name of the search engine.
@@ -49,8 +62,6 @@ export class InputCta extends MozLitElement {
     },
   };
 
-  static ACTIONS = ["chat", "navigate", "search", "stop"];
-
   constructor() {
     super();
     this.action = "";
@@ -59,10 +70,6 @@ export class InputCta extends MozLitElement {
     this._menuId = `actions-menu-${crypto.randomUUID()}`;
     this._searchSubpanelId = `search-submenu-${crypto.randomUUID()}`;
     this.searchEngines = [];
-  }
-
-  get actionLabelId() {
-    return this.action ? `aiwindow-input-cta-submit-label-${this.action}` : "";
   }
 
   get buttonIconSrc() {
@@ -91,7 +98,7 @@ export class InputCta extends MozLitElement {
   }
 
   #setAction(key) {
-    if (!InputCta.ACTIONS.includes(key)) {
+    if (!Object.hasOwn(SUBMIT_LABEL_IDS, key)) {
       return;
     }
 
@@ -152,7 +159,7 @@ export class InputCta extends MozLitElement {
     if (
       changedProps.has("action") &&
       this.action &&
-      !InputCta.ACTIONS.includes(this.action)
+      !Object.hasOwn(SUBMIT_LABEL_IDS, this.action)
     ) {
       console.warn(`Invalid action: ${this.action}`);
       this.action = "";
@@ -190,18 +197,17 @@ export class InputCta extends MozLitElement {
 
   render() {
     const isStop = this.action == "stop";
-    const menuActions = InputCta.ACTIONS.filter(a => a !== "stop");
 
     const panelListTemplate =
       this.action && !isStop
         ? html`<panel-list id=${this._menuId}>
             ${repeat(
-              menuActions,
-              key => key,
-              key =>
+              Object.entries(MENU_LABEL_IDS),
+              ([key]) => key,
+              ([key, l10nId]) =>
                 html`<panel-item
                   @click=${() => this.#setAction(key)}
-                  data-l10n-id=${`aiwindow-input-cta-menu-label-${key}`}
+                  data-l10n-id=${l10nId}
                   data-l10n-args=${key == "search"
                     ? JSON.stringify({
                         searchEngineName: this.searchEngineInfo.name,
@@ -261,7 +267,7 @@ export class InputCta extends MozLitElement {
           ? ""
           : html`<slot>
               ${this.action &&
-              html`<span data-l10n-id=${this.actionLabelId}></span>`}
+              html`<span data-l10n-id=${SUBMIT_LABEL_IDS[this.action]}></span>`}
             </slot>`}
       </moz-button>
       ${panelListTemplate} ${searchSubpanelTemplate}

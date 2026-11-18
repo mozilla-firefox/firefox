@@ -122,6 +122,11 @@ const MONITOR_OUTCOME_DESCRIPTIONS = Object.freeze({
 // Most entries kept in a monitor's log. The "created" entry is always kept.
 const MAX_MONITOR_LOG_ENTRIES = 10;
 
+const MONITOR_STATUS_L10N_IDS = Object.freeze({
+  watching: "smartwindow-agent-monitor-status-watching",
+  paused: "smartwindow-agent-monitor-status-paused",
+});
+
 /**
  * Handles interactive updates from agent cards embedded in chat
  */
@@ -940,9 +945,7 @@ export class AgentUI {
    */
   static #statusForKind(kind) {
     return {
-      label: lazy.l10n.formatValueSync(
-        `smartwindow-agent-monitor-status-${kind}`
-      ),
+      label: lazy.l10n.formatValueSync(MONITOR_STATUS_L10N_IDS[kind]),
       kind,
     };
   }
