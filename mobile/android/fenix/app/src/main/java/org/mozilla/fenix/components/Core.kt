@@ -728,20 +728,19 @@ class Core(
     val longFoxFeature by lazy { LongFoxFeature() }
 
     /**
-     * Shared Preferences that encrypt/decrypt using Android KeyStore and lib-dataprotect for 23+ only on Debug builds
-     * for now, otherwise simply stored. See https://github.com/mozilla-mobile/fenix/issues/8324 Also, this needs
-     * revision. See https://github.com/mozilla-mobile/fenix/issues/19155
+     * Regular Shared Preferences. Any values previously encrypted by [SecureAbove22Preferences] are migrated on first
+     * access.
      */
-    private fun getSecureAbove22Preferences() =
+    private fun getAbove22Preferences() =
         SecureAbove22Preferences(
             context = context,
             name = KEY_STORAGE_NAME,
-            forceInsecure = !Config.channel.isDebug,
+            forceInsecure = true,
             crashReporting = crashReporter,
         )
 
     // Temporary. See https://github.com/mozilla-mobile/fenix/issues/19155
-    private val lazySecurePrefs = lazy { getSecureAbove22Preferences() }
+    private val lazySecurePrefs = lazy { getAbove22Preferences() }
     val trackingProtectionPolicyFactory =
         TrackingProtectionPolicyFactory(context.components.settings, context.resources)
 

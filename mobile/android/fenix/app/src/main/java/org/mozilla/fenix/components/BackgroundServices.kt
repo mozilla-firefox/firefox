@@ -51,7 +51,6 @@ import mozilla.components.service.sync.autofill.AutofillCreditCardsAddressesStor
 import mozilla.components.service.sync.logins.SyncableLoginsStorage
 import mozilla.components.support.utils.RunWhenReadyQueue
 import mozilla.telemetry.glean.private.NoExtras
-import org.mozilla.fenix.Config
 import org.mozilla.fenix.GleanMetrics.ClientAssociation
 import org.mozilla.fenix.GleanMetrics.Onboarding
 import org.mozilla.fenix.GleanMetrics.Pings.fxAccounts
@@ -115,10 +114,6 @@ class BackgroundServices(
                     add(DeviceCapability.SEND_TAB)
                     add(DeviceCapability.CLOSE_TABS)
                 },
-            // Enable encryption for account state on supported API levels (23+).
-            // Just on Nightly and local builds for now.
-            // Enabling this for all channels is tracked in https://github.com/mozilla-mobile/fenix/issues/6704
-            secureStateAtRest = Config.channel.isNightlyOrDebug,
         )
 
     @VisibleForTesting
