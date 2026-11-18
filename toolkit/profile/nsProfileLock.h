@@ -25,7 +25,7 @@ class nsProfileLock
 {
  public:
   nsProfileLock();
-  nsProfileLock(nsProfileLock& src);
+  nsProfileLock(const nsProfileLock&) = delete;
 
   ~nsProfileLock();
 

@@ -62,8 +62,6 @@ nsProfileLock::nsProfileLock()
 #endif
 }
 
-nsProfileLock::nsProfileLock(nsProfileLock& src) { *this = src; }
-
 nsProfileLock& nsProfileLock::operator=(nsProfileLock& rhs) {
   Unlock();
 
