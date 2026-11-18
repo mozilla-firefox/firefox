@@ -264,9 +264,9 @@ class OnboardingMapperTest {
     }
 
     @Test
-    fun disqualifiersDontMatchJexlConditions_shouldDisplayCard_returnsConvertedPage() {
+    fun unknownDisqualifier_toPageUiData_returnsNoPage() {
         val jexlConditions = mapOf("NEVER" to "false")
-        val expected = listOf(syncPageUiData)
+        val expected = emptyList<OnboardingPageUiData>()
 
         assertEquals(
             expected,
