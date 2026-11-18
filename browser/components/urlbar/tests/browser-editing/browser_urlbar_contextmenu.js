@@ -752,6 +752,31 @@ add_task(async function result_target_menu_nimbus() {
   await SpecialPowers.popPrefEnv();
 });
 
+add_task(async function context_menu_nimbus() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.contextMenu.featureGate", false]],
+  });
+  info("Sanity check that the context menu doesn't open");
+  await assertNoContextMenuOnFirstResult();
+
+  await ExperimentAPI.ready();
+  let doCleanup = await NimbusTestUtils.enrollWithFeatureConfig({
+    featureId: "urlbar",
+    value: { contextMenuFeatureGate: true },
+  });
+
+  let menu = await openContextMenuOnFirstResult();
+  Assert.ok(menu.open, "The menu opens on right-click while enrolled");
+  menu.hide(undefined, { force: true });
+  gURLBar.view.close();
+
+  await doCleanup();
+  info("Check that the context menu doesn't open after unenrolling");
+  await assertNoContextMenuOnFirstResult();
+
+  await SpecialPowers.popPrefEnv();
+});
+
 // Returns the menu's items as the command or open-in target each one picks, in
 // the order they are shown, separators included.
 async function promiseMenuDescription() {
@@ -807,6 +832,29 @@ async function openContextMenu(row) {
   await onShown;
 
   return menu;
+}
+
+async function assertNoContextMenuOnFirstResult() {
+  await UrlbarTestUtils.promiseAutocompleteResultPopup({
+    value: "exa",
+    window,
+    fireInputEvent: true,
+  });
+  let { element } = await UrlbarTestUtils.getDetailsOfResultAt(window, 0);
+  let onContextMenu = BrowserTestUtils.waitForEvent(window, "contextmenu");
+  let menuShown = false;
+  let menuListener = () => {
+    menuShown = true;
+  };
+  window.addEventListener("showing", menuListener, true);
+  EventUtils.synthesizeMouseAtCenter(element.row, {
+    type: "contextmenu",
+    button: 2,
+  });
+  await onContextMenu;
+  Assert.ok(!menuShown, "A right-click on the result doesn't open the menu");
+  window.removeEventListener("showing", menuListener, true);
+  gURLBar.view.close();
 }
 
 async function openContextMenuOnFirstResult() {

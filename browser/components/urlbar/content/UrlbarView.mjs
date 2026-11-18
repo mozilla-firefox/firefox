@@ -4950,7 +4950,7 @@ export class UrlbarView {
 
     event.preventDefault();
 
-    if (!UrlbarPrefs.get("contextMenu.featureGate")) {
+    if (!UrlbarPrefs.get("contextMenuFeatureGate")) {
       return;
     }
 

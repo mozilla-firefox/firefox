@@ -112,7 +112,8 @@ const PREF_URLBAR_DEFAULTS = /** @type {PreferenceDefinition[]} */ ([
   // unexpected issues in Release. We normally want this behavior.
   ["closeOtherPanelsOnOpen", true],
 
-  // Feature gate pref for context menu on the urlbar.
+  // Feature gate pref for whether a user interaction, such as right-clicking a
+  // result, opens the result's context menu.
   ["contextMenu.featureGate", false],
 
   // Whether to show a link for using the search functionality provided by the

@@ -339,6 +339,12 @@ urlbar:
         pref: browser.urlbar.autoFill.dismissalBlockDurationMs
         branch: user
       description: Duration in ms to block an origin or URL after user dismissal.
+    contextMenuFeatureGate:
+      type: boolean
+      fallbackPref: browser.urlbar.contextMenu.featureGate
+      description: >-
+        Whether a user interaction, such as right-clicking a urlbar result,
+        opens the result's context menu.
     deduplicationEnabled:
       type: boolean
       setPref:

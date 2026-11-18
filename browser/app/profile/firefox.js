@@ -553,7 +553,8 @@ pref("browser.urlbar.weather.featureGate", false);
 // Enable clipboard suggestions feature, the pref should be removed once stable.
 pref("browser.urlbar.clipboard.featureGate", false);
 
-// Enable context menu on the urlbar.
+// Whether a user interaction, such as right-clicking a urlbar result, opens the
+// result's context menu.
 pref("browser.urlbar.contextMenu.featureGate", false);
 
 // Whether urlbar result menus offer to open the result in a new tab or window.
