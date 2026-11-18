@@ -361,6 +361,7 @@ tasks:
                       - trustDomain: gecko
                         isPullRequest: false
                         prNumber: null
+                        baseRef: ''
                         eventType: '${tasks_for}'
                         eventAction: null
                       - $switch:
@@ -400,6 +401,7 @@ tasks:
                                 # to fetch all tags from the repo just on the off-chance it is a tag.
                                 ref: 'refs/heads/${event.pull_request.head.ref}'
                                 baseRev: '${event.pull_request.base.sha}'
+                                baseRef: '${event.pull_request.base.ref}'
                                 headRev: '${event.pull_request.head.sha}'
                                 prNumber: '${event.pull_request.number}'
                                 isPullRequest: true
@@ -538,6 +540,7 @@ tasks:
                                       $merge:
                                           - GECKO_BASE_REPOSITORY: '${baseRepoUrl}'
                                             GECKO_BASE_REV: '${baseRev}'
+                                            GECKO_BASE_REF: '${baseRef}'
                                             GECKO_HEAD_REPOSITORY: '${repoUrl}'
                                             GECKO_HEAD_REF: '${ref}'
                                             GECKO_HEAD_REV: '${headRev}'
@@ -604,7 +607,8 @@ tasks:
                                                --repository-type=git \
                                                --tasks-for='${tasks_for}' \
                                                --base-repository='${baseRepoUrl}' \
-                                               --base-rev='${baseRev}' \
+                                               --base-rev="$GECKO_BASE_REV" \
+                                               --base-ref="$GECKO_BASE_REF" \
                                                --head-repository='${repoUrl}' \
                                                --head-ref='${ref}' \
                                                --head-rev='${headRev}' \
