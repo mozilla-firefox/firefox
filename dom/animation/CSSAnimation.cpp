@@ -183,10 +183,14 @@ void CSSAnimation::Tick(TickState& aState) {
 }
 
 int32_t CSSAnimation::CompareCompositeOrder(
-    const CSSAnimation& aOther, nsContentUtils::NodeIndexCache& aCache) const {
-  MOZ_ASSERT(IsTiedToMarkup() && aOther.IsTiedToMarkup(),
+    const Maybe<EventContext>& aContext, const CSSAnimation& aOther,
+    const Maybe<EventContext>& aOtherContext,
+    nsContentUtils::NodeIndexCache& aCache) const {
+  MOZ_ASSERT((IsTiedToMarkup() || aContext) &&
+                 (aOther.IsTiedToMarkup() || aOtherContext),
              "Should only be called for CSS animations that are sorted "
-             "as CSS animations (i.e. tied to CSS markup)");
+             "as CSS animations (i.e. tied to CSS markup) or with overridden "
+             "target and animation index");
 
   // 0. Object-equality case
   if (&aOther == this) {
@@ -194,11 +198,30 @@ int32_t CSSAnimation::CompareCompositeOrder(
   }
 
   // 1. Sort by document order
-  if (!mOwningElement.Equals(aOther.mOwningElement)) {
-    return mOwningElement.Compare(aOther.mOwningElement, aCache);
+  const OwningElementRef& owningElement1 =
+      IsTiedToMarkup() ? mOwningElement : OwningElementRef(aContext->mTarget);
+  const OwningElementRef& owningElement2 =
+      aOther.IsTiedToMarkup() ? aOther.mOwningElement
+                              : OwningElementRef(aOtherContext->mTarget);
+  if (!owningElement1.Equals(owningElement2)) {
+    return owningElement1.Compare(owningElement2, aCache);
   }
 
   // 2. (Same element and pseudo): Sort by position in animation-name
+  // https://drafts.csswg.org/css-animations-2/#animation-composite-order
+  //
+  // Case 1: if Both have been cancelled, we just sort by the old positions in
+  // the list
+  if (!IsTiedToMarkup() && !aOther.IsTiedToMarkup()) {
+    return aContext->mIndex < aOtherContext->mIndex ? -1 : 1;
+  }
+  // Case 2: if only one animation has been cancelled, the cancelled animation
+  // sorts first.
+  if (IsTiedToMarkup() != aOther.IsTiedToMarkup()) {
+    return !IsTiedToMarkup() ? -1 : 1;
+  }
+  // Case 3: If neither |this| nor |aOther| have been cancelled, we sort by the
+  // positions in the current list.
   MOZ_ASSERT(mAnimationIndex != aOther.mAnimationIndex);
   return mAnimationIndex < aOther.mAnimationIndex ? -1 : 1;
 }

@@ -73,7 +73,9 @@ class CSSAnimation final : public Animation {
   void QueueEvents(
       const StickyTimeDuration& aActiveTime = StickyTimeDuration());
 
-  int32_t CompareCompositeOrder(const CSSAnimation& aOther,
+  int32_t CompareCompositeOrder(const Maybe<EventContext>& aContext,
+                                const CSSAnimation& aOther,
+                                const Maybe<EventContext>& aOtherContext,
                                 nsContentUtils::NodeIndexCache&) const;
 
   void SetAnimationIndex(uint64_t aIndex) {

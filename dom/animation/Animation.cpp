@@ -1653,14 +1653,18 @@ int32_t Animation::CompareCompositeOrder(
   // 2. CSS Animations sort next
   {
     auto asCSSAnimationForSorting =
-        [](const Animation& anim) -> const CSSAnimation* {
+        [](const Animation& anim,
+           const Maybe<EventContext>& aContext) -> const CSSAnimation* {
       const CSSAnimation* animation = anim.AsCSSAnimation();
-      return animation && animation->IsTiedToMarkup() ? animation : nullptr;
+      return animation && (aContext || animation->IsTiedToMarkup()) ? animation
+                                                                    : nullptr;
     };
-    auto thisAnimation = asCSSAnimationForSorting(*this);
-    auto otherAnimation = asCSSAnimationForSorting(aOther);
+    const auto* const thisAnimation = asCSSAnimationForSorting(*this, aContext);
+    const auto* const otherAnimation =
+        asCSSAnimationForSorting(aOther, aOtherContext);
     if (thisAnimation && otherAnimation) {
-      return thisAnimation->CompareCompositeOrder(*otherAnimation, aCache);
+      return thisAnimation->CompareCompositeOrder(aContext, *otherAnimation,
+                                                  aOtherContext, aCache);
     }
     if (thisAnimation || otherAnimation) {
       return thisAnimation ? -1 : 1;
