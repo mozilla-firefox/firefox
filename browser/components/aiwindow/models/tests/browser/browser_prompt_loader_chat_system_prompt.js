@@ -8,12 +8,18 @@ const { buildChatSystemPrompt, loadPrompt } = ChromeUtils.importESModule(
 );
 
 const {
+  _clearRemoteClientForTesting,
+  _setRemoteClientForTesting,
   checkMajorVersion,
   FEATURE_MAJOR_VERSIONS,
   getRemoteClient,
   MODEL_FEATURES,
 } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs"
+);
+
+const { Region } = ChromeUtils.importESModule(
+  "resource://gre/modules/Region.sys.mjs"
 );
 
 const CHAT_MODEL = "generic";
@@ -173,6 +179,67 @@ add_task(async function test_buildChatSystemPrompt_skips_gated_module() {
   Assert.ok(
     prompt.includes(marker),
     "pages module is assembled while the aitab pref is on"
+  );
+  await SpecialPowers.popPrefEnv();
+});
+
+/**
+ * Test that the monitor module follows the monitor gate: the agent pref and
+ * the supported regions.
+ */
+add_task(async function test_buildChatSystemPrompt_gates_monitor_module() {
+  const AGENT_PREF = "browser.smartwindow.agent.enabled";
+  const MONITOR_MARKER = "# Monitor test module";
+
+  const records = await getRemoteClient().get();
+  const withMonitor = records.map(record =>
+    record.id === gChatParams.id
+      ? {
+          ...record,
+          modules: [...record.modules, { name: "monitor", version: "1.0" }],
+        }
+      : record
+  );
+  withMonitor.push({
+    id: "chat-monitor-test",
+    kind: "module",
+    feature: MODEL_FEATURES.CHAT,
+    module: "monitor",
+    model: "generic",
+    version: "1.0",
+    prompts: `${MONITOR_MARKER}\nSuggest watching the page.`,
+  });
+  _setRemoteClientForTesting({ get: async () => withMonitor });
+
+  const originalRegion = Region.home;
+  registerCleanupFunction(() => {
+    _clearRemoteClientForTesting();
+    Region._setHomeRegion(originalRegion, false);
+  });
+
+  Region._setHomeRegion("US", false);
+  await SpecialPowers.pushPrefEnv({ set: [[AGENT_PREF, true]] });
+  let { prompt } = await buildChatSystemPrompt(CHAT_MODEL);
+  Assert.ok(
+    prompt.includes(MONITOR_MARKER),
+    "monitor module is assembled while monitors are available"
+  );
+  await SpecialPowers.popPrefEnv();
+
+  await SpecialPowers.pushPrefEnv({ set: [[AGENT_PREF, false]] });
+  ({ prompt } = await buildChatSystemPrompt(CHAT_MODEL));
+  Assert.ok(
+    !prompt.includes(MONITOR_MARKER),
+    "monitor module is left out while the agent pref is off"
+  );
+  await SpecialPowers.popPrefEnv();
+
+  await SpecialPowers.pushPrefEnv({ set: [[AGENT_PREF, true]] });
+  Region._setHomeRegion("FR", false);
+  ({ prompt } = await buildChatSystemPrompt(CHAT_MODEL));
+  Assert.ok(
+    !prompt.includes(MONITOR_MARKER),
+    "monitor module is left out in a region without monitors"
   );
   await SpecialPowers.popPrefEnv();
 });
