@@ -948,6 +948,7 @@ toolbarbutton[constrain-size="true"][cui-areatype="panel"] > .toolbarbutton-badg
    the account menu. */
 #PanelUI-fxa-menu-signed-out-card,
 #appMenu-fxa-signed-out-row {
+  min-width: 0;
   gap: var(--space-medium);
   padding: var(--panel-menuitem-padding);
   margin: var(--panel-menuitem-margin);
@@ -966,7 +967,16 @@ toolbarbutton[constrain-size="true"][cui-areatype="panel"] > .toolbarbutton-badg
   }
 
   & .fxa-menu-signed-out-email {
+    margin-block: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-weight: var(--font-weight-semibold);
+  }
+
+  /* The fallback title is localized copy, which wraps; only an email truncates. */
+  & #appMenu-fxa-signed-out-title[data-l10n-id] {
+    white-space: normal;
   }
 
   & .fxa-menu-signed-out-message {
