@@ -674,11 +674,19 @@ if (typeof Mozilla == "undefined") {
    * This will prompt the user to sign in and then open the AI Window
    * upon successful authentication.
    *
+   * @param {string} [entrypoint] - The entry point recorded as the launch
+   * trigger in Smart Window telemetry, as "bedrock-<entrypoint>". Defaults to
+   * "bedrock" when omitted.
+   * @since 149, 162 for `entrypoint`
    * @example
    * Mozilla.UITour.showFirefoxAccountsForAIWindow();
+   * @example
+   * Mozilla.UITour.showFirefoxAccountsForAIWindow("sample");
    */
-  Mozilla.UITour.showFirefoxAccountsForAIWindow = function () {
-    _sendEvent("showFirefoxAccountsForAIWindow");
+  Mozilla.UITour.showFirefoxAccountsForAIWindow = function (entrypoint) {
+    _sendEvent("showFirefoxAccountsForAIWindow", {
+      entrypoint,
+    });
   };
 
   /**

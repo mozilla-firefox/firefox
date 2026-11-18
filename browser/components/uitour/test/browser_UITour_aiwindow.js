@@ -55,6 +55,33 @@ add_UITour_task(async function test_showFirefoxAccountsForAIWindow() {
   await SpecialPowers.popPrefEnv();
 });
 
+add_UITour_task(
+  async function test_showFirefoxAccountsForAIWindow_entrypoint() {
+    if (IS_ESR) {
+      Assert.ok(true, "Smart Window is not available on ESR, skipping.");
+      return;
+    }
+
+    let launchStub = sinon.stub(AIWindow, "launchWindow");
+    launchStub.resolves(true);
+
+    gContentAPI.showFirefoxAccountsForAIWindow("custom_entrypoint");
+
+    await TestUtils.waitForCondition(
+      () => launchStub.callCount > 0,
+      "Waiting for launchWindow to be called"
+    );
+
+    Assert.deepEqual(
+      launchStub.firstCall.args.slice(1),
+      [false, "bedrock-custom_entrypoint"],
+      "launchWindow should be called with the bedrock-prefixed entrypoint as trigger"
+    );
+
+    launchStub.restore();
+  }
+);
+
 add_UITour_task(async function test_showFirefoxAccountsForAIWindow_esr() {
   if (!IS_ESR) {
     Assert.ok(true, "Not an ESR build, skipping.");
