@@ -30,6 +30,7 @@
 
 import { PipelineOptions } from "chrome://global/content/ml/EngineProcess.sys.mjs";
 import { MLEngineParent } from "moz-src:///toolkit/components/ml/actors/MLEngineParent.sys.mjs";
+import { createFileUrl } from "chrome://global/content/ml/Utils.sys.mjs";
 import { TextGenerationEngine } from "moz-src:///toolkit/components/ml/textgeneration/TextGenerationEngine.sys.mjs";
 import { BrowserTestUtils } from "resource://testing-common/BrowserTestUtils.sys.mjs";
 import { HttpServer } from "resource://testing-common/httpd.sys.mjs";
@@ -301,6 +302,40 @@ function createServer(markup, code) {
     cleanup: () => promise,
   };
 }
+
+/**
+ * @typedef {object} MockModelHubFileSpec
+ * @property {string} model - Model name, e.g. "acme/bert".
+ * @property {string} revision - Model revision, e.g. "main".
+ * @property {string} file - Path within the revision, e.g. "onnx/model.onnx".
+ * @property {string | Uint8Array} [content] - The body to serve. Strings are
+ *   encoded as UTF-8. Defaults to an empty body.
+ * @property {string} [etag] - The ETag to serve. Defaults to an opaque token with
+ *   no relationship to the body, since a real hub's ETag covers the representation
+ *   it transfers rather than the bytes the client stores.
+ * @property {number} [failTimes] - Serve `failStatus` for this many requests before
+ *   serving the body.
+ * @property {number} [failStatus] - Status to serve while failing. Default 500.
+ * @property {boolean} [truncate] - Advertise the full Content-Length but send only
+ *   half the bytes, so the client sees a short read rather than a small file.
+ */
+
+/**
+ * @typedef {object} MockModelHubEntry
+ * @property {Uint8Array} bytes
+ * @property {string} etag
+ * @property {number} failTimes
+ * @property {number} failStatus
+ * @property {boolean} truncate
+ * @property {number} attempts - Drives `failTimes`. Assertions should use
+ *   requestCount() instead, which counts 404s and survives removeFile().
+ */
+
+/**
+ * @typedef {object} MockModelHubRequest
+ * @property {string} method
+ * @property {string} path
+ */
 
 /**
  * Mock an LLM with artificial calls. This is useful for testing various user flows when
@@ -925,6 +960,232 @@ export const MLTestUtils = {
        */
       // eslint-disable-next-line sdl/no-insecure-url
       origin: `http://${primaryHost}:${primaryPort}`,
+    };
+  },
+
+  /**
+   * Serve a ModelHub over a local http server for a realistic testing environment.
+   *
+   * Example usage:
+   *   const hub = MLTestUtils.createMockModelHub();
+   *   hub.setFile({
+   *     model: "acme/bert",
+   *     revision: "main",
+   *     file: "config.json",
+   *     content: JSON.stringify({ hidden_size: 768 }),
+   *   });
+   *   const modelHub = new ModelHub({
+   *     rootUrl: hub.rootUrl,
+   *     urlTemplate: hub.urlTemplate,
+   *   });
+   *   // ...exercise the download, then assert it only hit the network once:
+   *   Assert.equal(
+   *     hub.requestCount({ model: "acme/bert", revision: "main", file: "config.json", method: "GET" }),
+   *     1
+   *   );
+   *   await hub.cleanup();
+   */
+  createMockModelHub() {
+    const urlTemplate = "{model}/resolve/{revision}";
+
+    const server = new HttpServer();
+    server.start(-1);
+    const { primaryHost, primaryPort } = server.identity;
+    // eslint-disable-next-line sdl/no-insecure-url
+    const rootUrl = `http://${primaryHost}:${primaryPort}`;
+
+    // primaryHost is "localhost", which ModelHub's URLChecker always allows, so
+    // tests do not need MOZ_ALLOW_EXTERNAL_ML_HUB.
+
+    let etagCounter = 0;
+
+    /** @type {Map<string, MockModelHubEntry>} */
+    const entries = new Map();
+
+    /** @type {MockModelHubRequest[]} */
+    const requests = [];
+
+    /**
+     * The request path ModelHub would use for a file, derived through the same
+     * code production uses.
+     *
+     * @param {object} triple
+     * @param {string} triple.model
+     * @param {string} triple.revision
+     * @param {string} triple.file
+     * @returns {string}
+     */
+    function pathFor({ model, revision, file }) {
+      return new URL(
+        createFileUrl({ model, revision, file, rootUrl, urlTemplate })
+      ).pathname;
+    }
+
+    /** @type {nsIHttpRequestHandler} */
+    const handler = (request, response) => {
+      requests.push({ method: request.method, path: request.path });
+
+      const entry = entries.get(request.path);
+      if (!entry) {
+        response.setStatusLine(request.httpVersion, 404, "Not Found");
+        return;
+      }
+
+      entry.attempts++;
+
+      if (entry.attempts <= entry.failTimes) {
+        response.setStatusLine(request.httpVersion, entry.failStatus, "");
+        return;
+      }
+
+      // httpd.js overwrites Content-Length with the real body length on any
+      // non-async response, so the cases that need a Content-Length which
+      // disagrees with the body have to go through processAsync.
+      const needsAsync = entry.truncate || request.method === "HEAD";
+      if (needsAsync) {
+        response.processAsync();
+      }
+
+      response.setStatusLine(request.httpVersion, 200, "");
+      response.setHeader("ETag", entry.etag);
+
+      if (needsAsync) {
+        response.setHeader("Content-Length", String(entry.bytes.length));
+      }
+
+      if (request.method !== "HEAD") {
+        const body = entry.truncate
+          ? entry.bytes.slice(0, Math.floor(entry.bytes.length / 2))
+          : entry.bytes;
+
+        if (body.length) {
+          const binaryOutputStream = Cc[
+            "@mozilla.org/binaryoutputstream;1"
+          ].createInstance(Ci.nsIBinaryOutputStream);
+          binaryOutputStream.setOutputStream(response.bodyOutputStream);
+          binaryOutputStream.writeByteArray(
+            /**
+             * @type {any} - The type expects a number[], while we are passing a Uint8Array.
+             */ (body)
+          );
+        }
+      }
+
+      if (needsAsync) {
+        response.finish();
+      }
+    };
+
+    server.registerPrefixHandler("/", handler);
+
+    return {
+      /** @type {string} */
+      rootUrl,
+
+      /** @type {string} */
+      urlTemplate,
+
+      /**
+       * Define a file on the hub.
+       *
+       * @param {MockModelHubFileSpec} spec
+       * @returns {{url: string, etag: string, size: number, contentHash: string}}
+       *   `contentHash` is the SHA-256 of the body, for tests asserting against
+       *   the digest of what gets stored. It is not the ETag.
+       */
+      setFile(spec) {
+        const {
+          model,
+          revision,
+          file,
+          content = "",
+          failTimes = 0,
+          failStatus = 500,
+          truncate = false,
+        } = spec;
+
+        // Checked by typeof rather than `instanceof Uint8Array`, which is false
+        // for a typed array constructed in the caller's global.
+        const bytes =
+          typeof content === "string"
+            ? new TextEncoder().encode(content)
+            : content;
+        const etag = spec.etag ?? `"mock-etag-${++etagCounter}"`;
+
+        const hasher = Cc["@mozilla.org/security/hash;1"].createInstance(
+          Ci.nsICryptoHash
+        );
+        hasher.init(Ci.nsICryptoHash.SHA256);
+        hasher.update(bytes, bytes.length);
+
+        // finish(false) hands back the raw digest with one byte per code unit.
+        const digest = hasher.finish(false);
+        let contentHash = "";
+        for (let i = 0; i < digest.length; i++) {
+          contentHash += digest.charCodeAt(i).toString(16).padStart(2, "0");
+        }
+
+        entries.set(pathFor({ model, revision, file }), {
+          bytes,
+          etag,
+          failTimes,
+          failStatus,
+          truncate,
+          attempts: 0,
+        });
+
+        return {
+          url: createFileUrl({ model, revision, file, rootUrl, urlTemplate }),
+          etag,
+          size: bytes.length,
+          contentHash,
+        };
+      },
+
+      /**
+       * Remove a file, so the hub answers 404 for it.
+       *
+       * @param {object} triple
+       * @param {string} triple.model
+       * @param {string} triple.revision
+       * @param {string} triple.file
+       * @returns {boolean} Whether the file was defined.
+       */
+      removeFile({ model, revision, file }) {
+        return entries.delete(pathFor({ model, revision, file }));
+      },
+
+      /**
+       * How many times a file was requested. Reads the request log rather than
+       * per-file state, so it also counts requests the hub answered with a 404.
+       *
+       * @param {object} query
+       * @param {string} query.model
+       * @param {string} query.revision
+       * @param {string} query.file
+       * @param {string} [query.method] - Restrict to one method, e.g. "GET" or
+       *   "HEAD". Counts every method when omitted.
+       * @returns {number}
+       */
+      requestCount({ model, revision, file, method }) {
+        const path = pathFor({ model, revision, file });
+        return requests.filter(
+          request =>
+            request.path === path &&
+            (method === undefined || request.method === method)
+        ).length;
+      },
+
+      /**
+       * @returns {Promise<void>}
+       */
+      async cleanup() {
+        // Clean up any unresolved pause gates.
+        for (const entry of entries.values()) {
+          entry.pauseGate?.resolve();
+        }
+        await new Promise(resolve => server.stop(resolve));
+      },
     };
   },
 };
