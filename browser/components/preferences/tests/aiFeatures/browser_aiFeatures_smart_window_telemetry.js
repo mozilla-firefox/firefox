@@ -47,13 +47,14 @@ describe("Smart Window telemetry", () => {
       "There's no model from the onboarding selection"
     );
 
-    const fastRadio = doc.querySelector(
-      'moz-radio[data-l10n-id="smart-window-model-fast-v2"]'
+    const geminiRadio = await waitForModelRadio(
+      doc,
+      "smart-window-model-gemini"
     );
     const prefChanged = TestUtils.waitForPrefChange(
       "browser.smartwindow.firstrun.modelChoice"
     );
-    fastRadio.click();
+    geminiRadio.click();
     await prefChanged;
 
     const settingsModelEvent = Glean.smartWindow.settingsModel.testGetValue();
@@ -96,13 +97,14 @@ describe("Smart Window telemetry", () => {
     const modelSelection = doc.getElementById("modelSelection");
     Assert.equal(modelSelection.value, 2, "Model 2 was previously selected");
 
-    const fastRadio = doc.querySelector(
-      'moz-radio[data-l10n-id="smart-window-model-fast-v2"]'
+    const geminiRadio = await waitForModelRadio(
+      doc,
+      "smart-window-model-gemini"
     );
     const prefChanged = TestUtils.waitForPrefChange(
       "browser.smartwindow.firstrun.modelChoice"
     );
-    fastRadio.click();
+    geminiRadio.click();
     await prefChanged;
 
     const settingsModelEvent = Glean.smartWindow.settingsModel.testGetValue();

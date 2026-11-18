@@ -19,6 +19,7 @@
   addChat,
   triggerBlockAndWaitForDialog,
   selectCustomModel,
+  waitForModelRadio,
 */
 
 ChromeUtils.defineESModuleGetters(this, {
@@ -159,4 +160,23 @@ async function selectCustomModel(doc) {
     () => BrowserTestUtils.isVisible(doc.getElementById("customModelName"))
   );
   return doc.getElementById("customModelName");
+}
+
+/**
+ * Waits for the model radio with the given l10n ID to render and returns it.
+ *
+ * @param {Document} doc
+ * @param {string} l10nId
+ * @returns {Promise<Element>}
+ */
+async function waitForModelRadio(doc, l10nId) {
+  const modelSelection = doc.getElementById("modelSelection");
+  await modelSelection.updateComplete;
+  const findRadio = () =>
+    modelSelection.querySelector(`moz-radio[data-l10n-id="${l10nId}"]`);
+  return BrowserTestUtils.waitForMutationCondition(
+    modelSelection,
+    { attributes: true, childList: true, subtree: true },
+    findRadio
+  );
 }

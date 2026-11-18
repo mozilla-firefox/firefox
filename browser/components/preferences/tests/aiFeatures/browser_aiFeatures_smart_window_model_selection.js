@@ -65,6 +65,9 @@ describe("Smart Window model selection", () => {
   });
 
   it("shows model selection with no model selected, then selects a model", async () => {
+    await SpecialPowers.pushPrefEnv({
+      set: [["browser.smartwindow.firstrun.singlePageWithAutoModel", false]],
+    });
     ({ doc, win } = await openSmartWindowPanel());
 
     const modelSelection = doc.getElementById("modelSelection");
@@ -121,6 +124,9 @@ describe("Smart Window model selection", () => {
   });
 
   it("hides the Auto model option when the pref is off, and shows it once the pref is flipped", async () => {
+    await SpecialPowers.pushPrefEnv({
+      set: [["browser.smartwindow.firstrun.singlePageWithAutoModel", false]],
+    });
     ({ doc, win } = await openSmartWindowPanel());
 
     Assert.ok(

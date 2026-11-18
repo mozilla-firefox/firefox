@@ -245,10 +245,11 @@ describe("Smart Window custom model settings", () => {
       "Save button is disabled when a previously saved custom model is loaded"
     );
 
-    const fastRadio = doc.querySelector(
-      'moz-radio[data-l10n-id="smart-window-model-fast-v2"]'
+    const geminiRadio = await waitForModelRadio(
+      doc,
+      "smart-window-model-gemini"
     );
-    fastRadio.click();
+    geminiRadio.click();
 
     await BrowserTestUtils.waitForMutationCondition(
       doc.body,

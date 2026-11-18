@@ -482,6 +482,7 @@ add_task(async function test_firstrun_europe_promotes_mistral() {
 
   await SpecialPowers.pushPrefEnv({
     set: [
+      ["browser.smartwindow.firstrun.singlePageWithAutoModel", false],
       ["browser.smartwindow.firstrun.autoAdvanceMS", 0],
       ["browser.smartwindow.firstrun.modelChoice", ""],
     ],
@@ -537,6 +538,7 @@ add_task(async function test_firstrun_non_europe_no_promotion() {
 
   await SpecialPowers.pushPrefEnv({
     set: [
+      ["browser.smartwindow.firstrun.singlePageWithAutoModel", false],
       ["browser.smartwindow.firstrun.autoAdvanceMS", 0],
       ["browser.smartwindow.firstrun.modelChoice", ""],
     ],
@@ -579,6 +581,9 @@ add_task(async function test_firstrun_non_europe_no_promotion() {
 });
 
 add_task(async function test_firstrun_welcome_screen_renders() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.smartwindow.firstrun.singlePageWithAutoModel", false]],
+  });
   const tab = await openFirstrunPage();
 
   await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
@@ -606,6 +611,7 @@ add_task(async function test_firstrun_welcome_screen_renders() {
   });
 
   BrowserTestUtils.removeTab(tab);
+  await SpecialPowers.popPrefEnv();
 });
 
 add_task(async function test_launchWindow_shows_firstrun_when_not_completed() {
@@ -757,6 +763,7 @@ add_task(async function test_firstrun_explainer_page_opens() {
 
   await SpecialPowers.pushPrefEnv({
     set: [
+      ["browser.smartwindow.firstrun.singlePageWithAutoModel", false],
       ["browser.smartwindow.enabled", true],
       ["browser.smartwindow.firstrun.hasCompleted", false],
       ["browser.smartwindow.firstrun.modelChoice", ""],
@@ -869,6 +876,7 @@ add_task(async function test_firstrun_telemetry() {
 
   await SpecialPowers.pushPrefEnv({
     set: [
+      ["browser.smartwindow.firstrun.singlePageWithAutoModel", false],
       ["browser.smartwindow.firstrun.autoAdvanceMS", 0],
       ["browser.smartwindow.firstrun.modelChoice", ""],
     ],
@@ -1070,6 +1078,7 @@ add_task(async function test_firstrun_hidden_screen_removed() {
 
   await SpecialPowers.pushPrefEnv({
     set: [
+      ["browser.smartwindow.firstrun.singlePageWithAutoModel", false],
       ["browser.smartwindow.firstrun.autoAdvanceMS", 0],
       ["browser.smartwindow.firstrun.modelChoice", ""],
       ["browser.smartwindow.firstrun.hasCompleted", false],
@@ -1143,6 +1152,7 @@ add_task(async function test_firstrun_hidden_screen_removed() {
 add_task(async function test_firstrun_non_removable_screens_not_hidden() {
   await SpecialPowers.pushPrefEnv({
     set: [
+      ["browser.smartwindow.firstrun.singlePageWithAutoModel", false],
       ["browser.smartwindow.firstrun.autoAdvanceMS", 0],
       ["browser.smartwindow.firstrun.modelChoice", ""],
       [
@@ -1197,6 +1207,7 @@ add_task(async function test_firstrun_telemetry_unchecked() {
 
   await SpecialPowers.pushPrefEnv({
     set: [
+      ["browser.smartwindow.firstrun.singlePageWithAutoModel", false],
       ["browser.smartwindow.firstrun.autoAdvanceMS", 0],
       ["browser.smartwindow.firstrun.modelChoice", ""],
       ["browser.smartwindow.memories.generateFromHistory", true],
