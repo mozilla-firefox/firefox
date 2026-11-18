@@ -3257,6 +3257,12 @@ AppendedBackgroundType nsDisplayBackgroundImage::AppendBackgroundItemsToTop(
     return AppendedBackgroundType::None;
   }
 
+  // The WebVTT cue background box inherits and paints the ::cue background.
+  // https://w3c.github.io/webvtt/#the-cue-pseudo-element
+  if (bgSC->GetPseudoType() == PseudoStyleType::Cue) {
+    return AppendedBackgroundType::None;
+  }
+
   bool drawBackgroundColor = false;
   bool drawBackgroundImage = false;
   nscolor color = NS_RGBA(0, 0, 0, 0);

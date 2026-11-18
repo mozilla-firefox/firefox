@@ -882,19 +882,19 @@ video > .caption-box:-moz-native-anonymous {
 }
 
 /**
- * The pseudo element won't inherit CSS styles from its direct parent, `::cue`
- * would actually inherit styles from video because it's video's pseudo element.
- * Therefore, we have to explicitly set some styles which are already defined
- * in its parent element in vtt.sys.mjs.
+ * https://w3c.github.io/webvtt/#applying-css-properties
+ * `::cue` is the list of WebVTT Node Objects, the block that holds the lines
+ * of a cue. Its background is painted only by the WebVTT cue background box,
+ * the inline box around the cue text, which inherits it.
  */
 ::cue {
+  unicode-bidi: plaintext;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+  font: 10px sans-serif;
   color: rgba(255, 255, 255, 1);
   white-space: pre-line;
-  background-color: rgba(0, 0, 0, 0.8);
-  font: 10px sans-serif;
-  overflow-wrap: break-word;
-  /* TODO : enable unicode-bidi, right now enable it would cause incorrect
-            display direction, maybe related with bug 1558431. */
+  background: rgba(0, 0, 0, 0.8);
 }
 
 /* <dialog> element styles */

@@ -139,6 +139,7 @@ struct DeclarationIterator<'a> {
     // Per rule state.
     declarations: DeclarationImportanceIterator<'a>,
     priority: CascadePriority,
+    apply_restriction: bool,
 }
 
 impl<'a> DeclarationIterator<'a> {
@@ -159,6 +160,7 @@ impl<'a> DeclarationIterator<'a> {
             ),
             declarations: DeclarationImportanceIterator::default(),
             restriction,
+            apply_restriction: false,
         };
         iter.update_for_node(rule_node);
         iter
@@ -166,6 +168,10 @@ impl<'a> DeclarationIterator<'a> {
 
     fn update_for_node(&mut self, node: &'a StrongRuleNode) {
         self.priority = node.cascade_priority();
+        // Only privileged code sets the style attribute of pseudo-elements.
+        self.apply_restriction = !self.restriction.is_empty()
+            && self.priority.cascade_level().origin() != CascadeOrigin::UA
+            && !self.priority.layer_order().is_style_attribute_layer();
         let guard = self.priority.cascade_level().origin().guard(self.guards);
         self.declarations = match node.style_source() {
             Some(source) => source.read(guard).declaration_importance_iter(),
@@ -185,14 +191,13 @@ impl<'a> Iterator for DeclarationIterator<'a> {
                     continue;
                 }
 
-                if !self.restriction.is_empty() {
+                if self.apply_restriction {
                     // decl.id() is either a longhand or a custom
                     // property.  Custom properties are always allowed, but
                     // longhands are only allowed if they have our
                     // restriction flag set.
                     if let PropertyDeclarationId::Longhand(id) = decl.id()
                         && !id.flags().contains(self.restriction)
-                        && self.priority.cascade_level().origin() != CascadeOrigin::UA
                     {
                         continue;
                     }

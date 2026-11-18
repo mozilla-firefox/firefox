@@ -438,7 +438,10 @@ function parseContent(window, input, mode) {
   let root;
   switch (mode) {
     case PARSE_CONTENT_MODE.NORMAL_CUE:
-      root = window.document.createElement("span", {pseudo: "::cue"});
+      // The WebVTT cue background box.
+      // https://www.w3.org/TR/webvtt1/#webvtt-cue-background-box
+      root = window.document.createElement("span");
+      root.style.cssText = "background: inherit; background-blend-mode: inherit";
       break;
     case PARSE_CONTENT_MODE.REGION_CUE:
       root = window.document.createElement("span");
@@ -556,18 +559,17 @@ class CueStyleBox extends StyleBoxBase {
   constructor(window, cue, containerBox) {
     super();
     this.cue = cue;
-    this.div = window.document.createElement("div");
-    this.cueDiv = parseContent(window, cue.text, PARSE_CONTENT_MODE.NORMAL_CUE);
-    this.div.appendChild(this.cueDiv);
+    // The root list of WebVTT Node Objects, which ::cue matches.
+    // https://www.w3.org/TR/webvtt1/#list-of-webvtt-node-objects
+    this.div = window.document.createElement("div", {pseudo: "::cue"});
+    this.div.appendChild(
+      parseContent(window, cue.text, PARSE_CONTENT_MODE.NORMAL_CUE));
 
     this.containerHeight = containerBox.height;
     this.containerWidth = containerBox.width;
     this.fontSize = this._getFontSize(containerBox);
     this.isCueStyleBox = true;
 
-    // As pseudo element won't inherit the parent div's style, so we have to
-    // set the font size explicitly.
-    this._applyDefaultStylesOnBackgroundNode();
     this._applyDefaultStylesOnRootNode();
   }
 
@@ -596,16 +598,6 @@ class CueStyleBox extends StyleBoxBase {
     return this.div.firstLineBoxBSize;
   }
 
-  setBidiRule() {
-    // This function is a workaround which is used to force the reflow in order
-    // to use the correct alignment for bidi text. Now this function would be
-    // called after calculating the final position of the cue box to ensure the
-    // rendering result is correct. See bug1557882 comment3 for more details.
-    // TODO : remove this function and set `unicode-bidi` when initiailizing
-    // the CueStyleBox, after fixing bug1558431.
-    this.applyStyles({ "unicode-bidi": "plaintext" });
-  }
-
   /**
    * Following methods are private functions, should not use them outside this
    * class.
@@ -629,15 +621,6 @@ class CueStyleBox extends StyleBoxBase {
     return Math.min(containerBox.width, containerBox.height) * 0.05 + "px";
   }
 
-  _applyDefaultStylesOnBackgroundNode() {
-    // most of the properties have been defined in `::cue` in `html.css`, but
-    // there are some css properties we have to set them dynamically.
-    // FIXME(emilio): These are observable by content. Ideally the style
-    // attribute will work like for ::part() and we wouldn't need this.
-    this.cueDiv.style.setProperty("--cue-font-size", this.fontSize, "important");
-    this.cueDiv.style.setProperty("--cue-writing-mode", this._getCueWritingMode(), "important");
-  }
-
   // spec https://www.w3.org/TR/webvtt1/#applying-css-properties
   _applyDefaultStylesOnRootNode() {
     // The variables writing-mode, top, left, width, and height are calculated
@@ -648,39 +631,18 @@ class CueStyleBox extends StyleBoxBase {
     // spec 7.2.2 ~ 7.2.7, calculate 'width', 'height', 'left' and 'top'.
     const {width, height, left, top} = this._getCueSizeAndPosition();
 
-    // TODO: https://github.com/w3c/webvtt/issues/530 for potentially making
-    // the cue container's font-size 0.
-    //
-    // The inline cue element cannot make the size of the parent element, this
-    // container, smaller. If the inline cue element is larger, the line height
-    // grows. If it's smaller than the container, it's stuck with the
-    // container's height. This becomes a problem when the container's font-size
-    // is large and a site wants to style the ::cue pseudo element significantly
-    // smaller. This is less of a problem when using the equivalent of 5vmin
-    // instead of 5vh of course, but it's still a problem. It would be most
-    // visible in large videos with 1:1 aspect ratio that a site tries to scale
-    // down.
-    //
-    // All WebVTT use videos with min(width, height) 180, 5% of which is 9px.
-    // 9px font-size keeps tests passing.
-    const fontSize = "9px";
-
     this.applyStyles({
       "position": "absolute",
-      // "unicode-bidi": "plaintext", (uncomment this line after fixing bug1558431)
       "writing-mode": writingMode,
       "top": top,
       "left": left,
       "width": width,
       "height": height,
-      "overflow-wrap": "break-word",
-      // "text-wrap": "balance", (we haven't supported this CSS attribute yet)
-      "white-space": "pre-line",
-      "font": `${fontSize} sans-serif`,
-      "color": "rgba(255, 255, 255, 1)",
-      "white-space": "pre-line",
       "text-align": this.cue.align,
     });
+
+    // A style attribute font size would win over the page's ::cue rules.
+    this.div.style.setProperty("--cue-font-size", this.fontSize, "important");
   }
 
   _getCueWritingMode() {
@@ -1328,7 +1290,6 @@ function processCuesInternal(window, cues, overlay, controls) {
         // have any room for this cue.
         let cueBox = adjustBoxPosition(styleBox, containerBox, controlBarBox, boxPositions);
         if (cueBox) {
-          styleBox.setBidiRule();
           // Remember the computed div so that we don't have to recompute it later
           // if we don't have too.
           cue.displayState = styleBox.div;
