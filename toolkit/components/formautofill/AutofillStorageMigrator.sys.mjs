@@ -32,7 +32,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 // Each attempt re-imports the whole profile, so a store that can never be
 // written must not pay that on every startup. Budgets the real migration and
 // the dry run separately.
-export const MAX_ATTEMPTS = 10;
+export const MAX_ATTEMPTS = 15;
 
 // The error_code of a copy into Rust whose source was written to while it ran.
 const SOURCE_CHANGED = "SourceChanged";
@@ -47,6 +47,13 @@ const GUID_LIKE = /\b(?=[A-Za-z0-9+/]*[0-9])[A-Za-z0-9+/]{12,}\b/g;
 // carry an empty message, and then its result name is what says why.
 const errorCodeOf = e =>
   e instanceof lazy.AutofillApiError ? e.constructor.name : "Unknown";
+
+// How a JSON store's export fails when OSKeyStore cannot decrypt a number: a
+// key that does not open the ciphertext, or a ciphertext too short to hold one.
+// Anything else -- a cancelled unlock, a shutdown -- says the key was not
+// available, not that the number cannot be read.
+const isUndecryptable = e =>
+  e?.result == Cr.NS_ERROR_FAILURE || e?.result == Cr.NS_ERROR_INVALID_ARG;
 
 const errorTextOf = e =>
   String(e?.message || e?.name || e)
@@ -71,7 +78,10 @@ const wellFormed = value =>
  * instance fields so they are readable from here:
  *
  *  - `config` (static), holding metrics, rustAdapter, collectionName,
- *    testVersionPref, testVersion, testAttemptsPref and attemptsPref. Rebuilt
+ *    testVersionPref, testVersion, testAttemptsPref, attemptsPref and, for a
+ *    collection that holds encrypted values,
+ *    dropUndecryptablePref, dropUndecryptableAfterAttemptsPref and
+ *    undecryptableAttemptsPref. Rebuilt
  *    on each read, so the Glean category and the lazy module getters inside it
  *    resolve at call time rather than at load.
  *  - `logger`.
@@ -142,12 +152,37 @@ export class AutofillStorageMigrator {
   }
 
   /**
+   * Whether a copy may leave out records whose values the source cannot
+   * decrypt at all. Set through Nimbus; a collection without
+   * dropUndecryptablePref never does.
+   *
+   * @returns {boolean}
+   */
+  get #dropUndecryptableEnabled() {
+    const { dropUndecryptablePref } = this.config;
+    return (
+      !!dropUndecryptablePref &&
+      Services.prefs.getBoolPref(dropUndecryptablePref, false)
+    );
+  }
+
+  /**
    * Copy the records across, unless this is a copy into Rust and this profile
    * has spent its attempts. A copy back to JSON is neither refused nor counted.
    *
    * Divergence is measured and reported, not acted on: a complete copy is the
    * only bar. A source written to while a copy into Rust ran fails it too, as
    * the write is in the source and may not be in the target.
+   *
+   * While dropUndecryptablePref is set, a copy drops the records whose values
+   * the source cannot decrypt, rather than failing on them, when another
+   * record's value did decrypt: the key
+   * store works, so those were encrypted under a key it no longer holds. Once
+   * as many attempts have failed as dropUndecryptableAfterAttemptsPref says,
+   * and the last of them failed to decrypt a record too, a copy into Rust
+   * drops them even when none decrypted: a failure that has outlasted that
+   * many launches is not expected to clear, and giving up would strand the
+   * whole profile on JSON for the sake of records it cannot read either.
    *
    * @param {object} [options]
    * @param {boolean} [options.dryRun=false] Copy only to measure it: reports
@@ -168,7 +203,7 @@ export class AutofillStorageMigrator {
         }
         const { testVersionPref, testVersion, testAttemptsPref } = this.config;
         this.#attempt = Services.prefs.getIntPref(testAttemptsPref, 0);
-        const { ok } = await this.#migrateAndReport({ wipe });
+        const { ok } = await this.#migrateAndReport({ wipe, dryRun: true });
         // Measured, not read: put the target back the way it was found. Safe to
         // empty because nothing is serving from it -- the dry run only runs
         // while rust.enabled is off -- and the run is recorded on its own pref,
@@ -184,7 +219,11 @@ export class AutofillStorageMigrator {
         return false;
       }
 
-      const { attemptsPref } = this.config;
+      const {
+        attemptsPref,
+        dropUndecryptableAfterAttemptsPref,
+        undecryptableAttemptsPref,
+      } = this.config;
       if (this.#intoRust) {
         this.#attempt = Services.prefs.getIntPref(attemptsPref, 0);
         if (this.constructor.attemptsExhausted) {
@@ -195,13 +234,44 @@ export class AutofillStorageMigrator {
         }
       }
 
-      const { ok } = await this.#migrateAndReport({ wipe });
+      let dropUndecryptable = false;
+      let undecryptableAttempts = 0;
+      if (this.#intoRust) {
+        if (undecryptableAttemptsPref) {
+          undecryptableAttempts = Services.prefs.getIntPref(
+            undecryptableAttemptsPref,
+            0
+          );
+        }
+        dropUndecryptable =
+          undecryptableAttempts > 0 &&
+          !!dropUndecryptableAfterAttemptsPref &&
+          this.#attempt >=
+            Services.prefs.getIntPref(
+              dropUndecryptableAfterAttemptsPref,
+              MAX_ATTEMPTS
+            );
+      }
+      const { ok, undecryptable } = await this.#migrateAndReport({
+        wipe,
+        dropUndecryptable,
+      });
 
       if (this.#intoRust) {
         if (ok) {
           Services.prefs.clearUserPref(attemptsPref);
         } else {
           Services.prefs.setIntPref(attemptsPref, this.#attempt + 1);
+        }
+        if (undecryptableAttemptsPref) {
+          if (!ok && undecryptable) {
+            Services.prefs.setIntPref(
+              undecryptableAttemptsPref,
+              undecryptableAttempts + 1
+            );
+          } else {
+            Services.prefs.clearUserPref(undecryptableAttemptsPref);
+          }
         }
       }
       return ok;
@@ -229,12 +299,30 @@ export class AutofillStorageMigrator {
    *
    * @param {object} [options]
    * @param {boolean} [options.wipe=true] Handed to #migrate.
+   * @param {boolean} [options.dropUndecryptable=false] Handed to #migrate.
+   * @param {boolean} [options.dryRun=false] Whether this is a dry run, which
+   *   reports no drop_reason, so every one reported is a real migration that
+   *   completed.
    * @returns {Promise<object>} What #migrate found. A copy can be complete
    *   (`ok`) and still not be faithful (`diverged`).
    */
-  async #migrateAndReport({ wipe = true } = {}) {
+  async #migrateAndReport({
+    wipe = true,
+    dropUndecryptable = false,
+    dryRun = false,
+  } = {}) {
     const startedAt = ChromeUtils.now();
-    const result = await this.#migrate(this.#source, this.#target, { wipe });
+    const result = await this.#migrate(this.#source, this.#target, {
+      wipe,
+      dropUndecryptable,
+    });
+    // Another record decrypting is the stronger evidence, so it is the one
+    // reported when the attempt threshold was reached as well.
+    if (result.ok && result.dropped && !dryRun) {
+      result.dropReason = result.anyDecrypted
+        ? "others_decrypted"
+        : "attempt_threshold";
+    }
 
     // Reporting cannot decide the outcome. A failure here -- Glean refusing an
     // event, say -- would otherwise leave the caller's bookkeeping undone: a
@@ -299,6 +387,7 @@ export class AutofillStorageMigrator {
       target_total: result.targetTotal,
       migrated: result.migrated,
       failed: result.failed,
+      ...(result.dropReason ? { drop_reason: result.dropReason } : {}),
       failed_deletions: result.failedDeletions,
       diverged: result.diverged,
       duration_ms: Math.round(ChromeUtils.now() - startedAt),
@@ -328,12 +417,21 @@ export class AutofillStorageMigrator {
    * @param {object} target The store being copied into.
    * @param {object} [options]
    * @param {boolean} [options.wipe=true] Empty the target before copying.
+   * @param {boolean} [options.dropUndecryptable=false] Leave out a record whose
+   *   value the source cannot decrypt (see isUndecryptable), as if the source
+   *   did not hold it, instead of failing the copy on it, even when no other
+   *   record's value decrypted. Any other export failure still fails the
+   *   copy.
    * @returns {Promise<object>} What the copy did: the counts either side of it,
    *   whether every record arrived, the first reason one was rejected, the
    *   records that came back different, and the error where it threw or the
    *   source was written to while it ran.
    */
-  async #migrate(source, target, { wipe = true } = {}) {
+  async #migrate(
+    source,
+    target,
+    { wipe = true, dropUndecryptable = false } = {}
+  ) {
     // The source keeps serving while the copy runs. Only a copy into Rust is
     // checked for writes to it: the JSON store announces every write but the
     // sync bookkeeping as it makes it, and the Rust adapter's bulk writes are
@@ -360,6 +458,9 @@ export class AutofillStorageMigrator {
     let targetTotal = 0;
     let migrated = 0;
     let failed = 0;
+    let undecryptable = 0;
+    let dropped = 0;
+    let anyDecrypted = false;
     let failedDeletions = 0;
     let ok = false;
     let errorCode = null;
@@ -377,7 +478,7 @@ export class AutofillStorageMigrator {
       // raw because a store may hide a stored field on read, and copying from
       // the filtered read would write that field out of existence here.
       const raw = source._data ?? (await source.getAll({ rawData: true }));
-      const records = raw.filter(record => !record.deleted);
+      let records = raw.filter(record => !record.deleted);
       const tombstones = raw
         .filter(record => record.deleted)
         .map(record => ({
@@ -393,21 +494,47 @@ export class AutofillStorageMigrator {
       // nothing to convert has no _recordForMigrationExport, or the trivial one
       // that returns the record, and this is a copy either way.
       //
-      // A record that cannot be exported is counted as failed and left out: it
-      // is better to fail the run than to copy the record without the value.
+      // A record that cannot be exported is left out: it is better to fail the
+      // run than to copy the record without the value. Where the caller allows
+      // a record that will not decrypt to be dropped instead, it is treated
+      // from here on as a record the source does not hold.
       const exportable = [];
+      const undecryptableRecords = [];
       for (const record of records) {
         try {
           exportable.push(
             (await source._recordForMigrationExport?.(record)) ?? record
           );
+          // Only a credit card holds an encrypted value.
+          anyDecrypted ||= !!record["cc-number-encrypted"];
         } catch (e) {
-          failed++;
           firstCause ??= errorTextOf(e);
           this.logger.error(
             `Could not export a record for migration: ${errorTextOf(e)}`
           );
+          if (isUndecryptable(e)) {
+            undecryptableRecords.push(record);
+          } else {
+            failed++;
+          }
         }
+      }
+
+      undecryptable = undecryptableRecords.length;
+      if (
+        undecryptable &&
+        this.#dropUndecryptableEnabled &&
+        (dropUndecryptable || anyDecrypted)
+      ) {
+        dropped = undecryptable;
+        records = records.filter(
+          record => !undecryptableRecords.includes(record)
+        );
+        this.logger.warn(
+          `Dropping ${dropped} record(s) that cannot be decrypted.`
+        );
+      } else {
+        failed += undecryptable;
       }
 
       if (wipe) {
@@ -527,7 +654,8 @@ export class AutofillStorageMigrator {
 
       this.logger.log(
         `Migrated ${migrated}/${sourceTotal} records ` +
-          `(${failed} failed, ${failedDeletions} deletions failed, ` +
+          `(${failed} failed, ${dropped} dropped, ` +
+          `${failedDeletions} deletions failed, ` +
           `${missing} missing, ${extra} extra, count=${targetTotal}, ` +
           `diverged=${divergences.length}, verified=${ok}).`
       );
@@ -548,6 +676,9 @@ export class AutofillStorageMigrator {
       targetTotal,
       migrated,
       failed,
+      undecryptable,
+      dropped,
+      anyDecrypted,
       failedDeletions,
       diverged: divergences.length,
       divergences,
@@ -745,6 +876,12 @@ export class CreditCardStorageMigrator extends AutofillStorageMigrator {
         "extensions.formautofill.creditCards.storage.rust.migrationTestAttempts",
       attemptsPref:
         "extensions.formautofill.creditCards.storage.rust.migrationAttempts",
+      dropUndecryptablePref:
+        "extensions.formautofill.creditCards.storage.rust.dropUndecryptable",
+      dropUndecryptableAfterAttemptsPref:
+        "extensions.formautofill.creditCards.storage.rust.dropUndecryptableAfterAttempts",
+      undecryptableAttemptsPref:
+        "extensions.formautofill.creditCards.storage.rust.migrationUndecryptableAttempts",
     };
   }
 

@@ -120,9 +120,11 @@ formautofill.creditcards:
     bugs:
       - https://bugzil.la/2068982
       - https://bugzil.la/2085806
+      - https://bugzil.la/2089931
     data_reviews:
       - https://bugzil.la/2068982
       - https://bugzil.la/2085806
+      - https://bugzil.la/2089931
     notification_emails:
       - autofill@lists.mozilla.org
     expires: never
@@ -144,7 +146,7 @@ formautofill.creditcards:
           How many launches had already tried and failed before this one, 0 on
           the first. A retry emits an otherwise identical event, so this is
           what separates a profile that failed once from one failing every
-          time. The migrator gives up after 10. Always 0 for "to_json", which
+          time. The migrator gives up after 15. Always 0 for "to_json", which
           is not limited.
         type: quantity
       result:
@@ -180,6 +182,16 @@ formautofill.creditcards:
           Number of records the import rejected. Why is summarized in
           error_message.
         type: quantity
+      drop_reason:
+        description: >
+          Present only when a "to_rust" migration completed by leaving out
+          cards whose number would not decrypt, and says why it was allowed
+          to: "others_decrypted" when another card's number decrypted in the
+          same attempt; "attempt_threshold" when enough attempts had already
+          failed, the last of them failing to decrypt a card too. When both
+          hold, "others_decrypted" is reported. How many were left out is
+          source_total minus migrated minus failed. Never set on a dry run.
+        type: string
       failed_deletions:
         description: >
           Number of deletions the copy could not apply, whether removing a
@@ -2167,7 +2179,7 @@ formautofill.addresses:
           How many launches had already tried and failed before this one, 0 on
           the first. A retry emits an otherwise identical event, so this is
           what separates a profile that failed once from one failing every
-          time. The migrator gives up after 10. Always 0 for "to_json", which
+          time. The migrator gives up after 15. Always 0 for "to_json", which
           is not limited.
         type: quantity
       result:
