@@ -5,7 +5,7 @@
 :host {
   display: flex;
   flex-direction: column;
-  contain: strict;
+  contain: size paint style;
   background: var(--card-background-color);
   border: var(--card-border);
   border-radius: var(--card-border-radius);
@@ -53,6 +53,7 @@
   flex: 1 1 auto;
   min-block-size: 0;
   position: relative;
+  contain: strict;
 }
 
 .content {
