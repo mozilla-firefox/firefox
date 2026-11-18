@@ -10,15 +10,18 @@
 #include "BufferReader.h"
 #include "ByteStream.h"
 #include "MP4Interval.h"
+#include "MPEGAudioByteStream.h"
 #include "MediaData.h"
 #include "MoofParser.h"
 #include "SampleIterator.h"
 #include "SourceBufferResource.h"
 #include "WebMBufferedParser.h"
+#include "mozilla/Casting.h"
 #include "mozilla/ErrorResult.h"
 #include "mozilla/IntegerPrintfMacros.h"
 #include "mozilla/Logging.h"
 #include "mozilla/Maybe.h"
+#include "mozilla/Result.h"
 #include "mozilla/Try.h"
 #include "nsMimeTypes.h"
 
@@ -738,6 +741,265 @@ class ADTSContainerParser
   int64_t GetRoundingError() override { return 0; }
 };
 
+DDLoggedTypeDeclNameAndBase(MPEGAudioContainerParser, ContainerParser);
+
+// https://w3c.github.io/mse-byte-stream-format-mpeg-audio/
+class MPEGAudioContainerParser
+    : public ContainerParser,
+      public DecoderDoctorLifeLogger<MPEGAudioContainerParser> {
+ public:
+  explicit MPEGAudioContainerParser(const MediaContainerType& aType)
+      : ContainerParser(aType) {}
+
+  // Every MPEG audio frame header is an initialization segment, and the coded
+  // audio that follows it is a media segment. The header alone is enough to
+  // report the initialization segment, as the byte stream format says.
+  // Chromium waits for the whole frame.
+  bool HasImplicitInitSegment() const override { return true; }
+
+  // Metadata frames are ignored. Garbage violates the byte stream format, but
+  // is ignored too rather than failing the append, as in Chromium. Media
+  // segments only hold MPEG audio frames.
+  size_t SkipIgnorableBytesAtStart(const MediaSpan& aData) override {
+    const Span<const uint8_t> data = AsSpan(aData);
+    size_t ignored = 0;
+    while (ignored < data.Length()) {
+      if (mSkip) {
+        const size_t skipped = static_cast<size_t>(
+            std::min<uint64_t>(mSkip, data.Length() - ignored));
+        ignored += skipped;
+        mSkip -= skipped;
+        continue;
+      }
+      const mpeg_audio::Unit unit = mpeg_audio::ParseUnit(
+          data.From(ignored), mResyncing, /* aHeaderOnly = */ true);
+      switch (unit.mType) {
+        case mpeg_audio::Unit::Type::Metadata:
+          mSkip = unit.mLength;
+          mResyncing = false;
+          break;
+        case mpeg_audio::Unit::Type::Garbage:
+          MSE_DEBUG("ignoring {} bytes of garbage", unit.mLength);
+          MOZ_ASSERT(unit.mLength <= data.Length() - ignored);
+          ignored += unit.mLength;
+          mResyncing = true;
+          break;
+        case mpeg_audio::Unit::Type::Frame:
+        case mpeg_audio::Unit::Type::InfoFrame:
+          // Once confirmed, a frame header that followed garbage starts a
+          // segment like any other.
+          mResyncing = false;
+          return ignored;
+        case mpeg_audio::Unit::Type::NeedMoreData:
+        case mpeg_audio::Unit::Type::Error:
+          return ignored;
+      }
+    }
+    return ignored;
+  }
+
+  MediaResult IsInitSegmentPresent(const MediaSpan& aData) override {
+    ContainerParser::IsInitSegmentPresent(aData);
+    mpeg_audio::FrameInfo frame;
+    MediaResult rv = ParseFrameHeaderAtStart(AsSpan(aData), frame);
+    if (NS_FAILED(rv)) {
+      return rv;
+    }
+    // A header that keeps the current configuration would only add the same
+    // track description again, so only report one that changes it. This
+    // avoids recreating the demuxer for each frame.
+    if (mConfig && mConfig->HasSameConfig(frame)) {
+      return NS_ERROR_NOT_AVAILABLE;
+    }
+    return NS_OK;
+  }
+
+  MediaResult IsMediaSegmentPresent(const MediaSpan& aData) override {
+    ContainerParser::IsMediaSegmentPresent(aData);
+    if (!mConfig) {
+      return NS_ERROR_NOT_AVAILABLE;
+    }
+    mpeg_audio::FrameInfo frame;
+    MediaResult rv = ParseFrameHeaderAtStart(AsSpan(aData), frame);
+    if (NS_FAILED(rv)) {
+      return rv;
+    }
+    if (!mConfig->HasSameConfig(frame)) {
+      return NS_ERROR_NOT_AVAILABLE;
+    }
+    // The media segment is the coded audio of the frame, so it only starts
+    // once data follows the header. Chromium starts it with the header,
+    // except for the first one.
+    return aData.Length() > mpeg_audio::kFrameHeaderSize
+               ? NS_OK
+               : NS_ERROR_NOT_AVAILABLE;
+  }
+
+  // Timestamps are generated, so this never returns any. It parses the frame
+  // header at the start of aData when there is no current configuration, and
+  // otherwise sets MediaSegmentRange() to end after the last complete frame,
+  // or before a unit that isn't a frame with the current configuration.
+  MediaResult ParseStartAndEndTimestamps(const MediaSpan& aData,
+                                         media::TimeUnit& aStart,
+                                         media::TimeUnit& aEnd) override {
+    const uint64_t dataOffset = mParsed;
+    mParsed += aData.Length();
+    if (mSegmentEnded) {
+      return NS_ERROR_NOT_AVAILABLE;
+    }
+
+    Span<const uint8_t> buffer = AsSpan(aData);
+    uint64_t bufferOffset = dataOffset;
+    if (!mPending.IsEmpty()) {
+      bufferOffset = dataOffset - mPending.Length();
+      if (!mPending.AppendElements(aData.Elements(), aData.Length(),
+                                   fallible)) {
+        return NS_ERROR_OUT_OF_MEMORY;
+      }
+      buffer = Span<const uint8_t>(mPending);
+    }
+
+    Result<size_t, MediaResult> consumed =
+        mConfig ? ParseMediaFrames(buffer, bufferOffset)
+                : ParseInitSegment(buffer, bufferOffset);
+    if (consumed.isErr()) {
+      return consumed.unwrapErr();
+    }
+
+    // Keep the bytes of an incomplete frame until more data arrives.
+    const size_t remaining = buffer.Length() - consumed.inspect();
+    if (mSegmentEnded || !remaining) {
+      mPending.Clear();
+    } else if (buffer.Elements() == mPending.Elements()) {
+      mPending.RemoveElementsAt(0, consumed.inspect());
+    } else if (!mPending.AppendElements(buffer.Elements() + consumed.inspect(),
+                                        remaining, fallible)) {
+      return NS_ERROR_OUT_OF_MEMORY;
+    }
+
+    if (mSegmentEnd > mSegmentStart) {
+      mCompleteMediaSegmentRange =
+          MediaByteRange(AssertedCast<int64_t>(mSegmentStart),
+                         AssertedCast<int64_t>(mSegmentEnd));
+      mCompleteMediaHeaderRange = mCompleteMediaSegmentRange;
+    }
+    MSE_DEBUGV("media segment [{}, {}) pending={}", mSegmentStart, mSegmentEnd,
+               mPending.Length());
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+
+  int64_t GetRoundingError() override { return 0; }
+
+ private:
+  static Span<const uint8_t> AsSpan(const MediaSpan& aData) {
+    return Span(aData.Elements(), aData.Length());
+  }
+
+  static MediaResult InvalidData() {
+    return MediaResult(NS_ERROR_FAILURE, "Invalid MPEG audio byte stream");
+  }
+
+  // Parses the frame header at the start of aData, as
+  // SkipIgnorableBytesAtStart() removes any bytes before it.
+  MediaResult ParseFrameHeaderAtStart(Span<const uint8_t> aData,
+                                      mpeg_audio::FrameInfo& aFrame) const {
+    const mpeg_audio::Unit unit =
+        mpeg_audio::ParseUnit(aData, mResyncing, /* aHeaderOnly = */ true);
+    switch (unit.mType) {
+      case mpeg_audio::Unit::Type::NeedMoreData:
+        return NS_ERROR_NOT_AVAILABLE;
+      case mpeg_audio::Unit::Type::Error:
+        return InvalidData();
+      case mpeg_audio::Unit::Type::Frame:
+      case mpeg_audio::Unit::Type::InfoFrame:
+        aFrame = unit.mFrame;
+        return NS_OK;
+      case mpeg_audio::Unit::Type::Metadata:
+      case mpeg_audio::Unit::Type::Garbage:
+        break;
+    }
+    MOZ_ASSERT_UNREACHABLE("Bytes to ignore must be removed first");
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+
+  // Returns the number of bytes consumed. The parser is recreated once the
+  // initialization segment has been handled, so all of aData is consumed once
+  // the frame header is found.
+  Result<size_t, MediaResult> ParseInitSegment(Span<const uint8_t> aData,
+                                               uint64_t aDataOffset) {
+    mpeg_audio::FrameInfo frame;
+    MediaResult rv = ParseFrameHeaderAtStart(aData, frame);
+    if (rv == NS_ERROR_NOT_AVAILABLE) {
+      return 0;
+    }
+    if (NS_FAILED(rv)) {
+      return Err(rv);
+    }
+    mConfig = Some(frame);
+    mInitData = new MediaByteBuffer();
+    mInitData->AppendElements(aData.Elements(), mpeg_audio::kFrameHeaderSize);
+    mHasInitData = true;
+    mSegmentStart = mSegmentEnd = aDataOffset + aData.Length();
+    MSE_DEBUG("init segment at {}: layer={} rate={} channels={}", aDataOffset,
+              frame.mLayer, frame.mSampleRate, frame.mChannels);
+    return aData.Length();
+  }
+
+  Result<size_t, MediaResult> ParseMediaFrames(Span<const uint8_t> aData,
+                                               uint64_t aDataOffset) {
+    size_t consumed = 0;
+    while (consumed < aData.Length()) {
+      const mpeg_audio::Unit unit = mpeg_audio::ParseUnit(
+          aData.From(consumed), /* aConfirmSync = */ false);
+      switch (unit.mType) {
+        case mpeg_audio::Unit::Type::NeedMoreData:
+          return consumed;
+        case mpeg_audio::Unit::Type::Error:
+          return Err(InvalidData());
+        case mpeg_audio::Unit::Type::Metadata:
+        case mpeg_audio::Unit::Type::Garbage:
+          // These bytes are removed while waiting for the next segment.
+          EndSegment();
+          return consumed;
+        case mpeg_audio::Unit::Type::Frame:
+        case mpeg_audio::Unit::Type::InfoFrame:
+          if (!mConfig->HasSameConfig(unit.mFrame)) {
+            // This frame header is a new initialization segment.
+            EndSegment();
+            return consumed;
+          }
+          MOZ_ASSERT(unit.mLength <= aData.Length() - consumed);
+          consumed += unit.mLength;
+          mSegmentEnd = aDataOffset + consumed;
+          break;
+      }
+    }
+    return consumed;
+  }
+
+  void EndSegment() {
+    // IsMediaSegmentPresent() only starts a media segment at a frame.
+    MOZ_ASSERT(mSegmentEnd > mSegmentStart);
+    mSegmentEnded = true;
+  }
+
+  // The configuration of the current initialization segment.
+  Maybe<mpeg_audio::FrameInfo> mConfig;
+  // Total bytes passed to ParseStartAndEndTimestamps.
+  uint64_t mParsed = 0;
+  // The incomplete frame that ends the data parsed so far.
+  nsTArray<uint8_t> mPending;
+  // Bytes left to ignore in a metadata frame.
+  uint64_t mSkip = 0;
+  // Whether the next frame header must be confirmed by those that follow it,
+  // after garbage.
+  bool mResyncing = false;
+  uint64_t mSegmentStart = 0;
+  uint64_t mSegmentEnd = 0;
+  // Whether the media segment ended before a unit that it can't hold.
+  bool mSegmentEnded = false;
+};
+
 /*static*/
 UniquePtr<ContainerParser> ContainerParser::CreateForMIMEType(
     const MediaContainerType& aType) {
@@ -752,6 +1014,9 @@ UniquePtr<ContainerParser> ContainerParser::CreateForMIMEType(
   }
   if (aType.Type() == MEDIAMIMETYPE("audio/aac")) {
     return std::make_unique<ADTSContainerParser>(aType);
+  }
+  if (aType.Type() == MEDIAMIMETYPE(AUDIO_MP3)) {
+    return std::make_unique<MPEGAudioContainerParser>(aType);
   }
 
   return std::make_unique<ContainerParser>(aType);

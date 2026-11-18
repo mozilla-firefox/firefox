@@ -28,6 +28,8 @@ UNIFIED_SOURCES += [
     "MediaSourceDecoder.cpp",
     "MediaSourceDemuxer.cpp",
     "MediaSourceUtils.cpp",
+    "MPEGAudioByteStream.cpp",
+    "MPEGAudioByteStreamDemuxer.cpp",
     "ResourceQueue.cpp",
     "SourceBuffer.cpp",
     "SourceBufferList.cpp",
@@ -46,6 +48,8 @@ FINAL_LIBRARY = "xul"
 SOURCE_HEADERS += [
     "ContainerParser.h",
     "MediaSourceUtils.h",
+    "MPEGAudioByteStream.h",
+    "MPEGAudioByteStreamDemuxer.h",
     "ResourceQueue.h",
     "SourceBufferResource.h",
 ]

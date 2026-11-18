@@ -6,6 +6,7 @@
 
 #include "ContainerParser.h"
 #include "MP4Demuxer.h"
+#include "MPEGAudioByteStreamDemuxer.h"
 #include "MediaInfo.h"
 #include "MediaSourceDemuxer.h"
 #include "MediaSourceUtils.h"
@@ -1198,6 +1199,13 @@ void TrackBuffersManager::CreateDemuxerforMIMEType() {
   if (mType.Type() == MEDIAMIMETYPE(VIDEO_MP4) ||
       mType.Type() == MEDIAMIMETYPE(AUDIO_MP4)) {
     mInputDemuxer = new MP4Demuxer(mCurrentInputBuffer);
+    mFrameEndTimeBeforeRecreateDemuxer.reset();
+    DDLINKCHILD("demuxer", mInputDemuxer.get());
+    return;
+  }
+
+  if (mType.Type() == MEDIAMIMETYPE(AUDIO_MP3)) {
+    mInputDemuxer = new MPEGAudioByteStreamDemuxer(mCurrentInputBuffer);
     mFrameEndTimeBeforeRecreateDemuxer.reset();
     DDLINKCHILD("demuxer", mInputDemuxer.get());
     return;

@@ -6,6 +6,7 @@ UNIFIED_SOURCES += [
     "TestContainerParser.cpp",
     "TestExtractH265CodecDetails.cpp",
     "TestExtractVPXCodecDetails.cpp",
+    "TestMPEGAudioByteStream.cpp",
 ]
 
 UNIFIED_SOURCES += [

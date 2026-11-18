@@ -14,7 +14,7 @@ using TimeUnit = mozilla::media::TimeUnit;
 TEST(ContainerParser, MIMETypes)
 {
   const char* containerTypes[] = {"video/webm", "audio/webm", "video/mp4",
-                                  "audio/mp4", "audio/aac"};
+                                  "audio/mp4",  "audio/aac",  "audio/mpeg"};
   UniquePtr<ContainerParser> parser;
   for (size_t i = 0; i < std::size(containerTypes); ++i) {
     Maybe<MediaContainerType> containerType =
