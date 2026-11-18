@@ -1436,6 +1436,7 @@ ParentAPIManager = {
   async recvRemoveListener(data, { actor }) {
     let context = this.getContext(data.childId, actor);
     let listener = context.listenerProxies.get(data.listenerId);
+    context.listenerProxies.delete(data.listenerId);
 
     let handler = await context.apiCan.asyncFindAPIPath(data.path);
     handler.removeListener(listener);
