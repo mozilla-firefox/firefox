@@ -446,6 +446,7 @@ test(t => {
     return new VideoFrame(data, {...init, format: 'I420'});
   }
 
+
   assert_throws_js(
       TypeError, () => constructFrame({
                    timestamp: 1234,
@@ -511,6 +512,20 @@ test(t => {
                  }),
       'invalid display height');
 }, 'Test invalid buffer constructed VideoFrames');
+
+test(() => {
+  assert_throws_js(
+      TypeError, () => new VideoFrame(new Uint8Array(36), {
+                   timestamp: 10,
+                   codedWidth: 3,
+                   codedHeight: 3,
+                   visibleRect: {x: 0, y: 0, width: 1, height: 1},
+                   format: 'RGBA',
+                   layout: [{offset: 0, stride: 16}],
+                 }),
+      'buffer must hold the whole coded size, not just the visible rect');
+
+}, 'VideoFrame buffer must cover the coded size with an explicit layout');
 
 test(t => {
   testBufferConstructedI420Frame('Uint8Array(ArrayBuffer)');

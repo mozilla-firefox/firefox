@@ -1037,8 +1037,8 @@ static Result<RefPtr<VideoFrame>, MediaResult> CreateVideoFrameFromBuffer(
 
   const Sequence<PlaneLayout>* optLayout = OptionalToPointer(aInit.mLayout);
 
-  CombinedBufferLayout combinedLayout =
-      MOZ_TRY(ComputeLayoutAndAllocationSize(parsedRect, format, optLayout));
+  CombinedBufferLayout combinedLayout = MOZ_TRY(ComputeLayoutAndAllocationSize(
+      gfx::IntRect({0, 0}, codedSize), format, optLayout));
 
   Maybe<uint64_t> duration = OptionalToMaybe(aInit.mDuration);
 
@@ -1050,15 +1050,6 @@ static Result<RefPtr<VideoFrame>, MediaResult> CreateVideoFrameFromBuffer(
           -> Result<RefPtr<layers::Image>, MediaResult> {
         if (aData.Length() <
             static_cast<size_t>(combinedLayout.mAllocationSize)) {
-          return Err(MediaResult(NS_ERROR_INVALID_ARG, "data is too small"_ns));
-        }
-
-        // TODO: If codedSize is (3, 3) and visibleRect is (0, 0, 1, 1) but
-        // the data is 2 x 2 RGBA buffer (2 x 2 x 4 bytes), it pass the
-        // above check. In this case, we can crop it to a 1 x 1-codedSize
-        // image (Bug 1782128).
-        size_t byteCount = MOZ_TRY(format.ByteCount(codedSize));
-        if (aData.Length() < byteCount) {
           return Err(MediaResult(NS_ERROR_INVALID_ARG, "data is too small"_ns));
         }
 
