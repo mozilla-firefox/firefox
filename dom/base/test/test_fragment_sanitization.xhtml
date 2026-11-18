@@ -49,6 +49,13 @@ async function testFrame(frame, html, expected = html) {
   div.firstChild.insertAdjacentHTML("afterend", html);
   is(unNS(div.innerHTML), "<a>foo</a>" + expected, "insertAdjacentHTML('afterend') value");
 
+  div.setHTMLUnsafe(html);
+  is(unNS(div.innerHTML), expected, "setHTMLUnsafe() value");
+
+  div.setHTMLUnsafe(`<div><template shadowrootmode="open">${html}</template></div>`);
+  is(unNS(div.firstChild.shadowRoot.innerHTML), expected,
+     "setHTMLUnsafe() declarative shadow root value");
+
   frame.remove();
 }
 

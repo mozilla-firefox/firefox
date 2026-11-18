@@ -6900,17 +6900,23 @@ void nsContentUtils::DropFragmentParsers() {
 /* static */
 void nsContentUtils::XPCOMShutdown() { nsContentUtils::DropFragmentParsers(); }
 
-// https://wicg.github.io/sanitizer-api/#set-and-filter-html
+// https://html.spec.whatwg.org/#set-and-filter-html
+//
+// aSanitizerOptions is null for setHTMLUnsafe() without a sanitizer, the
+// spec's default of an empty SanitizerConfig with permissive defaults. That
+// sanitizer removes nothing, so the fragment is parsed straight into
+// aTarget's document instead of an inert one, unless privileged default
+// sanitization applies.
 static void SetAndFilterHTML(
     FragmentOrElement* aTarget, Element* aContext, const nsAString& aHTML,
-    const OwningSanitizerOrSanitizerConfigOrSanitizerPresets& aSanitizerOptions,
+    const OwningSanitizerOrSanitizerConfigOrSanitizerPresets* aSanitizerOptions,
     nsContentUtils::SanitizerMode aSanitizerMode, ErrorResult& aError) {
   const bool safe = aSanitizerMode == nsContentUtils::SanitizerMode::Safe;
+  MOZ_ASSERT_IF(safe, aSanitizerOptions);
   const RefPtr<Document> doc = aTarget->OwnerDoc();
 
-  // Step 1. If safe and contextElement’s local name is "script" and
-  // contextElement’s namespace is the HTML namespace or the SVG namespace, then
-  // return.
+  // Step 3. If safe and context's local name is "script" and context's
+  // namespace is the HTML namespace or the SVG namespace, then return.
   if (safe && (aContext->IsHTMLElement(nsGkAtoms::script) ||
                aContext->IsSVGElement(nsGkAtoms::script))) {
     nsContentUtils::ReportToConsole(nsIScriptError::warningFlag, "DOM"_ns, doc,
@@ -6919,18 +6925,21 @@ static void SetAndFilterHTML(
     return;
   }
 
-  // Step 2. Let sanitizer be the result of calling get a sanitizer instance
-  // from options with options and safe.
-  nsCOMPtr<nsPIDOMWindowInner> window =
-      do_QueryInterface(aTarget->GetRelevantGlobal());
-  if (!window) {
-    aError.ThrowInvalidStateError("Missing owner global.");
-    return;
-  }
-  RefPtr<Sanitizer> sanitizer =
-      Sanitizer::GetInstance(window, aSanitizerOptions, safe, aError);
-  if (aError.Failed()) {
-    return;
+  // Step 4. Let sanitizer be the result of calling getting a sanitizer from
+  // options given safe.
+  RefPtr<Sanitizer> sanitizer;
+  if (aSanitizerOptions) {
+    nsCOMPtr<nsPIDOMWindowInner> window =
+        do_QueryInterface(aTarget->GetRelevantGlobal());
+    if (!window) {
+      aError.ThrowInvalidStateError("Missing owner global.");
+      return;
+    }
+    sanitizer =
+        Sanitizer::GetInstance(window, *aSanitizerOptions, safe, aError);
+    if (aError.Failed()) {
+      return;
+    }
   }
 
   aTarget->NotifyDevToolsOfRemovalsOfChildren();
@@ -6945,23 +6954,21 @@ static void SetAndFilterHTML(
 
   nsAutoScriptLoaderDisabler sld(doc);
 
-  // Step 3. Let newChildren be the result of the HTML fragment parsing
-  // algorithm steps given contextElement, html, and true.
-  // Step 4. Let fragment be a new DocumentFragment whose node document is
-  // contextElement’s node document.
-  // Step 5. For each node in newChildren, append node to fragment.
+  // Step 7. Let fragment be the result of invoking the HTML fragment parsing
+  // algorithm given target, html, true, and scriptingMode.
 
-  // We MUST NOT cause any requests during parsing, so we'll
-  // create an inert Document and parse into a new DocumentFragment.
-
-  RefPtr<Document> inertDoc = nsContentUtils::CreateInertHTMLDocument(doc);
-  if (!inertDoc) {
-    aError = NS_ERROR_FAILURE;
-    return;
+  // Parse into an inert document, so that no requests are made; as nothing the
+  // sanitizer removes can be allowed to make a request.
+  RefPtr<Document> parseDoc = doc;
+  if (sanitizer) {
+    parseDoc = nsContentUtils::CreateInertHTMLDocument(doc);
+    if (!parseDoc) {
+      aError = NS_ERROR_FAILURE;
+      return;
+    }
   }
-
-  RefPtr<DocumentFragment> fragment = new (inertDoc->NodeInfoManager())
-      DocumentFragment(inertDoc->NodeInfoManager());
+  RefPtr<DocumentFragment> fragment = new (parseDoc->NodeInfoManager())
+      DocumentFragment(parseDoc->NodeInfoManager());
 
   nsAtom* contextLocalName = aContext->NodeInfo()->NameAtom();
   int32_t contextNameSpaceID = aContext->GetNameSpaceID();
@@ -6969,14 +6976,30 @@ static void SetAndFilterHTML(
       safe ? nsContentUtils::kParseFragmentNoSanitization
            : nsContentUtils::kParseFragmentPrivilegedDefaultSanitization;
 
+  // https://html.spec.whatwg.org/#html-fragment-parsing-algorithm
+  // 11. Let root be the result of creating an element given document, 'html',
+  //     the HTML namespace, null, null, false, and context's custom element
+  //     registry.
+  //
+  // Not with a sanitizer: a registry would enqueue upgrade reactions for
+  // elements the sanitizer then drops, running their constructors. The inert
+  // document has no registry, so kept elements upgrade when inserted instead.
+  Maybe<RefPtr<CustomElementRegistry>> customElementRegistry;
+  if (!sanitizer &&
+      StaticPrefs::dom_scoped_custom_element_registries_enabled()) {
+    customElementRegistry.emplace(aContext->GetCustomElementRegistry());
+  }
+
   const bool sanitizeWhileParsing =
-      StaticPrefs::dom_security_sanitizer_while_parsing();
+      sanitizer && StaticPrefs::dom_security_sanitizer_while_parsing();
 
   aError = nsContentUtils::ParseFragmentHTML(
       aHTML, fragment, contextLocalName, contextNameSpaceID,
-      /* aQuirks */ false, /* aPreventScriptExecution */ true, flags,
-      mozilla::Nothing(), sanitizeWhileParsing ? sanitizer.get() : nullptr,
-      aSanitizerMode);
+      doc->GetCompatibilityMode() == eCompatibility_NavQuirks,
+      /* aPreventScriptExecution */ true, flags,
+      std::move(customElementRegistry),
+      sanitizeWhileParsing ? sanitizer.get() : nullptr, aSanitizerMode,
+      nsContentUtils::DeclarativeShadowRoots::Allow);
   if (aError.Failed()) {
     return;
   }
@@ -6986,15 +7009,15 @@ static void SetAndFilterHTML(
   // mutation listeners on the fragment that comes from the parser.
   nsAutoScriptBlockerSuppressNodeRemoved scriptBlocker;
 
-  if (!sanitizeWhileParsing) {
-    // Step 6. Run sanitize on fragment using sanitizer and safe.
+  if (sanitizer && !sanitizeWhileParsing) {
+    // Step 8. Sanitize fragment given sanitizer and safe.
     sanitizer->Sanitize(fragment, safe, aError);
     if (aError.Failed()) {
       return;
     }
   }
 
-  // Step 7. Replace all with fragment within target.
+  // Step 9. Replace all with fragment within target.
   aTarget->AppendChild(*fragment, aError);
   if (aError.Failed()) {
     return;
@@ -7008,11 +7031,10 @@ void nsContentUtils::SetHTML(FragmentOrElement* aTarget, Element* aContext,
                              const nsAString& aHTML,
                              const SetHTMLOptions& aOptions,
                              ErrorResult& aError) {
-  SetAndFilterHTML(aTarget, aContext, aHTML, aOptions.mSanitizer,
+  SetAndFilterHTML(aTarget, aContext, aHTML, &aOptions.mSanitizer,
                    SanitizerMode::Safe, aError);
 }
 
-/* https://html.spec.whatwg.org/#unsafely-set-html */
 /* https://html.spec.whatwg.org/#dom-shadowroot-sethtmlunsafe */
 /* https://html.spec.whatwg.org/#dom-element-sethtmlunsafe */
 /* static */
@@ -7038,53 +7060,12 @@ void nsContentUtils::SetHTMLUnsafe(
     return;
   }
 
-  // Fallback to the more optimized code below without a sanitizer.
-  if (aOptions.mSanitizer.WasPassed()) {
-    return SetAndFilterHTML(aTarget, aContext, *compliantString,
-                            aOptions.mSanitizer.Value(), SanitizerMode::Unsafe,
-                            aError);
-  }
-
-  RefPtr<DocumentFragment> fragment;
-  {
-    MOZ_ASSERT(!sFragmentParsingActive,
-               "Re-entrant fragment parsing attempted.");
-    mozilla::AutoRestore<bool> guard(sFragmentParsingActive);
-    sFragmentParsingActive = true;
-    if (!sHTMLFragmentParser) {
-      NS_ADDREF(sHTMLFragmentParser = new nsHtml5StringParser());
-      // Now sHTMLFragmentParser owns the object
-    }
-
-    nsAtom* contextLocalName = aContext->NodeInfo()->NameAtom();
-    int32_t contextNameSpaceID = aContext->GetNameSpaceID();
-
-    // https://html.spec.whatwg.org/#html-fragment-parsing-algorithm
-    // 11. Let root be the result of creating an element given document,
-    //     'html', the HTML namespace, null, null, false, and context's
-    //     custom element registry.
-    Maybe<RefPtr<CustomElementRegistry>> customElementRegistry;
-    if (StaticPrefs::dom_scoped_custom_element_registries_enabled()) {
-      customElementRegistry.emplace(aContext->GetCustomElementRegistry());
-    }
-
-    RefPtr<Document> doc = aTarget->OwnerDoc();
-    fragment = doc->CreateDocumentFragment();
-
-    // XXX: Steps 1-3 are performed together by ParseFragment, which parses
-    // directly into the DocumentFragment.
-    nsresult rv = sHTMLFragmentParser->ParseFragment(
-        *compliantString, fragment, contextLocalName, contextNameSpaceID,
-        fragment->OwnerDoc()->GetCompatibilityMode() ==
-            eCompatibility_NavQuirks,
-        true, true, std::move(customElementRegistry));
-    if (NS_FAILED(rv)) {
-      NS_WARNING("Failed to parse fragment for SetHTMLUnsafe");
-    }
-  }
-
-  // Step 4. "Replace all with fragment within target."
-  aTarget->ReplaceChildren(fragment, IgnoreErrors());
+  // Step 3. Set and filter HTML given target, compliantHTML, options, and
+  // false.
+  SetAndFilterHTML(
+      aTarget, aContext, *compliantString,
+      aOptions.mSanitizer.WasPassed() ? &aOptions.mSanitizer.Value() : nullptr,
+      SanitizerMode::Unsafe, aError);
 }
 
 // We sanitize if the fragment occurs in a system privileged
@@ -7154,7 +7135,8 @@ nsresult nsContentUtils::ParseFragmentHTML(
     bool aPreventScriptExecution, int32_t aFlags,
     mozilla::Maybe<RefPtr<mozilla::dom::CustomElementRegistry>>
         aCustomElementRegistry,
-    Sanitizer* aSanitizer, SanitizerMode aSanitizerMode) {
+    Sanitizer* aSanitizer, SanitizerMode aSanitizerMode,
+    DeclarativeShadowRoots aDeclarativeShadowRoots) {
   MOZ_ASSERT(!aSanitizer ||
              StaticPrefs::dom_security_sanitizer_while_parsing());
   if (nsContentUtils::sFragmentParsingActive) {
@@ -7203,8 +7185,9 @@ nsresult nsContentUtils::ParseFragmentHTML(
 
   nsresult rv = sHTMLFragmentParser->ParseFragment(
       aSourceBuffer, target, aContextLocalName, aContextNamespace, aQuirks,
-      aPreventScriptExecution, false, std::move(aCustomElementRegistry),
-      aSanitizer, aSanitizerMode);
+      aPreventScriptExecution,
+      aDeclarativeShadowRoots == DeclarativeShadowRoots::Allow,
+      std::move(aCustomElementRegistry), aSanitizer, aSanitizerMode);
   NS_ENSURE_SUCCESS(rv, rv);
 
   if (fragment) {

@@ -1999,8 +1999,9 @@ class nsContentUtils {
   // automatically do default sanitization using the nsTreeSantizer when called
   // from system privileged or about: code.
   static const int32_t kParseFragmentPrivilegedDefaultSanitization = -1;
-  // Warning: Only use this for safe callers that do their own sanitization like
-  // setHTML().
+  // Warning: Only use this for callers that do their own sanitization like
+  // setHTML(), or that deliberately do none like setHTMLUnsafe() without a
+  // sanitizer.
   static const int32_t kParseFragmentNoSanitization = -2;
 
   /**
@@ -2016,6 +2017,8 @@ class nsContentUtils {
   static bool IsFragmentParsingActive() { return sFragmentParsingActive; }
 
   enum class SanitizerMode { Safe, Unsafe };
+
+  enum class DeclarativeShadowRoots { Allow, Disallow };
 
   /**
    * Invoke the fragment parsing algorithm (innerHTML) using the HTML parser.
@@ -2046,6 +2049,10 @@ class nsContentUtils {
    * while parsing.
    * @param aSanitizerMode whether to safely sanitize, i.e.
    * "remove javascript navigation URLs".
+   * @param aDeclarativeShadowRoots the fragment parsing algorithm's
+   * allowDeclarativeShadowRoots; DeclarativeShadowRoots::Allow only for
+   * setHTML() and setHTMLUnsafe(). Defaults to
+   * DeclarativeShadowRoots::Disallow.
    * @return NS_ERROR_DOM_INVALID_STATE_ERR if a re-entrant attempt to parse
    *         fragments is made, NS_ERROR_OUT_OF_MEMORY if aSourceBuffer is too
    *         long and NS_OK otherwise.
@@ -2057,7 +2064,9 @@ class nsContentUtils {
       mozilla::Maybe<RefPtr<mozilla::dom::CustomElementRegistry>>
           aCustomElementRegistry,
       mozilla::dom::Sanitizer* aSanitizer = nullptr,
-      SanitizerMode aSanitizerMode = SanitizerMode::Unsafe);
+      SanitizerMode aSanitizerMode = SanitizerMode::Unsafe,
+      DeclarativeShadowRoots aDeclarativeShadowRoots =
+          DeclarativeShadowRoots::Disallow);
 
   /**
    * Invoke the fragment parsing algorithm (innerHTML) using the XML parser.

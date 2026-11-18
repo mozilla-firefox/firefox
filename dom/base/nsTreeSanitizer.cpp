@@ -22,6 +22,7 @@
 #include "mozilla/dom/SRIMetadata.h"
 #include "mozilla/dom/SanitizerBinding.h"
 #include "mozilla/dom/ShadowIncludingTreeIterator.h"
+#include "mozilla/dom/ShadowRoot.h"
 #include "nsAtom.h"
 #include "nsAttrName.h"
 #include "nsComponentManagerUtils.h"
@@ -1413,6 +1414,12 @@ void nsTreeSanitizer::SanitizeChildren(nsINode* aRoot) {
         mFullDocument = false;
         RefPtr<DocumentFragment> frag = templateEl->Content();
         SanitizeChildren(frag);
+        mFullDocument = wasFullDocument;
+      }
+      if (RefPtr<ShadowRoot> shadow = elt->GetShadowRoot()) {
+        bool wasFullDocument = mFullDocument;
+        mFullDocument = false;
+        SanitizeChildren(shadow);
         mFullDocument = wasFullDocument;
       }
       if (nsGkAtoms::style == localName) {
