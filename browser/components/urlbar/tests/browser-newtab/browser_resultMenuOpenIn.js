@@ -16,6 +16,7 @@ add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.urlbar.contextMenu.featureGate", true],
+      ["browser.urlbar.resultTargetMenu.featureGate", true],
       ["privacy.userContext.enabled", true],
     ],
   });

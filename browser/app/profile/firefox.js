@@ -556,6 +556,9 @@ pref("browser.urlbar.clipboard.featureGate", false);
 // Enable context menu on the urlbar.
 pref("browser.urlbar.contextMenu.featureGate", false);
 
+// Whether urlbar result menus offer to open the result in a new tab or window.
+pref("browser.urlbar.resultTargetMenu.featureGate", false);
+
 // The minimum prefix length of a weather keyword the user must type to trigger
 // the suggestion. 0 means the min length should be taken from Nimbus or remote
 // settings.

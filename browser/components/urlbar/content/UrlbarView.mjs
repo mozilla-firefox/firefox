@@ -4275,7 +4275,8 @@ export class UrlbarView {
 
   /**
    * The commands that open a result in a new tab or window. They're offered
-   * alongside a result's own menu commands, gated on `contextMenu.featureGate`.
+   * alongside a result's own menu commands, gated on
+   * `resultTargetMenuFeatureGate`.
    *
    * @param {UrlbarResult} result
    * @returns {UrlbarResultCommand[]}
@@ -4365,7 +4366,7 @@ export class UrlbarView {
    */
   #canOpenInNewTarget(result) {
     return (
-      UrlbarPrefs.get("contextMenu.featureGate") &&
+      UrlbarPrefs.get("resultTargetMenuFeatureGate") &&
       this.input.handlesOpenInCommands &&
       result.type != UrlbarShared.RESULT_TYPE.TAB_SWITCH &&
       !!UrlbarShared.getLoadRequestFromResult(result)

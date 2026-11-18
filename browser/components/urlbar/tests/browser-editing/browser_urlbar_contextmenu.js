@@ -3,9 +3,17 @@
 
 "use strict";
 
+ChromeUtils.defineESModuleGetters(this, {
+  ExperimentAPI: "resource://nimbus/ExperimentAPI.sys.mjs",
+  NimbusTestUtils: "resource://testing-common/NimbusTestUtils.sys.mjs",
+});
+
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.urlbar.contextMenu.featureGate", true]],
+    set: [
+      ["browser.urlbar.contextMenu.featureGate", true],
+      ["browser.urlbar.resultTargetMenu.featureGate", true],
+    ],
   });
 
   // Add visits so that it can be autofilled.
@@ -307,32 +315,6 @@ add_task(async function labels_by_type() {
 
   gURLBar.view.close();
   await PlacesUtils.history.clear();
-});
-
-// With the feature gate off, the three-dot menu holds only the result's own
-// commands and a right-click opens nothing.
-add_task(async function feature_gate_off() {
-  await SpecialPowers.pushPrefEnv({
-    set: [["browser.urlbar.contextMenu.featureGate", false]],
-  });
-  await PlacesTestUtils.addVisits(["https://example.com/"]);
-
-  let resultIndex = await promiseResultWithMenuButton();
-  await UrlbarTestUtils.openResultMenu(window, { resultIndex, byMouse: true });
-  let items = await promiseMenuDescription();
-  Assert.ok(
-    items.some(item => item.command),
-    "The menu holds the result's own commands"
-  );
-  Assert.ok(
-    items.every(item => !item.openIn),
-    "The menu doesn't open the result in a new target"
-  );
-  gURLBar.view.resultMenu.hide(undefined, { force: true });
-
-  gURLBar.view.close();
-  await PlacesUtils.history.clear();
-  await SpecialPowers.popPrefEnv();
 });
 
 add_task(async function toolbar_context_menu() {
@@ -706,6 +688,68 @@ add_task(async function other_result_right_click() {
       Assert.ok(otherRow.hasAttribute("menu-trigger"));
     }
   );
+});
+
+add_task(async function result_target_menu_pref() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.resultTargetMenu.featureGate", false]],
+  });
+  await PlacesTestUtils.addVisits(["https://example.com/"]);
+
+  let resultIndex = await promiseResultWithMenuButton();
+  await UrlbarTestUtils.openResultMenu(window, { resultIndex, byMouse: true });
+  let items = await promiseMenuDescription();
+  Assert.ok(
+    items.some(item => item.command),
+    "The menu holds the result's own commands"
+  );
+  Assert.ok(
+    items.every(item => !item.openIn),
+    "The menu doesn't open the result in a new target"
+  );
+  gURLBar.view.resultMenu.hide(undefined, { force: true });
+
+  gURLBar.view.close();
+  await PlacesUtils.history.clear();
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function result_target_menu_nimbus() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.resultTargetMenu.featureGate", false]],
+  });
+  await PlacesTestUtils.addVisits(["https://example.com/"]);
+
+  await ExperimentAPI.ready();
+  let doCleanup = await NimbusTestUtils.enrollWithFeatureConfig({
+    featureId: "urlbar",
+    value: { resultTargetMenuFeatureGate: true },
+  });
+
+  let resultIndex = await promiseResultWithMenuButton();
+  await UrlbarTestUtils.openResultMenu(window, { resultIndex, byMouse: true });
+  let items = await promiseMenuDescription();
+  Assert.ok(
+    items.some(item => item.openIn),
+    "The menu opens the result in a new target while enrolled"
+  );
+  gURLBar.view.resultMenu.hide(undefined, { force: true });
+  gURLBar.view.close();
+
+  await doCleanup();
+
+  resultIndex = await promiseResultWithMenuButton();
+  await UrlbarTestUtils.openResultMenu(window, { resultIndex, byMouse: true });
+  items = await promiseMenuDescription();
+  Assert.ok(
+    items.every(item => !item.openIn),
+    "The menu doesn't open the result in a new target after unenrolling"
+  );
+  gURLBar.view.resultMenu.hide(undefined, { force: true });
+
+  gURLBar.view.close();
+  await PlacesUtils.history.clear();
+  await SpecialPowers.popPrefEnv();
 });
 
 // Returns the menu's items as the command or open-in target each one picks, in

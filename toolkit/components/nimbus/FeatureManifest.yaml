@@ -634,6 +634,12 @@ urlbar:
       description: >-
         When selecting and hovering over certain types of urlbar results,
         replace their URLs with strings that explain why they're shown.
+    resultTargetMenuFeatureGate:
+      type: boolean
+      fallbackPref: browser.urlbar.resultTargetMenu.featureGate
+      description: >-
+        Whether urlbar result menus offer "Open in New Tab", "Open in New
+        Window", etc.
     semanticHistoryEnable:
       type: boolean
       setPref:

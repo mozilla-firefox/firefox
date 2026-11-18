@@ -454,6 +454,9 @@ const PREF_URLBAR_DEFAULTS = /** @type {PreferenceDefinition[]} */ ([
   // Allow the result menu button to be reached with the Tab key.
   ["resultMenu.keyboardAccessible", true],
 
+  // Feature gate pref for the "Open in ..." items in the urlbar result menu.
+  ["resultTargetMenu.featureGate", false],
+
   // Timeout in milliseconds before stale rows are removed from the view.
   ["removeStaleRowsTimeout", 400],
 
