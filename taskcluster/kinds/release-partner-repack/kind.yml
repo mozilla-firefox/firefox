@@ -36,7 +36,7 @@ task-defaults:
         docker-image:
             in-tree: "partner-repack"
         chain-of-trust: true
-        max-run-time: 7200
+        max-run-time: 10800
         artifacts:
             - name: releng/partner
               path: /builds/worker/artifacts/
