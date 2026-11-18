@@ -532,14 +532,6 @@ tasks:
     decision:
         symbol: I(decision)
         parent: debian13-base
-    snap-build-core22:
-        symbol: I(snap22-build)
-        parent: ubuntu2204-base
-        definition: snap-coreXX-build
-        args:
-            SNAP_BASE: core22
-            SNAP_LIST: "core20 core24 gnome-42-2204 gtk-common-themes gnome-42-2204-sdk"
-            EXTRA_PACKAGES: "libavcodec58 libavutil56"
     snap-build-core24:
         symbol: I(snap24-build)
         parent: ubuntu2404-base

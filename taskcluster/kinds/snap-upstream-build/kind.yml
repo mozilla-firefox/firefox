@@ -193,7 +193,7 @@ tasks:
             symbol: B-stable(amd64)
 
     amd64-esr/opt:
-        description: Build Firefox ESR 128 as a Snap using upstream definition
+        description: Build Firefox ESR as a Snap using upstream definition
         attributes:
             build_platform: linux64-snap
             build_type: opt
@@ -201,7 +201,7 @@ tasks:
             product: firefox
             job-name: snap-amd64-esr-opt
         worker:
-            docker-image: {in-tree: snap-build-core22}
+            docker-image: {in-tree: snap-build-core24}
             max-run-time: 9000
         run:
             using: run-task
@@ -212,7 +212,7 @@ tasks:
             symbol: B-esr(amd64)
 
     amd64-esr/debug:
-        description: Build Firefox ESR 128 (debug) as a Snap using upstream definition
+        description: Build Firefox ESR (debug) as a Snap using upstream definition
         attributes:
             build_platform: linux64-snap
             build_type: debug
@@ -220,7 +220,7 @@ tasks:
             product: firefox
             job-name: snap-amd64-esr-debug
         worker:
-            docker-image: {in-tree: snap-build-core22}
+            docker-image: {in-tree: snap-build-core24}
             max-run-time: 7200
         run:
             using: run-task

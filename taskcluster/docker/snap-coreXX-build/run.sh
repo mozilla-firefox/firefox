@@ -45,13 +45,6 @@ if [ "${BRANCH}" = "try" ]; then
 fi
 
 if [ "${USE_SNAP_FROM_STORE_OR_MC}" = "0" ]; then
-  # ESR currently still has a hard dependency against zstandard==0.17.0 so
-  # install this specific version here
-  if [ "${BRANCH}" = "esr" ]; then
-    sudo apt-get remove -y python3-zstandard && sudo apt-get install -y python3-pip && sudo pip3 install --no-input zstandard==0.17.0
-    MOZCONFIG=mozconfig
-  fi
-
   # Stable and beta runs out of file descriptors during link with gold
   ulimit -n 65536
 
