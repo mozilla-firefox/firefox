@@ -9,10 +9,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -29,14 +33,26 @@ import mozilla.components.compose.menu.ui.utils.DISABLED_ALPHA
 import mozilla.components.compose.menu.ui.utils.mainSectionMenuItemsPreviewData
 import mozilla.components.ui.icons.R as iconsR
 
+/**
+ * Show a group of the customize menu screen, with the handle to drag it by.
+ *
+ * @param group The group to show.
+ * @param modifier The [Modifier] to be applied to the group and its handle.
+ * @param state How the group is shown.
+ * @param dragState State of dragging the groups, or `null` to not drag them.
+ * @param onDragHandleLongPress Called when the user long presses the drag handle without moving.
+ */
 @Composable
 internal fun CustomizeMenuGroupContent(
     group: MenuItemsGroup,
     modifier: Modifier = Modifier,
     state: CustomizeMenuGroupState = CustomizeMenuGroupState.SHOWN,
     dragState: CustomizeMenuDragState? = null,
+    onDragHandleLongPress: () -> Unit = {},
 ) {
     val isHidden = state == CustomizeMenuGroupState.HIDDEN
+    val haptic = LocalHapticFeedback.current
+    val currentOnDragHandleLongPress by rememberUpdatedState(onDragHandleLongPress)
 
     Row(
         modifier = modifier,
@@ -52,7 +68,13 @@ internal fun CustomizeMenuGroupContent(
             }
         }
 
-        CustomizeMenuDragIndicator(modifier = Modifier.dragGroup(dragState, group.id))
+        CustomizeMenuDragIndicator(
+            modifier =
+                Modifier.dragGroup(dragState, group.id) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    currentOnDragHandleLongPress()
+                }
+        )
     }
 }
 

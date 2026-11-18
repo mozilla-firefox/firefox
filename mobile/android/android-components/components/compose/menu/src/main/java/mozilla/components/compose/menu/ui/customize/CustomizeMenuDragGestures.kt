@@ -11,6 +11,9 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.verticalDrag
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.PointerId
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import mozilla.components.compose.draggable.InteractionState
@@ -26,13 +29,15 @@ internal fun Modifier.dragGroupAfterLongPress(dragState: CustomizeMenuDragState?
     dragState?.let { dragGroupAfterLongPress(it.interactionState, it.listState, groupId) } ?: this
 
 /**
- * Drag the group with [groupId] as soon as the user moves vertically where this is applied, without a long press.
+ * Drag the group with [groupId] as soon as the user moves vertically where this is applied, without a long press, or
+ * call [onLongPress] once the user held it for a long press without moving, after which this touch no longer drags it.
  *
  * @param dragState State of dragging the groups, or `null` to not drag them.
  * @param groupId Id of the group to drag.
+ * @param onLongPress Called when the user long presses without moving, while the finger is still down.
  */
-internal fun Modifier.dragGroup(dragState: CustomizeMenuDragState?, groupId: Any): Modifier =
-    dragState?.let { dragGroup(it.interactionState, it.listState, groupId) } ?: this
+internal fun Modifier.dragGroup(dragState: CustomizeMenuDragState?, groupId: Any, onLongPress: () -> Unit): Modifier =
+    dragState?.let { dragGroup(it.interactionState, it.listState, groupId, onLongPress) } ?: this
 
 private fun Modifier.dragGroupAfterLongPress(
     interactionState: ListInteractionState,
@@ -56,16 +61,27 @@ private fun Modifier.dragGroup(
     interactionState: ListInteractionState,
     listState: LazyListState,
     groupId: Any,
+    onLongPress: () -> Unit,
 ): Modifier =
     this.pointerInput(interactionState, listState, groupId) {
         val gesture = GroupDragGesture(interactionState, listState, groupId)
         awaitEachGesture {
             val down = awaitFirstDown()
-            // The touch is left to the list unless the group is dragged.
-            val slopChange =
-                awaitVerticalTouchSlopOrCancellation(down.id) { change, _ ->
-                    if (gesture.start(shouldLongPress = false)) change.consume()
-                } ?: return@awaitEachGesture
+            var slop: PointerInputChange? = null
+            val isBeforeLongPress =
+                withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                    slop = awaitVerticalSlop(down, gesture)
+                    true
+                }
+            if (isBeforeLongPress == null) {
+                if (isStill(down) && interactionState.draggedItem == InteractionState.List.None) {
+                    onLongPress()
+                    consumeUntilUp(down.id)
+                    return@awaitEachGesture
+                }
+                slop = awaitVerticalSlop(down, gesture)
+            }
+            val slopChange = slop ?: return@awaitEachGesture
             try {
                 // Everything moved since the finger went down, for the group not to stay behind by the touch slop.
                 gesture.drag(slopChange.position.y - down.position.y)
@@ -80,6 +96,30 @@ private fun Modifier.dragGroup(
             }
         }
     }
+
+/** Wait for the pointer of [down] to move vertically by the touch slop, picking the group up then if it can be. */
+private suspend fun AwaitPointerEventScope.awaitVerticalSlop(
+    down: PointerInputChange,
+    gesture: GroupDragGesture,
+): PointerInputChange? =
+    // The touch is left to the list unless the group is dragged.
+    awaitVerticalTouchSlopOrCancellation(down.id) { change, _ ->
+        if (gesture.start(shouldLongPress = false)) change.consume()
+    }
+
+/** Whether the pointer of [down] is still down within the touch slop of where it went down. */
+private fun AwaitPointerEventScope.isStill(down: PointerInputChange): Boolean {
+    val change = currentEvent.changes.firstOrNull { it.id == down.id } ?: return false
+    return change.pressed && (change.position - down.position).getDistance() <= viewConfiguration.touchSlop
+}
+
+/** Consume the changes of the pointer with [id] until it is lifted or the gesture is cancelled. */
+private suspend fun AwaitPointerEventScope.consumeUntilUp(id: PointerId) {
+    do {
+        val change = awaitPointerEvent().changes.firstOrNull { it.id == id }
+        change?.consume()
+    } while (change != null && change.pressed)
+}
 
 /**
  * Drags the group with [groupId] for one gesture at a time. A gesture drags only if no other group is dragged when it

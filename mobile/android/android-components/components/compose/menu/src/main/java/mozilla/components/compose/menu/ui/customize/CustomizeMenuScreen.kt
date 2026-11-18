@@ -26,7 +26,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -107,6 +109,7 @@ private fun CustomizeMenuList(
     val dragState = rememberCustomizeMenuDragState(store, menuState, listState)
     val itemSpacing = AcornTheme.layout.space.static150
     val announcer = rememberA11yUpdatesAnnouncer()
+    var actionsGroupId by rememberSaveable { mutableStateOf<String?>(null) }
     val onMove = { movedGroupId: String, movedGroups: CustomizeMenuGroups, moveAnnouncement: String ->
         movedGroups.listIndexOf(movedGroupId)?.let { listState.moveAndKeepVisible(movedGroupId, it) }
         store.saveMove(dragState.groups, movedGroupId, movedGroups)
@@ -140,6 +143,7 @@ private fun CustomizeMenuList(
             firstIndex = 1,
             itemSpacing = itemSpacing,
             onMove = onMove,
+            onShowActions = { actionsGroupId = it },
         )
 
         item(key = HIDDEN_SECTIONS) {
@@ -156,6 +160,7 @@ private fun CustomizeMenuList(
             firstIndex = dragState.firstHiddenIndex,
             itemSpacing = itemSpacing,
             onMove = onMove,
+            onShowActions = { actionsGroupId = it },
             isHidden = true,
         )
 
@@ -170,9 +175,39 @@ private fun CustomizeMenuList(
         }
     }
 
+    CustomizeMenuSectionActionsSheetOf(
+        groupId = actionsGroupId,
+        groups = dragState.groups,
+        onMove = onMove,
+        onDismissRequest = { actionsGroupId = null },
+    )
+
     // Drawn over the list, important to be the last element here.
     // Will allow for accessibility services to be told of its updates, which they aren't if it is covered.
     announcer.LiveRegion()
+}
+
+/**
+ * Bottom sheet with the actions moving the group with [groupId], shown only while [groups] has it.
+ *
+ * @param groupId Id of the group, if any.
+ * @param groups The shown and the hidden groups.
+ * @param onMove Called with the id of the group, the moved groups and the announcement of the chosen action.
+ * @param onDismissRequest Called when the sheet is hidden, to stop showing it.
+ */
+@Composable
+private fun CustomizeMenuSectionActionsSheetOf(
+    groupId: String?,
+    groups: CustomizeMenuGroups,
+    onMove: (movedGroupId: String, movedGroups: CustomizeMenuGroups, announcement: String) -> Unit,
+    onDismissRequest: () -> Unit,
+) {
+    val group = (groups.shown + groups.hidden).firstOrNull { it.id == groupId } ?: return
+    CustomizeMenuSectionActionsSheet(
+        actions = customizeMenuSectionActions(group, groups),
+        onAction = { movedGroups, announcement -> onMove(group.id, movedGroups, announcement) },
+        onDismissRequest = onDismissRequest,
+    )
 }
 
 /**
