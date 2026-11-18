@@ -307,10 +307,6 @@ add_task(async function test_retry_after_interrupted_download_on_main() {
 /**
  * Ensure a pinned revision recovers by re-downloading after an interrupted
  * transfer.
- *
- * TODO: Currently the 0 byte entry reads as a cache hit, so the file is stuck.
- * Every later attempt fails without touching the network, and nothing in the
- * public API clears it.
  */
 add_task(async function test_retry_after_interrupted_download_on_pinned() {
   const { hub, modelHub, args, serveInFull, cleanup } = await withModelHub({
@@ -326,37 +322,27 @@ add_task(async function test_retry_after_interrupted_download_on_pinned() {
 
   serveInFull();
 
-  for (const attempt of ["second", "third"]) {
-    await Assert.rejects(
-      modelHub.getModelFileAsBlob(args),
-      /Missing cached headers for the model file/,
-      `The ${attempt} attempt fails on the missing headers row instead of ` +
-        "downloading the file the hub is now serving in full."
-    );
-  }
+  const [blob, headers] = await modelHub.getModelFileAsBlob(args);
 
   Assert.equal(
+    blob.size,
+    BODY_SIZE,
+    "The retry downloads the whole file rather than reading the failed attempt."
+  );
+  Assert.equal(
+    headers.fileSize,
+    BODY_SIZE,
+    "The stored file size matches the body that was served."
+  );
+  Assert.equal(
     hub.requestCount({ ...PINNED_FILE, method: "GET" }),
-    1,
-    "Neither retry reached the network."
+    2,
+    "The retry went back to the network."
   );
   Assert.equal(
     (await opfsEntry(modelHub, PINNED_FILE)).size,
-    0,
-    "The empty entry responsible for this is still there."
-  );
-
-  // deleteModels walks the task store, which an interrupted download never
-  // writes to, so the entry is not reachable through the public delete API.
-  await modelHub.deleteModels({
-    taskName: TASK_NAME,
-    model: null,
-    revision: null,
-  });
-
-  Assert.ok(
-    (await opfsEntry(modelHub, PINNED_FILE)).exists,
-    "deleteModels leaves the entry in place."
+    BODY_SIZE,
+    "The OPFS entry holds the full body."
   );
 
   await cleanup();
