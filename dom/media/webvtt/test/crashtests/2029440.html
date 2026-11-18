@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html class="reftest-wait"><body>
+<canvas id="cv" width="100" height="100"></canvas>
+<script>
+(async function(){
+  try {
+    const v4 = document.createElement('video');
+    v4.width = 400; v4.height = 300;
+    document.body.appendChild(v4);
+
+    const v3 = document.createElement('video');
+    document.body.appendChild(v3);
+
+    let v2 = document.createElement('video');
+    v2.id = 'v2';
+    v2.width = 400; v2.height = 300;
+    document.body.appendChild(v2);
+    const cv = document.getElementById('cv');
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle='red'; ctx.fillRect(0,0,100,100);
+    const stream = cv.captureStream();
+    v2.srcObject = stream;
+    v2.muted = true;
+    v2.play().catch(()=>{});
+    for (let i = 0; i < 200; i++) {
+      if (v2.readyState >= 2) break;
+      ctx.fillRect(0,0,100,100);
+      await new Promise(r => requestAnimationFrame(r));
+    }
+
+    const te = document.createElement('track');
+    v2.appendChild(te);
+    const trackA = te.track;
+    trackA.mode = 'showing';
+
+    const baitCue = new VTTCue(0, 99999, 'bait');
+    trackA.addCue(baitCue);
+    const triggerCue = new VTTCue(0, 99999, 'trigger');
+    trackA.addCue(triggerCue);
+
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    baitCue.line = 5;
+    document.body.offsetWidth;
+    v4.style.width = '600px';
+
+    let fired = false;
+    const ct = v2.currentTime;
+    v2 = null;
+
+    v4.addEventListener('resizecaption', function cb(){
+      if (fired) return;
+      fired = true;
+      v4.removeEventListener('resizecaption', cb, true);
+
+      v3.appendChild(te);
+
+      let vv = document.getElementById('v2');
+      try { vv.pause(); } catch(e){}
+      try { vv.srcObject = null; } catch(e){}
+      try { vv.removeAttribute('src'); } catch(e){}
+      vv.remove();
+      vv = null;
+
+      for (let k = 0; k < 5; k++) {
+        SpecialPowers.forceGC();
+        SpecialPowers.forceCC();
+        SpecialPowers.forceGC();
+        SpecialPowers.forceCC();
+      }
+    }, true);
+
+    triggerCue.endTime = ct;
+
+    setTimeout(() => document.documentElement.removeAttribute("class"), 0);
+  } catch(e){
+    document.documentElement.removeAttribute("class");
+  }
+})();
+</script></body></html>
