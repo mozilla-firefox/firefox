@@ -12,6 +12,7 @@ import { WidgetMenuFooter } from "./WidgetMenuFooter";
 import { SizeSubmenu } from "./SizeSubmenu";
 import { WidgetError } from "./WidgetError";
 import { useWidgetTelemetry } from "./useWidgetTelemetry";
+import { useSrcAfterPageShown } from "./usePageVisible";
 
 const USER_ACTION_TYPES = {
   ...WIDGET_USER_ACTIONS,
@@ -44,21 +45,22 @@ export function MozWidgetCard({
   entry,
   size,
   displaySize = size,
-  src,
+  src: frameSrc,
   readyOnLoad = true,
   widgetEnabledMap,
   menuItems,
   onChangeSize,
   cardRef,
 }) {
-  const [lastSrc, setLastSrc] = useState(src);
+  const [lastSrc, setLastSrc] = useState(frameSrc);
   const [failure, setFailure] = useState(null);
   const [isReady, setIsReady] = useState(false);
   const [seen, setSeen] = useState(false);
   const sizeAtImpression = useRef(null);
+  const src = useSrcAfterPageShown(frameSrc);
 
-  if (src !== lastSrc) {
-    setLastSrc(src);
+  if (frameSrc !== lastSrc) {
+    setLastSrc(frameSrc);
     setFailure(null);
     setIsReady(false);
   }
@@ -174,7 +176,7 @@ export function MozWidgetCard({
           />
         )}
       </moz-widget-header>
-      {!src && <p data-l10n-id="newtab-widget-placeholder" />}
+      {!frameSrc && <p data-l10n-id="newtab-widget-placeholder" />}
       {failure && (
         <WidgetError
           slot="error"

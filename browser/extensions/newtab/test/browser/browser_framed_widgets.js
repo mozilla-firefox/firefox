@@ -29,7 +29,7 @@ registerCleanupFunction(restoreFeedState);
 // Serves a manifest entry for every widget from the framed widgets feed instead
 // of fetching from Merino, and turns every widget on. `disabledId` gets
 // `enabled: false`.
-async function setUpFramedWidgets(pushPrefs, disabledId) {
+async function setUpFramedWidgets(pushPrefs, disabledId, widgets = WIDGETS) {
   const feed = AboutNewTab.activityStream.store.feeds.get(
     "feeds.framedwidgetsfeed"
   );
@@ -43,7 +43,7 @@ async function setUpFramedWidgets(pushPrefs, disabledId) {
   sandbox = sinon.createSandbox();
   sandbox.stub(feed, "loadFrames").callsFake(async () => {
     feed.manifest = {
-      widgets: WIDGETS.map(({ id }) => ({
+      widgets: widgets.map(({ id }) => ({
         id,
         enabled: id !== disabledId,
         url: `${PAGE_URL}?widget=${id}`,
@@ -60,8 +60,8 @@ async function setUpFramedWidgets(pushPrefs, disabledId) {
     ],
     [`${PREF_BRANCH}widgets.system.enabled`, true],
     [`${PREF_BRANCH}widgets.enabled`, true],
-    [`${PREF_BRANCH}widgets.order`, WIDGETS.map(w => w.id).join(",")],
-    ...WIDGETS.flatMap(w => [
+    [`${PREF_BRANCH}widgets.order`, widgets.map(w => w.id).join(",")],
+    ...widgets.flatMap(w => [
       [`${PREF_BRANCH}${w.systemEnabledPref}`, true],
       [`${PREF_BRANCH}${w.enabledPref}`, true],
     ])
@@ -126,4 +126,84 @@ test_newtab({
   after() {
     restoreFeedState();
   },
+});
+
+// A preloaded newtab renders while hidden, possibly long before the user opens
+// it. A framed widget's document reads its state when it loads, so loading it
+// then would show the state from preload time (bug 2068016). The frames wait
+// until the page is shown.
+add_task(async function test_framed_widgets_wait_for_preloaded_tab_to_show() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.newtab.preload", true]],
+  });
+  await setUpFramedWidgets(
+    (...prefs) => SpecialPowers.pushPrefEnv({ set: prefs }),
+    null,
+    FRAMED_WIDGETS
+  );
+
+  NewTabPagePreloading.removePreloadedBrowser(window);
+  NewTabPagePreloading.maybeCreatePreloadedBrowser(window);
+  const preloaded = gBrowser.preloadedBrowser;
+  Assert.ok(preloaded, "A newtab is preloaded");
+  await waitForPreloaded(preloaded);
+
+  const ids = FRAMED_WIDGETS.map(w => w.id);
+  // The src of each widget's frame, whether the widget draws its own iframe or
+  // a moz-widget does.
+  const getFrameSrcs = browser =>
+    SpecialPowers.spawn(browser, [ids], async widgetIds => {
+      const srcs = { visibilityState: content.document.visibilityState };
+      for (const id of widgetIds) {
+        const container = await ContentTaskUtils.waitForCondition(
+          () =>
+            content.document.querySelector(`article.${id}`) ??
+            content.document.querySelector(`moz-widget[widget-id="${id}"]`),
+          `Wait for the ${id} widget`
+        );
+        const frame =
+          container.localName === "moz-widget"
+            ? container
+            : container.querySelector("iframe");
+        srcs[id] = frame?.getAttribute("src") ?? null;
+      }
+      return srcs;
+    });
+
+  const hiddenSrcs = await getFrameSrcs(preloaded);
+  Assert.equal(
+    hiddenSrcs.visibilityState,
+    "hidden",
+    "The preloaded newtab is hidden"
+  );
+  for (const id of ids) {
+    Assert.ok(
+      !hiddenSrcs[id],
+      `The ${id} frame loads nothing while the newtab is preloaded`
+    );
+  }
+
+  const tab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    "about:newtab",
+    false
+  );
+  Assert.equal(tab.linkedBrowser, preloaded, "The preloaded newtab is used");
+  await TestUtils.waitForCondition(async () => {
+    const srcs = await getFrameSrcs(tab.linkedBrowser);
+    return ids.every(id => srcs[id]);
+  }, "Wait for every frame to load once the newtab is shown");
+  const shownSrcs = await getFrameSrcs(tab.linkedBrowser);
+  for (const id of ids) {
+    Assert.ok(
+      shownSrcs[id].split("#")[0].endsWith(`/blue_page.html?widget=${id}`),
+      `The ${id} frame loads its manifest URL once the newtab is shown`
+    );
+  }
+
+  BrowserTestUtils.removeTab(tab);
+  NewTabPagePreloading.removePreloadedBrowser(window);
+  restoreFeedState();
+  await SpecialPowers.popPrefEnv();
+  await SpecialPowers.popPrefEnv();
 });

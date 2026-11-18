@@ -19,6 +19,7 @@ import { WidgetMenuFooter } from "../WidgetMenuFooter";
 import { WidgetMenuPoweredBy } from "../WidgetMenuPoweredBy";
 import { SizeSubmenu } from "../SizeSubmenu";
 import { useWidgetTelemetry } from "../useWidgetTelemetry";
+import { useSrcAfterPageShown } from "../usePageVisible";
 import { useFramedWidgetMessages } from "../useFramedWidgetMessages";
 
 const USER_ACTION_TYPES = {
@@ -50,11 +51,12 @@ function Solitaire({
 }) {
   const prefs = useSelector(state => state.Prefs.values);
   const framedWidgets = useSelector(state => state.FramedWidgets);
-  const { src, state: frameState } = resolveWidgetFrame(
+  const { src: frameSrc, state: frameState } = resolveWidgetFrame(
     SOLITAIRE_ENTRY,
     prefs,
     framedWidgets
   );
+  const src = useSrcAfterPageShown(frameSrc);
 
   const widgetSize = resolveWidgetSize(SOLITAIRE_ENTRY, prefs);
 

@@ -582,6 +582,30 @@ describe("<FramedWidgetCard>", () => {
       expect(card.querySelector(".widget-error")).not.toBeNull();
     });
 
+    it("loads the latest choice once a page that rendered hidden is shown", () => {
+      const setVisibility = value => {
+        Object.defineProperty(document, "visibilityState", {
+          configurable: true,
+          value,
+        });
+        fireEvent(document, new Event("visibilitychange"));
+      };
+      try {
+        setVisibility("hidden");
+        const { card, store } = renderCard({ menu: MENU });
+        expect(card).not.toHaveAttribute("src");
+
+        setView(store, "week");
+        setVisibility("visible");
+        expect(card).toHaveAttribute(
+          "src",
+          "moz-extension://uuid/widget.html#view=week"
+        );
+      } finally {
+        setVisibility("visible");
+      }
+    });
+
     it("loads a new document normally", () => {
       const { card, rerenderWithSrc } = renderCard({ menu: MENU });
       const replace = jest.fn();
