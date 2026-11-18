@@ -9,10 +9,12 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   BrowserUtils: "resource://gre/modules/BrowserUtils.sys.mjs",
   BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
+  PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   TabStateFlusher:
     "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs",
   MiniWindowUtils:
     "moz-src:///browser/components/miniwindow/MiniWindowUtils.sys.mjs",
+  URILoadingHelper: "resource:///modules/URILoadingHelper.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "prefs", () => {
@@ -61,20 +63,23 @@ const WINDOW_EVENTS = ["unload", "activate"];
 const TOOLBAR_HIDE_DELAY_FIRST_OPEN_MS = 2500;
 
 /**
- * One always-on-top popup hosting a live moved tab. The tab keeps its
- * browsing context across the move, so the page is never reloaded, and
- * teardown adopts it back into its origin window rather than discarding it.
+ * One always-on-top popup hosting either a live moved tab or a URL opened
+ * straight into it. A moved tab keeps its browsing context across the move,
+ * so the page is never reloaded. Either way, teardown adopts the tab into the
+ * origin window rather than discarding it.
  */
 export class MiniWindow {
   /**
-   * The tab being popped out of its origin window into this popup.
+   * The tab being popped out of its origin window into this popup, or null
+   * when a URL is opened into it instead.
    *
-   * @type {MozTabbrowserTab}
+   * @type {MozTabbrowserTab|null}
    */
   #sourceTab;
 
   /**
-   * The index #sourceTab held in originWin.
+   * The index in originWin the tab returns to: the one #sourceTab held, or
+   * just after the selected tab for an opened URL.
    *
    * @type {number}
    */
@@ -180,18 +185,20 @@ export class MiniWindow {
   /**
    * @param {object} manager - The MiniWindowManager singleton.
    * @param {ChromeWindow} originWin - The tab's source window.
-   * @param {MozTabbrowserTab} sourceTab - The tab to move.
+   * @param {MozTabbrowserTab|null} [sourceTab] - The tab to move. This can be null
+   *  if the mini window is being opened with a URL instead of a tab.
    * @param {object|null} [cropInfo] - The page region to frame, in content CSS
    *   px. Carries left/top/width/height plus the viewport size and fullZoom it
    *   was captured against; see MiniWindowUtils. Null makes a full-tab mini
    *   window.
    */
-  constructor(manager, originWin, sourceTab, cropInfo = null) {
+  constructor(manager, originWin, sourceTab = null, cropInfo = null) {
     this.manager = manager;
     this.originWin = originWin;
     this.#sourceTab = sourceTab;
     this.#cropped = !!cropInfo;
-    let browser = sourceTab.linkedBrowser;
+    let browser =
+      sourceTab?.linkedBrowser ?? originWin.gBrowser.selectedBrowser;
     if (cropInfo) {
       this._cropInfo = cropInfo;
     } else {
@@ -208,7 +215,9 @@ export class MiniWindow {
         fullZoom: browser.fullZoom,
       };
     }
-    this.#originTabIndex = originWin.gBrowser.tabs.indexOf(sourceTab);
+    this.#originTabIndex = sourceTab
+      ? originWin.gBrowser.tabs.indexOf(sourceTab)
+      : originWin.gBrowser.tabs.indexOf(originWin.gBrowser.selectedTab) + 1;
     this.miniWin = null;
     this._state = MiniWindowState.OPENING;
   }
@@ -252,6 +261,26 @@ export class MiniWindow {
   }
 
   /**
+   * Window features for a new mini window, sized and placed for the crop.
+   *
+   * @returns {object}
+   */
+  #windowFeatures() {
+    let rect = lazy.MiniWindowUtils.computeWindowRect(
+      this.originWin,
+      this._cropInfo
+    );
+    return {
+      alwaysontop: 1,
+      lockaspectratio: this.#cropped ? 1 : 0,
+      outerWidth: rect.width,
+      outerHeight: rect.height,
+      screenX: rect.left,
+      screenY: rect.top,
+    };
+  }
+
+  /**
    * Moves the source tab out into a new always-on-top popup and frames the
    * crop in it.
    *
@@ -260,45 +289,83 @@ export class MiniWindow {
    *   Resolves with null without waiting if the tab could not be moved out,
    *   in which case the Mini Window is left CLOSED.
    */
-  async open() {
-    lazy.logConsole.debug("open", { crop: this._cropInfo });
+  async move() {
+    lazy.logConsole.debug("move", { crop: this._cropInfo });
     let gBrowser = this.originWin.gBrowser;
-    let rect = lazy.MiniWindowUtils.computeWindowRect(
-      this.originWin,
-      this._cropInfo
-    );
 
     // Pop the tab out like a normal move-to-window.
 
-    let features = {
-      alwaysontop: 1,
-      lockaspectratio: this.#cropped ? 1 : 0,
-      replaceLastTab: true,
-      outerWidth: rect.width,
-      outerHeight: rect.height,
-      screenX: rect.left,
-      screenY: rect.top,
-    };
-
-    // Mark the tab being moved out to make sure styling is correct.
-    this.#sourceTab.setAttribute("mini-window", "true");
+    let extraOptions = Cc["@mozilla.org/hash-property-bag;1"].createInstance(
+      Ci.nsIWritablePropertyBag2
+    );
+    extraOptions.setPropertyAsBool("mini-window", true);
     if (this.#cropped) {
-      this.#sourceTab.setAttribute("cropped-mini-window", "true");
+      extraOptions.setPropertyAsBool("cropped-mini-window", true);
     }
 
-    this.miniWin = gBrowser.replaceTabWithWindow(this.#sourceTab, features);
+    let options = {
+      extraOptions,
+      replaceLastTab: true,
+      ...this.#windowFeatures(),
+    };
+
+    this.miniWin = gBrowser.replaceTabWithWindow(this.#sourceTab, options);
 
     if (!this.miniWin) {
       lazy.logConsole.error(
-        "open: Something went horribly wrong when opening \
+        "move: Something went horribly wrong when opening \
           the mini window - replaceTabWithWindow returned null"
       );
-      this.#sourceTab.removeAttribute("mini-window");
-      this.#sourceTab.removeAttribute("cropped-mini-window");
       this._state = MiniWindowState.CLOSED;
       return null;
     }
 
+    return this.#activate();
+  }
+
+  /**
+   * Opens `url` in a new always-on-top full-tab popup.
+   *
+   * @param {string} url
+   * @param {nsIPrincipal} triggeringPrincipal - the principal triggering the load.
+   * @returns {Promise<DOMWindow|null>} Resolves once the popup has finished
+   *   delayed startup and reached state ACTIVE. Resolves with null if the
+   *   window could not be opened.
+   */
+  async open(url, triggeringPrincipal) {
+    lazy.logConsole.debug("open", { url });
+    let features = Object.entries(this.#windowFeatures())
+      .map(([key, value]) => `${key}=${value}`)
+      .join(",");
+    try {
+      lazy.URILoadingHelper.openLinkIn(this.originWin, url, "window", {
+        triggeringPrincipal,
+        private: lazy.PrivateBrowsingUtils.isWindowPrivate(this.originWin),
+        miniWindow: true,
+        features,
+        resolveOnNewWindowCreated: win => {
+          this.miniWin = win;
+        },
+      });
+    } catch (e) {
+      lazy.logConsole.error("open: openLinkIn failed", e);
+    }
+
+    if (!this.miniWin) {
+      this._state = MiniWindowState.CLOSED;
+      return null;
+    }
+
+    return this.#activate();
+  }
+
+  /**
+   * Waits for the freshly-opened popup to finish starting up, then frames it
+   * and wires up its mini window UI.
+   *
+   * @returns {Promise<DOMWindow>}
+   */
+  async #activate() {
     await lazy.BrowserUtils.promiseObserved(
       "browser-delayed-startup-finished",
       subject => subject == this.miniWin
@@ -309,7 +376,7 @@ export class MiniWindow {
       this.#frame();
     }
     this._state = MiniWindowState.FRAMED;
-    lazy.logConsole.debug("open: state -> FRAMED");
+    lazy.logConsole.debug("#activate: state -> FRAMED");
 
     this.#avoidOtherWindows();
 
@@ -323,7 +390,7 @@ export class MiniWindow {
     }
 
     this._state = MiniWindowState.ACTIVE;
-    lazy.logConsole.debug("open: state -> ACTIVE");
+    lazy.logConsole.debug("#activate: state -> ACTIVE");
 
     // Now that the tab is settled in the mini window, watch for it navigating away.
     this.#attachHistoryListener();

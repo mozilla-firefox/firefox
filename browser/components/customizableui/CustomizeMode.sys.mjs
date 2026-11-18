@@ -392,6 +392,7 @@ export class CustomizeMode {
       let w = lazy.URILoadingHelper.getTargetWindow(this.#window, {
         skipPopups: true,
         skipTaskbarTabs: true,
+        skipMiniWindows: true,
       });
       if (w) {
         w.gCustomizeMode.enter(aEntryPoint);
@@ -402,6 +403,7 @@ export class CustomizeMode {
         w = lazy.URILoadingHelper.getTargetWindow(this.#window, {
           skipPopups: true,
           skipTaskbarTabs: true,
+          skipMiniWindows: true,
         });
         w.gCustomizeMode.enter(aEntryPoint);
       };

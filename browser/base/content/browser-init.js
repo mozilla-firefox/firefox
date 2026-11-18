@@ -208,13 +208,12 @@ var gBrowserInit = {
       if (extraOptions.hasKey("aswebauth")) {
         document.documentElement.setAttribute("aswebauth", true);
       }
-    }
-
-    let tabToAdopt = this.getTabToAdopt();
-    if (tabToAdopt?.hasAttribute?.("mini-window")) {
-      document.documentElement.setAttribute("mini-window", "true");
-      if (tabToAdopt.hasAttribute("cropped-mini-window")) {
-        document.documentElement.setAttribute("cropped-mini-window", "true");
+      if (extraOptions.hasKey("mini-window")) {
+        document.documentElement.removeAttribute("persist");
+        document.documentElement.setAttribute("mini-window", "true");
+        if (extraOptions.hasKey("cropped-mini-window")) {
+          document.documentElement.setAttribute("cropped-mini-window", "true");
+        }
       }
     }
 
