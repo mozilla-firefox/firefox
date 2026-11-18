@@ -2,11 +2,17 @@
 <meta charset="utf-8" />
 <title>prefetch source</title>
 <script>
-  const target = new URLSearchParams(location.search).get("target");
+  const params = new URLSearchParams(location.search);
+  const rule = {
+    source: "list",
+    urls: [params.get("target")],
+    eagerness: "immediate",
+  };
+  if (params.has("tag")) {
+    rule.tag = params.get("tag");
+  }
   const script = document.createElement("script");
   script.type = "speculationrules";
-  script.textContent = JSON.stringify({
-    prefetch: [{ source: "list", urls: [target], eagerness: "immediate" }],
-  });
+  script.textContent = JSON.stringify({ prefetch: [rule] });
   document.head.appendChild(script);
 </script>

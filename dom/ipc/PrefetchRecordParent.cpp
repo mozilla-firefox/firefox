@@ -13,6 +13,7 @@
 #include "mozilla/dom/WindowGlobalParent.h"
 #include "mozilla/glean/DomMetrics.h"
 #include "mozilla/net/NoVarySearchUtils.h"
+#include "mozilla/net/SFVService.h"
 #include "nsContentPolicyUtils.h"
 #include "nsIAsyncVerifyRedirectCallback.h"
 #include "nsICacheEntry.h"
@@ -154,6 +155,7 @@ void PrefetchRecordParent::Init(WindowGlobalParent* aWGP,
   }
 
   ConfigureSecPurpose(mChannel);
+  ConfigureSpeculationTags(mChannel, docPrincipal, isCrossSite);
 
   MOZ_ASSERT(mReferrerInfo);
   nsCOMPtr<nsIHttpChannel> http = do_QueryInterface(mChannel);
@@ -212,6 +214,66 @@ void PrefetchRecordParent::ConfigureSecPurpose(nsIChannel* aChannel) {
   LOG_SPECRULES_V(
       ("PrefetchRecordParent::ConfigureSecPurpose: this=%p Sec-Purpose=%s",
        this, secPurpose.get()));
+}
+
+static nsresult SerializeSpeculationTags(const nsTArray<Maybe<nsString>>& aTags,
+                                         nsACString& aResult) {
+  nsCOMPtr<nsISFVService> sfv = net::GetSFVService();
+  if (!sfv) {
+    return NS_ERROR_FAILURE;
+  }
+  nsTArray<RefPtr<nsISFVItemOrInnerList>> members;
+  for (const Maybe<nsString>& tag : aTags) {
+    nsCOMPtr<nsISFVBareItem> value;
+    nsresult rv;
+    if (tag) {
+      nsCOMPtr<nsISFVString> str;
+      rv = sfv->NewString(NS_ConvertUTF16toUTF8(*tag), getter_AddRefs(str));
+      value = str;
+    } else {
+      nsCOMPtr<nsISFVToken> token;
+      rv = sfv->NewToken("null"_ns, getter_AddRefs(token));
+      value = token;
+    }
+    NS_ENSURE_SUCCESS(rv, rv);
+    nsCOMPtr<nsISFVParams> params;
+    rv = sfv->NewParameters(getter_AddRefs(params));
+    NS_ENSURE_SUCCESS(rv, rv);
+    nsCOMPtr<nsISFVItem> item;
+    rv = sfv->NewItem(value, params, getter_AddRefs(item));
+    NS_ENSURE_SUCCESS(rv, rv);
+    members.AppendElement(item);
+  }
+  nsCOMPtr<nsISFVList> list;
+  nsresult rv = sfv->NewList(members, getter_AddRefs(list));
+  NS_ENSURE_SUCCESS(rv, rv);
+  return list->Serialize(aResult);
+}
+
+// Spec:
+// https://wicg.github.io/nav-speculation/prefetch.html#create-navigation-params-by-fetching
+void PrefetchRecordParent::ConfigureSpeculationTags(
+    nsIChannel* aChannel, nsIPrincipal* aDocumentPrincipal, bool aIsCrossSite) {
+  nsCOMPtr<nsIHttpChannel> http = do_QueryInterface(aChannel);
+  if (!http) {
+    return;
+  }
+  // Unlike the spec text, compare with the document's site, as WPT expects.
+  // IsThirdPartyURI compares base domains, so also check the scheme.
+  nsCOMPtr<nsIURI> uri;
+  aChannel->GetURI(getter_AddRefs(uri));
+  nsAutoCString scheme;
+  uri->GetScheme(scheme);
+  nsAutoCString tags;
+  if (aIsCrossSite || !aDocumentPrincipal->SchemeIs(scheme.get()) ||
+      NS_FAILED(SerializeSpeculationTags(mTags, tags))) {
+    tags.Truncate();
+  }
+  (void)http->SetRequestHeader("Sec-Speculation-Tags"_ns, tags, false);
+  LOG_SPECRULES_V(
+      ("PrefetchRecordParent::ConfigureSpeculationTags: this=%p "
+       "Sec-Speculation-Tags=%s",
+       this, tags.get()));
 }
 
 bool PrefetchRecordParent::PrefetchIPAnonymizationPolicyRequiresAnonymity(
@@ -540,14 +602,14 @@ PrefetchRecordParent::AsyncOnChannelRedirect(
   // Cross-site prefetches are not supported yet: the isolated partition that
   // keeps a cross-site hop uncredentialed is not implemented, so don't follow
   // a redirect off the document's site either.
+  auto* wgp = static_cast<WindowGlobalParent*>(Manager());
+  nsCOMPtr<nsIPrincipal> docPrincipal =
+      wgp ? wgp->DocumentPrincipal() : nullptr;
+  bool isCrossSite = true;
+  if (docPrincipal) {
+    docPrincipal->IsThirdPartyURI(newURI, &isCrossSite);
+  }
   if (StaticPrefs::dom_speculation_rules_same_site_only()) {
-    auto* wgp = static_cast<WindowGlobalParent*>(Manager());
-    nsCOMPtr<nsIPrincipal> docPrincipal =
-        wgp ? wgp->DocumentPrincipal() : nullptr;
-    bool isCrossSite = true;
-    if (docPrincipal) {
-      docPrincipal->IsThirdPartyURI(newURI, &isCrossSite);
-    }
     if (isCrossSite) {
       LOG_SPECRULES_WARN(
           ("PrefetchRecordParent::AsyncOnChannelRedirect: this=%p cross-site "
@@ -560,6 +622,7 @@ PrefetchRecordParent::AsyncOnChannelRedirect(
 
   AppendRedirectChainEntry(newURI);
   ConfigureSecPurpose(aNewChannel);
+  ConfigureSpeculationTags(aNewChannel, docPrincipal, isCrossSite);
   aCb->OnRedirectVerifyCallback(NS_OK);
   return NS_OK;
 }

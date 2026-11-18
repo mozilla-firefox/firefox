@@ -178,6 +178,12 @@ support-files = [
   "file_speculation_rules_hover_source.html",
 ]
 
+["browser_speculation_tags_redirect.js"]
+support-files = [
+  "file_pageload_prefetch_source.html",
+  "file_speculation_tags_redirect.sjs",
+]
+
 ["browser_pagehide_on_tab_close.js"]
 skip-if = [
   "true", # this tests non-e10s behavior.
