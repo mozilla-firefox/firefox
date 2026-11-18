@@ -15,7 +15,6 @@ task-defaults:
         kind: other
         tier: 2
     run:
-        clone-with: hg
         using: run-task
         tooltool-downloads: public
     fetches:
