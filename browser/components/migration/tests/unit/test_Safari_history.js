@@ -95,5 +95,10 @@ add_task(async function testHistoryImport() {
       urlInfo.jsTime,
       "Should have the correct date"
     );
+    Assert.equal(
+      MigrationUtils.getImportedHistoryAgeInDays(),
+      6,
+      "Imported history age is based on the oldest imported visit."
+    );
   }
 });

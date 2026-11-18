@@ -868,7 +868,7 @@ export class MigrationWizardParent extends JSWindowActorParent {
         return lazy.gFluentStrings.formatValue(
           "migration-wizard-progress-success-history",
           {
-            maxAgeInDays: MigrationUtils.HISTORY_MAX_AGE_IN_DAYS,
+            maxAgeInDays: MigrationUtils.getImportedHistoryAgeInDays(),
           }
         );
       }
