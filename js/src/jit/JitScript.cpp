@@ -51,7 +51,7 @@ JitScript::JitScript(JSScript* script, Offset fallbackStubsOffset,
   // Ensure the baselineScript_ and ionScript_ fields match the BaselineDisabled
   // and IonDisabled script flags.
   if (!script->canBaselineCompile()) {
-    setBaselineScriptImpl(script, BaselineDisabledScriptPtr);
+    setIsBaselineDisabled();
   }
   if (!script->canIonCompile()) {
     setIonScriptImpl(script, IonDisabledScriptPtr);
@@ -207,7 +207,7 @@ void JitScript::trace(JSTracer* trc) {
   icScript_.trace(trc);
 
   BaselineScript* baselineScript = baselineScript_.getForTracing();
-  if (baselineScript && IsBaselineScript(baselineScript)) {
+  if (baselineScript) {
     baselineScript->trace(trc);
   }
 
@@ -673,13 +673,18 @@ JitScript::functionEnvironmentTemplates(JSFunction* fun) const {
 }
 
 void JitScript::setBaselineScriptImpl(JSScript* script,
-                                      BaselineScript* baselineScript) {
+                                      BaselineScript* baselineScript,
+                                      ScriptState baselineState) {
   JSRuntime* rt = script->runtimeFromMainThread();
-  setBaselineScriptImpl(rt->gcContext(), script, baselineScript);
+  setBaselineScriptImpl(rt->gcContext(), script, baselineScript, baselineState);
 }
 
 void JitScript::setBaselineScriptImpl(JS::GCContext* gcx, JSScript* script,
-                                      BaselineScript* baselineScript) {
+                                      BaselineScript* baselineScript,
+                                      ScriptState baselineState) {
+  checkBaselineState();
+  MOZ_ASSERT((baselineState == ScriptState::HasScript) == bool(baselineScript));
+
   if (hasBaselineScript()) {
     gcx->removeCellMemory(script, baselineScript_->allocBytes(),
                           MemoryUse::BaselineScript);
@@ -689,6 +694,7 @@ void JitScript::setBaselineScriptImpl(JS::GCContext* gcx, JSScript* script,
   MOZ_ASSERT(ionScript_ == nullptr || ionScript_ == IonDisabledScriptPtr);
 
   baselineScript_.set(script->zone(), baselineScript);
+  baselineState_ = baselineState;
   if (hasBaselineScript()) {
     AddCellMemory(script, baselineScript_->allocBytes(),
                   MemoryUse::BaselineScript);

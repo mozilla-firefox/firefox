@@ -173,8 +173,7 @@ inline bool JSScript::canBaselineCompile() const {
   bool disabled = baselineDisabled();
 #ifdef DEBUG
   if (hasJitScript()) {
-    bool jitScriptDisabled =
-        jitScript()->baselineScript_ == js::jit::BaselineDisabledScriptPtr;
+    bool jitScriptDisabled = jitScript()->isBaselineDisabled();
     MOZ_ASSERT(disabled == jitScriptDisabled);
   }
 #endif
@@ -197,8 +196,7 @@ inline void JSScript::disableBaselineCompile() {
   MOZ_ASSERT(!hasBaselineScript());
   setFlag(MutableFlags::BaselineDisabled);
   if (hasJitScript()) {
-    jitScript()->setBaselineScriptImpl(this,
-                                       js::jit::BaselineDisabledScriptPtr);
+    jitScript()->setIsBaselineDisabled();
   }
 }
 

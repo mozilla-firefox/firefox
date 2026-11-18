@@ -4297,8 +4297,7 @@ void MacroAssembler::loadJitCodeRawNoIon(Register func, Register dest,
 #ifdef DEBUG
   // If we have an IonScript, we must also have a BaselineScript.
   Label hasBaselineScript;
-  branchPtr(Assembler::Above, scratch, ImmPtr(BaselineCompilingScriptPtr),
-            &hasBaselineScript);
+  branchPtr(Assembler::NotEqual, scratch, ImmPtr(nullptr), &hasBaselineScript);
   assumeUnreachable("JitScript has IonScript without BaselineScript");
   bind(&hasBaselineScript);
 #endif

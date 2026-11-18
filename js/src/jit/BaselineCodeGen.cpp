@@ -1902,20 +1902,20 @@ bool BaselineInterpreterCodeGen::emitWarmUpCounterIncrement() {
     masm.branch32(Assembler::BelowOrEqual, countReg,
                   Imm32(JitOptions.baselineJitWarmUpThreshold), &done);
 
-    // Decide what to do based on the state of the baseline script field.
-    Label notSpecial;
     masm.loadPtr(baselineScriptAddr, scratch);
-    masm.branchTestPtr(Assembler::Zero, scratch, Imm32(SpecialScriptBit),
-                       &notSpecial);
 
-    // The baseline script is a special tagged value: disabled, queued, or
-    // compiling. If it's queued and the warmup count is high enough,
-    // trigger a batch compilation with whatever is currently queued.
-    // Otherwise, we're done.
+    // Decide what to do based on the baseline state field.
+    Label notSpecial;
+    Address baselineStateAddr(scriptReg, JitScript::offsetOfBaselineState());
+    masm.branch8(Assembler::Below, baselineStateAddr,
+                 Imm32(JitScript::firstSpecialScriptState()), &notSpecial);
+
+    // The baseline script is disabled, queued, or compiling. If it's queued and
+    // the warmup count is high enough, trigger a batch compilation with
+    // whatever is currently queued. Otherwise, we're done.
     uint32_t eagerWarmUpThreshold = JitOptions.baselineJitWarmUpThreshold * 2;
-    masm.branchPtr(Assembler::NotEqual, scratch,
-                   ImmPtr(BaselineQueuedScriptPtr), &done);
-
+    masm.branch8(Assembler::NotEqual, baselineStateAddr,
+                 Imm32(JitScript::queuedScriptState()), &done);
     masm.branch32(Assembler::Below, countReg, Imm32(eagerWarmUpThreshold),
                   &done);
 
@@ -1925,8 +1925,7 @@ bool BaselineInterpreterCodeGen::emitWarmUpCounterIncrement() {
 
     // If we already have a valid BaselineScript, tier up now.
     Label notCompiled;
-    masm.branchPtr(Assembler::BelowOrEqual, scratch,
-                   ImmPtr(BaselineCompilingScriptPtr), &notCompiled);
+    masm.branchPtr(Assembler::Equal, scratch, ImmPtr(nullptr), &notCompiled);
 
     // We just need to update our frame, find the OSR address, and jump to it.
     saveInterpreterPCReg();
@@ -1951,7 +1950,7 @@ bool BaselineInterpreterCodeGen::emitWarmUpCounterIncrement() {
 
     // Otherwise, add this script to the queue.
     // First, mark the jitscript as queued.
-    masm.storePtr(ImmPtr(BaselineQueuedScriptPtr), baselineScriptAddr);
+    masm.store8(Imm32(JitScript::queuedScriptState()), baselineStateAddr);
 
     Register queueReg = scratch;
     masm.loadBaselineCompileQueue(queueReg);
@@ -2005,9 +2004,9 @@ bool BaselineInterpreterCodeGen::emitWarmUpCounterIncrement() {
   masm.branch32(Assembler::BelowOrEqual, countReg,
                 Imm32(JitOptions.baselineJitWarmUpThreshold), &done);
 
-  masm.branchTestPtr(Assembler::NonZero,
-                     Address(scriptReg, JitScript::offsetOfBaselineScript()),
-                     Imm32(SpecialScriptBit), &done);
+  masm.branch8(Assembler::AboveOrEqual,
+               Address(scriptReg, JitScript::offsetOfBaselineState()),
+               Imm32(JitScript::firstSpecialScriptState()), &done);
   {
     prepareVMCall();
 
