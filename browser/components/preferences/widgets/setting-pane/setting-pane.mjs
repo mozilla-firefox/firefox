@@ -50,6 +50,8 @@ function shouldGoBackToParent(win, parentCategory) {
  */
 
 export class SettingPane extends MozLitElement {
+  #internals;
+
   static properties = {
     name: { type: String },
     isSubPane: { type: Boolean },
@@ -69,6 +71,8 @@ export class SettingPane extends MozLitElement {
 
   constructor() {
     super();
+    this.#internals = this.attachInternals();
+    this.#internals.role = "region";
     /** @type {string} */
     this.name = undefined;
     /** @type {boolean} */
@@ -93,6 +97,12 @@ export class SettingPane extends MozLitElement {
     let result = await super.getUpdateComplete();
     await this.pageHeaderEl.updateComplete;
     return result;
+  }
+
+  async updated() {
+    await this.pageHeaderEl?.updateComplete;
+    let headingEl = this.pageHeaderEl?.headingEl;
+    this.#internals.ariaLabelledByElements = headingEl ? [headingEl] : null;
   }
 
   goBack() {

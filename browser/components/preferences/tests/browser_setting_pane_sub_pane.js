@@ -111,6 +111,56 @@ describe("setting-pane", () => {
     );
   });
 
+  it("exposes the sub-pane as a region labelled by its heading", async () => {
+    let pane = doc.querySelector(
+      'setting-pane[data-category="paneTestSubPane"]'
+    );
+
+    let paneLoaded = waitForPaneChange("testSubPane");
+    EventUtils.synthesizeMouseAtCenter(
+      getSettingControl("testLoadSubPane"),
+      {},
+      win
+    );
+    await paneLoaded;
+    await pane.updateComplete;
+
+    let pageHeader = pane.pageHeaderEl;
+    let headingText = pageHeader.headingEl.textContent.trim();
+    ok(headingText, "The heading has text");
+
+    let accService = Cc["@mozilla.org/accessibilityService;1"].getService(
+      Ci.nsIAccessibilityService
+    );
+    let accessible;
+    await TestUtils.waitForCondition(() => {
+      accessible = accService.getAccessibleFor(pane);
+      return accessible?.name == headingText;
+    }, "Pane accessible is named by the heading");
+    is(
+      accessible.role,
+      Ci.nsIAccessibleRole.ROLE_REGION,
+      "Pane is exposed as a region"
+    );
+    is(accessible.name, headingText, "Pane is labelled by the heading");
+
+    pane.onSearchPane = true;
+    await pane.updateComplete;
+    is(pageHeader.headingEl.localName, "h3", "Heading is re-rendered as h3");
+    await TestUtils.waitForCondition(
+      () => accService.getAccessibleFor(pane)?.name == headingText,
+      "Pane accessible is named by the re-rendered heading"
+    );
+    is(
+      accService.getAccessibleFor(pane).name,
+      headingText,
+      "Pane is still labelled after the heading level changes"
+    );
+
+    pane.onSearchPane = false;
+    await pane.updateComplete;
+  });
+
   it("does not show breadcrumbs on top-level pane", async () => {
     let pane = doc.querySelector(
       'setting-pane[data-category="paneTestTopLevel"]'
