@@ -1164,6 +1164,7 @@ add_task(async function test_suggestJourneysToResume() {
       makeMemory("Older journey", { created_at: JOURNEY_TEST_TIME - 60_000 }),
       makeMemory("Newer journey", {
         created_at: JOURNEY_TEST_TIME,
+        strength: 12.5,
         pages: Array.from({ length: MAX_NUM_URLS_PER_MEMORY + 1 }, (_, i) =>
           makePage(`Newer page ${i}`, {
             lastVisitDate: JOURNEY_TEST_TIME + i * 60_000,
@@ -1244,6 +1245,16 @@ add_task(async function test_suggestJourneysToResume() {
         },
       ],
       "Suggests stored journeys only for live, unsuppressed, non-sensitive memories with resolvable URLs, newest first, with the newest preview tabs in visit order"
+    );
+    Assert.deepEqual(
+      (await JourneyManager.suggestJourneysToResume())[0].telemetryData,
+      {
+        lastVisitDate: JOURNEY_TEST_TIME + MAX_NUM_URLS_PER_MEMORY * 60_000,
+        memoryCreatedAt: JOURNEY_TEST_TIME,
+        memoryStrength: 12.5,
+        componentSummaryCount: 0,
+      },
+      "Telemetry data has the newest preview tab's visit date in ms"
     );
     const suggestedIds = async (...args) =>
       (await JourneyManager.suggestJourneysToResume(...args)).map(

@@ -17,6 +17,7 @@ export const ToolUITelemetry = {
    * @param {number} data.message_seq - The conversation message count
    * @param {string} data.action - The browser action being prompted for
    * @param {string} data.prompt_type - The type of prompt being shown
+   * @param {"browser_action" | "resume"} data.entrypoint - What opened the prompt
    * @param {string} data.reason - The reason for the prompt
    * @param {number} data.candidates - Number of candidates being acted upon
    * @param {number} data.preselected - Number of preselected items
@@ -34,6 +35,7 @@ export const ToolUITelemetry = {
    * @param {number} data.message_seq - The conversation message count
    * @param {string} data.action - The browser action being performed
    * @param {string} data.prompt_type - The type of prompt that was responded to
+   * @param {"browser_action" | "resume"} data.entrypoint - What opened the prompt
    * @param {string} data.response - The user's response (confirm/cancel)
    * @param {number} data.selected - Number of items selected
    * @param {string} data.reason - The reason for the action

@@ -2469,10 +2469,12 @@ smart_window:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2037203
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2061465
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2078565
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2091776
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2037203
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2061465
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2078565
+      - https://phabricator.services.mozilla.com/D341858
     data_sensitivity:
       - interaction
     notification_emails: *emails
@@ -2487,6 +2489,12 @@ smart_window:
       prompt_type:
         type: string
         description: Type of prompt shown - disambiguation, batch_preview, or safety_confirmation
+      entrypoint: &browser_action_entrypoint
+        type: string
+        description: >
+          Where the prompt came from, one of: browser_action (a chat request
+          handled by the manage_tabs tool) or resume (a resume card, or a
+          "Pick up where you left off" pill when resume cards are disabled)
       reason:
         type: string
         description: Why the prompt was shown - multiple_matches, low_confidence, batch_action, pinned_tab, grouped_tab, active_tab, last_tab, user_action
@@ -2506,9 +2514,11 @@ smart_window:
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2037203
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2061465
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2091776
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2037203
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2061465
+      - https://phabricator.services.mozilla.com/D341858
     data_sensitivity:
       - interaction
     notification_emails: *emails
@@ -2522,6 +2532,7 @@ smart_window:
         type: string
         description: >
           Type of prompt shown: disambiguation, batch_preview, or safety_confirmation
+      entrypoint: *browser_action_entrypoint
       response:
         type: string
         description: >
@@ -2542,8 +2553,10 @@ smart_window:
       User clicks "Select all" or "Deselect all" on a tab confirmation card.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2072041
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2091776
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2072041
+      - https://phabricator.services.mozilla.com/D341858
     data_sensitivity:
       - interaction
     notification_emails: *emails
@@ -2557,11 +2570,7 @@ smart_window:
         type: string
         description: >
           Type of prompt shown: disambiguation, batch_preview, or safety_confirmation
-      entrypoint:
-        type: string
-        description: >
-          Where the card came from: browser_action (a chat request handled by
-          the manage_tabs tool) or resume (a "Pick up where you left off" pill)
+      entrypoint: *browser_action_entrypoint
       toggle:
         type: string
         description: >
@@ -2787,8 +2796,10 @@ smart_window:
       Recorded when the user interacts with a resume card.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2067873
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2091776
     data_reviews:
       - https://phabricator.services.mozilla.com/D332941
+      - https://phabricator.services.mozilla.com/D341858
     data_sensitivity:
       - interaction
     notification_emails: *emails
@@ -2806,6 +2817,64 @@ smart_window:
         type: quantity
         description: >
           The position (0-index) of the card acted on.
+      rank: &resume_card_rank
+        type: quantity
+        description: >
+          The card's position (0-index) when the section loaded. Unlike
+          position, it does not shift when other cards are removed.
+      memory_strength: &resume_card_memory_strength
+        type: string
+        description: >
+          The strength of the card's underlying memory when suggested,
+          recorded as a decimal string to preserve fractional values.
+      memory_age: &resume_card_memory_age
+        type: quantity
+        unit: ms
+        description: >
+          Milliseconds since the oldest memory merged into the card's
+          underlying memory was created, or since the underlying memory was
+          created if it was never merged.
+      last_visit_age: &resume_card_last_visit_age
+        type: quantity
+        unit: ms
+        description: >
+          Milliseconds since the most recent visit to any of the card's preview
+          tabs.
+      component_summaries: &resume_card_component_summaries
+        type: quantity
+        unit: count
+        description: >
+          The number of distinct memories, by summary text, merged into the
+          card's underlying memory, including memories from earlier merges.
+
+  resume_card_impression:
+    type: event
+    description: >
+      Recorded once per card per resume-section instance, the first time the
+      card is visible: at load, after "Show more", or when it moves into view
+      after another card is removed. A new section, such as after a restart,
+      records its cards again.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2091776
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D341858
+    data_sensitivity:
+      - interaction
+    notification_emails: *emails
+    expires: 175
+    extra_keys:
+      chat_id: *chat_id
+      location: *location
+      message_seq: *message_seq
+      position:
+        type: quantity
+        description: >
+          The position (0-index) of the card when it became visible.
+      rank: *resume_card_rank
+      memory_strength: *resume_card_memory_strength
+      memory_age: *resume_card_memory_age
+      last_visit_age: *resume_card_last_visit_age
+      component_summaries: *resume_card_component_summaries
 
   resume_section_action:
     type: event

@@ -324,7 +324,7 @@ export class ToolUI {
     selected,
     reason = "user_action",
   }) {
-    const { conversation, mode } = context;
+    const { conversation, mode, message } = context;
 
     lazy.ToolUITelemetry.recordBrowserActionPromptResponse({
       location: mode,
@@ -332,6 +332,9 @@ export class ToolUI {
       message_seq: conversation.messageCount,
       action: actionType,
       prompt_type: PROMPT_TYPES.SAFETY_CONFIRMATION,
+      entrypoint: message?.toolUIData?.isResumeActivity
+        ? "resume"
+        : "browser_action",
       response,
       selected,
       reason,
@@ -1249,6 +1252,7 @@ export class ToolUI {
       ...telemetryData,
       action: actionType,
       prompt_type: PROMPT_TYPES.SAFETY_CONFIRMATION,
+      entrypoint: toolUIData.isResumeActivity ? "resume" : "browser_action",
       reason,
       candidates: tabs.length,
       preselected: 0, // we currently don't preselect any tabs

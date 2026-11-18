@@ -727,9 +727,17 @@ async function stubResumeActivityGenerationPool(sb, memoryCount) {
     url: `https://example.com/pool-${i}`,
     title: `Example ${i}`,
   }));
+  // Memory `i` is `i` days old with `i` component summaries, so suggestions
+  // keep pool order and each card's telemetry is predictable.
   const memories = urls.map((page, i) => ({
     id: `pool-memory-${i}`,
     memory_summary: `Research topic ${i}`,
+    strength: i * 4.25,
+    created_at: Date.now() - i * 24 * 60 * 60 * 1000,
+    component_summaries: Array.from({ length: i }, () => ({
+      memory_summary: "Merged topic",
+      reasoning: "Merged",
+    })),
     sensitivity_category: MEMORY_SENSITIVITY_CATEGORY_NOT_SENSITIVE,
     source_ids: {
       history_source_ids: [PlacesUtils.history.hashURL(page.url)],

@@ -59,11 +59,13 @@ async function createResumeCard(doc, { content, journeyId = "memory-1" }) {
  * Runs a test callback with a generated, rendered resume card.
  *
  * @param {Function} stub - Resume-activity generation stub
- * @param {Function} run - Receives {win, aiWindow, section, card, memories}
+ * @param {Function} run - Receives {win, aiWindow, section, card, memories,
+ *   since}, where `since` is a Date.now() value taken before the stub ran
  */
 async function withRenderedResumeCard(stub, run) {
   await SpecialPowers.pushPrefEnv({ set: RESUME_ACTIVITY_PREFS });
 
+  const since = Date.now();
   const { memories, cleanup } = await stub();
   let win;
   try {
@@ -81,7 +83,7 @@ async function withRenderedResumeCard(stub, run) {
       () => section.shadowRoot.querySelector("smartwindow-resume-card"),
       "Wait for a resume card to render"
     );
-    await run({ win, aiWindow, section, card, memories });
+    await run({ win, aiWindow, section, card, memories, since });
   } finally {
     if (win) {
       await BrowserTestUtils.closeWindow(win);
@@ -719,6 +721,7 @@ add_task(async function test_resume_card_click_shows_confirmation_card() {
 
     await SpecialPowers.pushPrefEnv({ set: RESUME_ACTIVITY_PREFS });
 
+    const since = Date.now();
     const resumeActivityStubs = await stubResumeActivityGeneration(sb);
     let win;
     try {
@@ -745,8 +748,16 @@ add_task(async function test_resume_card_click_shows_confirmation_card() {
       assertResumeAction(
         "resumeCardAction",
         aiWindow,
-        { action: "card_click", position: "0" },
-        "Clicking the card records card_click"
+        {
+          action: "card_click",
+          position: "0",
+          rank: "0",
+          component_summaries: "0",
+        },
+        "Clicking the card records card_click",
+        // The memory has no created_at, and its newest preview tab was
+        // visited 2 minutes before the stub ran.
+        { lastVisitAge: 2 * 60_000, since }
       );
 
       await TestUtils.waitForCondition(
@@ -765,6 +776,20 @@ add_task(async function test_resume_card_click_shows_confirmation_card() {
         assistantMessage.toolUIData?.uiType,
         "tab-group-confirmation",
         "Clicking the card should attach the same confirmation card as a resume pill"
+      );
+      // fetchWithHistory is stubbed, so stand in for a streamed update.
+      aiWindow.conversation.emit(
+        "chat-conversation:message-update",
+        assistantMessage
+      );
+      const [prompt] = await TestUtils.waitForCondition(
+        () => Glean.smartWindow.browserActionPrompt.testGetValue(),
+        "Wait for the confirmation card's prompt event"
+      );
+      Assert.equal(
+        prompt.extra.entrypoint,
+        "resume",
+        "The confirmation card's prompt records the resume entrypoint"
       );
     } finally {
       if (win) {
@@ -807,14 +832,17 @@ async function clickResumeCardMenuItem(card, l10nId) {
  *
  * @param {"resumeCardAction"|"resumeSectionAction"} metric
  * @param {Element} aiWindow
- * @param {object} expected - Extras beyond the shared telemetry context
+ * @param {object} expected - Extras beyond the shared telemetry context and
+ *   the ages
  * @param {string} message
+ * @param {object} [ages] - Expected ages for a resume card event, as taken by
+ *   checkAges
  */
-function assertResumeAction(metric, aiWindow, expected, message) {
+function assertResumeAction(metric, aiWindow, expected, message, ages) {
   const event = Glean.smartWindow[metric].testGetValue()?.at(-1);
   Assert.ok(event, `${message}: an action event was recorded`);
   Assert.deepEqual(
-    event.extra,
+    ages ? checkAges(event.extra, ages) : event.extra,
     {
       chat_id: String(aiWindow.conversationId),
       location: "fullpage",
@@ -823,6 +851,79 @@ function assertResumeAction(metric, aiWindow, expected, message) {
     },
     message
   );
+}
+
+/**
+ * Checks a resume card event's memory_age and last_visit_age, which grow with
+ * the time between the stub running and the event being recorded, and
+ * returns the other extras for an exact comparison.
+ *
+ * @param {object} extra - The event's extras
+ * @param {object} ages
+ * @param {number} [ages.memoryAge] - The memory's age, in ms, when the stub
+ *   ran, or undefined if the memory has no created_at
+ * @param {number} ages.lastVisitAge - The newest preview tab visit's age, in
+ *   ms, when the stub ran
+ * @param {number} ages.since - A Date.now() value taken before the stub ran
+ * @returns {object}
+ */
+function checkAges(extra, { memoryAge, lastVisitAge, since }) {
+  const { memory_age, last_visit_age, ...rest } = extra;
+  const elapsed = Date.now() - since;
+  if (memoryAge === undefined) {
+    Assert.equal(memory_age, undefined, "memory_age is not recorded");
+  } else {
+    Assert.greaterOrEqual(Number(memory_age), memoryAge, "memory_age minimum");
+    Assert.lessOrEqual(
+      Number(memory_age),
+      memoryAge + elapsed,
+      "memory_age maximum"
+    );
+  }
+  Assert.greaterOrEqual(
+    Number(last_visit_age),
+    lastVisitAge,
+    "last_visit_age minimum"
+  );
+  Assert.lessOrEqual(
+    Number(last_visit_age),
+    lastVisitAge + elapsed,
+    "last_visit_age maximum"
+  );
+  return rest;
+}
+
+/**
+ * Returns the suggestion extras, other than the ages, recorded for a
+ * stubResumeActivityGenerationPool card.
+ *
+ * @param {number} rank - The card's load-time index
+ * @returns {object}
+ */
+function poolCardFeatures(rank) {
+  return {
+    rank: String(rank),
+    memory_strength: String(rank * 4.25),
+    component_summaries: String(rank),
+  };
+}
+
+/**
+ * Returns the checkAges ages for a stubResumeActivityGenerationPool card.
+ * Memory `rank` is `rank` days old, and its only preview tab was visited
+ * `memoryCount - rank` minutes before the stub ran.
+ *
+ * @param {number} rank - The card's load-time index
+ * @param {number} memoryCount - The memoryCount passed to the stub
+ * @param {number} since - A Date.now() value taken before the stub ran
+ * @returns {object}
+ */
+function poolCardAges(rank, memoryCount, since) {
+  return {
+    memoryAge: rank * DAY_MS,
+    lastVisitAge: (memoryCount - rank) * 60_000,
+    since,
+  };
 }
 
 add_task(async function test_resume_cards_displayed_telemetry() {
@@ -975,7 +1076,7 @@ add_task(async function test_resume_card_action_telemetry() {
   try {
     await withRenderedResumeCard(
       () => stubResumeActivityGenerationPool(sb, 3),
-      async ({ aiWindow, section }) => {
+      async ({ aiWindow, section, since }) => {
         sb.stub(ToolUI, "openOrGroupTabs").resolves();
         await TestUtils.waitForCondition(
           () => Glean.smartWindow.resumeCardsDisplayed.testGetValue(),
@@ -988,8 +1089,9 @@ add_task(async function test_resume_card_action_telemetry() {
         assertResumeAction(
           "resumeCardAction",
           aiWindow,
-          { action: "open_tabs", position: "1" },
-          "Open tabs records the card's position"
+          { action: "open_tabs", position: "1", ...poolCardFeatures(1) },
+          "Open tabs records the card's position",
+          poolCardAges(1, 3, since)
         );
 
         synthesizeClick(
@@ -1024,8 +1126,9 @@ add_task(async function test_resume_card_action_telemetry() {
         assertResumeAction(
           "resumeCardAction",
           aiWindow,
-          { action: "snooze", position: "1" },
-          "Snooze records the card's position"
+          { action: "snooze", position: "1", ...poolCardFeatures(1) },
+          "Snooze records the card's position",
+          poolCardAges(1, 3, since)
         );
 
         // The close button only appears while the card is hovered.
@@ -1049,8 +1152,9 @@ add_task(async function test_resume_card_action_telemetry() {
         assertResumeAction(
           "resumeCardAction",
           aiWindow,
-          { action: "dismiss", position: "0" },
-          "The close button records dismiss"
+          { action: "dismiss", position: "0", ...poolCardFeatures(0) },
+          "The close button records dismiss",
+          poolCardAges(0, 3, since)
         );
         // Removing a card triggers the initial-impression update path;
         // ensure the section isn't recorded again.
@@ -1076,7 +1180,7 @@ add_task(async function test_resume_card_resume_button_telemetry() {
   try {
     await withRenderedResumeCard(
       () => stubResumeActivityGenerationPool(sb, 3),
-      async ({ aiWindow, section }) => {
+      async ({ aiWindow, section, since }) => {
         Services.fog.testResetFOG();
         const card = section.shadowRoot.querySelectorAll(
           "smartwindow-resume-card"
@@ -1087,8 +1191,9 @@ add_task(async function test_resume_card_resume_button_telemetry() {
         assertResumeAction(
           "resumeCardAction",
           aiWindow,
-          { action: "resume", position: "1" },
-          "The Resume button records resume"
+          { action: "resume", position: "1", ...poolCardFeatures(1) },
+          "The Resume button records resume",
+          poolCardAges(1, 3, since)
         );
         Assert.equal(
           Glean.smartWindow.resumeCardAction.testGetValue().length,
@@ -1098,6 +1203,100 @@ add_task(async function test_resume_card_resume_button_telemetry() {
         await TestUtils.waitForCondition(
           () => fetchWithHistoryStub.calledOnce,
           "Wait for the resume flow to finish before closing the window"
+        );
+      }
+    );
+  } finally {
+    sb.restore();
+  }
+});
+
+add_task(async function test_resume_card_impression_telemetry() {
+  const sb = sinon.createSandbox();
+  Services.fog.testResetFOG();
+  try {
+    await withRenderedResumeCard(
+      () => stubResumeActivityGenerationPool(sb, 4),
+      async ({ aiWindow, section, since }) => {
+        const context = {
+          chat_id: String(aiWindow.conversationId),
+          location: "fullpage",
+          message_seq: "0",
+        };
+        const waitForImpressions = count =>
+          TestUtils.waitForCondition(() => {
+            const events =
+              Glean.smartWindow.resumeCardImpression.testGetValue();
+            return events?.length === count && events;
+          }, `Wait for ${count} card impressions`);
+
+        let events = await waitForImpressions(2);
+        Assert.deepEqual(
+          events.map(({ extra }, rank) =>
+            checkAges(extra, poolCardAges(rank, 4, since))
+          ),
+          [
+            { ...context, position: "0", ...poolCardFeatures(0) },
+            { ...context, position: "1", ...poolCardFeatures(1) },
+          ],
+          "The two collapsed cards are recorded at load"
+        );
+
+        const firstCard = section.shadowRoot.querySelector(
+          "smartwindow-resume-card"
+        );
+        EventUtils.synthesizeMouseAtCenter(
+          firstCard,
+          { type: "mousemove" },
+          firstCard.documentGlobal
+        );
+        synthesizeClick(
+          firstCard.shadowRoot.querySelector(".resume-card-dismiss")
+        );
+        events = await waitForImpressions(3);
+        Assert.deepEqual(
+          checkAges(events[2].extra, poolCardAges(2, 4, since)),
+          { ...context, position: "1", ...poolCardFeatures(2) },
+          "A card that moves into view after a dismiss is recorded"
+        );
+
+        synthesizeClick(
+          section.shadowRoot.querySelector(".resume-section-toggle")
+        );
+        events = await waitForImpressions(4);
+        Assert.deepEqual(
+          checkAges(events[3].extra, poolCardAges(3, 4, since)),
+          { ...context, position: "2", ...poolCardFeatures(3) },
+          "Show more records the newly visible card"
+        );
+
+        // Collapse, then expand again. Every card is already recorded, so this
+        // must not record any more impressions.
+        await section.updateComplete;
+        synthesizeClick(
+          section.shadowRoot.querySelector(".resume-section-toggle")
+        );
+        await section.updateComplete;
+        synthesizeClick(
+          section.shadowRoot.querySelector(".resume-section-toggle")
+        );
+        await section.updateComplete;
+        Assert.equal(
+          Glean.smartWindow.resumeCardImpression.testGetValue().length,
+          4,
+          "Collapsing and re-expanding does not record duplicate impressions"
+        );
+
+        const card = section.shadowRoot.querySelectorAll(
+          "smartwindow-resume-card"
+        )[1];
+        await clickResumeCardMenuItem(card, "aiwindow-resume-card-snooze");
+        assertResumeAction(
+          "resumeCardAction",
+          aiWindow,
+          { action: "snooze", position: "1", ...poolCardFeatures(2) },
+          "rank stays fixed after another card is removed",
+          poolCardAges(2, 4, since)
         );
       }
     );

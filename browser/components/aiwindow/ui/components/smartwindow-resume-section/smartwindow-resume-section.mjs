@@ -24,7 +24,9 @@ const TELEMETRY_EMPTY_STATE = {
 /**
  * A collapsible grid of resume cards. Card events bubble to the caller.
  *
- * @property {Array<{content: object, memory: object}>} cards - Journeys to render as cards
+ * @property {Array<{content: object, memory: object, rank: number, telemetryData: object}>} cards
+ *   - Journeys to render as cards. `rank` is the card's load-time index and
+ *   `telemetryData` holds the raw values behind its Glean extras.
  * @property {string} emptyReason - Why `cards` is empty (a
  *   RESUME_SECTION_EMPTY_REASON value), or null/undefined to render nothing
  *   while empty
@@ -44,6 +46,7 @@ export class SmartwindowResumeSection extends MozLitElement {
   #visibilityHandler = null;
   #displayedFrame = 0;
   #hasRecordedDisplayed = false;
+  #impressedIds = new Set();
 
   constructor() {
     super();
@@ -69,6 +72,14 @@ export class SmartwindowResumeSection extends MozLitElement {
         changedProperties.has("emptyReason"))
     ) {
       this.#recordDisplayedWhenSeen();
+    }
+    // Cards become visible after load via "Show more", or by moving into the
+    // collapsed slots when a visible card is removed.
+    if (
+      this.#hasRecordedDisplayed &&
+      (changedProperties.has("cards") || changedProperties.has("expanded"))
+    ) {
+      this.#recordImpressions();
     }
   }
 
@@ -119,6 +130,45 @@ export class SmartwindowResumeSection extends MozLitElement {
         total_cards: this.cards.length,
       });
       this.#hasRecordedDisplayed = true;
+      this.#recordImpressions();
+    });
+  }
+
+  /**
+   * Returns the Glean extras that describe a card's suggestion.
+   *
+   * @param {{rank: number, telemetryData: object}} card
+   * @returns {{rank: number, memory_strength: ?string, memory_age: ?number, last_visit_age: ?number, component_summaries: ?number}}
+   */
+  #cardFeatures({ rank, telemetryData = {} }) {
+    const msSince = ms => (Number.isFinite(ms) ? Date.now() - ms : undefined);
+    return {
+      rank,
+      memory_strength: telemetryData.memoryStrength?.toString(),
+      memory_age: msSince(telemetryData.memoryCreatedAt),
+      last_visit_age: msSince(telemetryData.lastVisitDate),
+      component_summaries: telemetryData.componentSummaryCount,
+    };
+  }
+
+  /**
+   * Records Glean event "resume_card_impression" once for each card the
+   * first time it is visible.
+   */
+  #recordImpressions() {
+    if (this.ownerDocument.hidden || !this.checkVisibility()) {
+      return;
+    }
+    this.cards.slice(0, this.#visibleCardCount).forEach((card, position) => {
+      if (this.#impressedIds.has(card.memory.id)) {
+        return;
+      }
+      this.#impressedIds.add(card.memory.id);
+      Glean.smartWindow.resumeCardImpression.record({
+        ...this.getTelemetryContext(),
+        position,
+        ...this.#cardFeatures(card),
+      });
     });
   }
 
@@ -145,10 +195,15 @@ export class SmartwindowResumeSection extends MozLitElement {
    * @param {string} journeyId - The card the user clicked.
    */
   #recordCardAction(action, journeyId) {
+    const position = this.cards.findIndex(
+      ({ memory }) => memory.id === journeyId
+    );
+    const card = this.cards[position];
     Glean.smartWindow.resumeCardAction.record({
       ...this.getTelemetryContext(),
       action,
-      position: this.cards.findIndex(({ memory }) => memory.id === journeyId),
+      position,
+      ...(card && this.#cardFeatures(card)),
     });
   }
 

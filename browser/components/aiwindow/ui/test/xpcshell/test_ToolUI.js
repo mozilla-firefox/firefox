@@ -514,6 +514,74 @@ add_task(async function test_handleUpdate_toggle_all_telemetry() {
 });
 
 /**
+ * Test that the prompt and prompt-response events record where the card came
+ * from
+ */
+add_task(async function test_prompt_and_response_entrypoint_telemetry() {
+  const originalPrompt = ToolUITelemetry.recordBrowserActionPrompt;
+  const originalResponse = ToolUITelemetry.recordBrowserActionPromptResponse;
+  let prompts = [];
+  let responses = [];
+  ToolUITelemetry.recordBrowserActionPrompt = data => prompts.push(data);
+  ToolUITelemetry.recordBrowserActionPromptResponse = data =>
+    responses.push(data);
+
+  const showAndCancel = async toolUIData => {
+    const conversation = new ChatConversation({});
+    const message = conversation.addAssistantMessage("text", "Confirm?");
+    message.toolUIData = { toolCallId: "entrypoint", ...toolUIData };
+    ToolUI.handleUIDisplayTelemetry(message.toolUIData, {
+      location: "fullpage",
+      chat_id: conversation.id,
+      message_seq: conversation.messageCount,
+    });
+    await ToolUI.handleUpdate(
+      {
+        messageId: message.id,
+        toolCallId: "entrypoint",
+        updateType: "cancel-tab-selection",
+        updateData: { actionType: toolUIData.properties.actionType },
+      },
+      conversation,
+      null,
+      "fullpage"
+    );
+  };
+
+  try {
+    await showAndCancel({
+      uiType: "tab-group-confirmation",
+      isResumeActivity: true,
+      properties: { actionType: "open_tabs", tabs: [{}, {}] },
+    });
+    await showAndCancel({
+      uiType: "website-confirmation",
+      properties: { actionType: "close_tabs", tabs: [{}] },
+    });
+
+    Assert.deepEqual(
+      prompts.map(({ action, entrypoint }) => ({ action, entrypoint })),
+      [
+        { action: "open_tabs", entrypoint: "resume" },
+        { action: "close_tabs", entrypoint: "browser_action" },
+      ],
+      "The prompt records the card's entrypoint"
+    );
+    Assert.deepEqual(
+      responses.map(({ action, entrypoint }) => ({ action, entrypoint })),
+      [
+        { action: "open_tabs", entrypoint: "resume" },
+        { action: "close_tabs", entrypoint: "browser_action" },
+      ],
+      "The response records the card's entrypoint"
+    );
+  } finally {
+    ToolUITelemetry.recordBrowserActionPrompt = originalPrompt;
+    ToolUITelemetry.recordBrowserActionPromptResponse = originalResponse;
+  }
+});
+
+/**
  * Test that ToolUI.handleUpdate fails confirmation without valid window
  */
 add_task(async function test_handleUpdate_confirmation_no_window() {
