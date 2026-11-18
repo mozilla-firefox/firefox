@@ -1081,3 +1081,13 @@
    fun:drop_in_place<core::option::Option<style::values::generics::animation::GenericAnimationDuration<style::values::specified::time::Time>>>
    fun:parse_one_animation
 }
+{
+   False positive, seems to happen too late during atexit for valgrind to track
+   Memcheck:Cond
+   fun:Check
+   fun:~CorruptionCanary
+   fun:~PresArenaSuperblock
+   ...
+   fun:__run_exit_handlers
+   fun:exit
+}
