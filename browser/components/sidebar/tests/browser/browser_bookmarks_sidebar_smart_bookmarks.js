@@ -204,6 +204,71 @@ add_task(async function test_bookmarks_smart_bookmark_uses_bookmark_guid() {
   SidebarController.hide();
 });
 
+add_task(async function test_bookmarks_folder_shortcut_matches_folder() {
+  // A folder shortcut must list the folder's children in their position order,
+  // including subfolders, rather than in the order they were created.
+  const moved = await addBookmark({
+    title: "Moved In",
+    url: "https://example.com/shortcut-order-moved",
+  });
+  const folder = await addFolder("Order Shortcut Target");
+  await addBookmark({
+    title: "First",
+    url: "https://example.com/shortcut-order-first",
+    parentGuid: folder.guid,
+  });
+  await addBookmark({
+    title: "Last",
+    url: "https://example.com/shortcut-order-last",
+    parentGuid: folder.guid,
+  });
+  const subfolder = await addFolder("Nested Folder", folder.guid);
+  await addBookmark({
+    title: "Inside Nested",
+    url: "https://example.com/shortcut-order-nested",
+    parentGuid: subfolder.guid,
+  });
+  await PlacesUtils.bookmarks.update({
+    guid: moved.guid,
+    parentGuid: folder.guid,
+    index: 1,
+  });
+  const shortcut = await PlacesUtils.bookmarks.insert({
+    parentGuid: PlacesUtils.bookmarks.toolbarGuid,
+    title: "Order Shortcut",
+    url: `place:parent=${folder.guid}`,
+  });
+
+  const { component } = await showBookmarksSidebar(window);
+  const tabList = component.bookmarkList;
+  const toolbarDetails = await openToolbarFolder(tabList);
+  const toolbarList = toolbarDetails.querySelector("sidebar-bookmark-list");
+  const shortcutFolder =
+    await SidebarTestUtils.bookmarks.findBookmarkItemByGuid(
+      toolbarList,
+      "folderEls",
+      shortcut.guid
+    );
+  await openFolder(shortcutFolder);
+
+  const shortcutList = shortcutFolder.querySelector("sidebar-bookmark-list");
+  Assert.deepEqual(
+    shortcutList.tabItems.map(item => item.title),
+    ["First", "Moved In", "Last", "Nested Folder"],
+    "Shortcut lists the folder's children in position order."
+  );
+  const nestedFolder = await SidebarTestUtils.bookmarks.findBookmarkItemByGuid(
+    shortcutList,
+    "folderEls",
+    subfolder.guid
+  );
+  ok(nestedFolder, "Subfolder is shown inside the shortcut.");
+
+  await PlacesUtils.bookmarks.remove(shortcut.guid);
+  await PlacesUtils.bookmarks.remove(folder.guid);
+  SidebarTestUtils.closePanel(window);
+});
+
 add_task(async function test_bookmarks_folder_shortcut_uses_folder_icon() {
   // A shortcut to a plain folder should render with a plain folder icon,
   // not the tag-container icon (bug 2047956).

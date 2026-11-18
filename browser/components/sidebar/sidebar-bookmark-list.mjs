@@ -42,6 +42,8 @@ let activeDropList = null;
  * @property {boolean} [isPlaceContainer]
  * @property {boolean} [isTagContainer]
  * @property {boolean} [isTagsRoot]
+ * @property {string} [targetFolderGuid]
+ *   For a folder shortcut, the guid of the folder it points to.
  */
 
 export class SidebarBookmarkList extends SidebarTabList {
@@ -237,6 +239,7 @@ export class SidebarBookmarkList extends SidebarTabList {
           @auxclick=${e => this.#onFolderAuxClick(e, tabItem.guid)}
           @mouseenter=${e => this.#updateFolderTooltip(e, title)}
           .guid=${tabItem.guid}
+          .targetFolderGuid=${tabItem.targetFolderGuid}
         >
           <span
             class="bookmark-folder-title text-truncated-ellipsis"
@@ -252,6 +255,7 @@ export class SidebarBookmarkList extends SidebarTabList {
           @toggle=${e => this.#onFolderToggle(e, tabItem.guid)}
           data-folder-kind=${ifDefined(folderKind)}
           .guid=${tabItem.guid}
+          .targetFolderGuid=${tabItem.targetFolderGuid}
         >
           <summary
             draggable="true"
@@ -462,6 +466,7 @@ export class SidebarBookmarkList extends SidebarTabList {
           return {
             element: details,
             guid: details.guid,
+            targetFolderGuid: details.targetFolderGuid,
             orientation,
             isFolder: true,
           };
@@ -478,7 +483,13 @@ export class SidebarBookmarkList extends SidebarTabList {
         } else {
           orientation = DROP_ON;
         }
-        return { element: el, guid: el.guid, orientation, isFolder: true };
+        return {
+          element: el,
+          guid: el.guid,
+          targetFolderGuid: el.targetFolderGuid,
+          orientation,
+          isFolder: true,
+        };
       }
       if (el.classList?.contains("bookmark-separator") && el.guid) {
         const rect = el.getBoundingClientRect();
@@ -657,6 +668,8 @@ export class SidebarBookmarkList extends SidebarTabList {
     if (
       !target ||
       target.guid === this.#draggedGuid ||
+      (target.targetFolderGuid &&
+        target.targetFolderGuid === this.#draggedGuid) ||
       this.#isFixedSortFolderTarget(target)
     ) {
       this.#cleanupIndicator();
@@ -696,10 +709,12 @@ export class SidebarBookmarkList extends SidebarTabList {
 
   // A query folder (Recently Bookmarked, Recent Tags, or a tag container) has
   // a forced sort order, so we can't drop into it. Such folders are the only
-  // ones tagged with `data-folder-kind`.
+  // ones tagged with `data-folder-kind`, apart from folder shortcuts, which
+  // accept drops on behalf of the folder they point to.
   #isFixedSortFolderTarget(target) {
     return (
       target.isFolder &&
+      !target.targetFolderGuid &&
       target.orientation === DROP_ON &&
       !!target.element?.dataset?.folderKind
     );
@@ -803,7 +818,7 @@ export class SidebarBookmarkList extends SidebarTabList {
     let insertionPoint;
     if (target.orientation === DROP_ON) {
       insertionPoint = {
-        guid: target.guid,
+        guid: target.targetFolderGuid ?? target.guid,
         isTag: false,
         getIndex: async () => lazy.PlacesUtils.bookmarks.DEFAULT_INDEX,
       };

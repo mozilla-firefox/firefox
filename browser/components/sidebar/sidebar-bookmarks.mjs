@@ -1239,7 +1239,18 @@ export class SidebarBookmarks extends SidebarPage {
     return tree;
   }
 
-  async #normalizeBookmarkNode(node, guidToL10nId) {
+  /**
+   * @param {object} node
+   * @param {object} guidToL10nId
+   * @param {Set<string>} [shortcutTargets]
+   *   Guids of the folders that folder shortcuts above this node point to, used
+   *   to stop a shortcut from expanding a folder it is already nested in.
+   */
+  async #normalizeBookmarkNode(
+    node,
+    guidToL10nId,
+    shortcutTargets = new Set()
+  ) {
     if (node.iconUri && !node.iconUri.startsWith("fake-favicon-uri:")) {
       node.icon = node.iconUri;
     } else if (node.uri) {
@@ -1254,7 +1265,10 @@ export class SidebarBookmarks extends SidebarPage {
       node.type === lazy.PlacesUtils.TYPE_X_MOZ_PLACE &&
       node.uri?.startsWith("place:")
     ) {
-      await this.#expandPlaceQuery(node);
+      await this.#expandPlaceQuery(node, shortcutTargets);
+      if (node.targetFolderGuid) {
+        shortcutTargets = new Set(shortcutTargets).add(node.targetFolderGuid);
+      }
     }
     const l10nId = guidToL10nId?.[node.guid];
     if (l10nId) {
@@ -1268,24 +1282,30 @@ export class SidebarBookmarks extends SidebarPage {
     // whole tree; the worst case is an incomplete branch.
     await Promise.allSettled(
       (node.children ?? []).map(child =>
-        this.#normalizeBookmarkNode(child, guidToL10nId)
+        this.#normalizeBookmarkNode(child, guidToL10nId, shortcutTargets)
       )
     );
   }
 
   /**
-   * Execute a smart-bookmark (place:) query off the main thread and attach its
-   * results as children, so it renders as a folder like the legacy bookmarks
-   * sidebar.
+   * Attach children to a smart-bookmark (place:) node, so it renders as a
+   * folder like the legacy bookmarks sidebar.
    *
-   * Uses asyncExecuteLegacyQuery to avoid main-thread I/O. That API delivers
-   * flat result rows rather than a node tree, so the container/leaf structure
-   * is rebuilt here (see #runPlaceQueryAsync / #convertPlaceRow).
+   * A folder shortcut takes its children from the folder it points to, since
+   * the query would only return that folder's bookmarks, ordered by creation
+   * rather than by position.
+   *
+   * Other queries are run with asyncExecuteLegacyQuery to avoid main-thread
+   * I/O. That API delivers flat result rows rather than a node tree, so the
+   * container/leaf structure is rebuilt here (see #runPlaceQueryAsync /
+   * #convertPlaceRow).
    *
    * @param {object} node
    *   The bookmark tree node whose `uri` is a `place:` query.
+   * @param {Set<string>} shortcutTargets
+   *   See #normalizeBookmarkNode.
    */
-  async #expandPlaceQuery(node) {
+  async #expandPlaceQuery(node, shortcutTargets) {
     const queryRef = {};
     const optionsRef = {};
     try {
@@ -1312,6 +1332,21 @@ export class SidebarBookmarks extends SidebarPage {
       (optionsRef.value.resultType ===
         Ci.nsINavHistoryQueryOptions.RESULTS_AS_TAGS_ROOT ||
         queryRef.value.tags?.length === 1);
+    const { rootGuid, tagsGuid } = lazy.PlacesUtils.bookmarks;
+    if (targetGuid && targetGuid !== rootGuid && targetGuid !== tagsGuid) {
+      node.targetFolderGuid = targetGuid;
+      node.children = [];
+      if (!shortcutTargets.has(targetGuid)) {
+        try {
+          const folder =
+            await lazy.PlacesUtils.promiseBookmarksTree(targetGuid);
+          node.children = folder?.children ?? [];
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      return;
+    }
     const ancestorKeys = targetGuid ? new Set([targetGuid]) : new Set();
     try {
       node.children = await this.#runPlaceQueryAsync(
