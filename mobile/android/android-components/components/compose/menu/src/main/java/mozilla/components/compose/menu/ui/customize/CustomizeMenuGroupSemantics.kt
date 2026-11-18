@@ -18,16 +18,20 @@ import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.ui.displayedInGrid
 
 /**
- * Make a group of the customize menu screen a single node for accessibility services, reading the names of its items
- * then, for a group shown in the menu, its position among the shown groups. Its items and drag handle are not separate
- * nodes, and the dimmed items of hidden groups are not read as disabled.
+ * Make a group of the customize menu screen a single node for accessibility services, reading its name and the names of
+ * its items then, for a group shown in the menu, its position among the shown groups. Its items and drag handle are not
+ * separate nodes, and the dimmed items of hidden groups are not read as disabled.
  *
  * @param group The group.
  * @param groups The groups of the screen, as last saved.
  */
 @Composable
 internal fun Modifier.customizeMenuGroupSemantics(group: MenuItemsGroup, groups: CustomizeMenuGroups): Modifier {
-    val label = group.itemNames()
+    val itemNames = group.itemNames()
+    val groupName = group.name?.value
+    val label =
+        groupName?.let { stringResource(R.string.mozac_menu_customize_named_section, it, itemNames) }
+            ?: stringResource(R.string.mozac_menu_customize_unnamed_section, itemNames)
     val shownIndex = groups.shown.indexOfFirst { it.id == group.id }
     val description =
         if (shownIndex == -1) {

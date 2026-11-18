@@ -5,6 +5,7 @@
 package org.mozilla.fenix.components.menu.configuration
 
 import androidx.annotation.VisibleForTesting
+import org.mozilla.fenix.R
 import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.AddToHomeScreen
@@ -146,6 +147,7 @@ object BrowserMenuConfiguration {
                 presentationMode = Grid,
                 items = listOf(Back, Forward, Share, Refresh),
                 isSticky = true,
+                name = R.string.browser_menu_section_page_controls,
             )
         val rest =
             listOf(
@@ -184,16 +186,19 @@ object BrowserMenuConfiguration {
                                 )
                             ),
                         ),
+                    name = R.string.browser_menu_section_tools,
                 ),
                 MenuSectionConfiguration(
                     id = LIBRARY_GROUP_ID,
                     presentationMode = Grid,
                     items = listOf(History, Bookmarks, Downloads, Passwords),
+                    name = R.string.browser_menu_section_library,
                 ),
                 MenuSectionConfiguration(
                     id = ACCOUNTS_AND_SETTINGS_GROUP_ID,
                     presentationMode = Row,
                     items = listOf(MozillaAccount, Settings),
+                    name = R.string.browser_menu_section_accounts_and_settings,
                 ),
                 MenuSectionConfiguration(
                     id = QUIT_GROUP_ID,
@@ -204,6 +209,7 @@ object BrowserMenuConfiguration {
                     id = TABS_CONTROLS_GROUP_ID,
                     presentationMode = Row,
                     items = listOf(NewTab, NewPrivateTab),
+                    name = R.string.browser_menu_section_new_tab,
                 ),
             )
         return if (shouldShowNavigationItemsAtTheTop) listOf(navSection) + rest else rest + navSection

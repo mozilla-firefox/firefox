@@ -116,7 +116,11 @@ class CustomizeMenuContentTest {
     fun `GIVEN more sections than fit on the screen WHEN scrolling to the last one THEN it is shown`() {
         setContent(menuState(shown = List(10) { row("Shown $it") }, hidden = List(10) { row("Hidden $it") }))
 
-        composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasContentDescription("Hidden 9"))
+        composeTestRule
+            .onNode(hasScrollAction())
+            .performScrollToNode(
+                hasContentDescription(testContext.getString(R.string.mozac_menu_customize_unnamed_section, "Hidden 9"))
+            )
 
         sectionText("Hidden 9").assertIsDisplayed()
     }

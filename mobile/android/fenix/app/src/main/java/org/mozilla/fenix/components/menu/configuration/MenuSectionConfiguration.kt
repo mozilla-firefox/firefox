@@ -4,6 +4,8 @@
 
 package org.mozilla.fenix.components.menu.configuration
 
+import androidx.annotation.StringRes
+import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.menu.data.MenuItem
 import mozilla.components.compose.menu.data.MenuItemsGroup
 
@@ -14,12 +16,14 @@ import mozilla.components.compose.menu.data.MenuItemsGroup
  * @property presentationMode How the items in this section should be shown.
  * @property items The items to show in this section.
  * @property isSticky Whether this section should be sticky at the top or bottom of the menu.
+ * @property name Name of this section, read by accessibility services before the names of its items.
  */
 data class MenuSectionConfiguration(
     val id: String,
     val presentationMode: MenuPresentationMode,
     val items: List<FenixMenuItem>,
     val isSticky: Boolean = false,
+    @param:StringRes val name: Int? = null,
 )
 
 /**
@@ -27,21 +31,25 @@ data class MenuSectionConfiguration(
  *
  * @param shownItems The items to show in this menu group.
  */
-internal fun MenuSectionConfiguration.asMenuItemsGroup(shownItems: List<MenuItem>) =
-    when (presentationMode) {
+internal fun MenuSectionConfiguration.asMenuItemsGroup(shownItems: List<MenuItem>): MenuItemsGroup {
+    val groupName = name?.let { Text.Resource(it) }
+    return when (presentationMode) {
         MenuPresentationMode.Row ->
             MenuItemsGroup.Row(
                 id = id,
                 items = shownItems,
                 isSticky = isSticky,
+                name = groupName,
             )
         MenuPresentationMode.Grid ->
             MenuItemsGroup.Grid(
                 id = id,
                 items = shownItems,
                 isSticky = isSticky,
+                name = groupName,
             )
     }
+}
 
 /** How the [FenixMenuItem] should be shown inside a menu section. */
 sealed class MenuPresentationMode {

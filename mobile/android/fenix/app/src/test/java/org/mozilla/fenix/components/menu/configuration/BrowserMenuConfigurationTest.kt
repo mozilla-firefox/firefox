@@ -8,6 +8,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Test
+import org.mozilla.fenix.R
 import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.ACCOUNTS_AND_SETTINGS_GROUP_ID
@@ -351,4 +352,23 @@ class BrowserMenuConfigurationTest {
 
     private fun menuInfo(shown: List<String>, hidden: List<String> = emptyList()) =
         CustomizedMenuInfo(visibleSectionIds = shown, hiddenSectionIds = hidden)
+
+    @Test
+    fun `WHEN getting all the browser menu sections THEN page controls, tools, library, accounts and settings and new tab are named`() {
+        val names = BrowserMenuConfiguration.allSections().associate { it.id to it.name }
+
+        assertEquals(
+            mapOf(
+                PAGE_CONTROLS_GROUP_ID to R.string.browser_menu_section_page_controls,
+                READER_VIEW_GROUP_ID to null,
+                VPN_GROUP_ID to null,
+                TOOLS_GROUP_ID to R.string.browser_menu_section_tools,
+                LIBRARY_GROUP_ID to R.string.browser_menu_section_library,
+                ACCOUNTS_AND_SETTINGS_GROUP_ID to R.string.browser_menu_section_accounts_and_settings,
+                QUIT_GROUP_ID to null,
+                TABS_CONTROLS_GROUP_ID to R.string.browser_menu_section_new_tab,
+            ),
+            names,
+        )
+    }
 }

@@ -80,7 +80,7 @@ class CustomizeMenuAccessibilityTest {
         )
 
         composeTestRule
-            .onNodeWithContentDescription("Hidden 1, Hidden 2")
+            .onNodeWithContentDescription(label("Hidden 1, Hidden 2"))
             .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Disabled))
     }
 
@@ -107,9 +107,29 @@ class CustomizeMenuAccessibilityTest {
         composeTestRule.onNodeWithContentDescription(shownSection("Back, Forward", 1, 1)).assertExists()
     }
 
-    /** What the section read as [label] reads when it is shown at [position] among [count] shown sections. */
-    private fun shownSection(label: String, position: Int, count: Int) =
-        testContext.getString(R.string.mozac_menu_customize_shown_section, label, position, count)
+    @Test
+    fun `GIVEN a named section THEN it reads its name before the names of its items`() {
+        setContent(menuState(shown = listOf(grid(id = "grid", "Back", "Forward").copy(name = Text.String("Controls")))))
+
+        composeTestRule
+            .onNodeWithContentDescription(shownSection("Back, Forward", 1, 1, name = "Controls"))
+            .assertExists()
+    }
+
+    /**
+     * What the section with [itemNames] and [name], if any, reads when it is shown at [position] among [count] shown
+     * sections.
+     */
+    private fun shownSection(itemNames: String, position: Int, count: Int, name: String? = null) =
+        testContext.getString(R.string.mozac_menu_customize_shown_section, label(itemNames, name), position, count)
+
+    /** What the section with [itemNames] and [name], if any, is read as, before its position if it is shown. */
+    private fun label(itemNames: String, name: String? = null) =
+        if (name == null) {
+            testContext.getString(R.string.mozac_menu_customize_unnamed_section, itemNames)
+        } else {
+            testContext.getString(R.string.mozac_menu_customize_named_section, name, itemNames)
+        }
 
     private fun hasRole(role: Role) = SemanticsMatcher.expectValue(SemanticsProperties.Role, role)
 

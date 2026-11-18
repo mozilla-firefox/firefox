@@ -42,4 +42,15 @@ class MenuSectionConfigurationTest {
             section.asMenuItemsGroup(shownItems),
         )
     }
+
+    @Test
+    fun `GIVEN a named section WHEN getting its menu group THEN the group has the same name`() {
+        val name = android.R.string.ok
+        val row = MenuSectionConfiguration(id = "row", presentationMode = Row, items = listOf(FindInPage), name = name)
+        val grid =
+            MenuSectionConfiguration(id = "grid", presentationMode = Grid, items = listOf(FindInPage), name = name)
+
+        assertEquals(Text.Resource(name), row.asMenuItemsGroup(shownItems).name)
+        assertEquals(Text.Resource(name), grid.asMenuItemsGroup(shownItems).name)
+    }
 }
