@@ -78,8 +78,16 @@ created under their own account with a chance to review and adjust.
    - Single-quote every `field=value` argument.
    - Write `short_desc` and `comment` as plain text, with markdown backticks around
      code identifiers; the script does all the encoding.
-   - Any form field works, so add more as the bug needs them, e.g. `blocked=<bug>`
-     (blocks), `dependson=<bug>` (depends on), or `see_also=<url>`.
+   - Any `enter_bug.cgi` field works. Besides the link fields below, the ones a
+     bug most often needs are `status_whiteboard` (copy it from the parent or a
+     sibling bug, since teams use it for tags such as a Jira sync marker),
+     `keywords` (e.g. `regression`, `meta`), `cc` and `assigned_to`.
+   - Link a related bug by what its fix needs. Set `dependson=<bug>` when this
+     bug's fix needs the other bug's fix to land first, and `blocked=<bug>` when
+     the other bug's fix needs this one's or the other bug is a meta bug tracking
+     this one. Set `regressed_by=<bug>` when the other bug's patch caused this
+     bug. Use `see_also` otherwise, and for an external bug tracker URL, which
+     the other fields don't take.
 
    The script opens the form and prints a one-line confirmation. **Never paste the
    URL into your reply**: a prefilled form carries the whole description
