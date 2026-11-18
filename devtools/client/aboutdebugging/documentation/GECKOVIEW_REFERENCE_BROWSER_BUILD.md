@@ -21,12 +21,12 @@ It is recommended to create a new directory to build your GeckoView and Referenc
 
 ### Build GeckoView
 
-#### Clone mozilla-central
+#### Clone the Firefox repository
 
-It is recommended to create a new clone of mozilla-central for your GeckoView builds.
+It is recommended to create a new clone of the Firefox repository for your GeckoView builds.
 
 ```
-  hg clone https://hg.mozilla.org/mozilla-central mozilla-central-gecko-view
+  git clone https://github.com/mozilla-firefox/firefox.git mozilla-central-gecko-view
   cd mozilla-central-gecko-view
 ```
 

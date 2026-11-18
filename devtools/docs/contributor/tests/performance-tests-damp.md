@@ -195,7 +195,7 @@ There is a PerfHerder link on each chart that will take you to the PerfHerder pa
 
 On PerfHerder charts, each circle is a push on mozilla-central.
 When you see a spike or a drop, you can try to identify the patch that caused it by clicking the circles.
-It will show a black popup. Then click on the changeset hash like "cb717386aec8" and you will get a mercurial changelog.
+It will show a black popup. Then click on the changeset hash like "cb717386aec8" and you will get the list of changesets in that push.
 Then it is up to you to read the changelog and see which changeset may have hit the performance.
 
 For example, open [this page](https://treeherder.mozilla.org/perf.html#/graphs?timerange=31536000&series=mozilla-central,1417969,1,1&series=mozilla-central,1417971,1,1&series=mozilla-central,1417966,1,1&highlightedRevisions=a06f92099a5d&zoom=1482734645161.3916,1483610598216.4773,594.756508587898,969.2883437938906).
@@ -207,7 +207,7 @@ Now, click on the first yellow circle of this spike.
 You will get a black popup like this one:
 ![Perfherder changeset popup](regression-popup.png)
 
-Click on the [changelog link](https://hg.mozilla.org/mozilla-central/pushloghtml?fromchange=9104708cc3ac0ccfe4cf5d518e13736773c565d7&tochange=a06f92099a5d8edeb05e5971967fe8d6cd4c593c) to see which changesets were added during this run. Here, you will see that the regression comes from these patches:
+Click on the [changelog link](https://github.com/mozilla-firefox/firefox/compare/ad8d8fec71a68ce9aecc2069f76385ac379b302c...e1e37d105306ae81f3c5297c18425368567143db) to see which changesets were added during this run. Here, you will see that the regression comes from these patches:
 
 * Bug 1245921 - Turn toolbox toolbar into a React component
 * Bug 1245921 - Monkey patch ReactDOM event system for XUL

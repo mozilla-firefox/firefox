@@ -190,7 +190,7 @@ If any tests fail then fix them.
 
 #### Commit your changes
 
-Use `hg commit` or `hg amend` to commit your changes.
+Use `git commit` (or `git commit --amend`) to commit your changes.
 
 #### Push to try
 

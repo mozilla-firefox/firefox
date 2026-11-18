@@ -10,12 +10,12 @@ This will be a short documentation focused on the typical patches you may write 
 
 The whole setup needs to download several gigabytes of dependencies so try to have a fast internet connection to follow those steps.
 
-### Clone mozilla-central
+### Clone the Firefox repository
 
-It is recommended to create a new clone of mozilla-central for your GeckoView Example builds.
+It is recommended to create a new clone of the Firefox repository for your GeckoView Example builds.
 
 ```
-  hg clone https://hg.mozilla.org/mozilla-central mozilla-central-gecko-view
+  git clone https://github.com/mozilla-firefox/firefox.git mozilla-central-gecko-view
   cd mozilla-central-gecko-view
 ```
 
