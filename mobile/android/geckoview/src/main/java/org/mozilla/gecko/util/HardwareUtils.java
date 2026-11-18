@@ -6,8 +6,6 @@ package org.mozilla.gecko.util;
 
 import android.content.Context;
 import android.content.res.Configuration;
-import android.os.Build;
-import android.os.Process;
 
 public final class HardwareUtils {
   private static final String LOGTAG = "GeckoHardwareUtils";
@@ -43,9 +41,5 @@ public final class HardwareUtils {
       init(context);
     }
     return sIsLargeTablet || sIsSmallTablet;
-  }
-
-  public static String[] getProcessAbis() {
-    return Process.is64Bit() ? Build.SUPPORTED_64_BIT_ABIS : Build.SUPPORTED_32_BIT_ABIS;
   }
 }

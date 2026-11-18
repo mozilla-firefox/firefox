@@ -19,7 +19,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.mozilla.gecko.GeckoAppShell;
 import org.mozilla.gecko.annotation.JNITarget;
-import org.mozilla.gecko.util.HardwareUtils;
 
 public final class GeckoLoader {
   private static final String LOGTAG = "GeckoLoader";
@@ -104,6 +103,7 @@ public final class GeckoLoader {
     }
   }
 
+  @SuppressWarnings("deprecation") // for Build.CPU_ABI
   public static synchronized void setupGeckoEnvironment(
       final Context context,
       final boolean isChildProcess,
@@ -172,7 +172,7 @@ public final class GeckoLoader {
           "MOZ_ANDROID_CRASH_HANDLER=" + context.getPackageName() + "/" + crashHandler.getName());
     }
 
-    putenv("MOZ_ANDROID_CPU_ABI=" + HardwareUtils.getProcessAbis()[0]);
+    putenv("MOZ_ANDROID_CPU_ABI=" + Build.CPU_ABI);
 
     // env from extras could have reset out linker flags; set them again.
     loadLibsSetupLocked(context);
