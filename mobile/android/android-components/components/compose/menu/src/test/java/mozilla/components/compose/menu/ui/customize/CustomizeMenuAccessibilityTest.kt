@@ -4,7 +4,9 @@
 
 package mozilla.components.compose.menu.ui.customize
 
+import androidx.annotation.StringRes
 import androidx.compose.ui.semantics.CollectionInfo
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -24,9 +26,11 @@ import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.CustomizableMenuAction
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
+import mozilla.components.compose.menu.store.CustomizableMenuAction.Update
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.ui.MenuItemIconRes
+import mozilla.components.compose.menu.ui.utils.A11Y_ANNOUNCEMENT_DURATION
 import mozilla.components.lib.state.Middleware
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.ui.icons.R as iconsR
@@ -220,6 +224,104 @@ class CustomizeMenuAccessibilityTest {
         assertEquals(listOf("Second", "First", "Hidden"), store.state.menuGroups.map { it.id })
     }
 
+    @Test
+    fun `GIVEN no section was moved by an action THEN nothing is announced`() {
+        setContent(menuState(shown = listOf(row("First"), row("Second"))))
+
+        announcementNode().assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.ContentDescription))
+    }
+
+    @Test
+    fun `WHEN a section is moved up or down THEN its new position is announced politely`() {
+        setContent(menuState(shown = listOf(row("First"), row("Second"), row("Third"))))
+
+        performAction("First", moveDown)
+
+        announcementNode()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
+            .assert(hasAnnouncement(R.string.mozac_menu_customize_section_moved, "First", 2, 3))
+
+        performAction("Third", moveUp)
+
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_section_moved, "Third", 2, 3))
+    }
+
+    @Test
+    fun `WHEN a section is hidden THEN it is announced as removed`() {
+        setContent(menuState(shown = listOf(row("First"), row("Second"))))
+
+        performAction("Second", hide)
+
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_section_hidden, "Second"))
+    }
+
+    @Test
+    fun `WHEN a hidden section is added to the menu THEN it is announced as added`() {
+        setContent(menuState(shown = listOf(row("Shown")), hidden = listOf(row(id = "hidden", "Hidden 1", "Hidden 2"))))
+
+        performAction("Hidden 1, Hidden 2", unhide)
+
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_section_shown, "Hidden 1, Hidden 2"))
+    }
+
+    @Test
+    fun `GIVEN a named section WHEN it is moved THEN it is announced by its name`() {
+        val named = grid(id = "grid", "Back", "Forward").copy(name = Text.String("Controls"))
+        setContent(menuState(shown = listOf(named, row("Second"))))
+
+        performAction("Back, Forward", moveDown, name = "Controls")
+
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_section_moved, "Controls", 2, 2))
+    }
+
+    @Test
+    fun `THEN the announcements are drawn over the list, for accessibility services to be told about them`() {
+        setContent(menuState(shown = listOf(row("First"), row("Second"))))
+
+        val announcement = announcementNode().fetchSemanticsNode()
+        val list = composeTestRule.onNode(hasScrollAction()).fetchSemanticsNode()
+        val siblings = checkNotNull(announcement.parent).children.map { it.id }
+        assertTrue(siblings.indexOf(announcement.id) > siblings.indexOf(list.id))
+    }
+
+    @Test
+    fun `WHEN a move is announced THEN the announcement is gone shortly after`() {
+        setContent(menuState(shown = listOf(row("First"), row("Second"))))
+
+        performAction("First", moveDown)
+        composeTestRule.mainClock.advanceTimeBy(A11Y_ANNOUNCEMENT_DURATION.inWholeMilliseconds + 100)
+        composeTestRule.waitForIdle()
+
+        announcementNode().assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.ContentDescription))
+    }
+
+    @Test
+    fun `WHEN the same move result is announced again THEN it is announced anew`() {
+        val store = setContent(menuState(shown = listOf(row("First"), row("Second"))))
+        val announced = hasAnnouncement(R.string.mozac_menu_customize_section_hidden, "First")
+
+        performAction("First", hide)
+        announcementNode().assert(announced)
+        composeTestRule.mainClock.advanceTimeBy(A11Y_ANNOUNCEMENT_DURATION.inWholeMilliseconds + 100)
+        composeTestRule.runOnIdle {
+            store.dispatch(Update(listOf(row("First"), row("Second")), emptySet(), emptySet(), isCustomized = false))
+        }
+        composeTestRule.waitForIdle()
+        announcementNode().assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.ContentDescription))
+        performAction("First", hide)
+
+        announcementNode().assert(announced)
+    }
+
+    private fun announcementNode() =
+        composeTestRule.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.LiveRegion))
+
+    private fun hasAnnouncement(@StringRes stringRes: Int, vararg args: Any) =
+        SemanticsMatcher.expectValue(
+            SemanticsProperties.ContentDescription,
+            listOf(testContext.getString(stringRes, *args)),
+        )
+
     private fun actionsOf(itemNames: String) =
         composeTestRule
             .onNode(section(itemNames))
@@ -228,10 +330,10 @@ class CustomizeMenuAccessibilityTest {
             .getOrElse(SemanticsActions.CustomActions) { emptyList() }
             .map { it.label }
 
-    private fun performAction(itemNames: String, actionLabel: String) {
+    private fun performAction(itemNames: String, actionLabel: String, name: String? = null) {
         val action =
             composeTestRule
-                .onNode(section(itemNames))
+                .onNode(section(itemNames, name))
                 .fetchSemanticsNode()
                 .config[SemanticsActions.CustomActions]
                 .single { it.label == actionLabel }
@@ -254,10 +356,10 @@ class CustomizeMenuAccessibilityTest {
             testContext.getString(R.string.mozac_menu_customize_named_section, name, itemNames)
         }
 
-    /** The node of the section with [itemNames], read with its position if it is shown. */
-    private fun section(itemNames: String) =
+    /** The node of the section with [itemNames] and [name], if any, read with its position if it is shown. */
+    private fun section(itemNames: String, name: String? = null) =
         SemanticsMatcher("Section with $itemNames") { node ->
-            val label = label(itemNames)
+            val label = label(itemNames, name)
             val description =
                 node.config.getOrElse(SemanticsProperties.ContentDescription) { emptyList() }.singleOrNull()
             description == label || description?.startsWith("$label. ") == true

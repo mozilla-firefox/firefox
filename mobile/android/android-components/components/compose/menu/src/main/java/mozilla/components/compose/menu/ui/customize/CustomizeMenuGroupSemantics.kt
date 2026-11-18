@@ -26,19 +26,21 @@ import mozilla.components.compose.menu.ui.displayedInGrid
  *
  * @param group The group.
  * @param groups The groups of the screen, as last saved.
- * @param onMove Called with the groups as moved by one of the custom actions, to save them.
+ * @param onMove Called with the groups as moved by one of the custom actions, to save them, and what to tell the user
+ *   about the move.
  */
 @Composable
 internal fun Modifier.customizeMenuGroupSemantics(
     group: MenuItemsGroup,
     groups: CustomizeMenuGroups,
-    onMove: (movedGroups: CustomizeMenuGroups) -> Unit,
+    onMove: (movedGroups: CustomizeMenuGroups, announcement: String) -> Unit,
 ): Modifier {
     val itemNames = group.itemNames()
     val groupName = group.name?.value
     val label =
         groupName?.let { stringResource(R.string.mozac_menu_customize_named_section, it, itemNames) }
             ?: stringResource(R.string.mozac_menu_customize_unnamed_section, itemNames)
+    val shortName = groupName ?: itemNames
     val shownIndex = groups.shown.indexOfFirst { it.id == group.id }
     val shownCount = groups.shown.size
     val description =
@@ -52,21 +54,27 @@ internal fun Modifier.customizeMenuGroupSemantics(
             moveAction(
                 label = stringResource(R.string.mozac_menu_customize_move_up),
                 movedGroups = groups.moveUp(group.id),
+                announcement =
+                    stringResource(R.string.mozac_menu_customize_section_moved, shortName, shownIndex, shownCount),
                 onMove = onMove,
             ),
             moveAction(
                 label = stringResource(R.string.mozac_menu_customize_move_down),
                 movedGroups = groups.moveDown(group.id),
+                announcement =
+                    stringResource(R.string.mozac_menu_customize_section_moved, shortName, shownIndex + 2, shownCount),
                 onMove = onMove,
             ),
             moveAction(
                 label = stringResource(R.string.mozac_menu_customize_hide),
                 movedGroups = groups.moveToHidden(group.id),
+                announcement = stringResource(R.string.mozac_menu_customize_section_hidden, shortName),
                 onMove = onMove,
             ),
             moveAction(
                 label = stringResource(R.string.mozac_menu_customize_unhide),
                 movedGroups = groups.moveToShown(group.id),
+                announcement = stringResource(R.string.mozac_menu_customize_section_shown, shortName),
                 onMove = onMove,
             ),
         )
@@ -76,14 +84,19 @@ internal fun Modifier.customizeMenuGroupSemantics(
     }
 }
 
-/** The custom action labelled [label] moving the groups to [movedGroups], or `null` if it cannot move them. */
+/**
+ * The custom action labelled [label] moving the groups to [movedGroups], or `null` if it cannot move them.
+ *
+ * @param announcement What to tell the user once the groups are moved.
+ */
 private fun moveAction(
     label: String,
     movedGroups: CustomizeMenuGroups?,
-    onMove: (movedGroups: CustomizeMenuGroups) -> Unit,
+    announcement: String,
+    onMove: (movedGroups: CustomizeMenuGroups, announcement: String) -> Unit,
 ): CustomAccessibilityAction? = movedGroups?.let {
     CustomAccessibilityAction(label) {
-        onMove(it)
+        onMove(it, announcement)
         true
     }
 }

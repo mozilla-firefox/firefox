@@ -31,4 +31,10 @@
   <string name="mozac_menu_customize_hide">Hide section</string>
   <!-- Name of the action (not visible, used by screen readers, etc.) that shows a previously hidden menu section, placing it last among the visible sections in the customize menu screen. -->
   <string name="mozac_menu_customize_unhide">Unhide section</string>
+  <!-- Announcement (not visible, for screen readers etc.) once the user moved a menu section up or down in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward", %2$d its new position, from 1, and %3$d the number of sections shown in the menu. -->
+  <string name="mozac_menu_customize_section_moved">Section “%1$s” moved to position %2$d of %3$d</string>
+  <!-- Announcement (not visible, for screen readers etc.) once the user hid a menu section in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward". -->
+  <string name="mozac_menu_customize_section_hidden">Section “%1$s” removed</string>
+  <!-- Announcement (not visible, for screen readers etc.) once the user showed a hidden menu section in the menu again in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward". -->
+  <string name="mozac_menu_customize_section_shown">Section “%1$s” added to menu</string>
 </resources>

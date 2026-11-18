@@ -42,7 +42,7 @@ import mozilla.components.ui.icons.R as iconsR
  * @param itemSpacing Space between the items of the list. It is added above each group, not by the list, for a dragged
  *   group, which takes no space, to not leave more of it between the groups around it.
  * @param onMove Called when the custom action of an accessibility service moves a group, with its id and the groups as
- *   moved, to save them.
+ *   moved, to save them, and what to tell the user about the move.
  * @param isHidden Whether these groups were removed from the menu.
  */
 internal fun LazyListScope.customizeMenuGroups(
@@ -50,7 +50,7 @@ internal fun LazyListScope.customizeMenuGroups(
     dragState: CustomizeMenuDragState,
     firstIndex: Int,
     itemSpacing: Dp,
-    onMove: (movedGroupId: String, movedGroups: CustomizeMenuGroups) -> Unit,
+    onMove: (movedGroupId: String, movedGroups: CustomizeMenuGroups, announcement: String) -> Unit,
     isHidden: Boolean = false,
 ) {
     val interactionState = dragState.interactionState
@@ -78,7 +78,7 @@ internal fun LazyListScope.customizeMenuGroups(
                     Modifier.customizeMenuGroupSemantics(
                             group = group,
                             groups = dragState.groups,
-                            onMove = { movedGroups -> onMove(group.id, movedGroups) },
+                            onMove = { movedGroups, announcement -> onMove(group.id, movedGroups, announcement) },
                         )
                         .padding(top = itemSpacing)
                         .dropLine(group.id, dragState.dropTarget, itemSpacing)
@@ -178,7 +178,7 @@ private fun CustomizeMenuPreview() {
                     dragState = dragState,
                     firstIndex = 0,
                     itemSpacing = 0.dp,
-                    onMove = { _, _ -> },
+                    onMove = { _, _, _ -> },
                 )
             }
         }

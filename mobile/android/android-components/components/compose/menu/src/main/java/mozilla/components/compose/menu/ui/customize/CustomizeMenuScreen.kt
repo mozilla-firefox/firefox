@@ -55,6 +55,7 @@ import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.RESET_BUTTON
 import mozilla.components.compose.menu.ui.utils.customizeMenuPreviewData
 import mozilla.components.compose.menu.ui.utils.ext.saveMove
+import mozilla.components.compose.menu.ui.utils.rememberA11yUpdatesAnnouncer
 import mozilla.components.lib.state.ext.observeAsComposableState
 
 /**
@@ -104,8 +105,10 @@ private fun CustomizeMenuList(
     val listState = rememberLazyListState()
     val dragState = rememberCustomizeMenuDragState(store, menuState, listState)
     val itemSpacing = AcornTheme.layout.space.static150
-    val onMove = { movedGroupId: String, movedGroups: CustomizeMenuGroups ->
+    val announcer = rememberA11yUpdatesAnnouncer()
+    val onMove = { movedGroupId: String, movedGroups: CustomizeMenuGroups, moveAnnouncement: String ->
         store.saveMove(dragState.groups, movedGroupId, movedGroups)
+        announcer.announce(moveAnnouncement)
     }
 
     LazyColumn(
@@ -173,6 +176,10 @@ private fun CustomizeMenuList(
             }
         }
     }
+
+    // Drawn over the list, important to be the last element here.
+    // Will allow for accessibility services to be told of its updates, which they aren't if it is covered.
+    announcer.LiveRegion()
 }
 
 @Composable
