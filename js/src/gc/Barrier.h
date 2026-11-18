@@ -872,74 +872,18 @@ DEFINE_BARRIERED_PTR(HeapPtr, gc::BarrierOption_PreWriteBarrier |
 /*
  * A pre-barriered heap pointer, for use inside the JS engine.
  *
- * Similar to GCPtr, but used for a pointer to a malloc-allocated structure
+ * Similar to GCPtr, but used for a pointer to a buffer-allocated structure
  * containing GC thing pointers.
  *
- * It must only be stored in memory that has GC lifetime. It must not be used in
- * contexts where it may be implicitly moved or deleted, e.g. most containers.
+ * It should only be stored in memory that has GC lifetime, or it must perform
+ * the necessary pre-barrier if the memory is freed outside the GC. It must not
+ * be used in contexts where it may be implicitly moved or deleted, e.g. most
+ * containers.
  *
- * A post-barrier is unnecessary since malloc-allocated structures cannot be in
- * the nursery.
+ * A post-barrier is unnecessary since buffer allocations are always in the same
+ * heap as their owning cell; there can be no tenured heap to nursery buffer
+ * edges.
  */
-template <class T>
-class GCStructPtr : public BarrieredBase<T> {
- public:
-  GCStructPtr() : BarrieredBase<T>(JS::SafelyInitialized<T>::create()) {}
-
-  explicit GCStructPtr(const T& v) : BarrieredBase<T>(v) {}
-
-  GCStructPtr(const GCStructPtr<T>& other) : BarrieredBase<T>(other) {}
-
-  ~GCStructPtr() {
-    // No barriers are necessary as this only happens when the GC is sweeping.
-    MOZ_ASSERT_IF(isTraceable(),
-                  CurrentThreadIsGCSweeping() || CurrentThreadIsGCFinalizing());
-  }
-
-  void init(const T& v) {
-    MOZ_ASSERT(this->get() == JS::SafelyInitialized<T>());
-    AssertTargetIsNotGray(v);
-    this->unbarrieredSet(v);
-  }
-
-  void set(JS::Zone* zone, const T& v) {
-    pre(zone);
-    this->unbarrieredSet(v);
-  }
-
-#ifdef JS_GC_CONCURRENT_MARKING
-  void unbarrieredSet(T ptr) { this->unbarrieredAtomicSet(ptr); }
-#else
-  using BarrieredBase<T>::unbarrieredSet;
-#endif
-
-  T get() const { return this->unbarrieredGet(); }
-  operator T() const { return get(); }
-  T operator->() const { return get(); }
-
-#if JS_BITS_PER_WORD == 64
-  T atomicGet() const { return this->unbarrieredAtomicGet(); }
-#endif
-
-  // Getter used for tracing: no barriers and atomic when concurrent marking is
-  // used.
-#ifdef JS_GC_CONCURRENT_MARKING
-  T getForTracing() const { return atomicGet(); }
-#else
-  T getForTracing() const { return get(); }
-#endif
-
- protected:
-  bool isTraceable() const { return uintptr_t(get()) > MaxTaggedPointer; }
-
-  void pre(JS::Zone* zone) {
-    if (isTraceable()) {
-      PreWriteBarrier(zone, get());
-    }
-  }
-};
-
-// Like GCStructPtr but for memory allocated with the buffer allocator.
 template <class T>
 class GCBuffer : public BarrieredBase<T> {
   static_assert(std::is_pointer_v<T>);
