@@ -14,6 +14,16 @@
       const BYTES_PER_ROW_ALIGNMENT = 256;
       const BYTES_PER_PIXEL = 4;
 
+      // Straight colors, including a color under alpha 0 and a low alpha that
+      // a premultiplied round trip changes.
+      const STRAIGHT_PIXELS = [
+        [200, 100, 50, 128],
+        [10, 20, 30, 0],
+        [0, 200, 100, 16],
+        [255, 128, 0, 255],
+      ];
+      const STRAIGHT_WIDTH = STRAIGHT_PIXELS.length;
+      const OPAQUE_BLUE = [0, 0, 255, 255];
       const TRANSPARENT_BLACK = [0, 0, 0, 0];
 
       async function getDevice() {
@@ -60,6 +70,60 @@
         buffer.unmap();
         return pixels;
       }
+
+      // The straight pixels sit to the right of aPadding opaque blue pixels.
+      function makeStraightBitmap(aPadding) {
+        const imageData = new ImageData(aPadding + STRAIGHT_WIDTH, 1);
+        for (let x = 0; x < aPadding; x++) {
+          imageData.data.set(OPAQUE_BLUE, x * BYTES_PER_PIXEL);
+        }
+        STRAIGHT_PIXELS.forEach((pixel, x) => {
+          imageData.data.set(pixel, (aPadding + x) * BYTES_PER_PIXEL);
+        });
+        return createImageBitmap(imageData, { premultiplyAlpha: "none" });
+      }
+
+      add_task(async function test_unpremultiplied_bitmap_keeps_its_pixels() {
+        const device = await getDevice();
+        const sources = [
+          ["uncropped", () => makeStraightBitmap(0)],
+          [
+            "cropped",
+            async () => {
+              const source = await makeStraightBitmap(STRAIGHT_WIDTH);
+              const cropped = await createImageBitmap(
+                source,
+                STRAIGHT_WIDTH,
+                0,
+                STRAIGHT_WIDTH,
+                1
+              );
+              source.close();
+              return cropped;
+            },
+          ],
+          [
+            "drawn before",
+            async () => {
+              const bitmap = await makeStraightBitmap(0);
+              new OffscreenCanvas(STRAIGHT_WIDTH, 1)
+                .getContext("2d")
+                .drawImage(bitmap, 0, 0);
+              return bitmap;
+            },
+          ],
+        ];
+        for (const [name, make] of sources) {
+          const bitmap = await make();
+          const pixels = await copyAndRead(device, bitmap, false);
+          bitmap.close();
+          SimpleTest.isDeeply(
+            pixels,
+            STRAIGHT_PIXELS,
+            `${name} premultiplyAlpha "none" ImageBitmap keeps its pixels`
+          );
+        }
+      });
 
       add_task(async function test_crop_outside_source_copies_transparent() {
         const device = await getDevice();
