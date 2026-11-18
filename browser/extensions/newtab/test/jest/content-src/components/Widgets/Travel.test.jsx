@@ -310,6 +310,32 @@ describe("Travel widget", () => {
     );
   });
 
+  describe("region fragment", () => {
+    const renderWithRegion = url => {
+      const state = {
+        ...mockState,
+        Prefs: {
+          ...mockState.Prefs,
+          values: { ...mockState.Prefs.values, region: "IE" },
+        },
+        FramedWidgets: { travel: { url } },
+      };
+      const { container } = renderWidget(jest.fn(), {}, state);
+      return container.querySelector("iframe.travel-frame").getAttribute("src");
+    };
+    const { url } = mockState.FramedWidgets.travel;
+
+    it("passes the home region to the frame in its URL fragment", () => {
+      expect(renderWithRegion(url)).toBe(`${url}#region=IE`);
+    });
+
+    it("keeps a fragment the manifest URL already has", () => {
+      expect(renderWithRegion(`${url}#debug=1`)).toBe(
+        `${url}#debug=1&region=IE`
+      );
+    });
+  });
+
   it("renders nothing without a manifest entry", () => {
     const { container } = renderWidget(
       jest.fn(),
