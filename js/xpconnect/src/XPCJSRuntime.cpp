@@ -135,6 +135,7 @@ const char* const XPCJSRuntime::mStrings[] = {
     "indexedDB",        // IDX_INDEXEDDB
     "structuredClone",  // IDX_STRUCTUREDCLONE
     "locks",            // IDX_LOCKS
+    "storage",          // IDX_STORAGE
     "suppressed",       // IDX_SUPPRESSED
     "error",            // IDX_ERROR
     // IDX_REACT_DEVTOOLS_GLOBAL_HOOK
