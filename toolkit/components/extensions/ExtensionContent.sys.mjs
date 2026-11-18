@@ -13,7 +13,7 @@ const lazy = XPCOMUtils.declareLazy({
   ExtensionUserScriptsContent:
     "resource://gre/modules/ExtensionUserScriptsContent.sys.mjs",
   LanguageDetector:
-    "resource://gre/modules/translations/LanguageDetector.sys.mjs",
+    "moz-src:///toolkit/components/translations/LanguageDetector.sys.mjs",
   Schemas: "resource://gre/modules/Schemas.sys.mjs",
   WebNavigationFrames: "resource://gre/modules/WebNavigationFrames.sys.mjs",
 
@@ -1513,9 +1513,9 @@ export var ExtensionContent = {
 
         const documentId = lazy.ExtensionDocumentId.getDocumentId(innerId);
         try {
-          const result = await promise;
+          const value = await promise;
 
-          return { frameId, documentId, result };
+          return { frameId, documentId, result: value };
         } catch (error) {
           return { frameId, documentId, error };
         }

@@ -642,7 +642,7 @@ bool nsContentSecurityUtils::IsEvalAllowed(JSContext* cx,
       "resource://testing-common/content-task.js"_ns,
 
       // Tracked by Bug 1584605
-      "resource://gre/modules/translations/cld-worker.js"_ns,
+      "moz-src:///toolkit/components/translations/cld2/cld-worker.js"_ns,
 
       // require.js implements a script loader for workers. It uses eval
       // to load the script; but injection is only possible in situations

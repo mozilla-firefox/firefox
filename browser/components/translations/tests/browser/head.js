@@ -9,7 +9,7 @@ Services.scriptloader.loadSubScript(
 );
 
 const { LanguageDetector: PageLanguageDetector } = ChromeUtils.importESModule(
-  "resource://gre/modules/translations/LanguageDetector.sys.mjs"
+  "moz-src:///toolkit/components/translations/LanguageDetector.sys.mjs"
 );
 
 /**

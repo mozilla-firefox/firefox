@@ -33,7 +33,7 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   LanguageDetector:
-    "resource://gre/modules/translations/LanguageDetector.sys.mjs",
+    "moz-src:///toolkit/components/translations/LanguageDetector.sys.mjs",
   ReaderWorker: "moz-src:///toolkit/components/reader/ReaderWorker.sys.mjs",
   Readerable: "resource://gre/modules/Readerable.sys.mjs",
 });
