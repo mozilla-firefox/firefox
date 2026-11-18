@@ -59,7 +59,7 @@ Services.prefs.setBoolPref(
 
 // For tests, allow the settings to write sooner than it would do normally so that
 // the tests that need to wait for it can run a bit faster.
-SearchSettings.SETTNGS_INVALIDATION_DELAY = 250;
+SearchSettings.SETTINGS_INVALIDATION_DELAY = 250;
 
 async function promiseSettingsData() {
   let path = PathUtils.join(PathUtils.profileDir, SETTINGS_FILENAME);
