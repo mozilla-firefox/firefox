@@ -1,0 +1,89 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.from_deps
+    - gecko_taskgraph.transforms.job:transforms
+    - gecko_taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - build
+    - fetch
+
+task-defaults:
+    from-deps:
+        kinds: [build]
+        copy-attributes: true
+    worker:
+        env:
+            PIP_INDEX_URL: https://pypi.python.org/simple/
+            PIP_NO_INDEX: "0"
+        max-run-time: 1200
+
+    shipping-product: firefox
+
+    description: Start Desktop Test Eng Selenium tests
+
+    treeherder:
+        kind: other
+        tier: 2
+        symbol: dte-ui
+
+tasks:
+    linux:
+        fetches:
+            build:
+                - artifact: target.tar.xz
+                  extract: true
+        worker-type: t-linux-docker-amd
+        worker:
+            docker-image:
+                in-tree: ubuntu2404-test
+        treeherder:
+            platform: linux64/opt
+        from-deps:
+            with-attributes:
+                build_platform: linux64
+                build_type: opt
+        run:
+            checkout: true
+            cwd: '{checkout}'
+            using: run-task
+            command:
+                . $HOME/scripts/xvfb.sh && start_xvfb '1600x1200x24' 0 && ./mach dte-ui-test
+
+    win11:
+        fetches:
+            build:
+                - artifact: target.zip
+                  extract: true
+        worker-type: win11-64-25h2-source
+        treeherder:
+            platform: windows2012-64/opt
+        from-deps:
+            with-attributes:
+                build_platform: win64
+                build_type: opt
+        run:
+            using: mach
+            mach: dte-ui-test
+
+    macos:
+        fetches:
+            build:
+                - artifact: target.dmg
+                  extract: false
+        worker-type: t-osx-1500-m4
+        treeherder:
+            platform: macosx64/opt
+        from-deps:
+            with-attributes:
+                build_platform: macosx64
+                build_type: opt
+        run:
+            using: mach
+            mach: dte-ui-test

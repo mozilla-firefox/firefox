@@ -991,6 +991,10 @@ Run baseline profile generation for Android on Firebase TestLab.
 
 Send payload for DTE testing Github Actions.
 
+## dte-ui-test
+
+Run DTE Pytest Selenium suite for UI.
+
 ## update-test
 
 Run tests to see if the Firefox executable can be updated to the latest release.

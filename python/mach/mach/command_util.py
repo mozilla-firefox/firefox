@@ -107,6 +107,7 @@ MACH_COMMANDS = {
     "devtools-update-compat-data": MachCommandReference("devtools/mach_commands.py"),
     "doc": MachCommandReference("tools/moztreedocs/mach_commands.py"),
     "doctor": MachCommandReference("python/mozbuild/mozbuild/mach_commands.py"),
+    "dte-ui-test": MachCommandReference("testing/dte-ui-test/mach_commands.py"),
     "environment": MachCommandReference("python/mozbuild/mozbuild/mach_commands.py"),
     "eslint": MachCommandReference("tools/lint/mach_commands.py"),
     "event-into-legacy": MachCommandReference(
