@@ -51,27 +51,17 @@ private fun OnboardingCardData.shouldDisplayCard(
     val allPrerequisites = prerequisites.mapNotNull { jexlConditions[it] }
     val allDisqualifiers = disqualifiers.mapNotNull { jexlConditions[it] }
 
-    val validPrerequisites =
-        if (allPrerequisites.size == prerequisites.size) {
-            allPrerequisites.all { condition ->
-                jexlCache.getOrPut(condition) {
-                    jexlEvaluator(condition)
-                }
-            }
-        } else {
-            false
-        }
+    if (allPrerequisites.size != prerequisites.size || allDisqualifiers.size != disqualifiers.size) {
+        return false
+    }
 
-    val hasDisqualifiers =
-        if (allDisqualifiers.isNotEmpty() && allDisqualifiers.size == disqualifiers.size) {
-            allDisqualifiers.all { condition ->
-                jexlCache.getOrPut(condition) {
-                    jexlEvaluator(condition)
-                }
-            }
-        } else {
-            false
-        }
+    val validPrerequisites = allPrerequisites.all { condition ->
+        jexlCache.getOrPut(condition) { jexlEvaluator(condition) }
+    }
+
+    val hasDisqualifiers = allDisqualifiers.any { condition ->
+        jexlCache.getOrPut(condition) { jexlEvaluator(condition) }
+    }
 
     return validPrerequisites && !hasDisqualifiers
 }

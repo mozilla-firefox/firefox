@@ -190,7 +190,7 @@ class OnboardingMapperTest {
 
         assertEquals(
             expected,
-            listOf(defaultBrowserCardData)
+            listOf(defaultBrowserCardDataNoDisqualifiers)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
                     jexlConditions = jexlConditions,
@@ -264,13 +264,29 @@ class OnboardingMapperTest {
     }
 
     @Test
-    fun disqualifiersDontMatchJexlConditions_shouldDisplayCard_returnsConvertedPage() {
+    fun unknownDisqualifier_toPageUiData_returnsNoPage() {
         val jexlConditions = mapOf("NEVER" to "false")
-        val expected = listOf(syncPageUiData)
+        val expected = emptyList<OnboardingPageUiData>()
 
         assertEquals(
             expected,
             listOf(syncCardDataUnknownDisqualifier)
+                .toPageUiData(
+                    showDefaultBrowserPage = true,
+                    jexlConditions = jexlConditions,
+                    jexlEvaluator = fakeJexlEvaluator,
+                ),
+        )
+    }
+
+    @Test
+    fun anyDisqualifierTrue_toPageUiData_returnsNoPage() {
+        val jexlConditions = mapOf("ALWAYS" to "true", "NEVER" to "false")
+        val expected = emptyList<OnboardingPageUiData>()
+
+        assertEquals(
+            expected,
+            listOf(syncCardDataOneTrueDisqualifier)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
                     jexlConditions = jexlConditions,
@@ -406,6 +422,19 @@ private val syncCardDataUnknownDisqualifier =
         ordering = 20,
         prerequisites = listOf(),
         disqualifiers = listOf("NEVER", "OTHER"),
+    )
+
+private val syncCardDataOneTrueDisqualifier =
+    OnboardingCardData(
+        cardType = OnboardingCardType.SYNC_SIGN_IN,
+        imageRes = R.drawable.ic_onboarding_sync,
+        title = StringHolder(null, "sync title"),
+        body = StringHolder(null, "sync body"),
+        primaryButtonLabel = StringHolder(null, "sync primary button text"),
+        secondaryButtonLabel = StringHolder(null, "sync secondary button text"),
+        ordering = 20,
+        prerequisites = listOf(),
+        disqualifiers = listOf("NEVER", "ALWAYS"),
     )
 
 private val unsortedAllKnownCardData =
