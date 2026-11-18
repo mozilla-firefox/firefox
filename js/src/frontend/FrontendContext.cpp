@@ -379,11 +379,6 @@ void FrontendContext::checkAndUpdateFrontendContextRecursionLimit(void* sp) {
   }
   previousStackPointer_ = sp;
 }
-
-void js::CheckAndUpdateFrontendContextRecursionLimit(FrontendContext* fc,
-                                                     void* sp) {
-  fc->checkAndUpdateFrontendContextRecursionLimit(sp);
-}
 #endif
 
 JS_PUBLIC_API const JSErrorReport* JS::GetFrontendErrorReport(
