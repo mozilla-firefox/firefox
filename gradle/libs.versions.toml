@@ -73,7 +73,6 @@ dependency-analysis = "3.20.0"
 jacoco = "0.8.16"
 kaml = "0.104.0"
 protobuf-plugin = "0.10.0"
-python-envs-plugin = "0.0.31"
 scip-javac = "0.13.2"
 scip-kotlinc = "0.13.2"
 tomlj = "2.2.0"
@@ -332,6 +331,4 @@ kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 protobuf-plugin = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }
-# Only the vendored app-services component builds still apply this.
-python-envs-plugin = { id = "com.jetbrains.python.envs", version.ref = "python-envs-plugin" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
