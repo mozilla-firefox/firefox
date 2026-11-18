@@ -28,5 +28,6 @@ setup(
     ],
     zip_safe=False,
     install_requires=[],  # use requirements files
+    python_requires=">=3.10",
     entry_points=entry_points,
 )

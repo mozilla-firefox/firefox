@@ -18,6 +18,7 @@ setup(
     packages=find_packages(),
     zip_safe=False,
     install_requires=["marionette_harness", "PyYaml"],
+    python_requires=">=3.10",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Environment :: Console",

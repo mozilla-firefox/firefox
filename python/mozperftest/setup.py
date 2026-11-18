@@ -23,7 +23,8 @@ setup(
     name=PACKAGE_NAME,
     version=PACKAGE_VERSION,
     description="Mozilla's mach perftest command",
-    classifiers=["Programming Language :: Python :: 3.6"],
+    classifiers=["Programming Language :: Python :: 3 :: Only"],
+    python_requires=">=3.10",
     # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
     keywords="",
     author="Mozilla Performance Test Engineering Team",
