@@ -2578,8 +2578,8 @@ void InlineFrameIterator::findNextFrame() {
 
     // Skip over non-argument slots, as well as |this|.
     bool skipNewTarget = IsConstructPC(pc_);
-    unsigned skipCount = (si_.numAllocations() - 1) -
-                         numActualArgs_ - 1 - skipNewTarget;
+    unsigned skipCount =
+        (si_.numAllocations() - 1) - numActualArgs_ - 1 - skipNewTarget;
     for (unsigned j = 0; j < skipCount; j++) {
       si_.skip();
     }
