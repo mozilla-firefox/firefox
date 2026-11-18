@@ -14,6 +14,7 @@ namespace mozilla {
 
 struct TouchSwipeInfo;
 struct TouchSwipeInfoQueue;
+class MultiTouchInput;
 
 // TouchSwipeState phase transition:
 // - Initially Idle:       wait for a MULTITOUCH_START.
@@ -100,6 +101,8 @@ struct TouchSwipeState {
   void ChangePhaseForConsumedTouchInput();
 
   void QueueInfo(TouchSwipeInfo&& aInfo);
+
+  bool ShouldSkipInputOnWindows(const MultiTouchInput& aInput) const;
 };
 
 }  // namespace mozilla

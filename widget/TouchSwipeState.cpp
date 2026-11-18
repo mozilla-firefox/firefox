@@ -4,6 +4,7 @@
 
 #include "TouchSwipeState.h"
 
+#include "InputData.h"
 #include "TouchSwipeInfo.h"
 #include "Units.h"
 #include "mozilla/DebugOnly.h"
@@ -94,5 +95,20 @@ void TouchSwipeState::ChangePhaseForConsumedTouchInput() {
           "Inputs are queued while waiting for APZ and handled after Start()");
       return;
   }
+}
+
+// A temporal measure for addressing Windows widget bugs (bug 2089005 and bug
+// 2091573). They cause the situation in which MULTITOUCH_END makes the touch
+// count 0 and resets the phase, even though the finger is still on the screen.
+// So, when the phase is Idle, accept only MULTITOUCH_START. Other inputs mean
+// the count doesn't reflect the actual finger arrangement, so skip them. When
+// the phase is not Idle, at least one finger is already down. So a
+// MULTITOUCH_START with only one finger should not happen. Skip it as well.
+bool TouchSwipeState::ShouldSkipInputOnWindows(
+    const MultiTouchInput& aInput) const {
+  const uint32_t count = touchCounter.GetActiveTouchCount();
+  return phase == TouchSwipeState::Phase::Idle
+             ? aInput.mType != MultiTouchInput::MULTITOUCH_START
+             : aInput.mType == MultiTouchInput::MULTITOUCH_START && count == 1;
 }
 }  // namespace mozilla

@@ -1530,6 +1530,11 @@ bool nsIWidget::MayTriggerSwipe(const MultiTouchInput& aInput) {
 // aResult.
 void nsIWidget::HandleTouchInputForSwipe(const MultiTouchInput& aInput,
                                          const APZEventResult& aResult) {
+  // TODO: Remove this guard when bug 2089005 and bug 2091573 are fixed.
+  if (mTouchSwipeState.ShouldSkipInputOnWindows(aInput)) {
+    return;
+  }
+
   if (mTouchSwipeState.phase == TouchSwipeState::Phase::WaitingForAPZ) {
     // Other inputs are queued while waiting. See DispatchTouchInput().
     MOZ_ASSERT(aInput.mType == MultiTouchInput::MULTITOUCH_START &&
@@ -1630,20 +1635,7 @@ void nsIWidget::DispatchTouchInput(MultiTouchInput& aInput) {
         // Process as well, because events such as touchmove have to be fired
         // even during swipe-to-nav on touchscreen.
         if (touchSwipeEnabled) {
-          // NOTE: This is a temporal fix for Windows widget bugs, bug 2089005
-          // and bug 2091573. These bugs cause the situation in which
-          // MULTITOUCH_END makes the touch count 0 and resets the phase, even
-          // though the finger is still on the screen. Ignore these gestures.
-          const uint32_t count =
-              mTouchSwipeState.touchCounter.GetActiveTouchCount();
-          const bool ignoreForSwipe =
-              mTouchSwipeState.phase == TouchSwipeState::Phase::Idle
-                  ? aInput.mType != MultiTouchInput::MULTITOUCH_START
-                  : aInput.mType == MultiTouchInput::MULTITOUCH_START &&
-                        count == 1;
-          if (!ignoreForSwipe) {
-            HandleTouchInputForSwipe(aInput, result);
-          }
+          HandleTouchInputForSwipe(aInput, result);
         }
 
         WidgetTouchEvent event = aInput.ToWidgetEvent(this);
