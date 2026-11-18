@@ -7,11 +7,13 @@
 #include <algorithm>
 #include <utility>
 
+#include "HTMLEditUtils.h"
 #include "mozilla/BinarySearch.h"
 #include "mozilla/EditorBase.h"
 #include "mozilla/HTMLEditor.h"
 #include "mozilla/Logging.h"
 #include "mozilla/RangeBoundary.h"
+#include "mozilla/ServoBindings.h"
 #include "mozilla/ToString.h"
 #include "mozilla/dom/CharacterDataBuffer.h"
 #include "mozilla/dom/Element.h"
@@ -23,6 +25,7 @@
 #include "nsUnicodeProperties.h"
 #include "nsServiceManagerUtils.h"
 #include "nsIContent.h"
+#include "nsIContentInlines.h"
 #include "nsContentUtils.h"
 #include "nsIFrame.h"
 
@@ -756,6 +759,21 @@ static bool ContainsDOMWordSeparator(nsINode* aNode, int32_t aBeforeOffset,
   return false;
 }
 
+// Returns true if the frame of aElement which does not have a frame yet will
+// be constructed lazily, i.e., at the next refresh.
+static bool WillConstructFrame(const dom::Element& aElement) {
+  bool needsFrame = false;
+  for (const nsIContent* content = &aElement; content;
+       content = content->GetFlattenedTreeParent()) {
+    if (const nsIFrame* frame = content->GetPrimaryFrame()) {
+      // Leaf frames do not create frames for their children.
+      return needsFrame && !frame->IsLeaf();
+    }
+    needsFrame |= content->HasFlag(NODE_NEEDS_FRAME);
+  }
+  return needsFrame;
+}
+
 static bool IsBreakElement(nsINode* aNode) {
   if (!aNode->IsElement()) {
     return false;
@@ -766,14 +784,34 @@ static bool IsBreakElement(nsINode* aNode) {
     return true;
   }
 
-  // If we don't have a frame, we don't consider ourselves a break
-  // element.  In particular, words can span us.
-  nsIFrame* frame = element->GetPrimaryFrame();
-  if (!frame) {
-    return false;
+  const nsStyleDisplay* disp = nullptr;
+  if (nsIFrame* frame = element->GetPrimaryFrame()) {
+    disp = frame->StyleDisplay();
+  } else {
+    // If we don't have a frame and won't get one, we're not rendered, e.g., in
+    // a display:none subtree, or display:contents.  Then, we don't consider
+    // ourselves a break element.  In particular, words can span us.
+    if (!WillConstructFrame(*element)) {
+      return false;
+    }
+    // Otherwise, the spellcheck runs before the next refresh after a web app
+    // inserts or moves us.  Use our style if it has been computed, otherwise,
+    // guess from the default style.
+    if (!element->HasServoData()) {
+      return HTMLEditUtils::IsBlockElement(
+          *element, BlockInlineCheck::UseHTMLDefaultStyle);
+    }
+    const ComputedStyle* style = Servo_Element_GetMaybeOutOfDateStyle(element);
+    if (!style) {
+      return false;
+    }
+    disp = style->StyleDisplay();
+    if (disp->mDisplay == StyleDisplay::None ||
+        disp->mDisplay == StyleDisplay::Contents) {
+      return false;
+    }
   }
 
-  auto* disp = frame->StyleDisplay();
   // Anything that's not an inline element is a break element.
   // XXXbz should replaced inlines be break elements, though?
   // Also should inline-block and such be break elements?

@@ -19,6 +19,7 @@ FINAL_LIBRARY = "xul"
 
 LOCAL_INCLUDES += [
     "../ipc",
+    "/editor/libeditor",
 ]
 EXPORTS.mozilla += [
     "mozInlineSpellChecker.h",
