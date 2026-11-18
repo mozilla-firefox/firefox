@@ -1436,8 +1436,17 @@ class IndexedDBCache {
 
     const filesToDelete = filesToMaybeDelete.difference(remainingFiles);
 
+    const deletedPaths = [];
+
     for (const key of filesToDelete) {
       const [modelValue, revisionValue, fileValue] = JSON.parse(key);
+      deletedPaths.push(
+        this.generateFilePathInOPFS({
+          model: modelValue,
+          revision: revisionValue,
+          file: fileValue,
+        })
+      );
       deletePromises.push(
         this.#deleteFile({
           model: modelValue,
@@ -1447,6 +1456,13 @@ class IndexedDBCache {
       );
     }
     await Promise.all(deletePromises);
+
+    // Pruned after every file is gone rather than inside #deleteFile, so that
+    // files sharing a directory do not race each other to remove it.
+    for (const path of deletedPaths) {
+      await lazy.OPFS.pruneEmptyDirectories(path, this.dbName);
+    }
+
     if (deletePromises.length) {
       lazy.console.debug(
         `Deleted model ${model} (${deletePromises.length} files.)`
