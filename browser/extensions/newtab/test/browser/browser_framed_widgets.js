@@ -86,7 +86,11 @@ test_newtab({
         `Wait for the ${id} frame`
       );
       Assert.ok(
-        frame.getAttribute("src").endsWith(`/blue_page.html?widget=${id}`),
+        // Travel adds the home region in the fragment.
+        frame
+          .getAttribute("src")
+          .split("#")[0]
+          .endsWith(`/blue_page.html?widget=${id}`),
         `The ${id} frame loads its manifest URL`
       );
     }

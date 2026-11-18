@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 // eslint-disable-next-line no-unused-vars
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import {
@@ -37,6 +37,21 @@ const KAYAK_URL = "https://www.kayak.com/";
 
 const TRAVEL_ENTRY = WIDGET_REGISTRY.find(w => w.id === "travel");
 
+function withRegion(src, region) {
+  if (!src || !region) {
+    return src;
+  }
+  try {
+    const url = new URL(src);
+    const params = new URLSearchParams(url.hash.slice(1));
+    params.set("region", region);
+    url.hash = params;
+    return url.href;
+  } catch {
+    return src;
+  }
+}
+
 /**
  * Travel widget.
  *
@@ -62,7 +77,12 @@ function Travel({
     prefs,
     framedWidgets
   );
-  const src = useSrcAfterPageShown(frameSrc);
+  // The frame reads its market and partner site from the region once, at load.
+  // A region that arrives later changes src, which reloads the frame on
+  // purpose. That only happens in a new profile's first session. The frame
+  // isn't held back until the region is known, so Travel still shows (using
+  // the browser language) if the region lookup never finishes.
+  const src = useSrcAfterPageShown(withRegion(frameSrc, prefs.region));
   const widgetSize = resolveWidgetSize(TRAVEL_ENTRY, prefs);
   const hasInteracted = prefs["widgets.travel.interaction"];
 
@@ -118,9 +138,16 @@ function Travel({
   });
   recordErrorRef.current = recordError;
 
+  const frameOrigin = useMemo(() => {
+    try {
+      return new URL(src).origin;
+    } catch {
+      return null;
+    }
+  }, [src]);
   useEffect(() => {
     const frameWindow = iframeRef.current?.contentWindow;
-    if (!readyPayload || !frameWindow) {
+    if (!readyPayload || !frameWindow || !frameOrigin) {
       return;
     }
     frameWindow.postMessage(
@@ -131,9 +158,10 @@ function Travel({
         payload: { interacted: Boolean(hasInteracted) },
         sentAt: new Date().toISOString(),
       },
-      new URL(src).origin
+      frameOrigin
     );
-    // src is left out: a new document sends its own widget_ready.
+    // frameOrigin is left out: a new document sends its own widget_ready,
+    // which sends this again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readyPayload, hasInteracted]);
 
