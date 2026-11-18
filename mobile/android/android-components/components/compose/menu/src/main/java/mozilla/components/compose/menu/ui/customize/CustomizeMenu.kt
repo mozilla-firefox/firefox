@@ -72,7 +72,8 @@ internal fun LazyListScope.customizeMenuGroups(
             CustomizeMenuGroupContent(
                 group = group,
                 modifier =
-                    Modifier.padding(top = itemSpacing)
+                    Modifier.customizeMenuGroupSemantics(group = group, groups = dragState.groups)
+                        .padding(top = itemSpacing)
                         .dropLine(group.id, dragState.dropTarget, itemSpacing)
                         .alpha(if (isDragged) DRAGGED_GROUP_ALPHA else 1f)
                         .padding(

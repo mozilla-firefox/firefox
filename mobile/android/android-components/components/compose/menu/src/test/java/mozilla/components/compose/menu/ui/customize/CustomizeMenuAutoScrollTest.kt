@@ -52,7 +52,7 @@ class CustomizeMenuAutoScrollTest {
                     )
             )
         composeTestRule.setContent { AcornTheme { CustomizeMenuContent(store = store) } }
-        val from = composeTestRule.onNodeWithText("Shown 1").fetchSemanticsNode().boundsInRoot.center
+        val from = sectionText("Shown 1").fetchSemanticsNode().boundsInRoot.center
         val bottom = composeTestRule.onRoot().fetchSemanticsNode().boundsInRoot.bottom
         composeTestRule.onRoot().performTouchInput {
             down(from)
@@ -104,4 +104,7 @@ class CustomizeMenuAutoScrollTest {
                     )
                 ),
         )
+
+    /** The node of the text of a section, merged into the node of the section for accessibility services. */
+    private fun sectionText(text: String) = composeTestRule.onNodeWithText(text, useUnmergedTree = true)
 }

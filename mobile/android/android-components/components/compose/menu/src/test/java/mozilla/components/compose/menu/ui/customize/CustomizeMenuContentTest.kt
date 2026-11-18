@@ -14,8 +14,8 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollAction
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -62,11 +62,11 @@ class CustomizeMenuContentTest {
             )
         )
 
-        val shown1Bounds = composeTestRule.onNodeWithText("Shown 1").getUnclippedBoundsInRoot()
-        val mandatoryBounds = composeTestRule.onNodeWithText("Mandatory").getUnclippedBoundsInRoot()
-        val shown2Bounds = composeTestRule.onNodeWithText("Shown 2").getUnclippedBoundsInRoot()
+        val shown1Bounds = sectionText("Shown 1").getUnclippedBoundsInRoot()
+        val mandatoryBounds = sectionText("Mandatory").getUnclippedBoundsInRoot()
+        val shown2Bounds = sectionText("Shown 2").getUnclippedBoundsInRoot()
         val hiddenTitleBounds = composeTestRule.onNodeWithText(hiddenSectionsTitle).getUnclippedBoundsInRoot()
-        val hiddenBounds = composeTestRule.onNodeWithText("Hidden").getUnclippedBoundsInRoot()
+        val hiddenBounds = sectionText("Hidden").getUnclippedBoundsInRoot()
         assertTrue(shown1Bounds.bottom <= mandatoryBounds.top)
         assertTrue(mandatoryBounds.bottom <= shown2Bounds.top)
         assertTrue(shown2Bounds.bottom <= hiddenTitleBounds.top)
@@ -91,7 +91,7 @@ class CustomizeMenuContentTest {
     fun `GIVEN the menu is customized AND hidden sections THEN the button to reset it is shown below the hidden sections`() {
         setContent(menuState(shown = listOf(row("Shown")), hidden = listOf(row("Hidden")), isCustomized = true))
 
-        val hiddenBounds = composeTestRule.onNodeWithText("Hidden").getUnclippedBoundsInRoot()
+        val hiddenBounds = sectionText("Hidden").getUnclippedBoundsInRoot()
         val resetBounds = composeTestRule.onNodeWithText(resetToDefault).getUnclippedBoundsInRoot()
         assertTrue(hiddenBounds.bottom <= resetBounds.top)
     }
@@ -116,9 +116,9 @@ class CustomizeMenuContentTest {
     fun `GIVEN more sections than fit on the screen WHEN scrolling to the last one THEN it is shown`() {
         setContent(menuState(shown = List(10) { row("Shown $it") }, hidden = List(10) { row("Hidden $it") }))
 
-        composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasText("Hidden 9"))
+        composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasContentDescription("Hidden 9"))
 
-        composeTestRule.onNodeWithText("Hidden 9").assertIsDisplayed()
+        sectionText("Hidden 9").assertIsDisplayed()
     }
 
     @Test
@@ -670,7 +670,12 @@ class CustomizeMenuContentTest {
         return store
     }
 
-    private fun boundsOf(text: String) = composeTestRule.onNodeWithText(text).fetchSemanticsNode().boundsInRoot
+    /** Bounds of the node with [text], which can be the text of a section. */
+    private fun boundsOf(text: String) =
+        composeTestRule.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+
+    /** The node of the text of a section, merged into the node of the section for accessibility services. */
+    private fun sectionText(text: String) = composeTestRule.onNodeWithText(text, useUnmergedTree = true)
 
     /** Bounds of the nodes with [texts], by default the hidden sections title and the hidden section "Hidden". */
     private fun hiddenAreaBounds(vararg texts: String = arrayOf(hiddenSectionsTitle, "Hidden")) = texts.map {

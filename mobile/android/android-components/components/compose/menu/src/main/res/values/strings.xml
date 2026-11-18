@@ -17,4 +17,6 @@
   <string name="mozac_menu_customize_drag_to_hide">Drag sections here to hide</string>
   <!-- Button text to reset the menu to default configuration -->
   <string name="mozac_menu_customize_reset_to_default">Reset to default</string>
+  <!-- Accessibility description used in the menu customization screen, where sections of the menu can be moved around. The string describes the section the user has selected, and tells the user what position it currently occupies. %1$s is the name of the section (e.g. "VPN"). %2$d is its position, and %3$d is the total number of sections being shown. -->
+  <string name="mozac_menu_customize_shown_section">%1$s. Position %2$d of %3$d</string>
 </resources>

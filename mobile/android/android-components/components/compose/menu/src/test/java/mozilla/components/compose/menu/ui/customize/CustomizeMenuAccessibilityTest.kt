@@ -10,6 +10,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.compose.base.text.Text
@@ -52,6 +53,53 @@ class CustomizeMenuAccessibilityTest {
         composeTestRule.onNodeWithText(resetToDefault).assert(hasRole(Role.Button))
     }
 
+    @Test
+    fun `THEN each section is a single node reading the names of its items and its position among the shown sections`() {
+        setContent(
+            menuState(
+                shown = listOf(row(id = "first", "First 1", "First 2"), row(id = "second", "Second")),
+                hidden = listOf(row("Hidden")),
+            )
+        )
+
+        composeTestRule.onNodeWithContentDescription(shownSection("First 1, First 2", 1, 2)).assertExists()
+        composeTestRule.onNodeWithContentDescription(shownSection("Second", 2, 2)).assertExists()
+        composeTestRule.onNodeWithText("First 1").assertDoesNotExist()
+        composeTestRule.onNodeWithText("First 2").assertDoesNotExist()
+    }
+
+    @Test
+    fun `THEN a hidden section reads the names of its items without a position AND it is not disabled`() {
+        setContent(
+            menuState(
+                shown = listOf(row("Shown")),
+                hidden = listOf(row(id = "hidden", "Hidden 1", "Hidden 2")),
+            )
+        )
+
+        composeTestRule
+            .onNodeWithContentDescription("Hidden 1, Hidden 2")
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Disabled))
+    }
+
+    @Test
+    fun `GIVEN a section with more items than its collapsed list shows THEN it reads the names of all of them`() {
+        setContent(menuState(shown = listOf(row(id = "long", "One", "Two", "Three", "Four", "Five"))))
+
+        composeTestRule.onNodeWithContentDescription(shownSection("One, Two, Three, Four, Five", 1, 1)).assertExists()
+    }
+
+    @Test
+    fun `GIVEN a grid section THEN it reads the names of its items`() {
+        setContent(menuState(shown = listOf(grid(id = "grid", "Back", "Forward"))))
+
+        composeTestRule.onNodeWithContentDescription(shownSection("Back, Forward", 1, 1)).assertExists()
+    }
+
+    /** What the section read as [label] reads when it is shown at [position] among [count] shown sections. */
+    private fun shownSection(label: String, position: Int, count: Int) =
+        testContext.getString(R.string.mozac_menu_customize_shown_section, label, position, count)
+
     private fun hasRole(role: Role) = SemanticsMatcher.expectValue(SemanticsProperties.Role, role)
 
     private fun setContent(state: CustomizableMenuState) {
@@ -65,22 +113,38 @@ class CustomizeMenuAccessibilityTest {
 
     private fun menuState(
         shown: List<MenuItemsGroup>,
+        hidden: List<MenuItemsGroup> = emptyList(),
         isCustomized: Boolean = false,
     ) =
         CustomizableMenuState(
-            menuGroups = shown,
+            menuGroups = shown + hidden,
+            hiddenGroupIds = hidden.map { it.id }.toSet(),
             isCustomized = isCustomized,
         )
 
-    private fun row(title: String) =
+    private fun row(title: String) = row(id = title, title)
+
+    private fun row(id: String, vararg titles: String) =
         MenuItemsGroup.Row(
-            id = title,
+            id = id,
             items =
-                listOf(
+                titles.map { title ->
                     StandardMenuItem(
                         title = MenuItemTitle(Text.String(title)),
                         icon = MenuItemIconRes(iconsR.drawable.mozac_ic_settings_24),
                     )
-                ),
+                },
+        )
+
+    private fun grid(id: String, vararg titles: String) =
+        MenuItemsGroup.Grid(
+            id = id,
+            items =
+                titles.map { title ->
+                    StandardMenuItem(
+                        title = MenuItemTitle(Text.String(title)),
+                        icon = MenuItemIconRes(iconsR.drawable.mozac_ic_settings_24),
+                    )
+                },
         )
 }
