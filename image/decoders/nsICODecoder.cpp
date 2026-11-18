@@ -7,6 +7,8 @@
 
 #include "nsICODecoder.h"
 
+#include <algorithm>
+#include <tuple>
 #include <utility>
 
 #include "RasterImage.h"
@@ -166,19 +168,21 @@ LexerTransition<ICOState> nsICODecoder::ReadDirEntry(const char* aData) {
     // then we don't trust any of them and just try to get the size of each
     // resource directly from the resource. This includes 0 sized entries, and
     // two entries having the same size.
-    bool needsVerification = false;
-    for (size_t i = 0; !needsVerification && i < mDirEntries.Length(); ++i) {
-      if (mDirEntries[i].mSize.width == 0 || mDirEntries[i].mSize.height == 0) {
-        needsVerification = true;
-        break;
-      }
-      for (size_t j = i + 1; j < mDirEntries.Length(); ++j) {
-        if (mDirEntries[i].mSize == mDirEntries[j].mSize) {
-          needsVerification = true;
-          break;
-        }
-      }
+    nsTArray<OrientedIntSize> sizes(mDirEntries.Length());
+    for (const IconDirEntryEx& entry : mDirEntries) {
+      sizes.AppendElement(entry.mSize);
     }
+    std::sort(sizes.begin(), sizes.end(),
+              [](const OrientedIntSize& aA, const OrientedIntSize& aB) {
+                return std::tie(aA.width, aA.height) <
+                       std::tie(aB.width, aB.height);
+              });
+    bool needsVerification =
+        std::any_of(sizes.begin(), sizes.end(),
+                    [](const OrientedIntSize& aSize) {
+                      return aSize.width == 0 || aSize.height == 0;
+                    }) ||
+        std::adjacent_find(sizes.begin(), sizes.end()) != sizes.end();
 
     if (!needsVerification) {
       return Transition::To(ICOState::FINISHED_DIR_ENTRY, 0);
