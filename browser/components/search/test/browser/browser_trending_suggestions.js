@@ -158,7 +158,7 @@ add_task(async function test_block_trending() {
   );
   Assert.equal(trendingResult.payload.trending, true);
 
-  await UrlbarTestUtils.openResultMenuAndPressAccesskey(window, "D", {
+  await UrlbarTestUtils.openResultMenuAndPressAccesskey(window, "n", {
     resultIndex: 0,
   });
 
