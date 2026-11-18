@@ -10,8 +10,10 @@
 
 #include <memory>
 
+#include "mozilla/ArenaAllocator.h"
 #include "mozilla/ArenaObjectID.h"
 #include "mozilla/DisplayListArenaObjectId.h"
+#include "mozilla/MemoryReporting.h"
 #include "nsDisplayItemTypes.h"
 #include "nsQueryFrame.h"
 #include "nsTArray.h"
@@ -23,23 +25,15 @@ class SizeOfState;
 enum class PresArenaKind { Frames, DisplayList };
 }  // namespace mozilla
 
-namespace mozilla::detail {
-struct PresArenaSlabMetadata;
-struct PresArenaSuperblock;
-}  // namespace mozilla::detail
-
-/**
- * Type-segregated slab allocator for the frame tree and display lists. See the
- * cpp file for details on allocation and memory layout.
- */
-template <typename ObjectId, size_t ObjectIdCount>
+template <size_t ArenaSize, typename ObjectId, size_t ObjectIdCount>
 class nsPresArena {
  public:
   constexpr nsPresArena() = default;
   ~nsPresArena();
 
   /**
-   * Every aCode must always be used with the same object size, aSize.
+   * Pool allocation with recycler lists indexed by object-type ID (see above).
+   * Every aID must always be used with the same object size, aSize.
    */
   void* Allocate(ObjectId aCode, size_t aSize);
   void Free(ObjectId aCode, void* aPtr);
@@ -52,7 +46,7 @@ class nsPresArena {
   void AddSizeOfExcludingThis(mozilla::SizeOfState&, nsArenaSizes&,
                               mozilla::PresArenaKind) const;
 
-  void Check();
+  void Check() { mPool.Check(); }
 
   /**
    * Asserts that every allocation has been freed, and releases the debug-only
@@ -61,39 +55,27 @@ class nsPresArena {
   void AssertNoLiveAllocations();
 
   /**
-   * Decommits the memory of empty slabs. If aAll is false, only slabs that
-   * have been empty since the previous call are decommitted. Returns whether
-   * there are empty slabs left to decommit.
+   * Sorts the free lists so that subsequent allocations reuse entries in
+   * ascending address order.
    */
-  bool Purge(bool aAll);
+  void SortFreeLists();
 
  private:
-  using SlabMetadata = mozilla::detail::PresArenaSlabMetadata;
-  using Superblock = mozilla::detail::PresArenaSuperblock;
+  class FreeList {
+   public:
+    nsTArray<void*> mEntries;
+    size_t mEntrySize = 0;
+    size_t mEntriesEverAllocated = 0;
 
-  struct TypeHeap {
-    nsTArray<SlabMetadata*> mSlabs;
-    // Bitmap over mSlabs of the slabs which have at least one free slot.
-    nsTArray<uint64_t> mSlabsWithSpace;
-    uint32_t mEntrySize = 0;
-    uint32_t mSlotsPerSlab = 0;
-    uint32_t mPagesPerSlab = 0;
-    // No slab with a lower index than this has free space.
-    uint32_t mFirstSlabWithSpace = 0;
+    constexpr FreeList() = default;
 
-    constexpr TypeHeap() = default;
+    size_t SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const {
+      return mEntries.ShallowSizeOfExcludingThis(aMallocSizeOf);
+    }
   };
 
-  void InitHeap(TypeHeap&, size_t aSize);
-  SlabMetadata* FindSlabWithSpace(TypeHeap&);
-  char* AllocatePages(size_t aCount);
-
-  TypeHeap mHeaps[ObjectIdCount];
-  nsTArray<Superblock*> mSuperblocks;
-  // Next unused page in the last superblock.
-  uint32_t mNextPage = 0;
-  uint32_t mEpoch = 0;
-  uint32_t mEmptyCommittedSlabs = 0;
+  FreeList mFreeLists[ObjectIdCount];
+  mozilla::ArenaAllocator<ArenaSize, 8> mPool;
 #ifdef DEBUG
   // We track allocated pointers in a diagnostic hash set, to assert against
   // missing/double frees. The set can get quite large, so we use fallible
@@ -106,10 +88,10 @@ class nsPresArena {
 #endif
 };
 
-extern template class nsPresArena<mozilla::ArenaObjectID,
+extern template class nsPresArena<8192, mozilla::ArenaObjectID,
                                   mozilla::eArenaObjectID_COUNT>;
 extern template class nsPresArena<
-    mozilla::DisplayListArenaObjectId,
+    32768, mozilla::DisplayListArenaObjectId,
     size_t(mozilla::DisplayListArenaObjectId::COUNT)>;
 
 namespace mozilla {
@@ -117,10 +99,10 @@ namespace mozilla {
 /**
  * A process-wide, main-thread-only nsPresArena.
  */
-template <typename ObjectId, size_t ObjectIdCount>
+template <size_t ArenaSize, typename ObjectId, size_t ObjectIdCount>
 class StaticPresArena {
  public:
-  using Arena = nsPresArena<ObjectId, ObjectIdCount>;
+  using Arena = nsPresArena<ArenaSize, ObjectId, ObjectIdCount>;
 
   static void* Allocate(ObjectId aId, size_t aSize) {
     return sInstance.Allocate(aId, aSize);
@@ -132,24 +114,26 @@ class StaticPresArena {
     sInstance.AddSizeOfExcludingThis(aState, aSizes, aKind);
   }
   static void AssertNoLiveAllocations() { sInstance.AssertNoLiveAllocations(); }
-  static bool Purge(bool aAll) { return sInstance.Purge(aAll); }
+  static void SortFreeLists() { sInstance.SortFreeLists(); }
 
  private:
   static Arena sInstance;
 };
 
-extern template class StaticPresArena<ArenaObjectID, eArenaObjectID_COUNT>;
-extern template class StaticPresArena<DisplayListArenaObjectId,
+extern template class StaticPresArena<8192, ArenaObjectID,
+                                      eArenaObjectID_COUNT>;
+extern template class StaticPresArena<32768, DisplayListArenaObjectId,
                                       size_t(DisplayListArenaObjectId::COUNT)>;
 
 /**
  * All frames are allocated from a process-wide arena, along with some other
- * closely-related objects (see nsPresArenaObjectList.inc). Each object type
- * (aID) gets its own slabs, and must always correspond to the same aSize value.
- * Allocate is infallible and will abort on out-of-memory.
+ * closely-related objects (see nsPresArenaObjectList.inc). They are also
+ * recycled using free lists. Separate free lists are maintained for each object
+ * type (aID), which must always correspond to the same aSize value. Allocate is
+ * infallible and will abort on out-of-memory.
  */
 class FrameArena final
-    : public StaticPresArena<ArenaObjectID, eArenaObjectID_COUNT> {
+    : public StaticPresArena<8192, ArenaObjectID, eArenaObjectID_COUNT> {
  public:
   using StaticPresArena::Allocate;
   using StaticPresArena::Free;
@@ -176,7 +160,7 @@ class FrameArena final
  * display list nodes.
  */
 class DisplayListArena final
-    : public StaticPresArena<DisplayListArenaObjectId,
+    : public StaticPresArena<32768, DisplayListArenaObjectId,
                              size_t(DisplayListArenaObjectId::COUNT)> {
  public:
   using StaticPresArena::Allocate;

@@ -111,6 +111,7 @@ UNIFIED_SOURCES += [
     "nsLayoutDebugger.cpp",
     "nsLayoutHistoryState.cpp",
     "nsLayoutUtils.cpp",
+    "nsPresArena.cpp",
     "nsPresContext.cpp",
     "nsQuoteList.cpp",
     "nsRefreshObservers.cpp",
@@ -126,10 +127,8 @@ UNIFIED_SOURCES += [
     "ZoomConstraintsClient.cpp",
 ]
 
-# nsPresArena.cpp includes windows.h.
 # nsRefreshDriver.cpp needs to be built separately because of name clashes in the OS X headers
 SOURCES += [
-    "nsPresArena.cpp",
     "nsRefreshDriver.cpp",
 ]
 
