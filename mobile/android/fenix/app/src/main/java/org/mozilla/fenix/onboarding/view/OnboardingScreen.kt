@@ -208,10 +208,7 @@ fun OnboardingScreen(
             onSkipDefaultClick()
             scrollToNextPageOrDismiss()
         },
-        onSignInButtonClick = {
-            onSignInButtonClick()
-            scrollToNextPageOrDismiss()
-        },
+        onSignInButtonClick = onSignInButtonClick,
         onSignInSkipClick = {
             onSkipSignInClick()
             scrollToNextPageOrDismiss()
