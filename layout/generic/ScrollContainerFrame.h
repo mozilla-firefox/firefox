@@ -1207,14 +1207,6 @@ class ScrollContainerFrame : public nsContainerFrame,
   void PostScrolledAreaEvent();
   MOZ_CAN_RUN_SCRIPT void FireScrolledAreaEvent();
 
-  // Whether aPart (a scrollbar, the scroll corner or the resizer) is shown.
-  // Only the scrollbars and the scroll corner (which can only take up space
-  // when both scrollbars are shown) can be hidden. Like content hidden by
-  // content-visibility, hidden parts aren't laid out, painted or kept up to
-  // date until they're shown again.
-  bool IsScrollbarPartShown(const nsIFrame* aPart) const;
-  // The scrollbar, if it's shown.
-  nsScrollbarFrame* GetShownScrollbarBox(bool aVertical) const;
   void FinishReflowForScrollbar(nsScrollbarFrame*, nscoord aMinXY,
                                 nscoord aMaxXY, nscoord aCurPosXY,
                                 nscoord aPageIncrement);
