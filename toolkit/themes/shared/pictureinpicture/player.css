@@ -77,7 +77,7 @@ browser {
 
 #controls {
   height: calc(100% - 2 * var(--resize-margin));
-  left: 0;
+  inset-inline-start: 0;
   position: absolute;
   top: 0;
   width: calc(100% - 2 * var(--resize-margin));
@@ -327,24 +327,22 @@ body:not(:fullscreen) #controls:hover #timestamp {
 
 #close {
   background-image: url("chrome://global/skin/icons/close.svg");
-  right: 10px;
+  inset-inline-end: 10px;
   top: 10px;
 }
 
 #close[mac="true"] {
-  right: auto;
-  left: 10px;
+  inset-inline: 10px auto;
 }
 
 #unpip {
   background-image: url("chrome://global/skin/media/picture-in-picture-closed.svg");
-  left: 10px;
+  inset-inline-start: 10px;
   top: 10px;
 }
 
 #unpip[mac="true"] {
-  right: 10px;
-  left: auto;
+  inset-inline: auto 10px;
 }
 
 #playpause {
@@ -472,6 +470,7 @@ body:not(:fullscreen) #fullscreen {
   position: absolute;
   bottom: 40px;
   user-select: none;
+  /* .panel turns RTL in RTL locales, but the button it opens from stays on the right */
   right: 24px;
   color: var(--settings-panel-text-color);
   font: menu;

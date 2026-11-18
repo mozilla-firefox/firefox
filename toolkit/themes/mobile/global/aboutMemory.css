@@ -54,7 +54,7 @@ div.sections {
 
 div.sidebar {
   flex: 0 0 max-content;
-  margin-left: 1em;
+  margin-inline-start: 1em;
 }
 
 div.sidebarContents {
@@ -83,12 +83,12 @@ ul.index {
 }
 
 ul.index > li {
-  padding-left: 0.5em;
+  padding-inline-start: 0.5em;
 }
 
 div.opsRow {
   padding: 0.5em;
-  margin-right: 0.5em;
+  margin-inline-end: 0.5em;
   margin-top: 0.5em;
   border: 1px solid ThreeDShadow;
   border-radius: 10px;
@@ -105,7 +105,7 @@ div.sidebarLabel {
 }
 
 .opsRowLabel label {
-  margin-left: 1em;
+  margin-inline-start: 1em;
   font-weight: normal;
 }
 
@@ -120,7 +120,7 @@ h1 {
 }
 
 h2 {
-  padding-left: 0.1em;
+  padding-inline-start: 0.1em;
 }
 
 .accuracyWarning,

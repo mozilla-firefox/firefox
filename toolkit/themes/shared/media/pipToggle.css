@@ -53,7 +53,7 @@
   height: var(--pip-icon-width-with-margins);
   width: var(--pip-icon-width-with-margins);
   border-radius: var(--pip-border-radius-toggle);
-  margin-right: calc(var(--pip-icon-width-with-margins) * -1);
+  margin-inline-end: calc(var(--pip-icon-width-with-margins) * -1);
 }
 
 .pip-wrapper[policy="hidden"] {
@@ -92,7 +92,7 @@
 
 .pip-wrapper[position="right"] {
   /* move from the right by total width of pip toggle so that it is at least visible in the video element */
-  right: calc(var(--pip-icon-width-with-margins) + var(--pip-toggle-distanceFromVideoEdge));
+  inset-inline-end: calc(var(--pip-icon-width-with-margins) + var(--pip-toggle-distanceFromVideoEdge));
 }
 
 /* Re-position the first-time toggle such that it will always be the same distance away from the right edge
@@ -103,7 +103,7 @@
 }
 
 .pip-wrapper[position="left"] {
-  left: var(--pip-toggle-distanceFromVideoEdge);
+  inset-inline-start: var(--pip-toggle-distanceFromVideoEdge);
 }
 
 .pip-expanded,
@@ -111,7 +111,7 @@
 .pip-icon,
 .pip-explainer {
   position: absolute;
-  left: 0;
+  inset-inline-start: 0;
   top: 0;
 }
 
@@ -140,7 +140,7 @@
 
 .pip-icon {
   top: 8px;
-  left: 8px;
+  inset-inline-start: 8px;
   pointer-events: none;
   background-image: url("resource://content-accessible/media/picture-in-picture-open.svg");
   background-position: center, center;
@@ -157,8 +157,7 @@
 }
 
 .pip-wrapper[position="left"] > .pip-expanded > .pip-icon-label > .pip-label {
-  margin-left: var(--pip-icon-width-with-margins);
-  margin-right: var(--pip-toggle-margin);
+  margin-inline: var(--pip-icon-width-with-margins) var(--pip-toggle-margin);
 }
 
 .pip-small {
@@ -178,7 +177,7 @@
 .pip-wrapper[position="right"] > .pip-expanded > .pip-icon-label > .pip-icon {
   position: relative;
   top: 0;
-  left: 0;
+  inset-inline-start: 0;
   display: inline-block;
 }
 
@@ -198,7 +197,7 @@
 }
 
 .pip-wrapper[position="right"] > .pip-expanded > .pip-icon-label > .pip-label {
-  margin-right: var(--pip-toggle-margin);
+  margin-inline-end: var(--pip-toggle-margin);
 }
 
 @media (prefers-reduced-motion) {
@@ -279,21 +278,22 @@
 }
 
 .pip-wrapper:not([small-video], [has-used], .experiment).hovering > .pip-expanded {
-  border-bottom-right-radius: 0;
-  border-bottom-left-radius: 0;
+  border-end-end-radius: 0;
+  border-end-start-radius: 0;
 }
 
 /* Toggle message only appears for CONTROL variant. */
 .pip-wrapper:not(.experiment) > .pip-expanded > .pip-explainer {
-  padding: 6px 16px 8px 8px;
+  padding-block: 6px 8px;
+  padding-inline: 8px 16px;
   translate: 0;
   transition:
     opacity 250ms,
     translate 190ms;
   transition-timing-function: cubic-bezier(0.07, 0.95, 0, 1);
   background: rgba(12, 12, 13, 0.65);
-  border-bottom-right-radius: 8px;
-  border-bottom-left-radius: 8px;
+  border-end-end-radius: 8px;
+  border-end-start-radius: 8px;
   border: var(--pip-highlight-width) var(--pip-highlight-style);
   border-top: 0;
   box-shadow: 0 4px 4px rgba(12, 12, 13, 0.25);
@@ -305,8 +305,7 @@
   user-select: none;
 }
 
-.videocontrols[localedir="rtl"] .pip-wrapper:not(.experiment) > .pip-explainer {
-  text-align: right;
+.videocontrols[localedir="rtl"] .pip-wrapper:not(.experiment) .pip-explainer {
   direction: rtl;
 }
 

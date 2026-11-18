@@ -17,7 +17,7 @@
    * better, see bug 1590379 */
   user-select: none;
   /* Prevent unwanted style inheritance. See bug 554717. */
-  text-align: left;
+  text-align: start;
   list-style-image: none !important;
   font: normal normal normal 100% / normal sans-serif !important;
   text-decoration: none !important;
@@ -111,7 +111,7 @@
 
 .stackItem {
   position: absolute;
-  left: 0;
+  inset-inline-start: 0;
   bottom: 0;
   width: 100%;
   height: 100%;
@@ -279,8 +279,7 @@
   min-width: var(--volumeStack-width);
   flex-grow: 1;
   flex-shrink: 0;
-  margin-right: 6px;
-  margin-left: 4px;
+  margin-inline: 4px 6px;
 }
 
 .bufferBar,
@@ -289,7 +288,7 @@
 .volumeControl {
   bottom: 0;
   color: inherit;
-  left: 0;
+  inset-inline-start: 0;
   position: absolute;
   width: 100%;
   height: 100%;
@@ -370,7 +369,7 @@
 
 .textTrackListContainer {
   position: absolute;
-  right: 5px;
+  inset-inline-end: 5px;
   bottom: 45px;
   top: 5px;
   max-width: 80%;
@@ -404,7 +403,7 @@
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
-  text-align: left;
+  text-align: start;
   text-overflow: ellipsis;
   background-color: transparent;
   color: inherit;

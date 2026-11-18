@@ -66,7 +66,7 @@ xul|separator.groove:not([orient="vertical"]) {
   margin-block: 0.4em;
 }
 xul|separator.groove[orient="vertical"] {
-  border-left: 1px solid #a3a3a3;
+  border-inline-start: 1px solid #a3a3a3;
   width: 0;
   margin-inline: 0.4em;
 }

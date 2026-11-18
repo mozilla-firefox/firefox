@@ -726,16 +726,16 @@ xul|richlistbox {
 }
 
 xul|listheader {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
   overflow: clip; /* Clip border-radius */
 }
 
 xul|listheader + xul|richlistbox {
   margin-top: 0;
   border-top: none;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
 }
 
 html|select[size][multiple] > html|option,
@@ -810,8 +810,8 @@ xul|tree {
 xul|treecols {
   appearance: none;
   border: none;
-  border-top-left-radius: var(--border-radius-small);
-  border-top-right-radius: var(--border-radius-small);
+  border-start-start-radius: var(--border-radius-small);
+  border-start-end-radius: var(--border-radius-small);
   border-bottom: var(--button-border);
   overflow: clip; /* Clip border-radius */
   padding: 0;

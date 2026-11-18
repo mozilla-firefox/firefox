@@ -77,7 +77,7 @@ http://www.briangrinstead.com/blog/keep-aspect-ratio-with-html-and-css */
 .spectrum-color {
   position: absolute;
   top: 0;
-  left: 0;
+  inset-inline-start: 0;
   bottom: 0;
   width: 100%;
 }
@@ -85,10 +85,7 @@ http://www.briangrinstead.com/blog/keep-aspect-ratio-with-html-and-css */
 .spectrum-sat,
 .spectrum-val {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
 }
 
 .spectrum-alpha {

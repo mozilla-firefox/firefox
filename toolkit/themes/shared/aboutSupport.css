@@ -162,7 +162,7 @@ td.integer {
 #verify-place-result {
   max-height: 200px;
   overflow: auto;
-  text-align: left;
+  text-align: start;
   direction: ltr;
 }
 

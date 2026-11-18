@@ -169,7 +169,7 @@ input[type="search"] {
 table {
   border-collapse: collapse;
   border-spacing: 0;
-  text-align: left;
+  text-align: start;
   width: 100%;
   table-layout: fixed;
 }
