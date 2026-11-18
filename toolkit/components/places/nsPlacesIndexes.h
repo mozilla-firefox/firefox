@@ -5,9 +5,12 @@
 #ifndef nsPlacesIndexes_h_
 #define nsPlacesIndexes_h_
 
-#define CREATE_PLACES_IDX(__name, __table, __columns, __type)                  \
-  nsLiteralCString("CREATE " __type " INDEX IF NOT EXISTS " __table "_" __name \
-                   " ON " __table " (" __columns ")")
+#define CREATE_IDX_IN_SCHEMA(__schema, __name, __table, __columns, __type)   \
+  nsLiteralCString("CREATE " __type " INDEX IF NOT EXISTS " __schema __table \
+                   "_" __name " ON " __table " (" __columns ")")
+
+#define CREATE_PLACES_IDX(__name, __table, __columns, __type) \
+  CREATE_IDX_IN_SCHEMA("", __name, __table, __columns, __type)
 
 /**
  * moz_places
@@ -103,6 +106,13 @@
 
 #define CREATE_IDX_MOZ_ICONS_ICONURLHASH \
   CREATE_PLACES_IDX("iconurlhashindex", "moz_icons", "fixed_icon_url_hash", "")
+
+// moz_icons_to_pages
+// Indexes the referencing column of the FOREIGN KEY (icon_id), so cascading
+// deletes from moz_icons and orphan-icon lookups don't scan the table.
+#define CREATE_IDX_MOZ_ICONS_TO_PAGES_ICON(__schema)                           \
+  CREATE_IDX_IN_SCHEMA(__schema, "iconindex", "moz_icons_to_pages", "icon_id", \
+                       "")
 
 // moz_places_metadata
 #define CREATE_IDX_MOZ_PLACES_METADATA_PLACECREATED                    \

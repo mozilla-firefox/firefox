@@ -821,6 +821,8 @@ nsresult Database::EnsureFaviconsDatabaseAttached(
     NS_ENSURE_SUCCESS(rv, rv);
     rv = conn->ExecuteSimpleSQL(CREATE_MOZ_ICONS_TO_PAGES);
     NS_ENSURE_SUCCESS(rv, rv);
+    rv = conn->ExecuteSimpleSQL(CREATE_IDX_MOZ_ICONS_TO_PAGES_ICON(""));
+    NS_ENSURE_SUCCESS(rv, rv);
     rv = transaction.Commit();
     NS_ENSURE_SUCCESS(rv, rv);
 
@@ -1433,6 +1435,13 @@ nsresult Database::InitSchema(bool* aDatabaseMigrated) {
 
       // Firefox 160 uses schema version 88
 
+      if (currentSchemaVersion < 89) {
+        rv = MigrateV89Up();
+        NS_ENSURE_SUCCESS(rv, rv);
+      }
+
+      // Firefox 162 uses schema version 89
+
       // Schema Upgrades must add migration code here.
       // >>> IMPORTANT! <<<
       // NEVER MIX UP SYNC AND ASYNC EXECUTION IN MIGRATORS, YOU MAY LOCK THE
@@ -1566,6 +1575,11 @@ nsresult Database::InitSchema(bool* aDatabaseMigrated) {
     NS_ENSURE_SUCCESS(rv, rv);
     // Add moz_newtab_shortcuts_interaction place_id index
     rv = mMainConn->ExecuteSimpleSQL(CREATE_IDX_MOZ_NEWTAB_SHORTCUTS_PLACEID);
+    NS_ENSURE_SUCCESS(rv, rv);
+
+    // The favicons database may predate this one.
+    rv = mMainConn->ExecuteSimpleSQL(
+        CREATE_IDX_MOZ_ICONS_TO_PAGES_ICON("favicons."));
     NS_ENSURE_SUCCESS(rv, rv);
 
     // The bookmarks roots get initialized in CheckRoots().
@@ -2474,6 +2488,11 @@ nsresult Database::MigrateV88Up() {
     NS_ENSURE_SUCCESS(rv, rv);
   }
   return NS_OK;
+}
+
+nsresult Database::MigrateV89Up() {
+  return mMainConn->ExecuteSimpleSQL(
+      CREATE_IDX_MOZ_ICONS_TO_PAGES_ICON("favicons."));
 }
 
 int64_t Database::CreateMobileRoot() {
