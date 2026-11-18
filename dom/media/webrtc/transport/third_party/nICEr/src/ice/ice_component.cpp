@@ -920,6 +920,7 @@ int nr_ice_component_take_from_pool(nr_ice_component *component,
           cand->type != RELAYED) {
         r_log(LOG_ICE, LOG_DEBUG, "ICE(%s)/STREAM(%s)/COMP(%d): dropping pre-gathered candidate %s because the stream is relay-only",
               component->ctx->label, component->stream->label, component->component_id, cand->label);
+        TAILQ_REMOVE(&cand->isock->candidates, cand, entry_sock);
         nr_ice_candidate_destroy(&cand);
         dropped = true;
         continue;
@@ -928,6 +929,7 @@ int nr_ice_component_take_from_pool(nr_ice_component *component,
       if (nr_ice_candidate_update_ice_servers(component->stream, cand)) {
         r_log(LOG_ICE, LOG_WARNING, "ICE(%s)/STREAM(%s)/COMP(%d): dropping pre-gathered candidate %s because the stream does not have its server",
               component->ctx->label, component->stream->label, component->component_id, cand->label);
+        TAILQ_REMOVE(&cand->isock->candidates, cand, entry_sock);
         nr_ice_candidate_destroy(&cand);
         dropped = true;
         continue;
