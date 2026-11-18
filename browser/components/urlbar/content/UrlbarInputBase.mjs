@@ -4287,7 +4287,7 @@ ${
       this.inputField.setSelectionRange(0, 0);
     }
 
-    if (where != "current" && !this.isSearchbarSAP && !keepViewOpen) {
+    if (where != "current" && !this.isSearchbarSAP) {
       this.handleRevert();
     }
 
