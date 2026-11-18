@@ -967,6 +967,159 @@ describe("DiscoveryStreamFeed", () => {
     );
   });
 
+  describe("#getUntitledBlockToRepair", () => {
+    it("should return null when every block has a title", () => {
+      expect(
+        feed.getUntitledBlockToRepair({
+          cooking: { isFollowed: false, isBlocked: true, title: "Cooking" },
+          food: { isFollowed: true, isBlocked: false },
+        })
+      ).toBeNull();
+    });
+
+    it("should rotate through untitled blocks every feed update", () => {
+      const sectionPersonalization = {
+        tech: { isFollowed: false, isBlocked: true },
+        cooking: { isFollowed: false, isBlocked: true, title: "Cooking" },
+        sports: { isFollowed: false, isBlocked: true },
+        food: { isFollowed: true, isBlocked: false },
+      };
+
+      expect(feed.getUntitledBlockToRepair(sectionPersonalization)).toBe(
+        "sports"
+      );
+      jest.advanceTimersByTime(THIRTY_MINUTES);
+      expect(feed.getUntitledBlockToRepair(sectionPersonalization)).toBe(
+        "tech"
+      );
+      jest.advanceTimersByTime(THIRTY_MINUTES);
+      expect(feed.getUntitledBlockToRepair(sectionPersonalization)).toBe(
+        "sports"
+      );
+    });
+  });
+
+  describe("#formatComponentFeedRequest untitled blocks", () => {
+    it("should leave only the block being repaired out of the request", () => {
+      const body = JSON.parse(
+        feed.formatComponentFeedRequest(
+          {
+            sports: { isFollowed: false, isBlocked: true },
+            tech: { isFollowed: false, isBlocked: true },
+            cooking: { isFollowed: false, isBlocked: true, title: "Cooking" },
+            food: { isFollowed: true, isBlocked: false },
+          },
+          "sports"
+        ).body
+      );
+
+      expect(body.sections.map(s => s.sectionId)).toEqual([
+        "tech",
+        "cooking",
+        "food",
+      ]);
+    });
+  });
+
+  describe("#getComponentFeed untitled block repair", () => {
+    const section = (title, recommendations = []) => ({
+      title,
+      receivedFeedRank: 0,
+      layout: "cards",
+      recommendations,
+    });
+
+    const fetchWith = async (sectionPersonalization, feeds) => {
+      setPref("discoverystream.sections.enabled", true);
+      feed.store.dispatch({
+        type: at.SECTION_PERSONALIZATION_UPDATE,
+        data: sectionPersonalization,
+      });
+      jest.spyOn(feed.cache, "get").mockResolvedValue({});
+      jest.spyOn(feed, "rotate").mockImplementation(val => val);
+      jest
+        .spyOn(feed, "scoreItemsInferred")
+        .mockImplementation(val => ({ data: val, filtered: [] }));
+      stubOutFetchFromEndpointWithRealisticData({ feeds });
+      jest.spyOn(feed.store, "dispatch");
+      await feed.getComponentFeed("foo.com");
+      return feed.store.dispatch.mock.calls
+        .map(([action]) => action)
+        .filter(action => action.type === at.SECTION_PERSONALIZATION_SET);
+    };
+
+    it("should store the returned title on untitled blocked sections", async () => {
+      const setActions = await fetchWith(
+        {
+          sports: { isFollowed: false, isBlocked: true },
+          tech: { isFollowed: false, isBlocked: true },
+          food: { isFollowed: true, isBlocked: false },
+        },
+        { sports: section("Sports"), food: section("Food") }
+      );
+
+      expect(setActions).toEqual([
+        {
+          type: at.SECTION_PERSONALIZATION_SET,
+          data: {
+            sports: { isFollowed: false, isBlocked: true, title: "Sports" },
+            tech: { isFollowed: false, isBlocked: true },
+            food: { isFollowed: true, isBlocked: false },
+          },
+        },
+      ]);
+    });
+
+    it("should not update personalization when no untitled block is returned with a title", async () => {
+      const setActions = await fetchWith(
+        {
+          sports: { isFollowed: false, isBlocked: true },
+          cooking: { isFollowed: false, isBlocked: true, title: "Cooking" },
+        },
+        {
+          cooking: section("Cooking 2"),
+          food: section("Food"),
+          sports: section(),
+        }
+      );
+
+      expect(setActions).toEqual([]);
+    });
+
+    it("should filter stories of untitled blocked sections", async () => {
+      const story = (id, topic) => ({ corpusItemId: id, topic, url: id });
+      const sectionPersonalization = {
+        sports: { isFollowed: false, isBlocked: true },
+        tech: { isFollowed: false, isBlocked: true, title: "Tech" },
+      };
+      setPref("discoverystream.sections.enabled", true);
+      jest
+        .spyOn(feed.cache, "get")
+        .mockResolvedValue({ sectionPersonalization });
+      jest.spyOn(feed, "rotate").mockImplementation(val => val);
+      jest
+        .spyOn(feed, "scoreItemsInferred")
+        .mockImplementation(val => ({ data: val, filtered: [] }));
+      stubOutFetchFromEndpointWithRealisticData({
+        data: [],
+        feeds: {
+          top_stories_section: section("Popular Today", [
+            story("a", "sports"),
+            story("b", "food"),
+            story("c", "tech"),
+          ]),
+        },
+      });
+
+      const feedResp = await feed.getComponentFeed("foo.com");
+
+      expect(feedResp.data.recommendations.map(({ id }) => id)).toEqual([
+        "b",
+        "c",
+      ]);
+    });
+  });
+
   describe("#getComponentFeed", () => {
     it("should fetch fresh feed data if cache is empty", async () => {
       const fakeCache = {};

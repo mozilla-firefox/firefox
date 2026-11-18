@@ -2007,8 +2007,12 @@ export class DiscoveryStreamFeed {
       // surfaceId is checked against what Merino was sent even if the region
       // changes while the fetch is in flight.
       const { locale, region } = this;
-      const options = this.formatComponentFeedRequest(
+      const repairSectionKey = this.getUntitledBlockToRepair(
         cachedData.sectionPersonalization
+      );
+      const options = this.formatComponentFeedRequest(
+        cachedData.sectionPersonalization,
+        repairSectionKey
       );
 
       let fetchError;
@@ -2057,10 +2061,24 @@ export class DiscoveryStreamFeed {
         }));
 
         if (sectionsEnabled) {
+          const { sectionPersonalization = {} } =
+            this.store.getState().DiscoveryStream;
+          let repairedPersonalization = null;
           for (const [sectionKey, sectionData] of Object.entries(
             feedResponse.feeds
           )) {
             if (sectionData) {
+              // Sections blocked before bug 2019975 did not store a title, so
+              // repair the block now that its section has been returned.
+              const entry = sectionPersonalization[sectionKey];
+              if (entry?.isBlocked && !entry.title && sectionData.title) {
+                repairedPersonalization ??= { ...sectionPersonalization };
+                repairedPersonalization[sectionKey] = {
+                  ...entry,
+                  title: sectionData.title,
+                };
+              }
+
               for (const item of sectionData.recommendations) {
                 recommendations.push({
                   id:
@@ -2103,6 +2121,21 @@ export class DiscoveryStreamFeed {
           }
 
           this._applySectionLayouts(sections);
+
+          if (repairedPersonalization) {
+            this.store.dispatch({
+              type: at.SECTION_PERSONALIZATION_SET,
+              data: repairedPersonalization,
+            });
+          }
+        }
+
+        // The block being repaired was left out of the request, so Merino did
+        // not filter its stories. Filter them here instead.
+        if (repairSectionKey) {
+          recommendations = recommendations.filter(
+            ({ topic }) => topic !== repairSectionKey
+          );
         }
 
         const { data: scoredItems, personalized } =
@@ -2214,7 +2247,39 @@ export class DiscoveryStreamFeed {
     );
   }
 
-  formatComponentFeedRequest(sectionPersonalization = {}) {
+  /**
+   * Sections blocked before bug 2019975 did not store a title. Picks one of
+   * them to leave out of the feed request so its section is returned and can
+   * be repaired. The pick rotates every feed update, so a section that is
+   * never returned does not hold up the others.
+   *
+   * @param {object} [sectionPersonalization]
+   * @returns {string|null} The section key to leave out, if any.
+   */
+  getUntitledBlockToRepair(sectionPersonalization = {}) {
+    const untitledKeys = Object.keys(sectionPersonalization)
+      .filter(
+        key =>
+          sectionPersonalization[key]?.isBlocked &&
+          !sectionPersonalization[key].title
+      )
+      .sort();
+    if (!untitledKeys.length) {
+      return null;
+    }
+    const rotation = Math.floor(Date.now() / COMPONENT_FEEDS_UPDATE_TIME);
+    return untitledKeys[rotation % untitledKeys.length];
+  }
+
+  /**
+   * @param {object} [sectionPersonalization]
+   * @param {string|null} [repairSectionKey] Untitled block to leave out of the
+   *   request, see getUntitledBlockToRepair.
+   */
+  formatComponentFeedRequest(
+    sectionPersonalization = {},
+    repairSectionKey = null
+  ) {
     const prefs = this.store.getState().Prefs.values;
     const inferredPersonalization =
       prefs[PREF_USER_INFERRED_PERSONALIZATION] &&
@@ -2236,14 +2301,14 @@ export class DiscoveryStreamFeed {
     );
 
     // convert section to array to match what merino is expecting
-    const sections = Object.entries(sectionPersonalization).map(
-      ([sectionId, data]) => ({
+    const sections = Object.entries(sectionPersonalization)
+      .filter(([sectionId]) => sectionId !== repairSectionKey)
+      .map(([sectionId, data]) => ({
         sectionId,
         isFollowed: data.isFollowed,
         isBlocked: data.isBlocked,
         ...(data.followedAt && { followedAt: data.followedAt }),
-      })
-    );
+      }));
 
     // To display the inline interest picker pass `enableInterestPicker` into the request
     const interestPickerEnabled = prefs[PREF_INTEREST_PICKER_ENABLED];
