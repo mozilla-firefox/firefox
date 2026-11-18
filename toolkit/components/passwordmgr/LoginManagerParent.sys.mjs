@@ -1651,13 +1651,17 @@ export class LoginManagerParent extends JSWindowActorParent {
     const osAuth = await lazy.AutocompleteRemoveRecord.passwordOSAuthStrings();
     const { isAuthorized } = await lazy.LoginHelper.requestReauth(
       browser,
-      null,
+      lazy.AutocompleteRemoveRecord.authExpirationTime("password", browser),
       osAuth.message,
       osAuth.caption,
       "delete_autocomplete"
     );
 
-    if (!isAuthorized || !chromeWindow) {
+    if (!isAuthorized) {
+      return;
+    }
+    lazy.AutocompleteRemoveRecord.noteAuthorized("password", browser);
+    if (!chromeWindow) {
       return;
     }
 

@@ -16,6 +16,15 @@ ChromeUtils.defineLazyGetter(
     ])
 );
 
+const AUTH_TIMEOUT_MS = 5 * 60 * 1000;
+
+// Record type -> { browser: WeakRef, expiresAt } of the last authorized delete.
+const gRecentAuth = new Map();
+
+function forgetAuth() {
+  gRecentAuth.clear();
+}
+
 const TITLE_L10N_IDS = {
   password: "autocomplete-delete-password-title",
   address: "autocomplete-delete-address-title",
@@ -23,6 +32,47 @@ const TITLE_L10N_IDS = {
 };
 
 export const AutocompleteRemoveRecord = {
+  /**
+   * Like about:logins, a delete authorized in the last 5 minutes from the
+   * same tab skips the next prompt, until the user switches tabs.
+   *
+   * @param {string} recordType
+   * @param {Element} browser The top <browser> of the tab.
+   * @returns {number?} When the authorization expires, or null if none.
+   */
+  authExpirationTime(recordType, browser) {
+    const auth = gRecentAuth.get(recordType);
+    if (
+      !auth ||
+      auth.browser.deref() !== browser ||
+      Date.now() >= auth.expiresAt
+    ) {
+      return null;
+    }
+    return auth.expiresAt;
+  },
+
+  /**
+   * @param {string} recordType
+   * @param {Element} browser The top <browser> of the tab.
+   */
+  noteAuthorized(recordType, browser) {
+    const tabContainer = browser?.getTabBrowser?.()?.tabContainer;
+    if (!tabContainer) {
+      return;
+    }
+    gRecentAuth.set(recordType, {
+      browser: new WeakRef(browser),
+      expiresAt: Date.now() + AUTH_TIMEOUT_MS,
+    });
+    // Adding the same listener again is a no-op.
+    tabContainer.addEventListener("TabSelect", forgetAuth, { once: true });
+  },
+
+  resetAuthForTesting() {
+    forgetAuth();
+  },
+
   async passwordOSAuthStrings() {
     const platform = AppConstants.platform;
     const ids = [{ id: "autocomplete-remove-password-os-auth-dialog-caption" }];

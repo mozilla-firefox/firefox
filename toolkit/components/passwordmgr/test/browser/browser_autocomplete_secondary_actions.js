@@ -1466,3 +1466,83 @@ add_task(async function test_reopening_after_removal_starts_a_new_flow() {
   gReauthAuthorized = false;
   await SpecialPowers.popPrefEnv();
 });
+
+// Like about:logins, a reauthentication is reused for 5 minutes in the same
+// tab, until the user switches tabs.
+add_task(async function test_recent_reauth_is_reused_until_tab_switch() {
+  await SpecialPowers.pushPrefEnv({ set: [[PREF, true]] });
+  const { AutocompleteRemoveRecord } = ChromeUtils.importESModule(
+    "resource://gre/modules/AutocompleteRemoveRecord.sys.mjs"
+  );
+  AutocompleteRemoveRecord.resetAuthForTesting();
+  gReauthCalls = [];
+  const popup = document.getElementById("PopupAutoComplete");
+  const tab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    TEST_URL_PATH
+  );
+  const browser = tab.linkedBrowser;
+  const waitForReopen = () =>
+    TestUtils.waitForCondition(
+      () => popup.state == "open",
+      "Wait for the dropdown to come back after the removal"
+    );
+  const deleteAndCancel = async () => {
+    const dialogClosed = BrowserTestUtils.promiseAlertDialog("cancel");
+    await activateDelete(popup);
+    await dialogClosed;
+    await waitForReopen();
+  };
+  const reopenAfterBlur = async () => {
+    await SpecialPowers.spawn(browser, [], () =>
+      content.document.querySelector("#form-basic-username").blur()
+    );
+    await openACPopup(popup, browser, "#form-basic-username");
+  };
+
+  await openACPopup(popup, browser, "#form-basic-username");
+  gReauthAuthorized = false;
+  await activateDelete(popup);
+  await TestUtils.waitForCondition(
+    () => gReauthCalls.length == 1,
+    "Wait for the declined reauthentication"
+  );
+  await waitForReopen();
+
+  gReauthAuthorized = true;
+  await deleteAndCancel();
+  Assert.equal(
+    gReauthCalls[1][1],
+    null,
+    "A declined reauthentication is not reused"
+  );
+
+  await deleteAndCancel();
+  Assert.greater(
+    gReauthCalls[2][1],
+    Date.now(),
+    "A recent reauthentication in the same tab is reused"
+  );
+  await closePopup(popup);
+
+  const otherTab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    "about:blank"
+  );
+  await BrowserTestUtils.switchTab(gBrowser, tab);
+  BrowserTestUtils.removeTab(otherTab);
+  await reopenAfterBlur();
+  await deleteAndCancel();
+  Assert.equal(
+    gReauthCalls[3][1],
+    null,
+    "Switching tabs drops the recent reauthentication"
+  );
+  Assert.equal(gReauthCalls.length, 4, "Every delete asked for reauth");
+  await closePopup(popup);
+
+  BrowserTestUtils.removeTab(tab);
+  AutocompleteRemoveRecord.resetAuthForTesting();
+  gReauthAuthorized = false;
+  await SpecialPowers.popPrefEnv();
+});

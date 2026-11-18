@@ -599,3 +599,92 @@ add_task(async function test_delete_removes_a_card_that_cannot_be_decrypted() {
   await removeAllRecords();
   await SpecialPowers.popPrefEnv();
 });
+
+// Like about:logins, a device sign in is reused for 5 minutes in the same tab,
+// until the user switches tabs.
+add_task(
+  async function test_recent_device_sign_in_is_reused_until_tab_switch() {
+    await SpecialPowers.pushPrefEnv({ set: [[PREF, true]] });
+    await removeAllRecords();
+    await setStorage(TEST_CREDIT_CARD_1);
+    const { AutocompleteRemoveRecord } = ChromeUtils.importESModule(
+      "resource://gre/modules/AutocompleteRemoveRecord.sys.mjs"
+    );
+    AutocompleteRemoveRecord.resetAuthForTesting();
+
+    const tab = await BrowserTestUtils.openNewForegroundTab(gBrowser, CC_URL);
+    const browser = tab.linkedBrowser;
+    const popup = browser.autoCompletePopup;
+    let verified = false;
+    let verifyCalls = 0;
+    const originalVerify = FormAutofillUtils.verifyUserOSAuth;
+    // A real OS prompt takes focus and closes the dropdown before it resolves.
+    FormAutofillUtils.verifyUserOSAuth = async () => {
+      verifyCalls++;
+      popup.hidePopup();
+      await TestUtils.waitForCondition(
+        () => popup.state == "closed",
+        "Wait for the dropdown to close before device sign in resolves"
+      );
+      return verified;
+    };
+
+    const waitForReopen = () =>
+      TestUtils.waitForCondition(
+        () => popup.popupOpen,
+        "Wait for the dropdown to come back after the removal"
+      );
+    const clickFirstTrash = async () => {
+      const item = getDisplayedPopupItems(browser)[0];
+      await selectFirstRow(browser, item);
+      await clickTrashButton(item.querySelector("autocomplete-row-item"));
+    };
+    const deleteAndCancel = async () => {
+      const dialogClosed = BrowserTestUtils.promiseAlertDialog("cancel");
+      await clickFirstTrash();
+      await dialogClosed;
+      await waitForReopen();
+    };
+
+    try {
+      await openPopupOn(browser, "#cc-number");
+      await clickFirstTrash();
+      await TestUtils.waitForCondition(
+        () => verifyCalls == 1,
+        "Wait for the declined device sign in"
+      );
+      await waitForReopen();
+
+      verified = true;
+      await deleteAndCancel();
+      is(verifyCalls, 2, "A declined device sign in is not reused");
+
+      await deleteAndCancel();
+      is(verifyCalls, 2, "A recent device sign in in the same tab is reused");
+      await closePopup(browser);
+
+      const otherTab = await BrowserTestUtils.openNewForegroundTab(
+        gBrowser,
+        "about:blank"
+      );
+      await BrowserTestUtils.switchTab(gBrowser, tab);
+      BrowserTestUtils.removeTab(otherTab);
+      await openPopupOn(browser, "#cc-number");
+      await deleteAndCancel();
+      is(verifyCalls, 3, "Switching tabs drops the recent device sign in");
+      await closePopup(browser);
+
+      is(
+        (await getCreditCards()).length,
+        1,
+        "Cancelling every confirmation keeps the payment method"
+      );
+    } finally {
+      FormAutofillUtils.verifyUserOSAuth = originalVerify;
+      AutocompleteRemoveRecord.resetAuthForTesting();
+      BrowserTestUtils.removeTab(tab);
+    }
+    await removeAllRecords();
+    await SpecialPowers.popPrefEnv();
+  }
+);
