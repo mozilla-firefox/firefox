@@ -185,6 +185,19 @@ export class ProgressAndStatusCallbackParams {
       }
     }
   }
+
+  /**
+   * A copy of this event with the given fields changed. This instance is
+   * left untouched.
+   *
+   * @param {Partial<ProgressAndStatusCallbackParams>} changes
+   * @returns {ProgressAndStatusCallbackParams}
+   */
+  cloneWith(changes) {
+    const copy = new ProgressAndStatusCallbackParams(this);
+    copy.update(changes);
+    return copy;
+  }
 }
 
 /**
