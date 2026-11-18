@@ -2338,10 +2338,10 @@ void WebRenderBridgeParent::AddPipelineIdForCompositable(
 
   // The AsyncImagePipelineManager is shared by every bridge composited into
   // this window, including the window's root pipeline. A pipeline id must not
-  // collide with one that is already live there, possibly registered by
-  // another bridge. Pipeline ids are never legitimately reused, so reject
-  // collisions outright.
-  if (mLateInit->mAsyncImageManager->HasLivePipeline(aPipelineId)) {
+  // collide with one that is already registered there, possibly by another
+  // bridge. Pipeline ids are never legitimately reused, so reject collisions
+  // outright.
+  if (mLateInit->mAsyncImageManager->HasPipeline(aPipelineId)) {
     gfxCriticalNote << "Content attempted AddPipelineIdForCompositable with "
                        "pipelineId already registered";
     return;
