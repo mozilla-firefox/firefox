@@ -363,7 +363,7 @@ export class NimbusEnrollments {
       this.#reducedTelemetryEnabled =
         lazy.NimbusFeatures.nimbusTelemetry.getVariable(
           "reducedEnrollmentStatusTelemetryEnabled"
-        ) ?? false;
+        ) ?? true;
     }
 
     return this.#reducedTelemetryEnabled;

@@ -2086,12 +2086,6 @@ add_task(async function test_updateRecipes_enrollmentStatus_telemetry() {
             status: "WasEnrolled",
           },
           {
-            reason: "Qualified",
-            slug: "stays-enrolled",
-            branch: "control",
-            status: "Enrolled",
-          },
-          {
             status: "Disqualified",
             branch: "control",
             slug: "recipe-mismatch",
@@ -2836,18 +2830,6 @@ add_task(async function testUnenrolledInAnotherProfileBetweenUpdates() {
           ?.map(ev => ev.extra),
         [
           {
-            slug: "rollout-1",
-            branch: "control",
-            status: "Enrolled",
-            reason: "Qualified",
-          },
-          {
-            slug: "rollout-2",
-            branch: "control",
-            status: "Enrolled",
-            reason: "Qualified",
-          },
-          {
             slug: "experiment-1",
             branch: "control",
             status: "Disqualified",
@@ -2858,12 +2840,6 @@ add_task(async function testUnenrolledInAnotherProfileBetweenUpdates() {
             branch: "control",
             status: "Disqualified",
             reason: "UnenrolledInAnotherProfile",
-          },
-          {
-            slug: "experiment-3",
-            branch: "control",
-            status: "Enrolled",
-            reason: "Qualified",
           },
         ]
       );

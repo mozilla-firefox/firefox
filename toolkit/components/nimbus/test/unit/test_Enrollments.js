@@ -489,12 +489,12 @@ async function doTestStatuses({ reducedTelemetry = false } = {}) {
     clearTelemetry: true,
   });
 
-  if (reducedTelemetry) {
+  if (!reducedTelemetry) {
     await manager.enroll(
       NimbusTestUtils.factories.recipe.withFeatureConfig("nimbus-telemetry", {
         featureId: "nimbusTelemetry",
         value: {
-          reducedEnrollmentStatusTelemetryEnabled: true,
+          reducedEnrollmentStatusTelemetryEnabled: false,
         },
       }),
       "test"
@@ -638,7 +638,7 @@ async function doTestStatuses({ reducedTelemetry = false } = {}) {
     "Enrollment status entries removed from the database by a deletion"
   );
 
-  if (reducedTelemetry) {
+  if (!reducedTelemetry) {
     await NimbusTestUtils.cleanupManager(["nimbus-telemetry"]);
   }
 
