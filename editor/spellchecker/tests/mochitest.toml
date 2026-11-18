@@ -99,6 +99,8 @@ skip-if = [
 ]
 support-files = ["multiple_content_languages_subframe.html"]
 
+["test_spellcheck_across_unrendered_blocks.html"]
+
 ["test_spellcheck_after_edit.html"]
 
 ["test_spellcheck_after_pressing_navigation_key.html"]

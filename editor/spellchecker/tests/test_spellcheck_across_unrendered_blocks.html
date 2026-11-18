@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Spellcheck should not join words across block boundaries without frames</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css">
+</head>
+<body>
+<div contenteditable spellcheck="true" lang="en-US"></div>
+<script>
+"use strict";
+
+const { maybeOnSpellCheck } = SpecialPowers.ChromeUtils.importESModule(
+  "resource://testing-common/AsyncSpellCheckTestHelper.sys.mjs"
+);
+
+function waitForSpellCheck(aEditingHost) {
+  return new Promise(resolve => maybeOnSpellCheck(aEditingHost, resolve));
+}
+
+function getMisspelledWords(aSpellCheckSelection) {
+  const words = [];
+  for (let i = 0; i < aSpellCheckSelection.rangeCount; i++) {
+    words.push(aSpellCheckSelection.getRangeAt(i).toString());
+  }
+  return words.sort();
+}
+
+SimpleTest.waitForExplicitFinish();
+SimpleTest.waitForFocus(async () => {
+  const editingHost = document.querySelector("div[contenteditable]");
+  editingHost.innerHTML = "<p>first</p>";
+  editingHost.focus();
+  getSelection().collapse(editingHost.firstChild.firstChild, 0);
+
+  const editor = SpecialPowers.wrap(window).docShell.editingSession.getEditorForWindow(window);
+  const selCon = editor.selectionController;
+  const spellCheckSelection = selCon.getSelection(selCon.SELECTION_SPELLCHECK);
+  await waitForSpellCheck(editingHost);
+  is(spellCheckSelection.rangeCount, 0, "There should be no misspelled words at start");
+
+  // Stop refreshing so that the spellcheck runs before the frames of new or
+  // moved elements are constructed.
+  const utils = SpecialPowers.DOMWindowUtils;
+  utils.advanceTimeAndRefresh(0);
+  try {
+    editingHost.insertAdjacentHTML(
+      "beforeend",
+      "<p>This is a paragraph</p><p>New missspelled paragraph</p>" +
+        "<ul><li>second</li><li>third</li></ul>" +
+        "<table><tr><td>cell</td><td>another</td></tr></table>"
+    );
+    await waitForSpellCheck(editingHost);
+    isDeeply(
+      getMisspelledWords(spellCheckSelection),
+      ["missspelled"],
+      "Words in adjacent new blocks without frames should not be joined"
+    );
+
+    // Words around content which is not rendered are rendered as one word.
+    const p = document.createElement("p");
+    const hiddenSpan = document.createElement("span");
+    hiddenSpan.style.display = "none";
+    hiddenSpan.appendChild(document.createElement("div"));
+    const hiddenDiv = document.createElement("div");
+    hiddenDiv.style.display = "none";
+    // Unassigned children of a shadow host are not rendered either.
+    const shadowHost = document.createElement("span");
+    shadowHost.attachShadow({ mode: "open" });
+    shadowHost.appendChild(document.createElement("div"));
+    p.append("missp", hiddenSpan, "elled wro", hiddenDiv, "ng beauti", shadowHost, "ful");
+    editingHost.appendChild(p);
+    // Compute the style of the display:none elements.
+    editingHost.getBoundingClientRect();
+    await waitForSpellCheck(editingHost);
+    isDeeply(
+      getMisspelledWords(spellCheckSelection),
+      ["missspelled"],
+      "Words around content which is not rendered should be joined"
+    );
+
+    if (typeof Element.prototype.moveBefore == "function") {
+      // The frames of moved elements are constructed later too.
+      const list = editingHost.querySelector("ul");
+      list.moveBefore(list.lastChild, list.firstChild);
+      await waitForSpellCheck(editingHost);
+      isDeeply(
+        getMisspelledWords(spellCheckSelection),
+        ["missspelled"],
+        "Words in adjacent moved blocks without frames should not be joined"
+      );
+    }
+  } finally {
+    utils.restoreNormalRefresh();
+  }
+  SimpleTest.finish();
+});
+</script>
+</body>
+</html>
