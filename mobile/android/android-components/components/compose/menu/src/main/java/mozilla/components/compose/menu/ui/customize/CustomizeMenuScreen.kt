@@ -143,6 +143,7 @@ private fun CustomizeMenuList(
             firstIndex = 1,
             itemSpacing = itemSpacing,
             onMove = onMove,
+            highlightedGroupId = actionsGroupId,
             onShowActions = { actionsGroupId = it },
         )
 
@@ -160,6 +161,7 @@ private fun CustomizeMenuList(
             firstIndex = dragState.firstHiddenIndex,
             itemSpacing = itemSpacing,
             onMove = onMove,
+            highlightedGroupId = actionsGroupId,
             onShowActions = { actionsGroupId = it },
             isHidden = true,
         )
