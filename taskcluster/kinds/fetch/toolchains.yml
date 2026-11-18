@@ -666,7 +666,7 @@ afl-plus-plus:
     fetch:
         type: git
         repo: https://github.com/AFLplusplus/AFLplusplus
-        revision: 011cd189801830253c66ecd3cd6919ec01b46c34
+        revision: dbaf11913c1b2702dee5b4d3dcfffd52f1defe50
 
 cargo-audit:
     # Keep the version in sync with tools/lint/cargo-audit/cargo-audit_version.txt
