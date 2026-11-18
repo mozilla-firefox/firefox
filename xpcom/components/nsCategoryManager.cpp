@@ -134,7 +134,7 @@ CategoryEnumerator* CategoryEnumerator::Create(
 
   for (const auto& entry : aTable) {
     // if a category has no entries, we pretend it doesn't exist
-    CategoryNode* aNode = entry.GetWeak();
+    CategoryNode* aNode = entry.GetRawPtr();
     if (aNode->Count()) {
       enumObj->mArray[enumObj->mCount++] = entry.GetKey();
     }

@@ -527,7 +527,7 @@ VLPrefixSet::VLPrefixSet(const PrefixStringMap& aMap) : mCount(0) {
 void VLPrefixSet::Merge(PrefixStringMap& aPrefixMap) {
   for (const auto& entry : mMap) {
     nsCString* prefixString = aPrefixMap.GetOrInsertNew(entry.GetKey());
-    PrefixString* str = entry.GetWeak();
+    PrefixString* str = entry.GetRawPtr();
 
     nsAutoCString remainingString;
     str->getRemainingString(remainingString);
@@ -541,7 +541,7 @@ void VLPrefixSet::Merge(PrefixStringMap& aPrefixMap) {
 bool VLPrefixSet::GetSmallestPrefix(nsACString& aOutString) const {
   PrefixString* pick = nullptr;
   for (const auto& entry : mMap) {
-    PrefixString* str = entry.GetWeak();
+    PrefixString* str = entry.GetRawPtr();
 
     if (str->remaining() <= 0) {
       continue;

@@ -125,7 +125,7 @@ void DocManager::NotifyOfDocumentShutdown(DocAccessible* aDocument,
     // will shut down the accessibility service completely.
     bool anyPrintDocsRemain = false;
     for (const auto& entry : mDocAccessibleCache) {
-      DocAccessible* doc = entry.GetWeak();
+      DocAccessible* doc = entry.GetRawPtr();
       if (doc->IsPrintDoc()) {
         anyPrintDocsRemain = true;
         break;
@@ -183,7 +183,7 @@ xpcAccessibleDocument* DocManager::GetXPCDocument(DocAccessibleParent* aDoc) {
 #ifdef DEBUG
 bool DocManager::IsProcessingRefreshDriverNotification() const {
   for (const auto& entry : mDocAccessibleCache) {
-    DocAccessible* docAccessible = entry.GetWeak();
+    DocAccessible* docAccessible = entry.GetRawPtr();
     NS_ASSERTION(docAccessible,
                  "No doc accessible for the object in doc accessible cache!");
 

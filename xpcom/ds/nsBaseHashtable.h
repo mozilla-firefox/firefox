@@ -92,27 +92,27 @@ struct SmartPtrTraits<nsCOMPtr<Pointee>> {
 };
 
 template <class T>
-T* PtrGetWeak(T* aPtr) {
+T* GetRawPtr(T* aPtr) {
   return aPtr;
 }
 
 template <class T>
-T* PtrGetWeak(const RefPtr<T>& aPtr) {
+T* GetRawPtr(const RefPtr<T>& aPtr) {
   return aPtr.get();
 }
 
 template <class T>
-T* PtrGetWeak(const SafeRefPtr<T>& aPtr) {
+T* GetRawPtr(const SafeRefPtr<T>& aPtr) {
   return aPtr.unsafeGetRawPtr();
 }
 
 template <class T>
-T* PtrGetWeak(const nsCOMPtr<T>& aPtr) {
+T* GetRawPtr(const nsCOMPtr<T>& aPtr) {
   return aPtr.get();
 }
 
 template <class T>
-T* PtrGetWeak(const UniquePtr<T>& aPtr) {
+T* GetRawPtr(const UniquePtr<T>& aPtr) {
   return aPtr.get();
 }
 
@@ -229,8 +229,8 @@ class nsBaseHashtableET : public KeyClass {
     mData = std::forward<U>(aData);
   }
 
-  decltype(auto) GetWeak() const {
-    return mozilla::detail::PtrGetWeak(GetData());
+  decltype(auto) GetRawPtr() const {
+    return mozilla::detail::GetRawPtr(GetData());
   }
 
   // The destructor is intentionally public even though entries are only ever
@@ -421,7 +421,7 @@ class nsBaseHashtable
     static_assert(
         SmartPtrTraits::IsSmartPointer,
         "GetOrInsertNew can only be used with smart pointer data types");
-    return mozilla::detail::PtrGetWeak(LookupOrInsertWith(std::move(aKey), [&] {
+    return mozilla::detail::GetRawPtr(LookupOrInsertWith(std::move(aKey), [&] {
       return SmartPtrTraits::template NewObject<
           typename SmartPtrTraits::PointeeType>(
           std::forward<Args>(aConstructionArgs)...);

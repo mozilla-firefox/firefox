@@ -1576,7 +1576,7 @@ TEST(Hashtables, RefPtrHashtable_Clone)
     auto cloneEntry = clone.Lookup(entry.GetKey());
 
     EXPECT_TRUE(cloneEntry);
-    EXPECT_EQ(cloneEntry.Data(), entry.GetWeak());
+    EXPECT_EQ(cloneEntry.Data(), entry.GetRawPtr());
   }
 }
 

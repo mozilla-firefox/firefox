@@ -172,7 +172,7 @@ void SessionStorageManagerBase::ClearStoragesInternal(
       continue;
     }
 
-    OriginKeyHashTable* table = oaEntry.GetWeak();
+    OriginKeyHashTable* table = oaEntry.GetRawPtr();
     for (const auto& originKeyEntry : *table) {
       if (aOriginScope.IsEmpty() ||
           (!isExactMatch &&
@@ -195,7 +195,7 @@ void SessionStorageManagerBase::ClearStoragesForOriginInternal(
       continue;
     }
 
-    OriginKeyHashTable* table = oaEntry.GetWeak();
+    OriginKeyHashTable* table = oaEntry.GetRawPtr();
     for (const auto& originKeyEntry : *table) {
       // Match exact origin (without origin attrs).
       if (originKeyEntry.GetKey() != aOriginKey) {

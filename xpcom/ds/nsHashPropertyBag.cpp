@@ -233,7 +233,7 @@ nsHashPropertyBagBase::SetPropertyAsInterface(const nsAString& aProp,
 
 void nsHashPropertyBagBase::CopyFrom(const nsHashPropertyBagBase* aOther) {
   for (const auto& entry : aOther->mPropertyHash) {
-    SetProperty(entry.GetKey(), entry.GetWeak());
+    SetProperty(entry.GetKey(), entry.GetRawPtr());
   }
 }
 

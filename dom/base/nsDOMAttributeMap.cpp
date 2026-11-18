@@ -55,7 +55,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(nsDOMAttributeMap)
   for (const auto& entry : tmp->mAttributeCache) {
-    cb.NoteXPCOMChild(static_cast<nsINode*>(entry.GetWeak()));
+    cb.NoteXPCOMChild(static_cast<nsINode*>(entry.GetRawPtr()));
   }
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mContent)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
@@ -400,7 +400,7 @@ size_t nsDOMAttributeMap::SizeOfIncludingThis(
 
   n += mAttributeCache.ShallowSizeOfExcludingThis(aMallocSizeOf);
   for (const auto& entry : mAttributeCache) {
-    n += aMallocSizeOf(entry.GetWeak());
+    n += aMallocSizeOf(entry.GetRawPtr());
   }
 
   // NB: mContent is non-owning and thus not counted.

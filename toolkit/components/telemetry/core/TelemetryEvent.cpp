@@ -1127,7 +1127,7 @@ nsresult TelemetryEvent::CreateSnapshots(uint32_t aDataset, bool aClear,
                         optional_argc,
                         aEventLimit](EventRecordsMapType& aProcessStorage) {
       for (const auto& entry : aProcessStorage) {
-        const EventRecordArray* eventStorage = entry.GetWeak();
+        const EventRecordArray* eventStorage = entry.GetRawPtr();
         EventRecordArray events;
         EventRecordArray leftoverEvents;
 

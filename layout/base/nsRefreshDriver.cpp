@@ -2688,7 +2688,7 @@ void nsRefreshDriver::UpdateAnimatedImages(TimeStamp aPreviousRefresh,
   // events.
   for (const auto& entry : mStartTable) {
     const uint32_t& delay = entry.GetKey();
-    ImageStartData* data = entry.GetWeak();
+    ImageStartData* data = entry.GetRawPtr();
 
     if (data->mEntries.IsEmpty()) {
       continue;

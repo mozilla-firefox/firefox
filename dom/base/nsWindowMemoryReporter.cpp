@@ -755,7 +755,7 @@ void nsWindowMemoryReporter::CheckForGhostWindows(
   for (const auto& entry : *windowsById) {
     // Null outer window implies null top, but calling GetInProcessTop() when
     // there's no outer window causes us to spew debug warnings.
-    nsGlobalWindowInner* window = entry.GetWeak();
+    nsGlobalWindowInner* window = entry.GetRawPtr();
     if (!window->GetOuterWindow() || !window->GetInProcessTopInternal() ||
         !window->GetBrowsingContextGroup()) {
       // This window is detached, so we don't care about its browsing

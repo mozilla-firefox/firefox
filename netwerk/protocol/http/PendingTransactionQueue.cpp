@@ -183,22 +183,22 @@ void PendingTransactionQueue::AppendPendingQForNonFocusedWindows(
     }
 
     uint32_t count = 0;
-    for (; count < entry.GetWeak()->Length(); ++count) {
+    for (; count < entry.GetRawPtr()->Length(); ++count) {
       if (maxCount && totalCount == maxCount) {
         break;
       }
 
       // Because elements in |result| could come from multiple penndingQ,
       // call |InsertTransactionSorted| to make sure the order is correct.
-      InsertTransactionSorted(result, entry.GetWeak()->ElementAt(count));
+      InsertTransactionSorted(result, entry.GetRawPtr()->ElementAt(count));
       ++totalCount;
     }
-    entry.GetWeak()->RemoveElementsAt(0, count);
+    entry.GetRawPtr()->RemoveElementsAt(0, count);
     MOZ_ASSERT(mPendingQueueLength >= count);
     mPendingQueueLength -= count;
 
     if (maxCount && totalCount == maxCount) {
-      if (entry.GetWeak()->Length()) {
+      if (entry.GetRawPtr()->Length()) {
         // There are still some pending transactions for background
         // tabs but we limit their dispatch.  This is considered as
         // an active tab optimization.
@@ -258,7 +258,7 @@ void PendingTransactionQueue::PrintPendingQ() {
   }
   for (const auto& entry : mPendingTransactionTable) {
     LOG(("] window id = %" PRIx64 " queue [", entry.GetKey()));
-    for (const auto& info : *entry.GetWeak()) {
+    for (const auto& info : *entry.GetRawPtr()) {
       LOG(("  %p", info->Transaction()));
     }
   }

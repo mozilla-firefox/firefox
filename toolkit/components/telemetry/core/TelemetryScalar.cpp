@@ -783,7 +783,7 @@ void KeyedScalar::AddValue(const StaticMutexAutoLock& locker,
 nsresult KeyedScalar::GetValue(const nsACString& aStoreName, bool aClearStorage,
                                nsTArray<KeyValuePair>& aValues) {
   for (const auto& entry : mScalarKeys) {
-    ScalarBase* scalar = entry.GetWeak();
+    ScalarBase* scalar = entry.GetRawPtr();
 
     // Get the scalar value.
     nsCOMPtr<nsIVariant> scalarValue;
@@ -1392,7 +1392,7 @@ nsresult internal_ScalarSnapshotter(const StaticMutexAutoLock& aLock,
   // Iterate the scalars in aProcessStorage. The storage may contain empty or
   // yet to be initialized scalars from all the supported processes.
   for (const auto& entry : aProcessStorage) {
-    ScalarStorageMapType* scalarStorage = entry.GetWeak();
+    ScalarStorageMapType* scalarStorage = entry.GetRawPtr();
     ScalarTupleArray& processScalars =
         aScalarsToReflect.LookupOrInsert(entry.GetKey());
 
@@ -1402,7 +1402,7 @@ nsresult internal_ScalarSnapshotter(const StaticMutexAutoLock& aLock,
 
     // Iterate each available child storage.
     for (const auto& childEntry : *scalarStorage) {
-      ScalarBase* scalar = childEntry.GetWeak();
+      ScalarBase* scalar = childEntry.GetRawPtr();
       const ScalarKey key{childEntry.GetKey(),
                           aIsBuiltinDynamic || isDynamicProcess};
       // Get the informations for this scalar.
@@ -1449,7 +1449,7 @@ nsresult internal_KeyedScalarSnapshotter(
   // Iterate the scalars in aProcessStorage. The storage may contain empty or
   // yet to be initialized scalars from all the supported processes.
   for (const auto& entry : aProcessStorage) {
-    KeyedScalarStorageMapType* scalarStorage = entry.GetWeak();
+    KeyedScalarStorageMapType* scalarStorage = entry.GetRawPtr();
     KeyedScalarTupleArray& processScalars =
         aScalarsToReflect.LookupOrInsert(entry.GetKey());
 
@@ -1458,7 +1458,7 @@ nsresult internal_KeyedScalarSnapshotter(
         ProcessID::Dynamic == static_cast<ProcessID>(entry.GetKey());
 
     for (const auto& childEntry : *scalarStorage) {
-      KeyedScalar* scalar = childEntry.GetWeak();
+      KeyedScalar* scalar = childEntry.GetRawPtr();
       const ScalarKey key{childEntry.GetKey(),
                           aIsBuiltinDynamic || isDynamicProcess};
       // Get the informations for this scalar.

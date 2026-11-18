@@ -341,7 +341,7 @@ void LocalStorageManager::ClearCaches(uint32_t aUnloadFlags,
       continue;
     }
 
-    CacheOriginHashtable* table = cacheEntry.GetWeak();
+    CacheOriginHashtable* table = cacheEntry.GetRawPtr();
 
     for (auto iter2 = table->Iter(); !iter2.Done(); iter2.Next()) {
       LocalStorageCache* cache = iter2.Get()->cache();

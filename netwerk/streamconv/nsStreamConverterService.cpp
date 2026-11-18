@@ -191,7 +191,7 @@ nsresult nsStreamConverterService::FindConverter(
   BFSHashTable lBFSTable;
   for (const auto& entry : mAdjacencyList) {
     const nsACString& key = entry.GetKey();
-    MOZ_ASSERT(entry.GetWeak(), "no data in the table iteration");
+    MOZ_ASSERT(entry.GetRawPtr(), "no data in the table iteration");
     lBFSTable.InsertOrUpdate(key, std::make_unique<BFSTableData>(key));
   }
 

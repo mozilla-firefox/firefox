@@ -444,7 +444,7 @@ WrAnimations CompositorAnimationStorage::CollectWebRenderAnimations() const {
   WrAnimations animations;
 
   for (const auto& animatedValueEntry : mAnimatedValues) {
-    AnimatedValue* value = animatedValueEntry.GetWeak();
+    AnimatedValue* value = animatedValueEntry.GetRawPtr();
     value->Value().match(
         [&](const AnimationTransform& aTransform) {
           animations.mTransformArrays.AppendElement(wr::ToWrTransformProperty(

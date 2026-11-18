@@ -116,7 +116,7 @@ static void GenerateUpdateData(bool fullUpdate, PrefixStringMap& add,
   tableUpdate->SetFullUpdate(fullUpdate);
 
   for (const auto& entry : add) {
-    nsCString* pstring = entry.GetWeak();
+    nsCString* pstring = entry.GetRawPtr();
     tableUpdate->NewPrefixes(entry.GetKey(), *pstring);
   }
 
@@ -152,7 +152,7 @@ static void VerifyPrefixSet(PrefixStringMap& expected) {
   lookup->GetPrefixes(prefixesInFile);
 
   for (const auto& entry : expected) {
-    nsCString* expectedPrefix = entry.GetWeak();
+    nsCString* expectedPrefix = entry.GetRawPtr();
     nsCString* resultPrefix = prefixesInFile.Get(entry.GetKey());
 
     ASSERT_TRUE(*resultPrefix == *expectedPrefix);

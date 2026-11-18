@@ -630,7 +630,7 @@ void nsWebBrowserPersist::SerializeNextFile() {
   // Persist each file in the uri map. The document(s)
   // will be saved after the last one of these is saved.
   for (const auto& entry : mURIMap) {
-    URIData* data = entry.GetWeak();
+    URIData* data = entry.GetRawPtr();
 
     if (!data->mNeedsPersisting || data->mSaved) {
       continue;
@@ -733,7 +733,7 @@ void nsWebBrowserPersist::SerializeNextFile() {
   RefPtr<FlatURIMap> flatMap = new FlatURIMap(targetBaseSpec);
   for (const auto& uriEntry : mURIMap) {
     nsAutoCString mapTo;
-    nsresult rv = uriEntry.GetWeak()->GetLocalURI(mTargetBaseURI, mapTo);
+    nsresult rv = uriEntry.GetRawPtr()->GetLocalURI(mTargetBaseURI, mapTo);
     if (NS_SUCCEEDED(rv) || !mapTo.IsVoid()) {
       flatMap->Add(uriEntry.GetKey(), mapTo);
     }

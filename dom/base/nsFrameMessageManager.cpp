@@ -823,7 +823,8 @@ void MessageManagerReporter::CountReferents(
     nsFrameMessageManager* aMessageManager,
     MessageManagerReferentCount* aReferentCount) {
   for (const auto& entry : aMessageManager->mListeners) {
-    nsAutoTObserverArray<nsMessageListenerInfo, 1>* listeners = entry.GetWeak();
+    nsAutoTObserverArray<nsMessageListenerInfo, 1>* listeners =
+        entry.GetRawPtr();
     uint32_t listenerCount = listeners->Length();
     if (listenerCount == 0) {
       continue;
@@ -1412,7 +1413,8 @@ nsresult NS_NewChildProcessMessageManager(nsISupports** aResult) {
 
 void nsFrameMessageManager::MarkForCC() {
   for (const auto& entry : mListeners) {
-    nsAutoTObserverArray<nsMessageListenerInfo, 1>* listeners = entry.GetWeak();
+    nsAutoTObserverArray<nsMessageListenerInfo, 1>* listeners =
+        entry.GetRawPtr();
     uint32_t count = listeners->Length();
     for (uint32_t i = 0; i < count; i++) {
       listeners->ElementAt(i).mListener->MarkForCC();

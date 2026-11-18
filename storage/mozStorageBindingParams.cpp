@@ -182,9 +182,9 @@ already_AddRefed<mozIStorageError> AsyncBindingParams::bind(
 
     if (mParameters.Length() <= static_cast<uint32_t>(oneIdx - 1)) {
       mParameters.SetLength(oneIdx - 1);
-      mParameters.AppendElement(entry.GetWeak());
+      mParameters.AppendElement(entry.GetRawPtr());
     } else {
-      mParameters.ReplaceElementAt(oneIdx - 1, entry.GetWeak());
+      mParameters.ReplaceElementAt(oneIdx - 1, entry.GetRawPtr());
     }
   }
 

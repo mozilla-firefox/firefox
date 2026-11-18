@@ -232,7 +232,7 @@ void nsChromeRegistryChrome::SendRegisteredChrome(
 
   for (const auto& entry : mPackagesHash) {
     ChromePackage chromePackage;
-    ChromePackageFromPackageEntry(entry.GetKey(), entry.GetWeak(),
+    ChromePackageFromPackageEntry(entry.GetKey(), entry.GetRawPtr(),
                                   &chromePackage, SKIN);
     packages.AppendElement(chromePackage);
   }
@@ -258,7 +258,7 @@ void nsChromeRegistryChrome::SendRegisteredChrome(
     SerializedURI chromeURI, overrideURI;
 
     SerializeURI(entry.GetKey(), chromeURI);
-    SerializeURI(entry.GetWeak(), overrideURI);
+    SerializeURI(entry.GetRawPtr(), overrideURI);
 
     overrides.AppendElement(
         OverrideMapping{std::move(chromeURI), std::move(overrideURI)});

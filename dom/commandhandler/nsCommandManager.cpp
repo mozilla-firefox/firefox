@@ -29,7 +29,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(nsCommandManager)
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(nsCommandManager)
   for (const auto& entry : tmp->mObserversTable) {
-    nsCommandManager::ObserverList* observers = entry.GetWeak();
+    nsCommandManager::ObserverList* observers = entry.GetRawPtr();
     int32_t numItems = observers->Length();
     for (int32_t i = 0; i < numItems; ++i) {
       cb.NoteXPCOMChild(observers->ElementAt(i));

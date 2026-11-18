@@ -332,7 +332,7 @@ nsresult nsINIParser::WriteToFile(nsIFile* aFile) {
 void nsINIParser::WriteToString(nsACString& aOutput) {
   for (const auto& entry : mSections) {
     aOutput.AppendPrintf("[%s]\n", entry.GetKey());
-    INIValue* val = entry.GetWeak();
+    INIValue* val = entry.GetRawPtr();
     while (val) {
       aOutput.AppendPrintf("%s=%s\n", val->key, val->value);
       val = val->next.get();

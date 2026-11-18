@@ -359,7 +359,7 @@ void RealTimeRequestSimulator::ExpireCache() {
              NS_GetCurrentThread());
 
   for (auto& entry : mSimulatedCache) {
-    CachedFullHashResponse* response = entry.GetWeak();
+    CachedFullHashResponse* response = entry.GetRawPtr();
     response->negativeCacheExpirySec = 0;
     for (auto iter = response->fullHashes.Iter(); !iter.Done(); iter.Next()) {
       iter.Data() = 0;
@@ -367,7 +367,7 @@ void RealTimeRequestSimulator::ExpireCache() {
   }
 
   for (auto& entry : mNegativeCache) {
-    entry.GetWeak()->negativeCacheExpirySec = 0;
+    entry.GetRawPtr()->negativeCacheExpirySec = 0;
   }
 }
 

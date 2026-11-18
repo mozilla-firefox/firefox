@@ -174,7 +174,7 @@ void ContainStyleScopeManager::RecalcAllCounters() {
 void ContainStyleScopeManager::DumpCounters() {
   GetRootScope().GetCounterManager().Dump();
   for (auto& entry : mScopes) {
-    entry.GetWeak()->GetCounterManager().Dump();
+    entry.GetRawPtr()->GetCounterManager().Dump();
   }
 }
 #endif
@@ -237,7 +237,7 @@ void ContainStyleScopeManager::GetSpokenCounterText(nsIFrame* aFrame,
 void ContainStyleScopeManager::SetAllCountersDirty() {
   GetRootScope().GetCounterManager().SetAllDirty();
   for (auto& entry : mScopes) {
-    entry.GetWeak()->GetCounterManager().SetAllDirty();
+    entry.GetRawPtr()->GetCounterManager().SetAllDirty();
   }
 }
 

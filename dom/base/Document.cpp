@@ -1092,7 +1092,7 @@ void ExternalResourceMap::Traverse(
   // mPendingLoads will get cleared out as the requests complete, so
   // no need to worry about those here.
   for (const auto& entry : mMap) {
-    ExternalResourceMap::ExternalResource* resource = entry.GetWeak();
+    ExternalResourceMap::ExternalResource* resource = entry.GetRawPtr();
 
     NS_CYCLE_COLLECTION_NOTE_EDGE_NAME(*aCallback,
                                        "mExternalResourceMap.mMap entry"
@@ -2892,7 +2892,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INTERNAL(Document)
     NS_CYCLE_COLLECTION_NOTE_EDGE_NAME(cb,
                                        "mUntranslatedL10nProtoElements key");
     cb.NoteXPCOMChild(entry.GetKey());
-    CycleCollectionNoteChild(cb, entry.GetWeak(),
+    CycleCollectionNoteChild(cb, entry.GetRawPtr(),
                              "mUntranslatedL10nProtoElements value");
   }
 

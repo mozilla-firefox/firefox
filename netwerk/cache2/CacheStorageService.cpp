@@ -802,7 +802,7 @@ NS_IMETHODIMP CacheStorageService::ClearBaseDomain(
 
       // If we didn't get a partitionKey match, try to match by entry URI. This
       // requires us to iterate over all entries.
-      CacheEntryTable* table = globalEntry.GetWeak();
+      CacheEntryTable* table = globalEntry.GetRawPtr();
       MOZ_ASSERT(table);
 
       nsTArray<RefPtr<CacheEntry>> entriesToDelete;
@@ -875,7 +875,7 @@ nsresult CacheStorageService::ClearOriginInternal(
         continue;
       }
 
-      CacheEntryTable* table = globalEntry.GetWeak();
+      CacheEntryTable* table = globalEntry.GetRawPtr();
       MOZ_ASSERT(table);
 
       nsTArray<RefPtr<CacheEntry>> entriesToDelete;
@@ -2493,7 +2493,7 @@ CacheStorageService::CollectReports(nsIHandleReportCallback* aHandleReport,
     for (const auto& globalEntry : *sGlobalEntryTables) {
       CacheStorageService::Self()->Lock().AssertCurrentThreadOwns();
 
-      CacheEntryTable* table = globalEntry.GetWeak();
+      CacheEntryTable* table = globalEntry.GetRawPtr();
 
       size_t size = 0;
       mozilla::MallocSizeOf mallocSizeOf = CacheStorageService::MallocSizeOf;

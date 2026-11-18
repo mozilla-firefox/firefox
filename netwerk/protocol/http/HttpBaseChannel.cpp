@@ -5509,7 +5509,7 @@ nsresult HttpBaseChannel::SetupReplacementChannel(nsIURI* newURI,
   nsCOMPtr<nsIWritablePropertyBag> bag(do_QueryInterface(newChannel));
   if (bag) {
     for (const auto& entry : mPropertyHash) {
-      bag->SetProperty(entry.GetKey(), entry.GetWeak());
+      bag->SetProperty(entry.GetKey(), entry.GetRawPtr());
     }
   }
 

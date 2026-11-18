@@ -3680,7 +3680,7 @@ Result<int64_t, nsresult> ConnectionWriteOptimizer::Perform(
   }
 
   for (const auto& entry : mWriteInfos) {
-    const WriteInfo* const writeInfo = entry.GetWeak();
+    const WriteInfo* const writeInfo = entry.GetRawPtr();
 
     switch (writeInfo->GetType()) {
       case WriteInfo::InsertItem:

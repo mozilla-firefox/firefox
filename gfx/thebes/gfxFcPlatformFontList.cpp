@@ -1856,7 +1856,7 @@ void gfxFcPlatformFontList::ReadSystemFontList(dom::SystemFontList* retValue) {
 
   if (FcGetVersion() < 20900) {
     for (const auto& entry : mFontFamilies) {
-      auto* family = static_cast<gfxFontconfigFontFamily*>(entry.GetWeak());
+      auto* family = static_cast<gfxFontconfigFontFamily*>(entry.GetRawPtr());
       family->AddFacesToFontList([&](FcPattern* aPat, bool aAppFonts) {
         char* s = (char*)FcNameUnparse(aPat);
         nsDependentCString patternStr(s);
@@ -1873,7 +1873,7 @@ void gfxFcPlatformFontList::ReadSystemFontList(dom::SystemFontList* retValue) {
     }
   } else {
     for (const auto& entry : mFontFamilies) {
-      auto* family = static_cast<gfxFontconfigFontFamily*>(entry.GetWeak());
+      auto* family = static_cast<gfxFontconfigFontFamily*>(entry.GetRawPtr());
       family->AddFacesToFontList([&](FcPattern* aPat, bool aAppFonts) {
         char* s = (char*)FcNameUnparse(aPat);
         nsDependentCString patternStr(s);

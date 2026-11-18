@@ -1968,7 +1968,7 @@ void nsHostResolver::GetDNSCacheEntries(nsTArray<DNSCacheEntries>* args) {
   for (const auto& recordEntry : mRecordDB) {
     // We don't pay attention to address literals, only resolved domains.
     // Also require a host.
-    nsHostRecord* rec = recordEntry.GetWeak();
+    nsHostRecord* rec = recordEntry.GetRawPtr();
     MOZ_ASSERT(rec, "rec should never be null here!");
 
     if (!rec) {

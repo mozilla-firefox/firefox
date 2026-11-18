@@ -173,7 +173,7 @@ TEST(UrlClassifierProtocolParser, SingleValueEncoding)
 
     // The fixed-length prefix string from ProtocolParser should
     // exactly match the expected prefix string.
-    nsCString* prefix = entry.GetWeak();
+    nsCString* prefix = entry.GetRawPtr();
     ASSERT_TRUE(prefix->Equals(nsCString(expectedPrefix, 4)));
   }
 

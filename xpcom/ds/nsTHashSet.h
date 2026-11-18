@@ -149,7 +149,7 @@ inline void ImplCycleCollectionTraverse(
     const nsTBaseHashSet<KeyClass>& aField, const char* aName,
     uint32_t aFlags = 0) {
   for (const auto& entry : aField) {
-    CycleCollectionNoteChild(aCallback, mozilla::detail::PtrGetWeak(entry),
+    CycleCollectionNoteChild(aCallback, mozilla::detail::GetRawPtr(entry),
                              aName, aFlags);
   }
 }

@@ -1398,7 +1398,7 @@ nsresult KeyedHistogram::GetSnapshot(const StaticMutexAutoLock& aLock,
 
   // Snapshot every key.
   for (const auto& entry : *histogramMap) {
-    base::Histogram* keyData = entry.GetWeak();
+    base::Histogram* keyData = entry.GetRawPtr();
     if (!keyData) {
       return NS_ERROR_FAILURE;
     }

@@ -88,7 +88,7 @@ void LSWriteOptimizerBase::GetSortedWriteInfos(
   }
 
   for (const auto& entry : mWriteInfos) {
-    aWriteInfos.AppendElement(WrapNotNull(entry.GetWeak()));
+    aWriteInfos.AppendElement(WrapNotNull(entry.GetRawPtr()));
   }
 
   // Serial numbers are unique, so this is a total order and the result is

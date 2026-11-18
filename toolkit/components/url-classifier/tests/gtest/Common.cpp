@@ -172,7 +172,7 @@ void CheckContent(LookupCacheV4* aCache, const _PrefixArray& aPrefixArray) {
 
   for (const auto& entry : vlPSetMap) {
     nsCString* expectedPrefix = expected.Get(entry.GetKey());
-    nsCString* resultPrefix = entry.GetWeak();
+    nsCString* resultPrefix = entry.GetRawPtr();
 
     ASSERT_TRUE(resultPrefix->Equals(*expectedPrefix));
   }

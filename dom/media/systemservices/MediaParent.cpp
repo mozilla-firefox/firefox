@@ -303,7 +303,7 @@ class OriginKeyStore {
       }
       for (const auto& entry : mKeys) {
         const nsACString& origin = entry.GetKey();
-        OriginKey* originKey = entry.GetWeak();
+        OriginKey* originKey = entry.GetRawPtr();
 
         if (!originKey->mSecondsStamp) {
           continue;  // don't write temporal ones

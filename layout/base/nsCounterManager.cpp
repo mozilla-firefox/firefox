@@ -556,7 +556,7 @@ void nsCounterManager::Dump() const {
   for (const auto& entry : mNames) {
     printf("Counter named \"%s\":\n", nsAtomCString(entry.GetKey()).get());
 
-    nsCounterList* list = entry.GetWeak();
+    nsCounterList* list = entry.GetRawPtr();
     list->Dump();
   }
   printf("\n\n");

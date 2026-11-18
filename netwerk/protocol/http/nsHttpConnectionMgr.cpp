@@ -3593,7 +3593,7 @@ void nsHttpConnectionMgr::ResumeReadOf(
       // These have never been throttled (never stopped reading)
       continue;
     }
-    ResumeReadOf(entry.GetWeak());
+    ResumeReadOf(entry.GetRawPtr());
   }
 }
 

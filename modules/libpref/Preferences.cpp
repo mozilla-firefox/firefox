@@ -3705,7 +3705,7 @@ size_t nsPrefBranch::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const {
 
   n += mObservers.ShallowSizeOfExcludingThis(aMallocSizeOf);
   for (const auto& entry : mObservers) {
-    const PrefCallback* data = entry.GetWeak();
+    const PrefCallback* data = entry.GetRawPtr();
     n += data->SizeOfIncludingThis(aMallocSizeOf);
   }
 
@@ -4507,7 +4507,7 @@ PreferenceServiceReporter::CollectReports(
   nsTHashMap<nsCStringHashKey, uint32_t> prefCounter;
 
   for (const auto& entry : rootBranch->mObservers) {
-    auto* callback = entry.GetWeak();
+    auto* callback = entry.GetRawPtr();
 
     if (callback->IsWeak()) {
       nsCOMPtr<nsIObserver> callbackRef = do_QueryReferent(callback->mWeakRef);

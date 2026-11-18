@@ -393,7 +393,7 @@ void LookupCache::GetCacheInfo(nsIUrlClassifierCacheInfo** aCache) const {
     CStringToHexString(prefix, entry->prefix);
 
     // Set expiry of the cache entry.
-    CachedFullHashResponse* response = cacheEntry.GetWeak();
+    CachedFullHashResponse* response = cacheEntry.GetRawPtr();
     entry->expirySec = response->negativeCacheExpirySec;
 
     // Set positive cache.
@@ -678,7 +678,7 @@ void LookupCache::DumpCache() const {
   }
 
   for (const auto& cacheEntry : mFullHashCache) {
-    CachedFullHashResponse* response = cacheEntry.GetWeak();
+    CachedFullHashResponse* response = cacheEntry.GetRawPtr();
 
     nsAutoCString prefix;
     CStringToHexString(

@@ -134,7 +134,7 @@ const nsTArray<SharedMap::Entry*>& SharedMap::EntryArray() const {
     mEntryArray.emplace(mEntries.Count());
     auto& array = mEntryArray.ref();
     for (auto& entry : mEntries) {
-      array.AppendElement(entry.GetWeak());
+      array.AppendElement(entry.GetRawPtr());
     }
   }
 
