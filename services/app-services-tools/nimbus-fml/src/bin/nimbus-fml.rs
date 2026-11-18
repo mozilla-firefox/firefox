@@ -3,9 +3,5 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 fn main() {
-    nimbus_fml::command_line::do_main(
-        std::env::args_os(),
-        &std::env::current_dir().expect("no cwd"),
-    )
-    .expect("nimbus failed")
+    nimbus_fml::command_line::do_main().expect("nimbus failed")
 }
