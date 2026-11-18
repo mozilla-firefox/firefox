@@ -1001,6 +1001,7 @@ export class AIChatContent extends MozLitElement {
       toolName: content.name,
       pendingLabel: actionLog.pendingLabel,
       row: actionLog.row,
+      modelName: actionLog.modelName,
     };
 
     this.requestUpdate();
@@ -1435,9 +1436,10 @@ export class AIChatContent extends MozLitElement {
    * @param {number} groupIndex - this group's index in the render items
    */
   #renderActionLogGroup(toolMsgs, isComplete, groupIndex) {
+    const { modelName } = toolMsgs[0];
     const finalMessage = {
       l10nId: "action-log-completed-steps",
-      l10nArgs: { count: toolMsgs.length },
+      l10nArgs: { count: toolMsgs.length + (modelName ? 1 : 0) },
     };
     const summary = isComplete
       ? finalMessage
@@ -2074,7 +2076,18 @@ export class AIChatContent extends MozLitElement {
    * @returns {Array<{ labelL10nId?: string, labelL10nArgs?: object, label?: string, items: Array }>}
    */
   #buildGroupedActionLogRows(toolMsgs) {
-    return toolMsgs.map(msg => msg.row).filter(Boolean);
+    const rows = toolMsgs.map(msg => msg.row).filter(Boolean);
+    const { modelName } = toolMsgs[0];
+    if (!modelName) {
+      return rows;
+    }
+    return [
+      {
+        labelL10nId: "action-log-picked-model",
+        labelL10nArgs: { model: modelName },
+      },
+      ...rows,
+    ];
   }
 
   #renderMessages(items) {

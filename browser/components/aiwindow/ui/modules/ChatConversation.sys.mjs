@@ -3,7 +3,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { MODEL_FEATURES } from "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs";
+import {
+  getCachedModelsData,
+  MODEL_FEATURES,
+} from "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs";
 
 import {
   constructRelevantMemoriesContextMessage,
@@ -464,6 +467,11 @@ export class ChatConversation extends Conversation {
       last.content?.type === "text" &&
       !last.content.l10nId
     ) {
+      // A retry after an error streams into the failed attempt’s message, so
+      // attribute it to the engine that answers, unless it holds earlier text.
+      if (!last.content.body) {
+        Object.assign(last, this.#engineFields());
+      }
       return last;
     }
     return this.addAssistantMessage("text", "");
@@ -650,6 +658,29 @@ export class ChatConversation extends Conversation {
     }
   }
 
+  #engineFields() {
+    const { model = null, modelChoiceId } = this.engine ?? {};
+    if (!modelChoiceId) {
+      return { modelId: model, params: null };
+    }
+    // Only a choice that routes to another model, like the auto model, names it.
+    const choice = getCachedModelsData()[modelChoiceId];
+    const modelDisplayName =
+      choice?.inferenceModel === model ? choice.inferenceShortName : null;
+    return { modelId: model, params: { modelChoiceId, modelDisplayName } };
+  }
+
+  #withEngineDefaults(opts) {
+    const { modelId, params } = this.#engineFields();
+    if (opts.modelId == null) {
+      opts.modelId = modelId;
+    }
+    if (opts.params == null) {
+      opts.params = params;
+    }
+    return opts;
+  }
+
   /**
    * Add an assistant message to the conversation
    *
@@ -663,9 +694,6 @@ export class ChatConversation extends Conversation {
     contentBody,
     assistantOpts = new AssistantRoleOpts()
   ) {
-    if (assistantOpts.modelId == null) {
-      assistantOpts.modelId = this.engine?.model ?? null;
-    }
     const content = {
       type,
       body: contentBody,
@@ -675,7 +703,7 @@ export class ChatConversation extends Conversation {
       MESSAGE_ROLE.ASSISTANT,
       content,
       this.currentTurnIndex(),
-      assistantOpts
+      this.#withEngineDefaults(assistantOpts)
     );
   }
 
@@ -696,15 +724,12 @@ export class ChatConversation extends Conversation {
     link = null,
     assistantOpts = new AssistantRoleOpts()
   ) {
-    if (assistantOpts.modelId == null) {
-      assistantOpts.modelId = this.engine?.model ?? null;
-    }
     const content = { type: "text", body: "", l10nId, l10nArgs, link };
     const message = this.addMessage(
       MESSAGE_ROLE.ASSISTANT,
       content,
       this.currentTurnIndex(),
-      assistantOpts
+      this.#withEngineDefaults(assistantOpts)
     );
 
     if (message) {
@@ -722,14 +747,11 @@ export class ChatConversation extends Conversation {
    * @returns {ChatMessage} The newly created tool message
    */
   addToolCallMessage(content, toolOpts = new ToolRoleOpts()) {
-    if (toolOpts.modelId == null) {
-      toolOpts.modelId = this.engine?.model ?? null;
-    }
     const message = this.addMessage(
       MESSAGE_ROLE.TOOL,
       content,
       this.currentTurnIndex(),
-      toolOpts
+      this.#withEngineDefaults(toolOpts)
     );
     // Emit tool messages so the renderer can display them
     // in the action log

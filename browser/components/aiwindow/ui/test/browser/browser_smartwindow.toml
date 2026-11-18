@@ -104,6 +104,8 @@ skip-if = [
 
 ["browser_smartwindow_abort_on_tab_close.js"]
 
+["browser_smartwindow_action_log_model.js"]
+
 ["browser_smartwindow_aitab_callout.js"]
 
 ["browser_smartwindow_assistant_ui_errors.js"]

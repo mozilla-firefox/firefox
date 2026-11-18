@@ -45,6 +45,13 @@ export class openAIEngine {
   model = null;
 
   /**
+   * Model choice the engine was built for.
+   *
+   * @type {string | null}
+   */
+  modelChoiceId = null;
+
+  /**
    * Engine ID used for creating the engine instance
    *
    * @type {string | null}
@@ -140,6 +147,7 @@ export class openAIEngine {
    *
    * @param {object} options
    * @param {string} options.model
+   * @param {string|null} [options.modelChoiceId]
    * @param {string} options.serviceType
    * @param {string} options.purpose
    * @param {string|null} [options.flowId]
@@ -150,6 +158,7 @@ export class openAIEngine {
    */
   static async build({
     model,
+    modelChoiceId = null,
     serviceType,
     purpose,
     flowId,
@@ -162,6 +171,7 @@ export class openAIEngine {
     engine.#engineId = engineId;
     engine.feature = feature;
     engine.model = model;
+    engine.modelChoiceId = modelChoiceId;
     engine.#serviceType = serviceType;
     engine.#purpose = purpose;
     engine.#flowId = flowId;

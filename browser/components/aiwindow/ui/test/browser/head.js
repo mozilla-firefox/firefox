@@ -349,6 +349,64 @@ const MOCK_AUTO_RS_RECORD = (() => {
   };
 })();
 
+const AUTO_MODEL_PREF = "browser.smartwindow.firstrun.singlePageWithAutoModel";
+
+/**
+ * Opens a Smart Window with a model choice and the auto model’s routing record
+ * in Remote Settings.
+ *
+ * @param {object} options
+ * @param {boolean} [options.enabled] - Value of the auto model pref
+ * @param {string} [options.modelChoice] - Default model choice
+ * @param {?object} [options.autoRecord] - The auto model’s routing record in
+ *   Remote Settings, or null for none
+ * @param {(fixture: {win: Window, browser: MozBrowser, engineManager: MockEngineManager}) => Promise<void>} task
+ */
+async function withModelChoiceWindow(
+  {
+    enabled = true,
+    modelChoice = Services.prefs.getStringPref(
+      "browser.smartwindow.firstrun.modelChoice",
+      ""
+    ),
+    autoRecord = MOCK_AUTO_RS_RECORD,
+  },
+  task
+) {
+  const { _clearModelsDataCacheForTesting } = ChromeUtils.importESModule(
+    "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs"
+  );
+  const { MockEngineManager } = ChromeUtils.importESModule(
+    "resource://testing-common/AIWindowTestUtils.sys.mjs"
+  );
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [AUTO_MODEL_PREF, enabled],
+      ["browser.smartwindow.firstrun.modelChoice", modelChoice],
+    ],
+  });
+  const engineManager = new MockEngineManager();
+  let win;
+  try {
+    _setRemoteClientForTesting({
+      get: async () =>
+        autoRecord ? [...MOCK_RS_RECORDS, autoRecord] : MOCK_RS_RECORDS,
+    });
+    _clearModelsDataCacheForTesting();
+    win = await openAIWindow();
+    await task({ win, browser: win.gBrowser.selectedBrowser, engineManager });
+  } finally {
+    if (win) {
+      await BrowserTestUtils.closeWindow(win);
+    }
+    await engineManager.rejectAllRequests();
+    engineManager.cleanupMocks();
+    _setRemoteClientForTesting({ get: async () => MOCK_RS_RECORDS });
+    _clearModelsDataCacheForTesting();
+    await SpecialPowers.popPrefEnv();
+  }
+}
+
 add_setup(async function () {
   if (parseInt(Services.env.get("MOZ_CHAOSMODE"), 16)) {
     // When running chaos mode in --verify test runs, the amount of time
