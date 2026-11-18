@@ -1951,6 +1951,8 @@ void DocumentLoadListener::SerializeRedirectData(
 
   if (StaticPrefs::dom_location_ancestorOrigins_enabled()) {
     MOZ_ASSERT(XRE_IsParentProcess());
+    Span<const nsCOMPtr<nsIPrincipal>> ancestorPrincipals;
+    auto& ancestorOrigins = aArgs.loadInfo().ancestorOrigins();
     if (RefPtr bc = redirectLoadInfo->GetFrameBrowsingContext()) {
       nsCOMPtr<nsIPrincipal> resultPrincipal;
       // If this fails, we get an empty location.ancestorOrigins list
@@ -1963,14 +1965,22 @@ void DocumentLoadListener::SerializeRedirectData(
         bc->Canonical()->CreateRedactedAncestorOriginsList(resultPrincipal,
                                                            referrerPolicy);
       }
+      ancestorPrincipals =
+          bc->Canonical()->GetPossiblyRedactedAncestorOriginsList();
+    } else if (!mIsDocumentLoad && mParentWindowContext) {
+      // <object> and <embed> have no referrerpolicy, so nothing is masked.
+      nsIPrincipal* parentPrincipal = mParentWindowContext->DocumentPrincipal();
+      ancestorOrigins.AppendElement(
+          parentPrincipal->GetIsNullPrincipal() ? nullptr : parentPrincipal);
+      ancestorPrincipals = mParentWindowContext->BrowsingContext()
+                               ->GetPossiblyRedactedAncestorOriginsList();
+    }
 
-      // The ancestorOrigins list the document should ultimately have, that we
-      // send down with load args.
-      auto& ancestorOrigins = aArgs.loadInfo().ancestorOrigins();
-      for (const auto& ancestorPrincipal :
-           bc->Canonical()->GetPossiblyRedactedAncestorOriginsList()) {
-        ancestorOrigins.AppendElement(ancestorPrincipal);
-      }
+    // The ancestorOrigins list the document should ultimately have, that we
+    // send down with load args.
+
+    for (const auto& ancestorPrincipal : ancestorPrincipals) {
+      ancestorOrigins.AppendElement(ancestorPrincipal);
     }
   }
 
