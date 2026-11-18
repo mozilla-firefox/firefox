@@ -235,7 +235,7 @@ add_task(async function test_url_mini_window_is_recorded() {
     window,
     "https://example.com/",
     "link_context_menu",
-    Services.scriptSecurityManager.getSystemPrincipal()
+    { triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal() }
   );
   let miniWin = mini.miniWin;
 

@@ -1654,7 +1654,10 @@ export class nsContextMenu {
       this.window,
       this.linkURL,
       "link_context_menu",
-      this.principal
+      this._openLinkInParameters({
+        userContextId: this.contentData.userContextId,
+        ...this._getGlobalHistoryOptions(),
+      })
     );
   }
 
