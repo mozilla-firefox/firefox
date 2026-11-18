@@ -90,7 +90,7 @@
   <!-- The error message shown when the browser prevents loading a website on a restricted port. -->
   <string name="mozac_browser_errorpages_port_blocked_message"><![CDATA[<p>نشۊوی درخاست دیاریه (سی مسال<q>mozilla.org:80</q>سی پورت 80 و ری mozilla.org) پورتی ن و کار اگره ک من هالت عادی و عونوان کاربوردی <em>و غیر</em> ز وب گشتن و کار اروه. گشت گر سی زفت کردن وو ٱمنیت ایسا ای درخاست ن لقو کرد.</p>]]></string>
   <!-- The document title and heading of the error page shown when the Internet connection is disrupted while loading a website. -->
-  <string name="mozac_browser_errorpages_net_reset_title">منپیز ز نۊ ره اۊفتا</string>
+  <string name="mozac_browser_errorpages_net_reset_title">منپیز وورنشۊوی وابی</string>
   <!-- The error message shown when the Internet connection is disrupted while loading a website. -->
   <string name="mozac_browser_errorpages_net_reset_message"><![CDATA[<p>گشت گر وا مووفقیت منپیز وابی، ٱما مجال جا گورویی دووسمندیا، منپیز قت وابی. ز نۊ قپ ریت کۊنین.</p>\n<ul>\n<li>وبگه گاشڌ مووقتن من دسرس نبۊ یا قلوه شۊلۊغ بۊ. ی دمووݩ دی ز نۊ قپ ریت کۊنین.</li>\n<li>ٱر نترین هیچ بلگه ای ن بار ونی کۊنین، منپیز داده دسگا یا وای فای خوتووݩ ن واجۊری کۊنین.</li>\n</ul>]]></string>
   <!-- The document title and heading of the error page shown when the browser refuses to load a type of file that is considered unsafe. -->

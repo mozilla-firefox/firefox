@@ -51,7 +51,7 @@
   <!-- Description for the "browserSettings" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_browser_setting_description">Browserynstellingen lêze en oanpasse</string>
   <!-- Description for the "browsingData" WebExtensions API permission. -->
-  <string name="mozac_feature_addons_permissions_browser_data_description">Resinte browserskiednis, cookies en relatearre gegevens wiskje</string>
+  <string name="mozac_feature_addons_permissions_browser_data_description">Resinte sneupskiednis, cookies en relatearre gegevens wiskje</string>
   <!-- Description for the "clipboardRead" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_clipboard_read_description">Gegevens fan it klamboerd ophelje</string>
   <!-- Description for the "clipboardWrite" WebExtensions API permission. -->
