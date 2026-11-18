@@ -21,6 +21,26 @@ const kSearchBox = "search-container";
 
 var originalWindowWidth;
 
+// The window resize is asynchronous: wait for it, otherwise the next task can
+// read a stale window.outerWidth and leave the window narrow when it ends.
+async function unensureToolbarOverflowAndWait() {
+  let resized =
+    window.outerWidth != originalWindowWidth &&
+    BrowserTestUtils.waitForEvent(
+      window,
+      "resize",
+      false,
+      () => window.outerWidth == originalWindowWidth
+    );
+  unensureToolbarOverflow(window, originalWindowWidth);
+  await resized;
+  await BrowserTestUtils.waitForMutationCondition(
+    navbar,
+    { attributeFilter: ["overflowing"] },
+    () => !navbar.hasAttribute("overflowing")
+  );
+}
+
 // Adding a widget should add it next to the widget it's being inserted next to.
 add_task(async function subsequent_widget() {
   let sidebarRevampEnabled = Services.prefs.getBoolPref(
@@ -109,8 +129,7 @@ add_task(async function subsequent_widget() {
     } button.`
   );
 
-  unensureToolbarOverflow(window, originalWindowWidth);
-  await TestUtils.waitForCondition(() => !navbar.hasAttribute("overflowing"));
+  await unensureToolbarOverflowAndWait();
   ok(
     !navbar.hasAttribute("overflowing"),
     "Should not have an overflowing toolbar."
@@ -155,8 +174,7 @@ add_task(async function subsequent_widget() {
   CustomizableUI.removeWidgetFromArea(
     !sidebarRevampEnabled ? kSidebarBtn : kTestBtn2
   );
-  unensureToolbarOverflow(window, originalWindowWidth);
-  await TestUtils.waitForCondition(() => !navbar.hasAttribute("overflowing"));
+  await unensureToolbarOverflowAndWait();
 });
 
 // Removing a widget should remove it from the overflow list if that is where it is, and update it accordingly.
@@ -203,8 +221,7 @@ add_task(async function remove_widget() {
     "Test button should be in the palette"
   );
 
-  unensureToolbarOverflow(window, originalWindowWidth);
-  await TestUtils.waitForCondition(() => !navbar.hasAttribute("overflowing"));
+  await unensureToolbarOverflowAndWait();
   ok(
     !navbar.hasAttribute("overflowing"),
     "Should not have an overflowing toolbar."
@@ -214,8 +231,7 @@ add_task(async function remove_widget() {
     CustomizableUI.removeWidgetFromArea(kTestBtn2);
     el.remove();
   }
-  unensureToolbarOverflow(window, originalWindowWidth);
-  await TestUtils.waitForCondition(() => !navbar.hasAttribute("overflowing"));
+  await unensureToolbarOverflowAndWait();
 });
 
 // Constructing a widget while overflown should set the right class on it.
@@ -307,8 +323,7 @@ add_task(async function construct_widget() {
   CustomizableUI.removeWidgetFromArea(
     !sidebarRevampEnabled ? kSidebarBtn : kTestBtn2
   );
-  unensureToolbarOverflow(window, originalWindowWidth);
-  await TestUtils.waitForCondition(() => !navbar.hasAttribute("overflowing"));
+  await unensureToolbarOverflowAndWait();
 });
 
 add_task(async function insertBeforeFirstItemInOverflow() {
@@ -406,14 +421,13 @@ add_task(async function insertBeforeFirstItemInOverflow() {
 
   urlbar.style.removeProperty("min-width");
   CustomizableUI.removeWidgetFromArea(kLibraryButton);
-  unensureToolbarOverflow(window, originalWindowWidth);
-  await TestUtils.waitForCondition(() => !navbar.hasAttribute("overflowing"));
+  await unensureToolbarOverflowAndWait();
   await resetCustomization();
 });
 
 registerCleanupFunction(async function asyncCleanup() {
+  // Only does something when a task failed before restoring this state itself.
   document.getElementById("urlbar-container").style.removeProperty("min-width");
-  window.resizeTo(originalWindowWidth, window.outerHeight);
-  await TestUtils.waitForCondition(() => !navbar.hasAttribute("overflowing"));
+  await unensureToolbarOverflowAndWait();
   await resetCustomization();
 });
