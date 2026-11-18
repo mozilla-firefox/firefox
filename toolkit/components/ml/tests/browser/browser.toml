@@ -34,8 +34,6 @@ support-files = [
   "ml_native_ort_error_stub.worker.mjs",
 ]
 
-["browser_ml_cache.js"]
-
 ["browser_ml_cluster_algos.js"]
 
 ["browser_ml_embeddings_generator.js"]
