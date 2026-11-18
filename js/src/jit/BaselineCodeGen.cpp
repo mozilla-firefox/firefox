@@ -1745,16 +1745,14 @@ bool BaselineCompilerCodeGen::emitWarmUpCounterIncrement() {
   Address depthAddr(scriptReg, ICScript::offsetOfDepth());
   masm.branch32(Assembler::NotEqual, depthAddr, Imm32(0), &done);
 
-  // Load the IonScript* in scriptReg. We can load this from the ICScript*
-  // because it must be an outer ICScript embedded in the JitScript.
-  constexpr int32_t offset = -int32_t(JitScript::offsetOfICScript()) +
-                             int32_t(JitScript::offsetOfIonScript());
-  masm.loadPtr(Address(scriptReg, offset), scriptReg);
-
+  // Check the IonScript state. We can load this via the ICScript* because it
+  // must be an outer ICScript embedded in a JitScript.
+  constexpr int32_t ionStateOffset = -int32_t(JitScript::offsetOfICScript()) +
+                                     int32_t(JitScript::offsetOfIonState());
   // Do nothing if Ion is already compiling this script off-thread or if Ion has
   // been disabled for this script.
-  masm.branchTestPtr(Assembler::NonZero, scriptReg, Imm32(SpecialScriptBit),
-                     &done);
+  masm.branch8(Assembler::AboveOrEqual, Address(scriptReg, ionStateOffset),
+               Imm32(JitScript::firstSpecialScriptState()), &done);
 
   // Try to compile and/or finish a compilation.
   if (JSOp(*pc) == JSOp::LoopHead) {

@@ -54,7 +54,7 @@ JitScript::JitScript(JSScript* script, Offset fallbackStubsOffset,
     setIsBaselineDisabled();
   }
   if (!script->canIonCompile()) {
-    setIonScriptImpl(script, IonDisabledScriptPtr);
+    setIsIonDisabled();
   }
 }
 
@@ -212,7 +212,7 @@ void JitScript::trace(JSTracer* trc) {
   }
 
   IonScript* ionScript = ionScript_.getForTracing();
-  if (ionScript && IsIonScript(ionScript)) {
+  if (ionScript) {
     ionScript->trace(trc);
   }
 
@@ -691,7 +691,8 @@ void JitScript::setBaselineScriptImpl(JS::GCContext* gcx, JSScript* script,
     baselineScript_.set(script->zone(), nullptr);
   }
 
-  MOZ_ASSERT(ionScript_ == nullptr || ionScript_ == IonDisabledScriptPtr);
+  MOZ_ASSERT(ionState_ == ScriptState::None ||
+             ionState_ == ScriptState::Disabled);
 
   baselineScript_.set(script->zone(), baselineScript);
   baselineState_ = baselineState;
@@ -704,14 +705,16 @@ void JitScript::setBaselineScriptImpl(JS::GCContext* gcx, JSScript* script,
   script->updateJitCodeRaw(gcx->runtime());
 }
 
-void JitScript::setIonScriptImpl(JSScript* script, IonScript* ionScript) {
+void JitScript::setIonScriptImpl(JSScript* script, IonScript* ionScript,
+                                 ScriptState ionState) {
   JSRuntime* rt = script->runtimeFromMainThread();
-  setIonScriptImpl(rt->gcContext(), script, ionScript);
+  setIonScriptImpl(rt->gcContext(), script, ionScript, ionState);
 }
 
 void JitScript::setIonScriptImpl(JS::GCContext* gcx, JSScript* script,
-                                 IonScript* ionScript) {
-  MOZ_ASSERT_IF(ionScript != IonDisabledScriptPtr,
+                                 IonScript* ionScript, ScriptState ionState) {
+  checkIonState();
+  MOZ_ASSERT_IF(ionState != ScriptState::Disabled,
                 !baselineScript()->hasPendingIonCompileTask());
 
   JS::Zone* zone = script->zone();
@@ -722,6 +725,7 @@ void JitScript::setIonScriptImpl(JS::GCContext* gcx, JSScript* script,
   }
 
   ionScript_.set(zone, ionScript);
+  ionState_ = ionState;
   MOZ_ASSERT_IF(hasIonScript(), hasBaselineScript());
   if (hasIonScript()) {
     AddCellMemory(script, ionScript_->allocBytes(), MemoryUse::IonScript);
