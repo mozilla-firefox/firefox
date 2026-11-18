@@ -108,6 +108,8 @@ skip-if = [
 
 ["browser_smartwindow_assistant_ui_errors.js"]
 
+["browser_smartwindow_auto_model_telemetry.js"]
+
 ["browser_smartwindow_beta_badge.js"]
 
 ["browser_smartwindow_bookmarks_toolbar.js"]
