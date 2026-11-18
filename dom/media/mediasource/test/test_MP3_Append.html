@@ -1,0 +1,146 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>MSE: append and play audio/mpeg</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="text/javascript" src="mediasource.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+
+SimpleTest.waitForExplicitFinish();
+addMSEPrefs(["media.mediasource.mp3.enabled", true]);
+
+// All the frames hold 1152 samples at 44.1 kHz, except those of
+// mp1_tone.mp1.
+const framesDuration = n => (n * 1152) / 44100;
+
+// Returns the offsets of the frames that follow the ID3v2 tag of an MP3 file
+// of MPEG-1 Layer III frames.
+function frameOffsets(bytes) {
+  const bitrates = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320];
+  const rates = [44100, 48000, 32000];
+  let offset = 0;
+  if (String.fromCharCode(...bytes.subarray(0, 3)) == "ID3") {
+    offset = 10 + ((bytes[6] << 21) | (bytes[7] << 14) | (bytes[8] << 7) | bytes[9]);
+  }
+  const offsets = [];
+  while (bytes[offset] == 0xff && (bytes[offset + 1] & 0xe0) == 0xe0) {
+    offsets.push(offset);
+    const bitrate = bitrates[bytes[offset + 2] >> 4] * 1000;
+    const rate = rates[(bytes[offset + 2] >> 2) & 3];
+    offset += Math.floor((144 * bitrate) / rate) + ((bytes[offset + 2] >> 1) & 1);
+  }
+  return offsets;
+}
+
+function checkBuffered(sb, end, msg) {
+  is(sb.buffered.length, 1, `${msg}: one buffered range`);
+  isfuzzy(sb.buffered.start(0), 0, 1e-6, `${msg}: buffered start`);
+  isfuzzy(sb.buffered.end(0), end, 1e-6, `${msg}: buffered end`);
+}
+
+runWithMSE(async (ms, el) => {
+  await once(ms, "sourceopen");
+  const sb = ms.addSourceBuffer("audio/mpeg");
+  const [smallShot, hugeID3] = await Promise.all([
+    fetchWithXHR("small-shot.mp3"),
+    fetchWithXHR("huge-id3.mp3"),
+  ]);
+
+  // small-shot.mp3 has an ID3v2 tag, an Info frame and 12 stereo frames.
+  await loadSegment(sb, smallShot);
+  let frames = 12;
+  checkBuffered(sb, framesDuration(frames), "small-shot.mp3");
+  isfuzzy(
+    sb.timestampOffset,
+    framesDuration(frames),
+    1e-6,
+    "timestampOffset is the end of the last frame"
+  );
+  is(ms.duration, Infinity, "The initialization segment has no duration");
+
+  // Splitting the byte stream within the tag and the frames gives the same
+  // frames.
+  const bytes = new Uint8Array(smallShot);
+  for (let i = 0; i < bytes.length; i += 101) {
+    await loadSegment(sb, bytes.subarray(i, i + 101));
+  }
+  frames += 12;
+  checkBuffered(sb, framesDuration(frames), "small-shot.mp3 in small chunks");
+
+  // huge-id3.mp3 has a 137 KB ID3v2 tag, an Info frame, 40 mono frames and an
+  // ID3v1 tag. The channel count changes the track configuration. The tag is
+  // ignored as it is appended, so the attributes can be set partway through
+  // it.
+  const hugeID3Bytes = new Uint8Array(hugeID3);
+  await loadSegment(sb, hugeID3Bytes.subarray(0, 1000));
+  const offset = sb.timestampOffset;
+  sb.timestampOffset = offset;
+  sb.mode = "sequence";
+  ok(true, "The attributes can be set partway through an ID3v2 tag");
+  await loadSegment(sb, hugeID3Bytes.subarray(1000));
+  frames += 40;
+  checkBuffered(sb, framesDuration(frames), "huge-id3.mp3");
+
+  // An Icecast header is ignored.
+  await loadSegment(
+    sb,
+    new TextEncoder().encode("ICY 200 OK\r\nicy-name: test\r\n\r\n")
+  );
+  await loadSegment(sb, smallShot);
+  frames += 12;
+  checkBuffered(sb, framesDuration(frames), "Icecast header and small-shot.mp3");
+
+  // Garbage is ignored as it is appended too. Three frame headers in a row
+  // resynchronize the stream after it, even when the third one changes the
+  // track configuration.
+  await loadSegment(sb, new Uint8Array(100).fill(0x55));
+  sb.mode = "sequence";
+  ok(true, "The attributes can be set after garbage");
+  const smallShotFrames = frameOffsets(bytes);
+  const hugeID3Frames = frameOffsets(hugeID3Bytes);
+  await loadSegment(sb, bytes.subarray(smallShotFrames[1], smallShotFrames[3]));
+  await loadSegment(sb, hugeID3Bytes.subarray(hugeID3Frames[0]));
+  frames += 2 + 40;
+  checkBuffered(
+    sb,
+    framesDuration(frames),
+    "Garbage, two stereo frames and huge-id3.mp3"
+  );
+
+  // mp3_crc.mp3 has an Info frame and 11 frames that are protected by a CRC.
+  await loadSegment(sb, await fetchWithXHR("mp3_crc.mp3"));
+  frames += 11;
+  checkBuffered(sb, framesDuration(frames), "mp3_crc.mp3");
+
+  // mp2_click.mp2 has 20 mono Layer II frames, and mp1_tone.mp1 100 mono
+  // Layer I frames of 384 samples. Each layer needs a new initialization
+  // segment.
+  await loadSegment(sb, await fetchWithXHR("mp2_click.mp2"));
+  frames += 20;
+  checkBuffered(sb, framesDuration(frames), "mp2_click.mp2");
+  await loadSegment(sb, await fetchWithXHR("mp1_tone.mp1"));
+  const end = framesDuration(frames) + (100 * 384) / 44100;
+  checkBuffered(sb, end, "mp1_tone.mp1");
+
+  ms.endOfStream();
+  isfuzzy(
+    ms.duration,
+    end,
+    1e-6,
+    "endOfStream() sets the duration to the end of the buffered range"
+  );
+
+  el.play();
+  await once(el, "ended");
+  ok(true, "Played to the end");
+  SimpleTest.finish();
+});
+
+</script>
+</pre>
+</body>
+</html>

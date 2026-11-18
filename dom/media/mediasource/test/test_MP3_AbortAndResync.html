@@ -1,0 +1,90 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>MSE: audio/mpeg after abort(), garbage and invalid frames</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="text/javascript" src="mediasource.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+
+SimpleTest.waitForExplicitFinish();
+addMSEPrefs(["media.mediasource.mp3.enabled", true]);
+
+const framesDuration = (n, rate) => (n * 1152) / rate;
+
+function checkBuffered(sb, end, msg, epsilon = 1e-6) {
+  is(sb.buffered.length, 1, `${msg}: one buffered range`);
+  isfuzzy(sb.buffered.start(0), 0, 1e-6, `${msg}: buffered start`);
+  isfuzzy(sb.buffered.end(0), end, epsilon, `${msg}: buffered end`);
+}
+
+runWithMSE(async (ms, el) => {
+  await once(ms, "sourceopen");
+  const sb = ms.addSourceBuffer("audio/mpeg");
+  const [vbr, emptySize] = await Promise.all([
+    fetchWithXHR("vbr.mp3"),
+    fetchWithXHR("empty_size.mp3"),
+  ]);
+
+  // vbr.mp3 has 384 frames at 44.1 kHz and no metadata. Its first frame
+  // header is an initialization segment, without waiting for the rest of the
+  // frame as Chrome does. The media segment starts with the coded audio that
+  // follows the header.
+  const bytes = new Uint8Array(vbr);
+  await loadSegment(sb, bytes.subarray(0, 4));
+  is(ms.duration, Infinity, "A frame header is an initialization segment");
+  sb.timestampOffset = 0;
+  ok(true, "timestampOffset can be set after a frame header");
+  await loadSegment(sb, bytes.subarray(4, 5));
+  must_throw(
+    () => (sb.timestampOffset = 100),
+    "Setting timestampOffset after the start of the coded audio throws",
+    "InvalidStateError"
+  );
+
+  // Split it within a frame.
+  const split = 100001;
+  await loadSegment(sb, bytes.subarray(5, split));
+  must_throw(
+    () => (sb.timestampOffset = 100),
+    "Setting timestampOffset while a frame is incomplete throws",
+    "InvalidStateError"
+  );
+
+  // abort() drops the start of the split frame, so the rest of the byte
+  // stream starts with garbage, and is resynchronized on the next frame.
+  sb.abort();
+  await loadSegment(sb, bytes.subarray(split));
+  let end = framesDuration(383, 44100);
+  checkBuffered(sb, end, "vbr.mp3 without the split frame");
+
+  // empty_size.mp3 has garbage between an empty ID3v2 tag and its 93 frames
+  // at 48 kHz, and ends with an ID3v1 tag.
+  // The frames after the sample rate change can start up to a sample early,
+  // as the end of the previous frame is truncated to the new sample rate.
+  await loadSegment(sb, emptySize);
+  end += framesDuration(93, 48000);
+  checkBuffered(sb, end, "empty_size.mp3", 1 / 48000);
+
+  // A frame header that the byte stream format allows but Gecko doesn't
+  // support (a free format bitrate) is a decode error.
+  const freeFormat = new Uint8Array(1000);
+  freeFormat.set([0xff, 0xfb, 0x00, 0x00]);
+  const sbError = once(sb, "error");
+  const elError = once(el, "error");
+  sb.appendBuffer(freeFormat);
+  await sbError;
+  ok(true, "The SourceBuffer fired an error event");
+  await elError;
+  is(el.error.code, MediaError.MEDIA_ERR_DECODE, "The media element errored");
+  is(ms.readyState, "ended", "The MediaSource ended");
+  SimpleTest.finish();
+});
+
+</script>
+</pre>
+</body>
+</html>

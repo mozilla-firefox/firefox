@@ -252,6 +252,15 @@ support-files = [
   "seek-odd-keyframes/single-idr-vp9-0.mp4^headers^",
   "seek-odd-keyframes/single-idr-vp9-1.mp4",
   "seek-odd-keyframes/single-idr-vp9-1.mp4^headers^",
+
+  # MPEG audio
+  "../../test/empty_size.mp3",
+  "../../test/huge-id3.mp3",
+  "../../test/small-shot.mp3",
+  "../../test/vbr.mp3",
+  "mp3_crc.mp3",
+  "mp1_tone.mp1",
+  "mp2_click.mp2",
 ]
 
 ["test_BufferedSeekCanPlayThrough.html"]
@@ -283,6 +292,14 @@ skip-if = [
 ["test_H264_SPS_InvalidDimensions.html"]
 
 ["test_HEAAC_extradata.html"]
+
+["test_MP3_AbortAndResync.html"]
+
+["test_MP3_Append.html"]
+
+["test_MP3_RemoveAndEvict.html"]
+
+["test_MP3_TypeSupport.html"]
 
 ["test_NoAudioLoopBackData.html"]
 skip-if = [

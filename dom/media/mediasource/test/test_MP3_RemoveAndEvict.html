@@ -1,0 +1,112 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>MSE: remove() and eviction with audio/mpeg</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="text/javascript" src="mediasource.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+
+SimpleTest.waitForExplicitFinish();
+addMSEPrefs(
+  ["media.mediasource.mp3.enabled", true],
+  ["media.mediasource.eviction_threshold.audio", 524288],
+  ["media.dormant-on-pause-timeout-ms", -1] // FIXME: bug 1319292
+);
+
+// vbr.mp3 has 384 frames and small-shot.mp3 has 12, at 44.1 kHz.
+const frameDuration = 1152 / 44100;
+const vbrDuration = 384 * frameDuration;
+const smallShotDuration = 12 * frameDuration;
+// timestampOffset can be truncated by a sample when converted from seconds.
+const EPSILON = 2 / 44100;
+
+async function withSourceBuffer(aTest) {
+  const ms = new MediaSource();
+  const audio = document.createElement("audio");
+  audio.src = URL.createObjectURL(ms);
+  await once(ms, "sourceopen");
+  await aTest(ms.addSourceBuffer("audio/mpeg"), audio);
+  audio.removeAttribute("src");
+  audio.load();
+}
+
+// Unlike loadSegment(), this waits for updateend, so that remove() can't be
+// confused by the updateend of the append.
+async function append(aSourceBuffer, aData) {
+  aSourceBuffer.appendBuffer(aData);
+  await once(aSourceBuffer, "updateend");
+}
+
+function checkBuffered(aSourceBuffer, aStart, aEnd, aMessage) {
+  is(aSourceBuffer.buffered.length, 1, `${aMessage}: one buffered range`);
+  if (aSourceBuffer.buffered.length == 1) {
+    isfuzzy(aSourceBuffer.buffered.start(0), aStart, EPSILON, `${aMessage}: start`);
+    isfuzzy(aSourceBuffer.buffered.end(0), aEnd, EPSILON, `${aMessage}: end`);
+  }
+}
+
+runWithMSE(async () => {
+  const [vbr, smallShot] = await Promise.all([
+    fetchWithXHR("vbr.mp3"),
+    fetchWithXHR("small-shot.mp3"),
+  ]);
+
+  // The frames that start before the removed range remain, and appending
+  // continues from timestampOffset.
+  await withSourceBuffer(async sb => {
+    await append(sb, vbr);
+    sb.remove(vbrDuration / 2 + frameDuration / 2, Infinity);
+    await once(sb, "updateend");
+    const kept = 193 * frameDuration;
+    checkBuffered(sb, 0, kept, "remove()");
+    sb.timestampOffset = kept;
+    await append(sb, smallShot);
+    checkBuffered(sb, 0, kept + smallShotDuration, "Append after remove()");
+  });
+
+  // Once the SourceBuffer is full, the data before currentTime is evicted to
+  // make room for more. The appends are small, so that the data before
+  // currentTime is enough for the next one.
+  await withSourceBuffer(async (sb, audio) => {
+    await must_reject(
+      async () => {
+        while (true) {
+          sb.appendBuffer(smallShot);
+          await once(sb, "updateend");
+        }
+      },
+      "Appending until the SourceBuffer is full",
+      "QuotaExceededError"
+    );
+    const end = sb.buffered.end(0);
+    checkBuffered(
+      sb,
+      0,
+      Math.round(end / smallShotDuration) * smallShotDuration,
+      "Full SourceBuffer"
+    );
+    audio.currentTime = end / 2;
+    await once(audio, "seeked");
+    await append(sb, smallShot);
+    is(sb.buffered.length, 1, "Eviction leaves one buffered range");
+    ok(sb.buffered.start(0) > 0, "The data before currentTime is evicted");
+    ok(sb.buffered.start(0) <= end / 2, "The data after currentTime is kept");
+    isfuzzy(
+      sb.buffered.end(0),
+      end + smallShotDuration,
+      EPSILON,
+      "Appending after eviction"
+    );
+  });
+
+  SimpleTest.finish();
+});
+
+</script>
+</pre>
+</body>
+</html>

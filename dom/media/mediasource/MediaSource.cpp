@@ -189,6 +189,12 @@ void MediaSource::IsTypeSupported(const nsAString& aType,
   if (mimeType == MEDIAMIMETYPE("audio/webm")) {
     return;
   }
+  // https://w3c.github.io/mse-byte-stream-format-mpeg-audio/#mime-types
+  // The "codecs" MIME-type parameter MUST NOT be used with these MIME-types.
+  if (mimeType == MEDIAMIMETYPE(AUDIO_MP3) &&
+      StaticPrefs::media_mediasource_mp3_enabled() && codecs.IsEmpty()) {
+    return;
+  }
 
   return aRv.ThrowNotSupportedError("Type not supported in MediaSource");
 }

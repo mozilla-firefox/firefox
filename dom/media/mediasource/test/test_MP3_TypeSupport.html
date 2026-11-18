@@ -1,0 +1,65 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>MSE: audio/mpeg type support and generated timestamps</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="text/javascript" src="mediasource.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+
+SimpleTest.waitForExplicitFinish();
+addMSEPrefs(["media.mediasource.mp3.enabled", true]);
+
+runWithMSE(async ms => {
+  await once(ms, "sourceopen");
+
+  ok(MediaSource.isTypeSupported("audio/mpeg"), "audio/mpeg is supported");
+  // The codecs parameter must not be used with the MPEG audio byte stream
+  // format, and audio/mp3 isn't in the byte stream format registry.
+  for (const type of [
+    'audio/mpeg; codecs="mp3"',
+    'audio/mpeg; codecs="mp4a.6B"',
+    "audio/mp3",
+  ]) {
+    ok(!MediaSource.isTypeSupported(type), `${type} is not supported`);
+  }
+
+  // The generate timestamps flag of audio/mpeg is true.
+  const sb = ms.addSourceBuffer("audio/mpeg");
+  is(sb.mode, "sequence", "addSourceBuffer() sets mode to sequence");
+  must_throw(
+    () => (sb.mode = "segments"),
+    "Setting mode to segments throws",
+    "TypeError"
+  );
+  is(sb.mode, "sequence", "mode is unchanged");
+
+  sb.changeType("audio/webm");
+  is(sb.mode, "sequence", "changeType() to audio/webm keeps the mode");
+  sb.mode = "segments";
+  sb.changeType("audio/mpeg");
+  is(sb.mode, "sequence", "changeType() to audio/mpeg sets mode to sequence");
+
+  await SpecialPowers.pushPrefEnv({
+    set: [["media.mediasource.mp3.enabled", false]],
+  });
+  ok(
+    !MediaSource.isTypeSupported("audio/mpeg"),
+    "audio/mpeg is not supported when disabled"
+  );
+  must_throw(
+    () => ms.addSourceBuffer("audio/mpeg"),
+    "addSourceBuffer() throws when disabled",
+    "NotSupportedError"
+  );
+
+  SimpleTest.finish();
+});
+
+</script>
+</pre>
+</body>
+</html>
