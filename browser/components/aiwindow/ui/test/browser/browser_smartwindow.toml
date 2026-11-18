@@ -230,6 +230,8 @@ skip-if = [
 
 ["browser_smartwindow_smartbar_model_select.js"]
 
+["browser_smartwindow_smartbar_model_select_auto.js"]
+
 ["browser_smartwindow_smartbar_tab_state.js"]
 
 ["browser_smartwindow_smartformfill_autocomplete.js"]

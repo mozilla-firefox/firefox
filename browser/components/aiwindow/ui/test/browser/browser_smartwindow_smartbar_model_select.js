@@ -28,23 +28,6 @@ add_setup(async function () {
 });
 
 /**
- * Waits for the expected model in the smartbar model select.
- *
- * @param {MozBrowser} browser - The browser element
- * @param {string} expectedModel - The expected model name
- */
-async function waitForSelectedModel(browser, expectedModel) {
-  await SpecialPowers.spawn(browser, [expectedModel], async expected => {
-    const aiWindowElement = content.document.querySelector("ai-window");
-    await ContentTaskUtils.waitForMutationCondition(
-      aiWindowElement,
-      { attributes: true },
-      () => aiWindowElement.selectedModelId === expected
-    );
-  });
-}
-
-/**
  * Opens the model select panel, returns the choice IDs of the items showing the
  * selected-model checkmark, then closes the panel again.
  *
