@@ -604,6 +604,42 @@ html {
               margin-block: 40px;
             }
           }
+
+          .loader {
+            width: 1em;
+            height: 1em;
+            border: 3px solid var(--button-text-color-primary);
+            border-bottom-color: transparent;
+            border-radius: var(--border-radius-circle);
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+            margin: auto;
+          }
+
+          @keyframes rotation {
+            0% {
+              transform: rotate(0deg);
+            }
+
+            100% {
+              transform: rotate(360deg);
+            }
+          }
+
+          .loaderContainer {
+            display: flex;
+            padding: 1.5px 37.5px;
+            margin: auto;
+          }
+
+          .install-button-wrapper {
+            button {
+              margin-block: var(--space-large) 0;
+              padding-block: var(--space-small);
+              width: 100%;
+              max-width: 450px;
+            }
+          }
         }
       }
     }

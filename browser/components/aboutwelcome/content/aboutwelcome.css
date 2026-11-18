@@ -1696,6 +1696,35 @@ html {
   height: 60px;
   margin-block: 40px;
 }
+.onboardingContainer:has([pos=center-large][fullscreen]) .section-main .main-content .main-content-inner .loader {
+  width: 1em;
+  height: 1em;
+  border: 3px solid var(--button-text-color-primary);
+  border-bottom-color: transparent;
+  border-radius: var(--border-radius-circle);
+  box-sizing: border-box;
+  animation: rotation 1s linear infinite;
+  margin: auto;
+}
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.onboardingContainer:has([pos=center-large][fullscreen]) .section-main .main-content .main-content-inner .loaderContainer {
+  display: flex;
+  padding: 1.5px 37.5px;
+  margin: auto;
+}
+.onboardingContainer:has([pos=center-large][fullscreen]) .section-main .main-content .main-content-inner .install-button-wrapper button {
+  margin-block: var(--space-large) 0;
+  padding-block: var(--space-small);
+  width: 100%;
+  max-width: 450px;
+}
 .onboardingContainer:has([pos=center-large][fullscreen]) .corner-image-container {
   position: absolute;
   inset: 0;
