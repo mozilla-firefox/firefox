@@ -33,6 +33,10 @@ class AndroidHardwareBuffer
  public:
   MOZ_DECLARE_REFCOUNTED_TYPENAME(AndroidHardwareBuffer)
 
+  // Borrow the input FDs. On failure, the caller still owns both fences.
+  static UniqueFileHandle TryMergeFences(const UniqueFileHandle& aFence1,
+                                         const UniqueFileHandle& aFence2);
+
   static UniqueFileHandle MergeFences(UniqueFileHandle&& aFence1,
                                       UniqueFileHandle&& aFence2);
 

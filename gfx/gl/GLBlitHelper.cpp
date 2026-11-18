@@ -1160,7 +1160,8 @@ bool GLBlitHelper::Blit(layers::AndroidImageReader* imageReader,
 
   RefPtr<layers::AndroidImageWrapper> image;
   if (!imageReader->UpdateTexImage(frameId, mGL, tex.Texture(),
-                                   getter_AddRefs(image))) {
+                                   getter_AddRefs(image)) ||
+      !image->WaitForWriteFence(mGL)) {
     return false;
   }
 
@@ -1175,6 +1176,24 @@ bool GLBlitHelper::Blit(layers::AndroidImageReader* imageReader,
                                            fbSize, destRect, texSize};
   prog.Draw(baseArgs);
 
+  // Keep this AImage unavailable to the decoder until the blit has read it.
+  const auto& egl = GLContextEGL::Cast(mGL)->mEgl;
+  if (egl->IsExtensionSupported(EGLExtension::ANDROID_native_fence_sync) &&
+      egl->IsExtensionSupported(EGLExtension::KHR_fence_sync)) {
+    if (EGLSync sync =
+            egl->fCreateSyncKHR(LOCAL_EGL_SYNC_NATIVE_FENCE_ANDROID, nullptr)) {
+      mGL->fFlush();
+      UniqueFileHandle readFence(egl->fDupNativeFenceFDANDROID(sync));
+      egl->fDestroySync(sync);
+      if (readFence) {
+        image->SetReadFenceFd(std::move(readFence));
+        return true;
+      }
+    }
+  }
+
+  // Without an exportable fence, wait before releasing our image reference.
+  mGL->fFinish();
   return true;
 }
 

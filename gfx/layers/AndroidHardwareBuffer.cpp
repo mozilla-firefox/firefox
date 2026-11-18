@@ -208,6 +208,18 @@ UniqueFileHandle AndroidHardwareBuffer::MergeFences(
 
   UniqueFileHandle fence1 = std::move(aFence1);
   UniqueFileHandle fence2 = std::move(aFence2);
+  auto merged = TryMergeFences(fence1, fence2);
+  if (!merged) {
+    gfxCriticalNote << "AndroidHardwareBuffer::MergeFences: "
+                       "failed to merge fences";
+  }
+  return merged;
+}
+
+/* static */
+UniqueFileHandle AndroidHardwareBuffer::TryMergeFences(
+    const UniqueFileHandle& aFence1, const UniqueFileHandle& aFence2) {
+  MOZ_ASSERT(aFence1 && aFence2);
 
 #ifdef DEBUG
   // Limit retries in debug builds so persistent EINTR does not go unnoticed.
@@ -216,18 +228,12 @@ UniqueFileHandle AndroidHardwareBuffer::MergeFences(
 #endif
   int fd;
   do {
-    fd = sync_merge("MergeFences", fence1.get(), fence2.get());
+    fd = sync_merge("MergeFences", aFence1.get(), aFence2.get());
   } while (fd == -1 && errno == EINTR
 #ifdef DEBUG
            && eintrCounter++ < kMaxEintrRetries
 #endif
   );
-  if (fd < 0) {
-    gfxCriticalNote << "AndroidHardwareBuffer::MergeFences: "
-                       "failed to merge fences";
-    return UniqueFileHandle();
-  }
-
   return UniqueFileHandle(fd);
 }
 

@@ -216,16 +216,69 @@ AndroidImageWrapper::~AndroidImageWrapper() {
 
 mozilla::UniqueFileHandle AndroidImageWrapper::CloneWriteFenceFd() {
   MutexAutoLock lock(mMutex);
+  return ipc::FileDescriptor(mWriteFenceFd.get()).TakePlatformHandle();
+}
 
-  auto writeFenceFd = ipc::FileDescriptor(mWriteFenceFd.get());
-  return writeFenceFd.TakePlatformHandle();
+bool AndroidImageWrapper::WaitForWriteFence(gl::GLContext* aGL) {
+  UniqueFileHandle writeFenceFd;
+  {
+    MutexAutoLock lock(mMutex);
+    if (!mWriteFenceFd) {
+      return true;
+    }
+    writeFenceFd =
+        ipc::FileDescriptor(mWriteFenceFd.get()).TakePlatformHandle();
+  }
+
+  const auto& egl = gl::GLContextEGL::Cast(aGL)->mEgl;
+  if (!writeFenceFd ||
+      !egl->IsExtensionSupported(gl::EGLExtension::ANDROID_native_fence_sync) ||
+      !egl->IsExtensionSupported(gl::EGLExtension::KHR_fence_sync)) {
+    gfxCriticalNoteOnce << "Cannot import AndroidImageReader acquire fence";
+    return false;
+  }
+
+  // EGL takes ownership of the duplicated fence FD.
+  const EGLint attrs[] = {LOCAL_EGL_SYNC_NATIVE_FENCE_FD_ANDROID,
+                          writeFenceFd.release(), LOCAL_EGL_NONE};
+  EGLSync sync =
+      egl->fCreateSyncKHR(LOCAL_EGL_SYNC_NATIVE_FENCE_ANDROID, attrs);
+  if (!sync) {
+    gfxCriticalNoteOnce << "Failed to create AndroidImageReader acquire sync";
+    return false;
+  }
+
+  const bool waited = egl->IsExtensionSupported(gl::EGLExtension::KHR_wait_sync)
+                          ? egl->fWaitSync(sync, 0) == LOCAL_EGL_TRUE
+                          : egl->fClientWaitSync(sync, 0, LOCAL_EGL_FOREVER) ==
+                                LOCAL_EGL_CONDITION_SATISFIED;
+  egl->fDestroySync(sync);
+  if (!waited) {
+    gfxCriticalNoteOnce
+        << "Failed to wait for AndroidImageReader acquire fence";
+  }
+  return waited;
 }
 
 void AndroidImageWrapper::SetReadFenceFd(UniqueFileHandle&& aFenceFd) {
-  MutexAutoLock lock(mMutex);
+  if (!aFenceFd) {
+    return;
+  }
 
-  mReadFenceFd = AndroidHardwareBuffer::MergeFences(std::move(mReadFenceFd),
-                                                    std::move(aFenceFd));
+  UniqueFileHandle fence = std::move(aFenceFd);
+  MutexAutoLock lock(mMutex);
+  if (!mReadFenceFd) {
+    mReadFenceFd = std::move(fence);
+    return;
+  }
+
+  auto merged = AndroidHardwareBuffer::TryMergeFences(mReadFenceFd, fence);
+  if (!merged) {
+    // Keep the registered fence and close the incoming FD without waiting.
+    gfxCriticalNoteOnce << "Failed to merge AndroidImageReader read fences";
+    return;
+  }
+  mReadFenceFd = std::move(merged);
 }
 
 /* static */
@@ -381,7 +434,8 @@ bool AndroidImageReader::UpdateTexImage(const AndroidMediaCodecFrameId aFrameId,
 
   MOZ_ASSERT(mCurrentImage);
 
-  // XXX add fence handling
+  // The caller must wait on the acquire fence in the GL context that
+  // will sample this image.
 
   const auto& gle = gl::GLContextEGL::Cast(aGL);
   const auto& egl = gle->mEgl;
@@ -441,37 +495,8 @@ bool AndroidImageReader::UpdateTexImageWithReadback(
   const auto& gle = gl::GLContextEGL::Cast(aGL);
   const auto& egl = gle->mEgl;
 
-  auto writeFenceFd = mCurrentImage->CloneWriteFenceFd();
-  if (writeFenceFd) {
-    if (!egl->IsExtensionSupported(
-            gl::EGLExtension::ANDROID_native_fence_sync) ||
-        !egl->IsExtensionSupported(gl::EGLExtension::KHR_fence_sync)) {
-      return false;
-    }
-
-    // EGL takes ownership of the fd even if creating the sync fails.
-    const EGLint fenceAttrs[] = {LOCAL_EGL_SYNC_NATIVE_FENCE_FD_ANDROID,
-                                 writeFenceFd.release(), LOCAL_EGL_NONE};
-    EGLSync sync =
-        egl->fCreateSyncKHR(LOCAL_EGL_SYNC_NATIVE_FENCE_ANDROID, fenceAttrs);
-    if (!sync) {
-      gfxCriticalNote << "Failed to create ImageReader readback acquire sync";
-      return false;
-    }
-
-    // Order sampling after the decoder's writes on this GL context. Readback
-    // subsequently waits for the GL work to complete.
-    const bool waited =
-        egl->IsExtensionSupported(gl::EGLExtension::KHR_wait_sync)
-            ? egl->fWaitSync(sync, 0) == LOCAL_EGL_TRUE
-            : egl->fClientWaitSync(sync, 0, LOCAL_EGL_FOREVER) ==
-                  LOCAL_EGL_CONDITION_SATISFIED;
-    egl->fDestroySync(sync);
-    if (!waited) {
-      gfxCriticalNote
-          << "Failed to wait for ImageReader readback acquire fence";
-      return false;
-    }
+  if (!mCurrentImage->WaitForWriteFence(aGL)) {
+    return false;
   }
 
   const EGLint attrs[] = {

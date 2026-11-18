@@ -96,6 +96,7 @@ class AndroidImageWrapper {
                                mozilla::UniqueFileHandle&& aWriteFenceFd);
 
   mozilla::UniqueFileHandle CloneWriteFenceFd();
+  bool WaitForWriteFence(gl::GLContext* aGL);
 
   void SetReadFenceFd(UniqueFileHandle&& aFenceFd);
 
