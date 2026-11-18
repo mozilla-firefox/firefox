@@ -1,19 +1,18 @@
 apply plugin: 'com.android.library'
 
 if (!gradle.hasProperty("mozconfig")) {
-    apply plugin: 'kotlin-android'
     apply plugin: 'org.mozilla.rust-android-gradle.rust-android'
 }
 
 android {
     namespace = 'org.mozilla.appservices.full_megazord'
 
-    compileSdk { version = release(config.compileSdkMajorVersion) { minorApiLevel = config.compileSdkMinorVersion } }
+    compileSdk { version = release(rootProject.config.compileSdkMajorVersion) { minorApiLevel = rootProject.config.compileSdkMinorVersion } }
 
     defaultConfig {
-        ndkVersion = config.ndkVersion
-        minSdkVersion config.minSdkVersion
-        targetSdkVersion config.targetSdkVersion
+        ndkVersion = rootProject.config.ndkVersion
+        minSdkVersion rootProject.config.minSdkVersion
+        targetSdkVersion rootProject.config.targetSdkVersion
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
@@ -204,7 +203,7 @@ if (!gradle.hasProperty("mozconfig")) {
         exec = { spec, toolchain ->
             rootProject.ext.cargoExec(spec, toolchain)
             // Only used in the full megazord (that is, in this project) at build time.
-            spec.environment("MEGAZORD_VERSION", config.componentsVersion)
+            spec.environment("MEGAZORD_VERSION", rootProject.config.componentsVersion)
         }
 
         extraCargoBuildArguments = rootProject.ext.extraCargoBuildArguments
@@ -212,15 +211,6 @@ if (!gradle.hasProperty("mozconfig")) {
         // Add a build-id so that our code works with simpleperf
         // https://bugzilla.mozilla.org/show_bug.cgi?id=1937916
         generateBuildId = true
-    }
-}
-
-if (!gradle.hasProperty("mozconfig")) {
-    androidComponents.onVariants(androidComponents.selector().all()) { variant ->
-        // The `cargoBuild` task isn't available until after evaluation.
-        afterEvaluate {
-            tasks["merge${variant.name.capitalize()}JniLibFolders"].dependsOn(tasks["cargoBuild"])
-        }
     }
 }
 

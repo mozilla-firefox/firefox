@@ -11,8 +11,15 @@ crate-type = ["staticlib"]
 [dependencies]
 rust-log-forwarder = { path = "../../../components/support/rust-log-forwarder" }
 viaduct = { path = "../../../components/viaduct" }
-viaduct-backend-rust = { path = "../../../components/support/viaduct-backend-rust" }
 nimbus-sdk = { path = "../../../components/nimbus" }
 error-support = { path = "../../../components/support/error" }
 remote_settings = { path = "../../../components/remote_settings" }
 ads-client = { path = "../../../components/ads-client" }
+mozilla-central-workspace-hack = { version = "0.1", features = ["megazord_focus"], optional = true }
+rc_crypto = { path = "../../../components/support/rc_crypto", optional = true }
+
+[target.'cfg(target_vendor = "apple")'.dependencies]
+viaduct-backend-rust = { path = "../../../components/support/viaduct-backend-rust" }
+
+[features]
+mozbuild-rustlib = ["dep:rc_crypto", "rc_crypto/mozbuild-rustlib"]

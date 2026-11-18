@@ -19,8 +19,6 @@ buildscript {
         }
     } else {
         // big copy/paste from mobile/android/shared-settings.gradle.
-        gradle.ext.mozconfig = gradle.root.mozconfig
-
         repositories {
             gradle.mozconfig.substs.GRADLE_MAVEN_REPOSITORIES.each { repository ->
                 maven {
@@ -79,7 +77,6 @@ def setupProject(name, projectProps, appServicesRootDir) {
             project.ext.publishDir = appServicesRootDir
 
             if (gradle.hasProperty("mozconfig")) {
-                project.buildDir = "${gradle.mozconfig.topobjdir}/gradle/build/application-services/android/$name"
                 project.ext.publishDir = "${gradle.mozconfig.topsrcdir}/mobile/android/android-components"
             }
         }
@@ -119,11 +116,7 @@ if (file('local.properties').canRead()) {
 def calcVersion(buildconfig) {
     def local = gradle.rootProject.findProperty("local")
 
-    if (gradle.hasProperty("mozconfig")) {
-        // We are in m-c - XXX - this is temporary - once in m-c this will not be called, but this seems sane for now?
-        def buildid = file("${gradle.mozconfig.topobjdir}/buildid.h").getText('utf-8').split()[2]
-        return "${gradle.mozconfig.substs.MOZ_APP_VERSION}-${buildid}"
-    } else if (gradle.rootProject.hasProperty("nightlyVersion")) {
+    if (gradle.rootProject.hasProperty("nightlyVersion")) {
         // We are in app-services but building a "nightly" version to be consumed by Fenix.
         return gradle.rootProject.nightlyVersion
     } else if(local) {
@@ -136,14 +129,7 @@ def calcVersion(buildconfig) {
 }
 
 def calcGroupId(buildconfig) {
-    if (gradle.root.hasProperty("mozconfig")) {
-        // We are in m-c - always build `org.mozilla.appservices`.
-        return buildconfig.groupId
-    } else if (gradle.rootProject.hasProperty("nightlyVersion")) {
-        return buildconfig.groupId + ".nightly"
-    } else {
-        return buildconfig.groupId
-    }
+    return buildconfig.groupId + (gradle.rootProject.hasProperty("nightlyVersion") ? ".nightly" : "")
 }
 
 // This is a copy of the `Config` object used in moz-central (but with the addition of ndkVersion for UniFFI)

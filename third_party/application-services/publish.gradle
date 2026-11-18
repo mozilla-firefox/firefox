@@ -4,12 +4,10 @@
 
 import groovy.xml.XmlSlurper
 
-def libLicense = properties.libLicense
-def libLicenseUrl = properties.libLicenseUrl
-def libRepositoryName = properties.libRepositoryName
-def libProjectName = properties.libProjectName
-def libUrl = properties.libUrl
-def libVcsUrl = properties.libVcsUrl
+def libLicense = providers.gradleProperty("libLicense").get()
+def libLicenseUrl = providers.gradleProperty("libLicenseUrl").get()
+def libUrl = providers.gradleProperty("libUrl").get()
+def libVcsUrl = providers.gradleProperty("libVcsUrl").get()
 
 // The `Arg` suffixes matter. Naming these `groupId`, `artifactId` or `description` shadows the
 // assignments to the publication down in `pom`, which then silently do nothing.
@@ -93,7 +91,7 @@ ext.configurePublish = { groupIdArg = null, artifactIdArg = null, descriptionArg
 
     publishing.publications.withType(MavenPublication).each {publication ->
         def checkFileSizeTask = task "checkLibSizeForMavenArtifact-${publication.artifactId}"(type: Exec) {
-            commandLine "${rootProject.projectDir}/automation/check_artifact_size.sh", project.buildDir, publication.artifactId
+            commandLine "${rootProject.projectDir}/automation/check_artifact_size.sh", project.layout.buildDirectory.get().asFile, publication.artifactId
         }
         checkMavenArtifacts.dependsOn(checkFileSizeTask)
     }

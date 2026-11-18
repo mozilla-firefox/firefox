@@ -385,6 +385,10 @@ export const ContainerIcon = Object.freeze(/** @lends ContainerIcon */ {
      * FENCE
      */
     FENCE: 12,
+    /**
+     * ROBOT
+     */
+    ROBOT: 13,
 });
 
 // Export the FFIConverter object to make external types work.
@@ -420,6 +424,8 @@ export class FfiConverterTypeContainerIcon extends FfiConverterArrayBuffer {
                 return ContainerIcon.CIRCLE
             case 13:
                 return ContainerIcon.FENCE
+            case 14:
+                return ContainerIcon.ROBOT
             default:
                 throw new UniFFITypeError("Unknown ContainerIcon variant");
         }
@@ -477,6 +483,10 @@ export class FfiConverterTypeContainerIcon extends FfiConverterArrayBuffer {
         }
         if (value === ContainerIcon.FENCE) {
             dataStream.writeInt32(13);
+            return;
+        }
+        if (value === ContainerIcon.ROBOT) {
+            dataStream.writeInt32(14);
             return;
         }
         throw new UniFFITypeError("Unknown ContainerIcon variant");

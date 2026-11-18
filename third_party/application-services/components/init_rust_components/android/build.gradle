@@ -5,7 +5,7 @@ android {
     namespace = 'org.mozilla.appservices.init_rust_components'
 
     defaultConfig {
-        buildConfigField("String", "LIBRARY_VERSION", "\"${config.componentsVersion}\"")
+        buildConfigField("String", "LIBRARY_VERSION", "\"${rootProject.config.componentsVersion}\"")
     }
 }
 

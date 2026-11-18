@@ -153,6 +153,7 @@ pub enum ContainerIcon {
     Chill,
     Circle,
     Fence,
+    Robot,
 }
 
 impl ContainerIcon {
@@ -172,6 +173,7 @@ impl ContainerIcon {
         Self::Chill,
         Self::Circle,
         Self::Fence,
+        Self::Robot,
     ];
 
     /// The name the document stores.
@@ -190,6 +192,7 @@ impl ContainerIcon {
             Self::Chill => "chill",
             Self::Circle => "circle",
             Self::Fence => "fence",
+            Self::Robot => "robot",
         }
     }
 
@@ -217,6 +220,7 @@ impl ContainerIcon {
             Self::Chill => "user-context-icon-chill",
             Self::Circle => "user-context-icon-circle",
             Self::Fence => "user-context-icon-fence",
+            Self::Robot => "user-context-icon-robot",
         }
     }
 }

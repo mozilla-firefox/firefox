@@ -11,13 +11,6 @@ import javax.inject.Inject
 
 apply plugin: 'com.android.library'
 
-// When built as part of mozilla-central (mozconfig present), AGP 9 provides
-// built-in Kotlin support and rejects this plugin; standalone builds still use
-// an older AGP that requires it.
-if (!gradle.hasProperty("mozconfig")) {
-    apply plugin: 'kotlin-android'
-}
-
 // Typed task used in the standalone app-services build, where the megazord
 // dynamic library is produced by a separate gradle task and only exists when
 // generateUniffiBindings runs (not at configuration time).
@@ -64,15 +57,15 @@ abstract class GenerateUniffiBindingsCargo extends DefaultTask {
 }
 
 android {
-    compileSdk { version = release(config.compileSdkMajorVersion) { minorApiLevel = config.compileSdkMinorVersion } }
+    compileSdk { version = release(rootProject.config.compileSdkMajorVersion) { minorApiLevel = rootProject.config.compileSdkMinorVersion } }
 
     defaultConfig {
-        ndkVersion = config.ndkVersion
-        minSdkVersion config.minSdkVersion
-        targetSdkVersion config.targetSdkVersion
+        ndkVersion = rootProject.config.ndkVersion
+        minSdkVersion rootProject.config.minSdkVersion
+        targetSdkVersion rootProject.config.targetSdkVersion
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "LIBRARY_VERSION", "\"${config.componentsVersion}\"")
+        buildConfigField("String", "LIBRARY_VERSION", "\"${rootProject.config.componentsVersion}\"")
     }
 
     buildFeatures {

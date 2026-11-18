@@ -285,6 +285,7 @@ test-trust-anchors-static = ["dep:bindgen", "dep:bitflags", "dep:itertools", "de
 toolchain-embedded-uniffi-bindgen = []
 toolchain-nimbus-fml = []
 megazord = []
+uniffi-bindgen-library-mode = []
 embedded-uniffi-bindgen = []
 nimbus-fml = []
 gkrust-uniffi-components = []
