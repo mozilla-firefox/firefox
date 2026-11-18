@@ -6,30 +6,55 @@
 
 // Check evaluating eager-evaluation values.
 const TEST_URI = "data:text/html;charset=utf8,<!DOCTYPE html>";
+const MODULE_URI = "moz-src:///dom/base/ContentAreaDropListener.sys.mjs";
 
 add_task(async function () {
-  await addTab(TEST_URI);
-
   await pushPref("devtools.chrome.enabled", true);
+  await pushPref("devtools.browsertoolbox.scope", "everything");
+
+  // Evaluate in a new content process, as the parent process keeps the module
+  // loaded and the Services property resolved once a previous run did it.
+  const tab = await BrowserTestUtils.openNewForegroundTab({
+    gBrowser,
+    url: TEST_URI,
+    forceNewProcess: true,
+  });
+  const pid = tab.linkedBrowser.browsingContext.currentWindowGlobal.osPid;
 
   info("Open the Browser Console");
   const hud = await BrowserConsoleManager.toggleBrowserConsole();
 
-  await executeResolveHookWithSideEffect(hud);
+  info(`Select the content process target (pid ${pid})`);
+  const processItem = await waitFor(() =>
+    getContextSelectorItems(hud).find(el =>
+      el.querySelector(".label")?.innerText?.startsWith(`(pid ${pid}) `)
+    )
+  );
+  processItem.click();
+  await waitFor(() =>
+    hud.ui.outputNode
+      .querySelector(".webconsole-evaluation-selector-button")
+      .innerText.startsWith(`(pid ${pid}) `)
+  );
+
+  await executeResolveHookWithSideEffect(hud, tab.linkedBrowser);
+
+  // Close the Browser Console while the content process it evaluates in is
+  // still alive: removing the tab shuts that process down.
+  await safeCloseBrowserConsole({ clearOutput: true });
+  BrowserTestUtils.removeTab(tab);
 });
 
-async function executeResolveHookWithSideEffect(hud) {
+async function executeResolveHookWithSideEffect(hud, browser) {
   // Services.droppedLinkHandler is implemented with resolve hook, which imports
   // ContentAreaDropListener.sys.mjs.
   //
   // In order to test the resolve hook behavior, ensure the module is not yet
   // loaded, which ensures the property is not yet resolved.
-  //
-  // NOTE: This test is not compatible with verify mode, given it depends on the
-  //       initial state of the Services object and the module.
   is(
-    Cu.isESModuleLoaded("moz-src:///dom/base/ContentAreaDropListener.sys.mjs"),
-    false
+    await isModuleLoadedInContentProcess(browser),
+    false,
+    "The module isn't loaded in the new content process"
   );
 
   setInputValue(hud, `Services.droppedLinkHandler`);
@@ -49,12 +74,19 @@ async function executeResolveHookWithSideEffect(hud) {
   );
 
   is(
-    Cu.isESModuleLoaded("moz-src:///dom/base/ContentAreaDropListener.sys.mjs"),
-    true
+    await isModuleLoadedInContentProcess(browser),
+    true,
+    "The module got loaded by the evaluation"
   );
 
   // Eager evaluation should work after the property is resolved.
   setInputValue(hud, `Services.droppedLinkHandler`);
   await wait(500);
   await waitForEagerEvaluationResult(hud, /XPCWrappedNative_NoHelper/);
+}
+
+function isModuleLoadedInContentProcess(browser) {
+  return SpecialPowers.spawn(browser, [MODULE_URI], uri =>
+    Cu.isESModuleLoaded(uri)
+  );
 }
