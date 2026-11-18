@@ -8,16 +8,18 @@ from taskgraph.transforms.base import TransformSequence
 from taskgraph.util.schema import Schema
 from taskgraph.util.templates import merge
 
-_FX_CMD = "sh browser/installer/linux/script/install-firefox.sh"
-
 
 class TaskSchema(Schema, forbid_unknown_fields=False, kw_only=True, rename="kebab"):
     install_method: Optional[str] = None
+    install_script_command: Optional[str] = None
+    lang_env: Optional[str] = None
     pre_install: Optional[str] = None
     distro_symbol: Optional[str] = None
     channels: Optional[list[str]] = None
     locales: Optional[list[str]] = None
     platform: Optional[str] = None
+    architectures: Optional[dict] = None
+    distros: Optional[dict] = None
 
 
 transforms = TransformSequence()
@@ -45,21 +47,17 @@ def _build_worker_config(distro_cfg, docker_image):
     return worker_cfg
 
 
-@transforms.add
-def expand_distros(config, tasks):
-    kind_config = config.config
-    distros = kind_config.pop("distros", {})
-    architectures = kind_config.pop("architectures", {})
-    channels = kind_config.pop("channels", [])
-    locales = kind_config.pop("locales", [])
-    defaults = kind_config.get("task-defaults", {})
+def _expand_distro_matrix(generator):
+    base = {
+        k: v
+        for k, v in generator.items()
+        if k not in ("name", "architectures", "channels", "locales", "distros")
+    }
+    architectures = generator.get("architectures", {})
+    channels = generator.get("channels", [])
+    locales = generator.get("locales", [])
 
-    explicit_names = set(kind_config.get("tasks", {}).keys())
-
-    for task in tasks:
-        yield task
-
-    for distro_name, distro_cfg in distros.items():
+    for distro_name, distro_cfg in generator["distros"].items():
         allowed_arches = distro_cfg.get("architectures", list(architectures.keys()))
         for arch_name, arch_cfg in architectures.items():
             if arch_name not in allowed_arches:
@@ -67,13 +65,8 @@ def expand_distros(config, tasks):
             docker_image = _resolve_docker_image(distro_name, distro_cfg, arch_name)
             worker_cfg = _build_worker_config(distro_cfg, docker_image)
             for method in distro_cfg["methods"]:
-                name = f"{distro_name}-{arch_name}-{method}"
-                if name in explicit_names:
-                    raise ValueError(
-                        f"Generated task '{name}' conflicts with an explicit task in kind.yml"
-                    )
                 task = {
-                    "name": name,
+                    "name": f"{distro_name}-{arch_name}-{method}",
                     "distro-symbol": distro_cfg["symbol"],
                     "install-method": method,
                     "worker-type": arch_cfg["worker-type"],
@@ -84,9 +77,24 @@ def expand_distros(config, tasks):
                 }
                 if distro_cfg.get("pre-install") is not None:
                     task["pre-install"] = distro_cfg["pre-install"]
-                if defaults:
-                    task = merge(defaults, task)
-                yield task
+                yield merge(base, task)
+
+
+@transforms.add
+def expand_distros(config, tasks):
+    tasks = list(tasks)
+    explicit_names = {t["name"] for t in tasks if "distros" not in t}
+
+    for task in tasks:
+        if "distros" not in task:
+            yield task
+            continue
+        for generated in _expand_distro_matrix(task):
+            if generated["name"] in explicit_names:
+                raise ValueError(
+                    f"Generated task '{generated['name']}' conflicts with an explicit task"
+                )
+            yield generated
 
 
 @transforms.add
@@ -103,14 +111,27 @@ def build_run_command(config, tasks):
     for task in tasks:
         method = task.get("install-method")
         pre_install = task.pop("pre-install", None)
+        fx_cmd = task.pop("install-script-command", None)
+        lang_env = task.pop("lang-env", None)
 
-        if method is None or task.get("run", {}).get("command"):
+        if method is None:
             yield task
             continue
 
+        name = task.get("name", "?")
+        if not fx_cmd:
+            raise ValueError(
+                f"Task '{name}' sets install-method but no install-script-command"
+            )
+        if task.get("run", {}).get("command"):
+            raise ValueError(f"Task '{name}' sets both install-method and run.command")
+
         # {{...}} produces a literal {matrix[channel]} placeholder substituted by taskgraph.transforms.matrix.
-        fx_args = f"--channel {{matrix[channel]}} --install-method {method} --lang {{matrix[locale]}}"
-        cmd = f"{_FX_CMD} {fx_args}"
+        fx_args = f"--channel {{matrix[channel]}} --install-method {method}"
+        if lang_env:
+            cmd = f"LANG={lang_env} {fx_cmd} {fx_args}"
+        else:
+            cmd = f"{fx_cmd} {fx_args} --lang {{matrix[locale]}}"
         parts = [pre_install, cmd] if pre_install else [cmd]
         task.setdefault("run", {})["command"] = " && ".join(parts)
 

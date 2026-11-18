@@ -1,0 +1,27 @@
+---
+task-defaults:
+    run:
+        run-as-root: false
+        checkout: true
+        cwd: '{checkout}'
+    optimization:
+        skip-unless-changed:
+            - browser/installer/linux/script/install-firefox-test-unit.sh
+            - taskcluster/kinds/linux-install-test/unit.yml
+
+unit-tests:
+    description: "Shell unit tests for install-firefox.sh pure functions"
+    worker-type: b-linux
+    worker:
+        docker-image: {in-tree: debian12-base}
+    run:
+        command: >-
+            chmod +x /builds/worker/fetches/shunit2 &&
+            export PATH="/builds/worker/fetches:$PATH" &&
+            ./mach shell-test browser/installer/linux/script/install-firefox-test-unit.sh
+    fetches:
+        fetch:
+            - shunit2
+    treeherder:
+        platform: linux64/opt
+        symbol: inst(unit)

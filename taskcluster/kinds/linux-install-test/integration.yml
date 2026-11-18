@@ -1,0 +1,344 @@
+---
+task-defaults:
+    description: "Test install-firefox.sh: {name}"
+    task-context:
+        substitution-fields:
+            - description
+    run:
+        run-as-root: true
+        checkout: false
+    dependencies:
+        source-artifact: source-artifact-linux64
+    fetches:
+        source-artifact:
+            - artifact: install-firefox.sh
+              extract: false
+    install-script-command: sh $MOZ_FETCHES_DIR/install-firefox.sh
+    optimization:
+        skip-unless-changed:
+            - taskcluster/kinds/linux-install-test/integration.yml
+            - taskcluster/kinds/source-artifact/kind.yml
+
+# Expanded by the linux_install_test transform into one
+# <distro>-<arch>-<method> task per distro, architecture and install method.
+distros:
+    architectures:
+        x64:
+            worker-type: b-linux
+            platform: linux64/opt
+        a64:
+            worker-type: b-linux-aarch64
+            platform: linux64-aarch64/opt
+
+    channels: [release, beta, devedition, nightly]
+    locales: [en-US, fr, ja]
+
+    # TODO: add snap distro once a suitable CI worker image with snapd is available
+    distros:
+        debian-12:
+            symbol: deb12
+            pre-install: &apt-pre-install apt-get update -qq && apt-get install -y -qq curl wget gnupg
+            docker-image:
+                x64: {in-tree: debian12-base}
+                a64: {in-tree: debian12-arm64-base}
+            methods: [apt, tarball]
+
+        ubuntu-2004:
+            symbol: ub20
+            pre-install: apt-get update -qq && apt-get install -y -qq curl wget gnupg
+            docker-image:
+                x64: {in-tree: ubuntu2004-base}
+            methods: [apt, tarball]
+            architectures: [x64]
+
+        ubuntu-2204:
+            symbol: ub22
+            pre-install: apt-get update -qq && apt-get install -y -qq curl wget gnupg
+            docker-image:
+                x64: {in-tree: ubuntu2204-base}
+                a64: {in-tree: ubuntu2204-arm64-base}
+            methods: [apt]
+
+        debian-13:
+            symbol: deb13
+            pre-install: *apt-pre-install
+            docker-image:
+                x64: {in-tree: debian13-base}
+                a64: {in-tree: debian13-arm64-base}
+            methods: [apt, tarball]
+
+        fedora-41:
+            symbol: f41
+            pre-install: dnf install -y curl wget tar xz
+            docker-image:
+                x64: {in-tree: fedora41-base}
+                a64: {in-tree: fedora41-arm64-base}  # both arches tested intentionally
+            methods: [rpm, tarball]
+
+        opensuse-leap:
+            symbol: leap
+            pre-install: zypper refresh && zypper install -y curl wget tar xz findutils
+            docker-image:
+                x64: {in-tree: opensuse-leap-base}
+                a64: {in-tree: opensuse-leap-arm64-base}  # both arches tested intentionally
+            methods: [rpm, tarball]
+
+        rocky-8:
+            symbol: rky8
+            pre-install: dnf install -y curl wget tar xz
+            docker-image:
+                x64: {in-tree: rocky8-base}
+                a64: {in-tree: rocky8-arm64-base}
+            methods: [rpm]
+
+        # Rocky Linux 9 is not tested: dnf cannot import Mozilla's RPM signing key there, because
+        # RHEL 9's default crypto policy rejects the SHA-1 signatures in the key (rpm --import exits 1).
+        rocky-10:
+            symbol: rky10
+            pre-install: dnf install -y curl wget tar xz
+            docker-image:
+                x64: {in-tree: rocky10-base}
+                a64: {in-tree: rocky10-arm64-base}
+            methods: [rpm]
+
+        alma-8:
+            symbol: alm8
+            pre-install: dnf install -y curl wget tar xz
+            docker-image:
+                x64: {in-tree: alma8-base}
+                a64: {in-tree: alma8-arm64-base}
+            methods: [rpm]
+
+        # AlmaLinux 9 is not tested: dnf cannot import Mozilla's RPM signing key there, because
+        # RHEL 9's default crypto policy rejects the SHA-1 signatures in the key (rpm --import exits 1).
+        alma-10:
+            symbol: alm10
+            pre-install: dnf install -y curl wget tar xz
+            docker-image:
+                x64: {in-tree: alma10-base}
+                a64: {in-tree: alma10-arm64-base}
+            methods: [rpm]
+
+        debian-12-flatpak:
+            symbol: deb12-fpk
+            pre-install: *apt-pre-install
+            docker-image:
+                x64: {in-tree: debian12-flatpak}
+                a64: {in-tree: debian12-arm64-flatpak}
+            methods: [flatpak]
+            channels: [release, beta]
+            locales: [en-US]  # flatpak ignores locale; en-US avoids redundant tasks
+            max-run-time: 1800
+
+debian-12-x64-apt-release-env:
+    description: "Test install-firefox.sh: apt release on debian-12 (auto-detect locale from env)"
+    worker-type: b-linux
+    worker:
+        docker-image: {in-tree: debian12-base}
+    pre-install: apt-get update -qq && apt-get install -y -qq curl wget
+    install-method: apt
+    lang-env: fr_FR.UTF-8
+    channels: [release]
+    locales: [en-US]
+    treeherder:
+        platform: linux64/opt
+        symbol: inst-apt(deb12-x64-rel-env)
+
+debian-12-x64-apt-release-wget:
+    description: "Test install-firefox.sh: apt release on debian-12 (wget only, no curl)"
+    worker-type: b-linux
+    worker:
+        docker-image: {in-tree: debian12-base}
+    pre-install: >-
+        apt-get update -qq && apt-get install -y -qq curl wget &&
+        apt-get remove -y curl
+    install-method: apt
+    channels: [release]
+    locales: [en-US]
+    treeherder:
+        platform: linux64/opt
+        symbol: inst-apt(deb12-x64-rel-wget)
+
+ubuntu-2004-x64-apt-release-upgrade:
+    description: "Test install-firefox.sh: apt release over pre-installed distro firefox"
+    worker-type: b-linux
+    worker:
+        docker-image: {in-tree: ubuntu2004-base}
+    pre-install: apt-get update -qq && apt-get install -y -qq curl wget gnupg firefox
+    install-method: apt
+    channels: [release]
+    locales: [en-US]
+    treeherder:
+        platform: linux64/opt
+        symbol: inst-apt(ub20-x64-rel-upg)
+
+fedora-41-x64-rpm-release-upgrade:
+    description: "Test install-firefox.sh: rpm release over pre-installed distro firefox"
+    worker-type: b-linux
+    worker:
+        docker-image: {in-tree: fedora41-base}
+    pre-install: dnf install -y curl wget firefox
+    install-method: rpm
+    channels: [release]
+    locales: [en-US]
+    treeherder:
+        platform: linux64/opt
+        symbol: inst-rpm(f41-x64-rel-upg)
+
+opensuse-leap-x64-rpm-release-upgrade:
+    description: "Test install-firefox.sh: rpm release over pre-installed distro MozillaFirefox"
+    worker-type: b-linux
+    worker:
+        docker-image: {in-tree: opensuse-leap-base}
+    pre-install: zypper refresh && zypper install -y curl wget MozillaFirefox
+    install-method: rpm
+    channels: [release]
+    locales: [en-US]
+    treeherder:
+        platform: linux64/opt
+        symbol: inst-rpm(leap-x64-rel-upg)
+
+fedora-41-a64-rpm-release-upgrade:
+    description: "Test install-firefox.sh: rpm release over pre-installed distro firefox (aarch64)"
+    worker-type: b-linux-aarch64
+    worker:
+        docker-image: {in-tree: fedora41-arm64-base}
+    pre-install: dnf install -y curl wget firefox
+    install-method: rpm
+    channels: [release]
+    locales: [en-US]
+    treeherder:
+        platform: linux64-aarch64/opt
+        symbol: inst-rpm(f41-a64-rel-upg)
+
+opensuse-leap-a64-rpm-release-upgrade:
+    description: "Test install-firefox.sh: rpm release over pre-installed distro MozillaFirefox (aarch64)"
+    worker-type: b-linux-aarch64
+    worker:
+        docker-image: {in-tree: opensuse-leap-arm64-base}
+    pre-install: zypper refresh && zypper install -y curl wget MozillaFirefox
+    install-method: rpm
+    channels: [release]
+    locales: [en-US]
+    treeherder:
+        platform: linux64-aarch64/opt
+        symbol: inst-rpm(leap-a64-rel-upg)
+
+rocky-8-x64-rpm-release-upgrade:
+    description: "Test install-firefox.sh: rpm release over pre-installed distro firefox"
+    worker-type: b-linux
+    worker:
+        docker-image: {in-tree: rocky8-base}
+    pre-install: dnf install -y curl wget firefox
+    install-method: rpm
+    channels: [release]
+    locales: [en-US]
+    treeherder:
+        platform: linux64/opt
+        symbol: inst-rpm(rky8-x64-rel-upg)
+
+rocky-8-a64-rpm-release-upgrade:
+    description: "Test install-firefox.sh: rpm release over pre-installed distro firefox (aarch64)"
+    worker-type: b-linux-aarch64
+    worker:
+        docker-image: {in-tree: rocky8-arm64-base}
+    pre-install: dnf install -y curl wget firefox
+    install-method: rpm
+    channels: [release]
+    locales: [en-US]
+    treeherder:
+        platform: linux64-aarch64/opt
+        symbol: inst-rpm(rky8-a64-rel-upg)
+
+rocky-10-x64-rpm-release-upgrade:
+    description: "Test install-firefox.sh: rpm release over pre-installed distro firefox"
+    worker-type: b-linux
+    worker:
+        docker-image: {in-tree: rocky10-base}
+    pre-install: dnf install -y curl wget firefox
+    install-method: rpm
+    channels: [release]
+    locales: [en-US]
+    treeherder:
+        platform: linux64/opt
+        symbol: inst-rpm(rky10-x64-rel-upg)
+
+rocky-10-a64-rpm-release-upgrade:
+    description: "Test install-firefox.sh: rpm release over pre-installed distro firefox (aarch64)"
+    worker-type: b-linux-aarch64
+    worker:
+        docker-image: {in-tree: rocky10-arm64-base}
+    pre-install: dnf install -y curl wget firefox
+    install-method: rpm
+    channels: [release]
+    locales: [en-US]
+    treeherder:
+        platform: linux64-aarch64/opt
+        symbol: inst-rpm(rky10-a64-rel-upg)
+
+alma-8-x64-rpm-release-upgrade:
+    description: "Test install-firefox.sh: rpm release over pre-installed distro firefox"
+    worker-type: b-linux
+    worker:
+        docker-image: {in-tree: alma8-base}
+    pre-install: dnf install -y curl wget firefox
+    install-method: rpm
+    channels: [release]
+    locales: [en-US]
+    treeherder:
+        platform: linux64/opt
+        symbol: inst-rpm(alm8-x64-rel-upg)
+
+alma-8-a64-rpm-release-upgrade:
+    description: "Test install-firefox.sh: rpm release over pre-installed distro firefox (aarch64)"
+    worker-type: b-linux-aarch64
+    worker:
+        docker-image: {in-tree: alma8-arm64-base}
+    pre-install: dnf install -y curl wget firefox
+    install-method: rpm
+    channels: [release]
+    locales: [en-US]
+    treeherder:
+        platform: linux64-aarch64/opt
+        symbol: inst-rpm(alm8-a64-rel-upg)
+
+alma-10-x64-rpm-release-upgrade:
+    description: "Test install-firefox.sh: rpm release over pre-installed distro firefox"
+    worker-type: b-linux
+    worker:
+        docker-image: {in-tree: alma10-base}
+    pre-install: dnf install -y curl wget firefox
+    install-method: rpm
+    channels: [release]
+    locales: [en-US]
+    treeherder:
+        platform: linux64/opt
+        symbol: inst-rpm(alm10-x64-rel-upg)
+
+alma-10-a64-rpm-release-upgrade:
+    description: "Test install-firefox.sh: rpm release over pre-installed distro firefox (aarch64)"
+    worker-type: b-linux-aarch64
+    worker:
+        docker-image: {in-tree: alma10-arm64-base}
+    pre-install: dnf install -y curl wget firefox
+    install-method: rpm
+    channels: [release]
+    locales: [en-US]
+    treeherder:
+        platform: linux64-aarch64/opt
+        symbol: inst-rpm(alm10-a64-rel-upg)
+
+debian-12-x64-tarball-release-reinstall:
+    description: "Test install-firefox.sh: tarball release reinstall over existing /opt/firefox"
+    worker-type: b-linux
+    worker:
+        docker-image: {in-tree: debian12-base}
+    pre-install: >-
+        apt-get update -qq && apt-get install -y -qq curl wget &&
+        mkdir -p /opt/firefox && touch /opt/firefox/firefox
+    install-method: tarball
+    channels: [release]
+    locales: [en-US]
+    treeherder:
+        platform: linux64/opt
+        symbol: inst-tarball(deb12-x64-rel-upg)
