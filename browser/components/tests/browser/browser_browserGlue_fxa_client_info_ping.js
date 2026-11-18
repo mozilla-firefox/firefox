@@ -15,12 +15,17 @@ const { sinon } = ChromeUtils.importESModule(
 const { UIState } = ChromeUtils.importESModule(
   "resource://services-sync/UIState.sys.mjs"
 );
+const { DefaultBrowserCheck } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/DefaultBrowserCheck.sys.mjs"
+);
 
 const FAKE_UID = "0123456789abcdef0123456789abcdef";
 
 add_setup(async () => {
   await SpecialPowers.pushPrefEnv({
     set: [["identity.fxaccounts.telemetry.clientInfoPing.enabled", true]],
+    // Rewritten by willCheckDefaultBrowser(true) when we are the default.
+    clear: [["browser.shell.mostRecentDateSetAsDefault"]],
   });
 });
 
@@ -37,6 +42,9 @@ add_task(async function test_client_info_ping_signed_in() {
 
   // prime the fxa uid for the ping.
   Services.obs.notifyObservers(null, "sync-ui-state:update");
+  // is_user_default is recorded once per session by the startup check, and
+  // a previous submission of the ping may have cleared it.
+  await DefaultBrowserCheck.willCheckDefaultBrowser(true);
 
   try {
     await GleanPings.fxAccountsClientInfo.testSubmission(
@@ -52,7 +60,7 @@ add_task(async function test_client_info_ping_signed_in() {
           "fx-accounts-client-info"
         );
         Assert.ok(
-          defaultMetric.false == 1 || defaultMetric.true == 1,
+          defaultMetric.false > 0 || defaultMetric.true > 0,
           "is_user_default metric is present when signed in"
         );
       },
