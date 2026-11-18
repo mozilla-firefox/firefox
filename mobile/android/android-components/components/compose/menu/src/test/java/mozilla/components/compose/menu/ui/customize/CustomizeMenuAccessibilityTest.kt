@@ -4,10 +4,12 @@
 
 package mozilla.components.compose.menu.ui.customize
 
+import androidx.compose.ui.semantics.CollectionInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -80,6 +82,15 @@ class CustomizeMenuAccessibilityTest {
         composeTestRule
             .onNodeWithContentDescription("Hidden 1, Hidden 2")
             .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Disabled))
+    }
+
+    @Test
+    fun `THEN the list does not tell how many rows it has, which are not all sections`() {
+        setContent(menuState(shown = listOf(row("First"), row("Second")), hidden = listOf(row("Hidden"))))
+
+        composeTestRule
+            .onNode(hasScrollAction())
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.CollectionInfo, CollectionInfo(-1, 1)))
     }
 
     @Test

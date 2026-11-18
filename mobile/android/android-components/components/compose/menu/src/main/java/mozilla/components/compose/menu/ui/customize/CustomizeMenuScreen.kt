@@ -34,6 +34,8 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CollectionInfo
+import androidx.compose.ui.semantics.collectionInfo
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
@@ -103,7 +105,12 @@ private fun CustomizeMenuList(
     val itemSpacing = AcornTheme.layout.space.static150
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().onGloballyPositioned(dragState.interactionState::updateListLayoutCoordinates),
+        modifier =
+            Modifier.fillMaxSize()
+                .onGloballyPositioned(dragState.interactionState::updateListLayoutCoordinates)
+                // Not all items are menu sections so avoid having them all counted and read to the user.
+                // Each section tells separately of its position among the shown ones.
+                .semantics { collectionInfo = CollectionInfo(rowCount = -1, columnCount = 1) },
         state = listState,
         userScrollEnabled = !dragState.isDragging,
         contentPadding =
