@@ -147,16 +147,7 @@ private fun CustomizeMenuList(
         }
 
         if (!dragState.hasHiddenGroups) {
-            item(key = DROP_AREA) {
-                val isDropTarget by
-                    remember(dragState.dropTarget) {
-                        derivedStateOf { dragState.dropTarget.value == CustomizeMenuDropTarget.EmptyHiddenArea }
-                    }
-                CustomizeMenuDropArea(
-                    isDropTarget = isDropTarget,
-                    modifier = Modifier.drawnOnlyInView(DROP_AREA, dragState).animateItem(),
-                )
-            }
+            item(key = DROP_AREA) { DropAreaItem(dragState = dragState) }
         }
 
         customizeMenuGroups(
@@ -170,10 +161,10 @@ private fun CustomizeMenuList(
 
         if (menuState.isCustomized) {
             item(key = RESET_BUTTON) {
-                CustomizeMenuResetButton(
+                ResetButtonItem(
+                    dragState = dragState,
+                    itemSpacing = itemSpacing,
                     onClick = { store.dispatch(ResetToDefaultClicked) },
-                    modifier =
-                        Modifier.drawnOnlyInView(RESET_BUTTON, dragState).animateItem().padding(top = itemSpacing),
                 )
             }
         }
@@ -276,6 +267,38 @@ private fun LazyItemScope.HiddenSectionsItem(dragState: CustomizeMenuDragState, 
                 .animateItem()
                 .padding(top = itemSpacing)
                 .dropLine(HIDDEN_SECTIONS, dragState.dropTarget, itemSpacing, placeAfter = true)
+    )
+}
+
+/**
+ * The [DROP_AREA] item of the list, where shown groups are dropped to hide them while none is hidden.
+ *
+ * @param dragState State of dragging the groups of the screen.
+ */
+@Composable
+private fun LazyItemScope.DropAreaItem(dragState: CustomizeMenuDragState) {
+    val isDropTarget by
+        remember(dragState.dropTarget) {
+            derivedStateOf { dragState.dropTarget.value == CustomizeMenuDropTarget.EmptyHiddenArea }
+        }
+    CustomizeMenuDropArea(
+        isDropTarget = isDropTarget,
+        modifier = Modifier.drawnOnlyInView(DROP_AREA, dragState).animateItem(),
+    )
+}
+
+/**
+ * The [RESET_BUTTON] item of the list.
+ *
+ * @param dragState State of dragging the groups of the screen.
+ * @param itemSpacing Space between the items of the list.
+ * @param onClick Called when the button is clicked.
+ */
+@Composable
+private fun LazyItemScope.ResetButtonItem(dragState: CustomizeMenuDragState, itemSpacing: Dp, onClick: () -> Unit) {
+    CustomizeMenuResetButton(
+        onClick = onClick,
+        modifier = Modifier.drawnOnlyInView(RESET_BUTTON, dragState).animateItem().padding(top = itemSpacing),
     )
 }
 
