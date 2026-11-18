@@ -19,19 +19,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import mozilla.components.compose.base.theme.PreviewThemeProvider
 import mozilla.components.compose.base.theme.Theme
+import mozilla.components.support.utils.CertificateDetails
+import mozilla.components.support.utils.issuerDisplayName
 import org.mozilla.fenix.R
-import org.mozilla.fenix.settings.trustpanel.store.CertificateDetails
 import org.mozilla.fenix.theme.FirefoxTheme
-
-/**
- * Returns the name of the certificate authority that issued the certificate: its organization, or its common name if it
- * has no organization. Blank fields are treated as absent.
- *
- * Until the missing-field behaviour is decided, null is returned when neither is present, so that no dangling label is
- * shown.
- */
-internal fun CertificateDetails?.issuerDisplayName(): String? =
-    this?.issuerOrganization?.takeIf { it.isNotBlank() } ?: this?.issuerCommonName?.takeIf { it.isNotBlank() }
 
 /**
  * Shows which certificate authority verified the website's certificate. Nothing is shown when the issuer name is

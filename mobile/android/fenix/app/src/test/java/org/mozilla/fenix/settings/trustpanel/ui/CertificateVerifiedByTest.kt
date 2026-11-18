@@ -16,12 +16,12 @@ import androidx.compose.ui.test.onRoot
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.compose.base.theme.Theme
+import mozilla.components.support.utils.CertificateDetails
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mozilla.fenix.R
-import org.mozilla.fenix.settings.trustpanel.store.CertificateDetails
 import org.mozilla.fenix.theme.FirefoxTheme
 
 @RunWith(AndroidJUnit4::class)

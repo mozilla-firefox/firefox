@@ -20,8 +20,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import mozilla.components.compose.base.theme.PreviewThemeProvider
 import mozilla.components.compose.base.theme.Theme
+import mozilla.components.support.utils.CertificateDetails
+import mozilla.components.support.utils.toIssuedTo
 import org.mozilla.fenix.R
-import org.mozilla.fenix.settings.trustpanel.store.CertificateDetails
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /**

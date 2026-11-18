@@ -33,9 +33,10 @@ import mozilla.components.compose.base.annotation.FlexibleWindowPreview
 import mozilla.components.compose.base.theme.PreviewThemeProvider
 import mozilla.components.compose.base.theme.Theme
 import mozilla.components.support.ktx.kotlin.tryGetHostFromUrl
+import mozilla.components.support.utils.CertificateDetails
+import mozilla.components.support.utils.R as supportUtilsR
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.menu.compose.MenuScaffold
-import org.mozilla.fenix.settings.trustpanel.store.CertificateDetails
 import org.mozilla.fenix.theme.FirefoxTheme
 
 private const val DARK_BACKGROUND_LUMINANCE = 0.5f
@@ -120,9 +121,14 @@ private fun EuTrustMark() {
     // The colors of the EU trust mark must not be altered, so the inverted asset is used on dark backgrounds instead
     // of tinting it.
     val isDarkBackground = MaterialTheme.colorScheme.surfaceBright.luminance() < DARK_BACKGROUND_LUMINANCE
+    val trustMark =
+        if (isDarkBackground) {
+            supportUtilsR.drawable.eu_trust_mark_inverted
+        } else {
+            supportUtilsR.drawable.eu_trust_mark
+        }
     Image(
-        painter =
-            painterResource(if (isDarkBackground) R.drawable.eu_trust_mark_inverted else R.drawable.eu_trust_mark),
+        painter = painterResource(trustMark),
         contentDescription = stringResource(R.string.certificate_details_panel_eu_trust_mark_content_description),
         modifier = Modifier.width(EU_TRUST_MARK_WIDTH),
     )

@@ -11,6 +11,7 @@ permalink: /changelog/
   * 🆕 Added `Settings.creditCardSecurityCodeEnabled` to control whether credit card security codes (CVV) are captured from web forms. [Bug 2089899](https://bugzilla.mozilla.org/show_bug.cgi?id=2089899)
 * **support-utils**
   * 🆕 Added `String.validateCreditCardNumber()`, which checks that a credit card number has only digits, matches a known card network and passes the Luhn check. It moved here from Fenix. [Bug 2090313](https://bugzilla.mozilla.org/show_bug.cgi?id=2090313)
+  * 🆕 Added `CertificateDetails`, with `X509Certificate.toCertificateDetails()`, `CertificateDetails.toIssuedTo()` and `CertificateDetails.issuerDisplayName()`, for showing who a website's certificate was issued to and who verified it, and the `eu_trust_mark` and `eu_trust_mark_inverted` drawables for showing the EU trust mark of a Qualified Website Authentication Certificate (QWAC). They moved here from Fenix so Focus can use them too. [Bug 2082529](https://bugzilla.mozilla.org/show_bug.cgi?id=2082529)
   * 🆕 Added `SwitchTabIntent`, holding the action and extra of the intent asking the app to bring the browser back on a tab. [Bug 2090245](https://bugzilla.mozilla.org/show_bug.cgi?id=2090245)
 * **support-locale**
   * Added a new API `LocaleManager#onAttachBaseContext` that applies only the configuration changes for the locale without cached values. Should only be used in `attachBaseContext` overrides for `Application` and `Activity` classes.

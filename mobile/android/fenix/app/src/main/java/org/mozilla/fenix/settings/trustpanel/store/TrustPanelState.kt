@@ -10,6 +10,8 @@ import mozilla.components.browser.state.state.SessionState
 import mozilla.components.concept.engine.permission.SitePermissions
 import mozilla.components.concept.engine.permission.SitePermissions.AutoplayStatus
 import mozilla.components.lib.state.State
+import mozilla.components.support.utils.CertificateDetails
+import mozilla.components.support.utils.toCertificateDetails
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.menu.store.IPProtectionMenuState
 import org.mozilla.fenix.settings.PhoneFeature
