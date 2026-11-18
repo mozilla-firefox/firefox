@@ -1519,8 +1519,9 @@ void ScrollContainerFrame::Reflow(nsPresContext* aPresContext,
   bool reflowVScrollbar = true;
   bool reflowScrollCorner = true;
   if (!aReflowInput.ShouldReflowAllKids()) {
-    auto NeedsReflow = [](const nsIFrame* aFrame) {
-      return aFrame && aFrame->IsSubtreeDirty();
+    // Hidden parts are left dirty until they are shown, see LayoutScrollbars().
+    auto NeedsReflow = [&](const nsIFrame* aFrame) {
+      return aFrame && IsScrollbarPartShown(aFrame) && aFrame->IsSubtreeDirty();
     };
 
     reflowHScrollbar = NeedsReflow(mHScrollbarBox);
@@ -3505,7 +3506,7 @@ void ScrollContainerFrame::AppendScrollPartsTo(nsDisplayListBuilder* aBuilder,
 
   AutoTArray<nsIFrame*, 3> scrollParts;
   for (nsIFrame* kid : PrincipalChildList()) {
-    if (kid == mScrolledFrame ||
+    if (kid == mScrolledFrame || !IsScrollbarPartShown(kid) ||
         (overlayScrollbars || kid->IsAbsPosContainingBlock()) != aPositioned) {
       continue;
     }
@@ -6245,12 +6246,24 @@ bool ScrollContainerFrame::IsScrollingActive() const {
          DisplayPortUtils::HasDisplayPort(content);
 }
 
+bool ScrollContainerFrame::IsScrollbarPartShown(const nsIFrame* aPart) const {
+  if (aPart == mVScrollbarBox) {
+    return mHasVerticalScrollbar;
+  }
+  if (aPart == mHScrollbarBox) {
+    return mHasHorizontalScrollbar;
+  }
+  if (aPart == mScrollCornerBox) {
+    return mHasVerticalScrollbar && mHasHorizontalScrollbar;
+  }
+  MOZ_ASSERT(aPart == mResizerBox);
+  return true;
+}
+
 nsScrollbarFrame* ScrollContainerFrame::GetShownScrollbarBox(
     bool aVertical) const {
-  if (aVertical) {
-    return mHasVerticalScrollbar ? mVScrollbarBox : nullptr;
-  }
-  return mHasHorizontalScrollbar ? mHScrollbarBox : nullptr;
+  nsScrollbarFrame* scrollbar = aVertical ? mVScrollbarBox : mHScrollbarBox;
+  return scrollbar && IsScrollbarPartShown(scrollbar) ? scrollbar : nullptr;
 }
 
 void ScrollContainerFrame::FinishReflowForScrollbar(
@@ -6871,6 +6884,20 @@ void ScrollContainerFrame::LayoutScrollbars(ScrollReflowInput& aState,
       mOnlyNeedVScrollbarToScrollVVInsideLV;
   nsPresContext* pc = PresContext();
 
+  // A hidden part isn't reflowed, and keeps its dirty bits until it's shown
+  // again. It just gets its (empty) rect, and no overflow left over from when
+  // it was last shown.
+  auto LayoutScrollbarPart = [&](nsIFrame* aPart, const nsRect& aRect) {
+    if (!IsScrollbarPartShown(aPart)) {
+      aPart->SetRect(aRect);
+      aPart->ClearOverflowRects();
+      return;
+    }
+    ReflowInput partRI(pc, aState.mReflowInput, aPart,
+                       LogicalSize(aPart->GetWritingMode(), aRect.Size()));
+    LayoutScrollbarPartAtRect(aState, partRI, aRect);
+  };
+
   // place the scrollcorner
   if (mScrollCornerBox) {
     nsRect r(0, 0, 0, 0);
@@ -6904,10 +6931,7 @@ void ScrollContainerFrame::LayoutScrollbars(ScrollReflowInput& aState,
       r.y = mScrollPort.YMost() - r.height;
     }
 
-    ReflowInput scrollCornerRI(
-        pc, aState.mReflowInput, mScrollCornerBox,
-        LogicalSize(mScrollCornerBox->GetWritingMode(), r.Size()));
-    LayoutScrollbarPartAtRect(aState, scrollCornerRI, r);
+    LayoutScrollbarPart(mScrollCornerBox, r);
   }
 
   if (mResizerBox) {
@@ -6958,16 +6982,10 @@ void ScrollContainerFrame::LayoutScrollbars(ScrollReflowInput& aState,
     AdjustOverlappingScrollbars(vRect, hRect);
   }
   if (mVScrollbarBox) {
-    ReflowInput vScrollbarRI(
-        pc, aState.mReflowInput, mVScrollbarBox,
-        LogicalSize(mVScrollbarBox->GetWritingMode(), vRect.Size()));
-    LayoutScrollbarPartAtRect(aState, vScrollbarRI, vRect);
+    LayoutScrollbarPart(mVScrollbarBox, vRect);
   }
   if (mHScrollbarBox) {
-    ReflowInput hScrollbarRI(
-        pc, aState.mReflowInput, mHScrollbarBox,
-        LogicalSize(mHScrollbarBox->GetWritingMode(), hRect.Size()));
-    LayoutScrollbarPartAtRect(aState, hScrollbarRI, hRect);
+    LayoutScrollbarPart(mHScrollbarBox, hRect);
   }
 
   // may need to update fixed position children of the viewport,
