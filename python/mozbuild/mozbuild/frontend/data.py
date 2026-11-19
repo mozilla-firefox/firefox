@@ -97,6 +97,12 @@ class HostMixin:
         defines = self._context["HOST_DEFINES"]
         return HostDefines(self._context, defines) if defines else None
 
+    def _host_pdb_link_flags(self, debug):
+        if self.config.substs.get("HOST_OS_ARCH") != "WINNT":
+            return []
+        pdb = f"-PDB:{mozpath.splitext(self.name)[0]}.pdb"
+        return ["-DEBUG", pdb] if debug else [pdb]
+
 
 class DirectoryTraversal(ContextDerived):
     """Describes how directory traversal for building should work.
@@ -555,6 +561,12 @@ class HostProgram(HostMixin, BaseProgram):
     def install_target(self):
         return "dist/host/bin"
 
+    @property
+    def pdb_link_flags(self):
+        return self._host_pdb_link_flags(
+            self.config.substs.get("HOST_CC_TYPE") != "clang-cl"
+        )
+
 
 class SimpleProgram(BaseProgram):
     """Context derived container object for each program in SIMPLE_PROGRAMS"""
@@ -583,6 +595,8 @@ class HostSimpleProgram(HostMixin, BaseProgram):
 
     SUFFIX_VAR = "HOST_BIN_SUFFIX"
     KIND = "host"
+
+    pdb_link_flags = HostProgram.pdb_link_flags
 
     def source_files(self):
         for srcs in self.sources.values():
@@ -1025,6 +1039,10 @@ class HostSharedLibrary(HostMixin, Library):
             context.config.host_dll_suffix,
         )
         self.compiler_plugin = bool(context.get("IS_COMPILER_PLUGIN"))
+
+    @property
+    def pdb_link_flags(self):
+        return self._host_pdb_link_flags(True)
 
 
 class ExternalLibrary:

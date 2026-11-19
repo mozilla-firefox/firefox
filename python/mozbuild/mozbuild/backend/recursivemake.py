@@ -1481,8 +1481,10 @@ class RecursiveMakeBackend(MakeBackend):
             backend_file.write(f"DUMP_SYMS_TARGETS += {target}\n")
 
     def _process_host_program(self, program, backend_file):
-        backend_file.write(
-            "HOST_PROGRAM = %s\n" % self._pretty_path(program.output_path, backend_file)
+        target = self._pretty_path(program.output_path, backend_file)
+        backend_file.write(f"HOST_PROGRAM = {target}\n")
+        self._add_link_flags(
+            target, "HOST_LDFLAGS", program.pdb_link_flags, backend_file
         )
         if program.cxx_link:
             backend_file.write_once("HOST_CPP_PROG_LINK := 1\n")
@@ -1599,6 +1601,9 @@ class RecursiveMakeBackend(MakeBackend):
 
     def _process_host_simple_program(self, obj, backend_file):
         backend_file.write(f"HOST_SIMPLE_PROGRAMS += {obj.program}\n")
+        self._add_link_flags(
+            obj.program, "HOST_LDFLAGS", obj.pdb_link_flags, backend_file
+        )
         if obj.cxx_link:
             backend_file.write_once("HOST_CPP_PROG_LINK := 1\n")
 
@@ -1776,6 +1781,9 @@ class RecursiveMakeBackend(MakeBackend):
 
     def _process_host_shared_library(self, libdef, backend_file):
         backend_file.write("HOST_SHARED_LIBRARY = %s\n" % libdef.lib_name)
+        self._add_link_flags(
+            libdef.lib_name, "HOST_LDFLAGS", libdef.pdb_link_flags, backend_file
+        )
 
     def _build_target_for_obj(self, obj):
         if hasattr(obj, "output_category") and obj.output_category:

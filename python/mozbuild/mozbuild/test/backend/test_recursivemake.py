@@ -2478,6 +2478,50 @@ class TestRecursiveMakeBackend(BackendTester):
                 self._program_ldflags("clang", subdir, OS_ARCH="Darwin"), []
             )
 
+    def _host_ldflags(self, name, subdir, host_cc_type="clang-cl", **substs):
+        env = self._get_environment(
+            name,
+            substs={"HOST_OS_ARCH": "WINNT", "HOST_CC_TYPE": host_cc_type, **substs},
+        )
+        self._consume(name, RecursiveMakeBackend, env=env)
+
+        with open(os.path.join(env.topobjdir, subdir, "backend.mk")) as fh:
+            return [l.rstrip() for l in fh if ": HOST_LDFLAGS += " in l]
+
+    def test_clang_cl_host_program_pdb(self):
+        self.assertEqual(
+            self._host_ldflags("host-cpp-link", "cpp"),
+            ["$(DEPTH)/dist/host/bin/cpphost: HOST_LDFLAGS += -PDB:cpphost.pdb"],
+        )
+
+    def test_clang_host_program_pdb(self):
+        self.assertEqual(
+            self._host_ldflags("host-cpp-link", "cpp", "clang"),
+            ["$(DEPTH)/dist/host/bin/cpphost: HOST_LDFLAGS += -DEBUG -PDB:cpphost.pdb"],
+        )
+
+    def test_clang_cl_host_simple_program_pdb(self):
+        self.assertEqual(
+            self._host_ldflags("host-cpp-link", "simple"),
+            ["host_asimple: HOST_LDFLAGS += -PDB:host_asimple.pdb"],
+        )
+
+    def test_clang_cl_host_shared_library_pdb(self):
+        self.assertEqual(
+            self._host_ldflags("clang-plugin", "plugin"),
+            ["libclang-plugin.so: HOST_LDFLAGS += -DEBUG -PDB:libclang-plugin.pdb"],
+        )
+
+    def test_host_pdb_not_windows(self):
+        self.assertEqual(
+            self._host_ldflags("host-cpp-link", "cpp", "clang", HOST_OS_ARCH="Linux"),
+            [],
+        )
+        self.assertEqual(
+            self._host_ldflags("clang-plugin", "plugin", "clang", HOST_OS_ARCH="Linux"),
+            [],
+        )
+
     def test_per_source_object_deps(self):
         env = self._consume("per-source-object-deps", RecursiveMakeBackend)
 
