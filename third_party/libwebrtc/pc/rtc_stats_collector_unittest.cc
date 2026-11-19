@@ -1540,15 +1540,11 @@ TEST_P(RTCStatsCollectorTest, CertificateStatsCache) {
 }
 
 TEST_P(RTCStatsCollectorTest, CollectTwoRTCDataChannelStatsWithPendingId) {
-  // Note: The test assumes data channel IDs are predictable.
-  // This is not a safe assumption, but in order to make it work for
-  // the test, we reset the ID allocator at test start.
-  SctpDataChannel::ResetInternalIdAllocatorForTesting(-1);
   pc_->AddSctpDataChannel(make_ref_counted<MockSctpDataChannel>(
-      data_channel_controller_->weak_ptr(), /*id=*/-1,
+      data_channel_controller_->weak_ptr(), /*internal_id=*/0, /*id=*/-1,
       DataChannelInterface::kConnecting));
   pc_->AddSctpDataChannel(make_ref_counted<MockSctpDataChannel>(
-      data_channel_controller_->weak_ptr(), /*id=*/-1,
+      data_channel_controller_->weak_ptr(), /*internal_id=*/1, /*id=*/-1,
       DataChannelInterface::kConnecting));
 
   scoped_refptr<const RTCStatsReport> report =
@@ -1570,13 +1566,10 @@ TEST_P(RTCStatsCollectorTest, CollectTwoRTCDataChannelStatsWithPendingId) {
 }
 
 TEST_P(RTCStatsCollectorTest, CollectRTCDataChannelStats) {
-  // Note: The test assumes data channel IDs are predictable.
-  // This is not a safe assumption, but in order to make it work for
-  // the test, we reset the ID allocator at test start.
-  SctpDataChannel::ResetInternalIdAllocatorForTesting(-1);
   pc_->AddSctpDataChannel(make_ref_counted<MockSctpDataChannel>(
-      data_channel_controller_->weak_ptr(), 0, "MockSctpDataChannel0",
-      DataChannelInterface::kConnecting, "proto1", 1, 2, 3, 4));
+      data_channel_controller_->weak_ptr(), /*internal_id=*/0, 0,
+      "MockSctpDataChannel0", DataChannelInterface::kConnecting, "proto1", 1, 2,
+      3, 4));
   RTCDataChannelStats expected_data_channel0("D0", Timestamp::Zero());
   expected_data_channel0.label = "MockSctpDataChannel0";
   expected_data_channel0.protocol = "proto1";
@@ -1588,8 +1581,9 @@ TEST_P(RTCStatsCollectorTest, CollectRTCDataChannelStats) {
   expected_data_channel0.bytes_received = 4;
 
   pc_->AddSctpDataChannel(make_ref_counted<MockSctpDataChannel>(
-      data_channel_controller_->weak_ptr(), 1, "MockSctpDataChannel1",
-      DataChannelInterface::kOpen, "proto2", 5, 6, 7, 8));
+      data_channel_controller_->weak_ptr(), /*internal_id=*/1, 1,
+      "MockSctpDataChannel1", DataChannelInterface::kOpen, "proto2", 5, 6, 7,
+      8));
   RTCDataChannelStats expected_data_channel1("D1", Timestamp::Zero());
   expected_data_channel1.label = "MockSctpDataChannel1";
   expected_data_channel1.protocol = "proto2";
@@ -1601,8 +1595,9 @@ TEST_P(RTCStatsCollectorTest, CollectRTCDataChannelStats) {
   expected_data_channel1.bytes_received = 8;
 
   pc_->AddSctpDataChannel(make_ref_counted<MockSctpDataChannel>(
-      data_channel_controller_->weak_ptr(), 2, "MockSctpDataChannel2",
-      DataChannelInterface::kClosing, "proto1", 9, 10, 11, 12));
+      data_channel_controller_->weak_ptr(), /*internal_id=*/2, 2,
+      "MockSctpDataChannel2", DataChannelInterface::kClosing, "proto1", 9, 10,
+      11, 12));
   RTCDataChannelStats expected_data_channel2("D2", Timestamp::Zero());
   expected_data_channel2.label = "MockSctpDataChannel2";
   expected_data_channel2.protocol = "proto1";
@@ -1614,8 +1609,9 @@ TEST_P(RTCStatsCollectorTest, CollectRTCDataChannelStats) {
   expected_data_channel2.bytes_received = 12;
 
   pc_->AddSctpDataChannel(make_ref_counted<MockSctpDataChannel>(
-      data_channel_controller_->weak_ptr(), 3, "MockSctpDataChannel3",
-      DataChannelInterface::kClosed, "proto3", 13, 14, 15, 16));
+      data_channel_controller_->weak_ptr(), /*internal_id=*/3, 3,
+      "MockSctpDataChannel3", DataChannelInterface::kClosed, "proto3", 13, 14,
+      15, 16));
   RTCDataChannelStats expected_data_channel3("D3", Timestamp::Zero());
   expected_data_channel3.label = "MockSctpDataChannel3";
   expected_data_channel3.protocol = "proto3";
@@ -2121,13 +2117,13 @@ TEST_P(RTCStatsCollectorTest, CollectRTCPeerConnectionStats) {
 
   FakeDataChannelController controller(pc_->network_thread());
   scoped_refptr<SctpDataChannel> dummy_channel_a = SctpDataChannel::Create(
-      controller.weak_ptr(), "DummyChannelA", false, InternalDataChannelInit(),
-      std::nullopt, signaling_safety.flag(), Thread::Current(),
-      Thread::Current());
+      controller.weak_ptr(), /*internal_id=*/0, "DummyChannelA", false,
+      InternalDataChannelInit(), std::nullopt, signaling_safety.flag(),
+      Thread::Current(), Thread::Current());
   scoped_refptr<SctpDataChannel> dummy_channel_b = SctpDataChannel::Create(
-      controller.weak_ptr(), "DummyChannelB", false, InternalDataChannelInit(),
-      std::nullopt, signaling_safety.flag(), Thread::Current(),
-      Thread::Current());
+      controller.weak_ptr(), /*internal_id=*/1, "DummyChannelB", false,
+      InternalDataChannelInit(), std::nullopt, signaling_safety.flag(),
+      Thread::Current(), Thread::Current());
 
   stats_->stats_collector().OnSctpDataChannelStateChanged(
       dummy_channel_a->internal_id(), DataChannelInterface::DataState::kOpen);

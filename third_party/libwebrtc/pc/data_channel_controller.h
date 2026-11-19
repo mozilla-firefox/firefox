@@ -169,6 +169,7 @@ class DataChannelController : public SctpDataChannelControllerInterface,
   DataChannelTransportInterface* data_channel_transport_
       RTC_GUARDED_BY(network_thread()) = nullptr;
   SctpSidAllocator sid_allocator_ RTC_GUARDED_BY(network_thread());
+  int next_internal_id_ RTC_GUARDED_BY(network_thread()) = 0;
   std::vector<scoped_refptr<SctpDataChannel>> sctp_data_channels_n_
       RTC_GUARDED_BY(network_thread());
   enum class DataChannelUsage : uint8_t {

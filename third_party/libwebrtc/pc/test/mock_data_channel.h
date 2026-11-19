@@ -27,9 +27,11 @@ namespace webrtc {
 class MockSctpDataChannel : public SctpDataChannel {
  public:
   MockSctpDataChannel(WeakPtr<SctpDataChannelControllerInterface> controller,
+                      int internal_id,
                       int id,
                       DataState state)
       : MockSctpDataChannel(std::move(controller),
+                            internal_id,
                             id,
                             "MockSctpDataChannel",
                             state,
@@ -40,6 +42,7 @@ class MockSctpDataChannel : public SctpDataChannel {
                             0) {}
   MockSctpDataChannel(
       WeakPtr<SctpDataChannelControllerInterface> controller,
+      int internal_id,
       int id,
       const std::string& label,
       DataState state,
@@ -53,6 +56,7 @@ class MockSctpDataChannel : public SctpDataChannel {
       Thread* network_thread = Thread::Current())
       : SctpDataChannel(config,
                         std::move(controller),
+                        internal_id,
                         label,
                         false,
                         std::nullopt,

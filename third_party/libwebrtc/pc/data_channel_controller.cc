@@ -467,9 +467,9 @@ DataChannelController::CreateDataChannel(absl::string_view label,
   }
 
   scoped_refptr<SctpDataChannel> channel = SctpDataChannel::Create(
-      weak_factory_.GetWeakPtr(), label, data_channel_transport_ != nullptr,
-      config, max_message_size_, signaling_safety_.flag(), signaling_thread(),
-      network_thread());
+      weak_factory_.GetWeakPtr(), next_internal_id_++, label,
+      data_channel_transport_ != nullptr, config, max_message_size_,
+      signaling_safety_.flag(), signaling_thread(), network_thread());
 
   sctp_data_channels_n_.push_back(channel);
   return channel;

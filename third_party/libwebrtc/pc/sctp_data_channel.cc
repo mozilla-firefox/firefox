@@ -10,7 +10,6 @@
 
 #include "pc/sctp_data_channel.h"
 
-#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -46,12 +45,6 @@ namespace webrtc {
 namespace {
 
 size_t kMaxQueuedReceivedDataBytes = 16 * 1024 * 1024;
-
-std::atomic<int> g_unique_id{0};
-
-int GenerateUniqueId() {
-  return ++g_unique_id;
-}
 
 // Define proxy for DataChannelInterface.
 BEGIN_PROXY_MAP(DataChannel)
@@ -251,6 +244,7 @@ class SctpDataChannel::ObserverAdapter : public DataChannelObserver {
 // static
 absl_nonnull scoped_refptr<SctpDataChannel> SctpDataChannel::Create(
     WeakPtr<SctpDataChannelControllerInterface> controller,
+    int internal_id,
     absl::string_view label,
     bool connected_to_transport,
     const InternalDataChannelInit& config,
@@ -260,7 +254,7 @@ absl_nonnull scoped_refptr<SctpDataChannel> SctpDataChannel::Create(
     Thread* network_thread) {
   RTC_DCHECK(config.IsValid());
   return make_ref_counted<SctpDataChannel>(
-      config, std::move(controller), label, connected_to_transport,
+      config, std::move(controller), internal_id, label, connected_to_transport,
       max_message_size, std::move(controller_safety), signaling_thread,
       network_thread);
 }
@@ -278,6 +272,7 @@ absl_nonnull scoped_refptr<DataChannelInterface> SctpDataChannel::CreateProxy(
 SctpDataChannel::SctpDataChannel(
     const InternalDataChannelInit& config,
     WeakPtr<SctpDataChannelControllerInterface> controller,
+    int internal_id,
     absl::string_view label,
     bool connected_to_transport,
     std::optional<int> max_message_size,
@@ -287,7 +282,7 @@ SctpDataChannel::SctpDataChannel(
     : signaling_thread_(signaling_thread),
       network_thread_(network_thread),
       id_n_(config.id == -1 ? std::nullopt : std::make_optional(config.id)),
-      internal_id_(GenerateUniqueId()),
+      internal_id_(internal_id),
       label_(label),
       protocol_(config.protocol),
       max_retransmit_time_(config.maxRetransmitTime),
@@ -1029,11 +1024,6 @@ bool SctpDataChannel::SendControlMessage(const CopyOnWriteBuffer& buffer) {
     CloseAbruptlyWithError(err);
   }
   return err.ok();
-}
-
-// static
-void SctpDataChannel::ResetInternalIdAllocatorForTesting(int new_value) {
-  g_unique_id = new_value;
 }
 
 }  // namespace webrtc

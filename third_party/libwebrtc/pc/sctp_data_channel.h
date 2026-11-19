@@ -148,6 +148,7 @@ class SctpDataChannel : public DataChannelInterface {
   // event notifications.
   static absl_nonnull scoped_refptr<SctpDataChannel> Create(
       WeakPtr<SctpDataChannelControllerInterface> controller,
+      int internal_id,
       absl::string_view label,
       bool connected_to_transport,
       const InternalDataChannelInit& config,
@@ -233,9 +234,9 @@ class SctpDataChannel : public DataChannelInterface {
 
   DataChannelStats GetStats() const;
 
-  // Returns a unique identifier that's guaranteed to always be available,
-  // doesn't change throughout SctpDataChannel's lifetime and is used for
-  // stats purposes (see also `GetStats()`).
+  // Returns an identifier, unique per controller, that's guaranteed to always
+  // be available, doesn't change throughout SctpDataChannel's lifetime and is
+  // used for stats purposes (see also `GetStats()`).
   int internal_id() const { return internal_id_; }
 
   std::optional<StreamId> sid_n() const {
@@ -243,13 +244,10 @@ class SctpDataChannel : public DataChannelInterface {
     return id_n_;
   }
 
-  // Reset the allocator for internal ID values for testing, so that
-  // the internal IDs generated are predictable. Test only.
-  static void ResetInternalIdAllocatorForTesting(int new_value);
-
  protected:
   SctpDataChannel(const InternalDataChannelInit& config,
                   WeakPtr<SctpDataChannelControllerInterface> controller,
+                  int internal_id,
                   absl::string_view label,
                   bool connected_to_transport,
                   std::optional<int> max_message_size,

@@ -71,9 +71,9 @@ class FakeDataChannelController : public SctpDataChannelControllerInterface {
           RTC_CHECK(my_weak_ptr);
 
           scoped_refptr<SctpDataChannel> channel = SctpDataChannel::Create(
-              std::move(my_weak_ptr), std::string(label), transport_available_,
-              init, std::nullopt, signaling_safety_.flag(), signaling_thread_,
-              network_thread_);
+              std::move(my_weak_ptr), next_internal_id_++, std::string(label),
+              transport_available_, init, std::nullopt,
+              signaling_safety_.flag(), signaling_thread_, network_thread_);
           if (transport_available_ && channel->sid_n().has_value()) {
             AddSctpDataStream(*channel->sid_n(), channel->priority());
           }
@@ -241,6 +241,7 @@ class FakeDataChannelController : public SctpDataChannelControllerInterface {
   bool transport_available_ RTC_GUARDED_BY(network_thread_);
   bool ready_to_send_ RTC_GUARDED_BY(network_thread_);
   bool transport_error_ RTC_GUARDED_BY(network_thread_);
+  int next_internal_id_ RTC_GUARDED_BY(network_thread_) = 0;
   int channels_closed_ RTC_GUARDED_BY(network_thread_) = 0;
   int channels_opened_ RTC_GUARDED_BY(network_thread_) = 0;
   std::set<SctpDataChannel*> connected_channels_
