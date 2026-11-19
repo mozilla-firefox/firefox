@@ -105,11 +105,6 @@ mozilla::ipc::IPCResult GamepadTestChannelParent::RecvGamepadTestEvent(
       service->NewAxisMoveEvent(handle, a.axis(), a.value());
       break;
     }
-    case GamepadChangeEventBody::TGamepadPoseInformation: {
-      const GamepadPoseInformation& a = body.get_GamepadPoseInformation();
-      service->NewPoseEvent(handle, a.pose_state());
-      break;
-    }
     case GamepadChangeEventBody::TGamepadTouchInformation: {
       const GamepadTouchInformation& a = body.get_GamepadTouchInformation();
       service->NewMultiTouchEvent(handle, a.index(), a.touch_state());

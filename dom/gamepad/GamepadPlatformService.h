@@ -19,7 +19,6 @@ namespace mozilla::dom {
 
 class GamepadEventChannelParent;
 enum class GamepadLightIndicatorType : uint8_t;
-struct GamepadPoseState;
 class GamepadTestChannelParent;
 struct GamepadTouchState;
 class GamepadPlatformService;
@@ -97,10 +96,6 @@ class GamepadPlatformService final {
   // windows that are listening and visible, and fire a gamepadaxismove
   // event at them as well.
   void NewAxisMoveEvent(GamepadHandle aHandle, uint32_t aAxis, double aValue)
-      MOZ_EXCLUDES(mMutex);
-  // Update the state of |aState| for the gamepad at |aHandle| for all
-  // windows that are listening and visible.
-  void NewPoseEvent(GamepadHandle aHandle, const GamepadPoseState& aState)
       MOZ_EXCLUDES(mMutex);
   // Update the type of |aType| for the gamepad at |aHandle| for all
   // windows that are listening and visible.
