@@ -564,32 +564,6 @@
     <ID>UndocumentedPublicClass:TabHistoryViewHolder.kt$TabHistoryViewHolder : ViewHolder</ID>
     <ID>UndocumentedPublicClass:ThemeManager.kt$DefaultThemeManager : ThemeManager</ID>
     <ID>UndocumentedPublicClass:ThemeManager.kt$ThemeManager</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu$Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$AddToHomeScreen : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$AddToTopSites : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$AddonsManager : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$Back : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$Bookmark : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$Bookmarks : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$CustomizeReaderView : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$Downloads : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$FindInPage : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$Forward : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$History : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$InstallPwaToHomeScreen : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$NewTab : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$OpenInApp : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$OpenInFenix : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$Quit : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$Reload : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$RemoveFromTopSites : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$RequestDesktop : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$SaveToCollection : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$SetDefaultBrowser : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$Settings : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$Share : Item</ID>
-    <ID>UndocumentedPublicClass:ToolbarMenu.kt$ToolbarMenu.Item$Stop : Item</ID>
     <ID>UndocumentedPublicClass:TrackerBuckets.kt$TrackerBuckets$BucketedTrackerLog</ID>
     <ID>UndocumentedPublicClass:TrackingProtectionExceptionsAdapter.kt$TrackingProtectionExceptionsAdapter$TrackingProtectionAdapterItem : Item</ID>
     <ID>UndocumentedPublicClass:TrackingProtectionExceptionsInteractor.kt$DefaultTrackingProtectionExceptionsInteractor : TrackingProtectionExceptionsInteractor</ID>
