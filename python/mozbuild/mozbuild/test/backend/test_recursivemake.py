@@ -2426,6 +2426,58 @@ class TestRecursiveMakeBackend(BackendTester):
             ["EXTRA_DSO_LDOPTS += -PDB:not-installed.pdb -IMPLIB:not-installed.lib"],
         )
 
+    def _program_ldflags(self, cc_type, subdir, **substs):
+        env = self._get_environment(
+            "program-paths",
+            substs={"OS_ARCH": "WINNT", "CC_TYPE": cc_type, **substs},
+        )
+        self._consume("program-paths", RecursiveMakeBackend, env=env)
+
+        with open(os.path.join(env.topobjdir, subdir, "backend.mk")) as fh:
+            return [l.rstrip() for l in fh if ": LDFLAGS += " in l]
+
+    def test_clang_cl_program_pdb(self):
+        self.assertEqual(
+            self._program_ldflags("clang-cl", "dist-bin"),
+            ["$(DEPTH)/dist/bin/dist-bin.prog: LDFLAGS += -PDB:dist-bin.pdb"],
+        )
+
+    def test_clang_cl_program_pdb_copy_pdbs(self):
+        self.assertEqual(
+            self._program_ldflags("clang-cl", "dist-bin", MOZ_COPY_PDBS="1"),
+            [
+                "$(DEPTH)/dist/bin/dist-bin.prog: LDFLAGS += "
+                "-PDB:../dist/bin/dist-bin.pdb"
+            ],
+        )
+
+    def test_clang_cl_simple_program_pdb_copy_pdbs(self):
+        self.assertEqual(
+            self._program_ldflags("clang-cl", "dist-bin-simple", MOZ_COPY_PDBS="1"),
+            ["simple.prog: LDFLAGS += -PDB:simple.pdb"],
+        )
+
+    def test_mingw_program_pdb(self):
+        self.assertEqual(
+            self._program_ldflags("clang", "dist-bin"),
+            [
+                "$(DEPTH)/dist/bin/dist-bin.prog: LDFLAGS += "
+                "-Wl,-pdb,../dist/bin/dist-bin.pdb"
+            ],
+        )
+
+    def test_mingw_simple_program_pdb(self):
+        self.assertEqual(
+            self._program_ldflags("clang", "dist-bin-simple"),
+            ["simple.prog: LDFLAGS += -Wl,-pdb,simple.pdb"],
+        )
+
+    def test_program_pdb_not_windows(self):
+        for subdir in ("dist-bin", "dist-bin-simple"):
+            self.assertEqual(
+                self._program_ldflags("clang", subdir, OS_ARCH="Darwin"), []
+            )
+
     def test_per_source_object_deps(self):
         env = self._consume("per-source-object-deps", RecursiveMakeBackend)
 

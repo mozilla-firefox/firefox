@@ -1466,12 +1466,15 @@ class RecursiveMakeBackend(MakeBackend):
         backend_file.write(f"PROGRAM = {program}\n")
         if not obj.cxx_link and not self.environment.bin_suffix:
             backend_file.write("PROG_IS_C_ONLY_%s := 1\n" % obj.program)
-        self._add_lto_object_path_flags(obj, program, backend_file)
+        self._add_link_flags(
+            program, "LDFLAGS", obj.lto_object_path_flags, backend_file
+        )
+        self._add_link_flags(program, "LDFLAGS", obj.pdb_link_flags, backend_file)
         self._add_dump_syms_target(obj, program, backend_file)
 
-    def _add_lto_object_path_flags(self, obj, target, backend_file):
-        if flags := obj.lto_object_path_flags:
-            backend_file.write(f"{target}: LDFLAGS += {' '.join(flags)}\n")
+    def _add_link_flags(self, target, var, flags, backend_file):
+        if flags:
+            backend_file.write(f"{target}: {var} += {' '.join(flags)}\n")
 
     def _add_dump_syms_target(self, obj, target, backend_file):
         if obj.dump_syms:
@@ -1588,7 +1591,10 @@ class RecursiveMakeBackend(MakeBackend):
             assert obj.cxx_link
         elif not obj.cxx_link and not self.environment.bin_suffix:
             backend_file.write(f"PROG_IS_C_ONLY_{obj.program} := 1\n")
-        self._add_lto_object_path_flags(obj, obj.program, backend_file)
+        self._add_link_flags(
+            obj.program, "LDFLAGS", obj.lto_object_path_flags, backend_file
+        )
+        self._add_link_flags(obj.program, "LDFLAGS", obj.pdb_link_flags, backend_file)
         self._add_dump_syms_target(obj, obj.program, backend_file)
 
     def _process_host_simple_program(self, obj, backend_file):
@@ -1719,7 +1725,9 @@ class RecursiveMakeBackend(MakeBackend):
         )
         shared_lib = self._pretty_path(libdef.output_path, backend_file)
         backend_file.write("SHARED_LIBRARY := %s\n" % shared_lib)
-        self._add_lto_object_path_flags(libdef, shared_lib, backend_file)
+        self._add_link_flags(
+            shared_lib, "LDFLAGS", libdef.lto_object_path_flags, backend_file
+        )
         self._add_dump_syms_target(libdef, shared_lib, backend_file)
         if libdef.dso_link_flags:
             backend_file.write(

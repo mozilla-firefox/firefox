@@ -58,40 +58,6 @@ endif
 MKSHLIB += $(DSO_LDOPTS) -o $@
 endif
 
-ifeq ($(OS_ARCH),WINNT)
-
-#
-# This next line captures both the default (non-MOZ_COPY_PDBS)
-# case as well as the MOZ_COPY_PDBS-for-mingwclang case.
-#
-# For the default case, placing the pdb in the build
-# directory is needed.
-#
-# For the MOZ_COPY_PDBS, non-mingwclang case - we need to
-# build the pdb next to the executable (handled in the if
-# statement immediately below.)
-#
-# For the MOZ_COPY_PDBS, mingwclang case - we also need to
-# build the pdb next to the executable, but this macro doesn't
-# work for jsapi-tests which is a little special, so we specify
-# the output directory below with MOZ_PROGRAM_LDFLAGS.
-#
-LINK_PDBFILE ?= $(basename $(@F)).pdb
-
-ifdef MOZ_COPY_PDBS
-ifneq ($(CC_TYPE),clang)
-LINK_PDBFILE = $(basename $@).pdb
-endif
-endif
-
-endif # WINNT
-
-ifeq ($(OS_ARCH),WINNT)
-ifeq ($(CC_TYPE),clang)
-MOZ_PROGRAM_LDFLAGS += -Wl,-pdb,$(dir $@)/$(LINK_PDBFILE)
-endif
-endif
-
 ifeq ($(HOST_OS_ARCH),WINNT)
 HOST_PDBFILE=$(basename $(@F)).pdb
 HOST_PDB_FLAG ?= -PDB:$(HOST_PDBFILE)
@@ -270,7 +236,7 @@ $(PROGRAM): $(PROGOBJS) $(STATIC_LIBS) $(call resfile,$(PROGRAM)) $(GLOBAL_DEPS)
 	$(REPORT_BUILD)
 	$(call BUILDSTATUS,START_Program $(@F))
 ifeq (clang-cl_WINNT,$(CC_TYPE)_$(OS_ARCH))
-	$(LINKER) -OUT:$@ -PDB:$(LINK_PDBFILE) -IMPLIB:$(basename $(@F)).lib $(WIN32_EXE_LDFLAGS) $(COMPUTED_PROGRAM_LDFLAGS) $(LDFLAGS) $(MOZ_PROGRAM_LDFLAGS) $($(notdir $@)_OBJS) $(filter %.res,$^) $(STATIC_LIBS) $(SHARED_LIBS) $(OS_LIBS)
+	$(LINKER) -OUT:$@ -IMPLIB:$(basename $(@F)).lib $(WIN32_EXE_LDFLAGS) $(COMPUTED_PROGRAM_LDFLAGS) $(LDFLAGS) $(MOZ_PROGRAM_LDFLAGS) $($(notdir $@)_OBJS) $(filter %.res,$^) $(STATIC_LIBS) $(SHARED_LIBS) $(OS_LIBS)
 else # !WINNT || !clang-cl
 	$(call EXPAND_CC_OR_CXX,$@) -o $@ $(COMPUTED_CXX_LDFLAGS) $($(notdir $@)_OBJS) $(filter %.res,$^) $(WIN32_EXE_LDFLAGS) $(LDFLAGS) $(STATIC_LIBS) $(COMPUTED_PROGRAM_LDFLAGS) $(MOZ_PROGRAM_LDFLAGS) $(SHARED_LIBS) $(OS_LIBS)
 	$(call py_action,check_binary $(@F),$@)
@@ -312,7 +278,7 @@ $(SIMPLE_PROGRAMS):
 	$(REPORT_BUILD)
 	$(call BUILDSTATUS,START_Program $(@F))
 ifeq (clang-cl_WINNT,$(CC_TYPE)_$(OS_ARCH))
-	$(LINKER) -out:$@ -pdb:$(LINK_PDBFILE) $($@_OBJS) $(filter %.res,$^) $(WIN32_EXE_LDFLAGS) $(COMPUTED_PROGRAM_LDFLAGS) $(LDFLAGS) $(MOZ_PROGRAM_LDFLAGS) $(STATIC_LIBS) $(SHARED_LIBS) $(OS_LIBS)
+	$(LINKER) -out:$@ $($@_OBJS) $(filter %.res,$^) $(WIN32_EXE_LDFLAGS) $(COMPUTED_PROGRAM_LDFLAGS) $(LDFLAGS) $(MOZ_PROGRAM_LDFLAGS) $(STATIC_LIBS) $(SHARED_LIBS) $(OS_LIBS)
 else
 	$(call EXPAND_CC_OR_CXX,$@) $(COMPUTED_CXX_LDFLAGS) -o $@ $($@_OBJS) $(filter %.res,$^) $(WIN32_EXE_LDFLAGS) $(LDFLAGS) $(STATIC_LIBS) $(COMPUTED_PROGRAM_LDFLAGS) $(MOZ_PROGRAM_LDFLAGS) $(SHARED_LIBS) $(OS_LIBS)
 	$(call py_action,check_binary $(@F),$@)

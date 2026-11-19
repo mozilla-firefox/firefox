@@ -520,12 +520,29 @@ class BaseProgram(Linkable):
     def name(self):
         return self.program
 
+    def _pdb_link_flags(self, linked_dir):
+        substs = self.config.substs
+        if substs.get("OS_ARCH") != "WINNT":
+            return []
+        # clang-cl writes the pdb to the build directory, or next to the
+        # executable under MOZ_COPY_PDBS. MinGW always writes it next to the
+        # executable.
+        pdb = f"{mozpath.splitext(self.program)[0]}.pdb"
+        beside = mozpath.relpath(mozpath.join(linked_dir, pdb), self.objdir)
+        if substs.get("CC_TYPE") == "clang-cl":
+            return [f"-PDB:{beside if substs.get('MOZ_COPY_PDBS') else pdb}"]
+        return [f"-Wl,-pdb,{beside}"]
+
 
 class Program(BaseProgram):
     """Context derived container object for PROGRAM"""
 
     SUFFIX_VAR = "BIN_SUFFIX"
     KIND = "target"
+
+    @property
+    def pdb_link_flags(self):
+        return self._pdb_link_flags(mozpath.dirname(self.output_path.full_path))
 
 
 class HostProgram(HostMixin, BaseProgram):
@@ -544,6 +561,10 @@ class SimpleProgram(BaseProgram):
 
     SUFFIX_VAR = "BIN_SUFFIX"
     KIND = "target"
+
+    @property
+    def pdb_link_flags(self):
+        return self._pdb_link_flags(self.objdir)
 
     def source_files(self):
         for srcs in self.sources.values():
