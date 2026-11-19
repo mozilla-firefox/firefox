@@ -8,6 +8,8 @@
 "use strict";
 
 ChromeUtils.defineESModuleGetters(this, {
+  ContentBlockingAllowList:
+    "moz-src:///toolkit/components/antitracking/ContentBlockingAllowList.sys.mjs",
   RemoteSettings: "resource://services-settings/remote-settings.sys.mjs",
   BrowserTestUtils: "resource://testing-common/BrowserTestUtils.sys.mjs",
   ExperimentAPI: "resource://nimbus/ExperimentAPI.sys.mjs",
@@ -699,6 +701,71 @@ add_task(async function test_tracker_count_hidden_when_toggle_switched_off() {
   } finally {
     await BrowserTestUtils.removeTab(tab);
     await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_tracker_count_hidden_when_etp_turned_off() {
+  await PlacesUtils.history.clear();
+
+  const tab = await BrowserTestUtils.openNewForegroundTab({
+    gBrowser,
+    opening: TRACKING_PAGE,
+    waitForLoad: true,
+  });
+
+  try {
+    await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+      content.postMessage("cryptomining", "*");
+    });
+
+    await waitForTrustIconClass(
+      "has-blocked-trackers",
+      "Waiting for has-blocked-trackers after a cryptominer is blocked"
+    );
+
+    await UrlbarTestUtils.openTrustPanel(window);
+
+    const reloaded = BrowserTestUtils.browserLoaded(tab.linkedBrowser);
+    EventUtils.synthesizeMouseAtCenter(
+      window.document.getElementById("trustpanel-toggle"),
+      {},
+      window
+    );
+    await reloaded;
+
+    await waitForTrustIconWithoutClass(
+      "has-blocked-trackers",
+      "has-blocked-trackers should be removed once ETP is off for the site"
+    );
+    Assert.equal(
+      trackerCountShortform(),
+      "0",
+      "The count is cleared once ETP is off for the site"
+    );
+    await document.l10n.translateElements([trustIconContainer()]);
+    Assert.equal(
+      trustIconContainer().getAttribute("aria-label"),
+      "View site information",
+      "The accessible name no longer mentions blocked trackers"
+    );
+
+    await UrlbarTestUtils.openTrustPanel(window);
+
+    const reloadedAgain = BrowserTestUtils.browserLoaded(tab.linkedBrowser);
+    EventUtils.synthesizeMouseAtCenter(
+      window.document.getElementById("trustpanel-toggle"),
+      {},
+      window
+    );
+    await reloadedAgain;
+
+    await waitForTrustIconClass(
+      "has-blocked-trackers",
+      "The count blocked while ETP was on is shown again once it is back on"
+    );
+  } finally {
+    ContentBlockingAllowList.remove(tab.linkedBrowser);
+    await BrowserTestUtils.removeTab(tab);
   }
 });
 
