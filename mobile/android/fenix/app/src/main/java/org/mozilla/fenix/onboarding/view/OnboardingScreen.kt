@@ -53,9 +53,9 @@ import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
 import mozilla.components.compose.base.button.TextButton
 import mozilla.components.lib.state.ext.observeAsComposableState
 import mozilla.components.support.base.log.logger.Logger
-import org.mozilla.fenix.FeatureFlags
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.components
+import org.mozilla.fenix.nimbus.FxNimbus
 import org.mozilla.fenix.theme.FirefoxTheme
 
 private val logger = Logger("OnboardingScreen")
@@ -137,7 +137,7 @@ fun OnboardingScreen(
             }
     }
 
-    if (FeatureFlags.onboardingHapticsEnabled) {
+    if (FxNimbus.features.onboardingHaptics.value().enabled) {
         OnboardingPagerHaptics(pagerState)
     }
 
