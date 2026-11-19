@@ -6,8 +6,12 @@ package org.mozilla.focus.settings.privacy
 
 import android.content.Context
 import android.view.View
+import android.widget.Button
 import android.widget.FrameLayout
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.view.AccessibilityDelegateCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
@@ -29,12 +33,22 @@ import org.mozilla.focus.ext.components
 import org.mozilla.focus.ext.installedDate
 import org.mozilla.focus.ext.settings
 
-/** Site state passed to [TrackingProtectionPanel]. */
+/**
+ * Site state passed to [TrackingProtectionPanel].
+ *
+ * @property tabUrl The URL of the current website.
+ * @property blockedTrackersCount The number of trackers blocked since the app was installed.
+ * @property isTrackingProtectionOn Whether tracking protection is on for the current website.
+ * @property isConnectionSecure Whether the connection to the current website is secure.
+ * @property showCertificateDetailsLink Whether the header shows a "Secure connection" link to the certificate details,
+ *   instead of the connection security row.
+ */
 data class SiteSecurityInfo(
     val tabUrl: String,
     val blockedTrackersCount: Int,
     val isTrackingProtectionOn: Boolean,
     val isConnectionSecure: Boolean,
+    val showCertificateDetailsLink: Boolean = false,
 )
 
 /** Callbacks invoked by [TrackingProtectionPanel]. */
@@ -54,7 +68,7 @@ interface TrackingProtectionPanelInteractor {
      */
     fun updateTrackingProtectionPolicy(tracker: String?, enabled: Boolean)
 
-    /** Called when the user taps the connection security info row. */
+    /** Called when the user taps the connection security info row or the "Secure connection" link. */
     fun showConnectionInfo()
 }
 
@@ -100,7 +114,34 @@ class TrackingProtectionPanel(
         )
     }
 
+    /**
+     * Updates the space under the drag handle once the QWAC status of the current website is known.
+     *
+     * @param isQwac Whether the current website presents a QWAC.
+     */
+    fun updateQwacStatus(isQwac: Boolean) {
+        binding.dragHandle.updateSpacing(isQwac)
+    }
+
     private fun updateConnectionState() {
+        binding.secureConnectionLink.isVisible = siteInfo.showCertificateDetailsLink
+        binding.securityInfo.isVisible = !siteInfo.showCertificateDetailsLink
+        ViewCompat.setAccessibilityDelegate(
+            binding.secureConnectionLink,
+            object : AccessibilityDelegateCompat() {
+                override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfoCompat) {
+                    super.onInitializeAccessibilityNodeInfo(host, info)
+                    info.className = Button::class.java.name
+                }
+            },
+        )
+        ViewCompat.replaceAccessibilityAction(
+            binding.secureConnectionLink,
+            AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_CLICK,
+            context.getString(R.string.connection_details_view_certificate_details),
+            null,
+        )
+
         binding.securityInfo.text =
             context.getString(
                 if (siteInfo.isConnectionSecure) R.string.secure_connection else R.string.insecure_connection
@@ -183,6 +224,9 @@ class TrackingProtectionPanel(
                 interactor.updateTrackingProtectionPolicy(TrackerChanged.CONTENT.tracker, content.isChecked)
             }
             securityInfo.setOnClickListener {
+                interactor.showConnectionInfo()
+            }
+            secureConnectionLink.setOnClickListener {
                 interactor.showConnectionInfo()
             }
         }

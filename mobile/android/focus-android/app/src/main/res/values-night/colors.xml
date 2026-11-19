@@ -87,6 +87,7 @@
 
     <!--Modals colors -->
     <color name="modal_background">@color/colorSecondary</color>
+    <color name="certificate_details_card_background">@color/photonInk20</color>
 
     <!-- Override AC colors. Those only referenced from android-components are marked so that the
          UnusedResources check, which cannot see those references, does not report them as unused. -->
