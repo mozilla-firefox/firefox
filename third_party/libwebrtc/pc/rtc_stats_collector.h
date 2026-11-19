@@ -75,8 +75,9 @@ struct RtpTransceiverStatsInfo {
   const bool has_channel;
 };
 
-// References to objects used on the signaling and worker threads for populating
-// RtpTransceiverStatsInfo but must always be released on the signaling thread
+// References to objects used on the signaling and network threads for
+// populating RtpTransceiverStatsInfo. They must always be released on the
+// signaling thread.
 struct TransceiverReferences {
   scoped_refptr<RtpTransceiver> transceiver;
   std::vector<scoped_refptr<RtpReceiverInternal>> receivers;
@@ -90,7 +91,7 @@ struct TransceiverReferences {
 };
 
 // All public methods of the collector are to be called on the signaling thread.
-// Stats are gathered on the signaling, worker and network threads
+// Stats are gathered on the signaling and network threads
 // asynchronously. The callback is invoked on the signaling thread. Resulting
 // reports are cached for `cache_lifetime_` ms.
 class RTCStatsCollector {
@@ -121,11 +122,9 @@ class RTCStatsCollector {
 
   // Cancels pending stats gathering operations and prepares for shutdown.
   // This method adds tasks that the caller needs to make sure is executed
-  // on the worker and network threads before the RTCStatsCollector instance is
-  // deleted.
+  // on the network thread before the RTCStatsCollector instance is deleted.
   void CancelPendingRequestAndGetShutdownTasks(
-      ScopedOperationsBatcher& network_tasks,
-      ScopedOperationsBatcher& worker_tasks);
+      ScopedOperationsBatcher& network_tasks);
 
   // Called by the PeerConnection instance when data channel states change.
   void OnSctpDataChannelStateChanged(int channel_id,
@@ -169,7 +168,7 @@ class RTCStatsCollector {
     std::optional<AudioDeviceModule::Stats> audio_device_stats;
   };
 
-  struct WorkerThreadResult {
+  struct MediaStatsResult {
     StatsGatheringResults results;
     std::vector<std::vector<RtpParameters>> sender_parameters;
     std::vector<TransceiverReferences> transceiver_references;
@@ -285,12 +284,13 @@ class RTCStatsCollector {
   std::map<std::string, CertificateStatsPair>
   PrepareTransportCertificateStats_n(
       const std::map<std::string, TransportStats>& transport_stats_by_name);
-  // The results are stored in `transceiver_stats_infos_` and `call_stats_`.
-  // Prepares the transceiver stats infos and call stats.
-  // Returns a callback that should be executed on the worker thread to populate
-  // the stats.
-  absl::AnyInvocable<WorkerThreadResult()>
-  PrepareTransceiverStatsInfosAndCallStats_s_w();
+  // Prepares the transceiver stats infos and call stats, and adds the
+  // transport name of each transceiver to `transport_names`.
+  // Returns a callback that should be executed on the network thread to
+  // populate the stats.
+  absl::AnyInvocable<MediaStatsResult()>
+  PrepareTransceiverStatsInfosAndCallStats_s_n(
+      std::set<std::string>& transport_names);
 
   // Stats gathering on a particular thread.
   void ProducePartialResultsOnSignalingThread(
@@ -301,7 +301,7 @@ class RTCStatsCollector {
       scoped_refptr<PendingTaskSafetyFlag> signaling_safety,
       Timestamp timestamp,
       std::set<std::string> transport_names,
-      StatsGatheringResults results);
+      absl::AnyInvocable<MediaStatsResult()> gather_task);
   // Merges `network_report` into `partial_report_` and completes the request.
   void OnNetworkReportReady(scoped_refptr<RTCStatsReport> network_report,
                             std::vector<DataChannelStats> data_channel_stats);
@@ -317,7 +317,6 @@ class RTCStatsCollector {
   const Environment env_;
   const bool stats_timestamp_with_environment_clock_;
   TaskQueueBase* const signaling_thread_;
-  Thread* const worker_thread_;
   Thread* const network_thread_;
 
   std::vector<RequestInfo> requests_ RTC_GUARDED_BY(signaling_thread_);
@@ -355,7 +354,6 @@ class RTCStatsCollector {
   };
   InternalRecord internal_record_;
   const scoped_refptr<PendingTaskSafetyFlag> signaling_safety_;
-  const scoped_refptr<PendingTaskSafetyFlag> worker_safety_;
   const scoped_refptr<PendingTaskSafetyFlag> network_safety_;
 
   std::unique_ptr<CollectionContext> collection_context_

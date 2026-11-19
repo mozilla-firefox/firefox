@@ -4123,20 +4123,18 @@ TEST(RTCStatsCollectorSafetyTest, CancelPendingRequestReturnsImmediately) {
   // the above task.
   wrapper.stats_collector().GetStatsReport(callback);
   ScopedOperationsBatcher network_tasks(worker_and_network.get());
-  ScopedOperationsBatcher worker_tasks(worker_and_network.get());
 
   // Now cancel any ongoing stats gathering operations.
   // This should cancel the outstanding operations and invoke pending callbacks
   // immediately.
   wrapper.stats_collector().CancelPendingRequestAndGetShutdownTasks(
-      network_tasks, worker_tasks);
+      network_tasks);
 
-  // Resume the network and worker threads.
+  // Resume the network thread.
   blocker.Set();
 
   // Run the cleanup tasks.
   network_tasks.Run();
-  worker_tasks.Run();
 }
 
 // This covers the following steps:
@@ -4154,13 +4152,11 @@ TEST(RTCStatsCollectorSafetyTest, NetworkThreadSafetyPreventsCallback) {
   // Start by canceling any ongoing tasks. There aren't actually any ongoing
   // tasks, but this gives us the network cleanup task.
   ScopedOperationsBatcher network_tasks(pc->network_thread());
-  ScopedOperationsBatcher worker_tasks(pc->worker_thread());
   wrapper.stats_collector().CancelPendingRequestAndGetShutdownTasks(
-      network_tasks, worker_tasks);
+      network_tasks);
   // Clean up the state on the network thread. This will have the effect of
   // dropping any tasks targeting the network thread.
   network_tasks.Run();
-  worker_tasks.Run();
   // Now, attempt to get a stats report. This will try to post a task to the
   // network thread, which will be dropped.
   wrapper.stats_collector().GetStatsReport(callback);

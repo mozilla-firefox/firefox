@@ -1231,22 +1231,17 @@ RTCStatsCollector::RTCStatsCollector(PeerConnectionInternal* pc,
       stats_timestamp_with_environment_clock_(
           pc->GetConfiguration().stats_timestamp_with_environment_clock()),
       signaling_thread_(pc->signaling_thread()),
-      worker_thread_(pc->worker_thread()),
       network_thread_(pc->network_thread()),
       cache_timestamp_us_(0),
       cache_lifetime_us_(cache_lifetime_us),
       signaling_safety_(
           PendingTaskSafetyFlag::CreateAttachedToTaskQueue(/*alive=*/true,
                                                            signaling_thread_)),
-      worker_safety_(
-          PendingTaskSafetyFlag::CreateAttachedToTaskQueue(/*alive=*/true,
-                                                           worker_thread_)),
       network_safety_(
           PendingTaskSafetyFlag::CreateAttachedToTaskQueue(/*alive=*/true,
                                                            network_thread_)) {
   RTC_DCHECK(pc_);
   RTC_DCHECK(signaling_thread_);
-  RTC_DCHECK(worker_thread_);
   RTC_DCHECK(network_thread_);
   RTC_DCHECK_GE(cache_lifetime_us_, 0);
 }
@@ -1274,41 +1269,35 @@ void RTCStatsCollector::GetStatsReport(
 }
 
 /*
-[Signaling Thread]        [Worker Thread]          [Network Thread]
-       |                         |                        |
-GetStatsReport                   |                        |
-       |                         |                        |
-GetStatsReportInternal           |                        |
-       |                         |                        |
-PrepareTransceiverStatsInfos-    |                        |
-  AndCallStats_s_w               |                        |
-       |                         |                        |
-       |----- (Post Task) ------>|                        |
-       |                         |                        |
-       |                  Call::GetStats                  |
-       |              MediaChannel::GetStats              |
-       |                         |                        |
-       |<---- (Post Task) -------|                        |
-       |                         |                        |
-ProducePartialResultsOnSig       |                        |
-       |                         |                        |
-       |----------------------------- (Post Task) ------->|
-       |                         |                        |
-       |                         |       ProducePartialResultsOnNetworkThread
-       |                         |           GetTransportStatsByNames
-       |                         |           GetDataChannelStats
-       |                         |           PrepareTransportCertStats
-       |                         |                        |
-       |<---------------------------- (Post Task) --------|
-       |                         |                        |
-ProcessResultsFromNetworkThread  |                        |
- (ProduceCertificateStats_s)     |                        |
- (ProduceTransportStats_s)       |                        |
- (ProduceRTPStreamStats_s)       |                        |
-       |                         |                        |
-OnNetworkReportReady             |                        |
- (Deliver Callback)              |                        |
-       v                         v                        v
+[Signaling Thread]                       [Network Thread]
+       |                                        |
+GetStatsReport                                  |
+       |                                        |
+GetStatsReportInternal                          |
+       |                                        |
+PrepareTransceiverStatsInfos-                   |
+  AndCallStats_s_n                              |
+       |                                        |
+       |----------- (Post Task) --------------->|
+       |                                        |
+       |                          ProducePartialResultsOnNetworkThread
+       |                              Call::GetStats
+       |                              MediaChannel::GetStats
+       |                              GetTransportStatsByNames
+       |                              GetDataChannelStats
+       |                              PrepareTransportCertStats
+       |                                        |
+       |<---------- (Post Task) ----------------|
+       |                                        |
+ProducePartialResultsOnSignalingThread          |
+ProcessResultsFromNetworkThread                 |
+ (ProduceCertificateStats_s)                    |
+ (ProduceTransportStats_s)                      |
+ (ProduceRTPStreamStats_s)                      |
+       |                                        |
+OnNetworkReportReady                            |
+ (Deliver Callback)                             |
+       v                                        v
 */
 void RTCStatsCollector::GetStatsReportInternal(
     RTCStatsCollector::RequestInfo request) {
@@ -1358,53 +1347,28 @@ void RTCStatsCollector::GetStatsReportInternal(
   collection_context_ = std::make_unique<CollectionContext>(
       RTCStatsReport::Create(timestamp), cache_now_us);
 
-  // Prepare `transceiver_stats_infos` and `call_stats` for use in
-  // `ProducePartialResultsOnNetworkThread` and
-  // `ProducePartialResultsOnSignalingThread`.
-  auto worker_task = PrepareTransceiverStatsInfosAndCallStats_s_w();
+  // The transport names are owned by the signaling thread, so they are
+  // collected here rather than as part of the stats gathering task.
+  std::set<std::string> transport_names;
+  std::optional<std::string> sctp_transport_name = pc_->sctp_transport_name();
+  if (sctp_transport_name) {
+    transport_names.emplace(std::move(*sctp_transport_name));
+  }
 
-  auto signaling_task = [this](WorkerThreadResult worker_result) mutable {
-    RTC_DCHECK_RUN_ON(signaling_thread_);
-    // Create the initial `partial_report_` for the gathering operation.
-    ProducePartialResultsOnSignalingThread(
-        worker_result.results.transceiver_stats_infos,
-        worker_result.transceiver_references,
-        worker_result.results.audio_device_stats);
+  // Prepare the stats that require the media channels, and gather them on the
+  // network thread together with the transport stats.
+  auto gather_task =
+      PrepareTransceiverStatsInfosAndCallStats_s_n(transport_names);
 
-    Timestamp timestamp = collection_context_->partial_report->timestamp();
-    std::set<std::string> transport_names;
-    auto sctp_transport_name = pc_->sctp_transport_name();
-    if (sctp_transport_name) {
-      transport_names.emplace(std::move(*sctp_transport_name));
-    }
-
-    for (const auto& info : worker_result.results.transceiver_stats_infos) {
-      if (info.transport_name)
-        transport_names.insert(*info.transport_name);
-    }
-
-    network_thread_->PostTask(SafeTask(
-        network_safety_,
-        [this, transport_names = std::move(transport_names), timestamp,
-         signaling_flag = signaling_safety_,
-         results = std::move(worker_result.results)]() mutable {
-          ProducePartialResultsOnNetworkThread(
-              std::move(signaling_flag), timestamp, std::move(transport_names),
-              std::move(results));
-        }));
-  };
-
-  worker_thread_->PostTask(SafeTask(
-      worker_safety_, [this, worker_task = std::move(worker_task),
-                       signaling_task = std::move(signaling_task)]() mutable {
-        auto worker_result = std::move(worker_task)();
-        signaling_thread_->PostTask(
-            SafeTask(signaling_safety_,
-                     [signaling_task = std::move(signaling_task),
-                      worker_result = std::move(worker_result)]() mutable {
-                       signaling_task(std::move(worker_result));
-                     }));
-      }));
+  network_thread_->PostTask(
+      SafeTask(network_safety_,
+               [this, timestamp, transport_names = std::move(transport_names),
+                gather_task = std::move(gather_task),
+                signaling_flag = signaling_safety_]() mutable {
+                 ProducePartialResultsOnNetworkThread(
+                     std::move(signaling_flag), timestamp,
+                     std::move(transport_names), std::move(gather_task));
+               }));
 }
 
 void RTCStatsCollector::ClearCachedStatsReport() {
@@ -1420,11 +1384,9 @@ void RTCStatsCollector::ClearCachedStatsReport() {
 }
 
 void RTCStatsCollector::CancelPendingRequestAndGetShutdownTasks(
-    ScopedOperationsBatcher& network_tasks,
-    ScopedOperationsBatcher& worker_tasks) {
+    ScopedOperationsBatcher& network_tasks) {
   RTC_DCHECK_RUN_ON(signaling_thread_);
   signaling_safety_->SetNotAlive();
-  worker_tasks.Add([flag = worker_safety_]() { flag->SetNotAlive(); });
   network_tasks.Add([flag = network_safety_]() { flag->SetNotAlive(); });
 }
 
@@ -1460,11 +1422,13 @@ void RTCStatsCollector::ProducePartialResultsOnNetworkThread(
     scoped_refptr<PendingTaskSafetyFlag> signaling_safety,
     Timestamp timestamp,
     std::set<std::string> transport_names,
-    StatsGatheringResults results) {
+    absl::AnyInvocable<MediaStatsResult()> gather_task) {
   RTC_DCHECK_RUN_ON(network_thread_);
   TRACE_EVENT0("webrtc",
                "RTCStatsCollector::ProducePartialResultsOnNetworkThread");
   Thread::ScopedDisallowBlockingCalls no_blocking_calls;
+
+  MediaStatsResult media_stats = std::move(gather_task)();
 
   std::vector<DataChannelStats> data_channel_stats = pc_->GetDataChannelStats();
 
@@ -1478,15 +1442,22 @@ void RTCStatsCollector::ProducePartialResultsOnNetworkThread(
       [this, timestamp,
        transport_stats_by_name = std::move(transport_stats_by_name),
        transport_cert_stats = std::move(transport_cert_stats),
-       transceiver_stats_infos = std::move(results.transceiver_stats_infos),
-       call_stats = results.call_stats,
-       audio_device_stats = results.audio_device_stats,
+       media_stats = std::move(media_stats),
        data_channel_stats = std::move(data_channel_stats)]() mutable {
+        RTC_DCHECK_RUN_ON(signaling_thread_);
+        // Create the initial `partial_report` for the gathering operation.
+        ProducePartialResultsOnSignalingThread(
+            media_stats.results.transceiver_stats_infos,
+            media_stats.transceiver_references,
+            media_stats.results.audio_device_stats);
+
         auto network_report = RTCStatsReport::Create(timestamp);
         ProcessResultsFromNetworkThread(
             timestamp, std::move(transport_stats_by_name),
-            std::move(transport_cert_stats), std::move(transceiver_stats_infos),
-            call_stats, audio_device_stats, network_report.get());
+            std::move(transport_cert_stats),
+            std::move(media_stats.results.transceiver_stats_infos),
+            media_stats.results.call_stats,
+            media_stats.results.audio_device_stats, network_report.get());
         OnNetworkReportReady(std::move(network_report),
                              std::move(data_channel_stats));
       }));
@@ -2282,8 +2253,9 @@ RTCStatsCollector::PrepareTransportCertificateStats_n(
   return transport_cert_stats;
 }
 
-absl::AnyInvocable<RTCStatsCollector::WorkerThreadResult()>
-RTCStatsCollector::PrepareTransceiverStatsInfosAndCallStats_s_w() {
+absl::AnyInvocable<RTCStatsCollector::MediaStatsResult()>
+RTCStatsCollector::PrepareTransceiverStatsInfosAndCallStats_s_n(
+    std::set<std::string>& transport_names) {
   RTC_DCHECK_RUN_ON(signaling_thread_);
   RTC_DCHECK_DISALLOW_THREAD_BLOCKING_CALLS();
 
@@ -2301,6 +2273,10 @@ RTCStatsCollector::PrepareTransceiverStatsInfosAndCallStats_s_w() {
         .transport_name = transceiver->transport_name(),
         .current_direction = transceiver->current_direction(),
         .has_channel = transceiver->HasChannel()};
+
+    if (stats.transport_name) {
+      transport_names.insert(*stats.transport_name);
+    }
 
     TransceiverReferences refs{.transceiver =
                                    scoped_refptr<RtpTransceiver>(transceiver)};
@@ -2354,28 +2330,28 @@ RTCStatsCollector::PrepareTransceiverStatsInfosAndCallStats_s_w() {
   }
 
   // Embed the collected information into this lambda which will run on the
-  // worker thread. There, we'll call GetStats() on each media channel as well
+  // network thread. There, we'll call GetStats() on each media channel as well
   // as GetCallStats(). At the same time we construct the TrackMediaInfoMaps,
-  // which also needs info from the worker thread.
+  // which also needs info from the network thread.
   return [this, transceiver_stats_infos = std::move(transceiver_stats_infos),
           transceiver_references =
               std::move(transceiver_references)]() mutable {
     Thread::ScopedDisallowBlockingCalls no_blocking_calls;
 
-    WorkerThreadResult worker_result;
-    worker_result.results.transceiver_stats_infos =
+    MediaStatsResult media_stats;
+    media_stats.results.transceiver_stats_infos =
         std::move(transceiver_stats_infos);
-    worker_result.transceiver_references = std::move(transceiver_references);
+    media_stats.transceiver_references = std::move(transceiver_references);
 
     // Create the TrackMediaInfoMap for each transceiver stats object and keep
     // track of whether audio is played out.
     bool has_audio_receiver = false;
-    RTC_DCHECK_EQ(worker_result.results.transceiver_stats_infos.size(),
-                  worker_result.transceiver_references.size());
-    for (size_t i = 0; i < worker_result.results.transceiver_stats_infos.size();
+    RTC_DCHECK_EQ(media_stats.results.transceiver_stats_infos.size(),
+                  media_stats.transceiver_references.size());
+    for (size_t i = 0; i < media_stats.results.transceiver_stats_infos.size();
          ++i) {
-      auto& stats = worker_result.results.transceiver_stats_infos[i];
-      auto& refs = worker_result.transceiver_references[i];
+      auto& stats = media_stats.results.transceiver_stats_infos[i];
+      auto& refs = media_stats.transceiver_references[i];
       // The transceiver will still exist but in a stopped state after
       // pc.close().
       if (stats.current_direction == RtpTransceiverDirection::kStopped) {
@@ -2433,10 +2409,10 @@ RTCStatsCollector::PrepareTransceiverStatsInfosAndCallStats_s_w() {
       }
     }
 
-    worker_result.results.call_stats = pc_->GetCallStats();
-    worker_result.results.audio_device_stats =
+    media_stats.results.call_stats = pc_->GetCallStats();
+    media_stats.results.audio_device_stats =
         has_audio_receiver ? pc_->GetAudioDeviceStats() : std::nullopt;
-    return worker_result;
+    return media_stats;
   };
 }
 

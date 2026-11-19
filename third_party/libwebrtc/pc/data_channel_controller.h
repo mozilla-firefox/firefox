@@ -90,7 +90,7 @@ class DataChannelController : public SctpDataChannelControllerInterface,
   void OnTransportChanged(
       DataChannelTransportInterface* data_channel_transport);
 
-  // Called from PeerConnection::GetDataChannelStats on the signaling thread.
+  // Called from PeerConnection::GetDataChannelStats on the network thread.
   std::vector<DataChannelStats> GetDataChannelStats() const;
 
   // Creates channel and adds it to the collection of DataChannels that will

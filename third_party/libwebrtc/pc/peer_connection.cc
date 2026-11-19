@@ -593,8 +593,7 @@ PeerConnection::~PeerConnection() {
   sdp_handler_->GetMediaChannelTeardownTasks(network_tasks, worker_tasks);
 
   legacy_stats_.reset(nullptr);
-  stats_collector_.CancelPendingRequestAndGetShutdownTasks(network_tasks,
-                                                           worker_tasks);
+  stats_collector_.CancelPendingRequestAndGetShutdownTasks(network_tasks);
   network_tasks.AddWithFinalizer(MakeCloseOnNetworkThreadTask());
 
   // call_ must be destroyed on the worker thread.
