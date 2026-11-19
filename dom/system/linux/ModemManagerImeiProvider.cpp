@@ -160,14 +160,20 @@ void ModemManagerImeiProvider::OnIntrospectFinish(RefPtr<Promise> aPromise,
   }
 
   GDBusNodeInfo* modem = nodeInfos->nodes[0];
-  if (!modem) {
+  if (!modem || !modem->path) {
     aPromise->MaybeReject(NS_ERROR_NOT_IMPLEMENTED);
     return;
   }
 
+  nsPrintfCString modemPath("%s/%s", kModemRootPath, modem->path);
+  if (!g_variant_is_object_path(modemPath.get())) {
+    MMI_LOG(Error, "Invalid modem path: %s", modemPath.get());
+    aPromise->MaybeReject(NS_ERROR_ILLEGAL_VALUE);
+    return;
+  }
+
   MMI_LOG(Debug, "Query IMEI: %s", modem->path);
-  QueryModemImei(aPromise,
-                 nsPrintfCString("%s/%s", kModemRootPath, modem->path));
+  QueryModemImei(aPromise, modemPath);
 }
 
 void ModemManagerImeiProvider::CollectImei(RefPtr<Promise> aPromise) {
