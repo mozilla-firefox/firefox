@@ -115,7 +115,7 @@ ChromeUtils.defineLazyGetter(lazy, "log", function () {
 });
 
 /**
- * @import { SmartbarAction } from "chrome://browser/content/aiwindow/components/input-cta/input-cta.mjs"
+ * @import { SmartbarAction } from "chrome://browser/content/aiwindow/components/input-cta.mjs"
  * @import { TabGroupColor } from "chrome://browser/content/tabbrowser/tabgroup.mjs"
  */
 

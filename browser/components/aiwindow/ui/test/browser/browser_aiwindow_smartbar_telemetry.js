@@ -11,7 +11,7 @@
 "use strict";
 
 /**
- * @import { SmartbarAction } from "chrome://browser/content/aiwindow/components/input-cta/input-cta.mjs"
+ * @import { SmartbarAction } from "chrome://browser/content/aiwindow/components/input-cta.mjs"
  */
 
 const TEST_MARKETS = JSON.stringify([["US", ["en-*"]]]);

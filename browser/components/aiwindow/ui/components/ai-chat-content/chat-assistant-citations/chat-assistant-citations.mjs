@@ -4,7 +4,7 @@
 
 import { html, nothing } from "chrome://global/content/vendor/lit.all.mjs";
 import { MozLitElement } from "chrome://global/content/lit-utils.mjs";
-import { SmartwindowOverflowRowMixin } from "chrome://browser/content/aiwindow/components/SmartwindowOverflowRow.mjs";
+import { SmartwindowOverflowRowMixin } from "chrome://browser/content/aiwindow/components/smartwindow-overflow-row.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://global/content/elements/moz-button.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import

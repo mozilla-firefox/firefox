@@ -12,7 +12,7 @@ import {
   nothing,
   repeat,
 } from "chrome://global/content/vendor/lit.all.mjs";
-import { SmartwindowOverflowRowMixin } from "chrome://browser/content/aiwindow/components/SmartwindowOverflowRow.mjs";
+import { SmartwindowOverflowRowMixin } from "chrome://browser/content/aiwindow/components/smartwindow-overflow-row.mjs";
 
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/aiwindow/components/smartwindow-chip.mjs";

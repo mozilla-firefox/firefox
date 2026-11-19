@@ -6,7 +6,7 @@
  * @import { MockLLMEngine, MockedResponse } from "../../../../toolkit/components/ml/tests/MLTestUtils.sys.mjs"
  * @import { ModelFeature } from "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs"
  * @import { HttpServer } from "resource://testing-common/httpd.sys.mjs"
- * @import { SmartbarAction } from "chrome://browser/content/aiwindow/components/input-cta/input-cta.mjs"
+ * @import { SmartbarAction } from "chrome://browser/content/aiwindow/components/input-cta.mjs"
  * @import { ChatConversation } from "moz-src:///browser/components/aiwindow/ui/modules/ChatConversation.sys.mjs"
  */
 
