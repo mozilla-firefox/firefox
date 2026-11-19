@@ -20789,11 +20789,7 @@
 # When true, right-clicking selects the word/link under the cursor.
 - name: ui.mouse.right_click.select_under_cursor
   type: bool
-#ifdef XP_MACOSX
-  value: @IS_NIGHTLY_BUILD@
-#else
-  value: false
-#endif
+  value: @IS_XP_MACOSX@
   mirror: always
 
 # When true, right-clicking selects the word under the cursor in editable
