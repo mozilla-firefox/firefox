@@ -19,6 +19,7 @@ from gecko_taskgraph.transforms.task import (
     build_generic_worker_payload,
     check_run_task_caches,
     get_default_priority,
+    get_source_git_env,
     get_treeherder_link,
     get_treeherder_project,
     try_task_config_env,
@@ -179,6 +180,56 @@ def test_get_treeherder_link():
     link = get_treeherder_link(config)
     expected_link = f"{TREEHERDER_ROOT_URL}/#/jobs?repo={repo}&revision={params['head_rev']}&selectedTaskRun=<self>"
     assert link == expected_link
+
+
+@pytest.mark.parametrize(
+    "params,expected",
+    (
+        pytest.param(
+            {
+                "repository_type": "git",
+                "head_repository": "https://github.com/mozilla-firefox/firefox-dev",
+                "head_rev": "abc123",
+            },
+            {
+                "MOZ_SOURCE_GIT_REPO": "https://github.com/mozilla-firefox/firefox-dev",
+                "MOZ_SOURCE_GIT_CHANGESET": "abc123",
+            },
+            id="native-git-repo",
+        ),
+        pytest.param(
+            {
+                "repository_type": "hg",
+                "head_repository": "https://hg.mozilla.org/try",
+                "head_rev": "deadbeef",
+                "head_git_repository": "https://github.com/mozilla-firefox/firefox",
+                "head_git_rev": "abc123",
+            },
+            {
+                "MOZ_SOURCE_GIT_REPO": "https://github.com/mozilla-firefox/firefox",
+                "MOZ_SOURCE_GIT_CHANGESET": "abc123",
+            },
+            id="hg-repo-with-mirror",
+        ),
+        pytest.param(
+            {
+                "repository_type": "hg",
+                "head_repository": "https://hg.mozilla.org/try",
+                "head_rev": "deadbeef",
+                "head_git_repository": None,
+                "head_git_rev": None,
+            },
+            {},
+            id="hg-repo-without-mirror",
+        ),
+    ),
+)
+def test_get_source_git_env(params, expected):
+    config = FakeTransformConfig(
+        params=FakeParameters(params),
+        graph_config={"project-repo-param-prefix": ""},
+    )
+    assert get_source_git_env(config) == expected
 
 
 @pytest.mark.parametrize(
