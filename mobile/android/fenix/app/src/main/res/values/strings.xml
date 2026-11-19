@@ -3010,6 +3010,10 @@
     <string name="preferences_credit_cards_save_and_autofill_cards_2">Save and fill payment methods</string>
     <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
     <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s encrypts all payment methods you save</string>
+    <!-- Preference for saving the security codes of credit cards. -->
+    <string name="preferences_credit_cards_save_security_codes">Save security codes</string>
+    <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+    <string name="preferences_credit_cards_save_security_codes_summary">%s encrypts your card number and security code for faster payments later</string>
     <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
     <string name="preferences_credit_cards_sync_cards_across_devices">Sync cards across devices</string>
     <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->

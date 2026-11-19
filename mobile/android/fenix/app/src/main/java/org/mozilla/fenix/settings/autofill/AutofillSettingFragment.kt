@@ -75,6 +75,7 @@ class AutofillSettingFragment : BiometricPromptPreferenceFragment(), SystemInset
     private val creditCardPreferences: List<Int> =
         listOf(
             R.string.pref_key_credit_cards_save_and_autofill_cards,
+            R.string.pref_key_credit_cards_save_security_code,
             R.string.pref_key_credit_cards_sync_cards_across_devices,
             R.string.pref_key_credit_cards_manage_cards,
         )
@@ -123,6 +124,7 @@ class AutofillSettingFragment : BiometricPromptPreferenceFragment(), SystemInset
         )
 
         updateSaveAndAutofillCardsSwitch()
+        updateSaveSecurityCodesSwitch()
 
         if (requireComponents.settings.addressFeature) {
             updateSaveAndAutofillAddressesSwitch()
@@ -133,6 +135,28 @@ class AutofillSettingFragment : BiometricPromptPreferenceFragment(), SystemInset
     internal fun updateSaveAndAutofillCardsSwitch() {
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_credit_cards_save_and_autofill_cards).apply {
             isChecked = context.components.settings.shouldAutofillCreditCardDetails
+            onPreferenceChangeListener =
+                object : SharedPreferenceUpdater() {
+                    override fun onPreferenceChange(preference: Preference, newValue: Any?): Boolean {
+                        val changed = super.onPreferenceChange(preference, newValue)
+                        updateSaveSecurityCodesSwitch()
+                        return changed
+                    }
+                }
+        }
+    }
+
+    /**
+     * Shows the "Save security codes" switch when saving security codes is enabled, and updates its state depending on
+     * the saved user preference.
+     */
+    internal fun updateSaveSecurityCodesSwitch() {
+        val settings = requireComponents.settings
+        requirePreference<SwitchPreferenceCompat>(R.string.pref_key_credit_cards_save_security_code).apply {
+            isVisible = settings.isCreditCardSecurityCodeEnabled
+            isChecked = settings.shouldAutofillCreditCardDetails && settings.shouldSaveCreditCardSecurityCode
+            summary =
+                getString(R.string.preferences_credit_cards_save_security_codes_summary, getString(R.string.app_name))
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
     }

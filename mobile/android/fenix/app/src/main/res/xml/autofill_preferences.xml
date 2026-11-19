@@ -32,6 +32,11 @@
             android:key="@string/pref_key_credit_cards_save_and_autofill_cards"
             android:summary="@string/preferences_credit_cards_save_and_autofill_cards_summary_2"
             android:title="@string/preferences_credit_cards_save_and_autofill_cards_2" />
+        <SwitchPreferenceCompat
+            android:dependency="@string/pref_key_credit_cards_save_and_autofill_cards"
+            android:key="@string/pref_key_credit_cards_save_security_code"
+            android:persistent="false"
+            android:title="@string/preferences_credit_cards_save_security_codes" />
         <org.mozilla.fenix.settings.SyncPreference
             android:key="@string/pref_key_credit_cards_sync_cards_across_devices"
             android:title="@string/preferences_credit_cards_sync_cards_across_devices"
