@@ -183,16 +183,23 @@ static PRInt32 PR_CALLBACK MockNetworkRecvFrom(PRFileDesc* fd, void* buf,
 
   MockNetworkSecret* secret = reinterpret_cast<MockNetworkSecret*>(fd->secret);
   SOCKET_LOG(("MockNetworkRecvFrom %p\n", secret));
+  // addr is only filled in by the lower layer, so receive first and then drop
+  // the datagram if its sender is blocked.
+  PRInt32 count = (fd->lower->methods->recvfrom)(fd->lower, buf, amount, flags,
+                                                 addr, timeout);
+  if (count < 0) {
+    return count;
+  }
   mozilla::net::NetAddr netAddr(addr);
   if (FindBlockedUDPAddr(netAddr)) {
     nsAutoCString addrPort;
     netAddr.ToAddrPortString(addrPort);
     SOCKET_LOG(("MockNetworkRecvFrom %p addr [%s] is blocked", secret,
                 addrPort.get()));
-    return PR_SUCCESS;
+    PR_SetError(PR_WOULD_BLOCK_ERROR, 0);
+    return -1;
   }
-  return (fd->lower->methods->recvfrom)(fd->lower, buf, amount, flags, addr,
-                                        timeout);
+  return count;
 }
 
 nsresult AttachMockNetworkLayer(PRFileDesc* fd) {
