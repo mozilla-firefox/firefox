@@ -8,6 +8,7 @@ import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,18 +23,32 @@ class CollectionsMigrationCardMiddlewareTest {
     @get:Rule val gleanTestRule = FenixGleanTestRule(testContext)
 
     @Test
-    fun `WHEN ViewTabGroupsClicked action is dispatched THEN update card visibility preference and record promo click telemetry`() {
+    fun `WHEN ViewTabGroupsClicked action is dispatched THEN update card visibility preference`() {
         val repository = FakeCollectionsMigrationRepository(cardVisible = true)
         val store =
             CollectionsMigrationCardStore(
                 initialState = CollectionsMigrationCardState(visible = true),
                 middleware = listOf(CollectionsMigrationCardMiddleware(repository)),
             )
-        assertNull(CollectionsMigration.promoClick.testGetValue())
 
         store.dispatch(CollectionsMigrationCardAction.ViewTabGroupsClicked)
 
         assertFalse(repository.shouldShowCollectionsMigrationCard())
+    }
+
+    @Ignore("Bug 2095162: collections_migration probes expired in 163")
+    @Test
+    fun `WHEN ViewTabGroupsClicked action is dispatched THEN record promo click telemetry`() {
+        val store =
+            CollectionsMigrationCardStore(
+                initialState = CollectionsMigrationCardState(visible = true),
+                middleware =
+                    listOf(CollectionsMigrationCardMiddleware(FakeCollectionsMigrationRepository(cardVisible = true))),
+            )
+        assertNull(CollectionsMigration.promoClick.testGetValue())
+
+        store.dispatch(CollectionsMigrationCardAction.ViewTabGroupsClicked)
+
         assertEquals(1, CollectionsMigration.promoClick.testGetValue()!!.size)
     }
 }
