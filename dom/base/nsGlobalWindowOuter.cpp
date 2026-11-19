@@ -5088,14 +5088,6 @@ Nullable<WindowProxyHolder> nsGlobalWindowOuter::Print(
   }
 
   RefPtr<Document> docToPrint = mDoc;
-  if (docToPrint) {
-    // This is needed so that lazily created shadow trees like <input>'s get
-    // cloned into the static document if needed.
-    // FIXME(emilio): Might want to differentiate between JS and non-JS widgets
-    // instead.
-    docToPrint->FlushPendingNotifications(FlushType::Layout);
-    docToPrint = mDoc;
-  }
   if (NS_WARN_IF(!docToPrint)) {
     aError.ThrowNotSupportedError("Document is gone");
     return nullptr;
