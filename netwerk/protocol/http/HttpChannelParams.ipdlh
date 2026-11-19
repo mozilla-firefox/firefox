@@ -35,9 +35,10 @@ struct HttpChannelOnStartRequestArgs
   NetAddr peerAddr;
   ResourceTimingStructArgs timing;
   ParentLoadInfoForwarderArgs loadInfoForwarder;
-  // Only set for channels connected to an early hint preload, whose redirects
-  // were followed in the parent without the child being notified.
+  // Only set for channels connected to an early hint preload, whose
+  // redirects were followed in the parent without the child being notified.
   nullable nsIURI earlyHintResultPrincipalURI;
+  nullable nsIURI earlyHintFinalURI;
   nsresult channelStatus;
   TRRMode effectiveTRRMode;
   TRRSkippedReason trrSkipReason;
