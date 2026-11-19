@@ -122,10 +122,16 @@
         <desktop:Extension Category="windows.toastNotificationActivation">
           <desktop:ToastNotificationActivation ToastActivatorCLSID="@MOZ_INOTIFICATIONACTIVATION_CLSID@" />
         </desktop:Extension>
-        <!-- Required for FullTrustProcessLauncher. See
-             launch_full_trust in toolkit/mozapps/msixcomserver-rust. -->
+        <!-- Required for FullTrustProcessLauncher. Every background task
+             needs its own ParameterGroup. See launch_full_trust in
+             toolkit/mozapps/msixcomserver-rust. -->
         <desktop:Extension Category="windows.fullTrustProcess"
-                           Executable="VFS\ProgramFiles\@APPX_INSTDIR@\@MOZ_APP_NAME@.exe" />
+                           Executable="VFS\ProgramFiles\@APPX_INSTDIR@\@MOZ_APP_NAME@.exe">
+          <desktop:FullTrustProcess>
+            <desktop:ParameterGroup GroupId="defaultagent-do-task"
+                                    Parameters="--backgroundtask defaultagent do-task" />
+          </desktop:FullTrustProcess>
+        </desktop:Extension>
       </Extensions>
     </Application>
   </Applications>

@@ -1,0 +1,20 @@
+<!doctype html>
+<html class="test-wait">
+<link rel="help" href="https://bugzilla.mozilla.org/show_bug.cgi?id=2094903">
+<script>
+window.addEventListener("message", () => document.documentElement.removeAttribute("class"));
+window.addEventListener("load", () => {
+  const f = document.createElement("frame");
+  document.documentElement.appendChild(f);
+  f.src = URL.createObjectURL(new Blob([`<script>
+    window.addEventListener("afterprint", () => parent.postMessage("done", "*"));
+    window.addEventListener("load", () => {
+      const i = document.createElement("input");
+      document.documentElement.appendChild(i);
+      i.appendChild(document.createElement("div"));
+      print();
+    });
+  <\/script>`], {type: "text/html"}));
+});
+</script>
+</html>

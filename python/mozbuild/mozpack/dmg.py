@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import platform
+import plistlib
 import shutil
 import subprocess
 from pathlib import Path
@@ -77,6 +78,93 @@ def create_app_symlink(stagedir: Path, tmpdir: Path, hfs_tool: Path = None):
         os.symlink("/Applications", stagedir / " ")
 
 
+def create_dmg_with_diskutil(
+    stagedir: Path,
+    output_dmg: Path,
+    tmpdir: Path,
+    volume_name: str,
+    compression: str,
+):
+    """
+    Produce a DMG at output_dmg from stagedir with `diskutil image`.
+
+    diskutil can't create an HFS+ image straight from a folder, so create a blank
+    image, partition it, format it as HFS+, copy stagedir into it and convert it.
+    diskutil doesn't support bzip2 (UDBZ) either, use zlib instead, as
+    libdmg-hfsplus doesn't support lzfse (ULFO).
+    """
+    format = "ULMO" if compression == "lzma" else "UDZO"
+    hfs = tmpdir / "staged.img"
+    mountpoint = tmpdir / "mnt"
+    mountpoint.mkdir()
+    # Twice the size of stagedir leaves enough room for the HFS+ metadata, and the
+    # free space compresses away when converting.
+    size = 2 * int(subprocess.check_output(["du", "-sk", stagedir]).split()[0])
+    subprocess.check_call(
+        ["diskutil", "image", "create", "blank", "--fs", "None"]
+        + ["--size", f"{size}k", hfs],
+        stdout=subprocess.DEVNULL,
+    )
+    # Attach it without mounting it, to get its device.
+    attach = subprocess.check_output([
+        "diskutil",
+        "image",
+        "attach",
+        "--plist",
+        "--noMount",
+        hfs,
+    ])
+    # The image has no partition table yet, so it is a single entity.
+    (entity,) = plistlib.loads(attach)["system-entities"]
+    disk = entity["dev-entry"]
+    population_succeeded = False
+    try:
+        # Create an Apple partition map with a single HFS+ partition, like hdiutil
+        # does. libdmg-hfsplus can't find the HFS+ volume of an image without it.
+        # %noformat% leaves it unformatted and unmounted.
+        subprocess.check_call(
+            ["diskutil", "partitionDisk", disk, "1", "APM"]
+            + ["HFS+", "%noformat%", "R"],
+            stdout=subprocess.DEVNULL,
+        )
+        # The HFS+ partition comes after the partition map.
+        partitions = plistlib.loads(
+            subprocess.check_output(["diskutil", "list", "-plist", disk])
+        )["AllDisksAndPartitions"][0]["Partitions"]
+        device = partitions[-1]["DeviceIdentifier"]
+        subprocess.check_call(
+            ["newfs_hfs", "-v", volume_name, device],
+            stdout=subprocess.DEVNULL,
+        )
+        subprocess.check_call(
+            ["diskutil", "mount", "nobrowse", "-mountPoint", mountpoint, device],
+            stdout=subprocess.DEVNULL,
+        )
+        subprocess.check_call(["ditto", stagedir, mountpoint])
+        # ditto doesn't copy the custom icon attribute of stagedir itself.
+        # No -hfs-openfolder equivalent: `bless --openfolder` isn't supported on
+        # Apple Silicon.
+        set_folder_icon(mountpoint, tmpdir)
+        population_succeeded = True
+    finally:
+        # Don't let an eject failure hide the original error.
+        subprocess.run(
+            ["diskutil", "eject", disk],
+            stdout=subprocess.DEVNULL,
+            check=population_succeeded,
+        )
+
+    # diskutil reports progress on stderr, only show it on failure.
+    result = subprocess.run(
+        ["diskutil", "image", "create", "from", "--format", format, hfs, output_dmg],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode:
+        raise Exception(f"diskutil failed: {result.stderr}")
+
+
 def create_dmg_from_staged(
     stagedir: Path,
     output_dmg: Path,
@@ -132,6 +220,10 @@ def create_dmg_from_staged(
             # dmg is seriously chatty
             stdout=subprocess.DEVNULL,
         )
+    elif is_osx and int(platform.mac_ver()[0].split(".")[0]) >= 27:
+        # hdiutil is deprecated in favor of `diskutil image` as of macOS 27, which
+        # doesn't exist before macOS 26.
+        create_dmg_with_diskutil(stagedir, output_dmg, tmpdir, volume_name, compression)
     elif is_osx:
         format = "UDBZ"
         if compression == "lzma":

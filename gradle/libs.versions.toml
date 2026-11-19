@@ -73,8 +73,7 @@ dependency-analysis = "3.20.0"
 jacoco = "0.8.16"
 kaml = "0.104.0"
 protobuf-plugin = "0.10.0"
-scip-javac = "0.13.2"
-scip-kotlinc = "0.13.2"
+scip-java = "0.14.2"
 tomlj = "2.2.0"
 
 # Linters
@@ -255,8 +254,8 @@ protobuf-javalite = { module = "com.google.protobuf:protobuf-javalite", version.
 
 # Gradle plugins
 kaml = { module = "com.charleskorn.kaml:kaml", version.ref = "kaml" }
-scip-java = { module = "org.scip-code:scip-javac", version.ref = "scip-javac" }
-scip-kotlin = { module = "org.scip-code:scip-kotlinc", version.ref = "scip-kotlinc" }
+scip-javac = { module = "org.scip-code:scip-javac", version.ref = "scip-java" }
+scip-kotlin-analysis = { module = "org.scip-code:scip-kotlin-analysis", version.ref = "scip-java" }
 tomlj = { module = "org.tomlj:tomlj", version.ref = "tomlj" }
 
 # Linters

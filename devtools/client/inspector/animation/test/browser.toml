@@ -20,6 +20,7 @@ support-files = [
   "doc_short_duration.html",
   "doc_simple_animation.html",
   "doc_special_colors.html",
+  "doc_zero_playback_rate.html",
   "head.js",
   "keyframes-graph_keyframe-marker_head.js",
   "summary-graph_computed-timing-path_head.js",
@@ -277,3 +278,8 @@ fail-if = [
 ]
 
 ["browser_animation_timing_negative-playback-rate_summary-graph.js"]
+
+["browser_animation_timing_zero-playback-rate.js"]
+fail-if = [
+  "a11y_checks", # Bug 1849028 clicked element may not be focusable and/or labeled
+]

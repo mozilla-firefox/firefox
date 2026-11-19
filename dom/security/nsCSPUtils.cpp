@@ -623,16 +623,6 @@ bool nsCSPBaseSrc::permits(nsIURI* aUri, bool aWasRedirected, bool aReportOnly,
   return false;
 }
 
-// ::allows is only called for inlined loads, therefore:
-// nsCSPSchemeSrc, nsCSPHostSrc fall back
-// to this base class implementation which will never allow the load.
-bool nsCSPBaseSrc::allows(enum CSPKeyword aKeyword) const {
-  CSPUTILSLOG(
-      ("nsCSPBaseSrc::allows, aKeyWord: %s",
-       aKeyword == CSP_HASH ? "hash" : CSP_EnumToUTF8Keyword(aKeyword)));
-  return false;
-}
-
 /* ====== nsCSPSchemeSrc ===================== */
 
 nsCSPSchemeSrc::nsCSPSchemeSrc(const nsAString& aScheme) : mScheme(aScheme) {
@@ -937,12 +927,6 @@ nsCSPKeywordSrc::nsCSPKeywordSrc(enum CSPKeyword aKeyword)
 }
 
 nsCSPKeywordSrc::~nsCSPKeywordSrc() = default;
-
-bool nsCSPKeywordSrc::allows(enum CSPKeyword aKeyword) const {
-  CSPUTILSLOG(("nsCSPKeywordSrc::allows, aKeyWord: %s",
-               CSP_EnumToUTF8Keyword(aKeyword)));
-  return mKeyword == aKeyword;
-}
 
 bool nsCSPKeywordSrc::visit(nsCSPSrcVisitor* aVisitor) const {
   return aVisitor->visitKeywordSrc(*this);
@@ -1388,8 +1372,8 @@ bool nsCSPDirective::allows(enum CSPKeyword aKeyword) const {
   CSPUTILSLOG(("nsCSPDirective::allows, aKeyWord: %s",
                CSP_EnumToUTF8Keyword(aKeyword)));
 
-  for (uint32_t i = 0; i < mSrcs.Length(); i++) {
-    if (mSrcs[i]->allows(aKeyword)) {
+  for (const nsCSPBaseSrc* src : mSrcs) {
+    if (src->isKeyword(aKeyword)) {
       return true;
     }
   }

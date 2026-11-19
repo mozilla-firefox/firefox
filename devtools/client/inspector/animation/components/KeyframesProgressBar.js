@@ -59,7 +59,8 @@ class KeyframesProgressBar extends PureComponent {
   }
 
   updateOffset(currentTime, animation, timeScale) {
-    const { createdTime, playbackRate } = animation.state;
+    const { createdTime } = animation.state;
+    const { playbackRate } = animation.state.absoluteValues;
 
     const time =
       (timeScale.minStartTime + currentTime - createdTime) * playbackRate;

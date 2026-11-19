@@ -4,6 +4,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #define GTEST_HAS_RTTI 0
+#include "AudioConduit.h"
 #include "Canonicals.h"
 #include "ImageContainer.h"
 #include "MockCall.h"
@@ -15,6 +16,7 @@
 #include "api/video/video_sink_interface.h"
 #include "gtest/gtest.h"
 #include "media/base/media_constants.h"
+#include "mozilla/Span.h"
 #include "nss.h"
 
 using namespace mozilla;
@@ -2634,6 +2636,90 @@ TEST_F(VideoConduitTest, TestRemoteRtxSsrc) {
       Call()->mVideoReceiveConfig->rtp.rtx_associated_payload_types.size(), 0U);
   EXPECT_EQ(Call()->mVideoReceiveConfig->rtp.remote_ssrc, 2U);
   EXPECT_EQ(Call()->mVideoReceiveConfig->rtp.rtx_ssrc, 0U);
+}
+
+TEST_F(VideoConduitTest, TestNetworkStateFollowsTransportReadiness) {
+  mControl.Update([&](auto& aControl) {
+    aControl.mTransmitting = true;
+    VideoCodecConfig codecConfig(120, "VP8", VideoEncodingConstraints());
+    codecConfig.mEncodings.emplace_back();
+    aControl.mVideoSendCodec = Some(codecConfig);
+    aControl.mVideoSendRtpRtcpConfig =
+        Some(RtpRtcpConfig(webrtc::RtcpMode::kCompound, true));
+  });
+  ASSERT_TRUE(Call()->mVideoSendEncoderConfig);
+  NS_ProcessPendingEvents(nullptr);
+  auto& signals = Call()->mNetworkStateSignals;
+  EXPECT_TRUE(signals.IsEmpty());
+
+  mVideoConduit->SetTransportActive(true);
+  NS_ProcessPendingEvents(nullptr);
+  EXPECT_THAT(Span(signals), ElementsAre(FieldsAre(webrtc::MediaType::VIDEO,
+                                                   webrtc::kNetworkUp)));
+  signals.Clear();
+
+  mVideoConduit->SetTransportActive(false);
+  NS_ProcessPendingEvents(nullptr);
+  EXPECT_THAT(Span(signals), ElementsAre(FieldsAre(webrtc::MediaType::VIDEO,
+                                                   webrtc::kNetworkDown)));
+}
+
+TEST_F(VideoConduitTest, TestNetworkStateForAudioAndVideo) {
+  auto audioConduit = MakeRefPtr<WebrtcAudioConduit>(
+      mCallWrapper, GetCurrentSerialEventTarget());
+  mControl.Update([&](auto& aControl) {
+    audioConduit->InitControl(&mControl);
+    aControl.mTransmitting = true;
+    aControl.mAudioSendCodec =
+        Some(AudioCodecConfig(114, "opus", 48000, 2, false));
+    VideoCodecConfig codecConfig(120, "VP8", VideoEncodingConstraints());
+    codecConfig.mEncodings.emplace_back();
+    aControl.mVideoSendCodec = Some(codecConfig);
+    aControl.mVideoSendRtpRtcpConfig =
+        Some(RtpRtcpConfig(webrtc::RtcpMode::kCompound, true));
+  });
+  ASSERT_TRUE(Call()->mAudioSendConfig);
+  ASSERT_TRUE(Call()->mVideoSendEncoderConfig);
+  NS_ProcessPendingEvents(nullptr);
+  auto& signals = Call()->mNetworkStateSignals;
+  EXPECT_TRUE(signals.IsEmpty());
+
+  mVideoConduit->SetTransportActive(true);
+  audioConduit->SetTransportActive(true);
+  NS_ProcessPendingEvents(nullptr);
+  EXPECT_THAT(
+      Span(signals),
+      ElementsAre(FieldsAre(webrtc::MediaType::VIDEO, webrtc::kNetworkUp),
+                  FieldsAre(webrtc::MediaType::AUDIO, webrtc::kNetworkUp)));
+  signals.Clear();
+
+  mVideoConduit->SetTransportActive(false);
+  audioConduit->SetTransportActive(false);
+  NS_ProcessPendingEvents(nullptr);
+  EXPECT_THAT(
+      Span(signals),
+      ElementsAre(FieldsAre(webrtc::MediaType::VIDEO, webrtc::kNetworkDown),
+                  FieldsAre(webrtc::MediaType::AUDIO, webrtc::kNetworkDown)));
+  signals.Clear();
+
+  audioConduit->SetTransportActive(true);
+  mVideoConduit->SetTransportActive(true);
+  NS_ProcessPendingEvents(nullptr);
+  EXPECT_THAT(
+      Span(signals),
+      ElementsAre(FieldsAre(webrtc::MediaType::AUDIO, webrtc::kNetworkUp),
+                  FieldsAre(webrtc::MediaType::VIDEO, webrtc::kNetworkUp)));
+  signals.Clear();
+
+  audioConduit->SetTransportActive(false);
+  mVideoConduit->SetTransportActive(false);
+  NS_ProcessPendingEvents(nullptr);
+  EXPECT_THAT(
+      Span(signals),
+      ElementsAre(FieldsAre(webrtc::MediaType::AUDIO, webrtc::kNetworkDown),
+                  FieldsAre(webrtc::MediaType::VIDEO, webrtc::kNetworkDown)));
+
+  (void)WaitFor(audioConduit->Shutdown());
 }
 
 }  // End namespace test.

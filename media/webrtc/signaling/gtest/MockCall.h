@@ -6,11 +6,13 @@
 #define MOCK_CALL_H_
 
 #include <span>
+#include <tuple>
 
 #include "gmock/gmock.h"
 #include "mozilla/Assertions.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/media/MediaUtils.h"
+#include "nsTArray.h"
 #include "WebrtcCallWrapper.h"
 #include "WebrtcEnvironmentWrapper.h"
 #include "PeerConnectionCtx.h"
@@ -297,7 +299,9 @@ class MockCall : public webrtc::Call {
   Stats GetStats() const override { return mStats; }
 
   void SignalChannelNetworkState(webrtc::MediaType media,
-                                 webrtc::NetworkState state) override {}
+                                 webrtc::NetworkState state) override {
+    mNetworkStateSignals.EmplaceBack(media, state);
+  }
 
   void OnUpdateSyncGroup(webrtc::AudioReceiveStreamInterface& stream,
                          absl::string_view sync_group) override {}
@@ -344,6 +348,8 @@ class MockCall : public webrtc::Call {
       mVideoReceiveConfig;
   mozilla::Maybe<webrtc::VideoSendStream::Config> mVideoSendConfig;
   mozilla::Maybe<webrtc::VideoEncoderConfig> mVideoSendEncoderConfig;
+  nsTArray<std::tuple<webrtc::MediaType, webrtc::NetworkState>>
+      mNetworkStateSignals;
   webrtc::Call::Stats mStats;
   webrtc::MozTrialsConfig mUnusedConfig;
   webrtc::VideoEncoder::EncoderInfo mEncoderInfo;

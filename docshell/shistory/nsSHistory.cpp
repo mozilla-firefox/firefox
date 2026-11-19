@@ -621,9 +621,10 @@ void nsSHistory::WalkContiguousEntriesInOrder(
   // Walk backward to find the entries that have the same origin as the
   // input entry.
   RefPtr<SessionHistoryEntry> current = entry;
+  int32_t rootIndex = shistory->GetRootIndexOfEntry(current);
   while (RefPtr previousEntry =
              shistory->FindLeftmostAdjacentContiguousEntryFor(
-                 current, SearchDirection::Left)) {
+                 current, SearchDirection::Left, &rootIndex)) {
     nsCOMPtr<nsIURI> uri =
         previousEntry->GetURIOrInheritedForAboutBlankOrSrcdoc();
     if (NS_FAILED(nsContentUtils::GetSecurityManager()->CheckSameOriginURI(
@@ -646,8 +647,9 @@ void nsSHistory::WalkContiguousEntriesInOrder(
 
   // Walk forward to find the entries that have the same origin as the
   // input entry.
+  rootIndex = shistory->GetRootIndexOfEntry(entry);
   while ((entry = shistory->FindLeftmostAdjacentContiguousEntryFor(
-              entry, SearchDirection::Right))) {
+              entry, SearchDirection::Right, &rootIndex))) {
     nsCOMPtr<nsIURI> uri = entry->GetURIOrInheritedForAboutBlankOrSrcdoc();
     if (NS_FAILED(nsContentUtils::GetSecurityManager()->CheckSameOriginURI(
             targetURI, uri, false, false))) {
@@ -682,11 +684,12 @@ void nsSHistory::WalkClosestContiguousEntriesFrom(
 
   // Walk backward to find the entries that have the same origin as the
   // input entry.
+  int32_t rootIndex = shistory->GetRootIndexOfEntry(entry);
   for (nsCOMPtr<SessionHistoryEntry> current =
            shistory->FindClosestAdjacentContiguousEntryFor(
-               entry, SearchDirection::Left);
+               entry, SearchDirection::Left, &rootIndex);
        current; current = shistory->FindClosestAdjacentContiguousEntryFor(
-                    current, SearchDirection::Left)) {
+                    current, SearchDirection::Left, &rootIndex)) {
     nsCOMPtr<nsIURI> uri = current->GetURIOrInheritedForAboutBlankOrSrcdoc();
     if (NS_FAILED(nsContentUtils::GetSecurityManager()->CheckSameOriginURI(
             targetURI, uri, false, false))) {
@@ -699,11 +702,12 @@ void nsSHistory::WalkClosestContiguousEntriesFrom(
 
   // Walk forward to find the entries that have the same origin as the
   // input entry.
+  rootIndex = shistory->GetRootIndexOfEntry(entry);
   for (nsCOMPtr<SessionHistoryEntry> current =
            shistory->FindClosestAdjacentContiguousEntryFor(
-               entry, SearchDirection::Right);
+               entry, SearchDirection::Right, &rootIndex);
        current; current = shistory->FindClosestAdjacentContiguousEntryFor(
-                    current, SearchDirection::Right)) {
+                    current, SearchDirection::Right, &rootIndex)) {
     nsCOMPtr<nsIURI> uri = current->GetURIOrInheritedForAboutBlankOrSrcdoc();
     if (NS_FAILED(nsContentUtils::GetSecurityManager()->CheckSameOriginURI(
             targetURI, uri, false, false))) {
@@ -2678,9 +2682,16 @@ class SessionHistoryEntryIDComparator {
 
 }  // namespace
 
+int32_t nsSHistory::GetRootIndexOfEntry(
+    mozilla::dom::SessionHistoryEntry* aEntry) {
+  RefPtr<SessionHistoryEntry> root = GetRootSHEntry(aEntry);
+  return GetIndexOfEntry(root);
+}
+
 mozilla::dom::SessionHistoryEntry* nsSHistory::FindAdjacentEntryFor(
-    mozilla::dom::SessionHistoryEntry* aEntry,
-    SearchDirection aSearchDirection) {
+    mozilla::dom::SessionHistoryEntry* aEntry, SearchDirection aSearchDirection,
+    int32_t* aRootIndex) {
+  MOZ_DIAGNOSTIC_ASSERT(aRootIndex);
   MOZ_ASSERT(static_cast<int8_t>(aSearchDirection) == 1 ||
              static_cast<int8_t>(aSearchDirection) == -1);
 
@@ -2698,34 +2709,25 @@ mozilla::dom::SessionHistoryEntry* nsSHistory::FindAdjacentEntryFor(
   }
   ancestors.Reverse();
 
-  nsCOMPtr<nsISHEntry> rootEntry = ancestors.IsEmpty() ? aEntry : ancestors[0];
   nsCOMPtr<nsISHEntry> nextEntry;
   SessionHistoryEntry* foundParent = nullptr;
-  int32_t i =
-      GetIndexOfEntry(rootEntry) + static_cast<int8_t>(aSearchDirection);
+  int32_t i = *aRootIndex + static_cast<int8_t>(aSearchDirection);
   if (i < 0 || i >= Length()) {
     return nullptr;
   }
 
   nextEntry = mEntries[i];
   if (ancestors.IsEmpty()) {
-    // This can happen if we somehow have duplicates in mEntries. This should
-    // ideally never happen, but since it does we need to protect against it.
-    // See bug 2042897.
-    return nextEntry != aEntry
-               ? static_cast<SessionHistoryEntry*>(nextEntry.get())
-               : nullptr;
+    *aRootIndex = i;
+    return static_cast<SessionHistoryEntry*>(nextEntry.get());
   }
 
   foundParent =
       FindParent(ancestors, static_cast<SessionHistoryEntry*>(nextEntry.get()));
   if (foundParent) {
     for (const auto& child : foundParent->Children()) {
-      // As in the ancestors-empty case above, if mEntries has duplicates
-      // (see bug 2042897) the adjacent entry can resolve back to aEntry itself;
-      // returning it would make callers loop forever, so skip it.
-      if (child && child != aEntry &&
-          child->DocshellID() == aEntry->DocshellID()) {
+      if (child && child->DocshellID() == aEntry->DocshellID()) {
+        *aRootIndex = i;
         return child;
       }
     }
@@ -2736,11 +2738,12 @@ mozilla::dom::SessionHistoryEntry* nsSHistory::FindAdjacentEntryFor(
 
 mozilla::dom::SessionHistoryEntry*
 nsSHistory::FindClosestAdjacentContiguousEntryFor(
-    mozilla::dom::SessionHistoryEntry* aEntry,
-    SearchDirection aSearchDirection) {
+    mozilla::dom::SessionHistoryEntry* aEntry, SearchDirection aSearchDirection,
+    int32_t* aRootIndex) {
   for (SessionHistoryEntry* current =
-           FindAdjacentEntryFor(aEntry, aSearchDirection);
-       current; current = FindAdjacentEntryFor(current, aSearchDirection)) {
+           FindAdjacentEntryFor(aEntry, aSearchDirection, aRootIndex);
+       current;
+       current = FindAdjacentEntryFor(current, aSearchDirection, aRootIndex)) {
     if (aEntry->GetID() != current->GetID()) {
       return current;
     }
@@ -2751,11 +2754,12 @@ nsSHistory::FindClosestAdjacentContiguousEntryFor(
 
 mozilla::dom::SessionHistoryEntry*
 nsSHistory::FindLeftmostAdjacentContiguousEntryFor(
-    mozilla::dom::SessionHistoryEntry* aEntry,
-    SearchDirection aSearchDirection) {
+    mozilla::dom::SessionHistoryEntry* aEntry, SearchDirection aSearchDirection,
+    int32_t* aRootIndex) {
   SessionHistoryEntry* current = nullptr;
-  for (current = FindAdjacentEntryFor(aEntry, aSearchDirection); current;
-       current = FindAdjacentEntryFor(current, aSearchDirection)) {
+  for (current = FindAdjacentEntryFor(aEntry, aSearchDirection, aRootIndex);
+       current;
+       current = FindAdjacentEntryFor(current, aSearchDirection, aRootIndex)) {
     if (aEntry->GetID() != current->GetID()) {
       break;
     }
@@ -2765,13 +2769,15 @@ nsSHistory::FindLeftmostAdjacentContiguousEntryFor(
     return current;
   }
 
+  int32_t leftIndex = *aRootIndex;
   while (SessionHistoryEntry* left =
-             FindAdjacentEntryFor(current, aSearchDirection)) {
+             FindAdjacentEntryFor(current, aSearchDirection, &leftIndex)) {
     if (left->GetID() != current->GetID()) {
       break;
     }
 
     current = left;
+    *aRootIndex = leftIndex;
   }
 
   return current;

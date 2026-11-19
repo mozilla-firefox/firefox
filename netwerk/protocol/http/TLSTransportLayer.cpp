@@ -8,6 +8,7 @@
 #include "HttpLog.h"
 #include "nsISocketProvider.h"
 #include "nsITLSSocketControl.h"
+#include "nsProxyRelease.h"
 #include "nsQueryObject.h"
 #include "nsSocketProviderService.h"
 #include "nsSocketTransport2.h"
@@ -399,6 +400,19 @@ TLSTransportLayer::~TLSTransportLayer() {
   mTLSSocketControl = nullptr;
 }
 
+TLSTransportLayer::AutoSocketTransport::AutoSocketTransport(
+    TLSTransportLayer* aLayer) {
+  MutexAutoLock lock(aLayer->mLock);
+  mTransport = aLayer->mSocketTransport;
+}
+
+TLSTransportLayer::AutoSocketTransport::~AutoSocketTransport() {
+  if (mTransport && !OnSocketThread()) {
+    NS_ProxyRelease("TLSTransportLayer::AutoSocketTransport",
+                    gSocketTransportService, mTransport.forget());
+  }
+}
+
 bool TLSTransportLayer::Init(const char* aTLSHost, int32_t aTLSPort,
                              const OriginAttributes& aOriginAttributes,
                              uint32_t aFlags, uint32_t aTlsFlags) {
@@ -491,39 +505,42 @@ TLSTransportLayer::OnOutputStreamReady(nsIAsyncOutputStream* out) {
 
 NS_IMETHODIMP
 TLSTransportLayer::SetKeepaliveEnabled(bool aKeepaliveEnabled) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->SetKeepaliveEnabled(aKeepaliveEnabled);
+  return transport->SetKeepaliveEnabled(aKeepaliveEnabled);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::SetKeepaliveVals(int32_t keepaliveIdleTime,
                                     int32_t keepaliveRetryInterval) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->SetKeepaliveVals(keepaliveIdleTime,
-                                            keepaliveRetryInterval);
+  return transport->SetKeepaliveVals(keepaliveIdleTime, keepaliveRetryInterval);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::GetSecurityCallbacks(
     nsIInterfaceRequestor** aSecurityCallbacks) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->GetSecurityCallbacks(aSecurityCallbacks);
+  return transport->GetSecurityCallbacks(aSecurityCallbacks);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::SetSecurityCallbacks(
     nsIInterfaceRequestor* aSecurityCallbacks) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
 
-  return mSocketTransport->SetSecurityCallbacks(aSecurityCallbacks);
+  return transport->SetSecurityCallbacks(aSecurityCallbacks);
 }
 
 NS_IMETHODIMP
@@ -555,9 +572,13 @@ TLSTransportLayer::Close(nsresult aReason) {
 
   mInputCallback = nullptr;
   mOutputCallback = nullptr;
-  if (mSocketTransport) {
-    mSocketTransport->Close(aReason);
-    mSocketTransport = nullptr;
+  nsCOMPtr<nsISocketTransport> transport;
+  {
+    MutexAutoLock lock(mLock);
+    transport = std::move(mSocketTransport);
+  }
+  if (transport) {
+    transport->Close(aReason);
   }
   mSocketInWrapper.AsyncWait(nullptr, 0, 0, nullptr);
   mSocketInWrapper.CloseWithStatus(aReason);
@@ -586,79 +607,89 @@ TLSTransportLayer::Close(nsresult aReason) {
 NS_IMETHODIMP
 TLSTransportLayer::SetEventSink(nsITransportEventSink* aSink,
                                 nsIEventTarget* aEventTarget) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->SetEventSink(aSink, aEventTarget);
+  return transport->SetEventSink(aSink, aEventTarget);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::Bind(NetAddr* aLocalAddr) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->Bind(aLocalAddr);
+  return transport->Bind(aLocalAddr);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::GetEchConfigUsed(bool* aEchConfigUsed) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->GetEchConfigUsed(aEchConfigUsed);
+  return transport->GetEchConfigUsed(aEchConfigUsed);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::SetEchConfig(const nsACString& aEchConfig) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->SetEchConfig(aEchConfig);
+  return transport->SetEchConfig(aEchConfig);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::ResolvedByTRR(bool* aResolvedByTRR) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->ResolvedByTRR(aResolvedByTRR);
+  return transport->ResolvedByTRR(aResolvedByTRR);
 }
 
 NS_IMETHODIMP TLSTransportLayer::GetEffectiveTRRMode(
     nsIRequest::TRRMode* aEffectiveTRRMode) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->GetEffectiveTRRMode(aEffectiveTRRMode);
+  return transport->GetEffectiveTRRMode(aEffectiveTRRMode);
 }
 
 NS_IMETHODIMP TLSTransportLayer::GetTrrSkipReason(
     nsITRRSkipReason::value* aTrrSkipReason) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->GetTrrSkipReason(aTrrSkipReason);
+  return transport->GetTrrSkipReason(aTrrSkipReason);
 }
 
-#define FWD_TS_PTR(fx, ts)                          \
-  NS_IMETHODIMP                                     \
-  TLSTransportLayer::fx(ts* arg) {                  \
-    if (!mSocketTransport) return NS_ERROR_FAILURE; \
-    return mSocketTransport->fx(arg);               \
+#define FWD_TS_PTR(fx, ts)                   \
+  NS_IMETHODIMP                              \
+  TLSTransportLayer::fx(ts* arg) {           \
+    AutoSocketTransport transport(this);     \
+    if (!transport) return NS_ERROR_FAILURE; \
+    return transport->fx(arg);               \
   }
 
-#define FWD_TS_ADDREF(fx, ts)                       \
-  NS_IMETHODIMP                                     \
-  TLSTransportLayer::fx(ts** arg) {                 \
-    if (!mSocketTransport) return NS_ERROR_FAILURE; \
-    return mSocketTransport->fx(arg);               \
+#define FWD_TS_ADDREF(fx, ts)                \
+  NS_IMETHODIMP                              \
+  TLSTransportLayer::fx(ts** arg) {          \
+    AutoSocketTransport transport(this);     \
+    if (!transport) return NS_ERROR_FAILURE; \
+    return transport->fx(arg);               \
   }
 
-#define FWD_TS(fx, ts)                              \
-  NS_IMETHODIMP                                     \
-  TLSTransportLayer::fx(ts arg) {                   \
-    if (!mSocketTransport) return NS_ERROR_FAILURE; \
-    return mSocketTransport->fx(arg);               \
+#define FWD_TS(fx, ts)                       \
+  NS_IMETHODIMP                              \
+  TLSTransportLayer::fx(ts arg) {            \
+    AutoSocketTransport transport(this);     \
+    if (!transport) return NS_ERROR_FAILURE; \
+    return transport->fx(arg);               \
   }
 
 FWD_TS_PTR(GetKeepaliveEnabled, bool);
@@ -692,110 +723,121 @@ nsresult TLSTransportLayer::GetTlsSocketControl(
 
 nsresult TLSTransportLayer::GetOriginAttributes(
     mozilla::OriginAttributes* aOriginAttributes) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->GetOriginAttributes(aOriginAttributes);
+  return transport->GetOriginAttributes(aOriginAttributes);
 }
 
 nsresult TLSTransportLayer::SetOriginAttributes(
     const mozilla::OriginAttributes& aOriginAttributes) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->SetOriginAttributes(aOriginAttributes);
+  return transport->SetOriginAttributes(aOriginAttributes);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::GetScriptableOriginAttributes(
     JSContext* aCx, JS::MutableHandle<JS::Value> aOriginAttributes) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->GetScriptableOriginAttributes(aCx,
-                                                         aOriginAttributes);
+  return transport->GetScriptableOriginAttributes(aCx, aOriginAttributes);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::SetScriptableOriginAttributes(
     JSContext* aCx, JS::Handle<JS::Value> aOriginAttributes) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->SetScriptableOriginAttributes(aCx,
-                                                         aOriginAttributes);
+  return transport->SetScriptableOriginAttributes(aCx, aOriginAttributes);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::GetHost(nsACString& aHost) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->GetHost(aHost);
+  return transport->GetHost(aHost);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::GetTimeout(uint32_t aType, uint32_t* _retval) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->GetTimeout(aType, _retval);
+  return transport->GetTimeout(aType, _retval);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::SetTimeout(uint32_t aType, uint32_t aValue) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->SetTimeout(aType, aValue);
+  return transport->SetTimeout(aType, aValue);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::SetReuseAddrPort(bool aReuseAddrPort) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->SetReuseAddrPort(aReuseAddrPort);
+  return transport->SetReuseAddrPort(aReuseAddrPort);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::SetLinger(bool aPolarity, int16_t aTimeout) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->SetLinger(aPolarity, aTimeout);
+  return transport->SetLinger(aPolarity, aTimeout);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::GetQoSBits(uint8_t* aQoSBits) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->GetQoSBits(aQoSBits);
+  return transport->GetQoSBits(aQoSBits);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::SetQoSBits(uint8_t aQoSBits) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->SetQoSBits(aQoSBits);
+  return transport->SetQoSBits(aQoSBits);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::GetRetryDnsIfPossible(bool* aRetry) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->GetRetryDnsIfPossible(aRetry);
+  return transport->GetRetryDnsIfPossible(aRetry);
 }
 
 NS_IMETHODIMP
 TLSTransportLayer::GetStatus(nsresult* aStatus) {
-  if (!mSocketTransport) {
+  AutoSocketTransport transport(this);
+  if (!transport) {
     return NS_ERROR_FAILURE;
   }
-  return mSocketTransport->GetStatus(aStatus);
+  return transport->GetStatus(aStatus);
 }
 
 int32_t TLSTransportLayer::OutputInternal(const char* aBuf, int32_t aAmount) {
@@ -835,7 +877,7 @@ int32_t TLSTransportLayer::InputInternal(char* aBuf, int32_t aAmount) {
 PRStatus TLSTransportLayer::GetPeerName(PRFileDesc* aFD, PRNetAddr* addr) {
   TLSTransportLayer* self = reinterpret_cast<TLSTransportLayer*>(aFD->secret);
   NetAddr peeraddr;
-  if (NS_FAILED(self->Transport()->GetPeerAddr(&peeraddr))) {
+  if (NS_FAILED(self->GetPeerAddr(&peeraddr))) {
     return PR_FAILURE;
   }
   NetAddrToPRNetAddr(&peeraddr, addr);

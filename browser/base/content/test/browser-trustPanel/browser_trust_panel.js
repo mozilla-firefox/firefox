@@ -435,7 +435,7 @@ add_task(async function test_blocked_list_is_cumulative_across_same_site_nav() {
   await UrlClassifierTestUtils.cleanupTestTrackers();
 });
 
-add_task(async function test_blocked_list_not_cumulative_when_disabled() {
+add_task(async function test_blocked_list_stays_cumulative_when_toggled_off() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.urlbar.trackerCount.enabled", false],
@@ -507,14 +507,97 @@ add_task(async function test_blocked_list_not_cumulative_when_disabled() {
 
   Assert.equal(
     parseInt(cryptominerButton.textContent, 10),
-    1,
-    "The blocked list is not cumulative across same-site navigations when the tracker count feature is disabled"
+    2,
+    "The blocked list stays cumulative across same-site navigations when the address bar pill is turned off"
   );
 
   BrowserTestUtils.removeTab(tab);
   await SpecialPowers.popPrefEnv();
   await UrlClassifierTestUtils.cleanupTestTrackers();
 });
+
+add_task(
+  async function test_blocked_list_not_cumulative_when_feature_gate_is_off() {
+    await SpecialPowers.pushPrefEnv({
+      set: [
+        ["browser.urlbar.trackerCount.featureGate", false],
+        [
+          "urlclassifier.features.cryptomining.blacklistHosts",
+          "cryptomining.example.com",
+        ],
+        [
+          "urlclassifier.features.cryptomining.annotate.blacklistHosts",
+          "cryptomining.example.com",
+        ],
+      ],
+    });
+    await UrlClassifierTestUtils.addTestHostsFromPrefs();
+
+    const tab = await BrowserTestUtils.openNewForegroundTab({
+      gBrowser,
+      opening: TRACKING_PAGE,
+      waitForLoad: true,
+    });
+
+    await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+      content.postMessage("cryptomining", "*");
+    });
+    await TestUtils.waitForCondition(
+      () =>
+        tab.linkedBrowser
+          .getContentBlockingLog()
+          .includes("cryptomining.example.com"),
+      "Waiting for the cryptominer to be blocked on the first page"
+    );
+
+    // Navigate within the same site and block the same cryptominer again.
+    const loaded = BrowserTestUtils.browserLoaded(tab.linkedBrowser);
+    BrowserTestUtils.startLoadingURIString(
+      tab.linkedBrowser,
+      TRACKING_PAGE + "?same-site"
+    );
+    await loaded;
+
+    await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+      content.postMessage("cryptomining", "*");
+    });
+
+    await TestUtils.waitForCondition(
+      () =>
+        tab.linkedBrowser
+          .getContentBlockingLog()
+          .includes("cryptomining.example.com"),
+      "Waiting for the cryptominer to be blocked on the second page"
+    );
+
+    await UrlbarTestUtils.openTrustPanel(window);
+
+    const blockerShown = BrowserTestUtils.waitForEvent(
+      document.getElementById("trustpanel-blockerView"),
+      "ViewShown"
+    );
+    document.getElementById("trustpanel-blocker-see-all").click();
+    await blockerShown;
+
+    const cryptominerButton = await TestUtils.waitForCondition(
+      () =>
+        document.querySelector(
+          '#trustpanel-blocked [data-l10n-id="trustpanel-list-label-cryptominer"]'
+        ),
+      "Waiting for the cryptominer entry in the blocked list"
+    );
+
+    Assert.equal(
+      parseInt(cryptominerButton.textContent, 10),
+      1,
+      "The blocked list is not cumulative across same-site navigations when the tracker count feature gate is off"
+    );
+
+    BrowserTestUtils.removeTab(tab);
+    await SpecialPowers.popPrefEnv();
+    await UrlClassifierTestUtils.cleanupTestTrackers();
+  }
+);
 
 add_task(async function test_etld() {
   const tab = await BrowserTestUtils.openNewForegroundTab({

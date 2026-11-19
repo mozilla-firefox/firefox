@@ -170,14 +170,19 @@ class IntentReceiverActivity : Activity() {
         startActivityAndFinish(intent)
     }
 
-    /** Opens a scanned Firefox Accounts pairing link in [AuthCustomTabActivity]. */
+    /**
+     * Opens a scanned Firefox Accounts pairing link in [AuthCustomTabActivity] with `embed=customtab` appended so the
+     * page can adapt its wording.
+     */
     @VisibleForTesting
     internal fun launchAuthCustomTab(pairingUrl: Uri) {
         // Neither the receiver's transparent theme nor the application context defines colorSurface, which the custom
         // tab intent reads, so resolve it against the app theme explicitly.
         val themedContext = ContextThemeWrapper(this, R.style.NormalTheme)
+        val pairingCustomTabUrl =
+            pairingUrl.buildUpon().appendQueryParameter(FXA_EMBED_PARAM, FXA_EMBED_CUSTOM_TAB).build()
         val intent =
-            SupportUtils.createAuthCustomTabIntent(themedContext, pairingUrl.toString())
+            SupportUtils.createAuthCustomTabIntent(themedContext, pairingCustomTabUrl.toString())
                 .putExtra(AuthCustomTabActivity.EXTRA_OPEN_HOME_ON_AUTHENTICATED, true)
         startActivityAndFinish(intent)
     }
@@ -252,6 +257,8 @@ private fun Intent.stripUnwantedFlags() {
 }
 
 private const val FXA_PAIRING_PATH = "/pair"
+private const val FXA_EMBED_PARAM = "embed"
+private const val FXA_EMBED_CUSTOM_TAB = "customtab"
 
 /**
  * Returns whether [uri] has the same origin as [fxaServerUrl] and the Firefox Accounts pairing path. [fxaServerUrl] is

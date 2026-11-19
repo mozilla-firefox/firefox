@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { css, html } from "chrome://global/content/vendor/lit.all.mjs";
+import { html } from "chrome://global/content/vendor/lit.all.mjs";
 import { MozLitElement } from "chrome://global/content/lit-utils.mjs";
 import {
   Decoration,
@@ -24,43 +24,7 @@ import {
   undo as historyUndo,
 } from "chrome://browser/content/multilineeditor/prosemirror.bundle.mjs";
 
-function generatePlaceholderKeyframeStyles(placeholderCount) {
-  const segmentDuration = 100 / placeholderCount;
-  const transitionDuration = segmentDuration * 0.2;
-  const exitStart = Math.round(segmentDuration - transitionDuration);
-  const exitEnd = Math.round(segmentDuration);
-  const enterStart = Math.round(100 - transitionDuration);
-
-  return css`
-    @keyframes multiline-editor-placeholder-animation {
-      0% {
-        opacity: 1;
-        transform: translateY(0);
-        visibility: visible;
-      }
-      ${exitStart}% {
-        opacity: 1;
-        transform: translateY(0);
-        visibility: visible;
-      }
-      ${exitEnd}% {
-        opacity: 0;
-        transform: translateY(-100%);
-        visibility: hidden;
-      }
-      ${enterStart}% {
-        opacity: 0;
-        transform: translateY(100%);
-        visibility: hidden;
-      }
-      100% {
-        opacity: 1;
-        transform: translateY(0);
-        visibility: visible;
-      }
-    }
-  `;
-}
+const PLACEHOLDER_TRANSITION_FRACTION = 0.2;
 
 /**
  * A ProseMirror transaction.
@@ -118,10 +82,11 @@ export class MultilineEditor extends MozLitElement {
     ariaHasPopup: { type: String, attribute: "aria-haspopup", reflect: false },
     showPlaceholderAnimation: {
       type: Boolean,
-      reflect: true,
       attribute: "show-placeholder-animation",
     },
   };
+
+  static PLACEHOLDER_HINT_DURATION_MS = 3000;
 
   static schema = new Schema({
     nodes: {
@@ -146,7 +111,9 @@ export class MultilineEditor extends MozLitElement {
 
   #instanceId = crypto.randomUUID();
   #placeholderVersion = 0;
-  #placeholderKeyframeStyles = null;
+  #placeholderTimer = null;
+  #reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+  #onReducedMotionChange = () => this.#refreshView();
   #pendingValue = "";
   #placeholderPlugin;
   #plugins;
@@ -505,13 +472,21 @@ export class MultilineEditor extends MozLitElement {
       this.#innerRole = hostRole;
     }
     this.setAttribute("role", "presentation");
+    this.#reducedMotionQuery.addEventListener(
+      "change",
+      this.#onReducedMotionChange
+    );
   }
 
   /**
    * Called when the element is removed from the DOM.
    */
   disconnectedCallback() {
-    this.#cancelPlaceholderAnimations();
+    this.#reducedMotionQuery.removeEventListener(
+      "change",
+      this.#onReducedMotionChange
+    );
+    clearTimeout(this.#placeholderTimer);
     this.#destroyView();
     this.#pendingValue = "";
     super.disconnectedCallback();
@@ -521,7 +496,6 @@ export class MultilineEditor extends MozLitElement {
    * Called after the element’s DOM has been rendered for the first time.
    */
   firstUpdated() {
-    this.#updatePlaceholderKeyframeStyles();
     this.#createView();
   }
 
@@ -535,19 +509,12 @@ export class MultilineEditor extends MozLitElement {
       changedProps.has("placeholder") ||
       changedProps.has("placeholderHints") ||
       changedProps.has("plugins") ||
-      changedProps.has("readOnly")
+      changedProps.has("readOnly") ||
+      changedProps.has("showPlaceholderAnimation")
     ) {
       this.#refreshView();
     }
     this.#applyForwardedAria(changedProps);
-    if (changedProps.has("showPlaceholderAnimation")) {
-      // Restart or cancel placeholder animation.
-      if (this.showPlaceholderAnimation) {
-        this.#resetPlaceholderAnimation();
-      } else {
-        this.#cancelPlaceholderAnimations();
-      }
-    }
   }
 
   #buildSchema() {
@@ -790,32 +757,18 @@ export class MultilineEditor extends MozLitElement {
   }
 
   #createPlaceholderHints() {
-    const placeholderCount = this.placeholderHints.length + 1;
-
     const hints = document.createElement("ul");
     hints.id = `placeholder-hints-${this.#instanceId}-${this.#placeholderVersion}`;
     hints.className = "placeholder-hints";
     hints.setAttribute("role", "presentation");
-    hints.style.setProperty(
-      "--multiline-editor-placeholder-count",
-      placeholderCount
-    );
 
-    const placeholder = document.createElement("li");
-    placeholder.textContent = this.placeholder;
-    placeholder.style.setProperty("--multiline-editor-placeholder-index", 0);
-    hints.appendChild(placeholder);
-
-    for (const [index, hint] of this.placeholderHints.entries()) {
-      const hintItem = document.createElement("li");
-      hintItem.textContent = hint;
-      hintItem.style.setProperty(
-        "--multiline-editor-placeholder-index",
-        index + 1
-      );
-      hints.appendChild(hintItem);
+    for (const text of [this.placeholder, ...this.placeholderHints]) {
+      const item = document.createElement("li");
+      item.textContent = text;
+      hints.appendChild(item);
     }
 
+    this.#startPlaceholderRotation(hints);
     return hints;
   }
 
@@ -934,7 +887,6 @@ export class MultilineEditor extends MozLitElement {
     }
 
     this.#placeholderVersion++;
-    this.#updatePlaceholderKeyframeStyles();
     this.#view.setProps({
       attributes: this.#viewAttributes(),
       editable: () => !this.readOnly,
@@ -943,54 +895,48 @@ export class MultilineEditor extends MozLitElement {
   }
 
   /**
-   * Resets placeholder animations to their starting position.
+   * Shows the first hint and schedules the next ones.
    *
-   * When the placeholder animation is re-enabled the cached placeholder
-   * elements retain animation state and must be reset.
+   * @param {HTMLElement} hints
    */
-  #resetPlaceholderAnimation() {
-    const animations = this.#getPlaceholderAnimations();
-    // The `ready` promise rejects with an AbortError if the animation is
-    // cancelled before it becomes ready.
-    Promise.all(animations.map(animation => animation.ready))
-      .then(() => {
-        for (const animation of animations) {
-          animation.currentTime = 0;
-        }
-      })
-      .catch(() => {});
-  }
-
-  #cancelPlaceholderAnimations() {
-    const animations = this.#getPlaceholderAnimations();
-    for (const animation of animations) {
-      animation.cancel();
-    }
-  }
-
-  #getPlaceholderAnimations() {
-    const placeholderHints =
-      this.renderRoot.querySelector(".placeholder-hints");
-    if (!placeholderHints) {
-      return [];
-    }
-    return [...placeholderHints.querySelectorAll("li")].flatMap(
-      placeholderHint => placeholderHint.getAnimations()
-    );
-  }
-
-  #updatePlaceholderKeyframeStyles() {
-    if (!this.placeholderHints.length) {
+  #startPlaceholderRotation(hints) {
+    clearTimeout(this.#placeholderTimer);
+    this.#showPlaceholderHint(hints, 0);
+    if (!this.showPlaceholderAnimation || this.#reducedMotionQuery.matches) {
       return;
     }
-    if (!this.#placeholderKeyframeStyles) {
-      this.#placeholderKeyframeStyles = new CSSStyleSheet();
-      this.renderRoot.adoptedStyleSheets.push(this.#placeholderKeyframeStyles);
-    }
-    const keyframeStyles = generatePlaceholderKeyframeStyles(
-      this.placeholderHints.length + 1
+    const duration = MultilineEditor.PLACEHOLDER_HINT_DURATION_MS;
+    const transition = duration * PLACEHOLDER_TRANSITION_FRACTION;
+    hints.style.setProperty(
+      "--multiline-editor-placeholder-transition-duration",
+      `${transition}ms`
     );
-    this.#placeholderKeyframeStyles.replaceSync(keyframeStyles.cssText);
+    let index = 0;
+    const showNext = () => {
+      if (!hints.isConnected) {
+        return;
+      }
+      if (!document.hidden) {
+        index = (index + 1) % hints.children.length;
+        this.#showPlaceholderHint(hints, index);
+      }
+      this.#placeholderTimer = setTimeout(showNext, duration);
+    };
+    this.#placeholderTimer = setTimeout(showNext, duration - transition);
+  }
+
+  #showPlaceholderHint(hints, index) {
+    const count = hints.children.length;
+    const incoming = hints.children[index];
+    if (incoming.classList.contains("previous")) {
+      // With two hints, reset the incoming one so it enters from below.
+      incoming.classList.remove("previous");
+      incoming.getBoundingClientRect();
+    }
+    for (const [i, item] of [...hints.children].entries()) {
+      item.classList.toggle("current", i == index);
+      item.classList.toggle("previous", i == (index + count - 1) % count);
+    }
   }
 
   #textToDoc(text, schema) {

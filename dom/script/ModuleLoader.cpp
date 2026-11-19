@@ -26,7 +26,6 @@
 #include "mozilla/Assertions.h"
 #include "mozilla/CycleCollectedJSContext.h"
 #include "mozilla/LoadInfo.h"
-#include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/StyleSheet.h"
 #include "mozilla/StyleSheetInlines.h"
 #include "mozilla/dom/AutoEntryScript.h"
@@ -97,15 +96,6 @@ bool ModuleLoader::CanStartLoad(ModuleLoadRequest* aRequest, nsresult* aRvOut) {
   return true;
 }
 
-void ModuleLoader::DisallowImportMapsForModuleFetch(
-    ModuleLoadRequest* aRequest) {
-  if (!aRequest->GetScriptLoadContext()->IsPreload() &&
-      !StaticPrefs::dom_multiple_import_maps_enabled()) {
-    LOG(("ScriptLoadRequest (%p): Disallow further import maps.", aRequest));
-    DisallowImportMaps();
-  }
-}
-
 // Skip module CORS checks for resource: principals loading trusted schemes.
 // Other URI security checks still apply.
 static bool IsResourceDocumentLoadingTrustedURI(ModuleLoadRequest* aRequest) {
@@ -120,7 +110,6 @@ static bool IsResourceDocumentLoadingTrustedURI(ModuleLoadRequest* aRequest) {
 
 nsresult ModuleLoader::StartFetch(ModuleLoadRequest* aRequest) {
   if (aRequest->IsRetrievedFromMemoryCache()) {
-    DisallowImportMapsForModuleFetch(aRequest);
     GetScriptLoader()->EmulateNetworkEvents(aRequest);
     SetModuleFetchStarted(aRequest);
     aRequest->OnFetchComplete(NS_OK);
@@ -148,8 +137,6 @@ nsresult ModuleLoader::StartFetch(ModuleLoadRequest* aRequest) {
   // Delegate Shared Behavior to base ScriptLoader
   nsresult rv = GetScriptLoader()->StartLoadInternal(aRequest, securityFlags);
   NS_ENSURE_SUCCESS(rv, rv);
-
-  DisallowImportMapsForModuleFetch(aRequest);
 
   LOG(("ScriptLoadRequest (%p): Start fetching module", aRequest));
 

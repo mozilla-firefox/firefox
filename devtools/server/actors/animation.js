@@ -76,6 +76,21 @@ function getAnimationBrowsingContextPlayBackRateMultiplier(animation) {
 }
 
 /**
+ * Return the multiplier to convert animation times to timeline times. A playback
+ * rate of 0 is handled as a playback rate of 1, to match the client layout.
+ * See Bug 2094186 and Bug 2094187 for better handling of playbackRate=0
+ * animations.
+ *
+ * @param {Animation} animation
+ */
+function getTimingMultiplier(animation) {
+  return (
+    (animation.playbackRate || 1) *
+    getAnimationBrowsingContextPlayBackRateMultiplier(animation)
+  );
+}
+
+/**
  * The AnimationActor provides information about a given animation: its
  * startTime, currentTime, current state, etc.
  *
@@ -950,13 +965,9 @@ exports.AnimationsActor = class AnimationsActor extends Actor {
         animation.startTime = null;
       }
 
+      const multiplier = getTimingMultiplier(animation);
       const currentTime =
-        animation.playbackRate > 0
-          ? time - actor.createdTime
-          : actor.createdTime - time;
-      const multiplier =
-        animation.playbackRate *
-        getAnimationBrowsingContextPlayBackRateMultiplier(animation);
+        multiplier > 0 ? time - actor.createdTime : actor.createdTime - time;
       animation.currentTime = currentTime * Math.abs(multiplier);
       handledActors.push(actor);
     }
@@ -986,9 +997,7 @@ exports.AnimationsActor = class AnimationsActor extends Actor {
 
     // Play animation in a synchronous fashion by setting the start time directly.
     const currentTime = animation.currentTime || 0;
-    const multiplier =
-      animation.playbackRate *
-      getAnimationBrowsingContextPlayBackRateMultiplier(animation);
+    const multiplier = getTimingMultiplier(animation);
     animation.startTime =
       animation.timeline.currentTime - currentTime / multiplier;
   }
@@ -999,9 +1008,7 @@ exports.AnimationsActor = class AnimationsActor extends Actor {
    * @param {object} animation
    */
   getCreatedTime(animation) {
-    const multiplier =
-      animation.playbackRate *
-      getAnimationBrowsingContextPlayBackRateMultiplier(animation);
+    const multiplier = getTimingMultiplier(animation);
 
     return (
       animation.startTime ||

@@ -63,9 +63,6 @@ skip-if = [
 ["test_ext_background_early_shutdown.js"]
 requesttimeoutfactor = 3  # Slow on Linux TSan/ASan (replaces manifest 2x)
 run-sequentially = ["os == 'mac'"] # frequent fail in parallel on Mac
-skip-if = [
-  "isolated_process", # Bug 1709961
-]
 
 ["test_ext_background_empty.js"]
 
@@ -724,9 +721,6 @@ skip-if = [
 ["test_ext_storage_session.js"]
 
 ["test_ext_storage_session_on_crash.js"]
-skip-if = [
-  "isolated_process", # Bug 1709961
-]
 
 ["test_ext_storage_sync.js"]
 skip-if = [

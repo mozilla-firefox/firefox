@@ -432,12 +432,6 @@ if (!isDevtools) {
   }
 }
 
-if (AppConstants.MOZ_CODE_COVERAGE) {
-  allowlist.add(
-    "chrome://remote/content/marionette/PerTestCoverageUtils.sys.mjs"
-  );
-}
-
 const gInterestingCategories = new Set([
   "addon-provider-module",
   "webextension-modules",

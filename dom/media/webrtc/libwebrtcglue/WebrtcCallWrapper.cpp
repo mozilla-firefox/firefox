@@ -61,6 +61,22 @@ void WebrtcCallWrapper::UnregisterConduit(MediaSessionConduit* conduit) {
   mConduits.erase(conduit);
 }
 
+void WebrtcCallWrapper::UpdateReadyTransports(webrtc::MediaType aType,
+                                              int aDelta) {
+  MOZ_ASSERT(mCallThread->IsOnCurrentThread());
+  MOZ_ASSERT(aType == webrtc::MediaType::AUDIO ||
+             aType == webrtc::MediaType::VIDEO);
+  size_t& ready = aType == webrtc::MediaType::VIDEO ? mNumReadyVideoTransports
+                                                    : mNumReadyAudioTransports;
+  MOZ_ASSERT_IF(aDelta < 0, ready >= static_cast<size_t>(-aDelta));
+  const bool wasReady = ready > 0;
+  ready += aDelta;
+  if (mCall && wasReady != (ready > 0)) {
+    mCall->SignalChannelNetworkState(
+        aType, ready > 0 ? webrtc::kNetworkUp : webrtc::kNetworkDown);
+  }
+}
+
 void WebrtcCallWrapper::Destroy() {
   MOZ_ASSERT(mCallThread->IsOnCurrentThread());
   mCall = nullptr;

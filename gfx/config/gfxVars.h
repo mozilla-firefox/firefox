@@ -102,6 +102,7 @@ class MOZ_STACK_CLASS gfxVarsCollectUpdates;
   _(UseEGL, bool, false)                                           \
   _(DrmRenderDevice, nsCString, nsCString())                       \
   _(UseDMABuf, bool, false)                                        \
+  _(UseDMABufYUVDirectComposition, bool, false)                    \
   _(UseDMABufWebGL, bool, true)                                    \
   _(DMABufModifiersXRGB, ArrayOfuint64_t, nsTArray<uint64_t>())    \
   _(DMABufModifiersARGB, ArrayOfuint64_t, nsTArray<uint64_t>())    \

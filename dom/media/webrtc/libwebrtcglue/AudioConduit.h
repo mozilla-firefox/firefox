@@ -207,6 +207,9 @@ class WebrtcAudioConduit : public AudioSessionConduit,
   // Should only be called from Shutdown()
   void SetIsShutdown();
 
+  // Call thread only. Tells the call whether our transport can carry media.
+  void UpdateNetworkState(bool aReady);
+
   // Are SSRC changes without signaling allowed or not.
   // Call thread only.
   bool mAllowSsrcChange = true;
@@ -337,6 +340,10 @@ class WebrtcAudioConduit : public AudioSessionConduit,
   // Whether the conduit is shutdown or not.
   // Call thread only.
   bool mIsShutdown = false;
+
+  // Whether we have told the call that our transport can carry media.
+  // Call thread only.
+  bool mNetworkReady = false;
 };
 
 }  // namespace mozilla

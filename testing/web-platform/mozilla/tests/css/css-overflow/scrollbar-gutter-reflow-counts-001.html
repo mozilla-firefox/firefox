@@ -43,6 +43,11 @@
     gTarget.style.writingMode = "";
     gTarget.style.scrollbarGutter = "";
     gTargetChild.style.blockSize = "";
+    // Rebuild the scroll container, so that the next measurement doesn't
+    // depend on the state the previous one left its scrollbars in.
+    gTarget.style.display = "none";
+    getReflowCount();
+    gTarget.style.display = "";
   }
 
   function tweakStyleAndCountReflows(aAddStyle, aAddScrollbarGutter)

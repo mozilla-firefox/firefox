@@ -160,6 +160,7 @@ RefPtr<GenericPromise> WebrtcAudioConduit::Shutdown() {
         // Clear the stats send stream stats cache
         mTransitionalSendStreamStats = Nothing();
 
+        UpdateNetworkState(false);
         SetIsShutdown();
 
         return GenericPromise::CreateAndResolve(
@@ -592,6 +593,19 @@ void WebrtcAudioConduit::SetTransportActive(bool aActive) {
 
   // If false, This stops us from sending
   mTransportActive = aActive;
+
+  MOZ_ALWAYS_SUCCEEDS(mCallThread->Dispatch(NS_NewRunnableFunction(
+      __func__,
+      [this, self = RefPtr(this), aActive] { UpdateNetworkState(aActive); })));
+}
+
+void WebrtcAudioConduit::UpdateNetworkState(bool aReady) {
+  MOZ_ASSERT(mCallThread->IsOnCurrentThread());
+  if (mIsShutdown || mNetworkReady == aReady) {
+    return;
+  }
+  mNetworkReady = aReady;
+  mCall->UpdateReadyTransports(webrtc::MediaType::AUDIO, aReady ? 1 : -1);
 }
 
 // AudioSessionConduit Implementation
@@ -770,8 +784,6 @@ void WebrtcAudioConduit::StartTransmitting() {
 
   CSFLogDebug(LOGTAG, "%s Starting send stream", __FUNCTION__);
 
-  mCall->Call()->SignalChannelNetworkState(webrtc::MediaType::AUDIO,
-                                           webrtc::kNetworkUp);
   mSendStream->Start();
   mSendStreamRunning = true;
 }
@@ -805,8 +817,6 @@ void WebrtcAudioConduit::StartReceiving() {
               __FUNCTION__, mRecvStreamConfig.rtp.remote_ssrc,
               mRecvStreamConfig.rtp.remote_ssrc);
 
-  mCall->Call()->SignalChannelNetworkState(webrtc::MediaType::AUDIO,
-                                           webrtc::kNetworkUp);
   mRecvStream->Start();
   mRecvStreamRunning = true;
 }

@@ -42,6 +42,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 }
 
 dependencies {
+    compileOnly(libs.scip.kotlin.analysis)
     implementation(libs.kaml)
     implementation(libs.android.gradle.plugin)
     implementation(libs.kotlin.gradle.plugin)

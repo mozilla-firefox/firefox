@@ -47,8 +47,17 @@ bool CodeGeneratorARM64::generateOutOfLineCode() {
     // All non-table-based bailouts will go here.
     masm.bind(&deoptLabel_);
 
-    // Store the frame size, so the handler can recover the IonScript.
-    masm.push(Imm32(frameSize()));
+    // Push the snapshot offset from emitBailoutOOL, and the frame size so the
+    // handler can recover the IonScript.
+    {
+      vixl::UseScratchRegisterScope temps(&masm);
+      const ARMRegister snapshotOffset64(BailoutSnapshotOffsetReg, 64);
+      MOZ_ASSERT(temps.IsAvailable(snapshotOffset64));
+      temps.Exclude(snapshotOffset64);
+      const Register scratch = temps.AcquireX().asUnsized();
+      masm.move32(Imm32(frameSize()), scratch);
+      masm.push(BailoutSnapshotOffsetReg, scratch);
+    }
 
     TrampolinePtr handler = gen->jitRuntime()->getGenericBailoutHandler();
     masm.jump(handler);

@@ -187,7 +187,8 @@ class SummaryGraphPath extends Component {
     const keyframesList =
       this.getOffsetAndEasingOnlyKeyframes(animatedPropertyMap);
     const totalDuration =
-      timeScale.getDuration() * Math.abs(animation.state.playbackRate);
+      timeScale.getDuration() *
+      Math.abs(animation.state.absoluteValues.playbackRate);
     const durationPerPixel = totalDuration / thisEl.parentNode.clientWidth;
 
     this.setState({
@@ -211,8 +212,8 @@ class SummaryGraphPath extends Component {
       });
     }
 
-    const { playbackRate, playBackRateMultiplier } = animation.state;
-    const { createdTime } = animation.state.absoluteValues;
+    const { playBackRateMultiplier } = animation.state;
+    const { createdTime, playbackRate } = animation.state.absoluteValues;
     const multiplier = Math.abs(playbackRate) * playBackRateMultiplier;
 
     // Absorb the playbackRate in viewBox of SVG and offset of child path elements

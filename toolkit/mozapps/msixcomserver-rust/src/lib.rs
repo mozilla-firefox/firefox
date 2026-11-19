@@ -14,6 +14,7 @@ use windows::ApplicationModel::Background::{
 };
 use windows::ApplicationModel::FullTrustProcessLauncher;
 use windows::Win32::Foundation::{CLASS_E_CLASSNOTAVAILABLE, S_FALSE, S_OK};
+use windows::Win32::System::Diagnostics::Debug::OutputDebugStringW;
 use windows::Win32::System::WinRT::{IActivationFactory, IActivationFactory_Impl};
 use windows_core::{
     implement, IInspectable, OutRef, Ref, Result as WindowsResult, HRESULT, HSTRING,
@@ -56,7 +57,15 @@ impl IBackgroundTask_Impl for FirefoxBackgroundTask_Impl {
             return Ok(());
         };
 
-        let name = instance.Task()?.Name()?.to_string();
+        // An error returned from `Run` makes `backgroundtaskhost.exe` fail fast
+        // and report a crash, so errors are logged and swallowed.
+        let name = match instance.Task().and_then(|task| task.Name()) {
+            Ok(name) => name.to_string(),
+            Err(e) => {
+                debug_log(&format!("Could not read the task name: {e}"));
+                return Ok(());
+            }
+        };
         if name.is_empty() {
             return Ok(());
         }
@@ -65,27 +74,36 @@ impl IBackgroundTask_Impl for FirefoxBackgroundTask_Impl {
         // in an AppContainer at low integrity. The tasks we run need the same
         // access a normal Firefox launch has, so ask the shell to start the package's
         // full trust process.
-        launch_full_trust(&name)
+        if let Err(e) = launch_full_trust(&name) {
+            debug_log(&format!("Could not launch task {name}: {e}"));
+        }
+        Ok(())
     }
 }
 
-/// The registration name encodes the command line as colon-separated segments:
-/// "defaultagent:do-task" launches `firefox --backgroundtask defaultagent do-task`.
-fn task_args(task_name: &str) -> Vec<String> {
-    let mut args = vec!["--backgroundtask".to_string()];
-    args.extend(task_name.split(':').map(str::to_string));
-    args
+fn debug_log(message: &str) {
+    let message = HSTRING::from(format!("msixcomserver: {message}\n"));
+    unsafe { OutputDebugStringW(&message) };
 }
 
-/// Ask the shell to start the package's full trust process with the task args.
+/// The manifest `desktop:ParameterGroup` ID for a task. Every task needs a
+/// group in AppxManifest.xml.in whose ID is the task name with ":" replaced
+/// by "-". The group's `Parameters` hold the command line, for example
+/// "defaultagent:do-task" launches `firefox --backgroundtask defaultagent do-task`.
+fn parameter_group_id(task_name: &str) -> String {
+    task_name.replace(':', "-")
+}
+
+/// Ask the shell to start the package's full trust process with the
+/// parameters of the task's manifest group. The free arguments variant of this
+/// API needs FullTrustAppContract v2, which Windows 10 does not have.
 /// See https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/migrate-to-windows-app-sdk/guides/background-task-migration-strategy
 fn launch_full_trust(task_name: &str) -> WindowsResult<()> {
-    let command_line = HSTRING::from(task_args(task_name).join(" "));
+    let group_id = HSTRING::from(parameter_group_id(task_name));
     let operation =
-        FullTrustProcessLauncher::LaunchFullTrustProcessForCurrentAppWithArgumentsAsync(
-            &command_line,
+        FullTrustProcessLauncher::LaunchFullTrustProcessForCurrentAppWithParametersAsync(
+            &group_id,
         )?;
-
     block_on(operation.into_future())?;
     Ok(())
 }

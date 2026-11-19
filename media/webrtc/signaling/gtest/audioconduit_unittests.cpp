@@ -8,6 +8,7 @@
 #include "MockCall.h"
 #include "api/audio_codecs/opus/audio_encoder_opus_config.h"
 #include "gtest/gtest.h"
+#include "mozilla/Span.h"
 
 using namespace mozilla;
 using namespace testing;
@@ -37,6 +38,29 @@ class AudioConduitTest : public ::testing::Test {
   const RefPtr<WebrtcAudioConduit> mAudioConduit;
   ConcreteControl mControl;
 };
+
+TEST_F(AudioConduitTest, TestNetworkStateFollowsTransportReadiness) {
+  mControl.Update([&](auto& aControl) {
+    aControl.mAudioSendCodec =
+        Some(AudioCodecConfig(114, "opus", 48000, 2, false));
+    aControl.mTransmitting = true;
+  });
+  ASSERT_TRUE(Call()->mAudioSendConfig);
+  NS_ProcessPendingEvents(nullptr);
+  auto& signals = Call()->mNetworkStateSignals;
+  EXPECT_TRUE(signals.IsEmpty());
+
+  mAudioConduit->SetTransportActive(true);
+  NS_ProcessPendingEvents(nullptr);
+  EXPECT_THAT(Span(signals), ElementsAre(FieldsAre(webrtc::MediaType::AUDIO,
+                                                   webrtc::kNetworkUp)));
+  signals.Clear();
+
+  mAudioConduit->SetTransportActive(false);
+  NS_ProcessPendingEvents(nullptr);
+  EXPECT_THAT(Span(signals), ElementsAre(FieldsAre(webrtc::MediaType::AUDIO,
+                                                   webrtc::kNetworkDown)));
+}
 
 TEST_F(AudioConduitTest, TestConfigureSendMediaCodec) {
   mControl.Update([&](auto& aControl) {

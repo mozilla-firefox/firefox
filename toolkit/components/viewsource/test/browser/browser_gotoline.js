@@ -75,4 +75,10 @@ var checkViewSource = async function (aTab) {
       Assert.ok(foundNonEmptyRect, "Should have some non-empty rects");
     });
   }
+
+  // A line past the end isn't found, so the parent shows "Line not found".
+  await SpecialPowers.spawn(browser, [LINES * 10], async function (i) {
+    let actor = content.windowGlobalChild.getActor("ViewSourcePage");
+    Assert.equal(actor.findLocation(i), null, "Line past the end not found");
+  });
 };

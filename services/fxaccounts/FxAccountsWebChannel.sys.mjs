@@ -744,8 +744,6 @@ FxAccountsWebChannelHelpers.prototype = {
     log.debug(`storing info for services ${Object.keys(requestedServices)}`);
     accountData.requestedServices = JSON.stringify(requestedServices);
 
-    this.setPreviousAccountHashPref(accountData.uid);
-
     // Reauth can omit the stored token, while third-party auth can repeat the
     // current session; neither should replace the device.
     const previousSessionToken = signedInUser?.sessionToken;

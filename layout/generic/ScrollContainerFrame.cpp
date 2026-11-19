@@ -1519,8 +1519,9 @@ void ScrollContainerFrame::Reflow(nsPresContext* aPresContext,
   bool reflowVScrollbar = true;
   bool reflowScrollCorner = true;
   if (!aReflowInput.ShouldReflowAllKids()) {
-    auto NeedsReflow = [](const nsIFrame* aFrame) {
-      return aFrame && aFrame->IsSubtreeDirty();
+    // Hidden parts are left dirty until they are shown, see LayoutScrollbars().
+    auto NeedsReflow = [&](const nsIFrame* aFrame) {
+      return aFrame && IsScrollbarPartShown(aFrame) && aFrame->IsSubtreeDirty();
     };
 
     reflowHScrollbar = NeedsReflow(mHScrollbarBox);
@@ -3505,7 +3506,7 @@ void ScrollContainerFrame::AppendScrollPartsTo(nsDisplayListBuilder* aBuilder,
 
   AutoTArray<nsIFrame*, 3> scrollParts;
   for (nsIFrame* kid : PrincipalChildList()) {
-    if (kid == mScrolledFrame ||
+    if (kid == mScrolledFrame || !IsScrollbarPartShown(kid) ||
         (overlayScrollbars || kid->IsAbsPosContainingBlock()) != aPositioned) {
       continue;
     }
@@ -5981,12 +5982,14 @@ void ScrollContainerFrame::UpdateScrollbarPosition() {
     scrollRange = GetScrollRangeForUserInputEvents();
   }
 
-  if (mVScrollbarBox && mVScrollbarBox->SetCurPos(CSSPixel::FromAppUnitsRounded(
-                            pt.y - scrollRange.y))) {
+  auto* vScrollbar = GetShownScrollbarBox(true);
+  if (vScrollbar && vScrollbar->SetCurPos(
+                        CSSPixel::FromAppUnitsRounded(pt.y - scrollRange.y))) {
     ActivityOccurred();
   }
-  if (mHScrollbarBox && mHScrollbarBox->SetCurPos(CSSPixel::FromAppUnitsRounded(
-                            pt.x - scrollRange.x))) {
+  auto* hScrollbar = GetShownScrollbarBox(false);
+  if (hScrollbar && hScrollbar->SetCurPos(
+                        CSSPixel::FromAppUnitsRounded(pt.x - scrollRange.x))) {
     ActivityOccurred();
   }
 
@@ -6014,10 +6017,12 @@ void ScrollContainerFrame::ScrollbarCurPosChanged(bool aDoScroll) {
     current = GetVisualViewportOffset() - scrollRange.TopLeft();
   }
 
+  // Hidden scrollbars aren't kept up to date, so they don't say anything about
+  // where we should be.
   nsPoint dest = current;
   nsRect allowedRange(current, nsSize());
-  if (mHScrollbarBox) {
-    dest.x = CSSPixel::ToAppUnits(mHScrollbarBox->GetCurPos());
+  if (auto* hScrollbar = GetShownScrollbarBox(false)) {
+    dest.x = CSSPixel::ToAppUnits(hScrollbar->GetCurPos());
     if (dest.x) {
       const nscoord halfPixel = AppUnitsPerCSSPixel() / 2;
       // Any nscoord value that would round to the attribute value when
@@ -6026,8 +6031,8 @@ void ScrollContainerFrame::ScrollbarCurPosChanged(bool aDoScroll) {
       allowedRange.width = halfPixel * 2 - 1;
     }
   }
-  if (mVScrollbarBox) {
-    dest.y = CSSPixel::ToAppUnits(mVScrollbarBox->GetCurPos());
+  if (auto* vScrollbar = GetShownScrollbarBox(true)) {
+    dest.y = CSSPixel::ToAppUnits(vScrollbar->GetCurPos());
     if (dest.y) {
       const nscoord halfPixel = AppUnitsPerCSSPixel() / 2;
       // Any nscoord value that would round to the attribute value when
@@ -6239,6 +6244,26 @@ bool ScrollContainerFrame::IsScrollingActive() const {
   nsIContent* content = GetContent();
   return mHasBeenScrolledRecently || IsAlwaysActive() ||
          DisplayPortUtils::HasDisplayPort(content);
+}
+
+bool ScrollContainerFrame::IsScrollbarPartShown(const nsIFrame* aPart) const {
+  if (aPart == mVScrollbarBox) {
+    return mHasVerticalScrollbar;
+  }
+  if (aPart == mHScrollbarBox) {
+    return mHasHorizontalScrollbar;
+  }
+  if (aPart == mScrollCornerBox) {
+    return mHasVerticalScrollbar && mHasHorizontalScrollbar;
+  }
+  MOZ_ASSERT(aPart == mResizerBox || aPart == GetButtonBoxFrame());
+  return true;
+}
+
+nsScrollbarFrame* ScrollContainerFrame::GetShownScrollbarBox(
+    bool aVertical) const {
+  nsScrollbarFrame* scrollbar = aVertical ? mVScrollbarBox : mHScrollbarBox;
+  return scrollbar && IsScrollbarPartShown(scrollbar) ? scrollbar : nullptr;
 }
 
 void ScrollContainerFrame::FinishReflowForScrollbar(
@@ -6532,10 +6557,16 @@ bool ScrollContainerFrame::ReflowFinished() {
   NS_ASSERTION(!mFrameIsUpdatingScrollbar, "We shouldn't be reentering here");
   mFrameIsUpdatingScrollbar = true;
 
+  // Hidden scrollbars aren't updated, since that would dirty them (and toggling
+  // their enabled state would restyle them) for nothing. LayoutScrollbars()
+  // gets us back here whenever a scrollbar is shown.
+  //
   // Note, in some cases this may get deleted while finishing reflow
   // for scrollbars. XXXmats is this still true now that we have a script
   // blocker in this scope? (if not, remove the weak frame checks below).
-  if (mVScrollbarBox || mHScrollbarBox) {
+  nsScrollbarFrame* vScrollbar = GetShownScrollbarBox(true);
+  nsScrollbarFrame* hScrollbar = GetShownScrollbarBox(false);
+  if (vScrollbar || hScrollbar) {
     nsSize visualViewportSize = GetVisualViewportSize();
     nsRect scrollRange = GetVisualScrollRange();
     nsPoint scrollPos = GetScrollPosition();
@@ -6549,7 +6580,7 @@ bool ScrollContainerFrame::ReflowFinished() {
     // If modifying the logic here, be sure to modify the corresponding
     // compositor-side calculation in ScrollThumbUtils::ApplyTransformForAxis().
     AutoWeakFrame weakFrame(this);
-    if (mVScrollbarBox) {
+    if (vScrollbar) {
       const double kScrollMultiplier =
           StaticPrefs::toolkit_scrollbox_verticalScrollDistance();
       nscoord increment = lineScrollAmount.height * kScrollMultiplier;
@@ -6563,13 +6594,13 @@ bool ScrollContainerFrame::ReflowFinished() {
       nscoord pageincrement = nscoord(visualViewportSize.height - increment);
       nscoord pageincrementMin =
           nscoord(float(visualViewportSize.height) * 0.8);
-      FinishReflowForScrollbar(mVScrollbarBox, scrollRange.y,
-                               scrollRange.YMost(), scrollPos.y,
+      FinishReflowForScrollbar(vScrollbar, scrollRange.y, scrollRange.YMost(),
+                               scrollPos.y,
                                std::max(pageincrement, pageincrementMin));
     }
-    if (mHScrollbarBox) {
-      FinishReflowForScrollbar(mHScrollbarBox, scrollRange.x,
-                               scrollRange.XMost(), scrollPos.x,
+    if (hScrollbar) {
+      FinishReflowForScrollbar(hScrollbar, scrollRange.x, scrollRange.XMost(),
+                               scrollPos.x,
                                nscoord(float(visualViewportSize.width) * 0.8));
     }
     NS_ENSURE_TRUE(weakFrame.IsAlive(), false);
@@ -6853,6 +6884,20 @@ void ScrollContainerFrame::LayoutScrollbars(ScrollReflowInput& aState,
       mOnlyNeedVScrollbarToScrollVVInsideLV;
   nsPresContext* pc = PresContext();
 
+  // A hidden part isn't reflowed, and keeps its dirty bits until it's shown
+  // again. It just gets its (empty) rect, and no overflow left over from when
+  // it was last shown.
+  auto LayoutScrollbarPart = [&](nsIFrame* aPart, const nsRect& aRect) {
+    if (!IsScrollbarPartShown(aPart)) {
+      aPart->SetRect(aRect);
+      aPart->ClearOverflowRects();
+      return;
+    }
+    ReflowInput partRI(pc, aState.mReflowInput, aPart,
+                       LogicalSize(aPart->GetWritingMode(), aRect.Size()));
+    LayoutScrollbarPartAtRect(aState, partRI, aRect);
+  };
+
   // place the scrollcorner
   if (mScrollCornerBox) {
     nsRect r(0, 0, 0, 0);
@@ -6886,10 +6931,7 @@ void ScrollContainerFrame::LayoutScrollbars(ScrollReflowInput& aState,
       r.y = mScrollPort.YMost() - r.height;
     }
 
-    ReflowInput scrollCornerRI(
-        pc, aState.mReflowInput, mScrollCornerBox,
-        LogicalSize(mScrollCornerBox->GetWritingMode(), r.Size()));
-    LayoutScrollbarPartAtRect(aState, scrollCornerRI, r);
+    LayoutScrollbarPart(mScrollCornerBox, r);
   }
 
   if (mResizerBox) {
@@ -6940,16 +6982,10 @@ void ScrollContainerFrame::LayoutScrollbars(ScrollReflowInput& aState,
     AdjustOverlappingScrollbars(vRect, hRect);
   }
   if (mVScrollbarBox) {
-    ReflowInput vScrollbarRI(
-        pc, aState.mReflowInput, mVScrollbarBox,
-        LogicalSize(mVScrollbarBox->GetWritingMode(), vRect.Size()));
-    LayoutScrollbarPartAtRect(aState, vScrollbarRI, vRect);
+    LayoutScrollbarPart(mVScrollbarBox, vRect);
   }
   if (mHScrollbarBox) {
-    ReflowInput hScrollbarRI(
-        pc, aState.mReflowInput, mHScrollbarBox,
-        LogicalSize(mHScrollbarBox->GetWritingMode(), hRect.Size()));
-    LayoutScrollbarPartAtRect(aState, hScrollbarRI, hRect);
+    LayoutScrollbarPart(mHScrollbarBox, hRect);
   }
 
   // may need to update fixed position children of the viewport,

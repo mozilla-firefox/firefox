@@ -354,10 +354,6 @@ class ContentDelegateTest : BaseSessionTest() {
     @IgnoreCrash
     @Test
     fun crashContent() {
-        // TODO: bug 1710940
-        assumeThat(sessionRule.env.isIsolatedProcess, equalTo(false))
-        assumeThat(sessionRule.env.isAppZygoteProcess, equalTo(false))
-
         mainSession.loadUri(CONTENT_CRASH_URL)
         mainSession.waitUntilCalled(
             object : ContentDelegate {
@@ -389,10 +385,6 @@ class ContentDelegateTest : BaseSessionTest() {
     @WithDisplay(width = 10, height = 10)
     @Test
     fun crashContent_tapAfterCrash() {
-        // TODO: bug 1710940
-        assumeThat(sessionRule.env.isIsolatedProcess, equalTo(false))
-        assumeThat(sessionRule.env.isAppZygoteProcess, equalTo(false))
-
         mainSession.delegateUntilTestEnd(
             object : ContentDelegate {
                 override fun onCrash(session: GeckoSession) {

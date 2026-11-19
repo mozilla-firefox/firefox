@@ -74,8 +74,6 @@
 }
 
 .multiline-editor .ProseMirror .placeholder-hints {
-  --multiline-editor-placeholder-animation-duration: 3000ms;
-
   color: var(--text-color-deemphasized);
   height: 100%;
   inset-inline-start: 0;
@@ -90,11 +88,6 @@
   width: 100%;
 
   li {
-    animation: multiline-editor-placeholder-animation calc(var(--multiline-editor-placeholder-count) * var(--multiline-editor-placeholder-animation-duration))
-      infinite;
-    animation-delay: calc(
-      (var(--multiline-editor-placeholder-index) - var(--multiline-editor-placeholder-count)) * var(--multiline-editor-placeholder-animation-duration)
-    );
     inset-inline-start: 0;
     max-width: 100%;
     opacity: 0;
@@ -102,28 +95,26 @@
     position: absolute;
     text-overflow: ellipsis;
     top: 0;
+    transform: translateY(100%);
     visibility: hidden;
     white-space: nowrap;
-  }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .multiline-editor .ProseMirror .placeholder-hints li {
-    animation: none;
-
-    &:first-child {
+    &.current {
       opacity: 1;
+      transform: translateY(0);
+      transition:
+        opacity var(--multiline-editor-placeholder-transition-duration) ease,
+        transform var(--multiline-editor-placeholder-transition-duration) ease;
       visibility: visible;
     }
-  }
-}
 
-:host(:not([show-placeholder-animation])) .multiline-editor .ProseMirror .placeholder-hints li {
-  animation: none;
-
-  &:first-child {
-    opacity: 1;
-    visibility: visible;
+    &.previous {
+      transform: translateY(-100%);
+      transition:
+        opacity var(--multiline-editor-placeholder-transition-duration) ease,
+        transform var(--multiline-editor-placeholder-transition-duration) ease,
+        visibility 0s var(--multiline-editor-placeholder-transition-duration);
+    }
   }
 }
 

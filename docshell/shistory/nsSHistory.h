@@ -240,25 +240,6 @@ class nsSHistory : public mozilla::LinkedListElement<nsSHistory>,
 
   void LogHistory();
 
-  enum class SearchDirection : int8_t { Left = -1, Right = 1 };
-
-  // Finds the adjacent session history entry in search direction.
-  mozilla::dom::SessionHistoryEntry* FindAdjacentEntryFor(
-      mozilla::dom::SessionHistoryEntry* aEntry,
-      SearchDirection aSearchDirection);
-
-  // Finds the adjacent session history entry in search direction that shares ID
-  // with aEntry.
-  mozilla::dom::SessionHistoryEntry* FindClosestAdjacentContiguousEntryFor(
-      mozilla::dom::SessionHistoryEntry* aEntry,
-      SearchDirection aSearchDirection);
-
-  // Finds the leftmost entry in a sequence of entries adjacent to aEntry that
-  // shares ID with entry.
-  mozilla::dom::SessionHistoryEntry* FindLeftmostAdjacentContiguousEntryFor(
-      mozilla::dom::SessionHistoryEntry* aEntry,
-      SearchDirection aSearchDirection);
-
   bool ContainsEntry(SessionHistoryEntry* aEntry);
 
  protected:
@@ -268,6 +249,34 @@ class nsSHistory : public mozilla::LinkedListElement<nsSHistory>,
 
  private:
   friend class nsSHistoryObserver;
+
+  enum class SearchDirection : int8_t { Left = -1, Right = 1 };
+
+  // Returns aEntry's root entry's index or -1
+  int32_t GetRootIndexOfEntry(mozilla::dom::SessionHistoryEntry* aEntry);
+
+  // Finds the adjacent session history entry in search direction.
+  // aRootIndex is aEntry's root entry's index and when an adjacent entry
+  // is found, it is set to that entry's root entry's index. Effectively,
+  // repeated calls move through mEntries strictly monotonically, so walks
+  // terminate even if there are duplicate entries (bug 2042897).
+  mozilla::dom::SessionHistoryEntry* FindAdjacentEntryFor(
+      mozilla::dom::SessionHistoryEntry* aEntry,
+      SearchDirection aSearchDirection, int32_t* aRootIndex);
+
+  // Finds the adjacent session history entry in search direction that shares ID
+  // with aEntry.
+  // For aRootIndex, see FindAdjacentEntryFor.
+  mozilla::dom::SessionHistoryEntry* FindClosestAdjacentContiguousEntryFor(
+      mozilla::dom::SessionHistoryEntry* aEntry,
+      SearchDirection aSearchDirection, int32_t* aRootIndex);
+
+  // Finds the leftmost entry in a sequence of entries adjacent to aEntry that
+  // shares ID with entry.
+  // For aRootIndex, see FindAdjacentEntryFor.
+  mozilla::dom::SessionHistoryEntry* FindLeftmostAdjacentContiguousEntryFor(
+      mozilla::dom::SessionHistoryEntry* aEntry,
+      SearchDirection aSearchDirection, int32_t* aRootIndex);
 
   bool ForEachDifferingEntry(
       SessionHistoryEntry* aPrevEntry, SessionHistoryEntry* aNextEntry,

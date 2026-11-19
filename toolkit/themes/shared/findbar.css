@@ -223,8 +223,9 @@ xul|findbar {
   transition: opacity 150ms ease-in-out;
   border-radius: var(--border-radius-circle);
   border: var(--border-width) solid var(--toolbarbutton-outline-color);
-  padding: var(--space-xsmall) var(--space-small);
+  padding: 0;
   width: auto;
+  aspect-ratio: 1;
 
   &:hover {
     background-color: var(--toolbarbutton-background-color-hover, rgba(190, 190, 190, 0.2));

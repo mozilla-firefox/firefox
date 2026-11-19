@@ -176,7 +176,7 @@ export class ViewSourcePageChild extends JSWindowActorChild {
     }
 
     let pre = this.document.querySelector("pre");
-    if (pre.id) {
+    if (!pre || pre.id) {
       return null;
     }
     // Walk through each of the text nodes and count newlines.
