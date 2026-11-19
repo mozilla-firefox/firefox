@@ -13,7 +13,7 @@ import mozpack.path as mozpath
 
 from mozbuild.backend.base import BuildBackend
 from mozbuild.dirutils import mkdir
-from mozbuild.frontend.context import ObjDirPath
+from mozbuild.frontend.context import ObjDirPath, Path
 from mozbuild.frontend.data import (
     BaseProgram,
     BaseRustLibrary,
@@ -28,6 +28,7 @@ from mozbuild.frontend.data import (
     HostSources,
     IPDLCollection,
     JsShellArchive,
+    MacOSBundle,
     RustTests,
     SandboxedWasmLibrary,
     SharedLibrary,
@@ -157,6 +158,52 @@ def chrome_manifest_contents(entries):
         yield target, "".join(f"{line}\n" for line in sorted(lines))
 
 
+def macos_bundle_spec(obj, topobjdir):
+    context = obj._context
+    spec = obj.bundle
+
+    resolved = {
+        "bundle": Path(context, spec["bundle"]).full_path,
+        "lproj": spec["lproj"],
+        "binaries": [],
+        "extra_files": [],
+        "moves": [list(m) for m in spec["moves"]],
+        "pkginfo": spec["pkginfo"],
+        "copies": [Path(context, c).full_path for c in spec["copies"]],
+    }
+    inputs = []
+    if spec["skeleton"]:
+        resolved["skeleton"] = Path(context, spec["skeleton"]).full_path
+    for key in ("info_plist", "strings"):
+        if value := spec[key]:
+            path = Path(context, value)
+            resolved[key] = path.full_path
+            inputs.append(path)
+    for key in ("binaries", "extra_files"):
+        for source, dest in spec[key]:
+            path = Path(context, source)
+            resolved[key].append([path.full_path, dest])
+            inputs.append(path)
+    if spec["stage"]:
+        resolved["stage"] = Path(context, spec["stage"]).full_path
+        macos_files = Path(context, spec["macos_files"])
+        macos_copy_files = Path(context, spec["macos_copy_files"])
+        resolved["macos_files"] = macos_files.full_path
+        resolved["macos_copy_files"] = macos_copy_files.full_path
+        inputs.append(macos_files)
+        inputs.append(macos_copy_files)
+
+    # Bundles in one directory can share a basename (the same `.app` built
+    # into different locations), so key the spec on the objdir-relative path.
+    spec_id = (
+        mozpath
+        .relpath(resolved["bundle"], topobjdir)
+        .replace("/", "_")
+        .replace(" ", "")
+    )
+    return resolved, inputs, f"{spec_id}.bundle.json"
+
+
 class XPIDLManager:
     """Helps manage XPCOM IDLs in the context of the build system."""
 
@@ -227,6 +274,8 @@ class CommonBackend(BuildBackend):
         self._rust_libraries_for_spec = []
         self._rust_programs_for_spec = defaultdict(list)
         self._rust_tests_for_spec = []
+        self._macos_bundles = []
+        self._macos_bundle_specs = {}
 
     def _computed_flag_list(self, relobjdir, var, exclude=()):
         """Return all values for a computed flag in one directory, without the
@@ -433,6 +482,20 @@ class CommonBackend(BuildBackend):
             self._rust_tests_for_spec.append(obj)
             return False
 
+        elif isinstance(obj, MacOSBundle):
+            self._macos_bundle_specs[obj] = macos_bundle_spec(
+                obj, self.environment.topobjdir
+            )
+            spec, _, spec_name = self._macos_bundle_specs[obj]
+            spec_path = mozpath.normsep(mozpath.join(obj.objdir, spec_name))
+            with self._write_file(spec_path) as fh:
+                json.dump(spec, fh, sort_keys=True, indent=2)
+            self._macos_bundles.append({
+                "spec": spec_path,
+                "stage": bool(obj.bundle["stage"]),
+            })
+            return False
+
         elif isinstance(obj, BaseProgram):
             self._binaries.programs.append(obj)
             return False
@@ -560,6 +623,14 @@ class CommonBackend(BuildBackend):
 
         with self._write_file(mozpath.join(topobjdir, "rust-tests.json")) as fh:
             json.dump({"crates": sorted(test_crates)}, fh, sort_keys=True, indent=2)
+
+        with self._write_file(mozpath.join(topobjdir, "macos-bundles.json")) as fh:
+            json.dump(
+                {"bundles": sorted(self._macos_bundles, key=itemgetter("spec"))},
+                fh,
+                sort_keys=True,
+                indent=2,
+            )
 
     def _expand_libs(self, input_bin):
         os_libs = []

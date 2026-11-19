@@ -13,7 +13,6 @@ from operator import itemgetter
 from textwrap import dedent
 
 import mozpack.path as mozpath
-from mozfile import json
 from mozpack.manifests import InstallManifest
 from mozshellutil import quote as shell_quote
 
@@ -2255,53 +2254,9 @@ class RecursiveMakeBackend(MakeBackend):
             )
 
     def _process_macos_bundle(self, obj, backend_file):
-        context = obj._context
         spec = obj.bundle
-
-        resolved = {
-            "bundle": Path(context, spec["bundle"]).full_path,
-            "lproj": spec["lproj"],
-            "binaries": [],
-            "extra_files": [],
-            "moves": [list(m) for m in spec["moves"]],
-            "pkginfo": spec["pkginfo"],
-            "copies": [Path(context, c).full_path for c in spec["copies"]],
-        }
-        inputs = []
-        if spec["skeleton"]:
-            resolved["skeleton"] = Path(context, spec["skeleton"]).full_path
-        for key in ("info_plist", "strings"):
-            if value := spec[key]:
-                path = Path(context, value)
-                resolved[key] = path.full_path
-                inputs.append(path)
-        for key in ("binaries", "extra_files"):
-            for source, dest in spec[key]:
-                path = Path(context, source)
-                resolved[key].append([path.full_path, dest])
-                inputs.append(path)
-        if spec["stage"]:
-            resolved["stage"] = Path(context, spec["stage"]).full_path
-            macos_files = Path(context, spec["macos_files"])
-            macos_copy_files = Path(context, spec["macos_copy_files"])
-            resolved["macos_files"] = macos_files.full_path
-            resolved["macos_copy_files"] = macos_copy_files.full_path
-            inputs.append(macos_files)
-            inputs.append(macos_copy_files)
-
-        name = mozpath.basename(resolved["bundle"])
-        safe_name = name.replace(" ", "")
-        # Bundles in one directory can share a basename (the same `.app` built
-        # into different locations), so key the spec on the objdir-relative path.
-        spec_id = (
-            mozpath
-            .relpath(resolved["bundle"], self.environment.topobjdir)
-            .replace("/", "_")
-            .replace(" ", "")
-        )
-        spec_name = f"{spec_id}.bundle.json"
-        with self._write_file(mozpath.join(backend_file.objdir, spec_name)) as fh:
-            json.dump(resolved, fh, sort_keys=True, indent=2)
+        resolved, inputs, spec_name = self._macos_bundle_specs[obj]
+        safe_name = mozpath.basename(resolved["bundle"]).replace(" ", "")
 
         if spec["stage"]:
             tier = "tools"

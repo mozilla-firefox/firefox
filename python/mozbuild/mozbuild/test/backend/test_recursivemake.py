@@ -455,6 +455,28 @@ class TestRecursiveMakeBackend(BackendTester):
             other = json.load(fh)
         self.assertTrue(other["bundle"].endswith("dist/other/Test.app"))
 
+        objdir = mozpath.normsep(env.topobjdir)
+        with open(mozpath.join(env.topobjdir, "macos-bundles.json")) as fh:
+            self.assertEqual(
+                json.load(fh),
+                {
+                    "bundles": [
+                        {
+                            "spec": f"{objdir}/dist_Staged.app.bundle.json",
+                            "stage": True,
+                        },
+                        {
+                            "spec": f"{objdir}/dist_bin_Test.app.bundle.json",
+                            "stage": False,
+                        },
+                        {
+                            "spec": f"{objdir}/dist_other_Test.app.bundle.json",
+                            "stage": False,
+                        },
+                    ]
+                },
+            )
+
         backend_path = mozpath.join(env.topobjdir, "backend.mk")
         backend = open(backend_path).read()
         self.assertIn("py_action,assemble_macos_bundle Test.app", backend)
