@@ -33,10 +33,16 @@ add_task(async () => {
   function nearNativeStackLimit(d, f) {
     f = f || function() {};
     let failed = null;
+    nearNativeStackLimit.callCount = (nearNativeStackLimit.callCount || 0) + 1;
+    const callId = nearNativeStackLimit.callCount;
+    let evalCount = 0;
     function inner() {
       try {
+        // Use eval to force a number of native stackframes to be created.
+        // Each eval string is unique so that it is compiled every time,
+        // rather than being reused from the eval cache.
         // eslint-disable-next-line no-eval
-        var stepsFromLimit = eval("inner()"); // Use eval to force a number of native stackframes to be created.
+        var stepsFromLimit = eval(`inner(); // ${callId}:${evalCount++}`);
         if (stepsFromLimit == d) {
           try {
             f();

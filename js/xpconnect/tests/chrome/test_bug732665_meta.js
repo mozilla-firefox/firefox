@@ -4,11 +4,15 @@ var stackBottom = stackPointerInfo();
 var stackTop = stackBottom;
 
 function nearNativeStackLimit() {
+  let evalCount = 0;
   function inner() {
     try {
       stackTop = stackPointerInfo();
+      // Use eval to force a number of native stackframes to be created.
+      // Each eval string is unique so that it is compiled every time,
+      // rather than being reused from the eval cache.
       // eslint-disable-next-line no-eval
-      var stepsFromLimit = eval("inner()"); // Use eval to force a number of native stackframes to be created.
+      var stepsFromLimit = eval(`inner(); // ${evalCount++}`);
       return stepsFromLimit + 1;
     } catch (e) {
       // It would be nice to check here that the exception is actually an
