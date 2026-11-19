@@ -5,6 +5,7 @@
 package org.mozilla.fenix.settings.settingssearch
 
 import android.content.Context
+import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.test.runTest
 import mozilla.components.support.test.robolectric.testContext
@@ -107,5 +108,42 @@ class DefaultFenixSettingsIndexerTest {
 
         val results = excludingIndexer.getSettingsWithQuery(privacyReportTitle)
         assertFalse(results.any { it.preferenceKey == privacyReportKey })
+    }
+
+    @Test
+    @Config(sdk = [Build.VERSION_CODES.P])
+    fun `GIVEN API 28 or above WHEN indexing THEN follow device theme is indexed and auto battery theme is not`() =
+        runTest {
+            indexer.indexAllSettings()
+
+            assertTrue(isIndexed(R.string.preference_follow_device_theme, R.string.pref_key_follow_device_theme))
+            assertFalse(isIndexed(R.string.preference_auto_battery_theme, R.string.pref_key_auto_battery_theme))
+        }
+
+    @Test
+    @Config(sdk = [Build.VERSION_CODES.O_MR1])
+    fun `GIVEN below API 28 WHEN indexing THEN auto battery theme is indexed and follow device theme is not`() =
+        runTest {
+            indexer.indexAllSettings()
+
+            assertTrue(isIndexed(R.string.preference_auto_battery_theme, R.string.pref_key_auto_battery_theme))
+            assertFalse(isIndexed(R.string.preference_follow_device_theme, R.string.pref_key_follow_device_theme))
+        }
+
+    @Test
+    fun `GIVEN a row hidden with a literal false WHEN indexing it THEN it is not indexed`() = runTest {
+        indexer.indexAllSettings()
+
+        assertFalse(
+            isIndexed(
+                R.string.preferences_homepage_search_location,
+                R.string.pref_key_homepage_search_location_header,
+            )
+        )
+    }
+
+    private suspend fun isIndexed(titleId: Int, keyId: Int): Boolean {
+        val key = context.getString(keyId)
+        return indexer.getSettingsWithQuery(context.getString(titleId)).any { it.preferenceKey == key }
     }
 }
