@@ -477,6 +477,7 @@ webrtc_fuzzer_test("sdp_parser_fuzzer") {
   sources = [ "sdp_parser_fuzzer.cc" ]
   deps = [ "../../api:jsep" ]
   seed_corpus = "corpora/sdp-corpus"
+  dict = "corpora/sdp.tokens"
 }
 
 webrtc_fuzzer_test("simulcast_sdp_serializer_fuzzer") {
@@ -508,6 +509,7 @@ if (!build_with_chromium) {
       "//third_party/abseil-cpp/absl/strings",
     ]
     seed_corpus = "corpora/sdp-corpus"
+    dict = "corpora/sdp.tokens"
   }
 }
 
