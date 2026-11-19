@@ -4,6 +4,8 @@
 
 #include "Http3Session.h"
 
+#include <cmath>
+
 #include "ASpdySession.h"  // because of SoftStreamError()
 #include "Http3ConnectUDPStream.h"
 #include "Http3Stream.h"
@@ -537,6 +539,13 @@ nsresult Http3Session::ProcessInput(nsIUDPSocket* socket) {
     return NS_ERROR_UNEXPECTED;
   }
 
+  auto onInputReceived = [&]() {
+    if (mIsTrrServiceChannel) {
+      mNoInputSince =
+          mStreamTransactionHash.IsEmpty() ? TimeStamp() : TimeStamp::Now();
+    }
+  };
+
   if (mUseNSPRForIO) {
     while (true) {
       nsTArray<uint8_t> data;
@@ -555,6 +564,7 @@ nsresult Http3Session::ProcessInput(nsIUDPSocket* socket) {
 
       LOG(("Http3Session::ProcessInput received=%zu", data.Length()));
       mTotalBytesRead += static_cast<int64_t>(data.Length());
+      onInputReceived();
     }
 
     return NS_OK;
@@ -572,6 +582,9 @@ nsresult Http3Session::ProcessInput(nsIUDPSocket* socket) {
   }
   mTotalBytesRead += rv.bytes_read;
   socket->AddInputBytes(rv.bytes_read);
+  if (rv.bytes_read) {
+    onInputReceived();
+  }
 
   return NS_OK;
 }
@@ -1520,6 +1533,11 @@ bool Http3Session::AddStream(nsAHttpTransaction* aHttpTransaction,
   }
 
   mStreamTransactionHash.InsertOrUpdate(aHttpTransaction, RefPtr{stream});
+  if (mIsTrrServiceChannel && mNoInputSince.IsNull()) {
+    mNoInputSince = TimeStamp::Now();
+    // An idle session doesn't keep the tick armed; ReadTimeoutTick needs it.
+    gHttpHandler->ConnMgr()->ActivateTimeoutTick();
+  }
 
   // A transaction added before the handshake completes didn't necessarily go
   // through the pending queue, where the backup timer is normally started.
@@ -3242,6 +3260,44 @@ nsresult Http3Session::GetTransactionTLSSocketControl(
 }
 
 PRIntervalTime Http3Session::LastWriteTime() { return mLastWriteTime; }
+
+uint32_t Http3Session::ReadTimeoutTick() {
+  MOZ_ASSERT(OnSocketThread(), "not on socket thread");
+
+  if (!mIsTrrServiceChannel || !IsConnected() || !mUdpConn ||
+      !StaticPrefs::network_trr_http3_stall_detection_enabled()) {
+    return UINT32_MAX;
+  }
+
+  if (mStreamTransactionHash.IsEmpty()) {
+    mNoInputSince = TimeStamp();
+    return UINT32_MAX;
+  }
+
+  if (mNoInputSince.IsNull()) {
+    mNoInputSince = TimeStamp::Now();
+  }
+
+  // A live peer acknowledges our packets within milliseconds even when the
+  // response itself is slow, so total silence means the path is gone.
+  TimeDuration timeout =
+      TimeDuration::FromMilliseconds(StaticPrefs::network_trr_ping_timeout());
+  TimeDuration silence = TimeStamp::Now() - mNoInputSince;
+  if (silence < timeout) {
+    uint32_t nextTickInSeconds =
+        static_cast<uint32_t>(std::ceil((timeout - silence).ToSeconds()));
+    return std::max(1U, nextTickInSeconds);
+  }
+
+  LOG(
+      ("Http3Session::ReadTimeoutTick %p no input for %.0fms with %u streams, "
+       "closing",
+       this, silence.ToMilliseconds(), mStreamTransactionHash.Count()));
+  gHttpHandler->ExcludeHttp3(mConnInfo);
+  mUdpConn->SetCloseReason(ConnectionCloseReason::IDLE_TIMEOUT);
+  mUdpConn->CloseTransaction(this, NS_ERROR_NET_RESET);
+  return UINT32_MAX;
+}
 
 //=========================================================================
 // WebTransport

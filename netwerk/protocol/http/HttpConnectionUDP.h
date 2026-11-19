@@ -78,6 +78,9 @@ class HttpConnectionUDP final : public HttpConnectionBase,
 
   void OnQuicTimeoutExpired();
 
+  // Returns the seconds until the next tick is needed.
+  uint32_t ReadTimeoutTick();
+
   int64_t BytesWritten() override;
 
   nsresult GetSelfAddr(NetAddr* addr) override;

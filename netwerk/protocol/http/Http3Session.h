@@ -230,6 +230,10 @@ class Http3Session final : public Http3SessionBase,
   bool IsClosing() const { return (mState == CLOSING || mState == CLOSED); }
   bool IsClosed() const { return mState == CLOSED; }
 
+  // Called from the connection manager's timeout tick. Closes a TRR session
+  // whose path went silent; returns the seconds until the next check is due.
+  uint32_t ReadTimeoutTick();
+
   bool AddStream(nsAHttpTransaction* aHttpTransaction, int32_t aPriority,
                  nsIInterfaceRequestor* aCallbacks);
 
@@ -480,6 +484,9 @@ class Http3Session final : public Http3SessionBase,
   TimeStamp mTimerShouldTrigger;
   TimeStamp mZeroRttStarted;
   TimeStamp mLastTRRResponseTime;  // Time of the last successful TRR response
+  // TRR sessions only: start of the current period with requests outstanding
+  // and no packet received. Null while idle.
+  TimeStamp mNoInputSince;
   uint64_t mBlockedByStreamLimitCount = 0;
   uint64_t mTransactionsBlockedByStreamLimitCount = 0;
   uint64_t mTransactionsSenderBlockedByFlowControlCount = 0;

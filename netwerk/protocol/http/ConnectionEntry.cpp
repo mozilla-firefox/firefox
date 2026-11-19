@@ -860,6 +860,12 @@ uint32_t ConnectionEntry::TimeoutTick() {
     if (conn) {
       uint32_t connNextTimeout = conn->ReadTimeoutTick(tickTime);
       timeoutTickNext = std::min(timeoutTickNext, connNextTimeout);
+      continue;
+    }
+    RefPtr<HttpConnectionUDP> udpConn = do_QueryObject(mActiveConns[index]);
+    if (udpConn) {
+      uint32_t nextTickInSeconds = udpConn->ReadTimeoutTick();
+      timeoutTickNext = std::min(timeoutTickNext, nextTickInSeconds);
     }
   }
 

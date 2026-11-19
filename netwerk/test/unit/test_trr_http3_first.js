@@ -15,6 +15,10 @@ var { setTimeout } = ChromeUtils.importESModule(
   "resource://gre/modules/Timer.sys.mjs"
 );
 
+const mockNetwork = Cc[
+  "@mozilla.org/network/mock-network-controller;1"
+].getService(Ci.nsIMockNetworkLayerController);
+
 let h2Port;
 let h3ReverseProxyPort;
 
@@ -45,6 +49,10 @@ add_setup(async function setup() {
   registerCleanupFunction(async () => {
     Services.prefs.clearUserPref("network.dns.localDomains");
     Services.prefs.clearUserPref("network.trr.force_http3_first");
+    Services.prefs.clearUserPref("network.socket.attach_mock_network_layer");
+    Services.prefs.clearUserPref("network.http.http3.use_nspr_for_io");
+    Services.prefs.clearUserPref("network.trr.http3_stall_detection.enabled");
+    mockNetwork.clearBlockedUDPAddr();
   });
 });
 
@@ -160,5 +168,95 @@ add_task(async function test_doh_http3_first_fallback_http2() {
     Assert.ok(false, "dnsRequest takes too long");
   } finally {
     await trrServer.stop();
+  }
+});
+
+// An established HTTP/3 TRR connection that silently stops delivering packets
+// must not stall lookups until the HTTP/3 idle timeout or the TRR-only request
+// timeout fires; after network.trr.ping_timeout of silence they should move to
+// HTTP/2.
+add_task(async function test_doh_http3_blackholed_after_connect() {
+  Services.prefs.setBoolPref("network.trr.http3_stall_detection.enabled", true);
+  Services.dns.clearCache(true);
+  let host = "alt2.example.com";
+
+  // The reverse proxy only accepts one /port? request per process, and the
+  // shared one is already bound to the first task's backend.
+  let h3Server = new HTTP3Server();
+  await h3Server.start(
+    Services.env.get("MOZ_HTTP3_SERVER_PATH"),
+    Services.env.get("MOZ_HTTP3_CERT_DB_PATH")
+  );
+  let proxyPort = h3Server.reverse_proxy_port();
+
+  Services.prefs.setBoolPref("network.socket.attach_mock_network_layer", true);
+  Services.prefs.setBoolPref("network.http.http3.use_nspr_for_io", true);
+
+  // The HTTP/3 path answers 2.2.2.2 and the HTTP/2 path answers 3.3.3.3, so
+  // each answer tells us which protocol carried the query.
+  const names = ["warmup.example.org", "a.example.org", "b.example.org"];
+  let h3Backend = new PlainHttpTRRServer();
+  await h3Backend.start();
+  for (let name of names) {
+    await h3Backend.registerDoHAnswers(name, "A", {
+      answers: [{ name, ttl: 55, type: "A", flush: false, data: "2.2.2.2" }],
+    });
+  }
+
+  // Point the reverse proxy at the new backend before anything listens on the
+  // same TCP port, so this request can only be served over HTTP/3.
+  Services.prefs.setCharPref(
+    "network.http.http3.alt-svc-mapping-for-testing",
+    `${host};h3=:${proxyPort}`
+  );
+  let chan = makeChan(`https://${host}:${proxyPort}/port?${h3Backend.port()}`);
+  let [req] = await channelOpenPromise(chan, CL_ALLOW_UNKNOWN_CL);
+  Assert.equal(req.QueryInterface(Ci.nsIHttpChannel).protocolVersion, "h3");
+  Services.prefs.setCharPref(
+    "network.http.http3.alt-svc-mapping-for-testing",
+    ""
+  );
+
+  let h2Server = new TRRServer();
+  await h2Server.start(proxyPort);
+  for (let name of names) {
+    await h2Server.registerDoHAnswers(name, "A", {
+      answers: [{ name, ttl: 55, type: "A", flush: false, data: "3.3.3.3" }],
+    });
+  }
+
+  Services.prefs.setBoolPref("network.trr.force_http3_first", true);
+  Services.prefs.setCharPref("network.trr.confirmationNS", "skip");
+  Services.prefs.setIntPref("network.trr.mode", 3);
+  Services.prefs.setCharPref(
+    "network.trr.uri",
+    `https://${host}:${proxyPort}/dns-query`
+  );
+
+  await new TRRDNSListener("warmup.example.org", "2.2.2.2");
+
+  for (let ip of ["127.0.0.1", "::1"]) {
+    mockNetwork.blockUDPAddrIO(
+      mockNetwork.createScriptableNetAddr(ip, proxyPort)
+    );
+  }
+
+  let start = Date.now();
+  try {
+    await Promise.race([
+      Promise.all([
+        new TRRDNSListener("a.example.org", "3.3.3.3"),
+        new TRRDNSListener("b.example.org", "3.3.3.3"),
+      ]),
+      timeout(10000),
+    ]);
+    info(`Lookups recovered after ${Date.now() - start}ms`);
+  } catch (err) {
+    Assert.ok(false, `Lookups stalled on the dead HTTP/3 connection: ${err}`);
+  } finally {
+    mockNetwork.clearBlockedUDPAddr();
+    await h2Server.stop();
+    await h3Backend.stop();
+    await h3Server.stop();
   }
 });

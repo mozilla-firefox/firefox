@@ -16599,10 +16599,20 @@
   mirror: always
 
 # Similar to network.http.http2.ping-timeout, but this is used when the
-# Http/2 connection is connected to the TRR server.
+# Http/2 connection is connected to the TRR server. Also used as the
+# no-input timeout of network.trr.http3_stall_detection.enabled.
 - name: network.trr.ping_timeout
   type: RelaxedAtomicUint32
   value: 3000
+  mirror: always
+
+# When true, an established HTTP/3 connection to the TRR server that has
+# requests outstanding but receives no packets for network.trr.ping_timeout
+# is treated as dead: HTTP/3 is excluded for the server and the requests are
+# restarted, which sends them over HTTP/2.
+- name: network.trr.http3_stall_detection.enabled
+  type: RelaxedAtomicBool
+  value: true
   mirror: always
 
 # The timeout of the TRR confirmation request

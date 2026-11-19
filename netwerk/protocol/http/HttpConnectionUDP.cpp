@@ -1068,6 +1068,13 @@ PRIntervalTime HttpConnectionUDP::LastWriteTime() {
   return mHttp3Session->LastWriteTime();
 }
 
+uint32_t HttpConnectionUDP::ReadTimeoutTick() {
+  MOZ_ASSERT(OnSocketThread(), "not on socket thread");
+  // Hold a reference, since the session may close this connection.
+  RefPtr<Http3Session> session = mHttp3Session;
+  return session ? session->ReadTimeoutTick() : UINT32_MAX;
+}
+
 //-----------------------------------------------------------------------------
 // HttpConnectionUDP <private>
 //-----------------------------------------------------------------------------
