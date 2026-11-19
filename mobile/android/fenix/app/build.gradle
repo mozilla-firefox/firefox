@@ -558,6 +558,7 @@ dependencies {
     implementation project(':components:service-location')
     implementation project(':components:service-mars')
     implementation project(':components:service-merino-manifest')
+    implementation project(':components:service-merino-sports')
     implementation project(':components:service-nimbus')
     implementation project(':components:service-pocket')
     implementation project(':components:service-sync-autofill')

@@ -66,6 +66,7 @@ import mozilla.components.feature.summarize.settings.SummarizationSettings
 import mozilla.components.feature.syncedtabs.commands.GlobalSyncedTabsCommandsProvider
 import mozilla.components.lib.crash.CrashReporter
 import mozilla.components.service.fxa.manager.SyncEnginesStorage
+import mozilla.components.service.merino.sports.GlobalMerinoSportsDependencyProvider
 import mozilla.components.service.sync.autofill.GlobalAutofillDependencyProvider
 import mozilla.components.service.sync.logins.GlobalLoginsDependencyProvider
 import mozilla.components.service.sync.logins.LoginsApiException
@@ -392,6 +393,10 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
         GlobalAutofillDependencyProvider.initialize(lazy { components.core.autofillStorage })
 
         GlobalSyncedTabsCommandsProvider.initialize(lazy { components.backgroundServices.syncedTabsCommands })
+        GlobalMerinoSportsDependencyProvider.initialize(
+            provider = lazy { components.sports.merinoSportsProvider },
+            storage = lazy { components.sports.merinoMatchesStorage },
+        )
 
         initializeRemoteSettingsSupport()
 

@@ -511,6 +511,8 @@ class Components(
         Ads(context = context)
     }
 
+    val sports by lazy { Sports(context = context, crashReporter = analytics.crashReporter) }
+
     val relayEligibilityStore by lazy {
         RelayEligibilityStore(middleware = listOf(ClearLastUsedMiddleware()))
     }

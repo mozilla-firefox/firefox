@@ -103,6 +103,7 @@ projects:
     - components:service-location
     - components:service-mars
     - components:service-merino-manifest
+    - components:service-merino-sports
     - components:service-nimbus
     - components:service-pocket
     - components:service-sync-autofill
