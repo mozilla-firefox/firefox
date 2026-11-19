@@ -10,8 +10,8 @@ origin:
 
   url: https://gitlab.freedesktop.org/freetype/freetype
 
-  release: dbb00e529e69a2be629a9ef98498e4f9b188aab1 (2026-11-11T17:13:54.000-05:00).
-  revision: dbb00e529e69a2be629a9ef98498e4f9b188aab1
+  release: d7339729da576614cbf107d04a72924d21f7ec5a (2026-11-17T18:15:46.000-05:00).
+  revision: d7339729da576614cbf107d04a72924d21f7ec5a
 
   license: FTL
   license-file: docs/FTL.TXT

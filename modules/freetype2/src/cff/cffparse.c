@@ -581,7 +581,7 @@
           if ( number < power_tens[integer_length] )
             break;
 
-        if ( ( number / power_tens[integer_length - 5] ) > 0x7FFFL )
+        if ( ( number >> 15 ) >= power_tens[integer_length - 5] )
         {
           *scaling = integer_length - 4;
           return FT_DivFix( number, power_tens[integer_length - 4] );
