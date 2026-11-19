@@ -2239,6 +2239,10 @@ rtc_source_set("legacy_stats_collector_interface") {
 
 rtc_library("datagram_connection_internal") {
   sources = [
+    "congestion_control_feedback_block.cc",
+    "congestion_control_feedback_block.h",
+    "congestion_control_feedback_report.cc",
+    "congestion_control_feedback_report.h",
     "datagram_connection_internal.cc",
     "datagram_connection_internal.h",
     "dtls_packet_processor.cc",
@@ -2260,6 +2264,7 @@ rtc_library("datagram_connection_internal") {
     "../api/environment",
     "../api/transport:ecn_marking",
     "../api/transport:enums",
+    "../api/units:time_delta",
     "../api/units:timestamp",
     "../call:rtp_interfaces",
     "../call:rtp_receiver",
@@ -2276,6 +2281,7 @@ rtc_library("datagram_connection_internal") {
     "../rtc_base:checks",
     "../rtc_base:copy_on_write_buffer",
     "../rtc_base:crypto_random",
+    "../rtc_base:divide_round",
     "../rtc_base:logging",
     "../rtc_base:macromagic",
     "../rtc_base:ssl",
@@ -2459,6 +2465,26 @@ if (rtc_include_tests && !build_with_chromium) {
       "../test:test_support",
       "//third_party/abseil-cpp/absl/strings",
       "//third_party/abseil-cpp/absl/strings:string_view",
+    ]
+  }
+
+  rtc_cc_test("congestion_control_feedback_block_unittest") {
+    sources = [ "congestion_control_feedback_block_unittest.cc" ]
+    deps = [
+      ":datagram_connection_internal",
+      "../api/transport:ecn_marking",
+      "../api/units:time_delta",
+      "../test:test_support",
+    ]
+  }
+
+  rtc_cc_test("congestion_control_feedback_report_unittest") {
+    sources = [ "congestion_control_feedback_report_unittest.cc" ]
+    deps = [
+      ":datagram_connection_internal",
+      "../api/transport:ecn_marking",
+      "../api/units:time_delta",
+      "../test:test_support",
     ]
   }
 
@@ -2930,6 +2956,8 @@ if (rtc_include_tests && !build_with_chromium) {
       ":channel_unittest",
       ":codec_vendor_redesign_unittest",
       ":codec_vendor_unittest",
+      ":congestion_control_feedback_block_unittest",
+      ":congestion_control_feedback_report_unittest",
       ":datagram_connection_unittest",
       ":dtls_packet_processor_unittest",
       ":dtls_srtp_transport_integrationtest",

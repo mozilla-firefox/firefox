@@ -741,6 +741,14 @@ webrtc_fuzzer_test("sctp_utils_fuzzer") {
   ]
 }
 
+webrtc_fuzzer_test("congestion_control_feedback_report_fuzzer") {
+  sources = [ "congestion_control_feedback_report_fuzzer.cc" ]
+  deps = [
+    "../../pc:datagram_connection_internal",
+    "../../rtc_base:checks",
+  ]
+}
+
 webrtc_fuzzer_test("dcsctp_socket_fuzzer") {
   sources = [ "dcsctp_socket_fuzzer.cc" ]
   deps = [
@@ -853,6 +861,7 @@ group("fuzzers") {
     ":audio_processing_fuzzer",
     ":audio_processing_sample_rate_fuzzer",
     ":comfort_noise_decoder_fuzzer",
+    ":congestion_control_feedback_report_fuzzer",
     ":dcsctp_socket_fuzzer",
     ":field_trial_fuzzer",
     ":flexfec_header_reader_fuzzer",

@@ -592,7 +592,7 @@ index a1a20834ca..411d201a78 100644
  import("../../webrtc.gni")
  
 diff --git a/pc/BUILD.gn b/pc/BUILD.gn
-index aed572995a..30fffecf74 100644
+index 6b2fcfa646..16658ccff5 100644
 --- a/pc/BUILD.gn
 +++ b/pc/BUILD.gn
 @@ -29,8 +29,8 @@
@@ -762,7 +762,7 @@ index 8a0f43fc86..b52cc9b12e 100644
      deps = [ ":google_test_runner_delegate" ]
    }
 diff --git a/test/fuzzers/BUILD.gn b/test/fuzzers/BUILD.gn
-index 0d57743ded..df916c58eb 100644
+index d1009b5499..aa26e54d25 100644
 --- a/test/fuzzers/BUILD.gn
 +++ b/test/fuzzers/BUILD.gn
 @@ -6,7 +6,7 @@
