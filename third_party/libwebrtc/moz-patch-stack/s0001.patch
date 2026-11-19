@@ -1409,7 +1409,7 @@ index d95a960061..ea039a1679 100644
      # Dependency on chromium's logging (in //base).
      deps += [ "//base" ]
 diff --git a/rtc_base/logging.cc b/rtc_base/logging.cc
-index 8aae23ef48..f2f5822139 100644
+index 2a90e6b40f..1db04b6a65 100644
 --- a/rtc_base/logging.cc
 +++ b/rtc_base/logging.cc
 @@ -29,6 +29,7 @@
@@ -1445,7 +1445,7 @@ index 8aae23ef48..f2f5822139 100644
  namespace {
  
  // Note: `g_min_sev` and `g_dbg_sev` can be changed while running.
-@@ -299,7 +318,7 @@ const std::string& LogLineRef::DefaultLogLine() const {
+@@ -291,7 +310,7 @@ const std::string& LogLineRef::DefaultLogLine() const {
  // LogMessage
  /////////////////////////////////////////////////////////////////////////////
  
@@ -1455,10 +1455,10 @@ index 8aae23ef48..f2f5822139 100644
  // Boolean options default to false.
  constinit bool LogMessage::log_timestamp_ = false;
 diff --git a/rtc_base/logging.h b/rtc_base/logging.h
-index e82b4deb34..6d5fcfde68 100644
+index 0118e3e360..901cd41ec4 100644
 --- a/rtc_base/logging.h
 +++ b/rtc_base/logging.h
-@@ -689,6 +689,12 @@ class LogMessage {
+@@ -691,6 +691,12 @@ class LogMessage {
    }
  #endif  // RTC_LOG_ENABLED()
  
@@ -1471,7 +1471,7 @@ index e82b4deb34..6d5fcfde68 100644
   private:
    friend class LogMessageForTesting;
  
-@@ -730,6 +736,9 @@ class LogMessage {
+@@ -732,6 +738,9 @@ class LogMessage {
  
    // The stringbuilder that buffers the formatted message before output
    StringBuilder print_stream_;

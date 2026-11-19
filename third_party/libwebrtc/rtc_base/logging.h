@@ -275,6 +275,8 @@ const LoggingConfig& GetLoggingConfig();
 //   InitializeLogging() call will succeed.
 // - When `restore_config` is provided (e.g. in TearDown), moves it back in as
 //   the active initialized configuration.
+// Must not be called while other threads log, since it replaces the
+// configuration that log messages read.
 LoggingConfig ResetLoggingForTesting(
     std::optional<LoggingConfig> restore_config = std::nullopt);
 

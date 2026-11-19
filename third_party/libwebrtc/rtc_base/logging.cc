@@ -105,16 +105,9 @@ const char* FilenameFromPath(const char* file) {
     return (end1 > end2) ? end1 + 1 : end2 + 1;
 }
 
-// Serializes InitializeLogging() and ResetLoggingForTesting().
-Mutex& GetLoggingLock() {
-  static Mutex& mutex = *new Mutex();
-  return mutex;
-}
-
 // Set by ResetLoggingForTesting() to let the next InitializeLogging() call
 // replace the active configuration. Never set in production.
-constinit bool g_reinitialize_for_testing RTC_GUARDED_BY(GetLoggingLock()) =
-    false;
+constinit std::atomic<bool> g_reinitialize_for_testing = false;
 
 // Internal helper to manage config state.
 // NOTE: The return value is non-const only while transitioning away from and
@@ -225,8 +218,7 @@ class DynamicLogSinks {
   std::vector<Entry> sinks_ RTC_GUARDED_BY(mutex_);
 };
 
-void ApplyConfigToLogMessageLocked(const LoggingConfig& config)
-    RTC_EXCLUSIVE_LOCKS_REQUIRED(GetLoggingLock()) {
+void ApplyConfigToLogMessage(const LoggingConfig& config) {
   LogMessage::LogTimestamps(config.log_timestamp());
   LogMessage::SetLogToStderr(config.log_to_stderr());
   DynamicLogSinks::Get().SetDebugSeverity(config.debug_severity());
@@ -235,15 +227,16 @@ void ApplyConfigToLogMessageLocked(const LoggingConfig& config)
 }  // namespace
 
 bool InitializeLogging(LoggingConfig config) {
+  // Only the call that initializes the configuration, or the first call after
+  // ResetLoggingForTesting(), applies it.
   bool config_applied = false;
   LoggingConfig& active = GetOrInitConfig(&config, &config_applied);
-  MutexLock lock(&GetLoggingLock());
-  if (!config_applied && std::exchange(g_reinitialize_for_testing, false)) {
+  if (!config_applied && g_reinitialize_for_testing.exchange(false)) {
     active = std::move(config);
     config_applied = true;
   }
   if (config_applied) {
-    ApplyConfigToLogMessageLocked(active);
+    ApplyConfigToLogMessage(active);
   }
   return config_applied;
 }
@@ -255,13 +248,12 @@ const LoggingConfig& GetLoggingConfig() {
 LoggingConfig ResetLoggingForTesting(
     std::optional<LoggingConfig> restore_config) {
   LoggingConfig& active = GetOrInitConfig();
-  MutexLock lock(&GetLoggingLock());
   // Unless a configuration is restored, let the next InitializeLogging() call
   // replace the default configuration.
-  g_reinitialize_for_testing = !restore_config.has_value();
+  g_reinitialize_for_testing.store(!restore_config.has_value());
   LoggingConfig previous = std::exchange(
       active, std::move(restore_config).value_or(LoggingConfig()));
-  ApplyConfigToLogMessageLocked(active);
+  ApplyConfigToLogMessage(active);
   return previous;
 }
 
