@@ -47,10 +47,26 @@
         android:ellipsize="middle"
         android:singleLine="true"
         android:textColor="?attr/colorOnSurfaceVariant"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/cvv_saved"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/credit_card_logo"
         app:layout_constraintTop_toBottomOf="@id/credit_card_number"
         app:layout_constraintVertical_chainStyle="packed"
         tools:text="02/2022" />
+
+    <TextView
+        android:id="@+id/cvv_saved"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/credit_cards_saved_cards_item_margin_start"
+        android:layout_marginEnd="@dimen/credit_cards_saved_cards_item_margin_end"
+        android:singleLine="true"
+        android:text="@string/credit_cards_cvv_saved"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/credit_card_logo"
+        app:layout_constraintTop_toBottomOf="@id/expiry_date"
+        tools:visibility="visible" />
 </androidx.constraintlayout.widget.ConstraintLayout>

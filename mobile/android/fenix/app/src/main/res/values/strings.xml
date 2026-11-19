@@ -3067,6 +3067,8 @@
     <string name="credit_cards_cancel_button">Cancel</string>
     <!-- Title of the "Saved cards" screen -->
     <string name="credit_cards_saved_cards">Saved cards</string>
+    <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+    <string name="credit_cards_cvv_saved">CVV saved</string>
     <!-- Error message for card number validation -->
     <string name="credit_cards_number_validation_error_message_2">Enter a valid card number</string>
     <!-- Error message for card name on card validation -->

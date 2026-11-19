@@ -53,7 +53,12 @@ class CreditCardsManagementFragment : SecureFragment(), SystemInsetsPaddedFragme
             )
         val binding = ComponentCreditCardsBinding.bind(view)
 
-        creditCardsView = CreditCardsManagementView(binding, interactor)
+        creditCardsView =
+            CreditCardsManagementView(
+                binding = binding,
+                interactor = interactor,
+                shouldShowCvvSaved = requireContext().components.settings.isCreditCardSecurityCodeEnabled,
+            )
 
         loadCreditCards()
 

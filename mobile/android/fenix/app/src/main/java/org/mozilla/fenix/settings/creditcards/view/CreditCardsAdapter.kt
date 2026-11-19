@@ -11,13 +11,20 @@ import androidx.recyclerview.widget.ListAdapter
 import mozilla.components.concept.storage.CreditCard
 import org.mozilla.fenix.settings.creditcards.interactor.CreditCardsManagementInteractor
 
-/** Adapter for a list of credit cards to be displayed. */
-class CreditCardsAdapter(private val interactor: CreditCardsManagementInteractor) :
-    ListAdapter<CreditCard, CreditCardItemViewHolder>(DiffCallback) {
+/**
+ * Adapter for a list of credit cards to be displayed.
+ *
+ * @param interactor The [CreditCardsManagementInteractor] notified when a credit card is selected.
+ * @param shouldShowCvvSaved Whether to show which cards have a saved security code.
+ */
+class CreditCardsAdapter(
+    private val interactor: CreditCardsManagementInteractor,
+    private val shouldShowCvvSaved: Boolean = false,
+) : ListAdapter<CreditCard, CreditCardItemViewHolder>(DiffCallback) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CreditCardItemViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(CreditCardItemViewHolder.LAYOUT_ID, parent, false)
-        return CreditCardItemViewHolder(view, interactor)
+        return CreditCardItemViewHolder(view, interactor, shouldShowCvvSaved)
     }
 
     override fun onBindViewHolder(holder: CreditCardItemViewHolder, position: Int) {

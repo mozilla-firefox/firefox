@@ -6,6 +6,7 @@ package org.mozilla.fenix.settings.creditcards.view
 
 import android.view.View
 import androidx.annotation.LayoutRes
+import androidx.core.view.isVisible
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -16,10 +17,17 @@ import org.mozilla.fenix.databinding.CreditCardListItemBinding
 import org.mozilla.fenix.settings.creditcards.interactor.CreditCardsManagementInteractor
 import org.mozilla.fenix.utils.view.ViewHolder
 
-/** View holder for a credit card list item. */
+/**
+ * View holder for a credit card list item.
+ *
+ * @param view The view of the list item.
+ * @param interactor The [CreditCardsManagementInteractor] notified when the item is selected.
+ * @param shouldShowCvvSaved Whether to show that the card has a saved security code.
+ */
 class CreditCardItemViewHolder(
     private val view: View,
     private val interactor: CreditCardsManagementInteractor,
+    private val shouldShowCvvSaved: Boolean = false,
 ) : ViewHolder(view) {
 
     fun bind(creditCard: CreditCard) {
@@ -30,6 +38,8 @@ class CreditCardItemViewHolder(
         binding.creditCardNumber.text = creditCard.obfuscatedCardNumber
 
         bindCreditCardExpiryDate(creditCard, binding)
+
+        binding.cvvSaved.isVisible = shouldShowCvvSaved && !creditCard.cardCvv.isNullOrEmpty()
 
         itemView.setOnClickListener {
             interactor.onSelectCreditCard(creditCard)

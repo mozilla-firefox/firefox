@@ -6,12 +6,15 @@ package org.mozilla.fenix.settings.creditcards
 
 import android.view.LayoutInflater
 import android.view.View
+import androidx.core.view.isVisible
 import io.mockk.mockk
 import io.mockk.verify
 import mozilla.components.concept.storage.CreditCard
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.utils.CreditCardNetworkType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -64,5 +67,43 @@ class CreditCardItemViewHolderTest {
 
         view.performClick()
         verify { interactor.onSelectCreditCard(creditCard) }
+    }
+
+    @Test
+    fun `GIVEN showing saved CVVs AND the card has a saved CVV THEN the CVV saved line is visible`() {
+        CreditCardItemViewHolder(view, interactor, shouldShowCvvSaved = true).bind(creditCard.copy(cardCvv = "123"))
+
+        assertTrue(binding.cvvSaved.isVisible)
+    }
+
+    @Test
+    fun `GIVEN showing saved CVVs AND the card has no saved CVV THEN the CVV saved line is hidden`() {
+        CreditCardItemViewHolder(view, interactor, shouldShowCvvSaved = true).bind(creditCard)
+
+        assertFalse(binding.cvvSaved.isVisible)
+    }
+
+    @Test
+    fun `GIVEN showing saved CVVs AND the card has an empty CVV THEN the CVV saved line is hidden`() {
+        CreditCardItemViewHolder(view, interactor, shouldShowCvvSaved = true).bind(creditCard.copy(cardCvv = ""))
+
+        assertFalse(binding.cvvSaved.isVisible)
+    }
+
+    @Test
+    fun `GIVEN not showing saved CVVs AND the card has a saved CVV THEN the CVV saved line is hidden`() {
+        CreditCardItemViewHolder(view, interactor, shouldShowCvvSaved = false).bind(creditCard.copy(cardCvv = "123"))
+
+        assertFalse(binding.cvvSaved.isVisible)
+    }
+
+    @Test
+    fun `WHEN a view holder is bound again with a card without a saved CVV THEN the CVV saved line is hidden`() {
+        val viewHolder = CreditCardItemViewHolder(view, interactor, shouldShowCvvSaved = true)
+        viewHolder.bind(creditCard.copy(cardCvv = "123"))
+
+        viewHolder.bind(creditCard)
+
+        assertFalse(binding.cvvSaved.isVisible)
     }
 }

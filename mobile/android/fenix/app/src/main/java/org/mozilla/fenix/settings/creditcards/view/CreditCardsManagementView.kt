@@ -12,13 +12,20 @@ import org.mozilla.fenix.databinding.ComponentCreditCardsBinding
 import org.mozilla.fenix.settings.autofill.AutofillFragmentState
 import org.mozilla.fenix.settings.creditcards.interactor.CreditCardsManagementInteractor
 
-/** Shows a list of credit cards. */
+/**
+ * Shows a list of credit cards.
+ *
+ * @property binding The binding of the credit cards list.
+ * @property interactor The [CreditCardsManagementInteractor] notified of user actions.
+ * @param shouldShowCvvSaved Whether to show which cards have a saved security code.
+ */
 class CreditCardsManagementView(
     val binding: ComponentCreditCardsBinding,
     val interactor: CreditCardsManagementInteractor,
+    shouldShowCvvSaved: Boolean = false,
 ) {
 
-    private val creditCardsAdapter = CreditCardsAdapter(interactor)
+    private val creditCardsAdapter = CreditCardsAdapter(interactor, shouldShowCvvSaved)
 
     init {
         binding.creditCardsList.apply {
