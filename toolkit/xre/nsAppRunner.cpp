@@ -5041,11 +5041,9 @@ int XREMain::XRE_mainInit(bool* aExitFlag) {
   if (CheckArg("foreground")) {
     // The original process communicates that it was in the foreground by
     // adding this argument.  This new process, which is taking over for
-    // the old one, should make itself the active application.
-    ProcessSerialNumber psn;
-    if (::GetCurrentProcess(&psn) == noErr) {
-      ::SetFrontProcess(&psn);
-    }
+    // the old one, should make itself the active application once AppKit has
+    // finished launching.
+    ActivateMacAppAfterLaunch();
   }
 #endif
 
