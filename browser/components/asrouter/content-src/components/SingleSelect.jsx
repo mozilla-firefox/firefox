@@ -91,6 +91,7 @@ export const SingleSelect = ({
 
   const CONFIGURABLE_STYLES = [
     "background",
+    "backgroundImage",
     "border",
     "borderRadius",
     "height",
