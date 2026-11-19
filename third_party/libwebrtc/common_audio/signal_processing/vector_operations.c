@@ -61,7 +61,8 @@ void WebRtcSpl_AddAffineVectorToVector(int16_t* out,
   size_t i;
 
   for (i = 0; i < vector_length; i++) {
-    out[i] += (int16_t)((in[i] * gain + add_constant) >> right_shifts);
+    int32_t scaled = (in[i] * gain + add_constant) >> right_shifts;
+    out[i] = WebRtcSpl_SatW32ToW16((int32_t)out[i] + scaled);
   }
 }
 
@@ -74,6 +75,7 @@ void WebRtcSpl_AffineTransformVector(int16_t* out,
   size_t i;
 
   for (i = 0; i < vector_length; i++) {
-    out[i] = (int16_t)((in[i] * gain + add_constant) >> right_shifts);
+    out[i] =
+        WebRtcSpl_SatW32ToW16((in[i] * gain + add_constant) >> right_shifts);
   }
 }

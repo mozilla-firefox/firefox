@@ -461,6 +461,7 @@ void WebRtcSpl_AddVectorsAndShift(int16_t* out_vector,
 // Adds an affine transformed vector to another vector `out_vector`, i.e,
 // performs
 //  out_vector[k] += (in_vector[k]*gain+add_constant)>>right_shifts
+// The result is saturated to the int16_t range after addition.
 //
 // Input:
 //      - in_vector     : Input vector
@@ -485,6 +486,7 @@ void WebRtcSpl_AddAffineVectorToVector(int16_t* out_vector,
 //
 // Affine transforms a vector, i.e, performs
 //  out_vector[k] = (in_vector[k]*gain+add_constant)>>right_shifts
+// The result is saturated to the int16_t range after shifting.
 //
 // Input:
 //      - in_vector     : Input vector
