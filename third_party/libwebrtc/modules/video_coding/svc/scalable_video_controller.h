@@ -94,6 +94,12 @@ class ScalableVideoController {
   // Returned vector shouldn't be empty.
   virtual std::vector<LayerFrameConfig> NextFrameConfig(bool restart) = 0;
 
+  // Indicates that the layer frame is intentionally skipped with the intention
+  // to progress the pattern for the next frame.
+  // TODO(bugs.webrtc.org/445115234): Make pure virtual when implementations
+  // have been updated.
+  virtual void OnFrameDropped(const LayerFrameConfig& config) {}
+
   // Returns configuration to pass to EncoderCallback.
   virtual GenericFrameInfo OnEncodeDone(const LayerFrameConfig& config) = 0;
 };

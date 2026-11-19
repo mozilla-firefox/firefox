@@ -8,6 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -49,6 +50,7 @@ using ::testing::NotNull;
 using ::testing::SizeIs;
 using ::testing::TestWithParam;
 using ::testing::Values;
+using LayerFrameConfig = ScalableVideoController::LayerFrameConfig;
 
 std::string FrameDependencyTemplateToString(const FrameDependencyTemplate& t) {
   StringBuilder sb;
@@ -98,10 +100,123 @@ struct SvcTestParam {
   }
 
   std::string name;
+  // Number of temporal units in a test cycle (~2 pattern periods). Keep small:
+  // `OnFrameDropped*` tests generate O(N^2) frames and invariant checks are
+  // quadratic in frame count (O(N^4) overall).
   int num_temporal_units;
 };
 
 class ScalabilityStructureTest : public TestWithParam<SvcTestParam> {};
+
+void CheckDependencyDescriptorInvariants(
+    const FrameDependencyStructure& structure,
+    std::span<const GenericFrameInfo> frame_infos) {
+  const int64_t num_frames = frame_infos.size();
+  std::vector<std::set<int64_t>> full_deps(num_frames);
+
+  for (int64_t frame_id = 0; frame_id < num_frames; ++frame_id) {
+    const GenericFrameInfo& frame = frame_infos[frame_id];
+    EXPECT_GE(frame.spatial_id, 0) << " for frame " << frame_id;
+    EXPECT_GE(frame.temporal_id, 0) << " for frame " << frame_id;
+    EXPECT_THAT(frame.decode_target_indications,
+                SizeIs(structure.num_decode_targets))
+        << " for frame " << frame_id;
+    EXPECT_THAT(frame.part_of_chain, SizeIs(structure.num_chains))
+        << " for frame " << frame_id;
+    EXPECT_THAT(frame.chain_diffs, SizeIs(structure.num_chains))
+        << " for frame " << frame_id;
+
+    std::set<int64_t> all_base_frames;
+    for (int frame_diff : frame.frame_diffs) {
+      int64_t base_frame_id = frame_id - frame_diff;
+      ASSERT_GE(base_frame_id, 0) << " for frame " << frame_id;
+      ASSERT_LT(base_frame_id, frame_id) << " for frame " << frame_id;
+      const GenericFrameInfo& base_frame = frame_infos[base_frame_id];
+      EXPECT_GE(frame.spatial_id, base_frame.spatial_id)
+          << "Frame " << frame_id << " depends on frame " << base_frame_id;
+      EXPECT_GE(frame.temporal_id, base_frame.temporal_id)
+          << "Frame " << frame_id << " depends on frame " << base_frame_id;
+
+      all_base_frames.insert(base_frame_id);
+      const std::set<int64_t>& indirect = full_deps[base_frame_id];
+      all_base_frames.insert(indirect.begin(), indirect.end());
+    }
+    full_deps[frame_id] = std::move(all_base_frames);
+  }
+
+  for (int dt = 0; dt < structure.num_decode_targets; ++dt) {
+    for (int64_t frame_id = 0; frame_id < num_frames; ++frame_id) {
+      const GenericFrameInfo& frame = frame_infos[frame_id];
+      if (frame.decode_target_indications[dt] ==
+          DecodeTargetIndication::kNotPresent) {
+        continue;
+      }
+      for (int frame_diff : frame.frame_diffs) {
+        int64_t base_frame_id = frame_id - frame_diff;
+        const GenericFrameInfo& base_frame = frame_infos[base_frame_id];
+        EXPECT_NE(base_frame.decode_target_indications[dt],
+                  DecodeTargetIndication::kNotPresent)
+            << "Frame " << frame_id << " depends on frame " << base_frame_id
+            << " that is not part of decode target#" << dt;
+        EXPECT_NE(base_frame.decode_target_indications[dt],
+                  DecodeTargetIndication::kDiscardable)
+            << "Frame " << frame_id << " depends on frame " << base_frame_id
+            << " that is discardable for decode target#" << dt;
+      }
+    }
+
+    for (int64_t switch_frame_id = 0; switch_frame_id < num_frames;
+         ++switch_frame_id) {
+      if (frame_infos[switch_frame_id].decode_target_indications[dt] !=
+          DecodeTargetIndication::kSwitch) {
+        continue;
+      }
+      for (int64_t later_frame_id = switch_frame_id + 1;
+           later_frame_id < num_frames; ++later_frame_id) {
+        if (frame_infos[later_frame_id].decode_target_indications[dt] ==
+            DecodeTargetIndication::kNotPresent) {
+          continue;
+        }
+        for (int frame_diff : frame_infos[later_frame_id].frame_diffs) {
+          int64_t early_frame_id = later_frame_id - frame_diff;
+          if (early_frame_id < switch_frame_id) {
+            EXPECT_THAT(full_deps[switch_frame_id], Contains(early_frame_id))
+                << "For decode target #" << dt << " frame " << later_frame_id
+                << " depends on the frame " << early_frame_id
+                << " that switch indication frame " << switch_frame_id
+                << " doesn't directly or indirectly depend on.";
+          }
+        }
+      }
+
+      // Verify chain integrity and protection: walking `chain_diffs` back must
+      // hit only frames marked `part_of_chain`, and for chain-member `kSwitch`
+      // frames (e.g. T0), the chain must cover all transitive dependencies.
+      if (structure.num_chains > 0) {
+        int chain_id = structure.decode_target_protected_by_chain[dt];
+        std::set<int64_t> frames_in_chain;
+        int64_t cur = switch_frame_id;
+        while (frame_infos[cur].chain_diffs[chain_id] > 0) {
+          int cdiff = frame_infos[cur].chain_diffs[chain_id];
+          ASSERT_LE(cdiff, cur) << "Invalid chain_diff at frame " << cur;
+          cur -= cdiff;
+          EXPECT_TRUE(frame_infos[cur].part_of_chain[chain_id])
+              << "Frame " << cur << " referenced by chain " << chain_id
+              << " is not marked part_of_chain.";
+          frames_in_chain.insert(cur);
+        }
+        if (frame_infos[switch_frame_id].part_of_chain[chain_id]) {
+          for (int64_t dep_frame_id : full_deps[switch_frame_id]) {
+            EXPECT_THAT(frames_in_chain, Contains(dep_frame_id))
+                << "For decode target #" << dt << " (chain #" << chain_id
+                << "), switch frame " << switch_frame_id << " depends on frame "
+                << dep_frame_id << " which is not protected by the chain.";
+          }
+        }
+      }
+    }
+  }
+}
 
 TEST_P(ScalabilityStructureTest,
        StaticConfigMatchesConfigReturnedByController) {
@@ -362,6 +477,139 @@ TEST_P(ScalabilityStructureTest, ProduceNoFrameForDisabledLayers) {
           Not(Contains(AllOf(Field(&GenericFrameInfo::spatial_id, sid),
                              Field(&GenericFrameInfo::temporal_id, tid)))))
           << "For layer (" << sid << "," << tid << ")";
+    }
+  }
+}
+
+// TODO(bugs.webrtc.org/445115234): Populate supported scalability modes here,
+// and then remove once all are supported.
+bool SupportsOnFrameDropped(ScalabilityMode /*mode*/) {
+  return false;
+}
+
+TEST_P(ScalabilityStructureTest,
+       OnFrameDroppedForEnhancementTemporalLayersKeepsReferencesValid) {
+  if (!SupportsOnFrameDropped(GetParam().GetScalabilityMode())) {
+    GTEST_SKIP();
+  }
+  std::unique_ptr<ScalableVideoController> svc_controller =
+      CreateScalabilityStructure(GetParam().GetScalabilityMode());
+  ScalabilityStructureWrapper wrapper(*svc_controller);
+  std::vector<GenericFrameInfo> frames;
+
+  // Generate first temporal unit (keyframe / T0), then run `N` cycles of `N`
+  // temporal units (`N = num_temporal_units`). Each outer iteration drops a
+  // single enhancement temporal unit offset `drop_tu` and encodes the remaining
+  // temporal units so the controller recovers across a full cycle on the same
+  // stream before testing the next offset. `num_temporal_units` must remain
+  // small to avoid excessive runtime.
+  wrapper.GenerateFrames(/*num_temporal_units=*/1, frames);
+  for (int drop_tu = 0; drop_tu < GetParam().num_temporal_units; ++drop_tu) {
+    for (int i = 0; i < GetParam().num_temporal_units; ++i) {
+      std::vector<LayerFrameConfig> configs =
+          svc_controller->NextFrameConfig(/*restart=*/false);
+      const bool is_enhancement_temporal_unit =
+          std::ranges::any_of(configs, [](const LayerFrameConfig& config) {
+            return config.TemporalId() > 0;
+          });
+      if (i == drop_tu && is_enhancement_temporal_unit) {
+        for (const LayerFrameConfig& config : configs) {
+          svc_controller->OnFrameDropped(config);
+        }
+      } else {
+        wrapper.EncodeTemporalUnit(configs, frames);
+      }
+    }
+  }
+  EXPECT_TRUE(wrapper.FrameReferencesAreValid(frames));
+  CheckDependencyDescriptorInvariants(svc_controller->DependencyStructure(),
+                                      frames);
+}
+
+TEST_P(ScalabilityStructureTest,
+       OnFrameDroppedForAnyTemporalUnitKeepsReferencesValid) {
+  if (!SupportsOnFrameDropped(GetParam().GetScalabilityMode())) {
+    GTEST_SKIP();
+  }
+  std::unique_ptr<ScalableVideoController> svc_controller =
+      CreateScalabilityStructure(GetParam().GetScalabilityMode());
+  ScalabilityStructureWrapper wrapper(*svc_controller);
+  std::vector<GenericFrameInfo> frames;
+
+  // Drop the initial keyframe temporal unit before any frame has been encoded.
+  std::vector<LayerFrameConfig> initial_configs =
+      svc_controller->NextFrameConfig(/*restart=*/false);
+  ASSERT_THAT(initial_configs, Not(IsEmpty()));
+  for (const LayerFrameConfig& config : initial_configs) {
+    svc_controller->OnFrameDropped(config);
+  }
+
+  // Generate the first encoded temporal unit, then run `N` cycles of `N`
+  // temporal units (`N = num_temporal_units`), encoding `N * (N - 1)` temporal
+  // units in total. Each outer iteration drops a single temporal unit offset
+  // `drop_tu` (including T0) and encodes the remaining `N - 1` temporal units
+  // so the controller recovers across a full cycle on the same stream before
+  // testing the next offset. `num_temporal_units` must remain small since
+  // O(N^2) frames with O(frames^2) invariant checks gives O(N^4) work.
+  wrapper.GenerateFrames(/*num_temporal_units=*/1, frames);
+  for (int drop_tu = 0; drop_tu < GetParam().num_temporal_units; ++drop_tu) {
+    for (int i = 0; i < GetParam().num_temporal_units; ++i) {
+      std::vector<LayerFrameConfig> configs =
+          svc_controller->NextFrameConfig(/*restart=*/false);
+      ASSERT_THAT(configs, Not(IsEmpty()));
+      if (i == drop_tu) {
+        for (const LayerFrameConfig& config : configs) {
+          svc_controller->OnFrameDropped(config);
+        }
+      } else {
+        wrapper.EncodeTemporalUnit(configs, frames);
+      }
+    }
+  }
+  EXPECT_TRUE(wrapper.FrameReferencesAreValid(frames));
+  CheckDependencyDescriptorInvariants(svc_controller->DependencyStructure(),
+                                      frames);
+}
+
+TEST_P(ScalabilityStructureTest,
+       OnFrameDroppedForUpperSpatialLayersKeepsReferencesValid) {
+  if (!SupportsOnFrameDropped(GetParam().GetScalabilityMode())) {
+    GTEST_SKIP();
+  }
+  ScalableVideoController::StreamLayersConfig stream_config =
+      CreateScalabilityStructure(GetParam().GetScalabilityMode())
+          ->StreamConfig();
+  for (int drop_from_sid = 0; drop_from_sid < stream_config.num_spatial_layers;
+       ++drop_from_sid) {
+    for (int drop_tu = 0; drop_tu <= GetParam().num_temporal_units; ++drop_tu) {
+      std::unique_ptr<ScalableVideoController> svc_controller =
+          CreateScalabilityStructure(GetParam().GetScalabilityMode());
+      ScalabilityStructureWrapper wrapper(*svc_controller);
+      std::vector<GenericFrameInfo> frames;
+
+      const int total_tus = GetParam().num_temporal_units * 2 + 1;
+      for (int i = 0; i < total_tus; ++i) {
+        std::vector<LayerFrameConfig> configs =
+            svc_controller->NextFrameConfig(/*restart=*/false);
+        ASSERT_THAT(configs, Not(IsEmpty()));
+        if (i == drop_tu) {
+          std::vector<LayerFrameConfig> encoded;
+          for (const LayerFrameConfig& config : configs) {
+            if (config.SpatialId() >= drop_from_sid) {
+              svc_controller->OnFrameDropped(config);
+            } else {
+              encoded.push_back(config);
+            }
+          }
+          wrapper.EncodeTemporalUnit(encoded, frames);
+        } else {
+          wrapper.EncodeTemporalUnit(configs, frames);
+        }
+      }
+      EXPECT_TRUE(wrapper.FrameReferencesAreValid(frames))
+          << "drop_from_sid=" << drop_from_sid << ", drop_tu=" << drop_tu;
+      CheckDependencyDescriptorInvariants(svc_controller->DependencyStructure(),
+                                          frames);
     }
   }
 }
