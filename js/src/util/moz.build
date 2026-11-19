@@ -71,3 +71,11 @@ SOURCE_HEADERS += [
     "UnicodeNonBMP.h",
     "WindowsWrapper.h",
 ]
+
+if CONFIG["JS_HW_SHADOW_STACK"]:
+    UNIFIED_SOURCES += [
+        "HardwareShadowStack.cpp",
+    ]
+    SOURCE_HEADERS += [
+        "HardwareShadowStack.h",
+    ]
