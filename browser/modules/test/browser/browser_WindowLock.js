@@ -259,6 +259,61 @@ add_task(async function test_close_locked_window_with_warning() {
   await SpecialPowers.popPrefEnv();
 });
 
+/**
+ * Check that a prompt overlapping with a locked window doesn't re-enable
+ * commands that were disabled beforehand, such as Clear Recent History in
+ * Private Windows.
+ */
+add_task(async function test_prompt_while_locked_keeps_disabled_commands() {
+  await setLockPrivateWindows(true);
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.sessionstore.max_tabs_undo", 0]],
+  });
+  let privateWin = await BrowserTestUtils.openNewBrowserWindow({
+    private: true,
+  });
+  for (let i = 0; i < 2; i++) {
+    await BrowserTestUtils.openNewForegroundTab(
+      privateWin.gBrowser,
+      "https://example.com/"
+    );
+  }
+  let isDisabled = id =>
+    privateWin.document.getElementById(id).hasAttribute("disabled");
+  ok(isDisabled("Tools:Sanitize"), "Clearing history is disabled");
+
+  let dialogPromise = BrowserTestUtils.promiseAlertDialogOpen();
+  let promptReturnedPromise = new Promise(resolve => {
+    privateWin.setTimeout(() => {
+      privateWin.gBrowser.removeAllTabsBut(privateWin.gBrowser.selectedTab);
+      resolve();
+    }, 0);
+  });
+  let dialogWin = await dialogPromise;
+
+  Services.obs.notifyObservers(null, "screen_lock_notification");
+  ok(WindowLock.locked, "Locked");
+  await unlockWith(privateWin, ReauthResult.SUCCESS);
+  ok(!WindowLock.locked, "Unlocked");
+  ok(
+    isDisabled("cmd_newNavigatorTab"),
+    "Commands stay disabled while the prompt is open"
+  );
+
+  dialogWin.document.querySelector("dialog").cancelDialog();
+  await promptReturnedPromise;
+  is(privateWin.gBrowser.tabs.length, 3, "Canceling the prompt keeps the tabs");
+  ok(
+    !isDisabled("cmd_newNavigatorTab"),
+    "Commands are enabled once the prompt is closed"
+  );
+  ok(isDisabled("Tools:Sanitize"), "Clearing history stays disabled");
+
+  await BrowserTestUtils.closeWindow(privateWin);
+  await SpecialPowers.popPrefEnv();
+  await SpecialPowers.popPrefEnv();
+});
+
 add_task(async function test_no_lock_when_disabled() {
   await setLockPrivateWindows(false);
   let privateWin = await BrowserTestUtils.openNewBrowserWindow({
