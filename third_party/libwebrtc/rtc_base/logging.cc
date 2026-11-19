@@ -35,6 +35,7 @@
 #include "rtc_base/string_utils.h"
 #include "rtc_base/strings/string_builder.h"
 #include "rtc_base/synchronization/mutex.h"
+#include "rtc_base/system/ignore_warnings.h"
 #include "rtc_base/thread_annotations.h"
 #include "rtc_base/time_utils.h"
 
@@ -171,8 +172,12 @@ LoggingConfig ResetLoggingForTesting(
 }
 
 LogLineRef::LogLineRef() = default;
+LogLineRef::~LogLineRef() = default;
 
-std::string LogLineRef::DefaultLogLine() const {
+const std::string& LogLineRef::DefaultLogLine() const {
+  if (default_log_line_.has_value()) {
+    return *default_log_line_;
+  }
   absl::string_view prefix = GetLoggingConfig().log_prefix();
   StringBuilder log_output;
   // 48 characters is an estimate for the timestamp ("[000:000]"), the thread
@@ -211,7 +216,8 @@ std::string LogLineRef::DefaultLogLine() const {
 #endif
   }
   log_output << message_;
-  return log_output.Release();
+  default_log_line_ = log_output.Release();
+  return *default_log_line_;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -487,7 +493,7 @@ void LogMessage::UpdateMinLogSeverity()
 }
 
 void LogMessage::OutputToDebug(const LogLineRef& log_line) {
-  std::string msg_str = log_line.DefaultLogLine();
+  const std::string& msg_str = log_line.DefaultLogLine();
   bool log_to_stderr = log_to_stderr_;
 #if defined(WEBRTC_MAC) && !defined(WEBRTC_IOS) && defined(NDEBUG)
   // On the Mac, all stderr output goes to the Console log and causes clutter.
@@ -787,6 +793,13 @@ LoggingConfig ResetLoggingForTesting(
     std::optional<LoggingConfig> /* restore_config */) {
   return LoggingConfig();
 }
+
+const std::string& LogLineRef::DefaultLogLine() const {
+  if (!default_log_line_.has_value()) {
+    default_log_line_.emplace();
+  }
+  return *default_log_line_;
+}
 }  // namespace webrtc
 #endif  // RTC_LOG_ENABLED()
 
@@ -798,12 +811,16 @@ LoggingConfig::~LoggingConfig() = default;
 
 // Default implementation, override is recomended.
 void LogSink::OnLogMessage(const LogLineRef& log_line) {
+  // The default implementation still uses the deprecated string overloads, for
+  // sinks that override those.
+  RTC_PUSH_IGNORING_WDEPRECATED_DECLARATIONS()
 #if defined(WEBRTC_ANDROID)
   OnLogMessage(log_line.DefaultLogLine(), log_line.severity(),
                log_line.tag().data());
 #else
   OnLogMessage(log_line.DefaultLogLine(), log_line.severity());
 #endif
+  RTC_POP_IGNORING_WDEPRECATED_DECLARATIONS()
 }
 
 // Inefficient default implementation, override is recommended.
@@ -816,6 +833,10 @@ void LogSink::OnLogMessage(const std::string& msg,
 void LogSink::OnLogMessage(const std::string& msg,
                            LoggingSeverity /* severity */) {
   OnLogMessage(msg);
+}
+
+void LogSink::OnLogMessage(const std::string& msg) {
+  OnLogMessage(absl::string_view(msg));
 }
 
 // Inefficient default implementation, override is recommended.

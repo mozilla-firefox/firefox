@@ -5353,9 +5353,9 @@ TEST_P(PeerConnectionIntegrationTest, CryptexRenegotiation) {
 
 class DowngradeLogSink : public LogSink {
  public:
-  void OnLogMessage(const std::string& message) override {
-    if (message.find("Received unexpected non-DTLS packet") !=
-        std::string::npos) {
+  void OnLogMessage(const LogLineRef& line) override {
+    if (line.message().find("Received unexpected non-DTLS packet") !=
+        absl::string_view::npos) {
       found_ = true;
     }
   }

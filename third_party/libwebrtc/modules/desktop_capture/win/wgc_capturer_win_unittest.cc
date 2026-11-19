@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -120,8 +121,8 @@ class LogMessageMatcher : public LogSink {
   bool matched() const { return matched_; }
 
  private:
-  void OnLogMessage(const std::string& message) override {
-    if (message.find(substring_) != std::string::npos) {
+  void OnLogMessage(const LogLineRef& line) override {
+    if (line.message().find(substring_) != std::string::npos) {
       matched_ = true;
     }
   }

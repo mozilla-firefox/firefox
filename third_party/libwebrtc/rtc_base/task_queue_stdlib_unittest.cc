@@ -40,11 +40,8 @@ class StringPtrLogSink : public LogSink {
   explicit StringPtrLogSink(std::string* log_data) : log_data_(log_data) {}
 
  private:
-  void OnLogMessage(const std::string& message) override {
-    OnLogMessage(absl::string_view(message));
-  }
-  void OnLogMessage(absl::string_view message) override {
-    log_data_->append(message.begin(), message.end());
+  void OnLogMessage(const LogLineRef& line) override {
+    log_data_->append(line.DefaultLogLine());
   }
   std::string* const log_data_;
 };

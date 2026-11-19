@@ -82,13 +82,12 @@ std::string MakeSdp(int64_t num_media_sections) {
   return sdp;
 }
 
-// Receives log lines formatted by the default implementation of
-// LogSink::OnLogMessage(const LogLineRef&), i.e. by
-// LogLineRef::DefaultLogLine(), and discards them.
+// Formats each log line with LogLineRef::DefaultLogLine(), like the in-tree
+// sinks do, and discards it.
 class DiscardingLogSink : public LogSink {
  public:
-  void OnLogMessage(const std::string& message) override {
-    benchmark::DoNotOptimize(message.data());
+  void OnLogMessage(const LogLineRef& line) override {
+    benchmark::DoNotOptimize(line.DefaultLogLine().data());
   }
 };
 
@@ -105,8 +104,22 @@ class ScopedDiscardingLogSink {
 
 void BM_RtcLogLiteralsAndNumbers(benchmark::State& state) {
   ScopedDiscardingLogSink sink;
-  uint32_t i = 0;
+  int64_t i = 0;
   for (auto s : state) {
+    RTC_LOG(LS_VERBOSE) << "Received RTP packet seq=" << i
+                        << " timestamp=" << (i * 3000)
+                        << " ssrc=" << 0x12345678u << " payload_size=" << 1200;
+    ++i;
+  }
+}
+
+// Same message as BM_RtcLogLiteralsAndNumbers, sent to two sinks that both use
+// the default log line, e.g. a file sink and a sink that forwards to the app.
+void BM_RtcLogToTwoSinks(benchmark::State& state) {
+  ScopedDiscardingLogSink sink1;
+  ScopedDiscardingLogSink sink2;
+  int64_t i = 0;
+  for (auto _ : state) {
     RTC_LOG(LS_VERBOSE) << "Received RTP packet seq=" << i
                         << " timestamp=" << (i * 3000)
                         << " ssrc=" << 0x12345678u << " payload_size=" << 1200;
@@ -121,7 +134,7 @@ void BM_RtcLogMixedStrings(benchmark::State& state) {
       "Cand[:1052210311:1:udp:2122260223:192.168.1.100:61922:host::0:4ZcD:"
       "Ozxk6tlZr5dqE1ZeYvWbSVMd:1:1:0]";
   const absl::string_view candidate_str = candidate;
-  uint32_t i = 0;
+  int64_t i = 0;
   for (auto s : state) {
     RTC_LOG(LS_VERBOSE) << " ice_ufrag=" << ufrag
                         << " candidate=" << candidate_str << " component=" << i
@@ -145,6 +158,7 @@ void BM_RtcLogSdp(benchmark::State& state) {
 }
 
 BENCHMARK(BM_RtcLogLiteralsAndNumbers);
+BENCHMARK(BM_RtcLogToTwoSinks);
 BENCHMARK(BM_RtcLogMixedStrings);
 // The argument is the number of m-sections in the SDP.
 BENCHMARK(BM_RtcLogSdp)->Arg(1)->Arg(4)->Arg(16);

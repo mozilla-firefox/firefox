@@ -263,8 +263,8 @@ TEST(RTCErrorOrTest, BuildString) {
 TEST(RTCErrorOrTest, BuildStringLog) {
   class LogSinkImpl : public LogSink {
    public:
-    void OnLogMessage(const std::string& message) override {
-      log_.append(message);
+    void OnLogMessage(const LogLineRef& line) override {
+      log_.append(line.filename()).append(": ").append(line.message());
     }
     std::string log_;
   } log_monitor;

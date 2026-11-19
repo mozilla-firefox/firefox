@@ -119,6 +119,8 @@ class LogMessage;
 // the most flexible way.
 class LogLineRef {
  public:
+  ~LogLineRef();
+
   absl::string_view message() const { return message_; }
   absl::string_view filename() const { return filename_; }
   int line() const { return line_; }
@@ -128,16 +130,20 @@ class LogLineRef {
   LoggingSeverity severity() const { return severity_; }
   absl::string_view queue_name() const { return queue_name_; }
 
-#if RTC_LOG_ENABLED()
-  std::string DefaultLogLine() const;
-#else
-  std::string DefaultLogLine() const { return ""; }
-#endif
+  // Returns the log line in the default format: the log prefix, timestamp,
+  // thread and file information, followed by the message. It is formatted on
+  // first use and then cached, so that all consumers of a log message share
+  // it. Since the cache isn't synchronized, a LogLineRef must not be used on
+  // several threads at the same time.
+  const std::string& DefaultLogLine() const;
 
  private:
   friend class LogMessage;
   LogLineRef();
-  void set_message(std::string message) { message_ = std::move(message); }
+  void set_message(std::string message) {
+    message_ = std::move(message);
+    default_log_line_.reset();
+  }
   void set_filename(absl::string_view filename) { filename_ = filename; }
   void set_line(int line) { line_ = line; }
   void set_thread_id(std::optional<PlatformThreadId> thread_id) {
@@ -165,6 +171,8 @@ class LogLineRef {
   absl::string_view tag_ = "libjingle";
   // The severity level of this message
   LoggingSeverity severity_;
+  // The result of DefaultLogLine(), formatted on first use.
+  mutable std::optional<std::string> default_log_line_;
 };
 
 // Virtual sink interface that can receive log messages.
@@ -172,19 +180,30 @@ class LogSink {
  public:
   LogSink() {}
   virtual ~LogSink() {}
+  [[deprecated("Override OnLogMessage(const LogLineRef&) instead.")]]
   virtual void OnLogMessage(const std::string& msg,
                             LoggingSeverity severity,
                             const char* tag);
+  [[deprecated("Override OnLogMessage(const LogLineRef&) instead.")]]
   virtual void OnLogMessage(const std::string& message,
                             LoggingSeverity severity);
-  virtual void OnLogMessage(const std::string& message) = 0;
+  [[deprecated("Override OnLogMessage(const LogLineRef&) instead.")]]
+  virtual void OnLogMessage(const std::string& message);
 
+  [[deprecated("Override OnLogMessage(const LogLineRef&) instead.")]]
   virtual void OnLogMessage(absl::string_view msg,
                             LoggingSeverity severity,
                             const char* tag);
+  [[deprecated("Override OnLogMessage(const LogLineRef&) instead.")]]
   virtual void OnLogMessage(absl::string_view message,
                             LoggingSeverity severity);
+  [[deprecated("Override OnLogMessage(const LogLineRef&) instead.")]]
   virtual void OnLogMessage(absl::string_view message);
+
+  // Called for each log message that is at least as severe as the minimum
+  // severity of the sink. The default implementation formats the message with
+  // LogLineRef::DefaultLogLine() and passes it on to the deprecated overloads
+  // above.
   virtual void OnLogMessage(const LogLineRef& line);
 
  private:

@@ -23,6 +23,7 @@
 #include <string_view>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include "absl/functional/any_invocable.h"
 #include "absl/strings/string_view.h"
@@ -80,11 +81,21 @@ class TestLogSink : public LogSink {
   void Reserve(size_t size) { log_data_.reserve(size); }
 
  private:
-  void OnLogMessage(const std::string& message) override {
-    OnLogMessage(absl::string_view(message));
+  void OnLogMessage(const LogLineRef& line) override {
+    log_data_.append(line.DefaultLogLine());
   }
-  void OnLogMessage(absl::string_view message) override {
-    log_data_.append(message.begin(), message.end());
+  std::string log_data_;
+};
+
+// Overrides only the deprecated OnLogMessage(const std::string&), to test the
+// default implementation of OnLogMessage(const LogLineRef&).
+class DeprecatedTestLogSink : public LogSink {
+ public:
+  absl::string_view data() const { return log_data_; }
+
+ private:
+  void OnLogMessage(const std::string& message) override {
+    log_data_.append(message);
   }
   std::string log_data_;
 };
@@ -123,10 +134,12 @@ class LogTest : public ::testing::Test {
   void SetUp() override { saved_config_ = ResetLoggingForTesting(); }
   void TearDown() override { ResetLoggingForTesting(std::move(saved_config_)); }
 
-  // Initializes logging with `config` plus a TestLogSink and returns the sink.
-  TestLogSink& InitializeLoggingWithSink(LoggingConfig config = {}) {
-    auto sink = std::make_unique<TestLogSink>();
-    TestLogSink& sink_ref = *sink;
+  // Initializes logging with `config` plus a sink of type `SinkType` and
+  // returns the sink.
+  template <typename SinkType = TestLogSink>
+  SinkType& InitializeLoggingWithSink(LoggingConfig config = {}) {
+    auto sink = std::make_unique<SinkType>();
+    SinkType& sink_ref = *sink;
     config.AddSink(std::move(sink));
     RTC_CHECK(InitializeLogging(std::move(config)));
     return sink_ref;
@@ -406,9 +419,60 @@ TEST_F(LogTest, CheckFilePathParsed) {
 #endif
 }
 
+// Tests that the default implementation of OnLogMessage(const LogLineRef&)
+// passes the default log line on to the deprecated string overloads.
+TEST_F(LogTest, DefaultOnLogMessageForwardsDefaultLogLine) {
+  DeprecatedTestLogSink& sink =
+      InitializeLoggingWithSink<DeprecatedTestLogSink>();
+  {
+    LogMessageForTesting log_msg(kFakeFilePath, 100, LS_INFO);
+    log_msg.stream() << "Hello";
+  }
+
+#if defined(WEBRTC_ANDROID)
+  // Prefixed with the tag, which is the file name by default.
+  EXPECT_THAT(sink.data(), HasSubstr("myfile.cc: "));
+  EXPECT_THAT(sink.data(), HasSubstr("(line 100): Hello"));
+#else
+  EXPECT_THAT(sink.data(), HasSubstr("(myfile.cc:100): Hello"));
+#endif
+}
+
+// The debug output and all sinks get the same LogLineRef, so they share the
+// line that DefaultLogLine() formats on first use.
+TEST_F(LogTest, DefaultLogLineIsFormattedOnce) {
+  class CachingCheckSink : public LogSink {
+   public:
+    void OnLogMessage(const LogLineRef& line) override {
+      const std::string& first = line.DefaultLogLine();
+      reused = &first == &line.DefaultLogLine();
+    }
+    bool reused = false;
+  };
+  CachingCheckSink& sink = InitializeLoggingWithSink<CachingCheckSink>();
+  RTC_LOG(LS_INFO) << "Hello";
+  EXPECT_TRUE(sink.reused);
+}
+
+// Some sinks store copies of LogLineRef, to inspect the log lines later.
+TEST_F(LogTest, CopiedLogLineRefKeepsDefaultLogLine) {
+  class CopyingSink : public LogSink {
+   public:
+    void OnLogMessage(const LogLineRef& line) override {
+      lines.push_back(line);
+    }
+    std::vector<LogLineRef> lines;
+  };
+  CopyingSink& sink = InitializeLoggingWithSink<CopyingSink>();
+  RTC_LOG(LS_INFO) << "Hello";
+  ASSERT_THAT(sink.lines, SizeIs(1));
+  EXPECT_THAT(sink.lines[0].DefaultLogLine(), HasSubstr("Hello"));
+}
+
 #if defined(WEBRTC_ANDROID)
 TEST_F(LogTest, CheckTagAddedToStringInDefaultOnLogMessageAndroid) {
-  TestLogSink& sink = InitializeLoggingWithSink();
+  DeprecatedTestLogSink& sink =
+      InitializeLoggingWithSink<DeprecatedTestLogSink>();
 
   RTC_LOG_TAG(LS_INFO, "my_tag") << "INFO";
   EXPECT_THAT(sink.data(), HasSubstr("INFO"));
@@ -521,12 +585,7 @@ TEST_F(LogTest, ExplicitInitialization) {
   EXPECT_EQ(GetLoggingConfig().min_severity(), LS_WARNING);
 
   RTC_LOG(LS_WARNING) << "Test message";
-#if defined(WEBRTC_ANDROID)
-  EXPECT_THAT(sink_ptr->data(),
-              StartsWith("logging_unittest.cc: TEST_PREFIX: "));
-#else
   EXPECT_THAT(sink_ptr->data(), StartsWith("TEST_PREFIX: "));
-#endif
   EXPECT_THAT(sink_ptr->data(), HasSubstr("Test message"));
 }
 
