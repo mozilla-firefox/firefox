@@ -84,6 +84,7 @@ export class WidgetComposer extends MozLitElement {
       <div class="field" ?focused=${this.focused}>
         <div class="background"></div>
         <textarea
+          aria-describedby="disclaimer"
           data-l10n-id="widget-composer-input"
           .value=${this.value}
           @focus=${this.#onFocus}
@@ -102,6 +103,11 @@ export class WidgetComposer extends MozLitElement {
           ></moz-button>
         </div>
       </div>
+      <p
+        id="disclaimer"
+        class="disclaimer"
+        data-l10n-id="widget-composer-disclaimer"
+      ></p>
     `;
   }
 }

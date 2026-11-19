@@ -112,6 +112,35 @@ add_task(async function test_composer_needs_authentication() {
   SidebarController.hide();
 });
 
+add_task(async function test_composer_shows_disclaimer() {
+  setSignedIn(true);
+  let panel = await openWidgetsSidebar();
+  await panel.updateComplete;
+  let { composer } = panel;
+  await composer.updateComplete;
+  let disclaimer = composer.shadowRoot.querySelector(".disclaimer");
+  ok(disclaimer, "Disclaimer shown under the prompt");
+  await panel.ownerDocument.l10n.translateFragment(disclaimer);
+  is(
+    disclaimer.textContent,
+    "Widgets are built with AI. Check that yours works as expected.",
+    "The disclaimer is translated"
+  );
+  is(
+    composer.shadowRoot.querySelector(".field").nextElementSibling,
+    disclaimer,
+    "The disclaimer follows the prompt field"
+  );
+  is(
+    composer.shadowRoot
+      .querySelector("textarea")
+      .getAttribute("aria-describedby"),
+    disclaimer.id,
+    "The prompt is described by the disclaimer"
+  );
+  SidebarController.hide();
+});
+
 add_task(async function test_panel_composer() {
   setSignedIn(true);
   let panel = await openWidgetsSidebar();

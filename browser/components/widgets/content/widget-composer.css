@@ -133,3 +133,10 @@ textarea {
 .submit {
   margin-inline-start: auto;
 }
+
+.disclaimer {
+  margin-block: var(--space-medium) 0;
+  margin-inline: var(--space-small);
+  color: var(--text-color-deemphasized);
+  font-size: var(--font-size-small);
+}
