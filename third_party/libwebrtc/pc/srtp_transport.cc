@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 
+#include "api/crypto/crypto_options.h"
 #include "api/field_trials_view.h"
 #include "api/rtp_header_extension_id.h"
 #include "api/units/timestamp.h"
@@ -158,20 +159,24 @@ void SrtpTransport::OnWritableState(PacketTransportInternal* packet_transport) {
   SendWritableState(IsWritable(/*rtcp=*/false) && IsWritable(/*rtcp=*/true));
 }
 
-bool SrtpTransport::UseCryptex(bool enable, bool require) {
-  enable_cryptex_ = enable;
-  require_cryptex_ = require;
+bool SrtpTransport::UseCryptex(CryptoOptions::Srtp::CryptexPolicy policy,
+                               bool negotiated) {
+  cryptex_policy_ = policy;
+  use_cryptex_ = negotiated;
+  if (policy == CryptoOptions::Srtp::CryptexPolicy::kDisabled) {
+    return true;
+  }
+  bool require = policy == CryptoOptions::Srtp::CryptexPolicy::kRequire;
   if (send_session_) {
-    if (!send_session_->UseCryptex(enable_cryptex_, require_cryptex_,
-                                   /*send=*/true)) {
+    if (!send_session_->UseCryptex(use_cryptex_, require,
+                                   /*sending_session=*/true)) {
       RTC_LOG(LS_ERROR) << "Updating send session cryptex failed";
       return false;
     }
   }
   if (recv_session_) {
-    // TODO: bugs.webrtc.org/455813732 - never disable receiving cryptex.
-    if (!recv_session_->UseCryptex(enable_cryptex_, require_cryptex_,
-                                   /*send=*/false)) {
+    if (!recv_session_->UseCryptex(use_cryptex_, require,
+                                   /*sending_session=*/false)) {
       RTC_LOG(LS_ERROR) << "Updating recv session cryptex failed";
       return false;
     }
@@ -197,8 +202,11 @@ bool SrtpTransport::SetRtpParams(
     CreateSrtpSessions();
     new_sessions = true;
   }
-  if (!send_session_->UseCryptex(enable_cryptex_, require_cryptex_,
-                                 /*send=*/true)) {
+  if (cryptex_policy_ != CryptoOptions::Srtp::CryptexPolicy::kDisabled &&
+      !send_session_->UseCryptex(
+          use_cryptex_,
+          cryptex_policy_ == CryptoOptions::Srtp::CryptexPolicy::kRequire,
+          /*sending_session=*/true)) {
     RTC_LOG(LS_ERROR) << "Updating send session cryptex failed";
     return false;
   }
@@ -212,8 +220,11 @@ bool SrtpTransport::SetRtpParams(
     return false;
   }
 
-  if (!recv_session_->UseCryptex(enable_cryptex_, require_cryptex_,
-                                 /*send=*/false)) {
+  if (cryptex_policy_ != CryptoOptions::Srtp::CryptexPolicy::kDisabled &&
+      !recv_session_->UseCryptex(
+          use_cryptex_,
+          cryptex_policy_ == CryptoOptions::Srtp::CryptexPolicy::kRequire,
+          /*sending_session=*/false)) {
     RTC_LOG(LS_ERROR) << "Updating recv session cryptex failed";
     return false;
   }
@@ -225,12 +236,21 @@ bool SrtpTransport::SetRtpParams(
     ResetParams();
     return false;
   }
+  if (cryptex_policy_ != CryptoOptions::Srtp::CryptexPolicy::kDisabled &&
+      !recv_session_->UseCryptex(
+          use_cryptex_,
+          cryptex_policy_ == CryptoOptions::Srtp::CryptexPolicy::kRequire,
+          /*sending_session=*/false)) {
+    RTC_LOG(LS_ERROR) << "Updating recv session cryptex failed";
+    return false;
+  }
 
   RTC_LOG(LS_INFO) << "SRTP " << (new_sessions ? "activated" : "updated")
-                   << " with negotiated parameters:"
-                   << " send crypto_suite " << send_crypto_suite
-                   << " recv crypto_suite " << recv_crypto_suite << " cryptex "
-                   << enable_cryptex_ << "/" << require_cryptex_;
+                   << " with negotiated parameters:" << " send crypto_suite "
+                   << send_crypto_suite << " recv crypto_suite "
+                   << recv_crypto_suite << " cryptex " << use_cryptex_ << "/"
+                   << (cryptex_policy_ ==
+                       CryptoOptions::Srtp::CryptexPolicy::kRequire);
   MaybeUpdateWritableState();
   return true;
 }
@@ -250,8 +270,11 @@ bool SrtpTransport::SetRtcpParams(
   }
 
   send_rtcp_session_.reset(new SrtpSession(field_trials_));
-  if (!send_rtcp_session_->UseCryptex(enable_cryptex_, require_cryptex_,
-                                      /*send=*/true)) {
+  if (cryptex_policy_ != CryptoOptions::Srtp::CryptexPolicy::kDisabled &&
+      !send_rtcp_session_->UseCryptex(
+          use_cryptex_,
+          cryptex_policy_ == CryptoOptions::Srtp::CryptexPolicy::kRequire,
+          /*sending_session=*/true)) {
     return false;
   }
   if (!send_rtcp_session_->SetSend(send_crypto_suite, send_key,
@@ -260,19 +283,31 @@ bool SrtpTransport::SetRtcpParams(
   }
 
   recv_rtcp_session_.reset(new SrtpSession(field_trials_));
-  if (!recv_rtcp_session_->UseCryptex(enable_cryptex_, require_cryptex_,
-                                      /*send=*/false)) {
+  if (cryptex_policy_ != CryptoOptions::Srtp::CryptexPolicy::kDisabled &&
+      !recv_rtcp_session_->UseCryptex(
+          use_cryptex_,
+          cryptex_policy_ == CryptoOptions::Srtp::CryptexPolicy::kRequire,
+          /*sending_session=*/false)) {
     return false;
   }
   if (!recv_rtcp_session_->SetReceive(recv_crypto_suite, recv_key,
                                       recv_extension_ids)) {
     return false;
   }
+  if (cryptex_policy_ != CryptoOptions::Srtp::CryptexPolicy::kDisabled &&
+      !recv_rtcp_session_->UseCryptex(
+          use_cryptex_,
+          cryptex_policy_ == CryptoOptions::Srtp::CryptexPolicy::kRequire,
+          /*sending_session=*/false)) {
+    return false;
+  }
 
   RTC_LOG(LS_INFO) << "SRTCP activated with negotiated parameters:"
                    << " send crypto_suite " << send_crypto_suite
                    << " recv crypto_suite " << recv_crypto_suite << " cryptex "
-                   << enable_cryptex_ << "/" << require_cryptex_;
+                   << use_cryptex_ << "/"
+                   << (cryptex_policy_ ==
+                       CryptoOptions::Srtp::CryptexPolicy::kRequire);
   MaybeUpdateWritableState();
   return true;
 }

@@ -165,20 +165,23 @@ SrtpSession::~SrtpSession() {
   }
 }
 
-bool SrtpSession::UseCryptex(bool enable, bool require, bool sending_session) {
+bool SrtpSession::UseCryptex(bool negotiated,
+                             bool required,
+                             bool sending_session) {
   RTC_DCHECK_RUN_ON(&thread_checker_);
   if (session_) {
     srtp_ssrc_t ssrc;
     ssrc.type = sending_session ? ssrc_any_outbound : ssrc_any_inbound;
-    int err = srtp_set_stream_use_cryptex(session_, &ssrc, enable);
+    int err = srtp_set_stream_use_cryptex(session_, &ssrc,
+                                          negotiated || !sending_session);
     // Should not fail given the usage in libWebRTC.
     RTC_DCHECK(err == srtp_err_status_ok);
     if (err != srtp_err_status_ok) {
       return false;
     }
   }
-  use_cryptex_ = enable;
-  require_cryptex_ = require;
+  use_cryptex_ = negotiated;
+  require_cryptex_ = required;
   return true;
 }
 
@@ -217,7 +220,7 @@ bool SrtpSession::ProtectRtp(CopyOnWriteBuffer& buffer) {
     return false;
   }
 
-  // Note: the need_len differs from the libsrtp recommendatіon to ensure
+  // Note: the need_len differs from the libsrtp recommendation to ensure
   // SRTP_MAX_TRAILER_LEN bytes of free space after the data. WebRTC
   // never includes a MKI, therefore the amount of bytes added by the
   // srtp_protect call is known in advance and depends on the cipher suite.
@@ -260,7 +263,7 @@ bool SrtpSession::ProtectRtcp(CopyOnWriteBuffer& buffer) {
     return false;
   }
 
-  // Note: the need_len differs from the libsrtp recommendatіon to ensure
+  // Note: the need_len differs from the libsrtp recommendation to ensure
   // SRTP_MAX_TRAILER_LEN bytes of free space after the data. WebRTC
   // never includes a MKI, therefore the amount of bytes added by the
   // srtp_protect_rtp call is known in advance and depends on the cipher suite.
@@ -286,7 +289,6 @@ bool SrtpSession::ProtectRtcp(CopyOnWriteBuffer& buffer) {
   return true;
 }
 
-
 bool SrtpSession::UnprotectRtp(CopyOnWriteBuffer& buffer) {
   RTC_DCHECK_RUN_ON(&thread_checker_);
   if (!session_) {
@@ -307,7 +309,7 @@ bool SrtpSession::UnprotectRtp(CopyOnWriteBuffer& buffer) {
       (extension_profile == kRtpOneByteHeaderExtensionProfile ||
        extension_profile == kRtpTwoByteHeaderExtensionProfile)) {
     // An additional check whether cryptex is used when required.
-    // TODO: bugs.webrtc.org/455813732 - libSRTP wіll be doing this check
+    // TODO: bugs.webrtc.org/455813732 - libSRTP will be doing this check
     // after https://github.com/cisco/libsrtp/pull/805
     err = srtp_err_status_cryptex_err;
   }

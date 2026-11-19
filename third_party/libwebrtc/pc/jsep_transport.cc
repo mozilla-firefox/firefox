@@ -150,10 +150,8 @@ RTCError JsepTransport::SetLocalJsepTransportDescription(
     dtls_srtp_transport->UpdateRecvEncryptedHeaderExtensionIds(
         jsep_description.encrypted_header_extension_ids);
     dtls_srtp_transport->UseCryptex(
-        (cryptex_policy_ != CryptoOptions::Srtp::CryptexPolicy::kDisabled) &&
-            (remote_description_ != nullptr &&
-             remote_description_->transport_desc.cryptex),
-        cryptex_policy_ == CryptoOptions::Srtp::CryptexPolicy::kRequire);
+        cryptex_policy_, remote_description_ != nullptr &&
+                             remote_description_->transport_desc.cryptex);
   }
   bool ice_restarting =
       local_description_ != nullptr &&
@@ -226,10 +224,8 @@ RTCError JsepTransport::SetRemoteJsepTransportDescription(
   if (auto* dtls_srtp_transport = rtp_transport_->AsDtlsSrtpTransport()) {
     dtls_srtp_transport->UpdateSendEncryptedHeaderExtensionIds(
         jsep_description.encrypted_header_extension_ids);
-    dtls_srtp_transport->UseCryptex(
-        (cryptex_policy_ != CryptoOptions::Srtp::CryptexPolicy::kDisabled) &&
-            jsep_description.transport_desc.cryptex,
-        cryptex_policy_ == CryptoOptions::Srtp::CryptexPolicy::kRequire);
+    dtls_srtp_transport->UseCryptex(cryptex_policy_,
+                                    jsep_description.transport_desc.cryptex);
   }
 
   remote_description_.reset(new JsepTransportDescription(jsep_description));
