@@ -623,9 +623,6 @@ run-sequentially = [
 ["test_cookies_privatebrowsing.js"]
 
 ["test_cookies_profile_close.js"]
-skip-if = [
-  "os == 'android' && os_version == '14' && arch == 'x86_64' && !fission", # Bug 1700483
-]
 
 ["test_cookies_purge_counting.js"]
 

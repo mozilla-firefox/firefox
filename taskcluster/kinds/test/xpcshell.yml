@@ -76,7 +76,6 @@ xpcshell:
                     default: []
             no-fission:
                 by-test-platform:
-                    android.*: built-projects
                     linux2404-64.*: ['mozilla-central']
                     default: []
             msix:
