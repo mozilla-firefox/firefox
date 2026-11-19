@@ -51,6 +51,11 @@ class CodeGeneratorShared : public LElementVisitor {
   uint32_t pushedArgs_;
 #endif
   uint32_t lastOsiPointOffset_;
+#ifdef DEBUG
+  // OOL paths added while visiting the most recent non-OsiPoint instruction.
+  js::Vector<OutOfLineCode*, 4, BackgroundSystemAllocPolicy>
+      currentInstructionOols_;
+#endif
   SafepointWriter safepoints_;
   Label invalidate_;
   CodeOffset invalidateEpilogueData_;

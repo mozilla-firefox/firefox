@@ -295,6 +295,9 @@ void CodeGeneratorShared::addOutOfLineCode(OutOfLineCode* code,
   code->setFramePushed(masm.framePushed());
   code->setBytecodeSite(site);
   outOfLineCode_.pushBack(code);
+#ifdef DEBUG
+  masm.propagateOOM(currentInstructionOols_.append(code));
+#endif
 }
 
 bool CodeGeneratorShared::addNativeToBytecodeEntry(const BytecodeSite* site) {

@@ -3960,6 +3960,21 @@ void CodeGenerator::visitOsiPoint(LOsiPoint* lir) {
 
   MOZ_ASSERT(masm.framePushed() == frameSize());
 
+#ifdef DEBUG
+  // Validate that the previous OSI point can't clobber an OOL rejoin point.
+  if (!osiIndices_.empty() && !masm.oom()) {
+    for (OutOfLineCode* ool : currentInstructionOols_) {
+      Label* rejoin = ool->rejoin();
+      if (rejoin->bound()) {
+        MOZ_ASSERT(uint32_t(rejoin->offset()) - lastOsiPointOffset_ >=
+                       Assembler::PatchWrite_NearCallSize(),
+                   "Invalidation patch for the previous OsiPoint overwrites "
+                   "an OOL rejoin");
+      }
+    }
+  }
+#endif
+
   uint32_t osiCallPointOffset = markOsiPoint(lir);
 
   LSafepoint* safepoint = lir->associatedSafepoint();
@@ -9123,6 +9138,12 @@ bool CodeGenerator::generateBlock(LBlock* current, size_t blockNumber,
 #ifdef CHECK_OSIPOINT_REGISTERS
     if (iter->safepoint() && !compilingWasm) {
       resetOsiPointRegs(iter->safepoint());
+    }
+#endif
+
+#ifdef DEBUG
+    if (!iter->isOsiPoint()) {
+      currentInstructionOols_.clear();
     }
 #endif
 
