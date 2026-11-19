@@ -105,6 +105,8 @@ browser.jar:
   content/browser/aiwindow/components/smartwindow-option-select.mjs (components/smartwindow-option-select/smartwindow-option-select.mjs)
   content/browser/aiwindow/components/smartwindow-overflow-row.css  (components/smartwindow-overflow-row/smartwindow-overflow-row.css)
   content/browser/aiwindow/components/smartwindow-overflow-row.mjs  (components/smartwindow-overflow-row/smartwindow-overflow-row.mjs)
+  content/browser/aiwindow/components/smartwindow-digest-prompt.css (components/smartwindow-digest-prompt/smartwindow-digest-prompt.css)
+  content/browser/aiwindow/components/smartwindow-digest-prompt.mjs (components/smartwindow-digest-prompt/smartwindow-digest-prompt.mjs)
   content/browser/aiwindow/components/smartwindow-panel-list.css    (components/smartwindow-panel-list/smartwindow-panel-list.css)
   content/browser/aiwindow/components/smartwindow-panel-list.mjs    (components/smartwindow-panel-list/smartwindow-panel-list.mjs)
   content/browser/aiwindow/components/smartwindow-promo.css         (components/smartwindow-promo/smartwindow-promo.css)

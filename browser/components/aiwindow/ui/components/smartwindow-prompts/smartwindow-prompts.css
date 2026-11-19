@@ -15,8 +15,15 @@
    * plain "center" on an overflowing flex line pushes the start past the
    * initial scroll position, clipping the first pill. */
   justify-content: safe center;
+  margin: 0 auto;
+  /* Capping width per design spec */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  max-width: calc(545px - var(--space-large) * 2);
   overflow-x: auto;
   overflow-y: hidden;
+  /* Room for pill shadows, which the scroll container would otherwise clip. */
+  padding-inline: var(--space-large);
+  scroll-padding-inline: var(--space-large);
   overscroll-behavior-inline: contain;
   scrollbar-width: none;
   scroll-snap-type: x mandatory;
