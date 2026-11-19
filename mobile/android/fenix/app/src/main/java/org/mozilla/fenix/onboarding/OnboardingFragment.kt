@@ -15,11 +15,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.fragment.app.Fragment
 import androidx.fragment.compose.content
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.launch
@@ -154,8 +152,6 @@ class OnboardingFragment : Fragment() {
         )
     }
 
-    private val navBackStackEntry by lazy { findNavController().getBackStackEntry(R.id.onboardingFragment) }
-
     @SuppressLint("SourceLockedOrientationActivity")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -240,13 +236,9 @@ class OnboardingFragment : Fragment() {
     @Composable
     @Suppress("LongMethod")
     private fun ScreenContent() {
-        val isSyncFlowCompleted by OnboardingSyncFlowResult.isCompleted(navBackStackEntry).collectAsStateWithLifecycle()
-
         OnboardingScreen(
             pagesToDisplay = pagesToDisplay,
             initialPageIndex = requireComponents.settings.onboardingCurrentPageIndex,
-            isSyncFlowCompleted = isSyncFlowCompleted,
-            onSyncFlowCompletedHandled = { OnboardingSyncFlowResult.consume(navBackStackEntry) },
             onMakeFirefoxDefaultClick = {
                 promptToSetAsDefaultBrowser()
             },
