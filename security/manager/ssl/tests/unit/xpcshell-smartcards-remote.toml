@@ -34,6 +34,8 @@ prefs = [
 
 ["test_pkcs11_remote_process.js"]
 
+["test_pkcs11_remote_process_empty_path.js"]
+
 ["test_pkcs11_slot.js"]
 
 ["test_pkcs11_token.js"]
