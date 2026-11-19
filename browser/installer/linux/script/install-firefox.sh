@@ -678,10 +678,9 @@ tarball_install_to() {
     local _tmpdir="$1"
     local _install_dir="$2"
     local _pkg_bin="$3"
-    local _extracted_dir
-    _extracted_dir="$(find "$_tmpdir" -maxdepth 1 -mindepth 1 -type d | head -1)"
-    if [ -z "$_extracted_dir" ]; then
-        error "Tarball extraction produced no directory in $_tmpdir"
+    local _extracted_dir="$_tmpdir/firefox"
+    if [ ! -d "$_extracted_dir" ]; then
+        error "Tarball extraction produced no firefox directory in $_tmpdir"
     fi
     # Non-atomic: backup old dir, move new dir in, then remove backup.
     # A crash mid-upgrade leaves no Firefox; acceptable for an installer script.

@@ -977,6 +977,16 @@ testTarballInstallTo() {
         "grep -q 'run_sudo ln -sf /opt/firefox/firefox /usr/local/bin/firefox' '$_calls'"
 }
 
+testTarballInstallToMissingDir() {
+    local _calls="${SHUNIT_TMPDIR}/calls.tmp"
+    local _tmpdir="${SHUNIT_TMPDIR}/tarball-install-missing-dir"
+    mkdir -p "$_tmpdir/gpg"
+    run_sudo() { echo "run_sudo $*" >> "$_calls"; }; export -f run_sudo
+    assertFalse "missing firefox dir is an error" \
+        "( tarball_install_to '$_tmpdir' /opt/firefox firefox >/dev/null 2>&1 )"
+    assertFalse "nothing installed" "[ -e '$_calls' ]"
+}
+
 testInstallTarballOrchestration() {
     local _calls="${SHUNIT_TMPDIR}/calls.tmp"
     tarball_build_url() { echo "https://fake.url/firefox.tar"; }

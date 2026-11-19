@@ -77,7 +77,7 @@ distros:
 
         opensuse-leap:
             symbol: leap
-            pre-install: zypper refresh && zypper install -y curl wget tar xz findutils
+            pre-install: zypper refresh && zypper install -y curl wget tar xz
             docker-image:
                 x64: {in-tree: opensuse-leap-base}
                 a64: {in-tree: opensuse-leap-arm64-base}  # both arches tested intentionally
