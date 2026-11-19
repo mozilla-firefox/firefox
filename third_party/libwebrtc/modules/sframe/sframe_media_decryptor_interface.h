@@ -17,6 +17,8 @@
 #include <span>
 #include <variant>
 
+#include "api/ref_count.h"
+#include "api/rtc_error.h"
 #include "api/sframe/sframe_decryptor_interface.h"
 
 namespace webrtc {
@@ -50,10 +52,14 @@ struct SframeDecryptFailure {
 using SframeDecryptResult =
     std::variant<SframeDecryptSuccess, SframeDecryptFailure>;
 
-// Internal media pipeline interface that extends the public key management
-// interface with the actual decrypt operation.
-class SframeMediaDecryptorInterface : public SframeDecryptorInterface {
+// Internal media pipeline interface for Sframe decryption.
+class SframeMediaDecryptorInterface : public RefCountInterface {
  public:
+  virtual RTCError AddDecryptionKey(uint64_t key_id,
+                                    std::span<const uint8_t> key_material) = 0;
+
+  virtual RTCError RemoveDecryptionKey(uint64_t key_id) = 0;
+
   // Decrypts `encrypted_frame` into `frame`, authenticating it against
   // `additional_data`. The key id is read from the Sframe header, so the
   // matching decryption key must have been added beforehand. This is pure

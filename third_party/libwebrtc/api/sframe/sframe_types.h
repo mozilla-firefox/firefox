@@ -11,6 +11,9 @@
 #ifndef API_SFRAME_SFRAME_TYPES_H_
 #define API_SFRAME_SFRAME_TYPES_H_
 
+#include "absl/functional/any_invocable.h"
+#include "api/rtc_error.h"
+
 namespace webrtc {
 
 enum class SframeMode {
@@ -28,6 +31,9 @@ enum class SframeCipherSuite {
   kAes256CtrHmacSha512_64,
   kAes256CtrHmacSha512_32,
 };
+
+// Invoked with the result of an Sframe key update.
+using SframeKeyUpdateCallback = absl::AnyInvocable<void(RTCError) &&>;
 
 }  // namespace webrtc
 

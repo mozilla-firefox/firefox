@@ -112,7 +112,11 @@ rtc_library("synchronized_sframe_encryptor") {
 rtc_library("sframe_media_decryptor_interface") {
   visibility = [ "*" ]
   sources = [ "sframe_media_decryptor_interface.h" ]
-  deps = [ "../../api:sframe_decryptor_interface" ]
+  deps = [
+    "../../api:ref_count",
+    "../../api:rtc_error",
+    "../../api:sframe_decryptor_interface",
+  ]
 }
 
 rtc_library("sframe_decryptor") {

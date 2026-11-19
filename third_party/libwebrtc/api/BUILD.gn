@@ -274,6 +274,10 @@ rtc_library("dtmf_sender_interface") {
 rtc_library("sframe_types") {
   visibility = [ "*" ]
   sources = [ "sframe/sframe_types.h" ]
+  deps = [
+    ":rtc_error",
+    "//third_party/abseil-cpp/absl/functional:any_invocable",
+  ]
 }
 
 rtc_library("sframe_encryptor_interface") {
@@ -292,8 +296,8 @@ rtc_library("sframe_decryptor_interface") {
   deps = [
     ":frame_transformer_interface",
     ":ref_count",
-    ":rtc_error",
     ":sframe_types",
+    "//third_party/abseil-cpp/absl/base:nullability",
     "//third_party/abseil-cpp/absl/functional:any_invocable",
   ]
 }
