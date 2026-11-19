@@ -766,3 +766,59 @@ add_task(async function test_bookmarks_folder_shortcut_context_menu() {
   await PlacesUtils.bookmarks.remove(folder.guid);
   SidebarTestUtils.closePanel(window);
 });
+
+add_task(async function test_bookmarks_root_folder_shortcut_open_all() {
+  const bookmarkA = await addBookmark({
+    title: "Root Shortcut A",
+    url: "https://example.com/root-shortcut-a",
+    parentGuid: PlacesUtils.bookmarks.unfiledGuid,
+  });
+  const bookmarkB = await addBookmark({
+    title: "Root Shortcut B",
+    url: "https://example.com/root-shortcut-b",
+    parentGuid: PlacesUtils.bookmarks.unfiledGuid,
+  });
+  const nestedQuery = await PlacesUtils.bookmarks.insert({
+    parentGuid: PlacesUtils.bookmarks.unfiledGuid,
+    title: "Nested Query",
+    url: "place:queryType=1&sort=12&maxResults=10",
+  });
+  const shortcut = await PlacesUtils.bookmarks.insert({
+    parentGuid: PlacesUtils.bookmarks.toolbarGuid,
+    title: "Other Bookmarks Shortcut",
+    url: `place:parent=${PlacesUtils.bookmarks.unfiledGuid}`,
+  });
+
+  const { component } = await showBookmarksSidebar(window);
+  const toolbarDetails = await openToolbarFolder(component.bookmarkList);
+  const toolbarList = toolbarDetails.querySelector("sidebar-bookmark-list");
+  const shortcutFolder =
+    await SidebarTestUtils.bookmarks.findBookmarkItemByGuid(
+      toolbarList,
+      "folderEls",
+      shortcut.guid
+    );
+  const summary = shortcutFolder.querySelector("summary");
+
+  const openStub = sinon.stub(window, "openTrustedLinkIn");
+  await activateContextMenuItem(
+    summary,
+    "sidebar-bookmarks-context-open-all-bookmarks"
+  );
+  await TestUtils.waitForCondition(
+    () => openStub.callCount >= 2,
+    "The root folder's bookmarks are opened."
+  );
+  Assert.deepEqual(
+    openStub.args.map(([url]) => url).toSorted(),
+    [bookmarkA.url.href, bookmarkB.url.href],
+    "Only the root folder's bookmarks are opened, not nested queries."
+  );
+  openStub.restore();
+
+  await PlacesUtils.bookmarks.remove(shortcut.guid);
+  await PlacesUtils.bookmarks.remove(nestedQuery.guid);
+  await PlacesUtils.bookmarks.remove(bookmarkA.guid);
+  await PlacesUtils.bookmarks.remove(bookmarkB.guid);
+  SidebarTestUtils.closePanel(window);
+});

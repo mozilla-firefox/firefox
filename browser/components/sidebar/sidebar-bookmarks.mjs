@@ -946,7 +946,7 @@ export class SidebarBookmarks extends SidebarPage {
   #collectBookmarkUrls(node) {
     const urls = [];
     for (const child of node.children ?? []) {
-      if (child.uri) {
+      if (child.uri && !child.uri.startsWith("place:")) {
         urls.push(child.uri);
       }
     }
