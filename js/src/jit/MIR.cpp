@@ -508,13 +508,20 @@ HashNumber MUnaryInstruction::valueHash() const {
 }
 
 HashNumber MBinaryInstruction::valueHash() const {
+  // Order commutative operands as in binaryCongruentTo.
+  uint32_t lhsId = getOperand(0)->id();
+  uint32_t rhsId = getOperand(1)->id();
+  bool swap = isCommutative() && lhsId > rhsId;
+  if (swap) {
+    std::swap(lhsId, rhsId);
+  }
   HashNumber hash = HashNumber(op());
-  hash = addU32ToHash(hash, getOperand(0)->id());
-  hash = addU32ToHash(hash, getOperand(1)->id());
+  hash = addU32ToHash(hash, lhsId);
+  hash = addU32ToHash(hash, rhsId);
   if (MDefinition* dep = dependency()) {
     hash = addU32ToHash(hash, dep->id());
   }
-  MOZ_ASSERT(hash == MDefinition::valueHash());
+  MOZ_ASSERT_IF(!swap, hash == MDefinition::valueHash());
   return hash;
 }
 
