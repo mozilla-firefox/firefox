@@ -304,7 +304,8 @@ export var WindowsLaunchOnLogin = {
   },
 
   /**
-   * Checks if Windows launch on login has an existing registry key or user-created shortcut in
+   * Checks if Windows launch on login has an existing registry key that Windows Settings hasn't
+   * disabled, or a user-created shortcut in
    * %USERNAME%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup. The registry key that
    * stores this information should not be modified.
    *
@@ -353,10 +354,8 @@ export var WindowsLaunchOnLogin = {
       };
     }
 
-    // First check if launch on login is currently enabled
     let registryName = this.getLaunchOnLoginRegistryName();
     let regExists = false;
-    let shortcutExists = false;
     // Start by checking if the registry key exists
     try {
       await this.withLaunchOnLoginRegistryKey(wrk => {
@@ -366,12 +365,6 @@ export var WindowsLaunchOnLogin = {
       // There will be an error when the registry key doesn't exist,
       // but to us this just means launch on login is not currently enabled.
     }
-    // If the registry key doesn't exist, check if there are any shortcuts
-    // to Firefox in the startup folder
-    if (!regExists) {
-      shortcutExists = !!this.getLaunchOnLoginShortcutList().length;
-    }
-    let isEnabled = regExists || shortcutExists;
 
     // Check whether Windows Settings has overridden the user's ability to
     // toggle launch-on-login (the StartupApproved\Run registry key).
@@ -398,6 +391,14 @@ export var WindowsLaunchOnLogin = {
       // There will be an error when the registry key doesn't exist,
       // but to us this just means there is no policy override in place.
     }
+
+    // Disabling Firefox in Windows Startup Apps leaves our Run value in place,
+    // so the value only counts as enabled while StartupApproved allows it.
+    // Otherwise, check if there are any shortcuts to Firefox in the startup
+    // folder.
+    let isEnabled =
+      (regExists && isAllowedByPolicy) ||
+      !!this.getLaunchOnLoginShortcutList().length;
     return { isEnabled, isSupported: true, isAllowedByPolicy };
   },
 

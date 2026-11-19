@@ -924,13 +924,16 @@ Preferences.addSetting(
     // in HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run
     // but it is not possible to change it back to enabled as the disabled value is just a random
     // hexadecimal number
-    setup() {
+    setup(emitChange) {
       if (!lazy.LaunchOnLogin.isSupported()) {
         return;
       }
       // @ts-ignore bug 1996860
       lazy.LaunchOnLogin.isAllowed().then(val => {
-        this._getLaunchOnLoginApprovedCachedValue = val;
+        if (val !== this._getLaunchOnLoginApprovedCachedValue) {
+          this._getLaunchOnLoginApprovedCachedValue = val;
+          emitChange();
+        }
       });
     },
   })
