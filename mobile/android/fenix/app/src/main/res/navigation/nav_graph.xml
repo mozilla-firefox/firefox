@@ -140,9 +140,6 @@
         android:id="@+id/action_global_SitePermissionsManagePhoneFeature"
         app:destination="@id/SitePermissionsManagePhoneFeature" />
     <action
-        android:id="@+id/action_global_collectionCreationFragment"
-        app:destination="@id/collectionCreationFragment" />
-    <action
         android:id="@+id/action_global_bookmarkEditFragment"
         app:destination="@id/bookmarkEditFragment" />
     <action
@@ -1235,31 +1232,6 @@
         android:id="@+id/syncDebugFragment"
         android:name="org.mozilla.fenix.settings.SyncDebugFragment"
         android:label="@string/preferences_sync_debug" />
-    <dialog
-        android:id="@+id/collectionCreationFragment"
-        android:name="org.mozilla.fenix.collections.CollectionCreationFragment"
-        tools:layout="@layout/fragment_create_collection">
-        <argument
-            android:name="tabIds"
-            android:defaultValue="@null"
-            app:argType="string[]"
-            app:nullable="true" />
-        <argument
-            android:name="selectedTabIds"
-            android:defaultValue="@null"
-            app:argType="string[]"
-            app:nullable="true" />
-        <!-- nav_graph does not allow nullable Longs, so this defaults to -1 -->
-        <argument
-            android:name="selectedTabCollectionId"
-            android:defaultValue="-1L"
-            app:argType="long" />
-        <argument
-            android:name="saveCollectionStep"
-            app:argType="org.mozilla.fenix.collections.SaveCollectionStep"
-            app:nullable="false" />
-    </dialog>
-
     <dialog
         android:id="@+id/createShortcutFragment"
         android:name="org.mozilla.fenix.shortcut.CreateShortcutFragment"

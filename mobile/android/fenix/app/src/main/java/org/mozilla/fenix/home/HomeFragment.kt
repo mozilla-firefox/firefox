@@ -62,7 +62,6 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.compose.base.modifier.thenConditional
 import mozilla.components.compose.base.snackbar.Snackbar
@@ -108,7 +107,6 @@ import org.mozilla.fenix.components.Components
 import org.mozilla.fenix.components.HomepageThumbnailIntegration
 import org.mozilla.fenix.components.LensFeature
 import org.mozilla.fenix.components.QrScanFenixFeature
-import org.mozilla.fenix.components.TabCollectionStorage
 import org.mozilla.fenix.components.VoiceSearchFeature
 import org.mozilla.fenix.components.accounts.FenixFxAEntryPoint
 import org.mozilla.fenix.components.appstate.AppAction
@@ -236,20 +234,6 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
 
     private val browsingModeManager
         get() = (activity as HomeActivity).browsingModeManager
-
-    private val collectionStorageObserver =
-        object : TabCollectionStorage.Observer {
-            override fun onTabsAdded(tabCollection: TabCollection, sessions: List<TabSessionState>) {
-                if (sessions.size == 1) {
-                    showComposeSnackbar(
-                        SnackbarState(
-                            message = requireContext().getString(R.string.create_collection_tab_saved_2),
-                            duration = SnackbarState.Duration.Preset.Long,
-                        )
-                    )
-                }
-            }
-        }
 
     private val store: BrowserStore
         get() = requireComponents.core.store
@@ -1235,9 +1219,6 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
             )
         }
 
-        // We only want this observer live just before we navigate away to the collection creation screen
-        requireComponents.core.tabCollectionStorage.unregister(collectionStorageObserver)
-
         // Trigger review prompt logic and show the appropriate prompt variation if applicable
         requireComponents.appStore.dispatch(CheckIfEligibleForReviewPrompt)
 
@@ -1373,10 +1354,6 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
             .also { observer ->
                 requireComponents.core.tabCollectionStorage.getCollections().observe(this, observer)
             }
-    }
-
-    private fun registerCollectionStorageObserver() {
-        requireComponents.core.tabCollectionStorage.register(collectionStorageObserver, viewLifecycleOwner)
     }
 
     private fun openTabsTray() {
@@ -1790,10 +1767,6 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                 .apply {
                     registerCallback(
                         object : SessionControlControllerCallback {
-                            override fun registerCollectionStorageObserver() {
-                                this@HomeFragment.registerCollectionStorageObserver()
-                            }
-
                             override fun removeCollection(tabCollection: TabCollection) {
                                 this@HomeFragment.removeCollection(tabCollection)
                             }

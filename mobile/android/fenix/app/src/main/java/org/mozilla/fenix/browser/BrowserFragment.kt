@@ -54,7 +54,6 @@ import org.mozilla.fenix.browser.store.BrowserScreenAction.ReaderModeStatusUpdat
 import org.mozilla.fenix.components.Components
 import org.mozilla.fenix.components.LensFeature
 import org.mozilla.fenix.components.QrScanFenixFeature
-import org.mozilla.fenix.components.TabCollectionStorage
 import org.mozilla.fenix.components.VoiceSearchFeature
 import org.mozilla.fenix.components.accounts.FenixFxAEntryPoint
 import org.mozilla.fenix.components.appstate.AppAction
@@ -64,8 +63,6 @@ import org.mozilla.fenix.components.share.isSystemShareSheetSupported
 import org.mozilla.fenix.components.toolbar.ToolbarPosition
 import org.mozilla.fenix.components.toolbar.gestures.ToolbarHorizontalGesturesHandler
 import org.mozilla.fenix.components.toolbar.gestures.ToolbarVerticalGesturesHandler
-import org.mozilla.fenix.compose.snackbar.Snackbar
-import org.mozilla.fenix.compose.snackbar.SnackbarState
 import org.mozilla.fenix.e2e.SystemInsetsPaddedFragment
 import org.mozilla.fenix.ext.application
 import org.mozilla.fenix.ext.components
@@ -458,11 +455,6 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
             }
     }
 
-    override fun onResume() {
-        super.onResume()
-        requireComponents.core.tabCollectionStorage.register(collectionStorageObserver, this)
-    }
-
     override fun onBackPressed(): Boolean {
         return readerViewFeature.onBackPressed() || super.onBackPressed()
     }
@@ -493,41 +485,6 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
             }
         }
     }
-
-    private val collectionStorageObserver =
-        object : TabCollectionStorage.Observer {
-            override fun onCollectionCreated(
-                title: String,
-                sessions: List<TabSessionState>,
-                id: Long?,
-            ) {
-                showTabSavedToCollectionSnackbar(sessions.size, true)
-            }
-
-            override fun onTabsAdded(tabCollection: TabCollection, sessions: List<TabSessionState>) {
-                showTabSavedToCollectionSnackbar(sessions.size)
-            }
-
-            private fun showTabSavedToCollectionSnackbar(
-                tabSize: Int,
-                isNewCollection: Boolean = false,
-            ) {
-                val messageResId =
-                    when {
-                        isNewCollection -> R.string.create_collection_tabs_saved_new_collection_2
-                        tabSize == 1 -> R.string.create_collection_tab_saved_2
-                        else -> return // Don't show snackbar for multiple tabs
-                    }
-
-                view?.let {
-                    Snackbar.make(
-                            snackBarParentView = binding.dynamicSnackbarContainer,
-                            snackbarState = SnackbarState(message = getString(messageResId)),
-                        )
-                        .show()
-                }
-            }
-        }
 
     override fun getContextMenuCandidates(
         context: Context,

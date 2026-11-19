@@ -199,8 +199,6 @@
 
     <!-- Light theme color palette -->
     <color name="primary_text_light_theme">@color/photonInk80</color>
-    <color name="dark_grey_90_gradient_start">@color/photonDarkGrey90</color>
-    <color name="dark_grey_90_gradient_end">#0015141A</color>
 
     <!-- Private theme color palette -->
     <color name="accent_private_theme">@color/photonViolet50</color>

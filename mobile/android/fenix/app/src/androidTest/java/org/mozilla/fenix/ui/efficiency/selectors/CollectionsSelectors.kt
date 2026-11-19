@@ -4,8 +4,6 @@
 
 package org.mozilla.fenix.ui.efficiency.selectors
 
-import org.mozilla.fenix.R
-import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
 import org.mozilla.fenix.ui.efficiency.helpers.Selector
 import org.mozilla.fenix.ui.efficiency.helpers.SelectorContainer
 import org.mozilla.fenix.ui.efficiency.helpers.SelectorGroup
@@ -18,13 +16,6 @@ object CollectionsSelectors : SelectorContainer {
         COLLECTION_CONTROLS,
         COLLECTION_THREE_DOT_MENU,
     }
-
-    val TAB_SAVED_SNACK_BAR =
-        Selector(
-            strategy = SelectorStrategy.UIAUTOMATOR_WITH_TEXT,
-            value = getStringResource(R.string.create_collection_tab_saved_2),
-            description = "Tab saved snackbar",
-        )
 
     @Suppress("FunctionName")
     fun COLLECTION_WITH_TITLE(collectionTitle: String = "") =

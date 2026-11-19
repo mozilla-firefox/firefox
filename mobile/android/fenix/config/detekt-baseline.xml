@@ -405,19 +405,6 @@
     <ID>UndocumentedPublicClass:AutoplayValue.kt$AutoplayValue$BlockAll : AutoplayValue</ID>
     <ID>UndocumentedPublicClass:AutoplayValue.kt$AutoplayValue$BlockAudible : AutoplayValue</ID>
     <ID>UndocumentedPublicClass:BrowsingModeManager.kt$BrowsingModeManager</ID>
-    <ID>UndocumentedPublicClass:CollectionCreationController.kt$CollectionCreationController</ID>
-    <ID>UndocumentedPublicClass:CollectionCreationFragment.kt$CollectionCreationFragment : DialogFragment</ID>
-    <ID>UndocumentedPublicClass:CollectionCreationInteractor.kt$CollectionCreationInteractor</ID>
-    <ID>UndocumentedPublicClass:CollectionCreationStore.kt$CollectionCreationAction : Action</ID>
-    <ID>UndocumentedPublicClass:CollectionCreationStore.kt$CollectionCreationAction$AddAllTabs : CollectionCreationAction</ID>
-    <ID>UndocumentedPublicClass:CollectionCreationStore.kt$CollectionCreationAction$RemoveAllTabs : CollectionCreationAction</ID>
-    <ID>UndocumentedPublicClass:CollectionCreationStore.kt$CollectionCreationAction$TabAdded : CollectionCreationAction</ID>
-    <ID>UndocumentedPublicClass:CollectionCreationStore.kt$CollectionCreationAction$TabRemoved : CollectionCreationAction</ID>
-    <ID>UndocumentedPublicClass:CollectionCreationStore.kt$CollectionCreationState : State</ID>
-    <ID>UndocumentedPublicClass:CollectionCreationStore.kt$CollectionCreationStore : Store</ID>
-    <ID>UndocumentedPublicClass:CollectionCreationTabListAdapter.kt$CollectionCreationTabListAdapter : Adapter</ID>
-    <ID>UndocumentedPublicClass:CollectionCreationTabListAdapter.kt$TabViewHolder : ViewHolder</ID>
-    <ID>UndocumentedPublicClass:CollectionCreationView.kt$CollectionCreationView</ID>
     <ID>UndocumentedPublicClass:Config.kt$Config</ID>
     <ID>UndocumentedPublicClass:Config.kt$ReleaseChannel</ID>
     <ID>UndocumentedPublicClass:CounterPreference.kt$CounterPreference</ID>
@@ -513,7 +500,6 @@
     <ID>UndocumentedPublicClass:RecentlyClosedFragmentStore.kt$RecentlyClosedFragmentAction$Select : RecentlyClosedFragmentAction</ID>
     <ID>UndocumentedPublicClass:RecentlyClosedFragmentView.kt$RecentlyClosedInteractor : SelectionInteractor</ID>
     <ID>UndocumentedPublicClass:RecentlyClosedItemViewHolder.kt$RecentlyClosedItemViewHolder : ViewHolder</ID>
-    <ID>UndocumentedPublicClass:SaveCollectionListAdapter.kt$CollectionViewHolder : ViewHolder</ID>
     <ID>UndocumentedPublicClass:SearchEngineMenu.kt$SearchEngineMenu</ID>
     <ID>UndocumentedPublicClass:SearchEngineMenu.kt$SearchEngineMenu$Item</ID>
     <ID>UndocumentedPublicClass:SearchEngineMenu.kt$SearchEngineMenu.Item$Delete : Item</ID>
@@ -585,25 +571,6 @@
     <ID>UndocumentedPublicFunction:BackgroundServices.kt$BackgroundServices$@VisibleForTesting(otherwise = PRIVATE) fun makeAccountManager( context: Context, serverConfig: ServerConfig, deviceConfig: DeviceConfig, syncConfig: SyncConfig?, crashReporter: CrashReporter?, )</ID>
     <ID>UndocumentedPublicFunction:BackgroundServices.kt$BackgroundServices$fun defaultDeviceName(context: Context): String</ID>
     <ID>UndocumentedPublicFunction:BrowserIcons.kt$fun BrowserIcons.loadIntoView(view: ImageView, url: String)</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationBottomBarView.kt$CollectionCreationBottomBarView$fun update(step: SaveCollectionStep, state: CollectionCreationState)</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationController.kt$CollectionCreationController$fun addNewCollection()</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationController.kt$CollectionCreationController$fun addTabToSelection(tab: Tab)</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationController.kt$CollectionCreationController$fun removeTabFromSelection(tab: Tab)</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationController.kt$CollectionCreationController$fun renameCollection(collection: TabCollection, name: String)</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationController.kt$CollectionCreationController$fun saveCollectionName(tabs: List&lt;Tab&gt;, name: String)</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationController.kt$CollectionCreationController$fun selectCollection(collection: TabCollection, tabs: List&lt;Tab&gt;)</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationController.kt$fun List&lt;Tab&gt;.toTabSessionStateList(store: BrowserStore): List&lt;TabSessionState&gt;</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationInteractor.kt$CollectionCreationInteractor$fun addNewCollection()</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationInteractor.kt$CollectionCreationInteractor$fun addTabToSelection(tab: Tab)</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationInteractor.kt$CollectionCreationInteractor$fun onCollectionRenamed(collection: TabCollection, name: String)</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationInteractor.kt$CollectionCreationInteractor$fun onNewCollectionNameSaved(tabs: List&lt;Tab&gt;, name: String)</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationInteractor.kt$CollectionCreationInteractor$fun removeTabFromSelection(tab: Tab)</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationInteractor.kt$CollectionCreationInteractor$fun selectCollection(collection: TabCollection, tabs: List&lt;Tab&gt;)</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationStore.kt$@Suppress("LongParameterList") fun createInitialCollectionCreationState( browserState: BrowserState, tabCollectionStorage: TabCollectionStorage, publicSuffixList: PublicSuffixList, saveCollectionStep: SaveCollectionStep, tabIds: Array&lt;String&gt;?, selectedTabIds: Array&lt;String&gt;?, selectedTabCollectionId: Long, ): CollectionCreationState</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationTabListAdapter.kt$CollectionCreationTabListAdapter$fun updateData(tabs: List&lt;Tab&gt;, selectedTabs: Set&lt;Tab&gt;, hideCheckboxes: Boolean = false)</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationTabListAdapter.kt$TabViewHolder$fun bind(tab: Tab, isSelected: Boolean, shouldHideCheckBox: Boolean)</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationView.kt$CollectionCreationView$fun onResumed()</ID>
-    <ID>UndocumentedPublicFunction:CollectionCreationView.kt$CollectionCreationView$fun update(state: CollectionCreationState)</ID>
     <ID>UndocumentedPublicFunction:Context.kt$fun Context.asActivity()</ID>
     <ID>UndocumentedPublicFunction:Context.kt$fun Context.getPreferenceKey(@StringRes resourceId: Int): String</ID>
     <ID>UndocumentedPublicFunction:CounterPreference.kt$CounterPreference$fun increment()</ID>
@@ -694,7 +661,6 @@
     <ID>UndocumentedPublicFunction:RecentlyClosedFragmentView.kt$RecentlyClosedFragmentView$fun update(state: RecentlyClosedFragmentState)</ID>
     <ID>UndocumentedPublicFunction:RecentlyClosedItemViewHolder.kt$RecentlyClosedItemViewHolder$fun bind(item: TabState)</ID>
     <ID>UndocumentedPublicFunction:RecentlyVisitedItem.kt$fun RecentHistoryGroup.lastUpdated(): Long</ID>
-    <ID>UndocumentedPublicFunction:SaveCollectionListAdapter.kt$CollectionViewHolder$fun bind(collection: TabCollection)</ID>
     <ID>UndocumentedPublicFunction:SearchStringValidator.kt$SearchStringValidator$fun isSearchStringValid(client: Client, searchString: String): Result</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$@VisibleForTesting(otherwise = PRIVATE) fun setStrictETP()</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun amoCollectionOverrideConfigured(): Boolean</ID>

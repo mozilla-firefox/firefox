@@ -644,7 +644,6 @@ class DefaultSessionControlControllerTest {
     }
 
     private fun createController(
-        registerCollectionStorageObserver: () -> Unit = {},
         showTabTray: () -> Unit = {},
         removeCollectionWithUndo: (tabCollection: TabCollection) -> Unit = {},
     ): DefaultSessionControlController {
@@ -670,10 +669,6 @@ class DefaultSessionControlControllerTest {
             .apply {
                 registerCallback(
                     object : SessionControlControllerCallback {
-                        override fun registerCollectionStorageObserver() {
-                            registerCollectionStorageObserver()
-                        }
-
                         override fun removeCollection(tabCollection: TabCollection) {
                             removeCollectionWithUndo(tabCollection)
                         }

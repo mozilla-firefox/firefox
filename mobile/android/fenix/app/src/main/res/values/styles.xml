@@ -654,7 +654,6 @@
         <item name="android:drawablePadding">8dp</item>
     </style>
 
-    <style name="CreateCollectionDialogStyle" parent="DialogStyleBase"/>
     <style name="CreateShortcutDialogStyle" parent="DialogStyleBase"/>
     <style name="ResearchSurfaceDialogStyle" parent="NormalThemeBase">
         <item name="android:navigationBarColor">@android:color/transparent</item>

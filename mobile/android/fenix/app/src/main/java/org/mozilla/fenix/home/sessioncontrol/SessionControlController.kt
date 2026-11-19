@@ -94,9 +94,6 @@ interface SessionControlController {
 /** Interface for [SessionControlController] callbacks that are implemented in the UI. */
 interface SessionControlControllerCallback {
 
-    /** Callback to register the [TabCollectionStorage.Observer]. */
-    fun registerCollectionStorageObserver()
-
     /** Callback to remove collection. */
     fun removeCollection(tabCollection: TabCollection)
 

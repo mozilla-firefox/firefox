@@ -1516,12 +1516,8 @@
     <string name="tab_manager_search_bar_back_content_description">Return to tab manager</string>
     <!-- Text for the menu button to delete a collection -->
     <string name="collection_delete">Delete collection</string>
-    <!-- Text for the menu button to rename a collection -->
-    <string name="collection_rename">Rename collection</string>
     <!-- Text for the button to open tabs of the selected collection -->
     <string name="collection_open_tabs">Open tabs</string>
-    <!-- Hint for adding name of a collection -->
-    <string name="collection_name_hint">Collection name</string>
     <!-- Text for the menu button to remove a top site -->
     <string name="remove_top_site">Remove</string>
     <!-- Text for the menu button to delete a top site from history -->
@@ -2163,39 +2159,9 @@
     <!-- Content description (not visible, for screen readers etc.): Opens the collection menu when pressed -->
     <string name="collection_menu_button_content_description">Collection menu</string>
 
-    <!-- Title for the "select tabs" step of the collection creator -->
-    <string name="create_collection_select_tabs">Select Tabs</string>
-    <!-- Title for the "select collection" step of the collection creator -->
-    <string name="create_collection_select_collection">Select collection</string>
-    <!-- Title for the "name collection" step of the collection creator -->
-    <string name="create_collection_name_collection">Name collection</string>
-    <!-- Button to add new collection for the "select collection" step of the collection creator -->
-    <string name="create_collection_add_new_collection">Add new collection</string>
-    <!-- Button to select all tabs in the "select tabs" step of the collection creator -->
-    <string name="create_collection_select_all">Select all</string>
-    <!-- Button to deselect all tabs in the "select tabs" step of the collection creator -->
-    <string name="create_collection_deselect_all">Deselect all</string>
-    <!-- Text to prompt users to select the tabs to save in the "select tabs" step of the collection creator -->
-    <string name="create_collection_save_to_collection_empty">Select tabs to save</string>
-    <!-- Text to show users how many tabs they have selected in the "select tabs" step of the collection creator.
-     %d is a placeholder for the number of tabs selected. -->
-    <string name="create_collection_save_to_collection_tabs_selected">%d tabs selected</string>
-    <!-- Text to show users they have one tab selected in the "select tabs" step of the collection creator.
-    %d is a placeholder for the number of tabs selected. -->
-    <string name="create_collection_save_to_collection_tab_selected">%d tab selected</string>
-    <!-- Text shown in snackbar when one or multiple tabs have been saved in a new collection -->
-    <string name="create_collection_tabs_saved_new_collection_2">Collection saved</string>
-    <!-- Text shown in snackbar when one tab has been saved in a collection -->
-    <string name="create_collection_tab_saved_2">Tab saved</string>
-    <!-- Content description (not visible, for screen readers etc.): button to close the collection creator -->
-    <string name="create_collection_close">Close</string>
-    <!-- Button to save currently selected tabs in the "select tabs" step of the collection creator-->
-    <string name="create_collection_save">Save</string>
     <!-- Snackbar action to view the collection the user just created or updated -->
     <string name="create_collection_view">View</string>
 
-    <!-- Default name for a new collection in "name new collection" step of the collection creator. %d is a placeholder for the number of collections-->
-    <string name="create_collection_default_name">Collection %d</string>
 
     <!-- Share -->
     <!-- Share screen header -->

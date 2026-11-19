@@ -10,7 +10,6 @@ import androidx.core.content.ContextCompat
 import kotlin.math.abs
 import mozilla.components.feature.tab.collections.TabCollection
 import org.mozilla.fenix.R
-import org.mozilla.fenix.collections.DefaultCollectionCreationController
 
 /** Selects one of the predefined collection icon colors based on the id. */
 @ColorInt
@@ -24,19 +23,4 @@ fun TabCollection.getIconColor(context: Context): Int {
         )
     iconColors.recycle()
     return color
-}
-
-/**
- * Returns the new default name recommendation for a collection
- *
- * Algorithm: Go through all collections, make a list of their names and keep only the default ones. Then get the
- * numbers from all these default names, compute the maximum number and add one.
- */
-fun List<TabCollection>.getDefaultCollectionNumber(): Int {
-    return (this.map { it.title }
-        .filter { it.matches(Regex("Collection\\s\\d+")) }
-        .map {
-            Integer.valueOf(it.split(" ")[DefaultCollectionCreationController.DEFAULT_COLLECTION_NUMBER_POSITION])
-        }
-        .maxOrNull() ?: 0) + DefaultCollectionCreationController.DEFAULT_INCREMENT_VALUE
 }
