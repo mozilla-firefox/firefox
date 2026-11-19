@@ -521,7 +521,7 @@ export class nsContextMenu {
 
       document.l10n.setAttributes(
         item,
-        "main-context-menu-open-link-in-container-tab",
+        "main-context-menu-open-link-in-container-tab-2",
         {
           containerName: label,
         }

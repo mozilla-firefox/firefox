@@ -85,7 +85,7 @@ add_task(async function test_on_created_navigation_target_from_context_menu() {
     async openNavTarget() {
       await clickContextMenuItem({
         pageElementSelector: "#test-create-new-tab-from-context-menu",
-        contextMenuItemLabel: "Open Link in New Tab",
+        contextMenuItemLabel: "Open in New Tab",
       });
     },
     expectedWebNavProps: {
@@ -102,7 +102,7 @@ add_task(async function test_on_created_navigation_target_from_context_menu() {
     async openNavTarget() {
       await clickContextMenuItem({
         pageElementSelector: "#test-create-new-window-from-context-menu",
-        contextMenuItemLabel: "Open Link in New Window",
+        contextMenuItemLabel: "Open in New Window",
       });
     },
     expectedWebNavProps: {
@@ -143,7 +143,7 @@ add_task(
         await clickContextMenuItem({
           pageElementSelector:
             "#test-create-new-tab-from-context-menu-subframe",
-          contextMenuItemLabel: "Open Link in New Tab",
+          contextMenuItemLabel: "Open in New Tab",
           frameIndex: 0,
         });
       },
@@ -162,7 +162,7 @@ add_task(
         await clickContextMenuItem({
           pageElementSelector:
             "#test-create-new-window-from-context-menu-subframe",
-          contextMenuItemLabel: "Open Link in New Window",
+          contextMenuItemLabel: "Open in New Window",
           frameIndex: 0,
         });
       },

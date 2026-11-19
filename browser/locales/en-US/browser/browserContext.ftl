@@ -129,32 +129,32 @@ main-context-menu-edit-bookmark-with-shortcut-2 =
     .aria-label = Edit Bookmark…
     .tooltiptext = Edit bookmark ({ $shortcut })
 
-main-context-menu-open-link =
-    .label = Open Link
+main-context-menu-open-link-2 =
+    .label = Open
     .accesskey = O
 
-main-context-menu-open-link-new-tab =
-    .label = Open Link in New Tab
+main-context-menu-open-link-new-tab-2 =
+    .label = Open in New Tab
     .accesskey = T
 
-main-context-menu-open-link-split-view =
-    .label = Open Link in Split View
+main-context-menu-open-link-split-view-2 =
+    .label = Open in Split View
     .accesskey = M
 
-main-context-menu-open-link-container-tab =
-    .label = Open Link in New Container Tab
+main-context-menu-open-link-container-tab-2 =
+    .label = Open in New Container Tab
     .accesskey = w
 
-main-context-menu-open-link-new-window =
-    .label = Open Link in New Window
+main-context-menu-open-link-new-window-2 =
+    .label = Open in New Window
     .accesskey = d
 
-main-context-menu-open-link-new-private-window =
-    .label = Open Link in New Private Window
+main-context-menu-open-link-new-private-window-2 =
+    .label = Open in New Private Window
     .accesskey = P
 
-main-context-menu-bookmark-link-2 =
-    .label = Bookmark Link…
+main-context-menu-bookmark-link-3 =
+    .label = Bookmark…
     .accesskey = B
 
 main-context-menu-save-link =
@@ -393,12 +393,8 @@ main-context-menu-turn-on-actions-menu =
     .label = Turn On Actions Menu
     .accesskey = A
 
-main-context-menu-link-send-to-device =
-    .label = Send Link to Device
-    .accesskey = n
-
-main-context-menu-link-send-to-mobile =
-    .label = Send Link to Mobile
+main-context-menu-link-send-to-your-devices =
+    .label = Send to Your Devices
     .accesskey = n
 
 main-context-menu-frame =
@@ -481,8 +477,8 @@ main-context-menu-eme-learn-more =
 
 # Variables
 #   $containerName (String): The name of the current container
-main-context-menu-open-link-in-container-tab =
-    .label = Open Link in New { $containerName } Tab
+main-context-menu-open-link-in-container-tab-2 =
+    .label = Open in New { $containerName } Tab
     .accesskey = T
 
 main-context-menu-reveal-password =

@@ -176,7 +176,7 @@ add_task(async function test_link_contextmenu() {
   );
   is(
     document.getElementById("context-sendlinktodevice").label,
-    "Send Link to Device",
+    "Send to Your Devices",
     "Send link to device is enabled"
   );
   contextMenu.activateItem(
@@ -439,7 +439,7 @@ add_task(async function test_link_contextmenu_mobile() {
   );
   is(
     document.getElementById("context-sendlinktodevice").label,
-    "Send Link to Mobile",
+    "Send to Your Devices",
     "Send link to mobile is enabled"
   );
   contextMenu.activateItem(

@@ -3488,15 +3488,8 @@ var gSync = {
     );
 
     let hasOnlyMobileTargets = this.hasOnlyMobileSendTabTargets();
-    let sendLinkToDevice = document.getElementById("context-sendlinktodevice");
     let sendPageToDevice = document.getElementById("context-sendpagetodevice");
 
-    sendLinkToDevice.setAttribute(
-      "data-l10n-id",
-      hasOnlyMobileTargets
-        ? "main-context-menu-link-send-to-mobile"
-        : "main-context-menu-link-send-to-device"
-    );
     sendPageToDevice.setAttribute(
       "data-l10n-id",
       hasOnlyMobileTargets

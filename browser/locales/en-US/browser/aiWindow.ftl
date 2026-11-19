@@ -4,8 +4,8 @@
 
 ## Chrome
 
-main-context-menu-open-link-new-smart-window =
-    .label = Open Link in New { -smart-window-brand-name }
+main-context-menu-open-link-new-smart-window-2 =
+    .label = Open in New { -smart-window-brand-name }
     .accesskey = S
 
 appmenuitem-new-ai-window =
