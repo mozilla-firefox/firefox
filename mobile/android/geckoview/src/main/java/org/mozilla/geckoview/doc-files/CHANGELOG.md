@@ -25,6 +25,8 @@ exclude: true
 - Added [`SessionPdfFileSaver.save(boolean)`][162.6] to save the current PDF with its annotations,
     such as signatures, drawn into the page content. Form fields are flattened too, so they can no
     longer be filled in. ([bug 2075337]({{bugzilla}}2075337))
+- Added [`IPProtectionController.init(String)`][162.7], which takes an [`IPProtectionController.SignedOutAuth`][162.8]: [`SIGNED_OUT_AUTH_NONE`][162.9] or [`SIGNED_OUT_AUTH_GPI`][162.10]. [`IPProtectionController.init()`][162.11] initializes with `SIGNED_OUT_AUTH_NONE`. ([bug 2052469]({{bugzilla}}2052469))
+- ⚠️ Removed `GeckoRuntimeSettings.setIpProtectionAuthProvider`, `getIpProtectionAuthProvider`, `GeckoRuntimeSettings.IpProtectionAuthProvider`, `IP_PROTECTION_AUTH_PROVIDER_FXA` and `IP_PROTECTION_AUTH_PROVIDER_GPI`. Pass the auth provider used while no account is signed in to [`IPProtectionController.init(String)`][162.7] instead. ([bug 2052469]({{bugzilla}}2052469))
 
 [162.1]: {{javadoc_uri}}/PictureInPictureController.SessionPictureInPicture.html#setKeepActive(boolean)
 [162.2]: {{javadoc_uri}}/GeckoRuntimeSettings.Builder.html#creditCardSecurityCodeEnabled(boolean)
@@ -32,6 +34,11 @@ exclude: true
 [162.4]: {{javadoc_uri}}/GeckoRuntimeSettings.html#getCreditCardSecurityCodeEnabled()
 [162.5]: {{javadoc_uri}}/IPProtectionController.AuthProvider.html#onTokenRejected(java.lang.String)
 [162.6]: {{javadoc_uri}}/SessionPdfFileSaver.html#save(boolean)
+[162.7]: {{javadoc_uri}}/IPProtectionController.html#init(java.lang.String)
+[162.8]: {{javadoc_uri}}/IPProtectionController.SignedOutAuth.html
+[162.9]: {{javadoc_uri}}/IPProtectionController.html#SIGNED_OUT_AUTH_NONE
+[162.10]: {{javadoc_uri}}/IPProtectionController.html#SIGNED_OUT_AUTH_GPI
+[162.11]: {{javadoc_uri}}/IPProtectionController.html#init()
 
 ## v161
 - Added [`Autocomplete.CreditCard.securityCode`][161.1] and
@@ -2144,4 +2151,4 @@ to allow adding gecko profiler markers.
 [65.24]: {{javadoc_uri}}/CrashReporter.html#sendCrashReport(android.content.Context,android.os.Bundle,java.lang.String)
 [65.25]: {{javadoc_uri}}/GeckoResult.html
 
-[api-version]: ff90a3b6c849b34f6068a5fffecda17b62be894f
+[api-version]: 2f2c5ed5bd17eeb5895f02d27f081893c883e4de

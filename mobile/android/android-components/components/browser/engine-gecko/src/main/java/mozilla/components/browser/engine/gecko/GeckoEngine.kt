@@ -1685,14 +1685,6 @@ class GeckoEngine(
                         }
                     }
 
-                @ExperimentalAndroidComponentsApi
-                override var ipProtectionAuthProvider: String?
-                    @OptIn(ExperimentalGeckoViewApi::class) get() = runtime.settings.ipProtectionAuthProvider
-                    @OptIn(ExperimentalGeckoViewApi::class)
-                    set(value) {
-                        value?.let { runtime.settings.setIpProtectionAuthProvider(it) }
-                    }
-
                 override var forceUserScalableContent: Boolean
                     get() = runtime.settings.forceUserScalableEnabled
                     set(value) {
@@ -2018,7 +2010,6 @@ class GeckoEngine(
                     this.loginAutofillEnabled = it.loginAutofillEnabled
                     this.creditCardSecurityCodeEnabled = it.creditCardSecurityCodeEnabled
                     this.firefoxRelay = it.firefoxRelay
-                    this.ipProtectionAuthProvider = it.ipProtectionAuthProvider
                     this.enterpriseRootsEnabled = it.enterpriseRootsEnabled
                     this.httpsOnlyMode = it.httpsOnlyMode
                     this.dohSettingsMode = it.dohSettingsMode

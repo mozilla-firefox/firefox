@@ -61,6 +61,7 @@ function makeProvider(sandbox, gpiToken = "fake-gpi-token") {
   sandbox.stub(provider, "_dispatchGpiWarmUp");
   sandbox.stub(provider, "_onGpiWarmUpCompleted");
   sandbox.stub(provider, "_onGpiWarmUpFailed");
+  sandbox.stub(provider, "_onGpiEnrollmentFailed");
   sandbox.stub(provider, "_fetchGpiToken").resolves(gpiToken);
   return provider;
 }
@@ -232,6 +233,10 @@ add_task(async function test_aboutToStart_requests_gpi_token_then_auth_jwt() {
     String(renewAfter),
     "renewAfter stored in prefs"
   );
+  Assert.ok(
+    provider._onGpiEnrollmentFailed.notCalled,
+    "No fallback after a successful enrollment"
+  );
   sandbox.restore();
 });
 
@@ -254,28 +259,43 @@ add_task(async function test_aboutToStart_skips_enroll_with_valid_jwt() {
   sandbox.restore();
 });
 
-// Scenario: enrollment fails during activation. The prefs are reset and an
-// error is returned.
-add_task(async function test_aboutToStart_enrollment_failed_clears_prefs() {
-  const sandbox = sinon.createSandbox();
-  using serverWrapper = makeGuardianServer({
-    enrollment: enrollmentFail(),
-  });
-  // eslint-disable-next-line no-unused-vars
-  using _setup = setupServer(serverWrapper);
-  const provider = makeProvider(sandbox);
-  // Pre-populate with a stale JWT that triggered renewal.
-  Services.prefs.setCharPref(AUTH_JWT_PREF, "stale-jwt");
-  Services.prefs.setCharPref(AUTH_JWT_RENEW_AFTER_PREF, String(PAST_MS));
-  const result = await provider.aboutToStart();
-  Assert.deepEqual(result, { error: "enrollment_failed" });
-  Assert.equal(
-    Services.prefs.getCharPref(AUTH_JWT_PREF, ""),
-    "",
-    "JWT cleared from prefs after enrollment failure"
-  );
-  sandbox.restore();
-});
+// Scenario: enrollment fails during activation, because no GPI token is
+// returned or because Guardian rejects it. The prefs are reset, an error is
+// returned and the fallback auth provider is requested.
+add_task(
+  async function test_aboutToStart_enrollment_failed_clears_prefs_and_falls_back() {
+    const cases = [
+      { name: "no GPI token", gpiToken: null, enrollment: enrollmentOk() },
+      {
+        name: "Guardian rejects the token",
+        gpiToken: "fake-gpi-token",
+        enrollment: enrollmentFail(),
+      },
+    ];
+    for (const { name, gpiToken, enrollment } of cases) {
+      const sandbox = sinon.createSandbox();
+      using serverWrapper = makeGuardianServer({ enrollment });
+      // eslint-disable-next-line no-unused-vars
+      using _setup = setupServer(serverWrapper);
+      const provider = makeProvider(sandbox, gpiToken);
+      // Pre-populate with a stale JWT that triggered renewal.
+      Services.prefs.setCharPref(AUTH_JWT_PREF, "stale-jwt");
+      Services.prefs.setCharPref(AUTH_JWT_RENEW_AFTER_PREF, String(PAST_MS));
+      const result = await provider.aboutToStart();
+      Assert.deepEqual(result, { error: "enrollment_failed" }, name);
+      Assert.equal(
+        Services.prefs.getCharPref(AUTH_JWT_PREF, ""),
+        "",
+        `${name}: JWT cleared from prefs after enrollment failure`
+      );
+      Assert.ok(
+        provider._onGpiEnrollmentFailed.calledOnce,
+        `${name}: the fallback auth provider is requested`
+      );
+      sandbox.restore();
+    }
+  }
+);
 
 // Scenario: after a failed enrollment the JWT pref is cleared, so the next
 // aboutToStart() call re-enrolls successfully.
@@ -295,6 +315,10 @@ add_task(
       "",
       "No JWT after first failure"
     );
+    Assert.ok(
+      provider._onGpiEnrollmentFailed.calledOnce,
+      "The first failure requests the fallback auth provider"
+    );
 
     // Second call: server recovers.
     serverWrapper.server.registerPathHandler(
@@ -311,6 +335,21 @@ add_task(
     sandbox.restore();
   }
 );
+
+// Scenario: an enrollment failure requests the fallback auth provider only
+// after the caller of the failed enrollment has run.
+add_task(async function test_onGpiEnrollmentFailed_defers_the_fallback() {
+  const sandbox = sinon.createSandbox();
+  const reinit = sandbox.stub(IPProtectionActivator, "reinitWithFallback");
+  const provider = new IPPGpiAuthProviderSingleton();
+
+  provider._onGpiEnrollmentFailed();
+  Assert.ok(reinit.notCalled, "The fallback is not requested at once");
+
+  await new Promise(resolve => Services.tm.dispatchToMainThread(resolve));
+  Assert.ok(reinit.calledOnce, "The fallback is requested on the next task");
+  sandbox.restore();
+});
 
 // Scenario: init() schedules a renewal timer when renewAfter is in the past;
 // the timer fires and fetches a new JWT.
@@ -500,6 +539,10 @@ add_task(async function test_fetchProxyPass_401_reenroll_fails_clears_jwt() {
     "",
     "JWT cleared after failed re-enrollment so aboutToStart() retries next time"
   );
+  Assert.ok(
+    provider._onGpiEnrollmentFailed.notCalled,
+    "No fallback outside an activation"
+  );
   sandbox.restore();
 });
 
@@ -604,6 +647,10 @@ add_task(async function test_fetchProxyUsage_401_reenroll_fails_clears_jwt() {
     Services.prefs.getCharPref(AUTH_JWT_PREF, ""),
     "",
     "JWT cleared after failed re-enrollment so aboutToStart() retries next time"
+  );
+  Assert.ok(
+    provider._onGpiEnrollmentFailed.notCalled,
+    "No fallback outside an activation"
   );
   sandbox.restore();
 });

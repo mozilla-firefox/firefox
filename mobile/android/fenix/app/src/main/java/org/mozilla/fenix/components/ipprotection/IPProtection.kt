@@ -6,8 +6,10 @@ package org.mozilla.fenix.components.ipprotection
 
 import android.content.Context
 import androidx.lifecycle.ProcessLifecycleOwner
+import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.Engine
+import mozilla.components.concept.engine.ipprotection.IPProtectionHandler.SignedOutAuth
 import mozilla.components.feature.ipprotection.IPProtectionFeature
 import mozilla.components.feature.ipprotection.auth.gpi.IPProtectionGpiProvider
 import mozilla.components.feature.ipprotection.storage.DefaultIPProtectionLocationRepository
@@ -83,17 +85,15 @@ class IPProtection(
         )
     }
 
+    @OptIn(ExperimentalAndroidComponentsApi::class)
     val feature by lazy {
-        // N.B. Temporary: requires a restart. Should update automatically once we support
-        // switching the auth provider without a restart.
-        engine.settings.ipProtectionAuthProvider = if (settings.ipProtectionUseGpi) "gpi" else "fxa"
-
         IPProtectionFeature(
             store = store,
             engine = engine,
             accountManager = authSources.fxaAccountManager.value,
             engineMiddleware = engineMiddleware,
             extraAuthProvider = IPProtectionGpiProvider(authSources.integrityClient.value),
+            signedOutAuth = if (settings.ipProtectionUseGpi) SignedOutAuth.Gpi else SignedOutAuth.None,
         )
     }
 

@@ -107,6 +107,14 @@ class IPPGpiAuthProviderSingleton extends IPPAuthProvider {
     lazy.IPProtectionActivator.reinitWithFallback();
   }
 
+  _onGpiEnrollmentFailed() {
+    // An activation waiting on this enrollment has to fail with its own error
+    // before the fallback replaces the provider under it.
+    Services.tm.dispatchToMainThread(() =>
+      lazy.IPProtectionActivator.reinitWithFallback()
+    );
+  }
+
   _registerGpiListener(listener) {
     lazy.EventDispatcher.instance.registerListener(listener, [
       "GeckoView:IPProtection:GPI:WarmUpCompleted",
@@ -196,6 +204,7 @@ class IPPGpiAuthProviderSingleton extends IPPAuthProvider {
     if (needsEnrollment) {
       const { isEnrolledAndEntitled } = await this.enroll();
       if (!isEnrolledAndEntitled) {
+        this._onGpiEnrollmentFailed();
         return { error: AUTH_ERRORS.ENROLLMENT_FAILED };
       }
     }

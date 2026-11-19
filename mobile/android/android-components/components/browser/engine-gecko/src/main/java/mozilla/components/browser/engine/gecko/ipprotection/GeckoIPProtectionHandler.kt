@@ -90,8 +90,13 @@ internal class GeckoIPProtectionHandler(private val runtime: GeckoRuntime) : IPP
             )
     }
 
-    override fun init() {
-        runtime.ipProtectionController.init()
+    override fun init(signedOutAuth: IPProtectionHandler.SignedOutAuth) {
+        runtime.ipProtectionController.init(
+            when (signedOutAuth) {
+                IPProtectionHandler.SignedOutAuth.None -> IPProtectionController.SIGNED_OUT_AUTH_NONE
+                IPProtectionHandler.SignedOutAuth.Gpi -> IPProtectionController.SIGNED_OUT_AUTH_GPI
+            }
+        )
     }
 
     override fun uninit() {

@@ -1134,6 +1134,10 @@ features:
           "SR", "ST", "SV", "SX", "SZ", "TC", "TD", "TG", "TH", "TK", "TL", "TN", "TO", "TT", "TV", "TW",
           "UA", "US", "UY", "VA", "VC", "VE", "VG", "VI", "VU", "WF", "WS", "XK", "YT", "ZA", "ZM", "ZW"
         ]
+      use-gpi-when-signed-out:
+        description: If true, IP Protection may authenticate signed-out users with Google Play Integrity (GPI).
+        type: Boolean
+        default: false
       promo-deadline:
         description: The final date for the promotion to end. This needs to be an ISO 8601 formatted date (i.e. YYYY-MM-DD).
         type: String
