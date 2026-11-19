@@ -1377,6 +1377,8 @@ if (rtc_include_tests) {
       "../api/units:time_delta",
       "../api/units:timestamp",
       "../api/video:video_frame",
+      "../api/video/timing:video_jitter_timing_factory",
+      "../api/video/timing:video_jitter_timing_interface",
       "../api/video_codecs:video_codecs_api",
       "../call:fake_network",
       "../call:video_receive_stream_api",

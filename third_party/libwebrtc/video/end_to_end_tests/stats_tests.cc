@@ -32,6 +32,8 @@
 #include "api/transport/bitrate_settings.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
+#include "api/video/timing/video_jitter_timing_factory.h"
+#include "api/video/timing/video_jitter_timing_interface.h"
 #include "api/video/video_frame.h"
 #include "api/video/video_sink_interface.h"
 #include "api/video_codecs/sdp_video_format.h"
@@ -786,5 +788,160 @@ TEST_F(StatsEndToEndTest, CallReportsRttForSender) {
     DestroyCalls();
   });
 }
+
+struct FakeVideoJitterTimingState {
+  int create_count = 0;
+  int complete_frames = 0;
+  int continuous_units = 0;
+  int decodable_units = 0;
+  int network_updates = 0;
+  int local_time_calls = 0;
+  TimeDelta minimum_delay = TimeDelta::Millis(123);
+};
+
+class FakeVideoJitterTiming : public VideoJitterTimingInterface {
+ public:
+  explicit FakeVideoJitterTiming(FakeVideoJitterTimingState& state)
+      : state_(state) {}
+
+  void Reset() override {}
+
+  void OnCompleteFrame(const FrameInfo& info) override {
+    ++state_.complete_frames;
+    last_receive_time_ = info.time;
+  }
+
+  std::optional<TimeDelta> OnContinuousTemporalUnits(
+      std::span<const uint32_t> /*rtp_timestamps*/,
+      Timestamp /*now*/) override {
+    ++state_.continuous_units;
+    return state_.minimum_delay;
+  }
+
+  std::optional<TimeDelta> OnDecodableTemporalUnit(
+      const TemporalUnitInfo& /*info*/) override {
+    ++state_.decodable_units;
+    return state_.minimum_delay;
+  }
+
+  void OnNetworkUpdate(const NetworkInfo& /*info*/) override {
+    ++state_.network_updates;
+  }
+
+  std::optional<Timestamp> LocalTime(
+      uint32_t /*rtp_timestamp*/) const override {
+    ++state_.local_time_calls;
+    return last_receive_time_;
+  }
+
+ private:
+  FakeVideoJitterTimingState& state_;
+  std::optional<Timestamp> last_receive_time_;
+};
+
+class FakeVideoJitterTimingFactory : public VideoJitterTimingFactory {
+ public:
+  explicit FakeVideoJitterTimingFactory(FakeVideoJitterTimingState& state)
+      : state_(state) {}
+
+  std::unique_ptr<VideoJitterTimingInterface> Create(
+      const Environment& env) const override {
+    ++state_.create_count;
+    return std::make_unique<FakeVideoJitterTiming>(state_);
+  }
+
+ private:
+  FakeVideoJitterTimingState& state_;
+};
+
+TEST_F(StatsEndToEndTest, CreatesVideoJitterTimingPerStream) {
+  FakeVideoJitterTimingState timing_state;
+  FakeVideoJitterTimingFactory fake_factory(timing_state);
+
+  SendTask(task_queue(), [this, &fake_factory]() {
+    CallConfig recv_config = RecvCallConfig();
+    recv_config.video_jitter_timing_factory = &fake_factory;
+    CreateCalls(SendCallConfig(), std::move(recv_config));
+
+    CreateSendTransport(BuiltInNetworkBehaviorConfig(), /*observer=*/nullptr);
+    CreateReceiveTransport(BuiltInNetworkBehaviorConfig(),
+                           /*observer=*/nullptr);
+
+    CreateSendConfig(/*num_video_streams=*/2, /*num_audio_streams=*/0,
+                     /*num_flexfec_streams=*/0);
+    CreateMatchingReceiveConfigs();
+    CreateVideoStreams();
+
+    DestroyStreams();
+    DestroyCalls();
+  });
+
+  EXPECT_EQ(timing_state.create_count, 2);
+}
+
+TEST_F(StatsEndToEndTest, UsesInjectedVideoJitterTimingFactory) {
+  FakeVideoJitterTimingState timing_state;
+  FakeVideoJitterTimingFactory fake_factory(timing_state);
+
+  SendTask(task_queue(), [this, &fake_factory]() {
+    BuiltInNetworkBehaviorConfig config;
+    config.queue_delay_ms = 20;
+
+    CallConfig recv_config = RecvCallConfig();
+    recv_config.video_jitter_timing_factory = &fake_factory;
+    CreateCalls(SendCallConfig(), std::move(recv_config));
+
+    CreateSendTransport(config, /*observer=*/nullptr);
+    CreateReceiveTransport(config, /*observer=*/nullptr);
+
+    CreateSendConfig(/*num_video_streams=*/1, /*num_audio_streams=*/0,
+                     /*num_flexfec_streams=*/0);
+    CreateMatchingReceiveConfigs();
+    for (auto& receive_config : video_receive_configs_) {
+      receive_config.rtp.rtcp_xr.receiver_reference_time_report = true;
+    }
+
+    CreateVideoStreams();
+    CreateFrameGeneratorCapturer(test::VideoTestConstants::kDefaultFramerate,
+                                 test::VideoTestConstants::kDefaultWidth,
+                                 test::VideoTestConstants::kDefaultHeight);
+    receiver_call_->SignalChannelNetworkState(MediaType::VIDEO, kNetworkUp);
+    Start();
+  });
+
+  int64_t start_time_ms = env().clock().TimeInMilliseconds();
+  VideoReceiveStreamInterface::Stats stats;
+  FakeVideoJitterTimingState state;
+  while (env().clock().TimeInMilliseconds() - start_time_ms <
+         test::VideoTestConstants::kDefaultTimeout.ms()) {
+    SendTask(task_queue(), [this, &stats, &state, &timing_state]() {
+      stats = video_receive_streams_[0]->GetStats();
+      state = timing_state;
+    });
+    if (state.network_updates > 0 && stats.jitter_buffer_emitted_count > 0 &&
+        stats.jitter_buffer_ms == state.minimum_delay.ms()) {
+      break;
+    }
+    Thread::SleepMs(10);
+  }
+
+  EXPECT_EQ(state.create_count, 1);
+  EXPECT_GT(state.complete_frames, 0);
+  EXPECT_GT(state.continuous_units, 0);
+  EXPECT_GT(state.decodable_units, 0);
+  EXPECT_GT(state.network_updates, 0);
+  EXPECT_GT(state.local_time_calls, 0);
+  EXPECT_EQ(stats.jitter_buffer_ms, state.minimum_delay.ms());
+  EXPECT_EQ(stats.jitter_buffer_minimum_delay,
+            state.minimum_delay *
+                static_cast<int64_t>(stats.jitter_buffer_emitted_count));
+
+  SendTask(task_queue(), [this]() {
+    Stop();
+    DestroyStreams();
+    DestroyCalls();
+  });
+}
+
 }  // namespace
 }  // namespace webrtc
