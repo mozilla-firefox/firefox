@@ -1954,16 +1954,9 @@ impl<'a> SceneBuilder<'a> {
         }
 
         // If this stacking context has any complex clips, we need to draw it
-        // to an off-screen surface. Unless it wraps a backdrop-filter and its
-        // primitives can apply the clips themselves: it is not a backdrop
-        // root, so it draws into its parent's surface for the backdrop to
-        // include what it drew before the filter.
+        // to an off-screen surface.
         if let Some(clip_chain_id) = clip_chain_id {
-            let clips = &self.scene_stores.clips;
-            if self.clip_tree_builder.clip_chain_has_complex_clips(clip_chain_id, clips) &&
-               !(flags.contains(StackingContextFlags::WRAPS_BACKDROP_FILTER) &&
-                 self.clip_tree_builder.clip_chain_complex_clips_are_rounded_rects(clip_chain_id, clips))
-            {
+            if self.clip_tree_builder.clip_chain_has_complex_clips(clip_chain_id, &self.scene_stores.clips) {
                 // At the root level, if all complex clips are fixed-position
                 // rounded rectangles, we can skip the intermediate surface.
                 // The clips will be promoted to compositor clips on the tile
@@ -2718,12 +2711,9 @@ impl<'a> SceneBuilder<'a> {
             });
 
             // Find which stacking context (or root tile cache) to add the
-            // backdrop-filter chain to. A wrapper is only skipped if it has its
-            // own surface; a pass-through wrapper draws into its parent's
-            // surface, so the chain must stay in it to see what it drew before.
+            // backdrop-filter chain to
             let sc_index = self.sc_stack.iter().rposition(|sc| {
-                !sc.flags.contains(StackingContextFlags::WRAPS_BACKDROP_FILTER) ||
-                !sc.has_surface()
+                !sc.flags.contains(StackingContextFlags::WRAPS_BACKDROP_FILTER)
             });
 
             match sc_index {
@@ -3418,16 +3408,6 @@ impl FlattenedStackingContext {
     /// Return true if the stacking context has a valid preserve-3d property
     pub fn is_3d(&self) -> bool {
         self.transform_style == TransformStyle::Preserve3D && self.composite_ops.is_empty()
-    }
-
-    /// Return true if this stacking context renders into its own surface
-    /// rather than being a pass-through picture into its parent's surface.
-    /// 3d contexts are conservatively treated as having a surface.
-    fn has_surface(&self) -> bool {
-        !self.blit_reason.is_empty() ||
-            self.composite_ops.has_valid_filters() ||
-            self.composite_ops.mix_blend_mode.is_some() ||
-            !matches!(self.context_3d, Picture3DContext::Out)
     }
 
     /// Return true if the stacking context isn't needed.
