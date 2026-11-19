@@ -307,6 +307,12 @@ specific_include_rules = {
     "+p2p/base/port_allocator.h",
   ],
 
+  "webrtc_sdp_planb\\.h": [
+    "+media/base/stream_params.h",
+    "+pc/session_description.h",
+    "+rtc_base/strings/string_builder.h",
+  ],
+
   # .cc files in api/ should not be restricted in what they can #include,
   # so we re-add all the top-level directories here. (That's because .h
   # files leak their #includes to whoever's #including them, but .cc files

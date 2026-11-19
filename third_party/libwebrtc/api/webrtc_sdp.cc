@@ -40,6 +40,7 @@
 #include "api/rtp_transceiver_direction.h"
 #include "api/sctp_transport_interface.h"
 #include "api/uma_metrics.h"
+#include "api/webrtc_sdp_planb.h"
 #include "media/base/codec.h"
 #include "media/base/media_constants.h"
 #include "media/base/rid_description.h"
@@ -106,13 +107,7 @@ constexpr absl::string_view kAttributeSsrc = "ssrc";
 constexpr absl::string_view kSsrcAttributeCname = "cname";
 constexpr absl::string_view kAttributeExtmapAllowMixed = "extmap-allow-mixed";
 constexpr absl::string_view kAttributeExtmap = "extmap";
-// draft-alvestrand-mmusic-msid-01
-// a=msid-semantic: WMS
-// This is a legacy field supported only for Plan B semantics.
-constexpr absl::string_view kAttributeMsidSemantics = "msid-semantic";
-constexpr absl::string_view kMediaStreamSemantic = "WMS";
 constexpr absl::string_view kSsrcAttributeMsid = "msid";
-constexpr absl::string_view kDefaultMsid = "default";
 constexpr absl::string_view kNoStreamMsid = "-";
 constexpr absl::string_view kAttributeSsrcGroup = "ssrc-group";
 constexpr absl::string_view kAttributeCandidate = "candidate";
@@ -226,14 +221,6 @@ void ReportSdpBandwidth(SdpBandwidthCategory category) {
                             kSdpBandwidthMax);
 }
 
-// The string fields are views into the SDP message being parsed and must not
-// outlive it.
-struct SsrcInfo {
-  uint32_t ssrc_id = 0;
-  absl::string_view cname;
-  absl::string_view stream_id;
-  absl::string_view track_id;
-};
 using SsrcInfoVec = std::vector<SsrcInfo>;
 using SsrcGroupVec = std::vector<SsrcGroup>;
 
@@ -551,7 +538,7 @@ void CreateTracksFromSsrcInfos(const SsrcInfoVec& ssrc_infos,
                                absl::string_view msid_track_id,
                                StreamParamsVec* tracks,
                                int msid_signaling) {
-  RTC_DCHECK(tracks);
+  RTC_DCHECK(tracks != nullptr);
   if (msid_signaling & kMsidSignalingMediaSection) {
     // Unified Plan SDP msid signaling: all SSRCs in an m= section belong to a
     // single StreamParams track.
@@ -573,57 +560,7 @@ void CreateTracksFromSsrcInfos(const SsrcInfoVec& ssrc_infos,
     return;
   }
 
-  for (const SsrcInfo& ssrc_info : ssrc_infos) {
-    // According to https://tools.ietf.org/html/rfc5576#section-6.1, the CNAME
-    // attribute is mandatory, but we relax that restriction.
-    if (ssrc_info.cname.empty()) {
-      RTC_LOG(LS_WARNING) << "CNAME attribute missing for SSRC "
-                          << ssrc_info.ssrc_id;
-    }
-    std::vector<std::string> stream_ids;
-    absl::string_view track_id;
-    if (msid_signaling & kMsidSignalingSsrcAttribute) {
-      // This is the case with Plan B SDP msid signaling.
-      stream_ids.emplace_back(ssrc_info.stream_id);
-      track_id = ssrc_info.track_id;
-    } else if (msid_signaling == kMsidSignalingNotUsed) {
-      // Since no media streams isn't supported with older SDP signaling, we
-      // use a default stream id.
-      stream_ids.emplace_back(kDefaultMsid);
-    }
-
-    auto track_it = absl::c_find_if(
-        *tracks,
-        [track_id](const StreamParams& track) { return track.id == track_id; });
-    if (track_it == tracks->end()) {
-      // If we don't find an existing track, create a new one.
-      tracks->push_back(StreamParams());
-      track_it = tracks->end() - 1;
-    }
-    StreamParams& track = *track_it;
-    track.add_ssrc(ssrc_info.ssrc_id);
-    track.cname = ssrc_info.cname;
-    track.set_stream_ids(stream_ids);
-    track.id = track_id;
-  }
-  for (StreamParams& stream : *tracks) {
-    // If a track ID wasn't populated from the SSRC attributes OR the
-    // msid attribute, use default/random values. This happens after
-    // deduplication.
-    if (stream.id.empty()) {
-      stream.id = CreateRandomString(8);
-    }
-  }
-}
-
-void GetMediaStreamIds(const ContentInfo* content,
-                       flat_set<std::string>* labels) {
-  for (const StreamParams& stream_params :
-       content->media_description()->streams()) {
-    for (const std::string& stream_id : stream_params.stream_ids()) {
-      labels->insert(stream_id);
-    }
-  }
+  CreatePlanBTracksFromSsrcInfos(ssrc_infos, msid_signaling, tracks);
 }
 
 // Get the default destination from the `candidates` with the given value of
@@ -1447,24 +1384,7 @@ void BuildRtpContentAttributes(const MediaContentDescription* media_desc,
       AddSsrcLine(ssrc, kSsrcAttributeCname, track.cname, os, message);
 
       if (msid_signaling & kMsidSignalingSsrcAttribute) {
-        // draft-alvestrand-mmusic-msid-00
-        // a=ssrc:<ssrc-id> msid:identifier [appdata]
-        // The appdata consists of the "id" attribute of a MediaStreamTrack,
-        // which corresponds to the "id" attribute of StreamParams.
-        // Since a=ssrc msid signaling is used in Plan B SDP semantics, and
-        // multiple stream ids are not supported for Plan B, we are only adding
-        // a line for the first media stream id here.
-        // We use a special msid-id value of "-" to represent no streams,
-        // for Unified Plan compatibility. Plan B will always have a
-        // track_stream_id.
-        absl::string_view first_stream_id = track.first_stream_id();
-        absl::string_view stream_id =
-            first_stream_id.empty() ? kNoStreamMsid : first_stream_id;
-        InitAttrLine(kAttributeSsrc, os);
-        *os << kSdpDelimiterColon << ssrc << kSdpDelimiterSpace
-            << kSsrcAttributeMsid << kSdpDelimiterColon << stream_id
-            << kSdpDelimiterSpace << track.id;
-        AddLine(os->str(), message);
+        AddPlanBSsrcMsidLine(ssrc, track, os, message);
       }
     }
 
@@ -1866,9 +1786,7 @@ bool ParseSessionDescription(absl::string_view message,
       if (!GetValue(*aline, kAttributeMsidSemantics, &semantics, error)) {
         return false;
       }
-      if (absl::StrContainsIgnoreCase(semantics, kMediaStreamSemantic)) {
-        desc->set_msid_signaling(kMsidSignalingSemantic);
-      }
+      ParsePlanBMsidSemantics(semantics, desc);
     } else if (attr == kAttributeExtmapAllowMixed) {
       desc->set_extmap_allow_mixed(true);
     } else if (attr == kAttributeExtmap) {
@@ -3315,28 +3233,6 @@ bool ParseMediaDescription(
   return true;
 }
 
-bool IsMediaType(const MediaContentDescription* description, MediaType type) {
-  return description && description->type() == type;
-}
-
-const ContentInfo* GetFirstMediaContent(const ContentInfos& contents,
-                                        MediaType type) {
-  for (const ContentInfo& content : contents) {
-    if (IsMediaType(content.media_description(), type)) {
-      return &content;
-    }
-  }
-  return nullptr;
-}
-
-const ContentInfo* LegacyGetFirstAudioContent(const SessionDescription& sdesc) {
-  return GetFirstMediaContent(sdesc.contents(), MediaType::AUDIO);
-}
-
-const ContentInfo* LegacyGetFirstVideoContent(const SessionDescription& sdesc) {
-  return GetFirstMediaContent(sdesc.contents(), MediaType::VIDEO);
-}
-
 }  // namespace
 
 std::string SdpSerialize(const SessionDescriptionInterface& jdesc) {
@@ -3397,31 +3293,8 @@ std::string SdpSerialize(const SessionDescriptionInterface& jdesc) {
     AddLine(os.str(), &message);
   }
 
-  // MediaStream semantics.
-  // TODO(bugs.webrtc.org/10421): Change to & kMsidSignalingSemantic
-  // when we think it's safe to do so, so that we gradually fade out this old
-  // line that was removed from the specification.
-  if (desc->msid_signaling() != kMsidSignalingNotUsed) {
-    InitAttrLine(kAttributeMsidSemantics, &os);
-    os << kSdpDelimiterColon << " " << kMediaStreamSemantic;
-
-    // TODO(bugs.webrtc.org/10421): this code only looks at the first
-    // audio/video content. Fixing that might result in much larger SDP and the
-    // msid-semantic line should eventually go away so this is not worth fixing.
-    flat_set<std::string> media_stream_ids;
-    const ContentInfo* audio_content = LegacyGetFirstAudioContent(*desc);
-    if (audio_content)
-      GetMediaStreamIds(audio_content, &media_stream_ids);
-
-    const ContentInfo* video_content = LegacyGetFirstVideoContent(*desc);
-    if (video_content)
-      GetMediaStreamIds(video_content, &media_stream_ids);
-
-    for (const std::string& id : media_stream_ids) {
-      os << " " << id;
-    }
-    AddLine(os.str(), &message);
-  }
+  // MediaStream semantics (legacy Plan B a=msid-semantic: WMS ...).
+  SerializePlanBMsidSemantics(*desc, &os, &message);
 
   // a=ice-lite
   //

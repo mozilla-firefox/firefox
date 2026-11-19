@@ -382,6 +382,7 @@ rtc_library("jsep") {
     ":sctp_transport_interface",
     ":sequence_checker",
     ":uma_metrics",
+    ":webrtc_sdp_planb",
     "../media:codec",
     "../media:media_constants",
     "../media:rid_description",
@@ -417,6 +418,28 @@ rtc_library("jsep") {
     "//third_party/abseil-cpp/absl/memory",
     "//third_party/abseil-cpp/absl/strings",
     "//third_party/abseil-cpp/absl/strings:str_format",
+    "//third_party/abseil-cpp/absl/strings:string_view",
+  ]
+}
+
+# Legacy Plan B and msid-semantic SDP helpers. Internal to the SDP
+# implementation in :jsep; not part of the public API.
+rtc_library("webrtc_sdp_planb") {
+  visibility = [ ":jsep" ]
+  sources = [
+    "webrtc_sdp_planb.cc",
+    "webrtc_sdp_planb.h",
+  ]
+  deps = [
+    ":rtp_parameters",
+    "../media:stream_params",
+    "../pc:session_description",
+    "../rtc_base:crypto_random",
+    "../rtc_base:logging",
+    "../rtc_base:stringutils",
+    "../rtc_base/containers:flat_set",
+    "//third_party/abseil-cpp/absl/algorithm:container",
+    "//third_party/abseil-cpp/absl/strings",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
 }
