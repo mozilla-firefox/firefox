@@ -124,8 +124,6 @@
     <dimen name="addon_details_rating_view_margin_end">6dp</dimen>
 
     <!-- Tabs Tray -->
-    <dimen name="tab_tray_new_collection_padding_start">24dp</dimen>
-    <dimen name="tab_tray_new_collection_drawable_padding">28dp</dimen>
     <!--  Keeps FAB and snackbar from covering last item in list -->
     <dimen name="tab_tray_list_bottom_padding">140dp</dimen>
     <dimen name="tab_tray_grid_bottom_padding">40dp</dimen>
@@ -140,7 +138,6 @@
 
     <!-- a11y -->
     <dimen name="accessibility_min_height">48dp</dimen>
-    <dimen name="tap_increase_2">2dp</dimen>
 
     <!-- Browser Menu -->
     <dimen name="browser_menu_max_width">640dp</dimen>

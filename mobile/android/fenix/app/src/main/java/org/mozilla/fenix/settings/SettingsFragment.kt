@@ -32,6 +32,7 @@ import androidx.navigation.fragment.navArgs
 import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.R as preferenceR
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.lang.ref.WeakReference
@@ -296,7 +297,7 @@ class SettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragment 
         )
 
         requireView()
-            .findViewById<RecyclerView>(R.id.recycler_view)
+            .findViewById<RecyclerView>(preferenceR.id.recycler_view)
             ?.hideInitialScrollBar(viewLifecycleOwner.lifecycleScope)
 
         args.preferenceToScrollTo?.let {
@@ -372,7 +373,7 @@ class SettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragment 
     @Suppress("LongMethod", "CyclomaticComplexMethod")
     override fun onPreferenceTreeClick(preference: Preference): Boolean {
         // Hide the scrollbar so the animation looks smoother
-        val recyclerView = requireView().findViewById<RecyclerView>(R.id.recycler_view)
+        val recyclerView = requireView().findViewById<RecyclerView>(preferenceR.id.recycler_view)
         recyclerView.isVerticalScrollBarEnabled = false
 
         val directions: NavDirections? =

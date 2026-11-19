@@ -6,6 +6,7 @@ package org.mozilla.fenix.ui.robots
 
 import android.util.Log
 import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.preference.R as preferenceR
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.Espresso.pressBack
@@ -119,7 +120,7 @@ class SettingsSubMenuEnhancedTrackingProtectionRobot {
 
     fun scrollToGCPSettings() {
         Log.i(TAG, "scrollToGCPSettings: Trying to perform scroll to the $GLOBAL_PRIVACY_CONTROL_SWITCH_TEXT option")
-        onView(withId(R.id.recycler_view))
+        onView(withId(preferenceR.id.recycler_view))
             .perform(
                 RecyclerViewActions.scrollTo<RecyclerView.ViewHolder>(
                     hasDescendant(withText(GLOBAL_PRIVACY_CONTROL_SWITCH_TEXT))
@@ -418,7 +419,7 @@ class SettingsSubMenuEnhancedTrackingProtectionRobot {
             interact: SettingsSubMenuEnhancedTrackingProtectionExceptionsRobot.() -> Unit
         ): SettingsSubMenuEnhancedTrackingProtectionExceptionsRobot.Transition {
             Log.i(TAG, "openExceptions: Trying to perform scroll to the \"Exceptions\" option")
-            onView(withId(R.id.recycler_view))
+            onView(withId(preferenceR.id.recycler_view))
                 .perform(RecyclerViewActions.scrollTo<RecyclerView.ViewHolder>(hasDescendant(withText("Exceptions"))))
             Log.i(TAG, "openExceptions: Performed scroll to the \"Exceptions\" option")
             Log.i(TAG, "openExceptions: Trying to click the \"Exceptions\" option")

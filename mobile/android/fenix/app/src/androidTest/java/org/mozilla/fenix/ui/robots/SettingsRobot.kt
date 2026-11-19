@@ -12,6 +12,7 @@ import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.core.net.toUri
+import androidx.preference.R as preferenceR
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions
@@ -195,7 +196,7 @@ class SettingsRobot {
             TAG,
             "verifyEnhancedTrackingProtectionButton: Trying to verify that the \"Enhanced Tracking Protection\" button is visible",
         )
-        onView(withId(R.id.recycler_view))
+        onView(withId(preferenceR.id.recycler_view))
             .perform(
                 RecyclerViewActions.scrollTo<RecyclerView.ViewHolder>(
                     hasDescendant(withText("Enhanced Tracking Protection"))
@@ -281,7 +282,7 @@ class SettingsRobot {
 
     fun verifyOpenLinksInAppsButton() {
         Log.i(TAG, "verifyOpenLinksInAppsButton: Trying to perform scroll to the \"Open links in apps\" button")
-        onView(withId(R.id.recycler_view))
+        onView(withId(preferenceR.id.recycler_view))
             .perform(
                 RecyclerViewActions.scrollTo<RecyclerView.ViewHolder>(
                     hasDescendant(withText(R.string.preferences_open_links_in_apps))
@@ -305,7 +306,7 @@ class SettingsRobot {
 
         val extensions = getStringResource(R.string.preferences_extensions)
         Log.i(TAG, "verifySettingsView: Trying to perform scroll to the \"$extensions\" button")
-        onView(withId(R.id.recycler_view))
+        onView(withId(preferenceR.id.recycler_view))
             .perform(
                 RecyclerViewActions.scrollTo<RecyclerView.ViewHolder>(
                     hasDescendant(withText(R.string.preferences_extensions))
@@ -352,7 +353,7 @@ class SettingsRobot {
     fun verifyAdvancedHeading() {
         val extensions = getStringResource(R.string.preferences_extensions)
         Log.i(TAG, "verifyAdvancedHeading: Trying to perform scroll to the \"$extensions\" button")
-        onView(withId(R.id.recycler_view))
+        onView(withId(preferenceR.id.recycler_view))
             .perform(
                 RecyclerViewActions.scrollTo<RecyclerView.ViewHolder>(
                     hasDescendant(withText(R.string.preferences_extensions))
@@ -367,7 +368,7 @@ class SettingsRobot {
     fun verifyAddons() {
         val extensions = getStringResource(R.string.preferences_extensions)
         Log.i(TAG, "verifyAddons: Trying to perform scroll to the \"$extensions\" button")
-        onView(withId(R.id.recycler_view))
+        onView(withId(preferenceR.id.recycler_view))
             .perform(
                 RecyclerViewActions.scrollTo<RecyclerView.ViewHolder>(
                     hasDescendant(withText(R.string.preferences_extensions))
@@ -388,7 +389,7 @@ class SettingsRobot {
     }
 
     fun verifyLeakCanaryToggle(enabled: Boolean) {
-        onView(withId(R.id.recycler_view))
+        onView(withId(preferenceR.id.recycler_view))
             .perform(
                 RecyclerViewActions.scrollTo<RecyclerView.ViewHolder>(
                     hasDescendant(withText(R.string.preference_leakcanary))
@@ -414,7 +415,7 @@ class SettingsRobot {
     }
 
     fun verifyRemoteDebuggingToggle(enabled: Boolean) {
-        onView(withId(R.id.recycler_view))
+        onView(withId(preferenceR.id.recycler_view))
             .perform(
                 RecyclerViewActions.scrollTo<RecyclerView.ViewHolder>(
                     hasDescendant(withText(R.string.preferences_remote_debugging))
@@ -682,7 +683,7 @@ class SettingsRobot {
         ): SettingsSubMenuLanguageRobot.Transition {
             Log.i(TAG, "openLanguageSubMenu: Trying to click the $localizedText button")
             mDevice.waitForIdle()
-            onView(withId(R.id.recycler_view))
+            onView(withId(preferenceR.id.recycler_view))
                 .perform(
                     RecyclerViewActions.actionOnItem<RecyclerView.ViewHolder>(
                         hasDescendant(withText(localizedText)),
@@ -936,7 +937,7 @@ private fun aboutFirefoxHeading(): UiObject {
     return itemContainingText("About $appName")
 }
 
-fun swipeToBottom() = onView(withId(R.id.recycler_view)).perform(ViewActions.swipeUp())
+fun swipeToBottom() = onView(withId(preferenceR.id.recycler_view)).perform(ViewActions.swipeUp())
 
 fun clickRateButtonGooglePlay() {
     rateOnGooglePlayHeading().click()

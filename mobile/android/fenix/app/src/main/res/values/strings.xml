@@ -38,12 +38,6 @@
     <string name="tab_tray_multi_select_title">%1$d selected</string>
     <!-- Tab tray multi select title in app bar when no tabs are selected -->
     <string name="tab_tray_multi_select_title_empty">Select tabs</string>
-    <!-- Label of button in create collection dialog for creating a new collection  -->
-    <string name="tab_tray_add_new_collection">Add new collection</string>
-    <!-- Label of editable text in create collection dialog for naming a new collection  -->
-    <string name="tab_tray_add_new_collection_name">Name</string>
-    <!-- Label of button in save to collection dialog for selecting a current collection  -->
-    <string name="tab_tray_select_collection">Select collection</string>
     <!-- Content description for close button while in multiselect mode in tab tray -->
     <string name="tab_tray_close_multiselect_content_description">Exit multiselect mode</string>
     <!-- The header text displayed on the synced tabs page when the user is not logged into an account. -->
@@ -2199,10 +2193,6 @@
     <string name="create_collection_save">Save</string>
     <!-- Snackbar action to view the collection the user just created or updated -->
     <string name="create_collection_view">View</string>
-    <!-- Text for the OK button from collection dialogs -->
-    <string name="create_collection_positive">OK</string>
-    <!-- Text for the cancel button from collection dialogs -->
-    <string name="create_collection_negative">Cancel</string>
 
     <!-- Default name for a new collection in "name new collection" step of the collection creator. %d is a placeholder for the number of collections-->
     <string name="create_collection_default_name">Collection %d</string>

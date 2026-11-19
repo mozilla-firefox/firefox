@@ -7,6 +7,7 @@ package org.mozilla.fenix.ui
 import androidx.compose.ui.test.junit4.v2.AndroidComposeTestRule as AndroidComposeTestRuleV2
 import androidx.core.net.toUri
 import androidx.core.os.LocaleListCompat
+import androidx.preference.R as preferenceR
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
@@ -166,7 +167,7 @@ class SettingsGeneralTest {
             .clickSettingsButton {
                 waitForAppWindowToBeUpdated()
                 registerAndCleanupIdlingResources(
-                    RecyclerViewIdlingResource(composeTestRule.activity.findViewById(R.id.recycler_view), 1)
+                    RecyclerViewIdlingResource(composeTestRule.activity.findViewById(preferenceR.id.recycler_view), 1)
                 ) {
                     verifyLanguageButton()
                 }
@@ -195,7 +196,10 @@ class SettingsGeneralTest {
                 .clickSettingsButton(localizedText = FR_SETTINGS) {
                     waitForAppWindowToBeUpdated()
                     registerAndCleanupIdlingResources(
-                        RecyclerViewIdlingResource(composeTestRule.activity.findViewById(R.id.recycler_view), 1)
+                        RecyclerViewIdlingResource(
+                            composeTestRule.activity.findViewById(preferenceR.id.recycler_view),
+                            1,
+                        )
                     ) {
                         verifyLanguageButton(localizedText = FRENCH_LANGUAGE_HEADER)
                     }

@@ -5,6 +5,7 @@
 package org.mozilla.fenix.ui.robots
 
 import android.util.Log
+import androidx.preference.R as preferenceR
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.Visibility
@@ -121,7 +122,7 @@ class SettingsSubMenuDeleteBrowsingDataOnQuitRobot {
                 TAG,
                 "verifyAllTheCheckBoxesChecked: Trying to verify that the the check box at position ${index - 1} is checked: $checked",
             )
-            onView(withId(R.id.recycler_view))
+            onView(withId(preferenceR.id.recycler_view))
                 .check(
                     matches(
                         atPosition(
