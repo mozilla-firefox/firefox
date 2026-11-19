@@ -250,6 +250,7 @@ void nsWindowWaylandToplevelGtk::CreateNative() {
   mWaitingToSessionRestore =
       IsTopLevelWidget() &&
       nsAppShell::UpdateAndGetSessionState() == eSessionRestoring;
+  mWaitingToFocusRestore = mWaitingToSessionRestore;
 
   LOGVERBOSE("  mWaitingToSessionRestore %d", mWaitingToSessionRestore);
 }
@@ -319,13 +320,17 @@ void nsWindowWaylandToplevelGtk::NativeShow(bool aAction) {
     LOG("nsWindowWaylandToplevelGtk::NativeShow show\n");
 
     gtk_widget_show(mShell);
-    SetUserTimeAndStartupTokenForActivatedWindow();
-
-    auto token = std::move(mWindowActivationTokenFromEnv);
-    if (!token.IsEmpty()) {
-      FocusWaylandWindow(token.get());
+    if (mWaitingToFocusRestore) {
+      LOG("  waiting to focus restore, not activated");
     } else {
-      TransferFocusTo();
+      SetUserTimeAndStartupTokenForActivatedWindow();
+
+      auto token = std::move(mWindowActivationTokenFromEnv);
+      if (!token.IsEmpty()) {
+        FocusWaylandWindow(token.get());
+      } else {
+        TransferFocusTo();
+      }
     }
     mNeedsShow = false;
   } else {

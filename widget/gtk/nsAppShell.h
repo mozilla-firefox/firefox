@@ -14,6 +14,7 @@
 #include <glib.h>
 
 #include "nsBaseAppShell.h"
+#include "nsStringFwd.h"
 
 typedef enum {
   eSessionDefault = 0,
@@ -34,6 +35,9 @@ class nsAppShell : public nsBaseAppShell {
   static SessionRestoreState UpdateAndGetSessionState();
   static bool IsSessionRestoreSupported();
   static void InitSessionRestore();
+  // On Wayland, moves the activation token Firefox was launched with from GTK
+  // to nsGTKToolkit.
+  static void InitLaunchActivationToken(const nsACString& aToken);
 
   void ScheduleNativeEventCallback() override;
   bool ProcessNextNativeEvent(bool mayWait) override;

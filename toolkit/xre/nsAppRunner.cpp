@@ -6628,6 +6628,9 @@ nsresult XREMain::XRE_mainRun() {
 #endif
 
 #if defined(MOZ_WIDGET_GTK)
+      nsAppShell::InitLaunchActivationToken(mXDGActivationToken.IsEmpty()
+                                                ? mDesktopStartupID
+                                                : mXDGActivationToken);
       // Clear the environment variables so they won't be inherited by child
       // processes and confuse things.
       for (const auto& name : kStartupTokenNames) {

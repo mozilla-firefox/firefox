@@ -795,6 +795,11 @@ class nsWindow : public nsIWidget {
   // size/focus etc.
   bool mWaitingToSessionRestore : 1;
 
+  // Set together with mWaitingToSessionRestore and kept until session restore
+  // finishes, so that a window shown while it runs, which is a restored one,
+  // neither uses the launch activation token nor requests activation.
+  bool mWaitingToFocusRestore : 1;
+
   // all of our DND stuff
   void InitDragEvent(mozilla::WidgetDragEvent& aEvent);
 

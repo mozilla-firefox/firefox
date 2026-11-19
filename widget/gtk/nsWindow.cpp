@@ -427,7 +427,8 @@ nsWindow::nsWindow()
       mNeedsToRetryCapturingMouse(false),
       mX11HiddenPopupPositioned(false),
       mPopupTemporaryHidden(false),
-      mWaitingToSessionRestore(false) {
+      mWaitingToSessionRestore(false),
+      mWaitingToFocusRestore(false) {
   SetSafeWindowSize(mSizeConstraints.mMaxSize);
 
   if (!gGlobalsInitialized) {
@@ -1296,6 +1297,11 @@ void nsWindow::SetFocus(Raise aRaise, mozilla::dom::CallerType aCallerType) {
     if (StaticPrefs::mozilla_widget_raise_on_setfocus_AtStartup() &&
         toplevelWindow->mIsShown && toplevelWindow->mShell &&
         !gtk_window_is_active(GTK_WINDOW(toplevelWindow->mShell))) {
+      if (toplevelWindow->mWaitingToFocusRestore) {
+        LOG("  toplevel waits to focus restore, not activated [%p]",
+            toplevelWindow.get());
+        return;
+      }
       LOG("  toplevel is visible but not active, requesting activation [%p]",
           toplevelWindow.get());
 
@@ -7893,7 +7899,11 @@ void nsWindow::SessionRestoreFinished() {
   GList* toplevels = gtk_window_list_toplevels();
   for (GList* item = toplevels; item; item = item->next) {
     nsWindow* window = FromGtkWidget(GTK_WIDGET(item->data));
-    if (window && window->mWaitingToSessionRestore) {
+    if (!window) {
+      continue;
+    }
+    window->mWaitingToFocusRestore = false;
+    if (window->mWaitingToSessionRestore) {
       waitingWindows.AppendElement(window);
     }
   }
@@ -7909,12 +7919,17 @@ void nsWindow::SessionRestoreFinished() {
     }
   }
 
-  if (!gFocusRequestWindow) {
-    return;
+  if (gFocusRequestWindow) {
+    gFocusRequestWindow->SetFocus(gFocusRequestWindowRaise,
+                                  mozilla::dom::CallerType::System);
+    gFocusRequestWindow = nullptr;
   }
-  gFocusRequestWindow->SetFocus(gFocusRequestWindowRaise,
-                                mozilla::dom::CallerType::System);
-  gFocusRequestWindow = nullptr;
+
+  // A launch activation token which no window used, because every window was
+  // restored, must not activate a window opened later.
+  if (nsGTKToolkit* toolkit = nsGTKToolkit::GetToolkit()) {
+    toolkit->SetActivationToken(""_ns);
+  }
 }
 
 // If aForce = true we create a new session if there isn't any one.
