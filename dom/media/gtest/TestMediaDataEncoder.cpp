@@ -19,6 +19,7 @@
 #include "mozilla/AbstractThread.h"
 #include "mozilla/CheckedInt.h"
 #include "mozilla/Preferences.h"
+#include "mozilla/RemoteMediaDataEncoderParent.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/SpinEventLoopUntil.h"
 #include "mozilla/TaskQueue.h"
@@ -1552,6 +1553,65 @@ TEST_F(MediaDataEncoderTest, VP9EncodeWithScalabilityModeL1T3) {
   });
 }
 #  endif
+
+static EncoderConfig VP8Config() {
+  return EncoderConfig(
+      CodecType::VP8, kImageSize, Usage::Realtime,
+      EncoderConfig::SampleFormat(dom::ImageBitmapFormat::YUV420P), FRAME_RATE,
+      KEYFRAME_INTERVAL, BIT_RATE, 0, 0, BIT_RATE_MODE,
+      HardwarePreference::None, ScalabilityMode::None,
+      AsVariant(VP8Specific()));
+}
+
+// Sends Construct to aParent, runs aWhileCreating before the encoder creation
+// completes, and returns the Construct result.
+static MediaResult ConstructWith(RemoteMediaDataEncoderParent* aParent,
+                                 const std::function<void()>& aWhileCreating) {
+  Maybe<MediaResult> result;
+  aParent->RecvConstruct(
+      [&](const MediaResult& aResult) { result = Some(aResult); });
+  aWhileCreating();
+  SpinEventLoopUntil("RemoteMediaDataEncoderParent::RecvConstruct"_ns,
+                     [&] { return result.isSome(); });
+  return result.extract();
+}
+
+static void ShutdownAndWait(RemoteMediaDataEncoderParent* aParent) {
+  bool done = false;
+  aParent->RecvShutdown([&](const bool&) { done = true; });
+  SpinEventLoopUntil("RemoteMediaDataEncoderParent::RecvShutdown"_ns,
+                     [&] { return done; });
+}
+
+TEST(RemoteMediaDataEncoderParent, Constructs)
+{
+  RUN_IF_SUPPORTED(CodecType::VP8, []() {
+    auto parent = MakeRefPtr<RemoteMediaDataEncoderParent>(VP8Config());
+    EXPECT_EQ(ConstructWith(parent, [] {}).Code(), NS_OK);
+    ShutdownAndWait(parent);
+  });
+}
+
+TEST(RemoteMediaDataEncoderParent, ShutdownWhileConstructing)
+{
+  RUN_IF_SUPPORTED(CodecType::VP8, []() {
+    auto parent = MakeRefPtr<RemoteMediaDataEncoderParent>(VP8Config());
+    MediaResult rv = ConstructWith(
+        parent, [&] { parent->RecvShutdown([](const bool&) {}); });
+    EXPECT_TRUE(NS_FAILED(rv.Code())) << rv.Description().get();
+  });
+}
+
+TEST(RemoteMediaDataEncoderParent, ActorDestroyWhileConstructing)
+{
+  RUN_IF_SUPPORTED(CodecType::VP8, []() {
+    auto parent = MakeRefPtr<RemoteMediaDataEncoderParent>(VP8Config());
+    MediaResult rv = ConstructWith(parent, [&] {
+      parent->ActorDestroy(mozilla::ipc::IProtocol::AbnormalShutdown);
+    });
+    EXPECT_TRUE(NS_FAILED(rv.Code())) << rv.Description().get();
+  });
+}
 #endif
 
 already_AddRefed<MediaDataEncoder> CreateAudioEncoder(
