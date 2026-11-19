@@ -86,23 +86,24 @@ fn debug_log(message: &str) {
     unsafe { OutputDebugStringW(&message) };
 }
 
-/// The registration name encodes the command line as colon-separated segments:
+/// The manifest `desktop:ParameterGroup` ID for a task. Every task needs a
+/// group in AppxManifest.xml.in whose ID is the task name with ":" replaced
+/// by "-". The group's `Parameters` hold the command line, for example
 /// "defaultagent:do-task" launches `firefox --backgroundtask defaultagent do-task`.
-fn task_args(task_name: &str) -> Vec<String> {
-    let mut args = vec!["--backgroundtask".to_string()];
-    args.extend(task_name.split(':').map(str::to_string));
-    args
+fn parameter_group_id(task_name: &str) -> String {
+    task_name.replace(':', "-")
 }
 
-/// Ask the shell to start the package's full trust process with the task args.
+/// Ask the shell to start the package's full trust process with the
+/// parameters of the task's manifest group. The free arguments variant of this
+/// API needs FullTrustAppContract v2, which Windows 10 does not have.
 /// See https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/migrate-to-windows-app-sdk/guides/background-task-migration-strategy
 fn launch_full_trust(task_name: &str) -> WindowsResult<()> {
-    let command_line = HSTRING::from(task_args(task_name).join(" "));
+    let group_id = HSTRING::from(parameter_group_id(task_name));
     let operation =
-        FullTrustProcessLauncher::LaunchFullTrustProcessForCurrentAppWithArgumentsAsync(
-            &command_line,
+        FullTrustProcessLauncher::LaunchFullTrustProcessForCurrentAppWithParametersAsync(
+            &group_id,
         )?;
-
     block_on(operation.into_future())?;
     Ok(())
 }
