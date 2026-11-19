@@ -32,6 +32,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   SearchService: "moz-src:///toolkit/components/search/SearchService.sys.mjs",
   SearchUIUtils: "moz-src:///browser/components/search/SearchUIUtils.sys.mjs",
   SearchUtils: "moz-src:///toolkit/components/search/SearchUtils.sys.mjs",
+  SelectionUtils: "resource://gre/modules/SelectionUtils.sys.mjs",
   ShortcutUtils: "resource://gre/modules/ShortcutUtils.sys.mjs",
   TranslationsParent: "resource://gre/actors/TranslationsParent.sys.mjs",
   TranslationsUtils:
@@ -2885,18 +2886,7 @@ export class nsContextMenu {
       return;
     }
 
-    // Copied to alert.js' prefillAlertInfo().
-    // If the JS character after our truncation point is a trail surrogate,
-    // include it in the truncated string to avoid splitting a surrogate pair.
-    if (selectedText.length > 15) {
-      let truncLength = 15;
-      let truncChar = selectedText[15].charCodeAt(0);
-      if (truncChar >= 0xdc00 && truncChar <= 0xdfff) {
-        truncLength++;
-      }
-      selectedText =
-        selectedText.substr(0, truncLength) + Services.locale.ellipsis;
-    }
+    selectedText = lazy.SelectionUtils.truncateForDisplay(selectedText, 15);
 
     const { gNavigatorBundle } = this.window;
     // format "Search <engine> for <selection>" string to show in menu

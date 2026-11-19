@@ -27,6 +27,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   ReaderMode: "moz-src:///toolkit/components/reader/ReaderMode.sys.mjs",
   SearchService: "moz-src:///toolkit/components/search/SearchService.sys.mjs",
   SearchUIUtils: "moz-src:///browser/components/search/SearchUIUtils.sys.mjs",
+  SelectionUtils: "resource://gre/modules/SelectionUtils.sys.mjs",
   SidebarManager:
     "moz-src:///browser/components/sidebar/SidebarManager.sys.mjs",
 });
@@ -683,19 +684,8 @@ export const GenAI = {
     const searchActionButton = panel.querySelector("#search-action-button");
 
     // Matches the context menu's "Search <engine> for <selection>" label.
-    const truncateSelection = selection => {
-      const collapsed = selection.replace(/\s+/g, " ").trim();
-      if (collapsed.length <= 15) {
-        return collapsed;
-      }
-      let truncLength = 15;
-      const truncChar = collapsed[15].charCodeAt(0);
-      // Handle surrogate pairs.
-      if (truncChar >= 0xdc00 && truncChar <= 0xdfff) {
-        truncLength++;
-      }
-      return collapsed.substring(0, truncLength) + Services.locale.ellipsis;
-    };
+    const truncateSelection = selection =>
+      lazy.SelectionUtils.truncateForDisplay(selection, 15);
 
     // Returns the engine the action searches with, or null if the action ends
     // up hidden, so callers can tell whether the menu has anything to offer.

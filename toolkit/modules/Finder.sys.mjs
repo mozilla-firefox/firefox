@@ -15,6 +15,7 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   FinderIterator: "resource://gre/modules/FinderIterator.sys.mjs",
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
+  SelectionUtils: "resource://gre/modules/SelectionUtils.sys.mjs",
 });
 
 XPCOMUtils.defineLazyServiceGetter(
@@ -444,15 +445,11 @@ Finder.prototype = {
     }
 
     // Process our text to get rid of unwanted characters.
-    selText = selText.trim().replace(/\s+/g, " ");
-    let truncLength = kSelectionMaxLen;
-    if (selText.length > truncLength) {
-      let truncChar = selText.charAt(truncLength).charCodeAt(0);
-      if (truncChar >= 0xdc00 && truncChar <= 0xdfff) {
-        truncLength++;
-      }
-      selText = selText.substr(0, truncLength);
-    }
+    selText = lazy.SelectionUtils.truncateForDisplay(
+      selText,
+      kSelectionMaxLen,
+      { addEllipsis: false }
+    );
 
     return { selectedText: selText };
   },

@@ -12,7 +12,6 @@ const NS_ALERT_LEFT = 2;
 const NS_ALERT_TOP = 4;
 
 const WINDOW_MARGIN = AppConstants.platform == "win" ? 0 : 10;
-const BODY_TEXT_LIMIT = 200;
 const WINDOW_SHADOW_SPREAD = AppConstants.platform == "win" ? 10 : 0;
 
 var gOrigin = 0; // Default value: alert from bottom right.
@@ -131,25 +130,8 @@ function prefillAlertInfo() {
     case 3:
       if (window.arguments[2]) {
         document.getElementById("alertBox").setAttribute("hasBodyText", true);
-        let bodyText = window.arguments[2];
-        let bodyTextLabel = document.getElementById("alertTextLabel");
-
-        if (bodyText.length > BODY_TEXT_LIMIT) {
-          bodyTextLabel.setAttribute("tooltiptext", bodyText);
-
-          // Copied from nsContextMenu.js' formatSearchContextItem().
-          // If the JS character after our truncation point is a trail surrogate,
-          // include it in the truncated string to avoid splitting a surrogate pair.
-          let truncLength = BODY_TEXT_LIMIT;
-          let truncChar = bodyText[BODY_TEXT_LIMIT].charCodeAt(0);
-          if (truncChar >= 0xdc00 && truncChar <= 0xdfff) {
-            truncLength++;
-          }
-
-          bodyText =
-            bodyText.substring(0, truncLength) + Services.locale.ellipsis;
-        }
-        bodyTextLabel.textContent = bodyText;
+        document.getElementById("alertTextLabel").textContent =
+          window.arguments[2];
       }
     // fall through
     case 2:
@@ -196,6 +178,11 @@ function onAlertLoad() {
   alertImageBox.style.minHeight = alertTextBox.scrollHeight + "px";
 
   window.sizeToContent();
+
+  let alertTextLabel = document.getElementById("alertTextLabel");
+  if (alertTextLabel.scrollHeight > alertTextLabel.clientHeight) {
+    alertTextLabel.setAttribute("tooltiptext", alertTextLabel.textContent);
+  }
 
   if (gReplacedWindow && !gReplacedWindow.closed) {
     moveWindowToReplace(gReplacedWindow);

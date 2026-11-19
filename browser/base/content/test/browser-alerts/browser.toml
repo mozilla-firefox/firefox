@@ -10,6 +10,8 @@ https_first_disabled = true
 ["browser_notification_do_not_disturb.js"]
 https_first_disabled = true
 
+["browser_notification_long_body.js"]
+
 ["browser_notification_open_settings.js"]
 https_first_disabled = true
 

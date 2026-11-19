@@ -144,6 +144,8 @@ skip-if = [
   "os == 'android'",
 ]
 
+["test_SelectionUtils.js"]
+
 ["test_Services.js"]
 
 ["test_URLKeywordAnalyzer.js"]

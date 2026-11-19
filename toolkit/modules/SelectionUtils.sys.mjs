@@ -8,7 +8,64 @@ ChromeUtils.defineESModuleGetters(lazy, {
   UrlUtils: "resource://gre/modules/UrlUtils.sys.mjs",
 });
 
+ChromeUtils.defineLazyGetter(
+  lazy,
+  "graphemeSegmenter",
+  () => new Intl.Segmenter(undefined, { granularity: "grapheme" })
+);
+
+const MAX_CLUSTER_OVERSHOOT = 32;
+// Some characters, such as many emoji, occupy two units in a JavaScript
+// string. The second unit is called a low surrogate and falls in this range.
+const LOW_SURROGATE_MIN = 0xdc00;
+const LOW_SURROGATE_MAX = 0xdfff;
+
 export var SelectionUtils = {
+  /**
+   * Collapse whitespace in a string and shorten it for display, never
+   * splitting a grapheme cluster (surrogate pairs, combining marks, emoji
+   * sequences) unless the cluster is exceedingly long.
+   *
+   * @param {string} aText
+   *        The text to shorten.
+   * @param {number} aMaxLen
+   *        The maximum length in UTF-16 code units. The cut is moved forward
+   *        past a grapheme cluster that straddles it, by at most
+   *        MAX_CLUSTER_OVERSHOOT code units. Beyond that the cluster is split,
+   *        but never in the middle of a surrogate pair.
+   * @param {object} [aOptions]
+   * @param {boolean} [aOptions.addEllipsis=true]
+   *        Whether to append the locale's ellipsis when text was removed.
+   * @returns {string}
+   */
+  truncateForDisplay(aText, aMaxLen, { addEllipsis = true } = {}) {
+    let text = aText.trim().replace(/\s+/g, " ");
+    if (text.length <= aMaxLen) {
+      return text;
+    }
+
+    let cut = aMaxLen;
+    let segment = lazy.graphemeSegmenter.segment(text).containing(aMaxLen);
+    if (segment && segment.index < aMaxLen) {
+      let clusterEnd = segment.index + segment.segment.length;
+      let nextCode = text.charCodeAt(aMaxLen);
+      if (clusterEnd - aMaxLen <= MAX_CLUSTER_OVERSHOOT) {
+        cut = clusterEnd;
+      } else if (
+        nextCode >= LOW_SURROGATE_MIN &&
+        nextCode <= LOW_SURROGATE_MAX
+      ) {
+        cut++;
+      }
+    }
+    if (cut >= text.length) {
+      return text;
+    }
+
+    text = text.substring(0, cut);
+    return addEllipsis ? text + Services.locale.ellipsis : text;
+  },
+
   /**
    * Trim the selection text to a reasonable size and sanitize it to make it
    * safe for search query input.
