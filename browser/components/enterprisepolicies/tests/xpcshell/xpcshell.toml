@@ -51,6 +51,11 @@ support-files = [
 
 ["test_local_network_access.js"]
 
+["test_macos_policy_sources.js"]
+run-if = [
+  "os == 'mac'",
+]
+
 ["test_macos_policy_validation.js"]
 
 ["test_macosparser_unflatten.js"]
