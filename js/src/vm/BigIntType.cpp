@@ -2104,6 +2104,46 @@ BigInt* BigInt::div(JSContext* cx, HandleBigInt x, HandleBigInt y) {
   return destructivelyTrimHighZeroDigits(cx, quotient);
 }
 
+// For a single-digit divisor, hardware double-word division is faster than
+// division by multiplication for short dividends.
+#if defined(__x86_64__) || defined(__i386__)
+static constexpr size_t LargeDividendLength = 6;
+#else
+static constexpr size_t LargeDividendLength = 2;
+#endif
+
+MOZ_ALWAYS_INLINE BigInt::Digit BigInt::modDigitsByDigit(ConstDigits u,
+                                                         Digit m) {
+  return u.size() < LargeDividendLength ? modSmallDigitsByDigit(u, m)
+                                        : modLargeDigitsByDigit(u, m);
+}
+
+MOZ_ALWAYS_INLINE BigInt::Digit BigInt::modSmallDigitsByDigit(ConstDigits u,
+                                                              Digit m) {
+  Digit remainder = 0;
+  for (size_t i = u.size(); i-- > 0;) {
+    digitDiv(remainder, u[i], m, &remainder);
+  }
+  return remainder;
+}
+
+BigInt::Digit BigInt::modLargeDigitsByDigit(ConstDigits u, Digit m) {
+  MOZ_RELEASE_ASSERT(u.size() >= LargeDividendLength);
+  unsigned shift = std::countl_zero(m);
+  Digit divisor = m << shift;
+  Digit inverse = normalizedDigitInverse(divisor);
+  size_t i = u.size();
+  Digit remainder = shift ? u[i - 1] >> (DigitBits - shift) : 0;
+  while (i-- > 0) {
+    Digit low = u[i] << shift;
+    if (shift && i > 0) {
+      low |= u[i - 1] >> (DigitBits - shift);
+    }
+    digitDivByMultiplication(remainder, low, divisor, inverse, &remainder);
+  }
+  return remainder >> shift;
+}
+
 // BigInt proposal section 1.1.6
 BigInt* BigInt::mod(JSContext* cx, HandleBigInt x, HandleBigInt y) {
   // 1. If y is 0n, throw a RangeError exception.
@@ -2126,8 +2166,16 @@ BigInt* BigInt::mod(JSContext* cx, HandleBigInt x, HandleBigInt y) {
     return x;
   }
 
-  size_t length = x->digitLength();
   size_t n = y->digitLength();
+
+  // A one-digit divisor needs no copy of the dividend: fold its digits into the
+  // remainder directly.
+  if (n == 1) {
+    Digit mod = modDigitsByDigit(x->unguardedDigits(), y->individualDigit(0));
+    return mod ? createFromDigit(cx, mod, x->isNegative()) : zero(cx);
+  }
+
+  size_t length = x->digitLength();
   Vector<Digit, 16, SystemAllocPolicy> u;
   // The fallback is to modulo by schoolbook division, which needs a zero digit
   // above the dividend.
@@ -2277,11 +2325,7 @@ bool BigInt::modDigitsInPlace(Digits u, ConstDigits m) {
   MOZ_ASSERT(!u[u.size() - 1]);
 
   if (n == 1) {
-    Digit remainder = 0;
-    for (size_t i = u.size(); i-- > 0;) {
-      digitDiv(remainder, u[i], m[0], &remainder);
-    }
-    u[0] = remainder;
+    u[0] = modDigitsByDigit(u, m[0]);
     return true;
   }
 

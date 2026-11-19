@@ -480,6 +480,12 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
   // digits. `u` must have more digits than `m`, and its top digit must be zero,
   // for normalization. Return false on OOM, without reporting it.
   [[nodiscard]] static bool modDigitsInPlace(Digits u, ConstDigits m);
+  // Return `u % m`.  The large version has better throughput because it divides
+  // by multiplication against an inverse, but computing the inverse only pays
+  // off once `u` is long enough.
+  static Digit modDigitsByDigit(ConstDigits u, Digit m);
+  static Digit modSmallDigitsByDigit(ConstDigits u, Digit m);
+  static Digit modLargeDigitsByDigit(ConstDigits u, Digit m);
 
   static bool productGreaterThan(Digit factor1, Digit factor2, Digit high,
                                  Digit low);
