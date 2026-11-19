@@ -12,6 +12,8 @@ CSS:
 - Avoid `!important` but if you have to use it, make sure it's
   obvious why you're using it (ideally with a comment). The
   [Overriding CSS] section contains more information about this.
+  Stylelint's `declaration-no-important` rule reports it only in New Tab,
+  about:welcome and ASRouter code.
 
 - Avoid magic numbers; prefer automatic sizing or alignment methods.
   Some examples to avoid:
@@ -34,7 +36,8 @@ CSS:
 ### Boilerplate
 
 Make sure each file starts with the standard copyright header (see
-[License Boilerplate](https://www.mozilla.org/MPL/headers/)).
+[License Boilerplate](https://www.mozilla.org/MPL/headers/)). The `license`
+linter checks this.
 
 ### Before adding more CSS
 
@@ -52,30 +55,11 @@ reduced.
 
 ## Formatting
 
-### Spacing & Indentation
-
-- 2 spaces indentation is preferred
-- Add a space after each comma, **except** within color functions:
-
-```css
-linear-gradient(to bottom, black 1px, rgba(255,255,255,0.2) 1px)
-```
-
-- Always add a space before `!important`.
-
-### Omit units on 0 values
-
-Do this:
-
-```css
-margin: 0;
-```
-
-Not this:
-
-```css
-margin: 0px;
-```
+Prettier formats CSS, including indentation, spacing and line breaks between
+selectors; `./mach format` runs it on your changes. Stylelint runs on CSS as
+well (`./mach lint -l stylelint`), and its rules include some of the
+guidelines on this page, such as `length-zero-no-unit` for omitting units on
+`0` values.
 
 ### Use expanded syntax
 
@@ -95,28 +79,6 @@ Not this:
 border: red;
 ```
 
-### Put multiple selectors on different lines
-
-Do this:
-
-```css
-h1,
-h2,
-h3 {
-  font-family: sans-serif;
-  text-align: center;
-}
-```
-
-Not this:
-
-```css
-h1, h2, h3 {
-  font-family: sans-serif;
-  text-align: center;
-}
-```
-
 ### Naming standards for class names
 
 - `lower-case-with-dashes` is the most common.
@@ -129,16 +91,114 @@ h1, h2, h3 {
 
   - Example: Use `option[checked]`, not `option[checked="true"]`.
 
-- Avoid ID selectors unless it is really the wanted goal, since IDs
-  have higher specificity and therefore are harder to override.
-
-- Using descendant selectors is good practice for performance when
+- Using child selectors is good practice for performance when
   possible:
 
   - For example:
     `.autocomplete-item[selected] > .autocomplete-item-title` would
     be more efficient than
     `.autocomplete-item[selected] .autocomplete-item-title`
+
+## CSS nesting
+
+### Nest by the element you style, not by the markup
+
+Write one rule per element and nest its states, variants and conditions inside
+it. Don't nest rules to mirror the DOM tree: that raises specificity and makes a
+selector hard to find by searching for it.
+
+Do this:
+
+```css
+.share-header {
+  display: flex;
+}
+
+.share-icon {
+  width: 16px;
+}
+```
+
+Not this:
+
+```scss
+.container {
+  .preview {
+    .share-header {
+      display: flex;
+
+      .share-icon {
+        width: 16px;
+      }
+    }
+  }
+}
+```
+
+Express the state of an ancestor with a selector before `&`:
+
+```scss
+.tab-icon-overlay {
+  &[crashed] {
+    list-style-image: url("chrome://browser/skin/tabbrowser/crashed.svg");
+  }
+
+  #tabbrowser-tabs[orient="vertical"] & {
+    top: 7px;
+  }
+}
+```
+
+### Nest media queries inside the rule they modify
+
+Put a `@media` block for `(forced-colors)`, `(prefers-contrast)`,
+`-moz-platform` or a pref inside the rule it modifies, with the declarations
+directly in it; it needs no `& {}`.
+
+```scss
+.toolbarbutton-text {
+  padding-top: calc(var(--toolbarbutton-padding-inner) - 1px);
+
+  @media (-moz-platform: macos) {
+    padding-top: calc(var(--toolbarbutton-padding-inner) + 1px);
+  }
+}
+```
+
+### Other formatting
+
+- Put declarations before nested rules.
+- Omit `&` before a combinator: write `> .icon`, not `& > .icon`.
+- Stylelint's `max-nesting-depth` allows three levels, and a nested `@media`
+  block counts as one.
+
+### Pitfalls
+
+- `&` can't represent a pseudo-element. A rule nested with `&` under
+  `::before`, `::part()` or another pseudo-element matches nothing, and a
+  pseudo-element in the parent's selector list drops out of `&`.
+
+  Do this:
+
+  ```css
+  .delete-button::part(button):hover {
+    --button-icon-fill: var(--button-background-color-destructive-hover);
+  }
+  ```
+
+  Not this:
+
+  ```scss
+  .delete-button::part(button) {
+    &:hover {
+      --button-icon-fill: var(--button-background-color-destructive-hover);
+    }
+  }
+  ```
+
+- `&` behaves like `:is()` over the parent's selector list, so it takes the
+  specificity of the most specific selector in the list. Under
+  `.urlbar, #searchbar`, `&:hover` has ID specificity for `.urlbar` too.
 
 ## Overriding CSS
 
@@ -213,8 +273,8 @@ questions:
 
 1. **Is the variable value changed at runtime?**
    *(Either from JavaScript or overridden by another CSS file)*
-   **If the answer is no**, consider using a preprocessor variable or
-   inlining the value.
+   **If the answer is no**, consider using a design token or inlining the
+   value.
 2. **Is the variable value used multiple times?**
    **If the answer is no and the value isn't changed at runtime**, then
    you likely don't need a CSS variable.
@@ -239,16 +299,16 @@ anything fails the test too, on the platforms the entry applies to.
 Do this:
 
 ```css
-xul|tab:hover {
-  background-color: var(--in-content-box-background-hover);
+button:hover {
+  background-color: var(--button-background-color-hover);
 }
 ```
 
 Not this:
 
 ```css
-#certificateErrorDebugInformation {
-  background-color: var(--in-content-box-background-hover);
+.certificate-details {
+  background-color: var(--button-background-color-hover);
 }
 ```
 
@@ -256,53 +316,26 @@ Not this:
 
 ### Text Direction
 
-- For margins, padding and borders, use
-  `inline-start`/`inline-end` rather than `left`/`right`.
-  *Example:* Use `margin-inline-start: 3px;` instead of
-  `margin-left: 3px`.
-- For RTL-aware positioning (left/right), use
-  `inset-inline-start`/`inset-inline-end`.
-- For RTL-aware float layouts, `float: inline-start|inline-end` can
-  be used instead of `float: left|right`.
-- The RTL-aware equivalents of
-  `border-{top/bottom}-{left/right}-radius` are
-  `border-{start/end}-{start/end}-radius`
-- When there is no special RTL-aware property available, use the pseudo
-  `:-moz-locale-dir(ltr|rtl)` (for XUL files) or `:dir(ltr|rtl)`
-  (for HTML files).
-- Remember that while a tab content's scrollbar still shows on the
-  right in RTL, an overflow scrollbar will show on the left.
-- Write `padding: 0 3px 4px;` instead of
-  `padding: 0 3px 4px 3px;`. This makes it more obvious that the
-  padding is symmetrical (so RTL won't be an issue).
-
-:::{note}
-See [CSS Logical Properties and
-Values](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Logical_Properties)
-for more information.
-:::
+Use logical properties, and `:dir()` or `:-moz-locale-dir()` where no logical
+property fits, as the [RTL guidelines](rtl_guidelines.md) describe.
 
 ## Writing cross-platform CSS
 
 Firefox supports many different platforms and each of those platforms
 can contain many different configurations:
 
-- Windows 7, 8 and 10
-
-  - Default theme
-  - Aero basic (Windows 7, 8)
-  - Windows classic (Windows 7)
-  - High contrast (All versions)
-
+- Windows 10 and 11
 - Linux
-
 - macOS
+
+Each of them has light and dark modes and its own high contrast or
+increased contrast settings.
 
 ### File structure
 
 - The `browser/` directory contains styles specific to Firefox
 - The `toolkit/` directory contains styles that are shared across all
-  toolkit applications (Thunderbird and SeaMonkey)
+  toolkit applications (e.g. Thunderbird)
 
 Under each of those two directories, there is a `themes` directory
 containing 4 sub-directories:
@@ -320,49 +353,15 @@ For new CSS, when possible try to privilege using the `shared`
 directory, instead of writing the same CSS for the 3 platform specific
 directories, especially for large blocks of CSS.
 
-#### Content CSS vs. Theme CSS
+#### Stylesheets outside `themes/`
 
-The following directories also contain CSS:
-
-- `browser/base/content/`
-- `toolkit/content/`
-
-These directories contain content CSS, that applies on all platforms,
-which is styling deemed to be essential for the browser to behave
-correctly. To determine whether some CSS is theme-side or content-side,
-it is useful to know that certain CSS properties are going to lean one
-way or the other: color - 99% of the time it will be theme CSS, overflow
-\- 99% content.
-
-| 99% theme                                                          | 70% theme                    | 70% content                                              | 99% content                                                                 |
-| ------------------------------------------------------------------ | ---------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------- |
-| font-\*, color, \*-color, border-\*, -moz-appearance [^footnote-1] | line-height, padding, margin | cursor, width, max-width, top, bottom [^footnote-2], etc | overflow, direction, display, \*-align, align-\*, \*-box-\*, flex-\*, order |
-
-If some CSS is layout or functionality related, then it is likely
-content CSS. If it is esthetics related, then it is likely theme CSS.
-
-When importing your stylesheets, it's best to import the content CSS
-before the theme CSS, that way the theme values get to override the
-content values (which is probably what you want), and you're going to
-want them both after the global values, so your imports will look like
-this:
-
-```html
-<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
-<?xml-stylesheet href="chrome://browser/content/path/module.css" type="text/css"?>
-<?xml-stylesheet href="chrome://browser/skin/path/module.css" type="text/css"?>
-```
-
-[^footnote-1]: -moz-appearance is tricky. Generally, when specifying
-    -moz-appearance: foo; you're giving hints as to how something should
-    act, however -moz-appearance: none; is probably saying 'ignore
-    browser preconceptions - I want a blank sheet', so that's more
-    visual. However -moz-appearance values aren't implemented and don't
-    behave consistently across platforms, so idealism aside
-    -moz-appearance should always be in theme CSS.
-
-[^footnote-2]: However there is probably a better way than using absolute
-    positioning.
+Directories such as `browser/base/content/` and `toolkit/content/` also
+contain stylesheets. A few of them hold only the styling a component needs in
+order to work, but most are ordinary theme CSS kept next to the component's
+markup and script, often so that the team that owns the component also owns
+its styles. Where a stylesheet lives also decides its review:
+`#desktop-theme-reviewers-rotation` is a blocking reviewer only for changes
+under `themes/`.
 
 ### Chrome versus in-content
 
@@ -678,50 +677,10 @@ themselves are the content.
 
 ### Writing media queries
 
-#### Boolean media queries
-
-Do this:
-
-```css
-@media (-moz-mac-yosemite-theme: 0) {
-```
-
-Not this:
-
-```css
-@media not all and (-moz-mac-yosemite-theme) {
-```
-
 #### Privilege CSS for most common configuration
 
-It is better to put the most common configuration (latest version of an
-OS, or default theme for example) outside of the media query. In the
-following example, `-moz-mac-yosemite-theme` targets macOS 10.10 and
-higher, so it should be privileged over the styling for macOS 10.9.
-
-Do this:
-
-```css
-@media (-moz-mac-yosemite-theme: 0) {
-  #placesList {
-    box-shadow: inset -2px 0 0 hsla(0,0%,100%,.2);
-  }
-}
-```
-
-Not this:
-
-```css
-#placesList {
-  box-shadow: inset -2px 0 0 hsla(0,0%,100%,.2);
-}
-
-@media (-moz-mac-yosemite-theme) {
-  #placesList {
-    box-shadow: none;
-  }
-}
-```
+Put the styling for the most common configuration (e.g. the default theme or
+the newest OS version) outside the media query, and the exceptions inside it.
 
 #### Chrome-only media features go by the stylesheet, not the document
 
@@ -803,15 +762,6 @@ For clarity, CSS variables that are only used when a theme is enabled
 have the `--lwt-` prefix.
 
 ## Layout & performance
-
-### Layout
-
-Mixing XUL flexbox and HTML flexbox can lead to undefined behavior.
-
-### CSS selectors
-
-When targeting the root element of a page, using `:root` is the most
-performant way of doing so.
 
 ### Reflows and style flushes
 

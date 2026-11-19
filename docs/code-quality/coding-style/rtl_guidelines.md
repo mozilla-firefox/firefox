@@ -75,6 +75,12 @@ icon on the right:
 }
 ```
 
+While a tab's content area keeps its scrollbar on the right in RTL, an
+overflow scrollbar in the UI shows on the left.
+
+Stylelint's `csstools/use-logical` rule reports physical properties only in
+New Tab code; bug 1996168 tracks enabling it elsewhere.
+
 :::{warning}
 It may be inappropriate to use logical properties when embedding LTR
 within RTL contexts. This is described further in the document.
