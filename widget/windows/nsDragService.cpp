@@ -233,24 +233,6 @@ nsresult nsDragSession::InvokeDragSessionImpl(
   return StartInvokingDragSession(aWidget, itemToDrag, aActionType);
 }
 
-static HWND GetSourceWindow(dom::Document* aSourceDocument) {
-  if (!aSourceDocument) {
-    return nullptr;
-  }
-
-  auto* pc = aSourceDocument->GetPresContext();
-  if (!pc) {
-    return nullptr;
-  }
-
-  nsCOMPtr<nsIWidget> widget = pc->GetRootWidget();
-  if (!widget) {
-    return nullptr;
-  }
-
-  return (HWND)widget->GetNativeData(NS_NATIVE_WINDOW);
-}
-
 //-------------------------------------------------------------------------
 nsresult nsDragSession::StartInvokingDragSession(nsIWidget* aWidget,
                                                  IDataObject* aDataObj,
@@ -341,7 +323,8 @@ nsresult nsDragSession::StartInvokingDragSession(nsIWidget* aWidget,
   POINT cpos;
   cpos.x = GET_X_LPARAM(pos);
   cpos.y = GET_Y_LPARAM(pos);
-  if (auto wnd = GetSourceWindow(mSourceDocument)) {
+  if (nsCOMPtr<nsIWidget> widget = GetSourceWidget()) {
+    HWND wnd = (HWND)widget->GetNativeData(NS_NATIVE_WINDOW);
     // Convert from screen to client coordinates like nsWindow::InitEvent does.
     ::ScreenToClient(wnd, &cpos);
   }

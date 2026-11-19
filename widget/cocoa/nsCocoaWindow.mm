@@ -3940,10 +3940,18 @@ static gfx::IntPoint GetIntegerDeltaForEvent(NSEvent* aEvent) {
 
   if (dragSession) {
     if (aMessage == eDragOver) {
-      // fire the drag event at the source. Just ignore whether it was
-      // cancelled or not as there isn't actually a means to stop the drag
-      dragSession->FireDragEventAtSource(
-          eDrag, nsCocoaUtils::ModifiersForEvent([NSApp currentEvent]));
+      nsCOMPtr<nsIWidget> sourceWidget = dragSession->GetSourceWidget();
+      if (sourceWidget == mGeckoChild) {
+        NSPoint draggingLoc = [aSender draggingLocation];
+        LayoutDeviceIntPoint point =
+            [self convertWindowCoordinates:draggingLoc];
+
+        // fire the drag event at the source. Just ignore whether it was
+        // cancelled or not as there isn't actually a means to stop the drag
+        dragSession->FireDragEventAtSource(
+            eDrag, nsCocoaUtils::ModifiersForEvent([NSApp currentEvent]),
+            point);
+      }
       dragSession->SetCanDrop(false);
     } else if (aMessage == eDrop) {
       // We make the assumption that the dragOver handlers have correctly set
