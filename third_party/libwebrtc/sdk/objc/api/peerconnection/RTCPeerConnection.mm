@@ -539,6 +539,37 @@ void PeerConnectionDelegateAdapter::OnRemoveTrack(
   return self;
 }
 
+- (void)dealloc {
+  if (_peerConnection == nullptr) {
+    // Initialization failed.
+    return;
+  }
+  webrtc::Thread *signalingThread = _peerConnection->signaling_thread();
+  if (!signalingThread->IsCurrent() && !_factory.networkThread->IsCurrent()) {
+    // .cxx_destruct releases the proxy, which destroys the native
+    // PeerConnection on the signaling thread.
+    return;
+  }
+  // Released on the signaling thread, possibly from inside a PeerConnection
+  // callback, or on the network thread, e.g. from a certificate verifier.
+  // Destroying the native PeerConnection here could delete it while its
+  // methods are on the stack, or deadlock since it blocks on the network
+  // thread while it's destroyed. Destroy it from a separate task on the
+  // signaling thread instead. The observer must outlive the native
+  // PeerConnection, and the factory keeps the signaling thread running until
+  // the task has run.
+  signalingThread->PostTask([peerConnection = std::move(_peerConnection),
+                             observer = std::move(_observer),
+                             factory = _factory]() mutable {
+    RTC_DCHECK(factory.signalingThread->IsCurrent());
+    peerConnection = nullptr;
+    observer = nullptr;
+    // If this is the last reference to the factory, the factory is
+    // deallocated here, on its signaling thread, which it supports.
+    factory = nil;
+  });
+}
+
 - (NSArray<RTC_OBJC_TYPE(RTCMediaStream) *> *)localStreams {
   return [_localStreams copy];
 }

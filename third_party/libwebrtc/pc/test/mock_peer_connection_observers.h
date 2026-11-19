@@ -311,6 +311,20 @@ class MockPeerConnectionObserver : public PeerConnectionObserver {
   scoped_refptr<MediaStreamInterface> last_removed_stream_;
 };
 
+// A PeerConnectionObserver that ignores all events. Unlike
+// MockPeerConnectionObserver, it doesn't hold a reference to the
+// PeerConnection.
+class NullPeerConnectionObserver : public PeerConnectionObserver {
+ public:
+  void OnSignalingChange(
+      PeerConnectionInterface::SignalingState /* new_state */) override {}
+  void OnDataChannel(
+      scoped_refptr<DataChannelInterface> /* data_channel */) override {}
+  void OnIceGatheringChange(
+      PeerConnectionInterface::IceGatheringState /* new_state */) override {}
+  void OnIceCandidate(const IceCandidate* /* candidate */) override {}
+};
+
 class MockCreateSessionDescriptionObserver
     : public CreateSessionDescriptionObserver {
  public:

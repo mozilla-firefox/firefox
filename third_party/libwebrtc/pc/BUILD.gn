@@ -3910,6 +3910,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../api:jsep",
       "../api:make_ref_counted",
       "../api:peer_connection_interface",
+      "../api:ref_count",
       "../api:rtc_error",
       "../api:rtc_error_matchers",
       "../api:rtp_parameters",

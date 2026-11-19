@@ -25,12 +25,10 @@
 #include "api/audio_options.h"
 #include "api/create_modular_peer_connection_factory.h"
 #include "api/create_peerconnection_factory.h"
-#include "api/data_channel_interface.h"
 #include "api/enable_media_with_defaults.h"
 #include "api/environment/environment.h"
 #include "api/environment/environment_factory.h"
 #include "api/field_trials_view.h"
-#include "api/jsep.h"
 #include "api/make_ref_counted.h"
 #include "api/media_stream_interface.h"
 #include "api/media_types.h"
@@ -62,6 +60,7 @@
 #include "pc/test/fake_rtc_certificate_generator.h"
 #include "pc/test/fake_video_track_renderer.h"
 #include "pc/test/fake_video_track_source.h"
+#include "pc/test/mock_peer_connection_observers.h"
 #include "rtc_base/event.h"
 #include "rtc_base/internal/default_socket_server.h"
 #include "rtc_base/net_helper.h"
@@ -108,24 +107,6 @@ constexpr char kStunIceServerWithIPv6Address[] = "stun:[2401:fa00:4::]:1234";
 constexpr char kStunIceServerWithIPv6AddressWithoutPort[] =
     "stun:[2401:fa00:4::]";
 constexpr char kTurnIceServerWithIPv6Address[] = "turn:[2401:fa00:4::]:1234";
-
-class NullPeerConnectionObserver : public PeerConnectionObserver {
- public:
-  ~NullPeerConnectionObserver() override = default;
-  void OnSignalingChange(
-      PeerConnectionInterface::SignalingState new_state) override {}
-  void OnAddStream(scoped_refptr<MediaStreamInterface> stream) override {}
-  void OnRemoveStream(scoped_refptr<MediaStreamInterface> stream) override {}
-  void OnDataChannel(
-      scoped_refptr<DataChannelInterface> data_channel) override {}
-  void OnRenegotiationNeeded() override {}
-  void OnIceConnectionChange(
-      PeerConnectionInterface::IceConnectionState new_state) override {}
-  void OnIceGatheringChange(
-      PeerConnectionInterface::IceGatheringState new_state) override {}
-  void OnIceCandidate(const IceCandidate* candidate) override {}
-  void OnIceCandidateRemoved(const IceCandidate* candidate) override {}
-};
 
 class MockNetworkManager : public NetworkManager {
  public:

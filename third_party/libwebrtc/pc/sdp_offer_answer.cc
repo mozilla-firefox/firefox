@@ -1307,7 +1307,9 @@ class SdpOfferAnswerHandler::RemoteDescriptionOperation {
         unified_plan_(handler_->IsUnifiedPlan()) {}
 
   ~RemoteDescriptionOperation() {
-    RTC_DCHECK_RUN_ON(handler_->signaling_thread());
+    // If the observer has already been notified, it may have released the last
+    // reference to the PeerConnection, which deletes `handler_`. In that case
+    // SignalCompletion() returns early and `handler_` is not used.
     SignalCompletion();
     operations_chain_callback_();
   }
@@ -2692,11 +2694,15 @@ void SdpOfferAnswerHandler::ApplyRemoteDescription(
   }
 
   // Consider the operation complete at this point.
+  // The observer may release the last reference to the PeerConnection, which
+  // deletes `this`.
+  WeakPtr<SdpOfferAnswerHandler> this_weak_ptr = weak_ptr_factory_.GetWeakPtr();
   operation->SignalCompletion();
 
-  // The observer may have closed the PeerConnection. If so, the transport
-  // controller and the port allocator are gone and there is nothing left to do.
-  if (pc_->IsClosed()) {
+  // The observer may have closed or released the PeerConnection. If so, the
+  // transport controller and the port allocator are gone and there is nothing
+  // left to do.
+  if (!this_weak_ptr || pc_->IsClosed()) {
     return;
   }
 
@@ -3084,15 +3090,17 @@ void SdpOfferAnswerHandler::DoSetLocalDescription(
                               static_cast<int>(outcome),
                               static_cast<int>(SdpMungingOutcome::kMaxValue));
     if (reject_with_error) {
-      error = RTCError::InvalidModification(
-          "SDP is modified in a non-acceptable way");
-      TraceSetLocalDescriptionComplete(error);
-      observer->OnSetLocalDescriptionComplete(std::move(error));
+      // Update the state and report metrics before informing the observer,
+      // which may release the last reference to the PeerConnection.
       last_sdp_munging_type_ = sdp_munging_type;
       ReportInitialSdpMunging(had_local_description, desc->GetType());
       RTC_HISTOGRAM_ENUMERATION_SPARSE(
           "WebRTC.PeerConnection.SdpMunging.SdpOutcome.Rejected",
           sdp_munging_type, SdpMungingType::kMaxValue);
+      error = RTCError::InvalidModification(
+          "SDP is modified in a non-acceptable way");
+      TraceSetLocalDescriptionComplete(error);
+      observer->OnSetLocalDescriptionComplete(std::move(error));
       return;
     }
     if (sdp_munging_type != kNoModification) {
@@ -3184,10 +3192,13 @@ void SdpOfferAnswerHandler::DoSetLocalDescription(
                           local_description()->GetType());
 
   TraceSetLocalDescriptionComplete(RTCError::OK());
+  // The observer may release the last reference to the PeerConnection, which
+  // deletes `this`.
+  WeakPtr<SdpOfferAnswerHandler> this_weak_ptr = weak_ptr_factory_.GetWeakPtr();
   observer->OnSetLocalDescriptionComplete(RTCError::OK());
-  // The observer may have closed the PeerConnection. If so, the transport
-  // controller is gone and there is nothing left to do.
-  if (pc_->IsClosed()) {
+  // The observer may have closed or released the PeerConnection. If so, the
+  // transport controller is gone and there is nothing left to do.
+  if (!this_weak_ptr || pc_->IsClosed()) {
     return;
   }
   pc_->NoteUsageEvent(UsageEvent::SET_LOCAL_DESCRIPTION_SUCCEEDED);
