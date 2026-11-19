@@ -10,8 +10,6 @@ import {
 import { MozLitElement } from "chrome://global/content/lit-utils.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://global/content/elements/moz-button.mjs";
-// eslint-disable-next-line import-x/no-unassigned-import
-import "chrome://browser/content/aiwindow/components/smartwindow-digest-prompt.mjs";
 
 // The favicon cluster shows at most this many icons; beyond that, the
 // last slot becomes a "+N" overflow badge instead of an icon.
@@ -21,9 +19,7 @@ const MAX_VISIBLE_FAVICONS = 3;
  * A component for displaying conversation starter prompts.
  * Renders a list of prompt buttons that can be clicked to start a conversation.
  *
- * @property {Array<{text: string, type: string, previewIcons?: Array<{iconSrc: string}>, memory?: object, content?: object, id?: string, highlightExpiresAt?: number}>} prompts
- *   - Array of prompt objects to display. "digest" prompts render as
- *   smartwindow-digest-prompt.
+ * @property {Array<{text: string, type: string, previewIcons?: Array<{iconSrc: string}>, memory?: object, content?: object}>} prompts - Array of prompt objects to display
  */
 export class SmartWindowPrompts extends MozLitElement {
   static properties = {
@@ -297,29 +293,6 @@ export class SmartWindowPrompts extends MozLitElement {
     `;
   }
 
-  /**
-   * @param {object} swPrompt
-   */
-  #renderDigestPrompt(swPrompt) {
-    return html`
-      <smartwindow-digest-prompt
-        .prompt=${swPrompt}
-        .highlightExpiresAt=${swPrompt.highlightExpiresAt ?? 0}
-      ></smartwindow-digest-prompt>
-    `;
-  }
-
-  #renderPromptItem(swPrompt) {
-    switch (swPrompt.type) {
-      case "skeleton":
-        return this.#renderSkeletonPrompt();
-      case "digest":
-        return this.#renderDigestPrompt(swPrompt);
-      default:
-        return this.#renderPrompt(swPrompt);
-    }
-  }
-
   render() {
     if (!this.prompts.length) {
       return html``;
@@ -329,10 +302,6 @@ export class SmartWindowPrompts extends MozLitElement {
       <link
         rel="stylesheet"
         href="chrome://browser/content/aiwindow/components/smartwindow-prompts.css"
-      />
-      <link
-        rel="stylesheet"
-        href="chrome://browser/content/aiwindow/components/smartwindow-digest-prompt.css"
       />
       <div class="sw-prompts-wrapper">
         <!-- TODO : TODO a11y translations? -->
@@ -345,7 +314,11 @@ export class SmartWindowPrompts extends MozLitElement {
           role="group"
           @scroll=${() => this.#updateScrollState()}
         >
-          ${this.prompts.map(swPrompt => this.#renderPromptItem(swPrompt))}
+          ${this.prompts.map(swPrompt =>
+            swPrompt.type === "skeleton"
+              ? this.#renderSkeletonPrompt()
+              : this.#renderPrompt(swPrompt)
+          )}
         </div>
         ${this.#renderScrollButtons()}
       </div>
