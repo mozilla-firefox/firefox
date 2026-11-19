@@ -291,6 +291,11 @@ impl Cubic {
     pub const fn set_w_max(&mut self, w_max: f64) {
         self.current.w_max = Some(w_max);
     }
+
+    #[cfg(test)]
+    pub const fn t_epoch(&self) -> Option<Instant> {
+        self.current.t_epoch
+    }
 }
 
 impl WindowAdjustment for Cubic {

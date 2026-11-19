@@ -69,6 +69,9 @@ pub struct Paths {
 
     /// Whether PMTUD is limited to the local interface MTU.
     pmtud_iface_mtu: bool,
+
+    /// The peer's `max_udp_payload_size` transport parameter, once known.
+    peer_max_udp_payload: Option<usize>,
 }
 
 impl Paths {
@@ -83,6 +86,7 @@ impl Paths {
             qlog: Qlog::disabled(),
             pmtud,
             pmtud_iface_mtu: pmtud && conn_params.pmtud_iface_mtu_enabled(),
+            peer_max_udp_payload: None,
         }
     }
 
@@ -102,12 +106,18 @@ impl Paths {
                 let mut p = Path::temporary(local, remote, conn_params, self.qlog.clone(), now);
                 if let Some(primary) = self.primary.as_ref() {
                     p.prime_rtt(primary.borrow().rtt());
-                    if let Some(peer_max) = primary.borrow().pmtud().peer_max_udp_payload() {
-                        p.pmtud_mut().set_peer_max_udp_payload(peer_max);
-                    }
                 }
                 Rc::new(RefCell::new(p))
             })
+    }
+
+    /// Applies the peer's `max_udp_payload_size` to current and future permanent paths.
+    pub fn set_peer_max_udp_payload(&mut self, peer_max_udp_payload: usize, now: Instant) {
+        self.peer_max_udp_payload = Some(peer_max_udp_payload);
+        for p in &self.paths {
+            p.borrow_mut()
+                .set_peer_max_udp_payload(peer_max_udp_payload, now);
+        }
     }
 
     /// Get a reference to the primary path, if one exists.
@@ -178,6 +188,11 @@ impl Paths {
                     warn!("Failed to determine outbound interface for destination {ip}: {e}");
                 }
             }
+        }
+        // Temporary paths don't send, so they only get the peer's limit here.
+        if let Some(peer_max_udp_payload) = self.peer_max_udp_payload {
+            path.borrow_mut()
+                .set_peer_max_udp_payload(peer_max_udp_payload, now);
         }
         self.paths.push(Rc::clone(path));
         if self.primary.is_none() {
@@ -1035,6 +1050,11 @@ impl Path {
         self.sender.pmtud_mut()
     }
 
+    pub fn set_peer_max_udp_payload(&mut self, peer_max_udp_payload: usize, now: Instant) {
+        self.sender
+            .set_peer_max_udp_payload(peer_max_udp_payload, now);
+    }
+
     /// Read-only access to the owned sender.
     pub const fn sender(&self) -> &PacketSender {
         &self.sender
@@ -1242,8 +1262,20 @@ mod tests {
     use neqo_common::{Encoder, qlog::Qlog};
     use test_fixture::{DEFAULT_ADDR, now};
 
-    use super::Path;
-    use crate::{ConnectionParameters, frame::PATH_CHALLENGE_LEN, packet, stats::FrameStats};
+    use super::{Path, PathRef, Paths};
+    use crate::{
+        ConnectionParameters, MIN_INITIAL_PACKET_SIZE, Pmtud, Stats, cc::tests::INITIAL_CWND,
+        cid::RemoteConnectionIdEntry, frame::PATH_CHALLENGE_LEN, packet, stats::FrameStats,
+    };
+
+    fn find_path(paths: &Paths) -> PathRef {
+        paths.find_path(
+            DEFAULT_ADDR,
+            DEFAULT_ADDR,
+            &ConnectionParameters::default().pmtud_iface_mtu(false),
+            now(),
+        )
+    }
 
     fn path() -> Path {
         Path::temporary(
@@ -1283,5 +1315,28 @@ mod tests {
         assert_eq!(stats.path_response, 2);
         assert_eq!(stats.path_challenge, 0);
         assert_eq!(path.challenges, [[2; PATH_CHALLENGE_LEN]]);
+    }
+
+    /// A temporary path gets the peer's `max_udp_payload_size` once it is made permanent.
+    #[test]
+    fn make_permanent_applies_peer_max_udp_payload() {
+        let mut paths = Paths::new(&ConnectionParameters::default());
+        let path = find_path(&paths);
+        let default_plpmtu = Pmtud::default_plpmtu(DEFAULT_ADDR.ip());
+        assert_eq!(path.borrow().plpmtu(), default_plpmtu);
+
+        // `Paths` does not track temporary paths.
+        paths.set_peer_max_udp_payload(MIN_INITIAL_PACKET_SIZE, now());
+        assert_eq!(path.borrow().plpmtu(), default_plpmtu);
+
+        paths.make_permanent(
+            &path,
+            None,
+            RemoteConnectionIdEntry::empty_remote(),
+            now(),
+            &mut Stats::default(),
+        );
+        assert_eq!(path.borrow().plpmtu(), MIN_INITIAL_PACKET_SIZE);
+        assert_eq!(path.borrow().sender().cwnd(), INITIAL_CWND);
     }
 }

@@ -931,6 +931,9 @@ impl Http3Connection {
         } else {
             Http3StreamType::Http
         };
+        let send_initial_priority_update = self.local_params.send_initial_priority_update_enabled()
+            && stream_type == Http3StreamType::Http
+            && request.priority != Priority::default();
 
         let mut send_message = SendMessage::new(
             MessageType::Request,
@@ -957,9 +960,12 @@ impl Http3Connection {
                 },
                 Rc::clone(&self.qpack_decoder),
                 recv_events,
-                PriorityHandler::new(request.priority),
+                PriorityHandler::new(request.priority, send_initial_priority_update),
             )),
         );
+        if send_initial_priority_update {
+            self.control_stream_local.queue_update_priority(stream_id);
+        }
 
         // Call immediately send so that at least headers get sent. This will make Firefox faster,
         // since it can send request body immediately in most cases and does not need to do

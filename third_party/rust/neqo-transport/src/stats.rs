@@ -353,7 +353,7 @@ pub struct Stats {
     pub pmtud_iface_mtu: usize,
     /// The peer's `max_udp_payload_size` transport parameter.
     pub pmtud_peer_max_udp_payload: Option<usize>,
-    /// Probed PMTU of the current path.
+    /// Probed PMTU of the current path, before the [`Stats::pmtud_peer_max_udp_payload`] cap.
     pub pmtud_pmtu: usize,
     /// The connection-level receive window, as auto-tuned.
     pub fc_max_active: u64,

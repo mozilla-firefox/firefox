@@ -6,7 +6,8 @@
 
 use neqo_common::event::Provider as _;
 use neqo_http3::{
-    Header, Http3Client, Http3ClientEvent, Http3Server, Http3ServerEvent, Http3State, Priority,
+    Header, Http3Client, Http3ClientEvent, Http3Parameters, Http3Server, Http3ServerEvent,
+    Http3State, Priority,
 };
 use nss::AuthenticationStatus;
 use test_fixture::*;
@@ -53,38 +54,46 @@ fn connect() -> (Http3Client, Http3Server) {
 #[test]
 fn priority_update() {
     let (mut client, mut server) = connect();
+    let initial_priority = Priority::new(4, true);
     let stream_id = client
         .fetch(
             now(),
             "GET",
             &("https", "something.com", "/"),
             &[Header::new("priority", "u=4,i")],
-            Priority::new(4, true),
+            initial_priority,
         )
         .unwrap();
     exchange_packets(&mut client, &mut server, false, None);
 
-    // get event of the above request, skipping events of the connection setup
-    let header_event = loop {
+    // get events of the above request, skipping events of the connection setup
+    let mut header_event_received = false;
+    let mut initial_priority_update_event_received = false;
+    while !header_event_received || !initial_priority_update_event_received {
         let event = server.next_event().unwrap();
-        if matches!(event, Http3ServerEvent::Headers { .. }) {
-            break event;
+        match event {
+            Http3ServerEvent::Headers { headers, fin, .. } => {
+                let expected_headers = &[
+                    Header::new(":method", "GET"),
+                    Header::new(":scheme", "https"),
+                    Header::new(":authority", "something.com"),
+                    Header::new(":path", "/"),
+                    Header::new("priority", "u=4,i"),
+                ];
+                assert_eq!(&headers, expected_headers);
+                assert!(!fin);
+                header_event_received = true;
+            }
+            Http3ServerEvent::PriorityUpdate {
+                stream_id: update_id,
+                priority,
+            } => {
+                assert_eq!(update_id, stream_id);
+                assert_eq!(priority, initial_priority);
+                initial_priority_update_event_received = true;
+            }
+            _ => {}
         }
-    };
-
-    match header_event {
-        Http3ServerEvent::Headers { headers, fin, .. } => {
-            let expected_headers = &[
-                Header::new(":method", "GET"),
-                Header::new(":scheme", "https"),
-                Header::new(":authority", "something.com"),
-                Header::new(":path", "/"),
-                Header::new("priority", "u=4,i"),
-            ];
-            assert_eq!(&headers, expected_headers);
-            assert!(!fin);
-        }
-        other => panic!("unexpected server event: {other:?}"),
     }
 
     let update_priority = Priority::new(3, false);
@@ -110,7 +119,53 @@ fn priority_update() {
 #[test]
 fn priority_update_dont_send_for_cancelled_stream() {
     let (mut client, mut server) = connect();
+    let initial_priority = Priority::new(5, false);
     let stream_id = client
+        .fetch(
+            now(),
+            "GET",
+            &("https", "something.com", "/"),
+            &[Header::new("priority", "u=5")],
+            initial_priority,
+        )
+        .unwrap();
+    exchange_packets(&mut client, &mut server, false, None);
+
+    // the initial priority update is always sent
+    let initial_update = server.events().any(|e| {
+        matches!(
+            e,
+            Http3ServerEvent::PriorityUpdate { stream_id: update_id, priority }
+                if update_id == stream_id && priority == initial_priority
+        )
+    });
+    assert!(initial_update);
+
+    let update_priority = Priority::new(6, false);
+    client.priority_update(stream_id, update_priority).unwrap();
+    client.cancel_fetch(stream_id, 11).unwrap();
+    exchange_packets(&mut client, &mut server, false, None);
+
+    while let Some(event) = server.next_event() {
+        if matches!(event, Http3ServerEvent::PriorityUpdate { .. }) {
+            panic!("Priority update sent on cancelled stream");
+        }
+    }
+}
+
+#[test]
+fn no_initial_priority_update_when_disabled() {
+    let mut client = http3_client_with_params(
+        Http3Parameters::default()
+            .max_table_size_encoder(100)
+            .max_table_size_decoder(100)
+            .max_blocked_streams(100)
+            .send_initial_priority_update(false),
+    );
+    let mut server = default_http3_server();
+    connect_with(&mut client, &mut server);
+
+    client
         .fetch(
             now(),
             "GET",
@@ -121,14 +176,63 @@ fn priority_update_dont_send_for_cancelled_stream() {
         .unwrap();
     exchange_packets(&mut client, &mut server, false, None);
 
+    while let Some(event) = server.next_event() {
+        if matches!(event, Http3ServerEvent::PriorityUpdate { .. }) {
+            panic!("Initial priority update sent despite being disabled");
+        }
+    }
+}
+
+#[test]
+fn priority_update_before_initial_priority_update_sent() {
+    let (mut client, mut server) = connect();
+    let stream_id = client
+        .fetch(
+            now(),
+            "GET",
+            &("https", "something.com", "/"),
+            &[Header::new("priority", "u=5")],
+            Priority::new(5, false),
+        )
+        .unwrap();
+
+    // update priority before the initial priority update has been sent
     let update_priority = Priority::new(6, false);
-    client.priority_update(stream_id, update_priority).unwrap();
-    client.cancel_fetch(stream_id, 11).unwrap();
+    assert!(client.priority_update(stream_id, update_priority).unwrap());
+    exchange_packets(&mut client, &mut server, false, None);
+
+    // only a single priority update with the updated priority should be sent
+    let updates: Vec<_> = server
+        .events()
+        .filter_map(|e| match e {
+            Http3ServerEvent::PriorityUpdate {
+                stream_id: update_id,
+                priority,
+            } => Some((update_id, priority)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(updates, [(stream_id, update_priority)]);
+}
+
+#[test]
+fn no_initial_priority_update_for_default() {
+    let (mut client, mut server) = connect();
+
+    client
+        .fetch(
+            now(),
+            "GET",
+            &("https", "something.com", "/"),
+            &[Header::new("priority", "u=3")],
+            Priority::default(),
+        )
+        .unwrap();
     exchange_packets(&mut client, &mut server, false, None);
 
     while let Some(event) = server.next_event() {
         if matches!(event, Http3ServerEvent::PriorityUpdate { .. }) {
-            panic!("Priority update sent on cancelled stream");
+            panic!("Initial priority update sent for default priority");
         }
     }
 }

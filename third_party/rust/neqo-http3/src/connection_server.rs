@@ -334,7 +334,7 @@ impl Http3ServerHandler {
                         },
                         Rc::clone(self.base_handler.qpack_decoder()),
                         Box::new(self.events.clone()),
-                        PriorityHandler::new(Priority::default()),
+                        PriorityHandler::new(Priority::default(), false),
                     )),
                 );
                 let res = self

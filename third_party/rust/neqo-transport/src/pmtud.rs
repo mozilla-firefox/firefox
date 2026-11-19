@@ -9,7 +9,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use neqo_common::{Buffer, qlog::Qlog};
+use neqo_common::{Buffer, const_min, qlog::Qlog};
 use tracing::{debug, info};
 
 use crate::{
@@ -106,6 +106,10 @@ impl Pmtud {
         let old_mtu = self.plpmtu();
         self.mtu = self.search_table[idx];
         stats.pmtud_pmtu = self.mtu;
+        self.qlog_mtu_updated(old_mtu, now);
+    }
+
+    fn qlog_mtu_updated(&mut self, old_mtu: usize, now: Instant) {
         let new_mtu = self.plpmtu();
         if old_mtu != new_mtu {
             let done = !self.needs_probe();
@@ -118,15 +122,11 @@ impl Pmtud {
         self.iface_mtu = iface_mtu;
     }
 
-    /// Set the peer's `max_udp_payload_size` transport parameter as an upper bound for probing.
-    pub const fn set_peer_max_udp_payload(&mut self, peer_max_udp_payload: usize) {
+    /// Set the peer's `max_udp_payload_size` as an upper bound for the PLPMTU and probing.
+    pub fn set_peer_max_udp_payload(&mut self, peer_max_udp_payload: usize, now: Instant) {
+        let old_mtu = self.plpmtu();
         self.peer_max_udp_payload = Some(peer_max_udp_payload);
-    }
-
-    /// Returns the peer's `max_udp_payload_size`, if known.
-    #[must_use]
-    pub const fn peer_max_udp_payload(&self) -> Option<usize> {
-        self.peer_max_udp_payload
+        self.qlog_mtu_updated(old_mtu, now);
     }
 
     /// Checks whether the PMTUD raise timer should be fired, and does so if needed.
@@ -138,11 +138,20 @@ impl Pmtud {
         }
     }
 
+    /// The peer's `max_udp_payload_size` plus IP and UDP headers.
+    const fn peer_mtu_limit(&self) -> usize {
+        match self.peer_max_udp_payload {
+            Some(p) => p.saturating_add(self.header_size),
+            None => usize::MAX,
+        }
+    }
+
     /// Returns the current Packetization Layer Path MTU, i.e., the maximum UDP payload that can be
-    /// sent. During probing, this may be larger than the actual path MTU.
+    /// sent. During probing, this may be larger than the actual path MTU. Capped by the peer's
+    /// `max_udp_payload_size`.
     #[must_use]
     pub const fn plpmtu(&self) -> usize {
-        self.mtu - self.header_size
+        const_min(self.mtu, self.peer_mtu_limit()) - self.header_size
     }
 
     /// Returns true if a PMTUD probe should be sent.
@@ -292,9 +301,7 @@ impl Pmtud {
             return;
         }
 
-        let mtu_limit = self.peer_max_udp_payload.map_or(self.iface_mtu, |p| {
-            self.iface_mtu.min(p.saturating_add(self.header_size))
-        });
+        let mtu_limit = self.iface_mtu.min(self.peer_mtu_limit());
         if self.search_table[self.probe_index + 1] > mtu_limit {
             debug!(
                 "PMTUD reached MTU limit {mtu_limit}, stopping upwards search at {}",
@@ -330,12 +337,12 @@ mod tests {
     };
 
     use neqo_common::Encoder;
-    use test_fixture::{fixture_init, now};
+    use test_fixture::{fixture_init, new_neqo_qlog, now};
     use tracing::{debug, info};
 
     use super::MAX_PROBES;
     use crate::{
-        Pmtud, Stats,
+        MIN_INITIAL_PACKET_SIZE, Pmtud, Stats,
         crypto::CryptoDxState,
         packet,
         pmtud::{PMTU_RAISE_TIMER, Probe, SEARCH_TABLE_LEN},
@@ -603,7 +610,7 @@ mod tests {
         fixture_init();
         let now = now();
         let mut pmtud = new_pmtud(addr, iface_mtu);
-        pmtud.set_peer_max_udp_payload(peer_max_udp_payload);
+        pmtud.set_peer_max_udp_payload(peer_max_udp_payload, now);
         let mut stats = Stats::default();
         let mut prot = CryptoDxState::test_default_write();
 
@@ -648,13 +655,32 @@ mod tests {
         assert_eq!(pmtud.mtu, 1500);
     }
 
+    /// A peer limit below the default PLPMTU caps it.
     #[test]
-    fn peer_max_udp_payload_accessor() {
-        let mut pmtud = Pmtud::new(V4);
-        assert_eq!(pmtud.peer_max_udp_payload(), None);
+    fn pmtud_peer_max_below_default() {
+        for addr in [V4, V6] {
+            let pmtud = find_pmtu_with_peer_max(addr, 9000, None, MIN_INITIAL_PACKET_SIZE);
+            assert_eq!(pmtud.plpmtu(), MIN_INITIAL_PACKET_SIZE);
+        }
+    }
 
-        pmtud.set_peer_max_udp_payload(1452);
-        assert_eq!(pmtud.peer_max_udp_payload(), Some(1452));
+    /// Capping the PLPMTU logs one `mtu_updated` event, even if repeated.
+    #[test]
+    fn peer_max_udp_payload_logs_mtu_update() {
+        let (log, contents) = new_neqo_qlog();
+        let mut pmtud = Pmtud::new(V4);
+        pmtud.set_qlog(log);
+        let old_mtu = pmtud.plpmtu();
+
+        pmtud.set_peer_max_udp_payload(MIN_INITIAL_PACKET_SIZE, now());
+        pmtud.set_peer_max_udp_payload(MIN_INITIAL_PACKET_SIZE, now());
+        assert_eq!(pmtud.plpmtu(), MIN_INITIAL_PACKET_SIZE);
+        drop(pmtud);
+        let contents = contents.to_string();
+        assert_eq!(contents.matches("mtu_updated").count(), 1);
+        assert!(contents.contains(&format!(
+            r#""old":{old_mtu},"new":{MIN_INITIAL_PACKET_SIZE}"#
+        )));
     }
 
     /// `probe_count` is 0 before sending and 1 after the first probe.

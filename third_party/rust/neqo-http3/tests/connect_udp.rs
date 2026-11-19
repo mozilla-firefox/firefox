@@ -6,6 +6,8 @@
 
 #![cfg(test)]
 
+use std::time::Duration;
+
 use http::Uri;
 use neqo_common::{Datagram, Tos, event::Provider as _, header::HeadersExt as _};
 use neqo_http3::{
@@ -969,6 +971,54 @@ fn datagram_over_the_peers_limit_including_context_id_is_rejected() {
     );
 }
 
+/// Far past the default max age, which on a loopback path is the 20ms floor.
+const PAST_DEFAULT_MAX_AGE: Duration = Duration::from_hours(1);
+
+/// Queued datagrams are kept as long as necessary.
+#[test]
+fn client_datagrams_do_not_expire() {
+    fixture_init();
+    let (mut client, _proxy, proxy_session) = establish_new_session();
+    let session_id = proxy_session.stream_id();
+    while client.next_event().is_some() {}
+
+    let t0 = now();
+    for _ in 0..9 {
+        assert_eq!(
+            client.connect_udp_send_datagram(session_id, PING, None, t0),
+            Ok(DatagramQueueOutcome::Ok)
+        );
+    }
+    let t1 = t0 + PAST_DEFAULT_MAX_AGE;
+    drop(client.process_output(t1));
+    assert_eq!(
+        client.connect_udp_send_datagram(session_id, PING, None, t1),
+        Ok(DatagramQueueOutcome::MaxBufferedReached),
+        "the queued datagrams must not expire"
+    );
+}
+
+/// Server-side counterpart to [`client_datagrams_do_not_expire`].
+#[test]
+fn server_datagrams_do_not_expire() {
+    fixture_init();
+    let (_client, _proxy, proxy_session) = establish_new_session();
+
+    let t0 = now();
+    for _ in 0..9 {
+        assert_eq!(
+            proxy_session.send_datagram(PONG, None, t0),
+            Ok(DatagramQueueOutcome::Ok)
+        );
+    }
+    let t1 = t0 + PAST_DEFAULT_MAX_AGE;
+    assert_eq!(
+        proxy_session.send_datagram(PONG, None, t1),
+        Ok(DatagramQueueOutcome::MaxBufferedReached),
+        "the queued datagrams must not expire"
+    );
+}
+
 /// The datagram queue setters are `WebTransport` attributes; a connect-udp
 /// session must be rejected rather than silently given a mark.
 #[test]
@@ -981,11 +1031,7 @@ fn connect_udp_session_rejected_by_webtransport_datagram_setters() {
         Err(Error::InvalidStreamId)
     );
     assert_eq!(
-        client.webtransport_set_datagram_max_age(
-            session_id,
-            Some(std::time::Duration::from_millis(1)),
-            now()
-        ),
+        client.webtransport_set_datagram_max_age(session_id, Some(Duration::from_millis(1)), now()),
         Err(Error::InvalidStreamId)
     );
     assert_eq!(

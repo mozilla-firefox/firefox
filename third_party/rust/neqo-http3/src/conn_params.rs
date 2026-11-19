@@ -12,8 +12,10 @@ const WEBTRANSPORT_DEFAULT: bool = false;
 /// Do not support HTTP Extended CONNECT by default.
 const CONNECT_DEFAULT: bool = false;
 const HTTP3_DATAGRAM_DEFAULT: bool = true;
+const SEND_INITIAL_PRIORITY_UPDATE_DEFAULT: bool = true;
 
 #[derive(Debug, Clone)]
+#[expect(clippy::struct_excessive_bools, reason = "Independent feature flags.")]
 pub struct Http3Parameters {
     conn_params: ConnectionParameters,
     qpack_settings: qpack::Settings,
@@ -21,6 +23,7 @@ pub struct Http3Parameters {
     /// HTTP Extended CONNECT
     connect: bool,
     http3_datagram: bool,
+    send_initial_priority_update: bool,
 }
 
 impl Default for Http3Parameters {
@@ -31,6 +34,7 @@ impl Default for Http3Parameters {
             webtransport: WEBTRANSPORT_DEFAULT,
             connect: CONNECT_DEFAULT,
             http3_datagram: HTTP3_DATAGRAM_DEFAULT,
+            send_initial_priority_update: SEND_INITIAL_PRIORITY_UPDATE_DEFAULT,
         }
     }
 }
@@ -170,6 +174,24 @@ impl Http3Parameters {
             );
         }
         self.http3_datagram
+    }
+
+    /// Whether a `PRIORITY_UPDATE` frame should be sent on the HTTP/3 control stream at the
+    /// beginning of each request.
+    ///
+    /// This only affects clients.
+    #[must_use]
+    pub const fn send_initial_priority_update(
+        mut self,
+        send_initial_priority_update: bool,
+    ) -> Self {
+        self.send_initial_priority_update = send_initial_priority_update;
+        self
+    }
+
+    #[must_use]
+    pub const fn send_initial_priority_update_enabled(&self) -> bool {
+        self.send_initial_priority_update
     }
 }
 

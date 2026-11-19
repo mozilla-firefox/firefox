@@ -131,6 +131,11 @@ impl PacketSender {
         self.cc.pmtud_mut()
     }
 
+    pub fn set_peer_max_udp_payload(&mut self, peer_max_udp_payload: usize, now: Instant) {
+        self.cc.set_peer_max_udp_payload(peer_max_udp_payload, now);
+        self.maybe_update_pacer_mtu();
+    }
+
     #[must_use]
     pub fn cwnd(&self) -> usize {
         self.cc.cwnd()
@@ -256,8 +261,11 @@ mod tests {
 
     use super::PacketSender;
     use crate::{
-        ConnectionParameters, SlowStart,
-        cc::{CongestionControl, tests::pmtud},
+        ConnectionParameters, MIN_INITIAL_PACKET_SIZE, SlowStart,
+        cc::{
+            CongestionControl,
+            tests::{INITIAL_CWND, pmtud},
+        },
         recovery::sent,
         rtt::RttEstimate,
         stats::Stats,
@@ -353,5 +361,17 @@ mod tests {
         // though we are pacing delayed.
         let (before, after) = send_and_ack(true, super::PACING_BURST_SIZE + 1);
         assert_eq!(after, before, "cwnd should not grow when app limited");
+    }
+
+    /// The pacer follows the peer's `max_udp_payload_size` at once, not on the next ACK or loss.
+    #[test]
+    fn peer_max_udp_payload_updates_pacer() {
+        let mut sender = make_sender(true);
+        assert_eq!(sender.pacer.mtu(), sender.pmtud().plpmtu());
+
+        sender.set_peer_max_udp_payload(MIN_INITIAL_PACKET_SIZE, now());
+        assert_eq!(sender.pmtud().plpmtu(), MIN_INITIAL_PACKET_SIZE);
+        assert_eq!(sender.pacer.mtu(), MIN_INITIAL_PACKET_SIZE);
+        assert_eq!(sender.cwnd(), INITIAL_CWND);
     }
 }

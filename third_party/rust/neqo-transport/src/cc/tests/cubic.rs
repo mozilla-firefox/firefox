@@ -381,6 +381,12 @@ fn cwnd_and_acked_bytes_reduced_on_congestion_event(
         cubic.acked_bytes(),
         acked_bytes_before * beta / Cubic::BETA_USIZE_DIVISOR
     );
+
+    // Acking a packet sent before recovery started must not grow cwnd or start a new epoch.
+    let cwnd_reduced = cubic.cwnd();
+    ack_packet(&mut cubic, 3, now, &mut cc_stats);
+    assert_eq!(cubic.cwnd(), cwnd_reduced);
+    assert_eq!(cubic.congestion_control().t_epoch(), None);
 }
 
 #[test]
