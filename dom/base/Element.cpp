@@ -757,7 +757,7 @@ void Element::RecompileScriptEventListeners() {
 
     nsAutoString value;
     attrInfo.mValue->ToString(value);
-    SetEventHandler(GetEventNameForAttr(attr), value, true);
+    SetEventHandler(GetEventNameForAttr(attr), value);
   }
 }
 
@@ -3469,8 +3469,7 @@ nsresult Element::LeaveLink(nsPresContext* aPresContext) {
   return nsDocShell::Cast(shell)->OnLeaveLink();
 }
 
-void Element::SetEventHandler(nsAtom* aEventName, const nsAString& aValue,
-                              bool aDefer) {
+void Element::SetEventHandler(nsAtom* aEventName, const nsAString& aValue) {
   Document* ownerDoc = OwnerDoc();
   if (ownerDoc->IsLoadedAsData()) {
     // Make this a no-op rather than throwing an error to avoid
@@ -3479,15 +3478,12 @@ void Element::SetEventHandler(nsAtom* aEventName, const nsAString& aValue,
   }
 
   MOZ_ASSERT(aEventName, "Must have event name!");
-  bool defer = true;
-  EventListenerManager* manager =
-      GetEventListenerManagerForAttr(aEventName, &defer);
+  EventListenerManager* manager = GetEventListenerManagerForAttr(aEventName);
   if (!manager) {
     return;
   }
 
-  defer = defer && aDefer;  // only defer if everyone agrees...
-  manager->SetEventHandler(aEventName, aValue, defer,
+  manager->SetEventHandler(aEventName, aValue,
                            !nsContentUtils::IsChromeDoc(ownerDoc), this);
 }
 
@@ -4215,9 +4211,8 @@ void Element::OnAttrSetButNotChanged(int32_t aNamespaceID, nsAtom* aName,
   }
 }
 
-EventListenerManager* Element::GetEventListenerManagerForAttr(nsAtom* aAttrName,
-                                                              bool* aDefer) {
-  *aDefer = true;
+EventListenerManager* Element::GetEventListenerManagerForAttr(
+    nsAtom* aAttrName) {
   return GetOrCreateListenerManager();
 }
 

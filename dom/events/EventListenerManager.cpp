@@ -1022,7 +1022,6 @@ EventListenerManager::Listener* EventListenerManager::SetEventHandlerInternal(
 
 nsresult EventListenerManager::SetEventHandler(nsAtom* aName,
                                                const nsAString& aBody,
-                                               bool aDeferCompilation,
                                                bool aPermitUntrustedEvents,
                                                Element* aElement) {
   auto removeEventHandler = MakeScopeExit([&] { RemoveEventHandler(aName); });
@@ -1093,23 +1092,15 @@ nsresult EventListenerManager::SetEventHandler(nsAtom* aName,
   Listener* listener = SetEventHandlerInternal(aName, TypedEventHandler(),
                                                aPermitUntrustedEvents);
 
-  if (!aDeferCompilation) {
-    if (nsContentUtils::IsSafeToRunScript()) [[likely]] {
-      return CompileEventHandlerInternal(listener, aName, &aBody, aElement);
-    }
-    // Scripts are blocked (e.g. inside CloneAndAdopt or AfterSetAttr).
-    nsContentUtils::AddScriptRunner(NS_NewRunnableFunction(
-        "EventListenerManager::DeferredCompileEventHandler",
-        [self = RefPtr{this}, typeAtom = RefPtr{aName}, body = nsString(aBody),
-         element = RefPtr{aElement}]() {
-          Listener* listener = self->FindEventHandler(typeAtom);
-          if (listener && listener->mHandlerIsString) {
-            self->CompileEventHandlerInternal(listener, typeAtom, &body,
-                                              element);
-          }
-        }));
+  // The handler is compiled the first time it's needed. For an element target
+  // the source is read from the attribute again then, but a handler forwarded
+  // to a window (<body>, <frameset>, <xul:window>) has no element to read it
+  // from, so keep the source with the handler.
+  if (!Element::FromEventTargetOrNull(mTarget)) {
+    MOZ_DIAGNOSTIC_ASSERT(aElement);
+    listener->GetJSEventHandler()->SetPendingSource(aBody,
+                                                    aElement->GetNameSpaceID());
   }
-
   return NS_OK;
 }
 
@@ -1152,9 +1143,8 @@ void EventListenerManager::RemoveEventHandler(nsAtom* aName) {
   }
 }
 
-nsresult EventListenerManager::CompileEventHandlerInternal(
-    Listener* aListener, nsAtom* aTypeAtom, const nsAString* aBody,
-    Element* aElement) {
+nsresult EventListenerManager::CompileEventHandlerInternal(Listener* aListener,
+                                                           nsAtom* aTypeAtom) {
   MOZ_ASSERT(aListener->GetJSEventHandler());
   MOZ_ASSERT(aListener->mHandlerIsString,
              "Why are we compiling a non-string JS listener?");
@@ -1167,6 +1157,7 @@ nsresult EventListenerManager::CompileEventHandlerInternal(
   nsCOMPtr<nsIScriptGlobalObject> global =
       GetScriptGlobalAndDocument(getter_AddRefs(doc));
   NS_ENSURE_STATE(global);
+  NS_ENSURE_STATE(doc);
 
   // Activate JSAPI, and make sure that exceptions are reported on the right
   // Window.
@@ -1181,19 +1172,23 @@ nsresult EventListenerManager::CompileEventHandlerInternal(
   // Flag us as not a string so we don't keep trying to compile strings which
   // can't be compiled.
   aListener->mHandlerIsString = false;
+  UniquePtr<JSEventHandler::PendingSource> pendingSource =
+      jsEventHandler->TakePendingSource();
 
   // mTarget may not be an Element if it's a window and we're
   // getting an inline event listener forwarded from <html:body> or
-  // <html:frameset> or <xul:window> or the like.
+  // <html:frameset> or <xul:window> or the like. The source of such a
+  // listener is kept on its JSEventHandler, see SetEventHandler.
   // XXX I don't like that we have to reference content from
-  // here. The alternative is to store the event handler string on
-  // the JSEventHandler itself, and that still doesn't address
-  // the arg names issue.
+  // here for the other ones.
   RefPtr<Element> element = Element::FromEventTargetOrNull(mTarget);
-  MOZ_ASSERT(element || aBody, "Where will we get our body?");
-  nsAutoString handlerBody;
-  const nsAString* body = aBody;
-  if (!aBody) {
+  MOZ_ASSERT(element || pendingSource, "Where will we get our body?");
+  nsAutoString body;
+  int32_t nameSpaceID;
+  if (pendingSource) {
+    body.Assign(pendingSource->mBody);
+    nameSpaceID = pendingSource->mNameSpaceID;
+  } else {
     if (aTypeAtom == nsGkAtoms::onSVGLoad) {
       attrName = nsGkAtoms::onload;
     } else if (aTypeAtom == nsGkAtoms::onSVGScroll) {
@@ -1214,18 +1209,15 @@ nsresult EventListenerManager::CompileEventHandlerInternal(
       attrName = nsGkAtoms::onwebkittransitionend;
     }
 
-    element->GetAttr(attrName, handlerBody);
-    body = &handlerBody;
-    aElement = element;
+    element->GetAttr(attrName, body);
+    nameSpaceID = element->GetNameSpaceID();
   }
   aListener = nullptr;
 
   nsAutoCString url("-moz-evil:lying-event-listener"_ns);
-  MOZ_ASSERT(body);
-  MOZ_ASSERT(aElement);
-  MOZ_ASSERT(!aElement->ChromeOnlyAccess(),
+  MOZ_ASSERT(!element || !element->ChromeOnlyAccess(),
              "Don't use inline handlers on NAC/UAWidget");
-  nsIURI* uri = aElement->OwnerDoc()->GetDocumentURI();
+  nsIURI* uri = doc->GetDocumentURI();
   if (uri) {
     uri->GetSpec(url);
   }
@@ -1234,8 +1226,8 @@ nsresult EventListenerManager::CompileEventHandlerInternal(
       nsPIDOMWindowInner::FromEventTargetOrNull(mTarget);
   uint32_t argCount;
   const char** argNames;
-  nsContentUtils::GetEventArgNames(aElement->GetNameSpaceID(), aTypeAtom, win,
-                                   &argCount, &argNames);
+  nsContentUtils::GetEventArgNames(nameSpaceID, aTypeAtom, win, &argCount,
+                                   &argNames);
 
   // Use the document's realm as per spec:
   //
@@ -1257,8 +1249,7 @@ nsresult EventListenerManager::CompileEventHandlerInternal(
   JSAutoRealm ar(cx, target);
 
   // Now that we've entered the realm we actually care about, create our
-  // environment chain.  Note that we start with |element|, not aElement,
-  // because mTarget is different from aElement in the <body> case, where
+  // environment chain.  Note that |element| is null in the <body> case, where
   // mTarget is a Window, and in that case we do not want the environment chain
   // to include the body or the document.
   JS::EnvironmentChain envChain(cx, JS::SupportUnscopables::Yes);
@@ -1274,21 +1265,20 @@ nsresult EventListenerManager::CompileEventHandlerInternal(
       cx, JS_NewUCStringCopyN(cx, str.BeginReading(), str.Length()));
   NS_ENSURE_TRUE(jsStr, NS_ERROR_OUT_OF_MEMORY);
 
-  // Get the reflector for |aElement|, so that we can pass to setElement.
-  if (NS_WARN_IF(!GetOrCreateDOMReflector(cx, aElement, &v))) {
+  // Get the reflector for |element|, so that we can pass to setElement.
+  if (element && NS_WARN_IF(!GetOrCreateDOMReflector(cx, element, &v))) {
     return NS_ERROR_FAILURE;
   }
 
   RefPtr<JS::loader::ScriptFetchOptions> fetchOptions =
       new JS::loader::ScriptFetchOptions(
           CORS_NONE, /* aNonce = */ u""_ns, RequestPriority::Auto,
-          JS::loader::ParserMetadata::NotParserInserted,
-          aElement->OwnerDoc()->NodePrincipal());
+          JS::loader::ParserMetadata::NotParserInserted, doc->NodePrincipal());
 
   RefPtr<JS::loader::ScriptFetchInfo> fetchInfo =
       new JS::loader::ScriptFetchInfo(JS::loader::ScriptKind::eEvent,
-                                      aElement->OwnerDoc()->GetReferrerPolicy(),
-                                      fetchOptions, uri);
+                                      doc->GetReferrerPolicy(), fetchOptions,
+                                      uri);
 
   JS::CompileOptions options(cx);
   // Use line 0 to make the function body starts from line 1.
@@ -1299,7 +1289,7 @@ nsresult EventListenerManager::CompileEventHandlerInternal(
   JS::Rooted<JSObject*> handler(cx);
   result = nsJSUtils::CompileFunction(jsapi, envChain, options,
                                       nsAtomCString(aTypeAtom), argCount,
-                                      argNames, *body, handler.address());
+                                      argNames, body, handler.address());
   NS_ENSURE_SUCCESS(result, result);
   NS_ENSURE_TRUE(handler, NS_ERROR_FAILURE);
 
@@ -1361,8 +1351,7 @@ bool EventListenerManager::HandleEventSingleListener(
   // compiled the event handler itself
   if ((aListener->mListenerType == Listener::eJSEventListener) &&
       aListener->mHandlerIsString) {
-    result =
-        CompileEventHandlerInternal(aListener, aTypeAtom, nullptr, nullptr);
+    result = CompileEventHandlerInternal(aListener, aTypeAtom);
     aListener = nullptr;
   }
 
@@ -1930,7 +1919,7 @@ nsresult EventListenerManager::GetListenerInfo(
       if (listener.mListenerType == Listener::eJSEventListener &&
           listener.mHandlerIsString) {
         CompileEventHandlerInternal(const_cast<Listener*>(&listener),
-                                    entry.mTypeAtom, nullptr, nullptr);
+                                    entry.mTypeAtom);
       }
       nsAutoString eventType;
       if (listener.mAllEvents) {
@@ -2123,8 +2112,7 @@ const TypedEventHandler* EventListenerManager::GetTypedEventHandler(
   Maybe<RefPtr<JSEventHandler>> pin;
   if (listener->mHandlerIsString) {
     pin.emplace(jsEventHandler);
-    if (NS_FAILED(CompileEventHandlerInternal(listener, aEventName, nullptr,
-                                              nullptr))) {
+    if (NS_FAILED(CompileEventHandlerInternal(listener, aEventName))) {
       listener = nullptr;
     }
   }

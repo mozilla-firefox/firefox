@@ -489,7 +489,7 @@ class nsXULElement : public nsStyledElement {
                       nsAttrValue& aResult) override;
 
   mozilla::EventListenerManager* GetEventListenerManagerForAttr(
-      nsAtom* aAttrName, bool* aDefer) override;
+      nsAtom* aAttrName) override;
 
   /**
    * Add a listener for the specified attribute, if appropriate.

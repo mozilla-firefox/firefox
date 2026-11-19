@@ -1,0 +1,13 @@
+<script>
+var iterations = 0;
+function go() {
+  if (iterations++ > 20) {
+    return;
+  }
+  // Reads window.onload: <frameset>.onload is forwarded to the window.
+  document.createElement("frameset").onload;
+  document.documentElement.innerHTML = document.documentElement.innerHTML;
+}
+</script>
+<body onload="foo()">
+<iframe onload="go()"></iframe>

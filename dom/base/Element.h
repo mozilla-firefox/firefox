@@ -1965,10 +1965,8 @@ class Element : public FragmentOrElement {
    * (like onclick) and with the value as JS
    * @param aEventName the event listener name
    * @param aValue the JS to attach
-   * @param aDefer indicates if deferred execution is allowed
    */
-  void SetEventHandler(nsAtom* aEventName, const nsAString& aValue,
-                       bool aDefer = true);
+  void SetEventHandler(nsAtom* aEventName, const nsAString& aValue);
 
   /**
    * Do whatever needs to be done when the mouse leaves a link
@@ -2461,7 +2459,7 @@ class Element : public FragmentOrElement {
    * needed for attachment of attribute-defined handlers
    */
   virtual EventListenerManager* GetEventListenerManagerForAttr(
-      nsAtom* aAttrName, bool* aDefer);
+      nsAtom* aAttrName);
 
   /**
    * Internal hook for converting an attribute name-string to nsAttrName in
