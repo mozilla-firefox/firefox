@@ -12,7 +12,6 @@ import org.mozilla.gecko.annotation.WrapForJNI;
 public final class GeckoSurface implements Parcelable {
   private Surface mSurface;
   private long mHandle;
-  private long mImageReaderId;
   private boolean mIsSingleBuffer;
   private volatile boolean mIsAvailable;
   private boolean mOwned = true;
@@ -26,22 +25,9 @@ public final class GeckoSurface implements Parcelable {
     mIsAvailable = true;
   }
 
-  public GeckoSurface(final Surface surface, final long handle, final long readerId) {
-    mSurface = surface;
-    mHandle = handle;
-    mImageReaderId = readerId;
-    mIsAvailable = true;
-  }
-
-  @WrapForJNI
-  public long getImageReaderId() {
-    return mImageReaderId;
-  }
-
   public GeckoSurface(final Parcel p) {
     mSurface = Surface.CREATOR.createFromParcel(p);
     mHandle = p.readLong();
-    mImageReaderId = p.readLong();
     mIsSingleBuffer = p.readByte() == 1;
     mIsAvailable = p.readByte() == 1;
   }
@@ -78,7 +64,6 @@ public final class GeckoSurface implements Parcelable {
     mOwned = false;
 
     out.writeLong(mHandle);
-    out.writeLong(mImageReaderId);
     out.writeByte((byte) (mIsSingleBuffer ? 1 : 0));
     out.writeByte((byte) (mIsAvailable ? 1 : 0));
   }

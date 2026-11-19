@@ -68,7 +68,6 @@ classes_with_WrapForJNI = [
     "MediaDrmProxy",
     "MozLog",
     "PanZoomController",
-    "RemoteSurfaceAllocator",
     "Sample",
     "SampleBuffer",
     "ScreenManagerHelper",
