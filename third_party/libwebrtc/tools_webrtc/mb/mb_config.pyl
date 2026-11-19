@@ -581,7 +581,7 @@
       ],
     },
     'remoteexec': {
-      'gn_args': 'use_remoteexec=true use_reclient=false use_siso=true',
+      'gn_args': 'use_remoteexec=true use_siso=true',
     },
     'rtc_objc_test_prefix': {
       'gn_args': 'rtc_objc_prefix="RTC_TESTING"',

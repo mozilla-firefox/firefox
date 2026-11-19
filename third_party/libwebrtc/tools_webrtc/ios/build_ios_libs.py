@@ -194,10 +194,7 @@ def BuildWebRTC(output_dir, target_environment, target_arch, flavor,
     gn_args.append('rtc_enable_objc_symbol_export=true')
     gn_args.append('use_siso=true')
     if use_remoteexec:
-        gn_args.extend([
-            'use_remoteexec=true',
-            'use_reclient=false',
-        ])
+        gn_args.append('use_remoteexec=true')
 
     args_string = ' '.join(gn_args + extra_gn_args)
     logging.info('Building WebRTC with args: %s', args_string)
