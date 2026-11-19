@@ -47,6 +47,12 @@ tags = "os_integration"
 
 ["browser_privacy_uploadEnabled.js"]
 
+["browser_privacy_windowLock.js"]
+run-if = [
+  "os == 'mac'",
+  "os == 'win'",
+]
+
 ["browser_privacypane_2.js"]
 
 ["browser_privacypane_3.js"]
