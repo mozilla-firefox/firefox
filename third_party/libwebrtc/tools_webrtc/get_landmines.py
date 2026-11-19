@@ -81,6 +81,7 @@ def print_landmines():  # pylint: disable=invalid-name
         print('Lets clobber iOS due to moving rtc_test_suite')
         print('Lets clobber iOS due to rtc_test -> rtc_cc_test')
         print('Lets clobber iOS due to rtc_library -> rtc_test')
+        print('Lets clobber iOS due to rtc_test -> rtc_executable')
 
 
 def main():

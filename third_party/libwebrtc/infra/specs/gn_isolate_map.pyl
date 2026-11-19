@@ -173,10 +173,6 @@
     "label": "//video/adaptation:video_adaptation_tests",
     "type": "console_test_launcher",
   },
-  "video_capture_tests": {
-    "label": "//modules/video_capture:video_capture_tests",
-    "type": "console_test_launcher",
-  },
   "video_codec_perf_tests": {
     "label": "//modules/video_coding:video_codec_perf_tests",
     "type": "raw",

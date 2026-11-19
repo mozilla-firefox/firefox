@@ -16,7 +16,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/bbec1b95ddb5e0096
  5 files changed, 26 insertions(+), 6 deletions(-)
 
 diff --git a/modules/audio_coding/BUILD.gn b/modules/audio_coding/BUILD.gn
-index 02c68bb6f7..df7d268b13 100644
+index b9ef9b4a71..9c657287f0 100644
 --- a/modules/audio_coding/BUILD.gn
 +++ b/modules/audio_coding/BUILD.gn
 @@ -340,7 +340,7 @@ rtc_library("webrtc_opus_wrapper") {
@@ -48,7 +48,7 @@ index a91c89d297..83e0301615 100644
      }
    }
 diff --git a/modules/video_capture/BUILD.gn b/modules/video_capture/BUILD.gn
-index 6762c992fb..b65b149e7c 100644
+index 0262372568..f5d34a55f1 100644
 --- a/modules/video_capture/BUILD.gn
 +++ b/modules/video_capture/BUILD.gn
 @@ -116,7 +116,7 @@ if (!build_with_chromium || is_linux || is_chromeos) {

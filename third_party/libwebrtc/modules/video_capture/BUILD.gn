@@ -160,7 +160,8 @@ if (!build_with_chromium || is_linux || is_chromeos) {
 
   if (!is_android && rtc_include_tests) {
     # Tests that need a physical camera. They are not run on CI.
-    rtc_test("video_capture_tests") {
+    rtc_executable("video_capture_tests") {
+      testonly = true
       sources = [ "test/video_capture_unittest.cc" ]
       ldflags = []
       if (is_linux || is_chromeos || is_mac) {
@@ -192,6 +193,7 @@ if (!build_with_chromium || is_linux || is_chromeos) {
         "../../rtc_base/synchronization:mutex",
         "../../system_wrappers",
         "../../test:frame_utils",
+        "../../test:test_main",
         "../../test:test_support",
         "../../test:video_test_common",
         "../../test:wait_until",

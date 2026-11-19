@@ -1013,15 +1013,7 @@ if (rtc_include_tests) {
     "//resources/audio_coding/speech_mono_32_48kHz.pcm",
   ]
 
-  if (is_ios) {
-    bundle_data("audio_codec_speed_tests_data") {
-      testonly = true
-      sources = audio_codec_speed_tests_resources
-      outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-    }
-  }
-
-  rtc_test("audio_codec_speed_tests") {
+  rtc_executable("audio_codec_speed_tests") {
     testonly = true
     defines = []
     deps = [
@@ -1036,17 +1028,10 @@ if (rtc_include_tests) {
 
     data = audio_codec_speed_tests_resources
 
-    if (is_android) {
-      deps += [ "//build/android/gtest_apk:native_test_instrumentation_test_runner_java" ]
-    }
-
-    if (is_ios) {
-      deps += [ ":audio_codec_speed_tests_data" ]
-    }
-
     deps += [
       ":webrtc_opus",
       "../../rtc_base:checks",
+      "../../test:test_main",
       "../../test:test_support",
       "../audio_processing",
       "//testing/gtest",
@@ -1188,7 +1173,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_test("neteq_opus_quality_test") {
+  rtc_executable("neteq_opus_quality_test") {
     testonly = true
 
     sources = [ "neteq/test/neteq_opus_quality_test.cc" ]
@@ -1202,6 +1187,7 @@ if (rtc_include_tests) {
       "../../api/audio_codecs:audio_codecs_api",
       "../../rtc_base:buffer",
       "../../rtc_base:checks",
+      "../../test:test_main",
       "../../test:test_support",
       "//testing/gtest",
       "//third_party/abseil-cpp/absl/flags:flag",
@@ -1222,7 +1208,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_test("neteq_pcmu_quality_test") {
+  rtc_executable("neteq_pcmu_quality_test") {
     testonly = true
 
     sources = [ "neteq/test/neteq_pcmu_quality_test.cc" ]
@@ -1234,13 +1220,14 @@ if (rtc_include_tests) {
       "../../rtc_base:buffer",
       "../../rtc_base:checks",
       "../../rtc_base:safe_conversions",
+      "../../test:test_main",
       "../../test:test_support",
       "//testing/gtest",
       "//third_party/abseil-cpp/absl/flags:flag",
     ]
   }
 
-  rtc_test("neteq_pcm16b_quality_test") {
+  rtc_executable("neteq_pcm16b_quality_test") {
     testonly = true
 
     sources = [ "neteq/test/neteq_pcm16b_quality_test.cc" ]
@@ -1252,6 +1239,7 @@ if (rtc_include_tests) {
       "../../rtc_base:buffer",
       "../../rtc_base:checks",
       "../../rtc_base:safe_conversions",
+      "../../test:test_main",
       "../../test:test_support",
       "//testing/gtest",
       "//third_party/abseil-cpp/absl/flags:flag",

@@ -533,7 +533,7 @@ rtc_source_set("sframe_rtp_packet_received") {
 
 if (rtc_include_tests) {
   if (!build_with_chromium) {
-    rtc_test("test_packet_masks_metrics") {
+    rtc_executable("test_packet_masks_metrics") {
       testonly = true
 
       sources = [
@@ -546,6 +546,7 @@ if (rtc_include_tests) {
         "..:module_fec_api",
         "../../rtc_base:checks",
         "../../test:fileutils",
+        "../../test:test_main",
         "../../test:test_support",
         "//testing/gtest",
       ]

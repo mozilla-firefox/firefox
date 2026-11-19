@@ -694,7 +694,7 @@ index 85fefd4524..a6eb275d0f 100644
      : content_hint(VideoTrackInterface::ContentHint::kNone) {}
  VideoOptions::~VideoOptions() = default;
 diff --git a/modules/audio_coding/BUILD.gn b/modules/audio_coding/BUILD.gn
-index b1a7339f09..02c68bb6f7 100644
+index bde3cde738..b9ef9b4a71 100644
 --- a/modules/audio_coding/BUILD.gn
 +++ b/modules/audio_coding/BUILD.gn
 @@ -340,7 +340,7 @@ rtc_library("webrtc_opus_wrapper") {
@@ -978,7 +978,7 @@ index 167bce9157..89203fbcb4 100644
    }
  }
 diff --git a/modules/video_capture/BUILD.gn b/modules/video_capture/BUILD.gn
-index e64faf4bd4..d322e8ffb5 100644
+index c2cd569423..76fdeb6011 100644
 --- a/modules/video_capture/BUILD.gn
 +++ b/modules/video_capture/BUILD.gn
 @@ -135,21 +135,12 @@ if (!build_with_chromium || is_linux || is_chromeos) {

@@ -1821,7 +1821,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_test("dtls_ice_integration_bench") {
+  rtc_executable("dtls_ice_integration_bench") {
     testonly = true
 
     sources = [
@@ -1871,6 +1871,7 @@ if (rtc_include_tests) {
       "../rtc_base:threading",
       "../test:create_test_field_trials",
       "../test:run_loop",
+      "../test:test_main",
       "../test:test_support",
       "../test:wait_until",
       "../test/time_controller",
