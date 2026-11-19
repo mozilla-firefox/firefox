@@ -34,7 +34,6 @@ var gExceptionPaths = [
   "chrome://activity-stream/content/data/content/assets/tabs-top-zap-transparent.svg",
   "chrome://activity-stream/content/data/content/assets/euo-tab-orientation.svg",
   "chrome://activity-stream/content/data/content/assets/euo-chatbot.svg",
-  "chrome://browser/content/aiwindow/assets/agent-watch-kit.svg",
   "chrome://browser/content/assets/moz-vpn.svg",
   "chrome://browser/content/assets/vpn-logo.svg",
   "chrome://browser/content/asrouter/assets/fox-with-box-on-cloud.svg",

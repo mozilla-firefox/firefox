@@ -6,6 +6,7 @@ import { AITabStore } from "moz-src:///browser/components/aiwindow/ui/modules/AI
 import { getHeadingFont } from "moz-src:///browser/components/aiwindow/ui/modules/AITabHeadingFont.sys.mjs";
 import { ConversationStore } from "moz-src:///browser/components/aiwindow/ui/modules/ConversationStore.sys.mjs";
 import { getSmartPageName } from "chrome://browser/content/aiwindow/modules/TrustedInternalURLs.mjs";
+import { A2UI } from "../modules/A2UI.mjs";
 
 /**
  * A stored AI Tab record.
@@ -16,7 +17,7 @@ import { getSmartPageName } from "chrome://browser/content/aiwindow/modules/Trus
 /**
  * A page prepared for rendering.
  *
- * @typedef {import("../modules/A2UI.sys.mjs").HydratedAITabData} HydratedAITabData
+ * @typedef {import("../modules/A2UI.mjs").HydratedAITabData} HydratedAITabData
  */
 
 /**
@@ -49,7 +50,6 @@ const SMART_PAGE_ICON_URL =
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  A2UI: "moz-src:///browser/components/aiwindow/ui/modules/A2UI.sys.mjs",
   AIWINDOW_URL:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
   AITab: "moz-src:///browser/components/aiwindow/models/aitab/AITab.sys.mjs",
@@ -277,7 +277,7 @@ export class AITabParent extends JSWindowActorParent {
       return null;
     }
 
-    const a2ui = new lazy.A2UI(surface);
+    const a2ui = new A2UI(surface);
     const page = a2ui.toUI();
 
     return {
