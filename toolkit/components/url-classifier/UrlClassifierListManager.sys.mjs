@@ -96,6 +96,11 @@ class PROT_ListManager {
   registerTable(tableName, providerName, updateUrl, gethashUrl) {
     this.registered = true;
 
+    const previousUpdateUrl = this.tablesData[tableName]?.updateUrl;
+    if (previousUpdateUrl && previousUpdateUrl != updateUrl) {
+      this.#removeFromUpdateUrl(tableName, previousUpdateUrl);
+    }
+
     this.tablesData[tableName] = {};
     if (!updateUrl) {
       log("Can't register table " + tableName + " without updateUrl");
@@ -129,17 +134,22 @@ class PROT_ListManager {
     log("unregistering " + tableName);
     const table = this.tablesData[tableName];
     if (table) {
-      if (
-        !this.#updatesNeeded(table.updateUrl) &&
-        this.#updateCheckers[table.updateUrl]
-      ) {
-        this.#updateCheckers[table.updateUrl].cancel();
-        this.#updateCheckers[table.updateUrl] = null;
-      }
-      delete this.#needsUpdate[table.updateUrl][tableName];
+      this.#removeFromUpdateUrl(tableName, table.updateUrl);
       this.#clearNextUpdateTimes([tableName]);
     }
     delete this.tablesData[tableName];
+  }
+
+  /**
+   * Stop tracking a table under updateUrl, and stop the update checker of
+   * updateUrl if no other table needs it.
+   */
+  #removeFromUpdateUrl(tableName, updateUrl) {
+    delete this.#needsUpdate[updateUrl][tableName];
+    if (!this.#updatesNeeded(updateUrl) && this.#updateCheckers[updateUrl]) {
+      this.#updateCheckers[updateUrl].cancel();
+      this.#updateCheckers[updateUrl] = null;
+    }
   }
 
   /**
