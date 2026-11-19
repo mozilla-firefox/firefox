@@ -277,22 +277,6 @@ mozlint:
             - 'python/mozlint/**'
             - 'tools/lint/**'
 
-mozperfcommon:
-    description: testing/performance/mozperfcommon unit tests
-    platform: linux2404-64/opt
-    attributes:
-        code-review: true
-    treeherder:
-        symbol: mpc
-    run:
-        using: python-test
-        subsuite: mozperfcommon
-    when:
-        files-changed:
-            - 'testing/performance/mozperfcommon/**'
-            - 'testing/raptor/**'
-            - 'testing/performance/common/expected_changes.yml'
-
 mozrelease:
     description: python/mozrelease unit tests
     treeherder:
@@ -355,7 +339,6 @@ raptor:
         subsuite: raptor
     when:
         files-changed:
-            - 'testing/performance/mozperfcommon/**'
             - 'testing/raptor/**'
 
 reftest-harness:

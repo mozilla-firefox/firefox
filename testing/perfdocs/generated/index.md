@@ -10,7 +10,6 @@ awsy
 DAMP
 IndexedDB
 mach-try-perf
-mozperfcommon
 mozperftest
 perf-sheriffing
 perfcompare
@@ -32,7 +31,6 @@ For more detailed information about each test suite and project, see their docum
 * {doc}`DAMP`
 * {doc}`IndexedDB`
 * {doc}`mach-try-perf`
-* {doc}`mozperfcommon`
 * {doc}`mozperftest`
 * {doc}`perf-sheriffing`
 * {doc}`perfcompare`

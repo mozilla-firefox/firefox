@@ -46,7 +46,6 @@ pth:testing/mozbase/mozsystemmonitor
 pth:testing/mozbase/moztest
 pth:testing/mozbase/mozversion
 pth:testing/mozharness
-pth:testing/performance/mozperfcommon
 pth:testing/raptor
 pth:testing/talos
 pth:testing/web-platform
