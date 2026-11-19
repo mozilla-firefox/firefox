@@ -89,6 +89,17 @@ case "$target" in
   if [ "$what" = "compiler-rt" ]; then
     exe_linker_flags="--rtlib=libgcc -L$PWD"
     touch libgcc.a
+
+    # Below API 29 the runtimes use emulated TLS. Link the builtins into them
+    # so that they don't rely on another library for __emutls_get_address.
+    # The host clang has no builtins for the target, so point the lookup at
+    # the ones built here.
+    triple=$($clang --target=$target -print-target-triple)
+    EXTRA_CMAKE_FLAGS="
+      $EXTRA_CMAKE_FLAGS
+      -DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON
+      -DCOMPILER_RT_LIBRARY_builtins_$triple=clang_rt.builtins-$arch
+    "
   fi
   EXTRA_CMAKE_FLAGS="
     $EXTRA_CMAKE_FLAGS
