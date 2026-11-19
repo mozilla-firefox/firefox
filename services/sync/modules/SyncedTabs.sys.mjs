@@ -186,6 +186,10 @@ let SyncedTabsInternal = {
       return result;
     }
 
+    if (!this.isConfiguredToSyncTabs) {
+      return result;
+    }
+
     // A boolean that controls whether we should show the icon from the remote tab.
     const showRemoteIcons = Services.prefs.getBoolPref(
       "services.sync.syncedTabs.showRemoteIcons",
