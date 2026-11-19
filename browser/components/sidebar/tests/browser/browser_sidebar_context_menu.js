@@ -140,8 +140,8 @@ add_task(async function test_extension_context_menu() {
   );
   await EnterprisePolicyTesting.setupPolicyEngineWithJson({
     policies: {
-      Extensions: {
-        Locked: [extension.id],
+      ExtensionSettings: {
+        [extension.id]: { installation_mode: "force_installed" },
       },
     },
   });
