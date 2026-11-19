@@ -816,6 +816,41 @@ impl ClipTreeBuilder {
         self.has_complex_clips_impl(clip_chain_index, clips)
     }
 
+    /// Check if all complex clips in a clip chain are rounded rectangles (in
+    /// Clip mode), which primitives can apply individually to the same effect
+    /// as applying them once to an intermediate surface.
+    pub fn clip_chain_complex_clips_are_rounded_rects(
+        &self,
+        clip_chain_id: ClipChainId,
+        clips: &SceneClipStore,
+    ) -> bool {
+        let mut index = match self.clip_chain_map.get(&clip_chain_id) {
+            Some(index) => *index,
+            None => panic!(
+                "webrender: missing clip-chain {:?} in clip_chain_complex_clips_are_rounded_rects (defined_chains={})",
+                clip_chain_id,
+                self.clip_chain_map.len(),
+            ),
+        };
+
+        loop {
+            let clip_chain = &self.clip_chains[index];
+
+            for clip_entry in &clip_chain.clips {
+                match clips[clip_entry.handle].kind {
+                    ClipItemKeyKind::Rectangle(ClipMode::Clip) |
+                    ClipItemKeyKind::RoundedRectangle(_, _, ClipMode::Clip) => {}
+                    _ => return false,
+                }
+            }
+
+            match clip_chain.parent {
+                Some(parent) => index = parent,
+                None => return true,
+            }
+        }
+    }
+
     /// Check if all complex clips in a clip chain are fixed-position rounded
     /// rectangles (in Clip mode). When true, the intermediate surface for a
     /// root-level stacking context can be skipped because the clips will be

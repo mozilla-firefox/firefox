@@ -483,9 +483,17 @@ pub fn build_backdrop_capture_regions(
 
     'chains: for chain_info in backdrop_chains {
         let chain_pic_index = chain_info.output_pic_index;
-        let Some(root_pic_index) = picture_graph.parent(chain_pic_index) else {
+        let Some(mut root_pic_index) = picture_graph.parent(chain_pic_index) else {
             continue;
         };
+        // A pass-through picture draws into its parent's surface, so the
+        // backdrop includes what that surface drew before the picture began.
+        while pictures[root_pic_index.0 as usize].raster_config.is_none() {
+            match picture_graph.parent(root_pic_index) {
+                Some(parent_pic_index) => root_pic_index = parent_pic_index,
+                None => break,
+            }
+        }
         let Some(root_surface_index) = picture_graph.surface_index(root_pic_index) else {
             continue;
         };

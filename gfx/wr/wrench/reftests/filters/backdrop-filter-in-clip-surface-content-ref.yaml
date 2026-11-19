@@ -1,0 +1,36 @@
+# Reference for backdrop-filter-in-clip-surface-content.yaml - invert(1) of the
+# red and blue backdrop halves is exactly cyan and yellow.
+---
+root:
+  items:
+    - type: clip
+      id: 2
+      complex:
+        - rect: [0, 0, 200, 200]
+          radius: 20
+    - type: clip-chain
+      id: 3
+      clips: [2]
+    - type: stacking-context
+      filters: [identity]
+      items:
+        - type: rect
+          bounds: [0, 0, 200, 200]
+          color: blue
+          clip-chain: 3
+        - type: reference-frame
+          bounds: [0, 0, 200, 200]
+          transform: translate(-10, 0)
+          items:
+            - type: stacking-context
+              clip-chain: 3
+              items:
+                - type: rect
+                  bounds: [10, 0, 100, 200]
+                  color: red
+                - type: rect
+                  bounds: [60, 40, 50, 60]
+                  color: cyan
+                - type: rect
+                  bounds: [110, 40, 50, 60]
+                  color: yellow
