@@ -1738,8 +1738,7 @@ already_AddRefed<VideoFrame> VideoFrame::Constructor(
   }
 
   if (NS_WARN_IF(!dataSurface)) {
-    aRv.ThrowInvalidStateError(
-        "The ImageBitmap's surface acquisition failed");
+    aRv.ThrowInvalidStateError("The ImageBitmap's surface acquisition failed");
     return nullptr;
   }
 
