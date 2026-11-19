@@ -3,12 +3,12 @@
 
 "use strict";
 
-const { AIWindowUI } = ChromeUtils.importESModule(
-  "moz-src:///browser/components/aiwindow/ui/modules/AIWindowUI.sys.mjs"
+const { AutoTabGrouping } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/ui/modules/AutoTabGrouping.sys.mjs"
 );
 
 add_task(async function test_OPEN_ORGANIZE_TABS_PANEL() {
-  const stub = sinon.stub(AIWindowUI, "toggleGroupTabsPanel");
+  const stub = sinon.stub(AutoTabGrouping, "toggleGroupTabsPanel");
 
   await SMATestUtils.executeAndValidateAction({
     type: "OPEN_ORGANIZE_TABS_PANEL",

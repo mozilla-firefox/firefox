@@ -4,10 +4,10 @@
 
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
-  AIWindow:
-    "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
-  CustomizableUI:
-    "moz-src:///browser/components/customizableui/CustomizableUI.sys.mjs",
+  AIWindowToolbarButtons:
+    "moz-src:///browser/components/aiwindow/ui/modules/AIWindowToolbarButtons.sys.mjs",
+  MONITOR_WIDGET_ID:
+    "moz-src:///browser/components/aiwindow/ui/modules/AIWindowToolbarButtons.sys.mjs",
   MONITOR_AGENTS_CHANGED_TOPIC:
     "moz-src:///browser/components/aiwindow/models/agents/Monitor.sys.mjs",
   MonitorAgent:
@@ -27,7 +27,6 @@ ChromeUtils.defineLazyGetter(lazy, "gBundle", function () {
   );
 });
 
-const BUTTON_ID = "smartwindow-monitor-button";
 const PANEL_ID = "smartwindow-monitor-panel";
 const TITLE_ID = "smartwindow-monitor-panel-title";
 const TASKS_PAGE_URL = "about:smartwindowtasks";
@@ -108,7 +107,7 @@ export const MonitorPanel = {
    */
   showMonitorPanel(win, { create = false } = {}) {
     const doc = win.document;
-    const button = doc.getElementById(BUTTON_ID);
+    const button = doc.getElementById(lazy.MONITOR_WIDGET_ID);
     const popupSet = doc.getElementById("mainPopupSet");
     if (!button || !popupSet) {
       return;
@@ -116,12 +115,12 @@ export const MonitorPanel = {
 
     // Opening the panel answers the attention dot. Taking the ids and
     // it only clears once the panel has committed to opening.
-    const attentionIds = lazy.AIWindow.takeMonitorAttentionIds();
+    const attentionIds = lazy.AIWindowToolbarButtons.takeMonitorAttentionIds();
 
     // Anchor to the overflow button rather than the button itself when the
     // widget has been moved into the overflow panel.
     const anchor =
-      lazy.CustomizableUI.getWidget(BUTTON_ID)?.forWindow(win)?.anchor ??
+      lazy.AIWindowToolbarButtons.getAnchor(win, lazy.MONITOR_WIDGET_ID) ??
       button;
 
     const panel = this._createPanel(win);
