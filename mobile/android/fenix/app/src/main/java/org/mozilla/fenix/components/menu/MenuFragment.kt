@@ -369,7 +369,6 @@ class MenuFragment : BottomSheetDialogFragment() {
             historyStorage = components.core.historyStorage,
             bookmarksStorage = components.core.bookmarksStorage,
             pinnedSiteStorage = components.core.pinnedSiteStorage,
-            tabCollectionStorage = components.core.tabCollectionStorage,
             permissionStorage = components.core.permissionStorage,
             useCases = components.useCases,
             addonManager = components.addonManager,

@@ -35,11 +35,9 @@ import org.mozilla.fenix.browser.menu.MoveToNormalTabsMenuItemProvider
 import org.mozilla.fenix.browser.menu.NewPrivateTabMenuItemProvider
 import org.mozilla.fenix.browser.menu.NewTabMenuItemProvider
 import org.mozilla.fenix.browser.readermode.ReaderViewMenuItemProvider
-import org.mozilla.fenix.collections.SaveToCollectionMenuItemProvider
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.FindInPageMenuItemProvider
 import org.mozilla.fenix.components.PermissionStorage
-import org.mozilla.fenix.components.TabCollectionStorage
 import org.mozilla.fenix.components.UseCases
 import org.mozilla.fenix.components.accounts.MozillaAccountMenuItemProvider
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem
@@ -86,7 +84,6 @@ class MenuItemProvidersFactory(
     private val historyStorage: PlacesHistoryStorage,
     private val bookmarksStorage: BookmarksStorage,
     private val pinnedSiteStorage: PinnedSiteStorage,
-    private val tabCollectionStorage: TabCollectionStorage,
     private val permissionStorage: PermissionStorage,
     private val useCases: UseCases,
     private val addonManager: AddonManager,
@@ -278,14 +275,6 @@ class MenuItemProvidersFactory(
                     webAppUseCases = useCases.webAppUseCases,
                     settings = settings,
                     scope = menuViewScope,
-                )
-
-            FenixMenuItem.SaveToCollection ->
-                SaveToCollectionMenuItemProvider(
-                    settings = settings,
-                    tabCollectionStorage = tabCollectionStorage,
-                    browserStore = browserStore,
-                    target = target,
                 )
 
             FenixMenuItem.TabGroup ->

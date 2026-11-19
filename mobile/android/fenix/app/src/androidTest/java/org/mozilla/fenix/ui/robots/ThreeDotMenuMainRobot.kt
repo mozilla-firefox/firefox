@@ -411,9 +411,6 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "verifyMoreMainMenuItems: Trying to verify that the \"Add app to Home screen\" button exists.")
         composeTestRule.addToHomeScreenButton().assertIsDisplayed()
         Log.i(TAG, "verifyMoreMainMenuItems: Verified that the \"Add app to Home screen\" button exists.")
-        Log.i(TAG, "verifyMoreMainMenuItems: Trying to verify that the \"Save to collection\" button exists.")
-        composeTestRule.saveToCollectionButton().assertIsDisplayed()
-        Log.i(TAG, "verifyMoreMainMenuItems: Verified that the \"Save to collection\" button exists.")
         Log.i(TAG, "verifyMoreMainMenuItems: Trying to verify that the \"Open in app\" button exists.")
         composeTestRule.defaultOpenInAppButton().assertIsDisplayed()
         Log.i(TAG, "verifyMoreMainMenuItems: Verified that the \"Open in app\" button exists.")
@@ -934,21 +931,6 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
             return AddToHomeScreenRobot.Transition(composeTestRule)
         }
 
-        fun clickSaveToCollectionButton(interact: CollectionRobot.() -> Unit): CollectionRobot.Transition {
-            Log.i(
-                TAG,
-                "clickSaveToCollectionButton: Trying to click the \"Save to collection…\" button from the new main menu design.",
-            )
-            composeTestRule.saveToCollectionButton().performClick()
-            Log.i(
-                TAG,
-                "clickSaveToCollectionButton: Clicked the \"Save to collection…\" button from the new main menu design.",
-            )
-
-            CollectionRobot(composeTestRule).interact()
-            return CollectionRobot.Transition(composeTestRule)
-        }
-
         fun clickExtensionsButton(
             interact: SettingsSubMenuAddonsManagerRobot.() -> Unit
         ): SettingsSubMenuAddonsManagerRobot.Transition {
@@ -1179,9 +1161,6 @@ private fun ComposeTestRule.addToHomeScreenButton() =
 
 private fun ComposeTestRule.addAppToHomeScreenButton() =
     onNodeWithText(getStringResource(R.string.browser_menu_add_app_to_homescreen))
-
-private fun ComposeTestRule.saveToCollectionButton() =
-    onNodeWithText(getStringResource(R.string.browser_menu_save_to_collection_2))
 
 private fun ComposeTestRule.saveAsPDFButton() = onNodeWithText(getStringResource(R.string.browser_menu_save_as_pdf_2))
 

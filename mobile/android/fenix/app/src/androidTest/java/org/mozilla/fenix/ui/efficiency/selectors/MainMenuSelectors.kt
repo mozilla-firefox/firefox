@@ -26,7 +26,6 @@ object MainMenuSelectors : SelectorContainer {
         MORE_MAIN_MENU_SUB_LIST,
         EXPANDED_EXTENSIONS_MENU_ITEMS,
         HOME_BANNER,
-        MORE_MAIN_MENU_ITEMS,
         MORE_MENU_ITEMS,
     }
 
@@ -315,14 +314,6 @@ object MainMenuSelectors : SelectorContainer {
             value = getStringResource(R.string.browser_menu_customize_homepage),
             description = "Customize homepage Settings button",
             groups = setOf(Group.HOME_PAGE_MAIN_MENU_ITEMS),
-        )
-
-    val SAVE_TO_COLLECTIONS_BUTTON =
-        Selector(
-            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
-            value = getStringResource(R.string.browser_menu_save_to_collection_2),
-            description = "Save to collections button",
-            groups = setOf(Group.MORE_MAIN_MENU_ITEMS, Group.MORE_MAIN_MENU_SUB_LIST),
         )
 
     val ADD_TO_SHORTCUTS_BUTTON =

@@ -85,9 +85,6 @@ class MenuTelemetryMiddleware<S : State, A : Action>(private val accessPoint: Me
                 }
             }
 
-            is MenuAction.Navigate.SaveToCollection ->
-                Events.browserMenuAction.record(Events.BrowserMenuActionExtra(item = "save_to_collection"))
-
             is MenuAction.Navigate.Back ->
                 Events.browserMenuAction.record(
                     Events.BrowserMenuActionExtra(

@@ -39,7 +39,6 @@ import org.mozilla.fenix.browser.menu.MoveToNormalTabsMenuItemProvider
 import org.mozilla.fenix.browser.menu.NewPrivateTabMenuItemProvider
 import org.mozilla.fenix.browser.menu.NewTabMenuItemProvider
 import org.mozilla.fenix.browser.readermode.ReaderViewMenuItemProvider
-import org.mozilla.fenix.collections.SaveToCollectionMenuItemProvider
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.FindInPageMenuItemProvider
 import org.mozilla.fenix.components.accounts.MozillaAccountMenuItemProvider
@@ -156,7 +155,6 @@ class MenuItemProvidersFactoryTest {
             historyStorage = mockk(relaxed = true),
             bookmarksStorage = mockk(relaxed = true),
             pinnedSiteStorage = mockk(relaxed = true),
-            tabCollectionStorage = mockk(relaxed = true),
             permissionStorage = mockk(relaxed = true),
             useCases = mockk(relaxed = true),
             addonManager = mockk(relaxed = true),
@@ -193,7 +191,6 @@ class MenuItemProvidersFactoryTest {
             FenixMenuItem.ReportBrokenSite::class to ReportBrokenSiteMenuItemProvider::class,
             FenixMenuItem.Shortcut::class to ShortcutMenuItemProvider::class,
             FenixMenuItem.AddToHomeScreen::class to AddToHomeScreenMenuItemProvider::class,
-            FenixMenuItem.SaveToCollection::class to SaveToCollectionMenuItemProvider::class,
             FenixMenuItem.OpenInApp::class to OpenInAppMenuItemProvider::class,
             FenixMenuItem.OpenInFirefox::class to OpenInFirefoxMenuItemProvider::class,
             FenixMenuItem.CustomTabAppItems::class to CustomTabAppMenuItemProvider::class,

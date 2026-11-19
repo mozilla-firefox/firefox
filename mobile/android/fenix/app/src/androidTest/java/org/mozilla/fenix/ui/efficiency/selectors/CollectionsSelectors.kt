@@ -14,7 +14,6 @@ import org.mozilla.fenix.ui.efficiency.helpers.SelectorStrategy
 object CollectionsSelectors : SelectorContainer {
     enum class Group : SelectorGroup {
         TABS_TRAY_COLLECTIONS_SECTION,
-        SELECT_COLLECTION_VIEW,
         COLLECTION_ITEM,
         COLLECTION_TAB_ITEM,
         COLLECTION_CONTROLS,
@@ -27,15 +26,6 @@ object CollectionsSelectors : SelectorContainer {
             value = "Add new collection",
             description = "Add new collection from tabs tray collections section",
             groups = setOf(Group.TABS_TRAY_COLLECTIONS_SECTION),
-        )
-
-    @Suppress("FunctionName")
-    fun EXISTING_COLLECTION_WITH_TITLE(collectionTitle: String = "") =
-        Selector(
-            strategy = SelectorStrategy.UIAUTOMATOR_WITH_TEXT,
-            value = collectionTitle,
-            description = "Existing collection: $collectionTitle from the select collection view",
-            groups = setOf(Group.SELECT_COLLECTION_VIEW),
         )
 
     val TAB_SAVED_SNACK_BAR =

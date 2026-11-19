@@ -31,7 +31,6 @@ import org.mozilla.fenix.helpers.Constants.TAG
 import org.mozilla.fenix.helpers.MatcherHelper.assertItemTextEquals
 import org.mozilla.fenix.helpers.MatcherHelper.assertUIObjectExists
 import org.mozilla.fenix.helpers.MatcherHelper.assertUIObjectIsGone
-import org.mozilla.fenix.helpers.MatcherHelper.itemContainingText
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithResId
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithText
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTime
@@ -43,20 +42,11 @@ import org.mozilla.fenix.helpers.ext.waitNotNull
 
 class CollectionRobot(private val composeTestRule: ComposeTestRule) {
 
-    fun verifySelectCollectionScreen() =
-        assertUIObjectExists(
-            itemContainingText("Select collection"),
-            itemContainingText("Add new collection"),
-            itemWithResId("$packageName:id/collections_list"),
-        )
-
     fun clickAddNewCollection() {
         Log.i(TAG, "clickAddNewCollection: Trying to click the add new collection button")
         addNewCollectionButton().click()
         Log.i(TAG, "clickAddNewCollection: Clicked the add new collection button")
     }
-
-    fun verifyCollectionNameTextField() = assertUIObjectExists(mainMenuEditCollectionNameField())
 
     // names a collection saved from tab drawer
     fun typeCollectionNameAndSave(collectionName: String) {
@@ -265,12 +255,6 @@ class CollectionRobot(private val composeTestRule: ComposeTestRule) {
         mDevice.waitForIdle()
     }
 
-    fun goBackInCollectionFlow() {
-        Log.i(TAG, "goBackInCollectionFlow: Trying to click collection creation flow back button")
-        backButton().click()
-        Log.i(TAG, "goBackInCollectionFlow: Clicked collection creation flow back button")
-    }
-
     class Transition(private val composeTestRule: ComposeTestRule) {
         fun collapseCollection(
             title: String,
@@ -309,27 +293,6 @@ class CollectionRobot(private val composeTestRule: ComposeTestRule) {
             return BrowserRobot.Transition(composeTestRule)
         }
 
-        fun selectExistingCollection(
-            title: String,
-            interact: BrowserRobot.() -> Unit,
-        ): BrowserRobot.Transition {
-            Log.i(
-                TAG,
-                "selectExistingCollection: Waiting for $waitingTime ms for collection with title: $title to exist",
-            )
-            collectionTitle(title).waitForExists(waitingTime)
-            Log.i(
-                TAG,
-                "selectExistingCollection: Waited for $waitingTime ms for collection with title: $title to exist",
-            )
-            Log.i(TAG, "selectExistingCollection: Trying to click collection with title: $title")
-            collectionTitle(title).click()
-            Log.i(TAG, "selectExistingCollection: Clicked collection with title: $title")
-
-            BrowserRobot(composeTestRule).interact()
-            return BrowserRobot.Transition(composeTestRule)
-        }
-
         @OptIn(ExperimentalTestApi::class)
         fun clickShareCollectionButton(interact: ShareOverlayRobot.() -> Unit): ShareOverlayRobot.Transition {
             Log.i(TAG, "clickShareCollectionButton: Waiting for $waitingTime ms for share collection button to exist")
@@ -353,8 +316,6 @@ fun collectionRobot(
     return CollectionRobot.Transition(composeTestRule)
 }
 
-private fun collectionTitle(title: String) = itemWithText(title)
-
 private fun collectionThreeDotButton(rule: ComposeTestRule) = rule.onNode(hasContentDescription("Collection menu"))
 
 private fun removeTabFromCollectionButton(title: String) =
@@ -367,8 +328,6 @@ private fun collectionNameTextField() = mDevice.findObject(UiSelector().resource
 private fun mainMenuEditCollectionNameField() = itemWithResId("$packageName:id/name_collection_edittext")
 
 private fun addNewCollectionButton() = mDevice.findObject(UiSelector().text("Add new collection"))
-
-private fun backButton() = mDevice.findObject(UiSelector().resourceId("$packageName:id/back_button"))
 
 private fun addCollectionButtonPanel() = itemWithResId("$packageName:id/buttonPanel")
 

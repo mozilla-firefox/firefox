@@ -183,13 +183,6 @@ sealed class MenuAction : MenuEvent {
         /** [Navigate] action dispatched when opening the tab group flow. */
         data class OpenTabGroupFlow(val entryPoint: TabGroupFlowEntryPoint) : Navigate()
 
-        /**
-         * [Navigate] action dispatched when navigating to save a site to a collection.
-         *
-         * @property hasCollection Whether or not there are any existing tab collections.
-         */
-        data class SaveToCollection(val hasCollection: Boolean) : Navigate()
-
         /** [Navigate] action dispatched when navigating to translations dialog. */
         data object Translate : Navigate()
 

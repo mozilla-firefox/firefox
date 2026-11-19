@@ -30,7 +30,6 @@ import org.mozilla.fenix.helpers.FenixTestRule
 import org.mozilla.fenix.helpers.HomeActivityIntentTestRule
 import org.mozilla.fenix.helpers.MatcherHelper
 import org.mozilla.fenix.helpers.MatcherHelper.itemContainingText
-import org.mozilla.fenix.helpers.MockBrowserDataHelper
 import org.mozilla.fenix.helpers.MockBrowserDataHelper.createBookmarkItem
 import org.mozilla.fenix.helpers.TestAssetHelper.articleSummaryAsset
 import org.mozilla.fenix.helpers.TestAssetHelper.firstForeignWebPageAsset
@@ -462,46 +461,6 @@ class MainMenuTest {
             }
             .openHomeScreenShortcut(testPage.title) {
                 verifyPageContent(testPage.content)
-            }
-    }
-
-    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3080115
-    @Converted(
-        replacedBy = ["org.mozilla.fenix.ui.efficiency.tests.MainMenuTest#verifyTheSaveToCollectionSubMenuOptionTest"],
-        bug = 2048584,
-        since = "2026-06",
-    )
-    @SmokeTest
-    @Test
-    fun verifyTheSaveToCollectionSubMenuOptionTest() {
-        val collectionTitle = "First Collection"
-        val firstTestPage = mockWebServer.getGenericAsset(1)
-        val secondTestPage = mockWebServer.getGenericAsset(2)
-
-        composeTestRule.activityRule.applySettingsExceptions {
-            // Disabling these features to have better visibility of the Collections view
-            it.isRecentlyVisitedFeatureEnabled = false
-            it.isRecentTabsFeatureEnabled = false
-        }
-
-        MockBrowserDataHelper.createCollection(
-            Pair(firstTestPage.url.toString(), firstTestPage.title),
-            title = collectionTitle,
-        )
-
-        navigationToolbar(composeTestRule) {}
-            .enterURLAndEnterToBrowser(secondTestPage.url) {}
-            .openThreeDotMenu {
-                clickTheMoreButton()
-            }
-            .clickSaveToCollectionButton {}
-            .selectExistingCollection(collectionTitle) {
-                verifySnackBarText("Tab saved")
-            }
-            .goToHomescreen {}
-            .expandCollection(collectionTitle) {
-                verifyTabSavedInCollection(firstTestPage.title)
-                verifyTabSavedInCollection(secondTestPage.title)
             }
     }
 

@@ -16,7 +16,6 @@ import org.mozilla.fenix.helpers.Constants
 import org.mozilla.fenix.helpers.Constants.PackageName.PRINT_SPOOLER
 import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
 import org.mozilla.fenix.helpers.FeatureSettingsHelper.Companion.settings
-import org.mozilla.fenix.helpers.MockBrowserDataHelper
 import org.mozilla.fenix.helpers.TestAssetHelper.articleSummaryAsset
 import org.mozilla.fenix.helpers.TestAssetHelper.firstForeignWebPageAsset
 import org.mozilla.fenix.helpers.TestAssetHelper.getGenericAsset
@@ -28,7 +27,6 @@ import org.mozilla.fenix.ui.efficiency.selectors.AddToHomeScreenSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.BookmarksSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.BookmarksSelectors.DELETE_BOOKMARK_BUTTON
 import org.mozilla.fenix.ui.efficiency.selectors.BrowserPageSelectors
-import org.mozilla.fenix.ui.efficiency.selectors.CollectionsSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.DownloadsSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.HistorySelectors
 import org.mozilla.fenix.ui.efficiency.selectors.HistorySelectors.NAVIGATE_BACK_BUTTON
@@ -253,38 +251,6 @@ class MainMenuTest : BaseTest() {
         on.mainMenu.mozClick(DESKTOP_SITE_BUTTON)
         on.browserPage.navigateToPage()
         on.mainMenu.navigateToPage().mozVerify(DESKTOP_SITE_OFF)
-    }
-
-    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3080115
-    @SmokeTest
-    @Test
-    fun verifyTheSaveToCollectionSubMenuOptionTest() {
-        val collectionTitle = "First Collection"
-        val firstTestPage = mockWebServer.getGenericAsset(1)
-        val secondTestPage = mockWebServer.getGenericAsset(2)
-
-        composeRule.activityRule.applySettingsExceptions {
-            // Disabling these features to have better visibility of the Collections view
-            it.isRecentlyVisitedFeatureEnabled = false
-            it.isRecentTabsFeatureEnabled = false
-        }
-
-        MockBrowserDataHelper.createCollection(
-            Pair(firstTestPage.url.toString(), firstTestPage.title),
-            title = collectionTitle,
-        )
-
-        on.browserPage
-            .navigateToPage(secondTestPage.url.toString())
-            .mozClick(BrowserPageSelectors.MAIN_MENU_BUTTON)
-            .mozClick(MainMenuSelectors.MORE_BUTTON)
-            .mozClick(MainMenuSelectors.SAVE_TO_COLLECTIONS_BUTTON)
-            .mozClick(CollectionsSelectors.EXISTING_COLLECTION_WITH_TITLE(collectionTitle))
-        on.home
-            .navigateToPage()
-            .mozClick(CollectionsSelectors.COLLECTION_WITH_TITLE(collectionTitle))
-            .mozVerify(CollectionsSelectors.COLLECTION_TAB_WITH_TITLE(firstTestPage.title))
-            .mozVerify(CollectionsSelectors.COLLECTION_TAB_WITH_TITLE(secondTestPage.title))
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3080111

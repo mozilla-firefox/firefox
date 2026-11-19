@@ -173,16 +173,6 @@ class MenuTelemetryMiddlewareTest {
     }
 
     @Test
-    fun `WHEN navigating to the save to collection sheet THEN record the share browser menu telemetry`() {
-        val store = createStore()
-        assertNull(Events.browserMenuAction.testGetValue())
-
-        store.dispatch(MenuAction.Navigate.SaveToCollection(hasCollection = true))
-
-        assertTelemetryRecorded(Events.browserMenuAction, item = "save_to_collection")
-    }
-
-    @Test
     fun `WHEN navigating back without view history THEN record back telemetry`() {
         val store = createStore()
         assertNull(Events.browserMenuAction.testGetValue())

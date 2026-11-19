@@ -16,7 +16,6 @@ import org.mozilla.fenix.helpers.TestAssetHelper.getGenericAsset
 import org.mozilla.fenix.helpers.TestHelper.verifySnackBarText
 import org.mozilla.fenix.helpers.TestHelper.waitUntilSnackbarGone
 import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
-import org.mozilla.fenix.ui.robots.browserScreen
 import org.mozilla.fenix.ui.robots.collectionRobot
 import org.mozilla.fenix.ui.robots.composeTabDrawer
 import org.mozilla.fenix.ui.robots.homeScreen
@@ -49,24 +48,6 @@ class CollectionTest {
         }
 
     @get:Rule(order = 2) val memoryLeaksRule = DetectMemoryLeaksRule(composeTestRule = { composeTestRule })
-
-    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2283299
-    @Test
-    fun createFirstCollectionFromMainMenuTest() {
-        val defaultWebPage = mockWebServer.getGenericAsset(1)
-
-        navigationToolbar(composeTestRule) {}
-            .enterURLAndEnterToBrowser(defaultWebPage.url) {}
-            .openThreeDotMenu {
-                clickTheMoreButton()
-            }
-            .clickSaveToCollectionButton {
-                verifyCollectionNameTextField()
-            }
-            .typeCollectionNameAndSave(collectionName) {
-                verifySnackBarText("Collection saved")
-            }
-    }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/343422
     @SmokeTest
@@ -212,38 +193,6 @@ class CollectionTest {
             .expandCollection(collectionName) {
                 clickCollectionThreeDotButton()
                 selectDeleteCollection()
-            }
-    }
-
-    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2319453
-    // open a webpage, and add currently opened tab to existing collection
-    @Test
-    fun saveTabToExistingCollectionFromMainMenuTest() {
-        val firstWebPage = mockWebServer.getGenericAsset(1)
-        val secondWebPage = mockWebServer.getGenericAsset(2)
-
-        MockBrowserDataHelper.createCollection(
-            Pair(firstWebPage.url.toString(), firstWebPage.title),
-            title = collectionName,
-        )
-
-        navigationToolbar(composeTestRule) {}
-            .enterURLAndEnterToBrowser(secondWebPage.url) {
-                verifyPageContent(secondWebPage.content)
-            }
-            .openThreeDotMenu {
-                clickTheMoreButton()
-            }
-            .clickSaveToCollectionButton {}
-            .selectExistingCollection(collectionName) {
-                verifySnackBarText("Tab saved")
-            }
-            .goToHomescreen {
-                verifyCollectionIsDisplayed(collectionName)
-            }
-            .expandCollection(collectionName) {
-                verifyTabSavedInCollection(firstWebPage.title)
-                verifyTabSavedInCollection(secondWebPage.title)
             }
     }
 
@@ -450,44 +399,5 @@ class CollectionTest {
                 verifyTabSavedInCollection(firstWebPage.title)
                 verifyTabSavedInCollection(secondWebPage.title)
             }
-    }
-
-    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/344897
-    @Test
-    fun navigateBackInCollectionFlowTest() {
-        val webPage = mockWebServer.getGenericAsset(1)
-
-        navigationToolbar(composeTestRule) {}
-            .enterURLAndEnterToBrowser(webPage.url) {}
-            .openTabDrawer(composeTestRule) {
-                createCollection(webPage.title, collectionName = collectionName)
-                verifySnackBarText("Collection saved")
-                waitUntilSnackbarGone()
-            }
-            .closeTabDrawer {}
-            .openThreeDotMenu {
-                clickTheMoreButton()
-            }
-            .clickSaveToCollectionButton {
-                verifySelectCollectionScreen()
-                goBackInCollectionFlow()
-            }
-
-        browserScreen(composeTestRule) {}
-            .openThreeDotMenu {
-                clickTheMoreButton()
-            }
-            .clickSaveToCollectionButton {
-                verifySelectCollectionScreen()
-                clickAddNewCollection()
-                verifyCollectionNameTextField()
-                goBackInCollectionFlow()
-                verifySelectCollectionScreen()
-                goBackInCollectionFlow()
-            }
-        // verify the browser layout is visible
-        browserScreen(composeTestRule) {
-            verifyMenuButton()
-        }
     }
 }

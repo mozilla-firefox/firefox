@@ -32,7 +32,6 @@ import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Quit
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Refresh
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.ReportBrokenSite
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.SaveAsPdf
-import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.SaveToCollection
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Settings
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Share
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Shortcut
@@ -179,7 +178,6 @@ object BrowserMenuConfiguration {
                                     Shortcut,
                                     AddToHomeScreen,
                                     TabGroup,
-                                    SaveToCollection,
                                     OpenInApp,
                                     SaveAsPdf,
                                     Print,
