@@ -6,6 +6,7 @@ Transform calls to the DTE test suite in GHA.
 """
 
 from taskgraph.transforms.base import TransformSequence
+from taskgraph.util.copy import deepcopy
 from taskgraph.util.taskcluster import get_artifact_path
 
 transforms = TransformSequence()
@@ -38,3 +39,20 @@ def update_env(config, tasks):
             "POLL_TIMEOUT": str(task["worker"]["max-run-time"] - POLL_TIMEOUT_PADDING),
         }
         yield task
+
+
+@transforms.add
+def add_smart_window_tasks(config, tasks):
+    for task in tasks:
+        # Copy before yielding, since later transforms change the task in place.
+        smart_window = deepcopy(task)
+        smart_window["name"] = f"smart-window-{task['name']}"
+        smart_window["description"] = (
+            "Start Desktop Test Eng Smart Window tests via GHA dispatch API call"
+        )
+        smart_window["treeherder"]["tier"] = 3
+        smart_window["treeherder"]["symbol"] = "dte-sw"
+        smart_window["worker"]["env"]["WORKFLOW_ID"] = "smart-window.yml"
+
+        yield task
+        yield smart_window
