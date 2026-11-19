@@ -1698,7 +1698,7 @@ void mozInlineSpellChecker::SpellCheckerSlice::
             nodeOffsetRangesForWords, oldRangesForSomeWords, aIsMisspelled,
             *spellCheckerSelection);
       },
-      [inlineSpellChecker, token](nsresult aRv) {
+      [inlineSpellChecker, token](nsresult /*aRv*/) {
         if (!inlineSpellChecker->mEditorBase ||
             inlineSpellChecker->mEditorBase->Destroyed()) {
           return;
@@ -2080,7 +2080,7 @@ NS_IMETHODIMP mozInlineSpellChecker::HandleEvent(Event* aEvent) {
   }
 }
 
-void mozInlineSpellChecker::OnBlur(Event& aEvent) {
+void mozInlineSpellChecker::OnBlur(Event& /*aEvent*/) {
   // force spellcheck on blur, for instance when tabbing out of a textbox
   HandleNavigationEvent(true);
 }

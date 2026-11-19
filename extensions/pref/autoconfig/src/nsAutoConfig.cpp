@@ -64,11 +64,11 @@ void nsAutoConfig::SetConfigURL(const char* aConfigURL) {
 }
 
 NS_IMETHODIMP
-nsAutoConfig::OnStartRequest(nsIRequest* request) { return NS_OK; }
+nsAutoConfig::OnStartRequest(nsIRequest* /*request*/) { return NS_OK; }
 
 NS_IMETHODIMP
-nsAutoConfig::OnDataAvailable(nsIRequest* request, nsIInputStream* aIStream,
-                              uint64_t aSourceOffset, uint32_t aLength) {
+nsAutoConfig::OnDataAvailable(nsIRequest* /*request*/, nsIInputStream* aIStream,
+                              uint64_t /*aSourceOffset*/, uint32_t aLength) {
   uint32_t amt, size;
   nsresult rv;
   char buf[1024];
@@ -130,7 +130,7 @@ nsAutoConfig::OnStopRequest(nsIRequest* request, nsresult aStatus) {
 }
 
 // Notify method as a TimerCallBack function
-NS_IMETHODIMP nsAutoConfig::Notify(nsITimer* timer) {
+NS_IMETHODIMP nsAutoConfig::Notify(nsITimer* /*timer*/) {
   downloadAutoConfig();
   return NS_OK;
 }
@@ -146,8 +146,9 @@ nsAutoConfig::GetName(nsACString& aName) {
    creation time. Second time it calls  downloadAutoConfig().
 */
 
-NS_IMETHODIMP nsAutoConfig::Observe(nsISupports* aSubject, const char* aTopic,
-                                    const char16_t* someData) {
+NS_IMETHODIMP nsAutoConfig::Observe(nsISupports* /*aSubject*/,
+                                    const char* aTopic,
+                                    const char16_t* /*someData*/) {
   nsresult rv = NS_OK;
   if (!nsCRT::strcmp(aTopic, "profile-after-change")) {
     // We will be calling downloadAutoConfig even if there is no profile

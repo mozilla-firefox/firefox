@@ -42,10 +42,11 @@ nsAuthSASL::Init(const nsACString& serviceName, uint32_t serviceFlags,
 }
 
 NS_IMETHODIMP
-nsAuthSASL::InitAsync(const nsACString& aServiceName, uint32_t aServiceFlags,
-                      const nsAString& aDomain, const nsAString& aUsername,
-                      const nsAString& aPassword,
-                      nsIAuthModuleInitCallback* aCallback) {
+nsAuthSASL::InitAsync(const nsACString& /*aServiceName*/,
+                      uint32_t /*aServiceFlags*/, const nsAString& /*aDomain*/,
+                      const nsAString& /*aUsername*/,
+                      const nsAString& /*aPassword*/,
+                      nsIAuthModuleInitCallback* /*aCallback*/) {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -110,13 +111,14 @@ nsAuthSASL::GetNextToken(const void* inToken, uint32_t inTokenLen,
 }
 
 NS_IMETHODIMP
-nsAuthSASL::Unwrap(const void* inToken, uint32_t inTokenLen, void** outToken,
-                   uint32_t* outTokenLen) {
+nsAuthSASL::Unwrap(const void* /*inToken*/, uint32_t /*inTokenLen*/,
+                   void** /*outToken*/, uint32_t* /*outTokenLen*/) {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 
 NS_IMETHODIMP
-nsAuthSASL::Wrap(const void* inToken, uint32_t inTokenLen, bool confidential,
-                 void** outToken, uint32_t* outTokenLen) {
+nsAuthSASL::Wrap(const void* /*inToken*/, uint32_t /*inTokenLen*/,
+                 bool /*confidential*/, void** /*outToken*/,
+                 uint32_t* /*outTokenLen*/) {
   return NS_ERROR_NOT_IMPLEMENTED;
 }

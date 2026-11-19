@@ -85,8 +85,9 @@ nsresult nsReadConfig::Init() {
 
 nsReadConfig::~nsReadConfig() { CentralizedAdminPrefManagerFinish(); }
 
-NS_IMETHODIMP nsReadConfig::Observe(nsISupports* aSubject, const char* aTopic,
-                                    const char16_t* someData) {
+NS_IMETHODIMP nsReadConfig::Observe(nsISupports* /*aSubject*/,
+                                    const char* aTopic,
+                                    const char16_t* /*someData*/) {
   nsresult rv = NS_OK;
 
   if (!nsCRT::strcmp(aTopic, NS_PREFSERVICE_READ_TOPIC_ID)) {

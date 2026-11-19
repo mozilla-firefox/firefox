@@ -430,7 +430,7 @@ nsresult mozHunspell::DictionaryData::LoadIfNecessary() {
 
 NS_IMETHODIMP
 mozHunspell::CollectReports(nsIHandleReportCallback* aHandleReport,
-                            nsISupports* aData, bool aAnonymize) {
+                            nsISupports* aData, bool /*aAnonymize*/) {
   MOZ_COLLECT_REPORT("explicit/spell-check", KIND_HEAP, UNITS_BYTES,
                      HunspellAllocator::MemoryAllocated(),
                      "Memory used by the spell-checking engine.");
@@ -530,8 +530,8 @@ mozHunspell::Suggest(const nsAString& aWord, nsTArray<nsString>& aSuggestions) {
 }
 
 NS_IMETHODIMP
-mozHunspell::Observe(nsISupports* aSubj, const char* aTopic,
-                     const char16_t* aData) {
+mozHunspell::Observe(nsISupports* /*aSubj*/, const char* aTopic,
+                     const char16_t* /*aData*/) {
   NS_ASSERTION(!strcmp(aTopic, "profile-do-change") ||
                    !strcmp(aTopic, "profile-after-change"),
                "Unexpected observer topic");

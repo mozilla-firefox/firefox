@@ -70,7 +70,7 @@ mozilla::ipc::IPCResult RemoteSpellcheckEngineParent::RecvSuggest(
           [aResolve](CopyableTArray<nsString> aSuggestions) {
             aResolve(std::move(aSuggestions));
           },
-          [aResolve](nsresult aError) {
+          [aResolve](nsresult /*aError*/) {
             // No suggestions due to error
             nsTArray<nsString> suggestions;
             aResolve(std::move(suggestions));

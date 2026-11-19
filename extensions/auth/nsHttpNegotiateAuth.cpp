@@ -244,9 +244,9 @@ nsHttpNegotiateAuth::GetAuthFlags(uint32_t* flags) {
 //
 NS_IMETHODIMP
 nsHttpNegotiateAuth::ChallengeReceived(nsIHttpAuthenticableChannel* authChannel,
-                                       const nsACString& challenge,
+                                       const nsACString& /*challenge*/,
                                        bool isProxyAuth,
-                                       nsISupports** sessionState,
+                                       nsISupports** /*sessionState*/,
                                        nsISupports** continuationState,
                                        bool* identityInvalid) {
   *identityInvalid = false;
@@ -336,11 +336,11 @@ NS_IMPL_ISUPPORTS(nsHttpNegotiateAuth, nsIHttpAuthenticator)
 // used to build the channel binding token, and may be empty, in which case no
 // channel binding is sent.
 static nsresult GenerateCredentialsInternal(
-    nsIHttpAuthenticableChannel* authChannel, const nsACString& aChallenge,
-    bool isProxyAuth, const nsAString& domain, const nsAString& username,
-    const nsAString& password, nsISupports** sessionState,
-    nsISupports** continuationState, const nsTArray<uint8_t>& aCertDER,
-    uint32_t* flags, nsACString& creds);
+    nsIHttpAuthenticableChannel* /*authChannel*/, const nsACString& aChallenge,
+    bool /*isProxyAuth*/, const nsAString& /*domain*/,
+    const nsAString& /*username*/, const nsAString& /*password*/,
+    nsISupports** /*sessionState*/, nsISupports** continuationState,
+    const nsTArray<uint8_t>& aCertDER, uint32_t* flags, nsACString& creds);
 
 namespace {
 
@@ -615,11 +615,11 @@ nsHttpNegotiateAuth::GenerateCredentials(
 }
 
 static nsresult GenerateCredentialsInternal(
-    nsIHttpAuthenticableChannel* authChannel, const nsACString& aChallenge,
-    bool isProxyAuth, const nsAString& domain, const nsAString& username,
-    const nsAString& password, nsISupports** sessionState,
-    nsISupports** continuationState, const nsTArray<uint8_t>& aCertDER,
-    uint32_t* flags, nsACString& creds) {
+    nsIHttpAuthenticableChannel* /*authChannel*/, const nsACString& aChallenge,
+    bool /*isProxyAuth*/, const nsAString& /*domain*/,
+    const nsAString& /*username*/, const nsAString& /*password*/,
+    nsISupports** /*sessionState*/, nsISupports** continuationState,
+    const nsTArray<uint8_t>& aCertDER, uint32_t* flags, nsACString& creds) {
   // ChallengeReceived must have been called previously.
   nsCOMPtr<nsIAuthModule> module = do_QueryInterface(*continuationState);
   NS_ENSURE_TRUE(module, NS_ERROR_NOT_INITIALIZED);

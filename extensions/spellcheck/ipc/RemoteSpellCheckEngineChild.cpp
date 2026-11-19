@@ -42,7 +42,7 @@ RefPtr<GenericPromise> RemoteSpellcheckEngineChild::SetCurrentDictionaries(
             return GenericPromise::CreateAndReject(NS_ERROR_NOT_AVAILABLE,
                                                    __func__);
           },
-          [spellChecker](ResponseRejectReason&& aReason) {
+          [spellChecker](ResponseRejectReason&& /*aReason*/) {
             spellChecker->mCurrentDictionaries.Clear();
             return GenericPromise::CreateAndReject(NS_ERROR_NOT_AVAILABLE,
                                                    __func__);
@@ -67,7 +67,7 @@ RemoteSpellcheckEngineChild::SetCurrentDictionaryFromList(
             std::move(std::get<1>(aParam)));
         return GenericPromise::CreateAndResolve(true, __func__);
       },
-      [spellChecker](ResponseRejectReason&& aReason) {
+      [spellChecker](ResponseRejectReason&& /*aReason*/) {
         spellChecker->mCurrentDictionaries.Clear();
         return GenericPromise::CreateAndReject(NS_ERROR_NOT_AVAILABLE,
                                                __func__);
@@ -84,7 +84,7 @@ RefPtr<CheckWordPromise> RemoteSpellcheckEngineChild::CheckWords(
         return CheckWordPromise::CreateAndResolve(std::move(aIsMisspelled),
                                                   __func__);
       },
-      [kungFuDeathGrip](mozilla::ipc::ResponseRejectReason&& aReason) {
+      [kungFuDeathGrip](mozilla::ipc::ResponseRejectReason&& /*aReason*/) {
         return CheckWordPromise::CreateAndReject(NS_ERROR_NOT_AVAILABLE,
                                                  __func__);
       });

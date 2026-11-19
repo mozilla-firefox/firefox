@@ -352,10 +352,12 @@ nsAuthGSSAPI::Init(const nsACString& serviceName, uint32_t serviceFlags,
 }
 
 NS_IMETHODIMP
-nsAuthGSSAPI::InitAsync(const nsACString& aServiceName, uint32_t aServiceFlags,
-                        const nsAString& aDomain, const nsAString& aUsername,
-                        const nsAString& aPassword,
-                        nsIAuthModuleInitCallback* aCallback) {
+nsAuthGSSAPI::InitAsync(const nsACString& /*aServiceName*/,
+                        uint32_t /*aServiceFlags*/,
+                        const nsAString& /*aDomain*/,
+                        const nsAString& /*aUsername*/,
+                        const nsAString& /*aPassword*/,
+                        nsIAuthModuleInitCallback* /*aCallback*/) {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 

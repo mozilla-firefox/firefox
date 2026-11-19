@@ -419,9 +419,9 @@ NS_IMETHODIMP mozPersonalDictionary::EndSession() {
   return NS_OK;
 }
 
-NS_IMETHODIMP mozPersonalDictionary::Observe(nsISupports* aSubject,
+NS_IMETHODIMP mozPersonalDictionary::Observe(nsISupports* /*aSubject*/,
                                              const char* aTopic,
-                                             const char16_t* aData) {
+                                             const char16_t* /*aData*/) {
   if (!nsCRT::strcmp(aTopic, "profile-do-change")) {
     // The observer is registered in Init() which calls Load and in turn
     // LoadInternal(); i.e. Observe() can't be called before Load().

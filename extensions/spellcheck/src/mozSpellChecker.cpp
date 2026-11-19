@@ -176,7 +176,7 @@ RefPtr<mozilla::SuggestionsPromise> mozSpellChecker::Suggest(
               return mozilla::SuggestionsPromise::CreateAndResolve(
                   std::move(aSuggestions), __func__);
             },
-            [](mozilla::ipc::ResponseRejectReason&& aReason) {
+            [](mozilla::ipc::ResponseRejectReason&& /*aReason*/) {
               return mozilla::SuggestionsPromise::CreateAndReject(
                   NS_ERROR_NOT_AVAILABLE, __func__);
             });

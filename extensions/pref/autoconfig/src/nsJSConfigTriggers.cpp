@@ -105,8 +105,8 @@ nsresult EvaluateAdminConfigScript(const char* js_buffer, size_t length,
 
 nsresult EvaluateAdminConfigScript(JS::Handle<JSObject*> sandbox,
                                    const char* js_buffer, size_t length,
-                                   const char* filename, bool globalContext,
-                                   bool callbacks, bool skipFirstLine) {
+                                   const char* filename, bool /*globalContext*/,
+                                   bool /*callbacks*/, bool skipFirstLine) {
   if (skipFirstLine) {
     /* In order to protect the privacy of the JavaScript preferences file
      * from loading by the browser, we make the first line unparseable

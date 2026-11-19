@@ -180,7 +180,7 @@ nsresult nsAuthSambaNTLM::SpawnNTLMAuthHelper() {
 }
 
 NS_IMETHODIMP
-nsAuthSambaNTLM::Init(const nsACString& serviceName, uint32_t serviceFlags,
+nsAuthSambaNTLM::Init(const nsACString& /*serviceName*/, uint32_t serviceFlags,
                       const nsAString& domain, const nsAString& username,
                       const nsAString& password) {
   NS_ASSERTION(username.IsEmpty() && domain.IsEmpty() && password.IsEmpty(),
@@ -200,11 +200,12 @@ nsAuthSambaNTLM::Init(const nsACString& serviceName, uint32_t serviceFlags,
 }
 
 NS_IMETHODIMP
-nsAuthSambaNTLM::InitAsync(const nsACString& aServiceName,
-                           uint32_t aServiceFlags, const nsAString& aDomain,
-                           const nsAString& aUsername,
-                           const nsAString& aPassword,
-                           nsIAuthModuleInitCallback* aCallback) {
+nsAuthSambaNTLM::InitAsync(const nsACString& /*aServiceName*/,
+                           uint32_t /*aServiceFlags*/,
+                           const nsAString& /*aDomain*/,
+                           const nsAString& /*aUsername*/,
+                           const nsAString& /*aPassword*/,
+                           nsIAuthModuleInitCallback* /*aCallback*/) {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -246,14 +247,14 @@ nsAuthSambaNTLM::GetNextToken(const void* inToken, uint32_t inTokenLen,
 }
 
 NS_IMETHODIMP
-nsAuthSambaNTLM::Unwrap(const void* inToken, uint32_t inTokenLen,
-                        void** outToken, uint32_t* outTokenLen) {
+nsAuthSambaNTLM::Unwrap(const void* /*inToken*/, uint32_t /*inTokenLen*/,
+                        void** /*outToken*/, uint32_t* /*outTokenLen*/) {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 
 NS_IMETHODIMP
-nsAuthSambaNTLM::Wrap(const void* inToken, uint32_t inTokenLen,
-                      bool confidential, void** outToken,
-                      uint32_t* outTokenLen) {
+nsAuthSambaNTLM::Wrap(const void* /*inToken*/, uint32_t /*inTokenLen*/,
+                      bool /*confidential*/, void** /*outToken*/,
+                      uint32_t* /*outTokenLen*/) {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
