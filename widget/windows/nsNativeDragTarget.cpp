@@ -363,14 +363,9 @@ nsNativeDragTarget::DragOver(DWORD grfKeyState, POINTL ptl, LPDWORD pdwEffect) {
   LOGI("[%p] %s | Firing 'drag' event at drag source, if available", this,
        __FUNCTION__);
 
-  nsCOMPtr<nsIWidget> sourceWidget = currentDragSession->GetSourceWidget();
-  if (mWidget == sourceWidget) {
-    ModifierKeyState modifierKeyState;
-    POINT clientPoint = {ptl.x, ptl.y};
-    ::ScreenToClient(mHWnd, &clientPoint);
-    currentDragSession->FireDragEventAtSource(
-        eDrag, modifierKeyState.GetModifiers(), {clientPoint.x, clientPoint.y});
-  }
+  ModifierKeyState modifierKeyState;
+  currentDragSession->FireDragEventAtSource(eDrag,
+                                            modifierKeyState.GetModifiers());
   // Now process the native drag state and then dispatch the event
   LOGI("[%p] %s | Firing 'dragover' event at drag target", this, __FUNCTION__);
   ProcessDrag(eDragOver, grfKeyState, ptl, pdwEffect);

@@ -920,9 +920,8 @@ const char* nsDragSession::GetDragServiceTaskName(DragTaskType aTask) {
 #endif
 
 void nsDragSession::DispatchMotionEvents() {
-  if (mSourceWindow && mSourceWindow == mRecentTask->mWindow) {
-    FireDragEventAtSource(eDrag, GetCurrentModifiers(),
-                          mRecentTask->mWindowPoint);
+  if (mSourceWindow) {
+    FireDragEventAtSource(eDrag, GetCurrentModifiers());
   }
   if (mRecentTask->mWindow) {
     mRecentTask->mWindow->DispatchDragEvent(
