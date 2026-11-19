@@ -35,6 +35,7 @@ class ScalabilityStructureSimulcast : public ScalableVideoController {
 
   StreamLayersConfig StreamConfig() const override;
   std::vector<LayerFrameConfig> NextFrameConfig(bool restart) override;
+  void OnFrameDropped(const LayerFrameConfig& config) override;
   GenericFrameInfo OnEncodeDone(const LayerFrameConfig& config) override;
   void OnRatesUpdated(const VideoBitrateAllocation& bitrates) override;
 

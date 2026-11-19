@@ -506,6 +506,18 @@ bool SupportsOnFrameDropped(ScalabilityMode mode) {
     case ScalabilityMode::kL3T3:
     case ScalabilityMode::kL3T3h:
     case ScalabilityMode::kL3T3_KEY:
+    case ScalabilityMode::kS2T1:
+    case ScalabilityMode::kS2T1h:
+    case ScalabilityMode::kS2T2:
+    case ScalabilityMode::kS2T2h:
+    case ScalabilityMode::kS2T3:
+    case ScalabilityMode::kS2T3h:
+    case ScalabilityMode::kS3T1:
+    case ScalabilityMode::kS3T1h:
+    case ScalabilityMode::kS3T2:
+    case ScalabilityMode::kS3T2h:
+    case ScalabilityMode::kS3T3:
+    case ScalabilityMode::kS3T3h:
       return true;
     default:
       return false;
@@ -637,6 +649,47 @@ TEST_P(ScalabilityStructureTest,
                                           frames);
     }
   }
+}
+
+TEST(ScalabilityStructureSimulcastTest,
+     SkipT0FrameByEncoderKeepsReferencesValid) {
+  std::unique_ptr<ScalableVideoController> svc_controller =
+      CreateScalabilityStructure(ScalabilityMode::kS3T3);
+  ScalabilityStructureWrapper wrapper(*svc_controller);
+  std::vector<GenericFrameInfo> frames;
+
+  // Enable only S0 and encode one full temporal cycle (T0, T2a, T1, T2b).
+  svc_controller->OnRatesUpdated(
+      EnableTemporalLayers(/*s0=*/3, /*s1=*/0, /*s2=*/0));
+  wrapper.GenerateFrames(/*num_temporal_units=*/4, frames);
+  ASSERT_THAT(frames, SizeIs(4));
+
+  // Enable S1. Simulate legacy encoder skip where NextFrameConfig() is called
+  // on the T0 temporal unit without calling OnEncodeDone() or OnFrameDropped().
+  svc_controller->OnRatesUpdated(
+      EnableTemporalLayers(/*s0=*/3, /*s1=*/3, /*s2=*/0));
+  svc_controller->NextFrameConfig(/*restart=*/false);
+
+  // Subsequent frames must still emit a keyframe for S1 before referencing its
+  // T0 buffer.
+  wrapper.GenerateFrames(/*num_temporal_units=*/4, frames);
+  ASSERT_THAT(frames, SizeIs(12));
+
+  // Enable S2 and simulate a partial silent skip on T0 (S0 and S1 encode, S2
+  // is skipped without OnEncodeDone() or OnFrameDropped()).
+  svc_controller->OnRatesUpdated(
+      EnableTemporalLayers(/*s0=*/3, /*s1=*/3, /*s2=*/3));
+  std::vector<LayerFrameConfig> t0_configs =
+      svc_controller->NextFrameConfig(/*restart=*/false);
+  ASSERT_THAT(t0_configs, SizeIs(3));
+  wrapper.EncodeTemporalUnit(std::span(t0_configs).first(2), frames);
+
+  // Encode across the remaining enhancement frames and the next T0 cycle.
+  wrapper.GenerateFrames(/*num_temporal_units=*/7, frames);
+
+  EXPECT_TRUE(wrapper.FrameReferencesAreValid(frames));
+  CheckDependencyDescriptorInvariants(svc_controller->DependencyStructure(),
+                                      frames);
 }
 
 INSTANTIATE_TEST_SUITE_P(

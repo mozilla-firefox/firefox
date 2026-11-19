@@ -207,9 +207,12 @@ TEST(SimulcastToSvc, PredictsInternalStateCorrectlyOnFrameDrops) {
   const int kKeyFrameInterval = 13;
   for (int i = 0; i < 100; ++i) {
     bool force_restart = ((i + 1) % kKeyFrameInterval == 0) || (i == 0);
-    auto layer_config = svc_controller->NextFrameConfig(force_restart);
+    std::vector<ScalableVideoController::LayerFrameConfig> layer_config =
+        svc_controller->NextFrameConfig(force_restart);
     converter.EncodeStarted(force_restart);
-    for (int sid = 0; sid < 3; ++sid) {
+    for (const ScalableVideoController::LayerFrameConfig& config :
+         layer_config) {
+      int sid = config.SpatialId();
       if ((i + 1) % kDropInterval[sid] == 0) {
         continue;
       }
@@ -219,17 +222,15 @@ TEST(SimulcastToSvc, PredictsInternalStateCorrectlyOnFrameDrops) {
       image._encodedWidth = 1280 / (1 << sid);
       image._encodedHeight = 720 / (1 << sid);
       image.SetSpatialIndex(sid);
-      image.SetTemporalIndex(layer_config[sid].TemporalId());
+      image.SetTemporalIndex(config.TemporalId());
 
       CodecSpecificInfo codec_specific;
       codec_specific.codecType = kVideoCodecVP9;
       codec_specific.end_of_picture = false;
       codec_specific.codecSpecific.VP9.num_spatial_layers = 3;
       codec_specific.codecSpecific.VP9.first_active_layer = 0;
-      codec_specific.codecSpecific.VP9.temporal_idx =
-          layer_config[sid].TemporalId();
-      codec_specific.generic_frame_info =
-          svc_controller->OnEncodeDone(layer_config[sid]);
+      codec_specific.codecSpecific.VP9.temporal_idx = config.TemporalId();
+      codec_specific.generic_frame_info = svc_controller->OnEncodeDone(config);
 
       codec_specific.scalability_mode = ScalabilityMode::kS3T3;
 
@@ -237,7 +238,7 @@ TEST(SimulcastToSvc, PredictsInternalStateCorrectlyOnFrameDrops) {
 
       EXPECT_EQ(image.SpatialIndex(), std::nullopt);
       EXPECT_EQ(image.SimulcastIndex(), sid);
-      EXPECT_EQ(image.TemporalIndex(), layer_config[sid].TemporalId());
+      EXPECT_EQ(image.TemporalIndex(), config.TemporalId());
 
       EXPECT_EQ(codec_specific.scalability_mode, ScalabilityMode::kL1T3);
     }
