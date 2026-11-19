@@ -398,7 +398,6 @@ class TabManagementFragment : Fragment() {
                 metadata = { destination ->
                     BottomSheetSceneStrategy.bottomSheet(
                         handleContentDescription = resources.getString(R.string.tab_group_sheet_dismiss_description),
-                        showBetaLabel = true,
                         fullyExpandOnFirstOpen =
                             destination.group.shouldFullyExpandOnFirstOpen(windowSize = windowSize),
                     )
@@ -420,7 +419,6 @@ class TabManagementFragment : Fragment() {
                         skipPartiallyExpanded = true,
                         handleContentDescription =
                             stringResource(id = R.string.edit_tab_group_bottom_sheet_grabber_content_description),
-                        showBetaLabel = true,
                     )
             ) {
                 RenderEditTabGroup(formState = state.tabGroupState.formState)
@@ -429,8 +427,7 @@ class TabManagementFragment : Fragment() {
                 metadata =
                     BottomSheetSceneStrategy.bottomSheet(
                         handleContentDescription =
-                            stringResource(id = R.string.add_to_tab_group_bottom_sheet_grabber_content_description),
-                        showBetaLabel = true,
+                            stringResource(id = R.string.add_to_tab_group_bottom_sheet_grabber_content_description)
                     )
             ) {
                 RenderAddToTabGroup()

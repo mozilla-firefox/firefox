@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
 import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.R
-import org.mozilla.fenix.compose.BetaLabel
 import org.mozilla.fenix.home.collections.CollectionsMigrationPromoCard
 import org.mozilla.fenix.home.collections.CollectionsMigrationPromoSource
 import org.mozilla.fenix.tabstray.TabsTrayTestTag
@@ -59,14 +58,6 @@ internal fun TabGroupsPage(
 ) {
     if (state.groups.isNotEmpty()) {
         Column {
-            BetaLabel(
-                modifier =
-                    Modifier.padding(
-                        start = FirefoxTheme.layout.space.dynamic200,
-                        top = FirefoxTheme.layout.space.static200,
-                    )
-            )
-
             if (state.showCollectionsMigrationCard) {
                 CollectionsMigrationPromoCard(
                     source = CollectionsMigrationPromoSource.TABS_TRAY,
@@ -112,8 +103,6 @@ private fun EmptyTabGroupsPage(modifier: Modifier = Modifier) {
             modifier = Modifier.width(EmptyPageWidth),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            BetaLabel()
-
             Icon(
                 painter = painterResource(id = iconsR.drawable.mozac_ic_tab_group_24),
                 contentDescription = null,
