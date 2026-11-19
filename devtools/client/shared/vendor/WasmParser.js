@@ -267,6 +267,10 @@ var OperatorCode;
     OperatorCode[OperatorCode["table_grow"] = 64527] = "table_grow";
     OperatorCode[OperatorCode["table_size"] = 64528] = "table_size";
     OperatorCode[OperatorCode["table_fill"] = 64529] = "table_fill";
+    OperatorCode[OperatorCode["i64_add128"] = 64531] = "i64_add128";
+    OperatorCode[OperatorCode["i64_sub128"] = 64532] = "i64_sub128";
+    OperatorCode[OperatorCode["i64_mul_wide_s"] = 64533] = "i64_mul_wide_s";
+    OperatorCode[OperatorCode["i64_mul_wide_u"] = 64534] = "i64_mul_wide_u";
     OperatorCode[OperatorCode["table_get"] = 37] = "table_get";
     OperatorCode[OperatorCode["table_set"] = 38] = "table_set";
     OperatorCode[OperatorCode["ref_null"] = 208] = "ref_null";
@@ -343,17 +347,38 @@ var OperatorCode;
     OperatorCode[OperatorCode["i64_atomic_rmw8_cmpxchg_u"] = 65100] = "i64_atomic_rmw8_cmpxchg_u";
     OperatorCode[OperatorCode["i64_atomic_rmw16_cmpxchg_u"] = 65101] = "i64_atomic_rmw16_cmpxchg_u";
     OperatorCode[OperatorCode["i64_atomic_rmw32_cmpxchg_u"] = 65102] = "i64_atomic_rmw32_cmpxchg_u";
-    OperatorCode[OperatorCode["v128_load"] = 1036288] = "v128_load";
+    // Pre-standard SIMD load names, kept for backwards compatibility.
+    /** @deprecated Use v128_load8x8_s. */
     OperatorCode[OperatorCode["i16x8_load8x8_s"] = 1036289] = "i16x8_load8x8_s";
+    /** @deprecated Use v128_load8x8_u. */
     OperatorCode[OperatorCode["i16x8_load8x8_u"] = 1036290] = "i16x8_load8x8_u";
+    /** @deprecated Use v128_load16x4_s. */
     OperatorCode[OperatorCode["i32x4_load16x4_s"] = 1036291] = "i32x4_load16x4_s";
+    /** @deprecated Use v128_load16x4_u. */
     OperatorCode[OperatorCode["i32x4_load16x4_u"] = 1036292] = "i32x4_load16x4_u";
+    /** @deprecated Use v128_load32x2_s. */
     OperatorCode[OperatorCode["i64x2_load32x2_s"] = 1036293] = "i64x2_load32x2_s";
+    /** @deprecated Use v128_load32x2_u. */
     OperatorCode[OperatorCode["i64x2_load32x2_u"] = 1036294] = "i64x2_load32x2_u";
+    /** @deprecated Use v128_load8_splat. */
     OperatorCode[OperatorCode["v8x16_load_splat"] = 1036295] = "v8x16_load_splat";
+    /** @deprecated Use v128_load16_splat. */
     OperatorCode[OperatorCode["v16x8_load_splat"] = 1036296] = "v16x8_load_splat";
+    /** @deprecated Use v128_load32_splat. */
     OperatorCode[OperatorCode["v32x4_load_splat"] = 1036297] = "v32x4_load_splat";
+    /** @deprecated Use v128_load64_splat. */
     OperatorCode[OperatorCode["v64x2_load_splat"] = 1036298] = "v64x2_load_splat";
+    OperatorCode[OperatorCode["v128_load"] = 1036288] = "v128_load";
+    OperatorCode[OperatorCode["v128_load8x8_s"] = 1036289] = "v128_load8x8_s";
+    OperatorCode[OperatorCode["v128_load8x8_u"] = 1036290] = "v128_load8x8_u";
+    OperatorCode[OperatorCode["v128_load16x4_s"] = 1036291] = "v128_load16x4_s";
+    OperatorCode[OperatorCode["v128_load16x4_u"] = 1036292] = "v128_load16x4_u";
+    OperatorCode[OperatorCode["v128_load32x2_s"] = 1036293] = "v128_load32x2_s";
+    OperatorCode[OperatorCode["v128_load32x2_u"] = 1036294] = "v128_load32x2_u";
+    OperatorCode[OperatorCode["v128_load8_splat"] = 1036295] = "v128_load8_splat";
+    OperatorCode[OperatorCode["v128_load16_splat"] = 1036296] = "v128_load16_splat";
+    OperatorCode[OperatorCode["v128_load32_splat"] = 1036297] = "v128_load32_splat";
+    OperatorCode[OperatorCode["v128_load64_splat"] = 1036298] = "v128_load64_splat";
     OperatorCode[OperatorCode["v128_store"] = 1036299] = "v128_store";
     OperatorCode[OperatorCode["v128_const"] = 1036300] = "v128_const";
     OperatorCode[OperatorCode["i8x16_shuffle"] = 1036301] = "i8x16_shuffle";
@@ -910,21 +935,26 @@ exports.OperatorCodeNames = [
     "table.grow",
     "table.size",
     "table.fill",
+    undefined,
+    "i64.add128",
+    "i64.sub128",
+    "i64.mul_wide_s",
+    "i64.mul_wide_u",
 ].forEach(function (s, i) {
     exports.OperatorCodeNames[0xfc00 | i] = s;
 });
 [
     "v128.load",
-    "i16x8.load8x8_s",
-    "i16x8.load8x8_u",
-    "i32x4.load16x4_s",
-    "i32x4.load16x4_u",
-    "i64x2.load32x2_s",
-    "i64x2.load32x2_u",
-    "v8x16.load_splat",
-    "v16x8.load_splat",
-    "v32x4.load_splat",
-    "v64x2.load_splat",
+    "v128.load8x8_s",
+    "v128.load8x8_u",
+    "v128.load16x4_s",
+    "v128.load16x4_u",
+    "v128.load32x2_s",
+    "v128.load32x2_u",
+    "v128.load8_splat",
+    "v128.load16_splat",
+    "v128.load32_splat",
+    "v128.load64_splat",
     "v128.store",
     "v128.const",
     "i8x16.shuffle",
@@ -1311,6 +1341,11 @@ exports.OperatorCodeNames = [
 ].forEach(function (s, i) {
     exports.OperatorCodeNames[0xfb00 | i] = s;
 });
+var CompactImportKind;
+(function (CompactImportKind) {
+    CompactImportKind[CompactImportKind["ModuleName"] = 127] = "ModuleName";
+    CompactImportKind[CompactImportKind["ModuleNameAndExternType"] = 126] = "ModuleNameAndExternType";
+})(CompactImportKind || (CompactImportKind = {}));
 var ExternalKind;
 (function (ExternalKind) {
     ExternalKind[ExternalKind["Function"] = 0] = "Function";
@@ -1665,6 +1700,9 @@ var BinaryReader = /** @class */ (function () {
         this.result = null;
         this.error = null;
         this._sectionEntriesLeft = 0;
+        this._compactImportsLeft = 0;
+        this._compactImportModule = null;
+        this._compactImportDesc = null;
         this._sectionId = -1 /* SectionCode.Unknown */;
         this._sectionRange = null;
         this._functionRange = null;
@@ -1773,6 +1811,20 @@ var BinaryReader = /** @class */ (function () {
                 break;
         }
         return result >>> 0;
+    };
+    // Reads an unsigned 64-bit LEB128 value as a number: values above 2^53 lose
+    // precision, which is fine for memory and table sizes and offsets.
+    BinaryReader.prototype.readVarUint64AsNumber = function () {
+        var result = 0;
+        var scale = 1;
+        while (true) {
+            var byte = this.readUint8();
+            result += (byte & 0x7f) * scale;
+            scale *= 0x80;
+            if ((byte & 0x80) === 0)
+                break;
+        }
+        return result;
     };
     BinaryReader.prototype.readVarInt64 = function () {
         var result = new Uint8Array(8);
@@ -1939,26 +1991,35 @@ var BinaryReader = /** @class */ (function () {
             mutability: mutability,
         };
     };
-    BinaryReader.prototype.readResizableLimits = function (maxPresent) {
-        var initial = this.readVarUint32();
+    BinaryReader.prototype.readResizableLimits = function (maxPresent, is64) {
+        var initial = is64 ? this.readVarUint64AsNumber() : this.readVarUint32();
         var maximum;
         if (maxPresent) {
-            maximum = this.readVarUint32();
+            maximum = is64 ? this.readVarUint64AsNumber() : this.readVarUint32();
         }
         return { initial: initial, maximum: maximum };
     };
     BinaryReader.prototype.readTableType = function () {
         var elementType = this.readType();
         var flags = this.readVarUint32();
-        var limits = this.readResizableLimits(!!(flags & 0x01));
-        return { elementType: elementType, limits: limits };
+        var is64 = !!(flags & 0x04);
+        var limits = this.readResizableLimits(!!(flags & 0x01), is64);
+        return { elementType: elementType, limits: limits, is64: is64 };
     };
     BinaryReader.prototype.readMemoryType = function () {
         var flags = this.readVarUint32();
         var shared = !!(flags & 0x02);
+        var is64 = !!(flags & 0x04);
+        var limits = this.readResizableLimits(!!(flags & 0x01), is64);
+        var pageSizeLog2;
+        if (flags & 0x08) {
+            pageSizeLog2 = this.readVarUint32();
+        }
         return {
-            limits: this.readResizableLimits(!!(flags & 0x01)),
+            limits: limits,
             shared: shared,
+            is64: is64,
+            pageSizeLog2: pageSizeLog2,
         };
     };
     BinaryReader.prototype.readGlobalType = function () {
@@ -2052,6 +2113,20 @@ var BinaryReader = /** @class */ (function () {
         return true;
     };
     BinaryReader.prototype.readImportEntry = function () {
+        if (this._compactImportsLeft > 0) {
+            this.state = 12 /* BinaryReaderState.IMPORT_SECTION_ENTRY */;
+            var field = this.readStringBytes();
+            var desc = this._compactImportDesc || this.readImportDesc(this.readUint8());
+            this.result = {
+                module: this._compactImportModule,
+                field: field,
+                kind: desc.kind,
+                funcTypeIndex: desc.funcTypeIndex,
+                type: desc.type,
+            };
+            this._compactImportsLeft--;
+            return true;
+        }
         if (this._sectionEntriesLeft === 0) {
             this.skipSection();
             return this.read();
@@ -2060,6 +2135,32 @@ var BinaryReader = /** @class */ (function () {
         var module = this.readStringBytes();
         var field = this.readStringBytes();
         var kind = this.readUint8();
+        if (field.length === 0 &&
+            (kind === 127 /* CompactImportKind.ModuleName */ ||
+                kind === 126 /* CompactImportKind.ModuleNameAndExternType */)) {
+            // A group of imports from one module, either with their own types
+            // or sharing one.
+            this._compactImportModule = module;
+            this._compactImportDesc =
+                kind === 126 /* CompactImportKind.ModuleNameAndExternType */
+                    ? this.readImportDesc(this.readUint8())
+                    : null;
+            this._compactImportsLeft = this.readVarUint32();
+            this._sectionEntriesLeft--;
+            return this.readImportEntry();
+        }
+        var desc = this.readImportDesc(kind);
+        this.result = {
+            module: module,
+            field: field,
+            kind: desc.kind,
+            funcTypeIndex: desc.funcTypeIndex,
+            type: desc.type,
+        };
+        this._sectionEntriesLeft--;
+        return true;
+    };
+    BinaryReader.prototype.readImportDesc = function (kind) {
         var funcTypeIndex;
         var type;
         switch (kind) {
@@ -2079,15 +2180,7 @@ var BinaryReader = /** @class */ (function () {
                 type = this.readTagType();
                 break;
         }
-        this.result = {
-            module: module,
-            field: field,
-            kind: kind,
-            funcTypeIndex: funcTypeIndex,
-            type: type,
-        };
-        this._sectionEntriesLeft--;
-        return true;
+        return { kind: kind, funcTypeIndex: funcTypeIndex, type: type };
     };
     BinaryReader.prototype.readExportEntry = function () {
         if (this._sectionEntriesLeft === 0) {
@@ -2305,8 +2398,13 @@ var BinaryReader = /** @class */ (function () {
     };
     BinaryReader.prototype.readMemoryImmediate = function () {
         var flags = this.readVarUint32();
-        var offset = this.readVarUint32();
-        return { flags: flags, offset: offset };
+        var memoryIndex = 0;
+        if (flags & 0x40) {
+            flags &= ~0x40;
+            memoryIndex = this.readVarUint32();
+        }
+        var offset = this.readVarUint64AsNumber();
+        return { flags: flags, offset: offset, memoryIndex: memoryIndex };
     };
     BinaryReader.prototype.readNameMap = function () {
         var count = this.readVarUint32();
@@ -2589,6 +2687,7 @@ var BinaryReader = /** @class */ (function () {
             fieldIndex: fieldIndex,
             memoryAddress: undefined,
             literal: literal,
+            literalBits: undefined,
             segmentIndex: segmentIndex,
             destinationIndex: undefined,
             len: len,
@@ -2602,7 +2701,7 @@ var BinaryReader = /** @class */ (function () {
             return false;
         }
         var code = this.readVarUint32() | 0xfc00;
-        var reserved, segmentIndex, destinationIndex, tableIndex;
+        var segmentIndex, destinationIndex, tableIndex, memoryIndex;
         switch (code) {
             case 64512 /* OperatorCode.i32_trunc_sat_f32_s */:
             case 64513 /* OperatorCode.i32_trunc_sat_f32_u */:
@@ -2612,22 +2711,27 @@ var BinaryReader = /** @class */ (function () {
             case 64517 /* OperatorCode.i64_trunc_sat_f32_u */:
             case 64518 /* OperatorCode.i64_trunc_sat_f64_s */:
             case 64519 /* OperatorCode.i64_trunc_sat_f64_u */:
+            case 64531 /* OperatorCode.i64_add128 */:
+            case 64532 /* OperatorCode.i64_sub128 */:
+            case 64533 /* OperatorCode.i64_mul_wide_s */:
+            case 64534 /* OperatorCode.i64_mul_wide_u */:
                 break;
             case 64522 /* OperatorCode.memory_copy */:
-                // Currently memory index must be zero.
-                reserved = this.readVarUint1();
-                reserved = this.readVarUint1();
+                // Encoded as `memory.copy dst src`: memoryIndex is the source memory.
+                destinationIndex = this.readVarUint32();
+                memoryIndex = this.readVarUint32();
                 break;
             case 64523 /* OperatorCode.memory_fill */:
-                reserved = this.readVarUint1();
+                memoryIndex = this.readVarUint32();
                 break;
             case 64524 /* OperatorCode.table_init */:
                 segmentIndex = this.readVarUint32();
                 tableIndex = this.readVarUint32();
                 break;
             case 64526 /* OperatorCode.table_copy */:
-                tableIndex = this.readVarUint32();
+                // Encoded as `table.copy dst src`: tableIndex is the source table.
                 destinationIndex = this.readVarUint32();
+                tableIndex = this.readVarUint32();
                 break;
             case 64527 /* OperatorCode.table_grow */:
             case 64528 /* OperatorCode.table_size */:
@@ -2636,7 +2740,7 @@ var BinaryReader = /** @class */ (function () {
                 break;
             case 64520 /* OperatorCode.memory_init */:
                 segmentIndex = this.readVarUint32();
-                reserved = this.readVarUint1();
+                memoryIndex = this.readVarUint32();
                 break;
             case 64521 /* OperatorCode.data_drop */:
             case 64525 /* OperatorCode.elem_drop */:
@@ -2663,8 +2767,10 @@ var BinaryReader = /** @class */ (function () {
             fieldIndex: undefined,
             memoryAddress: undefined,
             literal: undefined,
+            literalBits: undefined,
             segmentIndex: segmentIndex,
             destinationIndex: destinationIndex,
+            memoryIndex: memoryIndex,
             len: undefined,
             lines: undefined,
             lineIndex: undefined,
@@ -2672,7 +2778,7 @@ var BinaryReader = /** @class */ (function () {
         return true;
     };
     BinaryReader.prototype.readCodeOperator_0xfd = function () {
-        var MAX_CODE_OPERATOR_0XFD_SIZE = 17;
+        var MAX_CODE_OPERATOR_0XFD_SIZE = 24;
         var pos = this._pos;
         if (!this._eof && pos + MAX_CODE_OPERATOR_0XFD_SIZE > this._length) {
             return false;
@@ -2687,16 +2793,16 @@ var BinaryReader = /** @class */ (function () {
         var lines;
         switch (code) {
             case 1036288 /* OperatorCode.v128_load */:
-            case 1036289 /* OperatorCode.i16x8_load8x8_s */:
-            case 1036290 /* OperatorCode.i16x8_load8x8_u */:
-            case 1036291 /* OperatorCode.i32x4_load16x4_s */:
-            case 1036292 /* OperatorCode.i32x4_load16x4_u */:
-            case 1036293 /* OperatorCode.i64x2_load32x2_s */:
-            case 1036294 /* OperatorCode.i64x2_load32x2_u */:
-            case 1036295 /* OperatorCode.v8x16_load_splat */:
-            case 1036296 /* OperatorCode.v16x8_load_splat */:
-            case 1036297 /* OperatorCode.v32x4_load_splat */:
-            case 1036298 /* OperatorCode.v64x2_load_splat */:
+            case 1036289 /* OperatorCode.v128_load8x8_s */:
+            case 1036290 /* OperatorCode.v128_load8x8_u */:
+            case 1036291 /* OperatorCode.v128_load16x4_s */:
+            case 1036292 /* OperatorCode.v128_load16x4_u */:
+            case 1036293 /* OperatorCode.v128_load32x2_s */:
+            case 1036294 /* OperatorCode.v128_load32x2_u */:
+            case 1036295 /* OperatorCode.v128_load8_splat */:
+            case 1036296 /* OperatorCode.v128_load16_splat */:
+            case 1036297 /* OperatorCode.v128_load32_splat */:
+            case 1036298 /* OperatorCode.v128_load64_splat */:
             case 1036299 /* OperatorCode.v128_store */:
             case 1036380 /* OperatorCode.v128_load32_zero */:
             case 1036381 /* OperatorCode.v128_load64_zero */:
@@ -2907,7 +3013,6 @@ var BinaryReader = /** @class */ (function () {
             case 1036510 /* OperatorCode.i64x2_extmul_low_i32x4_u */:
             case 1036511 /* OperatorCode.i64x2_extmul_high_i32x4_u */:
             case 1036512 /* OperatorCode.f32x4_abs */:
-            case 1036512 /* OperatorCode.f32x4_abs */:
             case 1036513 /* OperatorCode.f32x4_neg */:
             case 1036515 /* OperatorCode.f32x4_sqrt */:
             case 1036516 /* OperatorCode.f32x4_add */:
@@ -2979,6 +3084,7 @@ var BinaryReader = /** @class */ (function () {
             fieldIndex: undefined,
             memoryAddress: memoryAddress,
             literal: literal,
+            literalBits: undefined,
             segmentIndex: undefined,
             destinationIndex: undefined,
             len: undefined,
@@ -2988,7 +3094,7 @@ var BinaryReader = /** @class */ (function () {
         return true;
     };
     BinaryReader.prototype.readCodeOperator_0xfe = function () {
-        var MAX_CODE_OPERATOR_0XFE_SIZE = 11;
+        var MAX_CODE_OPERATOR_0XFE_SIZE = 22;
         var pos = this._pos;
         if (!this._eof && pos + MAX_CODE_OPERATOR_0XFE_SIZE > this._length) {
             return false;
@@ -3096,6 +3202,7 @@ var BinaryReader = /** @class */ (function () {
             fieldIndex: undefined,
             memoryAddress: memoryAddress,
             literal: undefined,
+            literalBits: undefined,
             segmentIndex: undefined,
             destinationIndex: undefined,
             len: undefined,
@@ -3129,7 +3236,7 @@ var BinaryReader = /** @class */ (function () {
                 }
                 break;
         }
-        var code, blockType, selectType, refType, brDepth, brTable, tryTable, relativeDepth, funcIndex, typeIndex, tableIndex, localIndex, globalIndex, tagIndex, memoryAddress, literal, reserved;
+        var code, blockType, selectType, refType, brDepth, brTable, tryTable, relativeDepth, funcIndex, typeIndex, tableIndex, localIndex, globalIndex, tagIndex, memoryIndex, memoryAddress, literal, literalBits;
         if (this.state === 26 /* BinaryReaderState.INIT_EXPRESSION_OPERATOR */ &&
             this._sectionId === 9 /* SectionCode.Element */ &&
             isExternvalElementSegmentType(this._segmentType)) {
@@ -3147,7 +3254,8 @@ var BinaryReader = /** @class */ (function () {
             }
         }
         else {
-            var MAX_CODE_OPERATOR_SIZE = 11; // i64.const or load/store
+            // load/store with a memory index and a 64-bit offset
+            var MAX_CODE_OPERATOR_SIZE = 21;
             var pos = this._pos;
             if (!this._eof && pos + MAX_CODE_OPERATOR_SIZE > this._length) {
                 return false;
@@ -3234,7 +3342,7 @@ var BinaryReader = /** @class */ (function () {
                 case 17 /* OperatorCode.call_indirect */:
                 case 19 /* OperatorCode.return_call_indirect */:
                     typeIndex = this.readVarUint32();
-                    reserved = this.readVarUint1();
+                    tableIndex = this.readVarUint32();
                     break;
                 case 32 /* OperatorCode.local_get */:
                 case 33 /* OperatorCode.local_set */:
@@ -3280,7 +3388,7 @@ var BinaryReader = /** @class */ (function () {
                     break;
                 case 63 /* OperatorCode.memory_size */:
                 case 64 /* OperatorCode.memory_grow */:
-                    reserved = this.readVarUint1();
+                    memoryIndex = this.readVarUint32();
                     break;
                 case 65 /* OperatorCode.i32_const */:
                     literal = this.readVarInt32();
@@ -3288,10 +3396,13 @@ var BinaryReader = /** @class */ (function () {
                 case 66 /* OperatorCode.i64_const */:
                     literal = this.readVarInt64();
                     break;
-                case 67 /* OperatorCode.f32_const */:
-                    literal = new DataView(this._data.buffer, this._data.byteOffset).getFloat32(this._pos, true);
+                case 67 /* OperatorCode.f32_const */: {
+                    var view = new DataView(this._data.buffer, this._data.byteOffset);
+                    literal = view.getFloat32(this._pos, true);
+                    literalBits = view.getUint32(this._pos, true);
                     this._pos += 4;
                     break;
+                }
                 case 68 /* OperatorCode.f64_const */:
                     literal = new DataView(this._data.buffer, this._data.byteOffset).getFloat64(this._pos, true);
                     this._pos += 8;
@@ -3491,8 +3602,10 @@ var BinaryReader = /** @class */ (function () {
             globalIndex: globalIndex,
             fieldIndex: undefined,
             tagIndex: tagIndex,
+            memoryIndex: memoryIndex,
             memoryAddress: memoryAddress,
             literal: literal,
+            literalBits: literalBits,
             segmentIndex: undefined,
             destinationIndex: undefined,
             len: undefined,
