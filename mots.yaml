@@ -8,7 +8,7 @@
 # documentation and how to modify this file.
 repo: mozilla-central
 created_at: '2021-10-14T12:50:40.073465'
-updated_at: '2026-11-09T04:27:33.756124+00:00'
+updated_at: '2026-11-19T17:30:45.534884+00:00'
 export:
   path: ./docs/mots/index.md
   format: md
@@ -2234,6 +2234,7 @@ modules:
       - *jld
       - *mccr8
       - *handyman
+      - *afranchuk
     machine_name: core_ipc
 
   - name: 'Core: JavaScript'
@@ -5081,5 +5082,5 @@ modules:
         - Ryan Tilder
       group: dev-platform
 hashes:
-  config: 2b093bf5501a7647a39a7cea050841049d733a89
-  export: 9bc58b52bffa670dbf61acfe0455d7d8cec862ab
+  config: 1115a30da5dd04369ebad6a46606641f4be0c1a3
+  export: 3cdfde064aca9727d626f07df2762b5eedbd2176
