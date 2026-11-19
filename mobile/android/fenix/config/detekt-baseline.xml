@@ -405,8 +405,6 @@
     <ID>UndocumentedPublicClass:AutoplayValue.kt$AutoplayValue$AllowAll : AutoplayValue</ID>
     <ID>UndocumentedPublicClass:AutoplayValue.kt$AutoplayValue$BlockAll : AutoplayValue</ID>
     <ID>UndocumentedPublicClass:AutoplayValue.kt$AutoplayValue$BlockAudible : AutoplayValue</ID>
-    <ID>UndocumentedPublicClass:BrowserFragmentStore.kt$BrowserFragmentAction : Action</ID>
-    <ID>UndocumentedPublicClass:BrowserFragmentStore.kt$BrowserFragmentStore : Store</ID>
     <ID>UndocumentedPublicClass:BrowsingModeManager.kt$BrowsingModeManager</ID>
     <ID>UndocumentedPublicClass:CollectionCreationController.kt$CollectionCreationController</ID>
     <ID>UndocumentedPublicClass:CollectionCreationFragment.kt$CollectionCreationFragment : DialogFragment</ID>
