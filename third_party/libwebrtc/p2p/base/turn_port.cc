@@ -726,11 +726,19 @@ int TurnPort::SendTo(std::span<const uint8_t> data,
                      const SocketAddress& addr,
                      const AsyncSocketPacketOptions& options,
                      bool payload) {
-  // Try to find an entry for this specific address; we should have one.
-  TurnEntry* entry = FindEntry(addr);
-  RTC_DCHECK(entry);
-
   if (!ready()) {
+    error_ = ENOTCONN;
+    return SOCKET_ERROR;
+  }
+
+  // Try to find an entry for this specific address. An entry is normally
+  // present, but `Port` may try to send STUN error responses to addresses
+  // for which no entry exists, e.g. when a remote peer sends a request from
+  // an unpaired port on an IP address that has a TURN permission.
+  TurnEntry* entry = FindEntry(addr);
+  if (!entry) {
+    RTC_LOG(LS_WARNING) << ToString() << ": No TurnEntry for "
+                        << addr.ToSensitiveString() << ", dropping packet.";
     error_ = ENOTCONN;
     return SOCKET_ERROR;
   }
