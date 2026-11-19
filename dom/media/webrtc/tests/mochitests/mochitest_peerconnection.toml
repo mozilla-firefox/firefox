@@ -285,8 +285,6 @@ skip-if = [
 ]
 scheme = "http"
 
-["test_peerConnection_initialResolution.html"]
-
 ["test_peerConnection_insertDTMF.html"]
 
 ["test_peerConnection_localReofferRollback.html"]
