@@ -937,6 +937,7 @@ address-footer {
   #selection-shortcut-action-panel {
     --selection-button-size: 36px;
     --panel-subview-body-padding: 1px;
+    --panel-border-radius: var(--border-radius-circle);
 
     moz-button {
       --button-min-height: var(--selection-button-size);
