@@ -399,10 +399,10 @@ index 6ba3292fca..5d3a731864 100644
    RTPHeader();
    RTPHeader(const RTPHeader& other);
 diff --git a/api/rtp_parameters.cc b/api/rtp_parameters.cc
-index 316e4365d9..4ff8b2d617 100644
+index 10be276737..3727b93b7d 100644
 --- a/api/rtp_parameters.cc
 +++ b/api/rtp_parameters.cc
-@@ -254,7 +254,8 @@ bool RtpExtension::IsSupportedForAudio(absl::string_view uri) {
+@@ -260,7 +260,8 @@ bool RtpExtension::IsSupportedForAudio(absl::string_view uri) {
           uri == RtpExtension::kTransportSequenceNumberUri ||
           uri == RtpExtension::kTransportSequenceNumberV2Uri ||
           uri == RtpExtension::kMidUri || uri == RtpExtension::kRidUri ||
@@ -1392,7 +1392,7 @@ index 75b30782ae..1b0f102f61 100644
    const bool enable_svc_for_simulcast_;
    std::optional<SimulcastToSvcConverter> simulcast_to_svc_converter_;
 diff --git a/rtc_base/BUILD.gn b/rtc_base/BUILD.gn
-index f01eed0f26..4d69d5f156 100644
+index 17f3f72cd4..33023048f4 100644
 --- a/rtc_base/BUILD.gn
 +++ b/rtc_base/BUILD.gn
 @@ -526,6 +526,12 @@ rtc_library("logging") {

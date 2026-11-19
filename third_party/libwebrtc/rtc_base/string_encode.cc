@@ -75,6 +75,28 @@ void HexEncodeWithDelimiter(std::string& buffer,
   }
 }
 
+// Shared implementation of the tokenize() overloads. `T` is either std::string
+// or absl::string_view.
+template <typename T>
+size_t Tokenize(absl::string_view source,
+                char delimiter,
+                std::vector<T>& fields) {
+  fields.clear();
+  size_t last = 0;
+  for (size_t i = 0; i < source.length(); ++i) {
+    if (source[i] == delimiter) {
+      if (i != last) {
+        fields.emplace_back(source.substr(last, i - last));
+      }
+      last = i + 1;
+    }
+  }
+  if (last != source.length()) {
+    fields.emplace_back(source.substr(last, source.length() - last));
+  }
+  return fields.size();
+}
+
 }  // namespace
 
 std::string HexEncode(std::span<const uint8_t> source) {
@@ -138,54 +160,48 @@ std::span<uint8_t> HexDecode(std::span<uint8_t> buffer,
 size_t tokenize(absl::string_view source,
                 char delimiter,
                 std::vector<std::string>* fields) {
-  fields->clear();
-  size_t last = 0;
-  for (size_t i = 0; i < source.length(); ++i) {
-    if (source[i] == delimiter) {
-      if (i != last) {
-        fields->emplace_back(source.substr(last, i - last));
-      }
-      last = i + 1;
-    }
-  }
-  if (last != source.length()) {
-    fields->emplace_back(source.substr(last, source.length() - last));
-  }
-  return fields->size();
+  return Tokenize(source, delimiter, *fields);
+}
+
+size_t tokenize(absl::string_view source,
+                char delimiter,
+                std::vector<absl::string_view>* fields) {
+  return Tokenize(source, delimiter, *fields);
 }
 
 bool tokenize_first(absl::string_view source,
                     const char delimiter,
-                    std::string* token,
-                    std::string* rest) {
+                    absl::string_view* token,
+                    absl::string_view* rest) {
   // Find the first delimiter
   size_t left_pos = source.find(delimiter);
   if (left_pos == absl::string_view::npos) {
     return false;
   }
 
-  // Look for additional occurrances of delimiter.
+  // Look for additional occurrences of delimiter.
   size_t right_pos = left_pos + 1;
   while (right_pos < source.size() && source[right_pos] == delimiter) {
     right_pos++;
   }
 
-  *token = std::string(source.substr(0, left_pos));
-  *rest = std::string(source.substr(right_pos));
+  *token = source.substr(0, left_pos);
+  *rest = source.substr(right_pos);
   return true;
 }
 
-std::vector<absl::string_view> split(absl::string_view source, char delimiter) {
-  std::vector<absl::string_view> fields;
-  size_t last = 0;
-  for (size_t i = 0; i < source.length(); ++i) {
-    if (source[i] == delimiter) {
-      fields.push_back(source.substr(last, i - last));
-      last = i + 1;
-    }
+bool tokenize_first(absl::string_view source,
+                    const char delimiter,
+                    std::string* token,
+                    std::string* rest) {
+  absl::string_view token_view;
+  absl::string_view rest_view;
+  if (!tokenize_first(source, delimiter, &token_view, &rest_view)) {
+    return false;
   }
-  fields.push_back(source.substr(last));
-  return fields;
+  *token = token_view;
+  *rest = rest_view;
+  return true;
 }
 
 bool FromString(absl::string_view s, bool* b) {

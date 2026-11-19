@@ -60,6 +60,7 @@ namespace {
 using ::testing::ElementsAre;
 using ::testing::Field;
 using ::testing::HasSubstr;
+using ::testing::IsEmpty;
 using ::testing::IsNull;
 using ::testing::Not;
 using ::testing::NotNull;
@@ -4397,6 +4398,55 @@ TEST_F(WebRtcSdpTest, DeserializeMsidAttributeWithoutAppDataWithSsrcs) {
   EXPECT_THAT(streams[0].stream_ids(), ElementsAre("stream_id"));
   // Track id is randomly generated.
   EXPECT_NE(streams[0].id, "");
+}
+
+// Tests that an a=ssrc msid line without appdata does not clear a track id
+// signaled by an earlier a=ssrc msid line for the same SSRC.
+TEST_F(WebRtcSdpTest, DeserializeSsrcMsidWithoutAppDataKeepsTrackId) {
+  std::string sdp =
+      "v=0\r\n"
+      "o=- 18446744069414584320 18446462598732840960 IN IP4 127.0.0.1\r\n"
+      "s=-\r\n"
+      "t=0 0\r\n"
+      "m=audio 9 RTP/SAVPF 111\r\n"
+      "c=IN IP4 0.0.0.0\r\n"
+      "a=rtpmap:111 opus/48000/2\r\n"
+      "a=ssrc:1 cname:stream_cname\r\n"
+      "a=ssrc:1 msid:stream_id track_id\r\n"
+      "a=ssrc:1 msid:stream_id2\r\n";
+
+  std::unique_ptr<SessionDescriptionInterface> jdesc_output =
+      SdpDeserialize(sdp);
+  ASSERT_THAT(jdesc_output, NotNull());
+  const StreamParamsVec& streams =
+      jdesc_output->description()->contents()[0].media_description()->streams();
+  ASSERT_THAT(streams, SizeIs(1));
+  EXPECT_EQ(streams[0].id, "track_id");
+  EXPECT_THAT(streams[0].stream_ids(), ElementsAre("stream_id2"));
+}
+
+// Tests that attribute names are matched exactly and not by prefix.
+TEST_F(WebRtcSdpTest, DeserializeIgnoresAttributesWithKnownPrefix) {
+  std::string sdp =
+      "v=0\r\n"
+      "o=- 18446744069414584320 18446462598732840960 IN IP4 127.0.0.1\r\n"
+      "s=-\r\n"
+      "t=0 0\r\n"
+      "m=audio 9 RTP/SAVPF 111\r\n"
+      "c=IN IP4 0.0.0.0\r\n"
+      "a=rtcp-mux-only\r\n"
+      "a=extmapx:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\n"
+      "a=ssrcx:1 cname:stream_cname\r\n"
+      "a=rtpmap:111 opus/48000/2\r\n";
+
+  std::unique_ptr<SessionDescriptionInterface> jdesc_output =
+      SdpDeserialize(sdp);
+  ASSERT_THAT(jdesc_output, NotNull());
+  const MediaContentDescription* media_desc =
+      jdesc_output->description()->contents()[0].media_description();
+  EXPECT_FALSE(media_desc->rtcp_mux());
+  EXPECT_THAT(media_desc->rtp_header_extensions(), IsEmpty());
+  EXPECT_THAT(media_desc->streams(), IsEmpty());
 }
 
 TEST_F(WebRtcSdpTest, DeserializeMsidAttributeWithoutAppDataMixed) {

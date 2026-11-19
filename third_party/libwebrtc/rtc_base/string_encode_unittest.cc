@@ -18,12 +18,14 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/inlined_vector.h"
 #include "absl/strings/string_view.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
 
 namespace webrtc {
 
+using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
@@ -208,6 +210,48 @@ TEST(TokenizeFirstTest, SingleToken) {
   ASSERT_STREQ("ABC    ", rest.c_str());
 }
 
+TEST(TokenizeTest, StringViewFieldsPointIntoSource) {
+  constexpr absl::string_view kSource = "  find   middle  one    ";
+  std::vector<absl::string_view> fields;
+  EXPECT_EQ(3u, tokenize(kSource, ' ', &fields));
+  EXPECT_THAT(fields, ElementsAre("find", "middle", "one"));
+  EXPECT_EQ(fields[1].data(), kSource.substr(9).data());
+
+  EXPECT_EQ(0u, tokenize(" ", ' ', &fields));
+  EXPECT_THAT(fields, IsEmpty());
+  EXPECT_EQ(0u, tokenize("", ' ', &fields));
+  EXPECT_THAT(fields, IsEmpty());
+}
+
+TEST(TokenizeFirstTest, StringViewOutputs) {
+  constexpr absl::string_view kSource = "A    B& *${}    ";
+  absl::string_view token;
+  absl::string_view rest;
+  ASSERT_TRUE(tokenize_first(kSource, ' ', &token, &rest));
+  EXPECT_EQ(token, "A");
+  EXPECT_EQ(rest, "B& *${}    ");
+  EXPECT_EQ(rest.data(), kSource.substr(5).data());
+
+  ASSERT_TRUE(tokenize_first("    ABC", ' ', &token, &rest));
+  EXPECT_EQ(token, "");
+  EXPECT_EQ(rest, "ABC");
+
+  ASSERT_TRUE(tokenize_first("ABC    ", ' ', &token, &rest));
+  EXPECT_EQ(token, "ABC");
+  EXPECT_EQ(rest, "");
+
+  // The outputs are left untouched when the delimiter is not found.
+  EXPECT_FALSE(tokenize_first("XYZ", ' ', &token, &rest));
+  EXPECT_EQ(token, "ABC");
+  EXPECT_EQ(rest, "");
+
+  // The same view can be used as input and output.
+  rest = "IN IP4 1.2.3.4";
+  ASSERT_TRUE(tokenize_first(rest, ' ', &token, &rest));
+  EXPECT_EQ(token, "IN");
+  EXPECT_EQ(rest, "IP4 1.2.3.4");
+}
+
 // Tests counting substrings.
 TEST(SplitTest, CountSubstrings) {
   EXPECT_EQ(5ul, split("one,two,three,four,five", ',').size());
@@ -250,6 +294,14 @@ TEST(SplitTest, EmptyTokens) {
   fields = split("", '.');
   ASSERT_EQ(1ul, fields.size());
   EXPECT_TRUE(fields[0].empty());
+}
+
+TEST(SplitTest, SplitsIntoGivenContainer) {
+  using Fields = absl::InlinedVector<absl::string_view, 2>;
+  EXPECT_THAT(split<Fields>("a b", ' '), ElementsAre("a", "b"));
+  // More fields than the inline capacity, and empty fields.
+  EXPECT_THAT(split<Fields>(" a  b", ' '), ElementsAre("", "a", "", "b"));
+  EXPECT_THAT(split<Fields>("", ' '), ElementsAre(""));
 }
 
 template <typename T>

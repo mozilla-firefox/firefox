@@ -67,22 +67,46 @@ std::span<uint8_t> HexDecodeWithDelimiter(std::span<uint8_t> buffer,
 
 // Splits the source string into multiple fields separated by delimiter,
 // with duplicates of delimiter creating empty fields. Empty input produces a
-// single, empty, field.
-std::vector<absl::string_view> split(absl::string_view source, char delimiter);
+// single, empty, field. The fields are views into `source`, which must outlive
+// them. `Container` can be, for example, an absl::InlinedVector that holds the
+// expected number of fields without a heap allocation.
+template <typename Container = std::vector<absl::string_view>>
+Container split(absl::string_view source, char delimiter) {
+  Container fields;
+  size_t start = 0;
+  for (size_t end = source.find(delimiter); end != absl::string_view::npos;
+       end = source.find(delimiter, start)) {
+    fields.push_back(source.substr(start, end - start));
+    start = end + 1;
+  }
+  fields.push_back(source.substr(start));
+  return fields;
+}
 
 // Splits the source string into multiple fields separated by delimiter,
 // with duplicates of delimiter ignored.  Trailing delimiter ignored.
+// The absl::string_view version returns views into `source`, which must outlive
+// `fields`.
 size_t tokenize(absl::string_view source,
                 char delimiter,
                 std::vector<std::string>* fields);
+size_t tokenize(absl::string_view source,
+                char delimiter,
+                std::vector<absl::string_view>* fields);
 
 // Extract the first token from source as separated by delimiter, with
 // duplicates of delimiter ignored. Return false if the delimiter could not be
 // found, otherwise return true.
+// The absl::string_view version returns views into `source`, which must outlive
+// `token` and `rest`.
 bool tokenize_first(absl::string_view source,
                     char delimiter,
                     std::string* token,
                     std::string* rest);
+bool tokenize_first(absl::string_view source,
+                    char delimiter,
+                    absl::string_view* token,
+                    absl::string_view* rest);
 
 // Versions that behave differently from StrCat
 

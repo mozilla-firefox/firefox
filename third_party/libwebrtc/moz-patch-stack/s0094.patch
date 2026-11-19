@@ -127,7 +127,7 @@ index d732028499..eb0fd3d974 100644
              "Generated during 'gn gen' by //BUILD.gn.",
              "",
 diff --git a/api/BUILD.gn b/api/BUILD.gn
-index a60d80cedf..f2fda528c3 100644
+index 2dd3a67166..a64868a21b 100644
 --- a/api/BUILD.gn
 +++ b/api/BUILD.gn
 @@ -8,8 +8,8 @@
@@ -603,7 +603,7 @@ index 1627d65e30..bd81c8aec5 100644
  
  if (rtc_build_libsrtp) {
 diff --git a/rtc_base/BUILD.gn b/rtc_base/BUILD.gn
-index 70fceba34e..0d789253b8 100644
+index aee783ae69..4f329fd3a3 100644
 --- a/rtc_base/BUILD.gn
 +++ b/rtc_base/BUILD.gn
 @@ -9,8 +9,8 @@

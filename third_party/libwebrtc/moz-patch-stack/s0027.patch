@@ -211,7 +211,7 @@ index 8366960e3b..c212b2e1cf 100644
      }
  
 diff --git a/api/BUILD.gn b/api/BUILD.gn
-index b73990f829..a60d80cedf 100644
+index 62f4600699..2dd3a67166 100644
 --- a/api/BUILD.gn
 +++ b/api/BUILD.gn
 @@ -34,6 +34,9 @@ rtc_library("enable_media") {
@@ -292,7 +292,7 @@ index b73990f829..a60d80cedf 100644
  
  rtc_library("sctp_transport_interface") {
    visibility = [ "*" ]
-@@ -818,6 +845,7 @@ rtc_source_set("peer_network_dependencies") {
+@@ -819,6 +846,7 @@ rtc_source_set("peer_network_dependencies") {
  }
  
  rtc_source_set("peer_connection_quality_test_fixture_api") {
@@ -300,7 +300,7 @@ index b73990f829..a60d80cedf 100644
    visibility = [ "*" ]
    testonly = true
    sources = [ "test/peerconnection_quality_test_fixture.h" ]
-@@ -832,6 +860,7 @@ rtc_source_set("peer_connection_quality_test_fixture_api") {
+@@ -833,6 +861,7 @@ rtc_source_set("peer_connection_quality_test_fixture_api") {
      "//third_party/abseil-cpp/absl/strings:string_view",
    ]
  }
@@ -308,7 +308,7 @@ index b73990f829..a60d80cedf 100644
  
  rtc_library("frame_generator_api") {
    visibility = [ "*" ]
-@@ -934,6 +963,7 @@ rtc_library("create_frame_generator") {
+@@ -935,6 +964,7 @@ rtc_library("create_frame_generator") {
    ]
  }
  
@@ -316,7 +316,7 @@ index b73990f829..a60d80cedf 100644
  rtc_library("create_peer_connection_quality_test_frame_generator") {
    visibility = [ "*" ]
    testonly = true
-@@ -951,6 +981,7 @@ rtc_library("create_peer_connection_quality_test_frame_generator") {
+@@ -952,6 +982,7 @@ rtc_library("create_peer_connection_quality_test_frame_generator") {
      "units:time_delta",
    ]
  }
@@ -324,7 +324,7 @@ index b73990f829..a60d80cedf 100644
  
  rtc_source_set("data_channel_event_observer_interface") {
    visibility = [ "*" ]
-@@ -1131,6 +1162,7 @@ rtc_source_set("refcountedbase") {
+@@ -1132,6 +1163,7 @@ rtc_source_set("refcountedbase") {
  }
  
  rtc_library("ice_transport_factory") {
@@ -332,7 +332,7 @@ index b73990f829..a60d80cedf 100644
    visibility = [ "*" ]
    sources = [
      "ice_transport_factory.cc",
-@@ -1148,6 +1180,7 @@ rtc_library("ice_transport_factory") {
+@@ -1149,6 +1181,7 @@ rtc_library("ice_transport_factory") {
      "../rtc_base/system:rtc_export",
    ]
  }
@@ -1000,7 +1000,7 @@ index 9276bffe6c..2ee7d2ccf3 100644
          "/config/external/nspr",
          "/nsprpub/lib/ds",
 diff --git a/rtc_base/BUILD.gn b/rtc_base/BUILD.gn
-index 4d69d5f156..589ceff837 100644
+index 33023048f4..5ba1e85e01 100644
 --- a/rtc_base/BUILD.gn
 +++ b/rtc_base/BUILD.gn
 @@ -406,6 +406,7 @@ rtc_library("sample_counter") {
@@ -1168,7 +1168,7 @@ index 4d69d5f156..589ceff837 100644
  
  rtc_library("ssl_adapter") {
    visibility = [ "*" ]
-@@ -3144,7 +3168,7 @@ if (rtc_include_tests) {
+@@ -3145,7 +3169,7 @@ if (rtc_include_tests) {
    }
  }
  
