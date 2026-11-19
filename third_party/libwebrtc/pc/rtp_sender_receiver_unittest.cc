@@ -3197,8 +3197,7 @@ TEST_F(RtpSenderReceiverTest,
           });
 
   EXPECT_TRUE(owner_callback_called);
-  ASSERT_FALSE(result.ok());
-  EXPECT_EQ(result.error().type(), RTCErrorType::UNSUPPORTED_OPERATION);
+  EXPECT_TRUE(result.ok());
 }
 
 TEST_F(RtpSenderReceiverTest,
@@ -3269,6 +3268,60 @@ TEST_F(RtpSenderReceiverTest,
   ASSERT_FALSE(result.ok());
   EXPECT_EQ(result.error().type(), RTCErrorType::INVALID_STATE);
   EXPECT_FALSE(owner_callback_called);
+}
+
+TEST_F(RtpSenderReceiverTest, ReceiverSframeDecryptorHandleManagesKeys) {
+  scoped_refptr<VideoRtpReceiver> receiver = make_ref_counted<VideoRtpReceiver>(
+      worker_thread_.get(), kVideoTrackId, std::vector<std::string>(),
+      /*enable_sframe_at_owner=*/[] { return RTCError::OK(); });
+  RTCErrorOr<scoped_refptr<SframeDecryptorInterface>> result =
+      receiver->CreateSframeDecryptorOrError(
+          SframeCipherSuite::kAes128GcmSha256_128, [](SframeDecryptError) {});
+  ASSERT_TRUE(result.ok());
+  const std::vector<uint8_t> key_material(16, 0xab);
+
+  RTCError add_result = RTCError::InternalError("Not called");
+  result.value()->AddDecryptionKey(
+      /*key_id=*/1, key_material,
+      [&add_result](RTCError error) { add_result = std::move(error); });
+  RTCError remove_result = RTCError::InternalError("Not called");
+  result.value()->RemoveDecryptionKey(
+      /*key_id=*/1, [this, &remove_result](RTCError error) {
+        remove_result = std::move(error);
+        run_loop_.Quit();
+      });
+  run_loop_.Run();
+
+  EXPECT_TRUE(add_result.ok());
+  EXPECT_TRUE(remove_result.ok());
+}
+
+TEST_F(RtpSenderReceiverTest, ReceiverSframeDecryptorCanBeCreatedAgain) {
+  scoped_refptr<VideoRtpReceiver> receiver = make_ref_counted<VideoRtpReceiver>(
+      worker_thread_.get(), kVideoTrackId, std::vector<std::string>(),
+      /*enable_sframe_at_owner=*/[] { return RTCError::OK(); });
+  ASSERT_TRUE(receiver
+                  ->CreateSframeDecryptorOrError(
+                      SframeCipherSuite::kAes128GcmSha256_128,
+                      /*error_callback=*/[](SframeDecryptError) {})
+                  .ok());
+
+  RTCErrorOr<scoped_refptr<SframeDecryptorInterface>> result =
+      receiver->CreateSframeDecryptorOrError(
+          SframeCipherSuite::kAes256GcmSha512_128,
+          /*error_callback=*/[](SframeDecryptError) {});
+  ASSERT_TRUE(result.ok());
+
+  RTCError add_result = RTCError::InternalError("Not called");
+  result.value()->AddDecryptionKey(
+      /*key_id=*/1, std::vector<uint8_t>(32, 0xab),
+      [this, &add_result](RTCError error) {
+        add_result = std::move(error);
+        run_loop_.Quit();
+      });
+  run_loop_.Run();
+
+  EXPECT_TRUE(add_result.ok());
 }
 
 }  // namespace webrtc

@@ -32,10 +32,16 @@
 #include "api/sframe/sframe_decryptor_interface.h"
 #include "api/sframe/sframe_types.h"
 #include "api/task_queue/pending_task_safety_flag.h"
+#include "api/task_queue/task_queue_base.h"
 #include "api/transport/rtp/rtp_source.h"
 #include "api/units/timestamp.h"
 #include "media/base/media_channel.h"
 #include "modules/rtp_rtcp/source/source_tracker.h"
+#include "modules/sframe/sframe_decrypt_error_reporter.h"
+#include "modules/sframe/sframe_decryption_config.h"
+#include "modules/sframe/sframe_decryptor.h"
+#include "modules/sframe/sframe_decryptor_handle.h"
+#include "modules/sframe/sframe_media_decryptor_interface.h"
 #include "pc/media_stream.h"
 #include "pc/media_stream_proxy.h"
 #include "rtc_base/checks.h"
@@ -234,10 +240,25 @@ RtpReceiverBase::CreateSframeDecryptorOrError(
     return error;
   }
 
-  // TODO(bugs.webrtc.org/479862368): Create the internal Sframe decryption
-  // pipeline and return a key management handle.
-  return RTCError(RTCErrorType::UNSUPPORTED_OPERATION,
-                  "Sframe decrypter not yet implemented");
+  scoped_refptr<SframeMediaDecryptorInterface> decryptor =
+      SframeDecryptor::Create(cipher_suite);
+  scoped_refptr<SframeDecryptErrorReporter> error_reporter =
+      SframeDecryptErrorReporter::Create(std::move(error_callback));
+  SframeDecryptionConfig config{.decryptor = decryptor,
+                                .error_reporter = std::move(error_reporter)};
+
+  network_thread_->PostTask(SafeTask(
+      network_thread_safety_, [this, config = std::move(config)]() mutable {
+        RTC_DCHECK_RUN_ON(network_thread_);
+        sframe_decryption_config_ = std::move(config);
+        // TODO(bugs.webrtc.org/479862368): Pass the config to the media
+        // channel.
+      }));
+
+  // This runs on the signaling thread, where the key update results are
+  // reported.
+  return scoped_refptr<SframeDecryptorInterface>(SframeDecryptorHandle::Create(
+      *TaskQueueBase::Current(), *network_thread_, std::move(decryptor)));
 }
 
 }  // namespace webrtc

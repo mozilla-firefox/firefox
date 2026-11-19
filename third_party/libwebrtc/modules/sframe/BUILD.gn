@@ -13,6 +13,7 @@ if (!build_with_mozilla) {
   deps = [
     ":sframe_context_factory",
     ":sframe_decrypt_error_reporter",
+    ":sframe_decryption_config",
     ":sframe_decryptor",
     ":sframe_decryptor_handle",
     ":sframe_encryption_config",
@@ -63,11 +64,24 @@ rtc_library("sframe_decrypt_error_reporter") {
     "sframe_decrypt_error_reporter.h",
   ]
   deps = [
+    "../../api:make_ref_counted",
+    "../../api:refcountedbase",
+    "../../api:scoped_refptr",
     "../../api:sequence_checker",
     "../../api:sframe_decryptor_interface",
     "../../rtc_base:checks",
     "../../rtc_base:macromagic",
     "../../rtc_base/system:no_unique_address",
+    "//third_party/abseil-cpp/absl/base:nullability",
+  ]
+}
+
+rtc_source_set("sframe_decryption_config") {
+  sources = [ "sframe_decryption_config.h" ]
+  deps = [
+    ":sframe_decrypt_error_reporter",
+    ":sframe_media_decryptor_interface",
+    "../../api:scoped_refptr",
     "//third_party/abseil-cpp/absl/base:nullability",
   ]
 }

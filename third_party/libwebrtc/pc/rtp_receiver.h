@@ -40,6 +40,7 @@
 #include "api/units/timestamp.h"
 #include "media/base/media_channel.h"
 #include "modules/rtp_rtcp/source/source_tracker.h"
+#include "modules/sframe/sframe_decryption_config.h"
 #include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/thread_annotations.h"
@@ -202,6 +203,8 @@ class RtpReceiverBase : public RtpReceiverInternal {
   std::optional<uint32_t> unsignaled_ssrc_s_
       RTC_GUARDED_BY(signaling_thread_checker_);
   MediaReceiveChannelInterface* media_channel_ RTC_GUARDED_BY(network_thread_);
+  std::optional<SframeDecryptionConfig> sframe_decryption_config_
+      RTC_GUARDED_BY(network_thread_);
   RtpReceiverObserverInterface* observer_
       RTC_GUARDED_BY(&signaling_thread_checker_) = nullptr;
   bool received_first_packet_ RTC_GUARDED_BY(&signaling_thread_checker_) =
