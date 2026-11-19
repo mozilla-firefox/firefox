@@ -26,7 +26,6 @@
 #include "api/rtp_parameters.h"
 #include "api/scoped_refptr.h"
 #include "api/sequence_checker.h"
-#include "api/task_queue/pending_task_safety_flag.h"
 #include "media/base/media_channel.h"
 #include "pc/audio_track.h"
 #include "pc/jitter_buffer_delay.h"
@@ -155,7 +154,6 @@ class AudioRtpReceiver : public ObserverInterface,
   // Stores and updates the playout delay. Handles caching cases if
   // `SetJitterBufferMinimumDelay` is called before start.
   JitterBufferDelay delay_ RTC_GUARDED_BY(worker_thread_);
-  const scoped_refptr<PendingTaskSafetyFlag> worker_thread_safety_;
 };
 
 }  // namespace webrtc

@@ -34,6 +34,7 @@
 #include "api/sequence_checker.h"
 #include "api/sframe/sframe_decryptor_interface.h"
 #include "api/sframe/sframe_types.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "api/transport/rtp/rtp_source.h"
 #include "api/units/timestamp.h"
 #include "media/base/media_channel.h"
@@ -171,6 +172,11 @@ class RtpReceiverBase : public RtpReceiverInternal {
   void set_media_channel(MediaReceiveChannelInterface* media_channel)
       RTC_RUN_ON(worker_thread_);
 
+  // Alive only while a media channel is set.
+  const scoped_refptr<PendingTaskSafetyFlag>& worker_thread_safety() const {
+    return worker_thread_safety_;
+  }
+
   RTC_NO_UNIQUE_ADDRESS SequenceChecker signaling_thread_checker_;
   Thread* const worker_thread_;
   SourceTracker source_tracker_ RTC_GUARDED_BY(signaling_thread_checker_);
@@ -184,6 +190,7 @@ class RtpReceiverBase : public RtpReceiverInternal {
       RTC_GUARDED_BY(worker_thread_);
 
  private:
+  const scoped_refptr<PendingTaskSafetyFlag> worker_thread_safety_;
   // SSRC of the most recent unsignaled stream that the receiver was bound to.
   // Not cleared when the receiver is set up again, since the media channel may
   // keep an existing unsignaled stream across renegotiation, in which case no

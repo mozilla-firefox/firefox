@@ -30,6 +30,7 @@
 #include "api/sequence_checker.h"
 #include "api/sframe/sframe_decryptor_interface.h"
 #include "api/sframe/sframe_types.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "api/transport/rtp/rtp_source.h"
 #include "api/units/timestamp.h"
 #include "media/base/media_channel.h"
@@ -70,6 +71,9 @@ RtpReceiverBase::RtpReceiverBase(
     Clock* clock)
     : worker_thread_(worker_thread),
       source_tracker_(clock),
+      worker_thread_safety_(PendingTaskSafetyFlag::CreateAttachedToTaskQueue(
+          /*alive=*/media_channel != nullptr,
+          worker_thread_)),
       media_channel_(media_channel),
       enable_sframe_at_owner_(std::move(enable_sframe_at_owner)) {}
 
@@ -85,6 +89,8 @@ MediaReceiveChannelInterface* RtpReceiverBase::media_channel() const {
 void RtpReceiverBase::set_media_channel(
     MediaReceiveChannelInterface* media_channel) {
   media_channel_ = media_channel;
+  media_channel_ != nullptr ? worker_thread_safety_->SetAlive()
+                            : worker_thread_safety_->SetNotAlive();
 }
 
 std::optional<uint32_t> RtpReceiverBase::ssrc() const {

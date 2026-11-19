@@ -103,8 +103,7 @@ AudioRtpReceiver::AudioRtpReceiver(
           Thread::Current(),
           AudioTrack::Create(receiver_id, source_))),
       cached_track_enabled_(track_->internal()->enabled()),
-      attachment_id_(GenerateUniqueId()),
-      worker_thread_safety_(PendingTaskSafetyFlag::CreateDetachedInactive()) {
+      attachment_id_(GenerateUniqueId()) {
   RTC_DCHECK(worker_thread_);
   RTC_DCHECK(track_->GetSource()->remote());
   track_->RegisterObserver(this);
@@ -125,7 +124,7 @@ void AudioRtpReceiver::OnChanged() {
   if (cached_track_enabled_ == enabled)
     return;
   cached_track_enabled_ = enabled;
-  worker_thread_->PostTask(SafeTask(worker_thread_safety_,
+  worker_thread_->PostTask(SafeTask(worker_thread_safety(),
                                     [this, enabled, volume = cached_volume_]() {
                                       RTC_DCHECK_RUN_ON(worker_thread_);
                                       Reconfigure(enabled, volume);
@@ -161,7 +160,7 @@ void AudioRtpReceiver::OnSetVolume(double volume) {
     return;
 
   // SetVolume() does not return a result, so there's no need to block.
-  worker_thread_->PostTask(SafeTask(worker_thread_safety_, [this, volume]() {
+  worker_thread_->PostTask(SafeTask(worker_thread_safety(), [this, volume]() {
     RTC_DCHECK_RUN_ON(worker_thread_);
     SetOutputVolume_w(volume);
   }));
@@ -230,11 +229,6 @@ void AudioRtpReceiver::GetRestartFunctionForMediaChannel_w(
   VoiceMediaReceiveChannelInterface* voice_channel = voice_media_channel();
   if (!voice_channel)
     return;  // Can't restart.
-
-  // Make sure the safety flag is marked as `alive` for cases where the media
-  // channel was provided via the ctor and not an explicit call to
-  // SetMediaChannel.
-  worker_thread_safety_->SetAlive();
 
   if (state != MediaSourceInterface::kInitializing) {
     if (signaled_ssrc_ == ssrc)
@@ -353,8 +347,6 @@ void AudioRtpReceiver::SetMediaChannel(
     SetOutputVolume_w(0.0);
   }
 
-  media_channel ? worker_thread_safety_->SetAlive()
-                : worker_thread_safety_->SetNotAlive();
   set_media_channel(media_channel);
 }
 
