@@ -11,7 +11,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/8ff886a4d366b4be3
  3 files changed, 8 insertions(+), 3 deletions(-)
 
 diff --git a/modules/video_capture/BUILD.gn b/modules/video_capture/BUILD.gn
-index eb6dafe778..82a7b79c66 100644
+index 8b70c6b7a0..af413cc063 100644
 --- a/modules/video_capture/BUILD.gn
 +++ b/modules/video_capture/BUILD.gn
 @@ -114,6 +114,10 @@ if (!build_with_chromium || is_linux || is_chromeos) {
