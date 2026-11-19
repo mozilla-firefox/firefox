@@ -85,10 +85,10 @@ export class UserContextManagerClass {
    * @param {object} options
    * @param {string=} options.color
    *     The color to use for the container, from the list of container colors
-   *     supported by ContextualIdentityService. No color is set by default.
+   *     supported by ContextualIdentityService. Defaults to "gray".
    * @param {string=} options.icon
    *     The icon to use for the container, from the list of container icons
-   *     supported by ContextualIdentityService. No icon is set by default.
+   *     supported by ContextualIdentityService. Defaults to "circle".
    * @param {string=} options.name
    *     The name to use for the user context. When provided options.prefix will
    *     be ignored. Defaults to null.

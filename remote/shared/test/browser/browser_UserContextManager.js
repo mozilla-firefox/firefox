@@ -192,8 +192,8 @@ add_task(async function test_create_context_icon_and_color() {
   const internalId1 = userContextManager.getInternalIdById(userContextId1);
   const identity1 =
     ContextualIdentityService.getPublicIdentityFromId(internalId1);
-  is(identity1.icon, undefined, "The new identity has no icon");
-  is(identity1.color, undefined, "The new identity has no color");
+  is(identity1.icon, "circle", "The new identity uses the default icon");
+  is(identity1.color, "gray", "The new identity uses the default color");
 
   userContextManager.removeUserContext(userContextId1);
 

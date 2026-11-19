@@ -6,6 +6,8 @@ run-if = [
 
 ["test_basic.js"]
 
+["test_containersStore.js"]
+
 ["test_corruptedFile.js"]
 
 ["test_migratedFile.js"]

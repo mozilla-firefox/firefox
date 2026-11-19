@@ -1,10 +1,6 @@
 "use strict";
 
 ChromeUtils.defineESModuleGetters(this, {
-  CONTAINER_COLORS:
-    "moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs",
-  CONTAINER_COLOR_ALIASES:
-    "moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs",
   ContextualIdentityService:
     "moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs",
   ExtensionPreferencesManager:
@@ -967,13 +963,13 @@ add_task(async function test_contextualIdentity_color_api_names() {
 
   // Forward coverage: every internal color name and alias must be listed
   // above, so this test has to be updated whenever the set of names changes.
-  for (let { name } of CONTAINER_COLORS) {
+  for (let name of ContextualIdentityService.containerColors) {
     ok(
       inputColors.includes(name),
       `internal color "${name}" is covered by the API test`
     );
   }
-  for (let legacy of Object.keys(CONTAINER_COLOR_ALIASES)) {
+  for (let legacy of ContextualIdentityService.containerColorAliases.keys()) {
     ok(
       inputColors.includes(legacy),
       `internal alias "${legacy}" is covered by the API test`
