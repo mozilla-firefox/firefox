@@ -20,6 +20,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "api/rtp_header_extension_id.h"
+#include "api/video/video_codec_constants.h"
 #include "rtc_base/checks.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
@@ -29,6 +30,7 @@ namespace webrtc {
 namespace {
 
 using ::testing::ElementsAre;
+using ::testing::HasSubstr;
 using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
 RtpParameters CreateRtpParametersWithCodecs(
@@ -478,6 +480,23 @@ TEST(CodecParameterMapTest, SupportsStringViewLookup) {
   EXPECT_EQ(params.count(absl::string_view("key2")), 1u);
   EXPECT_EQ(params.erase(key1), 1u);
   EXPECT_THAT(params, ElementsAre(Pair("key2", "value2")));
+}
+
+TEST(RtpParametersTest, EncodingComplexityEqualityAndStringify) {
+  RtpEncodingParameters encoding1;
+  RtpEncodingParameters encoding2;
+  EXPECT_EQ(encoding1, encoding2);
+
+  encoding1.encoding_complexity = VideoCodecComplexity::kComplexityHigh;
+  EXPECT_NE(encoding1, encoding2);
+  EXPECT_THAT(absl::StrCat(encoding1), HasSubstr("encoding_complexity: 1"));
+
+  encoding2.encoding_complexity = VideoCodecComplexity::kComplexityHigh;
+  EXPECT_EQ(encoding1, encoding2);
+
+  encoding2.encoding_complexity = VideoCodecComplexity::kComplexityLow;
+  EXPECT_NE(encoding1, encoding2);
+  EXPECT_THAT(absl::StrCat(encoding2), HasSubstr("encoding_complexity: -1"));
 }
 
 }  // namespace

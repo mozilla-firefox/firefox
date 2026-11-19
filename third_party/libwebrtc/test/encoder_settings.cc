@@ -97,6 +97,7 @@ std::vector<VideoStream> CreateVideoStreams(
       stream_settings[i].height = height / stream.scale_resolution_down_by;
     }
     stream_settings[i].scalability_mode = stream.scalability_mode;
+    stream_settings[i].encoding_complexity = stream.encoding_complexity;
     stream_settings[i].target_bitrate_bps = target_bitrate_bps;
     stream_settings[i].max_bitrate_bps = max_bitrate_bps;
     stream_settings[i].active =

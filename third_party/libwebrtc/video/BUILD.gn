@@ -2094,6 +2094,7 @@ if (rtc_include_tests) {
       "../api/video:video_rtp_headers",
       "../api/video:video_stream_encoder",
       "../api/video/corruption_detection:frame_instrumentation_data",
+      "../api/video_codecs:rtc_software_fallback_wrappers",
       "../api/video_codecs:scalability_mode",
       "../api/video_codecs:video_codecs_api",
       "../api/video_codecs:vp8_temporal_layers_factory",

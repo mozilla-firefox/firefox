@@ -78,6 +78,7 @@
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_codec.h"
 #include "api/video_codecs/video_encoder.h"
+#include "api/video_codecs/video_encoder_software_fallback_wrapper.h"
 #include "api/video_codecs/vp8_frame_buffer_controller.h"
 #include "api/video_codecs/vp8_temporal_layers_factory.h"
 #include "api/video_track_source_constraints.h"
@@ -1298,9 +1299,25 @@ class VideoStreamEncoderTest : public ::testing::Test {
       has_trusted_rate_controller_ = trusted;
     }
 
-    VideoCodecComplexity LastEncoderComplexity() {
+    VideoCodecComplexity LastEncoderComplexity() const {
       MutexLock lock(&local_mutex_);
       return last_encoder_complexity_;
+    }
+
+    int GetNumSetComplexityCalls() const {
+      MutexLock lock(&local_mutex_);
+      return num_set_complexity_calls_;
+    }
+
+    std::optional<std::vector<VideoCodecComplexity>>
+    LastComplexityBySpatialLayer() const {
+      MutexLock lock(&local_mutex_);
+      return last_complexity_by_spatial_layer_;
+    }
+
+    std::optional<ComplexityControlMode> LastComplexityControlMode() const {
+      MutexLock lock(&local_mutex_);
+      return last_complexity_control_mode_;
     }
 
    private:
@@ -1372,6 +1389,8 @@ class VideoStreamEncoderTest : public ::testing::Test {
       }
 
       last_encoder_complexity_ = config->GetVideoEncoderComplexity();
+      last_complexity_by_spatial_layer_.reset();
+      last_complexity_control_mode_.reset();
 
       if (force_init_encode_failed_) {
         initialized_ = EncoderState::kInitializationFailed;
@@ -1408,6 +1427,17 @@ class VideoStreamEncoderTest : public ::testing::Test {
       RateControlParameters adjusted_paramters = parameters;
       adjusted_paramters.bitrate = adjusted_rate_allocation;
       FakeEncoder::SetRates(adjusted_paramters);
+    }
+
+    void SetComplexity(
+        std::span<const VideoCodecComplexity> complexity_by_spatial_layer,
+        ComplexityControlMode complexity_control_mode) override {
+      MutexLock lock(&local_mutex_);
+      ++num_set_complexity_calls_;
+      last_complexity_by_spatial_layer_.emplace(
+          complexity_by_spatial_layer.begin(),
+          complexity_by_spatial_layer.end());
+      last_complexity_control_mode_ = complexity_control_mode;
     }
 
     mutable Mutex local_mutex_;
@@ -1461,6 +1491,11 @@ class VideoStreamEncoderTest : public ::testing::Test {
         RTC_GUARDED_BY(local_mutex_);
     VideoCodecComplexity last_encoder_complexity_ RTC_GUARDED_BY(local_mutex_){
         VideoCodecComplexity::kComplexityNormal};
+    int num_set_complexity_calls_ RTC_GUARDED_BY(local_mutex_) = 0;
+    std::optional<std::vector<VideoCodecComplexity>>
+        last_complexity_by_spatial_layer_ RTC_GUARDED_BY(local_mutex_);
+    std::optional<ComplexityControlMode> last_complexity_control_mode_
+        RTC_GUARDED_BY(local_mutex_);
   };
 
   class TestSink : public VideoStreamEncoder::EncoderSink {
@@ -9910,6 +9945,275 @@ TEST_F(VideoStreamEncoderTest,
   WaitForEncodedFrame(1);
   EXPECT_EQ(fake_encoder_.LastEncoderComplexity(),
             VideoCodecComplexity::kComplexityMax);
+  video_stream_encoder_->Stop();
+}
+
+TEST_F(VideoStreamEncoderTest,
+       DoesNotCallSetComplexityWhenEncodingComplexityUnpopulated) {
+  auto field_trials = SetFieldTrial("WebRTC-EncoderSpeed", "vp8_camera:high");
+  ResetEncoder("VP8", /*num_streams=*/1, /*num_temporal_layers=*/1,
+               /*num_spatial_layers=*/1,
+               /*screenshare=*/false, kDefaultFramerate,
+               VideoStreamEncoder::BitrateAllocationCallbackType::kNone,
+               /*num_cores=*/2, &field_trials);
+
+  video_stream_encoder_->OnBitrateUpdatedAndWaitForManagedResources(
+      kTargetBitrate, kTargetBitrate, 0, 0, 0);
+  video_source_.IncomingCapturedFrame(
+      CreateFrame(1, /*width=*/320, /*height=*/180));
+  WaitForEncodedFrame(1);
+
+  EXPECT_EQ(fake_encoder_.LastEncoderComplexity(),
+            VideoCodecComplexity::kComplexityHigh);
+  EXPECT_EQ(fake_encoder_.GetNumSetComplexityCalls(), 0);
+  EXPECT_EQ(fake_encoder_.LastComplexityBySpatialLayer(), std::nullopt);
+  EXPECT_EQ(fake_encoder_.LastComplexityControlMode(), std::nullopt);
+
+  video_stream_encoder_->Stop();
+}
+
+TEST_F(VideoStreamEncoderTest,
+       CallsSetComplexityWhenEncodingComplexityPopulated) {
+  VideoEncoderConfig config = video_encoder_config_.Copy();
+  config.simulcast_layers[0].encoding_complexity =
+      VideoCodecComplexity::kComplexityHigh;
+  ConfigureEncoder(config.Copy());
+
+  video_stream_encoder_->OnBitrateUpdatedAndWaitForManagedResources(
+      kTargetBitrate, kTargetBitrate, 0, 0, 0);
+  int64_t timestamp_ms = kFrameIntervalMs;
+  video_source_.IncomingCapturedFrame(CreateFrame(timestamp_ms, nullptr));
+  WaitForEncodedFrame(timestamp_ms);
+
+  EXPECT_EQ(fake_encoder_.GetNumInitializations(), 1);
+  EXPECT_EQ(fake_encoder_.LastEncoderComplexity(),
+            VideoCodecComplexity::kComplexityNormal);
+  EXPECT_EQ(fake_encoder_.GetNumSetComplexityCalls(), 1);
+  EXPECT_THAT(fake_encoder_.LastComplexityBySpatialLayer(),
+              Optional(ElementsAre(VideoCodecComplexity::kComplexityHigh)));
+  EXPECT_EQ(fake_encoder_.LastComplexityControlMode(),
+            VideoEncoder::ComplexityControlMode::kVariable);
+
+  // Updating encoding_complexity dynamically calls SetComplexity without
+  // resetting the encoder.
+  config.simulcast_layers[0].encoding_complexity =
+      VideoCodecComplexity::kComplexityLow;
+  video_stream_encoder_->ConfigureEncoder(config.Copy(), kMaxPayloadLength);
+  timestamp_ms += kFrameIntervalMs;
+  video_source_.IncomingCapturedFrame(CreateFrame(timestamp_ms, nullptr));
+  WaitForEncodedFrame(timestamp_ms);
+
+  EXPECT_EQ(fake_encoder_.GetNumInitializations(), 1);
+  EXPECT_EQ(fake_encoder_.GetNumSetComplexityCalls(), 2);
+  EXPECT_THAT(fake_encoder_.LastComplexityBySpatialLayer(),
+              Optional(ElementsAre(VideoCodecComplexity::kComplexityLow)));
+  EXPECT_EQ(fake_encoder_.LastComplexityControlMode(),
+            VideoEncoder::ComplexityControlMode::kVariable);
+
+  // Reconfiguring an unrelated parameter while encoding_complexity is unchanged
+  // does not redundantly call SetComplexity.
+  config.max_bitrate_bps = kTargetBitrate.bps() / 2;
+  video_stream_encoder_->ConfigureEncoder(config.Copy(), kMaxPayloadLength);
+  timestamp_ms += kFrameIntervalMs;
+  video_source_.IncomingCapturedFrame(CreateFrame(timestamp_ms, nullptr));
+  WaitForEncodedFrame(timestamp_ms);
+
+  EXPECT_EQ(fake_encoder_.GetNumInitializations(), 1);
+  EXPECT_EQ(fake_encoder_.GetNumSetComplexityCalls(), 2);
+
+  // An encoder reset (e.g. from resolution change) re-applies SetComplexity.
+  codec_width_ *= 2;
+  codec_height_ *= 2;
+  timestamp_ms += kFrameIntervalMs;
+  video_source_.IncomingCapturedFrame(CreateFrame(timestamp_ms, nullptr));
+  WaitForEncodedFrame(timestamp_ms);
+
+  EXPECT_EQ(fake_encoder_.GetNumInitializations(), 2);
+  EXPECT_EQ(fake_encoder_.GetNumSetComplexityCalls(), 3);
+  EXPECT_THAT(fake_encoder_.LastComplexityBySpatialLayer(),
+              Optional(ElementsAre(VideoCodecComplexity::kComplexityLow)));
+  EXPECT_EQ(fake_encoder_.LastComplexityControlMode(),
+            VideoEncoder::ComplexityControlMode::kVariable);
+
+  video_stream_encoder_->Stop();
+}
+
+TEST_F(VideoStreamEncoderTest,
+       ClearingEncodingComplexityResetsEncoderWithoutCallingSetComplexity) {
+  VideoEncoderConfig config = video_encoder_config_.Copy();
+  config.simulcast_layers[0].encoding_complexity =
+      VideoCodecComplexity::kComplexityMax;
+  ConfigureEncoder(config.Copy());
+
+  video_stream_encoder_->OnBitrateUpdatedAndWaitForManagedResources(
+      kTargetBitrate, kTargetBitrate, 0, 0, 0);
+  int64_t timestamp_ms = kFrameIntervalMs;
+  video_source_.IncomingCapturedFrame(CreateFrame(timestamp_ms, nullptr));
+  WaitForEncodedFrame(timestamp_ms);
+
+  EXPECT_EQ(fake_encoder_.GetNumInitializations(), 1);
+  EXPECT_EQ(fake_encoder_.GetNumSetComplexityCalls(), 1);
+  EXPECT_THAT(fake_encoder_.LastComplexityBySpatialLayer(),
+              Optional(ElementsAre(VideoCodecComplexity::kComplexityMax)));
+
+  // Clearing encoding_complexity back to std::nullopt resets the encoder to
+  // restore default heuristics without calling SetComplexity.
+  config.simulcast_layers[0].encoding_complexity = std::nullopt;
+  video_stream_encoder_->ConfigureEncoder(std::move(config), kMaxPayloadLength);
+  timestamp_ms += kFrameIntervalMs;
+  video_source_.IncomingCapturedFrame(CreateFrame(timestamp_ms, nullptr));
+  WaitForEncodedFrame(timestamp_ms);
+
+  EXPECT_EQ(fake_encoder_.GetNumInitializations(), 2);
+  EXPECT_EQ(fake_encoder_.GetNumSetComplexityCalls(), 1);
+  EXPECT_EQ(fake_encoder_.LastComplexityBySpatialLayer(), std::nullopt);
+  EXPECT_EQ(fake_encoder_.LastComplexityControlMode(), std::nullopt);
+
+  video_stream_encoder_->Stop();
+}
+
+TEST_F(VideoStreamEncoderTest,
+       ClearingEncodingComplexityWithFallbackWrapperClearsComplexity) {
+  TestEncoder sw_fallback_encoder(env_);
+  test::VideoEncoderProxyFactory sw_proxy_factory(&sw_fallback_encoder);
+  test::VideoEncoderProxyFactory hw_proxy_factory(&fake_encoder_);
+  test::FunctionVideoEncoderFactory wrapper_factory(
+      [&](const Environment& env, const SdpVideoFormat& format) {
+        return CreateVideoEncoderSoftwareFallbackWrapper(
+            env, sw_proxy_factory.Create(env, format),
+            hw_proxy_factory.Create(env, format),
+            /*prefer_temporal_support=*/false);
+      });
+  video_send_config_.encoder_settings.encoder_factory = &wrapper_factory;
+
+  VideoEncoderConfig config = video_encoder_config_.Copy();
+  config.simulcast_layers[0].encoding_complexity =
+      VideoCodecComplexity::kComplexityMax;
+  ConfigureEncoder(config.Copy());
+
+  video_stream_encoder_->OnBitrateUpdatedAndWaitForManagedResources(
+      kTargetBitrate, kTargetBitrate, 0, 0, 0);
+  int64_t timestamp_ms = kFrameIntervalMs;
+  video_source_.IncomingCapturedFrame(CreateFrame(timestamp_ms, nullptr));
+  WaitForEncodedFrame(timestamp_ms);
+
+  EXPECT_EQ(fake_encoder_.GetNumInitializations(), 1);
+  EXPECT_EQ(fake_encoder_.GetNumSetComplexityCalls(), 1);
+  EXPECT_THAT(fake_encoder_.LastComplexityBySpatialLayer(),
+              Optional(ElementsAre(VideoCodecComplexity::kComplexityMax)));
+
+  // Clearing encoding_complexity back to std::nullopt reinitializes the
+  // existing VideoEncoderSoftwareFallbackWrapper instance via Release() +
+  // InitEncode(), which must not replay the stale complexity onto the encoder.
+  config.simulcast_layers[0].encoding_complexity = std::nullopt;
+  video_stream_encoder_->ConfigureEncoder(std::move(config), kMaxPayloadLength);
+  timestamp_ms += kFrameIntervalMs;
+  video_source_.IncomingCapturedFrame(CreateFrame(timestamp_ms, nullptr));
+  WaitForEncodedFrame(timestamp_ms);
+
+  EXPECT_EQ(fake_encoder_.GetNumInitializations(), 2);
+  EXPECT_EQ(fake_encoder_.GetNumSetComplexityCalls(), 1);
+  EXPECT_EQ(fake_encoder_.LastComplexityBySpatialLayer(), std::nullopt);
+  EXPECT_EQ(fake_encoder_.LastComplexityControlMode(), std::nullopt);
+
+  video_stream_encoder_->Stop();
+  video_stream_encoder_.reset();
+}
+
+TEST_F(VideoStreamEncoderTest,
+       SimulcastEncodingComplexityPopulatesPerStreamWithDefaultFallback) {
+  auto field_trials = SetFieldTrial("WebRTC-EncoderSpeed", "vp8_camera:high");
+  VideoEncoderConfig config;
+  test::FillEncoderConfiguration(kVideoCodecVP8, /*num_streams=*/3, &config);
+  config.simulcast_layers[0].scale_resolution_down_by = 4.0;
+  config.simulcast_layers[0].encoding_complexity =
+      VideoCodecComplexity::kComplexityLow;
+  config.simulcast_layers[1].scale_resolution_down_by = 2.0;
+  config.simulcast_layers[1].encoding_complexity = std::nullopt;
+  config.simulcast_layers[2].scale_resolution_down_by = 1.0;
+  config.simulcast_layers[2].encoding_complexity =
+      VideoCodecComplexity::kComplexityMax;
+  config.video_stream_factory = nullptr;
+
+  ConfigureEncoder(config.Copy(),
+                   VideoStreamEncoder::BitrateAllocationCallbackType::kNone,
+                   /*num_cores=*/2, &field_trials);
+  video_stream_encoder_->OnBitrateUpdatedAndWaitForManagedResources(
+      kSimulcastTargetBitrate, kSimulcastTargetBitrate, 0, 0, 0);
+  sink_.SetNumExpectedLayers(3);
+
+  int64_t timestamp_ms = kFrameIntervalMs;
+  video_source_.IncomingCapturedFrame(CreateFrame(timestamp_ms, 1280, 720));
+  WaitForEncodedFrame(timestamp_ms);
+
+  EXPECT_EQ(fake_encoder_.GetNumInitializations(), 1);
+  EXPECT_EQ(fake_encoder_.GetNumSetComplexityCalls(), 1);
+  // Stream 1 is unpopulated and falls back to the default complexity (from
+  // WebRTC-EncoderSpeed: kComplexityHigh).
+  EXPECT_THAT(fake_encoder_.LastComplexityBySpatialLayer(),
+              Optional(ElementsAre(VideoCodecComplexity::kComplexityLow,
+                                   VideoCodecComplexity::kComplexityHigh,
+                                   VideoCodecComplexity::kComplexityMax)));
+  EXPECT_EQ(fake_encoder_.LastComplexityControlMode(),
+            VideoEncoder::ComplexityControlMode::kVariable);
+
+  // Updating one stream's encoding_complexity calls SetComplexity without
+  // resetting the encoder.
+  config.simulcast_layers[1].encoding_complexity =
+      VideoCodecComplexity::kComplexityNormal;
+  video_stream_encoder_->ConfigureEncoder(config.Copy(), kMaxPayloadLength);
+  timestamp_ms += kFrameIntervalMs;
+  video_source_.IncomingCapturedFrame(CreateFrame(timestamp_ms, 1280, 720));
+  WaitForEncodedFrame(timestamp_ms);
+
+  EXPECT_EQ(fake_encoder_.GetNumInitializations(), 1);
+  EXPECT_EQ(fake_encoder_.GetNumSetComplexityCalls(), 2);
+  EXPECT_THAT(fake_encoder_.LastComplexityBySpatialLayer(),
+              Optional(ElementsAre(VideoCodecComplexity::kComplexityLow,
+                                   VideoCodecComplexity::kComplexityNormal,
+                                   VideoCodecComplexity::kComplexityMax)));
+  EXPECT_EQ(fake_encoder_.LastComplexityControlMode(),
+            VideoEncoder::ComplexityControlMode::kVariable);
+
+  // Clearing encoding_complexity on all streams resets the encoder without
+  // calling SetComplexity.
+  for (auto& layer : config.simulcast_layers) {
+    layer.encoding_complexity = std::nullopt;
+  }
+  video_stream_encoder_->ConfigureEncoder(std::move(config), kMaxPayloadLength);
+  timestamp_ms += kFrameIntervalMs;
+  video_source_.IncomingCapturedFrame(CreateFrame(timestamp_ms, 1280, 720));
+  WaitForEncodedFrame(timestamp_ms);
+
+  EXPECT_EQ(fake_encoder_.GetNumInitializations(), 2);
+  EXPECT_EQ(fake_encoder_.GetNumSetComplexityCalls(), 2);
+  EXPECT_EQ(fake_encoder_.LastComplexityBySpatialLayer(), std::nullopt);
+  EXPECT_EQ(fake_encoder_.LastComplexityControlMode(), std::nullopt);
+
+  video_stream_encoder_->Stop();
+}
+
+TEST_F(VideoStreamEncoderTest, SvcSingleEncodingForwardsEncodingComplexity) {
+  video_send_config_.rtp.payload_name = "AV1";
+  VideoEncoderConfig config;
+  test::FillEncoderConfiguration(kVideoCodecAV1, /*num_streams=*/1, &config);
+  config.simulcast_layers[0].scalability_mode = ScalabilityMode::kL2T2;
+  config.simulcast_layers[0].encoding_complexity =
+      VideoCodecComplexity::kComplexityMax;
+  ConfigureEncoder(std::move(config));
+
+  video_stream_encoder_->OnBitrateUpdatedAndWaitForManagedResources(
+      kTargetBitrate, kTargetBitrate, 0, 0, 0);
+  video_source_.IncomingCapturedFrame(CreateFrame(1, 640, 360));
+  WaitForEncodedFrame(1);
+
+  EXPECT_EQ(fake_encoder_.GetNumInitializations(), 1);
+  EXPECT_EQ(fake_encoder_.GetNumSetComplexityCalls(), 1);
+  EXPECT_THAT(fake_encoder_.LastComplexityBySpatialLayer(),
+              Optional(ElementsAre(VideoCodecComplexity::kComplexityMax)));
+  EXPECT_EQ(fake_encoder_.LastComplexityControlMode(),
+            VideoEncoder::ComplexityControlMode::kVariable);
+
   video_stream_encoder_->Stop();
 }
 

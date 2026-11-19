@@ -2399,6 +2399,51 @@ TEST_F(RtpSenderReceiverTest, VideoSenderDetectInvalidMaxFramerate) {
   DestroyVideoRtpSender();
 }
 
+TEST_F(RtpSenderReceiverTest, VideoSenderCanSetEncodingComplexity) {
+  CreateVideoRtpSender();
+
+  RtpParameters params = video_rtp_sender_->GetParameters();
+  ASSERT_EQ(params.encodings.size(), 1u);
+  EXPECT_EQ(params.encodings[0].encoding_complexity, std::nullopt);
+  params.encodings[0].encoding_complexity =
+      VideoCodecComplexity::kComplexityHigh;
+
+  EXPECT_THAT(video_rtp_sender_->SetParameters(params), IsRtcOk());
+  params = video_rtp_sender_->GetParameters();
+  ASSERT_EQ(params.encodings.size(), 1u);
+  EXPECT_EQ(params.encodings[0].encoding_complexity,
+            VideoCodecComplexity::kComplexityHigh);
+
+  params = video_media_send_channel()->GetRtpSendParameters(kVideoSsrc);
+  ASSERT_EQ(params.encodings.size(), 1u);
+  EXPECT_EQ(params.encodings[0].encoding_complexity,
+            VideoCodecComplexity::kComplexityHigh);
+
+  DestroyVideoRtpSender();
+}
+
+TEST_F(RtpSenderReceiverTest, VideoSenderCanSetEncodingComplexitySimulcast) {
+  CreateVideoRtpSenderWithSimulcast();
+
+  RtpParameters params = video_rtp_sender_->GetParameters();
+  ASSERT_EQ(params.encodings.size(), kVideoSimulcastLayerCount);
+  params.encodings[0].encoding_complexity =
+      VideoCodecComplexity::kComplexityLow;
+  params.encodings[1].encoding_complexity =
+      VideoCodecComplexity::kComplexityMax;
+
+  EXPECT_THAT(video_rtp_sender_->SetParameters(params), IsRtcOk());
+  params =
+      video_media_send_channel()->GetRtpSendParameters(kVideoSsrcSimulcast);
+  ASSERT_EQ(params.encodings.size(), kVideoSimulcastLayerCount);
+  EXPECT_EQ(params.encodings[0].encoding_complexity,
+            VideoCodecComplexity::kComplexityLow);
+  EXPECT_EQ(params.encodings[1].encoding_complexity,
+            VideoCodecComplexity::kComplexityMax);
+
+  DestroyVideoRtpSender();
+}
+
 // A video sender can have multiple simulcast layers, in which case it will
 // contain multiple RtpEncodingParameters. This tests that if this is the case
 // (simulcast), then we can't set the bitrate_priority, or max_bitrate_bps

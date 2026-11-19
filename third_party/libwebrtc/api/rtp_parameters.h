@@ -39,6 +39,7 @@
 #include "api/rtp_header_extension_id.h"
 #include "api/rtp_transceiver_direction.h"
 #include "api/video/resolution.h"
+#include "api/video/video_codec_constants.h"
 #include "api/video_codecs/scalability_mode.h"
 #include "rtc_base/containers/flat_map.h"
 #include "rtc_base/strings/str_join.h"
@@ -693,6 +694,11 @@ struct RTC_EXPORT RtpEncodingParameters {
   // Allow changing the used codec for this encoding.
   std::optional<RtpCodec> codec;
 
+  // Indicates the desired complexity for this encoding. This will be gated
+  // behind a flag until https://github.com/w3c/webrtc-extensions/pull/252 has
+  // been landed.
+  std::optional<VideoCodecComplexity> encoding_complexity;
+
   bool operator==(const RtpEncodingParameters& o) const {
     return ssrc == o.ssrc && csrcs == o.csrcs &&
            bitrate_priority == o.bitrate_priority &&
@@ -705,7 +711,7 @@ struct RTC_EXPORT RtpEncodingParameters {
            active == o.active && rid == o.rid &&
            adaptive_ptime == o.adaptive_ptime &&
            scale_resolution_down_to == o.scale_resolution_down_to &&
-           codec == o.codec;
+           codec == o.codec && encoding_complexity == o.encoding_complexity;
   }
   bool operator!=(const RtpEncodingParameters& o) const {
     return !(*this == o);
@@ -744,6 +750,10 @@ struct RTC_EXPORT RtpEncodingParameters {
     }
     if (p.codec) {
       absl::Format(&sink, "codec: %v, ", *p.codec);
+    }
+    if (p.encoding_complexity) {
+      absl::Format(&sink, "encoding_complexity: %d, ",
+                   static_cast<int>(*p.encoding_complexity));
     }
     absl::Format(&sink, "adaptive_ptime: %s}",
                  p.adaptive_ptime ? "true" : "false");

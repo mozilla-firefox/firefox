@@ -24,6 +24,22 @@ inline constexpr int kMaxFrameSidePixels = 16384;
 inline constexpr int kMaxFrameSizePixels =
     kMaxFrameSidePixels * kMaxFrameSidePixels;
 
+// This represents a best-effort complexity set, that can be configured on
+// webrtc::VideoEncoder instance. A higher complexity indicates that more CPU
+// cycles can be spent in order to improve the quality of the encoded picture.
+// Note that the exact behavior is implementation specific and no guarantee of
+// the exact behavior exists. For instance, even if a higher complexity is
+// available to the encoder implementation, it may choose not to activate it if
+// it deems that it will not result in a noticeable quality difference.
+// The relative _target_ CPU usage is listed as comments below.
+enum class VideoCodecComplexity {
+  kComplexityLow = -1,    // As low as possible.
+  kComplexityNormal = 0,  // Default (baseline as if not configured).
+  kComplexityHigh = 1,    // 15% higher than normal.
+  kComplexityHigher = 2,  // 50% higher than normal.
+  kComplexityMax = 3      // Maximum RTC-compatiable setting available.
+};
+
 }  // namespace webrtc
 
 #endif  // API_VIDEO_VIDEO_CODEC_CONSTANTS_H_

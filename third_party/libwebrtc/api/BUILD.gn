@@ -816,6 +816,7 @@ rtc_library("rtp_parameters") {
     "../rtc_base/containers:flat_map",
     "../rtc_base/system:rtc_export",
     "video:resolution",
+    "video:video_codec_constants",
     "video_codecs:scalability_mode",
     "//third_party/abseil-cpp/absl/container:inlined_vector",
     "//third_party/abseil-cpp/absl/strings",
@@ -1925,6 +1926,7 @@ if (rtc_include_tests) {
       ":rtp_parameters",
       "../rtc_base:checks",
       "../test:test_support",
+      "video:video_codec_constants",
       "//third_party/abseil-cpp/absl/strings",
       "//third_party/abseil-cpp/absl/strings:string_view",
     ]

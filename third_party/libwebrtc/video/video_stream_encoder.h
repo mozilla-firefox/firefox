@@ -39,6 +39,7 @@
 #include "api/video/video_adaptation_reason.h"
 #include "api/video/video_bitrate_allocation.h"
 #include "api/video/video_bitrate_allocator.h"
+#include "api/video/video_codec_constants.h"
 #include "api/video/video_frame.h"
 #include "api/video/video_frame_buffer.h"
 #include "api/video/video_frame_type.h"
@@ -373,6 +374,8 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
 
   VideoEncoder::EncoderInfo encoder_info_ RTC_GUARDED_BY(encoder_queue_);
   VideoCodec send_codec_ RTC_GUARDED_BY(encoder_queue_);
+  std::optional<absl::InlinedVector<VideoCodecComplexity, kMaxSimulcastStreams>>
+      encoder_complexity_ RTC_GUARDED_BY(encoder_queue_);
 
   FrameDropper frame_dropper_ RTC_GUARDED_BY(encoder_queue_);
   // If frame dropper is not force disabled, frame dropping might still be

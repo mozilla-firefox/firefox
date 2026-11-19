@@ -231,6 +231,7 @@ if (rtc_include_tests) {
       "../../environment",
       "../../video:encoded_image",
       "../../video:video_bitrate_allocator",
+      "../../video:video_codec_constants",
       "../../video:video_frame",
       "../../video:video_frame_type",
       "../../video:video_rtp_headers",

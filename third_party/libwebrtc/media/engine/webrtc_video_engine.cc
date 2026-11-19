@@ -2225,7 +2225,9 @@ RTCError WebRtcVideoSendChannel::WebRtcVideoSendStream::SetRtpParameters(
         (new_parameters.encodings[i].scalability_mode !=
          rtp_parameters_.encodings[i].scalability_mode) ||
         (new_parameters.encodings[i].codec !=
-         rtp_parameters_.encodings[i].codec)) {
+         rtp_parameters_.encodings[i].codec) ||
+        (new_parameters.encodings[i].encoding_complexity !=
+         rtp_parameters_.encodings[i].encoding_complexity)) {
       new_param = true;
       break;
     }
@@ -2493,6 +2495,8 @@ WebRtcVideoSendChannel::WebRtcVideoSendStream::CreateVideoEncoderConfig(
     }
     encoder_config.simulcast_layers[i].scale_resolution_down_to =
         rtp_parameters_.encodings[i].scale_resolution_down_to;
+    encoder_config.simulcast_layers[i].encoding_complexity =
+        rtp_parameters_.encodings[i].encoding_complexity;
   }
 
   encoder_config.legacy_conference_mode = parameters_.conference_mode;

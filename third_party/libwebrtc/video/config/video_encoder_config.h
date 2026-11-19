@@ -21,6 +21,7 @@
 #include "api/ref_count.h"
 #include "api/scoped_refptr.h"
 #include "api/video/resolution.h"
+#include "api/video/video_codec_constants.h"
 #include "api/video/video_codec_type.h"
 #include "api/video_codecs/scalability_mode.h"
 #include "api/video_codecs/sdp_video_format.h"
@@ -91,6 +92,8 @@ struct VideoStream {
   // This should be set for mixed-codec simulcast, while for other cases,
   // it is optional and can be unset.
   std::optional<SdpVideoFormat> video_format;
+
+  std::optional<VideoCodecComplexity> encoding_complexity;
 };
 
 class VideoEncoderConfig {

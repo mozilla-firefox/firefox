@@ -9,7 +9,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/fb61f91d422c3d775
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/api/rtp_parameters.h b/api/rtp_parameters.h
-index 328bbb87e7..d812196e3f 100644
+index b7dcbbc237..4073b1b459 100644
 --- a/api/rtp_parameters.h
 +++ b/api/rtp_parameters.h
 @@ -36,7 +36,6 @@
@@ -20,7 +20,7 @@ index 328bbb87e7..d812196e3f 100644
  #include "api/rtp_header_extension_id.h"
  #include "api/rtp_transceiver_direction.h"
  #include "api/video/resolution.h"
-@@ -46,7 +45,7 @@
+@@ -47,7 +46,7 @@
  #include "rtc_base/system/rtc_export.h"
  
  namespace webrtc {
