@@ -148,6 +148,8 @@ CO01:
         - addressbar-firefox-suggest-online
         # browser/customkeys.ftl
         - customkeys-dev-network
+        # browser/installer/custom.ftl (terms aren't supported by the installer)
+        - un-survey-checkbox-label
         # browser/newtab/onboarding.ftl
         - mr1-onboarding-welcome-image-caption
         - mr2022-onboarding-gratitude-subtitle

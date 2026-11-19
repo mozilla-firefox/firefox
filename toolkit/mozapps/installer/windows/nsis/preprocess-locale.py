@@ -5,7 +5,7 @@
 # preprocess-locale.py provides two functions depending on the arguments passed
 # to it when invoked.
 #
-# Preprocesses installer locale properties files and creates a basic NSIS nlf
+# Preprocesses installer locale Fluent files and creates a basic NSIS nlf
 # file when invoked with --preprocess-locale.
 #
 # Converts a UTF-8 file to a new UTF-16LE file when invoked with
@@ -14,8 +14,12 @@
 from codecs import BOM_UTF16_LE
 import io
 from os.path import join, isfile
+import re
 import sys
 from optparse import OptionParser
+
+from fluent.syntax import FluentParser
+from fluent.syntax import ast as FTL
 
 
 def open_utf16le_file(path):
@@ -27,65 +31,300 @@ def open_utf16le_file(path):
     return fp
 
 
-def get_locale_strings(path, prefix, middle, add_cr):
+# Maps the Fluent variables available to installer strings to the NSIS
+# variables and defines used to replace them.
+NSIS_VARIABLES = {
+    "BrandShortName": "$BrandShortName",
+    "BrandFullName": "$BrandFullName",
+    "BrandFullNameDA": "$BrandFullNameDA",
+    "BrandProductName": "$BrandProductName",
+    "ClickInstructions": "$_CLICK",
+    "FilePath": "$0",
+    "MinSupportedVer": "${MinSupportedVer}",
+    "MinSupportedCPU": "${MinSupportedCPU}",
+}
+
+# Locales that don't add a space before the accesskey in parentheses (e.g.
+# "オプション(&O)"). This mirrors the historical installer translations.
+ACCESSKEY_NO_SPACE_LOCALES = {"brx", "ja", "ja-JP-mac", "ko", "pa-IN"}
+
+# Fluent IDs in override.ftl, mapped to the NSIS built-in strings they
+# override. The order matches the order in the file.
+OVERRIDE_IDS = {
+    "nsis-setup-caption": "SetupCaption",
+    "nsis-uninstall-caption": "UninstallCaption",
+    "nsis-back-btn": "BackBtn",
+    "nsis-next-btn": "NextBtn",
+    "nsis-accept-btn": "AcceptBtn",
+    "nsis-dont-accept-btn": "DontAcceptBtn",
+    "nsis-install-btn": "InstallBtn",
+    "nsis-uninstall-btn": "UninstallBtn",
+    "nsis-cancel-btn": "CancelBtn",
+    "nsis-close-btn": "CloseBtn",
+    "nsis-browse-btn": "BrowseBtn",
+    "nsis-show-details-btn": "ShowDetailsBtn",
+    "nsis-click-next": "ClickNext",
+    "nsis-click-install": "ClickInstall",
+    "nsis-click-uninstall": "ClickUninstall",
+    "nsis-completed": "Completed",
+    "nsis-license-text-rb": "LicenseTextRB",
+    "nsis-components-text": "ComponentsText",
+    "nsis-components-sub-text2-no-inst-types": "ComponentsSubText2_NoInstTypes",
+    "nsis-dir-text": "DirText",
+    "nsis-dir-sub-text": "DirSubText",
+    "nsis-dir-browse-text": "DirBrowseText",
+    "nsis-space-available": "SpaceAvailable",
+    "nsis-space-required": "SpaceRequired",
+    "nsis-uninstalling-text": "UninstallingText",
+    "nsis-uninstalling-sub-text": "UninstallingSubText",
+    "nsis-file-error": "FileError",
+    "nsis-file-error-no-ignore": "FileError_NoIgnore",
+    "nsis-cant-write": "CantWrite",
+    "nsis-copy-failed": "CopyFailed",
+    "nsis-copy-to": "CopyTo",
+    "nsis-registering": "Registering",
+    "nsis-unregistering": "Unregistering",
+    "nsis-symbol-not-found": "SymbolNotFound",
+    "nsis-could-not-load": "CouldNotLoad",
+    "nsis-create-folder": "CreateFolder",
+    "nsis-create-shortcut": "CreateShortcut",
+    "nsis-created-uninstaller": "CreatedUninstaller",
+    "nsis-delete": "Delete",
+    "nsis-delete-on-reboot": "DeleteOnReboot",
+    "nsis-error-creating-shortcut": "ErrorCreatingShortcut",
+    "nsis-error-creating": "ErrorCreating",
+    "nsis-error-decompressing": "ErrorDecompressing",
+    "nsis-error-registering": "ErrorRegistering",
+    "nsis-exec-shell": "ExecShell",
+    "nsis-exec": "Exec",
+    "nsis-extract": "Extract",
+    "nsis-error-writing": "ErrorWriting",
+    "nsis-invalid-opcode": "InvalidOpcode",
+    "nsis-no-ole": "NoOLE",
+    "nsis-output-folder": "OutputFolder",
+    "nsis-remove-folder": "RemoveFolder",
+    "nsis-rename-on-reboot": "RenameOnReboot",
+    "nsis-rename": "Rename",
+    "nsis-skipped": "Skipped",
+    "nsis-copy-details": "CopyDetails",
+    "nsis-log-install": "LogInstall",
+    "nsis-byte": "Byte",
+    "nsis-kilo": "Kilo",
+    "nsis-mega": "Mega",
+    "nsis-giga": "Giga",
+}
+
+# Used to detect trailing punctuation in a string, so that the accesskey
+# can be inserted before it.
+TRAILING_PUNCTUATION_RE = re.compile(r"\s*(?:…|\.{2,}|>)$")
+
+
+class UnsupportedMessage(Exception):
+    pass
+
+
+class InvalidReference(Exception):
+    pass
+
+
+def override_name(message_id):
+    if message_id not in OVERRIDE_IDS:
+        raise ValueError(f"Unknown NSIS override string: {message_id}")
+    return OVERRIDE_IDS[message_id]
+
+
+def default_name(message_id):
+    return message_id.upper().replace("-", "_")
+
+
+def load_messages(path, reference=False):
     """
-    Returns a string created by converting an installer locale properties file
-    into the format required by NSIS locale files.
+    Returns a dict of Fluent messages by ID.
 
     Parameters:
-    path   - the path to the installer locale properties file to preprocess
-    prefix - a string to prefix each line with
-    middle - a string to insert between the name and value for each line
-    add_cr - boolean for whether to add an NSIS carriage return before NSIS
-             linefeeds when there isn't one already
+    path      - the path to the Fluent file
+    reference - whether this is the en-US file, which must exist and be valid
     """
-    output = ""
-    fp = io.open(path, "r", encoding="utf-8")
-    for line in fp:
-        line = line.strip()
-        if line == "" or line[0] == "#":
+    if not isfile(path):
+        if reference:
+            raise InvalidReference(f"Missing en-US file: {path}")
+        return {}
+    with open(path, encoding="utf-8") as fp:
+        resource = FluentParser(with_spans=False).parse(fp.read())
+    if reference:
+        for entry in resource.body:
+            if isinstance(entry, FTL.Junk):
+                error = entry.annotations[0].message if entry.annotations else ""
+                content = entry.content.strip().splitlines()[0]
+                raise InvalidReference(f"Invalid syntax in {path}: {error} ({content})")
+    return {
+        entry.id.name: entry
+        for entry in resource.body
+        if isinstance(entry, FTL.Message)
+    }
+
+
+def get_accesskey(message):
+    for attribute in message.attributes:
+        if attribute.id.name != "accesskey":
             continue
+        text = ""
+        for element in attribute.value.elements:
+            if isinstance(element, FTL.TextElement):
+                text += element.value
+            elif isinstance(element.expression, FTL.StringLiteral):
+                text += element.expression.parse()["value"]
+            else:
+                raise UnsupportedMessage(
+                    f"{message.id.name}.accesskey uses unsupported syntax: "
+                    f"{type(element.expression).__name__}"
+                )
+        return text.strip()[:1] or None
+    return None
 
-        name, value = line.split("=", 1)
-        value = value.strip()  # trim whitespace from the start and end
-        if value and value[-1] == '"' and value[0] == '"':
-            value = value[1:-1]  # remove " from the start and end
 
-        if add_cr:
-            value = value.replace("\\n", "\\r\\n")  # prefix $\n with $\r
-            value = value.replace("\\r\\r", "\\r")  # replace $\r$\r with $\r
+def escape_text(text, has_accesskey):
+    text = text.replace("$", "$$")
+    text = text.replace('"', '$\\"')
+    if has_accesskey:
+        text = text.replace("&", "&&")
+    text = text.replace("\r", "").replace("\n", "$\\r$\\n")
+    return text.replace("\t", "$\\t")
 
-        value = value.replace('"', '$\\"')  # prefix " with $\
-        value = value.replace("\\r", "$\\r")  # prefix \r with $
-        value = value.replace("\\n", "$\\n")  # prefix \n with $
-        value = value.replace("\\t", "$\\t")  # prefix \t with $
 
-        output += prefix + name.strip() + middle + ' "' + value + '"\n'
-    fp.close()
+def find_accesskey(segments, accesskey):
+    """
+    Returns a (segment index, character index) tuple for the accesskey in the
+    literal text segments, preferring a case-sensitive match, or None.
+    """
+    literals = [
+        (segment, text)
+        for segment, (text, is_literal) in enumerate(segments)
+        if is_literal
+    ]
+    for segment, text in literals:
+        index = text.find(accesskey)
+        if index != -1:
+            return segment, index
+    for segment, text in literals:
+        for index, char in enumerate(text):
+            if char.lower() == accesskey.lower():
+                return segment, index
+    return None
+
+
+def format_message(message, reference, ab_cd):
+    """
+    Returns the value of a Fluent message in the format used by NSIS locale
+    files, with the accesskey inlined in the label.
+
+    Parameters:
+    message   - the localized Fluent message to format
+    reference - the en-US Fluent message, used for the accesskey fallback
+    ab_cd     - the locale code
+    """
+    if message.value is None:
+        raise UnsupportedMessage(f"{message.id.name} has no value")
+
+    accesskey = None
+    reference_accesskey = get_accesskey(reference)
+    if reference_accesskey:
+        accesskey = get_accesskey(message) or reference_accesskey
+
+    # List of (text, is_literal) tuples. Accesskeys are only searched in
+    # literal text, never in variable names.
+    segments = []
+    for element in message.value.elements:
+        if isinstance(element, FTL.TextElement):
+            segments.append((element.value, True))
+            continue
+        expression = element.expression
+        if isinstance(expression, FTL.StringLiteral):
+            segments.append((expression.parse()["value"], True))
+        elif (
+            isinstance(expression, FTL.VariableReference)
+            and expression.id.name in NSIS_VARIABLES
+        ):
+            segments.append((NSIS_VARIABLES[expression.id.name], False))
+        else:
+            raise UnsupportedMessage(
+                f"{message.id.name} uses unsupported syntax: {type(expression).__name__}"
+            )
+
+    has_accesskey = accesskey is not None
+    position = find_accesskey(segments, accesskey) if has_accesskey else None
+    value = ""
+    for segment, (text, is_literal) in enumerate(segments):
+        if not is_literal:
+            value += text
+        elif position and position[0] == segment:
+            index = position[1]
+            value += (
+                escape_text(text[:index], True) + "&" + escape_text(text[index:], True)
+            )
+        else:
+            value += escape_text(text, has_accesskey)
+
+    if has_accesskey and position is None:
+        separator = "" if ab_cd in ACCESSKEY_NO_SPACE_LOCALES else " "
+        label = f"{separator}(&{escape_text(accesskey, True)})"
+        match = TRAILING_PUNCTUATION_RE.search(value)
+        position = match.start() if match else len(value)
+        value = value[:position] + label + value[position:]
+
+    return value
+
+
+def get_locale_strings(filename, l10ndirs, ab_cd, prefix, middle, nsis_name):
+    """
+    Returns a string created by converting an installer Fluent file into the
+    format required by NSIS locale files.
+
+    Parameters:
+    filename  - the name of the Fluent file to convert
+    l10ndirs  - list of paths to search for the Fluent file, in order of
+                preference. The last one must contain the en-US file.
+    ab_cd     - the locale code
+    prefix    - a string to prefix each line with
+    middle    - a string to insert between the name and value for each line
+    nsis_name - a function returning the NSIS name for a Fluent message ID
+    """
+    reference = load_messages(join(l10ndirs[-1], filename), reference=True)
+    localizations = [load_messages(join(d, filename)) for d in l10ndirs[:-1]]
+
+    output = ""
+    for message_id, reference_message in reference.items():
+        reference_value = format_message(reference_message, reference_message, "en-US")
+        value = None
+        for messages in localizations:
+            if message_id not in messages:
+                continue
+            try:
+                value = format_message(messages[message_id], reference_message, ab_cd)
+                break
+            except UnsupportedMessage as e:
+                print(f"Warning: {filename}: {e}", file=sys.stderr)
+        if value is None:
+            value = reference_value
+        output += f'{prefix}{nsis_name(message_id)}{middle} "{value}"\n'
     return output
 
 
-def lookup(path, l10ndirs):
-    for d in l10ndirs:
-        if isfile(join(d, path)):
-            return join(d, path)
-    return join(l10ndirs[-1], path)
-
-
-def preprocess_locale_files(config_dir, l10ndirs):
+def preprocess_locale_files(config_dir, l10ndirs, ab_cd):
     """
-    Preprocesses the installer localized properties files into the format
+    Preprocesses the installer localized Fluent files into the format
     required by NSIS and creates a basic NSIS nlf file.
 
     Parameters:
     config_dir - the path to the destination directory
     l10ndirs   - list of paths to search for installer locale files
+    ab_cd      - the locale code
     """
 
     # Create the main NSIS language file
     fp = open_utf16le_file(join(config_dir, "overrideLocale.nsh"))
     locale_strings = get_locale_strings(
-        lookup("override.properties", l10ndirs), "LangString ^", " 0 ", False
+        "override.ftl", l10ndirs, ab_cd, "LangString ^", " 0 ", override_name
     )
     fp.write(locale_strings.encode("utf-16-le"))
     fp.close()
@@ -103,7 +342,7 @@ def preprocess_locale_files(config_dir, l10ndirs):
         ).encode("utf-16-le")
     )
     locale_strings = get_locale_strings(
-        lookup("mui.properties", l10ndirs), "!define ", " ", True
+        "mui.ftl", l10ndirs, ab_cd, "!define ", " ", default_name
     )
     fp.write(locale_strings.encode("utf-16-le"))
     fp.write("!insertmacro MOZ_MUI_LANGUAGEFILE_END\n".encode("utf-16-le"))
@@ -112,7 +351,7 @@ def preprocess_locale_files(config_dir, l10ndirs):
     # Create the custom language file for our custom strings
     fp = open_utf16le_file(join(config_dir, "customLocale.nsh"))
     locale_strings = get_locale_strings(
-        lookup("custom.properties", l10ndirs), "LangString ", " 0 ", True
+        "custom.ftl", l10ndirs, ab_cd, "LangString ", " 0 ", default_name
     )
     fp.write(locale_strings.encode("utf-16-le"))
     fp.close()
@@ -168,22 +407,23 @@ NLF v6
     fp.close()
 
 
-def preprocess_locale_file(config_dir, l10ndirs, properties_filename, output_filename):
+def preprocess_locale_file(config_dir, l10ndirs, ab_cd, ftl_filename, output_filename):
     """
-    Preprocesses a single localized properties file into the format
-    required by NSIS and creates a basic NSIS nlf file.
+    Preprocesses a single localized Fluent file into the format required by
+    NSIS.
 
     Parameters:
-    config_dir            - the path to the destination directory
-    l10ndirs              - list of paths to search for installer locale files
-    properties_filename   - the name of the properties file to search for
-    output_filename       - the output filename to write
+    config_dir      - the path to the destination directory
+    l10ndirs        - list of paths to search for installer locale files
+    ab_cd           - the locale code
+    ftl_filename    - the name of the Fluent file to search for
+    output_filename - the output filename to write
     """
 
     # Create the custom language file for our custom strings
     fp = open_utf16le_file(join(config_dir, output_filename))
     locale_strings = get_locale_strings(
-        lookup(properties_filename, l10ndirs), "LangString ", " 0 ", True
+        ftl_filename, l10ndirs, ab_cd, "LangString ", " 0 ", default_name
     )
     fp.write(locale_strings.encode("utf-16-le"))
     fp.close()
@@ -209,10 +449,10 @@ if __name__ == "__main__":
 
 Commands:
  --convert-utf8-utf16le     - Preprocesses installer locale properties files
- --preprocess-locale        - Preprocesses the installer localized properties
+ --preprocess-locale        - Preprocesses the installer localized Fluent
                               files into the format required by NSIS and
                               creates a basic NSIS nlf file.
- --preprocess-single-file   - Preprocesses a single properties file into the
+ --preprocess-single-file   - Preprocesses a single Fluent file into the
                               format required by NSIS
  --create-nlf-file          - Creates a basic NSIS nlf file
 
@@ -235,7 +475,7 @@ Arguments:
  <src>    \tthe path to top source directory for the toolkit source
  <locale> \tthe path to the installer's locale files
  <dest>   \tthe path to the destination directory
- <infile> \tthe properties file to process
+ <infile> \tthe Fluent file to process
  <outfile>\tthe nsh file to write
 
 
@@ -294,6 +534,12 @@ Arguments to --create-nlf-file should be:
         help="Add directory to lookup for locale files",
     )
     p.add_option(
+        "--ab-cd",
+        default="en-US",
+        dest="ab_cd",
+        help="The locale code, used by --preprocess-single-file",
+    )
+    p.add_option(
         "--convert-utf8-utf16le", action="store_true", default=False, dest="convert"
     )
 
@@ -321,59 +567,64 @@ Arguments to --create-nlf-file should be:
     if not foundOne:
         p.error("No command specified")
 
-    if options.preprocess:
-        if len(args) not in (3, 4):
-            p.error(preprocess_locale_args_help_string)
-
-        # Parse args
-        pargs = args[:]
-        moz_dir = pargs[0]
-        if len(pargs) == 4:
-            l10n_dirs = [pargs[1]]
-            del pargs[1]
-        else:
-            if not options.l10n_dirs:
+    try:
+        if options.preprocess:
+            if len(args) not in (3, 4):
                 p.error(preprocess_locale_args_help_string)
-            l10n_dirs = options.l10n_dirs
-        ab_cd = pargs[1]
-        config_dir = pargs[2]
 
-        # Create the output files
-        create_nlf_file(moz_dir, ab_cd, config_dir)
-        preprocess_locale_files(config_dir, l10n_dirs)
-    elif options.preprocessSingle:
-        if len(args) not in (4, 5):
-            p.error(preprocess_single_file_args_help_string)
+            # Parse args
+            pargs = args[:]
+            moz_dir = pargs[0]
+            if len(pargs) == 4:
+                l10n_dirs = [pargs[1]]
+                del pargs[1]
+            else:
+                if not options.l10n_dirs:
+                    p.error(preprocess_locale_args_help_string)
+                l10n_dirs = options.l10n_dirs
+            ab_cd = pargs[1]
+            config_dir = pargs[2]
 
-        # Parse args
-        pargs = args[:]
-        moz_dir = pargs[0]
-        if len(pargs) == 5:
-            l10n_dirs = [pargs[1]]
-            del pargs[1]
-        else:
-            if not options.l10n_dirs:
+            # Create the output files
+            create_nlf_file(moz_dir, ab_cd, config_dir)
+            preprocess_locale_files(config_dir, l10n_dirs, ab_cd)
+        elif options.preprocessSingle:
+            if len(args) not in (4, 5):
                 p.error(preprocess_single_file_args_help_string)
-            l10n_dirs = options.l10n_dirs
-        config_dir = pargs[1]
-        in_file = pargs[2]
-        out_file = pargs[3]
 
-        # Create the output files
-        preprocess_locale_file(config_dir, l10n_dirs, in_file, out_file)
-    elif options.createNlf:
-        if len(args) != 3:
-            p.error(create_nlf_args_help_string)
+            # Parse args
+            pargs = args[:]
+            moz_dir = pargs[0]
+            if len(pargs) == 5:
+                l10n_dirs = [pargs[1]]
+                del pargs[1]
+            else:
+                if not options.l10n_dirs:
+                    p.error(preprocess_single_file_args_help_string)
+                l10n_dirs = options.l10n_dirs
+            config_dir = pargs[1]
+            in_file = pargs[2]
+            out_file = pargs[3]
 
-        # Parse args
-        pargs = args[:]
-        moz_dir = pargs[0]
-        ab_cd = pargs[1]
-        config_dir = pargs[2]
+            # Create the output files
+            preprocess_locale_file(
+                config_dir, l10n_dirs, options.ab_cd, in_file, out_file
+            )
+        elif options.createNlf:
+            if len(args) != 3:
+                p.error(create_nlf_args_help_string)
 
-        # Create the output files
-        create_nlf_file(moz_dir, ab_cd, config_dir)
-    elif options.convert:
-        if len(args) != 2:
-            p.error("--convert-utf8-utf16le needs both of <src> <dest>")
-        convert_utf8_utf16le(*args)
+            # Parse args
+            pargs = args[:]
+            moz_dir = pargs[0]
+            ab_cd = pargs[1]
+            config_dir = pargs[2]
+
+            # Create the output files
+            create_nlf_file(moz_dir, ab_cd, config_dir)
+        elif options.convert:
+            if len(args) != 2:
+                p.error("--convert-utf8-utf16le needs both of <src> <dest>")
+            convert_utf8_utf16le(*args)
+    except InvalidReference as e:
+        sys.exit(f"Error: {e}")

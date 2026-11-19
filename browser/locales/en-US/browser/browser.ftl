@@ -18,10 +18,10 @@ browser-main-private-window-title = { PLATFORM() ->
 browser-main-private-suffix-for-content = Private Browsing
 
 # The non-variable portion of this MUST match the translation of
-# "PRIVATE_BROWSING_SHORTCUT_TITLE" in custom.properties
+# "private-browsing-shortcut-title" in installer/custom.ftl
 private-browsing-shortcut-text-2 = { -brand-shortcut-name } Private Browsing
 
-# This MUST match the translation of "BRIEF_APP_DESC" in custom.properties
+# This MUST match the translation of "brief-app-desc" in installer/custom.ftl
 browser-shortcut-description = Fast and private web browsing
 
 ##

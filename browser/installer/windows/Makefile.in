@@ -25,7 +25,7 @@ endif
 stage_installer:
 	$(call py_action,nsis_stage installer,$(NSIS_STAGE_ARGS) \
 	$(addprefix --install=,$(addprefix $(MOZILLA_DIR)/other-licenses/nsis/,$(NSIS_CUSTOM_UI))) \
-	--single-file nsisstrings.properties nsisstrings.nlf \
+	--single-file nsisstrings.ftl nsisstrings.nlf \
 	--convert-utf8 $(srcdir)/nsis/extensionsLocale.nsh $(CONFIG_DIR)/extensionsLocale.nsh)
 
 $(CONFIG_DIR)/setup.exe::

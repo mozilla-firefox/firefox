@@ -83,7 +83,7 @@ class TestNsisStage(unittest.TestCase):
                 "en-US",
                 "--preprocess-locale",
                 "--single-file",
-                "nsisstrings.properties",
+                "nsisstrings.ftl",
                 "nsisstrings.nlf",
                 "--convert-utf8",
                 "extensionsLocale.nsh",
@@ -131,8 +131,9 @@ class TestNsisStage(unittest.TestCase):
                     "--preprocess-single-file",
                     str(self.tmpdir),
                     "browser/locales/en-US/installer",
+                    "--ab-cd=en-US",
                     str(config_dir),
-                    "nsisstrings.properties",
+                    "nsisstrings.ftl",
                     "nsisstrings.nlf",
                 ],
                 [
@@ -169,7 +170,7 @@ class TestNsisStage(unittest.TestCase):
         config_dir = self.tmpdir / "instgen"
         steps = (
             ["--preprocess-locale"],
-            ["--single-file", "nsisstrings.properties", "nsisstrings.nlf"],
+            ["--single-file", "nsisstrings.ftl", "nsisstrings.nlf"],
             ["--convert-utf8", "extensionsLocale.nsh", "out.nsh"],
         )
 
@@ -315,7 +316,7 @@ class TestNsisStage(unittest.TestCase):
                 "en-US",
                 "--preprocess-locale",
                 "--single-file",
-                "nsisstrings.properties",
+                "nsisstrings.ftl",
                 "nsisstrings.nlf",
                 "--convert-utf8",
                 "extensionsLocale.nsh",
@@ -340,7 +341,7 @@ class TestNsisStage(unittest.TestCase):
                 "preprocess_locale_script": ppl,
                 "locale_args": ["browser/locales/en-US/installer"],
                 "preprocess_locale": True,
-                "single_files": [["nsisstrings.properties", "nsisstrings.nlf"]],
+                "single_files": [["nsisstrings.ftl", "nsisstrings.nlf"]],
                 "convert_utf8": [["extensionsLocale.nsh", "extensionsLocale.nsh"]],
                 "repack_l10n_dir": "browser/installer",
             },
@@ -356,7 +357,7 @@ class TestNsisStage(unittest.TestCase):
             "preprocess_locale_script": "/src/toolkit/preprocess-locale.py",
             "locale_args": ["/src/browser/locales/en-US/installer"],
             "preprocess_locale": True,
-            "single_files": [["nsisstrings.properties", "nsisstrings.nlf"]],
+            "single_files": [["nsisstrings.ftl", "nsisstrings.nlf"]],
             "convert_utf8": [
                 ["/src/nsis/extensionsLocale.nsh", "extensionsLocale.nsh"]
             ],
@@ -394,7 +395,7 @@ class TestNsisStage(unittest.TestCase):
             ],
             ab_cd="de",
             preprocess_locale=True,
-            single_files=[["nsisstrings.properties", "nsisstrings.nlf"]],
+            single_files=[["nsisstrings.ftl", "nsisstrings.nlf"]],
             convert_utf8=[
                 [
                     "/src/nsis/extensionsLocale.nsh",

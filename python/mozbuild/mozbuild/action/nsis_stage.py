@@ -61,11 +61,12 @@ def nsis_stage(
                 + [ab_cd, str(config_dir)]
             )
 
-        for properties, nlf in single_files:
+        for ftl, nlf in single_files:
             subprocess.check_call(
                 [sys.executable, ppl, "--preprocess-single-file", str(topsrcdir)]
                 + locale_args
-                + [str(config_dir), properties, nlf]
+                + ([f"--ab-cd={ab_cd}"] if ab_cd else [])
+                + [str(config_dir), ftl, nlf]
             )
 
         for src, dest in convert_utf8:
@@ -214,7 +215,7 @@ def _parser() -> argparse.ArgumentParser:
         nargs=2,
         default=[],
         dest="single_files",
-        metavar=("PROPERTIES", "NLF"),
+        metavar=("FTL", "NLF"),
         help="Run preprocess-locale.py --preprocess-single-file. Repeatable.",
     )
     parser.add_argument(

@@ -25,6 +25,8 @@ subsuite = "mozbuild"
 
 ["action/test_nsis_stage.py"]
 
+["action/test_preprocess_locale.py"]
+
 ["action/test_node.py"]
 
 ["action/test_package.py"]

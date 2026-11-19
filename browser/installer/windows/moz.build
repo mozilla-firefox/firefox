@@ -33,10 +33,10 @@ if CONFIG["MAKENSISU"]:
     nsis_locale_files = [
         f"/browser/locales/en-US/installer/{f}"
         for f in [
-            "custom.properties",
-            "mui.properties",
-            "nsisstrings.properties",
-            "override.properties",
+            "custom.ftl",
+            "mui.ftl",
+            "nsisstrings.ftl",
+            "override.ftl",
         ]
     ]
 
@@ -70,7 +70,7 @@ if CONFIG["MAKENSISU"]:
             "--ab-cd=en-US",
             "--preprocess-locale",
             "--single-file",
-            "nsisstrings.properties",
+            "nsisstrings.ftl",
             "nsisstrings.nlf",
             "--convert-utf8",
             f"{SRCDIR}/nsis/extensionsLocale.nsh",
