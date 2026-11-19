@@ -341,7 +341,7 @@ $(LIBRARY): $(OBJS) $(STATIC_LIBS) $(GLOBAL_DEPS)
 	$(REPORT_BUILD)
 	$(call BUILDSTATUS,START_StaticLib $@)
 	$(RM) $(REAL_LIBRARY)
-	$(AR) $(AR_FLAGS) $($@_OBJS)
+	$(AR) $(call subst_paths,$(AR_FLAGS)) $($@_OBJS)
 	$(call BUILDSTATUS,END_StaticLib $@)
 
 $(WASM_ARCHIVE): $(CWASMOBJS) $(CPPWASMOBJS) $(STATIC_LIBS) $(GLOBAL_DEPS)

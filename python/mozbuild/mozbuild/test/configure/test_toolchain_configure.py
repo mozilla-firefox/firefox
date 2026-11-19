@@ -421,6 +421,11 @@ class BaseToolchainTest(BaseConfigureTest):
             result,
         )
 
+    def do_ar_config_test(self, paths, result, environ={}):
+        values = self.sandbox_values(paths, ("target_ar_config",), environ)
+        self.assertIsInstance(values, tuple, values)
+        self.assertEqual(values[0].flags, result)
+
     def do_depend_cflags_test(self, paths, result):
         sandbox = self.toolchain_sandbox(paths)
         self.assertEqual(
@@ -757,6 +762,14 @@ class LinuxToolchainTest(BaseToolchainTest):
 
     def test_outoption(self):
         self.do_outoption_test(self.PATHS, ("-o ", "-o "))
+
+    def test_ar_config(self):
+        self.do_ar_config_test(self.PATHS, ("crs", "{target}"))
+
+    def test_ar_config_extra_flags(self):
+        self.do_ar_config_test(
+            self.PATHS, ("crs", "-D", "{target}"), environ={"AR_FLAGS": "-D"}
+        )
 
     def test_depend_cflags(self):
         self.do_depend_cflags_test(self.PATHS, (GCC_DEPEND_CFLAGS, GCC_DEPEND_CFLAGS))
@@ -1117,6 +1130,9 @@ class WindowsToolchainTest(BaseToolchainTest):
 
     def test_outoption(self):
         self.do_outoption_test(self.PATHS, ("-Fo", "-Fo"))
+
+    def test_ar_config(self):
+        self.do_ar_config_test(self.PATHS, ("-llvmlibthin", "-out:{target}"))
 
     def test_depend_cflags(self):
         self.do_depend_cflags_test(

@@ -3712,7 +3712,7 @@ def ar_config(c_compiler, toolchain_prefix=None):
         if c_compiler.type == "clang-cl":
             return namespace(
                 names=("llvm-lib",),
-                flags=("-llvmlibthin", "-out:$@") + extra_ar_flags,
+                flags=("-llvmlibthin", "-out:{target}") + extra_ar_flags,
             )
 
         names = tuple("%s%s" % (p, "ar") for p in (toolchain_prefix or ()) + ("",))
@@ -3729,7 +3729,7 @@ def ar_config(c_compiler, toolchain_prefix=None):
 
         return namespace(
             names=names,
-            flags=("crs",) + extra_ar_flags + ("$@",),
+            flags=("crs",) + extra_ar_flags + ("{target}",),
         )
 
     return ar_config
@@ -3776,7 +3776,7 @@ def ar_supports_response_files(c_compiler, extra_toolchain_flags, ar, ar_config)
                     os.remove(lib_path)
                     ar_command = (
                         [ar]
-                        + [x.replace("$@", lib_path) for x in ar_config.flags]
+                        + [x.replace("{target}", lib_path) for x in ar_config.flags]
                         + ["@" + list_path]
                     )
                     result = check_cmd_output(*ar_command, onerror=lambda: None)
