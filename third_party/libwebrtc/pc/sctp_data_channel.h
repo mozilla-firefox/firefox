@@ -202,6 +202,8 @@ class SctpDataChannel : public DataChannelInterface {
   // dropped if, by the time the task runs, the channel isn't connected to the
   // transport or has been closed. Can be called on any thread.
   void PostOnTransportReady();
+  // Lets a send run the posted `OnTransportReady()` early.
+  void SetTransportReadyPending_n();
 
   void OnDataReceived(DataMessageType type, const CopyOnWriteBuffer& payload);
 
@@ -331,6 +333,7 @@ class SctpDataChannel : public DataChannelInterface {
       kHandshakeInit;
   // Did we already start the graceful SCTP closing procedure?
   bool started_closing_procedure_ RTC_GUARDED_BY(network_thread_) = false;
+  bool transport_ready_pending_ RTC_GUARDED_BY(network_thread_) = false;
   PacketQueue queued_received_data_ RTC_GUARDED_BY(network_thread_);
   const scoped_refptr<PendingTaskSafetyFlag> network_safety_ =
       PendingTaskSafetyFlag::CreateDetachedInactive();

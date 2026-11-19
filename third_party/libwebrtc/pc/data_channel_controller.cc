@@ -344,14 +344,17 @@ bool DataChannelController::HandleOpenMessage_n(
   config.open_handshake_role = InternalDataChannelInit::kAcker;
   auto channel_or_error = CreateDataChannel(label, config);
   if (channel_or_error.ok()) {
-    signaling_thread()->PostTask(
-        SafeTask(signaling_safety_.flag(),
-                 [this, channel = channel_or_error.MoveValue(), channel_id,
-                  ready_to_send = data_channel_transport_->IsReadyToSend()] {
-                   RTC_DCHECK_RUN_ON(signaling_thread());
-                   OnDataChannelOpenMessage(std::move(channel), ready_to_send,
-                                            channel_id);
-                 }));
+    bool ready_to_send = data_channel_transport_->IsReadyToSend();
+    if (ready_to_send) {
+      channel_or_error.value()->SetTransportReadyPending_n();
+    }
+    signaling_thread()->PostTask(SafeTask(
+        signaling_safety_.flag(), [this, channel = channel_or_error.MoveValue(),
+                                   channel_id, ready_to_send] {
+          RTC_DCHECK_RUN_ON(signaling_thread());
+          OnDataChannelOpenMessage(std::move(channel), ready_to_send,
+                                   channel_id);
+        }));
   } else {
     RTC_LOG(LS_ERROR) << "Failed to create DataChannel from the OPEN message. "
                       << channel_or_error;

@@ -557,6 +557,15 @@ RTCError SctpDataChannel::SendImpl(DataBuffer buffer) {
   // The caller increases the cached `bufferedAmount` even if there are errors.
   expected_buffer_amount_ += buffer.size();
 
+  if (state_ == kConnecting && transport_ready_pending_) {
+    scoped_refptr<PendingTaskSafetyFlag> network_safety = network_safety_;
+    OnTransportReady();
+    // Failing to send the ACK closes the channel, which may then be deleted.
+    if (!network_safety->alive()) {
+      return RTCError(RTCErrorType::INVALID_STATE);
+    }
+  }
+
   if (state_ != kOpen) {
     error_ = RTCError(RTCErrorType::INVALID_STATE);
     return error_;
@@ -757,12 +766,18 @@ void SctpDataChannel::OnTransportReady() {
   RTC_DCHECK(connected_to_transport());
   RTC_DCHECK(id_n_.has_value());
 
+  transport_ready_pending_ = false;
   UpdateState();
 }
 
 void SctpDataChannel::PostOnTransportReady() {
   network_thread_->PostTask(
       SafeTask(network_safety_, [this] { OnTransportReady(); }));
+}
+
+void SctpDataChannel::SetTransportReadyPending_n() {
+  RTC_DCHECK_RUN_ON(network_thread_);
+  transport_ready_pending_ = true;
 }
 
 void SctpDataChannel::CloseAbruptlyWithError(RTCError error) {

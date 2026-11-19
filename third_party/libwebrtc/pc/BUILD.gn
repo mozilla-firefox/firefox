@@ -4542,6 +4542,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../rtc_base:ssl_adapter",
       "../rtc_base:stringutils",
       "../rtc_base:task_queue_for_test",
+      "../rtc_base:threading",
       "../test:run_loop",
       "../test:test_support",
       "../test:wait_until",

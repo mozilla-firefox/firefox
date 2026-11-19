@@ -302,6 +302,11 @@ class PeerConnectionIntegrationWrapper : public PeerConnectionObserver,
     remote_offer_handler_ = std::move(handler);
   }
 
+  void SetDataChannelHandler(
+      std::function<void(DataChannelInterface*)> handler) {
+    data_channel_handler_ = std::move(handler);
+  }
+
   void SetRemoteAsyncResolver(MockAsyncDnsResolver* resolver) {
     remote_async_dns_resolver_ = resolver;
   }
@@ -692,6 +697,7 @@ class PeerConnectionIntegrationWrapper : public PeerConnectionObserver,
   std::function<void(std::unique_ptr<SessionDescriptionInterface>&)>
       generated_sdp_munger_;
   std::function<void()> remote_offer_handler_;
+  std::function<void(DataChannelInterface*)> data_channel_handler_;
   MockAsyncDnsResolver* remote_async_dns_resolver_ = nullptr;
   // Result variables for the mock DNS resolver
   NiceMock<MockAsyncDnsResolverResult> remote_async_dns_resolver_result_;
