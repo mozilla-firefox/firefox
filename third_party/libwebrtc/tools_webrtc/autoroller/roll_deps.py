@@ -13,6 +13,7 @@
 import argparse
 import base64
 import collections
+import collections.abc
 import logging
 import os
 import re
@@ -99,6 +100,7 @@ sys.path.append(os.path.join(CHECKOUT_ROOT_DIR, 'build'))
 import find_depot_tools
 
 find_depot_tools.add_depot_tools_to_path()
+import gclient_eval
 
 DepsEntry = collections.namedtuple('DepsEntry', 'path url revision')
 ChangedDep = collections.namedtuple('ChangedDep',
@@ -122,29 +124,37 @@ class RollError(Exception):
     pass
 
 
-def StrExpansion():
-    return lambda str_value: str_value
+def _ToPlainTypes(value):
+    """Converts values returned by gclient_eval to plain Python types.
+
+    gclient_eval returns dict-like objects and wraps Str() values in
+    gclient_eval.ConstantString; the rest of this script expects plain dicts
+    and strings.
+    """
+    if isinstance(value, gclient_eval.ConstantString):
+        return value.value
+    if isinstance(value, collections.abc.Mapping):
+        return {key: _ToPlainTypes(val) for key, val in value.items()}
+    if isinstance(value, (list, tuple)):
+        return type(value)(_ToPlainTypes(val) for val in value)
+    return value
 
 
-def VarLookup(local_scope):
-    return lambda var_name: local_scope['vars'][var_name]
+def ParseDepsDict(deps_content, filename='<unknown>'):
+    """Parses the content of a DEPS file into a dict.
 
-
-def ParseDepsDict(deps_content):
-    local_scope = {}
-    global_scope = {
-        'Str': StrExpansion(),
-        'Var': VarLookup(local_scope),
-        'deps_os': {},
-    }
-    exec(deps_content, global_scope, local_scope)
-    return local_scope
+    The content may come from the network (e.g. Chromium's DEPS file), so it
+    must never be executed. gclient_eval only accepts the restricted subset of
+    Python that DEPS files are allowed to use (assignments of literals, Str()
+    and Var()) and raises an error for anything else.
+    """
+    return _ToPlainTypes(gclient_eval.Exec(deps_content, filename))
 
 
 def ParseLocalDepsFile(filename):
     with open(filename, 'rb') as f:
         deps_content = f.read().decode('utf-8')
-    return ParseDepsDict(deps_content)
+    return ParseDepsDict(deps_content, filename)
 
 
 def ParseCommitPosition(commit_message):
@@ -636,8 +646,7 @@ def UpdateDepsFile(deps_filename, rev_update, changed_deps, new_cr_content):
                 'target_os = ["android", "unix", "mac", "ios", "win"];\n'
                 'Then run "gclient sync" again.' % local_dep_dir)
         if isinstance(dep, ChangedCipdPackage):
-            package = dep.package.format()  # Eliminate double curly brackets
-            update = '%s:%s@%s' % (dep.path, package, dep.new_version)
+            update = '%s:%s@%s' % (dep.path, dep.package, dep.new_version)
         elif isinstance(dep, ChangedGcsPackage):
             update = dep.setdep_arg
         else:
@@ -822,7 +831,9 @@ def main():
         ReadRemoteCrCommit(rev_update.new_chromium_rev))
 
     new_cr_content = ReadRemoteCrFile('DEPS', rev_update.new_chromium_rev)
-    new_cr_deps = ParseDepsDict(new_cr_content)
+    new_cr_deps = ParseDepsDict(
+        new_cr_content,
+        CHROMIUM_FILE_TEMPLATE % (rev_update.new_chromium_rev, 'DEPS'))
     changed_deps = CalculateChangedDeps(webrtc_deps, new_cr_deps)
     # Discard other deps, assumed to be chromium-only dependencies.
     new_generated_android_deps, _ = FindAddedDeps(webrtc_deps, new_cr_deps)

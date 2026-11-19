@@ -110,11 +110,6 @@ class TestRollChromiumRevision(unittest.TestCase):
         shutil.rmtree(self._output_dir, ignore_errors=True)
         self.assertEqual(self.fake.expectations, [])
 
-    def testVarLookup(self):
-        local_scope = {'foo': 'wrong', 'vars': {'foo': 'bar'}}
-        lookup = roll_deps.VarLookup(local_scope)
-        self.assertEqual(lookup('foo'), 'bar')
-
     def testUpdateDepsFile(self):
         new_rev = 'aaaaabbbbbcccccdddddeeeeefffff0000011111'
         current_rev = TEST_DATA_VARS['chromium_revision']
@@ -188,6 +183,53 @@ class TestRollChromiumRevision(unittest.TestCase):
         AssertVar('chromium_revision')
         self.assertEqual(len(local_scope['deps']), 4)
         self.assertEqual(len(local_scope['deps_os']), 1)
+
+    def testParseDepsDictConvertsStrToPlainString(self):
+        local_scope = ParseDepsDict("vars = {'foo_version': Str('1.2.3')}")
+        self.assertEqual(local_scope['vars']['foo_version'], '1.2.3')
+        self.assertIsInstance(local_scope['vars']['foo_version'], str)
+
+    def testParseDepsDictDoesNotExecuteCode(self):
+        # Chromium's DEPS file is downloaded from the network: its content must
+        # be parsed as data and never be executed.
+        marker = os.path.join(self._output_dir, 'marker')
+        payloads = [
+            'import os\nos.system("touch %s")\nvars = {}\ndeps = {}' % marker,
+            'vars = {}\ndeps = {"a": open("%s", "w").name}' % marker,
+            'vars = {}\ndeps = {"a": __import__("os").system("touch %s")}' %
+            marker,
+            'vars = {}\ndeps = {"a": ().__class__.__base__.__subclasses__()}',
+        ]
+        for payload in payloads:
+            with self.subTest(payload=payload):
+                with self.assertRaises(ValueError):
+                    ParseDepsDict(payload)
+        self.assertFalse(os.path.exists(marker))
+
+    def testUpdateDepsFileWithCipdPlatformPlaceholder(self):
+        # gclient_eval expands '${{platform}}' to '${platform}', which is the
+        # package name that `gclient setdep` expects.
+        deps_template = ("deps = {'src/tool': {'packages': [{'package': "
+                         "'tool/${{platform}}', 'version': '%s'}], "
+                         "'dep_type': 'cipd'}}")
+        webrtc_deps = ParseDepsDict(deps_template % 'old-version')
+        new_cr_deps = ParseDepsDict(deps_template % 'new-version')
+        changed_deps = CalculateChangedDeps(webrtc_deps, new_cr_deps)
+        self.assertEqual(len(changed_deps), 1)
+        self.assertEqual(changed_deps[0].package, 'tool/${platform}')
+
+        with open(self._new_cr_depsfile, 'rb') as deps_file:
+            new_cr_contents = deps_file.read().decode('utf-8')
+        setdep_cmd = [
+            'gclient', 'setdep', '--revision',
+            'src/tool:tool/${platform}@new-version'
+        ]
+        self.fake.AddExpectation(setdep_cmd, _ignores=['working_dir'])
+        with mock.patch('roll_deps._RunCommand', self.fake):
+            with mock.patch('roll_deps._IsExistingDir', MockIsExistingDir()):
+                UpdateDepsFile(self._webrtc_depsfile,
+                               NO_CHROMIUM_REVISION_UPDATE, changed_deps,
+                               new_cr_contents)
 
     def testGetMatchingDepsEntriesReturnsPathInSimpleCase(self):
         entries = GetMatchingDepsEntries(DEPS_ENTRIES, 'src/testing/gtest')
