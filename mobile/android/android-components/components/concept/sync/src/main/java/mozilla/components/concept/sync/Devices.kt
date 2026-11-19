@@ -24,13 +24,16 @@ sealed class ServiceResult {
 /** Describes available interactions with the current device and other devices associated with an [OAuthAccount]. */
 interface DeviceConstellation : Observable<AccountEventsObserver> {
     /**
-     * Perform actions necessary to finalize device initialization based on [authType].
+     * Ensures the [capabilities] advertised for the device & account are up-to-date.
      *
-     * @param authType Type of an authentication event we're experiencing.
-     * @param config A [DeviceConfig] that describes current device.
-     * @return A boolean success flag.
+     * It is expected to call this after authentication when the account's scopes or keys may have changed.
+     *
+     * @param capabilities List of capabilities to update. The caller is responsible that the list here are correct
+     *   based on the state of the account. When the account does not have a sync scope/key, then this list should be
+     *   empty.
+     * @return [ServiceResult] that tells if the operation was successful.
      */
-    suspend fun finalizeDevice(authType: AuthType, config: DeviceConfig): ServiceResult
+    suspend fun ensureCapabilities(capabilities: Set<DeviceCapability>): ServiceResult
 
     /**
      * Current state of the constellation. May be missing if state was never queried.
@@ -131,16 +134,23 @@ data class DevicePushSubscription(
  *   changed later via [DeviceConstellation.setDeviceName].
  * @property type Type of a device - mobile, desktop - used for displaying identifying icons on other devices. This
  *   cannot be changed once device record is created.
- * @property capabilities A set of device capabilities, such as SEND_TAB.
+ * @property capabilities The configured device capabilities, exposed through [getCapabilities].
  * @property secureStateAtRest A flag indicating whether or not to use encrypted storage for the persisted account
  *   state.
  */
 data class DeviceConfig(
     val name: String,
     val type: DeviceType,
-    val capabilities: Set<DeviceCapability>,
+    private val capabilities: Set<DeviceCapability>,
     val secureStateAtRest: Boolean = false,
-)
+) {
+    /**
+     * Returns the configured capabilities when [hasSyncScope] is true, or an empty set otherwise.
+     *
+     * All current device capabilities require the Sync scope.
+     */
+    fun getCapabilities(hasSyncScope: Boolean): Set<DeviceCapability> = if (hasSyncScope) capabilities else emptySet()
+}
 
 /** Capabilities that a [Device] may have. */
 enum class DeviceCapability {

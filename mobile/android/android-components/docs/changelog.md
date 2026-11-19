@@ -68,6 +68,11 @@ permalink: /changelog/
     * ⚠️ **Breaking change**: `RecordingDevicesMiddleware` now requires an explicit `CoroutineScope` to be provided by callers. The constructor no longer supplies a default scope value, improving lifecycle ownership and scope management. [Bug 2086075](https://la.org/show_bug.cgi?id=2086075)
 * **service-firefox-accounts** and **concept-sync**
     * 🆕 Added an optional parameter determining whether or not to ignore cache when calling `DeviceConstellation.refreshDevices`. [Bug 2088410](https://bugzilla.mozilla.org/show_bug.cgi?id=2088410)
+* **concept-sync**
+    * ⚠️ **Breaking change**: Replaced `DeviceConstellation.finalizeDevice(authType, config)` with `DeviceConstellation.ensureCapabilities(capabilities)`, which updates the capabilities advertised for the current device. [Bug 2080763](https://bugzilla.mozilla.org/show_bug.cgi?id=2080763)
+    * ⚠️ **Breaking change**: `DeviceConfig.capabilities` is now private. Use `DeviceConfig.getCapabilities(hasSyncScope)`, which returns an empty set when the account does not have the Sync scope. [Bug 2080763](https://bugzilla.mozilla.org/show_bug.cgi?id=2080763)
+* **service-firefox-accounts**
+    * `FxaAccountManager` only advertises the `SEND_TAB` and `CLOSE_TABS` device capabilities when the account has the Sync scope. [Bug 2080763](https://bugzilla.mozilla.org/show_bug.cgi?id=2080763)
 
 # 161.0
 * **browser-state**

@@ -36,6 +36,7 @@ import mozilla.components.concept.sync.DeviceConfig
 import mozilla.components.concept.sync.FxAEntryPoint
 import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.concept.sync.Profile
+import mozilla.components.concept.sync.ServiceResult
 import mozilla.components.concept.sync.SyncConfig
 import mozilla.components.concept.sync.SyncEngine
 import mozilla.components.service.fxa.AccountManagerException
@@ -505,7 +506,10 @@ open class FxaAccountManager(
                     ASDeviceConfig(
                         name = deviceConfig.name,
                         deviceType = deviceConfig.type.into(),
-                        capabilities = ArrayList(deviceConfig.capabilities.map { it.into() }),
+                        capabilities =
+                            deviceConfig.getCapabilities(hasSyncScope = account.hasScope(SCOPE_SYNC)).map {
+                                it.into()
+                            },
                     )
                 )
             is Event.Account.BeginEmailFlow ->
@@ -581,6 +585,7 @@ open class FxaAccountManager(
                     is Event.Progress.AuthData -> {
                         if (authenticationSideEffects()) {
                             notifyObservers { onAuthenticated(account, via.authData.authType) }
+                            ensureCapabilities()
                             refreshProfile(ignoreCache = false)
                         } else {
                             throw AccountManagerException.AuthenticationSideEffectsFailed()
@@ -591,6 +596,7 @@ open class FxaAccountManager(
                         // Should we also call authenticationSideEffects here?
                         // (https://bugzilla.mozilla.org/show_bug.cgi?id=1865086)
                         notifyObservers { onAuthenticated(account, AuthType.Recovered) }
+                        ensureCapabilities()
                         refreshProfile(ignoreCache = true)
                     }
                     else -> Unit
@@ -636,13 +642,11 @@ open class FxaAccountManager(
         }
     }
 
-    private suspend fun finalizeDevice(authType: AuthType) =
-        account
+    private suspend fun ensureCapabilities(): ServiceResult {
+        return account
             .deviceConstellation()
-            .finalizeDevice(
-                authType,
-                deviceConfig,
-            )
+            .ensureCapabilities(deviceConfig.getCapabilities(hasSyncScope = account.hasScope(SCOPE_SYNC)))
+    }
 
     /**
      * Populates caches necessary for the sync worker (sync auth info and FxA device).

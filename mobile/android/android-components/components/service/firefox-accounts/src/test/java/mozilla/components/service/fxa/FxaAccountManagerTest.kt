@@ -8,9 +8,11 @@ import android.content.Context
 import androidx.lifecycle.LifecycleOwner
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.coroutines.CoroutineContext
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlinx.coroutines.test.runTest
+import mozilla.appservices.fxaclient.DeviceCapability as RustDeviceCapability
 import mozilla.appservices.fxaclient.FxaConfig
 import mozilla.appservices.fxaclient.FxaEvent
 import mozilla.appservices.fxaclient.FxaServer
@@ -118,6 +120,12 @@ class FxaAccountManagerTest {
         mock<FxAEntryPoint>().apply {
             whenever(entryName).thenReturn("home-menu")
         }
+
+    /** `concept` layer variant of the "device capabilities" */
+    private val testDeviceCapabilities = setOf(DeviceCapability.SEND_TAB)
+
+    /** rust/application services variant of the "device capabilities" */
+    private val testRustDeviceCapabilities = setOf(RustDeviceCapability.SEND_TAB)
 
     @Test
     fun `account state persistence`() = runTest {
@@ -241,6 +249,36 @@ class FxaAccountManagerTest {
     }
 
     @Test
+    fun `start without sync scope initializes device without any capabilities`() = runTest {
+        val fxaManager = createFxaManager(coroutineContext = coroutineContext, capabilities = testDeviceCapabilities)
+        val account = fxaManager.testableStorageWrapper.account
+        val eventCaptor = argumentCaptor<FxaEvent>()
+        whenever(account.hasScope(SCOPE_SYNC)).thenReturn(false)
+        whenever(account.processEvent(eventCaptor.capture())).thenReturn(FxaState.Disconnected)
+
+        fxaManager.start()
+
+        val fxaEvent = eventCaptor.value
+        assertIs<FxaEvent.Initialize>(fxaEvent)
+        assertEquals(emptyList(), fxaEvent.deviceConfig.capabilities)
+    }
+
+    @Test
+    fun `start with sync scope initializes device capabilities`() = runTest {
+        val fxaManager = createFxaManager(coroutineContext = coroutineContext, capabilities = testDeviceCapabilities)
+        val account = fxaManager.testableStorageWrapper.account
+        val eventCaptor = argumentCaptor<FxaEvent>()
+        whenever(account.hasScope(SCOPE_SYNC)).thenReturn(true)
+        whenever(account.processEvent(eventCaptor.capture())).thenReturn(FxaState.Disconnected)
+
+        fxaManager.start()
+
+        val fxaEvent = eventCaptor.value
+        assertIs<FxaEvent.Initialize>(fxaEvent)
+        assertContentEquals(testRustDeviceCapabilities, fxaEvent.deviceConfig.capabilities)
+    }
+
+    @Test
     fun `OAuth email login`() = runTest {
         val fxaManager =
             TestableFxaAccountManager(
@@ -266,6 +304,32 @@ class FxaAccountManagerTest {
         fxaManager.finishAuthentication(FxaAuthData(AuthType.Signin, "test-code", "test-auth-state"))
 
         verify(accountObserver, times(1)).onAuthenticated(any(), eq(AuthType.Signin))
+    }
+
+    @Test
+    fun `OAuth email login finalizes device without capabilities when sync scope is missing`() = runTest {
+        val fxaManager =
+            createFxaManager(coroutineContext = this.coroutineContext, capabilities = testDeviceCapabilities)
+        whenever(fxaManager.testableStorageWrapper.account.hasScope(SCOPE_SYNC)).thenReturn(false)
+
+        fxaManager.finishEmailAuthentication(AuthType.Signin)
+
+        val capabilitiesCaptor = argumentCaptor<Set<DeviceCapability>>()
+        verify(fxaManager.testableStorageWrapper.deviceConstellation).ensureCapabilities(capabilitiesCaptor.capture())
+        assertEquals(emptySet(), capabilitiesCaptor.value)
+    }
+
+    @Test
+    fun `OAuth email login finalizes device with capabilities when sync scope exists`() = runTest {
+        val fxaManager =
+            createFxaManager(coroutineContext = this.coroutineContext, capabilities = testDeviceCapabilities)
+        whenever(fxaManager.testableStorageWrapper.account.hasScope(SCOPE_SYNC)).thenReturn(true)
+
+        fxaManager.finishEmailAuthentication(AuthType.Signin)
+
+        val capabilitiesCaptor = argumentCaptor<Set<DeviceCapability>>()
+        verify(fxaManager.testableStorageWrapper.deviceConstellation).ensureCapabilities(capabilitiesCaptor.capture())
+        assertEquals(testDeviceCapabilities, capabilitiesCaptor.value)
     }
 
     @Test
@@ -382,6 +446,33 @@ class FxaAccountManagerTest {
     }
 
     @Test
+    fun `OAuth pairing login finalizes device without device capabilities when sync scope is missing`() = runTest {
+        val fxaManager =
+            createFxaManager(coroutineContext = this.coroutineContext, capabilities = testDeviceCapabilities)
+        whenever(fxaManager.testableStorageWrapper.account.hasScope(SCOPE_SYNC)).thenReturn(false)
+
+        fxaManager.finishPairingAuthentication(AuthType.Pairing)
+
+        val capabilitiesCaptor = argumentCaptor<Set<DeviceCapability>>()
+        verify(fxaManager.testableStorageWrapper.deviceConstellation).ensureCapabilities(capabilitiesCaptor.capture())
+
+        assertEquals(emptySet(), capabilitiesCaptor.value)
+    }
+
+    @Test
+    fun `OAuth pairing login finalizes device with capabilities when sync scope exists`() = runTest {
+        val fxaManager =
+            createFxaManager(coroutineContext = this.coroutineContext, capabilities = testDeviceCapabilities)
+        whenever(fxaManager.testableStorageWrapper.account.hasScope(SCOPE_SYNC)).thenReturn(true)
+
+        fxaManager.finishPairingAuthentication(AuthType.Pairing)
+
+        val capabilitiesCaptor = argumentCaptor<Set<DeviceCapability>>()
+        verify(fxaManager.testableStorageWrapper.deviceConstellation).ensureCapabilities(capabilitiesCaptor.capture())
+        assertEquals(testDeviceCapabilities, capabilitiesCaptor.value)
+    }
+
+    @Test
     fun `Failure to begin OAuth login`() = runTest {
         val fxaManager =
             TestableFxaAccountManager(
@@ -458,6 +549,19 @@ class FxaAccountManagerTest {
         fxaManager.start()
         verify(accountObserver, times(1)).onReady(any())
         verify(accountObserver, times(1)).onAuthenticated(any(), eq(AuthType.Existing))
+    }
+
+    @Test
+    fun `restoring account does not finalize device`() = runTest {
+        val fxaManager =
+            createFxaManager(coroutineContext = this.coroutineContext, capabilities = testDeviceCapabilities)
+        val account = fxaManager.testableStorageWrapper.account
+        whenever(account.hasScope(SCOPE_SYNC)).thenReturn(false)
+        whenever(account.processEvent(any())).thenReturn(FxaState.Connected)
+
+        fxaManager.start()
+
+        verify(fxaManager.testableStorageWrapper.deviceConstellation, never()).ensureCapabilities(any())
     }
 
     @Test
@@ -676,6 +780,23 @@ class FxaAccountManagerTest {
     }
 
     @Test
+    fun `recovery from auth issues finalizes device with device capabilities`() = runTest {
+        val fxaManager =
+            createFxaManager(coroutineContext = this.coroutineContext, capabilities = testDeviceCapabilities)
+        val account = fxaManager.testableStorageWrapper.account
+        whenever(account.hasScope(SCOPE_SYNC)).thenReturn(true)
+        fxaManager.finishEmailAuthentication(AuthType.Signin)
+        clearInvocations(fxaManager.testableStorageWrapper.deviceConstellation)
+        whenever(account.processEvent(any())).thenReturn(FxaState.Connected)
+
+        fxaManager.encounteredAuthError("fake operation", 1)
+
+        val capabilitiesCaptor = argumentCaptor<Set<DeviceCapability>>()
+        verify(fxaManager.testableStorageWrapper.deviceConstellation).ensureCapabilities(capabilitiesCaptor.capture())
+        assertEquals(testDeviceCapabilities, capabilitiesCaptor.value)
+    }
+
+    @Test
     fun `Logout after auth issues`() = runTest {
         val fxaManager =
             TestableFxaAccountManager(
@@ -817,5 +938,48 @@ class FxaAccountManagerTest {
 
         verify(fxaManager.syncStatusObserverRegistry).unregister(observer)
         verifyNoMoreInteractions(fxaManager.syncStatusObserverRegistry)
+    }
+
+    private fun createFxaManager(
+        coroutineContext: CoroutineContext,
+        capabilities: Set<DeviceCapability>,
+    ): TestableFxaAccountManager {
+        return TestableFxaAccountManager(
+            context = testContext,
+            config = FxaConfig(FxaServer.Release, "dummyId", "http://auth-url/redirect"),
+            storage = mock(),
+            capabilities = capabilities,
+            syncConfig = null,
+            coroutineContext = coroutineContext,
+        )
+    }
+
+    private suspend fun TestableFxaAccountManager.finishEmailAuthentication(authType: AuthType) {
+        val account = testableStorageWrapper.account
+        whenever(account.processEvent(any())).thenReturn(FxaState.Disconnected)
+        start()
+        whenever(account.processEvent(any()))
+            .thenReturn(FxaState.Authenticating("https://test-oauth.example.com/", FxaState.Connected))
+        beginAuthentication(
+            service = FxaService.Sync.identifier,
+            entrypoint = entryPoint,
+        )
+        whenever(account.processEvent(any())).thenReturn(FxaState.Connected)
+        finishAuthentication(FxaAuthData(authType, "test-code", "test-auth-state"))
+    }
+
+    private suspend fun TestableFxaAccountManager.finishPairingAuthentication(authType: AuthType) {
+        val account = testableStorageWrapper.account
+        whenever(account.processEvent(any())).thenReturn(FxaState.Disconnected)
+        start()
+        whenever(account.processEvent(any()))
+            .thenReturn(FxaState.Authenticating("https://test-oauth.example.com/", FxaState.Connected))
+        beginAuthentication(
+            service = FxaService.Sync.identifier,
+            pairingUrl = "http://test-oauth/example.com/pairing",
+            entrypoint = entryPoint,
+        )
+        whenever(account.processEvent(any())).thenReturn(FxaState.Connected)
+        finishAuthentication(FxaAuthData(authType, "test-code", "test-auth-state"))
     }
 }

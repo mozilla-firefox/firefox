@@ -9,6 +9,7 @@ import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.LifecycleOwner
 import kotlin.Result
+import kotlin.coroutines.ContinuationInterceptor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import mozilla.appservices.fxaclient.CloseTabsResult as RustCloseTabsResult
@@ -18,11 +19,10 @@ import mozilla.appservices.syncmanager.SyncTelemetry
 import mozilla.components.concept.base.crash.CrashReporting
 import mozilla.components.concept.sync.AccountEvent
 import mozilla.components.concept.sync.AccountEventsObserver
-import mozilla.components.concept.sync.AuthType
 import mozilla.components.concept.sync.ConstellationState
 import mozilla.components.concept.sync.Device
+import mozilla.components.concept.sync.DeviceCapability
 import mozilla.components.concept.sync.DeviceCommandOutgoing
-import mozilla.components.concept.sync.DeviceConfig
 import mozilla.components.concept.sync.DeviceConstellation
 import mozilla.components.concept.sync.DeviceConstellationObserver
 import mozilla.components.concept.sync.DevicePushSubscription
@@ -47,70 +47,42 @@ class FxaDeviceConstellation(
 
     private val deviceObserverRegistry = ObserverRegistry<DeviceConstellationObserver>()
 
+    /**
+     * Continuation interceptor for this scope.
+     *
+     * This exists because we should not be using the entire coroutineContext that includes a job for structured
+     * concurrency. Instead, we only want the [ContinuationInterceptor] present in the scope's context.
+     *
+     * See
+     * [https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#children-of-a-coroutine](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#children-of-a-coroutine)
+     * for more
+     */
+    private val continuationContext: ContinuationInterceptor
+        get() = requireNotNull(scope.coroutineContext[ContinuationInterceptor])
+
     @Volatile private var constellationState: ConstellationState? = null
 
     override fun state(): ConstellationState? = constellationState
 
-    @VisibleForTesting
-    internal enum class DeviceFinalizeAction {
-        Initialize,
-        EnsureCapabilities,
-        None,
-    }
-
     @Throws(FxaPanicException::class)
-    @Suppress("CognitiveComplexMethod")
-    override suspend fun finalizeDevice(
-        authType: AuthType,
-        config: DeviceConfig,
-    ): ServiceResult =
-        withContext(scope.coroutineContext) {
-            val finalizeAction =
-                when (authType) {
-                    AuthType.Signin,
-                    AuthType.Signup,
-                    AuthType.Pairing,
-                    is AuthType.OtherExternal,
-                    AuthType.MigratedCopy -> DeviceFinalizeAction.Initialize
-                    AuthType.Existing,
-                    AuthType.MigratedReuse -> DeviceFinalizeAction.EnsureCapabilities
-                    AuthType.Recovered -> DeviceFinalizeAction.None
-                }
-
-            if (finalizeAction == DeviceFinalizeAction.None) {
+    override suspend fun ensureCapabilities(capabilities: Set<DeviceCapability>): ServiceResult =
+        withContext(continuationContext) {
+            try {
+                account.ensureCapabilities(capabilities.map { it.into() }.toSet())
                 ServiceResult.Ok
-            } else {
-                val capabilities = config.capabilities.map { it.into() }.toSet()
-                if (finalizeAction == DeviceFinalizeAction.Initialize) {
-                    try {
-                        account.initializeDevice(config.name, config.type.into(), capabilities)
-                        ServiceResult.Ok
-                    } catch (e: FxaPanicException) {
-                        throw e
-                    } catch (e: FxaUnauthorizedException) {
-                        ServiceResult.AuthError
-                    } catch (e: FxaException) {
-                        ServiceResult.OtherError
-                    }
-                } else {
-                    try {
-                        account.ensureCapabilities(capabilities)
-                        ServiceResult.Ok
-                    } catch (e: FxaPanicException) {
-                        throw e
-                    } catch (e: FxaUnauthorizedException) {
-                        // Unless we've added a new capability, in practice 'ensureCapabilities' isn't
-                        // actually expected to do any work: everything should have been done by initializeDevice.
-                        // So if it did, and failed, let's report this so that we're aware of this!
-                        // See https://github.com/mozilla-mobile/android-components/issues/8164
-                        crashReporter?.submitCaughtException(
-                            FxaDeviceConstellationException.EnsureCapabilitiesFailed(e.toString())
-                        )
-                        ServiceResult.AuthError
-                    } catch (e: FxaException) {
-                        ServiceResult.OtherError
-                    }
-                }
+            } catch (e: FxaPanicException) {
+                throw e
+            } catch (e: FxaUnauthorizedException) {
+                // Unless we've added a new capability, in practice 'ensureCapabilities' isn't
+                // actually expected to do any work: everything should have been done by initializeDevice.
+                // So if it did, and failed, let's report this so that we're aware of this!
+                // See https://github.com/mozilla-mobile/android-components/issues/8164
+                crashReporter?.submitCaughtException(
+                    FxaDeviceConstellationException.EnsureCapabilitiesFailed(e.toString())
+                )
+                ServiceResult.AuthError
+            } catch (_: FxaException) {
+                ServiceResult.OtherError
             }
         }
 
