@@ -17152,9 +17152,9 @@ toolbar:
         description: |
           A string containing the name of the button the user tapped. These items include:
           navigate_back, navigate_back_long_press, navigate_forward, navigate_forward_long_press,
-          add_new_tab, add_new_tab_long_press, add_new_private_tab, tab_counter, tab_counter_long_press,
+          add_new_tab, add_new_private_tab, tab_counter, tab_counter_long_press,
           menu, share, clear, refresh, stop, add_bookmark, edit_bookmark, security_indicator, qr_code,
-          home, reader_mode, microphone, open_in_fenix, close, site_custom, search_engine_selector,
+          home, reader_mode, microphone, close, site_custom, search_engine_selector,
           search_engine_selected, translate, summarize, lens, lens_qr, shortcut_long_press,
           shortcut_edit_clicked.
         type: string

@@ -29,23 +29,6 @@ internal fun View.increaseTapAreaInternal(extraPx: Int) {
     }
 }
 
-/**
- * Increase tap area only vertically.
- *
- * @param extraDps the extra dps that's wanted to be added on top and bottom of the view
- */
-fun View.increaseTapAreaVertically(@Dimension(unit = DP) extraDps: Int) {
-    val dips = extraDps.dpToPx(resources.displayMetrics)
-    val parent = this.parent as View
-    parent.post {
-        val touchArea = Rect()
-        getHitRect(touchArea)
-        touchArea.top -= dips
-        touchArea.bottom += dips
-        parent.touchDelegate = TouchDelegate(touchArea, this)
-    }
-}
-
 fun View.removeTouchDelegate() {
     val parent = this.parent as View
     parent.post {
