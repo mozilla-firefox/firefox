@@ -169,6 +169,7 @@ if (rtc_include_tests) {
     deps = [
       ":scalability_structure_test_helpers",
       ":scalability_structures",
+      ":scalable_video_controller",
       "../../../common_video/generic_frame_descriptor",
       "../../../test:test_support",
     ]

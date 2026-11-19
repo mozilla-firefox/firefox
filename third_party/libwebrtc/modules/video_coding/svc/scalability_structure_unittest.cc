@@ -483,8 +483,26 @@ TEST_P(ScalabilityStructureTest, ProduceNoFrameForDisabledLayers) {
 
 // TODO(bugs.webrtc.org/445115234): Populate supported scalability modes here,
 // and then remove once all are supported.
-bool SupportsOnFrameDropped(ScalabilityMode /*mode*/) {
-  return false;
+bool SupportsOnFrameDropped(ScalabilityMode mode) {
+  switch (mode) {
+    case ScalabilityMode::kL1T2:
+    case ScalabilityMode::kL1T3:
+    case ScalabilityMode::kL2T1:
+    case ScalabilityMode::kL2T1h:
+    case ScalabilityMode::kL2T2:
+    case ScalabilityMode::kL2T2h:
+    case ScalabilityMode::kL2T3:
+    case ScalabilityMode::kL2T3h:
+    case ScalabilityMode::kL3T1:
+    case ScalabilityMode::kL3T1h:
+    case ScalabilityMode::kL3T2:
+    case ScalabilityMode::kL3T2h:
+    case ScalabilityMode::kL3T3:
+    case ScalabilityMode::kL3T3h:
+      return true;
+    default:
+      return false;
+  }
 }
 
 TEST_P(ScalabilityStructureTest,
