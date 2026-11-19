@@ -644,32 +644,36 @@ TEST(TestUpdateRectScale, CropAndScaleByHalf) {
   EXPECT_EQ(scaled, VideoFrame::UpdateRect({42, 22, 56, 106}));
 }
 
-TEST(TestVideoFrame, IsRepeatFrame) {
-  // Defaults to false.
+TEST(TestVideoFrame, RepeatMode) {
+  // Defaults to kNone.
   VideoFrame frame1 = VideoFrame::Builder()
                           .set_video_frame_buffer(I420Buffer::Create(10, 10))
                           .set_rotation(kVideoRotation_0)
                           .set_timestamp_ms(123)
                           .build();
+  EXPECT_EQ(frame1.repeat_mode(), VideoFrame::RepeatMode::kNone);
   EXPECT_FALSE(frame1.is_repeat_frame());
 
-  // Set to true.
-  VideoFrame frame2 = VideoFrame::Builder()
-                          .set_video_frame_buffer(I420Buffer::Create(10, 10))
-                          .set_rotation(kVideoRotation_0)
-                          .set_timestamp_ms(456)
-                          .set_is_repeat_frame(true)
-                          .build();
+  // Set to kQualityConvergence.
+  VideoFrame frame2 =
+      VideoFrame::Builder()
+          .set_video_frame_buffer(I420Buffer::Create(10, 10))
+          .set_rotation(kVideoRotation_0)
+          .set_timestamp_ms(456)
+          .set_repeat_mode(VideoFrame::RepeatMode::kQualityConvergence)
+          .build();
+  EXPECT_EQ(frame2.repeat_mode(), VideoFrame::RepeatMode::kQualityConvergence);
   EXPECT_TRUE(frame2.is_repeat_frame());
 
-  // Set to false.
+  // Set to kKeepAlive.
   VideoFrame frame3 = VideoFrame::Builder()
                           .set_video_frame_buffer(I420Buffer::Create(10, 10))
                           .set_rotation(kVideoRotation_0)
                           .set_timestamp_ms(789)
-                          .set_is_repeat_frame(false)
+                          .set_repeat_mode(VideoFrame::RepeatMode::kKeepAlive)
                           .build();
-  EXPECT_FALSE(frame3.is_repeat_frame());
+  EXPECT_EQ(frame3.repeat_mode(), VideoFrame::RepeatMode::kKeepAlive);
+  EXPECT_TRUE(frame3.is_repeat_frame());
 }
 
 TEST(TestVideoFrame, WrapI444BufferToI420FailsForOversizedDimensions) {

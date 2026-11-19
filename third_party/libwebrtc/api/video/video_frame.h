@@ -34,6 +34,23 @@ class RTC_EXPORT VideoFrame {
   // Value used to signal that `VideoFrame::id()` is not set.
   static constexpr uint16_t kNotSetId = 0;
 
+  // Indicates whether this frame is a copy of a previous frame and why it was
+  // inserted. Repeat frames are produced by the frame cadence adapter in
+  // zero-hertz mode when the video source stops delivering new frames, e.g.
+  // for a static screen share.
+  enum class RepeatMode {
+    // A new frame from the video source.
+    kNone,
+    // Repeated at the configured max frame rate until the encoder reports
+    // that the quality of the base temporal layer has converged. Encoders may
+    // drop such frames on enhancement temporal layers.
+    kQualityConvergence,
+    // Repeated at a low rate (currently 1 Hz) after quality has converged to
+    // keep the stream alive. Encoders should encode such frames on the base
+    // temporal layer and should not drop them.
+    kKeepAlive,
+  };
+
   struct RTC_EXPORT UpdateRect {
     int offset_x = 0;
     int offset_y = 0;
@@ -122,6 +139,9 @@ class RTC_EXPORT VideoFrame {
     Builder& set_id(uint16_t id);
     Builder& set_update_rect(const std::optional<UpdateRect>& update_rect);
     Builder& set_packet_infos(RtpPacketInfos packet_infos);
+    Builder& set_repeat_mode(RepeatMode repeat_mode);
+    // TODO: bugs.webrtc.org/445115234 - Remove once callers migrate to
+    // set_repeat_mode.
     Builder& set_is_repeat_frame(bool is_repeat_frame);
     Builder& set_content_type(VideoContentType content_type);
 
@@ -138,7 +158,7 @@ class RTC_EXPORT VideoFrame {
     RenderParameters render_parameters_;
     std::optional<UpdateRect> update_rect_;
     RtpPacketInfos packet_infos_;
-    bool is_repeat_frame_ = false;
+    RepeatMode repeat_mode_ = RepeatMode::kNone;
     std::optional<VideoContentType> content_type_;
   };
 
@@ -286,9 +306,15 @@ class RTC_EXPORT VideoFrame {
     processing_time_ = processing_time;
   }
 
-  bool is_repeat_frame() const { return is_repeat_frame_; }
+  // See `RepeatMode`. `is_repeat_frame()` is true for any mode but `kNone`.
+  RepeatMode repeat_mode() const { return repeat_mode_; }
+  void set_repeat_mode(RepeatMode repeat_mode) { repeat_mode_ = repeat_mode; }
+  bool is_repeat_frame() const { return repeat_mode_ != RepeatMode::kNone; }
+  // TODO: bugs.webrtc.org/445115234 - Remove once callers migrate to
+  // set_repeat_mode.
   void set_is_repeat_frame(bool is_repeat_frame) {
-    is_repeat_frame_ = is_repeat_frame;
+    repeat_mode_ =
+        is_repeat_frame ? RepeatMode::kQualityConvergence : RepeatMode::kNone;
   }
 
   std::optional<VideoContentType> content_type() const { return content_type_; }
@@ -309,7 +335,7 @@ class RTC_EXPORT VideoFrame {
              const RenderParameters& render_parameters,
              const std::optional<UpdateRect>& update_rect,
              RtpPacketInfos packet_infos,
-             bool is_repeat_frame,
+             RepeatMode repeat_mode,
              std::optional<VideoContentType> content_type)
       : id_(id),
         video_frame_buffer_(buffer),
@@ -323,7 +349,7 @@ class RTC_EXPORT VideoFrame {
         render_parameters_(render_parameters),
         update_rect_(update_rect),
         packet_infos_(std::move(packet_infos)),
-        is_repeat_frame_(is_repeat_frame),
+        repeat_mode_(repeat_mode),
         content_type_(content_type) {}
 
   uint16_t id_;
@@ -357,11 +383,7 @@ class RTC_EXPORT VideoFrame {
   // returned from the decoder.
   // Currently, not set for locally captured video frames.
   std::optional<ProcessingTime> processing_time_;
-  // Indicates if this is a "repeat frame" - i.e. a copy a previous frame,
-  // inserted in order to make a video codec converge towards a stable quality
-  // in cases where a capturer is using a variable frame rate and stops
-  // producing frames when nothing has changed.
-  bool is_repeat_frame_;
+  RepeatMode repeat_mode_;
   // The content type of the video frame. This represents the mode in which
   // the video frame was encoded by the remote peer (if signaled).
   std::optional<VideoContentType> content_type_;
