@@ -131,7 +131,6 @@ if CONFIG["MOZ_WEBRTC"]:
         "TestCamerasParent.cpp",
         "TestH264FmtpParser.cpp",
         "TestRTCStatsTimestampMaker.cpp",
-        "TestVideoStreamFactory.cpp",
         "TestWebrtcCodecFactory.cpp",
         "TestWebrtcTaskQueueWrapper.cpp",
     ]
