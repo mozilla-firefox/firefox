@@ -13,6 +13,11 @@ const lazy = XPCOMUtils.declareLazy({
     default: false,
     onUpdate: () => WindowLock._updateShortcuts(),
   },
+  featureEnabled: {
+    pref: "browser.privatebrowsing.lockOnScreenLock.featureGate",
+    default: false,
+    onUpdate: () => WindowLock._updateShortcuts(),
+  },
   l10n: () =>
     new Localization(["branding/brand.ftl", "browser/windowLock.ftl"]),
 });
@@ -89,6 +94,14 @@ export const WindowLock = {
   // Browsers muted while locked, to unmute them once unlocked.
   _mutedBrowsers: new WeakSet(),
 
+  /**
+   * Whether private windows get locked, which is false if locking windows
+   * isn't available.
+   */
+  get enabled() {
+    return lazy.featureEnabled && lazy.lockPrivateWindows;
+  },
+
   init() {
     if (
       this._initialized ||
@@ -161,7 +174,7 @@ export const WindowLock = {
    *        The LockTrigger value of the event causing the lock.
    */
   lock(trigger) {
-    if (!lazy.lockPrivateWindows || this.locked) {
+    if (!this.enabled || this.locked) {
       return;
     }
     let windows = this._windows().filter(win =>
@@ -266,7 +279,7 @@ export const WindowLock = {
       windows.push(newWindow);
     }
     let enabled =
-      lazy.lockPrivateWindows &&
+      this.enabled &&
       windows.some(win => lazy.PrivateBrowsingUtils.isWindowPrivate(win));
     for (let window of windows) {
       window.document

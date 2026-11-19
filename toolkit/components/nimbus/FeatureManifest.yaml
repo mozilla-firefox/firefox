@@ -6090,6 +6090,23 @@ fireButton:
         that can delete everything or open the clear browsing data dialog.
         "direct" opens the clear browsing data dialog.
 
+windowLock:
+  description: >-
+    Covers windows with a lock screen requiring OS authentication when the OS
+    session gets locked, starts the screensaver or goes to sleep. Only
+    supported on macOS and Windows.
+  owner: mraiber@mozilla.com
+  hasExposure: false
+  variables:
+    enabled:
+      type: boolean
+      setPref:
+        branch: default
+        pref: browser.privatebrowsing.lockOnScreenLock.featureGate
+      description: >-
+        Whether locking windows is available. If false, windows never get
+        locked and the setting in Privacy & Security is hidden.
+
 ipProtection:
   description: Prefs to control IP Protection feature
   owner: fchasen@mozilla.com

@@ -3823,6 +3823,14 @@ pref("browser.fireButton.flow", "panel");
 // authentication, when the OS session gets locked, starts the screensaver
 // (macOS only) or goes to sleep. Only supported on macOS and Windows.
 pref("browser.privatebrowsing.lockOnScreenLock.enabled", false);
+// Whether locking windows is available at all. If false, windows never get
+// locked, regardless of browser.privatebrowsing.lockOnScreenLock.enabled, and
+// the setting is hidden.
+#ifdef NIGHTLY_BUILD
+pref("browser.privatebrowsing.lockOnScreenLock.featureGate", true);
+#else
+pref("browser.privatebrowsing.lockOnScreenLock.featureGate", false);
+#endif
 
 // the preferences related to the Nimbus experiment, to activate and deactivate
 // the the entire rollout (see: bug 1864216 - two prompts, 1877500 - set two in one prompt)

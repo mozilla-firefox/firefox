@@ -366,6 +366,7 @@ Preferences.addAll([
 
   // Lock windows when the OS session gets locked
   { id: "browser.privatebrowsing.lockOnScreenLock.enabled", type: "bool" },
+  { id: "browser.privatebrowsing.lockOnScreenLock.featureGate", type: "bool" },
 
   // Do not track and Global Privacy Control
   { id: "privacy.donottrackheader.enabled", type: "bool" },
@@ -2508,9 +2509,16 @@ Preferences.addSetting({
   },
 });
 Preferences.addSetting({
+  id: "windowLockFeatureEnabled",
+  pref: "browser.privatebrowsing.lockOnScreenLock.featureGate",
+});
+Preferences.addSetting({
   id: "windowLockEnabled",
   pref: "browser.privatebrowsing.lockOnScreenLock.enabled",
-  visible: () => ["macosx", "win"].includes(lazy.AppConstants.platform),
+  deps: ["windowLockFeatureEnabled"],
+  visible: ({ windowLockFeatureEnabled }) =>
+    ["macosx", "win"].includes(lazy.AppConstants.platform) &&
+    windowLockFeatureEnabled.value,
   onUserChange(checked) {
     Glean.windowLock.toggled.record({ checked });
   },
