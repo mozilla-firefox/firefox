@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import {
+  ADD_PAGE_TYPE_COLUMN,
   ADD_TOOL_CONV_ID_COLUMN,
   AITAB_PAGES_SLUG_VERSION_INDEX,
 } from "moz-src:///browser/components/aiwindow/ui/modules/AITabSql.sys.mjs";
@@ -61,5 +62,28 @@ export const migrations = [
     }
 
     await connection.execute(ADD_TOOL_CONV_ID_COLUMN);
+  },
+
+  /**
+   * v4: page_type records which feature owns a page (see AITAB_PAGE_TYPES).
+   * Every page stored before it was a chat page, which is the column's
+   * default, so there is nothing to backfill.
+   *
+   * @param {object} connection - The open database connection.
+   * @param {number} version - Schema version the database is migrating from.
+   */
+  async (connection, version) => {
+    if (version >= 4) {
+      return;
+    }
+
+    // Looked for first for the same reason as tool_conv_id in v3: a
+    // downgrade leaves the column behind.
+    const columns = await connection.execute("PRAGMA table_info(aitab_pages)");
+    if (columns.some(row => row.getResultByName("name") == "page_type")) {
+      return;
+    }
+
+    await connection.execute(ADD_PAGE_TYPE_COLUMN);
   },
 ];

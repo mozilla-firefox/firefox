@@ -39,6 +39,7 @@ MOZ_SRC_FILES += [
     "modules/AITabConstants.sys.mjs",
     "modules/AITabHeadingFont.sys.mjs",
     "modules/AITabMigrations.sys.mjs",
+    "modules/AITabPageTypes.sys.mjs",
     "modules/AITabSql.sys.mjs",
     "modules/AITabStore.sys.mjs",
     "modules/AIWindow.sys.mjs",

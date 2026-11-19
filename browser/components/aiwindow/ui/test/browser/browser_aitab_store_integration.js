@@ -16,6 +16,8 @@ const STORED_SLUG = "stored-slug";
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
+  AITAB_PAGE_TYPES:
+    "moz-src:///browser/components/aiwindow/ui/modules/AITabPageTypes.sys.mjs",
   AITabStore:
     "moz-src:///browser/components/aiwindow/ui/modules/AITabStore.sys.mjs",
 });
@@ -251,6 +253,81 @@ describe("about:smartpage store integration", () => {
           );
         }
       );
+    });
+  });
+
+  describe("page actions by page type", () => {
+    /**
+     * Opens a stored page of `pageType` and reports which page actions its
+     * header offers.
+     *
+     * @param {number} pageType
+     * @returns {Promise<{editable: boolean, refresh: boolean, delete: boolean}>}
+     */
+    async function openAndReadActions(pageType) {
+      await lazy.AITabStore.create({
+        convId: "page-type-conversation",
+        slug: STORED_SLUG,
+        title: "Typed AI Tab",
+        pageType,
+        components: { surface: makeAITabSurface("Typed AI Tab") },
+      });
+
+      tab = await BrowserTestUtils.openNewForegroundTab(
+        gBrowser,
+        `about:smartpage?page=${STORED_SLUG}`
+      );
+
+      return SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+        await content.customElements.whenDefined("aitab-page");
+        const page = content.document.querySelector("aitab-page");
+        await ContentTaskUtils.waitForCondition(
+          () => page.wrappedJSObject.status == "ready",
+          "The stored page renders"
+        );
+        await page.updateComplete;
+
+        const header = page.shadowRoot.querySelector("aitab-header");
+        await header.updateComplete;
+        const actions = header.shadowRoot.querySelector("aitab-page-actions");
+        await actions.updateComplete;
+
+        return {
+          editable: page.wrappedJSObject.page.editable,
+          refresh: !!actions.shadowRoot.querySelector(".aitab-action-refresh"),
+          delete: !!actions.shadowRoot.querySelector(".aitab-action-delete"),
+        };
+      });
+    }
+
+    it("offers refresh on a chat page", async () => {
+      const actions = await openAndReadActions(lazy.AITAB_PAGE_TYPES.CHAT);
+
+      Assert.ok(actions.editable, "A chat page is sent as editable");
+      Assert.ok(actions.refresh, "Refresh is offered");
+      Assert.ok(actions.delete, "Delete is offered");
+    });
+
+    it("does not offer refresh on a digest page", async () => {
+      const actions = await openAndReadActions(lazy.AITAB_PAGE_TYPES.DIGEST);
+
+      Assert.ok(!actions.editable, "A digest page is sent as not editable");
+      Assert.ok(
+        !actions.refresh,
+        "Refresh, which rewrites the page, is hidden"
+      );
+      Assert.ok(actions.delete, "Delete is still offered");
+    });
+
+    it("does not offer refresh on a research page", async () => {
+      const actions = await openAndReadActions(lazy.AITAB_PAGE_TYPES.RESEARCH);
+
+      Assert.ok(!actions.editable, "A research page is sent as not editable");
+      Assert.ok(
+        !actions.refresh,
+        "Refresh, which rewrites the page, is hidden"
+      );
+      Assert.ok(actions.delete, "Delete is still offered");
     });
   });
 });

@@ -20,6 +20,8 @@
 // In practice, schema changes should be additive, allowing newer versions to
 // operate on older schemas, albeit with potentially reduced functionality.
 
+import { DEFAULT_AITAB_PAGE_TYPE } from "moz-src:///browser/components/aiwindow/ui/modules/AITabPageTypes.sys.mjs";
+
 export const AITAB_PAGES_TABLE = `
 CREATE TABLE aitab_pages (
   uuid TEXT PRIMARY KEY,
@@ -32,17 +34,19 @@ CREATE TABLE aitab_pages (
   updated_at INTEGER NOT NULL,
   context_jsonb BLOB,
   components_jsonb BLOB,
-  localstate_jsonb BLOB
+  localstate_jsonb BLOB,
+  page_type INTEGER NOT NULL DEFAULT ${DEFAULT_AITAB_PAGE_TYPE}
 ) WITHOUT ROWID;
 `;
 
 export const AITAB_PAGE_INSERT = `
 INSERT INTO aitab_pages (
   uuid, conv_id, tool_conv_id, slug, version, title, created_at, updated_at,
-  context_jsonb, components_jsonb, localstate_jsonb
+  context_jsonb, components_jsonb, localstate_jsonb, page_type
 ) VALUES (
   :uuid, :conv_id, :tool_conv_id, :slug, :version, :title, :created_at,
-  :updated_at, jsonb(:context), jsonb(:components), jsonb(:localstate)
+  :updated_at, jsonb(:context), jsonb(:components), jsonb(:localstate),
+  :page_type
 );
 `;
 
@@ -53,6 +57,12 @@ INSERT INTO aitab_pages (
 // on rows written before the column existed.
 export const ADD_TOOL_CONV_ID_COLUMN = `
 ALTER TABLE aitab_pages ADD COLUMN tool_conv_id TEXT;
+`;
+
+// One of AITAB_PAGE_TYPES. The default is what every row stored before the
+// column existed is backfilled with, and they were all chat pages.
+export const ADD_PAGE_TYPE_COLUMN = `
+ALTER TABLE aitab_pages ADD COLUMN page_type INTEGER NOT NULL DEFAULT ${DEFAULT_AITAB_PAGE_TYPE};
 `;
 
 // Compound index on (slug, version): serves both "latest version for a slug"
@@ -71,8 +81,11 @@ CREATE UNIQUE INDEX idx_aitab_pages_slug_version ON aitab_pages (slug, version);
 // Keyed on slug, to match the UNIQUE index the insert has to satisfy. On
 // conv_id it would number versions per conversation while uniqueness was
 // enforced per slug, so one conversation could only ever hold one page.
+//
+// page_type is a bare column next to MAX(), which SQLite reads from the row
+// MAX() picked: the type of the latest version, NULL when there is none.
 export const GET_NEXT_VERSION = `
-SELECT COALESCE(MAX(version), 0) + 1 AS next_version
+SELECT COALESCE(MAX(version), 0) + 1 AS next_version, page_type
 FROM aitab_pages
 WHERE slug = :slug;
 `;
@@ -86,6 +99,7 @@ SELECT EXISTS (SELECT 1 FROM aitab_pages WHERE slug = :slug) AS taken;
 
 const AITAB_PAGE_COLUMNS = `
   uuid, conv_id, tool_conv_id, slug, version, title, created_at, updated_at,
+  page_type,
   json(context_jsonb) AS context,
   json(components_jsonb) AS components,
   json(localstate_jsonb) AS localstate

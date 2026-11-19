@@ -15,6 +15,9 @@ const { MockEngineManager } = ChromeUtils.importESModule(
 const { AITabStore } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/AITabStore.sys.mjs"
 );
+const { AITAB_PAGE_TYPES } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/ui/modules/AITabPageTypes.sys.mjs"
+);
 const { TabStateFlusher } = ChromeUtils.importESModule(
   "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs"
 );
@@ -24,6 +27,30 @@ const PAGE_URL = `about:smartpage?page=${PAGE_SLUG}`;
 const MESSAGE_SELECTOR = ".smartpage-chat-message";
 const USER_PROMPT = "Add a heading";
 const ASSISTANT_RESPONSE = "Added a heading.";
+
+/**
+ * Stores a page with a one-heading surface.
+ *
+ * @param {string} slug
+ * @param {number} [pageType]
+ */
+function storePage(slug, pageType = AITAB_PAGE_TYPES.CHAT) {
+  return AITabStore.create({
+    convId: slug,
+    slug,
+    title: "Sidebar test",
+    pageType,
+    components: {
+      surface: {
+        components: [
+          { id: "root", component: "Page", header: "hdr", children: [] },
+          { id: "hdr", component: "Header", title: "Sidebar test" },
+        ],
+        dataModel: {},
+      },
+    },
+  });
+}
 
 async function setupSidebarTest() {
   await SpecialPowers.pushPrefEnv({
@@ -42,20 +69,7 @@ async function setupSidebarTest() {
     sidebarBrowser: null,
   };
 
-  await AITabStore.create({
-    convId: "sidebar-test-page",
-    slug: PAGE_SLUG,
-    title: "Sidebar test",
-    components: {
-      surface: {
-        components: [
-          { id: "root", component: "Page", header: "hdr", children: [] },
-          { id: "hdr", component: "Header", title: "Sidebar test" },
-        ],
-        dataModel: {},
-      },
-    },
-  });
+  await storePage(PAGE_SLUG);
 
   context.win = await openAIWindow();
   await openEmptySmartPage(context);
@@ -77,18 +91,28 @@ async function cleanupSidebarTest(context) {
   }
 }
 
-async function openEmptySmartPage(context) {
+/**
+ * Opens a Smart Page in a new tab with the sidebar showing an empty chat.
+ *
+ * @param {object} context
+ * @param {string} [url]
+ * @param {boolean} [expectMessage] - Whether the page invites changes, so the
+ *   message is waited for.
+ * @returns {Promise<MozTabbrowserTab>}
+ */
+async function openEmptySmartPage(
+  context,
+  url = PAGE_URL,
+  expectMessage = true
+) {
   const { win } = context;
-  const tab = await BrowserTestUtils.openNewForegroundTab(
-    win.gBrowser,
-    PAGE_URL
-  );
+  const tab = await BrowserTestUtils.openNewForegroundTab(win.gBrowser, url);
   if (!AIWindowUI.isSidebarOpen(win)) {
     await AIWindowUI.openSidebar(win);
   }
   context.sidebarBrowser = await waitForSidebarReady(win);
   await getAichatBrowser(context.sidebarBrowser);
-  await waitForMessage(context, true);
+  await waitForMessage(context, expectMessage);
   return tab;
 }
 
@@ -253,4 +277,48 @@ describe("AI Tab sidebar message", () => {
       "The new empty chat displays the message"
     );
   });
+});
+
+describe("AI Tab sidebar message for pages that cannot be modified", () => {
+  let context;
+
+  beforeEach(async () => {
+    context = await setupSidebarTest();
+  });
+
+  afterEach(async () => {
+    await AITabStore.deleteBySlug("sidebar-test-research");
+    await AITabStore.deleteBySlug("sidebar-test-digest");
+    await cleanupSidebarTest(context);
+    context = null;
+  });
+
+  for (const [name, pageType] of [
+    ["research", AITAB_PAGE_TYPES.RESEARCH],
+    ["digest", AITAB_PAGE_TYPES.DIGEST],
+  ]) {
+    it(`does not invite changes to a ${name} page`, async () => {
+      const slug = `sidebar-test-${name}`;
+      await storePage(slug, pageType);
+
+      const lockedTab = await openEmptySmartPage(
+        context,
+        `about:smartpage?page=${slug}`,
+        false
+      );
+      Assert.ok(
+        !(await getSidebarSnapshot(context)).messageShown,
+        `The message is hidden on the ${name} page`
+      );
+
+      const chatTab = await openEmptySmartPage(context);
+      Assert.ok(
+        (await getSidebarSnapshot(context)).messageShown,
+        "It is shown again on a page that can be modified"
+      );
+
+      BrowserTestUtils.removeTab(chatTab);
+      BrowserTestUtils.removeTab(lockedTab);
+    });
+  }
 });

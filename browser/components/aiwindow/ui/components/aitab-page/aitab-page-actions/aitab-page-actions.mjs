@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { html } from "chrome://global/content/vendor/lit.all.mjs";
+import { html, nothing } from "chrome://global/content/vendor/lit.all.mjs";
 import { MozLitElement } from "chrome://global/content/lit-utils.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://global/content/elements/moz-button.mjs";
@@ -22,15 +22,19 @@ const DELETE_EVENT = "aitab-page-actions:delete";
  *
  * @property {boolean} refreshing - Whether a refresh is in flight. While set,
  *   the refresh button is disabled and reports its progress.
+ * @property {boolean} editable - Whether the page can be revised. Refreshing
+ *   writes a new version of the page, so it is only offered when it can be.
  */
 export class AITabPageActions extends MozLitElement {
   static properties = {
     refreshing: { type: Boolean, reflect: true },
+    editable: { type: Boolean },
   };
 
   constructor() {
     super();
     this.refreshing = false;
+    this.editable = true;
   }
 
   get #dialog() {
@@ -84,6 +88,25 @@ export class AITabPageActions extends MozLitElement {
     `;
   }
 
+  #renderRefreshButton() {
+    if (!this.editable) {
+      return nothing;
+    }
+
+    return html`
+      <moz-button
+        class="aitab-action-refresh"
+        size="default"
+        iconSrc="chrome://global/skin/icons/reload.svg"
+        ?disabled=${this.refreshing}
+        data-l10n-id=${this.refreshing
+          ? "aitab-page-refreshing-sources"
+          : "aitab-page-refresh-sources"}
+        @click=${() => this.#onRefresh()}
+      ></moz-button>
+    `;
+  }
+
   render() {
     return html`
       <link
@@ -91,16 +114,7 @@ export class AITabPageActions extends MozLitElement {
         href="chrome://browser/content/aiwindow/components/aitab-page-actions.css"
       />
       <div class="aitab-page-actions">
-        <moz-button
-          class="aitab-action-refresh"
-          size="default"
-          iconSrc="chrome://global/skin/icons/reload.svg"
-          ?disabled=${this.refreshing}
-          data-l10n-id=${this.refreshing
-            ? "aitab-page-refreshing-sources"
-            : "aitab-page-refresh-sources"}
-          @click=${() => this.#onRefresh()}
-        ></moz-button>
+        ${this.#renderRefreshButton()}
         <moz-button
           class="aitab-action-delete"
           type="icon"

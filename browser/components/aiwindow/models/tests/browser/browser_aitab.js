@@ -9,6 +9,8 @@
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
+  AITAB_PAGE_TYPES:
+    "moz-src:///browser/components/aiwindow/ui/modules/AITabPageTypes.sys.mjs",
   AITabStore:
     "moz-src:///browser/components/aiwindow/ui/modules/AITabStore.sys.mjs",
   ConversationStore:
@@ -61,8 +63,8 @@ const MODIFIED_TITLE = "Where To Stay In Lisbon, Cheaply";
 // Content handed to the tool directly, as another tool's result would be.
 const RAW_CONTENT = "Hostel Bairro Alto, 22 euros a night.";
 
-// Mirrors MAX_INSTRUCTION_CHARS, MAX_HISTORY_CHARS and SOURCE_TEXT_BUDGET in
-// AITab.sys.mjs. All are limits the model is never told about, so they are
+// Mirrors MAX_INSTRUCTION_CHARS and MAX_HISTORY_CHARS in AITab.sys.mjs, and
+// DEFAULT_SOURCE_TEXT_BUDGET in AITabPageTypes.sys.mjs. All are limits the model is never told about, so they are
 // pinned here rather than read back from the module.
 const MAX_INSTRUCTION_CHARS = 1500;
 const MAX_HISTORY_CHARS = 100000;
@@ -805,6 +807,49 @@ add_task(async function test_modifying_an_unknown_slug_is_refused() {
     );
   });
 });
+
+/**
+ * A page whose type cannot be edited is refused before anything is read, and
+ * the model is told so in the same words for every such type.
+ */
+add_task(
+  async function test_modifying_a_page_that_cannot_be_edited_is_refused() {
+    for (const [name, pageType] of [
+      ["research", lazy.AITAB_PAGE_TYPES.RESEARCH],
+      ["digest", lazy.AITAB_PAGE_TYPES.DIGEST],
+    ]) {
+      await withAITab(async ({ conversation, mockEngine, refuse }) => {
+        const { slug } = await lazy.AITabStore.create({
+          convId: conversation.id,
+          slug: `a_${name}_page`,
+          title: `A ${name} page`,
+          pageType,
+        });
+
+        const toolResult = await refuse({
+          modify_slug: slug,
+          modify_instructions: MODIFY_INSTRUCTIONS,
+        });
+
+        Assert.ok(
+          toolResult.startsWith("This page cannot be modified."),
+          `The tool refuses the ${name} page: ${toolResult}`
+        );
+        Assert.ok(
+          !mockEngine.engines.has(lazy.MODEL_FEATURES.AITAB),
+          "No generation engine was created, so nothing was composed."
+        );
+        Assert.deepEqual(
+          await lazy.AITabStore.getVersionsBySlug(slug),
+          [1],
+          "The page is left as it was."
+        );
+
+        await lazy.AITabStore.deleteBySlug(slug);
+      });
+    }
+  }
+);
 
 /**
  * Slugs appear in page URLs, so a model can be talked into naming one from an

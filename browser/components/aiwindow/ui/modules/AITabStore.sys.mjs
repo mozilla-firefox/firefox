@@ -11,6 +11,11 @@ import {
 
 import { migrations } from "moz-src:///browser/components/aiwindow/ui/modules/AITabMigrations.sys.mjs";
 import {
+  DEFAULT_AITAB_PAGE_TYPE,
+  getAITabPageType,
+  isAITabPageEditable,
+} from "moz-src:///browser/components/aiwindow/ui/modules/AITabPageTypes.sys.mjs";
+import {
   AITAB_PAGES_TABLE,
   AITAB_PAGES_SLUG_VERSION_INDEX,
   AITAB_PAGE_INSERT,
@@ -39,6 +44,7 @@ import {
  * @property {string|null} toolConvId - Conversation used to generate the page.
  * @property {string} slug - URL identifier shared across versions.
  * @property {number} version - Sequential version number.
+ * @property {number} pageType - One of AITAB_PAGE_TYPES.
  * @property {string} title - Page title.
  * @property {number} createdAt - Creation time in microseconds since the Unix epoch.
  * @property {number} updatedAt - Update time in microseconds since the Unix epoch.
@@ -107,7 +113,8 @@ class AITabStore extends SQLiteStoreBase {
    * titles, which repeat, so this is the layer that settles who holds one.
    *
    * @param {object} page - Page fields: convId, slug, title, and optional
-   *   toolConvId, context, components, localState
+   *   pageType (DEFAULT_AITAB_PAGE_TYPE when omitted), toolConvId, context,
+   *   components, localState
    * @returns {Promise<object>} The persisted page (with the slug it was
    *   stored under, plus generated uuid, version, and timestamps)
    */
@@ -117,11 +124,12 @@ class AITabStore extends SQLiteStoreBase {
 
   /**
    * Persists an edit as a new version of an existing tab. The version is the
-   * current highest version for the slug plus one. Rejects if the slug has no
-   * existing version (use create instead).
+   * current highest version for the slug plus one, and it keeps the page type
+   * of the version before it. Rejects if the slug has no existing version
+   * (use create instead), or if its page type cannot be edited.
    *
    * @param {object} page - Page fields: convId, slug, title, and optional
-   *   toolConvId, context, components, localState
+   *   toolConvId, context, components, localState. A pageType is ignored.
    * @returns {Promise<object>} The newly persisted version
    */
   async edit(page) {
@@ -254,6 +262,7 @@ class AITabStore extends SQLiteStoreBase {
       toolConvId: row.getResultByName("tool_conv_id"),
       slug: row.getResultByName("slug"),
       version: row.getResultByName("version"),
+      pageType: row.getResultByName("page_type"),
       title: row.getResultByName("title"),
       createdAt: row.getResultByName("created_at"),
       updatedAt: row.getResultByName("updated_at"),
@@ -280,6 +289,8 @@ class AITabStore extends SQLiteStoreBase {
    *   composed in, in the ConversationStore. Null when it is not known, which
    *   is the case for every page stored before the column existed.
    * @param {string} page.slug - Opaque URL token supplied by the caller
+   * @param {number} [page.pageType] - One of AITAB_PAGE_TYPES, for a create.
+   *   An edit keeps the type already stored for the slug.
    * @param {string} page.title - Human-readable title of the page
    * @param {*} [page.context] - Context describing how the page was created
    * @param {*} [page.components] - Component list describing how the page renders
@@ -294,6 +305,7 @@ class AITabStore extends SQLiteStoreBase {
       convId,
       toolConvId = null,
       slug,
+      pageType = DEFAULT_AITAB_PAGE_TYPE,
       title,
       context = null,
       components = null,
@@ -301,6 +313,10 @@ class AITabStore extends SQLiteStoreBase {
     },
     { expectNew }
   ) {
+    if (expectNew && !getAITabPageType(pageType)) {
+      throw new Error(`create() called with unknown page type ${pageType}`);
+    }
+
     await this.ensureDatabase();
 
     const uuid = crypto.randomUUID();
@@ -309,6 +325,7 @@ class AITabStore extends SQLiteStoreBase {
     // A create can be moved off the slug it asked for; an edit names a page
     // that already exists and has to keep it.
     let storedSlug = slug;
+    let storedPageType = pageType;
 
     await this.connection
       .executeTransaction(async () => {
@@ -327,6 +344,13 @@ class AITabStore extends SQLiteStoreBase {
               `edit() called for unknown tab "${slug}"; use create()`
             );
           }
+
+          storedPageType = rows[0].getResultByName("page_type");
+          if (!isAITabPageEditable(storedPageType)) {
+            throw new Error(
+              `edit() called for tab "${slug}", whose page type ${storedPageType} cannot be edited`
+            );
+          }
         }
 
         await this.connection.executeCached(AITAB_PAGE_INSERT, {
@@ -335,6 +359,7 @@ class AITabStore extends SQLiteStoreBase {
           tool_conv_id: toolConvId,
           slug: storedSlug,
           version,
+          page_type: storedPageType,
           title,
           created_at: now,
           updated_at: now,
@@ -358,6 +383,7 @@ class AITabStore extends SQLiteStoreBase {
       toolConvId,
       slug: storedSlug,
       version,
+      pageType: storedPageType,
       title,
       createdAt: now,
       updatedAt: now,

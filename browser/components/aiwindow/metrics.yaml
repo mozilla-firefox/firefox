@@ -4331,9 +4331,10 @@ smart_window:
         type: string
         description: >
           Canonical error code, or absent on success: no_content, canceled,
-          page_load_failed, page_not_found, conversation_unavailable,
-          pages_unreadable, nothing_to_change, history_limit, empty_response,
-          invalid_json, content_related, invalid_format, or generation_failed
+          page_load_failed, page_not_found, page_not_editable,
+          conversation_unavailable, pages_unreadable, nothing_to_change,
+          history_limit, empty_response, invalid_json, content_related,
+          invalid_format, or generation_failed
       components_used:
         type: string
         description: >

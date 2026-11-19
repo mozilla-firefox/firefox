@@ -233,6 +233,7 @@ export class AITabPage extends MozLitElement {
       <aitab-header
         data-aitab-component=${componentTypeName(header)}
         .createdAt=${this.page?.createdAtLabel ?? ""}
+        .editable=${this.page?.editable ?? true}
         .title=${header.title ?? ""}
         .subhead=${header.subhead ?? ""}
         .references=${header.references?.items ?? []}

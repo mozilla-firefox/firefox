@@ -14,6 +14,11 @@ import {
 } from "moz-src:///browser/components/aiwindow/ui/modules/UrlTokenizer.sys.mjs";
 import { componentTypeName } from "chrome://browser/content/aiwindow/modules/AITabUtils.mjs";
 import { sanitizeUntrustedContent } from "moz-src:///browser/components/aiwindow/models/ChatUtils.sys.mjs";
+import {
+  DEFAULT_AITAB_PAGE_TYPE,
+  getAITabPageType,
+  isAITabPageEditable,
+} from "moz-src:///browser/components/aiwindow/ui/modules/AITabPageTypes.sys.mjs";
 
 import {
   getSmartPageName,
@@ -107,13 +112,6 @@ const ROOT_ID = "root";
 // JSON Schema dialect the per-component validators declare.
 const JSON_SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema";
 
-// Total budget (characters) for the source text sent to the model, shared by
-// the requested tabs and any inline content so multi-tab requests don't
-// overflow the prompt. Sized so that ten long pages still get about 2,500
-// characters each: below that, facts further down a page never reach the
-// model, and above it generation gets slower without the page getting better.
-// Measured after URL tokenization, since URLs only reach the model as tokens.
-const SOURCE_TEXT_BUDGET = 25000;
 // Separator inserted between each page's text in the model prompt.
 const PAGE_BREAK = "\n\n<----- PAGE BREAK ---->\n\n";
 
@@ -166,6 +164,8 @@ const CANCELED_RESULT = Object.freeze({
 const AITAB_VIEWER_BASE = "about:smartpage?page=";
 
 const HISTORY_LIMIT_ERROR = "No more modifications are supported";
+
+const PAGE_NOT_EDITABLE_ERROR = "This page cannot be modified";
 
 /**
  * A JSON Schema object from the catalog: a component's property schema, one of
@@ -336,6 +336,8 @@ const HISTORY_LIMIT_ERROR = "No more modifications are supported";
  * @property {string} [convId] - Id of the chat that owns the page being
  *   revised, which keeps it whichever chat asked for the revision. Absent for
  *   a new page, which belongs to the chat that asked for it.
+ * @property {number} pageType - One of AITAB_PAGE_TYPES: the type asked
+ *   for, or the type of the page being revised.
  * @property {string} toolConvId - Id of the conversation the surface was
  *   composed in, in the ConversationStore. Stored alongside the page so a
  *   later modification can continue that exchange, and so deleting the page
@@ -886,6 +888,8 @@ export class AITab {
    * @param {string} [options.modifySlug] - Slug of the stored page to revise.
    * @param {string} [options.modifyInstructions] - What to change about it.
    *   Cut to MAX_INSTRUCTION_CHARS.
+   * @param {number} [options.pageType] - One of AITAB_PAGE_TYPES, for a new
+   *   page. A revision keeps the type of the page it revises.
    * @param {string} [options.howInitiated] - How the generation was requested,
    *   for telemetry: tab_list, tab_group, fxms, chat, chat_followup or
    *   refresh.
@@ -903,11 +907,18 @@ export class AITab {
       rawContent,
       modifySlug,
       modifyInstructions,
+      pageType = DEFAULT_AITAB_PAGE_TYPE,
       howInitiated = "chat",
       signal,
     } = {},
     conversation
   ) {
+    if (!getAITabPageType(pageType)) {
+      throw new Error(
+        `generateAITab() called with unknown page type ${pageType}`
+      );
+    }
+
     const urls = Array.isArray(urlList)
       ? urlList
           .filter(url => typeof url == "string")
@@ -933,7 +944,16 @@ export class AITab {
     const startTime = ChromeUtils.now();
     const stats = { charsRead: 0, charsOut: 0 };
     const result = await AITab.#generate(
-      { urls, rawText, slug, focus, modifyInstructions, signal, stats },
+      {
+        urls,
+        rawText,
+        slug,
+        focus,
+        modifyInstructions,
+        pageType,
+        signal,
+        stats,
+      },
       conversation
     );
 
@@ -967,6 +987,8 @@ export class AITab {
    * @param {string} options.slug - Slug of the page to revise, or "".
    * @param {string} options.focus
    * @param {string} [options.modifyInstructions]
+   * @param {number} options.pageType - The type for a new page; ignored for a
+   *   revision.
    * @param {AbortSignal} [options.signal]
    * @param {{charsRead: number, charsOut: number}} options.stats - Filled in
    *   with the characters sent to and received from the model.
@@ -975,7 +997,7 @@ export class AITab {
    *   `code` is the canonical error code reported to telemetry.
    */
   static async #generate(
-    { urls, rawText, slug, focus, modifyInstructions, signal, stats },
+    { urls, rawText, slug, focus, modifyInstructions, pageType, signal, stats },
     conversation
   ) {
     // A modification already has a page to work from, so it needs no material
@@ -1006,9 +1028,11 @@ export class AITab {
       }
     }
 
+    const effectivePageType = prior ? prior.page.pageType : pageType;
     const sources = await AITab.#collectSources({
       urls,
       rawText,
+      sourceTextBudget: getAITabPageType(effectivePageType).sourceTextBudget,
       conversation,
       signal,
     });
@@ -1101,6 +1125,7 @@ export class AITab {
     const metadata = {
       id: prior ? prior.page.slug : AITab.#slugify(title),
       convId: prior?.page.convId,
+      pageType: effectivePageType,
       toolConvId: toolConversation.id,
       title,
       howCreated: "chat",
@@ -1253,6 +1278,9 @@ export class AITab {
    * @param {object} options
    * @param {string[]} options.urls - URLs to read, in the requested order.
    * @param {string} options.rawText - Content supplied inline, or "".
+   * @param {number} options.sourceTextBudget - Total characters of source
+   *   text, measured after URL tokenization since URLs only reach the model as
+   *   tokens.
    * @param {ChatConversation} options.conversation - Gates each URL's access
    *   check, so a page the chat may not read contributes nothing.
    * @param {AbortSignal} [options.signal] - Cancels the extractions.
@@ -1261,7 +1289,13 @@ export class AITab {
    *   requested, the URLs among them that could be read, and the text for the
    *   prompt, or a description of why there is nothing to build from.
    */
-  static async #collectSources({ urls, rawText, conversation, signal }) {
+  static async #collectSources({
+    urls,
+    rawText,
+    sourceTextBudget,
+    conversation,
+    signal,
+  }) {
     // Pull the readable content for each requested URL (order-aligned with
     // urls). Structured results, so a refusal is distinguishable from page
     // text rather than being composed into the page as if it were content.
@@ -1297,7 +1331,7 @@ export class AITab {
       [...texts, ...(rawText ? [rawText] : [])].map(text =>
         AITab.#tokenizedLength(text)
       ),
-      SOURCE_TEXT_BUDGET
+      sourceTextBudget
     );
 
     /** @type {AITabSource[]} */
@@ -1394,6 +1428,13 @@ export class AITab {
       return {
         error: `this conversation has no page with the slug "${slug}"`,
         code: "page_not_found",
+      };
+    }
+
+    if (!isAITabPageEditable(page.pageType)) {
+      return {
+        error: PAGE_NOT_EDITABLE_ERROR,
+        code: "page_not_editable",
       };
     }
 

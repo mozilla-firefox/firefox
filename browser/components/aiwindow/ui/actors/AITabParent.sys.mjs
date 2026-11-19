@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { AITabStore } from "moz-src:///browser/components/aiwindow/ui/modules/AITabStore.sys.mjs";
+import { isAITabPageEditable } from "moz-src:///browser/components/aiwindow/ui/modules/AITabPageTypes.sys.mjs";
 import { getHeadingFont } from "moz-src:///browser/components/aiwindow/ui/modules/AITabHeadingFont.sys.mjs";
 import { ConversationStore } from "moz-src:///browser/components/aiwindow/ui/modules/ConversationStore.sys.mjs";
 import { getSmartPageName } from "chrome://browser/content/aiwindow/modules/TrustedInternalURLs.mjs";
@@ -29,10 +30,12 @@ import { getSmartPageName } from "chrome://browser/content/aiwindow/modules/Trus
  */
 
 /**
- * Page data sent to the viewer, including hydrated content and a localized date.
+ * Page data sent to the viewer, including hydrated content, a localized date,
+ * and whether its page type allows the page to be revised.
  *
  * @typedef {AITabRow & HydratedAITabData & {
- *   createdAtLabel: string
+ *   createdAtLabel: string,
+ *   editable: boolean
  * }} AITabData
  */
 
@@ -284,6 +287,7 @@ export class AITabParent extends JSWindowActorParent {
       ...pageData,
       ...page,
       createdAtLabel: formatCreatedAt(pageData.createdAt),
+      editable: isAITabPageEditable(pageData.pageType),
     };
   }
 
