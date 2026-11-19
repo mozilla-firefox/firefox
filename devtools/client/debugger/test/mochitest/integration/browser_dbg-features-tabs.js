@@ -47,7 +47,9 @@ add_task(async function () {
   );
   await resume(dbg);
 
-  invokeInTab("breakInEval");
+  // Identical eval code at the same call site may reuse the same source,
+  // so pass a suffix to make the second evaled source distinct.
+  invokeInTab("breakInEval", "second");
   await waitFor(
     () => countTabs(dbg) == uniqueUrls.size + 2,
     "Wait for yet another tab for the second evaled source"
