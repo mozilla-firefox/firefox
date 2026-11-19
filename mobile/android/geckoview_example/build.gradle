@@ -39,6 +39,15 @@ android {
         buildConfig = true
     }
 
+    if (mozconfig.substs.MOZ_ASAN) {
+        // wrap.sh can only preload the ASan runtime if the native libraries are extracted.
+        packaging {
+            jniLibs {
+                useLegacyPackaging = true
+            }
+        }
+    }
+
     namespace = 'org.mozilla.geckoview_example'
 }
 
