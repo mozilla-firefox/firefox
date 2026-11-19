@@ -131,6 +131,60 @@ so for a context opened by a cross-site frame it resolves to the frame's own sit
 the frame can still name itself. Gecko resolves the opener to its top level document
 instead.
 
+## Purge exceptions
+
+A classified bounce tracker is not purged if its site has one of the following
+exceptions:
+
+- A `trackingprotection` permission, or `trackingprotection-pb` in private
+  browsing. These are set when the user turns off Enhanced Tracking Protection
+  for the site with the toggle in the trust panel.
+- A `cookie` permission with `ALLOW_ACTION`, which is set when the user always
+  allows cookies for the site, for example via the cookie exceptions in
+  preferences. Other `cookie` values, such as blocking or allowing for the
+  session only, are not exceptions. `cookie` permissions are stored without
+  private browsing isolation, so they currently only exempt sites in normal
+  browsing.
+- A `bounce-tracking-protection-exception` permission, which is set by remote
+  interventions, see below.
+
+Exceptions apply to the entire site (eTLD+1): a permission set for
+`https://www.example.com` also exempts `example.com` and all of its subdomains.
+Normal and private browsing are checked separately, using the permissions of the
+respective context. A site which is skipped because of an exception is removed
+from the bounce tracker candidates. If it bounces again after the exception has
+been removed it can be classified and purged again.
+
+### Remote interventions
+
+If BTP breaks a website, the site can be exempted from purging remotely,
+without shipping a new Firefox release, by setting a
+`bounce-tracking-protection-exception` permission via
+[remote permissions](/permissions/remote.md). Records go into the
+`remote-permissions` Remote Settings collection:
+
+```json
+{
+  "origin": "https://example.com",
+  "type": "bounce-tracking-protection-exception",
+  "capability": 1
+}
+```
+
+Only `ALLOW_ACTION` (`1`) may be set. `RemotePermissionService` rejects any
+other value except `UNKNOWN_ACTION` (`0`), which removes the permission, and
+BTP only considers `ALLOW_ACTION` to be an exception. New entries are requested through the
+[remote permissions process](/permissions/remote.md).
+
+Remote permissions are imported as default permissions. They are not written to
+the permission database, are mirrored to private browsing, and are not shown in
+the permission UI. Firefox does not ship a dump of the `remote-permissions`
+collection, so a new profile only gets the exceptions after its first Remote
+Settings sync. The import runs asynchronously during startup and BTP does not
+wait for it before purging, so a purge which runs before the import has
+finished does not see these exceptions. Changes synced from Remote Settings apply from the next purge
+onwards.
+
 ## Gecko Implementation
 
 Work for the Gecko implementation in tracked under following meta-bug:
@@ -235,7 +289,7 @@ classDiagram
     nsIBTPExceptionList --* BounceTrackingProtection
     nsIBTPExceptionList --> BounceTrackingProtection : Site host purge exceptions from RemoteSettings.
     BounceTrackingAllowList --* BounceTrackingProtection
-    BounceTrackingAllowList --> BounceTrackingProtection :  Site host purge exceptions from PermissionManager.
+    BounceTrackingAllowList --> BounceTrackingProtection :  Site purge exceptions from PermissionManager, incl. remote permissions.
     BrowsingContextWebProgress --> BounceTrackingState : Navigation signals
     DocumentLoadListener --> BounceTrackingState : Navigation signals, OnLoadRetargeted()
 ```
