@@ -4,12 +4,14 @@
 
 package org.mozilla.fenix.browser
 
+import android.app.KeyguardManager
 import android.content.Context
 import android.content.res.Configuration
 import android.view.View
 import android.view.ViewGroup
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.isVisible
+import androidx.fragment.app.FragmentActivity
 import io.mockk.Called
 import io.mockk.Runs
 import io.mockk.every
@@ -27,7 +29,9 @@ import mozilla.components.browser.state.state.createTab
 import mozilla.components.concept.engine.EngineView
 import mozilla.components.concept.engine.permission.SitePermissions
 import mozilla.components.feature.contextmenu.ContextMenuCandidate
+import mozilla.components.feature.prompts.PromptFeature
 import mozilla.components.ui.widgets.VerticalSwipeRefreshLayout
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -42,6 +46,7 @@ import org.mozilla.fenix.components.toolbar.ToolbarPosition
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.microsurvey.MicrosurveyState
 import org.mozilla.fenix.microsurvey.ui.ext.MicrosurveyUIData
+import org.mozilla.fenix.settings.biometric.AutomotiveSensitiveDataAuthenticator
 import org.mozilla.fenix.utils.Settings
 
 class BaseBrowserFragmentTest {
@@ -51,6 +56,7 @@ class BaseBrowserFragmentTest {
     private lateinit var settings: Settings
     private lateinit var testContext: Context
     lateinit var container: ViewGroup
+    private val activity: FragmentActivity = mockk(relaxed = true)
 
     @Before
     fun setup() {
@@ -846,6 +852,97 @@ class BaseBrowserFragmentTest {
 
         verify { settings.openLinksInExternalApp = "apps_always" }
         verify { settings.openLinksInYoutube = "youtube_always" }
+    }
+
+    private fun showCreditCardAuthentication(isRequired: Boolean): Pair<PromptFeature, FakeAuthenticator> {
+        val promptFeature: PromptFeature = mockk(relaxed = true)
+        val authenticator = FakeAuthenticator(isRequired)
+        fragment.promptsFeature.set(promptFeature, mockk(relaxed = true), mockk(relaxed = true))
+        fragment.automotiveAuthenticator = authenticator
+        every { fragment.requireActivity() } returns activity
+        every { fragment.getString(R.string.credit_cards_biometric_prompt_unlock_message_2) } returns UNLOCK_MESSAGE
+
+        fragment.showBiometricPrompt(testContext)
+
+        return promptFeature to authenticator
+    }
+
+    @Test
+    fun `GIVEN the automotive check is required WHEN a credit card is selected THEN it authenticates with the unlock message`() {
+        val (promptFeature, authenticator) = showCreditCardAuthentication(isRequired = true)
+
+        assertEquals(listOf(activity), authenticator.activities)
+        assertEquals(listOf(UNLOCK_MESSAGE), authenticator.titles)
+        verify(exactly = 0) { promptFeature.onBiometricResult(any()) }
+        verify(exactly = 0) { settings.shouldShowSecurityPinWarning }
+    }
+
+    @Test
+    fun `GIVEN the automotive check is required WHEN authentication succeeds THEN the credit card is filled`() {
+        val (promptFeature, authenticator) = showCreditCardAuthentication(isRequired = true)
+
+        authenticator.onAuthenticated()
+
+        verify { promptFeature.onBiometricResult(isAuthenticated = true) }
+        verify(exactly = 0) { promptFeature.onBiometricResult(isAuthenticated = false) }
+    }
+
+    @Test
+    fun `GIVEN the automotive check is required WHEN authentication is blocked THEN nothing is filled`() {
+        val (promptFeature, authenticator) = showCreditCardAuthentication(isRequired = true)
+
+        authenticator.onBlocked()
+
+        verify { promptFeature.onBiometricResult(isAuthenticated = false) }
+        verify(exactly = 0) { promptFeature.onBiometricResult(isAuthenticated = true) }
+    }
+
+    @Test
+    fun `GIVEN the automotive check is required WHEN a credit card is selected again THEN it authenticates again`() {
+        val (_, authenticator) = showCreditCardAuthentication(isRequired = true)
+        authenticator.onAuthenticated()
+
+        fragment.showBiometricPrompt(testContext)
+
+        assertEquals(2, authenticator.titles.size)
+    }
+
+    @Test
+    fun `GIVEN the automotive check is not required WHEN a credit card is selected THEN the automotive authentication is not used`() {
+        val keyguardManager: KeyguardManager = mockk { every { isKeyguardSecure } returns false }
+        every { testContext.getSystemService(Context.KEYGUARD_SERVICE) } returns keyguardManager
+        every { testContext.getSystemService(KeyguardManager::class.java) } returns keyguardManager
+        every { settings.shouldShowSecurityPinWarning } returns false
+
+        val (promptFeature, authenticator) = showCreditCardAuthentication(isRequired = false)
+
+        assertEquals(emptyList<String>(), authenticator.titles)
+        verify { promptFeature.onBiometricResult(isAuthenticated = true) }
+    }
+
+    private class FakeAuthenticator(private val isRequired: Boolean) : AutomotiveSensitiveDataAuthenticator {
+        val activities = mutableListOf<FragmentActivity>()
+        val titles = mutableListOf<String>()
+        var onAuthenticated: () -> Unit = {}
+        var onBlocked: () -> Unit = {}
+
+        override fun isRequired(context: Context) = isRequired
+
+        override fun authenticate(
+            activity: FragmentActivity,
+            title: String,
+            onAuthenticated: () -> Unit,
+            onBlocked: () -> Unit,
+        ) {
+            activities.add(activity)
+            titles.add(title)
+            this.onAuthenticated = onAuthenticated
+            this.onBlocked = onBlocked
+        }
+    }
+
+    private companion object {
+        const val UNLOCK_MESSAGE = "Unlock to use stored card information"
     }
 }
 
