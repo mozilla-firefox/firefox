@@ -1022,6 +1022,7 @@ if (rtc_include_tests) {
       ":frame_dependencies_calculator_unittest",
       ":frame_dropper_unittest",
       ":frame_helpers_unittest",
+      ":frame_sampler_unittest",
       ":framerate_controller_deprecated_unittest",
       ":generic_decoder_unittest",
       ":h264_impl_unittest",
@@ -1507,6 +1508,17 @@ if (rtc_include_tests) {
     sources = [ "utility/frame_dropper_unittest.cc" ]
     deps = [
       ":video_coding_utility",
+      "../../test:test_support",
+    ]
+  }
+
+  rtc_cc_test("frame_sampler_unittest") {
+    sources = [ "utility/frame_sampler_unittest.cc" ]
+    deps = [
+      ":frame_sampler",
+      "../../api:make_ref_counted",
+      "../../api/units:time_delta",
+      "../../api/video:video_frame",
       "../../test:test_support",
     ]
   }
