@@ -30,26 +30,47 @@ struct FrameDestroyContext;
 class PresShell;
 class FrameChildList;
 enum class FrameChildListID {
-  // The individual concrete child lists.
+  // The in-flow children in this frame.
   Principal,
-  Absolute,
-  PushedAbsolute,
+
+  // A temporary list of in-flow children that didn't fit in this frame.
   Overflow,
+
+  // A list of next-in-flows that hold overflow content. All of them should have
+  // the NS_FRAME_IS_OVERFLOW_CONTAINER bit set.
   OverflowContainers,
+
+  // A temporary list of next-in-flows of the overflow-incomplete children in
+  // this frame. It is expected to be drained by this frame's next-in-flow.
   ExcessOverflowContainers,
+
+  // The abspos and fixed-pos children.
+  Absolute,
+
+  // A temporary list of abspos children that didn't fit in the current
+  // fragmentainer, and the next-in-flows of incomplete abspos children. It is
+  // expected to be drained by the absolute containing block's continuation
+  // in the next fragmentainer.
+  PushedAbsolute,
+
   // Floats placed by the block. Their placeholders are in the block's in-flow
   // lines.
   Float,
+
   // Floats pushed to the block's next-in-flow because they didn't fit. The list
   // can hold floats' first-in-flows and next-in-flows, and it is expected to be
   // drained by the block's next-in-flow during reflow.
   PushedFloats,
+
   // Floats whose placeholders are in the overflow lines. This list collects the
   // floats' real frames so they are drained with their placeholders by the
   // block's next-in-flow.
   OverflowFloats,
+
+  // The outside ::marker frame of a list item.
   Marker,
-  // A special alias for FrameChildListID::Principal that suppress the reflow
+
+  // A special alias for FrameChildListID::Principal that suppresses the reflow
   // request that is normally done when manipulating child lists.
   NoReflowPrincipal,
 };
