@@ -138,6 +138,11 @@ support-files = ["test-page-with-nan-video-duration.html"]
 
 ["browser_occluded_window.js"]
 
+["browser_pipMenuBar_mac.js"]
+run-if = [
+  "os == 'mac'",
+]
+
 ["browser_playbackRate.js"]
 
 ["browser_playerControls.js"]

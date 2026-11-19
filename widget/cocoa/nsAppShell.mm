@@ -1101,6 +1101,20 @@ nsAppShell::GetLostNativeWakeups(uint32_t* aResult) {
   return NS_OK;
 }
 
+NS_IMETHODIMP
+nsAppShell::GetMainMenuItemTitles(nsTArray<nsString>& aResult) {
+  NS_OBJC_BEGIN_TRY_BLOCK_RETURN;
+
+  for (NSMenuItem* item in NSApp.mainMenu.itemArray) {
+    nsAutoString title;
+    nsCocoaUtils::GetStringForNSString(item.title, title);
+    aResult.AppendElement(title);
+  }
+  return NS_OK;
+
+  NS_OBJC_END_TRY_BLOCK_RETURN(NS_ERROR_FAILURE);
+}
+
 // AfterProcessNextEvent
 //
 // This nsIThreadObserver method is called after event processing is complete.

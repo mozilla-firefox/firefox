@@ -23,4 +23,10 @@ interface nsICocoaAppShellTestUtils : nsISupports
    * wake-up meant for it was consumed by a nested loop.
    */
   readonly attribute unsigned long lostNativeWakeups;
+
+  /**
+   * Titles of the top-level items in the application's main menu
+   * (NSApp.mainMenu), in order.
+   */
+  Array<AString> getMainMenuItemTitles();
 };
