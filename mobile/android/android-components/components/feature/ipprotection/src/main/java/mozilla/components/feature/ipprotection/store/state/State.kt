@@ -141,7 +141,7 @@ sealed class ProxyRequest {
  * We have a separation of authentication and authorization so that we can decide which scopes or services to use. With
  * FxA today, a device will have the VPN scope included in the authorization flow, where-as in current Android code, we
  * do not have Sync decoupled from FxA, so we need to authenticate with the VPN and Sync scopes. For this reason, we
- * have divergant flows.
+ * have divergent flows.
  *
  * To avoid re-requesting an auth flow, we have the intermediary (UI) states `Needs*`, `Requesting*`, and `Awaiting*`:
  *
@@ -149,63 +149,64 @@ sealed class ProxyRequest {
  * [mozilla.components.feature.ipprotection.store.IPProtectionStore] deduces that our engine requires a valid auth token
  * to proceed.
  *
- * An observers use the [RequestingAuthorization] and [RequestingAuthentication] states to know we need to initiated an
+ * An observers use the [RequestingAuthorization] and [RequestingAuthentication] states to know we need to initiate an
  * auth flow. The observers are typically some form of UI driver that needs to trigger the flow.
  *
  * A user can leave an incomplete flow at any time in the UI, in which case we need to return to the top of the previous
- * branch. The [AwaitingAuthorization] and [AwaitingAuthorization] let us do this.
+ * branch. The [AwaitingAuthentication] and [AwaitingAuthorization] let us do this.
  *
  * Whether the flow is successful or not, we try to end with [AwaitingEnrollment]. If we received this event with a
- * result from the account manager, then we can move forward with [AuthFailed] or [Ready], otherwise, we go back into
- * the `Needs*` state for each branch.
+ * result from the account manager, then we can move forward to [EnrolledAndEntitled] on success, otherwise we go back
+ * into the [NeedsAuthorization] state so the user can retry enrollment.
  *
- * The optional [TryAgain] is typically used to re-notify the engine that we have an account in a valid auth state and
+ * There are two "ready-ish" states. [Authenticated] means the user is signed in to FxA and the VPN scope has been
+ * granted, but we have not yet confirmed they are entitled to use the service. [EnrolledAndEntitled] means the service
+ * is ready and the user can turn protection on at any time. Entitlement is normally sourced from the engine (an
+ * `EngineStateChanged` reporting `ServiceState.Ready`); the [AwaitingEnrollment] -> [EnrolledAndEntitled] path is only
+ * used for the very first enrollment.
+ *
+ * The optional [TryAgain] is typically used to re-notify the engine that we have an account in a valid auth state, and
  * it's safe to re-request an access token, if needed.
  *
- * State transitions:
+ * Happy-path state transitions (rollback, [AuthFailed], and [TryAgain] edges are omitted for clarity):
  * ```
- *                    +---------------+
- *                    | Uninitialized |
- *                    +-------+-------+
- *                            |
- *                            v
- *                    +---------------+
- *                    |   WarmingUp   |
- *                    +---+-------+---+
- *                        |       |
- *              +---------+       +---------+
- *              v                           v
- *  +---------------------+      +----------------------+
- *  | NeedsAuthentication |      |  NeedsAuthorization  |
- *  +----------+----------+      +-----------+----------+
- *             |                             |
- *             v                             v
- *  +--------------------------+  +---------------------------+
- *  | RequestingAuthentication |  | RequestingAuthorization   |
- *  +-------------+------------+  +-------------+-------------+
- *                |                             |
- *                v                             v
- *  +--------------------------+  +---------------------------+
- *  |  AwaitingAuthentication  |  |   AwaitingAuthorization   |
- *  +-------------+------------+  +-------------+-------------+
- *                |                             |
- *                +--------------+--------------+
- *                               v
- *                     +-------------------+
- *                     | AwaitingEnrollment |
- *                     +---+-----------+---+
- *                         |           |
- *              +----------+           +----------+
- *              v                                 v
- *         +------------+                    +---------+
- *         | AuthFailed |                    |  Ready  |
- *         +------+-----+                    +----+----+
- *                |                               |
- *                +---------------+---------------+
- *                                v
- *                         +------------+
- *                         |  TryAgain  |
- *                         +------------+
+ *
+ *                      +---------------+
+ *                      | Uninitialized |
+ *                      +-------+-------+
+ *                              |
+ *                              v
+ *                      +---------------+
+ *                      |   WarmingUp   |----------------------+
+ *                      +--+--------+---+                      |
+ *                         |        |                          |
+ *               +---------+        +---------+                |
+ *               v                            v                |
+ *   +---------------------+      +----------------------+     |
+ *   | NeedsAuthentication |      |  NeedsAuthorization  |     |
+ *   +----------+----------+      +-----------+----------+     |
+ *              |                             |                |
+ *              v                             v                |
+ *   +--------------------------+  +-------------------------+ |
+ *   | RequestingAuthentication |  | RequestingAuthorization | |
+ *   +-------------+------------+  +-------------+-----------+ |
+ *                 |                             |             |
+ *                 v                             v             |
+ *   +--------------------------+  +-------------------------+ |
+ *   |  AwaitingAuthentication  |  |   AwaitingAuthorization | |
+ *   +-------------+------------+  +-------------+-----------+ |
+ *                 |                             |             |
+ *                 +--------------+--------------+             |
+ *                                v                            v
+ *                     +--------------------+      +---------------+
+ *                     | AwaitingEnrollment |      | Authenticated |
+ *                     +---------+----------+      +-------+-------+
+ *                               |                         |
+ *                               +------------+------------+
+ *                                            v
+ *                                +---------------------+
+ *                                | EnrolledAndEntitled |
+ *                                +---------------------+
  * ```
  */
 enum class AccountStatus {
@@ -218,7 +219,7 @@ enum class AccountStatus {
     /** The user is not signed in. */
     NoAccount,
 
-    /** Account is in a bad state. */
+    /** Account is in an incomplete state. */
     NeedsAuthentication,
 
     /** Start Authenticating. */
