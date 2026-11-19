@@ -178,6 +178,134 @@ add_task(async function test_bookmarks_drag_into_root_folder_shortcut() {
   await dropBookmarkOnFolderShortcut(PlacesUtils.bookmarks.menuGuid);
 });
 
+/**
+ * Creates a folder in Other Bookmarks holding the given bookmarks, adds a
+ * shortcut to it in the toolbar, and opens the shortcut in the sidebar.
+ *
+ * @param {string[]} titles - Titles of the bookmarks to create in the folder.
+ */
+async function openFolderShortcutWithBookmarks(titles) {
+  const folder = await addFolder(
+    "Shortcut Contents Folder",
+    PlacesUtils.bookmarks.unfiledGuid
+  );
+  const bookmarks = [];
+  for (const [i, title] of titles.entries()) {
+    bookmarks.push(
+      await addBookmark({
+        title,
+        url: `https://example.com/shortcut-contents-${i}`,
+        parentGuid: folder.guid,
+      })
+    );
+  }
+  const shortcut = await PlacesUtils.bookmarks.insert({
+    parentGuid: PlacesUtils.bookmarks.toolbarGuid,
+    title: "Shortcut Contents",
+    url: `place:parent=${folder.guid}`,
+  });
+
+  const { component, contentWindow } = await showBookmarksSidebar(window);
+  const tabList = component.bookmarkList;
+  const shortcutDetails = await getBookmarkFolder(tabList, shortcut);
+  await SidebarTestUtils.bookmarks.openFolder(shortcutDetails);
+  const shortcutList = shortcutDetails.querySelector("sidebar-bookmark-list");
+  const rows = [];
+  for (const bookmark of bookmarks) {
+    rows.push(
+      await SidebarTestUtils.bookmarks.findBookmarkItemByGuid(
+        shortcutList,
+        "rowEls",
+        bookmark.guid
+      )
+    );
+  }
+  return { folder, bookmarks, rows, tabList, contentWindow };
+}
+
+add_task(async function test_bookmarks_drag_reorders_within_folder_shortcut() {
+  const {
+    folder,
+    bookmarks: [bmA, bmB],
+    rows: [rowA, rowB],
+    contentWindow,
+  } = await openFolderShortcutWithBookmarks([
+    "Shortcut First",
+    "Shortcut Second",
+  ]);
+  ok(rowA && rowB, "Both bookmark rows are visible inside the shortcut.");
+
+  const rectB = rowB.getBoundingClientRect();
+  EventUtils.synthesizeDrop(
+    rowA,
+    rowB,
+    null,
+    "move",
+    contentWindow,
+    contentWindow,
+    {
+      clientX: rectB.left + rectB.width / 2,
+      clientY: rectB.top + rectB.height * 0.75,
+      _domDispatchOnly: true,
+    }
+  );
+
+  await TestUtils.waitForCondition(async () => {
+    const fetchA = await PlacesUtils.bookmarks.fetch(bmA.guid);
+    const fetchB = await PlacesUtils.bookmarks.fetch(bmB.guid);
+    return fetchA.index > fetchB.index;
+  }, "Bookmark A moves after B within the shortcut's target folder.");
+  Assert.equal(
+    (await PlacesUtils.bookmarks.fetch(bmA.guid)).parentGuid,
+    folder.guid,
+    "Bookmark A stays in the shortcut's target folder."
+  );
+
+  await PlacesUtils.bookmarks.eraseEverything();
+  SidebarTestUtils.closePanel(window);
+});
+
+add_task(async function test_bookmarks_drag_to_position_in_folder_shortcut() {
+  const bm = await addBookmark({
+    title: "Drag Into Shortcut Position",
+    url: "https://example.com/drag-into-shortcut-position",
+  });
+  const {
+    folder,
+    rows: [, lastRow],
+    tabList,
+    contentWindow,
+  } = await openFolderShortcutWithBookmarks([
+    "Shortcut First",
+    "Shortcut Last",
+  ]);
+  const bookmarkRow = await getBookmarkRow(tabList, bm);
+  ok(bookmarkRow && lastRow, "Source row and shortcut row are found.");
+
+  const rect = lastRow.getBoundingClientRect();
+  EventUtils.synthesizeDrop(
+    bookmarkRow,
+    lastRow,
+    null,
+    "move",
+    contentWindow,
+    contentWindow,
+    {
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height * 0.25,
+      _domDispatchOnly: true,
+    }
+  );
+
+  await TestUtils.waitForCondition(async () => {
+    const fetchBm = await PlacesUtils.bookmarks.fetch(bm.guid);
+    return fetchBm.parentGuid === folder.guid && fetchBm.index === 1;
+  }, "Bookmark is dropped between the shortcut's two bookmarks.");
+
+  await PlacesUtils.bookmarks.eraseEverything();
+  SidebarTestUtils.closePanel(window);
+});
+
 add_task(async function test_bookmarks_drag_hover_expands_folder() {
   const folder = await addFolder("Hover Expand Folder");
   await addBookmark({

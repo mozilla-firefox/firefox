@@ -285,7 +285,8 @@ export class SidebarBookmarkList extends SidebarTabList {
               secondaryActionClass="delete-button"
               .tabItems=${tabItem.children}
               .expandedFolderGuids=${this.expandedFolderGuids}
-              .readOnly=${this.readOnly || !!tabItem.isPlaceContainer}
+              .readOnly=${this.readOnly ||
+              (tabItem.isPlaceContainer && !tabItem.targetFolderGuid)}
               @fxview-tab-list-primary-action=${this.onPrimaryAction}
               @fxview-tab-list-secondary-action=${this.onSecondaryAction}
             >
@@ -702,6 +703,7 @@ export class SidebarBookmarkList extends SidebarTabList {
       return {
         element: parentDetails,
         guid: parentDetails.guid,
+        targetFolderGuid: parentDetails.targetFolderGuid,
         orientation: DROP_ON,
         isFolder: true,
       };
