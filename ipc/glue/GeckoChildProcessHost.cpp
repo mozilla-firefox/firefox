@@ -515,7 +515,7 @@ static MacOSChildProcessBundleType GetMacOSChildProcessBundleType(
       mozilla::StaticPrefs::layers_gpu_process_executable_enabled()) {
     return MacOSChildProcessBundleType::GPU;
   }
-#  if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#  if !defined(MOZ_NO_SMART_CARDS)
   if (processType == GeckoProcessType_Utility &&
       utilitySandbox == PKCS11_MODULE) {
     return MacOSChildProcessBundleType::PKCS11;
@@ -531,7 +531,7 @@ static nsLiteralCString GetBundleNameForType(
       return nsLiteralCString(MOZ_EME_PROCESS_BUNDLENAME);
     case MacOSChildProcessBundleType::GPU:
       return nsLiteralCString(MOZ_GPU_PROCESS_BUNDLENAME);
-#  if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#  if !defined(MOZ_NO_SMART_CARDS)
     case MacOSChildProcessBundleType::PKCS11:
       return nsLiteralCString(MOZ_PKCS11_PROCESS_BUNDLENAME);
 #  else
@@ -557,7 +557,7 @@ static const char* GetBundleExecutablePathForType(
       return BUNDLE_EXEC_PATH(EME);
     case MacOSChildProcessBundleType::GPU:
       return BUNDLE_EXEC_PATH(GPU);
-#  if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#  if !defined(MOZ_NO_SMART_CARDS)
     case MacOSChildProcessBundleType::PKCS11:
       return BUNDLE_EXEC_PATH(PKCS11);
 #  else

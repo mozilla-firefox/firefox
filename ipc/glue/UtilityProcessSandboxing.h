@@ -29,9 +29,9 @@ enum SandboxingKind : uint64_t {
   WINDOWS_UTILS,
   WINDOWS_FILE_DIALOG,
 #endif
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
   PKCS11_MODULE,
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
 #ifndef ANDROID
   HW_INFERENCE,

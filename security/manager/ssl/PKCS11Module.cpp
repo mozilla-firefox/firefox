@@ -77,7 +77,7 @@ PKCS11Module::GetSlots(nsTArray<RefPtr<nsIPKCS11Slot>>& slots) {
   return NS_OK;
 }
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
 nsresult PKCS11Module::GetModuleInfo(ModuleInfo& moduleInfo) {
   nsresult rv = CheckForSmartCardChanges();
   if (NS_FAILED(rv)) {
@@ -137,4 +137,4 @@ RemotePKCS11Module::GetSlots(nsTArray<RefPtr<nsIPKCS11Slot>>& slots) {
   }
   return NS_OK;
 }
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS

@@ -1695,7 +1695,7 @@ bool LoadOSClientCertsModule() {
 #endif
 }
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
 extern "C" {
 // Extern declaration of the C_GetFunctionList function in the remotecerts
 // module. NSS calls it to obtain the list of functions comprising this module.
@@ -1707,7 +1707,7 @@ bool LoadRemoteCertsModule() {
   return LoadUserModuleFromXul(kRemoteCertsModuleName.get(),
                                RemoteCerts_C_GetFunctionList);
 }
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
 bool LoadLoadableRoots(const nsCString& dir) {
   int unusedModType;

@@ -4056,7 +4056,7 @@ with only_when(target_is_osx):
 
     set_config("MOZ_GPU_PROCESS_BUNDLEID", moz_gpu_process_bundle_id)
 
-    with only_when(milestone.is_nightly & ~disable_smart_cards):
+    with only_when(~disable_smart_cards):
         # Security Module Helper
         #
         # Set up configuration strings for building and referencing the PKCS#11

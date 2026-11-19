@@ -11,9 +11,9 @@
 #endif  // !ANDROID
 #include "ChildProfilerController.h"
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
 #  include "mozilla/psm/PKCS11ModuleChild.h"
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
 #if defined(MOZ_SANDBOX) && defined(MOZ_DEBUG) && defined(ENABLE_TESTS)
 #  include "mozilla/PSandboxTestingChild.h"
@@ -89,10 +89,10 @@ class UtilityProcessChild final : public PUtilityProcessChild {
 
   AsyncBlockers& AsyncShutdownService() { return mShutdownBlockers; }
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
   IPCResult RecvStartPKCS11ModuleService(
       Endpoint<PPKCS11ModuleChild>&& aEndpoint, nsCString&& aProfilePath);
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
 #ifndef ANDROID
   already_AddRefed<hwinference::PHWInferenceChild> AllocPHWInferenceChild();
@@ -130,9 +130,9 @@ class UtilityProcessChild final : public PUtilityProcessChild {
 #ifdef XP_WIN
   RefPtr<PWindowsUtilsChild> mWindowsUtilsInstance;
 #endif
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
   RefPtr<psm::PKCS11ModuleChild> mPKCS11ModuleInstance;
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
   AsyncBlockers mShutdownBlockers;
 };

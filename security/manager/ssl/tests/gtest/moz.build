@@ -14,7 +14,7 @@ SOURCES += [
     "TLSIntoleranceTest.cpp",
 ]
 
-if CONFIG["NIGHTLY_BUILD"] and not CONFIG["MOZ_NO_SMART_CARDS"]:
+if not CONFIG["MOZ_NO_SMART_CARDS"]:
     SOURCES += [
         "UtilityPKCS11ModuleTest.cpp",
     ]

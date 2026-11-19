@@ -33,9 +33,9 @@
 
 #include "mozilla/GeckoArgs.h"
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
 #  include "mozilla/psm/PPKCS11ModuleChild.h"
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
 namespace mozilla::ipc {
 
@@ -705,7 +705,7 @@ UtilityProcessManager::CreateWinFileDialogActor() {
 
 #endif  // XP_WIN
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
 RefPtr<UtilityProcessManager::PKCS11ModulePromise>
 UtilityProcessManager::StartPKCS11Module() {
   using RetPromise = PKCS11ModulePromise;
@@ -726,7 +726,7 @@ UtilityProcessManager::StartPKCS11Module() {
         return RetPromise::CreateAndReject(std::move(aError), __func__);
       });
 }
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
 void UtilityProcessManager::OnProcessUnexpectedShutdown(
     UtilityProcessHost* aHost) {

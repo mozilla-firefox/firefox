@@ -10,9 +10,9 @@
 #include "nsISupports.h"
 #include "nsString.h"
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
 #  include "mozilla/psm/PPKCS11Module.h"
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
 class PKCS11Module : public nsIPKCS11Module {
  public:
@@ -21,9 +21,9 @@ class PKCS11Module : public nsIPKCS11Module {
 
   explicit PKCS11Module(SECMODModule* module);
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
   nsresult GetModuleInfo(mozilla::psm::ModuleInfo& moduleInfo);
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
  protected:
   virtual ~PKCS11Module() = default;
@@ -32,7 +32,7 @@ class PKCS11Module : public nsIPKCS11Module {
   mozilla::UniqueSECMODModule mModule;
 };
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
 class RemotePKCS11Module : public nsIPKCS11Module {
  public:
   NS_DECL_ISUPPORTS
@@ -46,6 +46,6 @@ class RemotePKCS11Module : public nsIPKCS11Module {
  private:
   mozilla::psm::ModuleInfo mModuleInfo;
 };
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
 #endif  // PKCS11Module_h

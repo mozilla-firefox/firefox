@@ -2,9 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#if !defined(NIGHTLY_BUILD) || defined(MOZ_NO_SMART_CARDS)
-#  error This file should only be used under NIGHTLY_BUILD and when MOZ_NO_SMART_CARDS is not defined.
-#endif  // !NIGHTLY_BUILD || MOZ_NO_SMART_CARDS
+#if defined(MOZ_NO_SMART_CARDS)
+#  error This file should only be used when MOZ_NO_SMART_CARDS is not defined.
+#endif  // MOZ_NO_SMART_CARDS
 
 #include "mozilla/psm/PKCS11ModuleChild.h"
 

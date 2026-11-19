@@ -250,7 +250,7 @@ if CONFIG["OS_ARCH"] == "WINNT":
         "CredentialManagerSecret.h",
     ]
 
-if CONFIG["NIGHTLY_BUILD"] and not CONFIG["MOZ_NO_SMART_CARDS"]:
+if not CONFIG["MOZ_NO_SMART_CARDS"]:
     EXPORTS.mozilla.psm += [
         "PKCS11ModuleChild.h",
         "PKCS11ModuleParent.h",

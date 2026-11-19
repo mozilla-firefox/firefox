@@ -234,7 +234,7 @@ mozilla::ipc::IPCResult UtilityProcessChild::RecvRequestMemoryReport(
   return IPC_OK();
 }
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
 IPCResult UtilityProcessChild::RecvStartPKCS11ModuleService(
     Endpoint<PPKCS11ModuleChild>&& aEndpoint, nsCString&& aProfilePath) {
   auto child = MakeRefPtr<psm::PKCS11ModuleChild>();
@@ -246,7 +246,7 @@ IPCResult UtilityProcessChild::RecvStartPKCS11ModuleService(
   mPKCS11ModuleInstance = std::move(child);
   return IPC_OK();
 }
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
 #if defined(MOZ_SANDBOX) && defined(MOZ_DEBUG) && defined(ENABLE_TESTS)
 mozilla::ipc::IPCResult UtilityProcessChild::RecvInitSandboxTesting(
@@ -456,9 +456,9 @@ void UtilityProcessChild::ActorDestroy(ActorDestroyReason aWhy) {
   mWindowsUtilsInstance = nullptr;
 #  endif
 
-#  if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#  if !defined(MOZ_NO_SMART_CARDS)
   mPKCS11ModuleInstance = nullptr;
-#  endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#  endif  // !MOZ_NO_SMART_CARDS
 
   // Wait until all RemoteMediaManagerParent have closed.
   // It is still possible some may not have clean up yet, and we might hit

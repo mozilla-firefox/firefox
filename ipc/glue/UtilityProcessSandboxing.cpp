@@ -40,14 +40,14 @@ bool IsUtilitySandboxEnabled(const char* envVar, SandboxingKind aKind) {
   }
 #endif
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
   // For now, don't enable sandboxing for the pkcs11 module loader process.
   // pkcs11 modules have historically been loaded in the parent process and may
   // have sandboxing-compatibility problems.
   if (aKind == SandboxingKind::PKCS11_MODULE) {
     return false;
   }
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
   if (envVar == nullptr) {
     return true;

@@ -144,8 +144,8 @@ SECStatus brotliCertificateDecode(const SECItem* input, unsigned char* output,
 SECStatus zstdCertificateDecode(const SECItem* input, unsigned char* output,
                                 size_t outputLen, size_t* usedLen);
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
 void CacheRemoteCryptokiObjects(mozilla::psm::SearchingFor searchingFor);
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
 #endif  // nsNSSIOLayer_h

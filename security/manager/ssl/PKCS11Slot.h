@@ -11,9 +11,9 @@
 #include "nsISupports.h"
 #include "nsString.h"
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
 #  include "mozilla/psm/PPKCS11Module.h"
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
 class PKCS11Slot : public nsIPKCS11Slot {
  public:
@@ -22,9 +22,9 @@ class PKCS11Slot : public nsIPKCS11Slot {
 
   explicit PKCS11Slot(PK11SlotInfo* slot);
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
   nsresult GetSlotInfo(mozilla::psm::SlotInfo& slotInfo);
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
  protected:
   virtual ~PKCS11Slot() = default;
@@ -46,7 +46,7 @@ class PKCS11Slot : public nsIPKCS11Slot {
                               /*out*/ nsACString& xpcomOutParam);
 };
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
 class RemotePKCS11Slot : public nsIPKCS11Slot {
  public:
   NS_DECL_ISUPPORTS
@@ -60,6 +60,6 @@ class RemotePKCS11Slot : public nsIPKCS11Slot {
  private:
   mozilla::psm::SlotInfo mSlotInfo;
 };
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
 #endif  // PKCS11Slot_h

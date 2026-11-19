@@ -299,7 +299,7 @@ elif CONFIG["MOZ_WIDGET_TOOLKIT"] == "android":
     OS_LIBS += ["android"]
 
 extra_vars = ()
-if CONFIG["NIGHTLY_BUILD"] and not CONFIG["MOZ_NO_SMART_CARDS"]:
+if not CONFIG["MOZ_NO_SMART_CARDS"]:
     extra_vars = (
         "MOZ_PKCS11_PROCESS_NAME_BRANDED",
         "MOZ_PKCS11_PROCESS_BUNDLENAME",

@@ -15,9 +15,9 @@
 
 #include "mozilla/PRemoteMediaManagerChild.h"
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
 #  include "mozilla/psm/PKCS11ModuleParent.h"
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
 namespace mozilla {
 
@@ -65,9 +65,9 @@ class UtilityProcessManager final : public UtilityProcessHost::Listener {
   using WinFileDialogPromise = LaunchPromise<widget::filedialog::ProcessProxy>;
 #endif
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
   using PKCS11ModulePromise = LaunchPromise<RefPtr<psm::PKCS11ModuleParent>>;
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
   static RefPtr<UtilityProcessManager> GetSingleton();
 
@@ -106,9 +106,9 @@ class UtilityProcessManager final : public UtilityProcessHost::Listener {
   RefPtr<WinFileDialogPromise> CreateWinFileDialogActor();
 #endif
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
   RefPtr<PKCS11ModulePromise> StartPKCS11Module();
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
 #ifndef ANDROID
   // Launches an independent HWInference process and binds aActor to it.

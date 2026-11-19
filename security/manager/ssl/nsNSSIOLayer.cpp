@@ -1893,7 +1893,7 @@ nsresult nsSSLIOLayerAddToSocket(int32_t family, const char* host, int32_t port,
   return NS_OK;
 }
 
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
 struct RemoteCryptokiState {
   TimeStamp mLastUpdate;
   nsTArray<CryptokiObject> mCryptokiObjects;
@@ -1976,18 +1976,15 @@ void CacheRemoteCryptokiObjects(SearchingFor searchingFor) {
   remoteCryptokiState->emplace(
       RemoteCryptokiState{TimeStamp::Now(), std::move(objects)});
 }
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
 extern "C" {
 
-#if defined(MOZ_WIDGET_ANDROID) || \
-    (defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS))
 const uint8_t kCryptokiObjectTypeCert = 1;
-#endif
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
 const uint8_t kCryptokiObjectTypeRSAKey = 2;
 const uint8_t kCryptokiObjectTypeECKey = 3;
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 
 using FindObjectsCallback = void (*)(uint8_t type, size_t id_len,
                                      const uint8_t* id, size_t data_len,
@@ -2068,7 +2065,7 @@ void AndroidDoSign(size_t certLen, const uint8_t* cert, size_t dataLen,
 // tokens.
 void RemoteCertsDoFindObjects(SearchingFor searchingFor, FindObjectsCallback cb,
                               void* ctx) {
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
   nsTArray<CryptokiObject> objects;
   {
     auto remoteCryptokiState(LockRemoteCryptokiState(searchingFor));
@@ -2105,7 +2102,7 @@ void RemoteCertsDoFindObjects(SearchingFor searchingFor, FindObjectsCallback cb,
         break;
     }
   }
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 }
 
 // This function implements signing using private keys stored on remote PKCS#11
@@ -2113,7 +2110,7 @@ void RemoteCertsDoFindObjects(SearchingFor searchingFor, FindObjectsCallback cb,
 void RemoteCertsDoSign(size_t certLen, const uint8_t* cert, size_t dataLen,
                        const uint8_t* data, size_t paramsLen,
                        const uint8_t* params, SignCallback cb, void* ctx) {
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+#if !defined(MOZ_NO_SMART_CARDS)
   MOZ_ASSERT(!NS_IsMainThread());
   if (NS_IsMainThread()) {
     return;
@@ -2160,6 +2157,6 @@ void RemoteCertsDoSign(size_t certLen, const uint8_t* cert, size_t dataLen,
     lock.Wait();
   }
   cb(signature.Length(), signature.Elements(), ctx);
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+#endif  // !MOZ_NO_SMART_CARDS
 }
 }  // extern "C"
