@@ -924,6 +924,45 @@ add_task(async function() {
     ]
   });
 
+
+  /// random-item()
+  test({
+    expression: "random-item(auto, 1px)",
+    el: sectionEl,
+    property: "width",
+    expected: ["random-item(auto, 1px)", "1px"]
+  });
+  test({
+    expression: "random-item(property-scoped, 1px)",
+    el: sectionEl,
+    property: "width",
+    expected: ["random-item(property-scoped, 1px)", "1px"]
+  });
+  test({
+    expression: "random-item(element-scoped, 1px)",
+    el: sectionEl,
+    property: "width",
+    expected: ["random-item(element-scoped, 1px)", "1px"]
+  });
+  test({
+    expression: "random-item(--key, 1px)",
+    el: sectionEl,
+    property: "width",
+    expected: ["random-item(--key, 1px)", "1px"]
+  });
+  test({
+    expression: "random-item(fixed 0.5, 1px)",
+    el: sectionEl,
+    property: "width",
+    expected: ["random-item(fixed 0.5, 1px)", "1px"]
+  });
+  test({
+    expression: "random-item(auto, 10em)",
+    el: sectionEl,
+    property: "width",
+    expected: ["random-item(auto, 10em)", "10em", "240px"]
+  });
+
   /// calc() operations
   test({
     expression: "calc(1px)",

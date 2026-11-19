@@ -48,10 +48,10 @@
 <script>
 add_task(async function() {
   const { InspectorUtils } = SpecialPowers;
-  const test = ({expression, el = "", pseudo, expected}) => {
+  const test = ({property = "width", expression, el = "", pseudo, expected}) => {
     const outer = el.outerHTML;
     is(
-      InspectorUtils.getSubstitutedValue(expression, el, pseudo),
+      InspectorUtils.getSubstitutedValue(property, expression, el, pseudo),
       expected,
       `Got expected substituted value for "${expression}" on ${outer.substring(0, outer.indexOf(">") + 1)}${pseudo ? "::" + pseudo: ""}`
     );
@@ -157,6 +157,7 @@ add_task(async function() {
 
   test({
     el: sectionEl,
+    property: "line-height",
     expression: "attr(data-x type(<number>))",
     expected: "10"
   });
@@ -170,6 +171,7 @@ add_task(async function() {
 
   test({
     el: sectionEl,
+    property: "color",
     expression: "attr(data-y type(<color>))",
     expected: "tomato"
   });

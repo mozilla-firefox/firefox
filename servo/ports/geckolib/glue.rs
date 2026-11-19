@@ -11552,6 +11552,7 @@ pub extern "C" fn Servo_GetShadowRootForScoped(
 }
 
 fn compute_arbritrary_substitution_functions(
+    property_id: Option<PropertyIdRef>,
     string: &str,
     element: GeckoElement,
     style: &ComputedValues,
@@ -11610,9 +11611,7 @@ fn compute_arbritrary_substitution_functions(
 
     let Ok(result) = style::substitution::substitute(
         &variable_value,
-        // TODO(Bug 2071366) - Thread the property being explained through InspectorUtils so
-        // that random() resolves the same way it does in the cascade.
-        None,
+        property_id,
         &substitution_functions,
         stylist,
         &context,
@@ -11691,6 +11690,7 @@ fn dummy_author_style_rule_context() -> ParserContext<'static> {
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn Servo_GetSubstitutedValue(
+    property: &nsACString,
     str: &nsACString,
     raw_element: &RawGeckoElement,
     pseudo_type: PseudoStyleType,
@@ -11702,7 +11702,13 @@ pub unsafe extern "C" fn Servo_GetSubstitutedValue(
     let data = raw_data.borrow();
     let mut context = ContextForSubstitution::new(element, pseudo_type);
     let parser_context = dummy_author_style_rule_context();
+
+    let property = unsafe { property.as_str_unchecked() };
+    let property_id = PropertyId::parse(&property, &parser_context).ok();
+    let property_id_ref = property_id.as_ref().map(PropertyIdRef::from);
+
     match compute_arbritrary_substitution_functions(
+        property_id_ref,
         unsafe { str.as_str_unchecked() },
         element,
         style,
@@ -11761,52 +11767,51 @@ pub unsafe extern "C" fn Servo_GetComputationSteps(
     let mut context = ContextForSubstitution::new(element, pseudo_type);
     let context = context.computed_context(&data, style);
 
-    let node = parser_context.with_property_id(
-        property_id.as_ref().map(PropertyIdRef::from),
-        |parser_context| {
-            if let Some(s) = compute_arbritrary_substitution_functions(
-                &string,
-                element,
-                style,
-                &data,
-                &parser_context,
-                &context,
-            ) {
-                // We successfully substituted, let's add the initial string to the result array
-                out.push(nsCString::from(string));
-                // …as well as the substituted string.
-                out.push(nsCString::from(&s));
-                substituted = Some(s.clone());
-            };
+    let property_id_ref = property_id.as_ref().map(PropertyIdRef::from);
+    let node = parser_context.with_property_id(property_id_ref, |parser_context| {
+        if let Some(s) = compute_arbritrary_substitution_functions(
+            property_id_ref,
+            &string,
+            element,
+            style,
+            &data,
+            &parser_context,
+            &context,
+        ) {
+            // We successfully substituted, let's add the initial string to the result array
+            out.push(nsCString::from(string));
+            // …as well as the substituted string.
+            out.push(nsCString::from(&s));
+            substituted = Some(s.clone());
+        };
 
-            let substituted_str = substituted.as_deref().unwrap_or(&string);
-            let mut parser = Parser::new(substituted_str);
+        let substituted_str = substituted.as_deref().unwrap_or(&string);
+        let mut parser = Parser::new(substituted_str);
 
-            let flags = CalcParseFlags {
-                percentage_context: PercentageContext::allowed(),
-                in_place_operations: CalcNodeParseInPlaceOperations::No,
-                ..Default::default()
-            };
+        let flags = CalcParseFlags {
+            percentage_context: PercentageContext::allowed(),
+            in_place_operations: CalcNodeParseInPlaceOperations::No,
+            ..Default::default()
+        };
 
-            // Initial parsing
-            Some(match parser.next().ok()? {
-                Token::Function(name) => {
-                    let math_func = CalcNode::math_function(&parser_context, name).ok()?;
-                    CalcNode::parse(&parser_context, &mut parser, math_func, flags).ok()?
-                },
-                Token::Percentage { unit_value, .. } => CalcNode::Leaf(Leaf::Percentage(
-                    CalcPercentageLeaf::new(*unit_value, Optional::None),
-                )),
-                Token::Dimension { value, unit, .. } => {
-                    let length =
-                        NoCalcLength::parse_dimension_with_context(&parser_context, *value, unit)
-                            .ok()?;
-                    CalcNode::Leaf(Leaf::Length(length))
-                },
-                _ => return None,
-            })
-        },
-    );
+        // Initial parsing
+        Some(match parser.next().ok()? {
+            Token::Function(name) => {
+                let math_func = CalcNode::math_function(&parser_context, name).ok()?;
+                CalcNode::parse(&parser_context, &mut parser, math_func, flags).ok()?
+            },
+            Token::Percentage { unit_value, .. } => CalcNode::Leaf(Leaf::Percentage(
+                CalcPercentageLeaf::new(*unit_value, Optional::None),
+            )),
+            Token::Dimension { value, unit, .. } => {
+                let length =
+                    NoCalcLength::parse_dimension_with_context(&parser_context, *value, unit)
+                        .ok()?;
+                CalcNode::Leaf(Leaf::Length(length))
+            },
+            _ => return None,
+        })
+    });
     let Some(mut node) = node else {
         return;
     };

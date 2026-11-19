@@ -6,6 +6,7 @@ prefs = [
   "layout.css.progress-function.enabled=true",
   "layout.css.properties-and-values.enabled=true",
   "layout.css.random.enabled=true",
+  "layout.css.random-item.enabled=true",
   "layout.css.starting-style-at-rules.enabled=true",
   "layout.css.tree-counting-functions.enabled=true",
 ]

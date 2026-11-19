@@ -1682,6 +1682,7 @@ void InspectorUtils::GetComputationSteps(GlobalObject& aGlobalObject,
 
 /* static */
 void InspectorUtils::GetSubstitutedValue(GlobalObject& aGlobalObject,
+                                         const nsACString& aProperty,
                                          const nsACString& aExpression,
                                          Element& aElement,
                                          const nsAString& aPseudo,
@@ -1707,7 +1708,7 @@ void InspectorUtils::GetSubstitutedValue(GlobalObject& aGlobalObject,
   }
 
   Servo_GetSubstitutedValue(
-      &aExpression, &aElement, pseudo->mType, computedStyle,
+      &aProperty, &aExpression, &aElement, pseudo->mType, computedStyle,
       aElement.OwnerDoc()->EnsureStyleSet().RawData(), &aResult);
 }
 

@@ -599,6 +599,7 @@ class StyleRuleActor extends Actor {
               declarationValue.includes("env(")
             ) {
               substitutedValue = InspectorUtils.getSubstitutedValue(
+                decl.name,
                 declarationValue,
                 this.pageStyle.selectedElement,
                 this._pseudoElement

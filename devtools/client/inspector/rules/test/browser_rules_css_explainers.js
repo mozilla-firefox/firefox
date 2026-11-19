@@ -39,6 +39,14 @@ const TEST_URI = `data:text/html,${encodeURIComponent(`<meta charset=utf8>
       width: 300px;
       height: 200px;
       translate: calc(2 * random(2em, 16px)) calc(4 * random(--name, 2em, 16px));
+      border-width: calc(attr(data-rand type(*)) * 10px);
+      background: linear-gradient(
+        random-item(auto, red, blue),
+        random-item(property-scoped, yellow, green),
+        random-item(element-scoped, black, white),
+        random-item(--key, cyan, hotpink),
+        random-item(fixed 0.2, purple, brown)
+      );
     }
 
     aside div {
@@ -76,7 +84,7 @@ const TEST_URI = `data:text/html,${encodeURIComponent(`<meta charset=utf8>
     <li>Second</li>
     <li>Third</li>
   </ol>
-  <aside>
+  <aside data-rand="random(9, 3, 1)">
     <div>Side</div>
     <section id="single-length-percentage">length-percentage</section>
   </aside>
@@ -89,6 +97,7 @@ add_task(async function () {
   await pushPref("devtools.inspector.css-explainers", true);
   await pushPref("layout.css.tree-counting-functions.enabled", true);
   await pushPref("layout.css.random.enabled", true);
+  await pushPref("layout.css.random-item.enabled", true);
 
   await addTab(TEST_URI);
   const { inspector, view } = await openRuleView();
@@ -263,8 +272,8 @@ add_task(async function () {
     },
   });
 
-  info("Select the <aside> to check random() computation");
-  await selectNode("aside ", inspector);
+  info("Select the <aside> to check random() and random-item() computation");
+  await selectNode("aside", inspector);
 
   await assertCssExplainersTooltip({
     view,
@@ -295,6 +304,80 @@ add_task(async function () {
         "calc(4 * 32px)",
         "128px",
       ],
+    },
+  });
+
+  await assertCssExplainersTooltip({
+    view,
+    selector: "aside",
+    propertyName: "border-width",
+    functionIndex: 0,
+    expected: {
+      functionText: "calc(attr(data-rand type(*)) * 10px)",
+      tooltipLines: [
+        "calc(attr(data-rand type(*)) * 10px)",
+        "calc(random(9, 3, 1) * 10px)",
+        /calc\(random\(fixed 0\.\d+, 9, 3, 1\) \* 10px\)/,
+        "calc(9 * 10px)",
+        "90px",
+      ],
+    },
+  });
+
+  await assertCssExplainersTooltip({
+    view,
+    selector: "aside",
+    propertyName: "background",
+    functionIndex: 0,
+    expected: {
+      functionText: "random-item(auto, red, blue)",
+      tooltipLines: ["random-item(auto, red, blue)", /red|blue/],
+    },
+  });
+  await assertCssExplainersTooltip({
+    view,
+    selector: "aside",
+    propertyName: "background",
+    functionIndex: 1,
+    expected: {
+      functionText: "random-item(property-scoped, yellow, green)",
+      tooltipLines: [
+        "random-item(property-scoped, yellow, green)",
+        /yellow|green/,
+      ],
+    },
+  });
+  await assertCssExplainersTooltip({
+    view,
+    selector: "aside",
+    propertyName: "background",
+    functionIndex: 2,
+    expected: {
+      functionText: "random-item(element-scoped, black, white)",
+      tooltipLines: [
+        "random-item(element-scoped, black, white)",
+        /black|white/,
+      ],
+    },
+  });
+  await assertCssExplainersTooltip({
+    view,
+    selector: "aside",
+    propertyName: "background",
+    functionIndex: 3,
+    expected: {
+      functionText: "random-item(--key, cyan, hotpink)",
+      tooltipLines: ["random-item(--key, cyan, hotpink)", /cyan|hotpink/],
+    },
+  });
+  await assertCssExplainersTooltip({
+    view,
+    selector: "aside",
+    propertyName: "background",
+    functionIndex: 4,
+    expected: {
+      functionText: "random-item(fixed 0.2, purple, brown)",
+      tooltipLines: ["random-item(fixed 0.2, purple, brown)", "purple"],
     },
   });
 
@@ -542,8 +625,16 @@ async function assertCssExplainersTooltip({
 
   const tooltip = view.tooltips.getTooltip("interactiveTooltip");
   const onTooltipReady = tooltip.once("shown");
-  EventUtils.synthesizeMouseAtCenter(
-    el,
+
+  // We can't use synthesizeMouse(AtCenter) as it's using the element bounding client rect
+  // and the function token we're targetting might wrap. So let's get the first quad and
+  // trigger the mousemove at its center.
+  const { p1, p2, p3 } = el.getBoxQuads()[0];
+  const x = p1.x + (p2.x - p1.x) / 2;
+  const y = p1.y + (p3.y - p1.y) / 2;
+  EventUtils.synthesizeMouseAtPoint(
+    x,
+    y,
     { type: "mousemove" },
     el.ownerDocument.defaultView
   );
