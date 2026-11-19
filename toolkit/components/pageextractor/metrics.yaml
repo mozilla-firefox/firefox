@@ -46,7 +46,7 @@ page_extractor:
       - firefox-ai-and-ml@mozilla.com
     send_in_pings:
       - page-extractor
-    expires: 163
+    expires: 169
     extra_keys:
       flow_id:
         type: string
