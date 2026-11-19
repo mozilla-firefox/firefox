@@ -317,10 +317,6 @@ internal object FakeHomepagePreview {
                     /* no op */
                 }
 
-                override fun onRenameCollectionTapped(collection: TabCollection) {
-                    /* no op */
-                }
-
                 override fun onToggleCollectionExpanded(
                     collection: TabCollection,
                     expand: Boolean,

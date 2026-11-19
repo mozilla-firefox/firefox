@@ -119,13 +119,6 @@ class SessionControlInteractorTest {
     }
 
     @Test
-    fun onRenameCollectionTapped() {
-        val collection: TabCollection = mockk(relaxed = true)
-        interactor.onRenameCollectionTapped(collection)
-        verify { controller.handleRenameCollectionTapped(collection) }
-    }
-
-    @Test
     fun onToggleCollectionExpanded() {
         val collection: TabCollection = mockk(relaxed = true)
         interactor.onToggleCollectionExpanded(collection, true)

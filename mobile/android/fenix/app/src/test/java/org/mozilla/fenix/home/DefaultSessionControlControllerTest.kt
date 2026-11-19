@@ -5,7 +5,6 @@
 package org.mozilla.fenix.home
 
 import androidx.navigation.NavController
-import androidx.navigation.NavDirections
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -357,27 +356,6 @@ class DefaultSessionControlControllerTest {
         val recordedEvents = Collections.removed.testGetValue()!!
         assertEquals(1, recordedEvents.size)
         assertEquals(null, recordedEvents.single().extra)
-    }
-
-    @Test
-    fun handleRenameCollectionTapped() {
-        val collection =
-            mockk<TabCollection> {
-                every { id } returns 3L
-            }
-        createController().handleRenameCollectionTapped(collection)
-
-        assertNotNull(Collections.renameButton.testGetValue())
-        val recordedEvents = Collections.renameButton.testGetValue()!!
-        assertEquals(1, recordedEvents.size)
-        assertEquals(null, recordedEvents.single().extra)
-
-        verify {
-            navController.navigate(
-                match<NavDirections> { it.actionId == R.id.action_global_collectionCreationFragment },
-                null,
-            )
-        }
     }
 
     @Test

@@ -21,7 +21,6 @@ import org.mozilla.fenix.ui.robots.homeScreen
 /** Tests for verifying basic functionality of tab collections */
 class CollectionTest {
     private val collectionName = "First Collection"
-    private val secondCollectionName = "testcollection_2"
 
     @get:Rule(order = 0) val fenixTestRule: FenixTestRule = FenixTestRule()
 
@@ -191,30 +190,6 @@ class CollectionTest {
                 clickCollectionThreeDotButton()
                 selectDeleteCollection()
             }
-    }
-
-    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/343424
-    @Test
-    fun renameCollectionTest() {
-        val webPage = mockWebServer.getGenericAsset(1)
-
-        MockBrowserDataHelper.createCollection(
-            Pair(webPage.url.toString(), webPage.title),
-            title = collectionName,
-        )
-
-        homeScreen(composeTestRule) {
-                verifyCollectionIsDisplayed(collectionName)
-            }
-            .expandCollection(collectionName) {
-                clickCollectionThreeDotButton()
-                selectRenameCollection()
-            }
-            .typeCollectionNameAndSave(secondCollectionName) {}
-
-        homeScreen(composeTestRule) {
-            verifyCollectionIsDisplayed(secondCollectionName)
-        }
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2319455

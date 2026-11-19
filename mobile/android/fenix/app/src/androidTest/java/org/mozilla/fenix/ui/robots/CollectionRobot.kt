@@ -19,23 +19,14 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.pressImeActionButton
-import androidx.test.espresso.matcher.ViewMatchers.withId
-import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiSelector
-import androidx.test.uiautomator.Until
-import org.mozilla.fenix.R
 import org.mozilla.fenix.helpers.Constants.TAG
 import org.mozilla.fenix.helpers.MatcherHelper.assertUIObjectExists
 import org.mozilla.fenix.helpers.MatcherHelper.assertUIObjectIsGone
-import org.mozilla.fenix.helpers.MatcherHelper.itemWithResId
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTime
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTimeLong
 import org.mozilla.fenix.helpers.TestHelper.mDevice
-import org.mozilla.fenix.helpers.TestHelper.packageName
 import org.mozilla.fenix.helpers.click
-import org.mozilla.fenix.helpers.ext.waitNotNull
 
 class CollectionRobot(private val composeTestRule: ComposeTestRule) {
 
@@ -139,18 +130,6 @@ class CollectionRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "selectOpenTabs: Clicked \"Open tabs\" menu option")
     }
 
-    fun selectRenameCollection() {
-        Log.i(TAG, "selectRenameCollection: Trying to verify \"Rename collection\" menu option is displayed")
-        composeTestRule.onNode(hasText("Rename collection")).assertIsDisplayed()
-        Log.i(TAG, "selectRenameCollection: Verified \"Rename collection\" menu option is displayed")
-        Log.i(TAG, "selectRenameCollection: Trying to click \"Rename collection\" menu option")
-        composeTestRule.onNode(hasText("Rename collection")).performClick()
-        Log.i(TAG, "selectRenameCollection: Clicked \"Rename collection\" menu option")
-        Log.i(TAG, "selectRenameCollection: Waiting for $waitingTime ms for collection name text field to exist")
-        mainMenuEditCollectionNameField().waitForExists(waitingTime)
-        Log.i(TAG, "selectRenameCollection: Waited for $waitingTime ms for collection name text field to exist")
-    }
-
     @OptIn(ExperimentalTestApi::class)
     fun selectDeleteCollection() {
         Log.i(TAG, "selectDeleteCollection: Trying to verify \"Delete collection\" menu option is displayed")
@@ -210,28 +189,6 @@ class CollectionRobot(private val composeTestRule: ComposeTestRule) {
             return HomeScreenRobot.Transition(composeTestRule)
         }
 
-        // names a collection saved from the 3dot menu
-        fun typeCollectionNameAndSave(
-            name: String,
-            interact: BrowserRobot.() -> Unit,
-        ): BrowserRobot.Transition {
-            Log.i(TAG, "typeCollectionNameAndSave: Waiting for $waitingTime ms for collection name text field to exist")
-            mainMenuEditCollectionNameField().waitForExists(waitingTime)
-            Log.i(TAG, "typeCollectionNameAndSave: Waited for $waitingTime ms for collection name text field to exist")
-            Log.i(TAG, "typeCollectionNameAndSave: Trying to set collection name text field to: $name")
-            mainMenuEditCollectionNameField().setText(name)
-            Log.i(TAG, "typeCollectionNameAndSave: Collection name text field set to: $name")
-            Log.i(TAG, "typeCollectionNameAndSave: Trying to press done action button")
-            onView(withId(R.id.name_collection_edittext)).perform(pressImeActionButton())
-            Log.i(TAG, "typeCollectionNameAndSave: Pressed done action button")
-
-            // wait for the collection creation wrapper to be dismissed
-            mDevice.waitNotNull(Until.gone(By.res("$packageName:id/createCollectionWrapper")))
-
-            BrowserRobot(composeTestRule).interact()
-            return BrowserRobot.Transition(composeTestRule)
-        }
-
         @OptIn(ExperimentalTestApi::class)
         fun clickShareCollectionButton(interact: ShareOverlayRobot.() -> Unit): ShareOverlayRobot.Transition {
             Log.i(TAG, "clickShareCollectionButton: Waiting for $waitingTime ms for share collection button to exist")
@@ -259,6 +216,3 @@ private fun collectionThreeDotButton(rule: ComposeTestRule) = rule.onNode(hasCon
 
 private fun removeTabFromCollectionButton(title: String) =
     mDevice.findObject(UiSelector().text(title)).getFromParent(UiSelector().description("Remove tab from collection"))
-
-// collection name text field, when saving from the main menu option
-private fun mainMenuEditCollectionNameField() = itemWithResId("$packageName:id/name_collection_edittext")

@@ -88,14 +88,6 @@ interface CollectionInteractor {
     fun onDeleteCollectionTapped(collection: TabCollection)
 
     /**
-     * Shows the Collection Creation fragment for renaming the given tab collection. Called when a user taps on the
-     * "Rename collection" collection menu item.
-     *
-     * @param collection The collection of tabs to rename.
-     */
-    fun onRenameCollectionTapped(collection: TabCollection)
-
-    /**
      * Toggles expanding or collapsing the given tab collection. Called when a user clicks on a [CollectionViewHolder].
      *
      * @param collection The collection of tabs that will be collapsed.
@@ -197,10 +189,6 @@ class SessionControlInteractor(
 
     override fun onRemoveTopSiteClicked(topSite: TopSite) {
         topSiteController.handleRemoveTopSiteClicked(topSite)
-    }
-
-    override fun onRenameCollectionTapped(collection: TabCollection) {
-        controller.handleRenameCollectionTapped(collection)
     }
 
     override fun onSelectTopSite(topSite: TopSite, position: Int) {

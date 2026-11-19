@@ -53,7 +53,6 @@ fun Collections(
                     getMenuItems(
                         collection = collection,
                         onOpenTabsTapped = interactor::onCollectionOpenTabsTapped,
-                        onRenameCollectionTapped = interactor::onRenameCollectionTapped,
                         onDeleteCollectionTapped = interactor::onDeleteCollectionTapped,
                     ),
                 onToggleCollectionExpanded = interactor::onToggleCollectionExpanded,
@@ -89,14 +88,12 @@ fun Collections(
  * @param collection [TabCollection] for which the menu will be shown. Might serve as an argument for the callbacks for
  *   when the user interacts with certain menu options.
  * @param onOpenTabsTapped Invoked when the user chooses to open the tabs from [collection].
- * @param onRenameCollectionTapped Invoked when the user chooses to rename the [collection].
  * @param onDeleteCollectionTapped Invoked when the user chooses to delete [collection].
  */
 @Composable
 private fun getMenuItems(
     collection: TabCollection,
     onOpenTabsTapped: (TabCollection) -> Unit,
-    onRenameCollectionTapped: (TabCollection) -> Unit,
     onDeleteCollectionTapped: (TabCollection) -> Unit,
 ): List<MenuItem> {
     return listOf(
@@ -105,12 +102,6 @@ private fun getMenuItems(
             color = MaterialTheme.colorScheme.onSurface,
         ) {
             onOpenTabsTapped(collection)
-        },
-        MenuItem(
-            title = stringResource(R.string.collection_rename),
-            color = MaterialTheme.colorScheme.onSurface,
-        ) {
-            onRenameCollectionTapped(collection)
         },
         MenuItem(
             title = stringResource(R.string.collection_delete),
@@ -171,10 +162,6 @@ private fun CollectionsPreview() {
                         }
 
                         override fun onDeleteCollectionTapped(collection: TabCollection) {
-                            /* no op */
-                        }
-
-                        override fun onRenameCollectionTapped(collection: TabCollection) {
                             /* no op */
                         }
 
