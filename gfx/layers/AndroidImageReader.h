@@ -20,6 +20,7 @@
 #include "mozilla/UniquePtrExtensions.h"
 #include "mozilla/gfx/2D.h"
 #include "mozilla/gfx/Types.h"
+#include "mozilla/java/GeckoSurfaceWrappers.h"
 #include "mozilla/layers/LayersSurfaces.h"
 #include "mozilla/layers/LayersTypes.h"
 #include "nsISupportsImpl.h"
@@ -37,13 +38,51 @@ class AndroidImageConsumer;
 class AndroidImageReader;
 
 /**
- * A class wraps information of AndroidImageReader and its frame.
+ * Codec-side client for a compositor-owned AndroidImageReader. Owns the output
+ * Surface and frame release callbacks. GPU decoding uses the reader directly.
+ */
+class AndroidImageReaderClient final {
+ public:
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(AndroidImageReaderClient);
+  static already_AddRefed<AndroidImageReaderClient> Create();
+  bool IsValid() const;
+  java::sdk::Surface::LocalRef GetSurface() const;
+  void MaybeRenderFirstFrame(AndroidMediaCodecFrameId aFrameId);
+  void DiscardFrames();
+
+  // Stop the compositor reader and drop its cached image on decoder shutdown.
+  // Images already held by consumers remain valid until they are released.
+  void Shutdown();
+
+  void RegisterFrame(
+      AndroidMediaCodecFrameId aFrameId,
+      UniquePtr<SurfaceTextureImage::SetCurrentCallback> aCallback);
+  void ForgetFrame(AndroidMediaCodecFrameId aFrameId);
+
+  const GpuProcessAndroidImageReaderId mImageReaderId;
+
+ private:
+  static already_AddRefed<AndroidImageReaderClient> CreateLocal();
+
+  AndroidImageReaderClient(AndroidImageReader* aReader,
+                           java::sdk::Surface::LocalRef aSurface);
+  ~AndroidImageReaderClient();
+
+  // Keep the compositor reader alive for the lifetime of its codec-side client.
+  const RefPtr<AndroidImageReader> mLocalReader;
+  // The producer Surface passed to MediaCodec.
+  const java::sdk::Surface::GlobalRef mOutputSurface;
+};
+
+/**
+ * Identifies a decoded frame and retains its codec-side ImageReader client.
+ * OnSetCurrent requests the reader's first image. Destruction asks the client
+ * to release the codec buffer without rendering if its callback is unconsumed.
  */
 class AndroidImageReaderImage final : public Image {
  public:
-  AndroidImageReaderImage(const GpuProcessAndroidImageReaderId aImageReaderId,
-                          const gfx::IntSize& aSize, const bool aHasAlpha);
-
+  AndroidImageReaderImage(AndroidImageReaderClient* aClient,
+                          const gfx::IntSize& aSize, bool aHasAlpha);
   gfx::IntSize GetSize() const override { return mSize; }
 
   gl::OriginPos GetOriginPos() const { return gl::OriginPos::TopLeft; }
@@ -62,12 +101,9 @@ class AndroidImageReaderImage final : public Image {
 
   void OnSetCurrent() override;
 
-  bool MaybeReleaseFrameToCodec(const MonitorAutoLock& aProofOfLock,
-                                bool aRender);
-
   void RegisterSetCurrentCallback(
       UniquePtr<SurfaceTextureImage::SetCurrentCallback> aCallback) {
-    mSetCurrentCallback = std::move(aCallback);
+    mClient->RegisterFrame(mFrameId, std::move(aCallback));
   }
 
   const GpuProcessAndroidImageReaderId mImageReaderId;
@@ -78,7 +114,7 @@ class AndroidImageReaderImage final : public Image {
  private:
   virtual ~AndroidImageReaderImage();
 
-  UniquePtr<SurfaceTextureImage::SetCurrentCallback> mSetCurrentCallback;
+  const RefPtr<AndroidImageReaderClient> mClient;
 };
 
 /**
@@ -156,8 +192,6 @@ class AndroidImageReader final
 
   RefPtr<AndroidImageWrapper> GetCurrentImage();
 
-  void RegisterReaderImage(AndroidImageReaderImage* aReaderImage);
-
   bool MaybeReleaseFrameToCodec(const AndroidMediaCodecFrameId aFrameId,
                                 const bool aRender);
 
@@ -198,18 +232,11 @@ class AndroidImageReader final
   bool mShuttingDown MOZ_GUARDED_BY(mMonitor) = false;
 
   mozilla::Atomic<int32_t> mAcquiredImageCount{0};
-
-  // mPendingFrames does not own AndroidImageReaderImage and stores only its
-  // pointer.
-  // AndroidImageReaderImage destructor ensures it is removed from the map.
-  std::unordered_map<AndroidMediaCodecFrameId, AndroidImageReaderImage*,
-                     AndroidMediaCodecFrameId::HashFn>
-      mPendingFrames MOZ_GUARDED_BY(mMonitor);
 };
 
 /**
- * A class to manage AndroidImageReader and AndroidImageConsumer shared in GPU
- * process by using GpuProcessAndroidImageReaderId.
+ * Manages AndroidImageReaders and AndroidImageConsumers in the GPU process,
+ * indexed by GpuProcessAndroidImageReaderId.
  */
 class GpuProcessAndroidImageReaderMap {
  public:
