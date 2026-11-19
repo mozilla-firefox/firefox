@@ -355,6 +355,7 @@ raptor:
         subsuite: raptor
     when:
         files-changed:
+            - 'testing/performance/mozperfcommon/**'
             - 'testing/raptor/**'
 
 reftest-harness:
