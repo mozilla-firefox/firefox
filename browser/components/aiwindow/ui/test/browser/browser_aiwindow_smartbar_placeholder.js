@@ -39,7 +39,7 @@ async function assertSmartbarHasPlaceholderAnimation(
         "#ai-window-smartbar moz-multiline-editor"
       );
       Assert.equal(
-        smartbarEditor.hasAttribute("show-placeholder-animation"),
+        smartbarEditor.showPlaceholderAnimation,
         shouldAnimate,
         `Smartbar placeholder should ${shouldAnimate ? "" : "not"} animate`
       );

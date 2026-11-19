@@ -25,7 +25,21 @@
         testHelpers.setupTests({
           templateFn: (attributes) => html`<moz-multiline-editor ${attributes}></moz-multiline-editor>`,
         });
+        const MultilineEditor = await customElements.whenDefined("moz-multiline-editor");
+        const { PLACEHOLDER_HINT_DURATION_MS } = MultilineEditor;
+        MultilineEditor.PLACEHOLDER_HINT_DURATION_MS = 100;
+        SimpleTest.registerCleanupFunction(() => {
+          MultilineEditor.PLACEHOLDER_HINT_DURATION_MS = PLACEHOLDER_HINT_DURATION_MS;
+        });
       });
+
+      function waitForCurrentHint(hints, index) {
+        return BrowserTestUtils.waitForMutationCondition(
+          hints,
+          { attributeFilter: ["class"], subtree: true },
+          () => hints.children[index].classList.contains("current")
+        );
+      }
 
       add_task(async function testPlaceholderHintsRendered() {
         const result = await testHelpers.renderTemplate();
@@ -89,39 +103,96 @@
       });
 
       add_task(async function testShowPlaceholderAnimation() {
+        await SpecialPowers.pushPrefEnv({
+          set: [["ui.prefersReducedMotion", 0]],
+        });
         const result = await testHelpers.renderTemplate();
         const editor = result.querySelector("moz-multiline-editor");
 
         editor.placeholder = "Primary placeholder";
         editor.placeholderHints = ["Hint one", "Hint two"];
-        await editor.updateComplete;
-
-        ok(
-          !editor.hasAttribute("show-placeholder-animation"),
-          "Animation disabled by default"
-        );
-
         editor.showPlaceholderAnimation = true;
         await editor.updateComplete;
 
-        ok(
-          editor.hasAttribute("show-placeholder-animation"),
-          "Attribute is removed when showPlaceholderAnimation is false"
+        let hints = editor.shadowRoot.querySelector(".placeholder-hints");
+        is(hints.children.length, 3, "All placeholder items are present");
+        ok(hints.children[0].classList.contains("current"), "Primary placeholder is shown first");
+
+        await waitForCurrentHint(hints, 1);
+        const [hidePrevious] = hints.children[0]
+          .getAnimations()
+          .filter(animation => animation.transitionProperty == "visibility");
+        is(
+          hidePrevious.effect.getKeyframes()[1].visibility,
+          "hidden",
+          "Previous hint is hidden after the transition"
         );
 
-        const carousel = editor.shadowRoot.querySelector(".placeholder-hints");
-        ok(carousel, "Carousel is still rendered when animation is disabled");
+        editor.showPlaceholderAnimation = false;
+        await editor.updateComplete;
 
-        const items = carousel.querySelectorAll("li");
-        is(items.length, 3, "All placeholder items are still present");
+        hints = editor.shadowRoot.querySelector(".placeholder-hints");
+        ok(
+          hints.children[0].classList.contains("current"),
+          "Primary placeholder is shown when the animation is disabled"
+        );
+        await SpecialPowers.popPrefEnv();
+      });
 
+      add_task(async function testReducedMotionStopsPlaceholderRotation() {
+        await SpecialPowers.pushPrefEnv({
+          set: [["ui.prefersReducedMotion", 0]],
+        });
+        const result = await testHelpers.renderTemplate();
+        const editor = result.querySelector("moz-multiline-editor");
+        editor.placeholder = "Primary placeholder";
+        editor.placeholderHints = ["Hint one", "Hint two"];
         editor.showPlaceholderAnimation = true;
         await editor.updateComplete;
 
-        ok(
-          editor.hasAttribute("show-placeholder-animation"),
-          "Attribute is set when showPlaceholderAnimation is true"
+        const getHints = () => editor.shadowRoot.querySelector(".placeholder-hints");
+        const rotatingHints = getHints();
+        await waitForCurrentHint(rotatingHints, 1);
+
+        await SpecialPowers.pushPrefEnv({
+          set: [["ui.prefersReducedMotion", 1]],
+        });
+        await TestUtils.waitForCondition(
+          () => getHints() != rotatingHints,
+          "Placeholder hints are rebuilt when reduced motion is enabled"
         );
+        const staticHints = getHints();
+        ok(staticHints.children[0].classList.contains("current"), "Primary placeholder is shown again");
+        is(
+          staticHints.style.getPropertyValue("--multiline-editor-placeholder-transition-duration"),
+          "",
+          "Rotation is not scheduled with reduced motion"
+        );
+        await SpecialPowers.flushPrefEnv();
+      });
+
+      add_task(async function testSingleHintEntersFromBelow() {
+        await SpecialPowers.pushPrefEnv({
+          set: [["ui.prefersReducedMotion", 0]],
+        });
+        const result = await testHelpers.renderTemplate();
+        const editor = result.querySelector("moz-multiline-editor");
+        editor.placeholder = "Primary placeholder";
+        editor.placeholderHints = ["Hint one"];
+        editor.showPlaceholderAnimation = true;
+        await editor.updateComplete;
+
+        const hints = editor.shadowRoot.querySelector(".placeholder-hints");
+        await waitForCurrentHint(hints, 1);
+        const [transition] = hints.children[1]
+          .getAnimations()
+          .filter(animation => animation.transitionProperty == "transform");
+        is(
+          transition.effect.getKeyframes()[0].transform,
+          "translateY(100%)",
+          "Hint enters from below"
+        );
+        await SpecialPowers.popPrefEnv();
       });
     </script>
   </head>
