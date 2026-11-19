@@ -3,8 +3,8 @@
 <!--
 https://bugzilla.mozilla.org/show_bug.cgi?id=1737682
 
-This is a test of the macOS video low power telemetry, defined as GFX_MACOS_VIDEO_LOW_POWER
-enums in Histograms.json. The test will load some video media files, play them for some
+This is a test of the macOS video low power telemetry, recorded in the
+gfx.macos_video_low_power Glean metric. The test will load some video media files, play them for some
 number of frames, then check that appropriate telemetry has been recorded. Since the
 telemetry fires based on the number of frames painted, the test is structured around
 the `media.video_stats.enabled` pref, which allows us to monitor the number of frames
@@ -54,10 +54,6 @@ steps we run before each video. We keep track of which test we are running with 
   const PAINTED_FRAMES = Math.max(Math.floor(TELEMETRY_FRAMES * 1.1), 200 + TELEMETRY_FRAMES);
   info(`Running each video for ${PAINTED_FRAMES} frames.`);
 
-  // Taken from TelemetryHistogramEnums.h
-  const GFX_MACOS_VIDEO_LOW_POWER_LowPower = 1;
-  const GFX_MACOS_VIDEO_LOW_POWER_FailWindowed = 3;
-
   var manager = new MediaTestManager;
 
   // Define some state variables that we'll use to manage multiple setup,
@@ -65,35 +61,51 @@ steps we run before each video. We keep track of which test we are running with 
   var testIndex = 0;
   var testsComplete = false;
 
+  // The labels of the gfx.macos_video_low_power labeled counter.
+  const LOW_POWER_LABELS = [
+    "NotVideo",
+    "LowPower",
+    "FailMultipleVideo",
+    "FailWindowed",
+    "FailOverlaid",
+    "FailBacking",
+    "FailMacOSVersion",
+    "FailPref",
+    "FailSurface",
+    "FailEnqueue",
+  ];
+
   async function retrieveSnapshotAndClearTelemetry() {
-    return SpecialPowers.spawnChrome([], () => {
-      let hist = Services.telemetry.getHistogramById("GFX_MACOS_VIDEO_LOW_POWER");
-      let snap = hist.snapshot();
-      hist.clear();
+    return SpecialPowers.spawnChrome([LOW_POWER_LABELS], async labels => {
+      await Services.fog.testFlushAllChildren();
+      const Glean = this.browsingContext.topChromeWindow.Glean;
+      let snap = {};
+      for (let label of labels) {
+        snap[label] = Glean.gfx.macosVideoLowPower[label].testGetValue() ?? 0;
+      }
+      Services.fog.testResetFOG();
       return snap;
     });
   }
 
-  function checkSnapshot(snap, category) {
+  function checkSnapshot(snap, label) {
     if (!snap) {
       return;
     }
 
-    // For debugging purposes, build a string of the snapshot values hashmap.
+    // For debugging purposes, build a string of the non-zero snapshot values.
     let valuesString = '';
-    let keys = Object.keys(snap.values);
-    keys.forEach(k => {
-      valuesString += `[${k}] = ${snap.values[k]}, `;
-    });
+    for (let [k, v] of Object.entries(snap)) {
+      if (v) {
+        valuesString += `[${k}] = ${v}, `;
+      }
+    }
     info(`Test ${testIndex} telemetry values are ${valuesString}`);
 
     // Since we've run the media for more frames than the telemetry needs to
     // fire, we should have at least 1 of the expected value.
-    let val = snap.values[category];
-    if (!val) {
-      val = 0;
-    }
-    ok(val > 0, `Test ${testIndex} enum ${category} should have at least 1 occurrence; found ${val}.`);
+    let val = snap[label];
+    ok(val > 0, `Test ${testIndex} ${label} should have at least 1 occurrence; found ${val}.`);
   }
 
   async function doPreTest(v) {
@@ -132,13 +144,13 @@ steps we run before each video. We keep track of which test we are running with 
     switch (testIndex) {
       case 1: {
         // Test 1 (FailWindowed): Just check.
-        checkSnapshot(snap, GFX_MACOS_VIDEO_LOW_POWER_FailWindowed);
+        checkSnapshot(snap, "FailWindowed");
         break;
       }
 
       case 2: {
         // Test 2 (LowPower): Check, then exit fullscreen.
-        checkSnapshot(snap, GFX_MACOS_VIDEO_LOW_POWER_LowPower);
+        checkSnapshot(snap, "LowPower");
 
         info("Attempting to exit fullscreen.");
         await SpecialPowers.wrap(document).exitFullscreen();
