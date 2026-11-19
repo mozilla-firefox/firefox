@@ -310,11 +310,11 @@ add_task(async function test_doorhanger_disable() {
   await doorHangerDisable();
 });
 
-add_task(async function test_no_doorhanger_when_locked_by_policy() {
+add_task(async function test_no_doorhanger_when_force_installed_by_policy() {
   const { EnterprisePolicyTesting } = ChromeUtils.importESModule(
     "resource://testing-common/EnterprisePolicyTesting.sys.mjs"
   );
-  const ID = "tabhide-locked@mochi.test";
+  const ID = "tabhide-force-installed@mochi.test";
 
   await doorhangerTest(
     async function (extension) {
@@ -322,13 +322,19 @@ add_task(async function test_no_doorhanger_when_locked_by_policy() {
       is(gBrowser.visibleTabs.length, 3, "There are 3 visible tabs");
 
       await EnterprisePolicyTesting.setupPolicyEngineWithJson({
-        policies: { Extensions: { Locked: [ID] } },
+        policies: {
+          ExtensionSettings: { [ID]: { installation_mode: "force_installed" } },
+        },
       });
 
       extension.sendMessage("hide", { url: "*://*/?one" });
       await extension.awaitMessage("done");
       is(gBrowser.visibleTabs.length, 2, "There are 2 visible tabs now");
-      is(panel.state, "closed", "No doorhanger while the add-on is locked");
+      is(
+        panel.state,
+        "closed",
+        "No doorhanger while the add-on is force-installed"
+      );
 
       // Dropping the policy lets the doorhanger appear again.
       await EnterprisePolicyTesting.setupPolicyEngineWithJson("");

@@ -172,8 +172,8 @@ add_task(async function contextMenu_removeExtension_disabled_in_urlbar() {
   // Add a policy to prevent the add-on from being uninstalled.
   await EnterprisePolicyTesting.setupPolicyEngineWithJson({
     policies: {
-      Extensions: {
-        Locked: [extension.id],
+      ExtensionSettings: {
+        [extension.id]: { installation_mode: "force_installed" },
       },
     },
   });
@@ -232,8 +232,8 @@ add_task(async function contextMenu_removeExtension_disabled_in_panel() {
   // Add a policy to prevent the add-on from being uninstalled.
   await EnterprisePolicyTesting.setupPolicyEngineWithJson({
     policies: {
-      Extensions: {
-        Locked: [extension.id],
+      ExtensionSettings: {
+        [extension.id]: { installation_mode: "force_installed" },
       },
     },
   });

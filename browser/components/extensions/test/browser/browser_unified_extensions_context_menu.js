@@ -272,8 +272,8 @@ add_task(
 
     await EnterprisePolicyTesting.setupPolicyEngineWithJson({
       policies: {
-        Extensions: {
-          Locked: [extension.id],
+        ExtensionSettings: {
+          [extension.id]: { installation_mode: "force_installed" },
         },
       },
     });
