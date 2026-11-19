@@ -6872,12 +6872,7 @@ bool nsBlockFrame::DrainOverflowLines() {
           }
         }
         ReparentFrames(oofs.mList, prevBlock, this);
-
-        // The placeholders of these floats are in the overflow lines that we
-        // prepend to our lines below, so put these floats after our pushed
-        // floats.
-        EnsureFloats()->InsertFrames(nullptr, GetLastPushedFloat(),
-                                     std::move(oofs.mList));
+        EnsureFloats()->InsertFrames(nullptr, nullptr, std::move(oofs.mList));
         if (!pushedFloats.IsEmpty()) {
           nsFrameList* pf = EnsurePushedFloats();
           pf->InsertFrames(nullptr, nullptr, std::move(pushedFloats));
@@ -6980,7 +6975,13 @@ void nsBlockFrame::DrainSelfPushedFloats() {
     // When we pull back floats, we want to put them with the pushed
     // floats, which must live at the start of our float list, but we
     // want them at the end of those pushed floats.
-    nsIFrame* insertionPrevSibling = GetLastPushedFloat();
+    // FIXME: This isn't quite right!  What if they're all pushed floats?
+    nsIFrame* insertionPrevSibling = nullptr; /* beginning of list */
+    for (nsIFrame* f = floats ? floats->FirstChild() : nullptr;
+         f && f->HasAnyStateBits(NS_FRAME_IS_PUSHED_OUT_OF_FLOW);
+         f = f->GetNextSibling()) {
+      insertionPrevSibling = f;
+    }
 
     nsIFrame* f = ourPushedFloats->LastChild();
     while (f) {
@@ -7184,17 +7185,6 @@ nsFrameList* nsBlockFrame::StealFloats() {
   RemoveStateBits(NS_BLOCK_HAS_FLOATS);
   MOZ_ASSERT(list, "List should always be valid when the property is set!");
   return list;
-}
-
-nsIFrame* nsBlockFrame::GetLastPushedFloat() const {
-  nsIFrame* last = nullptr;
-  for (nsIFrame* f : GetChildList(FrameChildListID::Float)) {
-    if (!f->HasAnyStateBits(NS_FRAME_IS_PUSHED_OUT_OF_FLOW)) {
-      break;
-    }
-    last = f;
-  }
-  return last;
 }
 
 bool nsBlockFrame::HasPushedFloats() const {
@@ -8501,12 +8491,8 @@ UsedClear nsBlockFrame::FindTrailingClear() {
 
 void nsBlockFrame::ReflowPushedFloats(BlockReflowState& aState,
                                       OverflowAreas& aOverflowAreas) {
-#ifdef DEBUG
-  VerifyPushedFloatsAtStart();
-#endif
-
   // Pushed floats live at the start of our float list; see comment
-  // above nsBlockFrame::DrainSelfPushedFloats().
+  // above nsBlockFrame::DrainPushedFloats.
   nsFrameList* floats = GetFloats();
   nsIFrame* f = floats ? floats->FirstChild() : nullptr;
   nsIFrame* prev = nullptr;
@@ -9981,18 +9967,6 @@ void nsBlockFrame::VerifyLines(bool aFinalCheckOK) {
     }
   }
   NS_ASSERTION(!cursor, "stale LineCursorProperty");
-}
-
-void nsBlockFrame::VerifyPushedFloatsAtStart() const {
-  bool seenNonPushedFloat = false;
-  for (const nsIFrame* f : GetChildList(FrameChildListID::Float)) {
-    if (f->HasAnyStateBits(NS_FRAME_IS_PUSHED_OUT_OF_FLOW)) {
-      NS_ASSERTION(!seenNonPushedFloat,
-                   "Pushed floats must be at the start of the floats list");
-    } else {
-      seenNonPushedFloat = true;
-    }
-  }
 }
 
 void nsBlockFrame::VerifyOverflowSituation() {
