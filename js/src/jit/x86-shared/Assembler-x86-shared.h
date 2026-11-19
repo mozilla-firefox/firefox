@@ -1194,6 +1194,11 @@ class AssemblerX86Shared : public AssemblerShared {
 
   void breakpoint() { masm.int3(); }
 
+  void rstorssp(const Address& src) {
+    masm.rstorssp_m(src.offset, src.base.encoding());
+  }
+  void saveprevssp() { masm.saveprevssp(); }
+
   void ldmxcsr(const Address& src) {
     masm.ldmxcsr_mr(src.offset, src.base.encoding());
   }

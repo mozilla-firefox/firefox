@@ -4691,6 +4691,21 @@ class BaseAssembler : public GenericAssembler {
                                  (RegisterID)src1, src0, (RegisterID)dst);
   }
 
+  // CET Shadow Stack instructions:
+
+  void rstorssp_m(int32_t offset, RegisterID base) {
+    spew(currentOffset(), "rstorssp   " MEM_ob, ADDR_ob(offset, base));
+    m_formatter.prefix(PRE_SSE_F3);
+    m_formatter.twoByteOp(OP2_RSTORSSP, offset, base, GROUP7_OP_RSTORSSP);
+  }
+
+  void saveprevssp() {
+    spew(currentOffset(), "saveprevssp");
+    m_formatter.prefix(PRE_SSE_F3);
+    m_formatter.twoByteOp(OP2_SAVEPREVSSP, (RegisterID)2,
+                          GROUP7_OP_SAVEPREVSSP);
+  }
+
   // Misc instructions:
 
   void int3() {

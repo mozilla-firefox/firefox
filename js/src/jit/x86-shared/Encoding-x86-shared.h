@@ -174,6 +174,8 @@ enum class ShiftID {
 };
 
 enum TwoByteOpcodeID {
+  OP2_RSTORSSP = 0x01,
+  OP2_SAVEPREVSSP = 0x01,
   OP2_UD2 = 0x0B,
   OP2_MOVSD_VsdWsd = 0x10,
   OP2_MOVPS_VpsWps = 0x10,
@@ -481,6 +483,9 @@ enum GroupOpcodeID {
   GROUP5_OP_CALLN = 2,
   GROUP5_OP_JMPN = 4,
   GROUP5_OP_PUSH = 6,
+
+  GROUP7_OP_RSTORSSP = 5,
+  GROUP7_OP_SAVEPREVSSP = 5,
 
   GROUP15_OP_INCSSP = 5,
 
