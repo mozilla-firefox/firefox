@@ -239,12 +239,27 @@ void LogScreamSimulation::LogState(Timestamp log_time) {
       .smoothed_rtt = scream_->delay_based_congestion_control().rtt(),
       .queue_delay = scream_->delay_based_congestion_control().queue_delay(),
       .queue_delay_min_avg =
-          scream_->delay_based_congestion_control().queue_delay_min_avg(),
-      .latency_difference_avg =
-          scream_->delay_based_congestion_control().latency_difference_avg(),
+          params_.reduce_jitter.Get()
+              ? TimeDelta::PlusInfinity()
+              : scream_->delay_based_congestion_control().queue_delay_min_avg(),
+      .latency_difference_avg = params_.reduce_jitter.Get()
+                                    ? TimeDelta::PlusInfinity()
+                                    : scream_->delay_based_congestion_control()
+                                          .latency_difference_avg(),
+      .qdelay_short_avg =
+          params_.reduce_jitter.Get()
+              ? scream_->delay_based_congestion_control().qdelay_short_avg()
+              : TimeDelta::PlusInfinity(),
+      .qdelay_long_avg =
+          params_.reduce_jitter.Get()
+              ? scream_->delay_based_congestion_control().qdelay_long_avg()
+              : TimeDelta::PlusInfinity(),
       .ref_window_scale_factor_due_to_avg_min_delay =
-          scream_->delay_based_congestion_control()
-              .ref_window_scale_factor_due_to_avg_min_delay(),
+          params_.reduce_jitter.Get()
+              ? std::nullopt
+              : std::make_optional(
+                    scream_->delay_based_congestion_control()
+                        .ref_window_scale_factor_due_to_avg_min_delay()),
       .ref_window_scale_factor_due_to_latency_difference =
           scream_->delay_based_congestion_control()
               .ref_window_scale_factor_due_to_latency_difference(),

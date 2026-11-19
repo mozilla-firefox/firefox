@@ -152,7 +152,9 @@ TEST(DelayBasedCongestionControlTest,
 TEST(DelayBasedCongestionControlTest,
      RefWindowScaleFactorDueToMinAverageQueueDelay) {
   SimulatedClock clock(Timestamp::Seconds(1234));
-  Environment env = CreateTestEnvironment({.time = &clock});
+  Environment env = CreateTestEnvironment(
+      {.field_trials = "WebRTC-Bwe-ScreamV2/ReduceJitter:false/",
+       .time = &clock});
   ScreamV2Parameters params(env.field_trials());
   DelayBasedCongestionControl delay_controller(params);
 
@@ -202,7 +204,9 @@ TEST(DelayBasedCongestionControlTest,
 TEST(DelayBasedCongestionControlTest,
      RefWindowScaleFactorDueToLatencyDifference) {
   SimulatedClock clock(Timestamp::Seconds(1234));
-  Environment env = CreateTestEnvironment({.time = &clock});
+  Environment env = CreateTestEnvironment(
+      {.field_trials = "WebRTC-Bwe-ScreamV2/ReduceJitter:false/",
+       .time = &clock});
   ScreamV2Parameters params(env.field_trials());
   DelayBasedCongestionControl delay_controller(params);
 
@@ -424,6 +428,57 @@ TEST(DelayBasedCongestionControlTest,
   EXPECT_DOUBLE_EQ(
       delay_controller.ref_window_scale_factor_due_to_latency_difference(),
       1.0);
+}
+
+TEST(DelayBasedCongestionControlTest,
+     ReduceJitterTracksShortAndLongQueueDelayTrend) {
+  SimulatedClock clock(Timestamp::Seconds(1234));
+  Environment env = CreateTestEnvironment(
+      {.field_trials = "WebRTC-Bwe-ScreamV2/ReduceJitter:true/",
+       .time = &clock});
+  DelayBasedCongestionControl delay_controller(
+      ScreamV2Parameters(env.field_trials()));
+
+  auto send_feedback_with_qdelay = [&](TimeDelta qdelay) {
+    clock.AdvanceTime(TimeDelta::Millis(25));
+    TransportPacketsFeedback msg;
+    msg.feedback_time = clock.CurrentTime();
+    PacketResult packet;
+    packet.receive_time = clock.CurrentTime();
+    packet.sent_packet.send_time =
+        clock.CurrentTime() - TimeDelta::Millis(50) - qdelay;
+    packet.sent_packet.sequence_number = 0;
+    msg.packet_feedbacks.push_back(packet);
+    delay_controller.Update(ParseScreamFeedback(msg), /*alr=*/false);
+  };
+
+  send_feedback_with_qdelay(/*qdelay=*/TimeDelta::Zero());
+  EXPECT_DOUBLE_EQ(
+      delay_controller.ref_window_scale_factor_due_to_latency_difference(),
+      1.0);
+
+  // Simulate rising queue delay.
+  Timestamp start_time = clock.CurrentTime();
+  while (clock.CurrentTime() < start_time + TimeDelta::Millis(500)) {
+    send_feedback_with_qdelay(/*qdelay=*/TimeDelta::Millis(20));
+  }
+  EXPECT_LT(
+      delay_controller.ref_window_scale_factor_due_to_latency_difference(),
+      0.8);
+
+  // When queue delay stabilizes, the scale factor recovers back above 0.95
+  // despite queue delay staying high.
+  start_time = clock.CurrentTime();
+  while (delay_controller.ref_window_scale_factor_due_to_latency_difference() <=
+             0.95 &&
+         clock.CurrentTime() < start_time + TimeDelta::Seconds(30)) {
+    send_feedback_with_qdelay(/*qdelay=*/TimeDelta::Millis(20));
+  }
+  EXPECT_GT(
+      delay_controller.ref_window_scale_factor_due_to_latency_difference(),
+      0.95);
+  EXPECT_LT(clock.CurrentTime() - start_time, TimeDelta::Seconds(20));
+  EXPECT_GT(clock.CurrentTime() - start_time, TimeDelta::Seconds(10));
 }
 
 }  // namespace

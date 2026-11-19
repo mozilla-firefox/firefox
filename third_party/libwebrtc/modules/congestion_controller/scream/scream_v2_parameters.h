@@ -110,6 +110,37 @@ struct ScreamV2Parameters {
   // difference scale factor when limiting ref_window increase, instead of
   // multiplying them.
   FieldTrialParameter<bool> use_min_delay_scale_on_increase;
+  // If true, uses the spec's `REDUCE_JITTER` latency difference trend
+  // calculation (`calculate_latency_diff_avg`) and reference window scaling
+  // (`latency_diff_ref_wnd_scale_t`).
+  FieldTrialParameter<bool> reduce_jitter;
+  // Exponentially Weighted Moving Average (EWMA) factor for the short-term
+  // queue delay average (`QDELAY_SHORT_AVG_G` in the RFC). Used when
+  // `reduce_jitter` is true to track recent queue delay changes.
+  FieldTrialParameter<double> queue_delay_short_avg_g;
+  // Exponentially Weighted Moving Average (EWMA) factor for the long-term
+  // queue delay average (`QDELAY_LONG_AVG_G` in the RFC). Used when
+  // `reduce_jitter` is true as the baseline to detect sustained queue delay
+  // increases vs. short-term jitter.
+  FieldTrialParameter<double> queue_delay_long_avg_g;
+  // Deadband margin (`LATENCY_DIFF_MARGIN_1` in the RFC) subtracted from
+  // `qdelay_short_avg - qdelay_long_avg` before accumulating into
+  // `latency_diff_avg`, and also the clamp magnitude (`[-latency_diff_margin_1,
+  // +latency_diff_margin_1]`) for the per-feedback difference (`diff_t`).
+  FieldTrialParameter<TimeDelta> latency_diff_margin_1;
+  // Queue delay threshold (`LATENCY_DIFF_MARGIN_2` in the RFC) used to scale
+  // down `latency_diff_avg` increases (`min(1.0, queue_delay_avg /
+  // latency_diff_margin_2)`) to avoid over-sensitivity when average queue delay
+  // is low.
+  FieldTrialParameter<TimeDelta> latency_diff_margin_2;
+  // Gain factor (`LATENCY_DIFF_UP_GAIN` in the RFC) applied when increasing
+  // `latency_diff_avg` as `qdelay_short_avg` exceeds `qdelay_long_avg +
+  // latency_diff_margin_1`.
+  FieldTrialParameter<double> latency_diff_up_gain;
+  // Gain factor (`LATENCY_DIFF_DOWN_GAIN` in the RFC) applied when decreasing
+  // `latency_diff_avg` as `qdelay_short_avg` falls below `qdelay_long_avg +
+  // latency_diff_margin_1`.
+  FieldTrialParameter<double> latency_diff_down_gain;
   // Minimum (base) window from the latest sent packet in feedback to compute
   // min and max one-way delay.
   FieldTrialParameter<TimeDelta> burst_window_min;
@@ -131,6 +162,9 @@ struct ScreamV2Parameters {
   // TODO: bugs.webrtc.org/447037083 -  Consider implementing 4.2.1.4.1.
   // Competing Flows Compensation.
   FieldTrialParameter<TimeDelta> queue_delay_target;
+  // Factor of `queue_delay_target` above which `IsQueueDelayDetected()` returns
+  // true.
+  FieldTrialParameter<double> queue_delay_detected_factor;
 
   // If the minimum queue delay is below this threshold, queues are deamed to be
   // drained.

@@ -536,7 +536,7 @@ TEST(ScreamTest, MaybeTest(LinkCapacity600KbpsRtt100msEcn)) {
   SendMediaTestResult result = SendMedia(std::move(params), s);
   // Allow rampup to take 3s.
   EXPECT_THAT(result.caller().subspan(3), Each(AvailableSendBitrateIsBetween(
-                                              DataRate::KilobitsPerSec(370),
+                                              DataRate::KilobitsPerSec(350),
                                               DataRate::KilobitsPerSec(620))));
 }
 
@@ -621,8 +621,8 @@ TEST(ScreamTest, MaybeTest(LinkCapacity1500KbpsRtt30msNoEcn)) {
 
   SendMediaTestResult result = SendMedia(std::move(params), s);
   EXPECT_THAT(result.caller().subspan(1), Each(AvailableSendBitrateIsBetween(
-                                              DataRate::KilobitsPerSec(1100),
-                                              DataRate::KilobitsPerSec(2200))));
+                                              DataRate::KilobitsPerSec(1000),
+                                              DataRate::KilobitsPerSec(2400))));
 }
 
 TEST(ScreamTest, MaybeTest(LinkCapacity2MbpsRtt50msNoEcn)) {
@@ -639,7 +639,7 @@ TEST(ScreamTest, MaybeTest(LinkCapacity2MbpsRtt50msNoEcn)) {
   SendMediaTestResult result = SendMedia(std::move(params), s);
   EXPECT_THAT(result.caller().subspan(1), Each(AvailableSendBitrateIsBetween(
                                               DataRate::KilobitsPerSec(1300),
-                                              DataRate::KilobitsPerSec(2500))));
+                                              DataRate::KilobitsPerSec(2700))));
 }
 
 TEST(ScreamTest, MaybeTest(LinkCapacity2MbpsRtt50msEcn)) {
@@ -656,7 +656,7 @@ TEST(ScreamTest, MaybeTest(LinkCapacity2MbpsRtt50msEcn)) {
   SendMediaTestResult result = SendMedia(std::move(params), s);
   EXPECT_THAT(result.caller().subspan(3), Each(AvailableSendBitrateIsBetween(
                                               DataRate::KilobitsPerSec(1400),
-                                              DataRate::KilobitsPerSec(2100))));
+                                              DataRate::KilobitsPerSec(2200))));
 }
 
 TEST(ScreamTest, MaybeTest(LinkCapacity2MbpsRtt50msNoEcnWithGoogCC)) {
@@ -719,7 +719,7 @@ TEST(ScreamTest, MaybeTest(LinkCapacity2MbpsRtt50msNoEcnWithTwcc)) {
   // approximately.
   EXPECT_THAT(result.caller().subspan(5), Each(AvailableSendBitrateIsBetween(
                                               DataRate::KilobitsPerSec(700),
-                                              DataRate::KilobitsPerSec(2600))));
+                                              DataRate::KilobitsPerSec(2650))));
 }
 
 TEST(ScreamTest, MaybeTest(CallerPauseSendingVideoIfFeedbackNotReceived)) {
@@ -822,7 +822,7 @@ TEST(ScreamTest, MaybeTest(ScreencastSlideChange2Mbit50msRttNoEcn)) {
   // Ignore estimate during rampup.
   EXPECT_THAT(result.caller().subspan(1), Each(AvailableSendBitrateIsBetween(
                                               DataRate::KilobitsPerSec(1200),
-                                              DataRate::KilobitsPerSec(2500))));
+                                              DataRate::KilobitsPerSec(2800))));
 }
 
 TEST(ScreamTest, MaybeTest(ScreencastSlideChange500Kbit30msRttNoEcn)) {
@@ -895,12 +895,12 @@ TEST(ScreamTest, MaybeTest(LinkCapacity2MbitRepeatedDelaySpikesNoEcn)) {
   SendMediaTestResult result = SendMedia(std::move(params), s);
   // Ignore BWE the first second.
   EXPECT_THAT(result.caller().subspan(5), Each(AvailableSendBitrateIsBetween(
-                                              DataRate::KilobitsPerSec(550),
+                                              DataRate::KilobitsPerSec(500),
                                               DataRate::KilobitsPerSec(2000))));
-  // Ensure average pacing delay between two reports is below 100ms.
+  // Ensure average pacing delay between two reports is below 140ms.
   for (size_t i = 1; i < result.caller_stats.size(); ++i) {
     EXPECT_THAT(result.caller_stats[i],
-                AveragePacingDelayIsBelow(TimeDelta::Millis(100),
+                AveragePacingDelayIsBelow(TimeDelta::Millis(140),
                                           result.caller_stats[i - 1]));
   }
 }

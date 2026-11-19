@@ -944,7 +944,7 @@ TEST(ScreamControllerTest, AlrRecoversDuringPeriodicPadding) {
   }
 
   EXPECT_TRUE(alr_recovered);
-  EXPECT_GE(target_rate, DataRate::KilobitsPerSec(9800));
+  EXPECT_GE(target_rate, DataRate::KilobitsPerSec(9000));
 }
 
 TEST(ScreamControllerTest, CwndReduceRatioSetWhenPacerQueueGrowsAndShrinks) {

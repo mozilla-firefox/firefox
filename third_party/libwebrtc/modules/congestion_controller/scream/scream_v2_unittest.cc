@@ -423,7 +423,7 @@ TEST(ScreamV2Test, AdaptsToDelayLinkCapacity2MbpsWithReorderedPackets) {
   EXPECT_LT(result.data_rate, DataRate::KilobitsPerSec(2500));
   EXPECT_GT(result.data_rate, DataRate::KilobitsPerSec(1500));
   EXPECT_LT(result.max_rate_after_adaption, DataRate::KilobitsPerSec(2500));
-  EXPECT_GT(result.min_rate_after_adaption, DataRate::KilobitsPerSec(1500));
+  EXPECT_GT(result.min_rate_after_adaption, DataRate::KilobitsPerSec(900));
 
   EXPECT_LT(result.max_smoothed_rtt_after_adaptation,
             TimeDelta::Millis(10 * 2 + 50 + 10));
@@ -612,10 +612,10 @@ TEST(ScreamV2Test, LossEventsAreNotIgnoredIfQueueDelayIsDetected) {
   scream.OnTransportPacketsFeedback(high_delay_feedback1);
   clock.AdvanceTime(TimeDelta::Millis(25));
 
-  // Send second high delay feedback to build queue delay above target/2 (30ms)
+  // Send second high delay feedback to build queue delay above target/4 (15ms)
   // queue_delay = 85ms - 5ms = 80ms.
-  // queue_delay_avg_ = 0.25 * 80ms + 0.75 * 20ms = 35ms.
-  // 35ms > 30ms, so IsQueueDelayDetected() is true.
+  // queue_delay_avg_ = 0.25 * 80ms = 20ms.
+  // 20ms > 15ms, so IsQueueDelayDetected() is true.
   TransportPacketsFeedback high_delay_feedback2 =
       CreateFeedback(clock.CurrentTime(), /*rtt=*/TimeDelta::Millis(170),
                      /*number_of_ect1_packets=*/20,

@@ -49,7 +49,7 @@ class LogScreamSimulation {
     DataRate received_rate = DataRate::Zero();
 
     DataSize ref_window = DataSize::Zero();
-    DataSize ref_window_i = DataSize::Zero();
+    std::optional<DataSize> ref_window_i;
     DataSize max_allowed_ref_window = DataSize::Zero();
     DataSize max_data_in_flight = DataSize::Zero();
     bool is_application_limited = false;
@@ -61,10 +61,12 @@ class LogScreamSimulation {
 
     TimeDelta smoothed_rtt = TimeDelta::Zero();
     TimeDelta queue_delay = TimeDelta::Zero();
-    TimeDelta queue_delay_min_avg = TimeDelta::Zero();
-    TimeDelta latency_difference_avg = TimeDelta::Zero();
+    TimeDelta queue_delay_min_avg = TimeDelta::PlusInfinity();
+    TimeDelta latency_difference_avg = TimeDelta::PlusInfinity();
+    TimeDelta qdelay_short_avg = TimeDelta::PlusInfinity();
+    TimeDelta qdelay_long_avg = TimeDelta::PlusInfinity();
 
-    double ref_window_scale_factor_due_to_avg_min_delay = 0.0;
+    std::optional<double> ref_window_scale_factor_due_to_avg_min_delay;
     double ref_window_scale_factor_due_to_latency_difference = 0.0;
     double ref_window_scale_factor_close_to_ref_window_i = 0.0;
     double ref_window_combined_increase_scale_factor = 0.0;
