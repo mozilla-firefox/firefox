@@ -3090,8 +3090,7 @@ if (rtc_include_tests && !build_with_chromium) {
     ]
   }
 
-  rtc_test("slow_peer_connection_unittests") {
-    testonly = true
+  rtc_cc_test("slow_peer_connection_integration_test") {
     sources = [ "slow_peer_connection_integration_test.cc" ]
     deps = [
       ":integration_test_helpers",
@@ -3117,6 +3116,10 @@ if (rtc_include_tests && !build_with_chromium) {
       "//third_party/abseil-cpp/absl/algorithm:container",
       "//third_party/abseil-cpp/absl/strings",
     ]
+  }
+
+  rtc_test_suite("slow_peer_connection_unittests") {
+    tests = [ ":slow_peer_connection_integration_test" ]
   }
 
   rtc_cc_test("dtmf_sender_unittest") {
@@ -5241,7 +5244,7 @@ if (rtc_include_tests && !build_with_chromium) {
     }
   }
 
-  rtc_test("svc_tests") {
+  rtc_cc_test("svc_e2e_tests") {
     sources = [ "test/svc_e2e_tests.cc" ]
     data = svc_tests_resources
     deps = [
@@ -5283,5 +5286,9 @@ if (rtc_include_tests && !build_with_chromium) {
     if (is_ios) {
       deps += [ ":svc_tests_bundle_data" ]
     }
+  }
+
+  rtc_test_suite("svc_tests") {
+    tests = [ ":svc_e2e_tests" ]
   }
 }

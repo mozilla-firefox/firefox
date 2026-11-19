@@ -720,7 +720,7 @@ if (rtc_include_tests) {
       ]
     }
 
-    rtc_test("videocodec_test_mediacodec") {
+    rtc_cc_test("videocodec_test_mediacodec") {
       sources = [ "codecs/test/videocodec_test_mediacodec.cc" ]
       deps = [
         ":android_codec_factory_helper",
@@ -731,7 +731,6 @@ if (rtc_include_tests) {
         "../../api/video_codecs:video_codecs_api",
         "../../media:media_constants",
         "../../rtc_base:stringutils",
-        "../../sdk/android:hwcodecs_java",
         "../../test:fileutils",
         "../../test:test_support",
       ]
@@ -970,9 +969,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_test("video_codec_perf_tests") {
-    testonly = true
-
+  rtc_cc_test("video_codec_test") {
     sources = [ "codecs/test/video_codec_test.cc" ]
 
     deps = [
@@ -1001,13 +998,14 @@ if (rtc_include_tests) {
     ]
 
     if (is_android) {
-      deps += [
-        ":android_codec_factory_helper",
-        "../../sdk/android:hwcodecs_java",
-      ]
+      deps += [ ":android_codec_factory_helper" ]
     }
 
     data = [ "../../resources/FourPeople_1280x720_30.yuv" ]
+  }
+
+  rtc_test_suite("video_codec_perf_tests") {
+    tests = [ ":video_codec_test" ]
   }
 
   rtc_test_suite("video_coding_unittests") {
@@ -1090,6 +1088,9 @@ if (rtc_include_tests) {
         ":vp9_frame_buffer_pool_unittest",
         ":vp9_impl_unittest",
       ]
+    }
+    if (is_android) {
+      tests += [ ":videocodec_test_mediacodec" ]
     }
     if (is_ios || is_mac) {
       tests += [ ":videocodec_test_videotoolbox" ]

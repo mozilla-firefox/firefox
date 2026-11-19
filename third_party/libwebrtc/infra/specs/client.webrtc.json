@@ -609,28 +609,6 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_gtest_merge.py"
         },
-        "module_name": "//modules/video_coding:videocodec_test_mediacodec",
-        "name": "videocodec_test_mediacodec",
-        "resultdb": {
-          "enable": true,
-          "has_native_resultdb_integration": true
-        },
-        "swarming": {
-          "dimensions": {
-            "android_devices": "1",
-            "device_os": "AP2A.240705.004",
-            "device_type": "panther",
-            "os": "Android"
-          },
-          "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
-        },
-        "test": "videocodec_test_mediacodec",
-        "test_id_prefix": "ninja://modules/video_coding:videocodec_test_mediacodec/"
-      },
-      {
-        "merge": {
-          "script": "//testing/merge_scripts/standard_gtest_merge.py"
-        },
         "module_name": "//:voip_unittests",
         "name": "voip_unittests",
         "resultdb": {
@@ -1322,28 +1300,6 @@
         },
         "test": "video_timing_tests",
         "test_id_prefix": "ninja://video/timing:video_timing_tests/"
-      },
-      {
-        "merge": {
-          "script": "//testing/merge_scripts/standard_gtest_merge.py"
-        },
-        "module_name": "//modules/video_coding:videocodec_test_mediacodec",
-        "name": "videocodec_test_mediacodec",
-        "resultdb": {
-          "enable": true,
-          "has_native_resultdb_integration": true
-        },
-        "swarming": {
-          "dimensions": {
-            "android_devices": "1",
-            "device_os": "AP2A.240705.004",
-            "device_type": "panther",
-            "os": "Android"
-          },
-          "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
-        },
-        "test": "videocodec_test_mediacodec",
-        "test_id_prefix": "ninja://modules/video_coding:videocodec_test_mediacodec/"
       },
       {
         "merge": {

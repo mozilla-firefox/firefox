@@ -150,9 +150,7 @@ if (rtc_include_tests) {
       ]
     }
 
-    rtc_test("shared_screencast_stream_test") {
-      testonly = true
-
+    rtc_cc_test("shared_screencast_stream_unittest") {
       sources = [
         "linux/wayland/shared_screencast_stream_unittest.cc",
         "linux/wayland/test/test_egl_dmabuf.cc",
@@ -188,6 +186,10 @@ if (rtc_include_tests) {
       data = [ "../../third_party/wireplumber" ]
       data_deps = [ "//third_party/pipewire:all" ]
       public_configs = [ "../portal:pipewire_config" ]
+    }
+
+    rtc_test_suite("shared_screencast_stream_test") {
+      tests = [ ":shared_screencast_stream_unittest" ]
     }
   }
 

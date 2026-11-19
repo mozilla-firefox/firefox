@@ -78,7 +78,7 @@ index 2eddb1bff8..a0451624b3 100644
  # The hermetic Python interpreter to use by default.
  script_executable = "//third_party/cpython3/host/bin/python3"
 diff --git a/BUILD.gn b/BUILD.gn
-index 39ed3e97ee..cf0e30ef67 100644
+index e85dc93ac8..e8d6cb61b0 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -21,8 +21,8 @@
@@ -103,7 +103,7 @@ index 39ed3e97ee..cf0e30ef67 100644
    import("//third_party/jni_zero/jni_zero.gni")
  }
  
-@@ -558,7 +558,7 @@ if (!build_with_chromium) {
+@@ -557,7 +557,7 @@ if (!build_with_chromium) {
      sources = []
  
      complete_static_lib = true
@@ -112,7 +112,7 @@ index 39ed3e97ee..cf0e30ef67 100644
      defines = []
  
      deps = [
-@@ -1038,7 +1038,7 @@ rtc_static_library("dcsctp") {
+@@ -1037,7 +1037,7 @@ rtc_static_library("dcsctp") {
    visibility = [ "//:default" ]
    sources = []
    complete_static_lib = true
@@ -121,7 +121,7 @@ index 39ed3e97ee..cf0e30ef67 100644
    defines = []
    deps = [
      "net/dcsctp/public:factory",
-@@ -1076,7 +1076,7 @@ group("poison_default_neural_residual_echo_estimator") {
+@@ -1075,7 +1075,7 @@ group("poison_default_neural_residual_echo_estimator") {
  if (!build_with_chromium) {
    # Write debug logs to gn_logs.txt.
    # This is also required for Siso builds.
@@ -551,7 +551,7 @@ index 5fbe21ec30..7d41b6d67d 100644
    }
  
 diff --git a/modules/desktop_capture/BUILD.gn b/modules/desktop_capture/BUILD.gn
-index 15755feb55..e0b1373d1b 100644
+index acc309855e..90e5c9d87a 100644
 --- a/modules/desktop_capture/BUILD.gn
 +++ b/modules/desktop_capture/BUILD.gn
 @@ -6,8 +6,8 @@
@@ -579,7 +579,7 @@ index 83e0301615..eb5f817c03 100644
  import("../../webrtc.gni")
  
 diff --git a/modules/video_coding/BUILD.gn b/modules/video_coding/BUILD.gn
-index 41270e2f32..120d08c5c3 100644
+index 4b22456c32..b0ef8f5137 100644
 --- a/modules/video_coding/BUILD.gn
 +++ b/modules/video_coding/BUILD.gn
 @@ -6,7 +6,7 @@
@@ -592,7 +592,7 @@ index 41270e2f32..120d08c5c3 100644
  import("../../webrtc.gni")
  
 diff --git a/pc/BUILD.gn b/pc/BUILD.gn
-index 6154e4369c..9dc4c27b99 100644
+index 9a9130c9bf..ce1313c7c9 100644
 --- a/pc/BUILD.gn
 +++ b/pc/BUILD.gn
 @@ -29,8 +29,8 @@
