@@ -14,21 +14,29 @@
  *
  * This interface is highly macOS specific.
  */
-[builtinclass, scriptable, uuid(b0f20595-88ce-4738-a1a4-24de78eb8051)]
+[builtinclass, scriptable, uuid(9b0865ce-fdab-4b47-bcca-ca97408258db)]
 interface nsIMacPreferencesReader : nsISupports
 {
   /**
-   * This method checks whether macOS policies are enabled.
+   * This method checks whether macOS policies are enabled in any of the
+   * sources returned by readPolicySources().
    *
    * @return true if macOS policies are enabled, false otherwise.
    */
   boolean policiesEnabled();
 
   /**
-   * This method reads and returns the macOS preferences.
+   * Reads the application's macOS preferences, keeping each source separate.
+   * Unforced values from the global domain and the argument domain are never
+   * used.
    *
-   * @return A JSON object containing all macOS preferences.
+   * @return A JSON object of the form { managed, system, user }, where
+   *         managed holds the values from device-scope configuration profiles,
+   *         system holds the values from /Library/Preferences and user holds
+   *         the current user's preferences overridden by user-scope
+   *         configuration profiles. EnterprisePoliciesEnabled, when present,
+   *         is a boolean.
    */
   [implicit_jscontext]
-  jsval readPreferences();
+  jsval readPolicySources();
 };

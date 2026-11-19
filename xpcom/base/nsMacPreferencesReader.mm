@@ -2,9 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "MacStringHelpers.h"
 #include "nsMacPreferencesReader.h"
+#include "CFTypeRefPtr.h"
+#include "MacStringHelpers.h"
 #include "nsString.h"
+
+#include <sys/stat.h>
 
 #include "js/JSON.h"
 #include "js/RootingAPI.h"
@@ -58,23 +61,124 @@ static void EvaluateDict(JSONWriter* aWriter,
   }
 }
 
+static bool IsTrue(id aValue) {
+  if ([aValue isKindOfClass:[NSNumber class]]) {
+    return [aValue boolValue];
+  }
+  if ([aValue isKindOfClass:[NSString class]]) {
+    return [@[ @"yes", @"true", @"1" ] containsObject:[aValue lowercaseString]];
+  }
+  return false;
+}
+
+// Values from device-scope configuration profiles. A standard user can install
+// a user-scope profile, so those values are not included here even though
+// macOS reports them as forced too.
+static NSDictionary<NSString*, id>* DeviceManagedPreferences() {
+  NSString* bundleID = [[NSBundle mainBundle] bundleIdentifier];
+  if (!bundleID) {
+    return @{};
+  }
+  NSString* path = [NSString
+      stringWithFormat:@"/Library/Managed Preferences/%@.plist", bundleID];
+  NSDictionary<NSFileAttributeKey, id>* attributes =
+      [[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil];
+  if (![attributes[NSFileOwnerAccountID] isEqual:@0] ||
+      ([attributes filePosixPermissions] & (S_IWGRP | S_IWOTH))) {
+    return @{};
+  }
+  return [NSDictionary dictionaryWithContentsOfFile:path] ?: @{};
+}
+
+static NSDictionary<NSString*, id>* SystemPreferences() {
+  auto prefs = CFTypeRefPtr<CFDictionaryRef>::WrapUnderCreateRule(
+      CFPreferencesCopyMultiple(nullptr, kCFPreferencesCurrentApplication,
+                                kCFPreferencesAnyUser, kCFPreferencesAnyHost));
+  return prefs ? [[(NSDictionary*)prefs.get() copy] autorelease] : @{};
+}
+
+// The user's own preferences, host-specific values winning over the others,
+// overridden by values from user-scope configuration profiles.
+static NSDictionary<NSString*, id>* UserPreferences(
+    NSDictionary<NSString*, id>* aDeviceManaged) {
+  NSMutableDictionary<NSString*, id>* user = [NSMutableDictionary dictionary];
+  for (CFStringRef host : {kCFPreferencesAnyHost, kCFPreferencesCurrentHost}) {
+    auto prefs = CFTypeRefPtr<CFDictionaryRef>::WrapUnderCreateRule(
+        CFPreferencesCopyMultiple(nullptr, kCFPreferencesCurrentApplication,
+                                  kCFPreferencesCurrentUser, host));
+    if (prefs) {
+      [user addEntriesFromDictionary:(NSDictionary*)prefs.get()];
+    }
+  }
+
+  NSDictionary<NSString*, id>* all =
+      [[NSUserDefaults standardUserDefaults] dictionaryRepresentation];
+  for (NSString* key in all) {
+    if (aDeviceManaged[key] ||
+        !CFPreferencesAppValueIsForced((CFStringRef)key,
+                                       kCFPreferencesCurrentApplication)) {
+      continue;
+    }
+    auto value = CFTypeRefPtr<CFPropertyListRef>::WrapUnderCreateRule(
+        CFPreferencesCopyAppValue((CFStringRef)key,
+                                  kCFPreferencesCurrentApplication));
+    if (value) {
+      user[key] = (id)value.get();
+    }
+  }
+  return user;
+}
+
+static void WriteSource(JSONWriter* aWriter, const char* aName,
+                        NSDictionary<NSString*, id>* aDict) {
+  NSString* enabledKey = (NSString*)CFSTR(ENTERPRISE_POLICIES_ENABLED_KEY);
+  NSMutableDictionary<NSString*, id>* dict = [[aDict mutableCopy] autorelease];
+  id enabled = dict[enabledKey];
+  [dict removeObjectForKey:enabledKey];
+
+  aWriter->StartObjectProperty(MakeStringSpan(aName));
+  EvaluateDict(aWriter, dict);
+  if (enabled) {
+    aWriter->BoolProperty(MakeStringSpan(ENTERPRISE_POLICIES_ENABLED_KEY),
+                          IsTrue(enabled));
+  }
+  aWriter->EndObject();
+}
+
+static bool IsEnabledIn(CFStringRef aUser, CFStringRef aHost) {
+  auto value = CFTypeRefPtr<CFPropertyListRef>::WrapUnderCreateRule(
+      CFPreferencesCopyValue(CFSTR(ENTERPRISE_POLICIES_ENABLED_KEY),
+                             kCFPreferencesCurrentApplication, aUser, aHost));
+  return IsTrue((id)value.get());
+}
+
 NS_IMETHODIMP
 nsMacPreferencesReader::PoliciesEnabled(bool* aPoliciesEnabled) {
-  NSString* policiesEnabledStr =
-      [NSString stringWithUTF8String:ENTERPRISE_POLICIES_ENABLED_KEY];
-  *aPoliciesEnabled = [[NSUserDefaults standardUserDefaults]
-                          boolForKey:policiesEnabledStr] == YES;
+  CFStringRef key = CFSTR(ENTERPRISE_POLICIES_ENABLED_KEY);
+  bool forced = false;
+  if (CFPreferencesAppValueIsForced(key, kCFPreferencesCurrentApplication)) {
+    auto value = CFTypeRefPtr<CFPropertyListRef>::WrapUnderCreateRule(
+        CFPreferencesCopyAppValue(key, kCFPreferencesCurrentApplication));
+    forced = IsTrue((id)value.get());
+  }
+  *aPoliciesEnabled =
+      forced || IsEnabledIn(kCFPreferencesAnyUser, kCFPreferencesAnyHost) ||
+      IsEnabledIn(kCFPreferencesCurrentUser, kCFPreferencesAnyHost) ||
+      IsEnabledIn(kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
   return NS_OK;
 }
 
 NS_IMETHODIMP
-nsMacPreferencesReader::ReadPreferences(JSContext* aCx,
-                                        JS::MutableHandle<JS::Value> aResult) {
+nsMacPreferencesReader::ReadPolicySources(
+    JSContext* aCx, JS::MutableHandle<JS::Value> aResult) {
+  NSDictionary<NSString*, id>* managed = DeviceManagedPreferences();
+
   JSONStringWriteFunc<nsAutoCString> jsonStr;
   JSONWriter w(jsonStr);
   w.Start();
-  EvaluateDict(
-      &w, [[NSUserDefaults standardUserDefaults] dictionaryRepresentation]);
+  WriteSource(&w, "managed", managed);
+  WriteSource(&w, "system", SystemPreferences());
+  WriteSource(&w, "user", UserPreferences(managed));
   w.End();
 
   NS_ConvertUTF8toUTF16 jsonStr16(jsonStr.StringCRef());
