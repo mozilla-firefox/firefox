@@ -1,0 +1,22 @@
+From: Michael Froman <mfroman@mozilla.com>
+Date: Thu, 19 Nov 2026 13:44:00 -0600
+Subject: Bug 2095210 - (fix-99203a1858) Comment out strict_deps_failures.gni
+ import in .gn
+
+---
+ .gn | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/.gn b/.gn
+index 0d00c8d612..a5654f82fb 100644
+--- a/.gn
++++ b/.gn
+@@ -10,7 +10,7 @@ import("//chromium/build/dotfile_settings.gni")
+ 
+ # Defines check_includes_strict_exceptions, the exceptions to the strict include
+ # checks that GN enables by default (see "gn help check_includes_strict").
+-import("//build/strict_deps_failures.gni")
++#import("//chromium/build/strict_deps_failures.gni")
+ 
+ # The location of the build configuration file.
+ buildconfig = "//chromium/build/config/BUILDCONFIG.gn"
