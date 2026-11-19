@@ -36,12 +36,6 @@ struct ParamTraits<mozilla::dom::GamepadCapabilityFlags>
           mozilla::dom::GamepadCapabilityFlags,
           mozilla::dom::GamepadCapabilityFlags::Cap_All> {};
 
-DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::dom::GamepadPoseState, flags,
-                                  orientation, position, angularVelocity,
-                                  angularAcceleration, linearVelocity,
-                                  linearAcceleration, isPositionValid,
-                                  isOrientationValid);
-
 DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::dom::GamepadTouchState, touchId,
                                   surfaceId, position, surfaceDimensions,
                                   isSurfaceDimensionsValid);

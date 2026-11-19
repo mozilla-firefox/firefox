@@ -52,7 +52,6 @@ class Gamepad final : public nsISupports, public nsWrapperCache {
   void SetButton(uint32_t aButton, bool aPressed, bool aTouched, double aValue);
   void SetAxis(uint32_t aAxis, double aValue);
   void SetIndex(int32_t aIndex);
-  void SetPose(const GamepadPoseState& aPose);
   void SetLightIndicatorType(uint32_t aLightIndex,
                              GamepadLightIndicatorType aType);
   void SetTouchEvent(uint32_t aTouchIndex, const GamepadTouchState& aTouch);

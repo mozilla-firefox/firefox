@@ -5,48 +5,45 @@
 #ifndef mozilla_dom_gamepad_GamepadPose_h
 #define mozilla_dom_gamepad_GamepadPose_h
 
-#include "mozilla/dom/GamepadPoseState.h"
 #include "mozilla/dom/Pose.h"
 #include "nsCOMPtr.h"
 
 namespace mozilla::dom {
 
-class GamepadPose final : public Pose {
+class GamepadPose final : public nsWrapperCache {
  public:
-  GamepadPose(nsISupports* aParent, const GamepadPoseState& aState);
   explicit GamepadPose(nsISupports* aParent);
 
+  NS_INLINE_DECL_CYCLE_COLLECTING_NATIVE_REFCOUNTING(GamepadPose)
+  NS_DECL_CYCLE_COLLECTION_NATIVE_WRAPPERCACHE_CLASS(GamepadPose)
+
+  nsISupports* GetParentObject() const { return mParent; }
   virtual JSObject* WrapObject(JSContext* aCx,
                                JS::Handle<JSObject*> aGivenProto) override;
 
-  bool HasOrientation() const;
-  bool HasPosition() const;
-  virtual void GetPosition(JSContext* aJSContext,
-                           JS::MutableHandle<JSObject*> aRetval,
-                           ErrorResult& aRv) override;
-  virtual void GetLinearVelocity(JSContext* aJSContext,
-                                 JS::MutableHandle<JSObject*> aRetval,
-                                 ErrorResult& aRv) override;
-  virtual void GetLinearAcceleration(JSContext* aJSContext,
-                                     JS::MutableHandle<JSObject*> aRetval,
-                                     ErrorResult& aRv) override;
-  virtual void GetOrientation(JSContext* aJSContext,
+  bool HasOrientation() const { return false; }
+  bool HasPosition() const { return false; };
+  void GetPosition(JSContext* aJSContext, JS::MutableHandle<JSObject*> aRetval,
+                   ErrorResult& aRv);
+  void GetLinearVelocity(JSContext* aJSContext,
+                         JS::MutableHandle<JSObject*> aRetval,
+                         ErrorResult& aRv);
+  void GetLinearAcceleration(JSContext* aJSContext,
+                             JS::MutableHandle<JSObject*> aRetval,
+                             ErrorResult& aRv);
+  void GetOrientation(JSContext* aJSContext,
+                      JS::MutableHandle<JSObject*> aRetval, ErrorResult& aRv);
+  void GetAngularVelocity(JSContext* aJSContext,
+                          JS::MutableHandle<JSObject*> aRetval,
+                          ErrorResult& aRv);
+  void GetAngularAcceleration(JSContext* aJSContext,
                               JS::MutableHandle<JSObject*> aRetval,
-                              ErrorResult& aRv) override;
-  virtual void GetAngularVelocity(JSContext* aJSContext,
-                                  JS::MutableHandle<JSObject*> aRetval,
-                                  ErrorResult& aRv) override;
-  virtual void GetAngularAcceleration(JSContext* aJSContext,
-                                      JS::MutableHandle<JSObject*> aRetval,
-                                      ErrorResult& aRv) override;
-  void SetPoseState(const GamepadPoseState& aPose);
-  const GamepadPoseState& GetPoseState();
+                              ErrorResult& aRv);
 
  private:
-  virtual ~GamepadPose();
+  virtual ~GamepadPose() = default;
 
   nsCOMPtr<nsISupports> mParent;
-  GamepadPoseState mPoseState;
 };
 
 }  // namespace mozilla::dom
