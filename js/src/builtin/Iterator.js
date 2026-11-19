@@ -678,18 +678,29 @@ function IteratorDrop(limit) {
 function* IteratorDropGenerator(iterator, nextMethod, remaining) {
   // Step 11.a. (Implicit)
 
-  // Steps 11.b-c.
-  for (var value of allowContentIterWithNext(iterator, nextMethod)) {
+  // Step 11.b.
+  while (remaining > 0) {
     // Step 11.b.i.
-    if (remaining-- <= 0) {
-      // Steps 11.b.ii-iii. (Implicit through for-of loop)
-      // Steps 11.c.i-ii. (Implicit through for-of loop)
+    remaining--;
 
-      // Step 11.c.iii.
-      yield value;
-
-      // Step 11.c.iv. (Implicit through for-of loop)
+    // Step 11.b.ii.
+    var next = callContentFunction(nextMethod, iterator);
+    if (!IsObject(next)) {
+      ThrowTypeError(JSMSG_ITER_METHOD_RETURNED_PRIMITIVE, "next");
     }
+
+    // Step 11.b.iii.
+    if (next.done) {
+      return;
+    }
+  }
+
+  // Steps 11.c.i-ii. (Implicit through for-of loop)
+  for (var value of allowContentIterWithNext(iterator, nextMethod)) {
+    // Step 11.c.iii.
+    yield value;
+
+    // Step 11.c.iv. (Implicit through for-of loop)
   }
 }
 
