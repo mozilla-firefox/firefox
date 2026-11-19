@@ -1409,18 +1409,18 @@ index 17f3f72cd4..33023048f4 100644
      # Dependency on chromium's logging (in //base).
      deps += [ "//base" ]
 diff --git a/rtc_base/logging.cc b/rtc_base/logging.cc
-index 449eea097c..a0618c5906 100644
+index 3ca28d8ad7..505cb003b6 100644
 --- a/rtc_base/logging.cc
 +++ b/rtc_base/logging.cc
-@@ -28,6 +28,7 @@
+@@ -27,6 +27,7 @@
  #include "absl/strings/string_view.h"
  #include "api/task_queue/task_queue_base.h"
  #include "api/units/timestamp.h"
 +#include "modules/audio_processing/logging/apm_data_dumper.h"
  #include "rtc_base/checks.h"
  #include "rtc_base/platform_thread_types.h"
- #include "rtc_base/string_encode.h"
-@@ -57,6 +58,24 @@ static const int kMaxLogLineSize = 1024 - 60;
+ #include "rtc_base/string_utils.h"
+@@ -55,6 +56,24 @@ static const int kMaxLogLineSize = 1024 - 60;
  #endif  // WEBRTC_MAC && !defined(WEBRTC_IOS) || WEBRTC_ANDROID
  
  namespace webrtc {
@@ -1445,7 +1445,7 @@ index 449eea097c..a0618c5906 100644
  namespace {
  
  // By default, release builds don't log, debug builds at info level
-@@ -205,7 +224,7 @@ const std::string& LogLineRef::DefaultLogLine() const {
+@@ -203,7 +222,7 @@ const std::string& LogLineRef::DefaultLogLine() const {
  // LogMessage
  /////////////////////////////////////////////////////////////////////////////
  
@@ -1455,10 +1455,10 @@ index 449eea097c..a0618c5906 100644
  // The list of logging streams currently configured.
  // Note: we explicitly do not clean this up, because of the uncertain ordering
 diff --git a/rtc_base/logging.h b/rtc_base/logging.h
-index 949a6de663..af9ebb7dfa 100644
+index f6bf97ec34..8688c40010 100644
 --- a/rtc_base/logging.h
 +++ b/rtc_base/logging.h
-@@ -720,6 +720,12 @@ class LogMessage {
+@@ -714,6 +714,12 @@ class LogMessage {
    }
  #endif  // RTC_LOG_ENABLED()
  
@@ -1471,7 +1471,7 @@ index 949a6de663..af9ebb7dfa 100644
   private:
    friend class LogMessageForTesting;
  
-@@ -767,6 +773,9 @@ class LogMessage {
+@@ -761,6 +767,9 @@ class LogMessage {
  
    // The stringbuilder that buffers the formatted message before output
    StringBuilder print_stream_;

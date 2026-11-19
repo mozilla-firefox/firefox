@@ -22,7 +22,6 @@
 #include <string>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 #include "absl/base/no_destructor.h"
 #include "absl/strings/string_view.h"
@@ -31,7 +30,6 @@
 #include "modules/audio_processing/logging/apm_data_dumper.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/platform_thread_types.h"
-#include "rtc_base/string_encode.h"
 #include "rtc_base/string_utils.h"
 #include "rtc_base/strings/string_builder.h"
 #include "rtc_base/synchronization/mutex.h"
@@ -430,55 +428,6 @@ void LogMessage::RemoveLogToStream(LogSink* stream) {
     }
   }
   UpdateMinLogSeverity();
-}
-
-void LogMessage::ConfigureLogging(absl::string_view params) {
-  LoggingSeverity current_level = LS_VERBOSE;
-  LoggingSeverity debug_level = GetLogToDebug();
-
-  std::vector<std::string> tokens;
-  tokenize(params, ' ', &tokens);
-
-  for (const std::string& token : tokens) {
-    if (token.empty())
-      continue;
-
-    // Logging features
-    if (token == "tstamp") {
-      LogTimestamps();
-    } else if (token == "thread") {
-      GetOrInitConfig().set_log_thread(true);
-
-      // Logging levels
-    } else if (token == "verbose") {
-      current_level = LS_VERBOSE;
-    } else if (token == "info") {
-      current_level = LS_INFO;
-    } else if (token == "warning") {
-      current_level = LS_WARNING;
-    } else if (token == "error") {
-      current_level = LS_ERROR;
-    } else if (token == "none") {
-      current_level = LS_NONE;
-
-      // Logging targets
-    } else if (token == "debug") {
-      debug_level = current_level;
-    }
-  }
-
-#if defined(WEBRTC_WIN) && !defined(WINUWP)
-  if ((LS_NONE != debug_level) && !::IsDebuggerPresent()) {
-    // First, attempt to attach to our parent's console... so if you invoke
-    // from the command line, we'll see the output there.  Otherwise, create
-    // our own console window.
-    // Note: These methods fail if a console already exists, which is fine.
-    if (!AttachConsole(ATTACH_PARENT_PROCESS))
-      ::AllocConsole();
-  }
-#endif  // defined(WEBRTC_WIN) && !defined(WINUWP)
-
-  LogToDebug(debug_level);
 }
 
 void LogMessage::UpdateMinLogSeverity()

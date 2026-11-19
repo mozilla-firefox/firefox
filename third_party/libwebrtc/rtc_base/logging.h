@@ -661,10 +661,6 @@ class LogMessage {
   static int GetMinLogSeverity();
   // Updates min_sev_ appropriately when debug sinks change.
   static void UpdateMinLogSeverity();
-  // Parses the provided parameter stream to configure the options above.
-  // Useful for configuring logging from the command line.
-  [[deprecated("Use InitializeLogging instead.")]]
-  static void ConfigureLogging(absl::string_view params);
   // Checks the current global debug severity and if the `streams_` collection
   // is empty. If `severity` is smaller than the global severity and if the
   // `streams_` collection is empty, the LogMessage will be considered a noop
@@ -711,8 +707,6 @@ class LogMessage {
   inline static void RemoveLogToStream(LogSink* stream) {}
   inline static int GetLogToStream(LogSink* stream = nullptr) { return 0; }
   inline static int GetMinLogSeverity() { return 0; }
-  [[deprecated("Use InitializeLogging instead.")]]
-  inline static void ConfigureLogging(absl::string_view params) {}
   static constexpr bool IsNoop(LoggingSeverity severity) { return true; }
   template <LoggingSeverity S>
   static constexpr bool IsNoop() {
