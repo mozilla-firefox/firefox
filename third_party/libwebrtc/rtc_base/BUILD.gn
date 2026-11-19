@@ -2052,6 +2052,7 @@ if (rtc_include_tests) {
         testonly = true
         sources = [ "logging_benchmark.cc" ]
         deps = [
+          ":checks",
           ":logging",
           "//third_party/abseil-cpp/absl/strings",
           "//third_party/abseil-cpp/absl/strings:string_view",
