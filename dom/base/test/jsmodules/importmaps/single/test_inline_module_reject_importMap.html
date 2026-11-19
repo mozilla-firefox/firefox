@@ -6,28 +6,45 @@
 <body onload='testLoaded()'>
 <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
 
+<script>
+// eslint-disable-next-line no-unused-vars
+let gotMsg = false;
+let console = Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService);
+let listener = {
+  QueryInterface: ChromeUtils.generateQI(["nsIConsoleListener"]),
+  observe(msg) {
+    info("console message:" + msg);
+    ok(msg.logLevel == Ci.nsIConsoleMessage.warn, "log level should be 'warn'.");
+    console.unregisterListener(this);
+    gotMsg = true;
+  }
+};
+console.registerListener(listener);
+</script>
+
 <!--Note: This test should be replaced by-->
-<!--test_importMap_after_module_load.html when the pref-->
+<!--test_importMap_between_inline_modules.html when the pref-->
 <!--"dom.multiple_import_maps.enabled" is turned on.-->
 
-<!--There is a module load before the import map tag, so the import map cannot-->
-<!--be accepted according to the spec.-->
+<!--There is an inline module before the import map tag, so the import map-->
+<!--cannot be accepted according to the spec.-->
 <!--And because the import map is rejected, so the module specifier-->
-<!--"./module_simpleExport.mjs" won't be remapped to-->
-<!--"./scope1/module_simpleExport.mjs".-->
+<!--"../module_simpleExport.mjs" won't be remapped to-->
+<!--"../scope1/module_simpleExport.mjs".-->
 
-<script src="./module_simpleExport.mjs" type="module">
+<script type="module">
 </script>
 
 <script type="importmap" onerror='importMapError()'>
 {
   "imports": {
-    "./module_simpleExport.mjs": "./scope1/module_simpleExport.mjs"
+    "../module_simpleExport.mjs": "../scope1/module_simpleExport.mjs"
   }
 }
 </script>
 
 <script>
+  /* global gotMsg */
   SimpleTest.waitForExplicitFinish();
 
   let hasError = false;
@@ -45,9 +62,10 @@
 
   // eslint-disable-next-line no-unused-vars
   function testLoaded() {
-    import("./module_simpleExport.mjs").then((ns) => {
+    import("../module_simpleExport.mjs").then((ns) => {
       ok(ns.x == expectedValue, 'Check simple imported value result: ' + ns.x);
       ok(hasError == onerrorExpected, "onerror of the import map should be called.");
+      ok(gotMsg == msgExpected, "Should have got the console warning.");
     }).catch((e) => {
       ok(false, "throws " + e);
     }).then(() => {

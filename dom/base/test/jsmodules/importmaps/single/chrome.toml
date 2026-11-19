@@ -1,0 +1,14 @@
+[DEFAULT]
+support-files = [
+  "!/dom/base/test/jsmodules/importmaps/module_simpleExport.mjs",
+  "!/dom/base/test/jsmodules/importmaps/scope1/module_simpleExport.mjs",
+]
+prefs = ["dom.multiple_import_maps.enabled=false"]
+
+["test_dynamic_import_reject_importMap.html"]
+
+["test_inline_module_reject_importMap.html"]
+
+["test_module_script_reject_importMap.html"]
+
+["test_reject_multiple_importMaps.html"]

@@ -29,6 +29,7 @@ TEST_DIRS += [
     "jsmodules",
     "jsmodules/importmaps",
     "jsmodules/importmaps/multiple",
+    "jsmodules/importmaps/single",
     "useractivation",
     "meta_viewport",
 ]

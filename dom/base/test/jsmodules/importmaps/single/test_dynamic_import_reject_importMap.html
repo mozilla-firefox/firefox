@@ -14,17 +14,17 @@
 <!--There is a dynamic import before the import map tag, so the import map-->
 <!--cannot be accepted according to the spec.-->
 <!--And because the import map is rejected, so the module specifier-->
-<!--"./scope1/module_simpleExport.mjs" won't be remapped to-->
-<!--"./module_simpleExport.mjs".-->
+<!--"../scope1/module_simpleExport.mjs" won't be remapped to-->
+<!--"../module_simpleExport.mjs".-->
 
 <script>
-  import("./module_simpleExport.mjs");
+  import("../module_simpleExport.mjs");
 </script>
 
 <script type="importmap" onerror='importMapError()'>
 {
   "imports": {
-    "./scope1/module_simpleExport.mjs": "./module_simpleExport.mjs"
+    "../scope1/module_simpleExport.mjs": "../module_simpleExport.mjs"
   }
 }
 </script>
@@ -46,7 +46,7 @@
 
   // eslint-disable-next-line no-unused-vars
   function testLoaded() {
-    import("./scope1/module_simpleExport.mjs").then((ns) => {
+    import("../scope1/module_simpleExport.mjs").then((ns) => {
       ok(ns.x == expectedValue, 'Check simple imported value result: ' + ns.x);
       ok(hasError == onerrorExpected, "onerror of the import map should be called.");
     }).catch((e) => {

@@ -31,7 +31,7 @@ console.registerListener(listener);
 <script type="importmap" onerror='importMapError1()'>
 {
   "imports": {
-    "./module_simpleExport.mjs": "./scope1/module_simpleExport.mjs"
+    "../module_simpleExport.mjs": "../scope1/module_simpleExport.mjs"
   }
 }
 </script>
@@ -40,7 +40,7 @@ console.registerListener(listener);
 <script type="importmap" onerror='importMapError2()'>
 {
   "imports": {
-    "./module_simpleExport.mjs": "./scope1/module_simpleExport.mjs"
+    "../module_simpleExport.mjs": "../scope1/module_simpleExport.mjs"
   }
 }
 </script>
@@ -67,7 +67,7 @@ console.registerListener(listener);
 
   // eslint-disable-next-line no-unused-vars
   function testLoaded() {
-    import("./module_simpleExport.mjs").then((ns) => {
+    import("../module_simpleExport.mjs").then((ns) => {
       ok(ns.x == 84, 'Check simple imported value result: ' + ns.x);
       ok(hasError == onerrorExpected , "onerror of the import map should be called.");
       ok(gotMsg, "Should have got the console warning.");
