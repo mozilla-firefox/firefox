@@ -11,6 +11,8 @@ prefs = [
 
 ["test_merinoClient.js"]
 
+["test_merinoClient_newtab.js"]
+
 ["test_merinoClient_sessions.js"]
 requesttimeoutfactor = 2  # Slow on Windows
 

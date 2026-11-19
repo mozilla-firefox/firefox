@@ -725,46 +725,33 @@ add_task(async function test_merino_client_uses_platform_method_when_present() {
   await MerinoTestUtils.server.start();
   MerinoTestUtils.server.reset();
 
+  const sandbox = sinon.createSandbox();
   const result = { data: { title: "From MerinoClient" }, error: null };
-  const platformMethod = sinon.stub().resolves(result);
-  const original = Object.getOwnPropertyDescriptor(
-    MerinoClient.prototype,
-    "fetchPictureOfTheDay"
-  );
-  MerinoClient.prototype.fetchPictureOfTheDay = platformMethod;
-  try {
-    const client = new PictureOfTheDayFeed().MerinoClient("POTD_TEST");
-    const options = {
-      source: "newtab",
-      endpointUrl: MerinoTestUtils.server.url.toString(),
-      acceptLanguage: "fr",
-    };
-    const returned = await client.fetchPictureOfTheDay(options);
+  const platformMethod = sandbox
+    .stub(MerinoClient.prototype, "fetchPictureOfTheDay")
+    .resolves(result);
+  const client = new PictureOfTheDayFeed().MerinoClient("POTD_TEST");
+  const options = {
+    source: "newtab",
+    endpointUrl: MerinoTestUtils.server.url.toString(),
+    acceptLanguage: "fr",
+  };
+  const returned = await client.fetchPictureOfTheDay(options);
 
-    Assert.equal(returned, result, "MerinoClient's result is returned");
-    Assert.ok(
-      platformMethod.calledOnceWithExactly(options),
-      "MerinoClient's method gets the same options"
-    );
-    Assert.equal(
-      platformMethod.firstCall.thisValue,
-      client,
-      "MerinoClient's method runs on the wrapper"
-    );
-    Assert.equal(
-      MerinoTestUtils.server.requests.length,
-      0,
-      "The fallback copy makes no request"
-    );
-  } finally {
-    if (original) {
-      Object.defineProperty(
-        MerinoClient.prototype,
-        "fetchPictureOfTheDay",
-        original
-      );
-    } else {
-      delete MerinoClient.prototype.fetchPictureOfTheDay;
-    }
-  }
+  Assert.equal(returned, result, "MerinoClient's result is returned");
+  Assert.ok(
+    platformMethod.calledOnceWithExactly(options),
+    "MerinoClient's method gets the same options"
+  );
+  Assert.equal(
+    platformMethod.firstCall.thisValue,
+    client,
+    "MerinoClient's method runs on the wrapper"
+  );
+  Assert.equal(
+    MerinoTestUtils.server.requests.length,
+    0,
+    "The fallback copy makes no request"
+  );
+  sandbox.restore();
 });

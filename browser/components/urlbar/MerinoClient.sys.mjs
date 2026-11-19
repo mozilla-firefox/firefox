@@ -618,6 +618,53 @@ export class MerinoClient {
   }
 
   /**
+   * Fetches the New Tab Picture of the Day.
+   *
+   * @param {object} options
+   *   Options object
+   * @param {string} [options.source]
+   *   The source that is requesting this fetch.
+   * @param {string} options.endpointUrl
+   *   The Picture of the Day endpoint.
+   * @param {string} [options.acceptLanguage]
+   *   Sent as the Accept-Language header so Merino can localize the
+   *   description.
+   * @returns {Promise<{data: object|null, error: null | "invalid_url" | "load_error"}>}
+   *   `error: null` with `data: null` means the endpoint is not configured.
+   */
+  async fetchPictureOfTheDay({ source, endpointUrl, acceptLanguage }) {
+    return this.#fetchNewTabJSON("Picture of the Day", {
+      source,
+      endpointUrl,
+      acceptLanguage,
+    });
+  }
+
+  /**
+   * Fetches the manifest of New Tab widgets that load in a frame.
+   *
+   * @param {object} options
+   *   Options object
+   * @param {string} [options.source]
+   *   The source that is requesting this fetch.
+   * @param {string} options.endpointUrl
+   *   The framed widgets manifest endpoint.
+   * @param {string} [options.locale]
+   *   Sent as the `locale` search param and the Accept-Language header.
+   *   Merino defaults to en-US without it.
+   * @returns {Promise<{data: object|null, error: null | "invalid_url" | "load_error"}>}
+   *   Same contract as fetchPictureOfTheDay().
+   */
+  async fetchFramedWidgets({ source, endpointUrl, locale }) {
+    return this.#fetchNewTabJSON("framed widgets", {
+      source,
+      endpointUrl,
+      acceptLanguage: locale,
+      params: locale ? { locale } : {},
+    });
+  }
+
+  /**
    * Resolves geo params from the provided values, falling back to geolocation
    * if none are provided.
    *
@@ -755,6 +802,57 @@ export class MerinoClient {
     ]);
 
     return { response, elapsedMs };
+  }
+
+  /**
+   * GETs a Merino JSON endpoint for fetchPictureOfTheDay() and
+   * fetchFramedWidgets().
+   *
+   * @param {string} label
+   *   Names the request in log messages.
+   * @param {object} options
+   * @param {string} [options.source]
+   * @param {string} options.endpointUrl
+   * @param {string} [options.acceptLanguage]
+   * @param {{[key: string]: string}} [options.params]
+   *   Extra search params.
+   * @returns {Promise<{data: object|null, error: null | "invalid_url" | "load_error"}>}
+   */
+  async #fetchNewTabJSON(
+    label,
+    { source, endpointUrl, acceptLanguage, params = {} }
+  ) {
+    if (!endpointUrl) {
+      return { data: null, error: null };
+    }
+    let url = URL.parse(endpointUrl);
+    if (!url) {
+      this.#lazy.logger.error(`Invalid ${label} endpoint URL`, endpointUrl);
+      return { data: null, error: "invalid_url" };
+    }
+    if (source) {
+      url.searchParams.set("source", source);
+    }
+    for (let [name, value] of Object.entries(params)) {
+      url.searchParams.set(name, value);
+    }
+    let fetchOptions = acceptLanguage
+      ? { headers: { "Accept-Language": acceptLanguage } }
+      : undefined;
+    try {
+      let response = await fetch(url, fetchOptions);
+      if (!response.ok) {
+        this.#lazy.logger.error(
+          `${label} fetch failed with status ${response.status}`
+        );
+        return { data: null, error: "load_error" };
+      }
+      let data = /** @type {any} */ (await response.json());
+      return { data, error: null };
+    } catch (e) {
+      this.#lazy.logger.error(`${label} fetch error`, e);
+      return { data: null, error: "load_error" };
+    }
   }
 
   static _test_disableCache = false;

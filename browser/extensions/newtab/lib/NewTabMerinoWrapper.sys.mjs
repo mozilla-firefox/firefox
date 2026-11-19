@@ -61,13 +61,14 @@ const fetchJSON = async (
 };
 
 /**
- * MerinoClient plus the New Tab requests it doesn't have yet. Each added
- * method uses MerinoClient's own version once it has one.
+ * MerinoClient plus the New Tab requests it lacks before 163. Each added
+ * method uses MerinoClient's own version when it has one.
  */
 export class NewTabMerinoWrapper extends MerinoClient {
   /**
-   * MerinoClient has no fetchPictureOfTheDay yet. Remove this copy once it
-   * does and that version reaches Release.
+   * @backward-compat { version 163 }
+   * MerinoClient has no fetchPictureOfTheDay before 163. Remove this override
+   * once 163 reaches Release.
    *
    * @param {object} options
    * @param {string} [options.source]
@@ -81,7 +82,6 @@ export class NewTabMerinoWrapper extends MerinoClient {
    *   `error: null` with `data: null` means the endpoint is not configured.
    */
   async fetchPictureOfTheDay(options) {
-    // @ts-expect-error MerinoClient has no fetchPictureOfTheDay yet.
     const upstream = super.fetchPictureOfTheDay;
     if (upstream) {
       return upstream.call(this, options);
@@ -95,8 +95,9 @@ export class NewTabMerinoWrapper extends MerinoClient {
   }
 
   /**
-   * MerinoClient has no fetchFramedWidgets yet. Remove this copy once it
-   * does and that version reaches Release.
+   * @backward-compat { version 163 }
+   * MerinoClient has no fetchFramedWidgets before 163. Remove this override
+   * once 163 reaches Release.
    *
    * @param {object} options
    * @param {string} [options.source]
@@ -110,7 +111,6 @@ export class NewTabMerinoWrapper extends MerinoClient {
    *   Same contract as fetchPictureOfTheDay.
    */
   async fetchFramedWidgets(options) {
-    // @ts-expect-error MerinoClient has no fetchFramedWidgets yet.
     const upstream = super.fetchFramedWidgets;
     if (upstream) {
       return upstream.call(this, options);
