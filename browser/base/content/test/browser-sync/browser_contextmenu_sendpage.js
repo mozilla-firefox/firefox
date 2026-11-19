@@ -125,25 +125,26 @@ add_task(async function test_link_contextmenu() {
 
   const expectedArray = [
     "context-openlinkintab",
-    ...(expectSplitView ? ["context-openlinkinsplitview"] : []),
     ...(expectOpenLinkInUserContextMenu
       ? ["context-openlinkinusercontext-menu"]
       : []),
     "context-openlink",
     "context-openlinkprivate",
-    "context-previewlink",
     "context-sep-open",
-    "context-bookmarklink",
-    "context-savelink",
+    ...(expectSplitView
+      ? ["context-openlinkinsplitview", "context-sep-splitview"]
+      : []),
     "context-copylink",
     ...(expectStripOnShareLink ? ["context-stripOnShareLink"] : []),
     "context-sep-copylink",
+    "context-savelink",
+    "context-bookmarklink",
     "context-sendlinktodevice",
     "context-sep-sendlinktodevice",
     "context-searchselect",
     ...(expectTranslateSelection ? ["context-translate-selection"] : []),
-    "context-ask-chat",
-    "frame-sep",
+    "context-previewlink",
+    "context-sep-search",
     ...(expectInspectAccessibility ? ["context-inspect-a11y"] : []),
     "context-inspect",
   ];
@@ -387,25 +388,26 @@ add_task(async function test_link_contextmenu_mobile() {
 
   const expectedArray = [
     "context-openlinkintab",
-    ...(expectSplitView ? ["context-openlinkinsplitview"] : []),
     ...(expectOpenLinkInUserContextMenu
       ? ["context-openlinkinusercontext-menu"]
       : []),
     "context-openlink",
     "context-openlinkprivate",
-    "context-previewlink",
     "context-sep-open",
-    "context-bookmarklink",
-    "context-savelink",
+    ...(expectSplitView
+      ? ["context-openlinkinsplitview", "context-sep-splitview"]
+      : []),
     "context-copylink",
     ...(expectStripOnShareLink ? ["context-stripOnShareLink"] : []),
     "context-sep-copylink",
+    "context-savelink",
+    "context-bookmarklink",
     "context-sendlinktodevice",
     "context-sep-sendlinktodevice",
     "context-searchselect",
     ...(expectTranslateSelection ? ["context-translate-selection"] : []),
-    "context-ask-chat",
-    "frame-sep",
+    "context-previewlink",
+    "context-sep-search",
     ...(expectInspectAccessibility ? ["context-inspect-a11y"] : []),
     "context-inspect",
   ];

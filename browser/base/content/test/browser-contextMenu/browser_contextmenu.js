@@ -105,52 +105,45 @@ add_task(async function test_xul_text_link_label() {
     waitForStateStop: true,
   });
 
-  await test_contextmenu(
-    "#test-xul-text-link-label",
-    [
-      "context-openlinkintab",
-      true,
-      ...(hasSplitViews ? ["context-openlinkinsplitview", true] : []),
-      ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
-      // We need a blank entry here because the containers submenu is
-      // dynamically generated with no ids.
-      ...(hasContainers ? ["", null] : []),
-      "context-openlink",
-      true,
-      "context-openlinkprivate",
-      true,
-      "context-previewlink",
-      true,
-      "---",
-      null,
-      "context-bookmarklink",
-      true,
-      "context-savelink",
-      true,
-      "context-copylink",
-      true,
-      ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
-      "---",
-      null,
-      "context-sendlinktodevice",
-      true,
-      // This entry will be blank because the submenu is dynamically generated.
-      [],
-      null,
-      "---",
-      null,
-      "context-searchselect",
-      true,
-      "context-searchselect-private",
-      true,
-      ...askChatMenu,
-    ],
-    {
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
-    }
-  );
+  await test_contextmenu("#test-xul-text-link-label", [
+    "context-openlinkintab",
+    true,
+    ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
+    // We need a blank entry here because the containers submenu is
+    // dynamically generated with no ids.
+    ...(hasContainers ? ["", null] : []),
+    "context-openlink",
+    true,
+    "context-openlinkprivate",
+    true,
+    "---",
+    null,
+    ...(hasSplitViews
+      ? ["context-openlinkinsplitview", true, "---", null]
+      : []),
+    "context-copylink",
+    true,
+    ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
+    "---",
+    null,
+    "context-savelink",
+    true,
+    "context-bookmarklink",
+    true,
+    "context-sendlinktodevice",
+    true,
+    // This entry will be blank because the submenu is dynamically generated.
+    [],
+    null,
+    "---",
+    null,
+    "context-searchselect",
+    true,
+    "context-searchselect-private",
+    true,
+    "context-previewlink",
+    true,
+  ]);
 
   // Clean up so won't affect HTML element test cases.
   lastElementSelector = null;
@@ -196,6 +189,7 @@ add_task(async function test_setup_html() {
 });
 
 let plainTextItems;
+
 add_task(async function test_plaintext() {
   await test_contextmenu("#test-text", [
     ...NAVIGATION_ITEMS,
@@ -229,7 +223,6 @@ add_task(async function test_plaintext() {
 const kLinkItems = [
   "context-openlinkintab",
   true,
-  ...(hasSplitViews ? ["context-openlinkinsplitview", true] : []),
   ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
   // We need a blank entry here because the containers submenu is
   // dynamically generated with no ids.
@@ -238,19 +231,18 @@ const kLinkItems = [
   true,
   "context-openlinkprivate",
   true,
-  "context-previewlink",
-  true,
   "---",
   null,
-  "context-bookmarklink",
-  true,
-  "context-savelink",
-  true,
+  ...(hasSplitViews ? ["context-openlinkinsplitview", true, "---", null] : []),
   "context-copylink",
   true,
   ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
   "---",
   null,
+  "context-savelink",
+  true,
+  "context-bookmarklink",
+  true,
   "context-sendlinktodevice",
   true,
   // This entry will be blank because the submenu is dynamically generated.
@@ -265,19 +257,12 @@ const kLinkItems = [
 ];
 
 add_task(async function test_link() {
-  await test_contextmenu(
-    "#test-link",
-    [
-      ...kLinkItems,
-      ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
-      ...askChatMenu,
-    ],
-    {
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
-    }
-  );
+  await test_contextmenu("#test-link", [
+    ...kLinkItems,
+    ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
+    "context-previewlink",
+    true,
+  ]);
 });
 
 add_task(async function test_link_in_shadow_dom() {
@@ -286,14 +271,12 @@ add_task(async function test_link_in_shadow_dom() {
     [
       ...kLinkItems,
       ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
-      ...askChatMenu,
+      "context-previewlink",
+      true,
     ],
     {
       offsetX: 6,
       offsetY: 6,
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
     }
   );
 });
@@ -305,53 +288,46 @@ add_task(async function test_linkpreviewcommand() {
   await SpecialPowers.pushPrefEnv({
     set: [["browser.ml.linkPreview.enabled", true]],
   });
-  await test_contextmenu(
-    "#test-link",
-    [
-      "context-openlinkintab",
-      true,
-      ...(hasSplitViews ? ["context-openlinkinsplitview", true] : []),
-      ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
-      // We need a blank entry here because the containers submenu is
-      // dynamically generated with no ids.
-      ...(hasContainers ? ["", null] : []),
-      "context-openlink",
-      true,
-      "context-openlinkprivate",
-      true,
-      "context-previewlink",
-      true,
-      "---",
-      null,
-      "context-bookmarklink",
-      true,
-      "context-savelink",
-      true,
-      "context-copylink",
-      true,
-      ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
-      "---",
-      null,
-      "context-sendlinktodevice",
-      true,
-      // This entry will be blank because the submenu is dynamically generated.
-      [],
-      null,
-      "---",
-      null,
-      "context-searchselect",
-      true,
-      "context-searchselect-private",
-      true,
-      ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
-      ...askChatMenu,
-    ],
-    {
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
-    }
-  );
+  await test_contextmenu("#test-link", [
+    "context-openlinkintab",
+    true,
+    ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
+    // We need a blank entry here because the containers submenu is
+    // dynamically generated with no ids.
+    ...(hasContainers ? ["", null] : []),
+    "context-openlink",
+    true,
+    "context-openlinkprivate",
+    true,
+    "---",
+    null,
+    ...(hasSplitViews
+      ? ["context-openlinkinsplitview", true, "---", null]
+      : []),
+    "context-copylink",
+    true,
+    ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
+    "---",
+    null,
+    "context-savelink",
+    true,
+    "context-bookmarklink",
+    true,
+    "context-sendlinktodevice",
+    true,
+    // This entry will be blank because the submenu is dynamically generated.
+    [],
+    null,
+    "---",
+    null,
+    "context-searchselect",
+    true,
+    "context-searchselect-private",
+    true,
+    ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
+    "context-previewlink",
+    true,
+  ]);
 
   await SpecialPowers.popPrefEnv();
 });
@@ -360,52 +336,45 @@ add_task(async function test_linkpreviewcommand_disabled() {
   await SpecialPowers.pushPrefEnv({
     set: [["browser.ml.linkPreview.enabled", false]],
   });
-  await test_contextmenu(
-    "#test-link",
-    [
-      "context-openlinkintab",
-      true,
-      ...(hasSplitViews ? ["context-openlinkinsplitview", true] : []),
-      ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
-      // We need a blank entry here because the containers submenu is
-      // dynamically generated with no ids.
-      ...(hasContainers ? ["", null] : []),
-      "context-openlink",
-      true,
-      "context-openlinkprivate",
-      true,
-      //missing context-previewlink is expected
-      "---",
-      null,
-      "context-bookmarklink",
-      true,
-      "context-savelink",
-      true,
-      "context-copylink",
-      true,
-      ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
-      "---",
-      null,
-      "context-sendlinktodevice",
-      true,
-      // This entry will be blank because the submenu is dynamically generated.
-      [],
-      null,
-      "---",
-      null,
-      "context-searchselect",
-      true,
-      "context-searchselect-private",
-      true,
-      ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
-      ...askChatMenu,
-    ],
-    {
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
-    }
-  );
+  await test_contextmenu("#test-link", [
+    "context-openlinkintab",
+    true,
+    ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
+    // We need a blank entry here because the containers submenu is
+    // dynamically generated with no ids.
+    ...(hasContainers ? ["", null] : []),
+    "context-openlink",
+    true,
+    "context-openlinkprivate",
+    true,
+    "---",
+    null,
+    ...(hasSplitViews
+      ? ["context-openlinkinsplitview", true, "---", null]
+      : []),
+    "context-copylink",
+    true,
+    ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
+    "---",
+    null,
+    "context-savelink",
+    true,
+    "context-bookmarklink",
+    true,
+    "context-sendlinktodevice",
+    true,
+    // This entry will be blank because the submenu is dynamically generated.
+    [],
+    null,
+    "---",
+    null,
+    "context-searchselect",
+    true,
+    "context-searchselect-private",
+    true,
+    ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
+    // missing context-previewlink is expected
+  ]);
   await SpecialPowers.popPrefEnv();
 });
 
@@ -460,61 +429,40 @@ add_task(async function test_linkpreviewcommand_not_on_text() {
 add_task(async function test_link_over_shadow_dom() {
   await test_contextmenu(
     "#shadow-host-in-link",
-    [...kLinkItems, ...askChatMenu],
+    [...kLinkItems, "context-previewlink", true],
     {
       offsetX: 6,
       offsetY: 6,
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
     }
   );
 });
 
 add_task(async function test_mailto() {
-  await test_contextmenu(
-    "#test-mailto",
-    [
-      "context-copyemail",
-      true,
-      "---",
-      null,
-      "context-searchselect",
-      true,
-      "context-searchselect-private",
-      true,
-      ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
-      ...askChatMenu,
-    ],
-    {
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
-    }
-  );
+  await test_contextmenu("#test-mailto", [
+    "context-copyemail",
+    true,
+    "---",
+    null,
+    "context-searchselect",
+    true,
+    "context-searchselect-private",
+    true,
+    ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
+  ]);
 });
 
 add_task(async function test_tel() {
-  await test_contextmenu(
-    "#test-tel",
-    [
-      "context-copyphone",
-      true,
-      "---",
-      null,
-      "context-searchselect",
-      true,
-      "context-searchselect-private",
-      true,
-      ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
-      ...askChatMenu,
-    ],
-    {
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
-    }
-  );
+  await test_contextmenu("#test-tel", [
+    "context-copyphone",
+    true,
+    "---",
+    null,
+    "context-searchselect",
+    true,
+    "context-searchselect-private",
+    true,
+    ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
+  ]);
 });
 
 add_task(async function test_image() {
@@ -1940,12 +1888,6 @@ add_task(async function test_select_text() {
       true,
       "---",
       null,
-      "context-copy-link-to-highlight",
-      null,
-      "context-copy-clean-link-to-highlight",
-      null,
-      "---",
-      null,
       "context-take-screenshot",
       true,
       "context-use-mini-window",
@@ -1958,6 +1900,12 @@ add_task(async function test_select_text() {
       true,
       ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
       ...askChatMenu,
+      "---",
+      null,
+      "context-copy-link-to-highlight",
+      null,
+      "context-copy-clean-link-to-highlight",
+      null,
       "---",
       null,
       "context-viewpartialsource-selection",
@@ -1991,12 +1939,6 @@ add_task(async function test_select_text_search_service_not_initialized() {
         true,
         "---",
         null,
-        "context-copy-link-to-highlight",
-        null,
-        "context-copy-clean-link-to-highlight",
-        null,
-        "---",
-        null,
         "context-take-screenshot",
         true,
         "context-use-mini-window",
@@ -2005,6 +1947,12 @@ add_task(async function test_select_text_search_service_not_initialized() {
           ? ["---", null, "context-translate-selection", true]
           : []),
         ...askChatMenu,
+        "---",
+        null,
+        "context-copy-link-to-highlight",
+        null,
+        "context-copy-clean-link-to-highlight",
+        null,
         "---",
         null,
         "context-viewpartialsource-selection",
@@ -2034,7 +1982,6 @@ add_task(async function test_select_text_link() {
       true,
       "context-openlinkintab",
       true,
-      ...(hasSplitViews ? ["context-openlinkinsplitview", true] : []),
       ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
       // We need a blank entry here because the containers submenu is
       // dynamically generated with no ids.
@@ -2043,17 +1990,20 @@ add_task(async function test_select_text_link() {
       true,
       "context-openlinkprivate",
       true,
-      "context-previewlink",
-      true,
       "---",
       null,
-      "context-bookmarklink",
-      true,
-      "context-savelink",
+      ...(hasSplitViews
+        ? ["context-openlinkinsplitview", true, "---", null]
+        : []),
+      "context-copy",
       true,
       ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
       "---",
       null,
+      "context-savelink",
+      true,
+      "context-bookmarklink",
+      true,
       "context-sendlinktodevice",
       true,
       // This entry will be blank because the submenu is dynamically generated.
@@ -2061,18 +2011,10 @@ add_task(async function test_select_text_link() {
       null,
       "---",
       null,
-      "context-copy",
-      true,
       "context-selectall",
       true,
       "context-print-selection",
       true,
-      "---",
-      null,
-      "context-copy-link-to-highlight",
-      null,
-      "context-copy-clean-link-to-highlight",
-      null,
       "---",
       null,
       "context-searchselect",
@@ -2080,7 +2022,14 @@ add_task(async function test_select_text_link() {
       "context-searchselect-private",
       true,
       ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
-      ...askChatMenu,
+      "context-previewlink",
+      true,
+      "---",
+      null,
+      "context-copy-link-to-highlight",
+      null,
+      "context-copy-clean-link-to-highlight",
+      null,
       "---",
       null,
       "context-viewpartialsource-selection",
@@ -2102,79 +2051,69 @@ add_task(async function test_select_text_link() {
           }
         );
       },
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
     }
   );
 });
 
 add_task(async function test_imagelink() {
-  await test_contextmenu(
-    "#test-image-link",
-    [
-      "context-openlinkintab",
-      true,
-      ...(hasSplitViews ? ["context-openlinkinsplitview", true] : []),
-      ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
-      // We need a blank entry here because the containers submenu is
-      // dynamically generated with no ids.
-      ...(hasContainers ? ["", null] : []),
-      "context-openlink",
-      true,
-      "context-openlinkprivate",
-      true,
-      "context-previewlink",
-      true,
-      "---",
-      null,
-      "context-bookmarklink",
-      true,
-      "context-savelink",
-      true,
-      "context-copylink",
-      true,
-      ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
-      "---",
-      null,
-      "context-sendlinktodevice",
-      true,
-      // This entry will be blank because the submenu is dynamically generated.
-      [],
-      null,
-      "---",
-      null,
-      "context-viewimage",
-      true,
-      "context-saveimage",
-      true,
-      "context-copyimage-contents",
-      true,
-      "context-copyimage",
-      true,
-      "context-sendimage",
-      true,
-      ...getTextRecognitionItems(),
-      ...(Services.prefs.getBoolPref("browser.menu.showViewImageInfo", false)
-        ? ["context-viewimageinfo", true]
-        : []),
-      ...(Services.prefs.getBoolPref("browser.search.visualSearch.featureGate")
-        ? ["context-visual-search", true]
-        : []),
-      "---",
-      null,
-      "context-setDesktopBackground",
-      true,
-      "---",
-      null,
-      ...askChatMenu,
-    ],
-    {
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
-    }
-  );
+  await test_contextmenu("#test-image-link", [
+    "context-openlinkintab",
+    true,
+    ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
+    // We need a blank entry here because the containers submenu is
+    // dynamically generated with no ids.
+    ...(hasContainers ? ["", null] : []),
+    "context-openlink",
+    true,
+    "context-openlinkprivate",
+    true,
+    "---",
+    null,
+    ...(hasSplitViews
+      ? ["context-openlinkinsplitview", true, "---", null]
+      : []),
+    "context-copylink",
+    true,
+    ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
+    "---",
+    null,
+    "context-savelink",
+    true,
+    "context-bookmarklink",
+    true,
+    "context-sendlinktodevice",
+    true,
+    // This entry will be blank because the submenu is dynamically generated.
+    [],
+    null,
+    "---",
+    null,
+    "context-viewimage",
+    true,
+    "context-saveimage",
+    true,
+    "context-copyimage-contents",
+    true,
+    "context-copyimage",
+    true,
+    "context-sendimage",
+    true,
+    ...getTextRecognitionItems(),
+    ...(Services.prefs.getBoolPref("browser.menu.showViewImageInfo", false)
+      ? ["context-viewimageinfo", true]
+      : []),
+    ...(Services.prefs.getBoolPref("browser.search.visualSearch.featureGate")
+      ? ["context-visual-search", true]
+      : []),
+    "---",
+    null,
+    "context-setDesktopBackground",
+    true,
+    "---",
+    null,
+    "context-previewlink",
+    true,
+  ]);
 });
 
 add_task(async function test_select_input_text() {
@@ -2382,323 +2321,267 @@ add_task(async function test_input_spell_false() {
 });
 
 add_task(async function test_svg_link() {
-  await test_contextmenu(
-    "#svg-with-link > a",
-    [
-      "context-openlinkintab",
-      true,
-      ...(hasSplitViews ? ["context-openlinkinsplitview", true] : []),
-      ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
-      // We need a blank entry here because the containers submenu is
-      // dynamically generated with no ids.
-      ...(hasContainers ? ["", null] : []),
-      "context-openlink",
-      true,
-      "context-openlinkprivate",
-      true,
-      "context-previewlink",
-      true,
-      "---",
-      null,
-      "context-bookmarklink",
-      true,
-      "context-savelink",
-      true,
-      "context-copylink",
-      true,
-      ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
-      "---",
-      null,
-      "context-sendlinktodevice",
-      true,
-      // This entry will be blank because the submenu is dynamically generated.
-      [],
-      null,
-      "---",
-      null,
-      "context-searchselect",
-      true,
-      "context-searchselect-private",
-      true,
-      ...askChatMenu,
-    ],
-    {
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
-    }
-  );
+  await test_contextmenu("#svg-with-link > a", [
+    "context-openlinkintab",
+    true,
+    ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
+    // We need a blank entry here because the containers submenu is
+    // dynamically generated with no ids.
+    ...(hasContainers ? ["", null] : []),
+    "context-openlink",
+    true,
+    "context-openlinkprivate",
+    true,
+    "---",
+    null,
+    ...(hasSplitViews
+      ? ["context-openlinkinsplitview", true, "---", null]
+      : []),
+    "context-copylink",
+    true,
+    ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
+    "---",
+    null,
+    "context-savelink",
+    true,
+    "context-bookmarklink",
+    true,
+    "context-sendlinktodevice",
+    true,
+    // This entry will be blank because the submenu is dynamically generated.
+    [],
+    null,
+    "---",
+    null,
+    "context-searchselect",
+    true,
+    "context-searchselect-private",
+    true,
+    "context-previewlink",
+    true,
+  ]);
 
-  await test_contextmenu(
-    "#svg-with-link2 > a",
-    [
-      "context-openlinkintab",
-      true,
-      ...(hasSplitViews ? ["context-openlinkinsplitview", true] : []),
-      ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
-      // We need a blank entry here because the containers submenu is
-      // dynamically generated with no ids.
-      ...(hasContainers ? ["", null] : []),
-      "context-openlink",
-      true,
-      "context-openlinkprivate",
-      true,
-      "context-previewlink",
-      true,
-      "---",
-      null,
-      "context-bookmarklink",
-      true,
-      "context-savelink",
-      true,
-      "context-copylink",
-      true,
-      ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
-      "---",
-      null,
-      "context-sendlinktodevice",
-      true,
-      // This entry will be blank because the submenu is dynamically generated.
-      [],
-      null,
-      "---",
-      null,
-      "context-searchselect",
-      true,
-      "context-searchselect-private",
-      true,
-      ...askChatMenu,
-    ],
-    {
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
-    }
-  );
+  await test_contextmenu("#svg-with-link2 > a", [
+    "context-openlinkintab",
+    true,
+    ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
+    // We need a blank entry here because the containers submenu is
+    // dynamically generated with no ids.
+    ...(hasContainers ? ["", null] : []),
+    "context-openlink",
+    true,
+    "context-openlinkprivate",
+    true,
+    "---",
+    null,
+    ...(hasSplitViews
+      ? ["context-openlinkinsplitview", true, "---", null]
+      : []),
+    "context-copylink",
+    true,
+    ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
+    "---",
+    null,
+    "context-savelink",
+    true,
+    "context-bookmarklink",
+    true,
+    "context-sendlinktodevice",
+    true,
+    // This entry will be blank because the submenu is dynamically generated.
+    [],
+    null,
+    "---",
+    null,
+    "context-searchselect",
+    true,
+    "context-searchselect-private",
+    true,
+    "context-previewlink",
+    true,
+  ]);
 
-  await test_contextmenu(
-    "#svg-with-link3 > a",
-    [
-      "context-openlinkintab",
-      true,
-      ...(hasSplitViews ? ["context-openlinkinsplitview", true] : []),
-      ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
-      // We need a blank entry here because the containers submenu is
-      // dynamically generated with no ids.
-      ...(hasContainers ? ["", null] : []),
-      "context-openlink",
-      true,
-      "context-openlinkprivate",
-      true,
-      "context-previewlink",
-      true,
-      "---",
-      null,
-      "context-bookmarklink",
-      true,
-      "context-savelink",
-      true,
-      "context-copylink",
-      true,
-      ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
-      "---",
-      null,
-      "context-sendlinktodevice",
-      true,
-      // This entry will be blank because the submenu is dynamically generated.
-      [],
-      null,
-      "---",
-      null,
-      "context-searchselect",
-      true,
-      "context-searchselect-private",
-      true,
-      ...askChatMenu,
-    ],
-    {
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
-    }
-  );
+  await test_contextmenu("#svg-with-link3 > a", [
+    "context-openlinkintab",
+    true,
+    ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
+    // We need a blank entry here because the containers submenu is
+    // dynamically generated with no ids.
+    ...(hasContainers ? ["", null] : []),
+    "context-openlink",
+    true,
+    "context-openlinkprivate",
+    true,
+    "---",
+    null,
+    ...(hasSplitViews
+      ? ["context-openlinkinsplitview", true, "---", null]
+      : []),
+    "context-copylink",
+    true,
+    ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
+    "---",
+    null,
+    "context-savelink",
+    true,
+    "context-bookmarklink",
+    true,
+    "context-sendlinktodevice",
+    true,
+    // This entry will be blank because the submenu is dynamically generated.
+    [],
+    null,
+    "---",
+    null,
+    "context-searchselect",
+    true,
+    "context-searchselect-private",
+    true,
+    "context-previewlink",
+    true,
+  ]);
 });
 
 add_task(async function test_svg_relative_link() {
-  await test_contextmenu(
-    "#svg-with-relative-link > a",
-    [
-      "context-openlinkintab",
-      true,
-      ...(hasSplitViews ? ["context-openlinkinsplitview", true] : []),
-      ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
-      // We need a blank entry here because the containers submenu is
-      // dynamically generated with no ids.
-      ...(hasContainers ? ["", null] : []),
-      "context-openlink",
-      true,
-      "context-openlinkprivate",
-      true,
-      "context-previewlink",
-      true,
-      "---",
-      null,
-      "context-bookmarklink",
-      true,
-      "context-savelink",
-      true,
-      "context-copylink",
-      true,
-      ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
-      "---",
-      null,
-      "context-sendlinktodevice",
-      true,
-      // This entry will be blank because the submenu is dynamically generated.
-      [],
-      null,
-      "---",
-      null,
-      "context-searchselect",
-      true,
-      "context-searchselect-private",
-      true,
-      ...askChatMenu,
-    ],
-    {
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
-    }
-  );
+  await test_contextmenu("#svg-with-relative-link > a", [
+    "context-openlinkintab",
+    true,
+    ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
+    // We need a blank entry here because the containers submenu is
+    // dynamically generated with no ids.
+    ...(hasContainers ? ["", null] : []),
+    "context-openlink",
+    true,
+    "context-openlinkprivate",
+    true,
+    "---",
+    null,
+    ...(hasSplitViews
+      ? ["context-openlinkinsplitview", true, "---", null]
+      : []),
+    "context-copylink",
+    true,
+    ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
+    "---",
+    null,
+    "context-savelink",
+    true,
+    "context-bookmarklink",
+    true,
+    "context-sendlinktodevice",
+    true,
+    // This entry will be blank because the submenu is dynamically generated.
+    [],
+    null,
+    "---",
+    null,
+    "context-searchselect",
+    true,
+    "context-searchselect-private",
+    true,
+    "context-previewlink",
+    true,
+  ]);
 
-  await test_contextmenu(
-    "#svg-with-relative-link2 > a",
-    [
-      "context-openlinkintab",
-      true,
-      ...(hasSplitViews ? ["context-openlinkinsplitview", true] : []),
-      ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
-      // We need a blank entry here because the containers submenu is
-      // dynamically generated with no ids.
-      ...(hasContainers ? ["", null] : []),
-      "context-openlink",
-      true,
-      "context-openlinkprivate",
-      true,
-      "context-previewlink",
-      true,
-      "---",
-      null,
-      "context-bookmarklink",
-      true,
-      "context-savelink",
-      true,
-      "context-copylink",
-      true,
-      ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
-      "---",
-      null,
-      "context-sendlinktodevice",
-      true,
-      // This entry will be blank because the submenu is dynamically generated.
-      [],
-      null,
-      "---",
-      null,
-      "context-searchselect",
-      true,
-      "context-searchselect-private",
-      true,
-      ...askChatMenu,
-    ],
-    {
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
-    }
-  );
+  await test_contextmenu("#svg-with-relative-link2 > a", [
+    "context-openlinkintab",
+    true,
+    ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
+    // We need a blank entry here because the containers submenu is
+    // dynamically generated with no ids.
+    ...(hasContainers ? ["", null] : []),
+    "context-openlink",
+    true,
+    "context-openlinkprivate",
+    true,
+    "---",
+    null,
+    ...(hasSplitViews
+      ? ["context-openlinkinsplitview", true, "---", null]
+      : []),
+    "context-copylink",
+    true,
+    ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
+    "---",
+    null,
+    "context-savelink",
+    true,
+    "context-bookmarklink",
+    true,
+    "context-sendlinktodevice",
+    true,
+    // This entry will be blank because the submenu is dynamically generated.
+    [],
+    null,
+    "---",
+    null,
+    "context-searchselect",
+    true,
+    "context-searchselect-private",
+    true,
+    "context-previewlink",
+    true,
+  ]);
 
-  await test_contextmenu(
-    "#svg-with-relative-link3 > a",
-    [
-      "context-openlinkintab",
-      true,
-      ...(hasSplitViews ? ["context-openlinkinsplitview", true] : []),
-      ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
-      // We need a blank entry here because the containers submenu is
-      // dynamically generated with no ids.
-      ...(hasContainers ? ["", null] : []),
-      "context-openlink",
-      true,
-      "context-openlinkprivate",
-      true,
-      "context-previewlink",
-      true,
-      "---",
-      null,
-      "context-bookmarklink",
-      true,
-      "context-savelink",
-      true,
-      "context-copylink",
-      true,
-      ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
-      "---",
-      null,
-      "context-sendlinktodevice",
-      true,
-      // This entry will be blank because the submenu is dynamically generated.
-      [],
-      null,
-      "---",
-      null,
-      "context-searchselect",
-      true,
-      "context-searchselect-private",
-      true,
-      ...askChatMenu,
-    ],
-    {
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
-    }
-  );
+  await test_contextmenu("#svg-with-relative-link3 > a", [
+    "context-openlinkintab",
+    true,
+    ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
+    // We need a blank entry here because the containers submenu is
+    // dynamically generated with no ids.
+    ...(hasContainers ? ["", null] : []),
+    "context-openlink",
+    true,
+    "context-openlinkprivate",
+    true,
+    "---",
+    null,
+    ...(hasSplitViews
+      ? ["context-openlinkinsplitview", true, "---", null]
+      : []),
+    "context-copylink",
+    true,
+    ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
+    "---",
+    null,
+    "context-savelink",
+    true,
+    "context-bookmarklink",
+    true,
+    "context-sendlinktodevice",
+    true,
+    // This entry will be blank because the submenu is dynamically generated.
+    [],
+    null,
+    "---",
+    null,
+    "context-searchselect",
+    true,
+    "context-searchselect-private",
+    true,
+    "context-previewlink",
+    true,
+  ]);
 });
 
 add_task(async function test_mathml_link() {
-  await test_contextmenu(
-    "#mathml-with-link > a",
-    [
-      ...kLinkItems,
-      ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
-      ...askChatMenu,
-    ],
-    {
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
-    }
-  );
+  await test_contextmenu("#mathml-with-link > a", [
+    ...kLinkItems,
+    ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
+    "context-previewlink",
+    true,
+  ]);
   if (
     !Services.prefs.getBoolPref(
       "mathml.href_link_on_non_anchor_element.disabled"
     )
   ) {
-    await test_contextmenu(
-      "#deprecated-mathml-with-link > mrow",
-      [
-        ...kLinkItems,
-        ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
-        ...askChatMenu,
-      ],
-      {
-        awaitOnMenuBuilt: {
-          id: "context-ask-chat",
-        },
-      }
-    );
+    await test_contextmenu("#deprecated-mathml-with-link > mrow", [
+      ...kLinkItems,
+      ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
+      "context-previewlink",
+      true,
+    ]);
   }
 });
 
@@ -2757,46 +2640,41 @@ add_task(async function test_background_image() {
   });
 
   // Don't show image related context menu commands for links with background images.
-  await test_contextmenu(
-    "#test-background-image-link",
-    [
-      "context-openlinkintab",
-      true,
-      ...(hasSplitViews ? ["context-openlinkinsplitview", true] : []),
-      ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
-      // We need a blank entry here because the containers submenu is
-      // dynamically generated with no ids.
-      ...(hasContainers ? ["", null] : []),
-      "context-openlink",
-      true,
-      "context-openlinkprivate",
-      true,
-      "context-previewlink",
-      true,
-      "---",
-      null,
-      "context-bookmarklink",
-      true,
-      "context-savelink",
-      true,
-      "context-copylink",
-      true,
-      ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
-      "---",
-      null,
-      "context-searchselect",
-      true,
-      "context-searchselect-private",
-      true,
-      ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
-      ...askChatMenu,
-    ],
-    {
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
-    }
-  );
+  await test_contextmenu("#test-background-image-link", [
+    "context-openlinkintab",
+    true,
+    ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
+    // We need a blank entry here because the containers submenu is
+    // dynamically generated with no ids.
+    ...(hasContainers ? ["", null] : []),
+    "context-openlink",
+    true,
+    "context-openlinkprivate",
+    true,
+    "---",
+    null,
+    ...(hasSplitViews
+      ? ["context-openlinkinsplitview", true, "---", null]
+      : []),
+    "context-copylink",
+    true,
+    ...(hasStripOnShare ? ["context-stripOnShareLink", false] : []),
+    "---",
+    null,
+    "context-savelink",
+    true,
+    "context-bookmarklink",
+    true,
+    "---",
+    null,
+    "context-searchselect",
+    true,
+    "context-searchselect-private",
+    true,
+    ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
+    "context-previewlink",
+    true,
+  ]);
 
   // Don't show image related context menu commands when there is a selection
   // with background images.
@@ -2811,12 +2689,6 @@ add_task(async function test_background_image() {
       true,
       "---",
       null,
-      "context-copy-link-to-highlight",
-      null,
-      "context-copy-clean-link-to-highlight",
-      null,
-      "---",
-      null,
       "context-take-screenshot",
       true,
       "context-use-mini-window",
@@ -2829,6 +2701,12 @@ add_task(async function test_background_image() {
       true,
       ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
       ...askChatMenu,
+      "---",
+      null,
+      "context-copy-link-to-highlight",
+      null,
+      "context-copy-clean-link-to-highlight",
+      null,
       "---",
       null,
       "context-viewpartialsource-selection",
@@ -2854,6 +2732,7 @@ add_task(async function test_cleanup_html() {
  *   Testing that Copy without Site Tracking option does not
  *   appear on internal about: pages.
  */
+
 add_task(async function test_strip_on_share_on_secure_about_page() {
   let url = about_preferences_base;
 
@@ -2874,52 +2753,45 @@ add_task(async function test_strip_on_share_on_secure_about_page() {
 
   // the Copy without Site Tracking option should not
   // show up within internal about: pages
-  await test_contextmenu(
-    "#link-test-strip",
-    [
-      "context-openlinkintab",
-      true,
-      ...(hasSplitViews ? ["context-openlinkinsplitview", true] : []),
-      ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
-      // We need a blank entry here because the containers submenu is
-      // dynamically generated with no ids.
-      ...(hasContainers ? ["", null] : []),
-      "context-openlink",
-      true,
-      "context-openlinkprivate",
-      true,
-      "context-previewlink",
-      true,
-      "---",
-      null,
-      "context-bookmarklink",
-      true,
-      "context-savelink",
-      true,
-      "context-copylink",
-      true,
-      "---",
-      null,
-      "context-sendlinktodevice",
-      true,
-      // This entry will be blank because the submenu is dynamically generated.
-      [],
-      null,
-      "---",
-      null,
-      "context-searchselect",
-      true,
-      "context-searchselect-private",
-      true,
-      ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
-      ...askChatMenu,
-    ],
-    {
-      awaitOnMenuBuilt: {
-        id: "context-ask-chat",
-      },
-    }
-  );
+  await test_contextmenu("#link-test-strip", [
+    "context-openlinkintab",
+    true,
+    ...(hasContainers ? ["context-openlinkinusercontext-menu", true] : []),
+    // We need a blank entry here because the containers submenu is
+    // dynamically generated with no ids.
+    ...(hasContainers ? ["", null] : []),
+    "context-openlink",
+    true,
+    "context-openlinkprivate",
+    true,
+    "---",
+    null,
+    ...(hasSplitViews
+      ? ["context-openlinkinsplitview", true, "---", null]
+      : []),
+    "context-copylink",
+    true,
+    "---",
+    null,
+    "context-savelink",
+    true,
+    "context-bookmarklink",
+    true,
+    "context-sendlinktodevice",
+    true,
+    // This entry will be blank because the submenu is dynamically generated.
+    [],
+    null,
+    "---",
+    null,
+    "context-searchselect",
+    true,
+    "context-searchselect-private",
+    true,
+    ...(hasSelectTranslations ? ["context-translate-selection", true] : []),
+    "context-previewlink",
+    true,
+  ]);
 
   // Clean up
   lastElementSelector = null;

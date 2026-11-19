@@ -1,5 +1,5 @@
 add_task(async function () {
-  // The frame-sep element is shared with "Ask an AI Chatbot".
+  // The context-sep-search element is shared with "Ask an AI Chatbot".
   await SpecialPowers.pushPrefEnv({
     set: [["browser.ml.chat.menu", false]],
   });
@@ -42,8 +42,8 @@ add_task(async function () {
   await popupShownPromise;
 
   ok(
-    document.getElementById("frame-sep").hidden,
-    "'frame-sep' should be hidden if the selection contains only spaces"
+    document.getElementById("context-sep-search").hidden,
+    "'context-sep-search' should be hidden if the selection contains only spaces"
   );
 
   let popupHiddenPromise = BrowserTestUtils.waitForEvent(

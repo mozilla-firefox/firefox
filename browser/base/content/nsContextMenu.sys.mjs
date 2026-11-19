@@ -945,16 +945,21 @@ export class nsContextMenu {
     this.showTranslateSelectionItem();
     this.showItem(
       "context-turn-on-highlight-menu",
-      this.isTextSelected &&
+      !(this.onLink || this.onPlainTextLink) &&
+        this.isTextSelected &&
         !this.onTextInput &&
         lazy.GenAI.canTurnOnSelectionMenu(this.window)
     );
-    lazy.GenAI.buildAskChatMenu(document.getElementById("context-ask-chat"), {
-      browser: this.browser,
-      selectionInfo: this.selectionInfo,
-      showItem: this.showItem.bind(this),
-      source: "page",
-    });
+    if (this.onLink || this.onPlainTextLink) {
+      this.showItem("context-ask-chat", false);
+    } else {
+      lazy.GenAI.buildAskChatMenu(document.getElementById("context-ask-chat"), {
+        browser: this.browser,
+        selectionInfo: this.selectionInfo,
+        showItem: this.showItem.bind(this),
+        source: "page",
+      });
+    }
     this.showItem(
       "context-create-aitab",
       lazy.AIWindowMenu.canShowAITabMenu(this.window, [this.browser.currentURI])
@@ -1051,6 +1056,19 @@ export class nsContextMenu {
     this.showItem("context-undo", this.onTextInput);
     this.showItem("context-redo", this.onTextInput);
     this.showItem("context-cut", this.onTextInput);
+    // For selected links, move Copy next to "Copy Link" and "Copy Clean Link".
+    // Otherwise, keep it with the other items.
+    // TODO: Hide Copy for selected links and/or consolidate with "Copy Link" (Bug 2085873).
+    let copyItem = this.document.getElementById("context-copy");
+    if (
+      this.isContentSelected &&
+      (this.onLink || this.onPlainTextLink) &&
+      !this.onTextInput
+    ) {
+      this.document.getElementById("context-copylink").before(copyItem);
+    } else {
+      this.document.getElementById("context-paste").before(copyItem);
+    }
     this.showItem("context-copy", this.isContentSelected || this.onTextInput);
     this.showItem("context-paste", this.onTextInput);
     this.showItem("context-paste-no-formatting", this.isDesignMode);
@@ -1097,11 +1115,6 @@ export class nsContextMenu {
 
     let disabledAttr = this.#canStripParams() ? null : true;
     this.setItemAttr("context-stripOnShareLink", "disabled", disabledAttr);
-
-    let sendLinkSeparator = this.document.getElementById(
-      "context-sep-sendlinktodevice"
-    );
-    sendLinkSeparator.toggleAttribute("ensureHidden", !this.syncItemsShown);
 
     this.showItem("context-copyvideourl", this.onVideo);
     this.showItem("context-copyaudiourl", this.onAudio);
@@ -1344,7 +1357,7 @@ export class nsContextMenu {
   }
 
   initSyncItems() {
-    this.syncItemsShown = this.window.gSync.updateContentContextMenu(this);
+    this.window.gSync.updateContentContextMenu(this);
   }
 
   initViewSourceItems() {
@@ -2841,11 +2854,11 @@ export class nsContextMenu {
       isPrivateSearchMenuitem: true,
     });
 
-    let frameSeparator = document.getElementById("frame-sep");
+    let searchSeparator = document.getElementById("context-sep-search");
 
     // Add a divider between "Search X for Y" and "This Frame", and between
     // "Search X for Y" and "Check Spelling", but no divider in other cases.
-    frameSeparator.toggleAttribute(
+    searchSeparator.toggleAttribute(
       "ensureHidden",
       menuItem.hidden && this.inFrame
     );

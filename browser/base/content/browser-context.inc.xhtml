@@ -87,12 +87,6 @@
                 data-l10n-id="main-context-menu-open-link-new-tab"
                 data-usercontextid="0"
                 />
-      <menuitem id="context-openlinkinsplitview"
-                class="context-menu-open-link"
-                data-l10n-id="main-context-menu-open-link-split-view"
-                data-usercontextid="0"
-                hidden="true"
-                />
 
       <menu id="context-openlinkinusercontext-menu"
             class="context-menu-open-link"
@@ -114,16 +108,14 @@
                 data-l10n-id="main-context-menu-open-link-new-smart-window"
                 intended-duplicate-accesskey="context-searchselect context-setDesktopBackground context-video-saveimage"
                 />
-      <menuitem id="context-previewlink"
-                data-l10n-id="main-context-menu-preview-link"
-                />
       <menuseparator id="context-sep-open"/>
-      <menuitem id="context-bookmarklink"
-                data-l10n-id="main-context-menu-bookmark-link-2"
+      <menuitem id="context-openlinkinsplitview"
+                class="context-menu-open-link"
+                data-l10n-id="main-context-menu-open-link-split-view"
+                data-usercontextid="0"
+                hidden="true"
                 />
-      <menuitem id="context-savelink"
-                data-l10n-id="main-context-menu-save-link"
-                />
+      <menuseparator id="context-sep-splitview"/>
       <menuitem id="context-copyemail"
                 data-l10n-id="main-context-menu-copy-email"
                 />
@@ -138,6 +130,12 @@
                 hidden="true"
                 />
       <menuseparator id="context-sep-copylink"/>
+      <menuitem id="context-savelink"
+                data-l10n-id="main-context-menu-save-link"
+                />
+      <menuitem id="context-bookmarklink"
+                data-l10n-id="main-context-menu-bookmark-link-2"
+                />
       <menu id="context-sendlinktodevice"
             class="sync-ui-item"
             data-l10n-id="main-context-menu-link-send-to-device"
@@ -338,13 +336,6 @@
       <menuitem id="context-print-selection"
                 data-l10n-id="main-context-menu-print-selection-2"/>
       <menuseparator id="context-sep-selectall"/>
-      <menuitem id="context-copy-link-to-highlight"
-                data-l10n-id="text-action-copy-link-to-highlight-2"
-                />
-      <menuitem id="context-copy-clean-link-to-highlight"
-                data-l10n-id="text-action-copy-clean-link-to-highlight-2"
-                intended-duplicate-accesskey="context-savelink"
-                />
       <menuitem id="context-remove-highlight"
                 data-l10n-id="text-action-remove-highlight-2"
                 intended-duplicate-accesskey="context-copy-link-to-highlight"
@@ -395,11 +386,22 @@
       <menuitem id="context-turn-on-highlight-menu"
                 data-l10n-id="main-context-menu-turn-on-actions-menu"
                 hidden="true"/>
+      <menuitem id="context-previewlink"
+                data-l10n-id="main-context-menu-preview-link"
+                />
       <menu id="context-ask-chat"/>
       <menuitem id="context-create-aitab"
                 data-l10n-id="main-context-menu-create-aitab"
                 hidden="true"
                 intended-duplicate-accesskey="context-copy context-pdfjs-copy context-media-showcontrols context-media-hidecontrols"/>
+      <menuseparator id="context-sep-search"/>
+      <menuitem id="context-copy-link-to-highlight"
+                data-l10n-id="text-action-copy-link-to-highlight-2"
+                />
+      <menuitem id="context-copy-clean-link-to-highlight"
+                data-l10n-id="text-action-copy-clean-link-to-highlight-2"
+                intended-duplicate-accesskey="context-savelink"
+                />
 
       <menuseparator id="frame-sep"/>
       <menu id="frame" data-l10n-id="main-context-menu-frame">

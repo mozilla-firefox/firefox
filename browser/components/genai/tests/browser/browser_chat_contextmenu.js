@@ -2,16 +2,24 @@
  * http://creativecommons.org/publicdomain/zero/1.0/ */
 
 // Bug 1895789 to standarize contextmenu helpers in BrowserTestUtils
-async function openContextMenu(doc = document) {
+async function openContextMenu(doc = document, targetEl) {
   const contextMenu = doc.getElementById("contentAreaContextMenu");
   const promise = BrowserTestUtils.waitForEvent(contextMenu, "popupshown");
-  await BrowserTestUtils.synthesizeMouse(
-    null,
-    0,
-    0,
-    { type: "contextmenu" },
-    doc.documentGlobal.gBrowser.selectedBrowser
-  );
+  if (targetEl) {
+    await BrowserTestUtils.synthesizeMouseAtCenter(
+      targetEl,
+      { type: "contextmenu" },
+      doc.documentGlobal.gBrowser.selectedBrowser
+    );
+  } else {
+    await BrowserTestUtils.synthesizeMouse(
+      null,
+      0,
+      0,
+      { type: "contextmenu" },
+      doc.documentGlobal.gBrowser.selectedBrowser
+    );
+  }
   await promise;
 }
 
@@ -643,6 +651,69 @@ add_task(async function test_turn_on_highlight_menu_not_in_smart_window() {
       document.documentElement.removeAttribute("ai-window");
     }
   });
+
+  await SpecialPowers.popPrefEnv();
+});
+
+/**
+ * Check that the item is not offered over a link, even when its text is
+ * selected.
+ */
+add_task(async function test_turn_on_highlight_menu_not_on_link() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ...MENU_OFF_PREFS,
+      ["ui.mouse.right_click.select_under_cursor", false],
+    ],
+  });
+
+  await BrowserTestUtils.withNewTab(
+    "data:text/html,<a href='https://example.com/'>some link text</a>",
+    async browser => {
+      await selectAllText(browser);
+      await openContextMenu(undefined, "a");
+      Assert.ok(gContextMenu.onLink, "The menu was opened on a link");
+      Assert.ok(
+        document.getElementById(TURN_ON_ITEM).hidden,
+        "Not offered over a link"
+      );
+      await hideContextMenu();
+    }
+  );
+
+  await SpecialPowers.popPrefEnv();
+});
+
+/**
+ * Check that the item is not offered over selected text that looks like a URL.
+ */
+add_task(async function test_turn_on_highlight_menu_not_on_plain_text_link() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ...MENU_OFF_PREFS,
+      ["ui.mouse.right_click.select_under_cursor", false],
+    ],
+  });
+
+  await BrowserTestUtils.withNewTab(
+    "data:text/html,<p>visit <span>example.com</span> today</p>",
+    async browser => {
+      await SpecialPowers.spawn(browser, [], () => {
+        const span = content.document.querySelector("span");
+        content.getSelection().selectAllChildren(span);
+      });
+      await openContextMenu(undefined, "span");
+      Assert.ok(
+        gContextMenu.onPlainTextLink,
+        "The menu was opened on a plain text link"
+      );
+      Assert.ok(
+        document.getElementById(TURN_ON_ITEM).hidden,
+        "Not offered over a plain text link"
+      );
+      await hideContextMenu();
+    }
+  );
 
   await SpecialPowers.popPrefEnv();
 });
