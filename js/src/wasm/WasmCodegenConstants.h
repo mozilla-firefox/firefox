@@ -49,6 +49,9 @@ static const uint32_t MaxInlineMemoryFillLength = 64;
 #elif defined(JS_CODEGEN_X86)
 static const uint32_t MaxInlineMemoryCopyLength = 32;
 static const uint32_t MaxInlineMemoryFillLength = 32;
+#elif defined(JS_CODEGEN_LOONG64)
+static const uint32_t MaxInlineMemoryCopyLength = 128;
+static const uint32_t MaxInlineMemoryFillLength = 128;
 #else
 // Keep these non-zero to avoid compile errors around always false
 // conditionals.
