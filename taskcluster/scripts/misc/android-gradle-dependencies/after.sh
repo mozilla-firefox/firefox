@@ -71,7 +71,8 @@ cp -R --parents [0-9]*/generated-gradle-jars [0-9]*/groovy-dsl [0-9]*/kotlin-dsl
 popd
 find $SEED_CACHES \( -name '*.lock' -o -name gc.properties \) -delete
 
-tar cavf /builds/worker/artifacts/android-gradle-dependencies.tar.zst android-gradle-dependencies
+tar cavf /builds/worker/artifacts/android-gradle-dependencies-nexus-attributes.tar.zst android-gradle-dependencies/*/.nexus
+tar cavf /builds/worker/artifacts/android-gradle-dependencies.tar.zst --exclude=.nexus --exclude=.meta android-gradle-dependencies
 tar cavf /builds/worker/artifacts/gradle-user-home-seed.tar.zst gradle-user-home-seed
 
 popd
