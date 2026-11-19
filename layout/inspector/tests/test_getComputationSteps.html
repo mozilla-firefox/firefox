@@ -30,6 +30,8 @@
 
   section {
     --on-section: 1em;
+    --space-separated-lengths: calc(1px + 1em) calc(-1 * 2cqb) 3rem clamp(30px, calc(4lh + 1em), 100cqw);
+    --shadow-parts: -0.2em 10px 8cqi /* color */ hotpink, 1rem 1lh 1cqmax rgb(255, 215, 0);
     width: 100px;
     height: 50px;
     font-size: 24px;
@@ -100,7 +102,7 @@
 <script>
 add_task(async function() {
   const { InspectorUtils } = SpecialPowers;
-  const test = ({expression, el, property = "", pseudo, expected}) => {
+  const test = ({expression, el, property = "", pseudo, expected }) => {
     const res = Array.from(InspectorUtils.getComputationSteps(property, expression, el, pseudo));
     const outer = el.outerHTML;
     const fmt = arr => `(${arr.length})[${arr.map(s => `'${s}'`).join(", ")}]`
@@ -784,6 +786,66 @@ add_task(async function() {
       //   so we should get the value set on main: 4em -> 4 * 20px -> 80px.
       //   XXX It would be nice to get the computation detail here too
       "80px"
+    ]
+  });
+
+  test({
+    property: "margin",
+    expression: "var(--space-separated-lengths)",
+    el: sectionEl,
+    expected: [
+      "var(--space-separated-lengths)",
+      "calc(1px + 1em) calc(-1 * 2cqb) 3rem clamp(30px, calc(4lh + 1em), 100cqw)",
+      "calc(1px + 24px) calc(-1 * 2cqb) 3rem clamp(30px, 4lh + 1em, 100cqw)",
+      "25px calc(-1 * 2cqb) 3rem clamp(30px, 4lh + 1em, 100cqw)",
+      "25px calc(-1 * 2px) 3rem clamp(30px, 4lh + 1em, 100cqw)",
+      "25px -2px 3rem clamp(30px, 4lh + 1em, 100cqw)",
+      "25px -2px 60px clamp(30px, 4lh + 1em, 100cqw)",
+      "25px -2px 60px clamp(30px, 112px + 24px, 200px)",
+      "25px -2px 60px clamp(30px, 136px, 200px)",
+      "25px -2px 60px 136px",
+    ]
+  });
+
+  test({
+    property: "margin",
+    expression: "4em 3cqb 2rem 1lh",
+    el: sectionEl,
+    expected: [
+      "4em 3cqb 2rem 1lh",
+      "96px 3cqb 2rem 1lh",
+      "96px 3px 2rem 1lh",
+      "96px 3px 40px 1lh",
+      "96px 3px 40px 28px",
+    ]
+  });
+
+  test({
+    property: "box-shadow",
+    expression: "var(--shadow-parts)",
+    el: sectionEl,
+    expected: [
+      "var(--shadow-parts)",
+      "-0.2em 10px 8cqi /* color */ hotpink, 1rem 1lh 1cqmax rgb(255, 215, 0)",
+      "-4.8px 10px 8cqi  hotpink, 1rem 1lh 1cqmax rgb(255, 215, 0)",
+      "-4.8px 10px 16px  hotpink, 1rem 1lh 1cqmax rgb(255, 215, 0)",
+      "-4.8px 10px 16px  hotpink, 20px 1lh 1cqmax rgb(255, 215, 0)",
+      "-4.8px 10px 16px  hotpink, 20px 28px 1cqmax rgb(255, 215, 0)",
+      "-4.8px 10px 16px  hotpink, 20px 28px 2px rgb(255, 215, 0)",
+    ]
+  });
+
+  test({
+    property: "box-shadow",
+    expression: "0.2em 20px 4cqi tomato, 1rem 1lh 1cqmax gold",
+    el: sectionEl,
+    expected: [
+      "0.2em 20px 4cqi tomato, 1rem 1lh 1cqmax gold",
+      "4.8px 20px 4cqi tomato, 1rem 1lh 1cqmax gold",
+      "4.8px 20px 8px tomato, 1rem 1lh 1cqmax gold",
+      "4.8px 20px 8px tomato, 20px 1lh 1cqmax gold",
+      "4.8px 20px 8px tomato, 20px 28px 1cqmax gold",
+      "4.8px 20px 8px tomato, 20px 28px 2px gold",
     ]
   });
 
