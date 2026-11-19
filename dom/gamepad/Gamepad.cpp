@@ -106,6 +106,11 @@ void Gamepad::SetAxis(uint32_t aAxis, double aValue) {
   UpdateTimestamp();
 }
 
+void Gamepad::SetPose(const GamepadPoseState& aPose) {
+  mPose->SetPoseState(aPose);
+  UpdateTimestamp();
+}
+
 void Gamepad::SetLightIndicatorType(uint32_t aLightIndex,
                                     GamepadLightIndicatorType aType) {
   // Until we fix the synchronization errors in Bug 1682554, this can be
@@ -160,6 +165,10 @@ void Gamepad::SyncState(Gamepad* aOther) {
     Gamepad_Binding::ClearCachedAxesValue(this);
   }
 
+  if (StaticPrefs::dom_gamepad_pose_enabled()) {
+    MOZ_ASSERT(aOther->GetPose());
+    mPose->SetPoseState(aOther->GetPose()->GetPoseState());
+  }
   if (StaticPrefs::dom_gamepad_hand_enabled()) {
     mHand = aOther->Hand();
   }
