@@ -32,10 +32,10 @@ index 2b12b40fa7..d4fd8d02e7 100644
  
    if (rtc_enable_win_wgc) {
 diff --git a/modules/portal/BUILD.gn b/modules/portal/BUILD.gn
-index a533779b78..ccc358b2b8 100644
+index eb5f817c03..eadaf3fb2c 100644
 --- a/modules/portal/BUILD.gn
 +++ b/modules/portal/BUILD.gn
-@@ -147,11 +147,9 @@ if (!build_with_mozilla) {
+@@ -150,11 +150,9 @@ if (!build_with_mozilla) {
        deps -= [ ":pipewire_stubs" ]
        defines -= [ "WEBRTC_DLOPEN_PIPEWIRE" ]
        public_deps = [
@@ -47,7 +47,7 @@ index a533779b78..ccc358b2b8 100644
 +      defines += [ "WEBRTC_USE_PIPEWIRE" ]
      }
    }
- }
+ 
 diff --git a/modules/video_capture/BUILD.gn b/modules/video_capture/BUILD.gn
 index fab83dd801..23a0608f30 100644
 --- a/modules/video_capture/BUILD.gn

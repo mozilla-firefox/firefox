@@ -110,6 +110,9 @@ if (rtc_include_tests && !build_with_chromium) {
     if (is_win) {
       tests += [ "audio_device:core_audio_utility_win_unittest" ]
     }
+    if ((is_linux || is_chromeos) && rtc_use_pipewire) {
+      tests += [ "portal:pipewire_buffer_checks_unittest" ]
+    }
   }
 
   rtc_cc_test("module_common_types_public_unittest") {

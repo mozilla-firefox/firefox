@@ -891,7 +891,7 @@ index 5247ec01c5..0cfd6ef2d1 100644
    if (use_desktop_capture_differ_sse2) {
      deps += [ ":desktop_capture_differ_sse2" ]
 diff --git a/modules/portal/BUILD.gn b/modules/portal/BUILD.gn
-index 7fa6ae078e..19b3b3e209 100644
+index fe8f7b26b3..a91c89d297 100644
 --- a/modules/portal/BUILD.gn
 +++ b/modules/portal/BUILD.gn
 @@ -11,6 +11,7 @@ import("//tools/generate_stubs/rules.gni")
@@ -902,7 +902,7 @@ index 7fa6ae078e..19b3b3e209 100644
    pkg_config("gio") {
      packages = [
        "gio-2.0",
-@@ -92,6 +93,12 @@ if ((is_linux || is_chromeos) && rtc_use_pipewire) {
+@@ -95,6 +96,12 @@ if ((is_linux || is_chromeos) && rtc_use_pipewire) {
        defines += [ "WEBRTC_USE_GIO" ]
      }
    }
@@ -915,7 +915,7 @@ index 7fa6ae078e..19b3b3e209 100644
  
    rtc_library("portal") {
      sources = [
-@@ -130,5 +137,22 @@ if ((is_linux || is_chromeos) && rtc_use_pipewire) {
+@@ -133,6 +140,22 @@ if ((is_linux || is_chromeos) && rtc_use_pipewire) {
  
        deps += [ ":pipewire_stubs" ]
      }
@@ -935,6 +935,11 @@ index 7fa6ae078e..19b3b3e209 100644
 +        "//third_party/libepoxy"
 +      ]
 +    }
+   }
+ 
+   if (rtc_include_tests && !build_with_chromium) {
+@@ -146,3 +169,4 @@ if ((is_linux || is_chromeos) && rtc_use_pipewire) {
+     }
    }
  }
 +

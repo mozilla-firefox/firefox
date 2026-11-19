@@ -10,7 +10,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/158a888cad8869a2f
  1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
-index 831ba77e01..2c90bd4127 100644
+index 3c4f66514a..57966a189c 100644
 --- a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
 +++ b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
 @@ -61,6 +61,13 @@

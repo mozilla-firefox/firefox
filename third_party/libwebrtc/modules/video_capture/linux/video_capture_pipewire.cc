@@ -452,6 +452,11 @@ void VideoCaptureModulePipeWire::ProcessBuffers() {
 
   while (pw_buffer* buffer = pw_stream_dequeue_buffer(stream_)) {
     spa_buffer* spaBuffer = buffer->buffer;
+    if (!PipeWireBufferHasFrameData(*spaBuffer)) {
+      RTC_LOG(LS_INFO) << "Dropping empty or corrupted frame data.";
+      pw_stream_queue_buffer(stream_, buffer);
+      continue;
+    }
     struct spa_meta_header* h;
     h = static_cast<struct spa_meta_header*>(
         spa_buffer_find_meta_data(spaBuffer, SPA_META_Header, sizeof(*h)));

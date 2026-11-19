@@ -362,6 +362,21 @@ TEST_F(MAYBE_PipeWireStreamTest, TestModifierFallback) {
   ASSERT_NE(frame, nullptr);
   EXPECT_EQ(RgbaColor(frame->data()), green_color);
 
+  // A DMA-BUF is imported from its plane descriptors, so a zero chunk size
+  // doesn't make it empty
+  Event zeroSizeFrameEvent;
+  EXPECT_CALL(*this, OnFrameRecorded);
+  EXPECT_CALL(*this, OnDesktopFrameChanged).WillOnce([&zeroSizeFrameEvent] {
+    zeroSizeFrameEvent.Set();
+  });
+
+  test_screencast_stream_provider_->RecordFrame(
+      green_color, TestScreenCastStreamProvider::EmptyData);
+  zeroSizeFrameEvent.Wait(kShortWait);
+
+  frame = shared_screencast_stream_->CaptureFrame();
+  ASSERT_NE(frame, nullptr);
+
   // Mark kTestSuccessModifier as failed, expect fallback to MemFd (no
   // modifier)
   Event waitRenegotiation3;

@@ -32,6 +32,7 @@ struct dma_buf_sync {
 #define DMA_BUF_IOCTL_SYNC _IOW(DMA_BUF_BASE, 0, struct dma_buf_sync)
 
 struct pw_thread_loop;
+struct spa_buffer;
 
 namespace webrtc {
 
@@ -76,6 +77,18 @@ class PipeWireInitializer {
   PipeWireInitializer(const PipeWireInitializer&) = delete;
   PipeWireInitializer& operator=(const PipeWireInitializer&) = delete;
 };
+
+// Returns whether the first data plane of `buffer` has a chunk that is not
+// flagged as corrupted. The chunk size is left to the caller: a zero-sized
+// chunk is empty when the data is read through a mapping, but not when a
+// DMA-BUF is imported from its plane descriptors.
+bool PipeWireBufferHasUncorruptedChunk(const spa_buffer& buffer);
+
+// Returns whether `buffer` has an uncorrupted first chunk with a nonzero size,
+// for callers that use the chunk size as the frame length whatever the memory
+// type. A nonempty chunk flagged SPA_CHUNK_FLAG_EMPTY can still hold valid
+// neutral image data.
+bool PipeWireBufferHasFrameData(const spa_buffer& buffer);
 
 // We should synchronize DMA Buffer object access from CPU to avoid potential
 // cache incoherency and data loss.
