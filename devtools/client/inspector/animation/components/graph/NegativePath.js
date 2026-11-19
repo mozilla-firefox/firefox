@@ -77,7 +77,7 @@ class NegativePath extends PureComponent {
 
     const toPathStringFunc = createSummaryGraphPathStringFunction(
       endTime,
-      state.playbackRate
+      state.absoluteValues.playbackRate
     );
     const helper = new SummaryGraphHelper(
       state,

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <style>
+    div {
+      background-color: lime;
+      height: 100px;
+    }
+    </style>
+  </head>
+  <body>
+    <div class="zero-playback-rate"></div>
+    <script>
+    "use strict";
+
+    const animation = document.querySelector(".zero-playback-rate").animate(
+      { backgroundColor: ["lime", "red"] },
+      100000
+    );
+    animation.updatePlaybackRate(0);
+    </script>
+  </body>
+</html>

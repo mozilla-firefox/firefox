@@ -60,7 +60,7 @@ class EffectTimingPath extends TimingPath {
 
     const toPathStringFunc = createSummaryGraphPathStringFunction(
       endTime,
-      state.playbackRate
+      state.absoluteValues.playbackRate
     );
     const helper = new SummaryGraphHelper(
       state,
