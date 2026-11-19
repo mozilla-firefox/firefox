@@ -38,6 +38,7 @@
 
 #include <cstring>
 #include <iostream>
+#include <numeric>
 
 #include "gmp-platform.h"
 #include "gmp-video-decode.h"
@@ -357,7 +358,7 @@ class FakeVideoDecoder : public GMPVideoDecoder {
     int ystride = eframe->idr_nalu.width_;
     // Round up so the data fits, or CreateEmptyFrame will fail on odd width and
     // height.
-    int uvstride = (ystride + (ystride % 2)) / 2;
+    int uvstride = std::midpoint(ystride, 0);
 
     GMPLOG(GL_DEBUG, "Video frame ready for display "
                          << width << "x" << height
