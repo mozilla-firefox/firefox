@@ -16,7 +16,6 @@
 #  include <windows.h>
 #else
 #  include <sys/mman.h>
-#  include <unistd.h>
 #endif
 
 #include "js/MemoryMetrics.h"
@@ -34,57 +33,48 @@
 #include "nsPrintfCString.h"
 #include "nsThreadUtils.h"
 #include "nsWindowSizes.h"
+#include "prsystem.h"
 
 using namespace mozilla;
 
-#if defined(XP_DARWIN) && defined(__aarch64__)
-static constexpr size_t kPageSize = 16384;
-#else
-static constexpr size_t kPageSize = 4096;
-#endif
 static constexpr size_t kSuperblockSize = 1024 * 1024;
-static constexpr size_t kPagesPerSuperblock = kSuperblockSize / kPageSize;
+// Each entry in the page-owner table covers 4 KiB on every platform.
+static constexpr size_t kPageMapGranularity = 4096;
 static constexpr size_t kMinSlotsPerSlab = 8;
 static constexpr size_t kAlignment = 8;
 static constexpr uint32_t kPurgeIntervalMs = 10000;
 
+static size_t ArenaPageSize() {
+  const size_t size = std::max(kPageMapGranularity, size_t(PR_GetPageSize()));
+  MOZ_ASSERT(std::has_single_bit(size) && size < kSuperblockSize);
+  return size;
+}
+
 // Memory layout
 //
-// Superblocks are kSuperblockSize-aligned allocations sized to multiples of the
-// page size. Their first page(s) hold a header that maps each page to the
-// metadata of the slab that owns it, so that Free() can find it by masking the
-// pointer. The remaining pages are handed out in order to new slabs, of one or
-// more pages each:
+// Each arena uses 1 MiB superblocks at 1 MiB boundaries. The first arena page
+// holds the canary and the page-owner table. Slabs occupy whole arena pages,
+// sized to the OS page size (at least 4 KiB). For example, with 16 KiB pages:
 //
-//   Superblock
-//   +--------+--------+-----------------+--------+-----+----------+
-//   | header | slab A |     slab B      | slab C | ... |  unused  |
-//   +--------+--------+-----------------+--------+-----+----------+
-//                ^             ^
-//                | mBase       | mBase
-//   SlabMetadata (type X)   SlabMetadata (type Y)
+//   offset (KiB)    0          16          32                      64
+//                   | header   | slab A    | slab B (two pages)    | unused ...
+//   mPageOwners     | [0..3]   | [4..7]    | [8..15]               |
+//                     unused     all -> A    all -> B
 //
-// Note that metadata is separately allocated, since we can't decommit it.
+// Free() masks the address to find its superblock. Dividing the byte offset
+// within the superblock by 4096 gives the mPageOwners index. Each entry for a
+// slab points to the same heap-allocated metadata, which survives decommit.
 //
-// A slab only ever holds objects of a single type, in fixed-size slots:
+// A slab holds fixed-size slots of one type. mBumped is the index of the next
+// unused slot. Below it, a set bit in mFreeBits marks a freed, poisoned slot:
 //
-//   slab A (type X)
-//   +--------+--------+--------+--------+------------------------+
-//   | slot 0 | slot 1 | slot 2 | slot 3 |          ...           |
-//   +--------+--------+--------+--------+------------------------+
-//     live     free     live     never handed out (>= mBumped)
-//              (poisoned, bit set in mFreeBits)
+//   slot index      0       1       2       3 = mBumped
+//                   | live  | free  | live  | unused ...
+//   mFreeBits         0       1       0       0
 //
-// A given address thus only ever holds an object of one type, poison, or
-// zeroes (from decommitting or fresh memory), which makes use-after-free bugs
-// much harder to exploit.
-//
-// Allocations are served from the lowest-index slab with free space, and from
-// the lowest free slot within it, so that objects allocated together are close
-// in memory regardless of what was freed before.
-//
-// Slabs that have been empty for a while are decommitted (see Purge), but are
-// never reassigned to another type.
+// Allocation picks the lowest-index slab with space, then its lowest free slot
+// or the next unused slot. Purge() can decommit an empty slab and reset its
+// bitmap and bump index. Its address range stays reserved for the same type.
 
 static size_t BitmapWords(size_t aBits) { return (aBits + 63) / 64; }
 
@@ -186,38 +176,22 @@ struct PresArenaSuperblock {
 
   // The slab that owns the page containing aPtr.
   SlabMetadata*& PageOwner(const void* aPtr) {
-    return mPageOwners[(uintptr_t(aPtr) - uintptr_t(mPages)) / kPageSize];
+    return mPageOwners[(uintptr_t(aPtr) - uintptr_t(this)) /
+                       kPageMapGranularity];
   }
 
   CorruptionCanary mCanary;
-  SlabMetadata* mPageOwners[kPagesPerSuperblock] = {};
-  // The rest of the allocation.
-  alignas(kPageSize) char mPages[0];
+  SlabMetadata* mPageOwners[kSuperblockSize / kPageMapGranularity] = {};
 };
 
 }  // namespace mozilla::detail
 
 using Superblock = mozilla::detail::PresArenaSuperblock;
 
-static_assert(offsetof(Superblock, mPages) == sizeof(Superblock));
-static constexpr size_t kHeaderPages = sizeof(Superblock) / kPageSize;
-static constexpr size_t kUsablePagesPerSuperblock =
-    kPagesPerSuperblock - kHeaderPages;
+static_assert(sizeof(Superblock) <= kPageMapGranularity);
 
 static SlabMetadata* SlabFor(const void* aPtr) {
   return Superblock::For(aPtr)->PageOwner(aPtr);
-}
-
-static bool CanDecommit() {
-#ifdef XP_WIN
-  return true;
-#else
-  static const bool sCanDecommit = [] {
-    long pageSize = sysconf(_SC_PAGESIZE);
-    return pageSize > 0 && kPageSize % size_t(pageSize) == 0;
-  }();
-  return sCanDecommit;
-#endif
 }
 
 static void DecommitPages(void* aPtr, size_t aSize) {
@@ -257,26 +231,25 @@ nsPresArena<ObjectId, ObjectIdCount>::~nsPresArena() {
 }
 
 template <typename ObjectId, size_t ObjectIdCount>
-char* nsPresArena<ObjectId, ObjectIdCount>::AllocatePages(size_t aCount) {
-  MOZ_RELEASE_ASSERT(aCount <= kUsablePagesPerSuperblock);
-  if (mSuperblocks.IsEmpty() ||
-      mNextPage + aCount > kUsablePagesPerSuperblock) {
+char* nsPresArena<ObjectId, ObjectIdCount>::AllocatePages(size_t aSize) {
+  if (mSuperblocks.IsEmpty() || mNextOffset + aSize > kSuperblockSize) {
     mSuperblocks.AppendElement(Superblock::Create());
-    mNextPage = 0;
+    mNextOffset = ArenaPageSize();
   }
-  char* result = mSuperblocks.LastElement()->mPages + mNextPage * kPageSize;
-  mNextPage += aCount;
+  char* result =
+      reinterpret_cast<char*>(mSuperblocks.LastElement()) + mNextOffset;
+  mNextOffset += aSize;
   return result;
 }
 
 template <typename ObjectId, size_t ObjectIdCount>
 void nsPresArena<ObjectId, ObjectIdCount>::InitHeap(TypeHeap& aHeap,
                                                     size_t aSize) {
-  size_t pages = std::max<size_t>(
-      1, (kMinSlotsPerSlab * aSize + kPageSize - 1) / kPageSize);
+  const size_t pageSize = ArenaPageSize();
+  MOZ_RELEASE_ASSERT(aSize <= (kSuperblockSize - pageSize) / kMinSlotsPerSlab);
   aHeap.mEntrySize = aSize;
-  aHeap.mPagesPerSlab = pages;
-  aHeap.mSlotsPerSlab = pages * kPageSize / aSize;
+  aHeap.mSlabSize = (kMinSlotsPerSlab * aSize + pageSize - 1) & ~(pageSize - 1);
+  aHeap.mSlotsPerSlab = aHeap.mSlabSize / aSize;
 }
 
 template <typename ObjectId, size_t ObjectIdCount>
@@ -290,10 +263,10 @@ auto nsPresArena<ObjectId, ObjectIdCount>::FindSlabWithSpace(TypeHeap& aHeap)
   }
 
   index = aHeap.mSlabs.Length();
-  SlabMetadata* slab = SlabMetadata::Create(AllocatePages(aHeap.mPagesPerSlab),
+  SlabMetadata* slab = SlabMetadata::Create(AllocatePages(aHeap.mSlabSize),
                                             index, aHeap.mSlotsPerSlab);
   std::fill_n(&Superblock::For(slab->mBase)->PageOwner(slab->mBase),
-              aHeap.mPagesPerSlab, slab);
+              aHeap.mSlabSize / kPageMapGranularity, slab);
   aHeap.mSlabs.AppendElement(slab);
   if (aHeap.mSlabsWithSpace.Length() < BitmapWords(index + 1)) {
     aHeap.mSlabsWithSpace.AppendElement(0);
@@ -322,7 +295,7 @@ void* nsPresArena<ObjectId, ObjectIdCount>::Allocate(ObjectId aCode,
 
   SlabMetadata* slab = FindSlabWithSpace(heap);
   if (slab->mDecommitted) {
-    RecommitPages(slab->mBase, heap.mPagesPerSlab * kPageSize);
+    RecommitPages(slab->mBase, heap.mSlabSize);
     slab->mDecommitted = false;
   } else if (slab->mLive == 0 && slab->mBumped) {
     MOZ_ASSERT(mEmptyCommittedSlabs);
@@ -445,16 +418,15 @@ void nsPresArena<ObjectId, ObjectIdCount>::Free(ObjectId aCode, void* aPtr) {
 template <typename ObjectId, size_t ObjectIdCount>
 bool nsPresArena<ObjectId, ObjectIdCount>::Purge(bool aAll) {
   MOZ_ASSERT(NS_IsMainThread());
-  if (mEmptyCommittedSlabs && CanDecommit()) {
+  if (mEmptyCommittedSlabs) {
     for (TypeHeap& heap : mHeaps) {
-      const size_t slabSize = heap.mPagesPerSlab * kPageSize;
       for (SlabMetadata* slab : heap.mSlabs) {
         if (slab->mLive || slab->mDecommitted || !slab->mBumped ||
             (!aAll && slab->mEmptyEpoch == mEpoch)) {
           continue;
         }
-        DecommitPages(slab->mBase, slabSize);
-        MOZ_MAKE_MEM_NOACCESS(slab->mBase, slabSize);
+        DecommitPages(slab->mBase, heap.mSlabSize);
+        MOZ_MAKE_MEM_NOACCESS(slab->mBase, heap.mSlabSize);
         slab->mDecommitted = true;
         slab->mBumped = 0;
         slab->ClearFreeBits();
@@ -463,7 +435,7 @@ bool nsPresArena<ObjectId, ObjectIdCount>::Purge(bool aAll) {
     }
   }
   mEpoch++;
-  return mEmptyCommittedSlabs && CanDecommit();
+  return mEmptyCommittedSlabs;
 }
 
 template <typename ObjectId, size_t ObjectIdCount>
@@ -475,7 +447,7 @@ void nsPresArena<ObjectId, ObjectIdCount>::AddSizeOfExcludingThis(
   // superblock pages are not reported.
   size_t overhead =
       mSuperblocks.ShallowSizeOfExcludingThis(aState.mMallocSizeOf);
-  overhead += mSuperblocks.Length() * kHeaderPages * kPageSize;
+  overhead += mSuperblocks.Length() * ArenaPageSize();
 
   for (const TypeHeap* heap = mHeaps; heap != std::end(mHeaps); ++heap) {
     overhead += heap->mSlabs.ShallowSizeOfExcludingThis(aState.mMallocSizeOf);
@@ -486,7 +458,7 @@ void nsPresArena<ObjectId, ObjectIdCount>::AddSizeOfExcludingThis(
     for (const SlabMetadata* slab : heap->mSlabs) {
       overhead += aState.mMallocSizeOf(slab);
       if (!slab->mDecommitted) {
-        totalSize += heap->mPagesPerSlab * kPageSize;
+        totalSize += heap->mSlabSize;
       }
     }
 
@@ -551,7 +523,7 @@ static void PurgeTimerCallback(nsITimer*, void*) {
 }
 
 static void SchedulePresArenaPurge() {
-  if (sPurgeTimerArmed || sPurgeShutdown || !CanDecommit()) {
+  if (sPurgeTimerArmed || sPurgeShutdown) {
     return;
   }
   if (!sPurgeTimer) {

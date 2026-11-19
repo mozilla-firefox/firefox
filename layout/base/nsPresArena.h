@@ -77,7 +77,7 @@ class nsPresArena {
     nsTArray<uint64_t> mSlabsWithSpace;
     uint32_t mEntrySize = 0;
     uint32_t mSlotsPerSlab = 0;
-    uint32_t mPagesPerSlab = 0;
+    uint32_t mSlabSize = 0;
     // No slab with a lower index than this has free space.
     uint32_t mFirstSlabWithSpace = 0;
 
@@ -86,12 +86,12 @@ class nsPresArena {
 
   void InitHeap(TypeHeap&, size_t aSize);
   SlabMetadata* FindSlabWithSpace(TypeHeap&);
-  char* AllocatePages(size_t aCount);
+  char* AllocatePages(size_t aSize);
 
   TypeHeap mHeaps[ObjectIdCount];
   nsTArray<Superblock*> mSuperblocks;
-  // Next unused page in the last superblock.
-  uint32_t mNextPage = 0;
+  // Byte offset of the next unused page in the last superblock.
+  uint32_t mNextOffset = 0;
   uint32_t mEpoch = 0;
   uint32_t mEmptyCommittedSlabs = 0;
 #ifdef DEBUG
