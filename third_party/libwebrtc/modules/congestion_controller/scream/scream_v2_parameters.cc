@@ -42,9 +42,10 @@ ScreamV2Parameters::ScreamV2Parameters(const FieldTrialsView* trials)
       backoff_scale_factor_close_to_ref_window_i(
           "BackoffScaleFactorCloseToRefWindowI",
           2.0),
+      // Set high in order to not back down ref_window_ on spurious CE.
       number_of_rtts_between_reset_ref_window_i_on_congestion(
           "NumberOfRttsBetweenResetRefWindowIOnCongestion",
-          100),
+          100000000),
       ref_window_i_update_max_hold_rtts("RefWindowIUpdateMaxHoldRtts", 50),
       ref_window_overhead_min("RefWinMin", 1.5),
       ref_window_overhead_max("RefWinMax", 3.0),
