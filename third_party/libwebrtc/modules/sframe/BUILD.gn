@@ -64,8 +64,10 @@ rtc_library("sframe_decrypt_error_reporter") {
   deps = [
     "../../api:sequence_checker",
     "../../api:sframe_decryptor_interface",
+    "../../rtc_base:checks",
     "../../rtc_base:macromagic",
     "../../rtc_base/system:no_unique_address",
+    "//third_party/abseil-cpp/absl/base:nullability",
   ]
 }
 

@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/functional/any_invocable.h"
 #include "api/crypto/frame_decryptor_interface.h"
 #include "api/frame_transformer_interface.h"
@@ -214,8 +215,9 @@ void RtpReceiverBase::OnFrameDelivered(const RtpPacketInfos& infos,
 RTCErrorOr<scoped_refptr<SframeDecryptorInterface>>
 RtpReceiverBase::CreateSframeDecryptorOrError(
     SframeCipherSuite cipher_suite,
-    SframeDecryptErrorCallback error_callback) {
+    absl_nonnull SframeDecryptErrorCallback error_callback) {
   RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
+  RTC_DCHECK(error_callback);
 
   if (stopped_) {
     return RTCError::InvalidState()

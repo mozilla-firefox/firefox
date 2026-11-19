@@ -1908,6 +1908,7 @@ rtc_library("rtp_receiver") {
     "../rtc_base:threading",
     "../rtc_base/system:no_unique_address",
     "../system_wrappers",
+    "//third_party/abseil-cpp/absl/base:nullability",
     "//third_party/abseil-cpp/absl/functional:any_invocable",
   ]
 }

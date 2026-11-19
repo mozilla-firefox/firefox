@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <optional>
 
+#include "absl/base/nullability.h"
 #include "api/sequence_checker.h"
 #include "api/sframe/sframe_decryptor_interface.h"
 #include "rtc_base/system/no_unique_address.h"
@@ -27,7 +28,7 @@ namespace webrtc {
 class SframeDecryptErrorReporter {
  public:
   explicit SframeDecryptErrorReporter(
-      SframeDecryptErrorCallback error_callback);
+      absl_nonnull SframeDecryptErrorCallback error_callback);
 
   // Reports a decryption failure. Consecutive identical failures are reported
   // only once until `ReportSuccess()` is called.

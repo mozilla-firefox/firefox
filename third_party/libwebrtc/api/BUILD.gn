@@ -578,6 +578,7 @@ rtc_library("rtp_receiver_interface") {
     "../rtc_base/system:rtc_export",
     "crypto:frame_decryptor_interface",
     "transport/rtp:rtp_source",
+    "//third_party/abseil-cpp/absl/base:nullability",
   ]
 }
 

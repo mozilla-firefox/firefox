@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/functional/any_invocable.h"
 #include "api/crypto/frame_decryptor_interface.h"
 #include "api/dtls_transport_interface.h"
@@ -135,9 +136,9 @@ class RtpReceiverInternal : public RtpReceiverInterface {
 class RtpReceiverBase : public RtpReceiverInternal {
  public:
   RTCErrorOr<scoped_refptr<SframeDecryptorInterface>>
-  CreateSframeDecryptorOrError(
-      SframeCipherSuite cipher_suite,
-      SframeDecryptErrorCallback error_callback) override;
+  CreateSframeDecryptorOrError(SframeCipherSuite cipher_suite,
+                               absl_nonnull SframeDecryptErrorCallback
+                                   error_callback) override;
 
   std::optional<uint32_t> ssrc() const override;
   std::optional<uint32_t> ssrc_s() const override;
