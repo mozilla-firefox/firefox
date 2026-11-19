@@ -4458,6 +4458,10 @@ nsFlexContainerFrame::GenerateFlexLayoutResult() {
     }
   }
 
+  NS_ASSERTION(iter.AtEnd(),
+               "Our first-in-flow's SharedFlexData should have a flex item "
+               "for each of our children!");
+
   flr.mContentBoxMainSize = data->mContentBoxMainSize;
   flr.mContentBoxCrossSize = data->mContentBoxCrossSize;
 
