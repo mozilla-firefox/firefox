@@ -10,7 +10,6 @@
 #include "XRNativeOriginViewer.h"
 #include "mozilla/dom/Gamepad.h"
 #include "mozilla/dom/GamepadManager.h"
-#include "mozilla/dom/GamepadPoseState.h"
 #include "mozilla/dom/XRInputSourceEvent.h"
 
 namespace mozilla::dom {
@@ -207,10 +206,10 @@ void XRInputSource::Setup(XRSession* aSession, uint32_t aIndex) {
 
   const GamepadHandle gamepadHandle{gamepadHandleValue, GamepadHandleKind::VR};
 
-  mGamepad =
-      new Gamepad(mParent, NS_ConvertASCIItoUTF16(""), -1, gamepadHandle,
-                  GamepadMappingType::Xr_standard, controllerState.numButtons,
-                  controllerState.numAxes, controllerState.numHaptics, 0, 0);
+  mGamepad = new Gamepad(mParent, NS_ConvertASCIItoUTF16(""), -1, gamepadHandle,
+                         GamepadMappingType::Xr_standard, controllerState.hand,
+                         controllerState.numButtons, controllerState.numAxes,
+                         controllerState.numHaptics, 0, 0);
   mIndex = aIndex;
 
   if (!mGripSpace) {

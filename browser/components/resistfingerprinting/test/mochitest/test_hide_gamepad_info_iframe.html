@@ -20,6 +20,7 @@ window.addEventListener("load", async () => {
   const buttonIndex = await service.addGamepad(
     "test gamepad", // id
     service.standardMapping,
+    service.noHand,
     4, // buttons
     2,
     0,

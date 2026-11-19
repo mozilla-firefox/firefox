@@ -42,7 +42,7 @@ void GamepadTestChannelParent::AddGamepadToPlatformService(
   nsCString gamepadID;
   LossyCopyUTF16toASCII(a.id(), gamepadID);
   GamepadHandle handle = service->AddGamepad(
-      gamepadID.get(), static_cast<GamepadMappingType>(a.mapping()),
+      gamepadID.get(), static_cast<GamepadMappingType>(a.mapping()), a.hand(),
       a.num_buttons(), a.num_axes(), a.num_haptics(), a.num_lights(),
       a.num_touches());
 
@@ -103,6 +103,11 @@ mozilla::ipc::IPCResult GamepadTestChannelParent::RecvGamepadTestEvent(
     case GamepadChangeEventBody::TGamepadAxisInformation: {
       const GamepadAxisInformation& a = body.get_GamepadAxisInformation();
       service->NewAxisMoveEvent(handle, a.axis(), a.value());
+      break;
+    }
+    case GamepadChangeEventBody::TGamepadPoseInformation: {
+      const GamepadPoseInformation& a = body.get_GamepadPoseInformation();
+      service->NewPoseEvent(handle, a.pose_state());
       break;
     }
     case GamepadChangeEventBody::TGamepadTouchInformation: {

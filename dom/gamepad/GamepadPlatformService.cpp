@@ -120,16 +120,16 @@ void GamepadPlatformService::NotifyGamepadChange(GamepadHandle aHandle,
 }
 
 GamepadHandle GamepadPlatformService::AddGamepad(
-    const char* aID, GamepadMappingType aMapping, uint32_t aNumButtons,
-    uint32_t aNumAxes, uint32_t aHaptics, uint32_t aNumLightIndicator,
-    uint32_t aNumTouchEvents) {
+    const char* aID, GamepadMappingType aMapping, GamepadHand aHand,
+    uint32_t aNumButtons, uint32_t aNumAxes, uint32_t aHaptics,
+    uint32_t aNumLightIndicator, uint32_t aNumTouchEvents) {
   // This method is called by monitor thread populated in
   // platform-dependent backends
   MOZ_ASSERT(XRE_IsParentProcess());
   MOZ_ASSERT(!NS_IsMainThread());
 
   GamepadAdded a(NS_ConvertUTF8toUTF16(nsDependentCString(aID)), aMapping,
-                 aNumButtons, aNumAxes, aHaptics, aNumLightIndicator,
+                 aHand, aNumButtons, aNumAxes, aHaptics, aNumLightIndicator,
                  aNumTouchEvents);
 
   GamepadHandle gamepadHandle;
@@ -220,6 +220,17 @@ void GamepadPlatformService::NewLightIndicatorTypeEvent(
   GamepadLightIndicatorTypeInformation a(aLight, aType);
   MutexAutoLock autoLock(mMutex);
   NotifyGamepadChange<GamepadLightIndicatorTypeInformation>(aHandle, a);
+}
+
+void GamepadPlatformService::NewPoseEvent(GamepadHandle aHandle,
+                                          const GamepadPoseState& aState) {
+  // This method is called by monitor thread populated in
+  // platform-dependent backends
+  MOZ_ASSERT(XRE_IsParentProcess());
+  MOZ_ASSERT(!NS_IsMainThread());
+  GamepadPoseInformation a(aState);
+  MutexAutoLock autoLock(mMutex);
+  NotifyGamepadChange<GamepadPoseInformation>(aHandle, a);
 }
 
 void GamepadPlatformService::NewMultiTouchEvent(
