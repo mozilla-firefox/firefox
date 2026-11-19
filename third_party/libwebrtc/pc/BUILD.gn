@@ -3893,6 +3893,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../test:run_loop",
       "../test:test_support",
       "../test:wait_until",
+      "//third_party/abseil-cpp/absl/functional:any_invocable",
       "//third_party/abseil-cpp/absl/strings:string_view",
     ]
   }

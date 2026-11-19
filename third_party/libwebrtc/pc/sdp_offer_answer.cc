@@ -3748,19 +3748,20 @@ RTCError SdpOfferAnswerHandler::UpdateSessionState(
     EnableSending();
   }
 
-  // Update the signaling state according to the specified state machine (see
-  // https://w3c.github.io/webrtc-pc/#rtcsignalingstate-enum).
+  // Determine the new signaling state according to the specified state machine
+  // (see https://w3c.github.io/webrtc-pc/#rtcsignalingstate-enum).
+  PeerConnectionInterface::SignalingState new_signaling_state;
   if (type == SdpType::kOffer) {
-    ChangeSignalingState(source == CS_LOCAL
-                             ? PeerConnectionInterface::kHaveLocalOffer
-                             : PeerConnectionInterface::kHaveRemoteOffer);
+    new_signaling_state = source == CS_LOCAL
+                              ? PeerConnectionInterface::kHaveLocalOffer
+                              : PeerConnectionInterface::kHaveRemoteOffer;
   } else if (type == SdpType::kPrAnswer) {
-    ChangeSignalingState(source == CS_LOCAL
-                             ? PeerConnectionInterface::kHaveLocalPrAnswer
-                             : PeerConnectionInterface::kHaveRemotePrAnswer);
+    new_signaling_state = source == CS_LOCAL
+                              ? PeerConnectionInterface::kHaveLocalPrAnswer
+                              : PeerConnectionInterface::kHaveRemotePrAnswer;
   } else {
     RTC_DCHECK(type == SdpType::kAnswer);
-    ChangeSignalingState(PeerConnectionInterface::kStable);
+    new_signaling_state = PeerConnectionInterface::kStable;
     if (ConfiguredForMedia()) {
       transceivers()->DiscardStableStates();
     }
@@ -3768,7 +3769,18 @@ RTCError SdpOfferAnswerHandler::UpdateSessionState(
 
   // Update internal objects according to the session description's media
   // descriptions.
-  return PushdownMediaDescription(type, source, bundle_groups_by_mid);
+  RTCError error = PushdownMediaDescription(type, source, bundle_groups_by_mid);
+
+  // Only update the signaling state (and notify the observer) once the media
+  // descriptions have been applied, so that an observer that inspects e.g.
+  // RtpSender::GetParameters() from within OnSignalingChange() sees the
+  // negotiated state, for audio and video alike. This matches
+  // https://w3c.github.io/webrtc-pc/#set-the-rtcsessiondescription, where
+  // "signalingstatechange" is fired after the description has been applied.
+  // Note that the state is changed even if applying the media descriptions
+  // failed, in which case the operation results in a session error.
+  ChangeSignalingState(new_signaling_state);
+  return error;
 }
 
 bool SdpOfferAnswerHandler::ShouldFireNegotiationNeededEvent(

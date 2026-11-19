@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/functional/any_invocable.h"
 #include "absl/strings/string_view.h"
 #include "api/audio_codecs/builtin_audio_decoder_factory.h"
 #include "api/audio_codecs/builtin_audio_encoder_factory.h"
@@ -154,6 +155,21 @@ class PeerConnectionRtpBaseTest : public ::testing::Test {
     RTCConfiguration modified_config = config;
     modified_config.sdp_semantics = sdp_semantics_;
     return CreatePeerConnectionInternal(modified_config, field_trials);
+  }
+
+  // Like CreatePeerConnection(), but uses the given `observer`, which allows
+  // tests to hook into the PeerConnectionObserver callbacks.
+  std::unique_ptr<PeerConnectionWrapper> CreatePeerConnectionWithObserver(
+      std::unique_ptr<MockPeerConnectionObserver> observer) {
+    RTCConfiguration config;
+    config.sdp_semantics = sdp_semantics_;
+    PeerConnectionDependencies pc_dependencies(observer.get());
+    auto result = pc_factory_->CreatePeerConnectionOrError(
+        config, std::move(pc_dependencies));
+    EXPECT_TRUE(result.ok());
+    observer->SetPeerConnectionInterface(result.value().get());
+    return std::make_unique<PeerConnectionWrapper>(
+        pc_factory_, result.MoveValue(), std::move(observer));
   }
 
  protected:
@@ -2164,6 +2180,52 @@ TEST_F(PeerConnectionRtpTestUnifiedPlan,
   ASSERT_GT(parameters2.codecs.size(), 0u);
   EXPECT_NE(parameters1.codecs[0].name, parameters2.codecs[0].name);
   EXPECT_EQ(parameters2, GetMediaChannelParameters(caller.get(), *sender));
+}
+
+// Observer that allows tests to run code from within OnSignalingChange(), i.e.
+// at the exact point where the application is told about the new state.
+class SignalingChangeHookObserver : public MockPeerConnectionObserver {
+ public:
+  void OnSignalingChange(
+      PeerConnectionInterface::SignalingState new_state) override {
+    MockPeerConnectionObserver::OnSignalingChange(new_state);
+    if (on_signaling_change) {
+      on_signaling_change(new_state);
+    }
+  }
+  absl::AnyInvocable<void(PeerConnectionInterface::SignalingState)>
+      on_signaling_change;
+};
+
+// OnSignalingChange() must fire after the description has been applied, so
+// that the negotiated send codecs are visible, for audio and video alike.
+TEST_F(PeerConnectionRtpTestUnifiedPlan,
+       SendCodecsAreAppliedBeforeOnSignalingChange) {
+  auto observer = std::make_unique<SignalingChangeHookObserver>();
+  SignalingChangeHookObserver* hook = observer.get();
+  auto caller = CreatePeerConnectionWithObserver(std::move(observer));
+  auto callee = CreatePeerConnection();
+  auto audio_sender = caller->AddAudioTrack("a");
+  auto video_sender = caller->AddVideoTrack("v");
+
+  // Snapshot the parameters as seen from within OnSignalingChange(stable).
+  std::optional<RtpParameters> audio_parameters;
+  std::optional<RtpParameters> video_parameters;
+  hook->on_signaling_change =
+      [&](PeerConnectionInterface::SignalingState state) {
+        if (state == PeerConnectionInterface::kStable) {
+          audio_parameters = audio_sender->GetParameters();
+          video_parameters = video_sender->GetParameters();
+        }
+      };
+  ASSERT_TRUE(caller->ExchangeOfferAnswerWith(callee.get()));
+  hook->on_signaling_change = nullptr;
+
+  // The negotiated send codecs must already have been applied.
+  ASSERT_TRUE(audio_parameters.has_value());
+  ASSERT_TRUE(video_parameters.has_value());
+  EXPECT_FALSE(audio_parameters->codecs.empty());
+  EXPECT_FALSE(video_parameters->codecs.empty());
 }
 
 TEST_F(PeerConnectionRtpTestUnifiedPlan,
