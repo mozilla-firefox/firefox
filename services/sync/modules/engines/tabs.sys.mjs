@@ -24,6 +24,8 @@ import {
 import { BridgedEngine } from "resource://services-sync/bridged_engine.sys.mjs";
 import { Weave } from "resource://services-sync/main.sys.mjs";
 
+const TABS_PUBLISHED_PREF = "tabs.publishedInMetaGlobal";
+
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
@@ -128,8 +130,27 @@ TabEngine.prototype = {
   },
 
   async _syncStartup() {
+    if (Weave.perDeviceEngineChoices) {
+      await this._maybePruneRemoteTabs();
+    }
     await super._syncStartup();
     await this.prepareTheBridge();
+  },
+
+  // A legacy client disabling tabs deletes the collection and our meta/global
+  // entry. Incremental syncs never see its record go, so refetch everything.
+  async _maybePruneRemoteTabs() {
+    let meta = await this.service.recordManager.get(this.metaURL);
+    let published = !!meta?.payload.engines?.[this.name];
+    if (!published && Svc.PrefBranch.getBoolPref(TABS_PUBLISHED_PREF, true)) {
+      this._log.info("Tabs left meta/global; refetching remote tabs");
+      let syncID = await this.getSyncID();
+      await this._bridge.reset();
+      if (syncID) {
+        await this.ensureCurrentSyncID(syncID);
+      }
+    }
+    Svc.PrefBranch.setBoolPref(TABS_PUBLISHED_PREF, published);
   },
 
   async initialize() {
