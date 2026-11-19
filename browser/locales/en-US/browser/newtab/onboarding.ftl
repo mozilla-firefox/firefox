@@ -718,7 +718,7 @@ hnt-card-pin-body = { PLATFORM() ->
 
 hnt-card-mobile-header = Get built-in protection on your phone
 hnt-card-mobile-body = Download { -brand-product-name } for mobile for extra privacy on the go.
-hnt-card-mobile-primary-button = Get { -brand-product-name } for mobile.
+hnt-card-mobile-primary-button2 = Get { -brand-product-name } for mobile
 
 hnt-card-wallpaper-header = Pick a fresh wallpaper
 hnt-card-wallpaper-body = Make this screen feel like home with a background you love.
