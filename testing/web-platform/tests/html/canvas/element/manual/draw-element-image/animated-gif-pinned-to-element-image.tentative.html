@@ -4,7 +4,6 @@
 <link rel="help" href="https://github.com/WICG/html-in-canvas">
 <script src="/resources/testharness.js"></script>
 <script src="/resources/testharnessreport.js"></script>
-<script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
 <style>
 #child {
   width: 300px;
@@ -28,7 +27,9 @@ let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 let child = document.getElementById("child");
 
-promise_test(() => waitForCanvasPaint(canvas).then(() => new Promise((resolve, reject) => {
+promise_test(() => new Promise((resolve, reject) => {
+  assert_implements('captureElementImage' in HTMLCanvasElement.prototype,
+                    'html-in-canvas is not supported');
   window.onload = () => {
     let colorEquals = (a, b) => {
       return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3];
@@ -70,6 +71,6 @@ promise_test(() => waitForCanvasPaint(canvas).then(() => new Promise((resolve, r
       }
     };
   }
-})));
+}));
 </script>
 </html>
