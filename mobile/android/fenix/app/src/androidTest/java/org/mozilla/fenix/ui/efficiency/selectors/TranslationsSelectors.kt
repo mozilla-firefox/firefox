@@ -16,7 +16,7 @@ object TranslationsSelectors : SelectorContainer {
     val TRANSLATIONS_OPTIONS_BUTTON =
         Selector(
             strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,
-            value = getStringResource(R.string.translation_option_bottom_sheet_title_heading),
+            value = getStringResource(R.string.translation_option_bottom_sheet_title_heading2),
             description = "Translations sheet options button",
             readiness = PageReadinessProfiles.IDENTITY_ANCHOR,
         )

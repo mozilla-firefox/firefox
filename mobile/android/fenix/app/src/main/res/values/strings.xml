@@ -3460,8 +3460,8 @@
 
 
     <!-- Translations options dialog -->
-    <!-- Title of the translation options dialog that allows a user to set their translation options for the site the user is currently on. -->
-    <string name="translation_option_bottom_sheet_title_heading">Translation options</string>
+    <!-- Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on. -->
+    <string name="translation_option_bottom_sheet_title_heading2">Translation preferences</string>
     <!-- Toggle switch label that allows a user to set the setting if they would like the browser to always offer or suggest translations when available. -->
     <string name="translation_option_bottom_sheet_always_translate">Always offer to translate</string>
     <!-- Toggle switch label that allows a user to set if they would like a given language to automatically translate or not. %1$s is the language name, for example, "Spanish". -->

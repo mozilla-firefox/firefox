@@ -306,7 +306,7 @@ object BrowserPageSelectors : SelectorContainer {
     val TRANSLATED_SHEET_TRANSLATION_OPTIONS_BUTTON =
         Selector(
             strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,
-            value = getStringResource(R.string.translation_option_bottom_sheet_title_heading),
+            value = getStringResource(R.string.translation_option_bottom_sheet_title_heading2),
             description = "Translated bottom sheet translation options button",
             groups = setOf(Group.NOT_TRANSLATED_PAGE_TRANSLATION_SHEET, Group.TRANSLATED_PAGE_TRANSLATION_SHEET),
         )

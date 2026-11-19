@@ -451,7 +451,7 @@ private fun TranslationsDialogHeader(
             Row(horizontalArrangement = Arrangement.End) {
                 IconButton(
                     onClick = { onSettingClicked() },
-                    contentDescription = stringResource(id = R.string.translation_option_bottom_sheet_title_heading),
+                    contentDescription = stringResource(id = R.string.translation_option_bottom_sheet_title_heading2),
                     modifier = Modifier.size(24.dp),
                 ) {
                     Icon(

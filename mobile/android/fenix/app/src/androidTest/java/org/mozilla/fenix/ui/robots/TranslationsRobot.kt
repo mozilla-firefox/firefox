@@ -74,7 +74,7 @@ class TranslationsRobot(private val composeTestRule: ComposeTestRule) {
     fun clickTranslationsOptionsButton() {
         Log.i(TAG, "clickTranslationsOptionsButton: Trying to click the translations option button.")
         composeTestRule
-            .onNodeWithContentDescription(getStringResource(R.string.translation_option_bottom_sheet_title_heading))
+            .onNodeWithContentDescription(getStringResource(R.string.translation_option_bottom_sheet_title_heading2))
             .performClick()
         Log.i(TAG, "clickTranslationsOptionsButton: Clicked the translations options button.")
     }

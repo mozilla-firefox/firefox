@@ -170,7 +170,7 @@ private fun TranslationOptionsDialogHeader(onBackClicked: () -> Unit) {
         Spacer(modifier = Modifier.width(32.dp))
 
         Text(
-            text = stringResource(id = R.string.translation_option_bottom_sheet_title_heading),
+            text = stringResource(id = R.string.translation_option_bottom_sheet_title_heading2),
             modifier = Modifier.weight(1f).semantics { heading() },
             style = FirefoxTheme.typography.headline7,
         )
