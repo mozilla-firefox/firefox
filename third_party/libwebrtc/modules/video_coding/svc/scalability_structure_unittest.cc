@@ -485,6 +485,7 @@ TEST_P(ScalabilityStructureTest, ProduceNoFrameForDisabledLayers) {
 // and then remove once all are supported.
 bool SupportsOnFrameDropped(ScalabilityMode mode) {
   switch (mode) {
+    case ScalabilityMode::kL1T1:
     case ScalabilityMode::kL1T2:
     case ScalabilityMode::kL1T3:
     case ScalabilityMode::kL2T1:

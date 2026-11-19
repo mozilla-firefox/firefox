@@ -1064,6 +1064,7 @@ if (rtc_include_tests) {
       "svc:scalability_structure_key_svc_unittest",
       "svc:scalability_structure_l2t2_key_shift_unittest",
       "svc:scalability_structure_unittest",
+      "svc:scalable_video_controller_no_layering_unittest",
       "svc:simulcast_to_svc_converter_unittest",
       "svc:svc_rate_allocator_unittest",
       "timing:decode_time_percentile_filter_unittest",
