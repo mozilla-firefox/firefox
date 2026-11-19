@@ -1,0 +1,47 @@
+From: Ryan VanderMeulen <rvandermeulen@mozilla.com>
+Date: Mon, 9 Nov 2026 14:55:00 +0000
+Subject: Bug 1914741 - Suppress the this-escape and serial javac lints in
+ libwebrtc's Android Java. r=webrtc-reviewers,ahochheiden,mjf
+
+GeckoView compiles these sources in the same javac invocation as its own Java, so they get its -Werror, which
+javac can't turn off for individual source paths. Later commits turn on both lints.
+
+Differential Revision: https://phabricator.services.mozilla.com/D340812
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/6d213db7dd1bd51a0d77d53e4c97a003ebe60bfb
+---
+ sdk/android/api/org/webrtc/GlUtil.java              | 1 +
+ sdk/android/api/org/webrtc/SurfaceViewRenderer.java | 2 ++
+ 2 files changed, 3 insertions(+)
+
+diff --git a/sdk/android/api/org/webrtc/GlUtil.java b/sdk/android/api/org/webrtc/GlUtil.java
+index e2dd0c56d6..ce81ba03dd 100644
+--- a/sdk/android/api/org/webrtc/GlUtil.java
++++ b/sdk/android/api/org/webrtc/GlUtil.java
+@@ -22,6 +22,7 @@ import java.nio.FloatBuffer;
+ public class GlUtil {
+   private GlUtil() {}
+ 
++  @SuppressWarnings("serial")
+   public static class GlOutOfMemoryException extends GLException {
+     public GlOutOfMemoryException(int error, String msg) {
+       super(error, msg);
+diff --git a/sdk/android/api/org/webrtc/SurfaceViewRenderer.java b/sdk/android/api/org/webrtc/SurfaceViewRenderer.java
+index 6c9140abbd..bf312e6166 100644
+--- a/sdk/android/api/org/webrtc/SurfaceViewRenderer.java
++++ b/sdk/android/api/org/webrtc/SurfaceViewRenderer.java
+@@ -44,6 +44,7 @@ public class SurfaceViewRenderer extends SurfaceView
+   /**
+    * Standard View constructor. In order to render something, you must first call init().
+    */
++  @SuppressWarnings("this-escape")
+   public SurfaceViewRenderer(Context context) {
+     super(context);
+     this.resourceName = getResourceName();
+@@ -55,6 +56,7 @@ public class SurfaceViewRenderer extends SurfaceView
+   /**
+    * Standard View constructor. In order to render something, you must first call init().
+    */
++  @SuppressWarnings("this-escape")
+   public SurfaceViewRenderer(Context context, AttributeSet attrs) {
+     super(context, attrs);
+     this.resourceName = getResourceName();
