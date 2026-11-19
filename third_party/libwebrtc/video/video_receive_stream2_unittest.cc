@@ -187,13 +187,6 @@ Timestamp ReceiveTimeForFrame(int id) {
 
 }  // namespace
 
-class DummySinkValidator : public RtpSinkValidator {
- public:
-  void OnSinkAdded(RtpPacketSinkInterface* sink) override {}
-  void OnSinkRemoved(RtpPacketSinkInterface* sink) override {}
-  bool IsValidSink(RtpPacketSinkInterface* sink) const override { return true; }
-};
-
 class VideoReceiveStream2Test : public ::testing::TestWithParam<bool> {
  public:
   auto DefaultDecodeAction() {
@@ -211,8 +204,7 @@ class VideoReceiveStream2Test : public ::testing::TestWithParam<bool> {
         call_stats_(&env_.clock(), time_controller_.GetMainThread()),
         fake_renderer_(&time_controller_),
         fake_call_(env_),
-        rtp_stream_receiver_controller_(time_controller_.GetMainThread(),
-                                        &dummy_validator_),
+        rtp_stream_receiver_controller_(time_controller_.GetMainThread()),
         fake_metronome_(TimeDelta::Millis(16)),
         decode_sync_(&env_.clock(),
                      &fake_metronome_,
@@ -313,7 +305,6 @@ class VideoReceiveStream2Test : public ::testing::TestWithParam<bool> {
   MockTransport mock_transport_;
   test::RtcpPacketParser rtcp_packet_parser_;
   PacketRouter packet_router_;
-  DummySinkValidator dummy_validator_;
   RtpStreamReceiverController rtp_stream_receiver_controller_;
   std::unique_ptr<internal::VideoReceiveStream2> video_receive_stream_;
   VCMTiming* timing_;

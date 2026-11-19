@@ -30,7 +30,6 @@
 #include "audio/mock_voe_channel_proxy.h"
 #include "call/audio_receive_stream.h"
 #include "call/audio_state.h"
-#include "call/rtp_packet_sink_interface.h"
 #include "call/rtp_stream_receiver_controller.h"
 #include "modules/audio_coding/include/audio_coding_module_typedefs.h"
 #include "modules/audio_device/include/mock_audio_device.h"
@@ -118,13 +117,6 @@ const NetworkStatistics kNetworkStats = {.currentBufferSize = 123,
                                          .totalInterruptionDurationMs = -1};
 const AudioDecodingCallStats kAudioDecodeStats = MakeAudioDecodeStatsForTest();
 
-class DummySinkValidator : public RtpSinkValidator {
- public:
-  void OnSinkAdded(RtpPacketSinkInterface* sink) override {}
-  void OnSinkRemoved(RtpPacketSinkInterface* sink) override {}
-  bool IsValidSink(RtpPacketSinkInterface* sink) const override { return true; }
-};
-
 struct ConfigHelper {
   ConfigHelper(TaskQueueBase* network_thread, bool use_null_audio_processing)
       : ConfigHelper(network_thread,
@@ -135,7 +127,7 @@ struct ConfigHelper {
                scoped_refptr<MockAudioMixer> audio_mixer,
                bool use_null_audio_processing)
       : audio_mixer_(audio_mixer),
-        rtp_stream_receiver_controller_(network_thread, &dummy_validator_) {
+        rtp_stream_receiver_controller_(network_thread) {
     AudioState::Config config;
     config.audio_mixer = audio_mixer_;
     config.audio_processing =
@@ -201,7 +193,6 @@ struct ConfigHelper {
   scoped_refptr<MockAudioMixer> audio_mixer_;
   AudioReceiveStreamInterface::Config stream_config_;
   ::testing::StrictMock<MockChannelReceive>* channel_receive_ = nullptr;
-  DummySinkValidator dummy_validator_;
   RtpStreamReceiverController rtp_stream_receiver_controller_;
   MockTransport rtcp_send_transport_;
 };

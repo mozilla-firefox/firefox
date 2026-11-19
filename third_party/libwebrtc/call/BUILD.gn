@@ -157,11 +157,9 @@ rtc_library("rtp_receiver") {
   ]
   deps = [
     ":rtp_interfaces",
-    "../api:scoped_refptr",
     "../api:sequence_checker",
     "../api/environment",
     "../api/task_queue",
-    "../api/task_queue:pending_task_safety_flag",
     "../logging:rtc_event_rtp_rtcp",
     "../modules/rtp_rtcp",
     "../modules/rtp_rtcp:rtp_rtcp_format",

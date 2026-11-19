@@ -77,7 +77,6 @@
 #include "modules/video_coding/fec_controller_default.h"
 #include "modules/video_coding/nack_requester.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/containers/flat_set.h"
 #include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/cpu_info.h"
 #include "rtc_base/logging.h"
@@ -200,31 +199,6 @@ class ResourceVideoSendStreamForwarder {
   BroadcastResourceListener broadcast_resource_listener_;
   std::map<VideoSendStream*, scoped_refptr<webrtc::Resource>>
       adapter_resources_;
-};
-
-// Tracks the currently registered receiver sinks (AudioReceiveStreamImpl,
-// VideoReceiveStream2, FlexfecReceiveStreamImpl). Receiver controllers consult
-// it before delivering an incoming RTP packet to a sink resolved by the
-// demuxer.
-class ReceiveSinkRegistry : public RtpSinkValidator {
- public:
-  ReceiveSinkRegistry() = default;
-  ~ReceiveSinkRegistry() override = default;
-
-  void OnSinkAdded(RtpPacketSinkInterface* sink) override {
-    registered_sinks_.insert(sink);
-  }
-  void OnSinkRemoved(RtpPacketSinkInterface* sink) override {
-    registered_sinks_.erase(sink);
-  }
-  bool IsValidSink(RtpPacketSinkInterface* sink) const override {
-    return sink != nullptr && registered_sinks_.contains(sink);
-  }
-
-  bool IsEmpty() const { return registered_sinks_.empty(); }
-
- private:
-  flat_set<RtpPacketSinkInterface*> registered_sinks_;
 };
 
 class Call final : public webrtc::Call,
@@ -389,7 +363,6 @@ class Call final : public webrtc::Call,
   const Environment env_;
   TaskQueueBase* const network_thread_;
   const ScopedTaskSafety task_safety_;
-  ReceiveSinkRegistry receive_sink_registry_ RTC_GUARDED_BY(network_thread_);
   const std::unique_ptr<DecodeSynchronizer> decode_sync_;
 
   const int num_cpu_cores_;
@@ -412,10 +385,8 @@ class Call final : public webrtc::Call,
       RTC_GUARDED_BY(network_thread_);
   // TODO(bugs.webrtc.org/7135, bugs.webrtc.org/9719): Should eventually be
   // injected at creation, with a single object in the bundled case.
-  RtpStreamReceiverController audio_receiver_controller_{
-      network_thread_, &receive_sink_registry_};
-  RtpStreamReceiverController video_receiver_controller_{
-      network_thread_, &receive_sink_registry_};
+  RtpStreamReceiverController audio_receiver_controller_{network_thread_};
+  RtpStreamReceiverController video_receiver_controller_{network_thread_};
 
   // Audio and Video send streams are owned by the client that creates them.
   std::map<uint32_t, AudioSendStream*> audio_send_ssrcs_
@@ -685,7 +656,8 @@ Call::~Call() {
   RTC_CHECK(video_send_streams_.empty());
   RTC_CHECK(audio_receive_streams_.empty());
   RTC_CHECK(video_receive_streams_.empty());
-  RTC_CHECK(receive_sink_registry_.IsEmpty());
+  RTC_CHECK(audio_receiver_controller_.IsEmpty());
+  RTC_CHECK(video_receiver_controller_.IsEmpty());
 
   if (is_started_) {
     receive_side_cc_periodic_task_.Stop();
@@ -1323,7 +1295,7 @@ void Call::DeliverRtpPacket(MediaType media_type,
   RTC_HISTOGRAM_COUNTS_100000("WebRTC.TimeFromNetworkToDeliverRtpPacketUs",
                               nw_to_deliver_delay.us());
 
-  if (receive_sink_registry_.IsValidSink(sink)) {
+  if (sink != nullptr) {
     sink->OnRtpPacket(packet);
     return;
   }
@@ -1334,7 +1306,7 @@ void Call::DeliverRtpPacket(MediaType media_type,
   }
 
   RtpPacketSinkInterface* retry_sink = receiver_controller.ResolveSink(packet);
-  if (receive_sink_registry_.IsValidSink(retry_sink)) {
+  if (retry_sink != nullptr) {
     retry_sink->OnRtpPacket(packet);
     return;
   }

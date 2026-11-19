@@ -12,7 +12,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <set>
 
 #include "call/rtp_packet_sink_interface.h"
 #include "call/rtp_stream_receiver_controller_interface.h"
@@ -35,28 +34,9 @@ class FakeRtpPacketSink : public RtpPacketSinkInterface {
   int packets_ = 0;
 };
 
-class TestRtpSinkValidator : public RtpSinkValidator {
- public:
-  void OnSinkAdded(RtpPacketSinkInterface* sink) override {
-    registered_sinks_.insert(sink);
-  }
-  void OnSinkRemoved(RtpPacketSinkInterface* sink) override {
-    registered_sinks_.erase(sink);
-  }
-  bool IsValidSink(RtpPacketSinkInterface* sink) const override {
-    return registered_sinks_.count(sink) > 0;
-  }
-
-  bool IsEmpty() const { return registered_sinks_.empty(); }
-
- private:
-  std::set<RtpPacketSinkInterface*> registered_sinks_;
-};
-
 TEST(RtpStreamReceiverControllerTest, DeliversPacketsToRegisteredSink) {
   test::RunLoop loop;
-  TestRtpSinkValidator validator;
-  RtpStreamReceiverController controller(loop.task_queue(), &validator);
+  RtpStreamReceiverController controller(loop.task_queue());
 
   FakeRtpPacketSink sink;
   std::unique_ptr<RtpStreamReceiverInterface> receiver =
@@ -64,28 +44,24 @@ TEST(RtpStreamReceiverControllerTest, DeliversPacketsToRegisteredSink) {
 
   RtpPacketReceived packet;
   packet.SetSsrc(kSsrc);
-  EXPECT_TRUE(validator.IsValidSink(controller.ResolveSink(packet)));
+  EXPECT_EQ(controller.ResolveSink(packet), &sink);
   EXPECT_TRUE(controller.OnRtpPacket(packet));
   EXPECT_EQ(sink.packets(), 1);
 }
 
 TEST(RtpStreamReceiverControllerTest, StopsDeliveringWhenReceiverIsDestroyed) {
   test::RunLoop loop;
-  TestRtpSinkValidator validator;
-  RtpStreamReceiverController controller(loop.task_queue(), &validator);
+  RtpStreamReceiverController controller(loop.task_queue());
 
   FakeRtpPacketSink sink;
   std::unique_ptr<RtpStreamReceiverInterface> receiver =
       controller.CreateReceiver(kSsrc, &sink);
   EXPECT_FALSE(controller.IsEmpty());
-  EXPECT_FALSE(validator.IsEmpty());
 
-  // Destroying the receiver unregisters the sink from both the demuxer and the
-  // validator before returning, so a packet that arrives afterwards can no
-  // longer resolve to it.
+  // Destroying the receiver unregisters the sink synchronously, so a packet
+  // that arrives afterwards can no longer resolve to it.
   receiver.reset();
   EXPECT_TRUE(controller.IsEmpty());
-  EXPECT_TRUE(validator.IsEmpty());
 
   RtpPacketReceived packet;
   packet.SetSsrc(kSsrc);

@@ -81,19 +81,11 @@ TEST(FlexfecReceiveStreamConfigTest, IsCompleteAndEnabled) {
   EXPECT_FALSE(config.IsCompleteAndEnabled());
 }
 
-class DummySinkValidator : public RtpSinkValidator {
- public:
-  void OnSinkAdded(RtpPacketSinkInterface* sink) override {}
-  void OnSinkRemoved(RtpPacketSinkInterface* sink) override {}
-  bool IsValidSink(RtpPacketSinkInterface* sink) const override { return true; }
-};
-
 class FlexfecReceiveStreamTest : public ::testing::Test {
  protected:
   FlexfecReceiveStreamTest()
       : config_(CreateDefaultConfig(&rtcp_send_transport_)),
-        rtp_stream_receiver_controller_(main_thread_.task_queue(),
-                                        &dummy_validator_) {
+        rtp_stream_receiver_controller_(main_thread_.task_queue()) {
     receive_stream_ = std::make_unique<FlexfecReceiveStreamImpl>(
         CreateTestEnvironment({.event_log = &log_}), config_,
         &recovered_packet_receiver_,
@@ -106,7 +98,6 @@ class FlexfecReceiveStreamTest : public ::testing::Test {
   }
 
   test::RunLoop main_thread_;
-  DummySinkValidator dummy_validator_;
   MockTransport rtcp_send_transport_;
   MockRtcEventLog log_;
   FlexfecReceiveStream::Config config_;
