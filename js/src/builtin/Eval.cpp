@@ -135,8 +135,6 @@ static EvalJSONResult TryEvalJSON(JSContext* cx, JSLinearString* str,
              : ParseEvalStringAsJSON(cx, linearChars.twoByteRange(), rval);
 }
 
-enum EvalType { DIRECT_EVAL, INDIRECT_EVAL };
-
 // 18.2.1.1 PerformEval
 //
 // Common code implementing direct and indirect eval.
@@ -150,9 +148,9 @@ enum EvalType { DIRECT_EVAL, INDIRECT_EVAL };
 static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
                        AbstractFramePtr caller, HandleObject env,
                        jsbytecode* pc, MutableHandleValue vp) {
-  MOZ_ASSERT((evalType == INDIRECT_EVAL) == !caller);
-  MOZ_ASSERT((evalType == INDIRECT_EVAL) == !pc);
-  MOZ_ASSERT_IF(evalType == INDIRECT_EVAL,
+  MOZ_ASSERT((evalType == EvalType::Indirect) == !caller);
+  MOZ_ASSERT((evalType == EvalType::Indirect) == !pc);
+  MOZ_ASSERT_IF(evalType == EvalType::Indirect,
                 env->is<GlobalLexicalEnvironmentObject>());
   AssertInnerizedEnvironmentChain(cx, *env);
 
@@ -181,8 +179,8 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
   if (!canCompileStrings &&
       !cx->isRuntimeCodeGenEnabled(
           JS::RuntimeCode::JS, str,
-          evalType == DIRECT_EVAL ? JS::CompilationType::DirectEval
-                                  : JS::CompilationType::IndirectEval,
+          evalType == EvalType::Direct ? JS::CompilationType::DirectEval
+                                       : JS::CompilationType::IndirectEval,
           parameterStrings, str, parameterArgs, v, &canCompileStrings)) {
     return false;
   }
@@ -198,7 +196,7 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
   // way so that the compiler can make assumptions about what bindings may or
   // may not exist in the current frame if it doesn't see 'eval'.)
   MOZ_ASSERT_IF(
-      evalType != DIRECT_EVAL,
+      evalType != EvalType::Direct,
       cx->global() == &env->as<GlobalLexicalEnvironmentObject>().global());
 
   Rooted<JSLinearString*> linearStr(cx, str->ensureLinear(cx));
@@ -213,7 +211,7 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
   }
 
   bool directEvalInFunctionFrame =
-      evalType == DIRECT_EVAL && caller.isFunctionFrame();
+      evalType == EvalType::Direct && caller.isFunctionFrame();
   RootedScript evalScript(cx);
   if (directEvalInFunctionFrame) {
     EvalCacheLookup key(linearStr, callerScript, pc);
@@ -228,7 +226,7 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
     const char* filename;
     bool mutedErrors;
     uint32_t pcOffset;
-    if (evalType == DIRECT_EVAL) {
+    if (evalType == EvalType::Direct) {
       DescribeScriptedCallerForDirectEval(cx, callerScript, pc, &filename,
                                           &lineno, &pcOffset, &mutedErrors);
       maybeScript = callerScript;
@@ -243,7 +241,7 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
     }
 
     Rooted<Scope*> enclosing(cx);
-    if (evalType == DIRECT_EVAL) {
+    if (evalType == EvalType::Direct) {
       enclosing = callerScript->innermostScope(pc);
     } else {
       enclosing = &cx->global()->emptyGlobalScope();
@@ -256,7 +254,7 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
 
     RootedScript introScript(cx);
 
-    if (evalType == DIRECT_EVAL && IsStrictEvalPC(pc)) {
+    if (evalType == EvalType::Direct && IsStrictEvalPC(pc)) {
       options.setForceStrictMode();
     }
 
@@ -319,7 +317,7 @@ bool js::IndirectEval(JSContext* cx, unsigned argc, Value* vp) {
 
   // Note we'll just pass |undefined| here, then return it directly (or throw
   // if runtime codegen is disabled), if no argument is provided.
-  return EvalKernel(cx, args.get(0), INDIRECT_EVAL, NullFramePtr(),
+  return EvalKernel(cx, args.get(0), EvalType::Indirect, NullFramePtr(),
                     globalLexical, nullptr, args.rval());
 }
 
@@ -335,7 +333,7 @@ bool js::DirectEval(JSContext* cx, HandleValue v, MutableHandleValue vp) {
   MOZ_ASSERT(caller.realm() == caller.script()->realm());
 
   RootedObject envChain(cx, caller.environmentChain());
-  return EvalKernel(cx, v, DIRECT_EVAL, caller, envChain, iter.pc(), vp);
+  return EvalKernel(cx, v, EvalType::Direct, caller, envChain, iter.pc(), vp);
 }
 
 bool js::IsAnyBuiltinEval(JSFunction* fun) {

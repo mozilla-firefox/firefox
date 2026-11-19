@@ -23,6 +23,8 @@
 
 namespace js {
 
+enum class EvalType : uint8_t { Direct, Indirect };
+
 struct EvalCacheEntry {
   JSLinearString* str;
   JSScript* script;
