@@ -1737,11 +1737,16 @@ TEST_F(PeerConnectionIntegrationTestUnifiedPlan,
   std::vector<scoped_refptr<RtpReceiverInterface>> receivers =
       callee()->pc()->GetReceivers();
   ASSERT_THAT(receivers, SizeIs(2));
+  // Wait for all receivers before calling NewGetStats(), since
+  // RTCStatsCollector caches the full report for 50 ms.
   for (const auto& receiver : receivers) {
     SCOPED_TRACE(receiver->track()->kind());
     // Frames are only reported by GetSources() once the receiver has been
     // bound to the SSRC of the unsignaled stream.
     ASSERT_TRUE(WaitUntil([&] { return !receiver->GetSources().empty(); }));
+  }
+  for (const auto& receiver : receivers) {
+    SCOPED_TRACE(receiver->track()->kind());
     scoped_refptr<const RTCStatsReport> report =
         callee()->NewGetStats(receiver, run_loop());
     ASSERT_NE(report, nullptr);
@@ -1802,6 +1807,8 @@ TEST_F(PeerConnectionIntegrationTestUnifiedPlan,
   ASSERT_TRUE(WaitUntil([&] { return observer->called(); }));
   ASSERT_THAT(observer->error(), IsRtcOk());
 
+  // Wait for all receivers before calling NewGetStats(), since
+  // RTCStatsCollector caches the full report for 50 ms.
   for (const auto& receiver : receivers) {
     SCOPED_TRACE(receiver->track()->kind());
     const uint32_t new_ssrc = receiver->media_type() == MediaType::AUDIO
@@ -1816,6 +1823,12 @@ TEST_F(PeerConnectionIntegrationTestUnifiedPlan,
                    source.source_id() == new_ssrc;
           });
     }));
+  }
+  for (const auto& receiver : receivers) {
+    SCOPED_TRACE(receiver->track()->kind());
+    const uint32_t new_ssrc = receiver->media_type() == MediaType::AUDIO
+                                  ? kNewAudioSsrc
+                                  : kNewVideoSsrc;
     scoped_refptr<const RTCStatsReport> report =
         callee()->NewGetStats(receiver, run_loop());
     ASSERT_NE(report, nullptr);
