@@ -21,7 +21,10 @@ from mozsystemmonitor.resourcemonitor import SystemResourceMonitor
 import mozharness
 from mozharness.base.errors import PythonErrorList
 from mozharness.base.log import CRITICAL, DEBUG, ERROR, INFO, OutputParser
-from mozharness.base.python import perfherder_schema_path
+from mozharness.base.python import (
+    perf_expected_changes_path,
+    perfherder_schema_path,
+)
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.automation import (
     EXIT_STATUS_DICT,
@@ -1455,6 +1458,7 @@ class Raptor(TestingMixin, MercurialScript, CodeCoverageMixin, AndroidMixin):
         env["SCRIPTSPATH"] = scripts_path
         env["EXTERNALTOOLSPATH"] = external_tools_path
         env["PERFHERDER_SCHEMA_PATH"] = perfherder_schema_path()
+        env["PERF_EXPECTED_CHANGES_PATH"] = perf_expected_changes_path()
 
         # xpcshell may come from local build, or fetched from build artifacts in
         # the case of CI.

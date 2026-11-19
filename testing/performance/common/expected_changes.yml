@@ -19,4 +19,4 @@
 #   application: firefox
 #   # The entry is ignored for revisions pushed after this date. Remove it once
 #   # it has expired.
-#   expires: 2026-11-01
+#   expires: 2099-11-01
