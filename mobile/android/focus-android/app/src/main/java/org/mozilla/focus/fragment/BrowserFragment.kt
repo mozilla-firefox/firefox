@@ -97,7 +97,9 @@ import org.mozilla.focus.menu.BrowserMenuCallbacks
 import org.mozilla.focus.open.OpenWithFragment
 import org.mozilla.focus.session.ui.TabsPopup
 import org.mozilla.focus.settings.permissions.permissionoptions.SitePermissionOptionsStorage
+import org.mozilla.focus.settings.privacy.CertificateDetailsPanel
 import org.mozilla.focus.settings.privacy.ConnectionDetailsPanel
+import org.mozilla.focus.settings.privacy.QwacStatusRequest
 import org.mozilla.focus.settings.privacy.SiteSecurityInfo
 import org.mozilla.focus.settings.privacy.TrackingProtectionPanel
 import org.mozilla.focus.settings.privacy.TrackingProtectionPanelInteractor
@@ -135,6 +137,7 @@ class BrowserFragment : BaseFragment(), UserInteractionHandler, AccessibilityMan
     private val toolbarIntegration = ViewBoundFeatureWrapper<BrowserToolbarIntegration>()
 
     private var trackingProtectionPanel: TrackingProtectionPanel? = null
+    private var qwacStatusRequest: QwacStatusRequest? = null
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<Array<String>>
     private lateinit var downloadFileUtils: DownloadFileUtils
     private var tabsPopup: TabsPopup? = null
@@ -1032,6 +1035,7 @@ class BrowserFragment : BaseFragment(), UserInteractionHandler, AccessibilityMan
                             isTrackingProtectionOn = tab.trackingProtection.ignoredOnTrackingProtection.not(),
                             isConnectionSecure = tab.content.securityInfo.isSecure,
                             blockedTrackersCount = requireContext().settings.getTotalBlockedTrackersCount(),
+                            showCertificateDetailsLink = showCertificateDetailsLink(),
                         ),
                     interactor =
                         object : TrackingProtectionPanelInteractor {
@@ -1052,22 +1056,50 @@ class BrowserFragment : BaseFragment(), UserInteractionHandler, AccessibilityMan
                         },
                 )
                 .also { currentEtp -> context?.let { currentEtp.show() } }
+
+        // Only secure pages with a certificate can present a QWAC.
+        val panel = trackingProtectionPanel
+        qwacStatusRequest =
+            if (showCertificateDetailsLink()) {
+                QwacStatusRequest(tab.engineState.engineSession).also { request ->
+                    request.observe { qwac -> panel?.updateQwacStatus(isQwac = qwac != null) }
+                }
+            } else {
+                null
+            }
     }
 
     private fun reloadCurrentTab() {
         requireComponents.sessionUseCases.reload(tab.id)
     }
 
+    /**
+     * Whether the certificate details are opened from a "Secure connection" link in the tracking protection panel
+     * header. Until the behaviour for pages without a certificate is decided, this is only the case for secure pages
+     * with a certificate.
+     */
+    private fun showCertificateDetailsLink(): Boolean =
+        tab.content.securityInfo.isSecure && tab.content.securityInfo.certificate != null
+
     private fun showConnectionInfo() {
         val connectionInfoPanel =
-            ConnectionDetailsPanel(
-                context = requireContext(),
-                engineSession = tab.engineState.engineSession,
-                tabTitle = tab.content.title,
-                tabUrl = tab.content.url,
-                isConnectionSecure = tab.content.securityInfo.isSecure,
-                goBack = { trackingProtectionPanel?.show() },
-            )
+            if (showCertificateDetailsLink()) {
+                CertificateDetailsPanel(
+                    context = requireContext(),
+                    qwacStatusRequest = qwacStatusRequest ?: QwacStatusRequest(tab.engineState.engineSession),
+                    tabUrl = tab.content.url,
+                    certificate = tab.content.securityInfo.certificate,
+                    goBack = { trackingProtectionPanel?.show() },
+                )
+            } else {
+                ConnectionDetailsPanel(
+                    context = requireContext(),
+                    tabTitle = tab.content.title,
+                    tabUrl = tab.content.url,
+                    isConnectionSecure = tab.content.securityInfo.isSecure,
+                    goBack = { trackingProtectionPanel?.show() },
+                )
+            }
         trackingProtectionPanel?.hide()
         connectionInfoPanel.show()
     }

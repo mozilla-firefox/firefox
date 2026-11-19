@@ -14,6 +14,7 @@ import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.uiautomator.UiSelector
 import org.hamcrest.Matchers.allOf
 import org.hamcrest.Matchers.not
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.mozilla.focus.R
 import org.mozilla.focus.helpers.TestHelper.mDevice
@@ -23,13 +24,17 @@ import org.mozilla.focus.helpers.TestHelper.waitingTime
 class SiteSecurityInfoSheetRobot {
 
     fun verifySiteConnectionInfoIsSecure(isSecure: Boolean) {
-        assertTrue(site_security_info.waitForExists(waitingTime))
-        assertTrue(site_identity_title.exists())
+        assertTrue(site_identity_title.waitForExists(waitingTime))
         assertTrue(site_identity_Icon.exists())
+        // Secure pages show a "Secure connection" link to the certificate details instead of the connection row.
         if (isSecure) {
-            assertTrue(site_security_info.text.equals("Connection is secure"))
+            assertTrue(secure_connection_link.exists())
+            assertTrue(secure_connection_link.text.equals("Secure connection"))
+            assertFalse(site_security_info.exists())
         } else {
+            assertTrue(site_security_info.exists())
             assertTrue(site_security_info.text.equals("Connection is not secure"))
+            assertFalse(secure_connection_link.exists())
         }
     }
 
@@ -59,6 +64,9 @@ class SiteSecurityInfoSheetRobot {
 }
 
 private val site_security_info = mDevice.findObject(UiSelector().resourceId("$packageName:id/security_info"))
+
+private val secure_connection_link =
+    mDevice.findObject(UiSelector().resourceId("$packageName:id/secure_connection_link"))
 
 private val site_identity_title = mDevice.findObject(UiSelector().resourceId("$packageName:id/site_title"))
 

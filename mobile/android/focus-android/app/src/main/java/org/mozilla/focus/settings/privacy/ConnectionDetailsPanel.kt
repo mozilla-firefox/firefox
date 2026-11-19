@@ -11,11 +11,8 @@ import androidx.appcompat.content.res.AppCompatResources
 import com.google.android.material.R as materialR
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import java.security.cert.X509Certificate
 import mozilla.components.browser.icons.IconRequest
-import mozilla.components.concept.engine.EngineSession
 import mozilla.components.support.ktx.android.view.putCompoundDrawablesRelativeWithIntrinsicBounds
-import mozilla.components.support.utils.CertificateUtils
 import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.focus.R
 import org.mozilla.focus.databinding.ConnectionDetailsBinding
@@ -24,7 +21,6 @@ import org.mozilla.focus.ext.components
 /** A bottom sheet panel that displays connection security details for the current site. */
 class ConnectionDetailsPanel(
     context: Context,
-    private var engineSession: EngineSession?,
     private val tabTitle: String,
     private val tabUrl: String,
     private val isConnectionSecure: Boolean,
@@ -40,9 +36,6 @@ class ConnectionDetailsPanel(
         updateSiteInfo()
         updateConnectionState()
         setListeners()
-
-        engineSession?.qwacStatus { cert -> updateQWACInformation(cert) }
-        engineSession = null
     }
 
     private fun expandBottomSheet() {
@@ -81,22 +74,6 @@ class ConnectionDetailsPanel(
             top = null,
             bottom = null,
         )
-
-        binding.qwacIdentity.setVisibility(View.GONE)
-        binding.qwacText.setVisibility(View.GONE)
-    }
-
-    private fun updateQWACInformation(cert: X509Certificate?) {
-        cert?.let {
-            binding.qwacIdentity.text =
-                context.getString(
-                    R.string.qualified_identity,
-                    CertificateUtils.subjectOrganization(it) ?: "",
-                )
-            binding.qwacIdentity.setVisibility(View.VISIBLE)
-            binding.qwacText.text = context.getString(R.string.qualified_text)
-            binding.qwacText.setVisibility(View.VISIBLE)
-        }
     }
 
     private fun setListeners() {

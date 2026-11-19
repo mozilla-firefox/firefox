@@ -7,8 +7,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
+    <include
+        android:id="@+id/drag_handle"
+        layout="@layout/bottom_sheet_drag_handle" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingStart="@dimen/activity_horizontal_margin"
@@ -34,9 +42,46 @@
             android:breakStrategy="simple"
             app:layout_constraintBottom_toBottomOf="@id/site_favicon"
             app:layout_constraintStart_toEndOf="@id/site_favicon"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/secure_connection_link"
             app:layout_constraintTop_toTopOf="@id/site_favicon"
+            app:layout_goneMarginEnd="0dp"
             tools:text="url.com" />
+
+        <!-- Keeps the "Secure connection" link to at most two thirds of the row, so the site title stays visible. -->
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/secure_connection_link_start"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.33" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/secure_connection_link"
+            style="@style/PanelTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackground"
+            android:drawablePadding="4dp"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:minHeight="48dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:text="@string/connection_details_secure_connection_link"
+            android:textColor="@color/secondaryText"
+            android:visibility="gone"
+            app:drawableEndCompat="@drawable/mozac_ic_chevron_right_16"
+            app:drawableStartCompat="@drawable/mozac_ic_lock_16"
+            app:drawableTint="@color/secondaryText"
+            app:layout_constrainedWidth="true"
+            app:layout_constraintBottom_toBottomOf="@id/site_favicon"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="1"
+            app:layout_constraintStart_toStartOf="@id/secure_connection_link_start"
+            app:layout_constraintTop_toTopOf="@id/site_favicon"
+            tools:visibility="visible" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/security_info"
@@ -60,6 +105,7 @@
             android:minHeight="48dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/security_info"
+            app:layout_goneMarginTop="28dp"
             app:switchDescription="@string/enhanced_tracking_protection_state_on"
             app:switchIcon="@drawable/mozac_ic_shield_24"
             app:switchTitle="@string/enhanced_tracking_protection" />
@@ -143,4 +189,5 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/trackers_count" />
     </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 </androidx.core.widget.NestedScrollView>

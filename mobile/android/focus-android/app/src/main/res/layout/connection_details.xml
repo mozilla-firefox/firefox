@@ -80,40 +80,12 @@
         android:paddingTop="8dp"
         android:paddingBottom="8dp"
         app:drawableStartCompat="@drawable/mozac_ic_lock_24"
-        app:layout_constraintBottom_toTopOf="@id/qwac_identity"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="@id/site_favicon"
         app:layout_constraintTop_toBottomOf="@id/site_full_url"
         tools:text="@string/secure_connection" />
 
-    <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/qwac_identity"
-        style="@style/PanelSubtitle"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:drawablePadding="8dp"
-        android:gravity="center_vertical"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        app:layout_constraintStart_toStartOf="@id/site_favicon"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/security_info"
-        app:layout_constraintBottom_toTopOf="@id/qwac_text"
-        tools:text="@string/qualified_identity" />
 
-    <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/qwac_text"
-        style="@style/PanelSubtitle"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:drawablePadding="8dp"
-        android:gravity="center_vertical"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        app:layout_constraintStart_toStartOf="@id/site_favicon"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/qwac_identity"
-        app:layout_constraintBottom_toBottomOf="parent"
-        tools:text="@string/qualified_text" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
