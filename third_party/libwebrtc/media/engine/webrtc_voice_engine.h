@@ -138,7 +138,6 @@ class WebRtcVoiceEngine final : public VoiceEngineInterface {
   void ApplyGlobalOptions(const AudioOptions& options) override;
 
   AudioDeviceModule* adm();
-  AudioProcessing* apm() const;
 
   // Registers `channel` when its first send stream is added on the worker
   // thread, and unregisters it when `channel` is destroyed. Registration
@@ -187,7 +186,8 @@ class WebRtcVoiceEngine final : public VoiceEngineInterface {
   const scoped_refptr<AudioEncoderFactory> encoder_factory_;
   const scoped_refptr<AudioDecoderFactory> decoder_factory_;
   // The audio processing module.
-  scoped_refptr<AudioProcessing> apm_ RTC_GUARDED_BY(worker_thread_checker_);
+  const scoped_refptr<AudioProcessing> apm_
+      RTC_GUARDED_BY(worker_thread_checker_);
   // The primary instance of WebRtc VoiceEngine.
   const scoped_refptr<AudioState> audio_state_;
   const std::vector<Codec> legacy_send_codecs_;
@@ -311,7 +311,6 @@ class WebRtcVoiceSendChannel final : public MediaChannelUtil,
   bool SetLocalSource(uint32_t ssrc, AudioSource* source);
   bool MuteStream(uint32_t ssrc, bool mute);
 
-  WebRtcVoiceEngine* engine() { return engine_; }
   bool SetMaxSendBitrate(int bps);
   void SetupRecording();
   void FillSendCodecStats(VoiceMediaSendInfo* voice_media_info);
@@ -457,7 +456,6 @@ class WebRtcVoiceReceiveChannel final
   bool SetLocalSource(uint32_t ssrc, AudioSource* source);
   bool MuteStream(uint32_t ssrc, bool mute);
 
-  WebRtcVoiceEngine* engine() { return engine_; }
   void SetupRecording();
 
   // Expected to be invoked once per packet that belongs to this channel that
