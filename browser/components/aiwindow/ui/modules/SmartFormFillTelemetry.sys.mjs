@@ -144,9 +144,296 @@ const DECISION_SOURCE_BY_ACTION = new Map([
 const UNTYPED_FIELD_KINDS = new Set(["other", "unknown"]);
 
 /**
- * Smart Form Fill Telemetry, groups all telemetry data and sends glean events.
+ * What a generation round produced, beyond the values the page is asked to
+ * fill.
+ *
+ * @typedef {{
+ *   formId: string,
+ *   fieldsFilled: number,
+ *   response: GenerateFormValuesResponse,
+ *   fields: Array<FieldData>,
+ *   formFields: Array<FieldData>,
+ *   classifications: Map<string, FieldClassification>,
+ *   tokensByFieldId: Map<string, string>,
+ *   similarityByMemory: Map<string, number>,
+ * }} GenerationResult
+ */
+
+/**
+ * How the controller reports the requests it makes. A dispatch callback answers
+ * with the flow the request belongs to, which is handed back on the matching
+ * answer or failure so the two can be paired. The controller treats it as
+ * opaque, so resolving flow ids stays in SmartFormFillTelemetry.
+ *
+ * @typedef {{
+ *   onRelevantTabsDispatched: (formId: string, request: RelevantTabRequestBody, modelInfo: ModelInfo, threshold: string) => RequestFlow,
+ *   onRelevantTabsAnswered: (flow: RequestFlow, response: RelevantTabsResponse, tabsUsed: number) => void,
+ *   onRelevantTabsFailed: (flow: RequestFlow, error: Error) => void,
+ *   onClassifyDispatched: (formId: string, request: ClassifyFieldsRequestBody, modelInfo: ModelInfo) => RequestFlow,
+ *   onClassifyAnswered: (flow: RequestFlow, response: ClassificationResponse) => void,
+ *   onClassifyFailed: (flow: RequestFlow, error: Error) => void,
+ *   onGenerateDispatched: (formId: string, request: GenerateFormValuesRequestBody, dispatch: object) => RequestFlow,
+ *   onGenerateAnswered: (flow: RequestFlow, result: GenerationResult) => void,
+ *   onGenerateFailed: (flow: RequestFlow, error: Error) => void,
+ * }} RequestObserver
+ */
+
+/**
+ * Smart Form Fill Telemetry for one actor: tracks the flow each form is on and
+ * sends the glean events of that flow.
  */
 export class SmartFormFillTelemetry {
+  /**
+   * Flow id correlating every event of a form's current round. Minted with the
+   * form's metadata and replaced whenever that metadata is invalidated, so one
+   * flow is one attempt at filling one form.
+   *
+   * @type {Map<string, string>}
+   */
+  #flowIdByFormId = new Map();
+
+  /**
+   * The model's decision for each field of the latest generation round, by form
+   * ID. Kept after the round ends because the field events are only complete
+   * once the page reports what it filled, and the outcome of each field is only
+   * known when the fill is torn down.
+   *
+   * @type {Map<string, {
+   *   flowId: string,
+   *   decisions: Array<FieldDecision>,
+   *   reviewValues: Map<string, string> | null,
+   * }>}
+   */
+  #fieldDecisionsByFormId = new Map();
+
+  /**
+   * How many times the source editor was opened in a form's current flow, and
+   * how the last of those opens ended.
+   *
+   * @type {Map<string, SourceEditorState>}
+   */
+  #sourceEditorByFormId = new Map();
+
+  /**
+   * Starts a new flow for a form, superseding the round it was on so its events
+   * stop sharing a flow with the ones the next round will record.
+   *
+   * @param {string} formId
+   */
+  startFlow(formId) {
+    this.#flowIdByFormId.set(formId, crypto.randomUUID());
+    this.#fieldDecisionsByFormId.delete(formId);
+    this.#sourceEditorByFormId.delete(formId);
+  }
+
+  /**
+   * @param {string} formId - A form that went away.
+   */
+  endFlow(formId) {
+    this.#flowIdByFormId.delete(formId);
+    this.#fieldDecisionsByFormId.delete(formId);
+    this.#sourceEditorByFormId.delete(formId);
+  }
+
+  clear() {
+    this.#flowIdByFormId.clear();
+    this.#fieldDecisionsByFormId.clear();
+    this.#sourceEditorByFormId.clear();
+  }
+
+  /**
+   * Gets the flow id correlating the events of a form's current round. Empty
+   * when the form is gone, which a request in flight can outlive.
+   *
+   * @param {string} formId
+   *
+   * @returns {string}
+   */
+  #getFlowId(formId) {
+    return this.#flowIdByFormId.get(formId) ?? "";
+  }
+
+  /**
+   * Counts an opening of the source editor in a form's flow, and records how
+   * it ended.
+   *
+   * @param {string} formId
+   * @param {Promise<SourceEditorResult>} result How the editor closed.
+   */
+  async recordSourceEditor(formId, result) {
+    let state = this.#sourceEditorByFormId.get(formId);
+    if (!state) {
+      state = { opens: 0, result: null };
+      this.#sourceEditorByFormId.set(formId, state);
+    }
+    state.opens++;
+    state.result = await result;
+  }
+
+  /**
+   * Records what the tab selection ended up being for a fill that is starting.
+   *
+   * @param {string} formId
+   * @param {Array<SelectedTab>} suggestedTabs The tabs the model suggested
+   * @param {Array<SelectedTab>} finalTabs The tabs the fill will run with
+   */
+  recordTabSelectionOutcome(formId, suggestedTabs, finalTabs) {
+    this.sendRelevantTabsOutcomeTelemetry(this.#getFlowId(formId), {
+      suggestedTabs,
+      finalTabs,
+      editor: this.#sourceEditorByFormId.get(formId),
+    });
+  }
+
+  /**
+   * Keeps the values that are presented for review, so what the user
+   * submits can be differentiated from what the model generated.
+   *
+   * @param {string} formId
+   * @param {Array<{id: string, value: string}>} fields The fields the review
+   * will show
+   */
+  setReviewValues(formId, fields) {
+    const round = this.#fieldDecisionsByFormId.get(formId);
+    if (!round) {
+      return;
+    }
+
+    round.reviewValues = new Map(fields.map(({ id, value }) => [id, value]));
+  }
+
+  /**
+   * Records what the user did with each generated value, after they
+   * submitted the review dialog's fill.
+   *
+   * @param {string} formId
+   * @param {Array<{id: string, value: string}>} fields The reviewed values the
+   * dialog was submitted with
+   */
+  recordFieldReviewOutcomes(formId, fields) {
+    const round = this.#fieldDecisionsByFormId.get(formId);
+    const reviewValues = round?.reviewValues;
+    if (!reviewValues) {
+      return;
+    }
+
+    round.reviewValues = null;
+
+    this.sendFillFieldReviewOutcomeTelemetry(round.flowId, round.decisions, {
+      generated: reviewValues,
+      submitted: fields,
+    });
+  }
+
+  /**
+   * Records what the model decided for each field of a form, now that the page
+   * has reported which of them it filled.
+   *
+   * @param {string} formId
+   * @param {Array<string>} filledFieldIds
+   */
+  recordFieldsFilled(formId, filledFieldIds) {
+    const round = this.#fieldDecisionsByFormId.get(formId);
+    if (!round) {
+      return;
+    }
+
+    this.sendFillFieldTelemetry(round.flowId, round.decisions, filledFieldIds);
+  }
+
+  /**
+   * Records what became of the fields a round filled, now that the page has
+   * reported the state each one ended in.
+   *
+   * @param {string} formId
+   * @param {Array<{
+   *   id: string,
+   *   edited: boolean,
+   *   isEmpty: boolean,
+   *   filledLength: number,
+   *   finalLength: number,
+   * }>} fields
+   */
+  recordFieldOutcomes(formId, fields) {
+    const round = this.#fieldDecisionsByFormId.get(formId);
+    if (!round) {
+      return;
+    }
+
+    this.sendFillFieldOutcomeTelemetry(round.flowId, round.decisions, fields);
+  }
+
+  /**
+   * The callbacks the controller reports its requests through. The controller
+   * only sees these callbacks, never this object.
+   *
+   * @type {RequestObserver}
+   */
+  get requestObserver() {
+    return {
+      onRelevantTabsDispatched: (formId, request, modelInfo, threshold) =>
+        this.startRelevantTabsRequest(
+          this.#getFlowId(formId),
+          request,
+          modelInfo,
+          threshold
+        ),
+
+      onRelevantTabsAnswered: (flow, response, tabsUsed) =>
+        this.sendRelevantTabsResponseTelemetry(flow, response, tabsUsed),
+
+      onRelevantTabsFailed: (flow, error) =>
+        this.sendRelevantTabsErrorTelemetry(flow, error),
+
+      onClassifyDispatched: (formId, request, modelInfo) =>
+        this.startClassifyRequest(this.#getFlowId(formId), request, modelInfo),
+
+      onClassifyAnswered: (flow, response) =>
+        this.sendClassifyResponseTelemetry(flow, response),
+
+      onClassifyFailed: (flow, error) =>
+        this.sendClassifyErrorTelemetry(flow, error),
+
+      onGenerateDispatched: (formId, request, dispatch) =>
+        this.startGenerateRequest(this.#getFlowId(formId), request, dispatch),
+
+      onGenerateAnswered: (flow, result) => {
+        const {
+          formId,
+          fieldsFilled,
+          response,
+          fields,
+          formFields,
+          classifications,
+          tokensByFieldId,
+          similarityByMemory,
+        } = result;
+
+        this.sendGenerateResponseTelemetry(
+          flow,
+          fieldsFilled,
+          response,
+          similarityByMemory
+        );
+
+        this.#fieldDecisionsByFormId.set(formId, {
+          flowId: flow.flowId,
+          decisions: this.resolveFieldDecisions({
+            fields,
+            formFields,
+            classifications,
+            tokensByFieldId,
+            values: response,
+          }),
+          reviewValues: null,
+        });
+      },
+
+      onGenerateFailed: (flow, error) =>
+        this.sendGenerateErrorTelemetry(flow, error),
+    };
+  }
+
   /**
    * @param {RequestFlow} flow
    *
