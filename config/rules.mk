@@ -391,33 +391,13 @@ $(CWASMOBJS):
 	$(WASM_CC) -o $@ -c $(WASM_CFLAGS) $($(notdir $<)_FLAGS) $<
 	$(call BUILDSTATUS,END_Object $@)
 
-WINEWRAP = $(if $(and $(filter %.exe,$1),$(WINE)),$(WINE) $1,$1)
-
-# Windows program run via Wine don't like Unix absolute paths (they look
-# like command line arguments). So when needed, create relative paths
-# from absolute paths. We start with $(DEPTH), which gets us to topobjdir,
-# then add "/.." for each component of topobjdir, which gets us to /.
-# then we can add the absolute path after that and we have a relative path,
-# albeit longer than it could be.
-ifdef WINE
-relativize = $(if $(filter /%,$1),$(DEPTH)$(subst $(space),,$(foreach d,$(subst /, ,$(topobjdir)),/..))$1,$1)
-else
-relativize = $1
-endif
-
-ifdef WINE
-# asmarm64 needs a library that can be found in $PATH but for some reason,
-# wine wants its path in $WINEPATH, so fill that to make it happy.
-$(ASOBJS) $(SOBJS): export WINEPATH=$(subst :,;,$(PATH))
-endif
-
 ifdef ASFILES
 # The AS_DASH_C_FLAG is needed cause not all assemblers (Solaris) accept
 # a '-c' flag.
 $(ASOBJS):
 	$(REPORT_BUILD_VERBOSE)
 	$(call BUILDSTATUS,OBJECT_FILE $@)
-	$(call WINEWRAP,$(AS)) $(ASOUTOPTION)$@ $(ASFLAGS) $($(notdir $<)_FLAGS) $(AS_DASH_C_FLAG) $(call relativize,$<)
+	$(AS) $(ASOUTOPTION)$@ $(ASFLAGS) $($(notdir $<)_FLAGS) $(AS_DASH_C_FLAG) $<
 	$(call BUILDSTATUS,END_Object $@)
 endif
 
@@ -465,7 +445,7 @@ endif
 
 $(SOBJS):
 	$(REPORT_BUILD)
-	$(call WINEWRAP,$(AS)) $(ASOUTOPTION)$@ $(SFLAGS) $($(notdir $<)_FLAGS) -c $(call relativize,$<)
+	$(AS) $(ASOUTOPTION)$@ $(SFLAGS) $($(notdir $<)_FLAGS) -c $<
 
 $(CPPOBJS):
 	$(REPORT_BUILD_VERBOSE)

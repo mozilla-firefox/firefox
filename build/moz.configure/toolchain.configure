@@ -3342,18 +3342,21 @@ assembler = check_prog(
 )
 
 
-@depends(as_info, assembler, provided_assembler, c_compiler)
-def as_with_flags(as_info, assembler, provided_assembler, c_compiler):
+@depends(as_info, assembler, provided_assembler, c_compiler, wine, virtualenv_python3)
+def as_with_flags(as_info, assembler, provided_assembler, c_compiler, wine, python):
     if provided_assembler:
-        return provided_assembler.wrapper + [assembler] + provided_assembler.flags
+        command = provided_assembler.wrapper + [assembler] + provided_assembler.flags
+    elif as_info.type in ("masm", "armasm"):
+        command = [assembler]
+    else:
+        assert as_info.type == "gcc"
 
-    if as_info.type in ("masm", "armasm"):
-        return assembler
+        # Need to add compiler wrappers and flags as appropriate.
+        command = c_compiler.wrapper + [assembler] + c_compiler.flags
 
-    assert as_info.type == "gcc"
-
-    # Need to add compiler wrappers and flags as appropriate.
-    return c_compiler.wrapper + [assembler] + c_compiler.flags
+    if wine and assembler.endswith(".exe"):
+        return [python.path, "-m", "mozbuild.action.wine_exe", wine, *command]
+    return command
 
 
 set_config("AS", as_with_flags)

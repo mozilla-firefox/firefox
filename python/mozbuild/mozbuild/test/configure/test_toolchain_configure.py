@@ -1589,6 +1589,23 @@ class WindowsCrossToolchainTest(BaseToolchainTest):
             self.PATHS, (CLANG_CL_DEPEND_CFLAGS, GCC_DEPEND_CFLAGS)
         )
 
+    def test_wine_assembler(self):
+        sandbox = self.toolchain_sandbox({
+            **self.PATHS,
+            "/usr/bin/ml64.exe": None,
+            "/usr/bin/wine": None,
+        })
+        self.assertEqual(
+            sandbox.get_config("AS"),
+            [
+                sandbox.get_config("PYTHON3"),
+                "-m",
+                "mozbuild.action.wine_exe",
+                mozpath.abspath("/usr/bin/wine"),
+                mozpath.abspath("/usr/bin/ml64.exe"),
+            ],
+        )
+
 
 class WindowsClangPluginToolchainTest(BaseToolchainTest):
     HOST = "i686-pc-windows-msvc"
