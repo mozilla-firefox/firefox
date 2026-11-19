@@ -18,6 +18,6 @@ setup(
     packages=["mozperfcommon"],
     include_package_data=True,
     zip_safe=False,
-    install_requires=[],
+    install_requires=["requests"],
     python_requires=">=3.9",
 )

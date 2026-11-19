@@ -16,6 +16,7 @@ with Files("performance/mozperfcommon/**"):
     BUG_COMPONENT = ("Testing", "Performance")
 
 PYTHON_UNITTEST_MANIFESTS += [
+    "performance/mozperfcommon/tests/manifest.toml",
     "test/python.toml",
     "web-platform/python.toml",
 ]
