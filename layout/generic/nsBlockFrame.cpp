@@ -1313,12 +1313,6 @@ class MOZ_RAII LineClampLineIterator {
                "descendant.");
     return GetBEndMargins() - mMarginsUntilLastFrame;
   }
-  nscoord GetOffsetBetweenGivenFrames() const {
-    MOZ_ASSERT(mEnteredLastFrameToExit,
-               "Tried getting offset between aFrame and aLastFrameToExit "
-               "before reaching aLastFrameToExit.");
-    return mOffsetBetweenFrames;
-  }
 
   Boundary GetPreviousBoundary() const {
     Boundary boundary = mPreviousBoundary;
@@ -1508,7 +1502,7 @@ class MOZ_RAII LineClampLineIterator {
           // Both BStart, and BEnd border and padding contribute to this block's
           // BSize. BStart border and padding are included in a line's BEnd.
           mCurrentFrameOffset.mCurrentBlockBStart +=
-              child->BStart(blockLine->mContainerSize);
+              child->BStart(mCurrentFrameOffset.mFrame->GetSize());
           mCurrentFrameOffset.mAccumulatedBEndBP +=
               child->GetLogicalUsedBorderAndPadding(mWm).BEnd(mWm);
 
@@ -1525,7 +1519,6 @@ class MOZ_RAII LineClampLineIterator {
                 mCurrentFrameOffset.mCollapsedMargins +
                 mCurrentFrameOffset.mCurrentCollapsingMargin.Get();
             mBPUntilLastFrame = mCurrentFrameOffset.mAccumulatedBEndBP;
-            mOffsetBetweenFrames = mCurrentFrameOffset.mCurrentBlockBStart;
           }
 
           mCurrentFrameOffset.mCurrentLine = child->LinesBegin();
@@ -1576,9 +1569,6 @@ class MOZ_RAII LineClampLineIterator {
 
   // Same as above but for block end border and padding.
   nscoord mBPUntilLastFrame;
-
-  // Block offset between aFrame and aLastFrameToExit
-  nscoord mOffsetBetweenFrames = 0;
 
   // Collection of values that are used to determine where we are in the frame
   // tree, and calculate BSize.
@@ -2669,6 +2659,12 @@ Maybe<nsBlockFrame::LineClampTarget> nsBlockFrame::FindLineClampAutoTarget(
   nscoord rootMaxBSize = aLineClampRoot->GetLineClampRootMaxHeight().value();
   nscoord thisMinBSize = aReflowInput.ComputedMinBSize();
 
+  // This is currently not ready for BlockDir::RL, since that requires us to
+  // check the right side offset (which may change in this reflow)
+  nscoord bOffsetToRoot = wm.GetBlockDir() == WritingMode::BlockDir::TB
+                              ? GetOffsetTo(aLineClampRoot).Y()
+                              : GetOffsetTo(aLineClampRoot).X();
+
   nsBlockFrame* prevFrame = nullptr;
   LineClampLineIterator iter(aLineClampRoot, this, Some(rootMaxBSize));
 
@@ -2682,8 +2678,7 @@ Maybe<nsBlockFrame::LineClampTarget> nsBlockFrame::FindLineClampAutoTarget(
       // When the first line doesn't fit, clamp out the whole container.
       return Some(LineClampTarget{nullptr, nullptr, 0});
     }
-    const nscoord clampedBSize =
-        boundary.mBEnd - iter.GetOffsetBetweenGivenFrames();
+    const nscoord clampedBSize = boundary.mBEnd - bOffsetToRoot;
     return Some(LineClampTarget{boundary.mFrame, boundary.mLine, clampedBSize});
   };
 
@@ -2773,11 +2768,17 @@ Maybe<nsBlockFrame::LineClampTarget> nsBlockFrame::FindLineClampNumberedTarget(
         // calculate its offset to this frame by using its offset to root and
         // this frame's offset to root.
         const WritingMode wm = targetFrame->GetWritingMode();
-        targetBEnd =
-            targetFrame->BSize(targetFrame->GetWritingMode()) +
-            iter.GetCurrentFrameBStart() - iter.GetOffsetBetweenGivenFrames() +
-            iter.GetDescendantBEndMargins() + iter.GetDescendantBEndBP() -
-            targetFrame->GetLogicalUsedBorderAndPadding(wm).BEnd(wm);
+        // This is currently not ready for BlockDir::RL, since that requires us
+        // to check the right side offset (which may change in this reflow)
+        const nscoord offsetToRoot =
+            wm.GetBlockDir() == WritingMode::BlockDir::TB
+                ? GetOffsetTo(aLineClampRoot).Y()
+                : GetOffsetTo(aLineClampRoot).X();
+        targetBEnd = targetFrame->BSize(targetFrame->GetWritingMode()) +
+                     iter.GetCurrentFrameBStart() - offsetToRoot +
+                     iter.GetDescendantBEndMargins() +
+                     iter.GetDescendantBEndBP() -
+                     targetFrame->GetLogicalUsedBorderAndPadding(wm).BEnd(wm);
       }
     }
   }
