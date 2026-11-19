@@ -421,6 +421,31 @@ class BaseToolchainTest(BaseConfigureTest):
             result,
         )
 
+    def do_depend_cflags_test(self, paths, result):
+        sandbox = self.toolchain_sandbox(paths)
+        self.assertEqual(
+            (
+                sandbox.get_config("DEPEND_CFLAGS"),
+                sandbox.get_config("HOST_DEPEND_CFLAGS"),
+            ),
+            result,
+        )
+
+
+GCC_DEPEND_CFLAGS = ["-MD", "-MP", "-MF", "{depfile}"]
+CLANG_CL_DEPEND_CFLAGS = [
+    "-Xclang",
+    "-MP",
+    "-Xclang",
+    "-dependency-file",
+    "-Xclang",
+    "{depfile}",
+    "-Xclang",
+    "-MT",
+    "-Xclang",
+    "{target}",
+]
+
 
 def old_gcc_message(old_ver):
     return f"Only GCC 11.1 or newer is supported (found version {old_ver})."
@@ -732,6 +757,9 @@ class LinuxToolchainTest(BaseToolchainTest):
 
     def test_outoption(self):
         self.do_outoption_test(self.PATHS, ("-o ", "-o "))
+
+    def test_depend_cflags(self):
+        self.do_depend_cflags_test(self.PATHS, (GCC_DEPEND_CFLAGS, GCC_DEPEND_CFLAGS))
 
 
 class LinuxSimpleCrossToolchainTest(BaseToolchainTest):
@@ -1089,6 +1117,11 @@ class WindowsToolchainTest(BaseToolchainTest):
 
     def test_outoption(self):
         self.do_outoption_test(self.PATHS, ("-Fo", "-Fo"))
+
+    def test_depend_cflags(self):
+        self.do_depend_cflags_test(
+            self.PATHS, (CLANG_CL_DEPEND_CFLAGS, CLANG_CL_DEPEND_CFLAGS)
+        )
 
 
 class Windows64ToolchainTest(WindowsToolchainTest):
@@ -1534,6 +1567,11 @@ class WindowsCrossToolchainTest(BaseToolchainTest):
 
     def test_outoption(self):
         self.do_outoption_test(self.PATHS, ("-Fo", "-o "))
+
+    def test_depend_cflags(self):
+        self.do_depend_cflags_test(
+            self.PATHS, (CLANG_CL_DEPEND_CFLAGS, GCC_DEPEND_CFLAGS)
+        )
 
 
 class WindowsClangPluginToolchainTest(BaseToolchainTest):

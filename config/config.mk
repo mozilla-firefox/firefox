@@ -118,6 +118,13 @@ INCLUDES = \
   -I$(ABS_DIST)/include \
   $(NULL)
 
+# Configured flags write the output and depfile paths as {target} and
+# {depfile}, and each build backend fills them in.
+subst_paths = $(subst {target},$@,$(subst {depfile},$(MDDEPDIR)/$(@F).pp,$(1)))
+
+_DEPEND_CFLAGS = $(call subst_paths,$(DEPEND_CFLAGS))
+_HOST_DEPEND_CFLAGS = $(call subst_paths,$(HOST_DEPEND_CFLAGS))
+
 LDFLAGS		= $(COMPUTED_LDFLAGS)
 
 COMPILE_CFLAGS	= $(COMPUTED_CFLAGS) $(COMPUTED_PGO_CFLAGS) $(_DEPEND_CFLAGS)

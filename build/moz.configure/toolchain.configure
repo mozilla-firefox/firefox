@@ -2512,7 +2512,7 @@ def depend_cflags(host_or_target_c_compiler):
     @depends(host_or_target_c_compiler)
     def depend_cflags(host_or_target_c_compiler):
         if host_or_target_c_compiler.type != "clang-cl":
-            return ["-MD", "-MP", "-MF $(MDDEPDIR)/$(@F).pp"]
+            return ["-MD", "-MP", "-MF", "{depfile}"]
         else:
             # clang-cl doesn't accept the normal -MD -MP -MF options that clang
             # does, but the underlying cc1 binary understands how to generate
@@ -2525,18 +2525,18 @@ def depend_cflags(host_or_target_c_compiler):
                 "-Xclang",
                 "-dependency-file",
                 "-Xclang",
-                "$(MDDEPDIR)/$(@F).pp",
+                "{depfile}",
                 "-Xclang",
                 "-MT",
                 "-Xclang",
-                "$@",
+                "{target}",
             ]
 
     return depend_cflags
 
 
-set_config("_DEPEND_CFLAGS", depend_cflags(c_compiler))
-set_config("_HOST_DEPEND_CFLAGS", depend_cflags(host_c_compiler))
+set_config("DEPEND_CFLAGS", depend_cflags(c_compiler))
+set_config("HOST_DEPEND_CFLAGS", depend_cflags(host_c_compiler))
 
 
 @depends(c_compiler)
