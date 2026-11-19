@@ -718,8 +718,8 @@ BigInt::Digit BigInt::divLargeDigitsByDigit(ConstDigits u, Digit m, Digits q) {
     if (shift && i > 0) {
       low |= u[i - 1] >> (DigitBits - shift);
     }
-    q[i] = digitDivByMultiplication(remainder, low, divisor, inverse,
-                                    &remainder);
+    q[i] =
+        digitDivByMultiplication(remainder, low, divisor, inverse, &remainder);
   }
   return remainder >> shift;
 }
