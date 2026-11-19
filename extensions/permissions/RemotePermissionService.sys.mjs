@@ -22,6 +22,9 @@ const COLLECTION_NAME = "remote-permissions";
  * value with a review from #permissions-reviewers.
  */
 const ALLOWED_PERMISSION_VALUES = {
+  "bounce-tracking-protection-exception": [
+    Ci.nsIPermissionManager.ALLOW_ACTION,
+  ],
   "https-only-load-insecure": [
     Ci.nsIHttpsOnlyModePermission.HTTPSFIRST_LOAD_INSECURE_ALLOW,
   ],
