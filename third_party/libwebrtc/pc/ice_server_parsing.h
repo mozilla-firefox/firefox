@@ -11,6 +11,7 @@
 #ifndef PC_ICE_SERVER_PARSING_H_
 #define PC_ICE_SERVER_PARSING_H_
 
+#include <cstddef>
 #include <vector>
 
 #include "api/peer_connection_interface.h"
@@ -20,6 +21,10 @@
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
+
+// STUN servers are limited to 32 in accordance with
+// https://w3c.github.io/webrtc-pc/#dom-rtcconfiguration-iceservers
+inline constexpr size_t kMaxStunServers = 32;
 
 // Parses the URLs for each server in `servers` to build `stun_servers` and
 // `turn_servers`. Can return SYNTAX_ERROR if the URL is malformed, or

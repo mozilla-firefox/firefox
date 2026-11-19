@@ -3142,8 +3142,8 @@ if (rtc_include_tests && !build_with_chromium) {
       "../api:rtc_error",
       "../p2p:port",
       "../p2p:port_allocator",
-      "../p2p:port_interface",
       "../rtc_base:ip_address",
+      "../rtc_base:net_helper",
       "../rtc_base:socket_address",
       "../test:test_support",
     ]
