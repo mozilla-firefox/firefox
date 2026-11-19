@@ -2,6 +2,27 @@
   "data": [
     {
       "attachment": {
+        "filename": "Desktop%20-%20Keyart.avif",
+        "hash": "97f9d76eee20227807c0a7f388df0c5aab2cbbe9d462fe15331e0a87eeecbed2",
+        "location": "main-workspace/newtab-wallpapers-v2/20261118145948--2078dd3d-3b2c-4eb2-b691-6a380c9c4459--14f74302-0986-4752-9cb5-53dd982a8e80.avif",
+        "mimetype": "image/avif",
+        "size": 309404
+      },
+      "background_position": "center",
+      "category": "predecessor",
+      "filter_expression": "env.distribution == \"predecessor-001\"",
+      "fluent_id": "newtab-wallpaper-category-title-predecessor",
+      "id": "2078dd3d-3b2c-4eb2-b691-6a380c9c4459",
+      "last_modified": 1795042209426,
+      "order": 1,
+      "schema": 1795015569007,
+      "theme": "dark",
+      "title": "predecessor-default",
+      "visibility_group": "",
+      "visible": true
+    },
+    {
+      "attachment": {
         "filename": "wallpaper-kit-peek.svg",
         "hash": "305c81072af8a9fbd5226c18b971d1d478c549c12e51bdc14b6fe7b5798171d7",
         "location": "main-workspace/newtab-wallpapers-v2/20260819200624--c01058f4-5b6c-4ac4-9708-54d5bee8f450--91a8634f-15b5-4b17-836b-de3225cb3b17.svg",
@@ -1362,5 +1383,5 @@
       "title": "brown"
     }
   ],
-  "timestamp": 1793244462428
+  "timestamp": 1795042209426
 }
