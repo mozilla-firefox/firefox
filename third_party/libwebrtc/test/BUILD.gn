@@ -188,16 +188,20 @@ rtc_library("create_test_field_trials") {
   }
 }
 
-rtc_library("scoped_logging_config") {
-  testonly = true
-  sources = [
-    "scoped_logging_config.cc",
-    "scoped_logging_config.h",
-  ]
-  deps = [
-    "../rtc_base:checks",
-    "../rtc_base:logging",
-  ]
+# Chromium builds rtc_base:logging from webrtc_overrides, which doesn't
+# provide LoggingConfig or ResetLoggingForTesting().
+if (!build_with_chromium) {
+  rtc_library("scoped_logging_config") {
+    testonly = true
+    sources = [
+      "scoped_logging_config.cc",
+      "scoped_logging_config.h",
+    ]
+    deps = [
+      "../rtc_base:checks",
+      "../rtc_base:logging",
+    ]
+  }
 }
 
 rtc_library("frame_generator_capturer") {
