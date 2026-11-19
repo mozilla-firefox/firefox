@@ -9210,9 +9210,9 @@
   value: false
   mirror: always
 
-- name: gfx.remote-texture.recycle.disabled
+- name: gfx.remote-texture.recycle.enabled
   type: RelaxedAtomicBool
-  value: false
+  value: true
   mirror: always
 
 - name: gfx.remote-texture.wait-owner-at-image-host
