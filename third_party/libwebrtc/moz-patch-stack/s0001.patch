@@ -1409,7 +1409,7 @@ index 8eb38a2ddd..ba4c34b197 100644
      # Dependency on chromium's logging (in //base).
      deps += [ "//base" ]
 diff --git a/rtc_base/logging.cc b/rtc_base/logging.cc
-index 3ca28d8ad7..505cb003b6 100644
+index c236a75289..4bca7e09b1 100644
 --- a/rtc_base/logging.cc
 +++ b/rtc_base/logging.cc
 @@ -27,6 +27,7 @@
@@ -1445,7 +1445,7 @@ index 3ca28d8ad7..505cb003b6 100644
  namespace {
  
  // By default, release builds don't log, debug builds at info level
-@@ -203,7 +222,7 @@ const std::string& LogLineRef::DefaultLogLine() const {
+@@ -202,7 +221,7 @@ const std::string& LogLineRef::DefaultLogLine() const {
  // LogMessage
  /////////////////////////////////////////////////////////////////////////////
  
@@ -1455,10 +1455,10 @@ index 3ca28d8ad7..505cb003b6 100644
  // The list of logging streams currently configured.
  // Note: we explicitly do not clean this up, because of the uncertain ordering
 diff --git a/rtc_base/logging.h b/rtc_base/logging.h
-index f6bf97ec34..8688c40010 100644
+index f97822caf1..b19c1911ec 100644
 --- a/rtc_base/logging.h
 +++ b/rtc_base/logging.h
-@@ -714,6 +714,12 @@ class LogMessage {
+@@ -699,6 +699,12 @@ class LogMessage {
    }
  #endif  // RTC_LOG_ENABLED()
  
@@ -1471,7 +1471,7 @@ index f6bf97ec34..8688c40010 100644
   private:
    friend class LogMessageForTesting;
  
-@@ -761,6 +767,9 @@ class LogMessage {
+@@ -744,6 +750,9 @@ class LogMessage {
  
    // The stringbuilder that buffers the formatted message before output
    StringBuilder print_stream_;

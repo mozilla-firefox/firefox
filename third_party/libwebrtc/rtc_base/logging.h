@@ -628,18 +628,11 @@ class LogMessage {
   [[deprecated("Use InitializeLogging instead.")]]
   static bool LogThreads(bool enabled = true);
 
-  // Enables or disables logging the name of the active task queue when
-  // available. This feature is by default disabled. Returns the previously set
-  // value. NOTE: Must be called prior to starting threads and/or starting
-  // logging.
-  static bool SetLogQueueNames(bool enabled);
-
   //  LogTimestamps: Display the elapsed time of the program
   static void LogTimestamps(bool on = true);
   // These are the available logging channels
   //  Debug: Debug console on Windows, otherwise stderr
   static void LogToDebug(LoggingSeverity min_sev);
-  static LoggingSeverity GetLogToDebug();
   // Sets whether logs will be directed to stderr in debug mode.
   static void SetLogToStderr(bool log_to_stderr);
   // Stream: Any non-blocking stream interface.
@@ -653,9 +646,6 @@ class LogMessage {
   // has completed, it's guaranteed that `stream` will receive no more logging
   // calls.
   static void RemoveLogToStream(LogSink* stream);
-  // Returns the severity for the specified stream, of if none is specified,
-  // the minimum stream severity.
-  static int GetLogToStream(LogSink* stream = nullptr);
   // Testing against MinLogSeverity allows code to avoid potentially expensive
   // logging operations by pre-checking the logging level.
   static int GetMinLogSeverity();
@@ -695,17 +685,12 @@ class LogMessage {
   inline static bool LogThreads(bool enabled = true) {
     return false;
   }
-  inline static bool SetLogQueueNames(bool enable) { return false; }
 
   inline static void LogTimestamps(bool on = true) {}
   inline static void LogToDebug(LoggingSeverity min_sev) {}
-  inline static LoggingSeverity GetLogToDebug() {
-    return LoggingSeverity::LS_INFO;
-  }
   inline static void SetLogToStderr(bool log_to_stderr) {}
   inline static void AddLogToStream(LogSink* stream, LoggingSeverity min_sev) {}
   inline static void RemoveLogToStream(LogSink* stream) {}
-  inline static int GetLogToStream(LogSink* stream = nullptr) { return 0; }
   inline static int GetMinLogSeverity() { return 0; }
   static constexpr bool IsNoop(LoggingSeverity severity) { return true; }
   template <LoggingSeverity S>
@@ -741,9 +726,7 @@ class LogMessage {
   static LogSink* streams_;
 
   // Flags for formatting options and their potential values.
-  static bool log_thread_;
   static bool log_timestamp_;
-  static bool log_queue_name_;
 
   // Determines if logs will be directed to stderr in debug mode.
   static bool log_to_stderr_;

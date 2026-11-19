@@ -129,7 +129,6 @@ LoggingConfig& GetOrInitConfig(LoggingConfig* init_config = nullptr,
 
 void ApplyConfigToLogMessageLocked(const LoggingConfig& config)
     RTC_EXCLUSIVE_LOCKS_REQUIRED(GetLoggingLock()) {
-  LogMessage::SetLogQueueNames(config.log_queue_name());
   LogMessage::LogTimestamps(config.log_timestamp());
   LogMessage::SetLogToStderr(config.log_to_stderr());
   g_dbg_sev.store(config.debug_severity(), std::memory_order_relaxed);
@@ -233,7 +232,6 @@ constinit LogSink* LogMessage::streams_ RTC_GUARDED_BY(GetLoggingLock()) =
 
 // Boolean options default to false.
 constinit bool LogMessage::log_timestamp_ = false;
-constinit bool LogMessage::log_queue_name_ = false;
 
 LogMessage::LogMessage(const char* file, int line, LoggingSeverity sev)
     : LogMessage(file, line, sev, ERRCTX_NONE, 0) {}
@@ -260,7 +258,7 @@ LogMessage::LogMessage(const char* file,
     log_line_.set_thread_id(CurrentThreadId());
   }
 
-  if (log_queue_name_) {
+  if (config.log_queue_name()) {
     if (TaskQueueBase* tq = TaskQueueBase::Current(); tq != nullptr) {
       log_line_.set_queue_name(tq->queue_name());
     }
@@ -361,9 +359,6 @@ int LogMessage::GetMinLogSeverity() {
   return g_min_sev.load(std::memory_order_relaxed);
 }
 
-LoggingSeverity LogMessage::GetLogToDebug() {
-  return g_dbg_sev.load(std::memory_order_relaxed);
-}
 int64_t LogMessage::LogStartTime() {
   static const int64_t g_start = SystemTimeMillis();
   return g_start;
@@ -381,10 +376,6 @@ bool LogMessage::LogThreads(bool enabled) {
   return prev;
 }
 
-bool LogMessage::SetLogQueueNames(bool enabled) {
-  return std::exchange(log_queue_name_, enabled);
-}
-
 void LogMessage::LogTimestamps(bool on) {
   log_timestamp_ = on;
 }
@@ -397,17 +388,6 @@ void LogMessage::LogToDebug(LoggingSeverity min_sev) {
 
 void LogMessage::SetLogToStderr(bool log_to_stderr) {
   log_to_stderr_ = log_to_stderr;
-}
-
-int LogMessage::GetLogToStream(LogSink* stream) {
-  MutexLock lock(&GetLoggingLock());
-  LoggingSeverity sev = LS_NONE;
-  for (LogSink* entry = streams_; entry != nullptr; entry = entry->next_) {
-    if (stream == nullptr || stream == entry) {
-      sev = std::min(sev, entry->min_severity_);
-    }
-  }
-  return sev;
 }
 
 void LogMessage::AddLogToStream(LogSink* stream, LoggingSeverity min_sev) {

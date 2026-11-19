@@ -302,13 +302,11 @@ TEST_F(LogTest, LogIfFDontLogIfConditionIsFalse) {
 // the VERBOSE stream should get the INFO and the VERBOSE.
 // We should restore the correct global state at the end.
 TEST_F(LogTest, MultipleStreams) {
-  int sev = LogMessage::GetLogToStream(nullptr);
+  int sev = LogMessage::GetMinLogSeverity();
 
   TestLogSink stream1, stream2;
   LogMessage::AddLogToStream(&stream1, LS_INFO);
   LogMessage::AddLogToStream(&stream2, LS_VERBOSE);
-  EXPECT_EQ(LS_INFO, LogMessage::GetLogToStream(&stream1));
-  EXPECT_EQ(LS_VERBOSE, LogMessage::GetLogToStream(&stream2));
 
   RTC_LOG(LS_INFO) << "INFO";
   RTC_LOG(LS_VERBOSE) << "VERBOSE";
@@ -320,10 +318,11 @@ TEST_F(LogTest, MultipleStreams) {
 
   LogMessage::RemoveLogToStream(&stream2);
   LogMessage::RemoveLogToStream(&stream1);
-  EXPECT_EQ(LS_NONE, LogMessage::GetLogToStream(&stream2));
-  EXPECT_EQ(LS_NONE, LogMessage::GetLogToStream(&stream1));
+  RTC_LOG(LS_INFO) << "Removed";
+  EXPECT_THAT(stream1.data(), Not(HasSubstr("Removed")));
+  EXPECT_THAT(stream2.data(), Not(HasSubstr("Removed")));
 
-  EXPECT_EQ(sev, LogMessage::GetLogToStream(nullptr));
+  EXPECT_EQ(sev, LogMessage::GetMinLogSeverity());
 }
 
 class LogThread {
@@ -340,7 +339,7 @@ class LogThread {
 // Ensure we don't crash when adding/removing streams while threads are going.
 // We should restore the correct global state at the end.
 TEST_F(LogTest, MultipleThreads) {
-  int sev = LogMessage::GetLogToStream(nullptr);
+  int sev = LogMessage::GetMinLogSeverity();
 
   LogThread thread1, thread2, thread3;
   thread1.Start();
@@ -357,7 +356,7 @@ TEST_F(LogTest, MultipleThreads) {
     LogMessage::RemoveLogToStream(&stream3);
   }
 
-  EXPECT_EQ(sev, LogMessage::GetLogToStream(nullptr));
+  EXPECT_EQ(sev, LogMessage::GetMinLogSeverity());
 }
 
 TEST_F(LogTest, WallClockStartTime) {
