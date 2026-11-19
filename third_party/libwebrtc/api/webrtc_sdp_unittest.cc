@@ -5496,5 +5496,42 @@ TEST_F(WebRtcSdpTest, DeserializeSdpWithTooLargeExtmapId) {
   EXPECT_EQ(error.line, "a=extmap:256 http://example.com/082005/ext.htm#ttime");
 }
 
+TEST_F(WebRtcSdpTest, RejectsNegativeAudioMaxptime) {
+  std::string sdp =
+      "v=0\r\n"
+      "o=- 2722475918447876005 2 IN IP4 127.0.0.1\r\n"
+      "s=-\r\n"
+      "t=0 0\r\n"
+      "m=audio 9 UDP/TLS/RTP/SAVPF 111\r\n"
+      "c=IN IP4 0.0.0.0\r\n"
+      "a=rtcp:9 IN IP4 0.0.0.0\r\n"
+      "a=mid:0\r\n"
+      "a=rtpmap:111 opus/48000/2\r\n"
+      "a=maxptime:-1\r\n";
+  SdpParseError error;
+  EXPECT_THAT(CreateSessionDescription(SdpType::kOffer, sdp, &error), IsNull());
+  EXPECT_THAT(error.description,
+              HasSubstr("maxptime (-1) cannot be less than minptime (0)"));
+}
+
+TEST_F(WebRtcSdpTest, RejectsAudioMaxptimeLessThanMinptime) {
+  std::string sdp =
+      "v=0\r\n"
+      "o=- 2722475918447876005 2 IN IP4 127.0.0.1\r\n"
+      "s=-\r\n"
+      "t=0 0\r\n"
+      "m=audio 9 UDP/TLS/RTP/SAVPF 111\r\n"
+      "c=IN IP4 0.0.0.0\r\n"
+      "a=rtcp:9 IN IP4 0.0.0.0\r\n"
+      "a=mid:0\r\n"
+      "a=rtpmap:111 opus/48000/2\r\n"
+      "a=fmtp:111 minptime=20\r\n"
+      "a=maxptime:10\r\n";
+  SdpParseError error;
+  EXPECT_THAT(CreateSessionDescription(SdpType::kOffer, sdp, &error), IsNull());
+  EXPECT_THAT(error.description,
+              HasSubstr("maxptime (10) cannot be less than minptime (20)"));
+}
+
 }  // namespace
 }  // namespace webrtc

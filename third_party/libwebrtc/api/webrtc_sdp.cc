@@ -2946,6 +2946,26 @@ bool ParseContent(absl::string_view message,
   if (media_type == MediaType::AUDIO) {
     AddAudioAttribute(kCodecParamMaxPTime, maxptime_as_string, media_desc);
     AddAudioAttribute(kCodecParamPTime, ptime_as_string, media_desc);
+    int max_minptime = 0;
+    std::optional<int> min_maxptime;
+    for (const Codec& codec : media_desc->codecs()) {
+      int minptime = 0;
+      if (GetParameter(kCodecParamMinPTime, codec.params, &minptime)) {
+        max_minptime = std::max(minptime, max_minptime);
+      }
+      int maxptime = 0;
+      if (GetParameter(kCodecParamMaxPTime, codec.params, &maxptime)) {
+        min_maxptime = min_maxptime.has_value()
+                           ? std::min(*min_maxptime, maxptime)
+                           : maxptime;
+      }
+    }
+    if (min_maxptime.has_value() && *min_maxptime < max_minptime) {
+      StringBuilder description;
+      description << "maxptime (" << *min_maxptime
+                  << ") cannot be less than minptime (" << max_minptime << ").";
+      return ParseFailed(description.Release(), error);
+    }
   }
 
   // RFC 5245
