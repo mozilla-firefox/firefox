@@ -276,7 +276,7 @@ tasks:
             job-name: win32-profile
         treeherder:
             platform: windows2012-32-shippable/opt
-        worker-type: b-win2025
+        worker-type: b-win2025-gpu
         worker:
             chain-of-trust: true
             max-run-time: 2400
@@ -305,7 +305,7 @@ tasks:
             job-name: win64-profile
         treeherder:
             platform: windows2012-64-shippable/opt
-        worker-type: b-win2025
+        worker-type: b-win2025-gpu
         worker:
             chain-of-trust: true
             max-run-time: 2400
@@ -363,7 +363,7 @@ tasks:
             job-name: win64-nightlyasrelease-profile
         treeherder:
             platform: win64-nightlyasrelease/opt
-        worker-type: b-win2025
+        worker-type: b-win2025-gpu
         worker:
             chain-of-trust: true
             max-run-time: 2400
