@@ -404,7 +404,9 @@ class CodeGeneratorShared : public LElementVisitor {
     return deoptLabel_.used() || deoptJumpPending_;
   }
 
-  // Pushes the snapshot offset and jumps to deoptLabel_.
+  // Pushes the snapshot offset and jumps to deoptLabel_. On arm64 the snapshot
+  // offset is passed in BailoutSnapshotOffsetReg and pushed at deoptLabel_
+  // instead.
   void emitBailoutOOL(LSnapshot* snapshot);
 
 // MIPS64, Loong64, and RISC-V64 have no flags register and can't implement

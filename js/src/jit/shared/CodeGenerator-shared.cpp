@@ -232,7 +232,11 @@ bool CodeGeneratorShared::generateOutOfLineCode() {
 }
 
 void CodeGeneratorShared::emitBailoutOOL(LSnapshot* snapshot) {
+#ifdef JS_CODEGEN_ARM64
+  masm.move32(Imm32(snapshot->snapshotOffset()), BailoutSnapshotOffsetReg);
+#else
   masm.push(Imm32(snapshot->snapshotOffset()));
+#endif
   jumpToDeoptLabel();
 }
 
