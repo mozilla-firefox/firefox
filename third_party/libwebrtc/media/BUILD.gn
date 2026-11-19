@@ -286,6 +286,7 @@ if (!build_with_mozilla) {
     "../rtc_base:stringutils",
     "../rtc_base:unique_id_generator",
     "//third_party/abseil-cpp/absl/algorithm:container",
+    "//third_party/abseil-cpp/absl/base:core_headers",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
 }

@@ -90,15 +90,15 @@ std::string BuildCandidate(const Candidate& candidate, bool include_ufrag) {
      << (candidate.address().ipaddr().IsNil()
              ? candidate.address().hostname()
              : candidate.address().ipaddr().ToString())
-     << " " << candidate.address().PortAsString() << " "
-     << kAttributeCandidateTyp << " " << type << " ";
+     << " " << candidate.address().port() << " " << kAttributeCandidateTyp
+     << " " << type << " ";
 
   // Related address
   if (!candidate.related_address().IsNil()) {
     os << kAttributeCandidateRaddr << " "
        << candidate.related_address().ipaddr().ToString() << " "
-       << kAttributeCandidateRport << " "
-       << candidate.related_address().PortAsString() << " ";
+       << kAttributeCandidateRport << " " << candidate.related_address().port()
+       << " ";
   }
 
   // Note that we allow the tcptype to be missing, for backwards
@@ -128,7 +128,7 @@ std::string BuildCandidate(const Candidate& candidate, bool include_ufrag) {
        << candidate.fingerprint()->GetRfc4572Fingerprint();
   }
 
-  return os.str();
+  return os.Release();
 }
 
 // From WebRTC draft section 4.8.1.1 candidate-attribute should be

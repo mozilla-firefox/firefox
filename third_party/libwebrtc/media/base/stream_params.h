@@ -53,6 +53,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/attributes.h"
 #include "absl/strings/string_view.h"
 #include "media/base/rid_description.h"
 #include "rtc_base/unique_id_generator.h"
@@ -182,7 +183,10 @@ struct StreamParams {
                    std::vector<uint32_t>* fid_ssrcs) const;
 
   // Stream ids serialized to SDP.
-  std::vector<std::string> stream_ids() const;
+  const std::vector<std::string>& stream_ids() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return stream_ids_;
+  }
   void set_stream_ids(const std::vector<std::string>& stream_ids);
 
   // Returns the first stream id or "" if none exist. This method exists only

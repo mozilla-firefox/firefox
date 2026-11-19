@@ -541,7 +541,7 @@ index 88890be798..c9aefc297b 100644
  #include "rtc_base/memory/aligned_malloc.h"
  
 diff --git a/media/BUILD.gn b/media/BUILD.gn
-index 318cca42c7..19941885b4 100644
+index 6543dc1ac5..ce536bfcbc 100644
 --- a/media/BUILD.gn
 +++ b/media/BUILD.gn
 @@ -45,6 +45,9 @@ rtc_library("rtc_sdp_video_format_utils") {
@@ -598,7 +598,7 @@ index 318cca42c7..19941885b4 100644
    sources = [
      "base/stream_params.cc",
      "base/stream_params.h",
-@@ -273,6 +287,7 @@ rtc_library("stream_params") {
+@@ -274,6 +288,7 @@ rtc_library("stream_params") {
      "//third_party/abseil-cpp/absl/strings:string_view",
    ]
  }
@@ -606,7 +606,7 @@ index 318cca42c7..19941885b4 100644
  
  rtc_library("media_constants") {
    sources = [
-@@ -286,6 +301,7 @@ rtc_library("media_constants") {
+@@ -287,6 +302,7 @@ rtc_library("media_constants") {
  }
  
  rtc_library("turn_utils") {
@@ -614,7 +614,7 @@ index 318cca42c7..19941885b4 100644
    sources = [
      "base/turn_utils.cc",
      "base/turn_utils.h",
-@@ -296,8 +312,10 @@ rtc_library("turn_utils") {
+@@ -297,8 +313,10 @@ rtc_library("turn_utils") {
      "../rtc_base/system:rtc_export",
    ]
  }
@@ -625,7 +625,7 @@ index 318cca42c7..19941885b4 100644
    sources = [
      "base/rid_description.cc",
      "base/rid_description.h",
-@@ -307,6 +325,7 @@ rtc_library("rid_description") {
+@@ -308,6 +326,7 @@ rtc_library("rid_description") {
      "//third_party/abseil-cpp/absl/strings:string_view",
    ]
  }
@@ -633,7 +633,7 @@ index 318cca42c7..19941885b4 100644
  
  rtc_library("rtc_simulcast_encoder_adapter") {
    visibility = [ "*" ]
-@@ -391,6 +410,11 @@ rtc_library("rtc_internal_video_codecs") {
+@@ -392,6 +411,11 @@ rtc_library("rtc_internal_video_codecs") {
      "//third_party/abseil-cpp/absl/container:inlined_vector",
      "//third_party/abseil-cpp/absl/strings",
    ]
@@ -645,7 +645,7 @@ index 318cca42c7..19941885b4 100644
  
    if (enable_libaom) {
      defines += [ "RTC_USE_LIBAOM_AV1_ENCODER" ]
-@@ -410,6 +434,13 @@ rtc_library("rtc_internal_video_codecs") {
+@@ -411,6 +435,13 @@ rtc_library("rtc_internal_video_codecs") {
      "engine/internal_encoder_factory.cc",
      "engine/internal_encoder_factory.h",
    ]

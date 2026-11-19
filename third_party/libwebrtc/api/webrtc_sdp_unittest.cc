@@ -2099,6 +2099,27 @@ TEST_F(WebRtcSdpTest, SerializeSessionDescriptionWithTransportInfosOutOfOrder) {
                SdpSerialize(NewSessionDescriptionWithCandidates()));
 }
 
+// Tests that the a=rtcp line uses the address of an IPv6 RTCP candidate.
+TEST_F(WebRtcSdpTest, SerializeRtcpLineWithIpv6Candidate) {
+  std::unique_ptr<SessionDescriptionInterface> jdesc =
+      NewSessionDescriptionNoCandidates();
+  ASSERT_THAT(jdesc, NotNull());
+  Candidate candidate(ICE_CANDIDATE_COMPONENT_RTCP, "udp",
+                      SocketAddress("::1", 1235), kCandidatePriority, "", "",
+                      IceCandidateType::kHost, kCandidateGeneration,
+                      kCandidateFoundation1);
+  IceCandidate ice_candidate(kAudioContentName, 0, candidate);
+  ASSERT_TRUE(jdesc->AddCandidate(&ice_candidate));
+  EXPECT_THAT(SdpSerialize(jdesc), HasSubstr("a=rtcp:1235 IN IP6 ::1\r\n"));
+}
+
+// Tests that an m= section without codecs is serialized with a fmt of 0.
+TEST_F(WebRtcSdpTest, SerializeMediaSectionWithoutCodecs) {
+  audio_desc_->set_codecs({});
+  EXPECT_THAT(SdpSerialize(MakeDescriptionWithoutCandidates()),
+              HasSubstr("m=audio 9 RTP/SAVPF 0\r\n"));
+}
+
 TEST_F(WebRtcSdpTest, SerializeSessionDescriptionWithBundles) {
   ContentGroup group1(GROUP_TYPE_BUNDLE);
   group1.AddContentName(kAudioContentName);
@@ -5370,6 +5391,8 @@ TEST_F(WebRtcSdpTest, SctpProtocolWithNonApplication) {
   ASSERT_NE(desc, nullptr);
   std::string serialized;
   EXPECT_TRUE(desc->ToString(&serialized));
+  // Unsupported media sections are rejected and serialized with a fmt of 0.
+  EXPECT_THAT(serialized, HasSubstr("m=unsupported 0 UDP/DTLS/SCTP 0\r\n"));
 }
 
 TEST_F(WebRtcSdpTest, RejectsInvalidCharactersInBundleGroup) {
