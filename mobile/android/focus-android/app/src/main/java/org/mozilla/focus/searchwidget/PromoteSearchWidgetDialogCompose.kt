@@ -6,12 +6,11 @@ package org.mozilla.focus.searchwidget
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,7 +34,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.constraintlayout.compose.ConstraintLayout
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.ui.colors.PhotonColors
 import mozilla.components.ui.icons.R as iconsR
@@ -74,44 +72,24 @@ fun PromoteSearchWidgetDialogCompose(
             },
             DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = false),
         ) {
-            Column(modifier = Modifier.clip(RoundedCornerShape(20.dp))) {
-                ConstraintLayout(
+            Column(
+                modifier =
+                    Modifier.clip(RoundedCornerShape(20.dp))
+                        .wrapContentSize()
+                        .background(colorResource(id = R.color.promote_search_widget_dialog_background)),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(
                     modifier =
-                        Modifier.wrapContentSize()
-                            .background(colorResource(id = R.color.promote_search_widget_dialog_background))
+                        Modifier.align(Alignment.End)
+                            .padding(top = focusDimensions.paddingSmall, end = focusDimensions.paddingDefault)
                 ) {
-                    val (closeButton, content) = createRefs()
-                    Column(
-                        modifier =
-                            Modifier.fillMaxWidth()
-                                .wrapContentHeight()
-                                .padding(top = focusDimensions.paddingSmall, end = focusDimensions.paddingDefault)
-                                .constrainAs(closeButton) {
-                                    top.linkTo(parent.top)
-                                    start.linkTo(parent.start)
-                                    end.linkTo(parent.end)
-                                },
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.End,
-                    ) {
-                        CloseButton(openDialog, onDismiss)
-                    }
-                    Column(
-                        modifier =
-                            Modifier.constrainAs(content) {
-                                top.linkTo(closeButton.bottom)
-                                start.linkTo(parent.start)
-                                end.linkTo(parent.end)
-                            },
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        DialogTitle()
-                        DialogSubtitle()
-                        DialogImage()
-                        ComponentAddWidgetButton({ onAddSearchWidgetButtonClick() }, { onDismiss() }, openDialog)
-                    }
+                    CloseButton(openDialog, onDismiss)
                 }
+                DialogTitle()
+                DialogSubtitle()
+                DialogImage()
+                ComponentAddWidgetButton(onAddSearchWidgetButtonClick, onDismiss, openDialog)
             }
         }
     }

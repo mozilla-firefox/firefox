@@ -303,7 +303,6 @@ dependencies {
     implementation libs.androidx.compose.ui
     implementation libs.androidx.compose.ui.tooling
     implementation libs.androidx.constraintlayout
-    implementation libs.androidx.constraintlayout.compose
     implementation libs.androidx.core
     implementation libs.androidx.core.splashscreen
     implementation libs.androidx.emoji2
