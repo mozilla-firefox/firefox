@@ -101,6 +101,10 @@ run-if = [
   "os == 'mac'",
   "os == 'win'",
 ]
+support-files = [
+  "!/dom/media/mediacontrol/tests/browser/file_non_autoplay.html",
+  "!/dom/media/test/gizmo.mp4",
+]
 
 ["browser_aswebauth_session.js"]
 run-if = ["os == 'mac'"]

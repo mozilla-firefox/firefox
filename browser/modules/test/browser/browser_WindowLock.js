@@ -11,6 +11,8 @@ const { WindowLock } = ChromeUtils.importESModule(
 );
 
 const PREF = "browser.privatebrowsing.lockOnScreenLock.enabled";
+const MEDIA_PAGE =
+  "https://example.com/browser/dom/media/mediacontrol/tests/browser/file_non_autoplay.html";
 
 function getLockDialog(win) {
   return win.document.getElementById("window-lock-dialog");
@@ -364,6 +366,74 @@ add_task(async function test_close_locked_window_skips_page_prompts() {
     "Closing the last private window ends the lock"
   );
 
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function test_lock_suspends_pages() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [PREF, true],
+      ["media.mediacontrol.testingevents.enabled", true],
+    ],
+  });
+  let privateWin = await BrowserTestUtils.openNewBrowserWindow({
+    private: true,
+  });
+  let tab = await BrowserTestUtils.openNewForegroundTab(
+    privateWin.gBrowser,
+    MEDIA_PAGE
+  );
+  let controller = tab.linkedBrowser.browsingContext.mediaController;
+  await SpecialPowers.spawn(tab.linkedBrowser, [], () =>
+    content.document.getElementById("video").play()
+  );
+  await TestUtils.waitForCondition(
+    () => controller.isPlaying,
+    "The media is playing"
+  );
+
+  Services.obs.notifyObservers(null, "screen_lock_notification");
+
+  await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+    let video = content.document.getElementById("video");
+    if (!video.paused) {
+      await ContentTaskUtils.waitForEvent(video, "pause");
+    }
+  });
+  ok(true, "Locking pauses the media");
+  await TestUtils.waitForCondition(
+    () => !controller.isActive,
+    "Locking removes the media from the OS media controls"
+  );
+  await TestUtils.waitForCondition(
+    () =>
+      SpecialPowers.spawn(tab.linkedBrowser, [], () =>
+        content.windowUtils.isInModalState()
+      ),
+    "Locking puts the page into modal state"
+  );
+  ok(controller.isMuted, "Locking mutes the tab");
+  ok(!tab.hasAttribute("muted"), "The tab isn't marked as muted by the user");
+
+  await unlockWith(privateWin, ReauthResult.SUCCESS);
+  await TestUtils.waitForCondition(
+    async () =>
+      !(await SpecialPowers.spawn(tab.linkedBrowser, [], () =>
+        content.windowUtils.isInModalState()
+      )),
+    "Unlocking makes the page leave modal state"
+  );
+  ok(!controller.isMuted, "Unlocking unmutes the tab");
+  ok(
+    await SpecialPowers.spawn(
+      tab.linkedBrowser,
+      [],
+      () => content.document.getElementById("video").paused
+    ),
+    "Unlocking doesn't resume the media"
+  );
+
+  await BrowserTestUtils.closeWindow(privateWin);
   await SpecialPowers.popPrefEnv();
 });
 
