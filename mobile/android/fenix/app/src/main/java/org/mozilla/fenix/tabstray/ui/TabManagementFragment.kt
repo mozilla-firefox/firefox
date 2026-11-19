@@ -569,7 +569,9 @@ class TabManagementFragment : Fragment() {
                     page = page,
                 )
             },
-            onTabClose = { tab -> tabManagerInteractor.onTabClosed(tab, TAB_MANAGER_FEATURE_NAME) },
+            onTabClose = { tab, tabCloseType ->
+                tabManagerInteractor.onTabClosed(tab, TAB_MANAGER_FEATURE_NAME, tabCloseType)
+            },
             onItemClick = { handleItemClick(item = it, handleTabClick = handleTabClick) },
             onItemLongClick = { item ->
                 tabsTrayStore.dispatch(TabsTrayAction.TabItemLongClicked(item))

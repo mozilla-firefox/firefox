@@ -111,6 +111,8 @@ import org.mozilla.fenix.tabstray.data.TabsTrayItem
 import org.mozilla.fenix.tabstray.data.createTab
 import org.mozilla.fenix.tabstray.data.createTabGroup
 import org.mozilla.fenix.tabstray.redux.state.TabsTrayState
+import org.mozilla.fenix.tabstray.telemetry.OnTabClose
+import org.mozilla.fenix.tabstray.telemetry.TabCloseType
 import org.mozilla.fenix.tabstray.ui.tabitems.TabGridTabItem
 import org.mozilla.fenix.tabstray.ui.tabitems.TabGroupMenuButton
 import org.mozilla.fenix.tabstray.ui.tabitems.TabGroupOnboardingGridItem
@@ -177,7 +179,7 @@ private val ignoredItems = setOf(HEADER_ITEM_KEY, SPAN_ITEM_KEY, TAB_GROUP_ONBOA
  * @param reorderingEnabled Whether tabs can be reordered by dragging.
  * @param trackersBlockedCount The number of trackers blocked to display in the footer card.
  * @param dragProcessingState The lifecycle state of tab-group drag handling
- * @param onTabClose Invoked when the user clicks to close a tab.
+ * @param onTabClose Invoked when the user closes a tab, with the [TabCloseType] of the interaction.
  * @param onItemClick Invoked when the user clicks on a tab.
  * @param onItemLongClick Invoked when the user long clicks a tab.
  * @param onEditTabGroupClick Invoked when the user clicks to edit a tab group.
@@ -210,7 +212,7 @@ fun TabLayout(
     reorderingEnabled: Boolean = true,
     trackersBlockedCount: Int? = null,
     dragProcessingState: TabsTrayState.DragProcessingState = TabsTrayState.DragProcessingState.UNINITIALIZED,
-    onTabClose: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     onItemClick: (TabsTrayItem) -> Unit,
     onItemLongClick: (TabsTrayItem) -> Unit,
     onEditTabGroupClick: (TabsTrayItem.TabGroup) -> Unit,
@@ -305,7 +307,7 @@ private fun TabList(
     modifier: Modifier = Modifier,
     reorderingEnabled: Boolean = true,
     trackersBlockedCount: Int? = null,
-    onTabClose: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     onItemClick: (TabsTrayItem) -> Unit,
     onItemLongClick: (TabsTrayItem) -> Unit,
     onEditTabGroupClick: (TabsTrayItem.TabGroup) -> Unit,
@@ -392,7 +394,7 @@ private fun TabGrid(
     modifier: Modifier = Modifier,
     reorderingEnabled: Boolean = true,
     trackersBlockedCount: Int? = null,
-    onTabClose: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     onItemClick: (TabsTrayItem) -> Unit,
     onItemLongClick: (TabsTrayItem) -> Unit,
     onEditTabGroupClick: (TabsTrayItem.TabGroup) -> Unit,
@@ -537,7 +539,7 @@ private fun ReorderableTabGrid(
     modifier: Modifier = Modifier,
     reorderingEnabled: Boolean = true,
     contentPadding: PaddingValues,
-    onTabClose: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     onItemClick: (TabsTrayItem) -> Unit,
     onItemLongClick: (TabsTrayItem) -> Unit,
     itemInteractionHandler: ItemInteractionHandler,
@@ -670,7 +672,7 @@ private fun InteractableTabGrid(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues,
     trackersBlockedCount: Int? = null,
-    onTabClose: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     onItemClick: (TabsTrayItem) -> Unit,
     onItemLongClick: (TabsTrayItem) -> Unit,
     onEditTabGroupClick: (TabsTrayItem.TabGroup) -> Unit,
@@ -913,7 +915,7 @@ private fun LazyGridItemScope.ReorderableTabGridItemContent(
     focusEnabled: Boolean,
     isMultiSelected: Boolean,
     reorderState: GridReorderState,
-    onTabClose: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     onItemClick: (TabsTrayItem) -> Unit,
     onEditTabGroupClick: (TabsTrayItem.TabGroup) -> Unit,
     onCloseTabGroupClick: (TabsTrayItem.TabGroup) -> Unit,
@@ -950,7 +952,7 @@ private fun LazyGridItemScope.ReorderableTabGridItemContent(
                     swipeToDismissBoxState = swipeToDismissBoxState,
                     swipingEnabled = !isInMultiSelectMode,
                     interactionState = interactionState,
-                    onCloseClick = onTabClose,
+                    onTabClose = onTabClose,
                     onClick = onItemClick,
                     thumbnailSizePx = thumbnailSizePx,
                     selectionState = selectionState,
@@ -990,7 +992,7 @@ private fun LazyGridItemScope.InteractableTabGridItemContent(
     focusEnabled: Boolean,
     isMultiSelected: Boolean,
     reorderState: GridInteractionState,
-    onTabClose: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     onItemClick: (TabsTrayItem) -> Unit,
     onEditTabGroupClick: (TabsTrayItem.TabGroup) -> Unit,
     onCloseTabGroupClick: (TabsTrayItem.TabGroup) -> Unit,
@@ -1039,7 +1041,7 @@ private fun LazyGridItemScope.InteractableTabGridItemContent(
                     swipeToDismissBoxState = swipeToDismissBoxState,
                     swipingEnabled = !isInMultiSelectMode,
                     interactionState = interactionState,
-                    onCloseClick = onTabClose,
+                    onTabClose = onTabClose,
                     onClick = onItemClick,
                     thumbnailSizePx = thumbnailSizePx,
                     selectionState = selectionState,
@@ -1097,7 +1099,7 @@ private fun TabListItemContent(
     selectionState: TabsTrayItemSelectionState,
     itemInteractionState: ItemInteractionState,
     listInteractionState: ListInteractionState,
-    onTabClose: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     onItemClick: (TabsTrayItem) -> Unit,
     onEditTabGroupClick: (TabsTrayItem.TabGroup) -> Unit,
     onCloseTabGroupClick: (TabsTrayItem.TabGroup) -> Unit,
@@ -1120,7 +1122,7 @@ private fun TabListItemContent(
                 selectionState = selectionState,
                 interactionState = itemInteractionState,
                 shouldClickListen = shouldClickListen,
-                onCloseClick = onTabClose,
+                onTabClose = onTabClose,
                 onClick = onItemClick,
             )
         }
@@ -1184,7 +1186,7 @@ private fun InteractableTabList(
     selectionMode: TabsTrayState.Mode,
     itemInteractionHandler: ItemInteractionHandler,
     modifier: Modifier = Modifier,
-    onTabClose: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     onItemClick: (TabsTrayItem) -> Unit,
     onItemLongClick: (TabsTrayItem) -> Unit,
     onEditTabGroupClick: (TabsTrayItem.TabGroup) -> Unit,
@@ -1328,7 +1330,7 @@ private fun LazyListScope.interactableTabListContent(
     tabCollectionSemantics: TabCollectionSemantics,
     tabReorderGeometry: TabReorderGeometry,
     itemInteractionHandler: ItemInteractionHandler,
-    onTabClose: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     onItemClick: (TabsTrayItem) -> Unit,
     onEditTabGroupClick: (TabsTrayItem.TabGroup) -> Unit,
     onCloseTabGroupClick: (TabsTrayItem.TabGroup) -> Unit,
@@ -1519,7 +1521,7 @@ private fun ReorderableTabList(
     selectionMode: TabsTrayState.Mode,
     itemInteractionHandler: ItemInteractionHandler,
     modifier: Modifier = Modifier,
-    onTabClose: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     onItemClick: (TabsTrayItem) -> Unit,
     onItemLongClick: (TabsTrayItem) -> Unit,
     onEditTabGroupClick: (TabsTrayItem.TabGroup) -> Unit,
@@ -1638,7 +1640,7 @@ private fun ReorderableTabList(
                                     ),
                                 selectionState = selectionState,
                                 shouldClickListen = shouldClickListen,
-                                onCloseClick = onTabClose,
+                                onTabClose = onTabClose,
                                 onClick = onItemClick,
                             )
                         }
@@ -1810,7 +1812,7 @@ private fun TabListPreview(
                 dragAndDropEnabled = false,
                 displayTabGroupOnboarding = false,
                 liveReorderEnabled = false,
-                onTabClose = tabs::remove,
+                onTabClose = { tab, _ -> tabs.remove(tab) },
                 onItemClick = {},
                 onItemLongClick = {},
                 onEditTabGroupClick = {},
@@ -1853,7 +1855,7 @@ private fun TabGridPreview(
             dragAndDropEnabled = false,
             displayTabGroupOnboarding = false,
             liveReorderEnabled = false,
-            onTabClose = tabs::remove,
+            onTabClose = { tab, _ -> tabs.remove(tab) },
             onItemClick = {},
             onItemLongClick = {},
             onEditTabGroupClick = {},
@@ -1893,7 +1895,7 @@ private fun TabListWindowSizePreview() {
                 dragAndDropEnabled = false,
                 displayTabGroupOnboarding = false,
                 liveReorderEnabled = false,
-                onTabClose = tabs::remove,
+                onTabClose = { tab, _ -> tabs.remove(tab) },
                 onItemClick = {},
                 onItemLongClick = {},
                 onEditTabGroupClick = {},
@@ -1934,7 +1936,7 @@ private fun TabGridWindowSizePreview() {
             dragAndDropEnabled = false,
             displayTabGroupOnboarding = false,
             liveReorderEnabled = false,
-            onTabClose = tabs::remove,
+            onTabClose = { tab, _ -> tabs.remove(tab) },
             onItemClick = {},
             onItemLongClick = {},
             onEditTabGroupClick = {},
@@ -2007,7 +2009,7 @@ private fun MultiSelectPreview(
             displayTabsInGrid = displayTabsInGrid,
             dragAndDropEnabled = false,
             displayTabGroupOnboarding = false,
-            onTabClose = {},
+            onTabClose = { _, _ -> },
             onItemClick = { tab ->
                 when (tab) {
                     is TabsTrayItem.Tab ->

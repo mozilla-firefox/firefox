@@ -47,6 +47,8 @@ import org.mozilla.fenix.ext.toShortUrl
 import org.mozilla.fenix.tabstray.TabsTrayTestTag
 import org.mozilla.fenix.tabstray.data.TabsTrayItem
 import org.mozilla.fenix.tabstray.data.createTab
+import org.mozilla.fenix.tabstray.telemetry.OnTabClose
+import org.mozilla.fenix.tabstray.telemetry.TabCloseType
 import org.mozilla.fenix.theme.FirefoxTheme
 
 private val ThumbnailWidth = 78.dp
@@ -63,7 +65,8 @@ internal val TabListItemHeight: Dp
  * @param selectionState: The tab item's [TabsTrayItemSelectionState]
  * @param shouldClickListen Whether the item should stop listening to click events.
  * @param swipingEnabled Whether the item is swipeable.
- * @param onCloseClick Invoked when the close button is clicked.
+ * @param onTabClose Invoked when a gesture is performed to close a tab. The [TabsTrayItem.Tab] and [TabCloseType] are
+ *   returned with the callback.
  * @param onClick Invoked when the item is clicked.
  * @param onLongClick Invoked when the item is long clicked.
  */
@@ -75,7 +78,7 @@ fun TabListTabItem(
     selectionState: TabsTrayItemSelectionState = TabsTrayItemSelectionState(),
     shouldClickListen: Boolean = true,
     swipingEnabled: Boolean = true,
-    onCloseClick: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     onClick: (TabsTrayItem) -> Unit,
     onLongClick: ((TabsTrayItem) -> Unit)? = null,
 ) {
@@ -84,8 +87,8 @@ fun TabListTabItem(
     // SwipeToDismissBox invokes onDismiss from a LaunchedEffect keyed on the callback, so an
     // unstable lambda would re-close the tab on every recomposition that follows the dismissal.
     val currentTab by rememberUpdatedState(tab)
-    val currentOnCloseClick by rememberUpdatedState(onCloseClick)
-    val onDismiss = remember { { _: SwipeToDismissBoxValue -> currentOnCloseClick(currentTab) } }
+    val currentOnTabClose by rememberUpdatedState(onTabClose)
+    val onDismiss = remember { { _: SwipeToDismissBoxValue -> currentOnTabClose(currentTab, TabCloseType.SWIPE) } }
 
     SwipeToDismissBox(
         state = swipeToDismissBoxState,
@@ -104,7 +107,7 @@ fun TabListTabItem(
             // there by tabListItemShapeStyling, and it only picks up the alpha if it is drawn
             // inside the layer.
             modifier = Modifier.swipeToDismissFade(swipeToDismissBoxState).then(modifier),
-            onCloseClick = onCloseClick,
+            onTabClose = onTabClose,
             onClick = onClick,
             onLongClick = onLongClick,
         )
@@ -119,7 +122,7 @@ private fun TabContent(
     selectionState: TabsTrayItemSelectionState,
     shouldClickListen: Boolean,
     modifier: Modifier = Modifier,
-    onCloseClick: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     onClick: (TabsTrayItem) -> Unit,
     onLongClick: ((TabsTrayItem) -> Unit)? = null,
 ) {
@@ -173,7 +176,7 @@ private fun TabContent(
 
         TabListIcon(
             selectionState = selectionState,
-            onCloseClick = onCloseClick,
+            onTabClose = onTabClose,
             tab = tab,
         )
     }
@@ -182,7 +185,7 @@ private fun TabContent(
 @Composable
 private fun TabListIcon(
     selectionState: TabsTrayItemSelectionState,
-    onCloseClick: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     tab: TabsTrayItem.Tab,
 ) {
     if (!selectionState.multiSelectEnabled) {
@@ -193,7 +196,7 @@ private fun TabListIcon(
                     tab.title,
                 ),
             modifier = Modifier.testTag(TabsTrayTestTag.TAB_ITEM_CLOSE),
-            onClick = { onCloseClick(tab) },
+            onClick = { onTabClose(tab, TabCloseType.TAP) },
         )
     } else {
         RadioCheckmark(
@@ -370,7 +373,7 @@ private fun TabListTabItemPreview(
                     url = tabListItemState.url,
                     title = tabListItemState.title,
                 ),
-            onCloseClick = {},
+            onTabClose = { _, _ -> },
             onClick = {},
             selectionState = tabListItemState.tabItemSelectionState,
             interactionState = tabListItemState.itemInteractionState,
@@ -389,7 +392,7 @@ private fun TabListTabItemMediaPreview() {
                     title = "Mozilla Domain",
                     isMediaActive = true,
                 ),
-            onCloseClick = {},
+            onTabClose = { _, _ -> },
             onClick = {},
         )
     }

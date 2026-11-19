@@ -38,6 +38,8 @@ import org.mozilla.fenix.tabstray.redux.state.TabsTrayState.InactiveTabsState
 import org.mozilla.fenix.tabstray.redux.state.TabsTrayState.Mode
 import org.mozilla.fenix.tabstray.redux.state.TabsTrayState.NormalTabsState
 import org.mozilla.fenix.tabstray.redux.state.TabsTrayState.TabsTrayConfig
+import org.mozilla.fenix.tabstray.telemetry.OnTabClose
+import org.mozilla.fenix.tabstray.telemetry.TabCloseType
 import org.mozilla.fenix.tabstray.ui.inactivetabs.InactiveTabsList
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.trackingprotection.TrackersBlockedCard
@@ -57,7 +59,7 @@ private val EmptyPageWidth = 170.dp
  * @param enteringGroupId The id of a group entering composition, if any. Can be null.
  * @param trackersBlockedCount The number of trackers blocked to display in the footer card.
  * @param focusEnabled Whether the focus indicator is enabled.
- * @param onTabClose Invoked when the user clicks to close a tab.
+ * @param onTabClose Invoked when the user closes a tab, with the [TabCloseType] of the interaction.
  * @param onItemClick Invoked when the user clicks on a tab.
  * @param onItemLongClick Invoked when the user long clicks a tab.
  * @param shouldShowInactiveTabsAutoCloseDialog Whether the inactive tabs auto close dialog should be displayed.
@@ -97,7 +99,7 @@ internal fun NormalTabsPage(
     enteringGroupId: String?,
     trackersBlockedCount: Int? = null,
     focusEnabled: Boolean,
-    onTabClose: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     onItemClick: (TabsTrayItem) -> Unit,
     onItemLongClick: (TabsTrayItem) -> Unit,
     shouldShowInactiveTabsAutoCloseDialog: Boolean,

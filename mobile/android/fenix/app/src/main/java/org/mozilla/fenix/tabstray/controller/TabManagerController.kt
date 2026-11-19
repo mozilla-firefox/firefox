@@ -64,6 +64,7 @@ import org.mozilla.fenix.tabstray.redux.action.TabsTrayAction
 import org.mozilla.fenix.tabstray.redux.state.Page
 import org.mozilla.fenix.tabstray.redux.state.TabsTrayState
 import org.mozilla.fenix.tabstray.redux.store.TabsTrayStore
+import org.mozilla.fenix.tabstray.telemetry.TabCloseType
 import org.mozilla.fenix.tabstray.ui.TabManagementFragmentDirections
 import org.mozilla.fenix.utils.Settings
 
@@ -94,8 +95,9 @@ interface TabManagerController : SyncedTabsController, InactiveTabsController, T
      *
      * @param tab The [TabsTrayItem.Tab] to be removed from the Tab Manager.
      * @param source app feature from which the tab with [tabId] was closed.
+     * @param tabCloseType the interaction performed by user for tab deletion, either swipe, tap or unknown
      */
-    fun handleTabDeletion(tab: TabsTrayItem.Tab, source: String? = null)
+    fun handleTabDeletion(tab: TabsTrayItem.Tab, source: String? = null, tabCloseType: TabCloseType)
 
     /**
      * Deletes the [TabsTrayItem] with the specified [tabId]
@@ -294,8 +296,8 @@ class DefaultTabManagerController(
         }
     }
 
-    override fun handleTabDeletion(tab: TabsTrayItem.Tab, source: String?) {
-        deleteTab(tab, source, isConfirmed = false)
+    override fun handleTabDeletion(tab: TabsTrayItem.Tab, source: String?, tabCloseType: TabCloseType) {
+        deleteTab(tab, source, tabCloseType, isConfirmed = false)
     }
 
     override fun handleDeletePrivateTabWarningAccepted(tabId: String, source: String?) {
@@ -305,10 +307,10 @@ class DefaultTabManagerController(
             Logger.error("handleDeletePrivateTabWarningAccepted: Failed to find private tab with ID $tabId")
             return
         }
-        deleteTab(privateTab, source, isConfirmed = true)
+        deleteTab(privateTab, source, TabCloseType.UNKNOWN, isConfirmed = true)
     }
 
-    private fun deleteTab(tab: TabsTrayItem.Tab, source: String?, isConfirmed: Boolean) {
+    private fun deleteTab(tab: TabsTrayItem.Tab, source: String?, tabCloseType: TabCloseType, isConfirmed: Boolean) {
         val isPrivate = tab.private
         val isNormal = !isPrivate
 
@@ -322,7 +324,9 @@ class DefaultTabManagerController(
             tabsUseCases.removeTab(excludedFallbackTabIds = excludedFallbackTabIds, tabId = tab.id)
             showUndoSnackbarForTab(isPrivate)
 
-            TabsTray.closedExistingTab.record(TabsTray.ClosedExistingTabExtra(source ?: "unknown"))
+            TabsTray.closedExistingTab.record(
+                TabsTray.ClosedExistingTabExtra(source ?: "unknown", type = tabCloseType.telemetryId)
+            )
             tabsTrayStore.dispatch(TabsTrayAction.ExitSelectMode)
         } else {
             handleNoTabsRemainingDeleteTab(
@@ -330,6 +334,7 @@ class DefaultTabManagerController(
                 tab = tab,
                 source = source,
                 isConfirmed = isConfirmed,
+                tabCloseType = tabCloseType,
             )
         }
     }
@@ -338,6 +343,7 @@ class DefaultTabManagerController(
         isPrivate: Boolean,
         tab: TabsTrayItem.Tab,
         source: String?,
+        tabCloseType: TabCloseType,
         isConfirmed: Boolean,
     ) {
         val browserState = browserStore.state
@@ -359,7 +365,9 @@ class DefaultTabManagerController(
             dismissTabManagerAndNavigateHome(tab.id)
         }
 
-        TabsTray.closedExistingTab.record(TabsTray.ClosedExistingTabExtra(source ?: "unknown"))
+        TabsTray.closedExistingTab.record(
+            TabsTray.ClosedExistingTabExtra(source ?: "unknown", type = tabCloseType.telemetryId)
+        )
         tabsTrayStore.dispatch(TabsTrayAction.ExitSelectMode)
     }
 
@@ -585,7 +593,7 @@ class DefaultTabManagerController(
 
     override fun handleCloseInactiveTabClicked(tab: TabsTrayItem.Tab) {
         TabsTray.closeInactiveTab.add()
-        handleTabDeletion(tab, INACTIVE_TABS_FEATURE_NAME)
+        handleTabDeletion(tab, INACTIVE_TABS_FEATURE_NAME, TabCloseType.TAP)
     }
 
     override fun handleInactiveTabsHeaderClicked(expanded: Boolean) {

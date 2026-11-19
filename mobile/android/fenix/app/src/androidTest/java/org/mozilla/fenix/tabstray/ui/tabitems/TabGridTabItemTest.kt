@@ -9,13 +9,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.compose.draggable.ItemInteractionState
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mozilla.fenix.tabstray.TabsTrayTestTag
 import org.mozilla.fenix.tabstray.data.createTab
+import org.mozilla.fenix.tabstray.telemetry.OnTabClose
+import org.mozilla.fenix.tabstray.telemetry.TabCloseType
 
 /**
  * Note - this test runs in the androidTest directory due to difficulties handling the Bitmaps coming from
@@ -126,17 +132,42 @@ class TabGridTabItemTest {
         composeTestRule.onNodeWithTag(TabsTrayTestTag.TAB_ITEM_MEDIA_INDICATOR).assertDoesNotExist()
     }
 
+    @Test
+    fun verifyTappingCloseButtonPassesTapCloseType() {
+        var closeType: TabCloseType? = null
+        composeTestRule.setContent {
+            ComposableUnderTest(onTabClose = { _, type -> closeType = type })
+        }
+
+        composeTestRule.onNodeWithTag(TabsTrayTestTag.TAB_ITEM_CLOSE).performClick()
+
+        composeTestRule.runOnIdle { assertEquals(TabCloseType.TAP, closeType) }
+    }
+
+    @Test
+    fun verifySwipingItemPassesSwipeCloseType() {
+        var closeType: TabCloseType? = null
+        composeTestRule.setContent {
+            ComposableUnderTest(onTabClose = { _, type -> closeType = type })
+        }
+
+        composeTestRule.onNodeWithTag(TabsTrayTestTag.TAB_ITEM_ROOT).performTouchInput { swipeLeft() }
+
+        composeTestRule.runOnIdle { assertEquals(TabCloseType.SWIPE, closeType) }
+    }
+
     @Composable
     private fun ComposableUnderTest(
         interactionState: ItemInteractionState = ItemInteractionState(),
         isMediaActive: Boolean = false,
+        onTabClose: OnTabClose = { _, _ -> },
     ) {
         TabGridTabItem(
             tab = createTab(url = "mozilla.org", isMediaActive = isMediaActive),
             swipeToDismissBoxState = rememberSwipeToDismissBoxState(),
             swipingEnabled = true,
             interactionState = interactionState,
-            onCloseClick = { _ -> },
+            onTabClose = onTabClose,
             onClick = { _ -> },
         )
     }

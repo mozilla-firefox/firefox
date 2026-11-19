@@ -65,7 +65,7 @@ fun expandedTabGroupActions(
                 else -> {}
             }
         },
-        onTabClose = { dispatch(TabGroupAction.TabClosed(tab = it, group = group)) },
+        onTabClose = { tab, _ -> dispatch(TabGroupAction.TabClosed(tab = tab, group = group)) },
         onDeleteTabGroupClick = { dispatch(TabGroupAction.DeleteClicked(group)) },
         onEditTabGroupClick = { dispatch(TabGroupAction.EditTabGroupClicked(group = group)) },
         onCloseTabGroupClick = { dispatch(TabGroupAction.CloseTabGroupClicked(group = group)) },

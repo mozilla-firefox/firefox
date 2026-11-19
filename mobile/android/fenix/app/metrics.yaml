@@ -7124,8 +7124,16 @@ tabs_tray:
         description: |
           From which app feature was an existing tab closed.
         type: string
+      type:
+        description: |
+          The interaction used to close the tab: `tap` for the close button,
+          `swipe` for the swipe-to-dismiss gesture, or `unknown` when the
+          closure was confirmed through a dialog and the original interaction
+          is no longer known.
+        type: string
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/11273
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2059836
     data_reviews:
       - https://github.com/mozilla-mobile/fenix/pull/12036
       - https://github.com/mozilla-mobile/fenix/pull/15713#issuecomment-703972068
@@ -7133,6 +7141,7 @@ tabs_tray:
       - https://github.com/mozilla-mobile/fenix/pull/20517#pullrequestreview-718069041
       - https://github.com/mozilla-mobile/fenix/pull/20508#issuecomment-902160532
       - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2059836
     data_sensitivity:
       - interaction
     notification_emails:

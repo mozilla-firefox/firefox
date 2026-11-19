@@ -63,6 +63,8 @@ import org.mozilla.fenix.compose.swipeToDismissFade
 import org.mozilla.fenix.tabstray.TabsTrayTestTag
 import org.mozilla.fenix.tabstray.data.TabsTrayItem
 import org.mozilla.fenix.tabstray.data.createTab
+import org.mozilla.fenix.tabstray.telemetry.OnTabClose
+import org.mozilla.fenix.tabstray.telemetry.TabCloseType
 import org.mozilla.fenix.theme.FirefoxTheme
 
 private val TabHeaderFaviconSize = 12.dp
@@ -74,7 +76,8 @@ private val TabHeaderFaviconSize = 12.dp
  * @param swipeToDismissBoxState The swipe state of the item.
  * @param swipingEnabled Whether swipe-to-dismiss is enabled.
  * @param interactionState The tab item's interaction state (hover, drag, etc)
- * @param onCloseClick Invoked when the close button is clicked.
+ * @param onTabClose Invoked when a gesture is performed to close a tab. The [TabsTrayItem.Tab] and [TabCloseType] are
+ *   returned with the callback.
  * @param onClick Invoked when the item is clicked.
  * @param modifier The Modifier param
  * @param thumbnailSizePx The size of the tab's thumbnail in pixels.
@@ -90,7 +93,7 @@ fun TabGridTabItem(
     swipeToDismissBoxState: SwipeToDismissBoxState,
     swipingEnabled: Boolean,
     interactionState: ItemInteractionState,
-    onCloseClick: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     onClick: (TabsTrayItem) -> Unit,
     modifier: Modifier = Modifier,
     thumbnailSizePx: Int = 50,
@@ -108,8 +111,8 @@ fun TabGridTabItem(
     // SwipeToDismissBox invokes onDismiss from a LaunchedEffect keyed on the callback, so an
     // unstable lambda would re-close the tab on every recomposition that follows the dismissal.
     val currentTab by rememberUpdatedState(tab)
-    val currentOnCloseClick by rememberUpdatedState(onCloseClick)
-    val onDismiss = remember { { _: SwipeToDismissBoxValue -> currentOnCloseClick(currentTab) } }
+    val currentOnTabClose by rememberUpdatedState(onTabClose)
+    val onDismiss = remember { { _: SwipeToDismissBoxValue -> currentOnTabClose(currentTab, TabCloseType.SWIPE) } }
 
     SwipeToDismissBox(
         modifier = modifier,
@@ -129,7 +132,7 @@ fun TabGridTabItem(
                     onClick = onClick,
                     onLongClick = onLongClick,
                 ),
-            onCloseTabClick = onCloseClick,
+            onTabClose = onTabClose,
             interactionState = interactionState,
             itemInfo = itemInfo,
             accessibilityActions = accessibilityActions,
@@ -145,7 +148,7 @@ fun TabGridTabItem(
  * @param modifier: The Modifier param
  * @param selectionState: The tab's selection state - active, multi-selection, etc.
  * @param clickHandler: The tab's click handler,
- * @param onCloseTabClick: Invoked when a tab is closed.
+ * @param onTabClose: Invoked when the close button is tapped, with [TabCloseType.TAP].
  * @param interactionState The tab item's interaction state (hover, drag, etc)
  * @param itemInfo: Optional CollectionItemInfo? for a11y to read this item in a collection.
  * @param accessibilityActions Accessibility actions offered on the item, such as reordering it.
@@ -162,7 +165,7 @@ private fun TabContent(
             isSelected = false,
         ),
     clickHandler: TabsTrayItemClickHandler,
-    onCloseTabClick: ((TabsTrayItem.Tab) -> Unit),
+    onTabClose: OnTabClose,
     interactionState: ItemInteractionState,
     itemInfo: CollectionItemInfo? = null,
     accessibilityActions: List<CustomAccessibilityAction> = emptyList(),
@@ -197,7 +200,7 @@ private fun TabContent(
                 Header(
                     tab = tab,
                     selectionState = selectionState,
-                    onCloseClick = onCloseTabClick,
+                    onTabClose = onTabClose,
                 )
 
                 Spacer(modifier = Modifier.height(FirefoxTheme.layout.space.static25))
@@ -231,7 +234,7 @@ private fun TabContent(
 private fun Header(
     tab: TabsTrayItem.Tab,
     selectionState: TabsTrayItemSelectionState,
-    onCloseClick: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().wrapContentHeight(),
@@ -257,7 +260,7 @@ private fun Header(
         UtilityIcon(
             tab = tab,
             selectionState = selectionState,
-            onCloseClick = onCloseClick,
+            onTabClose = onTabClose,
         )
     }
 }
@@ -291,12 +294,12 @@ private fun TabIcon(tab: TabsTrayItem.Tab) {
 private fun UtilityIcon(
     tab: TabsTrayItem.Tab,
     selectionState: TabsTrayItemSelectionState,
-    onCloseClick: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
 ) {
     if (!selectionState.multiSelectEnabled) {
         CloseButton(
             tab = tab,
-            onCloseClick = onCloseClick,
+            onTabClose = onTabClose,
         )
     } else {
         Box(
@@ -311,11 +314,11 @@ private fun UtilityIcon(
 @Composable
 private fun CloseButton(
     tab: TabsTrayItem.Tab,
-    onCloseClick: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
 ) {
     IconButton(
         onClick = {
-            onCloseClick(tab)
+            onTabClose(tab, TabCloseType.TAP)
         },
         contentDescription =
             stringResource(
@@ -470,7 +473,7 @@ private fun TabGridItemPreview(
                 ),
             thumbnailSize = 108,
             clickHandler = TabsTrayItemClickHandler(onClick = {}, onCloseClick = {}),
-            onCloseTabClick = {},
+            onTabClose = { _, _ -> },
             interactionState = tabGridItemState.value.interactionState,
         )
     }
@@ -495,7 +498,7 @@ private fun TabGridItemMediaPreview() {
                 ),
             thumbnailSize = 108,
             clickHandler = TabsTrayItemClickHandler(onClick = {}, onCloseClick = {}),
-            onCloseTabClick = {},
+            onTabClose = { _, _ -> },
             interactionState = ItemInteractionState(),
         )
     }

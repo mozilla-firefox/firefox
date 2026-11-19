@@ -30,6 +30,8 @@ import org.mozilla.fenix.tabstray.data.TabsTrayItem
 import org.mozilla.fenix.tabstray.redux.state.TabsTrayState.Mode
 import org.mozilla.fenix.tabstray.redux.state.TabsTrayState.PrivateBrowsingState
 import org.mozilla.fenix.tabstray.redux.state.TabsTrayState.TabsTrayConfig
+import org.mozilla.fenix.tabstray.telemetry.OnTabClose
+import org.mozilla.fenix.tabstray.telemetry.TabCloseType
 import org.mozilla.fenix.theme.FirefoxTheme
 
 private val EmptyPageWidth = 190.dp
@@ -39,7 +41,7 @@ private val EmptyPageWidth = 190.dp
  *
  * @param state The current snapshot of [PrivateBrowsingState].
  * @param config The current snapshot of [TabsTrayConfig].
- * @param onTabClose Invoked when the user clicks to close a tab.
+ * @param onTabClose Invoked when the user closes a tab, with the [TabCloseType] of the interaction.
  * @param onItemClick Invoked when the user clicks on a tab.
  * @param onItemLongClick Invoked when the user long clicks on a tab.
  * @param itemInteractionHandler Handles tab interactions such as moves and drag and drop.
@@ -50,7 +52,7 @@ private val EmptyPageWidth = 190.dp
 internal fun PrivateTabsPage(
     state: PrivateBrowsingState,
     config: TabsTrayConfig,
-    onTabClose: (TabsTrayItem.Tab) -> Unit,
+    onTabClose: OnTabClose,
     onItemClick: (TabsTrayItem) -> Unit,
     onItemLongClick: (TabsTrayItem) -> Unit,
     itemInteractionHandler: ItemInteractionHandler,

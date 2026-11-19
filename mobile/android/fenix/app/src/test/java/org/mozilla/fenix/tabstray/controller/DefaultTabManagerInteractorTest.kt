@@ -10,6 +10,7 @@ import io.mockk.verifySequence
 import mozilla.components.browser.state.state.createTab
 import org.junit.Test
 import org.mozilla.fenix.tabstray.data.TabsTrayItem
+import org.mozilla.fenix.tabstray.telemetry.TabCloseType
 
 class DefaultTabManagerInteractorTest {
 
@@ -27,9 +28,9 @@ class DefaultTabManagerInteractorTest {
 
     @Test
     fun `WHEN user deletes one browser tab page THEN the Interactor delegates to the controller`() {
-        interactor.onTabClosed(testTab)
+        interactor.onTabClosed(testTab, tabCloseType = TabCloseType.TAP)
 
-        verifySequence { controller.handleTabDeletion(testTab) }
+        verifySequence { controller.handleTabDeletion(testTab, null, TabCloseType.TAP) }
     }
 
     @Test

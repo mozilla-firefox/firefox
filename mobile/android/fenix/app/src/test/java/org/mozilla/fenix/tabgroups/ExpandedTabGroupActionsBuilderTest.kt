@@ -26,6 +26,7 @@ import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.tabstray.data.TabsTrayItem
 import org.mozilla.fenix.tabstray.data.createTabGroup
 import org.mozilla.fenix.tabstray.redux.action.TabGroupAction
+import org.mozilla.fenix.tabstray.telemetry.TabCloseType
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class) // for gleanTestRule
@@ -58,7 +59,7 @@ class ExpandedTabGroupActionsBuilderTest {
 
     @Test
     fun `WHEN a tab is closed THEN TabClosed is dispatched for that tab and group`() {
-        buildActions().onTabClose(tab1)
+        buildActions().onTabClose(tab1, TabCloseType.TAP)
 
         assertEquals(
             expected = listOf<TabGroupAction>(TabGroupAction.TabClosed(tab = tab1, group = group)),

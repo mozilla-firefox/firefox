@@ -203,7 +203,7 @@ class TabGroupOnboardingItemTest {
                         selectionMode = TabsTrayState.Mode.Normal,
                         focusEnabled = true,
                         itemInteractionHandler = NoOpItemInteractionHandler,
-                        onTabClose = {},
+                        onTabClose = { _, _ -> },
                         onItemClick = {},
                         onItemLongClick = {},
                         onEditTabGroupClick = {},

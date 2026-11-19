@@ -555,7 +555,7 @@ private fun TabGroupCardPreview(
                 swipeToDismissBoxState = rememberSwipeToDismissBoxState(),
                 swipingEnabled = true,
                 interactionState = tabGroupCardState.interactionState,
-                onCloseClick = {},
+                onTabClose = { _, _ -> },
                 onClick = {},
                 modifier = Modifier.weight(1f),
                 thumbnailSizePx = 50,

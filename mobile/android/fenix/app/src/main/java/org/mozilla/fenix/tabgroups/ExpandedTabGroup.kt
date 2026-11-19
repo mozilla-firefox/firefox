@@ -44,6 +44,8 @@ import org.mozilla.fenix.tabstray.data.TabsTrayItem
 import org.mozilla.fenix.tabstray.data.createTab
 import org.mozilla.fenix.tabstray.data.createTabGroup
 import org.mozilla.fenix.tabstray.redux.state.TabsTrayState
+import org.mozilla.fenix.tabstray.telemetry.OnTabClose
+import org.mozilla.fenix.tabstray.telemetry.TabCloseType
 import org.mozilla.fenix.tabstray.ui.tabitems.LOREM_IPSUM
 import org.mozilla.fenix.tabstray.ui.tabitems.TabGroupMenuButton
 import org.mozilla.fenix.tabstray.ui.tabpage.TabLayout
@@ -206,7 +208,7 @@ private fun ExpandedTabGroupPreview(
                 actions =
                     ExpandedTabGroupActions(
                         onItemClick = {},
-                        onTabClose = {},
+                        onTabClose = { _, _ -> },
                         onDeleteTabGroupClick = {},
                         onEditTabGroupClick = {},
                         onCloseTabGroupClick = {},
@@ -326,7 +328,8 @@ private class ExpandedTabGroupPreviewProvider : PreviewParameterProvider<Expande
  * User interactions handled by the [ExpandedTabGroup] view.
  *
  * @property onItemClick Invoked when the user clicks on a [TabsTrayItem] in the group.
- * @property onTabClose Invoked when the user clicks to close a [TabsTrayItem.Tab] in the group.
+ * @property onTabClose Invoked when the user closes a [TabsTrayItem.Tab] in the group, with the [TabCloseType] of the
+ *   interaction.
  * @property onDeleteTabGroupClick Invoked when the user clicks on delete tab group.
  * @property onEditTabGroupClick Invoked when the user clicks to edit the group.
  * @property onCloseTabGroupClick Invoked when the user clicks to close a tab group.
@@ -337,7 +340,7 @@ private class ExpandedTabGroupPreviewProvider : PreviewParameterProvider<Expande
  */
 data class ExpandedTabGroupActions(
     val onItemClick: (TabsTrayItem) -> Unit,
-    val onTabClose: (TabsTrayItem.Tab) -> Unit,
+    val onTabClose: OnTabClose,
     val onDeleteTabGroupClick: () -> Unit,
     val onEditTabGroupClick: () -> Unit,
     val onCloseTabGroupClick: () -> Unit,
