@@ -1385,7 +1385,15 @@ nsresult nsObjectLoadingContent::CloseChannel() {
     if (listenerGrip) {
       // mFinalListener is only set by LoadObject after OnStartRequest, or
       // by OnStartRequest in the case of late-opened plugin streams
-      listenerGrip->OnStopRequest(channelGrip, NS_BINDING_ABORTED);
+      if (nsContentUtils::IsSafeToRunScript()) {
+        listenerGrip->OnStopRequest(channelGrip, NS_BINDING_ABORTED);
+      } else {
+        nsContentUtils::AddScriptRunner(NS_NewRunnableFunction(
+            "nsObjectLoadingContent::CloseChannel",
+            [channelGrip, listenerGrip]() {
+              listenerGrip->OnStopRequest(channelGrip, NS_BINDING_ABORTED);
+            }));
+      }
     }
   }
   return NS_OK;
