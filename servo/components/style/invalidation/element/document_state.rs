@@ -150,7 +150,7 @@ where
         state_and_attributes::invalidated_self(element);
     }
 
-    fn invalidated_sibling(&mut self, sibling: E, of: E) {
-        state_and_attributes::invalidated_sibling(sibling, of);
+    fn invalidated_sibling_subtree(&mut self, sibling: E, of: E, invalidated_sibling: bool) {
+        state_and_attributes::invalidated_sibling_subtree(sibling, of, invalidated_sibling);
     }
 }

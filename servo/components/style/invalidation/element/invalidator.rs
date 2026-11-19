@@ -165,9 +165,9 @@ where
     /// Executes an action when `Self` is invalidated.
     fn invalidated_self(&mut self, element: E);
 
-    /// Executes an action when `sibling` is invalidated as a sibling of
-    /// `of`.
-    fn invalidated_sibling(&mut self, sibling: E, of: E);
+    /// Executes an action when `sibling` or a descendant is invalidated as a sibling of `of`.
+    /// if `invalidated_sibling` is true, the `sibling` itself is invalid.
+    fn invalidated_sibling_subtree(&mut self, sibling: E, of: E, invalidated_sibling: bool);
 
     /// Called when a highlight pseudo-element (::selection, ::highlight,
     /// ::target-text) style is invalidated. These pseudos have their styles
@@ -582,7 +582,7 @@ pub struct InvalidationResult {
     /// Whether the element's descendants were invalidated.
     invalidated_descendants: bool,
     /// Whether the element's siblings were invalidated.
-    invalidated_siblings: bool,
+    invalidated_siblings_or_sibling_descendants: bool,
 }
 
 impl InvalidationResult {
@@ -591,23 +591,23 @@ impl InvalidationResult {
         Self {
             invalidated_self: false,
             invalidated_descendants: false,
-            invalidated_siblings: false,
+            invalidated_siblings_or_sibling_descendants: false,
         }
     }
 
-    /// Whether the invalidation has invalidate the element itself.
+    /// Whether the invalidation has invalidated the element itself.
     pub fn has_invalidated_self(&self) -> bool {
         self.invalidated_self
     }
 
-    /// Whether the invalidation has invalidate desendants.
+    /// Whether the invalidation has invalidated descendants.
     pub fn has_invalidated_descendants(&self) -> bool {
         self.invalidated_descendants
     }
 
-    /// Whether the invalidation has invalidate siblings.
-    pub fn has_invalidated_siblings(&self) -> bool {
-        self.invalidated_siblings
+    /// Whether the invalidation has invalidated siblings or their descendants.
+    pub fn has_invalidated_siblings_or_sibling_descendants(&self) -> bool {
+        self.invalidated_siblings_or_sibling_descendants
     }
 }
 
@@ -673,12 +673,13 @@ where
         }
 
         let invalidated_descendants = self.invalidate_descendants(&descendant_invalidations);
-        let invalidated_siblings = self.invalidate_siblings(&mut sibling_invalidations);
+        let invalidated_siblings_or_sibling_descendants =
+            self.invalidate_siblings(&mut sibling_invalidations);
 
         InvalidationResult {
             invalidated_self,
             invalidated_descendants,
-            invalidated_siblings,
+            invalidated_siblings_or_sibling_descendants,
         }
     }
 
@@ -708,16 +709,16 @@ where
                 sibling_invalidations,
             );
 
-            if invalidated_sibling {
-                sibling_invalidator
-                    .processor
-                    .invalidated_sibling(sibling, self.element);
-            }
-
-            any_invalidated |= invalidated_sibling;
-
-            any_invalidated |=
+            let invalidated_sibling_descendants =
                 sibling_invalidator.invalidate_descendants(&invalidations_for_descendants);
+            if invalidated_sibling || invalidated_sibling_descendants {
+                sibling_invalidator.processor.invalidated_sibling_subtree(
+                    sibling,
+                    self.element,
+                    invalidated_sibling,
+                );
+                any_invalidated = true;
+            }
 
             if sibling_invalidations.is_empty() {
                 break;
