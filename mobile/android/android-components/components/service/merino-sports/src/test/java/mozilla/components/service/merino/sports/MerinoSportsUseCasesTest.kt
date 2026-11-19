@@ -11,7 +11,6 @@ import mozilla.components.support.test.whenever
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -19,7 +18,8 @@ class MerinoSportsUseCasesTest {
 
     @After
     fun cleanup() {
-        MerinoSportsUseCases.destroy()
+        GlobalMerinoSportsDependencyProvider.provider = null
+        GlobalMerinoSportsDependencyProvider.storage = null
     }
 
     @Test
@@ -29,7 +29,7 @@ class MerinoSportsUseCasesTest {
             val storage = MerinoMatchesStorage.inMemory()
             val matches = MerinoMatches(previous = emptyList(), current = emptyList(), upcoming = emptyList())
 
-            MerinoSportsUseCases.initialize(provider, storage)
+            GlobalMerinoSportsDependencyProvider.initialize(lazyOf(provider), lazyOf(storage))
 
             whenever(provider.getMatches()).thenReturn(matches)
 
@@ -44,7 +44,7 @@ class MerinoSportsUseCasesTest {
             val storedMatches = MerinoMatches(previous = emptyList(), current = emptyList(), upcoming = emptyList())
             val storage = MerinoMatchesStorage.inMemory(initialMatches = storedMatches)
 
-            MerinoSportsUseCases.initialize(provider, storage)
+            GlobalMerinoSportsDependencyProvider.initialize(lazyOf(provider), lazyOf(storage))
 
             whenever(provider.getMatches()).thenReturn(null)
 
@@ -53,18 +53,8 @@ class MerinoSportsUseCasesTest {
         }
 
     @Test(expected = IllegalArgumentException::class)
-    fun `GIVEN the use cases are not initialized WHEN refresh matches use case is called THEN an exception is thrown`() =
+    fun `GIVEN the dependencies are not initialized WHEN refresh matches use case is called THEN an exception is thrown`() =
         runTest {
             MerinoSportsUseCases().refreshMatches.invoke()
         }
-
-    @Test
-    fun `GIVEN the use cases are initialized WHEN destroyed THEN the provider and storage are unbound`() {
-        MerinoSportsUseCases.initialize(mock(), MerinoMatchesStorage.inMemory())
-
-        MerinoSportsUseCases.destroy()
-
-        assertNull(MerinoSportsUseCases.provider)
-        assertNull(MerinoSportsUseCases.storage)
-    }
 }

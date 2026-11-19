@@ -25,7 +25,8 @@ class MerinoSportsUpdaterWorkerTest {
 
     @After
     fun cleanup() {
-        MerinoSportsUseCases.destroy()
+        GlobalMerinoSportsDependencyProvider.provider = null
+        GlobalMerinoSportsDependencyProvider.storage = null
     }
 
     @Test
@@ -35,7 +36,7 @@ class MerinoSportsUpdaterWorkerTest {
         val matches = MerinoMatches(previous = emptyList(), current = emptyList(), upcoming = emptyList())
         val worker = TestListenableWorkerBuilder<MerinoSportsUpdaterWorker>(testContext).build()
 
-        MerinoSportsUseCases.initialize(provider, storage)
+        GlobalMerinoSportsDependencyProvider.initialize(lazyOf(provider), lazyOf(storage))
 
         whenever(provider.getMatches()).thenReturn(matches)
 
@@ -50,7 +51,7 @@ class MerinoSportsUpdaterWorkerTest {
         val provider: MerinoSportsProvider = mock()
         val worker = TestListenableWorkerBuilder<MerinoSportsUpdaterWorker>(testContext).build()
 
-        MerinoSportsUseCases.initialize(provider, MerinoMatchesStorage.inMemory())
+        GlobalMerinoSportsDependencyProvider.initialize(lazyOf(provider), lazyOf(MerinoMatchesStorage.inMemory()))
 
         whenever(provider.getMatches()).thenReturn(null)
 
@@ -67,7 +68,7 @@ class MerinoSportsUpdaterWorkerTest {
                 .setRunAttemptCount(MerinoSportsUpdaterWorker.MAX_RETRIES - 1)
                 .build()
 
-        MerinoSportsUseCases.initialize(provider, MerinoMatchesStorage.inMemory())
+        GlobalMerinoSportsDependencyProvider.initialize(lazyOf(provider), lazyOf(MerinoMatchesStorage.inMemory()))
 
         whenever(provider.getMatches()).thenReturn(null)
 
@@ -82,7 +83,7 @@ class MerinoSportsUpdaterWorkerTest {
                 .setRunAttemptCount(MerinoSportsUpdaterWorker.MAX_RETRIES)
                 .build()
 
-        MerinoSportsUseCases.initialize(provider, MerinoMatchesStorage.inMemory())
+        GlobalMerinoSportsDependencyProvider.initialize(lazyOf(provider), lazyOf(MerinoMatchesStorage.inMemory()))
 
         whenever(provider.getMatches()).thenReturn(null)
 
@@ -95,7 +96,7 @@ class MerinoSportsUpdaterWorkerTest {
             val provider: MerinoSportsProvider = mock()
             val worker = TestListenableWorkerBuilder<MerinoSportsUpdaterWorker>(testContext).build()
 
-            MerinoSportsUseCases.initialize(provider, MerinoMatchesStorage.inMemory())
+            GlobalMerinoSportsDependencyProvider.initialize(lazyOf(provider), lazyOf(MerinoMatchesStorage.inMemory()))
 
             whenever(provider.getMatches()).thenAnswer { throw CancellationException("stopped") }
 
@@ -103,7 +104,7 @@ class MerinoSportsUpdaterWorkerTest {
         }
 
     @Test
-    fun `GIVEN the use cases are not initialized WHEN worker runs THEN return a failure result`() = runTest {
+    fun `GIVEN the dependencies are not initialized WHEN worker runs THEN return a failure result`() = runTest {
         val worker = TestListenableWorkerBuilder<MerinoSportsUpdaterWorker>(testContext).build()
 
         val result = worker.startWork().await()

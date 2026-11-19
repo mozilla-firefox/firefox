@@ -11,15 +11,12 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
 import java.util.concurrent.TimeUnit
-import kotlin.test.assertNotNull
 import kotlinx.coroutines.test.runTest
 import mozilla.components.service.merino.sports.MerinoSportsUpdater.Companion.PERIODIC_WORK_TAG
 import mozilla.components.support.base.worker.Frequency
-import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -39,7 +36,6 @@ class MerinoSportsUpdaterTest {
     @After
     fun tearDown() {
         WorkManager.getInstance(testContext).cancelUniqueWork(PERIODIC_WORK_TAG)
-        MerinoSportsUseCases.destroy()
     }
 
     @Test
@@ -49,13 +45,8 @@ class MerinoSportsUpdaterTest {
         var workInfo = workManager.getWorkInfosForUniqueWork(PERIODIC_WORK_TAG).await()
 
         assertTrue(workInfo.isEmpty())
-        assertNull(MerinoSportsUseCases.provider)
-        assertNull(MerinoSportsUseCases.storage)
 
         updater.startPeriodicWork()
-
-        assertNotNull(MerinoSportsUseCases.requireProvider())
-        assertNotNull(MerinoSportsUseCases.requireStorage())
 
         workInfo = workManager.getWorkInfosForUniqueWork(PERIODIC_WORK_TAG).await()
         val work = workInfo.first()
@@ -80,8 +71,6 @@ class MerinoSportsUpdaterTest {
 
         val work = workManager.getWorkInfosForUniqueWork(PERIODIC_WORK_TAG).await().first()
 
-        assertNull(MerinoSportsUseCases.provider)
-        assertNull(MerinoSportsUseCases.storage)
         assertEquals(WorkInfo.State.CANCELLED, work.state)
     }
 
@@ -96,10 +85,5 @@ class MerinoSportsUpdaterTest {
     }
 
     private fun createUpdater(frequency: Frequency = Frequency(30, TimeUnit.MINUTES)) =
-        MerinoSportsUpdater(
-            context = testContext,
-            provider = mock(),
-            storage = MerinoMatchesStorage.inMemory(),
-            frequency = frequency,
-        )
+        MerinoSportsUpdater(context = testContext, frequency = frequency)
 }

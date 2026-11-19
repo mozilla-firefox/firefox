@@ -19,14 +19,10 @@ import mozilla.components.support.base.worker.Frequency
  * Provides functionality to schedule updates of the Merino sports matches.
  *
  * @property context A reference to the application context.
- * @property provider An instance of [MerinoSportsProvider] which will fetch the matches.
- * @property storage An instance of [MerinoMatchesStorage] which will store the fetched matches.
  * @property frequency Optional [Frequency] that specifies how often the match updates should happen.
  */
 class MerinoSportsUpdater(
     private val context: Context,
-    private val provider: MerinoSportsProvider,
-    private val storage: MerinoMatchesStorage,
     private val frequency: Frequency = Frequency(1, TimeUnit.HOURS),
 ) {
 
@@ -35,12 +31,9 @@ class MerinoSportsUpdater(
     /**
      * Starts a work request in the background to periodically update the Merino sports matches.
      *
-     * This must be called on every app start, such as from `Application.onCreate`, because the dependencies used by the
-     * scheduled work do not survive process death while the scheduled work does.
+     * [GlobalMerinoSportsDependencyProvider.initialize] must be called for the scheduled work to refresh the matches.
      */
     fun startPeriodicWork() {
-        MerinoSportsUseCases.initialize(provider, storage)
-
         WorkManager.getInstance(context)
             .enqueueUniquePeriodicWork(
                 PERIODIC_WORK_TAG,
@@ -53,8 +46,6 @@ class MerinoSportsUpdater(
 
     /** Stops the work request to periodically update the Merino sports matches. */
     fun stopPeriodicWork() {
-        MerinoSportsUseCases.destroy()
-
         WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_WORK_TAG)
 
         logger.info("Stopped periodic work to update Merino sports matches")
