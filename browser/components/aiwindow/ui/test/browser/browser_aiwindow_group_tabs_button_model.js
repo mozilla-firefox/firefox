@@ -369,7 +369,7 @@ describe("Auto Tab Grouping toolbar button", () => {
         await navigateToContent(win);
         await addWebTabs(win);
 
-        AIWindowUI.toggleGroupTabsPanel(win);
+        AutoTabGrouping.toggleGroupTabsPanel(win);
         const panel = await TestUtils.waitForCondition(() =>
           win.document.getElementById("smartwindow-group-tabs-panel")
         );
@@ -444,7 +444,7 @@ describe("Auto Tab Grouping toolbar button", () => {
       win = await openAIWindow();
       await navigateToContent(win);
 
-      AIWindowUI.toggleGroupTabsPanel(win);
+      AutoTabGrouping.toggleGroupTabsPanel(win);
       const panel = await TestUtils.waitForCondition(() =>
         win.document.getElementById("smartwindow-group-tabs-panel")
       );
@@ -499,7 +499,7 @@ describe("Auto Tab Grouping toolbar button", () => {
         BrowserTestUtils.isVisible(button)
       );
 
-      AIWindowUI.toggleGroupTabsPanel(win);
+      AutoTabGrouping.toggleGroupTabsPanel(win);
       let panel = await TestUtils.waitForCondition(() =>
         win.document.getElementById("smartwindow-group-tabs-panel")
       );
@@ -510,13 +510,13 @@ describe("Auto Tab Grouping toolbar button", () => {
         "Panel shows the loading state while clustering is pending"
       );
 
-      AIWindowUI.toggleGroupTabsPanel(win);
+      AutoTabGrouping.toggleGroupTabsPanel(win);
       await TestUtils.waitForCondition(
         () => !win.document.getElementById("smartwindow-group-tabs-panel"),
         "Panel closed while clustering was in flight"
       );
 
-      AIWindowUI.toggleGroupTabsPanel(win);
+      AutoTabGrouping.toggleGroupTabsPanel(win);
       panel = await TestUtils.waitForCondition(() =>
         win.document.getElementById("smartwindow-group-tabs-panel")
       );

@@ -36,6 +36,9 @@ ChromeUtils.defineESModuleGetters(lazy, {
   AIWindowUI:
     // eslint-disable-next-line mozilla/no-browser-refs-in-toolkit
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindowUI.sys.mjs",
+  AutoTabGrouping:
+    // eslint-disable-next-line mozilla/no-browser-refs-in-toolkit
+    "moz-src:///browser/components/aiwindow/ui/modules/AutoTabGrouping.sys.mjs",
   CustomIconManager:
     // eslint-disable-next-line mozilla/no-browser-refs-in-toolkit
     "moz-src:///browser/components/shell/CustomIconManager.sys.mjs",
@@ -1254,7 +1257,7 @@ export const SpecialMessageActions = {
         break;
       }
       case "OPEN_ORGANIZE_TABS_PANEL":
-        lazy.AIWindowUI.toggleGroupTabsPanel(window, {
+        lazy.AutoTabGrouping.toggleGroupTabsPanel(window, {
           source: action.data?.source ?? "message",
         });
         break;
