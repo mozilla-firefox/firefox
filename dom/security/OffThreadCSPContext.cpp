@@ -28,9 +28,9 @@ bool OffThreadCSPContext::IsEvalAllowed(bool& aReportViolation) {
   for (const UniquePtr<const nsCSPPolicy>& policy : Policies()) {
     if (!(trustedTypesRequired &&
           policy->allows(nsIContentSecurityPolicy::SCRIPT_SRC_DIRECTIVE,
-                         CSP_TRUSTED_TYPES_EVAL, u""_ns)) &&
+                         CSP_TRUSTED_TYPES_EVAL)) &&
         !policy->allows(nsIContentSecurityPolicy::SCRIPT_SRC_DIRECTIVE,
-                        CSP_UNSAFE_EVAL, u""_ns)) {
+                        CSP_UNSAFE_EVAL)) {
       aReportViolation = true;
       if (!policy->getReportOnlyFlag()) {
         return false;
@@ -45,9 +45,9 @@ bool OffThreadCSPContext::IsWasmEvalAllowed(bool& aReportViolation) {
   for (const UniquePtr<const nsCSPPolicy>& policy : Policies()) {
     // Either 'unsafe-eval' or 'wasm-unsafe-eval' can allow this
     if (!policy->allows(nsIContentSecurityPolicy::SCRIPT_SRC_DIRECTIVE,
-                        CSP_WASM_UNSAFE_EVAL, u""_ns) &&
+                        CSP_WASM_UNSAFE_EVAL) &&
         !policy->allows(nsIContentSecurityPolicy::SCRIPT_SRC_DIRECTIVE,
-                        CSP_UNSAFE_EVAL, u""_ns)) {
+                        CSP_UNSAFE_EVAL)) {
       aReportViolation = true;
       if (!policy->getReportOnlyFlag()) {
         return false;

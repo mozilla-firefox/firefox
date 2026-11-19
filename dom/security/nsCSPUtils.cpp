@@ -626,11 +626,10 @@ bool nsCSPBaseSrc::permits(nsIURI* aUri, bool aWasRedirected, bool aReportOnly,
 // ::allows is only called for inlined loads, therefore:
 // nsCSPSchemeSrc, nsCSPHostSrc fall back
 // to this base class implementation which will never allow the load.
-bool nsCSPBaseSrc::allows(enum CSPKeyword aKeyword,
-                          const nsAString& aContentOrNonce) const {
-  CSPUTILSLOG(("nsCSPBaseSrc::allows, aKeyWord: %s, a aContentOrNonce: %s",
-               aKeyword == CSP_HASH ? "hash" : CSP_EnumToUTF8Keyword(aKeyword),
-               NS_ConvertUTF16toUTF8(aContentOrNonce).get()));
+bool nsCSPBaseSrc::allows(enum CSPKeyword aKeyword) const {
+  CSPUTILSLOG(
+      ("nsCSPBaseSrc::allows, aKeyWord: %s",
+       aKeyword == CSP_HASH ? "hash" : CSP_EnumToUTF8Keyword(aKeyword)));
   return false;
 }
 
@@ -939,11 +938,9 @@ nsCSPKeywordSrc::nsCSPKeywordSrc(enum CSPKeyword aKeyword)
 
 nsCSPKeywordSrc::~nsCSPKeywordSrc() = default;
 
-bool nsCSPKeywordSrc::allows(enum CSPKeyword aKeyword,
-                             const nsAString& aContentOrNonce) const {
-  CSPUTILSLOG(("nsCSPKeywordSrc::allows, aKeyWord: %s, aContentOrNonce: %s",
-               CSP_EnumToUTF8Keyword(aKeyword),
-               NS_ConvertUTF16toUTF8(aContentOrNonce).get()));
+bool nsCSPKeywordSrc::allows(enum CSPKeyword aKeyword) const {
+  CSPUTILSLOG(("nsCSPKeywordSrc::allows, aKeyWord: %s",
+               CSP_EnumToUTF8Keyword(aKeyword)));
   return mKeyword == aKeyword;
 }
 
@@ -1387,14 +1384,12 @@ bool nsCSPDirective::permits(CSPDirective aDirective, nsILoadInfo* aLoadInfo,
   return false;
 }
 
-bool nsCSPDirective::allows(enum CSPKeyword aKeyword,
-                            const nsAString& aContentOrNonce) const {
-  CSPUTILSLOG(("nsCSPDirective::allows, aKeyWord: %s, aContentOrNonce: %s",
-               CSP_EnumToUTF8Keyword(aKeyword),
-               NS_ConvertUTF16toUTF8(aContentOrNonce).get()));
+bool nsCSPDirective::allows(enum CSPKeyword aKeyword) const {
+  CSPUTILSLOG(("nsCSPDirective::allows, aKeyWord: %s",
+               CSP_EnumToUTF8Keyword(aKeyword)));
 
   for (uint32_t i = 0; i < mSrcs.Length(); i++) {
-    if (mSrcs[i]->allows(aKeyword, aContentOrNonce)) {
+    if (mSrcs[i]->allows(aKeyword)) {
       return true;
     }
   }
@@ -1493,7 +1488,7 @@ bool nsCSPDirective::ShouldCreateViolationForNewTrustedTypesPolicy(
   MOZ_ASSERT(mDirective == nsIContentSecurityPolicy::TRUSTED_TYPES_DIRECTIVE);
 
   if (mDirective == nsIContentSecurityPolicy::TRUSTED_TYPES_DIRECTIVE) {
-    if (allows(CSP_NONE, EmptyString())) {
+    if (allows(CSP_NONE)) {
       // Step 2.4: if directive’s value only contains a tt-keyword which is a
       // match for a value 'none', set createViolation to true.
       // `nsCSPParser` ignores the 'none' keyword if other keywords or policy
@@ -1502,7 +1497,7 @@ bool nsCSPDirective::ShouldCreateViolationForNewTrustedTypesPolicy(
     }
 
     if (aCreatedPolicyNames.Contains(aPolicyName) &&
-        !allows(CSP_ALLOW_DUPLICATES, EmptyString())) {
+        !allows(CSP_ALLOW_DUPLICATES)) {
       // Step 2.5: if createdPolicyNames contains policyName and directive’s
       // value does not contain a tt-keyword which is a match for a value
       // 'allow-duplicates', set createViolation to true.
@@ -1918,14 +1913,13 @@ bool nsCSPPolicy::permits(CSPDirective aDir, nsILoadInfo* aLoadInfo,
   return true;
 }
 
-bool nsCSPPolicy::allows(CSPDirective aDirective, enum CSPKeyword aKeyword,
-                         const nsAString& aContentOrNonce) const {
-  CSPUTILSLOG(("nsCSPPolicy::allows, aKeyWord: %s, a aContentOrNonce: %s",
-               CSP_EnumToUTF8Keyword(aKeyword),
-               NS_ConvertUTF16toUTF8(aContentOrNonce).get()));
+bool nsCSPPolicy::allows(CSPDirective aDirective,
+                         enum CSPKeyword aKeyword) const {
+  CSPUTILSLOG(
+      ("nsCSPPolicy::allows, aKeyWord: %s", CSP_EnumToUTF8Keyword(aKeyword)));
 
   if (nsCSPDirective* directive = matchingOrDefaultDirective(aDirective)) {
-    return directive->allows(aKeyword, aContentOrNonce);
+    return directive->allows(aKeyword);
   }
 
   // No matching directive or default directive as fallback found, thus
@@ -1963,14 +1957,14 @@ bool nsCSPPolicy::allowsByHash(CSPDirective aDirective,
 bool nsCSPPolicy::isStrict() const {
   nsCSPDirective* scriptDir = matchingOrDefaultDirective(
       nsIContentSecurityPolicy::SCRIPT_SRC_ELEM_DIRECTIVE);
-  if (!scriptDir || !scriptDir->allows(CSP_STRICT_DYNAMIC, u""_ns)) {
+  if (!scriptDir || !scriptDir->allows(CSP_STRICT_DYNAMIC)) {
     return false;
   }
   for (nsCSPDirective* directive : mDirectives) {
     if (directive->equals(nsIContentSecurityPolicy::BASE_URI_DIRECTIVE)) {
       // This works because 'none' is only included by the parser when no
       // other source except 'report-sample' is used.
-      return directive->allows(CSP_NONE, u""_ns);
+      return directive->allows(CSP_NONE);
     }
   }
   return false;
