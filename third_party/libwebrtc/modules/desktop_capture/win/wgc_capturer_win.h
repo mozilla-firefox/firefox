@@ -116,6 +116,9 @@ class WgcCapturerWin : public DesktopCapturer {
   DesktopCapturer::SourceId SelectedSourceId() const {
     return selected_source_id_;
   }
+  ::ID3D11Device* GetD3D11DeviceForTesting() const {
+    return d3d11_device_.Get();
+  }
 
   void SetUpFullScreenDetectorForTest(
       DesktopCapturer::SourceId source_id,

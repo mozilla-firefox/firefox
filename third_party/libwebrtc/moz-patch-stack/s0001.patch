@@ -413,7 +413,7 @@ index 10be276737..3727b93b7d 100644
  
  bool RtpExtension::IsSupportedForVideo(absl::string_view uri) {
 diff --git a/call/BUILD.gn b/call/BUILD.gn
-index b8577c303b..640e104553 100644
+index 6c4aa95f43..8cf86a7bae 100644
 --- a/call/BUILD.gn
 +++ b/call/BUILD.gn
 @@ -25,6 +25,7 @@ rtc_library("call_interfaces") {
@@ -1392,7 +1392,7 @@ index 75b30782ae..1b0f102f61 100644
    const bool enable_svc_for_simulcast_;
    std::optional<SimulcastToSvcConverter> simulcast_to_svc_converter_;
 diff --git a/rtc_base/BUILD.gn b/rtc_base/BUILD.gn
-index d95a960061..ea039a1679 100644
+index a7c256a574..a59a6cc968 100644
 --- a/rtc_base/BUILD.gn
 +++ b/rtc_base/BUILD.gn
 @@ -527,6 +527,12 @@ rtc_library("logging") {

@@ -32,6 +32,7 @@
 #include "api/candidate.h"
 #include "api/crypto/crypto_options.h"
 #include "api/data_channel_interface.h"
+#include "api/dtls_transport_interface.h"
 #include "api/dtmf_sender_interface.h"
 #include "api/jsep.h"
 #include "api/make_ref_counted.h"
@@ -47,6 +48,7 @@
 #include "api/rtp_transceiver_direction.h"
 #include "api/rtp_transceiver_interface.h"
 #include "api/scoped_refptr.h"
+#include "api/sctp_transport_interface.h"
 #include "api/stats/rtc_stats_report.h"
 #include "api/stats/rtcstats_objects.h"
 #include "api/test/mock_async_dns_resolver.h"
@@ -5408,20 +5410,6 @@ TEST_P(PeerConnectionIntegrationTest, CryptexRenegotiation) {
 
 #ifdef WEBRTC_HAVE_SCTP
 
-class DowngradeLogSink : public LogSink {
- public:
-  void OnLogMessage(const LogLineRef& line) override {
-    if (line.message().find("Received unexpected non-DTLS packet") !=
-        absl::string_view::npos) {
-      found_ = true;
-    }
-  }
-  bool found() const { return found_; }
-
- private:
-  bool found_ = false;
-};
-
 // This test reproduces the vulnerability where a kPrAnswer with a BUNDLE group
 // but no fingerprint for a media section can cause that media section to use
 // an unencrypted transport.
@@ -5497,6 +5485,7 @@ TEST_P(PeerConnectionIntegrationTest,
   // Remove fingerprint from the second content.
   const ContentInfos& contents = desc->contents();
   ASSERT_GE(contents.size(), 2u);
+  const std::string bundled_mid = contents[0].mid();
   TransportInfo* transport_info =
       desc->GetTransportInfoByName(contents[1].mid());
   ASSERT_THAT(transport_info, NotNull());
@@ -5509,37 +5498,38 @@ TEST_P(PeerConnectionIntegrationTest,
 
   // With the fix, the Data Channel's transport will now be BUNDLED into mid 0.
   // Since mid 0 has DTLS active, mid 1's data will also be DTLS-wrapped.
-  // We can verify this by checking that the SCTP transport's internal DTLS
-  // transport is active.
-  EXPECT_TRUE(network_thread()->BlockingCall([&] {
-    return static_cast<SctpTransport*>(caller()->pc()->GetSctpTransport().get())
-        ->internal()
-        ->dtls_transport()
-        ->IsDtlsActive();
-  }));
+  network_thread()->BlockingCall([&] {
+    scoped_refptr<SctpTransportInterface> sctp_transport =
+        caller()->pc()->GetSctpTransport();
+    scoped_refptr<DtlsTransportInterface> bundled_dtls_transport =
+        caller()->pc()->LookupDtlsTransportByMid(bundled_mid);
+    ASSERT_THAT(sctp_transport, NotNull());
+    ASSERT_THAT(bundled_dtls_transport, NotNull());
+    EXPECT_EQ(sctp_transport->dtls_transport(), bundled_dtls_transport);
+    EXPECT_TRUE(static_cast<SctpTransport*>(sctp_transport.get())
+                    ->internal()
+                    ->dtls_transport()
+                    ->IsDtlsActive());
+  });
 
-  // If the bug were present, it would be sent as raw SCTP and trigger an error
-  // on the peer.
-
-  DowngradeLogSink downgrade_log_sink;
-  LogMessage::AddLogToStream(&downgrade_log_sink, LS_ERROR);
-
-  // Send data from caller.
+  // Apply the BUNDLE answer on callee as well so callee expects DTLS-wrapped
+  // SCTP on the bundled transport (dropping any unencrypted raw SCTP packets),
+  // and verify end-to-end delivery.
+  auto callee_observer = make_ref_counted<FakeSetLocalDescriptionObserver>();
+  callee()->pc()->SetLocalDescription(std::move(answer), callee_observer);
+  ASSERT_TRUE(WaitUntil([&] { return callee_observer->called(); }));
+  ASSERT_TRUE(callee_observer->error().ok());
   ASSERT_EQ(caller()->data_channels().size(), 1u);
   ASSERT_TRUE(WaitUntil([&] {
-    return caller()->data_channels()[0]->state() == DataChannelInterface::kOpen;
+    return caller()->data_channels()[0]->state() ==
+               DataChannelInterface::kOpen &&
+           callee()->data_observer() != nullptr;
   }));
   caller()->data_channels()[0]->Send(DataBuffer("SECRET-PLAINTEXT"));
-
-  // If the fix is correct, no non-DTLS packets should be received.
-  // We wait a bit to ensure packets have time to arrive.
-  Thread::Current()->ProcessMessages(500);
-
-  bool found = downgrade_log_sink.found();
-  LogMessage::RemoveLogToStream(&downgrade_log_sink);
-
-  EXPECT_FALSE(found) << "Security downgrade detected: raw SCTP packets sent "
-                         "instead of DTLS-wrapped packets.";
+  EXPECT_THAT(
+      WaitUntil([&] { return callee()->data_observer()->last_message(); },
+                Eq("SECRET-PLAINTEXT")),
+      IsRtcOk());
 }
 
 // This test verifies that establishing BUNDLE in a prAnswer does not cause

@@ -813,13 +813,11 @@ if (rtc_include_tests) {
       ":logging",
       ":rtc_event",
       ":rtc_task_queue_stdlib",
-      ":threading",
       "../api:field_trials_view",
       "../api/task_queue",
       "../api/task_queue:task_queue_test",
       "../api/units:time_delta",
       "../test:test_support",
-      "//third_party/abseil-cpp/absl/strings:string_view",
     ]
   }
 }

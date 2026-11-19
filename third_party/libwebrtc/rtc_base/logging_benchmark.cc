@@ -95,26 +95,18 @@ class DiscardingLogSink : public LogSink {
   }
 };
 
-// Registers a DiscardingLogSink for verbose logs during its lifetime. Verbose
-// logs are not written to the debug output (stderr) by default.
-class ScopedDiscardingLogSink {
- public:
-  ScopedDiscardingLogSink() { LogMessage::AddLogToStream(&sink_, LS_VERBOSE); }
-  ~ScopedDiscardingLogSink() { LogMessage::RemoveLogToStream(&sink_); }
-
- private:
-  DiscardingLogSink sink_;
-};
-
-// Reinitializes logging with a DiscardingLogSink as a LoggingConfig sink for
-// verbose logs, and restores the previous configuration when destroyed. Must
-// not be used while other threads are logging.
+// Reinitializes logging with `num_sinks` DiscardingLogSinks as LoggingConfig
+// sinks for verbose logs, and restores the previous configuration when
+// destroyed. Must not be used while other threads are logging.
 class ScopedConfigDiscardingLogSink {
  public:
-  ScopedConfigDiscardingLogSink() : saved_config_(ResetLoggingForTesting()) {
+  explicit ScopedConfigDiscardingLogSink(int num_sinks = 1)
+      : saved_config_(ResetLoggingForTesting()) {
     LoggingConfig config;
     config.set_min_severity(LS_VERBOSE);
-    config.AddSink(std::make_unique<DiscardingLogSink>());
+    for (int i = 0; i < num_sinks; ++i) {
+      config.AddSink(std::make_unique<DiscardingLogSink>());
+    }
     RTC_CHECK(InitializeLogging(std::move(config)));
   }
   ~ScopedConfigDiscardingLogSink() {
@@ -132,7 +124,7 @@ void LogRtpPacket(int64_t i) {
 }
 
 void BM_RtcLogLiteralsAndNumbers(benchmark::State& state) {
-  ScopedDiscardingLogSink sink;
+  ScopedConfigDiscardingLogSink sink;
   int64_t i = 0;
   for (auto s : state) {
     RTC_LOG(LS_VERBOSE) << "Received RTP packet seq=" << i
@@ -145,8 +137,7 @@ void BM_RtcLogLiteralsAndNumbers(benchmark::State& state) {
 // Same message as BM_RtcLogLiteralsAndNumbers, sent to two sinks that both use
 // the default log line, e.g. a file sink and a sink that forwards to the app.
 void BM_RtcLogToTwoSinks(benchmark::State& state) {
-  ScopedDiscardingLogSink sink1;
-  ScopedDiscardingLogSink sink2;
+  ScopedConfigDiscardingLogSink sinks(2);
   int64_t i = 0;
   for (auto _ : state) {
     RTC_LOG(LS_VERBOSE) << "Received RTP packet seq=" << i
@@ -156,22 +147,9 @@ void BM_RtcLogToTwoSinks(benchmark::State& state) {
   }
 }
 
-// Logs to a sink that is added at runtime with LogMessage::AddLogToStream(),
-// from one or more threads. The first thread adds the sink before, and removes
-// it after, the timed loop, which all threads enter and leave together.
-void BM_RtcLogToDynamicSink(benchmark::State& state) {
-  std::optional<ScopedDiscardingLogSink> sink;
-  if (state.thread_index() == 0) {
-    sink.emplace();
-  }
-  int64_t i = 0;
-  for (auto s : state) {
-    LogRtpPacket(i++);
-  }
-}
-
-// Same as BM_RtcLogToDynamicSink, with a sink added with
-// LoggingConfig::AddSink() instead.
+// Logs to a sink configured with LoggingConfig::AddSink(), from one or more
+// threads. The first thread initializes logging before, and restores it after,
+// the timed loop, which all threads enter and leave together.
 void BM_RtcLogToConfigSink(benchmark::State& state) {
   std::optional<ScopedConfigDiscardingLogSink> sink;
   if (state.thread_index() == 0) {
@@ -184,7 +162,7 @@ void BM_RtcLogToConfigSink(benchmark::State& state) {
 }
 
 void BM_RtcLogMixedStrings(benchmark::State& state) {
-  ScopedDiscardingLogSink sink;
+  ScopedConfigDiscardingLogSink sink;
   const std::string ufrag = "4ZcD";
   const std::string candidate =
       "Cand[:1052210311:1:udp:2122260223:192.168.1.100:61922:host::0:4ZcD:"
@@ -202,7 +180,7 @@ void BM_RtcLogMixedStrings(benchmark::State& state) {
 // Logs a complete SDP, like PeerConnectionTestWrapper::SetLocalDescription()
 // does.
 void BM_RtcLogSdp(benchmark::State& state) {
-  ScopedDiscardingLogSink sink;
+  ScopedConfigDiscardingLogSink sink;
   const std::string name = "caller";
   const absl::string_view type = "offer";
   const std::string sdp = MakeSdp(state.range(0));
@@ -215,7 +193,6 @@ void BM_RtcLogSdp(benchmark::State& state) {
 
 BENCHMARK(BM_RtcLogLiteralsAndNumbers);
 BENCHMARK(BM_RtcLogToTwoSinks);
-BENCHMARK(BM_RtcLogToDynamicSink)->ThreadRange(1, 8);
 BENCHMARK(BM_RtcLogToConfigSink)->ThreadRange(1, 8);
 BENCHMARK(BM_RtcLogMixedStrings);
 // The argument is the number of m-sections in the SDP.

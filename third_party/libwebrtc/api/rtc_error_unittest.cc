@@ -10,6 +10,7 @@
 
 #include "api/rtc_error.h"
 
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -263,22 +264,40 @@ TEST(RTCErrorOrTest, BuildString) {
 TEST(RTCErrorOrTest, BuildStringLog) {
   class LogSinkImpl : public LogSink {
    public:
+    explicit LogSinkImpl(std::string* log) : log_(log) {}
     void OnLogMessage(const LogLineRef& line) override {
-      log_.append(line.filename()).append(": ").append(line.message());
+      log_->append(line.filename()).append(": ").append(line.message());
     }
-    std::string log_;
-  } log_monitor;
 
-  auto foo = [&]() {
-    return RTC_LOG_ERROR(RTCError::InvalidParameter("BuildStringLog"));
+   private:
+    std::string* const log_;
   };
 
-  LogMessage::AddLogToStream(&log_monitor, LS_ERROR);
-  auto ret = foo();
-  LogMessage::RemoveLogToStream(&log_monitor);
-  EXPECT_THAT(log_monitor.log_, HasSubstr("BuildStringLog"));
+  class ScopedLoggingConfig {
+   public:
+    explicit ScopedLoggingConfig(LoggingConfig config)
+        : saved_config_(ResetLoggingForTesting()) {
+      RTC_CHECK(InitializeLogging(std::move(config)));
+    }
+    ~ScopedLoggingConfig() { ResetLoggingForTesting(std::move(saved_config_)); }
+
+   private:
+    LoggingConfig saved_config_;
+  };
+
+  std::string log;
+  LoggingConfig config;
+  config.set_min_severity(LS_ERROR);
+  config.AddSink(std::make_unique<LogSinkImpl>(&log));
+
+  RTCError ret;
+  {
+    ScopedLoggingConfig scoped_logging(std::move(config));
+    ret = RTC_LOG_ERROR(RTCError::InvalidParameter("BuildStringLog"));
+  }
+  EXPECT_THAT(log, HasSubstr("BuildStringLog"));
 #if defined(__FILE_NAME__)  // Works with clang.
-  EXPECT_THAT(log_monitor.log_, HasSubstr(__FILE_NAME__));
+  EXPECT_THAT(log, HasSubstr(__FILE_NAME__));
 #endif
   EXPECT_FALSE(ret.ok());
   EXPECT_EQ(ret.type(), RTCErrorType::INVALID_PARAMETER);

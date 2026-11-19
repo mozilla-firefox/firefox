@@ -114,22 +114,6 @@ constexpr int kMaxTries = 50;
 
 }  // namespace
 
-class LogMessageMatcher : public LogSink {
- public:
-  explicit LogMessageMatcher(const std::string& substring)
-      : substring_(substring) {}
-  bool matched() const { return matched_; }
-
- private:
-  void OnLogMessage(const LogLineRef& line) override {
-    if (line.message().find(substring_) != std::string::npos) {
-      matched_ = true;
-    }
-  }
-  std::string substring_;
-  bool matched_ = false;
-};
-
 class WgcCapturerWinTest : public ::testing::TestWithParam<CaptureType>,
                            public DesktopCapturer::Callback {
  public:
@@ -429,6 +413,17 @@ class WgcCapturerMonitorTest : public WgcCapturerWinTest {
       GTEST_SKIP();
     }
   }
+
+  void GetDeviceAdapterDesc(DXGI_ADAPTER_DESC* device_desc) {
+    auto* wgc_capturer = static_cast<WgcCapturerWin*>(capturer_.get());
+    ::ID3D11Device* device = wgc_capturer->GetD3D11DeviceForTesting();
+    ASSERT_NE(device, nullptr);
+    Microsoft::WRL::ComPtr<IDXGIDevice> dxgi_device;
+    ASSERT_TRUE(SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&dxgi_device))));
+    Microsoft::WRL::ComPtr<IDXGIAdapter> device_adapter;
+    ASSERT_TRUE(SUCCEEDED(dxgi_device->GetAdapter(&device_adapter)));
+    ASSERT_TRUE(SUCCEEDED(device_adapter->GetDesc(device_desc)));
+  }
 };
 
 TEST_F(WgcCapturerMonitorTest, FocusOnMonitor) {
@@ -458,9 +453,6 @@ TEST_F(WgcCapturerMonitorTest, CaptureWithValidAdapterLuid) {
   DXGI_ADAPTER_DESC desc;
   ASSERT_TRUE(SUCCEEDED(adapter->GetDesc(&desc)));
 
-  LogMessageMatcher fallback_matcher("Failed to get adapter by LUID");
-  LogMessage::AddLogToStream(&fallback_matcher, LS_WARNING);
-
   DesktopCaptureOptions options = DesktopCaptureOptions::CreateDefault();
   options.set_d3d_device_luid(desc.AdapterLuid);
   SetUpForScreenCapture(options);
@@ -468,8 +460,10 @@ TEST_F(WgcCapturerMonitorTest, CaptureWithValidAdapterLuid) {
 
   capturer_->Start(this);
 
-  LogMessage::RemoveLogToStream(&fallback_matcher);
-  EXPECT_FALSE(fallback_matcher.matched());
+  DXGI_ADAPTER_DESC device_desc = {};
+  GetDeviceAdapterDesc(&device_desc);
+  EXPECT_EQ(device_desc.AdapterLuid.LowPart, desc.AdapterLuid.LowPart);
+  EXPECT_EQ(device_desc.AdapterLuid.HighPart, desc.AdapterLuid.HighPart);
 
   DoCapture();
   EXPECT_GT(frame_->size().width(), 0);
@@ -481,9 +475,6 @@ TEST_F(WgcCapturerMonitorTest, CaptureWithInvalidAdapterLuid) {
   // default adapter and still capture successfully.
   LUID invalid_luid = {0xFFFF, 0x7FFF};
 
-  LogMessageMatcher fallback_matcher("falling back to default adapter");
-  LogMessage::AddLogToStream(&fallback_matcher, LS_WARNING);
-
   DesktopCaptureOptions options = DesktopCaptureOptions::CreateDefault();
   options.set_d3d_device_luid(invalid_luid);
   SetUpForScreenCapture(options);
@@ -491,8 +482,10 @@ TEST_F(WgcCapturerMonitorTest, CaptureWithInvalidAdapterLuid) {
 
   capturer_->Start(this);
 
-  LogMessage::RemoveLogToStream(&fallback_matcher);
-  EXPECT_TRUE(fallback_matcher.matched());
+  DXGI_ADAPTER_DESC device_desc = {};
+  GetDeviceAdapterDesc(&device_desc);
+  EXPECT_TRUE(device_desc.AdapterLuid.LowPart != invalid_luid.LowPart ||
+              device_desc.AdapterLuid.HighPart != invalid_luid.HighPart);
 
   DoCapture();
   EXPECT_GT(frame_->size().width(), 0);
