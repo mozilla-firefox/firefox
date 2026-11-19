@@ -3,6 +3,7 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <Button xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="48dp"
     android:layout_marginStart="12dp"
@@ -12,4 +13,5 @@
     android:text="@string/mozac_feature_addons_find_more_extensions_button_text"
     android:textAlignment="center"
     android:textAllCaps="false"
-    android:textSize="14sp" />
+    android:textSize="14sp"
+    tools:ignore="ButtonStyleXmlDetector" />

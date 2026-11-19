@@ -113,7 +113,8 @@
             android:layout_marginEnd="4dp"
             android:layout_marginTop="8dp"
             android:text="@string/dismiss_no_suggestions_prompt_button"
-            android:textColor="@color/searchSuggestionPromptButtonTextColor" />
+            android:textColor="@color/searchSuggestionPromptButtonTextColor"
+            tools:ignore="ButtonStyleXmlDetector" />
     </LinearLayout>
 
     <androidx.compose.ui.platform.ComposeView

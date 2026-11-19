@@ -1,15 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <issues format="6" by="lint 9.2.1" type="baseline" client="gradle" dependencies="false" name="AGP (9.2.1)" variant="all" version="9.2.1">
 
-    <issue
-        id="ButtonStyleXmlDetector"
-        message="All buttons must have a style, try using NeutralButton or similar."
-        errorLine1="    &lt;Button"
-        errorLine2="     ~~~~~~">
-        <location
-            file="src/main/res/layout/mozac_site_permissions_prompt.xml"
-            line="113"
-            column="6"/>
-    </issue>
-
 </issues>

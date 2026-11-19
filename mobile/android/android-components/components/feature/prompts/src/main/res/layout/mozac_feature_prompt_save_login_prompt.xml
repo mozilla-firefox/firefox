@@ -142,5 +142,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/password_text_input_layout"
-        app:rippleColor="?android:textColorSecondary" />
+        app:rippleColor="?android:textColorSecondary"
+        tools:ignore="ButtonStyleXmlDetector" />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -220,7 +220,8 @@
             android:layout_toStartOf="@id/allow_button"
             android:text="@string/mozac_feature_addons_permissions_dialog_cancel"
             android:textAlignment="center"
-            android:textAllCaps="false" />
+            android:textAllCaps="false"
+            tools:ignore="ButtonStyleXmlDetector" />
 
         <Button
             android:id="@+id/allow_button"
@@ -233,7 +234,8 @@
             android:layout_marginBottom="16dp"
             android:text="@string/mozac_feature_addons_permissions_dialog_add"
             android:textAlignment="center"
-            android:textAllCaps="false" />
+            android:textAllCaps="false"
+            tools:ignore="ButtonStyleXmlDetector" />
 
     </RelativeLayout>
 </FrameLayout>

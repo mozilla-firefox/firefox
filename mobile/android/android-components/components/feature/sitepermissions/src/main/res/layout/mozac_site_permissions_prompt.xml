@@ -122,6 +122,7 @@
         android:layout_marginBottom="16dp"
         android:text="@string/mozac_feature_sitepermissions_allow"
         android:textAlignment="center"
-        android:textAllCaps="false" />
+        android:textAllCaps="false"
+        tools:ignore="ButtonStyleXmlDetector" />
 
 </RelativeLayout>

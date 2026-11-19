@@ -74,5 +74,6 @@
         android:paddingEnd="16dp"
         android:textAlignment="center"
         android:textAllCaps="false"
-        tools:text="@string/mozac_feature_downloads_cancel_active_downloads_accept" />
+        tools:text="@string/mozac_feature_downloads_cancel_active_downloads_accept"
+        tools:ignore="ButtonStyleXmlDetector" />
 </RelativeLayout>

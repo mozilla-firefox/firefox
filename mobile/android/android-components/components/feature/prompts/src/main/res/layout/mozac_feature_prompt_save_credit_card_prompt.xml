@@ -136,5 +136,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/credit_card_logo"
-        app:rippleColor="?android:textColorSecondary" />
+        app:rippleColor="?android:textColorSecondary"
+        tools:ignore="ButtonStyleXmlDetector" />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -68,6 +68,7 @@
         android:paddingEnd="20dp"
         android:text="@string/mozac_feature_addons_installed_dialog_okay_button_2"
         android:textAlignment="center"
-        android:textAllCaps="false" />
+        android:textAllCaps="false"
+        tools:ignore="ButtonStyleXmlDetector" />
 
 </RelativeLayout>
