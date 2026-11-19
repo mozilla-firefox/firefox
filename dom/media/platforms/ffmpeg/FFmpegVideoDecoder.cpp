@@ -3324,7 +3324,8 @@ MediaResult FFmpegVideoDecoder<LIBAV_VER>::InitMediaCodecDecoder() {
   // the reference we hand to it when the device context is destroyed.
   hwctx->free = MediaCodecNativeWindowReleaseCallback;
 
-  if (XRE_IsGPUProcess() && gfx::gfxVars::ForceAImageReaderAndroid()) {
+  if ((XRE_IsGPUProcess() || XRE_IsRDDProcess()) &&
+      gfx::gfxVars::ForceAImageReaderAndroid()) {
     MOZ_ASSERT(!mAndroidImageReaderClient);
     mAndroidImageReaderClient = layers::AndroidImageReaderClient::Create();
     if (!mAndroidImageReaderClient) {

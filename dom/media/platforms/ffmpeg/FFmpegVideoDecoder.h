@@ -273,7 +273,7 @@ class FFmpegVideoDecoder<LIBAV_VER>
   java::sdk::Surface::GlobalRef mImageReaderSurface;
   AndroidSurfaceTextureHandle mSurfaceHandle{};
   SimpleMap<void*, AVFrame*, ThreadSafePolicy> mFrameMap;
-  // Codec-side client for local GPU decoding.
+  // Codec-side client shared by local GPU and remote RDD decoding.
   RefPtr<layers::AndroidImageReaderClient> mAndroidImageReaderClient;
 #endif
 

@@ -22,7 +22,8 @@ already_AddRefed<AndroidImageConsumer> AndroidImageConsumer::Create(
   MOZ_ASSERT(aImageReader);
   MOZ_ASSERT(aGL);
 
-  if (!XRE_IsGPUProcess() || !aImageReader || !aGL) {
+  if ((!XRE_IsGPUProcess() && !XRE_IsParentProcess()) || !aImageReader ||
+      !aGL) {
     MOZ_ASSERT_UNREACHABLE("unexpected to be called");
     return nullptr;
   }
@@ -49,7 +50,7 @@ AndroidImageConsumer::AndroidImageConsumer(AndroidImageReader* aImageReader,
 AndroidImageConsumer::~AndroidImageConsumer() {
   MOZ_ASSERT(wr::RenderThread::IsInRenderThread());
 
-  auto* imageReaderMap = layers::GpuProcessAndroidImageReaderMap::Get();
+  auto imageReaderMap = layers::GpuProcessAndroidImageReaderMap::Get();
   if (imageReaderMap) {
     imageReaderMap->UnregisterImageConsumer(mImageReaderId);
   }

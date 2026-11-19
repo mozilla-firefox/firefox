@@ -5,8 +5,12 @@
 package org.mozilla.gecko.gfx;
 
 import org.mozilla.gecko.gfx.GeckoSurface;
+import org.mozilla.gecko.gfx.IImageReaderFrameCallback;
 
 interface ISurfaceAllocator {
     GeckoSurface acquireSurface(in int width, in int height, in boolean singleBufferMode);
+    GeckoSurface acquireImageReaderSurface(in IImageReaderFrameCallback callback);
     void releaseSurface(in long handle);
+    void maybeRenderImageReaderFirstFrame(in long handle, in long frameId);
+    oneway void notifyImageReaderFrameReleaseFailed(in long handle, in long frameId);
 }

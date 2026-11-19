@@ -85,6 +85,7 @@
 #endif
 #if defined(MOZ_WIDGET_ANDROID)
 #  include "mozilla/java/HardwareCodecCapabilityUtilsWrappers.h"
+#  include "mozilla/layers/AndroidImageReader.h"
 #endif
 
 #ifdef XP_WIN
@@ -1359,6 +1360,11 @@ void gfxPlatform::InitLayersIPC() {
 #endif
       RemoteTextureMap::Init();
       wr::RenderThread::Start(GPUProcessManager::Get()->AllocateNamespace());
+#ifdef MOZ_WIDGET_ANDROID
+      if (gfxVars::ForceAImageReaderAndroid()) {
+        layers::GpuProcessAndroidImageReaderMap::Init();
+      }
+#endif
       image::ImageMemoryReporter::InitForWebRender();
     }
 
@@ -1395,6 +1401,11 @@ void gfxPlatform::ShutdownLayersIPC() {
     gfx::CanvasRenderThread::Shutdown();
     // This has to happen after shutting down the child protocols.
     layers::CompositorThreadHolder::Shutdown();
+#ifdef MOZ_WIDGET_ANDROID
+    if (layers::GpuProcessAndroidImageReaderMap::Get()) {
+      layers::GpuProcessAndroidImageReaderMap::Shutdown();
+    }
+#endif
     RemoteTextureMap::Shutdown();
     image::ImageMemoryReporter::ShutdownForWebRender();
     // There is a case that RenderThread exists when UseWebRender() is
@@ -4173,6 +4184,12 @@ void gfxPlatform::DisableGPUProcess() {
   // We need to initialize the parent process to prepare for WebRender if we
   // did not end up disabling it, despite losing the GPU process.
   wr::RenderThread::Start(GPUProcessManager::Get()->AllocateNamespace());
+#ifdef MOZ_WIDGET_ANDROID
+  if (gfxVars::ForceAImageReaderAndroid() &&
+      !layers::GpuProcessAndroidImageReaderMap::Get()) {
+    layers::GpuProcessAndroidImageReaderMap::Init();
+  }
+#endif
   gfx::CanvasRenderThread::Start();
   image::ImageMemoryReporter::InitForWebRender();
 }
