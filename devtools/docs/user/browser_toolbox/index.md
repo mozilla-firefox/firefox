@@ -32,13 +32,6 @@ You will be presented with a dialog like this (it can be removed by setting the 
 ```{image} browser-toolbox-warning.png
 ```
 
-If you work on a local build started with `./mach run`, you can disable this dialog for all runs by adding the following to `~/.mozbuild/machrc`:
-
-```ini
-[runprefs]
-devtools.debugger.prompt-connection=false
-```
-
 Click OK, and the Browser Toolbox will open in its own window:
 
 ```{image} browser-toolbox.png

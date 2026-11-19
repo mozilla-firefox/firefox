@@ -3950,7 +3950,12 @@ pref("devtools.errorconsole.deprecation_warnings", true);
 // Enable the DevTools remote debugging connection prompt.
 // Typically displayed when using the Browser Toolbox or about:debugging's
 // remote debugging.
-pref("devtools.debugger.prompt-connection", true, sticky);
+#ifdef MOZILLA_OFFICIAL
+  pref("devtools.debugger.prompt-connection", true, sticky);
+#else
+  // In local builds, don't show the Browser Toolbox prompt.
+  pref("devtools.debugger.prompt-connection", false, sticky);
+#endif
 
 #ifdef MOZILLA_OFFICIAL
   // Disable debugging chrome.
