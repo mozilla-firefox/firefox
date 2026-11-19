@@ -214,8 +214,7 @@ void WebRenderImageHost::UseRemoteTexture(bool aCalledInCallback) {
       // RemoteTextureOwner. In this case, RemoteTextureOwner should be alive or
       // obsoleted.
       if (mWaitForRemoteTextureOwner && !aCalledInCallback) {
-        // XXX remove sync wait
-        RemoteTextureMap::Get()->WaitForRemoteTextureOwner(wrapper);
+        wrapper->EnableWaitForRemoteTextureOwner(true);
       }
       mWaitingReadyCallback = !RemoteTextureMap::Get()->CheckRemoteTextureReady(
           wrapper->GetRemoteTextureInfo(), this, readyCallback);
