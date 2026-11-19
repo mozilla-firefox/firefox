@@ -216,7 +216,7 @@ class RtpTransmissionManager : public RtpSenderBase::SetStreamsObserver {
 
  private:
   Thread* signaling_thread() const { return context_->signaling_thread(); }
-  Thread* worker_thread() const { return context_->worker_thread(); }
+  Thread* worker_thread() const { return context_->network_thread(); }
   bool IsUnifiedPlan() const { return is_unified_plan_; }
   std::vector<RtpHeaderExtensionCapability> GetDefaultHeaderExtensions(
       MediaType media_type);

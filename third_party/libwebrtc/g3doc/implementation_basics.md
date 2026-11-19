@@ -34,7 +34,7 @@ This API offers primitives for posting tasks, with or without delay.
 Some core parts use the [webrtc::Thread][2], which is a subclass of
 TaskQueueBase. This may contain a SocketServer for processing I/O, and is used
 for policing certain calling pattern between a few core threads (the
-NetworkThread cannot do Invoke on the Worker thread, for instance).
+NetworkThread cannot do Invoke on the signaling thread, for instance).
 
 ## Reserved class suffixes
 

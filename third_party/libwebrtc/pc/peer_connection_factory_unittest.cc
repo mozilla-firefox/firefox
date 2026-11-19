@@ -794,18 +794,7 @@ TEST(PeerConnectionFactoryDependenciesTest,
 }
 #endif
 
-TEST(ConnectionContextTest,
-     WorkerThreadDefaultsToNetworkThreadWhenWorkerThreadNotSet) {
-  Environment env = CreateTestEnvironment();
-  PeerConnectionFactoryDependencies dependencies;
-  dependencies.signaling_thread = Thread::Current();
-  auto context = ConnectionContext::Create(env, &dependencies);
-  ASSERT_THAT(context, NotNull());
-  EXPECT_THAT(context->network_thread(), NotNull());
-  EXPECT_EQ(context->worker_thread(), context->network_thread());
-}
-
-TEST(ConnectionContextTest, SuppliedNetworkThreadIsUsedAsWorkerThread) {
+TEST(ConnectionContextTest, SuppliedNetworkThreadIsUsed) {
   Environment env = CreateTestEnvironment();
   std::unique_ptr<Thread> network_thread = Thread::CreateWithSocketServer();
   network_thread->Start();
@@ -815,7 +804,6 @@ TEST(ConnectionContextTest, SuppliedNetworkThreadIsUsedAsWorkerThread) {
   auto context = ConnectionContext::Create(env, &dependencies);
   ASSERT_THAT(context, NotNull());
   EXPECT_EQ(context->network_thread(), network_thread.get());
-  EXPECT_EQ(context->worker_thread(), network_thread.get());
 }
 
 }  // namespace

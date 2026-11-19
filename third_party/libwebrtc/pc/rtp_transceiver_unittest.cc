@@ -103,7 +103,7 @@ scoped_refptr<RtpTransceiver> CreateAudioTransceiverWithChannel(
       CryptoOptions(), nullptr, std::vector<RtpHeaderExtensionCapability>(),
       false, std::vector<SimulcastLayer>(), [] {});
 
-  ScopedOperationsBatcher worker_tasks(context->worker_thread());
+  ScopedOperationsBatcher worker_tasks(context->network_thread());
   ScopedOperationsBatcher network_tasks(context->network_thread());
   transceiver->CreateChannel("0", call, MediaConfig(), false, CryptoOptions(),
                              nullptr, std::move(transport_lookup), worker_tasks,
@@ -133,7 +133,7 @@ scoped_refptr<RtpTransceiver> CreateVideoTransceiverWithChannel(
       CryptoOptions(), nullptr, std::vector<RtpHeaderExtensionCapability>(),
       false, std::vector<SimulcastLayer>(), [] {});
 
-  ScopedOperationsBatcher worker_tasks(context->worker_thread());
+  ScopedOperationsBatcher worker_tasks(context->network_thread());
   ScopedOperationsBatcher network_tasks(context->network_thread());
   transceiver->CreateChannel("0", call, MediaConfig(), false, CryptoOptions(),
                              nullptr, std::move(transport_lookup), worker_tasks,
@@ -197,14 +197,14 @@ class RtpTransceiverDoubleThreadTest : public testing::Test {
         context_(ConnectionContext::Create(env_, &dependencies_)),
         codec_lookup_helper_(context_.get(), env_.field_trials()) {
     network_thread_->Start();
-    context_->worker_thread()->BlockingCall([&]() {
+    context_->network_thread()->BlockingCall([&]() {
       media_engine_ref_ =
           std::make_unique<ConnectionContext::MediaEngineReference>(context_);
     });
   }
 
   ~RtpTransceiverDoubleThreadTest() override {
-    context_->worker_thread()->BlockingCall(
+    context_->network_thread()->BlockingCall(
         [&]() { media_engine_ref_.reset(); });
   }
 
@@ -422,7 +422,7 @@ TEST_F(RtpTransceiverUnifiedPlanTest,
   EXPECT_CALL(*sender, SetCachedParameters(Optional(expected_parameters)));
 
   AudioContentDescription description;
-  ScopedOperationsBatcher batcher(context()->worker_thread());
+  ScopedOperationsBatcher batcher(context()->network_thread());
   transceiver->SetChannelLocalContent(&description, SdpType::kOffer, batcher);
   EXPECT_FALSE(batcher.Run().ok());
 
@@ -1165,7 +1165,7 @@ TEST_F(RtpTransceiverTestWithFakeCall,
   auto* fake_channel = static_cast<FakeVoiceMediaSendChannel*>(voice_channel);
   EXPECT_TRUE(fake_channel->options().audio_network_adaptor);
 
-  ScopedOperationsBatcher worker_tasks(context()->worker_thread());
+  ScopedOperationsBatcher worker_tasks(context()->network_thread());
   ScopedOperationsBatcher network_tasks(context()->network_thread());
   network_tasks.Add(transceiver->GetClearChannelNetworkTask());
   worker_tasks.Add(
@@ -1211,7 +1211,7 @@ TEST_F(RtpTransceiverTestWithFakeCall, OnNetworkRouteChangedForwardsToChannel) {
   EXPECT_EQ(100, fake_channel->last_network_route().last_sent_packet_id);
   EXPECT_EQ(28, fake_channel->transport_overhead_per_packet());
 
-  ScopedOperationsBatcher worker_tasks(context()->worker_thread());
+  ScopedOperationsBatcher worker_tasks(context()->network_thread());
   ScopedOperationsBatcher network_tasks(context()->network_thread());
   network_tasks.Add(transceiver->GetClearChannelNetworkTask());
   worker_tasks.Add(
@@ -1258,7 +1258,7 @@ TEST_F(RtpTransceiverTestWithFakeCall,
   EXPECT_EQ(100, fake_channel->last_network_route().last_sent_packet_id);
   EXPECT_EQ(28, fake_channel->transport_overhead_per_packet());
 
-  ScopedOperationsBatcher worker_tasks(context()->worker_thread());
+  ScopedOperationsBatcher worker_tasks(context()->network_thread());
   ScopedOperationsBatcher network_tasks(context()->network_thread());
   network_tasks.Add(transceiver->GetClearChannelNetworkTask());
   worker_tasks.Add(
@@ -1282,7 +1282,7 @@ TEST_F(RtpTransceiverDoubleThreadTest,
     rtp_transport->SetRtpPacketTransport(fake_dtls.get());
   });
 
-  auto call = std::make_unique<FakeCall>(env(), context()->worker_thread(),
+  auto call = std::make_unique<FakeCall>(env(), context()->network_thread(),
                                          context()->network_thread());
 
   auto transceiver = CreateAudioTransceiverWithChannel(
@@ -1323,7 +1323,7 @@ TEST_F(RtpTransceiverDoubleThreadTest,
       [&]() { return fake_channel->transport_overhead_per_packet(); });
   EXPECT_EQ(28, overhead);
 
-  ScopedOperationsBatcher worker_tasks(context()->worker_thread());
+  ScopedOperationsBatcher worker_tasks(context()->network_thread());
   ScopedOperationsBatcher network_tasks(context()->network_thread());
   network_tasks.Add(transceiver->GetClearChannelNetworkTask());
   worker_tasks.Add(

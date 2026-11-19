@@ -216,9 +216,9 @@ class RtpTransceiver : public RtpTransceiverInterface {
   absl::AnyInvocable<void() &&> GetClearChannelNetworkTask();
 
   // Returns a task that deletes the channel.
-  // The task must be executed on the worker thread.
+  // The task must be executed on the network thread.
   // This is used by SdpOfferAnswerHandler::GetMediaChannelTeardownTasks to
-  // batch worker thread operations.
+  // batch network thread operations.
   absl::AnyInvocable<void() &&> GetDeleteChannelWorkerTask(bool stop_senders);
 
   // Adds an RtpSender of the appropriate type to be owned by this transceiver.
@@ -336,14 +336,14 @@ class RtpTransceiver : public RtpTransceiverInterface {
 
   // Executes the "stop the RTCRtpTransceiver" procedure from
   // the webrtc-pc specification, described under the stop() method.
-  // The task must be executed on the worker thread.
-  // This is used by SdpOfferAnswerHandler to batch worker thread operations.
+  // The task must be executed on the network thread.
+  // This is used by SdpOfferAnswerHandler to batch network thread operations.
   [[nodiscard]] absl_nullable absl::AnyInvocable<void() &&>
   GetStopTransceiverProcedure();
 
   // Returns a task that stops the transceiver.
-  // The task must be executed on the worker thread.
-  // This is used by SdpOfferAnswerHandler to batch worker thread operations.
+  // The task must be executed on the network thread.
+  // This is used by SdpOfferAnswerHandler to batch network thread operations.
   ScopedOperationsBatcher::BatchTaskWithFinalizer StopStandardAsync();
 
   // RtpTransceiverInterface implementation.
@@ -478,14 +478,14 @@ class RtpTransceiver : public RtpTransceiverInterface {
       RTC_RUN_ON(context()->network_thread());
 
   // Stops the receivers synchronously and returns a task that stops the
-  // senders. The returned task must be executed on the worker thread.
+  // senders. The returned task must be executed on the network thread.
   [[nodiscard]] absl_nonnull absl::AnyInvocable<void() &&>
   GetStopSendingAndReceiving();
 
   void SetMediaChannels(MediaSendChannelInterface* send,
                         MediaReceiveChannelInterface* receive)
-      RTC_RUN_ON(context()->worker_thread());
-  void ClearMediaChannelReferences() RTC_RUN_ON(context()->worker_thread());
+      RTC_RUN_ON(context()->network_thread());
+  void ClearMediaChannelReferences() RTC_RUN_ON(context()->network_thread());
 
   VideoMediaSendChannelInterface::EncoderSwitchRequestCallback
   GetEncoderSwitchRequestCallback();
@@ -503,7 +503,7 @@ class RtpTransceiver : public RtpTransceiverInterface {
   // Pushes a multi-stage execution task into the provided
   // `ScopedOperationsBatcher`.
   //
-  //  Signaling Thread                   Worker Thread
+  //  Signaling Thread                   Network Thread
   //  +-------------------+              +-------------------+
   //  | SetChannelContent |              |                   |
   //  | - Capture SSRC    |              |                   |
@@ -518,14 +518,14 @@ class RtpTransceiver : public RtpTransceiverInterface {
   // 1. **Preparation (Signaling Thread)**: Called when this method is invoked.
   //    Captures current sender SSRC and cached parameters.
   //
-  // 2. **Execution (Worker Thread)**: The pushed outer lambda is executed
-  //    by the ScopedOperationsBatcher on the worker thread. Runs
+  // 2. **Execution (Network Thread)**: The pushed outer lambda is executed
+  //    by the ScopedOperationsBatcher on the network thread. Runs
   //    `set_content()`. If successful, fetches updated `RtpSendParameters`
   //    from the media channel and returns an inner completion lambda.
   //
   // 3. **Completion (Signaling Thread)**: The inner lambda returned by the
-  //    worker thread task is collected by `ScopedOperationsBatcher::Run()`.
-  //    After all batched operations on the worker thread are complete,
+  //    network thread task is collected by `ScopedOperationsBatcher::Run()`.
+  //    After all batched operations on the network thread are complete,
   //    `Run()` executes these inner lambdas on the thread that called
   //    `Run()` (in this case, the Signaling Thread). This stage updates
   //    the cached parameters on the senders.

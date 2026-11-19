@@ -2457,7 +2457,7 @@ void SdpOfferAnswerHandler::UpdateSenderSsrcsFromLocalDescription() {
   if (!ConfiguredForMedia()) {
     return;
   }
-  ScopedOperationsBatcher worker_tasks(context_->worker_thread());
+  ScopedOperationsBatcher worker_tasks(context_->network_thread());
   // We must use List and not ListInternal here because
   // transceivers()->StableState() is indexed by the non-internal refptr.
   for (const auto& transceiver_ext : transceivers()->List()) {
@@ -2716,7 +2716,7 @@ void SdpOfferAnswerHandler::ApplyRemoteDescriptionUpdateTransceiverState(
   std::vector<scoped_refptr<MediaStreamInterface>> added_streams;
   std::vector<scoped_refptr<MediaStreamInterface>> removed_streams;
   ScopedOperationsBatcher network_tasks(context_->network_thread());
-  ScopedOperationsBatcher worker_tasks(context_->worker_thread());
+  ScopedOperationsBatcher worker_tasks(context_->network_thread());
   flat_map<std::string, DtlsTransportAndName> dtls_transports_by_mid =
       GetDtlsTransports(*transceivers(), transport_controller_s());
 
@@ -3959,7 +3959,11 @@ RTCError SdpOfferAnswerHandler::Rollback(SdpType desc_type) {
       transceivers()->Remove(transceiver);
     }
   };
-  ScopedOperationsBatcher worker_tasks(context_->worker_thread());
+  // TODO(bugs.webrtc.org/558821261): Consider combining batchers targeting
+  // the network thread. Note: Combining them is currently not safe because
+  // worker tasks (such as channel deletion) depend on network tasks (clearing
+  // transport state on the network thread) having fully completed first.
+  ScopedOperationsBatcher worker_tasks(context_->network_thread());
   ScopedOperationsBatcher network_tasks(context_->network_thread());
 
   for (auto&& transceivers_stable_state_pair : transceivers()->StableStates()) {
@@ -4674,8 +4678,12 @@ RTCError SdpOfferAnswerHandler::UpdateTransceiversAndDataChannels(
   // - Destruction: Network tasks before Worker tasks.
   //   (Worker cleanup may depend on Network teardown).
   // The batchers below are declared and executed to enforce these orders.
+  // TODO(bugs.webrtc.org/558821261): Consider combining batchers targeting
+  // the network thread. Note: Combining them is currently not safe due to
+  // ordering dependencies between network teardown, worker setup/cleanup, and
+  // network initialization.
   ScopedOperationsBatcher network_teardown_tasks(context_->network_thread());
-  ScopedOperationsBatcher worker_tasks(context_->worker_thread());
+  ScopedOperationsBatcher worker_tasks(context_->network_thread());
   ScopedOperationsBatcher network_init_tasks(context_->network_thread());
   const ContentInfos& new_contents = new_session.description()->contents();
   struct TransceiverUpdate {
@@ -5818,8 +5826,8 @@ RTCError SdpOfferAnswerHandler::PushdownMediaDescription(
   RTC_DCHECK(sdesc);
 
   if (ConfiguredForMedia()) {
-    // Batch up operations for the worker thread.
-    ScopedOperationsBatcher batcher(context_->worker_thread());
+    // Batch up operations for the network thread.
+    ScopedOperationsBatcher batcher(context_->network_thread());
 
     // Note: This may perform a BlockingCall over to the network thread, which
     // we'll also do in a loop below.
@@ -5928,8 +5936,9 @@ RTCError SdpOfferAnswerHandler::PushdownMediaDescription(
 
         if (preferred_rtcp_cc_ack_type.has_value()) {
           if (preferred_rtcp_cc_ack_type == remote_preferred_rtcp_cc_ack_type) {
-            // The call and the congestion controller live on the worker thread.
-            context_->worker_thread()->PostTask(
+            // The call and the congestion controller live on the network
+            // thread.
+            context_->network_thread()->PostTask(
                 [call = pc_->call_ptr(),
                  preferred_rtcp_cc_ack_type = *preferred_rtcp_cc_ack_type] {
                   call->SetPreferredRtcpCcAckType(preferred_rtcp_cc_ack_type);
@@ -6018,7 +6027,11 @@ void SdpOfferAnswerHandler::RemoveStoppedTransceivers() {
   // Batched channel teardown for removed transceivers. The tasks run at the
   // end of this function while `transceiver_list` still holds references.
   ScopedOperationsBatcher network_teardown_tasks(context_->network_thread());
-  ScopedOperationsBatcher worker_tasks(context_->worker_thread());
+  // TODO(bugs.webrtc.org/558821261): Consider combining batchers targeting
+  // the network thread. Note: Combining them is currently not safe because
+  // worker tasks (such as channel deletion) depend on network tasks (clearing
+  // transport state on the network thread) having fully completed first.
+  ScopedOperationsBatcher worker_tasks(context_->network_thread());
   for (const auto& transceiver : transceiver_list) {
     // 3.2.10.1.1: If transceiver is stopped, associated with an m= section
     //             and the associated m= section is rejected in
@@ -6270,7 +6283,12 @@ RTCError SdpOfferAnswerHandler::CreateChannels(const SessionDescription& desc) {
   // at this point.
   RTC_DCHECK_RUN_ON(signaling_thread());
 
-  ScopedOperationsBatcher worker_tasks(context_->worker_thread());
+  // TODO(bugs.webrtc.org/558821261): Consider combining batchers targeting
+  // the network thread. Note: Combining them is currently not safe because
+  // worker_tasks creates the channel via a finalizer on the signaling thread
+  // that must complete before network_tasks (which expects channel_ to exist)
+  // runs.
+  ScopedOperationsBatcher worker_tasks(context_->network_thread());
   ScopedOperationsBatcher network_tasks(network_thread());
 
   const ContentInfo* voice = GetFirstAudioContent(&desc);
