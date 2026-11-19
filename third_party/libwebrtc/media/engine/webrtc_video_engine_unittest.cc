@@ -846,9 +846,9 @@ TEST_F(WebRtcVideoEngineTest, EncoderSwitchRequestCallback) {
   auto callback =
       [&callback_called, call = call_.get(), main_thread = Thread::Current()](
           VideoMediaSendChannelInterface::EncoderSwitchRequestAction action) {
-        call->worker_thread()->PostTask([action = std::move(action),
-                                         main_thread,
-                                         &callback_called]() mutable {
+        call->network_thread()->PostTask([action = std::move(action),
+                                          main_thread,
+                                          &callback_called]() mutable {
           std::move(action)();
           main_thread->PostTask([&callback_called] { callback_called = true; });
         });

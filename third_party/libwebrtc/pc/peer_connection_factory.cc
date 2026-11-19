@@ -372,7 +372,7 @@ std::unique_ptr<Call> PeerConnectionFactory::CreateCall_s(
     const PeerConnectionInterface::RTCConfiguration& configuration) {
   RTC_DCHECK_RUN_ON(signaling_thread());
 
-  CallConfig call_config(env, worker_thread(), network_thread());
+  CallConfig call_config(env, network_thread());
   if (!context_->media_engine() || !context_->call_factory()) {
     return nullptr;
   }

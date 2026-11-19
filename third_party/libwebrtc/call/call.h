@@ -151,6 +151,7 @@ class Call {
   virtual void DisconnectFromNetworkThread() = 0;
 
   virtual TaskQueueBase* network_thread() const = 0;
+  [[deprecated("worker_thread() is deprecated; use network_thread() instead.")]]
   virtual TaskQueueBase* worker_thread() const = 0;
 
   virtual ~Call() = default;

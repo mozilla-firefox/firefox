@@ -176,8 +176,8 @@ void NetworkNodeTransport::Connect(EmulatedEndpoint* endpoint,
     sender_call_->GetTransportControllerSend()->OnNetworkRouteChanged(
         kDummyTransportName, route);
   };
-  if (!sender_call_->worker_thread()->IsCurrent()) {
-    sender_call_->worker_thread()->PostTask(std::move(task));
+  if (!sender_call_->network_thread()->IsCurrent()) {
+    sender_call_->network_thread()->PostTask(std::move(task));
   } else {
     std::move(task)();
   }

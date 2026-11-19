@@ -139,11 +139,11 @@ class WebRtcVoiceEngine final : public VoiceEngineInterface {
 
   AudioDeviceModule* adm();
 
-  // Registers `channel` when its first send stream is added on the worker
+  // Registers `channel` when its first send stream is added on the network
   // thread, and unregisters it when `channel` is destroyed. Registration
   // happens on stream addition rather than CreateSendChannel() because
   // CreateSendChannel() runs on the signaling thread without blocking access to
-  // `worker_thread_`.
+  // `network_thread_`.
   void RegisterSendChannel(WebRtcVoiceSendChannel* channel);
   void UnregisterSendChannel(WebRtcVoiceSendChannel* channel);
 
@@ -175,7 +175,7 @@ class WebRtcVoiceEngine final : public VoiceEngineInterface {
   AudioState* audio_state();
 
   SequenceChecker signal_thread_checker_{SequenceChecker::kDetached};
-  SequenceChecker worker_thread_checker_{SequenceChecker::kDetached};
+  SequenceChecker network_thread_checker_{SequenceChecker::kDetached};
 
   // Field trial flags.
   const bool minimized_resampling_on_mobile_trial_enabled_;
@@ -187,20 +187,20 @@ class WebRtcVoiceEngine final : public VoiceEngineInterface {
   const scoped_refptr<AudioDecoderFactory> decoder_factory_;
   // The audio processing module.
   const scoped_refptr<AudioProcessing> apm_
-      RTC_GUARDED_BY(worker_thread_checker_);
+      RTC_GUARDED_BY(network_thread_checker_);
   // The primary instance of WebRtc VoiceEngine.
   const scoped_refptr<AudioState> audio_state_;
   const std::vector<Codec> legacy_send_codecs_;
   const std::vector<Codec> legacy_recv_codecs_;
   // Send channels that have had at least one send stream added. Populated on
-  // the worker thread via RegisterSendChannel() and removed in
+  // the network thread via RegisterSendChannel() and removed in
   // UnregisterSendChannel().
   absl::flat_hash_set<WebRtcVoiceSendChannel*> send_channels_
-      RTC_GUARDED_BY(worker_thread_checker_);
+      RTC_GUARDED_BY(network_thread_checker_);
   // Last boolean mute value forwarded to `apm_->set_output_will_be_muted()`.
   std::optional<bool> output_will_be_muted_
-      RTC_GUARDED_BY(worker_thread_checker_);
-  bool initialized_ RTC_GUARDED_BY(worker_thread_checker_) = false;
+      RTC_GUARDED_BY(network_thread_checker_);
+  bool initialized_ RTC_GUARDED_BY(network_thread_checker_) = false;
 };
 
 class WebRtcVoiceSendChannel final : public MediaChannelUtil,
@@ -316,45 +316,46 @@ class WebRtcVoiceSendChannel final : public MediaChannelUtil,
   void FillSendCodecStats(VoiceMediaSendInfo* voice_media_info);
 
   const Environment env_;
-  TaskQueueBase* const worker_thread_;
+  TaskQueueBase* const network_thread_;
   ScopedTaskSafety task_safety_;
   SequenceChecker network_thread_checker_{SequenceChecker::kDetached};
 
   WebRtcVoiceEngine* const engine_ = nullptr;
-  std::vector<Codec> send_codecs_ RTC_GUARDED_BY(worker_thread_);
+  std::vector<Codec> send_codecs_ RTC_GUARDED_BY(network_thread_);
 
-  int max_send_bitrate_bps_ RTC_GUARDED_BY(worker_thread_) = 0;
-  AudioOptions options_ RTC_GUARDED_BY(worker_thread_);
-  PayloadType dtmf_payload_type_ RTC_GUARDED_BY(worker_thread_);
-  int dtmf_payload_freq_ RTC_GUARDED_BY(worker_thread_) = -1;
-  bool send_ RTC_GUARDED_BY(worker_thread_) = false;
+  int max_send_bitrate_bps_ RTC_GUARDED_BY(network_thread_) = 0;
+  AudioOptions options_ RTC_GUARDED_BY(network_thread_);
+  PayloadType dtmf_payload_type_ RTC_GUARDED_BY(network_thread_);
+  int dtmf_payload_freq_ RTC_GUARDED_BY(network_thread_) = -1;
+  bool send_ RTC_GUARDED_BY(network_thread_) = false;
   Call* const call_ = nullptr;
 
   const MediaConfig::Audio audio_config_;
 
   class WebRtcAudioSendStream;
   std::map<uint32_t, WebRtcAudioSendStream*> send_streams_
-      RTC_GUARDED_BY(worker_thread_);
-  std::vector<RtpExtension> send_rtp_extensions_ RTC_GUARDED_BY(worker_thread_);
+      RTC_GUARDED_BY(network_thread_);
+  std::vector<RtpExtension> send_rtp_extensions_
+      RTC_GUARDED_BY(network_thread_);
   std::optional<RtcpFeedbackType> rtcp_cc_ack_type_
-      RTC_GUARDED_BY(worker_thread_);
-  std::string mid_ RTC_GUARDED_BY(worker_thread_);
-  RtcpMode rtcp_mode_ RTC_GUARDED_BY(worker_thread_);
+      RTC_GUARDED_BY(network_thread_);
+  std::string mid_ RTC_GUARDED_BY(network_thread_);
+  RtcpMode rtcp_mode_ RTC_GUARDED_BY(network_thread_);
 
   std::optional<AudioSendStream::Config::SendCodecSpec> send_codec_spec_
-      RTC_GUARDED_BY(worker_thread_);
+      RTC_GUARDED_BY(network_thread_);
 
   // Per peer connection crypto options that last for the lifetime of the peer
   // connection.
   const CryptoOptions crypto_options_;
-  SframeSendOptions sframe_options_ RTC_GUARDED_BY(worker_thread_);
+  SframeSendOptions sframe_options_ RTC_GUARDED_BY(network_thread_);
 
   // Callback invoked whenever the list of SSRCs changes.
   absl::AnyInvocable<void(const std::set<uint32_t>&)>
-      ssrc_list_changed_callback_ RTC_GUARDED_BY(worker_thread_);
+      ssrc_list_changed_callback_ RTC_GUARDED_BY(network_thread_);
 
   absl::AnyInvocable<void()> parameters_changed_callback_
-      RTC_GUARDED_BY(worker_thread_);
+      RTC_GUARDED_BY(network_thread_);
 };
 
 class WebRtcVoiceReceiveChannel final
@@ -468,65 +469,65 @@ class WebRtcVoiceReceiveChannel final
   void FillReceiveCodecStats(VoiceMediaReceiveInfo* voice_media_info);
 
   const Environment env_;
-  TaskQueueBase* const worker_thread_;
+  TaskQueueBase* const network_thread_;
   ScopedTaskSafety task_safety_;
   scoped_refptr<PendingTaskSafetyFlag> network_thread_safety_;
   SequenceChecker network_thread_checker_{SequenceChecker::kDetached};
 
   WebRtcVoiceEngine* const engine_ = nullptr;
 
-  std::map<int, SdpAudioFormat> decoder_map_ RTC_GUARDED_BY(worker_thread_);
+  std::map<int, SdpAudioFormat> decoder_map_ RTC_GUARDED_BY(network_thread_);
 
   const AudioOptions options_;
-  bool recv_nack_enabled_ RTC_GUARDED_BY(worker_thread_) = false;
-  enum RtcpMode recv_rtcp_mode_ RTC_GUARDED_BY(worker_thread_) =
+  bool recv_nack_enabled_ RTC_GUARDED_BY(network_thread_) = false;
+  enum RtcpMode recv_rtcp_mode_ RTC_GUARDED_BY(network_thread_) =
       RtcpMode::kCompound;
-  bool enable_non_sender_rtt_ RTC_GUARDED_BY(worker_thread_) = false;
-  bool playout_ RTC_GUARDED_BY(worker_thread_) = false;
+  bool enable_non_sender_rtt_ RTC_GUARDED_BY(network_thread_) = false;
+  bool playout_ RTC_GUARDED_BY(network_thread_) = false;
   Call* const call_ = nullptr;
 
   MediaConfig::Audio audio_config_;
 
   // Queue of unsignaled SSRCs; oldest at the beginning.
-  std::vector<uint32_t> unsignaled_recv_ssrcs_ RTC_GUARDED_BY(worker_thread_);
+  std::vector<uint32_t> unsignaled_recv_ssrcs_ RTC_GUARDED_BY(network_thread_);
 
   // This is a stream param that comes from the remote description, but wasn't
   // signaled with any a=ssrc lines. It holds the information that was signaled
   // before the unsignaled receive stream is created when the first packet is
   // received.
-  StreamParams unsignaled_stream_params_ RTC_GUARDED_BY(worker_thread_);
+  StreamParams unsignaled_stream_params_ RTC_GUARDED_BY(network_thread_);
 
   // Volume for unsignaled streams, which may be set before the stream exists.
-  double default_recv_volume_ RTC_GUARDED_BY(worker_thread_) = 1.0;
+  double default_recv_volume_ RTC_GUARDED_BY(network_thread_) = 1.0;
 
   // Delay for unsignaled streams, which may be set before the stream exists.
-  int default_recv_base_minimum_delay_ms_ RTC_GUARDED_BY(worker_thread_) = 0;
+  int default_recv_base_minimum_delay_ms_ RTC_GUARDED_BY(network_thread_) = 0;
 
   // Sink for latest unsignaled stream - may be set before the stream exists.
   std::unique_ptr<AudioSinkInterface> default_sink_
-      RTC_GUARDED_BY(worker_thread_);
-  std::string mid_ RTC_GUARDED_BY(worker_thread_);
+      RTC_GUARDED_BY(network_thread_);
+  std::string mid_ RTC_GUARDED_BY(network_thread_);
 
   class WebRtcAudioReceiveStream;
   std::map<uint32_t, WebRtcAudioReceiveStream*> recv_streams_
-      RTC_GUARDED_BY(worker_thread_);
+      RTC_GUARDED_BY(network_thread_);
 
-  AudioReceiverParameters recv_params_ RTC_GUARDED_BY(worker_thread_);
+  AudioReceiverParameters recv_params_ RTC_GUARDED_BY(network_thread_);
 
   // Per peer connection crypto options that last for the lifetime of the peer
   // connection.
   const CryptoOptions crypto_options_;
-  SframeReceiveOptions sframe_options_ RTC_GUARDED_BY(worker_thread_);
+  SframeReceiveOptions sframe_options_ RTC_GUARDED_BY(network_thread_);
   // Unsignaled streams have an option to have a frame decryptor set on them.
   scoped_refptr<FrameDecryptorInterface> unsignaled_frame_decryptor_
-      RTC_GUARDED_BY(worker_thread_);
+      RTC_GUARDED_BY(network_thread_);
   scoped_refptr<FrameTransformerInterface> unsignaled_frame_transformer_
-      RTC_GUARDED_BY(worker_thread_);
+      RTC_GUARDED_BY(network_thread_);
 
   // Channel-level callback invoked when a receive stream on this channel
   // receives its first packet.
   absl::AnyInvocable<void(uint32_t ssrc)> on_first_packet_
-      RTC_GUARDED_BY(worker_thread_);
+      RTC_GUARDED_BY(network_thread_);
   const absl::AnyInvocable<void(uint32_t ssrc, const RtpPacketInfos&, Timestamp)
                                const>
       on_frame_delivered_callback_;

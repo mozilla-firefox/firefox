@@ -24,8 +24,7 @@ CallConfig::CallConfig(const Environment& env,
     : env(env),
       network_task_queue_(network_task_queue ? network_task_queue
                                              : TaskQueueBase::Current()),
-      worker_task_queue(TaskQueueBase::Current()) {
-  RTC_DCHECK(worker_task_queue != nullptr);
+      worker_task_queue(network_task_queue_) {
   RTC_DCHECK(network_task_queue_ != nullptr);
 }
 
@@ -35,18 +34,19 @@ CallConfig::CallConfig(const Environment& env,
     : env(env),
       network_task_queue_(network_task_queue),
       worker_task_queue(worker_task_queue) {
-  RTC_DCHECK(worker_task_queue != nullptr);
   RTC_DCHECK(network_task_queue != nullptr);
+  // Call runs only on the network queue.
+  RTC_CHECK_EQ(worker_task_queue, network_task_queue);
 }
 
 CallConfig CallConfig::CreateWithJoinedWorkerAndNetworkQueue(
     const Environment& env,
     TaskQueueBase* absl_nonnull worker_and_network_queue) {
-  return CallConfig(env, worker_and_network_queue, worker_and_network_queue);
+  return CallConfig(env, worker_and_network_queue);
 }
 
 CallConfig CallConfig::CreateSingleThreaded(const Environment& env) {
-  return CallConfig(env, TaskQueueBase::Current(), TaskQueueBase::Current());
+  return CallConfig(env, TaskQueueBase::Current());
 }
 
 RtpTransportConfig CallConfig::ExtractTransportConfig() const {
@@ -60,9 +60,15 @@ RtpTransportConfig CallConfig::ExtractTransportConfig() const {
               : network_controller_factory,
       .default_pacing_time_window =
           pacer_burst_interval.value_or(PacerConfig::kDefaultTimeInterval),
-      .worker_thread = worker_task_queue,
+      .worker_thread = network_task_queue_,
   };
 }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+CallConfig::CallConfig(CallConfig&&) = default;
+CallConfig& CallConfig::operator=(CallConfig&& other) = default;
+#pragma clang diagnostic pop
 
 CallConfig::~CallConfig() = default;
 

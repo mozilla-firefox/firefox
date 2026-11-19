@@ -33,11 +33,10 @@ namespace webrtc {
 class AudioProcessing;
 
 struct CallConfig {
-  [[deprecated(
-      "Use CreateSingleThreaded or the multi-argument constructor instead.")]]
   explicit CallConfig(const Environment& env,
                       TaskQueueBase* network_task_queue = nullptr);
 
+  [[deprecated("Use CallConfig(env, network_task_queue) instead.")]]
   CallConfig(const Environment& env,
              TaskQueueBase* absl_nonnull worker_task_queue,
              TaskQueueBase* absl_nonnull network_task_queue);
@@ -46,16 +45,16 @@ struct CallConfig {
       const Environment& env,
       TaskQueueBase* absl_nonnull worker_and_network_queue);
 
-  // Creates a configuration for a single-threaded Call setup where signaling,
-  // worker, and network threads are all the same current thread.
+  // Creates a configuration for a single-threaded Call setup where Call runs
+  // on the current thread, which is also the signaling thread.
   // Note: This does not represent typical production configurations, where
-  // worker and network threads are usually separate background threads, but it
-  // is still a supported configuration (e.g. for testing or utility programs).
+  // the network thread is usually a separate background thread, but it is
+  // still a supported configuration (e.g. for testing or utility programs).
   static CallConfig CreateSingleThreaded(const Environment& env);
 
   // Move-only.
-  CallConfig(CallConfig&&) = default;
-  CallConfig& operator=(CallConfig&& other) = default;
+  CallConfig(CallConfig&&);
+  CallConfig& operator=(CallConfig&& other);
 
   ~CallConfig();
 
@@ -94,6 +93,8 @@ struct CallConfig {
   VideoJitterTimingFactory* video_jitter_timing_factory = nullptr;
 
   TaskQueueBase* network_task_queue_ = nullptr;
+  [[deprecated(
+      "worker_task_queue is deprecated; use network_task_queue_ instead.")]]
   TaskQueueBase* worker_task_queue = nullptr;
 
   Metronome* decode_metronome = nullptr;
