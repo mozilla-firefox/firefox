@@ -116,10 +116,10 @@ class HangMonitorChild : public PProcessHangMonitorChild,
   mozilla::ipc::IPCResult RecvRequestContentJSInterrupt() override;
 
   mozilla::ipc::IPCResult RecvPaintWhileInterruptingJS(
-      const TabId& aTabId) override;
+      const TabId& aTabId, const uint64_t& aEpoch) override;
 
   mozilla::ipc::IPCResult RecvUnloadLayersWhileInterruptingJS(
-      const TabId& aTabId) override;
+      const TabId& aTabId, const uint64_t& aEpoch) override;
 
   mozilla::ipc::IPCResult RecvCancelContentJSExecutionIfRunning(
       const TabId& aTabId, const nsIRemoteTab::NavigationType& aNavigationType,
@@ -183,6 +183,9 @@ class HangMonitorChild : public PProcessHangMonitorChild,
   // true means, we will paint. false - unload layers
   Maybe<bool> mPaintWhileInterruptingJS MOZ_GUARDED_BY(mMonitor);
   TabId mPaintWhileInterruptingJSTab MOZ_GUARDED_BY(mMonitor);
+  // Overwritten with the two fields above, so a request superseded before
+  // InterruptCallback runs is dropped, never applied with a newer epoch.
+  uint64_t mPaintWhileInterruptingJSEpoch MOZ_GUARDED_BY(mMonitor) = 0;
   bool mCancelContentJS MOZ_GUARDED_BY(mMonitor);
   TabId mCancelContentJSTab MOZ_GUARDED_BY(mMonitor);
   nsIRemoteTab::NavigationType mCancelContentJSNavigationType
@@ -295,8 +298,8 @@ class HangMonitorParent : public PProcessHangMonitorParent {
 
   void ClearHangNotification();
 
-  void PaintOrUnloadLayersWhileInterruptingJSOnThread(bool aPaint,
-                                                      TabId aTabId);
+  void PaintOrUnloadLayersWhileInterruptingJSOnThread(bool aPaint, TabId aTabId,
+                                                      uint64_t aEpoch);
   void CancelContentJSExecutionIfRunningOnThread(
       TabId aTabId, nsIRemoteTab::NavigationType aNavigationType,
       int32_t aNavigationIndex, nsIURI* aNavigationURI, int32_t aEpoch);
@@ -392,11 +395,13 @@ bool HangMonitorChild::InterruptCallback() {
 
   Maybe<bool> paintWhileInterruptingJS;
   TabId paintWhileInterruptingJSTab;
+  uint64_t paintWhileInterruptingJSEpoch;
 
   {
     MonitorAutoLock lock(mMonitor);
     paintWhileInterruptingJS = mPaintWhileInterruptingJS;
     paintWhileInterruptingJSTab = mPaintWhileInterruptingJSTab;
+    paintWhileInterruptingJSEpoch = mPaintWhileInterruptingJSEpoch;
 
     mPaintWhileInterruptingJS.reset();
   }
@@ -409,11 +414,12 @@ bool HangMonitorChild::InterruptCallback() {
       if (paintWhileInterruptingJS.value()) {
         AUTO_PROFILER_MARKER_UNTYPED(
             "InterruptCallback: PaintWhileInterruptingJS", DOM, {});
-        browserChild->PaintWhileInterruptingJS();
+        browserChild->PaintWhileInterruptingJS(paintWhileInterruptingJSEpoch);
       } else {
         AUTO_PROFILER_MARKER_UNTYPED(
             "InterruptCallback: UnloadLayersWhileInterruptingJS", DOM, {});
-        browserChild->UnloadLayersWhileInterruptingJS();
+        browserChild->UnloadLayersWhileInterruptingJS(
+            paintWhileInterruptingJSEpoch);
       }
     }
   }
@@ -562,7 +568,7 @@ mozilla::ipc::IPCResult HangMonitorChild::RecvRequestContentJSInterrupt() {
 }
 
 mozilla::ipc::IPCResult HangMonitorChild::RecvPaintWhileInterruptingJS(
-    const TabId& aTabId) {
+    const TabId& aTabId, const uint64_t& aEpoch) {
   PROFILER_MARKER_UNTYPED("PaintWhileInterruptingJS", DOM, {});
   MOZ_RELEASE_ASSERT(IsOnThread());
 
@@ -571,6 +577,7 @@ mozilla::ipc::IPCResult HangMonitorChild::RecvPaintWhileInterruptingJS(
     MaybeStartPaintWhileInterruptingJS();
     mPaintWhileInterruptingJS = Some(true);
     mPaintWhileInterruptingJSTab = aTabId;
+    mPaintWhileInterruptingJSEpoch = aEpoch;
   }
 
   JS_RequestInterruptCallback(mContext);
@@ -579,7 +586,7 @@ mozilla::ipc::IPCResult HangMonitorChild::RecvPaintWhileInterruptingJS(
 }
 
 mozilla::ipc::IPCResult HangMonitorChild::RecvUnloadLayersWhileInterruptingJS(
-    const TabId& aTabId) {
+    const TabId& aTabId, const uint64_t& aEpoch) {
   MOZ_RELEASE_ASSERT(IsOnThread());
 
   {
@@ -587,6 +594,7 @@ mozilla::ipc::IPCResult HangMonitorChild::RecvUnloadLayersWhileInterruptingJS(
     MaybeStartPaintWhileInterruptingJS();
     mPaintWhileInterruptingJS = Some(false);
     mPaintWhileInterruptingJSTab = aTabId;
+    mPaintWhileInterruptingJSEpoch = aEpoch;
   }
 
   JS_RequestInterruptCallback(mContext);
@@ -804,11 +812,11 @@ void HangMonitorParent::PaintWhileInterruptingJS(dom::BrowserParent* aTab) {
   MOZ_RELEASE_ASSERT(NS_IsMainThread());
   if (StaticPrefs::browser_tabs_remote_force_paint()) {
     TabId id = aTab->GetTabId();
-    Dispatch(NewNonOwningRunnableMethod<bool, TabId>(
+    Dispatch(NewNonOwningRunnableMethod<bool, TabId, uint64_t>(
         "HangMonitorParent::PaintOrUnloadLayersWhileInterruptingJSOnThread ",
         this,
         &HangMonitorParent::PaintOrUnloadLayersWhileInterruptingJSOnThread,
-        true, id));
+        true, id, aTab->GetRenderLayersEpoch()));
   }
 }
 
@@ -816,21 +824,21 @@ void HangMonitorParent::UnloadLayersWhileInterruptingJS(
     dom::BrowserParent* aTab) {
   MOZ_RELEASE_ASSERT(NS_IsMainThread());
   TabId id = aTab->GetTabId();
-  Dispatch(NewNonOwningRunnableMethod<bool, TabId>(
+  Dispatch(NewNonOwningRunnableMethod<bool, TabId, uint64_t>(
       "HangMonitorParent::PaintOrUnloadLayersWhileInterruptingJSOnThread ",
       this, &HangMonitorParent::PaintOrUnloadLayersWhileInterruptingJSOnThread,
-      false, id));
+      false, id, aTab->GetRenderLayersEpoch()));
 }
 
 void HangMonitorParent::PaintOrUnloadLayersWhileInterruptingJSOnThread(
-    const bool aPaint, TabId aTabId) {
+    const bool aPaint, TabId aTabId, uint64_t aEpoch) {
   MOZ_RELEASE_ASSERT(IsOnThread());
 
   if (mIPCOpen) {
     if (aPaint) {
-      (void)SendPaintWhileInterruptingJS(aTabId);
+      (void)SendPaintWhileInterruptingJS(aTabId, aEpoch);
     } else {
-      (void)SendUnloadLayersWhileInterruptingJS(aTabId);
+      (void)SendUnloadLayersWhileInterruptingJS(aTabId, aEpoch);
     }
   }
 }

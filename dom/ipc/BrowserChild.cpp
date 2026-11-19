@@ -3044,7 +3044,8 @@ mozilla::ipc::IPCResult BrowserChild::RecvDestroy() {
   return IPC_OK();
 }
 
-mozilla::ipc::IPCResult BrowserChild::RecvRenderLayers(const bool& aEnabled) {
+mozilla::ipc::IPCResult BrowserChild::RecvRenderLayers(const bool& aEnabled,
+                                                       const uint64_t& aEpoch) {
   auto clearPaintWhileInterruptingJS = MakeScopeExit([&] {
     // We might force a paint, or we might already have painted and this is a
     // no-op. In either case, once we exit this scope, we need to alert the
@@ -3059,6 +3060,13 @@ mozilla::ipc::IPCResult BrowserChild::RecvRenderLayers(const bool& aEnabled) {
   if (aEnabled) {
     ProcessHangMonitor::MaybeStartPaintWhileInterruptingJS();
   }
+
+  // The hang monitor's copy of a request can arrive before or after this one,
+  // so a newer request may already have been applied.
+  if (aEpoch < mRenderLayersEpoch) {
+    return IPC_OK();
+  }
+  mRenderLayersEpoch = aEpoch;
 
   mRenderLayers = aEnabled;
   const bool wasVisible = IsVisible();
@@ -3775,7 +3783,7 @@ LayoutDeviceIntRect BrowserChild::GetOuterRect() {
   return RoundedToInt(mUnscaledOuterRect * mPuppetWidget->GetDefaultScale());
 }
 
-void BrowserChild::PaintWhileInterruptingJS() {
+void BrowserChild::PaintWhileInterruptingJS(uint64_t aEpoch) {
   if (!IPCOpen() || !mPuppetWidget || !mPuppetWidget->HasWindowRenderer()) {
     // Don't bother doing anything now. Better to wait until we receive the
     // message on the PContent channel.
@@ -3784,10 +3792,10 @@ void BrowserChild::PaintWhileInterruptingJS() {
 
   MOZ_DIAGNOSTIC_ASSERT(nsContentUtils::IsSafeToRunScript());
   nsAutoScriptBlocker scriptBlocker;
-  RecvRenderLayers(/* aEnabled = */ true);
+  RecvRenderLayers(/* aEnabled = */ true, aEpoch);
 }
 
-void BrowserChild::UnloadLayersWhileInterruptingJS() {
+void BrowserChild::UnloadLayersWhileInterruptingJS(uint64_t aEpoch) {
   if (!IPCOpen() || !mPuppetWidget || !mPuppetWidget->HasWindowRenderer()) {
     // Don't bother doing anything now. Better to wait until we receive the
     // message on the PContent channel.
@@ -3796,7 +3804,7 @@ void BrowserChild::UnloadLayersWhileInterruptingJS() {
 
   MOZ_DIAGNOSTIC_ASSERT(nsContentUtils::IsSafeToRunScript());
   nsAutoScriptBlocker scriptBlocker;
-  RecvRenderLayers(/* aEnabled = */ false);
+  RecvRenderLayers(/* aEnabled = */ false, aEpoch);
 }
 
 nsresult BrowserChild::CanCancelContentJS(

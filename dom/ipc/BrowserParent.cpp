@@ -3731,7 +3731,7 @@ void BrowserParent::SetRenderLayers(bool aEnabled) {
 }
 
 void BrowserParent::SetRenderLayersInternal(bool aEnabled) {
-  (void)SendRenderLayers(aEnabled);
+  (void)SendRenderLayers(aEnabled, NextRenderLayersEpoch());
 
   // Ask the child to repaint/unload layers using the PHangMonitor
   // channel/thread (which may be less congested).

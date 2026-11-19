@@ -619,9 +619,9 @@ class BrowserChild final : public nsMessageManagerScriptExecutor,
                   const CSSRect& aRect, const uint32_t& aFlags);
 
   // Request that the docshell be marked as active.
-  void PaintWhileInterruptingJS();
+  void PaintWhileInterruptingJS(uint64_t aEpoch);
 
-  void UnloadLayersWhileInterruptingJS();
+  void UnloadLayersWhileInterruptingJS(uint64_t aEpoch);
 
   nsresult CanCancelContentJS(nsIRemoteTab::NavigationType aNavigationType,
                               int32_t aNavigationIndex, nsIURI* aNavigationURI,
@@ -765,7 +765,8 @@ class BrowserChild final : public nsMessageManagerScriptExecutor,
   mozilla::ipc::IPCResult RecvDestroy();
 
   MOZ_CAN_RUN_SCRIPT_BOUNDARY
-  mozilla::ipc::IPCResult RecvRenderLayers(const bool& aEnabled);
+  mozilla::ipc::IPCResult RecvRenderLayers(const bool& aEnabled,
+                                           const uint64_t& aEpoch);
 
   mozilla::ipc::IPCResult RecvPreserveLayers(bool);
 
@@ -970,6 +971,10 @@ class BrowserChild final : public nsMessageManagerScriptExecutor,
   RefPtr<SessionStoreChild> mSessionStoreChild;
 
   int32_t mCancelContentJSEpoch;
+
+  // The epoch of the last RenderLayers request we applied, whether it came
+  // through PBrowser or through the hang monitor.
+  uint64_t mRenderLayersEpoch = 0;
 
   Maybe<LayoutDeviceToLayoutDeviceMatrix4x4> mChildToParentConversionMatrix;
   // When mChildToParentConversionMatrix is Nothing() this value is invalid.

@@ -31,8 +31,8 @@ child:
   async TerminateScript();
   async RequestContentJSInterrupt();
 
-  async PaintWhileInterruptingJS(TabId tabId);
-  async UnloadLayersWhileInterruptingJS(TabId tabId);
+  async PaintWhileInterruptingJS(TabId tabId, uint64_t epoch);
+  async UnloadLayersWhileInterruptingJS(TabId tabId, uint64_t epoch);
 
   async CancelContentJSExecutionIfRunning(
       TabId tabId, NavigationType aNavigationType,

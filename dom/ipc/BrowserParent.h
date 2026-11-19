@@ -706,6 +706,9 @@ class BrowserParent final : public PBrowserParent,
   bool GetHasLayers();
   bool GetRenderLayers();
   void SetRenderLayers(bool aRenderLayers);
+  // The epoch of the last RenderLayers request sent to the child.
+  uint64_t GetRenderLayersEpoch() const { return mRenderLayersEpoch; }
+  uint64_t NextRenderLayersEpoch() { return ++mRenderLayersEpoch; }
   bool GetPriorityHint();
   void SetPriorityHint(bool aPriorityHint);
   void PreserveLayers(bool aPreserveLayers);
@@ -978,6 +981,8 @@ class BrowserParent final : public PBrowserParent,
   nsIWidget::Cursor mCursor;
 
   nsTArray<nsString> mVerifyDropLinks;
+
+  uint64_t mRenderLayersEpoch = 0;
 
 #ifdef DEBUG
   int32_t mActiveSuppressDisplayportCount = 0;

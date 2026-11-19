@@ -911,8 +911,11 @@ child:
      * @param aEnabled
      *        True if the child should render and upload layers, false if the
      *        child should clear layers.
+     * @param aEpoch
+     *        Increases with each request, which is also sent through
+     *        PProcessHangMonitor, so that the child applies only the latest.
      */
-    async RenderLayers(bool aEnabled);
+    async RenderLayers(bool aEnabled, uint64_t aEpoch);
 
     /**
      * Communicates the child that we want layers to be preserved even when the
