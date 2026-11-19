@@ -55,7 +55,6 @@ class IPProtectionLocationMiddleware(
 
             is IPProtectionAction.EligibilityAction.EligibilityChanged,
             is IPProtectionAction.ServiceAction.ServiceStateChanged,
-            is IPProtectionAction.ServiceAction.CurrentAuthProviderChanged,
             is IPProtectionAction.ProxyAction.ProxyStateChanged,
             is IPProtectionAction.UsageAction.UsageChanged,
             is IPProtectionAction.AccountAction.AccountStateChanged,

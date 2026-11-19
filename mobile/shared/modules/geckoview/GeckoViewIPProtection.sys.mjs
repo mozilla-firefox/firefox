@@ -10,8 +10,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   EventDispatcher: "resource://gre/modules/Messaging.sys.mjs",
   IPPAndroidAuthProvider:
     "moz-src:///toolkit/components/ipprotection/fxa/IPPAndroidAuthProvider.sys.mjs",
-  IPPAndroidSignInWatcher:
-    "moz-src:///toolkit/components/ipprotection/fxa/IPPAndroidSignInWatcher.sys.mjs",
   IPPAuthProvider:
     "moz-src:///toolkit/components/ipprotection/IPPAuthProvider.sys.mjs",
   IPPDummyAuthProvider:
@@ -26,8 +24,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///toolkit/components/ipprotection/IPProtectionActivator.sys.mjs",
   IPProtectionService:
     "moz-src:///toolkit/components/ipprotection/IPProtectionService.sys.mjs",
-  IPProtectionStates:
-    "moz-src:///toolkit/components/ipprotection/IPProtectionService.sys.mjs",
 });
 
 const { debug } = GeckoViewUtils.initLoggingConsole("GeckoViewIPProtection");
@@ -40,70 +36,6 @@ function sendRequest(message, data) {
 const AUTH_PROVIDER_PREF = "toolkit.ipProtection.android.authProvider";
 
 let initialized = false;
-
-let signedOutAuth = "none";
-let isSignedIn = null;
-let gpiUnavailable = false;
-let reportedAuthProvider = null;
-
-function resolveAuthProvider() {
-  if (Services.prefs.getCharPref(AUTH_PROVIDER_PREF, "") === "test") {
-    return lazy.IPPDummyAuthProvider;
-  }
-
-  if (signedOutAuth === "gpi" && isSignedIn === false && !gpiUnavailable) {
-    return lazy.IPPGpiAuthProvider;
-  }
-
-  return lazy.IPPAndroidAuthProvider;
-}
-
-function applyAuthProvider() {
-  const provider = resolveAuthProvider();
-  lazy.IPProtectionActivator.setAuthProvider(provider);
-
-  if (provider === lazy.IPPGpiAuthProvider) {
-    lazy.IPProtectionActivator.setFallbackAuthProvider(
-      lazy.IPPAndroidAuthProvider,
-      () => {
-        gpiUnavailable = true;
-      }
-    );
-  }
-}
-
-function currentAuthProvider() {
-  if (signedOutAuth === "gpi" && isSignedIn === null) {
-    return null;
-  }
-
-  const provider = lazy.IPProtectionService.authProvider;
-  if (provider === lazy.IPPAndroidAuthProvider) {
-    return "fxa";
-  }
-
-  if (provider === lazy.IPPGpiAuthProvider) {
-    return "gpi";
-  }
-
-  return null;
-}
-
-function sendAuthProvider(authProvider) {
-  reportedAuthProvider = authProvider;
-  sendRequest("GeckoView:IPProtection:CurrentAuthProviderChanged", {
-    authProvider,
-  });
-}
-
-function reportAuthProvider() {
-  const authProvider = currentAuthProvider();
-  if (!authProvider || authProvider === reportedAuthProvider) {
-    return;
-  }
-
-  sendAuthProvider(authProvider);
-}
 
 export const GeckoViewIPProtection = {
   // Events dispatched by components in toolkit/components/ipprotection.
@@ -126,15 +58,6 @@ export const GeckoViewIPProtection = {
           max: Number(usage.max),
           resetTime: usage.reset?.toString() ?? null,
         };
-        break;
-      }
-      case "IPProtectionService:StateChanged": {
-        // While uninitialized, the service still holds the auth provider it is
-        // being switched away from.
-        if (event.detail.state !== lazy.IPProtectionStates.UNINITIALIZED) {
-          reportAuthProvider();
-        }
-        detail = event.detail;
         break;
       }
       case "IPProtectionServerlist:ListChanged": {
@@ -173,9 +96,26 @@ export const GeckoViewIPProtection = {
             "IPProtectionServerlist:ListChanged",
             GeckoViewIPProtection
           );
-
-          signedOutAuth = aData?.signedOutAuth ?? "none";
-          applyAuthProvider();
+          let providerName = Services.prefs.getCharPref(AUTH_PROVIDER_PREF, "");
+          if (!providerName) {
+            providerName = aData?.isSignedIn ? "fxa" : "gpi";
+            Services.prefs.setCharPref(AUTH_PROVIDER_PREF, providerName);
+          }
+          if (providerName === "fxa") {
+            lazy.IPProtectionActivator.setAuthProvider(
+              lazy.IPPAndroidAuthProvider
+            );
+          } else if (providerName === "test") {
+            lazy.IPProtectionActivator.setAuthProvider(
+              lazy.IPPDummyAuthProvider
+            );
+          } else {
+            lazy.IPProtectionActivator.setAuthProvider(lazy.IPPGpiAuthProvider);
+            lazy.IPProtectionActivator.setFallbackAuthProvider(
+              lazy.IPPAndroidAuthProvider,
+              () => Services.prefs.setCharPref(AUTH_PROVIDER_PREF, "fxa")
+            );
+          }
           lazy.IPProtectionActivator.init();
         }
         aCallback.onSuccess();
@@ -202,52 +142,13 @@ export const GeckoViewIPProtection = {
           );
           lazy.IPProtectionActivator.uninit();
           lazy.IPProtectionActivator.removeHelpers();
-          isSignedIn = null;
 
           lazy.IPProtectionActivator.setAuthProvider(
             new lazy.IPPAuthProvider()
           );
-          if (reportedAuthProvider) {
-            sendAuthProvider(null);
-          }
           lazy.IPPProxyManager.updateState();
         }
         aCallback.onSuccess();
-        break;
-      }
-      case "GeckoView:IPProtection:AuthStateChanged": {
-        if (!initialized) {
-          aCallback.onSuccess();
-          break;
-        }
-
-        isSignedIn = !!aData?.isSignedIn;
-
-        (async () => {
-          // Notify first so the FxA provider clears its cached entitlement.
-          if (!isSignedIn) {
-            lazy.IPPAndroidSignInWatcher.notifySignInStateChanged(false);
-          }
-
-          if (lazy.IPProtectionService.authProvider !== resolveAuthProvider()) {
-            lazy.IPProtectionActivator.uninit();
-            applyAuthProvider();
-            await lazy.IPProtectionActivator.init();
-          }
-
-          if (isSignedIn) {
-            lazy.IPPAndroidSignInWatcher.notifySignInStateChanged(true);
-          }
-          reportAuthProvider();
-        })()
-          .then(() => {
-            aCallback.onSuccess();
-          })
-          .catch(err => {
-            aCallback.onError(
-              typeof err === "string" ? err : (err?.message ?? "generic-error")
-            );
-          });
         break;
       }
       case "GeckoView:IPProtection:IPProtectionService:GetState": {

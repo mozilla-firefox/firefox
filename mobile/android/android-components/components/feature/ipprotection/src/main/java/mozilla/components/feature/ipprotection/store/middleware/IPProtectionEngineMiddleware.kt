@@ -95,7 +95,6 @@ class IPProtectionEngineMiddleware(
             }
 
             is IPProtectionAction.EligibilityAction.EligibilityChanged,
-            is IPProtectionAction.ServiceAction.CurrentAuthProviderChanged,
             is IPProtectionAction.UsageAction.UsageChanged,
             is IPProtectionAction.AccountAction.AccountStateChanged,
             is IPProtectionAction.AccountAction.CheckAccount,

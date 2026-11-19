@@ -19,7 +19,6 @@ import kotlinx.coroutines.withContext
 import mozilla.appservices.fxaclient.FxaException
 import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.concept.engine.Engine
-import mozilla.components.concept.engine.ipprotection.CurrentAuthProvider
 import mozilla.components.concept.engine.ipprotection.IPProtectionDelegate
 import mozilla.components.concept.engine.ipprotection.IPProtectionHandler
 import mozilla.components.concept.engine.ipprotection.ProxyState
@@ -53,7 +52,6 @@ import mozilla.components.support.base.log.logger.Logger
  * @param accountManager [FxaAccountManager] used to supply FxA tokens to the proxy service.
  * @param engineMiddleware [IPProtectionEngineMiddleware] given the [IPProtectionHandler] on registration.
  * @param extraAuthProvider Optional [IPProtectionAuthProvider] used to compose extra capabilities.
- * @param signedOutAuth [IPProtectionHandler.SignedOutAuth] passed to the engine.
  * @param mainDispatcher [CoroutineDispatcher] on which state observations and engine calls run.
  */
 class IPProtectionFeature(
@@ -62,7 +60,6 @@ class IPProtectionFeature(
     private val accountManager: FxaAccountManager,
     private val engineMiddleware: IPProtectionEngineMiddleware,
     private val extraAuthProvider: IPProtectionAuthProvider? = null,
-    private val signedOutAuth: IPProtectionHandler.SignedOutAuth = IPProtectionHandler.SignedOutAuth.None,
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) {
     private val logger = Logger("IPP:Feature")
@@ -88,14 +85,24 @@ class IPProtectionFeature(
     ) {
         store.flowScoped(dispatcher = mainDispatcher) { flow ->
             flow
-                .map { it.eligibilityStatus to it.serviceStatus }
+                .map { Triple(it.eligibilityStatus, it.serviceStatus, it.accountState.status) }
                 .distinctUntilChanged()
-                .collectLatest { (eligibilityStatus, serviceStatus) ->
+                .collectLatest { (eligibilityStatus, serviceStatus, accountStatus) ->
                     when (eligibilityStatus) {
                         EligibilityStatus.Eligible -> {
                             if (serviceStatus == ServiceState.Uninitialized) {
                                 logger.info("Registering and initializing with IPProtectionController.")
                                 registerAndInit()
+                            }
+
+                            // When the app starts with an already signed-in user, the account state
+                            // is likely to be ready faster than the service, so we should notify
+                            // a ready account state after initializing the handler.
+                            if (
+                                serviceStatus == ServiceState.Unauthenticated &&
+                                    accountStatus == AccountStatus.Authenticated
+                            ) {
+                                handler?.notifyAccountStatus(true)
                             }
                         }
 
@@ -112,43 +119,46 @@ class IPProtectionFeature(
         }
     }
 
-    private fun signedInForEngine(accountStatus: AccountStatus): Boolean? =
-        when (accountStatus) {
-            AccountStatus.Authenticated,
-            AccountStatus.AwaitingEnrollment,
-            AccountStatus.TryAgain -> true
-            AccountStatus.AuthFailed,
-            AccountStatus.NoAccount -> false
-            AccountStatus.Uninitialized -> null
-            AccountStatus.WarmingUp,
-            AccountStatus.NeedsAuthentication,
-            AccountStatus.RequestingAuthentication,
-            AccountStatus.NeedsAuthorization,
-            AccountStatus.RequestingAuthorization,
-            AccountStatus.AwaitingAuthentication,
-            AccountStatus.AwaitingAuthorization,
-            AccountStatus.EnrolledAndEntitled ->
-                if (signedOutAuth == IPProtectionHandler.SignedOutAuth.Gpi) {
-                    accountManager.authenticatedAccount() != null
-                } else {
-                    null
-                }
-        }
-
     private fun observeAccount(store: IPProtectionStore, mainDispatcher: CoroutineDispatcher) {
         store.flowScoped(dispatcher = mainDispatcher) { flow ->
             flow
                 .distinctUntilChangedBy { it.accountState.status }
                 .collect { state ->
-                    val accountStatus = state.accountState.status
-                    signedInForEngine(accountStatus)?.let { handler?.notifyAccountStatus(it) }
-                    if (accountStatus == AccountStatus.AwaitingEnrollment) {
-                        handler?.enroll { enrollInfo ->
-                            store.dispatch(
-                                IPProtectionAction.AccountAction.FinishingEnrollment(
-                                    success = enrollInfo.isEnrolledAndEntitled
+                    when (state.accountState.status) {
+                        AccountStatus.AuthFailed,
+                        AccountStatus.NoAccount -> {
+                            handler?.notifyAccountStatus(false)
+                        }
+
+                        AccountStatus.Authenticated -> {
+                            handler?.notifyAccountStatus(true)
+                        }
+
+                        AccountStatus.AwaitingEnrollment -> {
+                            handler?.notifyAccountStatus(true)
+                            handler?.enroll { enrollInfo ->
+                                store.dispatch(
+                                    IPProtectionAction.AccountAction.FinishingEnrollment(
+                                        success = enrollInfo.isEnrolledAndEntitled
+                                    )
                                 )
-                            )
+                            }
+                        }
+
+                        AccountStatus.TryAgain -> {
+                            handler?.notifyAccountStatus(true)
+                        }
+
+                        AccountStatus.Uninitialized,
+                        AccountStatus.WarmingUp,
+                        AccountStatus.NeedsAuthentication,
+                        AccountStatus.RequestingAuthentication,
+                        AccountStatus.NeedsAuthorization,
+                        AccountStatus.RequestingAuthorization,
+                        AccountStatus.AwaitingAuthentication,
+                        AccountStatus.AwaitingAuthorization,
+                        AccountStatus.EnrolledAndEntitled -> {
+                            // no-op when we are in transient states.
                         }
                     }
                 }
@@ -180,10 +190,6 @@ class IPProtectionFeature(
                     object : IPProtectionDelegate {
                         override fun onServiceStateChanged(serviceState: ServiceState) {
                             store.dispatch(IPProtectionAction.ServiceAction.ServiceStateChanged(serviceState))
-                        }
-
-                        override fun onCurrentAuthProviderChanged(authProvider: CurrentAuthProvider) {
-                            store.dispatch(IPProtectionAction.ServiceAction.CurrentAuthProviderChanged(authProvider))
                         }
 
                         override fun onProxyStateChanged(
@@ -251,8 +257,7 @@ class IPProtectionFeature(
                 // We do need to register our listeners first to avoid dropping a message because,
                 // as a side effect, the init call triggers `IPProtectionController#onServiceStateChanged`
                 // that can trigger the account manager that leads to `AuthProvider#getToken`.
-                init(signedOutAuth)
-                signedInForEngine(store.state.accountState.status)?.let { notifyAccountStatus(it) }
+                init()
             }
         }
 

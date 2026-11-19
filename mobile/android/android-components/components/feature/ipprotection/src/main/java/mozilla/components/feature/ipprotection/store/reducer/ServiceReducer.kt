@@ -30,10 +30,6 @@ internal object ServiceReducer {
                     locationState = newLocationState,
                 )
             }
-
-            is IPProtectionAction.ServiceAction.CurrentAuthProviderChanged -> {
-                state.copy(currentAuthProvider = action.authProvider)
-            }
         }
 }
 
