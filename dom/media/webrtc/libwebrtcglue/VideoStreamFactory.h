@@ -5,10 +5,14 @@
 #ifndef VideoStreamFactory_h
 #define VideoStreamFactory_h
 
+#include <vector>
+
 #include "CodecConfig.h"
+#include "api/video/video_codec_constants.h"
 #include "mozilla/Atomics.h"
 #include "mozilla/EventTargetCapability.h"
 #include "mozilla/gfx/Point.h"
+#include "nsTArray.h"
 #include "video/config/video_encoder_config.h"
 
 namespace webrtc {
@@ -29,8 +33,16 @@ class VideoStreamFactory
     int max_bitrate_bps;
   };
 
-  static ResolutionAndBitrateLimits GetLimitsFor(gfx::IntSize aSize,
-                                                 int aCapBps = 0);
+  static ResolutionAndBitrateLimits GetUnicastLimitsFor(gfx::IntSize aSize,
+                                                        int aCapBps = 0);
+
+  // Bitrate limits for each of aStreams, before prefs, b=TIAS and encoding
+  // constraints cap them. The streams must have their resolution set.
+  static AutoTArray<ResolutionAndBitrateLimits, webrtc::kMaxSimulcastStreams>
+  GetBitrateLimitsFor(const webrtc::FieldTrialsView& aFieldTrials,
+                      const webrtc::VideoEncoderConfig& aConfig,
+                      bool aTemporalLayersSupported,
+                      const std::vector<webrtc::VideoStream>& aStreams);
 
   VideoStreamFactory(VideoCodecConfig aConfig, int aMinBitrate,
                      int aStartBitrate, int aPrefMaxBitrate,

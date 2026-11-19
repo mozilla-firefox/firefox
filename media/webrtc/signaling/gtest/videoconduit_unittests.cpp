@@ -526,7 +526,7 @@ TEST_F(VideoConduitTest, TestConfigureSendMediaCodecDefaults) {
     const std::vector<webrtc::VideoStream> videoStreams =
         Call()->CreateEncoderStreams(640, 480);
     EXPECT_EQ(videoStreams.size(), 1U);
-    EXPECT_EQ(videoStreams[0].min_bitrate_bps, 150000);
+    EXPECT_EQ(videoStreams[0].min_bitrate_bps, 30000);
     EXPECT_EQ(videoStreams[0].target_bitrate_bps, 500000);
     EXPECT_EQ(videoStreams[0].max_bitrate_bps, 2000000);
   }
@@ -537,7 +537,7 @@ TEST_F(VideoConduitTest, TestConfigureSendMediaCodecDefaults) {
     const std::vector<webrtc::VideoStream> videoStreams =
         Call()->CreateEncoderStreams(1280, 720);
     EXPECT_EQ(videoStreams.size(), 1U);
-    EXPECT_EQ(videoStreams[0].min_bitrate_bps, 1200000);
+    EXPECT_EQ(videoStreams[0].min_bitrate_bps, 30000);
     EXPECT_EQ(videoStreams[0].target_bitrate_bps, 1500000);
     EXPECT_EQ(videoStreams[0].max_bitrate_bps, 5000000);
   }
@@ -565,7 +565,7 @@ TEST_F(VideoConduitTest, TestConfigureSendMediaCodecTias) {
     const std::vector<webrtc::VideoStream> videoStreams =
         Call()->CreateEncoderStreams(1280, 720);
     ASSERT_EQ(videoStreams.size(), 1U);
-    ASSERT_EQ(videoStreams[0].min_bitrate_bps, 1200000);
+    ASSERT_EQ(videoStreams[0].min_bitrate_bps, 30000);
     ASSERT_EQ(videoStreams[0].target_bitrate_bps, 1500000);
     ASSERT_EQ(videoStreams[0].max_bitrate_bps, 2000000);
   }
@@ -1286,7 +1286,7 @@ TEST_P(VideoConduitCodecModeTest, TestReconfigureSendMediaCodec) {
     const std::vector<webrtc::VideoStream> videoStreams =
         Call()->CreateEncoderStreams(1280, 720);
     ASSERT_EQ(videoStreams.size(), 1U);
-    EXPECT_EQ(videoStreams[0].min_bitrate_bps, 1200000);
+    EXPECT_EQ(videoStreams[0].min_bitrate_bps, 30000);
     EXPECT_EQ(videoStreams[0].target_bitrate_bps, 1500000);
     EXPECT_EQ(videoStreams[0].max_bitrate_bps, 2000000);
   }
@@ -1416,7 +1416,7 @@ TEST_P(VideoConduitCodecModeTest,
     const std::vector<webrtc::VideoStream> videoStreams =
         Call()->CreateEncoderStreams(1280, 720);
     ASSERT_EQ(videoStreams.size(), 1U);
-    EXPECT_EQ(videoStreams[0].min_bitrate_bps, 1200000);
+    EXPECT_EQ(videoStreams[0].min_bitrate_bps, 30000);
     EXPECT_EQ(videoStreams[0].target_bitrate_bps, 1500000);
     EXPECT_EQ(videoStreams[0].max_bitrate_bps, 2000000);
   }
