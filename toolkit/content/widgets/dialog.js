@@ -11,6 +11,12 @@
     "resource://gre/modules/AppConstants.sys.mjs"
   );
 
+  const DEFAULT_BUTTON_L10N_IDS = {
+    accept: "dialog-button-accept",
+    cancel: "dialog-button-cancel",
+    disclosure: "dialog-button-disclosure",
+  };
+
   class MozDialog extends MozXULElement {
     #subDialogObserver = null;
 
@@ -115,7 +121,8 @@
           attributeFilter: ["subdialog"],
         });
       }
-      document.l10n?.connectRoot(this.shadowRoot);
+      MozXULElement.insertFTLIfNeeded("toolkit/global/dialog.ftl");
+      document.l10n.connectRoot(this.shadowRoot);
 
       this.shadowRoot.textContent = "";
       this.shadowRoot.appendChild(
@@ -190,15 +197,6 @@
         return this.getAttribute("defaultButton");
       }
       return "accept"; // default to the accept button
-    }
-
-    get _strBundle() {
-      if (!this.__stringBundle) {
-        this.__stringBundle = Services.strings.createBundle(
-          "chrome://global/locale/dialog.properties"
-        );
-      }
-      return this.__stringBundle;
     }
 
     acceptDialog() {
@@ -420,7 +418,7 @@
 
         // don't override custom labels with pre-defined labels on explicit buttons
         if (!button.hasAttribute("label")) {
-          // dialog attributes override the default labels in dialog.properties
+          // dialog attributes override the default labels in dialog.ftl
           if (this.hasAttribute("buttonlabel" + dlgtype)) {
             button.setAttribute(
               "label",
@@ -437,17 +435,11 @@
               button,
               this.getAttribute("buttonid" + dlgtype)
             );
-          } else if (dlgtype != "extra1" && dlgtype != "extra2") {
-            button.setAttribute(
-              "label",
-              this._strBundle.GetStringFromName("button-" + dlgtype)
+          } else if (DEFAULT_BUTTON_L10N_IDS[dlgtype]) {
+            document.l10n.setAttributes(
+              button,
+              DEFAULT_BUTTON_L10N_IDS[dlgtype]
             );
-            var accessKey = this._strBundle.GetStringFromName(
-              "accesskey-" + dlgtype
-            );
-            if (accessKey) {
-              button.setAttribute("accesskey", accessKey);
-            }
           }
         }
       }

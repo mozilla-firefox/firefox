@@ -101,6 +101,9 @@ function getPromptState(ui) {
   state.butt0Label = ui.button0.label;
   state.butt1Label = ui.button1.label;
   state.butt2Label = ui.button2.label;
+  state.butt0AccessKey = ui.button0.getAttribute("accesskey") || "";
+  state.butt1AccessKey = ui.button1.getAttribute("accesskey") || "";
+  state.butt2AccessKey = ui.button2.getAttribute("accesskey") || "";
 
   state.butt0Disabled = ui.button0.disabled;
   state.butt1Disabled = ui.button1.disabled;

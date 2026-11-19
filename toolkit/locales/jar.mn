@@ -29,7 +29,6 @@
 #if !defined(XP_WIN) && !defined(MOZ_GECKOVIEW)
   locale/@AB_CD@/global/printdialog.properties          (%chrome/global/printdialog.properties)
 #endif
-  locale/@AB_CD@/global/dialog.properties               (%chrome/global/dialog.properties)
   locale/@AB_CD@/global/wizard.properties               (%chrome/global/wizard.properties)
 % locale global-platform @AB_CD@ %locale/@AB_CD@/global-platform/unix/ os=LikeUnix os=Android
 % locale global-platform @AB_CD@ %locale/@AB_CD@/global-platform/mac/ os=Darwin

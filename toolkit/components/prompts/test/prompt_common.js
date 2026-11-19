@@ -257,6 +257,16 @@ function checkPromptState(promptState, expectedState) {
       "Checking extra1-button label"
     );
   }
+  for (let i = 0; i < 3; i++) {
+    let key = `butt${i}AccessKey`;
+    if (key in expectedState) {
+      is(
+        promptState[key],
+        expectedState[key],
+        `Checking button${i} access key`
+      );
+    }
+  }
 
   // For prompts with a time-delay button.
   if (expectedState.butt0Disabled) {

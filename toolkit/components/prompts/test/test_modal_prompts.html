@@ -849,6 +849,8 @@ async function runTests(util) {
     defButton: "button0",
     butt0Label: "OK",
     butt1Label: "Cancel",
+    butt0AccessKey: "",
+    butt1AccessKey: "",
   };
   action = {
     buttonClick: "ok",
@@ -894,6 +896,8 @@ async function runTests(util) {
     defButton: "button0",
     butt0Label: "Yes",
     butt1Label: "No",
+    butt0AccessKey: "Y",
+    butt1AccessKey: "N",
   };
   action = {
     buttonClick: "cancel",
@@ -916,6 +920,109 @@ async function runTests(util) {
   is(
     util.useAsync ? result.buttonNumClicked : result,
     1,
+    "checked expected button num click"
+  );
+
+  await promptDone;
+
+  // =====
+  info("Starting test: ConfirmEx (save/revert/don't save, button2)");
+  state = {
+    msg: "This is the confirmEx text.",
+    title: "TestTitle",
+    iconClass: "question-icon",
+    titleHidden: true,
+    textHidden: true,
+    passHidden: true,
+    checkHidden: true,
+    textValue: "",
+    passValue: "",
+    checkMsg: "",
+    checked: false,
+    focused: "button0",
+    defButton: "button0",
+    butt0Label: "Save",
+    butt1Label: "Revert",
+    butt2Label: "Don’t Save",
+    butt0AccessKey: "S",
+    butt1AccessKey: "R",
+    butt2AccessKey: "n",
+  };
+  action = {
+    buttonClick: 2,
+  };
+
+  promptDone = handlePrompt(state, action);
+
+  flags =
+    Ci.nsIPromptService.BUTTON_TITLE_SAVE * Ci.nsIPromptService.BUTTON_POS_0 +
+    Ci.nsIPromptService.BUTTON_TITLE_REVERT * Ci.nsIPromptService.BUTTON_POS_1 +
+    Ci.nsIPromptService.BUTTON_TITLE_DONT_SAVE *
+      Ci.nsIPromptService.BUTTON_POS_2;
+  promptArgs = [
+    "TestTitle",
+    "This is the confirmEx text.",
+    flags,
+    null,
+    null,
+    null,
+    null,
+    util.useAsync ? false : {},
+  ];
+  result = await util.prompt("confirmEx", promptArgs);
+  is(
+    util.useAsync ? result.buttonNumClicked : result,
+    2,
+    "checked expected button num click"
+  );
+
+  await promptDone;
+
+  // =====
+  info("Starting test: ConfirmEx (custom label with access key and no, ok)");
+  state = {
+    msg: "This is the confirmEx text.",
+    title: "TestTitle",
+    iconClass: "question-icon",
+    titleHidden: true,
+    textHidden: true,
+    passHidden: true,
+    checkHidden: true,
+    textValue: "",
+    passValue: "",
+    checkMsg: "",
+    checked: false,
+    focused: "button0",
+    defButton: "button0",
+    butt0Label: "Custom",
+    butt1Label: "No",
+    butt0AccessKey: "u",
+    butt1AccessKey: "N",
+  };
+  action = {
+    buttonClick: "ok",
+  };
+
+  promptDone = handlePrompt(state, action);
+
+  flags =
+    Ci.nsIPromptService.BUTTON_TITLE_IS_STRING *
+      Ci.nsIPromptService.BUTTON_POS_0 +
+    Ci.nsIPromptService.BUTTON_TITLE_NO * Ci.nsIPromptService.BUTTON_POS_1;
+  promptArgs = [
+    "TestTitle",
+    "This is the confirmEx text.",
+    flags,
+    "C&ustom",
+    null,
+    null,
+    null,
+    util.useAsync ? false : {},
+  ];
+  result = await util.prompt("confirmEx", promptArgs);
+  is(
+    util.useAsync ? result.buttonNumClicked : result,
+    0,
     "checked expected button num click"
   );
 

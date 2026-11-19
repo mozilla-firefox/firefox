@@ -9,6 +9,9 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 
+// Maximum number of buttons in a confirmEx dialog (button0 to button3).
+const MAX_BUTTONS = 4;
+
 export class CommonDialog {
   constructor(args, ui) {
     this.args = args;
@@ -57,17 +60,10 @@ export class CommonDialog {
         break;
       case "confirmEx":
         var numButtons = 0;
-        if (this.args.button0Label) {
-          numButtons++;
-        }
-        if (this.args.button1Label) {
-          numButtons++;
-        }
-        if (this.args.button2Label) {
-          numButtons++;
-        }
-        if (this.args.button3Label) {
-          numButtons++;
+        for (let i = 0; i < MAX_BUTTONS; i++) {
+          if (this.hasButtonLabel(i)) {
+            numButtons++;
+          }
         }
         if (numButtons == 0 && !this.args.allowNoButtons) {
           throw new Error(
@@ -131,20 +127,19 @@ export class CommonDialog {
     // This assumes that button0 defaults to a visible "ok" button, and
     // button1 defaults to a visible "cancel" button. The other 2 buttons
     // have no default labels (and are hidden).
+    let localizedButtons = [];
     switch (this.numButtons) {
       case 4:
-        this.setLabelForNode(this.ui.button3, this.args.button3Label);
+        this.setButtonLabel(this.ui.button3, 3, localizedButtons);
         this.ui.button3.hidden = false;
       // fall through
       case 3:
-        this.setLabelForNode(this.ui.button2, this.args.button2Label);
+        this.setButtonLabel(this.ui.button2, 2, localizedButtons);
         this.ui.button2.hidden = false;
       // fall through
       case 2:
         // Defaults to a visible "cancel" button
-        if (this.args.button1Label) {
-          this.setLabelForNode(this.ui.button1, this.args.button1Label);
-        }
+        this.setButtonLabel(this.ui.button1, 1, localizedButtons);
         break;
       case 0:
         this.ui.button0.hidden = true;
@@ -154,9 +149,16 @@ export class CommonDialog {
         break;
     }
     // Defaults to a visible "ok" button
-    if (this.args.button0Label) {
-      this.setLabelForNode(this.ui.button0, this.args.button0Label);
-    }
+    this.setButtonLabel(this.ui.button0, 0, localizedButtons);
+    let buttonsTranslated = localizedButtons.length
+      ? commonDialogEl.ownerDocument.l10n
+          .translateElements(localizedButtons)
+          .then(() => {
+            if (!isEmbedded) {
+              commonDialogEl.documentGlobal.sizeToContent();
+            }
+          })
+      : null;
 
     // display the main text
     let croppedMessage = "";
@@ -226,7 +228,33 @@ export class CommonDialog {
       // sending the notification.
       await this.initialFocusPromise;
     }
+    await buttonsTranslated;
     Services.obs.notifyObservers(this.ui.prompt, "common-dialog-loaded");
+  }
+
+  hasButtonLabel(aIndex) {
+    return !!(
+      this.args[`button${aIndex}L10nId`] || this.args[`button${aIndex}Label`]
+    );
+  }
+
+  /**
+   * Sets a button label from either a Fluent ID or a caller-supplied label
+   * with an embedded access key (&foo). Buttons localized with Fluent are
+   * added to aLocalizedButtons.
+   */
+  setButtonLabel(aNode, aIndex, aLocalizedButtons) {
+    let l10nId = this.args[`button${aIndex}L10nId`];
+    if (l10nId) {
+      aNode.ownerDocument.l10n.setAttributes(aNode, l10nId);
+      aLocalizedButtons.push(aNode);
+      return;
+    }
+    let label = this.args[`button${aIndex}Label`];
+    if (label) {
+      aNode.removeAttribute("data-l10n-id");
+      this.setLabelForNode(aNode, label);
+    }
   }
 
   setLabelForNode(aNode, aLabel) {

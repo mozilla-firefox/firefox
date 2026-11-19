@@ -18,6 +18,10 @@ let tests = [
       basicBox: { collapsed: false },
       normalBox: { collapsed: true },
     },
+    buttonL10nIds: {
+      accept: "unknowncontenttype-accept-save-file",
+      cancel: "dialog-button-cancel",
+    },
   },
   {
     // This URL will trigger the full UI
@@ -25,6 +29,10 @@ let tests = [
     elements: {
       basicBox: { collapsed: true },
       normalBox: { collapsed: false },
+    },
+    buttonL10nIds: {
+      accept: "dialog-button-accept",
+      cancel: "dialog-button-cancel",
     },
   },
 ];
@@ -90,11 +98,19 @@ add_task(async function test_unknownContentType_dialog_layout() {
             );
           }
         }
+        let dialog = uctWindow.document.getElementById("unknownContentType");
+        for (let [type, l10nId] of Object.entries(test.buttonL10nIds)) {
+          is(
+            dialog.getButton(type).getAttribute("data-l10n-id"),
+            l10nId,
+            `The ${type} button uses the expected Fluent ID`
+          );
+        }
         let focusOnDialog = SimpleTest.promiseFocus(uctWindow);
         uctWindow.focus();
         await focusOnDialog;
 
-        uctWindow.document.getElementById("unknownContentType").cancelDialog();
+        dialog.cancelDialog();
         uctWindow = null;
         Services.ww.unregisterNotification(UCTObserver);
       }

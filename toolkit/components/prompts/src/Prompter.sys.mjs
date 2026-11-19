@@ -21,6 +21,16 @@ const {
 const COMMON_DIALOG = "chrome://global/content/commonDialog.xhtml";
 const SELECT_DIALOG = "chrome://global/content/selectDialog.xhtml";
 
+const BUTTON_L10N_IDS = {
+  [Ci.nsIPrompt.BUTTON_TITLE_OK]: "dialog-button-accept",
+  [Ci.nsIPrompt.BUTTON_TITLE_CANCEL]: "dialog-button-cancel",
+  [Ci.nsIPrompt.BUTTON_TITLE_YES]: "dialog-button-yes",
+  [Ci.nsIPrompt.BUTTON_TITLE_NO]: "dialog-button-no",
+  [Ci.nsIPrompt.BUTTON_TITLE_SAVE]: "dialog-button-save",
+  [Ci.nsIPrompt.BUTTON_TITLE_DONT_SAVE]: "dialog-button-dont-save",
+  [Ci.nsIPrompt.BUTTON_TITLE_REVERT]: "dialog-button-revert",
+};
+
 export function Prompter() {}
 
 /**
@@ -737,44 +747,20 @@ var InternalPromptUtils = {
     // set for a button, then the button won't be shown.
     let argText = [button0, button1, button2];
     let buttonLabels = [null, null, null];
+    let buttonL10nIds = [null, null, null];
     for (let i = 0; i < 3; i++) {
-      let buttonLabel;
-      switch (flags & 0xff) {
-        case Ci.nsIPrompt.BUTTON_TITLE_OK:
-          buttonLabel = this.getLocalizedString("OK");
-          break;
-        case Ci.nsIPrompt.BUTTON_TITLE_CANCEL:
-          buttonLabel = this.getLocalizedString("Cancel");
-          break;
-        case Ci.nsIPrompt.BUTTON_TITLE_YES:
-          buttonLabel = this.getLocalizedString("Yes");
-          break;
-        case Ci.nsIPrompt.BUTTON_TITLE_NO:
-          buttonLabel = this.getLocalizedString("No");
-          break;
-        case Ci.nsIPrompt.BUTTON_TITLE_SAVE:
-          buttonLabel = this.getLocalizedString("Save");
-          break;
-        case Ci.nsIPrompt.BUTTON_TITLE_DONT_SAVE:
-          buttonLabel = this.getLocalizedString("DontSave");
-          break;
-        case Ci.nsIPrompt.BUTTON_TITLE_REVERT:
-          buttonLabel = this.getLocalizedString("Revert");
-          break;
-        case Ci.nsIPrompt.BUTTON_TITLE_IS_STRING:
-          buttonLabel = argText[i];
-          break;
-      }
-      if (buttonLabel) {
-        buttonLabels[i] = buttonLabel;
+      let title = flags & 0xff;
+      if (title == Ci.nsIPrompt.BUTTON_TITLE_IS_STRING) {
+        buttonLabels[i] = argText[i] || null;
+      } else if (BUTTON_L10N_IDS[title]) {
+        buttonL10nIds[i] = BUTTON_L10N_IDS[title];
       }
       flags >>= 8;
     }
 
     return [
-      buttonLabels[0],
-      buttonLabels[1],
-      buttonLabels[2],
+      buttonLabels,
+      buttonL10nIds,
       defaultButtonNum,
       isDelayEnabled,
       allowNoButtons,
@@ -1451,9 +1437,8 @@ class ModalPrompter {
     };
 
     let [
-      label0,
-      label1,
-      label2,
+      buttonLabels,
+      buttonL10nIds,
       defaultButtonNum,
       isDelayEnabled,
       allowNoButtons,
@@ -1463,13 +1448,13 @@ class ModalPrompter {
     args.enableDelay = isDelayEnabled;
     args.allowNoButtons = allowNoButtons;
 
-    if (label0) {
-      args.button0Label = label0;
-      if (label1) {
-        args.button1Label = label1;
-        if (label2) {
-          args.button2Label = label2;
-        }
+    for (let i = 0; i < 3; i++) {
+      if (buttonL10nIds[i]) {
+        args[`button${i}L10nId`] = buttonL10nIds[i];
+      } else if (buttonLabels[i]) {
+        args[`button${i}Label`] = buttonLabels[i];
+      } else {
+        break;
       }
     }
 
