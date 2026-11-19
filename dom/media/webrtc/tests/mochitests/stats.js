@@ -965,10 +965,10 @@ function pedanticChecks(report) {
         // framesAssembledFromMultiplePackets
         ok(
           stat.framesAssembledFromMultiplePackets >= 0 &&
-            stat.framesAssembledFromMultiplePackets < 200,
-          `${stat.type}.framesAssembledFromMultiplePackets is a sane number ` +
-            `for a short ${stat.kind} test.` +
-            `value=${stat.framesAssembledFromMultiplePackets}`
+            stat.framesAssembledFromMultiplePackets <= stat.framesDecoded,
+          `${stat.type}.framesAssembledFromMultiplePackets is at most ` +
+            `framesDecoded. value=${stat.framesAssembledFromMultiplePackets}, ` +
+            `framesDecoded=${stat.framesDecoded}`
         );
 
         // totalAssemblyTime
