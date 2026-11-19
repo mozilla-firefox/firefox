@@ -1337,6 +1337,17 @@ TEST_F(RtpTransceiverDoubleThreadTest,
 
 // Sframe tests
 
+// Gives `transceiver` a mock audio channel, as negotiation would. `mid` must
+// outlive the channel.
+void SetMockAudioChannel(RtpTransceiver& transceiver, const std::string& mid) {
+  transceiver.set_mid(mid);
+  auto mock_channel = std::make_unique<NiceMock<MockChannelInterface>>();
+  ON_CALL(*mock_channel, media_type).WillByDefault(Return(MediaType::AUDIO));
+  ON_CALL(*mock_channel, mid).WillByDefault(ReturnRef(mid));
+  ON_CALL(*mock_channel, SetRtpTransport).WillByDefault(Return(true));
+  transceiver.SetChannelForTest(std::move(mock_channel));
+}
+
 TEST_F(RtpTransceiverUnifiedPlanTest, SframeEnabledIsNulloptByDefault) {
   scoped_refptr<RtpTransceiver> transceiver = CreateTransceiver(
       MockSender(MediaType::AUDIO), MockReceiver(MediaType::AUDIO));
@@ -1347,19 +1358,51 @@ TEST_F(RtpTransceiverUnifiedPlanTest, SframeEnabledIsNulloptByDefault) {
 TEST_F(RtpTransceiverUnifiedPlanTest, TryToEnableSframeSetsValueToTrue) {
   scoped_refptr<RtpTransceiver> transceiver = CreateTransceiver(
       MockSender(MediaType::AUDIO), MockReceiver(MediaType::AUDIO));
+  const std::string mid = "audio";
+  SetMockAudioChannel(*transceiver, mid);
 
   EXPECT_TRUE(transceiver->TryToEnableSframe().ok());
   EXPECT_THAT(transceiver->SframeEnabled(), Optional(true));
+
+  transceiver->ClearChannel();
 }
 
 TEST_F(RtpTransceiverUnifiedPlanTest,
        TryToEnableSframeCanBeCalledMultipleTimes) {
   scoped_refptr<RtpTransceiver> transceiver = CreateTransceiver(
       MockSender(MediaType::AUDIO), MockReceiver(MediaType::AUDIO));
+  const std::string mid = "audio";
+  SetMockAudioChannel(*transceiver, mid);
 
   EXPECT_TRUE(transceiver->TryToEnableSframe().ok());
   EXPECT_TRUE(transceiver->TryToEnableSframe().ok());
   EXPECT_THAT(transceiver->SframeEnabled(), Optional(true));
+
+  transceiver->ClearChannel();
+}
+
+TEST_F(RtpTransceiverUnifiedPlanTest,
+       TryToEnableSframeFailsWithoutMediaChannel) {
+  scoped_refptr<RtpTransceiver> transceiver = CreateTransceiver(
+      MockSender(MediaType::AUDIO), MockReceiver(MediaType::AUDIO));
+
+  RTCError error = transceiver->TryToEnableSframe();
+  EXPECT_EQ(error.type(), RTCErrorType::INVALID_STATE);
+  EXPECT_EQ(transceiver->SframeEnabled(), std::nullopt);
+}
+
+TEST_F(RtpTransceiverUnifiedPlanTest, TryToEnableSframeFailsWhenStopping) {
+  scoped_refptr<RtpTransceiver> transceiver = CreateTransceiver(
+      MockSender(MediaType::AUDIO), MockReceiver(MediaType::AUDIO));
+  const std::string mid = "audio";
+  SetMockAudioChannel(*transceiver, mid);
+  transceiver->StopStandard();
+
+  RTCError error = transceiver->TryToEnableSframe();
+  EXPECT_EQ(error.type(), RTCErrorType::INVALID_STATE);
+  EXPECT_EQ(transceiver->SframeEnabled(), std::nullopt);
+
+  transceiver->ClearChannel();
 }
 
 TEST_F(RtpTransceiverUnifiedPlanTest,
