@@ -490,16 +490,24 @@ JSJitProfilingFrameIterator::JSJitProfilingFrameIterator(JSContext* cx,
 
   // If nothing matches, for now just assume we are at the start of the last
   // frame's baseline jit code or interpreter code.
+
   type_ = FrameType::BaselineJS;
-  if (frameScript()->hasBaselineScript()) {
-    resumePCinCurrentFrame_ = frameScript()->baselineScript()->method()->raw();
-  } else if (!IsPortableBaselineInterpreterEnabled()) {
+  if (JitScript* jitScript = frameScript()->maybeJitScript()) {
+    if (BaselineScript* baselineScript =
+            jitScript->maybeBaselineScriptForProfiler()) {
+      resumePCinCurrentFrame_ = baselineScript->method()->raw();
+      return;
+    }
+  }
+
+  if (!IsPortableBaselineInterpreterEnabled()) {
     MOZ_ASSERT(IsBaselineInterpreterEnabled());
     resumePCinCurrentFrame_ =
         cx->runtime()->jitRuntime()->baselineInterpreter().codeRaw();
-  } else {
-    resumePCinCurrentFrame_ = nullptr;
+    return;
   }
+
+  resumePCinCurrentFrame_ = nullptr;
 }
 
 template <typename ReturnType = CommonFrameLayout*>
