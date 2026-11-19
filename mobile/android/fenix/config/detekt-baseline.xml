@@ -490,7 +490,6 @@
     <ID>UndocumentedPublicClass:LoginExceptionsInteractor.kt$DefaultLoginExceptionsInteractor : LoginExceptionsInteractor</ID>
     <ID>UndocumentedPublicClass:LoginExceptionsInteractor.kt$LoginExceptionsInteractor : ExceptionsInteractor</ID>
     <ID>UndocumentedPublicClass:LoginExceptionsView.kt$LoginExceptionsView : ExceptionsView</ID>
-    <ID>UndocumentedPublicClass:MenuPresenter.kt$MenuPresenter : OnAttachStateChangeListener</ID>
     <ID>UndocumentedPublicClass:MessagingMiddleware.kt$MessagingMiddleware : Middleware</ID>
     <ID>UndocumentedPublicClass:MetricController.kt$MetricController</ID>
     <ID>UndocumentedPublicClass:MetricsService.kt$MetricServiceType</ID>
@@ -687,9 +686,6 @@
     <ID>UndocumentedPublicFunction:LocaleSettingsView.kt$LocaleSettingsViewInteractor$fun onSearchQueryTyped(query: String)</ID>
     <ID>UndocumentedPublicFunction:LocaleViewHolders.kt$BaseLocaleViewHolder$abstract fun bind(locale: Locale)</ID>
     <ID>UndocumentedPublicFunction:MarkersFragmentLifecycleCallbacks.kt$MarkersFragmentLifecycleCallbacks.Companion$fun register(supportFragmentManager: FragmentManager, engine: Engine)</ID>
-    <ID>UndocumentedPublicFunction:MenuPresenter.kt$MenuPresenter$fun invalidateActions()</ID>
-    <ID>UndocumentedPublicFunction:MenuPresenter.kt$MenuPresenter$fun start()</ID>
-    <ID>UndocumentedPublicFunction:MenuPresenter.kt$MenuPresenter$fun stop()</ID>
     <ID>UndocumentedPublicFunction:MetricController.kt$MetricController$fun start(type: MetricServiceType)</ID>
     <ID>UndocumentedPublicFunction:MetricController.kt$MetricController$fun stop(type: MetricServiceType)</ID>
     <ID>UndocumentedPublicFunction:MetricController.kt$MetricController$fun track(event: Event)</ID>
