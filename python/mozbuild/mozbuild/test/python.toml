@@ -11,6 +11,8 @@ subsuite = "mozbuild"
 
 ["action/test_html_fragment_preprocessor.py"]
 
+["action/test_l10n_merge.py"]
+
 ["action/test_l10n_stage.py"]
 
 ["action/test_langpack_manifest.py"]

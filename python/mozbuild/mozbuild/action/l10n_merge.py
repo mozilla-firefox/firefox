@@ -17,7 +17,10 @@ import argparse
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
+
+from mozbuild.util import FileAvoidWrite
 
 
 def merge_locale(
@@ -27,36 +30,54 @@ def merge_locale(
     target: str,
 ) -> int:
     merge_dir = Path(target) / locale
-    if merge_dir.exists():
-        shutil.rmtree(merge_dir)
-    result = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "moz.l10n.bin.build",
-            "--config",
-            config,
-            "--base",
-            l10n_base,
-            "--target",
-            target,
-            "--locales",
-            locale,
-            "--coverage",
-        ],
-        check=False,
-    )
-    if result.returncode:
-        return result.returncode
+    Path(target).mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=target, prefix=f".{locale}-") as tmp:
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "moz.l10n.bin.build",
+                "--config",
+                config,
+                "--base",
+                l10n_base,
+                "--target",
+                tmp,
+                "--locales",
+                locale,
+                "--coverage",
+            ],
+            check=False,
+        )
+        if result.returncode:
+            return result.returncode
 
-    hunspell_rel = Path("extensions") / "spellcheck" / "hunspell"
-    spellcheck_src = Path(l10n_base) / locale / hunspell_rel
-    if spellcheck_src.is_dir():
-        spellcheck_dst = merge_dir / hunspell_rel
-        spellcheck_dst.mkdir(parents=True, exist_ok=True)
-        for entry in spellcheck_src.iterdir():
-            if entry.is_file():
-                shutil.copy2(entry, spellcheck_dst / entry.name)
+        tmp_locale = Path(tmp) / locale
+        hunspell_rel = Path("extensions") / "spellcheck" / "hunspell"
+        spellcheck_src = Path(l10n_base) / locale / hunspell_rel
+        if spellcheck_src.is_dir():
+            spellcheck_dst = tmp_locale / hunspell_rel
+            spellcheck_dst.mkdir(parents=True, exist_ok=True)
+            for entry in spellcheck_src.iterdir():
+                if entry.is_file():
+                    shutil.copy2(entry, spellcheck_dst / entry.name)
+
+        produced = set()
+        for src in tmp_locale.rglob("*"):
+            if src.is_file():
+                rel = src.relative_to(tmp_locale)
+                produced.add(rel)
+                dest = merge_dir / rel
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                with FileAvoidWrite(str(dest), readmode="rb") as fh:
+                    fh.write(src.read_bytes())
+
+    for path in sorted(merge_dir.rglob("*"), reverse=True):
+        if path.is_dir():
+            if not any(path.iterdir()):
+                path.rmdir()
+        elif path.relative_to(merge_dir) not in produced:
+            path.unlink()
     return 0
 
 
