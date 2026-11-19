@@ -369,7 +369,8 @@ void DynamicsCompressorKernel::process(
       float effAttenDiffDb = std::max(0.5f, m_maxAttackCompressionDiffDb);
 
       float x = 0.25f / effAttenDiffDb;
-      envelopeRate = 1 - fdlibm_powf(x, 1 / attackFrames);
+      // Equivalent to 1 - x^(1 / attackFrames).
+      envelopeRate = 1 - fdlibm_expf(fdlibm_logf(x) / attackFrames);
     }
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
