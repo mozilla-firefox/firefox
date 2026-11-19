@@ -60,12 +60,12 @@ def split_job_flags(make_flags):
             except ValueError:
                 pass
 
-        if flag == "-j":
+        if flag in ("-j", "--jobs"):
             num_jobs = 0
             expect_job_count = True
-        elif flag.startswith("-j"):
+        elif flag.startswith(("-j", "--jobs=")):
             try:
-                num_jobs = int(flag[2:])
+                num_jobs = int(flag.removeprefix("--jobs=").removeprefix("-j"))
             except ValueError:
                 pass
         else:
@@ -875,8 +875,9 @@ class MozbuildObject(ProcessExecutionMixin):
         _, extra_flags = split_job_flags(self.mozconfig["make_flags"])
         args.extend(extra_flags)
 
-        num_jobs = self.resolve_num_jobs(num_jobs, job_size)
-        args.append("-j%d" % num_jobs)
+        if "MAKEFLAGS" not in (append_env or {}):
+            num_jobs = self.resolve_num_jobs(num_jobs, job_size)
+            args.append(f"-j{num_jobs}")
 
         if ignore_errors:
             args.append("-k")

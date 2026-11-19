@@ -455,6 +455,35 @@ class FakeMozbuildObject(MozbuildObject):
         return {}
 
 
+class TestRunMake(unittest.TestCase):
+    def _args(self, append_env, makeflags=""):
+        base = FakeMozbuildObject()
+        with mock.patch.object(
+            FakeMozbuildObject,
+            "substs",
+            new_callable=mock.PropertyMock,
+            return_value={"GMAKE": "make"},
+        ), mock.patch.object(base, "_ensure_objdir_exists"), mock.patch.object(
+            base, "_run_command_in_objdir"
+        ) as run, mock.patch.dict(os.environ, {"MAKEFLAGS": makeflags}):
+            base._run_make(target="export", num_jobs=8, append_env=append_env)
+        return run.call_args.kwargs["args"]
+
+    def test_run_make_jobs(self):
+        self.assertEqual(self._args(None), ["make", "-j8", "-s", "-w", "export"])
+
+    def test_run_make_makeflags(self):
+        self.assertEqual(
+            self._args({"MAKEFLAGS": "-j4"}), ["make", "-s", "-w", "export"]
+        )
+
+    def test_run_make_inherited_makeflags(self):
+        self.assertEqual(
+            self._args(None, "-j4 --jobserver-auth=3,4"),
+            ["make", "-j8", "-s", "-w", "export"],
+        )
+
+
 class TestSplitJobFlags(unittest.TestCase):
     def test_split_job_flags(self):
         for make_flags, expected in (
@@ -470,6 +499,9 @@ class TestSplitJobFlags(unittest.TestCase):
             (["-j4", "-j8"], (8, [])),
             (["-j8", "-j"], (0, [])),
             (["-j8", "-j", "-s"], (0, ["-s"])),
+            (["--jobs=8", "-s"], (8, ["-s"])),
+            (["--jobs", "8", "-s"], (8, ["-s"])),
+            (["--jobs", "-s"], (0, ["-s"])),
         ):
             with self.subTest(make_flags=make_flags):
                 self.assertEqual(split_job_flags(make_flags), expected)

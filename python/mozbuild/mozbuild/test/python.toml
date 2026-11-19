@@ -107,6 +107,8 @@ subsuite = "mozbuild"
 
 ["controller/test_clobber.py"]
 
+["controller/test_jobserver.py"]
+
 ["controller/test_source_repo.py"]
 
 ["frontend/test_context.py"]
