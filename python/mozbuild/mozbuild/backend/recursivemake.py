@@ -1476,8 +1476,18 @@ class RecursiveMakeBackend(MakeBackend):
             backend_file.write(f"{target}: {var} += {' '.join(flags)}\n")
 
     def _add_dump_syms_target(self, obj, target, backend_file):
-        if obj.dump_syms:
-            backend_file.write(f"DUMP_SYMS_TARGETS += {target}\n")
+        if not obj.dump_syms:
+            return
+        backend_file.write(f"DUMP_SYMS_TARGETS += {target}\n")
+        substs = self.environment.substs
+        if substs.get("MOZ_CRASHREPORTER") and not substs.get("MOZ_COPY_PDBS"):
+            track = f"{mozpath.basename(target)}_syms.track"
+            backend_file.write(
+                f"syms:: {track}\n"
+                f"{track}: {target}\n"
+                "\t$(call py_action,dumpsymbols $@,$(abspath $<) $(abspath $@)"
+                " $(DUMP_SYMBOLS_FLAGS))\n"
+            )
 
     def _process_host_program(self, program, backend_file):
         target = self._pretty_path(program.output_path, backend_file)

@@ -2587,6 +2587,71 @@ class TestRecursiveMakeBackend(BackendTester):
             with open(os.path.join(env.topobjdir, subdir, "backend.mk")) as fh:
                 self.assertNotIn("DUMP_SYMS_TARGETS", fh.read())
 
+    def _syms_rules(self, name, target):
+        return [
+            f"syms:: {name}_syms.track",
+            f"{name}_syms.track: {target}",
+            "\t$(call py_action,dumpsymbols $@,$(abspath $<) "
+            "$(abspath $@) $(DUMP_SYMBOLS_FLAGS))",
+        ]
+
+    def _syms_lines(self, name, subdirs, **substs):
+        env = self._get_environment(name, substs=substs)
+        self._consume(name, RecursiveMakeBackend, env=env)
+        result = {}
+        for subdir in subdirs:
+            with open(os.path.join(env.topobjdir, subdir, "backend.mk")) as fh:
+                result[subdir] = [
+                    l.rstrip("\n")
+                    for l in fh
+                    if "syms" in l or "PDB" in l or "dumpsymbols" in l
+                ]
+        return result
+
+    def test_dump_syms_rules(self):
+        rules = self._syms_rules
+        self.assertEqual(
+            self._syms_lines(
+                "program-paths",
+                (
+                    "dist-bin",
+                    "dist-subdir",
+                    "not-installed",
+                    "dist-bin-simple",
+                    "final-target",
+                    "dist-bin-sibling",
+                ),
+                MOZ_CRASHREPORTER="1",
+            ),
+            {
+                "dist-bin": rules("dist-bin.prog", "$(DEPTH)/dist/bin/dist-bin.prog"),
+                "dist-subdir": rules(
+                    "dist-subdir.prog", "$(DEPTH)/dist/bin/foo/dist-subdir.prog"
+                ),
+                "not-installed": rules("not-installed.prog", "not-installed.prog"),
+                "dist-bin-simple": rules("simple.prog", "simple.prog"),
+                "final-target": [],
+                "dist-bin-sibling": [],
+            },
+        )
+
+    def test_dump_syms_no_crashreporter(self):
+        self.assertEqual(
+            self._syms_lines("program-paths", ("dist-bin", "dist-bin-simple")),
+            {"dist-bin": [], "dist-bin-simple": []},
+        )
+
+    def test_dump_syms_copy_pdbs(self):
+        self.assertEqual(
+            self._syms_lines(
+                "program-paths",
+                ("dist-bin", "dist-bin-simple"),
+                MOZ_CRASHREPORTER="1",
+                MOZ_COPY_PDBS="1",
+            ),
+            {"dist-bin": [], "dist-bin-simple": []},
+        )
+
     def test_dump_syms_profile_generate(self):
         env = self._get_environment(
             "program-paths", substs={"MOZ_PROFILE_GENERATE": "1"}
