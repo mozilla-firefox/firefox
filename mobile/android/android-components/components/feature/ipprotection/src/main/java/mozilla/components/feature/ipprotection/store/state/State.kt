@@ -9,6 +9,7 @@ package mozilla.components.feature.ipprotection.store.state
 import java.util.IllformedLocaleException
 import java.util.Locale
 import mozilla.components.ExperimentalAndroidComponentsApi
+import mozilla.components.concept.engine.ipprotection.CurrentAuthProvider
 import mozilla.components.concept.engine.ipprotection.IPProtectionHandler
 import mozilla.components.concept.engine.ipprotection.ServiceState
 import mozilla.components.lib.state.State
@@ -19,6 +20,7 @@ import mozilla.components.lib.state.State
  * @property eligibilityStatus Whether the device is eligible of using the service.
  * @property proxyStatus The proxy state.
  * @property serviceStatus The state of the IPProtection service.
+ * @property currentAuthProvider The auth provider the IPProtection service uses.
  * @property usageQuota The usage quota in the current cycle, or null if unavailable.
  * @property accountState The state of the authenticator being used.
  * @property lastError The last error received from the IPProtection service.
@@ -32,6 +34,7 @@ data class IPProtectionState(
     val eligibilityStatus: EligibilityStatus = EligibilityStatus.Unknown,
     val proxyStatus: ProxyStatus = Uninitialized,
     val serviceStatus: ServiceState = ServiceState.Uninitialized,
+    val currentAuthProvider: CurrentAuthProvider = CurrentAuthProvider.Unknown,
     val usageQuota: UsageQuota? = null,
     val accountState: AccountState = AccountState(),
     val lastError: String? = null,

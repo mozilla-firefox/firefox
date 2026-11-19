@@ -696,25 +696,91 @@ class IPProtectionControllerTest : BaseSessionTest() {
     }
 
     @Test
-    fun gpiSignedOutAuthWarmsUpGpiOnlyWhileSignedOut() {
+    fun gpiSignedOutAuthUsesGpiOnlyWhileSignedOut() {
         val firstWarmUp = GeckoResult<Void>()
         val secondWarmUp = GeckoResult<Void>()
         val gpiProvider = WarmUpRecordingGpiProvider(firstWarmUp, secondWarmUp)
+        val authProviderReports = List(5) { GeckoResult<String?>() }
+        var authProviderReportCount = 0
         ipProtectionController.setAuthProvider(StubAuthProvider())
         ipProtectionController.setGpiProvider(gpiProvider)
+        ipProtectionController.setDelegate(
+            object : IPProtectionController.Delegate {
+                override fun onCurrentAuthProviderChanged(authProvider: String?) {
+                    authProviderReports.getOrNull(authProviderReportCount++)?.complete(authProvider)
+                }
+            }
+        )
 
         sessionRule.waitForResult(ipProtectionController.init(IPProtectionController.SIGNED_OUT_AUTH_GPI))
         assertThat("GPI is not warmed up before a sign-in state is reported", gpiProvider.warmUpCount, equalTo(0))
+        assertThat(
+            "no auth provider is reported before a sign-in state is reported",
+            authProviderReportCount,
+            equalTo(0),
+        )
 
         sessionRule.waitForResult(ipProtectionController.notifySignInStateChanged(true))
         assertThat("GPI is not warmed up while signed in", gpiProvider.warmUpCount, equalTo(0))
+        assertThat(
+            sessionRule.waitForResult(authProviderReports[0]),
+            equalTo(IPProtectionController.CURRENT_AUTH_PROVIDER_FXA),
+        )
 
         sessionRule.waitForResult(ipProtectionController.notifySignInStateChanged(false))
         sessionRule.waitForResult(firstWarmUp)
+        assertThat(
+            sessionRule.waitForResult(authProviderReports[1]),
+            equalTo(IPProtectionController.CURRENT_AUTH_PROVIDER_GPI),
+        )
 
         sessionRule.waitForResult(ipProtectionController.notifySignInStateChanged(true))
+        assertThat(
+            sessionRule.waitForResult(authProviderReports[2]),
+            equalTo(IPProtectionController.CURRENT_AUTH_PROVIDER_FXA),
+        )
+
         sessionRule.waitForResult(ipProtectionController.notifySignInStateChanged(false))
         sessionRule.waitForResult(secondWarmUp)
+        assertThat(
+            sessionRule.waitForResult(authProviderReports[3]),
+            equalTo(IPProtectionController.CURRENT_AUTH_PROVIDER_GPI),
+        )
+
+        sessionRule.waitForResult(ipProtectionController.uninit())
+        assertThat(
+            "null is reported after the service is uninitialized",
+            sessionRule.waitForResult(authProviderReports[4]),
+            nullValue(),
+        )
+    }
+
+    @Test
+    fun gpiSignedOutAuthReportsGpiFirstWhenSignedOutAtStartUp() {
+        val warmUp = GeckoResult<Void>()
+        val firstAuthProviderReport = GeckoResult<String?>()
+        var authProviderReportCount = 0
+        ipProtectionController.setAuthProvider(StubAuthProvider())
+        ipProtectionController.setGpiProvider(WarmUpRecordingGpiProvider(warmUp))
+        ipProtectionController.setDelegate(
+            object : IPProtectionController.Delegate {
+                override fun onCurrentAuthProviderChanged(authProvider: String?) {
+                    if (authProviderReportCount++ == 0) {
+                        firstAuthProviderReport.complete(authProvider)
+                    }
+                }
+            }
+        )
+
+        sessionRule.waitForResult(ipProtectionController.init(IPProtectionController.SIGNED_OUT_AUTH_GPI))
+        sessionRule.waitForResult(ipProtectionController.notifySignInStateChanged(false))
+        sessionRule.waitForResult(warmUp)
+
+        assertThat(
+            "the first auth provider reported after a signed-out start is GPI",
+            sessionRule.waitForResult(firstAuthProviderReport),
+            equalTo(IPProtectionController.CURRENT_AUTH_PROVIDER_GPI),
+        )
     }
 
     @Test

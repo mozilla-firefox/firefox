@@ -26,6 +26,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///toolkit/components/ipprotection/IPProtectionActivator.sys.mjs",
   IPProtectionService:
     "moz-src:///toolkit/components/ipprotection/IPProtectionService.sys.mjs",
+  IPProtectionStates:
+    "moz-src:///toolkit/components/ipprotection/IPProtectionService.sys.mjs",
 });
 
 const { debug } = GeckoViewUtils.initLoggingConsole("GeckoViewIPProtection");
@@ -42,6 +44,7 @@ let initialized = false;
 let signedOutAuth = "none";
 let isSignedIn = null;
 let gpiUnavailable = false;
+let reportedAuthProvider = null;
 
 function resolveAuthProvider() {
   if (Services.prefs.getCharPref(AUTH_PROVIDER_PREF, "") === "test") {
@@ -69,6 +72,39 @@ function applyAuthProvider() {
   }
 }
 
+function currentAuthProvider() {
+  if (signedOutAuth === "gpi" && isSignedIn === null) {
+    return null;
+  }
+
+  const provider = lazy.IPProtectionService.authProvider;
+  if (provider === lazy.IPPAndroidAuthProvider) {
+    return "fxa";
+  }
+
+  if (provider === lazy.IPPGpiAuthProvider) {
+    return "gpi";
+  }
+
+  return null;
+}
+
+function sendAuthProvider(authProvider) {
+  reportedAuthProvider = authProvider;
+  sendRequest("GeckoView:IPProtection:CurrentAuthProviderChanged", {
+    authProvider,
+  });
+}
+
+function reportAuthProvider() {
+  const authProvider = currentAuthProvider();
+  if (!authProvider || authProvider === reportedAuthProvider) {
+    return;
+  }
+
+  sendAuthProvider(authProvider);
+}
+
 export const GeckoViewIPProtection = {
   // Events dispatched by components in toolkit/components/ipprotection.
   handleEvent(event) {
@@ -90,6 +126,15 @@ export const GeckoViewIPProtection = {
           max: Number(usage.max),
           resetTime: usage.reset?.toString() ?? null,
         };
+        break;
+      }
+      case "IPProtectionService:StateChanged": {
+        // While uninitialized, the service still holds the auth provider it is
+        // being switched away from.
+        if (event.detail.state !== lazy.IPProtectionStates.UNINITIALIZED) {
+          reportAuthProvider();
+        }
+        detail = event.detail;
         break;
       }
       case "IPProtectionServerlist:ListChanged": {
@@ -162,6 +207,9 @@ export const GeckoViewIPProtection = {
           lazy.IPProtectionActivator.setAuthProvider(
             new lazy.IPPAuthProvider()
           );
+          if (reportedAuthProvider) {
+            sendAuthProvider(null);
+          }
           lazy.IPPProxyManager.updateState();
         }
         aCallback.onSuccess();
@@ -190,6 +238,7 @@ export const GeckoViewIPProtection = {
           if (isSignedIn) {
             lazy.IPPAndroidSignInWatcher.notifySignInStateChanged(true);
           }
+          reportAuthProvider();
         })()
           .then(() => {
             aCallback.onSuccess();

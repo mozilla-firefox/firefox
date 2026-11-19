@@ -172,3 +172,20 @@ enum class ServiceState {
     /** The service is ready to be activated. */
     Ready,
 }
+
+/** The possible auth providers of the IP protection service. */
+@ExperimentalAndroidComponentsApi
+enum class CurrentAuthProvider {
+
+    /**
+     * No auth provider has been reported, the service was uninitialized, or the engine reported one this version does
+     * not know.
+     */
+    Unknown,
+
+    /** The service uses FxA. */
+    Fxa,
+
+    /** The service uses Google Play Integrity. */
+    Gpi,
+}
