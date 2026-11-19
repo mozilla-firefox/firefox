@@ -65,9 +65,6 @@ struct IceFieldTrials {
   // Stop gathering when having a strong connection.
   bool stop_gather_on_strongly_connected = true;
 
-  // DSCP taging.
-  std::optional<int> override_dscp;
-
   bool piggyback_ice_check_acknowledgement = false;
   bool extra_ice_ping = false;
 

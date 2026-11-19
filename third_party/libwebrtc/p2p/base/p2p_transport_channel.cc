@@ -786,16 +786,6 @@ void P2PTransportChannel::ParseFieldTrials(
         << *ice_field_trials_.initial_select_dampening_ping_received;
   }
 
-  // DSCP override, allow user to specify (any) int value
-  // that will be used for tagging all packets.
-  StructParametersParser::Create("override_dscp",
-                                 &ice_field_trials_.override_dscp)
-      ->Parse(field_trials.Lookup("WebRTC-DscpFieldTrial"));
-
-  if (ice_field_trials_.override_dscp) {
-    SetOption(Socket::OPT_DSCP, *ice_field_trials_.override_dscp);
-  }
-
   std::string field_trial_string =
       field_trials.Lookup("WebRTC-SetSocketReceiveBuffer");
   int receive_buffer_size_kb = 0;
@@ -1600,9 +1590,6 @@ void P2PTransportChannel::RememberRemoteCandidate(
 // port objects.
 int P2PTransportChannel::SetOption(Socket::Option opt, int value) {
   RTC_DCHECK_RUN_ON(&network_thread_);
-  if (ice_field_trials_.override_dscp && opt == Socket::OPT_DSCP) {
-    value = *ice_field_trials_.override_dscp;
-  }
 
   OptionMap::iterator it = options_.find(opt);
   if (it == options_.end()) {
