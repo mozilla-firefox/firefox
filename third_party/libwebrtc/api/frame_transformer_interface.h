@@ -183,6 +183,12 @@ class TransformedFrameCallback : public RefCountInterface {
   // implementations.
   virtual void StartShortCircuiting() {}
 
+  // Reverts StartShortCircuiting(): frames are passed to the frame transformer
+  // again. This allows a transform that is attached after short circuiting
+  // has started to take effect. Frames that are already in flight may still
+  // bypass the transformer.
+  virtual void StopShortCircuiting() {}
+
  protected:
   ~TransformedFrameCallback() override = default;
 };

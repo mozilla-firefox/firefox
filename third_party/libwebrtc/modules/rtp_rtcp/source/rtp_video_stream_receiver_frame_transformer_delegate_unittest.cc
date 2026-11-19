@@ -51,6 +51,7 @@ namespace {
 
 using ::testing::_;
 using ::testing::ElementsAre;
+using ::testing::InSequence;
 using ::testing::NiceMock;
 using ::testing::NotNull;
 using ::testing::Optional;
@@ -441,6 +442,34 @@ TEST(RtpVideoStreamReceiverFrameTransformerDelegateTest,
   EXPECT_CALL(*mock_frame_transformer, Transform).Times(0);
   // Will pass the frame straight to the reciever.
   EXPECT_CALL(receiver, ManageFrame);
+  delegate->TransformFrame(CreateRtpFrameObject());
+}
+
+TEST(RtpVideoStreamReceiverFrameTransformerDelegateTest,
+     StopShortCircuitingResumesTransform) {
+  test::RunLoop main_thread;
+  TestRtpVideoFrameReceiver receiver;
+  auto mock_frame_transformer =
+      make_ref_counted<NiceMock<MockFrameTransformer>>();
+  SimulatedClock clock(0);
+  auto delegate =
+      make_ref_counted<RtpVideoStreamReceiverFrameTransformerDelegate>(
+          &receiver, &clock, mock_frame_transformer, main_thread.task_queue(),
+          1111);
+  delegate->Init();
+
+  InSequence s;
+  // While short circuiting, the frame is passed straight to the receiver.
+  EXPECT_CALL(receiver, ManageFrame);
+  // Once short circuiting stops, the frame is passed to the transformer again.
+  EXPECT_CALL(*mock_frame_transformer, Transform);
+
+  delegate->StartShortCircuiting();
+  main_thread.Flush();
+  delegate->TransformFrame(CreateRtpFrameObject());
+
+  delegate->StopShortCircuiting();
+  main_thread.Flush();
   delegate->TransformFrame(CreateRtpFrameObject());
 }
 

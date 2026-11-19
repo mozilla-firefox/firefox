@@ -46,6 +46,7 @@ namespace {
 
 using ::testing::_;
 using ::testing::ElementsAreArray;
+using ::testing::InSequence;
 using ::testing::NiceMock;
 using ::testing::Return;
 using ::testing::SaveArg;
@@ -393,6 +394,37 @@ TEST_F(RtpSenderVideoFrameTransformerDelegateTest,
       /*payload_type=*/1, VideoCodecType::kVideoCodecVP8, /*rtp_timestamp=*/2,
       encoded_image, RTPVideoHeader(),
       /*expected_retransmission_time=*/TimeDelta::Millis(10), csrcs);
+}
+
+TEST_F(RtpSenderVideoFrameTransformerDelegateTest,
+       StopShortCircuitingResumesTransform) {
+  auto delegate = make_ref_counted<RTPSenderVideoFrameTransformerDelegate>(
+      &test_sender_, frame_transformer_,
+      /*ssrc=*/1111, /*rid=*/"rid",
+      time_controller_.CreateTaskQueueFactory().get());
+  EXPECT_CALL(*frame_transformer_,
+              RegisterTransformedFrameSinkCallback(_, 1111));
+  delegate->Init();
+
+  InSequence s;
+  // While short circuiting, the frame is passed straight to the sender.
+  EXPECT_CALL(test_sender_, SendVideoFrame);
+  // Once short circuiting stops, the frame is passed to the transformer again.
+  EXPECT_CALL(*frame_transformer_, Transform);
+
+  EncodedImage encoded_image;
+  encoded_image.SetEncodedData(EncodedImageBuffer::Create(1));
+  delegate->StartShortCircuiting();
+  delegate->TransformFrame(
+      /*payload_type=*/1, VideoCodecType::kVideoCodecVP8, /*rtp_timestamp=*/2,
+      encoded_image, RTPVideoHeader(),
+      /*expected_retransmission_time=*/TimeDelta::Millis(10));
+
+  delegate->StopShortCircuiting();
+  delegate->TransformFrame(
+      /*payload_type=*/1, VideoCodecType::kVideoCodecVP8, /*rtp_timestamp=*/3,
+      encoded_image, RTPVideoHeader(),
+      /*expected_retransmission_time=*/TimeDelta::Millis(10));
 }
 
 TEST_F(RtpSenderVideoFrameTransformerDelegateTest, CreateSenderVideoFrame) {

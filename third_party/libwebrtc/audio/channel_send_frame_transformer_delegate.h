@@ -76,6 +76,7 @@ class ChannelSendFrameTransformerDelegate : public TransformedFrameCallback {
       std::unique_ptr<TransformableFrameInterface> frame) override;
 
   void StartShortCircuiting() override;
+  void StopShortCircuiting() override;
 
   // Delegates the call to ChannelSend::SendRtpAudio on the `send_queue_`,
   // by calling `send_audio_callback_`.

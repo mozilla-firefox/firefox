@@ -193,11 +193,21 @@ void ChannelReceiveFrameTransformerDelegate::OnTransformedFrame(
 }
 
 void ChannelReceiveFrameTransformerDelegate::StartShortCircuiting() {
+  SetShortCircuiting(/*short_circuit=*/true);
+}
+
+void ChannelReceiveFrameTransformerDelegate::StopShortCircuiting() {
+  SetShortCircuiting(/*short_circuit=*/false);
+}
+
+void ChannelReceiveFrameTransformerDelegate::SetShortCircuiting(
+    bool short_circuit) {
   scoped_refptr<ChannelReceiveFrameTransformerDelegate> delegate(this);
-  channel_receive_thread_->PostTask([delegate = std::move(delegate)]() mutable {
-    RTC_DCHECK_RUN_ON(&delegate->sequence_checker_);
-    delegate->short_circuit_ = true;
-  });
+  channel_receive_thread_->PostTask(
+      [delegate = std::move(delegate), short_circuit]() {
+        RTC_DCHECK_RUN_ON(&delegate->sequence_checker_);
+        delegate->short_circuit_ = short_circuit;
+      });
 }
 
 void ChannelReceiveFrameTransformerDelegate::ReceiveFrame(

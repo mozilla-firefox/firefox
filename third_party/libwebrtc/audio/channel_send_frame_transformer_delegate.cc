@@ -271,6 +271,11 @@ void ChannelSendFrameTransformerDelegate::StartShortCircuiting() {
   short_circuit_ = true;
 }
 
+void ChannelSendFrameTransformerDelegate::StopShortCircuiting() {
+  MutexLock lock(&send_lock_);
+  short_circuit_ = false;
+}
+
 void ChannelSendFrameTransformerDelegate::SendFrame(
     std::unique_ptr<TransformableFrameInterface> frame) const {
   MutexLock lock(&send_lock_);

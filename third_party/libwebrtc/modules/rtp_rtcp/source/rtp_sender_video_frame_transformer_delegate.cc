@@ -256,6 +256,11 @@ void RTPSenderVideoFrameTransformerDelegate::StartShortCircuiting() {
   short_circuit_ = true;
 }
 
+void RTPSenderVideoFrameTransformerDelegate::StopShortCircuiting() {
+  MutexLock lock(&sender_lock_);
+  short_circuit_ = false;
+}
+
 void RTPSenderVideoFrameTransformerDelegate::SendVideo(
     std::unique_ptr<TransformableFrameInterface> transformed_frame) const {
   RTC_DCHECK_RUN_ON(transformation_queue_.get());
