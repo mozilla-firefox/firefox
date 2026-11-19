@@ -37,8 +37,8 @@ class AndroidGamepadManager final
     }
 
     const GamepadHandle gamepadHandle = service->AddGamepad(
-        name.get(), GamepadMappingType::Standard, GamepadHand::_empty,
-        kStandardGamepadButtons, kStandardGamepadAxes, 0, 0, 0);
+        name.get(), GamepadMappingType::Standard, kStandardGamepadButtons,
+        kStandardGamepadAxes, 0, 0, 0);
 
     return mozilla::jni::ByteArray::New(
         reinterpret_cast<const int8_t*>(&gamepadHandle), sizeof(gamepadHandle));

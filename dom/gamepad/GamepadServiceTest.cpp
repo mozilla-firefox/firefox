@@ -100,9 +100,9 @@ void GamepadServiceTest::DestroyPBackgroundActor() {
 }
 
 already_AddRefed<Promise> GamepadServiceTest::AddGamepad(
-    const nsAString& aID, GamepadMappingType aMapping, GamepadHand aHand,
-    uint32_t aNumButtons, uint32_t aNumAxes, uint32_t aNumHaptics,
-    uint32_t aNumLightIndicator, uint32_t aNumTouchEvents, ErrorResult& aRv) {
+    const nsAString& aID, GamepadMappingType aMapping, uint32_t aNumButtons,
+    uint32_t aNumAxes, uint32_t aNumHaptics, uint32_t aNumLightIndicator,
+    uint32_t aNumTouchEvents, ErrorResult& aRv) {
   if (aNumButtons > kMaxButtons || aNumAxes > kMaxAxes ||
       aNumHaptics > kMaxHaptics || aNumLightIndicator > kMaxLightIndicator ||
       aNumTouchEvents > kMaxTouchEvents) {
@@ -119,8 +119,8 @@ already_AddRefed<Promise> GamepadServiceTest::AddGamepad(
   // assertion
   GamepadHandle gamepadHandle{1, GamepadHandleKind::GamepadPlatformManager};
 
-  GamepadAdded a(nsString(aID), aMapping, aHand, aNumButtons, aNumAxes,
-                 aNumHaptics, aNumLightIndicator, aNumTouchEvents);
+  GamepadAdded a(nsString(aID), aMapping, aNumButtons, aNumAxes, aNumHaptics,
+                 aNumLightIndicator, aNumTouchEvents);
   GamepadChangeEventBody body(a);
   GamepadChangeEvent e(gamepadHandle, body);
 

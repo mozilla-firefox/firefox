@@ -23,7 +23,6 @@ async function startTest() {
   if (frames_loaded != 2) return;
   index = await GamepadService.addGamepad("test gamepad", // id
                               GamepadService.standardMapping,
-                              GamepadService.noHand,
                               4, // buttons
                               2,
                               0,
