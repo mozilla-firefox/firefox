@@ -225,6 +225,13 @@ void gfxPlatformGtk::InitDmabufConfig() {
       feature.ForceDisable(FeatureStatus::Failed, "Failed to configure",
                            failureId);
     }
+    status = nsIGfxInfo::FEATURE_STATUS_UNKNOWN;
+    gfxVars::SetUseDMABufYUVDirectComposition(
+        NS_SUCCEEDED(gfxInfo->GetFeatureStatus(
+            nsIGfxInfo::FEATURE_DMABUF_YUV_DIRECT_COMPOSITION, failureId,
+            &status)) &&
+        status == nsIGfxInfo::FEATURE_STATUS_OK);
+
     // Make sure we have DMABuf formats available.
     (void)GetGlobalDMABufFormats();
   }

@@ -531,11 +531,11 @@ bool GlobalDMABufFormats::SupportsDirectComposition(
     case gfx::SurfaceFormat::B8G8R8X8:
       return true;
     case gfx::SurfaceFormat::NV12:
-      return !!mFormatNV12;
+      return mFormatNV12 && gfxVars::UseDMABufYUVDirectComposition();
     case gfx::SurfaceFormat::YUV420:
-      return !!mFormatYUV420;
+      return mFormatYUV420 && gfxVars::UseDMABufYUVDirectComposition();
     case gfx::SurfaceFormat::P010:
-      return !!mFormatP010;
+      return mFormatP010 && gfxVars::UseDMABufYUVDirectComposition();
     case gfx::SurfaceFormat::R10G10B10A2_UINT32:
       return !!mFormatABGR2101010;
     default:

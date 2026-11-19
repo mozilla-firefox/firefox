@@ -1276,6 +1276,17 @@ const nsTArray<RefPtr<GfxDriverInfo>>& GfxInfo::GetGfxDriverInfo() {
         "");
 #endif
 
+    // Bug 2076178: Mutter imports NV12/P010 chroma as GR88/GR1616, which
+    // NVIDIA EGL rejects. Use WebRender's RGB fallback until this is fixed.
+    // Lift this block for fixed Mutter versions once they can be identified.
+    APPEND_TO_DRIVER_BLOCKLIST_EXT(
+        OperatingSystem::Linux, ScreenSizeStatus::All, BatteryStatus::All,
+        WindowProtocol::Wayland, DriverVendor::NonMesaAll,
+        DeviceFamily::NvidiaAll,
+        nsIGfxInfo::FEATURE_DMABUF_YUV_DIRECT_COMPOSITION,
+        nsIGfxInfo::FEATURE_BLOCKED_DEVICE, DRIVER_COMPARISON_IGNORED,
+        V(0, 0, 0, 0), "FEATURE_FAILURE_BUG_2076178", "");
+
     ////////////////////////////////////
     // FEATURE_HARDWARE_VIDEO_DECODING
     APPEND_TO_DRIVER_BLOCKLIST_EXT(
