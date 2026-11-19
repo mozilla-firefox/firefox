@@ -4,26 +4,20 @@
 
 package org.mozilla.fenix.home.sports
 
-import androidx.annotation.DrawableRes
+import java.time.Instant
 
 /**
  * A participating team in the sports tournament.
  *
- * @property key Abbreviation named for a given name (e.g. "ENG").
- * @property drawableResId Local drawable representing the team.
- * @property globalTeamId Unique numeric identifier for this team.
- * @property name Long display name (e.g. "England"). This is not localized.
- * @property iconUrl Optional URL for the team logo.
- * @property eliminated True once the team is out of the tournament.
+ * @property name Display name of the team. This is not localized.
+ * @property id Unique numeric identifier for this team.
+ * @property iconUrl URL of the team logo.
  * @property standing The [TeamStanding] record in the tournament.
  */
 data class Team(
-    val key: String,
-    @param:DrawableRes val drawableResId: Int,
-    val globalTeamId: Long = 0L,
-    val name: String = "",
-    val iconUrl: String? = null,
-    val eliminated: Boolean = false,
+    val name: String,
+    val id: Long,
+    val iconUrl: String,
     val standing: TeamStanding = TeamStanding(),
 )
 
@@ -43,12 +37,13 @@ sealed class MatchStatus {
     /**
      * Match is currently in progress.
      *
-     * @property period Period description string ("1", "2", "Extra", etc.)
      * @property clock Minutes of elapsed play time, with extra time denoted as a "+" (e.g. "42", "90+3" (indicating 3
      *   minutes extra time)). Null when the feed omits it.
+     * @property isExtraTime True when the match is in extra time.
      * @property isHalftime True when play is paused for halftime (feed detail status "Break").
      */
-    data class Live(val period: String, val clock: String?, val isHalftime: Boolean = false) : MatchStatus()
+    data class Live(val clock: String?, val isExtraTime: Boolean = false, val isHalftime: Boolean = false) :
+        MatchStatus()
 
     /**
      * Match is in a penalty shootout.
@@ -78,8 +73,8 @@ sealed class MatchStatus {
     /** Match has been postponed to a later date. */
     data object Postponed : MatchStatus()
 
-    /** API returned an unrecognized status string. */
-    data object Unknown : MatchStatus()
+    /** Match has been canceled. */
+    data object Canceled : MatchStatus()
 }
 
 /** True when the match is currently being played (regulation or penalty shootout). */
@@ -89,20 +84,13 @@ internal fun MatchStatus.isLive(): Boolean = this is MatchStatus.Live || this is
 internal fun MatchStatus.isPast(): Boolean = this is MatchStatus.Final || this is MatchStatus.FinalAfterPenalties
 
 /**
- * True when this period description denotes extra time — the feed uses both "ET" and "Extra" (case-insensitively), so
- * match either form.
- */
-internal val String.isExtraTime: Boolean
-    get() = contains("ET", ignoreCase = true) || contains("Extra", ignoreCase = true)
-
-/**
  * Information related to a given sport event (game/match).
  *
  * @property globalEventId Stable upstream identifier; the natural cache key.
  * @property date Date string for start of match e.g. Jun 13.
  * @property time Time string for start of match e.g. 5:00 PM.
- * @property home Home [Team]. Null if the match has not been scheduled.
- * @property away Away [Team]. Null if the match has not been scheduled.
+ * @property home Home [Team].
+ * @property away Away [Team].
  * @property matchStatus Current [MatchStatus].
  * @property homeScore Home team score. Null if the match has not started.
  * @property awayScore Away team score. Null if the match has not started.
@@ -110,23 +98,21 @@ internal val String.isExtraTime: Boolean
  * @property awayPenalty Away penalty shootout score. Null if no shootout occurred.
  * @property clock Minutes of elapsed play time, with extra time denoted as a "+". (e.g. "42", "90+3" (indicating 3
  *   minutes extra time))
- * @property period Period description string ("1", "2", "Extra", etc.)
- * @property updated UTC timestamp when this event record was last updated.
+ * @property updatedAt The time the match data was last updated. Null if unknown.
  */
 data class Match(
-    val globalEventId: Long = 0L,
+    val globalEventId: Long,
     val date: String,
     val time: String,
-    val home: Team?,
-    val away: Team?,
-    val matchStatus: MatchStatus = MatchStatus.Scheduled,
+    val home: Team,
+    val away: Team,
+    val matchStatus: MatchStatus,
     val homeScore: Int? = null,
     val awayScore: Int? = null,
     val homePenalty: Int? = null,
     val awayPenalty: Int? = null,
     val clock: String? = null,
-    val period: String? = null,
-    val updated: Int? = null,
+    val updatedAt: Instant? = null,
 )
 
 /**

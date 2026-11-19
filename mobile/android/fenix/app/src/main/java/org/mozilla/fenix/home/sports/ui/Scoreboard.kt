@@ -21,7 +21,6 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.home.sports.Match
 import org.mozilla.fenix.home.sports.MatchStatus
 import org.mozilla.fenix.home.sports.fake.FakeSportsPreview
-import org.mozilla.fenix.home.sports.isExtraTime
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /**
@@ -85,7 +84,7 @@ internal fun statusSubtitle(status: MatchStatus, time: String): String =
         is MatchStatus.Live -> {
             val statusClock = status.clock?.let { "$it'" }
             when {
-                status.period.isExtraTime -> {
+                status.isExtraTime -> {
                     val extraTime = stringResource(R.string.wrex_widget_match_extra_time_short)
                     if (statusClock != null) "$extraTime: $statusClock" else extraTime
                 }
@@ -121,13 +120,13 @@ private class ScoreboardPreviewProvider : PreviewParameterProvider<Match> {
     override val values =
         sequenceOf(
             match(status = MatchStatus.Scheduled),
-            match(status = MatchStatus.Live(period = "1", clock = "29"), homeScore = 1, awayScore = 2),
+            match(status = MatchStatus.Live(clock = "29"), homeScore = 1, awayScore = 2),
             match(
-                status = MatchStatus.Live(period = "1", clock = "45", isHalftime = true),
+                status = MatchStatus.Live(clock = "45", isHalftime = true),
                 homeScore = 1,
                 awayScore = 0,
             ),
-            match(status = MatchStatus.Live(period = "Extra", clock = "100"), homeScore = 2, awayScore = 2),
+            match(status = MatchStatus.Live(clock = "100", isExtraTime = true), homeScore = 2, awayScore = 2),
             match(status = MatchStatus.Penalties(homePenalty = 3, awayPenalty = 2), homeScore = 1, awayScore = 1),
             match(status = MatchStatus.Final, homeScore = 3, awayScore = 1),
             match(

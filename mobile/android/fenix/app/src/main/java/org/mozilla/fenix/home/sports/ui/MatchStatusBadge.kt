@@ -76,24 +76,26 @@ internal fun MatchStatus.isLive(): Boolean =
         else -> false
     }
 
-/** Returns the label for a delayed, suspended or postponed match, or null for any other status. */
+/** Returns the label for a delayed, suspended, postponed or canceled match, or null for any other status. */
 @Composable
 internal fun MatchStatus.interruptedStatusText(): String? =
     when (this) {
         MatchStatus.Delayed -> stringResource(R.string.wrex_widget_match_delayed)
         MatchStatus.Suspended -> stringResource(R.string.wrex_widget_match_suspended)
         MatchStatus.Postponed -> stringResource(R.string.wrex_widget_match_postponed)
+        MatchStatus.Canceled -> stringResource(R.string.wrex_widget_match_canceled)
         else -> null
     }
 
 private class MatchStatusBadgePreviewProvider : PreviewParameterProvider<MatchStatus> {
     override val values =
         sequenceOf(
-            MatchStatus.Live(period = "1", clock = "29"),
+            MatchStatus.Live(clock = "29"),
             MatchStatus.Penalties(homePenalty = 3, awayPenalty = 2),
             MatchStatus.Delayed,
             MatchStatus.Suspended,
             MatchStatus.Postponed,
+            MatchStatus.Canceled,
         )
 }
 

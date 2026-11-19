@@ -29,7 +29,6 @@ import org.mozilla.fenix.home.sports.MatchCard as MatchCardState
 import org.mozilla.fenix.home.sports.MatchStatus
 import org.mozilla.fenix.home.sports.SportCardErrorState
 import org.mozilla.fenix.home.sports.fake.FakeMatchCardScenario
-import org.mozilla.fenix.home.sports.isExtraTime
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /**
@@ -49,7 +48,7 @@ fun MatchCard(
     state: MatchCardState,
     errorState: SportCardErrorState?,
     onRefresh: (LiveMatchRefreshSource) -> Unit,
-    onMatchClicked: (String?, String?, String?) -> Unit,
+    onMatchClicked: (String, String, String) -> Unit,
     modifier: Modifier = Modifier,
     pageNumber: Int? = null,
     pageCount: Int? = null,
@@ -98,7 +97,7 @@ private val MatchContentHorizontalPadding: Dp
 internal fun MatchBody(
     match: Match,
     errorState: SportCardErrorState?,
-    onMatchClicked: (String?, String?, String?) -> Unit,
+    onMatchClicked: (String, String, String) -> Unit,
     onRefresh: (LiveMatchRefreshSource) -> Unit,
 ) {
     if (errorState != null && match.matchStatus.isLive()) {
@@ -114,11 +113,7 @@ internal fun MatchBody(
                 Modifier.fillMaxWidth()
                     .padding(horizontal = MatchContentHorizontalPadding)
                     .clickable(
-                        onClick = {
-                            if (match.home != null || match.away != null) {
-                                onMatchClicked(match.home?.key, match.away?.key, "${match.date} ${match.time}")
-                            }
-                        }
+                        onClick = { onMatchClicked(match.home.name, match.away.name, "${match.date} ${match.time}") }
                     )
                     .clearAndSetSemantics {
                         contentDescription = rowContentDescription
@@ -137,10 +132,8 @@ internal fun MatchBody(
 
 @Composable
 private fun matchBodyContentDescription(match: Match): String {
-    val homeName =
-        match.home?.let { it.name.ifEmpty { it.key } } ?: stringResource(R.string.wrex_widget_team_to_be_determined)
-    val awayName =
-        match.away?.let { it.name.ifEmpty { it.key } } ?: stringResource(R.string.wrex_widget_team_to_be_determined)
+    val homeName = match.home.name
+    val awayName = match.away.name
     val middleText = matchBodyMiddleText(match = match)
 
     return when {
@@ -185,7 +178,7 @@ private fun matchBodyMiddleText(match: Match): String {
                     stringResource(R.string.wrex_widget_match_elapsed_minutes, it)
                 }
             when {
-                status.period.isExtraTime -> {
+                status.isExtraTime -> {
                     val extraTime = stringResource(R.string.wrex_widget_match_extra_time_short)
                     if (elapsed != null) "$extraTime $elapsed" else extraTime
                 }

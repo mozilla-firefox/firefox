@@ -4,7 +4,6 @@
 
 package org.mozilla.fenix.home.sports.fake
 
-import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.home.sports.Match
 import org.mozilla.fenix.home.sports.MatchCard
 import org.mozilla.fenix.home.sports.MatchStatus
@@ -13,15 +12,14 @@ import org.mozilla.fenix.home.sports.Team
 /** Fake data used for the Homepage Sports Widget Compose previews and debug tool. */
 internal object FakeSportsPreview {
 
-    private val PLACEHOLDER_DRAWABLE = iconsR.drawable.mozac_ic_soccer_ball_24
-
-    val usa = Team(key = "USA", drawableResId = PLACEHOLDER_DRAWABLE)
-    val par = Team(key = "PAR", drawableResId = PLACEHOLDER_DRAWABLE)
+    val usa = Team(name = "USA", id = 1L, iconUrl = "https://example.com/usa.png")
+    val par = Team(name = "PAR", id = 2L, iconUrl = "https://example.com/par.png")
 
     /** Builds a fake [Match]. */
     fun match(
-        home: Team? = usa,
-        away: Team? = par,
+        globalEventId: Long = 1L,
+        home: Team = usa,
+        away: Team = par,
         date: String = "Jun 28",
         time: String = "2:00 PM",
         homeScore: Int? = null,
@@ -29,6 +27,7 @@ internal object FakeSportsPreview {
         matchStatus: MatchStatus = MatchStatus.Scheduled,
     ): Match =
         Match(
+            globalEventId = globalEventId,
             date = date,
             time = time,
             home = home,
@@ -50,7 +49,7 @@ internal enum class FakeMatchCardScenario(val label: String) {
                             FakeSportsPreview.match(
                                 homeScore = 1,
                                 awayScore = 2,
-                                matchStatus = MatchStatus.Live(period = "1", clock = "29"),
+                                matchStatus = MatchStatus.Live(clock = "29"),
                             )
                         ),
                     label = "ABC Championship",
@@ -66,7 +65,7 @@ internal enum class FakeMatchCardScenario(val label: String) {
                             FakeSportsPreview.match(
                                 homeScore = 1,
                                 awayScore = 2,
-                                matchStatus = MatchStatus.Live(period = "Extra", clock = "100"),
+                                matchStatus = MatchStatus.Live(clock = "100", isExtraTime = true),
                             )
                         ),
                     label = "ABC Championship",
@@ -82,7 +81,7 @@ internal enum class FakeMatchCardScenario(val label: String) {
                             FakeSportsPreview.match(
                                 homeScore = 1,
                                 awayScore = 2,
-                                matchStatus = MatchStatus.Live(period = "", clock = null),
+                                matchStatus = MatchStatus.Live(clock = null),
                             )
                         ),
                     label = "ABC Championship",
@@ -98,7 +97,7 @@ internal enum class FakeMatchCardScenario(val label: String) {
                             FakeSportsPreview.match(
                                 homeScore = 1,
                                 awayScore = 2,
-                                matchStatus = MatchStatus.Live(period = "", clock = "45", isHalftime = true),
+                                matchStatus = MatchStatus.Live(clock = "45", isHalftime = true),
                             )
                         ),
                     label = "ABC Championship",
@@ -114,7 +113,7 @@ internal enum class FakeMatchCardScenario(val label: String) {
                             FakeSportsPreview.match(
                                 homeScore = 1,
                                 awayScore = 2,
-                                matchStatus = MatchStatus.Live(period = "", clock = null, isHalftime = true),
+                                matchStatus = MatchStatus.Live(clock = null, isHalftime = true),
                             )
                         ),
                     label = "ABC Championship",
@@ -188,30 +187,16 @@ internal enum class FakeMatchCardScenario(val label: String) {
         override fun build() =
             listOf(
                 MatchCard(
-                    matches = listOf(FakeSportsPreview.match(matchStatus = MatchStatus.Scheduled)),
+                    matches = listOf(FakeSportsPreview.match(globalEventId = 1L, matchStatus = MatchStatus.Scheduled)),
                     label = "ABC Championship",
                 ),
                 MatchCard(
-                    matches = listOf(FakeSportsPreview.match(matchStatus = MatchStatus.Scheduled)),
+                    matches = listOf(FakeSportsPreview.match(globalEventId = 2L, matchStatus = MatchStatus.Scheduled)),
                     label = "ABC Championship",
                 ),
                 MatchCard(
-                    matches = listOf(FakeSportsPreview.match(matchStatus = MatchStatus.Scheduled)),
+                    matches = listOf(FakeSportsPreview.match(globalEventId = 3L, matchStatus = MatchStatus.Scheduled)),
                     label = "ABC Championship",
-                ),
-            )
-    },
-    TBD("Null teams") {
-        override fun build() =
-            listOf(
-                MatchCard(
-                    matches = listOf(FakeSportsPreview.match(away = null, matchStatus = MatchStatus.Scheduled)),
-                    label = "Moz Cup",
-                ),
-                MatchCard(
-                    matches =
-                        listOf(FakeSportsPreview.match(home = null, away = null, matchStatus = MatchStatus.Scheduled)),
-                    label = "Moz Cup",
                 ),
             )
     };

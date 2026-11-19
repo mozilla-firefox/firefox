@@ -118,7 +118,7 @@ private class MatchCardHeaderPreviewProvider : PreviewParameterProvider<MatchCar
         sequenceOf(
             MatchCardHeaderPreviewState(
                 label = "Moz Cup",
-                status = MatchStatus.Live(period = "1", clock = "29"),
+                status = MatchStatus.Live(clock = "29"),
             ),
             MatchCardHeaderPreviewState(
                 label = "ABC Championship",
@@ -153,6 +153,7 @@ private fun MatchCardHeaderPreview(
             MatchCardHeader(
                 match =
                     Match(
+                        globalEventId = 1L,
                         date = "Oct 21",
                         time = "2:45 PM",
                         home = FakeSportsPreview.usa,

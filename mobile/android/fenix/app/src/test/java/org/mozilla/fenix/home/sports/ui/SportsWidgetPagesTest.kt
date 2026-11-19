@@ -11,10 +11,11 @@ import org.mozilla.fenix.home.sports.MatchCard
 import org.mozilla.fenix.home.sports.MatchStatus
 import org.mozilla.fenix.home.sports.SportCardErrorState
 import org.mozilla.fenix.home.sports.SportsCardType
+import org.mozilla.fenix.home.sports.Team
 
 class SportsWidgetPagesTest {
     private val pastCard = card(1L, MatchStatus.Final)
-    private val liveCard = card(2L, MatchStatus.Live(period = "2H", clock = "67"))
+    private val liveCard = card(2L, MatchStatus.Live(clock = "67"))
     private val upcomingCard = card(3L)
     private val matchweek = listOf(pastCard, liveCard, upcomingCard)
 
@@ -111,8 +112,8 @@ class SportsWidgetPagesTest {
                         globalEventId = globalEventId,
                         date = "Oct 10",
                         time = "3:00 PM",
-                        home = null,
-                        away = null,
+                        home = Team(name = "Team A", id = 1L, iconUrl = "https://example.com/a.png"),
+                        away = Team(name = "Team B", id = 2L, iconUrl = "https://example.com/b.png"),
                         matchStatus = matchStatus,
                     )
                 ),

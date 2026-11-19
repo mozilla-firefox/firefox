@@ -15,24 +15,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import mozilla.components.ui.icons.R as iconsR
-import org.mozilla.fenix.R
 import org.mozilla.fenix.home.sports.Team
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /**
  * A team's image and name.
  *
- * @param team The [Team] to display, or null when the team has not been determined yet.
+ * @param team The [Team] to display.
  * @param modifier [Modifier] to be applied to the slot.
  */
 @Composable
 internal fun TeamSlot(
-    team: Team?,
+    team: Team,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -41,26 +42,33 @@ internal fun TeamSlot(
         verticalArrangement = Arrangement.spacedBy(FirefoxTheme.layout.space.static50),
     ) {
         Image(
-            painter = painterResource(team?.drawableResId ?: iconsR.drawable.mozac_ic_soccer_ball_24),
+            painter = painterResource(iconsR.drawable.mozac_ic_soccer_ball_24),
             contentDescription = null,
             modifier = Modifier.size(36.dp),
         )
 
         Text(
-            text = team?.key ?: "--",
+            text = team.name,
             style = FirefoxTheme.typography.body2,
             color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            overflow = TextOverflow.Ellipsis,
+            maxLines = 2,
         )
     }
 }
 
-private class TeamSlotPreviewProvider : PreviewParameterProvider<Team?> {
-    override val values = sequenceOf(Team(key = "WRE", drawableResId = R.drawable.team_badge_wrexham), null)
+private class TeamSlotPreviewProvider : PreviewParameterProvider<Team> {
+    override val values =
+        sequenceOf(
+            Team(name = "WRE", id = 1L, iconUrl = "https://example.com/wre.png"),
+            Team(name = "Wolverhampton Wanderers FC", id = 2L, iconUrl = "https://example.com/wol.png"),
+        )
 }
 
 @PreviewLightDark
 @Composable
-private fun TeamSlotPreview(@PreviewParameter(TeamSlotPreviewProvider::class) team: Team?) {
+private fun TeamSlotPreview(@PreviewParameter(TeamSlotPreviewProvider::class) team: Team) {
     FirefoxTheme {
         Surface {
             TeamSlot(team = team)

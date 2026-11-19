@@ -77,7 +77,7 @@ data class MerinoCompetition(
  *
  * @property id The global team identifier.
  * @property name The team display name.
- * @property logoUrl The URL of the team logo if available.
+ * @property logoUrl The URL of the team logo, or of a fallback image.
  */
 @Serializable
 data class MerinoTeam(
