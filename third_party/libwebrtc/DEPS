@@ -49,8 +49,6 @@ vars = {
   'download_remoteexec_cfg': False,
   # RBE instance to use for running remote builds
   'rbe_instance': 'projects/rbe-webrtc-developer/instances/default_instance',
-  # reclient CIPD package version
-  'reclient_version': 're_client_version:0.185.0.db415f21-gomaip',
   # siso CIPD package version.
   'siso_version': 'git_revision:7ab4814901b3c7afc2dddf2ed1a6ff238a0d85c5',
 
@@ -133,18 +131,6 @@ deps = {
     ],
     'dep_type': 'cipd',
     'condition': 'checkout_win',
-  },
-  'src/buildtools/reclient': {
-    'packages': [
-      {
-         # https://chrome-infra-packages.appspot.com/p/infra/rbe/client/
-        'package': 'infra/rbe/client/${{platform}}',
-        'version': Var('reclient_version'),
-      }
-    ],
-    'dep_type': 'cipd',
-    # Reclient doesn't have linux-arm64 package.
-    'condition': 'not (host_os == "linux" and host_cpu == "arm64")',
   },
 
   'src/third_party/llvm-build/Release+Asserts': {
