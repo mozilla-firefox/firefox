@@ -92,6 +92,7 @@ import org.mozilla.fenix.settings.trustpanel.store.WebsiteInfoState
 import org.mozilla.fenix.settings.trustpanel.store.WebsitePermission
 import org.mozilla.fenix.settings.trustpanel.ui.CertificateDetailsPanel
 import org.mozilla.fenix.settings.trustpanel.ui.CertificateIssuedTo
+import org.mozilla.fenix.settings.trustpanel.ui.CertificateVerifiedBy
 import org.mozilla.fenix.settings.trustpanel.ui.ClearSiteDataDialog
 import org.mozilla.fenix.settings.trustpanel.ui.ProtectionPanel
 import org.mozilla.fenix.settings.trustpanel.ui.TrackerCategoryDetailsPanel
@@ -215,8 +216,22 @@ class TrustPanelFragment : BottomSheetDialogFragment() {
                     routeState == Route.TrackersProtectionDashboard
                 }
 
+            val websiteInfoState by remember {
+                store.stateFlow.map { state -> state.websiteInfoState }
+            }
+                .collectAsState(initial = store.state.websiteInfoState)
+
             MenuDialogBottomSheet(
-                modifier = Modifier.padding(top = 8.dp, bottom = 5.dp).fillMaxWidth(0.1f),
+                modifier =
+                    if (settings.isQwacUiEnabled && websiteInfoState.isQwac) {
+                            Modifier.padding(
+                                top = FirefoxTheme.layout.space.static100,
+                                bottom = FirefoxTheme.layout.space.static200,
+                            )
+                        } else {
+                            Modifier.padding(top = 8.dp, bottom = 5.dp)
+                        }
+                        .fillMaxWidth(0.1f),
                 onRequestDismiss = ::dismiss,
                 menuHandleState =
                     MenuHandleState(
@@ -235,10 +250,6 @@ class TrustPanelFragment : BottomSheetDialogFragment() {
                             bottomEnd = CornerSize(0.dp),
                         ),
             ) {
-                val websiteInfoState by remember {
-                    store.stateFlow.map { state -> state.websiteInfoState }
-                }
-                    .collectAsState(initial = store.state.websiteInfoState)
                 val baseDomain by remember {
                     store.stateFlow.map { state -> state.baseDomain }
                 }
@@ -453,10 +464,13 @@ class TrustPanelFragment : BottomSheetDialogFragment() {
                         Route.CertificateDetailsPanel -> {
                             CertificateDetailsPanel(
                                 url = websiteInfoState.websiteUrl,
-                                icon = sessionState?.content?.icon,
                                 isQwac = websiteInfoState.isQwac,
                                 issuedTo = { CertificateIssuedTo(websiteInfoState.certificateDetails) },
-                                verifiedBy = {},
+                                verifiedBy = { CertificateVerifiedBy(websiteInfoState.certificateDetails) },
+                                onBackButtonClick = {
+                                    focusSecureConnectionLink = true
+                                    routeState = Route.ProtectionPanel
+                                },
                             )
                         }
 

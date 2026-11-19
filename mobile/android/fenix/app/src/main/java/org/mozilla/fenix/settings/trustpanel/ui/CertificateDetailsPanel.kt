@@ -4,7 +4,6 @@
 
 package org.mozilla.fenix.settings.trustpanel.ui
 
-import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,49 +20,61 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import mozilla.components.compose.base.annotation.FlexibleWindowPreview
 import mozilla.components.compose.base.theme.PreviewThemeProvider
 import mozilla.components.compose.base.theme.Theme
-import mozilla.components.support.ktx.kotlin.tryGetHostFromUrl
 import mozilla.components.support.utils.CertificateDetails
 import mozilla.components.support.utils.R as supportUtilsR
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.menu.compose.MenuScaffold
+import org.mozilla.fenix.components.menu.compose.header.SubmenuHeader
 import org.mozilla.fenix.theme.FirefoxTheme
 
 private const val DARK_BACKGROUND_LUMINANCE = 0.5f
 
-// The EU trust mark must be displayed at least 64 pixels wide and 85 pixels high, as required by Commission
-// Implementing Regulation (EU) 2015/806. With the trust mark's aspect ratio, this width gives a height of about 94dp.
-private val EU_TRUST_MARK_WIDTH = 64.dp
+// The design shows the EU trust mark 58dp wide, which with its aspect ratio is 85dp high. It must also be displayed
+// at least 64 pixels wide and 85 pixels high, as required by Commission Implementing Regulation (EU) 2015/806, so on
+// low density screens it is widened to 64 pixels, which keeps it more than 85 pixels high.
+private val EU_TRUST_MARK_WIDTH = 58.dp
+private const val EU_TRUST_MARK_MIN_WIDTH_PX = 64
 
 /**
  * Sub-page of the Trust Panel that shows the certificate details of the current website.
  *
  * @param url The URL of the current website.
- * @param icon The favicon of the current website, or null to fall back to a generated icon.
  * @param isQwac Whether the certificate is a Qualified Website Authentication Certificate (QWAC), in which case the
  *   QWAC statement and the EU trust mark are shown.
  * @param issuedTo Slot for the details of who the certificate was issued to.
  * @param verifiedBy Slot for the details of who verified the certificate.
+ * @param onBackButtonClick Invoked when the back button in the header is clicked.
  */
 @Composable
 internal fun CertificateDetailsPanel(
     url: String,
-    icon: Bitmap?,
     isQwac: Boolean,
     issuedTo: @Composable () -> Unit,
     verifiedBy: @Composable () -> Unit,
+    onBackButtonClick: () -> Unit,
 ) {
-    MenuScaffold(header = { CertificateDetailsHeader(url = url, icon = icon) }) {
+    MenuScaffold(
+        header = {
+            SubmenuHeader(
+                title = "",
+                url = url,
+                backButtonContentDescription = stringResource(R.string.etp_back_button_content_description),
+                onClick = onBackButtonClick,
+            )
+        }
+    ) {
         Text(
             text = stringResource(R.string.certificate_details_panel_secure_connection_title),
             modifier =
@@ -127,40 +138,12 @@ private fun EuTrustMark() {
         } else {
             supportUtilsR.drawable.eu_trust_mark
         }
+    val minWidth = with(LocalDensity.current) { EU_TRUST_MARK_MIN_WIDTH_PX.toDp() }
     Image(
         painter = painterResource(trustMark),
         contentDescription = stringResource(R.string.certificate_details_panel_eu_trust_mark_content_description),
-        modifier = Modifier.width(EU_TRUST_MARK_WIDTH),
+        modifier = Modifier.width(max(EU_TRUST_MARK_WIDTH, minWidth)),
     )
-}
-
-@Composable
-private fun CertificateDetailsHeader(
-    url: String,
-    icon: Bitmap?,
-) {
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .padding(
-                    horizontal = FirefoxTheme.layout.space.static200,
-                    vertical = FirefoxTheme.layout.space.static100,
-                ),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        ProtectionPanelIcon(url = url, icon = icon)
-
-        Spacer(modifier = Modifier.width(FirefoxTheme.layout.space.static200))
-
-        Text(
-            text = url.tryGetHostFromUrl(),
-            modifier = Modifier.weight(1f).semantics { heading() },
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = FirefoxTheme.typography.headline7,
-        )
-    }
 }
 
 private val previewCertificateDetails =
@@ -182,10 +165,10 @@ private fun CertificateDetailsPanelPreviewContent(
     Column(modifier = Modifier.background(color = MaterialTheme.colorScheme.surface)) {
         CertificateDetailsPanel(
             url = url,
-            icon = null,
             isQwac = isQwac,
             issuedTo = { CertificateIssuedTo(certificateDetails = certificateDetails) },
             verifiedBy = { CertificateVerifiedBy(certificateDetails = certificateDetails) },
+            onBackButtonClick = {},
         )
     }
 }

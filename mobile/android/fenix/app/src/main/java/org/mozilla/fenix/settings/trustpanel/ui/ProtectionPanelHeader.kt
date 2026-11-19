@@ -54,7 +54,7 @@ import org.mozilla.fenix.theme.FirefoxTheme
 private val ICON_SIZE = 16.dp
 private val ICON_PADDING = 8.dp
 private val INNER_ICON_SHAPE = RoundedCornerShape(0.dp)
-private const val SECURE_CONNECTION_LINK_MAX_WIDTH_FRACTION = 0.5f
+private const val SECURE_CONNECTION_LINK_MAX_WIDTH_FRACTION = 2f / 3f
 
 internal const val SECURE_CONNECTION_LINK_TEST_TAG = "unified.trust.panel.secure.connection"
 

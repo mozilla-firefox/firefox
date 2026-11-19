@@ -10,9 +10,11 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.compose.base.theme.Theme
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,6 +30,9 @@ class CertificateDetailsPanelTest {
 
     private val qwacStatement
         get() = resources.getString(R.string.connection_security_panel_qualified_certificate)
+
+    private val backButtonDescription
+        get() = resources.getString(R.string.etp_back_button_content_description)
 
     private val trustMarkDescription
         get() = resources.getString(R.string.certificate_details_panel_eu_trust_mark_content_description)
@@ -61,15 +66,32 @@ class CertificateDetailsPanelTest {
         composeTestRule.onNodeWithContentDescription(trustMarkDescription, useUnmergedTree = true).assertDoesNotExist()
     }
 
-    private fun setCertificateDetailsPanel(isQwac: Boolean, theme: Theme) {
+    @Test
+    fun `WHEN the back button is clicked THEN going back is requested`() {
+        var backClicks = 0
+        setCertificateDetailsPanel(isQwac = true, theme = Theme.Light, onBackButtonClick = { backClicks++ })
+
+        composeTestRule.onNodeWithContentDescription(backButtonDescription).performClick()
+
+        assertEquals(1, backClicks)
+    }
+
+    @Test
+    fun `GIVEN a website THEN the header shows its host`() {
+        setCertificateDetailsPanel(isQwac = true, theme = Theme.Light)
+
+        composeTestRule.onNodeWithText("www.mozilla.org").assertIsDisplayed()
+    }
+
+    private fun setCertificateDetailsPanel(isQwac: Boolean, theme: Theme, onBackButtonClick: () -> Unit = {}) {
         composeTestRule.setContent {
             FirefoxTheme(theme) {
                 CertificateDetailsPanel(
                     url = "https://www.mozilla.org",
-                    icon = null,
                     issuedTo = { Text(text = "Issued to") },
                     verifiedBy = { Text(text = VERIFIED_BY) },
                     isQwac = isQwac,
+                    onBackButtonClick = onBackButtonClick,
                 )
             }
         }
