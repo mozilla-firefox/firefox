@@ -19,7 +19,6 @@ import org.mozilla.fenix.home.topsites.TopSitesConfigConstants.AMAZON_SPONSORED_
 import org.mozilla.fenix.home.topsites.TopSitesConfigConstants.EBAY_SPONSORED_TITLE
 import org.mozilla.fenix.home.topsites.TopSitesConfigConstants.TOP_SITES_PROVIDER_LIMIT
 import org.mozilla.fenix.home.topsites.TopSitesConfigConstants.TOP_SITES_PROVIDER_MAX_THRESHOLD
-import org.mozilla.fenix.nimbus.FxNimbus
 import org.mozilla.fenix.utils.Settings
 
 /**
@@ -38,12 +37,8 @@ internal fun getTopSitesConfig(
         TopSitesConfig(
             targetSitesCount = settings.topSitesMaxLimit,
             frecencyConfig =
-                if (FxNimbus.features.homepageHideFrecentTopSites.value().enabled) {
-                    null
-                } else {
-                    TopSitesFrecencyConfig(frecencyTresholdOption = FrecencyThresholdOption.SKIP_ONE_TIME_PAGES) {
-                        !it.url.toUri().containsQueryParameters(settings.frecencyFilterQuery)
-                    }
+                TopSitesFrecencyConfig(frecencyTresholdOption = FrecencyThresholdOption.SKIP_ONE_TIME_PAGES) {
+                    !it.url.toUri().containsQueryParameters(settings.frecencyFilterQuery)
                 },
             providerConfig =
                 TopSitesProviderConfig(
