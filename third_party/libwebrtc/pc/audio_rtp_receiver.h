@@ -106,8 +106,6 @@ class AudioRtpReceiver : public ObserverInterface,
   void Stop() override;
   absl::AnyInvocable<void() &&> GetSetupForMediaChannel(uint32_t ssrc) override;
   absl::AnyInvocable<void() &&> GetSetupForUnsignaledMediaChannel() override;
-  MediaReceiveChannelInterface* media_channel() const override
-      RTC_RUN_ON(worker_thread_);
   void set_stream_ids(std::vector<std::string> stream_ids) override;
   void set_transport(
       scoped_refptr<DtlsTransportInterface> dtls_transport) override;
@@ -141,12 +139,12 @@ class AudioRtpReceiver : public ObserverInterface,
   void Reconfigure(bool track_enabled, double volume)
       RTC_RUN_ON(worker_thread_);
   void SetOutputVolume_w(double volume) RTC_RUN_ON(worker_thread_);
+  VoiceMediaReceiveChannelInterface* voice_media_channel() const
+      RTC_RUN_ON(worker_thread_);
 
   const std::string id_;
   const scoped_refptr<RemoteAudioSource> source_;
   const scoped_refptr<AudioTrackProxyWithInternal<AudioTrack>> track_;
-  VoiceMediaReceiveChannelInterface* media_channel_
-      RTC_GUARDED_BY(worker_thread_) = nullptr;
   std::vector<scoped_refptr<MediaStreamInterface>> streams_
       RTC_GUARDED_BY(&signaling_thread_checker_);
   bool cached_track_enabled_ RTC_GUARDED_BY(&signaling_thread_checker_);

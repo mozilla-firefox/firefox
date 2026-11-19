@@ -83,8 +83,6 @@ class VideoRtpReceiver : public RtpReceiverBase {
   void Stop() override;
   absl::AnyInvocable<void() &&> GetSetupForMediaChannel(uint32_t ssrc) override;
   absl::AnyInvocable<void() &&> GetSetupForUnsignaledMediaChannel() override;
-  MediaReceiveChannelInterface* media_channel() const override
-      RTC_RUN_ON(worker_thread_);
   void set_stream_ids(std::vector<std::string> stream_ids) override;
   void set_transport(
       scoped_refptr<DtlsTransportInterface> dtls_transport) override;
@@ -113,6 +111,8 @@ class VideoRtpReceiver : public RtpReceiverBase {
   void SetSink(VideoSinkInterface<VideoFrame>* sink) RTC_RUN_ON(worker_thread_);
   void SetMediaChannel_w(MediaReceiveChannelInterface* media_channel)
       RTC_RUN_ON(worker_thread_);
+  VideoMediaReceiveChannelInterface* video_media_channel() const
+      RTC_RUN_ON(worker_thread_);
 
   // VideoRtpTrackSource::Callback
   void OnGenerateKeyFrame();
@@ -135,8 +135,6 @@ class VideoRtpReceiver : public RtpReceiverBase {
   } source_callback_{this};
 
   const std::string id_;
-  VideoMediaReceiveChannelInterface* media_channel_
-      RTC_GUARDED_BY(worker_thread_) = nullptr;
   // `source_` is held here to be able to change the state of the source when
   // the VideoRtpReceiver is stopped.
   const scoped_refptr<VideoRtpTrackSource> source_;

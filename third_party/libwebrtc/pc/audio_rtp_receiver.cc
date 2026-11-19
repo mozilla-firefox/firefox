@@ -92,14 +92,16 @@ AudioRtpReceiver::AudioRtpReceiver(
     VoiceMediaReceiveChannelInterface* voice_channel,
     RemoteAudioSource::OnAudioChannelGoneAction source_gone_action,
     Clock* clock)
-    : RtpReceiverBase(worker_thread, std::move(enable_sframe_at_owner), clock),
+    : RtpReceiverBase(worker_thread,
+                      std::move(enable_sframe_at_owner),
+                      voice_channel,
+                      clock),
       id_(receiver_id),
       source_(make_ref_counted<RemoteAudioSource>(worker_thread,
                                                   source_gone_action)),
       track_(AudioTrackProxyWithInternal<AudioTrack>::Create(
           Thread::Current(),
           AudioTrack::Create(receiver_id, source_))),
-      media_channel_(voice_channel),
       cached_track_enabled_(track_->internal()->enabled()),
       attachment_id_(GenerateUniqueId()),
       worker_thread_safety_(PendingTaskSafetyFlag::CreateDetachedInactive()) {
@@ -112,7 +114,6 @@ AudioRtpReceiver::AudioRtpReceiver(
 
 AudioRtpReceiver::~AudioRtpReceiver() {
   RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
-  RTC_DCHECK(!media_channel_);
 
   track_->GetSource()->UnregisterAudioObserver(this);
   track_->UnregisterObserver(this);
@@ -136,11 +137,12 @@ void AudioRtpReceiver::SetOutputVolume_w(double volume) {
   RTC_DCHECK_GE(volume, 0.0);
   RTC_DCHECK_LE(volume, 10.0);
 
-  if (!media_channel_)
+  VoiceMediaReceiveChannelInterface* voice_channel = voice_media_channel();
+  if (!voice_channel)
     return;
 
-  signaled_ssrc_ ? media_channel_->SetOutputVolume(*signaled_ssrc_, volume)
-                 : media_channel_->SetDefaultOutputVolume(volume);
+  signaled_ssrc_ ? voice_channel->SetOutputVolume(*signaled_ssrc_, volume)
+                 : voice_channel->SetDefaultOutputVolume(volume);
 }
 
 void AudioRtpReceiver::OnSetVolume(double volume) {
@@ -186,12 +188,13 @@ std::vector<scoped_refptr<MediaStreamInterface>> AudioRtpReceiver::streams()
 
 RtpParameters AudioRtpReceiver::GetParameters() const {
   RTC_DCHECK_RUN_ON(worker_thread_);
-  if (!media_channel_)
+  VoiceMediaReceiveChannelInterface* voice_channel = voice_media_channel();
+  if (!voice_channel)
     return RtpParameters();
   auto current_ssrc = ssrc();
   return current_ssrc.has_value()
-             ? media_channel_->GetRtpReceiverParameters(current_ssrc.value())
-             : media_channel_->GetDefaultRtpReceiveParameters();
+             ? voice_channel->GetRtpReceiverParameters(current_ssrc.value())
+             : voice_channel->GetDefaultRtpReceiveParameters();
 }
 
 void AudioRtpReceiver::Stop() {
@@ -224,7 +227,8 @@ void AudioRtpReceiver::GetRestartFunctionForMediaChannel_w(
     MediaSourceInterface::SourceState state,
     double volume) {
   RTC_DCHECK_RUN_ON(worker_thread_);
-  if (!media_channel_)
+  VoiceMediaReceiveChannelInterface* voice_channel = voice_media_channel();
+  if (!voice_channel)
     return;  // Can't restart.
 
   // Make sure the safety flag is marked as `alive` for cases where the media
@@ -235,14 +239,14 @@ void AudioRtpReceiver::GetRestartFunctionForMediaChannel_w(
   if (state != MediaSourceInterface::kInitializing) {
     if (signaled_ssrc_ == ssrc)
       return;
-    source_->Stop(media_channel_, signaled_ssrc_);
+    source_->Stop(voice_channel, signaled_ssrc_);
   }
 
   signaled_ssrc_ = std::move(ssrc);
-  source_->Start(media_channel_, signaled_ssrc_);
+  source_->Start(voice_channel, signaled_ssrc_);
   if (signaled_ssrc_) {
-    media_channel_->SetBaseMinimumPlayoutDelayMs(*signaled_ssrc_,
-                                                 delay_.GetMs());
+    voice_channel->SetBaseMinimumPlayoutDelayMs(*signaled_ssrc_,
+                                                delay_.GetMs());
   }
 
   Reconfigure(track_enabled, volume);
@@ -260,9 +264,10 @@ AudioRtpReceiver::GetSetupForUnsignaledMediaChannel() {
   return GetRestartFunctionForMediaChannel(std::nullopt);
 }
 
-MediaReceiveChannelInterface* AudioRtpReceiver::media_channel() const {
-  RTC_DCHECK_RUN_ON(worker_thread_);
-  return media_channel_;
+VoiceMediaReceiveChannelInterface* AudioRtpReceiver::voice_media_channel()
+    const {
+  MediaReceiveChannelInterface* channel = media_channel();
+  return channel ? channel->AsVoiceReceiveChannel() : nullptr;
 }
 
 void AudioRtpReceiver::set_stream_ids(std::vector<std::string> stream_ids) {
@@ -312,17 +317,18 @@ void AudioRtpReceiver::SetStreams(
 
 void AudioRtpReceiver::Reconfigure(bool track_enabled, double volume) {
   RTC_DCHECK_RUN_ON(worker_thread_);
-  RTC_DCHECK(media_channel_);
+  VoiceMediaReceiveChannelInterface* voice_channel = voice_media_channel();
+  RTC_DCHECK(voice_channel);
 
   SetOutputVolume_w(track_enabled ? volume : 0);
 
   if (signaled_ssrc_ && frame_decryptor_) {
     // Reattach the frame decryptor if we were reconfigured.
-    media_channel_->SetFrameDecryptor(*signaled_ssrc_, frame_decryptor_);
+    voice_channel->SetFrameDecryptor(*signaled_ssrc_, frame_decryptor_);
   }
 
   if (frame_transformer_) {
-    media_channel_->SetDepacketizerToDecoderFrameTransformer(
+    voice_channel->SetDepacketizerToDecoderFrameTransformer(
         signaled_ssrc_.value_or(0), frame_transformer_);
   }
 }
@@ -331,9 +337,11 @@ void AudioRtpReceiver::SetJitterBufferMinimumDelay(
     std::optional<double> delay_seconds) {
   RTC_DCHECK_RUN_ON(worker_thread_);
   delay_.Set(delay_seconds);
-  if (media_channel_ && signaled_ssrc_)
-    media_channel_->SetBaseMinimumPlayoutDelayMs(*signaled_ssrc_,
-                                                 delay_.GetMs());
+  VoiceMediaReceiveChannelInterface* voice_channel = voice_media_channel();
+  if (voice_channel && signaled_ssrc_) {
+    voice_channel->SetBaseMinimumPlayoutDelayMs(*signaled_ssrc_,
+                                                delay_.GetMs());
+  }
 }
 
 void AudioRtpReceiver::SetMediaChannel(
@@ -341,13 +349,13 @@ void AudioRtpReceiver::SetMediaChannel(
   RTC_DCHECK_RUN_ON(worker_thread_);
   RTC_DCHECK(media_channel == nullptr ||
              media_channel->media_type() == media_type());
-  if (!media_channel && media_channel_)
+  if (!media_channel && this->media_channel()) {
     SetOutputVolume_w(0.0);
+  }
 
   media_channel ? worker_thread_safety_->SetAlive()
                 : worker_thread_safety_->SetNotAlive();
-  media_channel_ =
-      static_cast<VoiceMediaReceiveChannelInterface*>(media_channel);
+  set_media_channel(media_channel);
 }
 
 }  // namespace webrtc

@@ -159,10 +159,17 @@ class RtpReceiverBase : public RtpReceiverInternal {
   void SetFrameTransformer(
       scoped_refptr<FrameTransformerInterface> frame_transformer) override;
 
+  MediaReceiveChannelInterface* media_channel() const override;
+
  protected:
   RtpReceiverBase(Thread* worker_thread,
                   absl::AnyInvocable<RTCError()> enable_sframe_at_owner,
+                  MediaReceiveChannelInterface* media_channel,
                   Clock* clock = Clock::GetRealTimeClock());
+  ~RtpReceiverBase() override;
+
+  void set_media_channel(MediaReceiveChannelInterface* media_channel)
+      RTC_RUN_ON(worker_thread_);
 
   RTC_NO_UNIQUE_ADDRESS SequenceChecker signaling_thread_checker_;
   Thread* const worker_thread_;
@@ -183,6 +190,7 @@ class RtpReceiverBase : public RtpReceiverInternal {
   // new first packet notification is issued for it.
   std::optional<uint32_t> unsignaled_ssrc_s_
       RTC_GUARDED_BY(signaling_thread_checker_);
+  MediaReceiveChannelInterface* media_channel_ RTC_GUARDED_BY(worker_thread_);
   RtpReceiverObserverInterface* observer_
       RTC_GUARDED_BY(&signaling_thread_checker_) = nullptr;
   bool received_first_packet_ RTC_GUARDED_BY(&signaling_thread_checker_) =

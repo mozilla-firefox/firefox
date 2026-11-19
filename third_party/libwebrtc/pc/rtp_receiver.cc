@@ -66,10 +66,26 @@ RtpReceiverInternal::CreateStreamsFromIds(
 RtpReceiverBase::RtpReceiverBase(
     Thread* worker_thread,
     absl::AnyInvocable<RTCError()> enable_sframe_at_owner,
+    MediaReceiveChannelInterface* media_channel,
     Clock* clock)
     : worker_thread_(worker_thread),
       source_tracker_(clock),
+      media_channel_(media_channel),
       enable_sframe_at_owner_(std::move(enable_sframe_at_owner)) {}
+
+RtpReceiverBase::~RtpReceiverBase() {
+  RTC_DCHECK(!media_channel_);
+}
+
+MediaReceiveChannelInterface* RtpReceiverBase::media_channel() const {
+  RTC_DCHECK_RUN_ON(worker_thread_);
+  return media_channel_;
+}
+
+void RtpReceiverBase::set_media_channel(
+    MediaReceiveChannelInterface* media_channel) {
+  media_channel_ = media_channel;
+}
 
 std::optional<uint32_t> RtpReceiverBase::ssrc() const {
   RTC_DCHECK_RUN_ON(worker_thread_);
