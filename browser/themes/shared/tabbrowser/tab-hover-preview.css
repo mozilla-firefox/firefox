@@ -7,7 +7,7 @@
   --panel-padding: 0;
 
   @media -moz-pref("browser.nova.enabled") {
-    --panel-padding: 0 var(--space-small) var(--space-small);
+    --panel-padding: var(--space-small);
     --panel-border-radius: var(--border-radius-large);
   }
 
