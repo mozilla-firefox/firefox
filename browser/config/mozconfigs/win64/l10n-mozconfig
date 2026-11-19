@@ -3,7 +3,7 @@
 . "$topsrcdir/build/mozconfig.no-compile"
 
 ac_add_options --enable-update-channel=${MOZ_UPDATE_CHANNEL}
-ac_add_options --with-branding=browser/branding/nightly
+ac_add_options --enable-official-branding
 
 ac_add_options --disable-nodejs
 unset NODEJS
