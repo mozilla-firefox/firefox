@@ -173,12 +173,14 @@ int main(int argc, char* argv[]) {
 
     if (FD_ISSET(listener.socket(), &socket_set)) {
       DataSocket* s = listener.Accept();
-      if (sockets.size() >= kMaxConnections) {
-        delete s;  // sorry, that's all we can take.
-        printf("Connection limit reached\n");
-      } else {
-        sockets.push_back(s);
-        printf("New connection...\n");
+      if (s) {
+        if (sockets.size() >= kMaxConnections) {
+          delete s;  // sorry, that's all we can take.
+          printf("Connection limit reached\n");
+        } else {
+          sockets.push_back(s);
+          printf("New connection...\n");
+        }
       }
     }
   }
