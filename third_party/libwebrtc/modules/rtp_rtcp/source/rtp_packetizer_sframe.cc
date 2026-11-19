@@ -11,7 +11,6 @@
 #include "modules/rtp_rtcp/source/rtp_packetizer_sframe.h"
 
 #include <algorithm>
-#include <bitset>
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -37,17 +36,6 @@ std::pair<bool, bool> GetSframeStartAndEndBits(MediaType media_type,
   }
 
   return {packet.is_first_packet_of_frame(), packet.is_last_packet_of_frame()};
-}
-
-uint8_t BuildDescriptorByte(bool start,
-                            bool end,
-                            SframeEncryptionLevel encryption_level) {
-  std::bitset<SframeDescriptor::kNumBits> bits;
-  bits.set(SframeDescriptor::kSBit, start);
-  bits.set(SframeDescriptor::kEBit, end);
-  bits.set(SframeDescriptor::kTBit,
-           encryption_level == SframeEncryptionLevel::kPacket);
-  return static_cast<uint8_t>(bits.to_ulong());
 }
 
 }  // namespace
@@ -82,8 +70,8 @@ bool RtpPacketizerSframe::NextPacket(RtpPacketToSend* packet) {
   const size_t payload_size = SframeDescriptor::kSize + media_size;
   std::span<uint8_t> payload(packet->AllocatePayload(payload_size),
                              payload_size);
-  payload[0] = BuildDescriptorByte(first_packet, last_packet,
-                                   SframeEncryptionLevel::kFrame);
+  payload[0] = BuildSframeDescriptorByte(first_packet, last_packet,
+                                         SframeEncryptionLevel::kFrame);
   std::ranges::copy(remaining_payload_.first(media_size),
                     payload.subspan(SframeDescriptor::kSize).begin());
   remaining_payload_ = remaining_payload_.subspan(media_size);
@@ -125,7 +113,7 @@ RTCError PacketizeSframeRtpPacketOrError(
   }
 
   const auto [start, end] = GetSframeStartAndEndBits(media_type, *packet);
-  payload[0] = BuildDescriptorByte(start, end, encryption_level);
+  payload[0] = BuildSframeDescriptorByte(start, end, encryption_level);
 
   if (restored_padding_size > 0 && !packet->SetPadding(restored_padding_size)) {
     return RTCError::InternalError("Failed to restore RTP padding");
