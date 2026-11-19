@@ -341,9 +341,9 @@ var allowlist = [
 
   // Bug 2078933: The widget dashboard will generate widgets with this module.
   { file: "moz-src:///browser/components/widgets/WidgetGenerator.sys.mjs" },
-  // Bug 2085179 - Implement DigestStore
+  // Bug 2085180 - Implement basics of DigestManager
   {
-    file: "moz-src:///browser/components/aiwindow/models/memories/digests/DigestStore.sys.mjs",
+    file: "moz-src:///browser/components/aiwindow/models/memories/digests/DigestManager.sys.mjs",
   },
 ];
 

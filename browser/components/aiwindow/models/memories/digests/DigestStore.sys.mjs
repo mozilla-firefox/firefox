@@ -83,7 +83,7 @@ const SCHEDULE_FIELD_VALIDATORS = new Map([
  * @param {*} schedule - Schedule to check.
  * @returns {boolean} Whether schedule is a valid {@link DigestSchedule}.
  */
-function isValidSchedule(schedule) {
+export function isValidSchedule(schedule) {
   if (!schedule || typeof schedule !== "object" || Array.isArray(schedule)) {
     return false;
   }

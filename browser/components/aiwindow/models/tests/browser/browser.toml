@@ -8,6 +8,7 @@ prefs = [
   "browser.smartwindow.enabled=true",
 ]
 
+["browser_DigestManager.js"]
 ["browser_DigestStore.js"]
 ["browser_JourneyManager.js"]
 ["browser_JourneyStore.js"]
