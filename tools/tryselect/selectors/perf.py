@@ -1118,24 +1118,12 @@ class PerfParser(CompareParser):
         with cache_file.open(mode="w") as f:
             json.dump(cache_data, f, indent=4)
 
-    def found_android_tasks(selected_tasks):
-        """
-        Check if any of the selected tasks are android.
-
-        :param selected_tasks list: List of tasks selected.
-        :return bool: True if android tasks were found, False otherwise.
-        """
-        return any("android" in task for task in selected_tasks)
-
-    def setup_try_config(try_config_params, extra_args, selected_tasks):
+    def setup_try_config(try_config_params, extra_args):
         """
         Setup the try config for a push.
 
         :param try_config_params dict: The current try config to be modified.
         :param extra_args list: A list of extra options to add to the tasks being run.
-        :param selected_tasks list: List of tasks selected. Used for determining if android
-            tasks are selected to disable artifact mode.
-        :param base_revision_treeherder str: The base revision of treeherder to save
         :return: None
         """
         if try_config_params is None:
@@ -1158,18 +1146,6 @@ class PerfParser(CompareParser):
                 PerfParser.push_info.base_lando_commit_id
                 or PerfParser.push_info.base_revision
             )
-        if PerfParser.found_android_tasks(selected_tasks) and try_config.get(
-            "use-artifact-builds", False
-        ):
-            # XXX: Fix artifact mode on android (no bug)
-            try_config["use-artifact-builds"] = False
-            print("Disabling artifact mode due to android task selection")
-
-            if try_config.get("disable-pgo", False):
-                print(
-                    "WARNING: PGO builds are disabled as artifact mode is "
-                    "enabled by default from your mozconfig."
-                )
 
     def get_majority_framework(selected_tasks):
         suite_counts = {suite: 0 for suite in PerfParser.suites.keys()}
@@ -1269,9 +1245,7 @@ class PerfParser(CompareParser):
                 base_extra_args = list(extra_args)
                 base_try_config_params = copy.deepcopy(try_config_params)
                 comparator_obj.setup_base_revision(base_extra_args)
-                PerfParser.setup_try_config(
-                    base_try_config_params, base_extra_args, selected_tasks
-                )
+                PerfParser.setup_try_config(base_try_config_params, base_extra_args)
 
                 # When pushing to lando, capturing the log can trigger failures
                 # if the user has not logged in yet
@@ -1332,11 +1306,7 @@ class PerfParser(CompareParser):
 
             new_extra_args = list(extra_args)
             comparator_obj.setup_new_revision(new_extra_args)
-            PerfParser.setup_try_config(
-                try_config_params,
-                new_extra_args,
-                selected_tasks,
-            )
+            PerfParser.setup_try_config(try_config_params, new_extra_args)
 
             if not push_to_vcs:
                 push_data = push_to_try(

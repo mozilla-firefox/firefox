@@ -1776,38 +1776,6 @@ def test_show_all_unions_multiple_queries():
         assert perf_push_to_try_mock.call_args.args[0] == {"task-a", "task-b"}
 
 
-@pytest.mark.parametrize(
-    "try_config, selected_tasks, expected_try_config",
-    [
-        (
-            {"use-artifact-builds": True, "disable-pgo": True},
-            ["some-android-task"],
-            {"use-artifact-builds": False},
-        ),
-        (
-            {"use-artifact-builds": True},
-            ["some-desktop-task"],
-            {"use-artifact-builds": True},
-        ),
-        (
-            {"use-artifact-builds": False},
-            ["some-android-task"],
-            {"use-artifact-builds": False},
-        ),
-        (
-            {"use-artifact-builds": True, "disable-pgo": True},
-            ["some-desktop-task", "some-android-task"],
-            {"use-artifact-builds": False},
-        ),
-    ],
-)
-def test_artifact_mode_autodisable(try_config, selected_tasks, expected_try_config):
-    PerfParser.setup_try_config({"try_task_config": try_config}, [], selected_tasks)
-    assert (
-        try_config["use-artifact-builds"] == expected_try_config["use-artifact-builds"]
-    )
-
-
 def test_build_category_description():
     base_cmd = ["--preview", '-t "{+f}"']
 
