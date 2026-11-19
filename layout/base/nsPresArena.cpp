@@ -24,6 +24,7 @@
 #include "mozilla/Services.h"
 #include "mozilla/Span.h"
 #include "mozilla/StaticPtr.h"
+#include "mozilla/TaggedAnonymousMemory.h"
 #include "mozilla/mozalloc.h"
 #include "nsDebug.h"
 #include "nsIMemoryReporter.h"
@@ -52,7 +53,7 @@ static size_t ArenaPageSize() {
 
 // Memory layout
 //
-// Each arena uses 1 MiB superblocks at 1 MiB boundaries. The first arena page
+// Each arena maps 1 MiB superblocks at 1 MiB boundaries. The first arena page
 // holds the canary and the page-owner table. Slabs occupy whole arena pages,
 // sized to the OS page size (at least 4 KiB). For example, with 16 KiB pages:
 //
@@ -145,28 +146,96 @@ struct PresArenaSlabMetadata {
 
 using SlabMetadata = mozilla::detail::PresArenaSlabMetadata;
 
+static char* MapPages(size_t aSize) {
+#ifdef XP_WIN
+  void* base = VirtualAlloc(nullptr, aSize, MEM_RESERVE, PAGE_NOACCESS);
+  if (!base) {
+#else
+  void* base =
+      MozTaggedAnonymousMmap(nullptr, aSize, PROT_READ | PROT_WRITE,
+                             MAP_PRIVATE | MAP_ANON, -1, 0, "pres-arena");
+  if (base == MAP_FAILED) {
+#endif
+    NS_ABORT_OOM(aSize);
+  }
+  return static_cast<char*>(base);
+}
+
+static void UnmapPages(void* aBase, size_t aSize) {
+#ifdef XP_WIN
+  MOZ_RELEASE_ASSERT(VirtualFree(aBase, 0, MEM_RELEASE));
+#else
+  MOZ_RELEASE_ASSERT(munmap(aBase, aSize) == 0);
+#endif
+}
+
+static void* MapSuperblock() {
+  // First we try to map a single super-block. If that is aligned, we're done.
+  char* base = MapPages(kSuperblockSize);
+  if (uintptr_t(base) % kSuperblockSize == 0) {
+    return base;
+  }
+  // If not, we need to find a contiguous address range that works for us. So we
+  // try with 2 * kSuperblockSize, which guarantees that, then get the address
+  // we want, and reserve it explicitly. Note that Windows can only release a
+  // whole reservation, so we need to retry if another thread takes the aligned
+  // range before we can reserve it.
+  UnmapPages(base, kSuperblockSize);
+
+  // This is the address we're going to use from the 2 * kSuperblockSize range.
+  auto alignedAddress = [](char* aBase) {
+    return aBase + (-uintptr_t(aBase) % kSuperblockSize);
+  };
+#ifdef XP_WIN
+  for (;;) {
+    base = MapPages(2 * kSuperblockSize);
+    char* aligned = alignedAddress(base);
+    UnmapPages(base, 2 * kSuperblockSize);
+    if (VirtualAlloc(aligned, kSuperblockSize, MEM_RESERVE, PAGE_NOACCESS)) {
+      return aligned;
+    }
+    if (GetLastError() != ERROR_INVALID_ADDRESS) {
+      NS_ABORT_OOM(kSuperblockSize);
+    }
+  }
+#else
+  base = MapPages(2 * kSuperblockSize);
+  char* aligned = alignedAddress(base);
+  // Now unmap the (up to) two regions of memory we don't care about, the prefix
+  // [base, aligned), and the suffix (aligned + kSuperblockSize, end].
+  size_t prefix = aligned - base;
+  if (prefix) {
+    UnmapPages(base, prefix);
+  }
+  UnmapPages(aligned + kSuperblockSize, kSuperblockSize - prefix);
+  return aligned;
+#endif
+}
+
+static void CommitPages(void* aPtr, size_t aSize) {
+#ifdef XP_WIN
+  if (!VirtualAlloc(aPtr, aSize, MEM_COMMIT, PAGE_READWRITE)) {
+    NS_ABORT_OOM(aSize);
+  }
+#elif defined(XP_DARWIN)
+  madvise(aPtr, aSize, MADV_FREE_REUSE);
+#endif
+}
+
 namespace mozilla::detail {
 
 // A kSuperblockSize-aligned allocation, from whose pages slabs are carved.
 struct PresArenaSuperblock {
   static PresArenaSuperblock* Create() {
-    void* mem = moz_xmemalign(kSuperblockSize, kSuperblockSize);
+    void* mem = MapSuperblock();
+    CommitPages(mem, ArenaPageSize());
     return new (mem) PresArenaSuperblock();
   }
 
   static void Destroy(PresArenaSuperblock* aSb) {
     MOZ_MAKE_MEM_UNDEFINED(aSb, kSuperblockSize);
     aSb->~PresArenaSuperblock();
-#if defined(XP_WIN) && !defined(MOZ_MEMORY)
-    // FIXME(emilio): In theory _aligned_free should be fine, and works on local
-    // asan builds, but on automation windows asan crashes, probably because the
-    // pages are already unmapped via MEM_DECOMMIT. Skip freeing these for now.
-    // This can be cleaned up if we take the patches from bug 2094410 mapping
-    // memory ourselves.
-    // _aligned_free(aSb);
-#else
-    free(aSb);
-#endif
+    UnmapPages(aSb, kSuperblockSize);
   }
 
   static PresArenaSuperblock* For(const void* aPtr) {
@@ -206,16 +275,6 @@ static void DecommitPages(void* aPtr, size_t aSize) {
 #endif
 }
 
-static void RecommitPages(void* aPtr, size_t aSize) {
-#if defined(XP_WIN)
-  if (!VirtualAlloc(aPtr, aSize, MEM_COMMIT, PAGE_READWRITE)) {
-    NS_ABORT_OOM(aSize);
-  }
-#elif defined(XP_DARWIN)
-  madvise(aPtr, aSize, MADV_FREE_REUSE);
-#endif
-}
-
 static void SchedulePresArenaPurge();
 
 template <typename ObjectId, size_t ObjectIdCount>
@@ -238,6 +297,7 @@ char* nsPresArena<ObjectId, ObjectIdCount>::AllocatePages(size_t aSize) {
   }
   char* result =
       reinterpret_cast<char*>(mSuperblocks.LastElement()) + mNextOffset;
+  CommitPages(result, aSize);
   mNextOffset += aSize;
   return result;
 }
@@ -295,7 +355,7 @@ void* nsPresArena<ObjectId, ObjectIdCount>::Allocate(ObjectId aCode,
 
   SlabMetadata* slab = FindSlabWithSpace(heap);
   if (slab->mDecommitted) {
-    RecommitPages(slab->mBase, heap.mSlabSize);
+    CommitPages(slab->mBase, heap.mSlabSize);
     slab->mDecommitted = false;
   } else if (slab->mLive == 0 && slab->mBumped) {
     MOZ_ASSERT(mEmptyCommittedSlabs);
