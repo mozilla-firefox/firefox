@@ -4913,6 +4913,15 @@ void SVGTextFrame::DoGlyphPositioning() {
     return;
   }
 
+  if (kid && HasAnyStateBits(NS_STATE_SVG_TEXT_CORRESPONDENCE_DIRTY) &&
+      kid->HasAnyStateBits(NS_BLOCK_NEEDS_BIDI_RESOLUTION) &&
+      PresContext()->BidiEnabled()) {
+    // Resolving bidi creates continuation frames that haven't been reflowed,
+    // so wait for the next reflow to do that.
+    AddStateBits(NS_STATE_SVG_POSITIONING_DIRTY);
+    return;
+  }
+
   // Since we can be called directly via GetBBoxContribution, our correspondence
   // may not be up to date.
   TextNodeCorrespondenceRecorder::RecordCorrespondence(this);
