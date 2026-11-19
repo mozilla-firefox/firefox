@@ -61,15 +61,6 @@ interface nsIBounceTrackingProtection : nsISupports {
     // Clear bounce tracking state for the given origin attributes.
     void clearByOriginAttributesPattern(in AString aPattern);
 
-    // Add a list of hosts to the global exception list. Hosts on the exception
-    // list don't get purged. addSiteHostExceptions and removeSiteHostExceptions
-    // are used by BTPRemoteExceptionList to populate entries coming from
-    // RemoteSettings.
-    void addSiteHostExceptions(in Array<ACString> aSiteHosts);
-
-    // Remove a list of hosts from the global exception list.
-    void removeSiteHostExceptions(in Array<ACString> aSiteHosts);
-
     // Checks whether a site has recently been purged by BTP. This check is done
     // across all OriginAttributes.
     boolean hasRecentlyPurgedSite(in ACString aSiteHost);
@@ -78,9 +69,6 @@ interface nsIBounceTrackingProtection : nsISupports {
     // chain: as the purged site key, initialHost, finalHost, or a bounceHost.
     // Searches across all OriginAttributes.
     Array<nsIBounceTrackingPurgeEntry> getRecentPurgedChainEntriesForSite(in ACString aSiteHost);
-
-    // Test getter to inspect remote exception list state.
-    Array<ACString> testGetSiteHostExceptions();
 
     // Trigger the bounce tracking timer algorithm that clears state for
     // classified bounce trackers.

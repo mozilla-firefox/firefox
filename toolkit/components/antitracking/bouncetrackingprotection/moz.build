@@ -9,7 +9,6 @@ XPIDL_SOURCES += [
     "nsIBounceTrackingMapEntry.idl",
     "nsIBounceTrackingProtection.idl",
     "nsIBounceTrackingRecord.idl",
-    "nsIBTPRemoteExceptionList.idl",
 ]
 
 XPIDL_MODULE = "toolkit_antitracking"
@@ -17,10 +16,6 @@ XPIDL_MODULE = "toolkit_antitracking"
 
 XPCOM_MANIFESTS += [
     "components.conf",
-]
-
-MOZ_SRC_FILES += [
-    "BTPRemoteExceptionList.sys.mjs",
 ]
 
 EXPORTS.mozilla += [
