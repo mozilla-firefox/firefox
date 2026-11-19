@@ -42,10 +42,6 @@ class RenderingSimulator {
     std::string field_trials_string = "";
     const VideoJitterTimingFactory* video_jitter_timing_factory = nullptr;
 
-    // Whether or not to reset the stream state on newly logged streams with the
-    // same SSRC.
-    bool reuse_streams = false;
-
     // If non-empty, will only simulate video streams whose main SSRCs is
     // contained in the set.
     std::set<uint32_t> ssrc_filter = {};
