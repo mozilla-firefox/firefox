@@ -114,7 +114,6 @@ CSPDirective CSP_StringToCSPDirective(const nsAString& aDir);
   MACRO(CSP_UNSAFE_EVAL, "'unsafe-eval'")           \
   MACRO(CSP_UNSAFE_HASHES, "'unsafe-hashes'")       \
   MACRO(CSP_NONE, "'none'")                         \
-  MACRO(CSP_NONCE, "'nonce-")                       \
   MACRO(CSP_REPORT_SAMPLE, "'report-sample'")       \
   MACRO(CSP_STRICT_DYNAMIC, "'strict-dynamic'")     \
   MACRO(CSP_WASM_UNSAFE_EVAL, "'wasm-unsafe-eval'") \
@@ -128,12 +127,7 @@ enum CSPKeyword {
 
   // CSP_LAST_KEYWORD_VALUE always needs to be the last element in the enum
   // because we use it to calculate the size for the char* array.
-  CSP_LAST_KEYWORD_VALUE,
-
-  // Putting CSP_HASH after the delimitor, because CSP_HASH is not a valid
-  // keyword (hash uses e.g. sha256, sha512) but we use CSP_HASH internally
-  // to identify allowed hashes in ::allows.
-  CSP_HASH
+  CSP_LAST_KEYWORD_VALUE
 };
 
 // The keywords, in UTF-8 form.
