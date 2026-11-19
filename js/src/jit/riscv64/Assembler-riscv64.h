@@ -42,7 +42,7 @@
 #include "mozilla/Assertions.h"
 #include "mozilla/Sprintf.h"
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "jit/CompactBuffer.h"
 #include "jit/JitCode.h"
@@ -409,24 +409,19 @@ class Assembler : public AssemblerShared,
 
   static void PatchWrite_NearCall(CodeLocationLabel start,
                                   CodeLocationLabel toCall) {
-    Instruction* inst = Instruction::At(start.raw());
-    uint8_t* dest = toCall.raw();
-
-    // Overwrite whatever instruction used to be here with a call.
-    // Always use long jump for two reasons:
-    // - Jump has to be the same size because of PatchWrite_NearCallSize.
-    // - Return address has to be at the end of replaced block.
-    // Short jump wouldn't be more efficient.
-
-    // WriteLiPtrInstructions writes 6 instructions to load an address.
-    Assembler::WriteLiPtrInstructions(inst, SavedScratchRegister,
-                                      uintptr_t(dest));
-
-    Instruction* jalr = (inst + 6 * kInstrSize);
-    jalr->SetIFormat(RO_JALR, ra.code(), SavedScratchRegister.code(), 0);
+    // See also ma_call.
+    static_assert(MaxCodeBytesPerProcess <= (UINT64_C(1) << 31) - 2048,
+                  "All JIT code must be within reach of auipc and jalr");
+    Instruction* const inst0 = Instruction::At(start.raw());
+    Instruction* const inst1 = Instruction::At(start.raw() + kInstrSize);
+    const int64_t offset = toCall.raw() - start.raw();
+    MOZ_ASSERT(is_intn(offset, 32));
+    const auto [high20, low12] = ToHigh20Low12(static_cast<int32_t>(offset));
+    inst0->SetUFormat(RO_AUIPC, SavedScratchRegister.code(), high20);
+    inst1->SetIFormat(RO_JALR, ra.code(), SavedScratchRegister.code(), low12);
   }
 
-  static uint32_t PatchWrite_NearCallSize() { return 7 * kInstrSize; }
+  static uint32_t PatchWrite_NearCallSize() { return 2 * kInstrSize; }
 
   static void TraceJumpRelocations(JSTracer* trc, JitCode* code,
                                    CompactBufferReader& reader);
