@@ -24,20 +24,19 @@ hierarchy, but the type hierarchy is very different: it includes types
 like text frames, blocks and inlines, the various parts of tables, flex
 and grid containers, and the various types of HTML form controls.
 
-Frames are allocated within an arena owned by the `PresShell`. Each
+Frames are allocated from a process-wide frame arena. Each
 frame is owned by its parent, created in `nsCSSFrameConstructor` and
 destroyed via `nsIFrame::Destroy()`. Frames are not reference counted,
 and code must not hold on to pointers to frames. To mitigate potential
 security bugs when pointers to destroyed frames are accessed, we use
 [frame
 poisoning](http://robert.ocallahan.org/2010/10/mitigating-dangling-pointer-bugs-using_15.html),
-which takes two parts. When a frame is destroyed other than at the end
-of life of the presentation, we fill its memory with a pattern
-consisting of a repeated pointer to inaccessible memory, and then put
-the memory on a per-frame-class freelist. This means that if code
-accesses the memory through a dangling pointer, it will either crash
-quickly by dereferencing the poison pattern or it will find a valid
-frame.
+which fills each freed slot with a repeated pointer to inaccessible memory.
+The arena allocates each frame class from its own slabs. When a slab becomes
+empty, the arena can return its pages to the OS while keeping the address
+range reserved for frames of the same class. The memory layout diagram in
+{searchfox}`nsPresArena.cpp <layout/base/nsPresArena.cpp>` shows how the
+arena finds the slab for a frame pointer.
 
 Like the content tree, frames must be accessed only from the main thread
 of their processes.
