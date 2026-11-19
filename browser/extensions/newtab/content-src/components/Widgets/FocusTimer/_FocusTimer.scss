@@ -16,6 +16,8 @@
 .focus-timer {
   @include newtab-card-style;
 
+  isolation: isolate;
+
   .nova-enabled & {
     @include widget-base-style;
   }
