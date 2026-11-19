@@ -711,7 +711,6 @@ class VideoCodecAnalyzer : public VideoCodecTester::VideoCodecStats {
                   std::map<std::string, std::string> metadata) const override {
     RTC_LOG(LS_INFO) << "Write metrics to " << csv_path;
     FILE* csv_file = fopen(csv_path.data(), "w");
-    const std::string delimiter = ";";
     StringBuilder header;
     header
         << "timestamp_rtp;spatial_idx;temporal_idx;width;height;frame_size_"

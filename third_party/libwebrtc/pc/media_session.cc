@@ -1251,7 +1251,6 @@ RTCError MediaSessionDescriptionFactory::AddRtpContentForOffer(
              media_description_options.type == MediaType::VIDEO);
 
   std::vector<Codec> codecs_to_include;
-  std::string mid = media_description_options.mid;
   RTCErrorOr<std::vector<Codec>> error_or_filtered_codecs =
       codec_lookup_helper_->GetCodecVendor()->GetNegotiatedCodecsForOffer(
           media_description_options, session_options, current_content,
@@ -1311,7 +1310,6 @@ RTCError MediaSessionDescriptionFactory::AddDataContentForOffer(
 
   bool secure_transport = true;
 
-  std::vector<std::string> crypto_suites;
   // Unlike SetMediaProtocol below, we need to set the protocol
   // before we call CreateMediaContentOffer. Otherwise,
   // CreateMediaContentOffer won't know this is SCTP and will

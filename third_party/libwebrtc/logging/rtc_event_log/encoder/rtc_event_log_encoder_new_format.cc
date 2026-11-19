@@ -722,7 +722,6 @@ std::string RtcEventLogEncoderNewFormat::EncodeBatch(
     std::deque<std::unique_ptr<RtcEvent>>::const_iterator begin,
     std::deque<std::unique_ptr<RtcEvent>>::const_iterator end) {
   rtclog2::EventStream event_stream;
-  std::string encoded_output;
 
   {
     std::vector<const RtcEventAlrState*> alr_state_events;
