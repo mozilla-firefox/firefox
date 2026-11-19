@@ -143,13 +143,13 @@ export const MenuMessage = {
         ? MenuMessage.SHOWING_SET_TO_DEFAULT_MENU_MESSAGE_ATTR
         : MenuMessage.SHOWING_FXA_MENU_MESSAGE_ATTR;
 
+    win.PanelUI.mainView.setAttribute(menuMessageAttribute, message.id);
+
     let msgElement = await this.constructMenuMessage(
       win,
       message,
       MenuMessage.SOURCES.APP_MENU
     );
-
-    win.PanelUI.mainView.setAttribute(menuMessageAttribute, message.id);
 
     msgElement.addEventListener("MenuMessage:Close", () => {
       win.PanelUI.mainView.removeAttribute(menuMessageAttribute);

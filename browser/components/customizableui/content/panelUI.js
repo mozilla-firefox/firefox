@@ -807,9 +807,11 @@ const PanelUI = {
 
   _onMainViewShow(event) {
     let panelview = event.target;
-    let messageId = panelview.getAttribute(
-      MenuMessage.SHOWING_FXA_MENU_MESSAGE_ATTR
-    );
+    let messageId =
+      panelview.getAttribute(MenuMessage.SHOWING_FXA_MENU_MESSAGE_ATTR) ??
+      panelview.getAttribute(
+        MenuMessage.SHOWING_SET_TO_DEFAULT_MENU_MESSAGE_ATTR
+      );
     if (messageId) {
       MenuMessage.recordMenuMessageTelemetry(
         "IMPRESSION",
