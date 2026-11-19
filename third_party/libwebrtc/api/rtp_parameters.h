@@ -24,6 +24,7 @@
 
 #include <cstddef>
 #include <initializer_list>
+#include <iterator>
 #include <map>
 #include <optional>
 #include <string>
@@ -39,17 +40,20 @@
 #include "api/rtp_transceiver_direction.h"
 #include "api/video/resolution.h"
 #include "api/video_codecs/scalability_mode.h"
+#include "rtc_base/containers/flat_map.h"
 #include "rtc_base/strings/str_join.h"
-#include "rtc_base/strong_alias.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
 class RTCError;
 class StringBuilder;
 
+// Codec parameters, e.g. fmtp parameters, keyed and sorted by name.
+// Note that unlike with std::map, inserting or erasing elements invalidates
+// iterators and references to elements of the map.
 struct RTC_EXPORT CodecParameterMap
-    : public std::map<std::string, std::string> {
-  using std::map<std::string, std::string>::map;
+    : public flat_map<std::string, std::string> {
+  using flat_map<std::string, std::string>::flat_map;
 
   CodecParameterMap() = default;
   CodecParameterMap(const CodecParameterMap&) = default;
@@ -59,16 +63,27 @@ struct RTC_EXPORT CodecParameterMap
 
   // TODO(bugs.webrtc.org/42223790): Remove these implicit converters when
   // downstream projects have been updated to not rely on them.
+  // A std::map is already sorted and unique, so no sorting is needed.
   CodecParameterMap(
       const std::map<std::string, std::string>& o)  // NOLINT(runtime/explicit)
-      : std::map<std::string, std::string>(o) {}
+      : flat_map<std::string, std::string>(sorted_unique_t(),
+                                           o.begin(),
+                                           o.end()) {}
   CodecParameterMap(
       std::map<std::string, std::string>&& o)  // NOLINT(runtime/explicit)
-      : std::map<std::string, std::string>(std::move(o)) {}
+      : flat_map<std::string, std::string>(sorted_unique_t(),
+                                           std::make_move_iterator(o.begin()),
+                                           std::make_move_iterator(o.end())) {}
+
+  // NOLINTNEXTLINE(google-explicit-constructor)
+  operator std::map<std::string, std::string>() const {
+    return std::map<std::string, std::string>(begin(), end());
+  }
 
   CodecParameterMap(
       std::initializer_list<std::pair<absl::string_view, absl::string_view>>
           il) {
+    reserve(il.size());
     for (const auto& p : il) {
       emplace(p.first, p.second);
     }
@@ -78,6 +93,7 @@ struct RTC_EXPORT CodecParameterMap
       std::initializer_list<std::pair<absl::string_view, absl::string_view>>
           il) {
     clear();
+    reserve(il.size());
     for (const auto& p : il) {
       emplace(p.first, p.second);
     }

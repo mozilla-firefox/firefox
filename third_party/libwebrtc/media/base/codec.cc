@@ -192,7 +192,7 @@ bool Codec::MatchesRtpCodec(const RtpCodec& codec_capability) const {
 }
 
 bool Codec::GetParam(absl::string_view key, std::string* out) const {
-  CodecParameterMap::const_iterator iter = params.find(std::string(key));
+  CodecParameterMap::const_iterator iter = params.find(key);
   if (iter == params.end())
     return false;
   *out = iter->second;
@@ -200,7 +200,7 @@ bool Codec::GetParam(absl::string_view key, std::string* out) const {
 }
 
 bool Codec::GetParam(absl::string_view key, int* out) const {
-  CodecParameterMap::const_iterator iter = params.find(std::string(key));
+  CodecParameterMap::const_iterator iter = params.find(key);
   if (iter == params.end())
     return false;
   return FromString(iter->second, out);
@@ -215,7 +215,7 @@ void Codec::SetParam(absl::string_view key, int value) {
 }
 
 bool Codec::RemoveParam(absl::string_view key) {
-  return params.erase(std::string(key)) == 1;
+  return params.erase(key) == 1;
 }
 
 void Codec::AddFeedbackParam(const FeedbackParam& param) {
@@ -235,7 +235,7 @@ webrtc::RtpCodecParameters Codec::ToCodecParameters() const {
   codec_params.payload_type = id;
   codec_params.name = name;
   codec_params.clock_rate = clockrate;
-  codec_params.parameters.insert(params.begin(), params.end());
+  codec_params.parameters = params;
 
   switch (type) {
     case Type::kAudio: {

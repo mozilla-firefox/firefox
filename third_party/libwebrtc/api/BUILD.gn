@@ -789,7 +789,7 @@ rtc_library("rtp_parameters") {
     "../rtc_base:checks",
     "../rtc_base:logging",
     "../rtc_base:stringutils",
-    "../rtc_base:strong_alias",
+    "../rtc_base/containers:flat_map",
     "../rtc_base/system:rtc_export",
     "video:resolution",
     "video_codecs:scalability_mode",

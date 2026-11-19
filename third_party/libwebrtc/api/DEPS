@@ -253,8 +253,8 @@ specific_include_rules = {
 
   "rtp_parameters\\.h": [
     "+absl/strings/str_format.h",
-    "+rtc_base/strings/str_join.h",
-    "+rtc_base/strong_alias.h"
+    "+rtc_base/containers/flat_map.h",
+    "+rtc_base/strings/str_join.h"
   ],
 
   "sequence_checker\\.h": [

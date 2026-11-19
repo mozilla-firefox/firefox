@@ -11,8 +11,10 @@
 #include "api/rtp_parameters.h"
 
 #include <cstddef>
+#include <map>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_cat.h"
@@ -26,6 +28,7 @@ namespace webrtc {
 
 namespace {
 
+using ::testing::ElementsAre;
 using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
 RtpParameters CreateRtpParametersWithCodecs(
@@ -452,6 +455,29 @@ TEST(CodecParameterMapTest, InitializerListWithAbslStringView) {
   map2 = {{key1, val2}, {key2, val1}};
   EXPECT_THAT(map2,
               UnorderedElementsAre(Pair("key1", "val2"), Pair("key2", "val1")));
+}
+
+TEST(CodecParameterMapTest, ConvertsFromAndToStdMap) {
+  const std::map<std::string, std::string> std_map = {{"b", "2"}, {"a", "1"}};
+  CodecParameterMap from_const_ref = std_map;
+  EXPECT_THAT(from_const_ref, ElementsAre(Pair("a", "1"), Pair("b", "2")));
+
+  std::map<std::string, std::string> movable = std_map;
+  CodecParameterMap from_rvalue = std::move(movable);
+  EXPECT_THAT(from_rvalue, ElementsAre(Pair("a", "1"), Pair("b", "2")));
+
+  std::map<std::string, std::string> converted_back = from_const_ref;
+  EXPECT_EQ(converted_back, std_map);
+}
+
+TEST(CodecParameterMapTest, SupportsStringViewLookup) {
+  CodecParameterMap params = {{"key1", "value1"}, {"key2", "value2"}};
+  const absl::string_view key1 = "key1";
+  ASSERT_NE(params.find(key1), params.end());
+  EXPECT_EQ(params.find(key1)->second, "value1");
+  EXPECT_EQ(params.count(absl::string_view("key2")), 1u);
+  EXPECT_EQ(params.erase(key1), 1u);
+  EXPECT_THAT(params, ElementsAre(Pair("key2", "value2")));
 }
 
 }  // namespace

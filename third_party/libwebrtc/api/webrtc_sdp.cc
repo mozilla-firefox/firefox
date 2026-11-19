@@ -1092,7 +1092,7 @@ bool GetParameter(absl::string_view name,
   if (params.empty()) {
     return false;
   }
-  CodecParameterMap::const_iterator found = params.find(std::string(name));
+  CodecParameterMap::const_iterator found = params.find(name);
   if (found == params.end()) {
     return false;
   }
