@@ -41,7 +41,7 @@ const int kRightStickYAxis = 3;
 class Gamepad final : public nsISupports, public nsWrapperCache {
  public:
   Gamepad(nsISupports* aParent, const nsAString& aID, int32_t aIndex,
-          GamepadHandle aHandle, GamepadMappingType aMapping,
+          GamepadHandle aHandle, GamepadMappingType aMapping, GamepadHand aHand,
           uint32_t aNumButtons, uint32_t aNumAxes, uint32_t aNumHaptics,
           uint32_t aNumLightIndicator, uint32_t aNumTouchEvents);
 
@@ -52,9 +52,11 @@ class Gamepad final : public nsISupports, public nsWrapperCache {
   void SetButton(uint32_t aButton, bool aPressed, bool aTouched, double aValue);
   void SetAxis(uint32_t aAxis, double aValue);
   void SetIndex(int32_t aIndex);
+  void SetPose(const GamepadPoseState& aPose);
   void SetLightIndicatorType(uint32_t aLightIndex,
                              GamepadLightIndicatorType aType);
   void SetTouchEvent(uint32_t aTouchIndex, const GamepadTouchState& aTouch);
+  void SetHand(GamepadHand aHand);
 
   // Make the state of this gamepad equivalent to other.
   void SyncState(Gamepad* aOther);
@@ -74,7 +76,7 @@ class Gamepad final : public nsISupports, public nsWrapperCache {
 
   GamepadMappingType Mapping() { return mMapping; }
 
-  GamepadHand Hand() { return GamepadHand::_empty; }
+  GamepadHand Hand() { return mHand; }
 
   bool Connected() const { return mConnected; }
 
@@ -132,6 +134,7 @@ class Gamepad final : public nsISupports, public nsWrapperCache {
   uint32_t mTouchIdHashValue;
   // The mapping in use.
   GamepadMappingType mMapping;
+  GamepadHand mHand;
 
   // true if this gamepad is currently connected.
   bool mConnected;

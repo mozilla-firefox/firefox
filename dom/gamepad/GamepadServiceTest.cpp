@@ -100,9 +100,9 @@ void GamepadServiceTest::DestroyPBackgroundActor() {
 }
 
 already_AddRefed<Promise> GamepadServiceTest::AddGamepad(
-    const nsAString& aID, GamepadMappingType aMapping, uint32_t aNumButtons,
-    uint32_t aNumAxes, uint32_t aNumHaptics, uint32_t aNumLightIndicator,
-    uint32_t aNumTouchEvents, ErrorResult& aRv) {
+    const nsAString& aID, GamepadMappingType aMapping, GamepadHand aHand,
+    uint32_t aNumButtons, uint32_t aNumAxes, uint32_t aNumHaptics,
+    uint32_t aNumLightIndicator, uint32_t aNumTouchEvents, ErrorResult& aRv) {
   if (aNumButtons > kMaxButtons || aNumAxes > kMaxAxes ||
       aNumHaptics > kMaxHaptics || aNumLightIndicator > kMaxLightIndicator ||
       aNumTouchEvents > kMaxTouchEvents) {
@@ -119,8 +119,8 @@ already_AddRefed<Promise> GamepadServiceTest::AddGamepad(
   // assertion
   GamepadHandle gamepadHandle{1, GamepadHandleKind::GamepadPlatformManager};
 
-  GamepadAdded a(nsString(aID), aMapping, aNumButtons, aNumAxes, aNumHaptics,
-                 aNumLightIndicator, aNumTouchEvents);
+  GamepadAdded a(nsString(aID), aMapping, aHand, aNumButtons, aNumAxes,
+                 aNumHaptics, aNumLightIndicator, aNumTouchEvents);
   GamepadChangeEventBody body(a);
   GamepadChangeEvent e(gamepadHandle, body);
 
@@ -228,6 +228,81 @@ already_AddRefed<Promise> GamepadServiceTest::NewAxisMoveEvent(
   GamepadHandle gamepadHandle = GetHandleInSlot(aHandleSlot);
 
   GamepadAxisInformation a(aAxis, aValue);
+  GamepadChangeEventBody body(a);
+  GamepadChangeEvent e(gamepadHandle, body);
+
+  uint32_t id = ++mEventNumber;
+  RefPtr<Promise> p = Promise::Create(mWindow->AsGlobal(), aRv);
+  if (aRv.Failed()) {
+    return nullptr;
+  }
+
+  MOZ_ASSERT(!mPromiseList.Contains(id));
+  mPromiseList.InsertOrUpdate(id, RefPtr{p});
+  mChild->SendGamepadTestEvent(id, e);
+  return p.forget();
+}
+
+already_AddRefed<Promise> GamepadServiceTest::NewPoseMove(
+    uint32_t aHandleSlot, const Nullable<Float32Array>& aOrient,
+    const Nullable<Float32Array>& aPos,
+    const Nullable<Float32Array>& aAngVelocity,
+    const Nullable<Float32Array>& aAngAcceleration,
+    const Nullable<Float32Array>& aLinVelocity,
+    const Nullable<Float32Array>& aLinAcceleration, ErrorResult& aRv) {
+  if (mShuttingDown) {
+    aRv.ThrowInvalidStateError("Shutting down");
+    return nullptr;
+  }
+
+  GamepadHandle gamepadHandle = GetHandleInSlot(aHandleSlot);
+
+  GamepadPoseState poseState;
+  poseState.flags = GamepadCapabilityFlags::Cap_Orientation |
+                    GamepadCapabilityFlags::Cap_Position |
+                    GamepadCapabilityFlags::Cap_AngularAcceleration |
+                    GamepadCapabilityFlags::Cap_LinearAcceleration;
+  if (!aOrient.IsNull()) {
+    DebugOnly<bool> ok = aOrient.Value().CopyDataTo(poseState.orientation);
+    MOZ_ASSERT(ok,
+               "aOrient.Value().Length() != std::size(poseState.orientation)");
+    poseState.isOrientationValid = true;
+  }
+  if (!aPos.IsNull()) {
+    DebugOnly<bool> ok = aPos.Value().CopyDataTo(poseState.position);
+    MOZ_ASSERT(ok, "aPos.Value().Length() != std::size(poseState.position)");
+    poseState.isPositionValid = true;
+  }
+  if (!aAngVelocity.IsNull()) {
+    DebugOnly<bool> ok =
+        aAngVelocity.Value().CopyDataTo(poseState.angularVelocity);
+    MOZ_ASSERT(ok,
+               "aAngVelocity.Value().Length() != "
+               "std::size(poseState.angularVelocity)");
+  }
+  if (!aAngAcceleration.IsNull()) {
+    DebugOnly<bool> ok =
+        aAngAcceleration.Value().CopyDataTo(poseState.angularAcceleration);
+    MOZ_ASSERT(ok,
+               "aAngAcceleration.Value().Length() != "
+               "std::size(poseState.angularAcceleration)");
+  }
+  if (!aLinVelocity.IsNull()) {
+    DebugOnly<bool> ok =
+        aLinVelocity.Value().CopyDataTo(poseState.linearVelocity);
+    MOZ_ASSERT(ok,
+               "aLinVelocity.Value().Length() != "
+               "std::size(poseState.linearVelocity)");
+  }
+  if (!aLinAcceleration.IsNull()) {
+    DebugOnly<bool> ok =
+        aLinAcceleration.Value().CopyDataTo(poseState.linearAcceleration);
+    MOZ_ASSERT(ok,
+               "aLinAcceleration.Value().Length() != "
+               "std::size(poseState.linearAcceleration)");
+  }
+
+  GamepadPoseInformation a(poseState);
   GamepadChangeEventBody body(a);
   GamepadChangeEvent e(gamepadHandle, body);
 

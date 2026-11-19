@@ -50,7 +50,9 @@ let frames_loaded = 0;
 async function startTest() {
   frames_loaded++;
   let promise = SpecialPowers.pushPrefEnv({ "set": [
+                              ["dom.gamepad.hand.enabled", true],
                               ["dom.gamepad.haptic_actuators.enabled", true],
+                              ["dom.gamepad.pose.enabled", true],
                               ["dom.gamepad.extensions.lightindicator", true],
                               ["dom.gamepad.extensions.multitouch", true]] });
   if (frames_loaded == 2) {
@@ -58,6 +60,7 @@ async function startTest() {
     // Add a gamepad
     gamepad_index = await GamepadService.addGamepad("test gamepad", // id
                         GamepadService.standardMapping,
+                        GamepadService.leftHand,
                         4,
                         2,
                         1,
@@ -80,6 +83,7 @@ function connecthandler(e) {
   is(e.gamepad.index, 0, "correct gamepad index");
   is(e.gamepad.id, "test gamepad", "correct gamepad name");
   is(e.gamepad.mapping, "standard", "standard mapping");
+  is(e.gamepad.hand, "left", "left hand");
   is(e.gamepad.buttons.length, 4, "correct number of buttons");
   is(e.gamepad.axes.length, 2, "correct number of axes");
   is(e.gamepad.hapticActuators.length, 1, "correct number of haptics");

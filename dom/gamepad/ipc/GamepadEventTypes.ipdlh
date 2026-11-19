@@ -4,9 +4,11 @@
 
 include "mozilla/dom/GamepadMessageUtils.h";
 
+using mozilla::dom::GamepadPoseState from "mozilla/dom/GamepadPoseState.h";
 using mozilla::dom::GamepadTouchState from "mozilla/dom/GamepadTouchState.h";
 using mozilla::dom::GamepadLightIndicatorType from "mozilla/dom/GamepadLightIndicatorBinding.h";
 using mozilla::dom::GamepadMappingType from "mozilla/dom/GamepadBinding.h";
+using mozilla::dom::GamepadHand from "mozilla/dom/GamepadBinding.h";
 using mozilla::dom::GamepadHandle from "mozilla/dom/GamepadHandle.h";
 
 namespace mozilla {
@@ -15,6 +17,7 @@ namespace dom {
 struct GamepadAdded {
   nsString id;
   GamepadMappingType mapping;
+  GamepadHand hand;
   uint32_t num_buttons;
   uint32_t num_axes;
   uint32_t num_haptics;
@@ -36,11 +39,18 @@ struct GamepadButtonInformation {
   bool touched;
 };
 
+struct GamepadPoseInformation {
+  GamepadPoseState pose_state;
+};
+
 struct GamepadLightIndicatorTypeInformation {
   uint32_t light;
   GamepadLightIndicatorType type;
 };
 
+struct GamepadHandInformation {
+  GamepadHand hand;
+};
 
 struct GamepadTouchInformation {
   uint32_t index;
@@ -52,7 +62,9 @@ union GamepadChangeEventBody {
   GamepadRemoved;
   GamepadAxisInformation;
   GamepadButtonInformation;
+  GamepadHandInformation;
   GamepadLightIndicatorTypeInformation;
+  GamepadPoseInformation;
   GamepadTouchInformation;
 };
 

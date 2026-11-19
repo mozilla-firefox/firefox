@@ -19,6 +19,7 @@ namespace mozilla::dom {
 
 class GamepadEventChannelParent;
 enum class GamepadLightIndicatorType : uint8_t;
+struct GamepadPoseState;
 class GamepadTestChannelParent;
 struct GamepadTouchState;
 class GamepadPlatformService;
@@ -69,8 +70,9 @@ class GamepadPlatformService final {
 
   // Add a gamepad to the list of known gamepads, and return its handle.
   GamepadHandle AddGamepad(const char* aID, GamepadMappingType aMapping,
-                           uint32_t aNumButtons, uint32_t aNumAxes,
-                           uint32_t aNumHaptics, uint32_t aNumLightIndicator,
+                           GamepadHand aHand, uint32_t aNumButtons,
+                           uint32_t aNumAxes, uint32_t aNumHaptics,
+                           uint32_t aNumLightIndicator,
                            uint32_t aNumTouchEvents) MOZ_EXCLUDES(mMutex);
   // Remove the gamepad at |aHandle| from the list of known gamepads.
   void RemoveGamepad(GamepadHandle aHandle) MOZ_EXCLUDES(mMutex);
@@ -95,6 +97,10 @@ class GamepadPlatformService final {
   // windows that are listening and visible, and fire a gamepadaxismove
   // event at them as well.
   void NewAxisMoveEvent(GamepadHandle aHandle, uint32_t aAxis, double aValue)
+      MOZ_EXCLUDES(mMutex);
+  // Update the state of |aState| for the gamepad at |aHandle| for all
+  // windows that are listening and visible.
+  void NewPoseEvent(GamepadHandle aHandle, const GamepadPoseState& aState)
       MOZ_EXCLUDES(mMutex);
   // Update the type of |aType| for the gamepad at |aHandle| for all
   // windows that are listening and visible.

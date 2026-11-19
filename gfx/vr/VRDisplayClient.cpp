@@ -471,12 +471,21 @@ void VRDisplayClient::FireGamepadEvents() {
     if ((lastState.controllerName[0] == '\0' || !existing) &&
         (state.numButtons > 0 || state.numAxes > 0)) {
       dom::GamepadAdded info(NS_ConvertUTF8toUTF16(state.controllerName.data()),
-                             dom::GamepadMappingType::_empty, state.numButtons,
-                             state.numAxes, state.numHaptics, 0, 0);
+                             dom::GamepadMappingType::_empty, state.hand,
+                             state.numButtons, state.numAxes, state.numHaptics,
+                             0, 0);
       dom::GamepadChangeEventBody body(info);
       dom::GamepadChangeEvent event(gamepadHandle, body);
       gamepadManager->Update(event);
       bIsNew = true;
+    }
+
+    // Send events for handedness changes
+    if (state.hand != lastState.hand) {
+      dom::GamepadHandInformation info(state.hand);
+      dom::GamepadChangeEventBody body(info);
+      dom::GamepadChangeEvent event(gamepadHandle, body);
+      gamepadManager->Update(event);
     }
 
     // Send events for axis value changes
@@ -512,6 +521,49 @@ void VRDisplayClient::FireGamepadEvents() {
           gamepadManager->Update(event);
         }
       }
+    }
+
+    // Send events for pose changes
+    // Note that VRPose is asserted to be a POD type so memcmp is safe
+    if (state.flags != lastState.flags ||
+        state.isPositionValid != lastState.isPositionValid ||
+        state.isOrientationValid != lastState.isOrientationValid ||
+        memcmp(&state.pose, &lastState.pose, sizeof(VRPose)) != 0) {
+      // Convert pose to GamepadPoseState
+      dom::GamepadPoseState poseState;
+      poseState.Clear();
+      poseState.flags = state.flags;
+
+      // Orientation values
+      poseState.isOrientationValid = state.isOrientationValid;
+      poseState.orientation[0] = state.pose.orientation[0];
+      poseState.orientation[1] = state.pose.orientation[1];
+      poseState.orientation[2] = state.pose.orientation[2];
+      poseState.orientation[3] = state.pose.orientation[3];
+      poseState.angularVelocity[0] = state.pose.angularVelocity[0];
+      poseState.angularVelocity[1] = state.pose.angularVelocity[1];
+      poseState.angularVelocity[2] = state.pose.angularVelocity[2];
+      poseState.angularAcceleration[0] = state.pose.angularAcceleration[0];
+      poseState.angularAcceleration[1] = state.pose.angularAcceleration[1];
+      poseState.angularAcceleration[2] = state.pose.angularAcceleration[2];
+
+      // Position values
+      poseState.isPositionValid = state.isPositionValid;
+      poseState.position[0] = state.pose.position[0];
+      poseState.position[1] = state.pose.position[1];
+      poseState.position[2] = state.pose.position[2];
+      poseState.linearVelocity[0] = state.pose.linearVelocity[0];
+      poseState.linearVelocity[1] = state.pose.linearVelocity[1];
+      poseState.linearVelocity[2] = state.pose.linearVelocity[2];
+      poseState.linearAcceleration[0] = state.pose.linearAcceleration[0];
+      poseState.linearAcceleration[1] = state.pose.linearAcceleration[1];
+      poseState.linearAcceleration[2] = state.pose.linearAcceleration[2];
+
+      // Send the event
+      dom::GamepadPoseInformation info(poseState);
+      dom::GamepadChangeEventBody body(info);
+      dom::GamepadChangeEvent event(gamepadHandle, body);
+      gamepadManager->Update(event);
     }
   }
 

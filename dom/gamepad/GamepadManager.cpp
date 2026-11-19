@@ -187,7 +187,7 @@ already_AddRefed<Gamepad> GamepadManager::GetGamepad(
 }
 
 void GamepadManager::AddGamepad(GamepadHandle aHandle, const nsAString& aId,
-                                GamepadMappingType aMapping,
+                                GamepadMappingType aMapping, GamepadHand aHand,
                                 uint32_t aNumButtons, uint32_t aNumAxes,
                                 uint32_t aNumHaptics,
                                 uint32_t aNumLightIndicator,
@@ -196,7 +196,7 @@ void GamepadManager::AddGamepad(GamepadHandle aHandle, const nsAString& aId,
   RefPtr<Gamepad> newGamepad =
       new Gamepad(nullptr, aId,
                   0,  // index is set by global window
-                  aHandle, aMapping, aNumButtons, aNumAxes, aNumHaptics,
+                  aHandle, aMapping, aHand, aNumButtons, aNumAxes, aNumHaptics,
                   aNumLightIndicator, aNumTouchEvents);
 
   // We store the gamepad related to its index given by the parent process,
@@ -482,8 +482,8 @@ void GamepadManager::Update(const GamepadChangeEvent& aEvent) {
   if (body.type() == GamepadChangeEventBody::TGamepadAdded) {
     const GamepadAdded& a = body.get_GamepadAdded();
     AddGamepad(handle, a.id(), static_cast<GamepadMappingType>(a.mapping()),
-               a.num_buttons(), a.num_axes(), a.num_haptics(), a.num_lights(),
-               a.num_touches());
+               static_cast<GamepadHand>(a.hand()), a.num_buttons(),
+               a.num_axes(), a.num_haptics(), a.num_lights(), a.num_touches());
     return;
   }
   if (body.type() == GamepadChangeEventBody::TGamepadRemoved) {
@@ -586,6 +586,11 @@ bool GamepadManager::SetGamepadByEvent(const GamepadChangeEvent& aEvent,
         gamepad->SetAxis(a.axis(), a.value());
         break;
       }
+      case GamepadChangeEventBody::TGamepadPoseInformation: {
+        const GamepadPoseInformation& a = body.get_GamepadPoseInformation();
+        gamepad->SetPose(a.pose_state());
+        break;
+      }
       case GamepadChangeEventBody::TGamepadLightIndicatorTypeInformation: {
         const GamepadLightIndicatorTypeInformation& a =
             body.get_GamepadLightIndicatorTypeInformation();
@@ -603,6 +608,11 @@ bool GamepadManager::SetGamepadByEvent(const GamepadChangeEvent& aEvent,
             listenerGamepad->SetTouchEvent(a.index(), a.touch_state());
           }
         }
+        break;
+      }
+      case GamepadChangeEventBody::TGamepadHandInformation: {
+        const GamepadHandInformation& a = body.get_GamepadHandInformation();
+        gamepad->SetHand(a.hand());
         break;
       }
       default:
@@ -734,11 +744,12 @@ already_AddRefed<Promise> GamepadManager::RequestAllGamepads(
         nsTArray<RefPtr<Gamepad>> gamepads;
 
         for (const auto& addedGamepad : aAddedGamepads) {
-          RefPtr<Gamepad> gamepad = new Gamepad(
-              nullptr, addedGamepad.id(), 0, GamepadHandle(),
-              addedGamepad.mapping(), addedGamepad.num_buttons(),
-              addedGamepad.num_axes(), addedGamepad.num_haptics(),
-              addedGamepad.num_lights(), addedGamepad.num_touches());
+          RefPtr<Gamepad> gamepad =
+              new Gamepad(nullptr, addedGamepad.id(), 0, GamepadHandle(),
+                          addedGamepad.mapping(), addedGamepad.hand(),
+                          addedGamepad.num_buttons(), addedGamepad.num_axes(),
+                          addedGamepad.num_haptics(), addedGamepad.num_lights(),
+                          addedGamepad.num_touches());
           gamepads.AppendElement(gamepad);
         }
         promise->MaybeResolve(gamepads);
