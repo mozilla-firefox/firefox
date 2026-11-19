@@ -1219,10 +1219,9 @@ static nsIFrame* ContainingBlockForFrame(nsIFrame* aFrame) {
     return insertionFrame;
   }
   // Generally frames with a different insertion frame are hard to deal with,
-  // but scrollframes are easy because the containing block is just the
-  // insertion frame.
-  if (aFrame->IsScrollContainerFrame()) {
-    return insertionFrame;
+  // but scrollframes use the scrolled frame.
+  if (ScrollContainerFrame* sf = do_QueryFrame(aFrame)) {
+    return sf->GetScrolledFrame();
   }
   // Table cell frames are also easy because the containing block is
   // the frame itself.
