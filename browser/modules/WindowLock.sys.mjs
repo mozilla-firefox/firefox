@@ -57,6 +57,9 @@ export const WindowLock = {
   _authError: false,
   // Stacks keeping menus and commands disabled while locked, per window.
   _menuAndCommandDisablers: new WeakMap(),
+  // Popups that had key handling disabled while locked, per window, with the
+  // ignorekeys value to restore on unlock.
+  _ignoreKeysPopups: new WeakMap(),
 
   init() {
     if (
@@ -81,6 +84,14 @@ export const WindowLock = {
       Services.obs.removeObserver(this, topic);
     }
     Services.obs.removeObserver(this, "last-pb-context-exited");
+  },
+
+  /**
+   * @param {Window} window
+   * @returns {boolean} Whether the window is covered by the lock screen.
+   */
+  isWindowLocked(window) {
+    return window.document.documentElement.hasAttribute(LOCKED_ATTRIBUTE);
   },
 
   /**
@@ -235,6 +246,15 @@ export const WindowLock = {
     root.setAttribute(LOCKED_ATTRIBUTE, "true");
     this._updateTitlebarHeight(window, dialog);
 
+    for (let popup of document.querySelectorAll("panel, menupopup")) {
+      if (popup.state == "open" || popup.state == "showing") {
+        popup.hidePopup();
+      }
+    }
+    for (let urlbar of document.querySelectorAll(".urlbar")) {
+      urlbar.view?.close();
+    }
+
     if (!dialog.open) {
       dialog.showModal();
     }
@@ -245,6 +265,8 @@ export const WindowLock = {
     for (let id of WINDOW_COMMANDS) {
       document.getElementById(id)?.removeAttribute("disabled");
     }
+    window.gBrowser.updateTitlebar();
+    window.UpdatePopupNotificationsVisibility();
   },
 
   /**
@@ -262,8 +284,19 @@ export const WindowLock = {
 
     document.getElementById(DIALOG_ID)?.close();
 
+    for (let [popup, ignoreKeys] of this._ignoreKeysPopups.get(window) ?? []) {
+      if (ignoreKeys == null) {
+        popup.removeAttribute("ignorekeys");
+      } else {
+        popup.setAttribute("ignorekeys", ignoreKeys);
+      }
+    }
+    this._ignoreKeysPopups.delete(window);
+
     this._menuAndCommandDisablers.get(window)?.dispose();
     this._menuAndCommandDisablers.delete(window);
+    window.gBrowser.updateTitlebar();
+    window.UpdatePopupNotificationsVisibility();
   },
 
   /**
@@ -305,6 +338,28 @@ export const WindowLock = {
     dialog
       .querySelector(".window-lock-button")
       .addEventListener("click", () => this.unlock(window));
+
+    // Popups are hidden while locked, so they must not handle keys either.
+    window.addEventListener(
+      "popupshowing",
+      event => {
+        let popup = event.composedTarget;
+        if (
+          !document.documentElement.hasAttribute(LOCKED_ATTRIBUTE) ||
+          popup.getAttribute("ignorekeys") == "true"
+        ) {
+          return;
+        }
+        let popups = this._ignoreKeysPopups.get(window);
+        if (!popups) {
+          popups = new Map();
+          this._ignoreKeysPopups.set(window, popups);
+        }
+        popups.set(popup, popup.getAttribute("ignorekeys"));
+        popup.setAttribute("ignorekeys", "true");
+      },
+      true
+    );
 
     // The lock screen must only go away once the user authenticated.
     dialog.addEventListener("cancel", event => event.preventDefault());

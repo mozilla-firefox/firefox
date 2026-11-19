@@ -8,6 +8,13 @@
   visibility: hidden;
 }
 
+/* Popups get their own widgets and popovers open in the top layer, so both
+ * show above the lock screen. Hide them and keep them from taking clicks. */
+:root[windowlocked] :is(panel, menupopup, :popover-open) {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 #window-lock-dialog {
   position: fixed;
   inset: 0;

@@ -761,6 +761,9 @@ Object.defineProperty(this, "gFindBarPromise", {
 });
 
 function shouldSuppressPopupNotifications() {
+  const { WindowLock } = ChromeUtils.importESModule(
+    "moz-src:///browser/modules/WindowLock.sys.mjs"
+  );
   // We have to hide notifications explicitly when the window is
   // minimized because of the effects of the "noautohide" attribute on Linux.
   // This can be removed once bug 545265 and bug 1320361 are fixed.
@@ -769,7 +772,8 @@ function shouldSuppressPopupNotifications() {
   return (
     window.windowState == window.STATE_MINIMIZED ||
     gBrowser?.selectedBrowser.hasAttribute("tabDialogShowing") ||
-    gDialogBox?.isOpen
+    gDialogBox?.isOpen ||
+    WindowLock.isWindowLocked(window)
   );
 }
 
@@ -3889,6 +3893,14 @@ function CanCloseWindow() {
   // Avoid redundant calls to canClose from showing multiple
   // PermitUnload dialogs.
   if (Services.startup.shuttingDown || window.skipNextCanClose) {
+    return true;
+  }
+
+  // Don't show beforeunload prompts while the window is locked.
+  const { WindowLock } = ChromeUtils.importESModule(
+    "moz-src:///browser/modules/WindowLock.sys.mjs"
+  );
+  if (WindowLock.isWindowLocked(window)) {
     return true;
   }
 

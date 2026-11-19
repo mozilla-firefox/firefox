@@ -77,6 +77,7 @@ const lazy = XPCOMUtils.declareLazy({
     "moz-src:///browser/components/urlbar/UrlbarProviderOpenTabs.sys.mjs",
   UrlbarUtils: "moz-src:///browser/components/urlbar/UrlbarUtils.sys.mjs",
   webrtcUI: "resource:///modules/webrtcUI.sys.mjs",
+  WindowLock: "moz-src:///browser/modules/WindowLock.sys.mjs",
 });
 
 /**
@@ -1827,7 +1828,8 @@ export class Tabbrowser {
     if (
       !lazy.shouldExposeContentTitle ||
       (lazy.PrivateBrowsingUtils.isWindowPrivate(this.documentGlobal) &&
-        !lazy.shouldExposeContentTitlePbm)
+        !lazy.shouldExposeContentTitlePbm) ||
+      lazy.WindowLock.isWindowLocked(this.documentGlobal)
     ) {
       return title;
     }
