@@ -43,9 +43,9 @@ class SettingsSearchMiddleware(
                 next(action)
                 scope.launch(dispatcher) {
                     fenixSettingsIndexer.indexAllSettings()
-                }
-                if (recentSettingsSearchesRepository != null) {
-                    observeRecentSearches(store, recentSettingsSearchesRepository)
+                    if (recentSettingsSearchesRepository != null) {
+                        observeRecentSearches(store, recentSettingsSearchesRepository)
+                    }
                 }
             }
             is SettingsSearchAction.SearchQueryUpdated -> {
@@ -100,7 +100,8 @@ class SettingsSearchMiddleware(
     }
 
     /**
-     * Observes the recent searches repository and updates the store when the list of recent searches changes.
+     * Observes the recent searches repository and updates the store when the list of recent searches changes. Each
+     * recent search is replaced by its currently indexed item, and left out if it is no longer indexed.
      *
      * @param store The [SettingsSearchStore] to dispatch the updates to.
      * @param repository The [RecentSettingsSearchesRepository] to observe.
@@ -111,7 +112,8 @@ class SettingsSearchMiddleware(
     ) {
         scope.launch {
             repository.recentSearches.collect { recents ->
-                store.dispatch(SettingsSearchAction.RecentSearchesUpdated(recents))
+                val indexedRecents = recents.mapNotNull { fenixSettingsIndexer.getIndexedItem(it.preferenceKey) }
+                store.dispatch(SettingsSearchAction.RecentSearchesUpdated(indexedRecents))
             }
         }
     }

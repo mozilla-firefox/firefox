@@ -85,6 +85,9 @@ class DefaultFenixSettingsIndexer(
         }
     }
 
+    override fun getIndexedItem(preferenceKey: String): SettingsSearchItem? =
+        settings.get().firstOrNull { it.preferenceKey == preferenceKey }
+
     /**
      * Get every indexed setting, unfiltered by any query.
      *

@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -108,6 +109,38 @@ class SettingsSearchMiddlewareTest {
 
             coVerify { recentSearchesRepository.addRecentSearchItem(testItem) }
             verify { navController.navigate(testItem.preferenceFileInformation.fragmentId, any()) }
+        }
+
+    @Test
+    fun `GIVEN a recent search is no longer indexed WHEN the screen is initialized THEN it is not shown in recent searches`() =
+        runTest(testDispatcher) {
+            val hiddenItem = testList.first().copy(preferenceKey = "hidden_pref")
+            recentSearchesFlow.value = listOf(hiddenItem, testList.first())
+            val store = SettingsSearchStore(middleware = listOf(buildMiddleware()))
+
+            store.dispatch(SettingsSearchAction.Init)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(listOf(testList.first()), store.state.recentSearches)
+        }
+
+    @Test
+    fun `GIVEN a recent search points to an outdated screen WHEN the screen is initialized THEN the indexed item is shown instead`() =
+        runTest(testDispatcher) {
+            val indexedItem = testList.first()
+            val staleItem =
+                indexedItem.copy(
+                    title = "Old title",
+                    categoryHeader = "",
+                    preferenceFileInformation = PreferenceFileInformation.GeneralPreferences,
+                )
+            recentSearchesFlow.value = listOf(staleItem)
+            val store = SettingsSearchStore(middleware = listOf(buildMiddleware()))
+
+            store.dispatch(SettingsSearchAction.Init)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(listOf(indexedItem), store.state.recentSearches)
         }
 
     @Test
@@ -260,6 +293,8 @@ class TestSettingsIndexer : SettingsIndexer {
     override suspend fun getSettingsWithQuery(query: String): List<SettingsSearchItem> {
         return testList
     }
+
+    override fun getIndexedItem(preferenceKey: String) = testList.firstOrNull { it.preferenceKey == preferenceKey }
 }
 
 class EmptyTestSettingsIndexer : SettingsIndexer {
@@ -270,6 +305,8 @@ class EmptyTestSettingsIndexer : SettingsIndexer {
     override suspend fun getSettingsWithQuery(query: String): List<SettingsSearchItem> {
         return emptyList()
     }
+
+    override fun getIndexedItem(preferenceKey: String): SettingsSearchItem? = null
 }
 
 class SlowTestSettingsIndexer(
@@ -284,6 +321,8 @@ class SlowTestSettingsIndexer(
         delay(delayMs)
         return if (query.isBlank()) emptyList() else results
     }
+
+    override fun getIndexedItem(preferenceKey: String) = testList.firstOrNull { it.preferenceKey == preferenceKey }
 }
 
 class DelayedTestSettingsIndexer(private val delayMs: Long = 500L) : SettingsIndexer {
@@ -298,6 +337,8 @@ class DelayedTestSettingsIndexer(private val delayMs: Long = 500L) : SettingsInd
         delay(delayMs)
         return testList.filter { it.title.contains(query, ignoreCase = true) }
     }
+
+    override fun getIndexedItem(preferenceKey: String) = testList.firstOrNull { it.preferenceKey == preferenceKey }
 }
 
 class VariableDelayTestSettingsIndexer : SettingsIndexer {
@@ -323,6 +364,8 @@ class VariableDelayTestSettingsIndexer : SettingsIndexer {
         delay(delays[query] ?: 100L)
         return results[query] ?: emptyList()
     }
+
+    override fun getIndexedItem(preferenceKey: String) = testList.firstOrNull { it.preferenceKey == preferenceKey }
 }
 
 private class FakeLifecycleOwner(initialState: Lifecycle.State) : LifecycleOwner {

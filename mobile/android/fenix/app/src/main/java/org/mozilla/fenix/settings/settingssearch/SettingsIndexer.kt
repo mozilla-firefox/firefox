@@ -16,4 +16,13 @@ interface SettingsIndexer {
      * @return A list of [SettingsSearchItem]s that match the query.
      */
     suspend fun getSettingsWithQuery(query: String): List<SettingsSearchItem>
+
+    /**
+     * Get the currently indexed setting for a preference key.
+     *
+     * @param preferenceKey The key of the preference to look up.
+     * @return The [SettingsSearchItem] built by the last [indexAllSettings] call for [preferenceKey], or null if it is
+     *   not indexed.
+     */
+    fun getIndexedItem(preferenceKey: String): SettingsSearchItem?
 }
