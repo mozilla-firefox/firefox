@@ -13,6 +13,11 @@
   -->
   <string name="mozac_tab_counter_open_tab_tray">ملوکا ٹیباک: %1$s۔ ٹیب بدل کننگ کن دو خلبو۔</string>
   <!--
+    Message announced to the user when tab tray is selected used by a11y services
+    The %1$s will be replaced by the number of opened tabs
+  -->
+  <string name="mozac_open_tab_counter_tab_tray">ملوکا عام ٹیباک: %1$s. ٹیباتے بدل کننگ کن دو خلبو.</string>
+  <!--
     Message announced to the user when the tab counter is selected in private browsing mode.
     Used by a11y services. The %1$s will be replaced by the number of opened tabs
   -->
@@ -25,4 +30,6 @@
   <string name="mozac_close_tab">ٹیب اے بند کہ</string>
   <!-- Menu option to duplicate the current tab -->
   <string name="mozac_ui_tabcounter_duplicate_tab">ٹیب نقل کہ</string>
+  <!-- Content description of the tab counter toolbar button -->
+  <string name="mozac_tab_counter_content_description">ٹیباتا حساب نا ٹولبار بٹن.</string>
 </resources>

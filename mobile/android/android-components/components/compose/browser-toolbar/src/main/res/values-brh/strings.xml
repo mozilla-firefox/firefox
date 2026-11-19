@@ -13,4 +13,10 @@
   <string name="mozac_browser_toolbar_search_hint">پٹ یا ویب ڈس اس لکھبو</string>
   <!-- Contextual menu option for long pressing on the toolbar URL. Clicking it will copy the current URL -->
   <string name="mozac_browser_toolbar_long_press_popup_copy">کاپی</string>
+  <!-- Contextual menu option for long pressing on the toolbar URL. Clicking it will paste the text from clipboard and allow user to edit it -->
+  <string name="mozac_browser_toolbar_long_press_popup_paste">پیسٹ</string>
+  <!-- Contextual menu option for long pressing on the toolbar URL. Clicking it will paste the text from clipboard and search for or load it as an URL. '&amp;' is replaced with the ampersand symbol: & -->
+  <string name="mozac_browser_toolbar_long_press_popup_paste_and_go">پیسٹ و انبو</string>
+  <!-- Content description (not visible, for screen readers etc.) for the "minimal toolbar" containing just the URL instead of the big toolbar containing also other buttons. %1$s will be replaced with the domain name of the current website. -->
+  <string name="mozac_minimal_display_toolbar_content_description">متن %1$s ٹی شاغنگنگ اے. سلیفنگ کن ارا وار دو خلبو</string>
 </resources>

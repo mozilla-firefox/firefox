@@ -9,6 +9,8 @@
 <resources>
   <!-- Default shortcut label used if website has no title -->
   <string name="mozac_feature_pwa_default_shortcut_label">ویب سائٹ</string>
+  <!-- Name of the "notification channel" used for displaying site controls notification. See https://developer.android.com/training/notify-user/channels -->
+  <string name="mozac_feature_pwa_site_controls_notification_channel">مچ اسکرین ویبڈس کنٹرولاک</string>
   <!-- Text shown on the second row of the site controls notification. -->
   <string name="mozac_feature_pwa_site_controls_notification_text">لِنک دوٹی اتینک کن اور خلبو</string>
   <!-- Refresh button in site controls notification. -->

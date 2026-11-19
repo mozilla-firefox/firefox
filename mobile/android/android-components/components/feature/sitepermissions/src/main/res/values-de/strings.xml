@@ -78,7 +78,7 @@
     Message of a dialog offering more context about the cross origin storage permission.
     %s is the name of the site URL (www.site1.example) trying to track the user's activity.
   -->
-  <string name="mozac_feature_sitepermissions_storage_access_message">Möglicherweise möchten Sie den Zugriff blockieren, wenn nicht klar ist, warum %1$s diese Daten benötigt.</string>
+  <string name="mozac_feature_sitepermissions_storage_access_message">Möglicherweise möchten Sie den Zugriff blockieren, wenn nicht klar ist, warum %s diese Daten benötigt.</string>
   <!-- Text for a negative button in the storage access permission request dialog. This button will not give access to this permission. -->
   <string name="mozac_feature_sitepermissions_storage_access_not_allow">Blockieren</string>
   <!-- Clickable text that will open a new tab navigating the user to online documentation about specific features. -->

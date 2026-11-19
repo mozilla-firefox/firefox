@@ -121,7 +121,7 @@
     Summary for the toggle to enable autocomplete for the topsites list
     %s is the name of the app (for example "Firefox Focus" or "Firefox Klar").
   -->
-  <string name="preference_autocomplete_topsite_summary2">एड्रेस बार में 450 लोकप्रिय URLs पर %1$s स्वत: पूर्णता लेली सक्षम करू</string>
+  <string name="preference_autocomplete_topsite_summary2">एड्रेस बार में 450 लोकप्रिय URLs पर %s स्वत: पूर्णता लेली सक्षम करू</string>
   <!-- Title of "switch" preference that enables/disables autocomplete for the user-defined list -->
   <string name="preference_switch_autocomplete_user_list">साइटों ले आपने जोड़ि‍यै</string>
   <!-- Item in autocomplete settings that will open a new preference screen for adding and removing URLs to the user-defined list -->
