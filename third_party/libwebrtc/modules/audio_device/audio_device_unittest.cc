@@ -356,7 +356,7 @@ class MockAudioTransport : public test::MockAudioTransport {
               &MockAudioTransport::RealNeedMorePlayData, this));
     }
     if (rec_mode()) {
-      ON_CALL(*this, RecordedDataIsAvailable(_, _, _, _, _, _, _, _, _, _))
+      ON_CALL(*this, RecordedDataIsAvailable(_, _, _, _, _, _, _, _, _, _, _))
           .WillByDefault(absl::bind_front(
               &MockAudioTransport::RealRecordedDataIsAvailable, this));
     }
@@ -370,16 +370,18 @@ class MockAudioTransport : public test::MockAudioTransport {
     HandleCallbacks(nullptr, audio_stream, 0);
   }
 
-  int32_t RealRecordedDataIsAvailable(const void* audio_buffer,
-                                      const size_t samples_per_channel,
-                                      const size_t bytes_per_frame,
-                                      const size_t channels,
-                                      const uint32_t sample_rate,
-                                      const uint32_t /* total_delay_ms */,
-                                      const int32_t /* clock_drift */,
-                                      const uint32_t /* current_mic_level */,
-                                      const bool /* typing_status */,
-                                      uint32_t& /* new_mic_level */) {
+  int32_t RealRecordedDataIsAvailable(
+      const void* audio_buffer,
+      const size_t samples_per_channel,
+      const size_t bytes_per_frame,
+      const size_t channels,
+      const uint32_t sample_rate,
+      const uint32_t /* total_delay_ms */,
+      const int32_t /* clock_drift */,
+      const uint32_t /* current_mic_level */,
+      const bool /* typing_status */,
+      uint32_t& /* new_mic_level */,
+      std::optional<int64_t> /* estimated_capture_time_ns */) {
     EXPECT_TRUE(rec_mode()) << "No test is expecting these callbacks.";
     // Store audio parameters once in the first callback. For all other
     // callbacks, verify that the provided audio parameters are maintained and

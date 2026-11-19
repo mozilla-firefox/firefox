@@ -17,6 +17,7 @@ rtc_source_set("audio_device") {
   deps = [
     "..:ref_count",
     "../../rtc_base:stringutils",
+    "//third_party/abseil-cpp/absl/base:core_headers",
   ]
 }
 

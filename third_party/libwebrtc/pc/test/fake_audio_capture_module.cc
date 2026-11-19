@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <optional>
 #include <utility>
 
 #include "api/audio/audio_device_defines.h"
@@ -522,7 +523,8 @@ void FakeAudioCaptureModule::SendFrameP() {
   if (audio_callback_->RecordedDataIsAvailable(
           send_buffer_.data(), kNumberSamples, kNumberBytesPerSample,
           kNumberOfChannels, kSamplesPerSecond, kTotalDelayMs, kClockDriftMs,
-          current_mic_level, key_pressed, current_mic_level) != 0) {
+          current_mic_level, key_pressed, current_mic_level,
+          std::nullopt) != 0) {
     RTC_DCHECK_NOTREACHED();
   }
   current_mic_level_ = current_mic_level;

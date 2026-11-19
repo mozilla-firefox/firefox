@@ -1,4 +1,5 @@
 <!-- go/cmark -->
+
 <!--* freshness: {owner: 'henrika' reviewed: '2024-09-02'} *-->
 
 # Audio Device Module (ADM)
@@ -10,16 +11,16 @@ output (speaker) audio in WebRTC and the API is defined in [audio_device.h][19].
 
 Main functions of the ADM are:
 
-*   Initialization and termination of native audio libraries.
-*   Registration of an [AudioTransport object][16] which handles audio callbacks
-    for audio in both directions.
-*   Device enumeration and selection (only for Linux, Windows and Mac OSX).
-*   Start/Stop physical audio streams:
-    *   Recording audio from the selected microphone, and
-    *   playing out audio on the selected speaker.
-*   Level control of the active audio streams.
-*   Control of built-in audio effects (Audio Echo Cancelation (AEC), Audio Gain
-    Control (AGC) and Noise Suppression (NS)) for Android and iOS.
+- Initialization and termination of native audio libraries.
+- Registration of an [AudioTransport object][16] which handles audio callbacks
+  for audio in both directions.
+- Device enumeration and selection (only for Linux, Windows and Mac OSX).
+- Start/Stop physical audio streams:
+  - Recording audio from the selected microphone, and
+  - playing out audio on the selected speaker.
+- Level control of the active audio streams.
+- Control of built-in audio effects (Audio Echo Cancelation (AEC), Audio Gain
+  Control (AGC) and Noise Suppression (NS)) for Android and iOS.
 
 ADM implementations reside at two different locations in the WebRTC repository:
 `/modules/audio_device/` and `/sdk/`. The latest implementations for [iOS][20]
@@ -32,8 +33,8 @@ as possible.
 
 By default, the ADM in WebRTC is created in [`WebRtcVoiceEngine::Init`][1] but
 an external implementation can also be injected using
-[`webrtc::CreatePeerConnectionFactory`][25]. An example of where an external ADM is
-injected can be found in [PeerConnectionInterfaceTest][26] where a so-called
+[`webrtc::CreatePeerConnectionFactory`][25]. An example of where an external ADM
+is injected can be found in [PeerConnectionInterfaceTest][26] where a so-called
 [fake ADM][29] is utilized to avoid hardware dependency in a gtest. Clients can
 also inject their own ADMs in situations where functionality is needed that is
 not provided by the default implementations.
@@ -70,22 +71,22 @@ internal - ADM is created in [`WebRtcVoiceEngine::Init`][1] using
 Basic initialization is done using a utility method called
 [`adm_helpers::Init`][5] which calls fundamental ADM APIs like:
 
-*   [`AudiDeviceModule::Init`][6] - initializes the native audio parts required
-    for each platform.
-*   [`AudiDeviceModule::SetPlayoutDevice`][7] - specifies which speaker to use
-    for playing out audio using an `index` retrieved by the corresponding
-    enumeration method [`AudiDeviceModule::PlayoutDeviceName`][8].
-*   [`AudiDeviceModule::SetRecordingDevice`][9] - specifies which microphone to
-    use for recording audio using an `index` retrieved by the corresponding
-    enumeration method which is [`AudiDeviceModule::RecordingDeviceName`][10].
-*   [`AudiDeviceModule::InitSpeaker`][11] - sets up the parts of the ADM needed
-    to use the selected output device.
-*   [`AudiDeviceModule::InitMicrophone`][12] - sets up the parts of the ADM
-    needed to use the selected input device.
-*   [`AudiDeviceModule::SetStereoPlayout`][13] - enables playout in stereo if
-    the selected audio device supports it.
-*   [`AudiDeviceModule::SetStereoRecording`][14] - enables recording in stereo
-    if the selected audio device supports it.
+- [`AudiDeviceModule::Init`][6] - initializes the native audio parts required
+  for each platform.
+- [`AudiDeviceModule::SetPlayoutDevice`][7] - specifies which speaker to use for
+  playing out audio using an `index` retrieved by the corresponding enumeration
+  method [`AudiDeviceModule::PlayoutDeviceName`][8].
+- [`AudiDeviceModule::SetRecordingDevice`][9] - specifies which microphone to
+  use for recording audio using an `index` retrieved by the corresponding
+  enumeration method which is [`AudiDeviceModule::RecordingDeviceName`][10].
+- [`AudiDeviceModule::InitSpeaker`][11] - sets up the parts of the ADM needed to
+  use the selected output device.
+- [`AudiDeviceModule::InitMicrophone`][12] - sets up the parts of the ADM needed
+  to use the selected input device.
+- [`AudiDeviceModule::SetStereoPlayout`][13] - enables playout in stereo if the
+  selected audio device supports it.
+- [`AudiDeviceModule::SetStereoRecording`][14] - enables recording in stereo if
+  the selected audio device supports it.
 
 [`WebRtcVoiceEngine::Init`][1] also calls
 [`AudiDeviceModule::RegisterAudioTransport`][15] to register an existing
@@ -101,7 +102,7 @@ Recorded audio samples are delivered from the ADM to the `WebRtcVoiceEngine`
 int32_t RecordedDataIsAvailable(const void* audioSamples, size_t nSamples, size_t nBytesPerSample,
                                 size_t nChannels, uint32_t samplesPerSec, uint32_t totalDelayMS,
                                 int32_t clockDrift, uint32_t currentMicLevel, bool keyPressed,
-                                uint32_t& newMicLevel)
+                                uint32_t& newMicLevel, std::optional<int64_t> estimatedCaptureTimeNS)
 ```
 
 Decoded audio samples ready to be played out are are delivered by the
@@ -120,13 +121,13 @@ using regular interleaving of channels within each sample.
 used has helper to start and stop audio to and from the ADM. To initialize and
 start recording, it calls:
 
-*   [`AudiDeviceModule::InitRecording`][31]
-*   [`AudiDeviceModule::StartRecording`][32]
+- [`AudiDeviceModule::InitRecording`][31]
+- [`AudiDeviceModule::StartRecording`][32]
 
 and to initialize and start playout:
 
-*   [`AudiDeviceModule::InitPlayout`][33]
-*   [`AudiDeviceModule::StartPlayout`][34]
+- [`AudiDeviceModule::InitPlayout`][33]
+- [`AudiDeviceModule::StartPlayout`][34]
 
 Finally, the corresponding stop methods [`AudiDeviceModule::StopRecording`][35]
 and [`AudiDeviceModule::StopPlayout`][36] are called followed by
