@@ -748,7 +748,6 @@ bool SetArrayLength(JSContext* cx, HandleObject obj, HandleValue value,
                     bool strict) {
   Handle<ArrayObject*> array = obj.as<ArrayObject>();
 
-  RootedId id(cx, NameToId(cx->names().length));
   ObjectOpResult result;
 
   // SetArrayLength is called by IC stubs for SetProp and SetElem on arrays'
@@ -759,13 +758,14 @@ bool SetArrayLength(JSContext* cx, HandleObject obj, HandleValue value,
   // non-writable "length" fails without throwing a RangeError for invalid
   // length values.
   if (array->lengthIsWritable()) {
-    if (!ArrayLengthSetter(cx, array, id, value, result)) {
+    if (!ArrayLengthSetter(cx, array, value, result)) {
       return false;
     }
   } else {
     MOZ_ALWAYS_TRUE(result.fail(JSMSG_READ_ONLY));
   }
 
+  RootedId id(cx, NameToId(cx->names().length));
   return result.checkStrictModeError(cx, obj, id, strict);
 }
 

@@ -97,10 +97,10 @@ class ArrayObject;
  *
  * ES2025 draft rev ac21460fedf4b926520b06c9820bdbebad596a8b
  *
- * |id| must be "length", |desc| is the new non-accessor descriptor, and
- * |result| receives an error code if the change is invalid.
+ * |desc| is the new non-accessor descriptor for "length", and |result|
+ * receives an error code if the change is invalid.
  */
-extern bool ArraySetLength(JSContext* cx, Handle<ArrayObject*> obj, HandleId id,
+extern bool ArraySetLength(JSContext* cx, Handle<ArrayObject*> obj,
                            Handle<PropertyDescriptor> desc,
                            ObjectOpResult& result);
 
@@ -264,7 +264,7 @@ class ObjectElements {
                                     IntegrityLevel level);
 
   friend bool ArraySetLength(JSContext* cx, Handle<ArrayObject*> obj,
-                             HandleId id, Handle<PropertyDescriptor> desc,
+                             Handle<PropertyDescriptor> desc,
                              ObjectOpResult& result);
 
   // The NumShiftedElementsBits high bits of this are used to store the

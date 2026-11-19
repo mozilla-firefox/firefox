@@ -1647,7 +1647,7 @@ bool js::NativeDefineProperty(JSContext* cx, Handle<NativeObject*> obj,
         return result.fail(JSMSG_CANT_REDEFINE_PROP);
       }
 
-      return ArraySetLength(cx, arr, id, desc_, result);
+      return ArraySetLength(cx, arr, desc_, result);
     }
 
     // 10.4.2.1 step 2. Don't extend a fixed-length array.
@@ -2152,7 +2152,8 @@ static bool GetCustomDataProperty(JSContext* cx, HandleObject obj, HandleId id,
 
   const JSClass* clasp = obj->getClass();
   if (clasp == &ArrayObject::class_) {
-    if (!ArrayLengthGetter(cx, obj, id, vp)) {
+    MOZ_ASSERT(id.isAtom(cx->names().length));
+    if (!ArrayLengthGetter(cx, obj.as<ArrayObject>(), vp)) {
       return false;
     }
   } else if (clasp == &MappedArgumentsObject::class_) {
@@ -2438,7 +2439,8 @@ static bool SetCustomDataProperty(JSContext* cx, HandleObject obj, HandleId id,
 
   const JSClass* clasp = obj->getClass();
   if (clasp == &ArrayObject::class_) {
-    return ArrayLengthSetter(cx, obj, id, v, result);
+    MOZ_ASSERT(id.isAtom(cx->names().length));
+    return ArrayLengthSetter(cx, obj.as<ArrayObject>(), v, result);
   }
   if (clasp == &MappedArgumentsObject::class_) {
     return MappedArgSetter(cx, obj, id, v, result);

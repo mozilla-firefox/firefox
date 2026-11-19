@@ -616,17 +616,17 @@ static MOZ_ALWAYS_INLINE bool TrySetArrayLengthFast(JSContext* cx,
 
 static bool SetArrayLengthProperty(JSContext* cx, Handle<ArrayObject*> obj,
                                    HandleValue value) {
-  RootedId id(cx, NameToId(cx->names().length));
   ObjectOpResult result;
   if (obj->lengthIsWritable()) {
     Rooted<PropertyDescriptor> desc(
         cx, PropertyDescriptor::Data(value, JS::PropertyAttribute::Writable));
-    if (!ArraySetLength(cx, obj, id, desc, result)) {
+    if (!ArraySetLength(cx, obj, desc, result)) {
       return false;
     }
   } else {
     MOZ_ALWAYS_TRUE(result.fail(JSMSG_READ_ONLY));
   }
+  RootedId id(cx, NameToId(cx->names().length));
   return result.checkStrict(cx, obj, id);
 }
 
@@ -646,19 +646,14 @@ bool js::SetLengthProperty(JSContext* cx, HandleObject obj, uint64_t length) {
   return SetProperty(cx, obj, cx->names().length, v);
 }
 
-bool js::ArrayLengthGetter(JSContext* cx, HandleObject obj, HandleId id,
+bool js::ArrayLengthGetter(JSContext* cx, Handle<ArrayObject*> arr,
                            MutableHandleValue vp) {
-  MOZ_ASSERT(id == NameToId(cx->names().length));
-
-  vp.setNumber(obj->as<ArrayObject>().length());
+  vp.setNumber(arr->length());
   return true;
 }
 
-bool js::ArrayLengthSetter(JSContext* cx, HandleObject obj, HandleId id,
+bool js::ArrayLengthSetter(JSContext* cx, Handle<ArrayObject*> arr,
                            HandleValue v, ObjectOpResult& result) {
-  MOZ_ASSERT(id == NameToId(cx->names().length));
-
-  Handle<ArrayObject*> arr = obj.as<ArrayObject>();
   MOZ_ASSERT(arr->lengthIsWritable(),
              "setter shouldn't be called if property is non-writable");
 
@@ -669,7 +664,7 @@ bool js::ArrayLengthSetter(JSContext* cx, HandleObject obj, HandleId id,
 
   Rooted<PropertyDescriptor> desc(
       cx, PropertyDescriptor::Data(v, JS::PropertyAttribute::Writable));
-  return ArraySetLength(cx, arr, id, desc, result);
+  return ArraySetLength(cx, arr, desc, result);
 }
 
 struct ReverseIndexComparator {
@@ -740,10 +735,9 @@ static bool TryFastDeleteElementsForNewLength(JSContext* cx,
 }
 
 /* ES6 draft rev 34 (2015 Feb 20) 9.4.2.4 ArraySetLength */
-bool js::ArraySetLength(JSContext* cx, Handle<ArrayObject*> arr, HandleId id,
+bool js::ArraySetLength(JSContext* cx, Handle<ArrayObject*> arr,
                         Handle<PropertyDescriptor> desc,
                         ObjectOpResult& result) {
-  MOZ_ASSERT(id == NameToId(cx->names().length));
   MOZ_ASSERT(desc.isDataDescriptor() || desc.isGenericDescriptor());
 
   // Step 1.
@@ -782,7 +776,8 @@ bool js::ArraySetLength(JSContext* cx, Handle<ArrayObject*> arr, HandleId id,
   bool lengthIsWritable = arr->lengthIsWritable();
 #ifdef DEBUG
   {
-    mozilla::Maybe<PropertyInfo> lengthProp = arr->lookupPure(id);
+    mozilla::Maybe<PropertyInfo> lengthProp =
+        arr->lookupPure(NameToId(cx->names().length));
     MOZ_ASSERT(lengthProp.isSome());
     MOZ_ASSERT(lengthProp->writable() == lengthIsWritable);
   }
@@ -950,6 +945,7 @@ bool js::ArraySetLength(JSContext* cx, Handle<ArrayObject*> arr, HandleId id,
 
   // Step 20.
   if (desc.hasWritable() && !desc.writable()) {
+    RootedId id(cx, NameToId(cx->names().length));
     Maybe<PropertyInfo> lengthProp = arr->lookup(cx, id);
     MOZ_ASSERT(lengthProp.isSome());
     MOZ_ASSERT(lengthProp->isCustomDataProperty());
