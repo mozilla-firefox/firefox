@@ -78,7 +78,7 @@ index 2eddb1bff8..a0451624b3 100644
  # The hermetic Python interpreter to use by default.
  script_executable = "//third_party/cpython3/host/bin/python3"
 diff --git a/BUILD.gn b/BUILD.gn
-index d732028499..eb0fd3d974 100644
+index 39ed3e97ee..cf0e30ef67 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -21,8 +21,8 @@
@@ -331,7 +331,7 @@ index 589142b014..2ee80ded55 100644
      }
    }
 diff --git a/examples/BUILD.gn b/examples/BUILD.gn
-index 1231eb5575..a5d26ec3c9 100644
+index 6f6f99d967..990a376b64 100644
 --- a/examples/BUILD.gn
 +++ b/examples/BUILD.gn
 @@ -9,15 +9,15 @@
@@ -355,7 +355,7 @@ index 1231eb5575..a5d26ec3c9 100644
  }
  
  group("examples") {
-@@ -625,7 +625,7 @@ if (is_ios || (is_mac && target_cpu != "x86")) {
+@@ -627,7 +627,7 @@ if (is_ios || (is_mac && target_cpu != "x86")) {
            "../sdk:mediaconstraints_objc",
            "../sdk:peerconnectionfactory_base_objc",
            "../sdk:videocapture_objc",
@@ -364,7 +364,7 @@ index 1231eb5575..a5d26ec3c9 100644
            "//third_party/ocmock",
          ]
        }
-@@ -729,7 +729,7 @@ if (is_linux || is_chromeos || is_win) {
+@@ -731,7 +731,7 @@ if (is_linux || is_chromeos || is_win) {
          "peerconnection/client/main_wnd.cc",
          "peerconnection/client/main_wnd.h",
        ]

@@ -117,7 +117,7 @@ index 026340da6a..e6c204e288 100644
    # TODO(https://bugs.webrtc.org/14437):  Remove this section if general
    # Chromium fix resolves the problem.
 diff --git a/BUILD.gn b/BUILD.gn
-index 8366960e3b..c212b2e1cf 100644
+index 68c1a213cd..519c7e9c84 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -39,7 +39,7 @@ if (is_android) {
@@ -694,7 +694,7 @@ index cb74a2710e..b1c02c5025 100644
      : content_hint(VideoTrackInterface::ContentHint::kNone) {}
  VideoOptions::~VideoOptions() = default;
 diff --git a/modules/audio_coding/BUILD.gn b/modules/audio_coding/BUILD.gn
-index a0cb6f35e5..5b03ad3042 100644
+index b1a7339f09..02c68bb6f7 100644
 --- a/modules/audio_coding/BUILD.gn
 +++ b/modules/audio_coding/BUILD.gn
 @@ -340,7 +340,7 @@ rtc_library("webrtc_opus_wrapper") {

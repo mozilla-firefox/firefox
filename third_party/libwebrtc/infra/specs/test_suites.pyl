@@ -83,6 +83,7 @@
       'dcsctp_unittests': {},
       'desktop_capture_modules_tests': {},
       'desktop_capture_unittests': {},
+      'examples_unittests': {},
       'modules_unittests': {
         'mixins': ['shards-6'],
       },

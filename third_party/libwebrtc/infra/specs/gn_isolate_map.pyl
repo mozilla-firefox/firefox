@@ -92,6 +92,10 @@
     "label": "//modules/desktop_capture:desktop_capture_win_unittests",
     "type": "console_test_launcher",
   },
+  "examples_unittests": {
+    "label": "//examples:examples_unittests",
+    "type": "console_test_launcher",
+  },
   "modules_unittests": {
     "label": "//modules:modules_unittests",
     "type": "console_test_launcher",

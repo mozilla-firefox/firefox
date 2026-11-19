@@ -55,7 +55,6 @@ if (!build_with_chromium && !build_with_mozilla) {
       deps += [
         ":rust_tests",
         ":test_suites",
-        "examples:examples_unittests",
         "modules/audio_coding:audio_coding_tests",
         "modules/audio_processing:audio_processing_tests",
         "modules/remote_bitrate_estimator:rtp_to_text",
@@ -131,6 +130,7 @@ if (rtc_include_tests) {
       "//call/adaptation:resource_adaptation_tests",
       "//common_audio:common_audio_unittests",
       "//common_video:common_video_unittests",
+      "//examples:examples_unittests",
       "//media:rtc_media_unittests",
       "//modules:modules_unittests",
       "//modules/audio_coding:audio_coding_unittests",
