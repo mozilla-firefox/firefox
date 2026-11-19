@@ -45,13 +45,17 @@ add_task(async function testIntervalChanges() {
   const PREF_SS_INTERVAL = 2000;
 
   // We speed up the interval between session saves to ensure that the test
-  // runs quickly.
-  Services.prefs.setIntPref("browser.sessionstore.interval", PREF_SS_INTERVAL);
-
-  // Increase `idleDelay` to 1 day to update the pre-registered idle observer
-  // in "real" idle service to avoid possible interference, especially for the
-  // CI server environment.
-  Services.prefs.setIntPref("browser.sessionstore.idleDelay", 86400);
+  // runs quickly, and raise `idleDelay` to 1 day so the observer that was
+  // registered against the "real" idle service does not interfere, especially
+  // in the CI server environment. Pushing the prefs rather than setting them
+  // lets the harness restore their prior effective values instead of resetting
+  // them to the defaults.
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.sessionstore.interval", PREF_SS_INTERVAL],
+      ["browser.sessionstore.idleDelay", 86400],
+    ],
+  });
 
   // Mock an idle service.
   let fakeIdleService = MockRegistrar.register(
@@ -60,14 +64,22 @@ add_task(async function testIntervalChanges() {
   );
   idleService._reset();
 
-  registerCleanupFunction(function () {
-    Services.prefs.clearUserPref("browser.sessionstore.interval");
+  registerCleanupFunction(async function () {
+    // Pop the inner env while the mock is still registered: the pref observer
+    // removes the idle observer from whichever service is current, and after
+    // the mock is gone the real service does not know the delay this test
+    // registered. The outer env is deliberately left on the stack for the
+    // harness to pop at the end of the test, when the real service is current
+    // again and still holds the delay that env set.
+    await SpecialPowers.popPrefEnv();
     MockRegistrar.unregister(fakeIdleService);
   });
 
   // Hook idle/active observer to mock idle service by changing pref `idleDelay`
   // to a whatever value, which will not be used.
-  Services.prefs.setIntPref("browser.sessionstore.idleDelay", 5000);
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.sessionstore.idleDelay", 5000]],
+  });
 
   // Wait a `sessionstore-state-write-complete` event from any previous
   // scheduled state write. This is needed since the `_lastSaveTime` in
