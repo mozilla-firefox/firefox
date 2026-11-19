@@ -13,8 +13,6 @@ import org.mozilla.fenix.helpers.FenixTestRule
 import org.mozilla.fenix.helpers.HomeActivityIntentTestRule
 import org.mozilla.fenix.helpers.MockBrowserDataHelper
 import org.mozilla.fenix.helpers.TestAssetHelper.getGenericAsset
-import org.mozilla.fenix.helpers.TestHelper.verifySnackBarText
-import org.mozilla.fenix.helpers.TestHelper.waitUntilSnackbarGone
 import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
 import org.mozilla.fenix.ui.robots.collectionRobot
 import org.mozilla.fenix.ui.robots.composeTabDrawer
@@ -247,31 +245,6 @@ class CollectionTest {
         }
     }
 
-    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/991248
-    @Test
-    fun createCollectionUsingSelectTabsButtonTest() {
-        val firstWebPage = mockWebServer.getGenericAsset(1)
-        val secondWebPage = mockWebServer.getGenericAsset(2)
-
-        navigationToolbar(composeTestRule) {}
-            .enterURLAndEnterToBrowser(firstWebPage.url) {}
-            .openTabDrawer(composeTestRule) {}
-            .openNewTab {}
-            .submitQuery(secondWebPage.url.toString()) {}
-            .openTabDrawer(composeTestRule) {
-                createCollection(
-                    tabTitles = arrayOf(firstWebPage.title, secondWebPage.title),
-                    collectionName = collectionName,
-                )
-                verifySnackBarText("Collection saved")
-                waitUntilSnackbarGone()
-            }
-            .closeTabDrawer {}
-            .goToHomescreen {
-                verifyCollectionIsDisplayed(collectionName)
-            }
-    }
-
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2319455
     @Test
     fun removeTabFromCollectionUsingTheCloseButtonTest() {
@@ -361,43 +334,5 @@ class CollectionTest {
         homeScreen(composeTestRule) {
             verifyCollectionIsDisplayed(collectionName, false)
         }
-    }
-
-    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/991276
-    @Test
-    fun createCollectionByLongPressingOpenTabsTest() {
-        val firstWebPage = mockWebServer.getGenericAsset(1)
-        val secondWebPage = mockWebServer.getGenericAsset(2)
-
-        navigationToolbar(composeTestRule) {}
-            .enterURLAndEnterToBrowser(firstWebPage.url) {
-                waitForPageToLoad()
-            }
-            .openTabDrawer(composeTestRule) {}
-            .openNewTab {}
-            .submitQuery(secondWebPage.url.toString()) {
-                waitForPageToLoad()
-            }
-            .openTabDrawer(composeTestRule) {
-                verifyExistingOpenTabs(firstWebPage.title, secondWebPage.title)
-                longClickTab(firstWebPage.title)
-                verifyTabsMultiSelectionCounter(1)
-                selectTab(secondWebPage.title, numberOfSelectedTabs = 2)
-                verifyTabsMultiSelectionCounter(2)
-            }
-            .openThreeDotMenu {}
-            .clickSaveCollection {
-                typeCollectionNameAndSave(collectionName)
-                verifySnackBarText("Collection saved")
-                waitUntilSnackbarGone()
-            }
-
-        composeTabDrawer(composeTestRule) {}
-            .closeTabDrawer {}
-            .goToHomescreen {}
-            .expandCollection(collectionName) {
-                verifyTabSavedInCollection(firstWebPage.title)
-                verifyTabSavedInCollection(secondWebPage.title)
-            }
     }
 }

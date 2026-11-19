@@ -226,7 +226,6 @@ class TabManagementFragment : Fragment() {
         tabManagerController =
             DefaultTabManagerController(
                 accountManager = requireComponents.backgroundServices.accountManager,
-                context = requireContext(),
                 appStore = requireComponents.appStore,
                 tabsTrayStore = tabsTrayStore,
                 browserStore = requireComponents.core.store,
@@ -240,14 +239,12 @@ class TabManagementFragment : Fragment() {
                 shareUseCases = requireComponents.useCases.shareUseCases,
                 closeSyncedTabsUseCases = requireComponents.useCases.closeSyncedTabsUseCases,
                 addBookmarkUseCase = requireComponents.useCases.bookmarksUseCases.addBookmark,
-                collectionStorage = requireComponents.core.tabCollectionStorage,
                 showUndoSnackbarForTab = ::showUndoSnackbarForTab,
                 showUndoSnackbarForInactiveTab = ::showUndoSnackbarForInactiveTab,
                 showUndoSnackbarForSyncedTab = ::showUndoSnackbarForSyncedTab,
                 showUndoSnackbarForMultipleTabs = ::showUndoSnackbarForMultipleTabs,
                 showCancelledDownloadWarning = ::showCancelledDownloadWarning,
                 showBookmarkSnackbar = ::showBookmarkSnackbar,
-                showCollectionSnackbar = ::showCollectionSnackbar,
             )
 
         tabManagerCfrController =
@@ -590,7 +587,6 @@ class TabManagementFragment : Fragment() {
             onSyncedTabClick = tabManagerInteractor::onSyncedTabClicked,
             onSyncedTabClose = tabManagerInteractor::onSyncedTabClosed,
             onSignInClick = tabManagerInteractor::onSignInClicked,
-            onSaveToCollectionClick = tabManagerInteractor::onAddSelectedTabsToCollectionClicked,
             onShareSelectedTabsClick = tabManagerInteractor::onShareSelectedTabs,
             onTabSettingsClick = tabManagerController::onTabSettingsClicked,
             onRecentlyClosedClick = tabManagerController::onOpenRecentlyClosedClicked,
@@ -750,7 +746,6 @@ class TabManagementFragment : Fragment() {
                             Config.channel.isDebug || requireComponents.settings.showSecretDebugMenuThisSession,
                         showTabAutoCloseBanner =
                             settings.shouldShowAutoCloseTabsBanner && settings.canShowCfr && settings.cfrPopupsEnabled,
-                        collectionsEnabled = settings.collections,
                     ),
             )
 
@@ -1017,24 +1012,6 @@ class TabManagementFragment : Fragment() {
     @VisibleForTesting
     internal fun recordBreadcrumb(message: String) {
         context?.components?.analytics?.crashReporter?.recordCrashBreadcrumb(Breadcrumb(message = message))
-    }
-
-    private fun showCollectionSnackbar(
-        tabSize: Int,
-        isNewCollection: Boolean = false,
-    ) {
-        val messageResId =
-            when {
-                isNewCollection -> R.string.create_collection_tabs_saved_new_collection_2
-                tabSize == 1 -> R.string.create_collection_tab_saved_2
-                else -> return // Don't show snackbar for multiple tabs
-            }
-        lifecycleScope.launch {
-            snackbarHostState.displaySnackbar(
-                message = getString(messageResId),
-                timeout = requireComponents.settings.getSnackbarTimeout(hasAction = false),
-            )
-        }
     }
 
     @VisibleForTesting

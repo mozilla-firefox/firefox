@@ -81,8 +81,6 @@ import org.mozilla.fenix.theme.FirefoxTheme
  * @param onSyncedTabClick Invoked when the user clicks on a synced tab.
  * @param onSyncedTabClose Invoked when the user clicks on a synced tab's close button.
  * @param onSignInClick Invoked when an unauthenticated user clicks to sign-in.
- * @param onSaveToCollectionClick Invoked when the user clicks on the save to collection button from the multi select
- *   banner.
  * @param onShareSelectedTabsClick Invoked when the user clicks on the share button from the multi select banner.
  * @param onTabSettingsClick Invoked when the user clicks on the tab settings banner menu item.
  * @param onRecentlyClosedClick Invoked when the user clicks on the recently closed banner menu item.
@@ -132,7 +130,6 @@ fun TabsTray(
     onSyncedTabClick: OnSyncedTabClick,
     onSyncedTabClose: OnSyncedTabClose,
     onSignInClick: () -> Unit,
-    onSaveToCollectionClick: () -> Unit,
     onShareSelectedTabsClick: () -> Unit,
     onTabSettingsClick: () -> Unit,
     onRecentlyClosedClick: () -> Unit,
@@ -195,7 +192,6 @@ fun TabsTray(
                 state = state,
                 onAction = onAction,
                 onTabPageIndicatorClicked = onTabPageClick,
-                onSaveToCollectionClick = onSaveToCollectionClick,
                 onShareSelectedTabsClick = onShareSelectedTabsClick,
                 onDeleteSelectedTabsClick = onDeleteSelectedTabsClick,
                 onBookmarkSelectedTabsClick = onBookmarkSelectedTabsClick,
@@ -441,7 +437,6 @@ private fun TabsTrayPreview(
                 }
             },
             onSignInClick = {},
-            onSaveToCollectionClick = {},
             onShareSelectedTabsClick = {},
             onTabSettingsClick = {},
             onRecentlyClosedClick = {},

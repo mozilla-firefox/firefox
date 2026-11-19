@@ -4,7 +4,6 @@
 
 package org.mozilla.fenix.tabstray.controller
 
-import android.content.Context
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDirections
@@ -62,7 +61,6 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode
 import org.mozilla.fenix.browser.browsingmode.BrowsingModeManager
 import org.mozilla.fenix.components.AppStore
-import org.mozilla.fenix.components.TabCollectionStorage
 import org.mozilla.fenix.components.accounts.FenixFxAEntryPoint
 import org.mozilla.fenix.components.appstate.AppState
 import org.mozilla.fenix.components.bookmarks.BookmarksUseCase
@@ -107,7 +105,6 @@ class DefaultTabManagerControllerTest {
     private lateinit var loadUrlUseCase: SessionUseCases.DefaultLoadUrlUseCase
     private lateinit var searchUseCases: SearchUseCases
     private lateinit var homepageTitle: String
-    private lateinit var context: Context
 
     private val appStore: AppStore = mockk(relaxed = true)
     private val settings: Settings = mockk(relaxed = true)
@@ -115,7 +112,6 @@ class DefaultTabManagerControllerTest {
 
     private val addBookmarkUseCase: BookmarksUseCase.AddBookmarksUseCase = mockk(relaxed = true)
     private val closeSyncedTabsUseCases: CloseTabsUseCases = mockk(relaxed = true)
-    private val collectionStorage: TabCollectionStorage = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
 
     private val testNormalTab =
@@ -135,7 +131,6 @@ class DefaultTabManagerControllerTest {
     @Before
     fun setup() {
         MockKAnnotations.init(this)
-        context = spyk(testContext)
         loadUrlUseCase = mockk(relaxed = true)
         searchUseCases = mockk(relaxed = true)
         homepageTitle = testContext.getString(R.string.tab_tray_homepage_tab)
@@ -2752,22 +2747,6 @@ class DefaultTabManagerControllerTest {
     }
 
     @Test
-    fun `GIVEN one tab is selected WHEN the add selected tabs to collection button is clicked THEN report the telemetry and show the collections dialog`() {
-        val controller = spyk(createController())
-        every { controller.showCollectionsDialog(any()) } just runs
-
-        every { trayStore.state.mode.selectedTabs } returns
-            setOf(TabsTrayItem.Tab(tab = createTab(url = "https://mozilla.org")))
-        every { controller.showCollectionsDialog(any()) } answers {}
-
-        assertNull(TabsTray.saveToCollection.testGetValue())
-
-        controller.handleAddSelectedTabsToCollectionClicked()
-
-        assertNotNull(TabsTray.saveToCollection.testGetValue())
-    }
-
-    @Test
     fun `GIVEN one tab selected WHEN saving selected tabs to bookmarks THEN add bookmark use case is invoked once and snackbar is shown`() =
         runTest(testDispatcher) {
             var showBookmarkSnackbarInvoked = false
@@ -3246,12 +3225,10 @@ class DefaultTabManagerControllerTest {
         showUndoSnackbarForSyncedTab: (CloseTabsUseCases.UndoableOperation) -> Unit = { _ -> },
         showUndoSnackbarForMultipleTabs: (Boolean, Int) -> Unit = { _, _ -> },
         showCancelledDownloadWarning: (Int, String?, String?) -> Unit = { _, _, _ -> },
-        showCollectionSnackbar: (Int, Boolean) -> Unit = { _, _ -> },
         showBookmarkSnackbar: (Int, String?) -> Unit = { _, _ -> },
     ): DefaultTabManagerController {
         return DefaultTabManagerController(
             accountManager = accountManager,
-            context = context,
             appStore = appStore,
             tabsTrayStore = trayStore,
             browserStore = browserStore,
@@ -3267,14 +3244,12 @@ class DefaultTabManagerControllerTest {
             addBookmarkUseCase = addBookmarkUseCase,
             ioDispatcher = testDispatcher,
             mainDispatcher = testDispatcher,
-            collectionStorage = collectionStorage,
             showUndoSnackbarForTab = showUndoSnackbarForTab,
             showUndoSnackbarForInactiveTab = showUndoSnackbarForInactiveTab,
             showUndoSnackbarForSyncedTab = showUndoSnackbarForSyncedTab,
             showUndoSnackbarForMultipleTabs = showUndoSnackbarForMultipleTabs,
             showCancelledDownloadWarning = showCancelledDownloadWarning,
             showBookmarkSnackbar = showBookmarkSnackbar,
-            showCollectionSnackbar = showCollectionSnackbar,
         )
     }
 

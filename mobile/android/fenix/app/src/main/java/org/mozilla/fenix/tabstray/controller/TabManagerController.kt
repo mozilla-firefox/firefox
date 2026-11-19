@@ -4,7 +4,6 @@
 
 package org.mozilla.fenix.tabstray.controller
 
-import android.content.Context
 import androidx.annotation.VisibleForTesting
 import androidx.navigation.NavController
 import java.util.concurrent.TimeUnit
@@ -31,17 +30,13 @@ import mozilla.components.lib.state.DelicateAction
 import mozilla.components.service.fxa.manager.FxaAccountManager
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.telemetry.glean.private.NoExtras
-import org.mozilla.fenix.GleanMetrics.Collections
 import org.mozilla.fenix.GleanMetrics.Events
 import org.mozilla.fenix.GleanMetrics.TabsTray
 import org.mozilla.fenix.GleanMetrics.TrackingProtection
 import org.mozilla.fenix.R
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode
 import org.mozilla.fenix.browser.browsingmode.BrowsingModeManager
-import org.mozilla.fenix.collections.CollectionsDialog
-import org.mozilla.fenix.collections.show
 import org.mozilla.fenix.components.AppStore
-import org.mozilla.fenix.components.TabCollectionStorage
 import org.mozilla.fenix.components.accounts.FenixFxAEntryPoint
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.bookmarks.BookmarksUseCase
@@ -116,9 +111,6 @@ interface TabManagerController : SyncedTabsController, InactiveTabsController, T
     /** Bookmarks the current set of selected tabs. */
     fun handleBookmarkSelectedTabsClicked()
 
-    /** Saves the current set of selected tabs to a collection. */
-    fun handleAddSelectedTabsToCollectionClicked()
-
     /** Shares the current set of selected tabs. */
     fun handleShareSelectedTabsClicked()
 
@@ -182,7 +174,6 @@ interface TabManagerController : SyncedTabsController, InactiveTabsController, T
  * Default implementation of [TabManagerController].
  *
  * @param accountManager [FxaAccountManager] used to determine signed in status.
- * @param context [Context] used for showing dialogs.
  * @param appStore [AppStore] used to dispatch any [AppAction].
  * @param tabsTrayStore [TabsTrayStore] used to read/update the [TabsTrayState].
  * @param browserStore [BrowserStore] used to read/update the current [BrowserState].
@@ -200,7 +191,6 @@ interface TabManagerController : SyncedTabsController, InactiveTabsController, T
  *   toolbar and menu.
  * @param ioDispatcher [CoroutineContext] used for storage operations.
  * @param mainDispatcher [CoroutineContext] used for UI operations.
- * @param collectionStorage Storage layer for interacting with collections.
  * @param showUndoSnackbarForTab Lambda used to display an undo snackbar when a normal or private tab is closed.
  * @param showUndoSnackbarForInactiveTab Lambda used to display an undo snackbar when an inactive tab is closed.
  * @param showUndoSnackbarForSyncedTab Lambda used to display an undo snackbar when a synced tab is closed.
@@ -208,13 +198,11 @@ interface TabManagerController : SyncedTabsController, InactiveTabsController, T
  *   are closed.
  * @property showCancelledDownloadWarning Lambda used to display a cancelled download warning.
  * @param showBookmarkSnackbar Lambda used to display a snackbar upon saving tabs as bookmarks.
- * @param showCollectionSnackbar Lambda used to display a snackbar upon successfully saving tabs to a collection.
  * @param currentTimeMillis provider for the current time in milliseconds, injectable for testing.
  */
 @Suppress("TooManyFunctions", "LongParameterList")
 class DefaultTabManagerController(
     private val accountManager: FxaAccountManager,
-    private val context: Context,
     private val appStore: AppStore,
     private val tabsTrayStore: TabsTrayStore,
     private val browserStore: BrowserStore,
@@ -230,18 +218,12 @@ class DefaultTabManagerController(
     private val addBookmarkUseCase: BookmarksUseCase.AddBookmarksUseCase,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO,
     private val mainDispatcher: CoroutineContext = Dispatchers.Main,
-    private val collectionStorage: TabCollectionStorage,
     private val showUndoSnackbarForTab: (Boolean) -> Unit,
     private val showUndoSnackbarForInactiveTab: (Int) -> Unit,
     private val showUndoSnackbarForSyncedTab: (CloseTabsUseCases.UndoableOperation) -> Unit,
     private val showUndoSnackbarForMultipleTabs: (isPrivate: Boolean, count: Int) -> Unit,
     internal val showCancelledDownloadWarning: (downloadCount: Int, tabId: String?, source: String?) -> Unit,
     private val showBookmarkSnackbar: (tabSize: Int, parentFolderTitle: String?) -> Unit,
-    private val showCollectionSnackbar:
-        (
-            tabSize: Int,
-            isNewCollection: Boolean,
-        ) -> Unit,
     private val currentTimeMillis: () -> Long = { System.currentTimeMillis() },
 ) : TabManagerController {
 
@@ -495,51 +477,6 @@ class DefaultTabManagerController(
         }
 
         tabsTrayStore.dispatch(TabsTrayAction.ExitSelectMode)
-    }
-
-    override fun handleAddSelectedTabsToCollectionClicked() {
-        val tabs = tabsTrayStore.state.mode.selectedTabs
-
-        TabsTray.selectedTabsToCollection.record(TabsTray.SelectedTabsToCollectionExtra(tabCount = tabs.size))
-        TabsTray.saveToCollection.record(NoExtras())
-
-        tabsTrayStore.dispatch(TabsTrayAction.ExitSelectMode)
-
-        showCollectionsDialog(tabs)
-    }
-
-    @VisibleForTesting
-    internal fun showCollectionsDialog(tabs: Collection<TabsTrayItem.Tab>) {
-        val tabIds = tabs.map { it.id }.toSet()
-        val transformedTabs = browserStore.state.tabs.filter { it.id in tabIds }
-        CollectionsDialog(
-                storage = collectionStorage,
-                sessionList = transformedTabs,
-                onPositiveButtonClick = { id, isNewCollection ->
-
-                    // If collection is null, a new one was created.
-                    if (isNewCollection) {
-                        Collections.saved.record(
-                            Collections.SavedExtra(
-                                tabsTrayStore.state.normalTabsState.tabCount.toString(),
-                                tabs.size.toString(),
-                            )
-                        )
-                    } else {
-                        Collections.tabsAdded.record(
-                            Collections.TabsAddedExtra(
-                                tabsTrayStore.state.normalTabsState.tabCount.toString(),
-                                tabs.size.toString(),
-                            )
-                        )
-                    }
-                    id?.apply {
-                        showCollectionSnackbar(tabs.size, isNewCollection)
-                    }
-                },
-                onNegativeButtonClick = {},
-            )
-            .show(context)
     }
 
     override fun handleShareSelectedTabsClicked() {

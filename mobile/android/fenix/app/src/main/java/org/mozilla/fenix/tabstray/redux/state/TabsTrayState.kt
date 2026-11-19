@@ -178,7 +178,6 @@ data class TabsTrayState(
      *   Groups create FAB.
      * @property isInDebugMode Whether the app is in a debug state or has secret menu enabled.
      * @property showTabAutoCloseBanner Whether the banner for the tab auto-closer feature is visible.
-     * @property collectionsEnabled Whether the Collections feature is enabled.
      */
     data class TabsTrayConfig(
         val displayTabsInGrid: Boolean = false,
@@ -189,7 +188,6 @@ data class TabsTrayState(
         val homepageAsNewTabEnabled: Boolean = false,
         val isInDebugMode: Boolean = false,
         val showTabAutoCloseBanner: Boolean = false,
-        val collectionsEnabled: Boolean = true,
     )
 
     /**

@@ -61,13 +61,6 @@ class DefaultTabManagerInteractorTest {
     }
 
     @Test
-    fun `WHEN user clicks to save the selected tabs to a collection THEN the Interactor delegates to the controller`() {
-        interactor.onAddSelectedTabsToCollectionClicked()
-
-        verify { controller.handleAddSelectedTabsToCollectionClicked() }
-    }
-
-    @Test
     fun `WHEN user clicks to share the selected tabs THEN the Interactor delegates to the controller`() {
         interactor.onShareSelectedTabs()
 

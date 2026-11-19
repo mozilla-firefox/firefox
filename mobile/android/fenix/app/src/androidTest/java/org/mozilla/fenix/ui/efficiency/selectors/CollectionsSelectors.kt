@@ -13,20 +13,11 @@ import org.mozilla.fenix.ui.efficiency.helpers.SelectorStrategy
 
 object CollectionsSelectors : SelectorContainer {
     enum class Group : SelectorGroup {
-        TABS_TRAY_COLLECTIONS_SECTION,
         COLLECTION_ITEM,
         COLLECTION_TAB_ITEM,
         COLLECTION_CONTROLS,
         COLLECTION_THREE_DOT_MENU,
     }
-
-    val ADD_NEW_COLLECTION_BUTTON =
-        Selector(
-            strategy = SelectorStrategy.UIAUTOMATOR_WITH_TEXT,
-            value = "Add new collection",
-            description = "Add new collection from tabs tray collections section",
-            groups = setOf(Group.TABS_TRAY_COLLECTIONS_SECTION),
-        )
 
     val TAB_SAVED_SNACK_BAR =
         Selector(

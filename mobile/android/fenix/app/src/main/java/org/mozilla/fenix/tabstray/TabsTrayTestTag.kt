@@ -16,7 +16,6 @@ internal object TabsTrayTestTag {
     const val SYNCED_TABS_PAGE_BUTTON = "$BANNER_ROOT.syncedTabsPageButton"
 
     const val SELECTION_COUNTER = "$BANNER_ROOT.selectionCounter"
-    const val COLLECTIONS_BUTTON = "$BANNER_ROOT.collections"
     const val SHARE_BUTTON = "$BANNER_ROOT.share"
 
     // Tabs Tray Banner three dot menu

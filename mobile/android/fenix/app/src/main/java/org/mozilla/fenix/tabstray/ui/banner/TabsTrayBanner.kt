@@ -78,7 +78,6 @@ private val RowHeight = 48.dp
  * @param state The current snapshot of [TabsTrayState].
  * @param onAction Invoked to pass upwards a [TabsTrayAction] in response to a UI event.
  * @param onTabPageIndicatorClicked Invoked when the user clicks on a tab page indicator.
- * @param onSaveToCollectionClick Invoked when the user clicks the "Save to Collection" button in multi-select mode.
  * @param onShareSelectedTabsClick Invoked when the user clicks the "Share" button in multi-select mode.
  * @param onDeleteSelectedTabsClick Invoked when the user clicks the "Close Selected Tabs" menu item.
  * @param onBookmarkSelectedTabsClick Invoked when the user clicks the "Bookmark Selected Tabs" menu item.
@@ -96,7 +95,6 @@ fun TabsTrayBanner(
     state: TabsTrayState,
     onAction: (TabsTrayAction) -> Unit,
     onTabPageIndicatorClicked: (Page) -> Unit,
-    onSaveToCollectionClick: () -> Unit,
     onShareSelectedTabsClick: () -> Unit,
     onDeleteSelectedTabsClick: () -> Unit,
     onBookmarkSelectedTabsClick: () -> Unit,
@@ -144,9 +142,7 @@ fun TabsTrayBanner(
                 selectedTabCount = state.mode.selectedTabs.size,
                 shouldShowInactiveButton = state.config.isInDebugMode,
                 shouldShowAddToTabGroupButton = state.config.tabGroupsEnabled,
-                shouldShowSaveToCollectionButton = state.config.collectionsEnabled,
                 onExitSelectModeClick = { onAction(TabsTrayAction.ExitSelectMode) },
-                onSaveToCollectionsClick = onSaveToCollectionClick,
                 onShareSelectedTabs = onShareSelectedTabsClick,
                 onBookmarkSelectedTabsClick = onBookmarkSelectedTabsClick,
                 onCloseSelectedTabsClick = onDeleteSelectedTabsClick,
@@ -389,9 +385,7 @@ private fun BannerTab(
  * @param selectedTabCount The amount of selected tabs.
  * @param shouldShowInactiveButton Whether to show the inactive tabs menu item.
  * @param shouldShowAddToTabGroupButton Whether the add to tab group button should be displayed.
- * @param shouldShowSaveToCollectionButton Whether the save to collection button should be displayed.
  * @param onExitSelectModeClick Invoked when the user clicks to exit selection mode.
- * @param onSaveToCollectionsClick Invoked when the user clicks on the save to collection button.
  * @param onShareSelectedTabs Invoked when the user clicks on the share tabs button.
  * @param onBookmarkSelectedTabsClick Invoked when the user clicks the menu item to bookmark the selected tabs.
  * @param onCloseSelectedTabsClick Invoked when the user clicks the menu item to close the selected tabs.
@@ -404,9 +398,7 @@ private fun MultiSelectBanner(
     selectedTabCount: Int,
     shouldShowInactiveButton: Boolean,
     shouldShowAddToTabGroupButton: Boolean,
-    shouldShowSaveToCollectionButton: Boolean,
     onExitSelectModeClick: () -> Unit,
-    onSaveToCollectionsClick: () -> Unit,
     onShareSelectedTabs: () -> Unit,
     onBookmarkSelectedTabsClick: () -> Unit,
     onCloseSelectedTabsClick: () -> Unit,
@@ -430,9 +422,7 @@ private fun MultiSelectBanner(
         generateMultiSelectBannerMenuItems(
             shouldShowInactiveButton = shouldShowInactiveButton,
             shouldShowAddToTabGroupButton = shouldShowAddToTabGroupButton,
-            shouldShowSaveToCollectionButton = shouldShowSaveToCollectionButton,
             onShareSelectedTabs = onShareSelectedTabs,
-            onSaveToCollectionsClick = onSaveToCollectionsClick,
             onMakeSelectedTabsInactive = onMakeSelectedTabsInactive,
             onAddToTabGroup = onAddToTabGroup,
         )
@@ -516,9 +506,7 @@ private fun MultiSelectBanner(
 private fun generateMultiSelectBannerMenuItems(
     shouldShowInactiveButton: Boolean,
     shouldShowAddToTabGroupButton: Boolean,
-    shouldShowSaveToCollectionButton: Boolean,
     onShareSelectedTabs: () -> Unit,
-    onSaveToCollectionsClick: () -> Unit,
     onMakeSelectedTabsInactive: () -> Unit,
     onAddToTabGroup: () -> Unit,
 ): List<MenuItem> {
@@ -531,16 +519,6 @@ private fun generateMultiSelectBannerMenuItems(
                 onClick = onShareSelectedTabs,
             )
         )
-    if (shouldShowSaveToCollectionButton) {
-        menuItems.add(
-            MenuItem.IconItem(
-                text = Text.Resource(R.string.tab_manager_multiselect_menu_item_add_to_collection),
-                drawableRes = iconsR.drawable.mozac_ic_collection_24,
-                testTag = TabsTrayTestTag.COLLECTIONS_BUTTON,
-                onClick = onSaveToCollectionsClick,
-            )
-        )
-    }
     if (shouldShowInactiveButton) {
         menuItems.add(
             MenuItem.IconItem(
@@ -653,7 +631,6 @@ private fun TabsTrayBannerPreview(
                 onTabPageIndicatorClicked = { page ->
                     tabsTrayStore.dispatch(TabsTrayAction.PageSelected(page))
                 },
-                onSaveToCollectionClick = {},
                 onShareSelectedTabsClick = {},
                 onBookmarkSelectedTabsClick = {},
                 onDeleteSelectedTabsClick = {},

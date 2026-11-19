@@ -38,9 +38,6 @@ interface TabManagerInteractor : SyncedTabsInteractor, InactiveTabsInteractor, T
     /** Invoked when the bookmark button in the multi selection banner is clicked. */
     fun onBookmarkSelectedTabsClicked()
 
-    /** Invoked when the collections button in the multi selection banner is clicked. */
-    fun onAddSelectedTabsToCollectionClicked()
-
     /** Invoked when the share button in the multi selection banner is clicked. */
     fun onShareSelectedTabs()
 
@@ -89,10 +86,6 @@ class DefaultTabManagerInteractor(private val controller: TabManagerController) 
 
     override fun onBookmarkSelectedTabsClicked() {
         controller.handleBookmarkSelectedTabsClicked()
-    }
-
-    override fun onAddSelectedTabsToCollectionClicked() {
-        controller.handleAddSelectedTabsToCollectionClicked()
     }
 
     override fun onShareSelectedTabs() {

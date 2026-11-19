@@ -21,7 +21,6 @@ import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.pressImeActionButton
-import androidx.test.espresso.matcher.RootMatchers
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiSelector
@@ -41,25 +40,6 @@ import org.mozilla.fenix.helpers.click
 import org.mozilla.fenix.helpers.ext.waitNotNull
 
 class CollectionRobot(private val composeTestRule: ComposeTestRule) {
-
-    fun clickAddNewCollection() {
-        Log.i(TAG, "clickAddNewCollection: Trying to click the add new collection button")
-        addNewCollectionButton().click()
-        Log.i(TAG, "clickAddNewCollection: Clicked the add new collection button")
-    }
-
-    // names a collection saved from tab drawer
-    fun typeCollectionNameAndSave(collectionName: String) {
-        Log.i(TAG, "typeCollectionNameAndSave: Trying to set collection name text field to: $collectionName")
-        collectionNameTextField().setText(collectionName)
-        Log.i(TAG, "typeCollectionNameAndSave: Collection name text field set to: $collectionName")
-        Log.i(TAG, "typeCollectionNameAndSave: Waiting for $waitingTime ms for add collection button panel to exist")
-        addCollectionButtonPanel().waitForExists(waitingTime)
-        Log.i(TAG, "typeCollectionNameAndSave: Waited for $waitingTime ms for add collection button panel to exist")
-        Log.i(TAG, "typeCollectionNameAndSave: Trying to click \"OK\" panel button")
-        addCollectionOkButton().click()
-        Log.i(TAG, "typeCollectionNameAndSave: Clicked \"OK\" panel button")
-    }
 
     fun verifyTabsSelectedCounterText(numOfTabs: Int) {
         Log.i(
@@ -321,14 +301,5 @@ private fun collectionThreeDotButton(rule: ComposeTestRule) = rule.onNode(hasCon
 private fun removeTabFromCollectionButton(title: String) =
     mDevice.findObject(UiSelector().text(title)).getFromParent(UiSelector().description("Remove tab from collection"))
 
-// collection name text field, opened from tab drawer
-private fun collectionNameTextField() = mDevice.findObject(UiSelector().resourceId("$packageName:id/collection_name"))
-
 // collection name text field, when saving from the main menu option
 private fun mainMenuEditCollectionNameField() = itemWithResId("$packageName:id/name_collection_edittext")
-
-private fun addNewCollectionButton() = mDevice.findObject(UiSelector().text("Add new collection"))
-
-private fun addCollectionButtonPanel() = itemWithResId("$packageName:id/buttonPanel")
-
-private fun addCollectionOkButton() = onView(withId(android.R.id.button1)).inRoot(RootMatchers.isDialog())

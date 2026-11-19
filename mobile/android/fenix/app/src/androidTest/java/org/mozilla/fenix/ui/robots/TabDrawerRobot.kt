@@ -384,35 +384,6 @@ class TabDrawerRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "swipeTabRight: mDevice.waitForIdle() returned")
     }
 
-    /** Creates a collection from the provided [tabTitles]. */
-    fun createCollection(
-        vararg tabTitles: String,
-        collectionName: String,
-        firstCollection: Boolean = true,
-    ) {
-        Log.i(TAG, "createCollection: Trying to click the three dot button")
-        composeTestRule.threeDotButton().performClick()
-        Log.i(TAG, "createCollection: Clicked the three dot button")
-        Log.i(TAG, "createCollection: Trying to click the \"Select tabs\" menu button")
-        composeTestRule.dropdownMenuItemSelectTabs().performClick()
-        Log.i(TAG, "createCollection: Clicked the \"Select tabs\" menu button")
-
-        for (tab in tabTitles) {
-            selectTab(tab, numberOfSelectedTabs = tabTitles.indexOf(tab) + 1)
-        }
-
-        Log.i(TAG, "createCollection: Trying to click the three dot button")
-        composeTestRule.threeDotButton().performClick()
-        Log.i(TAG, "createCollection: Clicked the three dot button")
-
-        clickCollectionsButton(composeTestRule) {
-            if (!firstCollection) {
-                clickAddNewCollection()
-            }
-            typeCollectionNameAndSave(collectionName)
-        }
-    }
-
     /** Selects a tab with [title]. */
     @OptIn(ExperimentalTestApi::class)
     fun selectTab(title: String, numberOfSelectedTabs: Int = 0) {
@@ -643,15 +614,6 @@ class TabDrawerRobot(private val composeTestRule: ComposeTestRule) {
             return BrowserRobot.Transition(composeTestRule)
         }
 
-        fun clickSaveCollection(interact: CollectionRobot.() -> Unit): CollectionRobot.Transition {
-            Log.i(TAG, "clickSaveCollection: Trying to click the collections button")
-            composeTestRule.collectionsButton().performClick()
-            Log.i(TAG, "clickSaveCollection: Clicked collections button")
-
-            CollectionRobot(composeTestRule).interact()
-            return CollectionRobot.Transition(composeTestRule)
-        }
-
         fun clickSelectTabsButton(interact: TabDrawerRobot.() -> Unit): Transition {
             Log.i(TAG, "clickSelectTabsButton: Trying to click the \"Select tabs\" menu button")
             composeTestRule.dropdownMenuItemSelectTabs().performClick()
@@ -685,19 +647,6 @@ class TabDrawerRobot(private val composeTestRule: ComposeTestRule) {
 fun composeTabDrawer(composeTestRule: ComposeTestRule, interact: TabDrawerRobot.() -> Unit): TabDrawerRobot.Transition {
     TabDrawerRobot(composeTestRule).interact()
     return TabDrawerRobot.Transition(composeTestRule)
-}
-
-/** Clicks on the Collections button in the Tabs Tray banner and opens a transition in the [CollectionRobot]. */
-private fun clickCollectionsButton(
-    composeTestRule: ComposeTestRule,
-    interact: CollectionRobot.() -> Unit,
-): CollectionRobot.Transition {
-    Log.i(TAG, "clickCollectionsButton: Trying to click the collections button")
-    composeTestRule.collectionsButton().performClick()
-    Log.i(TAG, "clickCollectionsButton: Clicked the collections button")
-
-    CollectionRobot(composeTestRule).interact()
-    return CollectionRobot.Transition(composeTestRule)
 }
 
 /** Obtains the root Tabs Tray. */
@@ -781,9 +730,6 @@ private fun ComposeTestRule.dropdownMenuItemTabSettings() = onNodeWithTag(TabsTr
 
 /** Obtains the dropdown menu item to share tabs. */
 private fun ComposeTestRule.dropdownMenuItemShare() = onNodeWithTag(TabsTrayTestTag.SHARE_BUTTON)
-
-/** Obtains the Tabs Tray banner collections button. */
-private fun ComposeTestRule.collectionsButton() = onNodeWithTag(TabsTrayTestTag.COLLECTIONS_BUTTON)
 
 /** Obtains the Tabs Tray banner multi selection counter. */
 private fun ComposeTestRule.multiSelectionCounter() = onNodeWithTag(TabsTrayTestTag.SELECTION_COUNTER)
