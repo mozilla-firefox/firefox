@@ -134,3 +134,93 @@ add_task(async function test_empty_providers_have_no_policies() {
     "Combining only empty providers yields no effective policies"
   );
 });
+
+function providerWithUserPolicies(policies, userPolicies) {
+  return { policies, userPolicies, failed: false };
+}
+
+add_task(async function test_user_policies_rank_below_every_provider() {
+  // The user policies come from the later, platform provider, but still can't
+  // override a policy set by the earlier, JSON provider.
+  let combined = combine(
+    fakeProvider({ Shared: "json" }),
+    providerWithUserPolicies({}, { Shared: "user", OnlyUser: true })
+  );
+
+  deepEqual(
+    combined.policies,
+    { Shared: "json", OnlyUser: true },
+    "User policies are merged under every provider's policies"
+  );
+});
+
+add_task(async function test_user_policies_applied_first() {
+  let combined = combine(
+    fakeProvider({ Shared: "json", OnlyJson: true }),
+    providerWithUserPolicies(
+      { OnlyPlatform: true },
+      { Shared: "user", OnlyUser: true }
+    )
+  );
+
+  deepEqual(
+    Object.keys(combined.policies),
+    ["OnlyUser", "Shared", "OnlyJson", "OnlyPlatform"],
+    "User-only policies come first, so admin callbacks run after them"
+  );
+  equal(combined.policies.Shared, "json", "The admin value wins");
+});
+
+add_task(async function test_disable_user_policies_from_any_provider() {
+  let combined = combine(
+    fakeProvider({ DisableMacOSUserPolicies: true, OnlyJson: true }),
+    providerWithUserPolicies({ OnlyPlatform: true }, { OnlyUser: true })
+  );
+
+  deepEqual(
+    combined.policies,
+    { DisableMacOSUserPolicies: true, OnlyJson: true, OnlyPlatform: true },
+    "DisableMacOSUserPolicies from another provider drops the user policies"
+  );
+
+  combined = combine(
+    providerWithUserPolicies(
+      { DisableMacOSUserPolicies: 1 },
+      { OnlyUser: true }
+    )
+  );
+  deepEqual(
+    combined.policies,
+    { DisableMacOSUserPolicies: 1 },
+    "DisableMacOSUserPolicies set to 1 drops the user policies"
+  );
+});
+
+add_task(async function test_disable_user_policies_false() {
+  let combined = combine(
+    providerWithUserPolicies(
+      { DisableMacOSUserPolicies: false },
+      { OnlyUser: true }
+    )
+  );
+
+  deepEqual(
+    combined.policies,
+    { OnlyUser: true, DisableMacOSUserPolicies: false },
+    "User policies are kept when DisableMacOSUserPolicies is false"
+  );
+});
+
+add_task(async function test_user_disable_user_policies_ignored() {
+  let combined = combine(
+    providerWithUserPolicies(
+      { OnlyPlatform: true },
+      { DisableMacOSUserPolicies: true, OnlyUser: true }
+    )
+  );
+
+  ok(
+    "OnlyUser" in combined.policies,
+    "DisableMacOSUserPolicies only counts from a provider's own policies"
+  );
+});

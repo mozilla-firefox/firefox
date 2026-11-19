@@ -674,6 +674,14 @@ class PoliciesProvider {
   get failed() {
     return this._failed;
   }
+
+  /**
+   * Policies from sources a standard user can write. They rank below the
+   * policies of every provider.
+   */
+  get userPolicies() {
+    return null;
+  }
 }
 
 /*
@@ -876,8 +884,40 @@ export class CombinedProvider extends PoliciesProvider {
 
   mergePolicies() {
     // Combine the top-level policies of every provider, with providers added
-    // later taking precedence over those added earlier.
-    this._policies = Object.assign({}, ...this._providers.map(p => p.policies));
+    // later taking precedence over those added earlier. User policies rank
+    // below all of them and are dropped when DisableMacOSUserPolicies is set.
+    let policies = Object.assign({}, ...this._providers.map(p => p.policies));
+    const userPolicies = Object.assign(
+      {},
+      ...this._providers.map(p => p.userPolicies)
+    );
+    // Drop the user entries an admin also sets, so every admin policy comes
+    // after the user-only ones and its callbacks run last.
+    let userOnly = Object.fromEntries(
+      Object.entries(userPolicies).filter(([name]) => !(name in policies))
+    );
+    if (this._disablesUserPolicies(policies)) {
+      let ignored = Object.keys(userOnly);
+      if (ignored.length) {
+        lazy.log.warn(`Ignoring user policies: ${ignored.join(", ")}`);
+      }
+      userOnly = {};
+    }
+    this._policies = { ...userOnly, ...policies };
+  }
+
+  _disablesUserPolicies(policies) {
+    if (!("DisableMacOSUserPolicies" in policies)) {
+      return false;
+    }
+    let { schema } = ChromeUtils.importESModule(
+      "resource:///modules/policies/schema.sys.mjs"
+    );
+    let { valid, parsedValue } = lazy.PolicySchemaValidator.validate(
+      policies.DisableMacOSUserPolicies,
+      schema.properties.DisableMacOSUserPolicies
+    );
+    return valid && parsedValue === true;
   }
 
   get failed() {
