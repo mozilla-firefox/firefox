@@ -199,20 +199,9 @@ bool MediaChannelUtil::TransportForMediaChannels::SendRtcp(
 bool MediaChannelUtil::TransportForMediaChannels::SendRtp(
     std::span<const uint8_t> packet,
     const PacketOptions& options) {
-  auto send = [this, packet = CopyOnWriteBuffer(packet, kMaxRtpPacketLen),
-               options]() mutable {
-    DoSendPacket(&packet, false, TranslatePacketOptions(options));
-  };
-
-  // TODO(bugs.webrtc.org/11993): ModuleRtpRtcpImpl2 and related classes (e.g.
-  // RTCPSender) aren't aware of the network thread and may trigger calls to
-  // this function from different threads. Update those classes to keep
-  // network traffic on the network thread.
-  if (network_thread_->IsCurrent()) {
-    send();
-  } else {
-    network_thread_->PostTask(SafeTask(network_safety_, std::move(send)));
-  }
+  RTC_DCHECK_RUN_ON(network_thread_);
+  CopyOnWriteBuffer send_packet(packet, kMaxRtpPacketLen);
+  DoSendPacket(&send_packet, false, TranslatePacketOptions(options));
   return true;
 }
 

@@ -15,7 +15,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/d380a43d59f4f7cbc
  4 files changed, 36 insertions(+)
 
 diff --git a/audio/audio_send_stream.cc b/audio/audio_send_stream.cc
-index 6b726c150d..7602bf8497 100644
+index df9c4beaeb..42d5859212 100644
 --- a/audio/audio_send_stream.cc
 +++ b/audio/audio_send_stream.cc
 @@ -441,6 +441,7 @@ webrtc::AudioSendStream::Stats AudioSendStream::GetStats(
@@ -27,7 +27,7 @@ index 6b726c150d..7602bf8497 100644
    stats.header_and_padding_bytes_sent =
        channel_stats.header_and_padding_bytes_sent;
 diff --git a/audio/channel_send.cc b/audio/channel_send.cc
-index bebe4d0696..1024fa6e96 100644
+index 8047721717..47ccd926fc 100644
 --- a/audio/channel_send.cc
 +++ b/audio/channel_send.cc
 @@ -82,6 +82,32 @@ namespace {
@@ -69,18 +69,18 @@ index bebe4d0696..1024fa6e96 100644
  
 +  const std::unique_ptr<RtcpCounterObserver> rtcp_counter_observer_;
 +
-   PacketRouter* packet_router_ RTC_GUARDED_BY(worker_thread_) = nullptr;
+   PacketRouter* packet_router_ RTC_GUARDED_BY(network_thread_) = nullptr;
    const std::unique_ptr<RtpPacketSenderProxy> rtp_packet_pacer_proxy_;
  
-@@ -537,6 +565,7 @@ ChannelSend::ChannelSend(
+@@ -535,6 +563,7 @@ ChannelSend::ChannelSend(
      : env_(env),
-       worker_thread_(TaskQueueBase::Current()),
+       network_thread_(TaskQueueBase::Current()),
        ssrc_(ssrc),
 +      rtcp_counter_observer_(new RtcpCounterObserver(ssrc)),
        rtp_packet_pacer_proxy_(new RtpPacketSenderProxy()),
        frame_encryptor_(frame_encryptor),
        crypto_options_(crypto_options),
-@@ -558,6 +587,8 @@ ChannelSend::ChannelSend(
+@@ -556,6 +585,8 @@ ChannelSend::ChannelSend(
  
    configuration.paced_sender = rtp_packet_pacer_proxy_.get();
    configuration.rtt_stats = rtcp_rtt_stats;
@@ -89,8 +89,8 @@ index bebe4d0696..1024fa6e96 100644
    configuration.extmap_allow_mixed = extmap_allow_mixed;
    configuration.rtcp_report_interval_ms = rtcp_report_interval_ms;
    configuration.rtcp_packet_type_counter_observer = this;
-@@ -833,6 +864,7 @@ ChannelSendStatistics ChannelSend::GetRTCPStatistics() const {
-   RTC_DCHECK_RUN_ON(worker_thread_);
+@@ -831,6 +862,7 @@ ChannelSendStatistics ChannelSend::GetRTCPStatistics() const {
+   RTC_DCHECK_RUN_ON(network_thread_);
    ChannelSendStatistics stats = {
        .round_trip_time = rtp_rtcp_->LastRtt().value_or(TimeDelta::Zero())};
 +  stats.rtcp_packet_type_counts = rtcp_counter_observer_->GetCounts();

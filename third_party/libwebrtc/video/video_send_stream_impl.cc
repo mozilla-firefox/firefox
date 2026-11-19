@@ -460,7 +460,7 @@ VideoSendStreamImpl::VideoSendStreamImpl(
           config_.periodic_alr_bandwidth_probing ||
           GetAlrSettings(env_.field_trials(), encoder_config.content_type)),
       pacing_config_(PacingConfig(env_.field_trials())),
-      worker_queue_(TaskQueueBase::Current()),
+      network_queue_(TaskQueueBase::Current()),
       timed_out_(false),
       bitrate_allocator_(bitrate_allocator),
       has_active_encodings_(HasActiveEncodings(encoder_config)),
@@ -684,7 +684,7 @@ void VideoSendStreamImpl::StartupVideoSendStream() {
     activity_ = false;
     timed_out_ = false;
     check_encoder_activity_task_ = RepeatingTaskHandle::DelayedStart(
-        worker_queue_, kEncoderTimeOut, [this] {
+        network_queue_, kEncoderTimeOut, [this] {
           RTC_DCHECK_RUN_ON(&thread_checker_);
           if (!activity_) {
             if (!timed_out_) {
@@ -775,7 +775,7 @@ void VideoSendStreamImpl::OnEncoderConfigurationChanged(
     VideoEncoderConfig::ContentType content_type,
     int min_transmit_bitrate_bps) {
   // Currently called on the encoder TQ
-  RTC_DCHECK(!worker_queue_->IsCurrent());
+  RTC_DCHECK(!network_queue_->IsCurrent());
   auto closure = [this, streams = std::move(streams), is_svc, content_type,
                   min_transmit_bitrate_bps]() mutable {
     RTC_DCHECK_GE(config_.rtp.ssrcs.size(), streams.size());
@@ -846,8 +846,8 @@ void VideoSendStreamImpl::OnEncoderConfigurationChanged(
     }
   };
 
-  worker_queue_->PostTask(
-      SafeTask(worker_queue_safety_.flag(), std::move(closure)));
+  network_queue_->PostTask(
+      SafeTask(network_queue_safety_.flag(), std::move(closure)));
 }
 
 EncodedImageCallback::Result VideoSendStreamImpl::OnEncodedImage(
@@ -859,9 +859,9 @@ EncodedImageCallback::Result VideoSendStreamImpl::OnEncodedImage(
 
   // Indicate that there still is activity going on.
   activity_ = true;
-  RTC_DCHECK(!worker_queue_->IsCurrent());
+  RTC_DCHECK(!network_queue_->IsCurrent());
 
-  auto task_to_run_on_worker = [this]() {
+  auto task_to_run_on_network = [this]() {
     RTC_DCHECK_RUN_ON(&thread_checker_);
     if (disable_padding_) {
       disable_padding_ = false;
@@ -869,8 +869,8 @@ EncodedImageCallback::Result VideoSendStreamImpl::OnEncodedImage(
       SignalEncoderActive();
     }
   };
-  worker_queue_->PostTask(
-      SafeTask(worker_queue_safety_.flag(), std::move(task_to_run_on_worker)));
+  network_queue_->PostTask(SafeTask(network_queue_safety_.flag(),
+                                    std::move(task_to_run_on_network)));
 
   return rtp_video_sender_->OnEncodedImage(encoded_image, codec_specific_info);
 }

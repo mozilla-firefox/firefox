@@ -127,41 +127,41 @@ class AudioSendStream final : public webrtc::AudioSendStream,
   const internal::AudioState* audio_state() const;
 
   void StoreEncoderProperties(int sample_rate_hz, size_t num_channels)
-      RTC_RUN_ON(worker_thread_checker_);
+      RTC_RUN_ON(network_thread_checker_);
 
   void ConfigureStream(const Config& new_config,
                        bool first_time,
                        SetParametersCallback callback)
-      RTC_RUN_ON(worker_thread_checker_);
+      RTC_RUN_ON(network_thread_checker_);
   bool SetupSendCodec(const Config& new_config)
-      RTC_RUN_ON(worker_thread_checker_);
+      RTC_RUN_ON(network_thread_checker_);
   bool ReconfigureSendCodec(const Config& new_config)
-      RTC_RUN_ON(worker_thread_checker_);
+      RTC_RUN_ON(network_thread_checker_);
   void ReconfigureANA(const Config& new_config)
-      RTC_RUN_ON(worker_thread_checker_);
+      RTC_RUN_ON(network_thread_checker_);
   void ReconfigureCNG(const Config& new_config)
-      RTC_RUN_ON(worker_thread_checker_);
+      RTC_RUN_ON(network_thread_checker_);
   void ReconfigureBitrateObserver(const Config& new_config)
-      RTC_RUN_ON(worker_thread_checker_);
+      RTC_RUN_ON(network_thread_checker_);
 
-  void ConfigureBitrateObserver() RTC_RUN_ON(worker_thread_checker_);
-  void RemoveBitrateObserver() RTC_RUN_ON(worker_thread_checker_);
+  void ConfigureBitrateObserver() RTC_RUN_ON(network_thread_checker_);
+  void RemoveBitrateObserver() RTC_RUN_ON(network_thread_checker_);
 
   // Returns bitrate constraints, maybe including overhead when enabled by
   // field trial.
   std::optional<TargetAudioBitrateConstraints> GetMinMaxBitrateConstraints()
-      const RTC_RUN_ON(worker_thread_checker_);
+      const RTC_RUN_ON(network_thread_checker_);
 
   // Sets per-packet overhead on encoded (for ANA) based on current known values
   // of transport and packetization overheads.
   void UpdateOverheadPerPacket();
 
   void RegisterCngPayloadType(int payload_type, int clockrate_hz)
-      RTC_RUN_ON(worker_thread_checker_);
+      RTC_RUN_ON(network_thread_checker_);
 
   const Environment env_;
 
-  SequenceChecker worker_thread_checker_;
+  SequenceChecker network_thread_checker_;
   RaceChecker audio_capture_race_checker_;
 
   const bool allocate_audio_without_feedback_;
@@ -170,22 +170,22 @@ class AudioSendStream final : public webrtc::AudioSendStream,
   const AudioAllocationConfig allocation_settings_;
 
   webrtc::AudioSendStream::Config config_
-      RTC_GUARDED_BY(worker_thread_checker_);
+      RTC_GUARDED_BY(network_thread_checker_);
   scoped_refptr<webrtc::AudioState> audio_state_;
   const std::unique_ptr<voe::ChannelSendInterface> channel_send_;
   const bool use_legacy_overhead_calculation_;
   const bool enable_priority_bitrate_;
 
-  int encoder_sample_rate_hz_ RTC_GUARDED_BY(worker_thread_checker_) = 0;
-  size_t encoder_num_channels_ RTC_GUARDED_BY(worker_thread_checker_) = 0;
-  bool sending_ RTC_GUARDED_BY(worker_thread_checker_) = false;
+  int encoder_sample_rate_hz_ RTC_GUARDED_BY(network_thread_checker_) = 0;
+  size_t encoder_num_channels_ RTC_GUARDED_BY(network_thread_checker_) = 0;
+  bool sending_ RTC_GUARDED_BY(network_thread_checker_) = false;
   mutable Mutex audio_level_lock_;
   // Keeps track of audio level, total audio energy and total samples duration.
   // https://w3c.github.io/webrtc-stats/#dom-rtcaudiohandlerstats-totalaudioenergy
   webrtc::voe::AudioLevel audio_level_ RTC_GUARDED_BY(audio_level_lock_);
 
   BitrateAllocatorInterface* const bitrate_allocator_
-      RTC_GUARDED_BY(worker_thread_checker_);
+      RTC_GUARDED_BY(network_thread_checker_);
   RtpTransportControllerSendInterface* const rtp_transport_;
 
   RtpRtcpInterface* const rtp_rtcp_module_;
@@ -209,16 +209,16 @@ class AudioSendStream final : public webrtc::AudioSendStream,
 
   // Current transport overhead (ICE, TURN, etc.)
   size_t transport_overhead_per_packet_bytes_
-      RTC_GUARDED_BY(worker_thread_checker_) = 0;
+      RTC_GUARDED_BY(network_thread_checker_) = 0;
   // Total overhead, including transport and RTP headers.
-  size_t overhead_per_packet_ RTC_GUARDED_BY(worker_thread_checker_) = 0;
+  size_t overhead_per_packet_ RTC_GUARDED_BY(network_thread_checker_) = 0;
 
-  bool registered_with_allocator_ RTC_GUARDED_BY(worker_thread_checker_) =
+  bool registered_with_allocator_ RTC_GUARDED_BY(network_thread_checker_) =
       false;
   std::optional<std::pair<TimeDelta, TimeDelta>> frame_length_range_
-      RTC_GUARDED_BY(worker_thread_checker_);
+      RTC_GUARDED_BY(network_thread_checker_);
   std::optional<std::pair<DataRate, DataRate>> bitrate_range_
-      RTC_GUARDED_BY(worker_thread_checker_);
+      RTC_GUARDED_BY(network_thread_checker_);
 };
 }  // namespace internal
 }  // namespace webrtc

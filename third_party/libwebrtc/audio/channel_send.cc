@@ -280,7 +280,7 @@ class ChannelSend : public ChannelSendInterface,
                        int64_t absolute_capture_timestamp_ms,
                        std::span<const uint32_t> csrcs,
                        std::optional<uint8_t> audio_level_dbov)
-      RTC_RUN_ON(worker_thread_);
+      RTC_RUN_ON(network_thread_);
 
   void OnReceivedRtt(int64_t rtt_ms);
 
@@ -296,7 +296,7 @@ class ChannelSend : public ChannelSendInterface,
   // specific threads we know about. The goal is to eventually split up
   // voe::Channel into parts with single-threaded semantics, and thereby reduce
   // the need for locks.
-  TaskQueueBase* worker_thread_;
+  TaskQueueBase* const network_thread_;
   const ScopedTaskSafety task_safety_;
   // Methods accessed from audio and video threads are checked for sequential-
   // only access. We don't necessarily own and control these threads, so thread
@@ -307,7 +307,7 @@ class ChannelSend : public ChannelSendInterface,
   mutable Mutex volume_settings_mutex_;
 
   const uint32_t ssrc_;
-  bool sending_ RTC_GUARDED_BY(worker_thread_) = false;
+  bool sending_ RTC_GUARDED_BY(network_thread_) = false;
 
   std::unique_ptr<ModuleRtpRtcpImpl2> rtp_rtcp_;
   std::unique_ptr<RTPSenderAudio> rtp_sender_audio_;
@@ -325,10 +325,8 @@ class ChannelSend : public ChannelSendInterface,
 
   const std::unique_ptr<RtcpCounterObserver> rtcp_counter_observer_;
 
-  PacketRouter* packet_router_ RTC_GUARDED_BY(worker_thread_) = nullptr;
+  PacketRouter* packet_router_ RTC_GUARDED_BY(network_thread_) = nullptr;
   const std::unique_ptr<RtpPacketSenderProxy> rtp_packet_pacer_proxy_;
-
-  RTC_NO_UNIQUE_ADDRESS SequenceChecker construction_thread_;
 
   std::atomic<bool> include_audio_level_indication_ = false;
   std::atomic<bool> encoder_queue_is_active_ = false;
@@ -336,14 +334,14 @@ class ChannelSend : public ChannelSendInterface,
 
   // E2EE Audio Frame Encryption
   scoped_refptr<FrameEncryptorInterface> frame_encryptor_
-      RTC_GUARDED_BY(worker_thread_);
+      RTC_GUARDED_BY(network_thread_);
   // E2EE Frame Encryption Options
   const CryptoOptions crypto_options_;
 
   // Sframe end-to-end encryption settings for this stream.
-  bool sframe_required_by_negotiation_ RTC_GUARDED_BY(worker_thread_) = false;
+  bool sframe_required_by_negotiation_ RTC_GUARDED_BY(network_thread_) = false;
   std::optional<SframeEncryptionConfig> sframe_encryption_config_
-      RTC_GUARDED_BY(worker_thread_);
+      RTC_GUARDED_BY(network_thread_);
 
   // Delegates calls to a frame transformer to transform audio, and
   // receives callbacks with the transformed frames; delegates calls to
@@ -448,12 +446,12 @@ int32_t ChannelSend::SendData(
   }
   Buffer payload(payloadData, payloadSize);
   std::vector<uint32_t> csrcs = csrcs_override.value_or(csrcs_);
-  worker_thread_->PostTask(SafeTask(
+  network_thread_->PostTask(SafeTask(
       task_safety_.flag(),
       [this, frameType, payloadType, rtp_timestamp,
        payload = std::move(payload), absolute_capture_timestamp_ms,
        csrcs = std::move(csrcs), audio_level_dbov] {
-        RTC_DCHECK_RUN_ON(worker_thread_);
+        RTC_DCHECK_RUN_ON(network_thread_);
         SendRtpAudio(frameType, payloadType, rtp_timestamp, payload,
                      absolute_capture_timestamp_ms, csrcs, audio_level_dbov);
       }));
@@ -563,7 +561,7 @@ ChannelSend::ChannelSend(
     scoped_refptr<FrameTransformerInterface> frame_transformer,
     RtpTransportControllerSendInterface* transport_controller)
     : env_(env),
-      worker_thread_(TaskQueueBase::Current()),
+      network_thread_(TaskQueueBase::Current()),
       ssrc_(ssrc),
       rtcp_counter_observer_(new RtcpCounterObserver(ssrc)),
       rtp_packet_pacer_proxy_(new RtpPacketSenderProxy()),
@@ -608,7 +606,7 @@ ChannelSend::ChannelSend(
 }
 
 ChannelSend::~ChannelSend() {
-  RTC_DCHECK(construction_thread_.IsCurrent());
+  RTC_DCHECK_RUN_ON(network_thread_);
 
   // Reset and clear the frame_transformer_delegate_ on the encoder queue
   // to avoid race conditions.
@@ -633,7 +631,7 @@ ChannelSend::~ChannelSend() {
 }
 
 void ChannelSend::StartSend() {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   RTC_DCHECK(!sending_);
   sending_ = true;
 
@@ -649,7 +647,7 @@ void ChannelSend::StartSend() {
 }
 
 void ChannelSend::StopSend() {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   if (!sending_) {
     return;
   }
@@ -681,7 +679,7 @@ void ChannelSend::StopSend() {
 void ChannelSend::SetEncoder(int payload_type,
                              const SdpAudioFormat& encoder_format,
                              std::unique_ptr<AudioEncoder> encoder) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   RTC_DCHECK_GE(payload_type, 0);
   RTC_DCHECK_LE(payload_type, 127);
 
@@ -740,7 +738,7 @@ void ChannelSend::OnReportBlockDataUpdated(ReportBlockData report_block) {
 }
 
 void ChannelSend::ReceivedRTCPPacket(const uint8_t* data, size_t length) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
 
   // Deliver RTCP packet to RTP/RTCP module for parsing
   rtp_rtcp_->IncomingRtcpPacket(std::span(data, length));
@@ -755,7 +753,7 @@ void ChannelSend::ReceivedRTCPPacket(const uint8_t* data, size_t length) {
 }
 
 void ChannelSend::SetInputMute(bool enable) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   MutexLock lock(&volume_settings_mutex_);
   input_mute_ = enable;
 }
@@ -766,7 +764,7 @@ bool ChannelSend::InputMute() const {
 }
 
 void ChannelSend::SetCsrcs(std::span<const uint32_t> csrcs) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   std::vector<uint32_t> csrcs_copy(
       csrcs.begin(),
       csrcs.begin() + std::min<size_t>(csrcs.size(), kRtpCsrcSize));
@@ -777,7 +775,7 @@ void ChannelSend::SetCsrcs(std::span<const uint32_t> csrcs) {
 }
 
 bool ChannelSend::SendTelephoneEventOutband(int event, int duration_ms) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   RTC_DCHECK_LE(0, event);
   RTC_DCHECK_GE(255, event);
   RTC_DCHECK_LE(0, duration_ms);
@@ -802,7 +800,7 @@ void ChannelSend::RegisterCngPayloadType(int payload_type,
 
 void ChannelSend::SetSendTelephoneEventPayloadType(int payload_type,
                                                    int payload_frequency) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   RTC_DCHECK_LE(0, payload_type);
   RTC_DCHECK_GE(127, payload_type);
   rtp_rtcp_->RegisterSendPayloadFrequency(payload_type, payload_frequency);
@@ -811,7 +809,7 @@ void ChannelSend::SetSendTelephoneEventPayloadType(int payload_type,
 }
 
 void ChannelSend::SetSendAudioLevelIndicationStatus(RtpHeaderExtensionId id) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   include_audio_level_indication_.store(id.IsSet());
   if (id.IsSet()) {
     rtp_rtcp_->RegisterRtpHeaderExtension(AudioLevelExtension::Uri(), id);
@@ -822,7 +820,7 @@ void ChannelSend::SetSendAudioLevelIndicationStatus(RtpHeaderExtensionId id) {
 
 void ChannelSend::RegisterSenderCongestionControlObjects(
     RtpTransportControllerSendInterface* transport) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   RtpPacketSender* rtp_packet_pacer = transport->packet_sender();
   PacketRouter* packet_router = transport->packet_router();
 
@@ -835,7 +833,7 @@ void ChannelSend::RegisterSenderCongestionControlObjects(
 }
 
 void ChannelSend::ResetSenderCongestionControlObjects() {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   RTC_DCHECK(packet_router_);
   rtp_rtcp_->SetStorePacketsStatus(false, 600);
   packet_router_ = nullptr;
@@ -843,7 +841,7 @@ void ChannelSend::ResetSenderCongestionControlObjects() {
 }
 
 void ChannelSend::SetRTCP_CNAME(absl::string_view c_name) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   // Note: SetCNAME() accepts a c string of length at most 255.
   const std::string c_name_limited(c_name.substr(0, 255));
   int ret = rtp_rtcp_->SetCNAME(c_name_limited.c_str()) != 0;
@@ -851,7 +849,7 @@ void ChannelSend::SetRTCP_CNAME(absl::string_view c_name) {
 }
 
 std::vector<ReportBlockData> ChannelSend::GetRemoteRTCPReportBlocks() const {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   // Get the report blocks from the latest received RTCP Sender or Receiver
   // Report. Each element in the vector contains the sender's SSRC and a
   // report block according to RFC 3550.
@@ -859,7 +857,7 @@ std::vector<ReportBlockData> ChannelSend::GetRemoteRTCPReportBlocks() const {
 }
 
 ChannelSendStatistics ChannelSend::GetRTCPStatistics() const {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   ChannelSendStatistics stats = {
       .round_trip_time = rtp_rtcp_->LastRtt().value_or(TimeDelta::Zero())};
   stats.rtcp_packet_type_counts = rtcp_counter_observer_->GetCounts();
@@ -986,7 +984,7 @@ void ChannelSend::ProcessAndEncodeAudio(
 }
 
 ANAStats ChannelSend::GetANAStatistics() const {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   return audio_coding_->GetANAStats();
 }
 
@@ -996,19 +994,19 @@ RtpRtcpInterface* ChannelSend::GetRtpRtcp() const {
 
 void ChannelSend::SetFrameEncryptor(
     scoped_refptr<FrameEncryptorInterface> frame_encryptor) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   frame_encryptor_ = std::move(frame_encryptor);
 }
 
 void ChannelSend::SetSframeOptions(const SframeSendOptions& options) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   sframe_required_by_negotiation_ = options.required;
   sframe_encryption_config_ = options.encryption_config;
 }
 
 void ChannelSend::SetEncoderToPacketizerFrameTransformer(
     scoped_refptr<FrameTransformerInterface> frame_transformer) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   if (!frame_transformer)
     return;
 
@@ -1042,7 +1040,7 @@ void ChannelSend::InitFrameTransformerDelegate(
              int64_t absolute_capture_timestamp_ms,
              std::span<const uint32_t> csrcs,
              std::optional<uint8_t> audio_level_dbov) {
-        RTC_DCHECK_RUN_ON(worker_thread_);
+        RTC_DCHECK_RUN_ON(network_thread_);
         uint32_t timestamp_without_offset;
         if (std::holds_alternative<RtpTimestampWithoutOffset>(
                 rtp_timestamp_info)) {
@@ -1060,7 +1058,7 @@ void ChannelSend::InitFrameTransformerDelegate(
   frame_transformer_delegate_ =
       make_ref_counted<ChannelSendFrameTransformerDelegate>(
           std::move(send_audio_callback), std::move(frame_transformer),
-          worker_thread_);
+          network_thread_);
   frame_transformer_delegate_->Init();
 }
 
