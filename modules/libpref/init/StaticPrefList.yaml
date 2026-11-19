@@ -19597,10 +19597,6 @@
 # dispatched to nearby elements that are sensitive to the event. See
 # PositionedEventTargeting.cpp. The 'mm' prefs define a rectangle around the
 # nominal event target point within which we will search for suitable elements.
-# 'visitedWeight' is a percentage weight; a value > 100 makes a visited link be
-# treated as further away from the event target than it really is, while a
-# value < 100 makes a visited link be treated as closer to the event target
-# than it really is.
 
 - name: ui.touch.radius.enabled
   type: bool
@@ -19650,11 +19646,6 @@
   value: true
   mirror: always
 
-- name: ui.touch.radius.visitedWeight
-  type: uint32_t
-  value: 120
-  mirror: always
-
 - name: ui.mouse.radius.enabled
   type: bool
   value: @IS_ANDROID@
@@ -19694,11 +19685,6 @@
 #else
   value: 8
 #endif
-  mirror: always
-
-- name: ui.mouse.radius.visitedWeight
-  type: uint32_t
-  value: 120
   mirror: always
 
 - name: ui.mouse.radius.reposition
