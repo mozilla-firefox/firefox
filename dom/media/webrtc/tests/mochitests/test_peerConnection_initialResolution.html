@@ -1,0 +1,59 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <script type="application/javascript" src="pc.js"></script>
+</head>
+<body>
+<pre id="test">
+<script type="application/javascript">
+  createHTML({
+    bug: "2077679",
+    title: "640x480 video is received at full resolution from the first frame",
+    visible: true
+  });
+
+  runNetworkTest(async () => {
+    const pc1 = new RTCPeerConnection();
+    const pc2 = new RTCPeerConnection();
+    pc1.onicecandidate = e => e.candidate && pc2.addIceCandidate(e.candidate);
+    pc2.onicecandidate = e => e.candidate && pc1.addIceCandidate(e.candidate);
+
+    // 640x480 is the default getUserMedia resolution outside of tests. Audio is
+    // sent along, with stereo negotiated by default between two Firefox peers,
+    // to use up some of the initial bandwidth estimate.
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: { width: 640, height: 480 },
+    });
+    const v1 = createMediaElement("video", "v1");
+    const v2 = createMediaElement("video", "v2");
+    // Check the size as soon as the metadata is loaded, as it can change later.
+    const checkSize = (video, what) =>
+      new Promise(r => (video.onloadedmetadata = r)).then(() => {
+        is(video.videoWidth, 640, `${what} width is 640`);
+        is(video.videoHeight, 480, `${what} height is 480`);
+      });
+    const v1checked = checkSize(v1, "source");
+    const v2checked = checkSize(v2, "first received frame");
+    const ontrack = new Promise(r => (pc2.ontrack = r));
+
+    v1.srcObject = stream;
+    stream.getTracks().forEach(track => pc1.addTrack(track, stream));
+
+    await pc1.setLocalDescription();
+    await pc2.setRemoteDescription(pc1.localDescription);
+    await pc2.setLocalDescription();
+    await pc1.setRemoteDescription(pc2.localDescription);
+
+    v2.srcObject = (await ontrack).streams[0];
+    await Promise.all([v1checked, v2checked]);
+
+    stream.getTracks().forEach(track => track.stop());
+    v1.srcObject = v2.srcObject = null;
+    pc1.close();
+    pc2.close();
+  });
+</script>
+</pre>
+</body>
+</html>
