@@ -86,7 +86,7 @@ add_setup(async function setup_monitor_suggest() {
   // runs.
   const originalRegion = Region.home;
   Region._setHomeRegion(SUGGEST_REGION, false);
-  AIWindow._updateMonitorWidgetRegistration();
+  AIWindowToolbarButtons.updateMonitorRegistration();
   await MonitorAgent._resetForTesting();
 
   registerCleanupFunction(async () => {

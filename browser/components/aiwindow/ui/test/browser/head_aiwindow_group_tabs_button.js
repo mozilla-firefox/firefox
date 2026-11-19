@@ -71,7 +71,7 @@ async function openGroupingWindowWithTabs() {
 }
 
 async function openPanel(win) {
-  AIWindowUI.toggleGroupTabsPanel(win);
+  AutoTabGrouping.toggleGroupTabsPanel(win);
   const panel = await TestUtils.waitForCondition(() =>
     win.document.getElementById("smartwindow-group-tabs-panel")
   );
@@ -92,7 +92,7 @@ async function openPanelWithSuggestions(win) {
 }
 
 async function closePanel(win) {
-  AIWindowUI.toggleGroupTabsPanel(win);
+  AutoTabGrouping.toggleGroupTabsPanel(win);
   await TestUtils.waitForCondition(
     () => !win.document.getElementById("smartwindow-group-tabs-panel")
   );
