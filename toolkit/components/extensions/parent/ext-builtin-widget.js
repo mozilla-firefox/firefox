@@ -13,7 +13,11 @@ ChromeUtils.defineESModuleGetters(this, {
  * with WidgetManager from the time the extension is ready until it shuts down.
  */
 this.builtinWidget = class extends ExtensionAPI {
-  /** @type {Function|null} the extension's pending "ready" listener */
+  /**
+   * The extension's pending "ready" listener.
+   *
+   * @type {Function|null}
+   */
   readyListener = null;
 
   onManifestEntry() {
