@@ -21,7 +21,10 @@ from mozsystemmonitor.resourcemonitor import SystemResourceMonitor
 from mozharness.base.config import parse_config_file
 from mozharness.base.errors import PythonErrorList
 from mozharness.base.log import CRITICAL, DEBUG, ERROR, INFO, WARNING, OutputParser
-from mozharness.base.python import perfherder_schema_path
+from mozharness.base.python import (
+    perf_expected_changes_path,
+    perfherder_schema_path,
+)
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.automation import (
     TBPL_FAILURE,
@@ -867,6 +870,7 @@ class Talos(TestingMixin, MercurialScript, TooltoolMixin, CodeCoverageMixin):
             env["PYTHONPATH"] = self.talos_path + os.pathsep + env["PYTHONPATH"]
         else:
             env["PYTHONPATH"] = self.talos_path
+        env["PERF_EXPECTED_CHANGES_PATH"] = perf_expected_changes_path()
 
         if self.repo_path is not None:
             env["MOZ_DEVELOPER_REPO_DIR"] = self.repo_path

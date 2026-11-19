@@ -39,18 +39,35 @@ PERFHERDER_SCHEMA_RELPATH = os.path.join(
     "common",
     "performance-artifact-schema.json",
 )
+PERF_EXPECTED_CHANGES_RELPATH = os.path.join(
+    "testing",
+    "performance",
+    "common",
+    "expected_changes.yml",
+)
 
 
-def perfherder_schema_path():
+def _source_path(relpath):
+    """Return the path of `relpath`, from the source checkout containing
+    mozharness, or from mozharness.zip, which carries it at the same relative
+    path."""
     mozharness_root = os.path.abspath(
         os.path.dirname(os.path.dirname(mozharness.__file__))
     )
     topsrcdir = os.path.dirname(os.path.dirname(mozharness_root))
     for root in (topsrcdir, mozharness_root):
-        path = os.path.join(root, PERFHERDER_SCHEMA_RELPATH)
+        path = os.path.join(root, relpath)
         if os.path.exists(path):
             return path
-    return os.path.join(topsrcdir, PERFHERDER_SCHEMA_RELPATH)
+    return os.path.join(topsrcdir, relpath)
+
+
+def perfherder_schema_path():
+    return _source_path(PERFHERDER_SCHEMA_RELPATH)
+
+
+def perf_expected_changes_path():
+    return _source_path(PERF_EXPECTED_CHANGES_RELPATH)
 
 
 class MultipleWheelMatchError(Exception):

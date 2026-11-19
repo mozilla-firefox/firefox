@@ -330,7 +330,10 @@ ARCHIVE_FILES = {
         {
             "source": buildconfig.topsrcdir,
             "base": "",
-            "pattern": "testing/performance/common/performance-artifact-schema.json",
+            "patterns": [
+                "testing/performance/common/performance-artifact-schema.json",
+                "testing/performance/common/expected_changes.yml",
+            ],
         },
         {
             "source": buildconfig.topsrcdir,
