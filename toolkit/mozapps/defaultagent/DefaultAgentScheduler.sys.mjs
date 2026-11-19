@@ -22,6 +22,8 @@ const TASK_MODULE = "defaultagent";
 
 // The WinRT task registration name (and identity). The MSIX background task COM
 // server splits on ":" - firefox --backgroundtask TASK_MODULE do-task`.
+// If this task name changes, or a new task is added, update the
+// desktop:ParameterGroup in AppxManifest.xml.in to match.
 const TASK_ID = `${TASK_MODULE}:do-task`;
 const INTERVAL_SECONDS = 24 * 60 * 60;
 const ENABLED_PREF = "default-browser-agent.enabled";
