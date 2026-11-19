@@ -146,7 +146,7 @@ events:
           desktop_view_on, discover_more_extensions, dismiss_menu_banner, downloads,
           edit_bookmark, find_in_page, forward, forward_long_press, history, install_addon,
           installed_addon_details, menu_banner, new_private_tab, new_tab, open_in_app, open_in_fenix, print_content,
-          quit, reader_mode_appearance, reload, remove_from_top_sites, save_to_collection,
+          quit, reader_mode_appearance, reload, remove_from_top_sites,
           move_to_non_private_tab, set_default_browser, settings, share, stop, sync_account,
           translate and web_extension_browser_action_clicked.
         type: string
@@ -7276,27 +7276,6 @@ tabs_tray:
     metadata:
       tags:
         - Tabs
-  save_to_collection:
-    type: event
-    description: |
-      A user tapped the save to collection button in the tabs tray
-    bugs:
-      - https://github.com/mozilla-mobile/fenix/issues/11273
-    data_reviews:
-      - https://github.com/mozilla-mobile/fenix/pull/12036
-      - https://github.com/mozilla-mobile/fenix/pull/15713#issuecomment-703972068
-      - https://github.com/mozilla-mobile/fenix/pull/19924#issuecomment-861423789
-      - https://github.com/mozilla-mobile/fenix/pull/20517#pullrequestreview-718069041
-      - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
-    data_sensitivity:
-      - interaction
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
-    metadata:
-      tags:
-        - Tabs
-        - Collections
   select_all_normal_tabs:
     type: event
     description: |
@@ -7904,28 +7883,6 @@ tabs_tray:
       tab_count:
         description: The number of selected tabs closed.
         type: quantity
-  selected_tabs_to_collection:
-    type: event
-    description: |
-      User has chosen to save selected tabs to a collection.
-    bugs:
-      - https://github.com/mozilla-mobile/fenix/issues/23399
-    data_reviews:
-      - https://github.com/mozilla-mobile/fenix/pull/23964#issuecomment-1051128057
-      - https://github.com/mozilla-mobile/fenix/pull/27068#issuecomment-1251509973
-      - https://github.com/mozilla-mobile/firefox-android/pull/3319
-    data_sensitivity:
-      - interaction
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
-    metadata:
-      tags:
-        - Tabs
-    extra_keys:
-      tab_count:
-        description: The number of selected tabs added to colelction.
-        type: quantity
   access_point:
     type: labeled_counter
     description: |
@@ -8107,28 +8064,6 @@ tab_strip:
         - Tabs
 
 collections:
-  renamed:
-    type: event
-    description: |
-      A user renamed a collection
-    bugs:
-      - https://github.com/mozilla-mobile/fenix/issues/969
-      - https://github.com/mozilla-mobile/fenix/issues/19923
-    data_reviews:
-      - https://github.com/mozilla-mobile/fenix/pull/3935
-      - https://github.com/mozilla-mobile/fenix/pull/13958#issuecomment-676857877
-      - https://github.com/mozilla-mobile/fenix/pull/18143
-      - https://github.com/mozilla-mobile/fenix/pull/19924#issuecomment-861423789
-      - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
-    data_sensitivity:
-      - technical
-      - interaction
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
-    metadata:
-      tags:
-        - Collections
   tab_restored:
     type: event
     description: |
@@ -8232,176 +8167,6 @@ collections:
       - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
     data_sensitivity:
       - technical
-      - interaction
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
-    metadata:
-      tags:
-        - Collections
-  saved:
-    type: event
-    description: |
-      A user saved a list of tabs to a new collection
-    extra_keys:
-      tabs_open:
-        description: "The number of tabs open in the current session"
-        type: string
-      tabs_selected:
-        description: "The number of tabs added to the collection"
-        type: string
-    bugs:
-      - https://github.com/mozilla-mobile/fenix/issues/969
-      - https://github.com/mozilla-mobile/fenix/issues/19923
-    data_reviews:
-      - https://github.com/mozilla-mobile/fenix/pull/3935
-      - https://github.com/mozilla-mobile/fenix/pull/13958#issuecomment-676857877
-      - https://github.com/mozilla-mobile/fenix/pull/18143
-      - https://github.com/mozilla-mobile/fenix/pull/19924#issuecomment-861423789
-      - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
-    data_sensitivity:
-      - technical
-      - interaction
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
-    metadata:
-      tags:
-        - Collections
-  tabs_added:
-    type: event
-    description: |
-      A user saved a list of tabs to an existing collection
-    extra_keys:
-      tabs_open:
-        description: The number of tabs open in the current session
-        type: string
-      tabs_selected:
-        description: The number of tabs added to the collection
-        type: string
-    bugs:
-      - https://github.com/mozilla-mobile/fenix/issues/969
-      - https://github.com/mozilla-mobile/fenix/issues/19923
-    data_reviews:
-      - https://github.com/mozilla-mobile/fenix/pull/3935
-      - https://github.com/mozilla-mobile/fenix/pull/13958#issuecomment-676857877
-      - https://github.com/mozilla-mobile/fenix/pull/18143
-      - https://github.com/mozilla-mobile/fenix/pull/19924#issuecomment-861423789
-      - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
-    data_sensitivity:
-      - technical
-      - interaction
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
-    metadata:
-      tags:
-        - Collections
-  tab_select_opened:
-    type: event
-    description: |
-      A user opened the select tabs screen (the first step of the collection
-      creation flow)
-    bugs:
-      - https://github.com/mozilla-mobile/fenix/issues/969
-      - https://github.com/mozilla-mobile/fenix/issues/19923
-    data_reviews:
-      - https://github.com/mozilla-mobile/fenix/pull/3935
-      - https://github.com/mozilla-mobile/fenix/pull/13958#issuecomment-676857877
-      - https://github.com/mozilla-mobile/fenix/pull/18143
-      - https://github.com/mozilla-mobile/fenix/pull/19924#issuecomment-861423789
-      - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
-    data_sensitivity:
-      - technical
-      - interaction
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
-    metadata:
-      tags:
-        - Collections
-  add_tab_button:
-    type: event
-    description: |
-      A user tapped the "add tab" button in the three dot menu of collections
-    bugs:
-      - https://github.com/mozilla-mobile/fenix/issues/969
-      - https://github.com/mozilla-mobile/fenix/issues/19923
-    data_reviews:
-      - https://github.com/mozilla-mobile/fenix/pull/4358
-      - https://github.com/mozilla-mobile/fenix/pull/13958#issuecomment-676857877
-      - https://github.com/mozilla-mobile/fenix/pull/18143
-      - https://github.com/mozilla-mobile/fenix/pull/19924#issuecomment-861423789
-      - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
-    data_sensitivity:
-      - interaction
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
-    metadata:
-      tags:
-        - Collections
-  save_button:
-    type: event
-    description: |
-      A user pressed the "save to collection" button on either the home or
-      browser screen, triggering the collection creation screen to open
-      (tab_select_opened)
-    bugs:
-      - https://github.com/mozilla-mobile/fenix/issues/969
-      - https://github.com/mozilla-mobile/fenix/issues/19923
-    data_reviews:
-      - https://github.com/mozilla-mobile/fenix/pull/4358
-      - https://github.com/mozilla-mobile/fenix/pull/13958#issuecomment-676857877
-      - https://github.com/mozilla-mobile/fenix/pull/18143
-      - https://github.com/mozilla-mobile/fenix/pull/19924#issuecomment-861423789
-      - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
-    data_sensitivity:
-      - interaction
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
-    extra_keys:
-      from_screen:
-        description: |
-          A string representing the screen from which the user pressed the save
-          button. Currently one of: `browserMenu`, `homeMenu` or `home`
-        type: string
-    metadata:
-      tags:
-        - Collections
-  rename_button:
-    type: event
-    description: |
-      A user pressed the "rename collection" button in the three dot menu
-    bugs:
-      - https://github.com/mozilla-mobile/fenix/issues/969
-      - https://github.com/mozilla-mobile/fenix/issues/19923
-    data_reviews:
-      - https://github.com/mozilla-mobile/fenix/pull/4539
-      - https://github.com/mozilla-mobile/fenix/pull/13958#issuecomment-676857877
-      - https://github.com/mozilla-mobile/fenix/pull/18143
-      - https://github.com/mozilla-mobile/fenix/pull/19924#issuecomment-861423789
-      - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
-    data_sensitivity:
-      - interaction
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
-    metadata:
-      tags:
-        - Collections
-  placeholder_cancel:
-    type: event
-    description: |
-      User interacted with the `X` button from the homescreen no collections
-      placeholder.
-    bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=1821032
-    data_reviews:
-      - https://github.com/mozilla-mobile/firefox-android/pull/1167
-      - https://github.com/mozilla-mobile/firefox-android/pull/4039
-    data_sensitivity:
       - interaction
     notification_emails:
       - android-probes@mozilla.com
