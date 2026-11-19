@@ -356,6 +356,7 @@ rtc_library("rtp_test_utils") {
     "../modules/rtp_rtcp",
     "../modules/rtp_rtcp:rtp_rtcp_format",
     "../rtc_base:checks",
+    "../rtc_base:copy_on_write_buffer",
     "../rtc_base:criticalsection",
     "../rtc_base:logging",
     "../rtc_base:macromagic",

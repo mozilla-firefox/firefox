@@ -37,10 +37,11 @@ class TestRtpFileReader : public ::testing::Test {
     test::RtpPacket packet;
     int c = 0;
     while (rtp_packet_source_->NextPacket(&packet)) {
-      if (headers_only_file_)
-        EXPECT_LT(packet.length, packet.original_length);
-      else
-        EXPECT_EQ(packet.length, packet.original_length);
+      if (headers_only_file_) {
+        EXPECT_LT(packet.length(), packet.original_length);
+      } else {
+        EXPECT_EQ(packet.length(), packet.original_length);
+      }
       c++;
     }
     return c;
@@ -77,7 +78,7 @@ class TestPcapFileReader : public ::testing::Test {
     int c = 0;
     test::RtpPacket packet;
     while (rtp_packet_source_->NextPacket(&packet)) {
-      EXPECT_EQ(packet.length, packet.original_length);
+      EXPECT_EQ(packet.length(), packet.original_length);
       c++;
     }
     return c;
@@ -87,9 +88,8 @@ class TestPcapFileReader : public ::testing::Test {
     PacketsPerSsrc pps;
     test::RtpPacket packet;
     while (rtp_packet_source_->NextPacket(&packet)) {
-      std::span<const uint8_t> raw(packet.data, packet.length);
-      if (IsRtpPacket(raw)) {
-        pps[ParseRtpSsrc(raw)]++;
+      if (IsRtpPacket(packet.buffer)) {
+        pps[ParseRtpSsrc(packet.buffer)]++;
       }
     }
     return pps;

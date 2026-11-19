@@ -10,16 +10,21 @@
 
 #include "test/rtp_file_writer.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
 
+#include "test/gmock.h"
 #include "test/gtest.h"
 #include "test/rtp_file_reader.h"
 #include "test/testsupport/file_utils.h"
 
 namespace webrtc {
+
+using ::testing::Each;
+using ::testing::Eq;
 
 class RtpFileWriterTest : public ::testing::Test {
  public:
@@ -39,11 +44,12 @@ class RtpFileWriterTest : public ::testing::Test {
   void WriteRtpPackets(int num_packets, int time_ms_offset = 0) {
     ASSERT_TRUE(rtp_writer_.get() != nullptr);
     test::RtpPacket packet;
+    packet.buffer.EnsureCapacity(num_packets);
     for (int i = 1; i <= num_packets; ++i) {
-      packet.length = i;
+      packet.buffer.SetSize(i);
       packet.original_length = i;
       packet.time_ms = i + time_ms_offset;
-      memset(packet.data, i, packet.length);
+      std::ranges::fill(packet.buffer.AsMutableSpan(), i);
       EXPECT_TRUE(rtp_writer_->WritePacket(&packet));
     }
   }
@@ -60,12 +66,10 @@ class RtpFileWriterTest : public ::testing::Test {
     int i = 0;
     while (rtp_reader->NextPacket(&packet)) {
       ++i;
-      EXPECT_EQ(static_cast<size_t>(i), packet.length);
+      EXPECT_EQ(static_cast<size_t>(i), packet.length());
       EXPECT_EQ(static_cast<size_t>(i), packet.original_length);
       EXPECT_EQ(static_cast<uint32_t>(i - 1), packet.time_ms);
-      for (int j = 0; j < i; ++j) {
-        EXPECT_EQ(i, packet.data[j]);
-      }
+      EXPECT_THAT(packet.buffer, Each(Eq(i)));
     }
     EXPECT_EQ(expected_packets, i);
   }

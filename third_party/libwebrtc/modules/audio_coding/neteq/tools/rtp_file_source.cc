@@ -67,7 +67,7 @@ std::unique_ptr<RtpPacketReceived> RtpFileSource::NextPacket() {
     }
     auto rtp_packet =
         std::make_unique<RtpPacketReceived>(&rtp_header_extension_map_);
-    if (!rtp_packet->Parse(temp_packet.data, temp_packet.length)) {
+    if (!rtp_packet->Parse(temp_packet.buffer)) {
       continue;
     }
     if (filter_.test(rtp_packet->PayloadType()) ||

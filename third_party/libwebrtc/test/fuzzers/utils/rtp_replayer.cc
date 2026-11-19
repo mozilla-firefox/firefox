@@ -194,7 +194,7 @@ void RtpReplayer::ReplayPackets(
     }
 
     RtpPacketReceived received_packet(&extensions, clock.CurrentTime());
-    if (!received_packet.Parse(packet.data, packet.length)) {
+    if (!received_packet.Parse(packet.buffer)) {
       RTC_LOG(LS_ERROR) << "Packet error, corrupt packets or incorrect setup?";
       break;
     }

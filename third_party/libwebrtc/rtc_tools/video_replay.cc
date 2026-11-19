@@ -8,6 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -627,23 +628,21 @@ class RtpReplayer final {
       if (!rtp_reader_->NextPacket(&packet)) {
         break;
       }
-      CopyOnWriteBuffer packet_buffer(
-          packet.original_length > 0 ? packet.original_length : packet.length);
-      memcpy(packet_buffer.MutableData(), packet.data, packet.length);
-      if (packet.length < packet.original_length) {
+      if (packet.buffer.size() < packet.original_length) {
         // Only the RTP header was recorded in the RTP dump, payload is not
         // known and and padding length is not known, zero the payload and
         // clear the padding bit.
-        memset(packet_buffer.MutableData() + packet.length, 0,
-               packet.original_length - packet.length);
-        packet_buffer.MutableData()[0] &= ~0x20;
+        size_t size = packet.buffer.size();
+        packet.buffer.SetSize(packet.original_length);
+        std::ranges::fill(packet.buffer.AsMutableSpan().subspan(size), 0);
+        packet.buffer.AsMutableSpan()[0] &= ~0x20;
       }
       // Check that the packet is a RTP packet and is valid.
-      if (!IsRtpPacket({packet.data, packet.length})) {
+      if (!IsRtpPacket(packet.buffer)) {
         continue;
       }
       RtpPacket header;
-      if (!header.Parse(packet_buffer) ||
+      if (!header.Parse(packet.buffer) ||
           header.Timestamp() < start_timestamp ||
           header.Timestamp() > stop_timestamp) {
         continue;
@@ -659,12 +658,12 @@ class RtpReplayer final {
 
       Result result = Result::kOk;
       worker_thread_->PostTask([&]() {
-        if (IsRtcpPacket(packet_buffer)) {
-          call_->Receiver()->DeliverRtcpPacket(std::move(packet_buffer));
+        if (IsRtcpPacket(packet.buffer)) {
+          call_->Receiver()->DeliverRtcpPacket(packet.buffer);
         } else {
           RtpPacketReceived received_packet(&extensions,
                                             Timestamp::Millis(CurrentTimeMs()));
-          if (!received_packet.Parse(std::move(packet_buffer))) {
+          if (!received_packet.Parse(packet.buffer)) {
             result = Result::kParsingFailed;
           } else {
             call_->Receiver()->DeliverRtpPacket(
@@ -693,8 +692,8 @@ class RtpReplayer final {
           fprintf(stderr,
                   "Packet error, corrupt packets or incorrect setup?\n");
           fprintf(stderr, "Packet len=%zu pt=%u seq=%u ts=%u ssrc=0x%8x\n",
-                  packet.length, header.PayloadType(), header.SequenceNumber(),
-                  header.Timestamp(), header.Ssrc());
+                  packet.length(), header.PayloadType(),
+                  header.SequenceNumber(), header.Timestamp(), header.Ssrc());
           break;
         }
       }
