@@ -32,6 +32,7 @@ class BaselineCompileQueue {
   }
 
   JSScript* pop();
+  void clear();
 
   bool isEmpty() const { return numQueued_ == 0; }
 

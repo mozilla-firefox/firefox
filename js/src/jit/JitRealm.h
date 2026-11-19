@@ -79,6 +79,8 @@ class JitRealm {
 
   void trace(JSTracer* trc) { baselineCompileQueue_.trace(trc); }
 
+  void finishRoots() { baselineCompileQueue_.clear(); }
+
   void addSizeOfExcludingThis(mozilla::MallocSizeOf mallocSizeOf,
                               size_t* cacheIRStubs) const {
     *cacheIRStubs += stubSpace_.sizeOfExcludingThis(mallocSizeOf);

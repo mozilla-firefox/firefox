@@ -324,6 +324,7 @@ void Realm::finishRoots() {
   }
 
   objects_.finishRoots();
+  jitRealm_.finishRoots();
 }
 
 void ObjectRealm::sweepAfterMinorGC(JSTracer* trc) {

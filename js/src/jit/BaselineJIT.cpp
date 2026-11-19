@@ -744,6 +744,15 @@ JSScript* BaselineCompileQueue::pop() {
   return result;
 }
 
+void BaselineCompileQueue::clear() {
+  while (!isEmpty()) {
+    JSScript* script = pop();
+    if (script->hasJitScript()) {
+      script->jitScript()->clearIsBaselineQueued(script);
+    }
+  }
+}
+
 bool BaselineCompileQueue::enqueue(JSScript* script) {
   if (numQueued_ >= JitOptions.baselineQueueCapacity) {
     return false;  // Queue is full
