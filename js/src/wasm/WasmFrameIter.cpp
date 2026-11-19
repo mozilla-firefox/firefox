@@ -79,13 +79,18 @@ static uint32_t FuncIndexForBytecodeOffset(const Code& code,
 /*****************************************************************************/
 // WasmFrameIter implementation
 
-WasmFrameIter::WasmFrameIter(JitActivation* activation, wasm::Frame* fp)
+WasmFrameIter::WasmFrameIter(JitActivation* activation, wasm::Frame* fp,
+                             uintptr_t* shadowStackPointer)
     : cx_(activation->cx()),
       activation_(activation),
       fp_(fp ? fp : activation->wasmExitFP())
 #ifdef ENABLE_WASM_JSPI
       ,
       contStack_(nullptr)
+#endif
+#ifdef JS_HW_SHADOW_STACK
+      ,
+      shadowStackPointer_(shadowStackPointer)
 #endif
 {
   MOZ_ASSERT(fp_);
@@ -114,6 +119,13 @@ WasmFrameIter::WasmFrameIter(JitActivation* activation, wasm::Frame* fp)
     const wasm::Code* unwoundCode = LookupCode(unwoundPC, &unwoundCodeRange);
     MOZ_RELEASE_ASSERT(unwoundCode);
     MOZ_RELEASE_ASSERT(unwoundCodeRange);
+
+#ifdef JS_HW_SHADOW_STACK
+    if (trapData.unwoundFrame) {
+      // wasm::StartUnwinding() unwound the frame where the trap occurred.
+      unwindShadowStackEntry(unwoundPC);
+    }
+#endif
 
 #ifdef ENABLE_WASM_JSPI
     MOZ_RELEASE_ASSERT(unwoundCodeRange->isFunction() ||
@@ -364,6 +376,15 @@ void WasmFrameIter::popFrame(bool isLeavingFrame) {
   currentFrameStackSwitched_ = false;
 #endif
 
+#ifdef JS_HW_SHADOW_STACK
+  // Unwind the shadow stack entry pushed by the call that created the current
+  // frame, except when the caller is the interpreter entry stub, which the
+  // WasmInterpEntry exception resume returns into.
+  if (!code_ || !codeRange->isInterpEntry()) {
+    unwindShadowStackEntry(returnAddress);
+  }
+#endif
+
   if (isLeavingFrame) {
     MOZ_ASSERT(activation_->hasWasmExitFP());
 
@@ -597,6 +618,18 @@ DebugFrame* WasmFrameIter::debugFrame() const {
   MOZ_ASSERT(!done());
   return DebugFrame::from(fp_);
 }
+
+#ifdef JS_HW_SHADOW_STACK
+void WasmFrameIter::unwindShadowStackEntry(const void* returnAddress) {
+  if (!shadowStackPointer_) {
+    return;
+  }
+
+  MOZ_RELEASE_ASSERT(*shadowStackPointer_ ==
+                     reinterpret_cast<uintptr_t>(returnAddress));
+  shadowStackPointer_++;
+}
+#endif
 
 /*****************************************************************************/
 // Prologue/epilogue code generation

@@ -350,12 +350,14 @@ struct ResumeFromException {
   uint8_t* stackPointer;
   uint8_t* target;
 #ifdef JS_HW_SHADOW_STACK
-  // Tracks the shadow stack pointer throughout the frame iteration and
-  // unwinding process. Initialized by the JIT before entering HandleException,
-  // and on exit back to the JIT, contains the new desired shadow stack pointer
-  // before jumping to target.
-  // If the shadow stack is disabled for this thread/process at runtime, then
-  // this field is nullptr.
+  // Used to communicate the shadow stack pointer between the JIT and exception
+  // handling / frame unwinding logic in both directions. If the shadow stack is
+  // disabled for this thread/process at runtime, then this field is nullptr.
+  //
+  // Just before calling HandleException, the JIT reads the shadow stack pointer
+  // into this field, which is where frame iteration begins. On returning back
+  // to the JIT, it contains the new desired shadow stack pointer before jumping
+  // to target.
   uintptr_t* shadowStackPointer = nullptr;
 #endif
   ExceptionResumeKind kind;

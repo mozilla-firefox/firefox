@@ -769,20 +769,6 @@ static void WasmHandleRequestTierUp(Instance* instance) {
   }
 }
 
-#ifdef JS_HW_SHADOW_STACK
-// Advance the tracked shadow stack pointer by exactly one entry with the
-// provided return address.
-static void UnwindShadowStackEntry(ResumeFromException* rfe,
-                                   uintptr_t returnAddress) {
-  if (!rfe->shadowStackPointer) {
-    return;
-  }
-
-  MOZ_RELEASE_ASSERT(*rfe->shadowStackPointer == returnAddress);
-  rfe->shadowStackPointer++;
-}
-#endif
-
 // Unwind the activation in response to a thrown exception. This function is
 // responsible for notifying the debugger of each unwound frame.
 //
@@ -823,21 +809,6 @@ void wasm::HandleExceptionWasm(JSContext* cx, JitFrameIter& iter,
   // re-added to the map of live frames, right as it becomes trash).
   iter.asWasm().setIsLeavingFrames();
 
-#ifdef JS_HW_SHADOW_STACK
-  if (activation->isWasmTrapping()) {
-    const TrapData& trapData = activation->wasmTrapData();
-    if (trapData.unwoundFrame) {
-      // wasm::StartUnwinding() unwound the frame where the trap occurred.
-      UnwindShadowStackEntry(rfe,
-                             reinterpret_cast<uintptr_t>(trapData.unwoundPC));
-    }
-  } else {
-    // Non-trapping iteration starts after the Wasm exit frame.
-    UnwindShadowStackEntry(rfe, reinterpret_cast<uintptr_t>(
-                                    iter.asWasm().resumePCinCurrentFrame()));
-  }
-#endif
-
   // Get (or wrap) the exception that we'll search for catch handlers for.
   Rooted<WasmExceptionObject*> wasmExn(cx,
                                        GetOrWrapWasmException(activation, cx));
@@ -852,22 +823,7 @@ void wasm::HandleExceptionWasm(JSContext* cx, JitFrameIter& iter,
   wasm::ContStack* wasmPreviousStack = iter.asWasm().unwoundContStack();
 #endif
 
-  auto advanceFrame = [&] {
-#ifdef JS_HW_SHADOW_STACK
-    auto returnAddress =
-        reinterpret_cast<uintptr_t>(iter.asWasm().frame()->returnAddress());
-#endif
-    ++iter;
-#ifdef JS_HW_SHADOW_STACK
-    // We don't want to unwind past the shadow stack entry of the frame
-    // we will resume in.
-    if (!iter.done()) {
-      UnwindShadowStackEntry(rfe, returnAddress);
-    }
-#endif
-  };
-
-  for (; !iter.done() && iter.isWasm(); advanceFrame()) {
+  for (; !iter.done() && iter.isWasm(); ++iter) {
     // Wasm code can enter same-compartment realms, so reset cx->realm to
     // this frame's realm.
     WasmFrameIter& wasmFrame = iter.asWasm();

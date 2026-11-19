@@ -23,7 +23,8 @@
 using namespace js;
 using namespace js::jit;
 
-JSJitFrameIter::JSJitFrameIter(const JitActivation* activation)
+JSJitFrameIter::JSJitFrameIter(const JitActivation* activation,
+                               uintptr_t* shadowStackPointer)
     : current_(activation->jsExitFP()),
       type_(FrameType::Exit),
       activation_(activation) {
@@ -34,10 +35,24 @@ JSJitFrameIter::JSJitFrameIter(const JitActivation* activation)
     type_ = FrameType::Bailout;
   }
   MOZ_ASSERT(!TlsContext.get()->inUnsafeCallWithABI);
+
+#ifdef JS_HW_SHADOW_STACK
+  if (shadowStackPointer && isUnwoundJitExit()) {
+    uintptr_t returnAddress =
+        reinterpret_cast<uintptr_t>(current()->returnAddress());
+    if (*shadowStackPointer != returnAddress) {
+      // An already-unwound frame can leave one extra shadow stack entry, for
+      // example when DebugEpilogue discards its VM exit frame.
+      MOZ_RELEASE_ASSERT(shadowStackPointer[1] == returnAddress);
+      shadowStackPointer++;
+    }
+  }
+  shadowStackPointer_ = shadowStackPointer;
+#endif
 }
 
 JSJitFrameIter::JSJitFrameIter(const JitActivation* activation, uint8_t* fp,
-                               bool unwinding)
+                               bool unwinding, uintptr_t* shadowStackPointer)
     : current_(fp), type_(FrameType::Exit), activation_(activation) {
   // This constructor is only used when resuming iteration after iterating Wasm
   // frames in the same JitActivation so ignore activation_->bailoutData().
@@ -45,6 +60,14 @@ JSJitFrameIter::JSJitFrameIter(const JitActivation* activation, uint8_t* fp,
     MOZ_ASSERT(fp == activation->jsExitFP());
   }
   MOZ_ASSERT(!TlsContext.get()->inUnsafeCallWithABI);
+
+#ifdef JS_HW_SHADOW_STACK
+  // We track the shadow stack pointer only when unwinding.
+  MOZ_ASSERT_IF(shadowStackPointer, unwinding);
+  // We don't expect unwound JIT exit frames after Wasm frames.
+  MOZ_ASSERT_IF(shadowStackPointer, !isUnwoundJitExit());
+  shadowStackPointer_ = shadowStackPointer;
+#endif
 }
 
 bool JSJitFrameIter::checkInvalidation() const {
@@ -213,6 +236,18 @@ static uint32_t ComputeBaselineFrameSize(const JSJitFrameIter& frame) {
 
 void JSJitFrameIter::operator++() {
   MOZ_ASSERT(!isEntry());
+
+#ifdef JS_HW_SHADOW_STACK
+  // Unwind the shadow stack entry pushed by the call that created the current
+  // frame, except when the caller is the CppToJSJit frame, which the EntryFrame
+  // exception resume returns through. Fake frames have no entry, so only unwind
+  // when the return address matches.
+  if (shadowStackPointer_ && current()->prevType() != FrameType::CppToJSJit &&
+      *shadowStackPointer_ ==
+          reinterpret_cast<uintptr_t>(current()->returnAddress())) {
+    shadowStackPointer_++;
+  }
+#endif
 
   // Compute BaselineFrame size. In debug builds this is equivalent to
   // BaselineFrame::debugFrameSize_. This is asserted at the end of this method.

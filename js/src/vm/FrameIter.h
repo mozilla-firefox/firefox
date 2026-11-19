@@ -115,8 +115,12 @@ class JitFrameIter {
  public:
   JitFrameIter() = default;
 
+  // When unwinding, |shadowStackPointer| is the value read on entry to the
+  // exception handler. It's passed to the JSJitFrameIter or WasmFrameIter, and
+  // handed over between them on transitions.
   explicit JitFrameIter(jit::JitActivation* activation,
-                        bool mustUnwindActivation = false);
+                        bool mustUnwindActivation = false,
+                        uintptr_t* shadowStackPointer = nullptr);
 
   explicit JitFrameIter(const JitFrameIter& another);
   JitFrameIter& operator=(const JitFrameIter& another);
@@ -160,6 +164,10 @@ class JitFrameIter {
   // Returns true iff this is a JIT frame with a self-hosted script. Note: be
   // careful, JitFrameIter does not consider functions inlined by Ion.
   bool isSelfHostedIgnoringInlining() const;
+
+  // Returns the tracked shadow stack pointer while unwinding, or nullptr if
+  // we're not unwinding or the shadow stack is disabled.
+  uintptr_t* shadowStackPointer() const;
 };
 
 // A JitFrameIter that skips all the non-JSJit frames, skipping interleaved

@@ -77,16 +77,19 @@ JitFrameIter& JitFrameIter::operator=(const JitFrameIter& another) {
   return *this;
 }
 
-JitFrameIter::JitFrameIter(jit::JitActivation* act, bool mustUnwindActivation) {
+JitFrameIter::JitFrameIter(jit::JitActivation* act, bool mustUnwindActivation,
+                           uintptr_t* shadowStackPointer) {
   act_ = act;
   mustUnwindActivation_ = mustUnwindActivation;
   MOZ_ASSERT(act->hasExitFP(),
              "packedExitFP is used to determine if JSJit or wasm");
+  // We track the shadow stack pointer only when unwinding.
+  MOZ_ASSERT_IF(shadowStackPointer, mustUnwindActivation);
   if (act->hasJSExitFP()) {
-    iter_.construct<jit::JSJitFrameIter>(act);
+    iter_.construct<jit::JSJitFrameIter>(act, shadowStackPointer);
   } else {
     MOZ_ASSERT(act->hasWasmExitFP());
-    iter_.construct<wasm::WasmFrameIter>(act);
+    iter_.construct<wasm::WasmFrameIter>(act, nullptr, shadowStackPointer);
   }
   settle();
 }
@@ -134,6 +137,13 @@ uint8_t* JitFrameIter::resumePCinCurrentFrame() const {
   return asJSJit().resumePCinCurrentFrame();
 }
 
+uintptr_t* JitFrameIter::shadowStackPointer() const {
+  if (isWasm()) {
+    return asWasm().shadowStackPointer();
+  }
+  return asJSJit().shadowStackPointer();
+}
+
 bool JitFrameIter::done() const {
   if (!isSome()) {
     return true;
@@ -179,8 +189,9 @@ void JitFrameIter::settle() {
       act_->setWasmExitFP(prevFP);
     }
 
+    uintptr_t* shadowStackPointer = jitFrame.shadowStackPointer();
     iter_.destroy();
-    iter_.construct<wasm::WasmFrameIter>(act_, prevFP);
+    iter_.construct<wasm::WasmFrameIter>(act_, prevFP, shadowStackPointer);
     MOZ_ASSERT(!asWasm().done());
     return;
   }
@@ -207,8 +218,10 @@ void JitFrameIter::settle() {
       act_->setJSExitFP(prevFP);
     }
 
+    uintptr_t* shadowStackPointer = wasmFrame.shadowStackPointer();
     iter_.destroy();
-    iter_.construct<jit::JSJitFrameIter>(act_, prevFP, mustUnwindActivation_);
+    iter_.construct<jit::JSJitFrameIter>(act_, prevFP, mustUnwindActivation_,
+                                         shadowStackPointer);
     MOZ_ASSERT(!asJSJit().done());
     return;
   }
