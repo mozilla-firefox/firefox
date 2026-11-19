@@ -152,12 +152,8 @@ class LoaderListener final : public GeckoViewStreamListener {
       return NS_ERROR_UNEXPECTED;
     }
 
-    // We only need this for the ReadSegments call, the value is unused.
-    uint32_t countRead;
-    nsresult rv =
-        aInputStream->ReadSegments(WriteSegment, this, aCount, &countRead);
-    NS_ENSURE_SUCCESS(rv, rv);
-    return rv;
+    return GeckoViewStreamListener::OnDataAvailable(aRequest, aInputStream,
+                                                    aOffset, aCount);
   }
 
   NS_IMETHOD

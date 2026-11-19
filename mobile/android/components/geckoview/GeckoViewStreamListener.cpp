@@ -138,6 +138,10 @@ NS_IMETHODIMP GeckoViewStreamListener::OnDataAvailable(
   nsresult rv =
       aInputStream->ReadSegments(WriteSegment, this, aCount, &countRead);
   NS_ENSURE_SUCCESS(rv, rv);
+
+  if (mStream->ShouldSuspend()) {
+    aRequest->Suspend();
+  }
   return rv;
 }
 

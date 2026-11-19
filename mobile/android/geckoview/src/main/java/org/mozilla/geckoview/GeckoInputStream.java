@@ -23,12 +23,19 @@ import org.mozilla.gecko.mozglue.JNIObject;
 /* package */ class GeckoInputStream extends InputStream {
   private static final String LOGTAG = "GeckoInputStream";
 
+  // Suspend the request once MAX_BUFFERED_BYTES are buffered, and resume it once the
+  // reader has drained the buffer to RESUME_BUFFERED_BYTES.
+  /* package */ static final long MAX_BUFFERED_BYTES = 8 * 1024 * 1024;
+  /* package */ static final long RESUME_BUFFERED_BYTES = 2 * 1024 * 1024;
+
   private LinkedList<ByteBuffer> mBuffers = new LinkedList<>();
   private boolean mEOF;
   private boolean mClosed;
   private boolean mHaveError;
   private long mReadTimeout;
   private boolean mResumed;
+  private boolean mSuspended;
+  private long mBufferedBytes;
   private Support mSupport;
 
   /**
@@ -112,9 +119,7 @@ import org.mozilla.gecko.mozglue.JNIObject;
       // The underlying channel is suspended, so resume that before
       // waiting for a buffer.
       if (!mResumed) {
-        if (mSupport != null) {
-          mSupport.resume();
-        }
+        resumeRequest();
         mResumed = true;
       }
 
@@ -142,7 +147,35 @@ import org.mozilla.gecko.mozglue.JNIObject;
       mBuffers.removeFirst();
     }
 
+    mBufferedBytes -= readCount;
+    if (mSuspended && mBufferedBytes <= RESUME_BUFFERED_BYTES) {
+      // If suspended and now has consumed enough of the buffered data, resume.
+      mSuspended = false;
+      resumeRequest();
+    }
+
     return readCount;
+  }
+
+  /* package */ void resumeRequest() {
+    if (mSupport != null) {
+      mSupport.resume();
+    }
+  }
+
+  /**
+   * Called by native code to check whether too much data is buffered and the request should be
+   * suspended.
+   *
+   * @return true if the underlying request should be suspended.
+   */
+  @WrapForJNI(calledFrom = "gecko")
+  /* package */ synchronized boolean shouldSuspend() {
+    if (!mResumed || mSuspended || mClosed || mBufferedBytes < MAX_BUFFERED_BYTES) {
+      return false;
+    }
+    mSuspended = true;
+    return true;
   }
 
   /** Called by native code to indicate that no more data will be sent via {@link #appendBuffer}. */
@@ -207,6 +240,7 @@ import org.mozilla.gecko.mozglue.JNIObject;
     }
 
     mBuffers.add(ByteBuffer.wrap(buf));
+    mBufferedBytes += buf.length;
     notifyAll();
   }
 
