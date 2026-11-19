@@ -50,9 +50,6 @@ import org.mozilla.fenix.wallpapers.WallpaperState
  */
 @Suppress("TooManyFunctions")
 interface SessionControlController {
-    /** @see [CollectionInteractor.onCollectionAddTabTapped] */
-    fun handleCollectionAddTabTapped(collection: TabCollection)
-
     /** @see [CollectionInteractor.onCollectionOpenTabClicked] */
     fun handleCollectionOpenTabClicked(tab: ComponentTab)
 
@@ -73,9 +70,6 @@ interface SessionControlController {
 
     /** @see [CollectionInteractor.onToggleCollectionExpanded] */
     fun handleToggleCollectionExpanded(collection: TabCollection, expand: Boolean)
-
-    /** @see [CollectionInteractor.onAddTabsToCollectionTapped] */
-    fun handleCreateCollection()
 
     /** @see [MessageCardInteractor.onMessageClicked] */
     fun handleMessageClicked(message: Message)
@@ -150,14 +144,6 @@ class DefaultSessionControlController(
 
     override fun unregisterCallback() {
         this.callback = null
-    }
-
-    override fun handleCollectionAddTabTapped(collection: TabCollection) {
-        Collections.addTabButton.record(NoExtras())
-        showCollectionCreationFragment(
-            step = SaveCollectionStep.SelectTabs,
-            selectedTabCollectionId = collection.id,
-        )
     }
 
     override fun handleCollectionOpenTabClicked(tab: ComponentTab) {
@@ -267,11 +253,6 @@ class DefaultSessionControlController(
         appStore.dispatch(AppAction.CollectionExpanded(collection, expand))
     }
 
-    private fun showTabTrayCollectionCreation() {
-        val directions = HomeFragmentDirections.actionGlobalTabManagementFragment(enterMultiselect = true)
-        navController.nav(R.id.homeFragment, directions)
-    }
-
     private fun showCollectionCreationFragment(
         step: SaveCollectionStep,
         selectedTabIds: Array<String>? = null,
@@ -296,10 +277,6 @@ class DefaultSessionControlController(
                 selectedTabCollectionId = selectedTabCollectionId ?: -1,
             )
         navController.nav(R.id.homeFragment, directions)
-    }
-
-    override fun handleCreateCollection() {
-        showTabTrayCollectionCreation()
     }
 
     private fun showShareFragment(shareSubject: String, data: List<ShareData>) {

@@ -4,8 +4,6 @@
 
 package org.mozilla.fenix.home.collections
 
-import mozilla.components.browser.state.selector.normalTabs
-import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.feature.tab.collections.TabCollection
 import org.mozilla.fenix.components.appstate.AppState
 
@@ -17,13 +15,10 @@ sealed class CollectionsState {
      *
      * @property collections List of [TabCollection] to display.
      * @property expandedCollections List of ids corresponding to [TabCollection]s which are currently expanded.
-     * @property showSaveTabsToCollection Whether to show the "Save tabs to collection" menu item in the collections
-     *   menu.
      */
     data class Content(
         val collections: List<TabCollection>,
         val expandedCollections: Set<Long>,
-        val showSaveTabsToCollection: Boolean,
     ) : CollectionsState()
 
     /** State in which the Collections to Tab Groups migration card should be displayed in place of the collections. */
@@ -35,7 +30,6 @@ sealed class CollectionsState {
     companion object {
         internal fun build(
             appState: AppState,
-            browserState: BrowserState,
             showCollections: Boolean,
             shouldShowCollectionsMigrationCard: Boolean,
         ): CollectionsState =
@@ -49,7 +43,6 @@ sealed class CollectionsState {
                         Content(
                             collections = collections,
                             expandedCollections = expandedCollections,
-                            showSaveTabsToCollection = browserState.normalTabs.isNotEmpty(),
                         )
 
                     else -> Gone

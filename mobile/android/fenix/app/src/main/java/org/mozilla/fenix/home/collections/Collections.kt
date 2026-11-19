@@ -33,7 +33,6 @@ import org.mozilla.fenix.theme.FirefoxTheme
  * @param modifier for the UI.
  * @param collections List of [TabCollection] to display.
  * @param expandedCollections List of ids corresponding to [TabCollection]s which are currently expanded.
- * @param showAddTabToCollection Whether to show the "Add tab" menu item in the collections menu.
  * @param interactor Interactor for interactions with the UI.
  */
 @Composable
@@ -41,7 +40,6 @@ fun Collections(
     modifier: Modifier = Modifier,
     collections: List<TabCollection>,
     expandedCollections: Set<Long> = emptySet(),
-    showAddTabToCollection: Boolean,
     interactor: CollectionInteractor,
 ) {
     Column(modifier = modifier) {
@@ -54,10 +52,8 @@ fun Collections(
                 menuItems =
                     getMenuItems(
                         collection = collection,
-                        showAddTabs = showAddTabToCollection,
                         onOpenTabsTapped = interactor::onCollectionOpenTabsTapped,
                         onRenameCollectionTapped = interactor::onRenameCollectionTapped,
-                        onAddTabTapped = interactor::onCollectionAddTabTapped,
                         onDeleteCollectionTapped = interactor::onDeleteCollectionTapped,
                     ),
                 onToggleCollectionExpanded = interactor::onToggleCollectionExpanded,
@@ -92,22 +88,18 @@ fun Collections(
  *
  * @param collection [TabCollection] for which the menu will be shown. Might serve as an argument for the callbacks for
  *   when the user interacts with certain menu options.
- * @param showAddTabs Whether to show the option to add a currently open tab to the [collection].
  * @param onOpenTabsTapped Invoked when the user chooses to open the tabs from [collection].
  * @param onRenameCollectionTapped Invoked when the user chooses to rename the [collection].
- * @param onAddTabTapped Invoked when the user chooses to add tabs to [collection].
  * @param onDeleteCollectionTapped Invoked when the user chooses to delete [collection].
  */
 @Composable
 private fun getMenuItems(
     collection: TabCollection,
-    showAddTabs: Boolean,
     onOpenTabsTapped: (TabCollection) -> Unit,
     onRenameCollectionTapped: (TabCollection) -> Unit,
-    onAddTabTapped: (TabCollection) -> Unit,
     onDeleteCollectionTapped: (TabCollection) -> Unit,
 ): List<MenuItem> {
-    return listOfNotNull(
+    return listOf(
         MenuItem(
             title = stringResource(R.string.collection_open_tabs),
             color = MaterialTheme.colorScheme.onSurface,
@@ -119,16 +111,6 @@ private fun getMenuItems(
             color = MaterialTheme.colorScheme.onSurface,
         ) {
             onRenameCollectionTapped(collection)
-        },
-        if (showAddTabs) {
-            MenuItem(
-                title = stringResource(R.string.add_tab),
-                color = MaterialTheme.colorScheme.onSurface,
-            ) {
-                onAddTabTapped(collection)
-            }
-        } else {
-            null
         },
         MenuItem(
             title = stringResource(R.string.collection_delete),
@@ -166,14 +148,9 @@ private fun CollectionsPreview() {
                                 )
                         ),
                     ),
-                showAddTabToCollection = true,
                 expandedCollections = expandedCollections.value,
                 interactor =
                     object : CollectionInteractor {
-                        override fun onCollectionAddTabTapped(collection: TabCollection) {
-                            /* no op */
-                        }
-
                         override fun onCollectionOpenTabClicked(tab: Tab) {
                             /* no op */
                         }
@@ -211,10 +188,6 @@ private fun CollectionsPreview() {
                                 } else {
                                     setOf()
                                 }
-                        }
-
-                        override fun onAddTabsToCollectionTapped() {
-                            /* no op */
                         }
                     },
             )

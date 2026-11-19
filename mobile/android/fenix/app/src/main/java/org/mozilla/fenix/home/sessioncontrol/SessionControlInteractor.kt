@@ -50,14 +50,6 @@ interface TabSessionInteractor {
 @SuppressWarnings("TooManyFunctions")
 interface CollectionInteractor {
     /**
-     * Shows the Collection Creation fragment for selecting the tabs to add to the given tab collection. Called when a
-     * user taps on the "Add tab" collection menu item.
-     *
-     * @param collection The collection of tabs that will be modified.
-     */
-    fun onCollectionAddTabTapped(collection: TabCollection)
-
-    /**
      * Opens the given tab. Called when a user clicks on a tab in the tab collection.
      *
      * @param tab The tab to open from the tab collection.
@@ -110,9 +102,6 @@ interface CollectionInteractor {
      * @param expand True if the given tab collection should be expanded or collapse if false.
      */
     fun onToggleCollectionExpanded(collection: TabCollection, expand: Boolean)
-
-    /** Opens the collection creator */
-    fun onAddTabsToCollectionTapped()
 }
 
 interface MessageCardInteractor {
@@ -177,10 +166,6 @@ class SessionControlInteractor(
     private val trackingProtectionController: TrackingProtectionController,
     private val logoController: LogoController,
 ) : HomepageInteractor {
-
-    override fun onCollectionAddTabTapped(collection: TabCollection) {
-        controller.handleCollectionAddTabTapped(collection)
-    }
 
     override fun onCollectionOpenTabClicked(tab: Tab) {
         controller.handleCollectionOpenTabClicked(tab)
@@ -278,10 +263,6 @@ class SessionControlInteractor(
 
     override fun onToggleCollectionExpanded(collection: TabCollection, expand: Boolean) {
         controller.handleToggleCollectionExpanded(collection, expand)
-    }
-
-    override fun onAddTabsToCollectionTapped() {
-        controller.handleCreateCollection()
     }
 
     override fun onLearnMoreClicked() {

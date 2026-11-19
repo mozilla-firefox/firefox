@@ -17,7 +17,6 @@ import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
 import org.mozilla.fenix.ui.robots.collectionRobot
 import org.mozilla.fenix.ui.robots.composeTabDrawer
 import org.mozilla.fenix.ui.robots.homeScreen
-import org.mozilla.fenix.ui.robots.navigationToolbar
 
 /** Tests for verifying basic functionality of tab collections */
 class CollectionTest {
@@ -191,33 +190,6 @@ class CollectionTest {
             .expandCollection(collectionName) {
                 clickCollectionThreeDotButton()
                 selectDeleteCollection()
-            }
-    }
-
-    // Testrail link: https://mozilla.testrail.io/index.php?/cases/view/343423
-    @Test
-    fun saveTabToExistingCollectionUsingTheAddTabButtonTest() {
-        val firstWebPage = mockWebServer.getGenericAsset(1)
-        val secondWebPage = mockWebServer.getGenericAsset(2)
-
-        MockBrowserDataHelper.createCollection(
-            Pair(firstWebPage.url.toString(), firstWebPage.title),
-            title = collectionName,
-        )
-
-        navigationToolbar(composeTestRule) {}
-            .enterURLAndEnterToBrowser(secondWebPage.url) {}
-            .goToHomescreen {
-                verifyCollectionIsDisplayed(collectionName)
-            }
-            .expandCollection(collectionName) {
-                clickCollectionThreeDotButton()
-                selectAddTabToCollection()
-                verifyTabsSelectedCounterText(1)
-                saveTabsSelectedForCollection()
-                // See: https://bugzilla.mozilla.org/show_bug.cgi?id=2034448
-                // verifySnackBarText(composeTestRule, "Tab saved")
-                verifyTabSavedInCollection(secondWebPage.title)
             }
     }
 

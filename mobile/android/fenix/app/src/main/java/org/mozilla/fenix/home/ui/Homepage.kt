@@ -587,7 +587,6 @@ private fun CollectionsSection(
                 Collections(
                     collections = collectionsState.collections,
                     expandedCollections = collectionsState.expandedCollections,
-                    showAddTabToCollection = collectionsState.showSaveTabsToCollection,
                     interactor = interactor,
                 )
             }

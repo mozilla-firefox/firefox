@@ -297,10 +297,6 @@ internal object FakeHomepagePreview {
     internal val collectionInteractor
         get() =
             object : CollectionInteractor {
-                override fun onCollectionAddTabTapped(collection: TabCollection) {
-                    /* no op */
-                }
-
                 override fun onCollectionOpenTabClicked(tab: Tab) {
                     /* no op */
                 }
@@ -329,10 +325,6 @@ internal object FakeHomepagePreview {
                     collection: TabCollection,
                     expand: Boolean,
                 ) {
-                    /* no op */
-                }
-
-                override fun onAddTabsToCollectionTapped() {
                     /* no op */
                 }
             }
@@ -487,7 +479,6 @@ internal object FakeHomepagePreview {
         CollectionsState.Content(
             collections = listOf(collection(tabs = listOf(tab()))),
             expandedCollections = setOf(),
-            showSaveTabsToCollection = true,
         )
 
     internal fun collection(tabs: List<Tab> = emptyList()): TabCollection {

@@ -126,29 +126,6 @@ class DefaultSessionControlControllerTest {
     }
 
     @Test
-    fun handleCollectionAddTabTapped() {
-        val collection =
-            mockk<TabCollection> {
-                every { id } returns 12L
-            }
-        createController().handleCollectionAddTabTapped(collection)
-
-        assertNotNull(Collections.addTabButton.testGetValue())
-        val recordedEvents = Collections.addTabButton.testGetValue()!!
-        assertEquals(1, recordedEvents.size)
-        assertEquals(null, recordedEvents.single().extra)
-
-        verify {
-            navController.navigate(
-                match<NavDirections> {
-                    it.actionId == R.id.action_global_collectionCreationFragment
-                },
-                null,
-            )
-        }
-    }
-
-    @Test
     fun `GIVEN browsing mode is private and collection tab cannot be restored WHEN a collection tab is opened THEN open collection in a new private tab`() {
         every { appStore.state.mode } returns BrowsingMode.Private
 
@@ -489,18 +466,6 @@ class DefaultSessionControlControllerTest {
         val collection = mockk<TabCollection>()
         createController().handleToggleCollectionExpanded(collection, true)
         verify { appStore.dispatch(AppAction.CollectionExpanded(collection, true)) }
-    }
-
-    @Test
-    fun handleCreateCollection() {
-        createController().handleCreateCollection()
-
-        verify {
-            navController.navigate(
-                match<NavDirections> { it.actionId == R.id.action_global_tabManagementFragment },
-                null,
-            )
-        }
     }
 
     @Test

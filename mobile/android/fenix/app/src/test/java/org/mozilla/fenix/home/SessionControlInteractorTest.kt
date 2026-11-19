@@ -77,13 +77,6 @@ class SessionControlInteractorTest {
     }
 
     @Test
-    fun onCollectionAddTabTapped() {
-        val collection: TabCollection = mockk(relaxed = true)
-        interactor.onCollectionAddTabTapped(collection)
-        verify { controller.handleCollectionAddTabTapped(collection) }
-    }
-
-    @Test
     fun onCollectionOpenTabClicked() {
         val tab: Tab = mockk(relaxed = true)
         interactor.onCollectionOpenTabClicked(tab)
@@ -137,12 +130,6 @@ class SessionControlInteractorTest {
         val collection: TabCollection = mockk(relaxed = true)
         interactor.onToggleCollectionExpanded(collection, true)
         verify { controller.handleToggleCollectionExpanded(collection, true) }
-    }
-
-    @Test
-    fun onAddTabsToCollection() {
-        interactor.onAddTabsToCollectionTapped()
-        verify { controller.handleCreateCollection() }
     }
 
     @Test

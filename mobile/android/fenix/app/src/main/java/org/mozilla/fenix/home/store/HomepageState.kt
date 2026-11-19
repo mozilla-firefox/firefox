@@ -10,7 +10,6 @@ import org.mozilla.fenix.browser.browsingmode.BrowsingModeManager
 import org.mozilla.fenix.components.appstate.AppState
 import org.mozilla.fenix.components.appstate.setup.checklist.SetupChecklistState
 import org.mozilla.fenix.components.appstate.sports.SportsWidgetState
-import org.mozilla.fenix.components.components
 import org.mozilla.fenix.components.toolbar.ToolbarPosition
 import org.mozilla.fenix.ext.shouldShowRecentSyncedTabs
 import org.mozilla.fenix.ext.shouldShowRecentTabs
@@ -196,7 +195,6 @@ internal sealed class HomepageState {
                     collectionsState =
                         CollectionsState.build(
                             appState = appState,
-                            browserState = components.core.store.state,
                             showCollections = settings.collections,
                             shouldShowCollectionsMigrationCard = collectionsMigrationCardState.visible,
                         ),

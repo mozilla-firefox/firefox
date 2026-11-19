@@ -27,11 +27,9 @@ import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
 import org.mozilla.fenix.R
 import org.mozilla.fenix.helpers.Constants.TAG
-import org.mozilla.fenix.helpers.MatcherHelper.assertItemTextEquals
 import org.mozilla.fenix.helpers.MatcherHelper.assertUIObjectExists
 import org.mozilla.fenix.helpers.MatcherHelper.assertUIObjectIsGone
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithResId
-import org.mozilla.fenix.helpers.MatcherHelper.itemWithText
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTime
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTimeLong
 import org.mozilla.fenix.helpers.TestHelper.mDevice
@@ -40,32 +38,6 @@ import org.mozilla.fenix.helpers.click
 import org.mozilla.fenix.helpers.ext.waitNotNull
 
 class CollectionRobot(private val composeTestRule: ComposeTestRule) {
-
-    fun verifyTabsSelectedCounterText(numOfTabs: Int) {
-        Log.i(
-            TAG,
-            "verifyTabsSelectedCounterText: Waiting for $waitingTime ms for \"Select tabs to save\" prompt to be gone",
-        )
-        itemWithText("Select tabs to save").waitUntilGone(waitingTime)
-        Log.i(
-            TAG,
-            "verifyTabsSelectedCounterText: Waited for $waitingTime ms for \"Select tabs to save\" prompt to be gone",
-        )
-
-        val tabsCounter = mDevice.findObject(UiSelector().resourceId("$packageName:id/bottom_bar_text"))
-        Log.i(TAG, "verifyTabsSelectedCounterText: Trying to assert that number of tabs selected is: $numOfTabs")
-        when (numOfTabs) {
-            1 -> assertItemTextEquals(tabsCounter, expectedText = "$numOfTabs tab selected")
-            2 -> assertItemTextEquals(tabsCounter, expectedText = "$numOfTabs tabs selected")
-        }
-        Log.i(TAG, "verifyTabsSelectedCounterText: Asserted number of tabs selected is: $numOfTabs")
-    }
-
-    fun saveTabsSelectedForCollection() {
-        Log.i(TAG, "saveTabsSelectedForCollection: Trying to click \"Save\" button")
-        itemWithResId("$packageName:id/save_button").click()
-        Log.i(TAG, "saveTabsSelectedForCollection: Clicked \"Save\" button")
-    }
 
     @OptIn(ExperimentalTestApi::class)
     fun verifyTabSavedInCollection(title: String, visible: Boolean = true) {
@@ -177,19 +149,6 @@ class CollectionRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "selectRenameCollection: Waiting for $waitingTime ms for collection name text field to exist")
         mainMenuEditCollectionNameField().waitForExists(waitingTime)
         Log.i(TAG, "selectRenameCollection: Waited for $waitingTime ms for collection name text field to exist")
-    }
-
-    @OptIn(ExperimentalTestApi::class)
-    fun selectAddTabToCollection() {
-        Log.i(TAG, "selectAddTabToCollection: Trying to verify \"Add tab\" menu option is displayed")
-        composeTestRule.onNode(hasText("Add tab")).assertIsDisplayed()
-        Log.i(TAG, "selectAddTabToCollection: Verified \"Add tab\" menu option is displayed")
-        Log.i(TAG, "selectAddTabToCollection: Trying to click \"Add tab\" menu option")
-        composeTestRule.onNode(hasText("Add tab")).performClick()
-        Log.i(TAG, "selectAddTabToCollection: Clicked \"Add tab\" menu option")
-        Log.i(TAG, "selectAddTabToCollection: Waiting for the \"Add tab\" menu option to not exist")
-        composeTestRule.waitUntilDoesNotExist(hasText("Add tab"))
-        Log.i(TAG, "selectAddTabToCollection: Waited for the \"Add tab\" menu option to not exist")
     }
 
     @OptIn(ExperimentalTestApi::class)
