@@ -101,10 +101,19 @@ class WasmFrameIter {
   Instance* contBaseInstance_ = nullptr;
 #endif
 #ifdef JS_HW_SHADOW_STACK
-  // The shadow stack pointer corresponding to the current frame while unwinding
-  // the stack for exception handling. It is nullptr if we're not unwinding or
-  // if the shadow stack is disabled.
+  // These fields track the shadow stack pointer while unwinding the stack for
+  // exception handling. They are nullptr if we're not unwinding or if the
+  // shadow stack is disabled.
+  //
+  // The shadow stack pointer to the entry corresponding to the current frame
+  // (i.e., the entry containing fp_->returnAddress()).
   uintptr_t* shadowStackPointer_ = nullptr;
+  // The shadow stack pointer corresponding to the resume/exit point of the
+  // current frame's continuation stack. In case we do need to resume in this
+  // stack to handle the exception, we switch to the continuation's shadow stack
+  // using this pointer. It is nullptr if the current frame is on the main
+  // stack.
+  uintptr_t* shadowStackSwitchPointer_ = nullptr;
 #endif
 
   //
@@ -246,6 +255,14 @@ class WasmFrameIter {
   uintptr_t* shadowStackPointer() const {
 #ifdef JS_HW_SHADOW_STACK
     return shadowStackPointer_;
+#else
+    return nullptr;
+#endif
+  }
+
+  uintptr_t* shadowStackSwitchPointer() const {
+#ifdef JS_HW_SHADOW_STACK
+    return shadowStackSwitchPointer_;
 #else
     return nullptr;
 #endif

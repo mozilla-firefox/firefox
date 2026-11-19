@@ -103,6 +103,17 @@ WasmFrameIter::WasmFrameIter(JitActivation* activation, wasm::Frame* fp,
   // Exit frames dynamically switch to the main stack. We need to mark this as
   // a stack switch.
   bool dynamicSwitchToMainStack = contStack_ && fp_ == activation->wasmExitFP();
+#  ifdef JS_HW_SHADOW_STACK
+  if (shadowStackPointer_ && dynamicSwitchToMainStack) {
+    // Since VM exits always switch to the main stack, the shadowStackPointer
+    // passed to this constructor does not correspond to the stack where the
+    // exception/trap actually occurred. We begin unwinding from the exit shadow
+    // stack pointer saved in wasm::GenerateExitPrologueMainStackSwitch.
+    shadowStackPointer_ = contStack_->exitShadowStackPointer();
+    MOZ_RELEASE_ASSERT(shadowStackPointer_);
+    shadowStackSwitchPointer_ = shadowStackPointer_;
+  }
+#  endif
 #endif
 
   // When the stack is captured during a trap (viz., to create the .stack
@@ -310,6 +321,19 @@ void WasmFrameIter::popContBaseFrame() {
   const Handlers* handlers = stack->handlers();
   fp_ = (wasm::Frame*)handlers->returnTarget.framePointer;
   uint8_t* returnAddress = (uint8_t*)handlers->returnTarget.resumePC;
+#  ifdef JS_HW_SHADOW_STACK
+  if (shadowStackPointer_) {
+    MOZ_RELEASE_ASSERT(handlers->returnTarget.shadowStackPointer);
+    // Continue unwinding on our handler's shadow stack, from where the switch
+    // to the stack the previous frame was on took place. Additionally, if this
+    // is not the main stack's shadow stack, we save the switch point in case we
+    // find a catch handler on this stack and need to switch to it on the
+    // exception resume path.
+    shadowStackPointer_ = handlers->returnTarget.shadowStackPointer;
+    shadowStackSwitchPointer_ =
+        handlers->returnTarget.stack->stack ? shadowStackPointer_ : nullptr;
+  }
+#  endif
   instance_ = handlers->returnTarget.instance;
   const CodeRange* codeRange;
   code_ = LookupCode(returnAddress, &codeRange);

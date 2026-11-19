@@ -350,15 +350,24 @@ struct ResumeFromException {
   uint8_t* stackPointer;
   uint8_t* target;
 #ifdef JS_HW_SHADOW_STACK
-  // Used to communicate the shadow stack pointer between the JIT and exception
-  // handling / frame unwinding logic in both directions. If the shadow stack is
-  // disabled for this thread/process at runtime, then this field is nullptr.
+  // These fields are used to communicate the shadow stack pointer between the
+  // JIT and exception handling / frame unwinding logic in both directions. If
+  // the shadow stack is disabled for this thread/process at runtime, then they
+  // are both nullptr.
   //
   // Just before calling HandleException, the JIT reads the shadow stack pointer
   // into this field, which is where frame iteration begins. On returning back
   // to the JIT, it contains the new desired shadow stack pointer before jumping
-  // to target.
+  // to target. While the initial value is always on the main stack's shadow
+  // stack, the final value may be on a continuation stack's shadow stack.
   uintptr_t* shadowStackPointer = nullptr;
+  // When we're resuming in a catch handler on a continuation stack, we must
+  // first switch to its shadow stack before unwinding to |shadowStackPointer|.
+  // With CET, this switch requires a valid restore token. This field holds the
+  // shadow stack pointer where that stack was last switched away from, below
+  // which a restore token was left. If we're resuming on the main stack, it is
+  // nullptr.
+  uintptr_t* shadowStackSwitchPointer = nullptr;
 #endif
   ExceptionResumeKind kind;
   wasm::Instance* instance;
@@ -388,6 +397,9 @@ struct ResumeFromException {
 #ifdef JS_HW_SHADOW_STACK
   static size_t offsetOfShadowStackPointer() {
     return offsetof(ResumeFromException, shadowStackPointer);
+  }
+  static size_t offsetOfShadowStackSwitchPointer() {
+    return offsetof(ResumeFromException, shadowStackSwitchPointer);
   }
 #endif
 

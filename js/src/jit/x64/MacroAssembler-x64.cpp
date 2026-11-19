@@ -744,8 +744,13 @@ void MacroAssemblerX64::handleFailureWithHandlerTail(
   *returnValueCheckOffset = asMasm().indirectTarget(TargetKind::Jump).offset();
 
 #ifdef JS_HW_SHADOW_STACK
-  // HandleException replaces the shadow stack pointer read above on entry with
-  // the new shadow stack pointer corresponding to the target handler.
+  // HandleException replaces the shadow stack pointer stored above with the
+  // one corresponding to the frame we want to resume in. If that frame is on
+  // a continuation stack, we must first switch to its shadow stack using the
+  // restore token that was left when we last switched away from it.
+  loadPtr(Address(rsp, ResumeFromException::offsetOfShadowStackSwitchPointer()),
+          rax);
+  switchToShadowStackPtr(rax);
   loadPtr(Address(rsp, ResumeFromException::offsetOfShadowStackPointer()), rax);
   unwindToShadowStackPtr(rax, rcx);
 #endif

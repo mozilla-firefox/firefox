@@ -884,6 +884,9 @@ void wasm::HandleExceptionWasm(JSContext* cx, JitFrameIter& iter,
           rfe->stackTarget = &cx->wasm().mainStackTarget();
           rfe->baseHandlers = nullptr;
         }
+#  ifdef JS_HW_SHADOW_STACK
+        rfe->shadowStackSwitchPointer = wasmFrame.shadowStackSwitchPointer();
+#  endif
 #endif  // ENABLE_WASM_JSPI
 
         // Maintain the invariant that trapping and exit frame state is always

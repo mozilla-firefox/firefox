@@ -42,6 +42,10 @@
 #include "vm/JSScript-inl.h"
 #include "vm/Probes-inl.h"
 
+#ifdef JS_HW_SHADOW_STACK
+#  include "util/HardwareShadowStack.h"
+#endif
+
 namespace js {
 namespace jit {
 
@@ -747,6 +751,9 @@ void HandleException(ResumeFromException* rfe) {
   });
 
   rfe->kind = ExceptionResumeKind::EntryFrame;
+#ifdef JS_HW_SHADOW_STACK
+  rfe->shadowStackSwitchPointer = nullptr;
+#endif
 
   JitSpew(JitSpew_IonInvalidate, "handling exception");
 
@@ -780,8 +787,16 @@ void HandleException(ResumeFromException* rfe) {
                     shadowStackPointer);
 
 #ifdef JS_HW_SHADOW_STACK
-  auto syncShadowStackPointer = mozilla::MakeScopeExit(
-      [&] { rfe->shadowStackPointer = iter.shadowStackPointer(); });
+  auto syncShadowStackPointer = mozilla::MakeScopeExit([&] {
+    rfe->shadowStackPointer = iter.shadowStackPointer();
+    // We expect to require switching shadow stacks only when resuming in a Wasm
+    // catch handler, and the shadow stack we switch to must have a valid
+    // restore token.
+    MOZ_ASSERT_IF(rfe->shadowStackSwitchPointer,
+                  rfe->kind == ExceptionResumeKind::WasmCatch);
+    MOZ_ASSERT_IF(rfe->shadowStackSwitchPointer,
+                  CanSwitchToShadowStack(rfe->shadowStackSwitchPointer));
+  });
 #endif
 
   CommonFrameLayout* prevJitFrame = nullptr;

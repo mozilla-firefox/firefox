@@ -219,6 +219,8 @@ void JitFrameIter::settle() {
     }
 
     uintptr_t* shadowStackPointer = wasmFrame.shadowStackPointer();
+    // We should be on the main stack when switching to JS JIT frames.
+    MOZ_ASSERT(!wasmFrame.shadowStackSwitchPointer());
     iter_.destroy();
     iter_.construct<jit::JSJitFrameIter>(act_, prevFP, mustUnwindActivation_,
                                          shadowStackPointer);
