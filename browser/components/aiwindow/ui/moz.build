@@ -60,6 +60,7 @@ MOZ_SRC_FILES += [
     "modules/ConversationMigrations.sys.mjs",
     "modules/ConversationSql.sys.mjs",
     "modules/ConversationStore.sys.mjs",
+    "modules/DigestActivity.sys.mjs",
     "modules/FeedbackModal.sys.mjs",
     "modules/MonitorAttention.sys.mjs",
     "modules/MonitorPanel.sys.mjs",

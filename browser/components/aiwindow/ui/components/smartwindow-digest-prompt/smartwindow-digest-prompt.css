@@ -1,0 +1,31 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:host([mode="fullpage"]) smartwindow-digest-prompt {
+  display: inline-flex;
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+.sw-prompt-button.sw-digest-highlighted::part(button) {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  box-shadow: var(--smartwindow-card-shadow-highlight);
+}
+
+/* The pill border is drawn by this pseudo-element in smartwindow-prompts.css. */
+.sw-prompt-button.sw-digest-highlighted::part(button)::before {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  background: var(--smartwindow-card-border-hover);
+}
+
+smartwindow-digest-prompt .sw-prompt-button {
+  max-width: var(--size-layout-medium);
+  white-space: nowrap;
+}
+
+smartwindow-digest-prompt .sw-prompt-button::part(moz-button-label) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

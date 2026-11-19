@@ -24,6 +24,9 @@
     --smartwindow-border-color: CanvasText;
   }
 
+  --smartwindow-card-border-hover: color-mix(in oklch, var(--color-violet-30) 30%, var(--color-gray-50));
+  --smartwindow-card-shadow-highlight: 0 2px 12px var(--color-violet-40);
+
   /* Non-nova dark-theme ghost chrome buttons (history menu, new chat, close).
      The dark fill approximates the design's #734d8d, which has no single
      matching token, by desaturating purple toward a dark gray. */
@@ -58,6 +61,7 @@
       /* Smart Window Nova Tokens */
       --smartwindow-text-color-accent-primary: light-dark(var(--color-violet-60), var(--color-violet-30));
       --smartwindow-icon-color-accent-primary-desaturated: light-dark(var(--color-violet-desaturated-60), var(--color-violet-desaturated-40));
+      --smartwindow-card-border-hover: var(--color-violet-desaturated-30);
 
       --smartwindow-panel-item-background-color-hover: light-dark(
         color-mix(in srgb, var(--color-violet-60) 15%, transparent),

@@ -406,6 +406,15 @@ aiwindow-starter-browsing-history = Find tabs in history
 aiwindow-starter-browsing-summarize = Summarize tabs
 aiwindow-starter-browsing-compare = Compare tabs
 
+## Smart Window digest starter dismiss button
+## Shown on hover over a digest starter pill. Turns off the digest and
+## removes its pill from the starter row.
+## Variables:
+##   $text (String) - The label of the pill, which is the digest's title, for example "Morning News"
+
+aiwindow-starter-digest-dismiss =
+    .aria-label = Dismiss { $text }
+
 ## Conversation Starter Scroll Buttons
 ## Scrolls the conversation-starter pill row toward its start/end.
 

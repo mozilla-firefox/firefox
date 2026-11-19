@@ -136,6 +136,8 @@ skip-if = [
 
 ["browser_smartwindow_default_startup.js"]
 
+["browser_smartwindow_digest_prompt.js"]
+
 ["browser_smartwindow_disclaimer.js"]
 
 ["browser_smartwindow_duplicate_chat_tabs.js"]
