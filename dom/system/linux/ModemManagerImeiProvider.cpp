@@ -133,7 +133,14 @@ void ModemManagerImeiProvider::QueryModemImei(RefPtr<Promise> aPromise,
 
 void ModemManagerImeiProvider::OnIntrospectFinish(RefPtr<Promise> aPromise,
                                                   RefPtr<GVariant> aResult) {
-  const gchar* introspectXml;
+  if (!aResult || !g_variant_is_of_type(aResult, G_VARIANT_TYPE("(s)"))) {
+    MMI_LOG(Error, "Unexpected Introspect reply type: %s",
+            aResult ? g_variant_get_type_string(aResult) : "(null)");
+    aPromise->MaybeReject(NS_ERROR_ILLEGAL_VALUE);
+    return;
+  }
+
+  const gchar* introspectXml = nullptr;
   g_variant_get(aResult, "(&s)", &introspectXml);
 
   GUniquePtr<GError> error;
