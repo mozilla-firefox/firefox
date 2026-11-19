@@ -50,15 +50,18 @@ static void AssertInnerizedEnvironmentChain(JSContext* cx, JSObject& env) {
 /* static */
 HashNumber EvalCacheHashPolicy::hash(const EvalCacheLookup& l) {
   HashNumber hash = HashStringChars(l.str);
-  return AddToHash(hash, l.callerScript, l.pc);
+  return AddToHash(hash, l.global, l.introducerScript, l.introducerPcOffset,
+                   l.evalType);
 }
 
 /* static */
 bool EvalCacheHashPolicy::match(const EvalCacheEntry& cacheEntry,
                                 const EvalCacheLookup& l) {
-  MOZ_ASSERT(cacheEntry.script->isDirectEvalInFunction());
-  return EqualStrings(cacheEntry.str, l.str) &&
-         cacheEntry.callerScript == l.callerScript && cacheEntry.pc == l.pc;
+  return &cacheEntry.script->global() == l.global &&
+         cacheEntry.introducerScript == l.introducerScript &&
+         cacheEntry.introducerPcOffset == l.introducerPcOffset &&
+         cacheEntry.evalType == l.evalType &&
+         EqualStrings(cacheEntry.str, l.str);
 }
 
 enum class EvalJSONResult { Failure, Success, NotJSON };
@@ -210,11 +213,35 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
     return ejr == EvalJSONResult::Success;
   }
 
-  bool directEvalInFunctionFrame =
-      evalType == EvalType::Direct && caller.isFunctionFrame();
+  bool isWasmIntroducer = false;
   RootedScript evalScript(cx);
-  if (directEvalInFunctionFrame) {
-    EvalCacheLookup key(linearStr, callerScript, pc);
+  RootedScript introducerScript(cx);
+  uint32_t introducerPcOffset = 0;
+  if (evalType == EvalType::Direct) {
+    introducerScript = callerScript;
+    introducerPcOffset = callerScript->pcToOffset(pc);
+  } else {
+    // Find the frame that DescribeScriptedCallerForCompilation will describe
+    // as the introducer of an indirect eval.
+    NonBuiltinFrameIter iter(cx, cx->realm()->principals());
+    if (iter.done()) {
+      // No script on the stack: promise jobs, timers, etc...
+      introducerScript = nullptr;
+      introducerPcOffset = 0;
+    } else if (iter.hasScript()) {
+      introducerScript = iter.script();
+      introducerPcOffset = introducerScript->pcToOffset(iter.pc());
+    } else {
+      // `eval` is being called directly from wasm. To cache this,
+      // EvalCacheLookup/Entry would need to support WasmInstanceObject
+      // introducers in addition to JSScripts. This isn't common enough
+      // to be worth it.
+      isWasmIntroducer = true;
+    }
+  }
+  if (!isWasmIntroducer) {
+    EvalCacheLookup key(linearStr, cx->global(), introducerScript,
+                        introducerPcOffset, evalType);
     if (EvalCache::Ptr entry = cx->caches().evalCache.lookup(key)) {
       evalScript = entry->script;
     }
@@ -293,11 +320,13 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
       return false;
     }
 
-    if (isReusable && directEvalInFunctionFrame) {
+    if (isReusable && !isWasmIntroducer) {
       MOZ_ASSERT(!evalScript->treatAsRunOnce());
       MOZ_ASSERT(!evalScript->hasCallSiteObj());
-      EvalCacheLookup key(linearStr, callerScript, pc);
-      EvalCacheEntry cacheEntry = {linearStr, evalScript, callerScript, pc};
+      EvalCacheLookup key(linearStr, cx->global(), introducerScript,
+                          introducerPcOffset, evalType);
+      EvalCacheEntry cacheEntry(linearStr, evalScript, introducerScript,
+                                introducerPcOffset, evalType);
       EvalCache::AddPtr p = cx->caches().evalCache.lookupForAdd(key);
       if (!p) {
         // Ignore failure to add cache entry.
@@ -492,8 +521,10 @@ void RuntimeCaches::checkEvalCacheAfterMinorGC() {
   gc::CheckTableAfterMovingGC(evalCache, [](const auto& entry) {
     CheckGCThingAfterMovingGC(entry.str);
     CheckGCThingAfterMovingGC(entry.script);
-    CheckGCThingAfterMovingGC(entry.callerScript);
-    return EvalCacheLookup(entry.str, entry.callerScript, entry.pc);
+    CheckGCThingAfterMovingGC(entry.introducerScript);
+    return EvalCacheLookup(entry.str, &entry.script->global(),
+                           entry.introducerScript, entry.introducerPcOffset,
+                           entry.evalType);
   });
 }
 #endif

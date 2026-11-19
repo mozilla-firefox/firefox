@@ -11,7 +11,8 @@ dbg.onDebuggerStatement = function (frame) {
 
 g.eval('var arr = [];')
 for (i = 0; i < N; i++)  // loop to defeat conservative GC
-    g.eval("arr.push(function () { debugger }); arr[arr.length - 1]();");
+    // Make each eval string distinct to avoid eval cache.
+    g.eval("arr.push(function () { debugger }); arr[arr.length - 1]();" + i);
 
 gc();
 
