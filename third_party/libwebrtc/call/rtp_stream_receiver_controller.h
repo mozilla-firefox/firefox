@@ -26,12 +26,10 @@ namespace webrtc {
 
 class RtpPacketReceived;
 
-// Interface used by RtpStreamReceiverController to validate the lifetime of
-// registered sinks across thread boundaries. It represents the registration
-// state of a sink as considered on the worker thread. Because demuxing occurs
-// on the network thread while delivery happens on the worker thread, this
-// validation prevents use-after-free bugs by verifying that a resolved sink
-// remains valid on the worker thread prior to packet dispatch.
+// Interface used by RtpStreamReceiverController to check that a sink resolved
+// by the demuxer is still registered before a packet is delivered to it.
+// TODO(bugs.webrtc.org/11993): Remove. Sinks are registered, resolved and
+// delivered to on the same thread, so the demuxer state is always current.
 class RtpSinkValidator {
  public:
   virtual ~RtpSinkValidator() = default;
@@ -55,7 +53,6 @@ class RtpStreamReceiverController : public RtpStreamReceiverControllerInterface,
                                     public RecoveredPacketReceiver {
  public:
   RtpStreamReceiverController(TaskQueueBase* absl_nonnull network_thread,
-                              TaskQueueBase* absl_nonnull worker_thread,
                               RtpSinkValidator* absl_nonnull sink_validator);
   ~RtpStreamReceiverController() override;
 
@@ -73,18 +70,16 @@ class RtpStreamReceiverController : public RtpStreamReceiverControllerInterface,
   // Responsible for demuxing recovered FLEXFEC packets.
   void OnRecoveredPacket(const RtpPacketReceived& packet) override;
 
+  // Removes all sinks and cancels tasks that are still pending on the network
+  // thread.
   void DisconnectFromNetworkThread();
 
   bool IsEmpty() const;
 
  private:
-  // ProxySink guarantees a unique pointer address per receiver instance.
-  // Because it is a unique_ptr owned by Receiver, its address cannot be reused
-  // across different streams even if the underlying sink is reallocated at the
-  // exact same memory address. This prevents a race condition where
-  // a packet resolved on the network thread might be incorrectly validated
-  // by ReceiveSinkRegistry on the worker thread if the raw sink address was
-  // reused by a newly created stream before the packet was delivered.
+  // Gives each receiver a unique sink address that is registered with both
+  // the demuxer and the RtpSinkValidator.
+  // TODO(bugs.webrtc.org/11993): Remove together with RtpSinkValidator.
   class ProxySink : public RtpPacketSinkInterface {
    public:
     explicit ProxySink(RtpPacketSinkInterface* sink) : sink_(sink) {}
@@ -114,17 +109,13 @@ class RtpStreamReceiverController : public RtpStreamReceiverControllerInterface,
   bool RemoveSink(const RtpPacketSinkInterface* sink);
 
   TaskQueueBase* const network_thread_;
-  TaskQueueBase* const worker_thread_;
   RtpSinkValidator* const sink_validator_;
   scoped_refptr<PendingTaskSafetyFlag> network_safety_ =
       PendingTaskSafetyFlag::CreateAttachedToTaskQueue(true, network_thread_);
-  scoped_refptr<PendingTaskSafetyFlag> worker_safety_ =
-      PendingTaskSafetyFlag::CreateAttachedToTaskQueue(true, worker_thread_);
-  // TODO(bugs.webrtc.org/11993): Demuxing and sink resolution (OnRtpPacket,
-  // ResolveSink) now run on the network thread. However, construction and
-  // destruction still occur on the worker thread. Once all receive streams and
-  // associated state are fully migrated to the network thread, cross-thread
-  // posting and dual safety flags can be eliminated.
+  // TODO(bugs.webrtc.org/11993): Receivers are created and destroyed on the
+  // worker thread, which is the same queue as `network_thread_`. Remove
+  // `network_safety_` and the posting to `network_thread_`, and require all
+  // calls to be made on `network_thread_`.
   RtpDemuxer demuxer_ RTC_GUARDED_BY(network_thread_){false /*use_mid*/};
 };
 

@@ -93,7 +93,6 @@ class FlexfecReceiveStreamTest : public ::testing::Test {
   FlexfecReceiveStreamTest()
       : config_(CreateDefaultConfig(&rtcp_send_transport_)),
         rtp_stream_receiver_controller_(main_thread_.task_queue(),
-                                        main_thread_.task_queue(),
                                         &dummy_validator_) {
     receive_stream_ = std::make_unique<FlexfecReceiveStreamImpl>(
         CreateTestEnvironment({.event_log = &log_}), config_,

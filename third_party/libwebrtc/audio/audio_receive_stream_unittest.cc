@@ -126,22 +126,16 @@ class DummySinkValidator : public RtpSinkValidator {
 };
 
 struct ConfigHelper {
-  ConfigHelper(TaskQueueBase* network_thread,
-               TaskQueueBase* worker_thread,
-               bool use_null_audio_processing)
+  ConfigHelper(TaskQueueBase* network_thread, bool use_null_audio_processing)
       : ConfigHelper(network_thread,
-                     worker_thread,
                      make_ref_counted<MockAudioMixer>(),
                      use_null_audio_processing) {}
 
   ConfigHelper(TaskQueueBase* network_thread,
-               TaskQueueBase* worker_thread,
                scoped_refptr<MockAudioMixer> audio_mixer,
                bool use_null_audio_processing)
       : audio_mixer_(audio_mixer),
-        rtp_stream_receiver_controller_(network_thread,
-                                        worker_thread,
-                                        &dummy_validator_) {
+        rtp_stream_receiver_controller_(network_thread, &dummy_validator_) {
     AudioState::Config config;
     config.audio_mixer = audio_mixer_;
     config.audio_processing =
@@ -239,8 +233,7 @@ TEST(AudioReceiveStreamTest, ConfigToString) {
 TEST(AudioReceiveStreamTest, ConstructDestruct) {
   test::RunLoop loop;
   for (bool use_null_audio_processing : {false, true}) {
-    ConfigHelper helper(loop.task_queue(), loop.task_queue(),
-                        use_null_audio_processing);
+    ConfigHelper helper(loop.task_queue(), use_null_audio_processing);
     auto recv_stream = helper.CreateAudioReceiveStream();
     recv_stream->UnregisterFromTransport();
   }
@@ -249,8 +242,7 @@ TEST(AudioReceiveStreamTest, ConstructDestruct) {
 TEST(AudioReceiveStreamTest, ReceiveRtcpPacket) {
   test::RunLoop loop;
   for (bool use_null_audio_processing : {false, true}) {
-    ConfigHelper helper(loop.task_queue(), loop.task_queue(),
-                        use_null_audio_processing);
+    ConfigHelper helper(loop.task_queue(), use_null_audio_processing);
     auto recv_stream = helper.CreateAudioReceiveStream();
     std::vector<uint8_t> rtcp_packet = CreateRtcpSenderReport();
     EXPECT_CALL(*helper.channel_receive(),
@@ -264,8 +256,7 @@ TEST(AudioReceiveStreamTest, ReceiveRtcpPacket) {
 TEST(AudioReceiveStreamTest, GetStats) {
   test::RunLoop loop;
   for (bool use_null_audio_processing : {false, true}) {
-    ConfigHelper helper(loop.task_queue(), loop.task_queue(),
-                        use_null_audio_processing);
+    ConfigHelper helper(loop.task_queue(), use_null_audio_processing);
     auto recv_stream = helper.CreateAudioReceiveStream();
     helper.SetupMockForGetStats();
     AudioReceiveStreamInterface::Stats stats =
@@ -353,8 +344,7 @@ TEST(AudioReceiveStreamTest, GetStats) {
 TEST(AudioReceiveStreamTest, SetGain) {
   test::RunLoop loop;
   for (bool use_null_audio_processing : {false, true}) {
-    ConfigHelper helper(loop.task_queue(), loop.task_queue(),
-                        use_null_audio_processing);
+    ConfigHelper helper(loop.task_queue(), use_null_audio_processing);
     auto recv_stream = helper.CreateAudioReceiveStream();
     EXPECT_CALL(*helper.channel_receive(),
                 SetChannelOutputVolumeScaling(FloatEq(0.765f)));
@@ -366,10 +356,9 @@ TEST(AudioReceiveStreamTest, SetGain) {
 TEST(AudioReceiveStreamTest, StreamsShouldBeAddedToMixerOnceOnStart) {
   test::RunLoop loop;
   for (bool use_null_audio_processing : {false, true}) {
-    ConfigHelper helper1(loop.task_queue(), loop.task_queue(),
+    ConfigHelper helper1(loop.task_queue(), use_null_audio_processing);
+    ConfigHelper helper2(loop.task_queue(), helper1.audio_mixer(),
                          use_null_audio_processing);
-    ConfigHelper helper2(loop.task_queue(), loop.task_queue(),
-                         helper1.audio_mixer(), use_null_audio_processing);
     auto recv_stream1 = helper1.CreateAudioReceiveStream();
     auto recv_stream2 = helper2.CreateAudioReceiveStream();
 
@@ -403,8 +392,7 @@ TEST(AudioReceiveStreamTest, StreamsShouldBeAddedToMixerOnceOnStart) {
 TEST(AudioReceiveStreamTest, ReconfigureWithUpdatedConfig) {
   test::RunLoop loop;
   for (bool use_null_audio_processing : {false, true}) {
-    ConfigHelper helper(loop.task_queue(), loop.task_queue(),
-                        use_null_audio_processing);
+    ConfigHelper helper(loop.task_queue(), use_null_audio_processing);
     auto recv_stream = helper.CreateAudioReceiveStream();
 
     MockChannelReceive& channel_receive = *helper.channel_receive();
@@ -424,8 +412,7 @@ TEST(AudioReceiveStreamTest, ReconfigureWithUpdatedConfig) {
 TEST(AudioReceiveStreamTest, SetFrameDecryptorForwardsToChannelReceive) {
   test::RunLoop loop;
   for (bool use_null_audio_processing : {false, true}) {
-    ConfigHelper helper(loop.task_queue(), loop.task_queue(),
-                        use_null_audio_processing);
+    ConfigHelper helper(loop.task_queue(), use_null_audio_processing);
     auto recv_stream = helper.CreateAudioReceiveStream();
 
     scoped_refptr<FrameDecryptorInterface> mock_frame_decryptor =

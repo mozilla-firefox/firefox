@@ -741,8 +741,7 @@ if (rtc_include_tests) {
         ":rtp_interfaces",
         ":rtp_receiver",
         "../modules/rtp_rtcp:rtp_rtcp_format",
-        "../rtc_base:rtc_base_tests_utils",
-        "../rtc_base:threading",
+        "../test:run_loop",
         "../test:test_support",
       ]
     }

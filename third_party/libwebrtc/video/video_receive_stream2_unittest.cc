@@ -212,7 +212,6 @@ class VideoReceiveStream2Test : public ::testing::TestWithParam<bool> {
         fake_renderer_(&time_controller_),
         fake_call_(env_),
         rtp_stream_receiver_controller_(time_controller_.GetMainThread(),
-                                        time_controller_.GetMainThread(),
                                         &dummy_validator_),
         fake_metronome_(TimeDelta::Millis(16)),
         decode_sync_(&env_.clock(),

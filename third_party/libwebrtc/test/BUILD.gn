@@ -1891,6 +1891,7 @@ if (!build_with_chromium) {
       "../api/environment:environment_factory",
       "../api/rtc_event_log",
       "../api/task_queue",
+      "../api/task_queue:pending_task_safety_flag",
       "../api/test/video:function_video_factory",
       "../api/transport:bitrate_settings",
       "../api/transport:network_control",
@@ -1927,6 +1928,7 @@ if (!build_with_chromium) {
       "../video/config:encoder_config",
       "//third_party/abseil-cpp/absl/base:nullability",
       "//third_party/abseil-cpp/absl/flags:flag",
+      "//third_party/abseil-cpp/absl/functional:any_invocable",
       "//third_party/abseil-cpp/absl/strings:string_view",
     ]
     if (!is_android && !build_with_chromium) {

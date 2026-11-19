@@ -78,9 +78,7 @@ class DummySinkValidator : public RtpSinkValidator {
 
 class RtxLoopBackTransport : public Transport {
  public:
-  RtxLoopBackTransport(TaskQueueBase* network_thread,
-                       TaskQueueBase* worker_thread,
-                       uint32_t rtx_ssrc)
+  RtxLoopBackTransport(TaskQueueBase* network_thread, uint32_t rtx_ssrc)
       : count_(0),
         packet_loss_(0),
         consecutive_drop_start_(0),
@@ -88,9 +86,7 @@ class RtxLoopBackTransport : public Transport {
         rtx_ssrc_(rtx_ssrc),
         count_rtx_ssrc_(0),
         module_(nullptr),
-        stream_receiver_controller_(network_thread,
-                                    worker_thread,
-                                    &dummy_validator_) {}
+        stream_receiver_controller_(network_thread, &dummy_validator_) {}
 
   void SetSendModule(RtpRtcpInterface* rtpRtcpModule) {
     module_ = rtpRtcpModule;
@@ -151,9 +147,7 @@ class RtpRtcpRtxNackTest : public ::testing::Test {
   RtpRtcpRtxNackTest()
       : fake_clock_(123456),
         env_(CreateTestEnvironment({.time = &fake_clock_})),
-        transport_(main_thread_.task_queue(),
-                   main_thread_.task_queue(),
-                   kTestRtxSsrc),
+        transport_(main_thread_.task_queue(), kTestRtxSsrc),
         rtx_stream_(env_,
                     &media_stream_,
                     rtx_associated_payload_types_,
