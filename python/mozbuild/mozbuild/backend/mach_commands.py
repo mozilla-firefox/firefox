@@ -33,7 +33,7 @@ from mozbuild.util import cpu_count
 )
 @CommandArgument("args", nargs=argparse.REMAINDER)
 def run(command_context, ide, no_interactive, args):
-    interactive = not no_interactive
+    interactive = not no_interactive and command_context._mach_context.is_interactive
 
     if ide == "eclipse" and not which("eclipse"):
         command_context.log(
