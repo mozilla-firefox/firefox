@@ -2220,10 +2220,6 @@ class GeckoSessionTestRuleTest : BaseSessionTest(noErrorCollector = true) {
     @IgnoreCrash
     @Test
     fun contentCrashIgnored() {
-        // TODO: bug 1710940
-        assumeThat(sessionRule.env.isIsolatedProcess, equalTo(false))
-        assumeThat(sessionRule.env.isAppZygoteProcess, equalTo(false))
-
         mainSession.loadUri(CONTENT_CRASH_URL)
         mainSession.waitUntilCalled(
             object : ContentDelegate {
