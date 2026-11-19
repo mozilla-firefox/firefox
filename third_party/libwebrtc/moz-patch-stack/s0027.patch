@@ -944,7 +944,7 @@ index fe8f7b26b3..a91c89d297 100644
  }
 +
 diff --git a/modules/sframe/BUILD.gn b/modules/sframe/BUILD.gn
-index 04c6a4efec..9623193cae 100644
+index c31bbdd9ab..aad83ce3db 100644
 --- a/modules/sframe/BUILD.gn
 +++ b/modules/sframe/BUILD.gn
 @@ -9,6 +9,7 @@
@@ -955,7 +955,7 @@ index 04c6a4efec..9623193cae 100644
    deps = [
      ":sframe_context_factory",
      ":sframe_decrypt_error_reporter",
-@@ -20,6 +21,7 @@ group("sframe") {
+@@ -21,6 +22,7 @@ group("sframe") {
      ":synchronized_sframe_encryptor",
    ]
  }
