@@ -812,7 +812,9 @@ add_task(
 
     let addon = await installAddon(XPIS.test_addon1, reconciler);
     await EnterprisePolicyTesting.setupPolicyEngineWithJson({
-      policies: { Extensions: { Locked: [ID1] } },
+      policies: {
+        ExtensionSettings: { [ID1]: { installation_mode: "force_installed" } },
+      },
     });
 
     let countTelemetry = new SyncedRecordsTelemetry();

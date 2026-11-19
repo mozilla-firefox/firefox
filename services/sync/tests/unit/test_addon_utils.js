@@ -128,7 +128,9 @@ add_task(
     Cc["@mozilla.org/enterprisepolicies;1"].getService(Ci.nsIObserver);
 
     await EnterprisePolicyTesting.setupPolicyEngineWithJson({
-      policies: { Extensions: { Locked: [ID] } },
+      policies: {
+        ExtensionSettings: { [ID]: { installation_mode: "force_installed" } },
+      },
     });
 
     Assert.ok(!AddonUtils.canDisableAddon(ID));
