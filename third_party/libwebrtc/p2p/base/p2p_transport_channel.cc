@@ -963,8 +963,15 @@ void P2PTransportChannel::OnCandidateError(
 }
 
 void P2PTransportChannel::OnCandidatesAllocationDone(
-    PortAllocatorSession* /* session */) {
+    PortAllocatorSession* session) {
   RTC_DCHECK_RUN_ON(&network_thread_);
+  if (session != allocator_session()) {
+    // A session stopped by an ICE restart must not end the new generation.
+    RTC_LOG(LS_INFO) << "P2PTransportChannel: " << transport_name()
+                     << ", component " << component()
+                     << " ignoring gathering complete of an old generation.";
+    return;
+  }
   if (config_.gather_continually()) {
     RTC_LOG(LS_INFO) << "P2PTransportChannel: " << transport_name()
                      << ", component " << component()
