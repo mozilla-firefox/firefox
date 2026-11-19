@@ -980,7 +980,8 @@ void Call::DestroyVideoSendStream(webrtc::VideoSendStream* send_stream) {
 webrtc::VideoReceiveStreamInterface* Call::CreateVideoReceiveStream(
     webrtc::VideoReceiveStreamInterface::Config configuration) {
   TRACE_EVENT0("webrtc", "Call::CreateVideoReceiveStream");
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
+  RTC_DCHECK_RUN_ON(worker_thread_);  // Same queue, see Call::Create().
 
   EnsureStarted();
 
@@ -989,10 +990,6 @@ webrtc::VideoReceiveStreamInterface* Call::CreateVideoReceiveStream(
 
   TimeDelta render_delay = TimeDelta::Millis(configuration.render_delay_ms);
 
-  // TODO(bugs.webrtc.org/11993): Move the registration between `receive_stream`
-  // and `video_receiver_controller_` out of VideoReceiveStream2 construction
-  // and set it up asynchronously on the network thread (the registration and
-  // `video_receiver_controller_` need to live on the network thread).
   // TODO(crbug.com/1381982): Re-enable decode synchronizer once the Chromium
   // API has adapted to the new Metronome interface.
   VideoReceiveStream2* receive_stream = new VideoReceiveStream2(
@@ -1003,8 +1000,6 @@ webrtc::VideoReceiveStreamInterface* Call::CreateVideoReceiveStream(
           MaybeCreateVideoJitterTiming(env_,
                                        config_.video_jitter_timing_factory)),
       &nack_periodic_processor_, decode_sync_.get());
-  // TODO(bugs.webrtc.org/11993): Set this up asynchronously on the network
-  // thread.
   receive_stream->RegisterWithTransport(&video_receiver_controller_);
   video_receive_streams_.insert(receive_stream);
 
@@ -1018,11 +1013,11 @@ webrtc::VideoReceiveStreamInterface* Call::CreateVideoReceiveStream(
 void Call::DestroyVideoReceiveStream(
     webrtc::VideoReceiveStreamInterface* receive_stream) {
   TRACE_EVENT0("webrtc", "Call::DestroyVideoReceiveStream");
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
+  RTC_DCHECK_RUN_ON(worker_thread_);  // Same queue, see Call::Create().
   RTC_DCHECK(receive_stream != nullptr);
   VideoReceiveStream2* receive_stream_impl =
       static_cast<VideoReceiveStream2*>(receive_stream);
-  // TODO(bugs.webrtc.org/11993): Unregister on the network thread.
   receive_stream_impl->UnregisterFromTransport();
   video_receive_streams_.erase(receive_stream_impl);
   ConfigureSync(receive_stream_impl->sync_group());

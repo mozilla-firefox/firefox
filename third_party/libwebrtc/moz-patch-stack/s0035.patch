@@ -273,7 +273,7 @@ index 7e0aaa4797..069696cf82 100644
  
      RtcpRttStats* rtt_stats = nullptr;
 diff --git a/video/rtp_video_stream_receiver2.cc b/video/rtp_video_stream_receiver2.cc
-index 1f4f709a17..0aae5eb44c 100644
+index 814165d8df..8a76be159a 100644
 --- a/video/rtp_video_stream_receiver2.cc
 +++ b/video/rtp_video_stream_receiver2.cc
 @@ -130,6 +130,7 @@ std::unique_ptr<ModuleRtpRtcpImpl2> CreateRtpRtcpModule(
