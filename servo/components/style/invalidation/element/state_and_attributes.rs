@@ -194,29 +194,31 @@ where
     true
 }
 
-/// Sets the appropriate hint after invalidating the style of a sibling.
-pub fn invalidated_sibling<E>(element: E, of: E)
+/// Sets the appropriate hint after invalidating the style of a sibling, and propagate the dirty bit
+/// all the way to `parent` if needed (assuming `of` is already being traversed / dealt with).
+pub fn invalidated_sibling_subtree<E>(sibling: E, of: E, invalidated_sibling: bool)
 where
     E: TElement,
 {
     debug_assert_eq!(
-        element.as_node().parent_node(),
+        sibling.as_node().parent_node(),
         of.as_node().parent_node(),
         "Should be siblings"
     );
-    if !invalidated_self(element) {
+    if invalidated_sibling {
+        invalidated_self(sibling);
+    }
+    if !sibling.has_data() {
         return;
     }
-    if element.traversal_parent() != of.traversal_parent() {
-        let parent = element.as_node().parent_element_or_host();
-        debug_assert!(
-            parent.is_some(),
-            "How can we have siblings without parent nodes?"
-        );
-        if let Some(e) = parent {
-            propagate_dirty_bit_up_to(e, element)
-        }
+    if sibling.traversal_parent() == of.traversal_parent() {
+        return;
     }
+    let Some(parent) = sibling.as_node().parent_element_or_host() else {
+        debug_assert!(false, "How can we have siblings without parent nodes?");
+        return;
+    };
+    propagate_dirty_bit_up_to(parent, sibling)
 }
 
 impl<'a, 'b: 'a, E: 'a> InvalidationProcessor<'a, 'a, E>
@@ -453,9 +455,9 @@ where
         invalidated_self(element);
     }
 
-    fn invalidated_sibling(&mut self, element: E, of: E) {
-        debug_assert_ne!(element, self.element);
-        invalidated_sibling(element, of);
+    fn invalidated_sibling_subtree(&mut self, sibling: E, of: E, invalidated_sibling: bool) {
+        debug_assert_ne!(sibling, self.element);
+        invalidated_sibling_subtree(sibling, of, invalidated_sibling);
     }
 
     fn invalidated_highlight_pseudo(&mut self, element: E) {
