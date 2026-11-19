@@ -396,3 +396,76 @@ add_task(async function test_purge() {
   await SiteDataTestUtils.clear();
   Services.perms.removeAll();
 });
+
+/**
+ * Tests that default "bounce-tracking-protection-exception" permissions, as
+ * set by remote permissions, exempt the whole site from purging in normal
+ * browsing, containers and private browsing.
+ */
+add_task(async function test_purge_remote_exception_permission() {
+  const PERM_TYPE = "bounce-tracking-protection-exception";
+  const OAS = [{}, { userContextId: 2 }, { privateBrowsingId: 1 }];
+  let bounceTime =
+    (Date.now() - (bounceTrackingGracePeriodSec + 5) * 1000) * 1000;
+
+  let allowPrincipal = Services.scriptSecurityManager.createContentPrincipal(
+    Services.io.newURI("https://www.example.com"),
+    {}
+  );
+  let denyPrincipal = Services.scriptSecurityManager.createContentPrincipal(
+    Services.io.newURI("https://example.net"),
+    {}
+  );
+  Services.perms.addDefaultFromPrincipal(
+    allowPrincipal,
+    PERM_TYPE,
+    Services.perms.ALLOW_ACTION
+  );
+  Services.perms.addDefaultFromPrincipal(
+    denyPrincipal,
+    PERM_TYPE,
+    Services.perms.DENY_ACTION
+  );
+
+  for (let oa of OAS) {
+    btp.testAddBounceTrackerCandidate(oa, "example.com", bounceTime);
+    btp.testAddBounceTrackerCandidate(oa, "example.net", bounceTime);
+    btp.testAddBounceTrackerCandidate(oa, "example.org", bounceTime);
+  }
+
+  let purgedHosts = await btp.testRunPurgeBounceTrackers();
+  Assert.deepEqual(
+    purgedHosts.sort(),
+    OAS.flatMap(() => ["example.net", "example.org"]).sort(),
+    `Should only purge sites without a ${PERM_TYPE} ALLOW permission.`
+  );
+  for (let oa of OAS) {
+    Assert.deepEqual(
+      btp.testGetBounceTrackerCandidateHosts(oa).map(entry => entry.siteHost),
+      [],
+      `Allowlisted and purged hosts are removed from the candidate map for ${JSON.stringify(oa)}.`
+    );
+  }
+
+  info(`Removing the ${PERM_TYPE} permission makes the site purgeable again.`);
+  Services.perms.addDefaultFromPrincipal(
+    allowPrincipal,
+    PERM_TYPE,
+    Services.perms.UNKNOWN_ACTION
+  );
+  btp.testAddBounceTrackerCandidate({}, "example.com", bounceTime);
+  Assert.deepEqual(
+    await btp.testRunPurgeBounceTrackers(),
+    ["example.com"],
+    `Should purge the site after its ${PERM_TYPE} permission was removed.`
+  );
+
+  Services.perms.addDefaultFromPrincipal(
+    denyPrincipal,
+    PERM_TYPE,
+    Services.perms.UNKNOWN_ACTION
+  );
+  btp.clearAll();
+  assertEmpty();
+  Services.perms.removeAll();
+});

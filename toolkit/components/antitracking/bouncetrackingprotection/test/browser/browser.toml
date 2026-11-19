@@ -53,6 +53,8 @@ support-files = [
 
 ["browser_bouncetracking_remoteExceptions.js"]
 
+["browser_bouncetracking_remotePermissions.js"]
+
 ["browser_bouncetracking_schemes.js"]
 
 ["browser_bouncetracking_simple.js"]
