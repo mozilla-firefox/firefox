@@ -566,8 +566,8 @@ class PinchGestureInput : public InputData {
       TRACKPAD, // From trackpad pinch gesture
       MOUSEWHEEL // Synthesized from modifier+mousewheel
 
-      // If adding more items here, increase n_values for the
-      // APZ_ZOOM_PINCHSOURCE Telemetry and glean::apz_zoom::pinchsource metrics.
+      // If adding more items here, increase range_max and bucket_count of the
+      // glean::apz_zoom::pinchsource metric.
   ));
   // clang-format on
 

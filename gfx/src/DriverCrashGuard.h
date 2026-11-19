@@ -62,7 +62,8 @@ class DriverCrashGuard {
   bool Crashed();
   void NotifyCrashed();
 
-  // These are the values reported to Telemetry (GRAPHICS_DRIVER_STARTUP_TEST).
+  // These are the values reported to Telemetry
+  // (gfx.graphics_driver_startup_test).
   // Values should not change; add new values to the end.
   enum class TelemetryState {
     Okay = 0,
