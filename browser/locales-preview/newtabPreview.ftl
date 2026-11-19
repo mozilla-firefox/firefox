@@ -29,8 +29,8 @@ newtab-crossword-widget-title = Daily crossword
 # Accessible name for the iframe that contains the crossword puzzle.
 newtab-crossword-widget-frame =
     .title = Crossword
-newtab-crossword-widget-menu-show-clues = Show clues
-newtab-crossword-widget-menu-solve-puzzle = Solve puzzle
+newtab-crossword-widget-menu-show-clues = Show Clues
+newtab-crossword-widget-menu-solve-puzzle = Solve Puzzle
 # Context menu item linking to the Particle website, the provider of the crossword.
 newtab-crossword-menu-powered-by-particle = Powered by Particle
-newtab-crossword-widget-menu-learn-more = Learn more
+newtab-crossword-widget-menu-learn-more = Learn More
