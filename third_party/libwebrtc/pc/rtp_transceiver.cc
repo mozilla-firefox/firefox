@@ -543,10 +543,10 @@ void RtpTransceiver::CreateChannel(
         RTC_DCHECK_RUN_ON(thread_);
         RTC_DCHECK(mid_.has_value());
         channel_ = std::make_unique<BaseChannel>(
-            context()->network_thread(), context()->network_thread(),
-            context()->signaling_thread(), std::move(send), std::move(receive),
-            *mid_, media_type(), srtp_required, crypto_options,
-            context()->ssrc_generator(), std::move(callbacks));
+            context()->network_thread(), context()->signaling_thread(),
+            std::move(send), std::move(receive), *mid_, media_type(),
+            srtp_required, crypto_options, context()->ssrc_generator(),
+            std::move(callbacks));
         transport_name_ = std::nullopt;
       };
 

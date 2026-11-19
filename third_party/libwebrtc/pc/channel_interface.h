@@ -77,7 +77,7 @@ class ChannelInterface {
   virtual void Enable(bool enable) = 0;
 
   // Enables Sframe encryption enforcement on all send and receive streams.
-  // Called on the signaling thread, applied asynchronously on the worker
+  // Called on the signaling thread, applied asynchronously on the network
   // thread.
   virtual void EnableSframe() = 0;
 
