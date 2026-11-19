@@ -486,6 +486,10 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
   static Digit modDigitsByDigit(ConstDigits u, Digit m);
   static Digit modSmallDigitsByDigit(ConstDigits u, Digit m);
   static Digit modLargeDigitsByDigit(ConstDigits u, Digit m);
+  // Store `u / m` in `q`, which may be `u`, and return `u % m`.
+  static Digit divDigitsByDigit(ConstDigits u, Digit m, Digits q);
+  static Digit divSmallDigitsByDigit(ConstDigits u, Digit m, Digits q);
+  static Digit divLargeDigitsByDigit(ConstDigits u, Digit m, Digits q);
 
   static bool productGreaterThan(Digit factor1, Digit factor2, Digit high,
                                  Digit low);

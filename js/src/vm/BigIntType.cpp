@@ -644,6 +644,86 @@ BigInt* BigInt::absoluteSub(JSContext* cx, HandleBigInt x, HandleBigInt y,
   return destructivelyTrimHighZeroDigits(cx, result);
 }
 
+// For a single-digit divisor, hardware double-word division is faster than
+// division by multiplication for short dividends.
+#if defined(__x86_64__) || defined(__i386__)
+static constexpr size_t LargeDividendLength = 6;
+#else
+static constexpr size_t LargeDividendLength = 2;
+#endif
+
+MOZ_ALWAYS_INLINE BigInt::Digit BigInt::modDigitsByDigit(ConstDigits u,
+                                                         Digit m) {
+  return u.size() < LargeDividendLength ? modSmallDigitsByDigit(u, m)
+                                        : modLargeDigitsByDigit(u, m);
+}
+
+MOZ_ALWAYS_INLINE BigInt::Digit BigInt::modSmallDigitsByDigit(ConstDigits u,
+                                                              Digit m) {
+  Digit remainder = 0;
+  for (size_t i = u.size(); i-- > 0;) {
+    digitDiv(remainder, u[i], m, &remainder);
+  }
+  return remainder;
+}
+
+BigInt::Digit BigInt::modLargeDigitsByDigit(ConstDigits u, Digit m) {
+  MOZ_RELEASE_ASSERT(u.size() >= LargeDividendLength);
+  unsigned shift = std::countl_zero(m);
+  Digit divisor = m << shift;
+  Digit inverse = normalizedDigitInverse(divisor);
+  size_t i = u.size();
+  Digit remainder = shift ? u[i - 1] >> (DigitBits - shift) : 0;
+  while (i-- > 0) {
+    Digit low = u[i] << shift;
+    if (shift && i > 0) {
+      low |= u[i - 1] >> (DigitBits - shift);
+    }
+    digitDivByMultiplication(remainder, low, divisor, inverse, &remainder);
+  }
+  return remainder >> shift;
+}
+
+// These div helpers are just like the mod helpers, only they write the
+// multi-digit quotient into the storage provided.  All things being equal, it
+// would be nice to unify the implementations behind a template, but the
+// template would be so gross we are leaving things as-is.
+MOZ_ALWAYS_INLINE BigInt::Digit BigInt::divDigitsByDigit(ConstDigits u, Digit m,
+                                                         Digits q) {
+  return u.size() < LargeDividendLength ? divSmallDigitsByDigit(u, m, q)
+                                        : divLargeDigitsByDigit(u, m, q);
+}
+
+MOZ_ALWAYS_INLINE BigInt::Digit BigInt::divSmallDigitsByDigit(ConstDigits u,
+                                                              Digit m,
+                                                              Digits q) {
+  q = q.First(u.size());
+  Digit remainder = 0;
+  for (size_t i = u.size(); i-- > 0;) {
+    q[i] = digitDiv(remainder, u[i], m, &remainder);
+  }
+  return remainder;
+}
+
+BigInt::Digit BigInt::divLargeDigitsByDigit(ConstDigits u, Digit m, Digits q) {
+  MOZ_RELEASE_ASSERT(u.size() >= LargeDividendLength);
+  q = q.First(u.size());
+  unsigned shift = std::countl_zero(m);
+  Digit divisor = m << shift;
+  Digit inverse = normalizedDigitInverse(divisor);
+  size_t i = u.size();
+  Digit remainder = shift ? u[i - 1] >> (DigitBits - shift) : 0;
+  while (i-- > 0) {
+    Digit low = u[i] << shift;
+    if (shift && i > 0) {
+      low |= u[i - 1] >> (DigitBits - shift);
+    }
+    q[i] = digitDivByMultiplication(remainder, low, divisor, inverse,
+                                    &remainder);
+  }
+  return remainder >> shift;
+}
+
 // Divides `x` by `divisor`, returning the result in `quotient` and `remainder`.
 // Mathematically, the contract is:
 //
@@ -687,13 +767,8 @@ bool BigInt::absoluteDivWithDigitDivisor(JSContext* cx, HandleBigInt x,
     quotient.set(q);
   }
 
-  auto xDigits = x->digits();
-  auto quotientDigits = quotient->digits();
-  for (int i = length - 1; i >= 0; i--) {
-    Digit q = digitDiv(*remainder, xDigits[i], divisor, remainder);
-    quotientDigits[i] = q;
-  }
-
+  *remainder = divDigitsByDigit(x->unguardedDigits(), divisor,
+                                quotient->unguardedDigits());
   return true;
 }
 
@@ -1506,21 +1581,19 @@ JSLinearString* BigInt::toStringGeneric(JSContext* cx, HandleBigInt x,
   RootedBigInt rest(cx);
 
   // In the first round, divide the input, allocating a new BigInt for
-  // the result == rest; from then on divide the rest in-place.
-  //
-  // FIXME: absoluteDivWithDigitDivisor doesn't
-  // destructivelyTrimHighZeroDigits for in-place divisions, leading to
-  // worse constant factors.  See
-  // https://bugzilla.mozilla.org/show_bug.cgi?id=1510213.
-  RootedBigInt dividend(cx, x);
+  // the result == rest; from then on divide the significant digits of the rest
+  // in place.
   do {
     Digit chunk;
-    if (!absoluteDivWithDigitDivisor(cx, dividend, chunkDivisor, &rest, &chunk,
-                                     dividend->isNegative())) {
-      return nullptr;
+    if (!rest) {
+      if (!absoluteDivWithDigitDivisor(cx, x, chunkDivisor, &rest, &chunk,
+                                       x->isNegative())) {
+        return nullptr;
+      }
+    } else {
+      Digits restDigits = rest->unguardedDigits().First(nonZeroDigit + 1);
+      chunk = divDigitsByDigit(restDigits, chunkDivisor, restDigits);
     }
-
-    dividend = rest;
     for (unsigned i = 0; i < chunkChars; i++) {
       MOZ_ASSERT(writePos > 0);
       resultString[--writePos] = radixDigits[chunk % radix];
@@ -2102,46 +2175,6 @@ BigInt* BigInt::div(JSContext* cx, HandleBigInt x, HandleBigInt y) {
   }
 
   return destructivelyTrimHighZeroDigits(cx, quotient);
-}
-
-// For a single-digit divisor, hardware double-word division is faster than
-// division by multiplication for short dividends.
-#if defined(__x86_64__) || defined(__i386__)
-static constexpr size_t LargeDividendLength = 6;
-#else
-static constexpr size_t LargeDividendLength = 2;
-#endif
-
-MOZ_ALWAYS_INLINE BigInt::Digit BigInt::modDigitsByDigit(ConstDigits u,
-                                                         Digit m) {
-  return u.size() < LargeDividendLength ? modSmallDigitsByDigit(u, m)
-                                        : modLargeDigitsByDigit(u, m);
-}
-
-MOZ_ALWAYS_INLINE BigInt::Digit BigInt::modSmallDigitsByDigit(ConstDigits u,
-                                                              Digit m) {
-  Digit remainder = 0;
-  for (size_t i = u.size(); i-- > 0;) {
-    digitDiv(remainder, u[i], m, &remainder);
-  }
-  return remainder;
-}
-
-BigInt::Digit BigInt::modLargeDigitsByDigit(ConstDigits u, Digit m) {
-  MOZ_RELEASE_ASSERT(u.size() >= LargeDividendLength);
-  unsigned shift = std::countl_zero(m);
-  Digit divisor = m << shift;
-  Digit inverse = normalizedDigitInverse(divisor);
-  size_t i = u.size();
-  Digit remainder = shift ? u[i - 1] >> (DigitBits - shift) : 0;
-  while (i-- > 0) {
-    Digit low = u[i] << shift;
-    if (shift && i > 0) {
-      low |= u[i - 1] >> (DigitBits - shift);
-    }
-    digitDivByMultiplication(remainder, low, divisor, inverse, &remainder);
-  }
-  return remainder >> shift;
 }
 
 // BigInt proposal section 1.1.6
