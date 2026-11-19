@@ -2237,13 +2237,6 @@ nsresult nsStandardURL::EqualsInternal(
     return NS_OK;
   }
 
-  // First, check whether one URIs is an nsIFileURL while the other
-  // is not.  If that's the case, they're different.
-  if (mSupportsFileURL != other->mSupportsFileURL) {
-    *result = false;
-    return NS_OK;
-  }
-
   // Next check parts of a URI that, if different, automatically make the
   // URIs different
   if (!SegmentIs(mScheme, other->mSpec.get(), other->mScheme) ||
@@ -2266,56 +2259,12 @@ nsresult nsStandardURL::EqualsInternal(
     return NS_OK;
   }
 
-  // Then check for exact identity of URIs.  If we have it, they're equal
-  if (SegmentIs(mDirectory, other->mSpec.get(), other->mDirectory) &&
-      SegmentIs(mBasename, other->mSpec.get(), other->mBasename) &&
-      SegmentIs(mExtension, other->mSpec.get(), other->mExtension)) {
-    *result = true;
-    return NS_OK;
-  }
-
-  // At this point, the URIs are not identical, but they only differ in the
-  // directory/filename/extension.  If these are file URLs, then get the
-  // corresponding file objects and compare those, since two filenames that
-  // differ, eg, only in case could still be equal.
-  if (mSupportsFileURL) {
-    // Assume not equal for failure cases... but failures in GetFile are
-    // really failures, more or less, so propagate them to caller.
-    *result = false;
-
-    nsCOMPtr<nsIFile> file, otherFile;
-    rv = ResolveFile(getter_AddRefs(file));
-    nsresult rv2 = other->ResolveFile(getter_AddRefs(otherFile));
-
-    // Special case for resource:// urls that don't resolve to files,
-    // and for moz-extension://UUID/_generated_background_page.html
-    // because it doesn't resolve to a file (instead it resolves to a data: URI,
-    // see ExtensionProtocolHandler::ResolveSpecialCases, see Bug 1926106).
-    if (rv == NS_ERROR_NO_INTERFACE || rv2 == NS_ERROR_NO_INTERFACE) {
-      return NS_OK;
-    }
-
-    if (NS_FAILED(rv)) {
-      LOG(("nsStandardURL::Equals [this=%p spec=%s] failed to ensure file",
-           this, mSpec.get()));
-      return rv;
-    }
-
-    rv = rv2;
-    if (NS_FAILED(rv)) {
-      LOG(
-          ("nsStandardURL::Equals [other=%p spec=%s] other failed to ensure "
-           "file",
-           other.get(), other->mSpec.get()));
-      return rv;
-    }
-    return file->Equals(otherFile, result);
-  }
-
-  // The URLs are not identical, and they do not correspond to the
-  // same file, so they are different.
-  *result = false;
-
+  // Check for exact identity of URIs. file:/// URIs (and friends) are compared
+  // textually in a case-sensitive manner, even on case-insensitive OSes, and no
+  // path resolutions / expansion / symlink-following is done.
+  *result = SegmentIs(mDirectory, other->mSpec.get(), other->mDirectory) &&
+            SegmentIs(mBasename, other->mSpec.get(), other->mBasename) &&
+            SegmentIs(mExtension, other->mSpec.get(), other->mExtension);
   return NS_OK;
 }
 

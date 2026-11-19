@@ -1055,6 +1055,22 @@ add_task(async function test_bug1875119() {
   Assert.ok(!uri1.equals(uri2), "Expect uri1.equals(uri2) to be false");
 });
 
+add_task(async function test_file_url_equality_does_not_resolve_files() {
+  const pairs = [
+    ["file:///foo/bar/", "file:///foo/bar"],
+    ["file:///foo/b%61r", "file:///foo/bar"],
+    ["jar:file:///foo/bar.jar/!/x", "jar:file:///foo/bar.jar!/x"],
+    ["jar:file:///foo/b%61r.jar!/x", "jar:file:///foo/bar.jar!/x"],
+  ];
+  for (let [a, b] of pairs) {
+    let uri1 = Services.io.newURI(a);
+    let uri2 = Services.io.newURI(b);
+    Assert.ok(!uri1.equals(uri2), `${a} != ${b}`);
+    Assert.ok(!uri2.equals(uri1), `${b} != ${a}`);
+    Assert.ok(!uri1.equalsExceptRef(uri2), `${a} != ${b} (except ref)`);
+  }
+});
+
 add_task(async function test_bug1843717() {
   // Make sure file path normalization on windows
   // doesn't affect the hash of the URL.
