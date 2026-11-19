@@ -88,9 +88,26 @@ struct NetworkMarker : public BaseMarkerType<NetworkMarker> {
 
     aWriter.StringProperty("requestMethod", aRequestMethod);
     if (aHttpVersion) {
-      aWriter.StringProperty("httpVersion",
-                             ProfilerString8View::WrapNullTerminatedString(
-                                 nsHttp::GetProtocolVersion(*aHttpVersion)));
+      const char* version = nullptr;
+      // GetProtocolVersion's warning would re-enter the profiler's buffer lock.
+      switch (*aHttpVersion) {
+        case HttpVersion::v1_0:
+        case HttpVersion::v1_1:
+        case HttpVersion::v2_0:
+        case HttpVersion::v3_0:
+          version = nsHttp::GetProtocolVersion(*aHttpVersion);
+          break;
+        case HttpVersion::UNKNOWN:
+        case HttpVersion::v0_9:
+          version = "unknown";
+          break;
+      }
+      MOZ_ASSERT(version, "Unexpected HttpVersion");
+      if (version) {
+        aWriter.StringProperty(
+            "httpVersion",
+            ProfilerString8View::WrapNullTerminatedString(version));
+      }
     }
     if (aResponseStatus) {
       aWriter.IntProperty("responseStatus", *aResponseStatus);
