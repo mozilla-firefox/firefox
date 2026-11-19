@@ -20,9 +20,13 @@
 #include "gfxPlatform.h"
 #include "mozilla/Assertions.h"
 #include "mozilla/ClearOnShutdown.h"
+#include "mozilla/DebugOnly.h"
 #include "mozilla/Logging.h"
 #include "mozilla/LookAndFeel.h"
+#include "mozilla/Services.h"
 #include "mozilla/WindowsVersion.h"
+#include "nsIObserverService.h"
+#include "nsIWidget.h"
 #include "nsLookAndFeel.h"
 #include "nsStringFwd.h"
 #include "nsWindowDbg.h"
@@ -81,10 +85,16 @@ void WinEventWindow::Ensure() {
 
   sDeviceNotifyHandle = InputDeviceUtils::RegisterNotification(sHiddenWindow);
 
+  // WM_WTSSESSION_CHANGE is only sent to registered windows.
+  DebugOnly<BOOL> wtsRegistered =
+      ::WTSRegisterSessionNotification(sHiddenWindow, NOTIFY_FOR_THIS_SESSION);
+  NS_ASSERTION(wtsRegistered, "WTSRegisterSessionNotification failed!");
+
   // It should be harmless to leak this window until destruction -- but other
   // parts of Gecko may expect all windows to be destroyed, so do that.
   mozilla::RunOnShutdown([]() {
     InputDeviceUtils::UnregisterNotification(sDeviceNotifyHandle);
+    ::WTSUnRegisterSessionNotification(sHiddenWindow);
 
     sHiddenWindowShutdown = true;
     ::DestroyWindow(sHiddenWindow);
@@ -140,6 +150,14 @@ static void OnSessionChange(WPARAM wParam, LPARAM lParam) {
 
     if (auto* wwot = WinWindowOcclusionTracker::Get()) {
       wwot->OnSessionChange(wParam);
+    }
+
+    if (nsCOMPtr<nsIObserverService> obs = services::GetObserverService()) {
+      obs->NotifyObservers(nullptr,
+                           wParam == WTS_SESSION_LOCK
+                               ? NS_WIDGET_SCREEN_LOCK_OBSERVER_TOPIC
+                               : NS_WIDGET_SCREEN_UNLOCK_OBSERVER_TOPIC,
+                           nullptr);
     }
   }
 }

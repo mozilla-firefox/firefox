@@ -291,13 +291,13 @@ enum nsCursor {  ///(normal cursor,       usually rendered as an arrow)
 
 /**
  * After the user session's screen gets locked, this topic is notified.
- * Currently only notified on macOS.
+ * Currently only notified on macOS and Windows.
  */
 #define NS_WIDGET_SCREEN_LOCK_OBSERVER_TOPIC "screen_lock_notification"
 
 /**
  * After the user session's screen gets unlocked, this topic is notified.
- * Currently only notified on macOS.
+ * Currently only notified on macOS and Windows.
  */
 #define NS_WIDGET_SCREEN_UNLOCK_OBSERVER_TOPIC "screen_unlock_notification"
 
