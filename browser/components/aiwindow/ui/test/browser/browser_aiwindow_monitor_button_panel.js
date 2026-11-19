@@ -55,7 +55,7 @@ add_setup(async function setup() {
   const originalRegion = Region.home;
   Region._setHomeRegion(TEST_REGION, false);
 
-  AIWindowToolbarButtons.updateMonitorRegistration();
+  AIWindow._updateMonitorWidgetRegistration();
 
   registerCleanupFunction(() => {
     Region._setHomeRegion(originalRegion, false);
@@ -587,9 +587,7 @@ add_task(async function test_monitor_panel_new_matches_section() {
   const win = await openAIWindow();
   try {
     notifyMatch("monitor-2");
-    await TestUtils.waitForCondition(
-      () => AIWindowToolbarButtons.hasMonitorAttention
-    );
+    await TestUtils.waitForCondition(() => AIWindow.hasMonitorAttention);
 
     const shown = BrowserTestUtils.waitForEvent(
       win.document.getElementById("mainPopupSet"),
@@ -679,7 +677,7 @@ add_task(async function test_monitor_panel_new_matches_section() {
     await hiddenAgain;
   } finally {
     sb.restore();
-    AIWindowToolbarButtons.clearMonitorAttention();
+    AIWindow.clearMonitorAttention();
     await BrowserTestUtils.closeWindow(win);
   }
 });
@@ -780,9 +778,7 @@ add_task(async function test_monitor_panel_failed_check_row() {
   const win = await openAIWindow();
   try {
     notifyRunFailed("monitor-1");
-    await TestUtils.waitForCondition(
-      () => AIWindowToolbarButtons.hasMonitorAttention
-    );
+    await TestUtils.waitForCondition(() => AIWindow.hasMonitorAttention);
 
     const shown = BrowserTestUtils.waitForEvent(
       win.document.getElementById("mainPopupSet"),
@@ -828,7 +824,7 @@ add_task(async function test_monitor_panel_failed_check_row() {
     await hidden;
   } finally {
     sb.restore();
-    AIWindowToolbarButtons.clearMonitorAttention();
+    AIWindow.clearMonitorAttention();
     await BrowserTestUtils.closeWindow(win);
   }
 });
@@ -885,9 +881,7 @@ add_task(async function test_monitor_panel_caps_visible_rows() {
     // The two oldest tasks matched, so they show despite everything newer.
     notifyMatch("monitor-1");
     notifyMatch("monitor-2");
-    await TestUtils.waitForCondition(
-      () => AIWindowToolbarButtons.hasMonitorAttention
-    );
+    await TestUtils.waitForCondition(() => AIWindow.hasMonitorAttention);
 
     let { panel, contents } = await openPanel(win);
     Assert.deepEqual(
@@ -911,9 +905,7 @@ add_task(async function test_monitor_panel_caps_visible_rows() {
     for (let index = 1; index <= 6; index++) {
       notifyMatch(`monitor-${index}`);
     }
-    await TestUtils.waitForCondition(
-      () => AIWindowToolbarButtons.hasMonitorAttention
-    );
+    await TestUtils.waitForCondition(() => AIWindow.hasMonitorAttention);
 
     ({ panel, contents } = await openPanel(win));
     Assert.deepEqual(
@@ -931,7 +923,7 @@ add_task(async function test_monitor_panel_caps_visible_rows() {
     await closePanel(panel);
   } finally {
     sb.restore();
-    AIWindowToolbarButtons.clearMonitorAttention();
+    AIWindow.clearMonitorAttention();
     await BrowserTestUtils.closeWindow(win);
   }
 });

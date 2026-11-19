@@ -12,8 +12,8 @@ import {
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  AIWindowToolbarButtons:
-    "moz-src:///browser/components/aiwindow/ui/modules/AIWindowToolbarButtons.sys.mjs",
+  AutoTabGrouping:
+    "moz-src:///browser/components/aiwindow/ui/modules/AutoTabGrouping.sys.mjs",
   MonitorPanel:
     "moz-src:///browser/components/aiwindow/ui/modules/MonitorPanel.sys.mjs",
   URILoadingHelper: "resource:///modules/URILoadingHelper.sys.mjs",
@@ -368,7 +368,7 @@ export const AIWindowUI = {
 
     if (!this.isSidebarOpen(win)) {
       this._setSidebarCollapsed(win, box, splitter, false, { animate: false });
-      lazy.AIWindowToolbarButtons.setAskButtonExpanded(win, true);
+      this._updateAskButtonChecked(win, true);
     }
 
     Glean.smartWindow.sidebarOpen.record({
@@ -471,7 +471,7 @@ export const AIWindowUI = {
     this._setSidebarCollapsed(win, box, splitter, true, {
       animate: source === "toggle",
     });
-    lazy.AIWindowToolbarButtons.setAskButtonExpanded(win, false);
+    this._updateAskButtonChecked(win, false);
 
     // Dispatch event to notify tab state manager that sidebar was toggled
     win.dispatchEvent(
@@ -489,6 +489,26 @@ export const AIWindowUI = {
       chat_id: chatId,
       message_seq: messageSeq,
     });
+  },
+
+  /**
+   * Toggle the "Organize Tabs" panel anchored to its toolbar button.
+   *
+   * @param {Window} win
+   * @param {object} [options] - Passed through to AutoTabGrouping, which uses
+   *   options.source to record what asked for the panel.
+   */
+  toggleGroupTabsPanel(win, options) {
+    lazy.AutoTabGrouping.toggleGroupTabsPanel(win, options);
+  },
+
+  /**
+   * Toggle the monitor creation panel anchored to its toolbar button.
+   *
+   * @param {Window} win
+   */
+  toggleMonitorPanel(win) {
+    lazy.MonitorPanel.toggleMonitorPanel(win);
   },
 
   /**
@@ -520,7 +540,7 @@ export const AIWindowUI = {
 
     this.ensureBrowserIsAppended(chromeDoc, box);
     this._setSidebarCollapsed(win, box, splitter, false);
-    lazy.AIWindowToolbarButtons.setAskButtonExpanded(win, true);
+    this._updateAskButtonChecked(win, true);
 
     // Dispatch event to notify tab state manager that sidebar was toggled
     win.dispatchEvent(
@@ -551,6 +571,20 @@ export const AIWindowUI = {
     if (aiWindowEl) {
       aiWindowEl.syncSmartbarMemoriesStateFromConversation();
     }
+  },
+
+  /**
+   * Update the Ask Button style based on the sidebar state.
+   *
+   * @param {Window} win
+   * @param {boolean} sidebarIsOpen
+   */
+  _updateAskButtonChecked(win, sidebarIsOpen) {
+    const askBtn = win.document.querySelector("#smartwindow-ask-button-inner");
+    if (!askBtn) {
+      return;
+    }
+    askBtn.setAttribute("aria-expanded", String(sidebarIsOpen));
   },
 
   /**

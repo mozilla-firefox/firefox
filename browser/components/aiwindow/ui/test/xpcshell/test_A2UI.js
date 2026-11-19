@@ -1,5 +1,5 @@
 const { A2UI } = ChromeUtils.importESModule(
-  "moz-src:///browser/components/aiwindow/ui/modules/A2UI.sys.mjs"
+  "moz-src:///browser/components/aiwindow/ui/modules/A2UI.mjs"
 );
 
 describe("A2UI", () => {
