@@ -209,11 +209,6 @@ classDiagram
         <!-- [...] -->
     }
 
-    class nsIBTPExceptionList {
-        <!-- Bug 1930704: Empty classes lead to build errors. Adding a comment inside the class fixes the issue -->
-        <!-- [...] -->
-    }
-
     class BounceTrackingStateGlobal {
         - mUserActivation: nsTHashMap&lt;nsCStringHashKey, PRTime&gt;
         - mBounceTrackers: nsTHashMap&lt;nsCStringHashKey, BounceTrackerCandidate&gt;
@@ -286,8 +281,6 @@ classDiagram
     BounceTrackingStateGlobal --* BounceTrackingProtectionStorage
     BounceTrackingStateGlobal --> BounceTrackingProtectionStorage : Persists state changes in storage.
     BounceTrackingProtection --> BounceTrackingStateGlobal : Manages global state
-    nsIBTPExceptionList --* BounceTrackingProtection
-    nsIBTPExceptionList --> BounceTrackingProtection : Site host purge exceptions from RemoteSettings.
     BounceTrackingAllowList --* BounceTrackingProtection
     BounceTrackingAllowList --> BounceTrackingProtection :  Site purge exceptions from PermissionManager, incl. remote permissions.
     BrowsingContextWebProgress --> BounceTrackingState : Navigation signals
