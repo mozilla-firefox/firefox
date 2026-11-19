@@ -10,6 +10,7 @@
 #include "gfx2DGlue.h"
 #include "gfxColor.h"
 #include "gfxTypes.h"
+#include "mozilla/ScopeExit.h"
 #include "mozilla/gfx/2D.h"
 #include "mozilla/gfx/Swizzle.h"
 
@@ -219,11 +220,11 @@ static int GuessAlignment(int width, int pixelSize, int rowStride) {
   return alignment;
 }
 
-void ReadPixelsIntoBuffer(GLContext* gl, uint8_t* aData, int32_t aStride,
+bool ReadPixelsIntoBuffer(GLContext* gl, uint8_t* aData, int32_t aStride,
                           const IntSize& aSize, SurfaceFormat aFormat) {
-  gl->MakeCurrent();
-  MOZ_ASSERT(aSize.width != 0);
-  MOZ_ASSERT(aSize.height != 0);
+  if (!gl->MakeCurrent() || !aData || aSize.IsEmpty()) {
+    return false;
+  }
 
   bool hasAlpha =
       aFormat == SurfaceFormat::B8G8R8A8 || aFormat == SurfaceFormat::R8G8B8A8;
@@ -323,12 +324,12 @@ void ReadPixelsIntoBuffer(GLContext* gl, uint8_t* aData, int32_t aStride,
     tempSurf = Factory::CreateDataSourceSurfaceWithStride(aSize, readFormatGFX,
                                                           stride);
     if (NS_WARN_IF(!tempSurf)) {
-      return;
+      return false;
     }
 
     tempMap.emplace(tempSurf, DataSourceSurface::READ_WRITE);
     if (NS_WARN_IF(!tempMap->IsMapped())) {
-      return;
+      return false;
     }
 
     data = tempMap->GetData();
@@ -344,21 +345,30 @@ void ReadPixelsIntoBuffer(GLContext* gl, uint8_t* aData, int32_t aStride,
     ScopedPackState safePackState(gl);
     gl->fPixelStorei(LOCAL_GL_PACK_ALIGNMENT, readAlignment);
 
+    GLContext::LocalErrorScope errorScope(*gl);
     gl->fReadPixels(0, 0, width, height, readFormat, readType, data);
+    if (errorScope.GetError()) {
+      return false;
+    }
   }
 
   if (tempMap) {
-    SwizzleData(tempMap->GetData(), tempMap->GetStride(), readFormatGFX, aData,
-                aStride, aFormat, aSize);
+    return SwizzleData(tempMap->GetData(), tempMap->GetStride(), readFormatGFX,
+                       aData, aStride, aFormat, aSize);
   }
+  return true;
 }
 
-void ReadPixelsIntoDataSurface(GLContext* gl, DataSourceSurface* dest) {
-  gl->MakeCurrent();
-
+bool ReadPixelsIntoDataSurface(GLContext* gl, DataSourceSurface* dest) {
+  if (!dest || !gl->MakeCurrent()) {
+    return false;
+  }
   DataSourceSurface::ScopedMap map(dest, DataSourceSurface::WRITE);
-  ReadPixelsIntoBuffer(gl, map.GetData(), map.GetStride(), dest->GetSize(),
-                       dest->GetFormat());
+  if (!map.IsMapped()) {
+    return false;
+  }
+  return ReadPixelsIntoBuffer(gl, map.GetData(), map.GetStride(),
+                              dest->GetSize(), dest->GetFormat());
 }
 
 already_AddRefed<DataSourceSurface> ReadBackSurface(GLContext* gl,
@@ -456,10 +466,12 @@ bool GLReadTexImageHelper::ReadTexImage(
              aTextureTarget == LOCAL_GL_TEXTURE_EXTERNAL ||
              aTextureTarget == LOCAL_GL_TEXTURE_RECTANGLE_ARB);
 
-  mGL->MakeCurrent();
+  if (!mGL->MakeCurrent()) {
+    return false;
+  }
 
   GLint oldrb, oldfb, oldprog, oldTexUnit, oldTex;
-  GLuint rb, fb;
+  GLuint rb = 0, fb = 0;
 
   do {
     mGL->fGetIntegerv(LOCAL_GL_RENDERBUFFER_BINDING, &oldrb);
@@ -480,6 +492,20 @@ bool GLReadTexImageHelper::ReadTexImage(
       default: /* Already checked above */
         break;
     }
+
+    auto restore = MakeScopeExit([&] {
+      mGL->fBindRenderbuffer(LOCAL_GL_RENDERBUFFER, oldrb);
+      mGL->fBindFramebuffer(LOCAL_GL_FRAMEBUFFER, oldfb);
+      mGL->fUseProgram(oldprog);
+      mGL->fDeleteRenderbuffers(1, &rb);
+      mGL->fDeleteFramebuffers(1, &fb);
+      if (aTextureId) {
+        mGL->fBindTexture(aTextureTarget, oldTex);
+      }
+      if (oldTexUnit != LOCAL_GL_TEXTURE0) {
+        mGL->fActiveTexture(oldTexUnit);
+      }
+    });
 
     ScopedGLState scopedScissorTestState(mGL, LOCAL_GL_SCISSOR_TEST, false);
     ScopedGLState scopedBlendState(mGL, LOCAL_GL_BLEND, false);
@@ -554,22 +580,11 @@ bool GLReadTexImageHelper::ReadTexImage(
     CLEANUP_IF_GLERROR_OCCURRED("when drawing texture");
 
     /* Read-back draw results */
-    ReadPixelsIntoDataSurface(mGL, aDest);
+    if (!ReadPixelsIntoDataSurface(mGL, aDest)) {
+      return false;
+    }
     CLEANUP_IF_GLERROR_OCCURRED("when reading pixels into surface");
   } while (false);
-
-  /* Restore GL state */
-  mGL->fBindRenderbuffer(LOCAL_GL_RENDERBUFFER, oldrb);
-  mGL->fBindFramebuffer(LOCAL_GL_FRAMEBUFFER, oldfb);
-  mGL->fUseProgram(oldprog);
-
-  // note that deleting 0 has no effect in any of these calls
-  mGL->fDeleteRenderbuffers(1, &rb);
-  mGL->fDeleteFramebuffers(1, &fb);
-
-  if (aTextureId) mGL->fBindTexture(aTextureTarget, oldTex);
-
-  if (oldTexUnit != LOCAL_GL_TEXTURE0) mGL->fActiveTexture(oldTexUnit);
 
   return true;
 }

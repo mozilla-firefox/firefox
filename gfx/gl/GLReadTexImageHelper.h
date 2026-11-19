@@ -24,11 +24,12 @@ namespace gl {
 bool GetActualReadFormats(GLContext* gl, GLenum destFormat, GLenum destType,
                           GLenum* out_readFormat, GLenum* out_readType);
 
-void ReadPixelsIntoBuffer(GLContext* gl, uint8_t* aData, int32_t aStride,
+// False means the destination must not be used.
+bool ReadPixelsIntoBuffer(GLContext* gl, uint8_t* aData, int32_t aStride,
                           const gfx::IntSize& aSize,
                           gfx::SurfaceFormat aFormat);
 
-void ReadPixelsIntoDataSurface(GLContext* aGL,
+bool ReadPixelsIntoDataSurface(GLContext* aGL,
                                gfx::DataSourceSurface* aSurface);
 
 already_AddRefed<gfx::DataSourceSurface> ReadBackSurface(
