@@ -408,27 +408,6 @@ ifneq (,$(filter $(DIST)/bin/gtest%,$(FINAL_TARGET)))
 DUMP_SYMBOLS_FLAGS += --symbols-dir=crashreporter-symbols-gtest
 endif
 
-ifdef MOZ_AUTOMATION
-ifeq (,$(filter 1,$(MOZ_AUTOMATION_BUILD_SYMBOLS)))
-DUMP_SYMS_TARGETS :=
-endif
-endif
-
-ifdef MOZ_COPY_PDBS
-MAIN_PDB_FILES = $(addsuffix .pdb,$(basename $(DUMP_SYMS_TARGETS)))
-MAIN_PDB_DEST ?= $(FINAL_TARGET)
-MAIN_PDB_TARGET = syms
-INSTALL_TARGETS += MAIN_PDB
-
-ifdef CPP_UNIT_TESTS
-CPP_UNIT_TESTS_PDB_FILES = $(addsuffix .pdb,$(basename $(CPP_UNIT_TESTS)))
-CPP_UNIT_TESTS_PDB_DEST = $(DIST)/cppunittests
-CPP_UNIT_TESTS_PDB_TARGET = syms
-INSTALL_TARGETS += CPP_UNIT_TESTS_PDB
-endif
-
-endif
-
 ifneq (,$(RUST_TESTS)$(RUST_LIBRARY_FILE)$(HOST_RUST_LIBRARY_FILE)$(RUST_PROGRAMS)$(HOST_RUST_PROGRAMS))
 include $(MOZILLA_DIR)/config/makefiles/rust.mk
 endif

@@ -1475,12 +1475,21 @@ class RecursiveMakeBackend(MakeBackend):
         if flags:
             backend_file.write(f"{target}: {var} += {' '.join(flags)}\n")
 
+    def _add_pdb_install(self, name, binary, dest, backend_file):
+        backend_file.write(f"{name}_FILES += {mozpath.splitext(binary)[0]}.pdb\n")
+        backend_file.write_once(f"{name}_DEST {dest}\n")
+        backend_file.write_once(f"{name}_TARGET = syms\n")
+        backend_file.write_once(f"INSTALL_TARGETS += {name}\n")
+
     def _add_dump_syms_target(self, obj, target, backend_file):
         if not obj.dump_syms:
             return
-        backend_file.write(f"DUMP_SYMS_TARGETS += {target}\n")
         substs = self.environment.substs
-        if substs.get("MOZ_CRASHREPORTER") and not substs.get("MOZ_COPY_PDBS"):
+        if substs.get("MOZ_COPY_PDBS"):
+            self._add_pdb_install(
+                "MAIN_PDB", target, "?= $(FINAL_TARGET)", backend_file
+            )
+        elif substs.get("MOZ_CRASHREPORTER"):
             track = f"{mozpath.basename(target)}_syms.track"
             backend_file.write(
                 f"syms:: {track}\n"
@@ -1599,6 +1608,13 @@ class RecursiveMakeBackend(MakeBackend):
             backend_file.write_once("CPP_UNIT_TESTS_DEST := $(DIST)/cppunittests\n")
             backend_file.write_once("CPP_UNIT_TESTS_TARGET := target\n")
             backend_file.write_once("INSTALL_TARGETS += CPP_UNIT_TESTS\n")
+            if self.environment.substs.get("MOZ_COPY_PDBS"):
+                self._add_pdb_install(
+                    "CPP_UNIT_TESTS_PDB",
+                    obj.program,
+                    "= $(DIST)/cppunittests",
+                    backend_file,
+                )
             assert obj.cxx_link
         elif not obj.cxx_link and not self.environment.bin_suffix:
             backend_file.write(f"PROG_IS_C_ONLY_{obj.program} := 1\n")
