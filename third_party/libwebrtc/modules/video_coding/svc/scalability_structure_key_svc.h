@@ -28,6 +28,7 @@ class ScalabilityStructureKeySvc : public ScalableVideoController {
   StreamLayersConfig StreamConfig() const override;
 
   std::vector<LayerFrameConfig> NextFrameConfig(bool restart) override;
+  void OnFrameDropped(const LayerFrameConfig& config) override;
   GenericFrameInfo OnEncodeDone(const LayerFrameConfig& config) override;
   void OnRatesUpdated(const VideoBitrateAllocation& bitrates) override;
 
@@ -63,13 +64,14 @@ class ScalabilityStructureKeySvc : public ScalableVideoController {
   std::vector<LayerFrameConfig> T1Config();
   std::vector<LayerFrameConfig> T2Config(FramePattern pattern);
 
+  FramePattern T0OrKeyPattern() const;
   FramePattern NextPattern(FramePattern last_pattern) const;
 
   const int num_spatial_layers_;
   const int num_temporal_layers_;
 
   FramePattern last_pattern_ = kNone;
-  std::bitset<kMaxNumSpatialLayers> spatial_id_is_enabled_;
+  std::bitset<kMaxNumSpatialLayers> can_reference_t0_frame_for_spatial_id_;
   std::bitset<kMaxNumSpatialLayers> can_reference_t1_frame_for_spatial_id_;
   std::bitset<32> active_decode_targets_;
 };
