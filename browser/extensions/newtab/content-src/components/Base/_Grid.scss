@@ -414,6 +414,11 @@
   grid-row: 3 / span 2;
 }
 
+.nova-enabled.container.top-sites-only {
+  align-content: center;
+  min-height: 75vh;
+}
+
 // The layout-*-column wrappers are display: contents outside side-by-side, so their
 // children are the band's own grid items and need the same treatment. Inside it each
 // column is a grid, and these declarations apply to its children instead.

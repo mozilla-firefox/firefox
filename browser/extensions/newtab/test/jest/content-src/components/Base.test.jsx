@@ -1324,6 +1324,68 @@ describe("<BaseContent> Nova layout variant class", () => {
   });
 });
 
+describe("<BaseContent> Nova top-sites-only class", () => {
+  const TOP_SITES_ONLY_PREFS = {
+    "nova.enabled": true,
+    "feeds.topsites": true,
+    "feeds.section.topstories": false,
+    "feeds.section.highlights": false,
+    showSearch: false,
+    "widgets.enabled": false,
+  };
+
+  const containerClassList = prefs => {
+    const { container } = renderBaseContentWithFeed({
+      store: { getState: () => {} },
+      App: { initialized: true },
+      Prefs: { values: { ...TOP_SITES_ONLY_PREFS, ...prefs } },
+      ExternalComponents: { components: [] },
+      Sections: [],
+      DiscoveryStream: {
+        config: { enabled: true },
+        spocs: {},
+        feeds: { loaded: true },
+        showTopicSelection: false,
+      },
+      dispatch: () => {},
+      document: {
+        visibilityState: "visible",
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+      },
+    });
+    return [...container.querySelector(".container.nova-enabled").classList];
+  };
+
+  it("is added when shortcuts are the only thing on the page", () => {
+    expect(containerClassList({})).toContain("top-sites-only");
+  });
+
+  it.each([
+    ["search is on", { showSearch: true }],
+    [
+      "stories are on",
+      {
+        "feeds.section.topstories": true,
+        "feeds.system.topstories": true,
+      },
+    ],
+    ["recent activity is on", { "feeds.section.highlights": true }],
+    [
+      "a widget is on",
+      {
+        "widgets.enabled": true,
+        "widgets.system.enabled": true,
+        "widgets.system.lists.enabled": true,
+        "widgets.lists.enabled": true,
+      },
+    ],
+    ["shortcuts are off", { "feeds.topsites": false }],
+  ])("is not added when %s", (_label, prefs) => {
+    expect(containerClassList(prefs)).not.toContain("top-sites-only");
+  });
+});
+
 describe("<BaseContent> non-Nova classic layout ASRouterNewTabMessage positions", () => {
   const DOCUMENT_STUB = {
     visibilityState: "visible",

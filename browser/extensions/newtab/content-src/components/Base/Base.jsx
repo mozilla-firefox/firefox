@@ -1193,6 +1193,12 @@ export class BaseContent extends React.PureComponent {
         !topSitesEnabled && !pocketEnabled && !highlightsEnabled;
       const isPageEmpty =
         noContentSectionsEnabled && !prefs.showSearch && !hasAnyEnabledWidget;
+      const topSitesOnly =
+        topSitesEnabled &&
+        !pocketEnabled &&
+        !highlightsEnabled &&
+        !prefs.showSearch &&
+        !hasAnyEnabledWidget;
       const hasManyTopSitesRows = topSitesEnabled && prefs.topSitesRows > 2;
       // Recent activity is then alone in the band, and the logo leaves the sidebar.
       const noFeedOrContentWidgets = !pocketEnabled && !hasContentWidgets;
@@ -1299,7 +1305,7 @@ export class BaseContent extends React.PureComponent {
             className={`nova-outer-wrapper${this.state.fixedSearch ? " stuck-search" : ""}${searchHasOwnRow ? " search-has-own-row" : ""}`}
           >
             <div
-              className={`container nova-enabled${logoShouldBeCentered ? " logo-in-content" : ""}${searchHasOwnRow ? " search-has-own-row" : ""}${searchShouldBeLowered ? " search-lowered" : ""}${hasFiveColumnLayout ? " sections-5-col" : ""}`}
+              className={`container nova-enabled${logoShouldBeCentered ? " logo-in-content" : ""}${searchHasOwnRow ? " search-has-own-row" : ""}${searchShouldBeLowered ? " search-lowered" : ""}${hasFiveColumnLayout ? " sections-5-col" : ""}${topSitesOnly ? " top-sites-only" : ""}`}
             >
               <aside className="sidebar-inline-start">
                 {!prefs.hideLogo && !logoShouldBeCentered && !isPageEmpty && (
