@@ -230,7 +230,7 @@ class RtpVideoSenderTestFixture {
         transport_controller_(RtpTransportConfig{
             .env = env_,
             .bitrate_config = bitrate_config_,
-            .worker_thread = time_controller_.GetMainThread()}),
+            .network_thread = time_controller_.GetMainThread()}),
         stats_proxy_(env_,
                      config_,
                      VideoEncoderConfig::ContentType::kRealtimeVideo) {
@@ -1816,7 +1816,7 @@ TEST(RtpVideoSenderTest, PostTaskRaceDoesNotLeadToDanglingPointer) {
   RtpTransportConfig transport_config{
       .env = env,
       .bitrate_config = bitrate_config,
-      .worker_thread = time_controller.GetMainThread()};
+      .network_thread = time_controller.GetMainThread()};
   RtpTransportControllerSend transport_controller(transport_config);
   transport_controller.EnsureStarted();
 

@@ -92,7 +92,7 @@ class ChannelSendTest : public ::testing::Test {
         transport_controller_(
             RtpTransportConfig{.env = env_,
                                .bitrate_config = GetBitrateConfig(),
-                               .worker_thread = TaskQueueBase::Current()}) {
+                               .network_thread = TaskQueueBase::Current()}) {
     channel_ = voe::CreateChannelSend(env_, &transport_, nullptr, nullptr,
                                       crypto_options_, false, kRtcpIntervalMs,
                                       kSsrc, /*rtp_state=*/std::nullopt, kMid,

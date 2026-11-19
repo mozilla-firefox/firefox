@@ -36,11 +36,6 @@ struct CallConfig {
   explicit CallConfig(const Environment& env,
                       TaskQueueBase* network_task_queue = nullptr);
 
-  [[deprecated("Use CallConfig(env, network_task_queue) instead.")]]
-  CallConfig(const Environment& env,
-             TaskQueueBase* absl_nonnull worker_task_queue,
-             TaskQueueBase* absl_nonnull network_task_queue);
-
   static CallConfig CreateWithJoinedWorkerAndNetworkQueue(
       const Environment& env,
       TaskQueueBase* absl_nonnull worker_and_network_queue);
@@ -53,8 +48,8 @@ struct CallConfig {
   static CallConfig CreateSingleThreaded(const Environment& env);
 
   // Move-only.
-  CallConfig(CallConfig&&);
-  CallConfig& operator=(CallConfig&& other);
+  CallConfig(CallConfig&&) = default;
+  CallConfig& operator=(CallConfig&& other) = default;
 
   ~CallConfig();
 
@@ -93,9 +88,6 @@ struct CallConfig {
   VideoJitterTimingFactory* video_jitter_timing_factory = nullptr;
 
   TaskQueueBase* network_task_queue_ = nullptr;
-  [[deprecated(
-      "worker_task_queue is deprecated; use network_task_queue_ instead.")]]
-  TaskQueueBase* worker_task_queue = nullptr;
 
   Metronome* decode_metronome = nullptr;
   Metronome* encode_metronome = nullptr;
