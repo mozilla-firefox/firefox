@@ -46,22 +46,22 @@ bool UpdateMeasurements(StreamSynchronization::Measurements* stream,
 }  // namespace
 
 RtpStreamsSynchronizer::RtpStreamsSynchronizer(const Environment& env,
-                                               TaskQueueBase* main_queue,
+                                               TaskQueueBase* network_queue,
                                                Syncable* syncable_video)
     : env_(env),
-      task_queue_(main_queue),
+      network_queue_(network_queue),
       syncable_video_(syncable_video),
       last_stats_log_ms_(env_.clock().TimeInMilliseconds()) {
   RTC_DCHECK(syncable_video);
 }
 
 RtpStreamsSynchronizer::~RtpStreamsSynchronizer() {
-  RTC_DCHECK_RUN_ON(&main_checker_);
+  RTC_DCHECK_RUN_ON(network_queue_);
   repeating_task_.Stop();
 }
 
 void RtpStreamsSynchronizer::ConfigureSync(Syncable* syncable_audio) {
-  RTC_DCHECK_RUN_ON(&main_checker_);
+  RTC_DCHECK_RUN_ON(network_queue_);
 
   // Prevent expensive no-ops.
   if (syncable_audio == syncable_audio_)
@@ -81,14 +81,14 @@ void RtpStreamsSynchronizer::ConfigureSync(Syncable* syncable_audio) {
     return;
 
   repeating_task_ =
-      RepeatingTaskHandle::DelayedStart(task_queue_, kSyncInterval, [this]() {
+      RepeatingTaskHandle::DelayedStart(network_queue_, kSyncInterval, [this] {
         UpdateDelay();
         return kSyncInterval;
       });
 }
 
 void RtpStreamsSynchronizer::UpdateDelay() {
-  RTC_DCHECK_RUN_ON(&main_checker_);
+  RTC_DCHECK_RUN_ON(network_queue_);
 
   if (!syncable_audio_)
     return;
@@ -183,7 +183,7 @@ bool RtpStreamsSynchronizer::GetStreamSyncOffsetInMs(
     int64_t* video_playout_ntp_ms,
     int64_t* stream_offset_ms,
     double* estimated_freq_khz) const {
-  RTC_DCHECK_RUN_ON(&main_checker_);
+  RTC_DCHECK_RUN_ON(network_queue_);
 
   if (!syncable_audio_)
     return false;

@@ -272,7 +272,7 @@ index 6f45a592c2..80f3753488 100644
    // h26x_packet_buffer_ is applicable to H.264 and H.265. For H.265 it is
    // always used but for H.264 it is only used if WebRTC-Video-H26xPacketBuffer
 diff --git a/video/video_receive_stream2.cc b/video/video_receive_stream2.cc
-index 5026d4f1c3..1a622af14b 100644
+index 3ef3062430..8e6053787d 100644
 --- a/video/video_receive_stream2.cc
 +++ b/video/video_receive_stream2.cc
 @@ -272,6 +272,7 @@ VideoReceiveStream2::VideoReceiveStream2(
