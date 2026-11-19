@@ -71,10 +71,8 @@ panel-item:not(.panel-section-header)::part(button) {
     background-color: var(--button-background-color-active);
   }
 
-  /* TODO: Bug 2033070 -  Nova tokens were implemented as the default value for the custom properties, and the fallbacks (and lint exceptions) will need to be removed after launch */
   @media -moz-pref("browser.nova.enabled") {
-    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-    border-radius: var(--smartwindow-panel-item-border-radius);
+    border-radius: var(--border-radius-large);
   }
 }
 
@@ -103,7 +101,7 @@ panel-item:not(.panel-section-header)::part(button) {
 .model-item-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-small);
+  gap: var(--space-xsmall);
   align-items: flex-start;
   margin-inline-end: var(--space-medium);
   /* Allow the column to shrink below its content's intrinsic width so long
@@ -143,6 +141,13 @@ panel-item:not(.panel-section-header)::part(button) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+
+  @media -moz-pref("browser.nova.enabled") and (not (prefers-contrast)) {
+    --text-color-deemphasized: light-dark(
+      color-mix(in srgb, var(--color-violet-desaturated-90) 70%, transparent),
+      color-mix(in srgb, var(--color-violet-desaturated-0) 70%, transparent)
+    );
+  }
 }
 
 .model-item-check {
