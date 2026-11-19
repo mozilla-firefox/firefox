@@ -34,6 +34,10 @@ eval $PRE_GRADLEW
 
 eval $GET_SECRETS
 
+if [ -n "$MOZ_GRADLE_USER_HOME_SEED" ]; then
+    $GECKO_PATH/mach python $GECKO_PATH/mobile/android/gradle.py
+fi
+
 mkdir -p "$BUILD_METRICS_DIR"
 $GRADLE $GRADLE_FLAGS listRepositories $GRADLEW_ARGS -PbuildMetricsOutputDir="$BUILD_METRICS_DIR"
 

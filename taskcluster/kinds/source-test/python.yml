@@ -485,6 +485,7 @@ mozbuild:
             - '**/moz.configure'
             - 'build/moz.configure/**'
             - 'build/test/python/test_gradle_jvmargs.py'
+            - 'build/test/python/test_gradle_user_home_seed.py'
             - 'build/test/python/unit.toml'
             - 'config/tests/**'
             - 'dom/bindings/mozwebidlcodegen/**'

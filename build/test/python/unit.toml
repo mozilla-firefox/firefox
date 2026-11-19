@@ -2,3 +2,5 @@
 subsuite = "mozbuild"
 
 ["test_gradle_jvmargs.py"]
+
+["test_gradle_user_home_seed.py"]

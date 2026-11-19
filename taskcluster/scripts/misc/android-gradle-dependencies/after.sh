@@ -64,6 +64,14 @@ if [ -z "$MOZ_APPSERVICES_IN_TREE" ]; then
     done
 fi
 
+SEED_CACHES=$WORKSPACE/gradle-user-home-seed/caches
+mkdir -p $SEED_CACHES
+pushd ${GRADLE_USER_HOME}/caches
+cp -R --parents [0-9]*/generated-gradle-jars [0-9]*/groovy-dsl [0-9]*/kotlin-dsl [0-9]*/dependencies-accessors [0-9]*/transforms jars-* $SEED_CACHES
+popd
+find $SEED_CACHES \( -name '*.lock' -o -name gc.properties \) -delete
+
 tar cavf /builds/worker/artifacts/android-gradle-dependencies.tar.zst android-gradle-dependencies
+tar cavf /builds/worker/artifacts/gradle-user-home-seed.tar.zst gradle-user-home-seed
 
 popd

@@ -137,7 +137,10 @@ def test_add_gradle(mode, use_cache, flags, cached):
         "worker": {"implementation": "docker-worker"},
         "use-gradle-cache": use_cache,
     }
-    taskdesc = {"worker": {"env": {"OTHER": "1"}}}
+    taskdesc = {
+        "worker": {"env": {"OTHER": "1"}},
+        "fetches": {"toolchain": ["linux64-android-gradle-dependencies"]},
+    }
 
     add_gradle(config, job, taskdesc, mode)
 
@@ -148,7 +151,16 @@ def test_add_gradle(mode, use_cache, flags, cached):
             "GRADLE_USER_HOME": "/builds/worker/gradle-user-home",
         }
     }
+    expected_toolchains = ["linux64-android-gradle-dependencies"]
     if cached:
+        expected["env"]["MOZ_GRADLE_USER_HOME_SEED"] = (
+            "/builds/worker/fetches/gradle-user-home-seed.tar.zst"
+        )
+        expected_toolchains.append({
+            "name": "linux64-android-gradle-dependencies",
+            "artifact": "public/build/gradle-user-home-seed.tar.zst",
+            "extract": False,
+        })
         expected["caches"] = [
             {
                 "type": "persistent",
@@ -158,6 +170,22 @@ def test_add_gradle(mode, use_cache, flags, cached):
             }
         ]
     assert taskdesc["worker"] == expected
+    assert taskdesc["fetches"] == {"toolchain": expected_toolchains}
+
+
+def test_add_gradle_cache_without_dependencies_fetch():
+    config = make_config(project="autoland", level="3")
+    job = {
+        "run": {"workdir": "/builds/worker"},
+        "worker": {"implementation": "docker-worker"},
+        "use-gradle-cache": True,
+    }
+    taskdesc = {"worker": {}}
+
+    add_gradle(config, job, taskdesc, "offline")
+
+    assert "MOZ_GRADLE_USER_HOME_SEED" not in taskdesc["worker"]["env"]
+    assert "fetches" not in taskdesc
 
 
 def test_add_gradle_online_cache():

@@ -258,6 +258,18 @@ def add_gradle(config, job, taskdesc, mode):
         if mode != "offline":
             raise Exception("use-gradle-cache requires use-gradle: offline")
         add_cache(job, taskdesc, "gradle-user-home", gradle_user_home)
+        toolchains = taskdesc.get("fetches", {}).get("toolchain", [])
+        if dependencies := next(
+            (t for t in toolchains if "android-gradle-dependencies" in t), None
+        ):
+            toolchains.append({
+                "name": dependencies,
+                "artifact": "public/build/gradle-user-home-seed.tar.zst",
+                "extract": False,
+            })
+            taskdesc["worker"]["env"]["MOZ_GRADLE_USER_HOME_SEED"] = (
+                f"{job['run']['workdir']}/fetches/gradle-user-home-seed.tar.zst"
+            )
 
 
 def get_expiration(config, policy="default"):

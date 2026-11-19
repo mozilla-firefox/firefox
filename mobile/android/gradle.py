@@ -2,8 +2,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import hashlib
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -40,6 +42,58 @@ def jvmargs_with_max_heap(topsrcdir, max_heap):
     return jvmargs
 
 
+def _seed_digest(seed):
+    sidecar = f"{seed}.sha256"
+    if os.path.exists(sidecar):
+        with open(sidecar, encoding="utf-8") as fh:
+            return fh.read().strip()
+    sha256 = hashlib.sha256()
+    with open(seed, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            sha256.update(chunk)
+    with open(sidecar, "w", encoding="utf-8") as fh:
+        fh.write(sha256.hexdigest())
+    return sha256.hexdigest()
+
+
+def _merge_tree(src, dst):
+    for name in os.listdir(src):
+        src_path = mozpath.join(src, name)
+        dst_path = mozpath.join(dst, name)
+        if not os.path.lexists(dst_path):
+            os.rename(src_path, dst_path)
+        elif os.path.isdir(src_path) and os.path.isdir(dst_path):
+            _merge_tree(src_path, dst_path)
+
+
+def seed_gradle_user_home(seed, gradle_user_home):
+    if not seed:
+        return
+    if not gradle_user_home:
+        raise Exception("MOZ_GRADLE_USER_HOME_SEED is set, but GRADLE_USER_HOME is not")
+    if not os.path.isfile(seed):
+        raise Exception(
+            f"MOZ_GRADLE_USER_HOME_SEED is set to {seed}, which is not a file"
+        )
+    digest = _seed_digest(seed)
+    applied = mozpath.join(gradle_user_home, ".seeds")
+    with SoftFileLock(f"{applied}.lock", timeout=600):
+        if os.path.exists(applied):
+            with open(applied, encoding="utf-8") as fh:
+                if digest in fh.read().split():
+                    return
+        staging = mozpath.join(gradle_user_home, "seed.tmp")
+        shutil.rmtree(staging, ignore_errors=True)
+        os.makedirs(staging)
+        subprocess.check_call(["tar", "xf", seed, "-C", staging])
+        caches = mozpath.join(gradle_user_home, "caches")
+        os.makedirs(caches, exist_ok=True)
+        _merge_tree(mozpath.join(staging, "gradle-user-home-seed", "caches"), caches)
+        shutil.rmtree(staging, ignore_errors=True)
+        with open(applied, "a", encoding="utf-8") as fh:
+            fh.write(f"{digest}\n")
+
+
 def main(dummy_output_file, *args):
     env = dict(os.environ)
     import buildconfig
@@ -66,3 +120,9 @@ def main(dummy_output_file, *args):
     if should_print_status:
         print("BUILDSTATUS " + str(time.time()) + " END_Gradle export")
     return 0
+
+
+if __name__ == "__main__":
+    seed_gradle_user_home(
+        os.environ.get("MOZ_GRADLE_USER_HOME_SEED"), os.environ.get("GRADLE_USER_HOME")
+    )
