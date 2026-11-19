@@ -60,8 +60,8 @@ fun X509Certificate.toCertificateDetails(): CertificateDetails {
  * Maps the subject fields of these [CertificateDetails] to [CertificateDetails.IssuedTo], with the country code
  * converted to its name in [locale]. Blank fields are treated as absent.
  *
- * Until the missing-field behaviour is decided, absent fields are left out and null is returned when all of them are
- * absent, so that no blank label or empty row is shown.
+ * Absent fields are left out, and null is returned if all of them are absent, so that no blank label or empty row is
+ * shown.
  */
 fun CertificateDetails?.toIssuedTo(locale: Locale): CertificateDetails.IssuedTo? {
     val organization = this?.subjectOrganization?.takeIf { it.isNotBlank() }
@@ -81,11 +81,17 @@ fun CertificateDetails?.toIssuedTo(locale: Locale): CertificateDetails.IssuedTo?
  * Returns the name of the certificate authority that issued the certificate: its organization, or its common name if it
  * has no organization. Blank fields are treated as absent.
  *
- * Until the missing-field behaviour is decided, null is returned when neither is present, so that no dangling label is
- * shown.
+ * Null is returned when neither is present, so that no dangling label is shown.
  */
 fun CertificateDetails?.issuerDisplayName(): String? =
     this?.issuerOrganization?.takeIf { it.isNotBlank() } ?: this?.issuerCommonName?.takeIf { it.isNotBlank() }
+
+/**
+ * Whether these [CertificateDetails] have anything to show: who the certificate was issued to, or who issued it. When
+ * they have neither, the certificate details are not offered at all.
+ */
+fun CertificateDetails?.hasDisplayableDetails(): Boolean =
+    toIssuedTo(Locale.ROOT) != null || issuerDisplayName() != null
 
 /**
  * Parses an RFC 2253 distinguished name into a map of attribute types to values. Only the first value of each type is

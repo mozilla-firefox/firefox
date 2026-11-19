@@ -9,7 +9,9 @@ import java.util.Locale
 import javax.security.auth.x500.X500Principal
 import mozilla.components.support.test.whenever
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.mockito.Mockito
 
@@ -158,6 +160,42 @@ class CertificateDetailsTest {
     @Test
     fun `GIVEN no certificate details WHEN getting the issuer name THEN it is null`() {
         assertNull((null as CertificateDetails?).issuerDisplayName())
+    }
+
+    @Test
+    fun `GIVEN only subject fields WHEN checking for details to show THEN the certificate has displayable details`() {
+        assertTrue(CertificateDetails(subjectOrganization = "Mozilla Corporation").hasDisplayableDetails())
+    }
+
+    @Test
+    fun `GIVEN only an issuer name WHEN checking for details to show THEN the certificate has displayable details`() {
+        assertTrue(
+            CertificateDetails(subjectCommonName = "example.com", issuerCommonName = "R13").hasDisplayableDetails()
+        )
+    }
+
+    @Test
+    fun `GIVEN no subject fields and no issuer name WHEN checking for details to show THEN there are no displayable details`() {
+        assertFalse(CertificateDetails(subjectCommonName = "example.com").hasDisplayableDetails())
+    }
+
+    @Test
+    fun `GIVEN only blank fields WHEN checking for details to show THEN there are no displayable details`() {
+        val certificateDetails =
+            CertificateDetails(
+                subjectOrganization = " ",
+                subjectLocality = "",
+                subjectCountry = "  ",
+                issuerOrganization = "",
+                issuerCommonName = " ",
+            )
+
+        assertFalse(certificateDetails.hasDisplayableDetails())
+    }
+
+    @Test
+    fun `GIVEN no certificate details WHEN checking for details to show THEN there are no displayable details`() {
+        assertFalse((null as CertificateDetails?).hasDisplayableDetails())
     }
 
     private fun createCertificate(subject: String, issuer: String): X509Certificate =

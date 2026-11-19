@@ -59,6 +59,34 @@ class CertificateDetailsTest {
         assertFalse(WebsiteInfoState(isSecured = false, certificate = certificate).canOpenCertificateDetails)
     }
 
+    @Test
+    fun `GIVEN a secure website whose certificate has only an issuer THEN the certificate details can be opened`() {
+        val certificate = createCertificate(subject = "CN=example.com", issuer = "CN=R13")
+
+        assertTrue(WebsiteInfoState(isSecured = true, certificate = certificate).canOpenCertificateDetails)
+    }
+
+    @Test
+    fun `GIVEN a secure website whose certificate has nothing to show THEN the certificate details cannot be opened`() {
+        val certificate = createCertificate(subject = "CN=example.com", issuer = "DC=example")
+
+        assertFalse(WebsiteInfoState(isSecured = true, certificate = certificate).canOpenCertificateDetails)
+    }
+
+    @Test
+    fun `GIVEN a secure website with a QWAC THEN it is shown as qualified`() {
+        val certificate = createCertificate(subject = "CN=example.com", issuer = "CN=Issuer")
+
+        assertTrue(WebsiteInfoState(isSecured = true, certificate = certificate, qwac = certificate).isQwac)
+    }
+
+    @Test
+    fun `GIVEN an insecure website with a QWAC THEN it is not shown as qualified`() {
+        val certificate = createCertificate(subject = "CN=example.com", issuer = "CN=Issuer")
+
+        assertFalse(WebsiteInfoState(isSecured = false, certificate = certificate, qwac = certificate).isQwac)
+    }
+
     private fun createCertificate(subject: String, issuer: String): X509Certificate =
         mockk<X509Certificate>().also {
             every { it.subjectX500Principal } returns X500Principal(subject)

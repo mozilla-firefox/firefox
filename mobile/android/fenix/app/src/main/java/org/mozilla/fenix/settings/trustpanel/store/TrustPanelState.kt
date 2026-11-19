@@ -11,6 +11,7 @@ import mozilla.components.concept.engine.permission.SitePermissions
 import mozilla.components.concept.engine.permission.SitePermissions.AutoplayStatus
 import mozilla.components.lib.state.State
 import mozilla.components.support.utils.CertificateDetails
+import mozilla.components.support.utils.hasDisplayableDetails
 import mozilla.components.support.utils.toCertificateDetails
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.menu.store.IPProtectionMenuState
@@ -73,17 +74,19 @@ data class WebsiteInfoState(
 
     /**
      * Whether the current web page is known to present a QWAC. This is false whenever the QWAC status is not yet
-     * determined, is still being requested, or could not be determined.
+     * determined, is still being requested, could not be determined, or on pages that are not secure, so that a
+     * certificate with an error is never shown as qualified.
      */
     val isQwac: Boolean
-        get() = qwac != null
+        get() = isSecured && qwac != null
 
     /**
-     * Whether the certificate details can be opened. Until the behaviour for pages without a certificate is decided,
-     * this is only the case for secure pages with a certificate.
+     * Whether the certificate details can be opened: only for secure pages with a certificate that has something to
+     * show. Pages without a certificate, such as HTTP, internal pages and local files, and pages whose certificate has
+     * an error, even after the user chose to proceed, show the connection security row instead.
      */
     val canOpenCertificateDetails: Boolean
-        get() = isSecured && certificate != null
+        get() = isSecured && certificate != null && certificateDetails.hasDisplayableDetails()
 }
 
 /**
