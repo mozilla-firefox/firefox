@@ -682,5 +682,27 @@ TEST_F(RtcpSenderTest, SendsCombinedRtcpPacket) {
   EXPECT_EQ(parser()->app()->sender_ssrc(), kSenderSsrc);
 }
 
+TEST_F(RtcpSenderTest, DropsPacketLargerThanMaxPacketSizeFromCombinedPacket) {
+  constexpr size_t kMaxPacketSize = 1200;
+  auto rtcp_sender = CreateRtcpSender(GetDefaultConfig());
+  rtcp_sender->SetRTCPStatus(RtcpMode::kReducedSize);
+  rtcp_sender->SetMaxRtpPacketSize(kMaxPacketSize);
+
+  auto transport_feedback = std::make_unique<rtcp::TransportFeedback>();
+  transport_feedback->SetBase(0, Timestamp::Millis(10));
+  for (uint16_t seq = 0; transport_feedback->BlockLength() <= kMaxPacketSize;
+       ++seq) {
+    ASSERT_TRUE(transport_feedback->AddReceivedPacket(
+        seq, Timestamp::Millis(10 + seq)));
+  }
+  std::vector<std::unique_ptr<rtcp::RtcpPacket>> packets;
+  packets.push_back(std::move(transport_feedback));
+  packets.push_back(std::make_unique<rtcp::RemoteEstimate>());
+  rtcp_sender->SendCombinedRtcpPacket(std::move(packets));
+
+  EXPECT_EQ(parser()->transport_feedback()->num_packets(), 0);
+  EXPECT_EQ(parser()->app()->num_packets(), 1);
+}
+
 }  // namespace
 }  // namespace webrtc

@@ -77,7 +77,11 @@ class RTCPSender::PacketSender {
   // Appends a packet to pending compound packet.
   // Sends rtcp packet if buffer is full and resets the buffer.
   void AppendPacket(const rtcp::RtcpPacket& packet) {
-    packet.Create(buffer_, &index_, max_packet_size_, callback_);
+    if (!packet.Create(buffer_, &index_, max_packet_size_, callback_)) {
+      RTC_LOG(LS_WARNING) << "Dropped RTCP packet of " << packet.BlockLength()
+                          << " bytes, max packet size is " << max_packet_size_
+                          << " bytes.";
+    }
   }
 
   // Sends pending rtcp packet.

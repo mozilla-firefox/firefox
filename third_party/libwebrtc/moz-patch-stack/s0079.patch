@@ -30,10 +30,10 @@ index fd0e8616e6..a13da1ad53 100644
    if (sending) {
      transport_->RegisterSendingRtpStream(rtp_module);
 diff --git a/modules/rtp_rtcp/source/rtcp_sender.cc b/modules/rtp_rtcp/source/rtcp_sender.cc
-index ea3c2fc9c1..980ce7e169 100644
+index d088ce0401..3c6b988cfa 100644
 --- a/modules/rtp_rtcp/source/rtcp_sender.cc
 +++ b/modules/rtp_rtcp/source/rtcp_sender.cc
-@@ -196,10 +196,25 @@ bool RTCPSender::Sending() const {
+@@ -200,10 +200,25 @@ bool RTCPSender::Sending() const {
  
  void RTCPSender::SetSendingStatus(const FeedbackState& /* feedback_state */,
                                    bool sending) {
@@ -64,7 +64,7 @@ index ea3c2fc9c1..980ce7e169 100644
  
  void RTCPSender::SetNonSenderRttMeasurement(bool enabled) {
 diff --git a/modules/rtp_rtcp/source/rtcp_sender_unittest.cc b/modules/rtp_rtcp/source/rtcp_sender_unittest.cc
-index 794fb8b6af..c6002e6f44 100644
+index 158f05879b..b810cca7e4 100644
 --- a/modules/rtp_rtcp/source/rtcp_sender_unittest.cc
 +++ b/modules/rtp_rtcp/source/rtcp_sender_unittest.cc
 @@ -338,12 +338,13 @@ TEST_F(RtcpSenderTest, SendBye) {
