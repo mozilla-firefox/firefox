@@ -45,15 +45,21 @@ int main() {
 | Setter                 | Default   | Description                             |
 | ---------------------- | --------- | --------------------------------------- |
 | `set_min_severity()`   | `LS_INFO` | Minimum severity for `AddSink()` sinks. |
-| `set_debug_severity()` | `LS_INFO` | Minimum severity for the debug output.  |
+| `set_debug_severity()` | See below | Minimum severity for the debug output.  |
 | `set_log_to_stderr()`  | `true`    | Writes the debug output to stderr.      |
 | `set_log_thread()`     | `false`   | Adds the thread ID to log lines.        |
 | `set_log_queue_name()` | `false`   | Adds the task queue name to log lines.  |
 | `set_log_timestamp()`  | `false`   | Adds the elapsed time to log lines.     |
 | `set_log_prefix()`     | Empty     | Text that starts each log line.         |
 
+The default debug severity is `LS_INFO` in debug builds and `LS_NONE` in release
+builds, so release builds don't write to the debug output unless configured to.
 Depending on the platform, the debug output also goes to logcat (Android) or to
 the debugger (Windows debug builds).
+
+The legacy `LogMessage::LogToDebug()` changes the minimum severity for the debug
+output at runtime, also after initialization. `GetLoggingConfig()` keeps
+returning the initial value.
 
 ## Log Sinks
 

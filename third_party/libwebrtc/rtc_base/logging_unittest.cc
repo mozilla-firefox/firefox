@@ -593,6 +593,62 @@ TEST_F(LogTest, DoubleExplicitInitialization) {
   EXPECT_FALSE(InitializeLogging(LoggingConfig()));
 }
 
+TEST_F(LogTest, DefaultDebugSeverityMatchesBuildConfiguration) {
+#if RTC_DLOG_IS_ON
+  constexpr LoggingSeverity kExpected = LS_INFO;
+#else
+  constexpr LoggingSeverity kExpected = LS_NONE;
+#endif
+  EXPECT_EQ(LoggingConfig().debug_severity(), kExpected);
+  EXPECT_EQ(GetLoggingConfig().debug_severity(), kExpected);
+}
+
+TEST_F(LogTest, MinSeverityWithoutSinksDoesNotEnableLogging) {
+  LoggingConfig config;
+  config.set_min_severity(LS_VERBOSE);
+  config.set_debug_severity(LS_WARNING);
+  ASSERT_TRUE(InitializeLogging(std::move(config)));
+
+  EXPECT_TRUE(LogMessage::IsNoop(LS_INFO));
+  EXPECT_FALSE(LogMessage::IsNoop(LS_WARNING));
+}
+
+TEST_F(LogTest, LogToDebugChangesDebugSeverityAfterInitialization) {
+  LoggingConfig config;
+  config.set_debug_severity(LS_WARNING);
+  ASSERT_TRUE(InitializeLogging(std::move(config)));
+  EXPECT_TRUE(LogMessage::IsNoop(LS_INFO));
+  EXPECT_FALSE(LogMessage::IsNoop(LS_WARNING));
+
+  LogMessage::LogToDebug(LS_INFO);
+  EXPECT_FALSE(LogMessage::IsNoop(LS_INFO));
+
+  LogMessage::LogToDebug(LS_NONE);
+  EXPECT_TRUE(LogMessage::IsNoop(LS_ERROR));
+}
+
+// Limited to Linux, where the debug output is only written to stderr.
+#if defined(WEBRTC_LINUX) && !defined(WEBRTC_ANDROID)
+TEST_F(LogTest, LogToDebugControlsDebugOutputAfterInitialization) {
+  LoggingConfig config;
+  config.set_debug_severity(LS_WARNING);
+  config.set_log_to_stderr(true);
+  ASSERT_TRUE(InitializeLogging(std::move(config)));
+
+  ::testing::internal::CaptureStderr();
+  RTC_LOG(LS_INFO) << "debug-output-1";
+  LogMessage::LogToDebug(LS_INFO);
+  RTC_LOG(LS_INFO) << "debug-output-2";
+  LogMessage::LogToDebug(LS_NONE);
+  RTC_LOG(LS_ERROR) << "debug-output-3";
+  const std::string output = ::testing::internal::GetCapturedStderr();
+
+  EXPECT_THAT(output, Not(HasSubstr("debug-output-1")));
+  EXPECT_THAT(output, HasSubstr("debug-output-2"));
+  EXPECT_THAT(output, Not(HasSubstr("debug-output-3")));
+}
+#endif
+
 TEST_F(LogTest, LogQueueNameFromThread) {
   LoggingConfig config;
   config.set_log_queue_name(true);

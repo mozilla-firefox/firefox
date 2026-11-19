@@ -1409,7 +1409,7 @@ index 8eb38a2ddd..ba4c34b197 100644
      # Dependency on chromium's logging (in //base).
      deps += [ "//base" ]
 diff --git a/rtc_base/logging.cc b/rtc_base/logging.cc
-index c236a75289..4bca7e09b1 100644
+index fd372f7492..581066220e 100644
 --- a/rtc_base/logging.cc
 +++ b/rtc_base/logging.cc
 @@ -27,6 +27,7 @@
@@ -1420,7 +1420,7 @@ index c236a75289..4bca7e09b1 100644
  #include "rtc_base/checks.h"
  #include "rtc_base/platform_thread_types.h"
  #include "rtc_base/string_utils.h"
-@@ -55,6 +56,24 @@ static const int kMaxLogLineSize = 1024 - 60;
+@@ -68,6 +69,24 @@ static const int kMaxLogLineSize = 1024 - 60;
  #endif  // WEBRTC_MAC && !defined(WEBRTC_IOS) || WEBRTC_ANDROID
  
  namespace webrtc {
@@ -1444,8 +1444,8 @@ index c236a75289..4bca7e09b1 100644
 +
  namespace {
  
- // By default, release builds don't log, debug builds at info level
-@@ -202,7 +221,7 @@ const std::string& LogLineRef::DefaultLogLine() const {
+ // Note: `g_min_sev` and `g_dbg_sev` can be changed while running.
+@@ -208,7 +227,7 @@ const std::string& LogLineRef::DefaultLogLine() const {
  // LogMessage
  /////////////////////////////////////////////////////////////////////////////
  

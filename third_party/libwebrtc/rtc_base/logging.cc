@@ -37,6 +37,19 @@
 #include "rtc_base/thread_annotations.h"
 #include "rtc_base/time_utils.h"
 
+namespace webrtc {
+namespace {
+
+// By default, release builds don't log, debug builds at info level.
+#if RTC_DLOG_IS_ON
+constexpr LoggingSeverity kDefaultLoggingSeverity = LS_INFO;
+#else
+constexpr LoggingSeverity kDefaultLoggingSeverity = LS_NONE;
+#endif
+
+}  // namespace
+}  // namespace webrtc
+
 #if RTC_LOG_ENABLED()
 
 #if defined(WEBRTC_WIN)
@@ -75,13 +88,6 @@ void LogMessage::set_aec_debug_filename(const char* filename) {
 }
 
 namespace {
-
-// By default, release builds don't log, debug builds at info level
-#if !defined(NDEBUG)
-constexpr LoggingSeverity kDefaultLoggingSeverity = LS_INFO;
-#else
-constexpr LoggingSeverity kDefaultLoggingSeverity = LS_NONE;
-#endif
 
 // Note: `g_min_sev` and `g_dbg_sev` can be changed while running.
 constinit std::atomic<LoggingSeverity> g_min_sev = kDefaultLoggingSeverity;
@@ -321,7 +327,9 @@ LogMessage::~LogMessage() {
 
   const LoggingConfig& config = GetLoggingConfig();
 
-  if (log_line_.severity() >= config.debug_severity()) {
+  // Not `config.debug_severity()`, since LogToDebug() can change the debug
+  // severity after initialization.
+  if (log_line_.severity() >= g_dbg_sev.load(std::memory_order_relaxed)) {
     OutputToDebug(log_line_);
   }
 
@@ -414,7 +422,9 @@ void LogMessage::UpdateMinLogSeverity()
     RTC_EXCLUSIVE_LOCKS_REQUIRED(GetLoggingLock()) {
   LoggingSeverity min_sev = g_dbg_sev.load(std::memory_order_relaxed);
   const LoggingConfig& config = GetLoggingConfig();
-  min_sev = std::min(min_sev, config.min_severity());
+  if (!config.sinks().empty()) {
+    min_sev = std::min(min_sev, config.min_severity());
+  }
   for (LogSink* entry = streams_; entry != nullptr; entry = entry->next_) {
     min_sev = std::min(min_sev, entry->min_severity_);
   }
@@ -733,7 +743,7 @@ const std::string& LogLineRef::DefaultLogLine() const {
 #endif  // RTC_LOG_ENABLED()
 
 namespace webrtc {
-LoggingConfig::LoggingConfig() = default;
+LoggingConfig::LoggingConfig() : debug_severity_(kDefaultLoggingSeverity) {}
 LoggingConfig::LoggingConfig(LoggingConfig&&) = default;
 LoggingConfig& LoggingConfig::operator=(LoggingConfig&&) = default;
 LoggingConfig::~LoggingConfig() = default;
