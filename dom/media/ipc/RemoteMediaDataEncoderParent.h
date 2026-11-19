@@ -55,10 +55,20 @@ class RemoteMediaDataEncoderParent final
 
   std::map<uint32_t, RefPtr<ShmemRecycleTicket>> mTickets;
   uint32_t mTicketCounter = 0;
-  bool mConstructAttempted : 1 = false;
-  bool mInitAttempted : 1 = false;
-  bool mInitialized : 1 = false;
-  bool mShutdown : 1 = false;
+
+  // Construct is accepted only in Unconstructed, Init only in Constructed, and
+  // Encode, Reconfigure, Drain and SetBitrate only in Initialized. Shutdown is
+  // accepted in any state. A failed Construct or Init keeps the state, so only
+  // Shutdown is accepted after it.
+  enum class State : uint8_t {
+    Unconstructed,
+    Constructing,
+    Constructed,
+    Initializing,
+    Initialized,
+    ShutDown,
+  };
+  State mState = State::Unconstructed;
 };
 
 }  // namespace mozilla

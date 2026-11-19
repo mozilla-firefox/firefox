@@ -43,12 +43,12 @@ RemoteMediaDataEncoderParent::~RemoteMediaDataEncoderParent() = default;
 
 IPCResult RemoteMediaDataEncoderParent::RecvConstruct(
     ConstructResolver&& aResolver) {
-  if (mEncoder || mShutdown || mConstructAttempted) {
+  if (mState != State::Unconstructed) {
     aResolver(MediaResult(NS_ERROR_ALREADY_INITIALIZED, __func__));
     return IPC_OK();
   }
 
-  mConstructAttempted = true;
+  mState = State::Constructing;
 
   RefPtr<TaskQueue> taskQueue =
       TaskQueue::Create(GetMediaThreadPool(MediaThreadType::PLATFORM_ENCODER),
@@ -65,13 +65,14 @@ IPCResult RemoteMediaDataEncoderParent::RecvConstruct(
                  return;
                }
 
-               if (self->mEncoder || self->mShutdown) {
+               if (self->mState != State::Constructing) {
                  aValue.ResolveValue()->Shutdown();
                  resolver(MediaResult(NS_ERROR_ALREADY_INITIALIZED, __func__));
                  return;
                }
 
                self->mEncoder = std::move(aValue.ResolveValue());
+               self->mState = State::Constructed;
                resolver(MediaResult(NS_OK));
              });
   return IPC_OK();
@@ -83,11 +84,11 @@ IPCResult RemoteMediaDataEncoderParent::RecvInit(InitResolver&& aResolver) {
     return IPC_OK();
   }
 
-  if (mInitAttempted) {
+  if (mState != State::Constructed) {
     aResolver(MediaResult(NS_ERROR_ALREADY_INITIALIZED, __func__));
     return IPC_OK();
   }
-  mInitAttempted = true;
+  mState = State::Initializing;
 
   mEncoder->Init()->Then(
       GetCurrentSerialEventTarget(), __func__,
@@ -103,7 +104,7 @@ IPCResult RemoteMediaDataEncoderParent::RecvInit(InitResolver&& aResolver) {
           return;
         }
 
-        self->mInitialized = true;
+        self->mState = State::Initialized;
 
         nsCString hardwareReason;
         bool hardware = self->mEncoder->IsHardwareAccelerated(hardwareReason);
@@ -115,7 +116,7 @@ IPCResult RemoteMediaDataEncoderParent::RecvInit(InitResolver&& aResolver) {
 
 IPCResult RemoteMediaDataEncoderParent::RecvEncode(
     const EncodedInputIPDL& aData, EncodeResolver&& aResolver) {
-  if (!mEncoder || !mInitialized) {
+  if (!mEncoder || mState != State::Initialized) {
     aResolver(MediaResult(NS_ERROR_ABORT, __func__));
     return IPC_OK();
   }
@@ -236,7 +237,7 @@ IPCResult RemoteMediaDataEncoderParent::RecvEncode(
 IPCResult RemoteMediaDataEncoderParent::RecvReconfigure(
     NotNull<EncoderConfigurationChangeList*> aConfigurationChanges,
     ReconfigureResolver&& aResolver) {
-  if (!mEncoder || !mInitialized) {
+  if (!mEncoder || mState != State::Initialized) {
     aResolver(MediaResult(NS_ERROR_ABORT, __func__));
     return IPC_OK();
   }
@@ -258,7 +259,7 @@ IPCResult RemoteMediaDataEncoderParent::RecvReconfigure(
 }
 
 IPCResult RemoteMediaDataEncoderParent::RecvDrain(DrainResolver&& aResolver) {
-  if (!mEncoder || !mInitialized) {
+  if (!mEncoder || mState != State::Initialized) {
     aResolver(MediaResult(NS_ERROR_ABORT, __func__));
     return IPC_OK();
   }
@@ -308,6 +309,7 @@ IPCResult RemoteMediaDataEncoderParent::RecvReleaseTicket(
 
 IPCResult RemoteMediaDataEncoderParent::RecvShutdown(
     ShutdownResolver&& aResolver) {
+  mState = State::ShutDown;
   if (!mEncoder) {
     aResolver(false);
     return IPC_OK();
@@ -320,13 +322,12 @@ IPCResult RemoteMediaDataEncoderParent::RecvShutdown(
         resolver(aValue.IsResolve());
       });
   mEncoder = nullptr;
-  mShutdown = true;
   return IPC_OK();
 }
 
 IPCResult RemoteMediaDataEncoderParent::RecvSetBitrate(
     const uint32_t& aBitrate, SetBitrateResolver&& aResolver) {
-  if (!mEncoder || !mInitialized) {
+  if (!mEncoder || mState != State::Initialized) {
     aResolver(NS_ERROR_ABORT);
     return IPC_OK();
   }
@@ -341,6 +342,8 @@ IPCResult RemoteMediaDataEncoderParent::RecvSetBitrate(
 }
 
 void RemoteMediaDataEncoderParent::ActorDestroy(ActorDestroyReason aWhy) {
+  // Ensure an encoder still being created is shut down when it is ready.
+  mState = State::ShutDown;
   if (mEncoder) {
     mEncoder->Shutdown();
     mEncoder = nullptr;
