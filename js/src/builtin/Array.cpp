@@ -596,6 +596,24 @@ static MOZ_ALWAYS_INLINE void TrimDenseElementsForNewLength(JSContext* cx,
   }
 }
 
+// Fast path for setting the length of an array. Returns false if the caller has
+// to use the generic ArraySetLength path.
+static MOZ_ALWAYS_INLINE bool TrySetArrayLengthFast(JSContext* cx,
+                                                    ArrayObject* arr,
+                                                    uint64_t newLen) {
+  if (!arr->lengthIsWritable() || newLen > UINT32_MAX) {
+    return false;
+  }
+  if (newLen < arr->length()) {
+    if (arr->isIndexed() || !CanFastTrimDenseElementsForNewLength(arr)) {
+      return false;
+    }
+    TrimDenseElementsForNewLength(cx, arr, uint32_t(newLen));
+  }
+  arr->setLength(cx, uint32_t(newLen));
+  return true;
+}
+
 static bool SetArrayLengthProperty(JSContext* cx, Handle<ArrayObject*> obj,
                                    HandleValue value) {
   RootedId id(cx, NameToId(cx->names().length));
@@ -615,10 +633,16 @@ static bool SetArrayLengthProperty(JSContext* cx, Handle<ArrayObject*> obj,
 bool js::SetLengthProperty(JSContext* cx, HandleObject obj, uint64_t length) {
   MOZ_ASSERT(length < uint64_t(DOUBLE_INTEGRAL_PRECISION_LIMIT));
 
-  RootedValue v(cx, NumberValue(length));
   if (obj->is<ArrayObject>()) {
-    return SetArrayLengthProperty(cx, obj.as<ArrayObject>(), v);
+    Handle<ArrayObject*> arr = obj.as<ArrayObject>();
+    if (TrySetArrayLengthFast(cx, arr, length)) {
+      return true;
+    }
+    RootedValue v(cx, NumberValue(length));
+    return SetArrayLengthProperty(cx, arr, v);
   }
+
+  RootedValue v(cx, NumberValue(length));
   return SetProperty(cx, obj, cx->names().length, v);
 }
 
@@ -637,6 +661,11 @@ bool js::ArrayLengthSetter(JSContext* cx, HandleObject obj, HandleId id,
   Handle<ArrayObject*> arr = obj.as<ArrayObject>();
   MOZ_ASSERT(arr->lengthIsWritable(),
              "setter shouldn't be called if property is non-writable");
+
+  if (v.isInt32() && v.toInt32() >= 0 &&
+      TrySetArrayLengthFast(cx, arr, uint32_t(v.toInt32()))) {
+    return result.succeed();
+  }
 
   Rooted<PropertyDescriptor> desc(
       cx, PropertyDescriptor::Data(v, JS::PropertyAttribute::Writable));
