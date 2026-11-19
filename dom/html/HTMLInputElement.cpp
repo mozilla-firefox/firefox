@@ -4624,12 +4624,8 @@ void HTMLInputElement::SetupShadowTree(bool aNotify) {
   TextControlElement::SetupShadowTree(*shadow, aNotify);
 }
 
-ShadowRoot* HTMLInputElement::CreateShadowTreeFromLayoutIfNeeded() {
-  if (!CreatesUAShadowTree()) {
-    return nullptr;
-  }
-  auto* existing = GetShadowRoot();
-  if (existing) {
+ShadowRoot* HTMLInputElement::CreateShadowTreeBeforeLayoutIfNeeded() {
+  if (!CreatesUAShadowTree() || GetShadowRoot()) {
     return nullptr;
   }
   if (HasChildren()) [[unlikely]] {

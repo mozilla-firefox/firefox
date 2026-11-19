@@ -58,6 +58,7 @@
 #include "mozilla/dom/HTMLDetailsElement.h"
 #include "mozilla/dom/HTMLDialogElement.h"
 #include "mozilla/dom/HTMLImageElement.h"
+#include "mozilla/dom/HTMLInputElement.h"
 #include "mozilla/dom/HTMLMediaElement.h"
 #include "mozilla/dom/HTMLSelectElement.h"
 #include "mozilla/dom/HTMLTemplateElement.h"
@@ -4585,6 +4586,12 @@ already_AddRefed<nsINode> nsINode::CloneAndAdopt(
         // because the animations clone code relies on the target (that is,
         // `clone`) being connected already.
         clone->AsElement()->CloneAnimationsFrom(*aNode->AsElement());
+
+        if (auto* input = HTMLInputElement::FromNode(aNode);
+            input && input->CreateShadowTreeBeforeLayoutIfNeeded()) {
+          nsLayoutUtils::PostRestyleEvent(input, RestyleHint::RestyleSubtree(),
+                                          nsChangeHint(0));
+        }
 
         // Clone the Shadow DOM
         ShadowRoot* originalShadowRoot = aNode->AsElement()->GetShadowRoot();
