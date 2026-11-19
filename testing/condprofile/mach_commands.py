@@ -117,5 +117,7 @@ def run(command_context, **kw):
             return 1
 
     from condprof.runner import run
+    from mozrunner.devices.android_device import prepend_adb_dir_to_path
 
+    prepend_adb_dir_to_path(command_context)
     run(**kw)

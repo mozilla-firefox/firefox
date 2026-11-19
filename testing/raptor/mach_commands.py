@@ -378,6 +378,7 @@ def run_raptor(command_context, **kwargs):
     if is_android:
         from mozrunner.devices.android_device import (
             InstallIntent,
+            prepend_adb_dir_to_path,
             verify_android_device,
         )
 
@@ -409,6 +410,8 @@ def run_raptor(command_context, **kwargs):
                 "****************************************************************************"
             )
             return 1
+
+        prepend_adb_dir_to_path(build_obj)
 
     # Remove mach global arguments from sys.argv to prevent them
     # from being consumed by raptor. Treat any item in sys.argv

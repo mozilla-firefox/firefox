@@ -84,8 +84,11 @@ def run_perftest(command_context, **kwargs):
             # can be picked)
             kwargs["flavor"] = "desktop-browser"
 
+    from mozrunner.devices.android_device import prepend_adb_dir_to_path
+
     from mozperftest.runner import run_tests
 
+    prepend_adb_dir_to_path(command_context)
     run_tests(command_context, kwargs, original_parser.get_user_args(kwargs))
 
     print("\nFirefox. Fast For Good.\n")
