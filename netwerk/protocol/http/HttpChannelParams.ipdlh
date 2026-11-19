@@ -15,6 +15,7 @@ using mozilla::net::NetAddr from "mozilla/net/DNS.h";
 using nsILoadInfo::CrossOriginOpenerPolicy from "nsILoadInfo.h";
 [RefCounted] using class nsIReferrerInfo from "nsIReferrerInfo.h";
 [RefCounted] using class nsITransportSecurityInfo from "nsITransportSecurityInfo.h";
+[RefCounted] using class nsIURI from "mozilla/ipc/URIUtils.h";
 using nsIRequest::TRRMode from "nsIRequest.h";
 using mozilla::net::TRRSkippedReason from "nsITRRSkipReason.h";
 using nsICacheInfoChannel::CacheDisposition from "nsICacheInfoChannel.h";
@@ -34,6 +35,9 @@ struct HttpChannelOnStartRequestArgs
   NetAddr peerAddr;
   ResourceTimingStructArgs timing;
   ParentLoadInfoForwarderArgs loadInfoForwarder;
+  // Only set for channels connected to an early hint preload, whose redirects
+  // were followed in the parent without the child being notified.
+  nullable nsIURI earlyHintResultPrincipalURI;
   nsresult channelStatus;
   TRRMode effectiveTRRMode;
   TRRSkippedReason trrSkipReason;
