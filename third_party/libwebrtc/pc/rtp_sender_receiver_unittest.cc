@@ -3188,4 +3188,44 @@ TEST_F(RtpSenderReceiverTest,
   EXPECT_EQ(result.error().type(), RTCErrorType::INTERNAL_ERROR);
 }
 
+TEST_F(RtpSenderReceiverTest,
+       AudioReceiverCreateSframeDecryptorFailsWhenStopped) {
+  bool owner_callback_called = false;
+  scoped_refptr<AudioRtpReceiver> receiver = make_ref_counted<AudioRtpReceiver>(
+      worker_thread_.get(), kAudioTrackId, std::vector<std::string>(),
+      /*enable_sframe_at_owner=*/[&owner_callback_called]() -> RTCError {
+        owner_callback_called = true;
+        return RTCError::OK();
+      });
+  receiver->Stop();
+
+  RTCErrorOr<scoped_refptr<SframeDecryptorInterface>> result =
+      receiver->CreateSframeDecryptorOrError(
+          SframeCipherSuite::kAes128GcmSha256_128, [](SframeDecryptError) {});
+
+  ASSERT_FALSE(result.ok());
+  EXPECT_EQ(result.error().type(), RTCErrorType::INVALID_STATE);
+  EXPECT_FALSE(owner_callback_called);
+}
+
+TEST_F(RtpSenderReceiverTest,
+       VideoReceiverCreateSframeDecryptorFailsWhenStopped) {
+  bool owner_callback_called = false;
+  scoped_refptr<VideoRtpReceiver> receiver = make_ref_counted<VideoRtpReceiver>(
+      worker_thread_.get(), kVideoTrackId, std::vector<std::string>(),
+      /*enable_sframe_at_owner=*/[&owner_callback_called]() -> RTCError {
+        owner_callback_called = true;
+        return RTCError::OK();
+      });
+  receiver->Stop();
+
+  RTCErrorOr<scoped_refptr<SframeDecryptorInterface>> result =
+      receiver->CreateSframeDecryptorOrError(
+          SframeCipherSuite::kAes128GcmSha256_128, [](SframeDecryptError) {});
+
+  ASSERT_FALSE(result.ok());
+  EXPECT_EQ(result.error().type(), RTCErrorType::INVALID_STATE);
+  EXPECT_FALSE(owner_callback_called);
+}
+
 }  // namespace webrtc

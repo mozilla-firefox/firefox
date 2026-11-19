@@ -86,6 +86,11 @@ MediaReceiveChannelInterface* RtpReceiverBase::media_channel() const {
   return media_channel_;
 }
 
+void RtpReceiverBase::Stop() {
+  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
+  stopped_ = true;
+}
+
 void RtpReceiverBase::set_media_channel(
     MediaReceiveChannelInterface* media_channel) {
   media_channel_ = media_channel;
@@ -211,6 +216,11 @@ RtpReceiverBase::CreateSframeDecryptorOrError(
     SframeCipherSuite cipher_suite,
     SframeDecryptErrorCallback error_callback) {
   RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
+
+  if (stopped_) {
+    return RTCError::InvalidState()
+           << "Cannot create an Sframe decryptor on a stopped receiver.";
+  }
 
   if (!enable_sframe_at_owner_) {
     return RTCError(RTCErrorType::INTERNAL_ERROR,

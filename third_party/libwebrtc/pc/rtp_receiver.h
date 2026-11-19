@@ -162,6 +162,9 @@ class RtpReceiverBase : public RtpReceiverInternal {
 
   MediaReceiveChannelInterface* media_channel() const override;
 
+  // Subclasses must call this from their override.
+  void Stop() override;
+
  protected:
   RtpReceiverBase(Thread* worker_thread,
                   absl::AnyInvocable<RTCError()> enable_sframe_at_owner,
@@ -202,6 +205,7 @@ class RtpReceiverBase : public RtpReceiverInternal {
       RTC_GUARDED_BY(&signaling_thread_checker_) = nullptr;
   bool received_first_packet_ RTC_GUARDED_BY(&signaling_thread_checker_) =
       false;
+  bool stopped_ RTC_GUARDED_BY(&signaling_thread_checker_) = false;
   absl::AnyInvocable<RTCError()> enable_sframe_at_owner_
       RTC_GUARDED_BY(signaling_thread_checker_);
 };
