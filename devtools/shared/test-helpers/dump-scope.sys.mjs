@@ -10,6 +10,7 @@ import { addDebuggerToGlobal } from "moz-src:///devtools/platform/jsdebugger.sys
 const hiddenSourceURLs = [
   "chrome://mochikit/content/browser-test.js",
   "chrome://mochikit/content/tests/SimpleTest/SimpleTest.js",
+  "chrome://remote/content/marionette/",
 ];
 
 const TYPED_ARRAY_CLASSES = [
@@ -226,7 +227,7 @@ function serializeFrame(frame) {
   const frameLocation = `${frameScriptUrl} @ ${lineNumber}:${columnNumber}`;
   dump(`[dump-scope] Serializing variables for frame: ${frameLocation}\n`);
 
-  if (hiddenSourceURLs.includes(frameScriptUrl)) {
+  if (hiddenSourceURLs.some(url => frameScriptUrl?.startsWith(url))) {
     return null;
   }
 
