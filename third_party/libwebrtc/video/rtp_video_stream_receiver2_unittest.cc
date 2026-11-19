@@ -1766,6 +1766,13 @@ class RtpVideoStreamReceiver2DependencyDescriptorTest
 
   void InjectPacketWith(const FrameDependencyStructure& stream_structure,
                         const DependencyDescriptor& dependency_descriptor) {
+    InjectPacketWith(stream_structure, dependency_descriptor,
+                     ++rtp_sequence_number_);
+  }
+
+  void InjectPacketWith(const FrameDependencyStructure& stream_structure,
+                        const DependencyDescriptor& dependency_descriptor,
+                        uint16_t sequence_number) {
     const std::vector<uint8_t> data = {0, 1, 2, 3, 4};
     RtpPacketReceived rtp_packet(&extension_map_);
     ASSERT_TRUE(rtp_packet.SetExtension<RtpDependencyDescriptorExtension>(
@@ -1775,7 +1782,7 @@ class RtpVideoStreamReceiver2DependencyDescriptorTest
     mock_on_complete_frame_callback_.AppendExpectedBitstream(data);
     rtp_packet.SetMarker(true);
     rtp_packet.SetPayloadType(payload_type_);
-    rtp_packet.SetSequenceNumber(++rtp_sequence_number_);
+    rtp_packet.SetSequenceNumber(sequence_number);
     rtp_video_stream_receiver_->OnRtpPacket(rtp_packet);
   }
 
@@ -1784,6 +1791,60 @@ class RtpVideoStreamReceiver2DependencyDescriptorTest
   RtpHeaderExtensionMap extension_map_;
   uint16_t rtp_sequence_number_ = 321;
 };
+
+TEST_F(RtpVideoStreamReceiver2DependencyDescriptorTest,
+       DuplicatePacketBeforeFrameDecodedWithLossNotificationEnabled) {
+  config_.rtp.lntf.enabled = true;
+  rtp_video_stream_receiver_->SetLossNotificationEnabled(true);
+  FrameDependencyStructure stream_structure = CreateStreamStructure();
+
+  DependencyDescriptor keyframe_descriptor;
+  keyframe_descriptor.attached_structure =
+      std::make_unique<FrameDependencyStructure>(stream_structure);
+  keyframe_descriptor.frame_dependencies = stream_structure.templates[0];
+  keyframe_descriptor.frame_number = 1;
+
+  EXPECT_CALL(mock_on_complete_frame_callback_, DoOnCompleteFrame).Times(2);
+  InjectPacketWith(stream_structure, keyframe_descriptor,
+                   /*sequence_number=*/100);
+  // Re-deliver the exact same RTP packet before FrameDecoded() clears
+  // PacketBuffer. PacketBuffer re-assembles the frame with the same frame ID.
+  InjectPacketWith(stream_structure, keyframe_descriptor,
+                   /*sequence_number=*/100);
+}
+
+TEST_F(RtpVideoStreamReceiver2DependencyDescriptorTest,
+       RepeatedFrameNumberAcrossDistinctPacketsWithLossNotificationEnabled) {
+  config_.rtp.lntf.enabled = true;
+  rtp_video_stream_receiver_->SetLossNotificationEnabled(true);
+  FrameDependencyStructure stream_structure = CreateStreamStructure();
+
+  DependencyDescriptor keyframe_descriptor;
+  keyframe_descriptor.attached_structure =
+      std::make_unique<FrameDependencyStructure>(stream_structure);
+  keyframe_descriptor.frame_dependencies = stream_structure.templates[0];
+  keyframe_descriptor.frame_number = 1;
+
+  EXPECT_CALL(mock_on_complete_frame_callback_, DoOnCompleteFrame).Times(3);
+  InjectPacketWith(stream_structure, keyframe_descriptor,
+                   /*sequence_number=*/100);
+  // Distinct RTP sequence number reusing the same frame_number.
+  InjectPacketWith(stream_structure, keyframe_descriptor,
+                   /*sequence_number=*/101);
+
+  // Inject a delta frame after a sequence number gap and verify that LNTF
+  // preserves the first assembled frame's sequence number (100).
+  DependencyDescriptor delta_descriptor;
+  delta_descriptor.frame_dependencies = stream_structure.templates[1];
+  delta_descriptor.frame_number = 2;
+  InjectPacketWith(stream_structure, delta_descriptor,
+                   /*sequence_number=*/105);
+
+  EXPECT_EQ(rtcp_packet_parser_.loss_notification()->num_packets(), 1);
+  EXPECT_EQ(rtcp_packet_parser_.loss_notification()->last_decoded(), 100u);
+  EXPECT_EQ(rtcp_packet_parser_.loss_notification()->last_received(), 105u);
+  EXPECT_TRUE(rtcp_packet_parser_.loss_notification()->decodability_flag());
+}
 
 TEST_F(RtpVideoStreamReceiver2DependencyDescriptorTest, UnwrapsFrameId) {
   FrameDependencyStructure stream_structure = CreateStreamStructure();

@@ -126,9 +126,12 @@ void LossNotificationController::OnAssembledFrame(
     return;
   }
 
+  if (!decodable_frame_ids_.insert(frame_id).second) {
+    // Ignore repeated frames (e.g. duplicate packets reassembled before decode
+    // cleanup, or a buggy/malicious remote reusing a frame ID).
+    return;
+  }
   last_decodable_non_discardable_.emplace(first_seq_num);
-  const auto it = decodable_frame_ids_.insert(frame_id);
-  RTC_DCHECK(it.second);
 }
 
 void LossNotificationController::DiscardOldInformation() {

@@ -368,6 +368,23 @@ TEST_F(LossNotificationControllerTest,
   EXPECT_FALSE(LastLossNotification());
 }
 
+TEST_F(LossNotificationControllerTest, RepeatedAssembledFrameIsIgnored) {
+  OnReceivedPacket(CreatePacket(true, true, 100, 0, true));
+  OnAssembledFrame(100, 0, false);
+
+  // Duplicate reassembly of the same packet before decode cleanup.
+  OnAssembledFrame(100, 0, false);
+
+  // Buggy/malicious remote reusing frame ID 0 on a new RTP sequence number.
+  OnReceivedPacket(CreatePacket(true, true, 101, 0, true));
+  OnAssembledFrame(101, 0, false);
+
+  // Subsequent loss notification still reports the original frame's sequence
+  // number (100) and treats frame ID 0 as decodable.
+  OnReceivedPacket(CreatePacket(true, true, 105, 1, false, {0}));
+  ExpectLossNotification(100, 105, true);
+}
+
 class LossNotificationControllerTestDecodabilityFlag
     : public LossNotificationControllerBaseTest {
  protected:
