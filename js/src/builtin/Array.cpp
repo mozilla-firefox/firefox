@@ -557,6 +557,45 @@ static bool DeletePropertiesOrThrow(JSContext* cx, HandleObject obj,
   return true;
 }
 
+// Returns true if TrimDenseElementsForNewLength can be used to remove dense
+// elements instead of the generic delete path. The caller is responsible for
+// handling sparse elements that have to be removed.
+static MOZ_ALWAYS_INLINE bool CanFastTrimDenseElementsForNewLength(
+    ArrayObject* arr) {
+  MOZ_ASSERT(arr->lengthIsWritable());
+
+  // If there might be an active for-in iterator for this array we have to use
+  // the generic code path because it supports suppressing deleted properties.
+  // Keys deleted before being reached during the iteration must not be visited.
+  if (arr->denseElementsMaybeInIteration()) {
+    return false;
+  }
+
+  // Sealed elements are non-configurable and shouldn't be removed.
+  return !arr->denseElementsAreSealed();
+}
+
+static MOZ_ALWAYS_INLINE void TrimDenseElementsForNewLength(JSContext* cx,
+                                                            ArrayObject* arr,
+                                                            uint32_t newLen) {
+  MOZ_ASSERT(CanFastTrimDenseElementsForNewLength(arr));
+  MOZ_ASSERT(newLen < arr->length());
+
+  uint32_t oldCapacity = arr->getDenseCapacity();
+  uint32_t oldInitializedLength = arr->getDenseInitializedLength();
+  MOZ_ASSERT(oldCapacity >= oldInitializedLength);
+  if (oldInitializedLength > newLen) {
+    arr->setDenseInitializedLengthMaybeNonExtensible(cx, newLen);
+  }
+  if (oldCapacity > newLen) {
+    if (arr->isExtensible()) {
+      arr->shrinkElements(cx, newLen);
+    } else {
+      MOZ_ASSERT(arr->getDenseInitializedLength() == arr->getDenseCapacity());
+    }
+  }
+}
+
 static bool SetArrayLengthProperty(JSContext* cx, Handle<ArrayObject*> obj,
                                    HandleValue value) {
   RootedId id(cx, NameToId(cx->names().length));
@@ -619,16 +658,7 @@ static bool TryFastDeleteElementsForNewLength(JSContext* cx,
                                               uint32_t newLen, bool* success) {
   MOZ_ASSERT(newLen < arr->length());
 
-  // If there might be an active for-in iterator for this array we have to use
-  // the generic code path because it supports suppressing deleted properties.
-  // Keys deleted before being reached during the iteration must not be visited.
-  if (arr->denseElementsMaybeInIteration()) {
-    *success = false;
-    return true;
-  }
-
-  // Sealed elements are non-configurable and shouldn't be removed.
-  if (arr->denseElementsAreSealed()) {
+  if (!CanFastTrimDenseElementsForNewLength(arr)) {
     *success = false;
     return true;
   }
@@ -675,21 +705,7 @@ static bool TryFastDeleteElementsForNewLength(JSContext* cx,
     }
   }
 
-  // Remove dense elements.
-  uint32_t oldCapacity = arr->getDenseCapacity();
-  uint32_t oldInitializedLength = arr->getDenseInitializedLength();
-  MOZ_ASSERT(oldCapacity >= oldInitializedLength);
-  if (oldInitializedLength > newLen) {
-    arr->setDenseInitializedLengthMaybeNonExtensible(cx, newLen);
-  }
-  if (oldCapacity > newLen) {
-    if (arr->isExtensible()) {
-      arr->shrinkElements(cx, newLen);
-    } else {
-      MOZ_ASSERT(arr->getDenseInitializedLength() == arr->getDenseCapacity());
-    }
-  }
-
+  TrimDenseElementsForNewLength(cx, arr, newLen);
   *success = true;
   return true;
 }
