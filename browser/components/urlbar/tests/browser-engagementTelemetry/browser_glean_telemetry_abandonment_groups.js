@@ -235,6 +235,7 @@ add_task(async function suggest() {
         },
       ]),
   });
+  await SpecialPowers.popPrefEnv();
 });
 
 add_task(async function about_page() {

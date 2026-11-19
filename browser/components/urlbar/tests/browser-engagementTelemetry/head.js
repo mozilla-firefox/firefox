@@ -198,8 +198,9 @@ async function doTest(testFn) {
   await PlacesTestUtils.clearInputHistory();
   await UrlbarTestUtils.formHistory.clear(window);
   await QuickSuggest.clearDismissedSuggestions();
-  await updateTopSites(() => true);
+  let cleanupTopSites = await updateTopSites(() => true);
   await BrowserTestUtils.withNewTab(gBrowser, testFn);
+  await cleanupTopSites();
 }
 
 async function initGroupTest() {

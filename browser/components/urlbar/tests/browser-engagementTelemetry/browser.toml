@@ -79,9 +79,6 @@ skip-if = [
 
 ["browser_glean_telemetry_engagement_selected_result.js"]
 support-files = ["../../../search/test/browser/trendingSuggestionEngine.sjs"]
-skip-if = [
-  "verify", # Bug 1852375 - MerinoTestUtils.initWeather() doesn't play well with pushPrefEnv()
-]
 
 ["browser_glean_telemetry_engagement_selected_result_action.js"]
 

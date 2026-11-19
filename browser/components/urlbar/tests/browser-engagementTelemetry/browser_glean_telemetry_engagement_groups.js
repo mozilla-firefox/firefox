@@ -239,6 +239,7 @@ add_task(async function suggest() {
         },
       ]),
   });
+  await SpecialPowers.popPrefEnv();
 });
 
 add_task(async function temporal() {
@@ -304,13 +305,15 @@ add_task(async function always_empty_if_drop_go() {
 
   await doTest(async () => {
     // Open the results view once.
-    await addTopSites("https://example.com/");
+    let cleanupTopSites = await addTopSites("https://example.com/");
     await showResultByArrowDown();
     await UrlbarTestUtils.promisePopupClose(window);
 
     await doDropAndGo("example.com");
 
     await assertEngagementTelemetry(expected);
+
+    await cleanupTopSites();
   });
 });
 
@@ -332,13 +335,15 @@ add_task(async function always_empty_if_paste_go() {
 
   await doTest(async () => {
     // Open the results view once.
-    await addTopSites("https://example.com/");
+    let cleanupTopSites = await addTopSites("https://example.com/");
     await showResultByArrowDown();
     await UrlbarTestUtils.promisePopupClose(window);
 
     await doPasteAndGo("example.com");
 
     await assertEngagementTelemetry(expected);
+
+    await cleanupTopSites();
   });
 });
 
@@ -365,6 +370,7 @@ add_task(async function actions_search_mode() {
 
     await assertEngagementTelemetry(expected);
   });
+  await SpecialPowers.popPrefEnv();
 });
 
 add_task(async function history_semantic() {

@@ -16,13 +16,15 @@ ChromeUtils.defineESModuleGetters(this, {
 
 async function doTopsitesTest({ trigger, assert }) {
   await doTest(async () => {
-    await addTopSites("https://example.com/");
+    let cleanupTopSites = await addTopSites("https://example.com/");
 
     await showResultByArrowDown();
     await selectRowByURL("https://example.com/");
 
     await trigger();
     await assert();
+
+    await cleanupTopSites();
   });
 }
 
@@ -79,7 +81,7 @@ async function doTopsitesSearchTest({ trigger, assert }) {
     };
     NewTabUtils.pinnedLinks.pin(siteToPin, 0);
 
-    await updateTopSites(sites => {
+    let cleanupTopSites = await updateTopSites(sites => {
       return sites && sites[0] && sites[0].url == "https://example.com";
     }, true);
 
@@ -114,6 +116,7 @@ async function doTopsitesSearchTest({ trigger, assert }) {
       "CUSTOM_SEARCH_SHORTCUTS values"
     );
     sandbox.restore();
+    await cleanupTopSites();
     Services.prefs.clearUserPref("browser.newtabpage.pinned");
     NewTabUtils.pinnedLinks.resetCache();
     await extension.unload();
@@ -131,13 +134,15 @@ async function doTypedTest({ trigger, assert }) {
 
 async function doTypedWithResultsPopupTest({ trigger, assert }) {
   await doTest(async () => {
-    await addTopSites("https://example.org/");
+    let cleanupTopSites = await addTopSites("https://example.org/");
     await showResultByArrowDown();
     EventUtils.synthesizeKey("x");
     await UrlbarTestUtils.promiseSearchComplete(window);
 
     await trigger();
     await assert();
+
+    await cleanupTopSites();
   });
 }
 
@@ -152,12 +157,14 @@ async function doPastedTest({ trigger, assert }) {
 
 async function doPastedWithResultsPopupTest({ trigger, assert }) {
   await doTest(async () => {
-    await addTopSites("https://example.org/");
+    let cleanupTopSites = await addTopSites("https://example.org/");
     await showResultByArrowDown();
     await doPaste("x");
 
     await trigger();
     await assert();
+
+    await cleanupTopSites();
   });
 }
 
@@ -260,7 +267,7 @@ async function doPersistedSearchTermsRestartedRefinedTest({
 
   for (const { firstInput, secondInput, expected } of testData) {
     await doTest(async () => {
-      await addTopSites("https://example.com/");
+      let cleanupTopSites = await addTopSites("https://example.com/");
       await openPopup(firstInput);
       await doEnter();
 
@@ -276,6 +283,8 @@ async function doPersistedSearchTermsRestartedRefinedTest({
 
       await trigger();
       await assert(expected);
+
+      await cleanupTopSites();
     });
   }
 }

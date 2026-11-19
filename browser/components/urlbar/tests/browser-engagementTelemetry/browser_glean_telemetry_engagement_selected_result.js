@@ -287,6 +287,8 @@ add_task(async function selected_result_bookmark() {
         results: "search_engine,bookmark",
       },
     ]);
+
+    await SpecialPowers.popPrefEnv();
   });
 });
 
@@ -349,6 +351,8 @@ add_task(async function selected_result_bookmark_serp() {
         results: "search_engine,bookmark_serp",
       },
     ]);
+
+    await SpecialPowers.popPrefEnv();
   });
 });
 
@@ -382,6 +386,8 @@ add_task(async function selected_result_bookmark_adaptive_serp() {
         results: "search_engine,bookmark_adaptive_serp",
       },
     ]);
+
+    await SpecialPowers.popPrefEnv();
   });
 });
 
@@ -563,6 +569,10 @@ add_task(async function selected_result_url() {
 });
 
 add_task(async function selected_result_tab() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.suggest.searches", true]],
+  });
+
   const tab = BrowserTestUtils.addTab(gBrowser, "https://example.com/");
 
   await doTest(async () => {
@@ -587,7 +597,10 @@ add_task(async function selected_result_tab() {
 
 add_task(async function selected_result_tab_adaptive() {
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.urlbar.suggest.searches", false]],
+    set: [
+      ["browser.urlbar.suggest.searches", false],
+      ["browser.urlbar.autoFill", false],
+    ],
   });
 
   const tab = BrowserTestUtils.addTab(gBrowser, "https://example.com/");
@@ -595,12 +608,6 @@ add_task(async function selected_result_tab_adaptive() {
   await doTest(async () => {
     await PlacesTestUtils.addVisits("https://example.com/");
     await UrlbarUtils.addToInputHistory("https://example.com/", "exa");
-
-    // TODO - Bug 2011291: When this test is run in verify mode, it will
-    // regularly fail to select a switch to tab result. Adding a warm up
-    // "solves" the issue.
-    await openPopup("warmup");
-    await UrlbarTestUtils.promisePopupClose(window);
 
     await openPopup("exa");
     await selectRowByProvider("UrlbarProviderInputHistory");
@@ -626,7 +633,10 @@ add_task(async function selected_result_tab_adaptive() {
 
 add_task(async function selected_result_tab_adaptive_serp() {
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.urlbar.suggest.searches", false]],
+    set: [
+      ["browser.urlbar.suggest.searches", false],
+      ["browser.urlbar.autoFill", false],
+    ],
   });
 
   let defaultEngine = await SearchService.getDefault();
@@ -636,12 +646,6 @@ add_task(async function selected_result_tab_adaptive_serp() {
   await doTest(async () => {
     await PlacesTestUtils.addVisits(serpUrl);
     await UrlbarUtils.addToInputHistory(serpUrl, "test sea");
-
-    // TODO - Bug 2011291: When this test is run in verify mode, it will
-    // regularly fail to select a switch to tab result. Adding a warm up
-    // "solves" the issue.
-    await openPopup("warmup");
-    await UrlbarTestUtils.promisePopupClose(window);
 
     await openPopup("test sea");
     await selectRowByProvider("UrlbarProviderInputHistory");
@@ -668,7 +672,10 @@ add_task(async function selected_result_tab_adaptive_serp() {
 
 add_task(async function selected_result_tab_serp() {
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.urlbar.suggest.searches", false]],
+    set: [
+      ["browser.urlbar.suggest.searches", false],
+      ["browser.urlbar.autoFill", false],
+    ],
   });
 
   let defaultEngine = await SearchService.getDefault();
@@ -741,7 +748,10 @@ add_task(async function selected_result_addon() {
 
 add_task(async function selected_result_tab_to_search() {
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.urlbar.tabToSearch.onboard.interactionsLeft", 0]],
+    set: [
+      ["browser.urlbar.tabToSearch.onboard.interactionsLeft", 0],
+      ["browser.urlbar.secondaryActions.featureGate", false],
+    ],
   });
 
   await SearchTestUtils.installSearchExtension({
@@ -775,7 +785,7 @@ add_task(async function selected_result_tab_to_search() {
 
 add_task(async function selected_result_top_site() {
   await doTest(async () => {
-    await addTopSites("https://example.com/");
+    let cleanupTopSites = await addTopSites("https://example.com/");
     await showResultByArrowDown();
     await selectRowByURL("https://example.com/");
     await doEnter();
@@ -788,6 +798,8 @@ add_task(async function selected_result_top_site() {
         results: "top_site",
       },
     ]);
+
+    await cleanupTopSites();
   });
 });
 
@@ -1297,6 +1309,9 @@ add_task(async function selected_result_rust_adm_sponsored() {
 });
 
 add_task(async function selected_result_rust_adm_nonsponsored() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.secondaryActions.featureGate", false]],
+  });
   const cleanupQuickSuggest = await ensureQuickSuggestInit();
 
   await doTest(async () => {
@@ -1315,6 +1330,7 @@ add_task(async function selected_result_rust_adm_nonsponsored() {
   });
 
   await cleanupQuickSuggest();
+  await SpecialPowers.popPrefEnv();
 });
 
 add_task(async function selected_result_action() {

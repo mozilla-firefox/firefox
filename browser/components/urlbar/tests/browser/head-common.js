@@ -72,12 +72,14 @@ ChromeUtils.defineLazyGetter(this, "SearchTestUtils", () => {
  *
  * @param {string} url
  *   The URL to make a top site.
+ * @returns {Promise<Function>}
+ *   The cleanup function returned by updateTopSites().
  */
 async function addTopSites(url) {
   for (let i = 0; i < 5; i++) {
     await PlacesTestUtils.addVisits(url);
   }
-  await updateTopSites(sites => {
+  return updateTopSites(sites => {
     return sites && sites[0] && sites[0].url == url;
   });
 }
@@ -128,6 +130,9 @@ async function withHttpServer(
  *   A callback that returns true after Top Sites are successfully updated.
  * @param {boolean} searchShortcuts
  *   True if Top Sites search shortcuts should be enabled.
+ * @returns {Promise<Function>}
+ *   An async function popping the pref env this pushes. Call it before popping
+ *   any pref env pushed earlier.
  */
 async function updateTopSites(condition, searchShortcuts = false) {
   // Toggle the pref to clear the feed cache and force an update.
@@ -170,6 +175,9 @@ async function updateTopSites(condition, searchShortcuts = false) {
     );
     await feed?._latestRefreshPromise;
   }
+
+  // TODO Bug 2095218: callers outside browser-engagementTelemetry ignore this.
+  return () => SpecialPowers.popPrefEnv();
 }
 
 async function installPersistTestEngines(globalDefault = "Example") {

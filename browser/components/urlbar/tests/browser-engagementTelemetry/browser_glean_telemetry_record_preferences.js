@@ -32,6 +32,7 @@ add_task(async function prefMaxRichResults() {
     UrlbarPrefs.get("maxRichResults"),
     "Record prefMaxResults when the maxRichResults pref is updated"
   );
+  await SpecialPowers.popPrefEnv();
 });
 
 add_task(async function boolPref() {
@@ -74,6 +75,7 @@ add_task(async function boolPref() {
       UrlbarPrefs.get(pref),
       `Record ${green} when the ${pref} pref is updated`
     );
+    await SpecialPowers.popPrefEnv();
   }
 });
 

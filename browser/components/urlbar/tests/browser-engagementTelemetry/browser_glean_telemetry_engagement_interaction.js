@@ -42,11 +42,13 @@ add_task(async function dropped() {
   });
 
   await doTest(async () => {
-    await addTopSites("https://example.com/");
+    let cleanupTopSites = await addTopSites("https://example.com/");
     await showResultByArrowDown();
     await doDropAndGo("example.com");
 
     await assertEngagementTelemetry([{ interaction: "dropped" }]);
+
+    await cleanupTopSites();
   });
 });
 
@@ -68,11 +70,13 @@ add_task(async function pasted() {
   });
 
   await doTest(async () => {
-    await addTopSites("https://example.com/");
+    let cleanupTopSites = await addTopSites("https://example.com/");
     await showResultByArrowDown();
     await doPasteAndGo("www.example.com");
 
     await assertEngagementTelemetry([{ interaction: "pasted" }]);
+
+    await cleanupTopSites();
   });
 
   await doTest(async () => {

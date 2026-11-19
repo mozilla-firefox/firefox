@@ -170,6 +170,9 @@ async function doTailSearchSuggestTest({ trigger, assert }) {
 }
 
 async function doTopPickTest({ trigger, assert }) {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.suggest.searches", true]],
+  });
   const cleanupQuickSuggest = await ensureQuickSuggestInit({
     merinoSuggestions: [
       {
@@ -193,17 +196,20 @@ async function doTopPickTest({ trigger, assert }) {
   });
 
   await cleanupQuickSuggest();
+  await SpecialPowers.popPrefEnv();
 }
 
 async function doTopSiteTest({ trigger, assert }) {
   await doTest(async () => {
-    await addTopSites("https://example.com/");
+    let cleanupTopSites = await addTopSites("https://example.com/");
 
     await showResultByArrowDown();
     await selectRowByURL("https://example.com/");
 
     await trigger();
     await assert();
+
+    await cleanupTopSites();
   });
 }
 
@@ -476,6 +482,9 @@ async function doBookmarkSerpHistoryTest({ trigger, assert }) {
 }
 
 async function doTabAdaptiveTest({ trigger, assert }) {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.autoFill", false]],
+  });
   let visited = PlacesTestUtils.waitForNotification("page-visited", visits =>
     visits.some(({ url }) => url == "https://example.com/")
   );
@@ -494,6 +503,7 @@ async function doTabAdaptiveTest({ trigger, assert }) {
   });
 
   BrowserTestUtils.removeTab(tab);
+  await SpecialPowers.popPrefEnv();
 }
 
 async function doTabAdaptiveSerpHistoryTest({ trigger, assert }) {
@@ -520,6 +530,12 @@ async function doTabAdaptiveSerpHistoryTest({ trigger, assert }) {
 }
 
 async function doTabSerpHistoryTest({ trigger, assert }) {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.urlbar.autoFill", false],
+      ["browser.urlbar.maxHistoricalSearchSuggestions", 0],
+    ],
+  });
   let defaultEngine = await SearchService.getDefault();
   const searchUrl = defaultEngine.getSubmission("serp history", null).uri.spec;
   let visited = PlacesTestUtils.waitForNotification("page-visited", visits =>
@@ -537,6 +553,7 @@ async function doTabSerpHistoryTest({ trigger, assert }) {
   });
 
   BrowserTestUtils.removeTab(tab);
+  await SpecialPowers.popPrefEnv();
 }
 
 /**
