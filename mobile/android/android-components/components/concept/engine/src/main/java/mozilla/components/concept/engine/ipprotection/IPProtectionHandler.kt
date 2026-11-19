@@ -51,7 +51,7 @@ interface IPProtectionHandler {
     fun updateCountryList(onResult: (Throwable?) -> Unit = {})
 
     /** Initializes the proxy state machine. */
-    fun init()
+    fun init(signedOutAuth: SignedOutAuth = SignedOutAuth.None)
 
     /** Uninitializes the proxy state machine. */
     fun uninit()
@@ -71,6 +71,15 @@ interface IPProtectionHandler {
      * @param provider The [GpiProvider], or null to clear.
      */
     fun setGpiProvider(provider: GpiProvider?)
+
+    /** The auth providers the IP protection service uses while no account is signed in. */
+    enum class SignedOutAuth {
+        /** The service authenticates only with the signed-in account. */
+        None,
+
+        /** The service may authenticate with Google Play Integrity. */
+        Gpi,
+    }
 
     /**
      * Result of an enrollment attempt.

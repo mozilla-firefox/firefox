@@ -9,6 +9,7 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringDef;
 import androidx.annotation.UiThread;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -321,15 +322,44 @@ public class IPProtectionController {
             "GeckoView:IPProtection:GPI:RequestToken");
   }
 
+  /** The auth providers IP Protection uses while no account is signed in. */
+  @Retention(RetentionPolicy.SOURCE)
+  @StringDef(value = {SIGNED_OUT_AUTH_NONE, SIGNED_OUT_AUTH_GPI})
+  public @interface SignedOutAuth {}
+
+  /** IP Protection authenticates only with the signed-in account. */
+  public static final String SIGNED_OUT_AUTH_NONE = "none";
+
   /**
-   * Initializes the IP protection service.
+   * IP Protection may authenticate with Google Play Integrity.
+   *
+   * <p>Without a {@link GpiProvider}, the service uses the signed-in account until the app
+   * restarts.
+   */
+  public static final String SIGNED_OUT_AUTH_GPI = "gpi";
+
+  /**
+   * Initializes the IP protection service with {@link #SIGNED_OUT_AUTH_NONE}.
    *
    * @return A {@link GeckoResult} that resolves when initialization completes.
    */
   @HandlerThread
   public @NonNull GeckoResult<Void> init() {
+    return init(SIGNED_OUT_AUTH_NONE);
+  }
+
+  /**
+   * Initializes the IP protection service.
+   *
+   * @param signedOutAuth The {@link SignedOutAuth} to use.
+   * @return A {@link GeckoResult} that resolves when initialization completes.
+   */
+  @HandlerThread
+  public @NonNull GeckoResult<Void> init(final @NonNull @SignedOutAuth String signedOutAuth) {
     ThreadUtils.assertOnHandlerThread();
-    return EventDispatcher.getInstance().queryVoid("GeckoView:IPProtection:Init");
+    final GeckoBundle bundle = new GeckoBundle(1);
+    bundle.putString("signedOutAuth", signedOutAuth);
+    return EventDispatcher.getInstance().queryVoid("GeckoView:IPProtection:Init", bundle);
   }
 
   /**
@@ -419,8 +449,7 @@ public class IPProtectionController {
    * precondition is violated, the returned {@link GeckoResult} is rejected with {@link
    * IllegalStateException}.
    *
-   * <p>Requires {@link #init()} to have been called; otherwise the JS-side listeners that consume
-   * the event have not yet been registered.
+   * <p>Requires {@link #init(String)} to have been called; a state reported earlier is ignored.
    *
    * @param signedIn Whether the embedding app currently has a signed-in user.
    * @return A {@link GeckoResult} that resolves once the JS side has acknowledged the event, or
@@ -820,6 +849,8 @@ public class IPProtectionController {
             final GpiProvider gpiProvider = mGpiProvider;
             if (gpiProvider == null) {
               Log.w(LOGTAG, "Received " + event + " but no GPI provider is set");
+              EventDispatcher.getInstance()
+                  .dispatch("GeckoView:IPProtection:GPI:WarmUpFailed", null);
               break;
             }
             gpiProvider

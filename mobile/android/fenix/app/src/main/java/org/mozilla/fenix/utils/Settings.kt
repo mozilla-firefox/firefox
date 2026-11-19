@@ -2977,11 +2977,11 @@ class Settings(
             default = false,
         )
 
-    /** Forces GPI (Google Play Integrity) authentication for IPProtection, set through Secret Settings. */
+    /** Whether IPProtection uses GPI (Google Play Integrity) while signed out. */
     var ipProtectionUseGpi by
         booleanPreference(
             key = appContext.getPreferenceKey(R.string.pref_key_ip_protection_use_gpi),
-            default = false,
+            default = { FxNimbus.features.ipProtection.value().useGpiWhenSignedOut },
         )
 
     /** Indicates if the user has already toggled the VPN on. */

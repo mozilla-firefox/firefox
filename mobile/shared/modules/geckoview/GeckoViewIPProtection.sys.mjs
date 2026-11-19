@@ -10,6 +10,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   EventDispatcher: "resource://gre/modules/Messaging.sys.mjs",
   IPPAndroidAuthProvider:
     "moz-src:///toolkit/components/ipprotection/fxa/IPPAndroidAuthProvider.sys.mjs",
+  IPPAndroidSignInWatcher:
+    "moz-src:///toolkit/components/ipprotection/fxa/IPPAndroidSignInWatcher.sys.mjs",
   IPPAuthProvider:
     "moz-src:///toolkit/components/ipprotection/IPPAuthProvider.sys.mjs",
   IPPDummyAuthProvider:
@@ -36,6 +38,36 @@ function sendRequest(message, data) {
 const AUTH_PROVIDER_PREF = "toolkit.ipProtection.android.authProvider";
 
 let initialized = false;
+
+let signedOutAuth = "none";
+let isSignedIn = null;
+let gpiUnavailable = false;
+
+function resolveAuthProvider() {
+  if (Services.prefs.getCharPref(AUTH_PROVIDER_PREF, "") === "test") {
+    return lazy.IPPDummyAuthProvider;
+  }
+
+  if (signedOutAuth === "gpi" && isSignedIn === false && !gpiUnavailable) {
+    return lazy.IPPGpiAuthProvider;
+  }
+
+  return lazy.IPPAndroidAuthProvider;
+}
+
+function applyAuthProvider() {
+  const provider = resolveAuthProvider();
+  lazy.IPProtectionActivator.setAuthProvider(provider);
+
+  if (provider === lazy.IPPGpiAuthProvider) {
+    lazy.IPProtectionActivator.setFallbackAuthProvider(
+      lazy.IPPAndroidAuthProvider,
+      () => {
+        gpiUnavailable = true;
+      }
+    );
+  }
+}
 
 export const GeckoViewIPProtection = {
   // Events dispatched by components in toolkit/components/ipprotection.
@@ -96,26 +128,9 @@ export const GeckoViewIPProtection = {
             "IPProtectionServerlist:ListChanged",
             GeckoViewIPProtection
           );
-          let providerName = Services.prefs.getCharPref(AUTH_PROVIDER_PREF, "");
-          if (!providerName) {
-            providerName = aData?.isSignedIn ? "fxa" : "gpi";
-            Services.prefs.setCharPref(AUTH_PROVIDER_PREF, providerName);
-          }
-          if (providerName === "fxa") {
-            lazy.IPProtectionActivator.setAuthProvider(
-              lazy.IPPAndroidAuthProvider
-            );
-          } else if (providerName === "test") {
-            lazy.IPProtectionActivator.setAuthProvider(
-              lazy.IPPDummyAuthProvider
-            );
-          } else {
-            lazy.IPProtectionActivator.setAuthProvider(lazy.IPPGpiAuthProvider);
-            lazy.IPProtectionActivator.setFallbackAuthProvider(
-              lazy.IPPAndroidAuthProvider,
-              () => Services.prefs.setCharPref(AUTH_PROVIDER_PREF, "fxa")
-            );
-          }
+
+          signedOutAuth = aData?.signedOutAuth ?? "none";
+          applyAuthProvider();
           lazy.IPProtectionActivator.init();
         }
         aCallback.onSuccess();
@@ -142,6 +157,7 @@ export const GeckoViewIPProtection = {
           );
           lazy.IPProtectionActivator.uninit();
           lazy.IPProtectionActivator.removeHelpers();
+          isSignedIn = null;
 
           lazy.IPProtectionActivator.setAuthProvider(
             new lazy.IPPAuthProvider()
@@ -149,6 +165,40 @@ export const GeckoViewIPProtection = {
           lazy.IPPProxyManager.updateState();
         }
         aCallback.onSuccess();
+        break;
+      }
+      case "GeckoView:IPProtection:AuthStateChanged": {
+        if (!initialized) {
+          aCallback.onSuccess();
+          break;
+        }
+
+        isSignedIn = !!aData?.isSignedIn;
+
+        (async () => {
+          // Notify first so the FxA provider clears its cached entitlement.
+          if (!isSignedIn) {
+            lazy.IPPAndroidSignInWatcher.notifySignInStateChanged(false);
+          }
+
+          if (lazy.IPProtectionService.authProvider !== resolveAuthProvider()) {
+            lazy.IPProtectionActivator.uninit();
+            applyAuthProvider();
+            await lazy.IPProtectionActivator.init();
+          }
+
+          if (isSignedIn) {
+            lazy.IPPAndroidSignInWatcher.notifySignInStateChanged(true);
+          }
+        })()
+          .then(() => {
+            aCallback.onSuccess();
+          })
+          .catch(err => {
+            aCallback.onError(
+              typeof err === "string" ? err : (err?.message ?? "generic-error")
+            );
+          });
         break;
       }
       case "GeckoView:IPProtection:IPProtectionService:GetState": {

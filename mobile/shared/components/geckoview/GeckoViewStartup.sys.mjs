@@ -260,6 +260,7 @@ export class GeckoViewStartup {
             ged: [
               "GeckoView:IPProtection:Init",
               "GeckoView:IPProtection:Uninit",
+              "GeckoView:IPProtection:AuthStateChanged",
               "GeckoView:IPProtection:IPProtectionService:GetState",
               "GeckoView:IPProtection:IPPProxyManager:GetState",
               "GeckoView:IPProtection:Activate",

@@ -1104,7 +1104,6 @@ package org.mozilla.geckoview {
     method public boolean getGlobalPrivacyControl();
     method public boolean getGlobalPrivacyControlPrivateMode();
     method public boolean getInputAutoZoomEnabled();
-    method @Nullable public String getIpProtectionAuthProvider();
     method public boolean getIsolatedProcessEnabled();
     method public boolean getJavaScriptEnabled();
     method @NonNull public int getLargeKeepaliveFactor();
@@ -1166,7 +1165,6 @@ package org.mozilla.geckoview {
     method @NonNull public GeckoRuntimeSettings setGlMsaaLevel(int);
     method @NonNull public GeckoRuntimeSettings setGlobalPrivacyControl(boolean);
     method @NonNull public GeckoRuntimeSettings setInputAutoZoomEnabled(boolean);
-    method @NonNull public GeckoRuntimeSettings setIpProtectionAuthProvider(@NonNull String);
     method @NonNull public GeckoRuntimeSettings setJavaScriptEnabled(boolean);
     method @NonNull public GeckoRuntimeSettings setLargeKeepaliveFactor(int);
     method @NonNull public GeckoRuntimeSettings setLnaBlockTrackers(boolean);
@@ -1200,8 +1198,6 @@ package org.mozilla.geckoview {
     field public static final String FIREFOX_RELAY_OFFERED = "offered";
     field public static final int HTTPS_ONLY = 2;
     field public static final int HTTPS_ONLY_PRIVATE = 1;
-    field public static final String IP_PROTECTION_AUTH_PROVIDER_FXA = "fxa";
-    field public static final String IP_PROTECTION_AUTH_PROVIDER_GPI = "gpi";
     field public static final int STRATEGY_ISOLATE_EVERYTHING = 1;
     field public static final int STRATEGY_ISOLATE_HIGH_VALUE = 2;
     field public static final int STRATEGY_ISOLATE_NOTHING = 0;
@@ -1275,9 +1271,6 @@ package org.mozilla.geckoview {
   }
 
   @Retention(value=RetentionPolicy.SOURCE) public static interface GeckoRuntimeSettings.HttpsOnlyMode {
-  }
-
-  @Retention(value=RetentionPolicy.SOURCE) public static interface GeckoRuntimeSettings.IpProtectionAuthProvider {
   }
 
   @Retention(value=RetentionPolicy.SOURCE) public static interface GeckoRuntimeSettings.TrustedRecursiveResolverMode {
@@ -2295,6 +2288,7 @@ package org.mozilla.geckoview {
     method @HandlerThread @NonNull public GeckoResult<IPProtectionController.ProxyState> getProxyState();
     method @HandlerThread @NonNull public GeckoResult<Integer> getServiceState();
     method @HandlerThread @NonNull public GeckoResult<Void> init();
+    method @HandlerThread @NonNull public GeckoResult<Void> init(@NonNull String);
     method @NonNull @UiThread public GeckoResult<Void> notifySignInStateChanged(boolean);
     method @HandlerThread @NonNull public GeckoResult<Void> refreshUsage();
     method @UiThread public void setAuthProvider(@Nullable IPProtectionController.AuthProvider);
@@ -2305,6 +2299,8 @@ package org.mozilla.geckoview {
     field public static final int SERVICE_STATE_UNAUTHENTICATED = 2;
     field public static final int SERVICE_STATE_UNAVAILABLE = 1;
     field public static final int SERVICE_STATE_UNINITIALIZED = 0;
+    field public static final String SIGNED_OUT_AUTH_GPI = "gpi";
+    field public static final String SIGNED_OUT_AUTH_NONE = "none";
   }
 
   public static interface IPProtectionController.AuthProvider {
@@ -2381,6 +2377,9 @@ package org.mozilla.geckoview {
   }
 
   @Retention(value=RetentionPolicy.SOURCE) public static interface IPProtectionController.ServiceState {
+  }
+
+  @Retention(value=RetentionPolicy.SOURCE) public static interface IPProtectionController.SignedOutAuth {
   }
 
   public static class IPProtectionController.UsageInfo {

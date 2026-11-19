@@ -9,8 +9,10 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.concept.engine.Engine
+import mozilla.components.concept.engine.ipprotection.IPProtectionHandler
 import mozilla.components.concept.engine.ipprotection.ProxyState
 import mozilla.components.concept.engine.ipprotection.ServiceState
+import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.feature.ipprotection.storage.buildIPProtectionState
 import mozilla.components.feature.ipprotection.storage.buildStore
 import mozilla.components.feature.ipprotection.store.IPProtectionAction
@@ -55,7 +57,7 @@ class IPProtectionFeatureTest {
         }
 
     @Test
-    fun `GIVEN the account manager reports Authenticated before WarmingUp WHEN the service starts unauthenticated THEN it is told the user is signed in`() =
+    fun `GIVEN the account manager reports Authenticated before WarmingUp WHEN the user becomes eligible THEN it is told the user is signed in`() =
         runTest(testDispatcher) {
             val (store, _) = buildStore(buildIPProtectionState(accountStatus = AccountStatus.Uninitialized))
             val handler = startFeature(store)
@@ -65,13 +67,72 @@ class IPProtectionFeatureTest {
             testScheduler.advanceUntilIdle()
             store.dispatch(IPProtectionAction.EligibilityAction.EligibilityChanged(EligibilityStatus.Eligible))
             testScheduler.advanceUntilIdle()
-            store.dispatch(IPProtectionAction.ServiceAction.ServiceStateChanged(ServiceState.Unauthenticated))
-            testScheduler.advanceUntilIdle()
 
             assertEquals(
                 listOf(FakeIPProtectionHandler.Call.NotifyAccountStatus(true)),
                 handler.calls.filterIsInstance<FakeIPProtectionHandler.Call.NotifyAccountStatus>(),
             )
+        }
+
+    @Test
+    fun `GIVEN an account status from before the user is eligible WHEN the user becomes eligible THEN it is told whether the user is signed in`() =
+        runTest(testDispatcher) {
+            data class Case(
+                val accountStatus: AccountStatus,
+                val signedOutAuth: IPProtectionHandler.SignedOutAuth,
+                val hasAccount: Boolean,
+                val signedIn: Boolean,
+            )
+            listOf(
+                    Case(
+                        AccountStatus.NoAccount,
+                        IPProtectionHandler.SignedOutAuth.None,
+                        hasAccount = false,
+                        signedIn = false,
+                    ),
+                    Case(
+                        AccountStatus.AuthFailed,
+                        IPProtectionHandler.SignedOutAuth.None,
+                        hasAccount = false,
+                        signedIn = false,
+                    ),
+                    Case(
+                        AccountStatus.AwaitingEnrollment,
+                        IPProtectionHandler.SignedOutAuth.None,
+                        hasAccount = true,
+                        signedIn = true,
+                    ),
+                    Case(
+                        AccountStatus.TryAgain,
+                        IPProtectionHandler.SignedOutAuth.None,
+                        hasAccount = true,
+                        signedIn = true,
+                    ),
+                    Case(
+                        AccountStatus.NeedsAuthorization,
+                        IPProtectionHandler.SignedOutAuth.Gpi,
+                        hasAccount = true,
+                        signedIn = true,
+                    ),
+                )
+                .forEach { case ->
+                    val (store, _) = buildStore(buildIPProtectionState(accountStatus = case.accountStatus))
+                    val handler =
+                        startFeature(
+                            store,
+                            signedOutAuth = case.signedOutAuth,
+                            accountManager = accountManager(case.hasAccount),
+                        )
+
+                    store.dispatch(IPProtectionAction.EligibilityAction.EligibilityChanged(EligibilityStatus.Eligible))
+                    testScheduler.advanceUntilIdle()
+
+                    assertEquals(
+                        "$case",
+                        listOf(FakeIPProtectionHandler.Call.NotifyAccountStatus(case.signedIn)),
+                        handler.calls.filterIsInstance<FakeIPProtectionHandler.Call.NotifyAccountStatus>(),
+                    )
+                }
         }
 
     @Test
@@ -100,9 +161,83 @@ class IPProtectionFeatureTest {
             )
         }
 
+    @Test
+    fun `GIVEN the feature is created with GPI for signed-out users WHEN the user is eligible THEN the engine is initialized with GPI for signed-out users`() =
+        runTest(testDispatcher) {
+            val (store, _) = buildStore(buildIPProtectionState(eligibilityStatus = EligibilityStatus.Eligible))
+
+            val handler = startFeature(store, signedOutAuth = IPProtectionHandler.SignedOutAuth.Gpi)
+
+            assertEquals(
+                listOf(FakeIPProtectionHandler.Call.Init(IPProtectionHandler.SignedOutAuth.Gpi)),
+                handler.calls.filterIsInstance<FakeIPProtectionHandler.Call.Init>(),
+            )
+        }
+
+    @Test
+    fun `GIVEN GPI is allowed while signed out WHEN the account needs authorization or authentication THEN the engine is told whether an account is signed in`() =
+        runTest(testDispatcher) {
+            listOf(AccountStatus.NeedsAuthorization, AccountStatus.NeedsAuthentication).forEach { accountStatus ->
+                listOf(true, false).forEach { signedIn ->
+                    val (store, _) =
+                        buildStore(
+                            buildIPProtectionState(
+                                accountStatus = AccountStatus.Uninitialized,
+                                eligibilityStatus = EligibilityStatus.Eligible,
+                            )
+                        )
+                    val handler =
+                        startFeature(
+                            store,
+                            signedOutAuth = IPProtectionHandler.SignedOutAuth.Gpi,
+                            accountManager = accountManager(signedIn),
+                        )
+
+                    store.dispatch(IPProtectionAction.AccountAction.AccountStateChanged(accountStatus))
+                    testScheduler.advanceUntilIdle()
+
+                    assertEquals(
+                        "$accountStatus with signedIn=$signedIn",
+                        listOf(FakeIPProtectionHandler.Call.NotifyAccountStatus(signedIn)),
+                        handler.calls.filterIsInstance<FakeIPProtectionHandler.Call.NotifyAccountStatus>(),
+                    )
+                }
+            }
+        }
+
+    @Test
+    fun `GIVEN GPI is not allowed while signed out WHEN a signed-in account needs authorization or authentication THEN the engine is not told about it`() =
+        runTest(testDispatcher) {
+            listOf(AccountStatus.NeedsAuthorization, AccountStatus.NeedsAuthentication).forEach { accountStatus ->
+                val (store, _) =
+                    buildStore(
+                        buildIPProtectionState(
+                            accountStatus = AccountStatus.Uninitialized,
+                            eligibilityStatus = EligibilityStatus.Eligible,
+                        )
+                    )
+                val handler = startFeature(store, accountManager = accountManager(signedIn = true))
+
+                store.dispatch(IPProtectionAction.AccountAction.AccountStateChanged(accountStatus))
+                testScheduler.advanceUntilIdle()
+
+                assertEquals(
+                    "$accountStatus",
+                    emptyList<FakeIPProtectionHandler.Call.NotifyAccountStatus>(),
+                    handler.calls.filterIsInstance<FakeIPProtectionHandler.Call.NotifyAccountStatus>(),
+                )
+            }
+        }
+
+    private fun accountManager(signedIn: Boolean): FxaAccountManager = mock {
+        whenever(authenticatedAccount()).thenReturn(if (signedIn) mock<OAuthAccount>() else null)
+    }
+
     private fun TestScope.startFeature(
         store: IPProtectionStore,
         engineMiddleware: IPProtectionEngineMiddleware = IPProtectionEngineMiddleware(scope = this),
+        signedOutAuth: IPProtectionHandler.SignedOutAuth = IPProtectionHandler.SignedOutAuth.None,
+        accountManager: FxaAccountManager = mock(),
     ): FakeIPProtectionHandler {
         val handler = FakeIPProtectionHandler()
         val engine: Engine = mock { whenever(registerIPProtectionDelegate(any())).thenReturn(handler) }
@@ -110,8 +245,9 @@ class IPProtectionFeatureTest {
         IPProtectionFeature(
                 store = store,
                 engine = engine,
-                accountManager = mock<FxaAccountManager>(),
+                accountManager = accountManager,
                 engineMiddleware = engineMiddleware,
+                signedOutAuth = signedOutAuth,
                 mainDispatcher = testDispatcher,
             )
             .initialize()

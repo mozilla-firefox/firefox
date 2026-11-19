@@ -89,8 +89,8 @@ internal class FakeIPProtectionHandler(
         onResult(countryListResult)
     }
 
-    override fun init() {
-        calls += Call.Init
+    override fun init(signedOutAuth: IPProtectionHandler.SignedOutAuth) {
+        calls += Call.Init(signedOutAuth)
     }
 
     override fun uninit() {
@@ -123,7 +123,7 @@ internal class FakeIPProtectionHandler(
 
         data object UpdateCountryList : Call
 
-        data object Init : Call
+        data class Init(val signedOutAuth: IPProtectionHandler.SignedOutAuth) : Call
 
         data object Uninit : Call
     }
