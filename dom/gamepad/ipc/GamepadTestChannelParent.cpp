@@ -42,7 +42,7 @@ void GamepadTestChannelParent::AddGamepadToPlatformService(
   nsCString gamepadID;
   LossyCopyUTF16toASCII(a.id(), gamepadID);
   GamepadHandle handle = service->AddGamepad(
-      gamepadID.get(), static_cast<GamepadMappingType>(a.mapping()), a.hand(),
+      gamepadID.get(), static_cast<GamepadMappingType>(a.mapping()),
       a.num_buttons(), a.num_axes(), a.num_haptics(), a.num_lights(),
       a.num_touches());
 

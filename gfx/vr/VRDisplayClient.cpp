@@ -471,21 +471,12 @@ void VRDisplayClient::FireGamepadEvents() {
     if ((lastState.controllerName[0] == '\0' || !existing) &&
         (state.numButtons > 0 || state.numAxes > 0)) {
       dom::GamepadAdded info(NS_ConvertUTF8toUTF16(state.controllerName.data()),
-                             dom::GamepadMappingType::_empty, state.hand,
-                             state.numButtons, state.numAxes, state.numHaptics,
-                             0, 0);
+                             dom::GamepadMappingType::_empty, state.numButtons,
+                             state.numAxes, state.numHaptics, 0, 0);
       dom::GamepadChangeEventBody body(info);
       dom::GamepadChangeEvent event(gamepadHandle, body);
       gamepadManager->Update(event);
       bIsNew = true;
-    }
-
-    // Send events for handedness changes
-    if (state.hand != lastState.hand) {
-      dom::GamepadHandInformation info(state.hand);
-      dom::GamepadChangeEventBody body(info);
-      dom::GamepadChangeEvent event(gamepadHandle, body);
-      gamepadManager->Update(event);
     }
 
     // Send events for axis value changes

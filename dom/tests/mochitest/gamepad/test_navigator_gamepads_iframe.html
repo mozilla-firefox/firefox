@@ -51,7 +51,6 @@ async function startTest() {
   // Add a gamepad
   internal_index1 = await GamepadService.addGamepad("test gamepad 1", // id
                      GamepadService.standardMapping,
-                     GamepadService.noHand,
                      4, // buttons
                      2,
                      0,
@@ -73,7 +72,6 @@ async function check_first_gamepad(e) {
   // Add a second gamepad, should automatically show up.
   internal_index2 = await GamepadService.addGamepad("test gamepad 2", // id
                      GamepadService.standardMapping,
-                     GamepadService.noHand,
                      4, // buttons
                      2,
                      0,

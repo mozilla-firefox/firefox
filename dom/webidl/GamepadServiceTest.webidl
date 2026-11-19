@@ -8,14 +8,10 @@ interface GamepadServiceTest
 {
   readonly attribute GamepadMappingType noMapping;
   readonly attribute GamepadMappingType standardMapping;
-  readonly attribute GamepadHand noHand;
-  readonly attribute GamepadHand leftHand;
-  readonly attribute GamepadHand rightHand;
 
   [NewObject]
   Promise<unsigned long> addGamepad(DOMString id,
                                     GamepadMappingType mapping,
-                                    GamepadHand hand,
                                     unsigned long numButtons,
                                     unsigned long numAxes,
                                     unsigned long numHaptics,

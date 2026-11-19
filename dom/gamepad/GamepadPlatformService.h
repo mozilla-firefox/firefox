@@ -69,9 +69,8 @@ class GamepadPlatformService final {
 
   // Add a gamepad to the list of known gamepads, and return its handle.
   GamepadHandle AddGamepad(const char* aID, GamepadMappingType aMapping,
-                           GamepadHand aHand, uint32_t aNumButtons,
-                           uint32_t aNumAxes, uint32_t aNumHaptics,
-                           uint32_t aNumLightIndicator,
+                           uint32_t aNumButtons, uint32_t aNumAxes,
+                           uint32_t aNumHaptics, uint32_t aNumLightIndicator,
                            uint32_t aNumTouchEvents) MOZ_EXCLUDES(mMutex);
   // Remove the gamepad at |aHandle| from the list of known gamepads.
   void RemoveGamepad(GamepadHandle aHandle) MOZ_EXCLUDES(mMutex);
