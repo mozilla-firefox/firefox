@@ -7,7 +7,6 @@
 
 #include "mozilla/dom/GamepadBinding.h"
 #include "mozilla/dom/GamepadLightIndicator.h"
-#include "mozilla/dom/GamepadPoseState.h"
 #include "mozilla/dom/GamepadTouchState.h"
 
 namespace mozilla::dom {
