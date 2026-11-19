@@ -4369,6 +4369,36 @@ TEST_F(WebRtcSdpTest, DeserializeMsidAttributeWithoutAppDataDuplicate) {
   EXPECT_NE(stream.id, "");
 }
 
+// Tests that with a=msid signaling all SSRCs of an m= section end up in a
+// single StreamParams, and that a track id is generated when a=msid has no
+// appdata.
+TEST_F(WebRtcSdpTest, DeserializeMsidAttributeWithoutAppDataWithSsrcs) {
+  std::string sdp =
+      "v=0\r\n"
+      "o=- 18446744069414584320 18446462598732840960 IN IP4 127.0.0.1\r\n"
+      "s=-\r\n"
+      "t=0 0\r\n"
+      "m=video 9 RTP/SAVPF 96\r\n"
+      "c=IN IP4 0.0.0.0\r\n"
+      "a=rtpmap:96 VP8/90000\r\n"
+      "a=msid:stream_id\r\n"
+      "a=ssrc-group:FID 1 2\r\n"
+      "a=ssrc:1 cname:stream_cname\r\n"
+      "a=ssrc:2 cname:stream_cname\r\n";
+
+  std::unique_ptr<SessionDescriptionInterface> jdesc_output =
+      SdpDeserialize(sdp);
+  ASSERT_THAT(jdesc_output, NotNull());
+  const StreamParamsVec& streams =
+      jdesc_output->description()->contents()[0].media_description()->streams();
+  ASSERT_THAT(streams, SizeIs(1));
+  EXPECT_THAT(streams[0].ssrcs, ElementsAre(1u, 2u));
+  EXPECT_EQ(streams[0].cname, "stream_cname");
+  EXPECT_THAT(streams[0].stream_ids(), ElementsAre("stream_id"));
+  // Track id is randomly generated.
+  EXPECT_NE(streams[0].id, "");
+}
+
 TEST_F(WebRtcSdpTest, DeserializeMsidAttributeWithoutAppDataMixed) {
   std::string sdp =
       "v=0\r\n"

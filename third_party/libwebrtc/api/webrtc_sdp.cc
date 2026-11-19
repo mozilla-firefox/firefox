@@ -16,10 +16,8 @@
 #include <climits>
 #include <cstddef>
 #include <cstdint>
-#include <map>
 #include <memory>
 #include <optional>
-#include <set>
 #include <span>
 #include <string>
 #include <utility>
@@ -538,6 +536,27 @@ void CreateTracksFromSsrcInfos(const SsrcInfoVec& ssrc_infos,
                                StreamParamsVec* tracks,
                                int msid_signaling) {
   RTC_DCHECK(tracks);
+  if (msid_signaling & kMsidSignalingMediaSection) {
+    // Unified Plan SDP msid signaling: all SSRCs in an m= section belong to a
+    // single StreamParams track.
+    RTC_DCHECK(!ssrc_infos.empty());
+    RTC_DCHECK(tracks->empty());
+    StreamParams track;
+    for (const SsrcInfo& ssrc_info : ssrc_infos) {
+      if (ssrc_info.cname.empty()) {
+        RTC_LOG(LS_WARNING)
+            << "CNAME attribute missing for SSRC " << ssrc_info.ssrc_id;
+      }
+      track.add_ssrc(ssrc_info.ssrc_id);
+      track.cname = ssrc_info.cname;
+    }
+    track.set_stream_ids(msid_stream_ids);
+    track.id = msid_track_id.empty() ? CreateRandomString(8)
+                                     : std::string(msid_track_id);
+    tracks->push_back(std::move(track));
+    return;
+  }
+
   for (const SsrcInfo& ssrc_info : ssrc_infos) {
     // According to https://tools.ietf.org/html/rfc5576#section-6.1, the CNAME
     // attribute is mandatory, but we relax that restriction.
@@ -547,11 +566,7 @@ void CreateTracksFromSsrcInfos(const SsrcInfoVec& ssrc_infos,
     }
     std::vector<std::string> stream_ids;
     std::string track_id;
-    if (msid_signaling & kMsidSignalingMediaSection) {
-      // This is the case with Unified Plan SDP msid signaling.
-      stream_ids = msid_stream_ids;
-      track_id = std::string(msid_track_id);
-    } else if (msid_signaling & kMsidSignalingSsrcAttribute) {
+    if (msid_signaling & kMsidSignalingSsrcAttribute) {
       // This is the case with Plan B SDP msid signaling.
       stream_ids.push_back(ssrc_info.stream_id);
       track_id = ssrc_info.track_id;
@@ -586,7 +601,7 @@ void CreateTracksFromSsrcInfos(const SsrcInfoVec& ssrc_infos,
 }
 
 void GetMediaStreamIds(const ContentInfo* content,
-                       std::set<std::string>* labels) {
+                       flat_set<std::string>* labels) {
   for (const StreamParams& stream_params :
        content->media_description()->streams()) {
     for (const std::string& stream_id : stream_params.stream_ids()) {
@@ -1908,13 +1923,15 @@ bool ParseMsidAttribute(absl::string_view line,
 void RemoveDuplicateRidDescriptions(const std::vector<int>& payload_types,
                                     std::vector<RidDescription>* rids) {
   RTC_DCHECK(rids);
-  std::set<std::string> to_remove;
-  std::set<std::string> unique_rids;
+  if (rids->size() <= 1) {
+    return;
+  }
+  flat_set<std::string> to_remove;
+  flat_set<absl::string_view> unique_rids;
   // Find duplicate RIDs to remove.
-  for (RidDescription& rid : *rids) {
+  for (const RidDescription& rid : *rids) {
     if (!unique_rids.insert(rid.rid).second) {
       to_remove.insert(rid.rid);
-      continue;
     }
   }
   // Remove every rid description that appears in the to_remove list.
@@ -2925,21 +2942,22 @@ bool ParseContent(absl::string_view message,
     RemoveInvalidRidsFromSimulcast(rids, &simulcast);
 
     // Use simulcast description to figure out Send / Receive RIDs.
-    std::map<std::string, RidDescription> rid_map;
-    for (const RidDescription& rid : rids) {
-      rid_map[rid.rid] = rid;
-    }
+    auto find_rid = [&](absl::string_view rid_name) {
+      return absl::c_find_if(rids, [rid_name](const RidDescription& rid) {
+        return rid.rid == rid_name;
+      });
+    };
 
     for (const auto& layer : simulcast.send_layers().GetAllLayers()) {
-      auto iter = rid_map.find(layer.rid);
-      RTC_DCHECK(iter != rid_map.end());
-      send_rids.push_back(iter->second);
+      auto iter = find_rid(layer.rid);
+      RTC_DCHECK(iter != rids.end());
+      send_rids.push_back(*iter);
     }
 
     for (const auto& layer : simulcast.receive_layers().GetAllLayers()) {
-      auto iter = rid_map.find(layer.rid);
-      RTC_DCHECK(iter != rid_map.end());
-      receive_rids.push_back(iter->second);
+      auto iter = find_rid(layer.rid);
+      RTC_DCHECK(iter != rids.end());
+      receive_rids.push_back(*iter);
     }
 
     media_desc->set_simulcast_description(simulcast);
@@ -3079,15 +3097,12 @@ std::unique_ptr<MediaContentDescription> ParseContentDescription(
 }
 
 bool HasDuplicateMsidLines(SessionDescription* desc) {
-  std::set<std::pair<absl::string_view, absl::string_view>> seen_msids;
+  flat_set<std::pair<absl::string_view, absl::string_view>> seen_msids;
   for (const ContentInfo& content : desc->contents()) {
     for (const StreamParams& stream : content.media_description()->streams()) {
-      auto msid = std::pair<absl::string_view, absl::string_view>(
-          stream.first_stream_id(), stream.id);
-      if (seen_msids.find(msid) != seen_msids.end()) {
+      if (!seen_msids.insert({stream.first_stream_id(), stream.id}).second) {
         return true;
       }
-      seen_msids.insert(std::move(msid));
     }
   }
   return false;
@@ -3381,7 +3396,7 @@ std::string SdpSerialize(const SessionDescriptionInterface& jdesc) {
     // TODO(bugs.webrtc.org/10421): this code only looks at the first
     // audio/video content. Fixing that might result in much larger SDP and the
     // msid-semantic line should eventually go away so this is not worth fixing.
-    std::set<std::string> media_stream_ids;
+    flat_set<std::string> media_stream_ids;
     const ContentInfo* audio_content = LegacyGetFirstAudioContent(*desc);
     if (audio_content)
       GetMediaStreamIds(audio_content, &media_stream_ids);

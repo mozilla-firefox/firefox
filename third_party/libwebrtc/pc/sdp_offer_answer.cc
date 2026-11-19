@@ -2383,7 +2383,7 @@ RTCError SdpOfferAnswerHandler::ApplyLocalDescription(
 
   // Validate SSRCs, we do not allow duplicates.
   if (ConfiguredForMedia()) {
-    std::set<uint32_t> used_ssrcs;
+    flat_set<uint32_t> used_ssrcs;
     for (const auto& content : local_description()->description()->contents()) {
       for (const auto& stream : content.media_description()->streams()) {
         for (uint32_t ssrc : stream.ssrcs) {
