@@ -42,13 +42,13 @@
 namespace webrtc {
 
 VideoRtpReceiver::VideoRtpReceiver(
-    Thread* worker_thread,
+    Thread* network_thread,
     absl::string_view receiver_id,
     std::vector<std::string> stream_ids,
     absl::AnyInvocable<RTCError()> enable_sframe_at_owner,
     VideoMediaReceiveChannelInterface* media_channel,
     Clock* clock)
-    : VideoRtpReceiver(worker_thread,
+    : VideoRtpReceiver(network_thread,
                        receiver_id,
                        CreateStreamsFromIds(std::move(stream_ids)),
                        std::move(enable_sframe_at_owner),
@@ -56,13 +56,13 @@ VideoRtpReceiver::VideoRtpReceiver(
                        clock) {}
 
 VideoRtpReceiver::VideoRtpReceiver(
-    Thread* worker_thread,
+    Thread* network_thread,
     absl::string_view receiver_id,
     const std::vector<scoped_refptr<MediaStreamInterface>>& streams,
     absl::AnyInvocable<RTCError()> enable_sframe_at_owner,
     VideoMediaReceiveChannelInterface* media_channel,
     Clock* clock)
-    : RtpReceiverBase(worker_thread,
+    : RtpReceiverBase(network_thread,
                       std::move(enable_sframe_at_owner),
                       media_channel,
                       clock),
@@ -70,10 +70,10 @@ VideoRtpReceiver::VideoRtpReceiver(
       source_(make_ref_counted<VideoRtpTrackSource>(&source_callback_)),
       track_(VideoTrackProxyWithInternal<VideoTrack>::Create(
           Thread::Current(),
-          worker_thread,
-          VideoTrack::Create(receiver_id, source_, worker_thread))),
+          network_thread,
+          VideoTrack::Create(receiver_id, source_, network_thread))),
       attachment_id_(GenerateUniqueId()) {
-  RTC_DCHECK(worker_thread_);
+  RTC_DCHECK(network_thread_);
   SetStreams(streams);
   RTC_DCHECK_EQ(source_->state(), MediaSourceInterface::kInitializing);
 }
@@ -102,7 +102,7 @@ std::vector<scoped_refptr<MediaStreamInterface>> VideoRtpReceiver::streams()
 }
 
 RtpParameters VideoRtpReceiver::GetParameters() const {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   VideoMediaReceiveChannelInterface* video_channel = video_media_channel();
   if (!video_channel)
     return RtpParameters();
@@ -127,15 +127,15 @@ VideoRtpReceiver::GetRestartFunctionForMediaChannel(
   MediaSourceInterface::SourceState state = source_->state();
   source_->SetState(MediaSourceInterface::kLive);
   return [this, ssrc = std::move(ssrc), state]() mutable {
-    RTC_DCHECK_RUN_ON(worker_thread_);
-    GetRestartFunctionForMediaChannel_w(std::move(ssrc), state);
+    RTC_DCHECK_RUN_ON(network_thread_);
+    GetRestartFunctionForMediaChannel_n(std::move(ssrc), state);
   };
 }
 
-void VideoRtpReceiver::GetRestartFunctionForMediaChannel_w(
+void VideoRtpReceiver::GetRestartFunctionForMediaChannel_n(
     std::optional<uint32_t> ssrc,
     MediaSourceInterface::SourceState state) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   VideoMediaReceiveChannelInterface* video_channel = video_media_channel();
   if (!video_channel) {
     return;  // Can't restart.
@@ -177,7 +177,7 @@ void VideoRtpReceiver::GetRestartFunctionForMediaChannel_w(
 }
 
 void VideoRtpReceiver::SetSink(VideoSinkInterface<VideoFrame>* sink) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   if (signaled_ssrc_) {
     video_media_channel()->SetSink(*signaled_ssrc_, sink);
   } else {
@@ -250,7 +250,7 @@ void VideoRtpReceiver::SetStreams(
 
 void VideoRtpReceiver::SetJitterBufferMinimumDelay(
     std::optional<double> delay_seconds) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   delay_.Set(delay_seconds);
   VideoMediaReceiveChannelInterface* video_channel = video_media_channel();
   if (video_channel && signaled_ssrc_) {
@@ -261,16 +261,16 @@ void VideoRtpReceiver::SetJitterBufferMinimumDelay(
 
 void VideoRtpReceiver::SetMediaChannel(
     MediaReceiveChannelInterface* media_channel) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   RTC_DCHECK(media_channel == nullptr ||
              media_channel->media_type() == media_type());
 
-  SetMediaChannel_w(media_channel);
+  SetMediaChannel_n(media_channel);
 }
 
-void VideoRtpReceiver::SetMediaChannel_w(
+void VideoRtpReceiver::SetMediaChannel_n(
     MediaReceiveChannelInterface* media_channel) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   MediaReceiveChannelInterface* old_media_channel = this->media_channel();
   if (media_channel == old_media_channel)
     return;
@@ -316,14 +316,14 @@ absl::AnyInvocable<void() &&> VideoRtpReceiver::GetSetupForMediaChannel(
   MediaSourceInterface::SourceState state = source_->state();
   source_->SetState(MediaSourceInterface::kLive);
   return [this, ssrc = std::move(ssrc), media_channel, state]() mutable {
-    RTC_DCHECK_RUN_ON(worker_thread_);
-    SetMediaChannel_w(media_channel);
-    GetRestartFunctionForMediaChannel_w(std::move(ssrc), state);
+    RTC_DCHECK_RUN_ON(network_thread_);
+    SetMediaChannel_n(media_channel);
+    GetRestartFunctionForMediaChannel_n(std::move(ssrc), state);
   };
 }
 
 void VideoRtpReceiver::OnGenerateKeyFrame() {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   VideoMediaReceiveChannelInterface* video_channel = video_media_channel();
   if (!video_channel) {
     RTC_LOG(LS_ERROR)
@@ -339,7 +339,7 @@ void VideoRtpReceiver::OnGenerateKeyFrame() {
 }
 
 void VideoRtpReceiver::OnEncodedSinkEnabled(bool enable) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   SetEncodedSinkEnabled(enable);
   // Always save the latest state of the callback in case the media_channel_
   // changes.
@@ -347,7 +347,7 @@ void VideoRtpReceiver::OnEncodedSinkEnabled(bool enable) {
 }
 
 void VideoRtpReceiver::SetEncodedSinkEnabled(bool enable) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   VideoMediaReceiveChannelInterface* video_channel = video_media_channel();
   if (!video_channel)
     return;

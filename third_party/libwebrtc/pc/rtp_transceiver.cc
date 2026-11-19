@@ -191,14 +191,14 @@ template <typename RtpReceiverT, typename ReceiveInterface>
 scoped_refptr<RtpReceiverProxyWithInternal<RtpReceiverInternal>>
 CreateReceiverOfType(const Environment& env,
                      Thread* signaling_thread,
-                     Thread* worker_thread,
+                     Thread* network_thread,
                      absl::string_view receiver_id,
                      MediaReceiveChannelInterface* receive_channel,
                      absl::AnyInvocable<RTCError()> enable_sframe_at_owner) {
   return RtpReceiverProxyWithInternal<RtpReceiverInternal>::Create(
-      signaling_thread, worker_thread,
+      signaling_thread, network_thread,
       make_ref_counted<RtpReceiverT>(
-          worker_thread, receiver_id, std::vector<std::string>(),
+          network_thread, receiver_id, std::vector<std::string>(),
           std::move(enable_sframe_at_owner),
           static_cast<ReceiveInterface*>(receive_channel), &env.clock()));
 }
@@ -207,20 +207,20 @@ scoped_refptr<RtpReceiverProxyWithInternal<RtpReceiverInternal>> CreateReceiver(
     const Environment& env,
     MediaType media_type,
     Thread* signaling_thread,
-    Thread* worker_thread,
+    Thread* network_thread,
     absl::string_view receiver_id,
     MediaReceiveChannelInterface* receive_channel,
     absl::AnyInvocable<RTCError()> enable_sframe_at_owner) {
   if (media_type == MediaType::AUDIO) {
     return CreateReceiverOfType<AudioRtpReceiver,
                                 VoiceMediaReceiveChannelInterface>(
-        env, signaling_thread, worker_thread, receiver_id, receive_channel,
+        env, signaling_thread, network_thread, receiver_id, receive_channel,
         std::move(enable_sframe_at_owner));
   }
   RTC_DCHECK_EQ(media_type, MediaType::VIDEO);
   return CreateReceiverOfType<VideoRtpReceiver,
                               VideoMediaReceiveChannelInterface>(
-      env, signaling_thread, worker_thread, receiver_id, receive_channel,
+      env, signaling_thread, network_thread, receiver_id, receive_channel,
       std::move(enable_sframe_at_owner));
 }
 

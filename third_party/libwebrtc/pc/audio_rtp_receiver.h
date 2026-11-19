@@ -44,12 +44,12 @@ class AudioRtpReceiver : public ObserverInterface,
  public:
   // The constructor supports optionally passing the voice channel to the
   // instance at construction time without having to call `SetMediaChannel()`
-  // on the worker thread straight after construction.
+  // on the network thread straight after construction.
   // However, when using that, the assumption is that right after construction,
   // a call to either `GetSetupForUnsignaledMediaChannel` or
   // `GetSetupForMediaChannel` will be made, which will internally start the
-  // source on the worker thread.
-  AudioRtpReceiver(Thread* worker_thread,
+  // source on the network thread.
+  AudioRtpReceiver(Thread* network_thread,
                    absl::string_view receiver_id,
                    std::vector<std::string> stream_ids,
                    absl::AnyInvocable<RTCError()> enable_sframe_at_owner,
@@ -60,7 +60,7 @@ class AudioRtpReceiver : public ObserverInterface,
   // This should be PLAN_B_ONLY; but this marking is deferred due to templating
   // issues
   AudioRtpReceiver(
-      Thread* worker_thread,
+      Thread* network_thread,
       absl::string_view receiver_id,
       const std::vector<scoped_refptr<MediaStreamInterface>>& streams,
       bool is_unified_plan,  // must always be set to false.
@@ -70,7 +70,7 @@ class AudioRtpReceiver : public ObserverInterface,
   // This should be PLAN_B_ONLY; but this marking is deferred due to templating
   // issues
   AudioRtpReceiver(
-      Thread* worker_thread,
+      Thread* network_thread,
       absl::string_view receiver_id,
       const std::vector<scoped_refptr<MediaStreamInterface>>& streams,
       VoiceMediaReceiveChannelInterface* media_channel = nullptr,
@@ -120,7 +120,7 @@ class AudioRtpReceiver : public ObserverInterface,
 
  private:
   AudioRtpReceiver(
-      Thread* worker_thread,
+      Thread* network_thread,
       absl::string_view receiver_id,
       const std::vector<scoped_refptr<MediaStreamInterface>>& streams,
       absl::AnyInvocable<RTCError()> enable_sframe_at_owner,
@@ -130,16 +130,16 @@ class AudioRtpReceiver : public ObserverInterface,
 
   absl::AnyInvocable<void() &&> GetRestartFunctionForMediaChannel(
       std::optional<uint32_t> ssrc) RTC_RUN_ON(&signaling_thread_checker_);
-  void GetRestartFunctionForMediaChannel_w(
+  void GetRestartFunctionForMediaChannel_n(
       std::optional<uint32_t> ssrc,
       bool track_enabled,
       MediaSourceInterface::SourceState state,
-      double volume) RTC_RUN_ON(worker_thread_);
+      double volume) RTC_RUN_ON(network_thread_);
   void Reconfigure(bool track_enabled, double volume)
-      RTC_RUN_ON(worker_thread_);
-  void SetOutputVolume_w(double volume) RTC_RUN_ON(worker_thread_);
+      RTC_RUN_ON(network_thread_);
+  void SetOutputVolume_n(double volume) RTC_RUN_ON(network_thread_);
   VoiceMediaReceiveChannelInterface* voice_media_channel() const
-      RTC_RUN_ON(worker_thread_);
+      RTC_RUN_ON(network_thread_);
 
   const std::string id_;
   const scoped_refptr<RemoteAudioSource> source_;
@@ -153,7 +153,7 @@ class AudioRtpReceiver : public ObserverInterface,
       RTC_GUARDED_BY(&signaling_thread_checker_);
   // Stores and updates the playout delay. Handles caching cases if
   // `SetJitterBufferMinimumDelay` is called before start.
-  JitterBufferDelay delay_ RTC_GUARDED_BY(worker_thread_);
+  JitterBufferDelay delay_ RTC_GUARDED_BY(network_thread_);
 };
 
 }  // namespace webrtc

@@ -66,15 +66,15 @@ RtpReceiverInternal::CreateStreamsFromIds(
 }
 
 RtpReceiverBase::RtpReceiverBase(
-    Thread* worker_thread,
+    Thread* network_thread,
     absl::AnyInvocable<RTCError()> enable_sframe_at_owner,
     MediaReceiveChannelInterface* media_channel,
     Clock* clock)
-    : worker_thread_(worker_thread),
+    : network_thread_(network_thread),
       source_tracker_(clock),
-      worker_thread_safety_(PendingTaskSafetyFlag::CreateAttachedToTaskQueue(
+      network_thread_safety_(PendingTaskSafetyFlag::CreateAttachedToTaskQueue(
           /*alive=*/media_channel != nullptr,
-          worker_thread_)),
+          network_thread_)),
       media_channel_(media_channel),
       enable_sframe_at_owner_(std::move(enable_sframe_at_owner)) {}
 
@@ -83,7 +83,7 @@ RtpReceiverBase::~RtpReceiverBase() {
 }
 
 MediaReceiveChannelInterface* RtpReceiverBase::media_channel() const {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   return media_channel_;
 }
 
@@ -95,12 +95,12 @@ void RtpReceiverBase::Stop() {
 void RtpReceiverBase::set_media_channel(
     MediaReceiveChannelInterface* media_channel) {
   media_channel_ = media_channel;
-  media_channel_ != nullptr ? worker_thread_safety_->SetAlive()
-                            : worker_thread_safety_->SetNotAlive();
+  media_channel_ != nullptr ? network_thread_safety_->SetAlive()
+                            : network_thread_safety_->SetNotAlive();
 }
 
 std::optional<uint32_t> RtpReceiverBase::ssrc() const {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   if (!signaled_ssrc_.has_value() && media_channel()) {
     return media_channel()->GetUnsignaledSsrc();
   }
@@ -128,7 +128,7 @@ void RtpReceiverBase::SetUnsignaledSsrc_s(uint32_t ssrc) {
 
 void RtpReceiverBase::SetFrameDecryptor(
     scoped_refptr<FrameDecryptorInterface> frame_decryptor) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   frame_decryptor_ = std::move(frame_decryptor);
   // Special Case: Set the frame decryptor to any value on any existing channel.
   if (media_channel() && signaled_ssrc_) {
@@ -138,13 +138,13 @@ void RtpReceiverBase::SetFrameDecryptor(
 
 scoped_refptr<FrameDecryptorInterface> RtpReceiverBase::GetFrameDecryptor()
     const {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   return frame_decryptor_;
 }
 
 void RtpReceiverBase::SetFrameTransformer(
     scoped_refptr<FrameTransformerInterface> frame_transformer) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   frame_transformer_ = std::move(frame_transformer);
   if (media_channel()) {
     media_channel()->SetDepacketizerToDecoderFrameTransformer(

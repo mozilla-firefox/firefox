@@ -44,7 +44,7 @@ class VideoRtpReceiver : public RtpReceiverBase {
  public:
   // An SSRC of 0 will create a receiver that will match the first SSRC it
   // sees. Must be called on signaling thread.
-  VideoRtpReceiver(Thread* worker_thread,
+  VideoRtpReceiver(Thread* network_thread,
                    absl::string_view receiver_id,
                    std::vector<std::string> streams_ids,
                    absl::AnyInvocable<RTCError()> enable_sframe_at_owner,
@@ -55,7 +55,7 @@ class VideoRtpReceiver : public RtpReceiverBase {
   // This should be PLAN_B_ONLY; but this marking is deferred due to templating
   // issues
   VideoRtpReceiver(
-      Thread* worker_thread,
+      Thread* network_thread,
       absl::string_view receiver_id,
       const std::vector<scoped_refptr<MediaStreamInterface>>& streams,
       absl::AnyInvocable<RTCError()> enable_sframe_at_owner,
@@ -105,20 +105,21 @@ class VideoRtpReceiver : public RtpReceiverBase {
  private:
   absl::AnyInvocable<void() &&> GetRestartFunctionForMediaChannel(
       std::optional<uint32_t> ssrc) RTC_RUN_ON(&signaling_thread_checker_);
-  void GetRestartFunctionForMediaChannel_w(
+  void GetRestartFunctionForMediaChannel_n(
       std::optional<uint32_t> ssrc,
-      MediaSourceInterface::SourceState state) RTC_RUN_ON(worker_thread_);
-  void SetSink(VideoSinkInterface<VideoFrame>* sink) RTC_RUN_ON(worker_thread_);
-  void SetMediaChannel_w(MediaReceiveChannelInterface* media_channel)
-      RTC_RUN_ON(worker_thread_);
+      MediaSourceInterface::SourceState state) RTC_RUN_ON(network_thread_);
+  void SetSink(VideoSinkInterface<VideoFrame>* sink)
+      RTC_RUN_ON(network_thread_);
+  void SetMediaChannel_n(MediaReceiveChannelInterface* media_channel)
+      RTC_RUN_ON(network_thread_);
   VideoMediaReceiveChannelInterface* video_media_channel() const
-      RTC_RUN_ON(worker_thread_);
+      RTC_RUN_ON(network_thread_);
 
   // VideoRtpTrackSource::Callback
   void OnGenerateKeyFrame();
   void OnEncodedSinkEnabled(bool enable);
 
-  void SetEncodedSinkEnabled(bool enable) RTC_RUN_ON(worker_thread_);
+  void SetEncodedSinkEnabled(bool enable) RTC_RUN_ON(network_thread_);
 
   class SourceCallback : public VideoRtpTrackSource::Callback {
    public:
@@ -146,12 +147,12 @@ class VideoRtpReceiver : public RtpReceiverBase {
       RTC_GUARDED_BY(&signaling_thread_checker_);
   // Stores the minimum jitter buffer delay. Handles caching cases
   // if `SetJitterBufferMinimumDelay` is called before start.
-  JitterBufferDelay delay_ RTC_GUARDED_BY(worker_thread_);
+  JitterBufferDelay delay_ RTC_GUARDED_BY(network_thread_);
 
   // Records if we should generate a keyframe when `media_channel_` gets set up
   // or switched.
-  bool saved_generate_keyframe_ RTC_GUARDED_BY(worker_thread_) = false;
-  bool saved_encoded_sink_enabled_ RTC_GUARDED_BY(worker_thread_) = false;
+  bool saved_generate_keyframe_ RTC_GUARDED_BY(network_thread_) = false;
+  bool saved_encoded_sink_enabled_ RTC_GUARDED_BY(network_thread_) = false;
 };
 
 }  // namespace webrtc
