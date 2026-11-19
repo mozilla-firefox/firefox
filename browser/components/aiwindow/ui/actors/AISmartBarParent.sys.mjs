@@ -4,8 +4,8 @@
 
 /**
  * @import { SapLocation, ContextWebsite } from "chrome://browser/content/urlbar/SmartbarInput.mjs"
- * @import { SmartbarAction } from "chrome://browser/content/aiwindow/components/input-cta/input-cta.mjs"
- * @import { ChatSubmitType } from "chrome://browser/content/aiwindow/components/ai-window/ai-window.mjs"
+ * @import { SmartbarAction } from "chrome://browser/content/aiwindow/components/input-cta.mjs"
+ * @import { ChatSubmitType } from "chrome://browser/content/aiwindow/components/ai-window.mjs"
  */
 
 /**

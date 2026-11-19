@@ -3,14 +3,9 @@
 This component grew quickly, and much of the existing code across this directory predates current standards, not only the largest files such as `ai-window.mjs`. Do not copy a pattern just because nearby code uses it: follow this file and the newer examples it names. When you touch legacy code, don't spread its patterns; clean them up only when that is in scope, otherwise in a separate patch.
 
 ## Where things live
-- `ui/modules/`: chrome modules (`*.sys.mjs`) listed in `ui/moz.build` `MOZ_SRC_FILES` and imported through `moz-src:///`. Plain `.mjs` modules shared with content pages are packaged by `ui/jar.mn` under `chrome://browser/content/aiwindow/modules/`.
-- `ui/components/`: Lit custom elements, each with a sibling `.css` and a `.stories.mjs`.
-- `ui/actors/`: JSWindowActor pairs, registered in `browser/components/DesktopActorRegistry.sys.mjs`.
-- `ui/content/`: HTML shells and page stylesheets, packaged by `ui/jar.mn`.
 - `models/`: engine, prompts (`PromptLoader.sys.mjs`, Remote Settings collection `ai-window-prompts`), tools, `SecurityProperties.sys.mjs`, memories and agents. `services/`: storage.
 - Startup: categories in `ui/aiwindow.manifest` call into `AIWindow.sys.mjs`, which owns per-window state and Smart/Classic switching (`toggleAIWindow`).
 - Strings: add new ones to `browser/locales-preview/aiWindow.ftl`. The shipped `aiWindow.ftl` and `aiWindowContent.ftl` change only when strings are finalized.
-- Telemetry: the `smart_window` category in `metrics.yaml`.
 - Bugzilla: Core :: Machine Learning: Frontend for `ui/`, and Machine Learning: General for most of `models/`. Check a specific file with `./mach file-info bugzilla-component <file>`.
 
 ## Current standard, and legacy to avoid

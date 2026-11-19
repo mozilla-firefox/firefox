@@ -46,7 +46,7 @@ const SIDEBAR_EMPTY_CLOSE_PROMPT_TRIGGER_COUNT = 2;
 const SESSION_STORE_KEY = "ai-window-tab-state";
 
 /**
- * @typedef {import("chrome://browser/content/aiwindow/components/ai-window/ai-window.mjs").SmartbarInputState} SmartbarInputState
+ * @typedef {import("chrome://browser/content/aiwindow/components/ai-window.mjs").SmartbarInputState} SmartbarInputState
  * @typedef {import("chrome://browser/content/urlbar/SmartbarInput.mjs").ContextWebsite} ContextWebsite
  *
  * @typedef {{

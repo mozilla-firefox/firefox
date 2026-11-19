@@ -300,7 +300,7 @@ export const IntentClassifier = {
    * Gets the intent of the prompt using a text classification model.
    *
    * @param {string} query
-   * @returns {string} "search" | "chat"
+   * @returns {Promise<"search" | "chat">}
    */
   async getPromptIntent(query) {
     if (this.smartbarIntent) {
