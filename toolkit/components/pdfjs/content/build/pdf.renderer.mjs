@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.164
- * pdfjsBuild = 60aefc5b5
+ * pdfjsVersion = 7.0.182
+ * pdfjsBuild = fc0822a07
  */
 
 ;// ./src/shared/util.js
@@ -4881,9 +4881,8 @@ class CanvasGraphics {
     }
     groupCtx.translate(-offsetX, -offsetY);
     groupCtx.transform(...currentTransform);
-    const needsBackdropCopy = !group.isolated && !group.smask && group.needsIsolation;
-    const replaceBackdrop = needsBackdropCopy && !inSMaskMode && savedKnockoutLevel === 0 && !group.knockout && !group.isGray && group.hasSoftMask && currentCtx.globalAlpha === 1 && currentCtx.globalCompositeOperation === "source-over" && this.current.transferMaps === "none" && !this.current.transferMapsFallback;
-    if (needsBackdropCopy && (inSMaskMode || replaceBackdrop)) {
+    const copyBackdrop = !group.isolated && !group.smask && group.needsIsolation && (inSMaskMode || savedKnockoutLevel === 0 && !group.knockout && !group.isGray && currentCtx.globalCompositeOperation === "source-over" && this.current.transferMaps === "none" && !this.current.transferMapsFallback);
+    if (copyBackdrop) {
       groupCtx.save();
       groupCtx.setTransform(1, 0, 0, 1, 0, 0);
       groupCtx.drawImage(currentCtx.canvas, -offsetX, -offsetY);
@@ -4927,7 +4926,7 @@ class CanvasGraphics {
       offsetX,
       offsetY,
       hasInnerBackdrop,
-      replaceBackdrop,
+      replaceBackdrop: copyBackdrop && !inSMaskMode,
       knockoutMaskEntry,
       knockoutTempEntry: null,
       knockoutBackdropEntry: null
@@ -5021,10 +5020,21 @@ class CanvasGraphics {
         }
       } else {
         if (groupMeta.replaceBackdrop) {
+          const {
+            width,
+            height
+          } = groupCtx.canvas;
           const clip = new Path2D();
-          clip.rect(0, 0, groupCtx.canvas.width, groupCtx.canvas.height);
+          clip.rect(0, 0, width, height);
           this.ctx.clip(clip);
-          this.ctx.globalCompositeOperation = "copy";
+          if (this.ctx.globalAlpha === 1) {
+            this.ctx.globalCompositeOperation = "copy";
+          } else {
+            this.ctx.globalCompositeOperation = "destination-out";
+            this.ctx.fillStyle = "#000";
+            this.ctx.fillRect(0, 0, width, height);
+            this.ctx.globalCompositeOperation = "lighter";
+          }
         }
         this.ctx.drawImage(groupCtx.canvas, 0, 0);
       }
@@ -7614,7 +7624,7 @@ class RendererMessageHandler {
     this.#connection = null;
   }
   static #sendReady(handler) {
-    const workerVersion = "7.0.164";
+    const workerVersion = "7.0.182";
     const testObj = new Uint8Array();
     handler.send("ready", {
       testObj,

@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.164
- * pdfjsBuild = 60aefc5b5
+ * pdfjsVersion = 7.0.182
+ * pdfjsBuild = fc0822a07
  */
 
 ;// ./src/shared/util.js
@@ -2058,7 +2058,7 @@ class FloatingToolbar {
 }
 
 ;// ./src/shared/internal_evt.js
-const INTERNAL_EVT = "aba9d0c1-a369-4fad-99e5-502c95cd1c89";
+const INTERNAL_EVT = "52701818-7260-4765-9637-e6d452533ca0";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -2649,7 +2649,7 @@ class AnnotationEditorUIManager {
       checker: arrowChecker
     }]]));
   }
-  constructor(container, viewer, viewerAlert, altTextManager, commentManager, signatureManager, eventBus, pdfDocument, pageColors, highlightColors, enableHighlightFloatingButton, enableUpdatedAddImage, enableNewAltTextWhenAddingImage, mlManager, editorUndoBar, supportsPinchToZoom, keepToolbarInPage) {
+  constructor(container, viewer, viewerAlert, altTextManager, commentManager, signatureManager, eventBus, pdfDocument, pageColors, highlightColors, enableHighlightFloatingButton, enableUpdatedAddImage, enableNewAltTextWhenAddingImage, mlManager, editorUndoBar, supportsPinchToZoom, keepToolbarInPage, useButtonRoleForUnselectedSignatures) {
     const signal = this._signal = this.#abortController.signal;
     this.#container = container;
     this.#viewer = viewer;
@@ -2704,6 +2704,7 @@ class AnnotationEditorUIManager {
     this._editorUndoBar = editorUndoBar || null;
     this._supportsPinchToZoom = supportsPinchToZoom !== false;
     this._keepToolbarInPage = keepToolbarInPage === true;
+    this._useButtonRoleForUnselectedSignatures = useButtonRoleForUnselectedSignatures === true;
     commentManager?.setSidebarUiManager(this);
   }
   destroy() {
@@ -11463,9 +11464,8 @@ class CanvasGraphics {
     }
     groupCtx.translate(-offsetX, -offsetY);
     groupCtx.transform(...currentTransform);
-    const needsBackdropCopy = !group.isolated && !group.smask && group.needsIsolation;
-    const replaceBackdrop = needsBackdropCopy && !inSMaskMode && savedKnockoutLevel === 0 && !group.knockout && !group.isGray && group.hasSoftMask && currentCtx.globalAlpha === 1 && currentCtx.globalCompositeOperation === "source-over" && this.current.transferMaps === "none" && !this.current.transferMapsFallback;
-    if (needsBackdropCopy && (inSMaskMode || replaceBackdrop)) {
+    const copyBackdrop = !group.isolated && !group.smask && group.needsIsolation && (inSMaskMode || savedKnockoutLevel === 0 && !group.knockout && !group.isGray && currentCtx.globalCompositeOperation === "source-over" && this.current.transferMaps === "none" && !this.current.transferMapsFallback);
+    if (copyBackdrop) {
       groupCtx.save();
       groupCtx.setTransform(1, 0, 0, 1, 0, 0);
       groupCtx.drawImage(currentCtx.canvas, -offsetX, -offsetY);
@@ -11509,7 +11509,7 @@ class CanvasGraphics {
       offsetX,
       offsetY,
       hasInnerBackdrop,
-      replaceBackdrop,
+      replaceBackdrop: copyBackdrop && !inSMaskMode,
       knockoutMaskEntry,
       knockoutTempEntry: null,
       knockoutBackdropEntry: null
@@ -11603,10 +11603,21 @@ class CanvasGraphics {
         }
       } else {
         if (groupMeta.replaceBackdrop) {
+          const {
+            width,
+            height
+          } = groupCtx.canvas;
           const clip = new Path2D();
-          clip.rect(0, 0, groupCtx.canvas.width, groupCtx.canvas.height);
+          clip.rect(0, 0, width, height);
           this.ctx.clip(clip);
-          this.ctx.globalCompositeOperation = "copy";
+          if (this.ctx.globalAlpha === 1) {
+            this.ctx.globalCompositeOperation = "copy";
+          } else {
+            this.ctx.globalCompositeOperation = "destination-out";
+            this.ctx.fillStyle = "#000";
+            this.ctx.fillRect(0, 0, width, height);
+            this.ctx.globalCompositeOperation = "lighter";
+          }
         }
         this.ctx.drawImage(groupCtx.canvas, 0, 0);
       }
@@ -14669,7 +14680,7 @@ class RendererWorker {
         terminateEarly("TypedArray transfer test failed.");
         return;
       }
-      const apiVersion = "7.0.164";
+      const apiVersion = "7.0.182";
       if (apiVersion !== data.workerVersion) {
         terminateEarly(`The API version "${apiVersion}" does not match the Worker version "${data.workerVersion}".`);
         return;
@@ -15304,7 +15315,7 @@ function getDocument(src = {}) {
   }
   const docParams = {
     docId,
-    apiVersion: "7.0.164",
+    apiVersion: "7.0.182",
     data,
     password,
     disableAutoFetch,
@@ -17019,8 +17030,8 @@ class InternalRenderTask {
     }
   }
 }
-const version = "7.0.164";
-const build = "60aefc5b5";
+const version = "7.0.182";
+const build = "fc0822a07";
 
 ;// ./src/display/editor/color_picker.js
 
@@ -25793,6 +25804,7 @@ class SignatureEditor extends DrawingEditor {
       baseY = this.y;
     }
     super.render();
+    this.#updateRoleForSelection();
     if (this._drawId === null) {
       if (this.#signatureData) {
         const {
@@ -25837,6 +25849,19 @@ class SignatureEditor extends DrawingEditor {
       this._moveAfterPaste(baseX, baseY);
     }
     return this.div;
+  }
+  select() {
+    super.select();
+    this.#updateRoleForSelection();
+  }
+  unselect() {
+    super.unselect();
+    this.#updateRoleForSelection();
+  }
+  #updateRoleForSelection() {
+    if (this._uiManager._useButtonRoleForUnselectedSignatures) {
+      this.div?.setAttribute("role", this.isSelected ? "application" : "button");
+    }
   }
   setUuid(uuid) {
     this.#signatureUUID = uuid;

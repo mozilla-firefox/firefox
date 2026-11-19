@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.164
- * pdfjsBuild = 60aefc5b5
+ * pdfjsVersion = 7.0.182
+ * pdfjsBuild = fc0822a07
  */
 
 ;// ./web/ui_utils.js
@@ -757,9 +757,6 @@ const defaultOptions = new Map([["allowedGlobalEvents", {
 }], ["iccUrl", {
   value: "resource://pdf.js/web/iccs/",
   kind: OptionKind.API
-}], ["isOffscreenCanvasSupported", {
-  value: true,
-  kind: OptionKind.API
 }], ["pdfBug", {
   value: false,
   kind: OptionKind.API
@@ -912,7 +909,7 @@ const {
 } = globalThis.pdfjsLib;
 
 ;// ./web/internal_evt.js
-const INTERNAL_EVT = "aba9d0c1-a369-4fad-99e5-502c95cd1c89";
+const INTERNAL_EVT = "52701818-7260-4765-9637-e6d452533ca0";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -13380,17 +13377,13 @@ class PDFPageView extends BasePDFPageView {
     });
     canvas.setAttribute("role", "presentation");
     this.#hasRestrictedScaling = this.#needsRestrictedScaling;
-    const sfx = this.#sfx;
-    const sfy = this.#sfy;
-    const canvasWidth = canvas.width = floorToDivide(calcRound(width * outputScale.sx), sfx[0]);
-    const canvasHeight = canvas.height = floorToDivide(calcRound(height * outputScale.sy), sfy[0]);
-    const pageWidth = floorToDivide(calcRound(width), sfx[1]);
-    const pageHeight = floorToDivide(calcRound(height), sfy[1]);
-    outputScale.sx = canvasWidth / pageWidth;
-    outputScale.sy = canvasHeight / pageHeight;
+    canvas.width = floorToDivide(calcRound(width * outputScale.sx), this.#sfx[0]);
+    canvas.height = floorToDivide(calcRound(height * outputScale.sy), this.#sfy[0]);
+    const sx = canvas.width / width;
+    const sy = canvas.height / height;
+    const transform = sx !== 1 || sy !== 1 ? [sx, 0, 0, sy, 0, 0] : null;
     const recordBBoxes = this.enableOptimizedPartialRendering && this.#hasRestrictedScaling && !this.recordedBBoxes;
     const recordImages = this.imagesRightClickMinSize !== -1 && !this.imageCoordinates;
-    const transform = outputScale.scaled ? [outputScale.sx, 0, 0, outputScale.sy, 0, 0] : null;
     const resultPromise = this._drawCanvas(this._getRenderingContext(canvas, transform, recordBBoxes, recordImages), () => {
       if (prevCanvas) {
         prevCanvas.remove();
@@ -13584,7 +13577,7 @@ class PDFViewer {
   #savedPageViews = null;
   #deletedPageNumbers = null;
   constructor(options) {
-    const viewerVersion = "7.0.164";
+    const viewerVersion = "7.0.182";
     if (version !== viewerVersion) {
       throw new Error(`The API version "${version}" does not match the Viewer version "${viewerVersion}".`);
     }
@@ -14050,7 +14043,7 @@ class PDFViewer {
         if (pdfDocument.isPureXfa) {
           console.warn("Warning: XFA-editing is not implemented.");
         } else if (isValidAnnotationEditorMode(mode)) {
-          this.#annotationEditorUIManager = new AnnotationEditorUIManager(this.container, viewer, this.#viewerAlert, this.#altTextManager, this.#commentManager, this.#signatureManager, eventBus, pdfDocument, pageColors, this.#annotationEditorHighlightColors, this.#enableHighlightFloatingButton, this.#enableUpdatedAddImage, this.#enableNewAltTextWhenAddingImage, this.#mlManager, this.#editorUndoBar, this.#supportsPinchToZoom, false);
+          this.#annotationEditorUIManager = new AnnotationEditorUIManager(this.container, viewer, this.#viewerAlert, this.#altTextManager, this.#commentManager, this.#signatureManager, eventBus, pdfDocument, pageColors, this.#annotationEditorHighlightColors, this.#enableHighlightFloatingButton, this.#enableUpdatedAddImage, this.#enableNewAltTextWhenAddingImage, this.#mlManager, this.#editorUndoBar, this.#supportsPinchToZoom, false, false);
           eventBus.dispatch("annotationeditoruimanager", {
             source: this,
             uiManager: this.#annotationEditorUIManager
