@@ -2546,6 +2546,10 @@ class TestRecursiveMakeBackend(BackendTester):
         with open(sharedlib_backend) as fh:
             sharedlib_content = fh.read()
         self.assertIn(
+            "libextra-link-deps-lib.so: libextra-link-deps-lib.so.symbols",
+            sharedlib_content,
+        )
+        self.assertIn(
             "libextra-link-deps-lib.so: generated.rsp",
             sharedlib_content,
         )

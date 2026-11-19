@@ -4,6 +4,8 @@
 
 SharedLibrary("extra-link-deps-lib")
 
+SYMBOLS_FILE = "lib.symbols"
+
 GENERATED_FILES += ["generated.rsp"]
 response = GENERATED_FILES["generated.rsp"]
 response.script = "generate.py:generate"

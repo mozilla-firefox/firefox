@@ -992,6 +992,10 @@ class TreeMetadataEmitter(LoggingMixin):
                 linkables.append(lib)
                 if not lib.installed:
                     generated_files.add(lib.lib_name)
+                if lib.symbols_file:
+                    lib.extra_link_deps.append(
+                        ObjDirPath(context, "!" + lib.symbols_file)
+                    )
                 if symbols_file and isinstance(symbols_file, SourcePath):
                     script = mozpath.join(
                         mozpath.dirname(mozpath.dirname(__file__)),
@@ -1106,9 +1110,8 @@ class TreeMetadataEmitter(LoggingMixin):
                         f"(resolved to {dep.full_path})",
                         context,
                     )
-            deps = list(extra_link_deps)
             for linkable in link_targets:
-                linkable.extra_link_deps = deps
+                linkable.extra_link_deps += extra_link_deps
         # Only emit sources if we have linkables defined in the same context.
         # Note the linkables are not emitted in this function, but much later,
         # after aggregation (because of e.g. USE_LIBS processing).
@@ -1883,12 +1886,15 @@ class TreeMetadataEmitter(LoggingMixin):
             raise SandboxValidationError(str(error), context)
 
     def _process_generated_files(self, context):
-        # The link reads whatever EXTRA_LINK_DEPS names, so a generated file
-        # among them has to be written before the link rather than alongside
-        # the other generated files.
+        # The link reads whatever EXTRA_LINK_DEPS and SYMBOLS_FILE name, so a
+        # generated file among them has to be written before the link rather
+        # than alongside the other generated files.
         link_deps = {
             mozpath.normpath(dep.full_path)
-            for dep in context.get("EXTRA_LINK_DEPS") or ()
+            for dep in [
+                *context.get("EXTRA_LINK_DEPS", []),
+                context.get("SYMBOLS_FILE"),
+            ]
             if isinstance(dep, ObjDirPath)
         }
 

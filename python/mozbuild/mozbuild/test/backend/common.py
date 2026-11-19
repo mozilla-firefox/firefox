@@ -396,6 +396,8 @@ CONFIGS = defaultdict(
                 "LIB_SUFFIX": "a",
                 "DLL_PREFIX": "lib",
                 "DLL_SUFFIX": ".so",
+                "GCC_USE_GNU_LD": "1",
+                "OS_TARGET": "Linux",
             },
         },
         "shared-lib-paths": {

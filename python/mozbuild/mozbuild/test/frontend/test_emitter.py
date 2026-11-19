@@ -1600,6 +1600,16 @@ class TestEmitterBasic(unittest.TestCase):
         self.assertEqual([str(d) for d in deps], ["!generated.rsp"])
         self.assertIsInstance(deps[0], ObjDirPath)
 
+    def test_extra_link_deps_symbols_file(self):
+        reader = self.reader("extra-link-deps-symbols-file")
+        objs = self.read_topsrcdir(reader)
+        libs = [o for o in objs if isinstance(o, SharedLibrary)]
+        self.assertEqual(len(libs), 1)
+        self.assertEqual(
+            [str(d) for d in libs[0].extra_link_deps],
+            ["!foo.symbols", "!generated.rsp"],
+        )
+
     def test_extra_link_deps_no_linkable(self):
         """Test that EXTRA_LINK_DEPS without a linkable is an error."""
         reader = self.reader("extra-link-deps-no-linkable")
@@ -2246,6 +2256,7 @@ class TestEmitterBasic(unittest.TestCase):
         # This looks weird but MockConfig sets DLL_{PREFIX,SUFFIX} and
         # the reader method in this class sets OS_TARGET=WINNT.
         self.assertEqual(shlib.symbols_file, "libfoo.so.def")
+        self.assertEqual([str(d) for d in shlib.extra_link_deps], ["!libfoo.so.def"])
 
     def test_symbols_file_objdir(self):
         """Test that a SYMBOLS_FILE in the objdir works"""
@@ -2259,6 +2270,8 @@ class TestEmitterBasic(unittest.TestCase):
         self.assertIsInstance(ldflags, ComputedFlags)
         self.assertIsInstance(shlib, SharedLibrary)
         self.assertEqual(shlib.symbols_file, "foo.symbols")
+        self.assertEqual([str(d) for d in shlib.extra_link_deps], ["!foo.symbols"])
+        self.assertEqual(genfile.required_during_compile, ["foo.symbols"])
 
     def test_symbols_file_objdir_missing_generated(self):
         """Test that a SYMBOLS_FILE in the objdir that's missing

@@ -1826,8 +1826,6 @@ class RecursiveMakeBackend(MakeBackend):
             else:
                 backend_file.write_once("%s_OBJS := %s\n" % (obj.name, objs_ref))
             backend_file.write("%s: %s\n" % (obj_target, objs_ref))
-        if getattr(obj, "symbols_file", None):
-            backend_file.write_once("%s: %s\n" % (obj_target, obj.symbols_file))
 
         for dep in getattr(obj, "extra_link_deps", ()):
             backend_file.write_once(

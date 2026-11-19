@@ -1661,7 +1661,6 @@ class GeneratedFile(ContextDerived):
                 ".plist",
                 ".s",
                 ".S",
-                "symverscript",
             ))
         ]
         if self.required_during_compile and self.required_before_compile:
