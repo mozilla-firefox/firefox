@@ -33,6 +33,7 @@
 #include "api/units/timestamp.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/platform_thread.h"
+#include "rtc_base/system/ignore_warnings.h"
 #include "rtc_base/thread.h"
 #include "system_wrappers/include/clock.h"
 #include "test/gmock.h"
@@ -200,6 +201,25 @@ TEST_F(LogTest, SingleStream) {
   EXPECT_THAT(sink.data(), HasSubstr("|(null)|"));
 }
 
+// Tests that every LoggingConfig sink receives the messages that are at least
+// as severe as the minimum severity.
+TEST_F(LogTest, MultipleConfigSinks) {
+  auto first_sink = std::make_unique<TestLogSink>();
+  const TestLogSink& first = *first_sink;
+  LoggingConfig config;
+  config.set_min_severity(LS_INFO);
+  config.AddSink(std::move(first_sink));
+  const TestLogSink& second = InitializeLoggingWithSink(std::move(config));
+
+  RTC_LOG(LS_INFO) << "INFO";
+  RTC_LOG(LS_VERBOSE) << "VERBOSE";
+
+  EXPECT_THAT(first.data(), HasSubstr("INFO"));
+  EXPECT_THAT(first.data(), Not(HasSubstr("VERBOSE")));
+  EXPECT_THAT(second.data(), HasSubstr("INFO"));
+  EXPECT_THAT(second.data(), Not(HasSubstr("VERBOSE")));
+}
+
 TEST_F(LogTest, LogStdStringView) {
   TestLogSink& sink = InitializeLoggingWithSink();
 
@@ -297,6 +317,11 @@ TEST_F(LogTest, LogIfFDontLogIfConditionIsFalse) {
   EXPECT_THAT(sink.data(), Not(HasSubstr(__FUNCTION__)));
   EXPECT_THAT(sink.data(), Not(HasSubstr("Not")));
 }
+
+// The tests below until RTC_POP_IGNORING_WDEPRECATED_DECLARATIONS() test the
+// deprecated LogMessage::AddLogToStream() and RemoveLogToStream() methods.
+// TODO: bugs.webrtc.org/42234107 - Remove them together with the methods.
+RTC_PUSH_IGNORING_WDEPRECATED_DECLARATIONS()
 
 // Test using multiple log streams. The INFO stream should get the INFO message,
 // the VERBOSE stream should get the INFO and the VERBOSE.
@@ -402,6 +427,8 @@ TEST_F(LogTest, RemovingLastDynamicSinkRestoresMinSeverity) {
   LogMessage::RemoveLogToStream(&sink);
   EXPECT_TRUE(LogMessage::IsNoop(LS_VERBOSE));
 }
+
+RTC_POP_IGNORING_WDEPRECATED_DECLARATIONS()
 
 TEST_F(LogTest, WallClockStartTime) {
   uint32_t time = LogMessage::WallClockStartTime();

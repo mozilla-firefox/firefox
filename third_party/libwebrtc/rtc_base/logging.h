@@ -622,12 +622,17 @@ class LogMessage {
   [[deprecated("Use InitializeLogging instead.")]]
   static bool LogThreads(bool enabled = true);
 
+  // TODO: bugs.webrtc.org/42234107 - Remove the deprecated methods below once
+  // downstream projects have migrated.
+
   //  LogTimestamps: Display the elapsed time of the program
+  [[deprecated("Use LoggingConfig::set_log_timestamp() instead.")]]
   static void LogTimestamps(bool on = true);
   // These are the available logging channels
   //  Debug: Debug console on Windows, otherwise stderr
   static void LogToDebug(LoggingSeverity min_sev);
   // Sets whether logs will be directed to stderr in debug mode.
+  [[deprecated("Use LoggingConfig::set_log_to_stderr() instead.")]]
   static void SetLogToStderr(bool log_to_stderr);
   // Stream: Any non-blocking stream interface.
   // Installs the `stream` to collect logs with severtiy `min_sev` or higher.
@@ -636,10 +641,15 @@ class LogMessage {
   // If `stream` is the first stream added to the system, we might miss some
   // early concurrent log statement happening from another thread happening near
   // this instant.
+  [[deprecated(
+      "Use LoggingConfig::AddSink() and InitializeLogging() instead.")]]
   static void AddLogToStream(LogSink* stream, LoggingSeverity min_sev);
   // Removes the specified stream, without destroying it. When the method
   // has completed, it's guaranteed that `stream` will receive no more logging
   // calls.
+  [[deprecated(
+      "Removing sinks is not supported. Tests can use "
+      "ResetLoggingForTesting().")]]
   static void RemoveLogToStream(LogSink* stream);
   // Testing against MinLogSeverity allows code to avoid potentially expensive
   // logging operations by pre-checking the logging level.
@@ -678,10 +688,17 @@ class LogMessage {
     return false;
   }
 
+  [[deprecated("Use LoggingConfig::set_log_timestamp() instead.")]]
   inline static void LogTimestamps(bool on = true) {}
   inline static void LogToDebug(LoggingSeverity min_sev) {}
+  [[deprecated("Use LoggingConfig::set_log_to_stderr() instead.")]]
   inline static void SetLogToStderr(bool log_to_stderr) {}
+  [[deprecated(
+      "Use LoggingConfig::AddSink() and InitializeLogging() instead.")]]
   inline static void AddLogToStream(LogSink* stream, LoggingSeverity min_sev) {}
+  [[deprecated(
+      "Removing sinks is not supported. Tests can use "
+      "ResetLoggingForTesting().")]]
   inline static void RemoveLogToStream(LogSink* stream) {}
   inline static int GetMinLogSeverity() { return 0; }
   static constexpr bool IsNoop(LoggingSeverity severity) { return true; }

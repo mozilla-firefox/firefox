@@ -111,9 +111,9 @@ const char *kRTCFileLoggerRotatingLogPrefix = "rotating_log";
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
   webrtc::LogMessage::LogThreads(true);
-#pragma clang diagnostic pop
   webrtc::LogMessage::LogTimestamps(true);
   webrtc::LogMessage::AddLogToStream(_logSink.get(), [self rtcSeverity]);
+#pragma clang diagnostic pop
   _hasStarted = YES;
 }
 
@@ -122,7 +122,10 @@ const char *kRTCFileLoggerRotatingLogPrefix = "rotating_log";
     return;
   }
   RTC_DCHECK(_logSink);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   webrtc::LogMessage::RemoveLogToStream(_logSink.get());
+#pragma clang diagnostic pop
   _hasStarted = NO;
   _logSink.reset();
 }

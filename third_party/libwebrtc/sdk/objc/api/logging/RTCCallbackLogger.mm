@@ -100,7 +100,10 @@ class CallbackWithSeverityLogSink final : public webrtc::LogSink {
 
   _logSink.reset(new CallbackLogSink(handler));
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   webrtc::LogMessage::AddLogToStream(_logSink.get(), [self rtcSeverity]);
+#pragma clang diagnostic pop
   _hasStarted = YES;
 }
 
@@ -112,7 +115,10 @@ class CallbackWithSeverityLogSink final : public webrtc::LogSink {
 
   _logSink.reset(new CallbackWithSeverityLogSink(handler));
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   webrtc::LogMessage::AddLogToStream(_logSink.get(), [self rtcSeverity]);
+#pragma clang diagnostic pop
   _hasStarted = YES;
 }
 
@@ -121,7 +127,10 @@ class CallbackWithSeverityLogSink final : public webrtc::LogSink {
     return;
   }
   RTC_DCHECK(_logSink);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   webrtc::LogMessage::RemoveLogToStream(_logSink.get());
+#pragma clang diagnostic pop
   _hasStarted = NO;
   _logSink.reset();
 }
