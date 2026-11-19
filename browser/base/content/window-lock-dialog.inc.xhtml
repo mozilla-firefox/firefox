@@ -1,0 +1,33 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+<html:template id="window-lock-dialog-template">
+  <html:dialog id="window-lock-dialog"
+               aria-labelledby="window-lock-title"
+               aria-describedby="window-lock-description">
+    <html:div class="window-lock-titlebar">
+#include titlebar-items.inc.xhtml
+    </html:div>
+    <html:img class="window-lock-icon"
+              src="chrome://browser/skin/privatebrowsing/favicon.svg"
+              alt=""/>
+    <html:h1 id="window-lock-title"
+             data-l10n-id="window-lock-private-title"/>
+#ifdef XP_WIN
+    <html:p id="window-lock-description"
+            data-l10n-id="window-lock-private-description-windows"/>
+#else
+    <html:p id="window-lock-description"
+            data-l10n-id="window-lock-private-description-macos"/>
+#endif
+    <html:moz-message-bar class="window-lock-error"
+                          type="error"
+                          data-l10n-id="window-lock-auth-error"
+                          hidden=""/>
+    <html:moz-button class="window-lock-button"
+                     type="primary"
+                     autofocus=""
+                     data-l10n-id="window-lock-unlock-button"/>
+  </html:dialog>
+</html:template>

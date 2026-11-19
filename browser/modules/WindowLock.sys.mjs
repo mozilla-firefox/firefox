@@ -1,0 +1,323 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+
+const lazy = XPCOMUtils.declareLazy({
+  BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
+  PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
+  lockPrivateWindows: {
+    pref: "browser.privatebrowsing.lockOnScreenLock.enabled",
+    default: false,
+  },
+  l10n: () =>
+    new Localization(["branding/brand.ftl", "browser/windowLock.ftl"]),
+});
+
+const LOCKED_ATTRIBUTE = "windowlocked";
+const DIALOG_ID = "window-lock-dialog";
+const SUPPORTED_PLATFORMS = ["macosx", "win"];
+const OS_AUTH_MESSAGE =
+  AppConstants.platform == "win"
+    ? "window-lock-private-os-auth-dialog-message-win"
+    : "window-lock-private-os-auth-dialog-message-macosx";
+// Window commands that stay available on the lock screen's titlebar.
+const WINDOW_COMMANDS = [
+  "cmd_minimizeWindow",
+  "cmd_maximizeWindow",
+  "cmd_restoreWindow",
+  "cmd_closeWindow",
+];
+
+// The topics windows get locked on.
+const LOCK_TOPICS = [
+  "screen_lock_notification",
+  "screensaver_start_notification",
+  "sleep_notification",
+];
+
+/**
+ * Covers private windows with a lock screen when the OS session gets locked,
+ * starts the screensaver or goes to sleep, until the user authenticates with their OS account
+ * credentials, if enabled by the
+ * browser.privatebrowsing.lockOnScreenLock.enabled pref. Only supported on
+ * macOS and Windows.
+ */
+export const WindowLock = {
+  /**
+   * Whether private windows are currently locked.
+   */
+  locked: false,
+
+  _initialized: false,
+  _pendingAuth: null,
+  // Whether the last authentication attempt failed with an error.
+  _authError: false,
+  // Stacks keeping menus and commands disabled while locked, per window.
+  _menuAndCommandDisablers: new WeakMap(),
+
+  init() {
+    if (
+      this._initialized ||
+      !SUPPORTED_PLATFORMS.includes(AppConstants.platform)
+    ) {
+      return;
+    }
+    this._initialized = true;
+    for (let topic of LOCK_TOPICS) {
+      Services.obs.addObserver(this, topic);
+    }
+    Services.obs.addObserver(this, "last-pb-context-exited");
+  },
+
+  uninit() {
+    if (!this._initialized) {
+      return;
+    }
+    this._initialized = false;
+    for (let topic of LOCK_TOPICS) {
+      Services.obs.removeObserver(this, topic);
+    }
+    Services.obs.removeObserver(this, "last-pb-context-exited");
+  },
+
+  /**
+   * Locks a newly opened private window if private windows are currently
+   * locked.
+   *
+   * @param {Window} window
+   */
+  initWindow(window) {
+    if (this.locked && lazy.PrivateBrowsingUtils.isWindowPrivate(window)) {
+      this._lockWindow(window);
+    }
+  },
+
+  /**
+   * Locks private windows on LOCK_TOPICS and drops the lock once the last
+   * private window is gone.
+   *
+   * @param {nsISupports} _subject
+   * @param {string} topic
+   */
+  observe(_subject, topic) {
+    if (topic == "last-pb-context-exited") {
+      this.locked = false;
+      return;
+    }
+    if (LOCK_TOPICS.includes(topic)) {
+      this.lock();
+    }
+  },
+
+  /**
+   * Locks private windows if enabled by the
+   * browser.privatebrowsing.lockOnScreenLock.enabled pref.
+   */
+  lock() {
+    if (!lazy.lockPrivateWindows || this.locked) {
+      return;
+    }
+    let windows = this._windows().filter(win =>
+      lazy.PrivateBrowsingUtils.isWindowPrivate(win)
+    );
+    // No windows to lock
+    if (!windows.length) {
+      return;
+    }
+    this.locked = true;
+    this._authError = false;
+    for (let window of windows) {
+      this._lockWindow(window);
+    }
+  },
+
+  /**
+   * Asks the user for their OS credentials and unlocks all locked windows if
+   * they authenticate successfully.
+   *
+   * @param {Window} window
+   *        The window requesting the unlock.
+   * @returns {Promise<boolean>} Whether windows are unlocked.
+   */
+  async unlock(window) {
+    if (!this.locked) {
+      return true;
+    }
+    if (!this._pendingAuth) {
+      this._setAuthError(false);
+      this._pendingAuth = this._authenticate(window).finally(() => {
+        this._pendingAuth = null;
+      });
+    }
+    if (!(await this._pendingAuth)) {
+      return false;
+    }
+    if (this.locked) {
+      this.locked = false;
+      this._unlockAllWindows();
+    }
+    return true;
+  },
+
+  /**
+   * Shows the OS authentication dialog.
+   *
+   * @param {Window} window
+   *        The window to parent the OS authentication dialog to.
+   * @returns {Promise<boolean>} Whether the user authenticated successfully.
+   */
+  async _authenticate(window) {
+    // The caption is only shown on Windows.
+    let [message, caption] = await lazy.l10n.formatValues([
+      OS_AUTH_MESSAGE,
+      "window-lock-os-auth-dialog-caption",
+    ]);
+    let authenticated = false;
+    try {
+      let [reauthenticated] = await Cc[
+        "@mozilla.org/security/osreauthenticator;1"
+      ]
+        .getService(Ci.nsIOSReauthenticator)
+        .asyncReauthenticateUser(message, caption, window);
+      authenticated = !!reauthenticated;
+    } catch (ex) {
+      console.error(ex);
+      this._setAuthError(true);
+    }
+    return authenticated;
+  },
+
+  _windows() {
+    return lazy.BrowserWindowTracker.orderedWindows.filter(win => !win.closed);
+  },
+
+  /**
+   * Shows or hides the authentication error on the lock screens.
+   *
+   * @param {boolean} shown
+   */
+  _setAuthError(shown) {
+    this._authError = shown;
+    for (let window of this._windows()) {
+      let error = window.document.querySelector(
+        `#${DIALOG_ID} .window-lock-error`
+      );
+      if (error) {
+        error.hidden = !shown;
+      }
+    }
+  },
+
+  _unlockAllWindows() {
+    for (let window of this._windows()) {
+      this._unlockWindow(window);
+    }
+  },
+
+  /**
+   * Covers the window with the lock screen.
+   *
+   * @param {Window} window
+   */
+  _lockWindow(window) {
+    let { document } = window;
+    let dialog =
+      document.getElementById(DIALOG_ID) ?? this._createDialog(window);
+    dialog.querySelector(".window-lock-error").hidden = !this._authError;
+
+    let root = document.documentElement;
+    if (root.hasAttribute(LOCKED_ATTRIBUTE)) {
+      return;
+    }
+    root.setAttribute(LOCKED_ATTRIBUTE, "true");
+    this._updateTitlebarHeight(window, dialog);
+
+    if (!dialog.open) {
+      dialog.showModal();
+    }
+
+    let disposables = new DisposableStack();
+    window.gDialogBox?.disableMenusAndCommands(disposables);
+    this._menuAndCommandDisablers.set(window, disposables);
+    for (let id of WINDOW_COMMANDS) {
+      document.getElementById(id)?.removeAttribute("disabled");
+    }
+  },
+
+  /**
+   * Removes the lock screen from the window.
+   *
+   * @param {Window} window
+   */
+  _unlockWindow(window) {
+    let { document } = window;
+    let root = document.documentElement;
+    if (!root.hasAttribute(LOCKED_ATTRIBUTE)) {
+      return;
+    }
+    root.removeAttribute(LOCKED_ATTRIBUTE);
+
+    document.getElementById(DIALOG_ID)?.close();
+
+    this._menuAndCommandDisablers.get(window)?.dispose();
+    this._menuAndCommandDisablers.delete(window);
+  },
+
+  /**
+   * Makes the lock screen's titlebar as tall as the one it covers, so the
+   * caption buttons stay in place.
+   *
+   * @param {Window} window
+   * @param {HTMLDialogElement} dialog
+   */
+  _updateTitlebarHeight(window, dialog) {
+    let buttonbox = Array.from(
+      window.document.querySelectorAll(
+        "#navigator-toolbox .titlebar-buttonbox-container"
+      )
+    ).find(element => element.checkVisibility());
+    let height =
+      buttonbox &&
+      window.windowUtils.getBoundsWithoutFlushing(buttonbox).height;
+    if (height) {
+      dialog.style.setProperty("--window-lock-titlebar-height", `${height}px`);
+    } else {
+      dialog.style.removeProperty("--window-lock-titlebar-height");
+    }
+  },
+
+  /**
+   * Creates the lock screen dialog from its template and inserts it into the
+   * window.
+   *
+   * @param {Window} window
+   * @returns {HTMLDialogElement}
+   */
+  _createDialog(window) {
+    let { document } = window;
+    window.MozXULElement.insertFTLIfNeeded("browser/windowLock.ftl");
+
+    let template = document.getElementById("window-lock-dialog-template");
+    let dialog = document.importNode(template.content.firstElementChild, true);
+    dialog
+      .querySelector(".window-lock-button")
+      .addEventListener("click", () => this.unlock(window));
+
+    // The lock screen must only go away once the user authenticated.
+    dialog.addEventListener("cancel", event => event.preventDefault());
+    dialog.addEventListener("close", () => {
+      if (
+        document.documentElement.hasAttribute(LOCKED_ATTRIBUTE) &&
+        !dialog.open
+      ) {
+        dialog.showModal();
+      }
+    });
+
+    template.after(dialog);
+    return dialog;
+  },
+};

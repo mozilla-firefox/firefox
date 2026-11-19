@@ -3819,6 +3819,11 @@ pref("browser.fireButton.enabled", false);
 // "direct" skips it and opens the clear browsing data dialog straight away.
 pref("browser.fireButton.flow", "panel");
 
+// Whether private windows get covered by a lock screen, requiring OS
+// authentication, when the OS session gets locked, starts the screensaver
+// (macOS only) or goes to sleep. Only supported on macOS and Windows.
+pref("browser.privatebrowsing.lockOnScreenLock.enabled", false);
+
 // the preferences related to the Nimbus experiment, to activate and deactivate
 // the the entire rollout (see: bug 1864216 - two prompts, 1877500 - set two in one prompt)
 pref("browser.mailto.dualPrompt", false);

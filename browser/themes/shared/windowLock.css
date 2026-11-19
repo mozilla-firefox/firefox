@@ -1,0 +1,72 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* Elements under the lock screen still carve no-drag areas out of the
+ * titlebar's drag region. */
+:root[windowlocked] :is(#TabsToolbar > .toolbar-items, #nav-bar-customization-target) {
+  visibility: hidden;
+}
+
+#window-lock-dialog {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: var(--space-xlarge);
+  border: none;
+  box-sizing: border-box;
+  background-color: var(--background-color-canvas);
+  color: var(--text-color);
+  font-size: var(--font-size-large);
+
+  &[open] {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-large);
+  }
+
+  &::backdrop {
+    background-color: var(--background-color-canvas);
+  }
+
+  > h1 {
+    margin: 0;
+  }
+
+  > p {
+    margin: 0;
+    max-width: 40em;
+    text-align: center;
+  }
+}
+
+.window-lock-titlebar {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  display: flex;
+  justify-content: flex-end;
+  min-height: var(--window-lock-titlebar-height, var(--size-item-large));
+  -moz-window-dragging: drag;
+
+  > .titlebar-buttonbox-container {
+    -moz-window-dragging: no-drag;
+
+    /* The OS draws the caption buttons on top of the window elsewhere, and a
+     * second button box would move them on macOS. */
+    @media not (-moz-platform: windows) {
+      display: none;
+    }
+  }
+}
+
+.window-lock-icon {
+  width: var(--icon-size-xxlarge);
+  height: var(--icon-size-xxlarge);
+}

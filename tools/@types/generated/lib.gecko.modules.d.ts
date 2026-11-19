@@ -581,6 +581,7 @@ export interface Modules {
   "moz-src:///browser/modules/PrivateBrowsingUI.sys.mjs": typeof import("moz-src:///browser/modules/PrivateBrowsingUI.sys.mjs"),
   "moz-src:///browser/modules/SerialDeviceSharingHelper.sys.mjs": typeof import("moz-src:///browser/modules/SerialDeviceSharingHelper.sys.mjs"),
   "moz-src:///browser/modules/UIDensityTelemetry.sys.mjs": typeof import("moz-src:///browser/modules/UIDensityTelemetry.sys.mjs"),
+  "moz-src:///browser/modules/WindowLock.sys.mjs": typeof import("moz-src:///browser/modules/WindowLock.sys.mjs"),
   "moz-src:///browser/themes/ThemesList.sys.mjs": typeof import("moz-src:///browser/themes/ThemesList.sys.mjs"),
   "moz-src:///browser/themes/ToolbarIconColor.sys.mjs": typeof import("moz-src:///browser/themes/ToolbarIconColor.sys.mjs"),
   "moz-src:///devtools/platform/jsdebugger.sys.mjs": typeof import("moz-src:///devtools/platform/jsdebugger.sys.mjs"),

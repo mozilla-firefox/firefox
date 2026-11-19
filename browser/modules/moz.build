@@ -157,6 +157,7 @@ MOZ_SRC_FILES += [
     "PrivateBrowsingUI.sys.mjs",
     "SerialDeviceSharingHelper.sys.mjs",
     "UIDensityTelemetry.sys.mjs",
+    "WindowLock.sys.mjs",
 ]
 
 if CONFIG["MOZ_WIDGET_TOOLKIT"] == "windows":

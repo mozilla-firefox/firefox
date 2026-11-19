@@ -24,6 +24,9 @@ category browser-before-ui-startup moz-src:///browser/components/remotecontrol/R
 category browser-before-ui-startup resource:///modules/AboutHomeStartupCache.sys.mjs AboutHomeStartupCache.init
 category browser-before-ui-startup moz-src:///browser/components/AccountsGlue.sys.mjs AccountsGlue.init
 category browser-before-ui-startup moz-src:///browser/modules/ObserverForwarder.sys.mjs ObserverForwarder.init
+#if defined(XP_MACOSX) || defined(XP_WIN)
+category browser-before-ui-startup moz-src:///browser/modules/WindowLock.sys.mjs WindowLock.init
+#endif
 #ifdef XP_WIN
 category browser-before-ui-startup moz-src:///browser/components/shell/StartupOSIntegration.sys.mjs StartupOSIntegration.applyCustomIconOnStartup
 #endif
@@ -63,6 +66,9 @@ category browser-window-load chrome://browser/content/browser.js#gUIDensity gUID
 category browser-window-load chrome://browser/content/browser.js#Win10TabletModeUpdater Win10TabletModeUpdater.init
 category browser-window-load chrome://browser/content/browser.js#CombinedStopReload CombinedStopReload.ensureInitialized
 category browser-window-load moz-src:///browser/modules/PrivateBrowsingUI.sys.mjs PrivateBrowsingUI.init
+#if defined(XP_MACOSX) || defined(XP_WIN)
+category browser-window-load moz-src:///browser/modules/WindowLock.sys.mjs WindowLock.initWindow
+#endif
 category browser-window-load moz-src:///browser/components/taskbartabs/TaskbarTabsChrome.sys.mjs TaskbarTabsChrome.init
 category browser-window-load chrome://browser/content/browser-pageActions.js BrowserPageActions.init
 category browser-window-load chrome://browser/content/browser-toolbarKeyNav.js ToolbarKeyboardNavigator.init

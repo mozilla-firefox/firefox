@@ -72,6 +72,7 @@
   skin/classic/browser/urlbar/view-proton.css                  (../shared/urlbar/view-proton.css)
   skin/classic/browser/urlbar.css                              (../shared/urlbar.css)
   skin/classic/browser/UITour.css                              (../shared/UITour.css)
+  skin/classic/browser/windowLock.css                          (../shared/windowLock.css)
   skin/classic/browser/webRTC-indicator.css                    (../shared/webRTC-indicator.css)
   skin/classic/browser/webRTC-menubar-indicator.css            (../shared/webRTC-menubar-indicator.css)
   skin/classic/browser/addons/addon-install-blocked.svg        (../shared/addons/addon-install-blocked.svg)
