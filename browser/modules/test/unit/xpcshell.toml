@@ -71,3 +71,9 @@ firefox-appdir = "browser"
 ["test_UpdatePolicySettings.js"]
 head =  "../../../../toolkit/components/enterprisepolicies/tests/xpcshell/head.js"
 firefox-appdir = "browser"
+
+["test_WindowLock_featureGate.js"]
+run-if = [
+  "os == 'mac'",
+  "os == 'win'",
+]

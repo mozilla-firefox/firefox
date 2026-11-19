@@ -106,6 +106,12 @@ support-files = [
   "!/dom/media/test/gizmo.mp4",
 ]
 
+["browser_WindowLock_featureGate.js"]
+run-if = [
+  "os == 'mac'",
+  "os == 'win'",
+]
+
 ["browser_aswebauth_session.js"]
 run-if = ["os == 'mac'"]
 support-files = [

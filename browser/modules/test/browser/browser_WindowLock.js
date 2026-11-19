@@ -3,78 +3,13 @@
 
 "use strict";
 
-const { MockRegistrar } = ChromeUtils.importESModule(
-  "resource://testing-common/MockRegistrar.sys.mjs"
-);
-const { WindowLock } = ChromeUtils.importESModule(
-  "moz-src:///browser/modules/WindowLock.sys.mjs"
-);
-
-const PREF = "browser.privatebrowsing.lockOnScreenLock.enabled";
 const MEDIA_PAGE =
   "https://example.com/browser/dom/media/mediacontrol/tests/browser/file_non_autoplay.html";
 
-function getLockDialog(win) {
-  return win.document.getElementById("window-lock-dialog");
-}
-
-function isLocked(win) {
-  return win.document.documentElement.hasAttribute("windowlocked");
-}
-
-function authErrorShown(win) {
-  return !getLockDialog(win).querySelector(".window-lock-error").hidden;
-}
-
-function commandsDisabled(win) {
-  return win.document
-    .getElementById("cmd_newNavigatorTab")
-    .hasAttribute("disabled");
-}
-
-// Outcomes of the mocked OS reauthentication prompt.
-const ReauthResult = Object.freeze({
-  SUCCESS: "success",
-  CANCELED: "canceled",
-  ERROR: "error",
-});
-let gReauthResult = ReauthResult.CANCELED;
-let gOnReauth = null;
-
-const mockReauthenticator = {
-  QueryInterface: ChromeUtils.generateQI(["nsIOSReauthenticator"]),
-  async asyncReauthenticateUser() {
-    gOnReauth?.();
-    if (gReauthResult == ReauthResult.ERROR) {
-      throw new Components.Exception(
-        "Simulated OS reauthentication error",
-        Cr.NS_ERROR_FAILURE
-      );
-    }
-    return [gReauthResult == ReauthResult.SUCCESS ? 1 : 0, 0];
-  },
-};
-
-async function unlockWith(win, result) {
-  gReauthResult = result;
-  let reauthPromise = new Promise(resolve => (gOnReauth = resolve));
-  getLockDialog(win).querySelector(".window-lock-button").click();
-  await reauthPromise;
-  gOnReauth = null;
-  await TestUtils.waitForTick();
-}
-
-async function setLockPrivateWindows(enabled) {
-  await SpecialPowers.pushPrefEnv({ set: [[PREF, enabled]] });
-}
-
 add_setup(async function () {
-  let cid = MockRegistrar.register(
-    "@mozilla.org/security/osreauthenticator;1",
-    mockReauthenticator
-  );
-  registerCleanupFunction(() => {
-    MockRegistrar.unregister(cid);
+  registerMockReauthenticator();
+  await SpecialPowers.pushPrefEnv({
+    set: [[WINDOW_LOCK_FEATURE_GATE_PREF, true]],
   });
 });
 
@@ -98,9 +33,9 @@ add_task(async function test_lock_private_windows() {
   Services.obs.notifyObservers(null, "screen_lock_notification");
 
   ok(WindowLock.locked, "Locked");
-  ok(isLocked(privateWin), "The private window is locked");
+  ok(isWindowLocked(privateWin), "The private window is locked");
   ok(getLockDialog(privateWin).open, "The lock screen is shown");
-  ok(!isLocked(window), "The non-private window is not locked");
+  ok(!isWindowLocked(window), "The non-private window is not locked");
   ok(!getLockDialog(window), "No lock screen in the non-private window");
   ok(!commandsDisabled(window), "Commands are enabled in the other window");
   ok(
@@ -116,7 +51,10 @@ add_task(async function test_lock_private_windows() {
   let newPrivateWin = await BrowserTestUtils.openNewBrowserWindow({
     private: true,
   });
-  ok(isLocked(newPrivateWin), "A private window opened while locked is locked");
+  ok(
+    isWindowLocked(newPrivateWin),
+    "A private window opened while locked is locked"
+  );
 
   await unlockWith(privateWin, ReauthResult.CANCELED);
   ok(WindowLock.locked, "Canceling authentication keeps windows locked");
@@ -139,7 +77,7 @@ add_task(async function test_lock_private_windows() {
     "The content title is restored in the window title"
   );
   for (let win of [privateWin, newPrivateWin]) {
-    ok(!isLocked(win), "The private window is unlocked");
+    ok(!isWindowLocked(win), "The private window is unlocked");
     ok(!getLockDialog(win).open, "The lock screen is hidden");
     ok(!commandsDisabled(win), "Commands are enabled again");
   }
@@ -209,11 +147,11 @@ add_task(async function test_lock_on_screensaver_start() {
   });
   Services.obs.notifyObservers(null, "screensaver_start_notification");
   ok(
-    isLocked(privateWin),
+    isWindowLocked(privateWin),
     "The private window is locked when the screensaver starts"
   );
   await unlockWith(privateWin, ReauthResult.SUCCESS);
-  ok(!isLocked(privateWin), "The private window is unlocked");
+  ok(!isWindowLocked(privateWin), "The private window is unlocked");
   await BrowserTestUtils.closeWindow(privateWin);
   await SpecialPowers.popPrefEnv();
 });
@@ -343,7 +281,7 @@ add_task(async function test_close_locked_window_with_warning() {
   closeCommand.doCommand();
   await prompt;
   ok(!privateWin.closed, "Canceling the warning keeps the window open");
-  ok(isLocked(privateWin), "The window stays locked");
+  ok(isWindowLocked(privateWin), "The window stays locked");
 
   prompt = BrowserTestUtils.promiseAlertDialogOpen("accept");
   let closed = BrowserTestUtils.domWindowClosed(privateWin);
@@ -362,7 +300,7 @@ add_task(async function test_close_locked_window_with_warning() {
 add_task(async function test_close_locked_window_skips_page_prompts() {
   await SpecialPowers.pushPrefEnv({
     set: [
-      [PREF, true],
+      [WINDOW_LOCK_PREF, true],
       ["dom.require_user_interaction_for_beforeunload", false],
     ],
   });
@@ -376,7 +314,7 @@ add_task(async function test_close_locked_window_skips_page_prompts() {
   );
   await BrowserTestUtils.browserLoaded(browser);
   Services.obs.notifyObservers(null, "screen_lock_notification");
-  ok(isLocked(privateWin), "The private window is locked");
+  ok(isWindowLocked(privateWin), "The private window is locked");
 
   let promptShown = false;
   let onPrompt = dialogWin => {
@@ -400,7 +338,7 @@ add_task(async function test_close_locked_window_skips_page_prompts() {
 add_task(async function test_lock_suspends_pages() {
   await SpecialPowers.pushPrefEnv({
     set: [
-      [PREF, true],
+      [WINDOW_LOCK_PREF, true],
       ["media.mediacontrol.testingevents.enabled", true],
     ],
   });
@@ -529,7 +467,10 @@ add_task(async function test_no_lock_when_disabled() {
   Services.obs.notifyObservers(null, "sleep_notification");
   Services.obs.notifyObservers(null, "wake_notification");
   ok(!WindowLock.locked, "Nothing gets locked when disabled");
-  ok(!isLocked(window) && !isLocked(privateWin), "No window is locked");
+  ok(
+    !isWindowLocked(window) && !isWindowLocked(privateWin),
+    "No window is locked"
+  );
 
   await BrowserTestUtils.closeWindow(privateWin);
   await SpecialPowers.popPrefEnv();
@@ -558,8 +499,8 @@ add_task(async function test_lock_with_shortcut() {
   EventUtils.synthesizeKey("L", { accelKey: true, shiftKey: true }, privateWin);
 
   ok(WindowLock.locked, "Locked");
-  ok(isLocked(privateWin), "The private window is locked");
-  ok(!isLocked(window), "The non-private window is not locked");
+  ok(isWindowLocked(privateWin), "The private window is locked");
+  ok(!isWindowLocked(window), "The non-private window is not locked");
   await minimized;
   is(
     privateWin.windowState,
