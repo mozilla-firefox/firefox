@@ -573,18 +573,9 @@ static bool SetArrayLengthProperty(JSContext* cx, Handle<ArrayObject*> obj,
   return result.checkStrict(cx, obj, id);
 }
 
-static bool SetLengthProperty(JSContext* cx, HandleObject obj,
-                              uint64_t length) {
+bool js::SetLengthProperty(JSContext* cx, HandleObject obj, uint64_t length) {
   MOZ_ASSERT(length < uint64_t(DOUBLE_INTEGRAL_PRECISION_LIMIT));
 
-  RootedValue v(cx, NumberValue(length));
-  if (obj->is<ArrayObject>()) {
-    return SetArrayLengthProperty(cx, obj.as<ArrayObject>(), v);
-  }
-  return SetProperty(cx, obj, cx->names().length, v);
-}
-
-bool js::SetLengthProperty(JSContext* cx, HandleObject obj, uint32_t length) {
   RootedValue v(cx, NumberValue(length));
   if (obj->is<ArrayObject>()) {
     return SetArrayLengthProperty(cx, obj.as<ArrayObject>(), v);
@@ -2757,7 +2748,7 @@ bool js::array_shift(JSContext* cx, unsigned argc, Value* vp) {
   // Step 3.
   if (len == 0) {
     // Step 3.a.
-    if (!SetLengthProperty(cx, obj, uint32_t(0))) {
+    if (!SetLengthProperty(cx, obj, 0)) {
       return false;
     }
 

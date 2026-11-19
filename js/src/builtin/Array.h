@@ -98,7 +98,7 @@ extern bool ToLength(JSContext* cx, HandleValue v, uint64_t* out);
 extern bool GetLengthProperty(JSContext* cx, HandleObject obj,
                               uint64_t* lengthp);
 
-extern bool SetLengthProperty(JSContext* cx, HandleObject obj, uint32_t length);
+extern bool SetLengthProperty(JSContext* cx, HandleObject obj, uint64_t length);
 
 /*
  * Copy 'length' elements from aobj to vp.
