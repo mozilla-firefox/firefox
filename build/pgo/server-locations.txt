@@ -123,6 +123,7 @@ https://sub1.test2.example.com:443     privileged
 https://sub2.test1.example.com:443     privileged
 https://sub2.test2.example.com:443     privileged
 https://example.net:443                privileged
+https://example.com.test:443           privileged
 https://nocert.example.com:443         privileged,nocert
 https://nocert.example.org:443         privileged,nocert
 https://self-signed.example.com:443    privileged,cert=selfsigned
