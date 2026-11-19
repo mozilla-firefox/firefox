@@ -431,4 +431,210 @@ class CreditCardEditorStoreTest {
                 ),
         )
     }
+
+    @Test
+    fun `GIVEN a security code in 'create' mode WHEN saving THEN the card is saved with the security code`() =
+        runTest(testDispatcher) {
+            val store = makeStore(state = createState(showSecurityCodeField = true, securityCode = "123"), scope = this)
+
+            store.dispatch(CreditCardEditorAction.Save)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals("123", creditCardsStorage.newAddedCard?.cardCvv)
+        }
+
+    @Test
+    fun `GIVEN an empty security code in 'create' mode WHEN saving THEN the card is saved without a security code`() =
+        runTest(testDispatcher) {
+            val store = makeStore(state = createState(showSecurityCodeField = true, securityCode = ""), scope = this)
+
+            store.dispatch(CreditCardEditorAction.Save)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertNotNull(creditCardsStorage.newAddedCard)
+            assertEquals(null, creditCardsStorage.newAddedCard?.cardCvv)
+        }
+
+    @Test
+    fun `GIVEN a card without a security code in 'edit' mode WHEN saving THEN the card is saved without a security code`() =
+        runTest(testDispatcher) {
+            val store =
+                makeStore(
+                    state =
+                        createState(
+                            guid = "1234",
+                            inEditMode = true,
+                            showSecurityCodeField = true,
+                            securityCode = "",
+                        ),
+                    scope = this,
+                )
+
+            store.dispatch(CreditCardEditorAction.FieldChanged.NameOnCardChanged("New Name"))
+            store.dispatch(CreditCardEditorAction.Save)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertFalse(store.state.showSecurityCodeError)
+            assertEquals("1234", creditCardsStorage.updatedCard?.first)
+            assertEquals("New Name", creditCardsStorage.updatedCard?.second?.billingName)
+            assertEquals(null, creditCardsStorage.updatedCard?.second?.cardCvv)
+            assertEquals(null, creditCardsStorage.newAddedCard)
+        }
+
+    @Test
+    fun `GIVEN the security code field is hidden WHEN saving THEN the card is saved without a security code`() =
+        runTest(testDispatcher) {
+            val store =
+                makeStore(state = createState(showSecurityCodeField = false, securityCode = "123"), scope = this)
+
+            store.dispatch(CreditCardEditorAction.Save)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(null, creditCardsStorage.newAddedCard?.cardCvv)
+        }
+
+    @Test
+    fun `GIVEN an unchanged security code in 'edit' mode WHEN saving THEN the stored security code is kept`() =
+        runTest(testDispatcher) {
+            val store =
+                makeStore(
+                    state =
+                        createState(
+                            guid = "1234",
+                            inEditMode = true,
+                            showSecurityCodeField = true,
+                            securityCode = "123",
+                            isSecurityCodeChanged = false,
+                        ),
+                    scope = this,
+                )
+
+            store.dispatch(CreditCardEditorAction.Save)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(
+                "1234" to
+                    UpdatableCreditCardFields(
+                        billingName = "Jane Doe",
+                        cardNumber = "5555444433331111",
+                        expiryMonth = 1,
+                        expiryYear = 2026L,
+                        cardType = "mastercard",
+                        cardCvv = null,
+                    ),
+                creditCardsStorage.updatedCard,
+            )
+        }
+
+    @Test
+    fun `GIVEN an unchanged stored security code of the wrong length in 'edit' mode WHEN saving THEN the card is saved and the code is kept`() =
+        runTest(testDispatcher) {
+            val store =
+                makeStore(
+                    state =
+                        createState(
+                            guid = "1234",
+                            inEditMode = true,
+                            cardNumber = "5555444433331111",
+                            showSecurityCodeField = true,
+                            securityCode = "1234",
+                        ),
+                    scope = this,
+                )
+
+            store.dispatch(CreditCardEditorAction.FieldChanged.NameOnCardChanged("New Name"))
+            store.dispatch(CreditCardEditorAction.Save)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertFalse(store.state.showSecurityCodeError)
+            assertEquals("New Name", creditCardsStorage.updatedCard?.second?.billingName)
+            assertEquals(null, creditCardsStorage.updatedCard?.second?.cardCvv)
+        }
+
+    @Test
+    fun `GIVEN a changed security code in 'edit' mode WHEN saving THEN the security code is replaced`() =
+        runTest(testDispatcher) {
+            val store =
+                makeStore(
+                    state = createState(guid = "1234", inEditMode = true, showSecurityCodeField = true),
+                    scope = this,
+                )
+
+            store.dispatch(CreditCardEditorAction.FieldChanged.SecurityCodeChanged("456"))
+            store.dispatch(CreditCardEditorAction.Save)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals("456", creditCardsStorage.updatedCard?.second?.cardCvv)
+        }
+
+    @Test
+    fun `GIVEN a cleared security code in 'edit' mode WHEN saving THEN the stored security code is removed`() =
+        runTest(testDispatcher) {
+            val store =
+                makeStore(
+                    state =
+                        createState(
+                            guid = "1234",
+                            inEditMode = true,
+                            showSecurityCodeField = true,
+                            securityCode = "123",
+                        ),
+                    scope = this,
+                )
+
+            store.dispatch(CreditCardEditorAction.FieldChanged.SecurityCodeCleared)
+            store.dispatch(CreditCardEditorAction.Save)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals("", creditCardsStorage.updatedCard?.second?.cardCvv)
+        }
+
+    @Test
+    fun `GIVEN an invalid security code WHEN saving THEN an error is shown and the card is not saved`() =
+        runTest(testDispatcher) {
+            val store = makeStore(state = createState(showSecurityCodeField = true), scope = this)
+
+            store.dispatch(CreditCardEditorAction.FieldChanged.SecurityCodeChanged("12"))
+            store.dispatch(CreditCardEditorAction.Save)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertTrue(store.state.showSecurityCodeError)
+            assertEquals(null, creditCardsStorage.newAddedCard)
+        }
+
+    @Test
+    fun `GIVEN the security code field is shown WHEN initializing with a card THEN the stored security code is shown`() =
+        runTest(testDispatcher) {
+            val store =
+                makeStore(state = CreditCardEditorState.Default.copy(showSecurityCodeField = true), scope = this)
+
+            store.dispatch(CreditCardEditorAction.Initialization.InitStarted(creditCard = creditCardWithCvv()))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals("123", store.state.securityCode)
+            assertFalse(store.state.isSecurityCodeChanged)
+        }
+
+    @Test
+    fun `GIVEN the security code field is hidden WHEN initializing with a card THEN the stored security code is not loaded`() =
+        runTest(testDispatcher) {
+            val store = makeStore(state = CreditCardEditorState.Default, scope = this)
+
+            store.dispatch(CreditCardEditorAction.Initialization.InitStarted(creditCard = creditCardWithCvv()))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals("", store.state.securityCode)
+        }
+
+    private fun creditCardWithCvv() =
+        CreditCard(
+            guid = "id",
+            billingName = "Banana Apple",
+            cardNumber = "5555444433331111",
+            cardNumberLast4 = "1111",
+            expiryMonth = 2,
+            expiryYear = 2025,
+            cardType = CreditCardNetworkType.MASTERCARD.cardName,
+            cardCvv = "123",
+        )
 }

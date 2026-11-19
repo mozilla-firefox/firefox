@@ -20,6 +20,11 @@ import mozilla.components.lib.state.State
  * @property selectedExpiryYearIndex The index of the selected expiry year.
  * @property inEditMode Indicates whether or not the state is in edit more, or create mode.
  * @property showDeleteDialog Indicates whether or not to show the delete dialog.
+ * @property showSecurityCodeField Indicates whether to show the "CVV" field.
+ * @property securityCode The credit card security code.
+ * @property isSecurityCodeChanged Indicates whether the user changed the security code. An unchanged security code
+ *   keeps the stored one when the card is updated.
+ * @property showSecurityCodeError Indicates whether to show an error on the "CVV" field.
  */
 data class CreditCardEditorState(
     val guid: String,
@@ -33,6 +38,10 @@ data class CreditCardEditorState(
     val selectedExpiryYearIndex: Int,
     val inEditMode: Boolean,
     val showDeleteDialog: Boolean = false,
+    val showSecurityCodeField: Boolean = false,
+    val securityCode: String = "",
+    val isSecurityCodeChanged: Boolean = false,
+    val showSecurityCodeError: Boolean = false,
 ) : State {
 
     companion object {

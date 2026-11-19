@@ -3051,6 +3051,8 @@
     <string name="credit_cards_expiration_date_year">Expiration Date Year</string>
     <!-- The header for the name on the credit card -->
     <string name="credit_cards_name_on_card">Name on Card</string>
+    <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+    <string name="credit_cards_cvv_optional">CVV (optional)</string>
     <!-- The text for the "Delete card" menu item for deleting a credit card -->
     <string name="credit_cards_menu_delete_card">Delete card</string>
     <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3073,6 +3075,10 @@
     <string name="credit_cards_number_validation_error_message_2">Enter a valid card number</string>
     <!-- Error message for card name on card validation -->
     <string name="credit_cards_name_on_card_validation_error_message_2">Add a name</string>
+    <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+    <string name="credit_cards_cvv_validation_error_message">Security code must be 3 digits</string>
+    <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+    <string name="credit_cards_cvv_amex_validation_error_message">American Express security codes are 4 digits</string>
     <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
     <string name="credit_cards_biometric_prompt_message">Unlock to view your saved cards</string>
     <!-- Title of warning dialog if users have no device authentication set up -->

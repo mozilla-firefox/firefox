@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.Dropdown
@@ -125,6 +126,12 @@ fun CreditCardEditorScreen(store: CreditCardEditorStore) {
                 },
                 onYearSelected = { year ->
                     store.dispatch(FieldChanged.YearSelected(year))
+                },
+                onSecurityCodeChanged = { securityCode ->
+                    store.dispatch(FieldChanged.SecurityCodeChanged(securityCode))
+                },
+                onSecurityCodeCleared = {
+                    store.dispatch(FieldChanged.SecurityCodeCleared)
                 },
                 onDeleteClicked = {
                     store.dispatch(CreditCardEditorAction.DeleteClicked)
@@ -213,6 +220,8 @@ private fun EditorContent(
     onNameOnCardChanged: (String) -> Unit = {},
     onMonthSelected: (Int) -> Unit = {},
     onYearSelected: (Int) -> Unit = {},
+    onSecurityCodeChanged: (String) -> Unit = {},
+    onSecurityCodeCleared: () -> Unit = {},
     onDeleteClicked: () -> Unit = {},
     onCancelClicked: () -> Unit = {},
     onSaveClicked: () -> Unit = {},
@@ -270,6 +279,16 @@ private fun EditorContent(
             onYearSelected = onYearSelected,
         )
 
+        if (state.showSecurityCodeField) {
+            SecurityCodeField(
+                securityCode = state.securityCode,
+                isError = state.showSecurityCodeError,
+                isAmexCard = state.isAmexCard(),
+                onSecurityCodeChanged = onSecurityCodeChanged,
+                onSecurityCodeCleared = onSecurityCodeCleared,
+            )
+        }
+
         ButtonsRow(
             inEditMode = state.inEditMode,
             onDeleteClicked = onDeleteClicked,
@@ -314,6 +333,45 @@ private fun ExpirationDateRow(
             onItemSelected = onYearSelected,
         )
     }
+}
+
+@Composable
+private fun SecurityCodeField(
+    securityCode: String,
+    isError: Boolean,
+    isAmexCard: Boolean,
+    onSecurityCodeChanged: (String) -> Unit,
+    onSecurityCodeCleared: () -> Unit,
+) {
+    TextField(
+        value = securityCode,
+        onValueChange = onSecurityCodeChanged,
+        modifier =
+            Modifier.fillMaxWidth().testTag(CreditCardEditorTestTags.SECURITY_CODE_FIELD).semantics {
+                contentDataType = ContentDataType.None
+            },
+        label = stringResource(R.string.credit_cards_cvv_optional),
+        placeholder = "",
+        isError = isError,
+        errorText =
+            if (isAmexCard) {
+                stringResource(R.string.credit_cards_cvv_amex_validation_error_message)
+            } else {
+                stringResource(R.string.credit_cards_cvv_validation_error_message)
+            },
+        trailingIcon =
+            if (securityCode.isNotEmpty()) {
+                { CrossTextFieldButton(onTrailingIconClick = onSecurityCodeCleared) }
+            } else {
+                null
+            },
+        visualTransformation = PasswordVisualTransformation(),
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = KeyboardType.NumberPassword,
+                imeAction = ImeAction.Done,
+            ),
+    )
 }
 
 @Composable
@@ -407,13 +465,16 @@ private data class CreditCardEditorPreviewState(
     val selectedExpiryYearIndex: Int = 2,
     val inEditMode: Boolean = false,
     val showDeleteDialog: Boolean = false,
+    val securityCode: String = "",
+    val showSecurityCodeError: Boolean = false,
 )
 
 private class CreditCardEditorPreviewProvider :
     ThemedValueProvider<CreditCardEditorPreviewState>(
         sequenceOf(
             CreditCardEditorPreviewState(),
-            CreditCardEditorPreviewState(inEditMode = true),
+            CreditCardEditorPreviewState(inEditMode = true, securityCode = "123"),
+            CreditCardEditorPreviewState(securityCode = "12", showSecurityCodeError = true),
             CreditCardEditorPreviewState(inEditMode = true, showDeleteDialog = true),
         )
     )
@@ -434,6 +495,9 @@ private fun CreditCardEditorScreenPreview(
             selectedExpiryYearIndex = state.value.selectedExpiryYearIndex,
             inEditMode = state.value.inEditMode,
             showDeleteDialog = state.value.showDeleteDialog,
+            showSecurityCodeField = true,
+            securityCode = state.value.securityCode,
+            showSecurityCodeError = state.value.showSecurityCodeError,
         )
     FirefoxTheme(state.theme) {
         CreditCardEditorScreen(store = CreditCardEditorStore(initialState = uiState))

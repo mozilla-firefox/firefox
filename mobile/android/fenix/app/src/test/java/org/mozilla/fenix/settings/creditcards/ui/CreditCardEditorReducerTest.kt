@@ -255,4 +255,95 @@ class CreditCardEditorReducerTest {
             result,
         )
     }
+
+    @Test
+    fun `WHEN a SecurityCodeChanged action is received THEN the security code is updated and the error is cleared`() {
+        val state = createState(showSecurityCodeError = true)
+
+        val result = creditCardEditorReducer(state, FieldChanged.SecurityCodeChanged("123"))
+
+        assertEquals("123", result.securityCode)
+        assertTrue(result.isSecurityCodeChanged)
+        assertFalse(result.showSecurityCodeError)
+    }
+
+    @Test
+    fun `WHEN a SecurityCodeChanged action has non-digits or more than 4 digits THEN only the first 4 digits are kept`() {
+        val result = creditCardEditorReducer(createState(), FieldChanged.SecurityCodeChanged("1a2-3 456"))
+
+        assertEquals("1234", result.securityCode)
+    }
+
+    @Test
+    fun `WHEN a SecurityCodeCleared action is received THEN the security code is emptied and the error is cleared`() {
+        val state = createState(securityCode = "12", showSecurityCodeError = true)
+
+        val result = creditCardEditorReducer(state, FieldChanged.SecurityCodeCleared)
+
+        assertEquals("", result.securityCode)
+        assertTrue(result.isSecurityCodeChanged)
+        assertFalse(result.showSecurityCodeError)
+    }
+
+    @Test
+    fun `GIVEN a non American Express card WHEN saving THEN only an empty or 3 digit security code is valid`() {
+        assertFalse(saveWithSecurityCode(MASTERCARD_NUMBER, "").showSecurityCodeError)
+        assertFalse(saveWithSecurityCode(MASTERCARD_NUMBER, "123").showSecurityCodeError)
+        assertTrue(saveWithSecurityCode(MASTERCARD_NUMBER, "12").showSecurityCodeError)
+        assertTrue(saveWithSecurityCode(MASTERCARD_NUMBER, "1234").showSecurityCodeError)
+    }
+
+    @Test
+    fun `GIVEN an American Express card WHEN saving THEN only an empty or 4 digit security code is valid`() {
+        assertFalse(saveWithSecurityCode(AMEX_NUMBER, "").showSecurityCodeError)
+        assertFalse(saveWithSecurityCode(AMEX_NUMBER, "1234").showSecurityCodeError)
+        assertTrue(saveWithSecurityCode(AMEX_NUMBER, "123").showSecurityCodeError)
+    }
+
+    @Test
+    fun `GIVEN the security code field is hidden WHEN saving THEN the security code is not validated`() {
+        val state =
+            createState(
+                cardNumber = MASTERCARD_NUMBER,
+                showSecurityCodeField = false,
+                securityCode = "12",
+                isSecurityCodeChanged = true,
+            )
+
+        val result = creditCardEditorReducer(state, CreditCardEditorAction.Save)
+
+        assertFalse(result.showSecurityCodeError)
+    }
+
+    @Test
+    fun `GIVEN an unchanged stored security code of the wrong length WHEN saving THEN the security code is not validated`() {
+        val mastercardWith4Digits =
+            createState(cardNumber = MASTERCARD_NUMBER, showSecurityCodeField = true, securityCode = "1234")
+        val amexWith3Digits = createState(cardNumber = AMEX_NUMBER, showSecurityCodeField = true, securityCode = "123")
+
+        assertFalse(creditCardEditorReducer(mastercardWith4Digits, CreditCardEditorAction.Save).showSecurityCodeError)
+        assertFalse(creditCardEditorReducer(amexWith3Digits, CreditCardEditorAction.Save).showSecurityCodeError)
+    }
+
+    @Test
+    fun `Only American Express card numbers are American Express cards`() {
+        assertTrue(createState(cardNumber = AMEX_NUMBER).isAmexCard())
+        assertFalse(createState(cardNumber = MASTERCARD_NUMBER).isAmexCard())
+    }
+
+    private fun saveWithSecurityCode(cardNumber: String, securityCode: String) =
+        creditCardEditorReducer(
+            createState(
+                cardNumber = cardNumber,
+                showSecurityCodeField = true,
+                securityCode = securityCode,
+                isSecurityCodeChanged = true,
+            ),
+            CreditCardEditorAction.Save,
+        )
+
+    private companion object {
+        const val MASTERCARD_NUMBER = "5555444433331111"
+        const val AMEX_NUMBER = "378282246310005"
+    }
 }

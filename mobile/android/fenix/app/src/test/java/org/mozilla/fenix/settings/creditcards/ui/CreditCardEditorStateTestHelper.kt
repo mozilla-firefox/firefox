@@ -17,6 +17,10 @@ internal fun createState(
     selectedExpiryYearIndex: Int = 1,
     inEditMode: Boolean = false,
     showDeleteDialog: Boolean = false,
+    showSecurityCodeField: Boolean = false,
+    securityCode: String = "",
+    isSecurityCodeChanged: Boolean = false,
+    showSecurityCodeError: Boolean = false,
 ): CreditCardEditorState {
     return CreditCardEditorState(
         guid = guid,
@@ -30,5 +34,9 @@ internal fun createState(
         selectedExpiryYearIndex = selectedExpiryYearIndex,
         inEditMode = inEditMode,
         showDeleteDialog = showDeleteDialog,
+        showSecurityCodeField = showSecurityCodeField,
+        securityCode = securityCode,
+        isSecurityCodeChanged = isSecurityCodeChanged,
+        showSecurityCodeError = showSecurityCodeError,
     )
 }

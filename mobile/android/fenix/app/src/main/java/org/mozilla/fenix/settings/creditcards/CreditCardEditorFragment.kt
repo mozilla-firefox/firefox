@@ -46,7 +46,12 @@ class CreditCardEditorFragment : SecureFragment(), SystemInsetsPaddedFragment {
     ): View {
         val store: CreditCardEditorStore = storeProvider.get { state ->
             CreditCardEditorStore(
-                initialState = state ?: CreditCardEditorState.Default.copy(inEditMode = args.creditCard != null),
+                initialState =
+                    state
+                        ?: CreditCardEditorState.Default.copy(
+                            inEditMode = args.creditCard != null,
+                            showSecurityCodeField = requireComponents.settings.isCreditCardSecurityCodeEnabled,
+                        ),
                 middleware =
                     listOf(
                         CreditCardEditorMiddleware(

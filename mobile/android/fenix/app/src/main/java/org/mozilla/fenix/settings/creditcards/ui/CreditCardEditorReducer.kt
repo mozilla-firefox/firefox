@@ -4,7 +4,12 @@
 
 package org.mozilla.fenix.settings.creditcards.ui
 
+import mozilla.components.support.utils.CreditCardNetworkType
+import mozilla.components.support.utils.creditCardIIN
 import mozilla.components.support.utils.validateCreditCardNumber
+
+private const val SECURITY_CODE_LENGTH = 3
+private const val AMEX_SECURITY_CODE_LENGTH = 4
 
 /**
  * Reducer for the [CreditCardEditorStore].
@@ -30,9 +35,26 @@ internal fun creditCardEditorReducer(
 private fun CreditCardEditorState.validateInput(): CreditCardEditorState {
     val validCardNumber = cardNumber.validateCreditCardNumber()
     val validNameOnCard = nameOnCard.isNotBlank()
+    val securityCodeError =
+        showSecurityCodeField &&
+            // An unchanged security code is kept as stored, so it is not validated.
+            isSecurityCodeChanged &&
+            securityCode.isNotEmpty() &&
+            securityCode.length != requiredSecurityCodeLength()
 
-    return copy(showNameOnCardError = !validNameOnCard, showCardNumberError = !validCardNumber)
+    return copy(
+        showNameOnCardError = !validNameOnCard,
+        showCardNumberError = !validCardNumber,
+        showSecurityCodeError = securityCodeError,
+    )
 }
+
+/** Whether the entered card number is an American Express card number. */
+internal fun CreditCardEditorState.isAmexCard() =
+    cardNumber.creditCardIIN()?.creditCardIssuerNetwork?.name == CreditCardNetworkType.AMEX.cardName
+
+private fun CreditCardEditorState.requiredSecurityCodeLength() =
+    if (isAmexCard()) AMEX_SECURITY_CODE_LENGTH else SECURITY_CODE_LENGTH
 
 private fun CreditCardEditorState.handleInitialization(
     action: CreditCardEditorAction.Initialization
@@ -51,6 +73,10 @@ private fun CreditCardEditorState.handleInitialization(
                 selectedExpiryYearIndex = action.state.selectedExpiryYearIndex,
                 inEditMode = action.state.inEditMode,
                 showDeleteDialog = action.state.showDeleteDialog,
+                showSecurityCodeField = action.state.showSecurityCodeField,
+                securityCode = action.state.securityCode,
+                isSecurityCodeChanged = action.state.isSecurityCodeChanged,
+                showSecurityCodeError = action.state.showSecurityCodeError,
             )
 
         else -> this
@@ -75,5 +101,18 @@ private fun CreditCardEditorState.handleFieldChange(
             )
 
         is CreditCardEditorAction.FieldChanged.YearSelected -> copy(selectedExpiryYearIndex = action.index)
+        is CreditCardEditorAction.FieldChanged.SecurityCodeChanged ->
+            copy(
+                securityCode = action.securityCode.filter { it.isDigit() }.take(AMEX_SECURITY_CODE_LENGTH),
+                isSecurityCodeChanged = true,
+                showSecurityCodeError = false,
+            )
+
+        is CreditCardEditorAction.FieldChanged.SecurityCodeCleared ->
+            copy(
+                securityCode = "",
+                isSecurityCodeChanged = true,
+                showSecurityCodeError = false,
+            )
     }
 }

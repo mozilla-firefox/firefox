@@ -83,5 +83,15 @@ sealed interface CreditCardEditorAction : Action {
          * @property index The index of the selected year.
          */
         data class YearSelected(val index: Int) : FieldChanged
+
+        /**
+         * Dispatched when the security code of the credit card is changed.
+         *
+         * @property securityCode The updated security code.
+         */
+        data class SecurityCodeChanged(val securityCode: String) : FieldChanged
+
+        /** Dispatched when the user clears the security code with the clear button of the field. */
+        data object SecurityCodeCleared : FieldChanged
     }
 }

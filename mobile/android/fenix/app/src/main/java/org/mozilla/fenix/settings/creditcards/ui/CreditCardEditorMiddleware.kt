@@ -81,7 +81,7 @@ internal class CreditCardEditorMiddleware(
     private fun handleSaveAction(store: Store<CreditCardEditorState, CreditCardEditorAction>) {
         val state = store.state
 
-        if (!state.showCardNumberError && !state.showNameOnCardError) {
+        if (!state.showCardNumberError && !state.showNameOnCardError && !state.showSecurityCodeError) {
             addOrUpdateCard(state)
         }
     }
@@ -103,7 +103,7 @@ internal class CreditCardEditorMiddleware(
                     expiryMonth = state.selectedExpiryMonthIndex + 1L,
                     expiryYear = state.expiryYears[state.selectedExpiryYearIndex].toLong(),
                     cardType = state.cardNumber.creditCardIIN()?.creditCardIssuerNetwork?.name ?: "",
-                    cardCvv = null,
+                    cardCvv = state.updatedSecurityCode(),
                 )
 
             storage.updateCreditCard(state.guid, fields)
@@ -124,7 +124,7 @@ internal class CreditCardEditorMiddleware(
                     expiryMonth = state.selectedExpiryMonthIndex + 1L,
                     expiryYear = state.expiryYears[state.selectedExpiryYearIndex].toLong(),
                     cardType = state.cardNumber.creditCardIIN()?.creditCardIssuerNetwork?.name ?: "",
-                    cardCvv = null,
+                    cardCvv = state.newSecurityCode(),
                 )
 
             storage.addCreditCard(fields)
@@ -134,6 +134,18 @@ internal class CreditCardEditorMiddleware(
             }
             CreditCards.saved.add()
         }
+    }
+
+    /**
+     * The security code for an updated card: null keeps the stored one, an empty string removes it, and any other value
+     * replaces it.
+     */
+    private fun CreditCardEditorState.updatedSecurityCode(): String? = securityCode.takeIf {
+        showSecurityCodeField && isSecurityCodeChanged
+    }
+
+    private fun CreditCardEditorState.newSecurityCode(): String? = securityCode.takeIf {
+        showSecurityCodeField && it.isNotEmpty()
     }
 
     private fun CreditCardEditorAction.Initialization.handleInitAction(
@@ -194,6 +206,8 @@ internal class CreditCardEditorMiddleware(
                                 },
                             inEditMode = true,
                             showDeleteDialog = false,
+                            securityCode = if (state.showSecurityCodeField) creditCard.cardCvv.orEmpty() else "",
+                            isSecurityCodeChanged = false,
                         )
                 )
             )
