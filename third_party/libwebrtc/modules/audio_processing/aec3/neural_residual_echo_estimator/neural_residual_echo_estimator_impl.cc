@@ -512,7 +512,7 @@ NeuralResidualEchoEstimatorImpl::NeuralResidualEchoEstimatorImpl(
   output_mask_unbounded_.fill(0.0f);
 
   init_queue_ = env.task_queue_factory().CreateTaskQueue(
-      "ReeInit", TaskQueueFactory::Priority::kLow);
+      "ReeInit", TaskQueueFactory::Priority::kNormal);
 
   const Timestamp post_time = env.clock().CurrentTime();
 
