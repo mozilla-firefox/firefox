@@ -56,6 +56,11 @@ class WebrtcCallWrapper {
   // Idempotent.
   void UnregisterConduit(MediaSessionConduit* conduit);
 
+  // Call thread only. Adds (aDelta 1) or removes (aDelta -1) a transport that
+  // can carry media of aType, and tells the Call that the network of that type
+  // is up while at least one such transport exists.
+  void UpdateReadyTransports(webrtc::MediaType aType, int aDelta);
+
   // Allow destroying the Call instance on the Call worker thread.
   //
   // Note that shutdown is blocked until the Call instance is destroyed.
@@ -105,6 +110,8 @@ class WebrtcCallWrapper {
  protected:
   // Call worker thread only.
   UniquePtr<webrtc::Call> mCall;
+  size_t mNumReadyAudioTransports = 0;
+  size_t mNumReadyVideoTransports = 0;
 };
 
 }  // namespace mozilla
