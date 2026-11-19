@@ -49,15 +49,10 @@ credit-card-capture-dismiss-button =
     .label = Dismiss
     .accessKey = D
 
-## The toggle turns saving security codes on and off. Its label describes the
-## current state: whether security codes are saved or not.
-
+# The toggle turns saving security codes on and off. The label stays the same
+# in both states.
 credit-card-doorhanger-always-save-security-codes-toggle =
     .label = Always save security codes
-credit-card-doorhanger-dont-save-security-codes-toggle =
-    .label = Don’t save security codes
-
-##
 
 credit-card-capture-save-button =
     .label = Save

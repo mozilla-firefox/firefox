@@ -1136,24 +1136,18 @@ export class CreditCardSaveDoorhanger extends AutofillDoorhanger {
 
   appendSecurityCodeToggle() {
     const toggle = this.doc.createElement("moz-toggle");
-    const updateLabel = () => {
-      this.doc.l10n.setAttributes(
-        toggle,
-        toggle.pressed
-          ? "credit-card-doorhanger-always-save-security-codes-toggle"
-          : "credit-card-doorhanger-dont-save-security-codes-toggle"
-      );
-    };
+    this.doc.l10n.setAttributes(
+      toggle,
+      "credit-card-doorhanger-always-save-security-codes-toggle"
+    );
     toggle.pressed = Services.prefs.getBoolPref(
       FormAutofill.ENABLED_AUTOFILL_CREDITCARDS_CVV_PREF
     );
-    updateLabel();
     toggle.addEventListener("toggle", () => {
       Services.prefs.setBoolPref(
         FormAutofill.ENABLED_AUTOFILL_CREDITCARDS_CVV_PREF,
         toggle.pressed
       );
-      updateLabel();
       this.onSecurityCodeToggled();
       lazy.FormAutofillPreferences.recordCvvSavingToggled(
         toggle.pressed,

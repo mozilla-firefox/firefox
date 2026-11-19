@@ -272,8 +272,8 @@ add_task(async function test_save_doorhanger_toggle_follows_pref() {
     );
     is(
       toggle.getAttribute("data-l10n-id"),
-      "credit-card-doorhanger-dont-save-security-codes-toggle",
-      "The toggle says security codes aren't saved"
+      "credit-card-doorhanger-always-save-security-codes-toggle",
+      "The toggle label doesn't change when the toggle is off"
     );
     is(
       descriptionL10nId(content),
@@ -929,8 +929,8 @@ add_task(async function test_security_code_toggle_switches_to_plain_update() {
     );
     is(
       toggle.getAttribute("data-l10n-id"),
-      "credit-card-doorhanger-dont-save-security-codes-toggle",
-      "The toggle says security codes aren't saved"
+      "credit-card-doorhanger-always-save-security-codes-toggle",
+      "The toggle label doesn't change when the toggle is off"
     );
 
     const notification = getNotification();
