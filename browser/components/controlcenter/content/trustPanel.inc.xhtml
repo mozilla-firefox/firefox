@@ -86,6 +86,75 @@
       </vbox>
     </panelview>
 
+    <panelview id="trustpanel-popup-mainView-redesign"
+               class="PanelUI-subView trustpanel-redesign"
+               role="document"
+               mainview-with-header="true"
+               has-custom-header="true">
+
+      <vbox id="trustpanel-header-section-redesign">
+        <hbox id="trustpanel-header-row-redesign">
+          <hbox id="trustpanel-popup-host-wrapper-redesign">
+            <image id="trustpanel-popup-icon-redesign"></image>
+            <label id="trustpanel-popup-host-redesign" crop="start"></label>
+          </hbox>
+          <toolbarbutton id="trustpanel-popup-connection-redesign" class="subviewbutton subviewbutton-nav">
+            <image id="trustpanel-connection-icon-redesign"></image>
+            <label id="trustpanel-connection-label-redesign"></label>
+          </toolbarbutton>
+        </hbox>
+
+        <html:script type="module" src="chrome://browser/content/controlcenter/components/breach-alert-panel.mjs"></html:script>
+        <html:breach-alert-panel id="trustpanel-breach-alert-section-redesign">
+        </html:breach-alert-panel>
+        <vbox id="trustpanel-graphic-section-redesign">
+          <vbox id="trustpanel-graphic-section-inner-redesign">
+            <hbox id="trustpanel-toggle-checkbox-container-redesign">
+              <hbox id="trustpanel-etp-label-wrapper-redesign">
+                <image id="trustpanel-etp-indicator-redesign"></image>
+                <label id="trustpanel-etp-label-redesign" class="trustpanel-header"></label>
+              </hbox>
+              <html:moz-toggle data-l10n-attrs="label, description" id="trustpanel-toggle-redesign"></html:moz-toggle>
+            </hbox>
+            <hbox class="trustpanel-card-main">
+              <image id="trustpanel-graphic-image-redesign"></image>
+            </hbox>
+            <vbox id="trustpanel-blocker-section-redesign" class="trustpanel-card-content trustpanel-graphic-inner">
+              <label data-l10n-id="trustpanel-blocker-section-header2-redesign" data-l10n-args='{"count":0}' id="trustpanel-blocker-section-header-redesign" class="trustpanel-header"></label>
+              <label data-l10n-id="trustpanel-blocker-description-redesign" id="trustpanel-blocker-description-text-redesign"></label>
+              <label data-l10n-id="trustpanel-no-trackers-header-redesign" id="trustpanel-no-trackers-header-redesign" class="trustpanel-header" hidden="true"></label>
+              <label data-l10n-id="trustpanel-no-trackers-description-redesign" id="trustpanel-no-trackers-description-text-redesign" hidden="true"></label>
+              <label data-l10n-id="trustpanel-etp-off-description-redesign" id="trustpanel-etp-off-description-text-redesign" hidden="true"></label>
+              <html:moz-button-group id="trustpanel-blocker-button-group-redesign">
+                <html:moz-button id="trustpanel-blocker-see-trackers-button" data-l10n-id="trustpanel-blocker-see-trackers-button" default="true" type="primary"></html:moz-button>
+              </html:moz-button-group>
+            </vbox>
+            <vbox id="trustpanel-insecure-section-redesign" class="trustpanel-card-content trustpanel-card-divided trustpanel-graphic-inner" when-connection="not-secure">
+              <label data-l10n-id="trustpanel-insecure-section-header" class="trustpanel-header"></label>
+              <label data-l10n-id="trustpanel-insecure-description"></label>
+            </vbox>
+          </vbox>
+        </vbox>
+
+        <vbox id="trustpanel-clear-cookies-footer-redesign">
+          <toolbarbutton id="trustpanel-delete-site-data-button" class="subviewbutton subviewbutton-iconic subviewbutton-nav">
+            <image class="toolbarbutton-icon" src="chrome://browser/skin/controlcenter/flame.svg"></image>
+            <label class="toolbarbutton-text" data-l10n-id="trustpanel-delete-site-data-button"></label>
+          </toolbarbutton>
+        </vbox>
+
+        <toolbarbutton id="trustpanel-fix-site-issue-button" class="subviewbutton subviewbutton-iconic subviewbutton-nav">
+          <image class="toolbarbutton-icon" src="chrome://browser/skin/controlcenter/wrench.svg"></image>
+          <label class="toolbarbutton-text" data-l10n-id="trustpanel-fix-site-issue-button"></label>
+        </toolbarbutton>
+
+        <toolbarbutton id="trustpanel-manage-settings-button" class="subviewbutton subviewbutton-iconic">
+          <image class="toolbarbutton-icon" src="chrome://browser/skin/controlcenter/cog.svg"></image>
+          <label class="toolbarbutton-text" data-l10n-id="trustpanel-manage-settings-button"></label>
+        </toolbarbutton>
+      </vbox>
+    </panelview>
+
     <panelview id="trustpanel-securityInformationView"
                class="PanelUI-subView"
                role="document">

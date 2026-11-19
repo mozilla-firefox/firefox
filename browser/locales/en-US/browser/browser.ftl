@@ -1754,6 +1754,8 @@ urlbar-trust-icon-trackers-blocked-longform-label = { $count ->
 trustpanel-etp-label-enabled = Enhanced Tracking Protection is on
 trustpanel-etp-label-disabled = Enhanced Tracking Protection is off
 
+trustpanel-etp-label-redesign = Enhanced Tracking Protection
+
 # Variables
 #  $host (String): the hostname of the site that is being displayed.
 trustpanel-etp-toggle-on =
@@ -1782,7 +1784,10 @@ trustpanel-header-disabled = You turned off protections
 trustpanel-description-disabled = { -brand-product-name } is off-duty. We suggest turning protections back on.
 
 trustpanel-clear-cookies-button = Clear cookies and site data
+trustpanel-delete-site-data-button = Delete site data
+trustpanel-fix-site-issue-button = Fix site issue
 trustpanel-privacy-link = Privacy Settings
+trustpanel-manage-settings-button = Manage settings
 
 # Variables
 #  $host (String): the hostname of the site that is being displayed.
@@ -1802,6 +1807,7 @@ trustpanel-site-information-header =
 trustpanel-siteinformation-morelink = More site information
 
 trustpanel-blocker-see-all = See All
+trustpanel-blocker-see-trackers-button = See trackers
 
 # Variables
 #  $host (String): the hostname of the site that is being displayed.
@@ -1816,6 +1822,20 @@ trustpanel-blocker-section-header2 = { $count ->
   *[other] <span data-l10n-name="count">{ $count }</span> Trackers blocked on this site
 }
 trustpanel-blocker-description = { -brand-product-name } thinks companies should follow you less. So we block as many as we can.
+
+##  $count (String): the number of trackers blocked.
+
+trustpanel-blocker-section-header2-redesign = { $count ->
+  [one] { -brand-short-name } blocked <span data-l10n-name="count">{ $count }</span> tracker on this site
+  *[other] { -brand-short-name } blocked <span data-l10n-name="count">{ $count }</span> trackers on this site
+}
+trustpanel-blocker-description-redesign = These trackers were blocked from collecting info about your browsing.
+
+trustpanel-no-trackers-header-redesign = No trackers found on this site
+trustpanel-no-trackers-description-redesign = { -brand-short-name } checked for known trackers and didn’t find any.
+
+trustpanel-etp-off-description-redesign = Turn on protections and { -brand-short-name } will block known trackers from collecting info about your browsing.
+
 trustpanel-blocked-header = { -brand-product-name } blocked these things for you:
 trustpanel-tracking-header = { -brand-product-name } allowed these things so sites don’t break:
 trustpanel-tracking-description = Without trackers, some buttons, forms, and login fields might not work.

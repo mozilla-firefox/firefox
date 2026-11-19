@@ -9,6 +9,15 @@
   --trustpanel-inner-border: var(--border-width) solid var(--color-violet-20);
   --trustpanel-inner-warning-border: var(--border-width) solid var(--color-red-10);
 
+  /* Redesign-specific backgrounds */
+  --trustpanel-redesign-overlay: light-dark(rgba(255, 255, 255, 0.2), rgba(0, 0, 0, 0.2));
+  --trustpanel-redesign-gradient-start: light-dark(rgba(212, 193, 255, 0.7), rgba(89, 57, 168, 0.5));
+  --trustpanel-redesign-gradient-end: light-dark(rgba(245, 236, 255, 0.7), rgba(62, 41, 118, 0.5));
+  --trustpanel-redesign-bg-disabled: light-dark(var(--color-gray-10, #efedf2), var(--color-gray-65, #312f33));
+
+  /* Redesign-specific icon size */
+  --trustpanel-etp-indicator-size: 7px;
+
   @media -moz-pref("browser.nova.enabled") {
     --trustpanel-highlight-bg: light-dark(var(--color-violet-10), var(--color-violet-desaturated-70));
     /* White cards use the standard border token, like the breach alert card;
@@ -119,10 +128,15 @@
 #identity-popup-mainView,
 #permission-popup-mainView,
 #trustpanel-popup-mainView,
+#trustpanel-popup-mainView-redesign,
 #trustpanel-blockerView,
 #protections-popup-mainView {
   min-width: var(--controlcenter-popup-content-width);
   max-width: var(--controlcenter-popup-content-width);
+}
+
+#trustpanel-popup-mainView-redesign {
+  padding: var(--space-xsmall);
 }
 
 #protections-popup[toast] #protections-popup-mainView > :not(#protections-popup-mainView-panel-header-section),
@@ -990,18 +1004,21 @@
 #trustpanel-popup[tracking-protection="warning"] {
   --trustpanel-image-legacy: url(chrome://browser/skin/trustpanel-graphic-warning.svg);
   --trustpanel-image-nova: url(chrome://browser/content/controlcenter/assets/breach-alert-shield-warning.svg);
+  --trustpanel-image-redesign: url(chrome://browser/skin/controlcenter/shield-redesign.svg);
   --trustpanel-background: var(--trustpanel-warning-bg);
 }
 
 #trustpanel-popup[tracking-protection="enabled"] {
   --trustpanel-image-legacy: url(chrome://browser/skin/trustpanel-graphic-enabled.svg);
   --trustpanel-image-nova: url(chrome://browser/content/controlcenter/assets/breach-alert-shield-check.svg);
+  --trustpanel-image-redesign: url(chrome://browser/skin/controlcenter/shield-redesign.svg);
   --trustpanel-background: var(--trustpanel-highlight-bg);
 }
 
 #trustpanel-popup[tracking-protection="disabled"] {
   --trustpanel-image-legacy: url(chrome://browser/skin/trustpanel-graphic-disabled.svg);
   --trustpanel-image-nova: url(chrome://browser/content/controlcenter/assets/breach-alert-shield-cross.svg);
+  --trustpanel-image-redesign: url(chrome://browser/skin/controlcenter/shield-etp-off.svg);
   --trustpanel-background: var(--trustpanel-graphic-bg);
 }
 
@@ -1235,6 +1252,262 @@
 
 #trustpanel-securityInformationView {
   padding-block-end: var(--space-small);
+}
+
+/* Redesigned trust panel experiment - duplicate all styles for -redesign suffixed elements */
+#trustpanel-header-section-redesign {
+  padding-block-end: var(--space-small);
+}
+
+#trustpanel-header-row-redesign {
+  justify-content: space-between;
+  padding-block-start: var(--space-small);
+  padding-inline-start: var(--space-large);
+}
+
+#trustpanel-popup-host-wrapper-redesign {
+  overflow: hidden;
+}
+
+#trustpanel-popup-host-redesign {
+  align-self: center;
+}
+
+#trustpanel-graphic-section-redesign {
+  margin: var(--space-small) var(--space-large);
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  border: var(--border-width) solid var(--trustpanel-card-border-color);
+  border-radius: var(--border-radius-large);
+  background:
+    linear-gradient(0deg, var(--trustpanel-redesign-overlay), var(--trustpanel-redesign-overlay)),
+    linear-gradient(143.28deg, var(--trustpanel-redesign-gradient-start) 32.8%, var(--trustpanel-redesign-gradient-end) 79.63%);
+
+  #trustpanel-popup:is([tracking-protection="warning"], [connection="not-secure"], [connection="cert-error-page"]) & {
+    background: none;
+  }
+
+  #trustpanel-popup[tracking-protection="disabled"] & {
+    background: var(--trustpanel-redesign-bg-disabled);
+  }
+}
+
+#trustpanel-graphic-section-inner-redesign {
+  padding: var(--space-xlarge);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Redesign: Center the shield icon in the card main section */
+#trustpanel-graphic-section-redesign .trustpanel-card-main {
+  justify-content: center;
+  padding-block-start: var(--space-xlarge);
+  padding-block-end: 0;
+  border: none;
+  margin-block-end: 0;
+}
+
+#trustpanel-graphic-image-redesign {
+  width: var(--size-image-large);
+  height: var(--size-image-large);
+  flex-shrink: 0;
+  background-image: var(--trustpanel-image-redesign);
+  -moz-context-properties: fill;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  fill: var(--icon-color-information);
+}
+
+#trustpanel-graphic-section-text-redesign {
+  align-self: flex-start;
+  margin-inline-start: 0;
+}
+
+#trustpanel-toggle-checkbox-container-redesign {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-block-end: var(--space-large);
+  margin-block-end: var(--space-medium);
+  border-bottom: var(--border-width) solid var(--trustpanel-card-divider-color);
+
+  &[disabled] label {
+    color: var(--button-text-color-ghost-disabled);
+    opacity: var(--button-opacity-disabled);
+  }
+}
+
+#trustpanel-etp-label-wrapper-redesign {
+  display: flex;
+  align-items: center;
+  gap: var(--space-small);
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-inline-end: var(--space-medium);
+}
+
+#trustpanel-etp-label-redesign {
+  margin: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: normal;
+}
+
+#trustpanel-etp-indicator-redesign {
+  width: var(--icon-size-xsmall);
+  height: var(--icon-size-xsmall);
+  background-image: url("chrome://browser/skin/controlcenter/etp-indicator-12.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  flex-shrink: 0;
+
+  #trustpanel-popup[tracking-protection="disabled"] & {
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    width: var(--trustpanel-etp-indicator-size);
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    height: var(--trustpanel-etp-indicator-size);
+    background-image: url("chrome://browser/skin/controlcenter/etp-off-indicator-12.svg");
+    -moz-context-properties: stroke;
+    stroke: var(--icon-color);
+    opacity: var(--opacity-deemphasized-strong);
+  }
+}
+
+#trustpanel-toggle-redesign {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+}
+
+#trustpanel-connection-icon-redesign,
+#trustpanel-popup-icon-redesign {
+  -moz-context-properties: fill, fill-opacity;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  margin-inline-end: var(--space-xsmall);
+  align-self: center;
+}
+
+#trustpanel-connection-icon-redesign {
+  list-style-image: url(chrome://global/skin/icons/security-broken.svg);
+  -moz-context-properties: fill, stroke;
+  stroke: var(--icon-color-critical);
+
+  #trustpanel-popup:is([connection^="secure"], [connection="extension"], [connection="chrome"], [connection="file"]):not(
+      [connection="secure-cert-user-overridden"]
+    )
+    & {
+    list-style-image: url(chrome://global/skin/icons/security.svg);
+  }
+
+  #trustpanel-popup[connection^="secure"]:is([customroot], [tlskeylogging]) & {
+    list-style-image: url(chrome://global/skin/icons/security-custom-root.svg);
+  }
+
+  #trustpanel-popup[connection="net-error-page"] & {
+    list-style-image: url(chrome://global/skin/icons/info.svg);
+  }
+}
+
+#trustpanel-popup-icon-redesign:not([src]),
+#trustpanel-popup-icon-redesign[src=""] {
+  display: none;
+}
+
+#trustpanel-blocker-section-header-redesign {
+  text-align: center;
+  margin: 0;
+  font-size: var(--font-size-heading-large);
+
+  span {
+    color: var(--color-accent-primary);
+  }
+}
+
+#trustpanel-no-trackers-header-redesign {
+  text-align: center;
+  margin: 0;
+  font-size: var(--font-size-heading-large);
+}
+
+#trustpanel-no-trackers-description-text-redesign {
+  font-size: var(--font-size-large);
+  text-align: center;
+  margin: 0;
+  padding-block-end: var(--space-large);
+}
+
+#trustpanel-etp-off-description-text-redesign {
+  font-size: var(--font-size-large);
+  text-align: center;
+  margin: 0;
+  padding-block-end: var(--space-large);
+  color: var(--text-color-deemphasized);
+}
+
+/* Footer button icons for redesigned panel */
+#trustpanel-delete-site-data-button .toolbarbutton-icon,
+#trustpanel-fix-site-issue-button .toolbarbutton-icon,
+#trustpanel-manage-settings-button .toolbarbutton-icon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  margin-inline-end: var(--space-small);
+  -moz-context-properties: fill, stroke;
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+#trustpanel-delete-site-data-button .toolbarbutton-text,
+#trustpanel-fix-site-issue-button .toolbarbutton-text,
+#trustpanel-manage-settings-button .toolbarbutton-text {
+  flex: 1;
+}
+
+#trustpanel-blocker-section-redesign {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-medium);
+  border: none;
+  padding-top: 0;
+
+  > label {
+    margin: 0;
+
+    &:not(.trustpanel-header) {
+      font-size: var(--font-size-large);
+    }
+  }
+
+  > moz-button-group {
+    margin-block: var(--space-medium);
+  }
+}
+
+#trustpanel-insecure-section-redesign {
+  visibility: collapse;
+  border: none;
+  border-top: var(--border-width) solid var(--trustpanel-card-divider-color);
+  padding-block-start: var(--space-large);
+
+  #trustpanel-popup[tracking-protection="warning"][connection="not-secure"] & {
+    visibility: visible;
+  }
+
+  .trustpanel-header {
+    -moz-context-properties: fill, stroke;
+    stroke: var(--icon-color-critical);
+  }
+}
+
+#trustpanel-clear-cookies-footer-redesign[hidden] + toolbarseparator {
+  display: none;
 }
 
 .moz-button-subviewbutton-nav {
