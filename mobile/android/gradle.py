@@ -3,6 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import os
+import re
 import subprocess
 import sys
 import time
@@ -22,6 +23,21 @@ def gradle_lock(topobjdir, max_wait_seconds=600):
     ensureParentDir(lock_path)
     with SoftFileLock(lock_path, timeout=max_wait_seconds):
         yield
+
+
+def jvmargs_with_max_heap(topsrcdir, max_heap):
+    with open(mozpath.join(topsrcdir, "gradle.properties"), encoding="utf-8") as fh:
+        jvmargs = ""
+        for line in fh:
+            if m := re.match(r"\s*org\.gradle\.jvmargs\s*[=:]\s*(.*?)\s*$", line):
+                jvmargs = m.group(1)
+    jvmargs, replaced = re.subn(r"-Xmx\S+", lambda _: f"-Xmx{max_heap}", jvmargs)
+    if not replaced or jvmargs.endswith("\\"):
+        raise Exception(
+            f"MOZ_GRADLE_MAX_HEAP is set, but {topsrcdir}/gradle.properties "
+            "has no single line org.gradle.jvmargs with -Xmx"
+        )
+    return jvmargs
 
 
 def main(dummy_output_file, *args):

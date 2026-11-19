@@ -819,6 +819,13 @@ def gradle(command_context, args, verbose=False, gradle_path=None, topsrcdir=Non
     if command_context.substs.get("MOZ_AUTOMATION"):
         gradle_flags += ["--console=plain"]
 
+    if max_heap := os.environ.get("MOZ_GRADLE_MAX_HEAP"):
+        android_gradle = load_source(
+            "android_gradle", os.path.join(os.path.dirname(__file__), "gradle.py")
+        )
+        jvmargs = android_gradle.jvmargs_with_max_heap(topsrcdir, max_heap)
+        gradle_flags += [f"-Dorg.gradle.jvmargs={jvmargs}"]
+
     env = os.environ.copy()
 
     env.update({

@@ -31,6 +31,7 @@ PYTHON_UNITTEST_MANIFESTS += [
 
 PYTHON_UNITTEST_MANIFESTS += [
     "test/python/python.ini",
+    "test/python/unit.toml",
 ]
 
 if CONFIG["ENABLE_TESTS"] or CONFIG["MOZ_DMD"]:

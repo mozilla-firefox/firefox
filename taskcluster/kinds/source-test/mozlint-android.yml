@@ -21,6 +21,7 @@ task-defaults:
         docker-image: {in-tree: android-build}
         env:
             MOZCONFIG: mobile/android/config/mozconfigs/android-arm/nightly-android-lints
+            MOZ_GRADLE_MAX_HEAP: 16g
             MOZ_OBJDIR: obj-firefox
             PERFHERDER_EXTRA_OPTIONS: android-lints
             TINDERBOX_OUTPUT: '1'
