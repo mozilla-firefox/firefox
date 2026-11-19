@@ -186,8 +186,6 @@ class MockVideoReceiveStream : public webrtc::VideoReceiveStreamInterface {
   void SetFlexFecProtection(
       webrtc::RtpPacketSinkInterface* flexfec_sink) override {}
 
-  void SetLossNotificationEnabled(bool enabled) override {}
-
   void SetNackHistory(webrtc::TimeDelta history) override {}
 
   void SetProtectionPayloadTypes(int red_payload_type,
