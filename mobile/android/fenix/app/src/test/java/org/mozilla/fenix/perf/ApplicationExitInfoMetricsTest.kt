@@ -11,6 +11,7 @@ import android.os.Build
 import androidx.test.filters.SdkSuppress
 import io.mockk.every
 import io.mockk.mockk
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -63,6 +64,26 @@ class ApplicationExitInfoMetricsTest {
         val result = ApplicationExitInfoMetrics.getProcessExitsForDisplay(throwingContext)
 
         assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `WHEN toProcessType is called THEN process names are mapped to the expected process types`() {
+        val expected =
+            mapOf(
+                "org.mozilla.fenix" to "parent",
+                "org.mozilla.fenix:sandboxed_tab_disable_art_image_3" to "content",
+                "org.mozilla.fenix:isolatedTab_disable_art_image_7" to "content",
+                "org.mozilla.fenix:zygoteTab_disable_art_image_" to "content",
+                "org.mozilla.fenix:gpu_disable_art_image_" to "gpu",
+                "org.mozilla.fenix:media" to "media",
+                "org.mozilla.fenix:utility_disable_art_image_" to "utility",
+                "org.mozilla.fenix:isolatedGmplugin_disable_art_image_" to "other",
+                "org.mozilla.fenix:rdd_disable_art_image_" to "other",
+                "org.example.stable:gpu_disable_art_image_" to "gpu",
+            )
+        expected.forEach { (name, type) ->
+            assertEquals(name, type, with(ApplicationExitInfoMetrics) { name.toProcessType() })
+        }
     }
 
     @Test

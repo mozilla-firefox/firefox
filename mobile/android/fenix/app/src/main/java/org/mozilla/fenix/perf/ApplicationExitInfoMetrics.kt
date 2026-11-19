@@ -189,13 +189,15 @@ object ApplicationExitInfoMetrics {
         }
     }
 
-    private fun String.toProcessType(): String {
+    @VisibleForTesting(otherwise = PRIVATE)
+    internal fun String.toProcessType(): String {
+        if (':' !in this) return "parent"
+        val suffix = substringAfter(':')
         return when {
-            ":" !in this -> "parent"
-            "tab" in this -> "content"
-            "gpu" in this -> "gpu"
-            "media" in this -> "media"
-            "utility" in this -> "utility"
+            suffix.contains("tab", ignoreCase = true) -> "content"
+            suffix.contains("gpu", ignoreCase = true) -> "gpu"
+            suffix.contains("media", ignoreCase = true) -> "media"
+            suffix.contains("utility", ignoreCase = true) -> "utility"
             else -> "other"
         }
     }
