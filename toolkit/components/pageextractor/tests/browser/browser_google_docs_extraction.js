@@ -3,9 +3,8 @@
 
 "use strict";
 
-const { HttpServer } = ChromeUtils.importESModule(
-  "resource://testing-common/httpd.sys.mjs"
-);
+const { HttpServer, overrideBinaryStreamsForTests } =
+  ChromeUtils.importESModule("resource://testing-common/httpd.sys.mjs");
 
 const { MAX_DOWNLOAD_BYTES } = ChromeUtils.importESModule(
   "moz-src:///toolkit/components/pageextractor/GoogleDocsExtraction.sys.mjs"
@@ -142,6 +141,29 @@ add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
     set: [["browser.pageextractor.googledocs.timeoutMs", 10 * 60 * 1000]],
   });
+
+  // httpd.js copies a body to the socket 8 KiB at a time, one main-thread
+  // round trip each. Chaos mode delays every round trip, which made the
+  // views at the download cap most of this test's run time.
+  const BinaryInputStream = Components.Constructor(
+    "@mozilla.org/binaryinputstream;1",
+    "nsIBinaryInputStream",
+    "setInputStream"
+  );
+  const BinaryOutputStream = Components.Constructor(
+    "@mozilla.org/binaryoutputstream;1",
+    "nsIBinaryOutputStream",
+    "setOutputStream"
+  );
+  overrideBinaryStreamsForTests(
+    BinaryInputStream,
+    BinaryOutputStream,
+    256 * 1024
+  );
+  // 8192 is httpd.js's default Response.SEGMENT_SIZE, which it doesn't export.
+  registerCleanupFunction(() =>
+    overrideBinaryStreamsForTests(BinaryInputStream, BinaryOutputStream, 8192)
+  );
 });
 
 add_task(async function test_reads_the_view() {
