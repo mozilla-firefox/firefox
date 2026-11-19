@@ -9,8 +9,9 @@
 
 namespace mozilla {
 
-// Extends ContentBlockingAllowListCache to also check for "cookie" allow
-// permissions.
+// Extends ContentBlockingAllowListCache to also check for "cookie" and
+// "bounce-tracking-protection-exception" allow permissions.
+// "bounce-tracking-protection-exception" is set via remote permissions.
 class BounceTrackingAllowList final : public ContentBlockingAllowListCache {
  private:
   nsTArray<nsCString> GetAllowListPermissionTypes() override;
