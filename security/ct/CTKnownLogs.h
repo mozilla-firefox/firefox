@@ -14,7 +14,7 @@
 
 #include <stddef.h>
 
-static const PRTime kCTExpirationTime = INT64_C(1800994074000000);
+static const PRTime kCTExpirationTime = INT64_C(1801166751000000);
 
 namespace mozilla::ct {
 
@@ -618,7 +618,7 @@ const CTLogInfo kCTLogList[] = {
      "\xe7",
      91},
     {"Geomys Tuscolo2028h1", CTLogState::Admissible, CTLogFormat::Tiled,
-     1788961500000,  // 2026-09-09T13:45:00Z
+     1795096200000,  // 2026-11-19T13:50:00Z
      6,              // operated by Geomys
      "\x30\x59\x30\x13\x06\x07\x2a\x86\x48\xce\x3d\x02\x01\x06\x08\x2a\x86\x48"
      "\xce\x3d\x03\x01\x07\x03\x42\x00\x04\xa0\x2a\xd8\xf4\x9c\x3f\x41\x62\x37"
@@ -628,7 +628,7 @@ const CTLogInfo kCTLogList[] = {
      "\x8f",
      91},
     {"Geomys Tuscolo2028h2", CTLogState::Admissible, CTLogFormat::Tiled,
-     1788961500000,  // 2026-09-09T13:45:00Z
+     1795096200000,  // 2026-11-19T13:50:00Z
      6,              // operated by Geomys
      "\x30\x59\x30\x13\x06\x07\x2a\x86\x48\xce\x3d\x02\x01\x06\x08\x2a\x86\x48"
      "\xce\x3d\x03\x01\x07\x03\x42\x00\x04\x16\xf5\xdb\xaf\x3f\x8d\xde\x24\x5c"
@@ -638,7 +638,7 @@ const CTLogInfo kCTLogList[] = {
      "\x32",
      91},
     {"Geomys Trastevere2026h2", CTLogState::Admissible, CTLogFormat::Tiled,
-     1788961500000,  // 2026-09-09T13:45:00Z
+     1795096200000,  // 2026-11-19T13:50:00Z
      6,              // operated by Geomys
      "\x30\x59\x30\x13\x06\x07\x2a\x86\x48\xce\x3d\x02\x01\x06\x08\x2a\x86\x48"
      "\xce\x3d\x03\x01\x07\x03\x42\x00\x04\x13\x31\x5c\x7e\x74\x7e\x3f\xec\x46"
@@ -648,7 +648,7 @@ const CTLogInfo kCTLogList[] = {
      "\xc3",
      91},
     {"Geomys Trastevere2027h1", CTLogState::Admissible, CTLogFormat::Tiled,
-     1788961500000,  // 2026-09-09T13:45:00Z
+     1795096200000,  // 2026-11-19T13:50:00Z
      6,              // operated by Geomys
      "\x30\x59\x30\x13\x06\x07\x2a\x86\x48\xce\x3d\x02\x01\x06\x08\x2a\x86\x48"
      "\xce\x3d\x03\x01\x07\x03\x42\x00\x04\x70\x66\x22\x45\x41\xb9\x7f\x5a\xa9"
@@ -658,7 +658,7 @@ const CTLogInfo kCTLogList[] = {
      "\x60",
      91},
     {"Geomys Trastevere2027h2", CTLogState::Admissible, CTLogFormat::Tiled,
-     1788961500000,  // 2026-09-09T13:45:00Z
+     1795096200000,  // 2026-11-19T13:50:00Z
      6,              // operated by Geomys
      "\x30\x59\x30\x13\x06\x07\x2a\x86\x48\xce\x3d\x02\x01\x06\x08\x2a\x86\x48"
      "\xce\x3d\x03\x01\x07\x03\x42\x00\x04\x24\xf1\x9e\x8e\x4d\xd7\x75\x1b\x6a"
@@ -668,7 +668,7 @@ const CTLogInfo kCTLogList[] = {
      "\xd9",
      91},
     {"Geomys Trastevere2028h1", CTLogState::Admissible, CTLogFormat::Tiled,
-     1788961500000,  // 2026-09-09T13:45:00Z
+     1795096200000,  // 2026-11-19T13:50:00Z
      6,              // operated by Geomys
      "\x30\x59\x30\x13\x06\x07\x2a\x86\x48\xce\x3d\x02\x01\x06\x08\x2a\x86\x48"
      "\xce\x3d\x03\x01\x07\x03\x42\x00\x04\xd3\x94\x5d\x3b\xd7\x71\xb9\xe3\xc5"
@@ -678,7 +678,7 @@ const CTLogInfo kCTLogList[] = {
      "\x2d",
      91},
     {"Geomys Trastevere2028h2", CTLogState::Admissible, CTLogFormat::Tiled,
-     1788961500000,  // 2026-09-09T13:45:00Z
+     1795096200000,  // 2026-11-19T13:50:00Z
      6,              // operated by Geomys
      "\x30\x59\x30\x13\x06\x07\x2a\x86\x48\xce\x3d\x02\x01\x06\x08\x2a\x86\x48"
      "\xce\x3d\x03\x01\x07\x03\x42\x00\x04\x07\x88\x79\x30\xc2\xd2\x81\x9b\x8e"
@@ -758,7 +758,7 @@ const CTLogInfo kCTLogList[] = {
      "\xf3",
      91},
     {"IPng Networks Gouda2028h1", CTLogState::Admissible, CTLogFormat::Tiled,
-     1788961500000,  // 2026-09-09T13:45:00Z
+     1795096200000,  // 2026-11-19T13:50:00Z
      7,              // operated by IPng Networks
      "\x30\x59\x30\x13\x06\x07\x2a\x86\x48\xce\x3d\x02\x01\x06\x08\x2a\x86\x48"
      "\xce\x3d\x03\x01\x07\x03\x42\x00\x04\xe6\x68\x02\x98\x96\xcf\xa3\x80\x7e"
@@ -768,7 +768,7 @@ const CTLogInfo kCTLogList[] = {
      "\x33",
      91},
     {"IPng Networks Gouda2028h2", CTLogState::Admissible, CTLogFormat::Tiled,
-     1788961500000,  // 2026-09-09T13:45:00Z
+     1795096200000,  // 2026-11-19T13:50:00Z
      7,              // operated by IPng Networks
      "\x30\x59\x30\x13\x06\x07\x2a\x86\x48\xce\x3d\x02\x01\x06\x08\x2a\x86\x48"
      "\xce\x3d\x03\x01\x07\x03\x42\x00\x04\x36\xd8\xcf\xc8\x7f\xee\x66\x66\x6e"
@@ -778,7 +778,7 @@ const CTLogInfo kCTLogList[] = {
      "\x37",
      91},
     {"IPng Networks Halloumi2028h1", CTLogState::Admissible, CTLogFormat::Tiled,
-     1788961500000,  // 2026-09-09T13:45:00Z
+     1795096200000,  // 2026-11-19T13:50:00Z
      7,              // operated by IPng Networks
      "\x30\x59\x30\x13\x06\x07\x2a\x86\x48\xce\x3d\x02\x01\x06\x08\x2a\x86\x48"
      "\xce\x3d\x03\x01\x07\x03\x42\x00\x04\x41\x50\xc4\x14\x97\x02\x59\x2f\x23"
@@ -788,7 +788,7 @@ const CTLogInfo kCTLogList[] = {
      "\x56",
      91},
     {"IPng Networks Halloumi2028h2", CTLogState::Admissible, CTLogFormat::Tiled,
-     1788961500000,  // 2026-09-09T13:45:00Z
+     1795096200000,  // 2026-11-19T13:50:00Z
      7,              // operated by IPng Networks
      "\x30\x59\x30\x13\x06\x07\x2a\x86\x48\xce\x3d\x02\x01\x06\x08\x2a\x86\x48"
      "\xce\x3d\x03\x01\x07\x03\x42\x00\x04\x11\x9b\xef\xf3\x81\xbf\x85\xc3\x1b"
