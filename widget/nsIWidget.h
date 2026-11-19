@@ -290,6 +290,25 @@ enum nsCursor {  ///(normal cursor,       usually rendered as an arrow)
 #define NS_WIDGET_WAKE_OBSERVER_TOPIC "wake_notification"
 
 /**
+ * After the user session's screen gets locked, this topic is notified.
+ * Currently only notified on macOS.
+ */
+#define NS_WIDGET_SCREEN_LOCK_OBSERVER_TOPIC "screen_lock_notification"
+
+/**
+ * After the user session's screen gets unlocked, this topic is notified.
+ * Currently only notified on macOS.
+ */
+#define NS_WIDGET_SCREEN_UNLOCK_OBSERVER_TOPIC "screen_unlock_notification"
+
+/**
+ * After the screensaver starts, this topic is notified. The screen may or may
+ * not get locked later on. Currently only notified on macOS.
+ */
+#define NS_WIDGET_SCREENSAVER_START_OBSERVER_TOPIC \
+  "screensaver_start_notification"
+
+/**
  * Before the OS suspends the current process, this topic is notified.  Some
  * OS will kill processes that are suspended instead of resuming them.
  * For that reason this topic may be useful to safely close down resources.

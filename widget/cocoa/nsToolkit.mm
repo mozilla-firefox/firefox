@@ -37,19 +37,43 @@ using namespace mozilla;
 
 static io_connect_t gRootPort = MACH_PORT_NULL;
 
+@interface ScreenLockObserver : NSObject
+- (void)screenIsLocked:(NSNotification*)aNotification;
+- (void)screenIsUnlocked:(NSNotification*)aNotification;
+- (void)screensaverDidStart:(NSNotification*)aNotification;
+@end
+
+@implementation ScreenLockObserver
+- (void)screenIsLocked:(NSNotification*)aNotification {
+  nsToolkit::PostSleepWakeNotification(NS_WIDGET_SCREEN_LOCK_OBSERVER_TOPIC);
+}
+
+- (void)screenIsUnlocked:(NSNotification*)aNotification {
+  nsToolkit::PostSleepWakeNotification(NS_WIDGET_SCREEN_UNLOCK_OBSERVER_TOPIC);
+}
+
+- (void)screensaverDidStart:(NSNotification*)aNotification {
+  nsToolkit::PostSleepWakeNotification(
+      NS_WIDGET_SCREENSAVER_START_OBSERVER_TOPIC);
+}
+@end
+
 nsToolkit* nsToolkit::gToolkit = nullptr;
 
 nsToolkit::nsToolkit()
     : mSleepWakeNotificationRLS(nullptr),
       mPowerNotifier{0},
+      mScreenLockObserver(nil),
       mAllProcessMouseMonitor(nil) {
   MOZ_COUNT_CTOR(nsToolkit);
   RegisterForSleepWakeNotifications();
+  RegisterScreenLockNotifications();
 }
 
 nsToolkit::~nsToolkit() {
   MOZ_COUNT_DTOR(nsToolkit);
   RemoveSleepWakeNotifications();
+  UnregisterScreenLockNotifications();
   StopMonitoringAllProcessMouseEvents();
 }
 
@@ -124,6 +148,37 @@ void nsToolkit::RemoveSleepWakeNotifications() {
 
     mSleepWakeNotificationRLS = nullptr;
   }
+
+  NS_OBJC_END_TRY_IGNORE_BLOCK;
+}
+
+void nsToolkit::RegisterScreenLockNotifications() {
+  NS_OBJC_BEGIN_TRY_IGNORE_BLOCK;
+
+  NSDistributedNotificationCenter* center =
+      [NSDistributedNotificationCenter defaultCenter];
+  mScreenLockObserver = [[ScreenLockObserver alloc] init];
+  auto observe = ^(SEL aSelector, NSString* aName) {
+    [center addObserver:mScreenLockObserver
+                  selector:aSelector
+                      name:aName
+                    object:nil
+        suspensionBehavior:NSNotificationSuspensionBehaviorDeliverImmediately];
+  };
+  observe(@selector(screenIsLocked:), @"com.apple.screenIsLocked");
+  observe(@selector(screenIsUnlocked:), @"com.apple.screenIsUnlocked");
+  observe(@selector(screensaverDidStart:), @"com.apple.screensaver.didstart");
+
+  NS_OBJC_END_TRY_IGNORE_BLOCK;
+}
+
+void nsToolkit::UnregisterScreenLockNotifications() {
+  NS_OBJC_BEGIN_TRY_IGNORE_BLOCK;
+
+  [[NSDistributedNotificationCenter defaultCenter]
+      removeObserver:mScreenLockObserver];
+  [mScreenLockObserver release];
+  mScreenLockObserver = nil;
 
   NS_OBJC_END_TRY_IGNORE_BLOCK;
 }
