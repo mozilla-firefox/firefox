@@ -20,7 +20,7 @@
   box-shadow: var(--card-box-shadow-hover);
 }
 
-:host(:focus-within) {
+:host(:focus-within:state(focus-visible)) {
   outline: var(--focus-outline);
   outline-offset: var(--focus-outline-offset);
   box-shadow: var(--card-box-shadow-hover);

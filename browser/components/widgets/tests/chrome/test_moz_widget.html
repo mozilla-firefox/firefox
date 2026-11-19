@@ -5,6 +5,7 @@
     <title>moz-widget tests</title>
     <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
     <script src="chrome://mochikit/content/tests/SimpleTest/ExtensionTestUtils.js"></script>
+    <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
     <script src="chrome://global/content/customElements.js"></script>
     <link
       rel="stylesheet"
@@ -751,6 +752,60 @@
 
         widget.remove();
         await extension.unload();
+      });
+
+      add_task(async function test_focus_outline_only_for_visible_focus() {
+        // Clicking a button focuses it everywhere but macOS.
+        await SpecialPowers.pushPrefEnv({
+          set: [["accessibility.mouse_focuses_formcontrol", true]],
+        });
+        const before = document.createElement("button");
+        before.textContent = "Before";
+        document.getElementById("content").append(before);
+        const widget = createWidget();
+        const header = document.createElement("moz-widget-header");
+        header.slot = "header";
+        header.title = "Widget";
+        const menu = document.createElement("panel-list");
+        menu.slot = "menu";
+        const item = document.createElement("panel-item");
+        item.textContent = "Item";
+        menu.append(item);
+        widget.append(header, menu);
+        await widget.updateComplete;
+        await header.updateComplete;
+        const menuButton = header.shadowRoot.querySelector("#menu-button");
+        await menuButton.updateComplete;
+        const outline = () => getComputedStyle(widget).outlineStyle;
+
+        const shown = new Promise(resolve =>
+          menu.addEventListener("shown", resolve, { once: true })
+        );
+        synthesizeMouseAtCenter(menuButton.buttonEl, {});
+        await shown;
+        ok(widget.matches(":focus-within"), "the menu button has mouse focus");
+        is(outline(), "none", "no outline for mouse focus");
+
+        synthesizeKey("KEY_ArrowDown");
+        is(document.activeElement, item, "the arrow key focused the menu item");
+        is(outline(), "none", "no outline while navigating the menu");
+
+        const hidden = new Promise(resolve =>
+          menu.addEventListener("hidden", resolve, { once: true })
+        );
+        synthesizeKey("KEY_Escape");
+        await hidden;
+
+        before.focus();
+        synthesizeKey("KEY_Tab");
+        ok(widget.matches(":focus-within"), "the menu button has keyboard focus");
+        isnot(outline(), "none", "an outline for keyboard focus");
+
+        before.focus();
+        is(outline(), "none", "no outline once focus leaves the widget");
+
+        widget.remove();
+        before.remove();
       });
     </script>
   </body>

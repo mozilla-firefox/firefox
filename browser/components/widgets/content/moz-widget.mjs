@@ -69,8 +69,12 @@ export class MozWidget extends MozLitElement {
 
   #readyReported = false;
 
+  /** @type {ElementInternals} Holds the `focus-visible` custom state. */
+  #internals = this.attachInternals();
+
   constructor() {
     super();
+    this.addEventListener("focusin", this.#onFocusIn);
     this.widgetId = null;
     this.title = null;
     this.size = null;
@@ -197,6 +201,27 @@ export class MozWidget extends MozLitElement {
       }
     }
   }
+
+  /**
+   * Sets the `focus-visible` state when focus inside the widget would show a
+   * focus ring. `:focus-visible` itself stays on the focused element, which is
+   * usually in another shadow tree, such as the header's menu button, so the
+   * stylesheet pairs this state with `:focus-within`. Focus inside the menu
+   * doesn't count, so arrowing through the menu items doesn't outline the card.
+   *
+   * @param {FocusEvent} event - a focusin event from inside the widget
+   */
+  #onFocusIn = event => {
+    const menu = this.querySelector(':scope > [slot="menu"]');
+    if (
+      !menu?.contains(event.target) &&
+      event.composedPath()[0].matches(":focus-visible")
+    ) {
+      this.#internals.states.add("focus-visible");
+    } else {
+      this.#internals.states.delete("focus-visible");
+    }
+  };
 
   #onMenuSlotChange(event) {
     this.#setMenu(event.target.assignedElements()[0]);
