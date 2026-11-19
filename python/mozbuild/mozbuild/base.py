@@ -731,18 +731,11 @@ class MozbuildObject(ProcessExecutionMixin):
             )
 
     def _ensure_objdir_exists(self):
-        if os.path.isdir(self.statedir):
-            return
-
-        os.makedirs(self.statedir)
+        os.makedirs(self.statedir, exist_ok=True)
 
     def _ensure_state_subdir_exists(self, subdir):
         path = os.path.join(self.statedir, subdir)
-
-        if os.path.isdir(path):
-            return
-
-        os.makedirs(path)
+        os.makedirs(path, exist_ok=True)
 
     def _get_state_filename(self, filename, subdir=None):
         path = self.statedir
