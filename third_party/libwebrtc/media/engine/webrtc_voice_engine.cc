@@ -28,6 +28,7 @@
 #include "absl/algorithm/algorithm.h"
 #include "absl/algorithm/container.h"
 #include "absl/base/nullability.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/functional/bind_front.h"
 #include "absl/strings/match.h"
@@ -543,6 +544,7 @@ WebRtcVoiceEngine::WebRtcVoiceEngine(
 WebRtcVoiceEngine::~WebRtcVoiceEngine() {
   RTC_DCHECK_RUN_ON(&worker_thread_checker_);
   RTC_LOG(LS_INFO) << "WebRtcVoiceEngine::~WebRtcVoiceEngine";
+  RTC_DCHECK(send_channels_.empty());
   RTC_DCHECK(!initialized_);
 }
 
@@ -844,6 +846,42 @@ AudioState* WebRtcVoiceEngine::audio_state() {
   return audio_state_.get();
 }
 
+void WebRtcVoiceEngine::RegisterSendChannel(WebRtcVoiceSendChannel* channel) {
+  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK(channel);
+  send_channels_.insert(channel);
+}
+
+void WebRtcVoiceEngine::UnregisterSendChannel(WebRtcVoiceSendChannel* channel) {
+  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  if (send_channels_.erase(channel) > 0) {
+    OnChannelMuteStateChange();
+  }
+}
+
+void WebRtcVoiceEngine::OnChannelMuteStateChange() {
+  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  AudioProcessing* ap = apm();
+  if (!ap) {
+    return;
+  }
+  std::optional<bool> muted;
+  for (const WebRtcVoiceSendChannel* channel : send_channels_) {
+    std::optional<bool> channel_muted = channel->muted();
+    if (channel_muted == false) {
+      muted = false;
+      break;
+    }
+    if (channel_muted == true) {
+      muted = true;
+    }
+  }
+  if (muted.has_value() && output_will_be_muted_ != muted) {
+    output_will_be_muted_ = muted;
+    ap->set_output_will_be_muted(*muted);
+  }
+}
+
 // --------------------------------- WebRtcVoiceSendChannel ------------------
 
 class WebRtcVoiceSendChannel::WebRtcAudioSendStream : public AudioSource::Sink {
@@ -1017,7 +1055,7 @@ class WebRtcVoiceSendChannel::WebRtcAudioSendStream : public AudioSource::Sink {
     muted_ = muted;
   }
 
-  bool muted() const {
+  std::optional<bool> muted() const {
     RTC_DCHECK_RUN_ON(&worker_thread_checker_);
     return muted_;
   }
@@ -1291,7 +1329,8 @@ class WebRtcVoiceSendChannel::WebRtcAudioSendStream : public AudioSource::Sink {
   // goes away.
   AudioSource* source_ = nullptr;
   bool send_ = false;
-  bool muted_ = false;
+  // True if muted, false if unmuted, or std::nullopt if unset.
+  std::optional<bool> muted_;
   int max_send_bitrate_bps_;
   RtpParameters rtp_parameters_;
   std::optional<AudioCodecSpec> audio_codec_spec_;
@@ -1328,12 +1367,13 @@ WebRtcVoiceSendChannel::WebRtcVoiceSendChannel(
 WebRtcVoiceSendChannel::~WebRtcVoiceSendChannel() {
   RTC_DCHECK_RUN_ON(worker_thread_);
   RTC_DLOG(LS_VERBOSE) << "WebRtcVoiceSendChannel::~WebRtcVoiceSendChannel";
-  // TODO(solenberg): Should be able to delete the streams directly, without
-  //                  going through RemoveNnStream(), once stream objects handle
-  //                  all (de)configuration.
-  while (!send_streams_.empty()) {
-    RemoveSendStream(send_streams_.begin()->first);
+  for (const auto& [ssrc, stream] : send_streams_) {
+    stream->SetSend(false);
+    delete stream;
   }
+  send_streams_.clear();
+  engine()->UnregisterSendChannel(this);
+  SetSend(false);
 }
 
 bool WebRtcVoiceSendChannel::SetOptions(const AudioOptions& options) {
@@ -1676,6 +1716,9 @@ bool WebRtcVoiceSendChannel::AddSendStream(const StreamParams& sp) {
       audio_config_.rtcp_report_interval_ms, audio_network_adaptor_config,
       call_, transport(), engine()->encoder_factory(), crypto_options_,
       sframe_options_);
+  if (send_streams_.empty()) {
+    engine()->RegisterSendChannel(this);
+  }
   send_streams_.insert(std::make_pair(ssrc, stream));
   if (ssrc_list_changed_callback_) {
     std::set<uint32_t> ssrcs_in_use;
@@ -1708,6 +1751,7 @@ bool WebRtcVoiceSendChannel::RemoveSendStream(uint32_t ssrc) {
   if (send_streams_.empty()) {
     SetSend(false);
   }
+  engine()->OnChannelMuteStateChange();
   return true;
 }
 
@@ -1824,6 +1868,20 @@ void WebRtcVoiceSendChannel::OnNetworkRouteChanged(
       }));
 }
 
+std::optional<bool> WebRtcVoiceSendChannel::muted() const {
+  RTC_DCHECK_RUN_ON(worker_thread_);
+  std::optional<bool> muted;
+  for (const auto& [ssrc, stream] : send_streams_) {
+    if (stream->muted() == false) {
+      return false;
+    }
+    if (stream->muted() == true) {
+      muted = true;
+    }
+  }
+  return muted;
+}
+
 bool WebRtcVoiceSendChannel::MuteStream(uint32_t ssrc, bool muted) {
   RTC_DCHECK_RUN_ON(worker_thread_);
   const auto it = send_streams_.find(ssrc);
@@ -1833,19 +1891,7 @@ bool WebRtcVoiceSendChannel::MuteStream(uint32_t ssrc, bool muted) {
   }
   it->second->SetMuted(muted);
 
-  // TODO(solenberg):
-  // We set the AGC to mute state only when all the channels are muted.
-  // This implementation is not ideal, instead we should signal the AGC when
-  // the mic channel is muted/unmuted. We can't do it today because there
-  // is no good way to know which stream is mapping to the mic channel.
-  bool all_muted = muted;
-  for (const auto& kv : send_streams_) {
-    all_muted = all_muted && kv.second->muted();
-  }
-  AudioProcessing* ap = engine()->apm();
-  if (ap) {
-    ap->set_output_will_be_muted(all_muted);
-  }
+  engine()->OnChannelMuteStateChange();
 
   return true;
 }
