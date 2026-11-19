@@ -377,7 +377,9 @@ def use_fetches(config, jobs):
         has_sccache = False
         for kind, artifacts in fetches.items():
             if kind in ("fetch", "toolchain"):
-                for fetch_name in artifacts:
+                for entry in artifacts:
+                    fetch = entry if isinstance(entry, dict) else {"name": entry}
+                    fetch_name = fetch["name"]
                     label = f"{kind}-{fetch_name}"
                     label = aliases.get(label, label)
                     if label not in artifact_names:
@@ -387,14 +389,19 @@ def use_fetches(config, jobs):
                     if label in extra_env:
                         env.update(extra_env[label])
 
-                    path = artifact_names[label]
-
                     dependencies[label] = label
-                    job_fetches.append({
-                        "artifact": path,
+                    job_fetch = {
+                        "artifact": fetch.get("artifact", artifact_names[label]),
                         "task": f"<{label}>",
-                        "extract": should_extract.get(label, True),
-                    })
+                        "extract": fetch.get(
+                            "extract", should_extract.get(label, True)
+                        ),
+                    }
+                    if (dest := fetch.get("dest")) is not None:
+                        job_fetch["dest"] = dest
+                    if verify_hash := fetch.get("verify-hash"):
+                        job_fetch["verify-hash"] = verify_hash
+                    job_fetches.append(job_fetch)
 
                     if kind == "toolchain" and fetch_name.endswith("-sccache"):
                         has_sccache = True

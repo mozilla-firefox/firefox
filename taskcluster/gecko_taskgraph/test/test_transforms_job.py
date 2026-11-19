@@ -13,6 +13,7 @@ from copy import deepcopy
 import pytest
 from mozunit import main
 from taskgraph.config import load_graph_config
+from taskgraph.task import Task
 from taskgraph.transforms.base import TransformConfig
 
 from gecko_taskgraph import GECKO
@@ -130,6 +131,52 @@ def test_use_gradle(transform):
             }
         ],
     }
+
+
+def test_use_fetches_toolchain_artifact():
+    toolchain = Task(
+        kind="toolchain",
+        label="toolchain-linux64-android-gradle-dependencies",
+        attributes={
+            "toolchain-artifact": "public/build/android-gradle-dependencies.tar.zst"
+        },
+        task={},
+    )
+    config = FakeTransformConfig(kind_dependencies_tasks={toolchain.label: toolchain})
+    task = {
+        "label": "fake-kind-task",
+        "attributes": {},
+        "fetches": {
+            "toolchain": [
+                "linux64-android-gradle-dependencies",
+                {
+                    "name": "linux64-android-gradle-dependencies",
+                    "artifact": "public/build/gradle-user-home-seed.tar.zst",
+                    "extract": False,
+                    "dest": "seed",
+                    "verify-hash": True,
+                },
+            ]
+        },
+    }
+
+    (result,) = job.use_fetches(config, [task])
+
+    assert result["dependencies"] == {toolchain.label: toolchain.label}
+    assert json.loads(result["worker"]["env"]["MOZ_FETCHES"]["task-reference"]) == [
+        {
+            "artifact": "public/build/android-gradle-dependencies.tar.zst",
+            "extract": True,
+            "task": f"<{toolchain.label}>",
+        },
+        {
+            "artifact": "public/build/gradle-user-home-seed.tar.zst",
+            "dest": "seed",
+            "extract": False,
+            "task": f"<{toolchain.label}>",
+            "verify-hash": True,
+        },
+    ]
 
 
 @pytest.mark.parametrize(
