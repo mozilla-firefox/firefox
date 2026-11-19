@@ -218,8 +218,8 @@ class RTCStatsCollector {
   void GetStatsReportInternal(RequestInfo request);
 
   // Invokes the completion callback for a pending request.
-  void DeliverReport(const RequestInfo& request,
-                     const scoped_refptr<const RTCStatsReport>& report);
+  static void DeliverReport(const RequestInfo& request,
+                            const scoped_refptr<const RTCStatsReport>& report);
 
   // Produces `RTCCertificateStats`.
   void ProduceCertificateStats_s(
@@ -306,7 +306,7 @@ class RTCStatsCollector {
   void OnNetworkReportReady(scoped_refptr<RTCStatsReport> network_report,
                             std::vector<DataChannelStats> data_channel_stats);
 
-  scoped_refptr<RTCStatsReport> CreateReportFilteredBySelector(
+  static scoped_refptr<RTCStatsReport> CreateReportFilteredBySelector(
       bool filter_by_sender_selector,
       scoped_refptr<const RTCStatsReport> report,
       scoped_refptr<RtpSenderInternal> sender_selector,
