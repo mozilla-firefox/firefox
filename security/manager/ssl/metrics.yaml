@@ -1833,13 +1833,18 @@ ssl:
     histogram_type: linear
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1503572
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961664
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1503572
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961664
     notification_emails:
       - jhofmann@mozilla.com
       - rtestard@mozilla.com
       - seceng@mozilla.org
     expires: never
+    send_in_pings:
+      - metrics
+      - network-health
 
   ct_policy_non_compliant_connections_by_ca_2:
     type: custom_distribution

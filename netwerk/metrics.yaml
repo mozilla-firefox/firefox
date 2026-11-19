@@ -370,14 +370,19 @@ networking:
       Migrated from Firefox Telemetry's `DNS_LOOKUP_TIME`.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1838240
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961664
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1838240#c6
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961664
     data_sensitivity:
       - technical
     notification_emails:
       - necko@mozilla.com
       - acreskey@mozilla.com
     expires: never
+    send_in_pings:
+      - metrics
+      - network-health
 
   trr_dns_start: &trr_dns_start
     type: labeled_timing_distribution
@@ -543,14 +548,19 @@ networking:
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1838240
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961664
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1838240#c6
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1961664
     data_sensitivity:
       - technical
     notification_emails:
       - necko@mozilla.com
       - acreskey@mozilla.com
     expires: never
+    send_in_pings:
+      - metrics
+      - network-health
 
   dns_native_https_call_time:
     type: timing_distribution

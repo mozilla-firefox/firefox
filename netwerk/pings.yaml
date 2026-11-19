@@ -61,3 +61,28 @@ content-decoding-error:
     - https://bugzilla.mozilla.org/show_bug.cgi?id=2016228
   notification_emails:
     - necko@mozilla.com
+
+network-health:
+  description: |
+    Contains metrics that report broadly on network health.
+    Submitted on the "baseline" ping's schedule.
+    Contents are kept low-volume to allow for the high-frequency reporting.
+  include_client_id: true
+  metadata:
+    ping_schedule:
+      - baseline
+  reasons:
+    active: |
+      The "baseline" ping is submitted with reason "active".
+    dirty_startup: |
+      The "baseline" ping is submitted with reason "dirty_startup".
+    inactive: |
+      The "baseline" ping is submitted with reason "inactive".
+  bugs:
+    - https://bugzilla.mozilla.org/show_bug.cgi?id=1961664
+  data_reviews:
+    - https://bugzilla.mozilla.org/show_bug.cgi?id=1961664
+  notification_emails:
+    - aplacitelli@mozilla.com
+    - chutten@mozilla.com
+    - necko@mozilla.com
