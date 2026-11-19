@@ -1207,9 +1207,6 @@ class ScrollContainerFrame : public nsContainerFrame,
   void PostScrolledAreaEvent();
   MOZ_CAN_RUN_SCRIPT void FireScrolledAreaEvent();
 
-  bool IsScrollbarPartShown(const nsIFrame* aPart) const;
-  // The scrollbar, if it's shown.
-  nsScrollbarFrame* GetShownScrollbarBox(bool aVertical) const;
   void FinishReflowForScrollbar(nsScrollbarFrame*, nscoord aMinXY,
                                 nscoord aMaxXY, nscoord aCurPosXY,
                                 nscoord aPageIncrement);
