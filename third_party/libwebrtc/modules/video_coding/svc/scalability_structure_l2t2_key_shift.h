@@ -36,11 +36,13 @@ class ScalabilityStructureL2T2KeyShift : public ScalableVideoController {
   FrameDependencyStructure DependencyStructure() const override;
 
   std::vector<LayerFrameConfig> NextFrameConfig(bool restart) override;
+  void OnFrameDropped(const LayerFrameConfig& config) override;
   GenericFrameInfo OnEncodeDone(const LayerFrameConfig& config) override;
   void OnRatesUpdated(const VideoBitrateAllocation& bitrates) override;
 
  private:
   enum FramePattern {
+    kNone,
     kKey,
     kDelta0,
     kDelta1,
@@ -55,8 +57,10 @@ class ScalabilityStructureL2T2KeyShift : public ScalableVideoController {
   void SetDecodeTargetIsActive(int sid, int tid, bool value) {
     active_decode_targets_.set(sid * kNumTemporalLayers + tid, value);
   }
+  FramePattern NextPattern() const;
 
-  FramePattern next_pattern_ = kKey;
+  FramePattern last_pattern_ = kNone;
+  std::bitset<kNumSpatialLayers> can_reference_t0_frame_for_spatial_id_;
   std::bitset<32> active_decode_targets_ = 0b1111;
 };
 

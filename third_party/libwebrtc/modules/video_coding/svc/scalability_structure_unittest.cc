@@ -494,6 +494,7 @@ bool SupportsOnFrameDropped(ScalabilityMode mode) {
     case ScalabilityMode::kL2T2:
     case ScalabilityMode::kL2T2h:
     case ScalabilityMode::kL2T2_KEY:
+    case ScalabilityMode::kL2T2_KEY_SHIFT:
     case ScalabilityMode::kL2T3:
     case ScalabilityMode::kL2T3h:
     case ScalabilityMode::kL2T3_KEY:

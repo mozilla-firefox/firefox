@@ -14,6 +14,7 @@
 
 #include "common_video/generic_frame_descriptor/generic_frame_info.h"
 #include "modules/video_coding/svc/scalability_structure_test_helpers.h"
+#include "modules/video_coding/svc/scalable_video_controller.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
 
@@ -23,6 +24,7 @@ namespace {
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
+using LayerFrameConfig = ScalableVideoController::LayerFrameConfig;
 
 // S1T1     3   7
 //         /   /
@@ -349,6 +351,145 @@ TEST(ScalabilityStructureL2T2KeyShiftTest, EnableOnlyS1T0AfterFewFrames) {
   EXPECT_EQ(frames[5].temporal_id, 0);
   EXPECT_EQ(frames[6].temporal_id, 0);
 
+  EXPECT_TRUE(wrapper.FrameReferencesAreValid(frames));
+}
+
+TEST(ScalabilityStructureL2T2KeyShiftTest,
+     SkippingFrameByEncoderReusesPatternAndKeepsReferencesValid) {
+  ScalabilityStructureL2T2KeyShift structure;
+  ScalabilityStructureWrapper wrapper(structure);
+  std::vector<GenericFrameInfo> frames;
+
+  // Simulate encoder dropping the initial keyframe (neither OnEncodeDone nor
+  // OnFrameDropped called).
+  structure.NextFrameConfig(/*restart=*/false);
+
+  // Next call should still produce the initial keyframe.
+  wrapper.GenerateFrames(/*num_temporal_units=*/1, frames);
+  ASSERT_THAT(frames, SizeIs(2));
+  EXPECT_THAT(frames[0].frame_diffs, IsEmpty());
+  EXPECT_THAT(frames[1].frame_diffs, ElementsAre(1));
+
+  // Simulate encoder dropping kDelta0 (S0T0 + S1T1).
+  std::vector<LayerFrameConfig> skipped_delta =
+      structure.NextFrameConfig(/*restart=*/false);
+  ASSERT_THAT(skipped_delta, SizeIs(2));
+  EXPECT_EQ(skipped_delta[0].TemporalId(), 0);
+  EXPECT_EQ(skipped_delta[1].TemporalId(), 1);
+
+  // Next call should reuse kDelta0 rather than advancing to kDelta1.
+  wrapper.GenerateFrames(/*num_temporal_units=*/2, frames);
+  ASSERT_THAT(frames, SizeIs(6));
+  EXPECT_EQ(frames[2].spatial_id, 0);
+  EXPECT_EQ(frames[2].temporal_id, 0);
+  EXPECT_EQ(frames[3].spatial_id, 1);
+  EXPECT_EQ(frames[3].temporal_id, 1);
+  EXPECT_EQ(frames[4].spatial_id, 0);
+  EXPECT_EQ(frames[4].temporal_id, 1);
+  EXPECT_EQ(frames[5].spatial_id, 1);
+  EXPECT_EQ(frames[5].temporal_id, 0);
+  EXPECT_TRUE(wrapper.FrameReferencesAreValid(frames));
+}
+
+TEST(ScalabilityStructureL2T2KeyShiftTest,
+     OnFrameDroppedAdvancesPatternAndKeepsReferencesValid) {
+  ScalabilityStructureL2T2KeyShift structure;
+  ScalabilityStructureWrapper wrapper(structure);
+  std::vector<GenericFrameInfo> frames;
+
+  // Encode initial keyframe (S0T0, S1T0).
+  wrapper.GenerateFrames(/*num_temporal_units=*/1, frames);
+  ASSERT_THAT(frames, SizeIs(2));
+
+  // Drop kDelta0 (S0T0 + S1T1) via OnFrameDropped.
+  std::vector<LayerFrameConfig> delta0 =
+      structure.NextFrameConfig(/*restart=*/false);
+  ASSERT_THAT(delta0, SizeIs(2));
+  EXPECT_EQ(delta0[0].TemporalId(), 0);
+  EXPECT_EQ(delta0[1].TemporalId(), 1);
+  for (const LayerFrameConfig& config : delta0) {
+    structure.OnFrameDropped(config);
+  }
+
+  // Pattern advances to kDelta1 (S0T1 + S1T0), referencing the keyframe's T0
+  // buffers.
+  wrapper.GenerateFrames(/*num_temporal_units=*/1, frames);
+  ASSERT_THAT(frames, SizeIs(4));
+  EXPECT_EQ(frames[2].spatial_id, 0);
+  EXPECT_EQ(frames[2].temporal_id, 1);
+  EXPECT_THAT(frames[2].frame_diffs, ElementsAre(2));
+  EXPECT_EQ(frames[3].spatial_id, 1);
+  EXPECT_EQ(frames[3].temporal_id, 0);
+  EXPECT_THAT(frames[3].frame_diffs, ElementsAre(2));
+
+  // Next TU is kDelta0 (S0T0 + S1T1); drop only enhancement layer S1T1 while
+  // encoding S0T0 (frames[4]).
+  delta0 = structure.NextFrameConfig(/*restart=*/false);
+  ASSERT_THAT(delta0, SizeIs(2));
+  wrapper.EncodeTemporalUnit(std::span(delta0).first(1), frames);
+  structure.OnFrameDropped(delta0[1]);
+
+  // Next TU is kDelta1 (S0T1 + S1T0); drop only enhancement layer S0T1 while
+  // encoding S1T0 (frames[5]).
+  std::vector<LayerFrameConfig> delta1 =
+      structure.NextFrameConfig(/*restart=*/false);
+  ASSERT_THAT(delta1, SizeIs(2));
+  structure.OnFrameDropped(delta1[0]);
+  wrapper.EncodeTemporalUnit(std::span(delta1).subspan(1), frames);
+
+  // Next TU is kDelta0 (S0T0 + S1T1); drop S0T0 while encoding S1T1 (frames[6],
+  // which only references S1's T0 buffer in frames[5]).
+  delta0 = structure.NextFrameConfig(/*restart=*/false);
+  ASSERT_THAT(delta0, SizeIs(2));
+  EXPECT_EQ(delta0[0].SpatialId(), 0);
+  EXPECT_EQ(delta0[0].TemporalId(), 0);
+  EXPECT_EQ(delta0[1].SpatialId(), 1);
+  EXPECT_EQ(delta0[1].TemporalId(), 1);
+  structure.OnFrameDropped(delta0[0]);
+  wrapper.EncodeTemporalUnit(std::span(delta0).subspan(1), frames);
+  ASSERT_THAT(frames, SizeIs(7));
+  EXPECT_THAT(frames[6].frame_diffs, ElementsAre(1));
+
+  // Subsequent kDelta1 and kDelta0 fall back to the earlier S0T0 (frames[4]).
+  wrapper.GenerateFrames(/*num_temporal_units=*/2, frames);
+  ASSERT_THAT(frames, SizeIs(11));
+  EXPECT_EQ(frames[7].spatial_id, 0);
+  EXPECT_EQ(frames[7].temporal_id, 1);
+  EXPECT_THAT(frames[7].frame_diffs, ElementsAre(3));
+  EXPECT_EQ(frames[9].spatial_id, 0);
+  EXPECT_EQ(frames[9].temporal_id, 0);
+  EXPECT_THAT(frames[9].frame_diffs, ElementsAre(5));
+  EXPECT_TRUE(wrapper.FrameReferencesAreValid(frames));
+}
+
+TEST(ScalabilityStructureL2T2KeyShiftTest,
+     OnFrameDroppedForS1OnKeyframeRecoversWithoutInvalidReferences) {
+  ScalabilityStructureL2T2KeyShift structure;
+  ScalabilityStructureWrapper wrapper(structure);
+  std::vector<GenericFrameInfo> frames;
+
+  std::vector<LayerFrameConfig> key_configs =
+      structure.NextFrameConfig(/*restart=*/false);
+  ASSERT_THAT(key_configs, SizeIs(2));
+  // Encode S0T0, drop S1T0 on the initial keyframe.
+  wrapper.EncodeTemporalUnit(std::span(key_configs).first(1), frames);
+  structure.OnFrameDropped(key_configs[1]);
+
+  // kDelta0 emits only S0T0 since S1 has no T0 reference yet.
+  std::vector<LayerFrameConfig> delta0 =
+      structure.NextFrameConfig(/*restart=*/false);
+  ASSERT_THAT(delta0, SizeIs(1));
+  EXPECT_EQ(delta0[0].SpatialId(), 0);
+  EXPECT_EQ(delta0[0].TemporalId(), 0);
+  wrapper.EncodeTemporalUnit(delta0, frames);
+
+  // At S1's T0 slot (kDelta1), a keyframe is emitted to initialize S1.
+  std::vector<LayerFrameConfig> recovery =
+      structure.NextFrameConfig(/*restart=*/false);
+  ASSERT_THAT(recovery, SizeIs(2));
+  EXPECT_TRUE(recovery[0].IsKeyframe());
+  wrapper.EncodeTemporalUnit(recovery, frames);
+  wrapper.GenerateFrames(/*num_temporal_units=*/2, frames);
   EXPECT_TRUE(wrapper.FrameReferencesAreValid(frames));
 }
 
