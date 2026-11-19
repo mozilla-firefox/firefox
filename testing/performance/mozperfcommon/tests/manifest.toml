@@ -1,4 +1,6 @@
 [DEFAULT]
 subsuite = "mozperfcommon"
 
+["test_comparisons.py"]
+
 ["test_utils.py"]
