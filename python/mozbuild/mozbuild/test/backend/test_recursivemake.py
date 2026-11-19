@@ -1892,7 +1892,8 @@ class TestRecursiveMakeBackend(BackendTester):
             # Debug information is installed, but there is nothing to check.
             f"$(INSTALL) {pdb} $(DEPTH)/dist/bin/",
             f"$(INSTALL) {so} $(DEPTH)/dist/bin/",
-            "$(call py_action,check_binary libfoo.so,$(DEPTH)/dist/bin/libfoo.so)",
+            "$(call py_action,check_binary libfoo.so,--prebuilt "
+            "$(DEPTH)/dist/bin/libfoo.so)",
         ]
 
         found = [str for str in lines if "libfoo." in str]

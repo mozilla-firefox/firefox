@@ -2020,8 +2020,8 @@ class RecursiveMakeBackend(MakeBackend):
                     # support. Do it here, as this is where they enter the build.
                     if f.lower().endswith((".dll", ".so", ".dylib")):
                         rules.append(
-                            "\t$(call py_action,check_binary %s,%s)"
-                            % (basename, mozpath.join(install_location, basename))
+                            f"\t$(call py_action,check_binary {basename},"
+                            f"--prebuilt {mozpath.join(install_location, basename)})"
                         )
                 backend_file.write("misc::\n%s\n" % "\n".join(rules))
 
