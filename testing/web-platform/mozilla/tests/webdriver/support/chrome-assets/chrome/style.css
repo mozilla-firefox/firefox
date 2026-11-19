@@ -11,3 +11,7 @@
 .input-moz-box-flex {
   -moz-box-flex: 1;
 }
+
+#textInput {
+  align-self: flex-start;
+}
