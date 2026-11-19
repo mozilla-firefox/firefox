@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Fetches a cross-origin resource and reports its internal response to the embedder</title>
+<script>
+  const params = new URLSearchParams(location.search);
+  const id = params.get("id");
+
+  // `Response.cloneUnfiltered` exposes the internal response, which is what the
+  // parent process is supposed to have withheld from this process. See
+  // `promise_internal_response_is_filtered` in resources/utils.js.
+  async function internalResponseBodyLength(target) {
+    const response = await fetch(target, { mode: "no-cors" });
+    const unfiltered = SpecialPowers.wrap(response).cloneUnfiltered();
+    return (await SpecialPowers.unwrap(unfiltered).text()).length;
+  }
+
+  internalResponseBodyLength(params.get("target")).then(
+    length => parent.postMessage({ id, length }, "*"),
+    e => parent.postMessage({ id, error: `${e}` }, "*")
+  );
+</script>

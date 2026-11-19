@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>ORB filters fetches made by a document nested in object or embed</title>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="/common/utils.js"></script>
+<script src="/fetch/orb/resources/utils.js"></script>
+<body>
+<script>
+  const path = "http://{{domains[www1]}}:{{ports[http][0]}}/fetch/orb/resources";
+  const nested = "resources/nested-document-fetch.html";
+
+  // <object> and <embed> use data and src respectively for the nested document.
+  const containers = {
+    iframe: "src",
+    object: "data",
+    embed: "src",
+  };
+
+  // Loads a same-origin document into `container` and resolves with the length
+  // of the internal response of the cross-origin no-cors fetch it issues.
+  function nestedFetch(t, container, target) {
+    const id = token();
+    const element = document.createElement(container);
+    element[containers[container]] =
+      `${nested}?id=${id}&target=${encodeURIComponent(target)}`;
+    t.add_cleanup(() => element.remove());
+
+    return new Promise(resolve => {
+      window.addEventListener("message", function listener(e) {
+        if (e.data && e.data.id === id) {
+          window.removeEventListener("message", listener);
+          resolve(e.data);
+        }
+      });
+      document.body.appendChild(element);
+    });
+  }
+
+  [
+    {
+      file: "data.json",
+      pipe: [contentType("application/json"), contentTypeOptions("nosniff")],
+      description: "opaque-response-blocklisted MIME type with nosniff",
+    },
+    {
+      file: "text.txt",
+      pipe: [contentType("text/html"), contentTypeOptions("nosniff")],
+      description: "opaque text/html with nosniff",
+    },
+    {
+      file: "text.txt",
+      pipe: [contentType("application/pdf")],
+      description: "opaque-blocklisted-never-sniffed MIME type",
+    },
+  ].forEach(({ file, pipe, description }) => {
+    for (const container in containers) {
+      promise_test(async t => {
+        const target = `${path}/${file}?pipe=${pipe.join("|")}`;
+        const { length, error } = await nestedFetch(t, container, target);
+        assert_equals(error, undefined, "the fetch should have succeeded");
+        assert_equals(length, 0, "the internal response should be empty");
+      }, `ORB should filter ${description} fetched by a document nested in <${container}>`);
+    }
+  });
+</script>
