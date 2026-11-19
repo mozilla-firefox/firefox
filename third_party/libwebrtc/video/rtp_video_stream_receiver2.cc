@@ -390,8 +390,8 @@ RtpVideoStreamReceiver2::RtpVideoStreamReceiver2(
   if (frame_transformer) {
     frame_transformer_delegate_ =
         make_ref_counted<RtpVideoStreamReceiverFrameTransformerDelegate>(
-            this, &env_.clock(), std::move(frame_transformer),
-            TaskQueueBase::Current(), config_.rtp.remote_ssrc);
+            this, &env_.clock(), std::move(frame_transformer), worker_queue_,
+            config_.rtp.remote_ssrc);
     frame_transformer_delegate_->Init();
   }
 }
@@ -1249,11 +1249,19 @@ void RtpVideoStreamReceiver2::SetFrameDecryptor(
 void RtpVideoStreamReceiver2::SetDepacketizerToDecoderFrameTransformer(
     scoped_refptr<FrameTransformerInterface> frame_transformer) {
   RTC_DCHECK_RUN_ON(worker_queue_);
-  frame_transformer_delegate_ =
-      make_ref_counted<RtpVideoStreamReceiverFrameTransformerDelegate>(
-          this, &env_.clock(), std::move(frame_transformer),
-          TaskQueueBase::Current(), config_.rtp.remote_ssrc);
-  frame_transformer_delegate_->Init();
+  if (frame_transformer_delegate_) {
+    // Reset the previous delegate before registering the new one so it clears
+    // its raw receiver pointer and unregisters `remote_ssrc` first.
+    frame_transformer_delegate_->Reset();
+    frame_transformer_delegate_ = nullptr;
+  }
+  if (frame_transformer) {
+    frame_transformer_delegate_ =
+        make_ref_counted<RtpVideoStreamReceiverFrameTransformerDelegate>(
+            this, &env_.clock(), std::move(frame_transformer), worker_queue_,
+            config_.rtp.remote_ssrc);
+    frame_transformer_delegate_->Init();
+  }
 }
 
 void RtpVideoStreamReceiver2::UpdateRtt(int64_t max_rtt_ms) {

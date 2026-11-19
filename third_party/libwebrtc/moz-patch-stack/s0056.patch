@@ -214,7 +214,7 @@ index 6067ea57ef..5b1eb36fe3 100644
                                     int current_delay_ms,
                                     int target_delay_ms,
 diff --git a/video/rtp_video_stream_receiver2.cc b/video/rtp_video_stream_receiver2.cc
-index 23e7a0c9b5..3555ac2fe6 100644
+index 401282fc2d..58a24fa7db 100644
 --- a/video/rtp_video_stream_receiver2.cc
 +++ b/video/rtp_video_stream_receiver2.cc
 @@ -298,6 +298,7 @@ RtpVideoStreamReceiver2::RtpVideoStreamReceiver2(
@@ -233,7 +233,7 @@ index 23e7a0c9b5..3555ac2fe6 100644
        packet_buffer_(kPacketBufferStartSize,
                       PacketBufferMaxSize(env_.field_trials())),
        reference_finder_(
-@@ -1636,7 +1638,8 @@ void RtpVideoStreamReceiver2::FrameDecoded(int64_t picture_id) {
+@@ -1644,7 +1646,8 @@ void RtpVideoStreamReceiver2::FrameDecoded(int64_t picture_id) {
      last_timestamp_for_pic_id_.erase(last_timestamp_for_pic_id_.begin(),
                                       ++ts_it);
    }
@@ -244,7 +244,7 @@ index 23e7a0c9b5..3555ac2fe6 100644
  }
  
 diff --git a/video/rtp_video_stream_receiver2.h b/video/rtp_video_stream_receiver2.h
-index 6f45a592c2..80f3753488 100644
+index 8a1e72419c..fb2b6d85fc 100644
 --- a/video/rtp_video_stream_receiver2.h
 +++ b/video/rtp_video_stream_receiver2.h
 @@ -70,6 +70,7 @@

@@ -17,6 +17,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "api/environment/environment.h"
@@ -2153,6 +2154,121 @@ TEST_F(RtpVideoStreamReceiver2Test, TransformFrameWithAbsoluteCaptureTime) {
 
   EXPECT_CALL(*mock_frame_transformer,
               UnregisterTransformedFrameSinkCallback(config_.rtp.remote_ssrc));
+  receiver = nullptr;
+}
+
+TEST_F(RtpVideoStreamReceiver2Test,
+       ReplaceFrameTransformerResetsPreviousDelegateBeforeDestruction) {
+  auto transformer1 =
+      make_ref_counted<testing::NiceMock<MockFrameTransformer>>();
+  auto transformer2 =
+      make_ref_counted<testing::NiceMock<MockFrameTransformer>>();
+
+  scoped_refptr<TransformedFrameCallback> callback1;
+  EXPECT_CALL(*transformer1,
+              RegisterTransformedFrameSinkCallback(_, config_.rtp.remote_ssrc))
+      .WillOnce(testing::SaveArg<0>(&callback1));
+
+  auto receiver = std::make_unique<RtpVideoStreamReceiver2>(
+      env_, TaskQueueBase::Current(), &mock_transport_, nullptr, nullptr,
+      &config_, kMaxWaitForKeyframe, rtp_receive_statistics_.get(), nullptr,
+      nullptr, &nack_periodic_processor_, &mock_on_complete_frame_callback_,
+      nullptr, transformer1, nullptr);
+  receiver->AddReceiveCodec(kPayloadType, kVideoCodecGeneric, {},
+                            /*raw_payload=*/false);
+  ASSERT_NE(callback1, nullptr);
+
+  RtpPacketReceived rtp_packet;
+  rtp_packet.SetPayloadType(kPayloadType);
+  rtp_packet.SetSequenceNumber(1);
+  CopyOnWriteBuffer data("1234");
+  RTPVideoHeader video_header =
+      GetGenericVideoHeader(VideoFrameType::kVideoFrameKey);
+
+  std::unique_ptr<TransformableFrameInterface> transformed_frame;
+  EXPECT_CALL(*transformer1, Transform(_))
+      .WillOnce(testing::SaveArgByMove<0>(&transformed_frame));
+  receiver->OnReceivedPayloadDataForTesting(data, rtp_packet, video_header);
+  ASSERT_NE(transformed_frame, nullptr);
+
+  // Queue a ManageFrame task on the retired delegate before replacing the
+  // transformer and destroying the receiver.
+  callback1->OnTransformedFrame(std::move(transformed_frame));
+
+  {
+    testing::InSequence seq;
+    EXPECT_CALL(*transformer1, UnregisterTransformedFrameSinkCallback(
+                                   config_.rtp.remote_ssrc));
+    EXPECT_CALL(*transformer2, RegisterTransformedFrameSinkCallback(
+                                   _, config_.rtp.remote_ssrc));
+    EXPECT_CALL(*transformer2, UnregisterTransformedFrameSinkCallback(
+                                   config_.rtp.remote_ssrc));
+  }
+  EXPECT_CALL(mock_on_complete_frame_callback_, DoOnCompleteFrame).Times(0);
+
+  receiver->SetDepacketizerToDecoderFrameTransformer(transformer2);
+  receiver = nullptr;
+
+  // Flush the queued ManageFrame task from `callback1`; the retired delegate
+  // must have cleared its raw `receiver_` pointer during replacement.
+  time_controller_.AdvanceTime(TimeDelta::Zero());
+}
+
+TEST_F(RtpVideoStreamReceiver2Test,
+       SetNullFrameTransformerResetsExistingDelegate) {
+  auto transformer =
+      make_ref_counted<testing::NiceMock<MockFrameTransformer>>();
+
+  scoped_refptr<TransformedFrameCallback> callback;
+  EXPECT_CALL(*transformer,
+              RegisterTransformedFrameSinkCallback(_, config_.rtp.remote_ssrc))
+      .WillOnce(testing::SaveArg<0>(&callback));
+
+  auto receiver = std::make_unique<RtpVideoStreamReceiver2>(
+      env_, TaskQueueBase::Current(), &mock_transport_, nullptr, nullptr,
+      &config_, kMaxWaitForKeyframe, rtp_receive_statistics_.get(), nullptr,
+      nullptr, &nack_periodic_processor_, &mock_on_complete_frame_callback_,
+      nullptr, transformer, nullptr);
+  receiver->AddReceiveCodec(kPayloadType, kVideoCodecGeneric, {},
+                            /*raw_payload=*/false);
+  ASSERT_NE(callback, nullptr);
+
+  RtpPacketReceived packet1;
+  packet1.SetPayloadType(kPayloadType);
+  packet1.SetSequenceNumber(1);
+  CopyOnWriteBuffer data1("1234");
+  RTPVideoHeader keyframe_header =
+      GetGenericVideoHeader(VideoFrameType::kVideoFrameKey);
+
+  std::unique_ptr<TransformableFrameInterface> transformed_frame;
+  EXPECT_CALL(*transformer, Transform(_))
+      .WillOnce(testing::SaveArgByMove<0>(&transformed_frame));
+  receiver->OnReceivedPayloadDataForTesting(data1, packet1, keyframe_header);
+  ASSERT_NE(transformed_frame, nullptr);
+
+  EXPECT_CALL(*transformer,
+              UnregisterTransformedFrameSinkCallback(config_.rtp.remote_ssrc));
+  receiver->SetDepacketizerToDecoderFrameTransformer(nullptr);
+
+  // Late frame from the cleared transformer's callback must be ignored.
+  EXPECT_CALL(mock_on_complete_frame_callback_, DoOnCompleteFrame).Times(0);
+  callback->OnTransformedFrame(std::move(transformed_frame));
+  time_controller_.AdvanceTime(TimeDelta::Zero());
+  testing::Mock::VerifyAndClearExpectations(&mock_on_complete_frame_callback_);
+
+  // Subsequent frames bypass transformation and reach OnCompleteFrame directly.
+  EXPECT_CALL(*transformer, Transform(_)).Times(0);
+  EXPECT_CALL(*transformer, UnregisterTransformedFrameSinkCallback(_)).Times(0);
+  CopyOnWriteBuffer data2("5678");
+  mock_on_complete_frame_callback_.AppendExpectedBitstream(data2);
+  EXPECT_CALL(mock_on_complete_frame_callback_, DoOnCompleteFrame);
+
+  RtpPacketReceived packet2;
+  packet2.SetPayloadType(kPayloadType);
+  packet2.SetSequenceNumber(2);
+  packet2.SetTimestamp(3000);
+  receiver->OnReceivedPayloadDataForTesting(data2, packet2, keyframe_header);
+
   receiver = nullptr;
 }
 

@@ -212,8 +212,8 @@ class RtpVideoStreamReceiver2 : public LossNotificationSender,
   void SetFrameDecryptor(
       scoped_refptr<FrameDecryptorInterface> frame_decryptor);
 
-  // Sets a frame transformer after a stream has started, if no transformer
-  // has previously been set. Does not reset the decoder state.
+  // Sets or clears the frame transformer after a stream has started. Does not
+  // reset the decoder state.
   void SetDepacketizerToDecoderFrameTransformer(
       scoped_refptr<FrameTransformerInterface> frame_transformer);
 
@@ -519,7 +519,7 @@ class RtpVideoStreamReceiver2 : public LossNotificationSender,
   int64_t last_completed_picture_id_ = 0;
 
   scoped_refptr<RtpVideoStreamReceiverFrameTransformerDelegate>
-      frame_transformer_delegate_;
+      frame_transformer_delegate_ RTC_GUARDED_BY(worker_queue_);
 
   SeqNumUnwrapper<uint16_t> rtp_seq_num_unwrapper_
       RTC_GUARDED_BY(worker_queue_);
