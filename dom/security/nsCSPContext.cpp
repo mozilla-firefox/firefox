@@ -202,7 +202,7 @@ bool nsCSPContext::permitsInternal(
   nsAutoString violatedDirectiveString;
   for (uint32_t p = 0; p < mPolicies.Length(); p++) {
     if (!mPolicies[p]->permits(aDir, aLoadInfo, aContentLocation,
-                               !!aOriginalURIIfRedirect, aSpecific,
+                               aOriginalURIIfRedirect, aSpecific,
                                violatedDirective, violatedDirectiveString)) {
       // If the policy is violated and not report-only, reject the load and
       // report to the console

@@ -539,9 +539,15 @@ class nsCSPDirective {
   explicit nsCSPDirective(CSPDirective aDirective);
   virtual ~nsCSPDirective();
 
+  // aOriginalURIIfRedirect is the URI the request started out with if it was
+  // redirected, null otherwise.
+  //
+  // TODO: Go back to a "was redirected" flag once url hashes match the URL
+  // string a request was made with, which doesn't change on redirects. See
+  // bug 2087026.
   virtual bool permits(CSPDirective aDirective, nsILoadInfo* aLoadInfo,
-                       nsIURI* aUri, bool aWasRedirected, bool aReportOnly,
-                       bool aUpgradeInsecure) const;
+                       nsIURI* aUri, nsIURI* aOriginalURIIfRedirect,
+                       bool aReportOnly, bool aUpgradeInsecure) const;
   virtual bool allows(enum CSPKeyword aKeyword) const;
   // Whether a nonce-source expression allows an element with the nonce aNonce.
   bool allowsByNonce(const nsAString& aNonce) const;
@@ -667,7 +673,7 @@ class nsBlockAllMixedContentDirective : public nsCSPDirective {
   ~nsBlockAllMixedContentDirective();
 
   bool permits(CSPDirective aDirective, nsILoadInfo* aLoadInfo, nsIURI* aUri,
-               bool aWasRedirected, bool aReportOnly,
+               nsIURI* aOriginalURIIfRedirect, bool aReportOnly,
                bool aUpgradeInsecure) const override {
     return false;
   }
@@ -722,7 +728,7 @@ class nsUpgradeInsecureDirective : public nsCSPDirective {
   ~nsUpgradeInsecureDirective();
 
   bool permits(CSPDirective aDirective, nsILoadInfo* aLoadInfo, nsIURI* aUri,
-               bool aWasRedirected, bool aReportOnly,
+               nsIURI* aOriginalURIIfRedirect, bool aReportOnly,
                bool aUpgradeInsecure) const override {
     return false;
   }
@@ -748,7 +754,7 @@ class nsCSPPolicy {
   virtual ~nsCSPPolicy();
 
   bool permits(CSPDirective aDirective, nsILoadInfo* aLoadInfo, nsIURI* aUri,
-               bool aWasRedirected, bool aSpecific,
+               nsIURI* aOriginalURIIfRedirect, bool aSpecific,
                nsAString& outViolatedDirective,
                nsAString& outViolatedDirectiveString) const;
   bool allows(CSPDirective aDirective, enum CSPKeyword aKeyword) const;

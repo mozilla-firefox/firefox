@@ -1340,7 +1340,7 @@ static bool DoesIntegrityMetadataMatchSourceList(
 }
 
 bool nsCSPDirective::permits(CSPDirective aDirective, nsILoadInfo* aLoadInfo,
-                             nsIURI* aUri, bool aWasRedirected,
+                             nsIURI* aUri, nsIURI* aOriginalURIIfRedirect,
                              bool aReportOnly, bool aUpgradeInsecure) const {
   MOZ_ASSERT(equals(aDirective) || isDefaultDirective());
 
@@ -1402,7 +1402,16 @@ bool nsCSPDirective::permits(CSPDirective aDirective, nsILoadInfo* aLoadInfo,
       // Step 1.3. If the result of executing §6.7.3.4 Does the hash of
       // request’s URL match source list? on this directive’s value and
       // request is "Matches", return "Allowed".
-      if (hasUrlHash && DoesUrlHashMatchSourceList(aUri, mSrcs)) {
+      //
+      // Unlike the PR, which matches the request's current URL, match the URL
+      // the request started out with if it was redirected, as the explainer
+      // and Chromium do. The policy allowlists exactly that URL, and matching
+      // the redirect target instead would let a page find out whether the
+      // allowlisted URL redirects.
+      // https://github.com/explainers-by-googlers/script-src-v2
+      if (hasUrlHash &&
+          DoesUrlHashMatchSourceList(
+              aOriginalURIIfRedirect ? aOriginalURIIfRedirect : aUri, mSrcs)) {
         CSPUTILSLOG(("  Allowed by matching url hash (script-like)"));
         return true;
       }
@@ -1448,7 +1457,7 @@ bool nsCSPDirective::permits(CSPDirective aDirective, nsILoadInfo* aLoadInfo,
   }
 
   for (uint32_t i = 0; i < mSrcs.Length(); i++) {
-    if (mSrcs[i]->permits(aUri, aWasRedirected, aReportOnly,
+    if (mSrcs[i]->permits(aUri, !!aOriginalURIIfRedirect, aReportOnly,
                           aUpgradeInsecure)) {
       return true;
     }
@@ -1935,8 +1944,8 @@ nsCSPPolicy::~nsCSPPolicy() {
 }
 
 bool nsCSPPolicy::permits(CSPDirective aDir, nsILoadInfo* aLoadInfo,
-                          nsIURI* aUri, bool aWasRedirected, bool aSpecific,
-                          nsAString& outViolatedDirective,
+                          nsIURI* aUri, nsIURI* aOriginalURIIfRedirect,
+                          bool aSpecific, nsAString& outViolatedDirective,
                           nsAString& outViolatedDirectiveString) const {
   if (CSPUTILSLOGENABLED()) {
     CSPUTILSLOG(("nsCSPPolicy::permits, aUri: %s, aDir: %s, aSpecific: %s",
@@ -1955,8 +1964,9 @@ bool nsCSPPolicy::permits(CSPDirective aDir, nsILoadInfo* aLoadInfo,
   // hashtable.
   for (uint32_t i = 0; i < mDirectives.Length(); i++) {
     if (mDirectives[i]->equals(aDir)) {
-      if (!mDirectives[i]->permits(aDir, aLoadInfo, aUri, aWasRedirected,
-                                   mReportOnly, mUpgradeInsecDir)) {
+      if (!mDirectives[i]->permits(aDir, aLoadInfo, aUri,
+                                   aOriginalURIIfRedirect, mReportOnly,
+                                   mUpgradeInsecDir)) {
         mDirectives[i]->getDirName(outViolatedDirective);
         mDirectives[i]->toString(outViolatedDirectiveString);
         return false;
@@ -1971,8 +1981,8 @@ bool nsCSPPolicy::permits(CSPDirective aDir, nsILoadInfo* aLoadInfo,
   // If the above loop runs through, we haven't found a matching directive.
   // Avoid relooping, just store the result of default-src while looping.
   if (!aSpecific && defaultDir) {
-    if (!defaultDir->permits(aDir, aLoadInfo, aUri, aWasRedirected, mReportOnly,
-                             mUpgradeInsecDir)) {
+    if (!defaultDir->permits(aDir, aLoadInfo, aUri, aOriginalURIIfRedirect,
+                             mReportOnly, mUpgradeInsecDir)) {
       defaultDir->getDirName(outViolatedDirective);
       defaultDir->toString(outViolatedDirectiveString);
       return false;
