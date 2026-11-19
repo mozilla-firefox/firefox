@@ -244,11 +244,18 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
     return ejr == EvalJSONResult::Success;
   }
 
-  bool isWasmIntroducer = false;
+  bool isIntroducerSupported = true;
   RootedScript evalScript(cx);
   RootedScript introducerScript(cx);
   uint32_t introducerPcOffset = 0;
   if (evalType == EvalType::Direct) {
+    // ScopeContext::determineEffectiveScope does some trickery using
+    // the environment chain to find the right scope for compilation.
+    // It is probably all safe for caching, but to be safe we simply
+    // don't cache evals in non-syntactic scopes. It's not a hot path.
+    if (callerScript->hasNonSyntacticScope()) {
+      isIntroducerSupported = false;
+    }
     introducerScript = callerScript;
     introducerPcOffset = callerScript->pcToOffset(pc);
   } else {
@@ -267,10 +274,10 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
       // EvalCacheLookup/Entry would need to support WasmInstanceObject
       // introducers in addition to JSScripts. This isn't common enough
       // to be worth it.
-      isWasmIntroducer = true;
+      isIntroducerSupported = false;
     }
   }
-  if (!isWasmIntroducer) {
+  if (isIntroducerSupported) {
     EvalCacheLookup key(linearStr, cx->global(), introducerScript,
                         introducerPcOffset, evalType);
     if (EvalCache::Ptr entry = cx->caches().evalCache.lookup(key)) {
@@ -351,7 +358,7 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
       return false;
     }
 
-    if (isReusable && !isWasmIntroducer) {
+    if (isReusable && isIntroducerSupported) {
       MOZ_ASSERT(!evalScript->treatAsRunOnce());
       MOZ_ASSERT(!evalScript->hasCallSiteObj());
       EvalCacheLookup key(linearStr, cx->global(), introducerScript,
