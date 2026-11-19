@@ -11,7 +11,6 @@
 #include "mozilla/StaticMutex.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/StaticPrefs_security.h"
-#include "mozilla/SyncRunnable.h"
 #include "mozilla/dom/quota/IPCStreamCipherStrategy.h"
 #include "mozilla/security/lockstore/lockstore_ffi_generated.h"
 #include "ScopedNSSTypes.h"
@@ -113,26 +112,26 @@ void EnsureProfilePathCached() {
 
 // Ensure the profile path is cached; callable from any thread. Database opens
 // run on worker threads (e.g. the QuotaManager / IndexedDB IO threads) where
-// the directory service is unavailable, so off the main thread we bounce a
-// tiny runnable to the main thread to resolve and cache the path. This is the
-// safe direction (worker -> main): the main thread never blocks waiting on a
-// storage IO thread, so it cannot deadlock. The fast path avoids the dispatch
-// once the path is cached (which, after the first open, it always is).
-void EnsureProfilePathCachedAnyThread() {
+// the directory service is unavailable. The path is cached on the main thread
+// at profile-do-change, so a worker getting here with no cached path is opening
+// a database before profile-do-change. Synchronously bouncing to the main
+// thread would deadlock if the main thread is blocked on that worker (e.g. on
+// the PermissionManager monitor), so fail instead and let the open error out.
+nsresult EnsureProfilePathCachedAnyThread() {
   {
     StaticMutexAutoLock lock(sStateMutex);
     if (!sCachedProfilePath.IsEmpty()) {
-      return;
+      return NS_OK;
     }
   }
   if (NS_IsMainThread()) {
     EnsureProfilePathCached();
-    return;
+    return NS_OK;
   }
-  nsCOMPtr<nsIRunnable> r =
-      NS_NewRunnableFunction("mozilla::storage::EnsureProfilePathCached",
-                             []() { EnsureProfilePathCached(); });
-  mozilla::SyncRunnable::DispatchToThread(GetMainThreadSerialEventTarget(), r);
+  NS_WARNING(
+      "Trying to open a database off the main thread before "
+      "profile-do-change! Forgot to call do_get_profile()?");
+  return NS_ERROR_NOT_INITIALIZED;
 }
 
 // Snapshot the cached profile path, resolving and caching it on first use.
@@ -140,16 +139,16 @@ void EnsureProfilePathCachedAnyThread() {
 // QuotaManager IO thread, which can open DBs before the main-thread eager
 // cache or profile-after-change has populated it -- and under xpcshell
 // profile-after-change never fires at all). dirsvc is main-thread only, so
-// EnsureProfilePathCachedAnyThread bounces to the main thread when called from
-// a worker rather than resolving (and crashing) here. Returns
-// NS_ERROR_NOT_INITIALIZED if the path still cannot be resolved.
+// EnsureProfilePathCachedAnyThread can only resolve it on the main thread.
+// Returns NS_ERROR_NOT_INITIALIZED if the path still cannot be resolved.
 nsresult GetCachedProfilePath(nsString& aOutPath) {
   {
     StaticMutexAutoLock lock(sStateMutex);
     aOutPath = sCachedProfilePath;
   }
   if (aOutPath.IsEmpty()) {
-    EnsureProfilePathCachedAnyThread();
+    nsresult rv = EnsureProfilePathCachedAnyThread();
+    NS_ENSURE_SUCCESS(rv, rv);
     StaticMutexAutoLock lock(sStateMutex);
     aOutPath = sCachedProfilePath;
   }
