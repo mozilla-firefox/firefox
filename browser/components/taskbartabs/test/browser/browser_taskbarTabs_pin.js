@@ -30,7 +30,7 @@ add_task(async function test_moveTabIntoTaskbarTabParentWindow() {
     const move = await TaskbarTabs.moveTabIntoTaskbarTab(tab);
     is(gPinStub.callCount, 1, "Exactly one pin was attempted");
     is(
-      gPinStub.firstCall.args[2],
+      gPinStub.firstCall.args[2]?.window,
       move.window,
       "The newly-created window was passed as part of the pinning"
     );
