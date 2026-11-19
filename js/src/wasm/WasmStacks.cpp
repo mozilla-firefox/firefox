@@ -658,6 +658,7 @@ void ContStack::reset() {
   initialResumeTarget_.framePointer = nullptr;
   initialResumeTarget_.stackPointer = nullptr;
 #  ifdef JS_HW_SHADOW_STACK
+  exitShadowStackPointer_ = nullptr;
   initialResumeTarget_.shadowStackPointer = nullptr;
 #  endif
   initialResumeTarget_.resumePC = nullptr;
@@ -1377,6 +1378,14 @@ void EmitSwitchStack(MacroAssembler& masm, Register switchTarget,
     masm.Mov(vixl::sp, PseudoStackPointer64);
   }
 #  endif
+
+#  ifdef JS_HW_SHADOW_STACK
+  // Switch SSP to the switch target when shadow stack is enabled.
+  masm.loadPtr(
+      Address(switchTarget, offsetof(wasm::SwitchTarget, shadowStackPointer)),
+      scratch1);
+  masm.switchToShadowStackPtr(scratch1);
+#  endif
   masm.loadPtr(
       Address(switchTarget, offsetof(wasm::SwitchTarget, framePointer)),
       FramePointer);
@@ -1537,8 +1546,9 @@ static void EmitBuildSwitchTarget(MacroAssembler& masm,
                                 static_cast<int32_t>(offsetof(
                                     wasm::SwitchTarget, stackPointer))));
 #  ifdef JS_HW_SHADOW_STACK
+  masm.moveShadowStackPtrTo(scratch);
   masm.storePtr(
-      ImmWord(0),
+      scratch,
       Address(FramePointer, -static_cast<int32_t>(switchTargetFramePushed) +
                                 static_cast<int32_t>(offsetof(
                                     wasm::SwitchTarget, shadowStackPointer))));

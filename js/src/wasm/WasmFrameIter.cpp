@@ -1238,6 +1238,28 @@ void wasm::GenerateExitPrologueMainStackSwitch(
   masm.moveToStackPtr(scratch3);
   masm.assertStackAlignment(WasmStackAlignment);
 
+#  ifdef JS_HW_SHADOW_STACK
+  masm.moveShadowStackPtrTo(scratch3);
+
+  Label noHardwareShadowStack;
+  masm.branchTestPtr(Assembler::Zero, scratch3, scratch3,
+                     &noHardwareShadowStack);
+
+  masm.storePtr(
+      scratch3,
+      Address(scratch2, wasm::ContStack::offsetOfExitShadowStackPointer()));
+
+  // SP points at the base handlers, which has a SwitchTarget where we can grab
+  // the shadow stack pointer for the main stack.
+  masm.loadPtr(Address(masm.getStackPointer(),
+                       offsetof(wasm::Handlers, returnTarget) +
+                           offsetof(wasm::SwitchTarget, shadowStackPointer)),
+               scratch3);
+  masm.switchToShadowStackPtr(scratch3);
+
+  masm.bind(&noHardwareShadowStack);
+#  endif
+
   // Reset the stack limit on wasm::Context to the main stack limit. This
   // clobbers scratch2.
   masm.loadPtr(Address(scratch1, JSContext::offsetOfWasm() +
@@ -1313,6 +1335,16 @@ void wasm::GenerateExitEpilogueMainStackReturn(MacroAssembler& masm,
   Label originallyOnSystemStack;
   masm.branchTestPtr(Assembler::Zero, scratch2, scratch2,
                      &originallyOnSystemStack);
+
+#  ifdef JS_HW_SHADOW_STACK
+  masm.loadPtr(
+      Address(scratch2, wasm::ContStack::offsetOfExitShadowStackPointer()),
+      scratch1);
+  masm.storePtr(
+      ImmWord(0),
+      Address(scratch2, wasm::ContStack::offsetOfExitShadowStackPointer()));
+  masm.switchToShadowStackPtr(scratch1);
+#  endif
 
   // Load the JSContext.
   masm.loadPtr(Address(InstanceReg, wasm::Instance::offsetOfCx()), scratch1);

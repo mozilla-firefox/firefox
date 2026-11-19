@@ -213,6 +213,13 @@ class ContStack {
   // The shadow stack pointer to switch to this stack's shadow stack with for
   // the initial resume.
   uintptr_t* initialShadowStackPointer_ = nullptr;
+
+  // The shadow stack pointer to switch back to this stack's shadow stack with
+  // when returning from a VM exit to the main stack. While the native stack
+  // pointer is recovered by leaving the frame pointer on the continuation
+  // stack, the shadow stack has no equivalent, so it is saved here. This
+  // works since there can be at most one exit in progress for a ContStack.
+  uintptr_t* exitShadowStackPointer_ = nullptr;
 #  endif
 
   // The initial resume target and callee for the base frame to use.
@@ -330,9 +337,23 @@ class ContStack {
     return offsetof(ContStack, resumeTarget_);
   }
 
+#  ifdef JS_HW_SHADOW_STACK
+  static constexpr int32_t offsetOfExitShadowStackPointer() {
+    return offsetof(ContStack, exitShadowStackPointer_);
+  }
+#  endif
+
   // The allocation base pointer for this stack. This is not the stack base for
   // execution.
   uintptr_t allocationBase() const { return allocationBase_; }
+
+  uintptr_t* exitShadowStackPointer() const {
+#  ifdef JS_HW_SHADOW_STACK
+    return exitShadowStackPointer_;
+#  else
+    return nullptr;
+#  endif
+  }
 
   // Return if we can resume this stack.
   bool canResume() const {

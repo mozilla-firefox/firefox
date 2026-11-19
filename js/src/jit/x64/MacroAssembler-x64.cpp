@@ -696,6 +696,27 @@ void MacroAssemblerX64::unwindToShadowStackPtr(Register newShstkPtr,
   bind(&done);
 }
 
+void MacroAssemblerX64::switchToShadowStackPtr(Register newShstkPtr) {
+  ScratchRegisterScope scratch(asMasm());
+  MOZ_ASSERT(newShstkPtr != scratch);
+
+  Label done;
+  // A null shadow stack pointer means the shadow stack wasn't enabled when it
+  // was saved.
+  asMasm().branchTestPtr(Assembler::Zero, newShstkPtr, newShstkPtr, &done);
+
+  // The shadow stack may have been disabled for this thread since the pointer
+  // was saved.
+  moveShadowStackPtrTo(scratch);
+  asMasm().branchTestPtr(Assembler::Zero, scratch, scratch, &done);
+
+  // The restore token is in the slot just below the shadow stack pointer that
+  // it resumes with.
+  rstorssp(Address(newShstkPtr, -int32_t(sizeof(uintptr_t))));
+  saveprevssp();
+  bind(&done);
+}
+
 void MacroAssemblerX64::handleFailureWithHandlerTail(
     Label* profilerExitTail, Label* bailoutTail,
     uint32_t* returnValueCheckOffset) {

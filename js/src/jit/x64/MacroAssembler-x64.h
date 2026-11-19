@@ -108,6 +108,10 @@ class MacroAssemblerX64 : public MacroAssemblerX86Shared {
   // is the provided value in newShstkPtr.
   void unwindToShadowStackPtr(Register newShstkPtr, Register scratch);
 
+  // Switch to the shadow stack that newShstkPtr points to, leaving a restore
+  // token on the current shadow stack so that it can be switched back to later.
+  void switchToShadowStackPtr(Register newShstkPtr);
+
   void writeDataRelocation(const Value& val) {
     MOZ_ASSERT(val.isGCThing(), "only called for gc-things");
 
