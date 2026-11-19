@@ -1182,6 +1182,28 @@ hooks = [
         'src/third_party/test_fonts/test_fonts.tar.gz', # Remove after 20240901
     ],
   },
+  {
+    # Populate src/third_party/.git/info/exclude with nested src/third_party/*
+    # DEPS paths so `gclient sync --reset --delete_unversioned_trees` does not
+    # delete nested sub-repositories and the Windows toolchain on every build.
+    'name': 'configure_third_party_exclude',
+    'pattern': '.',
+    'action': [
+        'python3',
+        'src/tools_webrtc/configure_third_party_exclude.py',
+    ],
+  },
+]
+
+pre_deps_hooks = [
+  {
+    'name': 'configure_third_party_exclude',
+    'pattern': '.',
+    'action': [
+        'python3',
+        'src/tools_webrtc/configure_third_party_exclude.py',
+    ],
+  },
 ]
 
 recursedeps = [
