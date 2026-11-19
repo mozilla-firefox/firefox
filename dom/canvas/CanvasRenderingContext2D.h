@@ -776,7 +776,8 @@ class CanvasRenderingContext2D : public nsICanvasRenderingContextInternal,
    */
   bool EnsureTarget(ErrorResult& aError,
                     const gfx::Rect* aCoveredRect = nullptr,
-                    bool aWillClear = false, bool aSkipTransform = false);
+                    bool aWillClear = false, bool aSkipTransform = false,
+                    bool aPreferAcceleration = false);
 
   bool EnsureTarget(const gfx::Rect* aCoveredRect = nullptr,
                     bool aWillClear = false, bool aSkipTransform = false) {
@@ -789,9 +790,20 @@ class CanvasRenderingContext2D : public nsICanvasRenderingContextInternal,
 
   void RestoreClipsAndTransformToTarget();
 
+  // aPreferAcceleration allows an accelerated target below the usual minimum
+  // size for acceleration.
   bool TryAcceleratedTarget(
       RefPtr<gfx::DrawTarget>& aOutDT,
-      RefPtr<layers::PersistentBufferProvider>& aOutProvider);
+      RefPtr<layers::PersistentBufferProvider>& aOutProvider,
+      bool aPreferAcceleration);
+
+  bool HasAcceleratedBufferProvider() const;
+
+  // Before the first drawing operation after a reset, returns whether the next
+  // EnsureTarget should create an accelerated target regardless of the canvas
+  // size, because aImage is an accelerated 2D canvas. Drawing it into a
+  // software target would require a synchronous readback.
+  bool MaybeAccelerateForDrawImage(const CanvasImageSource& aImage);
 
   bool TrySharedTarget(RefPtr<gfx::DrawTarget>& aOutDT,
                        RefPtr<layers::PersistentBufferProvider>& aOutProvider);

@@ -1060,7 +1060,8 @@ bool DrawTargetWebgl::IsValid() const {
   return mSharedContext && !mSharedContext->IsContextLost();
 }
 
-bool DrawTargetWebgl::CanCreate(const IntSize& aSize, SurfaceFormat aFormat) {
+bool DrawTargetWebgl::CanCreate(const IntSize& aSize, SurfaceFormat aFormat,
+                                bool aPreferAcceleration) {
   if (!gfxVars::UseAcceleratedCanvas2D()) {
     return false;
   }
@@ -1069,17 +1070,19 @@ bool DrawTargetWebgl::CanCreate(const IntSize& aSize, SurfaceFormat aFormat) {
     return false;
   }
 
-  // The interpretation of the min-size and max-size follows from the old
-  // SkiaGL prefs. First just ensure that the context is not unreasonably
-  // small.
-  static const int32_t kMinDimension = 16;
-  if (std::min(aSize.width, aSize.height) < kMinDimension) {
-    return false;
-  }
+  if (!aPreferAcceleration) {
+    // The interpretation of the min-size and max-size follows from the old
+    // SkiaGL prefs. First just ensure that the context is not unreasonably
+    // small.
+    static const int32_t kMinDimension = 16;
+    if (std::min(aSize.width, aSize.height) < kMinDimension) {
+      return false;
+    }
 
-  int32_t minSize = StaticPrefs::gfx_canvas_accelerated_min_size();
-  if (aSize.width * aSize.height < minSize * minSize) {
-    return false;
+    int32_t minSize = StaticPrefs::gfx_canvas_accelerated_min_size();
+    if (aSize.width * aSize.height < minSize * minSize) {
+      return false;
+    }
   }
 
   // Maximum pref allows 2 different options:
@@ -1096,9 +1099,9 @@ bool DrawTargetWebgl::CanCreate(const IntSize& aSize, SurfaceFormat aFormat) {
 already_AddRefed<DrawTargetWebgl> DrawTargetWebgl::Create(
     const IntSize& aSize, SurfaceFormat aFormat,
     const RefPtr<SharedContextWebgl>& aSharedContext,
-    const dom::ContentParentId& aContentId) {
+    const dom::ContentParentId& aContentId, bool aPreferAcceleration) {
   // Validate the size and format.
-  if (!CanCreate(aSize, aFormat)) {
+  if (!CanCreate(aSize, aFormat, aPreferAcceleration)) {
     return nullptr;
   }
 

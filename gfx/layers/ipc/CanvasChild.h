@@ -108,11 +108,13 @@ class CanvasChild final : public PCanvasChild, public SupportsWeakPtr {
    * @param aTextureOwnerId the id of the new texture
    * @param aSize size for the DrawTarget
    * @param aFormat SurfaceFormat for the DrawTarget
+   * @param aPreferAcceleration prefer acceleration even when aSize is below
+   *        the usual minimum size
    * @returns newly created DrawTargetRecording
    */
   already_AddRefed<gfx::DrawTargetRecording> CreateDrawTarget(
       const RemoteTextureOwnerId& aTextureOwnerId, gfx::IntSize aSize,
-      gfx::SurfaceFormat aFormat);
+      gfx::SurfaceFormat aFormat, bool aPreferAcceleration);
 
   /**
    * Record an event for processing by the CanvasParent's CanvasTranslator.

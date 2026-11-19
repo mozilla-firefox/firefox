@@ -1,0 +1,62 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+<title>Small canvases whose first draw is an accelerated canvas are accelerated</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<link rel="stylesheet" href="/tests/SimpleTest/test.css">
+<script>
+function makeContext(width, height, options = {}) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  return canvas.getContext("2d", options);
+}
+
+function isAccelerated(ctx) {
+  return SpecialPowers.wrap(ctx).getDebugInfo(true).isAccelerated;
+}
+
+function checkPixel(ctx, expected, message) {
+  is(Array.from(ctx.getImageData(1, 1, 1, 1).data).join(), expected.join(),
+     message);
+}
+
+const source = makeContext(512, 512);
+source.fillStyle = "rgb(0, 255, 0)";
+source.fillRect(0, 0, 512, 512);
+
+if (!isAccelerated(source)) {
+  todo(false, "Accelerated canvas is not available");
+} else {
+  const fromCanvas = makeContext(8, 8);
+  fromCanvas.drawImage(source.canvas, 0, 0, 8, 8);
+  ok(isAccelerated(fromCanvas),
+     "A small canvas whose first draw is an accelerated canvas is accelerated");
+  checkPixel(fromCanvas, [0, 255, 0, 255], "The accelerated canvas was drawn");
+
+  const fillFirst = makeContext(8, 8);
+  fillFirst.fillRect(0, 0, 8, 8);
+  fillFirst.drawImage(source.canvas, 0, 0, 8, 8);
+  ok(!isAccelerated(fillFirst),
+     "A small canvas that drew something else first is not accelerated");
+
+  const readFrequently = makeContext(8, 8, { willReadFrequently: true });
+  readFrequently.drawImage(source.canvas, 0, 0, 8, 8);
+  ok(!isAccelerated(readFrequently),
+     "A small willReadFrequently canvas is not accelerated");
+
+  const software = makeContext(512, 512, { willReadFrequently: true });
+  software.fillRect(0, 0, 512, 512);
+  const fromSoftware = makeContext(8, 8);
+  fromSoftware.drawImage(software.canvas, 0, 0, 8, 8);
+  ok(!isAccelerated(fromSoftware),
+     "A small canvas whose first draw is a software canvas is not accelerated");
+
+  const reset = makeContext(8, 8);
+  reset.fillRect(0, 0, 8, 8);
+  ok(!isAccelerated(reset), "A small canvas is not accelerated by default");
+  reset.canvas.width = 8;
+  reset.drawImage(source.canvas, 0, 0, 8, 8);
+  ok(isAccelerated(reset),
+     "A small canvas whose first draw after a reset is an accelerated canvas is accelerated");
+}
+</script>

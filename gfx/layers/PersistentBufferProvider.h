@@ -157,9 +157,10 @@ class PersistentBufferProviderRemote : public PersistentBufferProvider {
   MOZ_DECLARE_REFCOUNTED_VIRTUAL_TYPENAME(PersistentBufferProviderRemote,
                                           override)
 
+  // aPreferAcceleration allows acceleration below the usual minimum size.
   static already_AddRefed<PersistentBufferProviderRemote> Create(
       gfx::IntSize aSize, gfx::SurfaceFormat aFormat,
-      KnowsCompositor* aKnowsCompositor);
+      KnowsCompositor* aKnowsCompositor, bool aPreferAcceleration = false);
 
   bool IsAccelerated() const override { return true; }
   bool IsRemote() const override { return true; }

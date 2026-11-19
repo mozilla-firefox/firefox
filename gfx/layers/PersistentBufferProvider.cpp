@@ -118,13 +118,14 @@ static already_AddRefed<TextureClient> CreateTexture(
 already_AddRefed<PersistentBufferProviderRemote>
 PersistentBufferProviderRemote::Create(gfx::IntSize aSize,
                                        gfx::SurfaceFormat aFormat,
-                                       KnowsCompositor* aKnowsCompositor) {
+                                       KnowsCompositor* aKnowsCompositor,
+                                       bool aPreferAcceleration) {
   if (!aKnowsCompositor || !aKnowsCompositor->GetTextureForwarder() ||
       !aKnowsCompositor->GetTextureForwarder()->IPCOpen()) {
     return nullptr;
   }
 
-  if (!DrawTargetWebgl::CanCreate(aSize, aFormat)) {
+  if (!DrawTargetWebgl::CanCreate(aSize, aFormat, aPreferAcceleration)) {
 #ifdef XP_WIN
     // Direct2D acceleration does not require DrawTargetWebgl, but still
     // requires PersistentBufferProviderRemote.
@@ -150,6 +151,7 @@ PersistentBufferProviderRemote::Create(gfx::IntSize aSize,
     gfxCriticalNoteOnce << "Expected RecordedTextureData";
     return nullptr;
   }
+  recordedTextureData->SetPreferAcceleration(aPreferAcceleration);
 
   RefPtr<PersistentBufferProviderRemote> provider =
       new PersistentBufferProviderRemote(

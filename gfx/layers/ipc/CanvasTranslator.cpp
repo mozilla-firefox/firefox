@@ -1239,7 +1239,8 @@ already_AddRefed<gfx::DrawTarget> CanvasTranslator::CreateFallbackDrawTarget(
 
 already_AddRefed<gfx::DrawTarget> CanvasTranslator::CreateDrawTarget(
     gfx::ReferencePtr aRefPtr, const RemoteTextureOwnerId aTextureOwnerId,
-    const gfx::IntSize& aSize, gfx::SurfaceFormat aFormat) {
+    const gfx::IntSize& aSize, gfx::SurfaceFormat aFormat,
+    bool aPreferAcceleration) {
   if (!aTextureOwnerId.IsValid()) {
 #ifndef FUZZING_SNAPSHOT
     MOZ_DIAGNOSTIC_CRASH("No texture owner set");
@@ -1266,7 +1267,7 @@ already_AddRefed<gfx::DrawTarget> CanvasTranslator::CreateDrawTarget(
       mSharedContext->EnterTlsScope();
     }
     if (RefPtr<gfx::DrawTargetWebgl> webgl = gfx::DrawTargetWebgl::Create(
-            aSize, aFormat, mSharedContext, mContentId)) {
+            aSize, aFormat, mSharedContext, mContentId, aPreferAcceleration)) {
       webgl->BeginFrame(true);
       dt = webgl.forget().downcast<gfx::DrawTarget>();
       if (dt) {

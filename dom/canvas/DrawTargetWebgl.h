@@ -608,11 +608,14 @@ class DrawTargetWebgl : public DrawTarget, public SupportsWeakPtr {
   DrawTargetWebgl();
   ~DrawTargetWebgl();
 
-  static bool CanCreate(const IntSize& aSize, SurfaceFormat aFormat);
+  // aPreferAcceleration skips the minimum size checks, which exist only
+  // because small canvases are usually not worth accelerating.
+  static bool CanCreate(const IntSize& aSize, SurfaceFormat aFormat,
+                        bool aPreferAcceleration = false);
   static already_AddRefed<DrawTargetWebgl> Create(
       const IntSize& aSize, SurfaceFormat aFormat,
       const RefPtr<SharedContextWebgl>& aSharedContext,
-      const dom::ContentParentId& aContentId);
+      const dom::ContentParentId& aContentId, bool aPreferAcceleration = false);
 
   bool Init(const IntSize& aSize, SurfaceFormat aFormat,
             const RefPtr<SharedContextWebgl>& aSharedContext,

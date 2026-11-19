@@ -1796,7 +1796,8 @@ bool CanvasRenderingContext2D::HasErrorState(ErrorResult& aError,
 bool CanvasRenderingContext2D::EnsureTarget(ErrorResult& aError,
                                             const gfx::Rect* aCoveredRect,
                                             bool aWillClear,
-                                            bool aSkipTransform) {
+                                            bool aSkipTransform,
+                                            bool aPreferAcceleration) {
   if (HasErrorState(aError, false)) {
     return false;
   }
@@ -1847,7 +1848,7 @@ bool CanvasRenderingContext2D::EnsureTarget(ErrorResult& aError,
   RefPtr<DrawTarget> newTarget;
   RefPtr<PersistentBufferProvider> newProvider;
 
-  if (!TryAcceleratedTarget(newTarget, newProvider) &&
+  if (!TryAcceleratedTarget(newTarget, newProvider, aPreferAcceleration) &&
       !TrySharedTarget(newTarget, newProvider) &&
       !TryBasicTarget(newTarget, newProvider, aError)) {
     gfxCriticalError(
@@ -1993,7 +1994,8 @@ static WindowRenderer* WindowRendererFromCanvasElement(
 
 bool CanvasRenderingContext2D::TryAcceleratedTarget(
     RefPtr<gfx::DrawTarget>& aOutDT,
-    RefPtr<layers::PersistentBufferProvider>& aOutProvider) {
+    RefPtr<layers::PersistentBufferProvider>& aOutProvider,
+    bool aPreferAcceleration) {
   if (!XRE_IsContentProcess()) {
     // Only allow accelerated contexts to be created in a content process to
     // ensure it is remoted appropriately and run on the correct parent or
@@ -2021,7 +2023,8 @@ bool CanvasRenderingContext2D::TryAcceleratedTarget(
     }
 
     aOutProvider = PersistentBufferProviderRemote::Create(
-        GetSize(), GetSurfaceFormat(), renderer->AsKnowsCompositor());
+        GetSize(), GetSurfaceFormat(), renderer->AsKnowsCompositor(),
+        aPreferAcceleration);
   } else if (mOffscreenCanvas &&
              StaticPrefs::gfx_canvas_remote_allow_offscreen()) {
     RefPtr<ImageBridgeChild> imageBridge = ImageBridgeChild::GetSingleton();
@@ -2030,7 +2033,7 @@ bool CanvasRenderingContext2D::TryAcceleratedTarget(
     }
 
     aOutProvider = PersistentBufferProviderRemote::Create(
-        GetSize(), GetSurfaceFormat(), imageBridge);
+        GetSize(), GetSurfaceFormat(), imageBridge, aPreferAcceleration);
   }
 
   if (!aOutProvider) {
@@ -6073,6 +6076,43 @@ MaybeGetSurfaceDescriptorForRemoteCanvas(
 // other valid value for optional_argc is 6 if sx, sy, sw, sh, dx, dy, dw and dh
 // are all passed in.
 
+bool CanvasRenderingContext2D::HasAcceleratedBufferProvider() const {
+  return mBufferProvider && mBufferProvider->IsAccelerated();
+}
+
+bool CanvasRenderingContext2D::MaybeAccelerateForDrawImage(
+    const CanvasImageSource& aImage) {
+  if (mTarget || (mBufferProvider && !mBufferNeedsClear) ||
+      !mAllowAcceleration || UseSoftwareRendering()) {
+    return false;
+  }
+
+  nsICanvasRenderingContextInternal* context = nullptr;
+  if (aImage.IsHTMLCanvasElement()) {
+    HTMLCanvasElement& canvas = aImage.GetAsHTMLCanvasElement();
+    if (canvas.GetCurrentContextType() == CanvasContextType::Canvas2D) {
+      context = canvas.GetCurrentContext();
+    }
+  } else if (aImage.IsOffscreenCanvas()) {
+    OffscreenCanvas& canvas = aImage.GetAsOffscreenCanvas();
+    if (canvas.GetContextType() == CanvasContextType::OffscreenCanvas2D) {
+      context = canvas.GetContext();
+    }
+  }
+  if (!context || context == this ||
+      !static_cast<CanvasRenderingContext2D*>(context)
+           ->HasAcceleratedBufferProvider()) {
+    return false;
+  }
+
+  if (mBufferProvider && !mBufferProvider->IsAccelerated()) {
+    // The kept buffer was going to be cleared anyway.
+    mBufferProvider = nullptr;
+    mBufferNeedsClear = false;
+  }
+  return true;
+}
+
 void CanvasRenderingContext2D::DrawImage(const CanvasImageSource& aImage,
                                          double aSx, double aSy, double aSw,
                                          double aSh, double aDx, double aDy,
@@ -6098,7 +6138,8 @@ void CanvasRenderingContext2D::DrawImage(const CanvasImageSource& aImage,
   OffscreenCanvas* offscreenCanvas = nullptr;
   VideoFrame* videoFrame = nullptr;
 
-  if (!EnsureTarget(aError)) {
+  bool preferAcceleration = MaybeAccelerateForDrawImage(aImage);
+  if (!EnsureTarget(aError, nullptr, false, false, preferAcceleration)) {
     return;
   }
 

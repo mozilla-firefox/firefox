@@ -62,7 +62,8 @@ bool RecordedTextureData::Lock(OpenMode aMode) {
 
   if (!mDT && !mInited) {
     mInited = true;
-    mDT = mCanvasChild->CreateDrawTarget(mRemoteTextureOwnerId, mSize, mFormat);
+    mDT = mCanvasChild->CreateDrawTarget(mRemoteTextureOwnerId, mSize, mFormat,
+                                         mPreferAcceleration);
     if (!mDT) {
       return false;
     }

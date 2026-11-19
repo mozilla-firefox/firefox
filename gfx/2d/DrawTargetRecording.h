@@ -32,7 +32,8 @@ class DrawTargetRecording final : public DrawTarget {
                       IntRect aRect, bool aHasData = false);
   DrawTargetRecording(layers::CanvasDrawEventRecorder* aRecorder,
                       const layers::RemoteTextureOwnerId& aTextureOwnerId,
-                      DrawTarget* aDT, const IntSize& aSize);
+                      DrawTarget* aDT, const IntSize& aSize,
+                      bool aPreferAcceleration = false);
 
   ~DrawTargetRecording();
 

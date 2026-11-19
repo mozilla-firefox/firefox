@@ -21,6 +21,12 @@ class RecordedTextureData final : public TextureData {
 
   void FillInfo(TextureData::Info& aInfo) const final;
 
+  // Must be called before the first Lock, which creates the remote DrawTarget.
+  void SetPreferAcceleration(bool aPreferAcceleration) {
+    MOZ_ASSERT(!mInited);
+    mPreferAcceleration = aPreferAcceleration;
+  }
+
   void InvalidateContents() final;
 
   bool Lock(OpenMode aMode) final;
@@ -78,6 +84,7 @@ class RecordedTextureData final : public TextureData {
   bool mUsedRemoteTexture = false;
   bool mInvalidContents = true;
   bool mInited = false;
+  bool mPreferAcceleration = false;
 };
 
 }  // namespace layers

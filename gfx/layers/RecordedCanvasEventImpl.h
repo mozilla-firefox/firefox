@@ -457,13 +457,15 @@ class RecordedCanvasDrawTargetCreation final
   RecordedCanvasDrawTargetCreation(ReferencePtr aRefPtr,
                                    RemoteTextureOwnerId aTextureOwnerId,
                                    BackendType aType, const IntSize& aSize,
-                                   SurfaceFormat aFormat)
+                                   SurfaceFormat aFormat,
+                                   bool aPreferAcceleration)
       : RecordedEventDerived(CANVAS_DRAW_TARGET_CREATION),
         mRefPtr(aRefPtr),
         mTextureOwnerId(aTextureOwnerId),
         mBackendType(aType),
         mSize(aSize),
-        mFormat(aFormat) {}
+        mFormat(aFormat),
+        mPreferAcceleration(aPreferAcceleration) {}
 
   template <class S>
   MOZ_IMPLICIT RecordedCanvasDrawTargetCreation(S& aStream);
@@ -480,12 +482,13 @@ class RecordedCanvasDrawTargetCreation final
   BackendType mBackendType = BackendType::NONE;
   IntSize mSize;
   SurfaceFormat mFormat = SurfaceFormat::UNKNOWN;
+  bool mPreferAcceleration = false;
 };
 
 inline bool RecordedCanvasDrawTargetCreation::PlayCanvasEvent(
     CanvasTranslator* aTranslator) const {
-  RefPtr<DrawTarget> newDT =
-      aTranslator->CreateDrawTarget(mRefPtr, mTextureOwnerId, mSize, mFormat);
+  RefPtr<DrawTarget> newDT = aTranslator->CreateDrawTarget(
+      mRefPtr, mTextureOwnerId, mSize, mFormat, mPreferAcceleration);
 
   // If we couldn't create a DrawTarget this will probably cause us to crash
   // with nullptr later in the playback, so return false to abort.
@@ -499,6 +502,7 @@ void RecordedCanvasDrawTargetCreation::Record(S& aStream) const {
   WriteElement(aStream, mBackendType);
   WriteElement(aStream, mSize);
   WriteElement(aStream, mFormat);
+  WriteElement(aStream, mPreferAcceleration);
 }
 
 template <class S>
@@ -511,6 +515,7 @@ RecordedCanvasDrawTargetCreation::RecordedCanvasDrawTargetCreation(S& aStream)
   ReadElement(aStream, mSize);
   ReadElementConstrained(aStream, mFormat, SurfaceFormat::A8R8G8B8_UINT32,
                          SurfaceFormat::UNKNOWN);
+  ReadElement(aStream, mPreferAcceleration);
 }
 
 class RecordedTextureDestruction final

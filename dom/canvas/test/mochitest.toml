@@ -219,6 +219,9 @@ subsuite = "gpu"
 ["test_canvas.html"]
 subsuite = "gpu"
 
+["test_canvas_drawImage_accelerated_small.html"]
+subsuite = "gpu"
+
 ["test_canvas_focusring.html"]
 
 ["test_canvas_font_setter.html"]

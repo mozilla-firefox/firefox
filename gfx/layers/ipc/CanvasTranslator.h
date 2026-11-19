@@ -162,11 +162,14 @@ class CanvasTranslator final : public gfx::InlineTranslator,
    * @param aTextureOwnerId texture owner ID for this DrawTarget
    * @param aSize the size of the DrawTarget
    * @param aFormat the surface format for the DrawTarget
+   * @param aPreferAcceleration prefer acceleration for this DrawTarget even
+   *        when it is below the usual minimum size
    * @returns the new DrawTarget
    */
   already_AddRefed<gfx::DrawTarget> CreateDrawTarget(
       gfx::ReferencePtr aRefPtr, RemoteTextureOwnerId aTextureOwnerId,
-      const gfx::IntSize& aSize, gfx::SurfaceFormat aFormat);
+      const gfx::IntSize& aSize, gfx::SurfaceFormat aFormat,
+      bool aPreferAcceleration);
 
   already_AddRefed<gfx::DrawTarget> CreateDrawTarget(
       gfx::ReferencePtr aRefPtr, const gfx::IntSize& aSize,
