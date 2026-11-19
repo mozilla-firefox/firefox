@@ -854,15 +854,32 @@ class WindowsGPOPoliciesProvider extends PoliciesProvider {
 }
 
 class macOSPoliciesProvider extends PoliciesProvider {
-  constructor() {
+  /**
+   * @param {object} [options]
+   * @param {boolean} [options.allowUserPolicies] whether policies from the
+   *        user's preferences and user-scope profiles may be used.
+   */
+  constructor({ allowUserPolicies = true } = {}) {
     super();
+    this._userPolicies = null;
+    if (ignoreLocalPoliciesInAutomation()) {
+      return;
+    }
     let prefReader = Cc["@mozilla.org/mac-preferences-reader;1"].createInstance(
       Ci.nsIMacPreferencesReader
     );
     if (!prefReader.policiesEnabled()) {
       return;
     }
-    this._policies = lazy.macOSPoliciesParser.readPolicies(prefReader);
+    let result = lazy.macOSPoliciesParser.readPolicies(prefReader, {
+      allowUserPolicies,
+    });
+    this._policies = result?.policies ?? null;
+    this._userPolicies = result?.userPolicies ?? null;
+  }
+
+  get userPolicies() {
+    return this._userPolicies;
   }
 }
 

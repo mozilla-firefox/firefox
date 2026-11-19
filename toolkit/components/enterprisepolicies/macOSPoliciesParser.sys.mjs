@@ -19,15 +19,18 @@ ChromeUtils.defineLazyGetter(lazy, "log", () => {
   });
 });
 
+const ENABLED_KEY = "EnterprisePoliciesEnabled";
+const DISABLE_USER_POLICIES = "DisableMacOSUserPolicies";
+
 export var macOSPoliciesParser = {
-  readPolicies(reader) {
-    let nativePolicies = reader.readPreferences();
+  readPolicies(reader, options) {
+    let nativePolicies = this.selectPolicies(
+      reader.readPolicySources(),
+      options
+    );
     if (!nativePolicies) {
       return null;
     }
-
-    nativePolicies = this.unflatten(nativePolicies);
-    nativePolicies = this.removeUnknownPolicies(nativePolicies);
 
     // Need an extra check here so we don't
     // JSON.stringify if we aren't in debug mode
@@ -38,13 +41,59 @@ export var macOSPoliciesParser = {
     return nativePolicies;
   },
 
+  /**
+   * Splits the sources returned by nsIMacPreferencesReader.readPolicySources()
+   * into the policies an administrator controls and the ones a standard user
+   * can set. Device-scope configuration profiles win over /Library/Preferences.
+   *
+   * @param {object} sources { managed, system, user } preference objects.
+   * @param {object} [options]
+   * @param {boolean} [options.allowUserPolicies] whether user policies may be
+   *        used. Defaults to true.
+   * @returns {{policies: object, userPolicies: object|null}|null} the
+   *          policies, or null if policies aren't enabled.
+   */
+  selectPolicies(sources, { allowUserPolicies = true } = {}) {
+    let [managed, system, user] = ["managed", "system", "user"].map(name => {
+      try {
+        return this.removeUnknownPolicies(
+          this.unflatten(sources?.[name] ?? {})
+        );
+      } catch (e) {
+        lazy.log.error(`Ignoring macOS ${name} policies: ${e}`);
+        return {};
+      }
+    });
+
+    delete user[DISABLE_USER_POLICIES];
+    let policies = { ...system, ...managed };
+    let enabled = allowUserPolicies ? { ...user, ...policies } : policies;
+    if (enabled[ENABLED_KEY] !== true) {
+      return null;
+    }
+    delete policies[ENABLED_KEY];
+    delete user[ENABLED_KEY];
+
+    if (!allowUserPolicies) {
+      let ignored = Object.keys(user).filter(name => !(name in policies));
+      if (ignored.length) {
+        lazy.log.warn(`Ignoring macOS user policies: ${ignored.join(", ")}`);
+      }
+      return { policies, userPolicies: null };
+    }
+    return { policies, userPolicies: user };
+  },
+
   removeUnknownPolicies(policies) {
     let { schema } = ChromeUtils.importESModule(
       "resource:///modules/policies/schema.sys.mjs"
     );
 
     for (let policyName of Object.keys(policies)) {
-      if (!schema.properties.hasOwnProperty(policyName)) {
+      if (
+        policyName != ENABLED_KEY &&
+        !schema.properties.hasOwnProperty(policyName)
+      ) {
         lazy.log.debug(`Removing unknown policy: ${policyName}`);
         delete policies[policyName];
       }
