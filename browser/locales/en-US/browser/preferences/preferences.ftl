@@ -16,6 +16,14 @@ preferences-privacy-relay-available =
     .label = Suggest { -relay-brand-name } email masks
     .description = Hides your real email address to protect your inbox from spam.
 
+preferences-window-lock-macos =
+    .label = Lock Private Windows automatically
+    .description = { -brand-short-name } will ask for your device password or passkey after your computer locks, goes to sleep, or starts the screen saver.
+
+preferences-window-lock-windows =
+    .label = Lock Private Windows automatically
+    .description = { -brand-short-name } will ask for your device password or passkey after your computer locks.
+
 # Do not translate.
 # "Global Privacy Control" or "GPC" are a web platform feature name and abbreviation
 # included to facilitate power-user search of the about:preferences page.
