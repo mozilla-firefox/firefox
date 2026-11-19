@@ -23,4 +23,6 @@ subsuite = "raptor"
 
 ["test_raptor_profiling.py"]
 
+["test_results.py"]
+
 ["test_utils.py"]

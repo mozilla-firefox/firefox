@@ -13,6 +13,7 @@ mozdevice >= 4.0.0
 mozpower >= 1.0.0
 mozversion >= 1.0
 ../condprofile
+../mozperfcommon
 aiohttp==3.12.15
 # Keep aiohttp dependencies stable when using public PyPI (bug 1993260).
 aiohappyeyeballs==2.6.1

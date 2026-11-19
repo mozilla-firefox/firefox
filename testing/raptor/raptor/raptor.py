@@ -24,6 +24,7 @@ from cmdline import DESKTOP_APPS, parse_args
 from logger.logger import RaptorLogger
 from manifest import get_raptor_test_list
 from mozlog import commandline
+from mozperfcommon.detect import XtremeRegressionError
 from mozprofile.cli import parse_key_value, parse_preferences
 from signal_handler import SignalHandler
 from utils import view_gecko_profile_from_raptor
@@ -177,6 +178,11 @@ def main(args=sys.argv[1:]):
         if os.path.exists(result_dir):
             is_profiling_job = True if args.gecko_profile else False
             raptor.results_handler.archive_raptor_artifacts(is_profiling_job)
+
+    # Fail on extreme regressions if any exist
+    if raptor.results_handler.xtreme_regressions:
+        LOG.critical(XtremeRegressionError(raptor.results_handler.xtreme_regressions))
+        os.sys.exit(1)
 
     # when running raptor locally with gecko profiling on, use the view-gecko-profile
     # tool to automatically load the latest gecko profile in profiler.firefox.com

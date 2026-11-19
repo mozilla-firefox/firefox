@@ -14,7 +14,9 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
 from pathlib import Path
 
+from base_python_support import test_platform_from_label
 from logger.logger import RaptorLogger
+from mozperfcommon.detect import XtremeRegression
 from output import BrowsertimeOutput, RaptorOutput
 from utils import flatten
 
@@ -77,6 +79,7 @@ class PerftestResultsHandler(metaclass=ABCMeta):
         self.perf_profile = perf_profile
         self.existing_results = None
         self.extra_summary_methods = extra_summary_methods
+        self.xtreme_regressions = []
 
     @abstractmethod
     def add(self, new_result_json):
@@ -249,6 +252,36 @@ class PerftestResultsHandler(metaclass=ABCMeta):
             LOG.info(str(e))
             return False
         return True
+
+    def _detect_xtreme_regressions(self, output, output_perfdata):
+        """Detect any extreme regressions here."""
+        platform = test_platform_from_label(os.environ.get("RAPTOR_TASK_LABEL", ""))
+        repository = (
+            os.environ.get("GECKO_HEAD_REPOSITORY", "").rstrip("/").rsplit("/", 1)[-1]
+        )
+        if (
+            not platform
+            or repository != "autoland"
+            or not output_perfdata
+            or not output.summarized_results
+        ):
+            LOG.info("Skipping the extreme regression detection")
+            return
+
+        try:
+            results = XtremeRegression(platform, revision_repository=repository).detect(
+                output.summarized_results
+            )
+            detections = [
+                result for result in results if result.get("exceeds_variance")
+            ]
+        except Exception as e:
+            LOG.warning(f"Error while detecting extreme regressions: {e}")
+            return
+
+        for detection in detections:
+            LOG.warning(f"Extreme regression detected: {detection}")
+        self.xtreme_regressions.extend(detections)
 
     @abstractmethod
     def summarize_and_output(self, test_config, tests, test_names):
@@ -1198,6 +1231,8 @@ class BrowsertimeResultsHandler(PerftestResultsHandler):
         validate_success = True
         if not self.gecko_profile:
             validate_success = self._validate_treeherder_data(output, out_perfdata)
+            if validate_success and not run_local:
+                self._detect_xtreme_regressions(output, out_perfdata)
 
         if len(video_jobs) > 0:
             # The video list and application metadata (browser name and
