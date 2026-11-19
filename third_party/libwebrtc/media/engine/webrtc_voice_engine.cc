@@ -1806,9 +1806,13 @@ void WebRtcVoiceSendChannel::EnableSframe() {
 }
 
 void WebRtcVoiceSendChannel::SetSframeEncryptionConfig(
-    SframeEncryptionConfig /* sframe_encryption_config */) {
+    SframeEncryptionConfig sframe_encryption_config) {
   RTC_DCHECK_RUN_ON(worker_thread_);
-  // TODO(bugs.webrtc.org/479862368): Pass the encryptor to the send stream.
+  sframe_options_.encryption_config = std::move(sframe_encryption_config);
+
+  for (auto& [ssrc, stream] : send_streams_) {
+    stream->UpdateSframeOptions(sframe_options_);
+  }
 }
 
 bool WebRtcVoiceSendChannel::InsertDtmf(uint32_t ssrc,

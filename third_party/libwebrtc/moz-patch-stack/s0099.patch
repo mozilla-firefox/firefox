@@ -38,7 +38,7 @@ index 2b02c01806..00d5ebb2ce 100644
        ]
        # Added when we removed deps in other places to avoid building
 diff --git a/media/BUILD.gn b/media/BUILD.gn
-index 44dd4c9c37..74b4b28f28 100644
+index b8e526291e..97e893e5d8 100644
 --- a/media/BUILD.gn
 +++ b/media/BUILD.gn
 @@ -12,9 +12,7 @@ import("../webrtc.gni")

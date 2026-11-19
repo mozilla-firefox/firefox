@@ -45,6 +45,7 @@
 #include "api/rtp_packet_infos.h"
 #include "api/rtp_parameters.h"
 #include "api/scoped_refptr.h"
+#include "api/sframe/sframe_types.h"
 #include "api/transport/bitrate_settings.h"
 #include "api/units/timestamp.h"
 #include "call/audio_receive_stream.h"
@@ -69,6 +70,8 @@
 #include "modules/rtp_rtcp/include/rtp_header_extension_map.h"
 #include "modules/rtp_rtcp/source/rtp_header_extensions.h"
 #include "modules/rtp_rtcp/source/rtp_packet_received.h"
+#include "modules/sframe/sframe_encryption_config.h"
+#include "modules/sframe/sframe_encryptor.h"
 #include "rtc_base/byte_order.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/copy_on_write_buffer.h"
@@ -3573,6 +3576,54 @@ TEST_P(WebRtcVoiceEngineTestFake, EnableSframeReconfiguresExistingSendStream) {
   send_channel_->EnableSframe();
 
   EXPECT_TRUE(GetSendStreamConfig(kSsrcX).sframe_options.required);
+}
+
+// A send stream added after the Sframe encryption config is set starts with
+// that config.
+TEST_P(WebRtcVoiceEngineTestFake,
+       SframeEncryptionConfigPropagatesToNewSendStream) {
+  ASSERT_TRUE(SetupChannel());
+  scoped_refptr<SframeEncryptor> encryptor =
+      SframeEncryptor::Create(SframeCipherSuite::kAes128GcmSha256_128);
+  send_channel_->SetSframeEncryptionConfig(SframeEncryptionConfig{
+      .mode = SframeMode::kPerFrame, .encryptor = encryptor});
+
+  ASSERT_TRUE(send_channel_->AddSendStream(StreamParams::CreateLegacy(kSsrcX)));
+
+  const std::optional<SframeEncryptionConfig>& config =
+      GetSendStreamConfig(kSsrcX).sframe_options.encryption_config;
+  ASSERT_TRUE(config.has_value());
+  EXPECT_EQ(config->mode, SframeMode::kPerFrame);
+  EXPECT_EQ(config->encryptor, encryptor);
+}
+
+// Setting the Sframe encryption config reconfigures existing send streams.
+TEST_P(WebRtcVoiceEngineTestFake,
+       SframeEncryptionConfigUpdatesExistingSendStream) {
+  ASSERT_TRUE(SetupSendStream());
+  scoped_refptr<SframeEncryptor> encryptor =
+      SframeEncryptor::Create(SframeCipherSuite::kAes128GcmSha256_128);
+
+  send_channel_->SetSframeEncryptionConfig(SframeEncryptionConfig{
+      .mode = SframeMode::kPerPacket, .encryptor = encryptor});
+
+  const std::optional<SframeEncryptionConfig>& config =
+      GetSendStreamConfig(kSsrcX).sframe_options.encryption_config;
+  ASSERT_TRUE(config.has_value());
+  EXPECT_EQ(config->mode, SframeMode::kPerPacket);
+  EXPECT_EQ(config->encryptor, encryptor);
+}
+
+// Only negotiation makes Sframe required; an encryption config alone doesn't.
+TEST_P(WebRtcVoiceEngineTestFake, SframeEncryptionConfigDoesNotRequireSframe) {
+  ASSERT_TRUE(SetupSendStream());
+
+  send_channel_->SetSframeEncryptionConfig(SframeEncryptionConfig{
+      .mode = SframeMode::kPerFrame,
+      .encryptor =
+          SframeEncryptor::Create(SframeCipherSuite::kAes128GcmSha256_128)});
+
+  EXPECT_FALSE(GetSendStreamConfig(kSsrcX).sframe_options.required);
 }
 
 // TODO(solenberg): Remove, once recv streams are configured through Call.
