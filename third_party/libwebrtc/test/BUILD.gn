@@ -1390,6 +1390,7 @@ if (rtc_include_tests) {
         "pc/e2e/analyzer/video:video_frame_tracking_id_injector_unittest",
         "pc/e2e/analyzer/video/dvqa:frames_storage_test",
         "pc/e2e/analyzer/video/dvqa:pausable_state_test",
+        "peer_scenario/bwe_integration_tests:goog_cc_test",
         "peer_scenario/tests:peer_scenario_quality_test",
         "peer_scenario/tests:remote_estimate_test",
         "peer_scenario/tests:unsignaled_stream_test",

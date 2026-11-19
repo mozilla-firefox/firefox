@@ -28,6 +28,22 @@ if (rtc_include_tests) {
     ]
   }
 
+  rtc_cc_test("goog_cc_test") {
+    sources = [ "goog_cc_test.cc" ]
+    deps = [
+      "..:peer_scenario",
+      "../..:test_support",
+      "../../../api:audio_options_api",
+      "../../../api:make_ref_counted",
+      "../../../api:rtc_error",
+      "../../../api:rtc_stats_api",
+      "../../../api:simulated_network_api",
+      "../../../api/units:data_rate",
+      "../../../api/units:time_delta",
+      "../../../pc:pc_test_utils",
+    ]
+  }
+
   if (rtc_enable_protobuf) {
     rtc_cc_test("bwe_ramp_up_test") {
       sources = [ "bwe_ramp_up_test.cc" ]
