@@ -2579,7 +2579,10 @@ NSEvent* gLastDragMouseDownEvent = nil;  // [strong]
   // window state when the second click's mouseUp is handled here. Snapshot
   // the zoomed state on the first mouseUp and skip our own toggle if it
   // already changed when checked in the second mouseUp.
-  if (nsCocoaFeatures::OnGoldenGateOrLater() && [theEvent clickCount] == 1) {
+  // This no longer reproduces on macOS 27.2.1.
+  bool needsNativeZoomCheck = nsCocoaFeatures::OnGoldenGateOrLater() &&
+                              !nsCocoaFeatures::IsAtLeastVersion(27, 2, 1);
+  if (needsNativeZoomCheck && [theEvent clickCount] == 1) {
     mZoomStateAtLastSingleClick = [[self window] isZoomed];
   }
 
@@ -2588,7 +2591,7 @@ NSEvent* gLastDragMouseDownEvent = nil;  // [strong]
       !mGeckoChild->GetNonDraggableRegion().Contains(pos.x, pos.y)) {
     // Did the window state already change?
     bool zoomStateAlreadyChanged =
-        nsCocoaFeatures::OnGoldenGateOrLater() &&
+        needsNativeZoomCheck &&
         ([[self window] isZoomed] != mZoomStateAtLastSingleClick);
 
     if (!zoomStateAlreadyChanged) {
