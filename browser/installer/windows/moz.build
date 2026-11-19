@@ -44,6 +44,15 @@ if CONFIG["MAKENSISU"]:
         "/toolkit/mozapps/installer/windows/nsis/preprocess-locale.py"
     )
 
+    ab_cd = CONFIG["MOZ_UI_LOCALE"]
+    en_us_installer_dir = f"{TOPSRCDIR}/browser/locales/en-US/installer"
+    nsis_locale_args = [f"--locale-arg={en_us_installer_dir}"]
+    if ab_cd != "en-US":
+        nsis_locale_args = [
+            f"--locale-arg=--l10n-dir={CONFIG['L10NBASEDIR']}/{ab_cd}/browser/installer",
+            f"--locale-arg=--l10n-dir={en_us_installer_dir}",
+        ]
+
     GeneratedFile(
         "nsis-stage.stamp",
         "nsis-stage.json",
@@ -56,7 +65,9 @@ if CONFIG["MAKENSISU"]:
         flags=[
             f"--config-dir={nsis_config_dir}",
             f"--spec-out={OBJDIR}/nsis-stage.json",
+            # Localized repacks stage their locale through `l10n_repackage`.
             "--repack-l10n-dir=browser/installer",
+            f"--repack-locale-arg={en_us_installer_dir}",
         ]
         + [f"--install={SRCDIR}/{f}" for f in CONFIG["NSIS_INSTALLER_FILES"]]
         + [f"--install={TOPSRCDIR}{f}" for f in nsis_topsrcdir_files]
@@ -65,9 +76,10 @@ if CONFIG["MAKENSISU"]:
             f"--defines-out={nsis_config_dir}/defines.nsi",
             f"--topsrcdir={TOPSRCDIR}",
             f"--preprocess-locale-script={TOPSRCDIR}{nsis_preprocess_locale}",
-            # Localized repacks stage their locale through `l10n_repackage`.
-            f"--locale-arg={TOPSRCDIR}/browser/locales/en-US/installer",
-            "--ab-cd=en-US",
+        ]
+        + nsis_locale_args
+        + [
+            f"--ab-cd={ab_cd}",
             "--preprocess-locale",
             "--single-file",
             "nsisstrings.ftl",
@@ -76,7 +88,7 @@ if CONFIG["MAKENSISU"]:
             f"{SRCDIR}/nsis/extensionsLocale.nsh",
             f"{nsis_config_dir}/extensionsLocale.nsh",
             f"--defines-string={CONFIG['NSIS_INSTALLER_DEFINES']}",
-            "-DAB_CD=en-US",
+            f"-DAB_CD={ab_cd}",
             f"-DTOPOBJDIR={TOPOBJDIR}",
         ],
     )

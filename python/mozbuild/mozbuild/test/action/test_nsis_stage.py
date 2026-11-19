@@ -285,7 +285,24 @@ class TestNsisStage(unittest.TestCase):
                 str(self.tmpdir / "instgen"),
                 "--spec-out",
                 str(self.tmpdir / "nsis-stage.json"),
+                "--repack-locale-arg",
+                "browser/locales/en-US/installer",
             ])
+
+    def test_spec_out_requires_repack_locale_arg(self):
+        with mock.patch.object(nsis_stage.argparse.ArgumentParser, "error") as error:
+            error.side_effect = SystemExit
+            with self.assertRaises(SystemExit):
+                nsis_stage.main([
+                    "--config-dir",
+                    str(self.tmpdir / "instgen"),
+                    "--spec-out",
+                    str(self.tmpdir / "nsis-stage.json"),
+                    "--repack-l10n-dir",
+                    "browser/installer",
+                ])
+
+        error.assert_called_once_with("--repack-locale-arg is required with --spec-out")
 
     def test_spec_records_staging_inputs(self):
         installer = self._write("src/nsis/installer.nsi", "nsi")
@@ -310,10 +327,10 @@ class TestNsisStage(unittest.TestCase):
                 str(self.tmpdir),
                 "--preprocess-locale-script",
                 ppl,
-                "--locale-arg",
-                "browser/locales/en-US/installer",
+                "--locale-arg=--l10n-dir=l10n/de/browser/installer",
+                "--locale-arg=--l10n-dir=browser/locales/en-US/installer",
                 "--ab-cd",
-                "en-US",
+                "de",
                 "--preprocess-locale",
                 "--single-file",
                 "nsisstrings.ftl",
@@ -325,8 +342,10 @@ class TestNsisStage(unittest.TestCase):
                 str(spec_out),
                 "--repack-l10n-dir",
                 "browser/installer",
+                "--repack-locale-arg",
+                "browser/locales/en-US/installer",
                 "--defines-string=-DA=1",
-                "-DAB_CD=en-US",
+                "-DAB_CD=de",
             ])
 
         self.assertEqual(rc, 0)
@@ -336,10 +355,10 @@ class TestNsisStage(unittest.TestCase):
                 "installs": [installer],
                 "defines_in": defines_in,
                 "defines_out": "defines.nsi",
-                "preprocessor_args": ["-DA=1", "-DAB_CD=en-US"],
+                "preprocessor_args": ["-DA=1", "-DAB_CD=de"],
                 "topsrcdir": str(self.tmpdir),
                 "preprocess_locale_script": ppl,
-                "locale_args": ["browser/locales/en-US/installer"],
+                "repack_locale_args": ["browser/locales/en-US/installer"],
                 "preprocess_locale": True,
                 "single_files": [["nsisstrings.ftl", "nsisstrings.nlf"]],
                 "convert_utf8": [["extensionsLocale.nsh", "extensionsLocale.nsh"]],
@@ -355,7 +374,7 @@ class TestNsisStage(unittest.TestCase):
             "preprocessor_args": ["-DA=1", "-DAB_CD=en-US", "-DTOPOBJDIR=/obj"],
             "topsrcdir": "/src",
             "preprocess_locale_script": "/src/toolkit/preprocess-locale.py",
-            "locale_args": ["/src/browser/locales/en-US/installer"],
+            "repack_locale_args": ["/src/browser/locales/en-US/installer"],
             "preprocess_locale": True,
             "single_files": [["nsisstrings.ftl", "nsisstrings.nlf"]],
             "convert_utf8": [
@@ -444,6 +463,24 @@ class TestNsisStage(unittest.TestCase):
             nsis_stage.stage_digest(second, set()),
         )
 
+    def test_generate_returns_locale_files(self):
+        de = self._write("l10n/de/browser/installer/custom.properties")
+        en_us = self._write("src/browser/locales/en-US/installer/mui.properties")
+        config_dir = self.tmpdir / "instgen"
+
+        deps = nsis_stage.generate(
+            FakeStamp(),
+            "--config-dir",
+            str(config_dir),
+            f"--locale-arg=--l10n-dir={Path(de).parent}",
+            f"--locale-arg=--l10n-dir={Path(en_us).parent}",
+            f"--locale-arg=--l10n-dir={self.tmpdir / 'l10n/de/missing'}",
+        )
+
+        self.assertEqual(
+            deps, {de, en_us, str(Path(de).parent), str(Path(en_us).parent)}
+        )
+
     def _generate(self, installer, config_dir, generated_mtime):
         def fake_pp(argv):
             out = Path(argv[-1])
@@ -466,7 +503,7 @@ class TestNsisStage(unittest.TestCase):
                 "--defines-out",
                 str(config_dir / "defines.nsi"),
             )
-        self.assertEqual(rc, 0)
+        self.assertEqual(rc, set())
         return stamp.data
 
     def test_generate_stamp_converges(self):

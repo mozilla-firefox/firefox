@@ -19,7 +19,14 @@ PPL_LOCALE_ARGS = \
   --l10n-dir=$(topsrcdir)/browser/locales/en-US/installer \
   $(NULL)
 else
-PPL_LOCALE_ARGS=$(call EXPAND_LOCALE_SRCDIR,browser/locales)/installer
+ifeq (en-US,$(AB_CD))
+PPL_LOCALE_ARGS=$(topsrcdir)/browser/locales/en-US/installer
+else
+PPL_LOCALE_ARGS = \
+  --l10n-dir=$(L10NBASEDIR)/$(AB_CD)/browser/installer \
+  --l10n-dir=$(topsrcdir)/browser/locales/en-US/installer \
+  $(NULL)
+endif
 endif
 
 stage_installer:
