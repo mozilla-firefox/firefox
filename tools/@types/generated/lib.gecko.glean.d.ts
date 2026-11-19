@@ -1127,6 +1127,12 @@ interface GleanImpl {
     warningsShown: GleanEventWithExtras<{ count?: string|number }>;
   }
 
+  windowLock: {
+    toggled: GleanEventWithExtras<{ checked?: string|boolean }>;
+    locked: GleanEventWithExtras<{ mode?: string, trigger?: string }>;
+    authenticate: GleanEventWithExtras<{ mode?: string, result?: string }>;
+  }
+
   aboutprivatebrowsing: {
     basicsModalShown: GleanEventNoExtras;
     clickPrivateWindowBasicsLink: GleanEventNoExtras;

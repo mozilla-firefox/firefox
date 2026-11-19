@@ -31,12 +31,31 @@ const WINDOW_COMMANDS = [
   "cmd_closeWindow",
 ];
 
-// The topics windows get locked on.
-const LOCK_TOPICS = [
-  "screen_lock_notification",
-  "screensaver_start_notification",
-  "sleep_notification",
-];
+/**
+ * Values of the result extra of the window_lock.authenticate event.
+ */
+const AuthResult = Object.freeze({
+  SUCCESS: "success",
+  SUCCESS_NO_PASSWORD: "success_no_password",
+  FAILED: "failed",
+  WINDOW_CLOSED: "window_closed",
+});
+
+/**
+ * Values of the trigger extra of the window_lock.locked event.
+ */
+const LockTrigger = Object.freeze({
+  SCREEN_LOCK: "screen_lock",
+  SCREENSAVER: "screensaver",
+  SLEEP: "sleep",
+});
+
+// Maps the topics windows get locked on to their LockTrigger.
+const LOCK_TOPICS = {
+  screen_lock_notification: LockTrigger.SCREEN_LOCK,
+  screensaver_start_notification: LockTrigger.SCREENSAVER,
+  sleep_notification: LockTrigger.SLEEP,
+};
 
 /**
  * Covers private windows with a lock screen when the OS session gets locked,
@@ -74,7 +93,7 @@ export const WindowLock = {
       return;
     }
     this._initialized = true;
-    for (let topic of LOCK_TOPICS) {
+    for (let topic of Object.keys(LOCK_TOPICS)) {
       Services.obs.addObserver(this, topic);
     }
     Services.obs.addObserver(this, "last-pb-context-exited");
@@ -85,7 +104,7 @@ export const WindowLock = {
       return;
     }
     this._initialized = false;
-    for (let topic of LOCK_TOPICS) {
+    for (let topic of Object.keys(LOCK_TOPICS)) {
       Services.obs.removeObserver(this, topic);
     }
     Services.obs.removeObserver(this, "last-pb-context-exited");
@@ -123,16 +142,19 @@ export const WindowLock = {
       this.locked = false;
       return;
     }
-    if (LOCK_TOPICS.includes(topic)) {
-      this.lock();
+    if (Object.hasOwn(LOCK_TOPICS, topic)) {
+      this.lock(LOCK_TOPICS[topic]);
     }
   },
 
   /**
    * Locks private windows if enabled by the
    * browser.privatebrowsing.lockOnScreenLock.enabled pref.
+   *
+   * @param {string} trigger
+   *        The LockTrigger value of the event causing the lock.
    */
-  lock() {
+  lock(trigger) {
     if (!lazy.lockPrivateWindows || this.locked) {
       return;
     }
@@ -148,6 +170,7 @@ export const WindowLock = {
     for (let window of windows) {
       this._lockWindow(window);
     }
+    Glean.windowLock.locked.record({ trigger });
   },
 
   /**
@@ -192,17 +215,24 @@ export const WindowLock = {
       "window-lock-os-auth-dialog-caption",
     ]);
     let authenticated = false;
+    let authResult = AuthResult.FAILED;
     try {
-      let [reauthenticated] = await Cc[
+      let [reauthenticated, isBlankPassword] = await Cc[
         "@mozilla.org/security/osreauthenticator;1"
       ]
         .getService(Ci.nsIOSReauthenticator)
         .asyncReauthenticateUser(message, caption, window);
       authenticated = !!reauthenticated;
+      if (authenticated) {
+        authResult = isBlankPassword
+          ? AuthResult.SUCCESS_NO_PASSWORD
+          : AuthResult.SUCCESS;
+      }
     } catch (ex) {
       console.error(ex);
       this._setAuthError(true);
     }
+    Glean.windowLock.authenticate.record({ result: authResult });
     return authenticated;
   },
 
@@ -390,6 +420,17 @@ export const WindowLock = {
       },
       true
     );
+
+    window.addEventListener("unload", () => {
+      if (
+        document.documentElement.hasAttribute(LOCKED_ATTRIBUTE) &&
+        !Services.startup.shuttingDown
+      ) {
+        Glean.windowLock.authenticate.record({
+          result: AuthResult.WINDOW_CLOSED,
+        });
+      }
+    });
 
     // The lock screen must only go away once the user authenticated.
     dialog.addEventListener("cancel", event => event.preventDefault());

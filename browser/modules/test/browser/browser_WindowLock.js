@@ -79,6 +79,7 @@ add_setup(async function () {
 });
 
 add_task(async function test_lock_private_windows() {
+  Services.fog.testResetFOG();
   await setLockPrivateWindows(true);
   let privateWin = await BrowserTestUtils.openNewBrowserWindow({
     private: true,
@@ -123,6 +124,16 @@ add_task(async function test_lock_private_windows() {
 
   await unlockWith(privateWin, ReauthResult.SUCCESS);
   ok(!WindowLock.locked, "Windows are unlocked");
+  Assert.deepEqual(
+    Glean.windowLock.locked.testGetValue().map(event => event.extra),
+    [{ trigger: "screen_lock" }],
+    "The lock is recorded"
+  );
+  Assert.deepEqual(
+    Glean.windowLock.authenticate.testGetValue().map(event => event.extra),
+    [{ result: "failed" }, { result: "success" }],
+    "Authentication attempts are recorded"
+  );
   ok(
     privateWin.document.title.includes("SecretTitle"),
     "The content title is restored in the window title"
@@ -139,6 +150,7 @@ add_task(async function test_lock_private_windows() {
 });
 
 add_task(async function test_auth_error() {
+  Services.fog.testResetFOG();
   await setLockPrivateWindows(true);
   let privateWin = await BrowserTestUtils.openNewBrowserWindow({
     private: true,
@@ -166,6 +178,16 @@ add_task(async function test_auth_error() {
   await unlockWith(privateWin, ReauthResult.ERROR);
   await unlockWith(privateWin, ReauthResult.SUCCESS);
   ok(!WindowLock.locked, "Windows are unlocked");
+  Assert.deepEqual(
+    Glean.windowLock.authenticate.testGetValue().map(event => event.extra),
+    [
+      { result: "failed" },
+      { result: "failed" },
+      { result: "failed" },
+      { result: "success" },
+    ],
+    "Authentication attempts are recorded"
+  );
 
   await BrowserTestUtils.closeWindow(newPrivateWin);
   await BrowserTestUtils.closeWindow(privateWin);
@@ -197,6 +219,7 @@ add_task(async function test_lock_on_screensaver_start() {
 });
 
 add_task(async function test_lock_screen_titlebar() {
+  Services.fog.testResetFOG();
   await setLockPrivateWindows(true);
   let privateWin = await BrowserTestUtils.openNewBrowserWindow({
     private: true,
@@ -234,6 +257,11 @@ add_task(async function test_lock_screen_titlebar() {
   await TestUtils.waitForCondition(
     () => !WindowLock.locked,
     "Closing the last private window ends the lock"
+  );
+  Assert.deepEqual(
+    Glean.windowLock.authenticate.testGetValue().map(event => event.extra),
+    [{ result: "window_closed" }],
+    "Closing a locked window is recorded"
   );
   await SpecialPowers.popPrefEnv();
 });

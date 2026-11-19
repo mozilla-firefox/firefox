@@ -387,3 +387,24 @@ security.preferences.warnings:
     notification_emails:
       - bvandersloot@mozilla.com
     expires: never
+
+window_lock:
+  toggled:
+    type: event
+    description: >
+      Recorded when the user toggles locking private windows when the OS
+      session gets locked, starts the screensaver or goes to sleep, through
+      the setting in Privacy & Security.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2082471
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2082471
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - mraiber@mozilla.com
+    expires: never
+    extra_keys:
+      checked:
+        description: Whether locking private windows got enabled
+        type: boolean

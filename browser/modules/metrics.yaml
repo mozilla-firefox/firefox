@@ -2282,3 +2282,52 @@ theme_picker:
       - mstriemer@mozilla.com
       - athomas@mozilla.com
     expires: never
+
+window_lock:
+  locked:
+    type: event
+    description: >
+      Recorded when private windows get locked because the OS session got
+      locked, started the screensaver or went to sleep.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2082471
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2082471
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - mraiber@mozilla.com
+    expires: never
+    extra_keys:
+      trigger:
+        description: >
+          What caused the lock. `"screen_lock"` if the OS session got locked,
+          `"screensaver"` if the screensaver started (macOS only), or
+          `"sleep"` if the system went to sleep.
+        type: string
+
+  authenticate:
+    type: event
+    description: >
+      Recorded when the OS authentication prompt shown to unlock windows that
+      got locked because the OS session got locked, started the screensaver
+      or went to sleep, gets completed or dismissed, or when the user closes
+      a locked window without authenticating.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2082471
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2082471
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - mraiber@mozilla.com
+    expires: never
+    extra_keys:
+      result:
+        description: >
+          The outcome of the prompt. `"success"` if the user authenticated,
+          `"success_no_password"` if the OS account has no password,
+          `"failed"` if the user canceled the prompt or authentication failed,
+          or `"window_closed"` if the user closed a locked window. Windows
+          closed because Firefox shuts down are not recorded.
+        type: string

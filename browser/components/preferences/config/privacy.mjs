@@ -2511,6 +2511,9 @@ Preferences.addSetting({
   id: "windowLockEnabled",
   pref: "browser.privatebrowsing.lockOnScreenLock.enabled",
   visible: () => ["macosx", "win"].includes(lazy.AppConstants.platform),
+  onUserChange(checked) {
+    Glean.windowLock.toggled.record({ checked });
+  },
 });
 Preferences.addSetting({
   id: "dntHeaderEnabled",

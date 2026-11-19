@@ -14,8 +14,18 @@ async function openPane() {
   return checkbox;
 }
 
+function assertToggledEvents(expectedChecked) {
+  let events = Glean.windowLock.toggled.testGetValue() ?? [];
+  Assert.deepEqual(
+    events.map(event => event.extra.checked),
+    expectedChecked,
+    "The expected mode changes were recorded"
+  );
+}
+
 add_task(async function test_window_lock_setting() {
   await SpecialPowers.pushPrefEnv({ set: [[PREF, false]] });
+  Services.fog.testResetFOG();
   let checkbox = await openPane();
 
   ok(BrowserTestUtils.isVisible(checkbox), "The setting is visible");
@@ -32,6 +42,8 @@ add_task(async function test_window_lock_setting() {
     () => !Services.prefs.getBoolPref(PREF),
     "Disabling updates the pref"
   );
+
+  assertToggledEvents(["true", "false"]);
 
   BrowserTestUtils.removeTab(gBrowser.selectedTab);
   await SpecialPowers.popPrefEnv();
