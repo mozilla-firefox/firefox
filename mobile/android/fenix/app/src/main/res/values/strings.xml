@@ -2730,13 +2730,6 @@
     <string name="about_debug_menu_toast_progress">Debug menu: %1$d click(s) left to enable</string>
     <string name="about_debug_menu_toast_done">Debug menu enabled</string>
 
-    <!-- Browser long press popup menu -->
-    <!-- Copy the current url -->
-    <string name="browser_toolbar_long_press_popup_copy">Copy</string>
-    <!-- Paste & go the text in the clipboard. '&amp;' is replaced with the ampersand symbol: & -->
-    <string name="browser_toolbar_long_press_popup_paste_and_go">Paste &amp; Go</string>
-    <!-- Paste the text in the clipboard -->
-    <string name="browser_toolbar_long_press_popup_paste">Paste</string>
     <!-- Snackbar message shown after an URL has been copied to clipboard. -->
     <string name="browser_toolbar_url_copied_to_clipboard_snackbar">URL copied to clipboard</string>
 

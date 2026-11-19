@@ -39,9 +39,6 @@
     <dimen name="component_tp_exceptions_icon_size">48dp</dimen>
     <dimen name="custom_checkbox_alignment_margin">68dp</dimen>
 
-    <dimen name="context_menu_height">48dp</dimen>
-    <dimen name="context_menu_x_offset">8dp</dimen>
-
     <!--Preferences-->
     <dimen name="checkbox_preference_padding_vertical">12dp</dimen>
     <dimen name="radiobutton_preference_margin_start">8dp</dimen>
