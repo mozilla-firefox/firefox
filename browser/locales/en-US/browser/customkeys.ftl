@@ -104,6 +104,7 @@ customkeys-edit-find-previous = Find Previous
 customkeys-edit-find-selection = Use Selection for Find
 
 customkeys-tools-screenshot = Take a Screenshot
+customkeys-tools-lock-windows = Lock Private Windows
 
 customkeys-category-navigation-2 =
   .heading = Navigation

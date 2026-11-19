@@ -598,3 +598,31 @@ add_task(async function test_lock_with_shortcut() {
   ok(true, "The shortcut is disabled once the last private window is closed");
   await SpecialPowers.popPrefEnv();
 });
+
+add_task(async function test_shortcut_in_about_keyboard() {
+  let hasShortcut = () =>
+    BrowserTestUtils.withNewTab("about:keyboard", tab =>
+      SpecialPowers.spawn(tab, [], async () => {
+        await ContentTaskUtils.waitForMutationCondition(
+          content.document,
+          { childList: true, subtree: true },
+          () => content.document.querySelector(".key")
+        );
+        return !!content.document.querySelector(
+          '.key[data-id="key_lockWindows"]'
+        );
+      })
+    );
+
+  await setLockPrivateWindows(true);
+  let privateWin = await BrowserTestUtils.openNewBrowserWindow({
+    private: true,
+  });
+  ok(await hasShortcut(), "The shortcut is listed in about:keyboard");
+  await BrowserTestUtils.closeWindow(privateWin);
+  await SpecialPowers.popPrefEnv();
+
+  await setLockPrivateWindows(false);
+  ok(!(await hasShortcut()), "The disabled shortcut isn't listed");
+  await SpecialPowers.popPrefEnv();
+});
