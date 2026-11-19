@@ -559,7 +559,7 @@ describe("Auto Tab Grouping toolbar button", () => {
       );
       const popupSet = win.document.getElementById("mainPopupSet");
 
-      AutoTabGrouping.toggleGroupTabsPanel(win);
+      AIWindowUI.toggleGroupTabsPanel(win);
       const panel = await BrowserTestUtils.waitForMutationCondition(
         popupSet,
         { childList: true },

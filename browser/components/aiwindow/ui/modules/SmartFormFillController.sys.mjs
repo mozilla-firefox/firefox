@@ -2,9 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+const lazy = {};
 
-const lazy = XPCOMUtils.declareLazy({
+ChromeUtils.defineESModuleGetters(lazy, {
   AutofillDataTypes: "resource://gre/modules/shared/AutofillDataTypes.sys.mjs",
   clearTimeout: "resource://gre/modules/Timer.sys.mjs",
   MAX_SELECTED_TABS:
@@ -19,7 +19,6 @@ const lazy = XPCOMUtils.declareLazy({
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
   SmartFormFillModel:
     "moz-src:///browser/components/aiwindow/models/SmartFormFillModel.sys.mjs",
-  maxTabs: { pref: "browser.smartwindow.smartformfill.maxTabs" },
 });
 
 /** @typedef {import("moz-src:///browser/components/aiwindow/models/Tools.sys.mjs").TabInfo} TabInfo */
@@ -35,7 +34,7 @@ const lazy = XPCOMUtils.declareLazy({
 /** @typedef {import("moz-src:///browser/components/aiwindow/models/SmartFormFillModel.sys.mjs").TabData} TabData */
 /** @typedef {import("moz-src:///browser/components/aiwindow/models/SmartFormFillModel.sys.mjs").RelevantTab} RelevantTab */
 /** @typedef {import("moz-src:///browser/components/aiwindow/ui/modules/SmartFormFillDocument.sys.mjs").FormData} FormData */
-/** @typedef {import("moz-src:///browser/components/aiwindow/ui/modules/SmartFormFillTelemetry.sys.mjs").RequestObserver} RequestObserver */
+/** @typedef {import("moz-src:///browser/components/aiwindow/ui/actors/SmartFormFillParent.sys.mjs").RequestObserver} RequestObserver */
 
 /**
  * @typedef {{
@@ -88,6 +87,9 @@ const TAB_RELEVANCE_THRESHOLD = "medium";
  *   id: string,
  * }} SelectedTab
  */
+
+// TODO: Adjust this based on evals for optimal amount
+const MAX_TABS = 30;
 
 const REQUEST_RETRY_BASE_DELAY_MS = 1000;
 const REQUEST_RETRY_JITTER_MS = 250;
@@ -792,7 +794,7 @@ export class SmartFormFillController {
 
     this.#tabCounter = 0;
     this.#tabsById.clear();
-    this.#tabList = this.#getTabData(lazy.getTabList(lazy.maxTabs));
+    this.#tabList = this.#getTabData(lazy.getTabList(MAX_TABS));
   }
 
   /**

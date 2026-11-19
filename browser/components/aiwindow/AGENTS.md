@@ -3,9 +3,14 @@
 This component grew quickly, and much of the existing code across this directory predates current standards, not only the largest files such as `ai-window.mjs`. Do not copy a pattern just because nearby code uses it: follow this file and the newer examples it names. When you touch legacy code, don't spread its patterns; clean them up only when that is in scope, otherwise in a separate patch.
 
 ## Where things live
+- `ui/modules/`: chrome modules (`*.sys.mjs`) listed in `ui/moz.build` `MOZ_SRC_FILES` and imported through `moz-src:///`. Plain `.mjs` modules shared with content pages are packaged by `ui/jar.mn` under `chrome://browser/content/aiwindow/modules/`.
+- `ui/components/`: Lit custom elements, each with a sibling `.css` and a `.stories.mjs`.
+- `ui/actors/`: JSWindowActor pairs, registered in `browser/components/DesktopActorRegistry.sys.mjs`.
+- `ui/content/`: HTML shells and page stylesheets, packaged by `ui/jar.mn`.
 - `models/`: engine, prompts (`PromptLoader.sys.mjs`, Remote Settings collection `ai-window-prompts`), tools, `SecurityProperties.sys.mjs`, memories and agents. `services/`: storage.
 - Startup: categories in `ui/aiwindow.manifest` call into `AIWindow.sys.mjs`, which owns per-window state and Smart/Classic switching (`toggleAIWindow`).
 - Strings: add new ones to `browser/locales-preview/aiWindow.ftl`. The shipped `aiWindow.ftl` and `aiWindowContent.ftl` change only when strings are finalized.
+- Telemetry: the `smart_window` category in `metrics.yaml`.
 - Bugzilla: Core :: Machine Learning: Frontend for `ui/`, and Machine Learning: General for most of `models/`. Check a specific file with `./mach file-info bugzilla-component <file>`.
 
 ## Current standard, and legacy to avoid
@@ -15,7 +20,7 @@ This component grew quickly, and much of the existing code across this directory
 - Private members: `#` fields and methods. Legacy: `_name` methods.
 - JSDoc is enforced by eslint here (`require-jsdoc` and `valid-jsdoc` apply). Give every `@param` and `@property` a description unless the name makes it obvious.
 - TODO and FIXME comments must cite a bug number.
-- Prefer new, focused modules over growing the 1,500+ line files (`ai-window.mjs`, `ai-chat-content.mjs`, `AITab.sys.mjs`, `Tools.sys.mjs`). Don't add a separate constants module either, since each extra file is another runtime load.
+- Prefer new, focused modules over growing the 1,500+ line files (`ai-window.mjs`, `ai-chat-content.mjs`, `AITab.sys.mjs`, `Tools.sys.mjs`, `AIWindow.sys.mjs`, `ChatStore.sys.mjs`, `SmartFormFillParent.sys.mjs`). Don't add a separate constants module either, since each extra file is another runtime load.
 - Storage: extend `ui/modules/SQLiteStoreBase.sys.mjs`.
 - Reviewers flag generated-code habits: comments that narrate the code, try/catch or `typeof` checks that can't fail, optional chaining on values that can't be null or undefined, needless default arguments, nested ternaries, layers of indirection and vague `normalize` helpers. Prefer existing shared helpers and fix them rather than working around them.
 
