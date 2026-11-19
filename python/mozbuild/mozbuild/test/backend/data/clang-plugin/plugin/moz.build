@@ -1,0 +1,16 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+
+@template
+def HostSharedLibrary(name):
+    HOST_LIBRARY_NAME = name
+    FORCE_SHARED_LIB = True
+    IS_COMPILER_PLUGIN = True
+
+
+HostSharedLibrary("clang-plugin")
+
+HOST_SOURCES += ["plugin.cpp"]
+
+DIRS += ["tests"]

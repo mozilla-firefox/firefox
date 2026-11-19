@@ -190,7 +190,7 @@ def HostSimplePrograms(names, ext=".cpp"):
 
 
 @template
-def HostSharedLibrary(name):
+def HostSharedLibrary(name, compiler_plugin=False):
     """Template for build tools libraries."""
     if name != "clang-plugin":
         error(
@@ -201,6 +201,9 @@ def HostSharedLibrary(name):
     HOST_LIBRARY_NAME = name
 
     FORCE_SHARED_LIB = True
+
+    if compiler_plugin:
+        IS_COMPILER_PLUGIN = True
 
 
 @template

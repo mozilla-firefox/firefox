@@ -1,0 +1,9 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+SANDBOXED_WASM_LIBRARY_NAME = "wasmLibrary"
+
+WASM_SOURCES += ["a.c"]
+
+GENERATED_FILES += ["gen.c"]
+GENERATED_FILES["gen.c"].script = "gen.py"

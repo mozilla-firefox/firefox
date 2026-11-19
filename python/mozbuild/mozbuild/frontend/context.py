@@ -688,8 +688,8 @@ class CompileFlags(TargetCompileFlags):
                 ("CFLAGS", "CXXFLAGS", "CXX_LDFLAGS", "C_LDFLAGS"),
             ),
             (
-                "CLANG_PLUGIN",
-                context.config.substs.get("CLANG_PLUGIN_FLAGS"),
+                "COMPILER_PLUGIN",
+                context.config.substs.get("COMPILER_PLUGIN_FLAGS"),
                 ("CFLAGS", "CXXFLAGS", "CXX_LDFLAGS", "C_LDFLAGS"),
             ),
             (
@@ -793,8 +793,8 @@ class WasmFlags(TargetCompileFlags):
             ),
             ("DEBUG", self._debug_flags(), ("WASM_CFLAGS", "WASM_CXXFLAGS")),
             (
-                "CLANG_PLUGIN",
-                context.config.substs.get("CLANG_PLUGIN_FLAGS"),
+                "COMPILER_PLUGIN",
+                context.config.substs.get("COMPILER_PLUGIN_FLAGS"),
                 ("WASM_CFLAGS", "WASM_CXXFLAGS"),
             ),
             ("OPTIMIZE", self._optimize_flags(), ("WASM_CFLAGS", "WASM_CXXFLAGS")),
@@ -2985,6 +2985,16 @@ VARIABLES = {
            at link time (sectcreate inputs, response files, version
            scripts) so backends can declare them as prerequisites of the
            link target.
+        """,
+    ),
+    "IS_COMPILER_PLUGIN": (
+        bool,
+        bool,
+        """Whether the host shared library of this directory is a compiler
+           plugin.
+
+           Compiles with flags in the ``COMPILER_PLUGIN`` category of
+           ``COMPILE_FLAGS`` or ``WASM_FLAGS`` are ordered after the library.
         """,
     ),
     "EXTRA_DSO_LDOPTS": (

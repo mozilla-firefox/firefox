@@ -17,6 +17,6 @@ FORCE_STATIC_LIB = True
 NO_PGO = True
 
 DisableStlWrapping()
-COMPILE_FLAGS["CLANG_PLUGIN"] = []
+COMPILE_FLAGS["COMPILER_PLUGIN"] = []
 
 OS_LIBS += ["-Wl,--version-script,%s/hide_std.ld" % SRCDIR]

@@ -107,7 +107,7 @@ def clang_plugin_flags(
 
 
 set_config(
-    "CLANG_PLUGIN_FLAGS",
+    "COMPILER_PLUGIN_FLAGS",
     depends(clang_plugin_flags)(lambda plugin: plugin.plugin_flags if plugin else []),
 )
 set_config(

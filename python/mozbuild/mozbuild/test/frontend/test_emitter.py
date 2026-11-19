@@ -1600,6 +1600,14 @@ class TestEmitterBasic(unittest.TestCase):
         self.assertEqual([str(d) for d in deps], ["!generated.rsp"])
         self.assertIsInstance(deps[0], ObjDirPath)
 
+    def test_compiler_plugin_no_library(self):
+        reader = self.reader("compiler-plugin-no-library")
+        with self.assertRaisesRegex(
+            SandboxValidationError,
+            "IS_COMPILER_PLUGIN is set but no host shared library",
+        ):
+            self.read_topsrcdir(reader)
+
     def test_extra_link_deps_symbols_file(self):
         reader = self.reader("extra-link-deps-symbols-file")
         objs = self.read_topsrcdir(reader)

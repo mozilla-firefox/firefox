@@ -2633,6 +2633,23 @@ class TestRecursiveMakeBackend(BackendTester):
         )
         self.assertNotIn("IMPORT_LIB_DEST", backend_mk("not-installed"))
 
+    def test_compiler_plugin(self):
+        env = self._consume("clang-plugin", RecursiveMakeBackend)
+
+        with open(mozpath.join(env.topobjdir, "root-deps.mk")) as fh:
+            lines = sorted(l.strip() for l in fh if l.rstrip().endswith("plugin/host"))
+        self.assertEqual(
+            lines,
+            [
+                "consumer/target-objects: plugin/host",
+                "plugin/tests/target-objects: plugin/host",
+                "program/target-objects: plugin/host",
+                "program/target: plugin/host",
+                "wasm/pre-compile: plugin/host",
+                "wasm/target-objects: plugin/host",
+            ],
+        )
+
     def test_licenses_json(self):
         """LICENSES declarations are aggregated into licenses.json."""
         env = self._consume("licenses", RecursiveMakeBackend)

@@ -1090,6 +1090,15 @@ class TreeMetadataEmitter(LoggingMixin):
                     )
                 seen[basename] = (src, symbol)
 
+        if context.get("IS_COMPILER_PLUGIN") and not any(
+            isinstance(l, HostSharedLibrary) for l in host_linkables
+        ):
+            raise SandboxValidationError(
+                "IS_COMPILER_PLUGIN is set but no host shared library is defined "
+                "in this directory.",
+                context,
+            )
+
         extra_link_deps = context.get("EXTRA_LINK_DEPS")
         if extra_link_deps:
             link_targets = [

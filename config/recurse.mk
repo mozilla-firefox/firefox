@@ -166,9 +166,6 @@ recurse:
 ifeq (.,$(DEPTH))
 
 ifdef ENABLE_CLANG_PLUGIN
-# Only target rules use the clang plugin.
-$(filter %/target %/target-objects,$(filter-out config/export config/host build/unix/stdc++compat/% build/clang-plugin/%,$(compile_targets))) security/rlbox/pre-compile media/libsoundtouch/src/pre-compile: build/clang-plugin/host build/clang-plugin/tests/target-objects
-build/clang-plugin/tests/target-objects: build/clang-plugin/host
 # clang-plugin tests require js-confdefs.h on js standalone builds and mozilla-config.h on
 # other builds, because they are -include'd.
 ifdef JS_STANDALONE

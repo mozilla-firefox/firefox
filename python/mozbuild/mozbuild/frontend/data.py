@@ -1003,6 +1003,7 @@ class HostSharedLibrary(HostMixin, Library):
             self.basename,
             context.config.host_dll_suffix,
         )
+        self.compiler_plugin = bool(context.get("IS_COMPILER_PLUGIN"))
 
 
 class ExternalLibrary:

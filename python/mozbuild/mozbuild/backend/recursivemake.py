@@ -28,9 +28,11 @@ from mozbuild.backend.common import (
 )
 from mozbuild.frontend.context import (
     AbsolutePath,
+    CompileFlags,
     ObjDirPath,
     Path,
     SourcePath,
+    WasmFlags,
 )
 
 from ..frontend.data import (
@@ -125,6 +127,11 @@ DEPRECATED_VARIABLES_MESSAGE = (
     "This variable has been deprecated. It does nothing. It must be removed "
     "in order to build."
 )
+
+COMPILE_TARGETS_PER_FLAGS = {
+    CompileFlags: ("target", "target-objects"),
+    WasmFlags: ("pre-compile", "target", "target-objects"),
+}
 
 
 def make_quote(s):
@@ -403,6 +410,8 @@ class RecursiveMakeBackend(MakeBackend):
         self._gkrust_target = None
         self._pre_compile = set()
         self._objdir_local_includes = defaultdict(set)
+        self._compiler_plugins = set()
+        self._compiler_plugin_users = set()
 
         # For a given file produced by the build, gives the top-level target
         # that will produce it.
@@ -674,6 +683,11 @@ class RecursiveMakeBackend(MakeBackend):
 
         elif isinstance(obj, ComputedFlags):
             self._process_computed_flags(obj, backend_file)
+            if obj.flags.get("COMPILER_PLUGIN"):
+                self._compiler_plugin_users.update(
+                    mozpath.join(obj.relobjdir, name)
+                    for name in COMPILE_TARGETS_PER_FLAGS[type(obj.flags)]
+                )
 
         elif isinstance(obj, InstallationTarget):
             self._process_installation_target(obj, backend_file)
@@ -715,6 +729,10 @@ class RecursiveMakeBackend(MakeBackend):
         elif isinstance(obj, HostSharedLibrary):
             self._process_host_shared_library(obj, backend_file)
             self._process_linked_libraries(obj, backend_file)
+            if obj.compiler_plugin:
+                self._compiler_plugins.add(
+                    mozpath.join(backend_file.relobjdir, obj.KIND)
+                )
 
         elif isinstance(obj, ObjdirFiles):
             self._process_objdir_files(obj, obj.files, backend_file)
@@ -929,6 +947,16 @@ class RecursiveMakeBackend(MakeBackend):
             rule = root_deps_mk.create_rule([mozpath.join(relobjdir, tier)])
             rule.add_dependencies([prerequisite])
 
+        compile_targets = set(self._compile_graph.keys()) | all_compile_deps
+        known_targets = compile_targets | {
+            f"{d}/pre-compile" for d in self._pre_compile
+        }
+        if self._compiler_plugins:
+            for target in sorted(self._compiler_plugin_users & known_targets):
+                root_deps_mk.create_rule([target]).add_dependencies(
+                    sorted(self._compiler_plugins)
+                )
+
         root_mk = Makefile()
 
         # Fill root.mk with the convenience variables.
@@ -942,10 +970,7 @@ class RecursiveMakeBackend(MakeBackend):
             "pre_compile_targets := %s"
             % " ".join(sorted("%s/pre-compile" % p for p in self._pre_compile))
         )
-        root_mk.add_statement(
-            "compile_targets := %s"
-            % " ".join(sorted(set(self._compile_graph.keys()) | all_compile_deps))
-        )
+        root_mk.add_statement(f"compile_targets := {' '.join(sorted(compile_targets))}")
         root_mk.add_statement(
             "syms_targets := %s"
             % " ".join(sorted(set("%s/syms" % d for d in self._no_skip["syms"])))
