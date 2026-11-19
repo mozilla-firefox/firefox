@@ -17,9 +17,12 @@
 #include <vector>
 
 #include "modules/desktop_capture/desktop_capturer.h"
+#include "modules/desktop_capture/desktop_frame.h"
 #include "modules/desktop_capture/desktop_frame_generator.h"
+#include "modules/desktop_capture/desktop_geometry.h"
 #include "modules/desktop_capture/fake_desktop_capturer.h"
 #include "modules/desktop_capture/shared_memory.h"
+#include "system_wrappers/include/metrics.h"
 #include "test/gtest.h"
 
 namespace webrtc {
@@ -65,9 +68,23 @@ std::unique_ptr<SharedMemory> FakeSharedMemoryFactory::CreateSharedMemory(
   return std::unique_ptr<SharedMemory>(new FakeSharedMemory(size));
 }
 
+// FakeDesktopCapturer subclass with configurable SelectSource() (true by
+// default; CaptureFrame() defaults to Result::SUCCESS via FakeDesktopCapturer).
 class SelectSourceFakeCapturer : public FakeDesktopCapturer {
  public:
   void set_select_source_result(bool result) { select_source_result_ = result; }
+
+  void Start(DesktopCapturer::Callback* callback) override {
+    callback_ = callback;
+    FakeDesktopCapturer::Start(callback);
+  }
+
+  void CaptureFrame() override {
+    if (callback_) {
+      callback_->OnFrameCaptureStart();
+    }
+    FakeDesktopCapturer::CaptureFrame();
+  }
 
   bool SelectSource(DesktopCapturer::SourceId id) override {
     last_selected_source_ = id;
@@ -80,8 +97,12 @@ class SelectSourceFakeCapturer : public FakeDesktopCapturer {
 
  private:
   bool select_source_result_ = true;
+  DesktopCapturer::Callback* callback_ = nullptr;
   std::optional<DesktopCapturer::SourceId> last_selected_source_;
 };
+
+constexpr char kStartHistogram[] = "WebRTC.Test.FallbackStartOutcome";
+using StartOutcome = FallbackDesktopCapturerWrapper::StartOutcome;
 
 }  // namespace
 
@@ -235,7 +256,7 @@ class FallbackDesktopCapturerWrapperSelectSourceTest : public ::testing::Test {
     main_ = main.get();
     secondary_ = secondary.get();
     wrapper_ = std::make_unique<FallbackDesktopCapturerWrapper>(
-        std::move(main), std::move(secondary), "WebRTC.Test.SelectSource");
+        std::move(main), std::move(secondary));
   }
 
   SelectSourceFakeCapturer* main_ = nullptr;
@@ -282,6 +303,297 @@ TEST_F(FallbackDesktopCapturerWrapperSelectSourceTest, BothFail) {
   EXPECT_FALSE(wrapper_->SelectSource(123));
   EXPECT_EQ(main_->last_selected_source(), 123);
   EXPECT_EQ(secondary_->last_selected_source(), 123);
+}
+
+class FallbackDesktopCapturerWrapperStartOutcomeTest
+    : public ::testing::Test,
+      public DesktopCapturer::Callback {
+ protected:
+  FallbackDesktopCapturerWrapperStartOutcomeTest() {
+    metrics::Reset();
+    frame_generator_.size()->set(1024, 768);
+    CreateFallbackWrapper();
+  }
+
+  // Creates and starts `fallback_wrapper_` with `start_histogram`. Both fake
+  // capturers default to SelectSource() returning true and CaptureFrame()
+  // returning Result::SUCCESS, and capture without a selected source.
+  void CreateFallbackWrapper(const char* start_histogram = kStartHistogram) {
+    auto main = std::make_unique<SelectSourceFakeCapturer>();
+    auto secondary = std::make_unique<SelectSourceFakeCapturer>();
+    main->set_frame_generator(&frame_generator_);
+    secondary->set_frame_generator(&frame_generator_);
+    main_ = main.get();
+    secondary_ = secondary.get();
+    fallback_wrapper_ = std::make_unique<FallbackDesktopCapturerWrapper>(
+        std::move(main), std::move(secondary), start_histogram);
+    fallback_wrapper_->Start(this);
+  }
+
+  // DesktopCapturer::Callback interface.
+  void OnFrameCaptureStart() override { ++frame_capture_starts_; }
+  void OnCaptureResult(DesktopCapturer::Result result,
+                       std::unique_ptr<DesktopFrame> frame) override {
+    results_.emplace_back(result, !!frame);
+  }
+
+  // Destroys `fallback_wrapper_`, which runs
+  // FallbackDesktopCapturerWrapper::OutcomeRecorder::~OutcomeRecorder() to
+  // record any pending histogram outcome.
+  void DestroyFallbackWrapper() {
+    main_ = nullptr;
+    secondary_ = nullptr;
+    fallback_wrapper_.reset();
+  }
+
+  // Calls CaptureFrame() once per entry in `secondary_results`, with
+  // `secondary_` returning that entry.
+  void ExpectSecondaryOutcome(
+      const std::vector<DesktopCapturer::Result>& secondary_results,
+      StartOutcome expected_outcome) {
+    for (DesktopCapturer::Result result : secondary_results) {
+      EXPECT_METRIC_EQ(metrics::NumSamples(kStartHistogram), 0);
+      secondary_->set_result(result);
+      fallback_wrapper_->CaptureFrame();
+    }
+    if (secondary_results.back() == DesktopCapturer::Result::ERROR_TEMPORARY) {
+      EXPECT_METRIC_EQ(metrics::NumSamples(kStartHistogram), 0);
+    } else {
+      EXPECT_METRIC_EQ(NumStartEvents(expected_outcome), 1);
+    }
+
+    DestroyFallbackWrapper();
+    EXPECT_METRIC_EQ(NumStartEvents(expected_outcome), 1);
+    EXPECT_METRIC_EQ(metrics::NumSamples(kStartHistogram), 1);
+  }
+
+  static int NumStartEvents(StartOutcome outcome) {
+    return metrics::NumEvents(kStartHistogram, static_cast<int>(outcome));
+  }
+
+  PainterDesktopFrameGenerator frame_generator_;
+  SelectSourceFakeCapturer* main_ = nullptr;
+  SelectSourceFakeCapturer* secondary_ = nullptr;
+  std::unique_ptr<FallbackDesktopCapturerWrapper> fallback_wrapper_;
+  std::vector<std::pair<DesktopCapturer::Result, bool>> results_;
+  int frame_capture_starts_ = 0;
+};
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       EmptyHistogramNameRecordsNothing) {
+  CreateFallbackWrapper(/*start_histogram=*/"");
+  fallback_wrapper_->CaptureFrame();
+
+  DestroyFallbackWrapper();
+  EXPECT_METRIC_EQ(metrics::NumSamples(kStartHistogram), 0);
+  // Not recorded under an empty name either.
+  EXPECT_METRIC_EQ(metrics::NumSamples(""), 0);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       MainAcceptedSecondaryAcceptedRecordsNothingWithoutCapture) {
+  ASSERT_TRUE(fallback_wrapper_->SelectSource(123));
+  DestroyFallbackWrapper();
+  EXPECT_METRIC_EQ(metrics::NumSamples(kStartHistogram), 0);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       MainRejectedSecondaryAcceptedRecordsNothingWithoutCapture) {
+  main_->set_select_source_result(false);
+  ASSERT_TRUE(fallback_wrapper_->SelectSource(123));
+  DestroyFallbackWrapper();
+  EXPECT_METRIC_EQ(metrics::NumSamples(kStartHistogram), 0);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       MainAcceptedSecondaryRejectedRecords) {
+  secondary_->set_select_source_result(false);
+  EXPECT_FALSE(fallback_wrapper_->SelectSource(123));
+  EXPECT_METRIC_EQ(NumStartEvents(StartOutcome::kMainAcceptedSecondaryRejected),
+                   1);
+
+  DestroyFallbackWrapper();
+  EXPECT_METRIC_EQ(metrics::NumSamples(kStartHistogram), 1);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       MainRejectedSecondaryRejectedRecords) {
+  main_->set_select_source_result(false);
+  secondary_->set_select_source_result(false);
+  EXPECT_FALSE(fallback_wrapper_->SelectSource(123));
+  EXPECT_METRIC_EQ(NumStartEvents(StartOutcome::kMainRejectedSecondaryRejected),
+                   1);
+
+  DestroyFallbackWrapper();
+  EXPECT_METRIC_EQ(metrics::NumSamples(kStartHistogram), 1);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest, MainWorked) {
+  // `main_` captures this frame.
+  fallback_wrapper_->CaptureFrame();
+  EXPECT_METRIC_EQ(NumStartEvents(StartOutcome::kMainWorked), 1);
+
+  DestroyFallbackWrapper();
+  EXPECT_METRIC_EQ(metrics::NumSamples(kStartHistogram), 1);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       TemporaryMainErrorIsNotAPermanentFallback) {
+  main_->set_result(DesktopCapturer::Result::ERROR_TEMPORARY);
+  // `secondary_` captures this frame, but the next CaptureFrame() call goes to
+  // `main_` again.
+  fallback_wrapper_->CaptureFrame();
+  EXPECT_METRIC_EQ(metrics::NumSamples(kStartHistogram), 0);
+  main_->set_result(DesktopCapturer::Result::SUCCESS);
+  fallback_wrapper_->CaptureFrame();
+
+  DestroyFallbackWrapper();
+  EXPECT_METRIC_EQ(NumStartEvents(StartOutcome::kMainWorked), 1);
+  EXPECT_METRIC_EQ(metrics::NumSamples(kStartHistogram), 1);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       TemporaryErrorsWithoutPermanentFallbackRecordNothing) {
+  main_->set_result(DesktopCapturer::Result::ERROR_TEMPORARY);
+  secondary_->set_result(DesktopCapturer::Result::ERROR_TEMPORARY);
+  fallback_wrapper_->CaptureFrame();
+
+  DestroyFallbackWrapper();
+  EXPECT_METRIC_EQ(metrics::NumSamples(kStartHistogram), 0);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       MainRejectedSecondaryWorked) {
+  main_->set_select_source_result(false);
+  ASSERT_TRUE(fallback_wrapper_->SelectSource(123));
+
+  ExpectSecondaryOutcome({DesktopCapturer::Result::SUCCESS},
+                         StartOutcome::kMainRejectedSecondaryWorked);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       MainRejectedSecondaryWorkedAfterTemporaryErrors) {
+  main_->set_select_source_result(false);
+  ASSERT_TRUE(fallback_wrapper_->SelectSource(123));
+
+  ExpectSecondaryOutcome({DesktopCapturer::Result::ERROR_TEMPORARY,
+                          DesktopCapturer::Result::SUCCESS},
+                         StartOutcome::kMainRejectedSecondaryWorked);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       MainRejectedSecondaryFailed) {
+  main_->set_select_source_result(false);
+  ASSERT_TRUE(fallback_wrapper_->SelectSource(123));
+
+  ExpectSecondaryOutcome({DesktopCapturer::Result::ERROR_PERMANENT},
+                         StartOutcome::kMainRejectedSecondaryFailed);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       MainRejectedSecondaryFailedAfterTemporaryErrors) {
+  main_->set_select_source_result(false);
+  ASSERT_TRUE(fallback_wrapper_->SelectSource(123));
+
+  ExpectSecondaryOutcome({DesktopCapturer::Result::ERROR_TEMPORARY,
+                          DesktopCapturer::Result::ERROR_PERMANENT},
+                         StartOutcome::kMainRejectedSecondaryFailed);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       MainRejectedSecondaryFailedOnDestructionAfterTemporaryErrors) {
+  main_->set_select_source_result(false);
+  ASSERT_TRUE(fallback_wrapper_->SelectSource(123));
+
+  ExpectSecondaryOutcome({DesktopCapturer::Result::ERROR_TEMPORARY,
+                          DesktopCapturer::Result::ERROR_TEMPORARY},
+                         StartOutcome::kMainRejectedSecondaryFailed);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       MainStartErrorSecondaryWorked) {
+  main_->set_result(DesktopCapturer::Result::ERROR_PERMANENT);
+
+  ExpectSecondaryOutcome({DesktopCapturer::Result::SUCCESS},
+                         StartOutcome::kMainStartErrorSecondaryWorked);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       MainStartErrorSecondaryWorkedAfterTemporaryErrors) {
+  main_->set_result(DesktopCapturer::Result::ERROR_PERMANENT);
+
+  ExpectSecondaryOutcome({DesktopCapturer::Result::ERROR_TEMPORARY,
+                          DesktopCapturer::Result::SUCCESS},
+                         StartOutcome::kMainStartErrorSecondaryWorked);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       MainStartErrorSecondaryFailed) {
+  main_->set_result(DesktopCapturer::Result::ERROR_PERMANENT);
+
+  ExpectSecondaryOutcome({DesktopCapturer::Result::ERROR_PERMANENT},
+                         StartOutcome::kMainStartErrorSecondaryFailed);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       MainStartErrorSecondaryFailedAfterTemporaryErrors) {
+  main_->set_result(DesktopCapturer::Result::ERROR_PERMANENT);
+
+  ExpectSecondaryOutcome({DesktopCapturer::Result::ERROR_TEMPORARY,
+                          DesktopCapturer::Result::ERROR_PERMANENT},
+                         StartOutcome::kMainStartErrorSecondaryFailed);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       MainStartErrorSecondaryFailedOnDestructionAfterTemporaryErrors) {
+  main_->set_result(DesktopCapturer::Result::ERROR_PERMANENT);
+
+  ExpectSecondaryOutcome({DesktopCapturer::Result::ERROR_TEMPORARY,
+                          DesktopCapturer::Result::ERROR_TEMPORARY},
+                         StartOutcome::kMainStartErrorSecondaryFailed);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       MidCaptureMainErrorRecordsNoSecondOutcome) {
+  // `main_` captures this frame.
+  fallback_wrapper_->CaptureFrame();
+  main_->set_result(DesktopCapturer::Result::ERROR_PERMANENT);
+  secondary_->set_result(DesktopCapturer::Result::ERROR_PERMANENT);
+  fallback_wrapper_->CaptureFrame();
+
+  DestroyFallbackWrapper();
+  EXPECT_METRIC_EQ(NumStartEvents(StartOutcome::kMainWorked), 1);
+  EXPECT_METRIC_EQ(metrics::NumSamples(kStartHistogram), 1);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       MidCaptureSecondaryErrorRecordsNoSecondOutcome) {
+  main_->set_result(DesktopCapturer::Result::ERROR_PERMANENT);
+  // `secondary_` captures this frame.
+  fallback_wrapper_->CaptureFrame();
+  secondary_->set_result(DesktopCapturer::Result::ERROR_PERMANENT);
+  fallback_wrapper_->CaptureFrame();
+
+  DestroyFallbackWrapper();
+  EXPECT_METRIC_EQ(NumStartEvents(StartOutcome::kMainStartErrorSecondaryWorked),
+                   1);
+  EXPECT_METRIC_EQ(metrics::NumSamples(kStartHistogram), 1);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperStartOutcomeTest,
+       ForwardsSecondaryCallbacksUnchanged) {
+  main_->set_result(DesktopCapturer::Result::ERROR_PERMANENT);
+  fallback_wrapper_->CaptureFrame();
+  secondary_->set_result(DesktopCapturer::Result::ERROR_TEMPORARY);
+  fallback_wrapper_->CaptureFrame();
+  secondary_->set_result(DesktopCapturer::Result::ERROR_PERMANENT);
+  fallback_wrapper_->CaptureFrame();
+
+  EXPECT_EQ(frame_capture_starts_, 3);
+  EXPECT_EQ(results_, (std::vector<std::pair<DesktopCapturer::Result, bool>>{
+                          {DesktopCapturer::Result::SUCCESS, true},
+                          {DesktopCapturer::Result::ERROR_TEMPORARY, false},
+                          {DesktopCapturer::Result::ERROR_PERMANENT, false}}));
 }
 
 }  // namespace webrtc

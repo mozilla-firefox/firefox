@@ -12,6 +12,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "absl/strings/string_view.h"
@@ -51,25 +52,6 @@ class SharedMemoryFactoryProxy : public SharedMemoryFactory {
   SequenceChecker thread_checker_;
 };
 
-void RecordSelectSourceResult(absl::string_view histogram_name,
-                              bool main_capturer_result,
-                              bool secondary_capturer_result) {
-  using SelectSourceResult = FallbackDesktopCapturerWrapper::SelectSourceResult;
-  constexpr int kBoundary = static_cast<int>(SelectSourceResult::kMaxValue) + 1;
-  SelectSourceResult result;
-  if (main_capturer_result) {
-    result = secondary_capturer_result
-                 ? SelectSourceResult::kMainSucceededSecondarySucceeded
-                 : SelectSourceResult::kMainSucceededSecondaryFailed;
-  } else {
-    result = secondary_capturer_result
-                 ? SelectSourceResult::kMainFailedSecondarySucceeded
-                 : SelectSourceResult::kMainFailedSecondaryFailed;
-  }
-  RTC_HISTOGRAM_ENUMERATION(histogram_name, static_cast<int>(result),
-                            kBoundary);
-}
-
 }  // namespace
 
 SharedMemoryFactoryProxy::SharedMemoryFactoryProxy(
@@ -93,13 +75,161 @@ std::unique_ptr<SharedMemory> SharedMemoryFactoryProxy::CreateSharedMemory(
   return factory_->CreateSharedMemory(size);
 }
 
+// Observes `main_capturer_` and intercepts `secondary_capturer_` callbacks to
+// record at most one StartOutcome to `histogram_name_`:
+//   1. FallbackDesktopCapturerWrapper::Start() calls
+//      OutcomeRecorder::SetCallback() and passes this instance to
+//      secondary_capturer_->Start().
+//   2. FallbackDesktopCapturerWrapper::SelectSource() calls
+//      OutcomeRecorder::OnSelectSourceResult(). Records immediately if
+//      `secondary_capturer_` rejected the source; otherwise, if
+//      `main_capturer_` rejected it, enters
+//      kWaitingForSecondaryAfterMainRejected.
+//   3. FallbackDesktopCapturerWrapper::OnCaptureResult() calls
+//      OutcomeRecorder::OnMainCaptureResult() for `main_capturer_`, while
+//      `secondary_capturer_` calls OutcomeRecorder::OnCaptureResult().
+//   4. ~OutcomeRecorder() records failure if fallback started and every
+//      secondary_capturer_->CaptureFrame() call returned ERROR_TEMPORARY.
+class FallbackDesktopCapturerWrapper::OutcomeRecorder final
+    : public DesktopCapturer::Callback {
+ public:
+  static std::unique_ptr<OutcomeRecorder> Create(
+      absl::string_view histogram_name) {
+    if (histogram_name.empty()) {
+      return nullptr;
+    }
+    return std::unique_ptr<OutcomeRecorder>(
+        new OutcomeRecorder(histogram_name));
+  }
+
+  OutcomeRecorder(const OutcomeRecorder&) = delete;
+  OutcomeRecorder& operator=(const OutcomeRecorder&) = delete;
+
+  ~OutcomeRecorder() override {
+    if (state_ != State::kRecorded && secondary_returned_temporary_error_) {
+      RecordSecondaryOutcome(/*secondary_worked=*/false);
+    }
+  }
+
+  void SetCallback(DesktopCapturer::Callback* callback) {
+    callback_ = callback;
+  }
+
+  void OnSelectSourceResult(bool main_accepted, bool secondary_accepted) {
+    if (state_ == State::kRecorded) {
+      return;
+    }
+    if (!secondary_accepted) {
+      RecordStartOutcome(main_accepted
+                             ? StartOutcome::kMainAcceptedSecondaryRejected
+                             : StartOutcome::kMainRejectedSecondaryRejected);
+      return;
+    }
+    if (!main_accepted) {
+      state_ = State::kWaitingForSecondaryAfterMainRejected;
+    }
+  }
+
+  // Called by FallbackDesktopCapturerWrapper::OnCaptureResult() for
+  // `main_capturer_`.
+  void OnMainCaptureResult(Result result) {
+    if (state_ != State::kWaitingForMainFirstFrame) {
+      // Ignore results once a start outcome has been recorded (including
+      // mid-capture results after the first frame) or after `main_capturer_`
+      // already rejected the source or failed permanently.
+      // TODO(crbug.com/567859840): Record mid-capture fallback outcomes.
+      return;
+    }
+    if (result == Result::SUCCESS) {
+      RecordStartOutcome(StartOutcome::kMainWorked);
+    } else if (result == Result::ERROR_PERMANENT) {
+      state_ = State::kWaitingForSecondaryAfterMainStartError;
+    }
+  }
+
+  // DesktopCapturer::Callback interface, passed to `secondary_capturer_`.
+  void OnFrameCaptureStart() override {
+    if (callback_) {
+      callback_->OnFrameCaptureStart();
+    }
+  }
+
+  void OnCaptureResult(Result result,
+                       std::unique_ptr<DesktopFrame> frame) override {
+    // Only record when permanently using `secondary_capturer_` and no outcome
+    // has been recorded yet. When `main_capturer_` returns ERROR_TEMPORARY,
+    // FallbackDesktopCapturerWrapper::OnCaptureResult() calls
+    // secondary_capturer_->CaptureFrame() for that call while `state_` is
+    // still kWaitingForMainFirstFrame.
+    if (state_ == State::kWaitingForSecondaryAfterMainRejected ||
+        state_ == State::kWaitingForSecondaryAfterMainStartError) {
+      if (result == Result::ERROR_TEMPORARY) {
+        // Don't record yet: a later secondary_capturer_->CaptureFrame() call
+        // may still succeed. Failure is recorded in ~OutcomeRecorder() if no
+        // later call succeeds or fails permanently.
+        secondary_returned_temporary_error_ = true;
+      } else {
+        RecordSecondaryOutcome(/*secondary_worked=*/result == Result::SUCCESS);
+      }
+    }
+    if (callback_) {
+      callback_->OnCaptureResult(result, std::move(frame));
+    }
+  }
+
+ private:
+  enum class State {
+    // `main_capturer_` is active and has not delivered its first frame yet.
+    kWaitingForMainFirstFrame,
+    // main_capturer_->SelectSource() rejected the source; waiting for
+    // `secondary_capturer_` to deliver a frame or fail.
+    kWaitingForSecondaryAfterMainRejected,
+    // `main_capturer_` returned ERROR_PERMANENT before delivering a frame;
+    // waiting for `secondary_capturer_` to deliver a frame or fail.
+    kWaitingForSecondaryAfterMainStartError,
+    // StartOutcome has already been recorded.
+    kRecorded,
+  };
+
+  explicit OutcomeRecorder(absl::string_view histogram_name)
+      : histogram_name_(histogram_name) {}
+
+  void RecordSecondaryOutcome(bool secondary_worked) {
+    if (state_ == State::kWaitingForSecondaryAfterMainRejected) {
+      RecordStartOutcome(secondary_worked
+                             ? StartOutcome::kMainRejectedSecondaryWorked
+                             : StartOutcome::kMainRejectedSecondaryFailed);
+    } else if (state_ == State::kWaitingForSecondaryAfterMainStartError) {
+      RecordStartOutcome(secondary_worked
+                             ? StartOutcome::kMainStartErrorSecondaryWorked
+                             : StartOutcome::kMainStartErrorSecondaryFailed);
+    }
+  }
+
+  void RecordStartOutcome(StartOutcome outcome) {
+    if (state_ == State::kRecorded) {
+      return;
+    }
+    state_ = State::kRecorded;
+    RTC_HISTOGRAM_ENUMERATION(histogram_name_, static_cast<int>(outcome),
+                              static_cast<int>(StartOutcome::kMaxValue) + 1);
+  }
+
+  const std::string histogram_name_;
+  // The callback passed to FallbackDesktopCapturerWrapper::Start(), to which
+  // `secondary_capturer_` callbacks are forwarded.
+  DesktopCapturer::Callback* callback_ = nullptr;
+  State state_ = State::kWaitingForMainFirstFrame;
+  bool secondary_returned_temporary_error_ = false;
+};
+
 FallbackDesktopCapturerWrapper::FallbackDesktopCapturerWrapper(
     std::unique_ptr<DesktopCapturer> main_capturer,
     std::unique_ptr<DesktopCapturer> secondary_capturer,
-    absl::string_view select_source_histogram)
-    : main_capturer_(std::move(main_capturer)),
-      secondary_capturer_(std::move(secondary_capturer)),
-      select_source_histogram_(select_source_histogram) {
+    absl::string_view start_histogram)
+    : outcome_recorder_(OutcomeRecorder::Create(start_histogram)),
+      main_capturer_(std::move(main_capturer)),
+      secondary_capturer_(std::move(secondary_capturer)) {
   RTC_DCHECK(main_capturer_);
   RTC_DCHECK(secondary_capturer_);
 }
@@ -114,9 +244,15 @@ void FallbackDesktopCapturerWrapper::Start(
   // be involved.
   main_capturer_->Start(this);
   // For the secondary capturer, we do not have a backup plan anymore, so
-  // FallbackDesktopCapturerWrapper won't check its return value any more. It
-  // will directly return to the input `callback`.
-  secondary_capturer_->Start(callback);
+  // FallbackDesktopCapturerWrapper won't check its return value any more. Its
+  // results reach the input `callback` unchanged. If `outcome_recorder_` is
+  // set, they pass through it first.
+  if (outcome_recorder_) {
+    outcome_recorder_->SetCallback(callback);
+    secondary_capturer_->Start(outcome_recorder_.get());
+  } else {
+    secondary_capturer_->Start(callback);
+  }
 }
 
 void FallbackDesktopCapturerWrapper::SetSharedMemoryFactory(
@@ -157,8 +293,9 @@ bool FallbackDesktopCapturerWrapper::GetSourceList(SourceList* sources) {
 }
 
 bool FallbackDesktopCapturerWrapper::SelectSource(SourceId id) {
+  bool main_capturer_result = false;
   if (!main_capturer_permanent_error_) {
-    const bool main_capturer_result = main_capturer_->SelectSource(id);
+    main_capturer_result = main_capturer_->SelectSource(id);
     RTC_HISTOGRAM_BOOLEAN(
         "WebRTC.DesktopCapture.PrimaryCapturerSelectSourceError",
         main_capturer_result);
@@ -168,10 +305,9 @@ bool FallbackDesktopCapturerWrapper::SelectSource(SourceId id) {
   }
 
   const bool secondary_capturer_result = secondary_capturer_->SelectSource(id);
-  if (!select_source_histogram_.empty()) {
-    RecordSelectSourceResult(select_source_histogram_,
-                             !main_capturer_permanent_error_,
-                             secondary_capturer_result);
+  if (outcome_recorder_) {
+    outcome_recorder_->OnSelectSourceResult(main_capturer_result,
+                                            secondary_capturer_result);
   }
   return secondary_capturer_result;
 }
@@ -201,6 +337,9 @@ void FallbackDesktopCapturerWrapper::OnCaptureResult(
                         result != Result::SUCCESS);
   RTC_HISTOGRAM_BOOLEAN("WebRTC.DesktopCapture.PrimaryCapturerPermanentError",
                         result == Result::ERROR_PERMANENT);
+  if (outcome_recorder_) {
+    outcome_recorder_->OnMainCaptureResult(result);
+  }
   if (result == Result::SUCCESS) {
     callback_->OnCaptureResult(result, std::move(frame));
     return;

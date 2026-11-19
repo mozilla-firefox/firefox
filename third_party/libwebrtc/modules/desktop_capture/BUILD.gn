@@ -291,6 +291,7 @@ if (rtc_include_tests) {
     deps = [
       ":desktop_capture",
       ":primitives",
+      "../../system_wrappers:metrics",
       "../../test:test_support",
     ]
     if ((is_linux || is_chromeos) && rtc_use_pipewire) {
