@@ -16,7 +16,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
  * Pins Taskbar Tabs on Linux by creating a desktop entry.
  */
 export class TaskbarTabsPinLinux extends TaskbarTabsPinBase {
-  async createShortcut(aTaskbarTab, aIconFile, aArgs, _aWindow) {
+  async createShortcut(aTaskbarTab, aIconFile, aArgs, aWindow) {
     this._logConsole.info("Creating Taskbar Tabs desktop entry.");
 
     let appId = lazy.TaskbarTabsUtils._determineNewDesktopEntryName(
@@ -26,7 +26,8 @@ export class TaskbarTabsPinLinux extends TaskbarTabsPinBase {
       appId,
       aTaskbarTab.name,
       aArgs,
-      aIconFile.path
+      aIconFile.path,
+      { window: aWindow }
     );
 
     return appId + ".desktop";

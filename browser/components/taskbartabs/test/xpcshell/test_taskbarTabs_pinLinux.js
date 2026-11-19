@@ -11,6 +11,8 @@ ChromeUtils.defineESModuleGetters(this, {
     "moz-src:///browser/components/taskbartabs/TaskbarTabsPin.sys.mjs",
   TaskbarTabsRegistry:
     "moz-src:///browser/components/taskbartabs/TaskbarTabsRegistry.sys.mjs",
+  TaskbarTabsUtils:
+    "moz-src:///browser/components/taskbartabs/TaskbarTabsUtils.sys.mjs",
   XPCOMUtils: "resource://gre/modules/XPCOMUtils.sys.mjs",
 });
 
@@ -19,6 +21,9 @@ XPCOMUtils.defineLazyServiceGetters(this, {
 });
 
 const gRegistry = createInMemoryRegistry();
+
+// We need some object to compare when we pass a window in to pinTaskbarTab.
+const kFakeWindow = { fake: "window" };
 
 sinon.stub(ShellService, "writeShortcutIcon").resolves();
 sinon.stub(ShellService, "createLinuxDesktopEntry").resolves();
@@ -36,7 +41,17 @@ registerCleanupFunction(() => {
 // Favicons are written to the profile directory, ensure it exists.
 do_get_profile();
 
-function checkCreateLinuxDesktopEntryCall(aTaskbarTab) {
+async function tryPinTaskbarTab(aTaskbarTab) {
+  let result = await TaskbarTabsPin.pinTaskbarTab(
+    aTaskbarTab,
+    await TaskbarTabsUtils.getDefaultIcon(),
+    { window: kFakeWindow }
+  );
+  Assert.equal(
+    result.shortcut,
+    "glib.mock.prgname.webapp-" + aTaskbarTab.id + ".desktop",
+    "Expected shortcut path is returned"
+  );
   Assert.equal(
     ShellService.createLinuxDesktopEntry.callCount,
     1,
@@ -56,7 +71,16 @@ function checkCreateLinuxDesktopEntryCall(aTaskbarTab) {
     ShellService.createLinuxDesktopEntry.firstCall.args[2].includes(
       "-taskbar-tab"
     ),
-    "Reasonable arguments were specified."
+    "Reasonable command-line arguments were specified."
+  );
+  Assert.ok(
+    ShellService.createLinuxDesktopEntry.firstCall.args[3].endsWith(".png"),
+    "A reasonable icon path was specified."
+  );
+  Assert.equal(
+    ShellService.createLinuxDesktopEntry.firstCall.args[4]?.window,
+    kFakeWindow,
+    "The provided window was passed into createLinuxDesktopEntry."
   );
 }
 
@@ -64,14 +88,7 @@ add_task(async function test_pinCreatesDesktopEntry() {
   const parsedURI = Services.io.newURI("https://www.example.com");
   const taskbarTab = createTaskbarTab(gRegistry, parsedURI, 0);
   sinon.resetHistory();
-
-  Assert.equal(
-    (await TaskbarTabsPin.pinTaskbarTab(taskbarTab)).shortcut,
-    "glib.mock.prgname.webapp-" + taskbarTab.id + ".desktop",
-    "Expected shortcut path is returned"
-  );
-
-  checkCreateLinuxDesktopEntryCall(taskbarTab);
+  await tryPinTaskbarTab(taskbarTab);
   gRegistry.removeTaskbarTab(taskbarTab.id);
 });
 
@@ -84,14 +101,7 @@ add_task(async function test_pinUnusualName() {
     },
   });
   sinon.resetHistory();
-
-  Assert.equal(
-    (await TaskbarTabsPin.pinTaskbarTab(invalidTaskbarTab)).shortcut,
-    "glib.mock.prgname.webapp-" + invalidTaskbarTab.id + ".desktop",
-    "Expected shortcut path is returned"
-  );
-
-  checkCreateLinuxDesktopEntryCall(invalidTaskbarTab);
+  await tryPinTaskbarTab(invalidTaskbarTab);
   gRegistry.removeTaskbarTab(invalidTaskbarTab.id);
 });
 
