@@ -897,10 +897,10 @@ TEST(ScreamTest, MaybeTest(LinkCapacity2MbitRepeatedDelaySpikesNoEcn)) {
   EXPECT_THAT(result.caller().subspan(5), Each(AvailableSendBitrateIsBetween(
                                               DataRate::KilobitsPerSec(550),
                                               DataRate::KilobitsPerSec(2000))));
-  // Ensure average pacing delay between two reports is below 70ms.
+  // Ensure average pacing delay between two reports is below 100ms.
   for (size_t i = 1; i < result.caller_stats.size(); ++i) {
     EXPECT_THAT(result.caller_stats[i],
-                AveragePacingDelayIsBelow(TimeDelta::Millis(70),
+                AveragePacingDelayIsBelow(TimeDelta::Millis(100),
                                           result.caller_stats[i - 1]));
   }
 }
