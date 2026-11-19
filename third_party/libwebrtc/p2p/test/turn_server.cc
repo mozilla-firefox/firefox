@@ -538,7 +538,9 @@ TurnServerConnection::TurnServerConnection(const SocketAddress& src,
                                            ProtocolType proto,
                                            AsyncPacketSocket* socket)
     : src_(src),
-      dst_(socket->GetRemoteAddress()),
+      // UDP sockets are not connected and have no remote address. Asking for
+      // it anyway would cost a failing system call for every received packet.
+      dst_(proto == PROTO_UDP ? SocketAddress() : socket->GetRemoteAddress()),
       proto_(proto),
       socket_(socket) {}
 
