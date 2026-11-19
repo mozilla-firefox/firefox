@@ -282,7 +282,7 @@ void* nsNodeInfoManager::Allocate(size_t aSize) {
   if (mArena) {
     return mArena->Allocate(aSize);
   }
-  return malloc(aSize);
+  return moz_xmalloc(aSize);
 }
 
 void nsNodeInfoManager::SetArenaAllocator(mozilla::dom::DOMArena* aArena) {
