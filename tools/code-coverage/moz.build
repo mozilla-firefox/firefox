@@ -37,5 +37,6 @@ if CONFIG["MOZ_CODE_COVERAGE"]:
 
     XPCSHELL_TESTS_MANIFESTS += ["tests/xpcshell/xpcshell.toml"]
     MOCHITEST_MANIFESTS += ["tests/mochitest/mochitest.toml"]
+    BROWSER_CHROME_MANIFESTS += ["tests/browser/browser.toml"]
 
     FINAL_LIBRARY = "xul"

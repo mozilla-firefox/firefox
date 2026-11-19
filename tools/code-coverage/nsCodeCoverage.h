@@ -12,10 +12,8 @@ class nsCodeCoverage final : nsICodeCoverage {
   NS_DECL_THREADSAFE_ISUPPORTS
   NS_DECL_NSICODECOVERAGE
 
-  nsCodeCoverage();
-
  private:
-  ~nsCodeCoverage();
+  ~nsCodeCoverage() = default;
 };
 
 #endif  // tools_codecoverage_nscodecoverage_h

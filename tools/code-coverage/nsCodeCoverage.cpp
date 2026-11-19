@@ -6,37 +6,16 @@
 #include "mozilla/CodeCoverageHandler.h"
 #include "mozilla/dom/ContentParent.h"
 #include "mozilla/dom/Promise.h"
+#include "mozilla/ipc/MessageChannel.h"
+#include "nsThreadUtils.h"
 
 using mozilla::dom::ContentParent;
 using mozilla::dom::Promise;
+using mozilla::ipc::ResponseRejectReason;
 
 NS_IMPL_ISUPPORTS(nsCodeCoverage, nsICodeCoverage)
 
-nsCodeCoverage::nsCodeCoverage() {}
-
-nsCodeCoverage::~nsCodeCoverage() {}
-
-enum RequestType { Flush };
-
-class ProcessCount final {
-  NS_INLINE_DECL_REFCOUNTING(ProcessCount);
-
- public:
-  explicit ProcessCount(uint32_t c) : mCount(c) {}
-  operator uint32_t() const { return mCount; }
-  ProcessCount& operator--() {
-    mCount--;
-    return *this;
-  }
-
- private:
-  ~ProcessCount() {}
-  uint32_t mCount;
-};
-
-namespace {
-
-nsresult Request(JSContext* cx, Promise** aPromise, RequestType requestType) {
+NS_IMETHODIMP nsCodeCoverage::FlushCounters(JSContext* cx, Promise** aPromise) {
   MOZ_ASSERT(XRE_IsParentProcess());
   MOZ_ASSERT(NS_IsMainThread());
 
@@ -51,44 +30,31 @@ nsresult Request(JSContext* cx, Promise** aPromise, RequestType requestType) {
     return result.StealNSResult();
   }
 
-  uint32_t processCount = 0;
-  for (auto* cp : ContentParent::AllProcesses(ContentParent::eLive)) {
-    (void)cp;
-    ++processCount;
+  mozilla::CodeCoverageHandler::FlushCounters();
+
+  using FlushPromise = ContentParent::FlushCodeCoverageCountersPromise;
+  auto* target = mozilla::GetCurrentSerialEventTarget();
+  nsTArray<RefPtr<FlushPromise>> requests;
+  for (auto* process : ContentParent::AllProcesses(ContentParent::eLive)) {
+    auto logRejection = [pid = process->Pid(),
+                         kind = process->GetRemoteType().StringifyKind(),
+                         shuttingDown = process->IsSignaledImpendingShutdown()](
+                            ResponseRejectReason aReason) {
+      printf_stderr(
+          "[CodeCoverage] Coverage flush request for process %d (%s%s) "
+          "rejected (%s).\n",
+          pid, kind.get(), shuttingDown ? ", shutting down" : "",
+          EnumValueToString(aReason));
+      return aReason;
+    };
+    requests.AppendElement(process->SendFlushCodeCoverageCounters()->MapErr(
+        target, __func__, std::move(logRejection)));
   }
 
-  if (requestType == RequestType::Flush) {
-    mozilla::CodeCoverageHandler::FlushCounters();
-  }
-
-  if (processCount == 0) {
+  FlushPromise::AllSettled(target, requests)->Then(target, __func__, [promise] {
     promise->MaybeResolveWithUndefined();
-  } else {
-    RefPtr<ProcessCount> processCountHolder(new ProcessCount(processCount));
-
-    auto resolve = [processCountHolder, promise](bool unused) {
-      if (--(*processCountHolder) == 0) {
-        promise->MaybeResolveWithUndefined();
-      }
-    };
-
-    auto reject = [promise](mozilla::ipc::ResponseRejectReason&& aReason) {
-      promise->MaybeReject(NS_ERROR_FAILURE);
-    };
-
-    for (auto* cp : ContentParent::AllProcesses(ContentParent::eLive)) {
-      if (requestType == RequestType::Flush) {
-        cp->SendFlushCodeCoverageCounters(resolve, reject);
-      }
-    }
-  }
+  });
 
   promise.forget(aPromise);
   return NS_OK;
-}
-
-}  // anonymous namespace
-
-NS_IMETHODIMP nsCodeCoverage::FlushCounters(JSContext* cx, Promise** aPromise) {
-  return Request(cx, aPromise, RequestType::Flush);
 }

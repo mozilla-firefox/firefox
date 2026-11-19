@@ -8,6 +8,7 @@
 #include "ETWTools.h"
 #include "ipc/EnumSerializer.h"
 #include "mozilla/BaseProfilerMarkers.h"
+#include "mozilla/DefineEnum.h"
 #include "mozilla/LinkedList.h"
 #include "mozilla/Monitor.h"
 #include "mozilla/MoveOnlyFunction.h"
@@ -77,14 +78,10 @@ enum class SyncSendError {
   ReplyError,
 };
 
-enum class ResponseRejectReason {
-  SendError,
-  ChannelClosed,
-  HandlerRejected,
-  ActorDestroyed,
-  ResolverDestroyed,
-  EndGuard_,
-};
+MOZ_DEFINE_ENUM_CLASS_WITH_TOSTRING(ResponseRejectReason,
+                                    (SendError, ChannelClosed, HandlerRejected,
+                                     ActorDestroyed, ResolverDestroyed,
+                                     EndGuard_));
 
 template <typename T>
 using ResolveCallback = MoveOnlyFunction<void(T&&)>;
