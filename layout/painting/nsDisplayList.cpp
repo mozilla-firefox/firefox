@@ -5731,6 +5731,14 @@ WebRenderCommandsResult nsDisplayViewTransitionCapture::CreateWebRenderCommands(
     if (NS_WARN_IF(!vt)) {
       return Nothing();
     }
+    if (!isRoot && capturedFrame != mFrame &&
+        NS_WARN_IF(!GetMergedFrames().Contains(capturedFrame))) {
+      // FIXME(emilio): This ideally shouldn't happen, but we might not be able
+      // to properly merge all items belonging to a fragmented inline, see
+      // bug 2014087 for the equivalent opacity bug. In that case, we only honor
+      // the first fragment's capture.
+      return Nothing();
+    }
     const auto* key =
         vt->GetImageKeyForCapturedFrame(capturedFrame, aManager, aResources);
     return key ? Some(wr::SnapshotImageKey{*key}) : Nothing();
