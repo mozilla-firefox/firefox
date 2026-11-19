@@ -15,6 +15,7 @@ import mozilla.components.support.utils.FakeDateTimeProvider
 /** A fake implementation of [TabGroupRepository] designed exclusively for unit tests. */
 class FakeTabGroupRepository(
     initialTabGroupData: TabGroupData = TabGroupData(),
+    private val onCreateTabGroupWithTabs: suspend (TabGroup) -> Unit = {},
     private val closeAllTabGroups: () -> Unit = {},
     private val deleteTabGroupAssignmentById: (String) -> Unit = {},
     private val deleteTabGroupAssignmentsById: (List<String>) -> Unit = {},
@@ -25,6 +26,7 @@ class FakeTabGroupRepository(
         field: MutableStateFlow<TabGroupData> = MutableStateFlow(initialTabGroupData)
 
     override suspend fun createTabGroupWithTabs(tabGroup: TabGroup) {
+        onCreateTabGroupWithTabs(tabGroup)
         val updatedAssignments = HashMap(tabGroupDataFlow.value.tabGroupAssignments)
         tabGroup.tabIds.forEach { id ->
             updatedAssignments[id] = tabGroup.id
