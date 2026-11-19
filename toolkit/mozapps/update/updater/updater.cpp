@@ -3675,16 +3675,6 @@ bool ShouldRunSilently(int argc, NS_tchar** argv) {
 int NS_main(int argc, NS_tchar** argv) {
   LogToOS(NS_T("Updater started"));
 
-  // We may need to tweak our argument list when we launch the Second Updater
-  // Invocation (SUI), so we are going to make a copy of our arguments to
-  // modify.
-  int suiArgc = argc;
-  mozilla::UniquePtr<const NS_tchar*[]> suiArgv =
-      std::make_unique<const NS_tchar*[]>(suiArgc);
-  for (int argIndex = 0; argIndex < suiArgc; argIndex++) {
-    suiArgv.get()[argIndex] = argv[argIndex];
-  }
-
   sElevationType = getElevationType(argc, argv);
   if (sElevationType == ElevationType::Error ||
       sElevationType == ElevationType::Unknown) {
@@ -3756,6 +3746,17 @@ int NS_main(int argc, NS_tchar** argv) {
     }
   }
 #endif
+
+  // We may need to tweak our argument list when we launch the Second Updater
+  // Invocation (SUI), so we are going to make a copy of our arguments to
+  // modify. On macOS the elevated updater only gets its arguments from
+  // ObtainUpdaterArguments above, so the copy has to come after it.
+  int suiArgc = argc;
+  mozilla::UniquePtr<const NS_tchar*[]> suiArgv =
+      std::make_unique<const NS_tchar*[]>(suiArgc);
+  for (int argIndex = 0; argIndex < suiArgc; argIndex++) {
+    suiArgv.get()[argIndex] = argv[argIndex];
+  }
 
   if (!isDMGInstall) {
     // Skip update-related code path for DMG installs.
