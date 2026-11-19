@@ -16,6 +16,6 @@ dependencies = [
   'urllib3==2.1.0',
   'certifi==2023.11.17',
   'charset-normalizer==3.3.2',
-  'brotli==1.0.9',
+  'brotli==1.2.1',
   'asn1crypto==1.0.1'
 ]
