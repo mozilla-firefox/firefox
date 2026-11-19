@@ -817,6 +817,7 @@ if (rtc_include_tests) {
       "../api/task_queue",
       "../api/task_queue:task_queue_test",
       "../api/units:time_delta",
+      "../test:scoped_logging_config",
       "../test:test_support",
     ]
   }

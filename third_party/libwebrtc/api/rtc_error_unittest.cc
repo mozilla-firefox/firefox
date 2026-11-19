@@ -20,6 +20,7 @@
 #include "rtc_base/logging.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
+#include "test/scoped_logging_config.h"
 
 namespace webrtc {
 namespace {
@@ -271,18 +272,6 @@ TEST(RTCErrorOrTest, BuildStringLog) {
 
    private:
     std::string* const log_;
-  };
-
-  class ScopedLoggingConfig {
-   public:
-    explicit ScopedLoggingConfig(LoggingConfig config)
-        : saved_config_(ResetLoggingForTesting()) {
-      RTC_CHECK(InitializeLogging(std::move(config)));
-    }
-    ~ScopedLoggingConfig() { ResetLoggingForTesting(std::move(saved_config_)); }
-
-   private:
-    LoggingConfig saved_config_;
   };
 
   std::string log;

@@ -130,3 +130,16 @@ class MyLoggingTest : public ::testing::Test {
   webrtc::LoggingConfig saved_config_;
 };
 ```
+
+For a single test, `webrtc::ScopedLoggingConfig` from
+[`test/scoped_logging_config.h`](/test/scoped_logging_config.h) applies a
+configuration and restores the previous one when it goes out of scope:
+
+```cpp
+TEST(MyTest, LogsToMySink) {
+  webrtc::LoggingConfig config;
+  config.AddSink(std::make_unique<MyLogSink>());
+  webrtc::ScopedLoggingConfig scoped_logging(std::move(config));
+  // ...
+}
+```

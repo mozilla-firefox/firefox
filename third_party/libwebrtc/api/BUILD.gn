@@ -1868,6 +1868,7 @@ if (rtc_include_tests) {
       ":rtc_error",
       "../rtc_base:checks",
       "../rtc_base:logging",
+      "../test:scoped_logging_config",
       "../test:test_support",
       "//third_party/abseil-cpp/absl/strings",
       "//third_party/abseil-cpp/absl/strings:string_view",

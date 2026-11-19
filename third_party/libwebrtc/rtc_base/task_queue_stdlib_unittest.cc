@@ -23,6 +23,7 @@
 #include "api/units/time_delta.h"
 #include "rtc_base/event.h"
 #include "rtc_base/logging.h"
+#include "test/scoped_logging_config.h"
 #endif
 
 namespace webrtc {
@@ -48,18 +49,6 @@ class EventLogSink final : public LogSink {
 };
 
 TEST(TaskQueueStdlib, AvoidsSpammingLogOnInactivity) {
-  class ScopedLoggingConfig {
-   public:
-    explicit ScopedLoggingConfig(LoggingConfig config)
-        : saved_config_(ResetLoggingForTesting()) {
-      EXPECT_TRUE(InitializeLogging(std::move(config)));
-    }
-    ~ScopedLoggingConfig() { ResetLoggingForTesting(std::move(saved_config_)); }
-
-   private:
-    LoggingConfig saved_config_;
-  };
-
   Event logged;
   LoggingConfig config;
   config.set_min_severity(LS_VERBOSE);
