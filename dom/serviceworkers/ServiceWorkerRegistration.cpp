@@ -26,11 +26,22 @@ using mozilla::ipc::ResponseRejectReason;
 
 namespace mozilla::dom {
 
-NS_IMPL_CYCLE_COLLECTION_INHERITED(ServiceWorkerRegistration,
-                                   DOMEventTargetHelper, mInstallingWorker,
-                                   mWaitingWorker, mActiveWorker,
-                                   mNavigationPreloadManager, mPushManager,
-                                   mCookieStoreManager);
+NS_IMPL_CYCLE_COLLECTION_CLASS(ServiceWorkerRegistration)
+
+NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(ServiceWorkerRegistration,
+                                                  DOMEventTargetHelper)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mInstallingWorker, mWaitingWorker,
+                                    mActiveWorker, mNavigationPreloadManager,
+                                    mPushManager, mCookieStoreManager)
+NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
+
+NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(ServiceWorkerRegistration,
+                                                DOMEventTargetHelper)
+  tmp->DisconnectFromOwner();
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mInstallingWorker, mWaitingWorker,
+                                  mActiveWorker, mNavigationPreloadManager,
+                                  mPushManager, mCookieStoreManager)
+NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_IMPL_ADDREF_INHERITED(ServiceWorkerRegistration, DOMEventTargetHelper)
 NS_IMPL_RELEASE_INHERITED(ServiceWorkerRegistration, DOMEventTargetHelper)
