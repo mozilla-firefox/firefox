@@ -161,7 +161,7 @@ gfx::Matrix SVGViewportElement::GetViewBoxTransform() const {
 
   SVGViewBox viewBox = GetViewBoxWithSynthesis(viewportWidth, viewportHeight);
 
-  if (viewBox.IsEmpty()) {
+  if (viewBox.IsEmpty() || !viewBox.IsFinite()) {
     return gfx::Matrix(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);  // singular
   }
 
