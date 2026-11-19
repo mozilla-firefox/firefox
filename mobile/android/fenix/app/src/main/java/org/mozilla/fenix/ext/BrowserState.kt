@@ -27,21 +27,24 @@ val maxActiveTime = TimeUnit.DAYS.toMillis(DEFAULT_ACTIVE_DAYS)
 /**
  * Get the last opened normal tab or last tab with in progress media.
  *
+ * @param excludedTabIds The IDs of the tabs that are never returned, such as the tabs in closed tab groups.
  * @return A list of the last opened tab or an empty list.
  */
-fun BrowserState.asRecentTabs(): List<RecentTab> =
-    lastOpenedNormalTab?.let {
+fun BrowserState.asRecentTabs(excludedTabIds: Set<String> = emptySet()): List<RecentTab> =
+    lastOpenedNormalTab(excludedTabIds = excludedTabIds)?.let {
         mutableListOf(RecentTab.Tab(it))
     } ?: mutableListOf()
 
 /**
  * Get the selected normal tab or the last accessed normal tab if there is no selected tab or if the selected tab is a
- * private or homepage tab.
+ * private, homepage or excluded tab.
+ *
+ * @param excludedTabIds The IDs of the tabs that are never returned, such as the tabs in closed tab groups.
  */
-val BrowserState.lastOpenedNormalTab: TabSessionState?
-    get() =
-        selectedNormalTab?.takeIf { !it.isHomepageTab }
-            ?: normalTabs.filterNot { it.isHomepageTab }.maxByOrNull { it.lastAccess }
+fun BrowserState.lastOpenedNormalTab(excludedTabIds: Set<String> = emptySet()): TabSessionState? {
+    val isEligible = { tab: TabSessionState -> !tab.isHomepageTab && tab.id !in excludedTabIds }
+    return selectedNormalTab?.takeIf(isEligible) ?: normalTabs.filter(isEligible).maxByOrNull { it.lastAccess }
+}
 
 private val TabSessionState.isHomepageTab: Boolean
     get() = getTabUrl() == ABOUT_HOME_URL

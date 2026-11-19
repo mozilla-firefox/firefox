@@ -19,6 +19,9 @@ import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.mediasession.MediaSession
 import mozilla.components.feature.media.middleware.LastMediaAccessMiddleware
+import mozilla.components.feature.tabdata.coordinator.data.TabGroup
+import mozilla.components.feature.tabdata.coordinator.data.TabsSnapshot
+import mozilla.components.feature.tabdata.coordinator.fakes.FakeTabDataCoordinator
 import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -38,6 +41,7 @@ class RecentTabsListFeatureTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var appStore: AppStore
     private lateinit var middleware: CaptureActionsMiddleware<AppState, AppAction>
+    private val tabDataCoordinator = FakeTabDataCoordinator(initialTabsSnapshot = TabsSnapshot())
 
     @Before
     fun setup() {
@@ -59,6 +63,7 @@ class RecentTabsListFeatureTest {
                 RecentTabsListFeature(
                     browserStore = browserStore,
                     appStore = appStore,
+                    tabDataCoordinator = tabDataCoordinator,
                     mainDispatcher = testDispatcher,
                 )
 
@@ -82,6 +87,7 @@ class RecentTabsListFeatureTest {
                 RecentTabsListFeature(
                     browserStore = browserStore,
                     appStore = appStore,
+                    tabDataCoordinator = tabDataCoordinator,
                     mainDispatcher = testDispatcher,
                 )
 
@@ -111,12 +117,87 @@ class RecentTabsListFeatureTest {
                 RecentTabsListFeature(
                     browserStore = browserStore,
                     appStore = appStore,
+                    tabDataCoordinator = tabDataCoordinator,
                     mainDispatcher = testDispatcher,
                 )
 
             feature.start()
             testDispatcher.scheduler.advanceUntilIdle()
             assertEquals(1, appStore.state.recentTabs.size)
+        }
+
+    @Test
+    fun `GIVEN the last active tab is in a closed tab group WHEN the feature starts THEN dispatch the last active tab outside of it`() =
+        runTest(testDispatcher) {
+            val olderTab = createTab(url = "https://www.example.com", id = "0", lastAccess = 0)
+            val tab = createTab(url = "https://www.mozilla.org", id = "1", lastAccess = 1)
+            val closedTabGroupTab = createTab(url = "https://www.firefox.com", id = "2", lastAccess = 2)
+            val browserStore = BrowserStore(BrowserState(tabs = listOf(olderTab, tab, closedTabGroupTab)))
+            tabDataCoordinator.tabsSnapshot.value =
+                TabsSnapshot(tabGroups = listOf(tabGroup(closed = true, tabIds = listOf(closedTabGroupTab.id))))
+            val feature =
+                RecentTabsListFeature(
+                    browserStore = browserStore,
+                    appStore = appStore,
+                    tabDataCoordinator = tabDataCoordinator,
+                    mainDispatcher = testDispatcher,
+                )
+
+            feature.start()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(listOf(RecentTab.Tab(tab)), appStore.state.recentTabs)
+        }
+
+    @Test
+    fun `GIVEN the last active tab is in a closed tab group WHEN the tab group is opened THEN dispatch that tab as a recent tab list`() =
+        runTest(testDispatcher) {
+            val olderTab = createTab(url = "https://www.example.com", id = "0", lastAccess = 0)
+            val tab = createTab(url = "https://www.mozilla.org", id = "1", lastAccess = 1)
+            val tabGroupTab = createTab(url = "https://www.firefox.com", id = "2", lastAccess = 2)
+            val browserStore = BrowserStore(BrowserState(tabs = listOf(olderTab, tab, tabGroupTab)))
+            tabDataCoordinator.tabsSnapshot.value =
+                TabsSnapshot(tabGroups = listOf(tabGroup(closed = true, tabIds = listOf(tabGroupTab.id))))
+            val feature =
+                RecentTabsListFeature(
+                    browserStore = browserStore,
+                    appStore = appStore,
+                    tabDataCoordinator = tabDataCoordinator,
+                    mainDispatcher = testDispatcher,
+                )
+
+            feature.start()
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals(listOf(RecentTab.Tab(tab)), appStore.state.recentTabs)
+
+            tabDataCoordinator.openTabGroup(tabGroupId = "group")
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(listOf(RecentTab.Tab(tabGroupTab)), appStore.state.recentTabs)
+        }
+
+    @Test
+    fun `GIVEN the tab data coordinator is not initialized WHEN the feature starts THEN no recent tabs are dispatched until it is`() =
+        runTest(testDispatcher) {
+            val tab = createTab(url = "https://www.mozilla.org", id = "1")
+            val browserStore = BrowserStore(BrowserState(tabs = listOf(tab), selectedTabId = tab.id))
+            val tabDataCoordinator = FakeTabDataCoordinator(initialTabsSnapshot = null)
+            val feature =
+                RecentTabsListFeature(
+                    browserStore = browserStore,
+                    appStore = appStore,
+                    tabDataCoordinator = tabDataCoordinator,
+                    mainDispatcher = testDispatcher,
+                )
+
+            feature.start()
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertTrue(appStore.state.recentTabs.isEmpty())
+
+            tabDataCoordinator.tabsSnapshot.value = TabsSnapshot()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(listOf(RecentTab.Tab(tab)), appStore.state.recentTabs)
         }
 
     @Ignore("Disabled until we want to enable this feature. See #21670.")
@@ -141,6 +222,7 @@ class RecentTabsListFeatureTest {
                 RecentTabsListFeature(
                     browserStore = browserStore,
                     appStore = appStore,
+                    tabDataCoordinator = tabDataCoordinator,
                     mainDispatcher = testDispatcher,
                 )
 
@@ -175,6 +257,7 @@ class RecentTabsListFeatureTest {
                 RecentTabsListFeature(
                     browserStore = browserStore,
                     appStore = appStore,
+                    tabDataCoordinator = tabDataCoordinator,
                     mainDispatcher = testDispatcher,
                 )
 
@@ -211,6 +294,7 @@ class RecentTabsListFeatureTest {
                 RecentTabsListFeature(
                     browserStore = browserStore,
                     appStore = appStore,
+                    tabDataCoordinator = tabDataCoordinator,
                     mainDispatcher = testDispatcher,
                 )
 
@@ -256,6 +340,7 @@ class RecentTabsListFeatureTest {
                 RecentTabsListFeature(
                     browserStore = browserStore,
                     appStore = appStore,
+                    tabDataCoordinator = tabDataCoordinator,
                     mainDispatcher = testDispatcher,
                 )
 
@@ -328,6 +413,7 @@ class RecentTabsListFeatureTest {
                 RecentTabsListFeature(
                     browserStore = browserStore,
                     appStore = appStore,
+                    tabDataCoordinator = tabDataCoordinator,
                     mainDispatcher = testDispatcher,
                 )
 
@@ -369,6 +455,7 @@ class RecentTabsListFeatureTest {
                 RecentTabsListFeature(
                     browserStore = browserStore,
                     appStore = appStore,
+                    tabDataCoordinator = tabDataCoordinator,
                     mainDispatcher = testDispatcher,
                 )
 
@@ -416,6 +503,7 @@ class RecentTabsListFeatureTest {
                 RecentTabsListFeature(
                     browserStore = browserStore,
                     appStore = appStore,
+                    tabDataCoordinator = tabDataCoordinator,
                     mainDispatcher = testDispatcher,
                 )
 
@@ -427,4 +515,7 @@ class RecentTabsListFeatureTest {
             assertIs<RecentTab.Tab>(appStore.state.recentTabs[0])
             assertEquals(selectedTab, (appStore.state.recentTabs[0] as RecentTab.Tab).state)
         }
+
+    private fun tabGroup(closed: Boolean, tabIds: List<String>) =
+        TabGroup(id = "group", title = "Group", theme = "Yellow", closed = closed, lastModified = 0L, tabIds = tabIds)
 }

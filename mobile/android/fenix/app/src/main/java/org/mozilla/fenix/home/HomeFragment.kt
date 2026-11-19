@@ -1469,6 +1469,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                     RecentTabsListFeature(
                         browserStore = requireComponents.core.store,
                         appStore = requireComponents.appStore,
+                        tabDataCoordinator = requireComponents.tabDataCoordinator,
                     ),
                 owner = viewLifecycleOwner,
                 view = view,

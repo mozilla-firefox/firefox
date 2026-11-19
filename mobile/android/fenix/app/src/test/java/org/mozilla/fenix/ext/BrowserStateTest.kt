@@ -315,7 +315,7 @@ class BrowserStateTest {
                 selectedTabId = "1",
             )
 
-        assertNull(browserState.lastOpenedNormalTab)
+        assertNull(browserState.lastOpenedNormalTab())
     }
 
     @Test
@@ -329,7 +329,7 @@ class BrowserStateTest {
                 selectedTabId = "3",
             )
 
-        assertEquals(normalTab2, browserState.lastOpenedNormalTab)
+        assertEquals(normalTab2, browserState.lastOpenedNormalTab())
     }
 
     @Test
@@ -342,7 +342,54 @@ class BrowserStateTest {
                 selectedTabId = "1",
             )
 
-        assertEquals(normalTab1, browserState.lastOpenedNormalTab)
+        assertEquals(normalTab1, browserState.lastOpenedNormalTab())
+    }
+
+    @Test
+    fun `GIVEN no selected tab and the last accessed tab is excluded WHEN lastOpenedNormalTab is called THEN return the last accessed tab that is not excluded`() {
+        val olderTab = createTab(url = "url0", id = "0", lastAccess = 0)
+        val normalTab = createTab(url = "url1", id = "1", lastAccess = 1)
+        val excludedTab = createTab(url = "url2", id = "2", lastAccess = 2)
+        val browserState = BrowserState(tabs = listOf(olderTab, normalTab, excludedTab))
+
+        assertEquals(normalTab, browserState.lastOpenedNormalTab(excludedTabIds = setOf(excludedTab.id)))
+    }
+
+    @Test
+    fun `GIVEN the selected tab is a homepage tab and the last accessed tab is excluded WHEN lastOpenedNormalTab is called THEN return the last accessed tab that is not excluded`() {
+        val homepageTab = createTab(url = ABOUT_HOME_URL, id = "1", lastAccess = 3)
+        val olderTab = createTab(url = "url0", id = "0", lastAccess = 0)
+        val normalTab = createTab(url = "url2", id = "2", lastAccess = 1)
+        val excludedTab = createTab(url = "url3", id = "3", lastAccess = 2)
+        val browserState =
+            BrowserState(
+                tabs = listOf(homepageTab, olderTab, normalTab, excludedTab),
+                selectedTabId = homepageTab.id,
+            )
+
+        assertEquals(normalTab, browserState.lastOpenedNormalTab(excludedTabIds = setOf(excludedTab.id)))
+    }
+
+    @Test
+    fun `GIVEN the selected tab is excluded WHEN lastOpenedNormalTab is called THEN return the last accessed tab that is not excluded`() {
+        val olderTab = createTab(url = "url0", id = "0", lastAccess = 0)
+        val normalTab = createTab(url = "url1", id = "1", lastAccess = 1)
+        val excludedTab = createTab(url = "url2", id = "2", lastAccess = 2)
+        val browserState =
+            BrowserState(
+                tabs = listOf(olderTab, normalTab, excludedTab),
+                selectedTabId = excludedTab.id,
+            )
+
+        assertEquals(normalTab, browserState.lastOpenedNormalTab(excludedTabIds = setOf(excludedTab.id)))
+    }
+
+    @Test
+    fun `GIVEN only excluded tabs WHEN asRecentTabs is called THEN return an empty list`() {
+        val excludedTab = createTab(url = "url1", id = "1")
+        val browserState = BrowserState(tabs = listOf(excludedTab))
+
+        assertTrue(browserState.asRecentTabs(excludedTabIds = setOf(excludedTab.id)).isEmpty())
     }
 
     @Test
