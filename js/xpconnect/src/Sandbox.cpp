@@ -2364,9 +2364,18 @@ nsresult xpc::SetSandboxMetadata(JSContext* cx, HandleObject sandbox,
   return NS_OK;
 }
 
+static mozilla::LinkedList<SandboxPrivate>& LiveSandboxes() {
+  MOZ_ASSERT(NS_IsMainThread());
+  // Intentionally never destroyed: sandboxes can outlive static destructors.
+  static auto* sLiveSandboxes = new mozilla::LinkedList<SandboxPrivate>();
+  return *sLiveSandboxes;
+}
+
 SandboxPrivate::SandboxPrivate(nsIPrincipal* principal)
     : mPrincipal(principal),
-      mCookieJarSettings(mozilla::net::CookieJarSettings::Create(mPrincipal)) {}
+      mCookieJarSettings(mozilla::net::CookieJarSettings::Create(mPrincipal)) {
+  LiveSandboxes().insertBack(this);
+}
 
 SandboxPrivate::~SandboxPrivate() = default;
 
@@ -2377,6 +2386,17 @@ void SandboxPrivate::SetAssociatedWindow(nsPIDOMWindowInner* aWindow) {
 already_AddRefed<nsPIDOMWindowInner> SandboxPrivate::GetAssociatedWindow() {
   nsCOMPtr<nsPIDOMWindowInner> window = do_QueryReferent(mAssociatedWindow);
   return window.forget();
+}
+
+/* static */
+void SandboxPrivate::RefreshAllRTPCallerTypes() {
+  for (SandboxPrivate* sbp : LiveSandboxes()) {
+    sbp->RefreshRTPCallerType();
+  }
+}
+
+void xpc::RefreshSandboxesRTPCallerType() {
+  SandboxPrivate::RefreshAllRTPCallerTypes();
 }
 
 ModuleLoaderBase* SandboxPrivate::GetModuleLoader(JSContext* aCx) {

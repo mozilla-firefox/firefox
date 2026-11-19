@@ -10,3 +10,5 @@ prefs = [
 run-if = [
   "os == 'android'",
 ]
+
+["test_sandbox_reduce_timer_precision.js"]

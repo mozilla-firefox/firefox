@@ -5,6 +5,7 @@
 #ifndef SANDBOXPRIVATE_H_
 #define SANDBOXPRIVATE_H_
 
+#include "mozilla/LinkedList.h"
 #include "mozilla/net/CookieJarSettings.h"
 #include "mozilla/SchedulerGroup.h"
 #include "mozilla/StaticPrefs_dom.h"
@@ -29,7 +30,8 @@ class SandboxPrivate final : public nsIGlobalObject,
                              public nsIScriptObjectPrincipal,
                              public nsSupportsWeakReference,
                              public mozilla::SupportsWeakPtr,
-                             public nsWrapperCache {
+                             public nsWrapperCache,
+                             public mozilla::LinkedListElement<SandboxPrivate> {
  public:
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
   NS_DECL_CYCLE_COLLECTION_WRAPPERCACHE_CLASS_AMBIGUOUS(SandboxPrivate,
@@ -46,10 +48,22 @@ class SandboxPrivate final : public nsIGlobalObject,
         static_cast<nsIScriptObjectPrincipal*>(sbp.forget().take());
     JS::SetObjectISupports(global, sop);
 
+    GetPrivate(global)->RefreshRTPCallerType();
+  }
+
+  void RefreshRTPCallerType() {
+    JSObject* global = GetWrapperPreserveColor();
+    if (!global) {
+      return;
+    }
     JS::SetRealmReduceTimerPrecisionCallerType(
         js::GetNonCCWObjectRealm(global),
-        RTPCallerTypeToToken(GetPrivate(global)->GetRTPCallerType()));
+        RTPCallerTypeToToken(GetRTPCallerType()));
   }
+
+  // Refreshes the realm RTP caller type of every live sandbox, so that it
+  // stays in sync with GetRTPCallerType() when the RFP prefs change.
+  static void RefreshAllRTPCallerTypes();
 
   static SandboxPrivate* GetPrivate(JSObject* obj) {
     // The type used to cast to void needs to match the one in Create.
@@ -89,7 +103,12 @@ class SandboxPrivate final : public nsIGlobalObject,
                                                    mCookieJarSettings);
   }
 
-  void ForgetGlobalObject(JSObject* obj) { ClearWrapper(obj); }
+  void ForgetGlobalObject(JSObject* obj) {
+    ClearWrapper(obj);
+    if (isInList()) {
+      remove();
+    }
+  }
 
   nsISerialEventTarget* SerialEventTarget() const final {
     return mozilla::GetMainThreadSerialEventTarget();

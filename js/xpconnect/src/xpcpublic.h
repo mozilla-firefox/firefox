@@ -427,6 +427,10 @@ class XPCStringConvert {
 
 namespace xpc {
 
+// Recomputes the realm RTP caller type of every live JS sandbox. Called when
+// the fingerprinting protection prefs change.
+void RefreshSandboxesRTPCallerType();
+
 // If these functions return false, then an exception will be set on cx.
 bool Base64Encode(JSContext* cx, JS::Handle<JS::Value> val,
                   JS::MutableHandle<JS::Value> out);
