@@ -113,6 +113,12 @@ class SerialPort final : public DOMEventTargetHelper {
 
   void SetChild(SerialPortChild* aChild) { mChild = aChild; }
 
+  // Called after the pull algorithm errors aStream. Clears [[readable]] so a
+  // later readable access or close() doesn't use the errored stream. aFatal
+  // sets [[readFatal]] so that readable returns null until the port is
+  // reopened.
+  void HandleReadableErrored(ReadableStream* aStream, bool aFatal);
+
  private:
   ~SerialPort() override;
 
@@ -123,6 +129,9 @@ class SerialPort final : public DOMEventTargetHelper {
     // Error both streams without running author-observable algorithms or
     // dispatching events.
     Forced,
+    // Like Forced, but with the NetworkError the spec requires when the
+    // device has been lost.
+    Disconnected,
   };
 
   MOZ_CAN_RUN_SCRIPT ReadableStream* CreateReadableStream();
@@ -139,6 +148,7 @@ class SerialPort final : public DOMEventTargetHelper {
   // Whether the hardware device is physically connected to the system
   bool mPhysicallyPresent = true;
   bool mHasShutdown = false;
+  bool mReadFatal = false;
   uint32_t mBufferSize = 0;
   uint32_t mPipeCapacity = 0;
 

@@ -268,8 +268,11 @@ class InputToReadableStreamAlgorithms
                                               uint64_t aAvailable,
                                               ErrorResult& aRv);
 
-  void ErrorPropagation(JSContext* aCx, ReadableStream* aStream,
-                        nsresult aError);
+  // Closes or errors aStream according to the failure status of the backing
+  // nsIInputStream. Subclasses may override to run extra steps after the
+  // stream is errored; note that erroring the stream calls ReleaseObjects().
+  virtual void ErrorPropagation(JSContext* aCx, ReadableStream* aStream,
+                                nsresult aError);
 
   // Decides whether a failure of the backing nsIInputStream (other than
   // NS_BASE_STREAM_CLOSED) errors the ReadableStream.  Override to return

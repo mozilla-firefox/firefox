@@ -162,6 +162,15 @@ void SerialPort::DisconnectFromOwner() {
   DOMEventTargetHelper::DisconnectFromOwner();
 }
 
+void SerialPort::HandleReadableErrored(ReadableStream* aStream, bool aFatal) {
+  if (aFatal) {
+    mReadFatal = true;
+  }
+  if (mReadable == aStream) {
+    mReadable = nullptr;
+  }
+}
+
 JSObject* SerialPort::WrapObject(JSContext* aCx,
                                  JS::Handle<JSObject*> aGivenProto) {
   return SerialPort_Binding::Wrap(aCx, this, aGivenProto);
@@ -284,6 +293,7 @@ already_AddRefed<Promise> SerialPort::Open(const SerialOptions& aOptions,
           if (self->mState == State::Opening) {
             // Step 9.3: Set this.[[state]] to "opened".
             self->mState = State::Opened;
+            self->mReadFatal = false;
             self->UpdateWorkerRef();
             // Step 9.4: Set this.[[bufferSize]].
             self->mBufferSize = bufferSize;
@@ -672,11 +682,12 @@ void SerialPort::GetInfo(SerialPortInfo& aRetVal, ErrorResult& aRv) {
 }
 
 ReadableStream* SerialPort::GetReadable() {
-  if (mState != State::Opened) {
+  if (mState != State::Opened || mReadFatal) {
     return nullptr;
   }
-  // Per spec, readable becomes null after reader.cancel(). Detect the
-  // closed state and clear the reference so a fresh stream is created.
+  // Per spec, SerialPort.readable attribute becomes null after reader.cancel().
+  // Detect the closed state and clear the reference so a fresh stream is
+  // created.
   if (mReadable && mReadable->State() == ReadableStream::ReaderState::Closed) {
     mReadable = nullptr;
   }
@@ -748,7 +759,7 @@ void SerialPort::NotifyDisconnected() {
   }
   mPhysicallyPresent = false;
   // Don't have to wait for this
-  RefPtr<Promise> ignoredPromise = CloseStreams(StreamCloseMode::Graceful);
+  RefPtr<Promise> ignoredPromise = CloseStreams(StreamCloseMode::Disconnected);
   UpdateWorkerRef();
 
   auto event = MakeRefPtr<Event>(this, nullptr, nullptr);
@@ -944,7 +955,9 @@ already_AddRefed<Promise> SerialPort::CloseStreams(StreamCloseMode aMode) {
           ("SerialPort[%p]::CloseStreams closing streams "
            "(readable=%p, writable=%p, mode=%s)",
            this, mReadable.get(), mWritable.get(),
-           aMode == StreamCloseMode::Forced ? "forced" : "graceful"));
+           aMode == StreamCloseMode::Forced         ? "forced"
+           : aMode == StreamCloseMode::Disconnected ? "disconnected"
+                                                    : "graceful"));
 
   AutoJSAPI jsapi;
   if (!jsapi.Init(global)) {
@@ -953,15 +966,18 @@ already_AddRefed<Promise> SerialPort::CloseStreams(StreamCloseMode aMode) {
 
   JSContext* cx = jsapi.cx();
 
-  RefPtr<DOMException> exception =
-      DOMException::Create(NS_ERROR_DOM_NETWORK_ERR, "Port has been closed"_ns);
+  RefPtr<DOMException> exception = DOMException::Create(
+      NS_ERROR_DOM_NETWORK_ERR, aMode == StreamCloseMode::Disconnected
+                                    ? "The device has been lost."_ns
+                                    : "Port has been closed"_ns);
   JS::Rooted<JS::Value> errorVal(cx);
   bool hasError = ToJSValue(cx, exception, &errorVal);
 
   // Error the streams instead of aborting, so we don't dispatchevents
   // or runauthor-visible algorithms. The OS resources are released by
-  // mChild->Shutdown() in Shutdown().
-  if (aMode == StreamCloseMode::Forced) {
+  // mChild->Shutdown() in Shutdown(), or by the parent on disconnect.
+  if (aMode == StreamCloseMode::Forced ||
+      aMode == StreamCloseMode::Disconnected) {
     if (mReadable && hasError) {
       IgnoredErrorResult rv;
       RefPtr readable = mReadable;

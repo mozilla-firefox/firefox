@@ -66,6 +66,11 @@ class SerialPortReadAlgorithms final : public InputToReadableStreamAlgorithms {
   void BuildErrorValue(JSContext* aCx, nsresult aError,
                        JS::MutableHandle<JS::Value> aErrorValue) override;
 
+  // Runs the spec's "handle closing the readable stream" steps after the
+  // stream is errored, and sets [[readFatal]] if the device was lost.
+  void ErrorPropagation(JSContext* aCx, ReadableStream* aStream,
+                        nsresult aError) override;
+
   void ReleaseObjects() override;
 
  protected:

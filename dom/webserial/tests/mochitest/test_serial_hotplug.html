@@ -177,6 +177,75 @@ add_task(async function testDisconnectionWhilePortOpen() {
   ok(!port.connected, "Port should be disconnected");
 });
 
+add_task(async function testDisconnectionErrorsStreams() {
+  await removeAllDevices();
+
+  await simulateDeviceConnection("test-hotplug-streams", "/dev/ttyUSB96", 0x7777, 0x6666);
+  SpecialPowers.wrap(document).notifyUserGestureActivation();
+  const port = await navigator.serial.requestPort({ filters: [] });
+
+  await port.open({ baudRate: 9600 });
+  const reader = port.readable.getReader();
+  const writer = port.writable.getWriter();
+  const readPromise = reader.read().then(
+    result => ({ result }),
+    error => ({ error })
+  );
+
+  await waitForPortDisconnect(port, () => simulateDeviceDisconnection("test-hotplug-streams"));
+
+  const { result, error } = await readPromise;
+  ok(!result, `read() should reject on disconnect, got done=${result?.done}`);
+  is(error?.name, "NetworkError", "read() should reject with NetworkError");
+  try {
+    await writer.closed;
+    ok(false, "writer.closed should reject on disconnect");
+  } catch (e) {
+    is(e.name, "NetworkError", "writer.closed should reject with NetworkError");
+  }
+  is(port.readable, null, "readable should be null after disconnect");
+  is(port.writable, null, "writable should be null after disconnect");
+});
+
+add_task(async function testReadLoopEndsOnDisconnect() {
+  await removeAllDevices();
+
+  await simulateDeviceConnection("test-hotplug-loop", "/dev/ttyUSB91", 0x5555, 0x4444);
+  SpecialPowers.wrap(document).notifyUserGestureActivation();
+  const port = await navigator.serial.requestPort({ filters: [] });
+  await port.open({ baudRate: 9600 });
+
+  // Re-acquire a reader for as long as readable is non-null, as pages do.
+  // Cap the iterations so a regression fails instead of hanging the test.
+  let iterations = 0;
+  const errors = [];
+  const readLoop = (async () => {
+    while (port.readable && iterations < 100) {
+      iterations++;
+      const reader = port.readable.getReader();
+      try {
+        while (true) {
+          const { done } = await reader.read();
+          if (done) {
+            break;
+          }
+        }
+      } catch (e) {
+        errors.push(e.name);
+      } finally {
+        reader.releaseLock();
+      }
+    }
+  })();
+
+  await waitForPortDisconnect(port, () => simulateDeviceDisconnection("test-hotplug-loop"));
+  await readLoop;
+
+  is(iterations, 1, "read loop should stop after the first reader errors");
+  is(errors.join(","), "NetworkError", "the read should fail with NetworkError");
+  is(port.readable, null, "readable should be null after disconnect");
+});
+
 add_task(async function testDisconnectAfterClose() {
   await removeAllDevices();
 

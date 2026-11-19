@@ -246,6 +246,11 @@ void TestSerialPlatformService::SimulateDeviceConnection(
 
 void TestSerialPlatformService::SimulateDeviceDisconnection(
     const nsString& aId) {
+  // Like a real unplug, end the device's data stream before the
+  // device-change notification arrives.
+  if (MockSerialPort* port = FindPort(aId); port && port->mPipeWriteStream) {
+    port->mPipeWriteStream->Close();
+  }
   mMockPorts.RemoveElementsBy(
       [&aId](const MockSerialPort& port) { return port.mInfo.id() == aId; });
   NotifyPortDisconnected(aId);

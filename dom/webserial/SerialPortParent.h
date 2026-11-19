@@ -62,7 +62,9 @@ class SerialPortParent final : public PSerialPortParent {
   // This should only be called if the port is closing.
   void StopPumpsBeforeClose();
 
-  void StopReadPump();
+  // aReason is the status the read pipe is closed with, which content sees
+  // as either the end of the stream (NS_BASE_STREAM_CLOSED) or an error.
+  void StopReadPump(nsresult aReason = NS_BASE_STREAM_CLOSED);
   void DestroyPlatformReader();
   void StopWritePump();
   // Should only be called when there's a transition from open->closed or
