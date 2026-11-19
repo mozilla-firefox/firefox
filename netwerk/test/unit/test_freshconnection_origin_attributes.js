@@ -6,7 +6,7 @@
 // A LOAD_FRESH_CONNECTION | LOAD_INITIAL_DOCUMENT_URI load must only reset
 // the connections and Alt-Svc cache entries that share its origin attributes.
 
-const { NodeHTTPServer } = ChromeUtils.importESModule(
+const { NodeHTTPServer, NodeHTTP2Server } = ChromeUtils.importESModule(
   "resource://testing-common/NodeServer.sys.mjs"
 );
 const { TestUtils } = ChromeUtils.importESModule(
@@ -14,6 +14,7 @@ const { TestUtils } = ChromeUtils.importESModule(
 );
 
 let server;
+let h2Server;
 let h2Port;
 
 const ORIGIN_HOST = "foo.example.com";
@@ -21,9 +22,6 @@ const ALT_HOST = "alt1.example.com";
 
 add_setup(async function setup() {
   do_get_profile();
-  h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
   Services.prefs.setBoolPref("network.http.altsvc.enabled", true);
   Services.prefs.setCharPref(
     "network.dns.localDomains",
@@ -33,11 +31,6 @@ add_setup(async function setup() {
     Services.prefs.clearUserPref("network.http.altsvc.enabled");
     Services.prefs.clearUserPref("network.dns.localDomains");
   });
-  let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
-    Ci.nsIX509CertDB
-  );
-  addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
-
   server = new NodeHTTPServer();
   await server.start();
   registerCleanupFunction(async () => {
@@ -45,6 +38,23 @@ add_setup(async function setup() {
   });
   await server.registerPathHandler("/", (req, resp) => {
     resp.setHeader("x-client-port", req.socket.remotePort);
+    resp.writeHead(200, { "Content-Type": "text/plain" });
+    resp.end("ok");
+  });
+
+  h2Server = new NodeHTTP2Server();
+  await h2Server.start();
+  registerCleanupFunction(async () => {
+    await h2Server.stop();
+  });
+  h2Port = h2Server.port();
+  await h2Server.registerPathHandler("/", (req, resp) => {
+    resp.writeHead(200, { "Content-Type": "text/plain" });
+    resp.end("ok");
+  });
+  await h2Server.registerPathHandler("/altsvc-test", (req, resp) => {
+    resp.setHeader("Cache-Control", "no-cache");
+    resp.setHeader("Alt-Svc", "h2=" + req.headers["x-altsvc"]);
     resp.writeHead(200, { "Content-Type": "text/plain" });
     resp.end("ok");
   });

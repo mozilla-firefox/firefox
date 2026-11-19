@@ -1,5 +1,9 @@
 "use strict";
 
+const { NodeHTTP2Server } = ChromeUtils.importESModule(
+  "resource://testing-common/NodeServer.sys.mjs"
+);
+
 var h2Port;
 var prefs;
 var http2pref;
@@ -16,12 +20,30 @@ var httpsFooOrigin; // https://foo.exmaple.com:PORT/
 var httpsBarOrigin; // https://bar.example.com:PORT/
 
 function run_test() {
-  h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
-
-  // Set to allow the cert presented by our H2 server
   do_get_profile();
+  do_test_pending();
+  startServer().then(() => {
+    setup();
+    do_test_finished();
+  });
+}
+
+async function startServer() {
+  let server = new NodeHTTP2Server();
+  await server.start();
+  registerCleanupFunction(async () => {
+    await server.stop();
+  });
+  await server.registerPathHandler("/altsvc-test", (req, res) => {
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Alt-Svc", "h2=" + req.headers["x-altsvc"]);
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end("ok");
+  });
+  h2Port = server.port();
+}
+
+function setup() {
   prefs = Services.prefs;
 
   http2pref = prefs.getBoolPref("network.http.http2.enabled");
@@ -34,15 +56,9 @@ function run_test() {
     "foo.example.com, bar.example.com"
   );
 
-  // The moz-http2 cert is for foo.example.com and is signed by http2-ca.pem
-  // so add that cert to the trust list as a signing cert. The same cert is used
-  // for both h2FooRoute and h2BarRoute though it is only valid for
-  // the foo.example.com domain name.
-  let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
-    Ci.nsIX509CertDB
-  );
-  addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
-
+  // The server cert is for foo.example.com and is signed by http2-ca.pem, which
+  // NodeHTTP2Server installs. The same cert is used for both h2FooRoute and
+  // h2BarRoute though it is only valid for the foo.example.com domain name.
   h2FooRoute = "foo.example.com:" + h2Port;
   h2BarRoute = "bar.example.com:" + h2Port;
 

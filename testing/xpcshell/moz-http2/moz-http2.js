@@ -499,11 +499,6 @@ function handleRequestImpl(req, res) {
     }
   }
 
-  // for use with test_altsvc.js
-  else if (u.pathname === "/altsvc-test") {
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Alt-Svc", "h2=" + req.headers["x-altsvc"]);
-  }
   // for use with test_http3.js
   else if (u.pathname === "/http3-test") {
     res.setHeader("Cache-Control", "no-cache");
