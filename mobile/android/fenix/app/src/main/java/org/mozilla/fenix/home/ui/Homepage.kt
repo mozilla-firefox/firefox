@@ -435,7 +435,7 @@ private fun BannerCardSection(
 }
 
 @Composable
-internal fun TopSitesSection(
+private fun TopSitesSection(
     state: TopSiteState,
     showHeader: Boolean = true,
     interactor: TopSiteInteractor,
