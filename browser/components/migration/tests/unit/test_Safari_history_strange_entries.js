@@ -68,7 +68,7 @@ add_task(async function testHistoryImportStrangeEntries() {
   Assert.equal(emptyHistory.size, 0, "Empty history should indeed be empty.");
 
   const EXPECTED_MIGRATED_SITES = 10;
-  const EXPECTED_MIGRATED_VISTS = 23;
+  const EXPECTED_MIGRATED_VISTS = 22;
 
   let dbConn = await Sqlite.openConnection({ path: gHistoryFilePath });
   let [rowCountResult] = await dbConn.execute(

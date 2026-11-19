@@ -1304,6 +1304,25 @@ class MigrationUtils {
   }
 
   /**
+   * Returns the number of visits to import per history URL, read from the
+   * given pref. Places only samples the most recent
+   * places.frecency.pages.numSampledVisits visits for frecency, so importing
+   * more wouldn't change it.
+   *
+   * @param {string} prefName
+   * @returns {number} A value between 1 and numSampledVisits.
+   */
+  getHistoryVisitLimit(prefName) {
+    return Math.max(
+      1,
+      Math.min(
+        Services.prefs.getIntPref(prefName),
+        Services.prefs.getIntPref("places.frecency.pages.numSampledVisits")
+      )
+    );
+  }
+
+  /**
    * Determines whether or not the underlying platform supports creating
    * native file pickers that can do folder selection, which is a
    * pre-requisite for getting read-access permissions for data from other

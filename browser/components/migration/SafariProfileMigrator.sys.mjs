@@ -355,7 +355,7 @@ Bookmarks.prototype = {
  */
 async function GetHistoryResource(aShouldCheckForHistory) {
   let dbPath = FileUtils.getDir("ULibDir", ["Safari", "History.db"]).path;
-  let maxAge = msToNSDate(
+  const maxAge = msToNSDate(
     Date.now() - MigrationUtils.HISTORY_MAX_AGE_IN_MILLISECONDS
   );
 
@@ -377,18 +377,18 @@ async function GetHistoryResource(aShouldCheckForHistory) {
     }
   }
 
-  if (canReadHistory) {
-    let countQuery = `
-      SELECT COUNT(*)
-      FROM history_items LEFT JOIN history_visits
-      ON history_items.id = history_visits.history_item
-      WHERE history_visits.visit_time > ${maxAge}
-      LIMIT 1;`;
+  // Redirect sources and failed loads are skipped, since they would get
+  // a high frecency when imported as typed visits.
+  const visitFilter = `visit_time > ${maxAge}
+    AND load_successful = 1
+    AND redirect_destination IS NULL`;
+  const importableQuery = `SELECT COUNT(*) FROM history_visits WHERE ${visitFilter};`;
 
+  if (canReadHistory) {
     let countResult = await MigrationUtils.getRowsFromDBWithoutLocks(
       dbPath,
       "Safari history",
-      countQuery
+      importableQuery
     );
 
     if (!countResult[0].getResultByName("COUNT(*)")) {
@@ -396,30 +396,59 @@ async function GetHistoryResource(aShouldCheckForHistory) {
     }
   }
 
-  let selectQuery = `
-    SELECT
-      history_items.url as history_url,
-      history_visits.title as history_title,
-      history_visits.visit_time as history_time
-    FROM history_items LEFT JOIN history_visits
-    ON history_items.id = history_visits.history_item
-    WHERE history_visits.visit_time > ${maxAge};`;
-
   return {
     type: MigrationUtils.resourceTypes.HISTORY,
 
     async migrate(callback) {
-      callback(await this._migrate());
+      try {
+        callback(await this._migrate());
+      } catch (ex) {
+        console.error(ex);
+        callback(false);
+      }
     },
 
     async _migrate() {
+      const TOTAL_LIMIT = Services.prefs.getIntPref(
+        "browser.migrate.safari.history.limit"
+      );
+      const VISIT_LIMIT = MigrationUtils.getHistoryVisitLimit(
+        "browser.migrate.safari.history.visit.limit"
+      );
+      // Pages only need sorting to pick the most recent ones for the limit.
+      const limitClause = TOTAL_LIMIT
+        ? `ORDER BY last_visit_time DESC LIMIT ${TOTAL_LIMIT}`
+        : "";
+      // Safari gives a score of 0 to visits that follow a visit to the same
+      // URL within about a minute. They're imported as reloads, which don't
+      // count towards frecency, and ranked last so they only fill slots not
+      // taken by other visits.
+      let selectQuery = `WITH pages AS (
+  SELECT i.id, i.url, MAX(v.visit_time) AS last_visit_time
+  FROM history_items i
+  JOIN history_visits v ON v.history_item = i.id
+  WHERE ${visitFilter}
+  GROUP BY i.id
+  ${limitClause}
+)
+SELECT p.id, p.url, v.title, v.visit_time, v.score
+FROM pages p
+JOIN history_visits v ON v.id IN (
+  SELECT id FROM history_visits
+  WHERE history_item = p.id
+  AND ${visitFilter}
+  ORDER BY score = 0, visit_time DESC
+  LIMIT ${VISIT_LIMIT}
+)
+ORDER BY p.last_visit_time DESC, v.visit_time DESC`;
+
       let historyRows;
 
       try {
         let availableRows = await MigrationUtils.getRowsFromDBWithoutLocks(
           dbPath,
           "Safari history",
-          "SELECT COUNT(*) FROM history_visits;"
+          "SELECT COUNT(*) FROM history_items;"
         );
         this.available = availableRows[0].getResultByName("COUNT(*)");
 
@@ -438,23 +467,49 @@ async function GetHistoryResource(aShouldCheckForHistory) {
         return false;
       }
 
-      let pageInfos = [];
+      // Pages whose URL can't be parsed are kept as null so that the error is
+      // only reported once.
+      let pageInfosById = new Map();
       for (let row of historyRows) {
-        try {
-          pageInfos.push({
-            title: row.getResultByName("history_title"),
-            url: new URL(row.getResultByName("history_url")),
-            visits: [
-              {
-                transition: lazy.PlacesUtils.history.TRANSITIONS.TYPED,
-                date: parseNSDate(row.getResultByName("history_time")),
-              },
-            ],
-          });
-        } catch (e) {
-          console.error("Could not create a history row: ", e);
+        let id = row.getResultByName("id");
+        let pageInfo = pageInfosById.get(id);
+        if (pageInfo === null) {
+          continue;
         }
+        if (!pageInfo) {
+          try {
+            pageInfo = {
+              url: new URL(row.getResultByName("url")),
+              visits: [],
+            };
+          } catch (e) {
+            console.error("Could not create a history row: ", e);
+            pageInfosById.set(id, null);
+            continue;
+          }
+          pageInfosById.set(id, pageInfo);
+        }
+        let title = row.getResultByName("title");
+        if (title && !pageInfo.title) {
+          pageInfo.title = title;
+        }
+        // Safari doesn't store how a visit was made, so visits are imported as
+        // typed. A score of 0 marks a repeat record of a page view Safari
+        // already counted, which is imported as a reload so it's kept in
+        // history without adding to the page's visit count and frecency.
+        pageInfo.visits.push({
+          transition: row.getResultByName("score")
+            ? lazy.PlacesUtils.history.TRANSITIONS.TYPED
+            : lazy.PlacesUtils.history.TRANSITIONS.RELOAD,
+          date: parseNSDate(row.getResultByName("visit_time")),
+        });
       }
+      // Drop the null entries left for pages whose URL couldn't be parsed.
+      let pageInfos = [...pageInfosById.values()].filter(Boolean);
+      if (!pageInfos.length) {
+        return false;
+      }
+
       await MigrationUtils.insertVisitsWrapper(pageInfos);
 
       return true;

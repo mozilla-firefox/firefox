@@ -950,22 +950,17 @@ async function GetHistoryResource(aProfileFolder) {
         const TOTAL_LIMIT = Services.prefs.getIntPref(
           "browser.migrate.chrome.history.limit"
         );
-        // Places only samples the most recent places.frecency.pages.numSampledVisits
-        // visits for frecency, so importing more wouldn't change it.
-        const VISIT_LIMIT = Math.max(
-          1,
-          Math.min(
-            Services.prefs.getIntPref(
-              "browser.migrate.chrome.history.visit.limit"
-            ),
-            Services.prefs.getIntPref("places.frecency.pages.numSampledVisits")
-          )
+        const VISIT_LIMIT = MigrationUtils.getHistoryVisitLimit(
+          "browser.migrate.chrome.history.visit.limit"
         );
 
         const maxAge = lazy.ChromeMigrationUtils.dateToChromeTime(
           Date.now() - MigrationUtils.HISTORY_MAX_AGE_IN_MILLISECONDS
         );
-        const limitClause = TOTAL_LIMIT ? `LIMIT ${TOTAL_LIMIT}` : "";
+        // Pages only need sorting to pick the most recent ones for the limit.
+        const limitClause = TOTAL_LIMIT
+          ? `ORDER BY last_visit_time DESC LIMIT ${TOTAL_LIMIT}`
+          : "";
         // AUTO_SUBFRAME (3) visits are skipped: they map to EMBED, which Places
         // doesn't write to the database. MANUAL_SUBFRAME (4) and RELOAD (8)
         // visits are ranked last so they only fill slots not taken by visits
@@ -974,7 +969,6 @@ async function GetHistoryResource(aProfileFolder) {
   SELECT id, url, title, last_visit_time, typed_count
   FROM urls
   WHERE hidden = 0 AND last_visit_time > ${maxAge}
-  ORDER BY last_visit_time DESC
   ${limitClause}
 )
 SELECT p.id, p.url, p.title, p.last_visit_time, p.typed_count,

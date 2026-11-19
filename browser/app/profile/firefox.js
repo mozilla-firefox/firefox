@@ -3054,6 +3054,11 @@ pref("browser.migrate.firefox.enabled", true);
 pref("browser.migrate.opera.enabled", true);
 pref("browser.migrate.opera-gx.enabled", true);
 pref("browser.migrate.safari.enabled", true);
+// Number of most recent URLs to import from Safari history, 0 for no limit.
+pref("browser.migrate.safari.history.limit", 0);
+// Number of recent visits to import per URL from Safari history, capped at
+// places.frecency.pages.numSampledVisits.
+pref("browser.migrate.safari.history.visit.limit", 5);
 pref("browser.migrate.vivaldi.enabled", true);
 
 pref("browser.migrate.content-modal.import-all.enabled", true);
