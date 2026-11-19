@@ -60,7 +60,7 @@ ChromeUtils.defineLazyGetter(lazy, "log", () => {
 
 // On Nightly in automation, ignore real system/user policies so a developer's
 // local policies.json or registry entries don't leak into tests.
-function shouldIgnoreLocalPolicies() {
+function ignoreLocalPoliciesInAutomation() {
   return AppConstants.NIGHTLY_BUILD && Cu.isInAutomation;
 }
 
@@ -691,7 +691,7 @@ class JSONPoliciesProvider extends PoliciesProvider {
   }
 
   _getLocalConfigurationFile() {
-    if (shouldIgnoreLocalPolicies()) {
+    if (ignoreLocalPoliciesInAutomation()) {
       return null;
     }
 
@@ -820,7 +820,7 @@ class WindowsGPOPoliciesProvider extends PoliciesProvider {
         let altLocation = Services.prefs.getStringPref(PREF_ALTERNATE_GPO, "");
         if (altLocation) {
           regLocation = altLocation;
-        } else if (shouldIgnoreLocalPolicies()) {
+        } else if (ignoreLocalPoliciesInAutomation()) {
           return;
         }
       }
