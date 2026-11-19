@@ -60,6 +60,11 @@ export const WindowLock = {
   // Popups that had key handling disabled while locked, per window, with the
   // ignorekeys value to restore on unlock.
   _ignoreKeysPopups: new WeakMap(),
+  // Browsers put into modal state while locked, which suspends timers,
+  // workers and AudioContexts of their pages.
+  _modalStateBrowsers: new WeakSet(),
+  // Browsers muted while locked, to unmute them once unlocked.
+  _mutedBrowsers: new WeakSet(),
 
   init() {
     if (
@@ -254,6 +259,22 @@ export const WindowLock = {
     for (let urlbar of document.querySelectorAll(".urlbar")) {
       urlbar.view?.close();
     }
+    for (let browser of window.gBrowser.browsers) {
+      if (!browser.browsingContext) {
+        continue;
+      }
+      let controller = browser.browsingContext.mediaController;
+      // Remove OS media controller so no information is leaked
+      if (controller?.isActive) {
+        controller.stop();
+      }
+      if (controller && !controller.isMuted) {
+        controller.mute();
+        this._mutedBrowsers.add(browser);
+      }
+      browser.enterModalState();
+      this._modalStateBrowsers.add(browser);
+    }
 
     if (!dialog.open) {
       dialog.showModal();
@@ -292,6 +313,15 @@ export const WindowLock = {
       }
     }
     this._ignoreKeysPopups.delete(window);
+
+    for (let browser of window.gBrowser.browsers) {
+      if (this._modalStateBrowsers.delete(browser)) {
+        browser.maybeLeaveModalState();
+      }
+      if (this._mutedBrowsers.delete(browser)) {
+        browser.browsingContext?.mediaController?.unmute();
+      }
+    }
 
     this._menuAndCommandDisablers.get(window)?.dispose();
     this._menuAndCommandDisablers.delete(window);
