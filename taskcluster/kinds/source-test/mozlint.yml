@@ -256,7 +256,7 @@ stylelint:
         files-changed:
             # Files that are likely audited.
             - '**/*.css'
-            - 'tools/lint/styleint.yml'
+            - 'tools/lint/stylelint.yml'
             # Run when stylelint policies change.
             - '**/.stylelintignore'
             - '**/*stylelintrc*'
