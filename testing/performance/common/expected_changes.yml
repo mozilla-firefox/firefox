@@ -1,0 +1,22 @@
+# Accepted performance regressions, which XtremeRegression.detect does not flag.
+#
+# Add an entry in the patch causing the regression, for example:
+#
+# - bug: 1234567
+#   # fnmatch pattern of the suite.
+#   suite: speedometer3
+#   # Optional fnmatch pattern of the subtests. Without it, the suite value and
+#   # all the subtests of the suite match.
+#   test: "TodoMVC-*"
+#   # Optional fnmatch pattern of the Treeherder machine platform. Without it,
+#   # all the platforms match.
+#   platform: "windows11-*"
+#   # Optional extra options of the suite, which must all match, in any order.
+#   # Without it, the suite matches whatever its extra options are.
+#   extra_options: ["fission", "webrender"]
+#   # Optional fnmatch pattern of the application. Without it, all the
+#   # applications match.
+#   application: firefox
+#   # The entry is ignored for revisions pushed after this date. Remove it once
+#   # it has expired.
+#   expires: 2026-11-01
