@@ -2500,6 +2500,13 @@ pref("browser.smartwindow.smartformfill.disallowedRegions", "FR");
 // something other than a form the user fills in.
 pref("browser.smartwindow.smartformfill.minFormFields", 4);
 
+// How many characters of page text a fill sends, shared between the page and
+// the source tabs.
+pref("browser.smartwindow.smartformfill.maxPageContentLength", 10000);
+
+// How many open tabs Smart Form Fill considers as sources for a form.
+pref("browser.smartwindow.smartformfill.maxTabs", 30);
+
 #ifdef NIGHTLY_BUILD
 pref("browser.smartwindow.aitab.menus", true);
 #else
