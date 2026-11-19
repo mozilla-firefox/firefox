@@ -108,13 +108,20 @@ function assertHasContainerName(aPrivate, aTitle, aLabel = kUserContextLabel) {
 
 async function test_defaultCase(aPrivate) {
   const { tt, win } = await phaseBeforeContentTitle(0, null, aPrivate);
-  const title = win.document.title;
-  assertHasTaskbarTabName(aPrivate, title);
-  ok(!title.includes(kUserContextLabel), "Doesn't include container name");
+  const titleBefore = win.document.title;
+  assertHasTaskbarTabName(aPrivate, titleBefore);
+  ok(
+    !titleBefore.includes(kUserContextLabel),
+    "Doesn't include container name"
+  );
 
   await phaseAfterContentTitle(win);
-  assertHasTaskbarTabName(aPrivate, title);
-  ok(!title.includes(kUserContextLabel), "Title still has no container name");
+  const titleAfter = win.document.title;
+  assertHasTaskbarTabName(aPrivate, titleAfter);
+  ok(
+    !titleAfter.includes(kUserContextLabel),
+    "Title still has no container name"
+  );
 
   await BrowserTestUtils.closeWindow(win);
   await TaskbarTabs.removeTaskbarTab(tt.id);
@@ -122,13 +129,14 @@ async function test_defaultCase(aPrivate) {
 
 async function test_container(aPrivate) {
   const { tt, win } = await phaseBeforeContentTitle(1, null, aPrivate);
-  const title = win.document.title;
-  assertHasTaskbarTabName(aPrivate, title);
-  assertHasContainerName(aPrivate, title);
+  const titleBefore = win.document.title;
+  assertHasTaskbarTabName(aPrivate, titleBefore);
+  assertHasContainerName(aPrivate, titleBefore);
 
   await phaseAfterContentTitle(win);
-  assertHasTaskbarTabName(aPrivate, title);
-  assertHasContainerName(aPrivate, title);
+  const titleAfter = win.document.title;
+  assertHasTaskbarTabName(aPrivate, titleAfter);
+  assertHasContainerName(aPrivate, titleAfter);
 
   await BrowserTestUtils.closeWindow(win);
   await TaskbarTabs.removeTaskbarTab(tt.id);
@@ -140,15 +148,22 @@ async function test_profile(aPrivate) {
     kGenericProfileName,
     aPrivate
   );
-  const title = win.document.title;
-  assertHasTaskbarTabName(aPrivate, title);
-  ok(!title.includes(kUserContextLabel), "Doesn't include container name");
-  ok(title.includes(kGenericProfileName), "Does include profile name");
+  const titleBefore = win.document.title;
+  assertHasTaskbarTabName(aPrivate, titleBefore);
+  ok(
+    !titleBefore.includes(kUserContextLabel),
+    "Doesn't include container name"
+  );
+  ok(titleBefore.includes(kGenericProfileName), "Does include profile name");
 
   await phaseAfterContentTitle(win);
-  assertHasTaskbarTabName(aPrivate, title);
-  ok(!title.includes(kUserContextLabel), "Title still has no container name");
-  ok(title.includes(kGenericProfileName), "Does include profile name");
+  const titleAfter = win.document.title;
+  assertHasTaskbarTabName(aPrivate, titleAfter);
+  ok(
+    !titleAfter.includes(kUserContextLabel),
+    "Title still has no container name"
+  );
+  ok(titleAfter.includes(kGenericProfileName), "Does include profile name");
 
   await BrowserTestUtils.closeWindow(win);
   await TaskbarTabs.removeTaskbarTab(tt.id);
@@ -160,15 +175,16 @@ async function test_profileAndContainer(aPrivate) {
     kGenericProfileName,
     aPrivate
   );
-  const title = win.document.title;
-  assertHasTaskbarTabName(aPrivate, title);
-  assertHasContainerName(aPrivate, title);
-  ok(title.includes(kGenericProfileName), "Does include profile name");
+  const titleBefore = win.document.title;
+  assertHasTaskbarTabName(aPrivate, titleBefore);
+  assertHasContainerName(aPrivate, titleBefore);
+  ok(titleBefore.includes(kGenericProfileName), "Does include profile name");
 
   await phaseAfterContentTitle(win);
-  assertHasTaskbarTabName(aPrivate, title);
-  assertHasContainerName(aPrivate, title);
-  ok(title.includes(kGenericProfileName), "Does include profile name");
+  const titleAfter = win.document.title;
+  assertHasTaskbarTabName(aPrivate, titleAfter);
+  assertHasContainerName(aPrivate, titleAfter);
+  ok(titleAfter.includes(kGenericProfileName), "Does include profile name");
 
   await BrowserTestUtils.closeWindow(win);
   await TaskbarTabs.removeTaskbarTab(tt.id);
