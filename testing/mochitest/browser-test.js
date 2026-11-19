@@ -558,6 +558,13 @@ Tester.prototype = {
   get currentTest() {
     return this.tests[this.currentTestIndex];
   },
+  get debugging() {
+    return !!(
+      gConfig.debugger ||
+      gConfig.debuggerInteractive ||
+      gConfig.jsdebugger
+    );
+  },
   get done() {
     return this.currentTestIndex == this.tests.length - 1 && this.repeat <= 0;
   },
@@ -579,7 +586,7 @@ Tester.prototype = {
       this.a11y_checks = gConfig.a11y_checks;
     }
 
-    if (gConfig.debugger || gConfig.debuggerInteractive || gConfig.jsdebugger) {
+    if (this.debugging) {
       gTimeoutSeconds = 24 * 60 * 60 * 1000; // 24 hours
     }
 
@@ -1352,6 +1359,24 @@ Tester.prototype = {
     );
   },
 
+  /**
+   * Wait for the browser window to get focus, but give up after a fraction of
+   * the test timeout. When running under a debugger, wait without a limit.
+   *
+   * @returns {Promise<boolean>} Whether the window got focus.
+   */
+  _waitForFocus() {
+    return new Promise(resolve => {
+      const timer = this.debugging
+        ? null
+        : setTimeout(() => resolve(false), (gTimeoutSeconds * 1000) / 4);
+      this.SimpleTest.promiseFocus().then(() => {
+        clearTimeout(timer);
+        resolve(true);
+      });
+    });
+  },
+
   async notifyProfilerOfTestEnd() {
     // Upload a profile of a failing test, when one should be saved (e.g. not
     // when --profiler already saves a shutdown profile; see
@@ -1362,6 +1387,8 @@ Tester.prototype = {
   },
 
   async nextTest() {
+    let focusLost = false;
+
     // On first call (no currentTest yet), check for initial window state issues
     if (!this.currentTest) {
       this.checkWindowsState();
@@ -1651,6 +1678,18 @@ Tester.prototype = {
       // windows the test left open are attributed to this test.
       await this.checkPermissionsAfterTest();
 
+      // If the window manager doesn't hand the focus back to the browser
+      // window, report it as a failure of this test.
+      if (!(await this._waitForFocus())) {
+        this.currentTest.addResult(
+          new testResult({
+            name: "Timed out waiting for the browser window to get focus",
+            allowFailure: this.currentTest.allowFailure,
+          })
+        );
+        focusLost = true;
+      }
+
       await this.notifyProfilerOfTestEnd();
 
       let time = Date.now() - this.lastStartTime;
@@ -1695,8 +1734,7 @@ Tester.prototype = {
       gBrowser.stop();
     }
 
-    // Make sure the window is raised before starting the next test.
-    this.SimpleTest.waitForFocus(() => {
+    const runNextTest = () => {
       if (this.done) {
         Services.obs.notifyObservers(null, "mochitest-leave-chaos-mode");
         if (!this._shouldCheckForLeaks) {
@@ -1758,6 +1796,27 @@ Tester.prototype = {
         }
         this.execTest();
       }
+    };
+
+    if (focusLost) {
+      // Further tests cannot be expected to work without
+      // focus, so no more tests are run in this browser,
+      // and in CI the test runner continues with the
+      // remaining tests in a new one.
+      this.haltTests();
+      runNextTest();
+      return;
+    }
+
+    // Make sure the window is raised before starting the next test.
+    this._waitForFocus().then(focused => {
+      if (!focused) {
+        this.structuredLogger.error(
+          "browser-test.js | Timed out waiting for the browser window to get " +
+            "focus before starting the next test"
+        );
+      }
+      runNextTest();
     });
   },
 
