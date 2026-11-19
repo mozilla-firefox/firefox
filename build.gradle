@@ -92,38 +92,6 @@ allprojects {
             }
         }
     }
-
-    // Use the scip-javac and scip-kotlinc plugins to generate SCIP files for Searchfox
-    if (mozconfig.substs.ENABLE_MOZSEARCH_PLUGIN || mozconfig.substs.DOWNLOAD_ALL_GRADLE_DEPENDENCIES) {
-        def targetRoot = new File(topobjdir, "mozsearch_java_index")
-
-        afterEvaluate {
-            def addDependencyToConfigurationIfExists = { configurationName, dependency ->
-                def configuration = configurations.findByName(configurationName)
-                if (configuration != null) {
-                    dependencies.add(configurationName, dependency)
-                }
-            }
-
-            addDependencyToConfigurationIfExists("compileOnly", libs.scip.java)
-            addDependencyToConfigurationIfExists("testCompileOnly", libs.scip.java)
-            addDependencyToConfigurationIfExists("androidTestCompileOnly", libs.scip.java)
-            addDependencyToConfigurationIfExists("kotlinCompilerPluginClasspath", libs.scip.kotlin)
-        }
-
-        tasks.withType(JavaCompile) {
-            options.compilerArgs += [
-                "-Xplugin:scip -sourceroot:${topsrcdir} -targetroot:${targetRoot}",
-            ]
-        }
-
-        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
-            compilerOptions.freeCompilerArgs.addAll([
-                "-P", "plugin:scip-kotlinc:sourceroot=${topsrcdir}".toString(),
-                "-P", "plugin:scip-kotlinc:targetroot=${targetRoot}".toString(),
-            ])
-        }
-    }
 }
 
 // Non-official versions are like "61.0a1" or "61.0b1", where "a1" and "b1"

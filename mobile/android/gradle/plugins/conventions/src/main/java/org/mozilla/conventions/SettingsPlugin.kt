@@ -54,6 +54,7 @@ abstract class SettingsPlugin : Plugin<Settings> {
         }
 
         settings.gradle.allprojects {
+            pluginManager.apply(MozsearchPlugin::class.java)
             pluginManager.apply(ProjectPlugin::class.java)
             extensions.configure(ProjectExtension::class.java) {
                 androidComponentsProject.set(
