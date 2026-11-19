@@ -424,6 +424,16 @@ export class nsContextMenu {
     }
   }
 
+  /**
+   * Returns whether the menu was opened on a link while anything in the
+   * document is selected, including a selection made by right click.
+   *
+   * @returns {boolean}
+   */
+  #isLinkWithSelection() {
+    return this.onLink && this.isContentSelected;
+  }
+
   initTextFragmentItems() {
     const shouldShow =
       !(
@@ -432,7 +442,9 @@ export class nsContextMenu {
         this.onEditable ||
         this.browser.currentURI.schemeIs("view-source")
       ) &&
-      (this.hasTextFragments || this.isContentSelected);
+      (this.hasTextFragments || this.isContentSelected) &&
+      !this.onLink &&
+      !this.#isLinkWithSelection();
     this.showItem("context-copy-link-to-highlight", shouldShow);
     this.showItem(
       "context-copy-clean-link-to-highlight",
@@ -853,7 +865,8 @@ export class nsContextMenu {
       !this.inAboutDevtoolsToolbox &&
         this.isContentSelected &&
         this.selectionInfo.isDocumentLevelSelection &&
-        lazy.gPrintEnabled
+        lazy.gPrintEnabled &&
+        !this.#isLinkWithSelection()
     );
 
     var showViewSource = !(
@@ -1056,20 +1069,24 @@ export class nsContextMenu {
     this.showItem("context-undo", this.onTextInput);
     this.showItem("context-redo", this.onTextInput);
     this.showItem("context-cut", this.onTextInput);
-    // For selected links, move Copy next to "Copy Link" and "Copy Clean Link".
-    // Otherwise, keep it with the other items.
-    // TODO: Hide Copy for selected links and/or consolidate with "Copy Link" (Bug 2085873).
-    let copyItem = this.document.getElementById("context-copy");
-    if (
-      this.isContentSelected &&
-      (this.onLink || this.onPlainTextLink) &&
-      !this.onTextInput
-    ) {
-      this.document.getElementById("context-copylink").before(copyItem);
-    } else {
-      this.document.getElementById("context-paste").before(copyItem);
+
+    // For selected links, do not show the Copy item.
+    const canShowCopy =
+      (this.isContentSelected || this.onTextInput) &&
+      !this.#isLinkWithSelection();
+    if (canShowCopy) {
+      let copyItem = this.document.getElementById("context-copy");
+      // For selected plain text links outside of inputs, move Copy next to
+      // "Copy Link" and "Copy Clean Link".
+      // Otherwise, keep it with other items.
+      if (this.isContentSelected && this.onPlainTextLink && !this.onTextInput) {
+        this.document.getElementById("context-copylink").before(copyItem);
+      } else {
+        this.document.getElementById("context-paste").before(copyItem);
+      }
     }
-    this.showItem("context-copy", this.isContentSelected || this.onTextInput);
+    this.showItem("context-copy", canShowCopy);
+
     this.showItem("context-paste", this.onTextInput);
     this.showItem("context-paste-no-formatting", this.isDesignMode);
     this.showItem("context-delete", this.onTextInput);

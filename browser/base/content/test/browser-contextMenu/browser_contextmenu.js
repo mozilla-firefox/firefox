@@ -2055,6 +2055,40 @@ add_task(async function test_select_text_link() {
   );
 });
 
+add_task(async function test_link_with_separate_selection() {
+  await test_contextmenu("#test-link", null, {
+    skipFocusChange: true,
+    async preCheckContextMenuFn() {
+      await selectText("#test-select-text");
+    },
+    async onContextMenuShown() {
+      for (let id of [
+        "context-openlinkintab",
+        "context-copylink",
+        "context-savelink",
+      ]) {
+        ok(!document.getElementById(id).hidden, `${id} is shown on a link`);
+      }
+      for (let id of [
+        "context-copy",
+        "context-print-selection",
+        "context-copy-link-to-highlight",
+        "context-copy-clean-link-to-highlight",
+      ]) {
+        ok(
+          document.getElementById(id).hidden,
+          `${id} is hidden on a link with a selection elsewhere`
+        );
+      }
+    },
+    async postCheckContextMenuFn() {
+      await SpecialPowers.spawn(gBrowser.selectedBrowser, [], async () => {
+        content.getSelection().removeAllRanges();
+      });
+    },
+  });
+});
+
 add_task(async function test_imagelink() {
   await test_contextmenu("#test-image-link", [
     "context-openlinkintab",

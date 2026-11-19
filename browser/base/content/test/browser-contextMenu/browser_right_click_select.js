@@ -36,6 +36,20 @@ async function closeContextMenu(contextMenuEl) {
   await menuHidden;
 }
 
+function assertSelectionItemsHiddenOnLink(contextMenuEl) {
+  for (let id of [
+    "context-copy",
+    "context-print-selection",
+    "context-copy-link-to-highlight",
+    "context-copy-clean-link-to-highlight",
+  ]) {
+    ok(
+      !BrowserTestUtils.isVisible(contextMenuEl.querySelector(`#${id}`)),
+      `${id} is hidden on a link`
+    );
+  }
+}
+
 // Right-click the center of a word
 async function rightClickWord(tabBrowser, elementSelector, targetWord) {
   const { x, y } = await SpecialPowers.spawn(
@@ -141,7 +155,7 @@ add_task(async function user_select_none_container_does_not_auto_select() {
   });
 });
 
-add_task(async function right_click_link_text_shows_copy_and_copy_link() {
+add_task(async function right_click_link_text_shows_copy_link_only() {
   await SpecialPowers.pushPrefEnv({ set: [[PREF_RIGHT_CLICK_SELECTS, true]] });
   await BrowserTestUtils.withNewTab(TEST_PAGE, async tabBrowser => {
     const contextMenuEl = await openContextMenuOnWord(
@@ -151,10 +165,8 @@ add_task(async function right_click_link_text_shows_copy_and_copy_link() {
     );
     const selection = await getSelectionText(tabBrowser);
     is(selection, "link text here", "Right-click selected whole link text");
-    const copy = contextMenuEl.querySelector("#context-copy");
     const copyLink = contextMenuEl.querySelector("#context-copylink");
-    ok(BrowserTestUtils.isVisible(copy), "Copy is visible");
-    ok(!copy.hasAttribute("disabled"), "Copy is enabled");
+    assertSelectionItemsHiddenOnLink(contextMenuEl);
     ok(
       BrowserTestUtils.isVisible(copyLink),
       "Copy Link is visible for link text"
@@ -291,10 +303,7 @@ add_task(async function user_select_all_ancestor_selects_ancestor_contents() {
       "link text here",
       "Select the nearest user-select:all ancestor's contents"
     );
-    ok(
-      BrowserTestUtils.isVisible(menu.querySelector("#context-copy")),
-      "Copy visible with selection"
-    );
+    assertSelectionItemsHiddenOnLink(menu);
     ok(
       BrowserTestUtils.isVisible(menu.querySelector("#context-copylink")),
       "Copy Link visible on link"
