@@ -81,6 +81,16 @@ add_task(async function test_lock_private_windows() {
   let privateWin = await BrowserTestUtils.openNewBrowserWindow({
     private: true,
   });
+  await BrowserTestUtils.openNewForegroundTab(
+    privateWin.gBrowser,
+    "data:text/html,<title>SecretTitle</title>"
+  );
+  await BrowserTestUtils.waitForMutationCondition(
+    privateWin.document.querySelector("title"),
+    { childList: true, characterData: true, subtree: true },
+    () => privateWin.document.title.includes("SecretTitle")
+  );
+  ok(true, "The content title is in the window title");
 
   Services.obs.notifyObservers(null, "screen_lock_notification");
 
@@ -90,6 +100,10 @@ add_task(async function test_lock_private_windows() {
   ok(!isLocked(window), "The non-private window is not locked");
   ok(!getLockDialog(window), "No lock screen in the non-private window");
   ok(!commandsDisabled(window), "Commands are enabled in the other window");
+  ok(
+    !privateWin.document.title.includes("SecretTitle"),
+    "The content title is hidden from the window title"
+  );
   ok(commandsDisabled(privateWin), "Commands are disabled");
 
   EventUtils.synthesizeKey("KEY_Escape", {}, privateWin);
@@ -107,6 +121,10 @@ add_task(async function test_lock_private_windows() {
 
   await unlockWith(privateWin, ReauthResult.SUCCESS);
   ok(!WindowLock.locked, "Windows are unlocked");
+  ok(
+    privateWin.document.title.includes("SecretTitle"),
+    "The content title is restored in the window title"
+  );
   for (let win of [privateWin, newPrivateWin]) {
     ok(!isLocked(win), "The private window is unlocked");
     ok(!getLockDialog(win).open, "The lock screen is hidden");
@@ -218,6 +236,58 @@ add_task(async function test_lock_screen_titlebar() {
   await SpecialPowers.popPrefEnv();
 });
 
+add_task(async function test_popups_hidden_on_lock_screen() {
+  await setLockPrivateWindows(true);
+  let privateWin = await BrowserTestUtils.openNewBrowserWindow({
+    private: true,
+  });
+  let { document } = privateWin;
+  Services.obs.notifyObservers(null, "screen_lock_notification");
+
+  let isHidden = element => {
+    let style = privateWin.getComputedStyle(element);
+    return style.visibility == "hidden" && style.pointerEvents == "none";
+  };
+
+  // Native menus can't be hidden or receive synthesized keys, so use a panel.
+  let popup = document.createXULElement("panel");
+  document.getElementById("mainPopupSet").append(popup);
+  let shown = BrowserTestUtils.waitForPopupEvent(popup, "shown");
+  popup.openPopup(document.getElementById("nav-bar"));
+  await shown;
+  ok(isHidden(popup), "Popups are hidden while locked");
+  EventUtils.synthesizeKey("KEY_Escape", {}, privateWin);
+  await TestUtils.waitForTick();
+  is(popup.state, "open", "Popups don't handle keys while locked");
+
+  let popover = document.createElement("div");
+  popover.popover = "manual";
+  document.getElementById("navigator-toolbox").append(popover);
+  popover.showPopover();
+  ok(isHidden(popover), "Popovers are hidden while locked");
+
+  await unlockWith(privateWin, ReauthResult.SUCCESS);
+  for (let element of [popup, popover]) {
+    let style = privateWin.getComputedStyle(element);
+    isnot(style.visibility, "hidden", "Popups are visible after unlocking");
+    isnot(
+      style.pointerEvents,
+      "none",
+      "Popups are interactive after unlocking"
+    );
+  }
+
+  let hidden = BrowserTestUtils.waitForPopupEvent(popup, "hidden");
+  EventUtils.synthesizeKey("KEY_Escape", {}, privateWin);
+  await hidden;
+  ok(true, "Popups handle keys again after unlocking");
+  popup.remove();
+  popover.remove();
+
+  await BrowserTestUtils.closeWindow(privateWin);
+  await SpecialPowers.popPrefEnv();
+});
+
 add_task(async function test_close_locked_window_with_warning() {
   await setLockPrivateWindows(true);
   let privateWin = await BrowserTestUtils.openNewBrowserWindow({
@@ -256,6 +326,44 @@ add_task(async function test_close_locked_window_with_warning() {
     () => !WindowLock.locked,
     "Closing the last private window ends the lock"
   );
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function test_close_locked_window_skips_page_prompts() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [PREF, true],
+      ["dom.require_user_interaction_for_beforeunload", false],
+    ],
+  });
+  let privateWin = await BrowserTestUtils.openNewBrowserWindow({
+    private: true,
+  });
+  let browser = privateWin.gBrowser.selectedBrowser;
+  BrowserTestUtils.startLoadingURIString(
+    browser,
+    "data:text/html,<script>onbeforeunload = e => e.preventDefault()</script>"
+  );
+  await BrowserTestUtils.browserLoaded(browser);
+  Services.obs.notifyObservers(null, "screen_lock_notification");
+  ok(isLocked(privateWin), "The private window is locked");
+
+  let promptShown = false;
+  let onPrompt = dialogWin => {
+    promptShown = true;
+    dialogWin.document.querySelector("dialog").getButton("accept").click();
+  };
+  Services.obs.addObserver(onPrompt, "common-dialog-loaded");
+  let closed = BrowserTestUtils.domWindowClosed(privateWin);
+  privateWin.document.getElementById("cmd_closeWindow").doCommand();
+  await closed;
+  Services.obs.removeObserver(onPrompt, "common-dialog-loaded");
+  ok(!promptShown, "The window closes without a beforeunload prompt");
+  await TestUtils.waitForCondition(
+    () => !WindowLock.locked,
+    "Closing the last private window ends the lock"
+  );
+
   await SpecialPowers.popPrefEnv();
 });
 
