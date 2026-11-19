@@ -313,7 +313,7 @@ if word_bits == 32:
             sse_flags = "-arch:SSE2"
         else:
             sse_flags = "-msse -msse2 -mfpmath=sse"
-        env["CCFLAGS"] = "{} {}".format(env.get("CCFLAGS", ""), sse_flags)
+        env["CFLAGS"] = "{} {}".format(env.get("CFLAGS", ""), sse_flags)
         env["CXXFLAGS"] = "{} {}".format(env.get("CXXFLAGS", ""), sse_flags)
 elif platform.system() == "Windows":
     CONFIGURE_ARGS += " --target=x86_64-pc-windows-msvc"
@@ -455,6 +455,12 @@ with open(mozconfig, "w") as fh:
     fh.write("ac_add_options --enable-project=js\n")
     fh.write("ac_add_options " + CONFIGURE_ARGS + "\n")
     fh.write("mk_add_options MOZ_OBJDIR=" + quote(OBJDIR) + "\n")
+    for var in ("CC", "CXX"):
+        if var in env:
+            fh.write(f"export {var}={quote(env.pop(var))}\n")
+    for var in ("CFLAGS", "CXXFLAGS"):
+        if var in env:
+            fh.write(f'export {var}="${var} "{quote(env.pop(var))}\n')
 
 env["MOZCONFIG"] = mozconfig
 
