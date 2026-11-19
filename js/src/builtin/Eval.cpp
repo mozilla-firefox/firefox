@@ -47,9 +47,40 @@ static void AssertInnerizedEnvironmentChain(JSContext* cx, JSObject& env) {
 #endif
 }
 
+// To reduce the cost of hashing very long eval strings, we put a cap
+// on the total number of characters hashed. Lookups still compare the
+// entire string.
+static HashNumber HashEvalString(JSLinearString* str) {
+  constexpr uint32_t NumSamples = 16 + 1;
+  constexpr uint32_t SampleLength = 256;
+  uint32_t length = str->length();
+  if (length <= NumSamples * SampleLength) {
+    return HashStringChars(str);
+  }
+
+  // We want to ensure we cover the beginning and end of the string
+  // (because that's most likely to contain differences). We always
+  // sample the end, and take 16 evenly spaced samples of everything
+  // else.
+  auto hashSamples = [&](const auto* chars) {
+    HashNumber hash = mozilla::HashGeneric(length);
+    uint32_t stride = (length - SampleLength) / (NumSamples - 1);
+    for (uint32_t i = 0; i < NumSamples - 1; i++) {
+      hash = AddToHash(hash,
+                       mozilla::HashString(chars + i * stride, SampleLength));
+    }
+    return AddToHash(
+        hash, mozilla::HashString(chars + length - SampleLength, SampleLength));
+  };
+
+  JS::AutoCheckCannotGC nogc;
+  return str->hasLatin1Chars() ? hashSamples(str->latin1Chars(nogc))
+                               : hashSamples(str->twoByteChars(nogc));
+}
+
 /* static */
 HashNumber EvalCacheHashPolicy::hash(const EvalCacheLookup& l) {
-  HashNumber hash = HashStringChars(l.str);
+  HashNumber hash = HashEvalString(l.str);
   return AddToHash(hash, l.global, l.introducerScript, l.introducerPcOffset,
                    l.evalType);
 }
