@@ -1392,10 +1392,10 @@ index 75b30782ae..1b0f102f61 100644
    const bool enable_svc_for_simulcast_;
    std::optional<SimulcastToSvcConverter> simulcast_to_svc_converter_;
 diff --git a/rtc_base/BUILD.gn b/rtc_base/BUILD.gn
-index 8eb38a2ddd..ba4c34b197 100644
+index d95a960061..ea039a1679 100644
 --- a/rtc_base/BUILD.gn
 +++ b/rtc_base/BUILD.gn
-@@ -526,6 +526,12 @@ rtc_library("logging") {
+@@ -527,6 +527,12 @@ rtc_library("logging") {
      "//third_party/abseil-cpp/absl/strings:string_view",
    ]
  
@@ -1409,10 +1409,10 @@ index 8eb38a2ddd..ba4c34b197 100644
      # Dependency on chromium's logging (in //base).
      deps += [ "//base" ]
 diff --git a/rtc_base/logging.cc b/rtc_base/logging.cc
-index fd372f7492..581066220e 100644
+index 8aae23ef48..f2f5822139 100644
 --- a/rtc_base/logging.cc
 +++ b/rtc_base/logging.cc
-@@ -27,6 +27,7 @@
+@@ -29,6 +29,7 @@
  #include "absl/strings/string_view.h"
  #include "api/task_queue/task_queue_base.h"
  #include "api/units/timestamp.h"
@@ -1420,7 +1420,7 @@ index fd372f7492..581066220e 100644
  #include "rtc_base/checks.h"
  #include "rtc_base/platform_thread_types.h"
  #include "rtc_base/string_utils.h"
-@@ -68,6 +69,24 @@ static const int kMaxLogLineSize = 1024 - 60;
+@@ -70,6 +71,24 @@ static const int kMaxLogLineSize = 1024 - 60;
  #endif  // WEBRTC_MAC && !defined(WEBRTC_IOS) || WEBRTC_ANDROID
  
  namespace webrtc {
@@ -1445,20 +1445,20 @@ index fd372f7492..581066220e 100644
  namespace {
  
  // Note: `g_min_sev` and `g_dbg_sev` can be changed while running.
-@@ -208,7 +227,7 @@ const std::string& LogLineRef::DefaultLogLine() const {
+@@ -299,7 +318,7 @@ const std::string& LogLineRef::DefaultLogLine() const {
  // LogMessage
  /////////////////////////////////////////////////////////////////////////////
  
 -bool LogMessage::log_to_stderr_ = true;
 +bool LogMessage::log_to_stderr_ = false;
  
- // The list of logging streams currently configured.
- // Note: we explicitly do not clean this up, because of the uncertain ordering
+ // Boolean options default to false.
+ constinit bool LogMessage::log_timestamp_ = false;
 diff --git a/rtc_base/logging.h b/rtc_base/logging.h
-index f97822caf1..b19c1911ec 100644
+index e82b4deb34..6d5fcfde68 100644
 --- a/rtc_base/logging.h
 +++ b/rtc_base/logging.h
-@@ -699,6 +699,12 @@ class LogMessage {
+@@ -689,6 +689,12 @@ class LogMessage {
    }
  #endif  // RTC_LOG_ENABLED()
  
@@ -1471,7 +1471,7 @@ index f97822caf1..b19c1911ec 100644
   private:
    friend class LogMessageForTesting;
  
-@@ -744,6 +750,9 @@ class LogMessage {
+@@ -730,6 +736,9 @@ class LogMessage {
  
    // The stringbuilder that buffers the formatted message before output
    StringBuilder print_stream_;

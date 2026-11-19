@@ -205,14 +205,6 @@ class LogSink {
   // LogLineRef::DefaultLogLine() and passes it on to the deprecated overloads
   // above.
   virtual void OnLogMessage(const LogLineRef& line);
-
- private:
-  friend class LogMessage;
-#if RTC_LOG_ENABLED()
-  // Members for LogMessage class to keep linked list of the registered sinks.
-  LogSink* next_ = nullptr;
-  LoggingSeverity min_severity_ = LS_INFO;
-#endif
 };
 
 class LoggingConfig {
@@ -637,6 +629,7 @@ class LogMessage {
   static void SetLogToStderr(bool log_to_stderr);
   // Stream: Any non-blocking stream interface.
   // Installs the `stream` to collect logs with severtiy `min_sev` or higher.
+  // If `stream` has already been added, its severity is updated.
   // `stream` must live until deinstalled by RemoveLogToStream.
   // If `stream` is the first stream added to the system, we might miss some
   // early concurrent log statement happening from another thread happening near
@@ -649,12 +642,9 @@ class LogMessage {
   // Testing against MinLogSeverity allows code to avoid potentially expensive
   // logging operations by pre-checking the logging level.
   static int GetMinLogSeverity();
-  // Updates min_sev_ appropriately when debug sinks change.
-  static void UpdateMinLogSeverity();
-  // Checks the current global debug severity and if the `streams_` collection
-  // is empty. If `severity` is smaller than the global severity and if the
-  // `streams_` collection is empty, the LogMessage will be considered a noop
-  // LogMessage.
+  // Returns true if `severity` is lower than the minimum severity of the debug
+  // output and of all sinks, i.e. if a message with `severity` wouldn't be
+  // written anywhere.
   static bool IsNoop(LoggingSeverity severity);
   // Version of IsNoop that uses fewer instructions at the call site, since the
   // caller doesn't have to pass an argument.
@@ -722,9 +712,6 @@ class LogMessage {
   // the message before output.
   std::string extra_;
 
-  // The output streams and their associated severities
-  static LogSink* streams_;
-
   // Flags for formatting options and their potential values.
   static bool log_timestamp_;
 
@@ -732,7 +719,6 @@ class LogMessage {
   static bool log_to_stderr_;
 #else  // RTC_LOG_ENABLED()
   // Next methods do nothing; no one will call these functions.
-  inline static void UpdateMinLogSeverity() {}
 #if defined(WEBRTC_ANDROID)
   inline static void OutputToDebug(absl::string_view filename,
                                    int line,

@@ -359,6 +359,50 @@ TEST_F(LogTest, MultipleThreads) {
   EXPECT_EQ(sev, LogMessage::GetMinLogSeverity());
 }
 
+TEST_F(LogTest, ConfigAndDynamicSinksReceiveMessages) {
+  TestLogSink& config_sink = InitializeLoggingWithSink();
+  TestLogSink dynamic_sink;
+  LogMessage::AddLogToStream(&dynamic_sink, LS_INFO);
+
+  RTC_LOG(LS_INFO) << "To both sinks";
+
+  LogMessage::RemoveLogToStream(&dynamic_sink);
+  EXPECT_THAT(config_sink.data(), HasSubstr("To both sinks"));
+  EXPECT_THAT(dynamic_sink.data(), HasSubstr("To both sinks"));
+}
+
+TEST_F(LogTest, AddingSinkAgainUpdatesItsSeverity) {
+  TestLogSink sink;
+  LogMessage::AddLogToStream(&sink, LS_WARNING);
+  RTC_LOG(LS_VERBOSE) << "Before update";
+  LogMessage::AddLogToStream(&sink, LS_VERBOSE);
+
+  RTC_LOG(LS_VERBOSE) << "Logged once";
+
+  LogMessage::RemoveLogToStream(&sink);
+  RTC_LOG(LS_VERBOSE) << "After remove";
+  const std::string data(sink.data());
+  EXPECT_THAT(data, Not(HasSubstr("Before update")));
+  EXPECT_THAT(data, Not(HasSubstr("After remove")));
+  const size_t first = data.find("Logged once");
+  ASSERT_NE(first, std::string::npos);
+  EXPECT_EQ(data.find("Logged once", first + 1), std::string::npos);
+}
+
+TEST_F(LogTest, RemovingLastDynamicSinkRestoresMinSeverity) {
+  LoggingConfig config;
+  config.set_debug_severity(LS_WARNING);
+  ASSERT_TRUE(InitializeLogging(std::move(config)));
+  EXPECT_TRUE(LogMessage::IsNoop(LS_VERBOSE));
+
+  TestLogSink sink;
+  LogMessage::AddLogToStream(&sink, LS_VERBOSE);
+  EXPECT_FALSE(LogMessage::IsNoop(LS_VERBOSE));
+
+  LogMessage::RemoveLogToStream(&sink);
+  EXPECT_TRUE(LogMessage::IsNoop(LS_VERBOSE));
+}
+
 TEST_F(LogTest, WallClockStartTime) {
   uint32_t time = LogMessage::WallClockStartTime();
   // Expect the time to be in a sensible range, e.g. > 2012-01-01.
