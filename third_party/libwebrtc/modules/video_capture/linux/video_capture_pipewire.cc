@@ -202,8 +202,12 @@ int32_t VideoCaptureModulePipeWire::StartCapture(
   // times while sharing instance of VideoCapturePipeWire between
   // websites and therefore it would not follow the requirements of this
   // checker.
-  RTC_CHECK_RUNS_SERIALIZED(&capture_checker_);
+  // Keep this order: take the lock first, then enter the capture checker.
+  // Local objects are destroyed in reverse order, so the checker is left
+  // before the lock is released. A stream callback that runs after that does
+  // not find the checker in use.
   PipeWireThreadLoopLock thread_loop_lock(session_->pw_main_loop_);
+  RTC_CHECK_RUNS_SERIALIZED(&capture_checker_);
 
   RTC_LOG(LS_VERBOSE) << "Creating new PipeWire stream for node " << node_id_;
 
@@ -259,14 +263,14 @@ int32_t VideoCaptureModulePipeWire::StopCapture() {
 
   PipeWireThreadLoopLock thread_loop_lock(session_->pw_main_loop_);
 
-  // PipeWireSession is guarded by API checker so just make sure we do
-  // race detection when the PipeWire loop is locked/stopped to not run
-  // any callback at this point.
+  // Remove the stream listener before using the capture checker, so that no
+  // stream callback runs while the checker is held. With some PipeWire
+  // versions these callbacks run on another thread, so holding the lock is
+  // not enough. Clear the hook so that StopCapture can be called again.
+  spa_hook_remove(&stream_listener_);
+  stream_listener_ = {};
   RTC_CHECK_RUNS_SERIALIZED(&capture_checker_);
   if (stream_) {
-    // Removing the listener first guarantees no callbacks will fire after this
-    // point.
-    spa_hook_remove(&stream_listener_);
     pw_stream_destroy(stream_);
     stream_ = nullptr;
   }
