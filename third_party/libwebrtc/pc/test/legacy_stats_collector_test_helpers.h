@@ -35,7 +35,6 @@
 #include "rtc_base/fake_ssl_identity.h"
 #include "rtc_base/rtc_certificate.h"
 #include "rtc_base/ssl_stream_adapter.h"
-#include "rtc_base/system/plan_b_only.h"
 #include "system_wrappers/include/clock.h"
 #include "system_wrappers/include/ntp_time.h"
 #include "test/create_test_environment.h"
@@ -197,9 +196,7 @@ class LegacyStatsCollectorTest : public ::testing::Test {
     auto pc = CreatePeerConnection();
     auto stats = CreateStatsCollector(pc.get());
 
-    RTC_ALLOW_PLAN_B_DEPRECATION_BEGIN();
     pc->AddVoiceChannel(/*mid=*/"audio", kTransportName);
-    RTC_ALLOW_PLAN_B_DEPRECATION_END();
 
     // Fake stats to process.
     TransportChannelStats channel_stats;
