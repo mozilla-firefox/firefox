@@ -828,17 +828,7 @@ toolbar[keyNav]:not([collapsed], [customizing]) toolbartabstop,
 
 /* Smart Window auto tab grouping button */
 #smartwindow-group-tabs-button {
-  align-items: center;
   -moz-user-focus: normal;
-  align-self: center;
-
-  &:focus-visible {
-    outline: var(--focus-outline);
-
-    > .toolbarbutton-icon {
-      outline: none;
-    }
-  }
 
   & > .toolbarbutton-icon {
     -moz-context-properties: fill, fill-opacity;
