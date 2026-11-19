@@ -19,6 +19,7 @@ import kotlinx.coroutines.withContext
 import mozilla.appservices.fxaclient.FxaException
 import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.concept.engine.Engine
+import mozilla.components.concept.engine.ipprotection.CurrentAuthProvider
 import mozilla.components.concept.engine.ipprotection.IPProtectionDelegate
 import mozilla.components.concept.engine.ipprotection.IPProtectionHandler
 import mozilla.components.concept.engine.ipprotection.ProxyState
@@ -179,6 +180,10 @@ class IPProtectionFeature(
                     object : IPProtectionDelegate {
                         override fun onServiceStateChanged(serviceState: ServiceState) {
                             store.dispatch(IPProtectionAction.ServiceAction.ServiceStateChanged(serviceState))
+                        }
+
+                        override fun onCurrentAuthProviderChanged(authProvider: CurrentAuthProvider) {
+                            store.dispatch(IPProtectionAction.ServiceAction.CurrentAuthProviderChanged(authProvider))
                         }
 
                         override fun onProxyStateChanged(

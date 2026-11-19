@@ -53,6 +53,17 @@ public class IPProtectionController {
   /** The service is ready to be activated. */
   public static final int SERVICE_STATE_READY = 4;
 
+  /** The auth providers the IP protection service can use. */
+  @Retention(RetentionPolicy.SOURCE)
+  @StringDef(value = {CURRENT_AUTH_PROVIDER_FXA, CURRENT_AUTH_PROVIDER_GPI})
+  public @interface CurrentAuthProvider {}
+
+  /** The service uses FxA. */
+  public static final String CURRENT_AUTH_PROVIDER_FXA = "fxa";
+
+  /** The service uses Google Play Integrity. */
+  public static final String CURRENT_AUTH_PROVIDER_GPI = "gpi";
+
   private static @ServiceState int parseServiceState(final @Nullable String state) {
     switch (state) {
       case "uninitialized":
@@ -305,6 +316,22 @@ public class IPProtectionController {
      */
     @UiThread
     default void onCountryListChanged(final @NonNull List<Country> countries) {}
+
+    /**
+     * Called when the auth provider the IP protection service uses changes.
+     *
+     * <p>With {@link #SIGNED_OUT_AUTH_GPI}, nothing is reported until a sign-in state has been
+     * received.
+     *
+     * <p>Each value is reported once, when it changes; a change reported while no delegate is set
+     * is not sent again.
+     *
+     * @param authProvider The current auth provider. One of the {@link CurrentAuthProvider}
+     *     constants, or {@code null} after the service is uninitialized.
+     */
+    @UiThread
+    default void onCurrentAuthProviderChanged(
+        final @Nullable @CurrentAuthProvider String authProvider) {}
   }
 
   /* package */ IPProtectionController() {
@@ -316,6 +343,7 @@ public class IPProtectionController {
             "GeckoView:IPProtection:IPPProxyManager:StateChanged",
             "GeckoView:IPProtection:IPPProxyManager:UsageChanged",
             "GeckoView:IPProtection:ServerList:ListChanged",
+            "GeckoView:IPProtection:CurrentAuthProviderChanged",
             "GeckoView:IPProtection:GetToken",
             "GeckoView:IPProtection:TokenRejected",
             "GeckoView:IPProtection:GPI:WarmUp",
@@ -813,6 +841,10 @@ public class IPProtectionController {
           break;
         case "GeckoView:IPProtection:ServerList:ListChanged":
           withDelegate(event, d -> d.onCountryListChanged(countriesFromBundle(message)));
+          break;
+        case "GeckoView:IPProtection:CurrentAuthProviderChanged":
+          withDelegate(
+              event, d -> d.onCurrentAuthProviderChanged(message.getString("authProvider")));
           break;
         case "GeckoView:IPProtection:GetToken":
           {

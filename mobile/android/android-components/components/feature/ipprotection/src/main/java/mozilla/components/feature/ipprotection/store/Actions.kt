@@ -7,6 +7,7 @@
 package mozilla.components.feature.ipprotection.store
 
 import mozilla.components.ExperimentalAndroidComponentsApi
+import mozilla.components.concept.engine.ipprotection.CurrentAuthProvider
 import mozilla.components.concept.engine.ipprotection.IPProtectionHandler
 import mozilla.components.concept.engine.ipprotection.ProxyState
 import mozilla.components.concept.engine.ipprotection.ServiceState
@@ -34,6 +35,13 @@ sealed class IPProtectionAction : Action {
          * @property serviceState The current [ServiceState].
          */
         data class ServiceStateChanged(val serviceState: ServiceState) : ServiceAction()
+
+        /**
+         * Reports a new auth provider from the GeckoView IP protection toolkit.
+         *
+         * @property authProvider The current [CurrentAuthProvider].
+         */
+        data class CurrentAuthProviderChanged(val authProvider: CurrentAuthProvider) : ServiceAction()
     }
 
     /** [IPProtectionAction]s related to the proxy state. */

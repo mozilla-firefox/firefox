@@ -8,6 +8,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.time.Instant
 import mozilla.components.ExperimentalAndroidComponentsApi
+import mozilla.components.concept.engine.ipprotection.CurrentAuthProvider
 import mozilla.components.concept.engine.ipprotection.IPProtectionHandler
 import mozilla.components.concept.engine.ipprotection.ProxyState
 import mozilla.components.concept.engine.ipprotection.ServiceState
@@ -150,6 +151,19 @@ class IPProtectionReducerTest {
             val resultState = iPProtectionReducer(state, action)
 
             assertEquals(usageQuota, resultState.usageQuota)
+        }
+    }
+
+    @Test
+    fun `WHEN the engine reports an auth provider THEN the state's auth provider follows it`() {
+        CurrentAuthProvider.entries.forEach { authProvider ->
+            val resultState =
+                iPProtectionReducer(
+                    buildIPProtectionState(),
+                    IPProtectionAction.ServiceAction.CurrentAuthProviderChanged(authProvider),
+                )
+
+            assertEquals(authProvider, resultState.currentAuthProvider)
         }
     }
 

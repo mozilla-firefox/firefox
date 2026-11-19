@@ -7,6 +7,7 @@ package mozilla.components.browser.engine.gecko.ipprotection
 import androidx.annotation.OptIn
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.ExperimentalAndroidComponentsApi
+import mozilla.components.concept.engine.ipprotection.CurrentAuthProvider
 import mozilla.components.concept.engine.ipprotection.IPProtectionDelegate
 import mozilla.components.concept.engine.ipprotection.ProxyState
 import mozilla.components.concept.engine.ipprotection.ServiceState
@@ -38,6 +39,21 @@ class GeckoIPProtectionDelegateTest {
 
         cases.forEach { (code, expected) ->
             assertEquals("Code $code should map to $expected", expected, code.toProxyState())
+        }
+    }
+
+    @Test
+    fun `GIVEN an auth provider from GeckoView THEN it maps to the same auth provider AND a missing or unrecognised one maps to unknown`() {
+        val cases =
+            listOf(
+                GeckoViewIPProtectionController.CURRENT_AUTH_PROVIDER_FXA to CurrentAuthProvider.Fxa,
+                GeckoViewIPProtectionController.CURRENT_AUTH_PROVIDER_GPI to CurrentAuthProvider.Gpi,
+                null to CurrentAuthProvider.Unknown,
+                "other" to CurrentAuthProvider.Unknown,
+            )
+
+        cases.forEach { (authProvider, expected) ->
+            assertEquals("$authProvider should map to $expected", expected, authProvider.toCurrentAuthProvider())
         }
     }
 

@@ -41,4 +41,11 @@ interface IPProtectionDelegate {
      * @param countries The current list of available [IPProtectionHandler.Country] entries.
      */
     fun onCountryListChanged(countries: List<IPProtectionHandler.Country>) = Unit
+
+    /**
+     * Called when the auth provider the IP protection service uses changes.
+     *
+     * @param authProvider The current [CurrentAuthProvider].
+     */
+    fun onCurrentAuthProviderChanged(authProvider: CurrentAuthProvider) = Unit
 }

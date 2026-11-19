@@ -6,6 +6,7 @@ package mozilla.components.browser.engine.gecko.ipprotection
 
 import androidx.annotation.OptIn
 import mozilla.components.ExperimentalAndroidComponentsApi
+import mozilla.components.concept.engine.ipprotection.CurrentAuthProvider
 import mozilla.components.concept.engine.ipprotection.IPProtectionDelegate
 import mozilla.components.concept.engine.ipprotection.IPProtectionHandler
 import mozilla.components.concept.engine.ipprotection.ProxyState
@@ -47,6 +48,10 @@ internal class GeckoIPProtectionDelegate(private val delegate: IPProtectionDeleg
             }
         )
     }
+
+    override fun onCurrentAuthProviderChanged(authProvider: String?) {
+        delegate.onCurrentAuthProviderChanged(authProvider.toCurrentAuthProvider())
+    }
 }
 
 @OptIn(ExperimentalGeckoViewApi::class)
@@ -75,5 +80,18 @@ internal fun Int.toProxyState(): ProxyState =
         else -> {
             logger.warn("Unsupported proxy state from GeckoView: $this")
             ProxyState.UNKNOWN
+        }
+    }
+
+@OptIn(ExperimentalGeckoViewApi::class)
+@kotlin.OptIn(ExperimentalAndroidComponentsApi::class)
+internal fun String?.toCurrentAuthProvider(): CurrentAuthProvider =
+    when (this) {
+        GeckoViewIPProtectionController.CURRENT_AUTH_PROVIDER_FXA -> CurrentAuthProvider.Fxa
+        GeckoViewIPProtectionController.CURRENT_AUTH_PROVIDER_GPI -> CurrentAuthProvider.Gpi
+        null -> CurrentAuthProvider.Unknown
+        else -> {
+            logger.warn("Unsupported auth provider from GeckoView: $this")
+            CurrentAuthProvider.Unknown
         }
     }

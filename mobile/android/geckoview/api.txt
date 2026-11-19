@@ -2295,6 +2295,8 @@ package org.mozilla.geckoview {
     method @UiThread public void setDelegate(@Nullable IPProtectionController.Delegate);
     method @UiThread public void setGpiProvider(@Nullable IPProtectionController.GpiProvider);
     method @HandlerThread @NonNull public GeckoResult<Void> uninit();
+    field public static final String CURRENT_AUTH_PROVIDER_FXA = "fxa";
+    field public static final String CURRENT_AUTH_PROVIDER_GPI = "gpi";
     field public static final int SERVICE_STATE_READY = 4;
     field public static final int SERVICE_STATE_UNAUTHENTICATED = 2;
     field public static final int SERVICE_STATE_UNAVAILABLE = 1;
@@ -2314,8 +2316,12 @@ package org.mozilla.geckoview {
     field @NonNull public final String code;
   }
 
+  @Retention(value=RetentionPolicy.SOURCE) public static interface IPProtectionController.CurrentAuthProvider {
+  }
+
   public static interface IPProtectionController.Delegate {
     method @UiThread default public void onCountryListChanged(@NonNull List<IPProtectionController.Country>);
+    method @UiThread default public void onCurrentAuthProviderChanged(@Nullable String);
     method @UiThread default public void onProxyStateChanged(@NonNull IPProtectionController.ProxyState);
     method @UiThread default public void onServiceStateChanged(int);
     method @UiThread default public void onUsageChanged(@NonNull IPProtectionController.UsageInfo);

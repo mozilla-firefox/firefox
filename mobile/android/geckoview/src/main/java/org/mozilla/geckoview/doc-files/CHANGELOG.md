@@ -27,6 +27,7 @@ exclude: true
     longer be filled in. ([bug 2075337]({{bugzilla}}2075337))
 - Added [`IPProtectionController.init(String)`][162.7], which takes an [`IPProtectionController.SignedOutAuth`][162.8]: [`SIGNED_OUT_AUTH_NONE`][162.9] or [`SIGNED_OUT_AUTH_GPI`][162.10]. [`IPProtectionController.init()`][162.11] initializes with `SIGNED_OUT_AUTH_NONE`. ([bug 2052469]({{bugzilla}}2052469))
 - ⚠️ Removed `GeckoRuntimeSettings.setIpProtectionAuthProvider`, `getIpProtectionAuthProvider`, `GeckoRuntimeSettings.IpProtectionAuthProvider`, `IP_PROTECTION_AUTH_PROVIDER_FXA` and `IP_PROTECTION_AUTH_PROVIDER_GPI`. Pass the auth provider used while no account is signed in to [`IPProtectionController.init(String)`][162.7] instead. ([bug 2052469]({{bugzilla}}2052469))
+- Added [`IPProtectionController.Delegate.onCurrentAuthProviderChanged`][162.12], called with [`CURRENT_AUTH_PROVIDER_FXA`][162.13], [`CURRENT_AUTH_PROVIDER_GPI`][162.14] or `null` when the auth provider the IP protection service uses changes. ([bug 2089076]({{bugzilla}}2089076))
 
 [162.1]: {{javadoc_uri}}/PictureInPictureController.SessionPictureInPicture.html#setKeepActive(boolean)
 [162.2]: {{javadoc_uri}}/GeckoRuntimeSettings.Builder.html#creditCardSecurityCodeEnabled(boolean)
@@ -39,6 +40,9 @@ exclude: true
 [162.9]: {{javadoc_uri}}/IPProtectionController.html#SIGNED_OUT_AUTH_NONE
 [162.10]: {{javadoc_uri}}/IPProtectionController.html#SIGNED_OUT_AUTH_GPI
 [162.11]: {{javadoc_uri}}/IPProtectionController.html#init()
+[162.12]: {{javadoc_uri}}/IPProtectionController.Delegate.html#onCurrentAuthProviderChanged(java.lang.String)
+[162.13]: {{javadoc_uri}}/IPProtectionController.html#CURRENT_AUTH_PROVIDER_FXA
+[162.14]: {{javadoc_uri}}/IPProtectionController.html#CURRENT_AUTH_PROVIDER_GPI
 
 ## v161
 - Added [`Autocomplete.CreditCard.securityCode`][161.1] and
@@ -2151,4 +2155,4 @@ to allow adding gecko profiler markers.
 [65.24]: {{javadoc_uri}}/CrashReporter.html#sendCrashReport(android.content.Context,android.os.Bundle,java.lang.String)
 [65.25]: {{javadoc_uri}}/GeckoResult.html
 
-[api-version]: 2f2c5ed5bd17eeb5895f02d27f081893c883e4de
+[api-version]: 3178a28d2e02b0ea9be0beb5d7c15ba598177d00
