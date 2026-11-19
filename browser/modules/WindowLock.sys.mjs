@@ -11,6 +11,7 @@ const lazy = XPCOMUtils.declareLazy({
   lockPrivateWindows: {
     pref: "browser.privatebrowsing.lockOnScreenLock.enabled",
     default: false,
+    onUpdate: () => WindowLock._updateShortcuts(),
   },
   l10n: () =>
     new Localization(["branding/brand.ftl", "browser/windowLock.ftl"]),
@@ -18,6 +19,7 @@ const lazy = XPCOMUtils.declareLazy({
 
 const LOCKED_ATTRIBUTE = "windowlocked";
 const DIALOG_ID = "window-lock-dialog";
+const SHORTCUT_KEY_ID = "key_lockWindows";
 const SUPPORTED_PLATFORMS = ["macosx", "win"];
 const OS_AUTH_MESSAGE =
   AppConstants.platform == "win"
@@ -48,6 +50,7 @@ const LockTrigger = Object.freeze({
   SCREEN_LOCK: "screen_lock",
   SCREENSAVER: "screensaver",
   SLEEP: "sleep",
+  SHORTCUT: "shortcut",
 });
 
 // Maps the topics windows get locked on to their LockTrigger.
@@ -59,7 +62,8 @@ const LOCK_TOPICS = {
 
 /**
  * Covers private windows with a lock screen when the OS session gets locked,
- * starts the screensaver or goes to sleep, until the user authenticates with their OS account
+ * starts the screensaver or goes to sleep, or when the user presses the keyboard
+ * shortcut, until the user authenticates with their OS account
  * credentials, if enabled by the
  * browser.privatebrowsing.lockOnScreenLock.enabled pref. Only supported on
  * macOS and Windows.
@@ -125,6 +129,7 @@ export const WindowLock = {
    * @param {Window} window
    */
   initWindow(window) {
+    this._updateShortcuts(window);
     if (this.locked && lazy.PrivateBrowsingUtils.isWindowPrivate(window)) {
       this._lockWindow(window);
     }
@@ -140,6 +145,7 @@ export const WindowLock = {
   observe(_subject, topic) {
     if (topic == "last-pb-context-exited") {
       this.locked = false;
+      this._updateShortcuts();
       return;
     }
     if (Object.hasOwn(LOCK_TOPICS, topic)) {
@@ -169,8 +175,19 @@ export const WindowLock = {
     this._authError = false;
     for (let window of windows) {
       this._lockWindow(window);
+
+      if (trigger == LockTrigger.SHORTCUT) {
+        window.minimize();
+      }
     }
     Glean.windowLock.locked.record({ trigger });
+  },
+
+  /**
+   * Locks private windows in response to the keyboard shortcut.
+   */
+  lockFromShortcut() {
+    this.lock(LockTrigger.SHORTCUT);
   },
 
   /**
@@ -234,6 +251,28 @@ export const WindowLock = {
     }
     Glean.windowLock.authenticate.record({ result: authResult });
     return authenticated;
+  },
+
+  /**
+   * Enables the keyboard shortcut in all windows if it would lock any window,
+   * so the key event reaches pages otherwise.
+   *
+   * @param {Window} [newWindow]
+   *        A window being opened, which may not be tracked yet.
+   */
+  _updateShortcuts(newWindow) {
+    let windows = this._windows();
+    if (newWindow && !windows.includes(newWindow)) {
+      windows.push(newWindow);
+    }
+    let enabled =
+      lazy.lockPrivateWindows &&
+      windows.some(win => lazy.PrivateBrowsingUtils.isWindowPrivate(win));
+    for (let window of windows) {
+      window.document
+        .getElementById(SHORTCUT_KEY_ID)
+        ?.toggleAttribute("disabled", !enabled);
+    }
   },
 
   _windows() {

@@ -112,6 +112,9 @@
     <command id="Tools:ClassicWindow" />
     <command id="Tools:Sanitize" />
     <command id="Tools:PrivateBrowsing" />
+#if defined(XP_MACOSX) || defined(XP_WIN)
+    <command id="cmd_lockWindows" />
+#endif
     <command id="Browser:Screenshot" />
     <command id="History:UndoCloseTab" data-l10n-args='{"tabCount": 1}' />
     <command id="History:UndoCloseWindow" />
@@ -351,6 +354,10 @@
 
     <key id="key_privatebrowsing" command="Tools:PrivateBrowsing" data-l10n-id="private-browsing-shortcut"
          modifiers="accel,shift" reserved="true"/>
+#if defined(XP_MACOSX) || defined(XP_WIN)
+    <key id="key_lockWindows" data-l10n-id="window-lock-shortcut" command="cmd_lockWindows"
+         modifiers="accel,shift" disabled="true"/>
+#endif
     <key id="key_screenshot" data-l10n-id="screenshot-shortcut" command="Browser:Screenshot" modifiers="accel,shift"/>
     <key id="key_searchTabs" data-l10n-id="search-tabs-shortcut" command="Browser:SearchTabs" modifiers="accel,shift"/>
     <key id="key_sanitize" command="Tools:Sanitize" keycode="VK_DELETE" modifiers="accel,shift"/>

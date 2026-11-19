@@ -2288,9 +2288,11 @@ window_lock:
     type: event
     description: >
       Recorded when private windows get locked because the OS session got
-      locked, started the screensaver or went to sleep.
+      locked, started the screensaver or went to sleep, or because the user
+      pressed the keyboard shortcut.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2082471
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2086029
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2082471
     data_sensitivity:
@@ -2302,8 +2304,9 @@ window_lock:
       trigger:
         description: >
           What caused the lock. `"screen_lock"` if the OS session got locked,
-          `"screensaver"` if the screensaver started (macOS only), or
-          `"sleep"` if the system went to sleep.
+          `"screensaver"` if the screensaver started (macOS only),
+          `"sleep"` if the system went to sleep, or `"shortcut"` if the user
+          pressed the keyboard shortcut.
         type: string
 
   authenticate:

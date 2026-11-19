@@ -13,6 +13,7 @@ document.addEventListener(
       ContainerCreationPanel:
         "chrome://browser/content/usercontext/ContainerCreationPanel.mjs",
       Referrals: "moz-src:///browser/components/referrals/Referrals.sys.mjs",
+      WindowLock: "moz-src:///browser/modules/WindowLock.sys.mjs",
     });
 
     // <commandset id="mainCommandSet"> defined in browser-sets.inc.xhtml
@@ -333,6 +334,9 @@ document.addEventListener(
           }
           case "Tools:PrivateBrowsing":
             OpenBrowserWindow({ private: true });
+            break;
+          case "cmd_lockWindows":
+            lazy.WindowLock.lockFromShortcut();
             break;
           case "Browser:Screenshot":
             ScreenshotsUtils.notify(window, "Shortcut");

@@ -4972,6 +4972,9 @@ var gDialogBox = {
     "key_browserConsole",
     "key_browserToolbox",
 
+    // Locking windows must stay possible while a dialog is open.
+    "cmd_lockWindows",
+
     // Don't touch the editing keys/commands which we might want inside the dialog.
     "key_undo",
     "key_redo",

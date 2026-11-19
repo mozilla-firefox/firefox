@@ -534,3 +534,67 @@ add_task(async function test_no_lock_when_disabled() {
   await BrowserTestUtils.closeWindow(privateWin);
   await SpecialPowers.popPrefEnv();
 });
+
+add_task(async function test_lock_with_shortcut() {
+  Services.fog.testResetFOG();
+  await setLockPrivateWindows(true);
+  let normalKey = document.getElementById("key_lockWindows");
+  ok(
+    normalKey.hasAttribute("disabled"),
+    "The shortcut is disabled without private windows"
+  );
+
+  let privateWin = await BrowserTestUtils.openNewBrowserWindow({
+    private: true,
+  });
+  let key = privateWin.document.getElementById("key_lockWindows");
+  ok(!key.hasAttribute("disabled"), "The shortcut is enabled");
+  ok(
+    !normalKey.hasAttribute("disabled"),
+    "The shortcut is enabled in the non-private window"
+  );
+
+  let minimized = BrowserTestUtils.waitForEvent(privateWin, "sizemodechange");
+  EventUtils.synthesizeKey("L", { accelKey: true, shiftKey: true }, privateWin);
+
+  ok(WindowLock.locked, "Locked");
+  ok(isLocked(privateWin), "The private window is locked");
+  ok(!isLocked(window), "The non-private window is not locked");
+  await minimized;
+  is(
+    privateWin.windowState,
+    privateWin.STATE_MINIMIZED,
+    "The private window is minimized"
+  );
+  isnot(
+    window.windowState,
+    window.STATE_MINIMIZED,
+    "The non-private window is not minimized"
+  );
+  let restored = BrowserTestUtils.waitForEvent(privateWin, "sizemodechange");
+  privateWin.restore();
+  await restored;
+  Assert.deepEqual(
+    Glean.windowLock.locked.testGetValue().map(event => event.extra),
+    [{ trigger: "shortcut" }],
+    "The lock is recorded"
+  );
+
+  await unlockWith(privateWin, ReauthResult.SUCCESS);
+  ok(!WindowLock.locked, "Windows are unlocked");
+
+  await setLockPrivateWindows(false);
+  ok(key.hasAttribute("disabled"), "The shortcut is disabled");
+  EventUtils.synthesizeKey("L", { accelKey: true, shiftKey: true }, privateWin);
+  ok(!WindowLock.locked, "The disabled shortcut doesn't lock");
+  await SpecialPowers.popPrefEnv();
+
+  await BrowserTestUtils.closeWindow(privateWin);
+  await BrowserTestUtils.waitForMutationCondition(
+    normalKey,
+    { attributeFilter: ["disabled"] },
+    () => normalKey.hasAttribute("disabled")
+  );
+  ok(true, "The shortcut is disabled once the last private window is closed");
+  await SpecialPowers.popPrefEnv();
+});
