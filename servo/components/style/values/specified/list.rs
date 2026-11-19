@@ -162,12 +162,12 @@ impl SpecifiedValueInfo for Quotes {
 }
 
 impl Parse for Quotes {
-    fn parse(_: &ParserContext, input: &mut Parser) -> Result<Quotes, ParseError> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Quotes, ParseError> {
         let mut quotes = Vec::new();
         loop {
             let opening = match input.next() {
                 Ok(Token::QuotedString(value)) => value.as_ref().to_owned().into(),
-                Ok(Token::Ident(id)) if quotes.is_empty() => return Self::from_ident(id),
+                Ok(Token::Ident(id)) if quotes.is_empty() => return Self::from_ident(context, id),
                 Ok(_) => return Err(ParseError::unexpected_token()),
                 Err(_) => break,
             };
@@ -187,11 +187,14 @@ impl Parse for Quotes {
 }
 
 impl Quotes {
-    fn from_ident(id: &str) -> Result<Self, ParseError> {
+    fn from_ident(context: &ParserContext, id: &str) -> Result<Self, ParseError> {
         match_ignore_ascii_case! { id,
             "auto" => Ok(Self::Auto),
             "none" => Ok(Self::QuoteList(QuoteList::default())),
-            "match-parent" if crate::pref!("layout.css.quotes.match-parent.enabled") => {
+            "match-parent"
+                if context.in_ua_sheet()
+                    || crate::pref!("layout.css.quotes.match-parent.enabled") =>
+            {
                 Ok(Self::MatchParent)
             },
             _ => Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
