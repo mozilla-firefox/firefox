@@ -55,7 +55,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(RadioGroupContainer)
       // the button's reference to the container so that when it is collected
       // it does not attempt to remove itself from an already cleared radio
       // group.
-      button->DisconnectRadioGroupContainer();
+      button->DisconnectRadioGroupContainer(tmp);
     }
   }
   tmp->mRadioGroups.Clear();
