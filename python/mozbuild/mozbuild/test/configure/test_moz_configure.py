@@ -191,6 +191,25 @@ class TestMozConfigure(BaseConfigureTest):
         self.assertEqual(check_nsis_version("v3.0.1"), "3.0")
         self.assertEqual(check_nsis_version("v3.1"), "3.1")
 
+    def test_want_wine(self):
+        def want_wine(args):
+            sandbox = self.get_sandbox(
+                {}, {}, ["--target=x86_64-pc-windows-msvc", *args]
+            )
+            return sandbox._value_for(sandbox["want_wine"])
+
+        self.assertTrue(want_wine([]))
+        self.assertFalse(want_wine(["--enable-project=js"]))
+
+    def test_wine_missing(self):
+        sandbox = self.get_sandbox(
+            {},
+            {},
+            ["--target=x86_64-pc-windows-msvc", "--disable-bootstrap"],
+            {"PATH": ""},
+        )
+        self.assertIsNone(sandbox._value_for(sandbox["wine"]))
+
 
 class TestConfVars(BaseConfigureTest):
     def test_loading(self):

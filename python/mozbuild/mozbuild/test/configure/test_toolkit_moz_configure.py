@@ -3,6 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import os
+from io import StringIO
 
 from buildconfig import topsrcdir
 from mozpack import path as mozpath
@@ -143,6 +144,19 @@ class TestToolkitMozConfigure(BaseConfigureTest):
             (sandbox.get_config("WASM_CXX"), sandbox.get_config("WASM_CXX_LINK")),
             (["/usr/bin/clang.exe", "--driver-mode=g++", "--target=wasm32"], wasm_cxx),
         )
+
+    def test_require_wine(self):
+        out = StringIO()
+        sandbox = self.get_sandbox(
+            {},
+            {},
+            ["--target=x86_64-pc-windows-msvc", "--disable-bootstrap"],
+            {"PATH": ""},
+            out=out,
+        )
+        with self.assertRaises(SystemExit):
+            sandbox._value_for(sandbox["require_wine"])
+        self.assertIn("Cannot find wine", out.getvalue())
 
     def test_elfhack(self):
         class ReadElf:

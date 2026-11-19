@@ -3448,17 +3448,11 @@ set_config("MOZ_CRASHREPORTER_MOCK", True, when="MOZ_CRASHREPORTER_MOCK")
 
 # Wine
 # ==============================================================
-@depends(target, host)
-def want_wine(target, host):
-    return target.kernel == "WINNT" and host.kernel != "WINNT"
+@depends(wine, when=want_wine)
+def require_wine(wine):
+    if not wine:
+        die("Cannot find wine")
 
-
-wine = check_prog(
-    "WINE",
-    ["wine64", "wine"],
-    when=want_wine,
-    bootstrap="wine/bin",
-)
 
 # libevent
 # ==============================================================

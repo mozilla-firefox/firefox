@@ -252,6 +252,22 @@ def check_prog(*args, **kwargs):
     return check_prog(*args, **kwargs)
 
 
+# Wine
+# ==============================================================
+@depends(target, host, build_project)
+def want_wine(target, host, build_project):
+    return build_project != "js" and target.kernel == "WINNT" and host.kernel != "WINNT"
+
+
+wine = check_prog(
+    "WINE",
+    ["wine64", "wine"],
+    allow_missing=True,
+    when=want_wine,
+    bootstrap="wine/bin",
+)
+
+
 include("build/moz.configure/toolchain.configure", when="--enable-compile-environment")
 
 include("build/moz.configure/pkg.configure")
