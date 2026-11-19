@@ -104,6 +104,7 @@
 #include "rtc_base/containers/flat_map.h"
 #include "rtc_base/containers/flat_set.h"
 #include "rtc_base/crypto_random.h"
+#include "rtc_base/experiments/rfc8888_congestion_control_feedback_experiment.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/operations_chain.h"
 #include "rtc_base/rtc_certificate.h"
@@ -5884,7 +5885,7 @@ RTCError SdpOfferAnswerHandler::PushdownMediaDescription(
 
     // If local and remote are both set, we assume that it's safe to trigger
     // CCFB.
-    if (pc_->trials().IsEnabled("WebRTC-RFC8888CongestionControlFeedback")) {
+    if (IsRfc8888CongestionControlFeedbackEnabled(pc_->trials())) {
       if ((type == SdpType::kAnswer || type == SdpType::kPrAnswer) &&
           local_description() && remote_description()) {
         std::optional<RtcpFeedbackType> remote_preferred_rtcp_cc_ack_type;

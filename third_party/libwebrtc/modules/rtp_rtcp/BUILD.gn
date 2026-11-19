@@ -380,6 +380,7 @@ rtc_library("rtp_rtcp") {
     "../../rtc_base/containers:flat_map",
     "../../rtc_base/experiments:field_trial_parser",
     "../../rtc_base/experiments:retransmit_flushed_packets_settings",
+    "../../rtc_base/experiments:rfc8888_congestion_control_feedback_experiment",
     "../../rtc_base/synchronization:mutex",
     "../../rtc_base/system:no_unique_address",
     "../../rtc_base/task_utils:repeating_task",

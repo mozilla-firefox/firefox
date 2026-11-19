@@ -117,7 +117,7 @@ index a42c5d7aa7..f8e072fed5 100644
    # TODO(https://bugs.webrtc.org/14437):  Remove this section if general
    # Chromium fix resolves the problem.
 diff --git a/BUILD.gn b/BUILD.gn
-index acf6c14222..ab3c8c952f 100644
+index 8366960e3b..c212b2e1cf 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -39,7 +39,7 @@ if (is_android) {
@@ -1250,7 +1250,7 @@ index e4b4a28a9b..9ef2c4e1d9 100644
  rtc_library("call_config_utils") {
    testonly = true
 diff --git a/video/BUILD.gn b/video/BUILD.gn
-index fa5eb3a887..8c4151be40 100644
+index 1e0734ce48..03cb01c84e 100644
 --- a/video/BUILD.gn
 +++ b/video/BUILD.gn
 @@ -16,7 +16,7 @@ rtc_library("video_stream_encoder_interface") {
@@ -1262,7 +1262,7 @@ index fa5eb3a887..8c4151be40 100644
      "../api:scoped_refptr",
      "../api/adaptation:resource_adaptation_api",
      "../api/units:data_rate",
-@@ -430,7 +430,7 @@ rtc_library("video_stream_encoder_impl") {
+@@ -431,7 +431,7 @@ rtc_library("video_stream_encoder_impl") {
      "../api:rtc_error",
      "../api:rtp_packet_info",
      "../api:rtp_parameters",

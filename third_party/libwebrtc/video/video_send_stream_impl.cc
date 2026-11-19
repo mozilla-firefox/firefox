@@ -64,6 +64,7 @@
 #include "rtc_base/experiments/field_trial_parser.h"
 #include "rtc_base/experiments/min_video_bitrate_experiment.h"
 #include "rtc_base/experiments/rate_control_settings.h"
+#include "rtc_base/experiments/rfc8888_congestion_control_feedback_experiment.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
 #include "rtc_base/task_utils/repeating_task.h"
@@ -487,7 +488,7 @@ VideoSendStreamImpl::VideoSendStreamImpl(
   std::optional<bool> enable_alr_bw_probing;
 
   bool rfc8888_experiment_enabled =
-      env_.field_trials().IsEnabled("WebRTC-RFC8888CongestionControlFeedback");
+      IsRfc8888CongestionControlFeedbackEnabled(env_.field_trials());
 
   // If send-side BWE, or RFC8888 congestion control feedback experiment is
   // enabled, check if we should apply updated probing and pacing settings.

@@ -24,7 +24,6 @@
 
 #include "absl/algorithm/container.h"
 #include "api/environment/environment.h"
-#include "api/field_trials_view.h"
 #include "api/sequence_checker.h"
 #include "api/transport/network_types.h"
 #include "api/units/data_rate.h"
@@ -59,6 +58,7 @@
 #include "modules/rtp_rtcp/source/tmmbr_help.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/containers/flat_map.h"
+#include "rtc_base/experiments/rfc8888_congestion_control_feedback_experiment.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/trace_event.h"
@@ -152,8 +152,8 @@ RTCPReceiver::RTCPReceiver(const Environment& env,
                            ModuleRtpRtcp* owner)
     : env_(env),
       receiver_only_(config.receiver_only),
-      enable_congestion_controller_feedback_(env_.field_trials().IsEnabled(
-          "WebRTC-RFC8888CongestionControlFeedback")),
+      enable_congestion_controller_feedback_(
+          IsRfc8888CongestionControlFeedbackEnabled(env_.field_trials())),
       rtp_rtcp_(owner),
       registered_ssrcs_(config),
       network_link_rtcp_observer_(config.network_link_rtcp_observer),

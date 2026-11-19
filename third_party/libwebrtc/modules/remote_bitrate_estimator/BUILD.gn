@@ -115,6 +115,7 @@ rtc_library("congestion_control_feedback_generator") {
     "../../rtc_base:rtc_numerics",
     "../../rtc_base/containers:flat_map",
     "../../rtc_base/experiments:field_trial_parser",
+    "../../rtc_base/experiments:rfc8888_congestion_control_feedback_experiment",
     "../congestion_controller/rtp:congestion_controller_feedback_stats",
     "../rtp_rtcp:ntp_time_util",
     "../rtp_rtcp:rtp_rtcp_format",

@@ -30,6 +30,7 @@ rtc_library("congestion_controller") {
     "../../rtc_base:macromagic",
     "../../rtc_base/containers:flat_map",
     "../../rtc_base/experiments:field_trial_parser",
+    "../../rtc_base/experiments:rfc8888_congestion_control_feedback_experiment",
     "../../rtc_base/synchronization:mutex",
     "../../system_wrappers",
     "../remote_bitrate_estimator",

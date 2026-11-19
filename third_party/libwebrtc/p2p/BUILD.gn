@@ -495,6 +495,7 @@ rtc_library("p2p_transport_channel") {
     "../rtc_base:socket_address",
     "../rtc_base:stringutils",
     "../rtc_base/experiments:field_trial_parser",
+    "../rtc_base/experiments:rfc8888_congestion_control_feedback_experiment",
     "../rtc_base/network:received_packet",
     "../rtc_base/network:sent_packet",
     "../rtc_base/system:no_unique_address",

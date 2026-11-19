@@ -17,7 +17,6 @@
 #include <vector>
 
 #include "api/environment/environment.h"
-#include "api/field_trials_view.h"
 #include "api/sequence_checker.h"
 #include "api/units/data_rate.h"
 #include "api/units/data_size.h"
@@ -31,6 +30,7 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/containers/flat_map.h"
 #include "rtc_base/experiments/field_trial_parser.h"
+#include "rtc_base/experiments/rfc8888_congestion_control_feedback_experiment.h"
 
 namespace webrtc {
 
@@ -50,7 +50,7 @@ CongestionControlFeedbackGenerator::CongestionControlFeedbackGenerator(
   ParseFieldTrial(
       {&min_time_between_feedback_, &max_feedback_fraction_,
        &max_time_to_wait_for_packet_with_marker_, &max_time_between_feedback_},
-      env.field_trials().Lookup("WebRTC-RFC8888CongestionControlFeedback"));
+      Rfc8888CongestionControlFeedbackFieldTrialString(env.field_trials()));
 }
 
 void CongestionControlFeedbackGenerator::OnSendBandwidthEstimateChanged(

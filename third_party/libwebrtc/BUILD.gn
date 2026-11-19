@@ -888,6 +888,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "rtc_base/experiments:quality_scaling_experiment_unittest",
       "rtc_base/experiments:rate_control_settings_unittest",
       "rtc_base/experiments:retransmit_flushed_packets_settings_unittest",
+      "rtc_base/experiments:rfc8888_congestion_control_feedback_experiment_unittest",
       "rtc_base/experiments:struct_parameters_parser_unittest",
       "rtc_base/memory:aligned_malloc_unittest",
       "rtc_base/memory:always_valid_pointer_unittest",

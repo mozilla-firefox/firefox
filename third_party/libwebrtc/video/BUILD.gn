@@ -175,6 +175,7 @@ rtc_library("video") {
     "../rtc_base/experiments:keyframe_interval_settings_experiment",
     "../rtc_base/experiments:min_video_bitrate_experiment",
     "../rtc_base/experiments:rate_control_settings",
+    "../rtc_base/experiments:rfc8888_congestion_control_feedback_experiment",
     "../rtc_base/synchronization:mutex",
     "../rtc_base/system:no_unique_address",
     "../rtc_base/task_utils:repeating_task",

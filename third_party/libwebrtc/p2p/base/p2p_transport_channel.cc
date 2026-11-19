@@ -61,6 +61,7 @@
 #include "rtc_base/async_packet_socket.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/dscp.h"
+#include "rtc_base/experiments/rfc8888_congestion_control_feedback_experiment.h"
 #include "rtc_base/experiments/struct_parameters_parser.h"
 #include "rtc_base/ip_address.h"
 #include "rtc_base/logging.h"
@@ -815,7 +816,7 @@ void P2PTransportChannel::ParseFieldTrials(
     stun_dict_writer_.Disable();
   }
 
-  if (field_trials.IsEnabled("WebRTC-RFC8888CongestionControlFeedback")) {
+  if (IsRfc8888CongestionControlFeedbackEnabled(field_trials)) {
     int desired_recv_esn = 1;
     RTC_LOG(LS_INFO) << "Set WebRTC-RFC8888CongestionControlFeedback: Enable "
                         "and set ECN recving mode";
