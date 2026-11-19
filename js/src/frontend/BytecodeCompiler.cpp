@@ -676,11 +676,25 @@ JSScript* frontend::CompileGlobalScript(
                                  NoExtraBindings);
 }
 
+static bool IsEvalScriptReusable(const CompilationState& compilationState) {
+  // JSOp::CallSiteObj is used for tagged template literals. The strings array
+  // passed to the tag function is required to be the same object every time a
+  // literal is evaluated, so it is stored per-Script. If we cached an eval
+  // script with a JSOp::CallSiteObj (including in inner functions) then object
+  // identity would be the same across separate evals, which violates the spec.
+  for (const ScriptStencilExtra& extra : compilationState.scriptExtra) {
+    if (extra.hasCallSiteObj()) {
+      return false;
+    }
+  }
+  return true;
+}
+
 template <typename Unit>
 static JSScript* CompileEvalScriptImpl(
     JSContext* cx, const JS::ReadOnlyCompileOptions& options,
     SourceText<Unit>& srcBuf, JS::Handle<js::Scope*> enclosingScope,
-    JS::Handle<JSObject*> enclosingEnv) {
+    JS::Handle<JSObject*> enclosingEnv, bool* isReusable) {
   JS::Rooted<JSScript*> script(cx);
   {
     AutoReportFrontendContext fc(cx);
@@ -709,6 +723,10 @@ static JSScript* CompileEvalScriptImpl(
       return nullptr;
     }
 
+    if (isReusable) {
+      *isReusable = IsEvalScriptReusable(compiler.compilationState());
+    }
+
     Rooted<CompilationGCOutput> gcOutput(cx);
     {
       BorrowingCompilationStencil borrowingStencil(compiler.stencil());
@@ -728,9 +746,10 @@ JSScript* frontend::CompileEvalScript(JSContext* cx,
                                       const JS::ReadOnlyCompileOptions& options,
                                       JS::SourceText<char16_t>& srcBuf,
                                       JS::Handle<js::Scope*> enclosingScope,
-                                      JS::Handle<JSObject*> enclosingEnv) {
+                                      JS::Handle<JSObject*> enclosingEnv,
+                                      bool* isReusable) {
   return CompileEvalScriptImpl(cx, options, srcBuf, enclosingScope,
-                               enclosingEnv);
+                               enclosingEnv, isReusable);
 }
 
 template <typename Unit>

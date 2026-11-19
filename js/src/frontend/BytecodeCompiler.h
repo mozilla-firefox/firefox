@@ -174,12 +174,15 @@ extern JSScript* CompileGlobalScriptWithExtraBindings(
     JS::MutableHandle<JSObject*> env);
 
 // Compile a script for eval of the given source using the given options and
-// enclosing scope/environment.
+// enclosing scope/environment. If `isReusable` is non-null, it will be set to
+// true if the script can be reused by a subsequent eval with the same source,
+// options, and enclosing scope.
 extern JSScript* CompileEvalScript(JSContext* cx,
                                    const JS::ReadOnlyCompileOptions& options,
                                    JS::SourceText<char16_t>& srcBuf,
                                    JS::Handle<js::Scope*> enclosingScope,
-                                   JS::Handle<JSObject*> enclosingEnv);
+                                   JS::Handle<JSObject*> enclosingEnv,
+                                   bool* isReusable = nullptr);
 
 // Compile a module of the given source using the given options.
 ModuleObject* CompileModule(JSContext* cx, FrontendContext* fc,
