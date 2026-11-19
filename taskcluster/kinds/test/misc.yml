@@ -74,20 +74,11 @@ test-verify: &test-verify
     allow-software-gl-layers: false
     variants:
         - no-fission
-        - geckoview-isolated-process+no-fission
+        - geckoview-isolated-process
     run-on-projects:
         by-variant:
-            no-fission:
-                by-test-platform:
-                    # do not run on ccov or asan or shippable or wayland
-                    .*-ccov.*: []
-                    .*-asan.*: []
-                    .*-shippable.*: []
-                    .*-wayland.*: []
-                    # do not run on mozilla-central, beta or release: usually just confirms earlier results
-                    android.*: ['integration']
-                    default: []
-            geckoview-isolated-process+no-fission:
+            no-fission: []
+            geckoview-isolated-process:
                 by-test-platform:
                     # do not run on mozilla-central, beta or release: usually just confirms earlier results
                     android.*/debug: ['integration']
@@ -100,7 +91,6 @@ test-verify: &test-verify
                     .*-shippable.*: []
                     .*-wayland.*: []
                     # do not run on mozilla-central, beta or release: usually just confirms earlier results
-                    android.*: []
                     default: ['integration']
     built-projects-only: true
     target:
