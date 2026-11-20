@@ -322,14 +322,12 @@ add_task(async function test_redirect_https() {
   Services.prefs.setBoolPref(PREF_CAPTIVE_ENABLED, false);
   equal(cps.state, Ci.nsICaptivePortalService.UNKNOWN);
 
-  let h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
+  let h2Port = (await create_h2_server()).port();
 
   // Any kind of redirection should trigger the captive portal login.
   httpserver.registerPathHandler("/captive.html", (metadata, response) => {
     response.setStatusLine(metadata.httpVersion, 307, "Moved Temporarily");
-    response.setHeader("Location", `https://foo.example.com:${h2Port}/exit`);
+    response.setHeader("Location", `https://foo.example.com:${h2Port}/`);
   });
 
   let notification = observerPromise("captive-portal-login");

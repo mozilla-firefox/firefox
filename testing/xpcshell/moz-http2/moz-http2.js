@@ -232,14 +232,6 @@ function handleRequestImpl(req, res) {
     res.setHeader("X-Connection-Http2", "no");
   }
 
-  if (u.pathname === "/exit") {
-    res.setHeader("Content-Type", "text/plain");
-    res.setHeader("Connection", "close");
-    res.writeHead(200);
-    res.end("ok");
-    process.exit();
-  }
-
   if (u.pathname === "/exception-test") {
     // Intentionally throws to test that handleRequest isolates exceptions.
     // Without the try/catch wrapper this would crash the server process.
