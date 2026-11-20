@@ -281,7 +281,7 @@
     Browser menu label for the Delete browsing data on quit feature.
     %1$s is the name of the app (for example "Firefox").
   -->
-  <string name="browser_menu_delete_browsing_data_on_quit">Quitar %s</string>
+  <string name="browser_menu_delete_browsing_data_on_quit">Quitar %1$s</string>
   <!--
     Content description for a banner within the menu which prompt the user to make this app their default browser.
     %1$s is the name of the app (for example "Firefox").

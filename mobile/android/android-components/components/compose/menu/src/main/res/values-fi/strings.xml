@@ -21,4 +21,12 @@
   <string name="mozac_menu_customize_drag_to_hide">Piilota osiot vetämällä ne tähän</string>
   <!-- Button text to reset the menu to default configuration -->
   <string name="mozac_menu_customize_reset_to_default">Palauta oletusasetukset</string>
+  <!-- Content description (not visible, for screen readers etc.) of a named menu section in the customize menu screen. %1$s is the name of the section, for example "Page controls", and %2$s the names of its items, for example "Back, Forward, Share, Refresh". -->
+  <string name="mozac_menu_customize_named_section">Osio “%1$s”: %2$s</string>
+  <!-- Content description (not visible, for screen readers etc.) of a menu section without a name in the customize menu screen. %1$s is the names of its items, for example "VPN". -->
+  <string name="mozac_menu_customize_unnamed_section">Osio “%1$s”</string>
+  <!-- Announcement (not visible, for screen readers etc.) once the user hid a menu section in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward". -->
+  <string name="mozac_menu_customize_section_hidden">Osio “%1$s” poistettu</string>
+  <!-- Announcement (not visible, for screen readers etc.) once the user showed a hidden menu section in the menu again in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward". -->
+  <string name="mozac_menu_customize_section_shown">Osio “%1$s” lisätty valikkoon</string>
 </resources>

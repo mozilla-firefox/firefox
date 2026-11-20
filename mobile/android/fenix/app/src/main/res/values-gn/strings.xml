@@ -4557,6 +4557,8 @@
   <string name="wrex_widget_error_connection_offline_title">Ha’ete ndaipóriva ñanduti</string>
   <!-- Sports widget error card title shown when match data fails to load. -->
   <string name="wrex_widget_error_load_failed_title">Ndaipóri marandu partído rehegua ko’ág̃a</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Ndaikatúi ehecha apopyre ko’ág̃a</string>
   <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
   <string name="wrex_widget_team_to_be_determined">Aty oikotavahína</string>
   <!--

@@ -28,9 +28,9 @@
   <!-- Content description (not visible, for screen readers etc.) of a menu section without a name in the customize menu screen. %1$s is the names of its items, for example "VPN". -->
   <string name="mozac_menu_customize_unnamed_section">Section «\u00a0%1$s\u00a0»</string>
   <!-- Name of the action (used by screen readers, etc.) that moves a menu section up one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
-  <string name="mozac_menu_customize_move_up">Monter</string>
+  <string name="mozac_menu_customize_move_up">Déplacer vers le haut</string>
   <!-- Name of the action (used by screen readers, etc.) that moves a menu section down one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
-  <string name="mozac_menu_customize_move_down">Descendre</string>
+  <string name="mozac_menu_customize_move_down">Déplacer vers le bas</string>
   <!-- Name of the action (used by screen readers, etc.) that hides a section in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
   <string name="mozac_menu_customize_hide">Masquer la section</string>
   <!-- Name of the action (used by screen readers, etc.) that shows a previously hidden menu section, placing it last among the visible sections in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->

@@ -195,7 +195,7 @@
     Browser menu text shown in custom tabs to indicate this is a Fenix tab
     %1$s is the name of the app (for example "Firefox").
   -->
-  <string name="browser_menu_powered_by2">%s මගින් බලගැන්වේ</string>
+  <string name="browser_menu_powered_by2">%1$s මගින් බලගැන්වේ</string>
   <!-- Browser menu button to put the current page in reader mode -->
   <string name="browser_menu_read">කියවීමේ දැක්ම</string>
   <!-- Browser menu button content description to close reader mode and return the user to the regular browser -->

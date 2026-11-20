@@ -535,7 +535,7 @@
     Bookmark snackbar message on deletion
     %1$s is the host part of the URL of the bookmark deleted, if any
   -->
-  <string name="bookmark_deletion_snackbar_message">حذف شدہ %s</string>
+  <string name="bookmark_deletion_snackbar_message">حذف شدہ %1$s</string>
   <!--
     Site Permissions
 

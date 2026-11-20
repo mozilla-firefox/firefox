@@ -288,7 +288,7 @@
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">Navigaasje</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
-  <string name="browser_custom_tab_menu_handlebar_content_description">Menublêd Ljepblêd oanpasse slute</string>
+  <string name="browser_custom_tab_menu_handlebar_content_description">Paniel mear opsjes slute</string>
   <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
   <string name="browser_toolbar_cached_page_indicator">Buffere</string>
   <!-- Message shown when a cached website has finished reloading and the tab is now showing the live version of the page -->
@@ -436,7 +436,7 @@
   <!-- Search suggestion onboarding hint title text -->
   <string name="search_suggestions_onboarding_title">Syksuggestjes yn priveesesjes tastean?</string>
   <!-- Search suggestion onboarding hint description text, %s is the name of the app (for example "Firefox"). -->
-  <string name="search_suggestions_onboarding_text">%1$s sil alles wat jo yn de adresbalke yntype mei jo standert sykmasine diele.</string>
+  <string name="search_suggestions_onboarding_text">%s sil alles wat jo yn de adresbalke yntype mei jo standert sykmasine diele.</string>
   <!-- Search engine suggestion title text. %s is the name of the suggested engine. -->
   <string name="search_engine_suggestions_title">%s trochsykje</string>
   <!-- Search engine suggestion description text -->

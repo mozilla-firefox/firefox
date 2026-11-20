@@ -3599,8 +3599,6 @@
   <string name="automatic_translation_option_always_translate_title_preference">ᱡᱟᱣᱜᱮ ᱛᱚᱨᱡᱚᱢᱟᱭ ᱢᱮ</string>
   <!-- Preference option for always translate. Radio button summary text. %1$s is the name of the app (for example "Firefox"). -->
   <string name="automatic_translation_option_always_translate_summary_preference">ᱥᱟᱦᱴᱟ ᱞᱟᱫᱮ ᱡᱷᱚᱜ %1$s ᱫᱚ ᱱᱚᱶᱟ ᱯᱟᱹᱨᱥᱤ ᱛᱮ ᱟᱡᱛᱮ ᱥᱟᱦᱴᱟ ᱛᱚᱨᱡᱚᱢᱟᱭ ᱟ ᱾</string>
-  <!-- Preference option for never translate. Radio button title text. -->
-  <string name="automatic_translation_option_never_translate_title_preference">%S ᱛᱤᱥ ᱦᱚᱸ ᱟᱞᱚᱢ ᱛᱚᱨᱡᱚᱢᱟᱭᱟ</string>
   <!-- Preference option for never translate. Radio button summary text. %1$s is the name of the app (for example "Firefox"). -->
   <string name="automatic_translation_option_never_translate_summary_preference">ᱱᱚᱶᱟ ᱯᱟᱹᱨᱥᱤ ᱛᱮ %1$s ᱱᱚᱶᱟ ᱥᱟᱭᱤᱴ ᱵᱟᱭ ᱛᱚᱨᱡᱚᱢᱟ ᱪᱷᱚᱭᱟ ᱾</string>
   <!--
