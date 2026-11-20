@@ -48,16 +48,13 @@ class WebTransportDatagramsWritable final : public WritableStream {
 
   void SetChild(WebTransportChild* aChild);
 
-  // Resolves this writable's withheld write promise, if any, so the
-  // WritableStream is not left waiting on it once the session is torn down.
-  void Cleanup();
-
   // Forwards to the algorithms instance; see
-  // OutgoingDatagramStreamAlgorithms::RetireInFlight()/
-  // TryResolveOldestFromCredit() for details.
+  // OutgoingDatagramStreamAlgorithms::Cleanup()/RetireInFlight()/
+  // TryResolveBackpressureFromCredit() for details.
+  void Cleanup();
   void RetireInFlight(uint64_t aCount);
-  bool TryResolveOldestFromCredit(uint64_t aAvailableBytes,
-                                  size_t* aResolvedBytes);
+  bool TryResolveBackpressureFromCredit(uint64_t aAvailableBytes,
+                                        size_t* aResolvedBytes);
 
  private:
   ~WebTransportDatagramsWritable() override;
