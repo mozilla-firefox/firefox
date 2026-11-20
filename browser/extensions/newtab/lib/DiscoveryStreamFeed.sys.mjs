@@ -126,6 +126,12 @@ const PREF_UNIFIED_ADS_SPOCS_ENABLED = "unifiedAds.spocs.enabled";
 const PREF_UNIFIED_ADS_ADSFEED_ENABLED = "unifiedAds.adsFeed.enabled";
 const PREF_UNIFIED_ADS_ENDPOINT = "unifiedAds.endpoint";
 const PREF_UNIFIED_ADS_OHTTP = "unifiedAds.ohttp.enabled";
+const PREF_OHTTP_CONFIG = "discoverystream.ohttp.configURL";
+const PREF_OHTTP_RELAY = "discoverystream.ohttp.relayURL";
+const STAGING_ADS_ENDPOINT = "https://ads.allizom.org/";
+const STAGING_OHTTP_CONFIG =
+  "https://stage.ohttp-gateway.nonprod.webservices.mozgcp.net/ohttp-configs";
+const STAGING_OHTTP_RELAY = "https://mozilla-ohttp-relay-test.edgecompute.app/";
 const PREF_SHOW_SPONSORED = "showSponsored";
 const PREF_SYSTEM_SHOW_SPONSORED = "system.showSponsored";
 const PREF_SPOC_IMPRESSIONS = "discoverystream.spoc.impressions";
@@ -238,6 +244,29 @@ export class DiscoveryStreamFeed {
     this._prefCache.config.enabled = DISCOVERY_STREAM_ENABLED;
 
     return this._prefCache.config;
+  }
+
+  setStagingAds(enabled) {
+    if (enabled) {
+      const endpoints = this.store.getState().Prefs.values[PREF_ENDPOINTS];
+      this.store.dispatch(
+        ac.SetPref(PREF_UNIFIED_ADS_ENDPOINT, STAGING_ADS_ENDPOINT)
+      );
+      this.store.dispatch(
+        ac.SetPref(PREF_ENDPOINTS, `${endpoints},${STAGING_ADS_ENDPOINT}`)
+      );
+      this.store.dispatch(ac.SetPref(PREF_OHTTP_CONFIG, STAGING_OHTTP_CONFIG));
+      this.store.dispatch(ac.SetPref(PREF_OHTTP_RELAY, STAGING_OHTTP_RELAY));
+      return;
+    }
+    for (const name of [
+      PREF_UNIFIED_ADS_ENDPOINT,
+      PREF_ENDPOINTS,
+      PREF_OHTTP_CONFIG,
+      PREF_OHTTP_RELAY,
+    ]) {
+      this.store.dispatch({ type: at.CLEAR_PREF, data: { name } });
+    }
   }
 
   resetConfigDefauts() {
@@ -2961,6 +2990,9 @@ export class DiscoveryStreamFeed {
         await this.onSpocsOnDemandUpdate();
         break;
       }
+      case at.DISCOVERY_STREAM_DEV_STAGING_ADS:
+        this.setStagingAds(action.data.enabled);
+        break;
       case at.DISCOVERY_STREAM_DEV_SYNC_RS:
         lazy.RemoteSettings.pollChanges();
         break;
