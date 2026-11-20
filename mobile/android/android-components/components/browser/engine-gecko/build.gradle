@@ -4,16 +4,6 @@
 
 import static org.mozilla.conventions.BuildConfigKt.getBuildId
 
-buildscript {
-    repositories {
-        gradle.configureMavenRepositories(delegate)
-    }
-
-    dependencies {
-        classpath libs.mozilla.glean.gradle.plugin
-    }
-}
-
 plugins {
     id 'com.android.library'
     alias(libs.plugins.dependency.analysis)
