@@ -14,7 +14,6 @@
         "-no-snapstorage",
         "-no-snapshot",
         "-no-window",
-        "-no-accel",
         "-no-metrics",
         "-prop", "ro.test_harness=true"
     ],
