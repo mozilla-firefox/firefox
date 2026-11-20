@@ -83,6 +83,8 @@ add_task(async function test_wt_datagram() {
   let rawData = new Uint8Array(size);
   rawData.fill(42);
 
+  // The default max age is short enough for a loaded test machine to exceed.
+  webTransport.setDatagramMaxAge(Infinity);
   webTransport.sendDatagram(rawData, 0, 0);
 
   let chan = makeChan(`https://${host}/get_webtransport_datagram`);
