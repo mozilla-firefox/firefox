@@ -416,6 +416,9 @@ impl NeqoHttp3Conn {
         max_stream_data: u64,
         version_negotiation: bool,
         webtransport: bool,
+        wt_initial_max_data: u64,
+        wt_initial_max_streams_uni: u64,
+        wt_initial_max_streams_bidi: u64,
         qlog_dir: &nsACString,
         idle_timeout: u32,
         fast_pto: u32,
@@ -569,6 +572,9 @@ impl NeqoHttp3Conn {
             .max_blocked_streams(max_blocked_streams)
             .connection_parameters(params)
             .webtransport(webtransport)
+            .wt_initial_max_data(wt_initial_max_data)
+            .wt_initial_max_streams_uni(wt_initial_max_streams_uni)
+            .wt_initial_max_streams_bidi(wt_initial_max_streams_bidi)
             .connect(true)
             .http3_datagram(true);
 
@@ -1140,6 +1146,9 @@ pub extern "C" fn neqo_http3conn_new(
     max_stream_data: u64,
     version_negotiation: bool,
     webtransport: bool,
+    wt_initial_max_data: u64,
+    wt_initial_max_streams_uni: u64,
+    wt_initial_max_streams_bidi: u64,
     qlog_dir: &nsACString,
     idle_timeout: u32,
     fast_pto: u32,
@@ -1160,6 +1169,9 @@ pub extern "C" fn neqo_http3conn_new(
         max_stream_data,
         version_negotiation,
         webtransport,
+        wt_initial_max_data,
+        wt_initial_max_streams_uni,
+        wt_initial_max_streams_bidi,
         qlog_dir,
         idle_timeout,
         fast_pto,
@@ -1188,6 +1200,9 @@ pub extern "C" fn neqo_http3conn_new_use_nspr_for_io(
     max_stream_data: u64,
     version_negotiation: bool,
     webtransport: bool,
+    wt_initial_max_data: u64,
+    wt_initial_max_streams_uni: u64,
+    wt_initial_max_streams_bidi: u64,
     qlog_dir: &nsACString,
     idle_timeout: u32,
     fast_pto: u32,
@@ -1207,6 +1222,9 @@ pub extern "C" fn neqo_http3conn_new_use_nspr_for_io(
         max_stream_data,
         version_negotiation,
         webtransport,
+        wt_initial_max_data,
+        wt_initial_max_streams_uni,
+        wt_initial_max_streams_bidi,
         qlog_dir,
         idle_timeout,
         fast_pto,

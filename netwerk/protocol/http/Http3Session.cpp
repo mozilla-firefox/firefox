@@ -184,6 +184,13 @@ nsresult Http3Session::Init(nsHttpConnectionInfo* aConnInfo,
   bool pacingEnabled = !aIsTunnel;
 
   nsresult rv;
+  uint64_t wtInitialMaxData =
+      StaticPrefs::network_webtransport_initial_max_data();
+  uint64_t wtInitialMaxStreamsUni =
+      StaticPrefs::network_webtransport_initial_max_streams_uni();
+  uint64_t wtInitialMaxStreamsBidi =
+      StaticPrefs::network_webtransport_initial_max_streams_bidi();
+
   if (mUseNSPRForIO) {
     rv = NeqoHttp3Conn::InitUseNSPRForIO(
         mSocketControl->GetHostName(), alpn, selfAddr, peerAddr,
@@ -192,7 +199,8 @@ nsresult Http3Session::Init(nsHttpConnectionInfo* aConnInfo,
         StaticPrefs::network_http_http3_max_data(),
         StaticPrefs::network_http_http3_max_stream_data(),
         StaticPrefs::network_http_http3_version_negotiation_enabled(),
-        mConnInfo->GetWebTransport(), gHttpHandler->Http3QlogDir(), idleTimeout,
+        mConnInfo->GetWebTransport(), wtInitialMaxData, wtInitialMaxStreamsUni,
+        wtInitialMaxStreamsBidi, gHttpHandler->Http3QlogDir(), idleTimeout,
         fastPto, pacingEnabled, getter_AddRefs(mHttp3Connection));
   } else {
     rv = NeqoHttp3Conn::Init(
@@ -202,7 +210,8 @@ nsresult Http3Session::Init(nsHttpConnectionInfo* aConnInfo,
         StaticPrefs::network_http_http3_max_data(),
         StaticPrefs::network_http_http3_max_stream_data(),
         StaticPrefs::network_http_http3_version_negotiation_enabled(),
-        mConnInfo->GetWebTransport(), gHttpHandler->Http3QlogDir(), idleTimeout,
+        mConnInfo->GetWebTransport(), wtInitialMaxData, wtInitialMaxStreamsUni,
+        wtInitialMaxStreamsBidi, gHttpHandler->Http3QlogDir(), idleTimeout,
         fastPto, socket->GetFileDescriptor(), isOuterConnection,
         getter_AddRefs(mHttp3Connection));
   }
