@@ -482,6 +482,50 @@ TEST_F(MAYBE_PipeWireStreamTest, TestModifierFallbackNullRenegotiateEvent) {
   shared_screencast_stream_->StopScreenCastStream();
 }
 
+// Verifies that stopping the stream while a buffer is being processed on
+// PipeWire's data loop thread waits for the processing to finish, instead of
+// tearing down state that the in-flight OnStreamProcess() still uses.
+TEST_F(MAYBE_PipeWireStreamTest, TestStopWhileProcessingBuffer) {
+  Event waitConnectEvent;
+  Event waitStartStreamingEvent;
+
+  EXPECT_CALL(*this, OnStreamReady(_))
+      .WillOnce([this](uint32_t stream_node_id) {
+        StartScreenCastStream(stream_node_id);
+      });
+  EXPECT_CALL(*this, OnStreamConfigured).WillOnce([&waitConnectEvent] {
+    waitConnectEvent.Set();
+  });
+  EXPECT_CALL(*this, OnBufferAdded).Times(AtLeast(1));
+  EXPECT_CALL(*this, OnStartStreaming).WillOnce([&waitStartStreamingEvent] {
+    waitStartStreamingEvent.Set();
+  });
+  EXPECT_CALL(*this, OnFormatChanged(SPA_VIDEO_FORMAT_BGRA, 800, 640, 60,
+                                     DRM_FORMAT_MOD_LINEAR))
+      .Times(AtLeast(1));
+
+  waitConnectEvent.Wait(kLongWait);
+  waitStartStreamingEvent.Wait(kShortWait);
+
+  // Block inside OnStreamProcess() on the PipeWire data loop thread, so that
+  // StopScreenCastStream() runs while the buffer is still being processed.
+  Event processingBufferEvent;
+  EXPECT_CALL(*this, OnFrameRecorded);
+  EXPECT_CALL(*this, OnBufferCorruptedData).WillOnce([&processingBufferEvent] {
+    processingBufferEvent.Set();
+    Event().Wait(TimeDelta::Millis(500));
+  });
+
+  RgbaColor red_color(0, 0, 255);
+  test_screencast_stream_provider_->RecordFrame(
+      red_color, TestScreenCastStreamProvider::CorruptedData);
+  ASSERT_TRUE(processingBufferEvent.Wait(kShortWait));
+
+  EXPECT_CALL(*this, OnStopStreaming);
+  shared_screencast_stream_->StopScreenCastStream();
+  EXPECT_EQ(shared_screencast_stream_->CaptureFrame(), nullptr);
+}
+
 // The ability to create multiple Pipewire capture streams in the same
 // process is needed by projects such as Chrome Remote Desktop.
 TEST_F(MAYBE_PipeWireStreamTest, TestMultipleInstancesAllowed) {
