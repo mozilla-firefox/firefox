@@ -42,13 +42,21 @@ WebTransportIncomingStreamsAlgorithms::PullCallbackImpl(
   // Step 1: If transport.[[State]] is "connecting", then return the result
   // of performing the following steps upon fulfillment of
   // transport.[[Ready]]:
-  // We don't explicitly check mState here, since we'll reject
-  // mIncomingStreamPromise if we go to FAILED or CLOSED
-  //
-  // Step 2: Let session be transport.[[Session]].
-  // Step 3: Let p be a new promise.
+  // We don't explicitly wait for ready; no incoming stream can arrive before
+  // the session is established, so the wait below covers it.
   RefPtr<Promise> promise =
       Promise::CreateInfallible(mTransport->GetParentObject());
+
+  // Step 2: If transport.[[State]] is not "connected", then return a new
+  // rejected promise with an InvalidStateError.
+  if (mTransport->mState == WebTransport::WebTransportState::CLOSED ||
+      mTransport->mState == WebTransport::WebTransportState::FAILED) {
+    promise->MaybeRejectWithInvalidStateError("WebTransport closed or failed");
+    return promise.forget();
+  }
+
+  // Step 3: Let session be transport.[[Session]].
+  // Step 4: Let p be a new promise.
   RefPtr<WebTransportIncomingStreamsAlgorithms> self(this);
   // The real work of PullCallback()
   // Step 5: Wait until there is an available incoming unidirectional stream.
@@ -97,6 +105,13 @@ void WebTransportIncomingStreamsAlgorithms::BuildStream(JSContext* aCx,
                                                         ErrorResult& aRv) {
   // https://w3c.github.io/webtransport/#pullbidirectionalstream and
   // https://w3c.github.io/webtransport/#pullunidirectionalstream
+  // A waiting pull's reaction can run after a close() earlier in the same
+  // microtask checkpoint; the session is gone then, so there is nothing to
+  // receive.
+  if (mTransport->mState == WebTransport::WebTransportState::CLOSED ||
+      mTransport->mState == WebTransport::WebTransportState::FAILED) {
+    return;
+  }
   LOG(("Incoming%sDirectionalStreams Pull building a stream",
        mUnidirectional == StreamType::Unidirectional ? "Uni" : "Bi"));
   if (mUnidirectional == StreamType::Unidirectional) {
