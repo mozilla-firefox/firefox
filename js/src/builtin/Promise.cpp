@@ -9256,7 +9256,8 @@ static bool RunThenableJob(JSContext* cx, const StackThenableJob& job) {
   HandleObject thenMethod = job.thenMethod();
   switch (job.kind()) {
     case MicroTaskQueueElement::Kind::ResolveThenable:
-      return PerformPromiseResolveThenable(cx, promise, resolutionValue, thenMethod);
+      return PerformPromiseResolveThenable(cx, promise, resolutionValue,
+                                           thenMethod);
     case MicroTaskQueueElement::Kind::ResolveBuiltinThenable: {
       RootedObject thenableObj(cx, &resolutionValue.toObject());
       return PromiseResolveBuiltinThenableJob(cx, promise, thenableObj);
