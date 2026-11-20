@@ -724,10 +724,14 @@ static bool AbruptRejectPromise(JSContext* cx, CallArgs& args,
 }
 
 class PromiseJobObject : public NativeObject {
- public:
+ protected:
   enum Slots {
     // Shared slots:
-    Promise = 0,                    // see comment in PromiseReaction
+
+    // The promise this job is associated with, as reported to the host by
+    // JS::JSMicroTaskRef::maybeGetPromise: a reaction's result promise, or the
+    // promise a thenable job resolves. Can be null.
+    PromiseForHost = 0,
     IncumbentGlobalRepresentative,  // See comment in PromiseReaction
     OptionalHostDefinedData,
 
@@ -736,12 +740,13 @@ class PromiseJobObject : public NativeObject {
     SlotCount,
   };
 
-  JSObject* promise() const {
-    return getFixedSlot(Slots::Promise).toObjectOrNull();
+ public:
+  JSObject* promiseForHost() const {
+    return getFixedSlot(Slots::PromiseForHost).toObjectOrNull();
   }
 
-  void initPromise(JSObject* obj) {
-    initFixedSlot(Slots::Promise, ObjectOrNullValue(obj));
+  void initPromiseForHost(JSObject* obj) {
+    initFixedSlot(Slots::PromiseForHost, ObjectOrNullValue(obj));
   }
 
   Value getIncumbentGlobalRepresentative() const {
@@ -778,7 +783,7 @@ class PromiseJobObject : public NativeObject {
 // PromiseReaction is written against; the inline representation
 // on the stack (PromiseReactionStackStorage) provides the same accessors.
 class PromiseReactionObjectStorage : public PromiseJobObject {
- public:
+ protected:
   enum Slots {
     // This is the promise-like object that gets resolved with the result of
     // this reaction, if any. If this reaction record was created with .then or
@@ -811,7 +816,7 @@ class PromiseReactionObjectStorage : public PromiseJobObject {
     //   reaction to be created. (These functions act as if they had created a
     //   promise to invoke the appropriate provided reaction function, without
     //   actually allocating a promise for them.)
-    Promise = PromiseJobObject::Slots::Promise,
+    ResultPromise = PromiseJobObject::Slots::PromiseForHost,
 
     // The host defined data for this reaction record. Can be null.
     // See step 5 in https://html.spec.whatwg.org/#hostmakejobcallback
@@ -872,10 +877,13 @@ class PromiseReactionObjectStorage : public PromiseJobObject {
     SlotCount,
   };
 
+ public:
   int32_t flags() const { return getFixedSlot(Slots::Flags).toInt32(); }
   void setFlags(int32_t flags) {
     setFixedSlot(Slots::Flags, Int32Value(flags));
   }
+
+  JSObject* resultPromise() const { return promiseForHost(); }
 
   Value onFulfilled() const { return getFixedSlot(Slots::OnFulfilled); }
   Value onRejected() const { return getFixedSlot(Slots::OnRejected); }
@@ -911,12 +919,12 @@ class PromiseReactionObjectStorage : public PromiseJobObject {
 
   // Initialize the slots which come from the spec's PromiseReaction record.
   // [[Type]] is set later, see setTargetStateAndHandlerArg.
-  void initReaction(JSObject* promise, const Value& onFulfilled,
+  void initReaction(JSObject* resultPromise, const Value& onFulfilled,
                     const Value& onRejected, JSObject* resolve,
                     JSObject* reject,
                     const Value& incumbentGlobalRepresentative,
                     const Value& optionalHostDefinedData) {
-    initPromise(promise);
+    initPromiseForHost(resultPromise);
     initFixedSlot(Slots::Flags, Int32Value(0));
     initFixedSlot(Slots::OnFulfilled, onFulfilled);
     initFixedSlot(Slots::OnRejected, onRejected);
@@ -1121,7 +1129,7 @@ class PromiseReaction : public Base {
   // Specialized reactions carry a promise to resolve, an async function's
   // generator, an async generator, or an async-from-sync iterator. This is the
   // specializedReactionState() field, separate from the result promise in
-  // promise().
+  // resultPromise().
   bool hasSpecializedReactionState() const {
     int32_t flags = this->flags();
     return flags & REACTION_FLAGS_WITH_SPECIALIZED_STATE;
@@ -1174,7 +1182,7 @@ const JSClass PromiseReactionRecord::class_ = {
 // needed by StackPromiseReaction.
 class MOZ_STACK_CLASS PromiseReactionStackStorage {
   enum Slot {
-    Promise,
+    ResultPromise,
     Flags,
     OnFulfilled,
     OnRejected,
@@ -1205,7 +1213,9 @@ class MOZ_STACK_CLASS PromiseReactionStackStorage {
 
   Realm* realm() const { return realm_; }
 
-  JSObject* promise() const { return slots_[Promise].get().toObjectOrNull(); }
+  JSObject* resultPromise() const {
+    return slots_[ResultPromise].get().toObjectOrNull();
+  }
 
   int32_t flags() const { return slots_[Flags].get().toInt32(); }
   void setFlags(int32_t flags) { slots_[Flags].set(Int32Value(flags)); }
@@ -1238,12 +1248,12 @@ class MOZ_STACK_CLASS PromiseReactionStackStorage {
     return slots_[OptionalHostDefinedData];
   }
 
-  void initReaction(JSObject* promise, const Value& onFulfilled,
+  void initReaction(JSObject* resultPromise, const Value& onFulfilled,
                     const Value& onRejected, JSObject* resolve,
                     JSObject* reject,
                     const Value& incumbentGlobalRepresentative,
                     const Value& optionalHostDefinedData) {
-    slots_[Promise].set(ObjectOrNullValue(promise));
+    slots_[ResultPromise].set(ObjectOrNullValue(resultPromise));
     slots_[Flags].set(Int32Value(0));
     slots_[OnFulfilled].set(onFulfilled);
     slots_[OnRejected].set(onRejected);
@@ -1318,7 +1328,7 @@ class MOZ_STACK_CLASS StackPromiseReaction
   explicit StackPromiseReaction(JSContext* cx) : PromiseReaction(cx) {}
 
   // Read fields of an InlinePromiseReaction MicroTask without unpacking it.
-  static JSObject* maybePromise(const JS::MicroTask& task) {
+  static JSObject* maybeResultPromise(const JS::MicroTask& task) {
     if (!(MicroTaskQueueElement::jsBits(task) & InlineHasPromise)) {
       return nullptr;
     }
@@ -1416,7 +1426,7 @@ class MOZ_STACK_CLASS StackPromiseReaction
     // Embedded reactions share a slot for the result promise and specialized
     // reaction state. The reaction kind determines which one is present, so we
     // cannot embed a reaction that needs both.
-    if (hasSpecializedReactionState() && this->promise()) {
+    if (hasSpecializedReactionState() && this->resultPromise()) {
       return false;
     }
 
@@ -1444,11 +1454,14 @@ class MOZ_STACK_CLASS StackPromiseReaction
     uint32_t flags = uint32_t(this->flags());
     MOZ_ASSERT((flags & ~InlineFlagsMask) == 0);
 
+    // The embedded slot holds either the specialized state or the result
+    // promise; canEmbedInPromise rejects reactions that have both.
+    MOZ_ASSERT_IF(hasSpecializedReactionState(), !resultPromise());
     promise->initEmbeddedReaction(
         flags, !getIncumbentGlobalRepresentative().isNull(), onFulfilled(),
         onRejected(),
         hasSpecializedReactionState() ? specializedReactionState()
-                                      : ObjectOrNullValue(this->promise()));
+                                      : ObjectOrNullValue(resultPromise()));
   }
 
   // Whether this reaction, not yet enqueued, can be represented as a
@@ -1468,7 +1481,7 @@ class MOZ_STACK_CLASS StackPromiseReaction
       return false;
     }
 
-    if (JSObject* promise = this->promise()) {
+    if (JSObject* promise = this->resultPromise()) {
       // Handle only real promise objects.
       if (!promise->is<PromiseObject>()) {
         return false;
@@ -1503,7 +1516,7 @@ class MOZ_STACK_CLASS StackPromiseReaction
     uint32_t bits = uint32_t(flags());
     MOZ_ASSERT((bits & ~InlineFlagsMask) == 0);
 
-    JSObject* promise = this->promise();
+    JSObject* promise = this->resultPromise();
     if (promise) {
       bits |= InlineHasPromise;
     }
@@ -1522,8 +1535,8 @@ static PromiseReactionRecord* NewReactionRecordFromStack(
   if (!reaction) {
     return nullptr;
   }
-  reaction->initReaction(data.promise(), data.onFulfilled(), data.onRejected(),
-                         data.resolve(), data.reject(),
+  reaction->initReaction(data.resultPromise(), data.onFulfilled(),
+                         data.onRejected(), data.resolve(), data.reject(),
                          data.getIncumbentGlobalRepresentative(),
                          data.getOptionalHostDefinedData());
   reaction->setFlags(data.flags());
@@ -1606,7 +1619,7 @@ ThenableJobObject* NewThenableJob(JSContext* cx, HandleObject promise,
     return nullptr;
   }
 
-  job->initPromise(promise);
+  job->initPromiseForHost(promise);
   job->initThen(then);
   job->initThenable(thenable);
   job->initIncumbentGlobalRepresentative(
@@ -2211,7 +2224,7 @@ class MOZ_RAII StackThenableJob {
   StackThenableJob(JSContext* cx, MicroTaskQueueElement::Kind kind,
                    ThenableJobObject* job)
       : StackThenableJob(
-            cx, kind, job->promise(), job->thenable(), job->then(),
+            cx, kind, job->promiseForHost(), job->thenable(), job->then(),
             job->getIncumbentGlobalRepresentative().toObjectOrNull(),
             job->getOptionalHostDefinedData().toObjectOrNull()) {}
 
@@ -2312,7 +2325,7 @@ static bool CanUseSameRealmEnqueue(JSContext* cx, HandleObject reactionObj,
   }
 
   // Handle only real promise objects
-  JSObject* reactionPromise = reaction->promise();
+  JSObject* reactionPromise = reaction->resultPromise();
   if (reactionPromise && !reactionPromise->is<PromiseObject>()) {
     return false;
   }
@@ -2492,7 +2505,7 @@ static bool CanUseSameRealmEnqueue(JSContext* cx, HandleObject reactionObj,
   // If after all this we do have an object, wrap it in case we entered the
   // handler's compartment above, because we should pass objects from a
   // single compartment to the enqueuePromiseJob callback.
-  RootedField<JSObject*, 4> promise(roots, reaction->promise());
+  RootedField<JSObject*, 4> promise(roots, reaction->resultPromise());
   if (promise) {
     if (promise->is<PromiseObject>()) {
       if (!cx->compartment()->wrap(cx, &promise)) {
@@ -2592,7 +2605,7 @@ static bool CanUseSameRealmEnqueue(JSContext* cx, HandleObject reactionObj,
   // NewPromiseReactionJob
   // Checked in CanUseSameRealmEnqueue: the reaction's promise is either null
   // or a PromiseObject.
-  RootedField<JSObject*, 2> promise(roots, reaction->promise());
+  RootedField<JSObject*, 2> promise(roots, reaction->resultPromise());
 
   // NewPromiseReactionJob
   // Step 1 (reordered). Let job be a new Job Abstract Closure with no
@@ -3199,7 +3212,7 @@ template <typename InlineOrObjectReaction>
   }
 
   // Steps 1.f-i.
-  RootedField<JSObject*, 4> promiseObj(roots, reaction->promise());
+  RootedField<JSObject*, 4> promiseObj(roots, reaction->resultPromise());
   RootedField<JSObject*, 5> callee(roots);
   if (resolutionMode == ResolveMode) {
     callee = reaction->resolve();
@@ -3416,7 +3429,7 @@ static bool RunPromiseReactionJob(JSContext* cx,
   }
 
   // Steps 1.f-i.
-  RootedField<JSObject*, 6> promiseObj(roots, reaction->promise());
+  RootedField<JSObject*, 6> promiseObj(roots, reaction->resultPromise());
   RootedField<JSObject*, 5> callee(roots);
   if (resolutionMode == ResolveMode) {
     callee = reaction->resolve();
@@ -8540,7 +8553,7 @@ bool PromiseObject::dependentPromises(JSContext* cx,
     auto* reaction = &obj->as<PromiseReactionRecord>();
 
     // Not all reactions have a Promise on them.
-    JSObject* promiseObj = reaction->promise();
+    JSObject* promiseObj = reaction->resultPromise();
     if (promiseObj) {
       if (!values.growBy(1)) {
         return false;
@@ -8612,14 +8625,14 @@ bool PromiseObject::forEachReactionRecord(
     } else {
       RootedField<JSObject*, 5> resolve(roots);
       RootedField<JSObject*, 6> reject(roots);
-      RootedField<JSObject*, 7> result(roots, reaction->promise());
+      RootedField<JSObject*, 7> result(roots, reaction->resultPromise());
 
-      Value v = reaction->getFixedSlot(PromiseReactionRecord::OnFulfilled);
+      Value v = reaction->onFulfilled();
       if (v.isObject()) {
         resolve = &v.toObject();
       }
 
-      v = reaction->getFixedSlot(PromiseReactionRecord::OnRejected);
+      v = reaction->onRejected();
       if (v.isObject()) {
         reject = &v.toObject();
       }
@@ -8847,9 +8860,9 @@ void PromiseReactionRecord::forEachReactionFlag(uint32_t flags, KnownF known,
 }
 
 void PromiseReactionRecord::dumpOwnFields(js::JSONPrinter& json) const {
-  if (promise()) {
+  if (resultPromise()) {
     js::GenericPrinter& out = json.beginStringProperty("promise");
-    promise()->dumpStringContent(out);
+    resultPromise()->dumpStringContent(out);
     json.endStringProperty();
   }
 
@@ -9438,7 +9451,7 @@ JS_PUBLIC_API JSObject* JS::JSMicroTaskRef::maybeGetPromise() && {
   }
   if (MicroTaskQueueElement::Kind(task_.kind()) ==
       MicroTaskQueueElement::Kind::InlinePromiseReaction) {
-    return StackPromiseReaction::maybePromise(task_);
+    return StackPromiseReaction::maybeResultPromise(task_);
   }
   JSObject* unwrapped = UncheckedUnwrapToLive(maybeWrappedObject());
   if (!unwrapped) {
@@ -9446,7 +9459,7 @@ JS_PUBLIC_API JSObject* JS::JSMicroTaskRef::maybeGetPromise() && {
   }
 
   MOZ_ASSERT(unwrapped->is<PromiseJobObject>());
-  return unwrapped->as<PromiseJobObject>().promise();
+  return unwrapped->as<PromiseJobObject>().promiseForHost();
 }
 
 JS_PUBLIC_API bool JS::JSMicroTaskRef::getFlowId(uint64_t* uid) && {
