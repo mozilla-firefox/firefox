@@ -155,6 +155,7 @@
   "gTabsPanel",
   "StatusPanel",
   "TabBarVisibility",
+  "TabContextMenu",
   "fxAccounts",
   "PlacesTreeView",
   "PlacesInsertionPoint",

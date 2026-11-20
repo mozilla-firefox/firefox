@@ -460,6 +460,9 @@
       "chrome://browser/content/tabbrowser/tab-bar-visibility.mjs": [
         "../../../browser/components/tabbrowser/content/tab-bar-visibility.mjs"
       ],
+      "chrome://browser/content/tabbrowser/tab-context-menu.mjs": [
+        "../../../browser/components/tabbrowser/content/tab-context-menu.mjs"
+      ],
       "chrome://browser/content/tabbrowser/tab-groups-list.mjs": [
         "../../../browser/components/tabbrowser/content/tab-groups-list.mjs"
       ],

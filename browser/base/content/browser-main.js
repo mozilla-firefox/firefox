@@ -20,7 +20,6 @@
   Services.scriptloader.loadSubScript("chrome://browser/content/browser-unified-extensions.js", this);
   ChromeUtils.importESModule("chrome://browser/content/tabbrowser/address-footer.mjs", { global: "current" });
   ChromeUtils.importESModule("chrome://browser/content/tabbrowser/tab.mjs", { global: "current" });
-  Services.scriptloader.loadSubScript("chrome://browser/content/tabbrowser/tab-context-menu.js", this);
   ChromeUtils.importESModule("chrome://browser/content/tabbrowser/tabgroup.mjs", { global: "current" });
   ChromeUtils.importESModule("chrome://browser/content/tabbrowser/tabgroup-menu.mjs", { global: "current" });
   ChromeUtils.importESModule("chrome://browser/content/tabbrowser/tabnote-menu.mjs", { global: "current" });

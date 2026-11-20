@@ -162,4 +162,7 @@ declare namespace BrowserWindow {
 
   // tabbrowser/content/tab-bar-visibility.mjs
   var TabBarVisibility: typeof import("chrome://browser/content/tabbrowser/tab-bar-visibility.mjs").TabBarVisibility;
+
+  // tabbrowser/content/tab-context-menu.mjs
+  var TabContextMenu: typeof import("chrome://browser/content/tabbrowser/tab-context-menu.mjs").TabContextMenu;
 }

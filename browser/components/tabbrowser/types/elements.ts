@@ -54,6 +54,14 @@ interface MozToolbarbutton extends XULElement {
   disabled: boolean;
 }
 
+// The base of <menu> and <menuitem> in toolkit/content/widgets/menu.js, which
+// tsc cannot see. `disabled` comes from MozElements.BaseControl in
+// toolkit/content/customElements.js. Declares only the members tabbrowser
+// uses.
+interface MozMenuItemBase extends XULElement {
+  disabled: boolean;
+}
+
 // toolkit/content/widgets/moz-checkbox, whose Lit reactive properties tsc
 // cannot see. Declares only the members tabbrowser uses.
 interface MozCheckbox extends HTMLElement {

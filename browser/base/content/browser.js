@@ -136,6 +136,7 @@ ChromeUtils.defineESModuleGetters(
     StatusPanel: "chrome://browser/content/tabbrowser/status-panel.mjs",
     TabBarVisibility:
       "chrome://browser/content/tabbrowser/tab-bar-visibility.mjs",
+    TabContextMenu: "chrome://browser/content/tabbrowser/tab-context-menu.mjs",
   },
   { global: "current" }
 );

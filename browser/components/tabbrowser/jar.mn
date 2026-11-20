@@ -14,7 +14,7 @@ browser.jar:
    content/browser/tabbrowser/address-footer.mjs          (content/address-footer.mjs)
    content/browser/tabbrowser/status-panel.mjs            (content/status-panel.mjs)
    content/browser/tabbrowser/tab.mjs                     (content/tab.mjs)
-   content/browser/tabbrowser/tab-context-menu.js         (content/tab-context-menu.js)
+   content/browser/tabbrowser/tab-context-menu.mjs        (content/tab-context-menu.mjs)
    content/browser/tabbrowser/tab-bar-visibility.mjs      (content/tab-bar-visibility.mjs)
    content/browser/tabbrowser/tab-groups-list.mjs         (content/tab-groups-list.mjs)
    content/browser/tabbrowser/tab-hover-preview.mjs       (content/tab-hover-preview.mjs)

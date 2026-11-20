@@ -2,7 +2,54 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-var TabContextMenu = {
+/* global createUserContextMenu, gBrowser, gSync, gTabsPanel,
+   showFullScreenViewContextMenuItems */
+
+const { XPCOMUtils } = ChromeUtils.importESModule(
+  "resource://gre/modules/XPCOMUtils.sys.mjs"
+);
+const lazy = XPCOMUtils.declareLazy({
+  AIWindowMenu:
+    "moz-src:///browser/components/aiwindow/ui/modules/AIWindowMenu.sys.mjs",
+  ContentSharingUtils:
+    "moz-src:///browser/components/sharing/ContentSharingUtils.sys.mjs",
+  E10SUtils: "resource://gre/modules/E10SUtils.sys.mjs",
+  GenAI: "moz-src:///browser/components/genai/GenAI.sys.mjs",
+  MenuSectionLayout: "resource:///modules/MenuSectionLayout.sys.mjs",
+  MiniWindowManager:
+    "moz-src:///browser/components/miniwindow/MiniWindowManager.sys.mjs",
+  PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
+  SessionStore:
+    "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
+  SharingUtils: "moz-src:///browser/components/sharing/SharingUtils.sys.mjs",
+  Tabbrowser: "moz-src:///browser/components/tabbrowser/Tabbrowser.sys.mjs",
+  TabNotes: "moz-src:///browser/components/tabnotes/TabNotes.sys.mjs",
+  TabStateFlusher:
+    "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs",
+  tabNotesEnabled: { pref: "browser.tabs.notes.enabled", default: false },
+  unloadTabInContextMenu: {
+    pref: "browser.tabs.unloadTabInContextMenu",
+    default: false,
+  },
+});
+
+/**
+ * @param {string} id
+ * @returns {XULElement}
+ */
+function byId(id) {
+  return /** @type {XULElement} */ (document.getElementById(id));
+}
+
+/**
+ * @param {string} id
+ * @returns {MozMenuItemBase}
+ */
+function menuItemById(id) {
+  return /** @type {MozMenuItemBase} */ (document.getElementById(id));
+}
+
+export const TabContextMenu = {
   contextTab: null,
 
   // Badge variants for menu items. Values map to the `tab-context-badge-*` l10n
@@ -405,7 +452,7 @@ var TabContextMenu = {
     // MenuSectionLayout throws if the markup and layout disagree and a menuitem is unaccounted for.
     // Catch these exceptions and log them out.
     try {
-      new this.MenuSectionLayout(layout, {
+      new lazy.MenuSectionLayout(layout, {
         dynamicItemSelectors: this.DYNAMIC_MENU_ITEM_SELECTORS,
       }).arrange(aPopupMenu);
       this._hideUnusedSectionItems(layout);
@@ -437,8 +484,8 @@ var TabContextMenu = {
   },
 
   _updateSharePanelClasses(altEnabled) {
-    const copyLinkButton = document.getElementById("share-panel-copy-link");
-    const createQRCodeButton = document.getElementById("share-panel-qr-code");
+    const copyLinkButton = byId("share-panel-copy-link");
+    const createQRCodeButton = byId("share-panel-qr-code");
     const iconClass = "subviewbutton-iconic";
     if (copyLinkButton) {
       copyLinkButton.classList.toggle(iconClass, !altEnabled);
@@ -454,10 +501,10 @@ var TabContextMenu = {
       if (section.name !== "unused") {
         continue;
       }
-      for (let { selector } of this.MenuSectionLayout.placementsFor([
+      for (let { selector } of lazy.MenuSectionLayout.placementsFor([
         section,
       ])) {
-        let item = document.querySelector(selector);
+        let item = /** @type {XULElement} */ (document.querySelector(selector));
         if (item) {
           item.hidden = true;
         }
@@ -476,7 +523,6 @@ var TabContextMenu = {
    * visibility leaks across a pref toggle.
    */
   _updateMoveTabToFlattenedVisibility() {
-    let byId = id => document.getElementById(id);
     let newGroup = byId("context_moveTabToGroupNewGroup");
     let upperSeparator = byId("open-tab-groups-separator-upper");
     let savedGroups = byId("context_moveTabToSavedGroup");
@@ -542,9 +588,7 @@ var TabContextMenu = {
     // menu is refreshed once these flushes settle (bug 1973996).
     let sessionStoreFlushes = [];
     for (let tab of this.contextTabs) {
-      sessionStoreFlushes.push(
-        TabContextMenu.TabStateFlusher.flush(tab.linkedBrowser)
-      );
+      sessionStoreFlushes.push(lazy.TabStateFlusher.flush(tab.linkedBrowser));
 
       // Add unique split views for count info below
       if (tab.splitview) {
@@ -552,7 +596,7 @@ var TabContextMenu = {
       }
     }
 
-    let miniWindowItem = document.getElementById("context_openTabInMiniWindow");
+    let miniWindowItem = byId("context_openTabInMiniWindow");
     miniWindowItem.hidden = !Services.prefs.getBoolPref(
       "browser.mini-window.enabled",
       false
@@ -563,7 +607,7 @@ var TabContextMenu = {
       miniWindowItem.setAttribute(
         "data-l10n-args",
         JSON.stringify({
-          tabCount: this.MiniWindowManager.tabsToPop(this.contextTabs).length,
+          tabCount: lazy.MiniWindowManager.tabsToPop(this.contextTabs).length,
         })
       );
     }
@@ -593,7 +637,7 @@ var TabContextMenu = {
       menuItem.disabled = disabled;
     }
 
-    let contextNewTabButton = document.getElementById("context_openANewTab");
+    let contextNewTabButton = byId("context_openANewTab");
     // update context menu item strings for vertical tabs
     document.l10n.setAttributes(
       contextNewTabButton,
@@ -603,11 +647,11 @@ var TabContextMenu = {
     );
 
     // Session store
-    let closedCount = SessionStore.getLastClosedTabCount(window);
-    document
-      .getElementById("History:UndoCloseTab")
-      .toggleAttribute("disabled", closedCount == 0);
-    document.l10n.setArgs(document.getElementById("context_undoCloseTab"), {
+    let closedCount = lazy.SessionStore.getLastClosedTabCount(
+      /** @type {BrowserWindow} */ (window)
+    );
+    byId("History:UndoCloseTab").toggleAttribute("disabled", closedCount == 0);
+    document.l10n.setArgs(byId("context_undoCloseTab"), {
       tabCount: Math.max(closedCount, 1),
     });
 
@@ -617,27 +661,21 @@ var TabContextMenu = {
 
     // #context_moveTabToNewGroup is a simplified context menu item that only
     // appears if there are no existing tab groups available to move the tab to.
-    let contextMoveTabToNewGroup = document.getElementById(
-      "context_moveTabToNewGroup"
-    );
-    let contextMoveTabToGroup = document.getElementById(
-      "context_moveTabToGroup"
-    );
-    let contextAddTabToGroup = document.getElementById("context_addTabToGroup");
-    let contextUngroupTab = document.getElementById("context_ungroupTab");
-    let contextMoveSplitViewToNewGroup = document.getElementById(
+    let contextMoveTabToNewGroup = byId("context_moveTabToNewGroup");
+    let contextMoveTabToGroup = byId("context_moveTabToGroup");
+    let contextAddTabToGroup = byId("context_addTabToGroup");
+    let contextUngroupTab = byId("context_ungroupTab");
+    let contextMoveSplitViewToNewGroup = byId(
       "context_moveSplitViewToNewGroup"
     );
-    let contextUngroupSplitView = document.getElementById(
-      "context_ungroupSplitView"
-    );
+    let contextUngroupSplitView = byId("context_ungroupSplitView");
     let isAllSplitViewTabs = this.contextTabs.every(
       contextTab => contextTab.splitview
     );
     let openGroupsToMoveTo = [];
     let savedGroupsToMoveTo = [];
 
-    if (TabContextMenu.Tabbrowser.prefs.tabGroupsEnabled) {
+    if (lazy.Tabbrowser.prefs.tabGroupsEnabled) {
       let selectedGroupCount = new Set(
         // The filter removes the "null" group for ungrouped tabs.
         this.contextTabs.map(t => t.group).filter(g => g)
@@ -720,13 +758,9 @@ var TabContextMenu = {
         }
 
         if (!this._altTabContextMenu) {
-          const upperSeparator = document.getElementById(
-            "open-tab-groups-separator-upper"
-          );
-          const lowerSeparator = document.getElementById(
-            "open-tab-groups-separator-lower"
-          );
-          const openGroupsMenu = upperSeparator.parentNode;
+          const upperSeparator = byId("open-tab-groups-separator-upper");
+          const lowerSeparator = byId("open-tab-groups-separator-lower");
+          const openGroupsMenu = upperSeparator.parentElement;
           openGroupsMenu
             .querySelectorAll("[tab-group-id]")
             .forEach(el => el.remove());
@@ -778,9 +812,9 @@ var TabContextMenu = {
 
     this._updateMoveTabToFlattenedVisibility();
 
-    let contextAddNote = document.getElementById("context_addNote");
-    let contextEditNote = document.getElementById("context_editNote");
-    if (this._tabNotesEnabled) {
+    let contextAddNote = menuItemById("context_addNote");
+    let contextEditNote = menuItemById("context_editNote");
+    if (lazy.tabNotesEnabled) {
       // Tab notes behaviour is disabled if a user has a selection of tabs that
       // contains more than one canonical URL.
       let multiselectingDiverseUrls =
@@ -790,7 +824,7 @@ var TabContextMenu = {
         );
 
       contextAddNote.disabled =
-        multiselectingDiverseUrls || !this.TabNotes.isEligible(this.contextTab);
+        multiselectingDiverseUrls || !lazy.TabNotes.isEligible(this.contextTab);
       contextEditNote.disabled = multiselectingDiverseUrls;
 
       this.removeBadge(contextAddNote);
@@ -800,7 +834,7 @@ var TabContextMenu = {
         this.addBadge(contextAddNote, this.BADGE_TYPE.NEW);
       }
 
-      this.TabNotes.has(this.contextTab).then(hasNote => {
+      lazy.TabNotes.has(this.contextTab).then(hasNote => {
         contextAddNote.hidden = hasNote;
         contextEditNote.hidden = !hasNote;
       });
@@ -814,15 +848,11 @@ var TabContextMenu = {
       "browser.tabs.splitView.enabled",
       false
     );
-    let contextMoveTabToNewSplitView = document.getElementById(
+    let contextMoveTabToNewSplitView = menuItemById(
       "context_moveTabToSplitView"
     );
-    let contextSeparateSplitView = document.getElementById(
-      "context_separateSplitView"
-    );
-    let contextReverseSplitView = document.getElementById(
-      "context_reverseSplitView"
-    );
+    let contextSeparateSplitView = byId("context_separateSplitView");
+    let contextReverseSplitView = byId("context_reverseSplitView");
     let hasSplitViewTab = this.contextTabs.some(tab => tab.splitview);
     contextMoveTabToNewSplitView.hidden = !splitViewEnabled || hasSplitViewTab;
     contextSeparateSplitView.hidden = !splitViewEnabled || !hasSplitViewTab;
@@ -850,11 +880,10 @@ var TabContextMenu = {
     }
 
     // Only one of Reload_Tab/Reload_Selected_Tabs should be visible.
-    document.getElementById("context_reloadTab").hidden = this.multiselected;
-    document.getElementById("context_reloadSelectedTabs").hidden =
-      !this.multiselected;
-    let unloadTabItem = document.getElementById("context_unloadTab");
-    if (this._unloadTabInContextMenu) {
+    byId("context_reloadTab").hidden = this.multiselected;
+    byId("context_reloadSelectedTabs").hidden = !this.multiselected;
+    let unloadTabItem = byId("context_unloadTab");
+    if (lazy.unloadTabInContextMenu) {
       // linkedPanel is false if the tab is already unloaded
       // Cannot unload about: pages, etc., so skip browsers that are not remote
       let unloadableTabs = this.contextTabs.filter(
@@ -870,10 +899,10 @@ var TabContextMenu = {
     }
 
     // Show Play Tab menu item if the tab has attribute activemedia-blocked
-    document.getElementById("context_playTab").hidden = !(
+    byId("context_playTab").hidden = !(
       this.contextTab.activeMediaBlocked && !this.multiselected
     );
-    document.getElementById("context_playSelectedTabs").hidden = !(
+    byId("context_playSelectedTabs").hidden = !(
       this.contextTab.activeMediaBlocked && this.multiselected
     );
 
@@ -881,19 +910,15 @@ var TabContextMenu = {
     let hasAboutOpenTabsTab = this.contextTabs.some(
       t => t.linkedBrowser.currentURI.spec === "about:opentabs"
     );
-    let contextPinTab = document.getElementById("context_pinTab");
+    let contextPinTab = byId("context_pinTab");
     contextPinTab.hidden =
       this.contextTab.pinned || this.multiselected || hasAboutOpenTabsTab;
-    let contextUnpinTab = document.getElementById("context_unpinTab");
+    let contextUnpinTab = byId("context_unpinTab");
     contextUnpinTab.hidden = !this.contextTab.pinned || this.multiselected;
-    let contextPinSelectedTabs = document.getElementById(
-      "context_pinSelectedTabs"
-    );
+    let contextPinSelectedTabs = byId("context_pinSelectedTabs");
     contextPinSelectedTabs.hidden =
       this.contextTab.pinned || !this.multiselected || hasAboutOpenTabsTab;
-    let contextUnpinSelectedTabs = document.getElementById(
-      "context_unpinSelectedTabs"
-    );
+    let contextUnpinSelectedTabs = byId("context_unpinSelectedTabs");
     contextUnpinSelectedTabs.hidden =
       !this.contextTab.pinned || !this.multiselected;
 
@@ -902,33 +927,24 @@ var TabContextMenu = {
     // (#context_askChatSummarize). Hide whichever one this layout doesn't use so
     // a pref toggle reverses cleanly.
     if (!this._altTabContextMenu) {
-      document.getElementById("context_askChatSummarize").hidden = true;
-      TabContextMenu.GenAI.buildTabMenu(
-        document.getElementById("context_askChat"),
-        this
-      );
+      byId("context_askChatSummarize").hidden = true;
+      lazy.GenAI.buildTabMenu(byId("context_askChat"), this);
     } else {
-      document.getElementById("context_askChat").hidden = true;
+      byId("context_askChat").hidden = true;
       // In the alt layout #context_aiSeparator is reused as the divider after
       // the open-and-organize group, so keep it shown (the classic ask-chat
       // path would otherwise hide it together with #context_askChat).
-      document.getElementById("context_aiSeparator").hidden = false;
-      TabContextMenu.GenAI.buildTabSummarizeItem(
-        document.getElementById("context_askChatSummarize"),
-        this
-      );
+      byId("context_aiSeparator").hidden = false;
+      lazy.GenAI.buildTabSummarizeItem(byId("context_askChatSummarize"), this);
     }
 
-    document.getElementById("context_createAITab").hidden =
-      !TabContextMenu.AIWindowMenu.canShowAITabMenu(
-        window,
-        this.contextTabs.map(tab => tab.linkedBrowser.currentURI)
-      );
+    byId("context_createAITab").hidden = !lazy.AIWindowMenu.canShowAITabMenu(
+      window,
+      this.contextTabs.map(tab => tab.linkedBrowser.currentURI)
+    );
 
     // Move Tab items
-    let contextMoveTabOptions = document.getElementById(
-      "context_moveTabOptions"
-    );
+    let contextMoveTabOptions = menuItemById("context_moveTabOptions");
     // gBrowser.visibleTabs excludes tabs in collapsed groups,
     // which we want to include in calculations for Move Tab items
     let visibleOrCollapsedTabs = gBrowser.tabs.filter(
@@ -954,7 +970,7 @@ var TabContextMenu = {
       this.contextTab.hidden ||
       (allTabsSelected && !this._altTabContextMenu && miniWindowItem.hidden);
     let selectedTabs = gBrowser.selectedTabs;
-    let contextMoveTabToEnd = document.getElementById("context_moveToEnd");
+    let contextMoveTabToEnd = menuItemById("context_moveToEnd");
     let allSelectedTabsAdjacent = selectedTabs.every(
       (element, index, array) => {
         return array.length > index + 1
@@ -981,7 +997,7 @@ var TabContextMenu = {
       !lastTabToMove.group &&
       allSelectedTabsAdjacent;
 
-    let contextMoveTabToStart = document.getElementById("context_moveToStart");
+    let contextMoveTabToStart = menuItemById("context_moveToStart");
     let isFirstTab =
       !this.contextTabs[0].group &&
       (this.contextTabs[0] === visibleOrCollapsedTabs[0] ||
@@ -994,18 +1010,15 @@ var TabContextMenu = {
     contextMoveTabToStart.disabled =
       (isFirstTab || splitAtStart) && allSelectedTabsAdjacent;
 
-    document.getElementById("context_openTabInWindow").disabled =
+    menuItemById("context_openTabInWindow").disabled =
       this.contextTab.hasAttribute("customizemode") ||
       gBrowser.visibleTabs.length == 1;
 
     // Only one of "Duplicate Tab"/"Duplicate Tabs" should be visible.
-    document.getElementById("context_duplicateTab").hidden = this.multiselected;
-    document.getElementById("context_duplicateTabs").hidden =
-      !this.multiselected;
+    byId("context_duplicateTab").hidden = this.multiselected;
+    byId("context_duplicateTabs").hidden = !this.multiselected;
 
-    let closeTabsToTheStartItem = document.getElementById(
-      "context_closeTabsToTheStart"
-    );
+    let closeTabsToTheStartItem = menuItemById("context_closeTabsToTheStart");
 
     // update context menu item strings for vertical tabs and alt layout
     let startTabString;
@@ -1021,9 +1034,7 @@ var TabContextMenu = {
     }
     document.l10n.setAttributes(closeTabsToTheStartItem, startTabString);
 
-    let closeTabsToTheEndItem = document.getElementById(
-      "context_closeTabsToTheEnd"
-    );
+    let closeTabsToTheEndItem = menuItemById("context_closeTabsToTheEnd");
 
     // update context menu item strings for vertical tabs and alt layout
     let endTabString;
@@ -1056,7 +1067,7 @@ var TabContextMenu = {
       : gBrowser.openTabs.filter(
           t => t != this.contextTab && !t.pinned && !t.hidden
         ).length;
-    let closeOtherTabsItem = document.getElementById("context_closeOtherTabs");
+    let closeOtherTabsItem = menuItemById("context_closeOtherTabs");
     document.l10n.setAttributes(
       closeOtherTabsItem,
       this._altTabContextMenu ? "close-other-tabs-alt" : "close-other-tabs"
@@ -1064,24 +1075,19 @@ var TabContextMenu = {
     closeOtherTabsItem.disabled = unpinnedTabsToClose < 1;
 
     // Show separator before "Close Other Tabs" in alt layout only
-    document.getElementById("context_closeOtherTabsSeparator").hidden =
-      !this._altTabContextMenu;
+    byId("context_closeOtherTabsSeparator").hidden = !this._altTabContextMenu;
 
     // Update the close item with how many tabs will close.
-    document
-      .getElementById("context_closeTab")
-      .setAttribute("data-l10n-args", tabCountInfo);
+    byId("context_closeTab").setAttribute("data-l10n-args", tabCountInfo);
 
-    let closeDuplicateTabsItem = document.getElementById(
-      "context_closeDuplicateTabs"
-    );
+    let closeDuplicateTabsItem = menuItemById("context_closeDuplicateTabs");
     closeDuplicateTabsItem.disabled = !gBrowser.getDuplicateTabsToClose(
       this.contextTab
     ).length;
 
     // Disable "Close Multiple Tabs" if all sub menuitems are disabled. In the
     // alt layout Close Duplicates is one of those sub menuitems.
-    document.getElementById("context_closeTabOptions").disabled =
+    menuItemById("context_closeTabOptions").disabled =
       closeTabsToTheStartItem.disabled &&
       closeTabsToTheEndItem.disabled &&
       closeOtherTabsItem.disabled &&
@@ -1089,32 +1095,25 @@ var TabContextMenu = {
 
     // Hide "Bookmark Tab…" for multiselection.
     // Update its state if visible.
-    let bookmarkTab = document.getElementById("context_bookmarkTab");
+    let bookmarkTab = byId("context_bookmarkTab");
     bookmarkTab.hidden = this.multiselected;
 
     // Show "Bookmark Selected Tabs" in a multiselect context and hide it otherwise.
-    let bookmarkMultiSelectedTabs = document.getElementById(
-      "context_bookmarkSelectedTabs"
-    );
+    let bookmarkMultiSelectedTabs = byId("context_bookmarkSelectedTabs");
     bookmarkMultiSelectedTabs.hidden = !this.multiselected;
 
-    let contentSharingShareTabs = document.getElementById(
-      "context_shareSelectedTabs"
-    );
+    let contentSharingShareTabs = byId("context_shareSelectedTabs");
 
     const hideContentSharing =
-      !this.multiselected || !ContentSharingUtils.isEnabled;
+      !this.multiselected || !lazy.ContentSharingUtils.isEnabled;
     contentSharingShareTabs.hidden = hideContentSharing;
-    document.getElementById("context_shareSelectedTabsSeparator").hidden =
-      hideContentSharing;
+    byId("context_shareSelectedTabsSeparator").hidden = hideContentSharing;
     if (!contentSharingShareTabs.hidden) {
       this.addBadge(contentSharingShareTabs, this.BADGE_TYPE.NEW);
     }
 
-    let toggleMute = document.getElementById("context_toggleMuteTab");
-    let toggleMultiSelectMute = document.getElementById(
-      "context_toggleMuteSelectedTabs"
-    );
+    let toggleMute = byId("context_toggleMuteTab");
+    let toggleMultiSelectMute = byId("context_toggleMuteSelectedTabs");
 
     // Only one of mute_unmute_tab/mute_unmute_selected_tabs should be visible
     toggleMute.hidden = this.multiselected;
@@ -1147,7 +1146,7 @@ var TabContextMenu = {
     this.contextTab.toggleMultiSelectMuteMenuItem = toggleMultiSelectMute;
     this._updateToggleMuteMenuItems(this.contextTab);
 
-    let selectAllTabs = document.getElementById("context_selectAllTabs");
+    let selectAllTabs = menuItemById("context_selectAllTabs");
     selectAllTabs.disabled = gBrowser.allTabsSelected();
 
     gSync.updateTabContextMenu(aPopupMenu, this.contextTab);
@@ -1155,27 +1154,26 @@ var TabContextMenu = {
       // gSync sets #context_sendTabToDevice's label dynamically (device / mobile
       // / count), so the static data-alt-l10n-id mechanism can't own it; apply
       // the alt wording here, after gSync.
-      document
-        .getElementById("context_sendTabToDevice")
-        .setAttribute("data-l10n-id", "tab-context-send-to-device2");
+      byId("context_sendTabToDevice").setAttribute(
+        "data-l10n-id",
+        "tab-context-send-to-device2"
+      );
     }
 
-    let reopenInContainer = document.getElementById(
-      "context_reopenInContainer"
-    );
+    let reopenInContainer = menuItemById("context_reopenInContainer");
     reopenInContainer.hidden =
       !Services.prefs.getBoolPref("privacy.userContext.enabled", false) ||
-      PrivateBrowsingUtils.isWindowPrivate(window);
+      lazy.PrivateBrowsingUtils.isWindowPrivate(window);
     reopenInContainer.disabled = this.contextTab.hidden;
 
     // Anchor the share submenu where the active layout declares it: after
     // #context_moveTabOptions in the classic layout, or in the sending section
     // (after #context_shareSelectedTabs) in the alt layout. Matching the layout
     // keeps ensureShareMenu from re-inserting it (or duplicating it) elsewhere.
-    SharingUtils.ensureShareMenu(
+    lazy.SharingUtils.ensureShareMenu(
       this.contextTab.linkedBrowser,
       this.multiselected ? this.contextTabs.map(t => t.linkedBrowser) : null,
-      document.getElementById(
+      byId(
         this._altTabContextMenu
           ? "context_shareSelectedTabs"
           : "context_moveTabOptions"
@@ -1184,8 +1182,8 @@ var TabContextMenu = {
   },
 
   _populateAddToGroupMenu(openGroups, savedGroups) {
-    let separator = document.getElementById("add-tab-to-group-separator");
-    separator.parentNode
+    let separator = byId("add-tab-to-group-separator");
+    separator.parentElement
       .querySelectorAll(":scope > [tab-group-id]")
       .forEach(el => el.remove());
     openGroups.toReversed().forEach(group => {
@@ -1197,19 +1195,19 @@ var TabContextMenu = {
 
   _getSavedGroupsToMoveTo() {
     if (
-      PrivateBrowsingUtils.isWindowPrivate(window) ||
-      !SessionStore.shouldSaveTabsToGroup(this.contextTabs)
+      lazy.PrivateBrowsingUtils.isWindowPrivate(window) ||
+      !lazy.SessionStore.shouldSaveTabsToGroup(this.contextTabs)
     ) {
       return [];
     }
-    return SessionStore.getSavedTabGroups();
+    return lazy.SessionStore.getSavedTabGroups();
   },
 
   _populateSavedGroupsMenu(savedGroups) {
     const menuId = this._altTabContextMenu
       ? "context_addTabToSavedGroup"
       : "context_moveTabToSavedGroup";
-    let savedGroupsMenu = document.getElementById(menuId);
+    let savedGroupsMenu = menuItemById(menuId);
     savedGroupsMenu
       .querySelector("menupopup")
       .replaceChildren(
@@ -1284,7 +1282,10 @@ var TabContextMenu = {
   duplicateSelectedTabs() {
     let newIndex = this.contextTabs.at(-1).index + 1;
     for (let tab of this.contextTabs) {
-      let newTab = SessionStore.duplicateTab(window, tab);
+      let newTab = lazy.SessionStore.duplicateTab(
+        /** @type {BrowserWindow} */ (window),
+        tab
+      );
       if (tab.group) {
         Glean.tabgroup.tabInteractions.duplicate.add();
       }
@@ -1312,9 +1313,9 @@ var TabContextMenu = {
       } else {
         // For lazy tab browsers, get the original principal
         // from SessionStore
-        let tabState = JSON.parse(SessionStore.getTabState(tab));
+        let tabState = JSON.parse(lazy.SessionStore.getTabState(tab));
         try {
-          triggeringPrincipal = E10SUtils.deserializePrincipal(
+          triggeringPrincipal = lazy.E10SUtils.deserializePrincipal(
             tabState.triggeringPrincipal_base64
           );
         } catch (ex) {
@@ -1347,7 +1348,7 @@ var TabContextMenu = {
 
       Glean.containers.tabAssignedContainer.record({
         from_container_id: tab.getAttribute("usercontextid"),
-        to_container_id: userContextId,
+        to_container_id: String(userContextId),
       });
 
       if (gBrowser.selectedTab == tab) {
@@ -1474,7 +1475,7 @@ var TabContextMenu = {
         tabs.push(tab);
       }
     }
-    SessionStore.addTabsToSavedGroup(
+    lazy.SessionStore.addTabsToSavedGroup(
       groupId,
       tabs,
       gBrowser.TabMetrics.userTriggeredContext(
@@ -1551,7 +1552,7 @@ var TabContextMenu = {
    * Badge a menu item as a new or beta feature. NEW uses the filled style,
    * BETA the default outlined one.
    *
-   * @param {MozMenuItem} menuItem
+   * @param {XULElement} menuItem
    * @param {string} type - one of TabContextMenu.BADGE_TYPE.
    */
   addBadge(menuItem, type) {
@@ -1574,39 +1575,10 @@ var TabContextMenu = {
   },
 
   /**
-   * @param {MozMenuItem} menuItem
+   * @param {XULElement} menuItem
    */
   removeBadge(menuItem) {
     menuItem.removeAttribute("badge");
     menuItem.classList.remove("badge-new");
   },
 };
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  TabContextMenu,
-  "_tabNotesEnabled",
-  "browser.tabs.notes.enabled",
-  false
-);
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  TabContextMenu,
-  "_unloadTabInContextMenu",
-  "browser.tabs.unloadTabInContextMenu",
-  false
-);
-
-ChromeUtils.defineESModuleGetters(TabContextMenu, {
-  AIWindow:
-    "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
-  AIWindowMenu:
-    "moz-src:///browser/components/aiwindow/ui/modules/AIWindowMenu.sys.mjs",
-  GenAI: "moz-src:///browser/components/genai/GenAI.sys.mjs",
-  MenuSectionLayout: "resource:///modules/MenuSectionLayout.sys.mjs",
-  MiniWindowManager:
-    "moz-src:///browser/components/miniwindow/MiniWindowManager.sys.mjs",
-  Tabbrowser: "moz-src:///browser/components/tabbrowser/Tabbrowser.sys.mjs",
-  TabNotes: "moz-src:///browser/components/tabnotes/TabNotes.sys.mjs",
-  TabStateFlusher:
-    "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs",
-});
