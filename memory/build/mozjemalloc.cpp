@@ -1400,20 +1400,11 @@ ArenaPurgeResult arena_t::PurgeDirtyPages(arena_chunk_t* aChunk,
                                           PurgeStats& aStats,
                                           purge_keep_going_t aKeepGoing,
                                           void* aClosure) MOZ_EXCLUDES(mLock) {
-  // True if we should continue purging memory from this arena.
-  bool continue_purge_arena = true;
-
-  // True if we should continue purging memory in this chunk.
-  bool continue_purge_chunk = true;
-
   // True if at least one Purge operation has occured and therefore we need to
   // call FinishPurgingInChunk() before returning.
   bool purged_once = false;
 
-  // False if aKeepGoing prevents us from finishing this chunk in one go.
-  bool keep_going = true;
-
-  while (continue_purge_chunk && continue_purge_arena && keep_going) {
+  while (true) {
     // This structure is used to communicate between the two PurgePhase
     // functions.
     PurgeInfo purge_info(*this, aChunk, aStats);
@@ -1429,25 +1420,24 @@ ArenaPurgeResult arena_t::PurgeDirtyPages(arena_chunk_t* aChunk,
         return Dying;
       }
 
-      continue_purge_chunk = purge_info.FindDirtyPages(purged_once);
-      continue_purge_arena = purge_info.mArena.mNumDirty > aTargetDirtyPages;
+      const bool continue_purge_chunk = purge_info.FindDirtyPages(purged_once);
+      const bool continue_purge_arena =
+          purge_info.mArena.mNumDirty > aTargetDirtyPages;
 
-      // The code below will exit returning ReachedThresholdOrBusy if these are
-      // both false, so clear mIsPurgePending while we still hold the
-      // lock.
-      if (!continue_purge_chunk && !continue_purge_arena) {
+      if (!continue_purge_chunk) {
+        // There's nothing else to do here, PurgeLoop() may do another step if
+        // continue_purge_arena is true. Otherwise clear mIsPurgePending while
+        // we still hold the lock.
+        if (continue_purge_arena) {
+          return NotDone;
+        }
         purge_info.mArena.mIsPurgePending = false;
+        return ReachedThresholdOrBusy;
       }
+      // Note that even if continue_purge_arena is false, then the purge must
+      // still continue, because the pages have already been marked in
+      // FindDirtyPages(). It will exit after phase 2.
     }
-    if (!continue_purge_chunk) {
-      // There's nothing else to do here, PurgeLoop() may do another step if
-      // continue_purge_arena is true.
-      return continue_purge_arena ? NotDone : ReachedThresholdOrBusy;
-    }
-    // Note that even if continue_purge_arena is false, then the purge may still
-    // continue (as long as continue_purge_chunk is true). It must because the
-    // pages have already been marked in FindDirtyPages(), then it will exit
-    // after phase 2.
 
 #ifdef MALLOC_DECOMMIT
     pages_decommit(purge_info.DirtyPtr(), purge_info.DirtyLenBytes());
@@ -1461,42 +1451,40 @@ ArenaPurgeResult arena_t::PurgeDirtyPages(arena_chunk_t* aChunk,
 
     // Check budget outside any lock, after the madvise/decommit which is the
     // potentially expensive operation.
-    keep_going = aKeepGoing ? aKeepGoing(aClosure) : true;
+    const bool keep_going = aKeepGoing ? aKeepGoing(aClosure) : true;
 
-    bool arena_is_dying;
     {
       // Phase 2: Mark the pages with their final state (madvised or
       // decommitted) and fix up any other bookkeeping.
       MaybeMutexAutoLock lock(purge_info.mArena.mLock);
       MOZ_ASSERT(aChunk->mIsPurging);
 
-      // We can't early exit if the arena is dying, we have to finish the purge
-      // (which restores the state so the destructor will check it) and maybe
-      // release the old spare arena.
-      arena_is_dying = purge_info.mArena.mMustDeleteAfterPurge;
-
-      continue_purge_chunk = purge_info.UpdatePagesAndCounts();
-      continue_purge_arena = purge_info.mArena.mNumDirty > aTargetDirtyPages;
+      const bool continue_purge_chunk = purge_info.UpdatePagesAndCounts();
+      // A dying arena stops, but finishes purging in this chunk first, so that
+      // an empty chunk becomes a spare chunk that the destructor releases.
+      const bool continue_purge_arena =
+          !purge_info.mArena.mMustDeleteAfterPurge &&
+          purge_info.mArena.mNumDirty > aTargetDirtyPages;
 
       if (!continue_purge_chunk || !continue_purge_arena || !keep_going) {
         // We're going to stop (or pause) purging here so update the chunk's
         // bookkeeping to reflect what we did (so far).
         purge_info.FinishPurgingInChunk(true, continue_purge_chunk);
+        if (purge_info.mArena.mMustDeleteAfterPurge) {
+          return Dying;
+        }
         // Only clear mIsPurgePending when truly done. Otherwise the arena
         // stays marked pending so it gets re-queued for the next purge pass.
-        if (!continue_purge_arena) {
-          purge_info.mArena.mIsPurgePending = false;
+        if (continue_purge_arena) {
+          return NotDone;
         }
+        purge_info.mArena.mIsPurgePending = false;
+        return ReachedThresholdOrBusy;
       }
-    }  // MaybeMutexAutoLock
-
-    if (arena_is_dying) {
-      return Dying;
     }
+
     purged_once = true;
   }
-
-  return continue_purge_arena ? NotDone : ReachedThresholdOrBusy;
 }
 
 ArenaPurgeResult arena_t::PurgeLoop(PurgeCondition aCond, const char* aCaller,
