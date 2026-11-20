@@ -5,8 +5,6 @@
 #ifndef DOM_WEBTRANSPORT_API_WEBTRANSPORTDATAGRAMDUPLEXSTREAM_H_
 #define DOM_WEBTRANSPORT_API_WEBTRANSPORTDATAGRAMDUPLEXSTREAM_H_
 
-#include <limits>
-
 #include "mozilla/dom/DatagramCredit.h"
 #include "mozilla/dom/Promise.h"
 #include "mozilla/dom/ReadableStream.h"
@@ -260,8 +258,10 @@ class WebTransportDatagramDuplexStream final : public nsISupports,
     return mIncomingMaxAge;
   }
   void SetIncomingMaxAge(const Nullable<double>& aMaxAge, ErrorResult& aRv);
-  double GetOutgoingMaxAge(ErrorResult& aRv) const { return mOutgoingMaxAge; }
-  void SetOutgoingMaxAge(double aMaxAge, ErrorResult& aRv);
+  Nullable<double> GetOutgoingMaxAge(ErrorResult& aRv) const {
+    return mOutgoingMaxAge;
+  }
+  void SetOutgoingMaxAge(const Nullable<double>& aMaxAge, ErrorResult& aRv);
   uint32_t IncomingMaxBufferedDatagrams() const {
     return mIncomingMaxBufferedDatagrams;
   }
@@ -293,13 +293,12 @@ class WebTransportDatagramDuplexStream final : public nsISupports,
   nsTArray<RefPtr<WebTransportDatagramsWritable>> mAllWritables;
 
   // https://w3c.github.io/webtransport/#webtransportdatagramduplexstream-create
-  // null means no maximum age (infinite) for incoming.  outgoingMaxAge can't
-  // be null: Infinity means no maximum age, and is the default.
+  // null means no maximum age (infinite)
   Nullable<double> mIncomingMaxAge;
-  double mOutgoingMaxAge = std::numeric_limits<double>::infinity();
-  // The MaxBufferedDatagrams defaults are implementation-defined; for the
-  // outgoing one the spec asks only that it be "tuned to ensure decent
-  // throughput, without jeopardizing the timeliness of transmitted data".
+  Nullable<double> mOutgoingMaxAge;
+  // Both are implementation-defined; for the outgoing one the spec asks only
+  // that it be "tuned to ensure decent throughput, without jeopardizing the
+  // timeliness of transmitted data".
   //
   // outgoingMaxBufferedDatagrams is the length of the sink's send queue.
   // writeDatagrams returns a pending [[BackpressurePromise]] once the queue
