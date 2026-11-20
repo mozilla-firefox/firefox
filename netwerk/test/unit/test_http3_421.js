@@ -17,16 +17,37 @@ function run_next_test() {
 }
 
 function run_test() {
-  let h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
+  do_get_profile();
+  do_test_pending();
+  startServer().then(h2Port => {
+    setup(h2Port);
+    do_test_finished();
+  });
+}
+
+async function startServer() {
+  let server = await create_h2_server({
+    "/http3-test": (req, res) => {
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Alt-Svc", "h3=" + req.headers["x-altsvc"]);
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.end("ok");
+    },
+    "/Response421": (req, res) => {
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.end("You Win! (by requesting/Response421)");
+    },
+  });
+  return server.port();
+}
+
+function setup(h2Port) {
   let h3Port = Services.env.get("MOZHTTP3_PORT");
   Assert.notEqual(h3Port, null);
   Assert.notEqual(h3Port, "");
   h3AltSvc = ":" + h3Port;
 
   h3Route = "foo.example.com:" + h3Port;
-  do_get_profile();
   prefs = Services.prefs;
 
   prefs.setBoolPref("network.http.http3.enable", true);
