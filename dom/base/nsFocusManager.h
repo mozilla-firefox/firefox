@@ -6,6 +6,7 @@
 #define nsFocusManager_h_
 
 #include "mozilla/Attributes.h"
+#include "mozilla/Maybe.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/dom/Document.h"
@@ -34,6 +35,7 @@ class ContentParent;
 }  // namespace mozilla
 
 struct nsDelayedBlurOrFocusEvent;
+class LazyFocusActionId;
 
 /**
  * The focus manager keeps track of where the focus is, that is, the node
@@ -244,7 +246,7 @@ class nsFocusManager final : public nsIFocusManager,
    */
   MOZ_CAN_RUN_SCRIPT void RaiseWindow(nsPIDOMWindowOuter* aWindow,
                                       mozilla::dom::CallerType aCallerType,
-                                      uint64_t aActionId);
+                                      LazyFocusActionId& aActionId);
 
   /**
    * Called when a window has been raised.
@@ -1086,6 +1088,35 @@ class nsFocusManager final : public nsIFocusManager,
 
   // the single focus manager
   static mozilla::StaticRefPtr<nsFocusManager> sInstance;
+};
+
+/**
+ * The id of a focus action whose slot in the parent's order is reserved only
+ * when the action first needs it. A reserved slot stays queued in the parent
+ * until a newer action supersedes it, so a path that ends up doing nothing
+ * should not reserve one. It can't be copied, so that everything handling one
+ * action shares one slot. This deliberately doesn't expose whether the id was
+ * supplied by the caller, so that it can't stand for where the action came
+ * from.
+ */
+class MOZ_STACK_CLASS LazyFocusActionId final {
+ public:
+  LazyFocusActionId() = default;
+  explicit LazyFocusActionId(uint64_t aActionId)
+      : mActionId(mozilla::Some(aActionId)) {}
+  LazyFocusActionId(const LazyFocusActionId&) = delete;
+  LazyFocusActionId& operator=(const LazyFocusActionId&) = delete;
+
+  // Reserves the slot on the first call.
+  uint64_t Get() {
+    if (mActionId.isNothing()) {
+      mActionId.emplace(nsFocusManager::GenerateFocusActionId());
+    }
+    return *mActionId;
+  }
+
+ private:
+  mozilla::Maybe<uint64_t> mActionId;
 };
 
 nsresult NS_NewFocusManager(nsIFocusManager** aResult);

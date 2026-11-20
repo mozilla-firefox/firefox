@@ -3910,8 +3910,9 @@ mozilla::ipc::IPCResult ContentChild::RecvWindowFocus(
     return IPC_OK();
   }
 
+  LazyFocusActionId actionId(aActionId);
   nsGlobalWindowOuter::Cast(window)->FocusOuter(
-      aCallerType, /* aFromOtherProcess */ true, aActionId);
+      aCallerType, /* aFromOtherProcess */ true, actionId);
   return IPC_OK();
 }
 
@@ -3963,7 +3964,8 @@ mozilla::ipc::IPCResult ContentChild::RecvRaiseWindow(
   }
 
   if (RefPtr<nsFocusManager> fm = nsFocusManager::GetFocusManager()) {
-    fm->RaiseWindow(window, aCallerType, aActionId);
+    LazyFocusActionId actionId(aActionId);
+    fm->RaiseWindow(window, aCallerType, actionId);
   }
   return IPC_OK();
 }

@@ -4050,10 +4050,10 @@ void nsGlobalWindowInner::Prompt(const nsAString& aMessage,
 }
 
 void nsGlobalWindowInner::Focus(CallerType aCallerType, ErrorResult& aError) {
-  FORWARD_TO_OUTER_OR_THROW(FocusOuter,
-                            (aCallerType, /* aFromOtherProcess */ false,
-                             nsFocusManager::GenerateFocusActionId()),
-                            aError, );
+  LazyFocusActionId actionId;
+  FORWARD_TO_OUTER_OR_THROW(
+      FocusOuter, (aCallerType, /* aFromOtherProcess */ false, actionId),
+      aError, );
 }
 
 nsresult nsGlobalWindowInner::Focus(CallerType aCallerType) {

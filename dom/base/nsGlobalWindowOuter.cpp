@@ -4892,7 +4892,7 @@ void nsGlobalWindowOuter::PromptOuter(const nsAString& aMessage,
 
 void nsGlobalWindowOuter::FocusOuter(CallerType aCallerType,
                                      bool aFromOtherProcess,
-                                     uint64_t aActionId) {
+                                     LazyFocusActionId& aActionId) {
   RefPtr<nsFocusManager> fm = nsFocusManager::GetFocusManager();
   if (MOZ_UNLIKELY(!fm)) {
     return;
@@ -4935,6 +4935,9 @@ void nsGlobalWindowOuter::FocusOuter(CallerType aCallerType,
   // ensures that focus will be in this frame and not in a child.
   if (nsIContent* content = GetFocusedElement()) {
     if (HTMLIFrameElement::FromNode(content)) {
+      // ClearFocus can start newer focus actions, so reserve this one's slot
+      // first to keep it older than them.
+      aActionId.Get();
       fm->ClearFocus(this);
     }
   }
@@ -4951,7 +4954,7 @@ void nsGlobalWindowOuter::FocusOuter(CallerType aCallerType,
     if (!parent->IsInProcess()) {
       if (isActive) {
         OwningNonNull<nsGlobalWindowOuter> kungFuDeathGrip(*this);
-        fm->WindowRaised(kungFuDeathGrip, aActionId);
+        fm->WindowRaised(kungFuDeathGrip, aActionId.Get());
       } else {
         ContentChild* contentChild = ContentChild::GetSingleton();
         MOZ_ASSERT(contentChild);
