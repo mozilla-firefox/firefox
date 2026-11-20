@@ -5596,7 +5596,13 @@ void nsBlockFrame::ReflowBlockFrame(BlockReflowState& aState,
               mLines.after_insert(aLine, line);
             }
 
-            PushTruncatedLine(aState, aLine.next(), aKeepReflowGoing);
+            // We don't use PushTruncatedLine() here, as aLine.next() can be
+            // LinesEnd() here when the continuation already lives in our
+            // next in flow, and there is no pushed line to take a page name
+            // from.
+            PushLines(aState, aLine);
+            aState.mReflowStatus.SetIncomplete();
+            *aKeepReflowGoing = false;
 
             // If we need to reflow the continuation of the block child,
             // then we'd better reflow our continuation
