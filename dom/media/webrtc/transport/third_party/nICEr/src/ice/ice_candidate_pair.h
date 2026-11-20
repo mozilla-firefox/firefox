@@ -91,7 +91,7 @@ void nr_ice_candidate_pair_cancel(nr_ice_peer_ctx *pctx,nr_ice_cand_pair *pair, 
 int nr_ice_candidate_pair_do_triggered_check(nr_ice_peer_ctx *pctx, nr_ice_cand_pair *pair, int force);
 void nr_ice_candidate_pair_insert(nr_ice_cand_pair_head *head,nr_ice_cand_pair *pair);
 int nr_ice_candidate_pair_trigger_check_append(nr_ice_cand_pair_head *head,nr_ice_cand_pair *pair);
-int nr_ice_candidate_pair_destroy(nr_ice_cand_pair **pairp);
+void nr_ice_candidate_pair_destroy(nr_ice_cand_pair **pairp);
 void nr_ice_candidate_pair_role_change(nr_ice_cand_pair *pair);
 void nr_ice_candidate_pair_update_rtt(nr_ice_cand_pair *pair, UINT8 rtt_ms);
 

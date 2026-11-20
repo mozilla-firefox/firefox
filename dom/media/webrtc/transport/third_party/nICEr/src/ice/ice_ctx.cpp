@@ -1104,31 +1104,22 @@ int nr_ice_add_media_stream(nr_ice_ctx *ctx,const char *label,const char *ufrag,
     return(_status);
   }
 
-int nr_ice_remove_media_stream(nr_ice_ctx *ctx,nr_ice_media_stream **streamp)
+void nr_ice_remove_media_stream(nr_ice_ctx *ctx,nr_ice_media_stream **streamp)
   {
-    int r,_status;
     nr_ice_peer_ctx *pctx;
     nr_ice_media_stream *peer_stream;
 
     pctx=STAILQ_FIRST(&ctx->peers);
     while(pctx){
       if(!nr_ice_peer_ctx_find_pstream(pctx, *streamp, &peer_stream)) {
-        if(r=nr_ice_peer_ctx_remove_pstream(pctx, &peer_stream)) {
-          ABORT(r);
-        }
+        nr_ice_peer_ctx_remove_pstream(pctx, &peer_stream);
       }
 
       pctx=STAILQ_NEXT(pctx,entry);
     }
 
     STAILQ_REMOVE(&ctx->streams,*streamp,nr_ice_media_stream_,entry);
-    if(r=nr_ice_media_stream_destroy(streamp)) {
-      ABORT(r);
-    }
-
-    _status=0;
-  abort:
-    return(_status);
+    nr_ice_media_stream_destroy(streamp);
   }
 
 int nr_ice_get_global_attributes(nr_ice_ctx *ctx,char ***attrsp, int *attrctp)

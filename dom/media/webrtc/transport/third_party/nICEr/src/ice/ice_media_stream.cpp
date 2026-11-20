@@ -118,13 +118,13 @@ int nr_ice_media_stream_create(nr_ice_ctx *ctx,const char *label,const char *ufr
     return(_status);
   }
 
-int nr_ice_media_stream_destroy(nr_ice_media_stream **streamp)
+void nr_ice_media_stream_destroy(nr_ice_media_stream **streamp)
   {
     nr_ice_media_stream *stream;
     nr_ice_component *c1,*c2;
     nr_ice_cand_pair *p1,*p2;
     if(!streamp || !*streamp)
-      return(0);
+      return;
 
     stream=*streamp;
     *streamp=0;
@@ -161,8 +161,6 @@ int nr_ice_media_stream_destroy(nr_ice_media_stream **streamp)
       NR_async_timer_cancel(stream->timer);
 
     free(stream);
-
-    return(0);
   }
 
 int nr_ice_media_stream_initialize(nr_ice_ctx *ctx, nr_ice_media_stream *stream)

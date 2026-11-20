@@ -166,12 +166,12 @@ int nr_ice_candidate_pair_create(nr_ice_peer_ctx *pctx, nr_ice_candidate *lcand,
     return(_status);
   }
 
-int nr_ice_candidate_pair_destroy(nr_ice_cand_pair **pairp)
+void nr_ice_candidate_pair_destroy(nr_ice_cand_pair **pairp)
   {
     nr_ice_cand_pair *pair;
 
     if(!pairp || !*pairp)
-      return(0);
+      return;
 
     pair=*pairp;
     *pairp=0;
@@ -195,7 +195,6 @@ int nr_ice_candidate_pair_destroy(nr_ice_cand_pair **pairp)
     NR_async_timer_cancel(pair->restart_nominated_cb_timer);
 
     free(pair);
-    return(0);
   }
 
 int nr_ice_candidate_pair_unfreeze(nr_ice_peer_ctx *pctx, nr_ice_cand_pair *pair)

@@ -199,7 +199,7 @@ struct nr_ice_component_ *nr_ice_ctx_take_pool_component(nr_ice_ctx *ctx);
 int nr_ice_add_candidate(nr_ice_ctx *ctx, nr_ice_candidate *cand);
 void nr_ice_gather_finished_cb(NR_SOCKET s, int h, void *cb_arg);
 int nr_ice_add_media_stream(nr_ice_ctx *ctx,const char *label,const char *ufrag,const char *pwd,int components, nr_ice_media_stream **streamp);
-int nr_ice_remove_media_stream(nr_ice_ctx *ctx,nr_ice_media_stream **streamp);
+void nr_ice_remove_media_stream(nr_ice_ctx *ctx,nr_ice_media_stream **streamp);
 int nr_ice_get_global_attributes(nr_ice_ctx *ctx,char ***attrsp, int *attrctp);
 int nr_ice_ctx_deliver_packet(nr_ice_ctx *ctx, nr_ice_component *comp, nr_transport_addr *source_addr, UCHAR *data, int len);
 int nr_ice_ctx_is_known_id(nr_ice_ctx *ctx, UCHAR id[12]);
