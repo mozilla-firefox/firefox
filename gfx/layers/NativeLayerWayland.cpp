@@ -1130,6 +1130,9 @@ void NativeLayerWayland::Unmap() {
   WaylandSurfaceLock surfaceLock(mSurface);
 
   if (!mSurface->IsMapped()) {
+    // Release buffers attached while unmapped on the render thread, as the
+    // last layer reference may be dropped on the main thread (Bug 2092895).
+    DiscardBackbuffersLocked(surfaceLock, /* aForce */ true);
     return;
   }
 
