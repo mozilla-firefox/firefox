@@ -13,11 +13,12 @@ use neqo_http3::{
     connect_udp::{ServerEvent as ConnectUdpServerEvent, ServerSession as ConnectUdpRequest},
     webtransport::{ServerEvent as WebTransportServerEvent, ServerSession as WebTransportRequest},
     Error, Http3OrWebTransportStream, Http3Parameters, Http3Server, Http3ServerEvent,
-    SessionAcceptAction, StreamId,
+    SendGroupId, SessionAcceptAction, StreamId,
 };
 use neqo_transport::server::ConnectionRef;
 use neqo_transport::{
-    ConnectionEvent, ConnectionParameters, OutputBatch, RandomConnectionIdGenerator, StreamType,
+    ConnectionEvent, ConnectionParameters, DatagramQueueOutcome, OutputBatch,
+    RandomConnectionIdGenerator, StreamType,
 };
 use std::env;
 use std::pin::Pin;
@@ -84,6 +85,13 @@ struct Http3TestServer {
     wt_unidi_conn_to_stream: HashMap<ConnectionRef, Http3OrWebTransportStream>,
     wt_unidi_echo_back: HashMap<Http3OrWebTransportStream, Http3OrWebTransportStream>,
     received_datagram: Option<Bytes>,
+    // Sessions opened on /echo_datagrams, which echo every datagram back.
+    // Keyed by session ID only, as ServerSession has no identity; the tests
+    // using this run sequentially.
+    echo_datagram_sessions: HashSet<StreamId>,
+    // Sessions opened on /flood_datagrams/<count>/<size>, with the payload
+    // and the number of datagrams still to send.
+    datagram_floods: Vec<(WebTransportRequest, Vec<u8>, usize)>,
     // When true, server will stop processing datagrams after accepting 0-RTT,
     // simulating a stuck ZERORTT session that never transitions to CONNECTED.
     stuck_0rtt_mode: bool,
@@ -110,6 +118,8 @@ impl Http3TestServer {
             wt_unidi_conn_to_stream: HashMap::new(),
             wt_unidi_echo_back: HashMap::new(),
             received_datagram: None,
+            echo_datagram_sessions: HashSet::new(),
+            datagram_floods: Vec::new(),
             stuck_0rtt_mode: false,
             stuck_0rtt_activated: false,
         }
@@ -216,6 +226,25 @@ impl Http3TestServer {
         }
     }
 
+    // Sends until the session's outgoing datagram queue reports backpressure;
+    // OutgoingDatagramSpaceAvailable brings us back here to continue.
+    fn maybe_flood_datagrams(&mut self, now: Instant) {
+        self.datagram_floods.retain_mut(|(session, data, remaining)| {
+            while *remaining > 0 {
+                match session.send_datagram(data, None, now, SendGroupId::new(0), 0) {
+                    Ok(DatagramQueueOutcome::Ok) => *remaining -= 1,
+                    Ok(DatagramQueueOutcome::Rejected) => break,
+                    Ok(_) => {
+                        *remaining -= 1;
+                        break;
+                    }
+                    Err(_) => return false,
+                }
+            }
+            *remaining > 0
+        });
+    }
+
     // Regression test for bug 2043946: open a server-initiated bidi WebTransport
     // stream, send a byte so the client registers it in mStreamIdHash, then
     // schedule a STOP_SENDING(0x100) for a later flight.
@@ -300,6 +329,7 @@ impl HttpServer for Http3TestServer {
         self.maybe_create_wt_stream(now);
         self.maybe_create_wt_stream_and_stop_sending(now);
         self.maybe_stop_sending(now);
+        self.maybe_flood_datagrams(now);
 
         while let Some(event) = self.server.next_event() {
             trace!("Event: {:?}", event);
@@ -777,6 +807,29 @@ impl HttpServer for Http3TestServer {
                                     StreamType::BiDi,
                                     Some(data),
                                 ));
+                            } else if path.starts_with(b"/flood_datagrams/") {
+                                let params = std::str::from_utf8(&path[17..]).unwrap();
+                                let (count, size) = params.split_once('/').unwrap();
+                                session.response(&SessionAcceptAction::Accept, now).unwrap();
+                                // Without a count limit, the queue only reports
+                                // backpressure once its byte budget overflows,
+                                // which evicts a datagram.
+                                session
+                                    .set_max_buffered_datagrams(NonZeroUsize::new(64))
+                                    .unwrap();
+                                let size = if size == "max" {
+                                    session.max_datagram_size().unwrap() as usize
+                                } else {
+                                    size.parse().unwrap()
+                                };
+                                self.datagram_floods.push((
+                                    session,
+                                    vec![42; size],
+                                    count.parse().unwrap(),
+                                ));
+                            } else if path == b"/echo_datagrams" {
+                                session.response(&SessionAcceptAction::Accept, now).unwrap();
+                                self.echo_datagram_sessions.insert(session.stream_id());
                             } else if path == b"/create_bidi_stream_and_stop_sending" {
                                 session.response(&SessionAcceptAction::Accept, now).unwrap();
                                 self.sessions_to_create_bidi_and_stop_sending
@@ -806,6 +859,7 @@ impl HttpServer for Http3TestServer {
                         "WebTransportServerEvent::SessionClosed {:?} {:?}",
                         session, reason
                     );
+                    self.echo_datagram_sessions.remove(&session.stream_id());
                 }
                 Http3ServerEvent::WebTransport(WebTransportServerEvent::NewStream(stream)) => {
                     // new stream could be from client-outgoing unidirectional
@@ -832,7 +886,19 @@ impl HttpServer for Http3TestServer {
                         "WebTransportServerEvent::Datagram {:?} {:?}",
                         session, datagram
                     );
-                    self.received_datagram = Some(datagram);
+                    if self.echo_datagram_sessions.contains(&session.stream_id()) {
+                        // A full outgoing queue drops the echo, which the
+                        // client counts as loss.
+                        _ = session.send_datagram(
+                            datagram.as_ref(),
+                            None,
+                            now,
+                            SendGroupId::new(0),
+                            0,
+                        );
+                    } else {
+                        self.received_datagram = Some(datagram);
+                    }
                 }
                 Http3ServerEvent::ConnectUdp(_) => {
                     unimplemented!()

@@ -587,6 +587,31 @@ Performance tests from the 'dom/webgpu/tests/mochitest' folder.
 ::::
 
 
+## dom/webtransport/test/xpcshell
+
+Performance tests from the 'dom/webtransport/test/xpcshell' folder.
+
+::::{dropdown} WebTransport datagrams
+:class-container: anchor-id-webtransport-datagrams
+
+
+:owner: Network Team
+:name: WebTransport datagrams
+:tags: network,http3,quic,webtransport
+:Default options:
+
+::
+
+ --perfherder
+ --perfherder-metrics name:small_send,unit:datagrams/s,lowerIsBetter:False, name:small_receive,unit:datagrams/s,lowerIsBetter:False, name:small_delivered,unit:%,lowerIsBetter:False, name:small_latency_first,unit:ms,lowerIsBetter:True, name:small_latency_median,unit:ms,lowerIsBetter:True, name:small_latency_p95,unit:ms,lowerIsBetter:True, name:large_send,unit:datagrams/s,lowerIsBetter:False, name:large_receive,unit:datagrams/s,lowerIsBetter:False, name:large_delivered,unit:%,lowerIsBetter:False, name:large_latency_first,unit:ms,lowerIsBetter:True, name:large_latency_median,unit:ms,lowerIsBetter:True, name:large_latency_p95,unit:ms,lowerIsBetter:True, name:flood_small_receive,unit:datagrams/s,lowerIsBetter:False, name:flood_small_delivered,unit:%,lowerIsBetter:False, name:flood_small_first,unit:ms,lowerIsBetter:True, name:flood_large_receive,unit:datagrams/s,lowerIsBetter:False, name:flood_large_delivered,unit:%,lowerIsBetter:False, name:flood_large_first,unit:ms,lowerIsBetter:True, name:ping_small_median,unit:ms,lowerIsBetter:True, name:ping_small_p95,unit:ms,lowerIsBetter:True, name:ping_large_median,unit:ms,lowerIsBetter:True, name:ping_large_p95,unit:ms,lowerIsBetter:True
+ --xpcshell-cycles 13
+ --verbose
+ --try-platform linux, mac
+
+**XPCShell benchmark of WebTransport datagram send, echo receive and flood receive rates and latency against a local server**
+::::
+
+
 ## intl/benchmarks/test/xpcshell
 
 Performance tests running through XPCShell for Intl code
