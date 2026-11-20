@@ -15,6 +15,8 @@ SOURCES += [
 ]
 
 TEST_HARNESS_FILES.gtest += [
+    "../../mediasource/test/bipbop/bipbop_video1.m4s",
+    "../../mediasource/test/bipbop/bipbop_videoinit.mp4",
     "../../test/crashtests/1833896.mp4",
     "test_case_1156505.mp4",
     "test_case_1181213.mp4",
@@ -49,6 +51,10 @@ TEST_HARNESS_FILES.gtest += [
     "test_case_1519617-track2-trafs-removed.mp4",
     "test_case_1519617-video-has-track_id-0.mp4",
     "test_case_1714125-2-sample-description-entires-with-identical-crypto.mp4",
+    "test_case_1955763-composition-end-overflow.mp4",
+    "test_case_1955763-long-sample-duration.mp4",
+    "test_case_1955763-split-minigop.mp4",
+    "test_case_1955763-zero-sample-durations.mp4",
     "test_case_2004835-overflow-tfdt.mp4",
     "test_case_aac_encoder_delay_tfdt.mp4",
     "test_case_bad_co64_offset.mp4",
