@@ -22,16 +22,14 @@ let proxyPort;
 let proxyFilter;
 
 add_setup(async function () {
-  let h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
+  do_get_profile();
+  let h2Port = await create_h3_fallback_origin();
   h3Port = await create_h3_server();
   Assert.notEqual(h3Port, null);
   Assert.notEqual(h3Port, "");
   h3AltSvc = ":" + h3Port;
   h3ServerDomain = "foo.example.com";
   h3Route = `${h3ServerDomain}:${h3Port}`;
-  do_get_profile();
   prefs = Services.prefs;
 
   prefs.setBoolPref("network.http.http3.enable", true);
