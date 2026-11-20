@@ -137,14 +137,19 @@ MALLOC_DECL(moz_enable_deferred_purge, bool, bool)
 // NeedsMore:  There may be an arena that needs to be purged now.  The caller
 //             may call moz_may_purge_one_now again.
 // WantsLater: There is at least one arena that might want a purge later,
-//             according to aReuseGraceMS passed.  But none requesting purge
-//             now.
+//             according to aMinPurgeDelayMS passed.  But none requesting
+//             purge now.
 //
 // Parameters:
 // aPeekOnly:     If true, it won't process any purge but just return if some is
 //                needed now or wanted later.
-// aReuseGraceMS: The time to wait after a dirty page was reused before purging
-//                memory in an arena.
+// aMinPurgeDelayMS, aMaxPurgeDelayMS:
+//                Both delays depend on page reuse. An arena is purged once
+//                aMinPurgeDelayMS has passed since it last reused a dirty page.
+//                An arena that keeps reusing pages gets a target purge instead
+//                once aMaxPurgeDelayMS has passed since its last purge, which
+//                releases as many dirty pages as were unused since then. Zero
+//                disables the maximum delay.
 // aKeepGoing:    Used to determine if it should continue processing purge
 //                requests and may be used to implement a work budget.  It will
 //                exit if there's no more requests, if it finishes processing an
@@ -160,7 +165,7 @@ MALLOC_DECL(moz_enable_deferred_purge, bool, bool)
 // lock/unlock and iterating the list of purges. The mutex is never held during
 // expensive operations.
 #    ifdef __cplusplus
-MALLOC_DECL(moz_may_purge_now, may_purge_now_result_t, bool, uint32_t,
+MALLOC_DECL(moz_may_purge_now, may_purge_now_result_t, bool, uint32_t, uint32_t,
             purge_keep_going_t, void*)
 #    endif
 

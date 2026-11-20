@@ -25,12 +25,14 @@
 #define TYPED_ARGS2(t1, t2) TYPED_ARGS1(t1), t2 arg2
 #define TYPED_ARGS3(t1, t2, t3) TYPED_ARGS2(t1, t2), t3 arg3
 #define TYPED_ARGS4(t1, t2, t3, t4) TYPED_ARGS3(t1, t2, t3), t4 arg4
+#define TYPED_ARGS5(t1, t2, t3, t4, t5) TYPED_ARGS4(t1, t2, t3, t4), t5 arg5
 
 #define ARGS0()
 #define ARGS1(t1) arg1
 #define ARGS2(t1, t2) ARGS1(t1), arg2
 #define ARGS3(t1, t2, t3) ARGS2(t1, t2), arg3
 #define ARGS4(t1, t2, t3, t4) ARGS3(t1, t2, t3), arg4
+#define ARGS5(t1, t2, t3, t4, t5) ARGS4(t1, t2, t3, t4), arg5
 
 #ifdef MOZ_MEMORY
 
@@ -162,7 +164,8 @@ struct DummyArenaAllocator {
   static bool moz_enable_deferred_purge(bool aEnable) { return false; }
 
   static may_purge_now_result_t moz_may_purge_now(bool aPeekOnly,
-                                                  uint32_t aReuseGraceMS,
+                                                  uint32_t aMinPurgeDelayMS,
+                                                  uint32_t aMaxPurgeDelayMS,
                                                   purge_keep_going_t aKeepGoing,
                                                   void* aClosure) {
     return may_purge_now_result_t::Done;

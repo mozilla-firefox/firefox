@@ -233,7 +233,15 @@ static_assert(sizeof(arena_bin_t) == 48);
 static_assert(sizeof(arena_bin_t) == 32);
 #endif
 
-enum PurgeCondition { PurgeIfThreshold, PurgeUnconditional };
+enum PurgeCondition {
+  // Purge down to half of mMaxDirty.
+  PurgeIfThreshold,
+  // Purge all dirty pages.
+  PurgeUnconditional,
+  // Purge as many dirty pages as were unused since the last purge, see
+  // mMinimumNumDirty.
+  PurgeToTarget
+};
 
 struct arena_t : public BaseAllocClass {
 #if defined(MOZ_DIAGNOSTIC_ASSERT_ENABLED)
@@ -361,6 +369,22 @@ struct arena_t : public BaseAllocClass {
   // only sparsely on the main thread, but when we read it we need to see the
   // chronologically latest write asap (so we cannot use Relaxed).
   mozilla::Atomic<uint64_t> mLastPageReuseNS;
+
+  // With deferred purge, every dirty page reuse postpones the arena's purge by
+  // the reuse grace time, so an arena that keeps reusing a few pages would
+  // never purge the other dirty pages. To limit this, while the reuse
+  // continues, MayPurgeSteps() will run a target purge (PurgeToTarget) once the
+  // maximum purge delay has passed since the arena's last purge. It releases as
+  // many dirty pages as were unused since that purge.
+  //
+  // The lowest dirty page count since the last purge.
+  size_t mMinimumNumDirty MOZ_GUARDED_BY(mLock);
+  // When the last purge of this arena ended or the last target purge started
+  // (in ns). A target purge restarts this when it starts because it may stop
+  // above mMaxDirty without ending the purge, see PurgeLoop(). Written under
+  // mLock, read without it by MayPurgeSteps(), for which a stale value only
+  // moves a target purge slightly.
+  mozilla::Atomic<uint64_t> mLastPurgeNS;
 
  public:
   // A flag that indicates if this arena will be purged.
@@ -669,6 +693,14 @@ struct arena_t : public BaseAllocClass {
   // Take action according to ShouldStartPurge.
   inline void MayDoOrQueuePurge(purge_action_t aAction, const char* aCaller)
       MOZ_EXCLUDES(mLock);
+
+  // Clear mIsPurgePending at the end of a purge and restart the maximum purge
+  // delay. PurgeLoop() must end the purge whenever it returns anything other
+  // than NotDone.
+  void EndPurge() MOZ_REQUIRES(mLock);
+
+  // Restart the maximum purge delay and the tracking of mMinimumNumDirty.
+  void RestartMaxPurgeDelay() MOZ_REQUIRES(mLock);
 
   // Update the last page reuse timestamp.
   void NotifyPageReuse() MOZ_EXCLUDES(mLock);

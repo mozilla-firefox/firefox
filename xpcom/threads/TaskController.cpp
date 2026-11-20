@@ -17,6 +17,7 @@
 #include "mozilla/Perfetto.h"
 #include "mozilla/SchedulerGroup.h"
 #include "mozilla/ScopeExit.h"
+#include "mozilla/StaticPrefs_javascript.h"
 #include "mozilla/StaticPrefs_memory.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/VsyncTaskManager.h"
@@ -1002,6 +1003,15 @@ struct LazyPurgePeekMarker : mozilla::BaseMarkerType<LazyPurgePeekMarker> {
 }  // namespace geckoprofiler::markers
 
 namespace mozilla {
+// How long the reuse grace may postpone a busy arena's purge. The purge then
+// releases as many dirty pages as were unused since its last purge. An
+// arena needs the most pages right before a GC, and more so after a longer
+// GC/CC cycle. Cycles mostly follow the GC delay but vary in length, so the
+// delay spans several of them to include a long one most of the time.
+static uint32_t MaxPurgeDelay() {
+  return StaticPrefs::javascript_options_gc_delay() * 3;
+}
+
 // Check if a purge needs to be scheduled now or later.
 // Both used as timer callback and directly from MayScheduleMemoryCleanup.
 //
@@ -1032,8 +1042,9 @@ void CheckMemoryCleanupNeeded(nsITimer* aTimer, void* aClosure) {
     sMemoryCleanupWantsLaterScheduled = false;
   }
 
-  auto result = moz_may_purge_now(/* aPeekOnly */ true, reuseGracePeriod,
-                                  nullptr, nullptr);
+  auto result = moz_may_purge_now(
+      /* aPeekOnly */ true, reuseGracePeriod, MaxPurgeDelay(), nullptr,
+      nullptr);
   switch (result) {
     case may_purge_now_result_t::Done:
       // Currently we unqueue purge requests only:
@@ -1131,12 +1142,13 @@ Task::TaskResult InterruptiblePurgeTask::Run() {
 
   uint32_t reuseGracePeriod =
       StaticPrefs::memory_lazypurge_reuse_grace_period();
+  uint32_t maxPurgeDelay = MaxPurgeDelay();
 
   may_purge_now_result_t result;
   do {
     num_calls++;
     result = moz_may_purge_now(/* aPeekOnly */ false, reuseGracePeriod,
-                               KeepPurging, this);
+                               maxPurgeDelay, KeepPurging, this);
   } while ((result == may_purge_now_result_t::NeedsMore) && !mInterrupted);
 
   const char* last_result;
