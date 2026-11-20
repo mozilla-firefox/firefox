@@ -10,15 +10,12 @@
   var superExtendedTimeout = 5 * 60 * 1000;
   var hasExtendedCorpus =
     new URLSearchParams(location.search).get("extendedCorpus") == "true";
-  // Android trains on a subset of the corpus, and has no Quitter extension, see
-  // testing/mozharness/scripts/android_emulator_pgo.py. Its test runner also
-  // keeps new windows off-screen, so items are loaded in a frame covering this
-  // page instead, to show them in the training video.
-  var isAndroid = new URLSearchParams(location.search).get("android") == "true";
 
-  // How long to keep an item open after it is done, so that trailing work such
-  // as painting still gets profiled.
-  var doneGracePeriod = 500;
+  // How long to keep an item open after it signals that it is done, so that
+  // trailing work such as painting still gets profiled.
+  var loadGracePeriod = 500;
+  var reportGracePeriod = 250;
+  var benchmarkGracePeriod = 2 * 1000;
 
   function waitTimeout(time, win = window) {
     return new Promise(resolve => {
@@ -28,51 +25,16 @@
     });
   }
 
-  function isLoaded(subWindow) {
-    return (
-      subWindow.location.href != "about:blank" &&
-      subWindow.document.readyState == "complete"
-    );
+  // This page is in a background tab while items run, so its own timers are
+  // clamped. Prefer the item's window for short waits when it is same-origin.
+  function timerWindow(subWindow) {
+    try {
+      if (typeof subWindow.setTimeout == "function") {
+        return subWindow;
+      }
+    } catch (e) {}
+    return window;
   }
-
-  // Resolves when condition() is true. It is checked on load of subWindow, since
-  // the listener added to the initial about:blank window is kept when it is
-  // reused for the page, and polled in case it isn't.
-  function waitForCondition(subWindow, condition) {
-    return new Promise(resolve => {
-      let check = () => {
-        let met = false;
-        try {
-          met = !subWindow.closed && !!condition();
-        } catch (e) {}
-        if (met || subWindow.closed) {
-          window.clearInterval(poll);
-        }
-        if (met) {
-          resolve();
-        }
-      };
-      let poll = window.setInterval(check, 100);
-      subWindow.addEventListener("load", check);
-    });
-  }
-
-  // Tell whether the loaded window of an item is done, see Item.
-  var isReported = w => w.pgoReported;
-  var isSpeedometer2Done = w =>
-    w.document.querySelector(
-      "#summarized-results.selected, #detailed-results.selected"
-    );
-  var isSpeedometer3Done = w => w.benchmarkClient?._hasResults;
-  var isWebAudioDone = w => w.sessionStorage.getItem("benchmark_results");
-  var isJetStreamDone = w => w.JetStream?.isDone;
-  var isImageDecodingDone = w => w.pgoImageDecodingDone;
-
-  // Tell whether a done benchmark ran into an error, see Benchmark.
-  var hasSpeedometer3Failed = w =>
-    !Object.keys(w.benchmarkClient._metrics).length;
-  var hasJetStreamFailed = w => w.JetStream.errors.length;
-  var hasImageDecodingFailed = w => w.pgoImageDecodingFailed;
 
   /**
    * An item in the PGO training corpus
@@ -80,125 +42,99 @@
   class Item {
     url;
     timeout;
-    isDone;
+    waitFor;
 
     /**
      * @param {string} url URL to open.
      * @param {number} timeout Maximum time to keep the item open.
-     * @param {Function|null} isDone Called with the window of the item once it
-     *   has loaded, returns whether it is done so that it can be closed before
-     *   the timeout. null to always wait for the full timeout.
+     * @param {string} waitFor What signals that the item is done: "load" for the load
+     *   event, "report" for a perf-reftest-singleton calling tpRecordTime,
+     *   "benchmark" for a completion message posted by the benchmark, or
+     *   "timeout" to always wait for the full timeout.
      */
-    constructor(url, timeout = defaultTimeout, isDone = () => true) {
+    constructor(url, timeout = defaultTimeout, waitFor = "load") {
       this.url = url;
       this.timeout = timeout;
-      this.isDone = isDone;
+      this.waitFor = waitFor;
     }
 
-    /**
-     * @param {Window} subWindow The window of the item.
-     * @param {boolean} done Whether the item was done before its timeout.
-     * @returns {string|null} Why the item failed training, or null.
-     */
-    // eslint-disable-next-line no-unused-vars
-    getError(subWindow, done) {
-      return null;
-    }
-
-    /**
-     * @returns {{done: boolean, error: string|null}} Whether the item was done
-     *   before its timeout, and see getError.
-     */
     async run() {
-      let frame = null;
-      let subWindow;
-      if (isAndroid) {
-        frame = document.createElement("iframe");
-        frame.style.cssText =
-          "position: fixed; inset: 0; width: 100%; height: 100%; border: none; background: white;";
-        frame.src = this.url;
-        document.body.append(frame);
-        subWindow = frame.contentWindow;
-      } else {
-        subWindow = window.open(this.url);
-      }
+      let finished;
+      let completed = new Promise(resolve => {
+        finished = resolve;
+      });
+      var subWindow = window.open(this.url);
+      let onMessage = e => {
+        if (e.source === subWindow && e.data && e.data.pgoBenchmarkDone) {
+          finished(benchmarkGracePeriod);
+        }
+      };
 
       // Prevent the perf-reftest-singletons from calling alert()
-      subWindow.tpRecordTime = () => (subWindow.pgoReported = true);
-
-      // Wait until the timeout is finished, or until the item is done
-      let finished = waitTimeout(this.timeout).then(() => false);
-      if (this.isDone) {
-        let done = waitForCondition(
-          subWindow,
-          () => isLoaded(subWindow) && this.isDone(subWindow)
-        );
-        finished = Promise.race([finished, done.then(() => true)]);
-      }
-      let done = await finished;
-      let error;
-      try {
-        error = this.getError(subWindow, done);
-      } catch (e) {
-        error = String(e);
-      }
-      // On desktop, this page is in a background tab while items run, where its
-      // timers are clamped, so use the timers of the item's window for the grace
-      // period.
-      if (done) {
-        await waitTimeout(doneGracePeriod, subWindow);
+      subWindow.tpRecordTime = () => {
+        if (this.waitFor == "report") {
+          finished(reportGracePeriod);
+        }
+      };
+      if (this.waitFor == "load") {
+        watchLoad(subWindow, () => finished(loadGracePeriod));
+      } else if (this.waitFor == "benchmark") {
+        window.addEventListener("message", onMessage);
       }
 
-      if (frame) {
-        frame.remove();
-      } else {
-        subWindow.close();
+      let gracePeriod = await Promise.race([
+        completed,
+        waitTimeout(this.timeout),
+      ]);
+      window.removeEventListener("message", onMessage);
+      if (gracePeriod !== undefined) {
+        await waitTimeout(gracePeriod, timerWindow(subWindow));
       }
-      return { done, error };
+
+      subWindow.close();
+      return gracePeriod === undefined && this.waitFor != "timeout"
+        ? "timeout"
+        : "done";
     }
   }
 
-  /**
-   * A benchmark in the PGO training corpus. It fails training if it isn't done
-   * before its timeout, so that a benchmark update that breaks isDone doesn't
-   * go unnoticed.
-   */
-  class Benchmark extends Item {
-    hasFailed;
-
-    /**
-     * @param {string} url See Item.
-     * @param {number} timeout See Item.
-     * @param {Function} isDone See Item.
-     * @param {Function} hasFailed Called with the window of the benchmark once
-     *   it is done, returns whether it ran into an error.
-     */
-    constructor(url, timeout, isDone, hasFailed = () => false) {
-      super(url, timeout, isDone);
-      this.hasFailed = hasFailed;
-    }
-
-    getError(subWindow, done) {
-      if (!done) {
-        return `not done after ${this.timeout / 1000}s`;
-      }
-      return this.hasFailed(subWindow) ? "failed" : null;
-    }
-  }
-
-  // Tell profileserver.py how long an item took and whether it was done before
-  // its timeout, so that it records it in the task's resource usage profile.
+  // Tell profileserver.py how long an item took and whether it signalled
+  // completion, so that it records it in the task's resource usage profile.
   async function reportItem(item, start, outcome) {
+    let params = new URLSearchParams({
+      url: item.url,
+      ms: Math.round(performance.now() - start),
+      outcome,
+    });
     try {
-      await fetch("/pgo-item", {
-        method: "POST",
-        body: JSON.stringify({
-          url: item.url,
-          ms: Math.round(performance.now() - start),
-          outcome,
-        }),
-      });
+      await fetch(`/pgo-item?${params}`);
     } catch (e) {}
+  }
+
+  function watchLoad(subWindow, callback) {
+    let loaded = () => {
+      try {
+        return (
+          subWindow.location.href != "about:blank" &&
+          subWindow.document.readyState == "complete"
+        );
+      } catch (e) {
+        return false;
+      }
+    };
+    subWindow.addEventListener("load", () => {
+      if (loaded()) {
+        callback();
+      }
+    });
+    let poll = window.setInterval(() => {
+      if (subWindow.closed || loaded()) {
+        window.clearInterval(poll);
+        if (!subWindow.closed) {
+          callback();
+        }
+      }
+    }, 100);
   }
 
   var defaultItemUrls = [
@@ -274,85 +210,55 @@
   ];
 
   // Start with items with the default timeout
-  var items = defaultItemUrls
-    .filter(x => !isAndroid || !x.includes("perf-reftest-singletons"))
-    .map(x => {
-      if (x.includes("perf-reftest-singletons")) {
-        return new Item(x, defaultTimeout, isReported);
-      }
-      // This page animates continuously, so it never finishes on its own.
-      if (x.endsWith("3d-thingy.html")) {
-        return new Item(x, defaultTimeout, null);
-      }
-      return new Item(x);
-    });
+  var items = defaultItemUrls.map(x => {
+    if (x.includes("perf-reftest-singletons")) {
+      return new Item(x, defaultTimeout, "report");
+    }
+    // This page animates continuously, so it never finishes on its own.
+    if (x.endsWith("3d-thingy.html")) {
+      return new Item(x, defaultTimeout, "timeout");
+    }
+    return new Item(x);
+  });
 
   // Add items that needs longer timeouts
   items.push(
-    new Benchmark(
+    new Item(
       "webkit/PerformanceTests/Speedometer/index.html",
       extendedTimeout,
-      isSpeedometer2Done
+      "benchmark"
     ),
-    new Benchmark(
-      "webkit/PerformanceTests/Speedometer3/index.html?startAutomatically=true",
-      superExtendedTimeout,
-      isSpeedometer3Done,
-      hasSpeedometer3Failed
-    )
+    new Item(
+      "http://localhost:8000/index.html?startAutomatically=true",
+      extendedTimeout,
+      "benchmark"
+    ),
+    new Item(
+      "webkit/PerformanceTests/webaudio/index.html?raptor&rendering-buffer-length=30",
+      extendedTimeout,
+      "benchmark"
+    ),
+    new Item("image_decoding.html", extendedTimeout, "benchmark")
   );
-  if (!isAndroid) {
-    items.push(
-      new Benchmark(
-        "webkit/PerformanceTests/webaudio/index.html?raptor&rendering-buffer-length=30",
-        extendedTimeout,
-        isWebAudioDone
-      ),
-      new Benchmark(
-        "image_decoding.html",
-        extendedTimeout,
-        isImageDecodingDone,
-        hasImageDecodingFailed
-      )
-    );
-  }
 
   // Add optional items if there is a 'pgo-extended-corpus' provided
   if (hasExtendedCorpus) {
     items.push(
-      new Benchmark(
-        "JetStream/index.html?startAutomatically=true&testIterationCount=3&worstCaseCount=1",
+      new Item(
+        "http://localhost:8001/index.html?startAutomatically=true&testIterationCount=3&worstCaseCount=1",
         superExtendedTimeout,
-        isJetStreamDone,
-        hasJetStreamFailed
+        "benchmark"
       )
     );
   }
 
-  // Report the items that failed to the server, which then fails the task, see
-  // PGOServer.training_errors in build/pgo/pgoserver.py.
   window.onload = async function () {
-    let errors = [];
     for (let item of items) {
       let start = performance.now();
-      let { done, error } = await item.run();
-      await reportItem(item, start, done || !item.isDone ? "done" : "timeout");
-      if (error) {
-        errors.push(`${item.url}: ${error}`);
-      }
+      let outcome = await item.run();
+      await reportItem(item, start, outcome);
     }
-    try {
-      await fetch("/pgo-report", {
-        method: "POST",
-        body: JSON.stringify({ errors }),
-      });
-    } finally {
-      if (isAndroid) {
-        window.pgoTrainingDone = true;
-      } else {
-        Quitter.quit();
-      }
-    }
+    Quitter.quit();
   };
 
   for (let item of items) {

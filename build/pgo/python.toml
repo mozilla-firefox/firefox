@@ -1,4 +1,0 @@
-[DEFAULT]
-subsuite = "mozbuild"
-
-["test_pgoserver.py"]
