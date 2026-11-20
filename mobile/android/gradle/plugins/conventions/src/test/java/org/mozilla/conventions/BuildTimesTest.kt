@@ -57,7 +57,6 @@ class BuildTimesTest {
             tasks = listOf(
                 TaskRecord(":app:compileDebugKotlin", 0L, 4000L, "EXECUTED"),
                 TaskRecord(":app:kspDebugKotlin", 0L, 1500L, "EXECUTED"),
-                TaskRecord(":app:longfox:compileDebugKotlin", 0L, 300L, "EXECUTED"),
                 TaskRecord(":components:browser-state:compileDebugKotlin", 0L, 2000L, "EXECUTED"),
                 TaskRecord(":components:browser-state:mergeDebugResources", 0L, 250L, "UP-TO-DATE"),
                 TaskRecord(":listRepositories", 0L, 10L, "EXECUTED"),
@@ -93,11 +92,11 @@ class BuildTimesTest {
         assertEquals(7.0, subtests["execution"])
         assertEquals(4.0, subtests["app kotlin"])
         assertEquals(1.5, subtests["app ksp"])
-        assertEquals(6.3, subtests["kotlin task time"])
+        assertEquals(6.0, subtests["kotlin task time"])
         assertEquals(1.5, subtests["ksp task time"])
         assertEquals(0.25, subtests["resources task time"])
         assertEquals(0.01, subtests["other task time"])
-        assertEquals(5.8, subtests["app task time"])
+        assertEquals(5.5, subtests["app task time"])
         assertEquals(2.25, subtests["components task time"])
     }
 

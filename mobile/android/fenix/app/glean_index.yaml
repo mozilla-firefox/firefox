@@ -11,4 +11,3 @@ tag_files:
   - mobile/android/fenix/app/tags.yaml
 metrics_files:
   - mobile/android/fenix/app/metrics.yaml
-  - mobile/android/fenix/app/longfox/metrics.yaml

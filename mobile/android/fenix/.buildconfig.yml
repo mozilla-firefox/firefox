@@ -1,7 +1,6 @@
 projects:
   app:
     upstream_dependencies:
-    - app:longfox
     - components:browser-domains
     - components:browser-engine-gecko
     - components:browser-errorpages

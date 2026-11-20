@@ -134,10 +134,7 @@ with Files(
 ):
     BUG_COMPONENT = ("Firefox for Android", "Toolbar")
 
-with Files(
-    "app/longfox/**",
-    "app/src/*/java/org/mozilla/fenix/debugsettings/**",
-):
+with Files("app/src/*/java/org/mozilla/fenix/debugsettings/**"):
     BUG_COMPONENT = ("Firefox for Android", "Tooling")
 
 with Files("app/src/*/java/org/mozilla/fenix/home/topsites/**"):

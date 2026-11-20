@@ -58,8 +58,6 @@ if (!gradle.mozconfig.substs.MOZ_ANDROID_SUBPROJECT || gradle.mozconfig.substs.M
     project(':fenix').projectDir = new File("${gradle.mozconfig.topsrcdir}/mobile/android/fenix/app")
     include ':mozilla-detekt-rules'
     project(':mozilla-detekt-rules').projectDir = new File("${gradle.mozconfig.topsrcdir}/mobile/android/fenix/mozilla-detekt-rules")
-    include ':fenix:longfox'
-    project(':fenix:longfox').projectDir = new File("${gradle.mozconfig.topsrcdir}/mobile/android/fenix/app/longfox")
     include ':fenix:benchmark'
     project(':fenix:benchmark').projectDir = new File("${gradle.mozconfig.topsrcdir}/mobile/android/fenix/benchmark")
 }
