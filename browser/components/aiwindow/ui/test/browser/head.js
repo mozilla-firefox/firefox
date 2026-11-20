@@ -696,6 +696,9 @@ async function _stubResumeActivityGenerationCore(
 
   const originalAvailableLocales = Services.locale.availableLocales;
   const originalRequestedLocales = Services.locale.requestedLocales;
+  const hadRequestedPref = Services.prefs.prefHasUserValue(
+    "intl.locale.requested"
+  );
   Services.locale.availableLocales = ["en-US"];
   Services.locale.requestedLocales = ["en-US"];
 
@@ -712,6 +715,10 @@ async function _stubResumeActivityGenerationCore(
       }
       Services.locale.availableLocales = originalAvailableLocales;
       Services.locale.requestedLocales = originalRequestedLocales;
+      // Setting requestedLocales leaves a user value even when restoring one.
+      if (!hadRequestedPref) {
+        Services.prefs.clearUserPref("intl.locale.requested");
+      }
     },
   };
 }

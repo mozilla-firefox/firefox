@@ -208,8 +208,6 @@ skip-if = [
 
 ["browser_smartwindow_request_response_telemetry.js"]
 
-["browser_smartwindow_resume_card.js"]
-
 ["browser_smartwindow_resume_section.js"]
 
 ["browser_smartwindow_retry_context.js"]

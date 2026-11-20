@@ -1,0 +1,21 @@
+[DEFAULT]
+prefs = [
+  # A preloaded new tab can take the page openOnlyAIWindowTab opens.
+  "browser.newtab.preload=false",
+  # Popup animations take about a sixth of these files' runtime.
+  "ui.prefersReducedMotion=1",
+]
+support-files = [
+  "head.js",
+  "!/browser/components/aiwindow/ui/test/browser/head.js",
+]
+
+["browser_resume_card.js"]
+
+["browser_resume_card_actions.js"]
+
+["browser_resume_card_telemetry.js"]
+
+["browser_resume_section_hide.js"]
+
+["browser_resume_section_telemetry.js"]
