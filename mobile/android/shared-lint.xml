@@ -7,11 +7,6 @@
      `lintConfig` in each app's build.gradle rather than being named lint.xml, so that it is never
      picked up implicitly by another project through lint's directory hierarchy. -->
 <lint>
-    <!-- The android-lint mozlint task reports every issue in the lint report as a failure, including
-         the informational note lint emits about findings filtered by the baseline. Silence just that
-         note; the baseline itself still grandfathers the underlying findings. -->
-    <issue id="LintBaseline" severity="ignore" />
-
     <!-- Lints that don't apply to our translation process -->
     <issue id="MissingTranslation" severity="ignore" />
     <issue id="MissingQuantity" severity="ignore" />

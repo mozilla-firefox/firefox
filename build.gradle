@@ -219,13 +219,6 @@ subprojects { project ->
             dependencies {
                 lintChecks project.project(':components:tooling-lint')
             }
-
-            android {
-                // Copied from subbproject's build.gradle
-                lint {
-                    baseline = file("${project.projectDir}/lint-baseline.xml")
-                }
-            }
         }
     }
 }

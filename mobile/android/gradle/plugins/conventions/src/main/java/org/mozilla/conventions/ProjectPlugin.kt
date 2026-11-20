@@ -599,7 +599,6 @@ class ProjectPlugin : Plugin<Project> {
 
             val android = project.extensions.getByType<CommonExtension>()
             with(android.lint) {
-                baseline = project.file("lint-baseline.xml")
                 warningsAsErrors = true
                 abortOnError = false
                 disable += listOf(

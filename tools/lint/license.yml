@@ -83,7 +83,6 @@ license:
         # etc.) don't have license headers.
         - 'mobile/android/fenix/app/src/main/res/'
         - 'mobile/android/focus-android/app/src/main/res/'
-        - '**/lint-baseline.xml'
     extensions:
         - .c
         - .cc
