@@ -54,6 +54,8 @@ class WebTransportDatagramsWritable final : public WritableStream {
   // WritableStream is not left waiting on it once the session is torn down.
   void Cleanup();
 
+  void UpdateQueueParams(uint32_t aMaxBufferedDatagrams, double aMaxAge);
+
  private:
   ~WebTransportDatagramsWritable() override;
 
