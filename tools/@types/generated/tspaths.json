@@ -451,6 +451,9 @@
       "chrome://browser/content/tabbrowser/all-tabs-menu.mjs": [
         "../../../browser/components/tabbrowser/content/all-tabs-menu.mjs"
       ],
+      "chrome://browser/content/tabbrowser/browser-ctrlTab.mjs": [
+        "../../../browser/components/tabbrowser/content/browser-ctrlTab.mjs"
+      ],
       "chrome://browser/content/tabbrowser/drag-and-drop.mjs": [
         "../../../browser/components/tabbrowser/content/drag-and-drop.mjs"
       ],

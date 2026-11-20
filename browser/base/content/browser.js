@@ -132,6 +132,7 @@ ChromeUtils.defineESModuleGetters(this, {
 ChromeUtils.defineESModuleGetters(
   this,
   {
+    ctrlTab: "chrome://browser/content/tabbrowser/browser-ctrlTab.mjs",
     gTabsPanel: "chrome://browser/content/tabbrowser/all-tabs-menu.mjs",
     StatusPanel: "chrome://browser/content/tabbrowser/status-panel.mjs",
     TabBarVisibility:
@@ -197,11 +198,6 @@ XPCOMUtils.defineLazyScriptGetter(
     "gXPInstallObserver",
   ],
   "chrome://browser/content/browser-addons.js"
-);
-XPCOMUtils.defineLazyScriptGetter(
-  this,
-  "ctrlTab",
-  "chrome://browser/content/tabbrowser/browser-ctrlTab.js"
 );
 XPCOMUtils.defineLazyScriptGetter(
   this,

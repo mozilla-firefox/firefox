@@ -157,6 +157,9 @@ declare namespace BrowserWindow {
   // tabbrowser/content/all-tabs-menu.mjs
   var gTabsPanel: typeof import("chrome://browser/content/tabbrowser/all-tabs-menu.mjs").gTabsPanel;
 
+  // tabbrowser/content/browser-ctrlTab.mjs
+  var ctrlTab: typeof import("chrome://browser/content/tabbrowser/browser-ctrlTab.mjs").ctrlTab;
+
   // tabbrowser/content/status-panel.mjs
   var StatusPanel: typeof import("chrome://browser/content/tabbrowser/status-panel.mjs").StatusPanel;
 

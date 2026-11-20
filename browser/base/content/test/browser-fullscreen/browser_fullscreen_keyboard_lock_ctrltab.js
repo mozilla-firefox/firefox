@@ -22,7 +22,7 @@ async function synthesizeKeyRoundtripFlush(tab, key, options) {
  *
  * @param {boolean} sortByRecentlyUsed
  *   When false, tabbox.js handles Ctrl+Tab (default).
- *   When true,  browser-ctrlTab.js shows a panel and commits on Ctrl keyup.
+ *   When true,  browser-ctrlTab.mjs shows a panel and commits on Ctrl keyup.
  */
 async function runCtrlTabTest(sortByRecentlyUsed) {
   await SpecialPowers.pushPrefEnv({

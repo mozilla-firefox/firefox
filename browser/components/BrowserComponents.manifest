@@ -92,7 +92,7 @@ category browser-window-delayed-startup chrome://browser/content/browser-places.
 category browser-window-delayed-startup chrome://browser/content/browser-siteProtections.js gProtectionsHandler.init
 category browser-window-delayed-startup chrome://browser/content/browser-trustPanel.js gTrustPanelHandler.init
 category browser-window-delayed-startup chrome://browser/content/browser-places.js#PlacesToolbarHelper PlacesToolbarHelper.init
-category browser-window-delayed-startup chrome://browser/content/tabbrowser/browser-ctrlTab.js ctrlTab.observePref
+category browser-window-delayed-startup chrome://browser/content/browser.js#ctrlTab ctrlTab.observePref
 # The object handling the downloads indicator is initialized here in the delayed startup function,
 # but the actual indicator element is not loaded unless there are downloads to be displayed.
 category browser-window-delayed-startup chrome://browser/content/downloads/indicator.js DownloadsButton.initializeIndicator
@@ -163,7 +163,7 @@ category browser-window-unload chrome://browser/content/browser-sync.js gSync.un
 
 # Teardown for `browser-window-delayed-startup` consumers. Fired only when the
 # window's delayed startup actually ran.
-category browser-window-unload-delayed-startup chrome://browser/content/tabbrowser/browser-ctrlTab.js ctrlTab.stopObservingPref
+category browser-window-unload-delayed-startup chrome://browser/content/browser.js#ctrlTab ctrlTab.stopObservingPref
 category browser-window-unload-delayed-startup chrome://browser/content/browser-siteProtections.js gProtectionsHandler.uninit
 category browser-window-unload-delayed-startup chrome://browser/content/browser-trustPanel.js gTrustPanelHandler.uninit
 category browser-window-unload-delayed-startup chrome://browser/content/tabbrowser/browser-fullZoom.js FullZoom.destroy
