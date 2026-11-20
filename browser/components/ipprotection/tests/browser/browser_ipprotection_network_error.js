@@ -183,13 +183,6 @@ add_task(async function test_network_error_when_activating_offline() {
  * error, and that turning the VPN off afterwards clears it.
  */
 add_task(async function test_network_error_work_offline_while_active() {
-  // The blocking alert is covered by browser_ipprotection_alert_manager.js.
-  const sandbox = sinon.createSandbox();
-  let showErrorPromptsStub = sandbox.stub(
-    IPProtectionAlertManager,
-    "showErrorPrompts"
-  );
-
   setupService({
     isReady: true,
   });
@@ -219,10 +212,6 @@ add_task(async function test_network_error_work_offline_while_active() {
     ERRORS.NETWORK,
     "The proxy error should be a network error"
   );
-  Assert.ok(
-    showErrorPromptsStub.calledOnce,
-    "The error alert should be requested"
-  );
 
   await IPPProxyManager.stop();
 
@@ -236,7 +225,6 @@ add_task(async function test_network_error_work_offline_while_active() {
   Services.io.offline = false;
 
   await closePanel();
-  sandbox.restore();
   cleanupService();
 });
 
@@ -300,13 +288,6 @@ async function cleanupInclusionMode(principal, tabs) {
  * proxy only up for included sites, shows the network error.
  */
 add_task(async function test_network_error_work_offline_inclusion_mode() {
-  // The blocking alert is covered by browser_ipprotection_alert_manager.js.
-  const sandbox = sinon.createSandbox();
-  let showErrorPromptsStub = sandbox.stub(
-    IPProtectionAlertManager,
-    "showErrorPrompts"
-  );
-
   const includedSite = "https://example.com";
   let { principal, tabs } = await setupInclusionMode(
     includedSite,
@@ -330,13 +311,8 @@ add_task(async function test_network_error_work_offline_inclusion_mode() {
     ERRORS.NETWORK,
     "The proxy error should be a network error"
   );
-  Assert.ok(
-    showErrorPromptsStub.calledOnce,
-    "The error alert should be requested"
-  );
 
   await cleanupInclusionMode(principal, tabs);
-  sandbox.restore();
 });
 
 /**
@@ -344,12 +320,6 @@ add_task(async function test_network_error_work_offline_inclusion_mode() {
  * tab shows the network error once that tab is selected.
  */
 add_task(async function test_network_error_work_offline_background_tab() {
-  const sandbox = sinon.createSandbox();
-  let showErrorPromptsStub = sandbox.stub(
-    IPProtectionAlertManager,
-    "showErrorPrompts"
-  );
-
   const includedSite = "https://example.com";
   let { principal, tabs } = await setupInclusionMode(
     includedSite,
@@ -359,10 +329,6 @@ add_task(async function test_network_error_work_offline_background_tab() {
   Services.io.offline = true;
 
   await waitForProxyState(IPPProxyStates.ERROR);
-  Assert.ok(
-    showErrorPromptsStub.notCalled,
-    "The error alert should not be requested while the included site is in the background"
-  );
 
   let content = await openPanel();
   Assert.ok(
@@ -380,7 +346,6 @@ add_task(async function test_network_error_work_offline_background_tab() {
   );
 
   await cleanupInclusionMode(principal, tabs);
-  sandbox.restore();
 });
 
 /**
@@ -388,9 +353,6 @@ add_task(async function test_network_error_work_offline_background_tab() {
  * offline mode.
  */
 add_task(async function test_inclusion_mode_recovers_after_offline() {
-  const sandbox = sinon.createSandbox();
-  sandbox.stub(IPProtectionAlertManager, "showErrorPrompts");
-
   const includedSite = "https://example.com";
   let { principal, tabs } = await setupInclusionMode(
     includedSite,
@@ -411,7 +373,6 @@ add_task(async function test_inclusion_mode_recovers_after_offline() {
   Assert.ok(!content.state.error, "Panel error should be cleared");
 
   await cleanupInclusionMode(principal, tabs);
-  sandbox.restore();
 });
 
 /**

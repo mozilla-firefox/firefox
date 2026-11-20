@@ -27,28 +27,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///toolkit/components/ipprotection/IPProtectionService.sys.mjs",
 });
 
-const WINDOW_CALLBACK_ID = "ipprotection-alert-manager";
-
-/**
- * Whether a failure of the current connection affects the selected tab of a
- * window: always for a full connection, and only for included sites when the
- * connection carries just those.
- *
- * @param {Window} window
- * @returns {boolean}
- */
-function isWindowAffected(window) {
-  if (lazy.IPPProxyManager.mode !== lazy.IPPMode.MODE_INCLUSION) {
-    return true;
-  }
-  return (
-    lazy.IPPSiteRuleManager.getRule(
-      getSitePrincipal(window.gBrowser),
-      window.gBrowser.selectedBrowser.browserId
-    ) === lazy.IPPPrincipalRules.INCLUDED
-  );
-}
-
 /**
  * Manages showing alerts for different VPN states
  */
@@ -56,20 +34,6 @@ class IPProtectionAlertManagerClass {
   #localizationMessages = null;
   #promptsOpen = false;
   #initialized = false;
-  /** Whether the user already answered the alert for the current error. */
-  #errorAlertHandled = false;
-
-  #progressListener = {
-    onLocationChange: aWebProgress => {
-      if (aWebProgress.isTopLevel) {
-        this.#maybeShowPendingErrorPrompts();
-      }
-    },
-    QueryInterface: ChromeUtils.generateQI([
-      "nsIWebProgressListener",
-      "nsISupportsWeakReference",
-    ]),
-  };
 
   get initialized() {
     return this.#initialized;
@@ -81,17 +45,6 @@ class IPProtectionAlertManagerClass {
     }
 
     lazy.IPPProxyManager.addEventListener("IPPProxyManager:StateChanged", this);
-    lazy.EveryWindow.registerCallback(
-      WINDOW_CALLBACK_ID,
-      win => {
-        win.gBrowser.tabContainer.addEventListener("TabSelect", this);
-        win.gBrowser.addProgressListener(this.#progressListener);
-      },
-      win => {
-        win.gBrowser.tabContainer.removeEventListener("TabSelect", this);
-        win.gBrowser.removeProgressListener(this.#progressListener);
-      }
-    );
 
     this.#initialized = true;
   }
@@ -105,42 +58,30 @@ class IPProtectionAlertManagerClass {
       "IPPProxyManager:StateChanged",
       this
     );
-    lazy.EveryWindow.unregisterCallback(WINDOW_CALLBACK_ID);
 
     this.#closeAllPrompts();
 
-    this.#errorAlertHandled = false;
     this.#initialized = false;
   }
 
   get localizationMessages() {
     if (!this.#localizationMessages) {
-      const [
-        pausedTitle,
-        pausedBody,
-        closeTabsButton,
-        continueButton,
-        errorTitle,
-        errorBody,
-      ] = lazy.ipProtectionLocalization.formatMessagesSync([
-        { id: "vpn-paused-alert-title" },
-        {
-          id: "vpn-paused-alert-body",
-          args: { maxUsage: this.#getMaxBandwidthUsage() },
-        },
-        { id: "vpn-paused-alert-close-tabs-button" },
-        { id: "vpn-paused-alert-continue-wo-vpn-button" },
-        { id: "vpn-error-alert-title-1" },
-        { id: "vpn-error-alert-body-1" },
-      ]);
+      const [pausedTitle, pausedBody, closeTabsButton, continueButton] =
+        lazy.ipProtectionLocalization.formatMessagesSync([
+          { id: "vpn-paused-alert-title" },
+          {
+            id: "vpn-paused-alert-body",
+            args: { maxUsage: this.#getMaxBandwidthUsage() },
+          },
+          { id: "vpn-paused-alert-close-tabs-button" },
+          { id: "vpn-paused-alert-continue-wo-vpn-button" },
+        ]);
 
       this.#localizationMessages = {
         pausedTitle: pausedTitle.value,
         pausedBody: pausedBody.value,
         closeTabsButton: closeTabsButton.value,
         continueButton: continueButton.value,
-        errorTitle: errorTitle.value,
-        errorBody: errorBody.value,
       };
     }
 
@@ -168,11 +109,6 @@ class IPProtectionAlertManagerClass {
   }
 
   handleEvent(event) {
-    if (event.type === "TabSelect") {
-      this.#maybeShowPendingErrorPrompts();
-      return;
-    }
-
     if (event.type !== "IPPProxyManager:StateChanged") {
       return;
     }
@@ -182,34 +118,12 @@ class IPProtectionAlertManagerClass {
       case lazy.IPPProxyStates.NOT_READY:
       case lazy.IPPProxyStates.READY: {
         this.#closeAllPrompts();
-        this.#errorAlertHandled = false;
         break;
       }
       case lazy.IPPProxyStates.PAUSED: {
         this.showPausedPrompts();
         break;
       }
-      case lazy.IPPProxyStates.ERROR: {
-        if (
-          lazy.IPPProxyManager.mode !== lazy.IPPMode.MODE_INCLUSION ||
-          lazy.EveryWindow.readyWindows.some(window =>
-            this.#isIncludedSiteSelected(window.gBrowser)
-          )
-        ) {
-          this.showErrorPrompts();
-        }
-        break;
-      }
-    }
-  }
-
-  /**
-   * An error a window was not affected by when it happened is shown once the
-   * window's selected tab moves to a site the failed connection carries.
-   */
-  #maybeShowPendingErrorPrompts() {
-    if (lazy.IPPProxyManager.state === lazy.IPPProxyStates.ERROR) {
-      this.showErrorPrompts();
     }
   }
 
@@ -249,23 +163,16 @@ class IPProtectionAlertManagerClass {
    * @param {string} body The body text of the prompt
    * @param {string} button0 The text of the primary button
    * @param {string} button1 The text of the secondary button
-   * @param {Iterable<Window>} [windows] The windows to show the prompt in
    * @returns {Array} An array of promies. A promise will resole once one of
    * buttons in the prompt are clicked.
    */
-  #createAllPrompts(
-    title,
-    body,
-    button0,
-    button1,
-    windows = lazy.EveryWindow.readyWindows
-  ) {
+  #createAllPrompts(title, body, button0, button1) {
     if (this.#promptsOpen) {
       return [];
     }
 
     const promises = [];
-    for (let window of windows) {
+    for (let window of lazy.EveryWindow.readyWindows) {
       promises.push(
         Services.prompt.asyncConfirmEx(
           window.browsingContext,
@@ -341,62 +248,15 @@ class IPProtectionAlertManagerClass {
   }
 
   /**
-   * Show the VPN error alert. This notifies the user that the VPN isn't
-   * working.
-   *
-   * @returns {number} The button clicked. 0 meaning continue without vpn and
-   *  1 meaning close all tabs.
-   */
-  async showErrorPrompts() {
-    if (!lazy.IPPProxyManager.active) {
-      // If the proxy isn't active, no need to alert the user.
-      return;
-    }
-    if (this.#errorAlertHandled) {
-      return;
-    }
-
-    let { errorTitle, errorBody, continueButton, closeTabsButton } =
-      this.localizationMessages;
-
-    const promises = this.#createAllPrompts(
-      errorTitle,
-      errorBody,
-      continueButton,
-      closeTabsButton,
-      lazy.EveryWindow.readyWindows.filter(isWindowAffected)
-    );
-
-    if (promises.length === 0) {
-      return;
-    }
-
-    let result = await Promise.any(promises);
-    if (!this.#promptsOpen) {
-      return;
-    }
-    let buttonClicked = result.getProperty("buttonNumClicked");
-
-    this.#handlePromptAction(buttonClicked, "error");
-  }
-
-  /**
    * Handles the action taken by the user from the prompt.
    *
    * @param {number} buttonClicked Either 0 or 1.
    *  0 means continue without vpn
    *  1 means close all tabs
-   * @param {"paused"|"error"} reason Reason why the alert was triggered.
+   * @param {"paused"} reason Reason why the alert was triggered.
    */
   #handlePromptAction(buttonClicked, reason) {
-    // Prompts closed by #closeAllPrompts also resolve, without the user
-    // having answered them.
-    let answeredByUser = this.#promptsOpen;
     this.#closeAllPrompts();
-
-    if (reason === "error" && answeredByUser) {
-      this.#errorAlertHandled = true;
-    }
 
     if (buttonClicked === 0) {
       lazy.IPPProxyManager.stop(true);
