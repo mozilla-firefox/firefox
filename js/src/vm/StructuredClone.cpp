@@ -4335,6 +4335,11 @@ JS_PUBLIC_API bool JS_StructuredClone(
                                 closure);
 }
 
+JS_PUBLIC_API bool JS_PeekUint32Pair(JSStructuredCloneReader* r, uint32_t* p1,
+                                     uint32_t* p2) {
+  return r->input().getPair(p1, p2);
+}
+
 JS_PUBLIC_API bool JS_ReadUint32Pair(JSStructuredCloneReader* r, uint32_t* p1,
                                      uint32_t* p2) {
   return r->input().readPair((uint32_t*)p1, (uint32_t*)p2);

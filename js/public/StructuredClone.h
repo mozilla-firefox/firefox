@@ -677,6 +677,12 @@ JS_PUBLIC_API bool JS_StructuredClone(
 #define JS_SCERR_TRANSFERABLE_TWICE 9
 #define JS_SCERR_BAD_CLONE_VERSION 10
 
+/**
+ * Peek a uint32 pair without advancing the read offset
+ */
+JS_PUBLIC_API bool JS_PeekUint32Pair(JSStructuredCloneReader* r, uint32_t* p1,
+                                     uint32_t* p2);
+
 JS_PUBLIC_API bool JS_ReadUint32Pair(JSStructuredCloneReader* r, uint32_t* p1,
                                      uint32_t* p2);
 

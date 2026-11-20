@@ -1,0 +1,69 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>ImageData structured clone: legacy and current formats</title>
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+</head>
+<body>
+<script>
+"use strict";
+
+// Tests that clones written before ImageData serialized its colorSpace can still be
+// read back from persistent storage.
+
+const SCTAG_HEADER = 0xfff10000;
+const SCTAG_ARRAY_BUFFER_OBJECT = 0xffff001f;
+const SCTAG_TYPED_ARRAY_OBJECT = 0xffff0020;
+const SCTAG_DOM_IMAGEDATA = 0xffff8007;
+
+const LEGACY = [
+  [SCTAG_HEADER, 0x00090002],
+  [SCTAG_DOM_IMAGEDATA, 0],
+  [1, 1],                              // width, height
+  [SCTAG_TYPED_ARRAY_OBJECT, 8],       // Uint8ClampedArray
+  [0, 4],                              // element count
+  [SCTAG_ARRAY_BUFFER_OBJECT, 0],
+  [0, 4],                              // byte length
+  [0, 0x04030201],                     // bytes 1, 2, 3, 4
+  [0, 0],                              // byte offset
+];
+
+const CURRENT = [
+  [SCTAG_HEADER, 0x00090002],
+  [SCTAG_DOM_IMAGEDATA, 0],
+  [1, 1],                              // width, height
+  [0, 0],                              // colorSpace, reserved
+  [SCTAG_TYPED_ARRAY_OBJECT, 8],
+  [0, 4],
+  [SCTAG_ARRAY_BUFFER_OBJECT, 0],
+  [0, 4],
+  [0, 0x04030201],
+  [0, 0],
+];
+
+function deserialize(words) {
+  const view = new DataView(new ArrayBuffer(words.length * 8));
+  words.forEach(([high, low], i) => {
+    view.setUint32(i * 8, low, true);
+    view.setUint32(i * 8 + 4, high, true);
+  });
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(view.buffer)));
+
+  const container = Cc[
+    "@mozilla.org/docshell/structured-clone-container;1"
+  ].createInstance(Ci.nsIStructuredCloneContainer);
+  container.initFromBase64(base64);
+  return container.deserializeToJsval();
+}
+
+for (const [name, words] of [["legacy", LEGACY], ["current", CURRENT]]) {
+  const imageData = deserialize(words);
+  ok(ImageData.isInstance(imageData), `${name}: is an ImageData`);
+  is(imageData.width, 1, `${name}: width`);
+  is(imageData.height, 1, `${name}: height`);
+  is(Array.from(imageData.data).join(), "1,2,3,4", `${name}: pixel data`);
+}
+</script>
+</body>
+</html>
