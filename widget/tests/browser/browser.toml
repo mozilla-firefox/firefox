@@ -89,6 +89,11 @@ support-files = [
   "../file_test_ime_state_in_text_control_on_reframe.js",
 ]
 
+["browser_test_ime_state_no_redundant_set_input_context_in_remote_content.js"]
+skip-if = [
+  "tsan", # Bug 1804081 - The profiler times out on TSan
+]
+
 ["browser_test_ime_state_on_editable_state_change_in_remote_content.js"]
 support-files = ["../file_ime_state_test_helper.js"]
 
