@@ -712,7 +712,6 @@ WebTransportParent::OnSessionReady(uint64_t aSessionId) {
 
   mSessionReady = true;
   mSessionId = aSessionId;
-  mSessionReadyTime = TimeStamp::Now();
 
   // Retarget to socket thread. After this, WebTransportParent and
   // |mWebTransport| should be only accessed on the socket thread.
@@ -1173,16 +1172,15 @@ WebTransportParent::OnIncomingBidirectionalStreamAvailable(
     return IPC_OK();
   }
 
-  // A datagram written before the session was ready could not have been sent
-  // any sooner, so unless the page set an explicit outgoingMaxAge, don't
-  // count the connection setup against neqo's implementation-defined default
-  // max age (a small multiple of the RTT).  Datagrams written right after
-  // constructing the WebTransport would otherwise expire whenever the
-  // handshake took longer than that.
-  TimeStamp timestamp = aTimestamp;
-  if (!std::isfinite(mDatagramMaxAge) && timestamp < mSessionReadyTime) {
-    timestamp = mSessionReadyTime;
-  }
+  // neqo's implementation-defined default max age (a small multiple of the
+  // RTT, with a floor) bounds how long a datagram waits in its queue.  The
+  // write timestamp also counts the connection setup for a datagram written
+  // before the session was ready, and the IPC transit from the content
+  // process, which on a loaded machine can alone exceed that bound.  Neither
+  // is time spent queued behind the network, so unless the page set an
+  // explicit outgoingMaxAge, age the datagram from its arrival here.
+  TimeStamp timestamp =
+      std::isfinite(mDatagramMaxAge) ? aTimestamp : TimeStamp::Now();
 
   // neqo's queue requires a session's timestamps to be non-decreasing.
   // Writes from several writables, flushed one writable at a time at
