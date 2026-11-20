@@ -19,7 +19,6 @@ const mockNetwork = Cc[
   "@mozilla.org/network/mock-network-controller;1"
 ].getService(Ci.nsIMockNetworkLayerController);
 
-let h2Port;
 let h3ReverseProxyPort;
 
 add_setup(async function setup() {
@@ -27,10 +26,6 @@ add_setup(async function setup() {
     Ci.nsIX509CertDB
   );
   addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
-
-  h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
 
   let h3ServerPath = Services.env.get("MOZ_HTTP3_SERVER_PATH");
   let h3DBPath = Services.env.get("MOZ_HTTP3_CERT_DB_PATH");
