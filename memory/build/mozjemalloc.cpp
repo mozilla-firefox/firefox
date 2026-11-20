@@ -505,12 +505,12 @@ class ArenaCollection {
   // Done:       Purge has completed for all arenas.
   // NeedsMore:  There may be some arenas that needs to be purged now.
   // WantsLater: There is at least one arena that might want a purge later,
-  //             according to aMinPurgeDelayMS.
+  //             according to aReuseGraceMS.
   //
   // Parameters:
   // aPeekOnly:     If true, check only if there is work to do without doing it.
-  // aMinPurgeDelayMS, aMaxPurgeDelayMS:
-  //                See moz_may_purge_now() in malloc_decls.h.
+  // aReuseGraceMS: The time to wait with purge after a page reuse happened
+  //                for an arena.
   // aKeepGoing:    If this returns false purging will cease.
   //
   // This could exit for 3 different reasons.
@@ -518,9 +518,7 @@ class ArenaCollection {
   //  - There are more requests but aKeepGoing() returned false. (returns true)
   //  - One arena is completely purged, (returns true).
   //
-  may_purge_now_result_t MayPurgeSteps(bool aPeekOnly,
-                                       uint32_t aMinPurgeDelayMS,
-                                       uint32_t aMaxPurgeDelayMS,
+  may_purge_now_result_t MayPurgeSteps(bool aPeekOnly, uint32_t aReuseGraceMS,
                                        purge_keep_going_t aKeepGoing,
                                        void* aClosure);
 
@@ -1094,7 +1092,6 @@ void arena_t::RemoveChunk(arena_chunk_t* aChunk) {
   MOZ_ASSERT(!aChunk->mIsPurging);
 
   mNumDirty -= aChunk->mNumDirty;
-  mMinimumNumDirty = std::min(mMinimumNumDirty, mNumDirty);
   mStats.committed -= aChunk->mNumDirty;
 
   // Count the number of madvised/fresh pages and update the stats.
@@ -1237,7 +1234,7 @@ size_t arena_t::ExtraCommitPages(size_t aReqPages, size_t aRemainingPages) {
   const size_t max_page_cache = mMaxDirty;
 
   // The current size of the page cache, note that we use mNumFresh +
-  // mNumMAdvised here but PurgeLoop() does not.
+  // mNumMAdvised here but Purge() does not.
   const size_t page_cache = mNumDirty + mNumFresh + mNumMAdvised;
 
   if (page_cache > max_page_cache) {
@@ -1309,6 +1306,41 @@ size_t arena_t::ExtraCommitPages(size_t aReqPages, size_t aRemainingPages) {
 }
 #endif
 
+ArenaPurgeResult arena_t::Purge(PurgeCondition aCond, PurgeStats& aStats,
+                                purge_keep_going_t aKeepGoing, void* aClosure)
+    MOZ_EXCLUDES(mLock) {
+  mLock.Lock();
+
+  if (mMustDeleteAfterPurge) {
+    mIsPurgePending = false;
+    mLock.Unlock();
+    return Dying;
+  }
+
+  if (!ShouldContinuePurge(aCond)) {
+    mIsPurgePending = false;
+    mLock.Unlock();
+    return ReachedThresholdOrBusy;
+  }
+
+  arena_chunk_t* chunk = PurgeGetSpareChunk(aStats);
+  if (chunk) {
+    // Release the memory outside of the lock.
+    mLock.Unlock();
+    arena_chunk_dealloc(mChunkAllocator, (void*)chunk, kChunkSize);
+    aStats.system_calls++;
+    return NotDone;
+  }
+
+  chunk = PurgeGetDirtyChunk(aCond, aStats);
+  mLock.Unlock();
+  if (chunk) {
+    return PurgeDirtyPages(chunk, aCond, aStats, aKeepGoing, aClosure);
+  }
+
+  return ReachedThresholdOrBusy;
+}
+
 arena_chunk_t* arena_t::PurgeGetSpareChunk(PurgeStats& aStats)
     MOZ_REQUIRES(mLock) {
   if (mSpares.isEmpty()) {
@@ -1344,7 +1376,8 @@ arena_chunk_t* arena_t::GetExcessSpareChunk() MOZ_REQUIRES(mLock) {
   return nullptr;
 }
 
-arena_chunk_t* arena_t::PurgeGetDirtyChunk(PurgeStats& aStats)
+arena_chunk_t* arena_t::PurgeGetDirtyChunk(PurgeCondition aCond,
+                                           PurgeStats& aStats)
     MOZ_REQUIRES(mLock) {
 #ifdef MOZ_DEBUG
   size_t ndirty = 0;
@@ -1367,15 +1400,17 @@ arena_chunk_t* arena_t::PurgeGetDirtyChunk(PurgeStats& aStats)
   //  * The dirty page count for the arena hits its target,
   //  * Another thread attempts to delete this chunk, or
   //  * The chunk has no more dirty pages.
-  // In any of these cases the loop will break and PurgeDirtyPages() will
-  // return, which means it may return before the arena meets its dirty page
-  // count target, the return value is used by PurgeLoop() to do another step
+  // In any of these cases the loop will break and Purge() will return,
+  // which means it may return before the arena meets its dirty page count
+  // target, the return value is used by the caller to call Purge() again
   // where it will take the next chunk with dirty pages.
   if (mChunksDirty.isEmpty()) {
-    // If there's more purging work to do in other chunks then either other
-    // calls to PurgeLoop() (in other threads) will handle it or we rely on
+    // We have to clear the flag to preserve the invariant that if Purge()
+    // returns anything other than NotDone then the flag is clear. If
+    // there's more purging work to do in other chunks then either other
+    // calls to Purge() (in other threads) will handle it or we rely on
     // ShouldStartPurge() returning true at some point in the future.
-    EndPurge();
+    mIsPurgePending = false;
 
     // There are chunks with dirty pages (because mNumDirty > 0 above) but
     // they're not in mChunksDirty, they might not have enough dirty pages.
@@ -1397,15 +1432,24 @@ arena_chunk_t* arena_t::PurgeGetDirtyChunk(PurgeStats& aStats)
 }
 
 ArenaPurgeResult arena_t::PurgeDirtyPages(arena_chunk_t* aChunk,
-                                          size_t aTargetDirtyPages,
+                                          PurgeCondition aCond,
                                           PurgeStats& aStats,
                                           purge_keep_going_t aKeepGoing,
                                           void* aClosure) MOZ_EXCLUDES(mLock) {
+  // True if we should continue purging memory from this arena.
+  bool continue_purge_arena = true;
+
+  // True if we should continue purging memory in this chunk.
+  bool continue_purge_chunk = true;
+
   // True if at least one Purge operation has occured and therefore we need to
   // call FinishPurgingInChunk() before returning.
   bool purged_once = false;
 
-  while (true) {
+  // False if aKeepGoing prevents us from finishing this chunk in one go.
+  bool keep_going = true;
+
+  while (continue_purge_chunk && continue_purge_arena && keep_going) {
     // This structure is used to communicate between the two PurgePhase
     // functions.
     PurgeInfo purge_info(*this, aChunk, aStats);
@@ -1421,25 +1465,25 @@ ArenaPurgeResult arena_t::PurgeDirtyPages(arena_chunk_t* aChunk,
         return Dying;
       }
 
-      const bool continue_purge_chunk = purge_info.FindDirtyPages(purged_once);
-      const bool continue_purge_arena =
-          purge_info.mArena.mNumDirty > aTargetDirtyPages;
+      continue_purge_chunk = purge_info.FindDirtyPages(purged_once);
+      continue_purge_arena = purge_info.mArena.ShouldContinuePurge(aCond);
 
-      if (!continue_purge_chunk) {
-        if (!continue_purge_arena &&
-            purge_info.mArena.mNumDirty <= purge_info.mArena.mMaxDirty) {
-          // End the purge while we still hold the lock.
-          purge_info.mArena.EndPurge();
-          return ReachedThresholdOrBusy;
-        }
-        // The arena has not reached its target, or a target purge stopped
-        // above mMaxDirty. The purge does not end, so the arena stays queued.
-        return NotDone;
+      // The code below will exit returning ReachedThresholdOrBusy if these are
+      // both false, so clear mIsPurgePending while we still hold the
+      // lock.
+      if (!continue_purge_chunk && !continue_purge_arena) {
+        purge_info.mArena.mIsPurgePending = false;
       }
-      // Note that even if continue_purge_arena is false, then the purge must
-      // still continue, because the pages have already been marked in
-      // FindDirtyPages(). It will exit after phase 2.
     }
+    if (!continue_purge_chunk) {
+      // There's nothing else to do here, our caller may execute Purge() again
+      // if continue_purge_arena is true.
+      return continue_purge_arena ? NotDone : ReachedThresholdOrBusy;
+    }
+    // Note that even if continue_purge_arena is false, then the purge may still
+    // continue (as long as continue_purge_chunk is true). It must because the
+    // pages have already been marked in FindDirtyPages(), then it will exit
+    // after phase 2.
 
 #ifdef MALLOC_DECOMMIT
     pages_decommit(purge_info.DirtyPtr(), purge_info.DirtyLenBytes());
@@ -1453,42 +1497,42 @@ ArenaPurgeResult arena_t::PurgeDirtyPages(arena_chunk_t* aChunk,
 
     // Check budget outside any lock, after the madvise/decommit which is the
     // potentially expensive operation.
-    const bool keep_going = aKeepGoing ? aKeepGoing(aClosure) : true;
+    keep_going = aKeepGoing ? aKeepGoing(aClosure) : true;
 
+    bool arena_is_dying;
     {
       // Phase 2: Mark the pages with their final state (madvised or
       // decommitted) and fix up any other bookkeeping.
       MaybeMutexAutoLock lock(purge_info.mArena.mLock);
       MOZ_ASSERT(aChunk->mIsPurging);
 
-      const bool continue_purge_chunk = purge_info.UpdatePagesAndCounts();
-      // A dying arena stops, but finishes purging in this chunk first, so that
-      // an empty chunk becomes a spare chunk that the destructor releases.
-      const bool continue_purge_arena =
-          !purge_info.mArena.mMustDeleteAfterPurge &&
-          purge_info.mArena.mNumDirty > aTargetDirtyPages;
+      // We can't early exit if the arena is dying, we have to finish the purge
+      // (which restores the state so the destructor will check it) and maybe
+      // release the old spare arena.
+      arena_is_dying = purge_info.mArena.mMustDeleteAfterPurge;
+
+      continue_purge_chunk = purge_info.UpdatePagesAndCounts();
+      continue_purge_arena = purge_info.mArena.ShouldContinuePurge(aCond);
 
       if (!continue_purge_chunk || !continue_purge_arena || !keep_going) {
         // We're going to stop (or pause) purging here so update the chunk's
         // bookkeeping to reflect what we did (so far).
         purge_info.FinishPurgingInChunk(true, continue_purge_chunk);
-        if (purge_info.mArena.mMustDeleteAfterPurge) {
-          return Dying;
+        // Only clear mIsPurgePending when truly done. Otherwise the arena
+        // stays marked pending so it gets re-queued for the next purge pass.
+        if (!continue_purge_arena) {
+          purge_info.mArena.mIsPurgePending = false;
         }
-        if (!continue_purge_arena &&
-            purge_info.mArena.mNumDirty <= purge_info.mArena.mMaxDirty) {
-          // End the purge while we still hold the lock.
-          purge_info.mArena.EndPurge();
-          return ReachedThresholdOrBusy;
-        }
-        // The arena has not reached its target, or a target purge stopped
-        // above mMaxDirty. The purge does not end, so the arena stays queued.
-        return NotDone;
       }
-    }
+    }  // MaybeMutexAutoLock
 
+    if (arena_is_dying) {
+      return Dying;
+    }
     purged_once = true;
   }
+
+  return continue_purge_arena ? NotDone : ReachedThresholdOrBusy;
 }
 
 ArenaPurgeResult arena_t::PurgeLoop(PurgeCondition aCond, const char* aCaller,
@@ -1508,101 +1552,14 @@ ArenaPurgeResult arena_t::PurgeLoop(PurgeCondition aCond, const char* aCaller,
 #endif
 
   uint64_t reuseGraceNS = (uint64_t)aReuseGraceMS * 1000 * 1000;
-  bool started = false;
-  size_t target_dirty_pages = 0;
+  uint64_t now;
   ArenaPurgeResult pr;
-  while (true) {
-    // Each step first finds a chunk that needs purging with the lock held,
-    // either a spare chunk or one with dirty pages, and then purges it.
-    arena_chunk_t* spare_chunk = nullptr;
-    arena_chunk_t* dirty_chunk = nullptr;
-    {
-      MaybeMutexAutoLock lock(mLock);
-
-      if (mMustDeleteAfterPurge) {
-        mIsPurgePending = false;
-        pr = Dying;
-        break;
-      }
-
-      if (!started) {
-        started = true;
-        switch (aCond) {
-          case PurgeIfThreshold:
-            // This is lower than ShouldStartPurge() to have some hysteresis.
-            target_dirty_pages = mMaxDirty >> 1;
-            break;
-          case PurgeUnconditional:
-            target_dirty_pages = 0;
-            break;
-          case PurgeToTarget:
-            // mMinimumNumDirty dirty pages were unused since the last purge,
-            // release that many, but stop where PurgeIfThreshold would.
-            MOZ_ASSERT(mMinimumNumDirty <= mNumDirty);
-            target_dirty_pages =
-                std::max(mMaxDirty >> 1, mNumDirty - mMinimumNumDirty);
-            // EndPurge() restarts the maximum purge delay, but this purge does
-            // not end if it stops above mMaxDirty or aKeepGoing pauses it.
-            // Restart the delay here, so that the next target purge waits for
-            // it again and only counts the pages unused from now on.
-            RestartMaxPurgeDelay();
-            break;
-        }
-      }
-
-      if (mNumDirty <= target_dirty_pages) {
-        // A target purge keeps the dirty pages in the arena that were reused
-        // since the last purge, so it can stop above mMaxDirty. Then the purge
-        // does not end, and the arena stays queued so that a PurgeIfThreshold
-        // purge releases the rest once the arena stops reusing pages.
-        if (mNumDirty > mMaxDirty) {
-          pr = NotDone;
-          break;
-        }
-        EndPurge();
-        pr = ReachedThresholdOrBusy;
-        break;
-      }
-
-      spare_chunk = PurgeGetSpareChunk(purge_stats);
-      if (!spare_chunk) {
-        dirty_chunk = PurgeGetDirtyChunk(purge_stats);
-        if (!dirty_chunk) {
-          pr = ReachedThresholdOrBusy;
-          break;
-        }
-      }
-    }  // The lock is released here.
-
-    // The above block breaks the loop if there isn't any purging work.
-    MOZ_ASSERT(spare_chunk || dirty_chunk);
-    if (spare_chunk) {
-      arena_chunk_dealloc(mChunkAllocator, (void*)spare_chunk, kChunkSize);
-      purge_stats.system_calls++;
-      pr = NotDone;
-    } else {
-      // PurgeDirtyPages() takes the lock again, before and after it releases
-      // the pages.
-      pr = PurgeDirtyPages(dirty_chunk, target_dirty_pages, purge_stats,
-                           aKeepGoing, aClosure);
-    }
-    if (pr != NotDone) {
-      break;
-    }
-
-    // The arena reused dirty pages within the reuse grace time, so it will
-    // likely reuse more soon. A target purge only releases pages that were
-    // unused since the last purge, so this does not stop it.
-    if (aCond != PurgeToTarget && aReuseGraceMS &&
-        GetTimestampNS() - mLastPageReuseNS < reuseGraceNS) {
-      break;
-    }
-
-    // The caller wants to stop purging now.
-    if (aKeepGoing && !aKeepGoing(aClosure)) {
-      break;
-    }
-  }
+  do {
+    pr = Purge(aCond, purge_stats, aKeepGoing, aClosure);
+    now = aReuseGraceMS ? GetTimestampNS() : 0;
+  } while (pr == NotDone &&
+           (!aReuseGraceMS || (now - mLastPageReuseNS >= reuseGraceNS)) &&
+           (!aKeepGoing || aKeepGoing(aClosure)));
 
 #ifdef MOZJEMALLOC_PROFILING_CALLBACKS
   if (callbacks) {
@@ -1669,7 +1626,6 @@ bool arena_t::PurgeInfo::FindDirtyPages(bool aPurgedOnce) {
 
   mChunk->mNumDirty -= mDirtyNPages;
   mArena.mNumDirty -= mDirtyNPages;
-  mArena.mMinimumNumDirty = std::min(mArena.mMinimumNumDirty, mArena.mNumDirty);
 
   // Mark the run as busy so that another thread freeing memory won't try to
   // coalesce it.
@@ -2266,7 +2222,6 @@ void* arena_t::MallocSmall(size_t aSize, bool aZero) {
     num_dirty_before = mNumDirty;
     run = GetNonFullBinRun(bin);
     num_dirty_after = mNumDirty;
-    mMinimumNumDirty = std::min(mMinimumNumDirty, mNumDirty);
     if (MOZ_UNLIKELY(!run)) {
       return nullptr;
     }
@@ -2306,7 +2261,6 @@ void* arena_t::MallocLarge(size_t aSize, bool aZero) {
     num_dirty_before = mNumDirty;
     ret = AllocRun(aSize, true, aZero);
     num_dirty_after = mNumDirty;
-    mMinimumNumDirty = std::min(mMinimumNumDirty, mNumDirty);
     if (!ret) {
       return nullptr;
     }
@@ -2380,7 +2334,6 @@ void* arena_t::PallocLarge(size_t aAlignment, size_t aSize, size_t aAllocSize) {
       }
     }
     num_dirty_after = mNumDirty;
-    mMinimumNumDirty = std::min(mMinimumNumDirty, mNumDirty);
 
     mStats.allocated_large += aSize;
     mStats.operations++;
@@ -2845,9 +2798,9 @@ inline void arena_t::MayDoOrQueuePurge(purge_action_t aAction,
     case purge_action_t::Queue:
       // Note that this thread committed earlier by setting
       // mIsPurgePending to add us to the list. There is a low
-      // chance that in the meantime another thread ran PurgeLoop() and
-      // cleared the flag, but that is fine, we'll adjust our bookkeeping when
-      // calling ShouldStartPurge() or PurgeLoop() next time.
+      // chance that in the meantime another thread ran Purge() and cleared
+      // the flag, but that is fine, we'll adjust our bookkeeping when calling
+      // ShouldStartPurge() or Purge() next time.
       gArenas.AddToOutstandingPurges(this);
       break;
     case purge_action_t::PurgeNow: {
@@ -2862,16 +2815,6 @@ inline void arena_t::MayDoOrQueuePurge(purge_action_t aAction,
       // do nothing.
       break;
   }
-}
-
-void arena_t::EndPurge() {
-  mIsPurgePending = false;
-  RestartMaxPurgeDelay();
-}
-
-void arena_t::RestartMaxPurgeDelay() {
-  mMinimumNumDirty = mNumDirty;
-  mLastPurgeNS = GetTimestampNS();
 }
 
 inline void arena_t::NotifyPageReuse() {
@@ -2941,7 +2884,6 @@ bool arena_t::RallocGrowLarge(arena_chunk_t* aChunk, void* aPtr, size_t aSize,
       mStats.allocated_large += aSize - aOldSize;
       mStats.operations++;
       num_dirty_after = mNumDirty;
-      mMinimumNumDirty = std::min(mMinimumNumDirty, mNumDirty);
     } else {
       return false;
     }
@@ -3042,8 +2984,6 @@ arena_t::arena_t(arena_params_t* aParams, bool aIsPrivate)
       mMaxDirtyBase((aParams && aParams->mMaxDirty) ? aParams->mMaxDirty
                                                     : (opt_dirty_max / 8)),
       mLastPageReuseNS(GetTimestampNS()),
-      mMinimumNumDirty(0),
-      mLastPurgeNS(GetTimestampNS()),
       mChunkAllocator(&gSystemChunkAllocator) {
   MaybeMutex::DoLock doLock = MaybeMutex::MUST_LOCK;
   if (aParams) {
@@ -3968,7 +3908,7 @@ inline void MozJemalloc::jemalloc_set_main_thread() {
 // Explicitly remove all of this chunk's MADV_FREE'd pages from memory.
 static size_t hard_purge_chunk(arena_chunk_t* aChunk) {
   size_t total_npages = 0;
-  // See similar logic in arena_t::PurgeInfo::FindDirtyPages().
+  // See similar logic in arena_t::Purge().
   for (size_t i = gChunkHeaderNumPages; i < gChunkNumPages; i++) {
     // Find all adjacent pages with CHUNK_MAP_MADVISED set.
     size_t npages;
@@ -4129,10 +4069,9 @@ inline bool MozJemalloc::moz_enable_deferred_purge(bool aEnabled) {
 }
 
 inline may_purge_now_result_t MozJemalloc::moz_may_purge_now(
-    bool aPeekOnly, uint32_t aMinPurgeDelayMS, uint32_t aMaxPurgeDelayMS,
-    purge_keep_going_t aKeepGoing, void* aClosure) {
-  return gArenas.MayPurgeSteps(aPeekOnly, aMinPurgeDelayMS, aMaxPurgeDelayMS,
-                               aKeepGoing, aClosure);
+    bool aPeekOnly, uint32_t aReuseGraceMS, purge_keep_going_t aKeepGoing,
+    void* aClosure) {
+  return gArenas.MayPurgeSteps(aPeekOnly, aReuseGraceMS, aKeepGoing, aClosure);
 }
 
 inline void ArenaCollection::AddToOutstandingPurges(arena_t* aArena) {
@@ -4160,30 +4099,23 @@ inline bool ArenaCollection::RemoveFromOutstandingPurges(arena_t* aArena) {
 }
 
 may_purge_now_result_t ArenaCollection::MayPurgeSteps(
-    bool aPeekOnly, uint32_t aMinPurgeDelayMS, uint32_t aMaxPurgeDelayMS,
-    purge_keep_going_t aKeepGoing, void* aClosure) {
+    bool aPeekOnly, uint32_t aReuseGraceMS, purge_keep_going_t aKeepGoing,
+    void* aClosure) {
   // This only works on the main thread because it may process main-thread-only
   // arenas.
   MOZ_ASSERT(IsOnMainThreadWeak());
 
   uint64_t now = GetTimestampNS();
-  uint64_t minPurgeDelayNS = (uint64_t)aMinPurgeDelayMS * 1000 * 1000;
-  uint64_t maxPurgeDelayNS = (uint64_t)aMaxPurgeDelayMS * 1000 * 1000;
+  uint64_t reuseGraceNS = (uint64_t)aReuseGraceMS * 1000 * 1000;
   arena_t* found = nullptr;
-  PurgeCondition cond = PurgeIfThreshold;
   {
     MutexAutoLock lock(mPurgeListLock);
     if (mOutstandingPurges.isEmpty()) {
       return may_purge_now_result_t::Done;
     }
     for (arena_t& arena : mOutstandingPurges) {
-      if (now - arena.mLastPageReuseNS >= minPurgeDelayNS) {
+      if (now - arena.mLastPageReuseNS >= reuseGraceNS) {
         found = &arena;
-        break;
-      }
-      if (maxPurgeDelayNS && now - arena.mLastPurgeNS >= maxPurgeDelayNS) {
-        found = &arena;
-        cond = PurgeToTarget;
         break;
       }
     }
@@ -4197,19 +4129,19 @@ may_purge_now_result_t ArenaCollection::MayPurgeSteps(
 
     // We need to avoid the invalid state where mIsPurgePending is set
     // but the arena is not in the list or about to be added. So remove the
-    // arena from the list before calling PurgeLoop().
+    // arena from the list before calling Purge().
     mOutstandingPurges.remove(found);
   }
 
-  ArenaPurgeResult pr =
-      found->PurgeLoop(cond, __func__, aMinPurgeDelayMS, aKeepGoing, aClosure);
+  ArenaPurgeResult pr = found->PurgeLoop(PurgeIfThreshold, __func__,
+                                         aReuseGraceMS, aKeepGoing, aClosure);
 
   if (pr == ArenaPurgeResult::NotDone) {
     // If there's more work to do we re-insert the arena into the purge queue.
     // If the arena was busy we don't since the other thread that's purging it
     // will finish that work.
 
-    // Note that after the above PurgeLoop() and taking the lock below there's a
+    // Note that after the above Purge() and taking the lock below there's a
     // chance another thread may be purging the arena and clear
     // mIsPurgePending.  Resulting in the state of being in the list
     // with that flag clear.  That's okay since the next time a purge occurs

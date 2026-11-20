@@ -47,6 +47,7 @@
 #include "mozilla/webrender/RenderTextureHostSWGL.h"
 #include "mozilla/webrender/RenderThread.h"
 #include "mozilla/widget/CompositorWidget.h"
+#include "mozmemory.h"
 #include "nsExceptionHandler.h"
 
 #ifdef XP_WIN
@@ -166,50 +167,57 @@ namespace mozilla::layers {
 
 using namespace mozilla::gfx;
 
-static bool sRenderIdleCheckExtended = false;
-static bool sRenderIdleCheckPending = false;
+#ifdef MOZ_MEMORY
+static bool sAllocAsjustmentTaskCancelled = false;
+static bool sIncreasedDirtyPageThreshold = false;
 
-static void NotifyRenderThreadIfIdle();
+static void ResetDirtyPageModifier();
 
-static void ScheduleRenderIdleCheck() {
+static void ScheduleResetMaxDirtyPageModifier() {
   NS_DelayedDispatchToCurrentThread(
-      NewRunnableFunction("NotifyRenderThreadIfIdle",
-                          &NotifyRenderThreadIfIdle),
+      NewRunnableFunction("ResetDirtyPageModifier", &ResetDirtyPageModifier),
       100  // In ms.
   );
 }
 
-// Called whenever a transaction goes to WebRender. The render thread is told
-// once no further transaction followed within the check delay. Releasing dirty
-// pages to the OS is left to the deferred purge of the main thread.
-static void NoteRenderActivity() {
-  if (sRenderIdleCheckPending) {
-    sRenderIdleCheckExtended = true;
+static void NeedIncreasedMaxDirtyPageModifier() {
+  if (sIncreasedDirtyPageThreshold) {
+    sAllocAsjustmentTaskCancelled = true;
     return;
   }
 
-  sRenderIdleCheckPending = true;
-  ScheduleRenderIdleCheck();
+  moz_set_max_dirty_page_modifier(3);
+  sIncreasedDirtyPageThreshold = true;
+
+  ScheduleResetMaxDirtyPageModifier();
 }
 
-static void NotifyRenderThreadIfIdle() {
-  if (!sRenderIdleCheckPending) {
+static void ResetDirtyPageModifier() {
+  if (!sIncreasedDirtyPageThreshold) {
     return;
   }
 
-  if (sRenderIdleCheckExtended) {
-    sRenderIdleCheckExtended = false;
-    ScheduleRenderIdleCheck();
+  if (sAllocAsjustmentTaskCancelled) {
+    sAllocAsjustmentTaskCancelled = false;
+    ScheduleResetMaxDirtyPageModifier();
     return;
   }
+
+  moz_set_max_dirty_page_modifier(0);
 
   wr::RenderThread* renderThread = wr::RenderThread::Get();
   if (renderThread && !renderThread->HasShutdown()) {
     renderThread->NotifyIdle();
   }
 
-  sRenderIdleCheckPending = false;
+  jemalloc_free_excess_dirty_pages();
+
+  sIncreasedDirtyPageThreshold = false;
 }
+#else
+// Don't bother doing anything of the memory allocator doesn't support this.
+static void NeedIncreasedMaxDirtyPageModifier() {}
+#endif
 
 LazyLogModule gWebRenderBridgeParentLog("WebRenderBridgeParent");
 #define LOG(...) \
@@ -1472,7 +1480,7 @@ bool WebRenderBridgeParent::SetDisplayList(
                                                          aTxnStartTime));
   }
 
-  NoteRenderActivity();
+  NeedIncreasedMaxDirtyPageModifier();
 
   mLateInit->mApi->SendTransaction(aTxn);
 
@@ -1716,7 +1724,7 @@ bool WebRenderBridgeParent::ProcessEmptyTransactionUpdates(
     // There are resource updates, then we update Epoch of transaction.
     txn.UpdateEpoch(mPipelineId, mWrEpoch);
     *aScheduleComposite = true;
-    NoteRenderActivity();
+    NeedIncreasedMaxDirtyPageModifier();
   } else {
     // If TransactionBuilder does not have resource updates nor display list,
     // ScheduleGenerateFrame is not triggered via SceneBuilder and there is no
@@ -1857,7 +1865,7 @@ mozilla::ipc::IPCResult WebRenderBridgeParent::RecvParentCommands(
   wr::TransactionBuilder txn(mLateInit->mApi);
   txn.SetLowPriority(!IsRootWebRenderBridgeParent());
   bool success = ProcessWebRenderParentCommands(aCommands, txn);
-  NoteRenderActivity();
+  NeedIncreasedMaxDirtyPageModifier();
   mLateInit->mApi->SendTransaction(txn);
 
   if (!success) {
@@ -2953,7 +2961,7 @@ void WebRenderBridgeParent::MaybeGenerateFrame(VsyncId aId,
   wr::RenderThread::Get()->IncPendingFrameCount(mLateInit->mApi->GetId(), aId,
                                                 start);
 
-  NoteRenderActivity();
+  NeedIncreasedMaxDirtyPageModifier();
 
   mLateInit->mApi->SendTransaction(fastTxn);
 

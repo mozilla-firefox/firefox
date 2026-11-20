@@ -233,15 +233,7 @@ static_assert(sizeof(arena_bin_t) == 48);
 static_assert(sizeof(arena_bin_t) == 32);
 #endif
 
-enum PurgeCondition {
-  // Purge down to half of mMaxDirty.
-  PurgeIfThreshold,
-  // Purge all dirty pages.
-  PurgeUnconditional,
-  // Purge as many dirty pages as were unused since the last purge, see
-  // mMinimumNumDirty.
-  PurgeToTarget
-};
+enum PurgeCondition { PurgeIfThreshold, PurgeUnconditional };
 
 struct arena_t : public BaseAllocClass {
 #if defined(MOZ_DIAGNOSTIC_ASSERT_ENABLED)
@@ -370,24 +362,8 @@ struct arena_t : public BaseAllocClass {
   // chronologically latest write asap (so we cannot use Relaxed).
   mozilla::Atomic<uint64_t> mLastPageReuseNS;
 
-  // With deferred purge, every dirty page reuse postpones the arena's purge by
-  // the reuse grace time, so an arena that keeps reusing a few pages would
-  // never purge the other dirty pages. To limit this, while the reuse
-  // continues, MayPurgeSteps() will run a target purge (PurgeToTarget) once the
-  // maximum purge delay has passed since the arena's last purge. It releases as
-  // many dirty pages as were unused since that purge.
-  //
-  // The lowest dirty page count since the last purge.
-  size_t mMinimumNumDirty MOZ_GUARDED_BY(mLock);
-  // When the last purge of this arena ended or the last target purge started
-  // (in ns). A target purge restarts this when it starts because it may stop
-  // above mMaxDirty without ending the purge, see PurgeLoop(). Written under
-  // mLock, read without it by MayPurgeSteps(), for which a stale value only
-  // moves a target purge slightly.
-  mozilla::Atomic<uint64_t> mLastPurgeNS;
-
  public:
-  // A flag that indicates if this arena will be purged.
+  // A flag that indicates if arena will be Purge()'d.
   //
   // It is set either when a thread commits to adding it to mOutstandingPurges
   // or when imitating a Purge.  Cleared only by Purge when we know we are
@@ -563,16 +539,29 @@ struct arena_t : public BaseAllocClass {
       MOZ_REQUIRES(mLock);
 #endif
 
-  // Purge dirty pages, one chunk per step. If sCallback is non-null then
-  // collect statistics and publish them through the callback,  aCaller should
-  // be used to identify the caller in the profiling data.
+  // Purge some dirty pages.
   //
   // When this is called the caller has already tested ShouldStartPurge()
   // (possibly on another thread asychronously) or is passing
   // PurgeUnconditional.  However because it's called without the lock it will
-  // recheck the dirty page count before each step.
+  // recheck ShouldContinuePurge() before doing any work.
+  //
+  // It may purge a number of runs within a single chunk before returning.  It
+  // will return Continue if there's more work to do in other chunks
+  // (ShouldContinuePurge()).
+  //
+  // To release more pages from other chunks then it's best to call Purge
+  // in a loop, looping when it returns Continue.
   //
   // This must be called without the mLock held (it'll take the lock).
+  //
+  ArenaPurgeResult Purge(PurgeCondition aCond, mozilla::PurgeStats& aStats,
+                         purge_keep_going_t aKeepGoing = nullptr,
+                         void* aClosure = nullptr) MOZ_EXCLUDES(mLock);
+
+  // Run Purge() in a loop. If sCallback is non-null then collect statistics and
+  // publish them through the callback,  aCaller should be used to identify the
+  // caller in the profiling data.
   //
   // aCond         - when to stop purging
   // aCaller       - a string representing the caller, this is used for
@@ -661,12 +650,10 @@ struct arena_t : public BaseAllocClass {
 
  private:
   arena_chunk_t* PurgeGetSpareChunk(mozilla::PurgeStats& aStats);
-  arena_chunk_t* PurgeGetDirtyChunk(mozilla::PurgeStats& aStats);
+  arena_chunk_t* PurgeGetDirtyChunk(PurgeCondition aCond,
+                                    mozilla::PurgeStats& aStats);
 
-  // Purge dirty pages from aChunk until the arena has aTargetDirtyPages, the
-  // chunk has no more or aKeepGoing returns false.
-  ArenaPurgeResult PurgeDirtyPages(arena_chunk_t* aChunk,
-                                   size_t aTargetDirtyPages,
+  ArenaPurgeResult PurgeDirtyPages(arena_chunk_t* aChunk, PurgeCondition aCond,
                                    mozilla::PurgeStats& aStats,
                                    purge_keep_going_t aKeepGoing,
                                    void* aClosure);
@@ -694,13 +681,11 @@ struct arena_t : public BaseAllocClass {
   inline void MayDoOrQueuePurge(purge_action_t aAction, const char* aCaller)
       MOZ_EXCLUDES(mLock);
 
-  // Clear mIsPurgePending at the end of a purge and restart the maximum purge
-  // delay. PurgeLoop() must end the purge whenever it returns anything other
-  // than NotDone.
-  void EndPurge() MOZ_REQUIRES(mLock);
-
-  // Restart the maximum purge delay and the tracking of mMinimumNumDirty.
-  void RestartMaxPurgeDelay() MOZ_REQUIRES(mLock);
+  // Check the EffectiveHalfMaxDirty threshold to decide if we continue purge.
+  // This threshold is lower than ShouldStartPurge to have some hysteresis.
+  bool ShouldContinuePurge(PurgeCondition aCond) MOZ_REQUIRES(mLock) {
+    return (mNumDirty > ((aCond == PurgeUnconditional) ? 0 : mMaxDirty >> 1));
+  }
 
   // Update the last page reuse timestamp.
   void NotifyPageReuse() MOZ_EXCLUDES(mLock);
