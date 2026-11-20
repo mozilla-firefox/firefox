@@ -86,6 +86,7 @@ def _activate_virtualenvs(flavor):
         if flavor == "xpcshell":
             print("Setting up xpcshell python paths...")
             sys.path.append("xpcshell")
+            sys.path.append(str(Path("tools", "geckoprocesstypes_generator")))
         elif flavor == "mochitest":
             print("Setting up mochitest python paths...")
             sys.path.append("mochitest")
