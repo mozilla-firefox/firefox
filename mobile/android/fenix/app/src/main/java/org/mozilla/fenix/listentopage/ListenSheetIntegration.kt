@@ -236,7 +236,6 @@ private fun ListenSheetContent(
         speed = uiState.speed,
         voiceState = uiState.voiceState,
         onAction = onAction,
-        onExpandClicked = { onAction(ListenAction.ModeChanged(PlayerMode.Expanded)) },
         expanded = mode == PlayerMode.Expanded,
         error = uiState.error,
         modifier =

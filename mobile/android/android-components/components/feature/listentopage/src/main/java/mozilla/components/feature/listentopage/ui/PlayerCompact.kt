@@ -32,6 +32,7 @@ import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.listentopage.ArticleProgress
 import mozilla.components.feature.listentopage.ListenAction
+import mozilla.components.feature.listentopage.PlayerMode
 import mozilla.components.feature.listentopage.R
 import mozilla.components.ui.icons.R as iconsR
 
@@ -42,7 +43,6 @@ internal fun PlayerCompact(
     articleProgressState: State<ArticleProgress>,
     playbackUiState: PlaybackUiState,
     onAction: (ListenAction) -> Unit,
-    onExpandClicked: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -74,7 +74,7 @@ internal fun PlayerCompact(
                         .clickable(
                             onClickLabel = stringResource(R.string.mozac_feature_listentopage_expand_player),
                             role = Role.Button,
-                            onClick = onExpandClicked,
+                            onClick = { onAction(ListenAction.ModeChanged(PlayerMode.Expanded)) },
                         ),
                 shouldScrollTitle =
                     playbackUiState is PlaybackUiState.Playing || playbackUiState is PlaybackUiState.Buffering,
@@ -124,7 +124,6 @@ private fun PlayerCompactPreview(@PreviewParameter(PlaybackUIStatePreviewProvide
                     remember { mutableStateOf(ArticleProgress(positionMs = 84_000, durationMs = 360_000)) },
                 playbackUiState = state,
                 onAction = {},
-                onExpandClicked = {},
             )
         }
     }

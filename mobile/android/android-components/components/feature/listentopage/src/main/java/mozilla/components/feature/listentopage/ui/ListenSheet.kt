@@ -82,7 +82,6 @@ private val ContentExit =
  * @param voiceState The voices the expanded player offers to read the article in, and the one it is read in.
  * @param expanded Whether to show the full player. `false` shows the compact one.
  * @param onAction Invoked to pass upwards a [ListenAction] in response to a UI event.
- * @param onExpandClicked Invoked when the user asks for the expanded player from the compact one.
  * @param modifier Optional modifier for further customisation of this player.
  */
 @Composable
@@ -93,7 +92,6 @@ fun ListenSheet(
     speed: PlaybackSpeed,
     voiceState: VoiceState,
     onAction: (ListenAction) -> Unit,
-    onExpandClicked: () -> Unit,
     modifier: Modifier = Modifier,
     error: ListenError? = null,
     expanded: Boolean = true,
@@ -149,7 +147,6 @@ fun ListenSheet(
                         playbackUiState = playbackUiState,
                         articleProgressState = articleProgressState,
                         onAction = onAction,
-                        onExpandClicked = onExpandClicked,
                         modifier = Modifier.inertWhileTransitioning(scope = this),
                     )
                 }
@@ -219,7 +216,6 @@ private fun ListenSheetPreview(
         speed = PlaybackSpeed.Default,
         voiceState = VoiceState(),
         onAction = {},
-        onExpandClicked = {},
         expanded = expanded,
     )
 }

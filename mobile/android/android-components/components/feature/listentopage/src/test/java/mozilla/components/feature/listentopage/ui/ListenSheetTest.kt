@@ -39,6 +39,7 @@ import mozilla.components.feature.listentopage.ListenAction
 import mozilla.components.feature.listentopage.ListenError
 import mozilla.components.feature.listentopage.PlaybackPhase
 import mozilla.components.feature.listentopage.PlaybackSpeed
+import mozilla.components.feature.listentopage.PlayerMode
 import mozilla.components.feature.listentopage.R
 import mozilla.components.feature.listentopage.VoiceState
 import mozilla.components.support.test.robolectric.testContext
@@ -80,7 +81,6 @@ class ListenSheetTest {
 
     private fun setContent(
         expanded: Boolean,
-        onExpandClicked: () -> Unit = {},
         onAction: (ListenAction) -> Unit = {},
         articleProgress: ArticleProgress = ArticleProgress(LESS_THAN_ONE_SEC_ELAPSED_TIME_MS, TOTAL_DURATION_MS),
         playbackPhase: PlaybackPhase = PlaybackPhase.Playing,
@@ -97,7 +97,6 @@ class ListenSheetTest {
                         speed = PlaybackSpeed.Default,
                         voiceState = VoiceState(),
                         onAction = onAction,
-                        onExpandClicked = onExpandClicked,
                         expanded = expanded,
                         error = error,
                         modifier = Modifier.fillMaxWidth(),
@@ -139,12 +138,12 @@ class ListenSheetTest {
 
     @Test
     fun `GIVEN the sheet is compact WHEN the article heading is clicked THEN expanding is requested`() {
-        var expandClicked = false
-        setContent(expanded = false, onExpandClicked = { expandClicked = true })
+        val actions = mutableListOf<ListenAction>()
+        setContent(expanded = false, onAction = { actions.add(it) })
 
         composeTestRule.onNodeWithText(TITLE).performClick()
 
-        assertTrue(expandClicked)
+        assertEquals(listOf(ListenAction.ModeChanged(PlayerMode.Expanded)), actions)
     }
 
     // Play button tests
