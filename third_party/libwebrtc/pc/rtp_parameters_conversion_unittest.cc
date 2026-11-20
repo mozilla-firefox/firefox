@@ -10,7 +10,6 @@
 
 #include "pc/rtp_parameters_conversion.h"
 
-#include <map>
 #include <optional>
 #include <string>
 #include <vector>
@@ -31,9 +30,6 @@ TEST(RtpParametersConversionTest, ToRtcpFeedback) {
   std::optional<RtcpFeedback> result = ToRtcpFeedback({"ccm", "fir"});
   EXPECT_EQ(RtcpFeedback(RtcpFeedbackType::CCM, RtcpFeedbackMessageType::FIR),
             *result);
-
-  result = ToRtcpFeedback(FeedbackParam("goog-lntf"));
-  EXPECT_EQ(RtcpFeedback(RtcpFeedbackType::LNTF), *result);
 
   result = ToRtcpFeedback(FeedbackParam("nack"));
   EXPECT_EQ(RtcpFeedback(RtcpFeedbackType::NACK,
@@ -57,10 +53,6 @@ TEST(RtpParametersConversionTest, ToRtcpFeedbackErrors) {
   EXPECT_FALSE(result);
 
   result = ToRtcpFeedback(FeedbackParam("ccm"));
-  EXPECT_FALSE(result);
-
-  // LNTF with message type (should be left empty).
-  result = ToRtcpFeedback({"goog-lntf", "pli"});
   EXPECT_FALSE(result);
 
   // NACK with missing or invalid message type.
@@ -104,7 +96,6 @@ TEST(RtpParametersConversionTest, ToVideoRtpCodecCapability) {
   cricket_codec.params["foo"] = "bar";
   cricket_codec.params["ANOTHER"] = "param";
   cricket_codec.feedback_params.Add(FeedbackParam("transport-cc"));
-  cricket_codec.feedback_params.Add(FeedbackParam("goog-lntf"));
   cricket_codec.feedback_params.Add({"nack", "pli"});
   RtpCodecCapability codec = ToRtpCodecCapability(cricket_codec);
 
@@ -115,12 +106,11 @@ TEST(RtpParametersConversionTest, ToVideoRtpCodecCapability) {
   ASSERT_EQ(2u, codec.parameters.size());
   EXPECT_EQ("bar", codec.parameters["foo"]);
   EXPECT_EQ("param", codec.parameters["ANOTHER"]);
-  EXPECT_EQ(3u, codec.rtcp_feedback.size());
+  EXPECT_EQ(2u, codec.rtcp_feedback.size());
   EXPECT_EQ(RtcpFeedback(RtcpFeedbackType::TRANSPORT_CC),
             codec.rtcp_feedback[0]);
-  EXPECT_EQ(RtcpFeedback(RtcpFeedbackType::LNTF), codec.rtcp_feedback[1]);
   EXPECT_EQ(RtcpFeedback(RtcpFeedbackType::NACK, RtcpFeedbackMessageType::PLI),
-            codec.rtcp_feedback[2]);
+            codec.rtcp_feedback[1]);
 }
 
 // An unknown feedback param should just be ignored.

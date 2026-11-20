@@ -35,8 +35,7 @@ class VideoEncoderFeedbackKeyframeTestBase : public ::testing::Test {
             CreateTestEnvironment({.time = &simulated_clock_}),
             per_layer_pli_handling,
             ssrcs,
-            &encoder_,
-            nullptr) {}
+            &encoder_) {}
 
  protected:
   static const uint32_t kSsrc = 1234;

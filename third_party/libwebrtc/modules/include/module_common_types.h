@@ -49,17 +49,6 @@ class KeyFrameRequestSender {
   virtual ~KeyFrameRequestSender() {}
 };
 
-// Interface used by LossNotificationController to communicate to RtpRtcp.
-class LossNotificationSender {
- public:
-  virtual ~LossNotificationSender() {}
-
-  virtual void SendLossNotification(uint16_t last_decoded_seq_num,
-                                    uint16_t last_received_seq_num,
-                                    bool decodability_flag,
-                                    bool buffering_allowed) = 0;
-};
-
 }  // namespace webrtc
 
 #endif  // MODULES_INCLUDE_MODULE_COMMON_TYPES_H_

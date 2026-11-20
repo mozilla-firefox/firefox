@@ -140,9 +140,6 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
 
   void SendKeyFrame(const std::vector<VideoFrameType>& layers = {}) override;
 
-  void OnLossNotification(
-      const VideoEncoder::LossNotification& loss_notification) override;
-
   void OnBitrateUpdated(DataRate target_bitrate,
                         DataRate link_allocation,
                         uint8_t fraction_lost,

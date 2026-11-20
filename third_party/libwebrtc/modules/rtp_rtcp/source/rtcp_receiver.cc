@@ -40,7 +40,6 @@
 #include "modules/rtp_rtcp/source/rtcp_packet/dlrr.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/extended_reports.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/fir.h"
-#include "modules/rtp_rtcp/source/rtcp_packet/loss_notification.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/nack.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/pli.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/psfb.h"
@@ -144,7 +143,6 @@ struct RTCPReceiver::PacketInformation {
   std::unique_ptr<rtcp::TransportFeedback> transport_feedback;
   std::optional<rtcp::CongestionControlFeedback> congestion_control_feedback;
   std::optional<NetworkStateEstimate> network_state_estimate;
-  std::unique_ptr<rtcp::LossNotification> loss_notification;
 };
 
 RTCPReceiver::RTCPReceiver(const Environment& env,
@@ -159,7 +157,6 @@ RTCPReceiver::RTCPReceiver(const Environment& env,
       network_link_rtcp_observer_(config.network_link_rtcp_observer),
       rtcp_event_observer_(config.rtcp_event_observer),
       rtcp_intra_frame_observer_(config.intra_frame_callback),
-      rtcp_loss_notification_observer_(config.rtcp_loss_notification_observer),
       network_state_estimate_observer_(config.network_state_estimate_observer),
       report_interval_(config.rtcp_report_interval_ms > 0
                            ? TimeDelta::Millis(config.rtcp_report_interval_ms)
@@ -847,15 +844,6 @@ void RTCPReceiver::HandlePsfbApp(const CommonHeader& rtcp_block,
     }
   }
 
-  {
-    auto loss_notification = std::make_unique<rtcp::LossNotification>();
-    if (loss_notification->Parse(rtcp_block)) {
-      packet_information->packet_type_flags |= kRtcpLossNotification;
-      packet_information->loss_notification = std::move(loss_notification);
-      return;
-    }
-  }
-
   RTC_LOG(LS_WARNING) << "Unknown PSFB-APP packet.";
   ++num_skipped_packets_;
   // Application layer feedback message doesn't have a standard format.
@@ -990,18 +978,6 @@ void RTCPReceiver::TriggerCallbacksFromRtcpPacket(
       }
       rtcp_intra_frame_observer_->OnReceivedIntraFrameRequest(
           local_media_ssrc());
-    }
-  }
-  if (rtcp_loss_notification_observer_ &&
-      (packet_information.packet_type_flags & kRtcpLossNotification)) {
-    rtcp::LossNotification* loss_notification =
-        packet_information.loss_notification.get();
-    RTC_DCHECK(loss_notification);
-    if (loss_notification->media_ssrc() == local_media_ssrc()) {
-      rtcp_loss_notification_observer_->OnReceivedLossNotification(
-          loss_notification->media_ssrc(), loss_notification->last_decoded(),
-          loss_notification->last_received(),
-          loss_notification->decodability_flag());
     }
   }
   // Network state estimate should be applied before other feedback since it may

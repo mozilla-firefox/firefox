@@ -304,10 +304,6 @@ class FakeVideoReceiveStream final : public VideoReceiveStreamInterface {
     config_.rtp.protected_by_flexfec = (sink != nullptr);
   }
 
-  void SetLossNotificationEnabled(bool enabled) override {
-    config_.rtp.lntf.enabled = enabled;
-  }
-
   void SetNackHistory(TimeDelta history) override {
     config_.rtp.nack.rtp_history_ms = history.ms();
   }

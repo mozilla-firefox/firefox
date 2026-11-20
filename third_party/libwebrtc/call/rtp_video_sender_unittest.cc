@@ -151,7 +151,6 @@ RtpSenderObservers CreateObservers(
   RtpSenderObservers observers;
   observers.rtcp_rtt_stats = nullptr;
   observers.intra_frame_callback = intra_frame_callback;
-  observers.rtcp_loss_notification_observer = nullptr;
   observers.report_block_data_observer = report_block_data_observer;
   observers.rtp_stats = rtp_stats;
   observers.bitrate_observer = bitrate_observer;

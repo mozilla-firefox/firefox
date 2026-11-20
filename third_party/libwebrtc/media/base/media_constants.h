@@ -98,8 +98,6 @@ inline constexpr int kPreferredUseInbandFec = 0;
 
 inline constexpr absl::string_view kPacketizationParamRaw = "raw";
 
-// rtcp-fb message in its first experimental stages. Documentation pending.
-inline constexpr absl::string_view kRtcpFbParamLntf = "goog-lntf";
 // rtcp-fb messages according to RFC 4585
 inline constexpr absl::string_view kRtcpFbParamNack = "nack";
 inline constexpr absl::string_view kRtcpFbNackParamPli = "pli";

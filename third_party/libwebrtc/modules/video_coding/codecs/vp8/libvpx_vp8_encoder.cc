@@ -506,13 +506,6 @@ void LibvpxVp8Encoder::OnRttUpdate(int64_t rtt_ms) {
   }
 }
 
-void LibvpxVp8Encoder::OnLossNotification(
-    const LossNotification& loss_notification) {
-  if (frame_buffer_controller_) {
-    frame_buffer_controller_->OnLossNotification(loss_notification);
-  }
-}
-
 void LibvpxVp8Encoder::SetStreamState(bool send_stream, int stream_idx) {
   if (send_stream && !send_stream_[stream_idx]) {
     // Need a key frame if we have not sent this stream before.

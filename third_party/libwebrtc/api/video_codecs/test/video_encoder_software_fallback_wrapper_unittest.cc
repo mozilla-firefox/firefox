@@ -62,10 +62,7 @@ constexpr int kBitrateKbps = 200;
 constexpr int kMinPixelsPerFrame = 1;
 constexpr char kFieldTrial[] = "WebRTC-VP8-Forced-Fallback-Encoder-v2";
 
-const VideoEncoder::Capabilities kCapabilities(false);
-const VideoEncoder::Settings kSettings(kCapabilities,
-                                       kNumCores,
-                                       kMaxPayloadSize);
+constexpr VideoEncoder::Settings kSettings(kNumCores, kMaxPayloadSize);
 
 VideoEncoder::EncoderInfo GetEncoderInfoWithTrustedRateController(
     bool trusted_rate_controller) {
@@ -1004,9 +1001,6 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   EXPECT_CALL(*hw_, OnRttUpdate).Times(0);
   EXPECT_CALL(*sw_, OnRttUpdate).Times(0);
 
-  EXPECT_CALL(*hw_, OnLossNotification).Times(0);
-  EXPECT_CALL(*sw_, OnLossNotification).Times(0);
-
   EXPECT_CALL(*hw_, SetComplexity).Times(0);
   EXPECT_CALL(*sw_, SetComplexity).Times(0);
 
@@ -1023,7 +1017,6 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   VideoEncoder::RateControlParameters rate_params1;
   float packet_loss1 = 0.1;
   int64_t rtt1 = 1;
-  VideoEncoder::LossNotification lntf1;
   const VideoCodecComplexity complexity1[] = {
       VideoCodecComplexity::kComplexityLow,
       VideoCodecComplexity::kComplexityHigh};
@@ -1047,10 +1040,6 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   EXPECT_CALL(*hw_, OnRttUpdate(rtt1));
   EXPECT_CALL(*sw_, OnRttUpdate).Times(0);
   wrapper_->OnRttUpdate(rtt1);
-
-  EXPECT_CALL(*hw_, OnLossNotification).Times(1);
-  EXPECT_CALL(*sw_, OnLossNotification).Times(0);
-  wrapper_->OnLossNotification(lntf1);
 
   EXPECT_CALL(*hw_,
               SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityLow,
@@ -1079,9 +1068,6 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   EXPECT_CALL(*sw_, OnRttUpdate(rtt1));
   EXPECT_CALL(*hw_, OnRttUpdate).Times(0);
 
-  EXPECT_CALL(*sw_, OnLossNotification).Times(1);
-  EXPECT_CALL(*hw_, OnLossNotification).Times(0);
-
   EXPECT_CALL(*sw_,
               SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityLow,
                                         VideoCodecComplexity::kComplexityHigh),
@@ -1099,7 +1085,6 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   VideoEncoder::RateControlParameters rate_params2;
   float packet_loss2 = 0.2;
   int64_t rtt2 = 2;
-  VideoEncoder::LossNotification lntf2;
   const VideoCodecComplexity complexity2[] = {
       VideoCodecComplexity::kComplexityMax};
 
@@ -1122,10 +1107,6 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   EXPECT_CALL(*sw_, OnRttUpdate(rtt2));
   EXPECT_CALL(*hw_, OnRttUpdate).Times(0);
   wrapper_->OnRttUpdate(rtt2);
-
-  EXPECT_CALL(*sw_, OnLossNotification).Times(1);
-  EXPECT_CALL(*hw_, OnLossNotification).Times(0);
-  wrapper_->OnLossNotification(lntf2);
 
   EXPECT_CALL(*sw_,
               SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityMax),
@@ -1152,9 +1133,6 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
 
   EXPECT_CALL(*hw_, OnRttUpdate(rtt2));
   EXPECT_CALL(*sw_, OnRttUpdate).Times(0);
-
-  EXPECT_CALL(*hw_, OnLossNotification).Times(1);
-  EXPECT_CALL(*sw_, OnLossNotification).Times(0);
 
   EXPECT_CALL(*hw_,
               SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityMax),

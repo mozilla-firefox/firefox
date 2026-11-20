@@ -35,10 +35,10 @@ index 8a2a9306ba..c1c8449453 100644
  
    scoped_refptr<VideoFrameBuffer> mapped_buffer;
 diff --git a/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc b/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc
-index f32b732029..ef580a933a 100644
+index d0c4658d60..77b7e129d2 100644
 --- a/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc
 +++ b/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc
-@@ -1577,6 +1577,13 @@ std::vector<scoped_refptr<VideoFrameBuffer>> LibvpxVp8Encoder::PrepareBuffers(
+@@ -1570,6 +1570,13 @@ std::vector<scoped_refptr<VideoFrameBuffer>> LibvpxVp8Encoder::PrepareBuffers(
  
      auto scaled_buffer =
          buffer_to_scale->Scale(raw_images_[i].d_w, raw_images_[i].d_h);

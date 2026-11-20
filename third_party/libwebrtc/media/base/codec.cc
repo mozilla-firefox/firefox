@@ -344,11 +344,6 @@ const Codec* FindCodecById(const std::vector<Codec>& codecs,
   return nullptr;
 }
 
-bool HasLntf(const Codec& codec) {
-  return codec.HasFeedbackParam(
-      FeedbackParam(kRtcpFbParamLntf, kParamValueEmpty));
-}
-
 bool HasNack(const Codec& codec) {
   return codec.HasFeedbackParam(
       FeedbackParam(kRtcpFbParamNack, kParamValueEmpty));

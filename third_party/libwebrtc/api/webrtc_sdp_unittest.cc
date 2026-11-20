@@ -13,7 +13,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -1941,7 +1940,6 @@ class WebRtcSdpTest : public ::testing::Test {
     std::string sdp_video =
         "m=video 3457 RTP/SAVPF 101\r\n"
         "a=rtpmap:101 VP8/90000\r\n"
-        "a=rtcp-fb:101 goog-lntf\r\n"
         "a=rtcp-fb:101 nack\r\n"
         "a=rtcp-fb:101 nack pli\r\n"
         "a=rtcp-fb:101 goog-remb\r\n";
@@ -1977,8 +1975,6 @@ class WebRtcSdpTest : public ::testing::Test {
     Codec vp8 = vcd->codecs()[0];
     EXPECT_EQ(vp8.name, "VP8");
     EXPECT_EQ(101, vp8.id);
-    EXPECT_TRUE(vp8.HasFeedbackParam(
-        FeedbackParam(kRtcpFbParamLntf, kParamValueEmpty)));
     EXPECT_TRUE(vp8.HasFeedbackParam(
         FeedbackParam(kRtcpFbParamNack, kParamValueEmpty)));
     EXPECT_TRUE(vp8.HasFeedbackParam(

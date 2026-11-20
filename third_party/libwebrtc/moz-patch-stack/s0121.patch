@@ -9,7 +9,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/fb61f91d422c3d775
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/api/rtp_parameters.h b/api/rtp_parameters.h
-index 988af1564a..0c0cc966dc 100644
+index 328bbb87e7..d812196e3f 100644
 --- a/api/rtp_parameters.h
 +++ b/api/rtp_parameters.h
 @@ -36,7 +36,6 @@

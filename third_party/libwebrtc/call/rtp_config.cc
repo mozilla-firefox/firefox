@@ -41,10 +41,6 @@ uint32_t FindAssociatedSsrc(uint32_t ssrc,
 
 }  // namespace
 
-std::string LntfConfig::ToString() const {
-  return enabled ? "{enabled: true}" : "{enabled: false}";
-}
-
 std::string NackConfig::ToString() const {
   StringBuilder ss;
   ss << "{rtp_history_ms: " << rtp_history_ms;
@@ -132,7 +128,6 @@ std::string RtpConfig::ToString() const {
   }
   ss << ']';
 
-  ss << ", lntf: " << lntf.ToString();
   ss << ", nack: {rtp_history_ms: " << nack.rtp_history_ms << '}';
   ss << ", ulpfec: " << ulpfec.ToString();
   ss << ", payload_name: " << payload_name;

@@ -94,18 +94,6 @@ class MockRtcpIntraFrameObserver : public RtcpIntraFrameObserver {
   MOCK_METHOD(void, OnReceivedIntraFrameRequest, (uint32_t), (override));
 };
 
-class MockRtcpLossNotificationObserver : public RtcpLossNotificationObserver {
- public:
-  ~MockRtcpLossNotificationObserver() override = default;
-  MOCK_METHOD(void,
-              OnReceivedLossNotification,
-              (uint32_t ssrc,
-               uint16_t seq_num_of_last_decodable,
-               uint16_t seq_num_of_last_received,
-               bool decodability_flag),
-              (override));
-};
-
 class MockCnameCallbackImpl : public RtcpCnameCallback {
  public:
   MOCK_METHOD(void, OnCname, (uint32_t, absl::string_view), (override));
@@ -148,7 +136,6 @@ struct ReceiverMocks {
   // are not interesting.
   NiceMock<MockRtcpPacketTypeCounterObserver> packet_type_counter_observer;
   StrictMock<MockRtcpIntraFrameObserver> intra_frame_observer;
-  StrictMock<MockRtcpLossNotificationObserver> rtcp_loss_notification_observer;
   StrictMock<MockModuleRtpRtcp> rtp_rtcp_impl;
   NiceMock<MockNetworkLinkRtcpObserver> network_link_rtcp_observer;
   NiceMock<MockNetworkStateEstimateObserver> network_state_estimate_observer;
@@ -156,7 +143,6 @@ struct ReceiverMocks {
   RtpRtcpInterface::Configuration config = {
       .receiver_only = false,
       .intra_frame_callback = &intra_frame_observer,
-      .rtcp_loss_notification_observer = &rtcp_loss_notification_observer,
       .network_link_rtcp_observer = &network_link_rtcp_observer,
       .network_state_estimate_observer = &network_state_estimate_observer,
       .rtcp_packet_type_counter_observer = &packet_type_counter_observer,

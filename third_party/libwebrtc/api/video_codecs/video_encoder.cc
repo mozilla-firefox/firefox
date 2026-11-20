@@ -330,9 +330,7 @@ void VideoEncoder::SetFecControllerOverride(
 int32_t VideoEncoder::InitEncode(const VideoCodec* codec_settings,
                                  int32_t number_of_cores,
                                  size_t max_payload_size) {
-  const VideoEncoder::Capabilities capabilities(/* loss_notification= */ false);
-  const VideoEncoder::Settings settings(capabilities, number_of_cores,
-                                        max_payload_size);
+  const VideoEncoder::Settings settings(number_of_cores, max_payload_size);
   // In theory, this and the other version of InitEncode() could end up calling
   // each other in a loop until we get a stack overflow.
   // In practice, any subclass of VideoEncoder would overload at least one

@@ -118,8 +118,6 @@ constexpr int kFramesSentInQuickTest = 1;
 constexpr uint32_t kThumbnailSendSsrcStart = 0xE0000;
 constexpr uint32_t kThumbnailRtxSsrcStart = 0xF0000;
 
-const VideoEncoder::Capabilities kCapabilities(false);
-
 std::pair<uint32_t, uint32_t> GetMinMaxBitratesBps(const VideoCodec& codec,
                                                    size_t spatial_idx) {
   uint32_t min_bitrate = codec.minBitrate;
@@ -263,10 +261,6 @@ class QualityTestVideoEncoder : public VideoEncoder,
   }
 
   void OnRttUpdate(int64_t rtt_ms) override { encoder_->OnRttUpdate(rtt_ms); }
-
-  void OnLossNotification(const LossNotification& loss_notification) override {
-    encoder_->OnLossNotification(loss_notification);
-  }
 
   EncoderInfo GetEncoderInfo() const override {
     EncoderInfo info = encoder_->GetEncoderInfo();

@@ -846,13 +846,6 @@ void SimulcastEncoderAdapter::OnRttUpdate(int64_t rtt_ms) {
   }
 }
 
-void SimulcastEncoderAdapter::OnLossNotification(
-    const LossNotification& loss_notification) {
-  for (auto& c : stream_contexts_) {
-    c.encoder().OnLossNotification(loss_notification);
-  }
-}
-
 EncodedImageCallback::Result SimulcastEncoderAdapter::OnEncodedImage(
     size_t stream_idx,
     const EncodedImage& encodedImage,

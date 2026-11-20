@@ -493,12 +493,6 @@ void VideoReceiveStream2::SetFlexFecProtection(
   config_.rtp.protected_by_flexfec = (flexfec_sink != nullptr);
 }
 
-void VideoReceiveStream2::SetLossNotificationEnabled(bool enabled) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
-  config_.rtp.lntf.enabled = enabled;
-  rtp_video_stream_receiver_.SetLossNotificationEnabled(enabled);
-}
-
 void VideoReceiveStream2::SetNackHistory(TimeDelta history) {
   RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
   RTC_DCHECK_GE(history.ms(), 0);

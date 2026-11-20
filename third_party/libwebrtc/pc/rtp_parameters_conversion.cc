@@ -33,14 +33,6 @@ std::optional<RtcpFeedback> ToRtcpFeedback(
                           << cricket_feedback.param();
       return std::nullopt;
     }
-  } else if (cricket_feedback.id() == kRtcpFbParamLntf) {
-    if (cricket_feedback.param().empty()) {
-      return RtcpFeedback(RtcpFeedbackType::LNTF);
-    } else {
-      RTC_LOG(LS_WARNING) << "Unsupported parameter for LNTF RTCP feedback: "
-                          << cricket_feedback.param();
-      return std::nullopt;
-    }
   } else if (cricket_feedback.id() == kRtcpFbParamNack) {
     if (cricket_feedback.param().empty()) {
       return RtcpFeedback(RtcpFeedbackType::NACK,

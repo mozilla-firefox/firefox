@@ -52,9 +52,6 @@
             }
          ],
          "local_ssrc" : 1,
-         "lntf" : {
-            "enabled": false,
-         },
          "nack" : {
             "rtp_history_ms" : 1000
          },

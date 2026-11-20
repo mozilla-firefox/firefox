@@ -10,7 +10,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/a7179d8d75313b6c9
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/video/video_stream_encoder.cc b/video/video_stream_encoder.cc
-index 0841b1e577..88f6434c7c 100644
+index dac51e6a06..8094a008ed 100644
 --- a/video/video_stream_encoder.cc
 +++ b/video/video_stream_encoder.cc
 @@ -1463,7 +1463,7 @@ void VideoStreamEncoder::ReconfigureEncoder() {

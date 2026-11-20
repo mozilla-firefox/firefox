@@ -104,7 +104,7 @@ VideoSendStream::Config::Config(const Config&) = default;
 VideoSendStream::Config::Config(Config&&) = default;
 VideoSendStream::Config::Config(Transport* send_transport)
     : rtp(),
-      encoder_settings(VideoEncoder::Capabilities(rtp.lntf.enabled)),
+      encoder_settings(VideoEncoder::Capabilities(false)),
       send_transport(send_transport) {}
 
 VideoSendStream::Config& VideoSendStream::Config::operator=(Config&&) = default;

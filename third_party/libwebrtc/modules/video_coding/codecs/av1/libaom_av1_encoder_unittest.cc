@@ -95,9 +95,8 @@ VideoCodec HDCodecSettings() {
 }
 
 VideoEncoder::Settings DefaultEncoderSettings() {
-  return VideoEncoder::Settings(
-      VideoEncoder::Capabilities(/*loss_notification=*/false),
-      /*number_of_cores=*/1, /*max_payload_size=*/1200);
+  return VideoEncoder::Settings(/*number_of_cores=*/1,
+                                /*max_payload_size=*/1200);
 }
 
 class LibaomAv1EncoderTest : public ::testing::TestWithParam<bool> {

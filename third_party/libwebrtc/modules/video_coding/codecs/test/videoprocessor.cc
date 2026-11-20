@@ -62,8 +62,6 @@ namespace {
 const int kMsToRtpTimestamp = kVideoPayloadTypeFrequency / 1000;
 const int kMaxBufferedInputFrames = 20;
 
-const VideoEncoder::Capabilities kCapabilities(false);
-
 size_t GetMaxNaluSizeBytes(const EncodedImage& encoded_frame,
                            const VideoCodecTestFixture::Config& config) {
   if (config.codec_settings.codecType != kVideoCodecH264)
@@ -204,12 +202,12 @@ VideoProcessor::VideoProcessor(const Environment& env,
                WEBRTC_VIDEO_CODEC_OK);
 
   // Initialize codecs so that they are ready to receive frames.
-  RTC_CHECK_EQ(encoder_->InitEncode(
-                   &config_.codec_settings,
-                   VideoEncoder::Settings(
-                       kCapabilities, static_cast<int>(config_.NumberOfCores()),
-                       config_.max_payload_size_bytes)),
-               WEBRTC_VIDEO_CODEC_OK);
+  RTC_CHECK_EQ(
+      encoder_->InitEncode(
+          &config_.codec_settings,
+          VideoEncoder::Settings(static_cast<int>(config_.NumberOfCores()),
+                                 config_.max_payload_size_bytes)),
+      WEBRTC_VIDEO_CODEC_OK);
 
   for (size_t i = 0; i < num_simulcast_or_spatial_layers_; ++i) {
     decode_callback_.push_back(

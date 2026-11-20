@@ -293,8 +293,6 @@ std::vector<RtpStreamSender> CreateRtpStreamSenders(
   configuration.receiver_only = false;
   configuration.outgoing_transport = send_transport;
   configuration.intra_frame_callback = observers.intra_frame_callback;
-  configuration.rtcp_loss_notification_observer =
-      observers.rtcp_loss_notification_observer;
   configuration.network_link_rtcp_observer = transport->GetRtcpObserver();
   configuration.network_state_estimate_observer =
       transport->network_state_estimate_observer();
@@ -354,8 +352,6 @@ std::vector<RtpStreamSender> CreateRtpStreamSenders(
             : std::nullopt;
 
     configuration.rid = (i < rtp_config.rids.size()) ? rtp_config.rids[i] : "";
-
-    configuration.need_rtp_packet_infos = rtp_config.lntf.enabled;
 
     auto rtp_rtcp = ModuleRtpRtcpImpl2::CreateSendModule(env, configuration);
     ConfigureRtpModule(rtp_config, i, *rtp_rtcp);

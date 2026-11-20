@@ -110,8 +110,7 @@ class VideoCodecInitializerTest : public ::testing::Test {
     // Make sure temporal layers instances have been created.
     if (codec_out_.codecType == VideoCodecType::kVideoCodecVP8) {
       Vp8TemporalLayersFactory factory;
-      const VideoEncoder::Settings settings(VideoEncoder::Capabilities(false),
-                                            1, 1000);
+      constexpr VideoEncoder::Settings settings(1, 1000);
       frame_buffer_controller_ =
           factory.Create(env_, codec_out_, settings, &fec_controller_override_);
     }

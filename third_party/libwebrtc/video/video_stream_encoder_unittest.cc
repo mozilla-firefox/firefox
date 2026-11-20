@@ -807,7 +807,7 @@ class SimpleVideoStreamEncoderFactory {
   std::unique_ptr<VideoBitrateAllocatorFactory> bitrate_allocator_factory_ =
       CreateBuiltinVideoBitrateAllocatorFactory();
   VideoStreamEncoderSettings encoder_settings_{
-      VideoEncoder::Capabilities(/*loss_notification=*/false)};
+      VideoEncoder::Capabilities(false)};
   MockFakeEncoder mock_fake_encoder_{env_};
   test::VideoEncoderProxyFactory encoder_factory_{&mock_fake_encoder_};
   NullEncoderSink sink_;
@@ -10619,7 +10619,7 @@ TEST(VideoStreamEncoderSimpleTest, CreateDestroy) {
   std::unique_ptr<VideoBitrateAllocatorFactory> bitrate_allocator_factory =
       CreateBuiltinVideoBitrateAllocatorFactory();
   VideoStreamEncoderSettings encoder_settings{
-      VideoEncoder::Capabilities(/*loss_notification=*/false)};
+      VideoEncoder::Capabilities(false)};
   encoder_settings.encoder_factory = &encoder_factory;
   encoder_settings.bitrate_allocator_factory = bitrate_allocator_factory.get();
 

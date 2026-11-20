@@ -162,7 +162,6 @@ class VideoReceiveStream2
 
   void SetRtcpMode(RtcpMode mode) override;
   void SetFlexFecProtection(RtpPacketSinkInterface* flexfec_sink) override;
-  void SetLossNotificationEnabled(bool enabled) override;
   void SetNackHistory(TimeDelta history) override;
   void SetProtectionPayloadTypes(int red_payload_type,
                                  int ulpfec_payload_type) override;

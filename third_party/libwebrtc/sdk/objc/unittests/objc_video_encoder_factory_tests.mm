@@ -132,9 +132,7 @@ std::unique_ptr<webrtc::VideoEncoder> GetObjCEncoder(
       GetObjCEncoder(CreateOKEncoderFactory());
 
   auto *settings = new webrtc::VideoCodec();
-  const webrtc::VideoEncoder::Capabilities kCapabilities(false);
-  EXPECT_EQ(encoder->InitEncode(
-                settings, webrtc::VideoEncoder::Settings(kCapabilities, 1, 0)),
+  EXPECT_EQ(encoder->InitEncode(settings, webrtc::VideoEncoder::Settings(1, 0)),
             WEBRTC_VIDEO_CODEC_OK);
 }
 
@@ -143,9 +141,7 @@ std::unique_ptr<webrtc::VideoEncoder> GetObjCEncoder(
       GetObjCEncoder(CreateErrorEncoderFactory());
 
   auto *settings = new webrtc::VideoCodec();
-  const webrtc::VideoEncoder::Capabilities kCapabilities(false);
-  EXPECT_EQ(encoder->InitEncode(
-                settings, webrtc::VideoEncoder::Settings(kCapabilities, 1, 0)),
+  EXPECT_EQ(encoder->InitEncode(settings, webrtc::VideoEncoder::Settings(1, 0)),
             WEBRTC_VIDEO_CODEC_ERROR);
 }
 

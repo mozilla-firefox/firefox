@@ -69,8 +69,7 @@ const int kScaleResolutionDownBy[kNumberOfSimulcastStreams] = {4, 2, 1};
 const int kDefaultTemporalLayerProfile[3] = {3, 3, 3};
 const int kNoTemporalLayerProfile[3] = {0, 0, 0};
 
-const VideoEncoder::Capabilities kCapabilities(false);
-const VideoEncoder::Settings kSettings(kCapabilities, 1, 1200);
+constexpr VideoEncoder::Settings kSettings(1, 1200);
 
 template <typename T>
 void SetExpectedValues3(T value0, T value1, T value2, T* expected_values) {

@@ -9,10 +9,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/26c916591791b13a3
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/call/rtp_config.cc b/call/rtp_config.cc
-index 85f55b6013..265e96e35c 100644
+index e86a5a66a6..fac8abab85 100644
 --- a/call/rtp_config.cc
 +++ b/call/rtp_config.cc
-@@ -259,7 +259,7 @@ RtpStreamConfig RtpConfig::GetStreamConfig(size_t index) const {
+@@ -254,7 +254,7 @@ RtpStreamConfig RtpConfig::GetStreamConfig(size_t index) const {
    stream_config.raw_payload = raw_payload;
    if (!rtx.ssrcs.empty()) {
      RTC_DCHECK_EQ(ssrcs.size(), rtx.ssrcs.size());

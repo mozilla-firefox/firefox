@@ -260,8 +260,7 @@ VideoCodec CodecSettings(FuzzDataHelper& rng) {
 }
 
 VideoEncoder::Settings EncoderSettings() {
-  return VideoEncoder::Settings(VideoEncoder::Capabilities(false),
-                                /*number_of_cores=*/1,
+  return VideoEncoder::Settings(/*number_of_cores=*/1,
                                 /*max_payload_size=*/0);
 }
 

@@ -112,7 +112,7 @@ enum class FecMechanism {
 enum class RtcpFeedbackType {
   NONE,
   CCM,
-  LNTF,  // "goog-lntf"
+  LNTF,  // "goog-lntf" (deprecated, kept for UMA enum numbering)
   NACK,
   REMB,  // "goog-remb"
   TRANSPORT_CC,

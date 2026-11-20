@@ -167,7 +167,6 @@ std::string VideoReceiveStreamInterface::Config::Rtp::ToString() const {
   ss << "{receiver_reference_time_report: "
      << (rtcp_xr.receiver_reference_time_report ? "on" : "off");
   ss << "}";
-  ss << ", lntf: {enabled: " << (lntf.enabled ? "true" : "false") << "}";
   ss << ", nack: {rtp_history_ms: " << nack.rtp_history_ms << "}";
   ss << ", ulpfec_payload_type: " << ulpfec_payload_type;
   ss << ", red_type: " << red_payload_type;

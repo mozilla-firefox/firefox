@@ -597,9 +597,6 @@ void DefaultTemporalLayers::OnPacketLossRateUpdate(
 
 void DefaultTemporalLayers::OnRttUpdate(int64_t /* rtt_ms */) {}
 
-void DefaultTemporalLayers::OnLossNotification(
-    const VideoEncoder::LossNotification& /* loss_notification */) {}
-
 FrameDependencyStructure DefaultTemporalLayers::GetTemplateStructure(
     int num_layers) const {
   RTC_CHECK_LT(num_layers, 5);

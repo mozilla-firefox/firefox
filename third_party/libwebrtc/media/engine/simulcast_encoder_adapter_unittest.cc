@@ -91,8 +91,7 @@ namespace {
 constexpr int kDefaultWidth = 1280;
 constexpr int kDefaultHeight = 720;
 
-const VideoEncoder::Capabilities kCapabilities(false);
-const VideoEncoder::Settings kSettings(kCapabilities, 1, 1200);
+constexpr VideoEncoder::Settings kSettings(1, 1200);
 
 std::unique_ptr<SimulcastTestFixture> CreateSpecificSimulcastTestFixture(
     VideoEncoderFactory* internal_encoder_factory) {

@@ -10,9 +10,6 @@
       "rtp" : {
          "extensions" : [],
          "local_ssrc" : 7331,
-         "lntf" : {
-            "enabled": false,
-         },
          "nack" : {
             "rtp_history_ms" : 1000
          },

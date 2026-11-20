@@ -53,7 +53,6 @@ class RtpRtcpInterface;
 struct RtpSenderObservers {
   RtcpRttStats* rtcp_rtt_stats;
   RtcpIntraFrameObserver* intra_frame_callback;
-  RtcpLossNotificationObserver* rtcp_loss_notification_observer;
   ReportBlockDataObserver* report_block_data_observer;
   StreamDataCountersCallback* rtp_stats;
   BitrateStatisticsObserver* bitrate_observer;

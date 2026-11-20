@@ -435,18 +435,18 @@ index b8577c303b..640e104553 100644
    deps = [
      ":audio_sender_interface",
 diff --git a/call/video_receive_stream.h b/call/video_receive_stream.h
-index 2a7be9fe0d..1e53b6e117 100644
+index 3b4ed43ea1..f564447c0f 100644
 --- a/call/video_receive_stream.h
 +++ b/call/video_receive_stream.h
-@@ -248,6 +248,8 @@ class VideoReceiveStreamInterface : public MediaReceiveStreamInterface {
-       // disabled.
+@@ -247,6 +247,8 @@ class VideoReceiveStreamInterface : public MediaReceiveStreamInterface {
+       // How to request keyframes from a remote sender.
        KeyFrameReqMethod keyframe_method = KeyFrameReqMethod::kPliRtcp;
  
 +      bool tmmbr = false;
 +
-       // See LntfConfig for description.
-       LntfConfig lntf;
- 
+       // Payload types for ULPFEC and RED, respectively.
+       int ulpfec_payload_type = -1;
+       int red_payload_type = -1;
 diff --git a/modules/audio_coding/neteq/dtmf_buffer.cc b/modules/audio_coding/neteq/dtmf_buffer.cc
 index 5813f6df9a..db99e227e9 100644
 --- a/modules/audio_coding/neteq/dtmf_buffer.cc
@@ -596,10 +596,10 @@ index 28509654c4..1e2ae94c85 100644
        device_names->push_back(ToUtf8(device.DeviceName));
      }
 diff --git a/modules/rtp_rtcp/source/rtcp_sender.cc b/modules/rtp_rtcp/source/rtcp_sender.cc
-index afe3d9ebf4..825399a025 100644
+index 261c8334e8..ea3c2fc9c1 100644
 --- a/modules/rtp_rtcp/source/rtcp_sender.cc
 +++ b/modules/rtp_rtcp/source/rtcp_sender.cc
-@@ -186,7 +186,7 @@ void RTCPSender::SetRTCPStatus(RtcpMode new_method) {
+@@ -184,7 +184,7 @@ void RTCPSender::SetRTCPStatus(RtcpMode new_method) {
      next_time_to_send_rtcp_ = std::nullopt;
    } else if (method_ == RtcpMode::kOff) {
      // When switching on, reschedule the next packet

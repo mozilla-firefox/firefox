@@ -1403,9 +1403,7 @@ TEST_F(RtpSenderReceiverTest, InjectVideoFrameOnDifferentThread) {
         env_, SdpVideoFormat("VP8"));
     VideoCodec codec_settings;
     codec_settings.codecType = kVideoCodecVP8;
-    encoder->InitEncode(
-        &codec_settings,
-        VideoEncoder::Settings(VideoEncoder::Capabilities(false), 1, 1000));
+    encoder->InitEncode(&codec_settings, VideoEncoder::Settings(1, 1000));
     encoder->RegisterEncodeCompleteCallback(&image_callback);
   });
 

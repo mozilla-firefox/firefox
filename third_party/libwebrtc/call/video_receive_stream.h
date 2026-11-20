@@ -253,17 +253,13 @@ class VideoReceiveStreamInterface : public MediaReceiveStreamInterface {
         bool receiver_reference_time_report = false;
       } rtcp_xr;
 
-      // How to request keyframes from a remote sender. Applies only if lntf is
-      // disabled.
+      // How to request keyframes from a remote sender.
       KeyFrameReqMethod keyframe_method = KeyFrameReqMethod::kPliRtcp;
 
       // See draft-alvestrand-rmcat-remb for information.
       bool remb = false;
 
       bool tmmbr = false;
-
-      // See LntfConfig for description.
-      LntfConfig lntf;
 
       // Payload types for ULPFEC and RED, respectively.
       int ulpfec_payload_type = -1;
@@ -364,10 +360,6 @@ class VideoReceiveStreamInterface : public MediaReceiveStreamInterface {
   // TODO(bugs.webrtc.org/11993): Packet delivery thread today means `worker
   // thread` but will be `network thread`.
   virtual void SetFlexFecProtection(RtpPacketSinkInterface* flexfec_sink) = 0;
-
-  // Turns on/off loss notifications. Must be called on the packet delivery
-  // thread.
-  virtual void SetLossNotificationEnabled(bool enabled) = 0;
 
   // Modify `rtp.nack.rtp_history_ms` post construction. Setting this value
   // to 0 disables nack.

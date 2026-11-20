@@ -259,7 +259,6 @@ Codec CreateVideoRtxCodec(PayloadType rtx_payload_type,
 const Codec* FindCodecById(const std::vector<Codec>& codecs,
                            PayloadType payload_type);
 
-bool HasLntf(const Codec& codec);
 bool HasNack(const Codec& codec);
 bool HasRemb(const Codec& codec);
 bool HasRrtr(const Codec& codec);

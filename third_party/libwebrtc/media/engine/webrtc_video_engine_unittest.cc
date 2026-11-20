@@ -183,10 +183,7 @@ constexpr size_t kNumSimulcastStreams = 3;
 constexpr char kUnsupportedExtensionName[] =
     "urn:ietf:params:rtp-hdrext:unsupported";
 
-void VerifyCodecHasDefaultFeedbackParams(const Codec& codec,
-                                         bool lntf_expected) {
-  EXPECT_EQ(lntf_expected, codec.HasFeedbackParam(FeedbackParam(
-                               kRtcpFbParamLntf, kParamValueEmpty)));
+void VerifyCodecHasDefaultFeedbackParams(const Codec& codec) {
   EXPECT_TRUE(codec.HasFeedbackParam(
       FeedbackParam(kRtcpFbParamNack, kParamValueEmpty)));
   EXPECT_TRUE(codec.HasFeedbackParam(
@@ -1528,8 +1525,7 @@ TEST(WebRtcVideoEngineNewVideoCodecFactoryTest, Vp8) {
                                            &associated_payload_type));
   EXPECT_EQ(engine_codecs.at(0).id, associated_payload_type);
   // Verify default parameters has been added to the VP8 codec.
-  VerifyCodecHasDefaultFeedbackParams(engine_codecs.at(0),
-                                      /*lntf_expected=*/false);
+  VerifyCodecHasDefaultFeedbackParams(engine_codecs.at(0));
 
   // Mock encoder creation. `engine` take ownership of the encoder.
   const SdpVideoFormat format("VP8");
@@ -3633,7 +3629,7 @@ TEST_F(WebRtcVideoChannelTest, RtcpIsCompoundByDefault) {
 
 TEST_F(WebRtcVideoChannelTest, NackIsEnabledByDefault) {
   AssignDefaultCodec();
-  VerifyCodecHasDefaultFeedbackParams(*default_codec_, false);
+  VerifyCodecHasDefaultFeedbackParams(*default_codec_);
 
   VideoSenderParameters parameters;
   parameters.codecs = engine_->LegacySendCodecs();

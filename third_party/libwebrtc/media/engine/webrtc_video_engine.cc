@@ -2099,10 +2099,6 @@ void WebRtcVideoSendChannel::WebRtcVideoSendStream::SetCodec(
     }
   }
 
-  const bool has_lntf = HasLntf(codec_settings.codec);
-  parameters_.config.rtp.lntf.enabled = has_lntf;
-  parameters_.config.encoder_settings.capabilities.loss_notification = has_lntf;
-
   parameters_.config.rtp.nack.rtp_history_ms =
       HasNack(codec_settings.codec) ? kNackHistoryMs : 0;
 
@@ -3643,7 +3639,6 @@ WebRtcVideoReceiveChannel::WebRtcVideoReceiveStream::WebRtcVideoReceiveStream(
   const VideoCodecSettings& codec = recv_codecs.front();
   config_.rtp.ulpfec_payload_type = codec.ulpfec.ulpfec_payload_type;
   config_.rtp.red_payload_type = codec.ulpfec.red_payload_type;
-  config_.rtp.lntf.enabled = HasLntf(codec.codec);
   config_.rtp.nack.rtp_history_ms = HasNack(codec.codec) ? kNackHistoryMs : 0;
   if (codec.rtx_time && config_.rtp.nack.rtp_history_ms != 0) {
     config_.rtp.nack.rtp_history_ms = *codec.rtx_time;
@@ -3712,12 +3707,6 @@ void WebRtcVideoReceiveChannel::WebRtcVideoReceiveStream::ReconfigureCodecs(
     config_.rtp.red_payload_type = codec.ulpfec.red_payload_type;
     stream_->SetProtectionPayloadTypes(config_.rtp.red_payload_type,
                                        config_.rtp.ulpfec_payload_type);
-  }
-
-  const bool has_lntf = HasLntf(codec.codec);
-  if (config_.rtp.lntf.enabled != has_lntf) {
-    config_.rtp.lntf.enabled = has_lntf;
-    stream_->SetLossNotificationEnabled(has_lntf);
   }
 
   int new_history_ms = config_.rtp.nack.rtp_history_ms;
@@ -4002,7 +3991,6 @@ WebRtcVideoReceiveChannel::WebRtcVideoReceiveStream::GetVideoReceiverInfo(
   info.firs_sent = stats.rtcp_packet_type_counts.fir_packets;
   info.plis_sent = stats.rtcp_packet_type_counts.pli_packets;
   info.nacks_sent = stats.rtcp_packet_type_counts.nack_packets;
-  // TODO(bugs.webrtc.org/10662): Add stats for LNTF.
 
   info.timing_frame_info = stats.timing_frame_info;
 

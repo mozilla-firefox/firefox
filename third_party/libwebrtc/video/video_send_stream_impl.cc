@@ -337,7 +337,6 @@ RtpSenderObservers CreateObservers(RtcpRttStats* call_stats,
   RtpSenderObservers observers;
   observers.rtcp_rtt_stats = call_stats;
   observers.intra_frame_callback = encoder_feedback;
-  observers.rtcp_loss_notification_observer = encoder_feedback;
   observers.report_block_data_observer = stats_proxy;
   observers.rtp_stats = stats_proxy;
   observers.bitrate_observer = stats_proxy;
@@ -443,10 +442,7 @@ VideoSendStreamImpl::VideoSendStreamImpl(
               encoder_config.video_format.parameters) ||
               env_.field_trials().IsEnabled("WebRTC-Video-PerSsrcKeyframes"),
           config_.rtp.ssrcs,
-          video_stream_encoder_.get(),
-          [this](uint32_t ssrc, const std::vector<uint16_t>& seq_nums) {
-            return rtp_video_sender_->GetSentRtpPacketInfos(ssrc, seq_nums);
-          }),
+          video_stream_encoder_.get()),
       rtp_video_sender_(transport->CreateRtpVideoSender(
           suspended_ssrcs,
           suspended_payload_states,

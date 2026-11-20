@@ -168,8 +168,6 @@ class VideoEncoderSoftwareFallbackWrapper final : public VideoEncoder {
 
   void OnRttUpdate(int64_t rtt_ms) override;
 
-  void OnLossNotification(const LossNotification& loss_notification) override;
-
   void SetRates(const RateControlParameters& parameters) override;
 
   void SetComplexity(
@@ -214,7 +212,6 @@ class VideoEncoderSoftwareFallbackWrapper final : public VideoEncoder {
   // The last channel parameters set.
   std::optional<float> packet_loss_;
   std::optional<int64_t> rtt_;
-  std::optional<LossNotification> loss_notification_;
   std::optional<std::vector<VideoCodecComplexity>> complexity_by_spatial_layer_;
   ComplexityControlMode complexity_control_mode_ =
       ComplexityControlMode::kConstant;
@@ -270,10 +267,6 @@ void VideoEncoderSoftwareFallbackWrapper::PrimeEncoder(
   }
   if (packet_loss_.has_value()) {
     encoder->OnPacketLossRateUpdate(packet_loss_.value());
-  }
-
-  if (loss_notification_.has_value()) {
-    encoder->OnLossNotification(loss_notification_.value());
   }
   if (complexity_by_spatial_layer_.has_value()) {
     encoder->SetComplexity(*complexity_by_spatial_layer_,
@@ -470,12 +463,6 @@ void VideoEncoderSoftwareFallbackWrapper::OnPacketLossRateUpdate(
 void VideoEncoderSoftwareFallbackWrapper::OnRttUpdate(int64_t rtt_ms) {
   rtt_ = rtt_ms;
   current_encoder()->OnRttUpdate(rtt_ms);
-}
-
-void VideoEncoderSoftwareFallbackWrapper::OnLossNotification(
-    const LossNotification& loss_notification) {
-  loss_notification_ = loss_notification;
-  current_encoder()->OnLossNotification(loss_notification);
 }
 
 VideoEncoder::EncoderInfo VideoEncoderSoftwareFallbackWrapper::GetEncoderInfo()

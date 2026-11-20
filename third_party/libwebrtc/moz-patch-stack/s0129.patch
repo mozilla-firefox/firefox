@@ -9,7 +9,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/f1981bae2720ec808
  1 file changed, 8 insertions(+), 12 deletions(-)
 
 diff --git a/video/video_stream_encoder.cc b/video/video_stream_encoder.cc
-index d628d681fc..5608171513 100644
+index 1c3252ffe2..7af3144723 100644
 --- a/video/video_stream_encoder.cc
 +++ b/video/video_stream_encoder.cc
 @@ -846,13 +846,11 @@ void VideoStreamEncoder::AddAdaptationResource(
