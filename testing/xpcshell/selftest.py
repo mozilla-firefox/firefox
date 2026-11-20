@@ -21,6 +21,8 @@ import mozfile
 import mozinfo
 import six
 from mozlog import structured
+from mozlog.formatters import JSONFormatter
+from mozlog.handlers import StreamHandler
 from runxpcshelltests import XPCShellTests
 
 TEST_PASS_STRING = "TEST-PASS"
@@ -1290,6 +1292,33 @@ add_test({
         self.assertTestResult(False, retry=True, verify=True)
         self.assertEqual(1, self.x.failCount)
         self.assertNotInLog("will retry")
+
+    def testVerify(self):
+        """
+        Check that --verify logs a group for each test.
+        """
+        self.writeFile("test_basic.js", SIMPLE_PASSING_TEST)
+        self.writeFile("test_add_test_simple.js", ADD_TEST_SIMPLE)
+        self.writeManifest(["test_basic.js", "test_add_test_simple.js"])
+        raw = six.StringIO()
+        self.x.log.add_handler(StreamHandler(raw, JSONFormatter()))
+
+        self.assertTestResult(True, verify=True)
+        records = [json.loads(l) for l in raw.getvalue().splitlines()]
+        groups = [
+            (r["action"], r["name"])
+            for r in records
+            if r["action"] in ("group_start", "group_end")
+            and r["name"].endswith(" --verify")
+        ]
+        self.assertEqual(
+            [
+                (action, f"{test} --verify")
+                for test in ("test_basic.js", "test_add_test_simple.js")
+                for action in ("group_start", "group_end")
+            ],
+            [(action, os.path.basename(name)) for action, name in groups],
+        )
 
     def testCrashWithRetry(self):
         """

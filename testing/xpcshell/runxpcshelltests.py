@@ -2642,6 +2642,8 @@ class XPCShellTests:
             startTime = datetime.now()
             maxTime = timedelta(seconds=options["verifyMaxTime"])
             for test_object in self.alltests:
+                test_group = f"{test_object['id']} --verify"
+                self.log.group_start(name=test_group)
                 stepResults = {}
                 for descr, step in steps:
                     stepResults[descr] = "not run / incomplete"
@@ -2684,6 +2686,7 @@ class XPCShellTests:
                 self.log.info(":::")
                 self.log.info("::: Test verification %s" % finalResult)
                 self.log.info(":::")
+                self.log.group_end(name=test_group)
 
         self.shutdownNode()
         self.shutdownHttp3Server()
