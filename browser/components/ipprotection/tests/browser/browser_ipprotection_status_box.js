@@ -708,3 +708,106 @@ add_task(async function test_catastrophic_error_excluded_site_vpn_on() {
   await closePanel();
   await SpecialPowers.popPrefEnv();
 });
+
+/**
+ * Tests that the trying again state keeps the error's buttons, disabled.
+ */
+add_task(async function test_trying_again_disables_error_buttons() {
+  for (let isDefaultMode of [false, true]) {
+    let content = await openPanel({
+      unauthenticated: false,
+      error: ERRORS.GENERIC,
+      isDefaultMode,
+      isRetrying: true,
+    });
+
+    let statusBox = content.statusBoxEl;
+    Assert.equal(
+      statusBox.titleEl.getAttribute("data-l10n-id"),
+      "ipprotection-connection-status-trying-again-title",
+      "Title should say the VPN is trying again"
+    );
+    Assert.ok(!statusBox.descriptionEl, "Description should not be shown");
+    await checkStatusBoxAriaLabel(statusBox);
+
+    Assert.ok(
+      content.tryAgainButtonEl.disabled,
+      "Try again button should be disabled"
+    );
+    if (isDefaultMode) {
+      Assert.ok(
+        content.continueWithoutVpnButtonEl.disabled,
+        "Continue without VPN button should be disabled"
+      );
+    } else {
+      Assert.ok(
+        !content.continueWithoutVpnButtonEl,
+        "Continue without VPN button should not be present"
+      );
+    }
+
+    await closePanel();
+  }
+  await setPanelState({ isRetrying: false });
+});
+
+/**
+ * Tests that clicking Try again shows the trying again state until the
+ * retry fails, then returns to the error.
+ */
+add_task(async function test_try_again_shows_trying_again_until_failure() {
+  const sandbox = sinon.createSandbox();
+  let { promise, resolve } = Promise.withResolvers();
+  let startStub = sandbox.stub(IPPProxyManager, "start").returns(promise);
+
+  let content = await openPanel({
+    unauthenticated: false,
+    error: ERRORS.GENERIC,
+    isDefaultMode: true,
+  });
+
+  content.tryAgainButtonEl.click();
+  await TestUtils.waitForCondition(
+    () => startStub.called,
+    "Retrying should try to start the proxy"
+  );
+  await content.updateComplete;
+
+  Assert.equal(
+    content.statusBoxEl.titleEl.getAttribute("data-l10n-id"),
+    "ipprotection-connection-status-trying-again-title",
+    "Title should say the VPN is trying again while retrying"
+  );
+  Assert.ok(
+    content.tryAgainButtonEl.disabled,
+    "Try again button should be disabled while retrying"
+  );
+  Assert.ok(
+    content.continueWithoutVpnButtonEl.disabled,
+    "Continue without VPN button should be disabled while retrying"
+  );
+
+  resolve({ error: ERRORS.GENERIC });
+  await TestUtils.waitForCondition(
+    () => !content.state.isRetrying,
+    "Retry should finish"
+  );
+  await content.updateComplete;
+
+  Assert.equal(
+    content.statusBoxEl.titleEl.getAttribute("data-l10n-id"),
+    "ipprotection-connection-status-blocked-error-title-1",
+    "Title should return to the error after the retry fails"
+  );
+  Assert.ok(
+    !content.tryAgainButtonEl.disabled,
+    "Try again button should be enabled after the retry fails"
+  );
+  Assert.ok(
+    !content.continueWithoutVpnButtonEl.disabled,
+    "Continue without VPN button should be enabled after the retry fails"
+  );
+
+  await closePanel();
+  sandbox.restore();
+});

@@ -533,6 +533,7 @@ export default class IPProtectionContentElement extends MozLitElement {
       "chrome://browser/content/ipprotection/assets/states/ipprotection-error.svg";
     let supportSlug = null;
     let showButtons = true;
+    const isRetrying = !!this.state.isRetrying;
 
     if (isNetworkError) {
       headerL10nId = "ipprotection-connection-status-network-error-title-1";
@@ -550,6 +551,11 @@ export default class IPProtectionContentElement extends MozLitElement {
       showButtons = false;
       imageSrc = null;
       supportSlug = LINKS.NO_ACCESS_SUPPORT_SLUG;
+    }
+
+    if (isRetrying) {
+      headerL10nId = "ipprotection-connection-status-trying-again-title";
+      descriptionL10nId = null;
     }
 
     return html`
@@ -576,6 +582,7 @@ export default class IPProtectionContentElement extends MozLitElement {
                 slot="action"
                 type="primary"
                 data-l10n-id="ipprotection-connection-status-try-again-button"
+                ?disabled=${isRetrying}
                 @click=${this.handleTryAgain}
                 closemenu="none"
               ></moz-button>
@@ -589,6 +596,7 @@ export default class IPProtectionContentElement extends MozLitElement {
                 type="secondary"
                 class="toolbarbutton"
                 data-l10n-id="ipprotection-connection-error-continue-without-vpn"
+                ?disabled=${isRetrying}
                 @click=${this.handleToggleOff}
                 closemenu="none"
               ></moz-button>

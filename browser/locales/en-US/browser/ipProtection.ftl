@@ -274,6 +274,9 @@ upgrade-vpn-button = Try { -mozilla-vpn-brand-name }
 ipprotection-connection-status-try-again-button = Try again
 # Label for button that causes the VPN to deactivate the VPN (but any site inclusions continue to use the VPN)
 ipprotection-connection-error-continue-without-vpn = Continue without VPN
+# Shown in place of the error title while the VPN tries to connect again
+ipprotection-connection-status-trying-again-title = Trying again…
+  .aria-label = Trying again…
 
 ipprotection-connection-status-network-error-title-1 = Check your internet connection
   .aria-label = Check your internet connection
