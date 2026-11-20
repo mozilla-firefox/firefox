@@ -705,6 +705,23 @@ def test_general_perf_testing_selects_safari_video_playback_latency():
     assert _raptor_label(vpl_safari, _MACOS) in selected
 
 
+def test_perf_crons_skip_ab_profiles_tasks():
+    platform = "windows11-64-24h2-shippable/opt"
+    car = _raptor_task("browsertime-benchmark-custom-car-speedometer3", platform)
+    ab = _raptor_task(
+        "browsertime-benchmark-firefox-speedometer3-native-profiling-vs-custom-car",
+        platform,
+    )
+    ab.attributes["ab_profiles"] = True
+    graph = TaskGraph(
+        {t.label: t for t in (car, ab)},
+        Graph(nodes={car.label, ab.label}, edges=set()),
+    )
+
+    assert set(get_method("custom-car_perf_testing")(graph, {}, {})) == {car.label}
+    assert ab.label not in _general_perf_selection(car, ab)
+
+
 def test_perftest_applink_profiling_selects_only_the_applink_tasks():
     """Only the applink startup tasks are selected, the perftest transforms
     then run them with profiling enabled."""

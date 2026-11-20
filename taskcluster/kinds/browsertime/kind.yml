@@ -13,6 +13,7 @@ kind-dependencies:
 transforms:
     - gecko_taskgraph.transforms.test:transforms
     - gecko_taskgraph.transforms.job:transforms
+    - gecko_taskgraph.transforms.raptor_ab:transforms
     - gecko_taskgraph.transforms.task:transforms
 
 # Adding a new test type or running tests on a new platform? Be sure to review

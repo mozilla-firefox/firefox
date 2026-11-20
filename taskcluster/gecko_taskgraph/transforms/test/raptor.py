@@ -844,6 +844,32 @@ def handle_native_profiling_symbol(config, tests):
         yield test
 
 
+@transforms.add
+def mark_ab_profiles_support(config, tests):
+    """Mark the tasks that an AB task can be derived from.
+
+    An AB task reuses one of these task definitions to run the test twice on
+    the same machine, so that the two profiles can be compared without the
+    machine-to-machine differences that separate tasks suffer from. See
+    ``mozharness/mozilla/testing/raptor_ab.py``.
+
+    Simpleperf is left out on purpose: ``simpleperf.py`` extracts symbols to a
+    directory beside the zip that ``raptor_ab.py`` swaps between runs, so the
+    second run would symbolicate against the first run's symbols.
+    """
+    profiling_args = ("--etw-profile", "--samply-profile", "--perf-profile")
+
+    for test in tests:
+        extra_options = test.get("mozharness", {}).get("extra-options", [])
+        if (
+            any(arg in extra_options for arg in profiling_args)
+            and test.get("app") == "firefox"
+            and uses_speedometer_3_harness(test)
+        ):
+            test.setdefault("attributes", {})["supports_ab_profiles"] = True
+        yield test
+
+
 @task_transforms.add
 def setup_native_profiling_autoland_retriggers(config, tasks):
     for task in tasks:

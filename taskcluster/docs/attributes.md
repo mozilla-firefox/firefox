@@ -181,6 +181,16 @@ This is the name used to refer to a raptor job via try syntax.
 This is the name used to refer to a "job" via try syntax (`-j`). Note that for
 some kinds, `-j` also matches against `build_platform`.
 
+## ab_profiles
+
+Set on the performance test tasks that run the test twice on one machine, for
+two builds or two browsers. The perf cron targets skip these tasks.
+
+## supports_ab_profiles
+
+Set on the performance test tasks that an AB task can be derived from. An AB
+task reuses such a task's definition to run the test twice on one machine.
+
 ## test_chunk
 
 This is the chunk number of a chunked test suite. Note that this is a string!
