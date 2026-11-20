@@ -51,8 +51,8 @@ class AutoIndent:
     def write(self, string):
         """A smart write function which automatically adjusts the
         indentation of each line as it is written by counting braces"""
-        for s in string.split("\n"):
-            s = s.strip()
+        for line in string.split("\n"):
+            s = line.strip()
             indent = self.indent
             if len(s) == 0:
                 indent = 0

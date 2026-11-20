@@ -242,6 +242,8 @@ class Location:
         self._lexdata = lexer.lexdata
         self._file = getattr(lexer, "filename", "<unknown>")
 
+    __hash__ = None
+
     def __eq__(self, other):
         return self._lexpos == other._lexpos and self._file == other._file
 
@@ -526,6 +528,8 @@ class Typedef:
         self.location = location
         self.doccomments = doccomments
 
+    __hash__ = None
+
     def __eq__(self, other):
         return self.name == other.name and self.type == other.type
 
@@ -560,6 +564,8 @@ class Forward:
         self.name = name
         self.location = location
         self.doccomments = doccomments
+
+    __hash__ = None
 
     def __eq__(self, other):
         return other.kind == "forward" and other.name == self.name
@@ -637,6 +643,8 @@ class Native:
                     self.nativename = self.specialtypes[attr_name]
             else:
                 raise IDLError("Unexpected attribute", aloc)
+
+    __hash__ = None
 
     def __eq__(self, other):
         return (
@@ -799,6 +807,8 @@ class WebIDL:
         self.name = name
         self.location = location
 
+    __hash__ = None
+
     def __eq__(self, other):
         return other.kind == "webidl" and self.name == other.name
 
@@ -859,6 +869,8 @@ class Interface:
         for m in members:
             if not isinstance(m, CDATA):
                 self.namemap.set(m)
+
+    __hash__ = None
 
     def __eq__(self, other):
         return self.name == other.name and self.location == other.location
