@@ -421,9 +421,9 @@ class Http3Session final : public Http3SessionBase,
 
   RefPtr<NeqoHttp3Conn> mHttp3Connection;
   RefPtr<nsAHttpConnection> mConnection;
-  // We need an extra map to store the mapping of WebTransportSession and
-  // WebTransportStreams to handle the case that a stream is already removed
-  // from mStreamIdHash and we still need the WebTransportSession.
+  // Maps a WebTransport stream to its session, so a RESET_STREAM or
+  // STOP_SENDING for a stream can be reported to the session.  Entries live
+  // as long as the stream is in mStreamIdHash.
   nsTHashMap<nsUint64HashKey, uint64_t> mWebTransportStreamToSessionMap;
   nsRefPtrHashtable<nsUint64HashKey, Http3StreamBase> mStreamIdHash;
   nsRefPtrHashtable<nsPtrHashKey<nsAHttpTransaction>, Http3StreamBase>
