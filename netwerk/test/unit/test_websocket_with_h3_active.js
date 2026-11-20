@@ -3,6 +3,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 "use strict";
 
+const { NodeWebSocketHttp2Server } = ChromeUtils.importESModule(
+  "resource://testing-common/NodeServer.sys.mjs"
+);
+
 registerCleanupFunction(async () => {
   http3_clear_prefs();
 });
@@ -11,9 +15,12 @@ let wssUri;
 let httpsUri;
 
 add_task(async function pre_setup() {
-  let h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
+  let server = new NodeWebSocketHttp2Server();
+  await server.start();
+  registerCleanupFunction(async () => {
+    await server.stop();
+  });
+  let h2Port = server.port();
 
   wssUri = "wss://foo.example.com:" + h2Port + "/websocket";
   httpsUri = "https://foo.example.com:" + h2Port + "/";
