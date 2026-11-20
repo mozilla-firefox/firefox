@@ -22,6 +22,5 @@ static_prefs = { path = "../../../../modules/libpref/init/static_prefs" }
 storage_variant = { path = "../../../../storage/variant" }
 tempfile = "3"
 thin-vec = { version = "0.2.1", features = ["gecko-ffi"] }
-time = "0.3"
 wr_malloc_size_of = { path = "../../../../gfx/wr/wr_malloc_size_of" }
 xpcom = { path = "../../../../xpcom/rust/xpcom" }

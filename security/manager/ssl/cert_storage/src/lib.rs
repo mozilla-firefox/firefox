@@ -17,7 +17,6 @@ extern crate nsstring;
 extern crate rkv;
 extern crate sha2;
 extern crate thin_vec;
-extern crate time;
 #[macro_use]
 extern crate xpcom;
 extern crate storage_variant;
