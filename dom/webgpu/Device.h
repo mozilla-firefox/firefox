@@ -202,6 +202,16 @@ void reportCompilationMessagesToConsole(
     const RefPtr<ShaderModule>& aShaderModule,
     const nsTArray<WebGPUCompilationMessage>& aMessages);
 
+// A device's GPU-side resources are freed only when its id is dropped, which
+// waits for its `GPUDevice` to be garbage collected, even if it has been
+// destroyed. Each device is expensive: on D3D12, for example, its
+// shader-visible descriptor heap alone holds 1,000,000 descriptors, around 32
+// MiB. To encourage garbage collection of unused devices before they exhaust
+// GPU memory, we associate a comparable amount of memory with each device.
+inline size_t BindingJSObjectMallocBytes(Device* aDevice) {
+  return 32 * 1024 * 1024;
+}
+
 }  // namespace webgpu
 }  // namespace mozilla
 
