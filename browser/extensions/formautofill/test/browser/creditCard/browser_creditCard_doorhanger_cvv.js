@@ -230,7 +230,7 @@ add_task(async function test_save_doorhanger_content() {
     );
     ok(
       content.querySelector(".payments-doorhanger-options-button"),
-      "The edit button is shown"
+      "The options button is shown"
     );
 
     const toggle = content.querySelector("moz-toggle");
@@ -696,7 +696,7 @@ async function checkPlainUpdateContent(content, { withSecurityCode }) {
   );
   ok(
     content.querySelector(".payments-doorhanger-options-button"),
-    "The edit button is shown"
+    "The options button is shown"
   );
   is(
     cardDetailsL10nId(content),
@@ -841,7 +841,7 @@ async function checkSecurityCodeUpdateContent(content) {
   );
   ok(
     content.querySelector(".payments-doorhanger-options-button"),
-    "The edit button is shown"
+    "The options button is shown"
   );
 
   const toggle = content.querySelector("moz-toggle");

@@ -1171,7 +1171,7 @@ export class CreditCardSaveDoorhanger extends AutofillDoorhanger {
     const button = this.doc.createElement("moz-button");
     button.className = "payments-doorhanger-options-button";
     button.setAttribute("type", "icon");
-    button.setAttribute("iconsrc", "chrome://global/skin/icons/edit.svg");
+    button.setAttribute("iconsrc", "chrome://global/skin/icons/settings.svg");
     this.doc.l10n.setAttributes(
       button,
       "credit-card-doorhanger-options-button"
