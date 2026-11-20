@@ -404,46 +404,47 @@ add_task(async function test_fetchHighlights_chronological_order() {
   let sandbox = sinon.createSandbox();
   let feed = getHighlightsFeedForTest(sandbox);
 
+  let now = Date.now();
   let links = [
     {
       url: "https://site0.com",
       type: "bookmark",
       bookmarkGuid: "1234",
-      date_added: Date.now() - 80,
+      date_added: now - 80,
     }, // 3rd newest
     {
       url: "https://site1.com",
       type: "history",
       bookmarkGuid: "1234",
-      date_added: Date.now() - 60,
+      date_added: now - 60,
     }, // append at the end
     {
       url: "https://site2.com",
       type: "history",
-      date_added: Date.now() - 160,
+      date_added: now - 160,
     }, // append at the end
     {
       url: "https://site3.com",
       type: "history",
-      date_added: Date.now() - 60,
+      date_added: now - 60,
     }, // append at the end
     {
       url: "https://site4.com",
       type: "bookmark",
       bookmarkGuid: "1234",
-      date_added: Date.now(),
+      date_added: now,
     }, // newest highlight
     {
       url: "https://site5.com",
       type: "bookmark",
       bookmarkGuid: "12345",
-      date_added: Date.now() - 100,
+      date_added: now - 100,
     }, // 4th newest
     {
       url: "https://site6.com",
       type: "bookmark",
       bookmarkGuid: "1234",
-      date_added: Date.now() - 40,
+      date_added: now - 40,
     }, // 2nd newest
   ];
   let expectedChronological = [4, 6, 0, 5];
