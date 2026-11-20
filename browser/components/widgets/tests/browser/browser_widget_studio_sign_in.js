@@ -25,9 +25,11 @@ add_task(async function test_signed_out_shows_prompt() {
   const title = prompt.querySelector("#sign-in-title");
   const button = prompt.querySelector("#sign-in-button");
   const learnMore = prompt.querySelector("#sign-in-learn-more");
-  const illustration = prompt.querySelector("#sign-in-illustration");
+  const description = prompt.querySelector("#sign-in-description");
+  const exampleHeading = prompt.querySelector("#sign-in-example-heading");
+  const kit = prompt.querySelector("#sign-in-kit");
   await TestUtils.waitForCondition(
-    () => illustration.complete && illustration.naturalWidth > 0,
+    () => kit.complete && kit.naturalWidth > 0,
     "The Kit image loads"
   );
   is(
@@ -36,10 +38,40 @@ add_task(async function test_signed_out_shows_prompt() {
     "The title is translated"
   );
   is(button.label, "Sign in", "The button label is translated");
-  is(illustration.getAttribute("alt"), "", "The image is decorative");
+  is(
+    description.textContent,
+    "Build helpful tools for your homepage or sidebar.",
+    "The description is translated"
+  );
+  is(
+    exampleHeading.textContent,
+    "Describe your widget. Watch it appear.",
+    "The example heading is translated"
+  );
+  is(
+    prompt.querySelector("#sign-in-calendar strong").textContent,
+    "Morning workout streak: 4 days",
+    "The calendar title is translated with its streak count"
+  );
+  is(
+    Array.from(
+      prompt.querySelectorAll("#sign-in-calendar-weekdays span"),
+      span => span.textContent
+    ).join(""),
+    "SMTWTFS",
+    "The calendar shows the weekday initials, starting on Sunday"
+  );
+  is(kit.getAttribute("alt"), "", "The image is decorative");
+  for (const id of ["#sign-in-example-prompt", "#sign-in-illustration"]) {
+    is(
+      prompt.querySelector(id).getAttribute("aria-hidden"),
+      "true",
+      `${id} is hidden from assistive technology`
+    );
+  }
   ok(
-    learnMore.href.endsWith("firefox-new-tab-widgets"),
-    "The learn-more link opens the widgets support page"
+    learnMore.href.endsWith("firefox-custom-widgets"),
+    "The learn-more link opens the custom widgets support page"
   );
   ok(
     panel.shadowRoot.querySelector("slot"),
@@ -58,8 +90,8 @@ add_task(async function test_learn_more_opens_support_page() {
     ok(openTrustedLinkIn.calledOnce, "Clicking Learn more opens a link");
     const [url, where] = openTrustedLinkIn.firstCall.args;
     ok(
-      url.endsWith("firefox-new-tab-widgets"),
-      "The link is the widgets support page"
+      url.endsWith("firefox-custom-widgets"),
+      "The link is the custom widgets support page"
     );
     is(where, "tab", "The page opens in a new tab");
   } finally {

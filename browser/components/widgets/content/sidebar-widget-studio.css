@@ -51,61 +51,174 @@ widget-composer {
 #sign-in-prompt {
   --sign-in-background-color: light-dark(var(--color-violet-desaturated-10, var(--panel-background-color)), var(--panel-background-color));
 
-  display: grid;
-  grid-template-areas:
-    "title title"
-    "button button"
-    "image link";
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: auto auto 1fr;
-  gap: var(--space-medium) var(--space-small);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-medium);
   box-sizing: border-box;
   flex-shrink: 0;
   overflow: hidden;
   margin-block-start: calc(var(--space-large) * 2 + var(--size-item-large));
   margin-inline: var(--space-large);
-  padding-block: var(--space-medium) 0;
-  padding-inline: var(--space-medium);
-  border: var(--border-width) dashed var(--border-color);
+  padding-block: var(--space-large) 0;
+  padding-inline: var(--space-large);
+  border: var(--border-width) solid var(--border-color-transparent);
   border-radius: var(--border-radius-large);
   background-color: var(--sign-in-background-color);
   color: var(--text-color);
 
+  @media (prefers-contrast) {
+    border-color: var(--border-color);
+  }
+
   @media (forced-colors) {
-    background-color: var(--background-color-canvas);
+    --sign-in-background-color: var(--background-color-canvas);
+  }
+
+  :where(h1, p) {
+    margin: 0;
   }
 }
 
 #sign-in-title {
-  grid-area: title;
-  margin-block: initial;
   font-size: var(--font-size-large);
   font-weight: var(--font-weight-bold);
   overflow-wrap: anywhere;
 }
 
-#sign-in-button {
-  grid-area: button;
+#sign-in-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-medium);
 }
 
 #sign-in-learn-more {
-  grid-area: link;
-  align-self: end;
-  justify-self: end;
-  text-align: end;
-  padding-block-end: var(--space-medium);
-  font-size: var(--font-size-large);
   color: var(--link-color);
   text-decoration: underline;
-  overflow-wrap: anywhere;
+}
+
+#sign-in-example-heading {
+  margin-block-start: calc(var(--space-small) + var(--space-xxsmall));
+  padding-block-start: var(--space-large);
+  border-block-start: var(--border-width) solid color-mix(in srgb, currentColor 18%, transparent);
+}
+
+#sign-in-example-prompt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-medium);
+  padding: var(--space-medium) var(--space-large);
+  border-radius: var(--border-radius-circle);
+  background-color: color-mix(in srgb, var(--background-color-box) 70%, transparent);
+  color: var(--text-color-deemphasized);
+  user-select: none;
+
+  img {
+    -moz-context-properties: fill;
+    fill: currentColor;
+  }
 }
 
 #sign-in-illustration {
-  grid-area: image;
-  align-self: end;
-  justify-self: start;
-  margin-block-start: calc(var(--space-xxlarge) * 2);
+  --calendar-frame-color: var(--color-pink-40);
+  --calendar-done-background-color: var(--color-violet-50);
+  --calendar-done-text-color: var(--color-white);
+
+  position: relative;
+  margin-block-end: var(--space-medium);
+  margin-inline: calc(var(--space-xsmall) + var(--space-xxsmall));
+  padding: var(--space-small);
+  user-select: none;
+
+  @media (forced-colors) {
+    --calendar-frame-color: var(--border-color);
+  }
+}
+
+/* A CSS border ties dash length to border width, so an SVG rect draws the long, thin dashes. */
+#sign-in-frame {
+  position: absolute;
+  inset: 0;
   inline-size: 100%;
+  block-size: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: var(--calendar-frame-color);
+  stroke-dasharray: 8 4;
+
+  rect {
+    width: 100%;
+    height: 100%;
+    rx: var(--border-radius-large);
+  }
+}
+
+#sign-in-calendar {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-xxsmall);
+  overflow: hidden;
+  padding: var(--space-large);
+  border-radius: var(--border-radius-medium);
+  background-color: var(--background-color-box);
+  font-size: calc(var(--font-size-root) * 0.6);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 40% 0 0;
+    background-image: linear-gradient(transparent, var(--background-color-box) 70%);
+  }
+}
+
+#sign-in-calendar-weekdays,
+#sign-in-calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  justify-items: center;
+  row-gap: var(--space-small);
+}
+
+#sign-in-calendar-weekdays {
+  margin-block-start: var(--space-small);
+  color: var(--text-color-deemphasized);
+}
+
+#sign-in-calendar-days > span {
+  display: grid;
+  place-items: center;
+  inline-size: 100%;
+  max-inline-size: 2.2em;
+  aspect-ratio: 1;
+  border-radius: var(--border-radius-circle);
+
+  &:first-child {
+    grid-column-start: 3;
+  }
+
+  &[data-state="done"] {
+    background-color: var(--calendar-done-background-color);
+    color: var(--calendar-done-text-color);
+    font-weight: var(--font-weight-bold);
+  }
+
+  &[data-state="today"] {
+    border: var(--border-width) solid var(--border-color);
+  }
+
+  &[data-state="upcoming"] {
+    color: var(--text-color-deemphasized);
+  }
+}
+
+#sign-in-kit {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-start: calc(-1 * var(--space-xsmall));
+  inline-size: 50%;
   max-inline-size: var(--size-layout-small);
   block-size: auto;
 }

@@ -57,5 +57,21 @@ experimental-features-custom-widgets-description = Build your own widgets for { 
 ## Prompt shown in Widget Studio when nobody is signed in.
 
 widget-studio-sign-in-title = Sign in to create custom widgets
+widget-studio-sign-in-description = Build helpful tools for your homepage or sidebar.
 widget-studio-sign-in-button =
     .label = Sign in
+widget-studio-sign-in-example-heading = Describe your widget. Watch it appear.
+
+# Example of a prompt, shown as decoration. It is not a text field.
+widget-studio-sign-in-example-prompt = Make a habit tracker with a calendar
+
+# Decoration only: a small preview of a habit tracker widget.
+# Variables:
+#   $days (number) - Number of days in a row the habit was completed.
+widget-studio-sign-in-calendar-title =
+    { $days ->
+        [one] Morning workout streak: { $days } day
+       *[other] Morning workout streak: { $days } days
+    }
+# Decoration only: the period the habit tracker preview shows.
+widget-studio-sign-in-calendar-period = This month
