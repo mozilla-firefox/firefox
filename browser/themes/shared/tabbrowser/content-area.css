@@ -538,6 +538,7 @@
         content: "";
         position: absolute;
         inset: 0;
+        z-index: 1;
         pointer-events: none;
         border-radius: var(--border-radius-medium);
         outline: var(--focus-outline);
