@@ -90,6 +90,9 @@ prefs = [
 ["browser_103_cleanup.js"]
 support-files = ["103_cleanup.sjs"]
 
+["browser_103_coep_credentialless.js"]
+support-files = ["early_hint_coep_credentialless.sjs"]
+
 ["browser_103_csp.js"]
 support-files = ["early_hint_preload_test_helper.sys.mjs",]
 
