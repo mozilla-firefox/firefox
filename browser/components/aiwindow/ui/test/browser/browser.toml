@@ -176,10 +176,6 @@ skip-if = [
 
 ["browser_aiwindow_memories_toggle_prefs.js"]
 
-["browser_aiwindow_monitor_button.js"]
-
-["browser_aiwindow_monitor_button_panel.js"]
-
 ["browser_aiwindow_monitor_create.js"]
 
 ["browser_aiwindow_monitor_suggest_chat.js"]

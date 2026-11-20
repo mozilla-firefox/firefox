@@ -1,11 +1,26 @@
 [DEFAULT]
-prefs = [
-  "browser.newtab.preload=false",
-  "browser.smartwindow.endpoint=http://localhost:0/v1",
+# Panel animations take about half of these files' runtime.
+prefs = ["ui.prefersReducedMotion=1"]
+support-files = [
+  "head.js",
+  "!/browser/components/aiwindow/ui/test/browser/head.js",
 ]
+
+["browser_tasks_monitor_attention.js"]
+
+["browser_tasks_monitor_button.js"]
+
+["browser_tasks_monitor_groups.js"]
 support-files = [
   "test_monitors_display_page.html",
   "test_monitors_display.mjs",
 ]
 
-["browser_tasks_monitor_groups.js"]
+["browser_tasks_monitor_panel.js"]
+
+["browser_tasks_monitor_panel_create.js"]
+support-files = [
+  "!/browser/components/aiwindow/ui/test/browser/test_context_url_page.html",
+]
+
+["browser_tasks_monitor_panel_rows.js"]
