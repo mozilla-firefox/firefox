@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.isVisible
+import androidx.fragment.app.FragmentActivity
 import io.mockk.Called
 import io.mockk.Runs
 import io.mockk.every
@@ -29,6 +30,7 @@ import mozilla.components.concept.engine.permission.SitePermissions
 import mozilla.components.feature.contextmenu.ContextMenuCandidate
 import mozilla.components.ui.widgets.VerticalSwipeRefreshLayout
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Test
 import org.mozilla.fenix.R
@@ -42,6 +44,7 @@ import org.mozilla.fenix.components.toolbar.ToolbarPosition
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.microsurvey.MicrosurveyState
 import org.mozilla.fenix.microsurvey.ui.ext.MicrosurveyUIData
+import org.mozilla.fenix.settings.biometric.AutomotiveSensitiveDataAuthenticator
 import org.mozilla.fenix.utils.Settings
 
 class BaseBrowserFragmentTest {
@@ -846,6 +849,60 @@ class BaseBrowserFragmentTest {
 
         verify { settings.openLinksInExternalApp = "apps_always" }
         verify { settings.openLinksInYoutube = "youtube_always" }
+    }
+
+    @Test
+    fun `WHEN a login is selected and the user authenticates THEN the login is filled`() {
+        val authenticator = FakeSensitiveDataAuthenticator()
+        val activity = mockk<FragmentActivity>()
+        every { fragment.requireActivity() } returns activity
+        fragment.sensitiveDataAuthenticator = authenticator
+        var confirmed = false
+        var dismissed = false
+
+        fragment.authenticateBeforeFillingLogin(onConfirm = { confirmed = true }, onDismiss = { dismissed = true })
+
+        assertSame(activity, authenticator.activity)
+        assertFalse(confirmed)
+
+        authenticator.onAuthenticated()
+
+        assertTrue(confirmed)
+        assertFalse(dismissed)
+    }
+
+    @Test
+    fun `WHEN a login is selected and authentication is blocked THEN the login is not filled`() {
+        val authenticator = FakeSensitiveDataAuthenticator()
+        every { fragment.requireActivity() } returns mockk()
+        fragment.sensitiveDataAuthenticator = authenticator
+        var confirmed = false
+        var dismissed = false
+
+        fragment.authenticateBeforeFillingLogin(onConfirm = { confirmed = true }, onDismiss = { dismissed = true })
+        authenticator.onBlocked()
+
+        assertFalse(confirmed)
+        assertTrue(dismissed)
+    }
+}
+
+private class FakeSensitiveDataAuthenticator : AutomotiveSensitiveDataAuthenticator {
+    var activity: FragmentActivity? = null
+    var onAuthenticated: () -> Unit = {}
+    var onBlocked: () -> Unit = {}
+
+    override fun isRequired(context: Context) = true
+
+    override fun authenticate(
+        activity: FragmentActivity,
+        title: String,
+        onAuthenticated: () -> Unit,
+        onBlocked: () -> Unit,
+    ) {
+        this.activity = activity
+        this.onAuthenticated = onAuthenticated
+        this.onBlocked = onBlocked
     }
 }
 

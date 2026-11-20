@@ -351,6 +351,27 @@ class SettingsTest {
     }
 
     @Test
+    fun `WHEN login autofill is enabled or disabled THEN logins are filled without a prompt accordingly`() {
+        assertTrue(settings.shouldAutofillLoginsWithoutPrompt)
+
+        settings.shouldAutofillLogins = false
+
+        assertFalse(settings.shouldAutofillLoginsWithoutPrompt)
+    }
+
+    @Test
+    fun `GIVEN Android Automotive and the sensitive data feature is enabled WHEN login autofill is enabled THEN logins are not filled without a prompt`() {
+        shadowOf(testContext.packageManager).setSystemFeature(PackageManager.FEATURE_AUTOMOTIVE, true)
+        FxNimbus.features.automotiveSensitiveData.withCachedValue(AutomotiveSensitiveData(enabled = true))
+        val automotiveSettings = Settings(testContext)
+
+        assertTrue(automotiveSettings.shouldAutofillLogins)
+        assertFalse(automotiveSettings.shouldAutofillLoginsWithoutPrompt)
+
+        FxNimbus.features.automotiveSensitiveData.withCachedValue(null)
+    }
+
+    @Test
     fun fontSizeFactor() {
         // When just created
         // Then

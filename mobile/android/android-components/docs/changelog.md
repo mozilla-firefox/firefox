@@ -5,6 +5,8 @@ permalink: /changelog/
 ---
 
 # 163.0 (In Development)
+* **feature-prompts**
+    * Added `LoginDelegate.onSelectLogin`, invoked when a login is selected from the select login prompt before it is filled, e.g. to ask the user to authenticate first. [Bug 2081840](https://bugzilla.mozilla.org/show_bug.cgi?id=2081840)
 
 # 162.0
 * **concept-engine**

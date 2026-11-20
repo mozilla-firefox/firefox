@@ -1994,6 +1994,14 @@ class Settings(
         )
 
     /**
+     * Whether the engine can fill a saved login without the user selecting it, e.g. when the page loads. Always false
+     * on Android Automotive OS, where the user has to authenticate before a password is filled, so logins can only be
+     * filled from the select login prompt.
+     */
+    val shouldAutofillLoginsWithoutPrompt: Boolean
+        get() = shouldAutofillLogins && !appContext.isAndroidAutomotiveAvailable()
+
+    /**
      * In Bug 1853113, we changed the type of [searchWidgetInstalled] from int to boolean without changing the pref key,
      * now we have to migrate users that were using the previous type int to the new one boolean. The migration will
      * only happens if pref_key_search_widget_installed is detected.

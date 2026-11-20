@@ -182,7 +182,7 @@ class Core(
                 fontInflationEnabled = context.components.settings.shouldUseAutoSize,
                 suspendMediaWhenInactive = false,
                 forceUserScalableContent = context.components.settings.forceEnableZoom,
-                loginAutofillEnabled = context.components.settings.shouldAutofillLogins,
+                loginAutofillEnabled = context.components.settings.shouldAutofillLoginsWithoutPrompt,
                 creditCardSecurityCodeEnabled = context.components.settings.isCreditCardSecurityCodeEnabled,
                 enterpriseRootsEnabled = context.components.settings.allowThirdPartyRootCerts,
                 clearColor =

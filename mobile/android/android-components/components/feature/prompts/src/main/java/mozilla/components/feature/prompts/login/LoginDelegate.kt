@@ -16,4 +16,12 @@ interface LoginDelegate {
     /** Callback invoked when a user selects "Manage logins" from the select login prompt. */
     val onManageLogins: () -> Unit
         get() = {}
+
+    /**
+     * Callback invoked when a user selects a login from the select login prompt, before it is filled. Invoke
+     * `onConfirm` to fill the login, or `onDismiss` to dismiss the prompt without filling it. The login is filled right
+     * away by default.
+     */
+    val onSelectLogin: (onConfirm: () -> Unit, onDismiss: () -> Unit) -> Unit
+        get() = { onConfirm, _ -> onConfirm() }
 }

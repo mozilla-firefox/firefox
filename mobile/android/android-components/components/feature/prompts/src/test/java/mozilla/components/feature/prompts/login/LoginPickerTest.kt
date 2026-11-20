@@ -17,6 +17,8 @@ import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -92,6 +94,96 @@ class LoginPickerTest {
 
         assertEquals(confirmedLogin, login)
         verify(loginSelectBar).hidePrompt()
+    }
+
+    @Test
+    fun `WHEN a login is selected THEN it is only filled once the select login callback confirms it`() {
+        val selectedSession = prepareSelectedSession(request)
+        var onConfirm: () -> Unit = {}
+        loginPicker =
+            LoginPicker(store, loginSelectBar, onManageLogins, selectedSession.id) { confirm, _ -> onConfirm = confirm }
+
+        loginPicker.handleSelectLoginRequest(request)
+        loginPicker.onOptionSelect(login)
+
+        verify(loginSelectBar).hidePrompt()
+        assertNull(confirmedLogin)
+        assertFalse(onDismissWasCalled)
+
+        onConfirm()
+
+        assertEquals(login, confirmedLogin)
+        assertFalse(onDismissWasCalled)
+    }
+
+    @Test
+    fun `WHEN a login is selected and the select login callback dismisses it THEN nothing is filled`() {
+        val selectedSession = prepareSelectedSession(request)
+        var onDismiss: () -> Unit = {}
+        loginPicker =
+            LoginPicker(store, loginSelectBar, onManageLogins, selectedSession.id) { _, dismiss -> onDismiss = dismiss }
+
+        loginPicker.handleSelectLoginRequest(request)
+        loginPicker.onOptionSelect(login)
+        onDismiss()
+
+        assertNull(confirmedLogin)
+        assertTrue(onDismissWasCalled)
+        captureMiddleware.assertFirstAction(ContentAction.ConsumePromptRequestAction::class) { action ->
+            assertEquals(request, action.promptRequest)
+        }
+    }
+
+    @Test
+    fun `GIVEN the request was replaced before the select login callback confirms WHEN confirming THEN the new request is not filled`() {
+        val selectedSession = prepareSelectedSession(request)
+        var onConfirm: () -> Unit = {}
+        loginPicker =
+            LoginPicker(store, loginSelectBar, onManageLogins, selectedSession.id) { confirm, _ -> onConfirm = confirm }
+        var newRequestConfirmedLogin: Login? = null
+        var newRequestDismissed = false
+        val newRequest =
+            PromptRequest.SelectLoginPrompt(
+                logins = listOf(login2),
+                generatedPassword = null,
+                onConfirm = { newRequestConfirmedLogin = it },
+                onDismiss = { newRequestDismissed = true },
+            )
+
+        loginPicker.handleSelectLoginRequest(request)
+        loginPicker.onOptionSelect(login)
+        prepareSelectedSession(newRequest)
+        onConfirm()
+
+        assertNull(confirmedLogin)
+        assertNull(newRequestConfirmedLogin)
+        assertFalse(newRequestDismissed)
+        captureMiddleware.assertNotDispatched(ContentAction.ConsumePromptRequestAction::class)
+    }
+
+    @Test
+    fun `GIVEN the request was replaced before the select login callback dismisses WHEN dismissing THEN the new request is not dismissed`() {
+        val selectedSession = prepareSelectedSession(request)
+        var onDismiss: () -> Unit = {}
+        loginPicker =
+            LoginPicker(store, loginSelectBar, onManageLogins, selectedSession.id) { _, dismiss -> onDismiss = dismiss }
+        var newRequestDismissed = false
+        val newRequest =
+            PromptRequest.SelectLoginPrompt(
+                logins = listOf(login2),
+                generatedPassword = null,
+                onConfirm = {},
+                onDismiss = { newRequestDismissed = true },
+            )
+
+        loginPicker.handleSelectLoginRequest(request)
+        loginPicker.onOptionSelect(login)
+        prepareSelectedSession(newRequest)
+        onDismiss()
+
+        assertFalse(onDismissWasCalled)
+        assertFalse(newRequestDismissed)
+        captureMiddleware.assertNotDispatched(ContentAction.ConsumePromptRequestAction::class)
     }
 
     @Test
