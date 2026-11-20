@@ -423,9 +423,7 @@ TestRunner._makeIframe = function (url, retry) {
       "Error: Unable to restore focus, expect failures and timeouts."
     );
   }
-  // The chrome harness scrolls #xulharness rather than its window.
-  let scroller = $("xulharness") || document.scrollingElement;
-  scroller.scrollTop = $("indicator").offsetTop;
+  window.scrollTo(0, $("indicator").offsetTop);
   try {
     let urlObj = new URL(url);
     if (TestRunner.xOriginTests) {
