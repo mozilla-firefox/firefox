@@ -492,7 +492,7 @@ impl ReportCrash {
         let memtest_enabled = self.config.run_memtest && self.settings.borrow().test_hardware;
         let mut memtest = self.memtest.borrow_mut();
         if memtest_enabled && memtest.is_none() {
-            *memtest = Memtest::spawn();
+            *memtest = Memtest::spawn(self.config.memtest_kinds.clone());
         } else if !memtest_enabled && memtest.is_some() {
             *memtest = None;
         }

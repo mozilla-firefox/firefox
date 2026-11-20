@@ -121,6 +121,7 @@ fn allocate_memory(mut mem_usize_count: usize) -> Vec<usize> {
 /// Encapsulated logic for launching and interacting with a memory testing process.
 pub mod child {
     use crate::std::{
+        collections::HashMap,
         env,
         mem::ManuallyDrop,
         process::{Child, Command, Stdio},
@@ -136,8 +137,8 @@ pub mod child {
 
     impl Memtest {
         /// Try to start an asynchronous memory test.
-        pub fn spawn() -> Option<Self> {
-            match spawn_memtest() {
+        pub fn spawn(tests: Option<String>) -> Option<Self> {
+            match spawn_memtest(tests) {
                 Ok(child) => Some(Memtest {
                     child: ManuallyDrop::new(child),
                 }),
@@ -178,7 +179,7 @@ pub mod child {
         }
     }
 
-    fn spawn_memtest() -> anyhow::Result<Child> {
+    fn spawn_memtest(tests: Option<String>) -> anyhow::Result<Child> {
         let memsize_mb = 1024;
         let memtest_runner_args = RunnerArgs {
             timeout: Duration::from_secs(3),
@@ -189,6 +190,10 @@ pub mod child {
         };
 
         let curr_exe = env::current_exe().context("failed to get current exe path")?;
+        let mut envs = HashMap::new();
+        if let Some(tests) = tests {
+            envs.insert(ekey!("MEMTEST_KINDS"), tests);
+        }
         Command::new(curr_exe)
             .arg("--memtest")
             .arg(memsize_mb.to_string())
@@ -196,6 +201,7 @@ pub mod child {
                 serde_json::to_string(&memtest_runner_args)
                     .expect("memtest_runner_args conversion to json string should not fail"),
             )
+            .envs(envs)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()

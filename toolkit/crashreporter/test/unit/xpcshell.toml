@@ -63,6 +63,12 @@ run-if = [
 ]
 reason = "Test covering Linux-specific PSI (Pressure Stall Information) annotation"
 
+["test_crash_purevirtual.js"]
+
+["test_crash_rust_panic.js"]
+
+["test_crash_rust_panic_multiline.js"]
+
 ["test_crash_signal_origin_linux.js"]
 run-if = [
   "os == 'linux'",
@@ -75,12 +81,6 @@ run-if = [
 ]
 reason = "Test covering macOS-specific signal handling"
 
-["test_crash_purevirtual.js"]
-
-["test_crash_rust_panic.js"]
-
-["test_crash_rust_panic_multiline.js"]
-
 ["test_crash_stack_overflow.js"]
 run-if = [
   "os == 'linux'",
@@ -89,9 +89,9 @@ reason = "Still broken on macOS and not yet supported on Windows"
 
 ["test_crash_stl.js"]
 run-if = [
-  "debug && !ccov",
-  "os == 'win' && !ccov",
+  "!ccov && debug",
   "os == 'mac' && !ccov",
+  "os == 'win' && !ccov",
 ]
 reason = "STL hardening is enabled on desktop debug, Windows opt, and MacOS opt builds"
 
@@ -160,6 +160,14 @@ reason = "Windows test specific to the x86-64 architecture"
 ["test_crashreporter.js"]
 
 ["test_crashreporter_crash.js"]
+
+["test_crashreporter_memtest.js"]
+requesttimeoutfactor = 3 # Slow on Windows
+run-if = [
+  "os == 'win'",
+  "os == 'linux'",
+]
+reason = "Launching the crash reporter client from xpcshell doesn't work on macOS"
 
 ["test_crashreporter_omnijar_loading.js"]
 
