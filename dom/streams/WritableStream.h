@@ -195,6 +195,12 @@ class WritableStream : public nsISupports, public nsWrapperCache {
   MOZ_CAN_RUN_SCRIPT already_AddRefed<Promise> AbortNative(
       JSContext* aCx, JS::Handle<JS::Value> aReason, ErrorResult& aRv);
 
+  // https://streams.spec.whatwg.org/#writablestream-close
+  // Unlike the IDL Close() below, this assumes that the caller owns the stream
+  // and can close it even if there's an active writer.
+  MOZ_CAN_RUN_SCRIPT already_AddRefed<Promise> CloseNative(JSContext* aCx,
+                                                           ErrorResult& aRv);
+
   // IDL layer functions
 
   nsIGlobalObject* GetParentObject() const { return mGlobal; }

@@ -825,4 +825,26 @@ already_AddRefed<Promise> WritableStream::AbortNative(
   return WritableStreamAbort(aCx, this, aReason, aRv);
 }
 
+// https://streams.spec.whatwg.org/#writablestream-close
+// To close a WritableStream stream, return ! WritableStreamClose(stream).
+already_AddRefed<Promise> WritableStream::CloseNative(JSContext* aCx,
+                                                      ErrorResult& aRv) {
+  RefPtr<WritableStream> thisRefPtr = this;
+  RefPtr<Promise> promise = WritableStreamClose(aCx, thisRefPtr, aRv);
+  if (aRv.IsUncatchableException()) {
+    return nullptr;
+  }
+  if (aRv.Failed()) {
+    promise = Promise::CreateRejectedWithErrorResult(GetParentObject(), aRv);
+  }
+  // No caller of a Native method is script, so none will ever attach a
+  // handler to this promise themselves; mark it handled here so a rejection
+  // isn't reported as unhandled.  Not required by the Streams spec yet; see
+  // https://github.com/whatwg/streams/issues/1384.
+  if (promise) {
+    (void)promise->SetAnyPromiseIsHandled();
+  }
+  return promise.forget();
+}
+
 }  // namespace mozilla::dom

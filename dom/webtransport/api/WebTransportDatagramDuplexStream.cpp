@@ -789,15 +789,42 @@ WebTransportDatagramDuplexStream::Cleanup() {
   return writables;
 }
 
-void WebTransportDatagramDuplexStream::ErrorWritables(
+// static
+void WebTransportDatagramDuplexStream::CloseOrErrorWritable(
+    JSContext* aCx, WritableStream* aWritable, bool aClean,
+    JS::Handle<JS::Value> aErrorValue) {
+  if (!aWritable) {
+    return;
+  }
+  // Best-effort: one writable already closing/errored (e.g. a duplicate
+  // call) must not stop the rest from being settled.
+  if (aClean) {
+    // https://w3c.github.io/webtransport/#webtransport-cleanup step 17.5
+    // calls "close" on every writable unconditionally, but
+    // WritableStreamClose() asserts the stream has no close already
+    // queued/in-flight -- a race with the page's own writer.close() would
+    // trip it. WritableStreamCloseQueuedOrInFlight isn't observable from
+    // the public Streams API, so a fix belongs in WebTransport's
+    // cleanup() algorithm, not here; skipping is safe meanwhile, since the
+    // page's own close() call already settles the writable once the
+    // underlying sink finishes closing.
+    // See https://github.com/w3c/webtransport/issues/797
+    if (aWritable->CloseQueuedOrInFlight()) {
+      return;
+    }
+    RefPtr<Promise> ignored = aWritable->CloseNative(aCx, IgnoreErrors());
+  } else {
+    aWritable->ErrorNative(aCx, aErrorValue, IgnoreErrors());
+  }
+}
+
+void WebTransportDatagramDuplexStream::CloseOrErrorWritables(
     JSContext* aCx,
     const nsTArray<RefPtr<WebTransportDatagramsWritable>>& aWritables,
-    JS::Handle<JS::Value> aErrorValue) {
-  if (RefPtr<WritableStream> writable = mWritable) {
-    writable->ErrorNative(aCx, aErrorValue, IgnoreErrors());
-  }
+    bool aClean, JS::Handle<JS::Value> aErrorValue) {
+  CloseOrErrorWritable(aCx, MOZ_KnownLive(mWritable), aClean, aErrorValue);
   for (const auto& writable : aWritables) {
-    MOZ_KnownLive(writable)->ErrorNative(aCx, aErrorValue, IgnoreErrors());
+    CloseOrErrorWritable(aCx, MOZ_KnownLive(writable), aClean, aErrorValue);
   }
 }
 

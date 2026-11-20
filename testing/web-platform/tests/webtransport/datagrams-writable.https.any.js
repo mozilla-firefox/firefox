@@ -245,11 +245,9 @@ promise_test(async t => {
   const writer = wt.datagrams.createWritable().getWriter();
   wt.close();
 
-  // Cleanup errors outgoing datagram writables even on a clean close, with
-  // the AbortError close() passes it.
-  await promise_rejects_dom(t, 'AbortError', writer.closed);
+  await writer.closed;
   await wt.closed;
-}, 'WebTransportDatagramsWritable is errored when the transport is closed');
+}, 'WebTransportDatagramsWritable is closed when the transport is closed');
 
 promise_test(async t => {
   const wt = new WebTransport(webtransport_url('server-connection-close.py'));

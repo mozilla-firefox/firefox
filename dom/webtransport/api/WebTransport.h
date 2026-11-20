@@ -25,7 +25,6 @@
 
 namespace mozilla::dom {
 
-class DOMException;
 class Headers;
 class WebTransportError;
 class WebTransportDatagramDuplexStream;
@@ -77,7 +76,7 @@ class WebTransport final : public nsISupports, public nsWrapperCache {
   // this calls CloseNative(), which doesn't actually run script.   See bug
   // 1810942
   MOZ_CAN_RUN_SCRIPT_BOUNDARY void Cleanup(
-      DOMException* aError, const WebTransportCloseInfo* aCloseInfo,
+      WebTransportError* aError, const WebTransportCloseInfo* aCloseInfo,
       ErrorResult& aRv);
 
   // From Parent
