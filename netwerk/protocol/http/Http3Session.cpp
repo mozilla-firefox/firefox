@@ -1346,9 +1346,6 @@ nsresult Http3Session::ProcessOutput(nsIUDPSocket* socket) {
           self->SetupTimer(timeout);
         });
     mSocket = nullptr;
-    if (NS_SUCCEEDED(rv)) {
-      NotifyOutgoingDatagramProgress();
-    }
     return rv;
   }
 
@@ -1375,25 +1372,7 @@ nsresult Http3Session::ProcessOutput(nsIUDPSocket* socket) {
     socket->AddOutputBytes(rv.bytes_written);
   }
 
-  NotifyOutgoingDatagramProgress();
   return NS_OK;
-}
-
-void Http3Session::NotifyOutgoingDatagramProgress() {
-  if (!std::exchange(mOutgoingDatagramProgressRequested, false)) {
-    return;
-  }
-  // As for OutgoingDatagramSpaceAvailable in ProcessEvents(), the listener
-  // only samples the queue and sends IPC, so mWebTransportSessions can't
-  // change here.
-  for (const auto& stream : mWebTransportSessions) {
-    if (Http3WebTransportSession* session =
-            stream->GetHttp3WebTransportSession()) {
-      if (session->TakeOutgoingDatagramProgressRequest()) {
-        session->NotifyOutgoingDatagramSpaceAvailable();
-      }
-    }
-  }
 }
 
 // This is only called when timer expires.
