@@ -63,7 +63,6 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.store.BrowserStore
-import mozilla.components.compose.base.modifier.thenConditional
 import mozilla.components.compose.base.snackbar.Snackbar
 import mozilla.components.compose.base.snackbar.displaySnackbar
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarStore
@@ -120,7 +119,6 @@ import org.mozilla.fenix.components.metrics.installSourcePackage
 import org.mozilla.fenix.components.toolbar.ToolbarPosition
 import org.mozilla.fenix.components.toolbar.TopDividerColumn
 import org.mozilla.fenix.compose.snackbar.SnackbarState
-import org.mozilla.fenix.compose.verticalFadingEdges
 import org.mozilla.fenix.ext.application
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.hideToolbar
@@ -167,7 +165,9 @@ import org.mozilla.fenix.home.topsites.controller.TopSitesSource
 import org.mozilla.fenix.home.topsites.getTopSitesConfig
 import org.mozilla.fenix.home.ui.HomeSwipeIntegration
 import org.mozilla.fenix.home.ui.Homepage
+import org.mozilla.fenix.home.ui.MiddleSearchPinState
 import org.mozilla.fenix.home.ui.WallpaperBackground
+import org.mozilla.fenix.home.ui.rememberMiddleSearchPinState
 import org.mozilla.fenix.ipprotection.store.Surface as IPProtectionSurface
 import org.mozilla.fenix.ipprotection.ui.IPProtectionBottomSheetFragment
 import org.mozilla.fenix.messaging.DefaultMessageController
@@ -706,6 +706,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                 var bottomBarHeight by remember { mutableIntStateOf(0) }
                 val fadeContentEdges = isOverUniversalEdgeToEdgeWallpaper(appState.value)
                 val searchBackgroundColor = toolbarView.searchBackgroundColor()
+                val middleSearchPinState = rememberMiddleSearchPinState()
 
                 LaunchedEffect(currentWallpaper.name, isPrivateMode, searchBackgroundColor) {
                     applyWallpaperSystemBarsTheme(
@@ -761,6 +762,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                                 appState = appState.value,
                                 privacyNoticeBannerState = privacyNoticeBannerState.value,
                                 collectionsMigrationCardState = collectionsMigrationCardState.value,
+                                middleSearchPinState = middleSearchPinState,
                                 settings = settings,
                                 innerPadding = innerPadding,
                                 fadeContentEdges = fadeContentEdges,
@@ -962,6 +964,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
         appState: AppState,
         privacyNoticeBannerState: PrivacyNoticeBannerState,
         collectionsMigrationCardState: CollectionsMigrationCardState,
+        middleSearchPinState: MiddleSearchPinState,
         settings: Settings,
         innerPadding: PaddingValues,
         fadeContentEdges: Boolean,
@@ -1004,10 +1007,8 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                 onMiddleSearchBarVisibilityChanged = { isVisible ->
                     toolbarView.updateAddressBarVisibility(!isVisible)
                 },
-                modifier =
-                    Modifier.thenConditional(Modifier.verticalFadingEdges(HOMEPAGE_EDGE_FADE_LENGTH)) {
-                        fadeContentEdges
-                    },
+                middleSearchPinState = middleSearchPinState,
+                contentFadeLength = HOMEPAGE_EDGE_FADE_LENGTH.takeIf { fadeContentEdges },
             )
 
             if (microsurveyVisible) {

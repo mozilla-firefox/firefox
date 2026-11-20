@@ -8,21 +8,23 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -30,20 +32,28 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mozilla.components.compose.base.modifier.thenConditional
@@ -62,6 +72,7 @@ import org.mozilla.fenix.components.appstate.setup.checklist.SetupChecklistState
 import org.mozilla.fenix.components.components
 import org.mozilla.fenix.compose.MessageCard
 import org.mozilla.fenix.compose.home.HomeSectionHeader
+import org.mozilla.fenix.compose.verticalFadingEdges
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.home.bookmarks.Bookmark
 import org.mozilla.fenix.home.bookmarks.interactor.BookmarksInteractor
@@ -120,30 +131,52 @@ private const val POPULAR_SITES_TO_SHOW = 8
  * Top level composable for the homepage.
  *
  * @param state State representing the homepage.
+ * @param middleSearchPinState [MiddleSearchPinState] of the middle search bar, which holds the scroll state of the
+ *   homepage content.
  * @param interactor [HomepageInteractor] for interactions with the homepage UI.
  * @param onCollectionsMigrationCardAction Invoked with the [CollectionsMigrationCardAction] to dispatch.
  * @param onTopSitesItemBound Invoked during the composition of a top site item.
  * @param onMiddleSearchBarVisibilityChanged Invoked when the middle search bar is shown/hidden.
  * @param modifier [Modifier] to be applied to the layout.
+ * @param contentFadeLength Distance over which the scrollable content fades out at its top and bottom edges, or null
+ *   for no fade. Once the middle search bar is pinned, the top fade starts below it.
  */
 @Suppress("LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod")
 @Composable
 internal fun Homepage(
     state: HomepageState,
+    middleSearchPinState: MiddleSearchPinState,
     interactor: HomepageInteractor,
     onCollectionsMigrationCardAction: (CollectionsMigrationCardAction) -> Unit,
     onTopSitesItemBound: () -> Unit,
     onMiddleSearchBarVisibilityChanged: (isVisible: Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    contentFadeLength: Dp? = null,
 ) {
-    val scrollState = rememberScrollState()
     val browsingModeChanged = interactor::onPrivateModeButtonClicked
     var shortcutsDialogState by remember { mutableStateOf<DialogState>(DialogState.Closed) }
+    val fadeLengthPx = with(LocalDensity.current) { contentFadeLength?.toPx() ?: 0f }
+    val isSearchBarOverlaid by
+        remember(middleSearchPinState, fadeLengthPx) {
+            derivedStateOf { middleSearchPinState.isOverlaid(fadeLengthPx) }
+        }
+
+    LaunchedEffect(state.middleSearchState.isShown) {
+        if (!state.middleSearchState.isShown) {
+            middleSearchPinState.reset()
+        }
+    }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         Column(
             modifier =
-                Modifier.fillMaxSize()
+                (contentFadeLength?.let { fadeLength ->
+                        Modifier.verticalFadingEdges(
+                            fadeLength = fadeLength,
+                            topFadeStart = { middleSearchPinState.topFadeStart },
+                        )
+                    } ?: Modifier)
+                    .fillMaxSize()
                     .semantics {
                         testTagsAsResourceId = true
                         testTag = HOMEPAGE
@@ -156,7 +189,7 @@ internal fun Homepage(
                             }
                         }
                     }
-                    .verticalScroll(scrollState),
+                    .verticalScroll(middleSearchPinState.scrollState),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (state is HomepageState.Normal) {
@@ -201,8 +234,9 @@ internal fun Homepage(
                             if (middleSearchState.isShown) {
                                 Spacer(Modifier.height(FirefoxTheme.layout.space.static400))
 
-                                SearchBar(
-                                    modifier = Modifier.padding(horizontal = horizontalMargin),
+                                MiddleSearchBar(
+                                    pinState = middleSearchPinState,
+                                    isReplacedByOverlay = isSearchBarOverlaid,
                                     onClick = interactor::onNavigateSearch,
                                 )
 
@@ -239,8 +273,9 @@ internal fun Homepage(
                                 }
 
                                 if (middleSearchState.searchBarVisible) {
-                                    SearchBar(
-                                        modifier = Modifier.padding(horizontal = horizontalMargin),
+                                    MiddleSearchBar(
+                                        pinState = middleSearchPinState,
+                                        isReplacedByOverlay = isSearchBarOverlaid,
                                         onClick = interactor::onNavigateSearch,
                                     )
 
@@ -390,6 +425,59 @@ internal fun Homepage(
                 }
             }
         }
+
+        if (state.firstFrameDrawn && state.middleSearchState.isShown && isSearchBarOverlaid) {
+            MiddleSearchBarOverlay(
+                pinState = middleSearchPinState,
+                onClick = interactor::onNavigateSearch,
+            )
+        }
+    }
+}
+
+/**
+ * The middle [SearchBar] laid out in the scrollable homepage content, which reports its position to [pinState].
+ *
+ * @param pinState [MiddleSearchPinState] of the middle search bar.
+ * @param isReplacedByOverlay Whether [MiddleSearchBarOverlay] is drawn in its place, in which case this one is
+ *   invisible and hidden from accessibility services.
+ * @param onClick Invoked when the user clicks on the search bar.
+ */
+@Composable
+private fun MiddleSearchBar(
+    pinState: MiddleSearchPinState,
+    isReplacedByOverlay: Boolean,
+    onClick: () -> Unit,
+) {
+    SearchBar(
+        modifier =
+            Modifier.onPlaced { pinState.onPlaced(it.positionInParent().y.roundToInt(), it.size.height) }
+                .thenConditional(Modifier.alpha(0f).clearAndSetSemantics {}) { isReplacedByOverlay }
+                .padding(horizontal = horizontalMargin),
+        onClick = onClick,
+    )
+}
+
+/**
+ * The middle [SearchBar] drawn over the scrollable homepage content, so that it isn't faded, at the position of
+ * [MiddleSearchBar] until it is pinned to the top.
+ *
+ * @param pinState [MiddleSearchPinState] of the middle search bar.
+ * @param onClick Invoked when the user clicks on the search bar.
+ */
+@Composable
+private fun BoxScope.MiddleSearchBarOverlay(
+    pinState: MiddleSearchPinState,
+    onClick: () -> Unit,
+) {
+    Box(modifier = Modifier.matchParentSize().clipToBounds()) {
+        SearchBar(
+            modifier =
+                Modifier.align(Alignment.TopCenter)
+                    .offset { IntOffset(x = 0, y = pinState.overlayOffset) }
+                    .padding(horizontal = horizontalMargin),
+            onClick = onClick,
+        )
     }
 }
 
@@ -680,6 +768,7 @@ private fun HomepagePreview() {
                 onCollectionsMigrationCardAction = {},
                 onTopSitesItemBound = {},
                 onMiddleSearchBarVisibilityChanged = {},
+                middleSearchPinState = rememberMiddleSearchPinState(),
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -723,6 +812,7 @@ private fun HomepageBannerPreview() {
                 onCollectionsMigrationCardAction = {},
                 onTopSitesItemBound = {},
                 onMiddleSearchBarVisibilityChanged = {},
+                middleSearchPinState = rememberMiddleSearchPinState(),
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -757,6 +847,7 @@ private fun HomepagePreviewCollections() {
                 onCollectionsMigrationCardAction = {},
                 onTopSitesItemBound = {},
                 onMiddleSearchBarVisibilityChanged = {},
+                middleSearchPinState = rememberMiddleSearchPinState(),
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -791,6 +882,7 @@ private fun HomepageCollectionsMigrationCardPreview() {
                 onCollectionsMigrationCardAction = {},
                 onTopSitesItemBound = {},
                 onMiddleSearchBarVisibilityChanged = {},
+                middleSearchPinState = rememberMiddleSearchPinState(),
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -828,6 +920,7 @@ private fun MinimalHomepagePreview() {
                 onCollectionsMigrationCardAction = {},
                 onTopSitesItemBound = {},
                 onMiddleSearchBarVisibilityChanged = {},
+                middleSearchPinState = rememberMiddleSearchPinState(),
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -849,6 +942,7 @@ private fun PrivateHomepagePreview() {
             onCollectionsMigrationCardAction = {},
             onTopSitesItemBound = {},
             onMiddleSearchBarVisibilityChanged = {},
+            middleSearchPinState = rememberMiddleSearchPinState(),
             modifier = Modifier.fillMaxSize(),
         )
     }
