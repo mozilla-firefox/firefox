@@ -550,19 +550,19 @@ already_AddRefed<Promise> OutgoingDatagramStreamAlgorithms::WriteCallbackImpl(
     // Step 8: Enqueue chunk to writable.[[OutgoingDatagramsQueue]].
     //
     // Not in spec: the queue lives in the parent and neqo, so bytes and
-    // timestamp are sent below and mInFlight stands in for its length.
-    //
+    // timestamp are sent below and mInFlightCount stands in for its length.
+    mInFlightCount++;
+
     // Step 9: If the length of writable.[[OutgoingDatagramsQueue]] is less
     // than datagrams.[[OutgoingMaxBufferedDatagrams]], then resolve promise
     // with undefined.
     //
     // Not in spec: neqo's queue also has a byte budget and evicts once it is
     // full, so the datagram must also fit in the parent's byte credit.
-    bool underMaxBuffered =
-        mInFlight.Add(mDatagrams->mOutgoingMaxBufferedDatagrams);
-    if (underMaxBuffered && mDatagrams->mCredit.HasBytesFor(dataLength)) {
+    if (mInFlightCount < mDatagrams->mOutgoingMaxBufferedDatagrams &&
+        mDatagrams->HasCreditBytesFor(dataLength)) {
       promise->MaybeResolveWithUndefined();
-      mDatagrams->mCredit.Charge(dataLength);
+      mDatagrams->ChargeCredit(dataLength);
     } else {
       // sendDatagrams resolves it once the datagram leaves the queue (steps
       // 5.1.2.2/5.3.4), but datagrams are sent untracked, so
@@ -588,7 +588,7 @@ already_AddRefed<Promise> OutgoingDatagramStreamAlgorithms::WriteCallbackImpl(
     if (mWaitConnectQueue.Length() <
         mDatagrams->mOutgoingMaxBufferedDatagrams) {
       promise->MaybeResolveWithUndefined();
-      mDatagrams->mCredit.Charge(dataLength);
+      mDatagrams->ChargeCredit(dataLength);
     } else {
       mPendingDatagramPromises.AppendElement(
           PendingDatagram{promise, dataLength});
@@ -606,7 +606,7 @@ void OutgoingDatagramStreamAlgorithms::SetChild(WebTransportChild* aChild) {
   mChild = aChild;
   // Each queued datagram is in flight once handed to the parent, whether or
   // not step 9 already resolved its promise.
-  mInFlight.AddQueued(mWaitConnectQueue.Length());
+  mInFlightCount += mWaitConnectQueue.Length();
   // Send all queued datagrams
   for (auto& queued : mWaitConnectQueue) {
     uint64_t sendGroupId = mSendGroup ? mSendGroup->GetGroupId() : 0;
@@ -621,8 +621,7 @@ bool OutgoingDatagramStreamAlgorithms::TryResolveOldestFromCredit(
     uint64_t aAvailableBytes, size_t* aResolvedBytes) {
   if (mPendingDatagramPromises.IsEmpty() ||
       DatagramQueueCharge(mPendingDatagramPromises[0].mBytes,
-                          mDatagrams->mCredit.DatagramPrefixBytes()) >
-          aAvailableBytes) {
+                          mDatagrams->mDatagramPrefixBytes) > aAvailableBytes) {
     return false;
   }
   RefPtr<Promise> promise = std::move(mPendingDatagramPromises[0].mPromise);
@@ -633,7 +632,7 @@ bool OutgoingDatagramStreamAlgorithms::TryResolveOldestFromCredit(
 }
 
 void OutgoingDatagramStreamAlgorithms::RetireInFlight(uint64_t aCount) {
-  mInFlight.Retire(aCount);
+  mInFlightCount -= std::min<uint64_t>(aCount, mInFlightCount);
 }
 
 void WebTransportDatagramDuplexStream::OnDatagramCapacity(
@@ -645,7 +644,13 @@ void WebTransportDatagramDuplexStream::OnDatagramCapacity(
   // writeDatagrams step 9 slot and owing some promise its resolution (steps
   // 5.1.2.2/5.3.4).
 
-  mCredit.SetDatagramPrefixBytes(aDatagramPrefixBytes);
+  // Writes charged before the first grant arrived (pre-connect ones) were
+  // charged without the prefix, so make up the difference for them.
+  if (aDatagramPrefixBytes > mDatagramPrefixBytes) {
+    mCreditBytesUsed +=
+        (aDatagramPrefixBytes - mDatagramPrefixBytes) * mCreditDatagramsUsed;
+    mDatagramPrefixBytes = aDatagramPrefixBytes;
+  }
 
   mSentOutgoing += aSentDelta;
   mExpiredOutgoing += aExpiredDelta;
@@ -662,29 +667,34 @@ void WebTransportDatagramDuplexStream::OnDatagramCapacity(
 
   // Matches SenderFlowControl::update: only an increase moves the limit, so
   // a grant that arrives late relative to a newer one is a harmless no-op.
-  mCredit.Raise(aCumulativeDatagrams, aCumulativeBytes);
+  mCreditDatagramsLimit = std::max(mCreditDatagramsLimit, aCumulativeDatagrams);
+  mCreditBytesLimit = std::max(mCreditBytesLimit, aCumulativeBytes);
+
+  // Writes resolved immediately are charged to mCredit*Used when they are
+  // made, before the parent has been told about them, so the used counts can
+  // run ahead of the limits until its next grant.
 
   // The resolutions steps 5.1.2.2/5.3.4 owe, round-robin across writables so
   // one long backlog can't starve the others while credit lasts.
   size_t resolvedCount = 0;
   bool resolvedAny = true;
-  while (resolvedAny && mCredit.HasDatagramRoom()) {
+  while (resolvedAny && mCreditDatagramsUsed < mCreditDatagramsLimit) {
     resolvedAny = false;
     size_t bytes = 0;
-    if (mOutgoingAlgorithms->TryResolveOldestFromCredit(
-            mCredit.BytesAvailable(), &bytes)) {
-      mCredit.Charge(bytes);
+    if (mOutgoingAlgorithms->TryResolveOldestFromCredit(CreditBytesAvailable(),
+                                                        &bytes)) {
+      ChargeCredit(bytes);
       resolvedCount++;
       resolvedAny = true;
     }
     for (auto& writable : mAllWritables) {
-      if (!mCredit.HasDatagramRoom()) {
+      if (mCreditDatagramsUsed >= mCreditDatagramsLimit) {
         break;
       }
       size_t writableBytes = 0;
-      if (writable->TryResolveOldestFromCredit(mCredit.BytesAvailable(),
+      if (writable->TryResolveOldestFromCredit(CreditBytesAvailable(),
                                                &writableBytes)) {
-        mCredit.Charge(writableBytes);
+        ChargeCredit(writableBytes);
         resolvedCount++;
         resolvedAny = true;
       }
