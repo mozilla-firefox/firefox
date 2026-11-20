@@ -14,6 +14,8 @@
 #include "AnnexB.h"
 #include "H264.h"
 #include "ImageContainer.h"
+#include "mozilla/dom/BindingUtils.h"
+#include "mozilla/dom/ImageUtils.h"
 
 namespace mozilla {
 extern LazyLogModule sPEMLog;
@@ -356,41 +358,54 @@ MediaResult AppleVTEncoder::SetColorSpace(
   return MediaResult(NS_OK, msg);
 }
 
-static Result<OSType, MediaResult> MapPixelFormat(ImagePixelFormat aFormat,
-                                                  gfx::ColorRange aColorRange) {
+static Result<OSType, MediaResult> MapPixelFormat(
+    dom::ImageBitmapFormat aFormat, gfx::ColorRange aColorRange) {
   const bool isFullRange = aColorRange == gfx::ColorRange::FULL;
 
+  Maybe<OSType> fmt;
   switch (aFormat) {
-    case ImagePixelFormat::I444:
-    case ImagePixelFormat::I444A:
+    case dom::ImageBitmapFormat::YUV444P:
       return kCVPixelFormatType_444YpCbCr8;
-    case ImagePixelFormat::I420:
-    case ImagePixelFormat::I420A:
+    case dom::ImageBitmapFormat::YUV420P:
       return isFullRange ? kCVPixelFormatType_420YpCbCr8PlanarFullRange
                          : kCVPixelFormatType_420YpCbCr8Planar;
-    case ImagePixelFormat::NV12:
+    case dom::ImageBitmapFormat::YUV420SP_NV12:
       return isFullRange ? kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
                          : kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
-    case ImagePixelFormat::RGBA:
-    case ImagePixelFormat::RGBX:
-    case ImagePixelFormat::BGRA:
-    case ImagePixelFormat::BGRX:
-      // Limited RGB formats are not supported on MacOS (Bug 1957758).
-      if (!isFullRange) {
-        return Err(MediaResult(
-            NS_ERROR_NOT_IMPLEMENTED,
-            RESULT_DETAIL("format %s with limited colorspace is not supported",
-                          EnumValueToString(aFormat))));
-      }
-      return aFormat == ImagePixelFormat::RGBA ||
-                     aFormat == ImagePixelFormat::RGBX
-                 ? kCVPixelFormatType_32RGBA
-                 : kCVPixelFormatType_32BGRA;
+    case dom::ImageBitmapFormat::RGBA32:
+      fmt.emplace(kCVPixelFormatType_32RGBA);
+      break;
+    case dom::ImageBitmapFormat::BGRA32:
+      fmt.emplace(kCVPixelFormatType_32BGRA);
+      break;
+    case dom::ImageBitmapFormat::RGB24:
+      fmt.emplace(kCVPixelFormatType_24RGB);
+      break;
+    case dom::ImageBitmapFormat::BGR24:
+      fmt.emplace(kCVPixelFormatType_24BGR);
+      break;
+    case dom::ImageBitmapFormat::GRAY8:
+      fmt.emplace(kCVPixelFormatType_OneComponent8);
+      break;
     default:
-      return Err(MediaResult(NS_ERROR_NOT_IMPLEMENTED,
-                             RESULT_DETAIL("format %s is not supported",
-                                           EnumValueToString(aFormat))));
+      MOZ_ASSERT_UNREACHABLE("Unsupported image format");
   }
+
+  // Limited RGB formats are not supported on MacOS (Bug 1957758).
+  if (fmt) {
+    if (!isFullRange) {
+      return Err(
+          MediaResult(NS_ERROR_NOT_IMPLEMENTED,
+                      RESULT_DETAIL("format %s with limited colorspace is "
+                                    "not supported",
+                                    dom::GetEnumString(aFormat).get())));
+    }
+    return fmt.value();
+  }
+
+  return Err(MediaResult(NS_ERROR_NOT_IMPLEMENTED,
+                         RESULT_DETAIL("format %s is not supported",
+                                       dom::GetEnumString(aFormat).get())));
 }
 
 static Result<OSType, MediaResult> MapPixelFormat(gfx::SurfaceFormat aFormat) {
@@ -1155,31 +1170,42 @@ static void ReleaseImage(void* aImageGrip, const void* aDataPtr,
 CVPixelBufferRef AppleVTEncoder::CreateCVPixelBuffer(Image* aSource) {
   AssertOnTaskQueue();
 
-  // Only planar input is wrapped in place and needs a SampleFormat. Any other
-  // image is read back as RGB below.
+  auto sfr = EncoderConfig::SampleFormat::FromImage(aSource);
+  if (sfr.isErr()) {
+    MediaResult err = sfr.unwrapErr();
+    LOGE("{}", err.Description().get());
+    return nullptr;
+  }
+  const EncoderConfig::SampleFormat sf = sfr.unwrap();
+
+  gfx::ColorRange defaultColorRange =
+      sf.IsYUV() ? gfx::ColorRange::LIMITED : gfx::ColorRange::FULL;
+  auto pfr = MapPixelFormat(sf.mPixelFormat, sf.mColorSpace.mRange
+                                                 ? sf.mColorSpace.mRange.value()
+                                                 : defaultColorRange);
+  if (pfr.isErr()) {
+    MediaResult err = pfr.unwrapErr();
+    LOGE("{}", err.Description().get());
+    return nullptr;
+  }
+
+  OSType pixelFormat = pfr.unwrap();
+
+  if (sf != mConfig.mFormat) {
+    LOGV(
+        "Input image in format {} but encoder configured with "
+        "format {}. "
+        "Fingers crossed",
+        sf.ToString().get(), mConfig.mFormat.ToString().get());
+    // Bug 1955153: If the encoder encounters a
+    // kVTPixelTransferNotSupportedErr error due to an unsupported
+    // image format, it must be re-initialized. Additionally, any
+    // changes to the color space also require re-initializing the
+    // encoder.
+  }
+
   if (aSource->GetFormat() == ImageFormat::PLANAR_YCBCR ||
       aSource->GetFormat() == ImageFormat::NV_IMAGE) {
-    auto sfr = EncoderConfig::SampleFormat::FromImage(aSource);
-    if (sfr.isErr()) {
-      MediaResult err = sfr.unwrapErr();
-      LOGE("{}", err.Description().get());
-      return nullptr;
-    }
-    const EncoderConfig::SampleFormat sf = sfr.unwrap();
-
-    if (sf != mConfig.mFormat) {
-      LOGV(
-          "Input image in format {} but encoder configured with "
-          "format {}. "
-          "Fingers crossed",
-          sf.ToString().get(), mConfig.mFormat.ToString().get());
-      // Bug 1955153: If the encoder encounters a
-      // kVTPixelTransferNotSupportedErr error due to an unsupported
-      // image format, it must be re-initialized. Additionally, any
-      // changes to the color space also require re-initializing the
-      // encoder.
-    }
-
     const PlanarYCbCrData* yuv = nullptr;
     if (PlanarYCbCrImage* image = aSource->AsPlanarYCbCrImage()) {
       yuv = image->GetData();
@@ -1190,18 +1216,6 @@ CVPixelBufferRef AppleVTEncoder::CreateCVPixelBuffer(Image* aSource) {
       LOGE("Failed to get YCbCr data");
       return nullptr;
     }
-
-    gfx::ColorRange defaultColorRange =
-        sf.IsYUV() ? gfx::ColorRange::LIMITED : gfx::ColorRange::FULL;
-    auto pfr = MapPixelFormat(
-        sf.mPixelFormat, sf.mColorSpace.mRange ? sf.mColorSpace.mRange.value()
-                                               : defaultColorRange);
-    if (pfr.isErr()) {
-      MediaResult err = pfr.unwrapErr();
-      LOGE("{}", err.Description().get());
-      return nullptr;
-    }
-    OSType pixelFormat = pfr.unwrap();
 
     const auto sizes = yuv->GetPlaneSizes();
     if (!sizes) {
@@ -1258,7 +1272,6 @@ CVPixelBufferRef AppleVTEncoder::CreateCVPixelBuffer(Image* aSource) {
     return nullptr;
   }
 
-  // TODO(bug 2063701): Wrap MacIOSurfaceImage input instead of reading it back.
   RefPtr<gfx::SourceSurface> surface = aSource->GetAsSourceSurface();
   if (!surface) {
     LOGE("Failed to get SourceSurface");

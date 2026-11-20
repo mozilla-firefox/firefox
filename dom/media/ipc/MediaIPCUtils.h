@@ -294,10 +294,11 @@ DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::TrackingId, mSource, mProcId,
 DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::CryptoTrack, mCryptoScheme);
 
 template <>
-struct ParamTraits<mozilla::ImagePixelFormat>
+struct ParamTraits<mozilla::dom::ImageBitmapFormat>
     : public ContiguousEnumSerializerInclusive<
-          mozilla::ImagePixelFormat, mozilla::ImagePixelFormat(0),
-          mozilla::kHighestImagePixelFormat> {};
+          mozilla::dom::ImageBitmapFormat,
+          mozilla::dom::ImageBitmapFormat::RGBA32,
+          mozilla::dom::ImageBitmapFormat::DEPTH> {};
 
 template <>
 struct ParamTraits<mozilla::CodecType>

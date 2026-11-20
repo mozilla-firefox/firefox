@@ -6,10 +6,10 @@
 #define mozilla_EncoderConfig_h_
 
 #include "H264.h"
-#include "ImagePixelFormat.h"
 #include "MediaResult.h"
 #include "mozilla/Result.h"
 #include "mozilla/Variant.h"
+#include "mozilla/dom/ImageBitmapBinding.h"
 #include "mozilla/ipc/IPCCore.h"
 
 namespace mozilla {
@@ -146,13 +146,13 @@ class EncoderConfig final {
   };
 
   struct SampleFormat {
-    ImagePixelFormat mPixelFormat;
+    dom::ImageBitmapFormat mPixelFormat;
     VideoColorSpace mColorSpace;
 
-    SampleFormat(ImagePixelFormat aPixelFormat,
+    SampleFormat(const dom::ImageBitmapFormat& aPixelFormat,
                  const VideoColorSpace& aColorSpace)
         : mPixelFormat(aPixelFormat), mColorSpace(aColorSpace) {}
-    explicit SampleFormat(ImagePixelFormat aPixelFormat)
+    explicit SampleFormat(const dom::ImageBitmapFormat& aPixelFormat)
         : mPixelFormat(aPixelFormat) {}
 
     bool operator==(const SampleFormat& aOther) const {
@@ -165,7 +165,17 @@ class EncoderConfig final {
 
     nsCString ToString() const;
 
-    bool IsYUV() const { return !IsRGB(mPixelFormat); }
+    bool IsRGB32() const {
+      return mPixelFormat == dom::ImageBitmapFormat::BGRA32 ||
+             mPixelFormat == dom::ImageBitmapFormat::RGBA32;
+    }
+    bool IsYUV() const {
+      return mPixelFormat == dom::ImageBitmapFormat::YUV444P ||
+             mPixelFormat == dom::ImageBitmapFormat::YUV422P ||
+             mPixelFormat == dom::ImageBitmapFormat::YUV420P ||
+             mPixelFormat == dom::ImageBitmapFormat::YUV420SP_NV12 ||
+             mPixelFormat == dom::ImageBitmapFormat::YUV420SP_NV21;
+    }
 
     static Result<SampleFormat, MediaResult> FromImage(layers::Image* aImage);
   };
@@ -226,7 +236,7 @@ class EncoderConfig final {
   Usage mUsage{Usage::Record};
   // Video-only
   HardwarePreference mHardwarePreference{HardwarePreference::None};
-  SampleFormat mFormat{ImagePixelFormat::I420};
+  SampleFormat mFormat{dom::ImageBitmapFormat::YUV420P};
   ScalabilityMode mScalabilityMode{};
   uint32_t mFramerate{};
   size_t mKeyframeInterval{};

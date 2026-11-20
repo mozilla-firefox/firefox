@@ -94,6 +94,7 @@ enum class ScreenOrientation : uint32_t;
 namespace dom {
 class BarProp;
 class BrowsingContext;
+struct ChannelPixelLayout;
 class Credential;
 class ClientSource;
 class Console;
@@ -107,6 +108,7 @@ class External;
 class FunctionOrTrustedScriptOrString;
 class Gamepad;
 class ContentMediaController;
+enum class ImageBitmapFormat : uint8_t;
 class IdleRequest;
 class IdleRequestCallback;
 class IdleRequestMap;

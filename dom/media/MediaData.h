@@ -11,7 +11,6 @@
 #include "MediaResult.h"
 #include "SharedBuffer.h"
 #include "TimeUnits.h"
-#include "js/Utility.h"
 #include "mozilla/CheckedInt.h"
 #include "mozilla/DefineEnum.h"
 #include "mozilla/EnumSet.h"

@@ -15,6 +15,7 @@
 #  include "mozilla/MozPromise.h"
 #  include "mozilla/RefPtr.h"
 #  include "mozilla/TaskQueue.h"
+#  include "mozilla/dom/ImageBitmapBinding.h"
 #  include "nsISupportsImpl.h"
 
 namespace mozilla {
