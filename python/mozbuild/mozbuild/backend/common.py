@@ -237,7 +237,7 @@ class XPIDLManager:
             basename = mozpath.basename(idl.full_path)
 
             if basename in self._idls:
-                raise Exception("IDL already registered: %s" % basename)
+                raise Exception(f"IDL already registered: {basename}")
             self._idls.add(basename)
 
         self.modules[module.name].add_idls(module.idl_files)
@@ -757,9 +757,9 @@ class CommonBackend(BuildBackend):
         self._handle_generated_sources(
             itertools.chain.from_iterable(
                 (
-                    mozpath.join(include_dir, "%s.h" % stem),
-                    mozpath.join(bindings_rt_dir, "%s.rs" % stem),
-                    mozpath.join(bindings_bt_dir, "%s.rs" % stem),
+                    mozpath.join(include_dir, f"{stem}.h"),
+                    mozpath.join(bindings_rt_dir, f"{stem}.rs"),
+                    mozpath.join(bindings_bt_dir, f"{stem}.rs"),
                 )
                 for stem in self._idl_manager.idl_stems()
             )
