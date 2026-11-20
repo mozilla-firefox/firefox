@@ -2,62 +2,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-// Hosts the node processes that NodeServer.sys.mjs forks for tests, and an
-// HTTP/2 server on MOZHTTP2_PORT that answers every request with a 200.
+// Hosts the node processes that NodeServer.sys.mjs forks for tests.
 
-var node_http2_root = "../node-http2";
-if (process.env.NODE_HTTP2_ROOT) {
-  node_http2_root = process.env.NODE_HTTP2_ROOT;
-}
-var http2 = require(node_http2_root);
-var fs = require("fs");
 var url = require("url");
 const { fork } = require("child_process");
 const { spawn } = require("child_process");
 const path = require("path");
 
-function handleRequest(req, res) {
-  res.setHeader("Content-Type", "text/html");
-  if (req.httpVersionMajor != 2) {
-    res.setHeader("Connection", "close");
-  }
-  res.writeHead(200);
-  res.end("<!doctype html><html><body>You Win!</body></html>");
-}
-
 // Keeps the process, and the node processes it hosts, alive on exceptions
 // thrown from asynchronous callbacks.
 process.on("uncaughtException", function (err) {
   console.error("moz-http2: Uncaught exception (server continuing):", err);
-});
-
-// Set up the SSL certs for our server - this server has a cert for foo.example.com
-// signed by netwerk/tests/unit/http2-ca.pem
-var options = {
-  key: fs.readFileSync(__dirname + "/http2-cert.key"),
-  cert: fs.readFileSync(__dirname + "/http2-cert.pem"),
-};
-
-if (process.env.HTTP2_LOG !== undefined) {
-  var log_module = node_http2_root + "/test/util";
-  options.log = require(log_module).createLogger("server");
-}
-
-var server = http2.createServer(options, handleRequest);
-
-server.on("connection", function (socket) {
-  socket.on("error", function () {
-    // Ignoring SSL socket errors, since they usually represent a connection that was tore down
-    // by the browser because of an untrusted certificate. And this happens at least once, when
-    // the first test case if done.
-  });
-});
-
-server.on("connect", function (req, clientSocket) {
-  clientSocket.write(
-    "HTTP/1.1 404 Not Found\r\nProxy-agent: Node.js-Proxy\r\n\r\n"
-  );
-  clientSocket.destroy();
 });
 
 function makeid(length) {
@@ -72,13 +27,8 @@ function makeid(length) {
 }
 
 let globalObjects = {};
-var serverPort;
 
 const listen = (serv, envport) => {
-  if (!serv) {
-    return Promise.resolve(0);
-  }
-
   let portSelection = 0;
   if (envport !== undefined) {
     try {
@@ -284,9 +234,9 @@ function forkProcessInternal(forked) {
   return id;
 }
 
-Promise.all([
-  listen(server, process.env.MOZHTTP2_PORT).then(port => (serverPort = port)),
-  listen(httpServer, process.env.MOZNODE_EXEC_PORT),
-]).then(([sPort, nodeExecPort]) => {
+// The harnesses parse this line. The first port belonged to an HTTP/2 server
+// that no longer exists, and is always 0.
+listen(httpServer, process.env.MOZNODE_EXEC_PORT).then(nodeExecPort => {
+  const sPort = 0;
   console.log(`HTTP2 server listening on ports ${sPort},${nodeExecPort}`);
 });

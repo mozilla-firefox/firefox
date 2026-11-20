@@ -713,7 +713,7 @@ class XPCShellRemote(xpcshell.XPCShellTests):
         return node_env
 
     def trySetupNode(self):
-        NODE_PORT_KEYS = ["MOZHTTP2_PORT", "MOZNODE_EXEC_PORT"]
+        NODE_PORT_KEYS = ["MOZNODE_EXEC_PORT"]
         MAX_ATTEMPTS = 3
         portsPreset = any(key in self.env for key in NODE_PORT_KEYS)
         for attempt in range(1, MAX_ATTEMPTS + 1):
@@ -757,12 +757,6 @@ class XPCShellRemote(xpcshell.XPCShellTests):
 
         super().shutdownNode()
 
-        if "MOZHTTP2_PORT" in self.env:
-            port = "tcp:{}".format(self.env["MOZHTTP2_PORT"])
-            self.device.remove_socket_connections(
-                ADBDevice.SOCKET_DIRECTION_REVERSE, port
-            )
-            self.log.info("cleared MOZHTTP2_PORT connection for port " + port)
         if "MOZNODE_EXEC_PORT" in self.env:
             port = "tcp:{}".format(self.env["MOZNODE_EXEC_PORT"])
             self.device.remove_socket_connections(
