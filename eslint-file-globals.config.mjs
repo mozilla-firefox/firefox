@@ -121,7 +121,6 @@ export default [
       "browser/components/places/content/places-menupopup.js",
       "browser/components/places/content/placesContextMenu.js",
       "browser/components/screenshots/screenshots-buttons.js",
-      "browser/components/tabbrowser/content/browser-allTabsMenu.js",
       "browser/components/tabbrowser/content/browser-ctrlTab.js",
       "browser/components/tabbrowser/content/browser-fullZoom.js",
       "browser/components/translations/content/fullPageTranslationsPanel.js",

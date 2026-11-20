@@ -2,15 +2,24 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-ChromeUtils.defineESModuleGetters(this, {
+/* global FirefoxViewHandler, gBrowser, gURLBar, isElementVisible, PanelUI */
+
+const { XPCOMUtils } = ChromeUtils.importESModule(
+  "resource://gre/modules/XPCOMUtils.sys.mjs"
+);
+const lazy = XPCOMUtils.declareLazy({
   BrowserUsageTelemetry: "resource:///modules/BrowserUsageTelemetry.sys.mjs",
+  ContextualIdentityService:
+    "moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs",
   GroupsPanel: "moz-src:///browser/components/tabbrowser/GroupsList.sys.mjs",
-  NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
+  PanelMultiView:
+    "moz-src:///browser/components/customizableui/PanelMultiView.sys.mjs",
+  PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   TabsPanel: "moz-src:///browser/components/tabbrowser/TabsList.sys.mjs",
   UrlbarShared: "chrome://browser/content/urlbar/UrlbarShared.mjs",
 });
 
-var gTabsPanel = {
+export const gTabsPanel = {
   kElements: {
     allTabsButton: "alltabs-button",
     allTabsView: "allTabsMenu-allTabsView",
@@ -31,11 +40,13 @@ var gTabsPanel = {
     if (this._initializedElements) {
       return;
     }
-    let template = document.getElementById("allTabsMenu-container");
+    let template = /** @type {HTMLTemplateElement} */ (
+      document.getElementById("allTabsMenu-container")
+    );
     template.replaceWith(template.content);
 
-    for (let [name, id] of Object.entries(this.kElements)) {
-      this[name] = document.getElementById(id);
+    for (let [key, id] of Object.entries(this.kElements)) {
+      this[key] = document.getElementById(id);
     }
     this._initializedElements = true;
   },
@@ -54,24 +65,24 @@ var gTabsPanel = {
 
     this.initElements();
 
-    this.hiddenAudioTabsPopup = new TabsPanel({
+    this.hiddenAudioTabsPopup = new lazy.TabsPanel({
       view: this.allTabsView,
       containerNode: this.hiddenAudioTabs,
       filterFn: tab => tab.soundPlaying || tab.muted,
       onlyHiddenTabs: true,
     });
-    this.allTabsPanel = new TabsPanel({
+    this.allTabsPanel = new lazy.TabsPanel({
       view: this.allTabsView,
       containerNode: this.allTabsViewTabs,
       filterFn: tab => !tab.hidden,
       dropIndicator: this.dropIndicator,
       onlyHiddenTabs: false,
     });
-    this.groupsPanel = new GroupsPanel({
+    this.groupsPanel = new lazy.GroupsPanel({
       view: this.allTabsView,
       containerNode: this.groupsView,
     });
-    this.showAllGroupsPanel = new GroupsPanel({
+    this.showAllGroupsPanel = new lazy.GroupsPanel({
       view: this.groupsSubView,
       containerNode: document.getElementById("allTabsMenu-groupsSubView-body"),
       showAll: true,
@@ -82,16 +93,17 @@ var gTabsPanel = {
 
       let containersEnabled =
         Services.prefs.getBoolPref("privacy.userContext.enabled") &&
-        !PrivateBrowsingUtils.isWindowPrivate(window);
-      document.getElementById("allTabsMenu-containerTabsButton").hidden =
-        !containersEnabled;
+        !lazy.PrivateBrowsingUtils.isWindowPrivate(window);
+      /** @type {XULElement} */ (
+        document.getElementById("allTabsMenu-containerTabsButton")
+      ).hidden = !containersEnabled;
 
       const hasHiddenTabs = this.hasHiddenTabsExcludingFxView();
-      const hiddenTabsButton = document.getElementById(
-        "allTabsMenu-hiddenTabsButton"
+      const hiddenTabsButton = /** @type {XULElement} */ (
+        document.getElementById("allTabsMenu-hiddenTabsButton")
       );
-      const hiddenTabsSeparator = document.getElementById(
-        "allTabsMenu-hiddenTabsSeparator"
+      const hiddenTabsSeparator = /** @type {XULElement} */ (
+        document.getElementById("allTabsMenu-hiddenTabsSeparator")
       );
       hiddenTabsButton.hidden = !hasHiddenTabs;
 
@@ -114,8 +126,8 @@ var gTabsPanel = {
         );
       }
 
-      let closeDuplicateTabsItem = document.getElementById(
-        "allTabsMenu-closeDuplicateTabs"
+      let closeDuplicateTabsItem = /** @type {XULElement} */ (
+        document.getElementById("allTabsMenu-closeDuplicateTabs")
       );
       closeDuplicateTabsItem.hidden =
         !gBrowser.getAllDuplicateTabsToClose().length;
@@ -129,7 +141,6 @@ var gTabsPanel = {
 
     this.allTabsView.addEventListener("command", event => {
       let { target } = event;
-      let { PanelUI } = target.documentGlobal;
       switch (target.id) {
         case "allTabsMenu-searchTabs":
           Glean.browserUiInteraction.listAllTabsAction.search_tabs.add(1);
@@ -162,12 +173,14 @@ var gTabsPanel = {
       let elements = [];
       let frag = document.createDocumentFragment();
 
-      ContextualIdentityService.getPublicIdentities().forEach(identity => {
+      lazy.ContextualIdentityService.getPublicIdentities().forEach(identity => {
         let menuitem = document.createXULElement("toolbarbutton");
         menuitem.setAttribute("class", "subviewbutton subviewbutton-iconic");
         menuitem.setAttribute(
           "label",
-          ContextualIdentityService.getUserContextLabel(identity.userContextId)
+          lazy.ContextualIdentityService.getUserContextLabel(
+            identity.userContextId
+          )
         );
         // The styles depend on this.
         menuitem.setAttribute("usercontextid", identity.userContextId);
@@ -198,7 +211,7 @@ var gTabsPanel = {
       );
     });
 
-    this.hiddenTabsPopup = new TabsPanel({
+    this.hiddenTabsPopup = new lazy.TabsPanel({
       view: this.hiddenTabsView,
       containerNode: this.hiddenTabsViewTabs,
       filterFn: tab => tab != FirefoxViewHandler.tab,
@@ -223,7 +236,7 @@ var gTabsPanel = {
     this.init();
     if (this.canOpen) {
       Glean.browserUiInteraction.allTabsPanelEntrypoint[entrypoint].add(1);
-      BrowserUsageTelemetry.recordInteractionEvent(
+      lazy.BrowserUsageTelemetry.recordInteractionEvent(
         entrypoint,
         "all-tabs-panel-entrypoint"
       );
@@ -238,7 +251,7 @@ var gTabsPanel = {
   hideAllTabsPanel() {
     let panel = this.allTabsView?.closest("panel");
     if (panel) {
-      PanelMultiView.hidePopup(panel);
+      lazy.PanelMultiView.hidePopup(panel);
     }
   },
 
@@ -261,7 +274,7 @@ var gTabsPanel = {
   },
 
   searchTabs() {
-    gURLBar.search(UrlbarShared.RESTRICT_TOKENS.OPENPAGE, {
+    gURLBar.search(lazy.UrlbarShared.RESTRICT_TOKENS.OPENPAGE, {
       searchModeEntry: "tabmenu",
     });
   },

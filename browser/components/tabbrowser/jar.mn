@@ -3,7 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 browser.jar:
-   content/browser/tabbrowser/browser-allTabsMenu.js      (content/browser-allTabsMenu.js)
+   content/browser/tabbrowser/all-tabs-menu.mjs           (content/all-tabs-menu.mjs)
    content/browser/tabbrowser/browser-ctrlTab.js          (content/browser-ctrlTab.js)
    content/browser/tabbrowser/browser-fullZoom.js         (content/browser-fullZoom.js)
    content/browser/tabbrowser/drag-and-drop.mjs           (content/drag-and-drop.mjs)

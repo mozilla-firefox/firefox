@@ -132,6 +132,7 @@ ChromeUtils.defineESModuleGetters(this, {
 ChromeUtils.defineESModuleGetters(
   this,
   {
+    gTabsPanel: "chrome://browser/content/tabbrowser/all-tabs-menu.mjs",
     StatusPanel: "chrome://browser/content/tabbrowser/status-panel.mjs",
     TabBarVisibility:
       "chrome://browser/content/tabbrowser/tab-bar-visibility.mjs",
@@ -185,11 +186,6 @@ XPCOMUtils.defineLazyScriptGetter(
   this,
   "gViewSourceUtils",
   "chrome://global/content/viewSourceUtils.js"
-);
-XPCOMUtils.defineLazyScriptGetter(
-  this,
-  "gTabsPanel",
-  "chrome://browser/content/tabbrowser/browser-allTabsMenu.js"
 );
 XPCOMUtils.defineLazyScriptGetter(
   this,

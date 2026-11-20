@@ -85,7 +85,7 @@ class TabsListBase {
 
   /**
    * @param {object} opts
-   * @param {string} opts.className
+   * @param {string} [opts.className]
    * @param {function(MozTabbrowserTab):boolean} opts.filterFn
    * @param {Element} opts.containerNode
    * @param {XULElement} [opts.dropIndicator=null]
@@ -565,7 +565,7 @@ const TABS_PANEL_EVENTS = {
 export class TabsPanel extends TabsListBase {
   /**
    * @param {object} opts
-   * @param {string} opts.className
+   * @param {string} [opts.className]
    * @param {function(MozTabbrowserTab):boolean} opts.filterFn
    * @param {Element} opts.containerNode
    * @param {XULElement} [opts.dropIndicator=null]
