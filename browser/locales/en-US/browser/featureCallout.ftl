@@ -326,3 +326,17 @@ tab-groups-2026-onboarding-callout-subtitle = Group your tabs by task or topic. 
 # Button label — keep short (ideally under ~15 characters) so it fits in the
 # callout UI. "Start a group" means "create a new tab group."
 tab-groups-2026-onboarding-cta-button = Start a group
+
+## Closed-browser web notifications callout
+## Shown after the browser starts delivering notifications from sites the
+## user has allowed, even while the browser is closed.
+
+closed-browser-notifications-callout-title = Get web notifications with { -brand-short-name } closed
+# <a data-l10n-name="learn-more"> is a link to a support article.
+closed-browser-notifications-callout-body = Sites you allow can now send notifications even when { -brand-short-name } is closed. <a data-l10n-name="learn-more">Learn more</a>
+# Opens the notification settings.
+closed-browser-notifications-callout-manage-button = Manage
+# Stops notifications from being delivered while the browser is closed.
+closed-browser-notifications-callout-turn-off-button = Turn off
+# Keeps notifications being delivered while the browser is closed.
+closed-browser-notifications-callout-keep-on-button = Keep on
