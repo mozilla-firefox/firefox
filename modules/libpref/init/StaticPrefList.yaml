@@ -17893,24 +17893,6 @@
   value: false
   mirror: always
 
-# WebTransport per-session initial flow control limits (draft-ietf-webtrans-http3-15).
-# These are advertised to peers in HTTP/3 SETTINGS. 0 means "do not advertise this
-# setting" (unlimited). Set to a non-zero value to restrict per-session streams/data.
-- name: network.webtransport.initial_max_streams_uni
-  type: RelaxedAtomicUint32
-  value: 0
-  mirror: always
-
-- name: network.webtransport.initial_max_streams_bidi
-  type: RelaxedAtomicUint32
-  value: 0
-  mirror: always
-
-- name: network.webtransport.initial_max_data
-  type: RelaxedAtomicUint32
-  value: 0
-  mirror: always
-
 # Wifi-scan polling period, in ms, when on a mobile network.
 # A value of 0 indicates that no polling should be done.
 - name: network.wifi.scanning_period
