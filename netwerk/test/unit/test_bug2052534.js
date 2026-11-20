@@ -46,16 +46,17 @@ let altPort;
 let altRoute; // ALT_HOST:altPort, i.e. the Alt-Used value once routed.
 
 add_setup(async function () {
-  h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
-
   do_get_profile();
 
-  let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
-    Ci.nsIX509CertDB
-  );
-  addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
+  let h2Server = await create_h2_server({
+    "/http3-test": (req, res) => {
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Alt-Svc", "h3=" + req.headers["x-altsvc"]);
+      res.writeHead(200, { "Content-Type": "text/html", "Content-Length": 2 });
+      res.end("ok");
+    },
+  });
+  h2Port = h2Server.port();
 
   Services.prefs.setBoolPref("network.http.http2.enabled", true);
   Services.prefs.setBoolPref("network.http.altsvc.enabled", true);
