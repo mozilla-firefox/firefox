@@ -452,7 +452,6 @@ toolkit/components/thumbnails/PageThumbs.sys.mjs
 toolkit/components/thumbnails/PageThumbs.worker.js
 toolkit/components/thumbnails/PageThumbsStorageService.sys.mjs
 toolkit/components/timermanager/UpdateTimerManager.sys.mjs
-toolkit/components/tooltiptext/TooltipTextProvider.sys.mjs
 toolkit/components/url-classifier/SafeBrowsing.sys.mjs
 toolkit/components/url-classifier/UrlClassifierHashCompleter.sys.mjs
 toolkit/components/url-classifier/UrlClassifierLib.sys.mjs
