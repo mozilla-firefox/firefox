@@ -1,0 +1,59 @@
+<!-- Any copyright is dedicated to the Public Domain.
+- http://creativecommons.org/publicdomain/zero/1.0/ -->
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>ARIA element reflection read from two JS worlds</title>
+<script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+<link rel="stylesheet" href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+</head>
+<body>
+<iframe id="content" src="data:text/html,<!DOCTYPE html><body>"></iframe>
+<script>
+SimpleTest.waitForExplicitFinish();
+
+const REFLECTED = {
+  ariaLabelledByElements: "aria-labelledby",
+  ariaDescribedByElements: "aria-describedby",
+  ariaOwnsElements: "aria-owns",
+  ariaControlsElements: "aria-controls",
+  ariaFlowToElements: "aria-flowto",
+  ariaDetailsElements: "aria-details",
+  ariaErrorMessageElements: "aria-errormessage",
+};
+
+function setup(doc, attr, id) {
+  const target = doc.createElement("span");
+  target.id = id;
+  const element = doc.createElement("button");
+  element.setAttribute(attr, id);
+  doc.body.append(target, element);
+  return { element, target };
+}
+
+function check(array, target, message) {
+  is(array.length, 1, `${message}: length`);
+  is(array[0], target, `${message}: element`);
+}
+
+window.addEventListener("load", () => {
+  const doc = document.getElementById("content").contentDocument;
+  for (const [prop, attr] of Object.entries(REFLECTED)) {
+    const first = setup(doc, attr, `${attr}-1`);
+    Cu.waiveXrays(first.element)[prop];
+    check(first.element[prop], first.target, `${prop}, page then Xray`);
+    is(first.element[prop], first.element[prop], `${prop}: stable through Xray`);
+
+    const second = setup(doc, attr, `${attr}-2`);
+    second.element[prop];
+    check(Cu.waiveXrays(second.element)[prop], Cu.waiveXrays(second.target), `${prop}, Xray then page`);
+
+    second.target.remove();
+    second.element.setAttribute(attr, first.target.id);
+    check(second.element[prop], first.target, `${prop}: Xray sees a changed list`);
+  }
+  SimpleTest.finish();
+});
+</script>
+</body>
+</html>

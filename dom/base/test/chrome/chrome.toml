@@ -28,6 +28,8 @@ support-files = [
   "window_TextEventDispatcherBatch.xhtml",
 ]
 
+["test_aria_element_reflection_two_worlds.html"]
+
 ["test_bug120684.xhtml"]
 
 ["test_bug206691.xhtml"]

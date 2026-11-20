@@ -2305,7 +2305,11 @@ void Element::GetAttrAssociatedElementsForBindings(
 
   auto& [_, cachedAttrElements] =
       ExtendedDOMSlots()->mAttrElementsMap.LookupOrInsert(aAttr);
-  if (elements && elements == cachedAttrElements) {
+  // aUseCachedValue is null when the binding has no cached attr-associated
+  // elements object for this JS world yet, even if another world filled
+  // cachedAttrElements. In that case we must return the freshly computed
+  // elements below rather than signalling a cache hit.
+  if (aUseCachedValue && elements && elements == cachedAttrElements) {
     // 2. If the contents of elements is equal to the contents of this's cached
     // attr-associated elements, then return this's cached attr-associated
     // elements object.
