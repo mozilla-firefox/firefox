@@ -800,7 +800,7 @@ class PromiseReactionObjectStorage : public PromiseJobObject {
     // - When you resolve one promise to another. When you pass a promise P1 to
     //   the 'fulfill' function of a promise P2, so that resolving P1 resolves
     //   P2 in the same way, P1 gets a reaction record with the
-    //   REACTION_FLAG_DEFAULT_RESOLVING_HANDLER flag set and whose
+    //   REACTION_FLAG_FORWARDING flag set and whose
     //   Slots::SpecializedReactionState slot holds P2.
     //
     // - When you await a promise. When an async function or generator awaits a
@@ -809,7 +809,7 @@ class PromiseReactionObjectStorage : public PromiseJobObject {
     //   REACTION_FLAG_ASYNC_FUNCTION or REACTION_FLAG_ASYNC_GENERATOR flag set
     //   and whose Slots::SpecializedReactionState slot holds the generator
     //   object. (Typically V is a promise, so resolving P to V gives V a
-    //   REACTION_FLAGS_DEFAULT_RESOLVING_HANDLER reaction record as described
+    //   REACTION_FLAG_FORWARDING reaction record as described
     //   above.)
     //
     // - When JS::AddPromiseReactions{,IgnoringUnhandledRejection} cause the
@@ -838,7 +838,7 @@ class PromiseReactionObjectStorage : public PromiseJobObject {
     // The slot value is either a callable object, an integer constant from
     // the |PromiseHandler| enum, or null. If the value is null, either the
     // REACTION_FLAG_DEBUGGER_DUMMY or the
-    // REACTION_FLAG_DEFAULT_RESOLVING_HANDLER flag must be set.
+    // REACTION_FLAG_FORWARDING flag must be set.
     //
     // After setting the target state for a PromiseReaction, the slot of the
     // no longer used handler gets reused to store the argument of the active
@@ -867,7 +867,7 @@ class PromiseReactionObjectStorage : public PromiseJobObject {
     //   the (internal) generator object for this promise reaction.
     // - When the REACTION_FLAG_ASYNC_GENERATOR flag is set, this slot stores
     //   the async generator object for this promise reaction.
-    // - When the REACTION_FLAG_DEFAULT_RESOLVING_HANDLER flag is set, this
+    // - When the REACTION_FLAG_FORWARDING flag is set, this
     //   slot stores the promise to resolve when conceptually "calling" the
     //   OnFulfilled or OnRejected handlers.
     // - When the REACTION_FLAG_ASYNC_FROM_SYNC_ITERATOR is set, this slot
@@ -962,9 +962,9 @@ class PromiseReaction : public Base {
   static constexpr uint32_t REACTION_FLAG_FULFILLED = 0x2;
 
   // If this flag is set, this reaction record is created for resolving
-  // one promise P1 to another promise P2, and Slots::SpecializedReactionState
-  // slot holds P2.
-  static constexpr uint32_t REACTION_FLAG_DEFAULT_RESOLVING_HANDLER = 0x4;
+  // one promise P1 to another promise P2; the reaction is attached to P2 and
+  // Slots::SpecializedReactionState holds P1 (the forwarding target).
+  static constexpr uint32_t REACTION_FLAG_FORWARDING = 0x4;
 
   // If this flag is set, this reaction record is created for async function
   // and Slots::SpecializedReactionState slot holds internal generator object
@@ -995,14 +995,14 @@ class PromiseReaction : public Base {
 
   static constexpr uint32_t REACTION_FLAGS_ALL =
       REACTION_FLAG_RESOLVED | REACTION_FLAG_FULFILLED |
-      REACTION_FLAG_DEFAULT_RESOLVING_HANDLER | REACTION_FLAG_ASYNC_FUNCTION |
+      REACTION_FLAG_FORWARDING | REACTION_FLAG_ASYNC_FUNCTION |
       REACTION_FLAG_ASYNC_GENERATOR | REACTION_FLAG_DEBUGGER_DUMMY |
       REACTION_FLAG_IGNORE_UNHANDLED_REJECTION |
       REACTION_FLAG_ASYNC_FROM_SYNC_ITERATOR;
 
   // Reaction kinds that use the SpecializedReactionState field.
   static constexpr uint32_t REACTION_FLAGS_WITH_SPECIALIZED_STATE =
-      REACTION_FLAG_DEFAULT_RESOLVING_HANDLER | REACTION_FLAG_ASYNC_FUNCTION |
+      REACTION_FLAG_FORWARDING | REACTION_FLAG_ASYNC_FUNCTION |
       REACTION_FLAG_ASYNC_GENERATOR | REACTION_FLAG_ASYNC_FROM_SYNC_ITERATOR;
 
  public:
@@ -1054,16 +1054,20 @@ class PromiseReaction : public Base {
                : UnhandledRejectionBehavior::Report;
   }
 
-  void initDefaultResolvingHandler(PromiseObject* promiseToResolve) {
-    setFlagOnInitialState(REACTION_FLAG_DEFAULT_RESOLVING_HANDLER);
-    this->setSpecializedReactionState(ObjectValue(*promiseToResolve));
+  // A forwarding reaction is created when a promise X is resolved with another
+  // promise P (i.e. X's resolve function is called with P). It is attached to
+  // P and, instead of calling a handler, settles forwardingTarget() (X) with
+  // P's fulfillment value or rejection reason.
+  void initForwarding(PromiseObject* forwardingTarget) {
+    setFlagOnInitialState(REACTION_FLAG_FORWARDING);
+    this->setSpecializedReactionState(ObjectValue(*forwardingTarget));
   }
-  bool isDefaultResolvingHandler() const {
+  bool isForwarding() const {
     int32_t flags = this->flags();
-    return flags & REACTION_FLAG_DEFAULT_RESOLVING_HANDLER;
+    return flags & REACTION_FLAG_FORWARDING;
   }
-  PromiseObject* defaultResolvingPromise() {
-    MOZ_ASSERT(isDefaultResolvingHandler());
+  PromiseObject* forwardingTarget() {
+    MOZ_ASSERT(isForwarding());
     return &this->specializedReactionState()
                 .toObject()
                 .template as<PromiseObject>();
@@ -3172,14 +3176,14 @@ static bool ForEachReaction(JSContext* cx, HandleValue reactionsVal, F f) {
  * CreateResolvingFunctions abstract operation.
  */
 template <typename InlineOrObjectReaction>
-[[nodiscard]] static bool DefaultResolvingPromiseReactionJob(
+[[nodiscard]] static bool ForwardingPromiseReactionJob(
     JSContext* cx, const InlineOrObjectReaction& reaction) {
   MOZ_ASSERT(reaction->targetState() != JS::PromiseState::Pending);
 
   RootedTuple<PromiseObject*, Value, SavedFrame*, Value, JSObject*, JSObject*>
       roots(cx);
-  RootedField<PromiseObject*, 0> promiseToResolve(
-      roots, reaction->defaultResolvingPromise());
+  RootedField<PromiseObject*, 0> forwardingTarget(roots,
+                                                  reaction->forwardingTarget());
 
   // Testing functions allow to directly settle a promise without going
   // through the resolving functions. In that case the normal bookkeeping to
@@ -3189,7 +3193,7 @@ template <typename InlineOrObjectReaction>
   ResolutionMode resolutionMode = ResolveMode;
   RootedField<Value, 1> handlerResult(roots, UndefinedValue());
   RootedField<SavedFrame*, 2> unwrappedRejectionStack(roots);
-  if (promiseToResolve->state() == JS::PromiseState::Pending) {
+  if (forwardingTarget->state() == JS::PromiseState::Pending) {
     RootedField<Value, 3> argument(roots, reaction->handlerArgument());
 
     // Step 1.e. Else, let handlerResult be
@@ -3197,9 +3201,9 @@ template <typename InlineOrObjectReaction>
     //                                          « argument »)).
     bool ok;
     if (reaction->targetState() == JS::PromiseState::Fulfilled) {
-      ok = ResolvePromiseInternal(cx, promiseToResolve, argument);
+      ok = ResolvePromiseInternal(cx, forwardingTarget, argument);
     } else {
-      ok = RejectPromiseInternal(cx, promiseToResolve, argument);
+      ok = RejectPromiseInternal(cx, forwardingTarget, argument);
     }
 
     if (!ok) {
@@ -3319,8 +3323,8 @@ static bool RunPromiseReactionJob(JSContext* cx,
   RootedTuple<Value, AsyncGeneratorObject*, Value, Value, SavedFrame*,
               JSObject*, JSObject*>
       roots(cx);
-  if (reaction->isDefaultResolvingHandler()) {
-    return DefaultResolvingPromiseReactionJob(cx, reaction);
+  if (reaction->isForwarding()) {
+    return ForwardingPromiseReactionJob(cx, reaction);
   }
   if (reaction->isAsyncFunction()) {
     MOZ_RELEASE_ASSERT(reaction->asyncFunctionGenerator()->realm() ==
@@ -8294,7 +8298,7 @@ bool js::Promise_then(JSContext* cx, unsigned argc, Value* vp) {
   HandleValue onRejected = NullHandleValue;
 
   auto extraStep = [promiseToResolve](const auto& reaction) {
-    reaction->initDefaultResolvingHandler(promiseToResolve);
+    reaction->initForwarding(promiseToResolve);
   };
 
   // Steps 9-12.
@@ -8618,9 +8622,9 @@ bool PromiseObject::forEachReactionRecord(
       if (!builder.asyncGenerator(cx, generator)) {
         return false;
       }
-    } else if (reaction->isDefaultResolvingHandler()) {
-      RootedField<PromiseObject*, 4> promise(
-          roots, reaction->defaultResolvingPromise());
+    } else if (reaction->isForwarding()) {
+      RootedField<PromiseObject*, 4> promise(roots,
+                                             reaction->forwardingTarget());
       if (!builder.direct(cx, promise)) {
         return false;
       }
@@ -8839,8 +8843,8 @@ void PromiseReactionRecord::forEachReactionFlag(uint32_t flags, KnownF known,
       case REACTION_FLAG_FULFILLED:
         known("FULFILLED");
         break;
-      case REACTION_FLAG_DEFAULT_RESOLVING_HANDLER:
-        known("DEFAULT_RESOLVING_HANDLER");
+      case REACTION_FLAG_FORWARDING:
+        known("FORWARDING");
         break;
       case REACTION_FLAG_ASYNC_FUNCTION:
         known("ASYNC_FUNCTION");
@@ -8925,8 +8929,8 @@ void PromiseReactionRecord::dumpOwnFields(js::JSONPrinter& json) const {
       [&](uint32_t value) { json.value("Unknown(%08x)", value); });
   json.endInlineList();
 
-  if (isDefaultResolvingHandler()) {
-    js::GenericPrinter& out = json.beginStringProperty("promiseToResolve");
+  if (isForwarding()) {
+    js::GenericPrinter& out = json.beginStringProperty("forwardingTarget");
     getFixedSlot(SpecializedReactionState).dumpStringContent(out);
     json.endStringProperty();
   }
