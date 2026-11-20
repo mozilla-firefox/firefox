@@ -188,6 +188,44 @@ class PromiseObject : public NativeObject {
     return getFixedSlot(REACTIONS_OR_RESULT_SLOT);
   }
 
+  void setReactions(const JS::Value& reactions) {
+    MOZ_ASSERT(state() == JS::PromiseState::Pending);
+    MOZ_ASSERT(!hasEmbeddedReaction());
+    MOZ_ASSERT(reactions.isObject());
+    setFixedSlot(REACTIONS_OR_RESULT_SLOT, reactions);
+  }
+
+  void setSettledResult(JS::PromiseState targetState, const JS::Value& result) {
+    MOZ_ASSERT(state() == JS::PromiseState::Pending);
+    MOZ_ASSERT(targetState != JS::PromiseState::Pending);
+    MOZ_ASSERT(!hasEmbeddedReaction());
+
+    // FulfillPromise
+    // Step 3. Set promise.[[PromiseResult]] to value.
+    // RejectPromise
+    // Step 3. Set promise.[[PromiseResult]] to reason.
+    //
+    // Step 4. Set promise.[[PromiseFulfillReactions]] to undefined.
+    // Step 5. Set promise.[[PromiseRejectReactions]] to undefined.
+    //
+    // The same slot is used for the reactions list and the result, so setting
+    // the result also removes the reactions list.
+    setFixedSlot(REACTIONS_OR_RESULT_SLOT, result);
+
+    // FulfillPromise
+    // Step 6. Set promise.[[PromiseState]] to fulfilled.
+    // RejectPromise
+    // Step 6. Set promise.[[PromiseState]] to rejected.
+    int32_t flags = this->flags() | PROMISE_FLAG_RESOLVED;
+    if (targetState == JS::PromiseState::Fulfilled) {
+      flags |= PROMISE_FLAG_FULFILLED;
+    }
+    setFixedSlotTyped(FLAGS_SLOT, JS::Int32Value(flags));
+
+    // Also null out the resolve/reject functions so they can be GC'd.
+    setFixedSlotTyped(REJECT_FUNCTION_SLOT, JS::UndefinedValue());
+  }
+
   bool hasExistingReaction() const {
     MOZ_ASSERT(state() == JS::PromiseState::Pending);
     return !getFixedSlot(REACTIONS_OR_RESULT_SLOT).isUndefined();
@@ -206,6 +244,43 @@ class PromiseObject : public NativeObject {
   bool embeddedReactionHasIncumbentGlobal() const {
     MOZ_ASSERT(hasEmbeddedReaction());
     return flags() & PROMISE_FLAG_EMBEDDED_REACTION_REALM_INCUMBENT;
+  }
+
+  JS::Value embeddedReactionOnFulfilled() const {
+    MOZ_ASSERT(hasEmbeddedReaction());
+    return getFixedSlot(REACTIONS_OR_RESULT_SLOT);
+  }
+
+  JS::Value embeddedReactionOnRejected() const {
+    MOZ_ASSERT(hasEmbeddedReaction());
+    return getFixedSlot(EMBEDDED_REACTION_ON_REJECTED_SLOT);
+  }
+
+  JS::Value embeddedReactionPromiseOrState() const {
+    MOZ_ASSERT(hasEmbeddedReaction());
+    return getFixedSlot(EMBEDDED_REACTION_PROMISE_OR_SPECIALIZED_STATE_SLOT);
+  }
+
+  void initEmbeddedReaction(int32_t reactionFlags, bool hasIncumbentGlobal,
+                            const JS::Value& onFulfilled,
+                            const JS::Value& onRejected,
+                            const JS::Value& promiseOrState) {
+    MOZ_ASSERT(state() == JS::PromiseState::Pending);
+    MOZ_ASSERT(!hasExistingReaction());
+    MOZ_ASSERT((uint32_t(reactionFlags) &
+                ~(PROMISE_FLAG_EMBEDDED_REACTION_FLAGS_MASK >>
+                  PROMISE_FLAG_EMBEDDED_REACTION_FLAGS_SHIFT)) == 0);
+    int32_t flags =
+        this->flags() | PROMISE_FLAG_EMBEDDED_REACTION |
+        (reactionFlags << PROMISE_FLAG_EMBEDDED_REACTION_FLAGS_SHIFT);
+    if (hasIncumbentGlobal) {
+      flags |= PROMISE_FLAG_EMBEDDED_REACTION_REALM_INCUMBENT;
+    }
+    setFixedSlotTyped(FLAGS_SLOT, JS::Int32Value(flags));
+    setFixedSlot(REACTIONS_OR_RESULT_SLOT, onFulfilled);
+    setFixedSlot(EMBEDDED_REACTION_ON_REJECTED_SLOT, onRejected);
+    setFixedSlot(EMBEDDED_REACTION_PROMISE_OR_SPECIALIZED_STATE_SLOT,
+                 promiseOrState);
   }
 
   // Remove the embedded reaction, leaving the promise without reactions.

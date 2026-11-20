@@ -1372,8 +1372,7 @@ class MOZ_STACK_CLASS StackPromiseReaction
 
     int32_t flags = promise->embeddedReactionFlags();
     bool hasSpecializedState = flags & REACTION_FLAGS_WITH_SPECIALIZED_STATE;
-    Value promiseOrSpecializedState = promise->getFixedSlot(
-        PromiseObject::EMBEDDED_REACTION_PROMISE_OR_SPECIALIZED_STATE_SLOT);
+    Value promiseOrSpecializedState = promise->embeddedReactionPromiseOrState();
     JSObject* resultPromise = hasSpecializedState
                                   ? nullptr
                                   : promiseOrSpecializedState.toObjectOrNull();
@@ -1384,10 +1383,9 @@ class MOZ_STACK_CLASS StackPromiseReaction
 
     initReaction(resultPromise,
                  /* onFulfilled = */
-                 promise->getFixedSlot(PromiseObject::REACTIONS_OR_RESULT_SLOT),
+                 promise->embeddedReactionOnFulfilled(),
                  /* onRejected = */
-                 promise->getFixedSlot(
-                     PromiseObject::EMBEDDED_REACTION_ON_REJECTED_SLOT),
+                 promise->embeddedReactionOnRejected(),
                  /* resolve = */ nullptr, /* reject = */ nullptr,
                  incumbentGlobalRepresentative,
                  /* optionalHostDefinedData = */ NullValue());
@@ -1446,20 +1444,9 @@ class MOZ_STACK_CLASS StackPromiseReaction
     uint32_t flags = uint32_t(this->flags());
     MOZ_ASSERT((flags & ~InlineFlagsMask) == 0);
 
-    uint32_t promiseFlags =
-        uint32_t(promise->flags()) | PROMISE_FLAG_EMBEDDED_REACTION |
-        (flags << PROMISE_FLAG_EMBEDDED_REACTION_FLAGS_SHIFT);
-    if (!getIncumbentGlobalRepresentative().isNull()) {
-      promiseFlags |= PROMISE_FLAG_EMBEDDED_REACTION_REALM_INCUMBENT;
-    }
-    promise->setFixedSlotTyped(PromiseObject::FLAGS_SLOT,
-                               Int32Value(int32_t(promiseFlags)));
-    promise->setFixedSlot(PromiseObject::REACTIONS_OR_RESULT_SLOT,
-                          onFulfilled());
-    promise->setFixedSlot(PromiseObject::EMBEDDED_REACTION_ON_REJECTED_SLOT,
-                          onRejected());
-    promise->setFixedSlot(
-        PromiseObject::EMBEDDED_REACTION_PROMISE_OR_SPECIALIZED_STATE_SLOT,
+    promise->initEmbeddedReaction(
+        flags, !getIncumbentGlobalRepresentative().isNull(), onFulfilled(),
+        onRejected(),
         hasSpecializedReactionState() ? specializedReactionState()
                                       : ObjectOrNullValue(this->promise()));
   }
@@ -1559,8 +1546,7 @@ static PromiseReactionRecord* NewReactionRecordFromStack(
   }
 
   promise->clearEmbeddedReaction();
-  promise->setFixedSlot(PromiseObject::REACTIONS_OR_RESULT_SLOT,
-                        ObjectValue(*reaction));
+  promise->setReactions(ObjectValue(*reaction));
   return true;
 }
 
@@ -2666,32 +2652,7 @@ static void SettlePromise(JSContext* cx, Handle<PromiseObject*> promise,
   MOZ_ASSERT(state != JS::PromiseState::Pending);
   MOZ_ASSERT(!promise->hasEmbeddedReaction());
 
-  // FulfillPromise
-  // Step 3. Set promise.[[PromiseResult]] to value.
-  // RejectPromise
-  // Step 3. Set promise.[[PromiseResult]] to reason.
-  //
-  // Step 4. Set promise.[[PromiseFulfillReactions]] to undefined.
-  // Step 5. Set promise.[[PromiseRejectReactions]] to undefined.
-  //
-  // The same slot is used for the reactions list and the result, so setting
-  // the result also removes the reactions list.
-  promise->setFixedSlot(PromiseObject::REACTIONS_OR_RESULT_SLOT, valueOrReason);
-
-  // FulfillPromise
-  // Step 6. Set promise.[[PromiseState]] to fulfilled.
-  // RejectPromise
-  // Step 6. Set promise.[[PromiseState]] to rejected.
-  int32_t flags = promise->flags();
-  flags |= PROMISE_FLAG_RESOLVED;
-  if (state == JS::PromiseState::Fulfilled) {
-    flags |= PROMISE_FLAG_FULFILLED;
-  }
-  promise->setFixedSlotTyped(PromiseObject::FLAGS_SLOT, Int32Value(flags));
-
-  // Also null out the resolve/reject functions so they can be GC'd.
-  promise->setFixedSlotTyped(PromiseObject::REJECT_FUNCTION_SLOT,
-                             UndefinedValue());
+  promise->setSettledResult(state, valueOrReason);
 
   // onSettled observes the settled state, so it must come last.
   //
@@ -8453,7 +8414,7 @@ template <typename InlineOrObjectReaction>
 
   if (reactionsVal.isUndefined()) {
     // If no reactions existed so far, just store the reaction record directly.
-    promise->setFixedSlot(PromiseObject::REACTIONS_OR_RESULT_SLOT, reactionVal);
+    promise->setReactions(reactionVal);
     return true;
   }
 
@@ -8484,8 +8445,7 @@ template <typename InlineOrObjectReaction>
     reactions->initDenseElement(0, reactionsVal);
     reactions->initDenseElement(1, reactionVal);
 
-    promise->setFixedSlot(PromiseObject::REACTIONS_OR_RESULT_SLOT,
-                          ObjectValue(*reactions));
+    promise->setReactions(ObjectValue(*reactions));
   } else {
     // Otherwise, just store the new reaction.
     MOZ_RELEASE_ASSERT(reactionsObj->is<NativeObject>());
