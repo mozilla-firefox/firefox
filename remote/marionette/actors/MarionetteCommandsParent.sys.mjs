@@ -347,6 +347,34 @@ export class MarionetteCommandsParent extends JSWindowActorParent {
       readback = false;
     }
 
+    if (lazy.capture.usesReadback(this.browsingContext, readback)) {
+      // Readback captures whatever was last composited, so let pending paints
+      // and resizes land first. Ask the top-level document's actor rather than
+      // this one, since this actor belongs to the frame that's currently
+      // selected via WebDriver:SwitchToFrame, which may be an out-of-process
+      // iframe.
+      const top = this.browsingContext.top;
+      const chromeWindow = top.embedderElement && top.topChromeWindow;
+      if (chromeWindow) {
+        // The <browser>'s current size is only sent to content at the end of a
+        // chrome refresh tick (in UpdateRemoteFrameEffects), so wait for a
+        // tick to complete. Then we wait for content to handle that size
+        // update, via the query below: it goes over the same IPC channel as the
+        // size update, so content handles the size update first.
+        await new Promise(resolve =>
+          chromeWindow.requestAnimationFrame(() =>
+            chromeWindow.requestAnimationFrame(resolve)
+          )
+        );
+      }
+      const topWindowGlobal = top.currentWindowGlobal;
+      if (topWindowGlobal) {
+        await topWindowGlobal
+          .getActor("MarionetteCommands")
+          .sendQuery("MarionetteCommandsParent:_waitForPaintedViewport");
+      }
+    }
+
     const rect = await this.sendQuery(
       "MarionetteCommandsParent:getScreenshotRect",
       {

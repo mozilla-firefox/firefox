@@ -270,6 +270,17 @@ class TestScreenCaptureContent(WindowManagerMixin, ScreenCaptureTestCase):
         self.assert_readback_viewport(screenshot)
 
     @unittest.skipIf(sys.platform.startswith("darwin"), "Not supported on MacOS")
+    def test_readback_reflects_preceding_dom_change(self):
+        # A readback right after a DOM change must not capture the frame that
+        # was composited before the change.
+        self.marionette.navigate(inline("<body style='background: lime'>"))
+        expected = self.marionette.screenshot(full=False, readback=True)
+        self.marionette.navigate(inline("<body style='background: red'>"))
+        self.marionette.execute_script("document.body.style.background = 'lime';")
+        screenshot = self.marionette.screenshot(full=False, readback=True)
+        self.assertEqual(expected, screenshot)
+
+    @unittest.skipIf(sys.platform.startswith("darwin"), "Not supported on MacOS")
     def test_readback_viewport(self):
         self.marionette.navigate(short)
         with self.marionette.using_prefs({"remote.screenshot.use_readback": True}):
