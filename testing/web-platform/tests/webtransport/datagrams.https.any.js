@@ -100,7 +100,6 @@ promise_test(async t => {
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
   await wt.ready;
-  wt.datagrams.outgoingMaxAge = Infinity;
 
   const writer = wt.datagrams.createWritable().getWriter();
   const reader = wt.datagrams.readable.getReader();
@@ -128,7 +127,6 @@ promise_test(async t => {
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
   await wt.ready;
-  wt.datagrams.outgoingMaxAge = Infinity;
 
   const writer = wt.datagrams.createWritable().getWriter();
   const reader = wt.datagrams.readable.getReader({ mode: 'byob' });
@@ -171,7 +169,6 @@ promise_test(async t => {
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
   await wt.ready;
-  wt.datagrams.outgoingMaxAge = Infinity;
 
   const writer = wt.datagrams.createWritable().getWriter();
   const reader = wt.datagrams.readable.getReader({ mode: 'byob' });
@@ -198,7 +195,6 @@ promise_test(async t => {
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
   await wt.ready;
-  wt.datagrams.outgoingMaxAge = Infinity;
 
   const writer = wt.datagrams.createWritable().getWriter();
   const reader = wt.datagrams.readable.getReader();
@@ -252,7 +248,6 @@ promise_test(async t => {
   const wt = new WebTransport(webtransport_url('echo.py'));
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
-  wt.datagrams.outgoingMaxAge = Infinity;
 
   const writer = wt.datagrams.createWritable().getWriter();
   const reader = wt.datagrams.readable.getReader();
@@ -320,7 +315,6 @@ promise_test(async t => {
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
   await wt.ready;
-  wt.datagrams.outgoingMaxAge = Infinity;
 
   const N = 5;
   wt.datagrams.incomingMaxBufferedDatagrams = N;
