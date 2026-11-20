@@ -3420,7 +3420,8 @@ void nsBlockFrame::ReflowLine(BlockReflowState& aState, LineIterator aLine,
   // hidden by `content-visibility`, all of them are, so avoid reflow in that
   // case as well.
   nsIFrame* firstChild = aLine->mFirstChild;
-  if (firstChild->IsHiddenByContentVisibilityOfInFlowParentForLayout()) {
+  if (firstChild->IsHiddenByContentVisibilityOfInFlowParentForLayout() &&
+      !HasAnyStateBits(NS_FRAME_OWNS_ANON_BOXES) && !GetNextContinuation()) {
     return;
   }
 
