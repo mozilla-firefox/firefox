@@ -1172,7 +1172,6 @@ navigation-api/navigation-history-entry/key-id-location-reload-intercept.html @w
 navigation-api/navigation-history-entry/key-id-location-reload.html @web-platform-tests/interop
 navigation-api/navigation-history-entry/key-id-location-replace-cross-origin.html @web-platform-tests/interop
 navigation-api/navigation-history-entry/key-id-location-replace.html @web-platform-tests/interop
-navigation-api/navigation-history-entry/no-referrer-dynamic-url-censored.html @web-platform-tests/interop
 navigation-api/navigation-history-entry/no-referrer-from-meta-url-censored.html @web-platform-tests/interop
 navigation-api/navigation-history-entry/no-referrer-url-censored.html @web-platform-tests/interop
 navigation-api/navigation-history-entry/opaque-origin-data-url.html @web-platform-tests/interop
@@ -1354,10 +1353,8 @@ navigation-api/precommit-handler/precommitHandler-redirect-throws.html @web-plat
 navigation-api/precommit-handler/precommitHandler-reload.html @web-platform-tests/interop
 navigation-api/precommit-handler/precommitHandler-replace.html @web-platform-tests/interop
 navigation-api/precommit-handler/precommitHandler-traversal-commit-new-navigation-before-commit.html @web-platform-tests/interop
-navigation-api/precommit-handler/precommitHandler-traversal-window-stop-before-commit.html @web-platform-tests/interop
 navigation-api/precommit-handler/precommitHandler-traverse.html @web-platform-tests/interop
 navigation-api/precommit-handler/precommitHandler-uncancelable.html @web-platform-tests/interop
-navigation-api/precommit-handler/precommitHandler-window-stop-before-commit.html @web-platform-tests/interop
 navigation-api/scroll-behavior/after-transition-basic.html @web-platform-tests/interop
 navigation-api/scroll-behavior/after-transition-change-history-scroll-restoration-during-promise.html @web-platform-tests/interop
 navigation-api/scroll-behavior/after-transition-explicit-scroll.html @web-platform-tests/interop
