@@ -42,18 +42,18 @@ index 009e1408b9..a737f9bdb3 100644
  uint32_t DeviceInfoPipeWire::NumberOfDevices() {
    RTC_CHECK(pipewire_session_);
 diff --git a/modules/video_capture/linux/pipewire_session.cc b/modules/video_capture/linux/pipewire_session.cc
-index e17bab807c..cd56026c7b 100644
+index 93b262128c..2025c8a2c3 100644
 --- a/modules/video_capture/linux/pipewire_session.cc
 +++ b/modules/video_capture/linux/pipewire_session.cc
-@@ -36,6 +36,7 @@
+@@ -37,6 +37,7 @@
  #include "modules/portal/pipewire_utils.h"
  #include "modules/portal/portal_request_response.h"
  #include "modules/video_capture/linux/camera_portal.h"
 +#include "modules/video_capture/linux/device_info_pipewire.h"
+ #include "modules/video_capture/linux/pipewire_video_sizes.h"
  #include "modules/video_capture/video_capture_defines.h"
  #include "modules/video_capture/video_capture_options.h"
- #include "rtc_base/logging.h"
-@@ -343,6 +344,30 @@ void PipeWireSession::InitPipeWire(int fd) {
+@@ -342,6 +343,30 @@ void PipeWireSession::InitPipeWire(int fd) {
      Finish(VideoCaptureOptions::Status::ERROR);
  }
  
@@ -84,7 +84,7 @@ index e17bab807c..cd56026c7b 100644
  RTC_NO_SANITIZE("cfi-icall")
  bool PipeWireSession::StartPipeWire(int fd) {
    pw_initializer_ = std::make_unique<PipeWireInitializer>();
-@@ -415,6 +440,21 @@ void PipeWireSession::PipeWireSync() {
+@@ -414,6 +439,21 @@ void PipeWireSession::PipeWireSync() {
    sync_seq_ = pw_core_sync(pw_core_, PW_ID_CORE, sync_seq_);
  }
  
@@ -106,7 +106,7 @@ index e17bab807c..cd56026c7b 100644
  // static
  void PipeWireSession::OnCoreError(void* data,
                                    uint32_t id,
-@@ -472,6 +512,8 @@ void PipeWireSession::OnRegistryGlobal(void* data,
+@@ -471,6 +511,8 @@ void PipeWireSession::OnRegistryGlobal(void* data,
  
    that->nodes_.push_back(PipeWireNode::Create(that, id, props));
    that->PipeWireSync();
@@ -115,7 +115,7 @@ index e17bab807c..cd56026c7b 100644
  }
  
  // static
-@@ -481,10 +523,15 @@ void PipeWireSession::OnRegistryGlobalRemove(void* data, uint32_t id) {
+@@ -480,10 +522,15 @@ void PipeWireSession::OnRegistryGlobalRemove(void* data, uint32_t id) {
    std::erase_if(that->nodes_, [id](const PipeWireNode::PipeWireNodePtr& node) {
      return node->id() == id;
    });
