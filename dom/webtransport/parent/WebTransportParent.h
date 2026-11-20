@@ -9,6 +9,7 @@
 
 #include "ErrorList.h"
 #include "mozilla/dom/ClientIPCTypes.h"
+#include "mozilla/dom/DatagramCredit.h"
 #include "mozilla/dom/FlippedOnce.h"
 #include "mozilla/dom/PWebTransportParent.h"
 #include "mozilla/ipc/Endpoint.h"
@@ -141,7 +142,7 @@ class WebTransportParent : public PWebTransportParent,
   // called on the socket thread after mWebTransport has been retargeted there.
   void CloseSessionForDestroyedActor();
 
-  // Adds the expiries counted in mParentExpiredOutgoing to aStats, which only
+  // Adds the expiries counted by mDatagramCreditGranter to aStats, which only
   // carries neqo's own count.  Must be called on the socket thread.
   void AddParentExpiredOutgoing(WebTransportStatsData& aStats) const;
 
@@ -158,9 +159,6 @@ class WebTransportParent : public PWebTransportParent,
   // thread only.
   bool mRetargeted = false;
   uint64_t mSessionId{0};
-  // DatagramPrefixBytes() for mSessionId, sent to content with each
-  // DatagramCapacity so both sides charge datagrams the way neqo does.
-  uint64_t mDatagramPrefixBytes{0};
 
   mozilla::Mutex mMutex{"WebTransportParent::mMutex"};
   std::function<void(ResolveType)> mResolver MOZ_GUARDED_BY(mMutex);
@@ -171,49 +169,17 @@ class WebTransportParent : public PWebTransportParent,
   uint64_t mMaxDatagramSizeValue{0};
   // Last values set via RecvUpdateDatagramQueueParams(), used by
   // RecvOutgoingDatagrams() to drop datagrams that are already older than
-  // outgoingMaxAge by the time they reach the parent (see comment there),
-  // and as the window size for the datagram-count credit grant below.
+  // outgoingMaxAge by the time they reach the parent (see comment there).
   double mDatagramMaxAge{std::numeric_limits<double>::infinity()};
   // Latest write timestamp handed to neqo; see RecvOutgoingDatagrams().
   TimeStamp mLastOutgoingDatagramTimestamp;
-  uint32_t mOutgoingMaxBufferedDatagrams{5};
+  // Computes the DatagramCapacity messages sent to content; also counts the
+  // datagrams RecvOutgoingDatagrams() drops for age, which neqo cannot see.
+  OutgoingDatagramCreditGranter mDatagramCreditGranter;
   // Set while RecvOutgoingDatagrams() runs, so a space-available notification
   // the session raises synchronously from inside it (HTTP/2 writes a datagram
   // capsule as soon as it is enqueued) defers to that batch's own sample.
   bool mInOutgoingDatagramsBatch{false};
-  // Cumulative datagrams/bytes retired from [[OutgoingDatagramsQueue]]: both
-  // ones handed to neqo's outgoing queue and ones dropped right here for
-  // being too old to bother forwarding (see RecvOutgoingDatagrams) -- both
-  // leave the queue, so both must count, or a run of datagrams that all
-  // expire before reaching neqo would freeze this at its initial value
-  // forever and starve every write() deferred past outgoingMaxBufferedDatagrams
-  // of the credit it's waiting for. Combined with the queue's live
-  // DatagramQueueCapacity snapshot, this derives a MAX_DATA-style cumulative
-  // credit grant: everything retired so far, plus however much room is
-  // currently free. Growth slows exactly when the queue can't drain fast
-  // enough to keep that room from shrinking, which is the desired
-  // backpressure signal.
-  uint64_t mCumulativeDatagramsRetired{0};
-  uint64_t mCumulativeBytesRetired{0};
-  // The grant values actually sent in the last DatagramCapacity message, so
-  // a new one is sent only once consumption has crossed roughly half of the
-  // outstanding window since then (mirrors the dedupe in neqo's
-  // ReceiverFlowControl::should_send_update), or a sent/expired/dropped
-  // delta is waiting to be reported.
-  uint64_t mLastGrantedCumulativeDatagrams{0};
-  uint64_t mLastGrantedCumulativeBytes{0};
-  // This process's own outgoing-datagram drop, for arriving already older
-  // than outgoingMaxAge (see RecvOutgoingDatagrams) -- a second expiry site
-  // neqo's own counter cannot see. Cumulative, delta-ed into
-  // DatagramCapacity's expiredDelta the same way as the neqo-sourced
-  // counters below.
-  uint64_t mParentExpiredOutgoing{0};
-  // Last values observed from neqo's GetDatagramSessionStats() and from
-  // mParentExpiredOutgoing, for computing this message's deltas.
-  uint64_t mLastObservedSentOutgoing{0};
-  uint64_t mLastObservedExpiredOutgoingFromNeqo{0};
-  uint64_t mLastObservedDroppedOutgoing{0};
-  uint64_t mLastObservedParentExpiredOutgoing{0};
   // Resolvers for in-flight GetStats() requests; only one gather runs at a
   // time, so concurrent calls share it. Socket thread only; drained via
   // ResolvePendingGetStats().
