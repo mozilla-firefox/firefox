@@ -271,10 +271,7 @@ upgrade-vpn-button = Try { -mozilla-vpn-brand-name }
 
 ## Messages and errors
 
-ipprotection-connection-status-generic-error-title-1 = Couldn’t connect to VPN
-  .aria-label = Couldn’t connect to VPN
-ipprotection-connection-status-generic-error-description = Try again in a few minutes.
-ipprotection-connection-status-generic-error-try-again = Please try again later.
+ipprotection-connection-status-try-again-button = Try again
 
 ipprotection-connection-status-network-error-title-1 = Check your internet connection
   .aria-label = Check your internet connection

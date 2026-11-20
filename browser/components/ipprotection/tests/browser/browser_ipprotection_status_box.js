@@ -210,16 +210,34 @@ add_task(async function test_generic_error() {
   Assert.ok(statusBox, "Status box should be shown when there is an error");
 
   let errorTitle = statusBox.titleEl;
-  let errorDescription = statusBox.descriptionEl;
 
   Assert.ok(errorTitle, "Error title should be present");
-  Assert.ok(errorDescription, "Error description should be present");
+  Assert.equal(
+    errorTitle.getAttribute("data-l10n-id"),
+    "ipprotection-connection-status-blocked-error-title-1",
+    "Error title should say the VPN is unavailable"
+  );
+  Assert.ok(!statusBox.descriptionEl, "Error description should not be shown");
   await checkStatusBoxAriaLabel(statusBox);
 
   Assert.equal(
     statusBox.type,
     ERRORS.GENERIC,
     "Status box type should be generic-error"
+  );
+
+  Assert.equal(
+    statusBox.querySelector('img[slot="image"]')?.src,
+    "chrome://browser/content/ipprotection/assets/states/ipprotection-error.svg",
+    "Error icon should be shown"
+  );
+
+  let tryAgainButton = content.tryAgainButtonEl;
+  Assert.ok(tryAgainButton, "Try again button should be present");
+  Assert.equal(
+    tryAgainButton.type,
+    "primary",
+    "Try again button should be a primary button"
   );
 
   Assert.ok(!content.statusCardEl, "Status card should be hidden when error");
@@ -258,6 +276,10 @@ add_task(async function test_network_error() {
   // Check for the error icon in the network error case
   let errorImage = statusBox.querySelector('img[slot="image"]');
   Assert.ok(errorImage, "Error icon should be present for network error");
+  Assert.ok(
+    !content.tryAgainButtonEl,
+    "Try again button should only be shown for the generic error"
+  );
 
   Assert.ok(!content.statusCardEl, "Status card should be hidden when error");
 
@@ -268,7 +290,7 @@ add_task(async function test_network_error() {
 });
 
 /**
- * Tests the catastrophic error type in the status box component.
+ * Tests that the catastrophic error shows the same state as the generic error.
  */
 add_task(async function test_catastrophic_error() {
   let content = await openPanel({
@@ -280,20 +302,28 @@ add_task(async function test_catastrophic_error() {
   Assert.ok(statusBox, "Status box should be shown when there is an error");
 
   let errorTitle = statusBox.titleEl;
-  let errorDescription = statusBox.descriptionEl;
 
   Assert.ok(errorTitle, "Error title should be present");
-  Assert.ok(errorDescription, "Error description should be present");
+  Assert.equal(
+    errorTitle.getAttribute("data-l10n-id"),
+    "ipprotection-connection-status-blocked-error-title-1",
+    "Error title should have correct l10n id"
+  );
+  Assert.ok(!statusBox.descriptionEl, "Error description should not be shown");
   await checkStatusBoxAriaLabel(statusBox);
 
   Assert.equal(
     statusBox.type,
-    ERRORS.CATASTROPHIC,
-    "Status box type should be catastrophic-error"
+    ERRORS.GENERIC,
+    "Status box type should be generic-error"
   );
 
-  let errorImage = statusBox.querySelector('img[slot="image"]');
-  Assert.ok(errorImage, "Error icon should be present for catastrophic error");
+  Assert.equal(
+    statusBox.querySelector('img[slot="image"]')?.src,
+    "chrome://browser/content/ipprotection/assets/states/ipprotection-error.svg",
+    "Error icon should be shown"
+  );
+  Assert.ok(content.tryAgainButtonEl, "Try again button should be present");
 
   Assert.ok(!content.statusCardEl, "Status card should be hidden when error");
 
@@ -420,5 +450,101 @@ add_task(async function test_region_unavailable_shows_generic_error() {
 
   await closePanel();
   sandbox.restore();
+  cleanupService();
+});
+
+/**
+ * Tests that clicking Try again on the generic error connects the VPN.
+ */
+add_task(async function test_generic_error_try_again_connects() {
+  setupService({
+    isReady: true,
+  });
+  IPProtectionService.updateState();
+  await waitForProxyState(IPPProxyStates.READY);
+
+  let content = await openPanel({
+    isReady: true,
+    error: ERRORS.GENERIC,
+  });
+
+  let tryAgainButton = content.tryAgainButtonEl;
+  Assert.ok(tryAgainButton, "Try again button should be present");
+  tryAgainButton.click();
+
+  await waitForProxyState(IPPProxyStates.ACTIVE);
+  await TestUtils.waitForCondition(
+    () => !content.state.error && content.statusCardEl,
+    "Panel should show the status card once connected"
+  );
+  Assert.ok(content.state.isActive, "Panel state should be active");
+  Assert.ok(!content.statusBoxEl, "Error should no longer be shown");
+
+  await closePanel();
+  await IPPProxyManager.reset();
+  cleanupService();
+});
+
+/**
+ * Tests that a failed Try again leaves the generic error unchanged.
+ */
+add_task(async function test_generic_error_try_again_fails() {
+  // Drop any pass cached by an earlier connection so that starting fetches
+  // a new one and hits the failing response.
+  await IPPProxyManager.reset();
+  setupService({
+    isReady: true,
+    proxyPass: {
+      status: 451,
+      error: "region_unavailable",
+      pass: null,
+    },
+  });
+  IPProtectionService.updateState();
+  await waitForProxyState(IPPProxyStates.READY);
+
+  const sandbox = sinon.createSandbox();
+  let startSpy = sandbox.spy(IPPProxyManager, "start");
+
+  let content = await openPanel({
+    isReady: true,
+    error: ERRORS.GENERIC,
+  });
+
+  let statusCardShown = false;
+  let observer = new MutationObserver(() => {
+    if (content.statusCardEl) {
+      statusCardShown = true;
+    }
+  });
+  observer.observe(content.shadowRoot, { childList: true, subtree: true });
+
+  content.tryAgainButtonEl.click();
+
+  await TestUtils.waitForCondition(
+    () => startSpy.called,
+    "Retrying should try to start the proxy"
+  );
+  let { error } = await startSpy.firstCall.returnValue;
+  Assert.ok(error, "Starting the proxy should fail");
+  await content.updateComplete;
+  observer.disconnect();
+
+  Assert.equal(
+    content.state.error,
+    ERRORS.GENERIC,
+    "Panel should still show the generic error"
+  );
+  Assert.equal(
+    content.statusBoxEl?.type,
+    ERRORS.GENERIC,
+    "Status box should still be the generic error"
+  );
+  Assert.ok(content.tryAgainButtonEl, "Try again button should still be shown");
+  Assert.ok(!statusCardShown, "Status card should not be shown while retrying");
+
+  await closePanel();
+  sandbox.restore();
+  await IPPProxyManager.stop();
   cleanupService();
 });

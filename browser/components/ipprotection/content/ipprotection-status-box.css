@@ -40,7 +40,7 @@
   }
 }
 
-.catastrophic-error {
+.generic-error {
   ::slotted([slot="image"]) {
     -moz-context-properties: fill;
     fill: var(--icon-color-critical);

@@ -186,6 +186,7 @@ export class IPProtectionPanel {
   initiatedUpgrade = false;
   #window = null;
   #showToken = null;
+  #isRetrying = false;
   #panelView = null;
   #headerButtons = [];
   #locationsClosedByKeyboard = false;
@@ -615,7 +616,9 @@ export class IPProtectionPanel {
       lazy.ERRORS.NOT_READY,
     ];
     if (error && !handledElsewhere.includes(error)) {
-      const errorMessage = this.#errorMessage(error);
+      const errorMessage = this.state.error
+        ? this.state.error
+        : this.#errorMessage(error);
       this.setState({
         error: errorMessage,
         showSiteInclusionPrompt: false,
@@ -638,6 +641,23 @@ export class IPProtectionPanel {
       : lazy.IPProtectionServerlist.getRecommendedLocation();
     if (current && wanted?.country.code !== current.country.code) {
       lazy.IPPProxyManager.switch(country);
+    }
+  }
+
+  /**
+   * Retries a failed connection from the error state. The error stays
+   * visible until the connection is active or paused, so a failed retry
+   * changes nothing.
+   */
+  async #retryProxy() {
+    if (this.#isRetrying) {
+      return;
+    }
+    this.#isRetrying = true;
+    try {
+      await this.#startProxy();
+    } finally {
+      this.#isRetrying = false;
     }
   }
 
@@ -1038,6 +1058,7 @@ export class IPProtectionPanel {
     doc.addEventListener("IPProtection:ClickUpgrade", this.handleEvent);
     doc.addEventListener("IPProtection:Close", this.handleEvent);
     doc.addEventListener("IPProtection:UserEnable", this.handleEvent);
+    doc.addEventListener("IPProtection:UserRetry", this.handleEvent);
     doc.addEventListener("IPProtection:UserDisable", this.handleEvent);
     doc.addEventListener("IPProtection:OptIn", this.handleEvent);
     doc.addEventListener("IPProtection:UserEnableVPNForSite", this.handleEvent);
@@ -1067,6 +1088,7 @@ export class IPProtectionPanel {
     doc.removeEventListener("IPProtection:ClickUpgrade", this.handleEvent);
     doc.removeEventListener("IPProtection:Close", this.handleEvent);
     doc.removeEventListener("IPProtection:UserEnable", this.handleEvent);
+    doc.removeEventListener("IPProtection:UserRetry", this.handleEvent);
     doc.removeEventListener("IPProtection:UserDisable", this.handleEvent);
     doc.removeEventListener("IPProtection:OptIn", this.handleEvent);
     doc.removeEventListener(
@@ -1501,6 +1523,8 @@ export class IPProtectionPanel {
         Services.prefs.setBoolPref(SITE_INCLUSION_PROMPT_SHOWN_PREF, true);
         this.setState({ showSiteInclusionPrompt: true });
       }
+    } else if (event.type == "IPProtection:UserRetry") {
+      this.#retryProxy();
     } else if (event.type == "IPProtection:UserDisable") {
       this.#stopProxy();
       Services.prefs.setBoolPref("browser.ipProtection.userEnabled", false);
@@ -1521,7 +1545,12 @@ export class IPProtectionPanel {
       event.type == "IPProtectionService:StateChanged" ||
       event.type === "IPPAuthProvider:StateChanged"
     ) {
-      const errorType = this.#getProxyErrorType();
+      const errorType =
+        this.#isRetrying &&
+        lazy.IPPProxyManager.state !== lazy.IPPProxyStates.ACTIVE &&
+        lazy.IPPProxyManager.state !== lazy.IPPProxyStates.PAUSED
+          ? this.state.error
+          : this.#getProxyErrorType();
       const paused = lazy.IPPProxyManager.state === lazy.IPPProxyStates.PAUSED;
 
       this.setState({
