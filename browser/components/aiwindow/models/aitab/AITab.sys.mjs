@@ -28,6 +28,7 @@ import {
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
+  A2UI: "moz-src:///browser/components/aiwindow/ui/modules/A2UI.sys.mjs",
   AIWindow:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
   AITabStore:
@@ -962,6 +963,9 @@ export class AITab {
       components_used: result.surface
         ? AITab.#componentsUsed(result.surface)
         : "[]",
+      components_converted: JSON.stringify(
+        result.surface ? new lazy.A2UI(result.surface).conversions() : []
+      ),
       num_chars_read: stats.charsRead,
       num_chars_out: stats.charsOut,
       seconds_elapsed: Math.round((ChromeUtils.now() - startTime) / 1000),
@@ -1501,7 +1505,8 @@ export class AITab {
    * The component types a validated surface uses, for telemetry: a
    * JSON-encoded array in render order, walking from the root through each
    * component's header then children. A component carrying a `layout` is
-   * listed as `component_layout`.
+   * listed as `component_layout`. These are the types that the model sent;
+   * components_converted lists the ones that render as a different type.
    *
    * @param {A2UISurface} surface
    * @returns {string}

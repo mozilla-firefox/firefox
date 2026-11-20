@@ -407,8 +407,7 @@ smart_window:
       component_type:
         type: string
         description: >
-          The component name recorded for creation, for example "Header"
-          or "List_column". "unknown" when the click is outside those blocks.
+          The component name that recorded the click.
       result:
         type: string
         description: >
@@ -4316,8 +4315,12 @@ smart_window:
     description: |
       Recorded when generation of a new AI Tab page finishes, successfully or
       not.
-    bugs: *aitab_bugs
-    data_reviews: *aitab_data_reviews
+    bugs: &aitab_complete_bugs
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2069132
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2088273
+    data_reviews: &aitab_complete_data_reviews
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2069132
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2088273
     data_sensitivity:
       - interaction
     notification_emails: *emails
@@ -4340,7 +4343,17 @@ smart_window:
         description: >
           JSON-encoded array of the component types in the generated page, in
           the order they are used, each formatted as component_layout (or just
-          component when it has no layout). An empty array on failure.
+          component when it has no layout). These are the types that the model
+          sent. An empty array on failure.
+      components_converted:
+        type: string
+        description: >
+          JSON-encoded array of the body blocks that render as a different
+          component from the one the model sent, in render order, each
+          formatted as sent>rendered with the names used in components_used,
+          for example "Highlights>TextBlock". A block that is dropped is
+          sent>none. An empty array when no block is converted, and on
+          failure.
       num_chars_read:
         type: quantity
         unit: characters
@@ -4363,8 +4376,8 @@ smart_window:
     description: |
       Recorded when a modification of an existing AI Tab page finishes,
       successfully or not.
-    bugs: *aitab_bugs
-    data_reviews: *aitab_data_reviews
+    bugs: *aitab_complete_bugs
+    data_reviews: *aitab_complete_data_reviews
     data_sensitivity:
       - interaction
     notification_emails: *emails

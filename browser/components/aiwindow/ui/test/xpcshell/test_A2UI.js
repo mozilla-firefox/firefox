@@ -16,6 +16,128 @@ describe("A2UI", () => {
     });
   });
 
+  describe("when reporting conversions", () => {
+    const surface = (...blocks) => ({
+      components: [
+        {
+          id: "root",
+          component: "Page",
+          header: "hdr",
+          children: blocks.map(block => block.id),
+        },
+        { id: "hdr", component: "Header", title: "Page Title" },
+        ...blocks,
+      ],
+      dataModel: {},
+    });
+    const statement = { title: "A statement", body: "Its body." };
+    const group = { items: [{ text: "An item" }] };
+
+    it("reports nothing for a surface without a root", () => {
+      Assert.deepEqual(new A2UI({ components: [] }).conversions(), []);
+    });
+
+    it("reports nothing for blocks that render as sent", () => {
+      const conversions = new A2UI(
+        surface(
+          { id: "text", component: "TextBlock", lead: "A lead" },
+          {
+            id: "highlights",
+            component: "Highlights",
+            title: "Highlights Title",
+            items: [statement, statement],
+          },
+          {
+            id: "column",
+            component: "List",
+            layout: "column",
+            groups: [group, group],
+          },
+          { id: "row", component: "List", layout: "row", groups: [group] }
+        )
+      ).conversions();
+
+      Assert.deepEqual(conversions, []);
+    });
+
+    it("reports each converted block in render order", () => {
+      const conversions = new A2UI(
+        surface(
+          {
+            id: "single",
+            component: "Highlights",
+            title: "Highlights Title",
+            items: [statement],
+          },
+          { id: "text", component: "TextBlock", lead: "A lead" },
+          {
+            id: "no-bodies",
+            component: "Highlights",
+            title: "Highlights Title",
+            items: [{ title: "One" }, { title: "Two" }],
+          },
+          { id: "empty", component: "Highlights", items: [] },
+          {
+            id: "column",
+            component: "List",
+            layout: "column",
+            groups: [group],
+          },
+          { id: "no-layout", component: "List", groups: [group] }
+        )
+      ).conversions();
+
+      Assert.deepEqual(conversions, [
+        "Highlights>TextBlock",
+        "Highlights>List_row",
+        "Highlights>none",
+        "List_column>List_row",
+        "List>List_row",
+      ]);
+    });
+
+    it("reports each converted instance of a template", () => {
+      const a2uiSurface = surface();
+      a2uiSurface.components[0].children = {
+        componentId: "template",
+        path: "/sections",
+      };
+      a2uiSurface.components.push({
+        id: "template",
+        component: "Highlights",
+        title: "Highlights Title",
+        items: { path: "items" },
+      });
+      a2uiSurface.dataModel = {
+        sections: [
+          { items: [statement] },
+          { items: [statement, statement] },
+          { items: [] },
+        ],
+      };
+
+      Assert.deepEqual(new A2UI(a2uiSurface).conversions(), [
+        "Highlights>TextBlock",
+        "Highlights>none",
+      ]);
+    });
+
+    it("reports the same conversions on each call", () => {
+      const instance = new A2UI(
+        surface({
+          id: "single",
+          component: "Highlights",
+          title: "Highlights Title",
+          items: [statement],
+        })
+      );
+
+      instance.toUI();
+      Assert.deepEqual(instance.conversions(), ["Highlights>TextBlock"]);
+      Assert.deepEqual(instance.conversions(), ["Highlights>TextBlock"]);
+    });
+  });
+
   describe("when converting a surface to UI more than once", () => {
     beforeEach(() => {
       a2uiData = {

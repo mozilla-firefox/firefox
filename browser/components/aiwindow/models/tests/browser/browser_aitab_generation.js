@@ -270,6 +270,11 @@ add_task(async function test_generateAITab_telemetry_success() {
       ["Page", "Header", "TextBlock"],
       "components are listed in render order"
     );
+    Assert.equal(
+      complete.extra.components_converted,
+      "[]",
+      "no conversions when every block renders as sent"
+    );
     Assert.greater(
       Number(complete.extra.num_chars_read),
       "some notes".length,
@@ -308,6 +313,59 @@ add_task(async function test_generateAITab_telemetry_failure() {
     "[]",
     "no components on failure"
   );
+  Assert.equal(
+    complete.extra.components_converted,
+    "[]",
+    "no conversions on failure"
+  );
+});
+
+add_task(async function test_generateAITab_telemetry_conversions() {
+  Services.fog.testResetFOG();
+  const mockEngine = new lazy.MockEngineManager();
+  const { url: GEN_URL, cleanup: stopServing } = servePage();
+  try {
+    const conversation = await lazy.newChatConversation();
+    const call = generatePage(mockEngine, conversation, {
+      url_list: [GEN_URL],
+    });
+    // A Highlights block with one statement renders as a TextBlock.
+    const surface = structuredClone(GENERATED_SURFACE);
+    surface.components[0].children.push("verdict");
+    surface.components.push({
+      id: "verdict",
+      component: "Highlights",
+      title: "Verdict",
+      items: [
+        {
+          title: "Budget Central Hostel is the pick.",
+          body: "It is $72 / night and has free breakfast.",
+        },
+      ],
+    });
+    await mockEngine.respondTo({
+      purpose: lazy.MODEL_FEATURES.AITAB,
+      response: JSON.stringify(surface),
+    });
+    await storedPage(await call);
+
+    const [complete] = Glean.smartWindow.aitabCreateComplete.testGetValue();
+    Assert.deepEqual(
+      JSON.parse(complete.extra.components_used),
+      ["Page", "Header", "TextBlock", "Highlights"],
+      "components_used lists the types that the model sent"
+    );
+    Assert.deepEqual(
+      JSON.parse(complete.extra.components_converted),
+      ["Highlights>TextBlock"],
+      "components_converted lists the block that renders as another type"
+    );
+  } finally {
+    await mockEngine.rejectAllRequests();
+    await stopServing();
+    mockEngine.cleanupMocks();
+    await lazy.AITabStore.destroyDatabase();
+  }
 });
 
 add_task(async function test_generateAITab_includes_page_image() {

@@ -53,8 +53,10 @@ export class AITabChild extends JSWindowActorChild {
   }
 
   /**
-   * The catalog component that contained the click, using the same name
-   * creation telemetry records. A click outside those blocks is "unknown".
+   * The component that contained the click, as it is rendered, in the name
+   * format that creation telemetry uses. A block that A2UI converted reports
+   * the type it renders as, not the type the model sent. A click outside
+   * those blocks is "unknown".
    *
    * @param {Event} event
    * @returns {string}

@@ -23,13 +23,17 @@
  * @property {AITabComponent[]} children - Hydrated header and content components.
  */
 
-import { httpUrl } from "chrome://browser/content/aiwindow/modules/AITabUtils.mjs";
+import {
+  componentTypeName,
+  httpUrl,
+} from "chrome://browser/content/aiwindow/modules/AITabUtils.mjs";
 
 /**
  * Parses A2UI JSON objects to prepare for rendering
  */
 export class A2UI {
   #components;
+  #conversions = [];
   #dataModel;
   #hydrators;
   #surface;
@@ -58,6 +62,7 @@ export class A2UI {
   toUI() {
     const surface = structuredClone(this.#surface);
     this.#dataModel = surface.dataModel;
+    this.#conversions = [];
     this.#components = new Map();
     surface.components.forEach(component => {
       this.#components.set(component.id, component);
@@ -98,8 +103,8 @@ export class A2UI {
     component.groups = this.#resolveArray(component.groups, [], dataModel);
 
     // A single list sits beside its title rather than below it.
-    // Creation telemetry still reports the model's layout.
-    // Bug 2088273 decides how Glean reports these conversions.
+    // components_used in creation telemetry still reports the model's
+    // layout, and components_converted reports the change.
     const groups = component.groups.filter(group => group?.items?.length);
     if (groups.length == 1 && !component.description) {
       component.layout = "row";
@@ -235,7 +240,7 @@ export class A2UI {
         }
 
         const component = this.#components.get(child);
-        this.#pushChild(page, this.#hydrateComponent(component));
+        this.#pushChild(page, component);
       }
 
       return;
@@ -258,15 +263,54 @@ export class A2UI {
     const template = this.#components.get(componentId);
     for (const dataModel of dataModels) {
       const component = structuredClone(template);
-      this.#pushChild(page, this.#hydrateComponent(component, dataModel));
+      this.#pushChild(page, component, dataModel);
     }
   }
 
-  #pushChild(page, component) {
-    const child = this.#normalizeHighlights(component);
+  /**
+   * The body blocks that render as a different component from the one the
+   * model sent, for creation telemetry. Each entry is `sent>rendered`, with
+   * the names that componentTypeName gives, in render order. A block that is
+   * dropped is `sent>none`.
+   *
+   * @returns {string[]} For example ["Highlights>TextBlock"].
+   */
+  conversions() {
+    this.toUI();
+    return [...this.#conversions];
+  }
+
+  /**
+   * Hydrates a body block and adds it to the page as the component it
+   * renders as. Every body block goes through here, so conversions() reports
+   * a new conversion in a hydrator or in #normalize without more telemetry
+   * code.
+   *
+   * @param {HydratedAITabData} page
+   * @param {AITabComponent} component - A body component as the model sent it.
+   * @param {object} [dataModel] - The data a template instance binds to.
+   */
+  #pushChild(page, component, dataModel = undefined) {
+    const sent = componentTypeName(component);
+    const child = this.#normalize(this.#hydrateComponent(component, dataModel));
+    const rendered = child ? componentTypeName(child) : "none";
+    if (sent && sent != rendered) {
+      this.#conversions.push(`${sent}>${rendered}`);
+    }
     if (child) {
       page.children.push(child);
     }
+  }
+
+  /**
+   * Converts a block that the model sent in a shape that does not render
+   * well. Add each new normalization step here.
+   *
+   * @param {AITabComponent} component - A hydrated body component.
+   * @returns {AITabComponent|null} The component to render, or null to drop it.
+   */
+  #normalize(component) {
+    return this.#normalizeHighlights(component);
   }
 
   /**
@@ -280,8 +324,9 @@ export class A2UI {
    * without a heading. A List renders only plain text, so the statements'
    * eyebrows and sources are dropped, and a block left with no text is
    * dropped.
-   * Link-click telemetry reports the converted block as a TextBlock.
-   * Bug 2088273 decides how Glean reports these conversions.
+   * Link-click telemetry reports the converted block as the component it
+   * renders as, and creation telemetry reports the conversion in
+   * components_converted.
    *
    * @param {AITabComponent} component - A hydrated body component.
    * @returns {AITabComponent|null} The component to render, or null to drop it.
