@@ -14,7 +14,7 @@
 #include "mozilla/SharedLibrary.h"
 #include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/dom/GamepadBinding.h"
-#include "mozilla/dom/GamepadEventTypes.h"
+#include "mozilla/dom/GamepadPoseState.h"
 #include "mozilla/gfx/DeviceManagerDx.h"
 #include "mozilla/gfx/Logging.h"
 

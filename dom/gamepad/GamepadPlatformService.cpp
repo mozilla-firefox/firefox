@@ -222,17 +222,6 @@ void GamepadPlatformService::NewLightIndicatorTypeEvent(
   NotifyGamepadChange<GamepadLightIndicatorTypeInformation>(aHandle, a);
 }
 
-void GamepadPlatformService::NewPoseEvent(GamepadHandle aHandle,
-                                          const GamepadPoseState& aState) {
-  // This method is called by monitor thread populated in
-  // platform-dependent backends
-  MOZ_ASSERT(XRE_IsParentProcess());
-  MOZ_ASSERT(!NS_IsMainThread());
-  GamepadPoseInformation a(aState);
-  MutexAutoLock autoLock(mMutex);
-  NotifyGamepadChange<GamepadPoseInformation>(aHandle, a);
-}
-
 void GamepadPlatformService::NewMultiTouchEvent(
     GamepadHandle aHandle, uint32_t aTouchArrayIndex,
     const GamepadTouchState& aState) {

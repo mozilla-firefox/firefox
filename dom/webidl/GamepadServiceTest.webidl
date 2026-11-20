@@ -42,14 +42,6 @@ interface GamepadServiceTest
   Promise<unsigned long> newAxisMoveEvent(unsigned long index,
                         unsigned long axis,
                         double value);
-  [NewObject]
-  Promise<unsigned long> newPoseMove(unsigned long index,
-                   Float32Array? orient,
-                   Float32Array? pos,
-                   Float32Array? angVelocity,
-                   Float32Array? angAcceleration,
-                   Float32Array? linVelocity,
-                   Float32Array? linAcceleration);
 
   [NewObject]
   Promise<unsigned long> newTouch(unsigned long index, unsigned long aTouchArrayIndex,

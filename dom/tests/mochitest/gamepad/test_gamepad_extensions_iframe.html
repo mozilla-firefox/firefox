@@ -15,20 +15,12 @@ let SimpleTest = window.parent.SimpleTest;
 let SpecialPowers = window.parent.SpecialPowers;
 
 var tests = [
-  poseadd,
-  posecheck,
   touchadd,
   touchcheck,
   haptictest // Keep haptictest at the last because it will test removing gamepad from the service.
 ];
 var gamepad_index = 0;
 var testNum = 0;
-var poseOrient = new Float32Array([-0.203, -0.235, 0.740, -0.596]);
-var posePos = new Float32Array([-0.0233, -0.707, -0.763]);
-var poseAngVel = new Float32Array([-0.0008, 0.00147, 0.001]);
-var poseAngAcc = new Float32Array([-0.494, 0.476, -0.241]);
-var poseLinVel = new Float32Array([0.003,0.024,-0.068]);
-var poseLinAcc = new Float32Array([-1.211,21.427,-2.348]);
 var touchData = [{touchId: 0, surfaceId: 0, pos: new Float32Array([-0.5, 0.5]), surf: new Float32Array([100, 100])},
                  {touchId: 1, surfaceId: 0, pos: new Float32Array([-0.1, 1.0]), surf: new Float32Array([100, 100])}];
 
@@ -49,7 +41,6 @@ async function startTest() {
   await SpecialPowers.pushPrefEnv({ "set": [
                                     ["dom.gamepad.hand.enabled", true],
                                     ["dom.gamepad.haptic_actuators.enabled", true],
-                                    ["dom.gamepad.pose.enabled", true],
                                     ["dom.gamepad.extensions.lightindicator", true],
                                     ["dom.gamepad.extensions.multitouch", true]] });
   // Add a gamepad
@@ -93,35 +84,6 @@ function checkValueInFloat32Array(array1, array2) {
     ++index;
   }
   return true;
-}
-
-async function poseadd() {
-  await GamepadService.newPoseMove(gamepad_index, poseOrient,
-                             posePos, poseAngVel, poseAngAcc,
-                             poseLinVel, poseLinAcc);
-  await pressButton();
-}
-
-async function posecheck() {
-  var gamepads = navigator.getGamepads();
-  var pose = gamepads[0].pose;
-  is(gamepads[0].pose.hasOrientation, true,
-     "correct gamepadPose hasOrientation");
-  is(gamepads[0].pose.hasPosition, true,
-     "correct gamepadPose hasPosition");
-  is(checkValueInFloat32Array(pose.orientation, poseOrient), true,
-     "correct gamepadPose orientation");
-  is(checkValueInFloat32Array(pose.position, posePos), true,
-     "correct gamepadPose position");
-  is(checkValueInFloat32Array(pose.angularVelocity, poseAngVel), true,
-     "correct gamepadPose angularVelocity");
-  is(checkValueInFloat32Array(pose.angularAcceleration, poseAngAcc), true,
-     "correct gamepadPose angularAcceleration");
-  is(checkValueInFloat32Array(pose.linearVelocity, poseLinVel), true,
-     "correct gamepadPose linearVelocity");
-  is(checkValueInFloat32Array(pose.linearAcceleration, poseLinAcc), true,
-     "correct gamepadPose linearAcceleration");
-  await pressButton();
 }
 
 function haptictest() {
