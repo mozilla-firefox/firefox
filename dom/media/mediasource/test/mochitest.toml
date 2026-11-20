@@ -8,6 +8,12 @@ support-files = [
   "seek.webm^headers^",
   "seek_lowres.webm",
   "seek_lowres.webm^headers^",
+  "color_cycle_across_fragments.mp4",
+  "color_frames.js",
+  "gap_between_keyframes.mp4",
+  "long_frame_across_fragments.mp4",
+  "one_frame_per_fragment.mp4",
+  "overlap_across_fragments.mp4",
   "split_gop_across_fragments.mp4",
   "bipbop/bipbop_300-3s.webm",
   "bipbop/bipbop_300-3s.webm^headers^",
@@ -286,6 +292,11 @@ support-files = [
 
 ["test_ExperimentalAsync.html"]
 
+["test_FrameEndsAcrossFragments_mp4.html"]
+skip-if = [
+  "os == 'android'", # Android has black frames issue.
+]
+
 ["test_FrameSelection_mp4.html"]
 skip-if = [
   "os == 'android' && arch == 'aarch64' && debug", # Bug 1776960 - android aarch64 debug
@@ -295,6 +306,11 @@ skip-if = [
 ["test_H264_SPS_InvalidDimensions.html"]
 
 ["test_HEAAC_extradata.html"]
+
+["test_LongFrameAcrossFragments_mp4.html"]
+skip-if = [
+  "os == 'android'", # Android has black frames issue.
+]
 
 ["test_MP3_AbortAndResync.html"]
 

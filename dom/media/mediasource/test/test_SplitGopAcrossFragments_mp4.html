@@ -3,6 +3,7 @@
   <title>MSE: frame durations when a fragment splits a group of B-frames</title>
   <script src="/tests/SimpleTest/SimpleTest.js"></script>
   <script type="text/javascript" src="mediasource.js"></script>
+  <script type="text/javascript" src="color_frames.js"></script>
   <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
 </head>
 <body>
@@ -21,17 +22,13 @@
 // The green frame at 1024 must not cover the blue frame at 1536.
 const kTimescale = 15360;
 const kFrameTicks = 512;
-const kGreen = [0, 255, 0];
-const kBlue = [0, 0, 255];
-// Lossy coding and the YUV to RGB conversion move each channel a little.
-const kFuzz = 16;
 
 SimpleTest.waitForExplicitFinish();
 
 runWithMSE(async (ms, el) => {
   await once(ms, "sourceopen");
   const sb = ms.addSourceBuffer('video/mp4; codecs="avc1.4D401E"');
-  await fetchAndLoad(sb, "split_gop_across_fragments", [""], ".mp4");
+  await loadSegment(sb, await fetchWithXHR(kColorFiles.splitGop));
   ms.endOfStream();
   is(el.buffered.length, 1, "one buffered range");
 
@@ -45,23 +42,6 @@ runWithMSE(async (ms, el) => {
 // after rounding.
 function middleOf(pts) {
   return (pts + kFrameTicks / 2) / kTimescale;
-}
-
-async function colorAt(video, time) {
-  video.currentTime = time;
-  await once(video, "seeked");
-  const canvas = document.createElement("canvas");
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const context = canvas.getContext("2d");
-  context.drawImage(video, 0, 0);
-  return context.getImageData(canvas.width / 2, canvas.height / 2, 1, 1).data;
-}
-
-function isColor(actual, expected, name) {
-  for (let i = 0; i < 3; i++) {
-    isfuzzy(actual[i], expected[i], kFuzz, `${name}, channel ${i}`);
-  }
 }
 
 </script>

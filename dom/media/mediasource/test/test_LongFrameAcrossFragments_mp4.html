@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html><head>
+  <title>A frame that lasts until the next fragment</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="text/javascript" src="mediasource.js"></script>
+  <script type="text/javascript" src="color_frames.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test"><script class="testbody" type="text/javascript">
+
+// 30 fps H.264 with B-frames and timescale 15360, so a frame is 512 ticks.
+// Each frame is one solid color and every sample duration is 512 ticks (the
+// tfhd default), but the last frame comes 30 frames late. So the red frame at
+// 2048 must stay on screen until the green frame at 17920, which is in the next
+// fragment:
+//
+//   PTS         512   1024  1536  2048                          17920
+//   fragment 1  [red] [grn]       [red ...........................]
+//   fragment 2              [blu]                                 [grn]
+const kFile = kColorFiles.longFrame;
+const kType = 'video/mp4; codecs="avc1.4D401E"';
+const kTimescale = 15360;
+const kFirstFrameStart = 512 / kTimescale;
+const kLastFrameEnd = (17920 + 512) / kTimescale;
+
+add_setup(async function () {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ...gMSETestPrefs,
+      ["media.mp4.frame-ends-across-fragments.enabled", true],
+    ],
+  });
+});
+
+function createVideo() {
+  const video = document.createElement("video");
+  video.preload = "auto";
+  document.body.appendChild(video);
+  SimpleTest.registerCleanupFunction(() => {
+    video.remove();
+    video.removeAttribute("src");
+    video.load();
+  });
+  return video;
+}
+
+async function openMediaSource() {
+  const ms = new MediaSource();
+  const video = createVideo();
+  video.src = URL.createObjectURL(ms);
+  await once(ms, "sourceopen");
+  return { ms, video, sb: ms.addSourceBuffer(kType) };
+}
+
+async function checkColors(video, name) {
+  isColor(await colorAt(video, 2304 / kTimescale), kRed, `${name}: red start`);
+  isColor(await colorAt(video, 0.5), kRed, `${name}: red middle`);
+  isColor(await colorAt(video, 18176 / kTimescale), kGreen, `${name}: last`);
+}
+
+add_task(async function testSeekWithMediaSource() {
+  const { ms, video, sb } = await openMediaSource();
+  for (const segment of splitIntoFragments(await fetchWithXHR(kFile))) {
+    await loadSegment(sb, segment);
+  }
+  ms.endOfStream();
+  const buffered = video.buffered;
+  if (buffered.length != 1) {
+    // The checks below read these ranges, so stop here.
+    ok(false, `one range expected, got ${timeRangeToString(buffered)}`);
+    return;
+  }
+  isfuzzy(buffered.start(0), kFirstFrameStart, 1e-5, "buffered start");
+  isfuzzy(buffered.end(0), kLastFrameEnd, 1e-5, "buffered end");
+  await checkColors(video, "MSE");
+});
+
+add_task(async function testPlayWithMediaSource() {
+  const { ms, video, sb } = await openMediaSource();
+  const [init, first, ...rest] = splitIntoFragments(await fetchWithXHR(kFile));
+  await loadSegment(sb, init);
+  await loadSegment(sb, first);
+  const ended = once(video, "ended");
+  await video.play();
+  for (const segment of rest) {
+    await loadSegment(sb, segment);
+  }
+  ms.endOfStream();
+  is(video.buffered.length, 1, "one buffered range");
+  await ended;
+  const quality = video.getVideoPlaybackQuality();
+  is(quality.droppedVideoFrames, 0, "no dropped frames");
+});
+
+add_task(async function testSeekWithoutMediaSource() {
+  const video = createVideo();
+  // A separate URL, so that the range requests of this element do not share
+  // a cache entry with the fetches of the other tasks.
+  video.src = `${kFile}?src`;
+  await once(video, "loadeddata");
+  await checkColors(video, "src");
+});
+
+</script>
+</pre>
+</body>
+</html>

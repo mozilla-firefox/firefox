@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html><head>
+  <title>MSE: frame ends when each fragment is a separate append</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="text/javascript" src="mediasource.js"></script>
+  <script type="text/javascript" src="color_frames.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test"><script class="testbody" type="text/javascript">
+
+// 30 fps H.264 with two B-frames and timescale 15360, so a frame is 512 ticks.
+// Each frame is one solid color: red, green and blue in turn, in display order.
+// Each fragment is a separate append.
+const kType = 'video/mp4; codecs="avc1.4D401E"';
+const kTimescale = 15360;
+const kFrameTicks = 512;
+
+add_setup(async function () {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ...gMSETestPrefs,
+      ["media.mp4.frame-ends-across-fragments.enabled", true],
+    ],
+  });
+});
+
+async function openMediaSource() {
+  const ms = new MediaSource();
+  const video = document.createElement("video");
+  video.preload = "auto";
+  video.src = URL.createObjectURL(ms);
+  document.body.appendChild(video);
+  SimpleTest.registerCleanupFunction(() => {
+    video.remove();
+    video.removeAttribute("src");
+    video.load();
+  });
+  await once(ms, "sourceopen");
+  return { ms, video, sb: ms.addSourceBuffer(kType) };
+}
+
+async function appendFragments(file) {
+  const result = await openMediaSource();
+  for (const segment of splitIntoFragments(await fetchWithXHR(file))) {
+    await loadSegment(result.sb, segment);
+  }
+  return result;
+}
+
+// The middle of the frame at pts, in seconds.
+function middleOf(pts) {
+  return (pts + kFrameTicks / 2) / kTimescale;
+}
+
+// 60 frames with two B-frames, three frames per fragment in decode order. So
+// each fragment has a gap that a frame of the next fragment fills:
+//
+//   PTS         512   1024  1536  2048  2560
+//   fragment 1  [red] [grn]       [red]
+//   fragment 2              [blu]       [grn] ...
+//
+// A seek to the middle of each frame shows that frame.
+add_task(async function testEveryFrame() {
+  const { ms, video } = await appendFragments(kColorFiles.colorCycle);
+  ms.endOfStream();
+  is(video.buffered.length, 1, "one buffered range");
+  for (let i = 0; i < 60; i++) {
+    const pts = (i + 1) * kFrameTicks;
+    const color = await colorAt(video, middleOf(pts));
+    isColor(color, kFrameColors[i % 3], `frame ${pts}`);
+  }
+});
+
+// Two frames, one per fragment, with no B-frames. The red frame of fragment 1
+// has a sample duration of 1024 ticks, but the green frame of fragment 2
+// starts at 512 and lasts 128 ticks. The red frame ends at no other frame
+// start, so it keeps its own end and buffered does not shrink:
+//
+//   PTS         0           512   640         1024
+//   fragment 1  [red ......................... ]
+//   fragment 2              [grn]
+add_task(async function testOverlappedFrameKeepsItsEnd() {
+  const { video, sb } = await appendFragments(kColorFiles.overlap);
+  const buffered = video.buffered;
+  if (buffered.length != 1) {
+    // The checks below read these ranges, so stop here.
+    ok(false, `one range expected, got ${timeRangeToString(buffered)}`);
+    return;
+  }
+  is(buffered.start(0), 0, "buffered start");
+  isfuzzy(buffered.end(0), 1024 / kTimescale, 1e-5, "buffered end");
+  const red = await colorAt(video, 256 / kTimescale);
+  isColor(red, kFrameColors[0], "red frame");
+  sb.remove(0, Infinity);
+  await once(sb, "updateend");
+  is(video.buffered.length, 0, "nothing buffered after remove");
+});
+
+// Fragments 1 and 2 of the 60-frame clip, then the same fragments again 1 s
+// later with timestampOffset. The decode time jumps between the two copies, so
+// the last frame of the first copy must not last until the second copy:
+//
+//   PTS (s)     0.033        0.267   1.033        1.267
+//   copy 1      [6 frames ....]
+//   copy 2                           [6 frames ....]
+add_task(async function testGapStaysAGap() {
+  const { video, sb } = await openMediaSource();
+  const [init, first, second] = splitIntoFragments(
+    await fetchWithXHR(kColorFiles.colorCycle)
+  );
+  for (const segment of [init, first, second]) {
+    await loadSegment(sb, segment);
+  }
+  sb.timestampOffset = 1;
+  for (const segment of [first, second]) {
+    await loadSegment(sb, segment);
+  }
+  const buffered = video.buffered;
+  if (buffered.length != 2) {
+    // The checks below read these ranges, so stop here.
+    ok(false, `two ranges expected, got ${timeRangeToString(buffered)}`);
+    return;
+  }
+  isfuzzy(buffered.end(0), 4096 / kTimescale, 1e-5, "end of copy 1");
+  isfuzzy(buffered.start(1), 1 + 512 / kTimescale, 1e-5, "start of copy 2");
+  isfuzzy(buffered.end(1), 1 + 4096 / kTimescale, 1e-5, "end of copy 2");
+  const middle = middleOf(1536);
+  isColor(await colorAt(video, middle), kFrameColors[2], "copy 1, frame 1536");
+  const copy2 = await colorAt(video, 1 + middle);
+  isColor(copy2, kFrameColors[2], "copy 2, frame 1536");
+});
+
+// Two key frames, one per fragment, with continuous decode times. The red frame
+// at 0 lasts until the green frame at 15360. Fragment 2 is appended first, so
+// the red frame must end at a frame that is already buffered after it:
+//
+//   PTS         0                                   15360
+//   fragment 1  [red ...............................]
+//   fragment 2                                      [grn]
+add_task(async function testEarlierFragmentAppendedLater() {
+  const { video, sb } = await openMediaSource();
+  const [init, first, second] = splitIntoFragments(
+    await fetchWithXHR(kColorFiles.gapBetweenKeyframes)
+  );
+  for (const segment of [init, second, first]) {
+    await loadSegment(sb, segment);
+  }
+  const buffered = video.buffered;
+  if (buffered.length != 1) {
+    // The checks below read these ranges, so stop here.
+    ok(false, `one range expected, got ${timeRangeToString(buffered)}`);
+    return;
+  }
+  is(buffered.start(0), 0, "buffered start");
+  isfuzzy(buffered.end(0), (15360 + 512) / kTimescale, 1e-5, "buffered end");
+  isColor(await colorAt(video, 0.5), kFrameColors[0], "red frame");
+  const green = await colorAt(video, 15616 / kTimescale);
+  isColor(green, kFrameColors[1], "green frame");
+});
+
+// Seeks to the middle of each of the first aCount frames and checks its color.
+// The first frame starts at the start of buffered, which must be one range.
+async function checkFrames(video, aCount, name) {
+  const buffered = video.buffered;
+  if (buffered.length != 1) {
+    // The checks below read these ranges, so stop here.
+    const ranges = timeRangeToString(buffered);
+    ok(false, `${name}: one range expected, got ${ranges}`);
+    return;
+  }
+  const start = buffered.start(0);
+  for (let i = 0; i < aCount; i++) {
+    const time = start + (i * kFrameTicks + kFrameTicks / 2) / kTimescale;
+    const color = await colorAt(video, time);
+    isColor(color, kFrameColors[i % 3], `${name}: frame ${i}`);
+  }
+}
+
+// 12 frames with two B-frames and one frame per fragment, in decode order. A
+// frame of fragment 2 first ends the frame of fragment 1, then the B-frames of
+// the later fragments come in between, so each frame must end at the next one
+// in display order:
+//
+//   PTS         512   1024  1536  2048
+//   fragment 1  [ I ]
+//   fragment 2                    [ P ]
+//   fragment 3        [ B ]
+//   fragment 4              [ B ]
+add_task(async function testBFramesInLaterFragments() {
+  const { ms, video } = await appendFragments(kColorFiles.oneFramePerFragment);
+  ms.endOfStream();
+  await checkFrames(video, 12, "MSE");
+  const length = video.buffered.end(0) - video.buffered.start(0);
+  isfuzzy(length, (12 * kFrameTicks) / kTimescale, 1e-5, "buffered length");
+});
+
+// The same clip, then fragments 2 to 4 again. The P-frame of fragment 2
+// replaces the P-frame and the frames that depend on it, so the I-frame first
+// ends at the P-frame again, then the B-frames come in between again.
+add_task(async function testBFramesInLaterFragmentsAppendedAgain() {
+  const { ms, video, sb } = await appendFragments(
+    kColorFiles.oneFramePerFragment
+  );
+  const segments = splitIntoFragments(
+    await fetchWithXHR(kColorFiles.oneFramePerFragment)
+  );
+  for (const segment of segments.slice(2, 5)) {
+    await loadSegment(sb, segment);
+  }
+  ms.endOfStream();
+  await checkFrames(video, 4, "MSE again");
+});
+
+add_task(async function testBFramesInLaterFragmentsWithoutMediaSource() {
+  const video = document.createElement("video");
+  video.preload = "auto";
+  video.src = `${kColorFiles.oneFramePerFragment}?src`;
+  document.body.appendChild(video);
+  SimpleTest.registerCleanupFunction(() => {
+    video.remove();
+    video.removeAttribute("src");
+    video.load();
+  });
+  await once(video, "loadeddata");
+  await checkFrames(video, 12, "src");
+});
+
+</script>
+</pre>
+</body>
+</html>
