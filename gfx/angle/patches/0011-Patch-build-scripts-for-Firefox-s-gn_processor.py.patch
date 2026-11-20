@@ -1,4 +1,4 @@
-From 64b4d5917b65cf0dd6b1d74de637f9ddc7a8efe3 Mon Sep 17 00:00:00 2001
+From 3f0af3837d9c17ff29fb2b65c24b0078c1b32fee Mon Sep 17 00:00:00 2001
 From: Jamie Nicol <jnicol@mozilla.com>
 Date: Fri, 1 May 2026 10:56:48 +0100
 Subject: [PATCH] Patch build scripts for Firefox's gn_processor.py
@@ -24,18 +24,18 @@ Lastly, we comment out a couple dependencies on chromium's "testing"
 repo, which ANGLE assumes is available due to enabling
 `angle_has_build`, but we opted not to vendor.
 ---
- .gn                                   | 16 ++++-----
- BUILD.gn                              | 24 ++++++-------
+ .gn                                   | 16 ++++----
+ BUILD.gn                              | 24 ++++++------
  android/angle_apk.gni                 |  2 +-
- gni/angle.gni                         | 50 +++++++++++++--------------
+ gni/angle.gni                         | 54 +++++++++++++--------------
  src/compiler/translator/ir/BUILD.gn   |  2 +-
- src/libANGLE/renderer/gl/BUILD.gn     |  4 +--
+ src/libANGLE/renderer/gl/BUILD.gn     |  4 +-
  src/libANGLE/renderer/metal/BUILD.gn  |  2 +-
  src/libANGLE/renderer/vulkan/BUILD.gn |  2 +-
- 8 files changed, 51 insertions(+), 51 deletions(-)
+ 8 files changed, 53 insertions(+), 53 deletions(-)
 
 diff --git a/.gn b/.gn
-index c3aed0453..285be5dc4 100644
+index c3aed04534..285be5dc4b 100644
 --- a/.gn
 +++ b/.gn
 @@ -7,14 +7,14 @@
@@ -73,7 +73,7 @@ index c3aed0453..285be5dc4 100644
                          ]
  
 diff --git a/BUILD.gn b/BUILD.gn
-index 74f69f24a..9f5b2f45a 100644
+index 74f69f24ae..9f5b2f45a4 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -15,15 +15,15 @@ if (angle_enable_wgpu) {
@@ -153,7 +153,7 @@ index 74f69f24a..9f5b2f45a 100644
    # Write debug logs to gn_logs.txt.
    _lines = [
 diff --git a/android/angle_apk.gni b/android/angle_apk.gni
-index a0123357b..96a24b710 100644
+index a0123357b7..96a24b710c 100644
 --- a/android/angle_apk.gni
 +++ b/android/angle_apk.gni
 @@ -2,7 +2,7 @@
@@ -166,7 +166,7 @@ index a0123357b..96a24b710 100644
  
  vulkan_validation_layers = [ "VkLayer_khronos_validation" ]
 diff --git a/gni/angle.gni b/gni/angle.gni
-index 34451e32d..5bb359bb7 100644
+index a34718d04a..415c8b15c0 100644
 --- a/gni/angle.gni
 +++ b/gni/angle.gni
 @@ -4,7 +4,7 @@
@@ -202,7 +202,7 @@ index 34451e32d..5bb359bb7 100644
    }
  
    if (is_chromeos) {
-@@ -438,22 +438,22 @@ angle_common_configs = [
+@@ -445,29 +445,29 @@ angle_common_configs = [
  angle_remove_configs = []
  
  if (angle_has_build) {
@@ -230,7 +230,16 @@ index 34451e32d..5bb359bb7 100644
    }
  }
  
-@@ -523,7 +523,7 @@ template("angle_executable") {
+ # Enable max lto optimization
+ if (is_android && angle_enable_vulkan) {
+-  angle_common_configs += [ "//build/config/compiler:thinlto_optimize_max" ]
+-  angle_remove_configs += [ "//build/config/compiler:thinlto_optimize_default" ]
++  angle_common_configs += [ "//chromium/build/config/compiler:thinlto_optimize_max" ]
++  angle_remove_configs += [ "//chromium/build/config/compiler:thinlto_optimize_default" ]
+ }
+ 
+ set_defaults("angle_executable") {
+@@ -530,7 +530,7 @@ template("angle_executable") {
      configs -= invoker.suppressed_configs
  
      if (angle_has_build && is_win) {
@@ -239,7 +248,7 @@ index 34451e32d..5bb359bb7 100644
      }
  
      if (is_ios) {
-@@ -560,9 +560,9 @@ template("angle_shared_library") {
+@@ -567,9 +567,9 @@ template("angle_shared_library") {
  
      if (is_apple) {
        # If a "build with ARC" config is present, remove it.
@@ -251,7 +260,7 @@ index 34451e32d..5bb359bb7 100644
        }
      }
  
-@@ -570,7 +570,7 @@ template("angle_shared_library") {
+@@ -577,7 +577,7 @@ template("angle_shared_library") {
  
      if (is_android) {
        configs += [ angle_root + ":build_id_config" ]
@@ -260,7 +269,7 @@ index 34451e32d..5bb359bb7 100644
      }
      if (is_ios) {
        info_plist = "$angle_root/util/ios/Info.plist"
-@@ -614,9 +614,9 @@ template("angle_source_set") {
+@@ -621,9 +621,9 @@ template("angle_source_set") {
  
      if (is_apple) {
        # If a "build with ARC" config is present, remove it.
@@ -272,7 +281,7 @@ index 34451e32d..5bb359bb7 100644
        }
      }
    }
-@@ -640,9 +640,9 @@ template("angle_static_library") {
+@@ -647,9 +647,9 @@ template("angle_static_library") {
  
      if (is_apple) {
        # If a "build with ARC" config is present, remove it.
@@ -284,7 +293,7 @@ index 34451e32d..5bb359bb7 100644
        }
      }
    }
-@@ -665,9 +665,9 @@ if (angle_standalone || build_with_chromium ||
+@@ -672,9 +672,9 @@ if (angle_standalone || build_with_chromium ||
  
        if (is_apple) {
          # If a "build with ARC" config is present, remove it.
@@ -296,7 +305,7 @@ index 34451e32d..5bb359bb7 100644
          }
        }
  
-@@ -734,12 +734,12 @@ if (angle_standalone || build_with_chromium ||
+@@ -743,12 +743,12 @@ if (angle_standalone || build_with_chromium ||
  
        if ((is_linux || is_chromeos) && !is_component_build) {
          # Set rpath to find shared libs in a non-component build.
@@ -311,7 +320,7 @@ index 34451e32d..5bb359bb7 100644
          use_default_launcher = false
          generate_final_jni = false
          if (angle_standalone_benchmark) {
-@@ -764,7 +764,7 @@ if (angle_standalone || build_with_chromium ||
+@@ -773,7 +773,7 @@ if (angle_standalone || build_with_chromium ||
        }
  
        if (angle_has_build && is_win) {
@@ -321,7 +330,7 @@ index 34451e32d..5bb359bb7 100644
      }
    }
 diff --git a/src/compiler/translator/ir/BUILD.gn b/src/compiler/translator/ir/BUILD.gn
-index 3fbc538a9..810c76ed8 100644
+index f68c16c875..6af91f0889 100644
 --- a/src/compiler/translator/ir/BUILD.gn
 +++ b/src/compiler/translator/ir/BUILD.gn
 @@ -4,7 +4,7 @@
@@ -334,7 +343,7 @@ index 3fbc538a9..810c76ed8 100644
  
  angle_translator_ir_sources = [
 diff --git a/src/libANGLE/renderer/gl/BUILD.gn b/src/libANGLE/renderer/gl/BUILD.gn
-index 6be94901e..e25f58b35 100644
+index 6be94901ed..e25f58b352 100644
 --- a/src/libANGLE/renderer/gl/BUILD.gn
 +++ b/src/libANGLE/renderer/gl/BUILD.gn
 @@ -8,7 +8,7 @@ import("../../../../gni/angle.gni")
@@ -356,7 +365,7 @@ index 6be94901e..e25f58b35 100644
  
    if (is_win) {
 diff --git a/src/libANGLE/renderer/metal/BUILD.gn b/src/libANGLE/renderer/metal/BUILD.gn
-index 8e4c836b0..5906bf33f 100644
+index 8e4c836b00..5906bf33f3 100644
 --- a/src/libANGLE/renderer/metal/BUILD.gn
 +++ b/src/libANGLE/renderer/metal/BUILD.gn
 @@ -8,7 +8,7 @@ import("../../../../gni/angle.gni")
@@ -369,7 +378,7 @@ index 8e4c836b0..5906bf33f 100644
  
  assert(is_mac || is_ios)
 diff --git a/src/libANGLE/renderer/vulkan/BUILD.gn b/src/libANGLE/renderer/vulkan/BUILD.gn
-index 4eef7114f..8264b762a 100644
+index 4eef7114f6..8264b762af 100644
 --- a/src/libANGLE/renderer/vulkan/BUILD.gn
 +++ b/src/libANGLE/renderer/vulkan/BUILD.gn
 @@ -4,7 +4,7 @@
@@ -382,5 +391,5 @@ index 4eef7114f..8264b762a 100644
  import("vulkan_backend.gni")
  
 -- 
-2.43.0
+2.56.0
 

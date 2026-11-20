@@ -35,7 +35,9 @@
     "android": {
       "angle_enable_gl": true,
       "angle_build_vulkan_system_info": true,
-      "angle_shared_libvulkan": false
+      "angle_enable_vulkan": true,
+      "angle_enable_vulkan_validation_layers": false,
+      "vma_vulkan_headers_dir": "//angle/third_party/vulkan-headers/src"
     },
     "mac": {
       "angle_enable_metal": true,
@@ -81,6 +83,7 @@
     "third_party/angle/src/compiler/translator/tree_ops/msl/RewriteCaseDeclarations.cpp",
     "third_party/angle/src/compiler/translator/tree_ops/msl/RewriteOutArgs.cpp",
     "third_party/angle/src/compiler/translator/tree_ops/msl/TransposeRowMajorMatrices.cpp",
+    "third_party/angle/src/compiler/translator/tree_ops/spirv/RewriteSamplerExternalTexelFetch.cpp",
     "third_party/angle/src/libANGLE/Context.cpp",
     "third_party/angle/src/libANGLE/Context_gles_1_0.cpp",
     "third_party/angle/src/libANGLE/Device.cpp",
@@ -97,6 +100,8 @@
     "third_party/angle/src/libGLESv2/entry_points_gles_3_0_autogen.cpp",
     "third_party/angle/src/libGLESv2/entry_points_gles_3_1_autogen.cpp",
     "third_party/angle/src/libGLESv2/entry_points_gles_3_2_autogen.cpp",
-    "third_party/angle/src/libGLESv2/entry_points_gles_ext_autogen.cpp"
+    "third_party/angle/src/libGLESv2/entry_points_gles_ext_autogen.cpp",
+    "third_party/angle/third_party/spirv-tools/src/source/spirv_fuzzer_options.cpp",
+    "third_party/angle/third_party/spirv-tools/src/source/val/validate_ray_tracing_reorder.cpp"
   ]
 }

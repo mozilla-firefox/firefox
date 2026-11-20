@@ -23,6 +23,7 @@ DEPENDENCIES: tuple[str, ...] = (
     "third_party/spirv-headers/src",
     "third_party/spirv-tools/src",
     "third_party/vulkan-headers/src",
+    "third_party/vulkan_memory_allocator",
 )
 GOOGLESOURCE_HOST_SUFFIX = ".googlesource.com"
 
