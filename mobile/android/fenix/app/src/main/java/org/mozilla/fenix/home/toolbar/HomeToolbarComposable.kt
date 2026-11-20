@@ -9,6 +9,7 @@ import android.content.Intent
 import android.speech.RecognizerIntent
 import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -195,14 +196,24 @@ internal class HomeToolbarComposable(
     @Composable
     private fun ColumnScope.AddressBar(wallpaperTextColor: Color?) {
         val isAddressBarVisible = remember { addressBarVisibility }
+        val isSearchActive = appStore.observeAsComposableState { it.searchState.isSearchActive }.value
+        val isMiddleSearchEnabled = settings.isHomepageMiddleSearchEnabled
+        val isEditMode = toolbarStore.observeAsComposableState { it.isEditMode() }.value
+        // With the middle search bar, the address bar is only shown while searching, in edit mode.
+        val isMiddleSearchAddressBarShown = isSearchActive && isEditMode
 
         Box {
-            if (settings.isHomepageMiddleSearchEnabled) {
+            if (isMiddleSearchEnabled) {
                 BrowserSimpleToolbar(toolbarStore, appStore)
             }
 
             this@AddressBar.AnimatedVisibility(
-                visible = isAddressBarVisible.value || appStore.state.searchState.isSearchActive,
+                visible =
+                    if (isMiddleSearchEnabled) {
+                        isMiddleSearchAddressBarShown
+                    } else {
+                        isAddressBarVisible.value || isSearchActive
+                    },
                 enter =
                     fadeIn(
                         animationSpec =
@@ -211,23 +222,36 @@ internal class HomeToolbarComposable(
                                 easing = Easing { fraction -> fraction * fraction },
                             )
                     ),
-                exit =
-                    fadeOut(
-                        animationSpec =
-                            tween(
-                                durationMillis = 250,
-                                easing = Easing { fraction -> 1f - (1f - fraction) * (1f - fraction) },
-                            )
-                    ),
+                exit = addressBarExitTransition(isMiddleSearchEnabled),
             ) {
-                BrowserToolbar(
-                    store = toolbarStore,
-                    browserActionsColor = wallpaperTextColor,
-                    showDivider = false,
-                )
+                // AnimatedVisibility keeps its content for a frame or more after being hidden, even without an exit
+                // transition, during which the address bar would show over the homepage in its display mode. With the
+                // middle search bar, it is therefore removed right away instead.
+                if (!isMiddleSearchEnabled || isMiddleSearchAddressBarShown) {
+                    BrowserToolbar(
+                        store = toolbarStore,
+                        browserActionsColor = wallpaperTextColor,
+                        showDivider = false,
+                    )
+                }
             }
         }
     }
+
+    // With the middle search bar, the address bar is hidden right away when the search ends, rather than fading out
+    // over the homepage.
+    private fun addressBarExitTransition(isMiddleSearchEnabled: Boolean): ExitTransition =
+        if (isMiddleSearchEnabled) {
+            ExitTransition.None
+        } else {
+            fadeOut(
+                animationSpec =
+                    tween(
+                        durationMillis = 250,
+                        easing = Easing { fraction -> 1f - (1f - fraction) * (1f - fraction) },
+                    )
+            )
+        }
 
     @Composable
     override fun Content() {
