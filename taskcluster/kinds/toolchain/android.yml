@@ -196,7 +196,7 @@ linux64-jdk-repack:
         toolchain-artifact: project/gecko/jdk/jdk-linux.tar.zst
         toolchain-alias: linux64-jdk
         toolchain-env:
-            JAVA_HOME: "/builds/worker/fetches/jdk/jdk-25.0.5+8"
+            JAVA_HOME: "/builds/worker/fetches/jdk/jdk-25.0.5.1+2"
 
 linux64-android-sdk-linux-repack:
     description: "Android SDK (Linux) repack toolchain build"

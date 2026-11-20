@@ -18,7 +18,7 @@ Our Android builds run on Java 25 (while compiling to the Java 17 language level
 Do the following:
 
 * Run `./mach bootstrap`, which installs a Java 25 JDK under `~/.mozbuild/jdk/`
-* Add the following line to your `~/.zshrc` or equivalent shell startup file: `export JAVA_HOME="$HOME/.mozbuild/jdk/jdk-25.0.5+8/Contents/Home"`
+* Add the following line to your `~/.zshrc` or equivalent shell startup file: `export JAVA_HOME="$HOME/.mozbuild/jdk/jdk-25.0.5.1+2/Contents/Home"`
   * Update the version to match the directory under `~/.mozbuild/jdk/`
 
 That's it! To verify correctness, open a new shell, navigate to a directory with Android source code, and type `./gradlew tasks`.
@@ -50,7 +50,7 @@ java -version
 If you have Java 25 configured, you'll see output like:
 
 ```
-openjdk version "25.0.5" 2026-10-20 LTS
-OpenJDK Runtime Environment Temurin-25.0.5+8 (build 25.0.5+8-LTS)
-OpenJDK 64-Bit Server VM Temurin-25.0.5+8 (build 25.0.5+8-LTS, mixed mode, sharing)
+openjdk version "25.0.5.1" 2026-11-17 LTS
+OpenJDK Runtime Environment Temurin-25.0.5.1+2 (build 25.0.5.1+2-LTS)
+OpenJDK 64-Bit Server VM Temurin-25.0.5.1+2 (build 25.0.5.1+2-LTS, mixed mode, sharing)
 ```

@@ -52,8 +52,8 @@ AVD_HOME_PATH = Path(
 )
 
 JAVA_VERSION_MAJOR = "25"
-JAVA_VERSION_MINOR = "0.5"
-JAVA_VERSION_PATCH = "8"
+JAVA_VERSION_MINOR = "0.5.1"
+JAVA_VERSION_PATCH = "2"
 
 ANDROID_NDK_EXISTS = """
 Looks like you have the correct version of the Android NDK installed at:
@@ -888,7 +888,7 @@ def ensure_java(os_name: str, os_arch: str):
         ext = "zip" if os_name == "windows" else "tar.gz"
 
         # e.g. https://github.com/adoptium/temurin25-binaries/releases/
-        #      download/jdk-25.0.5%2B8/OpenJDK25U-jdk_x64_linux_hotspot_25.0.5_8.tar.gz
+        #      download/jdk-25.0.5.1%2B2/OpenJDK25U-jdk_x64_linux_hotspot_25.0.5.1_2.tar.gz
         java_url = (
             f"https://github.com/adoptium/temurin{JAVA_VERSION_MAJOR}-binaries/releases/"
             f"download/jdk-{JAVA_VERSION_MAJOR}.{JAVA_VERSION_MINOR}%2B{JAVA_VERSION_PATCH}/"
@@ -964,7 +964,7 @@ def ensure_gradle_jdk_installations(
 
 
 def get_java_bin_path(os_name: str, toolchain_path: Path):
-    # Like jdk-25.0.5+8
+    # Like jdk-25.0.5.1+2
     jdk_folder = f"jdk-{JAVA_VERSION_MAJOR}.{JAVA_VERSION_MINOR}+{JAVA_VERSION_PATCH}"
 
     java_path = toolchain_path / "jdk" / jdk_folder
