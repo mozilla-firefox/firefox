@@ -86,7 +86,6 @@ TEST(TestTokensCache, SinglePut)
 {
   mozilla::net::SSLTokensCache::Clear();
   mozilla::Preferences::SetInt("network.ssl_tokens_cache_records_per_entry", 1);
-  mozilla::Preferences::SetBool("network.ssl_tokens_cache_use_only_once", true);
 
   putToken("anon:www.example.com:443"_ns, 100);
   nsTArray<uint8_t> result;

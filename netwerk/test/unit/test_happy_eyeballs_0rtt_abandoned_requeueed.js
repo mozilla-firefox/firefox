@@ -81,7 +81,6 @@ add_setup(
 
     Services.prefs.setBoolPref("network.http.happy_eyeballs_enabled", true);
     Services.prefs.setIntPref("network.http.speculative-parallel-limit", 0);
-    Services.prefs.setBoolPref("network.ssl_tokens_cache_enabled", true);
     Services.prefs.setBoolPref("network.http.http3.enable", false);
     // Raise the per-host connection limit so two new HCAs can race
     // simultaneously even while the warm-up H2 session is still alive.
@@ -97,7 +96,6 @@ add_setup(
     registerCleanupFunction(async () => {
       Services.prefs.clearUserPref("network.http.happy_eyeballs_enabled");
       Services.prefs.clearUserPref("network.http.speculative-parallel-limit");
-      Services.prefs.clearUserPref("network.ssl_tokens_cache_enabled");
       Services.prefs.clearUserPref("network.http.http3.enable");
       Services.prefs.clearUserPref(
         "network.http.max-persistent-connections-per-server"

@@ -54,8 +54,6 @@ add_task(
 
     Services.prefs.setCharPref("network.dns.localDomains", retryDomains);
 
-    Services.prefs.setBoolPref("network.ssl_tokens_cache_enabled", true);
-
     for (var i = 0; i < retryDomains.length; i++) {
       {
         let countOfEarlyData = handlerCount("/callback/1");
