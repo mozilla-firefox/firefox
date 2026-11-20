@@ -46,13 +46,9 @@ WebTransportDatagramsWritable::Create(
     WebTransportDatagramDuplexStream* aDatagrams,
     WebTransportSendGroup* aSendGroup, int64_t aSendOrder, ErrorResult& aRv) {
   // https://w3c.github.io/webtransport/#webtransportdatagramswritable-create
-  // Step 1: Let stream be a new WebTransportDatagramsWritable, with:
-  // [[OutgoingDatagramsQueue]]: an empty queue
-  // [[BackpressurePromise]]: a promise resolved with undefined
-  // [[Transport]]: transport
-  // [[SendGroup]]: sendGroup
-  // [[SendOrder]]: sendOrder
-  // The first two live in the algorithms instance below.
+  // Step 1: Let stream be a new WebTransportDatagramsWritable with
+  // [[OutgoingDatagramsQueue]] as an empty queue, [[Transport]] as transport,
+  // [[SendGroup]] as sendGroup, and [[SendOrder]] as sendOrder.
   auto datagramsWritable = MakeRefPtr<WebTransportDatagramsWritable>(
       aGlobal, aTransport, aSendGroup, aSendOrder);
 
@@ -80,9 +76,7 @@ WebTransportDatagramsWritable::Create(
     return nullptr;
   }
 
-  // Step 4: Append stream to transport.[[Datagrams]].[[Writables]].
-  // Done by WebTransportDatagramDuplexStream::CreateWritable().
-  // Step 5: Return stream.
+  // Step 4: Return stream.
   return datagramsWritable.forget();
 }
 
@@ -139,10 +133,10 @@ void WebTransportDatagramsWritable::RetireInFlight(uint64_t aCount) {
   }
 }
 
-bool WebTransportDatagramsWritable::TryResolveBackpressureFromCredit(
+bool WebTransportDatagramsWritable::TryResolveOldestFromCredit(
     uint64_t aAvailableBytes, size_t* aResolvedBytes) {
-  return mAlgorithms && mAlgorithms->TryResolveBackpressureFromCredit(
-                            aAvailableBytes, aResolvedBytes);
+  return mAlgorithms && mAlgorithms->TryResolveOldestFromCredit(aAvailableBytes,
+                                                                aResolvedBytes);
 }
 
 }  // namespace mozilla::dom
