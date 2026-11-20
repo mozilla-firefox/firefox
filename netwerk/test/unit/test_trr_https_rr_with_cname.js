@@ -43,9 +43,7 @@ add_setup(async function setup() {
     Services.prefs.clearUserPref("network.http.happy_eyeballs_enabled");
   });
 
-  h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
+  h2Port = (await create_h2_server()).port();
 
   h3Port = Services.env.get("MOZHTTP3_PORT_ECH");
   Assert.notEqual(h3Port, null);
