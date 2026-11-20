@@ -9,6 +9,31 @@
 /* import-globals-from head_channels.js */
 /* import-globals-from head_http3.js */
 
+// Starts the HTTP/2 origin that advertises the HTTP/3 server via Alt-Svc and
+// serves the requests that fall back from HTTP/3. Returns its port.
+async function create_h3_fallback_origin() {
+  let server = new HeadNodeHTTP2Server();
+  // VersionFallback retries over HTTP/1.1.
+  server.allowHTTP1 = true;
+  await server.start();
+  registerCleanupFunction(async () => {
+    await server.stop();
+  });
+  await server.registerPathHandler("/http3-test", (req, res) => {
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Alt-Svc", "h3=" + req.headers["x-altsvc"]);
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end("ok");
+  });
+  for (let path of ["/UnknownReset", "/VersionFallback"]) {
+    await server.registerPathHandler(path, (req, res) => {
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.end("ok");
+    });
+  }
+  return server.port();
+}
+
 function makeChan(uri) {
   let chan = NetUtil.newChannel({
     uri,

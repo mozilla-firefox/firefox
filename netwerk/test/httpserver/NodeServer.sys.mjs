@@ -855,11 +855,12 @@ export class NodeHTTPSServer extends BaseNodeServer {
 // HTTP2
 
 class NodeHTTP2ServerCode extends BaseNodeHTTPServerCode {
-  static async startServer(port) {
+  static async startServer(port, allowHTTP1) {
     const fs = require("fs");
     const options = {
       key: global.tlsKey || fs.readFileSync(__dirname + "/http2-cert.key"),
       cert: global.tlsCert || fs.readFileSync(__dirname + "/http2-cert.pem"),
+      allowHTTP1,
     };
     const http2 = require("http2");
     global.server = http2.createSecureServer(
@@ -889,6 +890,8 @@ class NodeHTTP2ServerCode extends BaseNodeHTTPServerCode {
 export class NodeHTTP2Server extends BaseNodeServer {
   _protocol = "https";
   _version = "h2";
+  // When true, also accepts HTTP/1.1 clients. Must be set before start().
+  allowHTTP1 = false;
   /// Starts the server
   /// @port - default 0
   ///    when provided, will attempt to listen on that port.
@@ -902,7 +905,9 @@ export class NodeHTTP2Server extends BaseNodeServer {
     await this.execute(NodeHTTP2ServerCode);
     await this.execute(ADB);
     await this._pushGeneratedTLSMaterial();
-    this._port = await this.execute(`NodeHTTP2ServerCode.startServer(${port})`);
+    this._port = await this.execute(
+      `NodeHTTP2ServerCode.startServer(${port}, ${this.allowHTTP1})`
+    );
     await this.execute(`global.path_handlers = {};`);
   }
 
