@@ -11,6 +11,7 @@ import com.android.installreferrer.api.InstallReferrerClient
 import com.android.installreferrer.api.InstallReferrerStateListener
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
@@ -334,7 +335,7 @@ class InstallReferrerWorkerTest {
     }
 
     @Test
-    fun `WHEN service disconnects THEN returns SERVICE_UNAVAILABLE with null response`() = runTest {
+    fun `WHEN service disconnects THEN returns SERVICE_UNAVAILABLE with null response and ends connection`() = runTest {
         val fakeClient = FakeInstallReferrerClient(simulateDisconnect = true)
 
         val (responseCode, referrerResponse) = InstallReferrerWorker.fetchInstallReferrer(fakeClient)
@@ -342,7 +343,7 @@ class InstallReferrerWorkerTest {
         assertEquals(InstallReferrerClient.InstallReferrerResponse.SERVICE_UNAVAILABLE, responseCode)
         assertNull(referrerResponse)
         assertTrue(fakeClient.connectionStarted)
-        assertFalse(fakeClient.connectionEnded)
+        assertTrue(fakeClient.connectionEnded)
     }
 
     @Test
@@ -403,6 +404,81 @@ class InstallReferrerWorkerTest {
         yield()
 
         assertTrue(fakeClient.connectionEnded)
+    }
+
+    @Test
+    fun `GIVEN client throws IllegalStateException WHEN setup finishes OK THEN returns SERVICE_UNAVAILABLE with null response and ends connection`() =
+        runTest {
+            val fakeClient =
+                FakeInstallReferrerClient(
+                    responseCode = InstallReferrerClient.InstallReferrerResponse.OK,
+                    throwIllegalStateException = true,
+                )
+
+            val (responseCode, referrerResponse) = InstallReferrerWorker.fetchInstallReferrer(fakeClient)
+
+            assertEquals(InstallReferrerClient.InstallReferrerResponse.SERVICE_UNAVAILABLE, responseCode)
+            assertNull(referrerResponse)
+            assertTrue(fakeClient.connectionEnded)
+        }
+
+    @Test
+    fun `GIVEN the coroutine was cancelled WHEN setup finishes afterwards THEN getInstallReferrer is not called`() =
+        runTest {
+            val fakeClient =
+                FakeInstallReferrerClient(
+                    responseCode = InstallReferrerClient.InstallReferrerResponse.OK,
+                    throwIllegalStateException = true,
+                    delayCallback = true,
+                )
+
+            val job =
+                launch(start = CoroutineStart.UNDISPATCHED) { InstallReferrerWorker.fetchInstallReferrer(fakeClient) }
+            job.cancel()
+            job.join()
+
+            fakeClient.fireSetupFinished()
+
+            assertFalse(fakeClient.getInstallReferrerCalled)
+        }
+
+    @Test
+    fun `GIVEN setup already finished WHEN service disconnects afterwards THEN the original result is kept`() =
+        runTest {
+            val fakeClient =
+                FakeInstallReferrerClient(
+                    responseCode = InstallReferrerClient.InstallReferrerResponse.OK,
+                    referrerResponse = "test",
+                    delayCallback = true,
+                )
+
+            val result =
+                async(start = CoroutineStart.UNDISPATCHED) { InstallReferrerWorker.fetchInstallReferrer(fakeClient) }
+            fakeClient.fireSetupFinished()
+            fakeClient.fireServiceDisconnected()
+
+            assertEquals(Pair(InstallReferrerClient.InstallReferrerResponse.OK, "test"), result.await())
+        }
+
+    @Test
+    fun `GIVEN service disconnected WHEN setup finishes again after a rebind THEN the connection is ended`() = runTest {
+        val fakeClient =
+            FakeInstallReferrerClient(
+                responseCode = InstallReferrerClient.InstallReferrerResponse.OK,
+                referrerResponse = "test",
+                delayCallback = true,
+            )
+
+        val result =
+            async(start = CoroutineStart.UNDISPATCHED) { InstallReferrerWorker.fetchInstallReferrer(fakeClient) }
+        fakeClient.fireServiceDisconnected()
+        fakeClient.connectionEnded = false
+
+        fakeClient.fireSetupFinished()
+
+        assertEquals(Pair(InstallReferrerClient.InstallReferrerResponse.SERVICE_UNAVAILABLE, null), result.await())
+        assertTrue(fakeClient.connectionEnded)
+        assertFalse(fakeClient.getInstallReferrerCalled)
     }
 
     @Test
@@ -901,11 +977,21 @@ private class FakeInstallReferrerClient(
     private val simulateDisconnect: Boolean = false,
     private val throwRemoteException: Boolean = false,
     private val throwSecurityException: Boolean = false,
+    private val throwIllegalStateException: Boolean = false,
     private val delayCallback: Boolean = false,
 ) : InstallReferrerClientWrapper {
     var connectionStarted = false
     var connectionEnded = false
+    var getInstallReferrerCalled = false
     private var storedListener: InstallReferrerStateListener? = null
+
+    fun fireSetupFinished() {
+        storedListener?.onInstallReferrerSetupFinished(responseCode)
+    }
+
+    fun fireServiceDisconnected() {
+        storedListener?.onInstallReferrerServiceDisconnected()
+    }
 
     override fun startConnection(listener: InstallReferrerStateListener) {
         connectionStarted = true
@@ -921,6 +1007,10 @@ private class FakeInstallReferrerClient(
     }
 
     override fun getInstallReferrer(): String? {
+        getInstallReferrerCalled = true
+        if (throwIllegalStateException) {
+            throw IllegalStateException("Service not connected. Please start a connection before using the service.")
+        }
         if (throwRemoteException) {
             throw android.os.RemoteException("Test remote exception")
         }

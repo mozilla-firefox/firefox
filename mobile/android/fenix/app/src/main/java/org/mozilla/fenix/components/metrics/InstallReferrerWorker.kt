@@ -14,6 +14,7 @@ import com.android.installreferrer.api.InstallReferrerStateListener
 import java.io.UnsupportedEncodingException
 import java.net.URLDecoder
 import kotlin.coroutines.resume
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.telemetry.glean.Glean
@@ -161,17 +162,31 @@ class InstallReferrerWorker(
         private fun createReferrerStateListener(
             timerId: GleanTimerId,
             referrerClient: InstallReferrerClientWrapper,
-            continuation: kotlin.coroutines.Continuation<Pair<Int, String?>>,
+            continuation: CancellableContinuation<Pair<Int, String?>>,
         ) =
             object : InstallReferrerStateListener {
                 override fun onInstallReferrerSetupFinished(responseCode: Int) {
                     PlayStoreAttribution.attributionTime.stopAndAccumulate(timerId)
-                    val referrerResponse = getReferrerResponseIfOk(responseCode, referrerClient)
+                    if (!continuation.isActive) {
+                        safelyEndConnection(referrerClient)
+                        return
+                    }
+                    val result =
+                        try {
+                            Pair(responseCode, getReferrerResponseIfOk(responseCode, referrerClient))
+                        } catch (e: IllegalStateException) {
+                            logger.error("Install referrer client not ready", e)
+                            Pair(InstallReferrerClient.InstallReferrerResponse.SERVICE_UNAVAILABLE, null)
+                        }
                     safelyEndConnection(referrerClient)
-                    continuation.resume(Pair(responseCode, referrerResponse))
+                    continuation.resume(result)
                 }
 
                 override fun onInstallReferrerServiceDisconnected() {
+                    safelyEndConnection(referrerClient)
+                    if (!continuation.isActive) {
+                        return
+                    }
                     continuation.resume(
                         Pair(
                             InstallReferrerClient.InstallReferrerResponse.SERVICE_UNAVAILABLE,
