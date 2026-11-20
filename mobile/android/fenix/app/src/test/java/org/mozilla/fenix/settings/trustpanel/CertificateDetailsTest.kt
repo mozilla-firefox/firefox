@@ -61,14 +61,14 @@ class CertificateDetailsTest {
 
     @Test
     fun `GIVEN a secure website whose certificate has only an issuer THEN the certificate details can be opened`() {
-        val certificate = createCertificate(subject = "CN=example.com", issuer = "CN=R13")
+        val certificate = createCertificate(subject = "DC=example", issuer = "CN=R13")
 
         assertTrue(WebsiteInfoState(isSecured = true, certificate = certificate).canOpenCertificateDetails)
     }
 
     @Test
     fun `GIVEN a secure website whose certificate has nothing to show THEN the certificate details cannot be opened`() {
-        val certificate = createCertificate(subject = "CN=example.com", issuer = "DC=example")
+        val certificate = createCertificate(subject = "DC=example", issuer = "DC=example")
 
         assertFalse(WebsiteInfoState(isSecured = true, certificate = certificate).canOpenCertificateDetails)
     }

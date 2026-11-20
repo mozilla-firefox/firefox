@@ -24,14 +24,14 @@ class CanOpenCertificateDetailsTest {
 
     @Test
     fun `GIVEN a secure connection whose certificate has only an issuer THEN the certificate details can be opened`() {
-        val certificate = createCertificate(subject = "CN=www.mozilla.org", issuer = "CN=R13")
+        val certificate = createCertificate(subject = "DC=example", issuer = "CN=R13")
 
         assertTrue(SecurityInfo.Secure(certificate = certificate).canOpenCertificateDetails())
     }
 
     @Test
     fun `GIVEN a secure connection whose certificate has nothing to show THEN the certificate details cannot be opened`() {
-        val certificate = createCertificate(subject = "CN=www.mozilla.org", issuer = "DC=example")
+        val certificate = createCertificate(subject = "DC=example", issuer = "DC=example")
 
         assertFalse(SecurityInfo.Secure(certificate = certificate).canOpenCertificateDetails())
     }

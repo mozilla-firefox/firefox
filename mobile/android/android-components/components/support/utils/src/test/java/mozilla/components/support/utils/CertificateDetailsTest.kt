@@ -110,8 +110,26 @@ class CertificateDetailsTest {
     }
 
     @Test
-    fun `GIVEN all subject fields are missing WHEN mapped to issued to THEN nothing is shown`() {
-        assertNull(CertificateDetails(subjectCommonName = "example.com").toIssuedTo(Locale.ENGLISH))
+    fun `GIVEN only a common name WHEN mapped to issued to THEN the common name is shown as the organization`() {
+        assertEquals(
+            CertificateDetails.IssuedTo(organization = "example.com", locality = null, country = null),
+            CertificateDetails(subjectCommonName = "example.com").toIssuedTo(Locale.ENGLISH),
+        )
+    }
+
+    @Test
+    fun `GIVEN an organization and a common name WHEN mapped to issued to THEN the organization is shown`() {
+        assertEquals(
+            "Mozilla Corporation",
+            CertificateDetails(subjectOrganization = "Mozilla Corporation", subjectCommonName = "www.mozilla.org")
+                .toIssuedTo(Locale.ENGLISH)
+                ?.organization,
+        )
+    }
+
+    @Test
+    fun `GIVEN all subject fields including the common name are missing WHEN mapped to issued to THEN nothing is shown`() {
+        assertNull(CertificateDetails(subjectCommonName = " ", issuerCommonName = "R13").toIssuedTo(Locale.ENGLISH))
     }
 
     @Test
@@ -169,14 +187,12 @@ class CertificateDetailsTest {
 
     @Test
     fun `GIVEN only an issuer name WHEN checking for details to show THEN the certificate has displayable details`() {
-        assertTrue(
-            CertificateDetails(subjectCommonName = "example.com", issuerCommonName = "R13").hasDisplayableDetails()
-        )
+        assertTrue(CertificateDetails(issuerCommonName = "R13").hasDisplayableDetails())
     }
 
     @Test
     fun `GIVEN no subject fields and no issuer name WHEN checking for details to show THEN there are no displayable details`() {
-        assertFalse(CertificateDetails(subjectCommonName = "example.com").hasDisplayableDetails())
+        assertFalse(CertificateDetails().hasDisplayableDetails())
     }
 
     @Test

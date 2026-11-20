@@ -71,6 +71,16 @@ class CertificateDetailsPanelTest {
     }
 
     @Test
+    fun `GIVEN a certificate with only a common name THEN the common name is shown as who it was issued to`() {
+        val panel =
+            createPanel(certificate = createCertificate(subject = "CN=www.mozilla.org", issuer = "CN=R13"), qwac = null)
+
+        assertEquals("www.mozilla.org", panel.text(R.id.issued_to_organization))
+        assertFalse(panel.isShown(R.id.issued_to_locality))
+        assertFalse(panel.isShown(R.id.issued_to_country))
+    }
+
+    @Test
     fun `GIVEN a certificate without subject or issuer names THEN the issued to and verified by sections are hidden`() {
         val panel =
             createPanel(certificate = createCertificate(subject = "DC=example", issuer = "DC=example"), qwac = null)
@@ -99,8 +109,7 @@ class CertificateDetailsPanelTest {
 
     @Test
     fun `GIVEN a certificate with only an issuer THEN no space is added above who verified it`() {
-        val panel =
-            createPanel(certificate = createCertificate(subject = "CN=www.mozilla.org", issuer = "CN=R13"), qwac = null)
+        val panel = createPanel(certificate = createCertificate(subject = "DC=example", issuer = "CN=R13"), qwac = null)
 
         assertFalse(panel.isShown(R.id.issued_to))
         assertEquals(0, panel.topMargin(R.id.verified_by))

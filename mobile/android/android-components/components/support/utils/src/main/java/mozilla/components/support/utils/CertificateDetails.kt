@@ -30,7 +30,8 @@ data class CertificateDetails(
     /**
      * The subject fields of a certificate, as shown to the user under "Certificate issued to".
      *
-     * @property organization The organization the certificate was issued to, or null if absent.
+     * @property organization The organization the certificate was issued to, or its common name if it has no
+     *   organization, locality or country, or null if absent.
      * @property locality The locality of the organization, or null if absent.
      * @property country The display name of the organization's country, or null if absent.
      */
@@ -60,15 +61,18 @@ fun X509Certificate.toCertificateDetails(): CertificateDetails {
  * Maps the subject fields of these [CertificateDetails] to [CertificateDetails.IssuedTo], with the country code
  * converted to its name in [locale]. Blank fields are treated as absent.
  *
- * Absent fields are left out, and null is returned if all of them are absent, so that no blank label or empty row is
- * shown.
+ * Absent fields are left out. If the organization, locality and country are all absent, the common name is shown in
+ * place of the organization, and null is returned if that is absent too, so that no blank label or empty row is shown.
  */
 fun CertificateDetails?.toIssuedTo(locale: Locale): CertificateDetails.IssuedTo? {
     val organization = this?.subjectOrganization?.takeIf { it.isNotBlank() }
     val locality = this?.subjectLocality?.takeIf { it.isNotBlank() }
     val countryCode = this?.subjectCountry?.takeIf { it.isNotBlank() }
 
-    if (organization == null && locality == null && countryCode == null) return null
+    if (organization == null && locality == null && countryCode == null) {
+        val commonName = this?.subjectCommonName?.takeIf { it.isNotBlank() } ?: return null
+        return CertificateDetails.IssuedTo(organization = commonName, locality = null, country = null)
+    }
 
     return CertificateDetails.IssuedTo(
         organization = organization,

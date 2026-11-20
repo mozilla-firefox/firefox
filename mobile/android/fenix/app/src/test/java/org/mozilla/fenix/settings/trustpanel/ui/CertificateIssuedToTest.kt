@@ -72,8 +72,16 @@ class CertificateIssuedToTest {
     }
 
     @Test
-    fun `GIVEN all subject fields are missing THEN nothing is shown`() {
+    fun `GIVEN only a common name THEN the common name is shown`() {
         setCertificateIssuedTo(CertificateDetails(subjectCommonName = "example.com"))
+
+        composeTestRule.onNodeWithText(label, useUnmergedTree = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("example.com", useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `GIVEN all subject fields including the common name are missing THEN nothing is shown`() {
+        setCertificateIssuedTo(CertificateDetails(issuerCommonName = "R13"))
 
         composeTestRule.onRoot(useUnmergedTree = true).onChildren().assertCountEquals(0)
     }
