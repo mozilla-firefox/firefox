@@ -24,7 +24,7 @@ profiler_helper = { path = "../../../../tools/profiler/rust-helper" }
 mozurl = { path = "../../../../netwerk/base/mozurl" }
 harfbuzz_glue = { path = "../../../../gfx/harfbuzz_glue" }
 webrender_bindings = { path = "../../../../gfx/webrender_bindings" }
-cubeb-coreaudio = { git = "https://github.com/mozilla/cubeb-coreaudio-rs", rev = "076ecf68dbf20087d2fa8e9210a1965e341f66d0", optional = true }
+cubeb-coreaudio = { git = "https://github.com/mozilla/cubeb-coreaudio-rs", rev = "fea0321b47deec3d28a025336f379949d07b9945", optional = true }
 cubeb-pulse = { git = "https://github.com/mozilla/cubeb-pulse-rs", rev="43e6ffe0dcaace8e02093abc738fb80cc93db8db", optional = true, features=["pulse-dlopen"] }
 cubeb-sys = { version = "0.34", optional = true, features=["gecko-in-tree"] }
 audioipc2-client = { git = "https://github.com/mozilla/audioipc", rev = "ef46a7bd05032d1577208ff048d444cc7412c7b8", optional = true }
