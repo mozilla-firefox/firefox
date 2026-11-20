@@ -2,6 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#if defined(__ELF__) && defined(__x86_64__)
+#include <cet.h>
+#endif
+
 #if defined(_WIN32) && defined(__i386__)
 // Mark the object as SAFESEH-enabled.
 .def @feat.00;
