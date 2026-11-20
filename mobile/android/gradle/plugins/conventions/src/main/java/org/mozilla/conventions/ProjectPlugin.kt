@@ -93,7 +93,7 @@ class ProjectPlugin : Plugin<Project> {
         configureGleanVersionResolution(project)
         configureKtfmt(project, mozilla)
         configureDetekt(project, mozilla)
-        configureAndroidComponentsLint(project, mozilla)
+        configureAndroidLint(project, mozilla)
         configureRoomImplementationCheck(project)
         configureUnitTests(project)
         configurePackagingResourcesExcludes(project)
@@ -593,28 +593,28 @@ class ProjectPlugin : Plugin<Project> {
         }
     }
 
-    private fun configureAndroidComponentsLint(project: Project, mozilla: ProjectExtension) {
+    private fun configureAndroidLint(project: Project, mozilla: ProjectExtension) {
         val action = Action<AppliedPlugin> {
-            if (!mozilla.androidComponentsProject.get()) return@Action
-
             val android = project.extensions.getByType<CommonExtension>()
             with(android.lint) {
                 warningsAsErrors = true
                 abortOnError = false
-                disable += listOf(
-                    "MissingTranslation",
-                    "ExtraTranslation",
-                    "MissingDefaultResource",
-                    // We do not want to enforce this as a generic rule for all languages (see #6117, #6056, #6118)
-                    "TypographyEllipsis",
-                    // https://github.com/mozilla-mobile/android-components/issues/10641
-                    "UnspecifiedImmutableFlag",
-                    // https://bugzilla.mozilla.org/show_bug.cgi?id=1795427
-                    "UnusedResources",
-                    // "We do not impose rules on locales"
-                    // https://github.com/mozilla-mobile/android-components/pull/11069
-                    "TypographyDashes",
-                )
+                if (mozilla.androidComponentsProject.get()) {
+                    disable += listOf(
+                        "MissingTranslation",
+                        "ExtraTranslation",
+                        "MissingDefaultResource",
+                        // We do not want to enforce this as a generic rule for all languages (see #6117, #6056, #6118)
+                        "TypographyEllipsis",
+                        // https://github.com/mozilla-mobile/android-components/issues/10641
+                        "UnspecifiedImmutableFlag",
+                        // https://bugzilla.mozilla.org/show_bug.cgi?id=1795427
+                        "UnusedResources",
+                        // "We do not impose rules on locales"
+                        // https://github.com/mozilla-mobile/android-components/pull/11069
+                        "TypographyDashes",
+                    )
+                }
             }
         }
         project.pluginManager.withPlugin("com.android.library", action)

@@ -52,7 +52,7 @@
     </issue>
 
     <!-- Lints that are disabled by default -->
-    <issue id="ConvertToWebp" severity="warning" />
+    <issue id="ConvertToWebp" severity="error" />
 
     <!-- Performance: big wins from a theoretical perspective so we escalate to error. -->
     <issue id="DrawAllocation" severity="error" />

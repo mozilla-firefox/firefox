@@ -265,7 +265,6 @@ android {
 
     lint {
         lintConfig = file("../../shared-lint.xml")
-        abortOnError = false
     }
 
     // Exclude native libraries for unsupported architectures from third-party dependencies
