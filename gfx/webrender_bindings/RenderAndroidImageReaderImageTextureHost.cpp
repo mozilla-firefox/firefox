@@ -4,8 +4,7 @@
 
 #include "RenderAndroidImageReaderImageTextureHost.h"
 
-#include "GLContextEGL.h"
-#include "GLLibraryEGL.h"
+#include "GLContext.h"
 #include "GLReadTexImageHelper.h"
 #include "OGLShaderConfig.h"
 #include "mozilla/gfx/2D.h"
@@ -67,34 +66,8 @@ bool RenderAndroidImageReaderImageTextureHost::EnsureLockable() {
 
   MOZ_ASSERT(mAndroidImageConsumer);
 
-  mAndroidImageConsumer->UpdateTexImage(mFrameId);
-
-  if (!mAndroidImageConsumer->HasImage()) {
+  if (!mAndroidImageConsumer->PrepareTexture(mFrameId)) {
     return false;
-  }
-
-  auto writeFenceFd = mAndroidImageConsumer->CloneWriteFenceFd();
-  if (writeFenceFd) {
-    const auto& gle = gl::GLContextEGL::Cast(mGL);
-    const auto& egl = gle->mEgl;
-
-    // eglCreateSyncKHR takes ownership of the fd even on failure.
-    // Release it here to avoid closing the fd again.
-    const EGLint attribs[] = {LOCAL_EGL_SYNC_NATIVE_FENCE_FD_ANDROID,
-                              writeFenceFd.release(), LOCAL_EGL_NONE};
-
-    EGLSync sync =
-        egl->fCreateSyncKHR(LOCAL_EGL_SYNC_NATIVE_FENCE_ANDROID, attribs);
-    if (sync) {
-      if (egl->IsExtensionSupported(gl::EGLExtension::KHR_wait_sync)) {
-        egl->fWaitSync(sync, 0);
-      } else {
-        egl->fClientWaitSync(sync, 0, LOCAL_EGL_FOREVER);
-      }
-      egl->fDestroySync(sync);
-    } else {
-      gfxCriticalNote << "Failed to create EGLSync from acquire fence fd";
-    }
   }
 
   if (mAndroidImageConsumer->GetSize() != mSize) {

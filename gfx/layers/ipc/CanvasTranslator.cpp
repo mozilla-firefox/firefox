@@ -33,6 +33,10 @@
 #include "mozilla/layers/TextureClient.h"
 #include "mozilla/layers/VideoBridgeParent.h"
 
+#ifdef MOZ_WIDGET_ANDROID
+#  include "mozilla/layers/TextureHostOGL.h"
+#endif
+
 #if defined(XP_WIN)
 #  include "mozilla/gfx/DeviceManagerDx.h"
 #  include "mozilla/layers/TextureD3D11.h"
@@ -1572,6 +1576,12 @@ static bool SDIsSupportedRemoteDecoder(const SurfaceDescriptor& sd) {
 
   const auto& sdrd = sdv.get_SurfaceDescriptorRemoteDecoder();
 
+#ifdef MOZ_WIDGET_ANDROID
+  if (sdrd.videoType() == RemoteDecoderVideoType::AndroidImageReaderImage) {
+    return true;
+  }
+#endif
+
   if (sdrd.videoType() == RemoteDecoderVideoType::Buffer ||
       sdrd.videoType() == RemoteDecoderVideoType::MacIOSurface ||
       sdrd.videoType() == RemoteDecoderVideoType::D3D10 ||
@@ -1754,6 +1764,12 @@ CanvasTranslator::LookupSourceSurfaceFromSurfaceDescriptor(
     usedDescriptor = Some(sdrd);
 
     return do_AddRef(usedSurf);
+  }
+#endif
+
+#ifdef MOZ_WIDGET_ANDROID
+  if (sdrd.videoType() == RemoteDecoderVideoType::AndroidImageReaderImage) {
+    return GetAndroidImageReaderSurfaceForCanvas(texture);
   }
 #endif
 

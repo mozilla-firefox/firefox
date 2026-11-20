@@ -1156,12 +1156,10 @@ bool GLBlitHelper::Blit(layers::AndroidImageReader* imageReader,
   ScopedTexture tex(mGL);
   ScopedBindTexture bindTex(mGL, tex.Texture(), LOCAL_GL_TEXTURE_EXTERNAL);
 
-  mGL->TexParams_SetClampNoMips(LOCAL_GL_TEXTURE_EXTERNAL);
-
-  RefPtr<layers::AndroidImageWrapper> image;
-  if (!imageReader->UpdateTexImage(frameId, mGL, tex.Texture(),
-                                   getter_AddRefs(image)) ||
-      !image->WaitForWriteFence(mGL)) {
+  RefPtr<layers::AndroidImageWrapper> image =
+      imageReader->AcquireImage(frameId);
+  if (!image || !image->WaitForWriteFence(mGL) ||
+      !image->BindToTexture(mGL, tex.Texture())) {
     return false;
   }
 
@@ -1185,14 +1183,14 @@ bool GLBlitHelper::Blit(layers::AndroidImageReader* imageReader,
       mGL->fFlush();
       UniqueFileHandle readFence(egl->fDupNativeFenceFDANDROID(sync));
       egl->fDestroySync(sync);
-      if (readFence) {
-        image->SetReadFenceFd(std::move(readFence));
+      if (readFence && image->SetReadFenceFd(std::move(readFence))) {
         return true;
       }
     }
   }
 
-  // Without an exportable fence, wait before releasing our image reference.
+  // If the read fence could not be exported or stored, finish the blit
+  // before releasing our image reference.
   mGL->fFinish();
   return true;
 }

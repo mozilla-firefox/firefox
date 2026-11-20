@@ -5999,6 +5999,14 @@ bool ValidSurfaceDescriptorForRemoteCanvas2d(
   switch (sdrd.videoType()) {
     case layers::RemoteDecoderVideoType::Buffer:
       break;
+#ifdef MOZ_WIDGET_ANDROID
+    case layers::RemoteDecoderVideoType::AndroidImageReaderImage:
+      if (!StaticPrefs::
+              gfx_canvas_remote_use_draw_image_fast_path_aimage_reader()) {
+        return false;
+      }
+      break;
+#endif
 #ifdef XP_MACOSX
     case layers::RemoteDecoderVideoType::MacIOSurface: {
       break;

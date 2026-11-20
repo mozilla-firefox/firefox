@@ -41,11 +41,8 @@ class AndroidImageConsumer final {
   AndroidImageConsumer(AndroidImageReader* aImageReader, gl::GLContext* aGL,
                        const GLuint aTextureHandle);
 
-  void UpdateTexImage(const AndroidMediaCodecFrameId aFrameId);
+  bool PrepareTexture(AndroidMediaCodecFrameId aFrameId);
 
-  bool HasImage() { return !!mCurrentImage; }
-
-  mozilla::UniqueFileHandle CloneWriteFenceFd();
   void SetReadFenceFd(UniqueFileHandle&& aFenceFd);
 
   GLuint GetGlTextureHandle() { return mTextureHandle; }

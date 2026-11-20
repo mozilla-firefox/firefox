@@ -38,12 +38,20 @@
 namespace mozilla {
 namespace gfx {
 class DataSourceSurface;
+class SourceSurface;
 }  // namespace gfx
 
 namespace layers {
 
 class Compositor;
 class CompositorOGL;
+#ifdef MOZ_WIDGET_ANDROID
+// Resolve the authorized host's descriptor and retain a best-effort image
+// through readback. Works with forwarding TextureHost wrappers.
+already_AddRefed<gfx::SourceSurface> GetAndroidImageReaderSurfaceForCanvas(
+    TextureHost* aTextureHost);
+#endif
+
 class AndroidHardwareBuffer;
 class AndroidImageConsumer;
 class SurfaceDescriptorAndroidHardwareBuffer;

@@ -132,15 +132,26 @@ class AndroidImageWrapper {
                                AHardwareBuffer* aHardwareBuffer,
                                const gfx::IntSize aSize,
                                const gfx::SurfaceFormat aFormat,
-                               mozilla::UniqueFileHandle&& aWriteFenceFd);
+                               mozilla::UniqueFileHandle&& aWriteFenceFd,
+                               const gfx::IntRect& aCropRect);
 
-  mozilla::UniqueFileHandle CloneWriteFenceFd();
+  // Wait on the current GL context before sampling this acquired image.
   bool WaitForWriteFence(gl::GLContext* aGL);
+  // Requires a current EGL context. The caller must wait on the write fence
+  // before sampling.
+  bool BindToTexture(gl::GLContext* aGL, GLuint aTexture);
 
-  void SetReadFenceFd(UniqueFileHandle&& aFenceFd);
+  bool ReadTexImage(gl::GLContext* aGL, gfx::DataSourceSurface* aSurface);
+  already_AddRefed<gfx::DataSourceSurface> GetAsSurface(
+      const gfx::IntSize& aSize, gfx::SurfaceFormat aFormat);
+
+  // On failure the existing fence is preserved; the caller must complete
+  // its GL reads before dropping its reference to this image.
+  bool SetReadFenceFd(UniqueFileHandle&& aFenceFd);
 
   const AHardwareBuffer* mHardwareBuffer;
   const gfx::IntSize mSize;
+  const gfx::IntRect mCropRect;
   const gfx::SurfaceFormat mFormat;
 
  protected:
@@ -183,20 +194,14 @@ class AndroidImageReader final
   // released.
   void Shutdown();
 
-  bool UpdateTexImage(AndroidMediaCodecFrameId aFrameId, gl::GLContext* aGL,
-                      GLuint aTexture, AndroidImageWrapper** aImage);
+  // Retain the requested frame before releasing the monitor.
+  RefPtr<AndroidImageWrapper> AcquireImage(AndroidMediaCodecFrameId aFrameId);
 
-  bool UpdateTexImageWithReadback(AndroidMediaCodecFrameId aFrameId,
-                                  gl::GLContext* aGL,
-                                  gfx::DataSourceSurface* aSurface,
-                                  const gfx::IntSize aSize,
-                                  const gfx::SurfaceFormat aFormat);
+  // Remote Canvas can use the last acquired image if the target is unavailable.
+  RefPtr<AndroidImageWrapper> AcquireImageForCanvas(
+      AndroidMediaCodecFrameId aFrameId);
 
   void MaybeRenderFirstFrame(AndroidMediaCodecFrameId aFrameId);
-
-  bool DoUpdateTexImage(const MonitorAutoLock& aProofOfLock,
-                        AndroidMediaCodecFrameId aFrameId)
-      MOZ_REQUIRES(mMonitor);
 
   ANativeWindow* GetANativeWindow();
 
@@ -211,8 +216,8 @@ class AndroidImageReader final
 
   void NotifyFrameAvailable();
 
-  // AndroidImageConsumer::UpdateTexImage() requests at least 2 concurrently
-  // acquired AImages.
+  // Allow WebRender and Remote Canvas to hold different acquired images at
+  // the same time.
   const int32_t mMaxImageCount = 2;
   const GpuProcessAndroidImageReaderId mImageReaderId;
 
@@ -285,6 +290,20 @@ class AndroidImageReader final
   bool mShuttingDown MOZ_GUARDED_BY(mMonitor) = false;
 
   mozilla::Atomic<int32_t> mAcquiredImageCount{0};
+
+ private:
+  enum class CachePolicy {
+    // When all acquisition slots are in use, keep the cached image available
+    // as a Remote Canvas fallback and stop this acquisition attempt.
+    PreserveOnFull,
+    // When all acquisition slots are in use, drop the reader's cached image
+    // reference and continue only if a slot becomes available.
+    EvictOnFull,
+  };
+
+  bool DoUpdateTexImage(const MonitorAutoLock& aProofOfLock,
+                        AndroidMediaCodecFrameId aFrameId,
+                        CachePolicy aCachePolicy) MOZ_REQUIRES(mMonitor);
 };
 
 /**

@@ -7700,6 +7700,14 @@
   value: true
   mirror: always
 
+#ifdef MOZ_WIDGET_ANDROID
+# Enable GPU-process readback for ImageReader video in remote canvas drawImage.
+- name: gfx.canvas.remote.use-draw-image-fast-path-aimage-reader
+  type: RelaxedAtomicBool
+  value: true
+  mirror: always
+#endif
+
 #ifdef XP_WIN
 - name: gfx.canvas.remote.use-draw-image-fast-path-d3d
   type: RelaxedAtomicBool

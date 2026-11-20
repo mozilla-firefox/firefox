@@ -58,15 +58,19 @@ AndroidImageConsumer::~AndroidImageConsumer() {
   mGL->fDeleteTextures(1, &mTextureHandle);
 }
 
-void AndroidImageConsumer::UpdateTexImage(
-    const AndroidMediaCodecFrameId aFrameId) {
+bool AndroidImageConsumer::PrepareTexture(AndroidMediaCodecFrameId aFrameId) {
   MOZ_ASSERT(wr::RenderThread::IsInRenderThread());
 
-  if (!mImageReader->UpdateTexImage(aFrameId, mGL, mTextureHandle,
-                                    getter_AddRefs(mCurrentImage))) {
-    return;
+  // Release the previous image before requesting another acquisition slot.
+  mCurrentImage = nullptr;
+  RefPtr<AndroidImageWrapper> image = mImageReader->AcquireImage(aFrameId);
+  if (!image || !mGL->MakeCurrent() ||
+      !image->BindToTexture(mGL, mTextureHandle)) {
+    return false;
   }
-  MOZ_ASSERT(mCurrentImage);
+
+  mCurrentImage = std::move(image);
+  return mCurrentImage->WaitForWriteFence(mGL);
 }
 
 gfx::SurfaceFormat AndroidImageConsumer::GetFormat() {
@@ -83,18 +87,15 @@ gfx::IntSize AndroidImageConsumer::GetSize() {
   return mCurrentImage->mSize;
 }
 
-mozilla::UniqueFileHandle AndroidImageConsumer::CloneWriteFenceFd() {
-  if (!mCurrentImage) {
-    return nullptr;
-  }
-  return mCurrentImage->CloneWriteFenceFd();
-}
-
 void AndroidImageConsumer::SetReadFenceFd(UniqueFileHandle&& aFenceFd) {
   if (!mCurrentImage) {
     return;
   }
-  mCurrentImage->SetReadFenceFd(std::move(aFenceFd));
+  if (!mCurrentImage->SetReadFenceFd(std::move(aFenceFd))) {
+    // A failed merge leaves the other contexts' fences intact. Complete this
+    // context's reads before the current acquired image can be replaced.
+    mGL->fFinish();
+  }
 }
 
 }  // namespace layers

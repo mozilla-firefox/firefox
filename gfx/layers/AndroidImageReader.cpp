@@ -80,6 +80,21 @@ static void ReleaseAImageSnapshotContext() MOZ_REQUIRES(sAImageReadbackMutex) {
   gl::GLContext::ResetTLSCurrentContext();
 }
 
+static bool EnsureAImageSnapshotContext() MOZ_REQUIRES(sAImageReadbackMutex) {
+  if (!sAImageSnapshotContext) {
+    nsCString failureId;
+    sAImageSnapshotContext =
+        gl::GLContextProvider::CreateHeadless({}, &failureId);
+    if (!sAImageSnapshotContext) {
+      return false;
+    }
+    // Readback may run on a media pool worker or the canvas thread. The mutex
+    // and EGL unbind serialize ownership across those threads.
+    sAImageSnapshotContext->mOwningThreadId = Nothing();
+  }
+  return true;
+}
+
 namespace {
 // Codec-side callbacks are grouped by reader so flush only visits that reader.
 using FrameReleaseCallback = SurfaceTextureImage::SetCurrentCallback;
@@ -570,21 +585,12 @@ nsresult AndroidImageReaderImage::BuildSurfaceDescriptorBuffer(
     return NS_ERROR_NOT_AVAILABLE;
   }
 
-  if (!sAImageSnapshotContext) {
-    nsCString discardFailureId;
-    sAImageSnapshotContext =
-        gl::GLContextProvider::CreateHeadless({}, &discardFailureId);
-    if (!sAImageSnapshotContext) {
-      NS_WARNING("Failed to create snapshot GLContext");
-      return NS_ERROR_FAILURE;
-    }
-    // The manager TaskQueue serializes calls but can run on different pool
-    // workers. The mutex and EGL unbind enforce exclusive context ownership.
-    sAImageSnapshotContext->mOwningThreadId = Nothing();
+  if (!EnsureAImageSnapshotContext()) {
+    return NS_ERROR_FAILURE;
   }
 
   // CreateHeadless also makes the context current. Unbind on every exit, after
-  // UpdateTexImageWithReadback has destroyed all of its scoped GL resources.
+  // ReadTexImage has destroyed its scoped GL resources.
   auto releaseContext = MakeScopeExit([]() MOZ_REQUIRES(sAImageReadbackMutex) {
     ReleaseAImageSnapshotContext();
   });
@@ -619,8 +625,8 @@ nsresult AndroidImageReaderImage::BuildSurfaceDescriptorBuffer(
     return NS_ERROR_FAILURE;
   }
 
-  if (!imageReader->UpdateTexImageWithReadback(mFrameId, sAImageSnapshotContext,
-                                               surface, size, format)) {
+  RefPtr<AndroidImageWrapper> image = imageReader->AcquireImage(mFrameId);
+  if (!image || !image->ReadTexImage(sAImageSnapshotContext, surface)) {
     return NS_ERROR_FAILURE;
   }
 
@@ -630,9 +636,11 @@ nsresult AndroidImageReaderImage::BuildSurfaceDescriptorBuffer(
 AndroidImageWrapper::AndroidImageWrapper(
     AndroidImageReader* aImageReader, AImage* aImage,
     AHardwareBuffer* aHardwareBuffer, const gfx::IntSize aSize,
-    const gfx::SurfaceFormat aFormat, mozilla::UniqueFileHandle&& aWriteFenceFd)
+    const gfx::SurfaceFormat aFormat, mozilla::UniqueFileHandle&& aWriteFenceFd,
+    const gfx::IntRect& aCropRect)
     : mHardwareBuffer(aHardwareBuffer),
       mSize(aSize),
+      mCropRect(aCropRect),
       mFormat(aFormat),
       mMutex("AndroidImageWrapper::mMutex"),
       mImageReader(aImageReader),
@@ -652,11 +660,6 @@ AndroidImageWrapper::~AndroidImageWrapper() {
     AImage_delete(mImage);
   }
   mImageReader->mAcquiredImageCount--;
-}
-
-mozilla::UniqueFileHandle AndroidImageWrapper::CloneWriteFenceFd() {
-  MutexAutoLock lock(mMutex);
-  return ipc::FileDescriptor(mWriteFenceFd.get()).TakePlatformHandle();
 }
 
 bool AndroidImageWrapper::WaitForWriteFence(gl::GLContext* aGL) {
@@ -700,25 +703,93 @@ bool AndroidImageWrapper::WaitForWriteFence(gl::GLContext* aGL) {
   return waited;
 }
 
-void AndroidImageWrapper::SetReadFenceFd(UniqueFileHandle&& aFenceFd) {
+bool AndroidImageWrapper::BindToTexture(gl::GLContext* aGL, GLuint aTexture) {
+  const auto& egl = gl::GLContextEGL::Cast(aGL)->mEgl;
+
+  EGLClientBuffer buffer =
+      egl->mLib->fGetNativeClientBufferANDROID(mHardwareBuffer);
+  if (!buffer) {
+    return false;
+  }
+  const EGLint attrs[] = {LOCAL_EGL_IMAGE_PRESERVED, LOCAL_EGL_TRUE,
+                          LOCAL_EGL_NONE};
+  EGLImage image = egl->fCreateImage(
+      EGL_NO_CONTEXT, LOCAL_EGL_NATIVE_BUFFER_ANDROID, buffer, attrs);
+  if (!image) {
+    return false;
+  }
+  aGL->fBindTexture(LOCAL_GL_TEXTURE_EXTERNAL, aTexture);
+  aGL->TexParams_SetClampNoMips(LOCAL_GL_TEXTURE_EXTERNAL);
+  aGL->fEGLImageTargetTexture2D(LOCAL_GL_TEXTURE_EXTERNAL, image);
+  egl->fDestroyImage(image);
+  return true;
+}
+
+bool AndroidImageWrapper::ReadTexImage(gl::GLContext* aGL,
+                                       gfx::DataSourceSurface* aSurface) {
+  if (!aGL->MakeCurrent() || !WaitForWriteFence(aGL)) {
+    return false;
+  }
+  gl::ScopedTexture tex(aGL);
+  gl::ScopedBindTexture bind(aGL, tex.Texture(), LOCAL_GL_TEXTURE_EXTERNAL);
+  if (!BindToTexture(aGL, tex.Texture())) {
+    return false;
+  }
+  const auto config = ShaderConfigFromTargetAndFormat(LOCAL_GL_TEXTURE_EXTERNAL,
+                                                      aSurface->GetFormat());
+  // Sample the acquired image's crop rectangle and scale it to the
+  // destination surface.
+  gfx::Matrix4x4 transform;
+  transform._11 = float(mCropRect.width) / mSize.width;
+  transform._22 = float(mCropRect.height) / mSize.height;
+  transform._41 = float(mCropRect.x) / mSize.width;
+  transform._42 = float(mCropRect.y) / mSize.height;
+  const bool success = aGL->ReadTexImageHelper()->ReadTexImage(
+      aSurface, tex.Texture(), LOCAL_GL_TEXTURE_EXTERNAL, aSurface->GetSize(),
+      transform, config.mFeatures, /* aYInvert */ false);
+  if (!success) {
+    // A failed readback may still have submitted a draw using this image.
+    aGL->fFinish();
+  }
+  return success;
+}
+
+already_AddRefed<gfx::DataSourceSurface> AndroidImageWrapper::GetAsSurface(
+    const gfx::IntSize& aSize, gfx::SurfaceFormat aFormat) {
+  StaticMutexAutoLock lock(sAImageReadbackMutex);
+  if (sAImageReadbackShuttingDown || !EnsureAImageSnapshotContext()) {
+    return nullptr;
+  }
+  auto releaseContext = MakeScopeExit([]() MOZ_REQUIRES(sAImageReadbackMutex) {
+    ReleaseAImageSnapshotContext();
+  });
+  RefPtr<gfx::DataSourceSurface> surface =
+      gfx::Factory::CreateDataSourceSurface(aSize, aFormat, /* aZero */ true);
+  if (!surface || !ReadTexImage(sAImageSnapshotContext, surface)) {
+    return nullptr;
+  }
+  return surface.forget();
+}
+
+bool AndroidImageWrapper::SetReadFenceFd(UniqueFileHandle&& aFenceFd) {
   if (!aFenceFd) {
-    return;
+    return true;
   }
 
   UniqueFileHandle fence = std::move(aFenceFd);
   MutexAutoLock lock(mMutex);
   if (!mReadFenceFd) {
     mReadFenceFd = std::move(fence);
-    return;
+    return true;
   }
 
   auto merged = AndroidHardwareBuffer::TryMergeFences(mReadFenceFd, fence);
   if (!merged) {
-    // Keep the registered fence and close the incoming FD without waiting.
     gfxCriticalNoteOnce << "Failed to merge AndroidImageReader read fences";
-    return;
+    return false;
   }
   mReadFenceFd = std::move(merged);
+  return true;
 }
 
 /* static */
@@ -866,126 +937,29 @@ void AndroidImageReader::NotifyFrameAvailable() {
   mMonitor.NotifyAll();
 }
 
-bool AndroidImageReader::UpdateTexImage(const AndroidMediaCodecFrameId aFrameId,
-                                        gl::GLContext* aGL, GLuint aTexture,
-                                        AndroidImageWrapper** aImage) {
-  MOZ_ASSERT(aGL);
-  MOZ_ASSERT(aImage);
-
+RefPtr<AndroidImageWrapper> AndroidImageReader::AcquireImage(
+    AndroidMediaCodecFrameId aFrameId) {
   MonitorAutoLock lock(mMonitor);
-
-  DebugOnly<bool> ret = DoUpdateTexImage(lock, aFrameId);
-  if (!mCurrentImage || *aImage == mCurrentImage) {
-    MOZ_ASSERT(!ret);
-    return false;
+  DoUpdateTexImage(lock, aFrameId, CachePolicy::EvictOnFull);
+  if (IsStopped() || mCurrentFrameId != aFrameId) {
+    return nullptr;
   }
-
-  MOZ_ASSERT(mCurrentImage);
-
-  // The caller must wait on the acquire fence in the GL context that
-  // will sample this image.
-
-  const auto& gle = gl::GLContextEGL::Cast(aGL);
-  const auto& egl = gle->mEgl;
-
-  const EGLint attrs[] = {
-      LOCAL_EGL_IMAGE_PRESERVED,
-      LOCAL_EGL_TRUE,
-      LOCAL_EGL_NONE,
-  };
-
-  auto* nativeBuffer = mCurrentImage->mHardwareBuffer;
-
-  EGLClientBuffer clientBuffer =
-      egl->mLib->fGetNativeClientBufferANDROID(nativeBuffer);
-  EGLImage eglImage = egl->fCreateImage(
-      EGL_NO_CONTEXT, LOCAL_EGL_NATIVE_BUFFER_ANDROID, clientBuffer, attrs);
-
-  MOZ_ASSERT(eglImage);
-  if (!eglImage) {
-    return false;
-  }
-
-  aGL->fBindTexture(LOCAL_GL_TEXTURE_EXTERNAL, aTexture);
-  aGL->fTexParameteri(LOCAL_GL_TEXTURE_EXTERNAL, LOCAL_GL_TEXTURE_WRAP_T,
-                      LOCAL_GL_CLAMP_TO_EDGE);
-  aGL->fTexParameteri(LOCAL_GL_TEXTURE_EXTERNAL, LOCAL_GL_TEXTURE_WRAP_S,
-                      LOCAL_GL_CLAMP_TO_EDGE);
-  aGL->fEGLImageTargetTexture2D(LOCAL_GL_TEXTURE_EXTERNAL, eglImage);
-  egl->fDestroyImage(eglImage);
-
-  *aImage = mCurrentImage;
-  NS_ADDREF(*aImage);
-
-  return true;
+  return mCurrentImage;
 }
 
-bool AndroidImageReader::UpdateTexImageWithReadback(
-    AndroidMediaCodecFrameId aFrameId, gl::GLContext* aGL,
-    gfx::DataSourceSurface* aSurface, const gfx::IntSize aSize,
-    const gfx::SurfaceFormat aFormat) {
-  MOZ_ASSERT(aGL);
-  MOZ_ASSERT(aSurface);
-
+RefPtr<AndroidImageWrapper> AndroidImageReader::AcquireImageForCanvas(
+    AndroidMediaCodecFrameId aFrameId) {
+  // Declare the fallback before the lock so its reference is released after
+  // unlocking.
+  RefPtr<AndroidImageWrapper> fallback;
   MonitorAutoLock lock(mMonitor);
-
-  DoUpdateTexImage(lock, aFrameId);
-  // A timeout is recoverable. Do not read back a previous frame as aFrameId.
-  if (!mCurrentImage || mCurrentFrameId != aFrameId) {
-    return false;
+  // Retain the cached image in case it is cleared while waiting.
+  fallback = mCurrentImage;
+  DoUpdateTexImage(lock, aFrameId, CachePolicy::PreserveOnFull);
+  if (IsStopped()) {
+    return nullptr;
   }
-
-  if (!aGL->MakeCurrent()) {
-    return false;
-  }
-  gl::ScopedTexture scopedTex(aGL);
-
-  const auto& gle = gl::GLContextEGL::Cast(aGL);
-  const auto& egl = gle->mEgl;
-
-  if (!mCurrentImage->WaitForWriteFence(aGL)) {
-    return false;
-  }
-
-  const EGLint attrs[] = {
-      LOCAL_EGL_IMAGE_PRESERVED,
-      LOCAL_EGL_TRUE,
-      LOCAL_EGL_NONE,
-  };
-
-  auto* nativeBuffer = mCurrentImage->mHardwareBuffer;
-
-  EGLClientBuffer clientBuffer =
-      egl->mLib->fGetNativeClientBufferANDROID(nativeBuffer);
-  EGLImage eglImage = egl->fCreateImage(
-      EGL_NO_CONTEXT, LOCAL_EGL_NATIVE_BUFFER_ANDROID, clientBuffer, attrs);
-
-  MOZ_ASSERT(eglImage);
-
-  if (!eglImage) {
-    return false;
-  }
-
-  aGL->fBindTexture(LOCAL_GL_TEXTURE_EXTERNAL, scopedTex.Texture());
-  aGL->fTexParameteri(LOCAL_GL_TEXTURE_EXTERNAL, LOCAL_GL_TEXTURE_WRAP_T,
-                      LOCAL_GL_CLAMP_TO_EDGE);
-  aGL->fTexParameteri(LOCAL_GL_TEXTURE_EXTERNAL, LOCAL_GL_TEXTURE_WRAP_S,
-                      LOCAL_GL_CLAMP_TO_EDGE);
-  aGL->fEGLImageTargetTexture2D(LOCAL_GL_TEXTURE_EXTERNAL, eglImage);
-  egl->fDestroyImage(eglImage);
-
-  ShaderConfigOGL config =
-      ShaderConfigFromTargetAndFormat(LOCAL_GL_TEXTURE_EXTERNAL, aFormat);
-  int shaderConfig = config.mFeatures;
-
-  bool ret = aGL->ReadTexImageHelper()->ReadTexImage(
-      aSurface, scopedTex.Texture(), LOCAL_GL_TEXTURE_EXTERNAL, aSize,
-      gfx::Matrix4x4(), shaderConfig, /* aYInvert */ false);
-  if (!ret) {
-    return false;
-  }
-
-  return true;
+  return mCurrentImage ? mCurrentImage : fallback;
 }
 
 void AndroidImageReader::MaybeRenderFirstFrame(
@@ -994,11 +968,12 @@ void AndroidImageReader::MaybeRenderFirstFrame(
   if (mCurrentImage) {
     return;
   }
-  DoUpdateTexImage(lock, aFrameId);
+  DoUpdateTexImage(lock, aFrameId, CachePolicy::EvictOnFull);
 }
 
 bool AndroidImageReader::DoUpdateTexImage(const MonitorAutoLock& aProofOfLock,
-                                          AndroidMediaCodecFrameId aFrameId) {
+                                          AndroidMediaCodecFrameId aFrameId,
+                                          CachePolicy aCachePolicy) {
   MOZ_ASSERT(static_cast<int32_t>(mAcquiredImageCount) <= mMaxImageCount);
 
   if (IsStopped() || mCurrentFrameId == aFrameId) {
@@ -1034,9 +1009,32 @@ bool AndroidImageReader::DoUpdateTexImage(const MonitorAutoLock& aProofOfLock,
   // Acquiring an older outstanding frame counts as an update, even if the
   // requested frame is still pending.
   bool acquiredAnyImage = false;
+  auto ensureCapacity = [&]() MOZ_REQUIRES(mMonitor) {
+    if (static_cast<int32_t>(mAcquiredImageCount) < mMaxImageCount) {
+      return true;
+    }
+    if (aCachePolicy == CachePolicy::PreserveOnFull) {
+      // A canvas fallback must not lose the most recently acquired image just
+      // because the next submission is temporarily blocked by native capacity.
+      return false;
+    }
+    // Release only the replaceable cache. Consumers retain their own images.
+    // Keep this update in progress while dropping the monitor for release.
+    RefPtr<AndroidImageWrapper> previous;
+    previous.swap(mCurrentImage);
+    {
+      MonitorAutoUnlock unlock(mMonitor);
+      previous = nullptr;
+    }
+    return static_cast<int32_t>(mAcquiredImageCount) < mMaxImageCount;
+  };
 
   while (mCurrentFrameId != aFrameId) {
     if (mPendingFrameId.isNothing()) {
+      if (aCachePolicy == CachePolicy::PreserveOnFull &&
+          mAcquiredImageCount >= mMaxImageCount) {
+        return acquiredAnyImage;
+      }
       MOZ_ASSERT(!mWaitingFrameAvailable);
       mPendingFrameId = Some(aFrameId);
       mWaitingFrameAvailable = true;
@@ -1075,6 +1073,15 @@ bool AndroidImageReader::DoUpdateTexImage(const MonitorAutoLock& aProofOfLock,
 
     // OnFrameAvailable does not carry a frame ID. Consume the outstanding
     // frame before releasing another, even when aFrameId has since changed.
+    const bool hasCapacity = ensureCapacity();
+    // Evicting the cached image can drop the monitor and let Binder callbacks
+    // clear the request or disconnect the reader.
+    if (IsStopped()) {
+      return false;
+    }
+    if (!hasCapacity || mPendingFrameId.isNothing()) {
+      return acquiredAnyImage;
+    }
     const auto result = AcquirePendingImage();
     if (result == AcquireImageResult::Success) {
       acquiredAnyImage = true;
@@ -1103,6 +1110,19 @@ void AndroidImageReader::WaitForFrameNotification(TimeStamp aDeadline) {
     }
     mMonitor.Wait(remaining);
   }
+}
+
+static Maybe<gfx::IntRect> GetImageCropRect(AImage* aImage,
+                                            const gfx::IntSize& aSize) {
+  AImageCropRect crop;
+  if (aSize.IsEmpty() || AImage_getCropRect(aImage, &crop) != AMEDIA_OK ||
+      crop.left < 0 || crop.top < 0 || crop.right <= crop.left ||
+      crop.bottom <= crop.top || crop.right > aSize.width ||
+      crop.bottom > aSize.height) {
+    return Nothing();
+  }
+  return Some(gfx::IntRect(crop.left, crop.top, crop.right - crop.left,
+                           crop.bottom - crop.top));
 }
 
 AndroidImageReader::AcquireImageResult
@@ -1166,10 +1186,17 @@ AndroidImageReader::AcquirePendingImage() {
   // XXX
   const gfx::SurfaceFormat format = gfx::SurfaceFormat::R8G8B8X8;
 
-  // XXX add crop handling
-
+  auto crop = GetImageCropRect(image, size);
+  if (!crop) {
+    if (fence) {
+      AImage_deleteAsync(image, fence.release());
+    } else {
+      AImage_delete(image);
+    }
+    return AcquireImageResult::Failure;
+  }
   mCurrentImage = new AndroidImageWrapper(this, image, nativeBuffer, size,
-                                          format, std::move(fence));
+                                          format, std::move(fence), *crop);
   mCurrentFrameId = frameId;
 
   MOZ_ASSERT(static_cast<int32_t>(mAcquiredImageCount) <= mMaxImageCount);

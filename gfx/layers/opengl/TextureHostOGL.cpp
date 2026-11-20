@@ -30,6 +30,7 @@
 #ifdef MOZ_WIDGET_ANDROID
 #  include "mozilla/layers/AndroidHardwareBuffer.h"
 #  include "mozilla/layers/AndroidImageConsumer.h"
+#  include "mozilla/layers/AndroidImageReader.h"
 #  include "mozilla/webrender/RenderAndroidHardwareBufferTextureHost.h"
 #  include "mozilla/webrender/RenderAndroidImageReaderImageTextureHost.h"
 #  include "mozilla/webrender/RenderAndroidSurfaceTextureHost.h"
@@ -919,6 +920,42 @@ void AndroidImageReaderImageTextureSource::DeallocateDeviceData() {
 }
 
 ////////////////////////////////////////////////////////////////////////
+
+already_AddRefed<gfx::SourceSurface> GetAndroidImageReaderSurfaceForCanvas(
+    TextureHost* aTextureHost) {
+  const auto desc = aTextureHost->GetSurfaceDescriptor();
+  if (desc.type() != SurfaceDescriptor::TAndroidImageReaderImageDescriptor) {
+    return nullptr;
+  }
+  const auto& sd = desc.get_AndroidImageReaderImageDescriptor();
+  if (!gfx::Factory::AllowedSurfaceSize(sd.size())) {
+    return nullptr;
+  }
+  auto map = GpuProcessAndroidImageReaderMap::Get();
+  RefPtr<AndroidImageReader> reader =
+      map ? map->GetImageReader(sd.imageReaderId()) : nullptr;
+  RefPtr<AndroidImageWrapper> image =
+      reader ? reader->AcquireImageForCanvas(sd.frameId()) : nullptr;
+  if (!image || !gfx::Factory::AllowedSurfaceSize(image->mSize)) {
+    return nullptr;
+  }
+  // Use the retained image's format, including when it supplies a fallback.
+  gfx::SurfaceFormat format;
+  switch (image->mFormat) {
+    case gfx::SurfaceFormat::R8G8B8A8:
+      format = gfx::SurfaceFormat::B8G8R8A8;
+      break;
+    case gfx::SurfaceFormat::R8G8B8X8:
+      format = gfx::SurfaceFormat::B8G8R8X8;
+      break;
+    default:
+      return nullptr;
+  }
+  // Snapshot the retained image once on the GPU process's readback context.
+  // The returned CPU pixels remain stable when the reader advances. Apply the
+  // acquired crop at the descriptor's size to preserve recorded coordinates.
+  return image->GetAsSurface(sd.size(), format);
+}
 
 AndroidImageReaderImageTextureHost::AndroidImageReaderImageTextureHost(
     TextureFlags aFlags, const AndroidImageReaderImageDescriptor& aDescriptor)
