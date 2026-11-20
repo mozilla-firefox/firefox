@@ -161,14 +161,76 @@ The rule uses the start of the next sample as the end in two cases:
 
 One long sample raises the bound for all the samples in its moof. Suppose that
 in the B-frame example, the frame at 1024 in moof 1 has a duration of 7680
-ticks. The bound becomes 7680, so the gap does not limit the end, and the
-frame at 1024 ends at 2048 again:
+ticks. The bound becomes 7680, so the gap does not limit the end, and in moof
+1 alone the frame at 1024 ends at 2048 again. The next section shows how the
+next moof ends it at 1536:
 
 | PTS  | end  |
 | ---- | ---- |
 | 512  | 1024 |
 | 2048 | 2560 |
 | 1024 | 2048 |
+
+### Ends across moofs
+
+ISO BMFF stores no display duration. A sample duration is the step to the next
+decode time (ISO/IEC 14496-12, 8.6.1.2), and a sample has a composition time
+(8.6.1.3) but no composition duration; only the composition duration of the
+last sample is called unclear (8.6.1.4). So a sample is shown until the next
+composition time in the track, which can be in a later moof. For example, in
+variable frame rate content, the next frame can come after a long display gap,
+in the next moof.
+
+Suppose that every sample duration is 512 ticks, and that after the frame at
+2048, the next frame comes at 17920, in moof 2. Moof 1 alone gives the frame at
+2048 its own duration, so it ends at 2560:
+
+```
+PTS      512   1024  1536  2048  2560                17920 18432
+moof 1   [ I ] [ B ]       [ P ]
+moof 2               [ B ]                           [ P ]
+```
+
+When moof 2 is added, the next composition time is known, and the frame at
+2048 is extended to it:
+
+```
+PTS      512   1024  1536  2048                      17920 18432
+moof 1   [ I ] [ B ]       [ P ......................]
+moof 2               [ B ]                           [ P ]
+```
+
+A sample can also come in between later. For example, with one frame per moof
+and B-frames, the P-frame comes before the B-frames that are shown before it.
+Moof 2 extends the I-frame to the P-frame, and then the B-frames of moofs 3 and
+4 start inside the I-frame:
+
+```
+PTS      512   1024  1536  2048
+moof 1   [ I .............]
+moof 2                     [ P ]
+moof 3         [ B ]
+moof 4               [ B ]
+```
+
+So when a new sample starts inside an earlier sample, and the earlier sample
+ends at the start of the next earlier sample, that end came from the next
+sample, and the earlier sample is ended at the new sample. The new samples are
+then extended up to that next earlier sample, so the time stays covered:
+
+```
+PTS      512   1024  1536  2048
+moof 1   [ I ]
+moof 2                     [ P ]
+moof 3         [ B ]
+moof 4               [ B ]
+```
+
+An earlier sample that ends at no sample start keeps its own duration. Only
+samples next to the moof boundary in composition order can change. The search
+covers up to 16 samples before the new moof, the largest decoded picture buffer
+of H.264 and HEVC. A longer run of non-reference frames can put the next frame
+further back, and then the search misses it.
 
 ## Step 4: rewrite the decode times
 
