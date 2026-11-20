@@ -24,6 +24,7 @@ skip-if = [
   "debug",
   "os == 'android'",
   "tsan",
+  "verify", # too slow in chaos mode
 ]
 
 ["test_simple_conn.js"]
