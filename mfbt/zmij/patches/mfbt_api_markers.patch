@@ -1,0 +1,59 @@
+Mark write<double, true> with MFBT_API
+
+First-party code uses Zmij through headers that other libraries include,
+so the zmij::detail::write<double, true>() instantiation referenced by
+zmij::write_ecmascript() must be resolvable anywhere those headers are
+used. Links that pull in mozglue but not libxul or libjs resolve it from
+the shared mozglue library, which does not export hidden-visibility
+symbols, and the whole build is compiled with hidden visibility. Apply
+MFBT_API in two places:
+
+* on the explicit instantiation in zmij.cc, so the definition is
+  exported from the shared mozglue library, and
+* on an "extern template" declaration in zmij.h, so that consumer TUs
+  compiled with hidden visibility emit default-visibility references.
+Index: zmij/zmij.cc
+===================================================================
+--- zmij.orig/zmij.cc
++++ zmij/zmij.cc
+@@ -5,6 +5,7 @@
+ // the Boost Software License, Version 1.0.
+ 
+ #include "zmij.h"
++#include "mozilla/Types.h"
+ 
+ #include <assert.h>  // assert
+ #include <float.h>   // DBL_MANT_DIG, LDBL_MANT_DIG
+@@ -1838,7 +1839,7 @@ template auto to_decimal(double value) noexcept -> dec_fp<>;
+ 
+ template auto write(char* buffer, float value) noexcept -> char*;
+ template auto write(char* buffer, double value) noexcept -> char*;
+-template auto write<double, true>(char* buffer, double value) noexcept
++template MFBT_API auto write<double, true>(char* buffer, double value) noexcept
+     -> char*;
+ 
+ template auto write_big(char* out, size_t n, double value, int precision,
+Index: zmij/zmij.h
+===================================================================
+--- zmij.orig/zmij.h
++++ zmij/zmij.h
+@@ -34,6 +34,8 @@
+ #  define ZMIJ_MSC_VER 0
+ #endif
+ 
++#include "mozilla/Types.h"
++
+ #if defined(__has_builtin) && !defined(ZMIJ_NO_BUILTINS)
+ #  define ZMIJ_HAS_BUILTIN(x) __has_builtin(x)
+ #else
+@@ -803,6 +805,10 @@ auto to_decimal_big(Float value) noexcept -> dec_fp<uint128_t>;
+ template <typename Float, bool ecmascript = false>
+ auto write(char* buffer, Float value) noexcept -> char*;
+ 
++extern template MFBT_API auto write<double, true>(char* buffer,
++                                                  double value) noexcept
++    -> char*;
++
+ // Writes the shortest decimal representation of `value`, correctly rounded
+ // (ties to even), into `out`, truncating after `n` chars. Returns the total
+ // length the result would need; if it exceeds `n` the output was truncated to

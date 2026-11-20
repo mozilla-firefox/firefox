@@ -5,6 +5,7 @@
 // the Boost Software License, Version 1.0.
 
 #include "zmij.h"
+#include "mozilla/Types.h"
 
 #include <assert.h>  // assert
 #include <float.h>   // DBL_MANT_DIG, LDBL_MANT_DIG
@@ -1838,7 +1839,7 @@ template auto to_decimal(double value) noexcept -> dec_fp<>;
 
 template auto write(char* buffer, float value) noexcept -> char*;
 template auto write(char* buffer, double value) noexcept -> char*;
-template auto write<double, true>(char* buffer, double value) noexcept
+template MFBT_API auto write<double, true>(char* buffer, double value) noexcept
     -> char*;
 
 template auto write_big(char* out, size_t n, double value, int precision,
