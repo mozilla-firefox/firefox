@@ -7,6 +7,7 @@ import datetime
 import logging
 import os
 import re
+import sys
 
 import attr
 from mozsystemmonitor.resourcemonitor import SystemResourceMonitor
@@ -15,7 +16,6 @@ from taskgraph.util.keyed_by import evaluate_keyed_by
 from taskgraph.util.verify import (
     VerificationSequence,
     verify_always_optimized,
-    verify_dependency_tiers,
     verify_routes_notification_filters,
     verify_task_graph_symbol,
     verify_trust_domain_v2_routes,
@@ -41,7 +41,35 @@ verifications = VerificationSequence()
 verifications.add("full_task_graph")(verify_task_graph_symbol)
 verifications.add("full_task_graph")(verify_trust_domain_v2_routes)
 verifications.add("full_task_graph")(verify_routes_notification_filters)
-verifications.add("full_task_graph")(verify_dependency_tiers)
+
+
+@verifications.add("full_task_graph")
+def verify_dependency_tiers(task, taskgraph, scratch_pad, graph_config, parameters):
+    """Like taskgraph's verify_dependency_tiers, but partner tasks, which don't
+    report to Treeherder, are also exempt."""
+    tiers = scratch_pad
+    if task is not None:
+        tiers[task.label] = (
+            task.task.get("extra", {}).get("treeherder", {}).get("tier", sys.maxsize)
+        )
+        return
+
+    def printable_tier(tier):
+        return "unknown" if tier == sys.maxsize else tier
+
+    for graph_task in taskgraph.tasks.values():
+        tier = tiers[graph_task.label]
+        for d in graph_task.dependencies.values():
+            dep = taskgraph[d]
+            if dep.task.get("workerType") == "always-optimized":
+                continue
+            if "dummy" in dep.kind or "partner" in dep.kind:
+                continue
+            if tier < tiers[d]:
+                raise Exception(
+                    f"{graph_task.label} (tier {printable_tier(tier)}) cannot depend on {d} (tier {printable_tier(tiers[d])})"
+                )
+
 
 verifications.add("optimized_task_graph")(verify_always_optimized)
 
