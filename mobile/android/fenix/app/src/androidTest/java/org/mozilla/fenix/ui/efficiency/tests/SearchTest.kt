@@ -19,6 +19,7 @@ import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.helpers.AppAndSystemHelper
 import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
 import org.mozilla.fenix.helpers.MockBrowserDataHelper
+import org.mozilla.fenix.helpers.SearchDispatcher
 import org.mozilla.fenix.helpers.SearchMockServerRule
 import org.mozilla.fenix.helpers.TestAssetHelper.getGenericAsset
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTime
@@ -535,5 +536,47 @@ class SearchTest : BaseTest(LaunchConfig(isPocketEnabled = false)) {
         on.settingsTurnOnSync.returnFromSystemSettings().mozClick(SettingsTurnOnSyncSelectors.READY_TO_SCAN_BUTTON)
 
         on.searchBar.verifyScannerOpen()
+    }
+
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/4363237
+    @Critical
+    @Test
+    fun verifyTheUIOfTheAddressBarInFocusModeTest() {
+        val searchTerm = "android"
+        val searchEngineName = "TestSearchEngine"
+        composeRule.activityRule.applySettingsExceptions {
+            it.showAddressBarInFocusMode = true
+        }
+
+        // Trending suggestions are fetched live from the engine, so real Google returns non-deterministic
+        // content (and an empty list on any fetch miss). Point a custom engine's trending endpoint at the
+        // mock server, which returns a fixed set, so the rows can actually be asserted. isGeneral = true so
+        // the engine stands in for the general default (Google): it keeps the unified URL-bar placeholder
+        // and the recent-search suggestions a specific engine would otherwise suppress.
+        appContext.components.settings.trendingSearchSuggestionsEnabled = true
+        val trendingUrl =
+            "http://localhost:${searchMockServerRule.server.port}/${SearchDispatcher.TRENDING_SEARCHES_PATH}"
+        MockBrowserDataHelper.setCustomSearchEngine(
+            searchMockServerRule.server,
+            searchEngineName,
+            trendingUrl = trendingUrl,
+            isGeneral = true,
+        )
+
+        // Seed the recent search directly: a live search only registers as "recent" once its tab accrues view
+        // time (recorded when the tab is backgrounded), so driving it through navigateToPage races the moment
+        // we open the search bar on the same tab. This records the history-metadata entry the provider reads.
+        MockBrowserDataHelper.createRecentSearch(searchTerm)
+
+        on.browserPage.navigateToPage(searchTerm)
+        on.searchBar
+            .navigateToPage()
+            .mozVerify(SearchBarSelectors.SEARCH_BAR_PLACEHOLDER)
+            .mozVerifyElementsByGroup(SearchBarSelectors.Group.AWESOME_BAR_CURRENT_SITE_ITEMS)
+            .mozVerify(SearchBarSelectors.RECENT_SEARCHES_HEADER)
+            .mozVerifyAnyContainsText(SearchBarSelectors.SEARCH_SUGGESTION, searchTerm)
+            .mozVerify(SearchBarSelectors.TRENDING_SEARCHES_HEADER(searchEngineName))
+            .mozVerifyAnyContainsText(SearchBarSelectors.SEARCH_SUGGESTION, SearchDispatcher.TRENDING_SEARCHES.first())
+            .mozVerifyAnyContainsText(SearchBarSelectors.SEARCH_SUGGESTION, SearchDispatcher.TRENDING_SEARCHES.last())
     }
 }

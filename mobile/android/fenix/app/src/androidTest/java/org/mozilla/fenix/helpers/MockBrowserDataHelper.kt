@@ -20,6 +20,9 @@ import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.storage.sync.PlacesBookmarksStorage
 import mozilla.components.browser.storage.sync.PlacesHistoryStorage
+import mozilla.components.concept.storage.DocumentType
+import mozilla.components.concept.storage.HistoryMetadataKey
+import mozilla.components.concept.storage.HistoryMetadataObservation
 import mozilla.components.concept.storage.PageVisit
 import mozilla.components.concept.storage.VisitType
 import mozilla.components.feature.search.ext.createSearchEngine
@@ -129,12 +132,49 @@ object MockBrowserDataHelper {
     }
 
     /**
+     * Seeds a "recent search" by recording a history-metadata entry keyed on [searchTerm]. The recent-search awesomebar
+     * provider reads these records and discards any with a zero view time, so a positive
+     * [ViewTimeObservation][HistoryMetadataObservation.ViewTimeObservation] is recorded as well. This makes the "Recent
+     * searches" section deterministic without driving a live search, whose view time only accrues once the tab is
+     * backgrounded.
+     *
+     * @param searchTerm The term the recent-search row should display.
+     * @param url The page URL to associate the search with.
+     */
+    fun createRecentSearch(searchTerm: String, url: String = "https://www.mozilla.org/") {
+        Log.i(TAG, "createRecentSearch: Trying to record a recent search for term: $searchTerm")
+        runBlocking {
+            val storage = appContext.components.core.historyStorage
+            val key = HistoryMetadataKey(url = url, searchTerm = searchTerm)
+            storage.noteHistoryMetadataObservation(
+                key,
+                HistoryMetadataObservation.DocumentTypeObservation(DocumentType.Regular),
+            )
+            storage.noteHistoryMetadataObservation(
+                key,
+                HistoryMetadataObservation.ViewTimeObservation(viewTime = 1000),
+            )
+        }
+        Log.i(TAG, "createRecentSearch: Recorded a recent search for term: $searchTerm")
+    }
+
+    /**
      * Creates a new custom search engine object.
      *
      * @param mockWebServer The mockWebServer instance.
      * @param searchEngineName The name of the new search engine.
+     * @param trendingUrl Optional trending-searches endpoint. When set, the engine can provide trending search
+     *   suggestions (see [SearchDispatcher.TRENDING_SEARCHES_PATH]).
+     * @param isGeneral Whether this engine is a general-purpose engine. A general default engine drives the unified
+     *   URL-bar placeholder and the home/recent suggestions; a specific one shows "Enter search terms" and only its own
+     *   suggestions. Default `false` to match the historical custom-engine behaviour.
      */
-    private fun createCustomSearchEngine(mockWebServer: MockWebServer, searchEngineName: String): SearchEngine {
+    private fun createCustomSearchEngine(
+        mockWebServer: MockWebServer,
+        searchEngineName: String,
+        trendingUrl: String? = null,
+        isGeneral: Boolean = false,
+    ): SearchEngine {
         val searchString = "http://localhost:${mockWebServer.port}/pages/searchResults.html?search={searchTerms}"
         Log.i(
             TAG,
@@ -144,6 +184,8 @@ object MockBrowserDataHelper {
             name = searchEngineName,
             url = searchString,
             icon = DefaultIconGenerator().generate(appContext, IconRequest(searchString)).bitmap,
+            trendingUrl = trendingUrl,
+            isGeneral = isGeneral,
         )
     }
 
@@ -165,9 +207,16 @@ object MockBrowserDataHelper {
      *
      * @param mockWebServer The server the search engine will query.
      * @param searchEngineName Use createCustomSearchEngine method to create one.
+     * @param trendingUrl Optional trending-searches endpoint; when set the engine provides trending suggestions.
+     * @param isGeneral Whether the engine is general-purpose; see [createCustomSearchEngine].
      */
-    fun setCustomSearchEngine(mockWebServer: MockWebServer, searchEngineName: String) {
-        val searchEngine = createCustomSearchEngine(mockWebServer, searchEngineName)
+    fun setCustomSearchEngine(
+        mockWebServer: MockWebServer,
+        searchEngineName: String,
+        trendingUrl: String? = null,
+        isGeneral: Boolean = false,
+    ) {
+        val searchEngine = createCustomSearchEngine(mockWebServer, searchEngineName, trendingUrl, isGeneral)
         Log.i(TAG, "setCustomSearchEngine: Trying to set a custom search engine named: $searchEngineName")
         with(appContext.components.useCases.searchUseCases) {
             addSearchEngine(searchEngine)
