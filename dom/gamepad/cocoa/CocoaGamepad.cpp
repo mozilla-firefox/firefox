@@ -346,8 +346,8 @@ void DarwinGamepadService::DeviceAdded(IOHIDDeviceRef device) {
   remapper->SetButtonCount(mGamepads[slot].numButtons());
 
   GamepadHandle handle = service->AddGamepad(
-      buffer, remapper->GetMappingType(), mozilla::dom::GamepadHand::_empty,
-      remapper->GetButtonCount(), remapper->GetAxisCount(),
+      buffer, remapper->GetMappingType(), remapper->GetButtonCount(),
+      remapper->GetAxisCount(),
       0,  // TODO: Bug 680289, implement gamepad haptics for cocoa.
       remapper->GetLightIndicatorCount(), remapper->GetTouchEventCount());
 

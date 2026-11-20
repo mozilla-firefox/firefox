@@ -30,18 +30,15 @@ class GamepadServiceTest final : public DOMEventTargetHelper,
   GamepadMappingType StandardMapping() const {
     return GamepadMappingType::Standard;
   }
-  GamepadHand NoHand() const { return GamepadHand::_empty; }
-  GamepadHand LeftHand() const { return GamepadHand::Left; }
-  GamepadHand RightHand() const { return GamepadHand::Right; }
 
   // IPC receiver
   void ReplyGamepadHandle(uint32_t aPromiseId, const GamepadHandle& aHandle);
 
   // Methods from GamepadServiceTest.webidl
   already_AddRefed<Promise> AddGamepad(
-      const nsAString& aID, GamepadMappingType aMapping, GamepadHand aHand,
-      uint32_t aNumButtons, uint32_t aNumAxes, uint32_t aNumHaptics,
-      uint32_t aNumLightIndicator, uint32_t aNumTouchEvents, ErrorResult& aRv);
+      const nsAString& aID, GamepadMappingType aMapping, uint32_t aNumButtons,
+      uint32_t aNumAxes, uint32_t aNumHaptics, uint32_t aNumLightIndicator,
+      uint32_t aNumTouchEvents, ErrorResult& aRv);
 
   already_AddRefed<Promise> RemoveGamepad(uint32_t aHandleSlot,
                                           ErrorResult& aRv);

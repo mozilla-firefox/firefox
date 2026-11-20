@@ -484,8 +484,8 @@ bool WindowsGamepadService::ScanForXInputDevices() {
     gamepad.userIndex = i;
     gamepad.state = state;
     gamepad.gamepadHandle = service->AddGamepad(
-        "xinput", GamepadMappingType::Standard, GamepadHand::_empty,
-        kStandardGamepadButtons, kStandardGamepadAxes, 0, 0,
+        "xinput", GamepadMappingType::Standard, kStandardGamepadButtons,
+        kStandardGamepadAxes, 0, 0,
         0);  // TODO: Bug 680289, implement gamepad haptics for Windows.
     mGamepads.AppendElement(std::move(gamepad));
   }
@@ -785,7 +785,7 @@ bool WindowsGamepadService::GetRawGamepad(HANDLE handle) {
   gamepad.remapper = remapper.forget();
   // TODO: Bug 680289, implement gamepad haptics for Windows.
   gamepad.gamepadHandle = service->AddGamepad(
-      gamepad_id, gamepad.remapper->GetMappingType(), GamepadHand::_empty,
+      gamepad_id, gamepad.remapper->GetMappingType(),
       gamepad.remapper->GetButtonCount(), gamepad.remapper->GetAxisCount(), 0,
       gamepad.remapper->GetLightIndicatorCount(),
       gamepad.remapper->GetTouchEventCount());
