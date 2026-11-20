@@ -33,6 +33,8 @@ function isWidgetManagerSupported() {
  * @property {string} name - display name of the widget
  * @property {string} telemetryName - name sent in Glean events, the widget's id
  * @property {string[]} validSizes - sizes the widget supports
+ * @property {boolean} [generated] - whether the widget was generated from a
+ *   prompt
  */
 
 /**
@@ -68,6 +70,7 @@ export class ExtensionWidgetsFeed {
           name: widget.name,
           telemetryName: widget.id,
           validSizes: widget.sizes,
+          ...(widget.generated && { generated: true }),
         };
       }
     }

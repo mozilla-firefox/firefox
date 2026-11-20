@@ -15,6 +15,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs",
   Conversation:
     "moz-src:///browser/components/aiwindow/models/Conversation.sys.mjs",
+  FileUtils: "resource://gre/modules/FileUtils.sys.mjs",
   GeneratedWidgetsFeature:
     "moz-src:///browser/components/widgets/GeneratedWidgetsFeature.sys.mjs",
   MODEL_FEATURES: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
@@ -32,6 +33,21 @@ ChromeUtils.defineLazyGetter(lazy, "logger", () =>
     maxLogLevelPref: "browser.widgets.generated.loglevel",
   })
 );
+ChromeUtils.defineLazyGetter(lazy, "ZipWriter", () =>
+  Components.Constructor("@mozilla.org/zipwriter;1", "nsIZipWriter", "open")
+);
+ChromeUtils.defineLazyGetter(lazy, "StringInputStream", () =>
+  Components.Constructor(
+    "@mozilla.org/io/string-input-stream;1",
+    "nsIStringInputStream",
+    "setUTF8Data"
+  )
+);
+
+const WIDGET_FILE = "widget.json";
+const WIDGET_PAGE = "widget.html";
+
+export const OUTPUT_DIRECTORY = "widget-generator";
 
 const ENDPOINT_PREF = "browser.widgets.generated.endpoint";
 const API_KEY_PREF = "browser.widgets.generated.apiKey";
@@ -86,15 +102,17 @@ export class WidgetGeneratorError extends Error {
 }
 
 /**
- * Turns a prompt into a widget's files.
+ * Turns a prompt into a widget's zip file.
  */
 class _WidgetGenerator {
+  #clearing = null;
+
   /**
    * @param {object} options
    * @param {string} options.prompt - what the user asks for
    * @param {AbortSignal} [options.signal] - aborting it ends generation at the
    *   next step
-   * @returns {Promise<Map<string, string>>} the files the model wrote, by path
+   * @returns {Promise<string>} the path of the new zip file
    */
   async generate({ prompt, signal }) {
     signal?.throwIfAborted();
@@ -140,7 +158,7 @@ class _WidgetGenerator {
         GENERATION_ERRORS.GENERATION
       );
     }
-    return files;
+    return this.#package({ prompt, files, signal });
   }
 
   #throwIfBlocked() {
@@ -328,6 +346,130 @@ class _WidgetGenerator {
       "The model was still calling tools after the last turn",
       GENERATION_ERRORS.GENERATION
     );
+  }
+
+  /**
+   * Reads the manifest the model wrote.
+   *
+   * @param {Map<string, string>} files - the files the model wrote, by path
+   * @returns {object} the parsed manifest
+   * @throws {WidgetGeneratorError} when manifest.json is missing or not valid
+   *   JSON
+   */
+  #readManifest(files) {
+    try {
+      return JSON.parse(files.get("manifest.json"));
+    } catch (error) {
+      throw new WidgetGeneratorError(
+        "The manifest is missing or not valid JSON",
+        GENERATION_ERRORS.GENERATION,
+        error
+      );
+    }
+  }
+
+  /**
+   * Checks the manifest has a name and a written page.
+   *
+   * @param {object} manifest - the model's manifest
+   * @param {Map<string, string>} files - the model's files, by path
+   * @throws {WidgetGeneratorError} when the manifest has no name or the files
+   *   have no widget.html
+   */
+  #validate(manifest, files) {
+    let name = manifest?.name;
+    if (typeof name != "string" || !name.trim()) {
+      throw new WidgetGeneratorError(
+        "The widget has no name",
+        GENERATION_ERRORS.GENERATION
+      );
+    }
+    if (!files.has(WIDGET_PAGE)) {
+      throw new WidgetGeneratorError(
+        "The widget page is missing",
+        GENERATION_ERRORS.GENERATION
+      );
+    }
+  }
+
+  /**
+   * Packages the widget's files and a widget.json with the model's name and the
+   * prompt.
+   *
+   * @param {object} widget
+   * @param {string} widget.prompt - the request that made the widget
+   * @param {Map<string, string>} widget.files - the files the model wrote, by
+   *   path
+   * @param {AbortSignal} [widget.signal] - checked once the zip is written
+   * @returns {Promise<string>} the path of the new zip file
+   */
+  async #package({ prompt, files, signal }) {
+    let manifest = this.#readManifest(files);
+    this.#validate(manifest, files);
+    let packaged = new Map(files);
+    packaged.delete("manifest.json");
+    packaged.set(
+      WIDGET_FILE,
+      JSON.stringify({ name: manifest.name, prompt }, null, 2)
+    );
+    let directory = PathUtils.join(PathUtils.profileDir, OUTPUT_DIRECTORY);
+    await this.#clearOutputDirectory(directory);
+    await IOUtils.makeDirectory(directory);
+    let path = await IOUtils.createUniqueFile(directory, "widget.zip");
+    try {
+      this.#writeZip(path, packaged);
+      signal?.throwIfAborted();
+      this.#throwIfBlocked();
+    } catch (error) {
+      await IOUtils.remove(path, { ignoreAbsent: true });
+      throw error;
+    }
+    return path;
+  }
+
+  /**
+   * Clears the output directory the first time a widget is packaged.
+   *
+   * @param {string} directory - the generator's output directory
+   * @returns {Promise<void>}
+   */
+  async #clearOutputDirectory(directory) {
+    this.#clearing ??= IOUtils.remove(directory, {
+      recursive: true,
+      ignoreAbsent: true,
+    }).catch(error =>
+      lazy.logger.warn("The generator directory can't be cleared", error)
+    );
+    await this.#clearing;
+  }
+
+  /**
+   * Writes files to a new zip file.
+   *
+   * @param {string} path - the zip file's path
+   * @param {Map<string, string>} files - the files' text, by path
+   */
+  #writeZip(path, files) {
+    let writer = new lazy.ZipWriter(
+      new lazy.FileUtils.File(path),
+      lazy.FileUtils.MODE_WRONLY |
+        lazy.FileUtils.MODE_CREATE |
+        lazy.FileUtils.MODE_TRUNCATE
+    );
+    let time = Date.now() * 1000;
+    try {
+      for (let [name, text] of files) {
+        writer.addEntryStream(
+          name,
+          time,
+          Ci.nsIZipWriter.COMPRESSION_DEFAULT,
+          new lazy.StringInputStream(text),
+          false
+        );
+      }
+    } finally {
+      writer.close();
+    }
   }
 }
 

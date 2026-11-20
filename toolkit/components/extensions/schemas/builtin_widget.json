@@ -38,6 +38,30 @@
         }
       },
       {
+        "id": "GeneratedWidget",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "page": {
+            "$ref": "ExtensionURL",
+            "description": "Path to the widget content."
+          },
+          "sizes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "WidgetSize"
+            },
+            "description": "Sizes the widget can be displayed at."
+          },
+          "default_size": {
+            "$ref": "WidgetSize",
+            "optional": true,
+            "description": "Size the widget is displayed at until one is chosen. Defaults to the first of sizes."
+          }
+        }
+      },
+      {
         "$extend": "WebExtensionManifest",
         "properties": {
           "builtin_widget": {
@@ -45,6 +69,12 @@
             "optional": true,
             "privileged": true,
             "description": "Declares a widget provided by a privileged extension."
+          },
+          "generated_widget": {
+            "$ref": "GeneratedWidget",
+            "optional": true,
+            "privileged": true,
+            "description": "Declares a widget generated from a prompt. Marked privileged to reserve it for generated widgets, so addons-linter reports it as an error in submissions to AMO. Generated widgets themselves run unprivileged."
           }
         }
       }

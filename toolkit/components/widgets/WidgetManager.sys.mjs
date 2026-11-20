@@ -29,6 +29,8 @@ function prefKeyFor(id) {
  * @property {string} [prefBranch] - pref branch storing whether the widget is
  *   enabled and its size, in `<prefBranch>.enabled` and `<prefBranch>.size`
  * @property {string} [l10nId] - Fluent id of the display name
+ * @property {boolean} [generated] - whether the widget was generated from a
+ *   prompt
  */
 
 /**
@@ -71,6 +73,11 @@ class Widget {
   /** @returns {string|null} the Fluent id of the widget's display name */
   get l10nId() {
     return this.#properties.l10nId ?? null;
+  }
+
+  /** @returns {boolean} whether the widget was generated from a prompt */
+  get generated() {
+    return this.#properties.generated ?? false;
   }
 
   /**

@@ -78,6 +78,24 @@ add_task(function test_init_and_unregister() {
   feed.onAction({ type: actionTypes.UNINIT });
 });
 
+add_task(function test_generated_widget() {
+  registerWidget(EXTENSION_ID, { generated: true });
+
+  const feed = initFeed();
+  Assert.deepEqual(lastExtensionWidgets(feed), {
+    [EXTENSION_ID]: {
+      src: SRC,
+      name: "Tally",
+      telemetryName: EXTENSION_ID,
+      validSizes: ["medium"],
+      generated: true,
+    },
+  });
+
+  WidgetManager.unregister(EXTENSION_ID);
+  feed.onAction({ type: actionTypes.UNINIT });
+});
+
 add_task(function test_ignores_widget_not_in_registry() {
   const feed = initFeed();
   feed.store.dispatch.resetHistory();

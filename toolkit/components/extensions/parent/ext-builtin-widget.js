@@ -9,8 +9,10 @@ ChromeUtils.defineESModuleGetters(this, {
 });
 
 /**
- * Registers the widget a privileged extension declares in `builtin_widget`
- * with WidgetManager from the time the extension is ready until it shuts down.
+ * Registers the widget an extension declares in `builtin_widget` or
+ * `generated_widget` with WidgetManager from the time the extension is ready
+ * until it shuts down. `builtin_widget` is available to privileged extensions
+ * and `generated_widget` to generated widget extensions.
  */
 this.builtinWidget = class extends ExtensionAPI {
   /**
@@ -20,10 +22,16 @@ this.builtinWidget = class extends ExtensionAPI {
    */
   readyListener = null;
 
-  onManifestEntry() {
+  onManifestEntry(entryName) {
     const { extension } = this;
-    const options = extension.manifest.builtin_widget;
-    this.readyListener = () => this.onReady(options);
+    // Extension.sys.mjs keeps `generated_widget` only when
+    // canUseGeneratedWidgets() and `builtin_widget` only for privileged
+    // extensions, so only `builtin_widget` will be used if both are present.
+    if (entryName == "generated_widget" && extension.manifest.builtin_widget) {
+      return;
+    }
+    const options = extension.manifest[entryName];
+    this.readyListener = () => this.onReady(entryName, options);
     // "ready" is emitted only after the extension has started successfully.
     extension.once("ready", this.readyListener);
   }
@@ -32,9 +40,11 @@ this.builtinWidget = class extends ExtensionAPI {
    * Registers the widget with WidgetManager when the extension is still
    * running.
    *
-   * @param {object} options - the validated `builtin_widget` manifest key
+   * @param {string} entryName - the manifest key declaring the widget,
+   *   `builtin_widget` or `generated_widget`
+   * @param {object} options - the validated value of that manifest key
    */
-  onReady(options) {
+  onReady(entryName, options) {
     const { extension } = this;
     this.readyListener = null;
     if (extension.hasShutdown) {
@@ -47,6 +57,7 @@ this.builtinWidget = class extends ExtensionAPI {
       sizes: options.sizes,
       defaultSize: options.default_size,
       prefBranch: options.pref_branch,
+      generated: entryName == "generated_widget",
     });
   }
 

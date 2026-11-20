@@ -94,7 +94,9 @@ export class Workspace {
 
   /**
    * Checks a tool call's name, arguments and file_path, then runs it on the
-   * files. A leading ./ or / is stripped from the path.
+   * files. A leading ./ or / is stripped from the path. Paths with a
+   * backslash, an empty, . or .. segment, or a top-level META-INF folder are
+   * answered with an error.
    *
    * @param {object} call - a tool call from the model's reply
    * @returns {{reply?: string, error?: string, decline?: object}} the result
@@ -116,6 +118,10 @@ export class Workspace {
     let path = args.file_path.replace(/^(\.?\/)+/, "");
     if (!path) {
       return { error: `The ${name} call has no file_path.` };
+    }
+    let pathError = this.#checkPath(path);
+    if (pathError) {
+      return { error: pathError };
     }
     if (name !== WRITE_FILE && !this.files.has(path)) {
       return { error: `There is no file at ${path}.` };
@@ -165,6 +171,24 @@ export class Workspace {
       }
     }
     return { name, args };
+  }
+
+  /**
+   * @param {string} path - a file_path with any leading ./ or / stripped
+   * @returns {?string} the error for a path that can't be packaged
+   */
+  #checkPath(path) {
+    let segments = path.split("/");
+    if (
+      path.includes("\\") ||
+      segments.some(segment => !segment || segment == "." || segment == "..")
+    ) {
+      return `${path} is not a valid file_path. Use a relative path with / between folders, such as lib/units.js.`;
+    }
+    if (segments[0].toUpperCase() == "META-INF") {
+      return `${path} is in META-INF, which is reserved for signatures.`;
+    }
+    return null;
   }
 
   #write(path, content) {

@@ -3,9 +3,10 @@
 
 "use strict";
 
-const { GENERATION_ERRORS, WidgetGenerator } = ChromeUtils.importESModule(
-  "moz-src:///browser/components/widgets/WidgetGenerator.sys.mjs"
-);
+const { GENERATION_ERRORS, OUTPUT_DIRECTORY, WidgetGenerator } =
+  ChromeUtils.importESModule(
+    "moz-src:///browser/components/widgets/WidgetGenerator.sys.mjs"
+  );
 const { MockEngineManager } = ChromeUtils.importESModule(
   "resource://testing-common/AIWindowTestUtils.sys.mjs"
 );
@@ -14,6 +15,12 @@ const { PURPOSES } = ChromeUtils.importESModule(
 );
 const { openAIEngine } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/openAIEngine.sys.mjs"
+);
+
+const ZipReader = Components.Constructor(
+  "@mozilla.org/libjar/zip-reader;1",
+  "nsIZipReader",
+  "open"
 );
 
 const LOCAL_PROMPT_PREF = "browser.widgets.generated.localPrompt";
@@ -46,12 +53,44 @@ async function answer(...responses) {
   }
 }
 
-async function generate(options, ...responses) {
-  let [files] = await Promise.all([
-    WidgetGenerator.generate(options),
+function cleanup(path) {
+  registerCleanupFunction(() => IOUtils.remove(path, { ignoreAbsent: true }));
+}
+
+async function generate(
+  { generator = WidgetGenerator, ...options },
+  ...responses
+) {
+  let [path] = await Promise.all([
+    generator.generate(options),
     answer(...responses),
   ]);
-  return files;
+  cleanup(path);
+  return path;
+}
+
+function readZip(path) {
+  let reader = new ZipReader(new FileUtils.File(path));
+  try {
+    return new Map(
+      [...reader.findEntries(null)]
+        .filter(name => !reader.getEntry(name).isDirectory)
+        .map(name => {
+          let stream = reader.getInputStream(name);
+          let count = stream.available();
+          return [
+            name,
+            count
+              ? NetUtil.readInputStreamToString(stream, count, {
+                  charset: "UTF-8",
+                })
+              : "",
+          ];
+        })
+    );
+  } finally {
+    reader.close();
+  }
 }
 
 async function sentSystemPrompt() {
@@ -139,15 +178,6 @@ add_setup(async function () {
   });
 });
 
-add_task(async function test_a_prompt_makes_a_widget() {
-  let files = await generate(
-    { prompt: PROMPT },
-    simulateWriteFileResponse(FILES),
-    "Done."
-  );
-  Assert.deepEqual(Object.fromEntries(files), FILES, "Files");
-});
-
 add_task(async function test_the_model_writes_the_files() {
   let making = WidgetGenerator.generate({ prompt: PROMPT });
   let asked = await mockEngine.captureRequest({
@@ -185,7 +215,56 @@ add_task(async function test_the_model_writes_the_files() {
     "Writes replayed"
   );
   replayed.respond("Done.");
-  await making;
+  cleanup(await making);
+});
+
+add_task(async function test_the_zip_file_goes_to_the_generator_directory() {
+  let path = await generate(
+    { prompt: PROMPT },
+    simulateWriteFileResponse(FILES),
+    "Done."
+  );
+  Assert.equal(
+    PathUtils.parent(path),
+    PathUtils.join(PathUtils.profileDir, OUTPUT_DIRECTORY),
+    "Directory"
+  );
+  Assert.equal(readZip(path).get("widget.js"), FILES["widget.js"], "Files");
+});
+
+add_task(async function test_the_first_zip_clears_the_generator_directory() {
+  let generator = new WidgetGenerator.constructor();
+  let directory = PathUtils.join(PathUtils.profileDir, OUTPUT_DIRECTORY);
+  let leftover = PathUtils.join(directory, "leftover.zip");
+  await IOUtils.makeDirectory(directory);
+  await IOUtils.writeUTF8(leftover, "");
+  cleanup(leftover);
+  await generate(
+    { prompt: PROMPT, generator },
+    simulateWriteFileResponse(FILES),
+    "Done."
+  );
+  Assert.ok(!(await IOUtils.exists(leftover)), "Leftover removed");
+});
+
+add_task(async function test_later_zips_keep_the_earlier_ones() {
+  let generator = new WidgetGenerator.constructor();
+  let first = await generate(
+    { prompt: PROMPT, generator },
+    simulateWriteFileResponse(FILES),
+    "Done."
+  );
+  let second = await generate(
+    { prompt: PROMPT, generator },
+    simulateWriteFileResponse(FILES),
+    "Done."
+  );
+  let directory = PathUtils.join(PathUtils.profileDir, OUTPUT_DIRECTORY);
+  Assert.deepEqual(
+    (await IOUtils.getChildren(directory)).sort(),
+    [first, second].sort(),
+    "Both zips"
+  );
 });
 
 add_task(async function test_a_reply_without_files_is_rejected() {
@@ -279,8 +358,47 @@ add_task(async function test_a_delete_removes_a_file() {
     ],
     "Delete and read answers"
   );
+  respond(simulateWriteFileResponse({ "widget.html": FILES["widget.html"] }));
+  await answer("Done.");
+  let files = readZip(await making);
+  ok(!files.has("lib/units.js"), "Deleted file");
+});
+
+add_task(async function test_a_path_outside_the_package_is_rejected() {
+  let making = generate({ prompt: PROMPT });
+  await answer(
+    simulateWriteFileResponse({
+      ...FILES,
+      "../widget.js": "",
+      "lib/../widget.js": "",
+      "lib\\units.js": "",
+      "lib/": "",
+      "meta-inf/manifest.mf": "",
+    })
+  );
+  let { request, respond } = await mockEngine.captureRequest({
+    purpose: PURPOSES.WIDGET_GENERATION,
+  });
+  Assert.deepEqual(
+    request.args
+      .filter(message => message.role == "tool")
+      .slice(-5)
+      .map(message => JSON.parse(message.content)),
+    [
+      "../widget.js is not a valid file_path. Use a relative path with / between folders, such as lib/units.js.",
+      "lib/../widget.js is not a valid file_path. Use a relative path with / between folders, such as lib/units.js.",
+      "lib\\units.js is not a valid file_path. Use a relative path with / between folders, such as lib/units.js.",
+      "lib/ is not a valid file_path. Use a relative path with / between folders, such as lib/units.js.",
+      "meta-inf/manifest.mf is in META-INF, which is reserved for signatures.",
+    ],
+    "Path errors"
+  );
   respond("Done.");
-  ok(!(await making).has("lib/units.js"), "Deleted file");
+  Assert.deepEqual(
+    [...readZip(await making).keys()].sort(),
+    ["lib/units.js", "widget.html", "widget.js", "widget.json"],
+    "Packaged files"
+  );
 });
 
 add_task(async function test_an_edit_needs_a_passage_found_once() {
@@ -308,12 +426,12 @@ add_task(async function test_an_edit_needs_a_passage_found_once() {
     "Error answers"
   );
   respond("Done.");
-  let kept = (await making).get("widget.js");
+  let kept = readZip(await making).get("widget.js");
   is(kept, FILES["widget.js"], "Unchanged file");
 });
 
 add_task(async function test_replace_all_edits_every_match() {
-  let files = await generate(
+  let path = await generate(
     { prompt: PROMPT },
     simulateWriteFileResponse(FILES),
     simulateEditFileResponse({
@@ -325,7 +443,7 @@ add_task(async function test_replace_all_edits_every_match() {
     "Done."
   );
   is(
-    files.get("widget.js"),
+    readZip(path).get("widget.js"),
     FILES["widget.js"].split("formatTemperature").join("$&Celsius"),
     "Every match replaced"
   );
@@ -446,12 +564,14 @@ add_task(async function test_the_row_overrides_the_global_block() {
     ],
   });
   try {
-    let files = await generate(
-      { prompt: PROMPT },
-      simulateWriteFileResponse(FILES),
-      "Done."
+    let files = readZip(
+      await generate(
+        { prompt: PROMPT },
+        simulateWriteFileResponse(FILES),
+        "Done."
+      )
     );
-    Assert.deepEqual(Object.fromEntries(files), FILES, "Files");
+    Assert.equal(files.get("widget.js"), FILES["widget.js"], "Files");
   } finally {
     await SpecialPowers.popPrefEnv();
   }
@@ -464,12 +584,14 @@ add_task(async function test_the_endpoint_override_needs_no_account() {
   let [, getToken] = mockEngine.mocks;
   getToken.resetHistory();
   try {
-    let files = await generate(
-      { prompt: PROMPT },
-      simulateWriteFileResponse(FILES),
-      "Done."
+    let files = readZip(
+      await generate(
+        { prompt: PROMPT },
+        simulateWriteFileResponse(FILES),
+        "Done."
+      )
     );
-    Assert.deepEqual(Object.fromEntries(files), FILES, "Files");
+    Assert.equal(files.get("widget.js"), FILES["widget.js"], "Files");
     Assert.ok(getToken.notCalled, "No account token requested");
   } finally {
     await SpecialPowers.popPrefEnv();
@@ -591,7 +713,7 @@ add_task(async function test_only_this_major_version_is_read() {
   });
   respond(simulateWriteFileResponse(FILES));
   await answer("Done.");
-  await generating;
+  cleanup(await generating);
   Assert.equal(
     request.args.find(message => message.role == "system").content,
     "Newer",
@@ -661,4 +783,94 @@ add_task(async function test_an_aborted_signal_ends_generation() {
     error => error.name == "AbortError",
     "Aborted while generating"
   );
+});
+
+/**
+ * Stubs IOUtils.createUniqueFile in the generator's global to run a callback
+ * once the zip file is created.
+ *
+ * @param {Function} onCreated - called with the new zip file's path
+ */
+function onZipCreated(onCreated) {
+  let { IOUtils: moduleIOUtils } = Cu.getGlobalForObject(WidgetGenerator);
+  let stub = sinon
+    .stub(moduleIOUtils, "createUniqueFile")
+    .callsFake(async (...args) => {
+      let path = await stub.wrappedMethod.apply(moduleIOUtils, args);
+      onCreated(path);
+      return path;
+    });
+  return stub;
+}
+
+add_task(async function test_aborting_while_packaging_removes_the_zip() {
+  let controller = new AbortController();
+  let path;
+  let stub = onZipCreated(created => {
+    path = created;
+    controller.abort();
+  });
+  try {
+    await Assert.rejects(
+      generate(
+        { prompt: PROMPT, signal: controller.signal },
+        simulateWriteFileResponse(FILES),
+        "Done."
+      ),
+      error => error.name == "AbortError",
+      "Aborted while packaging"
+    );
+  } finally {
+    stub.restore();
+  }
+  ok(!(await IOUtils.exists(path)), "Zip removed");
+});
+
+add_task(async function test_blocking_while_packaging_removes_the_zip() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.ai.control.generatedWidgets", "available"]],
+  });
+  let path;
+  let stub = onZipCreated(created => {
+    path = created;
+    Services.prefs.setStringPref(
+      "browser.ai.control.generatedWidgets",
+      "blocked"
+    );
+  });
+  try {
+    await Assert.rejects(
+      generate({ prompt: PROMPT }, simulateWriteFileResponse(FILES), "Done."),
+      error => error.code == GENERATION_ERRORS.BLOCKED,
+      "Blocked while packaging"
+    );
+  } finally {
+    stub.restore();
+    await SpecialPowers.popPrefEnv();
+  }
+  ok(!(await IOUtils.exists(path)), "Zip removed");
+});
+
+add_task(async function test_an_incomplete_widget_fails_validation() {
+  let unnamed = { ...FILES };
+  delete unnamed["manifest.json"];
+  let unwritten = { ...FILES };
+  delete unwritten["widget.html"];
+  for (let [files, pattern, message] of [
+    [unnamed, /manifest/, "No manifest"],
+    [
+      { ...FILES, "manifest.json": JSON.stringify({ name: "  " }) },
+      /no name/,
+      "Blank name",
+    ],
+    [unwritten, /page/, "Page not written"],
+  ]) {
+    await Assert.rejects(
+      generate({ prompt: PROMPT }, simulateWriteFileResponse(files), "Done."),
+      error =>
+        error.code == GENERATION_ERRORS.GENERATION &&
+        pattern.test(error.message),
+      message
+    );
+  }
 });

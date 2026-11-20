@@ -6,6 +6,9 @@
 const { AddonSettings } = ChromeUtils.importESModule(
   "resource://gre/modules/addons/AddonSettings.sys.mjs"
 );
+const { Extension } = ChromeUtils.importESModule(
+  "resource://gre/modules/Extension.sys.mjs"
+);
 const { sinon } = ChromeUtils.importESModule(
   "resource://testing-common/Sinon.sys.mjs"
 );
@@ -22,11 +25,18 @@ const WIDGET = {
   pref_branch: "test.widget",
 };
 
+const GENERATED_WIDGET = {
+  page: "widget.html",
+  sizes: ["small", "medium"],
+};
+
 function loadWidgetExtension({
   id = EXTENSION_ID,
   isPrivileged = true,
   temporarilyInstalled = false,
+  manifestKey = "builtin_widget",
   widget = WIDGET,
+  extraManifest = {},
 } = {}) {
   return ExtensionTestUtils.loadExtension({
     isPrivileged,
@@ -34,7 +44,8 @@ function loadWidgetExtension({
     manifest: {
       name: "Widget Extension",
       browser_specific_settings: { gecko: { id } },
-      builtin_widget: widget,
+      [manifestKey]: widget,
+      ...extraManifest,
     },
     files: { "widget.html": "" },
   });
@@ -117,6 +128,80 @@ add_task(
     await extension.unload();
   }
 );
+
+add_task(async function test_generated_widget_is_ignored() {
+  for (const isPrivileged of [false, true]) {
+    ExtensionTestUtils.failOnSchemaWarnings(false);
+    const extension = loadWidgetExtension({
+      isPrivileged,
+      manifestKey: "generated_widget",
+      widget: GENERATED_WIDGET,
+    });
+    const { messages } = await promiseConsoleOutput(() => extension.startup());
+    ExtensionTestUtils.failOnSchemaWarnings(true);
+    Assert.equal(WidgetManager.getWidgetByID(EXTENSION_ID), null, "No widget");
+    Assert.ok(
+      messages.some(({ message }) =>
+        /Ignoring 'generated_widget'/.test(message)
+      ),
+      "Warning logged"
+    );
+    await extension.unload();
+  }
+});
+
+add_task(async function test_builtin_widget_is_used_with_generated_widget() {
+  ExtensionTestUtils.failOnSchemaWarnings(false);
+  const extension = loadWidgetExtension({
+    extraManifest: { generated_widget: GENERATED_WIDGET },
+  });
+  const { messages } = await promiseConsoleOutput(() => extension.startup());
+  ExtensionTestUtils.failOnSchemaWarnings(true);
+  const widget = WidgetManager.getWidgetByID(EXTENSION_ID);
+  Assert.equal(widget.size, "medium", "Size");
+  Assert.equal(widget.generated, false, "Not generated");
+  Assert.ok(
+    messages.some(({ message }) => /Ignoring 'generated_widget'/.test(message)),
+    "Warning logged"
+  );
+  await extension.unload();
+});
+
+add_task(async function test_builtin_widget_wins_when_both_are_allowed() {
+  const stub = sinon
+    .stub(Extension.prototype, "canUseGeneratedWidgets")
+    .returns(true);
+  const register = sinon.spy(WidgetManager, "register");
+  const extension = loadWidgetExtension({
+    extraManifest: { generated_widget: GENERATED_WIDGET },
+  });
+  await extension.startup();
+  Assert.ok(register.calledOnce, "Registered once");
+  const widget = WidgetManager.getWidgetByID(EXTENSION_ID);
+  Assert.equal(widget.size, "medium", "Size");
+  Assert.equal(widget.generated, false, "Not generated");
+  await extension.unload();
+  Assert.equal(WidgetManager.getWidgetByID(EXTENSION_ID), null, "Unregistered");
+  register.restore();
+  stub.restore();
+});
+
+add_task(async function test_generated_widget_temporary_install_is_rejected() {
+  ExtensionTestUtils.failOnSchemaWarnings(false);
+  const extension = loadWidgetExtension({
+    id: "rejected-generated-widget@mochi.test",
+    isPrivileged: false,
+    temporarilyInstalled: true,
+    manifestKey: "generated_widget",
+    widget: GENERATED_WIDGET,
+  });
+  await Assert.rejects(
+    extension.startup(),
+    /Using 'generated_widget' is reserved for generated widgets/,
+    "Startup rejected"
+  );
+  ExtensionTestUtils.failOnSchemaWarnings(true);
+});
 
 add_task(async function test_invalid_pref_branch() {
   ExtensionTestUtils.failOnSchemaWarnings(false);
