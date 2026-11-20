@@ -243,7 +243,8 @@ private fun CompactSearchBar(state: SearchBarState, widgetType: String) {
         SearchLabel(
             widgetType,
             modifier =
-                GlanceModifier.height(compactSearchPillHeight)
+                GlanceModifier.defaultWeight()
+                    .height(compactSearchPillHeight)
                     .background(ImageProvider(R.drawable.search_bar_widget_pill_background))
                     .padding(start = space.static150, end = space.static200),
             iconSize = compactAppIconSize,
