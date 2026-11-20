@@ -378,7 +378,7 @@ promise_test(async t => {
   await wt.ready;
 
   assert_equals(wt.datagrams.incomingMaxAge, null);
-  assert_equals(wt.datagrams.outgoingMaxAge, null);
+  assert_equals(wt.datagrams.outgoingMaxAge, Infinity);
 
   wt.datagrams.incomingMaxAge = 5;
   assert_equals(wt.datagrams.incomingMaxAge, 5);
@@ -392,8 +392,13 @@ promise_test(async t => {
 
   wt.datagrams.incomingMaxAge = 0;
   assert_equals(wt.datagrams.incomingMaxAge, null);
-  wt.datagrams.outgoingMaxAge = 0;
-  assert_equals(wt.datagrams.outgoingMaxAge, null);
+  assert_throws_js(RangeError, () => { wt.datagrams.outgoingMaxAge = 0; });
+  assert_equals(wt.datagrams.outgoingMaxAge, 5);
+  // null converts to 0 for the non-nullable attribute.
+  assert_throws_js(RangeError, () => { wt.datagrams.outgoingMaxAge = null; });
+  assert_equals(wt.datagrams.outgoingMaxAge, 5);
+  wt.datagrams.outgoingMaxAge = Infinity;
+  assert_equals(wt.datagrams.outgoingMaxAge, Infinity);
 }, 'Datagram MaxAge getters/setters work correctly');
 
 promise_test(async t => {
