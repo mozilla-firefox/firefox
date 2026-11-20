@@ -49,7 +49,10 @@ async function test_mouse_xbuttons(url) {
       // if necessary.
       const current = content.location.hash;
       if (current === "#1") {
-        await content.navigation.forward();
+        await new Promise(r => {
+          content.addEventListener("hashchange", r);
+          content.history.forward();
+        });
       }
       // Set selection for copy
       content
@@ -133,9 +136,9 @@ async function test_mouse_xbuttons(url) {
       "Should get the right order of events"
     );
 
-    // If mouseup or auxclick is default prevented, we shouldn't do the
-    // default action. However, if just mousedown is, we should.
-    if (preventDefault === "mousedown") {
+    // Only respect preventDefault() on the mouseup event,
+    // to be consistent with Chromium.
+    if (preventDefault !== "mouseup") {
       info(`Wait for default action (${command})`);
       await waitForDefaultAction;
     } else {

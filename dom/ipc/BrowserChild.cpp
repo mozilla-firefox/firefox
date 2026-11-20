@@ -1794,7 +1794,7 @@ void BrowserChild::HandleRealMouseButtonEvent(
   InputAPZContext context2(aGuid, aInputBlockId, nsEventStatus_eSentinel,
                            postLayerization != nullptr);
 
-  const nsEventStatus status = DispatchWidgetEventViaAPZ(localEvent);
+  DispatchWidgetEventViaAPZ(localEvent);
 
   if (aInputBlockId && localEvent.mFlags.mHandledByAPZ && mAPZEventState) {
     mAPZEventState->ProcessMouseEvent(localEvent, aInputBlockId);
@@ -1811,7 +1811,7 @@ void BrowserChild::HandleRealMouseButtonEvent(
 
   if (aUUID != nsID{}) {
     // Inform parent process that this event was handled.
-    SendReplyMouseEvent(status == nsEventStatus_eConsumeNoDefault, aUUID);
+    SendReplyMouseEvent(localEvent.DefaultPrevented(), aUUID);
   }
 }
 
