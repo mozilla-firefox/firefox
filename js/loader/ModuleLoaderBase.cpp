@@ -25,7 +25,6 @@
 #include "mozilla/CycleCollectedJSContext.h"  // nsAutoMicroTask
 #include "mozilla/Preferences.h"
 #include "mozilla/RefPtr.h"  // mozilla::StaticRefPtr
-#include "mozilla/StaticPrefs_dom.h"
 #include "nsContentUtils.h"
 #include "nsICacheInfoChannel.h"  // nsICacheInfoChannel
 #include "nsNetUtil.h"            // NS_NewURI
@@ -582,6 +581,12 @@ nsresult ModuleLoaderBase::StartOrRestartModuleLoad(ModuleLoadRequest* aRequest,
   nsresult rv = NS_OK;
   if (!CanStartLoad(aRequest, &rv)) {
     return rv;
+  }
+
+  if (!aRequest->mLoadContext->IsPreload() &&
+      !ImportMap::IsMultipleImportMapsSupported()) {
+    LOG(("ScriptLoadRequest (%p): Disallow further import maps.", aRequest));
+    DisallowImportMaps();
   }
 
   // Check whether the module has been fetched or is currently being fetched,

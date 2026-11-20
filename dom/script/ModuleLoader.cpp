@@ -26,7 +26,6 @@
 #include "mozilla/CycleCollectedJSContext.h"
 #include "mozilla/LoadInfo.h"
 #include "mozilla/Maybe.h"
-#include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/StyleSheet.h"
 #include "mozilla/StyleSheetInlines.h"
 #include "mozilla/dom/AutoEntryScript.h"
@@ -128,14 +127,6 @@ nsresult ModuleLoader::StartFetch(ModuleLoadRequest* aRequest) {
   nsresult rv = GetScriptLoader()->StartLoadInternal(
       aRequest, securityFlags, Nothing() /* aCharsetForPreload */);
   NS_ENSURE_SUCCESS(rv, rv);
-
-  // https://html.spec.whatwg.org/multipage/webappapis.html#fetch-an-import()-module-script-graph
-  // Step 1. Disallow further import maps given settings object.
-  if (!aRequest->GetScriptLoadContext()->IsPreload() &&
-      !StaticPrefs::dom_multiple_import_maps_enabled()) {
-    LOG(("ScriptLoadRequest (%p): Disallow further import maps.", aRequest));
-    DisallowImportMaps();
-  }
 
   LOG(("ScriptLoadRequest (%p): Start fetching module", aRequest));
 
