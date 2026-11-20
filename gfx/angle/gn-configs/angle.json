@@ -59,7 +59,10 @@
       "ANGLE_SKIP_DXGI_1_2_CHECK": true
     }
   },
-  "mozilla_flags": ["-Wno-unguarded-availability"],
+  "mozilla_flags": [
+    "-Wno-nullability-completeness",
+    "-Wno-unguarded-availability"
+  ],
   "write_mozbuild_variables": {
     "INCLUDE_GECKO_ZLIB_HANDLING": [
       "third_party/angle/third_party/zlib/zlib_gn"

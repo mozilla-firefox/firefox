@@ -9,6 +9,11 @@
 COMPILE_FLAGS["OS_INCLUDES"] = []
 AllowCompilerWarnings()
 
+CXXFLAGS += [
+    "-Wno-nullability-completeness",
+    "-Wno-nullability-completeness"
+]
+
 DEFINES["ANDROID"] = True
 DEFINES["ANDROID_NDK_VERSION_ROLL"] = "r27_1"
 DEFINES["ANGLE_ENABLE_CONTEXT_MUTEX"] = "1"

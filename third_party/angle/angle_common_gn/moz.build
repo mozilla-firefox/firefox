@@ -76,6 +76,10 @@ if CONFIG["MOZ_DEBUG"] == "1":
 
 if CONFIG["OS_TARGET"] == "Android":
 
+    CXXFLAGS += [
+        "-Wno-nullability-completeness"
+    ]
+
     DEFINES["ANDROID"] = True
     DEFINES["ANDROID_NDK_VERSION_ROLL"] = "r27_1"
     DEFINES["ANGLE_ENABLE_CONTEXT_MUTEX_RECURSION"] = "1"
@@ -100,6 +104,10 @@ if CONFIG["OS_TARGET"] == "Android":
     ]
 
 if CONFIG["OS_TARGET"] == "Darwin":
+
+    CXXFLAGS += [
+        "-Wno-nullability-completeness"
+    ]
 
     DEFINES["EGL_NO_X11"] = True
     DEFINES["__STDC_CONSTANT_MACROS"] = True
@@ -143,6 +151,10 @@ if CONFIG["OS_TARGET"] == "Linux":
 
 if CONFIG["OS_TARGET"] == "OpenBSD":
 
+    CXXFLAGS += [
+        "-Wno-nullability-completeness"
+    ]
+
     DEFINES["EGL_NO_X11"] = True
     DEFINES["USE_GLIB"] = "1"
     DEFINES["USE_OZONE"] = "1"
@@ -159,6 +171,10 @@ if CONFIG["OS_TARGET"] == "OpenBSD":
     ]
 
 if CONFIG["OS_TARGET"] == "WINNT":
+
+    CXXFLAGS += [
+        "-Wno-nullability-completeness"
+    ]
 
     DEFINES["ANGLE_IS_WIN"] = True
     DEFINES["CERT_CHAIN_PARA_HAS_EXTRA_FIELDS"] = True
@@ -201,13 +217,25 @@ if CONFIG["TARGET_CPU"] == "aarch64":
 
 if CONFIG["TARGET_CPU"] == "loongarch64":
 
+    CXXFLAGS += [
+        "-Wno-nullability-completeness"
+    ]
+
     DEFINES["_GNU_SOURCE"] = True
 
 if CONFIG["TARGET_CPU"] == "mips32":
 
+    CXXFLAGS += [
+        "-Wno-nullability-completeness"
+    ]
+
     DEFINES["_GNU_SOURCE"] = True
 
 if CONFIG["TARGET_CPU"] == "mips64":
+
+    CXXFLAGS += [
+        "-Wno-nullability-completeness"
+    ]
 
     DEFINES["_GNU_SOURCE"] = True
 
@@ -241,17 +269,33 @@ if CONFIG["MOZ_X11"] == "1" and CONFIG["OS_TARGET"] == "Linux":
 
 if CONFIG["OS_TARGET"] == "Linux" and CONFIG["TARGET_CPU"] == "aarch64":
 
+    CXXFLAGS += [
+        "-Wno-nullability-completeness"
+    ]
+
     DEFINES["_GNU_SOURCE"] = True
 
 if CONFIG["OS_TARGET"] == "Linux" and CONFIG["TARGET_CPU"] == "arm":
+
+    CXXFLAGS += [
+        "-Wno-nullability-completeness"
+    ]
 
     DEFINES["_GNU_SOURCE"] = True
 
 if CONFIG["OS_TARGET"] == "Linux" and CONFIG["TARGET_CPU"] == "x86":
 
+    CXXFLAGS += [
+        "-Wno-nullability-completeness"
+    ]
+
     DEFINES["_GNU_SOURCE"] = True
 
 if CONFIG["OS_TARGET"] == "Linux" and CONFIG["TARGET_CPU"] == "x86_64":
+
+    CXXFLAGS += [
+        "-Wno-nullability-completeness"
+    ]
 
     DEFINES["_GNU_SOURCE"] = True
 

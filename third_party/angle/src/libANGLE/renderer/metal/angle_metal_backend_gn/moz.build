@@ -7,11 +7,16 @@
   ### DO NOT edit it by hand.                                       ###
 
 CMMFLAGS += [
+    "-Wno-nullability-completeness",
     "-Wno-unguarded-availability"
 ]
 
 COMPILE_FLAGS["OS_INCLUDES"] = []
 AllowCompilerWarnings()
+
+CXXFLAGS += [
+    "-Wno-nullability-completeness"
+]
 
 DEFINES["ANGLE_DISABLE_POOL_ALLOC"] = True
 DEFINES["ANGLE_ENABLE_CONTEXT_MUTEX"] = "1"

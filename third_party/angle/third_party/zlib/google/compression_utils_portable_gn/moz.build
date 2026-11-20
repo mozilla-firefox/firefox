@@ -9,6 +9,10 @@
 COMPILE_FLAGS["OS_INCLUDES"] = []
 AllowCompilerWarnings()
 
+CXXFLAGS += [
+    "-Wno-nullability-completeness"
+]
+
 DEFINES["ANGLE_ENABLE_DEBUG_ANNOTATIONS"] = False
 DEFINES["ANGLE_ENABLE_KEYEDMUTEX"] = True
 DEFINES["ANGLE_PLATFORM_EXPORT"] = ""
