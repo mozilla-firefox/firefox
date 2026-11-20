@@ -62,6 +62,13 @@ private val navigationItems =
             onClickEvent = object : MenuEvent {},
         ),
         StandardMenuItem(
+            title = MenuItemTitle(Text.String("Bookmark")),
+            contentDescription = Text.String("Bookmark"),
+            icon = MenuItemIconRes(iconsR.drawable.mozac_ic_bookmark_fill_24),
+            state = MenuItemState.ACTIVE,
+            onClickEvent = object : MenuEvent {},
+        ),
+        StandardMenuItem(
             title = MenuItemTitle(Text.String("Share")),
             contentDescription = Text.String("Share"),
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_share_android_24),

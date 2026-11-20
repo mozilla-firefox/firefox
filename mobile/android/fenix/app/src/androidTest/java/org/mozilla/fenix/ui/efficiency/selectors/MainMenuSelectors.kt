@@ -103,16 +103,18 @@ object MainMenuSelectors : SelectorContainer {
 
     val BOOKMARK_THIS_PAGE_BUTTON =
         Selector(
-            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION_UNDER_TAG,
             value = getStringResource(R.string.browser_menu_bookmark_this_page_2),
+            secondaryValue = MenuTestTag.MAIN_MENU,
             description = "Bookmark this page button",
             groups = setOf(Group.BOOKMARK_ACTIONS, Group.BROWSER_VIEW_MAIN_MENU_ITEMS),
         )
 
     val EDIT_BOOKMARK_BUTTON =
         Selector(
-            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION_UNDER_TAG,
             value = getStringResource(R.string.browser_menu_edit_bookmark),
+            secondaryValue = MenuTestTag.MAIN_MENU,
             description = "Edit bookmark button",
             groups = setOf(Group.EDIT_BOOKMARK_ACTIONS),
         )
@@ -127,32 +129,36 @@ object MainMenuSelectors : SelectorContainer {
 
     val BACK_BUTTON =
         Selector(
-            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
-            value = "Back",
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION_UNDER_TAG,
+            value = getStringResource(R.string.browser_menu_back),
+            secondaryValue = MenuTestTag.MAIN_MENU,
             description = "Main menu Back button",
             groups = setOf(Group.BROWSER_VIEW_MAIN_MENU_ITEMS),
         )
 
     val FORWARD_BUTTON =
         Selector(
-            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
-            value = "Forward",
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION_UNDER_TAG,
+            value = getStringResource(R.string.browser_menu_forward),
+            secondaryValue = MenuTestTag.MAIN_MENU,
             description = "Main menu Forward button",
             groups = setOf(Group.BROWSER_VIEW_MAIN_MENU_ITEMS),
         )
 
     val REFRESH_BUTTON =
         Selector(
-            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
-            value = "Refresh",
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION_UNDER_TAG,
+            value = getStringResource(R.string.browser_menu_refresh),
+            secondaryValue = MenuTestTag.MAIN_MENU,
             description = "Main menu Refresh button",
             groups = setOf(Group.BROWSER_VIEW_MAIN_MENU_ITEMS),
         )
 
     val SHARE_BUTTON =
         Selector(
-            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
-            value = "Share",
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION_UNDER_TAG,
+            value = getStringResource(R.string.browser_menu_share),
+            secondaryValue = MenuTestTag.MAIN_MENU,
             description = "Main menu Share button",
             groups = setOf(Group.BROWSER_VIEW_MAIN_MENU_ITEMS),
         )

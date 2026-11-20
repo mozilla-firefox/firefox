@@ -77,6 +77,7 @@ enum class Extra {
     DESCENDANT_TEXT,
     CHILD_TEXT,
     EDITABLE_UNDER,
+    ANCESTOR_TAG,
 }
 
 /**
@@ -111,6 +112,8 @@ val STRATEGY_LOCATORS: Map<SelectorStrategy, Locator> =
         SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION to Locator(Layer.COMPOSE, Handle.DESC),
         SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION_SUBSTRING to
             Locator(Layer.COMPOSE, Handle.DESC, Match.SUBSTRING),
+        SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION_UNDER_TAG to
+            Locator(Layer.COMPOSE, Handle.DESC, extra = Extra.ANCESTOR_TAG),
 
         // Espresso
         SelectorStrategy.ESPRESSO_BY_ID to Locator(Layer.ESPRESSO, Handle.ID),

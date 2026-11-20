@@ -19,10 +19,16 @@ import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.TABS_CONTROLS_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.TOOLS_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.VPN_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Back
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Bookmark
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.CustomizeHomepage
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.DefaultBrowserBanner
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Forward
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.NewPrivateTab
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.NewTab
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Refresh
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Share
+import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Grid
 import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Row
 
 class BrowserMenuConfigurationTest {
@@ -215,6 +221,22 @@ class BrowserMenuConfigurationTest {
             ),
             BrowserMenuConfiguration.allSections().map { it.id },
         )
+    }
+
+    @Test
+    fun `WHEN checking the page controls section THEN it contains navigation and bookmark items in Grid mode`() {
+        val pageControlsSection = BrowserMenuConfiguration.allSections().first { it.id == PAGE_CONTROLS_GROUP_ID }
+        assertEquals(Grid, pageControlsSection.presentationMode)
+        assertEquals(listOf(Back, Forward, Bookmark, Share, Refresh), pageControlsSection.items)
+        assertTrue(pageControlsSection.isSticky)
+        assertFalse(pageControlsSection.showTitles)
+    }
+
+    @Test
+    fun `WHEN getting all the browser menu sections THEN only the page controls hide the titles of their items`() {
+        val sectionsHidingTitles = BrowserMenuConfiguration.allSections().filterNot { it.showTitles }.map { it.id }
+
+        assertEquals(listOf(PAGE_CONTROLS_GROUP_ID), sectionsHidingTitles)
     }
 
     @Test

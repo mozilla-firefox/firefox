@@ -35,8 +35,9 @@ object CustomTabMenuConfiguration {
             MenuSectionConfiguration(
                 id = PAGE_CONTROLS_GROUP_ID,
                 presentationMode = Grid,
-                items = listOf(Back, Forward, Share, Refresh),
+                items = listOf(Back, Forward, Bookmark, Share, Refresh),
                 isSticky = true,
+                showTitles = false,
             )
         val rest =
             listOf(
@@ -46,7 +47,6 @@ object CustomTabMenuConfiguration {
                     items =
                         listOfNotNull(
                             OpenInFirefox,
-                            Bookmark,
                             FindInPage,
                             DesktopSite,
                             if (shouldShowExtensions) Extensions else null,

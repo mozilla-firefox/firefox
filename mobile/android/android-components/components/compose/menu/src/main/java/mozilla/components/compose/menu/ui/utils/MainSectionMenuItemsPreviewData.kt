@@ -41,12 +41,6 @@ internal val mainSectionMenuItemsPreviewData =
             onClickEvent = object : MenuEvent {},
         ),
         StandardMenuItem(
-            title = MenuItemTitle(Text.String("Bookmark page")),
-            contentDescription = Text.String("Bookmark page"),
-            icon = MenuItemIconRes(iconsR.drawable.mozac_ic_bookmark_24),
-            onClickEvent = object : MenuEvent {},
-        ),
-        StandardMenuItem(
             title = MenuItemTitle(Text.String("Find in page")),
             contentDescription = Text.String("Find in page"),
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_find_in_page_24),

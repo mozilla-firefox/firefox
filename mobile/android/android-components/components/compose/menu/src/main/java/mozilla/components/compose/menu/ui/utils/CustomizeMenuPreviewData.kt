@@ -23,6 +23,7 @@ internal val customizeMenuPreviewData: List<MenuItemsGroup> =
                 listOf(
                     previewMenuItem("Back", iconsR.drawable.mozac_ic_back_24),
                     previewMenuItem("Forward", iconsR.drawable.mozac_ic_forward_24),
+                    previewMenuItem("Bookmark page", iconsR.drawable.mozac_ic_bookmark_24),
                     previewMenuItem("Share", iconsR.drawable.mozac_ic_share_android_24),
                     previewMenuItem("Refresh", iconsR.drawable.mozac_ic_arrow_clockwise_24),
                 ),
@@ -44,7 +45,6 @@ internal val customizeMenuPreviewData: List<MenuItemsGroup> =
             id = "page",
             items =
                 listOf(
-                    previewMenuItem("Bookmark page", iconsR.drawable.mozac_ic_bookmark_24),
                     previewMenuItem("Find in page", iconsR.drawable.mozac_ic_search_24),
                     previewMenuItem("Desktop site", iconsR.drawable.mozac_ic_device_desktop_24),
                 ),

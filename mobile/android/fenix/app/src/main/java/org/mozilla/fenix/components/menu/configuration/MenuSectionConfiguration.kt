@@ -17,6 +17,7 @@ import mozilla.components.compose.menu.data.MenuItemsGroup
  * @property items The items to show in this section.
  * @property isSticky Whether this section should be sticky at the top or bottom of the menu.
  * @property name Name of this section, read by accessibility services before the names of its items.
+ * @property showTitles Whether the titles of the items are shown when the section is a [MenuPresentationMode.Grid].
  */
 data class MenuSectionConfiguration(
     val id: String,
@@ -24,6 +25,7 @@ data class MenuSectionConfiguration(
     val items: List<FenixMenuItem>,
     val isSticky: Boolean = false,
     @param:StringRes val name: Int? = null,
+    val showTitles: Boolean = true,
 )
 
 /**
@@ -47,6 +49,7 @@ internal fun MenuSectionConfiguration.asMenuItemsGroup(shownItems: List<MenuItem
                 items = shownItems,
                 isSticky = isSticky,
                 name = groupName,
+                showTitles = showTitles,
             )
     }
 }

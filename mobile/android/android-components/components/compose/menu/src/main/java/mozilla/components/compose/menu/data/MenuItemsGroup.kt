@@ -35,11 +35,13 @@ sealed class MenuItemsGroup {
      * @property items The items to show in this group.
      * @property isSticky Whether this group should be sticky at the top or bottom of the menu.
      * @property name Name of this group, read by accessibility services before the names of its items.
+     * @property showTitles Whether the titles of the items are shown below their icons. Sticky groups never show them.
      */
     data class Grid(
         override val id: String,
         override val items: List<MenuItem>,
         override val isSticky: Boolean = false,
         override val name: Text? = null,
+        val showTitles: Boolean = true,
     ) : MenuItemsGroup()
 }

@@ -60,3 +60,13 @@ internal val MenuItemState.newIndicatorContainerColor: Color
             DISABLED -> MaterialTheme.colorScheme.information.copy(alpha = DISABLED_ALPHA)
             else -> MaterialTheme.colorScheme.information
         }
+
+/** Background color of the icon container of a menu item in this state. */
+internal val MenuItemState.iconContainerColor: Color
+    @Composable
+    @ReadOnlyComposable
+    get() =
+        when (this) {
+            ACTIVE -> MaterialTheme.colorScheme.surfaceContainerLowest
+            else -> Color.Transparent
+        }

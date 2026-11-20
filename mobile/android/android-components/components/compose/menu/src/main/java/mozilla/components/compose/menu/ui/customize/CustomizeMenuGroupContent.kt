@@ -123,6 +123,7 @@ private fun CustomizeMenuGroup(group: MenuItemsGroup, isHidden: Boolean, isHighl
                 items = group.items,
                 modifier = groupModifier,
                 contentAlpha = contentAlpha,
+                showTitles = group.showTitles,
             )
 
         is MenuItemsGroup.Row ->

@@ -10,6 +10,8 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
@@ -30,6 +32,7 @@ import mozilla.components.compose.browser.toolbar.concept.BrowserToolbarTestTags
 import mozilla.components.feature.customtabs.R as customtabsR
 import org.mozilla.fenix.Config
 import org.mozilla.fenix.R
+import org.mozilla.fenix.components.menu.MenuTestTag
 import org.mozilla.fenix.helpers.Constants.LONG_CLICK_DURATION
 import org.mozilla.fenix.helpers.Constants.TAG
 import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
@@ -205,16 +208,27 @@ class CustomTabRobot(private val composeTestRule: ComposeTestRule) {
             }
     }
 
+    @OptIn(ExperimentalTestApi::class)
     fun verifyCustomTabsMainMenuItems(
         customMenuItem: String,
         exist: Boolean,
         waitingTime: Long = TestAssetHelper.waitingTime,
-    ) =
+    ) {
+        listOf(
+                R.string.browser_menu_back,
+                R.string.browser_menu_forward,
+                R.string.browser_menu_refresh,
+                R.string.browser_menu_share,
+            )
+            .forEach { resId ->
+                val pageControl = pageControl(getStringResource(resId))
+                if (exist) {
+                    composeTestRule.waitUntilAtLeastOneExists(pageControl, waitingTime)
+                } else {
+                    composeTestRule.waitUntilDoesNotExist(pageControl, waitingTime)
+                }
+            }
         assertUIObjectExists(
-            itemContainingText(getStringResource(R.string.browser_menu_back)),
-            itemContainingText(getStringResource(R.string.browser_menu_forward)),
-            itemContainingText(getStringResource(R.string.browser_menu_refresh)),
-            itemContainingText(getStringResource(R.string.browser_menu_share)),
             itemWithText(getStringResource(R.string.browser_menu_open_in_fenix, appName)),
             itemWithText(getStringResource(R.string.browser_menu_find_in_page)),
             itemWithText(getStringResource(R.string.browser_menu_desktop_site)),
@@ -223,6 +237,7 @@ class CustomTabRobot(private val composeTestRule: ComposeTestRule) {
             exists = exist,
             waitingTime = waitingTime,
         )
+    }
 
     fun verifyBookmarkThisPageButton() {
         Log.i(TAG, "verifyBookmarkThisPageButton: Trying to verify that the \"Bookmark this page\" button is displayed")
@@ -475,16 +490,22 @@ private fun ComposeTestRule.disabledDesktopSiteButton() =
 
 private fun ComposeTestRule.findInPageButton() = onNodeWithText(getStringResource(R.string.browser_menu_find_in_page))
 
+/** A page control of the main menu, excluding toolbar buttons with the same content description. */
+private fun pageControl(description: String) =
+    hasContentDescription(description).and(hasAnyAncestor(hasTestTag(MenuTestTag.MAIN_MENU)))
+
+private fun ComposeTestRule.pageControlButton(description: String) = onNode(pageControl(description))
+
 private fun ComposeTestRule.bookmarkPageButton() =
-    onNodeWithText(getStringResource(R.string.browser_menu_bookmark_this_page_2))
+    pageControlButton(getStringResource(R.string.browser_menu_bookmark_this_page_2))
 
 private fun ComposeTestRule.editBookmarkButton() =
-    onNodeWithText(getStringResource(R.string.browser_menu_edit_bookmark))
+    pageControlButton(getStringResource(R.string.browser_menu_edit_bookmark))
 
-private fun ComposeTestRule.backButton() = onNodeWithText("Back")
+private fun ComposeTestRule.backButton() = pageControlButton(getStringResource(R.string.browser_menu_back))
 
-private fun ComposeTestRule.forwardButton() = onNodeWithText("Forward")
+private fun ComposeTestRule.forwardButton() = pageControlButton(getStringResource(R.string.browser_menu_forward))
 
-private fun ComposeTestRule.refreshButton() = onNodeWithText("Refresh")
+private fun ComposeTestRule.refreshButton() = pageControlButton(getStringResource(R.string.browser_menu_refresh))
 
-private fun ComposeTestRule.shareButton() = onNodeWithText("Share")
+private fun ComposeTestRule.shareButton() = pageControlButton(getStringResource(R.string.browser_menu_share))

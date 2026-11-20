@@ -16,7 +16,7 @@ import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -57,10 +57,10 @@ class MenuTest {
         setMenu(listOf(row("Item"), stickyGroup("Footer")))
 
         composeTestRule.onNodeWithText("Item").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Footer").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Footer").assertIsDisplayed()
         val menuBounds = composeTestRule.onNodeWithTag("menu").getUnclippedBoundsInRoot()
         val listBounds = composeTestRule.onNode(hasScrollAction()).getUnclippedBoundsInRoot()
-        val footerBounds = composeTestRule.onNodeWithText("Footer").getUnclippedBoundsInRoot()
+        val footerBounds = composeTestRule.onNodeWithContentDescription("Footer").getUnclippedBoundsInRoot()
         assertTrue(menuBounds.height < 300.dp)
         assertTrue(listBounds.bottom <= footerBounds.top)
     }
@@ -68,16 +68,16 @@ class MenuTest {
     @Test
     fun `GIVEN a long menu WHEN scrolling to the end THEN keep header and footer visible without covering content`() {
         setMenu(listOf(stickyGroup("Header")) + List(20) { row("Item $it") } + stickyGroup("Footer"))
-        val headerBefore = composeTestRule.onNodeWithText("Header").getUnclippedBoundsInRoot()
-        val footerBefore = composeTestRule.onNodeWithText("Footer").getUnclippedBoundsInRoot()
+        val headerBefore = composeTestRule.onNodeWithContentDescription("Header").getUnclippedBoundsInRoot()
+        val footerBefore = composeTestRule.onNodeWithContentDescription("Footer").getUnclippedBoundsInRoot()
 
         composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasText("Item 19"))
 
-        composeTestRule.onNodeWithText("Header").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Footer").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Header").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Footer").assertIsDisplayed()
         composeTestRule.onNodeWithText("Item 19").assertIsDisplayed()
-        val headerAfter = composeTestRule.onNodeWithText("Header").getUnclippedBoundsInRoot()
-        val footerAfter = composeTestRule.onNodeWithText("Footer").getUnclippedBoundsInRoot()
+        val headerAfter = composeTestRule.onNodeWithContentDescription("Header").getUnclippedBoundsInRoot()
+        val footerAfter = composeTestRule.onNodeWithContentDescription("Footer").getUnclippedBoundsInRoot()
         val listBounds = composeTestRule.onNode(hasScrollAction()).getUnclippedBoundsInRoot()
         val lastItemBounds = composeTestRule.onNodeWithText("Item 19").getUnclippedBoundsInRoot()
         assertEquals(headerBefore.top, headerAfter.top)
@@ -94,12 +94,12 @@ class MenuTest {
 
         composeTestRule.runOnIdle { store.dispatch(MenuAction.Update(groups + stickyGroup("Footer"))) }
 
-        composeTestRule.onNodeWithText("Footer").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Footer").assertIsDisplayed()
         assertTrue(composeTestRule.onNodeWithTag("menu").getUnclippedBoundsInRoot().height > originalHeight)
 
         composeTestRule.runOnIdle { store.dispatch(MenuAction.Update(groups)) }
 
-        composeTestRule.onNodeWithText("Footer").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("Footer").assertDoesNotExist()
         assertEquals(originalHeight, composeTestRule.onNodeWithTag("menu").getUnclippedBoundsInRoot().height)
     }
 
@@ -107,9 +107,17 @@ class MenuTest {
     fun `GIVEN a single sticky group THEN show it only once`() {
         setMenu(listOf(stickyGroup("Header")))
 
-        composeTestRule.onAllNodesWithText("Header").assertCountEquals(1)
-        composeTestRule.onNodeWithText("Header").assertIsDisplayed()
+        composeTestRule.onAllNodesWithContentDescription("Header").assertCountEquals(1)
+        composeTestRule.onNodeWithContentDescription("Header").assertIsDisplayed()
         assertTrue(composeTestRule.onNodeWithTag("menu").getUnclippedBoundsInRoot().height < 300.dp)
+    }
+
+    @Test
+    fun `GIVEN a sticky grid group THEN do not display visible text and provide it as content description`() {
+        setMenu(listOf(stickyGroup("StickyItem")))
+
+        composeTestRule.onNodeWithContentDescription("StickyItem").assertIsDisplayed()
+        composeTestRule.onNode(hasText("StickyItem"), useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
@@ -149,12 +157,12 @@ class MenuTest {
         composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasText("Item 19"))
 
         composeTestRule.onNodeWithText("Powered by Focus").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Header").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Footer").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Header").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Footer").assertIsDisplayed()
         composeTestRule.onNodeWithText("Item 19").assertIsDisplayed()
         val attributionAfter = composeTestRule.onNodeWithText("Powered by Focus").getUnclippedBoundsInRoot()
-        val headerBounds = composeTestRule.onNodeWithText("Header").getUnclippedBoundsInRoot()
-        val footerBounds = composeTestRule.onNodeWithText("Footer").getUnclippedBoundsInRoot()
+        val headerBounds = composeTestRule.onNodeWithContentDescription("Header").getUnclippedBoundsInRoot()
+        val footerBounds = composeTestRule.onNodeWithContentDescription("Footer").getUnclippedBoundsInRoot()
         val listBounds = composeTestRule.onNode(hasScrollAction()).getUnclippedBoundsInRoot()
         val lastItemBounds = composeTestRule.onNodeWithText("Item 19").getUnclippedBoundsInRoot()
         assertEquals(attributionBefore, attributionAfter)
@@ -203,6 +211,31 @@ class MenuTest {
 
         composeTestRule.onNodeWithText("Item").assertIsDisplayed()
         composeTestRule.onNodeWithText(BANNER_TITLE).assertDoesNotExist()
+    }
+
+    @Test
+    fun `GIVEN a grid not showing titles in the middle of the menu THEN show its items without titles`() {
+        setMenu(listOf(row("Item"), MenuItemsGroup.Grid(id = "grid", items = listOf(item("Grid")), showTitles = false)))
+
+        composeTestRule.onNodeWithContentDescription("Grid").assertIsDisplayed()
+        composeTestRule.onNode(hasText("Grid"), useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `GIVEN a sticky grid item with a content description THEN announce it instead of its hidden title`() {
+        val stickyItem = item("Bookmark").copy(contentDescription = Text.String("Bookmarked"))
+        setMenu(listOf(MenuItemsGroup.Grid(id = "header", items = listOf(stickyItem), isSticky = true), row("Item")))
+
+        composeTestRule.onNodeWithContentDescription("Bookmarked").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Bookmark").assertDoesNotExist()
+        composeTestRule.onNode(hasText("Bookmark"), useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `GIVEN a grid in the middle of the menu THEN show the titles of its items`() {
+        setMenu(listOf(row("Item"), MenuItemsGroup.Grid(id = "grid", items = listOf(item("Grid")))))
+
+        composeTestRule.onNodeWithText("Grid").assertIsDisplayed()
     }
 
     @Test

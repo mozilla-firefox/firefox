@@ -4,12 +4,16 @@
 
 package mozilla.components.compose.menu.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.CollectionInfo
@@ -36,37 +40,52 @@ import mozilla.components.compose.menu.store.MenuEvent
 /**
  * The icon and the optional title of a menu grid item, to be shown one below the other.
  *
- * @param title The title of the menu item. Nothing is shown below the icon if it is empty.
+ * @param title The title of the menu item. If null, the icon is shown inside a circle with nothing below it. Nothing is
+ *   shown below the icon if it is empty.
  * @param icon The [MenuItemIcon] of the menu item.
  * @param state The [MenuItemState] of the menu item, which determines the colors.
  */
 @Composable
 internal fun MenuGridItemContent(
-    title: Text,
+    title: Text?,
     icon: MenuItemIcon,
     state: MenuItemState,
 ) {
-    BadgedIcon(
-        painter = icon.painter,
-        isHighlighted = icon.isHighlighted,
-        modifier = Modifier.size(AcornTheme.layout.size.static300),
-        size = BADGE_SIZE_SMALL,
-        contentDescription = null,
-        containerColor = MaterialTheme.colorScheme.information,
-        tint = state.secondaryContentColor,
-    )
-
-    if (title.value.isNotEmpty()) {
-        Spacer(modifier = Modifier.height(AcornTheme.layout.space.static50))
-
-        Text(
-            text = title.value,
-            style = AcornTheme.typography.caption.copy(hyphens = Hyphens.Auto),
-            color = state.contentColor,
-            maxLines = 2,
-            softWrap = true,
-            textAlign = TextAlign.Center,
+    val badgedIcon: @Composable () -> Unit = {
+        BadgedIcon(
+            painter = icon.painter,
+            isHighlighted = icon.isHighlighted,
+            modifier = Modifier.size(AcornTheme.layout.size.static300),
+            size = BADGE_SIZE_SMALL,
+            contentDescription = null,
+            containerColor = MaterialTheme.colorScheme.information,
+            tint = state.secondaryContentColor,
         )
+    }
+
+    if (title == null) {
+        Box(
+            modifier =
+                Modifier.size(AcornTheme.layout.size.static600).background(state.iconContainerColor, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            badgedIcon()
+        }
+    } else {
+        badgedIcon()
+
+        if (title.value.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(AcornTheme.layout.space.static50))
+
+            Text(
+                text = title.value,
+                style = AcornTheme.typography.caption.copy(hyphens = Hyphens.Auto),
+                color = state.contentColor,
+                maxLines = 2,
+                softWrap = true,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 

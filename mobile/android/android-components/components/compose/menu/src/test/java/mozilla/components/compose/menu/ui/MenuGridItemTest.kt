@@ -4,6 +4,8 @@
 
 package mozilla.components.compose.menu.ui
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -121,6 +123,39 @@ class MenuGridItemTest {
         composeTestRule.onNodeWithText(TITLE).performTouchInput { longClick() }
 
         assertTrue(events.isEmpty())
+    }
+
+    @Test
+    fun `GIVEN an active item with a click event WHEN clicking it THEN dispatch that event`() {
+        setItem(onClickEvent = Clicked, state = MenuItemState.ACTIVE)
+
+        composeTestRule.onNodeWithText(TITLE).assertHasClickAction().performClick()
+
+        assertEquals(listOf<MenuEvent>(Clicked), events)
+    }
+
+    @Test
+    fun `GIVEN an active item THEN icon container color is surfaceContainerLowest`() {
+        composeTestRule.setContent {
+            AcornTheme {
+                assertEquals(
+                    MaterialTheme.colorScheme.surfaceContainerLowest,
+                    MenuItemState.ACTIVE.iconContainerColor,
+                )
+                assertEquals(
+                    Color.Transparent,
+                    MenuItemState.DEFAULT.iconContainerColor,
+                )
+                assertEquals(
+                    Color.Transparent,
+                    MenuItemState.DISABLED.iconContainerColor,
+                )
+                assertEquals(
+                    Color.Transparent,
+                    MenuItemState.WARNING.iconContainerColor,
+                )
+            }
+        }
     }
 
     private fun setItem(

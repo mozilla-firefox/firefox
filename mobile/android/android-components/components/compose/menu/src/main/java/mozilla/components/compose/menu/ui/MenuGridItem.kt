@@ -30,7 +30,7 @@ import mozilla.components.ui.icons.R as iconsR
 /**
  * A menu item shown as a cell in a grid.
  *
- * @param title The title of the menu item.
+ * @param title The title of the menu item, or null to show only the icon inside a circle.
  * @param icon An icon of the menu item.
  * @param onClickEvent Optional [MenuEvent] to dispatch when the menu item is clicked.
  * @param onInteraction The callback to invoke when the menu item is interacted with.
@@ -44,7 +44,7 @@ import mozilla.components.ui.icons.R as iconsR
  */
 @Composable
 internal fun MenuGridItem(
-    title: Text,
+    title: Text?,
     icon: MenuItemIcon,
     onClickEvent: MenuEvent?,
     onInteraction: (MenuEvent) -> Unit,
@@ -88,7 +88,7 @@ internal fun MenuGridItem(
                 containerModifier
             },
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = if (title.value.isNotEmpty()) Arrangement.Top else Arrangement.Center,
+        verticalArrangement = if (title != null) Arrangement.Top else Arrangement.Center,
     ) {
         MenuGridItemContent(title, icon, state)
     }
@@ -127,6 +127,25 @@ private fun MenuGridItemWithContainerPreview() {
                 icon = MenuItemIconRes(iconsR.drawable.mozac_ic_globe_24),
                 showContainer = true,
                 shape = MaterialTheme.shapes.extraLarge,
+            )
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun MenuGridItemActivePreview() {
+    AcornTheme {
+        Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+            MenuGridItem(
+                title = null,
+                contentDescription = Text.String("Bookmarked"),
+                onClickEvent = object : MenuEvent {},
+                onInteraction = {},
+                index = 0,
+                modifier = Modifier.fillMaxWidth(),
+                icon = MenuItemIconRes(iconsR.drawable.mozac_ic_bookmark_fill_24),
+                state = MenuItemState.ACTIVE,
             )
         }
     }

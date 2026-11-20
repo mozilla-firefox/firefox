@@ -16,6 +16,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -35,7 +36,6 @@ import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
-import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiSelector
 import mozilla.components.browser.menu.R as menuR
 import mozilla.components.compose.menu.R as MozacMenuR
@@ -46,7 +46,6 @@ import org.mozilla.fenix.helpers.Constants.LONG_CLICK_DURATION
 import org.mozilla.fenix.helpers.Constants.RETRY_COUNT
 import org.mozilla.fenix.helpers.Constants.TAG
 import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
-import org.mozilla.fenix.helpers.MatcherHelper.assertUIObjectExists
 import org.mozilla.fenix.helpers.MatcherHelper.itemContainingText
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithResId
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithText
@@ -224,7 +223,7 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
         composeTestRule.shareButton().assertIsDisplayed()
         Log.i(TAG, "verifyPageMainMenuItems: Verified that the \"Share\" button exists.")
         Log.i(TAG, "verifyPageMainMenuItems: Trying to verify that the \"Bookmark page\" button exists.")
-        assertUIObjectExists(itemWithText(getStringResource(R.string.browser_menu_bookmark_this_page_2)))
+        composeTestRule.bookmarkPageButton().assertIsDisplayed()
         Log.i(TAG, "verifyPageMainMenuItems: Verified that the \"Bookmark page\" button exists.")
         Log.i(TAG, "verifyPageMainMenuItems: Trying to verify that the \"Find in page\" button exists.")
         composeTestRule.findInPageButton().assertIsDisplayed()
@@ -277,7 +276,7 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
         composeTestRule.shareButton().assertIsDisplayed()
         Log.i(TAG, "verifyPageMainMenuItemsInLandscapeMode: Verified that the \"Share\" button exists.")
         Log.i(TAG, "verifyPageMainMenuItemsInLandscapeMode: Trying to verify that the \"Bookmark page\" button exists.")
-        assertUIObjectExists(itemWithText(getStringResource(R.string.browser_menu_bookmark_this_page_2)))
+        composeTestRule.bookmarkPageButton().assertIsDisplayed()
         Log.i(TAG, "verifyPageMainMenuItemsInLandscapeMode: Verified that the \"Bookmark page\" button exists.")
         Log.i(TAG, "verifyPageMainMenuItemsInLandscapeMode: Trying to verify that the \"Find in page\" button exists.")
         composeTestRule.findInPageButton().assertIsDisplayed()
@@ -786,13 +785,19 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
                         TAG,
                         "clickRefreshButton: Waiting for $waitingTimeLong until the \"Stop\" button does not exist",
                     )
-                    composeTestRule.waitUntilDoesNotExist(hasText("Stop"), waitingTimeLong)
+                    composeTestRule.waitUntilDoesNotExist(
+                        pageControl(getStringResource(R.string.browser_menu_stop)),
+                        waitingTimeLong,
+                    )
                     Log.i(
                         TAG,
                         "clickRefreshButton: Waited for $waitingTimeLong until the \"Stop\" button does not exist",
                     )
                     Log.i(TAG, "clickRefreshButton: Waiting for $waitingTime until the \"Refresh\" button exists")
-                    composeTestRule.waitUntilAtLeastOneExists(hasText("Refresh"), waitingTime)
+                    composeTestRule.waitUntilAtLeastOneExists(
+                        pageControl(getStringResource(R.string.browser_menu_refresh)),
+                        waitingTime,
+                    )
                     Log.i(TAG, "clickRefreshButton: Waited for $waitingTime until the \"Refresh\" button exists")
                 } catch (e: ComposeTimeoutException) {
                     Log.i(TAG, "clickRefreshButton: ComposeTimeoutException caught, executing fallback methods")
@@ -813,7 +818,9 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
 
         fun forceRefreshPage(interact: BrowserRobot.() -> Unit): BrowserRobot.Transition {
             Log.i(TAG, "forceRefreshPage: Trying to long click the \"Refresh\" button")
-            mDevice.findObject(By.text(getStringResource(R.string.browser_menu_refresh))).click(LONG_CLICK_DURATION)
+            composeTestRule.refreshButton().performTouchInput {
+                longClick(durationMillis = LONG_CLICK_DURATION)
+            }
             Log.i(TAG, "forceRefreshPage: Long clicked the \"Refresh\" button")
 
             BrowserRobot(composeTestRule).interact()
@@ -1072,13 +1079,19 @@ private fun shareAllTabsButton() = onView(allOf(withText("Share all tabs"))).inR
 
 // ComposeMainMenu
 
-private fun ComposeTestRule.backButton() = onNodeWithText("Back")
+/** A page control of the main menu, excluding toolbar buttons with the same content description. */
+private fun pageControl(description: String) =
+    hasContentDescription(description).and(hasAnyAncestor(hasTestTag(MenuTestTag.MAIN_MENU)))
 
-private fun ComposeTestRule.forwardButton() = onNodeWithText("Forward")
+private fun ComposeTestRule.pageControlButton(description: String) = onNode(pageControl(description))
 
-private fun ComposeTestRule.refreshButton() = onNodeWithText("Refresh")
+private fun ComposeTestRule.backButton() = pageControlButton(getStringResource(R.string.browser_menu_back))
 
-private fun ComposeTestRule.shareButton() = onNodeWithText("Share")
+private fun ComposeTestRule.forwardButton() = pageControlButton(getStringResource(R.string.browser_menu_forward))
+
+private fun ComposeTestRule.refreshButton() = pageControlButton(getStringResource(R.string.browser_menu_refresh))
+
+private fun ComposeTestRule.shareButton() = pageControlButton(getStringResource(R.string.browser_menu_share))
 
 /** The menu items are in a lazy list, which only has nodes for the items scrolled into view. */
 private fun ComposeTestRule.scrollMainMenuTo(text: String) =
@@ -1119,7 +1132,7 @@ private fun ComposeTestRule.toolsMenuButton() = onNodeWithTag("mainMenu.tools")
 private fun ComposeTestRule.saveMenuButton() = onNodeWithTag("mainMenu.save")
 
 private fun ComposeTestRule.bookmarkPageButton() =
-    onNodeWithText(getStringResource(R.string.browser_menu_bookmark_this_page_2))
+    pageControlButton(getStringResource(R.string.browser_menu_bookmark_this_page_2))
 
 private fun ComposeTestRule.desktopSiteButton() = onNodeWithText(getStringResource(R.string.browser_menu_desktop_site))
 
@@ -1148,7 +1161,7 @@ private fun ComposeTestRule.disabledDesktopSiteButton() =
 // Save sub menu items
 
 private fun ComposeTestRule.editBookmarkButton() =
-    onNodeWithText(getStringResource(R.string.browser_menu_edit_bookmark))
+    pageControlButton(getStringResource(R.string.browser_menu_edit_bookmark))
 
 private fun ComposeTestRule.addToShortcutsButton() =
     onNodeWithText(getStringResource(R.string.browser_menu_add_to_shortcuts))

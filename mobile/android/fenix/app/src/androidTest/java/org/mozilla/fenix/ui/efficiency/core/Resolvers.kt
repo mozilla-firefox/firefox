@@ -150,6 +150,7 @@ object Resolvers {
             Extra.STATE_DESC -> base and SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, second)
             Extra.CLICKABLE_WITHOUT_TEXT -> base and hasClickAction() and !hasText(second)
             Extra.EDITABLE_UNDER -> hasSetTextAction() and hasAnyAncestor(hasTestTag(selector.value))
+            Extra.ANCESTOR_TAG -> base and hasAnyAncestor(hasTestTag(second))
             else -> base
         }
     }

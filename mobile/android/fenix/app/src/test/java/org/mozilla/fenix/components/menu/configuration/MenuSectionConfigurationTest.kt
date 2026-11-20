@@ -5,6 +5,7 @@
 package org.mozilla.fenix.components.menu.configuration
 
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.MenuItemsGroup
@@ -52,5 +53,29 @@ class MenuSectionConfigurationTest {
 
         assertEquals(Text.Resource(name), row.asMenuItemsGroup(shownItems).name)
         assertEquals(Text.Resource(name), grid.asMenuItemsGroup(shownItems).name)
+    }
+
+    @Test
+    fun `GIVEN a grid section not showing titles WHEN getting its menu group THEN the grid doesn't show titles`() {
+        val section =
+            MenuSectionConfiguration(
+                id = "section",
+                presentationMode = Grid,
+                items = listOf(FindInPage),
+                showTitles = false,
+            )
+
+        assertEquals(
+            MenuItemsGroup.Grid(id = "section", items = shownItems, showTitles = false),
+            section.asMenuItemsGroup(shownItems),
+        )
+    }
+
+    @Test
+    fun `GIVEN a grid section with default settings WHEN getting its menu group THEN the grid shows titles`() {
+        val section = MenuSectionConfiguration(id = "section", presentationMode = Grid, items = listOf(FindInPage))
+
+        assertTrue(section.showTitles)
+        assertTrue((section.asMenuItemsGroup(shownItems) as MenuItemsGroup.Grid).showTitles)
     }
 }

@@ -8,6 +8,7 @@ import mozilla.components.compose.browser.toolbar.R as composeBrowserToolbarR
 import mozilla.components.compose.browser.toolbar.concept.BrowserToolbarTestTags.ADDRESSBAR_URL_BOX
 import mozilla.components.feature.customtabs.R as customtabsR
 import org.mozilla.fenix.R
+import org.mozilla.fenix.components.menu.MenuTestTag
 import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
 import org.mozilla.fenix.helpers.TestHelper.appName
 import org.mozilla.fenix.ui.efficiency.helpers.PageReadinessProfiles
@@ -52,32 +53,36 @@ object CustomTabsSelectors : SelectorContainer {
     // Main-menu items (visible after opening the custom-tab menu)
     val MENU_BACK =
         Selector(
-            strategy = SelectorStrategy.UIAUTOMATOR_WITH_TEXT_CONTAINS,
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION_UNDER_TAG,
             value = getStringResource(R.string.browser_menu_back),
+            secondaryValue = MenuTestTag.MAIN_MENU,
             description = "Custom tab menu: Back",
             groups = setOf(Group.CUSTOM_TAB_MAIN_MENU_ITEMS),
         )
 
     val MENU_FORWARD =
         Selector(
-            strategy = SelectorStrategy.UIAUTOMATOR_WITH_TEXT_CONTAINS,
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION_UNDER_TAG,
             value = getStringResource(R.string.browser_menu_forward),
+            secondaryValue = MenuTestTag.MAIN_MENU,
             description = "Custom tab menu: Forward",
             groups = setOf(Group.CUSTOM_TAB_MAIN_MENU_ITEMS),
         )
 
     val MENU_REFRESH =
         Selector(
-            strategy = SelectorStrategy.UIAUTOMATOR_WITH_TEXT_CONTAINS,
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION_UNDER_TAG,
             value = getStringResource(R.string.browser_menu_refresh),
+            secondaryValue = MenuTestTag.MAIN_MENU,
             description = "Custom tab menu: Refresh",
             groups = setOf(Group.CUSTOM_TAB_MAIN_MENU_ITEMS),
         )
 
     val MENU_SHARE =
         Selector(
-            strategy = SelectorStrategy.UIAUTOMATOR_WITH_TEXT_CONTAINS,
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION_UNDER_TAG,
             value = getStringResource(R.string.browser_menu_share),
+            secondaryValue = MenuTestTag.MAIN_MENU,
             description = "Custom tab menu: Share",
             groups = setOf(Group.CUSTOM_TAB_MAIN_MENU_ITEMS),
         )
@@ -118,11 +123,12 @@ object CustomTabsSelectors : SelectorContainer {
     // element type: a UIAutomator UiObject gets UiObject.longClick() (the ~500ms system long-press
     // timeout), which this Compose button does not register as a long press — it lands as a plain
     // click and just navigates back. The Compose path instead does composeLongClick(5000ms), matching
-    // the legacy robot's onNodeWithText("Back") + LONG_CLICK_DURATION.
+    // the legacy robot's backButton() + LONG_CLICK_DURATION.
     val MENU_BACK_COMPOSE =
         Selector(
-            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION_UNDER_TAG,
             value = getStringResource(R.string.browser_menu_back),
+            secondaryValue = MenuTestTag.MAIN_MENU,
             description = "Custom tab menu: Back (Compose, for long-press)",
         )
 

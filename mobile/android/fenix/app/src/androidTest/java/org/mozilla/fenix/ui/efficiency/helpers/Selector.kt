@@ -54,6 +54,10 @@ enum class SelectorStrategy {
     /** Supported strategies for locating UI elements. */
     COMPOSE_BY_CONTENT_DESCRIPTION,
     COMPOSE_BY_CONTENT_DESCRIPTION_SUBSTRING,
+
+    // A node whose content description is value, inside the node tagged secondaryValue. Tells an icon-only menu
+    // item apart from a toolbar button with the same content description.
+    COMPOSE_BY_CONTENT_DESCRIPTION_UNDER_TAG,
     COMPOSE_BY_TAG,
     COMPOSE_BY_TAG_AND_TEXT,
 

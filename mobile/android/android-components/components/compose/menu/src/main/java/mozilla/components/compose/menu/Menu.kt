@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.data.MenuAttribution
@@ -103,12 +104,8 @@ fun Menu(
                 listState = listState,
                 scrollableGroups = scrollableGroups,
                 onInteraction = onInteraction,
-                topPadding =
-                    if (headerGroup != null) {
-                        AcornTheme.layout.space.static150
-                    } else {
-                        AcornTheme.layout.space.static100
-                    },
+                topPadding = if (headerGroup != null) 0.dp else AcornTheme.layout.space.static100,
+                bottomPadding = if (footerGroup != null) 0.dp else AcornTheme.layout.space.static100,
                 modifier = Modifier.weight(1f, fill = false),
             )
 
@@ -134,6 +131,7 @@ private fun MenuContent(
     scrollableGroups: List<MenuItemsGroup>,
     onInteraction: (MenuEvent) -> Unit,
     topPadding: Dp,
+    bottomPadding: Dp,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -142,7 +140,7 @@ private fun MenuContent(
         contentPadding =
             PaddingValues(
                 top = topPadding,
-                bottom = AcornTheme.layout.space.static100,
+                bottom = bottomPadding,
             ),
         verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static150),
     ) {
@@ -173,6 +171,7 @@ private fun MenuGroupContent(
                 onInteraction = onInteraction,
                 modifier = modifier,
                 isSticky = isSticky,
+                showTitles = group.showTitles,
                 backgroundColor = backgroundColor,
             )
         }
@@ -196,8 +195,14 @@ private fun MenuHeader(
     onInteraction: (MenuEvent) -> Unit,
     backgroundColor: Color,
 ) {
-    Column(modifier = Modifier.background(backgroundColor).padding(top = AcornTheme.layout.space.static100)) {
-        MenuGroupContent(headerGroup, onInteraction, isSticky = true, backgroundColor = backgroundColor)
+    Column(modifier = Modifier.background(backgroundColor).padding(top = AcornTheme.layout.space.static150)) {
+        MenuGroupContent(
+            headerGroup,
+            onInteraction,
+            modifier = Modifier.padding(bottom = AcornTheme.layout.space.static100),
+            isSticky = true,
+            backgroundColor = backgroundColor,
+        )
 
         if (showDivider) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -212,12 +217,18 @@ private fun MenuFooter(
     onInteraction: (MenuEvent) -> Unit,
     backgroundColor: Color,
 ) {
-    Column(modifier = Modifier.background(backgroundColor)) {
+    Column(modifier = Modifier.background(backgroundColor).padding(bottom = AcornTheme.layout.space.static150)) {
         if (showDivider) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
 
-        MenuGroupContent(footerGroup, onInteraction, isSticky = true, backgroundColor = backgroundColor)
+        MenuGroupContent(
+            footerGroup,
+            onInteraction,
+            modifier = Modifier.padding(top = AcornTheme.layout.space.static100),
+            isSticky = true,
+            backgroundColor = backgroundColor,
+        )
     }
 }
 

@@ -144,9 +144,10 @@ object BrowserMenuConfiguration {
             MenuSectionConfiguration(
                 id = PAGE_CONTROLS_GROUP_ID,
                 presentationMode = Grid,
-                items = listOf(Back, Forward, Share, Refresh),
+                items = listOf(Back, Forward, Bookmark, Share, Refresh),
                 isSticky = true,
                 name = R.string.browser_menu_section_page_controls,
+                showTitles = false,
             )
         val rest =
             listOf(
@@ -165,7 +166,6 @@ object BrowserMenuConfiguration {
                     presentationMode = Row,
                     items =
                         listOf(
-                            Bookmark,
                             FindInPage,
                             DesktopSite,
                             Extensions,

@@ -39,12 +39,14 @@ import mozilla.components.ui.icons.R as iconsR
  *   width of the menu, are not shown.
  * @param modifier The modifier to apply to this layout.
  * @param contentAlpha Alpha applied to content.
+ * @param showTitles Whether to show the titles of the items.
  */
 @Composable
 internal fun CustomizeMenuGridContainer(
     items: List<MenuItem>,
     modifier: Modifier = Modifier,
     contentAlpha: Float = 1f,
+    showTitles: Boolean = true,
 ) {
     val displayedItems = remember(items) { items.displayedInGrid() }
     Row(
@@ -61,12 +63,12 @@ internal fun CustomizeMenuGridContainer(
             val icon = item.icon ?: return@forEachIndexed
 
             MenuGridItem(
-                title = item.title.text,
+                title = if (showTitles) item.title.text else null,
                 icon = icon,
                 onClickEvent = null,
                 onInteraction = {},
                 modifier = Modifier.weight(1f).fillMaxHeight().alpha(contentAlpha),
-                contentDescription = item.contentDescription,
+                contentDescription = item.contentDescription ?: if (showTitles) null else item.title.text,
                 index = index,
                 state = item.state,
                 showContainer = true,
