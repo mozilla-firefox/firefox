@@ -1201,23 +1201,12 @@ WebTransportParent::OnIncomingBidirectionalStreamAvailable(
       continue;
     }
 
-    // neqo's implementation-defined default max age (a small multiple of
-    // the RTT, with a floor) bounds how long a datagram waits in its
-    // queue.  The write timestamp also counts the connection setup for a
-    // datagram written before the session was ready, and the IPC transit
-    // from the content process, which on a loaded machine can alone exceed
-    // that bound.  Neither is time spent queued behind the network, so
-    // unless the page set an explicit outgoingMaxAge, age the datagram from
-    // its arrival here.
-    TimeStamp timestamp =
-        std::isfinite(mDatagramMaxAge) ? datagram.timestamp() : now;
-
     // neqo's queue requires a session's timestamps to be non-decreasing.
     // Writes from several writables, flushed one writable at a time at
     // connect, need not be, so never go backwards.
     if (mLastOutgoingDatagramTimestamp.IsNull() ||
-        timestamp > mLastOutgoingDatagramTimestamp) {
-      mLastOutgoingDatagramTimestamp = timestamp;
+        datagram.timestamp() > mLastOutgoingDatagramTimestamp) {
+      mLastOutgoingDatagramTimestamp = datagram.timestamp();
     }
 
     // Send to neqo's datagram queue, untracked. The sent/expired/dropped
@@ -1293,6 +1282,10 @@ void WebTransportParent::MaybeSendDatagramCapacity() {
        aOutgoingMaxBufferedDatagrams, aOutgoingMaxAge));
   MOZ_ASSERT(mSocketThread->IsOnCurrentThread());
   MOZ_ASSERT(mWebTransport);
+  // The outgoingMaxAge setter throws for these.
+  if (std::isnan(aOutgoingMaxAge) || aOutgoingMaxAge <= 0.) {
+    return IPC_FAIL(this, "Invalid outgoingMaxAge");
+  }
   mWebTransport->SetDatagramMaxBufferedDatagrams(aOutgoingMaxBufferedDatagrams);
   mWebTransport->SetDatagramMaxAge(aOutgoingMaxAge);
   mDatagramMaxAge = aOutgoingMaxAge;
