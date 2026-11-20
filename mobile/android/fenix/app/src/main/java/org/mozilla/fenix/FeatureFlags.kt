@@ -26,10 +26,4 @@ object FeatureFlags {
      * ⚠️ DO NOT MODIFY THIS FLAG IN PRODUCTION.
      */
     val onboardingFeatureEnabled = !Config.channel.isDebug
-
-    /** Enables haptic feedback during onboarding. */
-    val onboardingHapticsEnabled = Config.channel.isNightlyOrDebug
-
-    /** Shows the animated kit illustration instead of the static one on the onboarding terms of use page. */
-    val onboardingKitAnimationEnabled = Config.channel.isNightlyOrDebug
 }

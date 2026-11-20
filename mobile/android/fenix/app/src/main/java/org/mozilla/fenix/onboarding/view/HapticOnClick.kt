@@ -7,12 +7,12 @@ package org.mozilla.fenix.onboarding.view
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import org.mozilla.fenix.FeatureFlags
+import org.mozilla.fenix.nimbus.FxNimbus
 
 /** Wraps [onClick] so that pressing an onboarding button also plays a confirmation haptic. */
 @Composable
 internal fun hapticOnClick(onClick: () -> Unit): () -> Unit {
-    if (!FeatureFlags.onboardingHapticsEnabled) return onClick
+    if (!FxNimbus.features.onboardingHaptics.value().enabled) return onClick
     val haptic = LocalHapticFeedback.current
     return {
         haptic.performHapticFeedback(HapticFeedbackType.Confirm)
@@ -23,7 +23,7 @@ internal fun hapticOnClick(onClick: () -> Unit): () -> Unit {
 /** Wraps a link's [onClick] so that pressing an onboarding link also plays a confirmation haptic. */
 @Composable
 internal fun hapticOnLinkClick(onClick: (String) -> Unit): (String) -> Unit {
-    if (!FeatureFlags.onboardingHapticsEnabled) return onClick
+    if (!FxNimbus.features.onboardingHaptics.value().enabled) return onClick
     val haptic = LocalHapticFeedback.current
     return { url ->
         haptic.performHapticFeedback(HapticFeedbackType.Confirm)
@@ -34,7 +34,7 @@ internal fun hapticOnLinkClick(onClick: (String) -> Unit): (String) -> Unit {
 /** Wraps [onCheckedChange] so that flipping an onboarding toggle also plays the matching toggle haptic. */
 @Composable
 internal fun hapticOnCheckedChange(onCheckedChange: (Boolean) -> Unit): (Boolean) -> Unit {
-    if (!FeatureFlags.onboardingHapticsEnabled) return onCheckedChange
+    if (!FxNimbus.features.onboardingHaptics.value().enabled) return onCheckedChange
     val haptic = LocalHapticFeedback.current
     return { checked ->
         haptic.performHapticFeedback(if (checked) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)

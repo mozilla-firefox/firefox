@@ -41,9 +41,9 @@ import mozilla.components.compose.base.LinkText
 import mozilla.components.compose.base.LinkTextState
 import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.ui.animation.AnimatedIllustration
-import org.mozilla.fenix.FeatureFlags
 import org.mozilla.fenix.R
 import org.mozilla.fenix.compose.ScrollIndicator
+import org.mozilla.fenix.nimbus.FxNimbus
 import org.mozilla.fenix.theme.FirefoxTheme
 
 private val TOU_IMAGE_HEIGHT = 176.dp
@@ -132,7 +132,7 @@ fun TermsOfServiceOnboardingPage(
 
 @Composable
 private fun Header(pageState: OnboardingPageState) {
-    if (FeatureFlags.onboardingKitAnimationEnabled) {
+    if (FxNimbus.features.onboardingKitAnimation.value().enabled) {
         AnimatedIllustration(
             animationResource = R.raw.terms_of_use_hero_animation,
             staticDrawableResource = R.drawable.terms_of_use_hero,

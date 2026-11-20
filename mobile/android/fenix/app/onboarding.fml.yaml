@@ -109,6 +109,38 @@ features:
         value:
           enabled: true
 
+  onboarding-haptics:
+    description: Feature to enable haptic feedback during onboarding.
+    variables:
+      enabled:
+        description: If true, the feature is enabled.
+        type: Boolean
+        default: false
+    defaults:
+      - channel: developer
+        value:
+          enabled: true
+      - channel: nightly
+        value:
+          enabled: true
+
+  onboarding-kit-animation:
+    description: >
+      Feature to show the animated kit illustration instead of the static one on the onboarding
+      terms of use page.
+    variables:
+      enabled:
+        description: If true, the feature is enabled.
+        type: Boolean
+        default: false
+    defaults:
+      - channel: developer
+        value:
+          enabled: true
+      - channel: nightly
+        value:
+          enabled: true
+
 objects:
 
   OnboardingCardData:
