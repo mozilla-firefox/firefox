@@ -39,7 +39,7 @@ registerCleanupFunction(() => {
 });
 
 const pps = Cc["@mozilla.org/network/protocol-proxy-service;1"].getService();
-const { ADB, NodeServer } = ChromeUtils.importESModule(
+const { ADB, NodeLegacyHTTP2Server, NodeServer } = ChromeUtils.importESModule(
   "resource://testing-common/NodeServer.sys.mjs"
 );
 
@@ -323,6 +323,7 @@ async function proxy_session_to_origin_server_counter() {
   return parseInt(data) - initial_session_count;
 }
 let processId;
+let origin;
 add_setup(async function setup() {
   // Set to allow the cert presented by our H2 server
   do_get_profile();
@@ -334,8 +335,32 @@ add_setup(async function setup() {
   );
   addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
 
-  let server_port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(server_port, null);
+  origin = new NodeLegacyHTTP2Server();
+  await origin.start();
+  await origin.setRequestHandler((req, res) => {
+    const path = new URL(req.url, "https://localhost").pathname;
+    if (path == "/750ms" || path == "/750msNoData") {
+      // eslint-disable-next-line mozilla/no-arbitrary-setTimeout
+      setTimeout(() => {
+        res.writeHead(200);
+        if (path == "/750ms") {
+          res.end("It's all good 750ms.");
+        }
+      }, 750);
+      return;
+    }
+    // node-http2 encodes these headers illegally. The soft one fails only the
+    // stream, the hard one fails the whole session.
+    if (path == "/illegalhpacksoft") {
+      res.setHeader("x-softillegalhpack", "true");
+    } else if (path == "/illegalhpackhard") {
+      res.setHeader("x-hardillegalhpack", "true");
+    }
+    res.setHeader("Content-Type", "text/html");
+    res.writeHead(200);
+    res.end(`<body>You Win! (by requesting${path})</body>`);
+  });
+  let server_port = origin.port();
   processId = await NodeServer.fork();
   await NodeServer.execute(processId, `serverPort = ${server_port}`);
   await NodeServer.execute(processId, ADB);
@@ -373,6 +398,9 @@ registerCleanupFunction(async () => {
 
   await NodeServer.execute(processId, `http2ProxyCode.closeProxy()`);
   await NodeServer.kill(processId);
+  // Stopped after the proxy, which throws when its tunnels to the origin get
+  // reset, as they do on Windows when the origin's process is killed.
+  await origin.stop();
 });
 
 /**

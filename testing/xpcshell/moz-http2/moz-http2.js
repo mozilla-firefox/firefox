@@ -155,13 +155,10 @@ var runlater = function () {};
 runlater.prototype = {
   req: null,
   resp: null,
-  fin: true,
 
   onTimeout: function onTimeout() {
     this.resp.writeHead(200);
-    if (this.fin) {
-      this.resp.end("It's all good 750ms.");
-    }
+    this.resp.end("It's all good 750ms.");
   },
 };
 
@@ -215,13 +212,6 @@ function handleRequestImpl(req, res) {
     let rl = new runlater();
     rl.req = req;
     rl.resp = res;
-    setTimeout(executeRunLater, 750, rl);
-    return;
-  } else if (u.pathname === "/750msNoData") {
-    let rl = new runlater();
-    rl.req = req;
-    rl.resp = res;
-    rl.fin = false;
     setTimeout(executeRunLater, 750, rl);
     return;
   } else if (u.pathname === "/multiplex1" && req.httpVersionMajor === 2) {
