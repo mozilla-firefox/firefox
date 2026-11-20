@@ -1219,6 +1219,12 @@ void WebTransport::Close(const WebTransportCloseInfo& aOptions,
   closeInfo.mCloseCode = aOptions.mCloseCode;
   closeInfo.mReason = aOptions.mReason;
 
+  // Datagrams written before close() go out ahead of the close; Cleanup()
+  // discards whatever is still batched.
+  if (mDatagrams) {
+    mDatagrams->FlushOutgoingDatagrams();
+  }
+
   mChild->SendClose(
       aOptions.mCloseCode, reason,
       [self, error, closeInfo](Maybe<WebTransportStatsData>&& aStats) {

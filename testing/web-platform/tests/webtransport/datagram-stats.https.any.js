@@ -61,3 +61,32 @@ promise_test(async t => {
   const stats = await wt.getStats();
   assert_equals(stats.datagrams.expiredOutgoing, 0);
 }, "WebTransport client should not expire datagrams because of outgoingMaxBufferedDatagrams");
+
+promise_test(async t => {
+  const wt = new WebTransport(webtransport_url('echo.py'));
+  t.add_cleanup(() => wt.close());
+
+  // Written before the connection is up, so every datagram is older than
+  // outgoingMaxAge by the time sending can start.
+  wt.datagrams.outgoingMaxBufferedDatagrams = 100;
+  wt.datagrams.outgoingMaxAge = 1;
+
+  const numDatagrams = 100;
+  const writer = wt.datagrams.writable.getWriter();
+  const promises = [];
+  while (promises.length < numDatagrams) {
+    promises.push(writer.write(new Uint8Array(1024)));
+  }
+  await wt.ready;
+  await Promise.all(promises);
+
+  let stats;
+  for (let i = 0; i < 40; i++) {
+    await wait(50);
+    stats = await wt.getStats();
+    if (stats.datagrams.expiredOutgoing >= numDatagrams) {
+      break;
+    }
+  }
+  assert_equals(stats.datagrams.expiredOutgoing, numDatagrams);
+}, "WebTransport datagrams written before connect all expire when outgoingMaxAge is exceeded by connect time");

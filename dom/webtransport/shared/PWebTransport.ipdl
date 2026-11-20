@@ -101,6 +101,12 @@ async protocol PWebTransport
   /**
   * IPC for sending webtransport datagrams.
   *
+  * Datagrams are batched: the first one queued posts a runnable to the
+  * current thread, and everything queued before it runs goes out in one
+  * message, or earlier once the batch reaches 64KB.  Unlike
+  * IncomingDatagrams, there is no per-datagram task-posting concern here:
+  * nothing on the egress path needs a microtask checkpoint between datagrams.
+  *
   * @param datagrams the datagrams to send, oldest first
   */
   async OutgoingDatagrams(OutgoingDatagram[] datagrams);

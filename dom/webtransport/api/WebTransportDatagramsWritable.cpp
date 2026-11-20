@@ -127,13 +127,6 @@ void WebTransportDatagramsWritable::Cleanup() {
   }
 }
 
-void WebTransportDatagramsWritable::UpdateQueueParams(
-    uint32_t aMaxBufferedDatagrams, double aMaxAge) {
-  if (mAlgorithms) {
-    mAlgorithms->UpdateQueueParams(aMaxBufferedDatagrams, aMaxAge);
-  }
-}
-
 void WebTransportDatagramsWritable::RetireInFlight(uint64_t aCount) {
   if (mAlgorithms) {
     mAlgorithms->RetireInFlight(aCount);

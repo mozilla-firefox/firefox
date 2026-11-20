@@ -79,20 +79,21 @@ void WebTransportDatagramDuplexStream::Init(bool aUseByteStream,
 }
 
 void WebTransportDatagramDuplexStream::SetChild(WebTransportChild* aChild) {
-  mOutgoingAlgorithms->SetChild(aChild);
-  mOutgoingAlgorithms->UpdateQueueParams(
+  // The parent must know outgoingMaxAge before it sees any pre-connect
+  // datagram: queuing them below can flush a batch straight away.
+  aChild->SendUpdateDatagramQueueParams(
       mOutgoingMaxBufferedDatagrams,
       mOutgoingMaxAge.IsNull() ? NAN : mOutgoingMaxAge.Value());
+  mOutgoingAlgorithms->SetChild(aChild);
   for (auto& writable : mCreatedWritables) {
     writable->SetChild(aChild);
-    writable->UpdateQueueParams(
-        mOutgoingMaxBufferedDatagrams,
-        mOutgoingMaxAge.IsNull() ? NAN : mOutgoingMaxAge.Value());
   }
   mCreatedWritables.Clear();
 
-  // Every algorithms instance above just moved its mWaitConnectQueue into
-  // mPendingOutgoing; send them together.
+  // Every algorithms instance above just queued its mWaitConnectQueue via
+  // QueueOutgoingDatagram(); flush that initial batch now rather than
+  // waiting for a posted runnable, since this is already a known batch
+  // boundary.
   FlushOutgoingDatagrams();
 }
 
@@ -133,6 +134,8 @@ void WebTransportDatagramDuplexStream::SetOutgoingMaxAge(
   // Step 3
   mOutgoingMaxAge = value;
 
+  // Keep the new params ordered after datagrams already written.
+  FlushOutgoingDatagrams();
   // NaN tells the parent outgoingMaxAge is null; the setter rejects a real NaN.
   mOutgoingAlgorithms->UpdateQueueParams(
       mOutgoingMaxBufferedDatagrams,
@@ -156,6 +159,7 @@ void WebTransportDatagramDuplexStream::SetOutgoingMaxBufferedDatagrams(
   // write promise (see WriteCallbackImpl), so the controller HWM is unchanged.
 
   // Send updated parameters to parent/neqo
+  FlushOutgoingDatagrams();
   mOutgoingAlgorithms->UpdateQueueParams(
       mOutgoingMaxBufferedDatagrams,
       mOutgoingMaxAge.IsNull() ? NAN : mOutgoingMaxAge.Value());
@@ -472,8 +476,26 @@ static constexpr size_t kMaxOutgoingMessageDatagrams = 1024;
 
 void WebTransportDatagramDuplexStream::QueueOutgoingDatagram(
     OutgoingDatagram&& aDatagram) {
+  mPendingOutgoingBytes += aDatagram.data().Length();
   mPendingOutgoing.AppendElement(std::move(aDatagram));
-  FlushOutgoingDatagrams();
+
+  if (mPendingOutgoingBytes >= kMaxOutgoingMessageBytes) {
+    FlushOutgoingDatagrams();
+    return;
+  }
+  if (mOutgoingFlushPending) {
+    return;
+  }
+  mOutgoingFlushPending = true;
+  nsresult rv = NS_DispatchToCurrentThread(NS_NewRunnableFunction(
+      "WebTransportDatagramDuplexStream::QueueOutgoingDatagram",
+      [self = RefPtr{this}]() {
+        self->mOutgoingFlushPending = false;
+        self->FlushOutgoingDatagrams();
+      }));
+  if (NS_FAILED(rv)) {
+    mOutgoingFlushPending = false;
+  }
 }
 
 void WebTransportDatagramDuplexStream::FlushOutgoingDatagrams() {
@@ -484,7 +506,7 @@ void WebTransportDatagramDuplexStream::FlushOutgoingDatagrams() {
   WebTransportChild* child = mOutgoingAlgorithms->GetChild();
   MOZ_ASSERT(child);
 
-  LOG(("Flushing %zu outgoing datagrams", mPendingOutgoing.Length()));
+  LOG(("Flushing %zu batched outgoing datagrams", mPendingOutgoing.Length()));
   // Fire-and-forget: datagrams are sent untracked, so there is no reply to
   // wait for. If the actor is already dead, Send* below just fails
   // (returns false) having done nothing -- WebTransportChild::ActorDestroy()
@@ -504,6 +526,7 @@ void WebTransportDatagramDuplexStream::FlushOutgoingDatagrams() {
     }
   }
   mPendingOutgoing.Clear();
+  mPendingOutgoingBytes = 0;
 }
 
 already_AddRefed<Promise> OutgoingDatagramStreamAlgorithms::WriteCallbackImpl(
@@ -624,7 +647,7 @@ void OutgoingDatagramStreamAlgorithms::SetChild(WebTransportChild* aChild) {
   // Send all queued datagrams
   for (auto& queued : mWaitConnectQueue) {
     uint64_t sendGroupId = mSendGroup ? mSendGroup->GetGroupId() : 0;
-    mDatagrams->mPendingOutgoing.AppendElement(
+    mDatagrams->QueueOutgoingDatagram(
         OutgoingDatagram(std::move(queued.mEntry->mBuffer),
                          queued.mEntry->mTimeStamp, sendGroupId, mSendOrder));
   }
@@ -737,6 +760,13 @@ void WebTransportDatagramDuplexStream::Cleanup() {
   for (const auto& writable : mAllWritables) {
     writable->Cleanup();
   }
+  // Every promise queued here was already resolved above
+  // (mPendingDatagramPromises tracks it from write() time, before it ever
+  // reaches this batch), so there is nothing left to notify; drop the batch
+  // itself so a flush already posted for later becomes a no-op instead of
+  // sending stale data for a torn-down session.
+  mPendingOutgoing.Clear();
+  mPendingOutgoingBytes = 0;
 }
 
 // static
