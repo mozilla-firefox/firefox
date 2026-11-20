@@ -77,15 +77,11 @@ void WebTransportChild::CloseAll() {
   return IPC_OK();
 }
 
-::mozilla::ipc::IPCResult WebTransportChild::RecvDatagramCapacity(
-    const uint64_t& aCumulativeDatagrams, const uint64_t& aCumulativeBytes,
-    const uint64_t& aSentDelta, const uint64_t& aExpiredDelta,
-    const uint64_t& aDroppedDelta, const uint64_t& aDatagramPrefixBytes) {
+::mozilla::ipc::IPCResult WebTransportChild::RecvDatagramReady(
+    const uint64_t& aDatagramId) {
   if (mTransport) {
     RefPtr<WebTransport> self(mTransport);
-    self->OnDatagramCapacity(aCumulativeDatagrams, aCumulativeBytes, aSentDelta,
-                             aExpiredDelta, aDroppedDelta,
-                             aDatagramPrefixBytes);
+    self->OnDatagramReady(aDatagramId);
   }
   return IPC_OK();
 }

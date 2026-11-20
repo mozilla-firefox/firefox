@@ -68,8 +68,9 @@ class WebTransportSessionBase {
   virtual void SetAnticipatedConcurrentIncomingBidirectionalStreams(
       uint16_t aValue) = 0;
   // aTimestamp is when the datagram was written, for outgoingMaxAge.
-  virtual void SendDatagram(nsTArray<uint8_t>&& aData, uint64_t aSendGroupId,
-                            int64_t aSendOrder, TimeStamp aTimestamp) = 0;
+  virtual void SendDatagram(nsTArray<uint8_t>&& aData, uint64_t aTrackingId,
+                            uint64_t aSendGroupId, int64_t aSendOrder,
+                            TimeStamp aTimestamp) = 0;
   virtual void SetDatagramMaxBufferedDatagrams(
       uint32_t aMaxBufferedDatagrams) = 0;
   virtual void SetDatagramMaxAge(double aMaxAge) = 0;

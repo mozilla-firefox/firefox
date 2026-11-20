@@ -149,10 +149,6 @@ class WebTransportSessionProxy final
   bool CloseSessionAndGetStats(uint32_t aStatus, const nsACString& aReason,
                                mozilla::dom::WebTransportStatsData& aStats);
 
-  bool GetDatagramQueueCapacity(size_t* aRemainingBytes,
-                                size_t* aQueuedDatagrams,
-                                size_t* aMaxQueuedBytes);
-
   bool GetDatagramSessionStats(uint64_t* aSent, uint64_t* aExpired,
                                uint64_t* aDropped);
 
@@ -182,8 +178,9 @@ class WebTransportSessionProxy final
   void DoCreateStream(WebTransportStreamCallbackWrapper* aCallback,
                       WebTransportSessionBase* aSession, bool aBidi);
   void SendDatagramInternal(const RefPtr<WebTransportSessionBase>& aSession,
-                            nsTArray<uint8_t>&& aData, uint64_t aSendGroupId,
-                            int64_t aSendOrder, TimeStamp aTimestamp);
+                            nsTArray<uint8_t>&& aData, uint64_t aTrackingId,
+                            uint64_t aSendGroupId, int64_t aSendOrder,
+                            TimeStamp aTimestamp);
   void NotifyDatagramReceived(nsTArray<uint8_t>&& aData);
   void NotifyOutgoingDatagramSpaceAvailable();
   void GetMaxDatagramSizeInternal(
@@ -193,6 +190,8 @@ class WebTransportSessionProxy final
   void GetStatsInternal(const RefPtr<WebTransportSessionBase>& aSession);
   void OnStatsAvailableInternal(
       const Maybe<mozilla::dom::WebTransportStatsData>& aStats);
+  void OnOutgoingDatagramOutComeInternal(
+      uint64_t aId, WebTransportSessionEventListener::DatagramOutcome aOutCome);
   void OnStopSendingInternal(uint64_t aStreamId, uint64_t aErrorCode);
   void OnResetReceivedInternal(uint64_t aStreamId, uint64_t aErrorCode);
   void SetDatagramMaxBufferedDatagramsInternal(

@@ -46,6 +46,11 @@ WebTransportListener.prototype = {
       this.onMaxDatagramSize(size);
     }
   },
+  onOutgoingDatagramOutCome(id, outcome) {
+    if (this.onDatagramOutcome) {
+      this.onDatagramOutcome({ id, outcome });
+    }
+  },
 
   QueryInterface: ChromeUtils.generateQI(["WebTransportSessionEventListener"]),
 };
