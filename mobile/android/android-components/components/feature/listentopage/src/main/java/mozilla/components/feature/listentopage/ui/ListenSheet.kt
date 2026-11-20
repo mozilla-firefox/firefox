@@ -4,12 +4,8 @@
 
 package mozilla.components.feature.listentopage.ui
 
-import android.content.Context
-import android.provider.Settings
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
@@ -18,17 +14,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
@@ -38,16 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
@@ -186,96 +169,6 @@ fun ListenSheet(
         }
     }
 }
-
-/**
- * Makes a player layout ignore touches and hides it from accessibility services while it fades in or out.
- *
- * @param scope The scope that shows and hides the layout.
- */
-private fun Modifier.inertWhileTransitioning(scope: AnimatedVisibilityScope): Modifier {
-    val transition = scope.transition
-    if (transition.currentState == EnterExitState.Visible && transition.targetState == EnterExitState.Visible) {
-        return this
-    }
-    return this.clearAndSetSemantics {}
-        .pointerInput(Unit) {
-            awaitPointerEventScope {
-                while (true) {
-                    awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
-                }
-            }
-        }
-}
-
-/**
- * What the player says about the article it reads.
- *
- * @property title The article title, or `null` when the page has none.
- * @property site The site the article is from, shown under the title.
- * @property url The article's url, shown in full in place of the title when there is no title.
- */
-data class ArticleDetails(val title: String? = null, val site: String? = null, val url: String? = null) {
-    internal val hasTitle: Boolean
-        get() = !title.isNullOrBlank()
-
-    internal val heading: String?
-        get() = if (hasTitle) title else url
-}
-
-@Composable
-internal fun ArticleHeading(
-    article: ArticleDetails,
-    modifier: Modifier = Modifier,
-    shouldScrollTitle: Boolean = false,
-    playbackUiState: PlaybackUiState,
-) {
-    val context = LocalContext.current
-    val reducedMotion = remember(context) { isReducedMotionEnabled(context) }
-    val marquee = shouldScrollTitle && !reducedMotion
-    Column(
-        modifier = modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = article.heading.orEmpty(),
-            modifier =
-                if (marquee) {
-                    Modifier.basicMarquee(iterations = Int.MAX_VALUE, repeatDelayMillis = 0)
-                } else {
-                    Modifier
-                },
-            color =
-                if (playbackUiState !is PlaybackUiState.Error) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-            style = AcornTheme.typography.headline8,
-            maxLines = 1,
-            overflow = if (marquee) TextOverflow.Clip else TextOverflow.Ellipsis,
-        )
-        if (playbackUiState is PlaybackUiState.Error) {
-            Text(
-                text = stringResource(playbackUiState.listenError.userFacingMessage),
-                color = MaterialTheme.colorScheme.error,
-                style = AcornTheme.typography.caption,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-        } else if (article.hasTitle) {
-            Text(
-                text = article.site.orEmpty(),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = AcornTheme.typography.caption,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
-
-private fun isReducedMotionEnabled(context: Context): Boolean =
-    Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
 
 @FlexibleWindowLightDarkPreview
 @Composable
