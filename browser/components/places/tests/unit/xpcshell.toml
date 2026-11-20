@@ -11,6 +11,8 @@ support-files = [
   "distribution.ini",
 ]
 
+["test_HistoryDateContainer.js"]
+
 ["test_PUIU_batchUpdatesForNode.js"]
 
 ["test_PUIU_setCharsetForPage.js"]

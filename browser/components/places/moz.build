@@ -18,6 +18,9 @@ JAR_MANIFESTS += ["jar.mn"]
 SPHINX_TREES["/browser/places"] = "docs"
 
 MOZ_SRC_FILES += [
+    "history/HistoryContainerBase.sys.mjs",
+    "history/HistoryDateContainer.sys.mjs",
+    "history/HistoryDateRegistry.sys.mjs",
     "Interactions.sys.mjs",
     "InteractionsBlocklist.sys.mjs",
     "PlacesBrowserStartup.sys.mjs",

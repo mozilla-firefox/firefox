@@ -1,5 +1,5 @@
 {
-  "include": ["*.sys.mjs", "types/*.ts"],
+  "include": ["*.sys.mjs", "types/*.ts", "history/*.sys.mjs"],
   "exclude": ["Interactions.sys.mjs", "PlacesUIUtils.sys.mjs"],
   "extends": "../../../tools/@types/tsconfig.json",
 
