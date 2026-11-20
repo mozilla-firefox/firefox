@@ -127,4 +127,46 @@ test(t => {
   root.append(form);
   assert_equals(controlInternals.form, form, "The target form is reinserted");
 }, "A custom control's form attribute follows shadow-host connectivity and target-form insertion/removal");
+
+test(t => {
+  const container = document.createElement("div");
+  t.add_cleanup(() => container.remove());
+  document.body.append(container);
+  container.innerHTML = '<form><input form="missing"></form>';
+  const form = container.firstElementChild;
+  const input = form.firstElementChild;
+  assert_equals(input.form, null);
+
+  container.remove();
+
+  assert_equals(input.form, form);
+}, "Disconnecting an unassociated input with a form attribute falls back to its ancestor form without an ID");
+
+test(t => {
+  const container = document.createElement("div");
+  t.add_cleanup(() => container.remove());
+  document.body.append(container);
+  container.innerHTML = '<form id="unrelated"><input form="missing"></form>';
+  const form = container.firstElementChild;
+  const input = form.firstElementChild;
+  assert_equals(input.form, null);
+
+  container.remove();
+
+  assert_equals(input.form, form);
+}, "Disconnecting an unassociated input with a form attribute falls back to its ancestor form with an unrelated ID");
+
+test(t => {
+  const container = document.createElement("div");
+  t.add_cleanup(() => container.remove());
+  document.body.append(container);
+  container.innerHTML = '<form><form-control form="missing"></form-control></form>';
+  const form = container.firstElementChild;
+  const controlInternals = form.firstElementChild.attachInternals();
+  assert_equals(controlInternals.form, null);
+
+  container.remove();
+
+  assert_equals(controlInternals.form, form);
+}, "Disconnecting an unassociated custom control with a form attribute falls back to its ancestor form without an ID");
 </script>
