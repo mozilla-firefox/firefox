@@ -123,6 +123,59 @@ add_task(async function test_wt_stream_create_uni() {
   wt.close();
 });
 
-// TODO: datagram test
+add_task(async function test_datagram_backpressure_before_connect() {
+  let wt = newWebTransport("https://" + host + "/success");
+  const writer = wt.datagrams.writable.getWriter();
+  const limit = wt.datagrams.outgoingMaxBufferedDatagrams;
+
+  // Write synchronously, before the session's child actor is set (mChild is
+  // only assigned once the parent confirms session creation over IPC, which
+  // takes at least one event-loop turn): this exercises the
+  // mWaitConnectQueue path in
+  // OutgoingDatagramStreamAlgorithms::WriteCallbackImpl rather than the
+  // post-connect path.
+  let promises = [];
+  for (let i = 0; i < limit + 1; i++) {
+    promises.push(writer.write(new Uint8Array([i])));
+  }
+
+  let settled = new Array(promises.length).fill(false);
+  promises.forEach((p, i) => p.then(() => (settled[i] = true)));
+
+  // Flush a macrotask so any already-resolved promises' .then() callbacks
+  // have had a chance to run, without waiting long enough for the IPC
+  // round-trip (session creation, then SetChild()'s queue flush) to finish.
+  await new Promise(resolve => Services.tm.dispatchToMainThread(resolve));
+
+  // The queue length check happens after appending the new entry (matching
+  // https://w3c.github.io/webtransport/#writedatagrams steps 8-9: enqueue,
+  // then resolve only while length < outgoingMaxBufferedDatagrams), so only
+  // the first limit-1 writes see a queue length still under the limit;
+  // the write that brings the queue to exactly `limit` is the one withheld.
+  for (let i = 0; i < limit - 1; i++) {
+    Assert.ok(
+      settled[i],
+      `write ${i} should have settled immediately (under outgoingMaxBufferedDatagrams)`
+    );
+  }
+  Assert.ok(
+    !settled[limit - 1],
+    `write ${limit - 1} should still be pending (at outgoingMaxBufferedDatagrams)`
+  );
+  Assert.ok(
+    !settled[limit],
+    `write ${limit} should still be pending (at outgoingMaxBufferedDatagrams)`
+  );
+
+  // Once connected, SetChild() flushes mWaitConnectQueue and the withheld
+  // writes must settle.
+  await wt.ready;
+  await promises[limit - 1];
+  await promises[limit];
+  Assert.ok(true, "withheld writes settled once connected");
+
+  wt.close();
+});
+
 // TODO: getStats tests
 // TODO: fix the crash discussed in bug 1822154

@@ -66,6 +66,11 @@ void WebTransportDatagramDuplexStream::Init(bool aUseByteStream,
       mOutgoingAlgorithms;
   // Step 19: Set up outgoingDatagrams with writeAlgorithm set to
   // writeDatagramsAlgorithm.
+  //
+  // Backpressure at the outgoingMaxBufferedDatagrams limit is exerted by
+  // writeDatagrams withholding the write promise (see WriteCallbackImpl), not
+  // by the queuing strategy, so highWaterMark is left at the Streams default
+  // (Nothing() -> 1).
   mWritable = WritableStream::CreateNative(cx, *global, *outgoingAlgorithms,
                                            Nothing(), nullptr, aError);
   if (aError.Failed()) {
@@ -76,8 +81,14 @@ void WebTransportDatagramDuplexStream::Init(bool aUseByteStream,
 
 void WebTransportDatagramDuplexStream::SetChild(WebTransportChild* aChild) {
   mOutgoingAlgorithms->SetChild(aChild);
+  mOutgoingAlgorithms->UpdateQueueParams(
+      mOutgoingMaxBufferedDatagrams,
+      mOutgoingMaxAge.IsNull() ? INFINITY : mOutgoingMaxAge.Value());
   for (auto& writable : mCreatedWritables) {
     writable->SetChild(aChild);
+    writable->UpdateQueueParams(
+        mOutgoingMaxBufferedDatagrams,
+        mOutgoingMaxAge.IsNull() ? INFINITY : mOutgoingMaxAge.Value());
   }
   mCreatedWritables.Clear();
 
@@ -139,6 +150,11 @@ void WebTransportDatagramDuplexStream::SetOutgoingMaxBufferedDatagrams(
     uint32_t aValue) {
   // https://w3c.github.io/webtransport/#dom-webtransportdatagramduplexstream-outgoingmaxbuffereddatagrams
   mOutgoingMaxBufferedDatagrams = std::max(aValue, 1u);
+
+  // outgoingMaxBufferedDatagrams sizes the outgoing datagram queue, not the
+  // Streams queuing-strategy highWaterMark (which stays at the spec default of
+  // 1). Backpressure at this limit is exerted by writeDatagrams withholding the
+  // write promise (see WriteCallbackImpl), so the controller HWM is unchanged.
 
   // Send updated parameters to parent/neqo
   mOutgoingAlgorithms->UpdateQueueParams(
@@ -561,6 +577,15 @@ already_AddRefed<Promise> OutgoingDatagramStreamAlgorithms::WriteCallbackImpl(
     mWaitConnectQueue.AppendElement(QueuedDatagram(
         datagramId, std::make_unique<DatagramEntry>(std::move(data), now),
         promise));
+
+    // Same writeDatagrams backpressure rule before the session connects: the
+    // queued datagrams are the outgoing queue, so resolve immediately while
+    // under the limit; otherwise withhold until the datagram is sent after
+    // SetChild() flushes the queue.
+    if (mWaitConnectQueue.Length() <
+        mDatagrams->mOutgoingMaxBufferedDatagrams) {
+      promise->MaybeResolveWithUndefined();
+    }
   }
 
   // Step 10: return promise
