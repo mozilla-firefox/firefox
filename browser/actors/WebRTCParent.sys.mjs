@@ -549,7 +549,7 @@ function prompt(aActor, aBrowser, aRequest) {
 
   // promptBrowser drives UI placement only. Permissions, grace periods and
   // indicators stay keyed on aBrowser, since that's what owns the stream.
-  let promptBrowser = getPromptBrowser(aBrowser, aRequest);
+  let promptBrowser = getPromptBrowser(aBrowser);
 
   // If promptBrowser is sidebar browser, its ownerDocument is sidebar panel
   // document. We need top chrome window's document to access notification
@@ -1732,20 +1732,18 @@ function getDocumentPiPBrowser(aBrowser) {
  * the user just interacted, instead of in a background window where
  * PopupNotifications would suppress it until they went looking.
  *
- * Returns aBrowser in every other case, including all camera, microphone and
- * speaker requests. Only screen sharing redirects, because only screen sharing
- * has the use case: presenting from a meeting PiP, where the stream has to
- * outlive the PiP and so must belong to the opener. We can widen this later if
- * other prompts turn out to want it.
+ * This applies to every request type. Meeting sites keep their camera,
+ * microphone and screen streams on the opener so they outlive the PiP, and
+ * call getUserMedia() again to unmute. Without this, a request that needs no
+ * prompt would still wait for the opener to be focused, since grants are only
+ * checked once the prompt starts showing.
+ *
+ * Returns aBrowser in every other case.
  *
  * @param {Element} aBrowser - Browser element the request came from.
- * @param {object} aRequest - The webrtc:Request data.
  * @returns {Element} Browser element to anchor the prompt to.
  */
-function getPromptBrowser(aBrowser, aRequest) {
-  if (!aRequest.sharingScreen) {
-    return aBrowser;
-  }
+function getPromptBrowser(aBrowser) {
   const activeWindow = Services.focus.activeWindow;
   const pipBrowser = getDocumentPiPBrowser(aBrowser);
   if (

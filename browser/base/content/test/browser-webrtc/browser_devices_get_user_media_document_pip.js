@@ -1,8 +1,8 @@
 /* Any copyright is dedicated to the Public Domain.
    http://creativecommons.org/publicdomain/zero/1.0/ */
 
-// Tests that a screen-sharing prompt for a request made on the opener follows
-// the user into the document picture-in-picture window it was triggered from.
+// Tests that a capture prompt for a request made on the opener follows the
+// user into the document picture-in-picture window it was triggered from.
 
 const { DOMFullscreenTestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/DOMFullscreenTestUtils.sys.mjs"
@@ -43,14 +43,15 @@ async function openTabWithPiP() {
         let md = win.navigator.mediaDevices;
         let promise = kind == "screen"
           ? md.getDisplayMedia({ video: true })
-          : md.getUserMedia({ video: true });
+          : md.getUserMedia({ [kind == "camera" ? "video" : "audio"]: true });
         // Exposed for the test to await. It settles only once the prompt is
         // answered, and resolves either way so awaiting it can't produce an
         // unhandled rejection. Parked on the target window, which for
-        // "opener" outlives this one.
+        // "opener" outlives this one, along with any stream for the test to
+        // stop.
         win.captureOutcome = promise.then(
           stream => {
-            stream.getTracks().forEach(track => track.stop());
+            win.captureStream = stream;
             return "granted";
           },
           error => error.name
@@ -70,7 +71,7 @@ async function openTabWithPiP() {
  *
  * @param {Window} aPipWin - The PiP chrome window.
  * @param {"opener"|"pip"} aTarget - Whose mediaDevices to call.
- * @param {"screen"|"camera"} aKind - What to capture.
+ * @param {"screen"|"camera"|"microphone"} aKind - What to capture.
  */
 function requestCaptureFromPiP(aPipWin, aTarget, aKind) {
   return SpecialPowers.spawn(
@@ -276,21 +277,58 @@ add_task(async function testScreenOnOpenerPromptsInFocusedOpener() {
   await cleanUp(tab, pipWin);
 });
 
-add_task(async function testCameraOnOpenerPromptsInOpener() {
-  let [tab, pipWin] = await openTabWithPiP();
+for (let kind of ["camera", "microphone"]) {
+  add_task(async function testCameraOrMicOnOpenerPromptsInFocusedPiP() {
+    let [tab, pipWin] = await openTabWithPiP();
 
+    let shown = promisePopupNotificationShown(
+      "webRTC-shareDevices",
+      null,
+      pipWin
+    );
+    await requestCaptureFromPiP(pipWin, "opener", kind);
+    await shown;
+
+    ok(
+      !PopupNotifications.getNotification("webRTC-shareDevices"),
+      `no ${kind} prompt in the opener window`
+    );
+    checkDeviceSelectors([kind], pipWin);
+
+    await cleanUp(tab, pipWin);
+  });
+}
+
+add_task(async function testGrantedCameraOnOpenerNeedsNoOpenerFocus() {
+  let [tab, pipWin] = await openTabWithPiP();
+  let principal = tab.linkedBrowser.contentPrincipal;
+  SitePermissions.setForPrincipal(principal, "camera", SitePermissions.ALLOW);
+  clearDevicePermissionsAtEnd(principal);
+
+  // Like a meeting site unmuting its camera from the PiP. Grants are checked
+  // when the prompt starts showing, so this used to wait for opener focus.
   await requestCaptureFromPiP(pipWin, "opener", "camera");
-  await TestUtils.waitForCondition(
-    () =>
-      PopupNotifications.getNotification(
-        "webRTC-shareDevices",
-        tab.linkedBrowser
-      ),
-    "camera prompt is on the opener browser"
+  let result = await SpecialPowers.spawn(
+    tab.linkedBrowser,
+    [],
+    () => content.wrappedJSObject.captureOutcome
   );
-  ok(
-    !pipWin.PopupNotifications.getNotification("webRTC-shareDevices"),
-    "camera requests are not redirected to the PiP window"
+  is(result, "granted", "granted without focusing the opener");
+  is(Services.focus.activeWindow, pipWin, "PiP window kept focus");
+
+  // Let the sharing UI catch up before stopping, so cleanUp() waits for it to
+  // go away rather than passing before it shows.
+  let { webrtcUI } = ChromeUtils.importESModule(
+    "resource:///modules/webrtcUI.sys.mjs"
+  );
+  await TestUtils.waitForCondition(
+    () => webrtcUI.showCameraIndicator,
+    "camera indicator shows"
+  );
+  await SpecialPowers.spawn(tab.linkedBrowser, [], () =>
+    content.wrappedJSObject.captureStream
+      .getTracks()
+      .forEach(track => track.stop())
   );
 
   await cleanUp(tab, pipWin);
