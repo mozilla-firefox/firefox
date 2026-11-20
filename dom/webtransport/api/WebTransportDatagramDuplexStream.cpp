@@ -80,6 +80,10 @@ void WebTransportDatagramDuplexStream::SetChild(WebTransportChild* aChild) {
     writable->SetChild(aChild);
   }
   mCreatedWritables.Clear();
+
+  // Every algorithms instance above just moved its mWaitConnectQueue into
+  // mPendingOutgoing; send them together.
+  FlushOutgoingDatagrams();
 }
 
 void WebTransportDatagramDuplexStream::SetIncomingMaxAge(
@@ -432,6 +436,47 @@ NS_IMPL_ADDREF_INHERITED(OutgoingDatagramStreamAlgorithms,
 NS_IMPL_RELEASE_INHERITED(OutgoingDatagramStreamAlgorithms,
                           UnderlyingSinkAlgorithmsWrapper)
 
+// Bound one OutgoingDatagrams message well under the parent's
+// kMaxBatchBytes/kMaxBatchDatagrams, which it treats as a protocol error.  The
+// count cap matters only for tiny datagrams.
+static constexpr size_t kMaxOutgoingMessageBytes = 64 * 1024;
+static constexpr size_t kMaxOutgoingMessageDatagrams = 1024;
+
+void WebTransportDatagramDuplexStream::QueueOutgoingDatagram(
+    OutgoingDatagram&& aDatagram) {
+  mPendingOutgoing.AppendElement(std::move(aDatagram));
+  FlushOutgoingDatagrams();
+}
+
+void WebTransportDatagramDuplexStream::FlushOutgoingDatagrams() {
+  if (mPendingOutgoing.IsEmpty()) {
+    return;
+  }
+
+  WebTransportChild* child = mOutgoingAlgorithms->GetChild();
+  MOZ_ASSERT(child);
+
+  LOG(("Flushing %zu outgoing datagrams", mPendingOutgoing.Length()));
+  // Fire-and-forget: each datagram's outcome arrives later as a DatagramReady,
+  // so there is no reply to wait for.  If the actor is already dead, Send*
+  // below just fails having done nothing: WebTransportChild::ActorDestroy()
+  // settles every pending promise via CloseAll().
+  Span<const OutgoingDatagram> pending(mPendingOutgoing);
+  size_t start = 0;
+  size_t bytes = 0;
+  for (size_t i = 0; i < pending.Length(); ++i) {
+    bytes += pending[i].data().Length();
+    if (bytes >= kMaxOutgoingMessageBytes ||
+        i + 1 - start == kMaxOutgoingMessageDatagrams ||
+        i + 1 == pending.Length()) {
+      (void)child->SendOutgoingDatagrams(pending.FromTo(start, i + 1));
+      start = i + 1;
+      bytes = 0;
+    }
+  }
+  mPendingOutgoing.Clear();
+}
+
 already_AddRefed<Promise> OutgoingDatagramStreamAlgorithms::WriteCallbackImpl(
     JSContext* aCx, JS::Handle<JS::Value> aChunk,
     WritableStreamDefaultController& aController, ErrorResult& aError) {
@@ -500,32 +545,15 @@ already_AddRefed<Promise> OutgoingDatagramStreamAlgorithms::WriteCallbackImpl(
     // silently guessing it belongs to the default writable.
     mDatagrams->mWritableDatagramMap.InsertOrUpdate(datagramId, mOwnerWritable);
 
-    // We pass along the datagram to the parent with its ID.
+    // Hand the datagram to the parent in an OutgoingDatagrams message.
     // The OutgoingDatagramsQueue lives in parent/neqo, and steps 6-9 are
     // implemented there. Parent will send DatagramReady when appropriate.
-    LOG(("Sending Datagram id=%" PRIu64 ", size = %zu", datagramId,
-         data.Length()));
     uint64_t sendGroupId = mSendGroup ? mSendGroup->GetGroupId() : 0;
-    LOG(("Sending Datagram id=%" PRIu64 ", size = %zu, sendGroup = %" PRIu64
+    LOG(("Queuing Datagram id=%" PRIu64 ", size = %zu, sendGroup = %" PRIu64
          ", sendOrder = %" PRId64,
          datagramId, data.Length(), sendGroupId, mSendOrder));
-    mChild->SendOutgoingDatagram(
-        datagramId, std::move(data), now, sendGroupId, mSendOrder,
-        [](nsresult&&) {
-          // IPC succeeded - actual promise resolution happens via DatagramReady
-          LOG(("Datagram IPC succeeded"));
-        },
-        [self = RefPtr{this},
-         datagramId](mozilla::ipc::ResponseRejectReason&&) {
-          LOG(("Datagram IPC failed for id=%" PRIu64, datagramId));
-          // IPC failed - remove from pending maps and resolve promise
-          // immediately
-          self->mDatagrams->mWritableDatagramMap.Remove(datagramId);
-          if (Maybe<RefPtr<Promise>> promise =
-                  self->mPendingDatagramPromises.Extract(datagramId)) {
-            (*promise)->MaybeResolveWithUndefined();
-          }
-        });
+    mDatagrams->QueueOutgoingDatagram(OutgoingDatagram(
+        datagramId, std::move(data), now, sendGroupId, mSendOrder));
   } else {
     LOG(("Queuing datagram id=%" PRIu64 " for connect", datagramId));
     // Queue locally until we can send it.
@@ -556,20 +584,9 @@ void OutgoingDatagramStreamAlgorithms::SetChild(WebTransportChild* aChild) {
 
     uint64_t sendGroupId = mSendGroup ? mSendGroup->GetGroupId() : 0;
     uint64_t datagramId = queued.mDatagramId;
-    mChild->SendOutgoingDatagram(
-        datagramId, queued.mEntry->mBuffer, queued.mEntry->mTimeStamp,
-        sendGroupId, mSendOrder,
-        [](nsresult&&) { LOG_VERBOSE(("Early Datagram IPC succeeded")); },
-        [self = RefPtr{this},
-         datagramId](mozilla::ipc::ResponseRejectReason&&) {
-          LOG(("Early Datagram IPC failed for id=%" PRIu64, datagramId));
-          // Remove from pending maps and resolve on failure
-          self->mDatagrams->mWritableDatagramMap.Remove(datagramId);
-          if (Maybe<RefPtr<Promise>> promise =
-                  self->mPendingDatagramPromises.Extract(datagramId)) {
-            (*promise)->MaybeResolveWithUndefined();
-          }
-        });
+    mDatagrams->mPendingOutgoing.AppendElement(
+        OutgoingDatagram(datagramId, std::move(queued.mEntry->mBuffer),
+                         queued.mEntry->mTimeStamp, sendGroupId, mSendOrder));
   }
   mWaitConnectQueue.Clear();
 }
