@@ -18,6 +18,10 @@ import "chrome://browser/content/sidebar/sidebar-opentabs-preview.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/sidebar/sidebar-pins-promo.mjs";
 
+const { XPCOMUtils } = ChromeUtils.importESModule(
+  "resource://gre/modules/XPCOMUtils.sys.mjs"
+);
+
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   ASRouter: "resource:///modules/asrouter/ASRouter.sys.mjs",
@@ -81,6 +85,13 @@ export default class SidebarMain extends MozLitElement {
     };
     this.shouldShowOverflowButton = false;
     this.overflowMenuOpen = false;
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "openTabsHoverPreviewEnabled",
+      "sidebar.openTabsPanel.hoverPreview.enabled",
+      true,
+      () => this.requestUpdate()
+    );
   }
 
   tooltips = {
@@ -860,7 +871,10 @@ export default class SidebarMain extends MozLitElement {
           @mouseover=${e => this.onEntrypointHover(e, buttonValues.action.view)}
           @mouseout=${e =>
             this.onEntrypointHoverEnd(e, buttonValues.action.view)}
-          title=${buttonValues.tooltip}
+          title=${buttonValues.action.view === "viewOpenTabsSidebar" &&
+          this.openTabsHoverPreviewEnabled
+            ? nothing
+            : buttonValues.tooltip}
           .iconSrc=${buttonValues.action.iconUrl}
           ?extension=${buttonValues.action.view?.includes("-sidebar-action")}
           extensionId=${ifDefined(buttonValues.action.extensionId)}
