@@ -9,7 +9,7 @@ add_task(async function test_open_url_in_mini_window() {
     window,
     "https://example.com/",
     "test",
-    Services.scriptSecurityManager.getSystemPrincipal()
+    { triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal() }
   );
   Assert.ok(mini, "Mini window opened");
   let miniWin = mini.miniWin;
@@ -48,48 +48,65 @@ add_task(async function test_open_url_in_mini_window() {
   removeTestTabs();
 });
 
-add_task(async function test_open_url_without_principal_fails() {
-  let mini = await MiniWindowManager.openURL(
-    window,
-    "https://example.com/",
-    "test",
-    null
-  );
-  Assert.equal(mini, null, "Open without a triggeringPrincipal fails cleanly");
+add_task(async function test_open_url_without_principal_throws() {
+  for (let loadParams of [undefined, {}, { triggeringPrincipal: null }]) {
+    await Assert.rejects(
+      MiniWindowManager.openURL(
+        window,
+        "https://example.com/",
+        "test",
+        loadParams
+      ),
+      /must include a triggeringPrincipal/,
+      `openURL throws without a triggeringPrincipal: ${JSON.stringify(loadParams)}`
+    );
+  }
   assertNoMiniWindowsOpen();
 });
 
-add_task(async function test_open_link_in_mini_window_from_context_menu() {
-  Services.fog.testResetFOG();
-  let tab = await BrowserTestUtils.openNewForegroundTab(
-    gBrowser,
-    "https://example.com/"
-  );
-  await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+/**
+ * Adds a link to `href` in `browser`'s page and returns once its context menu
+ * is open.
+ *
+ * @param {Window} win - the window `browser` lives in.
+ * @param {MozBrowser} browser
+ * @param {string} href
+ * @returns {Promise<XULPopupElement>} the open context menu.
+ */
+async function openLinkContextMenu(win, browser, href) {
+  await SpecialPowers.spawn(browser, [href], linkHref => {
     let link = content.document.createElement("a");
     link.id = "link";
-    link.href = "https://example.org/";
+    link.href = linkHref;
     link.textContent = "link";
     content.document.body.prepend(link);
   });
-
-  let contextMenu = document.getElementById("contentAreaContextMenu");
+  let contextMenu = win.document.getElementById("contentAreaContextMenu");
   let shown = BrowserTestUtils.waitForEvent(contextMenu, "popupshown");
   await BrowserTestUtils.synthesizeMouseAtCenter(
     "#link",
     { type: "contextmenu" },
-    tab.linkedBrowser
+    browser
   );
   await shown;
+  return contextMenu;
+}
 
+/**
+ * Opens `href` from a link in `tab` through "Open Link in Mini Window".
+ *
+ * @param {MozTabbrowserTab} tab
+ * @param {string} href
+ * @returns {Promise<object>} the active MiniWindow.
+ */
+async function openLinkInMiniWindowForTest(tab, href) {
+  let contextMenu = await openLinkContextMenu(window, tab.linkedBrowser, href);
   let item = document.getElementById("context-openlinkminiwindow");
   Assert.ok(!item.hidden, "Open Link in Mini Window item is shown");
 
-  let newWin = BrowserTestUtils.waitForNewWindow({
-    url: "https://example.org/",
-  });
+  let newWin = BrowserTestUtils.waitForNewWindow({ url: href });
   contextMenu.activateItem(item);
-  let miniWin = await newWin;
+  await newWin;
 
   Assert.equal(MiniWindowManager._miniwindows.size, 1, "One mini registered");
   let mini = [...MiniWindowManager._miniwindows][0];
@@ -97,6 +114,18 @@ add_task(async function test_open_link_in_mini_window_from_context_menu() {
     () => mini.state == "active",
     "Waiting for the mini window to activate"
   );
+  return mini;
+}
+
+add_task(async function test_open_link_in_mini_window_from_context_menu() {
+  Services.fog.testResetFOG();
+  let tab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    "https://example.com/"
+  );
+  let mini = await openLinkInMiniWindowForTest(tab, "https://example.org/");
+  let { miniWin } = mini;
+
   let created = Glean.miniWindow.created.testGetValue();
   Assert.equal(created.length, 1, "One created event was recorded");
   Assert.equal(created[0].extra.type, "url", "Reports the url flavour");
@@ -111,6 +140,13 @@ add_task(async function test_open_link_in_mini_window_from_context_menu() {
     "Link loaded in the mini window"
   );
 
+  let referrer = await SpecialPowers.spawn(
+    miniWin.gBrowser.selectedBrowser,
+    [],
+    () => content.document.referrer
+  );
+  Assert.equal(referrer, "https://example.com/", "Link load sent a referrer");
+
   let restore = miniWin.document.getElementById("mini-window-restore-button");
   Assert.equal(
     restore.getAttribute("data-l10n-id"),
@@ -119,23 +155,11 @@ add_task(async function test_open_link_in_mini_window_from_context_menu() {
   );
   Assert.ok(BrowserTestUtils.isVisible(restore), "Restore button is visible");
 
-  let miniContextMenu = miniWin.document.getElementById(
-    "contentAreaContextMenu"
+  let miniContextMenu = await openLinkContextMenu(
+    miniWin,
+    miniWin.gBrowser.selectedBrowser,
+    "https://example.com/"
   );
-  let miniShown = BrowserTestUtils.waitForEvent(miniContextMenu, "popupshown");
-  await SpecialPowers.spawn(miniWin.gBrowser.selectedBrowser, [], () => {
-    let link = content.document.createElement("a");
-    link.id = "link";
-    link.href = "https://example.com/";
-    link.textContent = "link";
-    content.document.body.prepend(link);
-  });
-  await BrowserTestUtils.synthesizeMouseAtCenter(
-    "#link",
-    { type: "contextmenu" },
-    miniWin.gBrowser.selectedBrowser
-  );
-  await miniShown;
   Assert.ok(
     miniWin.document.getElementById("context-openlinkminiwindow").hidden,
     "Open Link in Mini Window item is hidden inside a mini window"
@@ -150,5 +174,49 @@ add_task(async function test_open_link_in_mini_window_from_context_menu() {
   mini.close();
   await BrowserTestUtils.domWindowClosed(miniWin);
   assertNoMiniWindowsOpen();
+  BrowserTestUtils.removeTab(tab);
+});
+
+add_task(async function test_open_link_in_mini_window_keeps_container() {
+  let tab = BrowserTestUtils.addTab(gBrowser, "https://example.com/", {
+    userContextId: 1,
+  });
+  gBrowser.selectedTab = tab;
+  await BrowserTestUtils.browserLoaded(tab.linkedBrowser);
+
+  let mini = await openLinkInMiniWindowForTest(tab, "https://example.org/");
+  let { miniWin } = mini;
+  Assert.equal(
+    miniWin.gBrowser.selectedBrowser.browsingContext.originAttributes
+      .userContextId,
+    1,
+    "Link loaded in the source tab's container"
+  );
+  let referrer = await SpecialPowers.spawn(
+    miniWin.gBrowser.selectedBrowser,
+    [],
+    () => content.document.referrer
+  );
+  Assert.equal(
+    referrer,
+    "https://example.com/",
+    "Same-container link load keeps the referrer"
+  );
+
+  mini.returnToOriginWin(true);
+  await BrowserTestUtils.domWindowClosed(miniWin);
+  Assert.equal(
+    gBrowser.selectedTab.userContextId,
+    1,
+    "Returned tab stays in the container"
+  );
+  Assert.equal(
+    gBrowser.selectedBrowser.currentURI.spec,
+    "https://example.org/",
+    "Returned tab is the link tab"
+  );
+
+  assertNoMiniWindowsOpen();
+  BrowserTestUtils.removeTab(gBrowser.selectedTab);
   BrowserTestUtils.removeTab(tab);
 });

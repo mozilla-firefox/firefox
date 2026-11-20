@@ -340,19 +340,20 @@ export class MiniWindow {
    * Opens `url` in a new always-on-top full-tab popup.
    *
    * @param {string} url
-   * @param {nsIPrincipal} triggeringPrincipal - the principal triggering the load.
+   * @param {object} loadParams - openLinkIn params for the load; see
+   *   MiniWindowManager.openURL.
    * @returns {Promise<DOMWindow|null>} Resolves once the popup has finished
    *   delayed startup and reached state ACTIVE. Resolves with null if the
    *   window could not be opened.
    */
-  async open(url, triggeringPrincipal) {
+  async open(url, loadParams) {
     lazy.logConsole.debug("open", { url });
     let features = Object.entries(this.#windowFeatures())
       .map(([key, value]) => `${key}=${value}`)
       .join(",");
     try {
       lazy.URILoadingHelper.openLinkIn(this.originWin, url, "window", {
-        triggeringPrincipal,
+        ...loadParams,
         private: lazy.PrivateBrowsingUtils.isWindowPrivate(this.originWin),
         miniWindow: true,
         features,

@@ -124,11 +124,17 @@ class MiniWindowManagerClass {
    *   its tab goes back here when the mini window is restored.
    * @param {string} url - the URL to load.
    * @param {string} entryPoint - where the open was initiated.
-   * @param {nsIPrincipal} triggeringPrincipal - the principal triggering the load.
+   * @param {object} loadParams - openLinkIn params for the load; must include
+   *   triggeringPrincipal. Pass userContextId to keep the load in a container.
    * @returns {Promise<object|null>} the MiniWindow, or null.
+   * @throws {Error} if loadParams has no triggeringPrincipal.
    */
-  async openURL(originWin, url, entryPoint, triggeringPrincipal) {
+  async openURL(originWin, url, entryPoint, loadParams) {
     this._log.debug("openURL: We're about to open a mini window: ", { url });
+
+    if (!loadParams?.triggeringPrincipal) {
+      throw new Error("openURL: loadParams must include a triggeringPrincipal");
+    }
 
     if (!this._enabled) {
       return null;
@@ -136,7 +142,7 @@ class MiniWindowManagerClass {
 
     let miniwindow = new lazy.MiniWindow(this, originWin);
     this.#register(miniwindow);
-    let open = await miniwindow.open(url, triggeringPrincipal);
+    let open = await miniwindow.open(url, loadParams);
 
     if (!open) {
       this._log.debug("openURL: open failed, returning null");
