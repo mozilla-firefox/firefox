@@ -35,7 +35,7 @@ XPCOMUtils.defineLazyServiceGetter(
  * This class implements a comprehensive offline check using:
  * - Services.io.offline (user-set offline mode)
  * - CaptivePortalService (connected but captive portal blocking internet)
- * - NetworkLinkService (physical network link status)
+ * - NetworkLinkService (physical network link status, when known)
  */
 export const IPPNetworkUtils = {
   /**
@@ -50,7 +50,8 @@ export const IPPNetworkUtils = {
         Services.io.offline ||
         lazy.CaptivePortalService.state ==
           lazy.CaptivePortalService.LOCKED_PORTAL ||
-        !lazy.gNetworkLinkService.isLinkUp
+        (lazy.gNetworkLinkService.linkStatusKnown &&
+          !lazy.gNetworkLinkService.isLinkUp)
       );
     } catch (e) {
       lazy.logConsole.warn("Could not determine network status.", e);
