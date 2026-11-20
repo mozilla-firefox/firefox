@@ -707,7 +707,7 @@ bool FontFaceSetDocumentImpl::MightHavePendingFontLoads() {
 
     // And we also wait for any CSS style sheets to finish loading, as their
     // styles might cause new fonts to load.
-    if (mDocument->CSSLoader()->HasPendingLoads()) {
+    if (mDocument->CSSLoader()->HasPendingNonDeferredLoads()) {
       return true;
     }
   }
