@@ -1054,7 +1054,7 @@ class PromiseReaction : public Base {
                : UnhandledRejectionBehavior::Report;
   }
 
-  void setIsDefaultResolvingHandler(PromiseObject* promiseToResolve) {
+  void initDefaultResolvingHandler(PromiseObject* promiseToResolve) {
     setFlagOnInitialState(REACTION_FLAG_DEFAULT_RESOLVING_HANDLER);
     this->setSpecializedReactionState(ObjectValue(*promiseToResolve));
   }
@@ -1069,7 +1069,7 @@ class PromiseReaction : public Base {
                 .template as<PromiseObject>();
   }
 
-  void setIsAsyncFunction(AsyncFunctionGeneratorObject* genObj) {
+  void initAsyncFunction(AsyncFunctionGeneratorObject* genObj) {
     MOZ_ASSERT(this->realm() == genObj->nonCCWRealm());
     setFlagOnInitialState(REACTION_FLAG_ASYNC_FUNCTION);
     this->setSpecializedReactionState(ObjectValue(*genObj));
@@ -1088,7 +1088,7 @@ class PromiseReaction : public Base {
     return res;
   }
 
-  void setIsAsyncGenerator(AsyncGeneratorObject* generator) {
+  void initAsyncGenerator(AsyncGeneratorObject* generator) {
     setFlagOnInitialState(REACTION_FLAG_ASYNC_GENERATOR);
     this->setSpecializedReactionState(ObjectValue(*generator));
   }
@@ -1103,7 +1103,7 @@ class PromiseReaction : public Base {
                 .template as<AsyncGeneratorObject>();
   }
 
-  void setIsAsyncFromSyncIterator(AsyncFromSyncIteratorObject* iterator) {
+  void initAsyncFromSyncIterator(AsyncFromSyncIteratorObject* iterator) {
     setFlagOnInitialState(REACTION_FLAG_ASYNC_FROM_SYNC_ITERATOR);
     this->setSpecializedReactionState(ObjectValue(*iterator));
   }
@@ -1118,7 +1118,7 @@ class PromiseReaction : public Base {
                 .template as<AsyncFromSyncIteratorObject>();
   }
 
-  void setIsDebuggerDummy() {
+  void initDebuggerDummy() {
     setFlagOnInitialState(REACTION_FLAG_DEBUGGER_DUMMY);
   }
   bool isDebuggerDummy() const {
@@ -7730,7 +7730,7 @@ template <typename T>
     JS::Handle<JS::Value> value, PromiseHandler onFulfilled,
     PromiseHandler onRejected) {
   auto extra = [&](const auto& reaction) {
-    reaction->setIsAsyncGenerator(generator);
+    reaction->initAsyncGenerator(generator);
   };
   return InternalAwait(cx, value, nullptr, onFulfilled, onRejected, extra);
 }
@@ -7747,7 +7747,7 @@ template <typename T>
   auto extra = [&](const auto& reaction) {
     MOZ_ASSERT(genObj->realm() == reaction->realm());
     MOZ_ASSERT(genObj->realm() == cx->realm());
-    reaction->setIsAsyncFunction(genObj);
+    reaction->initAsyncFunction(genObj);
   };
   if (!InternalAwait(cx, value, nullptr,
                      PromiseHandler::AsyncFunctionAwaitedFulfilled,
@@ -8038,7 +8038,7 @@ bool js::AsyncFromSyncIteratorMethod(JSContext* cx, CallArgs& args,
   //                                     onRejected, promiseCapability).
   auto extra = [&](const auto& reaction) {
     if (onRejected == PromiseHandler::AsyncFromSyncIteratorClose) {
-      reaction->setIsAsyncFromSyncIterator(asyncIter);
+      reaction->initAsyncFromSyncIterator(asyncIter);
     }
   };
   if (!InternalAwait(cx, value, resultPromise, onFulfilled, onRejected,
@@ -8294,7 +8294,7 @@ bool js::Promise_then(JSContext* cx, unsigned argc, Value* vp) {
   HandleValue onRejected = NullHandleValue;
 
   auto extraStep = [promiseToResolve](const auto& reaction) {
-    reaction->setIsDefaultResolvingHandler(promiseToResolve);
+    reaction->initDefaultResolvingHandler(promiseToResolve);
   };
 
   // Steps 9-12.
@@ -8502,7 +8502,7 @@ template <typename InlineOrObjectReaction>
     return false;
   }
 
-  reaction->setIsDebuggerDummy();
+  reaction->initDebuggerDummy();
 
   return AddPromiseReaction(cx, promise, reaction);
 }
