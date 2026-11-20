@@ -4,7 +4,6 @@
 
 "use strict";
 
-let h2Port;
 let h3Port;
 let trrServer;
 
@@ -17,10 +16,6 @@ const { NodeHTTPServer } = ChromeUtils.importESModule(
 );
 
 add_setup(async function setup() {
-  h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
-
   h3Port = Services.env.get("MOZHTTP3_PORT_PROXY");
   Assert.notEqual(h3Port, null);
   Assert.notEqual(h3Port, "");
