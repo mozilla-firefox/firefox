@@ -12,7 +12,6 @@
 #include "mozilla/mozalloc_oom.h"  // mozalloc_handle_oom
 #include "mozilla/Preferences.h"
 #include "mozilla/RefPtr.h"  // mozilla::StaticRefPtr
-#include "mozilla/StaticPrefs_dom.h"
 
 #include "GeckoProfiler.h"
 #include "LoadedScript.h"
@@ -595,6 +594,12 @@ nsresult ModuleLoaderBase::StartOrRestartModuleLoad(ModuleLoadRequest* aRequest,
   nsresult rv = NS_OK;
   if (!CanStartLoad(aRequest, &rv)) {
     return rv;
+  }
+
+  if (!aRequest->mLoadContext->IsPreload() &&
+      !ImportMap::IsMultipleImportMapsSupported()) {
+    LOG(("ScriptLoadRequest (%p): Disallow further import maps.", aRequest));
+    DisallowImportMaps();
   }
 
   // https://html.spec.whatwg.org/#fetch-a-single-module-script
