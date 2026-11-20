@@ -11,6 +11,8 @@
 package org.webrtc;
 
 import java.nio.ByteBuffer;
+import org.jni_zero.CalledByNative;
+import org.jni_zero.NativeMethods;
 
 /** Java wrapper for a C++ DataChannelInterface. */
 public class DataChannel {
@@ -115,9 +117,9 @@ public class DataChannel {
     lifecycleLock.run(
         () -> {
           if (nativeObserver != 0) {
-            nativeUnregisterObserver(nativeObserver);
+            DataChannelJni.get().unregisterObserver(this, nativeObserver);
           }
-          nativeObserver = nativeRegisterObserver(observer);
+          nativeObserver = DataChannelJni.get().registerObserver(this, observer);
         });
   }
 
@@ -125,21 +127,21 @@ public class DataChannel {
   public void unregisterObserver() {
     lifecycleLock.runIfAlive(
         () -> {
-          nativeUnregisterObserver(nativeObserver);
+          DataChannelJni.get().unregisterObserver(this, nativeObserver);
           nativeObserver = 0;
         });
   }
 
   public String label() {
-    return lifecycleLock.call(() -> nativeLabel());
+    return lifecycleLock.call(() -> DataChannelJni.get().label(this));
   }
 
   public int id() {
-    return lifecycleLock.call(() -> nativeId());
+    return lifecycleLock.call(() -> DataChannelJni.get().id(this));
   }
 
   public State state() {
-    return lifecycleLock.call(() -> nativeState());
+    return lifecycleLock.call(() -> DataChannelJni.get().state(this));
   }
 
   /**
@@ -147,12 +149,12 @@ public class DataChannel {
    * queued using SendBuffer but have not yet been transmitted to the network.
    */
   public long bufferedAmount() {
-    return lifecycleLock.call(() -> nativeBufferedAmount());
+    return lifecycleLock.call(() -> DataChannelJni.get().bufferedAmount(this));
   }
 
   /** Close the channel. */
   public void close() {
-    lifecycleLock.runIfAlive(() -> nativeClose());
+    lifecycleLock.runIfAlive(() -> DataChannelJni.get().close(this));
   }
 
   /** Send `data` to the remote peer; return success. */
@@ -163,7 +165,7 @@ public class DataChannel {
           // ByteBuffer is direct and/or is backed by an array.
           byte[] data = new byte[buffer.data.remaining()];
           buffer.data.get(data);
-          return nativeSend(data, buffer.binary);
+          return DataChannelJni.get().send(this, data, buffer.binary);
         });
   }
 
@@ -183,12 +185,22 @@ public class DataChannel {
     return lifecycleLock.getNativePointer();
   }
 
-  private native long nativeRegisterObserver(Observer observer);
-  private native void nativeUnregisterObserver(long observer);
-  private native String nativeLabel();
-  private native int nativeId();
-  private native State nativeState();
-  private native long nativeBufferedAmount();
-  private native void nativeClose();
-  private native boolean nativeSend(byte[] data, boolean binary);
+  @NativeMethods
+  interface Natives {
+    long registerObserver(DataChannel caller, Observer observer);
+
+    void unregisterObserver(DataChannel caller, long observer);
+
+    String label(DataChannel caller);
+
+    int id(DataChannel caller);
+
+    State state(DataChannel caller);
+
+    long bufferedAmount(DataChannel caller);
+
+    void close(DataChannel caller);
+
+    boolean send(DataChannel caller, byte[] data, boolean binary);
+  }
 }

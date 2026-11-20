@@ -10,6 +10,8 @@
 
 package org.webrtc;
 
+import org.jni_zero.NativeMethods;
+
 /**
  * A combined video decoder that falls back on a secondary decoder if the primary decoder fails.
  */
@@ -24,9 +26,11 @@ public class VideoDecoderFallback extends WrappedNativeVideoDecoder {
 
   @Override
   public long createNative(long webrtcEnvRef) {
-    return nativeCreate(webrtcEnvRef, fallback, primary);
+    return VideoDecoderFallbackJni.get().create(webrtcEnvRef, fallback, primary);
   }
 
-  private static native long nativeCreate(
-      long webrtcEnvRef, VideoDecoder fallback, VideoDecoder primary);
+  @NativeMethods
+  interface Natives {
+    long create(long webrtcEnvRef, VideoDecoder fallback, VideoDecoder primary);
+  }
 }

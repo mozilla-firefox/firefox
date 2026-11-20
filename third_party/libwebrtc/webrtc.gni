@@ -31,6 +31,10 @@ if (is_ios) {
   import("//chromium/build/config/ios/rules.gni")
 }
 
+if (is_android) {
+  import("//third_party/jni_zero/jni_zero.gni")
+}
+
 if (is_mac) {
   import("//chromium/build/config/mac/rules.gni")
 }
@@ -1099,7 +1103,13 @@ template("rtc_executable") {
 }
 
 template("rtc_shared_library") {
-  shared_library(target_name) {
+  if (is_android) {
+    target_type = "shared_library_with_jni"
+  } else {
+    target_type = "shared_library"
+  }
+
+  target(target_type, target_name) {
     forward_variables_from(invoker,
                            "*",
                            [
@@ -1383,6 +1393,14 @@ if (is_android && !build_with_mozilla) {
                                "suppressed_configs",
                                "visibility",
                              ])
+      if (defined(invoker.shared_libraries)) {
+        if (!defined(srcjar_deps)) {
+          srcjar_deps = []
+        }
+        foreach(_dep, invoker.shared_libraries) {
+          srcjar_deps += [ "${_dep}__jni_registration" ]
+        }
+      }
     }
   }
 

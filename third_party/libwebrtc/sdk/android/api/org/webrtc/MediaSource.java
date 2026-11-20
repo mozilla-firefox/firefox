@@ -10,6 +10,8 @@
 
 package org.webrtc;
 
+import org.jni_zero.NativeMethods;
+
 /** Java wrapper for a C++ MediaSourceInterface. */
 public class MediaSource {
   /** Tracks MediaSourceInterface.SourceState */
@@ -34,7 +36,7 @@ public class MediaSource {
   }
 
   public State state() {
-    return lifecycleLock.call(nativeSource -> nativeGetState(nativeSource));
+    return lifecycleLock.call(nativeSource -> MediaSourceJni.get().getState(nativeSource));
   }
 
   public void dispose() {
@@ -60,5 +62,8 @@ public class MediaSource {
     }
   }
 
-  private static native State nativeGetState(long pointer);
+  @NativeMethods
+  interface Natives {
+    State getState(long pointer);
+  }
 }

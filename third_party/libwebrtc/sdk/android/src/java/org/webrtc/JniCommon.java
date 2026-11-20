@@ -11,13 +11,35 @@
 package org.webrtc;
 
 import java.nio.ByteBuffer;
+import org.jni_zero.NativeMethods;
 
 /** Class with static JNI helper functions that are used in many places. */
 public class JniCommon {
   /** Functions to increment/decrement an RefCountInterface pointer. */
-  public static native void nativeAddRef(long refCountedPointer);
-  public static native void nativeReleaseRef(long refCountedPointer);
+  public static void nativeAddRef(long refCountedPointer) {
+    JniCommonJni.get().addRef(refCountedPointer);
+  }
 
-  public static native ByteBuffer nativeAllocateByteBuffer(int size);
-  public static native void nativeFreeByteBuffer(ByteBuffer buffer);
+  public static void nativeReleaseRef(long refCountedPointer) {
+    JniCommonJni.get().releaseRef(refCountedPointer);
+  }
+
+  public static ByteBuffer nativeAllocateByteBuffer(int size) {
+    return JniCommonJni.get().allocateByteBuffer(size);
+  }
+
+  public static void nativeFreeByteBuffer(ByteBuffer buffer) {
+    JniCommonJni.get().freeByteBuffer(buffer);
+  }
+
+  @NativeMethods
+  interface Natives {
+    void addRef(long refCountedPointer);
+
+    void releaseRef(long refCountedPointer);
+
+    ByteBuffer allocateByteBuffer(int size);
+
+    void freeByteBuffer(ByteBuffer buffer);
+  }
 }

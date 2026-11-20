@@ -80,6 +80,8 @@ if (is_android) {
       "//sdk/android:native_api_jni",
       "//sdk/android:native_api_video",
     ]
+
+    java_targets = [ ":androidnativeapi" ]
   }
 
   android_resources("resources") {

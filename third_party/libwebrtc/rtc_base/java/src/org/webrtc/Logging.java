@@ -16,6 +16,7 @@ import java.io.StringWriter;
 import java.util.EnumSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.jni_zero.NativeMethods;
 import org.webrtc.Loggable;
 
 /**
@@ -66,11 +67,11 @@ public class Logging {
   public enum Severity { LS_VERBOSE, LS_INFO, LS_WARNING, LS_ERROR, LS_NONE }
 
   public static void enableLogThreads() {
-    nativeEnableLogThreads();
+    LoggingJni.get().enableLogThreads();
   }
 
   public static void enableLogTimeStamps() {
-    nativeEnableLogTimeStamps();
+    LoggingJni.get().enableLogTimeStamps();
   }
 
   // Enable diagnostic logging for messages of `severity` to the platform debug
@@ -84,7 +85,7 @@ public class Logging {
           "Logging to native debug output not supported while Loggable is injected. "
           + "Delete the Loggable before calling this method.");
     }
-    nativeEnableLogToDebugOutput(severity.ordinal());
+    LoggingJni.get().enableLogToDebugOutput(severity.ordinal());
     loggingEnabled = true;
   }
 
@@ -104,7 +105,7 @@ public class Logging {
 
     // Try native logging if no loggable is injected.
     if (loggingEnabled) {
-      nativeLog(severity.ordinal(), tag, message);
+      LoggingJni.get().log(severity.ordinal(), tag, message);
       return;
     }
 
@@ -166,8 +167,14 @@ public class Logging {
     return sw.toString();
   }
 
-  private static native void nativeEnableLogToDebugOutput(int nativeSeverity);
-  private static native void nativeEnableLogThreads();
-  private static native void nativeEnableLogTimeStamps();
-  private static native void nativeLog(int severity, String tag, String message);
+  @NativeMethods
+  interface Natives {
+    void enableLogToDebugOutput(int nativeSeverity);
+
+    void enableLogThreads();
+
+    void enableLogTimeStamps();
+
+    void log(int severity, String tag, String message);
+  }
 }

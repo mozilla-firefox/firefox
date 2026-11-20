@@ -10,6 +10,8 @@
 
 package org.webrtc;
 
+import org.jni_zero.NativeMethods;
+
 /**
  * Class for holding the native pointer of a histogram. Since there is no way to destroy a
  * histogram, please don't create unnecessary instances of this object. This class is thread safe.
