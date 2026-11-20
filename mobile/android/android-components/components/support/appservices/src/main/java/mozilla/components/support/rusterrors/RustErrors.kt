@@ -4,7 +4,7 @@
 
 package mozilla.components.support.rusterrors
 
-import mozilla.appservices.errorsupport.RustComponentsErrorTelemetry
+import mozilla.appservices.errorsupport.reportError
 import mozilla.appservices.tracing.EventSink
 import mozilla.appservices.tracing.EventSinkSpecification
 import mozilla.appservices.tracing.EventTarget
@@ -21,7 +21,7 @@ import mozilla.components.concept.base.crash.CrashReporting
  * InternalException.
  */
 fun reportRustError(typeName: String, exception: Throwable) {
-    RustComponentsErrorTelemetry.submitErrorPing(typeName, exception.toString())
+    reportError(typeName, exception.toString())
 }
 
 /**
