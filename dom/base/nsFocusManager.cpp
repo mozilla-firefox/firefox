@@ -5724,21 +5724,20 @@ void nsFocusManager::InsertNewFocusActionId(uint64_t aActionId) {
   mPendingFocusedBrowsingContextActions.AppendElement(aActionId);
 }
 
+// Removes the content-initiated actions among the first aUntil elements of
+// aPendingActions, preserving the order of the remaining ones. This is done in
+// a single pass to avoid quadratic behavior when there are many pending
+// content-initiated actions.
 static void RemoveContentInitiatedActionsUntil(
     nsTArray<uint64_t>& aPendingActions,
     nsTArray<uint64_t>::index_type aUntil) {
-  nsTArray<uint64_t>::index_type i = 0;
-  while (i < aUntil) {
-    auto [actionProc, actionId] =
-        nsContentUtils::SplitProcessSpecificId(aPendingActions[i]);
-    (void)actionId;
-    if (actionProc) {
-      aPendingActions.RemoveElementAt(i);
-      --aUntil;
-      continue;
-    }
-    ++i;
-  }
+  MOZ_ASSERT(aUntil <= aPendingActions.Length());
+  uint64_t* begin = aPendingActions.Elements();
+  uint64_t* end = begin + aUntil;
+  uint64_t* newEnd = std::remove_if(begin, end, [](uint64_t aActionId) {
+    return std::get<0>(nsContentUtils::SplitProcessSpecificId(aActionId)) != 0;
+  });
+  aPendingActions.RemoveElementsAt(newEnd - begin, end - newEnd);
 }
 
 bool nsFocusManager::ProcessPendingActiveBrowsingContextActionId(
