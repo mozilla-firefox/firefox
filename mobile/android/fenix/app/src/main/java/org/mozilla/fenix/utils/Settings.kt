@@ -3591,15 +3591,10 @@ class Settings(
             default = { FxNimbus.features.accountSyncDecouple.value().enabled },
         )
 
-    /**
-     * Feature flag that indicates if the Trust Panel shows the certificate details of the current website, with the EU
-     * trust mark for websites that present a QWAC. The flag is backed by a Nimbus flag, with an option to override it
-     * through secret settings.
-     */
     var isQwacUiEnabled by
         booleanPreference(
             key = appContext.getPreferenceKey(R.string.pref_key_enable_qwac_ui),
-            default = { FxNimbus.features.qwacUi.value().enabled },
+            default = false,
         )
 
     private var powerSavingModeAutoPreference by
