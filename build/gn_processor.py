@@ -699,14 +699,14 @@ def process_gn_config(
         if use_defines_in_asflags and context_attrs["DEFINES"]:
             context_attrs["ASFLAGS"] += ["-D" + d for d in context_attrs["DEFINES"]]
         suffix_map = {
-            ".c": ("CFLAGS", ["cflags", "cflags_c"]),
-            ".cpp": ("CXXFLAGS", ["cflags", "cflags_cc"]),
-            ".cc": ("CXXFLAGS", ["cflags", "cflags_cc"]),
-            ".m": ("CMFLAGS", ["cflags", "cflags_objc"]),
-            ".mm": ("CMMFLAGS", ["cflags", "cflags_objcc"]),
+            (".c",): ("CFLAGS", ["cflags", "cflags_c"]),
+            (".cpp", ".cc"): ("CXXFLAGS", ["cflags", "cflags_cc"]),
+            (".m",): ("CMFLAGS", ["cflags", "cflags_objc"]),
+            (".mm",): ("CMMFLAGS", ["cflags", "cflags_objcc"]),
         }
-        variables = (suffix_map[e] for e in extensions if e in suffix_map)
-        for var, flag_keys in variables:
+        for suffixes, (var, flag_keys) in suffix_map.items():
+            if extensions.isdisjoint(suffixes):
+                continue
             flags = [
                 _f for _k in flag_keys for _f in spec.get(_k, []) if _f in mozilla_flags
             ]
