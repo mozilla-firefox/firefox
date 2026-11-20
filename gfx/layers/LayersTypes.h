@@ -412,10 +412,15 @@ struct CompositeProcessFencesHolderId {
   };
 };
 
-// AndroidImageReaderId allocated in GPU process
+// Identifies an AndroidImageReader in the compositing process (GPU or parent).
+// Zero is invalid. Locally generated IDs occupy the low half of the uint64_t
+// range; IDs derived from remote allocation handles always set kRemoteIdBit.
 struct GpuProcessAndroidImageReaderId {
+  static constexpr uint64_t kRemoteIdBit = uint64_t(1) << 63;
+
   uint64_t mId = 0;
 
+  // Allocates a local GPU-process ID. Fails before entering the remote range.
   static GpuProcessAndroidImageReaderId GetNext();
 
   bool IsValid() const { return mId != 0; }

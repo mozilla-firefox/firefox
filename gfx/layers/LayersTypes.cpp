@@ -6,6 +6,7 @@
 
 #include <cinttypes>
 
+#include "mozilla/Assertions.h"
 #include "mozilla/gfx/gfxVars.h"
 #include "nsPrintfCString.h"
 
@@ -104,7 +105,12 @@ GpuProcessAndroidImageReaderId GpuProcessAndroidImageReaderId::GetNext() {
   }
 
   static std::atomic<uint64_t> sCounter = 0;
-  return GpuProcessAndroidImageReaderId{++sCounter};
+  const uint64_t id = ++sCounter;
+  // Reserve the high bit for remote readers even in release builds. Exhaustion
+  // must fail rather than let a local ID collide with the remote namespace.
+  MOZ_RELEASE_ASSERT((id & kRemoteIdBit) == 0,
+                     "Local AndroidImageReader ID range exhausted");
+  return GpuProcessAndroidImageReaderId{id};
 }
 
 /* static */

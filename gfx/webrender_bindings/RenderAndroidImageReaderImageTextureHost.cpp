@@ -53,7 +53,7 @@ bool RenderAndroidImageReaderImageTextureHost::EnsureLockable() {
   MOZ_RELEASE_ASSERT(mGL);
 
   if (!mAndroidImageConsumer) {
-    auto* imageReaderMap = layers::GpuProcessAndroidImageReaderMap::Get();
+    auto imageReaderMap = layers::GpuProcessAndroidImageReaderMap::Get();
     if (!imageReaderMap) {
       return false;
     }

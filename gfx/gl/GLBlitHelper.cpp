@@ -1006,7 +1006,7 @@ bool GLBlitHelper::BlitSdToFramebuffer(const layers::SurfaceDescriptor& asd,
     case layers::SurfaceDescriptor::TAndroidImageReaderImageDescriptor: {
       const auto& sd = asd.get_AndroidImageReaderImageDescriptor();
 
-      auto* imageReaderMap = layers::GpuProcessAndroidImageReaderMap::Get();
+      auto imageReaderMap = layers::GpuProcessAndroidImageReaderMap::Get();
       if (!imageReaderMap) {
         return false;
       }
