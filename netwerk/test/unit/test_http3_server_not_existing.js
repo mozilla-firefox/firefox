@@ -36,8 +36,7 @@ function altsvcSetupPromise(chan, listener) {
 }
 
 add_task(async function test_fatal_error() {
-  let h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
+  let h2Port = (await create_h2_server()).port();
 
   Services.prefs.setBoolPref("network.http.http3.enable", true);
   Services.prefs.setCharPref("network.dns.localDomains", "foo.example.com");
