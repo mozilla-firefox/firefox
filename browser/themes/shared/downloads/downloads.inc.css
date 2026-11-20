@@ -49,9 +49,8 @@
   padding-inline-end: var(--space-xsmall);
   margin: 0 0 var(--space-small);
   border-radius: var(--border-radius-medium);
-  @media not -moz-pref("browser.nova.enabled") {
-    border-radius: var(--border-radius-small);
-  }
+  background: transparent;
+  color: inherit;
 }
 
 .downloadMainArea {
@@ -96,6 +95,8 @@
 
 .downloadTypeIcon {
   margin-inline-end: 0.7em;
+  width: var(--size-item-large);
+  height: var(--size-item-large);
 }
 
 #downloadsSummary {
@@ -106,6 +107,7 @@
   /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding-inline-end: 59px;
   -moz-user-focus: normal;
+  min-height: var(--downloads-item-height);
 }
 
 #downloadsSummary > .downloadTypeIcon {
@@ -117,22 +119,8 @@
 }
 
 /*** List items and similar elements in the summary ***/
-#downloadsSummary {
-  min-height: var(--downloads-item-height);
-}
-
-#downloadsListBox > richlistitem {
-  background: transparent;
-  color: inherit;
-}
-
 #downloadsListBox > richlistitem:last-child {
   margin-bottom: 0;
-}
-
-.downloadTypeIcon {
-  width: var(--size-item-large);
-  height: var(--size-item-large);
 }
 
 #downloadsSummaryDescription,
@@ -180,10 +168,6 @@
   --button-hover-color: var(--button-text-color-ghost-hover);
   --button-background-color-active: var(--button-background-color-ghost-active);
   --button-active-color: var(--button-text-color-ghost-active);
-
-  @media not -moz-pref("browser.nova.enabled") {
-    border-radius: var(--border-radius-small);
-  }
 }
 
 .downloadButton > .button-box > .button-icon {
@@ -252,56 +236,28 @@
 /*** Blocked subview ***/
 #downloadsPanel-blockedSubview-title {
   font-weight: var(--font-weight-heading);
-  @media not -moz-pref("browser.nova.enabled") {
-    font-size: var(--font-size-small);
-    font-weight: normal;
-    margin-block-end: var(--space-xlarge);
-  }
 }
 
 #downloadsPanel-blockedSubview-buttons {
   margin-block-start: var(--space-large);
-  @media not -moz-pref("browser.nova.enabled") {
-    margin-block-start: var(--space-xlarge);
-  }
+  justify-content: flex-start;
 }
 
 #downloadsPanel-blockedSubview-details1,
 #downloadsPanel-blockedSubview-details2 {
   color: var(--text-color-deemphasized);
   margin-block-end: 0;
-  @media not -moz-pref("browser.nova.enabled") {
-    margin-block-end: var(--space-small);
-    font-size: var(--font-size-small);
-  }
 }
 
-@media -moz-pref("browser.nova.enabled") {
-  #downloadsPanel-blockedSubview {
+#downloadsPanel-blockedSubview {
+  padding: var(--space-small);
+
+  .subviewbutton-back {
     padding: var(--space-small);
-
-    .subviewbutton-back {
-      padding: var(--space-small);
-    }
-
-    > .panel-view-body-unscrollable {
-      padding: var(--space-small);
-    }
   }
 
-  /* TODO: Bug 2056428 - Post-Nova this should be removed along with the defunct styles
-   * for icons in the blocked subview.
-   */
-  .downloadsPanel-blockedSubview-image {
-    display: none;
-  }
-
-  .downloadsPanel-blockedSubview-title-box {
-    margin-block: var(--space-xsmall);
-  }
-
-  #downloadsPanel-blockedSubview-buttons {
-    justify-content: flex-start;
+  > .panel-view-body-unscrollable {
+    padding: var(--space-small);
   }
 }
 
