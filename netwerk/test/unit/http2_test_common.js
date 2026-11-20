@@ -3,6 +3,7 @@
 "use strict";
 
 /* import-globals-from head_channels.js */
+/* import-globals-from http2_test_server.js */
 
 // Generate a small and a large post with known pre-calculated md5 sums
 function generateContent(size) {
@@ -956,3 +957,21 @@ FromDiskCacheListener.prototype = {
     });
   },
 };
+
+// Starts a server for the HTTP/2 tests above and returns its port.
+async function start_http2_test_server() {
+  const { NodeLegacyHTTP2Server } = ChromeUtils.importESModule(
+    "resource://testing-common/NodeServer.sys.mjs"
+  );
+  let server = new NodeLegacyHTTP2Server();
+  await server.start();
+  registerCleanupFunction(async () => {
+    await server.stop();
+  });
+  await server.execute(Http2TestServerCode);
+  await server.execute("Http2TestServerCode.install()");
+  await server.execute(
+    "global.request_handler = Http2TestServerCode.handleRequest"
+  );
+  return server.port();
+}
