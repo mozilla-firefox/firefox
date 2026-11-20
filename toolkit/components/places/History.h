@@ -144,6 +144,8 @@ class History final : public BaseHistory,
    */
   void AppendToRecentlyVisitedURIs(nsIURI* aURI, bool aHidden);
 
+  void ClearRecentlyVisitedURIs() { mRecentlyVisitedURIs.Clear(); }
+
  private:
   virtual ~History();
 

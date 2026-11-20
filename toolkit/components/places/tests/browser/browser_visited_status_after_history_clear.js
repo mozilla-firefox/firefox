@@ -52,3 +52,37 @@ add_task(async function links_are_unvisited_after_history_clear() {
 
   await PlacesUtils.history.clear();
 });
+
+add_task(async function reload_after_history_clear_is_stored() {
+  const pageURL =
+    getRootDirectory(gTestPath).replace(
+      "chrome://mochitests/content/",
+      "https://example.com/"
+    ) + "empty_page.html";
+  await BrowserTestUtils.withNewTab(
+    { gBrowser, url: pageURL },
+    async browser => {
+      async function reload() {
+        let loaded = BrowserTestUtils.browserLoaded(browser);
+        browser.reload();
+        await loaded;
+        await PlacesTestUtils.promiseAsyncUpdates();
+      }
+
+      await reload();
+      Assert.equal(
+        await PlacesTestUtils.visitsInDB(pageURL),
+        1,
+        "A reload of a recently visited page is not stored"
+      );
+
+      await PlacesUtils.history.clear();
+      await reload();
+      Assert.equal(
+        await PlacesTestUtils.visitsInDB(pageURL),
+        1,
+        "A reload after clearing history is stored"
+      );
+    }
+  );
+});

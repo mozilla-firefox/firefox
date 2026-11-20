@@ -411,7 +411,11 @@ class HistoryClearedListener final : public INativePlacesEventCallback {
     for (const auto& event : aEvents) {
       if (event->Type() == PlacesEventType::History_cleared) {
         // The History service owns this listener, so it is still alive.
-        History::GetService()->OnHistoryCleared();
+        History* history = History::GetService();
+        // Reloads of recently visited URIs are not stored, so forget the
+        // visits that were just cleared.
+        history->ClearRecentlyVisitedURIs();
+        history->OnHistoryCleared();
         return;
       }
     }

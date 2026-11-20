@@ -26,15 +26,9 @@ https_first_disabled = true
 
 ["browser_bug680727.js"]
 https_first_disabled = true
-skip-if = [
-  "verify-standalone",
-]
 
 ["browser_bug680727_feltPrivacy.js"]
 https_first_disabled = true
-skip-if = [
-  "verify-standalone",
-]
 
 ["browser_bug1601563.js"]
 https_first_disabled = true
@@ -100,6 +94,7 @@ support-files = [
 ["browser_visited_notfound.js"]
 
 ["browser_visited_status_after_history_clear.js"]
+support-files = ["empty_page.html"]
 
 ["browser_visituri.js"]
 https_first_disabled = true
