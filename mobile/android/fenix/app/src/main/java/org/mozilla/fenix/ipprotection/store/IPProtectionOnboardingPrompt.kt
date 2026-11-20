@@ -48,22 +48,20 @@ class IPProtectionOnboardingPrompt(
 ) : AbstractBinding<IPProtectionState>(store, mainDispatcher) {
     override suspend fun onState(flow: Flow<IPProtectionState>) {
         flow
-            .map { Pair(it.eligibilityStatus, it.accountState.status) }
+            .map {
+                PromptCriteria(
+                    eligibilityStatus = it.eligibilityStatus,
+                    accountStatus = it.accountState.status,
+                )
+            }
             .distinctUntilChanged()
-            .collect { (eligibilityStatus, accountStatus) ->
-                if (
-                    eligibilityStatus == EligibilityStatus.Ineligible ||
-                        eligibilityStatus == EligibilityStatus.UnsupportedRegion
-                ) {
+            .collect { criteria ->
+                if (criteria.isIneligible()) {
                     onIneligible()
                     return@collect
                 }
 
-                val accountInitializing =
-                    accountStatus == AccountStatus.Uninitialized || accountStatus == AccountStatus.WarmingUp
-                if (eligibilityStatus != EligibilityStatus.Eligible || accountInitializing) {
-                    return@collect
-                }
+                if (!criteria.canSelectPrompt()) return@collect
 
                 if (repository.canShowIPProtectionPrompt()) {
                     val promptDetails = determinePromptDetails()
@@ -104,6 +102,34 @@ class IPProtectionOnboardingPrompt(
             crashReporter.submitCaughtException(exception)
             null
         }
+
+    /** Criteria for determining whether to show the prompt */
+    private data class PromptCriteria(
+        val eligibilityStatus: EligibilityStatus,
+        val accountStatus: AccountStatus,
+    ) {
+        fun canSelectPrompt(): Boolean {
+            return eligibilityStatus.isEligible && accountStatus.isResolved
+        }
+
+        /** Whether the user is ineligible to use IPP (ineligible or in an unsupported region). */
+        fun isIneligible(): Boolean {
+            return eligibilityStatus == EligibilityStatus.Ineligible ||
+                eligibilityStatus == EligibilityStatus.UnsupportedRegion
+        }
+
+        val EligibilityStatus.isEligible: Boolean
+            get() = this == EligibilityStatus.Eligible
+
+        /**
+         * Whether the account status is resolved enough for us to start evaluating the prompt criteria.
+         *
+         * For us, as long as the account is not warming up, or initializing, it is enough to evaluate the prompt
+         * criteria
+         */
+        val AccountStatus.isResolved: Boolean
+            get() = this != AccountStatus.WarmingUp && this != AccountStatus.Uninitialized
+    }
 }
 
 /**
