@@ -7,6 +7,7 @@
 
 #include "ImageContainer.h"
 #include "ImageConversion.h"
+#include "ImagePixelFormat.h"
 #include "Pacer.h"
 #include "PerformanceRecorder.h"
 #include "VideoSegment.h"
@@ -15,8 +16,6 @@
 #include "common_video/include/video_frame_buffer.h"
 #include "common_video/include/video_frame_buffer_pool.h"
 #include "jsapi/RTCStatsReport.h"
-#include "mozilla/dom/ImageBitmapBinding.h"
-#include "mozilla/dom/ImageUtils.h"
 #include "nsISupportsImpl.h"
 #include "nsThreadUtils.h"
 
@@ -532,10 +531,9 @@ class VideoFrameConverterImpl : public webrtc::AdaptedVideoTrackSource {
     RefPtr<layers::PlanarYCbCrImage> image =
         aFrame.mImage->AsPlanarYCbCrImage();
     if (image) {
-      dom::ImageUtils utils(image);
-      Maybe<dom::ImageBitmapFormat> format = utils.GetFormat();
-      if (format.isSome() &&
-          format.value() == dom::ImageBitmapFormat::YUV420P &&
+      Maybe<ImagePixelFormat> format = ImageToPixelFormat(image);
+      if ((format == Some(ImagePixelFormat::I420) ||
+           format == Some(ImagePixelFormat::I420A)) &&
           image->GetData()) {
         const layers::PlanarYCbCrData* data = image->GetData();
         srcFrame = webrtc::WrapI420Buffer(
