@@ -169,11 +169,30 @@ internal fun copyFile(temporalFile: File, inStream: InputStream): Long {
 @VisibleForTesting
 @Suppress("TooGenericExceptionCaught")
 internal fun Uri.getFileNameForContentUris(contentResolver: ContentResolver): String {
-    var fileName = ""
+    var fileName: String? = null
     var fileExtension = ""
 
     try {
         fileExtension = getFileExtension(contentResolver)
+        fileName = getFileNameOrNullForContentUris(contentResolver)
+    } catch (e: RuntimeException) {
+        Logger("Uri.kt").warn("Could not read the file extension from the content provider", e)
+    }
+
+    return fileName ?: generateFileName(fileExtension)
+}
+
+/**
+ * Return the filename the content provider has for [this] content:// Uri.
+ *
+ * @param contentResolver The [ContentResolver] to query the content provider with.
+ * @return The sanitized file name, or null if the content provider does not have one or could not be read.
+ */
+@Suppress("TooGenericExceptionCaught")
+fun Uri.getFileNameOrNullForContentUris(contentResolver: ContentResolver): String? {
+    var fileName = ""
+
+    try {
         contentResolver.query(this, null, null, null, null)?.use { cursor ->
             val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
             if (nameIndex != -1 && cursor.moveToFirst()) {
@@ -184,7 +203,7 @@ internal fun Uri.getFileNameForContentUris(contentResolver: ContentResolver): St
         Logger("Uri.kt").warn("Could not read the file name from the content provider", e)
     }
 
-    return fileName.sanitizeFileName().ifEmpty { generateFileName(fileExtension) }
+    return fileName.sanitizeFileName().ifEmpty { null }
 }
 
 /** Generate a file name using a randomUUID + the current timestamp. */

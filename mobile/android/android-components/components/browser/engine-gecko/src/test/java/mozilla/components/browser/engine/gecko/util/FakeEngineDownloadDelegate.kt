@@ -16,7 +16,8 @@ class FakeEngineDownloadDelegate(
         ) -> String =
         { _, _, _ ->
             "fileName"
-        }
+        },
+    private val getContentFileName: (uri: String?) -> String? = { null },
 ) : DownloadDelegate {
     override fun guessFileName(
         contentDisposition: String?,
@@ -29,4 +30,6 @@ class FakeEngineDownloadDelegate(
             mimeType,
         )
     }
+
+    override fun getContentFileName(uri: String?): String? = getContentFileName.invoke(uri)
 }

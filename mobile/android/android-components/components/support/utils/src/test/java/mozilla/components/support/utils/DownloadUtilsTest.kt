@@ -66,6 +66,15 @@ class DownloadUtilsTest {
     }
 
     @Test
+    fun `WHEN fileNameFromContentDisposition is called THEN only the Content-Disposition is used`() {
+        assertEquals(
+            "test.pdf",
+            DownloadUtils.fileNameFromContentDisposition("attachment; filename=\"test.pdf\""),
+        )
+        assertNull(DownloadUtils.fileNameFromContentDisposition(contentDisposition = null))
+    }
+
+    @Test
     fun truncateFileNameTest() {
         val path = "/storage/emulated/0/Download"
         val customPath = "/storage/emulated/0/MyCustomFolder"

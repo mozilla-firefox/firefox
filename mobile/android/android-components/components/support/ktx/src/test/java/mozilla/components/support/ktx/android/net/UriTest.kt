@@ -254,6 +254,22 @@ class UriTest {
     }
 
     @Test
+    fun `WHEN getFileNameOrNullForContentUris is called THEN the display name is used`() {
+        val resolver = mock<ContentResolver>()
+        val uri = "content://media/external/file/37162".toUri()
+
+        doReturn(MatrixCursor(arrayOf(OpenableColumns.DISPLAY_NAME)).apply { addRow(arrayOf("myFile.txt")) })
+            .`when`(resolver)
+            .query(any(), any(), any(), any(), any())
+        assertEquals("myFile.txt", uri.getFileNameOrNullForContentUris(resolver))
+
+        doReturn(MatrixCursor(arrayOf(OpenableColumns.DISPLAY_NAME)).apply { addRow(arrayOf(null)) })
+            .`when`(resolver)
+            .query(any(), any(), any(), any(), any())
+        assertNull(uri.getFileNameOrNullForContentUris(resolver))
+    }
+
+    @Test
     fun `getFileName for file uri schemes`() {
         val resolver = mock<ContentResolver>()
         val uri = "file:///home/user/myfile.html".toUri()

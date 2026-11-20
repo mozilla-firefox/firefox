@@ -5,6 +5,14 @@ permalink: /changelog/
 ---
 
 # 163.0 (In Development)
+* **browser-engine-gecko**
+  * ⚠️ **Behavior change for embedders**: Implement `DownloadDelegate.getContentFileName` so that downloaded and shared PDFs from `content://` tabs keep their local filename. [Bug 2071966](https://bugzilla.mozilla.org/show_bug.cgi?id=2071966)
+* **concept-engine**
+  * 🆕 Added `DownloadDelegate.getContentFileName`, which returns the filename a content provider has for a `content://` URI. [Bug 2071966](https://bugzilla.mozilla.org/show_bug.cgi?id=2071966)
+* **support-ktx**
+  * 🆕 Added `Uri.getFileNameOrNullForContentUris`, which finds the filename a content provider has for a `content://` Uri. [Bug 2071966](https://bugzilla.mozilla.org/show_bug.cgi?id=2071966)
+* **support-utils**
+  * 🆕 Added `DownloadUtils.fileNameFromContentDisposition`, which pulls the filename from a Content-Disposition. [Bug 2071966](https://bugzilla.mozilla.org/show_bug.cgi?id=2071966)
 
 # 162.0
 * **concept-engine**

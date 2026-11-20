@@ -28,7 +28,7 @@ import mozilla.components.browser.engine.gecko.permission.GeckoPermissionRequest
 import mozilla.components.browser.engine.gecko.prompt.GeckoPromptDelegate
 import mozilla.components.browser.engine.gecko.translate.GeckoTranslateSessionDelegate
 import mozilla.components.browser.engine.gecko.translate.GeckoTranslationUtils.intoTranslationError
-import mozilla.components.browser.engine.gecko.util.makePdfDownloadFilename
+import mozilla.components.browser.engine.gecko.util.findBestPdfFilename
 import mozilla.components.browser.engine.gecko.window.GeckoWindowRequest
 import mozilla.components.concept.engine.DownloadDelegate
 import mozilla.components.concept.engine.EngineSession
@@ -69,7 +69,6 @@ import mozilla.components.support.ktx.kotlin.isEmail
 import mozilla.components.support.ktx.kotlin.isExtensionUrl
 import mozilla.components.support.ktx.kotlin.isGeoLocation
 import mozilla.components.support.ktx.kotlin.isPhone
-import mozilla.components.support.ktx.kotlin.sanitizeFileName
 import mozilla.components.support.ktx.kotlin.tryGetHostFromUrl
 import mozilla.components.support.utils.CertificateUtils
 import mozilla.components.support.utils.DownloadUtils
@@ -261,9 +260,16 @@ class GeckoEngineSession(
                     val responseStatus = RESPONSE_CODE_SUCCESS
                     // We do not know the size at this point; send 0 so consumers do not display it.
                     val contentLength = 0L
+                    val pdfFilename =
+                        findBestPdfFilename(
+                            downloadDelegate = settings.downloadDelegate,
+                            url = currentUrl,
+                            contentDisposition = webResponse.headers[CONTENT_DISPOSITION],
+                            title = currentTitle,
+                        )
                     // Update the content disposition to ensure we have proper file naming for both viewed or generated
                     // PDFs
-                    val disposition = contentDispositionForPdf(webResponse)
+                    val disposition = makePdfContentDisposition(pdfFilename)
                     // Ensures the name is properly sanitized for the filesystem
                     val fileName =
                         settings.downloadDelegate?.guessFileName(
@@ -322,6 +328,13 @@ class GeckoEngineSession(
                         return@then GeckoResult<Void>()
                     }
 
+                    val pdfFilename =
+                        findBestPdfFilename(
+                            downloadDelegate = settings.downloadDelegate,
+                            url = currentUrl,
+                            contentDisposition = webResponse.headers[CONTENT_DISPOSITION],
+                            title = currentTitle,
+                        )
                     onResult(
                         Response(
                             url = webResponse.uri,
@@ -329,7 +342,7 @@ class GeckoEngineSession(
                             headers =
                                 MutableHeaders(
                                     CONTENT_TYPE to "application/pdf",
-                                    CONTENT_DISPOSITION to contentDispositionForPdf(webResponse),
+                                    CONTENT_DISPOSITION to makePdfContentDisposition(pdfFilename),
                                 ),
                             body = Response.Body(body),
                         )
@@ -341,25 +354,6 @@ class GeckoEngineSession(
                     GeckoResult()
                 },
             )
-    }
-
-    /**
-     * Ensures a proper Content-Disposition is available to guarantee PDFs have reasonable names for downloading or
-     * sharing.
-     *
-     * @param webResponse The PDF response. May come either from the PDF viewer or from generating a PDF from browser
-     *   content.
-     * @return The Content-Disposition to download or share the PDF with.
-     */
-    private fun contentDispositionForPdf(webResponse: WebResponse): String {
-        val pdfFilename =
-            DownloadUtils.extractFileNameFromUrlOrNull(
-                    contentDisposition = webResponse.headers[CONTENT_DISPOSITION],
-                    url = null,
-                )
-                ?.sanitizeFileName()
-        // Ensures content disposition is set up properly for downloading a PDF
-        return makePdfContentDisposition(makePdfDownloadFilename(filename = pdfFilename, title = currentTitle))
     }
 
     /**
