@@ -53,7 +53,7 @@ StaticMutex GLLibraryEGL::sMutex;
 StaticRefPtr<GLLibraryEGL> GLLibraryEGL::sInstance;
 StaticRefPtr<GLLibraryEGL> GLLibraryEGL::sNativeInstance;
 
-// should match the order of EGLExtensions, and be null-terminated.
+// should match the order of EGLLibExtension, and be null-terminated.
 static const char* sEGLLibraryExtensionNames[] = {
     "EGL_ANDROID_get_native_client_buffer",
     "EGL_ANGLE_device_creation",
@@ -70,7 +70,7 @@ static const char* sEGLLibraryExtensionNames[] = {
     "EGL_EXT_platform_device",
     "EGL_MESA_platform_surfaceless"};
 
-// should match the order of EGLExtensions, and be null-terminated.
+// should match the order of EGLExtension, and be null-terminated.
 static const char* sEGLExtensionNames[] = {
     "EGL_KHR_image_base",
     "EGL_KHR_image_pixmap",
@@ -103,6 +103,12 @@ static const char* sEGLExtensionNames[] = {
     "EGL_ANGLE_metal_commands_scheduled_sync",
     "EGL_ANGLE_metal_shared_event_sync",
     "EGL_ANGLE_wait_until_work_scheduled",
+};
+
+// should match the order of EGLDeviceExtension, and be null-terminated.
+static const char* sEGLDeviceExtensionNames[] = {
+    "EGL_ANGLE_device_d3d",
+    "EGL_ANGLE_device_metal",
 };
 
 PRLibrary* LoadApitraceLibrary() {
@@ -1029,6 +1035,22 @@ EglDisplay::EglDisplay(const PrivateUseOnly&, GLLibraryEGL& lib,
   }
   MarkExtensions(rawExtString, shouldDumpExts, "display", sEGLExtensionNames,
                  &mAvailableExtensions);
+
+  if (mLib->IsExtensionSupported(EGLLibExtension::EXT_device_query)) {
+    EGLAttrib device = 0;
+    if (fQueryDisplayAttribEXT(LOCAL_EGL_DEVICE_EXT, &device)) {
+      auto rawDeviceExtString = mLib->fQueryDeviceStringEXT(
+          reinterpret_cast<EGLDeviceEXT>(device), LOCAL_EGL_EXTENSIONS);
+      if (!rawDeviceExtString) {
+        NS_WARNING("Failed to query EGL device extensions!");
+        rawDeviceExtString = "";
+      }
+      MarkExtensions(rawDeviceExtString, shouldDumpExts, "device",
+                     sEGLDeviceExtensionNames, &mAvailableDeviceExtensions);
+    } else {
+      NS_WARNING("Failed to query EGL device!");
+    }
+  }
 
   // -
 

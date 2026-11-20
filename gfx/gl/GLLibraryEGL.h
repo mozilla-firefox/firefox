@@ -64,11 +64,10 @@ void AfterEGLCall(const char* funcName);
 
 class EglDisplay;
 /**
- * Known GL extensions that can be queried by
- * IsExtensionSupported.  The results of this are cached, and as
- * such it's safe to use this even in performance critical code.
- * If you add to this array, remember to add to the string names
- * in GLLibraryEGL.cpp.
+ * Known EGL library extensions that can be queried by
+ * GLLibraryEGL::IsExtensionSupported. The results of this are cached, and as
+ * such it's safe to use this even in performance critical code. If you add to
+ * this array, remember to add to the string names in GLLibraryEGL.cpp.
  */
 enum class EGLLibExtension {
   ANDROID_get_native_client_buffer,
@@ -89,11 +88,10 @@ enum class EGLLibExtension {
 };
 
 /**
- * Known GL extensions that can be queried by
- * IsExtensionSupported.  The results of this are cached, and as
- * such it's safe to use this even in performance critical code.
- * If you add to this array, remember to add to the string names
- * in GLLibraryEGL.cpp.
+ * Known EGL display extensions that can be queried by
+ * EglDisplay::IsExtensionSupported. The results of this are cached, and as
+ * such it's safe to use this even in performance critical code. If you add to
+ * this array, remember to add to the string names in GLLibraryEGL.cpp.
  */
 enum class EGLExtension {
   KHR_image_base,
@@ -129,6 +127,14 @@ enum class EGLExtension {
   ANGLE_wait_until_work_scheduled,
   Max
 };
+
+/**
+ * Known EGL device extensions that can be queried by
+ * EglDisplay::IsExtensionSupported. The results of this are cached, and as such
+ * it's safe to use this even in performance critical code. If you add to this
+ * array, remember to add to the string names in GLLibraryEGL.cpp.
+ */
+enum class EGLDeviceExtension { ANGLE_device_d3d, ANGLE_device_metal, Max };
 
 struct EGLCreateDisplayFlags {
   // Force creation of a hardware accelerated Display. Must be false if
@@ -789,6 +795,8 @@ class EglDisplay final {
 
  private:
   std::bitset<UnderlyingValue(EGLExtension::Max)> mAvailableExtensions;
+  std::bitset<UnderlyingValue(EGLDeviceExtension::Max)>
+      mAvailableDeviceExtensions;
 
   bool mShouldLeakEGLDisplay = false;
 
@@ -811,6 +819,10 @@ class EglDisplay final {
 
   void MarkExtensionUnsupported(EGLExtension aKnownExtension) {
     mAvailableExtensions[UnderlyingValue(aKnownExtension)] = false;
+  }
+
+  bool IsExtensionSupported(EGLDeviceExtension aKnownExtension) const {
+    return mAvailableDeviceExtensions[UnderlyingValue(aKnownExtension)];
   }
 
   void DumpEGLConfig(EGLConfig) const;
