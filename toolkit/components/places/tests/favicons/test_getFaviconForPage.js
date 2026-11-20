@@ -289,6 +289,33 @@ add_task(async function test_rich_priority_below_threshold() {
   await PlacesTestUtils.clearFavicons();
 });
 
+add_task(async function test_newest_icon_for_same_width() {
+  const pageURI = uri("http://example.com/");
+  await PlacesTestUtils.addVisits(pageURI);
+
+  const faviconDataURI = await createDataURLForFavicon({
+    data: readFileData(do_get_file("favicon-normal16.png")),
+    mimeType: "image/png",
+  });
+  for (let version of ["v1", "v2"]) {
+    await PlacesUtils.favicons.setFaviconForPage(
+      pageURI,
+      uri(`http://example.com/${version}/favicon.png`),
+      faviconDataURI
+    );
+  }
+
+  const result = await PlacesUtils.favicons.getFaviconForPage(pageURI, 16);
+  Assert.equal(
+    result.uri.spec,
+    "http://example.com/v2/favicon.png",
+    "The most recently added icon is returned"
+  );
+
+  await PlacesUtils.history.clear();
+  await PlacesTestUtils.clearFavicons();
+});
+
 add_task(async function test_rich_priority_above_threshold() {
   const pageURI = uri("http://example.com/");
   await PlacesTestUtils.addVisits(pageURI);

@@ -405,7 +405,8 @@ nsresult FetchIconInfo(const UniquePtr<ConnectionAdapter>& aConn,
   const uint16_t THRESHOLD_WIDTH = 64;
 
   // This selects both associated and root domain icons, ordered by width,
-  // where an associated icon has priority over a root domain icon.
+  // where an associated icon has priority over a root domain icon, and the
+  // most recently added icon has priority over others of the same width.
   // If the preferred width is less than or equal to THRESHOLD_WIDTH, non-rich
   // icons are prioritized over rich icons by ordering first by `isRich ASC`,
   // then by width. If the preferred width is greater than THRESHOLD_WIDTH, the
@@ -430,7 +431,7 @@ nsresult FetchIconInfo(const UniquePtr<ConnectionAdapter>& aConn,
       "FROM moz_icons i "
       "WHERE fixed_icon_url_hash = "
       "  hash(fixup_url(:hostAndPort) || '/favicon.ico') "
-      "ORDER BY %s width DESC, root ASC",
+      "ORDER BY %s width DESC, root ASC, id DESC",
       nsIFaviconService::ICONDATA_FLAGS_RICH,
       nsIFaviconService::ICONDATA_FLAGS_RICH,
       // Prefer non-rich icons for small sizes (<= 64px).
