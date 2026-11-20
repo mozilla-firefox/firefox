@@ -18,6 +18,10 @@ add_setup(async function () {
     args0Markup: "Another <strong>zero args</strong> value",
     args1: "One arg value is { $arg1 }",
     args1Markup: "Another one arg value <strong>is { $arg1 }</strong>",
+    args2: "First { $arg1 } then { $arg2 }",
+    args1Title: "Value is { $arg1 }\n  .title = Title",
+    args2Markup:
+      'First <em>{ $arg1 }</em> then <a href="https://example.com/">{ $arg2 }</a>',
     attrs0: [".label = attrs0 label has zero args"],
     attrs0Markup: [
       ".label = Markup <strong>should not be parsed</strong> in attributes",
@@ -184,6 +188,8 @@ add_task(async function comprehensive() {
         id: "attrs1",
         attribute: "tooltiptext",
         args: { arg1: "foo" },
+        // Highlights are ignored for attributes, which can't contain markup.
+        argsHighlights: { arg1: [[0, 3]] },
       },
       assert: span => {
         checkAttributes(span, {
@@ -234,6 +240,142 @@ add_task(async function comprehensive() {
 
     cache.clear();
   }
+});
+
+add_task(async function argsHighlights() {
+  let cache = new L10nCache(gL10n);
+  let span = document.createElement("span");
+
+  let l10n = {
+    id: "args2",
+    args: { arg1: "foo <b>bar</b>", arg2: "baz" },
+    argsHighlights: { arg1: [[0, 3]] },
+  };
+  await cache.setElementL10n(span, l10n);
+  let { args } = document.l10n.getAttributes(span);
+  Assert.equal(args.arg2, "baz", "The other arg should be passed as is");
+  let parsed = new DOMParser().parseFromString(args.arg1, "text/html").body;
+  checkChildren(parsed, [
+    { name: "STRONG", textContent: "foo" },
+    { name: "#text", textContent: " <b>bar</b>" },
+  ]);
+
+  // The cached string should be applied synchronously with the highlights.
+  span.textContent = "";
+  let promise = cache.setElementL10n(span, l10n);
+  checkChildren(span, [
+    { name: "#text", textContent: "First " },
+    { name: "strong", textContent: "foo" },
+    { name: "#text", textContent: " <b>bar</b> then baz" },
+  ]);
+  await promise;
+
+  // Different highlights aren't cached yet.
+  span.textContent = "";
+  await cache.setElementL10n(span, {
+    ...l10n,
+    argsHighlights: { arg1: [[4, 3]] },
+  });
+  Assert.equal(span.textContent, "", "The uncached string isn't applied");
+});
+
+add_task(async function argsHighlightsWithoutOverlays() {
+  let cache = new L10nCache(gL10n);
+  let span = document.createElement("span");
+
+  let l10n = {
+    id: "args2",
+    args: { arg1: "foo", arg2: "baz" },
+    argsHighlights: { arg1: [[0, 3]] },
+  };
+  await cache.setElementL10n(span, l10n);
+
+  // `L10nOverlays` isn't available in unprivileged documents, so cached strings
+  // with highlights should be left to `DOMLocalization`.
+  Object.defineProperty(span, "documentGlobal", { value: {} });
+  span.textContent = "";
+  await cache.setElementL10n(span, l10n);
+  Assert.equal(span.textContent, "", "The cached string isn't applied");
+  Assert.equal(
+    document.l10n.getAttributes(span).id,
+    "args2",
+    "The l10n attributes should be set"
+  );
+});
+
+add_task(async function argsHighlightsMarkup() {
+  let cache = new L10nCache(gL10n);
+
+  // Cached strings should be rendered like `DOMLocalization` does: links are
+  // replaced with their text, and allowed elements in the translation are
+  // kept but their content is flattened, so highlights inside them are lost.
+  for (let { l10n, expected } of [
+    {
+      // Markup in args without highlights.
+      l10n: {
+        id: "args2",
+        args: { arg1: "foo", arg2: '<a href="https://example.com/">bar</a>' },
+        argsHighlights: { arg1: [[0, 3]] },
+      },
+      expected: [
+        { name: "#text", textContent: "First " },
+        { name: "strong", textContent: "foo" },
+        { name: "#text", textContent: " then " },
+        { name: "#text", textContent: "bar" },
+      ],
+    },
+    {
+      // Markup in the translation.
+      l10n: {
+        id: "args2Markup",
+        args: { arg1: "foo", arg2: "bar" },
+        argsHighlights: { arg1: [[0, 3]] },
+      },
+      expected: [
+        { name: "#text", textContent: "First " },
+        { name: "em", textContent: "foo" },
+        { name: "#text", textContent: " then " },
+        { name: "#text", textContent: "bar" },
+      ],
+    },
+  ]) {
+    info("Doing subtest: " + JSON.stringify(l10n));
+    let span = document.createElement("span");
+    await cache.setElementL10n(span, l10n);
+
+    span.textContent = "";
+    let promise = cache.setElementL10n(span, l10n);
+    checkChildren(span, expected);
+    Assert.ok(
+      !span.querySelector("em > *"),
+      "The content of allowed elements should be flattened"
+    );
+
+    await promise;
+  }
+});
+
+add_task(async function argsHighlightsWithAttributes() {
+  let cache = new L10nCache(gL10n);
+  let span = document.createElement("span");
+
+  let l10n = {
+    id: "args1Title",
+    args: { arg1: "foo" },
+    argsHighlights: { arg1: [[0, 3]] },
+  };
+  await cache.setElementL10n(span, l10n);
+
+  // Localized attributes should be kept when the highlighted value is applied.
+  span.textContent = "";
+  span.removeAttribute("title");
+  let promise = cache.setElementL10n(span, l10n);
+  checkChildren(span, [
+    { name: "#text", textContent: "Value is " },
+    { name: "strong", textContent: "foo" },
+  ]);
+  checkAttributes(span, { title: "Title" });
+  await promise;
 });
 
 add_task(async function removeElementL10n() {

@@ -250,7 +250,8 @@ export class L10nCache {
    *   string is expected to contain markup. When true, the cached string is
    *   essentially assigned to the element's `innerHTML` via `setHTML`. Only
    *   a few elements and attributes are allowed.  When false, it's assigned
-   *   to the element's `textContent`.
+   *   to the element's `textContent`. It's ignored when `argsHighlights` is
+   *   set, since markup is then always parsed, like `DOMLocalization` does.
    * @returns {Promise}
    *   A promise that's resolved when the string has been cached. You can ignore
    *   it and do not need to await it unless you want to make sure the string is
@@ -266,9 +267,53 @@ export class L10nCache {
       parseMarkup = false,
     }
   ) {
+    // If args highlights were specified, replace the highlighted args with
+    // their HTML version. They're used both to look up the cached string and
+    // for `DOMLocalization`, which renders markup in translations.
+    let highlighted = !attribute && argsHighlights;
+    if (highlighted) {
+      // Copy args to avoid modifying the caller's object, e.g. a result payload.
+      args = { ...args };
+
+      let span = element.ownerDocument.createElement("span");
+      for (let key in argsHighlights) {
+        UrlbarShared.addTextContentWithHighlights(
+          span,
+          args[key],
+          argsHighlights[key]
+        );
+        args[key] = span.innerHTML;
+      }
+    }
+
+    // If an attribute was passed in, make sure it's allowed to be localized by
+    // setting `data-l10n-attrs`. This isn't strictly required for attributes
+    // already in the Fluent allowlist.
+    if (attribute) {
+      element.setAttribute("data-l10n-attrs", attribute);
+    } else {
+      element.removeAttribute("data-l10n-attrs");
+    }
+
     // If the message is cached, apply it to the element.
     let message = this.get({ id, args });
-    if (message) {
+    if (highlighted) {
+      // Render the markup and attributes exactly like `DOMLocalization` does.
+      // `L10nOverlays` is chrome-only, so in unprivileged documents like
+      // about:newtab, leave the translation to `DOMLocalization`.
+      let overlays = element.documentGlobal?.L10nOverlays;
+      if (message && overlays) {
+        overlays.translateElement(element, {
+          value: message.value,
+          attributes:
+            message.attributes &&
+            Object.entries(message.attributes).map(([key, value]) => ({
+              name: key,
+              value,
+            })),
+        });
+      }
+    } else if (message) {
       if (message.attributes) {
         for (let [key, value] of Object.entries(message.attributes)) {
           element.setAttribute(key, value);
@@ -286,32 +331,6 @@ export class L10nCache {
           });
         }
       }
-    }
-
-    // If the message isn't cached and args highlights were specified, apply
-    // them now.
-    if (!message && !attribute && argsHighlights) {
-      // To avoid contaminated args because we cache it, create a new instance.
-      args = { ...args };
-
-      let span = element.ownerDocument.createElement("span");
-      for (let key in argsHighlights) {
-        UrlbarShared.addTextContentWithHighlights(
-          span,
-          args[key],
-          argsHighlights[key]
-        );
-        args[key] = span.innerHTML;
-      }
-    }
-
-    // If an attribute was passed in, make sure it's allowed to be localized by
-    // setting `data-l10n-attrs`. This isn't required for attrbutes already in
-    // the Fluent allowlist but it doesn't hurt.
-    if (attribute) {
-      element.setAttribute("data-l10n-attrs", attribute);
-    } else {
-      element.removeAttribute("data-l10n-attrs");
     }
 
     // Set the l10n attributes. If the message wasn't cached, `DOMLocalization`
