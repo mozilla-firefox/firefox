@@ -30,6 +30,11 @@ let mockAlertsService = {
     );
   },
 
+  // Notification.close() reaches the alerts service through this mock.
+  closeAlert(name, contextClosed) {
+    alertsService.closeAlert(name, contextClosed);
+  },
+
   QueryInterface: ChromeUtils.generateQI(["nsIAlertsService"]),
 
   createInstance(aIID) {
@@ -90,6 +95,7 @@ add_task(async function no_tag_collision_between_containers() {
         notification.onshow = () => resolve();
         notification.onerror = () => reject("onerror");
         notification.onclose = () => {};
+        content.wrappedJSObject.notification = notification;
         return promise;
       })
     )
@@ -101,6 +107,20 @@ add_task(async function no_tag_collision_between_containers() {
   for (const entry of mockAlertsService.history) {
     is(entry.prop, "onAlertShow", "Should only observe alertshow");
   }
+
+  // Closing the tab leaves the system notification in the Windows Action
+  // Center, and the next run's notifications with the same tag then report
+  // onAlertDismissedFromForeground, so close the notifications explicitly.
+  await Promise.all(
+    [browser1, browser2].map(browser =>
+      SpecialPowers.spawn(browser, [], async () => {
+        const { notification } = content.wrappedJSObject;
+        const closed = new Promise(resolve => (notification.onclose = resolve));
+        notification.close();
+        await closed;
+      })
+    )
+  );
 
   BrowserTestUtils.removeTab(tab1);
   BrowserTestUtils.removeTab(tab2);
