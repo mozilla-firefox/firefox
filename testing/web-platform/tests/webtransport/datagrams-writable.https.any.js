@@ -78,7 +78,6 @@ promise_test(async t => {
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
   await wt.ready;
-  wt.datagrams.outgoingMaxAge = Infinity;
 
   const writable = wt.datagrams.createWritable();
   const writer = writable.getWriter();
@@ -116,7 +115,6 @@ promise_test(async t => {
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
   await wt.ready;
-  wt.datagrams.outgoingMaxAge = Infinity;
 
   const writable = wt.datagrams.createWritable({ sendOrder: 5 });
   const writer = writable.getWriter();
@@ -218,7 +216,6 @@ promise_test(async t => {
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
   await wt.ready;
-  wt.datagrams.outgoingMaxAge = Infinity;
 
   const writable = wt.datagrams.createWritable();
   const writer = writable.getWriter();
