@@ -62,8 +62,7 @@ For certain package types, e.g. exe or dmg, we extract the internal binaries
 (e.g. xul.dll) and sign them. This is true for certain zipfiles, exes, and dmgs;
 we need to sign the internals before we [re]create the package. For linux
 tarballs, we don't need special packaging, so we can sign everything in this
-task. These kinds include `build-signing`, `l10n-signing`,
-`release-eme-free-repack-signing`, and `release-partner-repack-signing`.
+task. These kinds include `build-signing` and `l10n-signing`.
 
 **Build repackage signing**: Once we take the signed internals and package them
 (known as a `repackage`), certain formats require a signed external package.

@@ -40,8 +40,6 @@ def chunk_partners(config, jobs):
             platform_repack_ids = get_repack_ids_by_platform(config, build_platform)
             # we chunk mac signing
             if config.kind in (
-                "release-partner-repack-signing",
-                "release-eme-free-repack-signing",
                 "release-eme-free-repack-mac-signing",
                 "release-partner-repack-mac-signing",
             ):

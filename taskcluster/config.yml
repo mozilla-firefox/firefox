@@ -506,7 +506,6 @@ release-promotion:
             rebuild-kinds:
                 - release-partner-repack
                 - release-partner-repack-chunking-dummy
-                - release-partner-repack-signing
                 - release-partner-repack-mac-signing
                 - release-partner-repack-mac-notarization
                 - release-partner-repack-repackage

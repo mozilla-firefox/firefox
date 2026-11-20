@@ -490,10 +490,6 @@ Generates attributed versions of releases for partners.
 
 Chunks the partner repacks by locale.
 
-## release-partner-repack-signing
-
-Internal signing of partner repacks.
-
 ## release-partner-repack-mac-signing
 
 Mac signing without notarization.
@@ -539,10 +535,6 @@ Utilises landoscript to perform tagging that should happen near the start of a r
 ## release-eme-free-repack
 
 Generates customized versions of releases for eme-free repacks.
-
-## release-eme-free-repack-signing
-
-Internal signing of eme-free repacks
 
 ## release-eme-free-repack-repackage
 
