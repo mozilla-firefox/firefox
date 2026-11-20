@@ -9,6 +9,7 @@ _CHANNEL_ABBREV = {
     "beta": "beta",
     "devedition": "deved",
     "nightly": "nightly",
+    "esr": "esr",
 }
 
 _METHOD_GROUP = {

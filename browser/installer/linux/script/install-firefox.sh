@@ -6,7 +6,7 @@
 #    or: sh install-firefox.sh [OPTIONS]
 #
 # Options:
-#   --channel <release|beta|devedition|nightly>   Choose Firefox channel (default: release)
+#   --channel <release|beta|devedition|nightly|esr>   Choose Firefox channel (default: release)
 #   --install-method <method>          Force install method: apt, rpm, flatpak, tarball, snap
 #   --lang <locale>                    Force locale (e.g. fr, de, ja)
 #   -v, --verbose                      Enable verbose output
@@ -144,7 +144,7 @@ Usage: curl --proto '=https' --tlsv1.2 -sSf <url>/install-firefox.sh -o install-
    or: sh install-firefox.sh [OPTIONS]
 
 Options:
-  --channel <release|beta|devedition|nightly>   Choose Firefox channel (default: release)
+  --channel <release|beta|devedition|nightly|esr>   Choose Firefox channel (default: release)
   --install-method <method>          Force install method: apt, rpm, flatpak, tarball, snap
   --lang <locale>                    Force locale (e.g. fr, de, ja)
   -v, --verbose                      Enable verbose output (shell trace + sudo command logging)
@@ -160,8 +160,8 @@ parse_args() {
                 shift
                 CHANNEL="${1:?Missing channel value}"
                 case "$CHANNEL" in
-                    release|beta|devedition|nightly) ;;
-                    *) error "Invalid channel '$CHANNEL'. Must be: release, beta, devedition, nightly" ;;
+                    release|beta|devedition|nightly|esr) ;;
+                    *) error "Invalid channel '$CHANNEL'. Must be: release, beta, devedition, nightly, esr" ;;
                 esac
                 ;;
             --install-method)
@@ -258,6 +258,7 @@ channel_to_package() {
         beta)       echo "firefox-beta" ;;
         devedition) echo "firefox-devedition" ;;
         nightly)    echo "firefox-nightly" ;;
+        esr)        echo "firefox-esr" ;;
         *)          error "Unsupported channel: $CHANNEL" ;;
     esac
 }
@@ -521,6 +522,7 @@ channel_to_flatpak_branch() {
         beta)       echo "beta" ;;
         devedition) error "Firefox Developer Edition is not available as a flatpak" ;;
         nightly)    error "Firefox Nightly is not available as a flatpak" ;;
+        esr)        error "Firefox ESR is not available as a flatpak" ;;
         *)          error "Unsupported channel: $CHANNEL" ;;
     esac
 }
@@ -530,6 +532,7 @@ channel_to_snap_channel() {
         release)    echo "stable" ;;
         beta)       echo "beta" ;;
         nightly)    echo "edge" ;;
+        esr)        echo "esr/stable" ;;
         devedition) error "Firefox Developer Edition is not available as a snap" ;;
         *)          error "Unsupported channel: $CHANNEL" ;;
     esac
@@ -589,6 +592,7 @@ tarball_product_name() {
         beta)       echo "firefox-beta-latest-ssl" ;;
         devedition) echo "firefox-devedition-latest-ssl" ;;
         nightly)    echo "firefox-nightly-latest-ssl" ;;
+        esr)        echo "firefox-esr-latest-ssl" ;;
         *)          error "Unsupported channel: $CHANNEL" ;;
     esac
 }

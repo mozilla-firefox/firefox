@@ -30,7 +30,7 @@ distros:
             worker-type: b-linux-aarch64
             platform: linux64-aarch64/opt
 
-    channels: [release, beta, devedition, nightly]
+    channels: [release, beta, devedition, nightly, esr]
     locales: [en-US, fr, ja]
 
     # TODO: add snap distro once a suitable CI worker image with snapd is available

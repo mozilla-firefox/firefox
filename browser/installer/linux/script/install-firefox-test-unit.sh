@@ -53,6 +53,11 @@ testParseArgsChannelNightly() {
     assertEquals "channel=nightly" "nightly" "$CHANNEL"
 }
 
+testParseArgsChannelEsr() {
+    parse_args --channel esr
+    assertEquals "channel=esr" "esr" "$CHANNEL"
+}
+
 testParseArgsChannelInvalid() {
     assertFalse "invalid channel" 'sh "$INSTALL_FIREFOX_SCRIPT" --channel bogus >/dev/null 2>&1'
 }
@@ -93,6 +98,11 @@ testChannelToPackageDevedition() {
 testChannelToPackageNightly() {
     CHANNEL=nightly
     assertEquals "pkg nightly" "firefox-nightly" "$(channel_to_package)"
+}
+
+testChannelToPackageEsr() {
+    CHANNEL=esr
+    assertEquals "pkg esr" "firefox-esr" "$(channel_to_package)"
 }
 
 testDetectLocaleOverrideFr() {
@@ -739,6 +749,11 @@ testChannelToFlatpakBranchNightlyErrors() {
     assertFalse "flatpak nightly errors" 'sh "$INSTALL_FIREFOX_SCRIPT" --channel nightly --install-method flatpak >/dev/null 2>&1'
 }
 
+testChannelToFlatpakBranchEsrErrors() {
+    assertFalse "flatpak esr errors" \
+        '( CHANNEL=esr channel_to_flatpak_branch >/dev/null 2>&1 )'
+}
+
 testFlatpakAddRemotesRelease() {
     local _calls="${SHUNIT_TMPDIR}/calls.tmp"
     run_sudo() { echo "run_sudo $*" >> "$_calls"; }; export -f run_sudo
@@ -825,6 +840,11 @@ testTarballProductNameNightly() {
     assertEquals "tarball nightly" "firefox-nightly-latest-ssl" "$(tarball_product_name)"
 }
 
+testTarballProductNameEsr() {
+    CHANNEL=esr
+    assertEquals "tarball esr" "firefox-esr-latest-ssl" "$(tarball_product_name)"
+}
+
 testDetectBestMethodTarball() {
     check_cmd() { return 1; }
     detect_best_method
@@ -885,6 +905,13 @@ testTarballKeyUrlRelease() {
         "https://releases.mozilla.org/pub/firefox/releases/152.0.1/linux-x86_64/en-US/firefox-152.0.1.tar.xz")"
     assertEquals "release key URL" \
         "https://releases.mozilla.org/pub/firefox/releases/152.0.1/KEY" "$result"
+}
+
+testTarballKeyUrlEsr() {
+    result="$(tarball_key_url \
+        "https://download-installer.cdn.mozilla.net/pub/firefox/releases/153.7.0esr/linux-x86_64/en-US/firefox-153.7.0esr.tar.xz")"
+    assertEquals "esr key URL" \
+        "https://download-installer.cdn.mozilla.net/pub/firefox/releases/153.7.0esr/KEY" "$result"
 }
 
 testTarballKeyUrlNightly() {
@@ -1018,6 +1045,11 @@ testChannelToSnapChannelBeta() {
 testChannelToSnapChannelNightly() {
     CHANNEL=nightly
     assertEquals "snap nightly -> edge" "edge" "$(channel_to_snap_channel)"
+}
+
+testChannelToSnapChannelEsr() {
+    CHANNEL=esr
+    assertEquals "snap esr -> esr/stable" "esr/stable" "$(channel_to_snap_channel)"
 }
 
 testChannelToSnapChannelDeveditionErrors() {
