@@ -914,8 +914,42 @@ already_AddRefed<Promise> WebTransport::ExportKeyingMaterial(
     return promise.forget();
   }
 
+  // The parent can only export once the session is established, so while
+  // "connecting" defer the request until [[Ready]] settles; a rejected
+  // [[Ready]] means the state became "failed".
+  if (mState == WebTransportState::CONNECTING) {
+    mReady->AddCallbacksWithCycleCollectedArgs(
+        [labelData = CopyableTArray<uint8_t>(std::move(labelData)),
+         contextData = CopyableTArray<uint8_t>(std::move(contextData)),
+         aOutputLength](JSContext*, JS::Handle<JS::Value>, ErrorResult&,
+                        WebTransport* aSelf, Promise* aPromise) {
+          aSelf->SendExportKeyingMaterial(labelData, contextData, aOutputLength,
+                                          aPromise);
+        },
+        [](JSContext*, JS::Handle<JS::Value>, ErrorResult&, WebTransport*,
+           Promise* aPromise) {
+          aPromise->MaybeRejectWithInvalidStateError("WebTransport failed");
+        },
+        RefPtr{this}, promise);
+    return promise.forget();
+  }
+
+  SendExportKeyingMaterial(labelData, contextData, aOutputLength, promise);
+  return promise.forget();
+}
+
+void WebTransport::SendExportKeyingMaterial(const nsTArray<uint8_t>& aLabel,
+                                            const nsTArray<uint8_t>& aContext,
+                                            uint32_t aOutputLength,
+                                            Promise* aPromise) {
+  RefPtr<Promise> promise = aPromise;
+  if (!mChild) {
+    promise->MaybeRejectWithInvalidStateError("Transport closed or failed");
+    return;
+  }
+
   mChild->SendExportKeyingMaterial(
-      labelData, contextData, aOutputLength,
+      aLabel, aContext, aOutputLength,
       [self = RefPtr{this}, promise](Maybe<nsTArray<uint8_t>>&& aKeyingMaterial)
           MOZ_CAN_RUN_SCRIPT_BOUNDARY {
             // Step 8: If transport.[[State]] became "closed" or "failed",
@@ -983,8 +1017,6 @@ already_AddRefed<Promise> WebTransport::ExportKeyingMaterial(
         promise->MaybeRejectWithInvalidStateError(
             "Failed to export keying material");
       });
-
-  return promise.forget();
 }
 
 WebTransportReliabilityMode WebTransport::Reliability() { return mReliability; }
