@@ -363,7 +363,7 @@ struct arena_t : public BaseAllocClass {
   mozilla::Atomic<uint64_t> mLastPageReuseNS;
 
  public:
-  // A flag that indicates if arena will be Purge()'d.
+  // A flag that indicates if this arena will be purged.
   //
   // It is set either when a thread commits to adding it to mOutstandingPurges
   // or when imitating a Purge.  Cleared only by Purge when we know we are
@@ -539,29 +539,16 @@ struct arena_t : public BaseAllocClass {
       MOZ_REQUIRES(mLock);
 #endif
 
-  // Purge some dirty pages.
+  // Purge dirty pages, one chunk per step. If sCallback is non-null then
+  // collect statistics and publish them through the callback,  aCaller should
+  // be used to identify the caller in the profiling data.
   //
   // When this is called the caller has already tested ShouldStartPurge()
   // (possibly on another thread asychronously) or is passing
   // PurgeUnconditional.  However because it's called without the lock it will
-  // recheck ShouldContinuePurge() before doing any work.
-  //
-  // It may purge a number of runs within a single chunk before returning.  It
-  // will return Continue if there's more work to do in other chunks
-  // (ShouldContinuePurge()).
-  //
-  // To release more pages from other chunks then it's best to call Purge
-  // in a loop, looping when it returns Continue.
+  // recheck ShouldContinuePurge() before each step.
   //
   // This must be called without the mLock held (it'll take the lock).
-  //
-  ArenaPurgeResult Purge(PurgeCondition aCond, mozilla::PurgeStats& aStats,
-                         purge_keep_going_t aKeepGoing = nullptr,
-                         void* aClosure = nullptr) MOZ_EXCLUDES(mLock);
-
-  // Run Purge() in a loop. If sCallback is non-null then collect statistics and
-  // publish them through the callback,  aCaller should be used to identify the
-  // caller in the profiling data.
   //
   // aCond         - when to stop purging
   // aCaller       - a string representing the caller, this is used for
