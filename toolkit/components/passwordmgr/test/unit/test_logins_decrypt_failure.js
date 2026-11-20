@@ -185,3 +185,47 @@ add_task(async function test_sync_metadata_with_decrypt_failure() {
   await Services.logins.setSyncID("new-id");
   equal(await Services.logins.getSyncID(), "new-id");
 }).skip(isRustBackend);
+
+add_task(
+  { skip_if: () => !isRustBackend },
+  async function test_rust_undecryptable_login_is_recorded() {
+    Services.fog.initializeFOG();
+    Services.fog.testResetFOG();
+    await Services.logins.addLogins(TestData.loginList());
+    const [victim] = await Services.logins.getAllLogins();
+    victim.QueryInterface(Ci.nsILoginMetaInfo);
+
+    const { Sqlite } = ChromeUtils.importESModule(
+      "resource://gre/modules/Sqlite.sys.mjs"
+    );
+    const db = await Sqlite.openConnection({
+      path: PathUtils.join(PathUtils.profileDir, "logins.db"),
+    });
+    await db.execute(
+      "UPDATE loginsL SET secFields = 'not-a-ciphertext' WHERE guid = :guid",
+      { guid: victim.guid }
+    );
+    await db.close();
+
+    await Assert.rejects(
+      Services.logins.getAllLogins(),
+      /Primary password locked/,
+      "A login that does not decrypt still fails the whole list"
+    );
+    Assert.deepEqual(
+      Glean.pwmgr.rustStorageCryptoError
+        .testGetValue()
+        .map(event => event.extra),
+      [
+        {
+          operation: "list",
+          error_kind: "undecryptable",
+          direction: "decrypt",
+        },
+      ],
+      "The failure is recorded as a login that does not decrypt"
+    );
+
+    await Services.logins.removeAllUserFacingLoginsAsync();
+  }
+);

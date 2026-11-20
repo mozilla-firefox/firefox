@@ -110,6 +110,34 @@ add_task(async function test_cancel() {
     [{ source: "rust_storage", result: "cancel" }],
     "Cancelling is recorded"
   );
+  Assert.deepEqual(
+    Glean.pwmgr.rustStorageCryptoError.testGetValue().map(event => event.extra),
+    [{ operation: "list", error_kind: "canceled", direction: "decrypt" }],
+    "The failed operation is recorded as cancelled"
+  );
+
+  await LoginTestUtils.primaryPassword.disable();
+});
+
+add_task(async function test_cancel_while_saving() {
+  await LoginTestUtils.primaryPassword.enable();
+  Services.fog.testResetFOG();
+
+  let stopAnswering = answerPrimaryPasswordDialogs([null]);
+  await Assert.rejects(
+    rustStore.addLoginsAsync([
+      LoginTestUtils.testData.formLogin({ origin: "https://save.example.com" }),
+    ]),
+    /Primary password locked/,
+    "Cancelling the prompt fails the write"
+  );
+
+  Assert.equal(stopAnswering(), 1, "One dialog was shown");
+  Assert.deepEqual(
+    Glean.pwmgr.rustStorageCryptoError.testGetValue().map(event => event.extra),
+    [{ operation: "add", error_kind: "canceled", direction: "encrypt" }],
+    "The failed write is recorded as a cancelled encryption"
+  );
 
   await LoginTestUtils.primaryPassword.disable();
 });

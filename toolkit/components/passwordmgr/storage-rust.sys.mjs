@@ -712,7 +712,7 @@ export class LoginManagerRustStorage {
     try {
       result = await this.#addLoginsWithResults(logins, continueOnDuplicates);
     } catch (e) {
-      throw this.#translateLockedError(e);
+      throw this.#translateLockedError(e, "add");
     }
 
     // Return only successfully added logins, matching the JSON backend.
@@ -883,7 +883,7 @@ export class LoginManagerRustStorage {
 
       return finalLogin;
     } catch (e) {
-      throw this.#translateLockedError(e);
+      throw this.#translateLockedError(e, "modify");
     }
   }
 
@@ -905,7 +905,7 @@ export class LoginManagerRustStorage {
         ]);
       }
     } catch (e) {
-      throw this.#translateLockedError(e);
+      throw this.#translateLockedError(e, "record_password_use");
     }
   }
 
@@ -917,7 +917,7 @@ export class LoginManagerRustStorage {
     try {
       return await this.#storageAdapter.getBreachAlertDismissalsByLoginGUID();
     } catch (e) {
-      throw this.#translateLockedError(e);
+      throw this.#translateLockedError(e, "breach_dismissals");
     }
   }
 
@@ -939,7 +939,7 @@ export class LoginManagerRustStorage {
     try {
       return await this.#storageAdapter.list();
     } catch (e) {
-      throw this.#translateLockedError(e);
+      throw this.#translateLockedError(e, "list");
     }
   }
 
@@ -950,11 +950,25 @@ export class LoginManagerRustStorage {
    * NS_ERROR_ABORT for that, the way crypto-SDR reports it, rather than a raw
    * Rust error.
    *
+   * A key that is missing or invalid, or a single login that does not
+   * decrypt, reaches callers the same way for now. Every key and crypto
+   * failure, including those of writes that callers still see as raw errors,
+   * is recorded with its kind in pwmgr.rust_storage_crypto_error.
+   *
    * @param {Error} e The error the store threw.
+   * @param {string} operation The store operation that failed, for telemetry.
    * @returns {Error} NS_ERROR_ABORT if the primary password was unavailable,
    *   otherwise `e` unchanged, for the caller to rethrow.
    */
-  #translateLockedError(e) {
+  #translateLockedError(e, operation) {
+    const failure = this.#classifyStoreError(e);
+    if (failure) {
+      Glean.pwmgr.rustStorageCryptoError.record({
+        operation,
+        error_kind: failure.kind,
+        direction: failure.direction,
+      });
+    }
     if (
       !this.#authenticator?.authCanceled &&
       !/decryption failed/i.test(e.message)
@@ -965,6 +979,49 @@ export class LoginManagerRustStorage {
       this.#authenticator.authCanceled = false;
     }
     return Components.Exception("Primary password locked", Cr.NS_ERROR_ABORT);
+  }
+
+  /**
+   * The Rust store wraps every error of the key manager into an encryption or
+   * decryption failure that only carries a message, so the kind is read from
+   * that.
+   *
+   * @param {Error} e The error the store threw.
+   * @returns {{kind: string, direction: string}|null} The kind is "canceled",
+   *   "nss_auth", "missing_key", "invalid_key", "undecryptable" or
+   *   "encryption_failed"; the direction is "decrypt", "encrypt" or, for a
+   *   cancelled prompt behind an unrelated error, "unknown". Null for an error
+   *   that is not about the key, encryption or decryption.
+   */
+  #classifyStoreError(e) {
+    const message = String(e?.message ?? "");
+    let direction = null;
+    if (/decryption failed/i.test(message)) {
+      direction = "decrypt";
+    } else if (/encryption failed/i.test(message)) {
+      direction = "encrypt";
+    }
+    if (this.#authenticator?.authCanceled) {
+      return { kind: "canceled", direction: direction ?? "unknown" };
+    }
+    if (!direction) {
+      return null;
+    }
+    let kind;
+    if (/authentication cancelled/i.test(message)) {
+      kind = "canceled";
+    } else if (
+      /NSS not initialized|error during authentication/i.test(message)
+    ) {
+      kind = "nss_auth";
+    } else if (/Encryption key is missing/i.test(message)) {
+      kind = "missing_key";
+    } else if (/Encryption key is not valid/i.test(message)) {
+      kind = "invalid_key";
+    } else {
+      kind = direction == "decrypt" ? "undecryptable" : "encryption_failed";
+    }
+    return { kind, direction };
   }
 
   async searchLoginsAsync(matchData, includeDeleted) {
@@ -1001,7 +1058,7 @@ export class LoginManagerRustStorage {
       );
       return logins;
     } catch (e) {
-      throw this.#translateLockedError(e);
+      throw this.#translateLockedError(e, "search");
     }
   }
 
@@ -1194,7 +1251,7 @@ export class LoginManagerRustStorage {
         login.QueryInterface(Ci.nsILoginMetaInfo).guid
       );
     } catch (e) {
-      throw this.#translateLockedError(e);
+      throw this.#translateLockedError(e, "vulnerable_passwords");
     }
   }
 
@@ -1213,7 +1270,7 @@ export class LoginManagerRustStorage {
     try {
       return await this.#storageAdapter.arePotentiallyVulnerablePasswords(ids);
     } catch (e) {
-      throw this.#translateLockedError(e);
+      throw this.#translateLockedError(e, "vulnerable_passwords");
     }
   }
 

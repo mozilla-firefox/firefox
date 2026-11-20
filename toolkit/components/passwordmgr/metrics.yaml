@@ -1059,6 +1059,53 @@ pwmgr:
           Duration of the call as seen by the caller, measured in LoginManager
           around the delegation to the active backend.
 
+  rust_storage_crypto_error:
+    type: event
+    description: >
+      One record per Rust login storage operation that failed because the
+      encryption key was unavailable or a login did not encrypt or decrypt.
+      Callers see every decryption failure the same way, as a locked primary
+      password (an aborted operation, and an empty list in about:logins), so
+      this tells a cancelled prompt apart from an unusable key and from a
+      single login that does not decrypt. Encryption failures of writes are
+      recorded too; apart from a cancelled prompt they reach callers as the
+      raw error.
+    bugs:
+      - https://bugzil.la/2095164
+    data_reviews:
+      - https://bugzil.la/2095164
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - passwords-dev@mozilla.org
+    expires: never
+    extra_keys:
+      operation:
+        type: string
+        description: >
+          The store operation that failed: "list", "search", "add", "modify",
+          "record_password_use", "breach_dismissals" or
+          "vulnerable_passwords".
+      error_kind:
+        type: string
+        description: >
+          "canceled" when the primary password prompt was cancelled or
+          declined; "nss_auth" when NSS was not initialized or failed to
+          authenticate; "missing_key" when NSS could not hand out the key, or
+          the primary password prompt failed for a reason other than a
+          cancel (a key that is simply absent is not reported: a new one is
+          created, and the logins of the old one then show up as
+          "undecryptable"); "invalid_key" when the key is not a usable key;
+          "undecryptable" when the key was available but a login did not
+          decrypt with it; "encryption_failed" when the key was available but
+          a login did not encrypt with it.
+      direction:
+        type: string
+        description: >
+          "decrypt" or "encrypt", the step of the operation that failed;
+          "unknown" for a cancelled prompt recorded against an error that
+          names neither.
+
   rust_init_status:
     type: event
     description: >
