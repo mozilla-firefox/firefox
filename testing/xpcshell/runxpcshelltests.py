@@ -2623,18 +2623,22 @@ class XPCShellTests:
 
             steps = [
                 (
+                    None,
                     f"1. Run each test {VERIFY_REPEAT} times, sequentially.",
                     step_sequential,
                 ),
                 (
+                    None,
                     f"2. Run each test {VERIFY_REPEAT} times, in parallel.",
                     step_parallel,
                 ),
                 (
+                    "chaos",
                     f"3. Run each test {VERIFY_REPEAT} times, sequentially, in chaos mode.",
                     step_chaos,
                 ),
                 (
+                    "chaos",
                     f"4. Run each test {VERIFY_REPEAT} times, in parallel, in chaos mode.",
                     step_chaos_parallel,
                 ),
@@ -2645,10 +2649,11 @@ class XPCShellTests:
                 test_group = f"{test_object['id']} --verify"
                 self.log.group_start(name=test_group)
                 stepResults = {}
-                for descr, step in steps:
+                for _, descr, _ in steps:
                     stepResults[descr] = "not run / incomplete"
                 finalResult = "PASSED"
-                for descr, step in steps:
+                group = None
+                for name, descr, step in steps:
                     if (datetime.now() - startTime) > maxTime:
                         self.log.info(
                             "::: Test verification is taking too long: Giving up!"
@@ -2667,6 +2672,12 @@ class XPCShellTests:
                         if self.sequential:
                             stepResults[descr] = "Skipped, running sequentially"
                             continue
+                    if name != group:
+                        if group:
+                            self.log.group_end(name=group)
+                        if name:
+                            self.log.group_start(name=name)
+                        group = name
                     self.log.info(":::")
                     self.log.info('::: Running test verification step "%s"...' % descr)
                     self.log.info(":::")
@@ -2676,6 +2687,8 @@ class XPCShellTests:
                         finalResult = "FAILED!"
                         break
                     stepResults[descr] = "Pass"
+                if group:
+                    self.log.group_end(name=group)
                 self.log.info(":::")
                 self.log.info(
                     "::: Test verification summary for: %s" % test_object["path"]

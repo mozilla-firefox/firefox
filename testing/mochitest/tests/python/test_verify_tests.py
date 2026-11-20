@@ -52,8 +52,17 @@ def test_group_per_verified_test(verify):
     assert tests
     assert markers.index(("group_start", GROUP)) < tests[0]
     assert tests[-1] < markers.index(("group_end", GROUP))
+    steps = [
+        marker
+        for step in ("repeat", "standalone")
+        for marker in (("group_start", step), ("group_end", step))
+    ]
     assert [m for m in markers if m[0] in ("group_start", "group_end")] == [
         ("group_start", GROUP),
+        *steps,
+        ("group_start", "chaos"),
+        *steps,
+        ("group_end", "chaos"),
         ("group_end", GROUP),
     ]
 

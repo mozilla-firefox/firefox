@@ -1295,7 +1295,8 @@ add_test({
 
     def testVerify(self):
         """
-        Check that --verify logs a group for each test.
+        Check that --verify logs a group for each test, with its chaos mode steps
+        in a group of their own.
         """
         self.writeFile("test_basic.js", SIMPLE_PASSING_TEST)
         self.writeFile("test_add_test_simple.js", ADD_TEST_SIMPLE)
@@ -1306,18 +1307,30 @@ add_test({
         self.assertTestResult(True, verify=True)
         records = [json.loads(l) for l in raw.getvalue().splitlines()]
         groups = [
-            (r["action"], r["name"])
+            (r["action"], os.path.basename(r["name"]))
             for r in records
             if r["action"] in ("group_start", "group_end")
-            and r["name"].endswith(" --verify")
         ]
         self.assertEqual(
             [
-                (action, f"{test} --verify")
+                marker
                 for test in ("test_basic.js", "test_add_test_simple.js")
-                for action in ("group_start", "group_end")
+                for marker in (
+                    ("group_start", f"{test} --verify"),
+                    ("group_start", "sequential"),
+                    ("group_end", "sequential"),
+                    ("group_start", "parallel"),
+                    ("group_end", "parallel"),
+                    ("group_start", "chaos"),
+                    ("group_start", "sequential"),
+                    ("group_end", "sequential"),
+                    ("group_start", "parallel"),
+                    ("group_end", "parallel"),
+                    ("group_end", "chaos"),
+                    ("group_end", f"{test} --verify"),
+                )
             ],
-            [(action, os.path.basename(name)) for action, name in groups],
+            groups,
         )
 
     def testCrashWithRetry(self):

@@ -3802,28 +3802,35 @@ toolbar#nav-bar {
 
         if options.verify_fission:
             steps = [
-                ("1. Run each test without fission.", fission_step1),
-                ("2. Run each test with fission.", fission_step2),
+                ("no fission", "1. Run each test without fission.", fission_step1),
+                ("fission", "2. Run each test with fission.", fission_step2),
             ]
         else:
             steps = [
-                (f"1. Run each test {VERIFY_REPEAT} times in one browser.", step1),
                 (
+                    "repeat",
+                    f"1. Run each test {VERIFY_REPEAT} times in one browser.",
+                    step1,
+                ),
+                (
+                    "standalone",
                     f"2. Run each test {VERIFY_REPEAT_SINGLE_BROWSER} times in a new browser each time.",
                     step2,
                 ),
                 (
+                    "repeat",
                     f"3. Run each test {VERIFY_REPEAT} times in one browser, in chaos mode.",
                     step3,
                 ),
                 (
+                    "standalone",
                     f"4. Run each test {VERIFY_REPEAT_SINGLE_BROWSER} times in a new browser each time, in chaos mode.",
                     step4,
                 ),
             ]
 
         stepResults = {}
-        for descr, step in steps:
+        for _, descr, _ in steps:
             stepResults[descr] = "not run / incomplete"
 
         startTime = datetime.now()
@@ -3833,22 +3840,30 @@ toolbar#nav-bar {
         if testGroup:
             self.log.group_start(name=testGroup)
         finalResult = "PASSED"
-        for descr, step in steps:
+        in_chaos_group = False
+        for name, descr, step in steps:
             if (datetime.now() - startTime) > maxTime:
                 self.log.info("::: Test verification is taking too long: Giving up!")
                 self.log.info(
                     "::: So far, all checks passed, but not all checks were run."
                 )
                 break
+            if step in (step3, step4) and not in_chaos_group:
+                self.log.group_start(name="chaos")
+                in_chaos_group = True
+            self.log.group_start(name=name)
             self.log.info(":::")
             self.log.info(f'::: Running test verification step "{descr}"...')
             self.log.info(":::")
             result = step()
+            self.log.group_end(name=name)
             if result != 0:
                 stepResults[descr] = "FAIL"
                 finalResult = "FAILED!"
                 break
             stepResults[descr] = "Pass"
+        if in_chaos_group:
+            self.log.group_end(name="chaos")
 
         self.logPreamble([])
 
