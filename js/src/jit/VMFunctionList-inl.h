@@ -90,6 +90,7 @@ namespace jit {
   _(BigIntLeftShift, JS::BigInt::lsh)                                          \
   _(BigIntMod, JS::BigInt::mod)                                                \
   _(BigIntMul, JS::BigInt::mul)                                                \
+  _(BigIntMulMod, JS::BigInt::mulMod)                                          \
   _(BigIntNeg, JS::BigInt::neg)                                                \
   _(BigIntPow, JS::BigInt::pow)                                                \
   _(BigIntRightShift, JS::BigInt::rsh)                                         \

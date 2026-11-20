@@ -5438,7 +5438,59 @@ class MBigIntMod : public MBigIntBinaryArithInstruction {
       CompactBufferWriter& writer) const override;
   bool canRecoverOnBailout() const override { return !canBeDivideByZero(); }
 
+  MDefinition* foldsTo(TempAllocator& alloc) override;
+
   ALLOW_CLONE(MBigIntMod)
+};
+
+// `(lhs * rhs) % modulus`, without allocating the product.
+class MBigIntMulMod : public MTernaryInstruction, public NoTypePolicy::Data {
+  bool canBeDivideByZero_;
+
+  MBigIntMulMod(MDefinition* lhs, MDefinition* rhs, MDefinition* modulus)
+      : MTernaryInstruction(classOpcode, lhs, rhs, modulus) {
+    setResultType(MIRType::BigInt);
+    setMovable();
+    canBeDivideByZero_ = !modulus->isConstant() ||
+                         modulus->toConstant()->toBigInt()->isZero();
+
+    // Throws when the modulus is zero.
+    if (canBeDivideByZero_) {
+      setGuard();
+      setNotMovable();
+    }
+  }
+
+ public:
+  INSTRUCTION_HEADER(BigIntMulMod)
+  TRIVIAL_NEW_WRAPPERS
+  NAMED_OPERANDS((0, lhs), (1, rhs), (2, modulus))
+
+  bool canBeDivideByZero() const { return canBeDivideByZero_; }
+
+  HashNumber valueHash() const override;
+  bool congruentTo(const MDefinition* ins) const override {
+    if (congruentIfOperandsEqual(ins)) {
+      return true;
+    }
+    if (!ins->isBigIntMulMod() || isEffectful() || ins->isEffectful()) {
+      return false;
+    }
+    const MBigIntMulMod* other = ins->toBigIntMulMod();
+    return lhs() == other->rhs() && rhs() == other->lhs() &&
+           modulus() == other->modulus();
+  }
+
+  AliasSet getAliasSet() const override {
+    if (canBeDivideByZero()) {
+      return AliasSet::Store(AliasSet::ExceptionState);
+    }
+    return AliasSet::None();
+  }
+
+  bool possiblyCalls() const override { return true; }
+
+  ALLOW_CLONE(MBigIntMulMod)
 };
 
 class MBigIntPow : public MBigIntBinaryArithInstruction {

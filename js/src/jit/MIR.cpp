@@ -537,6 +537,22 @@ HashNumber MTernaryInstruction::valueHash() const {
   return hash;
 }
 
+HashNumber MBigIntMulMod::valueHash() const {
+  uint32_t lhsId = lhs()->id();
+  uint32_t rhsId = rhs()->id();
+  if (lhsId > rhsId) {
+    std::swap(lhsId, rhsId);
+  }
+  HashNumber hash = HashNumber(op());
+  hash = addU32ToHash(hash, lhsId);
+  hash = addU32ToHash(hash, rhsId);
+  hash = addU32ToHash(hash, modulus()->id());
+  if (MDefinition* dep = dependency()) {
+    hash = addU32ToHash(hash, dep->id());
+  }
+  return hash;
+}
+
 HashNumber MQuaternaryInstruction::valueHash() const {
   HashNumber hash = HashNumber(op());
   hash = addU32ToHash(hash, getOperand(0)->id());
@@ -3649,6 +3665,19 @@ MDefinition* MPow::foldsTo(TempAllocator& alloc) {
   }
   if (MDefinition* def = foldsConstantPower(alloc)) {
     return def;
+  }
+  return this;
+}
+
+MDefinition* MBigIntMod::foldsTo(TempAllocator& alloc) {
+  // Fuse `(x * y) % m`, so that the product isn't allocated.
+  if (lhs()->isBigIntMul() && lhs()->hasOneDefUse()) {
+    MBigIntMul* mul = lhs()->toBigIntMul();
+    auto* mulMod = MBigIntMulMod::New(alloc, mul->lhs(), mul->rhs(), rhs());
+    if (resumePoint()) {
+      mulMod->stealResumePoint(this);
+    }
+    return mulMod;
   }
   return this;
 }

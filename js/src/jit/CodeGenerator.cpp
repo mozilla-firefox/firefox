@@ -12479,6 +12479,15 @@ void CodeGenerator::visitBigIntMod(LBigIntMod* ins) {
   callVM<Fn, BigInt::mod>(ins);
 }
 
+void CodeGenerator::visitBigIntMulMod(LBigIntMulMod* ins) {
+  pushArg(ToRegister(ins->modulus()));
+  pushArg(ToRegister(ins->rhs()));
+  pushArg(ToRegister(ins->lhs()));
+
+  using Fn = BigInt* (*)(JSContext*, HandleBigInt, HandleBigInt, HandleBigInt);
+  callVM<Fn, BigInt::mulMod>(ins);
+}
+
 void CodeGenerator::visitBigIntPow(LBigIntPow* ins) {
   pushArg(ToRegister(ins->rhs()));
   pushArg(ToRegister(ins->lhs()));

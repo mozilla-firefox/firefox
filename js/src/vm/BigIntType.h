@@ -256,6 +256,9 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
   static BigInt* mul(JSContext* cx, Handle<BigInt*> x, Handle<BigInt*> y);
   static BigInt* div(JSContext* cx, Handle<BigInt*> x, Handle<BigInt*> y);
   static BigInt* mod(JSContext* cx, Handle<BigInt*> x, Handle<BigInt*> y);
+  // Return `(x * y) % m`.
+  static BigInt* mulMod(JSContext* cx, Handle<BigInt*> x, Handle<BigInt*> y,
+                        Handle<BigInt*> m);
   static BigInt* pow(JSContext* cx, Handle<BigInt*> x, Handle<BigInt*> y);
   static BigInt* neg(JSContext* cx, Handle<BigInt*> x);
   static BigInt* inc(JSContext* cx, Handle<BigInt*> x);

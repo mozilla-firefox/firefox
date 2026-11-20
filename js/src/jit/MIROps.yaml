@@ -1263,6 +1263,9 @@
 - name: BigIntMod
   gen_boilerplate: false
 
+- name: BigIntMulMod
+  gen_boilerplate: false
+
 - name: BigIntPow
   gen_boilerplate: false
 

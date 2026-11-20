@@ -1376,6 +1376,15 @@
   call_instruction: true
   mir_op: true
 
+- name: BigIntMulMod
+  result_type: WordSized
+  operands:
+    lhs: WordSized
+    rhs: WordSized
+    modulus: WordSized
+  call_instruction: true
+  mir_op: true
+
 - name: BigIntPow
   result_type: WordSized
   operands:

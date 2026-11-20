@@ -2226,6 +2226,55 @@ BigInt* BigInt::mod(JSContext* cx, HandleBigInt x, HandleBigInt y) {
   return createFromDigitVector(cx, u, x->isNegative());
 }
 
+BigInt* BigInt::mulMod(JSContext* cx, HandleBigInt x, HandleBigInt y,
+                       HandleBigInt m) {
+  size_t length = x->digitLength() + y->digitLength();
+  if (length > MaxDigitLength) {
+    ReportOversizedAllocation(cx, JSMSG_BIGINT_TOO_LARGE);
+    return nullptr;
+  }
+
+  if (m->isZero()) {
+    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
+                              JSMSG_BIGINT_DIVISION_BY_ZERO);
+    return nullptr;
+  }
+
+  if (x->isZero() || y->isZero()) {
+    return zero(cx);
+  }
+
+  bool isNegative = x->isNegative() != y->isNegative();
+  size_t n = m->digitLength();
+  Vector<Digit, 32, SystemAllocPolicy> storage;
+  if (!storage.resizeUninitialized(length + 1)) {
+    ReportOutOfMemory(cx);
+    return nullptr;
+  }
+  Digits product = Digits(storage).First(length);
+  schoolbookMultiplyDigits(x->unguardedDigits(), y->unguardedDigits(),
+                           product);
+  while (!product[length - 1]) {
+    length--;
+  }
+
+  ConstDigits mDigits = m->unguardedDigits();
+  if (length < n ||
+      (length == n && absoluteCompare(product.First(length), mDigits) < 0)) {
+    storage.shrinkTo(length);
+    return createFromDigitVector(cx, storage, isNegative);
+  }
+
+  Digits u = Digits(storage).First(length + 1);
+  u[length] = 0;
+  if (!modDigitsInPlace(u, mDigits)) {
+    ReportOutOfMemory(cx);
+    return nullptr;
+  }
+  storage.shrinkTo(n);
+  return createFromDigitVector(cx, storage, isNegative);
+}
+
 bool BigInt::shouldModuloByCrandallReduction(ConstDigits m, uint32_t* k,
                                              Digit* c) {
   // `m` is `2^k - c` for a single-digit `c` if all of its bits above the low
