@@ -93,9 +93,9 @@ class WebTransportParent : public PWebTransportParent,
   ::mozilla::ipc::IPCResult RecvGetHttpChannelID(
       GetHttpChannelIDResolver&& aResolver);
 
-  // Drops the callback-map entries of a peer-opened stream whose pipes have
-  // all finished copying.
-  void RemoveFinishedIncomingStream(uint64_t aStreamId);
+  // Drops the callback-map entries of a stream whose pipes have all finished
+  // copying.
+  void RemoveFinishedStream(uint64_t aStreamId);
 
   void ActorDestroy(ActorDestroyReason aWhy) override;
 
