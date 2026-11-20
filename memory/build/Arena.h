@@ -546,7 +546,7 @@ struct arena_t : public BaseAllocClass {
   // When this is called the caller has already tested ShouldStartPurge()
   // (possibly on another thread asychronously) or is passing
   // PurgeUnconditional.  However because it's called without the lock it will
-  // recheck ShouldContinuePurge() before each step.
+  // recheck the dirty page count before each step.
   //
   // This must be called without the mLock held (it'll take the lock).
   //
@@ -639,7 +639,10 @@ struct arena_t : public BaseAllocClass {
   arena_chunk_t* PurgeGetSpareChunk(mozilla::PurgeStats& aStats);
   arena_chunk_t* PurgeGetDirtyChunk(mozilla::PurgeStats& aStats);
 
-  ArenaPurgeResult PurgeDirtyPages(arena_chunk_t* aChunk, PurgeCondition aCond,
+  // Purge dirty pages from aChunk until the arena has aTargetDirtyPages, the
+  // chunk has no more or aKeepGoing returns false.
+  ArenaPurgeResult PurgeDirtyPages(arena_chunk_t* aChunk,
+                                   size_t aTargetDirtyPages,
                                    mozilla::PurgeStats& aStats,
                                    purge_keep_going_t aKeepGoing,
                                    void* aClosure);
@@ -666,12 +669,6 @@ struct arena_t : public BaseAllocClass {
   // Take action according to ShouldStartPurge.
   inline void MayDoOrQueuePurge(purge_action_t aAction, const char* aCaller)
       MOZ_EXCLUDES(mLock);
-
-  // Check the EffectiveHalfMaxDirty threshold to decide if we continue purge.
-  // This threshold is lower than ShouldStartPurge to have some hysteresis.
-  bool ShouldContinuePurge(PurgeCondition aCond) MOZ_REQUIRES(mLock) {
-    return (mNumDirty > ((aCond == PurgeUnconditional) ? 0 : mMaxDirty >> 1));
-  }
 
   // Update the last page reuse timestamp.
   void NotifyPageReuse() MOZ_EXCLUDES(mLock);

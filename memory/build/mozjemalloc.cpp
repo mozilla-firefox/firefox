@@ -1396,7 +1396,7 @@ arena_chunk_t* arena_t::PurgeGetDirtyChunk(PurgeStats& aStats)
 }
 
 ArenaPurgeResult arena_t::PurgeDirtyPages(arena_chunk_t* aChunk,
-                                          PurgeCondition aCond,
+                                          size_t aTargetDirtyPages,
                                           PurgeStats& aStats,
                                           purge_keep_going_t aKeepGoing,
                                           void* aClosure) MOZ_EXCLUDES(mLock) {
@@ -1430,7 +1430,7 @@ ArenaPurgeResult arena_t::PurgeDirtyPages(arena_chunk_t* aChunk,
       }
 
       continue_purge_chunk = purge_info.FindDirtyPages(purged_once);
-      continue_purge_arena = purge_info.mArena.ShouldContinuePurge(aCond);
+      continue_purge_arena = purge_info.mArena.mNumDirty > aTargetDirtyPages;
 
       // The code below will exit returning ReachedThresholdOrBusy if these are
       // both false, so clear mIsPurgePending while we still hold the
@@ -1476,7 +1476,7 @@ ArenaPurgeResult arena_t::PurgeDirtyPages(arena_chunk_t* aChunk,
       arena_is_dying = purge_info.mArena.mMustDeleteAfterPurge;
 
       continue_purge_chunk = purge_info.UpdatePagesAndCounts();
-      continue_purge_arena = purge_info.mArena.ShouldContinuePurge(aCond);
+      continue_purge_arena = purge_info.mArena.mNumDirty > aTargetDirtyPages;
 
       if (!continue_purge_chunk || !continue_purge_arena || !keep_going) {
         // We're going to stop (or pause) purging here so update the chunk's
@@ -1516,6 +1516,8 @@ ArenaPurgeResult arena_t::PurgeLoop(PurgeCondition aCond, const char* aCaller,
 #endif
 
   uint64_t reuseGraceNS = (uint64_t)aReuseGraceMS * 1000 * 1000;
+  bool started = false;
+  size_t target_dirty_pages = 0;
   ArenaPurgeResult pr;
   while (true) {
     // Each step first finds a chunk that needs purging with the lock held,
@@ -1531,7 +1533,13 @@ ArenaPurgeResult arena_t::PurgeLoop(PurgeCondition aCond, const char* aCaller,
         break;
       }
 
-      if (!ShouldContinuePurge(aCond)) {
+      if (!started && aCond != PurgeUnconditional) {
+        started = true;
+        // This is lower than ShouldStartPurge() to have some hysteresis.
+        target_dirty_pages = mMaxDirty >> 1;
+      }
+
+      if (mNumDirty <= target_dirty_pages) {
         mIsPurgePending = false;
         pr = ReachedThresholdOrBusy;
         break;
@@ -1556,8 +1564,8 @@ ArenaPurgeResult arena_t::PurgeLoop(PurgeCondition aCond, const char* aCaller,
     } else {
       // PurgeDirtyPages() takes the lock again, before and after it releases
       // the pages.
-      pr = PurgeDirtyPages(dirty_chunk, aCond, purge_stats, aKeepGoing,
-                           aClosure);
+      pr = PurgeDirtyPages(dirty_chunk, target_dirty_pages, purge_stats,
+                           aKeepGoing, aClosure);
     }
     if (pr != NotDone) {
       break;
