@@ -236,8 +236,7 @@
   background-color: var(--toolbarbutton-background-color-active);
 }
 
-#sidebar-switcher-target:focus-visible,
-#sidebar-close:focus-visible {
+#sidebar-switcher-target:focus-visible {
   outline: var(--focus-outline);
   outline-offset: 0;
 }
