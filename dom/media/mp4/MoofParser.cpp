@@ -481,16 +481,26 @@ Moof::Moof(const Box& aBox, const TrackParseMode& aTrackParseMode,
 
   if (IsValid()) {
     if (mIndex.Length()) {
-      // Ensure the samples are contiguous with no gaps.
+      // Trun durations are decode deltas and need not match the composition
+      // spacing. Close gaps to the next sample in composition order, but do not
+      // extend a sample past the longest duration of this moof, because a later
+      // moof can fill the rest.
       nsTArray<Sample*> ctsOrder;
+      TimeUnit longestSampleDuration = TimeUnit::Zero(aMdhd.mTimescale);
       for (auto& sample : mIndex) {
         ctsOrder.AppendElement(&sample);
+        longestSampleDuration =
+            std::max(longestSampleDuration, sample.mCompositionRange.Length());
       }
       ctsOrder.Sort(CtsComparator());
 
       for (size_t i = 1; i < ctsOrder.Length(); i++) {
-        ctsOrder[i - 1]->mCompositionRange.end =
-            ctsOrder[i]->mCompositionRange.start;
+        MP4Interval<TimeUnit>& range = ctsOrder[i - 1]->mCompositionRange;
+        const TimeUnit& nextStart = ctsOrder[i]->mCompositionRange.start;
+        const TimeUnit maxEnd = range.start + longestSampleDuration;
+        range.end = longestSampleDuration.IsPositive() && maxEnd.IsValid()
+                        ? std::min(nextStart, maxEnd)
+                        : nextStart;
       }
 
       // Ensure that there are no gaps between the first sample in this
@@ -528,14 +538,15 @@ Moof::Moof(const Box& aBox, const TrackParseMode& aTrackParseMode,
         }
       }
 
-      // In MP4, the duration of a sample is defined as the delta between two
-      // decode timestamps. The operation above has updated the duration of each
-      // sample as a Sample's duration is mCompositionRange.end -
-      // mCompositionRange.start MSE's TrackBuffersManager expects dts that
-      // increased by the sample's duration, so we rewrite the dts accordingly.
-      TimeUnit presentationDuration =
-          ctsOrder.LastElement()->mCompositionRange.end -
-          ctsOrder[0]->mCompositionRange.start;
+      // MSE's TrackBuffersManager expects dts that increase by each sample's
+      // duration, and the code above sets durations from composition ranges. So
+      // spread this moof's decode span over the samples by duration, scaled by
+      // their sum, not by the composition span, which can have gaps that a
+      // later moof fills.
+      TimeUnit totalSampleDuration = TimeUnit::Zero(aMdhd.mTimescale);
+      for (auto& sample : mIndex) {
+        totalSampleDuration += sample.mCompositionRange.Length();
+      }
       auto decodeOffset =
           aMdhd.ToTimeUnit(CheckedInt64(*aDecodeTime) - aEdts.mMediaStart);
       auto offsetOffset = aMvhd.ToTimeUnit(aEdts.mEmptyOffset);
@@ -545,9 +556,9 @@ Moof::Moof(const Box& aBox, const TrackParseMode& aTrackParseMode,
               : TimeUnit::Zero(aMvhd.mTimescale);
       TimeUnit decodeDuration = endDecodeTime - mIndex[0].mDecodeTime;
       double adjust = 0.;
-      if (!presentationDuration.IsZero()) {
+      if (!totalSampleDuration.IsZero()) {
         double num = decodeDuration.ToSeconds();
-        double denom = presentationDuration.ToSeconds();
+        double denom = totalSampleDuration.ToSeconds();
         if (denom != 0.) {
           adjust = num / denom;
         }
@@ -555,8 +566,8 @@ Moof::Moof(const Box& aBox, const TrackParseMode& aTrackParseMode,
 
       TimeUnit dtsOffset = mIndex[0].mDecodeTime;
       TimeUnit compositionDuration(0, aMvhd.mTimescale);
-      // Adjust the dts, ensuring that the new adjusted dts will never be
-      // greater than decodeTime (the next moof's decode start time).
+      // No dts goes above the decode end of this moof's truns, which is the
+      // next moof's decode start only when its tfdt matches the trun durations.
       for (auto& sample : mIndex) {
         sample.mDecodeTime = dtsOffset + compositionDuration.MultDouble(adjust);
         compositionDuration += sample.mCompositionRange.Length();
