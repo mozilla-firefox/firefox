@@ -854,8 +854,8 @@ export class MozTabbrowserTabGroupMenu extends MozXULElement {
   get #panelPosition() {
     if (gBrowser.tabContainer.verticalMode) {
       return SidebarController._positionStart
-        ? "topleft topright"
-        : "topright topleft";
+        ? "topright topleft"
+        : "topleft topright";
     }
     return "bottomleft topleft";
   }
