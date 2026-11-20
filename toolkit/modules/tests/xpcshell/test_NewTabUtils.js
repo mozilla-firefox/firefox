@@ -1574,3 +1574,31 @@ add_task(async function test_shortHostname() {
     "Should return IDN for www-only non-eTLD"
   );
 });
+
+add_task(async function getUserMonthlyActivity() {
+  await PlacesUtils.history.clear();
+  let localDate = date =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  let today = new Date();
+  let threeDaysAgo = new Date(today);
+  threeDaysAgo.setDate(today.getDate() - 3);
+  let fortyDaysAgo = new Date(today);
+  fortyDaysAgo.setDate(today.getDate() - 40);
+  await PlacesTestUtils.addVisits([
+    { uri: "https://today1.example.com/", visitDate: today * 1000 },
+    { uri: "https://today2.example.com/", visitDate: today * 1000 },
+    { uri: "https://recent.example.com/", visitDate: threeDaysAgo * 1000 },
+    { uri: "https://old.example.com/", visitDate: fortyDaysAgo * 1000 },
+  ]);
+
+  Assert.deepEqual(
+    await NewTabUtils.activityStreamProvider.getUserMonthlyActivity(),
+    [
+      [1, localDate(threeDaysAgo)],
+      [2, localDate(today)],
+    ],
+    "Visits are counted per local day, ignoring visits older than 27 days"
+  );
+
+  await PlacesUtils.history.clear();
+});

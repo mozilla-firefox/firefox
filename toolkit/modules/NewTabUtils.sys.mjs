@@ -1182,8 +1182,7 @@ var ActivityStreamProvider = {
       SELECT count(*),
         strftime('%Y-%m-%d', visit_date/1000000.0, 'unixepoch', 'localtime') as date_format
       FROM moz_historyvisits
-      WHERE visit_date > 0
-      AND visit_date > strftime('%s','now','localtime','start of day','-27 days','utc') * 1000000
+      WHERE visit_date > strftime('%s','now','localtime','start of day','-27 days','utc') * 1000000
       GROUP BY date_format
       ORDER BY date_format ASC
     `;
