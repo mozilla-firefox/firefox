@@ -98,6 +98,25 @@ class CertificateDetailsPanelTest {
     }
 
     @Test
+    fun `GIVEN a certificate with only an issuer THEN no space is added above who verified it`() {
+        val panel =
+            createPanel(certificate = createCertificate(subject = "CN=www.mozilla.org", issuer = "CN=R13"), qwac = null)
+
+        assertFalse(panel.isShown(R.id.issued_to))
+        assertEquals(0, panel.topMargin(R.id.verified_by))
+    }
+
+    @Test
+    fun `GIVEN a certificate with a subject and an issuer THEN who verified it is spaced from who it was issued to`() {
+        val panel = createPanel(qwac = null)
+
+        assertEquals(
+            panel.context.resources.getDimensionPixelSize(R.dimen.certificate_details_section_spacing),
+            panel.topMargin(R.id.verified_by),
+        )
+    }
+
+    @Test
     fun `THEN the trust mark is at least 64 pixels wide`() {
         val panel = createPanel(qwac = certificate)
 
@@ -151,6 +170,9 @@ class CertificateDetailsPanelTest {
     private fun CertificateDetailsPanel.text(id: Int) = findViewById<TextView>(id)!!.text.toString()
 
     private fun CertificateDetailsPanel.isShown(id: Int) = findViewById<View>(id)!!.visibility == View.VISIBLE
+
+    private fun CertificateDetailsPanel.topMargin(id: Int) =
+        (findViewById<View>(id)!!.layoutParams as ViewGroup.MarginLayoutParams).topMargin
 
     private fun CertificateDetailsPanel.dimension(id: Int) = context.resources.getDimensionPixelSize(id)
 

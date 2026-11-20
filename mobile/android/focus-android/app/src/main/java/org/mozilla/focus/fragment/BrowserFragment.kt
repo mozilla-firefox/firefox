@@ -103,6 +103,7 @@ import org.mozilla.focus.settings.privacy.QwacStatusRequest
 import org.mozilla.focus.settings.privacy.SiteSecurityInfo
 import org.mozilla.focus.settings.privacy.TrackingProtectionPanel
 import org.mozilla.focus.settings.privacy.TrackingProtectionPanelInteractor
+import org.mozilla.focus.settings.privacy.canOpenCertificateDetails
 import org.mozilla.focus.shortcut.HomeScreen
 import org.mozilla.focus.state.AppAction
 import org.mozilla.focus.topsites.DefaultTopSitesStorage.Companion.TOP_SITES_MAX_LIMIT
@@ -1073,13 +1074,8 @@ class BrowserFragment : BaseFragment(), UserInteractionHandler, AccessibilityMan
         requireComponents.sessionUseCases.reload(tab.id)
     }
 
-    /**
-     * Whether the certificate details are opened from a "Secure connection" link in the tracking protection panel
-     * header. Until the behaviour for pages without a certificate is decided, this is only the case for secure pages
-     * with a certificate.
-     */
-    private fun showCertificateDetailsLink(): Boolean =
-        tab.content.securityInfo.isSecure && tab.content.securityInfo.certificate != null
+    /** Whether the certificate details are opened from a "Secure connection" link in the tracking protection panel. */
+    private fun showCertificateDetailsLink(): Boolean = tab.content.securityInfo.canOpenCertificateDetails()
 
     private fun showConnectionInfo() {
         val connectionInfoPanel =

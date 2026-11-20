@@ -6,6 +6,7 @@ package org.mozilla.focus.settings.privacy
 
 import android.content.Context
 import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.activity.addCallback
@@ -13,13 +14,17 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.core.view.ViewCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updateLayoutParams
 import com.google.android.material.R as materialR
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import java.security.cert.X509Certificate
 import kotlin.math.roundToInt
+import mozilla.components.browser.state.state.SecurityInfo
+import mozilla.components.support.ktx.android.view.pixelSizeFor
 import mozilla.components.support.ktx.kotlin.tryGetHostFromUrl
 import mozilla.components.support.utils.R as supportUtilsR
+import mozilla.components.support.utils.hasDisplayableDetails
 import mozilla.components.support.utils.issuerDisplayName
 import mozilla.components.support.utils.toCertificateDetails
 import mozilla.components.support.utils.toIssuedTo
@@ -33,6 +38,14 @@ private const val DARK_BACKGROUND_LUMINANCE = 0.5
 // density screens it is widened to 64 pixels, which keeps it more than 85 pixels high.
 private const val EU_TRUST_MARK_WIDTH_DP = 58
 private const val EU_TRUST_MARK_MIN_WIDTH_PX = 64
+
+/**
+ * Whether the certificate details can be opened for this connection: only for secure connections with a certificate
+ * that has something to show. Pages without a certificate, such as HTTP, internal pages and local files, and pages
+ * whose certificate has an error, even after the user chose to proceed, show the connection security row instead.
+ */
+internal fun SecurityInfo.canOpenCertificateDetails(): Boolean =
+    isSecure && certificate?.toCertificateDetails().hasDisplayableDetails()
 
 /**
  * A bottom sheet panel that shows who the current website's certificate was issued to and who verified it, and, when
@@ -98,6 +111,13 @@ class CertificateDetailsPanel(
         binding.verifiedByIssuer.showText(issuerName)
 
         binding.qwacStatement.isVisible = qwac != null
+
+        // Space the sections apart, but not above the first one shown, so that the card stays evenly padded when some
+        // sections are hidden.
+        binding.verifiedBy.setSectionSpacing(hasSectionAbove = binding.issuedTo.isVisible)
+        binding.qwacStatement.setSectionSpacing(
+            hasSectionAbove = binding.issuedTo.isVisible || binding.verifiedBy.isVisible
+        )
         binding.euTrustMark.isVisible = qwac != null
         binding.dragHandle.updateSpacing(isQwac = qwac != null)
     }
@@ -117,6 +137,12 @@ class CertificateDetailsPanel(
 
         val width = (EU_TRUST_MARK_WIDTH_DP * context.resources.displayMetrics.density).roundToInt()
         binding.euTrustMark.layoutParams.width = maxOf(width, EU_TRUST_MARK_MIN_WIDTH_PX)
+    }
+
+    private fun View.setSectionSpacing(hasSectionAbove: Boolean) {
+        updateLayoutParams<ViewGroup.MarginLayoutParams> {
+            topMargin = if (hasSectionAbove) pixelSizeFor(R.dimen.certificate_details_section_spacing) else 0
+        }
     }
 
     private fun TextView.showText(value: String?) {

@@ -44,6 +44,8 @@
     <!-- Default values for Material Bottom sheet. -->
     <dimen name="tablet_bottom_sheet_width">@dimen/match_parent</dimen>
     <dimen name="tablet_bottom_sheet_peekheight">64dp</dimen>
+    <!-- Space between the sections of the certificate details card. -->
+    <dimen name="certificate_details_section_spacing">16dp</dimen>
     <!-- Space under the bottom sheet drag handle, larger on websites that present a QWAC. -->
     <dimen name="bottom_sheet_drag_handle_bottom_margin">5dp</dimen>
     <dimen name="bottom_sheet_drag_handle_bottom_margin_qwac">16dp</dimen>

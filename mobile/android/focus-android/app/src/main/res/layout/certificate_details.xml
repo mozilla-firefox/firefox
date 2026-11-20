@@ -128,7 +128,7 @@
                     android:id="@+id/verified_by"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="@dimen/certificate_details_section_spacing"
                     android:focusable="true"
                     android:orientation="vertical"
                     android:visibility="gone"
@@ -154,7 +154,7 @@
                     style="@style/PanelTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="@dimen/certificate_details_section_spacing"
                     android:text="@string/qualified_text"
                     android:visibility="gone"
                     tools:visibility="visible" />
