@@ -185,23 +185,22 @@ class WebTransportDatagramDuplexStream final : public nsISupports,
   void SetChild(WebTransportChild* aChild);
 
   // https://w3c.github.io/webtransport/#webtransport-cleanup steps 11-13.
-  // Returns what [[Writables]] held, for CloseOrErrorWritables().
+  // Returns what [[Writables]] held, for ErrorWritables().
   //
   // Resolving the withheld write promises also lets
   // WritableStreamStartErroring() finish, since it only does once no write
   // is marked in flight.
   [[nodiscard]] nsTArray<RefPtr<WebTransportDatagramsWritable>> Cleanup();
 
-  // https://w3c.github.io/webtransport/#webtransport-cleanup steps 17.5
-  // (aClean) and 18.7 (!aClean, with aErrorValue as error), for aWritables
-  // as returned by Cleanup() plus the default writable.
-  MOZ_CAN_RUN_SCRIPT void CloseOrErrorWritables(
+  // https://w3c.github.io/webtransport/#webtransport-cleanup step 17, for
+  // aWritables as returned by Cleanup() plus the default writable.
+  MOZ_CAN_RUN_SCRIPT void ErrorWritables(
       JSContext* aCx,
       const nsTArray<RefPtr<WebTransportDatagramsWritable>>& aWritables,
-      bool aClean, JS::Handle<JS::Value> aErrorValue);
+      JS::Handle<JS::Value> aErrorValue);
 
-  // https://w3c.github.io/webtransport/#webtransport-cleanup steps 17.6
-  // (aClean) and 18.8 (!aClean, with aErrorValue as error).
+  // https://w3c.github.io/webtransport/#webtransport-cleanup steps 18.5
+  // (aClean) and 19.7 (!aClean, with aErrorValue as error).
   MOZ_CAN_RUN_SCRIPT void CloseOrErrorReadable(
       JSContext* aCx, bool aClean, JS::Handle<JS::Value> aErrorValue);
 
@@ -277,10 +276,6 @@ class WebTransportDatagramDuplexStream final : public nsISupports,
 
  private:
   ~WebTransportDatagramDuplexStream() = default;
-
-  MOZ_CAN_RUN_SCRIPT static void CloseOrErrorWritable(
-      JSContext* aCx, WritableStream* aWritable, bool aClean,
-      JS::Handle<JS::Value> aErrorValue);
 
   nsCOMPtr<nsIGlobalObject> mGlobal;
   RefPtr<WebTransport> mWebTransport;
