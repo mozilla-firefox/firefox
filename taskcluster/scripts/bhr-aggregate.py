@@ -254,6 +254,9 @@ def main():
         output_dir=args.output_dir,
         output_tag=args.output_tag,
         config_overrides={"thread_filter": args.thread_filter},
+        # Only a run pinned to a date, a backfill or its retry, reads an earlier
+        # scan; the cron has to see the pings that arrived since.
+        reuse=args.date is not None,
     )
 
     if args.skip_timeseries:

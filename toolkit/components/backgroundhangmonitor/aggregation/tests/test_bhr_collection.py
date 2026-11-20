@@ -11,10 +11,12 @@ install required.
 import datetime
 import json
 import os
+import re
 import sys
 import types
 
 import mozunit
+import pytest
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _AGGREGATION_DIR = os.path.dirname(_HERE)
@@ -205,20 +207,64 @@ def _make_row(os_name, os_version, arch, app_build, hangs_reports, hangs_modules
 
 def _install_fake_bigquery(monkeypatch, rows=()):
     """Stand in for google-cloud-bigquery, so the tests stay offline and run
-    without it installed. Every table reads back as `rows`.
+    without it installed. Every table's rows read back as `rows`.
 
-    Returns a record of the projects clients are made for, the queries run and
-    the tables read.
+    NotFound: get_table raises it for a table that does not exist. Setting
+    lose_race makes get_table miss tables that exist, as it does when a concurrent
+    run creates the table between this run's check and its CREATE.
+
+    Conflict: a CREATE TABLE creates its table or, if the table already exists,
+    its result raises Conflict.
+
+    PreconditionFailed: update_table raises it when lose_update_race is set, as it
+    does when a concurrent run updates the table after this run fetched it.
+
+    Returns a record of the projects clients are made for, the queries run, the
+    tables created and read, and the fields of each table update.
     """
-    bq = types.SimpleNamespace(projects=[], queries=[], read=[])
+    bq = types.SimpleNamespace(
+        projects=[],
+        queries=[],
+        read=[],
+        tables={},
+        updated=[],
+        lose_race=False,
+        lose_update_race=False,
+    )
+
+    class NotFound(Exception):
+        pass
+
+    class Conflict(Exception):
+        pass
+
+    class PreconditionFailed(Exception):
+        pass
 
     class Client:
         def __init__(self, project):
             bq.projects.append(project)
 
+        def get_table(self, table_id):
+            if table_id not in bq.tables or bq.lose_race:
+                raise NotFound(table_id)
+            return bq.tables[table_id]
+
+        def update_table(self, table, fields):
+            if bq.lose_update_race:
+                raise PreconditionFailed(table)
+            bq.updated.append(fields)
+
         def query(self, sql):
             bq.queries.append(sql)
-            return types.SimpleNamespace(job_id="job", result=lambda: None)
+            table_id = re.search(r"TABLE `([^`]+)`", sql).group(1)
+
+            def result():
+                if table_id in bq.tables:
+                    raise Conflict(table_id)
+                bq.tables[table_id] = types.SimpleNamespace(expires=None)
+
+            return types.SimpleNamespace(job_id="job", result=result)
 
         def list_rows(self, table_id):
             bq.read.append(table_id)
@@ -226,11 +272,22 @@ def _install_fake_bigquery(monkeypatch, rows=()):
 
     modules = {
         name: types.ModuleType(name)
-        for name in ("google", "google.cloud", "google.cloud.bigquery")
+        for name in (
+            "google",
+            "google.cloud",
+            "google.cloud.bigquery",
+            "google.api_core",
+            "google.api_core.exceptions",
+        )
     }
     modules["google"].cloud = modules["google.cloud"]
+    modules["google"].api_core = modules["google.api_core"]
     modules["google.cloud"].bigquery = modules["google.cloud.bigquery"]
     modules["google.cloud.bigquery"].Client = Client
+    modules["google.api_core"].exceptions = modules["google.api_core.exceptions"]
+    modules["google.api_core.exceptions"].NotFound = NotFound
+    modules["google.api_core.exceptions"].Conflict = Conflict
+    modules["google.api_core.exceptions"].PreconditionFailed = PreconditionFailed
     for name, module in modules.items():
         monkeypatch.setitem(sys.modules, name, module)
     return bq
@@ -238,11 +295,89 @@ def _install_fake_bigquery(monkeypatch, rows=()):
 
 def test_query_bigquery_reads_back_the_table_its_query_creates(monkeypatch):
     bq = _install_fake_bigquery(monkeypatch)
-    bhr_collection._query_bigquery("SELECT 1", "test-project")
+    bhr_collection._query_bigquery("SELECT 1", "test-project", False)
     (create,) = bq.queries
     assert create.endswith("AS\nSELECT 1")
     assert len(bq.read) == 1
     assert f"TABLE `{bq.read[0]}`" in create
+
+
+def test_query_bigquery_reuses_an_earlier_scan_of_the_same_query(monkeypatch):
+    # A retry after a run died past its scan must not pay for the scan again.
+    bq = _install_fake_bigquery(monkeypatch)
+    bhr_collection._query_bigquery("SELECT 1", "test-project", True)
+    bhr_collection._query_bigquery("SELECT 1", "test-project", True)
+    assert len(bq.queries) == 1
+    assert "INTERVAL 72 HOUR" in bq.queries[0]
+    assert len(bq.tables) == 1, "Reusing a scan must keep a single result table"
+    (table_id,) = bq.tables
+    assert bq.read == [table_id, table_id]
+
+    bhr_collection._query_bigquery("SELECT 2", "test-project", True)
+    assert len(bq.queries) == 2
+    assert len(bq.tables) == 2
+    assert bq.read[2] in bq.tables and bq.read[2] != table_id
+    assert all(t.startswith("mozdata.tmp.bhr_aggregate_") for t in bq.tables)
+
+
+def test_query_bigquery_pushes_back_the_expiry_of_a_table_it_reuses(monkeypatch):
+    # A table found close to its expiry must not go while it is being read.
+    bq = _install_fake_bigquery(monkeypatch)
+    bhr_collection._query_bigquery("SELECT 1", "test-project", True)
+    before = datetime.datetime.now(datetime.timezone.utc)
+    bhr_collection._query_bigquery("SELECT 1", "test-project", True)
+    (table,) = bq.tables.values()
+    assert table.expires >= before + datetime.timedelta(hours=72)
+    assert bq.updated == [["expires"]]
+
+
+def test_query_bigquery_reads_a_table_a_concurrent_reuse_pushed_back(monkeypatch):
+    bq = _install_fake_bigquery(monkeypatch)
+    bhr_collection._query_bigquery("SELECT 1", "test-project", True)
+    bq.lose_update_race = True
+    bhr_collection._query_bigquery("SELECT 1", "test-project", True)
+    assert len(bq.queries) == 1
+    assert len(bq.tables) == 1, "Reusing a scan must keep a single result table"
+    (table_id,) = bq.tables
+    assert bq.read == [table_id, table_id]
+
+
+def test_query_bigquery_scans_afresh_without_reuse(monkeypatch):
+    # Neither an earlier run's table nor its own retry's is read.
+    bq = _install_fake_bigquery(monkeypatch)
+    bhr_collection._query_bigquery("SELECT 1", "test-project", True)
+    bhr_collection._query_bigquery("SELECT 1", "test-project", False)
+    bhr_collection._query_bigquery("SELECT 1", "test-project", False)
+    assert len(bq.queries) == 3
+    assert len(bq.tables) == 3
+    assert sorted(bq.read) == sorted(bq.tables)
+    assert all("INTERVAL 6 HOUR" in q for q in bq.queries[1:])
+
+
+def test_query_bigquery_reraises_conflict_without_reuse(monkeypatch):
+    bq = _install_fake_bigquery(monkeypatch)
+    monkeypatch.setattr(
+        bhr_collection.uuid, "uuid4", lambda: types.SimpleNamespace(hex="0" * 32)
+    )
+    bhr_collection._query_bigquery("SELECT 1", "test-project", False)
+    conflict = sys.modules["google.api_core.exceptions"].Conflict
+    with pytest.raises(conflict):
+        bhr_collection._query_bigquery("SELECT 1", "test-project", False)
+    assert len(bq.queries) == 2
+    assert len(bq.read) == 1, "A non-reusable run must not read an existing table"
+
+
+def test_query_bigquery_reads_the_table_a_concurrent_run_created(monkeypatch):
+    bq = _install_fake_bigquery(monkeypatch)
+    bhr_collection._query_bigquery("SELECT 1", "test-project", True)
+    bq.lose_race = True
+    # Neither fails nor replaces the other run's table.
+    bhr_collection._query_bigquery("SELECT 1", "test-project", True)
+    assert len(bq.queries) == 2
+    assert all(q.startswith("CREATE TABLE ") for q in bq.queries)
+    assert len(bq.tables) == 1, "Reusing a scan must keep a single result table"
+    (table_id,) = bq.tables
+    assert bq.read == [table_id, table_id]
 
 
 def test_get_data_yields_ping_for_valid_row_in_build_window(monkeypatch):
@@ -315,6 +450,52 @@ def test_get_data_explicit_end_date_widens_window(monkeypatch):
         "SUBSTR(client_info.app_build, 1, 8) BETWEEN '20260501' AND '20260502'"
         in bq.queries[0]
     )
+
+
+def test_get_data_reuses_an_earlier_scan_only_when_asked(monkeypatch):
+    bq = _install_fake_bigquery(monkeypatch)
+    args = dict(
+        date=datetime.date(2026, 5, 1),
+        sample_size=0.001,
+        billing_project="test-project",
+    )
+    list(bhr_collection.get_data(**args))
+    list(bhr_collection.get_data(**args))
+    assert len(bq.queries) == 2
+    list(bhr_collection.get_data(reuse=True, **args))
+    list(bhr_collection.get_data(reuse=True, **args))
+    assert len(bq.queries) == 3
+
+
+def test_aggregate_passes_reuse_on_to_the_query(monkeypatch, tmp_path):
+    import symbolication
+
+    hang = {
+        "thread": "Gecko",
+        "process": "main",
+        "duration": 500,
+        "stack": [{"frame": "1000", "module": 0}],
+        "annotations": [["UserInteracting", "true"]],
+    }
+    row = _make_row(
+        "Linux",
+        "5.10",
+        "x86_64",
+        "20260502123456",
+        json.dumps([hang]),
+        json.dumps([["xul.pdb", "ABC"]]),
+    )
+    bq = _install_fake_bigquery(monkeypatch, [row])
+    monkeypatch.setattr(symbolication, "fetch_url", lambda _url: (False, ""))
+    for reuse in (False, True, True):
+        bhr_collection.aggregate(
+            date=datetime.date(2026, 5, 2),
+            sample_size=0.001,
+            billing_project="test-project",
+            output_dir=str(tmp_path),
+            reuse=reuse,
+        )
+    assert len(bq.queries) == 2
 
 
 def test_get_data_exclude_modules_omits_hangs_modules_property(monkeypatch):

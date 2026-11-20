@@ -21,11 +21,12 @@ present in the runtime — that's handled by the TaskCluster Docker image
 in a later phase of the migration.
 """
 
+import hashlib
 import json
 import os
 import time
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 from client_metrics import HyperLogLog
 from heuristics import apply_hang_signature_heuristics
@@ -45,9 +46,12 @@ _SUBMISSION_PADDING_DAYS = 5
 # billing the query to a separately configured project.
 _MATERIALIZATION_PROJECT = "mozdata"
 _MATERIALIZATION_DATASET = "tmp"
-# Lifetime of the temp result table. Set as an OPTION at table-creation time so
-# it applies even if this process dies before it can clean anything up.
+# Lifetime of the temp result table, set as an OPTION when it is created:
+# BigQuery deletes the table once it expires, and nothing else deletes it.
 _MATERIALIZATION_EXPIRY_HOURS = 6
+# A table a later run may reuse is kept long enough for a failed run to be
+# retried days later, and each reuse pushes its expiry back by as much.
+_REUSABLE_MATERIALIZATION_EXPIRY_HOURS = 72
 
 # How often to print a heartbeat while streaming rows, so a long production run
 # visibly makes progress instead of sitting silent.
@@ -269,13 +273,13 @@ def build_query_sql(date, end_date, sample_slices, client_metrics=False):
     """
 
 
-def _query_bigquery(sql, billing_project):
+def _query_bigquery(sql, billing_project, reuse):
     """Run sql against BigQuery and return an iterator over the result rows.
 
     Selecting production-scale results back inline fails with "Response too
     large to return" (BigQuery's getQueryResults path is capped). So instead of
-    selecting rows directly, we wrap the query in a CREATE OR REPLACE TABLE ...
-    AS SELECT that writes the rows to a temp table, then read that table with
+    selecting rows directly, we wrap the query in a CREATE TABLE ... AS SELECT
+    that writes the rows to a temp table, then read that table with
     list_rows (paginated tabledata.list) so memory stays bounded.
 
     Because the job is a CREATE TABLE statement, query_job.result() returns an
@@ -286,26 +290,67 @@ def _query_bigquery(sql, billing_project):
     reclaims it on schedule even if this process is killed right afterwards (and
     the mozdata.tmp dataset has a default expiration as a further backstop).
 
+    With `reuse`, the table is named after a hash of the query and kept for
+    _REUSABLE_MATERIALIZATION_EXPIRY_HOURS, and one that already exists is read
+    rather than scanned for again, its expiry first pushed back as far so that
+    it outlives the read: CREATE TABLE AS only creates the table once its query
+    has succeeded, so an existing one holds a complete result, as of when it
+    was created. A run that dies after its scan can then be retried without
+    paying for it twice. Without `reuse`, the table gets a name of its own.
+
+    So a retry still pays for a new scan in two cases. One is a run without
+    `reuse`, as the daily cron's always is. The other is runs of the same query
+    that overlap, whether started together or retried while the first run's
+    query is still running in BigQuery: each scans, and the later CREATE fails
+    with Conflict and reads the earlier table instead of replacing it.
+
     google-cloud-bigquery is imported lazily and this whole function is the
     single BigQuery touchpoint, so the module imports without the package and
     unit tests can stub it.
     """
+    from google.api_core.exceptions import Conflict, NotFound, PreconditionFailed
     from google.cloud import bigquery
 
     client = bigquery.Client(project=billing_project)
+    if reuse:
+        name = hashlib.sha256(sql.encode()).hexdigest()[:32]
+        expiry_hours = _REUSABLE_MATERIALIZATION_EXPIRY_HOURS
+    else:
+        name = uuid.uuid4().hex
+        expiry_hours = _MATERIALIZATION_EXPIRY_HOURS
     destination = (
-        f"{_MATERIALIZATION_PROJECT}.{_MATERIALIZATION_DATASET}"
-        f".bhr_aggregate_{uuid.uuid4().hex}"
+        f"{_MATERIALIZATION_PROJECT}.{_MATERIALIZATION_DATASET}.bhr_aggregate_{name}"
     )
+    if reuse:
+        try:
+            table = client.get_table(destination)
+        except NotFound:
+            pass
+        else:
+            table.expires = datetime.now(timezone.utc) + timedelta(hours=expiry_hours)
+            try:
+                client.update_table(table, ["expires"])
+            except PreconditionFailed:
+                # Its ETag moved: a concurrent run reusing it pushed it back first.
+                pass
+            print(f"Reusing {destination} from an earlier run", flush=True)
+            return client.list_rows(destination)
+
     create_table_sql = (
-        f"CREATE OR REPLACE TABLE `{destination}`\n"
+        f"CREATE TABLE `{destination}`\n"
         f"OPTIONS (expiration_timestamp = TIMESTAMP_ADD("
-        f"CURRENT_TIMESTAMP(), INTERVAL {_MATERIALIZATION_EXPIRY_HOURS} HOUR))\n"
+        f"CURRENT_TIMESTAMP(), INTERVAL {expiry_hours} HOUR))\n"
         f"AS\n{sql}"
     )
     query_job = client.query(create_table_sql)
     print(f"BigQuery job {query_job.job_id} writing to {destination}", flush=True)
-    query_job.result()  # Block until the table is built; empty result, raises on failure.
+    try:
+        query_job.result()  # Block until the table is built; empty result, raises on failure.
+    except Conflict:
+        if not reuse:
+            raise
+        # A concurrent run of the same query created it: same rows, expiry just set.
+        print(f"{destination} was created by a concurrent run; reading it", flush=True)
     return client.list_rows(destination)
 
 
@@ -316,6 +361,7 @@ def get_data(
     end_date=None,
     exclude_modules=False,
     client_metrics=False,
+    reuse=False,
 ):
     """Stream BHR pings from BigQuery, filtered to the active build-date window.
 
@@ -326,6 +372,10 @@ def get_data(
         end_date: datetime.date for the end of the build-id window
             (default: same as date — a single-day window)
         exclude_modules: skip the hangs_modules column if True
+        reuse: read an earlier run's table for the same query if one exists
+            (see _REUSABLE_MATERIALIZATION_EXPIRY_HOURS) instead of scanning
+            again. A recent range's table may be missing pings that arrived
+            since.
 
     Yields:
         Dicts with slash/style keys (one per matching ping) — the same shape
@@ -343,7 +393,7 @@ def get_data(
     # missing a required field.
     total = 0
     kept = 0
-    for row in _query_bigquery(sql, billing_project):
+    for row in _query_bigquery(sql, billing_project, reuse):
         total += 1
         if total % _PROGRESS_EVERY_ROWS == 0:
             print(f"  ...read {total:,} rows ({kept:,} kept)", flush=True)
@@ -640,6 +690,7 @@ def aggregate(
     output_tag="main",
     end_date=None,
     config_overrides=None,
+    reuse=False,
 ):
     """Run the full BHR aggregation for one build-date window.
 
@@ -680,6 +731,7 @@ def aggregate(
         end_date=end_date,
         exclude_modules=config["exclude_modules"],
         client_metrics=config["client_metrics"],
+        reuse=reuse,
     ):
         if not ping_is_valid(ping):
             continue
