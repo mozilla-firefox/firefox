@@ -34,14 +34,12 @@ let proxyPort;
 let proxyFilter;
 
 add_setup(async function () {
-  let h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
+  do_get_profile();
+  let h2Port = await create_h3_fallback_origin();
   let h3Port = await create_h3_server();
   h3AltSvc = ":" + h3Port;
   h3Route = `${H3_SERVER_DOMAIN}:${h3Port}`;
   httpsOrigin = `https://${H3_SERVER_DOMAIN}:${h2Port}/`;
-  do_get_profile();
 
   Services.prefs.setBoolPref("network.http.http3.enable", true);
   Services.prefs.setBoolPref("network.http.happy_eyeballs_enabled", true);
