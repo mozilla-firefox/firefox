@@ -205,14 +205,24 @@ class WebTransportDatagramDuplexStream final : public nsISupports,
   void NewDatagramReceived(nsTArray<uint8_t>&& aData,
                            const mozilla::TimeStamp& aTimeStamp);
 
-  // Sends a datagram to the parent in an OutgoingDatagrams IPC message.
+  // Queues a datagram for the next batched OutgoingDatagrams IPC message.
   // Called by every OutgoingDatagramStreamAlgorithms instance (the default
-  // writable plus any from createWritable()) once mChild is set.
+  // writable plus any from createWritable()) instead of sending immediately,
+  // so a burst spread across writables still coalesces into one message.
+  // Flushes immediately if the pending batch has reached
+  // kMaxOutgoingMessageBytes; otherwise posts a flush runnable to the current
+  // thread on the first datagram queued, which runs as a later task.  Since
+  // this can send right away, an UpdateDatagramQueueParams meant to precede
+  // these datagrams must be sent before the first is queued (SetChild()), and
+  // one meant to follow datagrams already queued must flush first (the
+  // setters).
   void QueueOutgoingDatagram(OutgoingDatagram&& aDatagram);
 
-  // Sends whatever has accumulated in mPendingOutgoing, split into
+  // Sends whatever QueueOutgoingDatagram() has accumulated, split into
   // OutgoingDatagrams messages of at most about kMaxOutgoingMessageBytes or
-  // kMaxOutgoingMessageDatagrams; a no-op if nothing has.
+  // kMaxOutgoingMessageDatagrams. Safe to call when there is nothing pending
+  // (no-op) or when mChild is not yet set (also a no-op; SetChild() flushes
+  // explicitly once it is).
   void FlushOutgoingDatagrams();
 
   // Handles a DatagramCapacity message, the parent's aggregate stand-in for
@@ -321,9 +331,13 @@ class WebTransportDatagramDuplexStream final : public nsISupports,
   uint64_t mSentOutgoing = 0;
   uint64_t mDroppedOutgoing = 0;
 
-  // Outgoing datagrams accumulated by QueueOutgoingDatagram() or SetChild()
-  // for the next OutgoingDatagrams message.
+  // Outgoing datagrams accumulated by QueueOutgoingDatagram() for the next
+  // OutgoingDatagrams message.
   nsTArray<OutgoingDatagram> mPendingOutgoing;
+  size_t mPendingOutgoingBytes = 0;
+  // Set while a FlushOutgoingDatagrams() runnable is posted but hasn't run
+  // yet, so a burst within one task posts only one.
+  bool mOutgoingFlushPending = false;
 
   // The latest DatagramCapacity grant and how much of it write() promises
   // have used, across every OutgoingDatagramStreamAlgorithms instance.
