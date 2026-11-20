@@ -26,6 +26,7 @@ declare namespace BrowserWindow {
   var RTL_UI: boolean;
 
   function isBlankPageURL(aURL: string): boolean;
+  function isElementVisible(aElement: Element | null): boolean;
   function isInitialPage(url: string | nsIURI): boolean;
   function CreateContainerTabMenu(event: Event): void;
   function UpdatePopupNotificationsVisibility(): void;
@@ -95,6 +96,17 @@ declare namespace BrowserWindow {
 
   var FirefoxViewHandler: {
     tab: MozTabbrowserTab | null;
+    openTab(section?: string): void;
+  };
+
+  // customizableui/content/panelUI.js
+  var PanelUI: {
+    showSubView(
+      aViewId: string,
+      aAnchor: Element,
+      aEvent?: Event
+    ): Promise<void>;
+    _ensureShortcutsShown(view?: Element): void;
   };
 
   var XULBrowserWindow: {

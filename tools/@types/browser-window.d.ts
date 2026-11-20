@@ -20,6 +20,7 @@ declare var delayedStartupPromise: BrowserWindow["delayedStartupPromise"];
 declare var RTL_UI: BrowserWindow["RTL_UI"];
 
 declare var isBlankPageURL: BrowserWindow["isBlankPageURL"];
+declare var isElementVisible: BrowserWindow["isElementVisible"];
 declare var isInitialPage: BrowserWindow["isInitialPage"];
 declare var CreateContainerTabMenu: BrowserWindow["CreateContainerTabMenu"];
 declare var UpdatePopupNotificationsVisibility: BrowserWindow["UpdatePopupNotificationsVisibility"];
@@ -38,5 +39,6 @@ declare const gClickAndHoldListenersOnElement: BrowserWindow["gClickAndHoldListe
 declare var FirefoxViewHandler: BrowserWindow["FirefoxViewHandler"];
 declare var XULBrowserWindow: BrowserWindow["XULBrowserWindow"];
 declare var MousePosTracker: BrowserWindow["MousePosTracker"];
+declare var PanelUI: BrowserWindow["PanelUI"];
 declare var StatusPanel: BrowserWindow["StatusPanel"];
 declare var TabBarVisibility: BrowserWindow["TabBarVisibility"];
