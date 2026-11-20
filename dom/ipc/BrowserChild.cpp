@@ -2181,8 +2181,7 @@ mozilla::ipc::IPCResult BrowserChild::RecvRealDragEvent(
     if (dragSession) {
       // This will dispatch 'drag' event at the source if the
       // drag transaction started in this process.
-      dragSession->FireDragEventAtSource(eDrag, aEvent.mModifiers,
-                                         aEvent.mRefPoint);
+      dragSession->FireDragEventAtSource(eDrag, aEvent.mModifiers);
     }
   }
 
