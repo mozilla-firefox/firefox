@@ -189,7 +189,8 @@ two builds or two browsers. The perf cron targets skip these tasks.
 ## supports_ab_profiles
 
 Set on the performance test tasks that an AB task can be derived from. An AB
-task reuses such a task's definition to run the test twice on one machine.
+task reuses such a task's definition to run the test twice on one machine. The
+`ab-profiles` action refuses to run on a task without this attribute.
 
 ## test_chunk
 

@@ -85,6 +85,8 @@ def test_adds_vs_car_task(run_transform):
     ]
     original, _, task = tasks
 
+    assert "supports_ab_profiles" in original["attributes"]
+    assert "supports_ab_profiles" not in task["attributes"]
     assert task["attributes"]["raptor_try_name"].endswith(
         "native-profiling-vs-custom-car"
     )

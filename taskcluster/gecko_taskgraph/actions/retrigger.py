@@ -54,6 +54,7 @@ def _should_retrigger(task_graph, label):
         {"kind": "action-callback"},
         {"kind": "cron-task"},
         {"action": "backfill-task"},
+        {"action": "ab-profiles-task"},
     ],
 )
 def retrigger_decision_action(parameters, graph_config, input, task_group_id, task_id):

@@ -7,6 +7,7 @@ import pytest
 import yaml
 from mozunit import main
 from pytest_taskgraph import make_graph, make_task
+from taskcluster.exceptions import TaskclusterRestFailure
 from taskgraph import create
 from taskgraph.util import json
 from taskgraph.util.taskcluster import _task_definitions_cache
@@ -947,6 +948,226 @@ def mock_empty_task_group(responses, action_task_id):
             ]
         },
     )
+
+
+AB_PROFILES_LABEL = (
+    "test-windows11-64-24h2-shippable/opt-browsertime-benchmark-firefox"
+    "-speedometer3-native-profiling"
+)
+AB_PROFILES_BUILD_LABEL = "build-win64-shippable/opt"
+AB_PROFILES_BASE_REV = "ba5eba5e" * 5
+AB_PROFILES_COMMAND = [
+    "python3 -u mozharness/scripts/raptor_script.py --cfg foo "
+    "--app=firefox --browsertime-node $MOZ_FETCHES_DIR/node/node.exe"
+]
+
+
+@pytest.fixture
+def ab_profiles_mocks(mocker):
+    """Stand in for the two pushes the AB profiles action reads."""
+    graph = make_graph(
+        make_task(
+            label=AB_PROFILES_LABEL,
+            attributes={"supports_ab_profiles": True},
+            task_def={
+                "metadata": {"name": AB_PROFILES_LABEL, "description": "Raptor"},
+                "extra": {"treeherder": {"symbol": "sp3-p"}},
+                "payload": {
+                    "env": {
+                        "EXTRA_MOZHARNESS_CONFIG": {
+                            "artifact-reference": json.dumps({
+                                "installer_url": "<build/public/build/target.zip>"
+                            })
+                        },
+                        "MOZ_FETCHES": {
+                            "task-reference": json.dumps([
+                                {
+                                    "artifact": "public/build/node.tar.zst",
+                                    "task": "<build>",
+                                },
+                                {
+                                    "artifact": (
+                                        "public/build/target.crashreporter-symbols.zip"
+                                    ),
+                                    "task": "<build>",
+                                },
+                            ])
+                        },
+                    },
+                    "maxRunTime": 4200,
+                    "command": list(AB_PROFILES_COMMAND),
+                },
+            },
+        ),
+        make_task(
+            label=AB_PROFILES_BUILD_LABEL,
+            kind="build",
+            task_def={"metadata": {"name": "b", "description": "build"}},
+        ),
+        (AB_PROFILES_LABEL, AB_PROFILES_BUILD_LABEL, "build"),
+    )
+
+    mocker.patch(
+        "gecko_taskgraph.actions.ab_profiles.fetch_graph_and_labels",
+        return_value=("gid", graph, {AB_PROFILES_BUILD_LABEL: "newbuildtid"}, None),
+    )
+
+    def find_decision_task(parameters, graph_config):
+        assert parameters["head_rev"] == AB_PROFILES_BASE_REV
+        return "basedecisiontid"
+
+    mocker.patch(
+        "gecko_taskgraph.actions.ab_profiles.find_decision_task",
+        side_effect=find_decision_task,
+    )
+    mocker.patch(
+        "gecko_taskgraph.actions.ab_profiles.get_artifact",
+        return_value={AB_PROFILES_BUILD_LABEL: "basebuildtid"},
+    )
+
+    def get_task_definition(task_id):
+        if task_id == "tid":
+            return {"metadata": {"name": AB_PROFILES_LABEL}}
+        return {"schedulerId": "gecko-level-3"}
+
+    mocker.patch(
+        "gecko_taskgraph.actions.ab_profiles.get_task_definition",
+        side_effect=get_task_definition,
+    )
+    mocker.patch(
+        "gecko_taskgraph.actions.ab_profiles.status_task",
+        return_value={"state": "completed"},
+    )
+    return mocker.patch(
+        "gecko_taskgraph.actions.ab_profiles.list_artifacts",
+        return_value=[
+            {"name": "public/build/target.zip"},
+            {"name": "public/build/target.crashreporter-symbols.zip"},
+        ],
+    )
+
+
+def test_ab_profiles(ab_profiles_mocks, run_action, get_artifact):
+    label = AB_PROFILES_LABEL
+
+    run_action(
+        "ab-profiles",
+        params={"head_rev": "newrev123456789", "project": "try"},
+        input={
+            "base_revision": AB_PROFILES_BASE_REV,
+            "base_project": "try",
+            "order": "new,base",
+        },
+    )
+
+    assert label in get_artifact("to-run.json")
+
+    task_graph = get_artifact("task-graph.json")
+    task_id = get_artifact("label-to-taskid.json")[label]
+    task_def = task_graph[task_id]["task"]
+    config = json.loads(task_def["payload"]["env"]["RAPTOR_AB_CONFIG"])
+    assert config["runs"]["base"]["installer_url"] == (
+        f"{ROOT_URL}/api/queue/v1/task/basebuildtid/artifacts/public/build/target.zip"
+    )
+    assert config["runs"]["base"]["symbols_url"].endswith(
+        "basebuildtid/artifacts/public/build/target.crashreporter-symbols.zip"
+    )
+    assert config["runs"]["base"]["description"] == "ba5eba5eba5e (try)"
+    assert config["runs"]["new"]["description"] == "newrev123456 (try)"
+    assert config["order"] == ["new", "base"]
+
+    assert (
+        "AB profiles, base: ba5eba5eba5e (try)" in task_def["metadata"]["description"]
+    )
+    assert task_def["payload"]["command"] == [
+        AB_PROFILES_COMMAND[0].replace("/raptor_script.py", "/raptor_ab_script.py")
+    ]
+    assert task_def["metadata"]["name"] == f"{label}-ab"
+    assert task_def["extra"]["treeherder"]["symbol"] == "sp3-ab"
+    assert task_def["tags"]["action"] == "ab-profiles-task"
+    assert "retrigger" not in task_def["tags"]
+    assert task_def["payload"]["maxRunTime"] == 2 * 4200
+
+
+def test_ab_profiles_requires_a_base(mocker, run_action):
+    mocker.patch("gecko_taskgraph.actions.ab_profiles.fetch_graph_and_labels")
+    with pytest.raises(Exception, match="base revision or a base build task id"):
+        run_action("ab-profiles", input={"base_project": "try"})
+
+
+def test_ab_profiles_task_id_overrides_revision(
+    ab_profiles_mocks, run_action, get_artifact
+):
+    run_action(
+        "ab-profiles",
+        params={"head_rev": "newrev123456789", "project": "try"},
+        input={
+            "base_revision": AB_PROFILES_BASE_REV,
+            "base_build_task_id": "otherbuildtid",
+        },
+    )
+
+    task_id = get_artifact("label-to-taskid.json")[AB_PROFILES_LABEL]
+    task_def = get_artifact("task-graph.json")[task_id]["task"]
+    config = json.loads(task_def["payload"]["env"]["RAPTOR_AB_CONFIG"])
+    assert config["runs"]["base"]["description"] == "task otherbuildtid"
+    assert "otherbuildtid" in config["runs"]["base"]["installer_url"]
+
+
+def test_ab_profiles_short_base_revision(ab_profiles_mocks, run_action):
+    with pytest.raises(Exception, match="not a full 40-character"):
+        run_action(
+            "ab-profiles",
+            params={"head_rev": "newrev123456789", "project": "try"},
+            input={"base_revision": "baserev45678"},
+        )
+
+
+def test_ab_profiles_unknown_base_task_id(ab_profiles_mocks, mocker, run_action):
+    def status_task(task_id):
+        if task_id == "typotid":
+            raise TaskclusterRestFailure("not found", None, status_code=404)
+        return {"state": "completed"}
+
+    mocker.patch(
+        "gecko_taskgraph.actions.ab_profiles.status_task", side_effect=status_task
+    )
+    with pytest.raises(Exception, match="Could not find the base build task typotid"):
+        run_action(
+            "ab-profiles",
+            params={"head_rev": "newrev123456789", "project": "try"},
+            input={"base_build_task_id": "typotid"},
+        )
+
+
+@pytest.mark.parametrize("scheduler_id", ["gecko-level-1", "comm-level-3"])
+def test_ab_profiles_less_trusted_base(
+    ab_profiles_mocks, mocker, run_action, scheduler_id
+):
+    mocker.patch(
+        "gecko_taskgraph.actions.ab_profiles.get_task_definition",
+        side_effect=lambda task_id: (
+            {"metadata": {"name": AB_PROFILES_LABEL}}
+            if task_id == "tid"
+            else {"schedulerId": scheduler_id}
+        ),
+    )
+    with pytest.raises(Exception, match="same or a higher trust level"):
+        run_action(
+            "ab-profiles",
+            params={"head_rev": "newrev123456789", "project": "autoland", "level": "3"},
+            input={"base_build_task_id": "basebuildtid"},
+        )
+
+
+def test_ab_profiles_expired_base_artifacts(ab_profiles_mocks, run_action):
+    ab_profiles_mocks.return_value = [{"name": "public/logs/live_backing.log"}]
+    with pytest.raises(Exception, match="may have expired"):
+        run_action(
+            "ab-profiles",
+            params={"head_rev": "newrev123456789", "project": "try"},
+            input={"base_build_task_id": "basebuildtid", "base_project": "try"},
+        )
 
 
 def test_release_promotion(

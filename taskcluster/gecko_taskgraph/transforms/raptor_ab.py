@@ -69,8 +69,12 @@ def make_vs_car_task(firefox_task, car_task):
     task["label"] += LABEL_SUFFIX
     task["run-on-projects"] = []
 
-    task["attributes"]["ab_profiles"] = True
-    task["attributes"]["raptor_try_name"] += LABEL_SUFFIX
+    attributes = task["attributes"]
+    attributes["ab_profiles"] = True
+    # Keep the ab-profiles action from running on this task, which would
+    # replace its AB configuration.
+    del attributes["supports_ab_profiles"]
+    attributes["raptor_try_name"] += LABEL_SUFFIX
 
     firefox_fetches = fetches(task)
     car_fetches = [f for f in fetches(car_task) if f not in firefox_fetches]
