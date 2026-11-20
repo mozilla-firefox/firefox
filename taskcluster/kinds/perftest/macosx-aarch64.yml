@@ -165,6 +165,27 @@ http3:
             --xpcshell-xre-path ${MOZ_FETCHES_DIR}/target.dmg
 
 
+webtransport-datagrams:
+    description: Run WebTransport datagram test
+    treeherder:
+        symbol: perftest(wt-dgram)
+    attributes:
+        batch: false
+    run:
+        command: >-
+            mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
+            cd $MOZ_FETCHES_DIR &&
+            python3 -m venv . &&
+            bin/python3 python/mozperftest/mozperftest/runner.py
+            xpcshell/tests/dom/webtransport/test/xpcshell/test_datagram_perf.js
+            --flavor xpcshell
+            --output $MOZ_FETCHES_DIR/../artifacts
+            --xpcshell-binary ${MOZ_FETCHES_DIR}/bin/xpcshell
+            --xpcshell-mozinfo ${MOZ_FETCHES_DIR}/target.mozinfo.json
+            --xpcshell-nodejs ${MOZ_FETCHES_DIR}/node/bin/node
+            --xpcshell-xre-path ${MOZ_FETCHES_DIR}/target.dmg
+
+
 livesites:
     description: Live site performance testing
     variants: [http3]

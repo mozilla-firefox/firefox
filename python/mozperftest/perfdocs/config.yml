@@ -23,6 +23,10 @@ suites:
             DNS Benchmark: ""
             http3 raw: ""
             TRR Benchmark: ""
+    dom/webtransport/test/xpcshell:
+        description: "Performance tests from the 'dom/webtransport/test/xpcshell' folder."
+        tests:
+            WebTransport datagrams: ""
     testing/performance:
         description: "Performance tests from the 'testing/performance' folder."
         tests:

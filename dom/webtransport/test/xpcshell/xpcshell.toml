@@ -16,6 +16,16 @@ skip-if = [
   "os == 'android' && os_version == '14' && arch == 'x86_64' && ccov", # Bug 1982953
 ]
 
+["test_datagram_perf.js"]
+run-sequentially = ["true"] # http3server
+skip-if = [
+  "asan",
+  "ccov",
+  "debug",
+  "os == 'android'",
+  "tsan",
+]
+
 ["test_simple_conn.js"]
 run-sequentially = ["true"] # http3server
 skip-if = [
