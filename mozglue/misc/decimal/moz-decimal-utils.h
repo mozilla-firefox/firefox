@@ -13,7 +13,6 @@
 #include "mozilla/Casting.h"
 #include "mozilla/FloatingPoint.h"
 #include "mozilla/Span.h"
-#include "zmij/zmij.h"
 
 #include <cmath>
 #include <cstring>
@@ -59,10 +58,13 @@ double mozToDouble(const String &aStr, bool *valid) {
 }
 
 String mozToString(double aNum) {
-  char buffer[zmij::ecmascript_buffer_size];
-  char* end =
-      zmij::write_ecmascript(buffer, zmij::ecmascript_buffer_size, aNum);
-  return String(buffer, end);
+  char buffer[64];
+  int buffer_length = std::size(buffer);
+  const double_conversion::DoubleToStringConverter& converter =
+    double_conversion::DoubleToStringConverter::EcmaScriptConverter();
+  double_conversion::StringBuilder builder(buffer, buffer_length);
+  converter.ToShortest(aNum, &builder);
+  return String(builder.Finalize());
 }
 
 String mozToString(int64_t aNum) {

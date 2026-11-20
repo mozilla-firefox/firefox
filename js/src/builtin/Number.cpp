@@ -57,7 +57,6 @@
 #include "vm/JSContext.h"
 #include "vm/JSObject.h"
 #include "vm/StaticStrings.h"
-#include "zmij/zmij.h"
 
 #include "vm/Compartment-inl.h"  // For js::UnwrapAndTypeCheckThis
 #include "vm/GeckoProfiler-inl.h"
@@ -758,10 +757,6 @@ static_assert(
 static_assert(DTOSTR_STANDARD_BUFFER_SIZE <= JS::MaximumNumberToStringLength,
               "MaximumNumberToStringLength is large enough to hold the longest "
               "string produced by a conversion");
-
-static_assert(zmij::ecmascript_buffer_size <= JS::MaximumNumberToStringLength,
-              "MaximumNumberToStringLength is large enough to hold the scratch "
-              "space required by Zmij");
 
 MOZ_ALWAYS_INLINE
 static JSLinearString* LookupInt32ToString(JSContext* cx, int32_t si) {
@@ -1641,12 +1636,24 @@ static size_t FracNumberToCString(ToCStringBuf* cbuf, double d) {
   }
 #endif
 
-  char* end = zmij::write_ecmascript(cbuf->sbuf, sizeof cbuf->sbuf, d);
-  size_t len = end - cbuf->sbuf;
-  // This is safe, because sizeof ToCStringBuf::sbuf includes scratch bytes, so
-  // there's always space left over for the terminator.
-  MOZ_ASSERT(len < JS::MaximumNumberToStringLength);
-  *end = '\0';
+  /*
+   * This is V8's implementation of the algorithm described in the
+   * following paper:
+   *
+   *   Printing floating-point numbers quickly and accurately with integers.
+   *   Florian Loitsch, PLDI 2010.
+   */
+  const double_conversion::DoubleToStringConverter& converter =
+      double_conversion::DoubleToStringConverter::EcmaScriptConverter();
+  double_conversion::StringBuilder builder(cbuf->sbuf, std::size(cbuf->sbuf));
+  MOZ_ALWAYS_TRUE(converter.ToShortest(d, &builder));
+
+  size_t len = builder.position();
+#ifdef DEBUG
+  char* result =
+#endif
+      builder.Finalize();
+  MOZ_ASSERT(cbuf->sbuf == result);
   return len;
 }
 
@@ -1673,9 +1680,20 @@ static bool AppendFracNumberToStringBuilder(StringBuilder& sb, double d) {
   char* end = reinterpret_cast<char*>(sb.end<Latin1Char>());
   char* appendPtr = end - maxSize;
 
-  char* written = zmij::write_ecmascript(appendPtr, maxSize, d);
-  MOZ_ASSERT(size_t(written - appendPtr) < maxSize);
-  sb.shrinkBy(maxSize - (written - appendPtr));
+  const double_conversion::DoubleToStringConverter& converter =
+      double_conversion::DoubleToStringConverter::EcmaScriptConverter();
+  double_conversion::StringBuilder builder(appendPtr, maxSize);
+  MOZ_ALWAYS_TRUE(converter.ToShortest(d, &builder));
+
+  size_t len = builder.position();
+
+  // Unnecessarily adds a zero termination byte, which can't be avoided because
+  // builder's destructor will add it if we don't add it here. This byte is
+  // accounted for in JS::MaximumNumberToStringLength
+  mozilla::DebugOnly<char*> result = builder.Finalize();
+  MOZ_ASSERT(appendPtr == result);
+
+  sb.shrinkBy(maxSize - len);
   return true;
 }
 
@@ -1687,11 +1705,17 @@ void JS::NumberToString(double d, char (&out)[MaximumNumberToStringLength]) {
     memmove(out, cbuf.sbuf, len);
     out[len] = '\0';
   } else {
-    char* end = zmij::write_ecmascript(out, MaximumNumberToStringLength, d);
-    // This is safe, because MaximumNumberToStringLength includes scratch bytes,
-    // so there's always space left over for the terminator
-    MOZ_ASSERT(size_t(end - out) < MaximumNumberToStringLength);
-    *end = '\0';
+    const double_conversion::DoubleToStringConverter& converter =
+        double_conversion::DoubleToStringConverter::EcmaScriptConverter();
+
+    double_conversion::StringBuilder builder(out, sizeof(out));
+    MOZ_ALWAYS_TRUE(converter.ToShortest(d, &builder));
+
+#ifdef DEBUG
+    char* result =
+#endif
+        builder.Finalize();
+    MOZ_ASSERT(out == result);
   }
 }
 
