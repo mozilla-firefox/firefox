@@ -171,6 +171,7 @@
     "url": "chrome://extensions/content/parent/ext-trial-ml.js",
     "schema": "chrome://extensions/content/schemas/trial_ml.json",
     "scopes": ["addon_parent", "content_parent"],
+    "permissions": ["trialML"],
     "paths": [["trial", "ml"]]
   },
   "userScripts": {
