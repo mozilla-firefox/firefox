@@ -13,6 +13,7 @@ import org.mozilla.fenix.ui.efficiency.helpers.SelectorStrategy
 
 object LauncherSelectors : SelectorContainer {
 
+    // The branded app label (channel-specific), located in the app drawer rather than the home screen.
     val FIREFOX_APP_ICON =
         Selector(
             strategy = SelectorStrategy.UIAUTOMATOR2_BY_TEXT,
