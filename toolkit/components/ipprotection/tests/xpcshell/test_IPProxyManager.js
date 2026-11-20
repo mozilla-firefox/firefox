@@ -655,6 +655,35 @@ add_task(async function test_IPPProxyManager_system_start_keeps_error() {
 });
 
 /**
+ * Tests that a user retry out of ERROR that fails stays in ERROR, holding
+ * traffic, rather than releasing it.
+ */
+add_task(async function test_IPPProxyManager_failed_retry_keeps_error() {
+  await initServiceWithFailingPass();
+  await IPPProxyManager.start(false);
+  Assert.equal(IPPProxyManager.state, IPPProxyStates.ERROR);
+
+  const { started } = await IPPProxyManager.start(true);
+
+  Assert.ok(!started, "The retry should fail");
+  Assert.equal(
+    IPPProxyManager.state,
+    IPPProxyStates.ERROR,
+    "A failed retry should stay in ERROR"
+  );
+  const later = makeDocumentChannel("https://example.com/");
+  applyFilter(IPPProxyManager.channelFilter(), later);
+  Assert.equal(
+    later.cancelStatus,
+    Cr.NS_ERROR_PROXY_CONNECTION_REFUSED,
+    "A new load should still be cancelled with a proxy error"
+  );
+
+  await IPPProxyManager.stop(false);
+  IPProtectionService.uninit();
+});
+
+/**
  * Tests that a load held by a user activation that fails is cancelled with a
  * proxy error rather than aborted.
  */

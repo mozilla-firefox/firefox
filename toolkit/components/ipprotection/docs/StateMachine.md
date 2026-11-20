@@ -59,7 +59,7 @@ drives the lifecycle of the proxy connection.
   \- Failures during a user activation (missing entitlement, server list, proxy pass…) call `updateState()` to demote the proxy back to its previous state.
   \- Failures during a system activation move to `ERROR` instead, since its callers do not check the result and would otherwise start again from `READY`. `ERRORS.NOT_READY` and `ERRORS.CANCELED` are not failures and demote as above.
   \- Errors after the proxy is connected → `ERROR` via `#setErrorState`.
-  \- From `ERROR`, a user activation (`start(true)`) is a retry: it tears the failed connection down and moves straight to `ACTIVATING`; a system activation is refused with the error.
+  \- From `ERROR`, a user activation (`start(true)`) is a retry: it tears the failed connection down and moves straight to `ACTIVATING`; a system activation is refused with the error. A retry that fails goes back to `ERROR` and keeps holding traffic, like a failed system activation.
 - `stop(userAction)` from `ACTIVE` → `READY` after closing the channel filter and observers. It also cancels an activation that is in flight, including one still waiting for the service. `IPPAutoActivation` only starts it again on its own when a working connection (`ACTIVE` or `PAUSED`) goes back to `READY`, so a failed activation or a stop out of `ERROR` is not retried until a site rule changes or the service becomes ready anew.
 - `reset()` or helper‑driven recomputations call `updateState()` which demotes the proxy back to `READY`/`NOT_READY` and clears the credential cache.
 - Network errors (`proxy-http-error` with 401) trigger Proxy Pass rotation while staying `ACTIVE`; repeated failures bubble up through `#setErrorState`.

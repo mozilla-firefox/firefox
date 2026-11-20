@@ -538,7 +538,8 @@ class IPPProxyManagerSingleton extends EventTarget {
       return { started: false, error: ERRORS.QUOTA_EXHAUSTED };
     }
 
-    if (this.#state === IPPProxyStates.ERROR) {
+    const retrying = this.#state === IPPProxyStates.ERROR;
+    if (retrying) {
       if (!userAction) {
         return { started: false, error: this.#errorType ?? ERRORS.GENERIC };
       }
@@ -620,13 +621,14 @@ class IPPProxyManagerSingleton extends EventTarget {
           } else if (error === ERRORS.CANCELED) {
             this.#cancelChannelFilter();
             this.#setErrorState(error);
-          } else if (userAction) {
+          } else if (userAction && !retrying) {
             this.#connection?.fail();
             this.#cancelChannelFilter();
             this.#setErrorState(error);
           } else {
-            // Nobody checks a system activation's result, so keep holding
-            // traffic in ERROR until stop() rather than retrying from READY.
+            // Nobody checks a system activation's result, and a failed retry
+            // must not release the traffic ERROR held, so keep holding it in
+            // ERROR until stop() rather than retrying from READY.
             this.#setErrorState(error);
           }
           return { started: false, error };

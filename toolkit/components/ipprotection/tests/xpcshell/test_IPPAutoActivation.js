@@ -523,7 +523,11 @@ add_task(async function test_failed_user_retry_is_not_followed_up() {
         2,
         "Only the inclusion and the user retry should be attempted"
       );
-      Assert.equal(IPPProxyManager.state, IPPProxyStates.READY);
+      Assert.equal(
+        IPPProxyManager.state,
+        IPPProxyStates.ERROR,
+        "The failed retry should keep holding traffic in ERROR"
+      );
     } finally {
       startSpy.restore();
     }
