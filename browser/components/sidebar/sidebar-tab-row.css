@@ -182,12 +182,12 @@
   :host([medium-view]) .fxview-tab-row-time {
     display: block;
   }
-}
 
-:host([medium-view]) #fxview-tab-row-secondary-button {
-  visibility: hidden;
-}
+  :host([medium-view]) #fxview-tab-row-secondary-button {
+    visibility: hidden;
+  }
 
-:host([medium-view]:hover) #fxview-tab-row-secondary-button {
-  visibility: visible;
+  :host([medium-view]:hover) #fxview-tab-row-secondary-button {
+    visibility: visible;
+  }
 }
