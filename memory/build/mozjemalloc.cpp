@@ -1341,8 +1341,7 @@ arena_chunk_t* arena_t::GetExcessSpareChunk() MOZ_REQUIRES(mLock) {
   return nullptr;
 }
 
-arena_chunk_t* arena_t::PurgeGetDirtyChunk(PurgeCondition aCond,
-                                           PurgeStats& aStats)
+arena_chunk_t* arena_t::PurgeGetDirtyChunk(PurgeStats& aStats)
     MOZ_REQUIRES(mLock) {
 #ifdef MOZ_DEBUG
   size_t ndirty = 0;
@@ -1540,7 +1539,7 @@ ArenaPurgeResult arena_t::PurgeLoop(PurgeCondition aCond, const char* aCaller,
 
       spare_chunk = PurgeGetSpareChunk(purge_stats);
       if (!spare_chunk) {
-        dirty_chunk = PurgeGetDirtyChunk(aCond, purge_stats);
+        dirty_chunk = PurgeGetDirtyChunk(purge_stats);
         if (!dirty_chunk) {
           pr = ReachedThresholdOrBusy;
           break;
