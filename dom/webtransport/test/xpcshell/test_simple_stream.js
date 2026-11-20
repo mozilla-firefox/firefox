@@ -80,7 +80,9 @@ async function read_stream_as_string(readable_stream) {
 
 add_task(async function test_wt_incoming_unidi_stream() {
   // trigger stream creation server side and default echo
-  let wt = newWebTransport(`https://${host}/create_unidi_stream_and_hello`);
+  let wt = newWebTransport(
+    "https://" + host + "/create_unidi_stream_and_hello"
+  );
   await wt.ready;
 
   const streams = await wt.incomingUnidirectionalStreams;
@@ -96,7 +98,7 @@ add_task(async function test_wt_incoming_unidi_stream() {
 add_task(async function test_wt_incoming_and_outgoing_unidi_stream() {
   // create the client's incoming stream from the server side
   // we need it to listen to the echo back
-  let wt = newWebTransport(`https://${host}/create_unidi_stream`);
+  let wt = newWebTransport("https://" + host + "/create_unidi_stream");
   await wt.ready;
 
   // send hello to server
@@ -122,7 +124,7 @@ add_task(async function test_wt_incoming_and_outgoing_unidi_stream() {
 });
 
 add_task(async function test_wt_outgoing_bidi_stream() {
-  let wt = newWebTransport(`https://${host}/success`);
+  let wt = newWebTransport("https://" + host + "/success");
   await wt.ready;
 
   // write to server
@@ -144,7 +146,7 @@ add_task(async function test_wt_outgoing_bidi_stream() {
 });
 
 add_task(async function test_wt_incoming_bidi_stream() {
-  let wt = newWebTransport(`https://${host}/create_bidi_stream_and_hello`);
+  let wt = newWebTransport("https://" + host + "/create_bidi_stream_and_hello");
   // await wt.ready; // causes occasional hang on release --verify
 
   const stream_reader = wt.incomingBidirectionalStreams.getReader();
@@ -158,7 +160,9 @@ add_task(async function test_wt_incoming_bidi_stream() {
 });
 
 add_task(async function test_wt_incoming_bidi_stream_huge_data() {
-  let wt = newWebTransport(`https://${host}/create_bidi_stream_and_large_data`);
+  let wt = newWebTransport(
+    "https://" + host + "/create_bidi_stream_and_large_data"
+  );
   // await wt.ready; // causes occasional hang on release --verify
 
   const stream_reader = wt.incomingBidirectionalStreams.getReader();
