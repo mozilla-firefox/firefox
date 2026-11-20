@@ -158,14 +158,15 @@ tasks:
                         try:
                             version: "140.0esr"
                         default:
-                            linux64-aarch64.*:
-                                version: "140.0esr"
-                            mac.*:
-                                version: "102.15.1esr"
-                            win.*:
-                                version: "115.12.0esr"
-                            default:
-                                version: "68.0"
+                            by-build-platform:
+                                linux64-aarch64.*:
+                                    version: "140.0esr"
+                                mac.*:
+                                    version: "102.15.1esr"
+                                win.*:
+                                    version: "115.12.0esr"
+                                default:
+                                    version: "68.0esr"
                 # Project branches with their own release type, such as
                 # nightly-pine, have no watershed configured here, so the
                 # transform skips them.
