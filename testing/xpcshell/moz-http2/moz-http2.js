@@ -503,20 +503,6 @@ function handleRequestImpl(req, res) {
   else if (u.pathname === "/http3-test") {
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Alt-Svc", "h3=" + req.headers["x-altsvc"]);
-  }
-  // for use with test_http3.js
-  else if (u.pathname === "/http3-test2") {
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader(
-      "Alt-Svc",
-      "h2=foo2.example.com:8000,h3=" + req.headers["x-altsvc"]
-    );
-  } else if (u.pathname === "/http3-test3") {
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader(
-      "Alt-Svc",
-      "h3-29=" + req.headers["x-altsvc"] + ",h3=" + req.headers["x-altsvc"]
-    );
   } else if (u.pathname === "/websocket") {
     res.setHeader("Upgrade", "websocket");
     res.setHeader("Connection", "Upgrade");

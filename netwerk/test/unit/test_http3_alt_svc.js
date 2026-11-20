@@ -35,14 +35,42 @@ function setupAltSvc() {
 }
 
 function run_test() {
-  let h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
+  do_get_profile();
+  do_test_pending();
+  startServer().then(h2Port => {
+    setup(h2Port);
+    do_test_finished();
+  });
+}
 
+async function startServer() {
+  let server = await create_h2_server({
+    "/http3-test2": (req, res) => {
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader(
+        "Alt-Svc",
+        "h2=foo2.example.com:8000,h3=" + req.headers["x-altsvc"]
+      );
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.end("ok");
+    },
+    "/http3-test3": (req, res) => {
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader(
+        "Alt-Svc",
+        "h3-29=" + req.headers["x-altsvc"] + ",h3=" + req.headers["x-altsvc"]
+      );
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.end("ok");
+    },
+  });
+  return server.port();
+}
+
+function setup(h2Port) {
   h3ServerPath = Services.env.get("MOZ_HTTP3_SERVER_PATH");
   h3DBPath = Services.env.get("MOZ_HTTP3_CERT_DB_PATH");
 
-  do_get_profile();
   prefs = Services.prefs;
 
   prefs.setBoolPref("network.http.http3.enable", true);
