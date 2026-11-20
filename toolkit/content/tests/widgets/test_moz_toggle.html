@@ -43,6 +43,7 @@
         let interactionTemplate = testHelpers.templateFn({
           value: "default",
           label: "Label",
+          description: "Description",
         });
         let renderTarget =
           await testHelpers.renderTemplate(interactionTemplate);
@@ -159,7 +160,21 @@
         synthesizeMouseAtCenter(mozToggle.descriptionEl, {});
         await TestUtils.waitForTick();
 
-        verifyEvents([]);
+        // Clicking the description emits a click event but doesn't toggle.
+        verifyEvents([
+          {
+            type: "click",
+            localName: "moz-toggle",
+            pressed: false,
+            value: "default",
+          },
+        ]);
+
+        is(
+          mozToggle.pressed,
+          false,
+          "The toggle pressed state doesn't change on description click"
+        );
 
         isnot(
           mozToggle.shadowRoot.activeElement,
