@@ -76,10 +76,8 @@ DocAccessibleParent::~DocAccessibleParent() {
 }
 
 uint64_t DocAccessibleParent::EffectiveCacheDomains() const {
-  if (dom::CanonicalBrowsingContext* bc = GetBrowsingContext()) {
-    if (bc->Top()->GetIsPrinting()) {
-      return kPdfCacheDomains;
-    }
+  if (IsPrintDoc()) {
+    return kPdfCacheDomains;
   }
   return nsAccessibilityService::GetActiveCacheDomains();
 }
