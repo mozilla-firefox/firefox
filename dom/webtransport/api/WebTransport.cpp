@@ -1550,7 +1550,7 @@ void WebTransport::Cleanup(WebTransportError* aError,
   // Step 1: Let sendStreams be a copy of transport.[[SendStreams]]
   // Step 2: Let receiveStreams be a copy of transport.[[ReceiveStreams]]
   // Steps 3-4 and 11-13 (datagrams) are handled by
-  // WebTransportDatagramDuplexStream below.
+  // WebTransportDatagramDuplexStream::Cleanup() below.
   // Step 5: Let ready be transport.[[Ready]].
   // Step 6: Let closed be transport.[[Closed]].
   // Step 7: Let incomingBidirectionalStreams be
@@ -1574,6 +1574,10 @@ void WebTransport::Cleanup(WebTransportError* aError,
   RefPtr<ReadableStream> incomingUnidirectionalStreams =
       mIncomingUnidirectionalStreams;
   RefPtr<WebTransportDatagramDuplexStream> datagrams = mDatagrams;
+  nsTArray<RefPtr<WebTransportDatagramsWritable>> outgoingDatagramWritables;
+  if (datagrams) {
+    outgoingDatagramWritables = datagrams->Cleanup();
+  }
 
   // Step 14: If closeInfo is given, then set transport.[[State]] to "closed".
   // Otherwise, set transport.[[State]] to "failed".
@@ -1624,6 +1628,13 @@ void WebTransport::Cleanup(WebTransportError* aError,
     incomingBidirectionalStreams->CloseNative(cx, IgnoreErrors());
     // 17.4: Close incomingUnidirectionalStreams
     incomingUnidirectionalStreams->CloseNative(cx, IgnoreErrors());
+    if (datagrams) {
+      // 17.5: For each writable in outgoingDatagramWritables, close writable.
+      datagrams->CloseOrErrorWritables(cx, outgoingDatagramWritables, true,
+                                       errorValue);
+      // 17.6: Close incomingDatagrams.
+      datagrams->CloseOrErrorReadable(cx, true, errorValue);
+    }
   } else {
     // Step 18
     // 18.1: Reject closed with error
@@ -1639,21 +1650,18 @@ void WebTransport::Cleanup(WebTransportError* aError,
     incomingBidirectionalStreams->ErrorNative(cx, errorValue, IgnoreErrors());
     // 18.6: Error incomingUnidirectionalStreams with error
     incomingUnidirectionalStreams->ErrorNative(cx, errorValue, IgnoreErrors());
+    if (datagrams) {
+      // 18.7: For each writable in outgoingDatagramWritables, error writable
+      // with error.
+      datagrams->CloseOrErrorWritables(cx, outgoingDatagramWritables, false,
+                                       errorValue);
+      // 18.8: Error incomingDatagrams with error.
+      datagrams->CloseOrErrorReadable(cx, false, errorValue);
+    }
   }
   // Let go of the algorithms
   mIncomingBidirectionalAlgorithm = nullptr;
   mIncomingUnidirectionalAlgorithm = nullptr;
-
-  // Empty each outgoing datagram writable's [[OutgoingDatagramsQueue]], then
-  // close (clean close) or error (failure) each writable itself, like the
-  // send/receive streams above.
-  // TODO: Cleanup() also resolves each writable's withheld write promise,
-  // which the current spec doesn't do; see
-  // https://github.com/w3c/webtransport/pull/790.
-  if (datagrams) {
-    datagrams->Cleanup();
-    datagrams->CloseOrErrorWritables(cx, !!aCloseInfo, errorValue);
-  }
 
   // We no longer block BFCache
   NotifyToWindow(false);
