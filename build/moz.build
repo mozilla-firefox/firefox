@@ -27,6 +27,7 @@ DEFINES["ACCEPTED_MAR_CHANNEL_IDS"] = CONFIG["ACCEPTED_MAR_CHANNEL_IDS"]
 PYTHON_UNITTEST_MANIFESTS += [
     "compare-mozconfig/python.toml",
     "macosx/python.toml",
+    "pgo/python.toml",
 ]
 
 PYTHON_UNITTEST_MANIFESTS += [
