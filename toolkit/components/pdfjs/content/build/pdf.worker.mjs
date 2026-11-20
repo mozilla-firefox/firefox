@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.182
- * pdfjsBuild = fc0822a07
+ * pdfjsVersion = 7.0.189
+ * pdfjsBuild = 81b2255fe
  */
 
 ;// ./src/shared/util.js
@@ -26574,9 +26574,19 @@ class Font {
       descent: signedInt16(tables.hhea.data[6], tables.hhea.data[7]),
       lineGap: signedInt16(tables.hhea.data[8], tables.hhea.data[9])
     };
-    this.ascent = metricsOverride.ascent / metricsOverride.unitsPerEm;
-    this.descent = metricsOverride.descent / metricsOverride.unitsPerEm;
-    this.lineGap = metricsOverride.lineGap / metricsOverride.unitsPerEm;
+    const {
+      unitsPerEm,
+      ascent,
+      descent,
+      lineGap
+    } = metricsOverride;
+    if (ascent > 0 && descent <= 0 && ascent - descent <= 4 * unitsPerEm) {
+      this.ascent = ascent / unitsPerEm;
+      this.descent = descent / unitsPerEm;
+      this.lineGap = lineGap / unitsPerEm;
+    } else {
+      this.lineGap = 0;
+    }
     if (this.cssFontInfo?.lineHeight) {
       this.lineHeight = this.cssFontInfo.metrics.lineHeight;
       this.lineGap = this.cssFontInfo.metrics.lineGap;
@@ -35508,6 +35518,7 @@ class PartialEvaluator {
     viewBox,
     lang = null,
     disableNormalization = false,
+    textLayerFonts = null,
     keepWhiteSpace = false,
     prevRefs = null,
     intersector = null,
@@ -35657,6 +35668,7 @@ class PartialEvaluator {
           style.fontSubstitution = font.systemFontInfo.css;
           style.fontSubstitutionLoadedName = font.systemFontInfo.loadedName;
         }
+        textLayerFonts?.addFont(loadedName, font);
       }
       textContentItem.fontName = loadedName;
       const trm = textContentItem.transform = getCurrentTextTransform();
@@ -35986,6 +35998,7 @@ class PartialEvaluator {
       }
       const glyphs = font.charsToGlyphs(chars);
       const scale = textState.fontMatrix[0] * textState.fontSize;
+      const advanceScale = Math.abs(textState.fontMatrix[0] * 1000);
       for (let i = 0, ii = glyphs.length; i < ii; i++) {
         const glyph = glyphs[i];
         const {
@@ -35993,7 +36006,8 @@ class PartialEvaluator {
         } = glyph;
         const glyphWidth = font.vertical ? glyph.vmetric[0] : glyph.width;
         const {
-          isInvisibleFormatMark
+          isInvisibleFormatMark,
+          isZeroWidthDiacritic
         } = category;
         if (isInvisibleFormatMark && !glyphWidth) {
           continue;
@@ -36004,6 +36018,7 @@ class PartialEvaluator {
           charSpacing += textState.wordSpacing;
         }
         if (!keepWhiteSpace && category.isWhitespace) {
+          textLayerFonts?.addGlyph(font, " ", Math.abs(glyphWidth) * advanceScale);
           if (!font.vertical) {
             charSpacing += scaledDim;
             textState.translateTextMatrix(charSpacing * textState.textHScale, 0);
@@ -36014,7 +36029,7 @@ class PartialEvaluator {
           saveLastChar(" ");
           continue;
         }
-        if (!category.isZeroWidthDiacritic && !compareWithLastPosition(scaledDim)) {
+        if (!isZeroWidthDiacritic && !compareWithLastPosition(scaledDim)) {
           if (!font.vertical) {
             textState.translateTextMatrix(scaledDim * textState.textHScale, 0);
           } else {
@@ -36023,7 +36038,7 @@ class PartialEvaluator {
           continue;
         }
         const textChunk = ensureTextContentItem();
-        if (category.isZeroWidthDiacritic) {
+        if (isZeroWidthDiacritic) {
           scaledDim = 0;
         }
         const glyphUnicode = isInvisibleFormatMark ? "" : glyph.unicode;
@@ -36048,9 +36063,11 @@ class PartialEvaluator {
             textChunk.str.push(" ");
             intersector?.addExtraChar(" ");
           }
+          const unicode = disableNormalization ? glyphUnicode : glyph.normalizedUnicode;
           if (!intersector) {
-            textChunk.str.push(disableNormalization ? glyphUnicode : glyph.normalizedUnicode);
+            textChunk.str.push(unicode);
           }
+          textLayerFonts?.addGlyph(font, unicode, isZeroWidthDiacritic ? 0 : Math.abs(glyphWidth) * advanceScale);
         }
         if (charSpacing) {
           if (!font.vertical) {
@@ -36086,6 +36103,10 @@ class PartialEvaluator {
           resetLastChars();
           textContentItem.str.push(" ");
           lastFakeSpaceExtraCharId = intersector?.addExtraChar(" ") ?? -1;
+          if (textLayerFonts && !textContentItem.vertical) {
+            const [,, c, d] = textContentItem.transform;
+            textLayerFonts.addSpaceGap(textContentItem.fontName, 1000 * Math.abs(width) * textContentItem.textAdvanceScale / Math.hypot(c, d));
+          }
         }
         return false;
       }
@@ -36366,6 +36387,7 @@ class PartialEvaluator {
                 viewBox,
                 lang,
                 disableNormalization,
+                textLayerFonts,
                 keepWhiteSpace,
                 prevRefs: seenRefs,
                 markedContentScope: xObjMarkedContentScope
@@ -58973,6 +58995,327 @@ class Intersector {
   }
 }
 
+;// ./src/core/text_layer_font.js
+
+
+
+
+const UNITS_PER_EM = 2048;
+const DEFAULT_ASCENT = 0.8;
+const DEFAULT_SPACE_ADVANCE = 250;
+const MAX_ADVANCE = 0xffff * 1000 / UNITS_PER_EM;
+const ZERO_WIDTH_REGEXP = /^[\p{Mn}\p{Default_Ignorable_Code_Point}]$/u;
+const DEBUG_STROKE_WIDTH = 80;
+let nameTable;
+let postTable;
+function createStats() {
+  return {
+    advances: new Map(),
+    ligatures: new Map(),
+    spaceGaps: []
+  };
+}
+function getAscentRatio({
+  ascent,
+  descent,
+  bbox,
+  fontMatrix,
+  isType3Font
+}) {
+  const isValid = ratio => ratio > 0.5 && ratio < 0.95;
+  let ratio = ascent / (ascent + Math.abs(descent));
+  if (isValid(ratio)) {
+    return ratio;
+  }
+  if (bbox) {
+    let yMin = bbox[1],
+      yMax = bbox[3];
+    if (isType3Font && fontMatrix) {
+      const bounds = BBOX_INIT.slice();
+      Util.axialAlignedBoundingBox(bbox, fontMatrix, bounds);
+      yMin = bounds[1];
+      yMax = bounds[3];
+    }
+    ratio = yMax / (yMax - yMin);
+    if (isValid(ratio)) {
+      return ratio;
+    }
+  }
+  return DEFAULT_ASCENT;
+}
+function addCount(samples, key, advance) {
+  const counts = samples.getOrInsertComputed(key, makeMap);
+  counts.set(advance, (counts.get(advance) || 0) + 1);
+}
+function getMostFrequent(counts) {
+  let best = NaN,
+    bestCount = 0;
+  for (const [value, count] of counts) {
+    if (count > bestCount) {
+      best = value;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+function createBoxGlyph(width, yMin, yMax) {
+  const xMax = Math.min(width, 0x7fff);
+  const s = Math.min(DEBUG_STROKE_WIDTH, Math.floor(xMax / 4));
+  if (s === 0) {
+    return null;
+  }
+  const points = [0, yMin, 0, yMax, xMax, yMax, xMax, yMin, s, yMin + s, xMax - s, yMin + s, xMax - s, yMax - s, s, yMax - s];
+  const glyph = new Uint8Array(56);
+  const view = new DataView(glyph.buffer);
+  view.setInt16(0, 2);
+  view.setInt16(4, yMin);
+  view.setInt16(6, xMax);
+  view.setInt16(8, yMax);
+  view.setUint16(10, 3);
+  view.setUint16(12, 7);
+  glyph.fill(0x01, 16, 24);
+  for (let i = 0, x = 0, y = 0; i < 8; i++) {
+    view.setInt16(24 + 2 * i, points[2 * i] - x);
+    view.setInt16(40 + 2 * i, points[2 * i + 1] - y);
+    x = points[2 * i];
+    y = points[2 * i + 1];
+  }
+  return glyph;
+}
+function buildTextLayerFont(advances, ascent, drawBoxes = false) {
+  const hmtxAdvances = [0];
+  const glyphIds = new Map();
+  const charCodeToGlyphId = new Map();
+  let advanceSum = 0,
+    advanceMax = 0,
+    firstChar = 0xffff,
+    lastChar = 0;
+  for (const [codePoint, advance] of advances) {
+    if (!(advance >= 0 && advance <= MAX_ADVANCE)) {
+      return null;
+    }
+    const units = Math.round(advance * UNITS_PER_EM / 1000);
+    let glyphId = glyphIds.get(units);
+    if (glyphId === undefined) {
+      glyphId = hmtxAdvances.push(units) - 1;
+      glyphIds.set(units, glyphId);
+      advanceSum += units;
+      advanceMax = Math.max(advanceMax, units);
+    }
+    charCodeToGlyphId.set(codePoint, glyphId);
+    const char = Math.min(codePoint, 0xffff);
+    firstChar = Math.min(firstChar, char);
+    lastChar = Math.max(lastChar, char);
+  }
+  const numGlyphs = hmtxAdvances.length;
+  const ascender = Math.round(ascent * UNITS_PER_EM);
+  const descender = ascender - UNITS_PER_EM;
+  const builder = new OpenTypeFileBuilder("true");
+  function createTable(tag, length) {
+    const data = new Uint8Array(length);
+    builder.addTable(tag, data);
+    return new DataView(data.buffer);
+  }
+  const head = createTable("head", 54);
+  head.setUint32(0, 0x00010000);
+  head.setUint32(4, 0x00010000);
+  head.setUint32(12, 0x5f0f3cf5);
+  head.setUint16(16, 0x0003);
+  head.setUint16(18, UNITS_PER_EM);
+  head.setInt16(38, descender);
+  head.setInt16(42, ascender);
+  head.setUint16(46, 8);
+  head.setInt16(48, 2);
+  const hhea = createTable("hhea", 36);
+  hhea.setUint32(0, 0x00010000);
+  hhea.setInt16(4, ascender);
+  hhea.setInt16(6, descender);
+  hhea.setUint16(10, advanceMax);
+  hhea.setInt16(18, 1);
+  hhea.setUint16(34, numGlyphs);
+  const maxp = createTable("maxp", 32);
+  maxp.setUint32(0, 0x00010000);
+  maxp.setUint16(4, numGlyphs);
+  maxp.setUint16(14, 2);
+  const os2 = createTable("OS/2", 96);
+  os2.setUint16(0, 4);
+  os2.setInt16(2, Math.round(advanceSum / (numGlyphs - 1)));
+  os2.setUint16(4, 400);
+  os2.setUint16(6, 5);
+  os2.setUint32(58, 0x5044464a, false);
+  os2.setUint16(62, 0xc0);
+  os2.setUint16(64, firstChar);
+  os2.setUint16(66, lastChar);
+  os2.setInt16(68, ascender);
+  os2.setInt16(70, descender);
+  os2.setUint16(74, ascender);
+  os2.setUint16(76, -descender);
+  os2.setUint16(92, 0x20);
+  os2.setUint16(94, 1);
+  const hmtx = createTable("hmtx", 4 * numGlyphs);
+  for (let i = 0; i < numGlyphs; i++) {
+    hmtx.setUint16(4 * i, hmtxAdvances[i]);
+  }
+  if (drawBoxes) {
+    const loca = createTable("loca", 4 * (numGlyphs + 1));
+    const glyf = new DataBuilder({
+      exactLength: 56 * numGlyphs
+    });
+    for (let i = 0; i < numGlyphs; i++) {
+      const glyph = createBoxGlyph(hmtxAdvances[i], descender, ascender);
+      if (glyph) {
+        glyf.setArray(glyph);
+      }
+      loca.setUint32(4 * (i + 1), glyf.length);
+    }
+    if (!glyf.length) {
+      glyf.skip(1);
+    }
+    const xMax = Math.min(advanceMax, 0x7fff);
+    head.setInt16(40, xMax);
+    head.setInt16(50, 1);
+    hhea.setInt16(16, xMax);
+    maxp.setUint16(6, 8);
+    maxp.setUint16(8, 2);
+    builder.addTable("glyf", glyf.data);
+  } else {
+    builder.addTable("loca", new Uint8Array(2 * (numGlyphs + 1)));
+    builder.addTable("glyf", new Uint8Array(1));
+  }
+  builder.addTable("cmap", createCmapTable(charCodeToGlyphId, null, numGlyphs));
+  builder.addTable("name", nameTable ??= createNameTable("PDFJSTextLayer"));
+  builder.addTable("post", postTable ??= createPostTable({
+    italicAngle: 0
+  }));
+  return builder.toArray();
+}
+class TextLayerFonts {
+  #buildBound = this.#build.bind(this);
+  #chunks = [];
+  #drawBoxes;
+  #idFactory;
+  #loadedNames = new Map();
+  #sink;
+  #stats = new Map();
+  desiredSize = Infinity;
+  constructor(sink, idFactory, drawBoxes = false) {
+    this.#sink = sink;
+    this.#idFactory = idFactory;
+    this.#drawBoxes = drawBoxes;
+  }
+  get ready() {
+    return this.#sink.isCancelled ? Promise.reject(new AbortException("Text content stream cancelled.")) : Promise.resolve();
+  }
+  enqueue(chunk) {
+    this.#chunks.push({
+      ...chunk
+    });
+  }
+  addFont(loadedName, font) {
+    this.#loadedNames.set(loadedName, font);
+  }
+  #getStats(font) {
+    return this.#stats.getOrInsertComputed(font, createStats);
+  }
+  addGlyph(font, unicode, advance) {
+    if (!unicode) {
+      return;
+    }
+    const stats = this.#getStats(font);
+    const firstCodePoint = unicode.codePointAt(0);
+    if (unicode.length === (firstCodePoint > 0xffff ? 2 : 1)) {
+      if (firstCodePoint < 0xd800 || firstCodePoint > 0xdfff) {
+        addCount(stats.advances, firstCodePoint, ZERO_WIDTH_REGEXP.test(unicode) ? 0 : advance);
+      }
+      return;
+    }
+    const chars = [];
+    for (const char of unicode) {
+      const codePoint = char.codePointAt(0);
+      if (codePoint >= 0xd800 && codePoint <= 0xdfff) {
+        continue;
+      }
+      if (ZERO_WIDTH_REGEXP.test(char)) {
+        addCount(stats.advances, codePoint, 0);
+      } else {
+        chars.push(char);
+      }
+    }
+    if (chars.length === 1) {
+      addCount(stats.advances, chars[0].codePointAt(0), advance);
+    } else if (chars.length > 1) {
+      addCount(stats.ligatures, chars.join(""), advance);
+    }
+  }
+  addSpaceGap(loadedName, gap) {
+    const font = this.#loadedNames.get(loadedName);
+    if (font && Number.isFinite(gap)) {
+      this.#getStats(font).spaceGaps.push(gap);
+    }
+  }
+  #build(font) {
+    const stats = this.#stats.get(font);
+    if (!stats) {
+      return null;
+    }
+    const advances = new Map();
+    for (const [codePoint, counts] of stats.advances) {
+      advances.set(codePoint, getMostFrequent(counts));
+    }
+    for (const [unicode, counts] of stats.ligatures) {
+      const codePoints = Array.from(unicode, char => char.codePointAt(0));
+      let known = 0,
+        unknown = 0;
+      for (const codePoint of codePoints) {
+        const advance = advances.get(codePoint);
+        if (advance === undefined) {
+          unknown++;
+        } else {
+          known += advance;
+        }
+      }
+      if (!unknown) {
+        continue;
+      }
+      const advance = Math.max(getMostFrequent(counts) - known, 0) / unknown;
+      for (const codePoint of codePoints) {
+        advances.getOrInsert(codePoint, advance);
+      }
+    }
+    if (!advances.has(0x20)) {
+      const gaps = stats.spaceGaps.sort((a, b) => a - b);
+      advances.set(0x20, gaps.length > 0 ? gaps[gaps.length >> 1] : DEFAULT_SPACE_ADVANCE);
+    }
+    const ascent = font.vertical ? 0.5 : getAscentRatio(font);
+    const data = buildTextLayerFont(advances, ascent, this.#drawBoxes);
+    if (!data) {
+      return null;
+    }
+    return {
+      name: `${this.#idFactory.getDocId()}_t${this.#idFactory.createFontId()}`,
+      data,
+      ascent
+    };
+  }
+  send() {
+    const sink = this.#sink;
+    if (sink.isCancelled) {
+      return;
+    }
+    const fonts = new Map();
+    for (const chunk of this.#chunks) {
+      for (const [loadedName, style] of Object.entries(chunk.styles)) {
+        const font = this.#loadedNames.get(loadedName);
+        const textLayerFont = fonts.getOrInsertComputed(font, this.#buildBound);
+        if (textLayerFont) {
+          style.textLayerFont = textLayerFont;
+        }
+      }
+      sink.enqueue(chunk, chunk.items.length);
+    }
+  }
+}
+
 ;// ./src/core/calculate_sha_other.js
 
 class Word64 {
@@ -60995,6 +61338,7 @@ class XRef {
 
 
 
+
 const LETTER_SIZE_MEDIABOX = [0, 0, 612, 792];
 const SIGNATURE_TAIL_CHUNK_SIZE = 65536;
 class Page {
@@ -61411,6 +61755,8 @@ class Page {
     task,
     includeMarkedContent,
     disableNormalization,
+    includeTextLayerFonts = false,
+    debugTextLayerFonts = false,
     sink,
     intersector = null
   }) {
@@ -61420,17 +61766,20 @@ class Page {
     const [contentStream,, lang] = await Promise.all([contentStreamPromise, resourcesPromise, langPromise]);
     const resources = await this.#getMergedResources(contentStream.dict, RESOURCES_KEYS_TEXT_CONTENT);
     const partialEvaluator = this._createPartialEvaluator(handler);
-    return partialEvaluator.getTextContent({
+    const textLayerFonts = includeTextLayerFonts ? new TextLayerFonts(sink, this._localIdFactory, debugTextLayerFonts) : null;
+    await partialEvaluator.getTextContent({
       stream: contentStream,
       task,
       resources,
       includeMarkedContent,
       disableNormalization,
-      sink,
+      textLayerFonts,
+      sink: textLayerFonts ?? sink,
       viewBox: this.view,
       lang,
       intersector
     });
+    textLayerFonts?.send();
   }
   async getStructTree() {
     const structTreeRoot = await this.pdfManager.ensureCatalog("structTreeRoot");
@@ -66018,7 +66367,7 @@ class WorkerMessageHandler {
       docId,
       apiVersion
     } = docParams;
-    const workerVersion = "7.0.182";
+    const workerVersion = "7.0.189";
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match the Worker version "${workerVersion}".`);
     }
@@ -66799,18 +67148,16 @@ class WorkerMessageHandler {
     handler.on("GetTextContent", function ({
       pageId,
       pageIndex,
-      includeMarkedContent,
-      disableNormalization
+      ...params
     }, sink) {
       pdfManager.getPage(pageId).then(function (page) {
         const task = new WorkerTask("GetTextContent: page " + pageIndex);
         startWorkerTask(task);
         page.extractTextContent({
+          ...params,
           handler,
           task,
-          sink,
-          includeMarkedContent,
-          disableNormalization
+          sink
         }).then(() => {
           sink.close();
         }, reason => {

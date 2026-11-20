@@ -59,6 +59,7 @@ pref("pdfjs.highlightEditorColors", "yellow=#FFFF98,green=#53FFBC,blue=#80EBFF,p
 pref("pdfjs.historyUpdateUrl", false);
 pref("pdfjs.ignoreDestinationZoom", false);
 pref("pdfjs.imagesRightClickMinSize", 16);
+pref("pdfjs.newTextLayerMode", 1);
 pref("pdfjs.pageColorsBackground", "Canvas");
 pref("pdfjs.pageColorsForeground", "CanvasText");
 pref("pdfjs.pdfBugEnabled", false);

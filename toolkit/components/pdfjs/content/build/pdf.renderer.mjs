@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.182
- * pdfjsBuild = fc0822a07
+ * pdfjsVersion = 7.0.189
+ * pdfjsBuild = 81b2255fe
  */
 
 ;// ./src/shared/util.js
@@ -868,30 +868,6 @@ function getCurrentTransformInverse(ctx) {
     f
   } = ctx.getTransform().invertSelf();
   return [a, b, c, d, e, f];
-}
-class OutputScale {
-  constructor() {
-    const {
-      pixelRatio
-    } = OutputScale;
-    this.sx = pixelRatio;
-    this.sy = pixelRatio;
-  }
-  get scaled() {
-    return this.sx !== 1 || this.sy !== 1;
-  }
-  get symmetric() {
-    return this.sx === this.sy;
-  }
-  limitCanvas(width, height, maxPixels, maxDim, capAreaFactor = -1) {
-    return false;
-  }
-  static get pixelRatio() {
-    return globalThis.devicePixelRatio || 1;
-  }
-  static capPixels(maxPixels, capAreaFactor) {
-    return maxPixels;
-  }
 }
 function applyOpacity(color, opacity) {
   opacity = MathClamp(opacity ?? 1, 0, 1);
@@ -3103,7 +3079,7 @@ class CanvasGraphics {
   constructor(canvasCtx, commonObjs, objs, canvasFactory, filterFactory, {
     optionalContentConfig,
     markedContentStack = null,
-    pixelRatio = OutputScale.pixelRatio
+    pixelRatio
   }, annotationCanvasMap, pageColors, dependencyTracker, imagesTracker) {
     this.ctx = canvasCtx;
     this.current = new CanvasExtraState(this.ctx.canvas.width, this.ctx.canvas.height);
@@ -5621,6 +5597,15 @@ class FontLoader {
     this.#nativeFontFaces.delete(nativeFontFace);
     this._document.fonts.delete(nativeFontFace);
   }
+  static async loadBinaryFontFace(fontSet, fontFace) {
+    fontSet.add(fontFace);
+    try {
+      await fontFace.loaded;
+    } catch (reason) {
+      fontSet.delete(fontFace);
+      throw reason;
+    }
+  }
   insertRule(rule) {
     throw new Error("Not implemented: insertRule");
   }
@@ -5671,12 +5656,12 @@ class FontLoader {
     if (!fontFace) {
       return;
     }
-    this.addNativeFontFace(fontFace);
+    this.#nativeFontFaces.add(fontFace);
     try {
-      await fontFace.loaded;
+      await FontLoader.loadBinaryFontFace(this._document.fonts, fontFace);
     } catch (ex) {
       warn(`Failed to load font '${fontFace.family}': '${ex}'.`);
-      this.removeNativeFontFace(fontFace);
+      this.#nativeFontFaces.delete(fontFace);
       if (!font.missingFile) {
         font.disableFontFace = true;
         throw ex;
@@ -7624,7 +7609,7 @@ class RendererMessageHandler {
     this.#connection = null;
   }
   static #sendReady(handler) {
-    const workerVersion = "7.0.182";
+    const workerVersion = "7.0.189";
     const testObj = new Uint8Array();
     handler.send("ready", {
       testObj,

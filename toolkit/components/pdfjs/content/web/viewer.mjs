@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.182
- * pdfjsBuild = fc0822a07
+ * pdfjsVersion = 7.0.189
+ * pdfjsBuild = 81b2255fe
  */
 
 ;// ./web/ui_utils.js
@@ -679,6 +679,9 @@ const defaultOptions = new Map([["allowedGlobalEvents", {
 }], ["minDurationToUpdateCanvas", {
   value: 500,
   kind: OptionKind.VIEWER
+}], ["newTextLayerMode", {
+  value: 1,
+  kind: OptionKind.VIEWER + OptionKind.PREFERENCE
 }], ["forcePageColors", {
   value: false,
   kind: OptionKind.VIEWER + OptionKind.PREFERENCE
@@ -909,7 +912,7 @@ const {
 } = globalThis.pdfjsLib;
 
 ;// ./web/internal_evt.js
-const INTERNAL_EVT = "52701818-7260-4765-9637-e6d452533ca0";
+const INTERNAL_EVT = "178c1c76-e7b0-4fe6-ba40-4e51eb7f6b60";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -12439,6 +12442,7 @@ class TextHighlighter {
 class TextLayerBuilder {
   #abortSignal = null;
   #enablePermissions = false;
+  #textContentParams;
   #onAppend = null;
   #removeOwnSelectionListener = null;
   #renderingDone = false;
@@ -12450,6 +12454,7 @@ class TextLayerBuilder {
     highlighter = null,
     accessibilityManager = null,
     enablePermissions = false,
+    newTextLayerMode = 0,
     onAppend = null,
     abortSignal = null
   }) {
@@ -12457,11 +12462,21 @@ class TextLayerBuilder {
     this.highlighter = highlighter;
     this.accessibilityManager = accessibilityManager;
     this.#enablePermissions = enablePermissions === true;
+    const debugTextLayerFonts = newTextLayerMode === 2;
+    this.#textContentParams = {
+      includeMarkedContent: true,
+      disableNormalization: true,
+      includeTextLayerFonts: newTextLayerMode === 1 || debugTextLayerFonts,
+      debugTextLayerFonts
+    };
     this.#onAppend = onAppend;
     this.#abortSignal = abortSignal;
     this.div = document.createElement("div");
     this.div.tabIndex = 0;
     this.div.className = "textLayer";
+    if (debugTextLayerFonts) {
+      this.div.classList.add("debugFonts");
+    }
   }
   async render({
     viewport,
@@ -12477,10 +12492,7 @@ class TextLayerBuilder {
     }
     this.cancel();
     this.#textLayer = new TextLayer({
-      textContentSource: this.pdfPage.streamTextContent(textContentParams || {
-        includeMarkedContent: true,
-        disableNormalization: true
-      }),
+      textContentSource: this.pdfPage.streamTextContent(textContentParams || this.#textContentParams),
       images,
       container: this.div,
       viewport
@@ -12653,6 +12665,7 @@ class PDFPageView extends BasePDFPageView {
   #commentManager = null;
   #enableAutoLinking = true;
   #hasRestrictedScaling = false;
+  #newTextLayerMode = 0;
   #isEditing = false;
   #layerProperties = null;
   #needsRestrictedScaling = false;
@@ -12692,6 +12705,7 @@ class PDFPageView extends BasePDFPageView {
     this.maxCanvasDim = options.maxCanvasDim || AppOptions.get("maxCanvasDim");
     this.capCanvasAreaFactor = options.capCanvasAreaFactor ?? AppOptions.get("capCanvasAreaFactor");
     this.#enableAutoLinking = options.enableAutoLinking !== false;
+    this.#newTextLayerMode = options.newTextLayerMode ?? 0;
     this.#commentManager = options.commentManager || null;
     this.l10n = options.l10n;
     this._annotationCanvasMap = null;
@@ -13321,6 +13335,7 @@ class PDFPageView extends BasePDFPageView {
         highlighter: this._textHighlighter,
         accessibilityManager: this._accessibilityManager,
         enablePermissions: this.#textLayerMode === TextLayerMode.ENABLE_PERMISSIONS,
+        newTextLayerMode: this.#newTextLayerMode,
         onAppend: textLayerDiv => {
           this.l10n.pause();
           this.#addLayer(textLayerDiv, "textLayer");
@@ -13553,6 +13568,7 @@ class PDFViewer {
   #enableUpdatedAddImage = false;
   #enableNewAltTextWhenAddingImage = false;
   #enableAutoLinking = true;
+  #newTextLayerMode = 0;
   #abortSignal = null;
   #eventAC = null;
   #minDurationToUpdateCanvas = 0;
@@ -13577,7 +13593,7 @@ class PDFViewer {
   #savedPageViews = null;
   #deletedPageNumbers = null;
   constructor(options) {
-    const viewerVersion = "7.0.182";
+    const viewerVersion = "7.0.189";
     if (version !== viewerVersion) {
       throw new Error(`The API version "${version}" does not match the Viewer version "${viewerVersion}".`);
     }
@@ -13619,6 +13635,7 @@ class PDFViewer {
     this.#mlManager = options.mlManager || null;
     this.#supportsPinchToZoom = options.supportsPinchToZoom !== false;
     this.#enableAutoLinking = options.enableAutoLinking !== false;
+    this.#newTextLayerMode = options.newTextLayerMode ?? 0;
     this.#minDurationToUpdateCanvas = options.minDurationToUpdateCanvas ?? 500;
     this.renderingQueue = options.renderingQueue;
     const {
@@ -14079,6 +14096,7 @@ class PDFViewer {
           optionalContentConfigPromise,
           renderingQueue: this.renderingQueue,
           textLayerMode,
+          newTextLayerMode: this.#newTextLayerMode,
           annotationMode,
           imageResourcesPath: this.imageResourcesPath,
           maxCanvasPixels: this.maxCanvasPixels,
@@ -14809,6 +14827,9 @@ class PDFViewer {
   }
   _cancelRendering() {
     for (const pageView of this._pages) {
+      pageView.cancelRendering();
+    }
+    for (const pageView of this.#savedPageViews ?? []) {
       pageView.cancelRendering();
     }
   }
@@ -17819,6 +17840,7 @@ const PDFViewerApplication = {
   _preloadedIcons: null,
   async initialize(appConfig) {
     this.appConfig = appConfig;
+    this._preloadIcons();
     try {
       await this.preferences.initializedPromise;
     } catch (ex) {
@@ -17856,6 +17878,19 @@ const PDFViewerApplication = {
     this.bindWindowEvents();
     this._initializedCapability.settled = true;
     this._initializedCapability.resolve();
+  },
+  _preloadIcons() {
+    if (!this._preloadedIcons) {
+      this._preloadedIcons = [];
+      window.requestIdleCallback(() => {
+        const path = AppOptions.get("imageResourcesPath");
+        for (const name of ["toolbarButton-print.svg", "toolbarButton-download.svg", "toolbarButton-presentationMode.svg", "toolbarButton-bookmark.svg", "secondaryToolbarButton-firstPage.svg", "secondaryToolbarButton-lastPage.svg", "secondaryToolbarButton-rotateCw.svg", "secondaryToolbarButton-rotateCcw.svg", "secondaryToolbarButton-selectTool.svg", "secondaryToolbarButton-handTool.svg", "secondaryToolbarButton-scrollPage.svg", "secondaryToolbarButton-scrollVertical.svg", "secondaryToolbarButton-scrollHorizontal.svg", "secondaryToolbarButton-scrollWrapped.svg", "secondaryToolbarButton-spreadNone.svg", "secondaryToolbarButton-spreadOdd.svg", "secondaryToolbarButton-spreadEven.svg", "secondaryToolbarButton-documentProperties.svg", "pages_viewButton.svg", "pages_viewArrow.svg", "checkmark.svg", "toolbarButton-viewOutline.svg", "toolbarButton-viewAttachments.svg", "toolbarButton-viewLayers.svg", "pages_closeButton.svg", "altText_spinner.svg", "altText_done.svg"]) {
+          const image = new Image();
+          image.src = path + name;
+          this._preloadedIcons.push(image);
+        }
+      });
+    }
   },
   async _parseHashParams() {
     const hash = document.location.hash.substring(1);
@@ -17932,6 +17967,7 @@ const PDFViewerApplication = {
       disableHistory: x => x === "true",
       disableRange: x => x === "true",
       disableStream: x => x === "true",
+      newTextLayerMode: x => x | 0,
       verbosity: x => x | 0
     };
     for (const name in opts) {
@@ -18114,6 +18150,7 @@ const PDFViewerApplication = {
       scriptingManager: AppOptions.get("enableScripting") && pdfScriptingManager,
       l10n,
       textLayerMode: AppOptions.get("textLayerMode"),
+      newTextLayerMode: AppOptions.get("newTextLayerMode"),
       annotationMode: AppOptions.get("annotationMode"),
       annotationEditorMode,
       annotationEditorHighlightColors: AppOptions.get("highlightEditorColors"),
@@ -18869,17 +18906,6 @@ const PDFViewerApplication = {
             optionalContentConfig,
             pdfDocument
           });
-        });
-      }
-      if (!this._preloadedIcons) {
-        this._preloadedIcons = [];
-        window.requestIdleCallback(() => {
-          const path = AppOptions.get("imageResourcesPath");
-          for (const name of ["toolbarButton-print.svg", "toolbarButton-download.svg", "toolbarButton-presentationMode.svg", "toolbarButton-bookmark.svg", "secondaryToolbarButton-firstPage.svg", "secondaryToolbarButton-lastPage.svg", "secondaryToolbarButton-rotateCw.svg", "secondaryToolbarButton-rotateCcw.svg", "secondaryToolbarButton-selectTool.svg", "secondaryToolbarButton-handTool.svg", "secondaryToolbarButton-scrollPage.svg", "secondaryToolbarButton-scrollVertical.svg", "secondaryToolbarButton-scrollHorizontal.svg", "secondaryToolbarButton-scrollWrapped.svg", "secondaryToolbarButton-spreadNone.svg", "secondaryToolbarButton-spreadOdd.svg", "secondaryToolbarButton-spreadEven.svg", "secondaryToolbarButton-documentProperties.svg", "pages_viewButton.svg", "pages_viewArrow.svg", "checkmark.svg", "toolbarButton-viewOutline.svg", "toolbarButton-viewAttachments.svg", "toolbarButton-viewLayers.svg", "pages_closeButton.svg", "altText_spinner.svg", "altText_done.svg"]) {
-            const image = new Image();
-            image.src = path + name;
-            this._preloadedIcons.push(image);
-          }
         });
       }
     });
