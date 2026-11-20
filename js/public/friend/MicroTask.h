@@ -325,14 +325,6 @@ JS_PUBLIC_API void DequeueNextRegularMicroTask(
 JS_PUBLIC_API void PeekNextMicroTask(
     JSContext* cx, JS::MutableHandle<mozilla::Maybe<MicroTask>> out);
 
-// Value-returning forms of the above, which copy the task.
-JS_PUBLIC_API mozilla::Maybe<MicroTask> DequeueNextMicroTask(JSContext* cx);
-JS_PUBLIC_API mozilla::Maybe<MicroTask> DequeueNextDebuggerMicroTask(
-    JSContext* cx);
-JS_PUBLIC_API mozilla::Maybe<MicroTask> DequeueNextRegularMicroTask(
-    JSContext* cx);
-JS_PUBLIC_API mozilla::Maybe<MicroTask> PeekNextMicroTask(JSContext* cx);
-
 // Returns true if there are -any- microtasks pending in the queue.
 JS_PUBLIC_API bool HasAnyMicroTasks(JSContext* cx);
 

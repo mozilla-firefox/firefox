@@ -1092,34 +1092,6 @@ JS_PUBLIC_API void JS::PeekNextMicroTask(
   cx->microTaskQueues->peekFront(out);
 }
 
-JS_PUBLIC_API mozilla::Maybe<JS::MicroTask> JS::DequeueNextMicroTask(
-    JSContext* cx) {
-  JS::Rooted<mozilla::Maybe<JS::MicroTask>> task(cx);
-  DequeueNextMicroTask(cx, &task);
-  return task.get();
-}
-
-JS_PUBLIC_API mozilla::Maybe<JS::MicroTask> JS::DequeueNextDebuggerMicroTask(
-    JSContext* cx) {
-  JS::Rooted<mozilla::Maybe<JS::MicroTask>> task(cx);
-  DequeueNextDebuggerMicroTask(cx, &task);
-  return task.get();
-}
-
-JS_PUBLIC_API mozilla::Maybe<JS::MicroTask> JS::DequeueNextRegularMicroTask(
-    JSContext* cx) {
-  JS::Rooted<mozilla::Maybe<JS::MicroTask>> task(cx);
-  DequeueNextRegularMicroTask(cx, &task);
-  return task.get();
-}
-
-JS_PUBLIC_API mozilla::Maybe<JS::MicroTask> JS::PeekNextMicroTask(
-    JSContext* cx) {
-  JS::Rooted<mozilla::Maybe<JS::MicroTask>> task(cx);
-  PeekNextMicroTask(cx, &task);
-  return task.get();
-}
-
 JS_PUBLIC_API bool JS::HasAnyMicroTasks(JSContext* cx) {
   return !cx->microTaskQueues->empty();
 }
