@@ -155,6 +155,16 @@ class OutgoingDatagramStreamAlgorithms final
   // which lives in the parent: datagrams handed over, resolved or not, that
   // RetireInFlight() hasn't retired yet.
   OutgoingDatagramInFlight mInFlight;
+
+  // Set by Cleanup().  WritableStream dequeues one write() at a time, only
+  // advancing once the previous one's promise settles, so a burst queued
+  // synchronously is still draining across many later microtask turns
+  // after Cleanup() itself already ran and returned, and Cleanup() cannot
+  // resolve promises for writes that do not exist yet at the moment it
+  // runs.  Once set, WriteCallbackImpl resolves every future write
+  // immediately without queueing or forwarding it, since nothing will ever
+  // grant more credit to release a deferred one again.
+  bool mCleanedUp = false;
 };
 
 class WebTransportDatagramDuplexStream final : public nsISupports,

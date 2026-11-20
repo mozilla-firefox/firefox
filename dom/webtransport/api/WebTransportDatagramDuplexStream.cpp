@@ -544,6 +544,20 @@ already_AddRefed<Promise> OutgoingDatagramStreamAlgorithms::WriteCallbackImpl(
 
   size_t dataLength = data.Length();
 
+  // See mCleanedUp: the write is still consumed, but nothing is forwarded and
+  // no credit will ever release a withheld promise.
+  //
+  // Not in spec: writeDatagrams has no closed/failed check, so the spec
+  // enqueues this write and, past outgoingMaxBufferedDatagrams, withholds its
+  // promise forever, since sendDatagrams no longer runs once the transport is
+  // closed.  w3c/webtransport#790 resolves the backpressure promise in cleanup
+  // but still replaces it for writes dequeued afterwards, so it doesn't fix
+  // this either.
+  if (mCleanedUp) {
+    promise->MaybeResolveWithUndefined();
+    return promise.forget();
+  }
+
   // mChild is set when we move to Connected
   if (mChild) {
     // Step 7: Let chunk be (bytes, timestamp, promise).
@@ -707,6 +721,7 @@ void OutgoingDatagramStreamAlgorithms::UpdateQueueParams(
 }
 
 void OutgoingDatagramStreamAlgorithms::Cleanup() {
+  mCleanedUp = true;
   for (const auto& pending : mPendingDatagramPromises) {
     pending.mPromise->MaybeResolveWithUndefined();
   }
