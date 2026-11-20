@@ -84,7 +84,6 @@ use style::invalidation::element::relative_selector::{
     DomMutationOperation, RelativeSelectorDependencyCollector, RelativeSelectorInvalidator,
 };
 use style::invalidation::element::restyle_hints::RestyleHint;
-use style::invalidation::element::state_and_attributes::propagate_dirty_bit_up_to;
 use style::invalidation::stylesheets::RuleChangeKind;
 use style::logical_geometry::{LogicalAxis, PhysicalAxis, PhysicalSide, WritingMode};
 use style::media_queries::MediaList;
@@ -8338,15 +8337,12 @@ pub extern "C" fn Servo_StyleSet_MightHaveNthOfAttributeDependency(
 
 fn on_siblings_invalidated(element: GeckoElement) {
     let parent = element
-        .as_node()
-        .parent_element_or_host()
+        .traversal_parent()
         .expect("How could we invalidate siblings without a common parent?");
-    if element.has_data() {
-        propagate_dirty_bit_up_to(parent, element);
-    } else {
-        unsafe { parent.set_dirty_descendants() };
+    unsafe {
+        parent.set_dirty_descendants();
+        bindings::Gecko_NoteDirtySubtreeForInvalidation(parent.0);
     }
-    unsafe { bindings::Gecko_NoteDirtySubtreeForInvalidation(parent.0) };
 }
 
 fn restyle_for_nth_of(element: GeckoElement, flags: ElementSelectorFlags) {
@@ -8376,10 +8372,8 @@ fn restyle_for_nth_of(element: GeckoElement, flags: ElementSelectorFlags) {
     on_siblings_invalidated(element);
 }
 
-fn process_invalidation_result(element: GeckoElement, result: &InvalidationResult) {
-    if result.has_invalidated_siblings_or_sibling_descendants() {
-        // FIXME: Doesn't this need the same treatment as the state and attrs invalidation?
-        // But also doesn't the dirty bit propagation part of this get done by the processor?
+fn relative_selector_invalidated_at(element: GeckoElement, result: &InvalidationResult) {
+    if result.has_invalidated_siblings() {
         on_siblings_invalidated(element);
     } else if result.has_invalidated_descendants() {
         unsafe { bindings::Gecko_NoteDirtySubtreeForInvalidation(element.0) };
@@ -8451,7 +8445,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorIDDependency(
         element,
         quirks_mode,
         snapshots: Some(&snapshots),
-        invalidated: process_invalidation_result,
+        invalidated: relative_selector_invalidated_at,
         sibling_traversal_map: SiblingTraversalMap::default(),
     };
 
@@ -8494,7 +8488,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorClassDependency(
         element,
         quirks_mode,
         snapshots: Some(&snapshots),
-        invalidated: process_invalidation_result,
+        invalidated: relative_selector_invalidated_at,
         sibling_traversal_map: SiblingTraversalMap::default(),
     };
 
@@ -8540,7 +8534,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorAttributeDepende
                 element,
                 quirks_mode,
                 snapshots: Some(&snapshots),
-                invalidated: process_invalidation_result,
+                invalidated: relative_selector_invalidated_at,
                 sibling_traversal_map: SiblingTraversalMap::default(),
             };
 
@@ -8581,7 +8575,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorStateDependency(
         element,
         quirks_mode,
         snapshots: Some(&snapshots),
-        invalidated: process_invalidation_result,
+        invalidated: relative_selector_invalidated_at,
         sibling_traversal_map: SiblingTraversalMap::default(),
     };
 
@@ -8618,7 +8612,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorCustomStateDepen
         element,
         quirks_mode,
         snapshots: Some(&snapshots),
-        invalidated: process_invalidation_result,
+        invalidated: relative_selector_invalidated_at,
         sibling_traversal_map: SiblingTraversalMap::default(),
     };
 
@@ -8647,7 +8641,7 @@ fn invalidate_relative_selector_prev_sibling_side_effect(
         element: prev_sibling,
         quirks_mode,
         snapshots: None,
-        invalidated: process_invalidation_result,
+        invalidated: relative_selector_invalidated_at,
         sibling_traversal_map,
     };
     invalidator.invalidate_relative_selectors_for_dom_mutation(
@@ -8668,7 +8662,7 @@ fn invalidate_relative_selector_next_sibling_side_effect(
         element: next_sibling,
         quirks_mode,
         snapshots: None,
-        invalidated: process_invalidation_result,
+        invalidated: relative_selector_invalidated_at,
         sibling_traversal_map,
     };
     invalidator.invalidate_relative_selectors_for_dom_mutation(
@@ -8690,7 +8684,7 @@ fn invalidate_relative_selector_ts_dependency(
         element,
         quirks_mode,
         snapshots: None,
-        invalidated: process_invalidation_result,
+        invalidated: relative_selector_invalidated_at,
         sibling_traversal_map: SiblingTraversalMap::default(),
     };
 
@@ -8847,7 +8841,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorForInsertion(
         element,
         quirks_mode,
         snapshots: None,
-        invalidated: process_invalidation_result,
+        invalidated: relative_selector_invalidated_at,
         sibling_traversal_map: SiblingTraversalMap::default(),
     };
 
@@ -8889,7 +8883,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorForAppend(
             quirks_mode,
             snapshots: None,
             sibling_traversal_map: SiblingTraversalMap::default(),
-            invalidated: process_invalidation_result,
+            invalidated: relative_selector_invalidated_at,
         };
         invalidator.invalidate_relative_selectors_for_dom_mutation(
             true,
@@ -8964,7 +8958,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorForRemoval(
         quirks_mode,
         snapshots: None,
         sibling_traversal_map: SiblingTraversalMap::default(),
-        invalidated: process_invalidation_result,
+        invalidated: relative_selector_invalidated_at,
     };
     invalidator.invalidate_relative_selectors_for_dom_mutation(
         true,
@@ -9335,7 +9329,7 @@ fn process_relative_selector_invalidations(
     let invalidator = RelativeSelectorInvalidator {
         element: *element,
         quirks_mode,
-        invalidated: process_invalidation_result,
+        invalidated: relative_selector_invalidated_at,
         sibling_traversal_map: SiblingTraversalMap::default(),
         snapshots: Some(&snapshots),
     };
@@ -9431,14 +9425,28 @@ pub extern "C" fn Servo_ProcessInvalidations(
 
     let mut selector_caches = SelectorCaches::default();
     if let Some(ref mut data) = data {
-        // FIXME(emilio): Ideally we could share the nth-index-cache across all the elements?
+        // FIXME(emilio): Ideally we could share the nth-index-cache across all
+        // the elements?
         let result = data.invalidate_style_if_needed(
             element,
             &shared_style_context,
             None,
             &mut selector_caches,
         );
-        process_invalidation_result(element, &result);
+
+        if result.has_invalidated_siblings() {
+            let parent = element
+                .traversal_parent()
+                .expect("How could we invalidate siblings without a common parent?");
+            unsafe {
+                parent.set_dirty_descendants();
+                bindings::Gecko_NoteDirtySubtreeForInvalidation(parent.0);
+            }
+        } else if result.has_invalidated_descendants() {
+            unsafe { bindings::Gecko_NoteDirtySubtreeForInvalidation(element.0) };
+        } else if result.has_invalidated_self() {
+            unsafe { bindings::Gecko_NoteDirtyElement(element.0) };
+        }
     }
 }
 
@@ -10136,10 +10144,7 @@ pub unsafe extern "C" fn Servo_InvalidateStyleForDocStateChanges(
         TreeStyleInvalidator::new(root, /* stack_limit_checker = */ None, &mut processor)
             .invalidate();
 
-    debug_assert!(
-        !result.has_invalidated_siblings_or_sibling_descendants(),
-        "How in the world?"
-    );
+    debug_assert!(!result.has_invalidated_siblings(), "How in the world?");
     if result.has_invalidated_descendants() {
         unsafe {
             bindings::Gecko_NoteDirtySubtreeForInvalidation(root.0);
