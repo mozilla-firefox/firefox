@@ -20,9 +20,15 @@ let h2Port;
 let h3Port;
 
 add_setup(async function setup() {
-  h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
+  let h2Server = await create_h2_server({
+    "/server-timing": (req, res) => {
+      const body = "data reached";
+      res.setHeader("Content-Length", body.length);
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end(body);
+    },
+  });
+  h2Port = h2Server.port();
 
   h3Port = Services.env.get("MOZHTTP3_PORT");
   Assert.notEqual(h3Port, null);
@@ -32,14 +38,6 @@ add_setup(async function setup() {
   Services.prefs.setIntPref("network.http.speculative-parallel-limit", 6);
   // Lets the test block the origin's TCP connect (see below).
   Services.prefs.setBoolPref("network.socket.attach_mock_network_layer", true);
-
-  // Set to allow the cert presented by our H2 server
-  do_get_profile();
-
-  let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
-    Ci.nsIX509CertDB
-  );
-  addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
 });
 
 registerCleanupFunction(async () => {
@@ -100,7 +98,7 @@ add_task(async function testNotCoaleasingH2Connection() {
   // To clear the altsvc cache.
   Services.obs.notifyObservers(null, "browser:purge-session-history");
 
-  // Add another alt-svc header to route to moz-http2.js.
+  // Add another alt-svc header to route to the HTTP/2 server.
   Services.prefs.setCharPref(
     "network.http.http3.alt-svc-mapping-for-testing",
     `${host};h2=:${h2Port}`
