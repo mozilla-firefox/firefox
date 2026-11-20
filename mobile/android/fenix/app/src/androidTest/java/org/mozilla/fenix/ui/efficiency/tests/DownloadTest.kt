@@ -261,4 +261,24 @@ class DownloadTest : BaseTest() {
             .mozClick(DownloadsSelectors.BACK_AND_SEARCH_BUTTON)
             .mozVerify(DownloadsSelectors.DOWNLOADS_TOOLBAR_TITLE)
     }
+
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2485039
+    @Critical
+    @Test
+    fun privateBrowsingDownloadsCanBeAccessedOnlyOnDeviceStorageAfterClosingAllTabsTest() {
+        val downloadTestPage = mockWebServer.downloadPageAsset.url.toString()
+        val downloadFile = "zip_small.zip"
+
+        on.home.navigateToPage()
+        on.home.switchToPrivateBrowsingMode()
+        on.browserPage
+            .navigateToPage(downloadTestPage)
+            .clickDownloadLink(downloadFile, downloadTestPage)
+            .verifyDownloadPrompt()
+            .clickDownloadPromptConfirmButton()
+        on.tabDrawer.navigateToPage().closeAllTabs()
+        on.home.navigateToPage()
+        on.downloads.navigateToPage().mozVerifyElementAbsent(DownloadsSelectors.DOWNLOADED_FILE_LIST_ITEM(downloadFile))
+        on.downloads.verifyDownloadedFileStillExistsOnStorage(downloadFile)
+    }
 }
