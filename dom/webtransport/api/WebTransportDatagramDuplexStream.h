@@ -178,6 +178,16 @@ class WebTransportDatagramDuplexStream final : public nsISupports,
   // Called when parent notifies that a datagram is ready
   void OnDatagramReady(uint64_t aDatagramId);
 
+  // Sends a datagram to the parent in an OutgoingDatagrams IPC message.
+  // Called by every OutgoingDatagramStreamAlgorithms instance (the default
+  // writable plus any from createWritable()) once mChild is set.
+  void QueueOutgoingDatagram(OutgoingDatagram&& aDatagram);
+
+  // Sends whatever has accumulated in mPendingOutgoing, split into
+  // OutgoingDatagrams messages of at most about kMaxOutgoingMessageBytes or
+  // kMaxOutgoingMessageDatagrams; a no-op if nothing has.
+  void FlushOutgoingDatagrams();
+
   // WebIDL Boilerplate
   nsIGlobalObject* GetParentObject() const;
 
@@ -268,6 +278,10 @@ class WebTransportDatagramDuplexStream final : public nsISupports,
   // e.g. after a remote close, so a DatagramReady already in flight can
   // still arrive) from a genuine unregistered/duplicate-id bug.
   bool mCleanedUp = false;
+
+  // Outgoing datagrams accumulated by QueueOutgoingDatagram() or SetChild()
+  // for the next OutgoingDatagrams message.
+  nsTArray<OutgoingDatagram> mPendingOutgoing;
 
  public:
   uint64_t GetDroppedIncoming() const { return mDroppedIncoming; }

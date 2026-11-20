@@ -78,10 +78,8 @@ class WebTransportParent : public PWebTransportParent,
       int64_t aSendOrder, Maybe<uint64_t> aSendGroupId,
       CreateBidirectionalStreamResolver&& aResolver);
 
-  ::mozilla::ipc::IPCResult RecvOutgoingDatagram(
-      const uint64_t& aDatagramId, nsTArray<uint8_t>&& aData,
-      const TimeStamp& aTimestamp, const uint64_t& aSendGroupId,
-      const int64_t& aSendOrder, OutgoingDatagramResolver&& aResolver);
+  ::mozilla::ipc::IPCResult RecvOutgoingDatagrams(
+      nsTArray<OutgoingDatagram>&& aDatagrams);
 
   ::mozilla::ipc::IPCResult RecvUpdateDatagramQueueParams(
       const uint32_t& aOutgoingMaxBufferedDatagrams,
@@ -155,11 +153,10 @@ class WebTransportParent : public PWebTransportParent,
   // This is needed because mResolver is resolved on the background thread and
   // OnSessionClosed is called on the socket thread.
   std::function<void()> mExecuteAfterResolverCallback MOZ_GUARDED_BY(mMutex);
-  OutgoingDatagramResolver mOutgoingDatagramResolver;
   GetMaxDatagramSizeResolver mMaxDatagramSizeResolver;
   uint64_t mMaxDatagramSizeValue{0};
   // Last value set via RecvUpdateDatagramQueueParams(), used by
-  // RecvOutgoingDatagram() to drop datagrams that are already older than
+  // RecvOutgoingDatagrams() to drop datagrams that are already older than
   // outgoingMaxAge by the time they reach the parent (see comment there).
   double mDatagramMaxAge{std::numeric_limits<double>::infinity()};
   // Latest write timestamp handed to neqo; see RecvOutgoingDatagram().

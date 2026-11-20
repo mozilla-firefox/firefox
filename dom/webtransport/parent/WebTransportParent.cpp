@@ -1149,60 +1149,73 @@ WebTransportParent::OnIncomingBidirectionalStreamAvailable(
 }
 
 // The promise is now resolved via DatagramReady event from neqo
-::mozilla::ipc::IPCResult WebTransportParent::RecvOutgoingDatagram(
-    const uint64_t& aDatagramId, nsTArray<uint8_t>&& aData,
-    const TimeStamp& aTimestamp, const uint64_t& aSendGroupId,
-    const int64_t& aSendOrder, OutgoingDatagramResolver&& aResolver) {
-  LOG(("WebTransportParent sending datagram id=%" PRIu64 ", length=%zu",
-       aDatagramId, aData.Length()));
+::mozilla::ipc::IPCResult WebTransportParent::RecvOutgoingDatagrams(
+    nsTArray<OutgoingDatagram>&& aDatagrams) {
+  LOG(("WebTransportParent received %zu batched outgoing datagrams",
+       aDatagrams.Length()));
   MOZ_ASSERT(mSocketThread->IsOnCurrentThread());
   MOZ_ASSERT(mWebTransport);
 
-  // Resolve IPC immediately - actual outcome notification happens via
-  // DatagramReady
-  aResolver(NS_OK);
+  // Content splits its messages at about 64 KiB or 1024 datagrams, so a batch
+  // this large can only come from a compromised child holding up the socket
+  // thread.
+  static constexpr size_t kMaxBatchDatagrams = 256 * 1024;
+  static constexpr size_t kMaxBatchBytes = 1024 * 1024;
+  size_t batchBytes = 0;
+  for (const auto& datagram : aDatagrams) {
+    batchBytes += datagram.data().Length();
+  }
+  if (aDatagrams.Length() > kMaxBatchDatagrams || batchBytes > kMaxBatchBytes) {
+    return IPC_FAIL(this, "Outgoing datagram batch is too large");
+  }
 
-  double ageMs = (TimeStamp::Now() - aTimestamp).ToMilliseconds();
-  LOG(("Forwarding datagram id=%" PRIu64
-       " to neqo queue (timestamp=%f ms), sendGroup=%" PRIu64
-       ", sendOrder=%" PRId64,
-       aDatagramId, ageMs, aSendGroupId, aSendOrder));
+  TimeStamp now = TimeStamp::Now();
+  for (auto& datagram : aDatagrams) {
+    double ageMs = (now - datagram.timestamp()).ToMilliseconds();
+    LOG(("Forwarding datagram id=%" PRIu64
+         " to neqo queue (timestamp=%f ms), sendGroup=%" PRIu64
+         ", sendOrder=%" PRId64,
+         datagram.datagramId(), ageMs, datagram.sendGroupId(),
+         datagram.sendOrder()));
 
-  // neqo measures outgoingMaxAge from aTimestamp too, but a datagram already
-  // past it need not be queued at all.
-  if (ageMs > mDatagramMaxAge) {
-    LOG(("Dropping datagram id=%" PRIu64 ": age %f ms exceeds outgoingMaxAge "
-         "%f ms before reaching neqo",
-         aDatagramId, ageMs, mDatagramMaxAge));
-    if (CanSend()) {
-      (void)SendDatagramReady(aDatagramId);
+    // neqo measures outgoingMaxAge from the write timestamp too, but a
+    // datagram already past it need not be queued at all.
+    if (ageMs > mDatagramMaxAge) {
+      LOG(("Dropping datagram id=%" PRIu64
+           ": age %f ms exceeds outgoingMaxAge %f ms before reaching neqo",
+           datagram.datagramId(), ageMs, mDatagramMaxAge));
+      if (CanSend()) {
+        (void)SendDatagramReady(datagram.datagramId());
+      }
+      continue;
     }
-    return IPC_OK();
+
+    // neqo's implementation-defined default max age (a small multiple of
+    // the RTT, with a floor) bounds how long a datagram waits in its
+    // queue.  The write timestamp also counts the connection setup for a
+    // datagram written before the session was ready, and the IPC transit
+    // from the content process, which on a loaded machine can alone exceed
+    // that bound.  Neither is time spent queued behind the network, so
+    // unless the page set an explicit outgoingMaxAge, age the datagram from
+    // its arrival here.
+    TimeStamp timestamp =
+        std::isfinite(mDatagramMaxAge) ? datagram.timestamp() : now;
+
+    // neqo's queue requires a session's timestamps to be non-decreasing.
+    // Writes from several writables, flushed one writable at a time at
+    // connect, need not be, so never go backwards.
+    if (mLastOutgoingDatagramTimestamp.IsNull() ||
+        timestamp > mLastOutgoingDatagramTimestamp) {
+      mLastOutgoingDatagramTimestamp = timestamp;
+    }
+
+    // Send to neqo's datagram queue. The datagram will be sent when the
+    // queue is processed, and OnOutgoingDatagramOutCome will be called with
+    // the result.
+    (void)mWebTransport->SendDatagramAt(
+        datagram.data(), datagram.datagramId(), datagram.sendGroupId(),
+        datagram.sendOrder(), mLastOutgoingDatagramTimestamp);
   }
-
-  // neqo's implementation-defined default max age (a small multiple of the
-  // RTT, with a floor) bounds how long a datagram waits in its queue.  The
-  // write timestamp also counts the connection setup for a datagram written
-  // before the session was ready, and the IPC transit from the content
-  // process, which on a loaded machine can alone exceed that bound.  Neither
-  // is time spent queued behind the network, so unless the page set an
-  // explicit outgoingMaxAge, age the datagram from its arrival here.
-  TimeStamp timestamp =
-      std::isfinite(mDatagramMaxAge) ? aTimestamp : TimeStamp::Now();
-
-  // neqo's queue requires a session's timestamps to be non-decreasing.
-  // Writes from several writables, flushed one writable at a time at
-  // connect, need not be, so never go backwards.
-  if (mLastOutgoingDatagramTimestamp.IsNull() ||
-      timestamp > mLastOutgoingDatagramTimestamp) {
-    mLastOutgoingDatagramTimestamp = timestamp;
-  }
-
-  // Send to neqo's datagram queue. The datagram will be sent when the queue
-  // is processed, and OnOutgoingDatagramOutCome will be called with the result.
-  (void)mWebTransport->SendDatagramAt(aData, aDatagramId, aSendGroupId,
-                                      aSendOrder,
-                                      mLastOutgoingDatagramTimestamp);
 
   return IPC_OK();
 }

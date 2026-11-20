@@ -27,6 +27,17 @@ struct BidirectionalStream {
   nullable DataPipeSender outStream;
 };
 
+struct OutgoingDatagram {
+  uint64_t datagramId;
+  uint8_t[] data;
+  // When the content process created this datagram (for outgoingMaxAge
+  // calculation). Per-datagram rather than per-message for the same reason
+  // as IncomingDatagram.receivedTime.
+  TimeStamp timestamp;
+  uint64_t sendGroupId;
+  int64_t sendOrder;
+};
+
 struct WebTransportDatagramStatsData {
   uint64_t droppedIncoming;
   uint64_t expiredIncoming;
@@ -89,16 +100,11 @@ async protocol PWebTransport
   async CreateSendGroup(uint64_t groupId);
 
   /**
-  * IPC for sending webtransport datagrams
-  * @param datagramId unique identifier for tracking promise resolution
-  * @param data represents the datagram to be transferred
-  * @param timestamp time at which the datagram was created (for maxAge calculation)
-  * @param sendGroupId optional send group ID for prioritization (0 = null/default group)
-  * @param sendOrder send order for prioritization
+  * IPC for sending webtransport datagrams.
+  *
+  * @param datagrams the datagrams to send, oldest first
   */
-  async OutgoingDatagram(uint64_t datagramId, uint8_t[] data, TimeStamp timestamp,
-                         uint64_t sendGroupId, int64_t sendOrder)
-    returns(nsresult response);
+  async OutgoingDatagrams(OutgoingDatagram[] datagrams);
 
   /**
   * Update datagram queue parameters
