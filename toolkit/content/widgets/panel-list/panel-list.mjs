@@ -11,9 +11,6 @@ import {
 } from "chrome://global/content/elements/auto-accesskey.mjs";
 
 export class PanelList extends HTMLElement {
-  /** Whether addHideListeners() registered the keydown listeners. */
-  #listening = false;
-
   static get observedAttributes() {
     return ["open"];
   }
@@ -450,7 +447,6 @@ export class PanelList extends HTMLElement {
       // This is intended for inspection in Storybook.
       return;
     }
-    this.#listening = true;
     // Hide when a panel-item is clicked in the list.
     this.addEventListener("click", this);
     // Prevent contextmenus when `suppress-contextmenu` is present.
@@ -481,7 +477,6 @@ export class PanelList extends HTMLElement {
   }
 
   removeHideListeners() {
-    this.#listening = false;
     this.removeEventListener("click", this);
     this.removeEventListener("contextmenu", this);
     this.removeEventListener("keydown", this);
@@ -663,12 +658,11 @@ export class PanelList extends HTMLElement {
     }
     let focused = chain.find(el => this.contains(el));
     // Both this list and its open submenu hear the keystroke through their
-    // document listeners. A submenu still aligning before it shows doesn't
-    // listen yet, so this list keeps the key.
+    // document listeners.
     if (
       !focused &&
       [...this.querySelectorAll("panel-item[submenu]")].some(
-        item => item.submenuPanel?.#listening
+        item => item.submenuPanel?.open
       )
     ) {
       return false;

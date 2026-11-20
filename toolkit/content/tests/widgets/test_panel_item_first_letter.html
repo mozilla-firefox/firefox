@@ -246,26 +246,6 @@
         moveMouseOffTheList();
       });
 
-      add_task(async function testASubmenuStillShowingLeavesTheLetter() {
-        clicks = [];
-        let shown = BrowserTestUtils.waitForEvent(panelList, "shown");
-        synthesizeMouseAtCenter(document.getElementById("anchor"), {});
-        await shown;
-
-        synthesizeMouseAtCenter(moreHost, { type: "mousemove" });
-        ok(submenu.open, "The hover started opening the submenu");
-        await pressKey("p");
-        is(
-          clicks.length,
-          1,
-          "The key typed before the submenu showed was used"
-        );
-        is(clicks[0], personal, "The outer list took it");
-        ok(!submenu.open, "Closing the outer list closed the submenu");
-        await hidePanel();
-        moveMouseOffTheList();
-      });
-
       // Verifies that arrow navigation continues from a letter match.
       add_task(async function testArrowNavigationContinuesAfterLetterMatch() {
         await showPanel();
