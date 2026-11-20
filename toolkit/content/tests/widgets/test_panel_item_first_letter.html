@@ -99,6 +99,14 @@
         }
       }
 
+      // A list shown under the pointer, as when this file runs again in the
+      // same browser, would open the submenu the pointer was left over.
+      function moveMouseOffTheList() {
+        synthesizeMouseAtCenter(document.getElementById("outside"), {
+          type: "mousemove",
+        });
+      }
+
       function captureNextKeydown() {
         return new Promise(resolve => {
           document.addEventListener("keydown", resolve, {
@@ -235,6 +243,7 @@
         ok(!panelList.open, "The click closed the outer list too");
         await hidePanel(submenu);
         await hidePanel();
+        moveMouseOffTheList();
       });
 
       // Verifies that arrow navigation continues from a letter match.
