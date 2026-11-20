@@ -846,14 +846,14 @@ TEST(MoofParser, CompositionGapClosedWithinMoof)
   }
 }
 
-// Known limit: the bound is the longest duration of the moof. The file is the
-// one of CompositionGapFilledByNextMoof, except that the frame at 1024 has a
-// duration of 7680 ticks. The bound is then 7680, so that frame still covers
-// the frame of moof 2:
+// The bound is the longest duration of the moof. The file is the one of
+// CompositionGapFilledByNextMoof, except that the frame at 1024 has a duration
+// of 7680 ticks. The bound is then 7680, so in moof 1 alone that frame covers
+// the gap. When moof 2 is parsed, it ends at the frame of moof 2:
 //
-//   PTS     512   1024  1536  2048  2560
-//   moof 1  [ I ] [ B ------ ][ P ]
-//   moof 2              [ B ]
+//   PTS                512   1024  1536  2048  2560
+//   moof 1 alone       [ I ] [ B ------ ][ P ]
+//   with moof 2        [ I ] [ B ][ B ] [ P ]
 TEST(MoofParser, CompositionGapBoundRaisedByLongSample)
 {
   nsTArray<uint8_t> buffer =
@@ -867,11 +867,11 @@ TEST(MoofParser, CompositionGapBoundRaisedByLongSample)
       MediaByteRangeSet(MediaByteRange(0, int64_t(buffer.Length())))));
   ASSERT_EQ(parser.Moofs().Length(), 4u);
 
-  // Sample 1024 still ends at 2048, over sample 1536 of the next moof.
+  // Sample 1024 ends at 1536, where sample 1536 of the next moof starts.
   const int64_t kTimescale = 15360;
   const nsTArray<Sample>& first = parser.Moofs()[0].mIndex;
   ASSERT_EQ(first.Length(), 3u);
-  const int64_t kExpected[][2] = {{512, 1024}, {2048, 2560}, {1024, 2048}};
+  const int64_t kExpected[][2] = {{512, 1024}, {2048, 2560}, {1024, 1536}};
   for (size_t i = 0; i < first.Length(); i++) {
     const int64_t start =
         first[i].mCompositionRange.start.ToTicksAtRate(kTimescale);
@@ -890,6 +890,99 @@ TEST(MoofParser, CompositionGapBoundRaisedByLongSample)
           sample.mCompositionRange.end.ToTicksAtRate(kTimescale);
       EXPECT_EQ(end - start, 512) << "cts " << start;
     }
+  }
+}
+
+// One sample per color, at 15360 ticks per second. Every sample duration is
+// 512, but the red sample at 2048 lasts until the green sample of moof 2:
+//
+//   cts     512   1024  1536  2048           17920
+//   moof 1  [red] [grn]       [red ..........]
+//   moof 2              [blu]                [grn]
+TEST(MoofParser, SampleEndsInNextMoof)
+{
+  nsTArray<uint8_t> buffer = ReadTestFile("test_case_1955763-long-frame.mp4");
+  ASSERT_FALSE(buffer.IsEmpty());
+  RefPtr<ByteStream> stream =
+      new TestStream(buffer.Elements(), buffer.Length());
+  const uint32_t videoTrackId = 1;
+  MoofParser parser(stream, AsVariant(videoTrackId), false);
+  EXPECT_TRUE(parser.RebuildFragmentedIndex(
+      MediaByteRangeSet(MediaByteRange(0, int64_t(buffer.Length())))));
+  ASSERT_EQ(parser.Moofs().Length(), 2u);
+
+  // Only the red sample at 2048 changes; the samples are in decode order.
+  const int64_t kTimescale = 15360;
+  const int64_t kExpected[2][3][2] = {
+      {{512, 1024}, {2048, 17920}, {1024, 1536}},
+      {{1536, 2048}, {17920, 18432}, {0, 0}}};
+  const int64_t kMoofEnds[2] = {17920, 18432};
+  for (size_t m = 0; m < 2; m++) {
+    const Moof& moof = parser.Moofs()[m];
+    ASSERT_EQ(moof.mIndex.Length(), m == 0 ? 3u : 2u);
+    for (size_t i = 0; i < moof.mIndex.Length(); i++) {
+      const MP4Interval<media::TimeUnit>& range =
+          moof.mIndex[i].mCompositionRange;
+      EXPECT_EQ(range.start.ToTicksAtRate(kTimescale), kExpected[m][i][0]);
+      EXPECT_EQ(range.end.ToTicksAtRate(kTimescale), kExpected[m][i][1]);
+    }
+    EXPECT_EQ(moof.mTimeRange.end.ToTicksAtRate(kTimescale), kMoofEnds[m]);
+  }
+}
+
+// The same file, but read as all tracks of a segment, as the MSE container
+// parser does: the samples keep the ends set inside each moof.
+TEST(MoofParser, SampleEndsInNextMoofNotForAllTracks)
+{
+  nsTArray<uint8_t> buffer = ReadTestFile("test_case_1955763-long-frame.mp4");
+  ASSERT_FALSE(buffer.IsEmpty());
+  RefPtr<ByteStream> stream =
+      new TestStream(buffer.Elements(), buffer.Length());
+  MoofParser parser(stream, AsVariant(ParseAllTracks{}), false);
+  EXPECT_TRUE(parser.RebuildFragmentedIndex(
+      MediaByteRangeSet(MediaByteRange(0, int64_t(buffer.Length())))));
+  ASSERT_EQ(parser.Moofs().Length(), 2u);
+
+  const int64_t kTimescale = 15360;
+  const Moof& first = parser.Moofs()[0];
+  ASSERT_EQ(first.mIndex.Length(), 3u);
+  EXPECT_EQ(first.mIndex[1].mCompositionRange.end.ToTicksAtRate(kTimescale),
+            2560);
+}
+
+// 12 samples with two B-frames and one sample per moof, at 15360 ticks per
+// second. Moof 2 first extends the I-frame to the P-frame, then the B-frames of
+// moofs 3 and 4 come in between:
+//
+//   cts     512   1024  1536  2048
+//   moof 1  [ I ]
+//   moof 2                    [ P ]
+//   moof 3        [ B ]
+//   moof 4              [ B ]
+//
+// So at the end, each sample ends where the next one in composition order
+// starts.
+TEST(MoofParser, SampleEndsWithBFramesInLaterMoofs)
+{
+  nsTArray<uint8_t> buffer =
+      ReadTestFile("test_case_1955763-one-frame-per-moof.mp4");
+  ASSERT_FALSE(buffer.IsEmpty());
+  RefPtr<ByteStream> stream =
+      new TestStream(buffer.Elements(), buffer.Length());
+  const uint32_t videoTrackId = 1;
+  MoofParser parser(stream, AsVariant(videoTrackId), false);
+  EXPECT_TRUE(parser.RebuildFragmentedIndex(
+      MediaByteRangeSet(MediaByteRange(0, int64_t(buffer.Length())))));
+  ASSERT_EQ(parser.Moofs().Length(), 12u);
+
+  const int64_t kTimescale = 15360;
+  for (const Moof& moof : parser.Moofs()) {
+    ASSERT_EQ(moof.mIndex.Length(), 1u);
+    const MP4Interval<media::TimeUnit>& range =
+        moof.mIndex[0].mCompositionRange;
+    const int64_t start = range.start.ToTicksAtRate(kTimescale);
+    EXPECT_EQ(range.end.ToTicksAtRate(kTimescale) - start, 512)
+        << "cts " << start;
   }
 }
 

@@ -384,6 +384,10 @@ class MoofParser : public DecoderDoctorLifeLogger<MoofParser> {
 
  private:
   void ScanForMetadata(mozilla::MediaByteRange& aMoov);
+  // Sets the end of each video sample at a link between aNewMoof and an
+  // earlier moof to the start of the next sample in composition order: it
+  // extends the sample, or cuts back an end that came from a later sample.
+  void EndSamplesAtNextComposition(Moof& aNewMoof);
   nsTArray<Moof> mMoofs;
   nsTArray<MediaByteRange> mMediaRanges;
   nsTArray<TrackEndCts> mTracksEndCts;

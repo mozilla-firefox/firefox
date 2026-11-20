@@ -13,6 +13,7 @@
 #include "mozilla/CheckedInt.h"
 #include "mozilla/HelperMacros.h"
 #include "mozilla/Logging.h"
+#include "mozilla/StaticPrefs_media.h"
 #include "mozilla/Try.h"
 
 #define LOG_ERROR(name, arg, ...)                                             \
@@ -91,6 +92,7 @@ bool MoofParser::RebuildFragmentedIndex(BoxContext& aContext) {
       }
 
       if (!mMoofs.IsEmpty()) {
+        EndSamplesAtNextComposition(moof);
         // Stitch time ranges together in the case of a (hopefully small) time
         // range gap between moofs.
         mMoofs.LastElement().FixRounding(moof);
@@ -850,6 +852,95 @@ void Moof::ParseTraf(const Box& aBox, const TrackParseMode& aTrackParseMode,
 
   *aDecodeTime = decodeTime;
   LOG_DEBUG(Traf, "Done, setting aDecodeTime={}.", decodeTime);
+}
+
+void MoofParser::EndSamplesAtNextComposition(Moof& aNewMoof) {
+  // Only video samples of one track are extended. A parser that reads all
+  // tracks, as the MSE container parser does, can mix tracks in one moof.
+  if (!StaticPrefs::media_mp4_frame_ends_across_fragments_enabled() ||
+      mIsAudio || !mTrackParseMode.is<uint32_t>() ||
+      aNewMoof.mIndex.IsEmpty()) {
+    return;
+  }
+  // Collect up to 16 samples before the new moof in decode order, the largest
+  // H.264 and HEVC decoded picture buffer. Stop at a moof that does not start
+  // before the next one in decode time, as when data is appended again.
+  constexpr size_t kMaxReorderedSamples = 16;
+  const size_t newMoofIndex = mMoofs.Length();
+  struct Entry {
+    Sample* mSample;
+    size_t mMoofIndex;
+  };
+  AutoTArray<Entry, 32> entries;
+  TimeUnit nextMoofDecodeTime = aNewMoof.mIndex[0].mDecodeTime;
+  for (size_t m = mMoofs.Length();
+       m > 0 && entries.Length() < kMaxReorderedSamples; m--) {
+    auto& index = mMoofs[m - 1].mIndex;
+    if (index.IsEmpty() || index[0].mDecodeTime >= nextMoofDecodeTime) {
+      break;
+    }
+    nextMoofDecodeTime = index[0].mDecodeTime;
+    for (size_t i = index.Length();
+         i > 0 && entries.Length() < kMaxReorderedSamples; i--) {
+      entries.AppendElement(Entry{&index[i - 1], m - 1});
+    }
+  }
+  // Put the samples in composition order.
+  for (Sample& sample : aNewMoof.mIndex) {
+    entries.AppendElement(Entry{&sample, newMoofIndex});
+  }
+  entries.StableSort([](const Entry& aA, const Entry& aB) {
+    const TimeUnit& a = aA.mSample->mCompositionRange.start;
+    const TimeUnit& b = aB.mSample->mCompositionRange.start;
+    return a < b ? -1 : (a > b ? 1 : 0);
+  });
+
+  // A sample has a composition time but no composition duration (ISO/IEC
+  // 14496-12 8.6.1.3 and 8.6.1.4), so it is shown until the next composition
+  // time in the track, which can be in another moof. Moof::Moof has set the
+  // ends inside each moof, so only change an end at a link between the new
+  // moof and an earlier one.
+  for (size_t i = 1; i < entries.Length(); i++) {
+    const size_t moofIndex = entries[i - 1].mMoofIndex;
+    const bool isInNewMoof = moofIndex == newMoofIndex;
+    if (isInNewMoof == (entries[i].mMoofIndex == newMoofIndex)) {
+      continue;
+    }
+    MP4Interval<TimeUnit>& range = entries[i - 1].mSample->mCompositionRange;
+    const TimeUnit& nextStart = entries[i].mSample->mCompositionRange.start;
+    if (nextStart < range.end) {
+      // A new sample inside an earlier sample that ends at the start of the
+      // next earlier sample: that end came from the next sample, and the new
+      // samples up to it cover the rest, so end the earlier sample at the new
+      // one. An earlier sample that ends elsewhere keeps its duration.
+      if (isInNewMoof || nextStart <= range.start) {
+        continue;
+      }
+      size_t next = i + 1;
+      while (next < entries.Length() &&
+             entries[next].mMoofIndex == newMoofIndex) {
+        next++;
+      }
+      if (next == entries.Length() ||
+          entries[next].mSample->mCompositionRange.start != range.end) {
+        continue;
+      }
+      LOG_DEBUG(Moof, "End sample [{}, {}] at new sample start {}.",
+                range.start.ToMicroseconds(), range.end.ToMicroseconds(),
+                nextStart.ToMicroseconds());
+      range.end = nextStart;
+      continue;
+    }
+    if (nextStart == range.end) {
+      continue;
+    }
+    LOG_DEBUG(Moof, "Extend sample [{}, {}] to next composition start {}.",
+              range.start.ToMicroseconds(), range.end.ToMicroseconds(),
+              nextStart.ToMicroseconds());
+    range.end = nextStart;
+    Moof& moof = isInNewMoof ? aNewMoof : mMoofs[moofIndex];
+    moof.mTimeRange.end = std::max(moof.mTimeRange.end, range.end);
+  }
 }
 
 void Moof::FixRounding(const Moof& aMoof) {
