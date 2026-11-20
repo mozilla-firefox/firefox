@@ -6,6 +6,7 @@ package org.mozilla.fenix.utils
 
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.os.Looper
 import androidx.core.content.edit
 import io.mockk.every
 import io.mockk.spyk
@@ -13,6 +14,11 @@ import io.mockk.verify
 import java.io.File
 import java.util.Calendar
 import kotlin.test.assertNull
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.engine.Engine.HttpsOnlyMode.DISABLED
 import mozilla.components.concept.engine.Engine.HttpsOnlyMode.ENABLED
 import mozilla.components.concept.engine.Engine.HttpsOnlyMode.ENABLED_PRIVATE_ONLY
@@ -1697,5 +1703,20 @@ class SettingsTest {
         settings.lastAuthFlowEntrypoint = null
 
         assertNull(settings.lastAuthFlowEntrypoint)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `WHEN showTabGroupsInMenu changes THEN showTabGroupsInMenuFlow emits the new value`() = runTest {
+        settings.showTabGroupsInMenu = false
+        val values = mutableListOf<Boolean>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            settings.showTabGroupsInMenuFlow.toList(values)
+        }
+
+        settings.showTabGroupsInMenu = true
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals(listOf(false, true), values)
     }
 }

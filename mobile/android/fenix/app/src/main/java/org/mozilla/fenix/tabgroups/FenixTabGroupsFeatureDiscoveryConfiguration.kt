@@ -7,8 +7,8 @@ package org.mozilla.fenix.tabgroups
 import androidx.annotation.VisibleForTesting
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.mozilla.fenix.tabstray.repository.uistate.TabManagerUiStateRepository
 import org.mozilla.fenix.tabstray.repository.uistate.data.PersistedUIState
@@ -36,17 +36,16 @@ class FenixTabGroupsFeatureDiscoveryConfiguration(
         get() = settings.showTabGroupsInMenu
 
     override val toolbarMenuButtonHighlight: Flow<Boolean> =
-        tabGroupUiStateRepository.uiState
-            .map {
-                it.showToolbarHighlight()
+        combine(tabGroupUiStateRepository.uiState, settings.showTabGroupsInMenuFlow) { uiState, showMenuItem ->
+                uiState.showToolbarHighlight(showMenuItem)
             }
             .distinctUntilChanged()
 
     override val shouldHighlightMenuItem: Boolean
-        get() = tabGroupUiStateRepository.uiState.value.showMenuItemHighlight()
+        get() = tabGroupUiStateRepository.uiState.value.showMenuItemHighlight(showMenuItem)
 
     private val shouldHighlightToolbar: Boolean
-        get() = tabGroupUiStateRepository.uiState.value.showToolbarHighlight()
+        get() = tabGroupUiStateRepository.uiState.value.showToolbarHighlight(showMenuItem)
 
     override fun recordMenuItemExposure() {
         if (shouldHighlightMenuItem) {
@@ -66,14 +65,14 @@ class FenixTabGroupsFeatureDiscoveryConfiguration(
         }
     }
 
-    private fun PersistedUIState?.showMenuItemHighlight() =
+    private fun PersistedUIState?.showMenuItemHighlight(showMenuItem: Boolean) =
         this != null &&
             showMenuItem &&
             tabGroupMenuImpressionCount < TAB_GROUP_MENU_IMPRESSION_LIMIT &&
             !hasUserEverUsedTabGroupMenuItem
 
-    private fun PersistedUIState?.showToolbarHighlight() =
+    private fun PersistedUIState?.showToolbarHighlight(showMenuItem: Boolean) =
         this != null &&
-            showMenuItemHighlight() &&
+            showMenuItemHighlight(showMenuItem) &&
             tabGroupToolbarMenuHighlightImpressionCount < TAB_GROUP_TOOLBAR_HIGHLIGHT_IMPRESSION_LIMIT
 }

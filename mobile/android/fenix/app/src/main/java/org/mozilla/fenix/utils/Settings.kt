@@ -21,6 +21,10 @@ import androidx.preference.PreferenceManager
 import java.io.File
 import java.security.InvalidParameterException
 import java.util.concurrent.TimeUnit.MILLISECONDS
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import mozilla.components.concept.engine.Engine
 import mozilla.components.concept.engine.Engine.HttpsOnlyMode
 import mozilla.components.feature.automotive.isAndroidAutomotiveAvailable
@@ -3392,6 +3396,20 @@ class Settings(
             key = appContext.getPreferenceKey(R.string.pref_key_show_tab_groups_in_menu),
             default = { DefaultTabManagementFeatureHelper.showTabGroupsInMenu },
         )
+
+    /** [showTabGroupsInMenu], emitting its current value and then every change. */
+    val showTabGroupsInMenuFlow: Flow<Boolean> = callbackFlow {
+        val key = appContext.getPreferenceKey(R.string.pref_key_show_tab_groups_in_menu)
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, changedKey ->
+            if (changedKey == null || changedKey == key) {
+                trySend(showTabGroupsInMenu)
+            }
+        }
+        preferences.registerOnSharedPreferenceChangeListener(listener)
+        send(showTabGroupsInMenu)
+        awaitClose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+        .distinctUntilChanged()
 
     /** Whether the Native Share Sheet feature is enabled. */
     var nativeShareSheetEnabled by

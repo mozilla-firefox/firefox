@@ -11,7 +11,10 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -56,6 +59,35 @@ class FenixTabGroupsFeatureDiscoveryConfigurationTest {
 
             assertFalse(configuration.toolbarMenuButtonHighlight.first())
         }
+
+    @Test
+    fun `GIVEN the toolbar is highlighted WHEN tab groups are removed from the menu THEN stop highlighting it`() =
+        runTest {
+            val showTabGroupsInMenu = MutableStateFlow(true)
+            val configuration = configuration(FakeTabManagerUiStateRepository(PersistedUIState()), showTabGroupsInMenu)
+            val highlights = mutableListOf<Boolean>()
+            backgroundScope.launch { configuration.toolbarMenuButtonHighlight.toList(highlights) }
+            runCurrent()
+
+            showTabGroupsInMenu.value = false
+            runCurrent()
+
+            assertEquals(listOf(true, false), highlights)
+        }
+
+    @Test
+    fun `GIVEN tab groups are not shown in the menu WHEN they are added to it THEN highlight the toolbar`() = runTest {
+        val showTabGroupsInMenu = MutableStateFlow(false)
+        val configuration = configuration(FakeTabManagerUiStateRepository(PersistedUIState()), showTabGroupsInMenu)
+        val highlights = mutableListOf<Boolean>()
+        backgroundScope.launch { configuration.toolbarMenuButtonHighlight.toList(highlights) }
+        runCurrent()
+
+        showTabGroupsInMenu.value = true
+        runCurrent()
+
+        assertEquals(listOf(false, true), highlights)
+    }
 
     @Test
     fun `GIVEN the item was shown as many times as the limit WHEN observing the toolbar highlight THEN don't highlight it`() =
@@ -224,14 +256,15 @@ class FenixTabGroupsFeatureDiscoveryConfigurationTest {
     private fun TestScope.configuration(
         uiState: PersistedUIState?,
         showTabGroupsInMenu: Boolean = true,
-    ) = configuration(FakeTabManagerUiStateRepository(uiState), showTabGroupsInMenu)
+    ) = configuration(FakeTabManagerUiStateRepository(uiState), MutableStateFlow(showTabGroupsInMenu))
 
     private fun TestScope.configuration(
         repository: FakeTabManagerUiStateRepository,
-        showTabGroupsInMenu: Boolean = true,
+        showTabGroupsInMenu: MutableStateFlow<Boolean> = MutableStateFlow(true),
     ): FenixTabGroupsFeatureDiscoveryConfiguration {
         val settings = mockk<Settings>()
-        every { settings.showTabGroupsInMenu } returns showTabGroupsInMenu
+        every { settings.showTabGroupsInMenu } answers { showTabGroupsInMenu.value }
+        every { settings.showTabGroupsInMenuFlow } returns showTabGroupsInMenu
 
         return FenixTabGroupsFeatureDiscoveryConfiguration(
             settings = settings,
