@@ -15,6 +15,7 @@ function MockTabsEngine() {
 
 MockTabsEngine.prototype = {
   name: "tabs",
+  enabled: true,
 
   startTracking() {},
   getAllClients() {

@@ -157,6 +157,10 @@ add_task(async function test_clientWithTabs() {
   equal(clients[0].tabs[0].lastUsed, 1655745700);
   // second client has no tabs.
   equal(clients[1].tabs.length, 0);
+
+  tabsEngine.enabled = false;
+  equal((await SyncedTabs.getTabClients()).length, 0);
+  tabsEngine.enabled = true;
 });
 
 add_task(async function test_staleClientWithTabs() {

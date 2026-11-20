@@ -193,3 +193,15 @@ add_task(async function test_tab_engine_skips_incoming_local_record() {
   // Bug 1800185 - we don't want the sync scheduler to see these records as incoming.
   Assert.ok(!Service.scheduler.hasIncomingItems);
 });
+
+add_task(async function test_prune_when_tabs_leave_meta_global() {
+  let syncID = await engine.getSyncID();
+  equal((await engine._rustStore.getAll()).length, 1);
+
+  let meta = await Service.recordManager.get(engine.metaURL);
+  delete meta.payload.engines.tabs;
+  await engine._maybePruneRemoteTabs();
+
+  deepEqual(await engine._rustStore.getAll(), []);
+  equal(await engine.getSyncID(), syncID, "Kept the sync ID");
+});
