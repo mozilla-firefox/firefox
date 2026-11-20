@@ -915,7 +915,7 @@ String Decimal::toString() const
     uint64_t coefficient = m_data.coefficient();
 
     if (originalExponent < 0) {
-        const int maxDigits = DBL_DIG;
+        const int maxDigits = DBL_DECIMAL_DIG;
         uint64_t lastDigit = 0;
         while (countDigits(coefficient) > maxDigits) {
             lastDigit = coefficient % 10;

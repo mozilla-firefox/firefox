@@ -41,6 +41,7 @@ vendoring:
     - patches/add-doubleconversion-impl.patch
     - patches/moz-constexpr-decimal.patch
     - patches/moz-constexpr-nan.patch
+    - patches/tostring-more-digits.patch
     # The following is disabled. See
     # https://bugzilla.mozilla.org/show_bug.cgi?id=1208357#c7
     # patches/fix-wshadow-warnings.patch
