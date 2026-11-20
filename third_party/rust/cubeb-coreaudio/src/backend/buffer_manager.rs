@@ -4,7 +4,7 @@ use std::os::raw::c_void;
 use std::slice;
 
 use cubeb_backend::SampleFormat;
-use num::cast::AsPrimitive;
+use num_traits::AsPrimitive;
 
 use super::ringbuf::traits::{Consumer, Observer, Producer, Split};
 use super::ringbuf::HeapRb as RingBuffer;

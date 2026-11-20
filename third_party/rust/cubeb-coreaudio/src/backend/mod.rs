@@ -672,7 +672,7 @@ extern "C" fn audiounit_input_callback(
         assert!(input_frames as usize <= input_buffer_manager.available_frames_from_consumer());
         stm.frames_read.fetch_add(
             input_buffer_manager.available_frames_from_consumer(),
-            atomic::Ordering::SeqCst,
+            Ordering::SeqCst,
         );
         let mut total_input_frames = input_buffer_manager.available_frames_from_consumer() as i64;
         let input_buffer = input_buffer_manager

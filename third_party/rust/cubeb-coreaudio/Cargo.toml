@@ -41,14 +41,13 @@ crate-type = [
 path = "src/lib.rs"
 
 [dependencies]
-atomic = "0.4"
 audio-mixer = "0.2"
 bitflags = "2"
 cubeb-backend = "0.34.1"
 float-cmp = "0.6"
 libc = "0.2"
 mach2 = "0.4"
-num = "0.4.3"
+num-traits = "0.2"
 ringbuf = "0.5.2"
 triple_buffer = "5.0.5"
 whatsys = "0.3"
