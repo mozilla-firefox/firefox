@@ -31,6 +31,18 @@ data class IPProtectionPromptState(val details: PromptDetails) : State {
         @Parcelize data class Regular(val dataLimitGigabytes: Int) : PromptDetails
 
         /**
+         * Details for an IP Protection prompt announcing that the user can use GPI without an account.
+         *
+         * @property gpiMaxGigabytes The amount of data that can be used without an account
+         * @property fxaMaxGigabytes The amount of data that can be used with an account
+         */
+        @Parcelize
+        data class GpiPrompt(
+            val gpiMaxGigabytes: Int,
+            val fxaMaxGigabytes: Int,
+        ) : PromptDetails
+
+        /**
          * Details for an unlimited data promo prompt.
          *
          * @property promoDeadline The date object representing the end of the promotion

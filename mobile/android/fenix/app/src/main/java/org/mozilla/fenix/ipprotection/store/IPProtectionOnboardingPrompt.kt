@@ -12,7 +12,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.concept.base.crash.CrashReporting
+import mozilla.components.concept.engine.ipprotection.CurrentAuthProvider
+import mozilla.components.concept.engine.ipprotection.ServiceState
 import mozilla.components.feature.ipprotection.store.IPProtectionStore
 import mozilla.components.feature.ipprotection.store.state.AccountStatus
 import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
@@ -36,6 +39,7 @@ import org.mozilla.fenix.nimbus.FxNimbus
  * @param mainDispatcher [CoroutineDispatcher] on which [onShowOnboarding] is invoked.
  * @param store the singleton instance of [IPProtectionStore].
  */
+@OptIn(ExperimentalAndroidComponentsApi::class) // ServiceState
 class IPProtectionOnboardingPrompt(
     private val repository: IPProtectionPromptRepository,
     private val crashReporter: CrashReporting,
@@ -52,6 +56,8 @@ class IPProtectionOnboardingPrompt(
                 PromptCriteria(
                     eligibilityStatus = it.eligibilityStatus,
                     accountStatus = it.accountState.status,
+                    serviceStatus = it.serviceStatus,
+                    currentAuthProvider = it.currentAuthProvider,
                 )
             }
             .distinctUntilChanged()
@@ -61,38 +67,45 @@ class IPProtectionOnboardingPrompt(
                     return@collect
                 }
 
-                if (!criteria.canSelectPrompt()) return@collect
+                if (!criteria.hasResolvedEligibilityAndAccount()) return@collect
 
-                if (repository.canShowIPProtectionPrompt()) {
-                    val promptDetails = determinePromptDetails()
-                    onShowOnboarding(promptDetails)
-                } else {
+                if (!repository.canShowIPProtectionPrompt()) {
                     onAlreadySatisfied()
+                    return@collect
+                }
+
+                if (criteria.canSelectPrompt()) {
+                    onShowOnboarding(determinePromptDetails(criteria))
                 }
             }
     }
 
-    private fun determinePromptDetails(): PromptDetails? {
+    private fun determinePromptDetails(criteria: PromptCriteria): PromptDetails? {
         val feature = FxNimbus.features.ipProtection.value()
         val promoDeadline = feature.promoDeadline.takeIf { it.isNotBlank() }?.let(::parsePromoDeadline)
+        if (promoDeadline != null && !promoDeadline.isBefore(LocalDate.now(clock))) {
+            return PromptDetails.UnlimitedDataPromo(promoDeadline)
+        }
 
-        val prompt =
-            when {
-                promoDeadline != null && !promoDeadline.isBefore(LocalDate.now(clock)) ->
-                    PromptDetails.UnlimitedDataPromo(promoDeadline)
-                feature.dataLimitGigabyte > 0 -> PromptDetails.Regular(feature.dataLimitGigabyte)
-                else -> null
-            }
-
-        if (prompt == null) {
+        val useGpiPrompt = criteria.isSatisfiedForGpiUse()
+        val fxaDataLimit = feature.dataLimitGigabyte
+        val gpiDataLimit = feature.gpiDataLimitGigabytes
+        if (fxaDataLimit <= 0 || (useGpiPrompt && gpiDataLimit <= 0)) {
             crashReporter.submitCaughtException(
                 MalformedIPProtectionNimbusConfigException(
                     promoDeadline = feature.promoDeadline,
-                    dataLimit = feature.dataLimitGigabyte,
+                    fxaDataLimit = fxaDataLimit,
+                    gpiDataLimit = gpiDataLimit,
                 )
             )
+            return null
         }
-        return prompt
+
+        return if (useGpiPrompt) {
+            PromptDetails.GpiPrompt(gpiMaxGigabytes = gpiDataLimit, fxaMaxGigabytes = fxaDataLimit)
+        } else {
+            PromptDetails.Regular(fxaDataLimit)
+        }
     }
 
     private fun parsePromoDeadline(promoDeadline: String): LocalDate? =
@@ -107,19 +120,47 @@ class IPProtectionOnboardingPrompt(
     private data class PromptCriteria(
         val eligibilityStatus: EligibilityStatus,
         val accountStatus: AccountStatus,
+        val serviceStatus: ServiceState,
+        val currentAuthProvider: CurrentAuthProvider,
     ) {
-        fun canSelectPrompt(): Boolean {
-            return eligibilityStatus.isEligible && accountStatus.isResolved
+        fun hasResolvedEligibilityAndAccount(): Boolean = eligibilityStatus.isEligible && accountStatus.isResolved
+
+        fun canSelectPrompt(): Boolean = serviceStatus.isAvailableFor(currentAuthProvider)
+
+        /**
+         * Determines whether the criteria is determined to be ready for GPI use.
+         *
+         * The criteria are satisfied for GPI use when the service is ready, the current auth provider is GPI, and there
+         * is no account on-device
+         */
+        fun isSatisfiedForGpiUse(): Boolean {
+            return serviceStatus == ServiceState.Ready &&
+                currentAuthProvider == CurrentAuthProvider.Gpi &&
+                accountStatus == AccountStatus.NoAccount
         }
 
         /** Whether the user is ineligible to use IPP (ineligible or in an unsupported region). */
         fun isIneligible(): Boolean {
             return eligibilityStatus == EligibilityStatus.Ineligible ||
-                eligibilityStatus == EligibilityStatus.UnsupportedRegion
+                eligibilityStatus == EligibilityStatus.UnsupportedRegion ||
+                (serviceStatus == ServiceState.Unavailable && currentAuthProvider.isResolved)
         }
 
         val EligibilityStatus.isEligible: Boolean
             get() = this == EligibilityStatus.Eligible
+
+        /**
+         * The service is available for the current auth provider
+         *
+         * When using Fxa, the service is considered available when it's ready or unauthenticated. When using GPI, the
+         * service is considered available when it's ready
+         */
+        private fun ServiceState.isAvailableFor(authProvider: CurrentAuthProvider): Boolean =
+            when (authProvider) {
+                CurrentAuthProvider.Unknown -> false
+                CurrentAuthProvider.Fxa -> this == ServiceState.Ready || this == ServiceState.Unauthenticated
+                CurrentAuthProvider.Gpi -> this == ServiceState.Ready
+            }
 
         /**
          * Whether the account status is resolved enough for us to start evaluating the prompt criteria.
@@ -129,13 +170,18 @@ class IPProtectionOnboardingPrompt(
          */
         val AccountStatus.isResolved: Boolean
             get() = this != AccountStatus.WarmingUp && this != AccountStatus.Uninitialized
+
+        /** Auth provider is resolved when it is not unknown */
+        val CurrentAuthProvider.isResolved: Boolean
+            get() = this != CurrentAuthProvider.Unknown
     }
 }
 
 /**
  * Reported when we are unable to determine the correct prompt details due to invalid data from our nimbus configuration
  */
-internal class MalformedIPProtectionNimbusConfigException(promoDeadline: String, dataLimit: Int) :
+internal class MalformedIPProtectionNimbusConfigException(promoDeadline: String, fxaDataLimit: Int, gpiDataLimit: Int) :
     IllegalStateException(
-        "Invalid nimbus configuration for onboarding prompt: promoDeadline=$promoDeadline, dataLimit=$dataLimit"
+        "Invalid nimbus configuration for onboarding prompt: promoDeadline=$promoDeadline," +
+            " fxaDataLimit=$fxaDataLimit, gpiDataLimit=$gpiDataLimit"
     )

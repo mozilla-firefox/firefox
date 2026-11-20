@@ -2900,6 +2900,11 @@
       %1$s is a localized date (for example "Jun 9") indicating the end of the promotional period.
       %2$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox. -->
     <string name="ip_protection_onboarding_body_promo">Turn it on to make your browsing more private and harder to trace. Try it now to get unlimited bandwidth through %1$s. %2$s</string>
+    <!-- The body of the VPN onboarding card when the user qualifies for using VPN without signing in to a Mozilla account
+      %1$d is the amount of free data in GB available without signing in (for example "5").
+      %2$d is the amount of data in GB available after signing in (for example "50").
+      %3$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox. -->
+    <string name="ip_protection_onboarding_body_no_fxa">Turn it on to make your browsing more private and harder to trace. Try it with %1$d GB of free bandwidth, or sign in for %2$d GB. %3$s</string>
     <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
     <string name="ip_protection_onboarding_body_link_promo">Learn more</string>
     <!-- Label for the dismiss button on the onboarding bottom sheet. -->

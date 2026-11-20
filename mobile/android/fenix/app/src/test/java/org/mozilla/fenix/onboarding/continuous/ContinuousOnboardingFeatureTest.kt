@@ -16,10 +16,14 @@ import androidx.test.filters.SdkSuppress
 import kotlin.test.assertNotNull
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import mozilla.components.ExperimentalAndroidComponentsApi
+import mozilla.components.concept.engine.ipprotection.CurrentAuthProvider
+import mozilla.components.concept.engine.ipprotection.ServiceState
 import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.IPProtectionStore
 import mozilla.components.feature.ipprotection.store.state.AccountStatus
 import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
+import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.utils.DateTimeProvider
 import mozilla.components.support.utils.FakeDateTimeProvider
@@ -66,8 +70,11 @@ class ContinuousOnboardingFeatureTest {
     private lateinit var feature: ContinuousOnboardingFeature
 
     @Before
+    @OptIn(ExperimentalAndroidComponentsApi::class)
     fun setup() {
-        FxNimbus.features.ipProtection.withCachedValue(IpProtection(promoDeadline = "", dataLimitGigabyte = 50))
+        FxNimbus.features.ipProtection.withCachedValue(
+            IpProtection(promoDeadline = "2000-01-01", dataLimitGigabyte = 50)
+        )
         activity = Robolectric.buildActivity(AppCompatActivity::class.java).create().get()
         settings = Settings(testContext)
         telemetryRecorder =
@@ -77,7 +84,14 @@ class ContinuousOnboardingFeatureTest {
             )
         dateTimeProvider = FakeDateTimeProvider()
         stageProvider = FakeContinuousOnboardingStageProvider()
-        ipProtectionStore = IPProtectionStore()
+        ipProtectionStore =
+            IPProtectionStore(
+                initialState =
+                    IPProtectionState(
+                        serviceStatus = ServiceState.Unauthenticated,
+                        currentAuthProvider = CurrentAuthProvider.Fxa,
+                    )
+            )
         ipProtectionPromptRepository = FakeIPProtectionPromptRepository()
         feature =
             ContinuousOnboardingFeature(

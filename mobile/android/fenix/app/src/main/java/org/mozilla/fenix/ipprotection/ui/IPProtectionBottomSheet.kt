@@ -169,6 +169,12 @@ private fun BottomSheetContent(
                             maxGib = details.dataLimitGigabytes,
                             onLearnMoreClicked = onLearnMoreClicked,
                         )
+                    is PromptDetails.GpiPrompt ->
+                        IPProtectionGpiContent(
+                            gpiMaxGigabytes = details.gpiMaxGigabytes,
+                            fxaMaxGigabytes = details.fxaMaxGigabytes,
+                            onLearnMoreClicked = onLearnMoreClicked,
+                        )
                 }
             }
         }
@@ -234,6 +240,35 @@ private fun IPProtectionContent(
                 id = R.string.ip_protection_onboarding_body,
                 learnMoreText,
                 maxGib,
+            ),
+        linkTextStates =
+            listOf(
+                LinkTextState(
+                    text = learnMoreText,
+                    url = "",
+                    onClick = { onLearnMoreClicked() },
+                )
+            ),
+        style = FirefoxTheme.typography.body2.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+        linkTextDecoration = TextDecoration.Underline,
+    )
+}
+
+/** Content to show when we are showing the prompt for a user with no Firefox account. */
+@Composable
+private fun IPProtectionGpiContent(
+    gpiMaxGigabytes: Int,
+    fxaMaxGigabytes: Int,
+    onLearnMoreClicked: () -> Unit,
+) {
+    val learnMoreText = stringResource(R.string.ip_protection_onboarding_body_link_promo)
+    LinkText(
+        text =
+            stringResource(
+                id = R.string.ip_protection_onboarding_body_no_fxa,
+                gpiMaxGigabytes,
+                fxaMaxGigabytes,
+                learnMoreText,
             ),
         linkTextStates =
             listOf(
@@ -334,6 +369,27 @@ private fun IPProtectionPromoBottomSheetPreview(@PreviewParameter(PreviewThemePr
     FirefoxTheme(theme = theme) {
         IPProtectionBottomSheet(
             state = IPProtectionPromptState(PromptDetails.UnlimitedDataPromo(LocalDate.parse("2026-06-09"))),
+            onDismiss = {},
+            onDismissRequest = {},
+            onGetStartedClicked = {},
+            onLearnMoreClicked = {},
+            onNotNowClicked = {},
+        )
+    }
+}
+
+@FlexibleWindowPreview
+@Composable
+private fun IPProtectionNonFxaBottomSheetPreview(@PreviewParameter(PreviewThemeProvider::class) theme: Theme) {
+    FirefoxTheme(theme = theme) {
+        IPProtectionBottomSheet(
+            state =
+                IPProtectionPromptState(
+                    PromptDetails.GpiPrompt(
+                        gpiMaxGigabytes = 5,
+                        fxaMaxGigabytes = 50,
+                    )
+                ),
             onDismiss = {},
             onDismissRequest = {},
             onGetStartedClicked = {},
