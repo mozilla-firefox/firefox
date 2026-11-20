@@ -14,6 +14,7 @@ use std::{
     ffi::c_void,
     io,
     net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},
+    num::NonZeroUsize,
     path::PathBuf,
     ptr,
     rc::Rc,
@@ -2834,9 +2835,19 @@ pub extern "C" fn neqo_http3conn_webtransport_set_datagram_max_buffered_datagram
     session_id: u64,
     max_buffered_datagrams: u32,
 ) -> nsresult {
-    // Needs neqo's webtransport_set_max_buffered_datagrams.
-    let _ = (conn, session_id, max_buffered_datagrams);
-    NS_OK
+    // WebTransportDatagramDuplexStream::SetOutgoingMaxBufferedDatagrams already
+    // clamps to at least 1 per the WebTransport spec's setter steps, so 0 should
+    // never reach here; clamp defensively rather than trust this FFI boundary,
+    // since panicking across it is worse than the stricter-than-requested
+    // backpressure a silent clamp to 1 would produce.
+    let max_buffered_datagrams =
+        NonZeroUsize::new(max_buffered_datagrams as usize).unwrap_or(NonZeroUsize::MIN);
+    conn.conn
+        .webtransport_set_max_buffered_datagrams(
+            StreamId::from(session_id),
+            Some(max_buffered_datagrams),
+        )
+        .map_or(NS_ERROR_UNEXPECTED, |()| NS_OK)
 }
 
 #[no_mangle]
@@ -2845,9 +2856,20 @@ pub extern "C" fn neqo_http3conn_webtransport_set_datagram_max_age(
     session_id: u64,
     max_age: f64,
 ) -> nsresult {
-    // Needs neqo's webtransport_set_datagram_max_age.
-    let _ = (conn, session_id, max_age);
-    NS_OK
+    // A non-finite value is how the DOM layer spells "outgoingMaxAge is null".
+    // neqo substitutes its own implementation-defined default for None; the
+    // attribute keeps reporting null to script either way. A finite value too
+    // large for a `Duration` saturates instead of panicking, and saturates to
+    // "no limit" rather than to None, which would shed datagrams at neqo's
+    // default when script asked for the opposite.  The setter rejects negative
+    // values, but this comes from the content process, so a negative one is
+    // clamped to the shortest age rather than falling into that saturation.
+    let max_age = max_age.is_finite().then(|| {
+        Duration::try_from_secs_f64(max_age.max(0.0) / 1000.0).unwrap_or(Duration::MAX)
+    });
+    conn.conn
+        .webtransport_set_datagram_max_age(StreamId::from(session_id), max_age, Instant::now())
+        .map_or(NS_ERROR_UNEXPECTED, |()| NS_OK)
 }
 
 /// # Safety
