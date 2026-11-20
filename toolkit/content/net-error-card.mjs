@@ -21,7 +21,6 @@ import {
   gNoConnectivity,
   getLoopbackInfo,
   retryThis,
-  VPN_ACTIVE,
   detectClockSkew,
 } from "chrome://global/content/aboutNetErrorHelpers.mjs";
 import { initializeRegistry } from "chrome://global/content/errors/error-registry.mjs";
@@ -118,7 +117,6 @@ export class NetErrorCard extends MozLitElement {
       errorCodeString: errorInfo.errorCodeString,
       gErrorCode,
       noConnectivity: gNoConnectivity,
-      vpnActive: VPN_ACTIVE,
     });
 
     // Bug 2038887: the felt privacy error page does not surface the DoH
@@ -155,6 +153,7 @@ export class NetErrorCard extends MozLitElement {
     this.searchCTAQuery = "";
     this.searchCTAAction = "";
     this.searchCTAOfflineAborted = false;
+    this.vpnError = false;
     // Exit-outcome tracking (bug 2055717): plain, non-reactive flags mapped to
     // an exit_reason at pagehide.
     this.ctaClicked = false;
@@ -254,7 +253,7 @@ export class NetErrorCard extends MozLitElement {
       errorCodeString: this.errorInfo.errorCodeString,
       gErrorCode,
       noConnectivity: gNoConnectivity,
-      vpnActive: VPN_ACTIVE,
+      vpnError: this.vpnError,
     });
     this.errorConfig = this.getErrorConfig();
     this.hideExceptionButton = this.shouldHideExceptionButton();

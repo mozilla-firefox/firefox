@@ -22,6 +22,7 @@ import {
   retryThis,
   handleNSSFailure,
   detectClockSkew,
+  isVPNError,
 } from "chrome://global/content/aboutNetErrorHelpers.mjs";
 import { initializeRegistry } from "chrome://global/content/errors/error-registry.mjs";
 import {
@@ -1333,7 +1334,9 @@ async function main() {
     customElements.define("net-error-card", NetErrorCard);
     document.body.classList.add("felt-privacy-body");
     const warning = document.getElementById("sslKeyLoggingWarning");
-    document.body.replaceChildren(document.createElement("net-error-card"));
+    const card = document.createElement("net-error-card");
+    card.vpnError = await isVPNError();
+    document.body.replaceChildren(card);
     if (warning) {
       document.body.prepend(warning);
     }

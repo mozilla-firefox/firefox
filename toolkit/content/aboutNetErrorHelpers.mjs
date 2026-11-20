@@ -39,10 +39,24 @@ export let gNoConnectivity =
 // the File menu. gOffline is true for both that case and when there's no
 // network connectivity.
 export let gOffline = gErrorCode === "netOffline" || gNoConnectivity;
-export const VPN_ACTIVE = RPMGetBoolPref(
-  "browser.ipProtection.userEnabled",
-  false
-);
+
+/**
+ * @returns {Promise<boolean>} Whether this proxy failure is the VPN's.
+ */
+export async function isVPNError() {
+  if (
+    (gErrorCode !== "proxyConnectFailure" &&
+      gErrorCode !== "proxyResolveFailure") ||
+    !RPMGetBoolPref("browser.ipProtection.enabled", false)
+  ) {
+    return false;
+  }
+  try {
+    return await RPMSendQuery("IPP:IsVPNError");
+  } catch {
+    return false;
+  }
+}
 
 export function isCaptive() {
   return searchParams.get("captive") == "true";

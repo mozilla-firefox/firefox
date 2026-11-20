@@ -703,7 +703,6 @@ add_task(async function test_resolve_error_id_nss_fallthrough() {
       errorCodeString: "SSL_ERROR_RX_CERTIFICATE_REQUIRED_ALERT",
       gErrorCode: "nssFailure2",
       noConnectivity: false,
-      vpnActive: false,
     }),
     "nssFailure2",
     "Unrecognized errorCodeString with gErrorCode=nssFailure2 should fall through to nssFailure2"
@@ -714,7 +713,6 @@ add_task(async function test_resolve_error_id_nss_fallthrough() {
       errorCodeString: "SSL_ERROR_RX_CERTIFICATE_REQUIRED_ALERT",
       gErrorCode: "dnsNotFound",
       noConnectivity: false,
-      vpnActive: false,
     }),
     null,
     "Unrecognized errorCodeString with gErrorCode other than nssFailure2 should return null"
@@ -845,5 +843,28 @@ add_task(async function test_connection_failure_loopback_hints() {
       p => !p.dataL10nId.startsWith("neterror-loopback-")
     ),
     "Non-loopback refusal should keep the generic hints"
+  );
+});
+
+add_task(async function test_resolve_error_id_vpn_error() {
+  const { initializeRegistry } = ChromeUtils.importESModule(REGISTRY_URL);
+  const { resolveErrorID } = ChromeUtils.importESModule(LOOKUP_URL);
+  initializeRegistry();
+
+  const signals = {
+    errorCodeString: "",
+    gErrorCode: "proxyConnectFailure",
+    noConnectivity: false,
+  };
+
+  Assert.equal(
+    resolveErrorID(signals),
+    "proxyConnectFailure",
+    "A proxy failure that is not the VPN's stays a proxy failure"
+  );
+  Assert.equal(
+    resolveErrorID({ ...signals, vpnError: true }),
+    "vpnFailure",
+    "A proxy failure that is the VPN's resolves to the VPN failure"
   );
 });

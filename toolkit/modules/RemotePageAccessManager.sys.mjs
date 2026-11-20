@@ -49,7 +49,6 @@ export let RemotePageAccessManager = {
         "security.enterprise_roots.auto-enabled",
         "security.certerror.hideAddException",
         "security.certerrors.felt-privacy-v1",
-        "browser.ipProtection.userEnabled",
         "network.sslkeylog_warning",
         // net-error-card.mjs is shared with about:neterror and reads this at
         // module scope, so it must be allowed here too even though the search
@@ -142,8 +141,8 @@ export let RemotePageAccessManager = {
         "security.enterprise_roots.auto-enabled",
         "security.certerror.hideAddException",
         "security.certerrors.felt-privacy-v1",
-        "browser.ipProtection.userEnabled",
         "network.sslkeylog_warning",
+        "browser.ipProtection.enabled",
         "browser.netError.searchCTA.enabled",
         "browser.netError.illustration.enabled",
       ],
@@ -159,7 +158,11 @@ export let RemotePageAccessManager = {
       RPMSetTRRDisabledLoadFlags: ["*"],
       RPMShowOSXLocalNetworkPermissionWarning: ["*"],
       RPMIsSSLKeyLoggingEnabled: ["*"],
-      RPMSendQuery: ["Browser:AddTRRExcludedDomain", "SearchCTA:GetInfo"],
+      RPMSendQuery: [
+        "Browser:AddTRRExcludedDomain",
+        "IPP:IsVPNError",
+        "SearchCTA:GetInfo",
+      ],
       RPMGetIntPref: ["network.trr.mode", "security.dialog_enable_delay"],
     },
     "about:newtab": {

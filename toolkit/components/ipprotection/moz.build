@@ -35,6 +35,7 @@ MOZ_SRC_FILES += [
     "IPPAutoActivation.sys.mjs",
     "IPPChannelFilter.sys.mjs",
     "IPPLifecycleHelper.sys.mjs",
+    "IPPNetErrorUtils.sys.mjs",
     "IPPNetworkErrorObserver.sys.mjs",
     "IPPNetworkUtils.sys.mjs",
     "IPPNimbusHelper.sys.mjs",

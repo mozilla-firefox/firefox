@@ -1,0 +1,70 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+const lazy = {};
+
+ChromeUtils.defineESModuleGetters(lazy, {
+  IPPMode:
+    "moz-src:///toolkit/components/ipprotection/IPPChannelFilter.sys.mjs",
+  IPPPrincipalRules:
+    "moz-src:///toolkit/components/ipprotection/IPPSiteRuleManager.sys.mjs",
+  IPPProxyManager:
+    "moz-src:///toolkit/components/ipprotection/IPPProxyManager.sys.mjs",
+  IPPSiteRuleManager:
+    "moz-src:///toolkit/components/ipprotection/IPPSiteRuleManager.sys.mjs",
+});
+
+/**
+ * The principal IPPChannelFilter attributes a document load to: the embedding
+ * document for a subframe, the loaded URL for a top-level page.
+ *
+ * @param {BrowsingContext} browsingContext
+ * @returns {nsIPrincipal}
+ */
+function principalForDocumentLoad(browsingContext) {
+  const embedder = browsingContext.parent?.currentWindowGlobal;
+  if (embedder) {
+    return embedder.documentPrincipal;
+  }
+  return Services.scriptSecurityManager.createContentPrincipal(
+    browsingContext.currentURI,
+    browsingContext.originAttributes
+  );
+}
+
+/**
+ * Helpers for the network error page to explain IP Protection failures.
+ */
+export const IPPNetErrorUtils = {
+  /**
+   * Whether the failed load in this browsing context went through IP
+   * Protection, so a proxy failure there is the VPN's.
+   *
+   * @param {BrowsingContext} browsingContext - context showing the error page
+   * @returns {boolean}
+   */
+  isVPNError(browsingContext) {
+    if (!lazy.IPPProxyManager.active) {
+      return false;
+    }
+    const rule = lazy.IPPSiteRuleManager.getRule(
+      principalForDocumentLoad(browsingContext),
+      browsingContext.top.browserId
+    );
+    if (rule === lazy.IPPPrincipalRules.INCLUDED) {
+      return true;
+    }
+    if (rule === lazy.IPPPrincipalRules.EXCLUDED) {
+      return false;
+    }
+    switch (lazy.IPPProxyManager.mode) {
+      case lazy.IPPMode.MODE_FULL:
+        return true;
+      case lazy.IPPMode.MODE_PB:
+        return browsingContext.usePrivateBrowsing;
+      default:
+        return false;
+    }
+  },
+};

@@ -15,6 +15,8 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   BrowserUtils: "resource://gre/modules/BrowserUtils.sys.mjs",
   HomePage: "resource:///modules/HomePage.sys.mjs",
+  IPPNetErrorUtils:
+    "moz-src:///toolkit/components/ipprotection/IPPNetErrorUtils.sys.mjs",
   SearchService: "moz-src:///toolkit/components/search/SearchService.sys.mjs",
   SearchUIUtils: "moz-src:///browser/components/search/SearchUIUtils.sys.mjs",
   SEARCH_CTA_ACTIONS: "resource://gre/modules/URLKeywordAnalyzer.sys.mjs",
@@ -677,6 +679,8 @@ export class NetErrorParent extends EscapablePageParent {
       }
       case "SearchCTA:GetInfo":
         return this.getSearchCTAInfo(message.data.url);
+      case "IPP:IsVPNError":
+        return lazy.IPPNetErrorUtils.isVPNError(this.browsingContext);
       case "SearchCTA:Search":
         this.performSearchCTASearch(message.data.query);
         break;

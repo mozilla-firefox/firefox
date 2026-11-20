@@ -79,7 +79,6 @@ add_task(async function test_registered_ssl_error() {
         errorCodeString: "SSL_ERROR_RX_RECORD_TOO_LONG",
         gErrorCode: "nssFailure2",
         noConnectivity: false,
-        vpnActive: false,
       }),
       "SSL_ERROR_RX_RECORD_TOO_LONG",
       "Should resolve to the registered error, not fall back to nssFailure2"
