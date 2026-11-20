@@ -1,8 +1,6 @@
 // META: title=Sandboxed iframe top window close
 // META: script=/common/get-host-info.sub.js
 
-// Tentative because of https://github.com/whatwg/html/pull/12960
-
 'use strict';
 
 const IFRAME_PATH = '/html/semantics/embedded-content/the-iframe-element/resources/sandbox-top-close-iframe.html';
