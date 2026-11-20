@@ -553,7 +553,6 @@ Http3WebTransportSession::OnIncomingWebTransportStream(
 }
 
 void Http3WebTransportSession::SendDatagram(nsTArray<uint8_t>&& aData,
-                                            uint64_t aTrackingId,
                                             uint64_t aSendGroupId,
                                             int64_t aSendOrder,
                                             TimeStamp aTimestamp) {
@@ -586,8 +585,7 @@ void Http3WebTransportSession::SendDatagram(nsTArray<uint8_t>&& aData,
   //
   // This means the datagram is actually transmitted after one event loop
   // cycle (the async dispatch in ForceSend/MaybeForceSendIO).
-  mSession->SendDatagram(this, aData, aTrackingId, aSendGroupId, aSendOrder,
-                         aTimestamp);
+  mSession->SendDatagram(this, aData, aSendGroupId, aSendOrder, aTimestamp);
   mSession->StreamHasDataToWrite(this);
 }
 
@@ -650,6 +648,18 @@ void Http3WebTransportSession::SetDatagramMaxAge(double aMaxAge) {
   }
 
   mSession->SetDatagramMaxAge(mStreamId, aMaxAge);
+}
+
+bool Http3WebTransportSession::GetDatagramQueueCapacity(
+    size_t* aRemainingBytes, size_t* aQueuedDatagrams,
+    size_t* aMaxQueuedBytes) {
+  MOZ_ASSERT(OnSocketThread(), "not on socket thread");
+  if (mRecvState != ACTIVE) {
+    return false;
+  }
+
+  return mSession->GetDatagramQueueCapacity(mStreamId, aRemainingBytes,
+                                            aQueuedDatagrams, aMaxQueuedBytes);
 }
 
 bool Http3WebTransportSession::GetDatagramSessionStats(uint64_t* aSent,
@@ -752,20 +762,6 @@ nsresult Http3WebTransportSession::RegisterSendGroup(uint64_t aGroupId) {
     return NS_ERROR_NOT_AVAILABLE;
   }
   return mSession->RegisterWebTransportSendGroup(mStreamId, aGroupId);
-}
-
-void Http3WebTransportSession::OnOutgoingDatagramOutCome(
-    uint64_t aId, WebTransportSessionEventListener::DatagramOutcome aOutCome) {
-  MOZ_ASSERT(OnSocketThread(), "not on socket thread");
-  LOG(("Http3WebTransportSession::OnOutgoingDatagramOutCome this=%p id=%" PRIx64
-       ", outCome=%d mRecvState=%d",
-       this, aId, static_cast<uint32_t>(aOutCome), mRecvState));
-  RefPtr<WebTransportSessionEventListener> listener = GetListener();
-  if (mRecvState != ACTIVE || !listener || !aId) {
-    return;
-  }
-
-  listener->OnOutgoingDatagramOutCome(aId, aOutCome);
 }
 
 void Http3WebTransportSession::

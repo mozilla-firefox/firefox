@@ -3332,51 +3332,19 @@ nsresult Http3Session::CreateWebTransportStream(
 }
 
 void Http3Session::SendDatagram(Http3WebTransportSession* aSession,
-                                nsTArray<uint8_t>& aData, uint64_t aTrackingId,
-                                uint64_t aSendGroupId, int64_t aSendOrder,
-                                TimeStamp aTimestamp) {
+                                nsTArray<uint8_t>& aData, uint64_t aSendGroupId,
+                                int64_t aSendOrder, TimeStamp aTimestamp) {
   // Taken as late as possible, so time spent getting here counts too.
   uint64_t ageUs = static_cast<uint64_t>(
       std::max(0.0, (TimeStamp::Now() - aTimestamp).ToMicroseconds()));
-  bool belowHighWaterMark = false;
+  // Sent untracked: the sent/expired/dropped outcome is read back in
+  // aggregate via GetDatagramSessionStats() rather than reported per
+  // datagram, so there is nothing to forward to aSession here.
   nsresult rv = mHttp3Connection->WebTransportSendDatagram(
-      aSession->StreamId(), aData, aTrackingId, &belowHighWaterMark,
-      aSendGroupId, aSendOrder, ageUs);
-  LOG(("Http3Session::SendDatagram %p res=%" PRIx32
-       " belowHWM=%d, sendGroup=%" PRIu64 ", sendOrder=%" PRId64,
-       this, static_cast<uint32_t>(rv), belowHighWaterMark, aSendGroupId,
-       aSendOrder));
-
-  // Settle the write as soon as neqo has accepted or refused the datagram,
-  // whether or not the queue is above its high water mark.  neqo reports no
-  // later outcome for a queued datagram that expires or is evicted, and
-  // Http3Client doesn't forward the ones it does report, so a write left
-  // waiting for one would never settle, and content would stop writing once
-  // outgoingMaxBufferedDatagrams of them were outstanding.
-  //
-  // This knowingly departs from writeDatagrams
-  // (https://w3c.github.io/webtransport/#writedatagrams), which holds a write
-  // made while the send queue is full until queued datagrams are dequeued;
-  // bug 1818883 restores backpressure by pacing writes against neqo's queue
-  // capacity.
-  if (aTrackingId && NS_SUCCEEDED(rv)) {
-    aSession->OnOutgoingDatagramOutCome(
-        aTrackingId, WebTransportSessionEventListener::DatagramOutcome::SENT);
-  }
-
-  if (aTrackingId && NS_FAILED(rv)) {
-    WebTransportSessionEventListener::DatagramOutcome outcome;
-    if (rv == NS_ERROR_NOT_AVAILABLE) {
-      outcome = WebTransportSessionEventListener::DatagramOutcome::
-          DROPPED_TOO_MUCH_DATA;
-    } else if (rv == NS_BASE_STREAM_WOULD_BLOCK) {
-      outcome =
-          WebTransportSessionEventListener::DatagramOutcome::DROPPED_QUEUE_FULL;
-    } else {
-      outcome = WebTransportSessionEventListener::DatagramOutcome::UNKNOWN;
-    }
-    aSession->OnOutgoingDatagramOutCome(aTrackingId, outcome);
-  }
+      aSession->StreamId(), aData, aSendGroupId, aSendOrder, ageUs);
+  LOG(("Http3Session::SendDatagram %p res=%" PRIx32 ", sendGroup=%" PRIu64
+       ", sendOrder=%" PRId64,
+       this, static_cast<uint32_t>(rv), aSendGroupId, aSendOrder));
 }
 
 uint64_t Http3Session::MaxDatagramSize(uint64_t aSessionId) {
@@ -3400,6 +3368,15 @@ void Http3Session::SetDatagramMaxBufferedDatagrams(
        aSessionId, aMaxBufferedDatagrams));
   (void)mHttp3Connection->WebTransportSetDatagramMaxBufferedDatagrams(
       aSessionId, aMaxBufferedDatagrams);
+}
+
+bool Http3Session::GetDatagramQueueCapacity(uint64_t aSessionId,
+                                            size_t* aRemainingBytes,
+                                            size_t* aQueuedDatagrams,
+                                            size_t* aMaxQueuedBytes) {
+  nsresult rv = mHttp3Connection->WebTransportDatagramQueueCapacity(
+      aSessionId, aRemainingBytes, aQueuedDatagrams, aMaxQueuedBytes);
+  return NS_SUCCEEDED(rv);
 }
 
 bool Http3Session::GetDatagramSessionStats(uint64_t aSessionId, uint64_t* aSent,

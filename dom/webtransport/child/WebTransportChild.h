@@ -16,7 +16,7 @@ class WebTransport;
 
 class WebTransportChild : public PWebTransportChild {
  public:
-  NS_INLINE_DECL_REFCOUNTING(WebTransportChild)
+  NS_INLINE_DECL_REFCOUNTING(WebTransportChild, override)
   explicit WebTransportChild(WebTransport* aTransport)
       : mTransport(aTransport) {}
 
@@ -49,7 +49,10 @@ class WebTransportChild : public PWebTransportChild {
   ::mozilla::ipc::IPCResult RecvIncomingDatagram(
       nsTArray<uint8_t>&& aData, const TimeStamp& aRecvTimeStamp);
 
-  ::mozilla::ipc::IPCResult RecvDatagramReady(const uint64_t& aDatagramId);
+  ::mozilla::ipc::IPCResult RecvDatagramCapacity(
+      const uint64_t& aCumulativeDatagrams, const uint64_t& aCumulativeBytes,
+      const uint64_t& aSentDelta, const uint64_t& aExpiredDelta,
+      const uint64_t& aDroppedDelta, const uint64_t& aDatagramPrefixBytes);
 
   ::mozilla::ipc::IPCResult RecvDraining();
 

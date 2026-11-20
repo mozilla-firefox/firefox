@@ -285,12 +285,6 @@ NS_IMETHODIMP MockWebTransportSessionEventListener::OnMaxDatagramSize(
 }
 
 NS_IMETHODIMP
-MockWebTransportSessionEventListener::OnOutgoingDatagramOutCome(
-    uint64_t aId, WebTransportSessionEventListener::DatagramOutcome aOutCome) {
-  return NS_OK;
-}
-
-NS_IMETHODIMP
 MockWebTransportSessionEventListener::GetAnticipatedConcurrentIncomingStreams(
     uint16_t* aUni, uint16_t* aBidi) {
   *aUni = 0;
@@ -1144,8 +1138,7 @@ TEST(TestHttp2WebTransport, SendAndReceiveDatagram)
   expectedData.AppendElements(mockData);
 
   // Send datagram from client to server
-  client->Session()->SendDatagram(std::move(mockData), 1, 0, 0,
-                                  TimeStamp::Now());
+  client->Session()->SendDatagram(std::move(mockData), 0, 0, TimeStamp::Now());
   ServerProcessCapsules(server, client);
 
   // Verify the server received the correct datagram capsule

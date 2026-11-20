@@ -28,7 +28,6 @@ struct BidirectionalStream {
 };
 
 struct OutgoingDatagram {
-  uint64_t datagramId;
   uint8_t[] data;
   // When the content process created this datagram (for outgoingMaxAge
   // calculation). Per-datagram rather than per-message for the same reason
@@ -173,11 +172,38 @@ async protocol PWebTransport
   async IncomingDatagram(uint8_t[] data, TimeStamp receivedTime);
 
   /**
-  * Notify child that a datagram is ready (sent or dropped)
-  * This allows the content process to resolve the corresponding promise
-  * @param datagramId the ID of the datagram that was sent/dropped
+  * Aggregated outgoing-datagram feedback, sent after the parent forwards a
+  * batch to neqo. Datagrams are sent untracked -- nothing here identifies
+  * an individual one -- so write() promises are paced by cumulativeDatagrams/
+  * cumulativeBytes instead of a per-datagram round trip, and the sent/
+  * expired/dropped deltas feed the child's own running counters instead of
+  * per-datagram outcomes.
+  *
+  * cumulativeDatagrams/cumulativeBytes are MAX_DATA-style: cumulative
+  * counts of datagrams/bytes the child may now consider paced-through since
+  * the session began, not deltas, so a message processed late relative to
+  * another is still correct -- the child only ever raises its limits.
+  *
+  * sentDelta/expiredDelta/droppedDelta are true deltas since the last
+  * DatagramCapacity, added to running totals -- safe because a single
+  * actor's IPC messages are ordered and reliable up to actor death, which
+  * is itself handled separately (see WebTransportChild::ActorDestroy).
+  * expiredDelta covers both expiry sites: neqo's own outgoingMaxAge queue
+  * and the parent's own arrival-staleness drop, which neqo cannot see.
+  *
+  * @param cumulativeDatagrams cumulative number of datagrams paced-through
+  * @param cumulativeBytes cumulative bytes across those datagrams
+  * @param sentDelta datagrams handed to the QUIC layer since the last message
+  * @param expiredDelta datagrams dropped for exceeding outgoingMaxAge
+  * @param droppedDelta datagrams evicted for queue room, or refused at the
+  *   QUIC layer for another reason (e.g. exceeding the connection's
+  *   datagram size limit)
+  * @param datagramPrefixBytes per-datagram bytes neqo's queue charges on top
+  *   of the payload and its fixed overhead (see DatagramPrefixBytes())
   */
-  async DatagramReady(uint64_t datagramId);
+  async DatagramCapacity(uint64_t cumulativeDatagrams, uint64_t cumulativeBytes,
+                         uint64_t sentDelta, uint64_t expiredDelta,
+                         uint64_t droppedDelta, uint64_t datagramPrefixBytes);
 
   /**
   * Notify child of the negotiated protocol and HTTP response headers

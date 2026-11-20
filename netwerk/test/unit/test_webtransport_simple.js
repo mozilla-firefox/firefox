@@ -65,10 +65,6 @@ add_task(async function test_wt_datagram() {
   let pSize = new Promise(resolve => {
     listener.onMaxDatagramSize = resolve;
   });
-  let pOutcome = new Promise(resolve => {
-    listener.onDatagramOutcome = resolve;
-  });
-
   webTransport.asyncConnect(
     NetUtil.newURI(`https://${host}/success`),
     true,
@@ -87,33 +83,13 @@ add_task(async function test_wt_datagram() {
   let rawData = new Uint8Array(size);
   rawData.fill(42);
 
-  webTransport.sendDatagram(rawData, 1, 0, 0);
-  let { id, outcome } = await pOutcome;
-  Assert.equal(id, 1);
-  Assert.equal(outcome, Ci.WebTransportSessionEventListener.SENT);
+  webTransport.sendDatagram(rawData, 0, 0);
 
   let chan = makeChan(`https://${host}/get_webtransport_datagram`);
   let [req, buffer] = await channelOpenPromise(chan);
   Assert.equal(req.protocolVersion, "h3");
 
   Assert.deepEqual(bytesFromString(buffer), rawData);
-
-  webTransport.getMaxDatagramSize();
-  size = await pSize;
-  info("max size:" + size);
-
-  rawData = new Uint8Array(size + 1);
-  webTransport.sendDatagram(rawData, 2, 0, 0);
-
-  pOutcome = new Promise(resolve => {
-    listener.onDatagramOutcome = resolve;
-  });
-  ({ id, outcome } = await pOutcome);
-  Assert.equal(id, 2);
-  Assert.equal(
-    outcome,
-    Ci.WebTransportSessionEventListener.DROPPED_TOO_MUCH_DATA
-  );
 
   webTransport.closeSession(0, "");
 });
