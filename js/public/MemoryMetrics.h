@@ -772,7 +772,7 @@ struct RealmStats {
   MACRO(Other, NonHeap, baselineData)           \
   MACRO(Other, MallocHeap, allocSites)          \
   MACRO(Other, MallocHeap, cacheIRStubs)        \
-  MACRO(Other, MallocHeap, ionData)             \
+  MACRO(Other, NonHeap, ionData)                \
   MACRO(Other, MallocHeap, jitScripts)          \
   MACRO(Other, MallocHeap, realmObject)         \
   MACRO(Other, MallocHeap, realmTables)         \
