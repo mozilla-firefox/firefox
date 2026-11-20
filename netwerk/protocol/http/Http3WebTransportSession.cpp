@@ -573,24 +573,12 @@ void Http3WebTransportSession::SendDatagram(nsTArray<uint8_t>&& aData,
     return;
   }
 
-  // SendDatagram() enqueues the datagram into neqo's per-session queue but
-  // does not send it immediately. The datagram is moved to the QUIC send
-  // queue during process_output() (called from ProcessOutput() in
-  // Http3Session::SendData()).
-  //
-  // StreamHasDataToWrite() triggers the chain:
-  //   StreamReadyToWrite() -> ForceSend() -> HttpConnectionUDP::ForceSend()
-  //     -> MaybeForceSendIO() -> [async dispatch] -> SendData()
-  //     -> ProcessOutput() -> neqo process_output()
-  //
-  // This means the datagram is actually transmitted after one event loop
-  // cycle (the async dispatch in ForceSend/MaybeForceSendIO).
+  // Enqueues into neqo's per-session queue and schedules a SendData(), which
+  // runs neqo's process_output(), for the next event loop turn.
   if (NS_FAILED(mSession->SendDatagram(this, aData, aSendGroupId, aSendOrder,
                                        aTimestamp))) {
     mFailedOutgoingDatagrams++;
-    return;
   }
-  mSession->StreamHasDataToWrite(this);
 }
 
 void Http3WebTransportSession::OnDatagramReceived(nsTArray<uint8_t>&& aData) {

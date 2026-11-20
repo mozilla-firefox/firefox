@@ -93,6 +93,10 @@ class HttpConnectionUDP final : public HttpConnectionBase,
   void NotifyDataRead();
   void NotifyDataWrite();
 
+  // ForceSend() without its kForceDelay backup timer, for data that should
+  // go out on the next event loop turn, e.g. datagrams.
+  [[nodiscard]] nsresult ForceSendNow();
+
   Http3Stats GetStats();
 
   void ResetTransaction(nsHttpTransaction* aHttpTransaction);

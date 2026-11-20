@@ -1062,6 +1062,27 @@ nsresult HttpConnectionUDP::ForceSend() {
   return MaybeForceSendIO();
 }
 
+nsresult HttpConnectionUDP::ForceSendNow() {
+  LOG(("HttpConnectionUDP::ForceSendNow [this=%p]\n", this));
+  MOZ_ASSERT(OnSocketThread(), "not on socket thread");
+
+  if (mForceSendTimer) {
+    mForceSendTimer->Cancel();
+    mForceSendTimer = nullptr;
+    mForceSendPending = false;
+  }
+  if (mForceSendPending) {
+    return NS_OK;
+  }
+  mForceSendPending = true;
+  nsresult rv =
+      DispatchToCurrent(do_AddRef(new HttpConnectionUDPForceIO(this, false)));
+  if (NS_FAILED(rv)) {
+    mForceSendPending = false;
+  }
+  return rv;
+}
+
 HttpVersion HttpConnectionUDP::Version() { return HttpVersion::v3_0; }
 
 PRIntervalTime HttpConnectionUDP::LastWriteTime() {
