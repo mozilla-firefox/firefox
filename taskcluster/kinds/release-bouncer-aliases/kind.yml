@@ -87,6 +87,7 @@ tasks:
                     firefox-esr-msix-latest-ssl: msix
                     firefox-esr-pkg-latest-ssl: pkg
                     firefox-esr-langpack-latest-ssl: langpack
+                esrXXX:
                     # ... these point to the newer branch
                     firefox-esr-next-latest-ssl: installer-ssl
                     firefox-esr-next-latest: installer
