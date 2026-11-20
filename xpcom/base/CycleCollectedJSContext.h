@@ -126,6 +126,15 @@ class MOZ_STACK_CLASS MayConsumeMicroTask {
   explicit MayConsumeMicroTask(Maybe<JS::MicroTask>&& aMicroTask)
       : mMicroTask(std::move(aMicroTask)) {}
 
+  // The task storage of a rooted MayConsumeMicroTask, so the JS engine can
+  // fill it in place.
+  template <typename T>
+  static JS::MutableHandle<Maybe<JS::MicroTask>> MicroTaskHandle(
+      JS::MutableHandle<T> aMicroTask) {
+    return JS::MutableHandle<Maybe<JS::MicroTask>>::fromMarkedLocation(
+        &aMicroTask.get().mMicroTask);
+  }
+
   Maybe<JS::MicroTask> mMicroTask;
 };
 
@@ -141,9 +150,12 @@ class MOZ_STACK_CLASS MustConsumeMicroTask : public MayConsumeMicroTask {
 
   // The only way to get a (filled) MustConsumeMicroTask is through these
   // mechanisms.
-  friend MustConsumeMicroTask DequeueNextMicroTask(JSContext* aCx);
-  friend MustConsumeMicroTask DequeueNextRegularMicroTask(JSContext* aCx);
-  friend MustConsumeMicroTask DequeueNextDebuggerMicroTask(JSContext* aCx);
+  friend void DequeueNextMicroTask(
+      JSContext* aCx, JS::MutableHandle<MustConsumeMicroTask> aMicroTask);
+  friend void DequeueNextRegularMicroTask(
+      JSContext* aCx, JS::MutableHandle<MustConsumeMicroTask> aMicroTask);
+  friend void DequeueNextDebuggerMicroTask(
+      JSContext* aCx, JS::MutableHandle<MustConsumeMicroTask> aMicroTask);
 
   ~MustConsumeMicroTask() override {
     if (!IsConsumed()) {
@@ -214,9 +226,6 @@ class MOZ_STACK_CLASS MustConsumeMicroTask : public MayConsumeMicroTask {
   }
 
  private:
-  explicit MustConsumeMicroTask(Maybe<JS::MicroTask>&& aMicroTask)
-      : MayConsumeMicroTask(std::move(aMicroTask)) {}
-
   // Used to mark a task as consumed during internal operations
   void markAsConsumed() { mMicroTask.reset(); }
 };
@@ -232,15 +241,10 @@ class MOZ_STACK_CLASS WontConsumeMicroTask : public MayConsumeMicroTask {
   WontConsumeMicroTask() = default;
 
   // The only way to get a (filled) WontConsumeMicroTask is through peeking.
-  friend WontConsumeMicroTask PeekNextMicroTask(JSContext* aCx);
+  friend void PeekNextMicroTask(
+      JSContext* aCx, JS::MutableHandle<WontConsumeMicroTask> aMicroTask);
 
   ~WontConsumeMicroTask() = default;
-
- private:
-  explicit WontConsumeMicroTask(Maybe<JS::MicroTask>&& aMicroTask)
-      : MayConsumeMicroTask(std::move(aMicroTask)) {
-    MOZ_RELEASE_ASSERT(mMicroTask.isSome());
-  }
 };
 
 class SuppressedMicroTaskList final : public MicroTaskRunnable {
@@ -310,11 +314,18 @@ class FinalizationRegistryCleanup {
 [[nodiscard]] bool EnqueueDebugMicroTask(
     JSContext* aCx, already_AddRefed<MicroTaskRunnable> aRunnable);
 
-MustConsumeMicroTask DequeueNextMicroTask(JSContext* aCx);
-MustConsumeMicroTask DequeueNextRegularMicroTask(JSContext* aCx);
-MustConsumeMicroTask DequeueNextDebuggerMicroTask(JSContext* aCx);
+// These fill |aMicroTask| in place, which avoids copying the task. A dequeued
+// task can only be stored over a consumed one.
+void DequeueNextMicroTask(JSContext* aCx,
+                          JS::MutableHandle<MustConsumeMicroTask> aMicroTask);
+void DequeueNextRegularMicroTask(
+    JSContext* aCx, JS::MutableHandle<MustConsumeMicroTask> aMicroTask);
+void DequeueNextDebuggerMicroTask(
+    JSContext* aCx, JS::MutableHandle<MustConsumeMicroTask> aMicroTask);
 
-WontConsumeMicroTask PeekNextMicroTask(JSContext* aCx);
+// Peeking requires that there is a task to peek at.
+void PeekNextMicroTask(JSContext* aCx,
+                       JS::MutableHandle<WontConsumeMicroTask> aMicroTask);
 
 class CycleCollectedJSContext : dom::PerThreadAtomCache, public JS::JobQueue {
   friend class CycleCollectedJSRuntime;

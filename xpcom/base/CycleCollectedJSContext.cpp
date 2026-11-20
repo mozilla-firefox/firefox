@@ -370,7 +370,7 @@ class CycleCollectedJSContext::SavedMicroTaskQueue
     JS::Rooted<MustConsumeMicroTask> suppressedTasks(cx);
     MOZ_ASSERT(JS::GetRegularMicroTaskCount(cx) <= 1);
     if (JS::HasRegularMicroTasks(cx)) {
-      suppressedTasks = DequeueNextRegularMicroTask(cx);
+      DequeueNextRegularMicroTask(cx, &suppressedTasks);
       MOZ_ASSERT(MaybeUnwrapTaskToRunnable(suppressedTasks) ==
                  ccjs->mSuppressedMicroTaskList);
     }
@@ -1074,8 +1074,8 @@ void RunJSMicroTask(JSContext* aCx, CycleCollectedJSContext* aCCJS,
     }
 
     do {
-      JS::RootedField<WontConsumeMicroTask, 4> peekTask(roots,
-                                                        PeekNextMicroTask(aCx));
+      JS::RootedField<WontConsumeMicroTask, 4> peekTask(roots);
+      PeekNextMicroTask(aCx, &peekTask);
 
       // We can only coalesce JS tasks.
       if (!peekTask.get().IsJSMicroTask()) {
@@ -1120,7 +1120,7 @@ void RunJSMicroTask(JSContext* aCx, CycleCollectedJSContext* aCCJS,
       }
 
       // Ok, we're good to run again.
-      aMicroTask.set(DequeueNextMicroTask(aCx));
+      DequeueNextMicroTask(aCx, aMicroTask);
 
       // Notify the JS engine if the queue is now empty, enabling optimizations
       // like skipping await microtask creation for resolved promises.
@@ -1160,20 +1160,32 @@ void RunJSMicroTask(JSContext* aCx, CycleCollectedJSContext* aCCJS,
   }
 }
 
-MustConsumeMicroTask DequeueNextMicroTask(JSContext* aCx) {
-  return MustConsumeMicroTask(JS::DequeueNextMicroTask(aCx));
+void DequeueNextMicroTask(JSContext* aCx,
+                          JS::MutableHandle<MustConsumeMicroTask> aMicroTask) {
+  // We musn't clobber an unconsumed value.
+  MOZ_ASSERT(aMicroTask.get().IsConsumed());
+  JS::DequeueNextMicroTask(aCx,
+                           MustConsumeMicroTask::MicroTaskHandle(aMicroTask));
 }
 
-MustConsumeMicroTask DequeueNextRegularMicroTask(JSContext* aCx) {
-  return MustConsumeMicroTask(JS::DequeueNextRegularMicroTask(aCx));
+void DequeueNextRegularMicroTask(
+    JSContext* aCx, JS::MutableHandle<MustConsumeMicroTask> aMicroTask) {
+  MOZ_ASSERT(aMicroTask.get().IsConsumed());
+  JS::DequeueNextRegularMicroTask(
+      aCx, MustConsumeMicroTask::MicroTaskHandle(aMicroTask));
 }
 
-MustConsumeMicroTask DequeueNextDebuggerMicroTask(JSContext* aCx) {
-  return MustConsumeMicroTask(JS::DequeueNextDebuggerMicroTask(aCx));
+void DequeueNextDebuggerMicroTask(
+    JSContext* aCx, JS::MutableHandle<MustConsumeMicroTask> aMicroTask) {
+  MOZ_ASSERT(aMicroTask.get().IsConsumed());
+  JS::DequeueNextDebuggerMicroTask(
+      aCx, MustConsumeMicroTask::MicroTaskHandle(aMicroTask));
 }
 
-WontConsumeMicroTask PeekNextMicroTask(JSContext* aCx) {
-  return WontConsumeMicroTask(JS::PeekNextMicroTask(aCx));
+void PeekNextMicroTask(JSContext* aCx,
+                       JS::MutableHandle<WontConsumeMicroTask> aMicroTask) {
+  JS::PeekNextMicroTask(aCx, WontConsumeMicroTask::MicroTaskHandle(aMicroTask));
+  MOZ_RELEASE_ASSERT(aMicroTask.get().mMicroTask.isSome());
 }
 
 static bool IsSuppressed(JS::Handle<MustConsumeMicroTask> aTask) {
@@ -1248,7 +1260,7 @@ bool CycleCollectedJSContext::PerformMicroTaskCheckPoint(bool aForce) {
   // Make sure we don't leak tasks into the Gecko MicroTask queues.
   JS::Rooted<MustConsumeMicroTask> job(cx);
   while (JS::HasAnyMicroTasks(cx)) {
-    job.set(DequeueNextMicroTask(cx));
+    DequeueNextMicroTask(cx, &job);
 
     // To avoid us accidentally re-enqueing a SuppressionMicroTaskList in
     // itself, we determine here if the job is actually the suppression task
@@ -1336,7 +1348,7 @@ void CycleCollectedJSContext::PerformDebuggerMicroTaskCheckpoint() {
 
   JS::Rooted<MustConsumeMicroTask> job(cx);
   while (JS::HasDebuggerMicroTasks(cx)) {
-    job.set(DequeueNextDebuggerMicroTask(cx));
+    DequeueNextDebuggerMicroTask(cx, &job);
 
     // MG:XXX: Need to add a JS::JobQueueIsEmpty call here.
 
