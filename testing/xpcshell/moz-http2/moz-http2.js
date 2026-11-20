@@ -489,17 +489,6 @@ function handleRequestImpl(req, res) {
       res.end("WHAT?");
       return;
     }
-  } else if (u.pathname === "/websocket") {
-    res.setHeader("Upgrade", "websocket");
-    res.setHeader("Connection", "Upgrade");
-    var wshash = crypto.createHash("sha1");
-    wshash.update(req.headers["sec-websocket-key"]);
-    wshash.update("258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
-    let key = wshash.digest("base64");
-    res.setHeader("Sec-WebSocket-Accept", key);
-    res.writeHead(101);
-    res.end("something....");
-    return;
   } else if (u.pathname === "/.well-known/http-opportunistic") {
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Content-Type", "application/json");
@@ -550,24 +539,6 @@ function handleRequestImpl(req, res) {
     content = "not pushed";
   } else if (u.pathname === "/diskcache") {
     content = "this was pulled via h2";
-  }
-
-  // For test_header_Server_Timing.js
-  else if (u.pathname === "/server-timing") {
-    res.setHeader("Content-Type", "text/plain");
-    res.setHeader("Content-Length", "12");
-    res.setHeader("Trailer", "Server-Timing");
-    res.setHeader(
-      "Server-Timing",
-      "metric; dur=123.4; desc=description, metric2; dur=456.78; desc=description1"
-    );
-    res.write("data reached");
-    res.addTrailers({
-      "Server-Timing":
-        "metric3; dur=789.11; desc=description2, metric4; dur=1112.13; desc=description3",
-    });
-    res.end();
-    return;
   } else if (u.pathname.startsWith("/invalid_response_header/")) {
     // response headers with invalid characters in the name / value (RFC7540 Sec 10.3)
     let kind = u.pathname.slice("/invalid_response_header/".length);
