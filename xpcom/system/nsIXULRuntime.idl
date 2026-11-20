@@ -245,12 +245,6 @@ interface nsIXULRuntime : nsISupports
   readonly attribute uint32_t maxWebProcessCount;
 
   /**
-   * The current e10s-multi experiment number. Set dom.ipc.multiOptOut to (at
-   * least) this to disable it until the next experiment.
-   */
-  const uint32_t E10S_MULTI_EXPERIMENT = 1;
-
-  /**
    * If true, the accessibility service is running.
    */
   readonly attribute boolean accessibilityEnabled;

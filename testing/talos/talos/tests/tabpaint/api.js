@@ -26,7 +26,7 @@ ChromeUtils.defineESModuleGetters(this, {
 });
 
 const REDUCE_MOTION_PREF = "ui.prefersReducedMotion";
-const MULTI_OPT_OUT_PREF = "dom.ipc.multiOptOut";
+const PROCESS_COUNT_PREF = "dom.ipc.processCount";
 
 const MESSAGES = ["TabPaint:Go", "TabPaint:Painted"];
 
@@ -48,10 +48,7 @@ this.tabpaint = class extends ExtensionAPI {
     Services.mm.loadFrameScript(this.framescriptURL, true);
 
     Services.prefs.setIntPref(REDUCE_MOTION_PREF, 1);
-    Services.prefs.setIntPref(
-      MULTI_OPT_OUT_PREF,
-      Services.appinfo.E10S_MULTI_EXPERIMENT
-    );
+    Services.prefs.setIntPref(PROCESS_COUNT_PREF, 1);
 
     /**
      * We'll store a callback here to be fired once the target page
@@ -68,7 +65,7 @@ this.tabpaint = class extends ExtensionAPI {
     Services.mm.removeDelayedFrameScript(this.framescriptURL);
 
     Services.prefs.clearUserPref(REDUCE_MOTION_PREF);
-    Services.prefs.clearUserPref(MULTI_OPT_OUT_PREF);
+    Services.prefs.clearUserPref(PROCESS_COUNT_PREF);
   }
 
   receiveMessage(msg) {
