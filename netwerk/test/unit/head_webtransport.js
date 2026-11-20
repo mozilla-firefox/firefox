@@ -39,7 +39,6 @@ WebTransportListener.prototype = {
       this.onDatagram(data);
     }
   },
-  onOutgoingDatagramSpaceAvailable() {},
   onMaxDatagramSize(size) {
     info("max datagram size: " + size);
     if (this.onMaxDatagramSize) {

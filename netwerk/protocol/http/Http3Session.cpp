@@ -766,19 +766,6 @@ nsresult Http3Session::ProcessEvents() {
         LOG(("Http3Session::ProcessEvents - StreamCreatable"));
         ProcessPending();
         break;
-      case Http3Event::Tag::OutgoingDatagramSpaceAvailable:
-        LOG(("Http3Session::ProcessEvents - OutgoingDatagramSpaceAvailable"));
-        // Connection-scoped: neqo does not say which session drained.
-        // The listener only sends IPC and never closes a session, so
-        // mWebTransportSessions can't change here.  If that stops being true,
-        // iterate mWebTransportSessions.Clone() instead.
-        for (const auto& stream : mWebTransportSessions) {
-          if (Http3WebTransportSession* session =
-                  stream->GetHttp3WebTransportSession()) {
-            session->NotifyOutgoingDatagramSpaceAvailable();
-          }
-        }
-        break;
       case Http3Event::Tag::AuthenticationNeeded:
         LOG(("Http3Session::ProcessEvents - AuthenticationNeeded %d",
              mAuthenticationStarted));
@@ -3400,14 +3387,6 @@ void Http3Session::SetDatagramMaxBufferedDatagrams(
        aSessionId, aMaxBufferedDatagrams));
   (void)mHttp3Connection->WebTransportSetDatagramMaxBufferedDatagrams(
       aSessionId, aMaxBufferedDatagrams);
-}
-
-bool Http3Session::GetDatagramSessionStats(uint64_t aSessionId, uint64_t* aSent,
-                                           uint64_t* aExpired,
-                                           uint64_t* aDropped) {
-  nsresult rv = mHttp3Connection->WebTransportDatagramSessionStats(
-      aSessionId, aSent, aExpired, aDropped);
-  return NS_SUCCEEDED(rv);
 }
 
 void Http3Session::SetDatagramMaxAge(uint64_t aSessionId, double aMaxAge) {

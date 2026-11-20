@@ -346,40 +346,26 @@ bool WebTransportSessionProxy::CloseSessionAndGetStats(
     mozilla::dom::WebTransportStatsData& aStats) {
   MOZ_ASSERT(OnSocketThread());
   LOG(("WebTransportSessionProxy::CloseSessionAndGetStats"));
-  RefPtr<WebTransportSessionBase> session;
-  {
-    MutexAutoLock lock(mMutex);
-    if (mState != WebTransportSessionProxyState::ACTIVE ||
-        !mWebTransportSession) {
-      return false;
-    }
-    session = mWebTransportSession;
+  MutexAutoLock lock(mMutex);
+
+  if (mState != WebTransportSessionProxyState::ACTIVE ||
+      !mWebTransportSession) {
+    return false;
   }
 
-  Http3WebTransportSession* http3Session =
-      session->GetHttp3WebTransportSession();
-  return http3Session &&
-         http3Session->CloseSessionAndGetStats(aStatus, aReason, aStats);
-}
+  RefPtr<WebTransportSessionBase> session = mWebTransportSession;
 
-bool WebTransportSessionProxy::GetDatagramSessionStats(uint64_t* aSent,
-                                                       uint64_t* aExpired,
-                                                       uint64_t* aDropped) {
-  MOZ_ASSERT(OnSocketThread());
-  RefPtr<WebTransportSessionBase> session;
   {
-    MutexAutoLock lock(mMutex);
-    if (mState != WebTransportSessionProxyState::ACTIVE ||
-        !mWebTransportSession) {
-      return false;
+    MutexAutoUnlock unlock(mMutex);
+    Http3WebTransportSession* http3Session =
+        session->GetHttp3WebTransportSession();
+    if (http3Session &&
+        http3Session->CloseSessionAndGetStats(aStatus, aReason, aStats)) {
+      return true;
     }
-    session = mWebTransportSession;
   }
 
-  Http3WebTransportSession* http3Session =
-      session->GetHttp3WebTransportSession();
-  return http3Session &&
-         http3Session->GetDatagramSessionStats(aSent, aExpired, aDropped);
+  return false;
 }
 
 NS_IMETHODIMP
@@ -1791,54 +1777,6 @@ NS_IMETHODIMP WebTransportSessionProxy::OnDatagramReceivedInternal(
 
   NotifyDatagramReceived(std::move(aData));
   return NS_OK;
-}
-
-void WebTransportSessionProxy::NotifyOutgoingDatagramSpaceAvailable() {
-  nsCOMPtr<WebTransportSessionEventListener> listener;
-  {
-    MutexAutoLock lock(mMutex);
-    MOZ_ASSERT(mTarget->IsOnCurrentThread());
-
-    if (mState != WebTransportSessionProxyState::ACTIVE || !mListener) {
-      return;
-    }
-    listener = mListener;
-  }
-
-  listener->OnOutgoingDatagramSpaceAvailable();
-}
-
-NS_IMETHODIMP
-WebTransportSessionProxy::OnOutgoingDatagramSpaceAvailableInternal() {
-  MOZ_ASSERT(OnSocketThread());
-
-  {
-    MutexAutoLock lock(mMutex);
-    // Ordered with the datagrams it relates to, like OnDatagramsFlushInternal.
-    if (!mStopRequestCalled) {
-      mPendingEvents.AppendElement([self = RefPtr{this}]() {
-        self->OnOutgoingDatagramSpaceAvailableInternal();
-      });
-      return NS_OK;
-    }
-
-    if (!mTarget->IsOnCurrentThread()) {
-      return mTarget->Dispatch(NS_NewRunnableFunction(
-          "WebTransportSessionProxy::OnOutgoingDatagramSpaceAvailable",
-          [self = RefPtr{this}]() {
-            self->NotifyOutgoingDatagramSpaceAvailable();
-          }));
-    }
-  }
-
-  // Retakes mMutex: NotifyOutgoingDatagramSpaceAvailable() also runs on its
-  // own from the runnable dispatched above.
-  NotifyOutgoingDatagramSpaceAvailable();
-  return NS_OK;
-}
-
-NS_IMETHODIMP WebTransportSessionProxy::OnOutgoingDatagramSpaceAvailable() {
-  return NS_ERROR_NOT_IMPLEMENTED;
 }
 
 NS_IMETHODIMP WebTransportSessionProxy::OnDatagramReceived(
