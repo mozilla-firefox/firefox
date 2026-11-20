@@ -10,10 +10,8 @@ registerCleanupFunction(async () => {
 let httpsUri;
 
 add_task(async function setup() {
-  let h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
-  httpsUri = "https://foo.example.com:" + h2Port + "/";
+  let h2Server = await create_h2_server();
+  httpsUri = "https://foo.example.com:" + h2Server.port() + "/";
 
   await http3_setup_tests("h3", true);
 });

@@ -7,6 +7,7 @@
 
 const {
   HTTP3Server: HeadHTTP3Server,
+  NodeHTTP2Server: HeadNodeHTTP2Server,
   NodeHTTP2ProxyServer: HeadNodeHTTP2ProxyServer,
   startOnSharedPort: headStartOnSharedPort,
 } = ChromeUtils.importESModule("resource://testing-common/NodeServer.sys.mjs");
@@ -23,6 +24,30 @@ async function with_http3_server(selectPort) {
 
 async function create_h3_server() {
   return with_http3_server((_, h3Port) => h3Port);
+}
+
+// Starts an HTTP/2 server, stopped at cleanup. |handlers| maps each path to
+// its handler, and defaults to answering "/" with a 200.
+async function create_h2_server(
+  handlers = {
+    "/": (req, resp) => {
+      resp.writeHead(200, {
+        "Content-Type": "text/plain",
+        "Content-Length": 2,
+      });
+      resp.end("ok");
+    },
+  }
+) {
+  // The server installs its CA cert, which needs a profile.
+  do_get_profile();
+  const server = new HeadNodeHTTP2Server();
+  await server.start();
+  registerCleanupFunction(() => server.stop());
+  for (const [path, handler] of Object.entries(handlers)) {
+    await server.registerPathHandler(path, handler);
+  }
+  return server;
 }
 
 // Also starts the HTTP/2 proxy that MASQUE falls back to, on the same port.

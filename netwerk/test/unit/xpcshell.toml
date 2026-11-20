@@ -1835,7 +1835,6 @@ skip-if = [
 ["test_tldservice_nextsubdomain.js"]
 
 ["test_tls13_disabled.js"]
-run-sequentially = ["true"] # node server exceptions dont replay well
 skip-if = [
   "os == 'android' && os_version == '14' && arch == 'x86_64'", # Bug 1982955
   "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && msix", # Bug 1808048
