@@ -66,13 +66,13 @@ add_setup(async function setup() {
 });
 
 add_task(async function test_webtransport_create() {
-  const wt = newWebTransport("https://" + host + "/success");
+  const wt = newWebTransport(`https://${host}/success`);
   await wt.ready;
   wt.close();
 });
 
 add_task(async function test_redirect_wt() {
-  let wt = newWebTransport("https://" + host + "/redirect");
+  let wt = newWebTransport(`https://${host}/redirect`);
   const e1 = await wt.ready.catch(e => e);
   const e2 = await wt.closed.catch(e => e);
 
@@ -81,7 +81,7 @@ add_task(async function test_redirect_wt() {
 });
 
 add_task(async function test_reject_wt() {
-  let wt = newWebTransport("https://" + host + "/reject");
+  let wt = newWebTransport(`https://${host}/reject`);
   const e1 = await wt.ready.catch(e => e);
   const e2 = await wt.closed.catch(e => e);
   Assert.equal(e1, "WebTransportError: WebTransport connection rejected");
@@ -89,21 +89,21 @@ add_task(async function test_reject_wt() {
 });
 
 add_task(async function test_immediate_server_close() {
-  let wt = newWebTransport("https://" + host + "/closeafter0ms");
+  let wt = newWebTransport(`https://${host}/closeafter0ms`);
   await wt.ready;
   await wt.closed;
   Assert.ok(true);
 });
 
 add_task(async function test_delayed_server_close() {
-  let wt = newWebTransport("https://" + host + "/closeafter100ms");
+  let wt = newWebTransport(`https://${host}/closeafter100ms`);
   await wt.ready;
   await wt.closed;
   Assert.ok(true);
 });
 
 add_task(async function test_wt_stream_create_bidi() {
-  let wt = newWebTransport("https://" + host + "/success");
+  let wt = newWebTransport(`https://${host}/success`);
   await wt.ready;
 
   let bds = await wt.createBidirectionalStream();
@@ -114,7 +114,7 @@ add_task(async function test_wt_stream_create_bidi() {
 });
 
 add_task(async function test_wt_stream_create_uni() {
-  let wt = newWebTransport("https://" + host + "/success");
+  let wt = newWebTransport(`https://${host}/success`);
   await wt.ready;
 
   let uds = await wt.createUnidirectionalStream();
@@ -124,7 +124,7 @@ add_task(async function test_wt_stream_create_uni() {
 });
 
 add_task(async function test_datagram_backpressure_before_connect() {
-  let wt = newWebTransport("https://" + host + "/success");
+  let wt = newWebTransport(`https://${host}/success`);
   const writer = wt.datagrams.writable.getWriter();
   const limit = wt.datagrams.outgoingMaxBufferedDatagrams;
 

@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-// Tests for new WebTransport features:
+// Basic tests for WebTransport session API features:
 // * protocol attribute
 // * draining promise
 // * createSendGroup()
@@ -13,62 +13,26 @@
 
 "use strict";
 
-var h3Port;
-var host;
-
 registerCleanupFunction(async () => {
   Services.prefs.clearUserPref("network.dns.localDomains");
   Services.prefs.clearUserPref("network.webtransport.enabled");
 });
 
-var { NetUtil } = ChromeUtils.importESModule(
-  "resource://gre/modules/NetUtil.sys.mjs"
-);
-
-function readFile(file) {
-  let fstream = Cc["@mozilla.org/network/file-input-stream;1"].createInstance(
-    Ci.nsIFileInputStream
-  );
-  fstream.init(file, -1, 0, 0);
-  let data = NetUtil.readInputStreamToString(fstream, fstream.available());
-  fstream.close();
-  return data;
-}
-
-function addCertFromFile(certdb, filename, trustString) {
-  let certFile = do_get_file(filename, false);
-  let pem = readFile(certFile)
-    .replace(/-----BEGIN CERTIFICATE-----/, "")
-    .replace(/-----END CERTIFICATE-----/, "")
-    .replace(/[\r\n]/g, "");
-  certdb.addCertFromBase64(pem, trustString);
-}
-
 add_setup(async function setup() {
-  Services.prefs.setCharPref("network.dns.localDomains", "foo.example.com");
   Services.prefs.setBoolPref("network.webtransport.enabled", true);
-
-  h3Port = Services.env.get("MOZHTTP3_PORT");
-  Assert.notEqual(h3Port, null);
-  Assert.notEqual(h3Port, "");
-  host = "foo.example.com:" + h3Port;
-  do_get_profile();
-
-  let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
-    Ci.nsIX509CertDB
-  );
-  addCertFromFile(
-    certdb,
-    "../../../../netwerk/test/unit/http2-ca.pem",
-    "CTu,u,u"
-  );
+  setupWebTransportServer();
 });
 
-add_task(async function test_protocol_attribute() {
+async function openSession() {
   const wt = newWebTransport(`https://${host}/success`);
   await wt.ready;
+  return wt;
+}
 
-  // Protocol attribute should be empty string when no protocols specified
+add_task(async function test_protocol_attribute() {
+  const wt = await openSession();
+
+  // [[Protocol]] is initially the empty string, and no protocols were requested.
   Assert.equal(wt.protocol, "");
 
   wt.close();
@@ -76,36 +40,35 @@ add_task(async function test_protocol_attribute() {
 });
 
 add_task(async function test_draining_promise() {
-  const wt = newWebTransport(`https://${host}/success`);
-  await wt.ready;
+  const wt = await openSession();
 
-  // Draining promise should exist
-  Assert.notEqual(wt.draining, null);
-  Assert.equal(typeof wt.draining.then, "function");
+  // The promise belongs to the window's global, so check its class rather than
+  // using instanceof against this scope's Promise.
+  Assert.equal(ChromeUtils.getClassName(wt.draining), "Promise");
 
   wt.close();
   await wt.closed;
 });
 
 add_task(async function test_createSendGroup() {
-  const wt = newWebTransport(`https://${host}/success`);
-  await wt.ready;
+  const wt = await openSession();
 
   // Create a send group
   const sendGroup = wt.createSendGroup();
-  Assert.notEqual(sendGroup, null);
+  Assert.ok(sendGroup instanceof webTransportWindow().WebTransportSendGroup);
 
   wt.close();
   await wt.closed;
 });
 
 add_task(async function test_createWritable() {
-  const wt = newWebTransport(`https://${host}/success`);
-  await wt.ready;
+  const wt = await openSession();
 
   // Create a writable datagram stream
   const writable = wt.datagrams.createWritable();
-  Assert.notEqual(writable, null);
+  Assert.ok(
+    writable instanceof webTransportWindow().WebTransportDatagramsWritable
+  );
 
   // Writable should have sendGroup and sendOrder attributes
   Assert.equal(writable.sendGroup, null);
@@ -120,8 +83,7 @@ add_task(async function test_createWritable() {
 });
 
 add_task(async function test_createWritable_with_options() {
-  const wt = newWebTransport(`https://${host}/success`);
-  await wt.ready;
+  const wt = await openSession();
 
   // Create a send group
   const sendGroup = wt.createSendGroup();
@@ -131,7 +93,9 @@ add_task(async function test_createWritable_with_options() {
     sendOrder: 100,
     sendGroup,
   });
-  Assert.notEqual(writable, null);
+  Assert.ok(
+    writable instanceof webTransportWindow().WebTransportDatagramsWritable
+  );
   Assert.equal(writable.sendOrder, 100);
   Assert.equal(writable.sendGroup, sendGroup);
 
@@ -140,8 +104,7 @@ add_task(async function test_createWritable_with_options() {
 });
 
 add_task(async function test_exportKeyingMaterial() {
-  const wt = newWebTransport(`https://${host}/success`);
-  await wt.ready;
+  const wt = await openSession();
 
   // Export keying material with an empty context
   const label = new TextEncoder().encode("test-label");
@@ -164,8 +127,7 @@ add_task(async function test_exportKeyingMaterial() {
 });
 
 add_task(async function test_getStats() {
-  const wt = newWebTransport(`https://${host}/success`);
-  await wt.ready;
+  const wt = await openSession();
 
   const stats = await wt.getStats();
   Assert.notEqual(stats, null);
@@ -209,10 +171,8 @@ add_task(async function test_getStats() {
 });
 
 add_task(async function test_sendGroup_validation() {
-  const wt1 = newWebTransport(`https://${host}/success`);
-  const wt2 = newWebTransport(`https://${host}/success`);
-  await wt1.ready;
-  await wt2.ready;
+  const wt1 = await openSession();
+  const wt2 = await openSession();
 
   // Create send group on wt1
   const sendGroup = wt1.createSendGroup();
@@ -232,8 +192,7 @@ add_task(async function test_sendGroup_validation() {
 });
 
 add_task(async function test_getStats_after_close() {
-  const wt = newWebTransport(`https://${host}/success`);
-  await wt.ready;
+  const wt = await openSession();
   wt.close();
   await wt.closed;
 
@@ -246,8 +205,7 @@ add_task(async function test_getStats_after_close() {
 });
 
 add_task(async function test_closed_state_errors() {
-  const wt = newWebTransport(`https://${host}/success`);
-  await wt.ready;
+  const wt = await openSession();
   wt.close();
   await wt.closed;
 
