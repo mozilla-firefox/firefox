@@ -758,6 +758,7 @@ Http2WebTransportSession::OnInputStreamReady(nsIAsyncInputStream* aIn) {
 
     mCapsuleParser->ProcessCapsuleData(reinterpret_cast<uint8_t*>(buffer),
                                        read);
+    mImpl->FlushIncomingDatagrams();
   }
 
   mInput->AsyncWait(this, 0, 0, nullptr);

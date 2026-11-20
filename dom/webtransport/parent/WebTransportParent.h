@@ -146,6 +146,10 @@ class WebTransportParent : public PWebTransportParent,
   // carries neqo's own count.  Must be called on the socket thread.
   void AddParentExpiredOutgoing(WebTransportStatsData& aStats) const;
 
+  // Hands whatever OnDatagramReceived() has accumulated to the child as one
+  // message. Socket thread only.
+  void FlushIncomingDatagrams();
+
   using ResolveType =
       std::tuple<const nsresult&, const uint8_t&, const uint64_t&>;
 
@@ -180,6 +184,10 @@ class WebTransportParent : public PWebTransportParent,
   // the session raises synchronously from inside it (HTTP/2 writes a datagram
   // capsule as soon as it is enqueued) defers to that batch's own sample.
   bool mInOutgoingDatagramsBatch{false};
+  // Incoming datagrams accumulated by OnDatagramReceived() for the next
+  // IncomingDatagrams message. Socket thread only.
+  nsTArray<IncomingDatagram> mPendingIncoming;
+  size_t mPendingIncomingBytes{0};
   // Resolvers for in-flight GetStats() requests; only one gather runs at a
   // time, so concurrent calls share it. Socket thread only; drained via
   // ResolvePendingGetStats().

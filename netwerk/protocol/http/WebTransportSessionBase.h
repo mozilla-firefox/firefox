@@ -82,6 +82,11 @@ class WebTransportSessionBase {
           aCallback) = 0;
   virtual void StartReading() {}
 
+  // Tells the listener that no further datagram will arrive until we return to
+  // the event loop. Call it once after each run of OnDatagramReceived() calls,
+  // so that a listener batching them for IPC knows the batch is complete.
+  void FlushIncomingDatagrams();
+
   // Tell the listener the outgoing datagram queue has room again.
   void NotifyOutgoingDatagramSpaceAvailable();
 

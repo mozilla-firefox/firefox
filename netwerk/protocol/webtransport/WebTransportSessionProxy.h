@@ -185,6 +185,7 @@ class WebTransportSessionProxy final
                             nsTArray<uint8_t>&& aData, uint64_t aSendGroupId,
                             int64_t aSendOrder, TimeStamp aTimestamp);
   void NotifyDatagramReceived(nsTArray<uint8_t>&& aData);
+  void NotifyDatagramsFlush();
   void NotifyOutgoingDatagramSpaceAvailable();
   void GetMaxDatagramSizeInternal(
       const RefPtr<WebTransportSessionBase>& aSession);

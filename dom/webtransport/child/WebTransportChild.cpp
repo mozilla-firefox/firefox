@@ -68,11 +68,25 @@ void WebTransportChild::CloseAll() {
   return IPC_OK();
 }
 
-::mozilla::ipc::IPCResult WebTransportChild::RecvIncomingDatagram(
-    nsTArray<uint8_t>&& aData, const TimeStamp& aRecvTimeStamp) {
-  if (mTransport) {
-    RefPtr<WebTransport> self(mTransport);
-    self->NewDatagramReceived(std::move(aData), aRecvTimeStamp);
+::mozilla::ipc::IPCResult WebTransportChild::RecvIncomingDatagrams(
+    nsTArray<IncomingDatagram>&& aDatagrams) {
+  if (!mTransport) {
+    return IPC_OK();
+  }
+
+  // One task per datagram, rather than handing the whole batch over inline.
+  // Each task gets a microtask checkpoint after it, which is what lets a
+  // pending read() resolve and drain the DOM queue between arrivals. Delivering
+  // a batch inline would give the burst no checkpoints at all, so with a queue
+  // bound smaller than the batch every arrival would evict its predecessor and
+  // only the last queueful would ever reach script.
+  for (auto& datagram : aDatagrams) {
+    NS_DispatchToCurrentThread(NS_NewRunnableFunction(
+        "WebTransportChild::RecvIncomingDatagrams",
+        [self = RefPtr{mTransport}, data = std::move(datagram.data()),
+         ts = datagram.receivedTime()]() mutable {
+          self->NewDatagramReceived(std::move(data), ts);
+        }));
   }
   return IPC_OK();
 }

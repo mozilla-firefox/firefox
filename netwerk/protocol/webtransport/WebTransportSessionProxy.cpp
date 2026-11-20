@@ -1775,6 +1775,21 @@ void WebTransportSessionProxy::NotifyDatagramReceived(
   listener->OnDatagramReceived(aData);
 }
 
+void WebTransportSessionProxy::NotifyDatagramsFlush() {
+  nsCOMPtr<WebTransportSessionEventListener> listener;
+  {
+    MutexAutoLock lock(mMutex);
+    MOZ_ASSERT(mTarget->IsOnCurrentThread());
+
+    if (mState != WebTransportSessionProxyState::ACTIVE || !mListener) {
+      return;
+    }
+    listener = mListener;
+  }
+
+  listener->OnDatagramsFlush();
+}
+
 NS_IMETHODIMP WebTransportSessionProxy::OnDatagramReceivedInternal(
     nsTArray<uint8_t>&& aData) {
   MOZ_ASSERT(OnSocketThread());
@@ -1800,6 +1815,30 @@ NS_IMETHODIMP WebTransportSessionProxy::OnDatagramReceivedInternal(
   }
 
   NotifyDatagramReceived(std::move(aData));
+  return NS_OK;
+}
+
+NS_IMETHODIMP WebTransportSessionProxy::OnDatagramsFlushInternal() {
+  MOZ_ASSERT(OnSocketThread());
+
+  {
+    MutexAutoLock lock(mMutex);
+    // Queue or dispatch the flush exactly like the datagrams it belongs to, so
+    // that it stays behind them.
+    if (!mStopRequestCalled) {
+      mPendingEvents.AppendElement(
+          [self = RefPtr{this}]() { self->OnDatagramsFlushInternal(); });
+      return NS_OK;
+    }
+
+    if (!mTarget->IsOnCurrentThread()) {
+      return mTarget->Dispatch(NS_NewRunnableFunction(
+          "WebTransportSessionProxy::OnDatagramsFlush",
+          [self = RefPtr{this}]() { self->NotifyDatagramsFlush(); }));
+    }
+  }
+
+  NotifyDatagramsFlush();
   return NS_OK;
 }
 
@@ -1853,6 +1892,10 @@ NS_IMETHODIMP WebTransportSessionProxy::OnOutgoingDatagramSpaceAvailable() {
 
 NS_IMETHODIMP WebTransportSessionProxy::OnDatagramReceived(
     const nsTArray<uint8_t>& aData) {
+  return NS_ERROR_NOT_IMPLEMENTED;
+}
+
+NS_IMETHODIMP WebTransportSessionProxy::OnDatagramsFlush() {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 

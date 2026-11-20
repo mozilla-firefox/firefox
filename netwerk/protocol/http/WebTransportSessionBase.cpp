@@ -28,6 +28,18 @@ WebTransportSessionBase::GetListener() {
   return do_AddRef(mListener);
 }
 
+void WebTransportSessionBase::FlushIncomingDatagrams() {
+  RefPtr<WebTransportSessionEventListener> baseListener = GetListener();
+  if (!baseListener) {
+    return;
+  }
+
+  if (nsCOMPtr<WebTransportSessionEventListenerInternal> listener =
+          do_QueryInterface(baseListener)) {
+    listener->OnDatagramsFlushInternal();
+  }
+}
+
 void WebTransportSessionBase::NotifyOutgoingDatagramSpaceAvailable() {
   RefPtr<WebTransportSessionEventListener> baseListener = GetListener();
   if (!baseListener) {
