@@ -115,14 +115,19 @@ async function checkOriginReachedThroughH3Proxy(path) {
 add_setup(async function setup() {
   trr_test_setup();
 
-  h2OriginPort = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2OriginPort, null);
-  Assert.notEqual(h2OriginPort, "");
+  const youWin = (req, res) => {
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end("You Win!");
+  };
+  let originServer = await create_h2_server({
+    "/h3-outer-proxy": youWin,
+    "/h3-outer-proxy-no-speculative": youWin,
+  });
+  h2OriginPort = originServer.port();
 
   let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
     Ci.nsIX509CertDB
   );
-  addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
   addCertFromFile(certdb, "proxy-ca.pem", "CTu,u,u");
 
   Services.prefs.setBoolPref("network.proxy.allow_hijacking_localhost", true);
