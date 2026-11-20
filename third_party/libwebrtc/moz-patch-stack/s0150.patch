@@ -33,7 +33,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/6ce9c54228fae94fa
  2 files changed, 71 insertions(+), 9 deletions(-)
 
 diff --git a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
-index b27a35a10e..aa51b80c7f 100644
+index c0bdac87be..efc7d43ac4 100644
 --- a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
 +++ b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
 @@ -209,16 +209,16 @@ class SharedScreenCastStreamPrivate {
@@ -106,10 +106,10 @@ index b27a35a10e..aa51b80c7f 100644
        MutexLock latest_frame_lock(&latest_frame_lock_);
        latest_available_frame_ = nullptr;
 diff --git a/modules/desktop_capture/linux/wayland/shared_screencast_stream_unittest.cc b/modules/desktop_capture/linux/wayland/shared_screencast_stream_unittest.cc
-index 3c62a20ec0..3679480bd7 100644
+index 0fb57dfcf8..80ceb1b172 100644
 --- a/modules/desktop_capture/linux/wayland/shared_screencast_stream_unittest.cc
 +++ b/modules/desktop_capture/linux/wayland/shared_screencast_stream_unittest.cc
-@@ -482,6 +482,50 @@ TEST_F(MAYBE_PipeWireStreamTest, TestModifierFallbackNullRenegotiateEvent) {
+@@ -497,6 +497,50 @@ TEST_F(MAYBE_PipeWireStreamTest, TestModifierFallbackNullRenegotiateEvent) {
    shared_screencast_stream_->StopScreenCastStream();
  }
  

@@ -632,8 +632,7 @@ if (is_ios || (is_mac && target_cpu != "x86")) {
         ]
       }
 
-      rtc_test("apprtcmobile_tests") {
-        is_xctest = true
+      rtc_xctest("apprtcmobile_tests") {
         info_plist = "objc/AppRTCMobile/ios/Info.plist"
         deps = [
           ":AppRTCMobile_lib",

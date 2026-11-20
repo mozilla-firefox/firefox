@@ -61,7 +61,7 @@ index 6762c992fb..b65b149e7c 100644
        }
      }
 diff --git a/sdk/BUILD.gn b/sdk/BUILD.gn
-index b61062967d..6b4c5b368c 100644
+index 4383af6de4..bdcf7ca164 100644
 --- a/sdk/BUILD.gn
 +++ b/sdk/BUILD.gn
 @@ -624,6 +624,20 @@ if (is_ios || is_mac) {
@@ -86,10 +86,10 @@ index b61062967d..6b4c5b368c 100644
  
      if (!build_with_mozilla) {
 diff --git a/test/BUILD.gn b/test/BUILD.gn
-index 1935c2503d..c4d06412f5 100644
+index 792104e3ff..d44aea8210 100644
 --- a/test/BUILD.gn
 +++ b/test/BUILD.gn
-@@ -516,6 +516,12 @@ rtc_source_set("test_support") {
+@@ -515,6 +515,12 @@ rtc_source_set("test_support") {
      "//testing/gmock",
      "//testing/gtest",
    ]

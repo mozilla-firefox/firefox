@@ -439,9 +439,8 @@ if (is_ios && !build_with_chromium) {
     configs += [ ":test_support_objc_config" ]
   }
 
-  # Entry point for iOS XCTest bundles. rtc_test() adds this to is_xctest
-  # targets instead of test:test_main, whose gtest main() would collide with
-  # this one.
+  # Entry point for iOS XCTest bundles. rtc_xctest() adds this instead of
+  # test:test_main, whose gtest main() would collide with this one.
   rtc_library("test_main_xctest") {
     testonly = true
     visibility = [ "*" ]
