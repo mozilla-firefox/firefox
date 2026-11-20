@@ -17,6 +17,9 @@ const SLOW_DOCUMENT_URL = PAGELOAD_BASE + "file_slow_document.sjs";
 // earlier would carry the security info from that earlier handshake.
 const DOMAIN_EVENT_URL = "https://example.org/browser/dom/base/test/empty.html";
 
+// Unique per run, so tasks that check network-only timings never get a cache hit.
+const UNCACHED_QUERY = `?${Date.now()}`;
+
 // Which of page_load and page_load_domain a load produces is a random sample,
 // and they carry different extra keys, so force the former for the whole file.
 add_setup(async function () {
@@ -360,7 +363,7 @@ add_task(async function test_repeated_page_hides_report_once() {
 });
 
 const REDIRECT_BEFORE_LOAD_URL =
-  PAGELOAD_BASE + "file_redirect_before_load.html";
+  PAGELOAD_BASE + "file_redirect_before_load.html" + UNCACHED_QUERY;
 
 // The flag describes the load, so foregrounding a tab after a background load
 // has completed must not turn it into a foreground load.
@@ -503,7 +506,7 @@ add_task(async function test_proxy_type() {
     return;
   }
 
-  let first = PAGELOAD_BASE + "empty.html?proxy_type";
+  let first = PAGELOAD_BASE + "empty.html" + UNCACHED_QUERY;
   let second = PAGELOAD_BASE + "dummy.html";
   let tab = await BrowserTestUtils.openNewForegroundTab(gBrowser, first);
   let browser = tab.linkedBrowser;
