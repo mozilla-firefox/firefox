@@ -85,6 +85,9 @@ objc2-metal = { version = "0.3", default-features = false, features = [
   "objc2-io-surface",
 ] }
 
+[target.'cfg(target_os = "linux")'.dependencies]
+ash = "0.38"
+
 [dependencies]
 bincode = "1"
 log = "0.4"
@@ -95,7 +98,6 @@ thiserror = "2"
 nsstring = { path = "../../xpcom/rust/nsstring" }
 static_prefs = { path = "../../modules/libpref/init/static_prefs" }
 arrayvec = "0.7"
-ash = "0.38"
 glean = { workspace = true }
 firefox-on-glean = { path = "../../toolkit/components/glean/api" }
 moz_task = { path = "../../xpcom/rust/moz_task" }
