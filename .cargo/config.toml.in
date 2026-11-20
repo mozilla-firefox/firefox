@@ -74,9 +74,9 @@ git = "https://github.com/mozilla/cubeb-coreaudio-rs"
 rev = "0bb8a45a040e85d313eb18deb36570e87df3a6af"
 replace-with = "vendored-sources"
 
-[source."git+https://github.com/mozilla/cubeb-pulse-rs?rev=18bcb4ecbdd6c812e1a422f5ab45d3d0e0e92be0"]
+[source."git+https://github.com/mozilla/cubeb-pulse-rs?rev=ff41e87c88204b69921968795d658efd59793fff"]
 git = "https://github.com/mozilla/cubeb-pulse-rs"
-rev = "18bcb4ecbdd6c812e1a422f5ab45d3d0e0e92be0"
+rev = "ff41e87c88204b69921968795d658efd59793fff"
 replace-with = "vendored-sources"
 
 [source."git+https://github.com/mozilla/happy-eyeballs?tag=v0.6.0"]

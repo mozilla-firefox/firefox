@@ -9,22 +9,22 @@ use std::os::raw::c_void;
 // Note: For all clippy allowed warnings, see https://github.com/mozilla/cubeb-pulse-rs/issues/95
 // for the effort to fix them.
 
-#[allow(non_camel_case_types)]
-type pa_once_cb_t =
-    Option<unsafe extern "C" fn(m: *mut ffi::pa_mainloop_api, userdata: *mut c_void)>;
-fn wrap_once_cb<F>(_: F) -> pa_once_cb_t
+fn wrap_defer_cb<F>(_: F) -> ffi::pa_defer_event_cb_t
 where
-    F: Fn(&MainloopApi, *mut c_void),
+    F: Fn(&MainloopApi, *mut ffi::pa_defer_event, *mut c_void),
 {
     assert!(mem::size_of::<F>() == 0);
 
-    unsafe extern "C" fn wrapped<F>(m: *mut ffi::pa_mainloop_api, userdata: *mut c_void)
-    where
-        F: Fn(&MainloopApi, *mut c_void),
+    unsafe extern "C" fn wrapped<F>(
+        m: *mut ffi::pa_mainloop_api,
+        e: *mut ffi::pa_defer_event,
+        userdata: *mut c_void,
+    ) where
+        F: Fn(&MainloopApi, *mut ffi::pa_defer_event, *mut c_void),
     {
         let api = from_raw_ptr(m);
         #[allow(clippy::missing_transmute_annotations)]
-        mem::transmute::<_, &F>(&())(&api, userdata);
+        mem::transmute::<_, &F>(&())(&api, e, userdata);
         #[allow(clippy::forget_non_drop)]
         mem::forget(api);
     }
@@ -41,13 +41,24 @@ impl MainloopApi {
     }
 
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    pub fn once<CB>(&self, cb: CB, userdata: *mut c_void)
+    pub fn defer_new<CB>(&self, cb: CB, userdata: *mut c_void) -> *mut ffi::pa_defer_event
     where
-        CB: Fn(&MainloopApi, *mut c_void),
+        CB: Fn(&MainloopApi, *mut ffi::pa_defer_event, *mut c_void),
     {
-        let wrapped = wrap_once_cb(cb);
+        let wrapped = wrap_defer_cb(cb);
         unsafe {
-            ffi::pa_mainloop_api_once(self.raw_mut(), wrapped, userdata);
+            let api = self.raw_mut();
+            api.defer_new
+                .expect("mainloop does not support defer events")(api, wrapped, userdata)
+        }
+    }
+
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
+    pub fn defer_free(&self, e: *mut ffi::pa_defer_event) {
+        unsafe {
+            self.raw_mut()
+                .defer_free
+                .expect("mainloop does not support freeing defer events")(e);
         }
     }
 
