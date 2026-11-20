@@ -588,3 +588,38 @@ add_task(async function test_smartbar_button_container_click_no_focus() {
     );
   });
 });
+
+add_task(async function test_smartbar_autofocus_can_be_disabled() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.smartwindow.newtab.focusSmartbar", false]],
+  });
+
+  const win = browser.documentGlobal;
+  const opened = BrowserTestUtils.waitForNewTab(
+    win.gBrowser,
+    AIWINDOW_URL,
+    true
+  );
+  win.BrowserCommands.openTab();
+  const tab = await opened;
+
+  const smartbarFocused = await SpecialPowers.spawn(
+    tab.linkedBrowser,
+    [],
+    async () => {
+      const smartbar = await ContentTaskUtils.waitForCondition(
+        () =>
+          content.document
+            .querySelector("ai-window")
+            ?.shadowRoot?.querySelector("#ai-window-smartbar"),
+        "Wait for Smartbar to be rendered"
+      );
+      return smartbar.focused;
+    }
+  );
+  Assert.ok(!smartbarFocused, "Smartbar should not take focus on a new tab");
+  Assert.ok(win.gURLBar.focused, "Address bar should retain focus");
+
+  BrowserTestUtils.removeTab(tab);
+  await SpecialPowers.popPrefEnv();
+});

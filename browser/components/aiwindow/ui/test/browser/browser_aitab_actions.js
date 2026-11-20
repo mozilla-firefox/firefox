@@ -237,6 +237,35 @@ add_task(async function test_delete_from_the_dialog_removes_the_page() {
   await BrowserTestUtils.closeWindow(win);
 });
 
+add_task(async function test_smartbar_focus_after_returning_home() {
+  await seedPage();
+  const { win, browser } = await openSeededPage();
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.smartwindow.newtab.focusSmartbar", false]],
+  });
+
+  const navigated = BrowserTestUtils.browserLoaded(
+    browser,
+    false,
+    AIWINDOW_URL
+  );
+  const actor = browser.browsingContext.currentWindowGlobal.getActor("AITab");
+  await actor.receiveMessage({ name: "AITab:DeletePage" });
+  await navigated;
+  await SpecialPowers.spawn(browser, [], async () => {
+    await ContentTaskUtils.waitForCondition(
+      () =>
+        content.document
+          .querySelector("ai-window")
+          ?.shadowRoot?.querySelector("#ai-window-smartbar")?.focused,
+      "Smartbar receives focus when returning home after deleting a page"
+    );
+  });
+
+  await SpecialPowers.popPrefEnv();
+  await BrowserTestUtils.closeWindow(win);
+});
+
 add_task(async function test_delete_removes_the_page_from_history() {
   await PlacesUtils.history.clear();
   await seedPage();

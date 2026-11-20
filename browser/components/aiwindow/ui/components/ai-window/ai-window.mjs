@@ -194,6 +194,7 @@ const PREF_MEMORIES_HISTORY =
   "browser.smartwindow.memories.generateFromHistory";
 const PREF_MEMORIES_HAS_SEEN_MEMORIES =
   "browser.smartwindow.memories.hasSeenMemories";
+const PREF_NEW_TAB_FOCUS_SMARTBAR = "browser.smartwindow.newtab.focusSmartbar";
 const PREF_MODEL_CHOICE = "browser.smartwindow.firstrun.modelChoice";
 const PREF_CUSTOM_ENDPOINT = "browser.smartwindow.customEndpoint";
 const TAB_FAVICON_CHAT =
@@ -1951,7 +1952,13 @@ export class AIWindow extends MozLitElement {
         "smartbar-initialized",
         () => {
           this.#resolveSmartbarReady();
-          smartbar.focus();
+          if (
+            this.mode !== MODE.FULLPAGE ||
+            !this.#topChromeWindow?.gURLBar?.focused ||
+            Services.prefs.getBoolPref(PREF_NEW_TAB_FOCUS_SMARTBAR)
+          ) {
+            smartbar.focus();
+          }
           this.#observeSmartbarHeight();
           this.#updateSmartbarModels(smartbar);
         },

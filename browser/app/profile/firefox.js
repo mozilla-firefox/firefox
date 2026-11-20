@@ -2461,6 +2461,7 @@ pref("browser.smartwindow.memories.generateFromHistory", true);
 pref("browser.smartwindow.memories.generateFromConversation", true);
 pref("browser.smartwindow.memories.hasSeenMemories", false);
 pref("browser.smartwindow.memories.logLevel", "Warn");
+pref("browser.smartwindow.newtab.focusSmartbar", true);
 // Gates resume-activity ("pick up where you left off") starter generation.
 pref("browser.smartwindow.resumeActivity.enabled", true);
 // TODO Bug 2067871: remove once journey store is available.
