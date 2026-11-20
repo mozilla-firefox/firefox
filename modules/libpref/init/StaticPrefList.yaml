@@ -2713,6 +2713,12 @@
   value: true
   mirror: always
 
+# Expose CycleCollectorUnlinkTester, for testing use-after-unlink issues.
+- name: dom.cc.unlink_test
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
+
 # HTML specification says the level should be 5
 # https://html.spec.whatwg.org/#timer-initialisation-steps
 - name: dom.clamp.timeout.nesting.level
