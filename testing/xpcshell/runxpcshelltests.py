@@ -1803,10 +1803,10 @@ class XPCShellTests:
         """
         if os.getenv("MOZ_ASSUME_NODE_RUNNING", None):
             self.log.info("Assuming required node servers are already running")
-            if not os.getenv("MOZHTTP2_PORT", None):
+            if not os.getenv("MOZNODE_EXEC_PORT", None):
                 self.log.warning(
-                    "MOZHTTP2_PORT environment variable not set. "
-                    "Tests requiring http/2 will fail."
+                    "MOZNODE_EXEC_PORT environment variable not set. "
+                    "Tests requiring node servers will fail."
                 )
             return
 
