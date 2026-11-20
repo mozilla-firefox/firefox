@@ -25,23 +25,40 @@ var trailerServerTiming = [
 function run_test() {
   do_test_pending();
 
-  // Set up to allow the cert presented by the server
   do_get_profile();
-  let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
-    Ci.nsIX509CertDB
-  );
-  addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
 
   Services.prefs.setCharPref("network.dns.localDomains", "foo.example.com");
   registerCleanupFunction(() => {
     Services.prefs.clearUserPref("network.dns.localDomains");
   });
 
-  var serverPort = Services.env.get("MOZHTTP2_PORT");
-  make_and_open_channel(
-    "https://foo.example.com:" + serverPort + "/server-timing",
-    readServerContent
-  );
+  startServer().then(serverPort => {
+    make_and_open_channel(
+      "https://foo.example.com:" + serverPort + "/server-timing",
+      readServerContent
+    );
+  });
+}
+
+async function startServer() {
+  let server = await create_h2_server({
+    "/server-timing": (req, res) => {
+      res.setHeader("Content-Type", "text/plain");
+      res.setHeader("Content-Length", "12");
+      res.setHeader("Trailer", "Server-Timing");
+      res.setHeader(
+        "Server-Timing",
+        "metric; dur=123.4; desc=description, metric2; dur=456.78; desc=description1"
+      );
+      res.write("data reached");
+      res.addTrailers({
+        "Server-Timing":
+          "metric3; dur=789.11; desc=description2, metric4; dur=1112.13; desc=description3",
+      });
+      res.end();
+    },
+  });
+  return server.port();
 }
 
 function checkServerTimingContent(headers) {
