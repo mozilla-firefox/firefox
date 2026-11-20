@@ -24,6 +24,8 @@ in a later phase of the migration.
 import hashlib
 import json
 import os
+import resource
+import sys
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -52,6 +54,9 @@ _MATERIALIZATION_EXPIRY_HOURS = 6
 # A table a later run may reuse is kept long enough for a failed run to be
 # retried days later, and each reuse pushes its expiry back by as much.
 _REUSABLE_MATERIALIZATION_EXPIRY_HOURS = 72
+
+# ru_maxrss is in bytes on macOS and in KiB on Linux.
+_MAXRSS_PER_GIB = 2**30 if sys.platform == "darwin" else 2**20
 
 # How often to print a heartbeat while streaming rows, so a long production run
 # visibly makes progress instead of sitting silent.
@@ -718,7 +723,11 @@ def aggregate(
     job_start = time.time()
 
     def _phase(message):
-        print(f"[{int(time.time() - job_start):>4}s] {message}", flush=True)
+        peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / _MAXRSS_PER_GIB
+        print(
+            f"[{int(time.time() - job_start):>4}s, peak {peak:5.1f} GiB] {message}",
+            flush=True,
+        )
 
     # Stream pings and expand each valid one into hang tuples. The pings
     # themselves are not retained; only the (much smaller) hang set is.
