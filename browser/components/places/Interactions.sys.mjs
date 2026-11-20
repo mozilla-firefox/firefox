@@ -800,9 +800,6 @@ class InteractionsStore {
         params[`scrolling_distance${i}`] =
           Math.round(interaction.scrollingDistance) || 0;
         SQLInsertFragments.push(`(
-          (SELECT id FROM moz_places_metadata
-            WHERE place_id = (SELECT id FROM moz_places WHERE url_hash = hash(:url${i}) AND url = :url${i})
-              AND created_at = :created_at${i}),
           (SELECT id FROM moz_places WHERE url_hash = hash(:url${i}) AND url = :url${i}),
           (SELECT id FROM moz_places WHERE url_hash = hash(:referrer${i}) AND url = :referrer${i} AND :referrer${i} != :url${i}),
           :created_at${i},
@@ -826,12 +823,21 @@ class InteractionsStore {
       async db => {
         await db.executeCached(
           `
-          WITH inserts (id, place_id, referrer_place_id, created_at, updated_at, document_type, total_view_time, typing_time, key_presses, scrolling_time, scrolling_distance) AS (
+          WITH inserts (place_id, referrer_place_id, created_at, updated_at, document_type, total_view_time, typing_time, key_presses, scrolling_time, scrolling_distance) AS (
             VALUES ${SQLInsertFragments.join(", ")}
           )
-          INSERT OR REPLACE INTO moz_places_metadata (
-            id, place_id, referrer_place_id, created_at, updated_at, document_type, total_view_time, typing_time, key_presses, scrolling_time, scrolling_distance
-          ) SELECT * FROM inserts WHERE place_id NOT NULL;
+          INSERT INTO moz_places_metadata (
+            place_id, referrer_place_id, created_at, updated_at, document_type, total_view_time, typing_time, key_presses, scrolling_time, scrolling_distance
+          ) SELECT * FROM inserts WHERE place_id NOT NULL
+          ON CONFLICT(place_id, created_at) DO UPDATE SET
+            referrer_place_id = excluded.referrer_place_id,
+            updated_at = excluded.updated_at,
+            document_type = excluded.document_type,
+            total_view_time = excluded.total_view_time,
+            typing_time = excluded.typing_time,
+            key_presses = excluded.key_presses,
+            scrolling_time = excluded.scrolling_time,
+            scrolling_distance = excluded.scrolling_distance;
         `,
           params
         );

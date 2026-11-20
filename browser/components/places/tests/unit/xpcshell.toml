@@ -42,4 +42,6 @@ prefs = ["security.storage.encryption.sqlite.enabled=false"]
 
 ["test_interactions_blocklist.js"]
 
+["test_interactions_store.js"]
+
 ["test_invalid_defaultLocation.js"]
