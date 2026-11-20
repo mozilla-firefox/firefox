@@ -74,7 +74,7 @@ bool WaylandBuffer::IsAttached(const WaylandSurfaceLock& aSurfaceLock) const {
 BufferTransaction* WaylandBuffer::GetTransaction(
     const WaylandSurfaceLock& aSurfaceLock) {
   for (const auto& transaction : mBufferTransactions) {
-    if (transaction->CanRecycle(aSurfaceLock.GetWaylandSurface())) {
+    if (transaction->CanRecycle(aSurfaceLock.GetSurface())) {
       LOGWAYLAND("WaylandBuffer::GetTransaction() [%p] reuse transaction [%d]",
                  (void*)this, (int)mBufferTransactions.Length());
       return transaction;
@@ -95,7 +95,7 @@ BufferTransaction* WaylandBuffer::GetTransaction(
       "WaylandBuffer::GetTransaction() create new [%p] wl_buffer [%p] "
       "transactions [%d] external buffer [%d] WaylandSurface [%p]",
       (void*)this, buffer, (int)mBufferTransactions.Length(),
-      !!mExternalWlBuffer, aSurfaceLock.GetWaylandSurface());
+      !!mExternalWlBuffer, aSurfaceLock.GetSurface());
 
   auto* transaction = new BufferTransaction(this, buffer, !!mExternalWlBuffer);
   mBufferTransactions.AppendElement(transaction);
@@ -272,15 +272,14 @@ wl_buffer* BufferTransaction::BufferBorrowLocked(
   LOGWAYLAND(
       "BufferTransaction::BufferBorrow() [%p] widget [%p] WaylandSurface [%p] "
       "WaylandBuffer [%p]",
-      this, aSurfaceLock.GetWaylandSurface()->GetLoggingWidget(),
-      aSurfaceLock.GetWaylandSurface(), mBuffer.get());
+      this, aSurfaceLock.GetSurface()->GetLoggingWidget(),
+      aSurfaceLock.GetSurface(), mBuffer.get());
 
-  MOZ_DIAGNOSTIC_ASSERT(
-      !mSurface || mSurface == aSurfaceLock.GetWaylandSurface(),
-      "Can't transfer transaction between WaylandSurfaces!");
+  MOZ_DIAGNOSTIC_ASSERT(!mSurface || mSurface == aSurfaceLock.GetSurface(),
+                        "Can't transfer transaction between WaylandSurfaces!");
   MOZ_DIAGNOSTIC_ASSERT(mBufferState == BufferState::Detached);
 
-  mSurface = aSurfaceLock.GetWaylandSurface();
+  mSurface = aSurfaceLock.GetSurface();
 
   // We don't take reference to this. Some compositors doesn't send
   // buffer release callback and we may leak BufferTransaction then.

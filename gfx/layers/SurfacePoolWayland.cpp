@@ -77,7 +77,7 @@ bool SurfacePoolWayland::CanRecycleSurfaceForRequest(
     const widget::WaylandSurfaceLock* aWaylandSurfaceLock, const IntSize& aSize,
     GLContext* aGL) {
   widget::WaylandSurface* waylandSurface =
-      aWaylandSurfaceLock ? aWaylandSurfaceLock->GetWaylandSurface() : nullptr;
+      aWaylandSurfaceLock ? aWaylandSurfaceLock->GetSurface() : nullptr;
   if (aEntry.mWaylandSurface != waylandSurface) {
     LOGVERBOSE(
         "SurfacePoolWayland::CanRecycleSurfaceForRequest(): can't recycle due "
@@ -144,7 +144,7 @@ RefPtr<WaylandBuffer> SurfacePoolWayland::ObtainBufferFromPool(
   if (buffer) {
     RefPtr<widget::WaylandSurface> waylandSurface;
     if (aWaylandSurfaceLock) {
-      waylandSurface = aWaylandSurfaceLock->GetWaylandSurface();
+      waylandSurface = aWaylandSurfaceLock->GetSurface();
     } else if (auto* dmabuf = buffer->GetDMABufSurface()) {
       dmabuf->GlobalRefCountCreate();
     }

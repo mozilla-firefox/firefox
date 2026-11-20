@@ -1048,7 +1048,7 @@ bool NativeLayerWayland::Map(WaylandSurfaceLock& aParentWaylandSurfaceLock) {
   }
   mSurface->DisableUserInputLocked(surfaceLock);
 
-  auto* parentSurface = aParentWaylandSurfaceLock.GetWaylandSurface();
+  auto* parentSurface = aParentWaylandSurfaceLock.GetSurface();
   if (parentSurface->IsCoordinatesScaleLocked(aParentWaylandSurfaceLock)) {
     mSurface->SetCoordinatesScaleLocked(surfaceLock,
                                         parentSurface->GetCoordinatesScale());
@@ -1320,7 +1320,7 @@ void NativeLayerWaylandExternal::PurgeBorrowedBuffers(
     const widget::WaylandSurfaceLock& aSurfaceLock, bool aForce) {
   LOG("NativeLayerWaylandExternal::PurgeBorrowedBuffers() force %d", aForce);
   if (aForce) {
-    MOZ_DIAGNOSTIC_ASSERT(!aSurfaceLock.GetWaylandSurface()->IsMapped(),
+    MOZ_DIAGNOSTIC_ASSERT(!aSurfaceLock.GetSurface()->IsMapped(),
                           "We're supposed to be unmapped!");
     mExternalBuffers.Clear();
     return;

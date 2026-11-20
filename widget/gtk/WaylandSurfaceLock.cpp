@@ -49,7 +49,7 @@ WaylandSurfaceLock::~WaylandSurfaceLock() {
 #endif
 }
 
-WaylandSurface* WaylandSurfaceLock::GetWaylandSurface() const {
+WaylandSurface* WaylandSurfaceLock::GetSurface() const {
 #ifdef MOZ_WAYLAND
   return mWaylandSurface.get();
 #else

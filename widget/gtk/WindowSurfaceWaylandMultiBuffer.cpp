@@ -277,7 +277,7 @@ void WindowSurfaceWaylandMB::Commit(
     return;
   }
 
-  auto waylandSurface = aWaylandSurfaceLock.GetWaylandSurface();
+  auto waylandSurface = aWaylandSurfaceLock.GetSurface();
   waylandSurface->InvalidateRegionLocked(aWaylandSurfaceLock,
                                          aInvalidRegion.ToUnknownRegion());
   waylandSurface->AttachLocked(aWaylandSurfaceLock, mInProgressBuffer);

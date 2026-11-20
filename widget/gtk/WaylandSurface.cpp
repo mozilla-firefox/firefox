@@ -435,7 +435,7 @@ bool WaylandSurface::MapLocked(const WaylandSurfaceLock& aProofOfLock,
     mParentSurface = aParentWLSurface;
   } else {
     MOZ_DIAGNOSTIC_ASSERT(!mParentSurface, "Already mapped?");
-    mParent = aParentWaylandSurfaceLock->GetWaylandSurface();
+    mParent = aParentWaylandSurfaceLock->GetSurface();
     LOGWAYLAND(" parent WaylandSurface [%p]", mParent.get());
     MOZ_DIAGNOSTIC_ASSERT(mParent->IsMapped(), "Parent surface is not mapped?");
     mParentSurface = mParent->mSurface.get();
@@ -1404,12 +1404,12 @@ void WaylandSurface::RemoveAttachedBufferLocked(
 void WaylandSurface::PlaceAboveLocked(const WaylandSurfaceLock& aProofOfLock,
                                       WaylandSurfaceLock& aLowerSurfaceLock) {
   LOGVERBOSE("WaylandSurface::PlaceAboveLocked() aLowerSurface [%p]",
-             aLowerSurfaceLock.GetWaylandSurface());
+             aLowerSurfaceLock.GetSurface());
   MOZ_DIAGNOSTIC_ASSERT(&aProofOfLock == mSurfaceLock);
   MOZ_DIAGNOSTIC_ASSERT(mSubsurface);
 
   // WaylandSurface is reffed by WaylandSurfaceLock
-  WaylandSurface* lowerSurface = aLowerSurfaceLock.GetWaylandSurface();
+  WaylandSurface* lowerSurface = aLowerSurfaceLock.GetSurface();
 
   // lowerSurface has to be sibling or child of this
   MOZ_DIAGNOSTIC_ASSERT(lowerSurface->mParent == mParent ||
