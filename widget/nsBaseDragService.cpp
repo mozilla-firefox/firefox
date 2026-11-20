@@ -755,7 +755,13 @@ nsresult nsBaseDragSession::EndDragSessionImpl(bool aDoneDrag,
   mEndingSession = true;
 
   if (aDoneDrag && !GetSuppressLevel()) {
-    FireDragEventAtSource(eDragEnd, aKeyModifiers);
+    LayoutDeviceIntPoint point = mEndDragPoint;
+    // FIXME(bug 2093705): This is incorrect if the drag end point isn't in the
+    // source window.
+    if (nsCOMPtr<nsIWidget> widget = GetSourceWidget()) {
+      point -= widget->WidgetToTopLevelWidgetOffset();
+    }
+    FireDragEventAtSource(eDragEnd, aKeyModifiers, point);
   }
 
   nsGlobalWindowInner::MouseButtonReleased();
@@ -853,9 +859,24 @@ void nsBaseDragSession::DiscardInternalTransferData() {
   }
 }
 
+NS_IMETHODIMP nsBaseDragSession::GetSourceWidget(nsIWidget** aWindow) {
+  NS_ENSURE_ARG_POINTER(aWindow);
+  *aWindow = nullptr;
+  if (!mSourceDocument) {
+    return NS_OK;
+  }
+  nsPresContext* pc = mSourceDocument->GetPresContext();
+  if (!pc) {
+    return NS_OK;
+  }
+  NS_IF_ADDREF(*aWindow = pc->GetRootWidget());
+  return NS_OK;
+}
+
 NS_IMETHODIMP
 nsBaseDragSession::FireDragEventAtSource(EventMessage aEventMessage,
-                                         uint32_t aKeyModifiers) {
+                                         uint32_t aKeyModifiers,
+                                         const LayoutDeviceIntPoint& aPoint) {
   LOGD(
       "[%p] %s | mSourceNode: %p | mSourceDocument: %p | mSuppressLevel: %u | "
       "presShell: %p",
@@ -870,19 +891,20 @@ nsBaseDragSession::FireDragEventAtSource(EventMessage aEventMessage,
     return NS_OK;
   }
 
-  RefPtr<nsPresContext> pc = presShell->GetPresContext();
-  nsCOMPtr<nsIWidget> widget = pc ? pc->GetRootWidget() : nullptr;
+  nsCOMPtr<nsIWidget> widget = GetSourceWidget();
 
   nsEventStatus status = nsEventStatus_eIgnore;
   WidgetDragEvent event(true, aEventMessage, widget);
   event.mFlags.mIsSynthesizedForTests = mSessionIsSynthesizedForTests;
   event.mInputSource = mInputSource;
   if (aEventMessage == eDragEnd) {
-    event.mRefPoint = mEndDragPoint;
-    if (widget) {
-      event.mRefPoint -= widget->WidgetToTopLevelWidgetOffset();
-    }
     event.mUserCancelled = mUserCancelled;
+  }
+
+  if (aEventMessage == eDragEnd ||
+      (StaticPrefs::dom_event_drag_include_coordinates() &&
+       aEventMessage == eDrag)) {
+    event.mRefPoint = aPoint;
   }
   event.mModifiers = aKeyModifiers;
 

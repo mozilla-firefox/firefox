@@ -3337,7 +3337,10 @@ void nsWindow::OnDragEvent(int32_t aAction, float aX, float aY,
     switch (aAction) {
       case java::sdk::DragEvent::ACTION_DRAG_LOCATION:
         dragSession->SetDragEndPoint(point.x, point.y);
-        dragSession->FireDragEventAtSource(eDrag, 0);
+        if (nsCOMPtr<nsIWidget> widget = dragSession->GetSourceWidget();
+            this == widget) {
+          dragSession->FireDragEventAtSource(eDrag, 0, point);
+        }
         break;
       case java::sdk::DragEvent::ACTION_DROP: {
         bool canDrop = false;

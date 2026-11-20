@@ -4351,6 +4351,8 @@ async function _synthesizeMockDndFromChild(aParams) {
   const ds = SpecialPowers.Cc["@mozilla.org/widget/dragservice;1"].getService(
     SpecialPowers.Ci.nsIDragService
   );
+  const prevNeverAllowSessionIsSynthesizedForTests =
+    ds.neverAllowSessionIsSynthesizedForTests;
   ds.neverAllowSessionIsSynthesizedForTests = true;
 
   let sourceElt = document.getElementById(aParams.srcElement);
@@ -4437,6 +4439,8 @@ async function _synthesizeMockDndFromChild(aParams) {
     );
   } finally {
     info("Remote synthesizeMockDragAndDrop has completed.");
+    ds.neverAllowSessionIsSynthesizedForTests =
+      prevNeverAllowSessionIsSynthesizedForTests;
   }
 }
 

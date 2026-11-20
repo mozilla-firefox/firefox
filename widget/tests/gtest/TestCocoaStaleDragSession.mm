@@ -52,7 +52,8 @@ MOZ_CAN_RUN_SCRIPT_BOUNDARY void EndAsStale(nsDragSession* aSession) {
 class ReenteringDragSession final : public nsDragSession {
  public:
   MOZ_CAN_RUN_SCRIPT NS_IMETHOD FireDragEventAtSource(
-      mozilla::EventMessage aEventMessage, uint32_t aKeyModifiers) override {
+      mozilla::EventMessage aEventMessage, uint32_t aKeyModifiers,
+      const mozilla::LayoutDeviceIntPoint& aPoint) override {
     if (aEventMessage == mozilla::eDragEnd) {
       mWasCancelledAtDragEnd = mUserCancelled;
       EndDragSession(false, 0);

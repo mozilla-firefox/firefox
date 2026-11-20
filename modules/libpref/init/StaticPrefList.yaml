@@ -3034,6 +3034,12 @@
   value: true
   mirror: always
 
+# Whether drag events have non-zero clientX/Y, etc.
+- name: dom.event.drag.include_coordinates
+  type: bool
+  value: true
+  mirror: always
+
 - name: dom.event.dragexit.enabled
   type: bool
   value: @IS_NOT_NIGHTLY_BUILD@
