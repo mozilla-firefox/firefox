@@ -129,6 +129,7 @@ add_task(async function test_link_contextmenu() {
       ? ["context-openlinkinusercontext-menu"]
       : []),
     "context-openlink",
+    "context-openlinkminiwindow",
     "context-openlinkprivate",
     "context-sep-open",
     ...(expectSplitView
@@ -392,6 +393,7 @@ add_task(async function test_link_contextmenu_mobile() {
       ? ["context-openlinkinusercontext-menu"]
       : []),
     "context-openlink",
+    "context-openlinkminiwindow",
     "context-openlinkprivate",
     "context-sep-open",
     ...(expectSplitView

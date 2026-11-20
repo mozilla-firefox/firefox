@@ -97,6 +97,8 @@ function getVisibleMenuItems(aMenu) {
         const allowedAccessKeyDuplicates = [
           "context-translate-selection",
           "context-sendlinktodevice",
+          "context-openlinkinsplitview",
+          "context-openlinkminiwindow",
         ];
 
         if (

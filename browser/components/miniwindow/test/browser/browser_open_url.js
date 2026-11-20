@@ -58,3 +58,88 @@ add_task(async function test_open_url_without_principal_fails() {
   Assert.equal(mini, null, "Open without a triggeringPrincipal fails cleanly");
   assertNoMiniWindowsOpen();
 });
+
+add_task(async function test_open_link_in_mini_window_from_context_menu() {
+  let tab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    "https://example.com/"
+  );
+  await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+    let link = content.document.createElement("a");
+    link.id = "link";
+    link.href = "https://example.org/";
+    link.textContent = "link";
+    content.document.body.prepend(link);
+  });
+
+  let contextMenu = document.getElementById("contentAreaContextMenu");
+  let shown = BrowserTestUtils.waitForEvent(contextMenu, "popupshown");
+  await BrowserTestUtils.synthesizeMouseAtCenter(
+    "#link",
+    { type: "contextmenu" },
+    tab.linkedBrowser
+  );
+  await shown;
+
+  let item = document.getElementById("context-openlinkminiwindow");
+  Assert.ok(!item.hidden, "Open Link in Mini Window item is shown");
+
+  let newWin = BrowserTestUtils.waitForNewWindow({
+    url: "https://example.org/",
+  });
+  contextMenu.activateItem(item);
+  let miniWin = await newWin;
+
+  Assert.equal(MiniWindowManager._miniwindows.size, 1, "One mini registered");
+  let mini = [...MiniWindowManager._miniwindows][0];
+  await TestUtils.waitForCondition(
+    () => mini.state == "active",
+    "Waiting for the mini window to activate"
+  );
+  Assert.equal(
+    miniWin.gBrowser.selectedBrowser.contentPrincipal.origin,
+    "https://example.org",
+    "Link loaded in the mini window"
+  );
+
+  let restore = miniWin.document.getElementById("mini-window-restore-button");
+  Assert.equal(
+    restore.getAttribute("data-l10n-id"),
+    "mini-window-link-restore-button",
+    "Restore button uses the link label"
+  );
+  Assert.ok(BrowserTestUtils.isVisible(restore), "Restore button is visible");
+
+  let miniContextMenu = miniWin.document.getElementById(
+    "contentAreaContextMenu"
+  );
+  let miniShown = BrowserTestUtils.waitForEvent(miniContextMenu, "popupshown");
+  await SpecialPowers.spawn(miniWin.gBrowser.selectedBrowser, [], () => {
+    let link = content.document.createElement("a");
+    link.id = "link";
+    link.href = "https://example.com/";
+    link.textContent = "link";
+    content.document.body.prepend(link);
+  });
+  await BrowserTestUtils.synthesizeMouseAtCenter(
+    "#link",
+    { type: "contextmenu" },
+    miniWin.gBrowser.selectedBrowser
+  );
+  await miniShown;
+  Assert.ok(
+    miniWin.document.getElementById("context-openlinkminiwindow").hidden,
+    "Open Link in Mini Window item is hidden inside a mini window"
+  );
+  let miniHidden = BrowserTestUtils.waitForEvent(
+    miniContextMenu,
+    "popuphidden"
+  );
+  miniContextMenu.hidePopup();
+  await miniHidden;
+
+  mini.close();
+  await BrowserTestUtils.domWindowClosed(miniWin);
+  assertNoMiniWindowsOpen();
+  BrowserTestUtils.removeTab(tab);
+});
