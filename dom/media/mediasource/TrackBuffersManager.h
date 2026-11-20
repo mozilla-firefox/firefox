@@ -445,6 +445,13 @@ class TrackBuffersManager final
   void InsertFrames(TrackBuffer& aSamples,
                     const media::TimeIntervals& aIntervals,
                     TrackData& aTrackData) MOZ_REQUIRES(mTaskQueueCapability);
+  // Sets the end of each video frame at a link between a buffered frame and
+  // one of the aCount frames inserted at aStart to the start of the next frame
+  // in presentation order: it extends the frame, or cuts back an end that came
+  // from a later buffered frame. Adds the extended time to the buffered ranges.
+  void EndFramesAtNextPresentation(TrackData& aTrackData, uint32_t aStart,
+                                   uint32_t aCount)
+      MOZ_REQUIRES(mTaskQueueCapability);
   void UpdateHighestTimestamp(TrackData& aTrackData,
                               const media::TimeUnit& aHighestTime)
       MOZ_REQUIRES(mTaskQueueCapability);

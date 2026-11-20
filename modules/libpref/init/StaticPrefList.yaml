@@ -13972,6 +13972,15 @@
   value: true
   mirror: always
 
+# Whether the end of a video frame in fragmented MP4 is set to the start of the
+# next frame in presentation order when that frame comes in a later fragment or
+# append: the frame is extended to it, or cut back when a new frame starts
+# inside it. Used by the MP4 parser and by the MSE track buffer.
+- name: media.mp4.frame-ends-across-fragments.enabled
+  type: RelaxedAtomicBool
+  value: true
+  mirror: always
+
 # Error/warning handling, Decoder Doctor.
 #
 # Set to true to force demux/decode warnings to be treated as errors.
