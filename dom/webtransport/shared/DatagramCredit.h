@@ -121,6 +121,15 @@ class OutgoingDatagramCreditGranter {
     return Some(u);
   }
 
+  // Whether the last grant leaves the child too little to send another
+  // maximum-sized datagram.
+  bool CreditExhausted() const {
+    return mLastGrantedDatagrams <= mDatagramsRetired ||
+           mLastGrantedBytes <
+               mBytesRetired +
+                   DatagramQueueCharge(mMaxDatagramSize, mDatagramPrefixBytes);
+  }
+
   void Commit(const DatagramCapacityUpdate& aUpdate) {
     mLastGrantedDatagrams = aUpdate.mCumulativeDatagrams;
     mLastGrantedBytes = aUpdate.mCumulativeBytes;

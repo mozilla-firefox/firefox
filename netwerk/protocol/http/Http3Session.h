@@ -163,6 +163,9 @@ class Http3SessionBase {
   virtual void SetDatagramMaxBufferedDatagrams(
       uint64_t aSessionId, uint32_t aMaxBufferedDatagrams) = 0;
   virtual void SetDatagramMaxAge(uint64_t aSessionId, double aMaxAge) = 0;
+  // Have the next output pass check its sessions for a datagram progress
+  // request; see WebTransportSessionBase::RequestOutgoingDatagramProgress().
+  virtual void RequestOutgoingDatagramProgress() = 0;
   // A snapshot of this session's outgoing-datagram queue state, for driving
   // a content-process credit grant. aRemainingBytes/aMaxQueuedBytes bound
   // that queue's byte budget; aQueuedDatagrams is informational only.
@@ -347,6 +350,9 @@ class Http3Session final : public Http3SessionBase,
   void SetDatagramMaxBufferedDatagrams(uint64_t aSessionId,
                                        uint32_t aMaxBufferedDatagrams) override;
   void SetDatagramMaxAge(uint64_t aSessionId, double aMaxAge) override;
+  void RequestOutgoingDatagramProgress() override {
+    mOutgoingDatagramProgressRequested = true;
+  }
   bool GetDatagramQueueCapacity(uint64_t aSessionId, size_t* aRemainingBytes,
                                 size_t* aQueuedDatagrams,
                                 size_t* aMaxQueuedBytes) override;
@@ -389,6 +395,7 @@ class Http3Session final : public Http3SessionBase,
                           bool justKidding);
 
   nsresult ProcessOutput(nsIUDPSocket* socket);
+  void NotifyOutgoingDatagramProgress();
   nsresult ProcessInput(nsIUDPSocket* socket);
   nsresult ProcessEvents();
 
@@ -567,6 +574,9 @@ class Http3Session final : public Http3SessionBase,
   nsTArray<RefPtr<Http3StreamBase>> mTunnelStreams;
 
   bool mHasWebTransportSession = false;
+  // Whether some session in mWebTransportSessions has a pending
+  // RequestOutgoingDatagramProgress(), so output passes needn't walk them all.
+  bool mOutgoingDatagramProgressRequested = false;
   // When true, we don't add this connection info into the Http/3 excluded list.
   bool mDontExclude = false;
   // True if any stream accepted Do0RTT() during the ZERORTT phase.  When the

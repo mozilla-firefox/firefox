@@ -90,6 +90,12 @@ class WebTransportSessionBase {
   // Tell the listener the outgoing datagram queue has room again.
   void NotifyOutgoingDatagramSpaceAvailable();
 
+  // Ask for one NotifyOutgoingDatagramSpaceAvailable() after the next output
+  // pass.  neqo only signals space after rejecting a datagram, which a sender
+  // that stays within the credit it was granted never causes.  HTTP/2 already
+  // re-samples after each pass that writes a datagram.  Socket thread.
+  virtual void RequestOutgoingDatagramProgress() {}
+
   // A snapshot of the outgoing datagram queue, and its cumulative
   // sent/expired/dropped counts, for WebTransportParent's DatagramCapacity
   // feedback.  False if the session cannot report them.
