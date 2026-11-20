@@ -88,6 +88,22 @@ const SMART_SHORTCUTS_TICK_INTERVAL = 0;
 const SMART_TELEM = false;
 const MIN_EXP_IMPRESSIONS = 1000;
 const MIN_EXP_CLICKS = 10;
+const INTERACTION_LOOKBACK_DAYS = 61;
+const INTERACTION_PRUNE_MARGIN_DAYS = 1;
+const SECONDS_PER_DAY = 24 * 60 * 60;
+
+/**
+ * Start of the interaction lookback window, in seconds.
+ *
+ * @param {number} now Current time in milliseconds
+ * @param {number} [extraDays] Days to extend the window by
+ */
+function interactionCutoffS(now, extraDays = 0) {
+  return (
+    Math.round(now / 1000) -
+    (INTERACTION_LOOKBACK_DAYS + extraDays) * SECONDS_PER_DAY
+  );
+}
 
 const lazy = {};
 
@@ -532,13 +548,9 @@ export async function fetchDailyVisitsSpecific(topsites, table, placeTable) {
   }
   const guidList = topsites.map(site => site.guid);
 
-  const valuesClause = guidList
-    .map(guid => `('${guid.replace(/'/g, "''")}')`)
-    .join(", ");
-
   const sql = `
       WITH input_keys(guid) AS (
-        VALUES ${valuesClause}
+        SELECT value FROM json_each(:guids)
       ),
       place_ids AS (
         SELECT input_keys.guid, pTable.id AS place_id
@@ -552,12 +564,17 @@ export async function fetchDailyVisitsSpecific(topsites, table, placeTable) {
       FROM place_ids
       LEFT JOIN ${table} as dTable
         ON dTable.place_id = place_ids.place_id
-        AND dTable.visit_date >= 1e6 * strftime('%s', 'now', '-2 months')
+        AND dTable.visit_date >= :cutoff
       GROUP BY place_ids.guid, day_of_week
       ORDER BY place_ids.guid, day_of_week;
       `;
   const { activityStreamProvider } = lazy.NewTabUtils;
-  const rows = await activityStreamProvider.executePlacesQuery(sql);
+  const rows = await activityStreamProvider.executePlacesQuery(sql, {
+    params: {
+      cutoff: interactionCutoffS(Date.now()) * 1e6,
+      guids: JSON.stringify(guidList),
+    },
+  });
   const histograms = {};
   for (const [key, day_of_week, visit_count] of rows) {
     if (!histograms[key]) {
@@ -616,13 +633,9 @@ export async function fetchHourlyVisitsSpecific(topsites, table, placeTable) {
   }
   const guidList = topsites.map(site => site.guid);
 
-  const valuesClause = guidList
-    .map(guid => `('${guid.replace(/'/g, "''")}')`)
-    .join(", ");
-
   const sql = `
       WITH input_keys(guid) AS (
-        VALUES ${valuesClause}
+        SELECT value FROM json_each(:guids)
       ),
       place_ids AS (
         SELECT input_keys.guid, pTable.id AS place_id
@@ -636,12 +649,17 @@ export async function fetchHourlyVisitsSpecific(topsites, table, placeTable) {
       FROM place_ids
       LEFT JOIN ${table} as hTable
         ON hTable.place_id = place_ids.place_id
-        AND hTable.visit_date >= 1e6 * strftime('%s', 'now', '-2 months')
+        AND hTable.visit_date >= :cutoff
       GROUP BY place_ids.guid, hour_of_day
       ORDER BY place_ids.guid, hour_of_day;
       `;
   const { activityStreamProvider } = lazy.NewTabUtils;
-  const rows = await activityStreamProvider.executePlacesQuery(sql);
+  const rows = await activityStreamProvider.executePlacesQuery(sql, {
+    params: {
+      cutoff: interactionCutoffS(Date.now()) * 1e6,
+      guids: JSON.stringify(guidList),
+    },
+  });
   const histograms = {};
   for (const [key, hour_of_day, visit_count] of rows) {
     if (!histograms[key]) {
@@ -753,7 +771,7 @@ function checkWeights(all_weights, features) {
  * @param {string} placeTable moz_places table
  * @returns {Promise<Array>} Clicks and impressions for each site in topsites
  */
-async function fetchShortcutInteractions(topsites, table, placeTable) {
+export async function fetchShortcutInteractions(topsites, table, placeTable) {
   if (!topsites.length) {
     // Return empty clicks and impressions arrays
     return [[], []];
@@ -761,15 +779,11 @@ async function fetchShortcutInteractions(topsites, table, placeTable) {
 
   const guidList = topsites.map(site => site.guid);
 
-  const valuesClause = guidList
-    .map(guid => `('${guid.replace(/'/g, "''")}')`)
-    .join(", ");
-
-  // Only get records in the last 2 months!
+  // Only get records within the lookback window!
   // Join no places table to map guid to place_id
   const sql = `
     WITH input_keys(guid) AS (
-      VALUES ${valuesClause}
+      SELECT value FROM json_each(:guids)
     ),
     place_ids AS (
       SELECT input_keys.guid, ${placeTable}.id AS place_id
@@ -782,12 +796,17 @@ async function fetchShortcutInteractions(topsites, table, placeTable) {
       COALESCE(SUM(1 - ${table}.event_type), 0) AS total_impressions
     FROM place_ids
     LEFT JOIN ${table} ON ${table}.place_id = place_ids.place_id
-      AND ${table}.timestamp_s >= strftime('%s', 'now', '-2 months')
+      AND ${table}.timestamp_s >= :cutoff
     GROUP BY place_ids.guid;
   `;
 
   const { activityStreamProvider } = lazy.NewTabUtils;
-  const interactions = await activityStreamProvider.executePlacesQuery(sql);
+  const interactions = await activityStreamProvider.executePlacesQuery(sql, {
+    params: {
+      cutoff: interactionCutoffS(Date.now()),
+      guids: JSON.stringify(guidList),
+    },
+  });
   const interactionMap = new Map(
     interactions.map(row => {
       // Destructure the array into variables
@@ -805,6 +824,28 @@ async function fetchShortcutInteractions(topsites, table, placeTable) {
     interactionMap.has(guid) ? interactionMap.get(guid).impressions : 0
   );
   return [clicks, impressions];
+}
+
+/**
+ * Deletes interactions older than the lookback window.
+ *
+ * @param {number} now Current time in milliseconds
+ */
+export async function pruneShortcutInteractions(now) {
+  const cutoff = interactionCutoffS(now, INTERACTION_PRUNE_MARGIN_DAYS);
+  try {
+    await lazy.PlacesUtils.withConnectionWrapper(
+      "newtab/lib/SmartShortcutsRanker/RankShortcuts.mjs: pruneShortcutInteractions",
+      async db => {
+        await db.execute(
+          `DELETE FROM ${SHORTCUT_TABLE} WHERE timestamp_s < :cutoff`,
+          { cutoff }
+        );
+      }
+    );
+  } catch (ex) {
+    console.error(`Error pruning shortcut interactions ${ex}`);
+  }
 }
 
 export class RankShortcutsProvider {

@@ -3341,3 +3341,96 @@ add_task(async function test_fetchLast10VisitsByGuid_database() {
 
   await PlacesUtils.history.clear();
 });
+
+add_task(async function test_pruneShortcutInteractions() {
+  const { pruneShortcutInteractions } = ChromeUtils.importESModule(
+    "resource://newtab/lib/SmartShortcutsRanker/RankShortcuts.mjs"
+  );
+  await PlacesUtils.history.clear();
+  await PlacesTestUtils.addVisits("https://example.com/");
+  const placeId = await PlacesTestUtils.getDatabaseValue("moz_places", "id", {
+    url: "https://example.com/",
+  });
+
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  await PlacesUtils.withConnectionWrapper("test", async db => {
+    for (const age of [1, 60, 63]) {
+      await db.execute(
+        `INSERT INTO moz_newtab_shortcuts_interaction
+           (place_id, event_type, timestamp_s, pinned, tile_position)
+         VALUES (:placeId, 0, :timestamp_s, 0, 0)`,
+        { placeId, timestamp_s: Math.round((now - age * DAY_MS) / 1000) }
+      );
+    }
+  });
+
+  await pruneShortcutInteractions(now);
+
+  Assert.equal(
+    await PlacesTestUtils.getDatabaseValue(
+      "moz_newtab_shortcuts_interaction",
+      "COUNT(*)"
+    ),
+    2,
+    "Only interactions older than 62 days are removed"
+  );
+
+  await PlacesUtils.history.clear();
+});
+
+add_task(async function test_fetchShortcutInteractions_database() {
+  const Ranker = ChromeUtils.importESModule(
+    "resource://newtab/lib/SmartShortcutsRanker/RankShortcuts.mjs"
+  );
+  await PlacesUtils.history.clear();
+  await PlacesTestUtils.addVisits([
+    "https://counted.example.com/",
+    "https://empty.example.com/",
+  ]);
+  const counted = await PlacesUtils.history.fetch(
+    "https://counted.example.com/"
+  );
+  const empty = await PlacesUtils.history.fetch("https://empty.example.com/");
+  const placeId = await PlacesTestUtils.getDatabaseValue("moz_places", "id", {
+    guid: counted.guid,
+  });
+
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  await PlacesUtils.withConnectionWrapper("test", async db => {
+    for (const [event_type, age] of [
+      [1, 1],
+      [0, 1],
+      [0, 2],
+      [1, 70],
+      [0, 70],
+    ]) {
+      await db.execute(
+        `INSERT INTO moz_newtab_shortcuts_interaction
+           (place_id, event_type, timestamp_s, pinned, tile_position)
+         VALUES (:placeId, :event_type, :timestamp_s, 0, 0)`,
+        {
+          placeId,
+          event_type,
+          timestamp_s: Math.round((now - age * DAY_MS) / 1000),
+        }
+      );
+    }
+  });
+
+  const [clicks, impressions] = await Ranker.fetchShortcutInteractions(
+    [{ guid: counted.guid }, { guid: empty.guid }, { guid: "missingGuid0" }],
+    "moz_newtab_shortcuts_interaction",
+    "moz_places"
+  );
+
+  Assert.deepEqual(clicks, [1, 0, 0], "Only clicks inside the window count");
+  Assert.deepEqual(
+    impressions,
+    [2, 0, 0],
+    "Only impressions inside the window count"
+  );
+
+  await PlacesUtils.history.clear();
+});

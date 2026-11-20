@@ -158,6 +158,7 @@ add_task(async function test_interactions_written_in_one_flush() {
   feed.store = makeStore({
     [PREF_SYSTEM_SHORTCUTS_PERSONALIZATION]: true,
   });
+  await feed.onAction({ type: actionTypes.INIT });
 
   for (const [type, isPinned, position] of [
     ["impression", false, 0],
@@ -197,6 +198,7 @@ add_task(async function test_interactions_written_in_one_flush() {
   );
   Assert.equal(feed.pendingInteractions.length, 0, "Queue is emptied");
 
+  await feed.onAction({ type: actionTypes.INIT });
   await feed.onAction({
     type: actionTypes.TOP_SITES_ORGANIC_IMPRESSION_STATS,
     data: { type: "impression", guid, position: 0, isPinned: false },
@@ -206,6 +208,55 @@ add_task(async function test_interactions_written_in_one_flush() {
 
   await feed.onAction({ type: actionTypes.UNINIT });
   Assert.equal(await countInteractions(), 4, "The new task writes too");
+
+  await PlacesUtils.history.clear();
+});
+
+add_task(async function test_idle_daily_observer() {
+  let feed = new SmartShortcutsFeed();
+  feed.store = makeStore({
+    [PREF_SYSTEM_SHORTCUTS_PERSONALIZATION]: true,
+  });
+
+  const countObservers = () =>
+    [...Services.obs.enumerateObservers("idle-daily")].length;
+  const before = countObservers();
+
+  await feed.onAction({ type: actionTypes.INIT });
+  Assert.equal(countObservers(), before + 1, "Observes idle-daily after INIT");
+
+  await feed.onAction({ type: actionTypes.UNINIT });
+  Assert.equal(countObservers(), before, "Stops observing on UNINIT");
+});
+
+add_task(async function test_idle_daily_prunes_old_interactions() {
+  await PlacesUtils.history.clear();
+  await PlacesTestUtils.addVisits("https://example.com/");
+  const placeId = await PlacesTestUtils.getDatabaseValue("moz_places", "id", {
+    url: "https://example.com/",
+  });
+
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  await PlacesUtils.withConnectionWrapper("test", async db => {
+    for (const age of [1, 63]) {
+      await db.execute(
+        `INSERT INTO moz_newtab_shortcuts_interaction
+           (place_id, event_type, timestamp_s, pinned, tile_position)
+         VALUES (:placeId, 0, :timestamp_s, 0, 0)`,
+        { placeId, timestamp_s: Math.round((now - age * DAY_MS) / 1000) }
+      );
+    }
+  });
+
+  let feed = new SmartShortcutsFeed();
+  await feed.pruneInteractions();
+
+  Assert.equal(
+    await countInteractions(),
+    1,
+    "Removes interactions past the lookback window"
+  );
 
   await PlacesUtils.history.clear();
 });

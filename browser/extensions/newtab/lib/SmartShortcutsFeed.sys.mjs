@@ -8,6 +8,8 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   DeferredTask: "resource://gre/modules/DeferredTask.sys.mjs",
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
+  pruneShortcutInteractions:
+    "resource://newtab/lib/SmartShortcutsRanker/RankShortcuts.mjs",
 });
 
 import { actionTypes as at } from "resource://newtab/common/Actions.mjs";
@@ -28,6 +30,7 @@ function smartshortcutsEnabled(values) {
 
 const INTERACTION_FLUSH_DELAY_MS = 1000;
 const INTERACTION_FLUSH_MAX_IDLE_WAIT_MS = 5000;
+const TOPIC_IDLE_DAILY = "idle-daily";
 
 function timeMSToSeconds(timeMS) {
   return Math.round(timeMS / 1000);
@@ -44,6 +47,7 @@ export class SmartShortcutsFeed {
     this.loaded = false;
     this.pendingInteractions = [];
     this.flushTask = null;
+    this.observingIdleDaily = false;
   }
 
   isEnabled() {
@@ -57,6 +61,19 @@ export class SmartShortcutsFeed {
 
   async init() {
     this.loaded = this.isEnabled();
+  }
+
+  observe(subject, topic) {
+    if (topic === TOPIC_IDLE_DAILY) {
+      this.pruneInteractions();
+    }
+  }
+
+  async pruneInteractions() {
+    if (Services.startup.shuttingDown) {
+      return;
+    }
+    await lazy.pruneShortcutInteractions(this.Date().now());
   }
 
   async reset() {
@@ -136,9 +153,17 @@ export class SmartShortcutsFeed {
   async onAction(action) {
     switch (action.type) {
       case at.INIT:
+        if (!this.observingIdleDaily) {
+          Services.obs.addObserver(this, TOPIC_IDLE_DAILY);
+          this.observingIdleDaily = true;
+        }
         await this.init();
         break;
       case at.UNINIT:
+        if (this.observingIdleDaily) {
+          Services.obs.removeObserver(this, TOPIC_IDLE_DAILY);
+          this.observingIdleDaily = false;
+        }
         await this.reset();
         break;
       case at.TOP_SITES_ORGANIC_IMPRESSION_STATS:
