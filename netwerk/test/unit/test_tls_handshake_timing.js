@@ -18,20 +18,13 @@ const { NodeHTTPSServer } = ChromeUtils.importESModule(
 
 let h2Port;
 let h3Port;
-add_setup(function test_setup() {
+add_setup(async function test_setup() {
   do_get_profile();
-  h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
+  let h2Server = await create_h2_server();
+  h2Port = h2Server.port();
   h3Port = Services.env.get("MOZHTTP3_PORT");
   Assert.notEqual(h3Port, null);
   Assert.notEqual(h3Port, "");
-
-  let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
-    Ci.nsIX509CertDB
-  );
-
-  addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
 
   Services.prefs.setBoolPref("network.http.http3.enable", true);
   Services.prefs.setCharPref("network.dns.localDomains", "foo.example.com");
@@ -86,10 +79,10 @@ async function do_test_timing(url) {
 
 add_task(async function test_http2() {
   Services.prefs.setIntPref("network.http.speculative-parallel-limit", 6);
-  await do_test_timing(`https://foo.example.com:${h2Port}/server-timing`);
+  await do_test_timing(`https://foo.example.com:${h2Port}/`);
 
   Services.prefs.setIntPref("network.http.speculative-parallel-limit", 0);
-  await do_test_timing(`https://foo.example.com:${h2Port}/server-timing`);
+  await do_test_timing(`https://foo.example.com:${h2Port}/`);
 });
 
 add_task(async function test_http1() {
