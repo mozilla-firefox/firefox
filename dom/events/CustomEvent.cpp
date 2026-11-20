@@ -23,7 +23,7 @@ CustomEvent::~CustomEvent() { mozilla::DropJSObjects(this); }
 
 NS_IMPL_CYCLE_COLLECTION_CLASS(CustomEvent)
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(CustomEvent, Event)
-  mozilla::DropJSObjects(tmp);
+  tmp->mDetail.setNull();
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(CustomEvent, Event)
