@@ -119,8 +119,8 @@ fun WallpaperOnboarding(
 private fun WallpaperSnackbarPreview() {
     FirefoxTheme {
         WallpaperOnboarding(
-            wallpapers = listOf(Wallpaper.Default),
-            currentWallpaper = Wallpaper.Default,
+            wallpapers = listOf(Wallpaper.Solid),
+            currentWallpaper = Wallpaper.Solid,
             onCloseClicked = {},
             onExploreMoreButtonClicked = {},
             loadWallpaperResource = { _, _ -> null },

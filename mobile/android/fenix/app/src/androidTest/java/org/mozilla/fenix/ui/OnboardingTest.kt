@@ -154,7 +154,7 @@ class OnboardingTest {
     @SdkSuppress(minSdkVersion = 29)
     @SmokeTest
     @Test
-    fun verifyEdgeToEdgeWallpaperAfterOnboardingTest() {
+    fun verifyGradientWallpaperAfterOnboardingTest() {
         runWithLauncherIntent(composeTestRule.activityRule) {
             homeScreen(composeTestRule) {
                 clickTheOnboardingCardContinueButton()
@@ -163,7 +163,7 @@ class OnboardingTest {
                 clickContinueIfMarketingCardShown()
             }
             homeScreen(composeTestRule) {
-                verifyEdgeToEdgeWallpaperApplied(composeTestRule)
+                verifyGradientWallpaperApplied(composeTestRule)
             }
         }
     }

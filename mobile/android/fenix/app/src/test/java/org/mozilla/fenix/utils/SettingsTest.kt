@@ -161,11 +161,25 @@ class SettingsTest {
     }
 
     @Test
-    fun defaultWallpaperIsEdgeToEdge() {
+    fun defaultWallpaperIsGradient() {
         val settings = Settings(testContext)
 
         // Then
-        assertEquals(Wallpaper.EdgeToEdge.name, settings.currentWallpaperName)
+        assertEquals(Wallpaper.Gradient.name, settings.currentWallpaperName)
+    }
+
+    @Test
+    fun legacyWallpaperNamesAreMigratedWhenRead() {
+        val settings = Settings(testContext)
+        val key = testContext.getString(R.string.pref_key_current_wallpaper)
+
+        settings.preferences.edit().putString(key, "default").apply()
+        assertEquals(Wallpaper.SOLID, settings.currentWallpaperName)
+        assertEquals(Wallpaper.SOLID, settings.preferences.getString(key, null))
+
+        settings.preferences.edit().putString(key, "edge-to-edge").apply()
+        assertEquals(Wallpaper.GRADIENT, settings.currentWallpaperName)
+        assertEquals(Wallpaper.GRADIENT, settings.preferences.getString(key, null))
     }
 
     @Test

@@ -27,7 +27,7 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.wallpapers.Wallpaper
 
 /**
- * Renders the wallpaper as a full-screen background behind the homepage content: a gradient for the edge-to-edge
+ * Renders the wallpaper as a full-screen background behind the homepage content: a drawn gradient for the gradient
  * wallpaper, or the wallpaper bitmap otherwise.
  *
  * @param wallpaper The [Wallpaper] to render.
@@ -40,8 +40,8 @@ fun WallpaperBackground(
     loadBitmap: suspend (Wallpaper, Int) -> Bitmap?,
     onLoadFailed: () -> Unit = {},
 ) {
-    if (wallpaper.name == Wallpaper.EDGE_TO_EDGE) {
-        EdgeToEdgeGradient()
+    if (wallpaper.name == Wallpaper.GRADIENT) {
+        GradientWallpaper()
         return
     }
 
@@ -71,7 +71,7 @@ fun WallpaperBackground(
 }
 
 @Composable
-private fun EdgeToEdgeGradient() {
+private fun GradientWallpaper() {
     Box(
         modifier =
             Modifier.fillMaxSize()
@@ -80,11 +80,11 @@ private fun EdgeToEdgeGradient() {
                         Brush.verticalGradient(
                             colors =
                                 listOf(
-                                    colorResource(R.color.homepage_edge_to_edge_gradient_start),
-                                    colorResource(R.color.homepage_edge_to_edge_gradient_end),
+                                    colorResource(R.color.wallpaper_gradient_start),
+                                    colorResource(R.color.wallpaper_gradient_end),
                                 )
                         )
                 )
-                .testTag(HomepageTestTag.HOMEPAGE_EDGE_TO_EDGE_GRADIENT)
+                .testTag(HomepageTestTag.HOMEPAGE_GRADIENT_WALLPAPER)
     )
 }

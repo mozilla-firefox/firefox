@@ -105,9 +105,9 @@
     <color name="protections_dashboard_gradient_start">@color/novaVioletDesaturated90</color>
     <color name="protections_dashboard_gradient_end">@color/novaOrange70</color>
 
-    <!-- Colors for Edge to Edge background  -->
-    <color name="homepage_edge_to_edge_gradient_start">#FF0A1A3B</color>
-    <color name="homepage_edge_to_edge_gradient_end">#FF293564</color>
+    <!-- Colors for the gradient wallpaper -->
+    <color name="wallpaper_gradient_start">#FF0A1A3B</color>
+    <color name="wallpaper_gradient_end">#FF293564</color>
     <color name="homepage_tab_edge_to_edge_toolbar_background">#00000000</color>
     <color name="homepage_tab_edge_to_edge_toolbar_outline">#00000000</color>
 

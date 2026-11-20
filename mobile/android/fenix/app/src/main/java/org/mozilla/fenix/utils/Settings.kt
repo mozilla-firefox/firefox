@@ -580,11 +580,25 @@ class Settings(
             persistDefaultIfNotExists = true,
         )
 
-    var currentWallpaperName by
+    private var storedWallpaperName by
         stringPreference(
             appContext.getPreferenceKey(R.string.pref_key_current_wallpaper),
-            default = Wallpaper.EdgeToEdge.name,
+            default = Wallpaper.Gradient.name,
         )
+
+    /** The name of the selected wallpaper. A name stored before the wallpapers were renamed is migrated on read. */
+    var currentWallpaperName: String
+        get() {
+            val storedName = storedWallpaperName
+            val name = Wallpaper.migrateLegacyName(storedName)
+            if (name != storedName) {
+                storedWallpaperName = name
+            }
+            return name
+        }
+        set(value) {
+            storedWallpaperName = value
+        }
 
     /**
      * A cache of the text color to use on text overlaying the current wallpaper. The value will be `0` if the color is

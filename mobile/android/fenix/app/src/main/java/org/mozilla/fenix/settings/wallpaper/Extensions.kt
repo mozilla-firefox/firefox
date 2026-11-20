@@ -34,7 +34,7 @@ fun List<Wallpaper>.groupByDisplayableCollection(): Map<Wallpaper.Collection, Li
  * by classic wallpapers. If we have less than 6 wallpapers, return all the available seasonal and classic wallpapers.
  */
 fun List<Wallpaper>.getWallpapersForOnboarding(): List<Wallpaper> {
-    val (localWallpapers, remoteWallpapers) = this.partition { it.collection.name == Wallpaper.DEFAULT }
+    val (localWallpapers, remoteWallpapers) = this.partition { it.collection.name == Wallpaper.DEFAULT_COLLECTION }
 
     val (allClassicWallpapers, allSeasonalWallpapers) =
         remoteWallpapers.partition {

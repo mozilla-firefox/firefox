@@ -59,10 +59,15 @@ data class Wallpaper(
         const val SUNRISE = "sunrise"
         const val BEACH_VIBE = "beach-vibe"
         const val FIREFOX_COLLECTION = "firefox"
-        const val DEFAULT = "default"
-        const val EDGE_TO_EDGE = "edge-to-edge"
+        const val SOLID = "solid"
+        const val GRADIENT = "gradient"
+        const val DEFAULT_COLLECTION = "default"
 
-        private val localWallpapers = listOf(DEFAULT, EDGE_TO_EDGE)
+        // Names the solid and gradient wallpapers were stored under before they were renamed.
+        private const val LEGACY_SOLID = "default"
+        private const val LEGACY_GRADIENT = "edge-to-edge"
+
+        private val localWallpapers = listOf(SOLID, GRADIENT)
 
         /*
          * Note: this collection could get out of sync with the version of it generated when fetching
@@ -92,7 +97,7 @@ data class Wallpaper(
             )
         val DefaultCollection =
             Collection(
-                name = DEFAULT,
+                name = DEFAULT_COLLECTION,
                 heading = null,
                 description = null,
                 learnMoreUrl = null,
@@ -100,9 +105,9 @@ data class Wallpaper(
                 startDate = null,
                 endDate = null,
             )
-        val Default =
+        val Solid =
             Wallpaper(
-                name = DEFAULT,
+                name = SOLID,
                 collection = DefaultCollection,
                 textColor = null,
                 cardColorLight = null,
@@ -110,9 +115,9 @@ data class Wallpaper(
                 thumbnailFileState = ImageFileState.Downloaded,
                 assetsFileState = ImageFileState.Downloaded,
             )
-        val EdgeToEdge =
+        val Gradient =
             Wallpaper(
-                name = EDGE_TO_EDGE,
+                name = GRADIENT,
                 collection = DefaultCollection,
                 textColor = null,
                 cardColorLight = null,
@@ -150,8 +155,8 @@ data class Wallpaper(
             val textColor = settings.currentWallpaperTextColor
             val cardColorLight = settings.currentWallpaperCardColorLight
             val cardColorDark = settings.currentWallpaperCardColorDark
-            return if (name == EDGE_TO_EDGE) {
-                EdgeToEdge
+            return if (name == GRADIENT) {
+                Gradient
             } else if (name.isNotEmpty() && textColor != 0L && cardColorLight != 0L && cardColorDark != 0L) {
                 Wallpaper(
                     name = name,
@@ -168,21 +173,34 @@ data class Wallpaper(
         }
 
         /**
-         * Check if a wallpaper name matches the default. Considers empty strings to be default since that likely means
-         * a wallpaper has never been set. The "none" case here is to deal with a legacy case where the default
-         * wallpaper used to be Wallpaper.NONE. See commit 7a44412, Wallpaper.NONE and Settings.currentWallpaper (legacy
-         * name) for context.
+         * Check if a wallpaper name matches the solid wallpaper. Considers empty strings to be the solid wallpaper
+         * since that likely means a wallpaper has never been set. The "none" case here is to deal with a legacy case
+         * where the default wallpaper used to be Wallpaper.NONE. See commit 7a44412, Wallpaper.NONE and
+         * Settings.currentWallpaper (legacy name) for context.
          *
          * @param name The name to check.
          */
-        fun nameIsDefault(name: String): Boolean = name.isEmpty() || name == DEFAULT || name.lowercase() == "none"
+        fun nameIsSolid(name: String): Boolean = name.isEmpty() || name == SOLID || name.lowercase() == "none"
+
+        /**
+         * Returns the name to store for a wallpaper stored under [name], replacing the names the solid and gradient
+         * wallpapers had before they were renamed.
+         *
+         * @param name The stored wallpaper name.
+         */
+        fun migrateLegacyName(name: String): String =
+            when (name) {
+                LEGACY_SOLID -> SOLID
+                LEGACY_GRADIENT -> GRADIENT
+                else -> name
+            }
 
         /**
          * Returns true if the wallpaper is a local wallpaper, as opposed to a distant wallpaper that needs to be
          * downloaded from a distant URL.
          *
          * @param name The name to check.
-         * @return True if wallpaper name is Default or EdgeToEdge, False otherwise
+         * @return True if wallpaper name is [SOLID] or [GRADIENT], False otherwise
          */
         fun isLocalWallpaper(name: String): Boolean = name in localWallpapers
     }

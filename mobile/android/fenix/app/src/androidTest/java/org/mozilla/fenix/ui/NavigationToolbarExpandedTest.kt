@@ -649,7 +649,7 @@ class NavigationToolbarExpandedTest {
     @Test
     fun verifyTheExpandedToolbarHomepageItemsTest() {
         homeScreen(composeTestRule) {
-            verifyEdgeToEdgeWallpaperApplied(composeTestRule)
+            verifyGradientWallpaperApplied(composeTestRule)
             verifyHomeWordmark()
             verifyToolbarPosition(bottomPosition = false)
         }

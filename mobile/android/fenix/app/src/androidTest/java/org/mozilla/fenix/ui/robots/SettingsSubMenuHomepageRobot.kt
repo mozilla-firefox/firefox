@@ -35,6 +35,7 @@ import org.mozilla.fenix.helpers.TestHelper
 import org.mozilla.fenix.helpers.TestHelper.mDevice
 import org.mozilla.fenix.helpers.click
 import org.mozilla.fenix.helpers.isChecked
+import org.mozilla.fenix.wallpapers.Wallpaper
 
 /** Implementation of Robot Pattern for the settings Homepage sub menu. */
 class SettingsSubMenuHomepageRobot {
@@ -418,10 +419,10 @@ class SettingsSubMenuHomepageRobot {
         }
     }
 
-    fun clickTheDefaultWallpaper(composeTestRule: ComposeTestRule) {
-        Log.i(TAG, "clickTheDefaultWallpaper: Trying to click default wallpaper")
-        composeTestRule.defaultWallpaper().performClick()
-        Log.i(TAG, "clickTheDefaultWallpaper: Clicked default wallpaper")
+    fun clickTheSolidWallpaper(composeTestRule: ComposeTestRule) {
+        Log.i(TAG, "clickTheSolidWallpaper: Trying to click solid wallpaper")
+        composeTestRule.solidWallpaper().performClick()
+        Log.i(TAG, "clickTheSolidWallpaper: Clicked solid wallpaper")
         // Wait for the wallpaper state to propagate and background to be applied
         composeTestRule.waitForIdle()
         mDevice.waitForIdle()
@@ -445,43 +446,43 @@ class SettingsSubMenuHomepageRobot {
         Log.i(TAG, "verifyClassicFirefoxSection: Verified that the \"Classic Firefox\" wallpaper collection is visible")
     }
 
-    fun verifyEdgeToEdgeWallpaperIsDisplayed(composeTestRule: ComposeTestRule) {
-        Log.i(TAG, "verifyEdgeToEdgeWallpaperIsDisplayed: Trying to verify that edge-to-edge wallpaper is visible")
-        composeTestRule.edgeToEdgeWallpaper().assertIsDisplayed()
-        Log.i(TAG, "verifyEdgeToEdgeWallpaperIsDisplayed: Verified that edge-to-edge wallpaper is visible")
+    fun verifyGradientWallpaperIsDisplayed(composeTestRule: ComposeTestRule) {
+        Log.i(TAG, "verifyGradientWallpaperIsDisplayed: Trying to verify that gradient wallpaper is visible")
+        composeTestRule.gradientWallpaper().assertIsDisplayed()
+        Log.i(TAG, "verifyGradientWallpaperIsDisplayed: Verified that gradient wallpaper is visible")
     }
 
-    fun verifyDefaultWallpaperIsDisplayed(composeTestRule: ComposeTestRule) {
-        Log.i(TAG, "verifyDefaultWallpaperIsDisplayed: Trying to verify that default wallpaper is visible")
-        composeTestRule.defaultWallpaper().assertIsDisplayed()
-        Log.i(TAG, "verifyDefaultWallpaperIsDisplayed: Verified that default wallpaper is visible")
+    fun verifySolidWallpaperIsDisplayed(composeTestRule: ComposeTestRule) {
+        Log.i(TAG, "verifySolidWallpaperIsDisplayed: Trying to verify that solid wallpaper is visible")
+        composeTestRule.solidWallpaper().assertIsDisplayed()
+        Log.i(TAG, "verifySolidWallpaperIsDisplayed: Verified that solid wallpaper is visible")
     }
 
-    fun verifyEdgeToEdgeWallpaperIsSelected(composeTestRule: ComposeTestRule) {
-        Log.i(TAG, "verifyEdgeToEdgeWallpaperIsSelected: Trying to verify that edge-to-edge wallpaper is selected")
-        composeTestRule.edgeToEdgeWallpaperSelected().assertExists()
-        Log.i(TAG, "verifyEdgeToEdgeWallpaperIsSelected: Verified that edge-to-edge wallpaper is selected")
+    fun verifyGradientWallpaperIsSelected(composeTestRule: ComposeTestRule) {
+        Log.i(TAG, "verifyGradientWallpaperIsSelected: Trying to verify that gradient wallpaper is selected")
+        composeTestRule.gradientWallpaperSelected().assertExists()
+        Log.i(TAG, "verifyGradientWallpaperIsSelected: Verified that gradient wallpaper is selected")
     }
 
-    fun verifyDefaultWallpaperIsSelected(composeTestRule: ComposeTestRule) {
-        Log.i(TAG, "verifyDefaultWallpaperIsSelected: Trying to verify that default wallpaper is selected")
-        composeTestRule.defaultWallpaperSelected().assertExists()
-        Log.i(TAG, "verifyDefaultWallpaperIsSelected: Verified that default wallpaper is selected")
+    fun verifySolidWallpaperIsSelected(composeTestRule: ComposeTestRule) {
+        Log.i(TAG, "verifySolidWallpaperIsSelected: Trying to verify that solid wallpaper is selected")
+        composeTestRule.solidWallpaperSelected().assertExists()
+        Log.i(TAG, "verifySolidWallpaperIsSelected: Verified that solid wallpaper is selected")
     }
 
-    fun verifyEdgeToEdgeWallpaperIsNotSelected(composeTestRule: ComposeTestRule) {
+    fun verifyGradientWallpaperIsNotSelected(composeTestRule: ComposeTestRule) {
         Log.i(
             TAG,
-            "verifyEdgeToEdgeWallpaperIsNotSelected: Trying to verify that edge-to-edge wallpaper is not selected",
+            "verifyGradientWallpaperIsNotSelected: Trying to verify that gradient wallpaper is not selected",
         )
-        composeTestRule.edgeToEdgeWallpaperSelected().assertDoesNotExist()
-        Log.i(TAG, "verifyEdgeToEdgeWallpaperIsNotSelected: Verified that edge-to-edge wallpaper is not selected")
+        composeTestRule.gradientWallpaperSelected().assertDoesNotExist()
+        Log.i(TAG, "verifyGradientWallpaperIsNotSelected: Verified that gradient wallpaper is not selected")
     }
 
-    fun verifyDefaultWallpaperIsNotSelected(composeTestRule: ComposeTestRule) {
-        Log.i(TAG, "verifyDefaultWallpaperIsNotSelected: Trying to verify that default wallpaper is not selected")
-        composeTestRule.defaultWallpaperSelected().assertDoesNotExist()
-        Log.i(TAG, "verifyDefaultWallpaperIsNotSelected: Verified that default wallpaper is not selected")
+    fun verifySolidWallpaperIsNotSelected(composeTestRule: ComposeTestRule) {
+        Log.i(TAG, "verifySolidWallpaperIsNotSelected: Trying to verify that solid wallpaper is not selected")
+        composeTestRule.solidWallpaperSelected().assertDoesNotExist()
+        Log.i(TAG, "verifySolidWallpaperIsNotSelected: Verified that solid wallpaper is not selected")
     }
 
     class Transition {
@@ -592,27 +593,27 @@ private fun wallpapersPageHeader() = onView(withText(R.string.customize_wallpape
 
 private fun wallpapersPageBackButton() = onView(withContentDescription(R.string.action_bar_up_description))
 
-private fun ComposeTestRule.edgeToEdgeWallpaper() =
+private fun ComposeTestRule.gradientWallpaper() =
     onNodeWithContentDescription(
-        getStringResource(R.string.wallpapers_item_name_content_description, "edge-to-edge"),
+        getStringResource(R.string.wallpapers_item_name_content_description, Wallpaper.GRADIENT),
         useUnmergedTree = true,
     )
 
-private fun ComposeTestRule.defaultWallpaper() =
+private fun ComposeTestRule.solidWallpaper() =
     onNodeWithContentDescription(
-        getStringResource(R.string.wallpapers_item_name_content_description, "default"),
+        getStringResource(R.string.wallpapers_item_name_content_description, Wallpaper.SOLID),
         useUnmergedTree = true,
     )
 
-private fun ComposeTestRule.edgeToEdgeWallpaperSelected() =
+private fun ComposeTestRule.gradientWallpaperSelected() =
     onNodeWithTag(
-        "wallpaper.thumbnail.selected.edge-to-edge",
+        "wallpaper.thumbnail.selected.${Wallpaper.GRADIENT}",
         useUnmergedTree = true,
     )
 
-private fun ComposeTestRule.defaultWallpaperSelected() =
+private fun ComposeTestRule.solidWallpaperSelected() =
     onNodeWithTag(
-        "wallpaper.thumbnail.selected.default",
+        "wallpaper.thumbnail.selected.${Wallpaper.SOLID}",
         useUnmergedTree = true,
     )
 

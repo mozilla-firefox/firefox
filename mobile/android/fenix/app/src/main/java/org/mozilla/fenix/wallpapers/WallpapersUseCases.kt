@@ -140,7 +140,7 @@ class WallpapersUseCases(
                 possibleWallpapers.find { it.name == currentWallpaperName }
                     ?: fileManager.lookupExpiredWallpaper(settings)
                     ?: Wallpaper.getCurrentWallpaperFromSettings(settings)
-                    ?: Wallpaper.Default
+                    ?: Wallpaper.Solid
 
             // Dispatching this early will make it accessible to the home screen ASAP. This may have
             // been dispatched by FetchCurrentWallpaperUseCase, but this could include additional metadata.
@@ -160,11 +160,11 @@ class WallpapersUseCases(
             appStore.dispatch(AppAction.WallpaperAction.UpdateAvailableWallpapers(defaultIncluded))
         }
 
-        private val defaultWallpapers: List<Wallpaper> = listOf(Wallpaper.EdgeToEdge, Wallpaper.Default)
+        private val defaultWallpapers: List<Wallpaper> = listOf(Wallpaper.Gradient, Wallpaper.Solid)
 
         private fun Wallpaper.isExpired(): Boolean =
             when (this) {
-                Wallpaper.Default -> false
+                Wallpaper.Solid -> false
                 else -> {
                     val expired = this.collection.endDate?.let { Date().after(it) } ?: false
                     expired && this.name != settings.currentWallpaperName

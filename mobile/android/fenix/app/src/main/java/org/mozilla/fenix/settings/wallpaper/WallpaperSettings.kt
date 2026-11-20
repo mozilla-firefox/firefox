@@ -262,7 +262,7 @@ private fun WallpaperThumbnailItem(
                 width = FirefoxTheme.layout.border.heaviest,
                 color = MaterialTheme.colorScheme.primary,
             )
-        } else if (wallpaper.name == Wallpaper.DEFAULT) {
+        } else if (wallpaper.name == Wallpaper.SOLID) {
             BorderStroke(
                 width = FirefoxTheme.layout.border.heaviest,
                 color = MaterialTheme.colorScheme.outlineVariant,
@@ -322,7 +322,7 @@ private fun WallpaperThumbnailContent(
     loadingOpacity: Float,
 ) {
     if (bitmap == null) {
-        Spacer(modifier = Modifier.fillMaxSize().edgeToEdgeGradientConditional { wallpaper == Wallpaper.EdgeToEdge })
+        Spacer(modifier = Modifier.fillMaxSize().gradientConditional { wallpaper == Wallpaper.Gradient })
     } else {
         Image(
             bitmap = bitmap.asImageBitmap(),
@@ -360,15 +360,15 @@ private fun Modifier.wallpaperThumbnailTestTag(
     )
 
 @Composable
-private fun Modifier.edgeToEdgeGradientConditional(predicate: () -> Boolean): Modifier =
+private fun Modifier.gradientConditional(predicate: () -> Boolean): Modifier =
     this.thenConditional(
         Modifier.background(
             brush =
                 Brush.verticalGradient(
                     colors =
                         listOf(
-                            colorResource(R.color.homepage_edge_to_edge_gradient_start),
-                            colorResource(R.color.homepage_edge_to_edge_gradient_end),
+                            colorResource(R.color.wallpaper_gradient_start),
+                            colorResource(R.color.wallpaper_gradient_end),
                         )
                 )
         ),
@@ -390,7 +390,7 @@ private fun WallpaperThumbnailsPreview(@PreviewParameter(PreviewThemeProvider::c
                 assetsFileState = Wallpaper.ImageFileState.Downloaded,
                 collection = Wallpaper.ClassicFirefoxCollection,
             )
-        } + Wallpaper.Default
+        } + Wallpaper.Solid
     val downloadingCollection: List<Wallpaper> =
         List(size = 5) { index ->
             Wallpaper(
@@ -408,7 +408,7 @@ private fun WallpaperThumbnailsPreview(@PreviewParameter(PreviewThemeProvider::c
     FirefoxTheme(theme) {
         WallpaperSettings(
             loadWallpaperResource = { wallpaper, _ ->
-                if (wallpaper == Wallpaper.Default) {
+                if (wallpaper == Wallpaper.Solid) {
                     null
                 } else {
                     createBitmap(100, 100, Bitmap.Config.ARGB_8888)

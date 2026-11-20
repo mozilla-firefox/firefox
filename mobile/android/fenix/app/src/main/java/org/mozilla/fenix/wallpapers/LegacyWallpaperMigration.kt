@@ -45,7 +45,7 @@ class LegacyWallpaperMigration(
                 SUNRISE,
                 AMETHYST -> {
                     downloadWallpaper(
-                        Wallpaper.Default.copy(
+                        Wallpaper.Solid.copy(
                             name = wallpaperName,
                             collection = Wallpaper.ClassicFirefoxCollection,
                             thumbnailFileState = Wallpaper.ImageFileState.Unavailable,

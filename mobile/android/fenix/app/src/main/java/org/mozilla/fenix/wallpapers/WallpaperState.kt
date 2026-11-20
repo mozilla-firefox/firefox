@@ -24,7 +24,7 @@ data class WallpaperState(
     companion object {
         val default =
             WallpaperState(
-                currentWallpaper = Wallpaper.Default,
+                currentWallpaper = Wallpaper.Solid,
                 availableWallpapers = listOf(),
             )
     }
@@ -53,7 +53,7 @@ data class WallpaperState(
     val buttonBackgroundColor: Color
         @Composable
         get() =
-            if (isCurrentWallpaperDefault()) {
+            if (isCurrentWallpaperSolid()) {
                 ButtonDefaults.buttonColors().containerColor
             } else {
                 MaterialTheme.colorScheme.surface
@@ -63,7 +63,7 @@ data class WallpaperState(
     val buttonTextColor: Color
         @Composable
         get() =
-            if (isCurrentWallpaperDefault()) {
+            if (isCurrentWallpaperSolid()) {
                 ButtonDefaults.buttonColors().contentColor
             } else {
                 MaterialTheme.colorScheme.onSurface
@@ -73,7 +73,7 @@ data class WallpaperState(
     val textColor: Color
         @Composable get() = currentWallpaper.textColor?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurface
 
-    private fun isCurrentWallpaperDefault(): Boolean = Wallpaper.nameIsDefault(currentWallpaper.name)
+    private fun isCurrentWallpaperSolid(): Boolean = Wallpaper.nameIsSolid(currentWallpaper.name)
 
     /** Run the Composable [run] block only if the current wallpaper's card colors are available. */
     @Composable
