@@ -223,10 +223,6 @@ WebTransportDatagramDuplexStream::CreateWritable(
 void WebTransportDatagramDuplexStream::NewDatagramReceived(
     nsTArray<uint8_t>&& aData, const mozilla::TimeStamp& aTimeStamp) {
   LOG(("received Datagram, size = %zu", aData.Length()));
-  if (mWebTransport->mState == WebTransport::WebTransportState::CLOSED ||
-      mWebTransport->mState == WebTransport::WebTransportState::FAILED) {
-    return;
-  }
 
   // Drop oldest datagrams if the queue has reached the buffer limit. We still
   // drop if equal since we're about to add one.
@@ -759,21 +755,9 @@ void OutgoingDatagramStreamAlgorithms::Cleanup() {
   mWaitConnectQueue.Clear();
 }
 
-nsTArray<RefPtr<WebTransportDatagramsWritable>>
-WebTransportDatagramDuplexStream::Cleanup() {
-  // Step 11: Set transport.[[Datagrams]].[[Writables]] to an empty set.
-  nsTArray<RefPtr<WebTransportDatagramsWritable>> writables =
-      std::move(mAllWritables);
-  mCreatedWritables.Clear();
-  // Step 12: For each writable in outgoingDatagramWritables:
-  // Step 12.1: Set writable.[[OutgoingDatagramsQueue]] to an empty queue.
-  // Step 12.2: Resolve writable.[[BackpressurePromise]] with undefined.
-  // The write promises writeDatagrams withheld stand in for
-  // [[BackpressurePromise]], and the default writable isn't in
-  // [[Writables]], so each algorithms instance resolves its own and drops
-  // its queue.
+void WebTransportDatagramDuplexStream::Cleanup() {
   mOutgoingAlgorithms->Cleanup();
-  for (const auto& writable : writables) {
+  for (const auto& writable : mAllWritables) {
     writable->Cleanup();
   }
   // Every promise queued here was already resolved above
@@ -783,10 +767,6 @@ WebTransportDatagramDuplexStream::Cleanup() {
   // sending stale data for a torn-down session.
   mPendingOutgoing.Clear();
   mPendingOutgoingBytes = 0;
-  // Step 13: Set transport.[[Datagrams]].[[IncomingDatagramsQueue]] to an
-  // empty queue.
-  mIncomingDatagramsQueue.Clear();
-  return writables;
 }
 
 // static
@@ -799,7 +779,7 @@ void WebTransportDatagramDuplexStream::CloseOrErrorWritable(
   // Best-effort: one writable already closing/errored (e.g. a duplicate
   // call) must not stop the rest from being settled.
   if (aClean) {
-    // https://w3c.github.io/webtransport/#webtransport-cleanup step 17.5
+    // https://w3c.github.io/webtransport/#webtransport-cleanup step 16.5
     // calls "close" on every writable unconditionally, but
     // WritableStreamClose() asserts the stream has no close already
     // queued/in-flight -- a race with the page's own writer.close() would
@@ -819,22 +799,13 @@ void WebTransportDatagramDuplexStream::CloseOrErrorWritable(
 }
 
 void WebTransportDatagramDuplexStream::CloseOrErrorWritables(
-    JSContext* aCx,
-    const nsTArray<RefPtr<WebTransportDatagramsWritable>>& aWritables,
-    bool aClean, JS::Handle<JS::Value> aErrorValue) {
-  CloseOrErrorWritable(aCx, MOZ_KnownLive(mWritable), aClean, aErrorValue);
-  for (const auto& writable : aWritables) {
-    CloseOrErrorWritable(aCx, MOZ_KnownLive(writable), aClean, aErrorValue);
-  }
-}
-
-void WebTransportDatagramDuplexStream::CloseOrErrorReadable(
     JSContext* aCx, bool aClean, JS::Handle<JS::Value> aErrorValue) {
-  RefPtr<ReadableStream> readable = mReadable;
-  if (aClean) {
-    readable->CloseNative(aCx, IgnoreErrors());
-  } else {
-    readable->ErrorNative(aCx, aErrorValue, IgnoreErrors());
+  CloseOrErrorWritable(aCx, MOZ_KnownLive(mWritable), aClean, aErrorValue);
+  // Iterate a copy, since settling a writable must not invalidate the loop.
+  nsTArray<RefPtr<WebTransportDatagramsWritable>> writables =
+      mAllWritables.Clone();
+  for (const auto& writable : writables) {
+    CloseOrErrorWritable(aCx, MOZ_KnownLive(writable), aClean, aErrorValue);
   }
 }
 
