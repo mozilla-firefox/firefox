@@ -23,6 +23,8 @@ prefs = [
 
 ["browser_open_close.js"]
 
+["browser_open_link_unsupported_windows.js"]
+
 ["browser_open_url.js"]
 
 ["browser_origin_close.js"]

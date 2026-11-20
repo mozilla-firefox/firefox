@@ -121,7 +121,8 @@ class MiniWindowManagerClass {
    * Open `url` in a new full-tab mini window.
    *
    * @param {Window} originWin - the browser window the mini window belongs to;
-   *   its tab goes back here when the mini window is restored.
+   *   its tab goes back here when the mini window is restored. If this is a
+   *   mini window, the new one belongs to that mini window's originWin.
    * @param {string} url - the URL to load.
    * @param {string} entryPoint - where the open was initiated.
    * @param {object} loadParams - openLinkIn params for the load; must include
@@ -140,6 +141,9 @@ class MiniWindowManagerClass {
       return null;
     }
 
+    originWin =
+      this._miniWindowForBrowser(originWin.gBrowser.selectedBrowser)
+        ?.originWin ?? originWin;
     let miniwindow = new lazy.MiniWindow(this, originWin);
     this.#register(miniwindow);
     let open = await miniwindow.open(url, loadParams);

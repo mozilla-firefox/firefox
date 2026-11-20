@@ -552,9 +552,13 @@ export class nsContextMenu {
     let showSplitViews = Services.prefs.getBoolPref(
       "browser.tabs.splitView.enabled"
     );
+
+    // TODO: Bug 2094287 - Support opening links in a mini window from popups and Document
+    // Picture-in-Picture windows.
     let showMiniWindow =
       Services.prefs.getBoolPref("browser.mini-window.enabled", false) &&
-      !this.document.documentElement.hasAttribute("mini-window");
+      this.window.toolbar.visible &&
+      !this.window.browsingContext.isDocumentPiP;
     let currentTabInSplitView = !!window.gBrowser?.selectedTab?.splitview;
     let showSmartWindow = lazy.AIWindow.isAIWindowEnabled();
     this.showItem("context-openlink", shouldShow && !isWindowPrivate);
