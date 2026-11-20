@@ -57,15 +57,19 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/a342f5eca8622c8b9
  41 files changed, 102 insertions(+), 101 deletions(-)
 
 diff --git a/.gn b/.gn
-index 6a99da2a59..7f5e59fafa 100644
+index 2eddb1bff8..a0451624b3 100644
 --- a/.gn
 +++ b/.gn
-@@ -6,10 +6,10 @@
+@@ -6,14 +6,14 @@
  # in the file PATENTS.  All contributing project authors may
  # be found in the AUTHORS file in the root of the source tree.
  
 -import("//build/dotfile_settings.gni")
 +import("//chromium/build/dotfile_settings.gni")
+ 
+ # Defines check_includes_strict_exceptions, the exceptions to the strict include
+ # checks that GN enables by default (see "gn help check_includes_strict").
+ import("//build/strict_deps_failures.gni")
  
  # The location of the build configuration file.
 -buildconfig = "//build/config/BUILDCONFIG.gn"
