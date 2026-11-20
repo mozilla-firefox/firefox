@@ -212,10 +212,6 @@ impl GuiTest {
         // Create a default mock environment which allows successful operation.
         let mut mock = mock::builder();
         mock.set(
-            Command::mock("work_dir/pingsender"),
-            Box::new(|_| Ok(crate::std::process::success_output())),
-        )
-        .set(
             Command::mock("curl"),
             Box::new(|_| {
                 let mut output = crate::std::process::success_output();
@@ -592,7 +588,7 @@ fn customize_extra_file(test: &mut GuiTest, extra_fields: &[(&str, &str)]) -> St
 
 #[test]
 fn restart() {
-    let (mut test, ran_process )= prepare_restart_test();
+    let (mut test, ran_process) = prepare_restart_test();
     test.run(|interact| {
         interact.element("restart", |_style, b: &model::Button| b.click.fire(&()));
     });
@@ -607,7 +603,10 @@ fn no_restart_on_browser_shutdown() {
     let (mut test, ran_process) = prepare_restart_test();
     customize_extra_file(
         &mut test,
-        &[("ShutdownProgress", "xpcom-will-shutdown"), ("ShutdownReason", "Unknown")]
+        &[
+            ("ShutdownProgress", "xpcom-will-shutdown"),
+            ("ShutdownReason", "Unknown"),
+        ],
     );
 
     test.run(|interact| {
@@ -627,10 +626,8 @@ fn no_restart_on_browser_shutdown() {
 #[test]
 fn no_restart_with_windows_error_reporting() {
     let (mut test, ran_process) = prepare_restart_test();
-    let minidump_extra_contents = customize_extra_file(
-        &mut test,
-        &[("WindowsErrorReporting", "1")]
-    );
+    let minidump_extra_contents =
+        customize_extra_file(&mut test, &[("WindowsErrorReporting", "1")]);
     test.config.delete_dump = false;
 
     test.run(|interact| {
@@ -793,44 +790,6 @@ fn network_failure() {
                 serde_json::json! {{
                     "foo": "bar",
                     "MinidumpSha256Hash": MOCK_MINIDUMP_SHA256,
-                    "StackTraces": "{}"
-                }}
-            ),
-        );
-}
-
-#[test]
-fn pingsender_failure() {
-    let mut test = GuiTest::new();
-    test.mock.set(
-        Command::mock("work_dir/pingsender"),
-        Box::new(|_| Err(ErrorKind::NotFound.into())),
-    );
-    test.files.add_dir("events_dir").add_file(
-        "events_dir/minidump",
-        "1\n\
-         12:34:56\n\
-         e0423878-8d59-4452-b82e-cad9c846836e\n\
-         {\"foo\":\"bar\"}",
-    );
-    test.run(|interact| {
-        interact.element("quit", |_style, b: &model::Button| b.click.fire(&()));
-    });
-    test.assert_files()
-        .saved_settings(Settings::default())
-        .submitted()
-        .submission_event(true)
-        .check(
-            "events_dir/minidump",
-            format!(
-                "1\n\
-                12:34:56\n\
-                e0423878-8d59-4452-b82e-cad9c846836e\n\
-                {}",
-                serde_json::json! {{
-                    "foo": "bar",
-                    "MinidumpSha256Hash": MOCK_MINIDUMP_SHA256,
-                    // No crash ping UUID since pingsender fails
                     "StackTraces": "{}"
                 }}
             ),
