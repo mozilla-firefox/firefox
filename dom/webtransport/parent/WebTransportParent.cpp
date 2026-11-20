@@ -279,19 +279,58 @@ IPCResult WebTransportParent::RecvClose(const uint32_t& aCode,
   return IPC_OK();
 }
 
+namespace {
+// Each NS_AsyncCopy() of one stream holds a reference; the stream is removed
+// from the callback maps when the last of them completes (on the socket
+// thread).
+class StreamCopies final {
+ public:
+  NS_INLINE_DECL_REFCOUNTING(StreamCopies)
+
+  StreamCopies(WebTransportParent* aParent, uint64_t aStreamId)
+      : mParent(aParent), mStreamId(aStreamId) {}
+
+  nsresult AsyncCopy(nsIInputStream* aSource, nsIOutputStream* aSink,
+                     nsIEventTarget* aTarget, nsAsyncCopyMode aMode,
+                     nsISupports** aCopierCtx = nullptr) {
+    RefPtr<StreamCopies> self(this);
+    nsresult rv = NS_AsyncCopy(aSource, aSink, aTarget, aMode,
+                               mozilla::ipc::kDefaultDataPipeCapacity, CopyDone,
+                               this, true, true, aCopierCtx);
+    if (NS_SUCCEEDED(rv)) {
+      self.forget().leak();
+    }
+    return rv;
+  }
+
+ private:
+  ~StreamCopies() { mParent->RemoveFinishedStream(mStreamId); }
+
+  static void CopyDone(void* aClosure, nsresult) {
+    RefPtr<StreamCopies> copies =
+        dont_AddRef(static_cast<StreamCopies*>(aClosure));
+  }
+
+  const RefPtr<WebTransportParent> mParent;
+  const uint64_t mStreamId;
+};
+}  // namespace
+
 class BidiReceiveStream : public nsIWebTransportStreamCallback {
  public:
   NS_DECL_THREADSAFE_ISUPPORTS
   NS_DECL_NSIWEBTRANSPORTSTREAMCALLBACK
 
   BidiReceiveStream(
+      WebTransportParent* aParent,
       WebTransportParent::CreateBidirectionalStreamResolver&& aResolver,
       std::function<
           void(uint64_t, WebTransportParent::OnResetOrStopSendingCallback&&,
                nsIWebTransportBidirectionalStream* aStream)>&& aStreamCallback,
       int64_t aSendOrder, Maybe<uint64_t> aSendGroupId,
       nsCOMPtr<nsISerialEventTarget>& aSocketThread)
-      : mResolver(std::move(aResolver)),
+      : mParent(aParent),
+        mResolver(std::move(aResolver)),
         mStreamCallback(std::move(aStreamCallback)),
         mSendOrder(aSendOrder),
         mSendGroupId(aSendGroupId),
@@ -299,6 +338,7 @@ class BidiReceiveStream : public nsIWebTransportStreamCallback {
 
  private:
   virtual ~BidiReceiveStream() = default;
+  RefPtr<WebTransportParent> mParent;
   WebTransportParent::CreateBidirectionalStreamResolver mResolver;
   std::function<void(uint64_t,
                      WebTransportParent::OnResetOrStopSendingCallback&&,
@@ -315,13 +355,15 @@ class UniReceiveStream : public nsIWebTransportStreamCallback {
   NS_DECL_NSIWEBTRANSPORTSTREAMCALLBACK
 
   UniReceiveStream(
+      WebTransportParent* aParent,
       WebTransportParent::CreateUnidirectionalStreamResolver&& aResolver,
       std::function<void(uint64_t,
                          WebTransportParent::OnResetOrStopSendingCallback&&,
                          nsIWebTransportSendStream* aStream)>&& aStreamCallback,
       int64_t aSendOrder, Maybe<uint64_t> aSendGroupId,
       nsCOMPtr<nsISerialEventTarget>& aSocketThread)
-      : mResolver(std::move(aResolver)),
+      : mParent(aParent),
+        mResolver(std::move(aResolver)),
         mStreamCallback(std::move(aStreamCallback)),
         mSendOrder(aSendOrder),
         mSendGroupId(aSendGroupId),
@@ -329,6 +371,7 @@ class UniReceiveStream : public nsIWebTransportStreamCallback {
 
  private:
   virtual ~UniReceiveStream() = default;
+  RefPtr<WebTransportParent> mParent;
   WebTransportParent::CreateUnidirectionalStreamResolver mResolver;
   std::function<void(uint64_t,
                      WebTransportParent::OnResetOrStopSendingCallback&&,
@@ -365,14 +408,15 @@ NS_IMETHODIMP BidiReceiveStream::OnBidirectionalStreamReady(
 
   uint64_t id;
   (void)aStream->GetStreamId(&id);
+  auto copies = MakeRefPtr<StreamCopies>(mParent, id);
   nsCOMPtr<nsIAsyncInputStream> inputStream;
   aStream->GetInputStream(getter_AddRefs(inputStream));
   MOZ_ASSERT(inputStream);
   nsCOMPtr<nsISupports> inputCopyContext;
-  rv = NS_AsyncCopy(inputStream, inputsender, mSocketThread,
-                    NS_ASYNCCOPY_VIA_WRITESEGMENTS,  // can we use READSEGMENTS?
-                    mozilla::ipc::kDefaultDataPipeCapacity, nullptr, nullptr,
-                    true, true, getter_AddRefs(inputCopyContext));
+  rv = copies->AsyncCopy(
+      inputStream, inputsender, mSocketThread,
+      NS_ASYNCCOPY_VIA_WRITESEGMENTS,  // can we use READSEGMENTS?
+      getter_AddRefs(inputCopyContext));
   if (NS_WARN_IF(NS_FAILED(rv))) {
     mResolver(rv);
     return rv;
@@ -392,10 +436,9 @@ NS_IMETHODIMP BidiReceiveStream::OnBidirectionalStreamReady(
   aStream->GetOutputStream(getter_AddRefs(outputStream));
   MOZ_ASSERT(outputStream);
   nsCOMPtr<nsISupports> outputCopyContext;
-  rv = NS_AsyncCopy(outputreceiver, outputStream, mSocketThread,
-                    NS_ASYNCCOPY_VIA_READSEGMENTS,
-                    mozilla::ipc::kDefaultDataPipeCapacity, nullptr, nullptr,
-                    true, true, getter_AddRefs(outputCopyContext));
+  rv = copies->AsyncCopy(outputreceiver, outputStream, mSocketThread,
+                         NS_ASYNCCOPY_VIA_READSEGMENTS,
+                         getter_AddRefs(outputCopyContext));
   if (NS_WARN_IF(NS_FAILED(rv))) {
     mResolver(rv);
     return rv;
@@ -461,10 +504,10 @@ UniReceiveStream::OnUnidirectionalStreamReady(
   aStream->GetOutputStream(getter_AddRefs(outputStream));
   MOZ_ASSERT(outputStream);
   nsCOMPtr<nsISupports> copyContext;
-  rv = NS_AsyncCopy(receiver, outputStream, mSocketThread,
-                    NS_ASYNCCOPY_VIA_READSEGMENTS,
-                    mozilla::ipc::kDefaultDataPipeCapacity, nullptr, nullptr,
-                    true, true, getter_AddRefs(copyContext));
+  auto copies = MakeRefPtr<StreamCopies>(mParent, id);
+  rv = copies->AsyncCopy(receiver, outputStream, mSocketThread,
+                         NS_ASYNCCOPY_VIA_READSEGMENTS,
+                         getter_AddRefs(copyContext));
   if (NS_WARN_IF(NS_FAILED(rv))) {
     mResolver(rv);
     return rv;
@@ -662,7 +705,7 @@ IPCResult WebTransportParent::RecvCreateUnidirectionalStream(
                            std::move(aCallback), aStream});
       };
   RefPtr<UniReceiveStream> callback =
-      new UniReceiveStream(std::move(aResolver), std::move(streamCb),
+      new UniReceiveStream(this, std::move(aResolver), std::move(streamCb),
                            aSendOrder, aSendGroupId, mSocketThread);
   nsresult rv;
   rv = mWebTransport->CreateOutgoingUnidirectionalStream(callback);
@@ -689,7 +732,7 @@ IPCResult WebTransportParent::RecvCreateBidirectionalStream(
                            std::move(aCallback), aStream});
       };
   RefPtr<BidiReceiveStream> callback =
-      new BidiReceiveStream(std::move(aResolver), std::move(streamCb),
+      new BidiReceiveStream(this, std::move(aResolver), std::move(streamCb),
                             aSendOrder, aSendGroupId, mSocketThread);
   nsresult rv;
   rv = mWebTransport->CreateOutgoingBidirectionalStream(callback);
@@ -964,45 +1007,10 @@ void WebTransportParent::NotifyRemoteClosed(
       }));
 }
 
-namespace {
-// Each NS_AsyncCopy() of one peer-opened stream holds a reference; the stream
-// is removed from the callback maps when the last of them completes (on the
-// socket thread).
-class IncomingStreamCopies final {
- public:
-  NS_INLINE_DECL_REFCOUNTING(IncomingStreamCopies)
-
-  IncomingStreamCopies(WebTransportParent* aParent, uint64_t aStreamId)
-      : mParent(aParent), mStreamId(aStreamId) {}
-
-  nsresult AsyncCopy(nsIInputStream* aSource, nsIOutputStream* aSink,
-                     nsIEventTarget* aTarget, nsAsyncCopyMode aMode) {
-    RefPtr<IncomingStreamCopies> self(this);
-    nsresult rv =
-        NS_AsyncCopy(aSource, aSink, aTarget, aMode,
-                     mozilla::ipc::kDefaultDataPipeCapacity, CopyDone, this);
-    if (NS_SUCCEEDED(rv)) {
-      self.forget().leak();
-    }
-    return rv;
-  }
-
- private:
-  ~IncomingStreamCopies() { mParent->RemoveFinishedIncomingStream(mStreamId); }
-
-  static void CopyDone(void* aClosure, nsresult) {
-    RefPtr<IncomingStreamCopies> copies =
-        dont_AddRef(static_cast<IncomingStreamCopies*>(aClosure));
-  }
-
-  const RefPtr<WebTransportParent> mParent;
-  const uint64_t mStreamId;
-};
-}  // namespace
-
-void WebTransportParent::RemoveFinishedIncomingStream(uint64_t aStreamId) {
+void WebTransportParent::RemoveFinishedStream(uint64_t aStreamId) {
   MOZ_ASSERT(mSocketThread->IsOnCurrentThread());
   mIncomingUniStreamCallbackMap.Remove(aStreamId);
+  mUniStreamCallbackMap.Remove(aStreamId);
   mBidiStreamCallbackMap.Remove(aStreamId);
 }
 
@@ -1030,7 +1038,7 @@ WebTransportParent::OnIncomingUnidirectionalStreamAvailable(
   nsCOMPtr<nsIAsyncInputStream> inputStream;
   aStream->GetInputStream(getter_AddRefs(inputStream));
   MOZ_ASSERT(inputStream);
-  auto copies = MakeRefPtr<IncomingStreamCopies>(this, id);
+  auto copies = MakeRefPtr<StreamCopies>(this, id);
   rv = copies->AsyncCopy(inputStream, sender, mSocketThread,
                          NS_ASYNCCOPY_VIA_WRITESEGMENTS);
   if (NS_WARN_IF(NS_FAILED(rv))) {
@@ -1096,7 +1104,7 @@ WebTransportParent::OnIncomingBidirectionalStreamAvailable(
   aStream->GetOutputStream(getter_AddRefs(outputStream));
   MOZ_ASSERT(outputStream);
 
-  auto copies = MakeRefPtr<IncomingStreamCopies>(this, id);
+  auto copies = MakeRefPtr<StreamCopies>(this, id);
   rv = copies->AsyncCopy(inputStream, inputSender, mSocketThread,
                          NS_ASYNCCOPY_VIA_WRITESEGMENTS);
   if (NS_WARN_IF(NS_FAILED(rv))) {
