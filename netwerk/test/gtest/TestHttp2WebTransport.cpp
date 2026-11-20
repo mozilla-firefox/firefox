@@ -272,15 +272,6 @@ NS_IMETHODIMP MockWebTransportSessionEventListener::OnDatagramReceived(
   return NS_OK;
 }
 
-NS_IMETHODIMP
-MockWebTransportSessionEventListener::OnDatagramsFlushInternal() {
-  return NS_OK;
-}
-
-NS_IMETHODIMP MockWebTransportSessionEventListener::OnDatagramsFlush() {
-  return NS_OK;
-}
-
 NS_IMETHODIMP MockWebTransportSessionEventListener::
     OnOutgoingDatagramSpaceAvailableInternal() {
   return NS_OK;
