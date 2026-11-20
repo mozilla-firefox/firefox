@@ -1245,8 +1245,8 @@ void WebTransport::Close(const WebTransportCloseInfo& aOptions,
   // will kill the IPC connection to the parent (and the WebTransport session
   // will go away in any case, so IPC to the  parent wouldn't help us).
   RefPtr<WebTransport> self = this;
-  RefPtr<WebTransportError> error =
-      new WebTransportError("close()"_ns, WebTransportErrorSource::Session);
+  RefPtr<DOMException> error =
+      DOMException::Create(NS_ERROR_DOM_ABORT_ERR, "close()"_ns);
   WebTransportCloseInfo closeInfo;
   closeInfo.mCloseCode = aOptions.mCloseCode;
   closeInfo.mReason = aOptions.mReason;
@@ -1543,7 +1543,7 @@ already_AddRefed<WebTransportSendGroup> WebTransport::CreateSendGroup(
 
 // Can be invoked with "error", "error, error, and true/false", or "error and
 // closeInfo", but reason and abruptly are never used, and it does use closeinfo
-void WebTransport::Cleanup(WebTransportError* aError,
+void WebTransport::Cleanup(DOMException* aError,
                            const WebTransportCloseInfo* aCloseInfo,
                            ErrorResult& aRv) {
   // https://w3c.github.io/webtransport/#webtransport-cleanup
@@ -1613,49 +1613,47 @@ void WebTransport::Cleanup(WebTransportError* aError,
   for (const auto& stream : receiveStreams.Values()) {
     stream->ErrorNative(cx, errorValue, IgnoreErrors());
   }
-  // Step 17:
+  // Step 17: For each writable in outgoingDatagramWritables, error writable
+  // with error.
+  if (datagrams) {
+    datagrams->ErrorWritables(cx, outgoingDatagramWritables, errorValue);
+  }
+  // Step 18: If closeInfo is given, then:
   if (aCloseInfo) {
-    // 17.1: Resolve closed with closeInfo.
+    // 18.1: Resolve closed with closeInfo.
     LOG(("Resolving closed with closeinfo"));
     closed->MaybeResolve(*aCloseInfo);
-    // 17.2: Assert: ready is settled.
+    // 18.2: Assert: ready is settled.
     // However, if the connection closes before maxDatagramSize is received,
     // ready may still be pending. Resolve it in that case.
     if (ready->State() == Promise::PromiseState::Pending) {
       ready->MaybeResolveWithUndefined();
     }
-    // 17.3: Close incomingBidirectionalStreams
+    // 18.3: Close incomingBidirectionalStreams
     incomingBidirectionalStreams->CloseNative(cx, IgnoreErrors());
-    // 17.4: Close incomingUnidirectionalStreams
+    // 18.4: Close incomingUnidirectionalStreams
     incomingUnidirectionalStreams->CloseNative(cx, IgnoreErrors());
+    // 18.5: Close incomingDatagrams.
     if (datagrams) {
-      // 17.5: For each writable in outgoingDatagramWritables, close writable.
-      datagrams->CloseOrErrorWritables(cx, outgoingDatagramWritables, true,
-                                       errorValue);
-      // 17.6: Close incomingDatagrams.
       datagrams->CloseOrErrorReadable(cx, true, errorValue);
     }
   } else {
-    // Step 18
-    // 18.1: Reject closed with error
+    // Step 19: Otherwise:
+    // 19.1: Reject closed with error
     LOG(("Rejecting closed"));
     closed->MaybeReject(errorValue);
-    // 18.2: Set closed.[[PromiseIsHandled]] to true.
+    // 19.2: Set closed.[[PromiseIsHandled]] to true.
     closed->SetSettledPromiseIsHandled();
-    // 18.3: Reject ready with error
+    // 19.3: Reject ready with error
     ready->MaybeReject(errorValue);
-    // 18.4: Set ready.[[PromiseIsHandled]] to true.
+    // 19.4: Set ready.[[PromiseIsHandled]] to true.
     ready->SetSettledPromiseIsHandled();
-    // 18.5: Error incomingBidirectionalStreams with error
+    // 19.5: Error incomingBidirectionalStreams with error
     incomingBidirectionalStreams->ErrorNative(cx, errorValue, IgnoreErrors());
-    // 18.6: Error incomingUnidirectionalStreams with error
+    // 19.6: Error incomingUnidirectionalStreams with error
     incomingUnidirectionalStreams->ErrorNative(cx, errorValue, IgnoreErrors());
+    // 19.7: Error incomingDatagrams with error.
     if (datagrams) {
-      // 18.7: For each writable in outgoingDatagramWritables, error writable
-      // with error.
-      datagrams->CloseOrErrorWritables(cx, outgoingDatagramWritables, false,
-                                       errorValue);
-      // 18.8: Error incomingDatagrams with error.
       datagrams->CloseOrErrorReadable(cx, false, errorValue);
     }
   }
