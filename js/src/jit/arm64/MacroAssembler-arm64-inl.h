@@ -3141,6 +3141,42 @@ void MacroAssembler::permuteInt16x8(const uint16_t lanes[8], FloatRegister src,
 
 void MacroAssembler::permuteInt32x4(const uint32_t lanes[4], FloatRegister src,
                                     FloatRegister dest) {
+  auto is = [&](uint32_t a, uint32_t b, uint32_t c, uint32_t d) {
+    return lanes[0] == a && lanes[1] == b && lanes[2] == c && lanes[3] == d;
+  };
+  if (is(0, 2, 0, 2)) {
+    Uzp1(Simd4S(dest), Simd4S(src), Simd4S(src));
+    return;
+  }
+  if (is(1, 3, 1, 3)) {
+    Uzp2(Simd4S(dest), Simd4S(src), Simd4S(src));
+    return;
+  }
+  if (is(0, 0, 2, 2)) {
+    Trn1(Simd4S(dest), Simd4S(src), Simd4S(src));
+    return;
+  }
+  if (is(1, 1, 3, 3)) {
+    Trn2(Simd4S(dest), Simd4S(src), Simd4S(src));
+    return;
+  }
+  if (is(0, 0, 1, 1)) {
+    Zip1(Simd4S(dest), Simd4S(src), Simd4S(src));
+    return;
+  }
+  if (is(2, 2, 3, 3)) {
+    Zip2(Simd4S(dest), Simd4S(src), Simd4S(src));
+    return;
+  }
+  if (is(1, 0, 3, 2)) {
+    Rev64(Simd4S(dest), Simd4S(src));
+    return;
+  }
+  if (is(0, 1, 0, 1) || is(2, 3, 2, 3)) {
+    Dup(Simd2D(dest), Simd2D(src), lanes[0] / 2);
+    return;
+  }
+
   ScratchSimd128Scope scratch(*this);
   const int8_t lanes_[16] = {
       (int8_t)(lanes[0] << 2),       (int8_t)((lanes[0] << 2) + 1),
