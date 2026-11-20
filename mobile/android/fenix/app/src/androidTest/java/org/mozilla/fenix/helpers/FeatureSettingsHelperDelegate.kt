@@ -52,6 +52,7 @@ class FeatureSettingsHelperDelegate : FeatureSettingsHelper {
             nativeShareSheetEnabled = settings.nativeShareSheetEnabled,
             showVoiceSearchInDisplayToolbar = settings.showVoiceSearchInDisplayToolbar,
             isHomepageTrendingRecentSearchEnabled = settings.enableHomepageTrendingRecentSearch,
+            isHomepageCustomizationEnabled = settings.enableHomepageCustomization,
             isCollectionsToTabGroupsMigrationEnabled = settings.migrateCollectionsToTabGroupsEnabled,
             isCollectionsUiHidden = settings.hideCollectionsUi,
             isGoogleLensIntegrationEnabled = settings.googleLensIntegrationEnabled,
@@ -89,6 +90,7 @@ class FeatureSettingsHelperDelegate : FeatureSettingsHelper {
     override var showVoiceSearchInDisplayToolbar: Boolean by updatedFeatureFlags::showVoiceSearchInDisplayToolbar
     override var isHomepageTrendingRecentSearchEnabled: Boolean by
         updatedFeatureFlags::isHomepageTrendingRecentSearchEnabled
+    override var isHomepageCustomizationEnabled: Boolean by updatedFeatureFlags::isHomepageCustomizationEnabled
     override var isCollectionsToTabGroupsMigrationEnabled: Boolean by
         updatedFeatureFlags::isCollectionsToTabGroupsMigrationEnabled
     override var isCollectionsUiHidden: Boolean by updatedFeatureFlags::isCollectionsUiHidden
@@ -137,6 +139,7 @@ class FeatureSettingsHelperDelegate : FeatureSettingsHelper {
         settings.nativeShareSheetEnabled = featureFlags.nativeShareSheetEnabled
         settings.showVoiceSearchInDisplayToolbar = featureFlags.showVoiceSearchInDisplayToolbar
         settings.enableHomepageTrendingRecentSearch = featureFlags.isHomepageTrendingRecentSearchEnabled
+        settings.enableHomepageCustomization = featureFlags.isHomepageCustomizationEnabled
         settings.migrateCollectionsToTabGroupsEnabled = featureFlags.isCollectionsToTabGroupsMigrationEnabled
         settings.hideCollectionsUi = featureFlags.isCollectionsUiHidden
         settings.showAddressBarInFocusMode = featureFlags.showAddressBarInFocusMode
@@ -172,6 +175,7 @@ private data class FeatureFlags(
     var nativeShareSheetEnabled: Boolean,
     var showVoiceSearchInDisplayToolbar: Boolean,
     var isHomepageTrendingRecentSearchEnabled: Boolean,
+    var isHomepageCustomizationEnabled: Boolean,
     var isCollectionsToTabGroupsMigrationEnabled: Boolean,
     var isCollectionsUiHidden: Boolean,
     var showAddressBarInFocusMode: Boolean,

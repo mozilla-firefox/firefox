@@ -98,6 +98,9 @@ interface FeatureSettingsHelper {
     /** Whether trending and recent searches are shown on the Homepage search. */
     var isHomepageTrendingRecentSearchEnabled: Boolean
 
+    /** Whether Homepage Customization, e.g. the homepage search position setting, is enabled. */
+    var isHomepageCustomizationEnabled: Boolean
+
     /** Whether the Collections to Tab Groups migration runs. */
     var isCollectionsToTabGroupsMigrationEnabled: Boolean
 

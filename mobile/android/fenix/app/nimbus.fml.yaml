@@ -1305,7 +1305,7 @@ features:
       enabled:
         description: If true, Homepage Customization is enabled.
         type: Boolean
-        default: false
+        default: true
 
   homepage-trending-recent-search:
     description: Feature to show trending and recent searches on the Homepage Search for users on Firefox on Android.

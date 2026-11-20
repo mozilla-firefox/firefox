@@ -75,6 +75,7 @@ class HomeActivityTestRule(
         nativeShareSheetEnabled: Boolean = false,
         showVoiceSearchInDisplayToolbar: Boolean = false,
         isHomepageTrendingRecentSearchEnabled: Boolean = false,
+        isHomepageCustomizationEnabled: Boolean = false,
         isCollectionsToTabGroupsMigrationEnabled: Boolean = false,
         isCollectionsUiHidden: Boolean = false,
         isGoogleLensIntegrationEnabled: Boolean = true,
@@ -107,6 +108,7 @@ class HomeActivityTestRule(
         this.nativeShareSheetEnabled = nativeShareSheetEnabled
         this.showVoiceSearchInDisplayToolbar = showVoiceSearchInDisplayToolbar
         this.isHomepageTrendingRecentSearchEnabled = isHomepageTrendingRecentSearchEnabled
+        this.isHomepageCustomizationEnabled = isHomepageCustomizationEnabled
         this.isCollectionsToTabGroupsMigrationEnabled = isCollectionsToTabGroupsMigrationEnabled
         this.isCollectionsUiHidden = isCollectionsUiHidden
         this.isGoogleLensIntegrationEnabled = isGoogleLensIntegrationEnabled
@@ -232,6 +234,7 @@ internal constructor(
         nativeShareSheetEnabled: Boolean = false,
         showVoiceSearchInDisplayToolbar: Boolean = false,
         isHomepageTrendingRecentSearchEnabled: Boolean = false,
+        isHomepageCustomizationEnabled: Boolean = false,
         isCollectionsToTabGroupsMigrationEnabled: Boolean = false,
         isCollectionsUiHidden: Boolean = false,
         isGoogleLensIntegrationEnabled: Boolean = true,
@@ -266,6 +269,7 @@ internal constructor(
         this.nativeShareSheetEnabled = nativeShareSheetEnabled
         this.showVoiceSearchInDisplayToolbar = showVoiceSearchInDisplayToolbar
         this.isHomepageTrendingRecentSearchEnabled = isHomepageTrendingRecentSearchEnabled
+        this.isHomepageCustomizationEnabled = isHomepageCustomizationEnabled
         this.isCollectionsToTabGroupsMigrationEnabled = isCollectionsToTabGroupsMigrationEnabled
         this.isCollectionsUiHidden = isCollectionsUiHidden
         this.isGoogleLensIntegrationEnabled = isGoogleLensIntegrationEnabled
@@ -346,6 +350,7 @@ internal constructor(
         hasSeenShakeToSummarizeToolbarCfr = settings.shakeToSummarizeToolbarCfrShown
         nativeShareSheetEnabled = settings.nativeShareSheetEnabled
         isHomepageTrendingRecentSearchEnabled = settings.enableHomepageTrendingRecentSearch
+        isHomepageCustomizationEnabled = settings.enableHomepageCustomization
         isCollectionsToTabGroupsMigrationEnabled = settings.migrateCollectionsToTabGroupsEnabled
         isCollectionsUiHidden = settings.hideCollectionsUi
         isTabStripEnabled = settings.isTabStripEnabled
