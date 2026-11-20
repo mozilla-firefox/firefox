@@ -62,6 +62,31 @@ add_task(function test_tab_rule_covers_only_its_tab() {
 });
 
 /**
+ * Tests that a rule set with removeOnLeave only covers its site in its tab.
+ */
+add_task(function test_remove_on_leave_rule_covers_only_its_site() {
+  const provider = new IPPTabRuleProvider();
+  provider.init();
+  provider.setTabRule(IPPPrincipalRules.EXCLUDED, TAB, {
+    principal: makePrincipal("https://example.com/page"),
+    removeOnLeave: true,
+  });
+
+  Assert.equal(
+    provider.getRule(makePrincipal("https://www.example.com/"), TAB),
+    IPPPrincipalRules.EXCLUDED,
+    "The site in the tab should follow the tab rule"
+  );
+  Assert.strictEqual(
+    provider.getRule(makePrincipal("https://example.org/"), TAB),
+    null,
+    "Another site in the tab should be unaffected"
+  );
+
+  provider.uninit();
+});
+
+/**
  * Tests that DEFAULT removes a tab rule, and that only an actual change
  * notifies.
  */

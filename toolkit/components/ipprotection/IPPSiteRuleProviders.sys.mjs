@@ -601,10 +601,23 @@ export class IPPPermissionRuleProvider extends SiteRuleProvider {
 }
 
 /**
- * Rules that cover every site in a single tab, for as long as it is open.
+ * @param {nsIPrincipal} principal
+ * @returns {string|null} The site a tab rule is pinned to for the principal.
+ */
+function tabRuleSite(principal) {
+  return principal?.isContentPrincipal ? principal.siteOriginNoSuffix : null;
+}
+
+/**
+ * Rules that cover a single tab for as long as it is open, or only one site
+ * in it until the tab leaves that site.
  */
 export class IPPTabRuleProvider extends SiteRuleProvider {
-  /** @type {Map<number, string>} */
+  /**
+   * @type {Map<number, {rule: string, site: string|null, stopWatching: Function|null}>}
+   *  browserId -> the tab's rule, the site it is pinned to, and how to stop
+   *  watching the tab leave that site.
+   */
   #rules = new Map();
   #observer = null;
 
@@ -625,7 +638,7 @@ export class IPPTabRuleProvider extends SiteRuleProvider {
     ) {
       return;
     }
-    if (this.#rules.delete(browsingContext.browserId)) {
+    if (this.#deleteRule(browsingContext.browserId)) {
       this.notifyChange();
     }
   }
@@ -636,37 +649,109 @@ export class IPPTabRuleProvider extends SiteRuleProvider {
     }
     Services.obs.removeObserver(this.#observer, "browsing-context-discarded");
     this.#observer = null;
-    this.#rules.clear();
+    for (const browserId of [...this.#rules.keys()]) {
+      this.#deleteRule(browserId);
+    }
   }
 
-  getRule(_principal, browserId) {
-    return this.#rules.get(browserId) ?? null;
+  getRule(principal, browserId) {
+    const entry = this.#rules.get(browserId);
+    if (!entry || (entry.site && entry.site !== tabRuleSite(principal))) {
+      return null;
+    }
+    return entry.rule;
   }
 
   /**
-   * Sets the rule for every site in one tab until it closes.
+   * Sets the rule for one tab until it closes.
    *
    * @param {string} rule
    *  An IPPPrincipalRules value; DEFAULT removes the rule.
    * @param {number} browserId
    *  The tab.
+   * @param {object} [options]
+   * @param {nsIPrincipal} [options.principal]
+   *  The site to pin the rule to, required with removeOnLeave.
+   * @param {boolean} [options.removeOnLeave]
+   *  Only cover the principal's site, and remove the rule once a top-level
+   *  navigation in the tab goes to another site.
    */
-  setTabRule(rule, browserId) {
-    if (!browserId || (this.#rules.get(browserId) ?? null) === rule) {
+  setTabRule(rule, browserId, { principal, removeOnLeave = false } = {}) {
+    const site = removeOnLeave ? tabRuleSite(principal) : null;
+    if (!browserId || (removeOnLeave && !site)) {
       return;
     }
+    const entry = this.#rules.get(browserId);
+    if ((entry?.rule ?? null) === rule && (entry?.site ?? null) === site) {
+      return;
+    }
+    this.#deleteRule(browserId);
     if (rule) {
-      this.#rules.set(browserId, rule);
-    } else {
-      this.#rules.delete(browserId);
+      this.#rules.set(browserId, {
+        rule,
+        site,
+        stopWatching: site ? this.#watchLeave(browserId, site) : null,
+      });
     }
     this.notifyChange();
   }
 
+  /**
+   * @param {number} browserId
+   * @returns {boolean} Whether the tab had a rule.
+   */
+  #deleteRule(browserId) {
+    const entry = this.#rules.get(browserId);
+    entry?.stopWatching?.();
+    return this.#rules.delete(browserId);
+  }
+
+  /**
+   * Removes the tab's rule on the first top-level navigation off site.
+   *
+   * @param {number} browserId
+   * @param {string} site
+   * @returns {Function|null} Stops watching, null if the tab is not found.
+   */
+  #watchLeave(browserId, site) {
+    const webProgress =
+      BrowsingContext.getCurrentTopByBrowserId(browserId)?.webProgress;
+    if (!webProgress) {
+      return null;
+    }
+    const listener = {
+      QueryInterface: ChromeUtils.generateQI([
+        "nsIWebProgressListener",
+        "nsISupportsWeakReference",
+      ]),
+      onLocationChange: (progress, _request, location, flags) => {
+        if (
+          !progress.isTopLevel ||
+          flags & Ci.nsIWebProgressListener.LOCATION_CHANGE_SAME_DOCUMENT
+        ) {
+          return;
+        }
+        const principal = Services.scriptSecurityManager.createContentPrincipal(
+          location,
+          {}
+        );
+        if (tabRuleSite(principal) !== site && this.#deleteRule(browserId)) {
+          this.notifyChange();
+        }
+      },
+    };
+    // The web progress moves to a replacing context, so this covers the tab.
+    webProgress.addProgressListener(
+      listener,
+      Ci.nsIWebProgress.NOTIFY_LOCATION
+    );
+    return () => webProgress.removeProgressListener(listener);
+  }
+
   count(rule) {
     let count = 0;
-    for (const tabRule of this.#rules.values()) {
-      count += tabRule === rule ? 1 : 0;
+    for (const entry of this.#rules.values()) {
+      count += entry.rule === rule ? 1 : 0;
     }
     return count;
   }
