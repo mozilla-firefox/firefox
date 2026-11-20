@@ -627,6 +627,30 @@ bool RBigIntMod::recover(JSContext* cx, SnapshotIterator& iter) const {
   return true;
 }
 
+bool MBigIntMulMod::writeRecoverData(CompactBufferWriter& writer) const {
+  MOZ_ASSERT(canRecoverOnBailout());
+  writer.writeUnsigned(uint32_t(RInstruction::Recover_BigIntMulMod));
+  return true;
+}
+
+RBigIntMulMod::RBigIntMulMod(CompactBufferReader& reader) {}
+
+bool RBigIntMulMod::recover(JSContext* cx, SnapshotIterator& iter) const {
+  Rooted<BigInt*> lhs(cx, iter.readBigInt());
+  Rooted<BigInt*> rhs(cx, iter.readBigInt());
+  Rooted<BigInt*> modulus(cx, iter.readBigInt());
+  MOZ_ASSERT(!modulus->isZero(),
+             "division by zero throws and therefore can't be recovered");
+
+  BigInt* result = BigInt::mulMod(cx, lhs, rhs, modulus);
+  if (!result) {
+    return false;
+  }
+
+  iter.storeInstructionResult(BigIntValue(result));
+  return true;
+}
+
 bool MBigIntPow::writeRecoverData(CompactBufferWriter& writer) const {
   MOZ_ASSERT(canRecoverOnBailout());
   writer.writeUnsigned(uint32_t(RInstruction::Recover_BigIntPow));

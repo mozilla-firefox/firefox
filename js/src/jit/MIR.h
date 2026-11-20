@@ -5490,6 +5490,10 @@ class MBigIntMulMod : public MTernaryInstruction, public NoTypePolicy::Data {
 
   bool possiblyCalls() const override { return true; }
 
+  [[nodiscard]] bool writeRecoverData(
+      CompactBufferWriter& writer) const override;
+  bool canRecoverOnBailout() const override { return !canBeDivideByZero(); }
+
   ALLOW_CLONE(MBigIntMulMod)
 };
 

@@ -1900,6 +1900,16 @@ function rbigintmod(i) {
     return i;
 }
 
+let uceFault_mulmod_bigint = eval(`(${uceFault})`.replace('uceFault', 'uceFault_mulmod_bigint'));
+function rbigintmulmod(i) {
+    var a = i + 18446744073709551616n;
+    var x = (a * a) % 1000000007n;
+    if (uceFault_mulmod_bigint(i) || uceFault_mulmod_bigint(i))
+        assertEq(x, 583754857n  /* = (99 + 2**64) ** 2 % 1000000007 */);
+    assertRecoveredOnBailout(x, true);
+    return i;
+}
+
 let uceFault_pow_bigint = eval(`(${uceFault})`.replace('uceFault', 'uceFault_pow_bigint'));
 function rbigintpow(i) {
     var x = i ** 5n;
@@ -2331,6 +2341,7 @@ for (j = 100 - max; j < 100; j++) {
     rbigintmul(BigInt(i));
     rbigintdiv(BigInt(i));
     rbigintmod(BigInt(i));
+    rbigintmulmod(BigInt(i));
     rbigintpow(BigInt(i));
     rbigintinc(BigInt(i));
     rbigintdec(BigInt(i));
