@@ -254,6 +254,7 @@ class WebTransportDatagramDuplexStream final : public nsISupports,
 
   mozilla::Queue<UniquePtr<DatagramEntry>, 32> mIncomingDatagramsQueue;
   uint64_t mDroppedIncoming = 0;
+  uint64_t mExpiredIncoming = 0;
 
   // Datagram ID counter shared across all OutgoingDatagramStreamAlgorithms
   // instances created by this duplex stream (scoped to this duplex stream,
@@ -270,6 +271,7 @@ class WebTransportDatagramDuplexStream final : public nsISupports,
 
  public:
   uint64_t GetDroppedIncoming() const { return mDroppedIncoming; }
+  uint64_t GetExpiredIncoming() const { return mExpiredIncoming; }
 };
 
 }  // namespace mozilla::dom

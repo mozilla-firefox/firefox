@@ -212,6 +212,32 @@ void WebTransportDatagramDuplexStream::NewDatagramReceived(
     UniquePtr<DatagramEntry> entry = mIncomingDatagramsQueue.Pop();
     mDroppedIncoming++;
   }
+  // Filter out any datagrams that have a duration since reception longer than
+  // the effective max age. Entries are FIFO by arrival time, so once the oldest
+  // (front) entry isn't expired, none behind it can be either.
+  //
+  // A null incomingMaxAge does not mean "keep forever": receiveDatagrams step 4
+  // requires us to substitute an implementation-defined duration, and the
+  // attribute keeps reporting null either way since the substitution is local
+  // to the algorithm. Unlike the outgoing default this is a fixed value rather
+  // than a multiple of the RTT, because it bounds how long a datagram waits for
+  // the application to read it, which has nothing to do with the path. It is
+  // also only a staleness bound, not a memory bound -
+  // incomingMaxBufferedDatagrams already caps the queue - so it can afford to
+  // be generous. Same value Chromium uses (kDefaultIncomingMaxAge).
+  static constexpr double kDefaultIncomingMaxAgeMs = 60000.0;
+  const double maxAgeMs = mIncomingMaxAge.IsNull() ? kDefaultIncomingMaxAgeMs
+                                                   : mIncomingMaxAge.Value();
+  TimeStamp now = TimeStamp::Now();
+  while (!mIncomingDatagramsQueue.IsEmpty() &&
+         (now - mIncomingDatagramsQueue.FirstElement()->mTimeStamp)
+                 .ToMilliseconds() > maxAgeMs) {
+    LOG(("Dropping expired incoming datagram: age exceeds max age (%f ms)",
+         maxAgeMs));
+    UniquePtr<DatagramEntry> entry = mIncomingDatagramsQueue.Pop();
+    mExpiredIncoming++;
+  }
+
   mIncomingDatagramsQueue.Push(
       std::make_unique<DatagramEntry>(std::move(aData), aTimeStamp));
   mIncomingAlgorithms->NotifyDatagramAvailable();
