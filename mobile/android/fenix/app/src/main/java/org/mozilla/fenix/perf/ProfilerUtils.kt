@@ -19,7 +19,6 @@ import mozilla.components.concept.fetch.MutableHeaders
 import mozilla.components.concept.fetch.Request
 import mozilla.components.concept.fetch.Response
 import org.json.JSONObject
-import org.mozilla.fenix.R
 import org.mozilla.fenix.ext.components
 
 private const val PROFILER_API = "https://api.profiler.firefox.com/compressed-store"
@@ -206,13 +205,11 @@ object ProfilerUtils {
      *
      * @param context Android context for accessing clipboard service
      * @param url The profiler URL to copy to clipboard
-     * @param onUrlFinish Callback function that receives a string resource ID for user feedback
      */
-    fun finishProfileSave(context: Context, url: String, onUrlFinish: (Int) -> Unit) {
+    fun finishProfileSave(context: Context, url: String) {
         val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val clipData = ClipData.newPlainText("Profiler URL", url)
         clipboardManager.setPrimaryClip(clipData)
-        onUrlFinish(R.string.profiler_uploaded_url_to_clipboard)
     }
 
     private fun createTemporaryFile(profileResult: ByteArray, context: Context): File {

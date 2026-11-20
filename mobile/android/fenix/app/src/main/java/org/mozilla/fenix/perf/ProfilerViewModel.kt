@@ -10,12 +10,14 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import androidx.annotation.StringRes
+import androidx.annotation.VisibleForTesting
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import java.io.IOException
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -94,7 +96,7 @@ class ProfilerViewModel(
     private val profilerUtils: ProfilerUtils = ProfilerUtils,
 ) : AndroidViewModel(application) {
 
-    private val delayToUpdateStatus = 50L
+    @VisibleForTesting internal val delayToUpdateStatus = 50.milliseconds
     private val profiler: Profiler? = application.components.core.engine.profiler
     private val _isActive = MutableStateFlow(profiler?.isProfilerActive() ?: false)
     val isProfilerActive: StateFlow<Boolean> = _isActive.asStateFlow()
@@ -211,28 +213,27 @@ class ProfilerViewModel(
         )
     }
 
-    private fun handleProfileSaveInternal(profileData: ByteArray) {
-        viewModelScope.launch(ioDispatcher) {
-            try {
-                val url = profilerUtils.saveProfileUrlToClipboard(profileData, application)
-                withContext(mainDispatcher) {
-                    profilerUtils.finishProfileSave(application, url) { messageResId ->
-                        _uiState.value = ProfilerUiState.ShowToast(messageResId)
-                        launch(mainDispatcher) {
-                            delay(delayToUpdateStatus)
-                            _uiState.value = ProfilerUiState.Finished(url)
-                        }
-                    }
+    private suspend fun handleProfileSaveInternal(profileData: ByteArray) {
+        try {
+            val url =
+                withContext(ioDispatcher) {
+                    profilerUtils.saveProfileUrlToClipboard(profileData, application)
                 }
-            } catch (e: IOException) {
-                handleViewModelError(e, R.string.profiler_io_error, "Upload failed")
-            } catch (e: SecurityException) {
-                handleViewModelError(e, R.string.profiler_io_error, "Permission denied")
-            } catch (e: JSONException) {
-                handleViewModelError(e, R.string.profiler_io_error, "Server response invalid")
-            } catch (e: IllegalArgumentException) {
-                handleViewModelError(e, R.string.profiler_io_error, "Invalid profile data")
-            }
+
+            profilerUtils.finishProfileSave(application, url)
+            _uiState.value = ProfilerUiState.ShowToast(R.string.profiler_uploaded_url_to_clipboard)
+
+            delay(delayToUpdateStatus)
+
+            _uiState.value = ProfilerUiState.Finished(url)
+        } catch (e: IOException) {
+            handleViewModelError(e, R.string.profiler_io_error, "Upload failed")
+        } catch (e: SecurityException) {
+            handleViewModelError(e, R.string.profiler_io_error, "Permission denied")
+        } catch (e: JSONException) {
+            handleViewModelError(e, R.string.profiler_io_error, "Server response invalid")
+        } catch (e: IllegalArgumentException) {
+            handleViewModelError(e, R.string.profiler_io_error, "Invalid profile data")
         }
     }
 

@@ -8,21 +8,22 @@ import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import io.mockk.MockKAnnotations
+import io.mockk.Runs
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlin.test.assertIs
-import kotlin.test.assertNotNull
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.base.profiler.Profiler
@@ -94,11 +95,7 @@ class ProfilerViewModelTest {
         every { mockApplication.cacheDir } returns context.cacheDir
 
         every { mockProfilerUtils.saveProfileUrlToClipboard(any(), any()) } returns "http://example.com/profile/123"
-        every { mockProfilerUtils.finishProfileSave(any(), any(), any()) } answers
-            {
-                val callback = arg<(Int) -> Unit>(2)
-                callback.invoke(R.string.profiler_uploaded_url_to_clipboard)
-            }
+        every { mockProfilerUtils.finishProfileSave(any(), any()) } just Runs
     }
 
     @After
@@ -254,7 +251,7 @@ class ProfilerViewModelTest {
         }
 
     @Test
-    fun `WHEN a profile is successfully saved THEN the UI shows successful completing with copied URL`() =
+    fun `WHEN a profile is successfully saved THEN the UI transitions through toast and finished states`() =
         runTest(testDispatcher) {
             initializeViewModel(
                 isInitiallyActive = true,
@@ -277,26 +274,51 @@ class ProfilerViewModelTest {
             backgroundScope.launch {
                 viewModel.uiState.toList(collectedStates)
             }
+
             runCurrent()
 
             viewModel.stopProfilerAndSave()
-            advanceUntilIdle()
 
-            assertTrue(collectedStates.any { it is ProfilerUiState.Idle })
-            assertTrue(collectedStates.any { it is ProfilerUiState.Gathering })
-            val toastState = collectedStates.find { it is ProfilerUiState.ShowToast }
-            assertNotNull(toastState)
+            // Execute everything up to the delay(50.milliseconds)
+            runCurrent()
+
+            assertEquals(
+                listOf(
+                    ProfilerUiState.Idle::class,
+                    ProfilerUiState.Gathering::class,
+                    ProfilerUiState.ShowToast::class,
+                ),
+                collectedStates.map { it::class },
+            )
+
+            val toastState = collectedStates.last()
+            assertIs<ProfilerUiState.ShowToast>(toastState)
             assertEquals(
                 R.string.profiler_uploaded_url_to_clipboard,
-                (toastState as ProfilerUiState.ShowToast).messageResId,
+                toastState.messageResId,
             )
+
+            // Advance past the delay before Finished is emitted.
+            advanceTimeBy(viewModel.delayToUpdateStatus)
+            runCurrent()
+
+            assertEquals(
+                listOf(
+                    ProfilerUiState.Idle::class,
+                    ProfilerUiState.Gathering::class,
+                    ProfilerUiState.ShowToast::class,
+                    ProfilerUiState.Finished::class,
+                ),
+                collectedStates.map { it::class },
+            )
+
             val finishedState = collectedStates.last()
             assertIs<ProfilerUiState.Finished>(finishedState)
             assertEquals(expectedUrl, finishedState.profileUrl)
 
             verify { mockProfiler.stopProfiler(any(), any()) }
             verify { mockProfilerUtils.saveProfileUrlToClipboard(fakeProfileData, mockApplication) }
-            verify { mockProfilerUtils.finishProfileSave(mockApplication, expectedUrl, any()) }
+            verify { mockProfilerUtils.finishProfileSave(mockApplication, expectedUrl) }
         }
 
     @Test
@@ -386,7 +408,7 @@ class ProfilerViewModelTest {
 
             verify { mockProfiler.stopProfiler(any(), any()) }
             verify { mockProfilerUtils.saveProfileUrlToClipboard(fakeProfileData, mockApplication) }
-            verify(exactly = 0) { mockProfilerUtils.finishProfileSave(any(), any(), any()) }
+            verify(exactly = 0) { mockProfilerUtils.finishProfileSave(any(), any()) }
         }
 
     @Test
