@@ -32,23 +32,29 @@ private const val SCRIM_MID_STOP = 0.5f
  * the status bar or system navigation bar, and fades out at the inner edge of the toolbar content. The color is chosen
  * to contrast with [WallpaperTheme.onWallpaper].
  *
- * @param topContentHeight Height in pixels of the content laid out below the status bar.
- * @param bottomContentHeight Height in pixels of the content laid out above the system navigation bar.
+ * @param topContentHeight Lambda that returns the height in pixels of the content laid out below the status bar. It is
+ *   only read when drawing, so that a changing height, e.g. while the toolbar scrolls away, doesn't cause
+ *   recompositions.
+ * @param bottomContentHeight Lambda that returns the height in pixels of the content laid out above the system
+ *   navigation bar.
  */
 @Composable
 internal fun WallpaperToolbarScrim(
-    topContentHeight: Int,
-    bottomContentHeight: Int,
+    topContentHeight: () -> Int,
+    bottomContentHeight: () -> Int,
 ) {
     val scrimColor = if (ColorUtils.isDark(WallpaperTheme.onWallpaper.toArgb())) Color.White else Color.Black
     val insets = WindowInsets.systemBars.union(WindowInsets.displayCutout)
     val density = LocalDensity.current
-    val topScrimHeight = (insets.getTop(density) + topContentHeight).toFloat()
-    val bottomScrimHeight = (insets.getBottom(density) + bottomContentHeight).toFloat()
+    val topInset = insets.getTop(density)
+    val bottomInset = insets.getBottom(density)
 
     Box(
         modifier =
             Modifier.fillMaxSize().drawWithCache {
+                val topScrimHeight = (topInset + topContentHeight()).toFloat()
+                val bottomScrimHeight = (bottomInset + bottomContentHeight()).toFloat()
+
                 fun scrimBrush(startY: Float, endY: Float) =
                     Brush.verticalGradient(
                         0f to scrimColor.copy(alpha = SCRIM_MAX_ALPHA),

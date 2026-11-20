@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -63,6 +64,7 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.compose.base.modifier.thenConditional
 import mozilla.components.compose.base.snackbar.Snackbar
 import mozilla.components.compose.base.snackbar.displaySnackbar
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarStore
@@ -151,12 +153,14 @@ import org.mozilla.fenix.home.sessioncontrol.SessionControlInteractor
 import org.mozilla.fenix.home.store.HomeToolbarStoreBuilder
 import org.mozilla.fenix.home.store.HomepageState
 import org.mozilla.fenix.home.termsofuse.DefaultPrivacyNoticeBannerController
+import org.mozilla.fenix.home.toolbar.CollapsingTopBarState
 import org.mozilla.fenix.home.toolbar.DefaultToolbarController
 import org.mozilla.fenix.home.toolbar.FenixHomeToolbar
 import org.mozilla.fenix.home.toolbar.HomeNavigationBar
 import org.mozilla.fenix.home.toolbar.HomeToolbarComposable
 import org.mozilla.fenix.home.toolbar.HomeToolbarComposable.Companion.DirectToSearchConfig
 import org.mozilla.fenix.home.toolbar.WallpaperToolbarScrim
+import org.mozilla.fenix.home.toolbar.collapsingTopBar
 import org.mozilla.fenix.home.toolbar.homepageToolbarColors
 import org.mozilla.fenix.home.topsites.DefaultTopSitesView
 import org.mozilla.fenix.home.topsites.TopSitesBinding
@@ -707,6 +711,26 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                 val fadeContentEdges = isOverUniversalEdgeToEdgeWallpaper(appState.value)
                 val searchBackgroundColor = toolbarView.searchBackgroundColor()
                 val middleSearchPinState = rememberMiddleSearchPinState()
+                val collapsingTopBarState =
+                    remember(middleSearchPinState) {
+                        CollapsingTopBarState(
+                            distanceBeforeCollapse = {
+                                middleSearchPinState.distance?.toFloat() ?: Float.POSITIVE_INFINITY
+                            },
+                            remainingScroll = {
+                                with(middleSearchPinState.scrollState) { (maxValue - value).toFloat() }
+                            },
+                        )
+                    }
+                val isTopBarCollapsible =
+                    settings.isHomepageMiddleSearchEnabled && !appState.value.searchState.isSearchActive
+
+                LaunchedEffect(isTopBarCollapsible) {
+                    collapsingTopBarState.isEnabled = isTopBarCollapsible
+                    if (!isTopBarCollapsible) {
+                        collapsingTopBarState.expand()
+                    }
+                }
 
                 LaunchedEffect(currentWallpaper.name, isPrivateMode, searchBackgroundColor) {
                     applyWallpaperSystemBarsTheme(
@@ -732,19 +756,28 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
 
                         if (showToolbarScrim) {
                             WallpaperToolbarScrim(
-                                topContentHeight = topBarHeight,
-                                bottomContentHeight = bottomBarHeight,
+                                topContentHeight = { topBarHeight },
+                                bottomContentHeight = { bottomBarHeight },
                             )
                         }
 
                         Scaffold(
-                            modifier = Modifier.fillMaxSize().systemBarsPadding().displayCutoutPadding().imePadding(),
+                            modifier =
+                                Modifier.fillMaxSize()
+                                    .systemBarsPadding()
+                                    .displayCutoutPadding()
+                                    .imePadding()
+                                    .nestedScroll(collapsingTopBarState.nestedScrollConnection),
                             topBar = {
                                 HomeTopBar(
                                     settings = settings,
                                     isToolbarAtTop = isToolbarAtTop,
                                     captureToolbarBounds = captureToolbarBounds,
-                                    modifier = Modifier.onSizeChanged { topBarHeight = it.height },
+                                    modifier =
+                                        Modifier.onSizeChanged { topBarHeight = it.height }
+                                            .thenConditional(Modifier.collapsingTopBar(collapsingTopBarState)) {
+                                                settings.isHomepageMiddleSearchEnabled
+                                            },
                                 )
                             },
                             bottomBar = {
