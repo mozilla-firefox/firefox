@@ -346,6 +346,33 @@ already_AddRefed<const GfxDeviceFamily> GfxDriverInfo::GetDeviceFamily(
       APPEND_DEVICE(0x7D67);
       APPEND_DEVICE(0x7DD1);
       break;
+    case DeviceFamily::IntelAlchemist:
+      APPEND_DEVICE(0x56A0);  // dg2_g10
+      APPEND_DEVICE(0x56A1);  // dg2_g10
+      APPEND_DEVICE(0x56A2);  // dg2_g10
+      APPEND_DEVICE(0x56BE);  // dg2_g10
+      APPEND_DEVICE(0x56BF);  // dg2_g10
+      APPEND_DEVICE(0x5690);  // dg2_g10
+      APPEND_DEVICE(0x5691);  // dg2_g10
+      APPEND_DEVICE(0x5692);  // dg2_g10
+      APPEND_DEVICE(0x56A5);  // dg2_g11
+      APPEND_DEVICE(0x56A6);  // dg2_g11
+      APPEND_DEVICE(0x56B0);  // dg2_g11
+      APPEND_DEVICE(0x56B1);  // dg2_g11
+      APPEND_DEVICE(0x56BA);  // dg2_g11
+      APPEND_DEVICE(0x56BB);  // dg2_g11
+      APPEND_DEVICE(0x56BC);  // dg2_g11
+      APPEND_DEVICE(0x56BD);  // dg2_g11
+      APPEND_DEVICE(0x5693);  // dg2_g11
+      APPEND_DEVICE(0x5694);  // dg2_g11
+      APPEND_DEVICE(0x5695);  // dg2_g11
+      APPEND_DEVICE(0x56A3);  // dg2_g12
+      APPEND_DEVICE(0x56A4);  // dg2_g12
+      APPEND_DEVICE(0x56B2);  // dg2_g12
+      APPEND_DEVICE(0x56B3);  // dg2_g12
+      APPEND_DEVICE(0x5696);  // dg2_g12
+      APPEND_DEVICE(0x5697);  // dg2_g12
+      break;
     case DeviceFamily::IntelGen12:
       // Rocket Lake
       APPEND_DEVICE(0x4C8C);  // rkl_gt05
@@ -732,6 +759,7 @@ const nsAString& GfxDriverInfo::GetDeviceVendor(DeviceFamily id) {
     case DeviceFamily::IntelMobileHDGraphics:
     case DeviceFamily::IntelMeteorLake:
     case DeviceFamily::IntelArrowlake:
+    case DeviceFamily::IntelAlchemist:
     case DeviceFamily::IntelGen12:
     case DeviceFamily::IntelWebRenderBlocked:
     case DeviceFamily::Bug1116812:

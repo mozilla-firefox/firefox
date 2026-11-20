@@ -1732,6 +1732,12 @@ const nsTArray<RefPtr<GfxDriverInfo>>& GfxInfo::GetGfxDriverInfo() {
         nsIGfxInfo::FEATURE_BLOCKED_DRIVER_VERSION, DRIVER_GREATER_THAN,
         V(32, 0, 101, 5972), "FEATURE_FAILURE_BUG_1933755");
 
+    APPEND_TO_DRIVER_BLOCKLIST2(
+        OperatingSystem::Windows, DeviceFamily::IntelAlchemist,
+        nsIGfxInfo::FEATURE_REUSE_DECODER_DEVICE,
+        nsIGfxInfo::FEATURE_BLOCKED_DRIVER_VERSION, DRIVER_GREATER_THAN,
+        V(32, 0, 101, 5972), "FEATURE_FAILURE_BUG_2086938");
+
     ////////////////////////////////////
     // FEATURE_OVERLAY_VP_AUTO_HDR
 
