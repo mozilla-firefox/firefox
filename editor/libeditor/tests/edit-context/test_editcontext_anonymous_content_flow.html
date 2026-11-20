@@ -22,6 +22,14 @@ anonymousContent.root.append(anonymousDiv);
 const rect = anonymousDiv.getBoundingClientRect();
 is(`${rect.x},${rect.y}`, '0,0',
    'EditContext anonymous content should not be in-flow with other document-level anonymous content.');
+
+host.editContext.updateText(0, host.editContext.text.length,
+                           'W'.repeat(2000) + '\n'.repeat(1000));
+const root = document.documentElement;
+is(root.scrollWidth, root.clientWidth,
+   'EditContext text should not add horizontal overflow to the document.');
+is(root.scrollHeight, root.clientHeight,
+   'EditContext text should not add vertical overflow to the document.');
 </script>
 
 </body>
