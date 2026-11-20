@@ -229,6 +229,10 @@ const checkRestrictedHeaderValue = (value, opts = {}) => {
   if (WebExtensionPolicy.isRestrictedURI(uri)) {
     throw new Error(`Unable to set host header to restricted url.`);
   }
+
+  if (policy?.checkGuarded(uri)) {
+    throw new Error(`Unable to set host header to guarded url.`);
+  }
 };
 
 class RequestHeaderChanger extends HeaderChanger {
