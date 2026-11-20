@@ -269,6 +269,16 @@ NS_IMETHODIMP MockWebTransportSessionEventListener::OnDatagramReceived(
   return NS_OK;
 }
 
+NS_IMETHODIMP MockWebTransportSessionEventListener::
+    OnOutgoingDatagramSpaceAvailableInternal() {
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+MockWebTransportSessionEventListener::OnOutgoingDatagramSpaceAvailable() {
+  return NS_OK;
+}
+
 NS_IMETHODIMP MockWebTransportSessionEventListener::OnMaxDatagramSize(
     uint64_t aSize) {
   return NS_OK;

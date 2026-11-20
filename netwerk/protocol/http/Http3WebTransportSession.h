@@ -138,6 +138,9 @@ class Http3WebTransportSession final : public WebTransportSessionBase,
   void SetDatagramMaxBufferedDatagrams(uint32_t aMaxBufferedDatagrams) override;
   void SetDatagramMaxAge(double aMaxAge) override;
 
+  bool GetDatagramSessionStats(uint64_t* aSent, uint64_t* aExpired,
+                               uint64_t* aDropped);
+
   nsresult ExportKeyingMaterial(const nsTArray<uint8_t>& aLabel,
                                 const nsTArray<uint8_t>& aContext,
                                 uint32_t aOutputLength,

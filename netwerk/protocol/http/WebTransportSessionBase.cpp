@@ -28,6 +28,18 @@ WebTransportSessionBase::GetListener() {
   return do_AddRef(mListener);
 }
 
+void WebTransportSessionBase::NotifyOutgoingDatagramSpaceAvailable() {
+  RefPtr<WebTransportSessionEventListener> baseListener = GetListener();
+  if (!baseListener) {
+    return;
+  }
+
+  if (nsCOMPtr<WebTransportSessionEventListenerInternal> listener =
+          do_QueryInterface(baseListener)) {
+    listener->OnOutgoingDatagramSpaceAvailableInternal();
+  }
+}
+
 already_AddRefed<WebTransportSessionEventListener>
 WebTransportSessionBase::TakeListener() {
   MutexAutoLock lock(mListenerLock);

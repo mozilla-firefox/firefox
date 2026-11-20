@@ -149,6 +149,9 @@ class WebTransportSessionProxy final
   bool CloseSessionAndGetStats(uint32_t aStatus, const nsACString& aReason,
                                mozilla::dom::WebTransportStatsData& aStats);
 
+  bool GetDatagramSessionStats(uint64_t* aSent, uint64_t* aExpired,
+                               uint64_t* aDropped);
+
  private:
   ~WebTransportSessionProxy();
 
@@ -179,6 +182,7 @@ class WebTransportSessionProxy final
                             uint64_t aSendGroupId, int64_t aSendOrder,
                             TimeStamp aTimestamp);
   void NotifyDatagramReceived(nsTArray<uint8_t>&& aData);
+  void NotifyOutgoingDatagramSpaceAvailable();
   void GetMaxDatagramSizeInternal(
       const RefPtr<WebTransportSessionBase>& aSession);
   void OnMaxDatagramSizeInternal(uint64_t aSize);

@@ -179,6 +179,12 @@ interface WebTransportSessionEventListener : nsISupports {
   // When a new datagram has been received.
   void onDatagramReceived(in Array<uint8_t> aData);
 
+  // neqo's outgoing datagram queue has dropped back below its high water
+  // mark. A listener that withheld capacity from its own consumer while the
+  // queue was full should re-sample it; this is the only signal that arrives
+  // without the listener asking first.
+  void onOutgoingDatagramSpaceAvailable();
+
   void onMaxDatagramSize(in uint64_t aSize);
 
   cenum DatagramOutcome: 32 {
@@ -209,6 +215,10 @@ interface WebTransportSessionEventListenerInternal : nsISupports {
 
   // This is used internally to pass the datagram to WebTransportSessionProxy.
   void onDatagramReceivedInternal(in Datagram aData);
+
+  // This is used internally to forward onOutgoingDatagramSpaceAvailable() to
+  // the listener.
+  void onOutgoingDatagramSpaceAvailableInternal();
 
   // The anticipatedConcurrentIncoming{Uni,Bi}directionalStreams values to
   // apply once the CONNECT has been sent. 0 means not requested.
