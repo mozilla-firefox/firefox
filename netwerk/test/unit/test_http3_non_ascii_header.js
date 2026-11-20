@@ -32,9 +32,7 @@ let h2Port;
 let h3Port;
 
 add_setup(async function setup() {
-  h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
+  h2Port = (await create_h2_server()).port();
 
   let h3ServerPath = Services.env.get("MOZ_HTTP3_SERVER_PATH");
   let h3DBPath = Services.env.get("MOZ_HTTP3_CERT_DB_PATH");
