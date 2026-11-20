@@ -17,14 +17,6 @@ void WebTransportChild::Shutdown(bool aClose) {
   Close();
 }
 
-// Shutdown() clears mTransport first, so this only reaches the transport when
-// the actor goes away without the content side asking: the parent can't send
-// CloseAll from its own ActorDestroy(), so settle everything here instead.
-void WebTransportChild::ActorDestroy(ActorDestroyReason aWhy) {
-  LOG(("ActorDestroy WebTransportChild %d", aWhy));
-  CloseAll();
-}
-
 void WebTransportChild::CloseAll() {
   if (mTransport) {
     RefPtr<WebTransport> self(mTransport);

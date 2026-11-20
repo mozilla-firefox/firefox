@@ -24,8 +24,6 @@ class WebTransportChild : public PWebTransportChild {
 
   void Shutdown(bool aClose);
 
-  void ActorDestroy(ActorDestroyReason aWhy) override;
-
   void SetAnticipatedConcurrentIncomingUnidirectionalStreams(
       const Nullable<uint16_t>& aValue);
   void SetAnticipatedConcurrentIncomingBidirectionalStreams(
