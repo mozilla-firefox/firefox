@@ -2345,7 +2345,8 @@ void Navigation::CreateNavigationActivationFrom(
                   fmt::ptr(possiblePreviousEntry->get()));
       oldEntry = *possiblePreviousEntry;
     } else if (navigationType == NavigationType::Replace &&
-               !previousEntryForActivation->IsTransient()) {
+               !previousEntryForActivation->IsTransient() &&
+               !GetAssociatedDocument()->GetPrincipal()->GetIsNullPrincipal()) {
       oldEntry = MakeRefPtr<NavigationHistoryEntry>(
           GetRelevantGlobal(), previousEntryForActivation, -1);
       MOZ_LOG_FMT(gNavigationAPILog, LogLevel::Debug,

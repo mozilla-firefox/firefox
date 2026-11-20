@@ -28,6 +28,7 @@
 #include "mozilla/dom/ContentParent.h"
 #include "mozilla/dom/CSPMessageUtils.h"
 #include "mozilla/dom/PolicyContainerMessageUtils.h"
+#include "mozilla/dom/Document.h"
 #include "mozilla/dom/DocumentBinding.h"
 #include "mozilla/dom/DOMTypes.h"
 #include "mozilla/dom/NavigationAPIIPCUtils.h"
@@ -414,7 +415,6 @@ LoadingSessionHistoryInfo::LoadingSessionHistoryInfo(
 LoadingSessionHistoryInfo::LoadingSessionHistoryInfo(
     SessionHistoryEntry* aEntry, const LoadingSessionHistoryInfo* aInfo)
     : mInfo(aEntry->Info()),
-      mPreviousEntry(aInfo->mPreviousEntry),
       mTriggeringNavigationType(aInfo->mTriggeringNavigationType),
       mLoadId(aInfo->mLoadId),
       mLoadIsFromSessionHistory(aInfo->mLoadIsFromSessionHistory),
@@ -1475,18 +1475,22 @@ already_AddRefed<nsSHistory> SessionHistoryEntry::GetSessionHistory() {
 /* static */
 Maybe<PreviousSessionHistoryInfo>
 PreviousSessionHistoryInfo::CreateValidatedPreviousEntry(
-    const SessionHistoryInfo& aCurrentEntry,
-    const Maybe<SessionHistoryInfo>& aPreviousEntryForActivation,
-    Maybe<NavigationType> aNavigationType) {
+    SessionHistoryEntry* aCurrentEntry,
+    SessionHistoryEntry* aPreviousEntryForActivation,
+    Maybe<NavigationType> aNavigationType,
+    nsIPrincipal* aPreviousDocumentPrincipal) {
   // https://html.spec.whatwg.org/#update-document-for-history-step-application
   // Step 7 If all the following are true:
   // * previousEntryForActivation is given;
   // * navigationType is non-null; and
   // * navigationType is "reload" or previousEntryForActivation's document is
   //   not document,
-  if (!aPreviousEntryForActivation || !aNavigationType ||
-      (*aNavigationType != NavigationType::Reload &&
-       aCurrentEntry.SharesDocumentWith(*aPreviousEntryForActivation))) {
+  if (!aPreviousEntryForActivation || !aNavigationType) {
+    return Nothing();
+  }
+  bool isReload = *aNavigationType == NavigationType::Reload;
+  if (!isReload && aCurrentEntry->Info().SharesDocumentWith(
+                       aPreviousEntryForActivation->Info())) {
     return Nothing();
   }
 
@@ -1498,15 +1502,36 @@ PreviousSessionHistoryInfo::CreateValidatedPreviousEntry(
   // then set activation's old entry to a new NavigationHistoryEntry in
   // navigation's relevant realm, whose session history entry is
   // previousEntryForActivation.
-  nsCOMPtr previousURI =
-      aPreviousEntryForActivation->GetURIOrInheritedForAboutBlankOrSrcdoc();
-  nsCOMPtr currentURI = aCurrentEntry.GetURIOrInheritedForAboutBlankOrSrcdoc();
-  if (NS_FAILED(nsContentUtils::GetSecurityManager()->CheckSameOriginURI(
-          currentURI, previousURI, false, false))) {
-    return Some(PreviousSessionHistoryInfo{});
+  // Content also needs this entry for step 7.3; on reload, it is the current
+  // entry. The replace-only conditions in step 7.4 are checked in content.
+  nsCOMPtr currentURI = aCurrentEntry->GetURIOrInheritedForAboutBlankOrSrcdoc();
+  if (isReload || (aPreviousDocumentPrincipal &&
+                   aPreviousDocumentPrincipal->IsSameOrigin(currentURI))) {
+    return Some(
+        PreviousSessionHistoryInfo(aPreviousEntryForActivation->Info()));
   }
 
-  return Some(PreviousSessionHistoryInfo(aPreviousEntryForActivation));
+  return Some(PreviousSessionHistoryInfo{});
+}
+
+/* static */
+Maybe<PreviousSessionHistoryInfo>
+PreviousSessionHistoryInfo::CreateValidatedPreviousEntry(
+    const Document& aCurrentDocument, const Document& aPreviousDocument,
+    const SessionHistoryInfo* aPreviousEntryForActivation) {
+  // https://html.spec.whatwg.org/#update-document-for-history-step-application
+  if (&aCurrentDocument == &aPreviousDocument) {
+    return Nothing();
+  }
+
+  // Expose the replaced entry if the documents are same-origin and the
+  // previous document is past initial about:blank.
+  if (aPreviousEntryForActivation && !aPreviousDocument.IsInitialDocument() &&
+      aPreviousDocument.NodePrincipal()->Equals(
+          aCurrentDocument.NodePrincipal())) {
+    return Some(PreviousSessionHistoryInfo(*aPreviousEntryForActivation));
+  }
+  return Some(PreviousSessionHistoryInfo{});
 }
 
 SessionHistoryEntry* SessionHistoryEntry::GetAsSessionHistoryEntry() {
