@@ -82,8 +82,21 @@ class WebTransportSessionBase {
           aCallback) = 0;
   virtual void StartReading() {}
 
-  // Tell the listener neqo's outgoing datagram queue has room again.
+  // Tell the listener the outgoing datagram queue has room again.
   void NotifyOutgoingDatagramSpaceAvailable();
+
+  // A snapshot of the outgoing datagram queue, and its cumulative
+  // sent/expired/dropped counts, for WebTransportParent's DatagramCapacity
+  // feedback.  False if the session cannot report them.
+  virtual bool GetDatagramQueueCapacity(size_t* aRemainingBytes,
+                                        size_t* aQueuedDatagrams,
+                                        size_t* aMaxQueuedBytes) {
+    return false;
+  }
+  virtual bool GetDatagramSessionStats(uint64_t* aSent, uint64_t* aExpired,
+                                       uint64_t* aDropped) {
+    return false;
+  }
 
   virtual Http3WebTransportSession* GetHttp3WebTransportSession() {
     return nullptr;

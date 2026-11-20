@@ -125,10 +125,11 @@ void CapsuleEncoder::EncodeCapsule(Capsule& aCapsule) {
 
   if (aCapsule.mCapsule.is<WebTransportDatagramCapsule>()) {
     auto& value = aCapsule.mCapsule.as<WebTransportDatagramCapsule>();
-    uint64_t length = value.mPayload.Length();
+    size_t length = value.mPayload.Length();
     EncodeVarint(value.Type())
         .EncodeVarint(length)
         .EncodeBuffer(value.mPayload);
+    mDatagramSize = Some(length);
     return;
   }
 }

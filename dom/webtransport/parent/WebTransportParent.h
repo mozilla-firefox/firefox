@@ -173,6 +173,10 @@ class WebTransportParent : public PWebTransportParent,
   // Latest write timestamp handed to neqo; see RecvOutgoingDatagrams().
   TimeStamp mLastOutgoingDatagramTimestamp;
   uint32_t mOutgoingMaxBufferedDatagrams{5};
+  // Set while RecvOutgoingDatagrams() runs, so a space-available notification
+  // the session raises synchronously from inside it (HTTP/2 writes a datagram
+  // capsule as soon as it is enqueued) defers to that batch's own sample.
+  bool mInOutgoingDatagramsBatch{false};
   // Cumulative datagrams/bytes retired from [[OutgoingDatagramsQueue]]: both
   // ones handed to neqo's outgoing queue and ones dropped right here for
   // being too old to bother forwarding (see RecvOutgoingDatagrams) -- both

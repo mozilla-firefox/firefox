@@ -8,6 +8,7 @@
 #include <cmath>
 
 #include "Http3WebTransportSession.h"
+#include "mozilla/AutoRestore.h"
 #include "mozilla/ErrorResult.h"
 #include "mozilla/StaticPrefs_network.h"
 #include "mozilla/TimeStamp.h"
@@ -1170,6 +1171,8 @@ WebTransportParent::OnIncomingBidirectionalStreamAvailable(
     return IPC_FAIL(this, "Outgoing datagram batch is too large");
   }
 
+  AutoRestore<bool> inBatch(mInOutgoingDatagramsBatch);
+  mInOutgoingDatagramsBatch = true;
   TimeStamp now = TimeStamp::Now();
   for (auto& datagram : aDatagrams) {
     double ageMs = (now - datagram.timestamp()).ToMilliseconds();
@@ -1363,11 +1366,12 @@ NS_IMETHODIMP WebTransportParent::OnDatagramReceived(
 NS_IMETHODIMP WebTransportParent::OnOutgoingDatagramSpaceAvailable() {
   MOZ_ASSERT(mSocketThread->IsOnCurrentThread());
 
-  // The child withholds a write() promise once it has outgoingMaxBuffered-
-  // Datagrams in flight and only learns otherwise from a DatagramCapacity.
-  // Every other sample is taken while handling a batch the child sent, which
-  // it cannot send while withheld, so this is the only path that releases a
-  // fully back-pressured writer.
+  // The only capacity sample not taken while handling a child batch, so the
+  // only thing that releases a fully back-pressured writer.  Inside
+  // RecvOutgoingDatagrams() the batch's own closing sample covers it.
+  if (mInOutgoingDatagramsBatch) {
+    return NS_OK;
+  }
   MaybeSendDatagramCapacity();
   return NS_OK;
 }
