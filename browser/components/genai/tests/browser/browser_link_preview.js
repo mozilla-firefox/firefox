@@ -479,7 +479,7 @@ add_task(async function test_fetch_errors() {
   );
 
   result = await actor.fetchPageData(
-    "https://itisatrap.org/firefox/its-a-trap.html"
+    "https://www.itisatrap.org/firefox/its-a-trap.html"
   );
   ok(result.error, "got error from fetching trap");
   is(
