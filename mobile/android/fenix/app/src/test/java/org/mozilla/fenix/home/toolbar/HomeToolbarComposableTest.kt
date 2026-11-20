@@ -68,7 +68,7 @@ class HomeToolbarComposableTest {
                 )
             stubSpeechRecognition()
 
-            htc.build(false)
+            htc.build()
 
             assertTrue(appStore.state.voiceSearchState.isRequestingVoiceInput)
             assertFalse(appStore.state.searchState.isSearchActive)
@@ -92,7 +92,7 @@ class HomeToolbarComposableTest {
                         )
                 )
 
-            htc.build(false)
+            htc.build()
 
             assertFalse(appStore.state.voiceSearchState.isRequestingVoiceInput)
             assertTrue(appStore.state.searchState.isSearchActive)
@@ -121,7 +121,7 @@ class HomeToolbarComposableTest {
                 settings = settings,
             )
 
-        htc.build(false)
+        htc.build()
 
         assertFalse(appStore.state.voiceSearchState.isRequestingVoiceInput)
         assertTrue(appStore.state.searchState.isSearchActive)
@@ -152,7 +152,7 @@ class HomeToolbarComposableTest {
                 settings = settings,
             )
 
-        htc.build(false)
+        htc.build()
 
         assertTrue(appStore.state.searchState.isSearchActive)
         assertEquals(tab.id, appStore.state.searchState.sourceTabId)
@@ -172,7 +172,7 @@ class HomeToolbarComposableTest {
                     )
             )
 
-        htc.build(false)
+        htc.build()
 
         assertFalse(appStore.state.voiceSearchState.isRequestingVoiceInput)
         assertTrue(appStore.state.searchState.isSearchActive)

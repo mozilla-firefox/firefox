@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -95,8 +94,6 @@ internal class HomeToolbarComposable(
     private val searchSuggestionsContent: @Composable (Modifier) -> Unit,
     private val navigationBarContent: (@Composable () -> Unit)?,
 ) : FenixHomeToolbar {
-    private val addressBarVisibility = mutableStateOf(true)
-
     init {
         // Reset the toolbar visibility & position whenever coming back to the home screen
         // like after changing the toolbar position in settings.
@@ -195,12 +192,10 @@ internal class HomeToolbarComposable(
 
     @Composable
     private fun ColumnScope.AddressBar(wallpaperTextColor: Color?) {
-        val isAddressBarVisible = remember { addressBarVisibility }
         val isSearchActive = appStore.observeAsComposableState { it.searchState.isSearchActive }.value
         val isMiddleSearchEnabled = settings.isHomepageMiddleSearchEnabled
         val isEditMode = toolbarStore.observeAsComposableState { it.isEditMode() }.value
-        // With the middle search bar, the address bar is only shown while searching, in edit mode.
-        val isMiddleSearchAddressBarShown = isSearchActive && isEditMode
+        val isAddressBarShown = !isMiddleSearchEnabled || (isSearchActive && isEditMode)
 
         Box {
             if (isMiddleSearchEnabled) {
@@ -208,12 +203,7 @@ internal class HomeToolbarComposable(
             }
 
             this@AddressBar.AnimatedVisibility(
-                visible =
-                    if (isMiddleSearchEnabled) {
-                        isMiddleSearchAddressBarShown
-                    } else {
-                        isAddressBarVisible.value || isSearchActive
-                    },
+                visible = isAddressBarShown,
                 enter =
                     fadeIn(
                         animationSpec =
@@ -227,7 +217,7 @@ internal class HomeToolbarComposable(
                 // AnimatedVisibility keeps its content for a frame or more after being hidden, even without an exit
                 // transition, during which the address bar would show over the homepage in its display mode. With the
                 // middle search bar, it is therefore removed right away instead.
-                if (!isMiddleSearchEnabled || isMiddleSearchAddressBarShown) {
+                if (isAddressBarShown) {
                     BrowserToolbar(
                         store = toolbarStore,
                         browserActionsColor = wallpaperTextColor,
@@ -264,13 +254,8 @@ internal class HomeToolbarComposable(
         return if (isSearchActive) toolbarColors(isSearching = true).surface else null
     }
 
-    override fun build(middleSearchEnabled: Boolean) {
+    override fun build() {
         configureStartingInSearchMode()
-        updateAddressBarVisibility(!middleSearchEnabled)
-    }
-
-    override fun updateAddressBarVisibility(isVisible: Boolean) {
-        addressBarVisibility.value = isVisible
     }
 
     private fun buildToolbarGravityConfig(): ToolbarGravity =

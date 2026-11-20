@@ -85,11 +85,7 @@ class HomeNavigationBar(
         DefaultNavigationBarContent()
     }
 
-    override fun updateAddressBarVisibility(isVisible: Boolean) {
-        // no-op
-    }
-
-    override fun build(middleSearchEnabled: Boolean) {
+    override fun build() {
         // no-op
     }
 }

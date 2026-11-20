@@ -135,7 +135,6 @@ private const val POPULAR_SITES_TO_SHOW = 8
  * @param interactor [HomepageInteractor] for interactions with the homepage UI.
  * @param onCollectionsMigrationCardAction Invoked with the [CollectionsMigrationCardAction] to dispatch.
  * @param onTopSitesItemBound Invoked during the composition of a top site item.
- * @param onMiddleSearchBarVisibilityChanged Invoked when the middle search bar is shown/hidden.
  * @param modifier [Modifier] to be applied to the layout.
  * @param contentFadeLength Distance over which the scrollable content fades out at its top and bottom edges, or null
  *   for no fade. Once the middle search bar is pinned, the top fade starts below it.
@@ -148,7 +147,6 @@ internal fun Homepage(
     interactor: HomepageInteractor,
     onCollectionsMigrationCardAction: (CollectionsMigrationCardAction) -> Unit,
     onTopSitesItemBound: () -> Unit,
-    onMiddleSearchBarVisibilityChanged: (isVisible: Boolean) -> Unit,
     modifier: Modifier = Modifier,
     contentFadeLength: Dp? = null,
 ) {
@@ -212,12 +210,6 @@ internal fun Homepage(
                 with(state) {
                     when (this) {
                         is HomepageState.Private -> {
-                            if (middleSearchState.searchBarEnabled) {
-                                LaunchedEffect(middleSearchState.searchBarVisible) {
-                                    onMiddleSearchBarVisibilityChanged(middleSearchState.searchBarVisible)
-                                }
-                            }
-
                             Image(
                                 painter = painterResource(id = iconsR.drawable.mozac_ic_private_mode_circle_fill_72),
                                 contentDescription = null,
@@ -266,20 +258,14 @@ internal fun Homepage(
                                 }
                             }
 
-                            if (middleSearchState.searchBarEnabled) {
-                                LaunchedEffect(middleSearchState.searchBarVisible) {
-                                    onMiddleSearchBarVisibilityChanged(middleSearchState.searchBarVisible)
-                                }
+                            if (middleSearchState.isShown) {
+                                MiddleSearchBar(
+                                    pinState = middleSearchPinState,
+                                    isReplacedByOverlay = isSearchBarOverlaid,
+                                    onClick = interactor::onNavigateSearch,
+                                )
 
-                                if (middleSearchState.searchBarVisible) {
-                                    MiddleSearchBar(
-                                        pinState = middleSearchPinState,
-                                        isReplacedByOverlay = isSearchBarOverlaid,
-                                        onClick = interactor::onNavigateSearch,
-                                    )
-
-                                    Spacer(Modifier.height(FirefoxTheme.layout.space.static500))
-                                }
+                                Spacer(Modifier.height(FirefoxTheme.layout.space.static500))
                             }
 
                             if (topSiteState != null) {
@@ -766,7 +752,6 @@ private fun HomepagePreview() {
                 interactor = FakeHomepagePreview.homepageInteractor,
                 onCollectionsMigrationCardAction = {},
                 onTopSitesItemBound = {},
-                onMiddleSearchBarVisibilityChanged = {},
                 middleSearchPinState = rememberMiddleSearchPinState(),
                 modifier = Modifier.fillMaxSize(),
             )
@@ -810,7 +795,6 @@ private fun HomepageBannerPreview() {
                 interactor = FakeHomepagePreview.homepageInteractor,
                 onCollectionsMigrationCardAction = {},
                 onTopSitesItemBound = {},
-                onMiddleSearchBarVisibilityChanged = {},
                 middleSearchPinState = rememberMiddleSearchPinState(),
                 modifier = Modifier.fillMaxSize(),
             )
@@ -845,7 +829,6 @@ private fun HomepagePreviewCollections() {
                 interactor = FakeHomepagePreview.homepageInteractor,
                 onCollectionsMigrationCardAction = {},
                 onTopSitesItemBound = {},
-                onMiddleSearchBarVisibilityChanged = {},
                 middleSearchPinState = rememberMiddleSearchPinState(),
                 modifier = Modifier.fillMaxSize(),
             )
@@ -880,7 +863,6 @@ private fun HomepageCollectionsMigrationCardPreview() {
                 interactor = FakeHomepagePreview.homepageInteractor,
                 onCollectionsMigrationCardAction = {},
                 onTopSitesItemBound = {},
-                onMiddleSearchBarVisibilityChanged = {},
                 middleSearchPinState = rememberMiddleSearchPinState(),
                 modifier = Modifier.fillMaxSize(),
             )
@@ -918,7 +900,6 @@ private fun MinimalHomepagePreview() {
                 interactor = FakeHomepagePreview.homepageInteractor,
                 onCollectionsMigrationCardAction = {},
                 onTopSitesItemBound = {},
-                onMiddleSearchBarVisibilityChanged = {},
                 middleSearchPinState = rememberMiddleSearchPinState(),
                 modifier = Modifier.fillMaxSize(),
             )
@@ -940,7 +921,6 @@ private fun PrivateHomepagePreview() {
             interactor = FakeHomepagePreview.homepageInteractor,
             onCollectionsMigrationCardAction = {},
             onTopSitesItemBound = {},
-            onMiddleSearchBarVisibilityChanged = {},
             middleSearchPinState = rememberMiddleSearchPinState(),
             modifier = Modifier.fillMaxSize(),
         )

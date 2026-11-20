@@ -558,7 +558,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                 .navigate(NavGraphDirections.actionGlobalUnlockPrivateTabsFragment(NavigationOrigin.HOME_PAGE))
         }
 
-        toolbarView.build(requireComponents.settings.isHomepageMiddleSearchEnabled)
+        toolbarView.build()
 
         requireComponents.appStore.state.wasLastTabClosedPrivate?.also {
             showUndoSnackbar(requireContext().tabClosedUndoMessage(it))
@@ -1036,9 +1036,6 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                 },
                 onTopSitesItemBound = {
                     StartupTimeline.onTopSitesItemBound(activity = (requireActivity() as HomeActivity))
-                },
-                onMiddleSearchBarVisibilityChanged = { isVisible ->
-                    toolbarView.updateAddressBarVisibility(!isVisible)
                 },
                 middleSearchPinState = middleSearchPinState,
                 contentFadeLength = HOMEPAGE_EDGE_FADE_LENGTH.takeIf { fadeContentEdges },

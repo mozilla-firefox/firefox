@@ -18,17 +18,6 @@ interface FenixHomeToolbar {
      */
     @Composable fun searchBackgroundColor(): Color? = null
 
-    /**
-     * Setups the home screen toolbar.
-     *
-     * @param middleSearchEnabled Whether middle search is enabled, and the address bar should be invisible.
-     */
-    fun build(middleSearchEnabled: Boolean)
-
-    /**
-     * Updates the visibility of the address bar.
-     *
-     * @param isVisible Whether the address bar should be visible or not.
-     */
-    fun updateAddressBarVisibility(isVisible: Boolean)
+    /** Sets up the home screen toolbar. */
+    fun build()
 }
