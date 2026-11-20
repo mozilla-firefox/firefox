@@ -8,6 +8,7 @@ import {
   classMap,
   html,
   ifDefined,
+  keyed,
   when,
   nothing,
 } from "chrome://global/content/vendor/lit.all.mjs";
@@ -500,12 +501,20 @@ export class SidebarHistory extends SidebarPage {
   #historyCardsTemplate() {
     const { historyVisits } = this.controller;
     switch (this.controller.sortOption) {
-      case "date":
-        return historyVisits.map(({ l10nId, items }, i) =>
-          this.#dateCardTemplate(l10nId, i, items, {
-            setSize: historyVisits.length,
-          })
-        );
+      case "date": {
+        return historyVisits.map((dateCardEntry, i) => {
+          const template = this.#dateCardTemplate(
+            dateCardEntry.l10nId,
+            i,
+            dateCardEntry.items,
+            {
+              setSize: historyVisits.length,
+              dateCardEntry,
+            }
+          );
+          return keyed(dateCardEntry.container, template);
+        });
+      }
       case "site":
         return historyVisits.map(({ domain, items }, i) =>
           this.#siteCardTemplate(domain, i, items, {
@@ -532,7 +541,20 @@ export class SidebarHistory extends SidebarPage {
     }
   }
 
-  #dateCardTemplate(l10nId, index, items, { isDateSite = false, setSize }) {
+  #dateCardTemplate(
+    l10nId,
+    index,
+    items,
+    { isDateSite = false, setSize, dateCardEntry }
+  ) {
+    let date;
+    if (dateCardEntry?.startDate) {
+      // The HistoryDateRegistry API supplies a start date in the card itself,
+      // so we don't have to reach for the bucket's first visit.
+      date = dateCardEntry?.startDate?.getTime();
+    } else {
+      date = isDateSite ? items[0][1][0].time : items[0].time;
+    }
     return html` <moz-card
       type="accordion"
       class="date-card"
@@ -543,11 +565,9 @@ export class SidebarHistory extends SidebarPage {
       ?expanded=${index < DAYS_EXPANDED_INITIALLY}
       .historyItems=${items}
       data-l10n-id=${l10nId}
-      data-l10n-args=${JSON.stringify({
-        date: isDateSite ? items[0][1][0].time : items[0].time,
-      })}
+      data-l10n-args=${JSON.stringify({ date })}
       @keydown=${this.keydownHandler}
-      @toggle=${this.#onCardToggle}
+      @toggle=${event => this.#onCardToggle(event, dateCardEntry)}
     >
       ${isDateSite
         ? html`<div role="group">
@@ -594,7 +614,13 @@ export class SidebarHistory extends SidebarPage {
     </moz-card>`;
   }
 
-  #onCardToggle() {
+  #onCardToggle(event, dateCardEntry) {
+    if (dateCardEntry?.container) {
+      this.controller.toggleContainerExpanded(
+        dateCardEntry,
+        event.currentTarget.expanded
+      );
+    }
     this.dispatchEvent(new CustomEvent("folder-toggle"));
   }
 

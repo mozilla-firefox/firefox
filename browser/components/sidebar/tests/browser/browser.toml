@@ -65,6 +65,8 @@ prefs = [
 
 ["browser_history_sidebar_import_promo.js"]
 
+["browser_history_sidebar_memory_optimizations.js"]
+
 ["browser_launcher_dividers.js"]
 tags = "vertical-tabs"
 

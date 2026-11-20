@@ -2,12 +2,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-const lazy = {};
-
 import { getLogger } from "chrome://browser/content/firefoxview/helpers.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-ChromeUtils.defineESModuleGetters(lazy, {
+/**
+ * @import { HistoryDateContainer } from "moz-src:///browser/components/places/history/HistoryDateContainer.sys.mjs"
+ * @import { HistoryDateRegistry } from "moz-src:///browser/components/places/history/HistoryDateRegistry.sys.mjs"
+ */
+
+const lazy = XPCOMUtils.declareLazy({
+  HistoryDateRegistry:
+    "moz-src:///browser/components/places/history/HistoryDateRegistry.sys.mjs",
   PlacesQuery: "resource://gre/modules/PlacesQuery.sys.mjs",
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
   ProfileAge: "resource://gre/modules/ProfileAge.sys.mjs",
@@ -53,11 +58,24 @@ const HISTORY_MAP_L10N_IDS = {
  * @property {string} l10nId
  */
 
+/**
+ * A "date" card, which holds a list of visits that occurred during a specific timeframe.
+ *
+ * @typedef {CardEntry & {
+ *   startDate: Date,
+ *   container: HistoryDateContainer,
+ * }} DateCardEntry
+ */
+
 export class HistoryController {
   /**
    * @type {{ entries: CardEntry[]; searchQuery: string; sortOption: string; }}
    */
   historyCache;
+  /** @type {HistoryDateRegistry?} */
+  #registry = null;
+  /** @type {mozIStoragePendingStatement?} */
+  #pendingSearch = null;
   host;
   searchQuery;
   sortOption;
@@ -116,7 +134,11 @@ export class HistoryController {
   }
 
   hostConnected() {
-    this.placesQuery.observeHistory(historyMap => this.updateCache(historyMap));
+    this.placesQuery.observeHistory(historyMap => {
+      if (!this.#useNewHistoryAPI) {
+        this.updateCache(historyMap);
+      }
+    });
     if (!this.importHistoryDismissed && !this.hasImportedHistory) {
       this.#updateProfileAge();
     }
@@ -124,6 +146,11 @@ export class HistoryController {
 
   hostDisconnected() {
     this.placesQuery.close();
+    this.#registry?.unloadAll();
+    if (this.#pendingSearch) {
+      this.#pendingSearch.cancel();
+      this.#pendingSearch = null;
+    }
   }
 
   async #updateProfileAge() {
@@ -205,6 +232,20 @@ export class HistoryController {
   }
 
   /**
+   * Determine whether the new history API is enabled and supports the current
+   * component (i.e. Firefox View or Sidebar) and sort option.
+   *
+   * @returns {boolean}
+   */
+  get #useNewHistoryAPI() {
+    return (
+      this.component === "sidebar" &&
+      this.sortOption === "date" &&
+      Services.prefs.getBoolPref("sidebar.history.showAllHistory", false)
+    );
+  }
+
+  /**
    * Update cached history.
    *
    * @param {CachedHistory} [historyMap]
@@ -213,9 +254,19 @@ export class HistoryController {
    */
   async updateCache(historyMap) {
     const { searchQuery, sortOption } = this;
-    const entries = searchQuery
-      ? await this.#getVisitsForSearchQuery(searchQuery)
-      : await this.#getVisitsForSortOption(sortOption, historyMap);
+    let entries;
+    let registry = null;
+    if (this.#pendingSearch) {
+      this.#pendingSearch.cancel();
+      this.#pendingSearch = null;
+    }
+    if (!searchQuery && this.#useNewHistoryAPI) {
+      ({ entries, registry } = await this.#getVisitsFromDateRegistry());
+    } else {
+      entries = searchQuery
+        ? await this.#getVisitsForSearchQuery(searchQuery)
+        : await this.#getVisitsForSortOption(sortOption, historyMap);
+    }
     if (
       this.searchQuery !== searchQuery ||
       this.sortOption !== sortOption ||
@@ -238,8 +289,37 @@ export class HistoryController {
         }
       }
     }
+    this.#registry?.unloadAll();
+    this.#registry = registry;
     this.historyCache = { entries, searchQuery, sortOption };
     this.host.requestUpdate();
+  }
+
+  /**
+   * If this container is expanded, load its visits into memory and render
+   * them in the UI. Otherwise, unload its visits.
+   *
+   * @param {DateCardEntry} dateCardEntry
+   * @param {boolean} expanded
+   * @returns {Promise<void>} - Resolves when async loading and UI updates are complete.
+   */
+  async toggleContainerExpanded(dateCardEntry, expanded) {
+    if (expanded) {
+      await dateCardEntry.container.load();
+      if (!this.historyVisits.includes(dateCardEntry)) {
+        // If history was refreshed during the load, and we're no longer showing
+        // this card, then we should immediately unload it from memory.
+        dateCardEntry.container.unload();
+        return;
+      }
+      for (const visit of dateCardEntry.items) {
+        this.#normalizeVisit(visit);
+      }
+      await this.host.requestUpdate();
+    } else {
+      dateCardEntry.container.unload();
+      await this.host.requestUpdate();
+    }
   }
 
   /**
@@ -272,6 +352,10 @@ export class HistoryController {
   }
 
   async #getVisitsForSearchQuery(searchQuery) {
+    if (this.#useNewHistoryAPI) {
+      const items = await this.#searchHistory(searchQuery);
+      return items ? [{ items }] : null;
+    }
     let items = [];
     try {
       items = await this.placesQuery.searchHistory(
@@ -285,6 +369,70 @@ export class HistoryController {
       );
     }
     return [{ items }];
+  }
+
+  /**
+   * Search history without requiring a `PlacesQuery` instance.
+   *
+   * @param {string} searchTerms
+   * @returns {Promise<HistoryVisit[] | null>}
+   *   Visits, or `null` if cancelled.
+   */
+  #searchHistory(searchTerms) {
+    const query = Object.assign(lazy.PlacesUtils.history.getNewQuery(), {
+      searchTerms,
+    });
+    const options = Object.assign(
+      lazy.PlacesUtils.history.getNewQueryOptions(),
+      {
+        queryType: Ci.nsINavHistoryQueryOptions.QUERY_TYPE_HISTORY,
+        resultType: Ci.nsINavHistoryQueryOptions.RESULTS_AS_URI,
+        sortingMode: Ci.nsINavHistoryQueryOptions.SORT_BY_DATE_DESCENDING,
+        maxResults: this.searchResultsLimit,
+      }
+    );
+    return new Promise((resolve, reject) => {
+      const items = [];
+      const statement = lazy.PlacesUtils.history.asyncExecuteLegacyQuery(
+        query,
+        options,
+        {
+          handleResult(resultSet) {
+            let row;
+            while ((row = resultSet.getNextRow())) {
+              items.push({
+                date: lazy.PlacesUtils.toDate(
+                  row.getResultByName("last_visit_date")
+                ),
+                title: row.getResultByName("page_title"),
+                url: row.getResultByName("url"),
+                guid: row.getResultByName("guid"),
+              });
+            }
+          },
+          handleError(error) {
+            reject(new Error(error.message));
+          },
+          handleCompletion: reason => {
+            if (this.#pendingSearch === statement) {
+              this.#pendingSearch = null;
+            }
+            if (reason === Ci.mozIStorageStatementCallback.REASON_FINISHED) {
+              resolve(items);
+            } else if (
+              reason === Ci.mozIStorageStatementCallback.REASON_CANCELED
+            ) {
+              resolve(null);
+            } else {
+              reject(
+                new Error(`History search did not complete (reason: ${reason})`)
+              );
+            }
+          },
+        }
+      );
+      this.#pendingSearch = statement;
+    });
   }
 
   async #getVisitsForSortOption(sortOption, historyMap) {
@@ -310,6 +458,41 @@ export class HistoryController {
       default:
         return [];
     }
+  }
+
+  /**
+   * Use the `HistoryDateRegistry` API to fetch visits sorted by date.
+   *
+   * @returns {Promise<{ entries: DateCardEntry[], registry: HistoryDateRegistry }>}
+   */
+  async #getVisitsFromDateRegistry() {
+    const now = new Date();
+    const yesterday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - 1
+    );
+    const registry = await lazy.HistoryDateRegistry.create({ now });
+    const entries = registry.containers.map(container => {
+      const { startDate } = container;
+      let label = "history-date-prev-month";
+      if (this.#isSameDate(startDate, now)) {
+        label = "history-date-today";
+      } else if (this.#isSameDate(startDate, yesterday)) {
+        label = "history-date-yesterday";
+      } else if (this.#isSameMonth(startDate, now)) {
+        label = "history-date-this-month";
+      }
+      return {
+        l10nId: HISTORY_MAP_L10N_IDS[this.component][label],
+        startDate,
+        container,
+        get items() {
+          return container.children;
+        },
+      };
+    });
+    return { entries, registry };
   }
 
   #setTodaysDate() {

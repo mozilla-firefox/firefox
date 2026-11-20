@@ -2377,6 +2377,7 @@ pref("sidebar.backupState", "{}");
 pref("sidebar.expandOnHover", true);
 pref("sidebar.old-sidebar.has-used", false);
 pref("sidebar.new-sidebar.has-used", false);
+pref("sidebar.history.showAllHistory", false);
 pref("sidebar.history.sortOption", "date");
 #ifdef NIGHTLY_BUILD
 pref("sidebar.updatedBookmarks.enabled", true);
