@@ -6381,35 +6381,6 @@ Element* nsGlobalWindowOuter::GetFrameElement() {
 }
 
 namespace {
-class ChildCommandDispatcher : public Runnable {
- public:
-  ChildCommandDispatcher(nsPIWindowRoot* aRoot, nsIBrowserChild* aBrowserChild,
-                         nsPIDOMWindowOuter* aWindow, const nsAString& aAction)
-      : mozilla::Runnable("ChildCommandDispatcher"),
-        mRoot(aRoot),
-        mBrowserChild(aBrowserChild),
-        mWindow(aWindow),
-        mAction(aAction) {}
-
-  NS_IMETHOD Run() override {
-    AutoTArray<nsCString, 70> enabledCommands, disabledCommands;
-    mRoot->GetEnabledDisabledCommands(enabledCommands, disabledCommands);
-    if (enabledCommands.Length() || disabledCommands.Length()) {
-      BrowserChild* bc = static_cast<BrowserChild*>(mBrowserChild.get());
-      bc->SendEnableDisableCommands(mWindow->GetBrowsingContext(), mAction,
-                                    enabledCommands, disabledCommands);
-    }
-
-    return NS_OK;
-  }
-
- private:
-  nsCOMPtr<nsPIWindowRoot> mRoot;
-  nsCOMPtr<nsIBrowserChild> mBrowserChild;
-  nsCOMPtr<nsPIDOMWindowOuter> mWindow;
-  nsString mAction;
-};
-
 class CommandDispatcher : public Runnable {
  public:
   CommandDispatcher(nsIDOMXULCommandDispatcher* aDispatcher,
@@ -6431,11 +6402,22 @@ class CommandDispatcher : public Runnable {
 void nsGlobalWindowOuter::UpdateCommands(const nsAString& anAction) {
   // If this is a child process, redirect to the parent process.
   if (nsIDocShell* docShell = GetDocShell()) {
-    if (nsCOMPtr<nsIBrowserChild> child = docShell->GetBrowserChild()) {
-      nsCOMPtr<nsPIWindowRoot> root = GetTopWindowRoot();
-      if (root) {
-        nsContentUtils::AddScriptRunner(
-            MakeAndAddRef<ChildCommandDispatcher>(root, child, this, anAction));
+    if (BrowserChild::GetFrom(docShell)) {
+      // Collecting the state of all the commands and updating the commands in
+      // the parent process is expensive, so coalesce all the updates which
+      // happen during the current task, e.g. when focus moves repeatedly.
+      // They are sent at the end of the task rather than from a new task
+      // because a new task may run after higher priority input events whose
+      // shortcut keys the parent process handles with the command state.
+      if (mPendingCommandUpdateActions.Contains(anAction)) {
+        return;
+      }
+      mPendingCommandUpdateActions.AppendElement(anAction);
+      if (mPendingCommandUpdateActions.Length() == 1) {
+        nsContentUtils::RunInStableState(NewRunnableMethod(
+            "nsGlobalWindowOuter::SendPendingCommandUpdatesToParentProcess",
+            this,
+            &nsGlobalWindowOuter::SendPendingCommandUpdatesToParentProcess));
       }
       return;
     }
@@ -6458,6 +6440,35 @@ void nsGlobalWindowOuter::UpdateCommands(const nsAString& anAction) {
   if (xulCommandDispatcher) {
     nsContentUtils::AddScriptRunner(
         MakeAndAddRef<CommandDispatcher>(xulCommandDispatcher, anAction));
+  }
+}
+
+void nsGlobalWindowOuter::SendPendingCommandUpdatesToParentProcess() {
+  const AutoTArray<nsString, 1> actions =
+      std::move(mPendingCommandUpdateActions);
+  MOZ_ASSERT(!actions.IsEmpty());
+
+  nsIDocShell* docShell = GetDocShell();
+  if (!docShell) {
+    return;
+  }
+  RefPtr<BrowserChild> browserChild = BrowserChild::GetFrom(docShell);
+  if (!browserChild || browserChild->IsDestroyed()) {
+    return;
+  }
+  nsCOMPtr<nsPIWindowRoot> root = GetTopWindowRoot();
+  if (!root) {
+    return;
+  }
+
+  AutoTArray<nsCString, 70> enabledCommands, disabledCommands;
+  root->GetEnabledDisabledCommands(enabledCommands, disabledCommands);
+  if (enabledCommands.IsEmpty() && disabledCommands.IsEmpty()) {
+    return;
+  }
+  for (const nsString& action : actions) {
+    browserChild->SendEnableDisableCommands(GetBrowsingContext(), action,
+                                            enabledCommands, disabledCommands);
   }
 }
 
