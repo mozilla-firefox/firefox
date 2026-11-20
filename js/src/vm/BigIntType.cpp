@@ -2252,8 +2252,7 @@ BigInt* BigInt::mulMod(JSContext* cx, HandleBigInt x, HandleBigInt y,
     return nullptr;
   }
   Digits product = Digits(storage).First(length);
-  schoolbookMultiplyDigits(x->unguardedDigits(), y->unguardedDigits(),
-                           product);
+  schoolbookMultiplyDigits(x->unguardedDigits(), y->unguardedDigits(), product);
   while (!product[length - 1]) {
     length--;
   }

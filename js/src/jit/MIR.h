@@ -5451,8 +5451,8 @@ class MBigIntMulMod : public MTernaryInstruction, public NoTypePolicy::Data {
       : MTernaryInstruction(classOpcode, lhs, rhs, modulus) {
     setResultType(MIRType::BigInt);
     setMovable();
-    canBeDivideByZero_ = !modulus->isConstant() ||
-                         modulus->toConstant()->toBigInt()->isZero();
+    canBeDivideByZero_ =
+        !modulus->isConstant() || modulus->toConstant()->toBigInt()->isZero();
 
     // Throws when the modulus is zero.
     if (canBeDivideByZero_) {
