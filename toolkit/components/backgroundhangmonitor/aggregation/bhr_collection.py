@@ -40,6 +40,11 @@ _BQ_TABLE = "mozdata.firefox_desktop.hang_report_redacted"
 _MAX_SAMPLE_SLICES = 10000
 # How far either side of its build date a build's pings are read.
 _SUBMISSION_PADDING_DAYS = 5
+# Limits on one run's window, which the bhr-aggregate action also enforces and
+# sizes the task's run time for. Days times the effective sample size bounds the
+# pings read, at 3 days for the cron's 0.5; the day count bounds per-day work.
+_MAX_WINDOW_DAYS = 3
+_MAX_SAMPLED_DAYS = 1.5
 
 # Project/dataset where query results are materialized before being read back.
 # Large result sets cannot be returned inline, so the query writes to a temp
@@ -237,7 +242,9 @@ def build_query_sql(date, end_date, sample_slices, client_metrics=False):
     Only the handful of fields the pipeline actually reads are selected, not the
     whole client_info/metrics records (metrics in particular is large). They're
     rebuilt as STRUCTs so the rows keep the same nested shape get_prop expects
-    (client_info.os, metrics.object.hangs_reports, ...).
+    (client_info.os, metrics.object.hangs_reports, ...). The build date is also
+    selected on its own, since a table can only be clustered on a top-level
+    column.
     """
     submission_start = date - timedelta(days=_SUBMISSION_PADDING_DAYS)
     submission_end = end_date + timedelta(days=_SUBMISSION_PADDING_DAYS)
@@ -250,6 +257,7 @@ def build_query_sql(date, end_date, sample_slices, client_metrics=False):
     )
     return f"""
     SELECT
+      SUBSTR(client_info.app_build, 1, 8) AS build_date,
       STRUCT(
         client_info.os AS os,
         client_info.os_version AS os_version,
@@ -279,13 +287,20 @@ def build_query_sql(date, end_date, sample_slices, client_metrics=False):
 
 
 def _query_bigquery(sql, billing_project, reuse):
-    """Run sql against BigQuery and return an iterator over the result rows.
+    """Run sql against BigQuery and return an iterator over the result rows."""
+    client, destination = _materialize(sql, billing_project, reuse)
+    return client.list_rows(destination)
+
+
+def _materialize(sql, billing_project, reuse, clustered=False):
+    """Run sql into a temp table, clustered by build_date if `clustered`, and
+    return the client and the table's id.
 
     Selecting production-scale results back inline fails with "Response too
     large to return" (BigQuery's getQueryResults path is capped). So instead of
     selecting rows directly, we wrap the query in a CREATE TABLE ... AS SELECT
-    that writes the rows to a temp table, then read that table with
-    list_rows (paginated tabledata.list) so memory stays bounded.
+    that writes the rows to a temp table, which is then read with list_rows
+    (paginated tabledata.list) so memory stays bounded.
 
     Because the job is a CREATE TABLE statement, query_job.result() returns an
     empty result (the rows went to the table, not inline), so it is safe to
@@ -309,9 +324,8 @@ def _query_bigquery(sql, billing_project, reuse):
     query is still running in BigQuery: each scans, and the later CREATE fails
     with Conflict and reads the earlier table instead of replacing it.
 
-    google-cloud-bigquery is imported lazily and this whole function is the
-    single BigQuery touchpoint, so the module imports without the package and
-    unit tests can stub it.
+    google-cloud-bigquery is imported lazily, so the module imports without the
+    package installed.
     """
     from google.api_core.exceptions import Conflict, NotFound, PreconditionFailed
     from google.cloud import bigquery
@@ -339,10 +353,12 @@ def _query_bigquery(sql, billing_project, reuse):
                 # Its ETag moved: a concurrent run reusing it pushed it back first.
                 pass
             print(f"Reusing {destination} from an earlier run", flush=True)
-            return client.list_rows(destination)
+            return client, destination
 
+    cluster = "CLUSTER BY build_date\n" if clustered else ""
     create_table_sql = (
         f"CREATE TABLE `{destination}`\n"
+        f"{cluster}"
         f"OPTIONS (expiration_timestamp = TIMESTAMP_ADD("
         f"CURRENT_TIMESTAMP(), INTERVAL {expiry_hours} HOUR))\n"
         f"AS\n{sql}"
@@ -356,7 +372,7 @@ def _query_bigquery(sql, billing_project, reuse):
             raise
         # A concurrent run of the same query created it: same rows, expiry just set.
         print(f"{destination} was created by a concurrent run; reading it", flush=True)
-    return client.list_rows(destination)
+    return client, destination
 
 
 def get_data(
@@ -386,19 +402,66 @@ def get_data(
         Dicts with slash/style keys (one per matching ping) — the same shape
         the rest of the aggregation pipeline expects.
     """
+    for _, pings in get_data_by_day(
+        date,
+        sample_size,
+        billing_project,
+        end_date=end_date,
+        exclude_modules=exclude_modules,
+        client_metrics=client_metrics,
+        reuse=reuse,
+    ):
+        yield from pings
+
+
+def get_data_by_day(
+    date,
+    sample_size,
+    billing_project,
+    end_date=None,
+    exclude_modules=False,
+    client_metrics=False,
+    reuse=False,
+):
+    """Stream BHR pings from BigQuery one build date at a time.
+
+    Takes get_data's arguments and yields (build_date, pings) for every day of
+    the window in order, pings being that day's as get_data yields them. A
+    window of several days is scanned once into a table clustered by build
+    date, and each day is read from it only when its turn comes, so a caller
+    can be done with one day before the next is read. `reuse` applies to the
+    scan alone: a day's table only copies that day's blocks, so it is cheap to
+    make again.
+    """
     if end_date is None:
         end_date = date
 
     sample_slices = compute_sample_slices(sample_size)
     sql = build_query_sql(date, end_date, sample_slices, client_metrics=client_metrics)
     properties = _properties_for(exclude_modules, client_metrics=client_metrics)
+    build_dates = [
+        (date + timedelta(days=i)).strftime("%Y%m%d")
+        for i in range((end_date - date).days + 1)
+    ]
+    if len(build_dates) == 1:
+        rows = _query_bigquery(sql, billing_project, reuse)
+        yield build_dates[0], _pings(rows, properties)
+        return
 
+    _, window_table_id = _materialize(sql, billing_project, reuse, clustered=True)
+    for build_date in build_dates:
+        day_sql = f"SELECT * FROM `{window_table_id}` WHERE build_date = '{build_date}'"
+        rows = _query_bigquery(day_sql, billing_project, reuse=False)
+        yield build_date, _pings(rows, properties)
+
+
+def _pings(rows, properties):
     # The build-date window is filtered in SQL (see build_query_sql), so every
     # row that comes back is already in-window. Here we only drop rows that are
     # missing a required field.
     total = 0
     kept = 0
-    for row in _query_bigquery(sql, billing_project, reuse):
+    for row in rows:
         total += 1
         if total % _PROGRESS_EVERY_ROWS == 0:
             print(f"  ...read {total:,} rows ({kept:,} kept)", flush=True)
@@ -704,22 +767,48 @@ def aggregate(
         process_hangs    -> expand each ping into hang tuples
         collect_offsets_by_module + symbolicate_modules -> symbol lookup table
         symbolicate_hang -> symbolicate + trim each hang's stack
-        group_hangs      -> aggregate by signature
-        ProfileProcessor -> build the columnar output
-        write_file       -> hangs_<tag>_<date>.json and hangs_<tag>_current.json
+        group_hangs      -> aggregate by signature, per build date
+        ProfileProcessor -> build the columnar output, per build date
+        write_file       -> hangs_<tag>_<date>.json per day, plus
+                            hangs_<tag>_current.json for the newest
 
-    `date` is the build date to process. usageHoursByDate is set to a dummy
-    1.0 because Glean doesn't provide usage hours in the legacy shape (the
-    frontend only needs a non-null value here).
+    `date` through `end_date` is the build-date window to process, inclusive,
+    defaulting to the single day `date`. A window costs one BigQuery scan
+    instead of one per day, which is what makes a long backfill affordable, but
+    it still writes each day as its own artifact: both the timeseries roll-up
+    and the dashboard address one file per build date. A day in the window with
+    no hangs gets an empty one. Each day is read, symbolicated and written
+    before the next is read, so memory holds one day's hangs and a crash keeps
+    the days already written. Streaming a day back still takes a while, so a
+    window spans at most _MAX_WINDOW_DAYS days, and at most _MAX_SAMPLED_DAYS
+    once multiplied by the sample size the query reads.
 
-    Returns the profile dict that was written.
+    usageHoursByDate is set to a dummy 1.0 because Glean doesn't provide usage
+    hours in the legacy shape (the frontend only needs a non-null value here).
+
+    Returns the profile dict for the newest day written.
     """
     config = dict(DEFAULT_CONFIG)
-    config["uuid"] = uuid.uuid4().hex
     if config_overrides:
         config.update(config_overrides)
 
+    end_date = end_date or date
+    assert end_date >= date, f"end_date {end_date} is before date {date}"
     date_str = date.strftime("%Y%m%d")
+    end_date_str = end_date.strftime("%Y%m%d")
+    days = (end_date - date).days + 1
+    if days > _MAX_WINDOW_DAYS:
+        raise ValueError(
+            f"Build dates {date_str}..{end_date_str} span more than "
+            f"{_MAX_WINDOW_DAYS} days"
+        )
+    sampled_days = days * compute_sample_slices(sample_size) / _MAX_SAMPLE_SLICES
+    if sampled_days > _MAX_SAMPLED_DAYS:
+        raise ValueError(
+            f"Build dates {date_str}..{end_date_str} at sample size "
+            f"{sampled_days / days:g} come to {sampled_days:g} days * sample "
+            f"size, more than {_MAX_SAMPLED_DAYS:g}"
+        )
     job_start = time.time()
 
     def _phase(message):
@@ -729,11 +818,10 @@ def aggregate(
             flush=True,
         )
 
-    # Stream pings and expand each valid one into hang tuples. The pings
-    # themselves are not retained; only the (much smaller) hang set is.
-    _phase(f"Fetching pings from BigQuery for build date {date_str}...")
-    hangs = []
-    for ping in get_data(
+    window = date_str if end_date_str == date_str else f"{date_str}..{end_date_str}"
+    _phase(f"Fetching pings from BigQuery for build date {window}...")
+    base = "hangs_" + output_tag
+    for build_date_str, pings in get_data_by_day(
         date,
         sample_size,
         billing_project,
@@ -742,49 +830,61 @@ def aggregate(
         client_metrics=config["client_metrics"],
         reuse=reuse,
     ):
-        if not ping_is_valid(ping):
-            continue
-        hangs.extend(process_hangs(ping, config))
-    _phase(f"Collected {len(hangs)} hangs.")
+        # Expand each valid ping into hang tuples. The pings themselves are not
+        # retained; only the (much smaller) hang set is, for this day alone.
+        hangs = []
+        for ping in pings:
+            if not ping_is_valid(ping):
+                continue
+            hangs.extend(process_hangs(ping, config))
+        _phase(f"{build_date_str}: collected {len(hangs)} hangs.")
 
-    # Symbolicate: one symbol-server fetch per unique module, then resolve
-    # every hang's stack and apply the signature heuristics.
-    frames_by_module = collect_offsets_by_module(hangs)
-    _phase(f"Symbolicating {len(frames_by_module)} unique modules...")
-    symbol_map = symbolicate_modules(frames_by_module, config)
-    _phase(f"Resolved {len(symbol_map)} (module, offset) frames.")
-    symbolicated = [symbolicate_hang(hang, symbol_map) for hang in hangs]
-
-    # Affected-client counts, computed before the client_id is stripped off
-    # (group_hangs and ProfileProcessor consume the 8-element row).
-    affected_clients = None
-    if config["client_metrics"]:
-        affected_clients = _compute_affected_clients(symbolicated)
+        # Symbolicate: one symbol-server fetch per unique module, then resolve
+        # every hang's stack and apply the signature heuristics.
+        frames_by_module = collect_offsets_by_module(hangs)
         _phase(
-            f"Affected clients (day, distinct HLL): {affected_clients['totalDistinct']}"
+            f"{build_date_str}: symbolicating {len(frames_by_module)} unique modules..."
         )
-        symbolicated = [hang[:8] for hang in symbolicated]
+        symbol_map = symbolicate_modules(frames_by_module, config)
+        _phase(f"{build_date_str}: resolved {len(symbol_map)} (module, offset) frames.")
+        day_hangs = [symbolicate_hang(hang, symbol_map) for hang in hangs]
 
-    # Aggregate by signature and build the columnar profile.
-    grouped = group_hangs(symbolicated, config)
-    _phase(f"Aggregated into {len(grouped)} hang signatures.")
-    _phase("Building profile...")
-    processor = ProfileProcessor(config)
-    processor.ingest(grouped, {date_str: 1.0})
-    profile = processor.process_into_profile()
+        # Affected-client counts, computed before the client_id is stripped off
+        # (group_hangs and ProfileProcessor consume the 8-element row).
+        affected_clients = None
+        if config["client_metrics"]:
+            affected_clients = _compute_affected_clients(day_hangs)
+            _phase(
+                f"{build_date_str}: affected clients (distinct HLL): "
+                f"{affected_clients['totalDistinct']}"
+            )
+            day_hangs = [hang[:8] for hang in day_hangs]
 
-    if affected_clients is not None:
-        profile["affectedClients"] = affected_clients
+        grouped = group_hangs(day_hangs, config)
+        _phase(f"{build_date_str}: aggregated into {len(grouped)} hang signatures.")
+        # Each day is its own document, so it gets its own uuid.
+        day_config = dict(config)
+        day_config["uuid"] = uuid.uuid4().hex
+        processor = ProfileProcessor(day_config)
+        processor.ingest(grouped, {build_date_str: 1.0})
+        profile = processor.process_into_profile()
 
-    # Skipped in split-thread mode (a list of per-thread payloads), which the
-    # daily job does not use.
-    if config["leaf_grouping"] and not config["split_threads_in_out_file"]:
-        profile["leafGroups"] = compute_leaf_groups(profile)
-        group_count = sum(len(groups) for groups in profile["leafGroups"].values())
-        _phase(f"Grouped near-duplicates into {group_count} groups.")
+        if affected_clients is not None:
+            profile["affectedClients"] = affected_clients
 
-    base = "hangs_" + output_tag
-    written = write_file(f"{base}_{date_str}", profile, output_dir)
+        # Skipped in split-thread mode (a list of per-thread payloads), which the
+        # daily job does not use.
+        if config["leaf_grouping"] and not config["split_threads_in_out_file"]:
+            profile["leafGroups"] = compute_leaf_groups(profile)
+            group_count = sum(len(groups) for groups in profile["leafGroups"].values())
+            _phase(
+                f"{build_date_str}: grouped near-duplicates into {group_count} groups."
+            )
+
+        written = write_file(f"{base}_{build_date_str}", profile, output_dir)
+        _phase(f"Wrote {written}")
+
+    # `current` is the newest day produced, which for the daily cron is the
+    # only one.
     write_file(f"{base}_current", profile, output_dir)
-    _phase(f"Wrote {written}")
     return profile

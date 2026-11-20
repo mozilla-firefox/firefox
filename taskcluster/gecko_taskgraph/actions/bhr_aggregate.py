@@ -4,6 +4,7 @@
 
 
 import logging
+from datetime import datetime, timedelta
 
 from .registry import register_callback_action
 from .util import create_tasks, fetch_graph_and_labels
@@ -14,6 +15,13 @@ TASK_LABEL = "bhr-aggregate-cron"
 # Where a custom-date run publishes. The cron's own routes are all "this is the
 # aggregation for this push", which a backfill is not.
 BUILD_DATE_ROUTE = "index.gecko.v2.mozilla-central.bhr-aggregate.build.{date}"
+# A window's run time grows with the pings it reads: streaming one
+# day's rows back from BigQuery at the cron's 0.5 sample alone takes 20 to 40
+# minutes. Days times the effective sample size bounds those pings, and the day
+# count bounds per-day work. bhr_collection.aggregate enforces the same limits.
+MAX_WINDOW_DAYS = 3
+MAX_SAMPLED_DAYS = 1.5
+WINDOW_MAX_RUN_TIME = 4 * 60 * 60
 
 
 @register_callback_action(
@@ -44,6 +52,22 @@ BUILD_DATE_ROUTE = "index.gecko.v2.mozilla-central.bhr-aggregate.build.{date}"
                     "Build date to aggregate, as YYYYMMDD. Leave empty to keep "
                     "the cron's behaviour of resolving the date at run time from "
                     "BHR_AGGREGATE_DATE_OFFSET_DAYS."
+                ),
+            },
+            "end_date": {
+                "type": "string",
+                "pattern": "^[0-9]{8}$",
+                "title": "Last build date of the window",
+                "description": (
+                    "Aggregate every build date from the date above through "
+                    f"this one, inclusive: at most {MAX_WINDOW_DAYS} days, and "
+                    f"at most {MAX_SAMPLED_DAYS:g} once multiplied by the "
+                    "sample size, so 3 days at the cron's 0.5. One "
+                    "BigQuery scan covers the whole window rather than one per "
+                    "day; each day is still published as its own artifact, "
+                    "indexed under its own build date. Like any pinned run it "
+                    "leaves the roll-up alone: name its days in refill_dates "
+                    "on a later run to bring them in."
                 ),
             },
             "refill_dates": {
@@ -86,9 +110,37 @@ def bhr_aggregate_action(parameters, graph_config, input, task_group_id, task_id
         raise Exception(f"{TASK_LABEL} was not found in the task-graph")
 
     date = input.get("date")
+    end_date = input.get("end_date")
     sample_size = input.get("sample_size")
     refill_dates = input.get("refill_dates") or []
 
+    if end_date and not date:
+        raise Exception("end_date needs a date to start the window from")
+    if end_date and refill_dates:
+        raise Exception("end_date and refill_dates cannot be combined")
+    window = [date] if date else []
+    if end_date:
+        first = datetime.strptime(date, "%Y%m%d")
+        days = (datetime.strptime(end_date, "%Y%m%d") - first).days + 1
+        if days < 1:
+            raise Exception(f"end_date {end_date} is before date {date}")
+        if days > MAX_WINDOW_DAYS:
+            raise Exception(
+                f"{date}..{end_date} spans {days} days; one run covers at most "
+                f"{MAX_WINDOW_DAYS}"
+            )
+        if sample_size is not None:
+            effective = sample_size
+        else:
+            cron_env = full_task_graph.tasks[TASK_LABEL].task["payload"]["env"]
+            effective = float(cron_env["BHR_AGGREGATE_SAMPLE_SIZE"])
+        if days * effective > MAX_SAMPLED_DAYS:
+            raise Exception(
+                f"{date}..{end_date} at sample size {effective:g} comes to "
+                f"{days * effective:g} days * sample size; one run covers at "
+                f"most {MAX_SAMPLED_DAYS:g}"
+            )
+        window = [(first + timedelta(days=i)).strftime("%Y%m%d") for i in range(days)]
     if date and refill_dates:
         raise Exception(
             "date and refill_dates cannot be combined: a run pinned to a past "
@@ -106,6 +158,10 @@ def bhr_aggregate_action(parameters, graph_config, input, task_group_id, task_id
             # resolving an offset against the current time, so the task stays
             # reproducible however long after the fact it is triggered.
             env["BHR_AGGREGATE_DATE"] = date
+        if end_date:
+            env["BHR_AGGREGATE_END_DATE"] = end_date
+        if len(window) > 1:
+            task.task["payload"]["maxRunTime"] = WINDOW_MAX_RUN_TIME
         if sample_size is not None:
             env["BHR_AGGREGATE_SAMPLE_SIZE"] = str(sample_size)
 
@@ -131,8 +187,7 @@ def bhr_aggregate_action(parameters, graph_config, input, task_group_id, task_id
             for route in task.task.get("routes", [])
             if not route.startswith("index.")
         ]
-        if date:
-            routes.append(BUILD_DATE_ROUTE.format(date=date))
+        routes.extend(BUILD_DATE_ROUTE.format(date=day) for day in window)
         task.task["routes"] = routes
 
         # Nor may it touch the shared roll-up. build_timeseries ends the window
@@ -144,9 +199,10 @@ def bhr_aggregate_action(parameters, graph_config, input, task_group_id, task_id
         return task
 
     logger.info(
-        "Triggering %s with date=%s sample_size=%s refill_dates=%s",
+        "Triggering %s with date=%s end_date=%s sample_size=%s refill_dates=%s",
         TASK_LABEL,
         date or "(cron default)",
+        end_date or "(same as date)",
         sample_size if sample_size is not None else "(cron default)",
         ",".join(refill_dates) or "(none)",
     )

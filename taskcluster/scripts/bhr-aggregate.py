@@ -142,6 +142,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", default=os.environ.get("BHR_AGGREGATE_DATE"))
     parser.add_argument(
+        "--end-date",
+        default=os.environ.get("BHR_AGGREGATE_END_DATE"),
+        help=(
+            "Last build date of the window, inclusive. One BigQuery scan covers "
+            "the whole window, which is far cheaper than a scan per day, and "
+            "each day is still written as its own artifact. Defaults to --date."
+        ),
+    )
+    parser.add_argument(
         "--date-offset-days",
         type=int,
         default=_env_int("BHR_AGGREGATE_DATE_OFFSET_DAYS", 4),
@@ -221,6 +230,9 @@ def main():
         raise ValueError(f"--sample-size must be in (0, 1], got {args.sample_size}")
 
     build_date = _parse_date(args.date) or _default_date(args.date_offset_days)
+    end_date = _parse_date(args.end_date) or build_date
+    if end_date < build_date:
+        raise ValueError(f"--end-date {end_date} is before --date {build_date}")
 
     if not os.path.exists(args.credentials_file):
         if not args.gcp_secret:
@@ -242,13 +254,19 @@ def main():
     sys.path.insert(0, aggregation_dir)
     import bhr_collection
 
+    window = (
+        f"{build_date:%Y-%m-%d}"
+        if end_date == build_date
+        else f"{build_date:%Y-%m-%d}..{end_date:%Y-%m-%d}"
+    )
     print(
-        f"Running BHR aggregation for build date {build_date:%Y-%m-%d} "
+        f"Running BHR aggregation for build date {window} "
         f"at sample-size {args.sample_size}",
         flush=True,
     )
     bhr_collection.aggregate(
         date=build_date,
+        end_date=end_date,
         sample_size=args.sample_size,
         billing_project=args.billing_project,
         output_dir=args.output_dir,
@@ -296,7 +314,7 @@ def main():
         input_dir=args.output_dir,
         output_dir=args.output_dir,
         output_tag=args.output_tag,
-        end_date=build_date,
+        end_date=end_date,
         window_days=args.timeseries_window_days,
         top_count=args.timeseries_top_count,
         refill_dates=fetched,

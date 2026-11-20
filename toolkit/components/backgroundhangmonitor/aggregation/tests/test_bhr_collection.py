@@ -207,7 +207,9 @@ def _make_row(os_name, os_version, arch, app_build, hangs_reports, hangs_modules
 
 def _install_fake_bigquery(monkeypatch, rows=()):
     """Stand in for google-cloud-bigquery, so the tests stay offline and run
-    without it installed. Every table's rows read back as `rows`.
+    without it installed. Every table's rows read back as `rows`, except that a
+    table made by a query ending in `WHERE build_date = '<D>'` reads back only
+    the rows of builds from D.
 
     NotFound: get_table raises it for a table that does not exist. Setting
     lose_race makes get_table miss tables that exist, as it does when a concurrent
@@ -258,17 +260,26 @@ def _install_fake_bigquery(monkeypatch, rows=()):
         def query(self, sql):
             bq.queries.append(sql)
             table_id = re.search(r"TABLE `([^`]+)`", sql).group(1)
+            match = re.search(r"WHERE build_date = '(\d{8})'$", sql)
 
             def result():
                 if table_id in bq.tables:
                     raise Conflict(table_id)
-                bq.tables[table_id] = types.SimpleNamespace(expires=None)
+                bq.tables[table_id] = types.SimpleNamespace(
+                    expires=None, build_date=match and match.group(1)
+                )
 
             return types.SimpleNamespace(job_id="job", result=result)
 
         def list_rows(self, table_id):
             bq.read.append(table_id)
-            return iter(rows)
+            build_date = bq.tables[table_id].build_date
+            return (
+                row
+                for row in rows
+                if build_date is None
+                or row["client_info"]["app_build"].startswith(build_date)
+            )
 
     modules = {
         name: types.ModuleType(name)
@@ -1038,6 +1049,219 @@ def test_aggregate_end_to_end_offline(monkeypatch, tmp_path):
     # The written file round-trips to the same profile.
     with open(tmp_path / "hangs_main_current.json") as f:
         assert json.load(f)["usageHoursByDate"] == {"20260502": 1.0}
+
+
+def test_aggregate_window_writes_one_artifact_per_build_date(monkeypatch, tmp_path):
+    # Two pings from different builds, fetched by one query. Each build date
+    # must come out as its own artifact carrying only its own day, so the
+    # roll-up and the dashboard keep seeing single-day files.
+    import symbolication
+
+    def _hang(duration):
+        return {
+            "thread": "Gecko",
+            "process": "main",
+            "duration": duration,
+            "stack": [{"frame": "1000", "module": 0}],
+            "annotations": [["UserInteracting", "true"]],
+        }
+
+    modules = json.dumps([["xul.pdb", "ABC"]])
+    rows = [
+        _make_row(
+            "Linux",
+            "5.10",
+            "x86_64",
+            "20260502123456",
+            json.dumps([_hang(500)]),
+            modules,
+        ),
+        _make_row(
+            "Linux",
+            "5.10",
+            "x86_64",
+            "20260504123456",
+            json.dumps([_hang(600)]),
+            modules,
+        ),
+    ]
+    bq = _install_fake_bigquery(monkeypatch, rows)
+    monkeypatch.setattr(symbolication, "fetch_url", lambda _url: (False, ""))
+
+    profile = bhr_collection.aggregate(
+        date=datetime.date(2026, 5, 2),
+        end_date=datetime.date(2026, 5, 4),
+        sample_size=0.001,
+        billing_project="test-project",
+        output_dir=str(tmp_path),
+    )
+    assert len(bq.queries) == 4, "One scan for the window, then a read per day"
+    assert "CLUSTER BY build_date" in bq.queries[0]
+
+    for date in ("20260502", "20260504"):
+        path = tmp_path / f"hangs_main_{date}.json"
+        assert path.exists(), f"missing artifact for {date}"
+        with open(path) as f:
+            day = json.load(f)
+        # Only its own day, so thread["dates"][0] stays right for the roll-up.
+        assert day["usageHoursByDate"] == {date: 1.0}
+        assert [d["date"] for d in day["threads"][0]["dates"]] == [date]
+
+    # A day with no hangs still gets an artifact, an empty one, for its index route.
+    with open(tmp_path / "hangs_main_20260503.json") as f:
+        assert json.load(f)["usageHoursByDate"] == {"20260503": 1.0}
+
+    # `current` is the newest day, and is what aggregate() returns.
+    assert profile["usageHoursByDate"] == {"20260504": 1.0}
+    with open(tmp_path / "hangs_main_current.json") as f:
+        assert json.load(f)["usageHoursByDate"] == {"20260504": 1.0}
+
+
+def test_aggregate_gives_each_day_its_own_uuid(monkeypatch, tmp_path):
+    import symbolication
+
+    def _hang():
+        return {
+            "thread": "Gecko",
+            "process": "main",
+            "duration": 500,
+            "stack": [{"frame": "1000", "module": 0}],
+            "annotations": [["UserInteracting", "true"]],
+        }
+
+    modules = json.dumps([["xul.pdb", "ABC"]])
+    rows = [
+        _make_row(
+            "Linux",
+            "5.10",
+            "x86_64",
+            f"2026050{d}123456",
+            json.dumps([_hang()]),
+            modules,
+        )
+        for d in (2, 3)
+    ]
+    _install_fake_bigquery(monkeypatch, rows)
+    monkeypatch.setattr(symbolication, "fetch_url", lambda _url: (False, ""))
+
+    bhr_collection.aggregate(
+        date=datetime.date(2026, 5, 2),
+        end_date=datetime.date(2026, 5, 3),
+        sample_size=0.001,
+        billing_project="test-project",
+        output_dir=str(tmp_path),
+    )
+
+    uuids = set()
+    for date in ("20260502", "20260503"):
+        with open(tmp_path / f"hangs_main_{date}.json") as f:
+            uuids.add(json.load(f)["uuid"])
+    assert len(uuids) == 2
+
+
+def test_aggregate_single_day_is_unchanged(monkeypatch, tmp_path):
+    # The daily cron passes no end_date; it must behave exactly as before.
+    import symbolication
+
+    hang = {
+        "thread": "Gecko",
+        "process": "main",
+        "duration": 500,
+        "stack": [{"frame": "1000", "module": 0}],
+        "annotations": [["UserInteracting", "true"]],
+    }
+    bq = _install_fake_bigquery(
+        monkeypatch,
+        [
+            _make_row(
+                "Linux",
+                "5.10",
+                "x86_64",
+                "20260502123456",
+                json.dumps([hang]),
+                json.dumps([["xul.pdb", "ABC"]]),
+            )
+        ],
+    )
+    monkeypatch.setattr(symbolication, "fetch_url", lambda _url: (False, ""))
+
+    profile = bhr_collection.aggregate(
+        date=datetime.date(2026, 5, 2),
+        sample_size=0.001,
+        billing_project="test-project",
+        output_dir=str(tmp_path),
+    )
+
+    assert profile["usageHoursByDate"] == {"20260502": 1.0}
+    assert (tmp_path / "hangs_main_20260502.json").exists()
+    assert (tmp_path / "hangs_main_current.json").exists()
+    assert len(bq.queries) == 1, "A single day is read straight from its scan"
+
+
+def test_get_data_by_day_reads_the_window_one_build_date_at_a_time(monkeypatch):
+    rows = [
+        _make_row("Linux", "5.10", "x86_64", f"2026050{d}123456", "[]") for d in (2, 3)
+    ]
+    bq = _install_fake_bigquery(monkeypatch, rows)
+    args = dict(
+        date=datetime.date(2026, 5, 2),
+        end_date=datetime.date(2026, 5, 3),
+        sample_size=0.001,
+        billing_project="test-project",
+        reuse=True,
+    )
+    by_day = bhr_collection.get_data_by_day(**args)
+    for i, expected in enumerate(("20260502", "20260503")):
+        build_date, pings = next(by_day)
+        assert build_date == expected
+        assert [p["client_info/app_build"][:8] for p in pings] == [expected]
+        assert len(bq.queries) == 2 + i, "The window's scan, then a read per day so far"
+
+    # A retry reuses the window's scan, and copies each day out of it again.
+    for _, pings in bhr_collection.get_data_by_day(**args):
+        list(pings)
+    assert len(bq.queries) == 5, "A retry must not scan the window again"
+
+
+def _aggregate_window(tmp_path, days, sample_size):
+    start = datetime.date(2026, 5, 1)
+    bhr_collection.aggregate(
+        date=start,
+        end_date=start + datetime.timedelta(days=days - 1),
+        sample_size=sample_size,
+        billing_project="test-project",
+        output_dir=str(tmp_path),
+    )
+
+
+@pytest.mark.parametrize("days, sample_size", [(3, 0.5), (2, 0.75), (1, 1.0)])
+def test_aggregate_accepts_a_window_up_to_the_limits(
+    monkeypatch, tmp_path, days, sample_size
+):
+    bq = _install_fake_bigquery(monkeypatch)
+    _aggregate_window(tmp_path, days, sample_size)
+    assert len(bq.queries) == (1 if days == 1 else 1 + days), (
+        "One scan, plus a read per day when the window spans several"
+    )
+    assert len(list(tmp_path.glob("hangs_main_2026*.json"))) == days
+
+
+@pytest.mark.parametrize(
+    "days, sample_size, message",
+    [
+        # Within days * sample size, but past the day count.
+        (4, 0.25, "more than 3 days"),
+        (3, 0.5001, "sample size"),
+        (2, 0.7501, "sample size"),
+    ],
+)
+def test_aggregate_refuses_a_window_past_the_limits(
+    monkeypatch, tmp_path, days, sample_size, message
+):
+    bq = _install_fake_bigquery(monkeypatch)
+    with pytest.raises(ValueError, match=message):
+        _aggregate_window(tmp_path, days, sample_size)
+    assert bq.queries == []
 
 
 if __name__ == "__main__":

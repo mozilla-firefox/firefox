@@ -1548,7 +1548,7 @@ def test_backfill_sliced_boundary_gap(mocker, run_action):
     assert set(called_pids) == {"101", "103", "105"}
 
 
-def _bhr_graph():
+def _bhr_graph(cron_sample_size):
     return make_graph(
         make_task(
             label="bhr-aggregate-cron",
@@ -1556,7 +1556,7 @@ def _bhr_graph():
                 "payload": {
                     "env": {
                         "BHR_AGGREGATE_DATE_OFFSET_DAYS": "4",
-                        "BHR_AGGREGATE_SAMPLE_SIZE": "0.5",
+                        "BHR_AGGREGATE_SAMPLE_SIZE": cron_sample_size,
                     }
                 },
                 "extra": {"treeherder": {"symbol": "BHR"}},
@@ -1573,8 +1573,8 @@ def _bhr_graph():
 
 @pytest.fixture
 def run_bhr_action(mocker, run_action, get_artifact):
-    def inner(action_input):
-        graph = _bhr_graph()
+    def inner(action_input, cron_sample_size="0.5"):
+        graph = _bhr_graph(cron_sample_size)
         m = mocker.patch("gecko_taskgraph.actions.bhr_aggregate.fetch_graph_and_labels")
         m.return_value = (
             "gid",
@@ -1651,6 +1651,89 @@ def test_bhr_aggregate_refill_keeps_the_crons_routes_and_roll_up(run_bhr_action)
         "index.gecko.v2.mozilla-central.latest.firefox.bhr-aggregate" in task["routes"]
     )
     assert task["extra"]["treeherder"]["symbol"] == "BHR-custom"
+
+
+def test_bhr_aggregate_passes_the_date_window(run_bhr_action):
+    task = run_bhr_action({"date": "20260830", "end_date": "20260901"})
+    env = task["payload"]["env"]
+    assert env["BHR_AGGREGATE_DATE"] == "20260830"
+    assert env["BHR_AGGREGATE_END_DATE"] == "20260901"
+    # Each day is indexed under its own build date, where the dashboard and a
+    # later refill_dates run look it up. The run itself leaves the roll-up alone.
+    assert task["routes"] == [
+        "tc-treeherder.v2.mozilla-central.abcdef",
+        "index.gecko.v2.mozilla-central.bhr-aggregate.build.20260830",
+        "index.gecko.v2.mozilla-central.bhr-aggregate.build.20260831",
+        "index.gecko.v2.mozilla-central.bhr-aggregate.build.20260901",
+    ]
+    assert env["BHR_SKIP_TIMESERIES"] == "1"
+    assert task["payload"]["maxRunTime"] == 4 * 60 * 60
+
+
+def test_bhr_aggregate_single_day_keeps_the_crons_run_time(run_bhr_action):
+    for action_input in (
+        {"date": "20260802"},
+        {"date": "20260802", "end_date": "20260802"},
+    ):
+        assert "maxRunTime" not in run_bhr_action(action_input)["payload"]
+
+
+@pytest.mark.parametrize(
+    "action_input",
+    [
+        # At the cron's sample size of 0.5.
+        {"date": "20260830", "end_date": "20260901"},
+        {"date": "20260830", "end_date": "20260901", "sample_size": 0.5},
+        {"date": "20260830", "end_date": "20260831", "sample_size": 0.75},
+        {"date": "20260830", "end_date": "20260830", "sample_size": 1},
+    ],
+)
+def test_bhr_aggregate_accepts_a_window_up_to_the_limits(run_bhr_action, action_input):
+    env = run_bhr_action(action_input)["payload"]["env"]
+    assert env["BHR_AGGREGATE_END_DATE"] == action_input["end_date"]
+
+
+@pytest.mark.parametrize(
+    "action_input, cron_sample_size, message",
+    [
+        # Within days * sample size, but past the day count.
+        (
+            {"date": "20260830", "end_date": "20260902", "sample_size": 0.25},
+            "0.5",
+            "at most 3",
+        ),
+        (
+            {"date": "20260830", "end_date": "20260901", "sample_size": 0.5001},
+            "0.5",
+            "sample size",
+        ),
+        (
+            {"date": "20260830", "end_date": "20260831", "sample_size": 0.7501},
+            "0.5",
+            "sample size",
+        ),
+        # Without a sample size of its own, the run reads at the cron's.
+        ({"date": "20260830", "end_date": "20260831"}, "1.0", "sample size"),
+    ],
+)
+def test_bhr_aggregate_rejects_a_window_past_the_limits(
+    run_bhr_action, action_input, cron_sample_size, message
+):
+    with pytest.raises(Exception, match=message):
+        run_bhr_action(action_input, cron_sample_size=cron_sample_size)
+
+
+def test_bhr_aggregate_rejects_a_bad_window(run_bhr_action):
+    with pytest.raises(Exception, match="before date"):
+        run_bhr_action({"date": "20250921", "end_date": "20250915"})
+    with pytest.raises(Exception, match="needs a date"):
+        run_bhr_action({"end_date": "20250921"})
+    with pytest.raises(Exception, match="cannot be combined"):
+        run_bhr_action({
+            "date": "20250915",
+            "end_date": "20250917",
+            "refill_dates": ["20250915"],
+        })
 
 
 def test_bhr_aggregate_refuses_a_pinned_date_with_a_refill(run_bhr_action):
