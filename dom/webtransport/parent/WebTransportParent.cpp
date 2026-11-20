@@ -247,7 +247,6 @@ IPCResult WebTransportParent::RecvClose(const uint32_t& aCode,
 
     WebTransportStatsData statsData;
     if (proxy->CloseSessionAndGetStats(aCode, aReason, statsData)) {
-      AddParentExpiredOutgoing(statsData);
       stats = Some(statsData);
       LOG(("Retrieved stats from close: bytesSent=%llu",
            (unsigned long long)statsData.bytesSent()));
@@ -1001,8 +1000,7 @@ void WebTransportParent::NotifyRemoteClosed(
 
   mSocketThread->Dispatch(NS_NewRunnableFunction(
       __func__, [self = RefPtr{this}, aErrorCode, reason = nsCString{aReason},
-                 aCleanly, stats = std::move(stats)]() mutable {
-        self->AddParentExpiredOutgoing(*stats);
+                 aCleanly, stats = std::move(stats)]() {
         // The session is gone, so an in-flight gather will never call back;
         // settle it with the close-time stats.
         self->ResolvePendingGetStats(stats);
@@ -1421,21 +1419,8 @@ NS_IMETHODIMP WebTransportParent::OnStatsAvailable(
     return NS_OK;
   }
 
-  if (!rawStats) {
-    ResolvePendingGetStats(Nothing());
-    return NS_OK;
-  }
-
-  WebTransportStatsData stats = *rawStats;
-  AddParentExpiredOutgoing(stats);
-  ResolvePendingGetStats(Some(stats));
+  ResolvePendingGetStats(rawStats ? Some(*rawStats) : Nothing());
   return NS_OK;
-}
-
-void WebTransportParent::AddParentExpiredOutgoing(
-    WebTransportStatsData& aStats) const {
-  MOZ_ASSERT(mSocketThread->IsOnCurrentThread());
-  aStats.datagrams().expiredOutgoing() += mParentExpiredOutgoing;
 }
 
 void WebTransportParent::ResolvePendingGetStats(
