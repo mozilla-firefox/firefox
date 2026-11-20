@@ -14,15 +14,17 @@ using mozilla::Decimal;
 // as the shortest-representation form of the double input, but truncated to
 // DBL_DIG (15) significant digits when output as a double or string.
 
-TEST(TestDecimal, FromDoubleSmallValuesNotZeroed) {
+TEST(TestDecimal, FromDoubleSmallValuesNotZeroed)
+{
   EXPECT_EQ(Decimal::fromDouble(1e-7), Decimal::fromString("1e-7"));
   EXPECT_EQ(Decimal::fromDouble(1.5e-7), Decimal::fromString("1.5e-7"));
   EXPECT_EQ(Decimal::fromDouble(1e-20), Decimal::fromString("1e-20"));
 }
 
-TEST(TestDecimal, FromDoubleSerializePrecision) {
+TEST(TestDecimal, FromDoubleSerializePrecision)
+{
   EXPECT_EQ(Decimal::fromDouble(0.123456789012345).toString(),
-        "0.123456789012345");
+            "0.123456789012345");
   // 0.3 and 0.30000000000000004 are not distinct on output
   EXPECT_EQ(Decimal::fromDouble(0.30000000000000004).toString(), "0.3");
   // 0.06 must not serialize as 0.059999999999999998 as that's not the shortest
@@ -30,7 +32,8 @@ TEST(TestDecimal, FromDoubleSerializePrecision) {
   EXPECT_EQ(Decimal::fromDouble(0.06).toString(), "0.06");
 }
 
-TEST(TestDecimal, FromDoubleToDoubleIdentity) {
+TEST(TestDecimal, FromDoubleToDoubleIdentity)
+{
   static const double values[] = {
       0.06,
       0.1,
@@ -51,7 +54,8 @@ TEST(TestDecimal, FromDoubleToDoubleIdentity) {
   }
 }
 
-TEST(TestDecimal, FromDoubleSpecials) {
+TEST(TestDecimal, FromDoubleSpecials)
+{
   Decimal posInf = Decimal::fromDouble(INFINITY);
   EXPECT_TRUE(posInf.isInfinity());
   EXPECT_EQ(posInf.toString(), "Infinity");
@@ -70,7 +74,8 @@ TEST(TestDecimal, FromDoubleSpecials) {
   EXPECT_FALSE(zero.isNegative());
 }
 
-TEST(TestDecimal, ToStringExponentStyle) {
+TEST(TestDecimal, ToStringExponentStyle)
+{
   EXPECT_EQ(Decimal::fromString("1e-07").toString(), "1e-7");
   EXPECT_EQ(Decimal::fromString("1.5e-07").toString(), "1.5e-7");
   EXPECT_EQ(Decimal::fromString("1e23").toString(), "1e+23");
