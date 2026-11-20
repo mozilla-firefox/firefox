@@ -3504,11 +3504,11 @@ void Http3Session::SetSendOrder(Http3StreamBase* aStream, int64_t aSendOrder) {
   }
 }
 
-void Http3Session::SetSendGroup(Http3WebTransportStream* aStream,
+void Http3Session::SetSendGroup(Http3StreamBase* aStream,
                                 uint64_t aSendGroupId) {
   if (!IsClosing()) {
     nsresult rv = mHttp3Connection->WebTransportSetSendGroup(
-        aStream->SessionId(), aStream->StreamId(), aSendGroupId);
+        aStream->StreamId(), aSendGroupId);
     NS_WARNING_ASSERTION(NS_SUCCEEDED(rv), "WebTransportSetSendGroup failed");
     (void)rv;
   }

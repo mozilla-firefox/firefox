@@ -143,9 +143,8 @@ pub struct NeqoHttp3Conn {
     /// Maps the child-minted WebTransport send-group id (assigned synchronously in the content
     /// process) to the neqo-minted [`SendGroupId`]. neqo owns send-group id allocation, but the
     /// child needs an id before the round-trip to neqo completes, so it mints a provisional id and
-    /// we translate here. The 0 sentinel ("no group") is never stored. Keyed by session id as well,
-    /// since every session mints its ids from 1 and pooled sessions share this connection.
-    webtransport_send_groups: HashMap<(u64, u64), SendGroupId>,
+    /// we translate here. The 0 sentinel ("no group") is never stored.
+    webtransport_send_groups: HashMap<u64, SendGroupId>,
     /// The write time last handed to neqo's datagram queue, which requires
     /// write times never to go backwards.
     last_datagram_written: Option<Instant>,
@@ -384,13 +383,11 @@ type BorrowedSocket = std::os::windows::io::BorrowedSocket<'static>;
 impl NeqoHttp3Conn {
     /// Translate a child-minted send-group id to the neqo-minted id.
     /// The 0 sentinel ("no group") passes through unchanged; an unknown id yields `None`.
-    fn neqo_send_group_id(&self, session_id: u64, child_id: u64) -> Option<SendGroupId> {
+    fn neqo_send_group_id(&self, child_id: u64) -> Option<SendGroupId> {
         if child_id == 0 {
             Some(SendGroupId::new(0))
         } else {
-            self.webtransport_send_groups
-                .get(&(session_id, child_id))
-                .copied()
+            self.webtransport_send_groups.get(&child_id).copied()
         }
     }
 
@@ -2376,11 +2373,6 @@ pub extern "C" fn neqo_http3conn_event(
                 Http3Event::EchFallbackAuthenticationNeeded
             }
             Http3ClientEvent::WebTransport(e) => {
-                if let WebTransportEvent::SessionClosed { stream_id, .. } = &e {
-                    let session_id = stream_id.as_u64();
-                    conn.webtransport_send_groups
-                        .retain(|&(sid, _), _| sid != session_id);
-                }
                 Http3Event::WebTransport(WebTransportEventExternal::new(e, data))
             }
             Http3ClientEvent::ConnectUdp(e) => {
@@ -2754,11 +2746,11 @@ pub extern "C" fn neqo_http3conn_webtransport_send_datagram(
     // Translate the child-minted send-group id to the neqo-minted one, same
     // as neqo_http3conn_webtransport_set_sendgroup does for streams; without
     // this, datagrams are scheduled under a raw, unvalidated id that may
-    // collide with an unrelated stream's send-group.  A group whose
-    // registration failed sends ungrouped, as a stream does when
-    // set_sendgroup fails.
+    // collide with an unrelated stream's send-group.  A group that never got
+    // registered (one created before the session was ready) sends ungrouped,
+    // as a stream does when set_sendgroup fails.
     let translated_group_id = conn
-        .neqo_send_group_id(session_id, send_group_id)
+        .neqo_send_group_id(send_group_id)
         .unwrap_or(SendGroupId::new(0));
     // A Rust Instant can't be built from a C++ TimeStamp, so the write time
     // comes across as a Duration.  The C++ and Rust "now" reads aren't
@@ -2944,7 +2936,6 @@ pub unsafe extern "C" fn neqo_http3conn_webtransport_set_sendorder(
 #[no_mangle]
 pub unsafe extern "C" fn neqo_http3conn_webtransport_set_sendgroup(
     conn: &mut NeqoHttp3Conn,
-    session_id: u64,
     stream_id: u64,
     sendgroup_id: u64,
 ) -> nsresult {
@@ -2958,7 +2949,7 @@ pub unsafe extern "C" fn neqo_http3conn_webtransport_set_sendgroup(
             Err(_) => NS_ERROR_UNEXPECTED,
         };
     }
-    let Some(sg_id) = conn.neqo_send_group_id(session_id, sendgroup_id) else {
+    let Some(sg_id) = conn.neqo_send_group_id(sendgroup_id) else {
         return NS_ERROR_UNEXPECTED;
     };
     match conn
@@ -2982,8 +2973,7 @@ pub extern "C" fn neqo_http3conn_webtransport_register_send_group(
         .webtransport_create_send_group(StreamId::from(session_id))
     {
         Ok(neqo_id) => {
-            conn.webtransport_send_groups
-                .insert((session_id, group_id), neqo_id);
+            conn.webtransport_send_groups.insert(group_id, neqo_id);
             NS_OK
         }
         Err(_) => NS_ERROR_UNEXPECTED,
