@@ -133,11 +133,4 @@ void WebTransportDatagramsWritable::Cleanup() {
   }
 }
 
-void WebTransportDatagramsWritable::UpdateQueueParams(
-    uint32_t aMaxBufferedDatagrams, double aMaxAge) {
-  if (mAlgorithms) {
-    mAlgorithms->UpdateQueueParams(aMaxBufferedDatagrams, aMaxAge);
-  }
-}
-
 }  // namespace mozilla::dom
