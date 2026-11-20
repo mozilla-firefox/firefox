@@ -382,7 +382,7 @@ def gradle_android_archive_geckoview_tasks(build_config, appservices_in_tree):
 
     if appservices_in_tree:
         tasks.extend([
-            ":publishAppServicesAndroid",
+            ":publishApplicationServices",
         ])
     return tasks
 
