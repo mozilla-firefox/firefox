@@ -1056,10 +1056,10 @@ FFmpegVideoDecoder<LIBAV_VER>::InitHWDecoderIfAllowed() {
 
 FFmpegVideoDecoder<LIBAV_VER>::~FFmpegVideoDecoder() {
 #ifdef MOZ_WIDGET_ANDROID
-  if (mAndroidImageReader) {
+  if (mAndroidImageReaderClient) {
     // Release the reader's cached image to break its reference cycle. Images
     // still held by the compositor keep the reader and their AImages alive.
-    mAndroidImageReader->Shutdown();
+    mAndroidImageReaderClient->Shutdown();
   }
   // We must wait to release mSurfaceTextureHandle because there may be
   // outstanding frames that reference us. Those frames take a strong reference
@@ -2743,9 +2743,9 @@ void FFmpegVideoDecoder<LIBAV_VER>::ProcessShutdown() {
 #ifdef MOZ_WIDGET_ANDROID
   mShouldResumeDrain = false;
   ReleaseFramesMediaCodec();
-  if (mAndroidImageReader) {
-    mAndroidImageReader->Shutdown();
-    mAndroidImageReader = nullptr;
+  if (mAndroidImageReaderClient) {
+    mAndroidImageReaderClient->Shutdown();
+    mAndroidImageReaderClient = nullptr;
   }
   if (mMediaCodecDeviceContext) {
     mLib->av_buffer_unref(&mMediaCodecDeviceContext);
@@ -3325,38 +3325,26 @@ MediaResult FFmpegVideoDecoder<LIBAV_VER>::InitMediaCodecDecoder() {
   hwctx->free = MediaCodecNativeWindowReleaseCallback;
 
   if (XRE_IsGPUProcess() && gfx::gfxVars::ForceAImageReaderAndroid()) {
-    MOZ_ASSERT(!mAndroidImageReader);
-    mAndroidImageReader = layers::AndroidImageReader::Create();
-  }
-
-  if (mAndroidImageReader) {
-    auto* window = mAndroidImageReader->GetANativeWindow();
-    MOZ_ASSERT(window);
+    MOZ_ASSERT(!mAndroidImageReaderClient);
+    mAndroidImageReaderClient = layers::AndroidImageReaderClient::Create();
+    if (!mAndroidImageReaderClient) {
+      return MediaResult(
+          NS_ERROR_DOM_MEDIA_FATAL_ERR,
+          RESULT_DETAIL("unable to acquire compositor ImageReader surface"));
+    }
+    mImageReaderSurface = mAndroidImageReaderClient->GetSurface();
+    JNIEnv* env = jni::GetEnvForThread();
+    ANativeWindow* window =
+        ANativeWindow_fromSurface(env, mImageReaderSurface.Get());
     if (!window) {
       return MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR,
                          RESULT_DETAIL("unable to acquire ANativeWindow"));
     }
-
-    JNIEnv* const env = jni::GetEnvForThread();
-    jobject surface = ANativeWindow_toSurface(env, window);
-    if (!surface) {
-      return MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR,
-                         RESULT_DETAIL("unable to acquire Java surface"));
-    }
-
-    mImageReaderSurface = java::sdk::Surface::LocalRef::Adopt(env, surface);
-
-    if (!mImageReaderSurface) {
-      return MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR,
-                         RESULT_DETAIL("unable to acquire Java surface"));
-    }
-
     mediacodecctx->surface = mImageReaderSurface.Get();
-    // Acquire a reference on the ANativeWindow. It is released by
+    // ANativeWindow_fromSurface acquires the reference released by
     // MediaCodecNativeWindowReleaseCallback.
-    ANativeWindow_acquire(window);
     mediacodecctx->native_window = window;
-    mediacodecctx->create_window = 0;  // default -- useful when encoding?
+    mediacodecctx->create_window = 0;
   } else {
     mSurfaceTextureSurface =
         java::GeckoSurface::LocalRef(java::SurfaceAllocator::AcquireSurface(
@@ -3451,14 +3439,19 @@ MediaResult FFmpegVideoDecoder<LIBAV_VER>::CreateImageMediaCodec(
   };
 
   RefPtr<layers::Image> img;
-  if (mAndroidImageReader) {
+  if (mAndroidImageReaderClient) {
+    if (!mAndroidImageReaderClient->IsValid()) {
+      mLib->av_frame_free(&frame);
+      return MediaResult(
+          NS_ERROR_DOM_MEDIA_REMOTE_CRASHED_RDD_OR_GPU_ERR,
+          RESULT_DETAIL("compositor ImageReader surface was lost"));
+    }
     auto listener = std::make_unique<CompositeListener>(this);
     mFrameMap.Insert(listener.get(), frame);
     auto readerImage = MakeRefPtr<layers::AndroidImageReaderImage>(
-        mAndroidImageReader->mImageReaderId,
-        gfx::IntSize(mFrame->width, mFrame->height), mInfo.HasAlpha());
+        mAndroidImageReaderClient, gfx::IntSize(mFrame->width, mFrame->height),
+        mInfo.HasAlpha());
     readerImage->RegisterSetCurrentCallback(std::move(listener));
-    mAndroidImageReader->RegisterReaderImage(readerImage);
     img = readerImage.forget();
   } else {
     img = MakeRefPtr<layers::SurfaceTextureImage>(
@@ -3516,6 +3509,8 @@ bool FFmpegVideoDecoder<LIBAV_VER>::ReleaseFrameMediaCodec(void* aKey,
 }
 
 void FFmpegVideoDecoder<LIBAV_VER>::ReleaseSurfaceMediaCodec() {
+  mImageReaderSurface = nullptr;
+  mAndroidImageReaderClient = nullptr;
   if (mSurfaceTextureSurface) {
     java::SurfaceAllocator::DisposeSurface(mSurfaceTextureSurface);
     mSurfaceTextureSurface = nullptr;
@@ -3531,6 +3526,9 @@ void FFmpegVideoDecoder<LIBAV_VER>::ReleaseFramesMediaCodec() {
     FFMPEG_LOG("Flush/shutdown release MediaCodec frame {}", fmt::ptr(aFrame));
     mLib->av_frame_free(&aFrame);
   });
+  if (mAndroidImageReaderClient) {
+    mAndroidImageReaderClient->DiscardFrames();
+  }
 }
 #endif  // MOZ_WIDGET_ANDROID
 
