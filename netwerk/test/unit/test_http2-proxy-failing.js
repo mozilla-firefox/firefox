@@ -10,6 +10,10 @@
 
 "use strict";
 
+const { NodeLegacyHTTP2Server } = ChromeUtils.importESModule(
+  "resource://testing-common/NodeServer.sys.mjs"
+);
+
 const pps = Cc["@mozilla.org/network/protocol-proxy-service;1"].getService();
 
 let filter;
@@ -89,15 +93,38 @@ add_task(async function setup() {
   // Set to allow the cert presented by our H2 server
   do_get_profile();
 
-  // The moz-http2 cert is for foo.example.com and is signed by http2-ca.pem
-  // so add that cert to the trust list as a signing cert.
-  let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
-    Ci.nsIX509CertDB
-  );
-  addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
-
-  let proxy_port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(proxy_port, null);
+  let proxy = new NodeLegacyHTTP2Server();
+  await proxy.start();
+  registerCleanupFunction(async () => {
+    await proxy.stop();
+  });
+  await proxy.setConnectHandler((req, res) => {
+    switch (req.headers.host) {
+      case "illegalhpacksoft.example.com:80":
+        // node-http2 encodes this header illegally, failing only the stream.
+        res.setHeader("x-softillegalhpack", "true");
+        res.writeHead(200);
+        res.end("ok");
+        return;
+      case "illegalhpackhard.example.com:80":
+        // node-http2 encodes this header illegally, failing the session.
+        res.setHeader("x-hardillegalhpack", "true");
+        res.writeHead(200);
+        res.end("ok");
+        return;
+      case "750.example.com:80":
+        // Accepts the tunnel and answers the request through it after 750ms.
+        // eslint-disable-next-line mozilla/no-arbitrary-setTimeout
+        setTimeout(() => res.end("HTTP/1.1 200\n\r\n\r"), 750);
+        return;
+      case "h11required.com:80":
+        res.stream.reset("HTTP_1_1_REQUIRED");
+        return;
+    }
+    res.writeHead(404);
+    res.end();
+  });
+  let proxy_port = proxy.port();
 
   Services.prefs.setBoolPref("network.http.http2.enabled", true);
   // make all native resolve calls "secretly" resolve localhost instead

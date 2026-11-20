@@ -934,6 +934,11 @@ class NodeLegacyHTTP2ServerCode extends BaseNodeHTTPServerCode {
     );
     // Clients tearing down connections cause socket errors; ignore them.
     global.server.on("connection", socket => socket.on("error", () => {}));
+    // CONNECT is only supported over HTTP/2.
+    global.server.on("connect", (req, clientSocket) => {
+      clientSocket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+      clientSocket.destroy();
+    });
     // Handlers can throw from timers, which must not take the server down.
     process.on("uncaughtException", e => {
       console.log(`NodeLegacyHTTP2Server uncaught exception: ${e.stack}`);

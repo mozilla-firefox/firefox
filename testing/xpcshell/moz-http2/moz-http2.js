@@ -165,23 +165,6 @@ runlater.prototype = {
   },
 };
 
-var runConnectLater = function () {};
-runConnectLater.prototype = {
-  req: null,
-  resp: null,
-  connect: false,
-
-  onTimeout: function onTimeout() {
-    if (this.connect) {
-      this.resp.writeHead(200);
-      this.connect = true;
-      setTimeout(executeRunLaterCatchError, 50, this);
-    } else {
-      this.resp.end("HTTP/1.1 200\n\r\n\r");
-    }
-  },
-};
-
 var moreData = function () {};
 moreData.prototype = {
   req: null,
@@ -202,10 +185,6 @@ moreData.prototype = {
 };
 
 function executeRunLater(arg) {
-  arg.onTimeout();
-}
-
-function executeRunLaterCatchError(arg) {
   arg.onTimeout();
 }
 
@@ -232,36 +211,7 @@ function handleRequestImpl(req, res) {
     res.setHeader("X-Connection-Http2", "no");
   }
 
-  if (req.method == "CONNECT") {
-    if (req.headers.host == "illegalhpacksoft.example.com:80") {
-      illegalheader_conn = req.stream.connection;
-      res.setHeader("Content-Type", "text/html");
-      res.setHeader("x-softillegalhpack", "true");
-      res.writeHead(200);
-      res.end(content);
-      return;
-    } else if (req.headers.host == "illegalhpackhard.example.com:80") {
-      res.setHeader("Content-Type", "text/html");
-      res.setHeader("x-hardillegalhpack", "true");
-      res.writeHead(200);
-      res.end(content);
-      return;
-    } else if (req.headers.host == "750.example.com:80") {
-      // This response will mock a response through a proxy to a HTTP server.
-      // After 750ms , a 200 response for the proxy will be sent then
-      // after additional 50ms a 200 response for the HTTP GET request.
-      let rl = new runConnectLater();
-      rl.req = req;
-      rl.resp = res;
-      setTimeout(executeRunLaterCatchError, 750, rl);
-      return;
-    } else if (req.headers.host == "h11required.com:80") {
-      if (req.httpVersionMajor === 2) {
-        res.stream.reset("HTTP_1_1_REQUIRED");
-      }
-      return;
-    }
-  } else if (u.pathname === "/750ms") {
+  if (u.pathname === "/750ms") {
     let rl = new runlater();
     rl.req = req;
     rl.resp = res;
