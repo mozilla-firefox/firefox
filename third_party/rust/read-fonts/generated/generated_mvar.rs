@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Mvar<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,42 @@ impl TopLevelTable for Mvar<'_> {
     const TAG: Tag = Tag::new(b"MVAR");
 }
 
+impl ReadArgs for Mvar<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Mvar<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct MvarFixedHeader {
+    pub version: BigEndian<MajorMinor>,
+    pub _reserved: BigEndian<u16>,
+    pub value_record_size: BigEndian<u16>,
+    pub value_record_count: BigEndian<u16>,
+    pub item_variation_store_offset: BigEndian<Nullable<Offset16>>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<MvarFixedHeader>() <= Mvar::MIN_SIZE);
+
 /// The [MVAR (Metrics Variations)](https://docs.microsoft.com/en-us/typography/opentype/spec/mvar) table
 #[derive(Clone)]
 pub struct Mvar<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, MvarFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -48,75 +70,72 @@ impl<'a> Mvar<'a> {
     /// Major version number of the horizontal metrics variations table — set to 1.
     /// Minor version number of the horizontal metrics variations table — set to 0.
     pub fn version(&self) -> MajorMinor {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// The size in bytes of each value record — must be greater than zero.
     pub fn value_record_size(&self) -> u16 {
-        let range = self.value_record_size_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().value_record_size.get()
     }
 
     /// The number of value records — may be zero.
     pub fn value_record_count(&self) -> u16 {
-        let range = self.value_record_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().value_record_count.get()
     }
 
     /// Offset in bytes from the start of this table to the item variation store table. If valueRecordCount is zero, set to zero; if valueRecordCount is greater than zero, must be greater than zero.
     pub fn item_variation_store_offset(&self) -> Nullable<Offset16> {
-        let range = self.item_variation_store_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().item_variation_store_offset.get()
     }
 
     /// Attempt to resolve [`item_variation_store_offset`][Self::item_variation_store_offset].
     pub fn item_variation_store(&self) -> Option<Result<ItemVariationStore<'a>, ReadError>> {
-        let data = self.data;
+        let data = self.offset_data();
         self.item_variation_store_offset().resolve(data)
     }
 
     /// Array of value records that identify target items and the associated delta-set index for each. The valueTag records must be in binary order of their valueTag field.
-    pub fn value_records(&self) -> &'a [ValueRecord] {
+    pub fn value_records(&self) -> ComputedArray<'a, ValueRecord> {
         let range = self.value_records_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        ComputedArray::new(self.offset_data(), range, self.value_record_size()).unwrap_or_default()
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + MajorMinor::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(MajorMinor::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn _reserved_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn value_record_size_byte_range(&self) -> Range<usize> {
         let start = self._reserved_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn value_record_count_byte_range(&self) -> Range<usize> {
         let start = self.value_record_size_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn item_variation_store_offset_byte_range(&self) -> Range<usize> {
         let start = self.value_record_count_byte_range().end;
-        let end = start + Offset16::RAW_BYTE_LEN;
+        let end = start.saturating_add(Offset16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn value_records_byte_range(&self) -> Range<usize> {
         let value_record_count = self.value_record_count();
         let start = self.item_variation_store_offset_byte_range().end;
-        let end = start
-            + (transforms::to_usize(value_record_count)).saturating_mul(ValueRecord::RAW_BYTE_LEN);
+        let end = start.saturating_add((transforms::to_usize(value_record_count)).saturating_mul(
+            <ValueRecord as ComputeSize>::compute_size(self.value_record_size()).unwrap_or(0),
+        ));
         start..end
     }
 }
@@ -126,46 +145,9 @@ const _: () = assert!(FontData::default_data_long_enough(Mvar::MIN_SIZE));
 impl Default for Mvar<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Mvar<'a> {
-    fn type_name(&self) -> &str {
-        "Mvar"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new("value_record_size", self.value_record_size())),
-            2usize => Some(Field::new("value_record_count", self.value_record_count())),
-            3usize => Some(Field::new(
-                "item_variation_store_offset",
-                FieldType::offset(
-                    self.item_variation_store_offset(),
-                    self.item_variation_store(),
-                ),
-            )),
-            4usize => Some(Field::new(
-                "value_records",
-                traversal::FieldType::array_of_records(
-                    stringify!(ValueRecord),
-                    self.value_records(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Mvar<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -201,26 +183,4 @@ impl ValueRecord {
 
 impl FixedSize for ValueRecord {
     const RAW_BYTE_LEN: usize = Tag::RAW_BYTE_LEN + u16::RAW_BYTE_LEN + u16::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for ValueRecord {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "ValueRecord",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("value_tag", self.value_tag())),
-                1usize => Some(Field::new(
-                    "delta_set_outer_index",
-                    self.delta_set_outer_index(),
-                )),
-                2usize => Some(Field::new(
-                    "delta_set_inner_index",
-                    self.delta_set_inner_index(),
-                )),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }

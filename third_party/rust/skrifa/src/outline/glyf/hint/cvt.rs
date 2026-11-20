@@ -1,6 +1,6 @@
 //! Control value table.
 
-use super::{cow_slice::CowSlice, error::HintErrorKind, F26Dot6};
+use super::{cow_slice::CowSlice, F26Dot6, HintErrorKind};
 
 /// Backing store for the control value table.
 ///

@@ -1,5 +1,7 @@
 //! Common bitmap (EBLC/EBDT/CBLC/CBDT) types.
 
+use crate::{array, offset::CheckedOffset};
+
 include!("../../generated/generated_bitmap.rs");
 
 impl BitmapSize {
@@ -34,16 +36,11 @@ impl BitmapSize {
             match &subtable {
                 IndexSubtable::Format1(st) => {
                     location.format = st.image_format();
-                    let start = st.image_data_offset() as usize
-                        + st.sbit_offsets()
-                            .get(glyph_ix)
-                            .ok_or(ReadError::OutOfBounds)?
-                            .get() as usize;
-                    let end = st.image_data_offset() as usize
-                        + st.sbit_offsets()
-                            .get(glyph_ix + 1)
-                            .ok_or(ReadError::OutOfBounds)?
-                            .get() as usize;
+                    let [first_offset, second_offset] =
+                        array::get_pair(st.sbit_offsets(), glyph_ix)?.map(|o| o.get() as usize);
+                    let base = CheckedOffset::new(st.image_data_offset() as usize);
+                    let start = base.add(first_offset).ok_or_oob()?;
+                    let end = base.add(second_offset).ok_or_oob()?;
                     location.data_offset = start;
                     if end < start {
                         return Err(ReadError::OutOfBounds);
@@ -54,21 +51,19 @@ impl BitmapSize {
                     location.format = st.image_format();
                     let data_size = st.image_size() as usize;
                     location.data_size = data_size;
-                    location.data_offset = st.image_data_offset() as usize + glyph_ix * data_size;
-                    location.metrics = Some(st.big_metrics()[0]);
+                    location.data_offset = CheckedOffset::new(glyph_ix)
+                        .mul(data_size)
+                        .add(st.image_data_offset() as usize)
+                        .ok_or_oob()?;
+                    location.metrics = Some(*st.big_metrics());
                 }
                 IndexSubtable::Format3(st) => {
                     location.format = st.image_format();
-                    let start = st.image_data_offset() as usize
-                        + st.sbit_offsets()
-                            .get(glyph_ix)
-                            .ok_or(ReadError::OutOfBounds)?
-                            .get() as usize;
-                    let end = st.image_data_offset() as usize
-                        + st.sbit_offsets()
-                            .get(glyph_ix + 1)
-                            .ok_or(ReadError::OutOfBounds)?
-                            .get() as usize;
+                    let [first_offset, second_offset] =
+                        array::get_pair(st.sbit_offsets(), glyph_ix)?.map(|o| o.get() as usize);
+                    let base = CheckedOffset::new(st.image_data_offset() as usize);
+                    let start = base.add(first_offset).ok_or_oob()?;
+                    let end = base.add(second_offset).ok_or_oob()?;
                     location.data_offset = start;
                     if end < start {
                         return Err(ReadError::OutOfBounds);
@@ -84,11 +79,11 @@ impl BitmapSize {
                         Ok(ix) => ix,
                         _ => return Err(ReadError::InvalidCollectionIndex(glyph_id.to_u32())),
                     };
-                    let start = array[array_ix].sbit_offset() as usize;
-                    let end = array
-                        .get(array_ix + 1)
-                        .ok_or(ReadError::OutOfBounds)?
-                        .sbit_offset() as usize;
+                    let [first_offset, second_offset] =
+                        array::get_pair(array, array_ix)?.map(|p| p.sbit_offset() as usize);
+                    let base = CheckedOffset::new(st.image_data_offset() as usize);
+                    let start = base.add(first_offset).ok_or_oob()?;
+                    let end = base.add(second_offset).ok_or_oob()?;
                     location.data_offset = start;
                     if end < start {
                         return Err(ReadError::OutOfBounds);
@@ -106,8 +101,11 @@ impl BitmapSize {
                     };
                     let data_size = st.image_size() as usize;
                     location.data_size = data_size;
-                    location.data_offset = st.image_data_offset() as usize + array_ix * data_size;
-                    location.metrics = Some(st.big_metrics()[0]);
+                    location.data_offset = CheckedOffset::new(array_ix)
+                        .mul(data_size)
+                        .add(st.image_data_offset() as usize)
+                        .ok_or_oob()?;
+                    location.metrics = Some(*st.big_metrics());
                 }
             }
             return Ok(location);
@@ -124,12 +122,14 @@ impl BitmapSize {
         offset_data: FontData<'a>,
     ) -> Result<IndexSubtableList<'a>, ReadError> {
         let start = self.index_subtable_list_offset() as usize;
-        let end = start
-            .checked_add(self.index_subtable_list_size() as usize)
-            .ok_or(ReadError::OutOfBounds)?;
-        let data = offset_data
-            .slice(start..end)
-            .ok_or(ReadError::OutOfBounds)?;
+        // FreeType ignores the declared size and bounds reads by the end of the
+        // parent table. Some fonts, such as ProggyClean, rely on this behavior
+        // because they set indexTablesSize to the size of the index subtable
+        // record array alone, excluding the referenced subtables.
+        //
+        // See `tt_sbit_decoder_init` and `tt_sbit_decoder_load_image` in FreeType.
+        // <https://gitlab.freedesktop.org/freetype/freetype/-/blob/VER-2-13-3/src/sfnt/ttsbit.c#L1241>
+        let data = offset_data.split_off(start).ok_or(ReadError::OutOfBounds)?;
         IndexSubtableList::read(data, self.number_of_index_subtables())
     }
 }
@@ -189,8 +189,12 @@ pub(crate) fn bitmap_data<'a>(
     location: &BitmapLocation,
     is_color: bool,
 ) -> Result<BitmapData<'a>, ReadError> {
+    let start = location.data_offset;
+    let end = CheckedOffset::new(start)
+        .add(location.data_size)
+        .ok_or_oob()?;
     let mut image_data = offset_data
-        .slice(location.data_offset..location.data_offset + location.data_size)
+        .slice(start..end)
         .ok_or(ReadError::OutOfBounds)?
         .cursor();
     match location.format {
@@ -336,13 +340,6 @@ fn read_big_metrics(cursor: &mut Cursor) -> Result<BigGlyphMetrics, ReadError> {
     Ok(cursor.read_array::<BigGlyphMetrics>(1)?[0])
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl SbitLineMetrics {
-    pub(crate) fn traversal_type<'a>(&self, data: FontData<'a>) -> FieldType<'a> {
-        FieldType::Record(self.traverse(data))
-    }
-}
-
 /// [IndexSubtables](https://learn.microsoft.com/en-us/typography/opentype/spec/eblc#indexsubtables) format type.
 #[derive(Clone)]
 pub enum IndexSubtable<'a> {
@@ -402,17 +399,13 @@ impl<'a> IndexSubtable<'a> {
 impl ReadArgs for IndexSubtable<'_> {
     type Args = (GlyphId16, GlyphId16);
 }
-impl<'a> FontReadWithArgs<'a> for IndexSubtable<'a> {
-    fn read_with_args(data: FontData<'a>, args: &Self::Args) -> Result<Self, ReadError> {
+impl<'a> FontRead<'a> for IndexSubtable<'a> {
+    fn read_with_args(data: FontData<'a>, args: Self::Args) -> Result<Self, ReadError> {
         let format: u16 = data.read_at(0usize)?;
         match format {
-            IndexSubtable1::FORMAT => {
-                FontReadWithArgs::read_with_args(data, args).map(Self::Format1)
-            }
+            IndexSubtable1::FORMAT => FontRead::read_with_args(data, args).map(Self::Format1),
             IndexSubtable2::FORMAT => FontRead::read(data).map(Self::Format2),
-            IndexSubtable3::FORMAT => {
-                FontReadWithArgs::read_with_args(data, args).map(Self::Format3)
-            }
+            IndexSubtable3::FORMAT => FontRead::read_with_args(data, args).map(Self::Format3),
             IndexSubtable4::FORMAT => FontRead::read(data).map(Self::Format4),
             IndexSubtable5::FORMAT => FontRead::read(data).map(Self::Format5),
             other => Err(ReadError::InvalidFormat(other.into())),
@@ -442,32 +435,112 @@ impl<'a> MinByteRange<'a> for IndexSubtable<'a> {
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> IndexSubtable<'a> {
-    fn dyn_inner<'b>(&'b self) -> &'b dyn SomeTable<'a> {
-        match self {
-            Self::Format1(table) => table,
-            Self::Format2(table) => table,
-            Self::Format3(table) => table,
-            Self::Format4(table) => table,
-            Self::Format5(table) => table,
-        }
-    }
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{types::GlyphId16, FontData};
+    use font_test_data::bebuffer::BeBuffer;
 
-#[cfg(feature = "experimental_traverse")]
-impl std::fmt::Debug for IndexSubtable<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.dyn_inner().fmt(f)
+    fn bitmap_size_location(data: &[u8], glyph_id: GlyphId) -> Result<BitmapLocation, ReadError> {
+        let data = FontData::new(data);
+        let size = data.read_ref_at::<BitmapSize>(0).unwrap();
+        size.location(data, glyph_id)
     }
-}
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for IndexSubtable<'a> {
-    fn type_name(&self) -> &str {
-        self.dyn_inner().type_name()
+    fn bitmap_size_with_subtable(subtable: &[u8]) -> BeBuffer {
+        BeBuffer::new()
+            .push(BitmapSize::RAW_BYTE_LEN as u32)
+            .push((IndexSubtableRecord::RAW_BYTE_LEN + subtable.len()) as u32)
+            .push(1u32)
+            .push(0u32)
+            .extend([0u8; SbitLineMetrics::RAW_BYTE_LEN])
+            .extend([0u8; SbitLineMetrics::RAW_BYTE_LEN])
+            .push(GlyphId16::new(0))
+            .push(GlyphId16::new(0))
+            .push(0u8)
+            .push(0u8)
+            .push(1u8)
+            .push(0u8)
+            .push(GlyphId16::new(0))
+            .push(GlyphId16::new(0))
+            .push(IndexSubtableRecord::RAW_BYTE_LEN as u32)
+            .extend(subtable.iter().copied())
     }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        self.dyn_inner().get_field(idx)
+
+    #[test]
+    fn short_index_tables_size_is_ignored() {
+        // Some fonts (e.g. ProggyClean) set indexTablesSize to the size of
+        // the index subtable array alone, excluding the subtables it points
+        // to. Ensure we still resolve the subtables.
+        let subtable = BeBuffer::new()
+            .push(2u16) // index format
+            .push(5u16) // image format
+            .push(0u32) // image data offset
+            .push(4u32) // image size
+            .extend([0u8; 8]); // big metrics
+        let subtable = subtable.data();
+        let data = BeBuffer::new()
+            .push(BitmapSize::RAW_BYTE_LEN as u32)
+            // indexTablesSize covering only the record array
+            .push(IndexSubtableRecord::RAW_BYTE_LEN as u32)
+            .push(1u32)
+            .push(0u32)
+            .extend([0u8; SbitLineMetrics::RAW_BYTE_LEN])
+            .extend([0u8; SbitLineMetrics::RAW_BYTE_LEN])
+            .push(GlyphId16::new(0))
+            .push(GlyphId16::new(1))
+            .push(0u8)
+            .push(0u8)
+            .push(1u8)
+            .push(0u8)
+            .push(GlyphId16::new(0))
+            .push(GlyphId16::new(1))
+            .push(IndexSubtableRecord::RAW_BYTE_LEN as u32)
+            .extend(subtable.iter().copied());
+        let location = bitmap_size_location(data.data(), GlyphId::new(1)).unwrap();
+        assert_eq!(location.data_offset, 4);
+        assert_eq!(location.data_size, 4);
+    }
+
+    #[test]
+    fn format_2_truncated_metrics_returns_error_instead_of_panicking() {
+        let data =
+            bitmap_size_with_subtable(&BeBuffer::new().push(2u16).push(5u16).push(0u32).push(1u32));
+        // Just don't panic!
+        let result = bitmap_size_location(data.data(), GlyphId::new(0));
+        assert!(matches!(result, Err(ReadError::OutOfBounds)));
+    }
+
+    #[test]
+    fn format_4_sbit_offsets_are_relative_to_image_data_offset() {
+        let data = bitmap_size_with_subtable(
+            &BeBuffer::new()
+                .push(4u16) // index format
+                .push(17u16) // image format
+                .push(1000u32) // image data offset
+                .push(1u32) // num glyphs
+                .push(GlyphId16::new(0))
+                .push(20u16) // sbit offset
+                .push(GlyphId16::new(1))
+                .push(30u16), // sbit offset of the following glyph
+        );
+        let location = bitmap_size_location(data.data(), GlyphId::new(0)).unwrap();
+        assert_eq!(location.data_offset, 1020);
+        assert_eq!(location.data_size, 10);
+    }
+
+    #[test]
+    fn format_5_truncated_metrics_returns_error_instead_of_panicking() {
+        let data = bitmap_size_with_subtable(
+            &BeBuffer::new()
+                .push(5u16)
+                .push(5u16)
+                .push(0u32)
+                .push(1u32)
+                .push(0u32),
+        );
+        // Just don't panic!
+        let result = bitmap_size_location(data.data(), GlyphId::new(0));
+        assert!(result.is_err());
     }
 }

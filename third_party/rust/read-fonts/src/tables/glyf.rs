@@ -1,12 +1,25 @@
 //! The [glyf (Glyph Data)](https://docs.microsoft.com/en-us/typography/opentype/spec/glyf) table
 
 pub mod bytecode;
+mod hint_reliant;
+pub mod outline;
+
+pub use hint_reliant::is_hint_reliant;
 
 use bytemuck::AnyBitPattern;
 use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Sub};
 use types::{F26Dot6, Point};
 
 include!("../../generated/generated_glyf.rs");
+
+/// Number of "phantom" points appended to the end of a glyph outline.
+///
+/// These are not part of the glyph's contours. They carry the horizontal and
+/// vertical side bearings and advances so that variation deltas and the
+/// TrueType interpreter can adjust glyph metrics along with the outline.
+///
+/// See [phantom points](https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructing_glyphs#phantom-points).
+pub const PHANTOM_POINT_COUNT: usize = 4;
 
 /// Marker bits for point flags that are set during variation delta
 /// processing and hinting.
@@ -103,7 +116,7 @@ impl PointFlags {
     /// Returns true if this is an off curve cubic point.
     #[inline]
     pub const fn is_off_curve_cubic(self) -> bool {
-        self.0 & Self::OFF_CURVE_CUBIC != 0
+        self.0 & Self::CURVE_MASK == Self::OFF_CURVE_CUBIC
     }
 
     pub const fn is_off_curve(self) -> bool {
@@ -201,8 +214,8 @@ impl<'a> SimpleGlyph<'a> {
 
     /// Reads points and flags into the provided buffers.
     ///
-    /// Drops all flag bits except on-curve. The lengths of the buffers must be
-    /// equal to the value returned by [num_points](Self::num_points).
+    /// Drops all flag bits except on-curve and cubic. The lengths of the
+    /// buffers must equal the value returned by [num_points](Self::num_points).
     ///
     /// ## Performance
     ///
@@ -217,6 +230,9 @@ impl<'a> SimpleGlyph<'a> {
         let n_points = self.num_points();
         if points.len() != n_points || flags.len() != n_points {
             return Err(ReadError::InvalidArrayLen);
+        }
+        if n_points == 0 {
+            return Ok(());
         }
         let mut cursor = FontData::new(self.glyph_data()).cursor();
         // The flag run can use two bytes per point (a flag plus its repeat
@@ -248,19 +264,30 @@ impl<'a> SimpleGlyph<'a> {
                 break;
             }
         }
-        let mut cursor = FontData::new(self.glyph_data()).cursor();
-        cursor.advance_by(read_flags_bytes);
+        // This used to use a `Cursor` but that implies saturating
+        // arithmetic, bounds checking and `Result` building for each byte
+        // read.
+        //
+        // A byte slice iterator is just a pointer comparison and is
+        // significantly faster.
+        let coords = self
+            .glyph_data()
+            .get(read_flags_bytes..)
+            .ok_or(ReadError::OutOfBounds)?;
+        let mut bytes = coords.iter();
         let mut x = 0i32;
         for (&point_flags, point) in flags.iter().zip(points.as_mut()) {
             let mut delta = 0i32;
             let flag = SimpleGlyphFlags::from_bits_truncate(point_flags.0);
             if flag.contains(SimpleGlyphFlags::X_SHORT_VECTOR) {
-                delta = cursor.read::<u8>()? as i32;
+                delta = *bytes.next().ok_or(ReadError::OutOfBounds)? as i32;
                 if !flag.contains(SimpleGlyphFlags::X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR) {
                     delta = -delta;
                 }
             } else if !flag.contains(SimpleGlyphFlags::X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR) {
-                delta = cursor.read::<i16>()? as i32;
+                let hi = *bytes.next().ok_or(ReadError::OutOfBounds)?;
+                let lo = *bytes.next().ok_or(ReadError::OutOfBounds)?;
+                delta = i16::from_be_bytes([hi, lo]) as i32;
             }
             x = x.wrapping_add(delta);
             point.x = C::from_i32(x);
@@ -270,22 +297,18 @@ impl<'a> SimpleGlyph<'a> {
             let mut delta = 0i32;
             let flag = SimpleGlyphFlags::from_bits_truncate(point_flags.0);
             if flag.contains(SimpleGlyphFlags::Y_SHORT_VECTOR) {
-                delta = cursor.read::<u8>()? as i32;
+                delta = *bytes.next().ok_or(ReadError::OutOfBounds)? as i32;
                 if !flag.contains(SimpleGlyphFlags::Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR) {
                     delta = -delta;
                 }
             } else if !flag.contains(SimpleGlyphFlags::Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR) {
-                delta = cursor.read::<i16>()? as i32;
+                let hi = *bytes.next().ok_or(ReadError::OutOfBounds)?;
+                let lo = *bytes.next().ok_or(ReadError::OutOfBounds)?;
+                delta = i16::from_be_bytes([hi, lo]) as i32;
             }
             y = y.wrapping_add(delta);
             point.y = C::from_i32(y);
-            let flags_mask = if cfg!(feature = "spec_next") {
-                PointFlags::CURVE_MASK
-            } else {
-                // Drop the cubic bit if the spec_next feature is not enabled
-                PointFlags::ON_CURVE
-            };
-            point_flags.0 &= flags_mask;
+            point_flags.0 &= PointFlags::CURVE_MASK;
         }
         Ok(())
     }
@@ -318,7 +341,7 @@ impl<'a> SimpleGlyph<'a> {
     }
 }
 
-/// Point with an associated on-curve flag in a simple glyph.
+/// Point with associated on-curve and cubic flags in a simple glyph.
 ///
 /// This type is a simpler representation of the data in the blob.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -329,12 +352,19 @@ pub struct CurvePoint {
     pub y: i16,
     /// True if this is an on-curve point.
     pub on_curve: bool,
+    /// True if the CUBIC flag is set, including on on-curve points.
+    pub cubic: bool,
 }
 
 impl CurvePoint {
     /// Construct a new `CurvePoint`
     pub fn new(x: i16, y: i16, on_curve: bool) -> Self {
-        Self { x, y, on_curve }
+        Self {
+            x,
+            y,
+            on_curve,
+            cubic: false,
+        }
     }
 
     /// Convenience method to construct an on-curve point
@@ -346,6 +376,14 @@ impl CurvePoint {
     pub fn off_curve(x: i16, y: i16) -> Self {
         Self::new(x, y, false)
     }
+
+    /// Constructs a cubic off-curve control point.
+    pub fn off_curve_cubic(x: i16, y: i16) -> Self {
+        Self {
+            cubic: true,
+            ..Self::off_curve(x, y)
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -353,7 +391,7 @@ struct PointIter<'a> {
     flags: Cursor<'a>,
     x_coords: Cursor<'a>,
     y_coords: Cursor<'a>,
-    flag_repeats: u8,
+    flag_repeats: u16,
     cur_flags: SimpleGlyphFlags,
     cur_x: i16,
     cur_y: i16,
@@ -364,8 +402,12 @@ impl Iterator for PointIter<'_> {
     fn next(&mut self) -> Option<Self::Item> {
         self.advance_flags()?;
         self.advance_points();
-        let is_on_curve = self.cur_flags.contains(SimpleGlyphFlags::ON_CURVE_POINT);
-        Some(CurvePoint::new(self.cur_x, self.cur_y, is_on_curve))
+        Some(CurvePoint {
+            x: self.cur_x,
+            y: self.cur_y,
+            on_curve: self.cur_flags.contains(SimpleGlyphFlags::ON_CURVE_POINT),
+            cubic: self.cur_flags.contains(SimpleGlyphFlags::CUBIC),
+        })
     }
 }
 
@@ -388,9 +430,9 @@ impl<'a> PointIter<'a> {
             self.flag_repeats = self
                 .cur_flags
                 .contains(SimpleGlyphFlags::REPEAT_FLAG)
-                .then(|| self.flags.read().ok())
+                .then(|| self.flags.read::<u8>().ok())
                 .flatten()
-                .unwrap_or(0)
+                .unwrap_or(0) as u16
                 + 1;
         }
         self.flag_repeats -= 1;
@@ -528,7 +570,7 @@ pub struct Component {
     /// Component flags.
     pub flags: CompositeGlyphFlags,
     /// Glyph identifier.
-    pub glyph: GlyphId16,
+    pub glyph: GlyphId,
     /// Anchor for component placement.
     pub anchor: Anchor,
     /// Component transformation matrix.
@@ -556,7 +598,7 @@ impl<'a> CompositeGlyph<'a> {
     /// component in the composite glyph.
     pub fn component_glyphs_and_flags(
         &self,
-    ) -> impl Iterator<Item = (GlyphId16, CompositeGlyphFlags)> + 'a + Clone {
+    ) -> impl Iterator<Item = (GlyphId, CompositeGlyphFlags)> + 'a + Clone {
         ComponentGlyphIdFlagsIter {
             cur_flags: CompositeGlyphFlags::empty(),
             done: false,
@@ -573,13 +615,13 @@ impl<'a> CompositeGlyph<'a> {
             cursor: FontData::new(self.component_data()).cursor(),
         };
         let mut count = 0;
-        while iter.by_ref().next().is_some() {
+        let mut has_instructions = false;
+        for (_, flags) in iter.by_ref() {
             count += 1;
+            // ISO OFF permits this flag on any component; instructions follow the last.
+            has_instructions |= flags.contains(CompositeGlyphFlags::WE_HAVE_INSTRUCTIONS);
         }
-        let instructions = if iter
-            .cur_flags
-            .contains(CompositeGlyphFlags::WE_HAVE_INSTRUCTIONS)
-        {
+        let instructions = if has_instructions {
             iter.cursor
                 .read::<u16>()
                 .ok()
@@ -604,6 +646,14 @@ struct ComponentIter<'a> {
     cursor: Cursor<'a>,
 }
 
+fn read_component_glyph(cursor: &mut Cursor<'_>, flags: CompositeGlyphFlags) -> Option<GlyphId> {
+    if flags.contains(CompositeGlyphFlags::GID_IS_24_BIT) {
+        Some(GlyphId::new(cursor.read::<Uint24>().ok()?.to_u32()))
+    } else {
+        Some(cursor.read::<GlyphId16>().ok()?.into())
+    }
+}
+
 impl Iterator for ComponentIter<'_> {
     type Item = Component;
 
@@ -613,7 +663,7 @@ impl Iterator for ComponentIter<'_> {
         }
         let flags: CompositeGlyphFlags = self.cursor.read().ok()?;
         self.cur_flags = flags;
-        let glyph = self.cursor.read::<GlyphId16>().ok()?;
+        let glyph = read_component_glyph(&mut self.cursor, flags)?;
         let args_are_words = flags.contains(CompositeGlyphFlags::ARG_1_AND_2_ARE_WORDS);
         let args_are_xy_values = flags.contains(CompositeGlyphFlags::ARGS_ARE_XY_VALUES);
         let anchor = match (args_are_xy_values, args_are_words) {
@@ -670,7 +720,7 @@ struct ComponentGlyphIdFlagsIter<'a> {
 }
 
 impl Iterator for ComponentGlyphIdFlagsIter<'_> {
-    type Item = (GlyphId16, CompositeGlyphFlags);
+    type Item = (GlyphId, CompositeGlyphFlags);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.done {
@@ -678,7 +728,7 @@ impl Iterator for ComponentGlyphIdFlagsIter<'_> {
         }
         let flags: CompositeGlyphFlags = self.cursor.read().ok()?;
         self.cur_flags = flags;
-        let glyph = self.cursor.read::<GlyphId16>().ok()?;
+        let glyph = read_component_glyph(&mut self.cursor, flags)?;
         let args_are_words = flags.contains(CompositeGlyphFlags::ARG_1_AND_2_ARE_WORDS);
         if args_are_words {
             self.cursor.advance_by(4);
@@ -694,29 +744,6 @@ impl Iterator for ComponentGlyphIdFlagsIter<'_> {
         }
         self.done = !flags.contains(CompositeGlyphFlags::MORE_COMPONENTS);
         Some((glyph, flags))
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Component {
-    fn type_name(&self) -> &str {
-        "Component"
-    }
-
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0 => Some(Field::new("flags", self.flags.bits())),
-            1 => Some(Field::new("glyph", self.glyph)),
-            2 => match self.anchor {
-                Anchor::Point { base, .. } => Some(Field::new("base", base)),
-                Anchor::Offset { x, .. } => Some(Field::new("x", x)),
-            },
-            3 => match self.anchor {
-                Anchor::Point { component, .. } => Some(Field::new("component", component)),
-                Anchor::Offset { y, .. } => Some(Field::new("y", y)),
-            },
-            _ => None,
-        }
     }
 }
 
@@ -859,7 +886,10 @@ mod tests {
         let font = FontRef::new(font_test_data::COLR_GRADIENT_RECT).unwrap();
         let loca = font.loca(None).unwrap();
         let glyf = font.glyf().unwrap();
-        let glyph = loca.get_glyf(GlyphId::new(0), &glyf).unwrap().unwrap();
+        let glyph = loca
+            .get(GlyphId::new(0), &glyf)
+            .and_then(|g| g.into_glyph())
+            .unwrap();
         assert_eq!(glyph.number_of_contours(), 2);
         let simple_glyph = if let Glyph::Simple(simple) = glyph {
             simple
@@ -898,7 +928,10 @@ mod tests {
         let loca = font.loca(None).unwrap();
         let glyf = font.glyf().unwrap();
         let glyph_count = font.maxp().unwrap().num_glyphs() as u32;
-        (0..glyph_count).map(move |gid| loca.get_glyf(GlyphId::new(gid), &glyf).unwrap())
+        (0..glyph_count).map(move |gid| {
+            loca.get(GlyphId::new(gid), &glyf)
+                .and_then(|g| g.into_glyph())
+        })
     }
 
     #[test]
@@ -940,6 +973,53 @@ mod tests {
             expected_gids_components_with_overlap,
             gids_components_with_overlap
         );
+    }
+
+    #[test]
+    fn composite_instructions_flag_on_any_component() {
+        use font_test_data::bebuffer::BeBuffer;
+
+        let instructions = [0x40_u8, 0x01, 0x2A];
+        for wide_first in [false, true] {
+            for (first_flag, last_flag) in
+                [(true, false), (false, true), (true, true), (false, false)]
+            {
+                let mut first_flags =
+                    CompositeGlyphFlags::ARGS_ARE_XY_VALUES | CompositeGlyphFlags::MORE_COMPONENTS;
+                let mut last_flags = CompositeGlyphFlags::ARGS_ARE_XY_VALUES;
+                if wide_first {
+                    first_flags |= CompositeGlyphFlags::GID_IS_24_BIT;
+                }
+                if first_flag {
+                    first_flags |= CompositeGlyphFlags::WE_HAVE_INSTRUCTIONS;
+                }
+                if last_flag {
+                    last_flags |= CompositeGlyphFlags::WE_HAVE_INSTRUCTIONS;
+                }
+                let mut buf = BeBuffer::new()
+                    .push(-1_i16)
+                    .extend([0_i16; 4])
+                    .push(first_flags.bits());
+                buf = if wide_first {
+                    buf.push(Uint24::new(65536))
+                } else {
+                    buf.push(1_u16)
+                };
+                buf = buf
+                    .extend([0_i8; 2])
+                    .push(last_flags.bits())
+                    .push(2_u16)
+                    .extend([0_i8; 2]);
+                let expected = (first_flag || last_flag).then_some(instructions.as_slice());
+                if expected.is_some() {
+                    buf = buf.push(instructions.len() as u16).extend(instructions);
+                }
+                let glyph = CompositeGlyph::read(buf.data().into()).unwrap();
+                assert_eq!(glyph.components().count(), 2);
+                assert_eq!(glyph.count_and_instructions(), (2, expected));
+                assert_eq!(glyph.instructions(), expected);
+            }
+        }
     }
 
     #[test]
@@ -1028,7 +1108,10 @@ mod tests {
         let font = FontRef::new(font_test_data::CUBIC_GLYF).unwrap();
         let loca = font.loca(None).unwrap();
         let glyf = font.glyf().unwrap();
-        let glyph = loca.get_glyf(GlyphId::new(2), &glyf).unwrap().unwrap();
+        let glyph = loca
+            .get(GlyphId::new(2), &glyf)
+            .and_then(|g| g.into_glyph())
+            .unwrap();
         assert_eq!(glyph.number_of_contours(), 1);
         let simple_glyph = if let Glyph::Simple(simple) = glyph {
             simple
@@ -1125,5 +1208,30 @@ mod tests {
         let actual: Vec<_> = points.iter().map(|p| (p.x, p.y)).collect();
 
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn point_iter_repeat_count_255_does_not_overflow() {
+        // repeat byte 0xFF means the same flag applies to 256 points total
+        let flags = [SimpleGlyphFlags::REPEAT_FLAG.bits(), 0xFF];
+        // 256 coords of 2 bytes each
+        let coords = [0u8; 256 * 2];
+        let iter = PointIter::new(&flags, &coords, &coords);
+        assert_eq!(iter.count(), 256);
+    }
+
+    #[test]
+    fn read_points_fast_does_not_panic_on_empty_glyph_with_padding() {
+        let glyph_bytes: &[u8] = &[
+            0x00, 0x00, // numberOfContours = 0
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // bbox
+            0x00, 0x00, // instructionLength = 0
+            0x00, // trailing pad byte
+        ];
+        let glyph = SimpleGlyph::read(FontData::new(glyph_bytes)).expect("parses");
+        assert_eq!(glyph.num_points(), 0);
+        let mut points: Vec<Point<f32>> = vec![];
+        let mut flags: Vec<PointFlags> = vec![];
+        assert!(glyph.read_points_fast(&mut points, &mut flags).is_ok());
     }
 }

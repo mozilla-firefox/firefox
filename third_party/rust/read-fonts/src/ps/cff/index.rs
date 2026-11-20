@@ -3,7 +3,7 @@
 //! See <https://learn.microsoft.com/en-us/typography/opentype/spec/cff2#5-index-data>
 
 use crate::codegen_prelude::*;
-use crate::ps::error::Error;
+use crate::model::Error;
 
 #[doc(inline)]
 pub use super::{v1::Index as Index1, v2::Index as Index2};
@@ -60,27 +60,27 @@ impl<'a> Index<'a> {
     }
 
     /// Returns the total size in bytes of the index table.
-    pub fn size_in_bytes(&self) -> Result<usize, ReadError> {
+    pub fn size_in_bytes(&self) -> Option<usize> {
         match self {
-            Self::Empty => Ok(0),
+            Self::Empty => Some(0),
             Self::Format1(ix) => ix.size_in_bytes(),
             Self::Format2(ix) => ix.size_in_bytes(),
         }
     }
 
     /// Returns the offset at the given index.
-    pub fn get_offset(&self, index: usize) -> Result<usize, Error> {
+    pub fn get_offset(&self, index: usize) -> Option<usize> {
         match self {
-            Self::Empty => Err(ReadError::OutOfBounds.into()),
+            Self::Empty => None,
             Self::Format1(ix) => ix.get_offset(index),
             Self::Format2(ix) => ix.get_offset(index),
         }
     }
 
     /// Returns the data for the object at the given index.
-    pub fn get(&self, index: usize) -> Result<&'a [u8], Error> {
+    pub fn get(&self, index: usize) -> Option<&'a [u8]> {
         match self {
-            Self::Empty => Err(ReadError::OutOfBounds.into()),
+            Self::Empty => None,
             Self::Format1(ix) => ix.get(index),
             Self::Format2(ix) => ix.get(index),
         }
@@ -115,24 +115,20 @@ impl Default for Index<'_> {
 
 impl<'a> Index1<'a> {
     /// Returns the total size in bytes of the index table.
-    pub fn size_in_bytes(&self) -> Result<usize, ReadError> {
+    pub fn size_in_bytes(&self) -> Option<usize> {
         // 2 byte count + 1 byte off_size
         const HEADER_SIZE: usize = 3;
         // An empty CFF index contains only a 2 byte count field
         const EMPTY_SIZE: usize = 2;
         let count = self.count() as usize;
-        Ok(match count {
+        Some(match count {
             0 => EMPTY_SIZE,
-            _ => {
-                HEADER_SIZE
-                    + self.offsets().len()
-                    + self.get_offset(count).map_err(|_| ReadError::OutOfBounds)?
-            }
+            _ => HEADER_SIZE + self.offsets().len() + self.get_offset(count)?,
         })
     }
 
     /// Returns the offset of the object at the given index.
-    pub fn get_offset(&self, index: usize) -> Result<usize, Error> {
+    pub fn get_offset(&self, index: usize) -> Option<usize> {
         read_offset(
             index,
             self.count() as usize,
@@ -142,33 +138,28 @@ impl<'a> Index1<'a> {
     }
 
     /// Returns the data for the object at the given index.
-    pub fn get(&self, index: usize) -> Result<&'a [u8], Error> {
+    pub fn get(&self, index: usize) -> Option<&'a [u8]> {
         self.data()
             .get(self.get_offset(index)?..self.get_offset(index + 1)?)
-            .ok_or(ReadError::OutOfBounds.into())
     }
 }
 
 impl<'a> Index2<'a> {
     /// Returns the total size in bytes of the index table.
-    pub fn size_in_bytes(&self) -> Result<usize, ReadError> {
+    pub fn size_in_bytes(&self) -> Option<usize> {
         // 4 byte count + 1 byte off_size
         const HEADER_SIZE: usize = 5;
         // An empty CFF2 index contains only a 4 byte count field
         const EMPTY_SIZE: usize = 4;
         let count = self.count() as usize;
-        Ok(match count {
+        Some(match count {
             0 => EMPTY_SIZE,
-            _ => {
-                HEADER_SIZE
-                    + self.offsets().len()
-                    + self.get_offset(count).map_err(|_| ReadError::OutOfBounds)?
-            }
+            _ => HEADER_SIZE + self.offsets().len() + self.get_offset(count)?,
         })
     }
 
     /// Returns the offset of the object at the given index.
-    pub fn get_offset(&self, index: usize) -> Result<usize, Error> {
+    pub fn get_offset(&self, index: usize) -> Option<usize> {
         read_offset(
             index,
             self.count() as usize,
@@ -178,20 +169,14 @@ impl<'a> Index2<'a> {
     }
 
     /// Returns the data for the object at the given index.
-    pub fn get(&self, index: usize) -> Result<&'a [u8], Error> {
+    pub fn get(&self, index: usize) -> Option<&'a [u8]> {
         self.data()
             .get(self.get_offset(index)?..self.get_offset(index + 1)?)
-            .ok_or(ReadError::OutOfBounds.into())
     }
 }
 
 /// Reads an offset which is encoded as a variable sized integer.
-fn read_offset(
-    index: usize,
-    count: usize,
-    offset_size: u8,
-    offset_data: &[u8],
-) -> Result<usize, Error> {
+fn read_offset(index: usize, count: usize, offset_size: u8, offset_data: &[u8]) -> Option<usize> {
     // There are actually count + 1 entries in the offset array.
     //
     // "Offsets in the offset array are relative to the byte that precedes
@@ -202,20 +187,21 @@ fn read_offset(
     //
     // See <https://learn.microsoft.com/en-us/typography/opentype/spec/cff2#table-7-index-format>
     if index > count {
-        Err(ReadError::OutOfBounds)?;
+        return None;
     }
     let data_offset = index * offset_size as usize;
     let offset_data = FontData::new(offset_data);
     match offset_size {
-        1 => offset_data.read_at::<u8>(data_offset)? as usize,
-        2 => offset_data.read_at::<u16>(data_offset)? as usize,
-        3 => offset_data.read_at::<Uint24>(data_offset)?.to_u32() as usize,
-        4 => offset_data.read_at::<u32>(data_offset)? as usize,
-        _ => return Err(Error::InvalidIndexOffsetSize(offset_size)),
+        1 => offset_data.read_at::<u8>(data_offset).ok()? as usize,
+        2 => offset_data.read_at::<u16>(data_offset).ok()? as usize,
+        3 => offset_data.read_at::<Uint24>(data_offset).ok()?.to_u32() as usize,
+        4 => offset_data.read_at::<u32>(data_offset).ok()? as usize,
+        // the spec allows only 1 through 4
+        _ => return None,
     }
-    // As above, subtract one to get the actual offset.
+    // As above, subtract one to get the actual offset. A zero is malformed:
+    // the spec says the first entry is always 1.
     .checked_sub(1)
-    .ok_or(Error::ZeroOffsetInIndex)
 }
 
 #[cfg(test)]

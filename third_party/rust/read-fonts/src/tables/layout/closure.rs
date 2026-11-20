@@ -1,26 +1,28 @@
 //! Support Layout Closure
 
-use types::{BigEndian, GlyphId16, Offset16};
+use types::{BigEndian, Compatible, GlyphId16, GlyphId24, Offset16};
 
 use super::{
-    ArrayOfOffsets, ChainedClassSequenceRule, ChainedClassSequenceRuleSet, ChainedSequenceContext,
-    ChainedSequenceContextFormat1, ChainedSequenceContextFormat2, ChainedSequenceContextFormat3,
-    ChainedSequenceRule, ChainedSequenceRuleSet, ClassDef, ClassDefFormat1, ClassDefFormat2,
-    ClassSequenceRule, ClassSequenceRuleSet, CoverageTable, ExtensionLookup, Feature, FeatureList,
-    FeatureVariations, FontRead, GlyphId, LangSys, ReadError, Script, ScriptList, SequenceContext,
-    SequenceContextFormat1, SequenceContextFormat2, SequenceContextFormat3, SequenceLookupRecord,
-    SequenceRule, SequenceRuleSet, Subtables, Tag,
+    ArrayOfOffsets, ChainedClassSequenceRule, ChainedClassSequenceRuleSet,
+    ChainedClassSequenceRuleSet2, ChainedSequenceContext, ChainedSequenceContextFormat1,
+    ChainedSequenceContextFormat2, ChainedSequenceContextFormat3, ChainedSequenceContextFormat4,
+    ChainedSequenceContextFormat5, ChainedSequenceRule, ChainedSequenceRule2,
+    ChainedSequenceRuleSet, ChainedSequenceRuleSet2, ClassDef, ClassDefFormat1, ClassDefFormat2,
+    ClassSequenceRule, ClassSequenceRuleSet, ClassSequenceRuleSet2, CoverageTable, ExtensionLookup,
+    Feature, FeatureList, FeatureVariations, GlyphId, LangSys, ReadError, Script, ScriptList,
+    SequenceContext, SequenceContextFormat1, SequenceContextFormat2, SequenceContextFormat3,
+    SequenceContextFormat4, SequenceContextFormat5, SequenceContextFormat6, SequenceLookupRecord,
+    SequenceRule, SequenceRule2, SequenceRuleSet, SequenceRuleSet2, Subtables, Tag,
 };
 use crate::{
-    collections::IntSet,
+    collections::{FastHashMap, IntSet},
     tables::{gpos::PositionLookupList, gsub::SubstitutionLookupList},
+    FontRead, MinByteRange,
 };
 
-const MAX_SCRIPTS: u16 = 500;
-const MAX_LANGSYS: u16 = 2000;
-const MAX_FEATURE_INDICES: u16 = 1500;
-pub(crate) const MAX_NESTING_LEVEL: u8 = 64;
-pub(crate) const MAX_LOOKUP_VISIT_COUNT: u16 = 35000;
+use crate::limits::{
+    MAX_FEATURE_INDICES, MAX_LANGSYS, MAX_LOOKUP_VISIT_COUNT, MAX_RECURSION_DEPTH, MAX_SCRIPTS,
+};
 
 struct CollectFeaturesContext<'a> {
     script_count: u16,
@@ -260,6 +262,11 @@ impl FeatureVariations<'_> {
         feature_indices: &IntSet<u16>,
     ) -> Result<IntSet<u16>, ReadError> {
         let mut out = IntSet::empty();
+        if u64::from(self.feature_variation_record_count()) * 8
+            > self.offset_data().len().saturating_sub(8) as u64
+        {
+            return Err(ReadError::OutOfBounds);
+        }
 
         for variation_rec in self.feature_variation_records() {
             let Some(subs) = variation_rec
@@ -281,6 +288,36 @@ impl FeatureVariations<'_> {
                 out.extend_unsorted(sub_f.lookup_list_indices().iter().map(|i| i.get()));
             }
         }
+        if self.version().compatible((1, 1)) {
+            let records = self
+                .lookup_variation_records()
+                .ok_or(ReadError::OutOfBounds)?;
+            for record in records
+                .iter()
+                .filter(|rec| feature_indices.contains(rec.feature_index()))
+            {
+                if record.feature_lookups_offset().is_null() {
+                    continue;
+                }
+                let lookups = record.feature_lookups(self.offset_data())?;
+                if u64::from(lookups.lookup_condition_count()) * 8
+                    > lookups.offset_data().len().saturating_sub(10) as u64
+                {
+                    return Err(ReadError::OutOfBounds);
+                }
+                for record in lookups.lookup_condition_records() {
+                    if record.lookup_index_list_offset().is_null() {
+                        continue;
+                    }
+                    let indices = record.lookup_index_list(lookups.offset_data())?;
+                    if indices.min_table_bytes().is_empty() {
+                        return Err(ReadError::OutOfBounds);
+                    }
+                    // Closure includes every design-space branch; do not evaluate conditions.
+                    out.extend_unsorted(indices.lookup_indices().iter().map(|i| i.get()));
+                }
+            }
+        }
         Ok(out)
     }
 }
@@ -295,7 +332,7 @@ pub(crate) struct LookupClosureCtx<'a> {
     inactive_lookups: IntSet<u16>,
     glyph_set: &'a IntSet<GlyphId>,
     lookup_count: u16,
-    nesting_level_left: u8,
+    nesting_level_left: usize,
     lookup_list: &'a LayoutLookupList<'a>,
 }
 
@@ -306,7 +343,7 @@ impl<'a> LookupClosureCtx<'a> {
             inactive_lookups: IntSet::empty(),
             glyph_set,
             lookup_count: 0,
-            nesting_level_left: MAX_NESTING_LEVEL,
+            nesting_level_left: MAX_RECURSION_DEPTH,
             lookup_list,
         }
     }
@@ -386,27 +423,30 @@ impl Intersect for ClassDef<'_> {
         match self {
             ClassDef::Format1(table) => table.intersects(glyph_set),
             ClassDef::Format2(table) => table.intersects(glyph_set),
+            _ => Ok(self
+                .intersect_classes(glyph_set)
+                .iter()
+                .any(|class| class != 0)),
         }
     }
 }
 
 impl Intersect for ClassDefFormat1<'_> {
     fn intersects(&self, glyph_set: &IntSet<GlyphId>) -> Result<bool, ReadError> {
-        let glyph_count = self.glyph_count();
-        if glyph_count == 0 {
+        let class_values = self.class_value_array();
+        if class_values.is_empty() {
             return Ok(false);
         }
 
         let start = self.start_glyph_id().to_u32();
-        let end = start + glyph_count as u32;
+        let end = start + self.glyph_count() as u32;
 
         let mut start_glyph = GlyphId::from(start);
-        let class_values = self.class_value_array();
         if glyph_set.contains(start_glyph) && class_values[0] != 0 {
             return Ok(true);
         }
 
-        while let Some(g) = glyph_set.iter_after(start_glyph).next() {
+        while let Some(g) = glyph_set.next_after(start_glyph) {
             let g = g.to_u32();
             if g >= end {
                 break;
@@ -428,7 +468,7 @@ impl Intersect for ClassDefFormat2<'_> {
         let num_ranges = self.class_range_count();
         let num_bits = 16 - num_ranges.leading_zeros();
         if num_ranges as u64 > glyph_set.len() * num_bits as u64 {
-            for g in glyph_set.iter().map(|g| GlyphId16::from(g.to_u32() as u16)) {
+            for g in glyph_set.iter() {
                 if self.get(g) != 0 {
                     return Ok(true);
                 }
@@ -448,15 +488,34 @@ impl Intersect for ClassDefFormat2<'_> {
 
 impl<'a, T, Ext> LookupClosure for Subtables<'a, T, Ext>
 where
-    T: LookupClosure + Intersect + FontRead<'a> + 'a,
+    T: LookupClosure + Intersect + FontRead<'a, Args = ()> + 'a,
     Ext: ExtensionLookup<'a, T> + 'a,
 {
-    fn closure_lookups(&self, c: &mut LookupClosureCtx, arg: u16) -> Result<(), ReadError> {
+    /// Runs lookup closure on the subtables that intersect the glyph set, and
+    /// marks the lookup at `lookup_index` inactive if none of them do.
+    ///
+    /// This checks each subtable only once, instead of running a separate
+    /// `intersects` pass over the lookup first. A subtable that doesn't
+    /// intersect the glyph set recurses into no lookups, so skipping it
+    /// changes nothing.
+    fn closure_lookups(
+        &self,
+        c: &mut LookupClosureCtx,
+        lookup_index: u16,
+    ) -> Result<(), ReadError> {
+        let mut intersects = false;
         for t in self.iter().filter_map(|table| match table {
             Err(ReadError::NullOffset) => None,
             other => Some(other),
         }) {
-            t?.closure_lookups(c, arg)?;
+            let t = t?;
+            if t.intersects(c.glyphs())? {
+                intersects = true;
+                t.closure_lookups(c, lookup_index)?;
+            }
+        }
+        if !intersects {
+            c.set_lookup_inactive(lookup_index);
         }
         Ok(())
     }
@@ -464,7 +523,7 @@ where
 
 impl<'a, T> Intersect for ArrayOfOffsets<'a, T, Offset16>
 where
-    T: Intersect + FontRead<'a>,
+    T: Intersect + FontRead<'a, Args = ()> + 'a,
 {
     fn intersects(&self, glyph_set: &IntSet<GlyphId>) -> Result<bool, ReadError> {
         for t in self.iter().filter_map(|table| match table {
@@ -484,19 +543,25 @@ where
 pub(crate) enum ContextFormat1<'a> {
     Plain(SequenceContextFormat1<'a>),
     Chain(ChainedSequenceContextFormat1<'a>),
+    PlainWide(SequenceContextFormat4<'a>),
+    ChainWide(ChainedSequenceContextFormat4<'a>),
 }
 
 pub(crate) enum Format1RuleSet<'a> {
     Plain(SequenceRuleSet<'a>),
     Chain(ChainedSequenceRuleSet<'a>),
+    PlainWide(SequenceRuleSet2<'a>),
+    ChainWide(ChainedSequenceRuleSet2<'a>),
 }
 
 pub(crate) enum Format1Rule<'a> {
     Plain(SequenceRule<'a>),
     Chain(ChainedSequenceRule<'a>),
+    PlainWide(SequenceRule2<'a>),
+    ChainWide(ChainedSequenceRule2<'a>),
 }
 
-impl ContextFormat1<'_> {
+impl<'a> ContextFormat1<'a> {
     pub(crate) fn coverage(&self) -> Option<Result<CoverageTable<'_>, ReadError>> {
         match self {
             ContextFormat1::Plain(table) if !table.coverage_offset().is_null() => {
@@ -505,72 +570,90 @@ impl ContextFormat1<'_> {
             ContextFormat1::Chain(table) if !table.coverage_offset().is_null() => {
                 Some(table.coverage())
             }
+            ContextFormat1::PlainWide(table) if !table.coverage_offset().is_null() => {
+                Some(table.coverage())
+            }
+            ContextFormat1::ChainWide(table) if !table.coverage_offset().is_null() => {
+                Some(table.coverage())
+            }
             _ => None,
         }
     }
 
     pub(crate) fn rule_sets(
         &self,
-    ) -> impl Iterator<Item = Option<Result<Format1RuleSet<'_>, ReadError>>> {
-        let (left, right) = match self {
-            ContextFormat1::Plain(table) => (
-                Some(
-                    table
-                        .seq_rule_sets()
-                        .iter()
-                        .map(|rs| rs.map(|rs| rs.map(Format1RuleSet::Plain))),
-                ),
-                None,
-            ),
-            ContextFormat1::Chain(table) => (
-                None,
-                Some(
-                    table
-                        .chained_seq_rule_sets()
-                        .iter()
-                        .map(|rs| rs.map(|rs| rs.map(Format1RuleSet::Chain))),
-                ),
-            ),
+    ) -> impl Iterator<Item = Option<Result<Format1RuleSet<'a>, ReadError>>> + '_ {
+        let count = match self {
+            Self::Plain(table) => table.seq_rule_sets().len(),
+            Self::Chain(table) => table.chained_seq_rule_sets().len(),
+            Self::PlainWide(table) => table.seq_rule_sets().len(),
+            Self::ChainWide(table) => table.chained_seq_rule_sets().len(),
         };
-        left.into_iter()
-            .flatten()
-            .chain(right.into_iter().flatten())
+        (0..count).map(move |index| match self {
+            Self::Plain(table) => table
+                .seq_rule_sets()
+                .get(index)
+                .map(|rs| rs.map(Format1RuleSet::Plain)),
+            Self::Chain(table) => table
+                .chained_seq_rule_sets()
+                .get(index)
+                .map(|rs| rs.map(Format1RuleSet::Chain)),
+            Self::PlainWide(table) => table
+                .seq_rule_sets()
+                .get(index)
+                .map(|rs| rs.map(Format1RuleSet::PlainWide)),
+            Self::ChainWide(table) => table
+                .chained_seq_rule_sets()
+                .get(index)
+                .map(|rs| rs.map(Format1RuleSet::ChainWide)),
+        })
     }
 }
 
-impl Format1RuleSet<'_> {
-    pub(crate) fn rules(&self) -> impl Iterator<Item = Option<Result<Format1Rule<'_>, ReadError>>> {
-        let (left, right) = match self {
-            Self::Plain(table) => (
-                Some(
-                    table
-                        .seq_rules()
-                        .iter_as_nullable()
-                        .map(|rule| rule.map(|r| r.map(Format1Rule::Plain))),
-                ),
-                None,
-            ),
-            Self::Chain(table) => (
-                None,
-                Some(
-                    table
-                        .chained_seq_rules()
-                        .iter_as_nullable()
-                        .map(|rule| rule.map(|r| r.map(Format1Rule::Chain))),
-                ),
-            ),
+impl<'a> Format1RuleSet<'a> {
+    pub(crate) fn rules(
+        &self,
+    ) -> impl Iterator<Item = Option<Result<Format1Rule<'a>, ReadError>>> + '_ {
+        let count = match self {
+            Self::Plain(table) => table.seq_rules().len(),
+            Self::Chain(table) => table.chained_seq_rules().len(),
+            Self::PlainWide(table) => table.seq_rules().len(),
+            Self::ChainWide(table) => table.chained_seq_rules().len(),
         };
-        left.into_iter()
-            .flatten()
-            .chain(right.into_iter().flatten())
+        (0..count).map(move |index| {
+            let rule = match self {
+                Self::Plain(table) => table.seq_rules().get(index).map(Format1Rule::Plain),
+                Self::Chain(table) => table.chained_seq_rules().get(index).map(Format1Rule::Chain),
+                Self::PlainWide(table) => table.seq_rules().get(index).map(Format1Rule::PlainWide),
+                Self::ChainWide(table) => table
+                    .chained_seq_rules()
+                    .get(index)
+                    .map(Format1Rule::ChainWide),
+            };
+            match rule {
+                Err(ReadError::NullOffset) => None,
+                other => Some(other),
+            }
+        })
     }
 }
 
 impl Format1Rule<'_> {
-    pub(crate) fn input_sequence(&self) -> &[BigEndian<GlyphId16>] {
+    pub(crate) fn input_count(&self) -> usize {
         match self {
-            Self::Plain(table) => table.input_sequence(),
-            Self::Chain(table) => table.input_sequence(),
+            Self::Plain(table) => table.input_sequence().len() + 1,
+            Self::Chain(table) => table.input_sequence().len() + 1,
+            Self::PlainWide(table) => table.input_sequence().len() + 1,
+            Self::ChainWide(table) => table.input_sequence().len() + 1,
+        }
+    }
+
+    pub(crate) fn input_glyph(&self, index: usize) -> Option<GlyphId> {
+        match self {
+            Self::Plain(table) => table.input_sequence().get(index).map(|g| g.get().into()),
+            Self::Chain(table) => table.input_sequence().get(index).map(|g| g.get().into()),
+            Self::PlainWide(table) => table.input_sequence().get(index).map(|g| g.get().into()),
+            Self::ChainWide(table) => table.input_sequence().get(index).map(|g| g.get().into()),
         }
     }
 
@@ -578,6 +661,8 @@ impl Format1Rule<'_> {
         match self {
             Self::Plain(table) => table.seq_lookup_records(),
             Self::Chain(table) => table.seq_lookup_records(),
+            Self::PlainWide(table) => table.seq_lookup_records(),
+            Self::ChainWide(table) => table.seq_lookup_records(),
         }
     }
 }
@@ -590,11 +675,23 @@ impl Intersect for &[BigEndian<GlyphId16>] {
     }
 }
 
+impl Intersect for &[BigEndian<GlyphId24>] {
+    fn intersects(&self, glyph_set: &IntSet<GlyphId>) -> Result<bool, ReadError> {
+        Ok(self
+            .iter()
+            .all(|g| glyph_set.contains(GlyphId::from(g.get()))))
+    }
+}
+
 impl Intersect for Format1Rule<'_> {
     fn intersects(&self, glyph_set: &IntSet<GlyphId>) -> Result<bool, ReadError> {
         match self {
             Self::Plain(table) => table.input_sequence().intersects(glyph_set),
             Self::Chain(table) => Ok(table.backtrack_sequence().intersects(glyph_set)?
+                && table.input_sequence().intersects(glyph_set)?
+                && table.lookahead_sequence().intersects(glyph_set)?),
+            Self::PlainWide(table) => table.input_sequence().intersects(glyph_set),
+            Self::ChainWide(table) => Ok(table.backtrack_sequence().intersects(glyph_set)?
                 && table.input_sequence().intersects(glyph_set)?
                 && table.lookahead_sequence().intersects(glyph_set)?),
         }
@@ -618,11 +715,15 @@ impl LookupClosure for Format1Rule<'_> {
 pub(crate) enum ContextFormat2<'a> {
     Plain(SequenceContextFormat2<'a>),
     Chain(ChainedSequenceContextFormat2<'a>),
+    PlainWide(SequenceContextFormat5<'a>),
+    ChainWide(ChainedSequenceContextFormat5<'a>),
 }
 
 pub(crate) enum Format2RuleSet<'a> {
     Plain(ClassSequenceRuleSet<'a>),
     Chain(ChainedClassSequenceRuleSet<'a>),
+    PlainWide(ClassSequenceRuleSet2<'a>),
+    ChainWide(ChainedClassSequenceRuleSet2<'a>),
 }
 
 pub(crate) enum Format2Rule<'a> {
@@ -630,7 +731,14 @@ pub(crate) enum Format2Rule<'a> {
     Chain(ChainedClassSequenceRule<'a>),
 }
 
-impl ContextFormat2<'_> {
+#[derive(Default)]
+pub(crate) struct SeqCache {
+    input: FastHashMap<u16, bool>,
+    backtrack: FastHashMap<u16, bool>,
+    lookahead: FastHashMap<u16, bool>,
+}
+
+impl<'a> ContextFormat2<'a> {
     pub(crate) fn coverage(&self) -> Option<Result<CoverageTable<'_>, ReadError>> {
         match self {
             ContextFormat2::Plain(table) if !table.coverage_offset().is_null() => {
@@ -639,6 +747,8 @@ impl ContextFormat2<'_> {
             ContextFormat2::Chain(table) if !table.coverage_offset().is_null() => {
                 Some(table.coverage())
             }
+            Self::PlainWide(table) if !table.coverage_offset().is_null() => Some(table.coverage()),
+            Self::ChainWide(table) if !table.coverage_offset().is_null() => Some(table.coverage()),
             _ => None,
         }
     }
@@ -651,64 +761,100 @@ impl ContextFormat2<'_> {
             ContextFormat2::Chain(table_ref) if !table_ref.input_class_def_offset().is_null() => {
                 Some(table_ref.input_class_def())
             }
+            Self::PlainWide(table) if !table.class_def_offset().is_null() => {
+                Some(table.class_def())
+            }
+            Self::ChainWide(table) if !table.input_class_def_offset().is_null() => {
+                Some(table.input_class_def())
+            }
+            _ => None,
+        }
+    }
+
+    pub(crate) fn backtrack_class_def(&self) -> Option<Result<ClassDef<'_>, ReadError>> {
+        match self {
+            Self::Chain(table) if !table.backtrack_class_def_offset().is_null() => {
+                Some(table.backtrack_class_def())
+            }
+            Self::ChainWide(table) if !table.backtrack_class_def_offset().is_null() => {
+                Some(table.backtrack_class_def())
+            }
+            _ => None,
+        }
+    }
+
+    pub(crate) fn lookahead_class_def(&self) -> Option<Result<ClassDef<'_>, ReadError>> {
+        match self {
+            Self::Chain(table) if !table.lookahead_class_def_offset().is_null() => {
+                Some(table.lookahead_class_def())
+            }
+            Self::ChainWide(table) if !table.lookahead_class_def_offset().is_null() => {
+                Some(table.lookahead_class_def())
+            }
             _ => None,
         }
     }
 
     pub(crate) fn rule_sets(
         &self,
-    ) -> impl Iterator<Item = Option<Result<Format2RuleSet<'_>, ReadError>>> {
-        let (left, right) = match self {
-            ContextFormat2::Plain(table) => (
-                Some(
-                    table
-                        .class_seq_rule_sets()
-                        .iter()
-                        .map(|rs| rs.map(|rs| rs.map(Format2RuleSet::Plain))),
-                ),
-                None,
-            ),
-            ContextFormat2::Chain(table) => (
-                None,
-                Some(
-                    table
-                        .chained_class_seq_rule_sets()
-                        .iter()
-                        .map(|rs| rs.map(|rs| rs.map(Format2RuleSet::Chain))),
-                ),
-            ),
+    ) -> impl Iterator<Item = Option<Result<Format2RuleSet<'a>, ReadError>>> + '_ {
+        let count = match self {
+            Self::Plain(table) => table.class_seq_rule_sets().len(),
+            Self::Chain(table) => table.chained_class_seq_rule_sets().len(),
+            Self::PlainWide(table) => table.class_seq_rule_sets().len(),
+            Self::ChainWide(table) => table.chained_class_seq_rule_sets().len(),
         };
-        left.into_iter()
-            .flatten()
-            .chain(right.into_iter().flatten())
+        (0..count).map(move |index| match self {
+            Self::Plain(table) => table
+                .class_seq_rule_sets()
+                .get(index)
+                .map(|rs| rs.map(Format2RuleSet::Plain)),
+            Self::Chain(table) => table
+                .chained_class_seq_rule_sets()
+                .get(index)
+                .map(|rs| rs.map(Format2RuleSet::Chain)),
+            Self::PlainWide(table) => table
+                .class_seq_rule_sets()
+                .get(index)
+                .map(|rs| rs.map(Format2RuleSet::PlainWide)),
+            Self::ChainWide(table) => table
+                .chained_class_seq_rule_sets()
+                .get(index)
+                .map(|rs| rs.map(Format2RuleSet::ChainWide)),
+        })
     }
 }
 
-impl Format2RuleSet<'_> {
-    pub(crate) fn rules(&self) -> impl Iterator<Item = Option<Result<Format2Rule<'_>, ReadError>>> {
-        let (left, right) = match self {
-            Format2RuleSet::Plain(table) => (
-                Some(
-                    table
-                        .class_seq_rules()
-                        .iter_as_nullable()
-                        .map(|rule| rule.map(|r| r.map(Format2Rule::Plain))),
-                ),
-                None,
-            ),
-            Format2RuleSet::Chain(table) => (
-                None,
-                Some(
-                    table
-                        .chained_class_seq_rules()
-                        .iter_as_nullable()
-                        .map(|rule| rule.map(|r| r.map(Format2Rule::Chain))),
-                ),
-            ),
+impl<'a> Format2RuleSet<'a> {
+    pub(crate) fn rules(
+        &self,
+    ) -> impl Iterator<Item = Option<Result<Format2Rule<'a>, ReadError>>> + '_ {
+        let count = match self {
+            Self::Plain(table) => table.class_seq_rules().len(),
+            Self::Chain(table) => table.chained_class_seq_rules().len(),
+            Self::PlainWide(table) => table.class_seq_rules().len(),
+            Self::ChainWide(table) => table.chained_class_seq_rules().len(),
         };
-        left.into_iter()
-            .flatten()
-            .chain(right.into_iter().flatten())
+        (0..count).map(move |index| {
+            let rule = match self {
+                Self::Plain(table) => table.class_seq_rules().get(index).map(Format2Rule::Plain),
+                Self::Chain(table) => table
+                    .chained_class_seq_rules()
+                    .get(index)
+                    .map(Format2Rule::Chain),
+                Self::PlainWide(table) => {
+                    table.class_seq_rules().get(index).map(Format2Rule::Plain)
+                }
+                Self::ChainWide(table) => table
+                    .chained_class_seq_rules()
+                    .get(index)
+                    .map(Format2Rule::Chain),
+            };
+            match rule {
+                Err(ReadError::NullOffset) => None,
+                other => Some(other),
+            }
+        })
     }
 }
 
@@ -727,60 +873,122 @@ impl Format2Rule<'_> {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn intersects(
         &self,
-        input_classes: &IntSet<u16>,
-        backtrack_classes: &IntSet<u16>,
-        lookahead_classes: &IntSet<u16>,
+        glyphs: &IntSet<GlyphId>,
+        input_class_def: &ClassDef,
+        backtrack_class_def: Option<&ClassDef>,
+        lookahead_class_def: Option<&ClassDef>,
+        seq_cache: &mut SeqCache,
     ) -> bool {
         match self {
-            Self::Plain(table) => table.intersects(input_classes),
-            Self::Chain(table) => {
-                table.intersects(input_classes, backtrack_classes, lookahead_classes)
-            }
+            Self::Plain(table) => table.intersects(glyphs, input_class_def, &mut seq_cache.input),
+            Self::Chain(table) => table.intersects(
+                glyphs,
+                input_class_def,
+                backtrack_class_def,
+                lookahead_class_def,
+                seq_cache,
+            ),
         }
     }
 }
 
+fn intersects_class(
+    class_def: &ClassDef,
+    glyphs: &IntSet<GlyphId>,
+    class: u16,
+    cache: &mut FastHashMap<u16, bool>,
+) -> bool {
+    *cache
+        .entry(class)
+        .or_insert_with(|| class_def.intersects_class_glyphs(glyphs, u32::from(class)))
+}
 impl ClassSequenceRule<'_> {
-    fn intersects(&self, input_classes: &IntSet<u16>) -> bool {
+    fn intersects(
+        &self,
+        glyphs: &IntSet<GlyphId>,
+        input_class_def: &ClassDef,
+        cache: &mut FastHashMap<u16, bool>,
+    ) -> bool {
         self.input_sequence()
             .iter()
-            .all(|c| input_classes.contains(c.get()))
+            .all(|c| intersects_class(input_class_def, glyphs, c.get(), cache))
     }
 }
 
 impl ChainedClassSequenceRule<'_> {
+    #[allow(clippy::too_many_arguments)]
     fn intersects(
         &self,
-        input_classes: &IntSet<u16>,
-        backtrack_classes: &IntSet<u16>,
-        lookahead_classes: &IntSet<u16>,
+        glyphs: &IntSet<GlyphId>,
+        input_class_def: &ClassDef,
+        backtrack_class_def: Option<&ClassDef>,
+        lookahead_class_def: Option<&ClassDef>,
+        seq_cache: &mut SeqCache,
     ) -> bool {
-        self.input_sequence()
+        if !self
+            .input_sequence()
             .iter()
-            .all(|c| input_classes.contains(c.get()))
-            && self
-                .backtrack_sequence()
-                .iter()
-                .all(|c| backtrack_classes.contains(c.get()))
-            && self
-                .lookahead_sequence()
-                .iter()
-                .all(|c| lookahead_classes.contains(c.get()))
+            .all(|c| intersects_class(input_class_def, glyphs, c.get(), &mut seq_cache.input))
+        {
+            return false;
+        }
+
+        if let Some(backtrack_class_def) = backtrack_class_def {
+            if !self.backtrack_sequence().iter().all(|c| {
+                intersects_class(
+                    backtrack_class_def,
+                    glyphs,
+                    c.get(),
+                    &mut seq_cache.backtrack,
+                )
+            }) {
+                return false;
+            }
+        } else if self.backtrack_glyph_count() != 0 {
+            return false;
+        }
+
+        if let Some(lookahead_class_def) = lookahead_class_def {
+            if !self.lookahead_sequence().iter().all(|c| {
+                intersects_class(
+                    lookahead_class_def,
+                    glyphs,
+                    c.get(),
+                    &mut seq_cache.lookahead,
+                )
+            }) {
+                return false;
+            }
+        } else if self.lookahead_glyph_count() != 0 {
+            return false;
+        }
+        true
     }
 }
 
 pub(crate) enum ContextFormat3<'a> {
     Plain(SequenceContextFormat3<'a>),
     Chain(ChainedSequenceContextFormat3<'a>),
+    PlainWide(SequenceContextFormat6<'a>),
 }
 
 impl ContextFormat3<'_> {
-    pub(crate) fn coverages(&self) -> ArrayOfOffsets<'_, CoverageTable<'_>> {
+    pub(crate) fn input_count(&self) -> usize {
         match self {
-            ContextFormat3::Plain(table) => table.coverages(),
-            ContextFormat3::Chain(table) => table.input_coverages(),
+            Self::Plain(table) => table.coverages().len(),
+            Self::Chain(table) => table.input_coverages().len(),
+            Self::PlainWide(table) => table.coverages().len(),
+        }
+    }
+
+    pub(crate) fn coverage(&self, index: usize) -> Result<CoverageTable<'_>, ReadError> {
+        match self {
+            Self::Plain(table) => table.coverages().get(index),
+            Self::Chain(table) => table.input_coverages().get(index),
+            Self::PlainWide(table) => table.coverages().get(index),
         }
     }
 
@@ -788,33 +996,42 @@ impl ContextFormat3<'_> {
         match self {
             ContextFormat3::Plain(table) => table.seq_lookup_records(),
             ContextFormat3::Chain(table) => table.seq_lookup_records(),
+            ContextFormat3::PlainWide(table) => table.seq_lookup_records(),
         }
     }
 
     pub(crate) fn matches_glyphs(&self, glyphs: &IntSet<GlyphId>) -> Result<bool, ReadError> {
-        let (backtrack, lookahead) = match self {
-            Self::Plain(_) => (None, None),
-            Self::Chain(table) => (
-                Some(table.backtrack_coverages()),
-                Some(table.lookahead_coverages()),
-            ),
-        };
-
-        for coverage in self
-            .coverages()
-            .iter_as_nullable()
-            .chain(backtrack.into_iter().flat_map(|x| x.iter_as_nullable()))
-            .chain(lookahead.into_iter().flat_map(|x| x.iter_as_nullable()))
-        {
-            let Some(coverage) = coverage.transpose()? else {
-                return Ok(false);
-            };
-            if !coverage.intersects(glyphs) {
-                return Ok(false);
+        match self {
+            Self::Plain(table) => all_coverages_intersect(table.coverages().iter(), glyphs),
+            Self::PlainWide(table) => all_coverages_intersect(table.coverages().iter(), glyphs),
+            Self::Chain(table) => {
+                Ok(
+                    all_coverages_intersect(table.input_coverages().iter(), glyphs)?
+                        && all_coverages_intersect(table.backtrack_coverages().iter(), glyphs)?
+                        && all_coverages_intersect(table.lookahead_coverages().iter(), glyphs)?,
+                )
             }
         }
-        Ok(true)
     }
+}
+
+/// Returns true if every coverage table intersects `glyphs`.
+///
+/// A null offset counts as a coverage that doesn't intersect.
+fn all_coverages_intersect<'a>(
+    coverages: impl Iterator<Item = Result<CoverageTable<'a>, ReadError>>,
+    glyphs: &IntSet<GlyphId>,
+) -> Result<bool, ReadError> {
+    for coverage in coverages {
+        let coverage = match coverage {
+            Err(ReadError::NullOffset) => return Ok(false),
+            other => other?,
+        };
+        if !coverage.intersects(glyphs) {
+            return Ok(false);
+        }
+    }
+    Ok(true)
 }
 
 impl Intersect for ContextFormat1<'_> {
@@ -825,7 +1042,7 @@ impl Intersect for ContextFormat1<'_> {
         for rule_set in coverage
             .iter()
             .zip(self.rule_sets())
-            .filter_map(|(g, rule_set)| rule_set.filter(|_| glyph_set.contains(GlyphId::from(g))))
+            .filter_map(|(g, rule_set)| rule_set.filter(|_| glyph_set.contains(g)))
         {
             for rule in rule_set?.rules() {
                 let Some(rule) = rule.transpose()? else {
@@ -845,18 +1062,15 @@ impl LookupClosure for ContextFormat1<'_> {
         let Some(coverage) = self.coverage().transpose()? else {
             return Ok(());
         };
-        let glyph_set = c.glyphs();
 
-        let intersected_idxes: IntSet<u16> = coverage
+        for (g, rule_set) in coverage
             .iter()
-            .enumerate()
-            .filter(|&(_, g)| glyph_set.contains(GlyphId::from(g)))
-            .map(|(idx, _)| idx as u16)
-            .collect();
-
-        for rule_set in self.rule_sets().enumerate().filter_map(|(idx, rule_set)| {
-            rule_set.filter(|_| intersected_idxes.contains(idx as u16))
-        }) {
+            .zip(self.rule_sets())
+            .filter_map(|(g, rule_set)| rule_set.map(|rs| (g, rs)))
+        {
+            if !c.glyphs().contains(g) {
+                continue;
+            }
             if c.lookup_limit_exceed() {
                 return Ok(());
             }
@@ -877,41 +1091,23 @@ impl Intersect for ContextFormat2<'_> {
         let Some(coverage) = self.coverage().transpose()? else {
             return Ok(false);
         };
-        let retained_coverage_glyphs = coverage.intersect_set(glyph_set);
-        if retained_coverage_glyphs.is_empty() {
+        if !coverage.intersects(glyph_set) {
             return Ok(false);
         }
+        let retained_coverage_glyphs = coverage.intersect_set(glyph_set);
 
         let Some(input_class_def) = self.input_class_def().transpose()? else {
             return Ok(false);
         };
-        let coverage_glyph_classes = input_class_def.intersect_classes(&retained_coverage_glyphs);
-        let input_glyph_classes = input_class_def.intersect_classes(glyph_set);
 
-        let backtrack_classes = match self {
-            Self::Plain(_) => IntSet::empty(),
-            Self::Chain(table) => {
-                if table.backtrack_class_def_offset().is_null() {
-                    IntSet::empty()
-                } else {
-                    table.backtrack_class_def()?.intersect_classes(glyph_set)
-                }
-            }
-        };
-        let lookahead_classes = match self {
-            Self::Plain(_) => IntSet::empty(),
-            Self::Chain(table) => {
-                if table.lookahead_class_def_offset().is_null() {
-                    IntSet::empty()
-                } else {
-                    table.lookahead_class_def()?.intersect_classes(glyph_set)
-                }
-            }
-        };
+        let backtrack_class_def = self.backtrack_class_def().transpose()?;
+        let lookahead_class_def = self.lookahead_class_def().transpose()?;
 
+        let primary_classes = input_class_def.intersect_classes(&retained_coverage_glyphs);
+        let mut seq_cache = SeqCache::default();
         for rule_set in self.rule_sets().enumerate().filter_map(|(c, rule_set)| {
-            coverage_glyph_classes
-                .contains(c as u16)
+            primary_classes
+                .contains(c as u32)
                 .then_some(rule_set)
                 .flatten()
         }) {
@@ -919,7 +1115,13 @@ impl Intersect for ContextFormat2<'_> {
                 let Some(rule) = rule.transpose()? else {
                     continue;
                 };
-                if rule.intersects(&input_glyph_classes, &backtrack_classes, &lookahead_classes) {
+                if rule.intersects(
+                    glyph_set,
+                    &input_class_def,
+                    backtrack_class_def.as_ref(),
+                    lookahead_class_def.as_ref(),
+                    &mut seq_cache,
+                ) {
                     return Ok(true);
                 }
             }
@@ -933,42 +1135,22 @@ impl LookupClosure for ContextFormat2<'_> {
         let Some(coverage) = self.coverage().transpose()? else {
             return Ok(());
         };
-        let glyph_set = c.glyphs();
-        let retained_coverage_glyphs = coverage.intersect_set(glyph_set);
-        if retained_coverage_glyphs.is_empty() {
+        if !coverage.intersects(c.glyphs()) {
             return Ok(());
         }
-
+        let retained_coverage_glyphs = coverage.intersect_set(c.glyphs());
         let Some(input_class_def) = self.input_class_def().transpose()? else {
             return Ok(());
         };
-        let coverage_glyph_classes = input_class_def.intersect_classes(&retained_coverage_glyphs);
-        let input_glyph_classes = input_class_def.intersect_classes(glyph_set);
 
-        let backtrack_classes = match self {
-            Self::Plain(_) => IntSet::empty(),
-            Self::Chain(table) => {
-                if table.backtrack_class_def_offset().is_null() {
-                    IntSet::empty()
-                } else {
-                    table.backtrack_class_def()?.intersect_classes(glyph_set)
-                }
-            }
-        };
-        let lookahead_classes = match self {
-            Self::Plain(_) => IntSet::empty(),
-            Self::Chain(table) => {
-                if table.lookahead_class_def_offset().is_null() {
-                    IntSet::empty()
-                } else {
-                    table.lookahead_class_def()?.intersect_classes(glyph_set)
-                }
-            }
-        };
+        let backtrack_class_def = self.backtrack_class_def().transpose()?;
+        let lookahead_class_def = self.lookahead_class_def().transpose()?;
 
+        let primary_classes = input_class_def.intersect_classes(&retained_coverage_glyphs);
+        let mut seq_cache = SeqCache::default();
         for rule_set in self.rule_sets().enumerate().filter_map(|(c, rule_set)| {
-            coverage_glyph_classes
-                .contains(c as u16)
+            primary_classes
+                .contains(c as u32)
                 .then_some(rule_set)
                 .flatten()
         }) {
@@ -984,7 +1166,13 @@ impl LookupClosure for ContextFormat2<'_> {
                     continue;
                 };
 
-                if !rule.intersects(&input_glyph_classes, &backtrack_classes, &lookahead_classes) {
+                if !rule.intersects(
+                    c.glyphs(),
+                    &input_class_def,
+                    backtrack_class_def.as_ref(),
+                    lookahead_class_def.as_ref(),
+                    &mut seq_cache,
+                ) {
                     continue;
                 }
 
@@ -1020,11 +1208,15 @@ impl LookupClosure for ContextFormat3<'_> {
 }
 
 impl Intersect for SequenceContext<'_> {
+    #[inline]
     fn intersects(&self, glyph_set: &IntSet<GlyphId>) -> Result<bool, ReadError> {
         match self {
             Self::Format1(table) => ContextFormat1::Plain(table.clone()).intersects(glyph_set),
             Self::Format2(table) => ContextFormat2::Plain(table.clone()).intersects(glyph_set),
+            Self::Format5(table) => ContextFormat2::PlainWide(table.clone()).intersects(glyph_set),
             Self::Format3(table) => ContextFormat3::Plain(table.clone()).intersects(glyph_set),
+            Self::Format4(table) => ContextFormat1::PlainWide(table.clone()).intersects(glyph_set),
+            Self::Format6(table) => ContextFormat3::PlainWide(table.clone()).intersects(glyph_set),
         }
     }
 }
@@ -1034,17 +1226,29 @@ impl LookupClosure for SequenceContext<'_> {
         match self {
             Self::Format1(table) => ContextFormat1::Plain(table.clone()).closure_lookups(c, arg),
             Self::Format2(table) => ContextFormat2::Plain(table.clone()).closure_lookups(c, arg),
+            Self::Format5(table) => {
+                ContextFormat2::PlainWide(table.clone()).closure_lookups(c, arg)
+            }
             Self::Format3(table) => ContextFormat3::Plain(table.clone()).closure_lookups(c, arg),
+            Self::Format4(table) => {
+                ContextFormat1::PlainWide(table.clone()).closure_lookups(c, arg)
+            }
+            Self::Format6(table) => {
+                ContextFormat3::PlainWide(table.clone()).closure_lookups(c, arg)
+            }
         }
     }
 }
 
 impl Intersect for ChainedSequenceContext<'_> {
+    #[inline]
     fn intersects(&self, glyph_set: &IntSet<GlyphId>) -> Result<bool, ReadError> {
         match self {
             Self::Format1(table) => ContextFormat1::Chain(table.clone()).intersects(glyph_set),
             Self::Format2(table) => ContextFormat2::Chain(table.clone()).intersects(glyph_set),
+            Self::Format5(table) => ContextFormat2::ChainWide(table.clone()).intersects(glyph_set),
             Self::Format3(table) => ContextFormat3::Chain(table.clone()).intersects(glyph_set),
+            Self::Format4(table) => ContextFormat1::ChainWide(table.clone()).intersects(glyph_set),
         }
     }
 }
@@ -1054,7 +1258,42 @@ impl LookupClosure for ChainedSequenceContext<'_> {
         match self {
             Self::Format1(table) => ContextFormat1::Chain(table.clone()).closure_lookups(c, arg),
             Self::Format2(table) => ContextFormat2::Chain(table.clone()).closure_lookups(c, arg),
+            Self::Format5(table) => {
+                ContextFormat2::ChainWide(table.clone()).closure_lookups(c, arg)
+            }
             Self::Format3(table) => ContextFormat3::Chain(table.clone()).closure_lookups(c, arg),
+            Self::Format4(table) => {
+                ContextFormat1::ChainWide(table.clone()).closure_lookups(c, arg)
+            }
         }
+    }
+}
+
+#[cfg(test)]
+mod lookup_variations_tests;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::FontData;
+
+    #[test]
+    fn classdef_format1_short_read_no_panic() {
+        // glyph_count is 5, but only one class value is present.
+        let classdef = ClassDefFormat1::read(FontData::new(&[0, 1, 0, 10, 0, 5, 0, 1])).unwrap();
+        let glyphs: IntSet<GlyphId> = [GlyphId::new(14)].into_iter().collect();
+
+        assert!(!classdef.intersects(&glyphs).unwrap());
+    }
+
+    #[test]
+    fn classdef_format2_does_not_alias_wide_glyphs() {
+        let bytes = [
+            0, 2, 0, 3, 0, 1, 0, 1, 0, 1, 0, 2, 0, 2, 0, 1, 0, 3, 0, 3, 0, 1,
+        ];
+        let classdef = ClassDefFormat2::read(FontData::new(&bytes)).unwrap();
+        let glyphs: IntSet<GlyphId> = [GlyphId::new(65537)].into_iter().collect();
+        assert!(!classdef.intersects(&glyphs).unwrap());
+        assert!(!ClassDef::Format2(classdef).intersects(&glyphs).unwrap());
     }
 }

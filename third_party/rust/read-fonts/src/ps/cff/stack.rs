@@ -1,6 +1,7 @@
 //! Operand stack for CFF/CFF2 parsing.
 
-use super::{super::error::Error, blend::BlendState};
+use super::blend::BlendState;
+use crate::model::Error;
 use types::Fixed;
 
 /// Maximum size of the operand stack.
@@ -45,22 +46,6 @@ impl Stack {
         self.top
     }
 
-    pub fn verify_exact_len(&self, len: usize) -> Result<(), Error> {
-        if self.top != len {
-            Err(Error::StackUnderflow)
-        } else {
-            Ok(())
-        }
-    }
-
-    pub fn verify_at_least_len(&self, len: usize) -> Result<(), Error> {
-        if self.top < len {
-            Err(Error::StackUnderflow)
-        } else {
-            Ok(())
-        }
-    }
-
     /// Returns true if the number of elements on the stack is odd.
     ///
     /// Used for processing some charstring operators where an odd
@@ -74,19 +59,10 @@ impl Stack {
         self.top = 0;
     }
 
-    /// Reverse the order of all elements on the stack.
-    ///
-    /// Some charstring operators are simpler to process on a reversed
-    /// stack.
-    pub fn reverse(&mut self) {
-        self.values[..self.top].reverse();
-        self.value_is_fixed[..self.top].reverse();
-    }
-
     /// Swaps the top two elements.
     pub(crate) fn exch(&mut self) -> Result<(), Error> {
         if self.top < 2 {
-            return Err(Error::StackUnderflow);
+            return Err(Error::InvalidOperation);
         }
         let a = self.top - 1;
         let b = a - 1;
@@ -105,7 +81,7 @@ impl Stack {
     /// Sets the element at `index` to the given `number`.
     pub fn set(&mut self, index: usize, number: impl Into<Number>) -> Result<(), Error> {
         if index >= self.top {
-            return Err(Error::StackOverflow);
+            return Err(Error::LimitExceeded);
         }
         match number.into() {
             Number::I32(value) => {
@@ -141,7 +117,7 @@ impl Stack {
         if self.value_is_fixed[index] {
             // FreeType returns an error here rather than converting
             // <https://gitlab.freedesktop.org/freetype/freetype/-/blob/80a507a6b8e3d2906ad2c8ba69329bd2fb2a85ef/src/psaux/psstack.c#L145>
-            Err(Error::ExpectedI32StackEntry(index))
+            Err(Error::InvalidOperation)
         } else {
             Ok(value)
         }
@@ -224,17 +200,6 @@ impl Stack {
         Ok(result)
     }
 
-    /// Returns an iterator yielding all elements on the stack as number
-    /// values.
-    ///
-    /// This is useful for capturing the current state of the stack.
-    pub fn number_values(&self) -> impl Iterator<Item = Number> + '_ {
-        self.values[..self.top]
-            .iter()
-            .zip(&self.value_is_fixed)
-            .map(|(value, is_fixed)| Number::from_stack(*value, *is_fixed))
-    }
-
     /// Apply a prefix sum to decode delta-encoded numbers.
     ///
     /// "The second and subsequent numbers in a delta are encoded as the
@@ -290,14 +255,14 @@ impl Stack {
         // Then the stack is popped so only the final target values remain.
         let target_value_count = self.pop_i32()? as usize;
         if target_value_count > self.top {
-            return Err(Error::StackUnderflow);
+            return Err(Error::InvalidOperation);
         }
         let region_count = blend_state.region_count()?;
         // We expect at least `target_value_count * (region_count + 1)`
         // elements on the stack.
         let operand_count = target_value_count * (region_count + 1);
         if self.len() < operand_count {
-            return Err(Error::StackUnderflow);
+            return Err(Error::InvalidOperation);
         }
         // The stack may contain more elements than necessary, so keep track of
         // our active range.
@@ -335,6 +300,56 @@ impl Stack {
         Ok(())
     }
 
+    /// Rotates the top `count` values by `shift` places, toward the top.
+    ///
+    /// A count below two leaves the stack alone, as does a shift that is a
+    /// whole number of turns. A count the stack cannot supply is an error.
+    pub(crate) fn roll(&mut self, count: i32, shift: i32) -> Result<(), Error> {
+        if count < 2 {
+            return Ok(());
+        }
+        let count = count as usize;
+        if count > self.top {
+            return Err(Error::InvalidOperation);
+        }
+        let offset = self.top - count;
+        let n = count as i32;
+        // A Type 1 charstring can push i32::MIN, which has no positive
+        // counterpart, so negate it the way FreeType's arithmetic does.
+        let shift = if shift < 0 {
+            -(shift.wrapping_neg() % n)
+        } else {
+            shift % n
+        };
+        if shift == 0 {
+            return Ok(());
+        }
+        // Two temporaries suffice: carry one value while its place is filled
+        // by the last, walking the cycle the shift describes.
+        let (mut start_idx, mut idx) = (-1i32, -1i32);
+        let mut last = (0i32, false);
+        for _ in 0..count {
+            if start_idx == idx {
+                start_idx += 1;
+                idx = start_idx;
+                let u = offset + idx as usize;
+                last = (self.values[u], self.value_is_fixed[u]);
+            }
+            idx += shift;
+            if idx >= n {
+                idx -= n;
+            } else if idx < 0 {
+                idx += n;
+            }
+            let u = offset + idx as usize;
+            let tmp = (self.values[u], self.value_is_fixed[u]);
+            self.values[u] = last.0;
+            self.value_is_fixed[u] = last.1;
+            last = tmp;
+        }
+        Ok(())
+    }
+
     /// Pops the top two elements from the stack and pushes the quotient.
     ///
     /// Implements special behavior for Type1 fonts to handle the case of
@@ -360,7 +375,7 @@ impl Stack {
 
     fn push_impl(&mut self, value: i32, is_fixed: bool) -> Result<(), Error> {
         if self.top == MAX_STACK {
-            return Err(Error::StackOverflow);
+            return Err(Error::LimitExceeded);
         }
         self.values[self.top] = value;
         self.value_is_fixed[self.top] = is_fixed;
@@ -392,16 +407,6 @@ impl Default for Stack {
 pub enum Number {
     I32(i32),
     Fixed(Fixed),
-}
-
-impl Number {
-    fn from_stack(raw: i32, is_fixed: bool) -> Self {
-        if is_fixed {
-            Self::Fixed(Fixed::from_bits(raw))
-        } else {
-            Self::I32(raw)
-        }
-    }
 }
 
 impl From<i32> for Number {
@@ -437,8 +442,7 @@ mod tests {
         stack.push(20).unwrap();
         stack.push(Fixed::from_f64(42.42)).unwrap();
         assert!(!stack.len_is_odd());
-        stack.verify_exact_len(2).unwrap();
-        stack.verify_at_least_len(2).unwrap();
+        assert_eq!(stack.len(), 2);
         assert_eq!(stack.pop_fixed().unwrap(), Fixed::from_f64(42.42));
         assert_eq!(stack.pop_i32().unwrap(), 20);
     }
@@ -455,18 +459,6 @@ mod tests {
         let mut stack = Stack::new();
         stack.push(123).unwrap();
         assert_eq!(stack.pop_fixed().unwrap(), Fixed::from_f64(123.0));
-    }
-
-    #[test]
-    fn reverse() {
-        let mut stack = Stack::new();
-        stack.push(Fixed::from_f64(1.5)).unwrap();
-        stack.push(42).unwrap();
-        stack.push(Fixed::from_f64(4.2)).unwrap();
-        stack.reverse();
-        assert_eq!(stack.pop_fixed().unwrap(), Fixed::from_f64(1.5));
-        assert_eq!(stack.pop_i32().unwrap(), 42);
-        assert_eq!(stack.pop_fixed().unwrap(), Fixed::from_f64(4.2));
     }
 
     #[test]

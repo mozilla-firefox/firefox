@@ -1,30 +1,31 @@
 //! Unified access to CFF/CFF2 fonts.
 
+use crate::model::Error;
 use crate::{
-    model::pen::OutlinePen,
+    model::glyph::outline::PathSink,
     ps::{
         cff::{
             blend::BlendState, charset::Charset, dict, encoding::Encoding as RawEncoding,
             fd_select::FdSelect, index::Index,
         },
-        cs::{self, CommandSink, NopFilterSink, TransformSink},
+        charstring::{self, CommandSink, NopFilterSink, TransformSink},
         encoding::PredefinedEncoding,
-        error::Error,
         hinting::HintingParams,
         string::Sid,
-        transform::{self, ScaledFontMatrix, Transform},
+        transform::{ScaledFontMatrix, Transform},
     },
     tables::{cff, cff2, variations::ItemVariationStore},
-    FontData, FontRead, ReadError,
+    FontData, FontRead,
 };
 use core::ops::Range;
 use types::{BoundingBox, F2Dot14, Fixed, GlyphId};
+use yoke::Yokeable;
 
 /// A CFF or CFF2 font.
 ///
 /// The source data may be a raw CFF blob as embedded in a PDF or the content
 /// of a CFF or CFF2 table in an OpenType font.
-#[derive(Clone)]
+#[derive(Clone, Yokeable)]
 pub struct CffFontRef<'a> {
     data: &'a [u8],
     is_cff2: bool,
@@ -35,6 +36,18 @@ pub struct CffFontRef<'a> {
 }
 
 impl<'a> CffFontRef<'a> {
+    /// The byte range of an SID font's private dict, for tests that damage
+    /// it.
+    #[cfg(test)]
+    pub(crate) fn sid_private_dict_range(&self) -> Option<Range<usize>> {
+        match &self.top_dict.kind {
+            CffFontKind::Sid { private_dict, .. } => {
+                Some(private_dict.start as usize..private_dict.end as usize)
+            }
+            _ => None,
+        }
+    }
+
     /// Creates a new font for the given CFF or CFF2 data.
     ///
     /// Tries to determine the CFF version by reading the first word of the
@@ -47,7 +60,8 @@ impl<'a> CffFontRef<'a> {
         match version {
             1 => Self::new_cff(data, top_dict_index, upem),
             2 => Self::new_cff2(data, upem),
-            _ => Err(Error::InvalidFontFormat),
+            // the first byte says neither 1 nor 2
+            _ => Err(Error::Malformed),
         }
     }
 
@@ -57,10 +71,11 @@ impl<'a> CffFontRef<'a> {
     /// from the `head` table. Otherwise, 1000 will be assumed.
     pub fn new_cff(data: &'a [u8], top_dict_index: u32, upem: Option<i32>) -> Result<Self, Error> {
         let cff = cff::Cff::read(data.into())?;
-        let top_dict_data = cff.top_dicts().get(top_dict_index as usize)?;
-        let top_dict_index: u16 = top_dict_index
-            .try_into()
-            .map_err(|_| ReadError::OutOfBounds)?;
+        let top_dict_data = cff
+            .top_dicts()
+            .get(top_dict_index as usize)
+            .ok_or(Error::Malformed)?;
+        let top_dict_index: u16 = top_dict_index.try_into().map_err(|_| Error::Malformed)?;
         Self::new_impl(
             data,
             false,
@@ -161,7 +176,7 @@ impl<'a> CffFontRef<'a> {
     pub fn string(&self, sid: Sid) -> Option<&'a [u8]> {
         match sid.resolve_standard() {
             Ok(s) => Some(s),
-            Err(idx) => self.strings()?.get(idx).ok(),
+            Err(idx) => self.strings()?.get(idx),
         }
     }
 
@@ -175,13 +190,12 @@ impl<'a> CffFontRef<'a> {
             self.top_dict.charset_offset.get()?,
             self.top_dict.charstrings.count(),
         )
-        .ok()
     }
 
     /// Returns the mapping from character codes to glyph identifiers.
     pub fn encoding(&self) -> Option<Encoding<'a>> {
         let charset = self.charset()?;
-        let encoding = RawEncoding::new(self.data, self.top_dict.encoding_offset.get()?).ok()?;
+        let encoding = RawEncoding::new(self.data, self.top_dict.encoding_offset.get()?)?;
         Some(Encoding { encoding, charset })
     }
 
@@ -234,7 +248,8 @@ impl<'a> CffFontRef<'a> {
                 None,
             ),
             CffFontKind::Cid { fd_array, .. } | CffFontKind::Cff2 { fd_array, .. } => {
-                let font_dict = FontDict::new(fd_array.get(index as usize)?)?;
+                let font_dict =
+                    FontDict::new(fd_array.get(index as usize).ok_or(Error::Malformed)?)?;
                 Subfont::new(
                     self.data,
                     font_dict.private_dict_range,
@@ -261,7 +276,8 @@ impl<'a> CffFontRef<'a> {
                 None,
             ),
             CffFontKind::Cid { fd_array, .. } | CffFontKind::Cff2 { fd_array, .. } => {
-                let font_dict = FontDict::new(fd_array.get(index as usize)?)?;
+                let font_dict =
+                    FontDict::new(fd_array.get(index as usize).ok_or(Error::Malformed)?)?;
                 Subfont::new_hinted(
                     self.data,
                     font_dict.private_dict_range,
@@ -281,26 +297,7 @@ impl<'a> CffFontRef<'a> {
         let scaled_matrix = if let Some(top_matrix) = self.top_dict.matrix {
             // We have a top dict matrix. Now check for a font dict matrix.
             if let Some(sub_matrix) = subfont.matrix {
-                let scaling = if top_matrix.scale > 1 && sub_matrix.scale > 1 {
-                    top_matrix.scale.min(sub_matrix.scale)
-                } else {
-                    1
-                };
-                // Concatenate and scale
-                let matrix =
-                    transform::combine_scaled(&top_matrix.matrix, &sub_matrix.matrix, scaling);
-                let scaled_upem = Fixed::from_bits(sub_matrix.scale).mul_div(
-                    Fixed::from_bits(top_matrix.scale),
-                    Fixed::from_bits(scaling),
-                );
-                // Then normalize
-                Some(
-                    ScaledFontMatrix {
-                        matrix,
-                        scale: scaled_upem.to_bits(),
-                    }
-                    .normalize(),
-                )
+                Some(top_matrix.combine(&sub_matrix))
             } else {
                 // Top matrix was already normalized on load
                 Some(top_matrix)
@@ -333,11 +330,75 @@ impl<'a> CffFontRef<'a> {
         }
     }
 
+    /// Evaluates the charstring for the requested glyph far enough to read
+    /// its advance width, without drawing it.
+    ///
+    /// A Type 2 charstring states its width, where it states one at all, as
+    /// an optional extra argument on the first operator that clears the
+    /// stack, so evaluation stops there. Where the charstring states none,
+    /// the subfont's default width applies.
+    ///
+    /// The font matrix is applied and no size is, so the width is exact and
+    /// in the units the rest of the font is measured in.
+    /// [`advance`](Self::advance) applies a size as well and reports what
+    /// [`draw`](Self::draw) does.
+    ///
+    /// Unlike [`evaluate_charstring`], the matrix is applied here rather than
+    /// left to a caller. That one withholds it so a hinter can be slotted in
+    /// ahead of it; nothing hints a width.
+    ///
+    /// [`evaluate_charstring`]: Self::evaluate_charstring
+    pub fn evaluate_width(
+        &self,
+        subfont: &Subfont,
+        gid: GlyphId,
+        coords: &[F2Dot14],
+    ) -> Result<Option<Fixed>, Error> {
+        let transform = self.transform(subfont, None);
+        Ok(self
+            .charstring_width(subfont, gid, coords)?
+            .map(|width| transform.transform_h_metric(width)))
+    }
+
+    /// The width the charstring itself gives, before any transform.
+    ///
+    /// Where it gives none the subfont's default applies, as it does when the
+    /// glyph is drawn.
+    fn charstring_width(
+        &self,
+        subfont: &Subfont,
+        gid: GlyphId,
+        coords: &[F2Dot14],
+    ) -> Result<Option<Fixed>, Error> {
+        let charstrings = self.top_dict.charstrings.clone();
+        let blend = self.blend_state(subfont.vs_index, coords);
+        let subrs = if subfont.subrs_offset != 0 {
+            let data = self
+                .data
+                .get(subfont.subrs_offset as usize..)
+                .ok_or(Error::Malformed)?;
+            Index::new(data, self.is_cff2)?
+        } else {
+            Index::Empty
+        };
+        let charstring_data = charstrings
+            .get(gid.to_u32() as usize)
+            .ok_or(Error::Malformed)?;
+        let ctx = (self.data, &charstrings, &self.global_subrs, &subrs);
+        Ok(
+            match charstring::evaluate_width(&ctx, blend, charstring_data)? {
+                Some(width) => Some(width + subfont.nominal_width),
+                None => subfont.default_width,
+            },
+        )
+    }
+
     /// Evaluates the charstring for the requested glyph and sends the results
     /// to the given sink.
     ///
-    /// Returns the advance with of the glyph in font units if the charstring
-    /// provides one.
+    /// Returns the width the charstring states, in the charstring's own
+    /// space: neither the font matrix nor a size is applied, to the width or
+    /// to the commands. [`draw`](Self::draw) applies both.
     pub fn evaluate_charstring(
         &self,
         subfont: &Subfont,
@@ -351,18 +412,106 @@ impl<'a> CffFontRef<'a> {
             let data = self
                 .data
                 .get(subfont.subrs_offset as usize..)
-                .ok_or(ReadError::OutOfBounds)?;
+                .ok_or(Error::Malformed)?;
             Index::new(data, self.is_cff2)?
         } else {
             Index::Empty
         };
-        let charstring_data = charstrings.get(gid.to_u32() as usize)?;
+        let charstring_data = charstrings
+            .get(gid.to_u32() as usize)
+            .ok_or(Error::Malformed)?;
         let ctx = (self.data, &charstrings, &self.global_subrs, &subrs);
-        if let Some(width) = cs::evaluate(&ctx, blend, charstring_data, sink)? {
+        if let Some(width) = charstring::evaluate(&ctx, blend, charstring_data, sink)? {
             Ok(Some(width + subfont.nominal_width))
         } else {
             Ok(subfont.default_width)
         }
+    }
+
+    /// Returns the advance width of the glyph with an optional size in
+    /// ppem, without drawing it.
+    ///
+    /// This is the width [`draw`](Self::draw) reports, arrived at without
+    /// the drawing.
+    pub fn advance(
+        &self,
+        subfont: &Subfont,
+        gid: GlyphId,
+        coords: &[F2Dot14],
+        ppem: Option<f32>,
+    ) -> Result<Option<f32>, Error> {
+        let transform = self.transform(subfont, ppem);
+        Ok(self
+            .charstring_width(subfont, gid, coords)?
+            .map(|width| transform.transform_h_metric(width).to_f32().max(0.0)))
+    }
+
+    /// Measures the box the glyph's drawing stays within, in design units.
+    ///
+    /// A control box: a curve counts through its control points rather than
+    /// the path they describe, so one bulging inside its hull measures larger
+    /// than it draws. HarfBuzz reports a charstring's extents the same way.
+    ///
+    /// The font matrix is applied and no size is, so the box is exact and in
+    /// the units the rest of the font is measured in.
+    /// [`extents`](Self::extents) applies a size as well and answers in what
+    /// a caller laying out text works in.
+    ///
+    /// Unlike [`evaluate_charstring`], the matrix is applied here rather than
+    /// left to a caller. That one withholds it so a hinter can be slotted in
+    /// before it; nothing hints a box, and a box cannot be brought through a
+    /// matrix afterwards anyway, because turning a box turns its corners and
+    /// a matrix that shears tilts the drawing inside a box that has to grow
+    /// to hold them.
+    ///
+    /// `None` where the glyph draws nothing.
+    ///
+    /// [`evaluate_charstring`]: Self::evaluate_charstring
+    pub fn evaluate_extents(
+        &self,
+        subfont: &Subfont,
+        gid: GlyphId,
+        coords: &[F2Dot14],
+    ) -> Result<Option<BoundingBox<Fixed>>, Error> {
+        let mut bounds = charstring::ControlBoundsSink::new();
+        let mut nop_filter = charstring::NopFilterSink::new(&mut bounds);
+        let transform = self.transform(subfont, None);
+        let mut transformer = charstring::TransformSink::new(&mut nop_filter, transform);
+        self.evaluate_charstring(subfont, gid, coords, &mut transformer)?;
+        Ok(bounds.bounding_box())
+    }
+
+    /// Returns the box the glyph's drawing stays within, with an optional
+    /// size in ppem.
+    ///
+    /// The box [`draw`](Self::draw) would stay within, measured as
+    /// [`evaluate_extents`](Self::evaluate_extents) measures it and scaled by
+    /// the size as well.
+    ///
+    /// A size can be applied to a finished box, being one scale in both
+    /// directions; it is applied here so the answer matches `draw` at that
+    /// size without a caller doing the arithmetic. The matrix cannot, which
+    /// is why neither of these leaves it out.
+    ///
+    /// `None` where the glyph draws nothing.
+    pub fn extents(
+        &self,
+        subfont: &Subfont,
+        gid: GlyphId,
+        coords: &[F2Dot14],
+        ppem: Option<f32>,
+    ) -> Result<Option<BoundingBox<f32>>, Error> {
+        let mut bounds = charstring::ControlBoundsSink::new();
+        let mut nop_filter = charstring::NopFilterSink::new(&mut bounds);
+        let transform = self.transform(subfont, ppem);
+        let mut transformer = charstring::TransformSink::new(&mut nop_filter, transform);
+        self.evaluate_charstring(subfont, gid, coords, &mut transformer)?;
+        Ok(bounds.bounding_box().map(|b| BoundingBox {
+            x_min: b.x_min.to_f32(),
+            y_min: b.y_min.to_f32(),
+            x_max: b.x_max.to_f32(),
+            y_max: b.y_max.to_f32(),
+        }))
     }
 
     /// Draws the glyph with an optional size in ppem to the given pen.
@@ -375,9 +524,9 @@ impl<'a> CffFontRef<'a> {
         gid: GlyphId,
         coords: &[F2Dot14],
         ppem: Option<f32>,
-        pen: &mut impl OutlinePen,
+        sink: &mut impl PathSink,
     ) -> Result<Option<f32>, Error> {
-        let mut nop_filter = NopFilterSink::new(pen);
+        let mut nop_filter = NopFilterSink::new(sink);
         let transform = self.transform(subfont, ppem);
         let mut transformer = TransformSink::new(&mut nop_filter, transform);
         let width = self.evaluate_charstring(subfont, gid, coords, &mut transformer)?;
@@ -480,15 +629,12 @@ impl Subfont {
             matrix,
             ..Default::default()
         };
-        let data = data.get(range.clone()).ok_or(ReadError::OutOfBounds)?;
-        for entry in dict::entries(data, blend).filter_map(|e| e.ok()) {
+        let data = data.get(range.clone()).ok_or(Error::Malformed)?;
+        for entry in dict::unhinted_private_entries(data, blend).filter_map(|e| e.ok()) {
             match entry {
                 dict::Entry::SubrsOffset(offset) => {
-                    subfont.subrs_offset = range
-                        .start
-                        .checked_add(offset)
-                        .ok_or(ReadError::OutOfBounds)?
-                        as u32;
+                    subfont.subrs_offset =
+                        range.start.checked_add(offset).ok_or(Error::Malformed)? as u32;
                 }
                 dict::Entry::VariationStoreIndex(index) => subfont.vs_index = index,
                 // FreeType truncates the width values to int on read
@@ -511,15 +657,12 @@ impl Subfont {
             ..Default::default()
         };
         let mut params = HintingParams::default();
-        let data = data.get(range.clone()).ok_or(ReadError::OutOfBounds)?;
+        let data = data.get(range.clone()).ok_or(Error::Malformed)?;
         for entry in dict::entries(data, blend).filter_map(|e| e.ok()) {
             match entry {
                 dict::Entry::SubrsOffset(offset) => {
-                    subfont.subrs_offset = range
-                        .start
-                        .checked_add(offset)
-                        .ok_or(ReadError::OutOfBounds)?
-                        as u32;
+                    subfont.subrs_offset =
+                        range.start.checked_add(offset).ok_or(Error::Malformed)? as u32;
                 }
                 dict::Entry::VariationStoreIndex(index) => subfont.vs_index = index,
                 // FreeType truncates the width values to int on read
@@ -642,7 +785,7 @@ impl<'a> TopDict<'a> {
                 }
                 dict::Entry::PrivateDictRange(range) => {
                     // Fail early if our private dictionary is out of bounds
-                    let _ = cff_data.get(range.clone()).ok_or(ReadError::OutOfBounds)?;
+                    let _ = cff_data.get(range.clone()).ok_or(Error::Malformed)?;
                     private_dict_range = range;
                 }
                 dict::Entry::FontMatrix(font_matrix) => {
@@ -654,7 +797,7 @@ impl<'a> TopDict<'a> {
                     // IVS is preceded by a 2 byte length, but ensure that
                     // we don't overflow
                     // See <https://github.com/googlefonts/fontations/issues/1223>
-                    let offset = offset.checked_add(2).ok_or(ReadError::OutOfBounds)?;
+                    let offset = offset.checked_add(2).ok_or(Error::Malformed)?;
                     var_store = Some(ItemVariationStore::read(
                         cff_data.get(offset..).unwrap_or_default().into(),
                     )?);
@@ -662,7 +805,7 @@ impl<'a> TopDict<'a> {
                 _ => {}
             }
         }
-        let charstrings = charstrings.ok_or(Error::MissingCharstrings)?;
+        let charstrings = charstrings.ok_or(Error::MissingResource)?;
         let kind = if let Some(fd_array) = fd_array {
             if is_cff2 {
                 CffFontKind::Cff2 {
@@ -678,7 +821,7 @@ impl<'a> TopDict<'a> {
         } else {
             if has_ros || is_cff2 {
                 // The font dict array is required for CID-keyed and CFF2 fonts
-                return Err(Error::MissingFdArray);
+                return Err(Error::MissingResource);
             }
             CffFontKind::Sid {
                 strings,
@@ -718,7 +861,7 @@ impl FontDict {
             }
         }
         Ok(Self {
-            private_dict_range: range.ok_or(Error::MissingPrivateDict)?,
+            private_dict_range: range.ok_or(Error::MissingResource)?,
             matrix,
         })
     }
@@ -728,9 +871,12 @@ impl FontDict {
 ///
 /// This is accessed separately because this information is redundant when a
 /// CFF blob is used in an OpenType font.
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Metadata<'a> {
     name: Option<&'a str>,
+    version: Option<&'a str>,
+    notice: Option<&'a str>,
+    copyright: Option<&'a str>,
     full_name: Option<&'a str>,
     family_name: Option<&'a str>,
     weight: Option<&'a str>,
@@ -748,11 +894,11 @@ impl<'a> Metadata<'a> {
         let get_str = |sid: Sid| {
             let bytes = match sid.resolve_standard() {
                 Ok(bytes) => bytes,
-                Err(idx) => strings.get(idx).ok()?,
+                Err(idx) => strings.get(idx)?,
             };
             core::str::from_utf8(bytes).ok()
         };
-        let top_dict_data = cff.top_dicts().get(top_dict_index as usize).ok()?;
+        let top_dict_data = cff.top_dicts().get(top_dict_index as usize)?;
         let name = cff
             .name(top_dict_index as usize)
             .and_then(|bytes| core::str::from_utf8(bytes).ok());
@@ -762,6 +908,9 @@ impl<'a> Metadata<'a> {
         };
         for entry in dict::entries(top_dict_data, None).filter_map(|e| e.ok()) {
             match entry {
+                dict::Entry::Version(sid) => meta.version = get_str(sid),
+                dict::Entry::Notice(sid) => meta.notice = get_str(sid),
+                dict::Entry::Copyright(sid) => meta.copyright = get_str(sid),
                 dict::Entry::FullName(sid) => meta.full_name = get_str(sid),
                 dict::Entry::FamilyName(sid) => meta.family_name = get_str(sid),
                 dict::Entry::Weight(sid) => meta.weight = get_str(sid),
@@ -786,6 +935,21 @@ impl<'a> Metadata<'a> {
     /// Returns the PostScript name.
     pub fn name(&self) -> Option<&'a str> {
         self.name
+    }
+
+    /// Returns the version string.
+    pub fn version(&self) -> Option<&'a str> {
+        self.version
+    }
+
+    /// Returns the notice, commonly a trademark statement.
+    pub fn notice(&self) -> Option<&'a str> {
+        self.notice
+    }
+
+    /// Returns the copyright statement.
+    pub fn copyright(&self) -> Option<&'a str> {
+        self.copyright
     }
 
     /// Returns the full font name.
@@ -833,6 +997,9 @@ impl Default for Metadata<'_> {
     fn default() -> Self {
         Self {
             name: None,
+            version: None,
+            notice: None,
+            copyright: None,
             full_name: None,
             family_name: None,
             weight: None,
@@ -852,7 +1019,7 @@ mod tests {
         ps::{hinting::Blues, transform::FontMatrix},
         FontData, FontRef, TableProvider,
     };
-    use cs::test_helpers::*;
+    use charstring::test_helpers::*;
     use font_test_data::bebuffer::BeBuffer;
 
     #[test]
@@ -1235,5 +1402,237 @@ mod tests {
         let font = FontRef::new(font_test_data::CANTARELL_VF_TRIMMED).unwrap();
         let cff = CffFontRef::new(font.cff2().unwrap().offset_data().as_bytes(), 0, None).unwrap();
         assert!(cff.encoding().is_none());
+    }
+}
+
+#[cfg(test)]
+mod width_only_tests {
+    use super::*;
+    use crate::{model::glyph::outline::NullSink, FontRef, TableProvider};
+
+    const FONTS: [&[u8]; 3] = [
+        font_test_data::NOTO_SERIF_DISPLAY_TRIMMED,
+        font_test_data::ift::CFF_FONT,
+        // A nested matrix, so the charstring's space and the font's differ
+        // and the two widths are not the same number.
+        font_test_data::MATERIAL_ICONS_SUBSET_MATRIX,
+    ];
+
+    /// Calls `check` for every glyph, with the subfont that glyph belongs to.
+    fn for_each_glyph(data: &[u8], mut check: impl FnMut(&CffFontRef, &Subfont, GlyphId)) {
+        let font = FontRef::new(data).unwrap();
+        let cff =
+            CffFontRef::new_cff(font.cff().unwrap().offset_data().as_bytes(), 0, None).unwrap();
+        let num_glyphs = font.maxp().unwrap().num_glyphs() as u32;
+        assert!(num_glyphs > 1);
+        for gid in (0..num_glyphs).map(GlyphId::new) {
+            let index = cff.subfont_index(gid).unwrap_or(0);
+            let subfont = cff.subfont(index, &[]).unwrap();
+            check(&cff, &subfont, gid);
+        }
+    }
+
+    #[test]
+    fn the_quick_width_is_what_a_full_run_reports() {
+        let mut mapped = 0;
+        for data in FONTS {
+            let mut stated = 0;
+            for_each_glyph(data, |cff, subfont, gid| {
+                // `evaluate_charstring` answers in the charstring's own space
+                // and `evaluate_width` in design units, so the matrix goes on
+                // the full run before the two can be compared.
+                let transform = cff.transform(subfont, None);
+                let full = cff
+                    .evaluate_charstring(subfont, gid, &[], &mut charstring::NullSink)
+                    .unwrap();
+                let quick = cff.evaluate_width(subfont, gid, &[]).unwrap();
+                assert_eq!(
+                    full.map(|width| transform.transform_h_metric(width)),
+                    quick,
+                    "glyph {gid}"
+                );
+                stated += full.is_some() as u32;
+                if let (Some(full), Some(quick)) = (full, quick) {
+                    mapped += (full != quick) as u32;
+                }
+            });
+            // The comparison is worthless if nothing reported a width at all.
+            assert!(stated > 0, "no glyph reported a width");
+        }
+        // And worthless again if the matrix never moved one, since then the
+        // two spaces coincide and the comparison spans nothing.
+        assert!(mapped > 0, "no width was moved by a matrix");
+    }
+
+    #[test]
+    fn the_quick_advance_is_what_drawing_reports() {
+        // Drawing scales the width by the font matrix, and by ppem where one
+        // is given, so this is what catches an advance that skipped either.
+        for data in FONTS {
+            for ppem in [None, Some(16.0), Some(72.0)] {
+                for_each_glyph(data, |cff, subfont, gid| {
+                    let drawn = cff.draw(subfont, gid, &[], ppem, &mut NullSink).unwrap();
+                    let quick = cff.advance(subfont, gid, &[], ppem).unwrap();
+                    assert_eq!(drawn, quick, "glyph {gid} at {ppem:?}");
+                });
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod extents_tests {
+    use super::*;
+    use crate::{model::glyph::outline::PathSink, FontRef, TableProvider};
+
+    /// Has a sheared top level matrix over a scaled one, so where the box is
+    /// measured is observable.
+    const SHEARED: &[u8] = font_test_data::MATERIAL_ICONS_SUBSET_MATRIX;
+
+    #[derive(Default)]
+    struct BoundsPen(Option<[f32; 4]>);
+
+    impl BoundsPen {
+        fn add(&mut self, x: f32, y: f32) {
+            self.0 = Some(match self.0 {
+                Some([a, b, c, d]) => [a.min(x), b.min(y), c.max(x), d.max(y)],
+                None => [x, y, x, y],
+            });
+        }
+    }
+
+    impl PathSink for BoundsPen {
+        fn move_to(&mut self, x: f32, y: f32) {
+            self.add(x, y);
+        }
+        fn line_to(&mut self, x: f32, y: f32) {
+            self.add(x, y);
+        }
+        fn quad_to(&mut self, cx: f32, cy: f32, x: f32, y: f32) {
+            self.add(cx, cy);
+            self.add(x, y);
+        }
+        fn curve_to(&mut self, cx0: f32, cy0: f32, cx1: f32, cy1: f32, x: f32, y: f32) {
+            self.add(cx0, cy0);
+            self.add(cx1, cy1);
+            self.add(x, y);
+        }
+        fn close(&mut self) {}
+    }
+
+    fn corners(b: BoundingBox<f32>) -> [f32; 4] {
+        [b.x_min, b.y_min, b.x_max, b.y_max]
+    }
+
+    fn cff_of(data: &[u8]) -> CffFontRef<'_> {
+        let font = FontRef::new(data).unwrap();
+        CffFontRef::new_cff(font.cff().unwrap().offset_data().as_bytes(), 0, None).unwrap()
+    }
+
+    fn each_glyph(data: &[u8], mut f: impl FnMut(&CffFontRef, &Subfont, GlyphId)) {
+        let cff = cff_of(data);
+        for gid in (0..cff.num_glyphs()).map(GlyphId::new) {
+            let index = cff.subfont_index(gid).unwrap_or(0);
+            let subfont = cff.subfont(index, &[]).unwrap();
+            f(&cff, &subfont, gid);
+        }
+    }
+
+    #[test]
+    fn the_extents_are_the_box_drawing_stays_within() {
+        for data in [
+            font_test_data::NOTO_SERIF_DISPLAY_TRIMMED,
+            font_test_data::ift::CFF_FONT,
+            SHEARED,
+        ] {
+            for ppem in [None, Some(16.0)] {
+                let mut drew = 0;
+                each_glyph(data, |cff, subfont, gid| {
+                    let mut pen = BoundsPen::default();
+                    cff.draw(subfont, gid, &[], ppem, &mut pen).unwrap();
+                    let measured = cff.extents(subfont, gid, &[], ppem).unwrap();
+                    assert_eq!(measured.map(corners), pen.0, "glyph {gid} at {ppem:?}");
+                    drew += pen.0.is_some() as u32;
+                });
+                assert!(drew > 0, "nothing drew, so this proves nothing");
+            }
+        }
+    }
+
+    #[test]
+    fn a_sheared_matrix_measures_smaller_than_a_box_turned_afterwards() {
+        // Why the matrix is applied while measuring rather than to the
+        // finished box: a shear tilts the drawing inside a box that has to
+        // grow to hold the corners of a turned box.
+        let mut tighter = 0;
+        each_glyph(SHEARED, |cff, subfont, gid| {
+            // The box before the matrix. No method answers with one, since
+            // it cannot be brought through the matrix afterwards, which is
+            // what this test is about; the sink gives it.
+            let mut before = charstring::ControlBoundsSink::new();
+            let mut filter = charstring::NopFilterSink::new(&mut before);
+            cff.evaluate_charstring(subfont, gid, &[], &mut filter)
+                .unwrap();
+            let Some(plain) = before.bounding_box() else {
+                return;
+            };
+            let mut turned = charstring::ControlBoundsSink::new();
+            let transform = cff.transform(subfont, None);
+            let mut sink = charstring::TransformSink::new(&mut turned, transform);
+            for (x, y) in [
+                (plain.x_min, plain.y_min),
+                (plain.x_min, plain.y_max),
+                (plain.x_max, plain.y_min),
+                (plain.x_max, plain.y_max),
+            ] {
+                sink.move_to(x, y);
+            }
+            let turned = turned.bounding_box().unwrap();
+            let measured = cff.extents(subfont, gid, &[], None).unwrap().unwrap();
+            // Measuring during never reaches outside measuring after.
+            assert!(measured.x_min >= turned.x_min.to_f32());
+            assert!(measured.x_max <= turned.x_max.to_f32());
+            if measured.x_min > turned.x_min.to_f32() || measured.x_max < turned.x_max.to_f32() {
+                tighter += 1;
+            }
+        });
+        assert!(
+            tighter > 0,
+            "no glyph measured tighter, so the shear went unnoticed"
+        );
+    }
+
+    #[test]
+    fn a_location_moves_a_cff2_box_as_it_moves_the_drawing() {
+        // Coordinates reach the box the way they reach the drawing, through
+        // the blend the charstring runs with. Most glyphs here have no ink;
+        // the count guards against a subset leaving none that move.
+        let data = font_test_data::ift::CFF2_FONT;
+        let font = FontRef::new(data).unwrap();
+        let cff =
+            CffFontRef::new_cff2(font.cff2().unwrap().offset_data().as_bytes(), None).unwrap();
+        let axes = font.fvar().unwrap().axis_count() as usize;
+        let mut at_default: Vec<Option<[f32; 4]>> = Vec::new();
+        let mut moved = 0;
+        for coord in [0.0f32, -1.0, 1.0] {
+            let coords: Vec<_> = (0..axes).map(|_| F2Dot14::from_f32(coord)).collect();
+            for (i, gid) in (0..cff.num_glyphs()).map(GlyphId::new).enumerate() {
+                let index = cff.subfont_index(gid).unwrap_or(0);
+                let subfont = cff.subfont(index, &coords).unwrap();
+                let measured = cff
+                    .extents(&subfont, gid, &coords, None)
+                    .unwrap()
+                    .map(corners);
+                let mut pen = BoundsPen::default();
+                cff.draw(&subfont, gid, &coords, None, &mut pen).unwrap();
+                assert_eq!(measured, pen.0, "glyph {gid} at {coord}");
+                if coord == 0.0 {
+                    at_default.push(measured);
+                } else if at_default[i] != measured {
+                    moved += 1;
+                }
+            }
+        }
+        assert!(moved > 0, "no box moved, so the location went unread");
     }
 }

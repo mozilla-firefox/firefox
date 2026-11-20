@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Cpal<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,42 @@ impl TopLevelTable for Cpal<'_> {
     const TAG: Tag = Tag::new(b"CPAL");
 }
 
+impl ReadArgs for Cpal<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Cpal<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct CpalFixedHeader {
+    pub version: BigEndian<u16>,
+    pub num_palette_entries: BigEndian<u16>,
+    pub num_palettes: BigEndian<u16>,
+    pub num_color_records: BigEndian<u16>,
+    pub color_records_array_offset: BigEndian<Nullable<Offset32>>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<CpalFixedHeader>() <= Cpal::MIN_SIZE);
+
 /// [CPAL (Color Palette Table)](https://learn.microsoft.com/en-us/typography/opentype/spec/cpal#palette-table-header) table
 #[derive(Clone)]
 pub struct Cpal<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, CpalFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -47,48 +69,46 @@ impl<'a> Cpal<'a> {
 
     /// Table version number (=0).
     pub fn version(&self) -> u16 {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// Number of palette entries in each palette.
     pub fn num_palette_entries(&self) -> u16 {
-        let range = self.num_palette_entries_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().num_palette_entries.get()
     }
 
     /// Number of palettes in the table.
     pub fn num_palettes(&self) -> u16 {
-        let range = self.num_palettes_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().num_palettes.get()
     }
 
     /// Total number of color records, combined for all palettes.
     pub fn num_color_records(&self) -> u16 {
-        let range = self.num_color_records_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().num_color_records.get()
     }
 
     /// Offset from the beginning of CPAL table to the first
     /// ColorRecord.
     pub fn color_records_array_offset(&self) -> Nullable<Offset32> {
-        let range = self.color_records_array_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().color_records_array_offset.get()
     }
 
     /// Attempt to resolve [`color_records_array_offset`][Self::color_records_array_offset].
     pub fn color_records_array(&self) -> Option<Result<&'a [ColorRecord], ReadError>> {
-        let data = self.data;
+        let data = self.offset_data();
         let args = self.num_color_records();
         self.color_records_array_offset()
-            .resolve_with_args(data, &args)
+            .resolve_with_args(data, args)
     }
 
     /// Index of each palette’s first color record in the combined
     /// color record array.
     pub fn color_record_indices(&self) -> &'a [BigEndian<u16>] {
         let range = self.color_record_indices_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// Offset from the beginning of CPAL table to the [Palette Types Array][].
@@ -99,16 +119,16 @@ impl<'a> Cpal<'a> {
     pub fn palette_types_array_offset(&self) -> Option<Nullable<Offset32>> {
         let range = self.palette_types_array_offset_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_at(range.start).ok())
+            .then(|| self.offset_data().read_at(range.start).ok())
             .flatten()
     }
 
     /// Attempt to resolve [`palette_types_array_offset`][Self::palette_types_array_offset].
     pub fn palette_types_array(&self) -> Option<Result<&'a [BigEndian<PaletteType>], ReadError>> {
-        let data = self.data;
+        let data = self.offset_data();
         let args = self.num_palettes();
         self.palette_types_array_offset()
-            .map(|x| x.resolve_with_args(data, &args))?
+            .map(|x| x.resolve_with_args(data, args))?
     }
 
     /// Offset from the beginning of CPAL table to the [Palette Labels Array][].
@@ -121,16 +141,16 @@ impl<'a> Cpal<'a> {
     pub fn palette_labels_array_offset(&self) -> Option<Nullable<Offset32>> {
         let range = self.palette_labels_array_offset_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_at(range.start).ok())
+            .then(|| self.offset_data().read_at(range.start).ok())
             .flatten()
     }
 
     /// Attempt to resolve [`palette_labels_array_offset`][Self::palette_labels_array_offset].
     pub fn palette_labels_array(&self) -> Option<Result<&'a [BigEndian<NameId>], ReadError>> {
-        let data = self.data;
+        let data = self.offset_data();
         let args = self.num_palettes();
         self.palette_labels_array_offset()
-            .map(|x| x.resolve_with_args(data, &args))?
+            .map(|x| x.resolve_with_args(data, args))?
     }
 
     /// Offset from the beginning of CPAL table to the [Palette Entry Labels Array][].
@@ -145,59 +165,60 @@ impl<'a> Cpal<'a> {
     pub fn palette_entry_labels_array_offset(&self) -> Option<Nullable<Offset32>> {
         let range = self.palette_entry_labels_array_offset_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_at(range.start).ok())
+            .then(|| self.offset_data().read_at(range.start).ok())
             .flatten()
     }
 
     /// Attempt to resolve [`palette_entry_labels_array_offset`][Self::palette_entry_labels_array_offset].
     pub fn palette_entry_labels_array(&self) -> Option<Result<&'a [BigEndian<NameId>], ReadError>> {
-        let data = self.data;
+        let data = self.offset_data();
         let args = self.num_palette_entries();
         self.palette_entry_labels_array_offset()
-            .map(|x| x.resolve_with_args(data, &args))?
+            .map(|x| x.resolve_with_args(data, args))?
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn num_palette_entries_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn num_palettes_byte_range(&self) -> Range<usize> {
         let start = self.num_palette_entries_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn num_color_records_byte_range(&self) -> Range<usize> {
         let start = self.num_palettes_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn color_records_array_offset_byte_range(&self) -> Range<usize> {
         let start = self.num_color_records_byte_range().end;
-        let end = start + Offset32::RAW_BYTE_LEN;
+        let end = start.saturating_add(Offset32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn color_record_indices_byte_range(&self) -> Range<usize> {
         let num_palettes = self.num_palettes();
         let start = self.color_records_array_offset_byte_range().end;
-        let end = start + (transforms::to_usize(num_palettes)).saturating_mul(u16::RAW_BYTE_LEN);
+        let end = start
+            .saturating_add((transforms::to_usize(num_palettes)).saturating_mul(u16::RAW_BYTE_LEN));
         start..end
     }
 
     pub fn palette_types_array_offset_byte_range(&self) -> Range<usize> {
         let start = self.color_record_indices_byte_range().end;
         let end = if self.version().compatible(1u16) {
-            start + Offset32::RAW_BYTE_LEN
+            start.saturating_add(Offset32::RAW_BYTE_LEN)
         } else {
             start
         };
@@ -207,7 +228,7 @@ impl<'a> Cpal<'a> {
     pub fn palette_labels_array_offset_byte_range(&self) -> Range<usize> {
         let start = self.palette_types_array_offset_byte_range().end;
         let end = if self.version().compatible(1u16) {
-            start + Offset32::RAW_BYTE_LEN
+            start.saturating_add(Offset32::RAW_BYTE_LEN)
         } else {
             start
         };
@@ -217,7 +238,7 @@ impl<'a> Cpal<'a> {
     pub fn palette_entry_labels_array_offset_byte_range(&self) -> Range<usize> {
         let start = self.palette_labels_array_offset_byte_range().end;
         let end = if self.version().compatible(1u16) {
-            start + Offset32::RAW_BYTE_LEN
+            start.saturating_add(Offset32::RAW_BYTE_LEN)
         } else {
             start
         };
@@ -230,73 +251,20 @@ const _: () = assert!(FontData::default_data_long_enough(Cpal::MIN_SIZE));
 impl Default for Cpal<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Cpal<'a> {
-    fn type_name(&self) -> &str {
-        "Cpal"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new(
-                "num_palette_entries",
-                self.num_palette_entries(),
-            )),
-            2usize => Some(Field::new("num_palettes", self.num_palettes())),
-            3usize => Some(Field::new("num_color_records", self.num_color_records())),
-            4usize => Some(Field::new(
-                "color_records_array_offset",
-                traversal::FieldType::offset_to_array_of_records(
-                    self.color_records_array_offset(),
-                    self.color_records_array(),
-                    stringify!(ColorRecord),
-                    self.offset_data(),
-                ),
-            )),
-            5usize => Some(Field::new(
-                "color_record_indices",
-                self.color_record_indices(),
-            )),
-            6usize if self.version().compatible(1u16) => Some(Field::new(
-                "palette_types_array_offset",
-                FieldType::offset_to_array_of_scalars(
-                    self.palette_types_array_offset().unwrap(),
-                    self.palette_types_array(),
-                ),
-            )),
-            7usize if self.version().compatible(1u16) => Some(Field::new(
-                "palette_labels_array_offset",
-                FieldType::offset_to_array_of_scalars(
-                    self.palette_labels_array_offset().unwrap(),
-                    self.palette_labels_array(),
-                ),
-            )),
-            8usize if self.version().compatible(1u16) => Some(Field::new(
-                "palette_entry_labels_array_offset",
-                FieldType::offset_to_array_of_scalars(
-                    self.palette_entry_labels_array_offset().unwrap(),
-                    self.palette_entry_labels_array(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Cpal<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
-    }
-}
-
-/// The [PaletteType](https://learn.microsoft.com/en-us/typography/opentype/spec/cpal#palette-type-array) flags.
+/// Flags describing the backgrounds for which a palette is suitable.
+///
+/// These flags help applications select a palette for the intended background.
+/// Both flags may be set when a palette is suitable for both light and dark
+/// backgrounds. All other bits are reserved and must be zero.
+///
+/// Palette type information is optional and is available in CPAL version 1.
+/// See the [CPAL palette type specification](https://learn.microsoft.com/en-us/typography/opentype/spec/cpal#palette-type-array).
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, bytemuck :: AnyBitPattern)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[repr(transparent)]
@@ -305,10 +273,10 @@ pub struct PaletteType {
 }
 
 impl PaletteType {
-    /// Bit 0: palette is appropriate to use when displaying the font on a light background such as white.
+    /// The palette is suitable for displaying text on a light background, such as white.
     pub const USABLE_WITH_LIGHT_BACKGROUND: Self = Self { bits: 0x0001 };
 
-    /// Bit 1: palette is appropriate to use when displaying the font on a dark background such as black.
+    /// The palette is suitable for displaying text on a dark background, such as black.
     pub const USABLE_WITH_DARK_BACKGROUND: Self = Self { bits: 0x0002 };
 }
 
@@ -603,47 +571,50 @@ impl font_types::Scalar for PaletteType {
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> From<PaletteType> for FieldType<'a> {
-    fn from(src: PaletteType) -> FieldType<'a> {
-        src.bits().into()
-    }
-}
-
-/// [CPAL (Color Record)](https://learn.microsoft.com/en-us/typography/opentype/spec/cpal#palette-entries-and-color-records) record
+/// A palette color stored as four 8-bit components.
 ///
-/// Contains a color in non-premultiplied BGRA form, in the sRGB color space.
+/// The RGB components use the non-linear sRGB encoding and are not premultiplied
+/// by alpha. Alpha represents opacity on a linear scale: 0 is fully transparent
+/// and 255 is fully opaque.
+///
+/// See the [CPAL color record specification](https://learn.microsoft.com/en-us/typography/opentype/spec/cpal#palette-entries-and-color-records).
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Copy, bytemuck :: AnyBitPattern)]
 #[repr(C)]
 #[repr(packed)]
 pub struct ColorRecord {
-    /// Blue value (B0).
+    /// Blue component in non-linear sRGB, from 0 to 255.
     pub blue: u8,
-    /// Green value (B1).
+    /// Green component in non-linear sRGB, from 0 to 255.
     pub green: u8,
-    /// Red value (B2).
+    /// Red component in non-linear sRGB, from 0 to 255.
     pub red: u8,
-    /// Alpha value (B3).
+    /// Opacity, from 0 (fully transparent) to 255 (fully opaque).
+    ///
+    /// This may be combined with additional opacity specified by the paint
+    /// using this color, such as the alpha value in a COLR paint table.
     pub alpha: u8,
 }
 
 impl ColorRecord {
-    /// Blue value (B0).
+    /// Blue component in non-linear sRGB, from 0 to 255.
     pub fn blue(&self) -> u8 {
         self.blue
     }
 
-    /// Green value (B1).
+    /// Green component in non-linear sRGB, from 0 to 255.
     pub fn green(&self) -> u8 {
         self.green
     }
 
-    /// Red value (B2).
+    /// Red component in non-linear sRGB, from 0 to 255.
     pub fn red(&self) -> u8 {
         self.red
     }
 
-    /// Alpha value (B3).
+    /// Opacity, from 0 (fully transparent) to 255 (fully opaque).
+    ///
+    /// This may be combined with additional opacity specified by the paint
+    /// using this color, such as the alpha value in a COLR paint table.
     pub fn alpha(&self) -> u8 {
         self.alpha
     }
@@ -652,21 +623,4 @@ impl ColorRecord {
 impl FixedSize for ColorRecord {
     const RAW_BYTE_LEN: usize =
         u8::RAW_BYTE_LEN + u8::RAW_BYTE_LEN + u8::RAW_BYTE_LEN + u8::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for ColorRecord {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "ColorRecord",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("blue", self.blue())),
-                1usize => Some(Field::new("green", self.green())),
-                2usize => Some(Field::new("red", self.red())),
-                3usize => Some(Field::new("alpha", self.alpha())),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }

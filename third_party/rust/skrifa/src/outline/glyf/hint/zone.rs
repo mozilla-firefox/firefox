@@ -6,9 +6,8 @@ use read_fonts::{
 };
 
 use super::{
-    error::HintErrorKind,
     graphics::{CoordAxis, GraphicsState},
-    math,
+    math, HintErrorKind,
 };
 
 use HintErrorKind::{InvalidPointIndex, InvalidPointRange};
@@ -165,7 +164,7 @@ impl<'a> Zone<'a> {
             let mut end_point = self.contour(i)? as usize;
             let first_point = point;
             if end_point >= self.points.len() {
-                end_point = self.points.len() - 1;
+                end_point = self.points.len().saturating_sub(1);
             }
             while point <= end_point && !self.is_touched(point, axis)? {
                 point += 1;
@@ -335,7 +334,7 @@ impl<'a> GraphicsState<'a> {
     /// all accesses would be valid.
     pub fn in_bounds<const N: usize>(&self, pairs: [(ZonePointer, usize); N]) -> bool {
         for (zp, index) in pairs {
-            if index > self.zone(zp).points.len() {
+            if index >= self.zone(zp).points.len() {
                 return false;
             }
         }
@@ -449,14 +448,18 @@ impl GraphicsState<'_> {
                 // <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L1669>
                 let fv = self.freedom_vector;
                 let distance = distance.to_bits();
+                // A move measured along a horizontal projection vector is
+                // made even in backward compatibility mode. Comic Sans MS
+                // depends on it.
+                let horizontal = self.proj_vector.y == 0;
                 if fv.x != 0 {
-                    if !back_compat {
+                    if !back_compat || horizontal {
                         point.x += F26Dot6::from_bits(math::mul_div(distance, fv.x, self.fdotp));
                     }
                     zone.touch(point_ix, CoordAxis::X)?;
                 }
                 if fv.y != 0 {
-                    if !back_compat_and_did_iup {
+                    if !back_compat_and_did_iup || horizontal {
                         zone.point_mut(point_ix)?.y +=
                             F26Dot6::from_bits(math::mul_div(distance, fv.y, self.fdotp));
                     }
@@ -639,6 +642,19 @@ mod tests {
     }
 
     #[test]
+    fn iup_does_not_panic_with_empty_points() {
+        let mut zone = Zone {
+            unscaled: &[],
+            original: &mut [],
+            points: &mut [],
+            contours: &[0],
+            flags: &mut [],
+        };
+        let _ = zone.iup(CoordAxis::X);
+        let _ = zone.iup(CoordAxis::Y);
+    }
+
+    #[test]
     fn move_point_x() {
         let mut mock = MockGraphicsState::new();
         let mut gs = mock.graphics_state(100, 0);
@@ -697,6 +713,25 @@ mod tests {
         gs.move_point(ZonePointer::Glyph, 0, dist).unwrap();
         let point = gs.zones[1].point(point_ix).unwrap();
         assert_eq!(point.map(F26Dot6::to_bits), Point::new(4, -16));
+    }
+
+    // With a horizontal projection vector, a diagonal move is made in both
+    // directions despite backward compatibility.
+    #[test]
+    fn move_point_along_a_horizontal_projection() {
+        let mut mock = MockGraphicsState::new();
+        let mut gs = mock.graphics_state(100, 50);
+        gs.proj_vector = math::normalize14(-100, 0);
+        gs.update_projection_state();
+        assert_eq!(gs.freedom_axis, CoordAxis::Both);
+        gs.did_iup_x = true;
+        gs.did_iup_y = true;
+        let orig_point = gs.zones[1].point(0).unwrap();
+        gs.move_point(ZonePointer::Glyph, 0, F26Dot6::from_bits(10))
+            .unwrap();
+        let point = gs.zones[1].point(0).unwrap();
+        assert_ne!(point.x, orig_point.x);
+        assert_ne!(point.y, orig_point.y);
     }
 
     #[test]
@@ -782,6 +817,15 @@ mod tests {
                 dy: F26Dot6::from_f64(0.203125),
             }
         );
+    }
+
+    #[test]
+    fn in_bounds_rejects_index_equal_to_len() {
+        let mut mock = MockGraphicsState::new();
+        let gs = mock.graphics_state(100, 50);
+        let len = gs.zones[ZonePointer::Glyph as usize].points.len();
+        assert!(!gs.in_bounds([(ZonePointer::Glyph, len)]));
+        assert!(gs.in_bounds([(ZonePointer::Glyph, len.saturating_sub(1))]));
     }
 
     struct MockGraphicsState {

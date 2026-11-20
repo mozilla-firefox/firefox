@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Meta<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,41 @@ impl TopLevelTable for Meta<'_> {
     const TAG: Tag = Tag::new(b"meta");
 }
 
+impl ReadArgs for Meta<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Meta<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct MetaFixedHeader {
+    pub version: BigEndian<u32>,
+    pub flags: BigEndian<u32>,
+    pub reserved: BigEndian<u32>,
+    pub data_maps_count: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<MetaFixedHeader>() <= Meta::MIN_SIZE);
+
 /// [`meta`](https://docs.microsoft.com/en-us/typography/opentype/spec/meta)
 #[derive(Clone)]
 pub struct Meta<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, MetaFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -44,57 +65,58 @@ impl<'a> Meta<'a> {
 
     /// Version number of the metadata table — set to 1.
     pub fn version(&self) -> u32 {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// Flags — currently unused; set to 0.
     pub fn flags(&self) -> u32 {
-        let range = self.flags_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().flags.get()
     }
 
     /// The number of data maps in the table.
     pub fn data_maps_count(&self) -> u32 {
-        let range = self.data_maps_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().data_maps_count.get()
     }
 
     /// Array of data map records.
     pub fn data_maps(&self) -> &'a [DataMapRecord] {
         let range = self.data_maps_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u32::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn flags_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn reserved_byte_range(&self) -> Range<usize> {
         let start = self.flags_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn data_maps_count_byte_range(&self) -> Range<usize> {
         let start = self.reserved_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn data_maps_byte_range(&self) -> Range<usize> {
         let data_maps_count = self.data_maps_count();
         let start = self.data_maps_count_byte_range().end;
-        let end = start
-            + (transforms::to_usize(data_maps_count)).saturating_mul(DataMapRecord::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(data_maps_count)).saturating_mul(DataMapRecord::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -104,39 +126,9 @@ const _: () = assert!(FontData::default_data_long_enough(Meta::MIN_SIZE));
 impl Default for Meta<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Meta<'a> {
-    fn type_name(&self) -> &str {
-        "Meta"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new("flags", self.flags())),
-            2usize => Some(Field::new("data_maps_count", self.data_maps_count())),
-            3usize => Some(Field::new(
-                "data_maps",
-                traversal::FieldType::array_of_records(
-                    stringify!(DataMapRecord),
-                    self.data_maps(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Meta<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -170,7 +162,7 @@ impl DataMapRecord {
     /// By calling its `offset_data` method.
     pub fn data<'a>(&self, data: FontData<'a>) -> Result<Metadata<'a>, ReadError> {
         let args = (self.tag(), self.data_length());
-        self.data_offset().resolve_with_args(data, &args)
+        self.data_offset().resolve_with_args(data, args)
     }
 
     /// Length of the data, in bytes. The data is not required to be padded to any byte boundary.
@@ -181,20 +173,4 @@ impl DataMapRecord {
 
 impl FixedSize for DataMapRecord {
     const RAW_BYTE_LEN: usize = Tag::RAW_BYTE_LEN + Offset32::RAW_BYTE_LEN + u32::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for DataMapRecord {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "DataMapRecord",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("tag", self.tag())),
-                1usize => Some(Field::new("data_offset", traversal::FieldType::Unknown)),
-                2usize => Some(Field::new("data_length", self.data_length())),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }

@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Fvar<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,44 @@ impl TopLevelTable for Fvar<'_> {
     const TAG: Tag = Tag::new(b"fvar");
 }
 
+impl ReadArgs for Fvar<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Fvar<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct FvarFixedHeader {
+    pub version: BigEndian<MajorMinor>,
+    pub axis_instance_arrays_offset: BigEndian<Offset16>,
+    pub _reserved: BigEndian<u16>,
+    pub axis_count: BigEndian<u16>,
+    pub axis_size: BigEndian<u16>,
+    pub instance_count: BigEndian<u16>,
+    pub instance_size: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<FvarFixedHeader>() <= Fvar::MIN_SIZE);
+
 /// The [fvar (Font Variations)](https://docs.microsoft.com/en-us/typography/opentype/spec/fvar) table
 #[derive(Clone)]
 pub struct Fvar<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, FvarFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -50,92 +74,86 @@ impl<'a> Fvar<'a> {
     /// Major version number of the font variations table — set to 1.
     /// Minor version number of the font variations table — set to 0.
     pub fn version(&self) -> MajorMinor {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// Offset in bytes from the beginning of the table to the start of the VariationAxisRecord array. The
     /// InstanceRecord array directly follows.
     pub fn axis_instance_arrays_offset(&self) -> Offset16 {
-        let range = self.axis_instance_arrays_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().axis_instance_arrays_offset.get()
     }
 
     /// Attempt to resolve [`axis_instance_arrays_offset`][Self::axis_instance_arrays_offset].
     pub fn axis_instance_arrays(&self) -> Result<AxisInstanceArrays<'a>, ReadError> {
-        let data = self.data;
+        let data = self.offset_data();
         let args = (
             self.axis_count(),
             self.instance_count(),
             self.instance_size(),
         );
         self.axis_instance_arrays_offset()
-            .resolve_with_args(data, &args)
+            .resolve_with_args(data, args)
     }
 
     /// The number of variation axes in the font (the number of records in the axes array).
     pub fn axis_count(&self) -> u16 {
-        let range = self.axis_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().axis_count.get()
     }
 
     /// The size in bytes of each VariationAxisRecord — set to 20 (0x0014) for this version.
     pub fn axis_size(&self) -> u16 {
-        let range = self.axis_size_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().axis_size.get()
     }
 
     /// The number of named instances defined in the font (the number of records in the instances array).
     pub fn instance_count(&self) -> u16 {
-        let range = self.instance_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().instance_count.get()
     }
 
     /// The size in bytes of each InstanceRecord — set to either axisCount * sizeof(Fixed) + 4, or to axisCount * sizeof(Fixed) + 6.
     pub fn instance_size(&self) -> u16 {
-        let range = self.instance_size_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().instance_size.get()
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + MajorMinor::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(MajorMinor::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn axis_instance_arrays_offset_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + Offset16::RAW_BYTE_LEN;
+        let end = start.saturating_add(Offset16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn _reserved_byte_range(&self) -> Range<usize> {
         let start = self.axis_instance_arrays_offset_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn axis_count_byte_range(&self) -> Range<usize> {
         let start = self._reserved_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn axis_size_byte_range(&self) -> Range<usize> {
         let start = self.axis_count_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn instance_count_byte_range(&self) -> Range<usize> {
         let start = self.axis_size_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn instance_size_byte_range(&self) -> Range<usize> {
         let start = self.instance_count_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 }
@@ -145,40 +163,9 @@ const _: () = assert!(FontData::default_data_long_enough(Fvar::MIN_SIZE));
 impl Default for Fvar<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Fvar<'a> {
-    fn type_name(&self) -> &str {
-        "Fvar"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new(
-                "axis_instance_arrays_offset",
-                FieldType::offset(
-                    self.axis_instance_arrays_offset(),
-                    self.axis_instance_arrays(),
-                ),
-            )),
-            2usize => Some(Field::new("axis_count", self.axis_count())),
-            3usize => Some(Field::new("axis_size", self.axis_size())),
-            4usize => Some(Field::new("instance_count", self.instance_count())),
-            5usize => Some(Field::new("instance_size", self.instance_size())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Fvar<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -188,7 +175,7 @@ impl<'a> MinByteRange<'a> for AxisInstanceArrays<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -196,14 +183,17 @@ impl ReadArgs for AxisInstanceArrays<'_> {
     type Args = (u16, u16, u16);
 }
 
-impl<'a> FontReadWithArgs<'a> for AxisInstanceArrays<'a> {
-    fn read_with_args(data: FontData<'a>, args: &(u16, u16, u16)) -> Result<Self, ReadError> {
-        let (axis_count, instance_count, instance_size) = *args;
+impl<'a> FontRead<'a> for AxisInstanceArrays<'a> {
+    fn read_with_args(data: FontData<'a>, args: (u16, u16, u16)) -> Result<Self, ReadError> {
+        let (axis_count, instance_count, instance_size) = args;
 
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self {
             data,
             axis_count,
@@ -225,14 +215,24 @@ impl<'a> AxisInstanceArrays<'a> {
         instance_size: u16,
     ) -> Result<Self, ReadError> {
         let args = (axis_count, instance_count, instance_size);
-        Self::read_with_args(data, &args)
+        Self::read_with_args(data, args)
     }
 }
+
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct AxisInstanceArraysFixedHeader {}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () =
+    assert!(std::mem::size_of::<AxisInstanceArraysFixedHeader>() <= AxisInstanceArrays::MIN_SIZE);
 
 /// Shim table to handle combined axis and instance arrays.
 #[derive(Clone)]
 pub struct AxisInstanceArrays<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, AxisInstanceArraysFixedHeader>,
     axis_count: u16,
     instance_count: u16,
     instance_size: u16,
@@ -246,15 +246,21 @@ impl<'a> AxisInstanceArrays<'a> {
     /// Variation axis record array.
     pub fn axes(&self) -> &'a [VariationAxisRecord] {
         let range = self.axes_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// Instance record array.
     pub fn instances(&self) -> ComputedArray<'a, InstanceRecord<'a>> {
         let range = self.instances_byte_range();
-        self.data
-            .read_with_args(range, &(self.axis_count(), self.instance_size()))
-            .unwrap_or_default()
+        ComputedArray::new(
+            self.offset_data(),
+            range,
+            (self.axis_count(), self.instance_size()),
+        )
+        .unwrap_or_default()
     }
 
     pub(crate) fn axis_count(&self) -> u16 {
@@ -271,23 +277,25 @@ impl<'a> AxisInstanceArrays<'a> {
 
     pub fn axes_byte_range(&self) -> Range<usize> {
         let axis_count = self.axis_count();
-        let start = 0;
-        let end = start
-            + (transforms::to_usize(axis_count)).saturating_mul(VariationAxisRecord::RAW_BYTE_LEN);
+        let start = 0usize;
+        let end = start.saturating_add(
+            (transforms::to_usize(axis_count)).saturating_mul(VariationAxisRecord::RAW_BYTE_LEN),
+        );
         start..end
     }
 
     pub fn instances_byte_range(&self) -> Range<usize> {
         let instance_count = self.instance_count();
         let start = self.axes_byte_range().end;
-        let end = start
-            + (transforms::to_usize(instance_count)).saturating_mul(
-                <InstanceRecord as ComputeSize>::compute_size(&(
+        let end = start.saturating_add(
+            (transforms::to_usize(instance_count)).saturating_mul(
+                <InstanceRecord as ComputeSize>::compute_size((
                     self.axis_count(),
                     self.instance_size(),
                 ))
                 .unwrap_or(0),
-            );
+            ),
+        );
         start..end
     }
 }
@@ -300,47 +308,12 @@ const _: () = assert!(FontData::default_data_long_enough(
 impl Default for AxisInstanceArrays<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
             axis_count: Default::default(),
             instance_count: Default::default(),
             instance_size: Default::default(),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for AxisInstanceArrays<'a> {
-    fn type_name(&self) -> &str {
-        "AxisInstanceArrays"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new(
-                "axes",
-                traversal::FieldType::array_of_records(
-                    stringify!(VariationAxisRecord),
-                    self.axes(),
-                    self.offset_data(),
-                ),
-            )),
-            1usize => Some(Field::new(
-                "instances",
-                traversal::FieldType::computed_array(
-                    "InstanceRecord",
-                    self.instances(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for AxisInstanceArrays<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -402,23 +375,4 @@ impl FixedSize for VariationAxisRecord {
         + Fixed::RAW_BYTE_LEN
         + u16::RAW_BYTE_LEN
         + NameId::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for VariationAxisRecord {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "VariationAxisRecord",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("axis_tag", self.axis_tag())),
-                1usize => Some(Field::new("min_value", self.min_value())),
-                2usize => Some(Field::new("default_value", self.default_value())),
-                3usize => Some(Field::new("max_value", self.max_value())),
-                4usize => Some(Field::new("flags", self.flags())),
-                5usize => Some(Field::new("axis_name_id", self.axis_name_id())),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }

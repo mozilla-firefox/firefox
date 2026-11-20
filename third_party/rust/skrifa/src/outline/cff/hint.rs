@@ -1,7 +1,7 @@
 //! CFF hinting.
 
 use read_fonts::{
-    ps::{cs::CommandSink, hinting::Blues},
+    ps::{charstring::CommandSink, Blues},
     types::Fixed,
 };
 
@@ -906,7 +906,7 @@ fn msb_mask(bit: usize) -> u8 {
     1 << (7 - (bit & 0x7))
 }
 
-pub(super) struct HintingSink<'a, S> {
+pub(crate) struct HintingSink<'a, S> {
     state: &'a HintState,
     sink: &'a mut S,
     stem_hints: [StemHint; MAX_HINTS],

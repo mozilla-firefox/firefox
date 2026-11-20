@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Vorg<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,40 @@ impl TopLevelTable for Vorg<'_> {
     const TAG: Tag = Tag::new(b"VORG");
 }
 
+impl ReadArgs for Vorg<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Vorg<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct VorgFixedHeader {
+    pub version: BigEndian<MajorMinor>,
+    pub default_vert_origin_y: BigEndian<i16>,
+    pub num_vert_origin_y_metrics: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<VorgFixedHeader>() <= Vorg::MIN_SIZE);
+
 /// The [VORG (Vertical Origin)](https://docs.microsoft.com/en-us/typography/opentype/spec/vorg) table.
 #[derive(Clone)]
 pub struct Vorg<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, VorgFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -43,54 +63,55 @@ impl<'a> Vorg<'a> {
 
     /// Major/minor version number. Set to 1.0.
     pub fn version(&self) -> MajorMinor {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// The y coordinate of a glyph’s vertical origin, in the font’s design
     /// coordinate system, to be used if no entry is present for the glyph
     /// in the vertOriginYMetrics array.
     pub fn default_vert_origin_y(&self) -> i16 {
-        let range = self.default_vert_origin_y_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().default_vert_origin_y.get()
     }
 
     /// Number of elements in the vertOriginYMetrics array.
     pub fn num_vert_origin_y_metrics(&self) -> u16 {
-        let range = self.num_vert_origin_y_metrics_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().num_vert_origin_y_metrics.get()
     }
 
     /// Array of VertOriginYMetrics records, sorted by glyph ID.
     pub fn vert_origin_y_metrics(&self) -> &'a [VertOriginYMetrics] {
         let range = self.vert_origin_y_metrics_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + MajorMinor::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(MajorMinor::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn default_vert_origin_y_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + i16::RAW_BYTE_LEN;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn num_vert_origin_y_metrics_byte_range(&self) -> Range<usize> {
         let start = self.default_vert_origin_y_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn vert_origin_y_metrics_byte_range(&self) -> Range<usize> {
         let num_vert_origin_y_metrics = self.num_vert_origin_y_metrics();
         let start = self.num_vert_origin_y_metrics_byte_range().end;
-        let end = start
-            + (transforms::to_usize(num_vert_origin_y_metrics))
-                .saturating_mul(VertOriginYMetrics::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(num_vert_origin_y_metrics))
+                .saturating_mul(VertOriginYMetrics::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -100,45 +121,9 @@ const _: () = assert!(FontData::default_data_long_enough(Vorg::MIN_SIZE));
 impl Default for Vorg<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Vorg<'a> {
-    fn type_name(&self) -> &str {
-        "Vorg"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new(
-                "default_vert_origin_y",
-                self.default_vert_origin_y(),
-            )),
-            2usize => Some(Field::new(
-                "num_vert_origin_y_metrics",
-                self.num_vert_origin_y_metrics(),
-            )),
-            3usize => Some(Field::new(
-                "vert_origin_y_metrics",
-                traversal::FieldType::array_of_records(
-                    stringify!(VertOriginYMetrics),
-                    self.vert_origin_y_metrics(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Vorg<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -167,19 +152,4 @@ impl VertOriginYMetrics {
 
 impl FixedSize for VertOriginYMetrics {
     const RAW_BYTE_LEN: usize = GlyphId16::RAW_BYTE_LEN + i16::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for VertOriginYMetrics {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "VertOriginYMetrics",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("glyph_index", self.glyph_index())),
-                1usize => Some(Field::new("vert_origin_y", self.vert_origin_y())),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }

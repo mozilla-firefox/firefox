@@ -2,26 +2,35 @@
 
 include!("../../generated/generated_hmtx.rs");
 
-impl Hmtx<'_> {
-    /// Returns the advance width for the given glyph identifier.
-    pub fn advance(&self, glyph_id: GlyphId) -> Option<u16> {
-        advance(self.h_metrics(), glyph_id)
-    }
+use crate::{table_provider::prefer_extended, TableProvider};
 
-    /// Returns the left side bearing for the given glyph identifier.
-    pub fn side_bearing(&self, glyph_id: GlyphId) -> Option<i16> {
-        side_bearing(self.h_metrics(), self.left_side_bearings(), glyph_id)
-    }
+macro_rules! impl_hmtx_lookup {
+    ($table:ident) => {
+        impl $table<'_> {
+            /// Returns the advance width for the given glyph identifier.
+            pub fn advance(&self, glyph_id: GlyphId) -> Option<u16> {
+                advance(self.h_metrics(), glyph_id)
+            }
+
+            /// Returns the left side bearing for the given glyph identifier.
+            pub fn side_bearing(&self, glyph_id: GlyphId) -> Option<i16> {
+                side_bearing(self.h_metrics(), self.left_side_bearings(), glyph_id)
+            }
+        }
+    };
 }
 
-pub(super) fn advance(metrics: &[LongMetric], glyph_id: GlyphId) -> Option<u16> {
+impl_hmtx_lookup!(Hmtx);
+impl_hmtx_lookup!(HmtxExtended);
+
+pub(crate) fn advance(metrics: &[LongMetric], glyph_id: GlyphId) -> Option<u16> {
     metrics
         .get(glyph_id.to_u32() as usize)
         .or_else(|| metrics.last())
         .map(|metric| metric.advance())
 }
 
-pub(super) fn side_bearing(
+pub(crate) fn side_bearing(
     metrics: &[LongMetric],
     side_bearings: &[BigEndian<i16>],
     glyph_id: GlyphId,
@@ -93,5 +102,88 @@ mod tests {
             assert_eq!(hmtx.advance(gid), Some(advance));
             assert_eq!(hmtx.side_bearing(gid), Some(lsb));
         }
+    }
+}
+
+/// Unvaried per-glyph records from HMTX/hmtx or VMTX/vmtx.
+///
+/// Both tables hold the same records, so one type reads either, and which
+/// direction it describes is fixed when it is read.
+///
+/// Obtain these through [`TableProvider::h_glyph_metric_records`] or
+/// [`TableProvider::v_glyph_metric_records`]. Uppercase tables are selected
+/// independently of the outlines, with the original tables used if they are
+/// absent.
+/// Nothing here depends on a location, so every location shares one parse.
+#[derive(Clone, Default)]
+pub struct GlyphMetricRecords<'a> {
+    pub(crate) metrics: &'a [LongMetric],
+    /// Bare side bearings after the last long metric.
+    pub(crate) bearings: &'a [BigEndian<i16>],
+}
+
+/// The records of one table, whichever the font would select.
+macro_rules! glyph_metric_records_from {
+    ($($table:ty => $metrics:ident, $bearings:ident;)*) => {
+        $(
+            impl<'a> From<$table> for GlyphMetricRecords<'a> {
+                fn from(table: $table) -> Self {
+                    Self {
+                        metrics: table.$metrics(),
+                        bearings: table.$bearings(),
+                    }
+                }
+            }
+        )*
+    };
+}
+
+glyph_metric_records_from! {
+    Hmtx<'a> => h_metrics, left_side_bearings;
+    HmtxExtended<'a> => h_metrics, left_side_bearings;
+    super::vmtx::Vmtx<'a> => v_metrics, top_side_bearings;
+    super::vmtx::VmtxExtended<'a> => v_metrics, top_side_bearings;
+}
+
+impl<'a> GlyphMetricRecords<'a> {
+    pub(crate) fn read_horizontal(
+        tables: &(impl TableProvider<'a> + ?Sized),
+    ) -> Result<Self, ReadError> {
+        prefer_extended(
+            tables.hmtx_extended().map(Self::from),
+            Tag::new(b"HMTX"),
+            || tables.hmtx().map(Self::from),
+        )
+    }
+
+    pub(crate) fn read_vertical(
+        tables: &(impl TableProvider<'a> + ?Sized),
+    ) -> Result<Self, ReadError> {
+        prefer_extended(
+            tables.vmtx_extended().map(Self::from),
+            Tag::new(b"VMTX"),
+            || tables.vmtx().map(Self::from),
+        )
+    }
+
+    /// Returns the paired advance and side-bearing records.
+    pub fn long_metrics(&self) -> &'a [LongMetric] {
+        self.metrics
+    }
+
+    /// Returns the side bearings after the last long metric record.
+    pub fn side_bearings(&self) -> &'a [BigEndian<i16>] {
+        self.bearings
+    }
+
+    /// Returns the unvaried advance, repeating the last record when needed.
+    /// This does not check the font's glyph count.
+    pub fn advance(&self, glyph: GlyphId) -> Option<u16> {
+        advance(self.metrics, glyph)
+    }
+
+    /// Returns the unvaried leading side bearing for a glyph.
+    pub fn side_bearing(&self, glyph: GlyphId) -> Option<i16> {
+        side_bearing(self.metrics, self.bearings, glyph)
     }
 }

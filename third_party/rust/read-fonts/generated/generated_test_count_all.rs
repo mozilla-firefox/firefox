@@ -11,23 +11,41 @@ impl<'a> MinByteRange<'a> for CountAll16<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for CountAll16<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for CountAll16<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct CountAll16FixedHeader {
+    pub some_field: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<CountAll16FixedHeader>() <= CountAll16::MIN_SIZE);
+
 #[derive(Clone)]
 pub struct CountAll16<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, CountAll16FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -36,25 +54,28 @@ impl<'a> CountAll16<'a> {
     basic_table_impls!(impl_the_methods);
 
     pub fn some_field(&self) -> u16 {
-        let range = self.some_field_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().some_field.get()
     }
 
     pub fn remainder(&self) -> &'a [BigEndian<u16>] {
         let range = self.remainder_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn some_field_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn remainder_byte_range(&self) -> Range<usize> {
         let start = self.some_field_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / u16::RAW_BYTE_LEN * u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u16::RAW_BYTE_LEN * u16::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -64,30 +85,9 @@ const _: () = assert!(FontData::default_data_long_enough(CountAll16::MIN_SIZE));
 impl Default for CountAll16<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for CountAll16<'a> {
-    fn type_name(&self) -> &str {
-        "CountAll16"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("some_field", self.some_field())),
-            1usize => Some(Field::new("remainder", self.remainder())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for CountAll16<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -97,23 +97,41 @@ impl<'a> MinByteRange<'a> for CountAll32<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for CountAll32<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for CountAll32<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct CountAll32FixedHeader {
+    pub some_field: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<CountAll32FixedHeader>() <= CountAll32::MIN_SIZE);
+
 #[derive(Clone)]
 pub struct CountAll32<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, CountAll32FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -122,25 +140,28 @@ impl<'a> CountAll32<'a> {
     basic_table_impls!(impl_the_methods);
 
     pub fn some_field(&self) -> u16 {
-        let range = self.some_field_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().some_field.get()
     }
 
     pub fn remainder(&self) -> &'a [BigEndian<u32>] {
         let range = self.remainder_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn some_field_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn remainder_byte_range(&self) -> Range<usize> {
         let start = self.some_field_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / u32::RAW_BYTE_LEN * u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u32::RAW_BYTE_LEN * u32::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -150,29 +171,8 @@ const _: () = assert!(FontData::default_data_long_enough(CountAll32::MIN_SIZE));
 impl Default for CountAll32<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for CountAll32<'a> {
-    fn type_name(&self) -> &str {
-        "CountAll32"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("some_field", self.some_field())),
-            1usize => Some(Field::new("remainder", self.remainder())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for CountAll32<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }

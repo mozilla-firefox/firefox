@@ -12,7 +12,7 @@ pub type FontMatrix = types::Matrix<Fixed>;
 /// Note: this transforms the translation component of `b` by the upper 2x2 of
 /// `a`. This matches the offset transform FreeType uses when concatenating
 /// the matrices from the top and font dicts.
-pub fn combine_scaled(a: &FontMatrix, b: &FontMatrix, scale: i32) -> FontMatrix {
+fn combine_scaled(a: &FontMatrix, b: &FontMatrix, scale: i32) -> FontMatrix {
     // See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/80a507a6b8e3d2906ad2c8ba69329bd2fb2a85ef/src/base/ftcalc.c#L719>
     let a = a.elements();
     let b = b.elements();
@@ -155,6 +155,27 @@ impl ScaledFontMatrix {
         }
         let scale = num::BCD_POWER_TENS[(-max_scaling) as usize];
         Some(Self { matrix, scale })
+    }
+
+    /// Concatenates this matrix, from a top dictionary, with `sub`, from a
+    /// font dictionary, and normalizes the result.
+    ///
+    /// See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/f1cd6dbfa0c98f352b698448f40ac27e8fb3832e/src/cff/cffobjs.c#L746>
+    #[must_use]
+    pub fn combine(&self, sub: &ScaledFontMatrix) -> ScaledFontMatrix {
+        let scaling = if self.scale > 1 && sub.scale > 1 {
+            self.scale.min(sub.scale)
+        } else {
+            1
+        };
+        let matrix = combine_scaled(&self.matrix, &sub.matrix, scaling);
+        let scale = Fixed::from_bits(sub.scale)
+            .mul_div(Fixed::from_bits(self.scale), Fixed::from_bits(scaling));
+        ScaledFontMatrix {
+            matrix,
+            scale: scale.to_bits(),
+        }
+        .normalize()
     }
 
     /// Compute a new font matrix and UPEM scale factor where the Y scale of

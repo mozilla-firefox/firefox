@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Kerx<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,40 @@ impl TopLevelTable for Kerx<'_> {
     const TAG: Tag = Tag::new(b"kerx");
 }
 
+impl ReadArgs for Kerx<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Kerx<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct KerxFixedHeader {
+    pub version: BigEndian<u16>,
+    pub padding: BigEndian<u16>,
+    pub n_tables: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<KerxFixedHeader>() <= Kerx::MIN_SIZE);
+
 /// The [kerx (Extended Kerning)](https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6morx.html) table.
 #[derive(Clone)]
 pub struct Kerx<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, KerxFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -43,50 +63,48 @@ impl<'a> Kerx<'a> {
 
     /// The version number of the extended kerning table (currently 2, 3, or 4)
     pub fn version(&self) -> u16 {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// The number of subtables included in the extended kerning table.
     pub fn n_tables(&self) -> u32 {
-        let range = self.n_tables_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().n_tables.get()
     }
 
     pub fn subtables(&self) -> VarLenArray<'a, Subtable<'a>> {
         let range = self.subtables_byte_range();
-        self.data
+        self.offset_data()
             .split_off(range.start)
             .and_then(|d| VarLenArray::read(d).ok())
             .unwrap_or_default()
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn padding_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn n_tables_byte_range(&self) -> Range<usize> {
         let start = self.padding_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn subtables_byte_range(&self) -> Range<usize> {
         let n_tables = self.n_tables();
         let start = self.n_tables_byte_range().end;
-        let end = start + {
-            let data = self.data.split_off(start).unwrap_or_default();
+        let end = start.saturating_add({
+            let data = self.offset_data().split_off(start).unwrap_or_default();
             <Subtable as VarSize>::total_len_for_count(data, transforms::to_usize(n_tables))
                 .unwrap_or(0)
-        };
+        });
         start..end
     }
 }
@@ -96,34 +114,9 @@ const _: () = assert!(FontData::default_data_long_enough(Kerx::MIN_SIZE));
 impl Default for Kerx<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Kerx<'a> {
-    fn type_name(&self) -> &str {
-        "Kerx"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new("n_tables", self.n_tables())),
-            2usize => Some(Field::new(
-                "subtables",
-                traversal::FieldType::var_array("Subtable", self.subtables(), self.offset_data()),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Kerx<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -133,24 +126,44 @@ impl<'a> MinByteRange<'a> for Subtable<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for Subtable<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Subtable<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct SubtableFixedHeader {
+    pub length: BigEndian<u32>,
+    pub coverage: BigEndian<u32>,
+    pub tuple_count: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<SubtableFixedHeader>() <= Subtable::MIN_SIZE);
+
 /// A subtable in a `kerx` table.
 #[derive(Clone)]
 pub struct Subtable<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, SubtableFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -160,50 +173,51 @@ impl<'a> Subtable<'a> {
 
     /// The length of this subtable in bytes, including this header.
     pub fn length(&self) -> u32 {
-        let range = self.length_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().length.get()
     }
 
     /// Circumstances under which this table is used.
     pub fn coverage(&self) -> u32 {
-        let range = self.coverage_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().coverage.get()
     }
 
     /// The tuple count. This value is only used with variation fonts and should be 0 for all other fonts. The subtable's tupleCount will be ignored if the 'kerx' table version is less than 4.
     pub fn tuple_count(&self) -> u32 {
-        let range = self.tuple_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().tuple_count.get()
     }
 
     /// Subtable specific data.
     pub fn data(&self) -> &'a [u8] {
         let range = self.data_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn length_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u32::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn coverage_byte_range(&self) -> Range<usize> {
         let start = self.length_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn tuple_count_byte_range(&self) -> Range<usize> {
         let start = self.coverage_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn data_byte_range(&self) -> Range<usize> {
         let start = self.tuple_count_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -213,32 +227,9 @@ const _: () = assert!(FontData::default_data_long_enough(Subtable::MIN_SIZE));
 impl Default for Subtable<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Subtable<'a> {
-    fn type_name(&self) -> &str {
-        "Subtable"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("length", self.length())),
-            1usize => Some(Field::new("coverage", self.coverage())),
-            2usize => Some(Field::new("tuple_count", self.tuple_count())),
-            3usize => Some(Field::new("data", self.data())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Subtable<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -248,24 +239,45 @@ impl<'a> MinByteRange<'a> for Subtable0<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for Subtable0<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Subtable0<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct Subtable0FixedHeader {
+    pub n_pairs: BigEndian<u32>,
+    pub search_range: BigEndian<u32>,
+    pub entry_selector: BigEndian<u32>,
+    pub range_shift: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<Subtable0FixedHeader>() <= Subtable0::MIN_SIZE);
+
 /// The type 0 `kerx` subtable.
 #[derive(Clone)]
 pub struct Subtable0<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, Subtable0FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -276,63 +288,63 @@ impl<'a> Subtable0<'a> {
 
     /// The number of kerning pairs in this subtable.
     pub fn n_pairs(&self) -> u32 {
-        let range = self.n_pairs_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().n_pairs.get()
     }
 
     /// The largest power of two less than or equal to the value of nPairs, multiplied by the size in bytes of an entry in the subtable.
     pub fn search_range(&self) -> u32 {
-        let range = self.search_range_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().search_range.get()
     }
 
     /// This is calculated as log2 of the largest power of two less than or equal to the value of nPairs. This value indicates how many iterations of the search loop have to be made. For example, in a list of eight items, there would be three iterations of the loop.
     pub fn entry_selector(&self) -> u32 {
-        let range = self.entry_selector_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().entry_selector.get()
     }
 
     /// The value of nPairs minus the largest power of two less than or equal to nPairs. This is multiplied by the size in bytes of an entry in the table.
     pub fn range_shift(&self) -> u32 {
-        let range = self.range_shift_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().range_shift.get()
     }
 
     /// Kerning records.
     pub fn pairs(&self) -> &'a [Subtable0Pair] {
         let range = self.pairs_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn n_pairs_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u32::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn search_range_byte_range(&self) -> Range<usize> {
         let start = self.n_pairs_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn entry_selector_byte_range(&self) -> Range<usize> {
         let start = self.search_range_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn range_shift_byte_range(&self) -> Range<usize> {
         let start = self.entry_selector_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn pairs_byte_range(&self) -> Range<usize> {
         let n_pairs = self.n_pairs();
         let start = self.range_shift_byte_range().end;
-        let end =
-            start + (transforms::to_usize(n_pairs)).saturating_mul(Subtable0Pair::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(n_pairs)).saturating_mul(Subtable0Pair::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -342,40 +354,9 @@ const _: () = assert!(FontData::default_data_long_enough(Subtable0::MIN_SIZE));
 impl Default for Subtable0<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Subtable0<'a> {
-    fn type_name(&self) -> &str {
-        "Subtable0"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("n_pairs", self.n_pairs())),
-            1usize => Some(Field::new("search_range", self.search_range())),
-            2usize => Some(Field::new("entry_selector", self.entry_selector())),
-            3usize => Some(Field::new("range_shift", self.range_shift())),
-            4usize => Some(Field::new(
-                "pairs",
-                traversal::FieldType::array_of_records(
-                    stringify!(Subtable0Pair),
-                    self.pairs(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Subtable0<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -412,20 +393,4 @@ impl Subtable0Pair {
 impl FixedSize for Subtable0Pair {
     const RAW_BYTE_LEN: usize =
         GlyphId16::RAW_BYTE_LEN + GlyphId16::RAW_BYTE_LEN + i16::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for Subtable0Pair {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "Subtable0Pair",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("left", self.left())),
-                1usize => Some(Field::new("right", self.right())),
-                2usize => Some(Field::new("value", self.value())),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }

@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Gasp<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,39 @@ impl TopLevelTable for Gasp<'_> {
     const TAG: Tag = Tag::new(b"gasp");
 }
 
+impl ReadArgs for Gasp<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Gasp<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct GaspFixedHeader {
+    pub version: BigEndian<u16>,
+    pub num_ranges: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<GaspFixedHeader>() <= Gasp::MIN_SIZE);
+
 /// [gasp](https://learn.microsoft.com/en-us/typography/opentype/spec/gasp#gasp-table-formats)
 #[derive(Clone)]
 pub struct Gasp<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, GaspFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -43,39 +62,41 @@ impl<'a> Gasp<'a> {
 
     /// Version number (set to 1)
     pub fn version(&self) -> u16 {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// Number of records to follow
     pub fn num_ranges(&self) -> u16 {
-        let range = self.num_ranges_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().num_ranges.get()
     }
 
     /// Sorted by ppem
     pub fn gasp_ranges(&self) -> &'a [GaspRange] {
         let range = self.gasp_ranges_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn num_ranges_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn gasp_ranges_byte_range(&self) -> Range<usize> {
         let num_ranges = self.num_ranges();
         let start = self.num_ranges_byte_range().end;
-        let end =
-            start + (transforms::to_usize(num_ranges)).saturating_mul(GaspRange::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(num_ranges)).saturating_mul(GaspRange::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -85,38 +106,9 @@ const _: () = assert!(FontData::default_data_long_enough(Gasp::MIN_SIZE));
 impl Default for Gasp<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Gasp<'a> {
-    fn type_name(&self) -> &str {
-        "Gasp"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new("num_ranges", self.num_ranges())),
-            2usize => Some(Field::new(
-                "gasp_ranges",
-                traversal::FieldType::array_of_records(
-                    stringify!(GaspRange),
-                    self.gasp_ranges(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Gasp<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -144,24 +136,6 @@ impl GaspRange {
 
 impl FixedSize for GaspRange {
     const RAW_BYTE_LEN: usize = u16::RAW_BYTE_LEN + GaspRangeBehavior::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for GaspRange {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "GaspRange",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("range_max_ppem", self.range_max_ppem())),
-                1usize => Some(Field::new(
-                    "range_gasp_behavior",
-                    self.range_gasp_behavior(),
-                )),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }
 
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, bytemuck :: AnyBitPattern)]
@@ -474,12 +448,5 @@ impl font_types::Scalar for GaspRangeBehavior {
     fn from_raw(raw: Self::Raw) -> Self {
         let t = <u16>::from_raw(raw);
         Self::from_bits_truncate(t)
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> From<GaspRangeBehavior> for FieldType<'a> {
-    fn from(src: GaspRangeBehavior) -> FieldType<'a> {
-        src.bits().into()
     }
 }

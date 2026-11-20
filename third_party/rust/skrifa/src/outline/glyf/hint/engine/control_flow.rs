@@ -34,6 +34,7 @@ impl Engine<'_> {
             let mut out = false;
             while !out {
                 let opcode = self.decode_next_opcode()?;
+                self.work_budget.skipping_instruction()?;
                 match opcode {
                     Opcode::IF => nest_depth += 1,
                     Opcode::ELSE => out = nest_depth == 1,
@@ -62,6 +63,7 @@ impl Engine<'_> {
         let mut nest_depth = 1;
         while nest_depth != 0 {
             let opcode = self.decode_next_opcode()?;
+            self.work_budget.skipping_instruction()?;
             match opcode {
                 Opcode::IF => nest_depth += 1,
                 Opcode::EIF => nest_depth -= 1,
@@ -170,7 +172,7 @@ impl Engine<'_> {
                     // If the offset is -1, we'll just loop in place... forever
                     return Err(HintErrorKind::InvalidJump);
                 }
-                self.loop_budget.doing_backward_jump()?;
+                self.work_budget.doing_backward_jump()?;
             }
             self.program.decoder.pc = self
                 .program
@@ -193,7 +195,7 @@ impl Engine<'_> {
 
 #[cfg(test)]
 mod tests {
-    use super::{super::MockEngine, HintErrorKind, Opcode};
+    use super::{super::MockEngine, super::MAX_RUN_INSTRUCTIONS, HintErrorKind, Opcode};
 
     #[test]
     fn if_else() {
@@ -301,7 +303,7 @@ mod tests {
         }
         // Exhaust backward jump loop budget
         {
-            engine.loop_budget.limit = 40;
+            engine.work_budget.loop_limit = 40;
             for i in 0..45 {
                 engine.value_stack.push(-5).unwrap();
                 let result = engine.op_jmpr();
@@ -315,5 +317,23 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn skipping_budget() {
+        let mut mock = MockEngine::new();
+        let mut engine = mock.engine();
+        let bytecode = [Opcode::IF, Opcode::EIF].map(|op| op as u8);
+        engine.program.decoder.bytecode = bytecode.as_slice();
+        // Simulate the budget being exhausted and trigger one more skipped
+        // instruction while scanning for matching control-flow opcodes.
+        engine.work_budget.skipped = MAX_RUN_INSTRUCTIONS;
+        engine.program.decoder.pc = 1;
+        engine.value_stack.push(0).unwrap();
+        let result = engine.op_if();
+        assert!(matches!(
+            result,
+            Err(HintErrorKind::ExceededExecutionBudget)
+        ));
     }
 }

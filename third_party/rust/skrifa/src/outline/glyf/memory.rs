@@ -1,8 +1,7 @@
 //! Memory allocation for TrueType scaling.
 
-use std::mem::{align_of, size_of};
-
 use read_fonts::{
+    mem::take_slice,
     tables::glyf::PointFlags,
     types::{F26Dot6, Fixed, Point},
 };
@@ -21,14 +20,14 @@ pub(crate) struct HarfBuzzOutlineMemory<'a> {
 
 impl<'a> HarfBuzzOutlineMemory<'a> {
     pub(super) fn new(outline: &Outline, buf: &'a mut [u8]) -> Option<Self> {
-        let (points, buf) = alloc_slice(buf, outline.points)?;
-        let (contours, buf) = alloc_slice(buf, outline.contours)?;
-        let (flags, buf) = alloc_slice(buf, outline.points)?;
+        let (points, buf) = take_slice(buf, outline.points)?;
+        let (contours, buf) = take_slice(buf, outline.contours)?;
+        let (flags, buf) = take_slice(buf, outline.points)?;
         // Don't allocate any delta buffers if we don't have variations
         let (deltas, iup_buffer, composite_deltas, _buf) = if outline.has_variations {
-            let (deltas, buf) = alloc_slice(buf, outline.max_simple_points)?;
-            let (iup_buffer, buf) = alloc_slice(buf, outline.max_simple_points)?;
-            let (composite_deltas, buf) = alloc_slice(buf, outline.max_component_delta_stack)?;
+            let (deltas, buf) = take_slice(buf, outline.max_simple_points)?;
+            let (iup_buffer, buf) = take_slice(buf, outline.max_simple_points)?;
+            let (composite_deltas, buf) = take_slice(buf, outline.max_component_delta_stack)?;
             (deltas, iup_buffer, composite_deltas, buf)
         } else {
             (
@@ -70,19 +69,19 @@ pub(crate) struct FreeTypeOutlineMemory<'a> {
 impl<'a> FreeTypeOutlineMemory<'a> {
     pub(super) fn new(outline: &Outline, buf: &'a mut [u8], hinting: Hinting) -> Option<Self> {
         let hinted = outline.has_hinting && hinting == Hinting::Embedded;
-        let (scaled, buf) = alloc_slice(buf, outline.points)?;
-        let (unscaled, buf) = alloc_slice(buf, outline.max_other_points)?;
+        let (scaled, buf) = take_slice(buf, outline.points)?;
+        let (unscaled, buf) = take_slice(buf, outline.max_other_points)?;
         // We only need original scaled points when hinting
         let (original_scaled, buf) = if hinted {
-            alloc_slice(buf, outline.max_other_points)?
+            take_slice(buf, outline.max_other_points)?
         } else {
             (Default::default(), buf)
         };
         // Don't allocate any delta buffers if we don't have variations
         let (deltas, iup_buffer, composite_deltas, buf) = if outline.has_variations {
-            let (deltas, buf) = alloc_slice(buf, outline.max_simple_points)?;
-            let (iup_buffer, buf) = alloc_slice(buf, outline.max_simple_points)?;
-            let (composite_deltas, buf) = alloc_slice(buf, outline.max_component_delta_stack)?;
+            let (deltas, buf) = take_slice(buf, outline.max_simple_points)?;
+            let (iup_buffer, buf) = take_slice(buf, outline.max_simple_points)?;
+            let (composite_deltas, buf) = take_slice(buf, outline.max_component_delta_stack)?;
             (deltas, iup_buffer, composite_deltas, buf)
         } else {
             (
@@ -94,31 +93,31 @@ impl<'a> FreeTypeOutlineMemory<'a> {
         };
         // Hinting value stack
         let (stack, buf) = if hinted {
-            alloc_slice(buf, outline.max_stack)?
+            take_slice(buf, outline.max_stack)?
         } else {
             (Default::default(), buf)
         };
         // Copy-on-write buffers for CVT and storage area
         let (cvt, storage, buf) = if hinted {
-            let (cvt, buf) = alloc_slice(buf, outline.cvt_count)?;
-            let (storage, buf) = alloc_slice(buf, outline.storage_count)?;
+            let (cvt, buf) = take_slice(buf, outline.cvt_count)?;
+            let (storage, buf) = take_slice(buf, outline.storage_count)?;
             (cvt, storage, buf)
         } else {
             (Default::default(), Default::default(), buf)
         };
         // Twilight zone point buffers
         let (twilight_scaled, twilight_original_scaled, buf) = if hinted {
-            let (scaled, buf) = alloc_slice(buf, outline.max_twilight_points)?;
-            let (original_scaled, buf) = alloc_slice(buf, outline.max_twilight_points)?;
+            let (scaled, buf) = take_slice(buf, outline.max_twilight_points)?;
+            let (original_scaled, buf) = take_slice(buf, outline.max_twilight_points)?;
             (scaled, original_scaled, buf)
         } else {
             (Default::default(), Default::default(), buf)
         };
-        let (contours, buf) = alloc_slice(buf, outline.contours)?;
-        let (flags, buf) = alloc_slice(buf, outline.points)?;
+        let (contours, buf) = take_slice(buf, outline.contours)?;
+        let (flags, buf) = take_slice(buf, outline.points)?;
         // Twilight zone point flags
         let twilight_flags = if hinted {
-            alloc_slice(buf, outline.max_twilight_points)?.0
+            take_slice(buf, outline.max_twilight_points)?.0
         } else {
             Default::default()
         };
@@ -141,73 +140,9 @@ impl<'a> FreeTypeOutlineMemory<'a> {
     }
 }
 
-/// Allocates a mutable slice of `T` of the given length from the specified
-/// buffer.
-///
-/// Returns the allocated slice and the remainder of the buffer.
-fn alloc_slice<T>(buf: &mut [u8], len: usize) -> Option<(&mut [T], &mut [u8])>
-where
-    T: bytemuck::AnyBitPattern + bytemuck::NoUninit,
-{
-    if len == 0 {
-        return Some((Default::default(), buf));
-    }
-    // 1) Ensure we slice the buffer at a position that is properly aligned
-    // for T.
-    let base_ptr = buf.as_ptr() as usize;
-    let aligned_ptr = align_up(base_ptr, align_of::<T>());
-    let aligned_offset = aligned_ptr - base_ptr;
-    let buf = buf.get_mut(aligned_offset..)?;
-    // 2) Ensure we have enough space in the buffer to allocate our slice.
-    let len_in_bytes = len * size_of::<T>();
-    if len_in_bytes > buf.len() {
-        return None;
-    }
-    let (slice_buf, rest) = buf.split_at_mut(len_in_bytes);
-    // Bytemuck handles all safety guarantees here.
-    let slice = bytemuck::try_cast_slice_mut(slice_buf).ok()?;
-    Some((slice, rest))
-}
-
-fn align_up(len: usize, alignment: usize) -> usize {
-    len + (len.wrapping_neg() & (alignment - 1))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn unaligned_buffer() {
-        let mut buf = [0u8; 40];
-        let alignment = align_of::<i32>();
-        let addr = buf.as_ptr() as usize;
-        let mut unaligned_addr = addr;
-        // Force an unaligned offset
-        if unaligned_addr % alignment == 0 {
-            unaligned_addr += 1;
-        }
-        let unaligned_offset = unaligned_addr - addr;
-        let unaligned = &mut buf[unaligned_offset..];
-        assert!(unaligned.as_ptr() as usize % alignment != 0);
-        let (slice, _) = alloc_slice::<i32>(unaligned, 8).unwrap();
-        assert_eq!(slice.as_ptr() as usize % alignment, 0);
-    }
-
-    #[test]
-    fn fail_unaligned_buffer() {
-        let mut buf = [0u8; 40];
-        let alignment = align_of::<i32>();
-        let addr = buf.as_ptr() as usize;
-        let mut unaligned_addr = addr;
-        // Force an unaligned offset
-        if unaligned_addr % alignment == 0 {
-            unaligned_addr += 1;
-        }
-        let unaligned_offset = unaligned_addr - addr;
-        let unaligned = &mut buf[unaligned_offset..];
-        assert_eq!(alloc_slice::<i32>(unaligned, 16), None);
-    }
 
     #[test]
     fn outline_memory() {

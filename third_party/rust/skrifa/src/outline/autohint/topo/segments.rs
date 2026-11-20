@@ -387,9 +387,9 @@ fn build_segments(outline: &mut Outline, axis: &mut Axis) -> bool {
                                 prev_state.max_pos = prev_state.max_pos.max(state.max_pos);
                                 prev_segment.last_ix = point_ix as u16;
                                 prev_segment.pos =
-                                    ((prev_state.min_pos + prev_state.max_pos) >> 1) as i16;
+                                    compute_mid_pos(prev_state.min_pos, prev_state.max_pos);
                                 prev_segment.delta =
-                                    ((prev_state.max_pos - prev_state.min_pos) >> 1) as i16;
+                                    compute_mid_delta(prev_state.min_pos, prev_state.max_pos);
                             } else {
                                 // Discard previous segment
                                 state.min_pos = state.min_pos.min(prev_state.min_pos);
@@ -476,24 +476,21 @@ fn adjust_segment_heights(outline: &mut Outline, axis: &mut Axis) {
     for segment in &mut axis.segments {
         let first = segment.first_point(points);
         let last = segment.last_point(points);
-        fn adjust_height(segment: &mut Segment, v1: i32, v2: i32) {
-            segment.height = (segment.height as i32 + ((v1 - v2) >> 1)) as i16;
-        }
         let prev = &points[first.prev()];
         let next = &points[last.next()];
         if first.v < last.v {
             if prev.v < first.v {
-                adjust_height(segment, first.v, prev.v);
+                segment.adjust_height(first.v, prev.v);
             }
             if next.v > last.v {
-                adjust_height(segment, next.v, last.v);
+                segment.adjust_height(next.v, last.v);
             }
         } else {
             if prev.v > first.v {
-                adjust_height(segment, prev.v, first.v);
+                segment.adjust_height(prev.v, first.v);
             }
             if next.v < last.v {
-                adjust_height(segment, last.v, next.v);
+                segment.adjust_height(last.v, next.v);
             }
         }
     }
@@ -567,20 +564,30 @@ impl Default for State {
 
 impl State {
     fn apply_to_segment(&self, segment: &mut Segment, flat_threshold: i32) {
-        segment.pos = ((self.min_pos + self.max_pos) >> 1) as i16;
-        segment.delta = ((self.max_pos - self.min_pos) >> 1) as i16;
+        segment.pos = compute_mid_pos(self.min_pos, self.max_pos);
+        segment.delta = compute_mid_delta(self.min_pos, self.max_pos);
         // A segment is round if either end point is a
         // control and the length of the on points in
         // between fits within a heuristic limit.
         if (!self.min_flags.is_on_curve() || !self.max_flags.is_on_curve())
-            && (self.max_on_coord - self.min_on_coord) < flat_threshold
+            && (self.max_on_coord.wrapping_sub(self.min_on_coord)) < flat_threshold
         {
             segment.flags |= TopoFlags::ROUND;
         }
         segment.min_coord = self.min_coord as i16;
         segment.max_coord = self.max_coord as i16;
-        segment.height = (self.max_coord - self.min_coord) as i16;
+        segment.height = self.max_coord.wrapping_sub(self.min_coord) as i16;
     }
+}
+
+/// Compute the mid position between two values, using wrapping arithmetic.
+fn compute_mid_pos(min: i32, max: i32) -> i16 {
+    ((min.wrapping_add(max)) >> 1) as i16
+}
+
+/// Compute the mid delta between two values, using wrapping arithmetic.
+fn compute_mid_delta(min: i32, max: i32) -> i16 {
+    ((max.wrapping_sub(min)) >> 1) as i16
 }
 
 #[cfg(test)]
@@ -1082,5 +1089,14 @@ mod tests {
         };
         // Just don't panic with overflow
         state.apply_to_segment(&mut segment, 0);
+    }
+
+    #[test]
+    fn mid_extreme_values_do_not_panic() {
+        // Just don't panic with overflow
+        let _ = compute_mid_pos(i32::MIN, i32::MAX);
+        let _ = compute_mid_pos(i32::MAX, i32::MIN);
+        let _ = compute_mid_delta(i32::MIN, i32::MAX);
+        let _ = compute_mid_delta(i32::MAX, i32::MIN);
     }
 }

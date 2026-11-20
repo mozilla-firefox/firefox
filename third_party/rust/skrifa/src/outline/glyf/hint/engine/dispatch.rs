@@ -2,12 +2,9 @@
 
 use read_fonts::tables::glyf::bytecode::Opcode;
 
-use super::{super::program::Program, Engine, HintError, HintErrorKind, Instruction};
-
-/// Maximum number of instructions we will execute in `Engine::run()`. This
-/// is used to ensure termination of a hinting program.
-/// See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/include/freetype/config/ftoption.h#L744>
-const MAX_RUN_INSTRUCTIONS: usize = 1_000_000;
+use super::{
+    super::program::Program, Engine, HintError, HintErrorKind, Instruction, MAX_RUN_INSTRUCTIONS,
+};
 
 impl<'a> Engine<'a> {
     /// Resets state for the specified program and executes all instructions.
@@ -22,7 +19,7 @@ impl<'a> Engine<'a> {
         // Reset overall graphics state, keeping the retained bits.
         self.graphics.reset();
         self.graphics.is_pedantic = is_pedantic;
-        self.loop_budget.reset();
+        self.work_budget.reset();
         // Program specific setup.
         match program {
             Program::Font => {
@@ -38,8 +35,12 @@ impl<'a> Engine<'a> {
                 if self.graphics.instruct_control & 2 != 0 {
                     self.graphics.reset_retained();
                 }
-                // Set backward compatibility mode
-                if self.graphics.target.preserve_linear_metrics() {
+                // Set backward compatibility mode. A font that needs its
+                // instructions for correct contours runs without it, as
+                // FreeType runs one.
+                if self.cleartype.is_hint_reliant {
+                    self.graphics.backward_compatibility = false;
+                } else if self.graphics.target.preserve_linear_metrics() {
                     self.graphics.backward_compatibility = true;
                 } else if self.graphics.target.is_smooth() {
                     self.graphics.backward_compatibility =

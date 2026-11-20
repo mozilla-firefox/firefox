@@ -13,7 +13,7 @@
 edition = "2021"
 rust-version = "1.85"
 name = "read-fonts"
-version = "0.41.0"
+version = "0.47.0"
 build = false
 autolib = false
 autobins = false
@@ -32,9 +32,11 @@ repository = "https://github.com/googlefonts/fontations"
 
 [package.metadata.docs.rs]
 features = [
+    "agl",
     "libm",
     "serde",
     "std",
+    "type1",
 ]
 
 [features]
@@ -42,7 +44,7 @@ agl = []
 codegen_test = []
 default = ["std"]
 experimental_font_api = []
-experimental_traverse = ["std"]
+experimental_traverse = []
 ift = []
 libm = ["dep:core_maths"]
 scaler_test = []
@@ -51,7 +53,11 @@ serde = [
     "font-types/serde",
 ]
 spec_next = []
-std = ["font-types/std"]
+std = [
+    "font-types/std",
+    "dep:foldhash",
+]
+type1 = ["agl"]
 
 [lib]
 name = "read_fonts"
@@ -60,6 +66,16 @@ path = "src/lib.rs"
 [[bench]]
 name = "bench_helper"
 path = "benches/bench_helper.rs"
+
+[[bench]]
+name = "charmap"
+path = "benches/charmap.rs"
+harness = false
+
+[[bench]]
+name = "glyph_names"
+path = "benches/glyph_names.rs"
+harness = false
 
 [[bench]]
 name = "int_set_benchmark"
@@ -72,19 +88,35 @@ path = "benches/sparse_bit_set_benchmark.rs"
 harness = false
 
 [[bench]]
+name = "system_charmap"
+path = "benches/system_charmap.rs"
+harness = false
+
+[[bench]]
 name = "table_lookup"
 path = "benches/table_lookup.rs"
 harness = false
 
+[[bench]]
+name = "type1"
+path = "benches/type1.rs"
+harness = false
+required-features = ["type1"]
+
 [dependencies.bytemuck]
-version = "1.13.1"
+version = "1.14.0"
 
 [dependencies.core_maths]
 version = "0.1"
 optional = true
 
+[dependencies.foldhash]
+version = "0.2.0"
+optional = true
+default-features = false
+
 [dependencies.font-types]
-version = "0.12.0"
+version = "0.12.7"
 features = ["bytemuck"]
 
 [dependencies.once_cell]
@@ -99,6 +131,18 @@ default-features = false
 version = "1.0"
 features = ["derive"]
 optional = true
+
+[dependencies.smallvec]
+version = "1.13.1"
+features = [
+    "const_generics",
+    "union",
+]
+default-features = false
+
+[dependencies.yoke]
+version = "0.8.0"
+features = ["derive"]
 
 [dev-dependencies.criterion]
 version = "0.7"

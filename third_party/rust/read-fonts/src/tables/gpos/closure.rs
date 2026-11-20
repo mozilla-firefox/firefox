@@ -1,4 +1,5 @@
 //! support closure for GPOS
+mod extended;
 
 use super::{
     CursivePosFormat1, ExtensionPosFormat1, ExtensionSubtable, Gpos, MarkBasePosFormat1,
@@ -6,7 +7,11 @@ use super::{
     PositionLookup, PositionLookupList, PositionSubtables, SinglePos, SinglePosFormat1,
     SinglePosFormat2,
 };
-use crate::{collections::IntSet, FontRead, GlyphId, ReadError, Tag};
+use crate::{
+    collections::IntSet, tables::layout::CoverageTable, ArrayOfOffsets, FontRead, GlyphId, Offset,
+    ReadError, Tag,
+};
+use font_types::Scalar;
 
 #[cfg(feature = "std")]
 use crate::tables::layout::{Intersect, LayoutLookupList, LookupClosure, LookupClosureCtx};
@@ -19,7 +24,9 @@ impl Gpos<'_> {
         languages: &IntSet<Tag>,
         features: &IntSet<Tag>,
     ) -> Result<IntSet<u16>, ReadError> {
-        if self.script_list_offset().is_null() || self.feature_list_offset().is_null() {
+        if self.selected_script_list_offset()?.is_null()
+            || self.selected_feature_list_offset()?.is_null()
+        {
             return Ok(IntSet::empty());
         }
         let feature_list = self.feature_list()?;
@@ -30,7 +37,7 @@ impl Gpos<'_> {
 
     /// Return a set of lookups referenced by the specified features
     pub fn collect_lookups(&self, feature_indices: &IntSet<u16>) -> Result<IntSet<u16>, ReadError> {
-        if self.feature_list_offset().is_null() {
+        if self.selected_feature_list_offset()?.is_null() {
             return Ok(IntSet::empty());
         }
         let feature_list = self.feature_list()?;
@@ -49,7 +56,7 @@ impl Gpos<'_> {
         glyphs: &IntSet<GlyphId>,
         lookup_indices: &mut IntSet<u16>,
     ) -> Result<(), ReadError> {
-        if self.lookup_list_offset().is_null() {
+        if self.selected_lookup_list_offset()?.is_null() {
             return Ok(());
         }
         let lookup_list = self.lookup_list()?;
@@ -98,11 +105,20 @@ impl LookupClosure for PositionLookup<'_> {
             return Ok(());
         }
 
+        let subtables = self.subtables()?;
+        // Contextual subtables are checked for intersection as they are
+        // visited, and mark the lookup inactive if none of them intersect.
+        if matches!(
+            subtables,
+            PositionSubtables::Contextual(_) | PositionSubtables::ChainContextual(_)
+        ) {
+            return subtables.closure_lookups(c, lookup_index);
+        }
+
         if !self.intersects(c.glyphs())? {
             c.set_lookup_inactive(lookup_index);
-            return Ok(());
         }
-        self.subtables()?.closure_lookups(c, lookup_index)
+        Ok(())
     }
 }
 
@@ -149,7 +165,7 @@ impl Intersect for ExtensionSubtable<'_> {
 
 impl<'a, T> Intersect for ExtensionPosFormat1<'a, T>
 where
-    T: Intersect + FontRead<'a>,
+    T: Intersect + FontRead<'a, Args = ()>,
 {
     fn intersects(&self, glyph_set: &IntSet<GlyphId>) -> Result<bool, ReadError> {
         if self.extension_offset().is_null() {
@@ -164,6 +180,8 @@ impl Intersect for SinglePos<'_> {
         match self {
             Self::Format1(item) => item.intersects(glyph_set),
             Self::Format2(item) => item.intersects(glyph_set),
+            Self::Format3(item) => item.intersects(glyph_set),
+            Self::Format4(item) => item.intersects(glyph_set),
         }
     }
 }
@@ -191,8 +209,53 @@ impl Intersect for PairPos<'_> {
         match self {
             Self::Format1(item) => item.intersects(glyph_set),
             Self::Format2(item) => item.intersects(glyph_set),
+            Self::Format3(item) => item.intersects(glyph_set),
+            Self::Format4(item) => item.intersects(glyph_set),
         }
     }
+}
+
+/// Returns whether a pair set of a covered glyph in `glyphs` intersects them,
+/// for either pair set width.
+fn pair_pos_intersects<'a, T, O>(
+    coverage: &CoverageTable,
+    pair_sets: ArrayOfOffsets<'a, T, O>,
+    count: u32,
+    glyphs: &IntSet<GlyphId>,
+) -> Result<bool, ReadError>
+where
+    T: FontRead<'a> + Intersect,
+    T::Args: Copy + 'static,
+    O: Scalar + Offset,
+{
+    let num_bits = 32 - count.leading_zeros();
+    if count as u64 > glyphs.len() * num_bits as u64 {
+        for gid in glyphs.iter() {
+            let Some(index) = coverage.get(gid) else {
+                continue;
+            };
+            let set = match pair_sets.get(index as usize) {
+                Err(ReadError::NullOffset) => continue,
+                other => other,
+            }?;
+            if set.intersects(glyphs)? {
+                return Ok(true);
+            }
+        }
+    } else {
+        for (gid, set) in coverage.iter().zip(pair_sets.iter_as_nullable()) {
+            if !glyphs.contains(gid) {
+                continue;
+            }
+            let Some(set) = set.transpose()? else {
+                continue;
+            };
+            if set.intersects(glyphs)? {
+                return Ok(true);
+            }
+        }
+    }
+    Ok(false)
 }
 
 impl Intersect for PairPosFormat1<'_> {
@@ -200,38 +263,12 @@ impl Intersect for PairPosFormat1<'_> {
         if self.coverage_offset().is_null() {
             return Ok(false);
         }
-        let coverage = self.coverage()?;
-        let pair_sets = self.pair_sets();
-
-        let num_pair_sets = self.pair_set_count();
-        let num_bits = 16 - num_pair_sets.leading_zeros();
-        if num_pair_sets as u64 > glyph_set.len() * num_bits as u64 {
-            for g in glyph_set.iter() {
-                let Some(i) = coverage.get(g) else {
-                    continue;
-                };
-                let pair_set = match pair_sets.get(i as usize) {
-                    Err(ReadError::NullOffset) => continue,
-                    other => other,
-                }?;
-                if pair_set.intersects(glyph_set)? {
-                    return Ok(true);
-                }
-            }
-        } else {
-            for (g, pair_set) in coverage.iter().zip(pair_sets.iter_as_nullable()) {
-                if !glyph_set.contains(GlyphId::from(g)) {
-                    continue;
-                }
-                let Some(pair_set) = pair_set.transpose()? else {
-                    continue;
-                };
-                if pair_set.intersects(glyph_set)? {
-                    return Ok(true);
-                }
-            }
-        }
-        Ok(false)
+        pair_pos_intersects(
+            &self.coverage()?,
+            self.pair_sets(),
+            u32::from(self.pair_set_count()),
+            glyph_set,
+        )
     }
 }
 
@@ -295,5 +332,41 @@ impl Intersect for MarkMarkPosFormat1<'_> {
         }
         Ok(self.mark1_coverage()?.intersects(glyph_set)
             && self.mark2_coverage()?.intersects(glyph_set))
+    }
+}
+
+impl Intersect for super::CursivePos<'_> {
+    fn intersects(&self, glyphs: &IntSet<GlyphId>) -> Result<bool, ReadError> {
+        match self {
+            Self::Format1(table) => table.intersects(glyphs),
+            Self::Format2(table) => table.intersects(glyphs),
+        }
+    }
+}
+
+impl Intersect for super::MarkBasePos<'_> {
+    fn intersects(&self, glyphs: &IntSet<GlyphId>) -> Result<bool, ReadError> {
+        match self {
+            Self::Format1(table) => table.intersects(glyphs),
+            Self::Format2(table) => table.intersects(glyphs),
+        }
+    }
+}
+
+impl Intersect for super::MarkLigPos<'_> {
+    fn intersects(&self, glyphs: &IntSet<GlyphId>) -> Result<bool, ReadError> {
+        match self {
+            Self::Format1(table) => table.intersects(glyphs),
+            Self::Format2(table) => table.intersects(glyphs),
+        }
+    }
+}
+
+impl Intersect for super::MarkMarkPos<'_> {
+    fn intersects(&self, glyphs: &IntSet<GlyphId>) -> Result<bool, ReadError> {
+        match self {
+            Self::Format1(table) => table.intersects(glyphs),
+            Self::Format2(table) => table.intersects(glyphs),
+        }
     }
 }

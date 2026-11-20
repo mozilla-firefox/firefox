@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Vhea<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,54 @@ impl TopLevelTable for Vhea<'_> {
     const TAG: Tag = Tag::new(b"vhea");
 }
 
+impl ReadArgs for Vhea<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Vhea<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct VheaFixedHeader {
+    pub version: BigEndian<Version16Dot16>,
+    pub ascender: BigEndian<FWord>,
+    pub descender: BigEndian<FWord>,
+    pub line_gap: BigEndian<FWord>,
+    pub advance_height_max: BigEndian<UfWord>,
+    pub min_top_side_bearing: BigEndian<FWord>,
+    pub min_bottom_side_bearing: BigEndian<FWord>,
+    pub y_max_extent: BigEndian<FWord>,
+    pub caret_slope_rise: BigEndian<i16>,
+    pub caret_slope_run: BigEndian<i16>,
+    pub caret_offset: BigEndian<i16>,
+    pub reserved1: BigEndian<i16>,
+    pub reserved2: BigEndian<i16>,
+    pub reserved3: BigEndian<i16>,
+    pub reserved4: BigEndian<i16>,
+    pub metric_data_format: BigEndian<i16>,
+    pub number_of_long_ver_metrics: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<VheaFixedHeader>() <= Vhea::MIN_SIZE);
+
 /// The [vhea](https://docs.microsoft.com/en-us/typography/opentype/spec/vhea) Vertical Header Table
 #[derive(Clone)]
 pub struct Vhea<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, VheaFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -57,188 +91,175 @@ impl<'a> Vhea<'a> {
         + u16::RAW_BYTE_LEN);
     basic_table_impls!(impl_the_methods);
 
-    /// The major/minor version (1, 1)
+    /// The major/minor version (1, 0 or 1, 1)
     pub fn version(&self) -> Version16Dot16 {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// Typographic ascent.
     pub fn ascender(&self) -> FWord {
-        let range = self.ascender_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().ascender.get()
     }
 
     /// Typographic descent.
     pub fn descender(&self) -> FWord {
-        let range = self.descender_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().descender.get()
     }
 
     /// Typographic line gap. Negative LineGap values are treated as
     /// zero in some legacy platform implementations.
     pub fn line_gap(&self) -> FWord {
-        let range = self.line_gap_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().line_gap.get()
     }
 
     /// Maximum advance height value in 'vmtx' table.
     pub fn advance_height_max(&self) -> UfWord {
-        let range = self.advance_height_max_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().advance_height_max.get()
     }
 
     /// Minimum top sidebearing value in 'vmtx' table for glyphs with
     /// contours (empty glyphs should be ignored).
     pub fn min_top_side_bearing(&self) -> FWord {
-        let range = self.min_top_side_bearing_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().min_top_side_bearing.get()
     }
 
     /// Minimum bottom sidebearing value
     pub fn min_bottom_side_bearing(&self) -> FWord {
-        let range = self.min_bottom_side_bearing_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().min_bottom_side_bearing.get()
     }
 
     /// Defined as max( tsb + (yMax-yMin)).
     pub fn y_max_extent(&self) -> FWord {
-        let range = self.y_max_extent_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().y_max_extent.get()
     }
 
     /// Used to calculate the slope of the cursor (rise/run); 1 for
     /// vertical caret, 0 for horizontal.
     pub fn caret_slope_rise(&self) -> i16 {
-        let range = self.caret_slope_rise_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().caret_slope_rise.get()
     }
 
     /// 0 for vertical caret, 1 for horizontal.
     pub fn caret_slope_run(&self) -> i16 {
-        let range = self.caret_slope_run_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().caret_slope_run.get()
     }
 
     /// The amount by which a slanted highlight on a glyph needs to be
     /// shifted to produce the best appearance. Set to 0 for
     /// non-slanted fonts
     pub fn caret_offset(&self) -> i16 {
-        let range = self.caret_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().caret_offset.get()
     }
 
     /// 0 for current format.
     pub fn metric_data_format(&self) -> i16 {
-        let range = self.metric_data_format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().metric_data_format.get()
     }
 
     /// Number of advance heights in the vertical metrics (`vmtx`) table.
     pub fn number_of_long_ver_metrics(&self) -> u16 {
-        let range = self.number_of_long_ver_metrics_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().number_of_long_ver_metrics.get()
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + Version16Dot16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(Version16Dot16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn ascender_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + FWord::RAW_BYTE_LEN;
+        let end = start.saturating_add(FWord::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn descender_byte_range(&self) -> Range<usize> {
         let start = self.ascender_byte_range().end;
-        let end = start + FWord::RAW_BYTE_LEN;
+        let end = start.saturating_add(FWord::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn line_gap_byte_range(&self) -> Range<usize> {
         let start = self.descender_byte_range().end;
-        let end = start + FWord::RAW_BYTE_LEN;
+        let end = start.saturating_add(FWord::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn advance_height_max_byte_range(&self) -> Range<usize> {
         let start = self.line_gap_byte_range().end;
-        let end = start + UfWord::RAW_BYTE_LEN;
+        let end = start.saturating_add(UfWord::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn min_top_side_bearing_byte_range(&self) -> Range<usize> {
         let start = self.advance_height_max_byte_range().end;
-        let end = start + FWord::RAW_BYTE_LEN;
+        let end = start.saturating_add(FWord::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn min_bottom_side_bearing_byte_range(&self) -> Range<usize> {
         let start = self.min_top_side_bearing_byte_range().end;
-        let end = start + FWord::RAW_BYTE_LEN;
+        let end = start.saturating_add(FWord::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn y_max_extent_byte_range(&self) -> Range<usize> {
         let start = self.min_bottom_side_bearing_byte_range().end;
-        let end = start + FWord::RAW_BYTE_LEN;
+        let end = start.saturating_add(FWord::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn caret_slope_rise_byte_range(&self) -> Range<usize> {
         let start = self.y_max_extent_byte_range().end;
-        let end = start + i16::RAW_BYTE_LEN;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn caret_slope_run_byte_range(&self) -> Range<usize> {
         let start = self.caret_slope_rise_byte_range().end;
-        let end = start + i16::RAW_BYTE_LEN;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn caret_offset_byte_range(&self) -> Range<usize> {
         let start = self.caret_slope_run_byte_range().end;
-        let end = start + i16::RAW_BYTE_LEN;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn reserved1_byte_range(&self) -> Range<usize> {
         let start = self.caret_offset_byte_range().end;
-        let end = start + i16::RAW_BYTE_LEN;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn reserved2_byte_range(&self) -> Range<usize> {
         let start = self.reserved1_byte_range().end;
-        let end = start + i16::RAW_BYTE_LEN;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn reserved3_byte_range(&self) -> Range<usize> {
         let start = self.reserved2_byte_range().end;
-        let end = start + i16::RAW_BYTE_LEN;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn reserved4_byte_range(&self) -> Range<usize> {
         let start = self.reserved3_byte_range().end;
-        let end = start + i16::RAW_BYTE_LEN;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn metric_data_format_byte_range(&self) -> Range<usize> {
         let start = self.reserved4_byte_range().end;
-        let end = start + i16::RAW_BYTE_LEN;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn number_of_long_ver_metrics_byte_range(&self) -> Range<usize> {
         let start = self.metric_data_format_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 }
@@ -248,49 +269,261 @@ const _: () = assert!(FontData::default_data_long_enough(Vhea::MIN_SIZE));
 impl Default for Vhea<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Vhea<'a> {
-    fn type_name(&self) -> &str {
-        "Vhea"
+impl<'a> MinByteRange<'a> for VheaExtended<'a> {
+    fn min_byte_range(&self) -> Range<usize> {
+        0..self.number_of_long_ver_metrics_byte_range().end
     }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new("ascender", self.ascender())),
-            2usize => Some(Field::new("descender", self.descender())),
-            3usize => Some(Field::new("line_gap", self.line_gap())),
-            4usize => Some(Field::new("advance_height_max", self.advance_height_max())),
-            5usize => Some(Field::new(
-                "min_top_side_bearing",
-                self.min_top_side_bearing(),
-            )),
-            6usize => Some(Field::new(
-                "min_bottom_side_bearing",
-                self.min_bottom_side_bearing(),
-            )),
-            7usize => Some(Field::new("y_max_extent", self.y_max_extent())),
-            8usize => Some(Field::new("caret_slope_rise", self.caret_slope_rise())),
-            9usize => Some(Field::new("caret_slope_run", self.caret_slope_run())),
-            10usize => Some(Field::new("caret_offset", self.caret_offset())),
-            11usize => Some(Field::new("metric_data_format", self.metric_data_format())),
-            12usize => Some(Field::new(
-                "number_of_long_ver_metrics",
-                self.number_of_long_ver_metrics(),
-            )),
-            _ => None,
-        }
+    fn min_table_bytes(&self) -> &'a [u8] {
+        let range = self.min_byte_range();
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
+impl TopLevelTable for VheaExtended<'_> {
+    /// `VHEA`
+    const TAG: Tag = Tag::new(b"VHEA");
+}
+
+impl ReadArgs for VheaExtended<'_> {
+    type Args = ();
+}
+
+impl<'a> FontRead<'a> for VheaExtended<'a> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
+        #[allow(clippy::absurd_extreme_comparisons)]
+        if data.len() < Self::MIN_SIZE {
+            return Err(ReadError::OutOfBounds);
+        }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
+        Ok(Self { data })
+    }
+}
+
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct VheaExtendedFixedHeader {
+    pub version: BigEndian<Version16Dot16>,
+    pub ascender: BigEndian<FWord>,
+    pub descender: BigEndian<FWord>,
+    pub line_gap: BigEndian<FWord>,
+    pub advance_height_max: BigEndian<FWord>,
+    pub min_top_side_bearing: BigEndian<FWord>,
+    pub min_bottom_side_bearing: BigEndian<FWord>,
+    pub y_max_extent: BigEndian<FWord>,
+    pub caret_slope_rise: BigEndian<i16>,
+    pub caret_slope_run: BigEndian<i16>,
+    pub caret_offset: BigEndian<i16>,
+    pub reserved1: BigEndian<i16>,
+    pub reserved2: BigEndian<i16>,
+    pub reserved3: BigEndian<i16>,
+    pub reserved4: BigEndian<i16>,
+    pub metric_data_format: BigEndian<i16>,
+    pub number_of_long_ver_metrics: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<VheaExtendedFixedHeader>() <= VheaExtended::MIN_SIZE);
+
+/// VHEA header table (ISO/IEC 14496-22:2026, 5.6.13).
+#[derive(Clone)]
+pub struct VheaExtended<'a> {
+    data: TableDataRef<'a, VheaExtendedFixedHeader>,
+}
+
 #[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Vhea<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
+impl<'a> VheaExtended<'a> {
+    pub const MIN_SIZE: usize = (Version16Dot16::RAW_BYTE_LEN
+        + FWord::RAW_BYTE_LEN
+        + FWord::RAW_BYTE_LEN
+        + FWord::RAW_BYTE_LEN
+        + FWord::RAW_BYTE_LEN
+        + FWord::RAW_BYTE_LEN
+        + FWord::RAW_BYTE_LEN
+        + FWord::RAW_BYTE_LEN
+        + i16::RAW_BYTE_LEN
+        + i16::RAW_BYTE_LEN
+        + i16::RAW_BYTE_LEN
+        + i16::RAW_BYTE_LEN
+        + i16::RAW_BYTE_LEN
+        + i16::RAW_BYTE_LEN
+        + i16::RAW_BYTE_LEN
+        + i16::RAW_BYTE_LEN
+        + u32::RAW_BYTE_LEN);
+    basic_table_impls!(impl_the_methods);
+
+    pub fn version(&self) -> Version16Dot16 {
+        self.data.header().version.get()
+    }
+
+    pub fn ascender(&self) -> FWord {
+        self.data.header().ascender.get()
+    }
+
+    pub fn descender(&self) -> FWord {
+        self.data.header().descender.get()
+    }
+
+    pub fn line_gap(&self) -> FWord {
+        self.data.header().line_gap.get()
+    }
+
+    pub fn advance_height_max(&self) -> FWord {
+        self.data.header().advance_height_max.get()
+    }
+
+    pub fn min_top_side_bearing(&self) -> FWord {
+        self.data.header().min_top_side_bearing.get()
+    }
+
+    pub fn min_bottom_side_bearing(&self) -> FWord {
+        self.data.header().min_bottom_side_bearing.get()
+    }
+
+    pub fn y_max_extent(&self) -> FWord {
+        self.data.header().y_max_extent.get()
+    }
+
+    pub fn caret_slope_rise(&self) -> i16 {
+        self.data.header().caret_slope_rise.get()
+    }
+
+    pub fn caret_slope_run(&self) -> i16 {
+        self.data.header().caret_slope_run.get()
+    }
+
+    pub fn caret_offset(&self) -> i16 {
+        self.data.header().caret_offset.get()
+    }
+
+    pub fn metric_data_format(&self) -> i16 {
+        self.data.header().metric_data_format.get()
+    }
+
+    /// Number of long metric records in VMTX.
+    pub fn number_of_long_ver_metrics(&self) -> u32 {
+        self.data.header().number_of_long_ver_metrics.get()
+    }
+
+    pub fn version_byte_range(&self) -> Range<usize> {
+        let start = 0usize;
+        let end = start.saturating_add(Version16Dot16::RAW_BYTE_LEN);
+        start..end
+    }
+
+    pub fn ascender_byte_range(&self) -> Range<usize> {
+        let start = self.version_byte_range().end;
+        let end = start.saturating_add(FWord::RAW_BYTE_LEN);
+        start..end
+    }
+
+    pub fn descender_byte_range(&self) -> Range<usize> {
+        let start = self.ascender_byte_range().end;
+        let end = start.saturating_add(FWord::RAW_BYTE_LEN);
+        start..end
+    }
+
+    pub fn line_gap_byte_range(&self) -> Range<usize> {
+        let start = self.descender_byte_range().end;
+        let end = start.saturating_add(FWord::RAW_BYTE_LEN);
+        start..end
+    }
+
+    pub fn advance_height_max_byte_range(&self) -> Range<usize> {
+        let start = self.line_gap_byte_range().end;
+        let end = start.saturating_add(FWord::RAW_BYTE_LEN);
+        start..end
+    }
+
+    pub fn min_top_side_bearing_byte_range(&self) -> Range<usize> {
+        let start = self.advance_height_max_byte_range().end;
+        let end = start.saturating_add(FWord::RAW_BYTE_LEN);
+        start..end
+    }
+
+    pub fn min_bottom_side_bearing_byte_range(&self) -> Range<usize> {
+        let start = self.min_top_side_bearing_byte_range().end;
+        let end = start.saturating_add(FWord::RAW_BYTE_LEN);
+        start..end
+    }
+
+    pub fn y_max_extent_byte_range(&self) -> Range<usize> {
+        let start = self.min_bottom_side_bearing_byte_range().end;
+        let end = start.saturating_add(FWord::RAW_BYTE_LEN);
+        start..end
+    }
+
+    pub fn caret_slope_rise_byte_range(&self) -> Range<usize> {
+        let start = self.y_max_extent_byte_range().end;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
+        start..end
+    }
+
+    pub fn caret_slope_run_byte_range(&self) -> Range<usize> {
+        let start = self.caret_slope_rise_byte_range().end;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
+        start..end
+    }
+
+    pub fn caret_offset_byte_range(&self) -> Range<usize> {
+        let start = self.caret_slope_run_byte_range().end;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
+        start..end
+    }
+
+    pub fn reserved1_byte_range(&self) -> Range<usize> {
+        let start = self.caret_offset_byte_range().end;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
+        start..end
+    }
+
+    pub fn reserved2_byte_range(&self) -> Range<usize> {
+        let start = self.reserved1_byte_range().end;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
+        start..end
+    }
+
+    pub fn reserved3_byte_range(&self) -> Range<usize> {
+        let start = self.reserved2_byte_range().end;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
+        start..end
+    }
+
+    pub fn reserved4_byte_range(&self) -> Range<usize> {
+        let start = self.reserved3_byte_range().end;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
+        start..end
+    }
+
+    pub fn metric_data_format_byte_range(&self) -> Range<usize> {
+        let start = self.reserved4_byte_range().end;
+        let end = start.saturating_add(i16::RAW_BYTE_LEN);
+        start..end
+    }
+
+    pub fn number_of_long_ver_metrics_byte_range(&self) -> Range<usize> {
+        let start = self.metric_data_format_byte_range().end;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
+        start..end
+    }
+}
+
+const _: () = assert!(FontData::default_data_long_enough(VheaExtended::MIN_SIZE));
+
+impl Default for VheaExtended<'_> {
+    fn default() -> Self {
+        Self {
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
+        }
     }
 }

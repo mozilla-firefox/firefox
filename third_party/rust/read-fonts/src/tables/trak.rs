@@ -6,15 +6,11 @@ impl<'a> TrackData<'a> {
     /// Returns the size table for this set of tracking data.
     ///
     /// The `offset_data` parameter comes from the [`Trak`] table.
-    pub fn size_table(
-        &self,
-        offset_data: FontData<'a>,
-    ) -> Result<&'a [BigEndian<Fixed>], ReadError> {
+    pub fn size_table(&self, offset_data: FontData<'a>) -> Option<&'a [BigEndian<Fixed>]> {
         let mut cursor = offset_data
-            .split_off(self.size_table_offset() as usize)
-            .ok_or(ReadError::OutOfBounds)?
+            .split_off(self.size_table_offset() as usize)?
             .cursor();
-        cursor.read_array(self.n_sizes() as usize)
+        cursor.read_array(self.n_sizes() as usize).ok()
     }
 }
 
@@ -27,12 +23,9 @@ impl TrackTableEntry {
         &self,
         offset_data: FontData<'a>,
         n_sizes: u16,
-    ) -> Result<&'a [BigEndian<i16>], ReadError> {
-        let mut cursor = offset_data
-            .split_off(self.offset() as usize)
-            .ok_or(ReadError::OutOfBounds)?
-            .cursor();
-        cursor.read_array(n_sizes as usize)
+    ) -> Option<&'a [BigEndian<i16>]> {
+        let mut cursor = offset_data.split_off(self.offset() as usize)?.cursor();
+        cursor.read_array(n_sizes as usize).ok()
     }
 }
 
@@ -124,7 +117,6 @@ mod tests {
         for (track, expected_values) in track_table.iter().zip(expected_per_size_tracking_values) {
             let values = track
                 .per_size_values(trak.offset_data(), horiz.n_sizes())
-                .ok()
                 .map(|values| values.iter().map(|v| v.get()).collect::<Vec<_>>());
             assert_eq!(
                 values,
@@ -141,10 +133,9 @@ mod tests {
         let trak = Trak::read(FontData::new(&table_data)).unwrap();
         let horiz = trak.horiz().unwrap().unwrap();
         let track_table = horiz.track_table();
-        assert!(matches!(
-            track_table[0].per_size_values(trak.offset_data(), horiz.n_sizes()),
-            Err(ReadError::OutOfBounds)
-        ));
+        assert!(track_table[0]
+            .per_size_values(trak.offset_data(), horiz.n_sizes())
+            .is_none());
     }
 
     /// From <https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6trak.html>

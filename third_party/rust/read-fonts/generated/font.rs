@@ -11,24 +11,46 @@ impl<'a> MinByteRange<'a> for TableDirectory<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for TableDirectory<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for TableDirectory<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct TableDirectoryFixedHeader {
+    pub sfnt_version: BigEndian<u32>,
+    pub num_tables: BigEndian<u16>,
+    pub search_range: BigEndian<u16>,
+    pub entry_selector: BigEndian<u16>,
+    pub range_shift: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<TableDirectoryFixedHeader>() <= TableDirectory::MIN_SIZE);
+
 /// The OpenType [Table Directory](https://docs.microsoft.com/en-us/typography/opentype/spec/otff#table-directory)
 #[derive(Clone)]
 pub struct TableDirectory<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, TableDirectoryFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -42,72 +64,71 @@ impl<'a> TableDirectory<'a> {
 
     /// 0x00010000 or 0x4F54544F
     pub fn sfnt_version(&self) -> u32 {
-        let range = self.sfnt_version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().sfnt_version.get()
     }
 
     /// Number of tables.
     pub fn num_tables(&self) -> u16 {
-        let range = self.num_tables_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().num_tables.get()
     }
 
     pub fn search_range(&self) -> u16 {
-        let range = self.search_range_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().search_range.get()
     }
 
     pub fn entry_selector(&self) -> u16 {
-        let range = self.entry_selector_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().entry_selector.get()
     }
 
     pub fn range_shift(&self) -> u16 {
-        let range = self.range_shift_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().range_shift.get()
     }
 
     /// Table records array—one for each top-level table in the font
     pub fn table_records(&self) -> &'a [TableRecord] {
         let range = self.table_records_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn sfnt_version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u32::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn num_tables_byte_range(&self) -> Range<usize> {
         let start = self.sfnt_version_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn search_range_byte_range(&self) -> Range<usize> {
         let start = self.num_tables_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn entry_selector_byte_range(&self) -> Range<usize> {
         let start = self.search_range_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn range_shift_byte_range(&self) -> Range<usize> {
         let start = self.entry_selector_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn table_records_byte_range(&self) -> Range<usize> {
         let num_tables = self.num_tables();
         let start = self.range_shift_byte_range().end;
-        let end =
-            start + (transforms::to_usize(num_tables)).saturating_mul(TableRecord::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(num_tables)).saturating_mul(TableRecord::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -117,41 +138,9 @@ const _: () = assert!(FontData::default_data_long_enough(TableDirectory::MIN_SIZ
 impl Default for TableDirectory<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for TableDirectory<'a> {
-    fn type_name(&self) -> &str {
-        "TableDirectory"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("sfnt_version", self.sfnt_version())),
-            1usize => Some(Field::new("num_tables", self.num_tables())),
-            2usize => Some(Field::new("search_range", self.search_range())),
-            3usize => Some(Field::new("entry_selector", self.entry_selector())),
-            4usize => Some(Field::new("range_shift", self.range_shift())),
-            5usize => Some(Field::new(
-                "table_records",
-                traversal::FieldType::array_of_records(
-                    stringify!(TableRecord),
-                    self.table_records(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for TableDirectory<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -197,47 +186,50 @@ impl FixedSize for TableRecord {
         Tag::RAW_BYTE_LEN + u32::RAW_BYTE_LEN + u32::RAW_BYTE_LEN + u32::RAW_BYTE_LEN;
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for TableRecord {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "TableRecord",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("tag", self.tag())),
-                1usize => Some(Field::new("checksum", self.checksum())),
-                2usize => Some(Field::new("offset", self.offset())),
-                3usize => Some(Field::new("length", self.length())),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
 impl<'a> MinByteRange<'a> for TTCHeader<'a> {
     fn min_byte_range(&self) -> Range<usize> {
         0..self.table_directory_offsets_byte_range().end
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for TTCHeader<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for TTCHeader<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct TTCHeaderFixedHeader {
+    pub ttc_tag: BigEndian<Tag>,
+    pub version: BigEndian<MajorMinor>,
+    pub num_fonts: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<TTCHeaderFixedHeader>() <= TTCHeader::MIN_SIZE);
+
 /// [TTC Header](https://learn.microsoft.com/en-us/typography/opentype/spec/otff#ttc-header)
 #[derive(Clone)]
 pub struct TTCHeader<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, TTCHeaderFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -247,33 +239,33 @@ impl<'a> TTCHeader<'a> {
 
     /// Font Collection ID string: \"ttcf\"
     pub fn ttc_tag(&self) -> Tag {
-        let range = self.ttc_tag_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().ttc_tag.get()
     }
 
     /// Major/minor version of the TTC Header
     pub fn version(&self) -> MajorMinor {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// Number of fonts in TTC
     pub fn num_fonts(&self) -> u32 {
-        let range = self.num_fonts_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().num_fonts.get()
     }
 
     /// Array of offsets to the TableDirectory for each font from the beginning of the file
     pub fn table_directory_offsets(&self) -> &'a [BigEndian<u32>] {
         let range = self.table_directory_offsets_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// Tag indicating that a DSIG table exists, 0x44534947 ('DSIG') (null if no signature)
     pub fn dsig_tag(&self) -> Option<u32> {
         let range = self.dsig_tag_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_at(range.start).ok())
+            .then(|| self.offset_data().read_at(range.start).ok())
             .flatten()
     }
 
@@ -281,7 +273,7 @@ impl<'a> TTCHeader<'a> {
     pub fn dsig_length(&self) -> Option<u32> {
         let range = self.dsig_length_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_at(range.start).ok())
+            .then(|| self.offset_data().read_at(range.start).ok())
             .flatten()
     }
 
@@ -289,39 +281,40 @@ impl<'a> TTCHeader<'a> {
     pub fn dsig_offset(&self) -> Option<u32> {
         let range = self.dsig_offset_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_at(range.start).ok())
+            .then(|| self.offset_data().read_at(range.start).ok())
             .flatten()
     }
 
     pub fn ttc_tag_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + Tag::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(Tag::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
         let start = self.ttc_tag_byte_range().end;
-        let end = start + MajorMinor::RAW_BYTE_LEN;
+        let end = start.saturating_add(MajorMinor::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn num_fonts_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn table_directory_offsets_byte_range(&self) -> Range<usize> {
         let num_fonts = self.num_fonts();
         let start = self.num_fonts_byte_range().end;
-        let end = start + (transforms::to_usize(num_fonts)).saturating_mul(u32::RAW_BYTE_LEN);
+        let end = start
+            .saturating_add((transforms::to_usize(num_fonts)).saturating_mul(u32::RAW_BYTE_LEN));
         start..end
     }
 
     pub fn dsig_tag_byte_range(&self) -> Range<usize> {
         let start = self.table_directory_offsets_byte_range().end;
         let end = if self.version().compatible((2u16, 0u16)) {
-            start + u32::RAW_BYTE_LEN
+            start.saturating_add(u32::RAW_BYTE_LEN)
         } else {
             start
         };
@@ -331,7 +324,7 @@ impl<'a> TTCHeader<'a> {
     pub fn dsig_length_byte_range(&self) -> Range<usize> {
         let start = self.dsig_tag_byte_range().end;
         let end = if self.version().compatible((2u16, 0u16)) {
-            start + u32::RAW_BYTE_LEN
+            start.saturating_add(u32::RAW_BYTE_LEN)
         } else {
             start
         };
@@ -341,7 +334,7 @@ impl<'a> TTCHeader<'a> {
     pub fn dsig_offset_byte_range(&self) -> Range<usize> {
         let start = self.dsig_length_byte_range().end;
         let end = if self.version().compatible((2u16, 0u16)) {
-            start + u32::RAW_BYTE_LEN
+            start.saturating_add(u32::RAW_BYTE_LEN)
         } else {
             start
         };
@@ -354,43 +347,8 @@ const _: () = assert!(FontData::default_data_long_enough(TTCHeader::MIN_SIZE));
 impl Default for TTCHeader<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for TTCHeader<'a> {
-    fn type_name(&self) -> &str {
-        "TTCHeader"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("ttc_tag", self.ttc_tag())),
-            1usize => Some(Field::new("version", self.version())),
-            2usize => Some(Field::new("num_fonts", self.num_fonts())),
-            3usize => Some(Field::new(
-                "table_directory_offsets",
-                self.table_directory_offsets(),
-            )),
-            4usize if self.version().compatible((2u16, 0u16)) => {
-                Some(Field::new("dsig_tag", self.dsig_tag().unwrap()))
-            }
-            5usize if self.version().compatible((2u16, 0u16)) => {
-                Some(Field::new("dsig_length", self.dsig_length().unwrap()))
-            }
-            6usize if self.version().compatible((2u16, 0u16)) => {
-                Some(Field::new("dsig_offset", self.dsig_offset().unwrap()))
-            }
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for TTCHeader<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }

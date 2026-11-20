@@ -44,13 +44,6 @@ impl font_types::Scalar for MyEnum1 {
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> From<MyEnum1> for FieldType<'a> {
-    fn from(src: MyEnum1) -> FieldType<'a> {
-        (src as u16).into()
-    }
-}
-
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[repr(u16)]
@@ -89,13 +82,6 @@ impl font_types::Scalar for MyEnum2 {
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> From<MyEnum2> for FieldType<'a> {
-    fn from(src: MyEnum2) -> FieldType<'a> {
-        (src as u16).into()
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Copy, bytemuck :: AnyBitPattern)]
 #[repr(C)]
 #[repr(packed)]
@@ -116,19 +102,4 @@ impl MyRecord {
 
 impl FixedSize for MyRecord {
     const RAW_BYTE_LEN: usize = MyEnum1::RAW_BYTE_LEN + MyEnum2::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for MyRecord {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "MyRecord",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("my_enum1", self.my_enum1())),
-                1usize => Some(Field::new("my_enum2", self.my_enum2())),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }

@@ -5,7 +5,7 @@ use core::ops::Deref;
 
 /// Font data as a blob of bytes.
 #[derive(Clone)]
-pub enum FontBlob {
+pub enum Blob {
     /// A borrowed static reference to a slice of bytes.
     Static(&'static [u8]),
     /// An `Arc` containing anything that can be viewed as a contiguous slice
@@ -13,7 +13,7 @@ pub enum FontBlob {
     Shared(Arc<dyn AsRef<[u8]> + Send + Sync>),
 }
 
-impl AsRef<[u8]> for FontBlob {
+impl AsRef<[u8]> for Blob {
     fn as_ref(&self) -> &[u8] {
         match self {
             Self::Static(bytes) => bytes,
@@ -22,7 +22,7 @@ impl AsRef<[u8]> for FontBlob {
     }
 }
 
-impl Deref for FontBlob {
+impl Deref for Blob {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
@@ -30,19 +30,19 @@ impl Deref for FontBlob {
     }
 }
 
-impl From<&'static [u8]> for FontBlob {
+impl From<&'static [u8]> for Blob {
     fn from(value: &'static [u8]) -> Self {
         Self::Static(value)
     }
 }
 
-impl From<Arc<dyn AsRef<[u8]> + Send + Sync>> for FontBlob {
+impl From<Arc<dyn AsRef<[u8]> + Send + Sync>> for Blob {
     fn from(value: Arc<dyn AsRef<[u8]> + Send + Sync>) -> Self {
         Self::Shared(value)
     }
 }
 
-impl From<Vec<u8>> for FontBlob {
+impl From<Vec<u8>> for Blob {
     fn from(value: Vec<u8>) -> Self {
         Self::Shared(Arc::new(value))
     }

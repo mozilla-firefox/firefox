@@ -6,8 +6,8 @@ include!("../../generated/generated_svg.rs");
 
 impl<'a> Svg<'a> {
     /// Get the raw data of the SVG document. Is not guaranteed to be valid and might be compressed.
-    pub fn glyph_data(&self, glyph_id: GlyphId) -> Result<Option<&'a [u8]>, ReadError> {
-        let document_list = self.svg_document_list()?;
+    pub fn glyph_data(&self, glyph_id: GlyphId) -> Option<&'a [u8]> {
+        let document_list = self.svg_document_list().ok()?;
         let svg_document = document_list
             .document_records()
             .binary_search_by(|r| {
@@ -22,14 +22,12 @@ impl<'a> Svg<'a> {
             .ok()
             .and_then(|index| document_list.document_records().get(index))
             .and_then(|r| {
-                let all_data = document_list.data.as_bytes();
-                all_data.get(
-                    r.svg_doc_offset.get() as usize
-                        ..(r.svg_doc_offset.get() + r.svg_doc_length.get()) as usize,
-                )
+                let all_data = document_list.offset_data().as_bytes();
+                let start = r.svg_doc_offset();
+                let end = start.checked_add(r.svg_doc_length())?;
+                all_data.get(start as usize..end as usize)
             });
-
-        Ok(svg_document)
+        svg_document
     }
 }
 
@@ -77,34 +75,38 @@ mod tests {
         let first_document = &[0, 1, 0, 0, 0, 0, 0, 0, 0, 1][..];
         let second_document = &[0, 2, 0, 0, 0, 0][..];
 
-        assert_eq!(table.glyph_data(GlyphId::new(0)).unwrap(), None);
-        assert_eq!(
-            table.glyph_data(GlyphId::new(1)).unwrap(),
-            Some(first_document)
-        );
-        assert_eq!(
-            table.glyph_data(GlyphId::new(2)).unwrap(),
-            Some(first_document)
-        );
-        assert_eq!(
-            table.glyph_data(GlyphId::new(3)).unwrap(),
-            Some(first_document)
-        );
-        assert_eq!(table.glyph_data(GlyphId::new(4)).unwrap(), None);
-        assert_eq!(table.glyph_data(GlyphId::new(5)).unwrap(), None);
-        assert_eq!(
-            table.glyph_data(GlyphId::new(6)).unwrap(),
-            Some(second_document)
-        );
-        assert_eq!(
-            table.glyph_data(GlyphId::new(7)).unwrap(),
-            Some(second_document)
-        );
-        assert_eq!(table.glyph_data(GlyphId::new(8)).unwrap(), None);
-        assert_eq!(
-            table.glyph_data(GlyphId::new(9)).unwrap(),
-            Some(first_document)
-        );
-        assert_eq!(table.glyph_data(GlyphId::new(10)).unwrap(), None);
+        assert_eq!(table.glyph_data(GlyphId::new(0)), None);
+        assert_eq!(table.glyph_data(GlyphId::new(1)), Some(first_document));
+        assert_eq!(table.glyph_data(GlyphId::new(2)), Some(first_document));
+        assert_eq!(table.glyph_data(GlyphId::new(3)), Some(first_document));
+        assert_eq!(table.glyph_data(GlyphId::new(4)), None);
+        assert_eq!(table.glyph_data(GlyphId::new(5)), None);
+        assert_eq!(table.glyph_data(GlyphId::new(6)), Some(second_document));
+        assert_eq!(table.glyph_data(GlyphId::new(7)), Some(second_document));
+        assert_eq!(table.glyph_data(GlyphId::new(8)), None);
+        assert_eq!(table.glyph_data(GlyphId::new(9)), Some(first_document));
+        assert_eq!(table.glyph_data(GlyphId::new(10)), None);
+    }
+
+    #[test]
+    fn test_svg_glyph_data_overflow_guard() {
+        let data: [u16; 12] = [
+            0, // Version
+            0, 10, // SVGDocumentListOffset
+            0, 0, // Reserved
+            // SVGDocumentList
+            1, // numEntries
+            // documentRecords
+            // Record 1
+            1, // startGlyphID
+            3, // endGlyphID
+            0xFFFF, 0xFFFF, // svgDocOffset
+            0, 10, // svgDocLength
+        ];
+        let mut buf = BeBuffer::new();
+        buf = buf.extend(data);
+        let table = Svg::read(buf.data().into()).unwrap();
+        // Just don't panic with overflow
+        let _ = table.glyph_data(GlyphId::new(1));
     }
 }

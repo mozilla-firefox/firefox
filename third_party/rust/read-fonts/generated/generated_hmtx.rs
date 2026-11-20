@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Hmtx<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -24,14 +24,17 @@ impl ReadArgs for Hmtx<'_> {
     type Args = u16;
 }
 
-impl<'a> FontReadWithArgs<'a> for Hmtx<'a> {
-    fn read_with_args(data: FontData<'a>, args: &u16) -> Result<Self, ReadError> {
-        let number_of_h_metrics = *args;
+impl<'a> FontRead<'a> for Hmtx<'a> {
+    fn read_with_args(data: FontData<'a>, args: u16) -> Result<Self, ReadError> {
+        let number_of_h_metrics = args;
 
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self {
             data,
             number_of_h_metrics,
@@ -46,14 +49,23 @@ impl<'a> Hmtx<'a> {
     /// parsed.
     pub fn read(data: FontData<'a>, number_of_h_metrics: u16) -> Result<Self, ReadError> {
         let args = number_of_h_metrics;
-        Self::read_with_args(data, &args)
+        Self::read_with_args(data, args)
     }
 }
+
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct HmtxFixedHeader {}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<HmtxFixedHeader>() <= Hmtx::MIN_SIZE);
 
 /// The [hmtx (Horizontal Metrics)](https://docs.microsoft.com/en-us/typography/opentype/spec/hmtx) table
 #[derive(Clone)]
 pub struct Hmtx<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, HmtxFixedHeader>,
     number_of_h_metrics: u16,
 }
 
@@ -66,14 +78,20 @@ impl<'a> Hmtx<'a> {
     /// glyph. Records are indexed by glyph ID.
     pub fn h_metrics(&self) -> &'a [LongMetric] {
         let range = self.h_metrics_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// Leading (left/top) side bearings for glyph IDs greater than or equal to
     /// numberOfLongMetrics.
     pub fn left_side_bearings(&self) -> &'a [BigEndian<i16>] {
         let range = self.left_side_bearings_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub(crate) fn number_of_h_metrics(&self) -> u16 {
@@ -82,16 +100,18 @@ impl<'a> Hmtx<'a> {
 
     pub fn h_metrics_byte_range(&self) -> Range<usize> {
         let number_of_h_metrics = self.number_of_h_metrics();
-        let start = 0;
-        let end = start
-            + (transforms::to_usize(number_of_h_metrics)).saturating_mul(LongMetric::RAW_BYTE_LEN);
+        let start = 0usize;
+        let end = start.saturating_add(
+            (transforms::to_usize(number_of_h_metrics)).saturating_mul(LongMetric::RAW_BYTE_LEN),
+        );
         start..end
     }
 
     pub fn left_side_bearings_byte_range(&self) -> Range<usize> {
         let start = self.h_metrics_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / i16::RAW_BYTE_LEN * i16::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / i16::RAW_BYTE_LEN * i16::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -102,38 +122,130 @@ const _: () = assert!(FontData::default_data_long_enough(Hmtx::MIN_SIZE));
 impl Default for Hmtx<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
             number_of_h_metrics: Default::default(),
         }
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Hmtx<'a> {
-    fn type_name(&self) -> &str {
-        "Hmtx"
+impl<'a> MinByteRange<'a> for HmtxExtended<'a> {
+    fn min_byte_range(&self) -> Range<usize> {
+        0..self.left_side_bearings_byte_range().end
     }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new(
-                "h_metrics",
-                traversal::FieldType::array_of_records(
-                    stringify!(LongMetric),
-                    self.h_metrics(),
-                    self.offset_data(),
-                ),
-            )),
-            1usize => Some(Field::new("left_side_bearings", self.left_side_bearings())),
-            _ => None,
-        }
+    fn min_table_bytes(&self) -> &'a [u8] {
+        let range = self.min_byte_range();
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
+impl TopLevelTable for HmtxExtended<'_> {
+    /// `HMTX`
+    const TAG: Tag = Tag::new(b"HMTX");
+}
+
+impl ReadArgs for HmtxExtended<'_> {
+    type Args = u32;
+}
+
+impl<'a> FontRead<'a> for HmtxExtended<'a> {
+    fn read_with_args(data: FontData<'a>, args: u32) -> Result<Self, ReadError> {
+        let number_of_h_metrics = args;
+
+        #[allow(clippy::absurd_extreme_comparisons)]
+        if data.len() < Self::MIN_SIZE {
+            return Err(ReadError::OutOfBounds);
+        }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
+        Ok(Self {
+            data,
+            number_of_h_metrics,
+        })
+    }
+}
+
+impl<'a> HmtxExtended<'a> {
+    /// A constructor that requires additional arguments.
+    ///
+    /// This type requires some external state in order to be
+    /// parsed.
+    pub fn read(data: FontData<'a>, number_of_h_metrics: u32) -> Result<Self, ReadError> {
+        let args = number_of_h_metrics;
+        Self::read_with_args(data, args)
+    }
+}
+
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct HmtxExtendedFixedHeader {}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<HmtxExtendedFixedHeader>() <= HmtxExtended::MIN_SIZE);
+
+/// HMTX horizontal metrics (ISO/IEC 14496-22:2026, 5.1.11).
+#[derive(Clone)]
+pub struct HmtxExtended<'a> {
+    data: TableDataRef<'a, HmtxExtendedFixedHeader>,
+    number_of_h_metrics: u32,
+}
+
 #[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Hmtx<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
+impl<'a> HmtxExtended<'a> {
+    pub const MIN_SIZE: usize = 0;
+    basic_table_impls!(impl_the_methods);
+
+    pub fn h_metrics(&self) -> &'a [LongMetric] {
+        let range = self.h_metrics_byte_range();
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
+    }
+
+    pub fn left_side_bearings(&self) -> &'a [BigEndian<i16>] {
+        let range = self.left_side_bearings_byte_range();
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
+    }
+
+    pub(crate) fn number_of_h_metrics(&self) -> u32 {
+        self.number_of_h_metrics
+    }
+
+    pub fn h_metrics_byte_range(&self) -> Range<usize> {
+        let number_of_h_metrics = self.number_of_h_metrics();
+        let start = 0usize;
+        let end = start.saturating_add(
+            (transforms::to_usize(number_of_h_metrics)).saturating_mul(LongMetric::RAW_BYTE_LEN),
+        );
+        start..end
+    }
+
+    pub fn left_side_bearings_byte_range(&self) -> Range<usize> {
+        let start = self.h_metrics_byte_range().end;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / i16::RAW_BYTE_LEN * i16::RAW_BYTE_LEN,
+        );
+        start..end
+    }
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(FontData::default_data_long_enough(HmtxExtended::MIN_SIZE));
+
+impl Default for HmtxExtended<'_> {
+    fn default() -> Self {
+        Self {
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
+            number_of_h_metrics: Default::default(),
+        }
     }
 }
 
@@ -161,19 +273,4 @@ impl LongMetric {
 
 impl FixedSize for LongMetric {
     const RAW_BYTE_LEN: usize = u16::RAW_BYTE_LEN + i16::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for LongMetric {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "LongMetric",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("advance", self.advance())),
-                1usize => Some(Field::new("side_bearing", self.side_bearing())),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }

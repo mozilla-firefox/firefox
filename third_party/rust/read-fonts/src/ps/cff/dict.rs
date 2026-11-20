@@ -4,16 +4,16 @@ use super::{
     blend::BlendState,
     stack::{Number, Stack},
 };
+use crate::model::Error;
 use crate::{
     ps::{
-        error::Error,
         hinting::{Blues, StemSnaps},
         num::{self, BcdComponents},
         string::Sid,
         transform::ScaledFontMatrix,
     },
     types::Fixed,
-    Cursor, ReadError,
+    Cursor,
 };
 use std::ops::Range;
 
@@ -161,6 +161,19 @@ impl Operator {
 pub enum Token {
     /// An operator parsed from a DICT.
     Operator(Operator),
+    /// An opcode that is not a known operator.
+    ///
+    /// Reported rather than refused: a DICT containing one is still a DICT,
+    /// and what to do about it is the caller's decision. FreeType ignores
+    /// unknown operators and clears the stack, which is what
+    /// [`entries`] does; refusing here would leave a caller no way to do the
+    /// same through the raw view.
+    InvalidOperator(u8),
+    /// As [`InvalidOperator`][Self::InvalidOperator], for the two-byte form.
+    ///
+    /// Carries the extended opcode only; the byte before it is always the
+    /// escape.
+    InvalidTwoByteOperator(u8),
     /// A number parsed from a DICT. If the source was in
     /// binary coded decimal format, then the second field
     /// contains the parsed components.
@@ -204,7 +217,10 @@ fn parse_token(cursor: &mut Cursor) -> Result<Token, Error> {
     let b0 = cursor.read::<u8>()?;
     Ok(if b0 == ESCAPE {
         let b1 = cursor.read::<u8>()?;
-        Token::Operator(Operator::from_extended_opcode(b1).ok_or(Error::InvalidDictOperator(b1))?)
+        match Operator::from_extended_opcode(b1) {
+            Some(op) => Token::Operator(op),
+            None => Token::InvalidTwoByteOperator(b1),
+        }
     } else {
         // See <https://learn.microsoft.com/en-us/typography/opentype/spec/cff2#table-3-operand-encoding>
         match b0 {
@@ -213,7 +229,10 @@ fn parse_token(cursor: &mut Cursor) -> Result<Token, Error> {
                 let components = BcdComponents::parse(cursor)?;
                 Token::Operand(components.value(false).into(), Some(components))
             }
-            _ => Token::Operator(Operator::from_opcode(b0).ok_or(Error::InvalidDictOperator(b0))?),
+            _ => match Operator::from_opcode(b0) {
+                Some(op) => Token::Operator(op),
+                None => Token::InvalidOperator(b0),
+            },
         }
     })
 }
@@ -291,7 +310,24 @@ pub enum Entry {
 /// store is present, then `blend_state` must be provided.
 pub fn entries<'a>(
     dict_data: &'a [u8],
+    blend_state: Option<BlendState<'a>>,
+) -> impl Iterator<Item = Result<Entry, Error>> + 'a {
+    entries_impl(dict_data, blend_state, false)
+}
+
+/// Reads only the fields needed by an unhinted Private DICT subfont, sharing
+/// tokenization, blend state, and special operand handling with the full reader.
+pub(crate) fn unhinted_private_entries<'a>(
+    dict_data: &'a [u8],
+    blend_state: Option<BlendState<'a>>,
+) -> impl Iterator<Item = Result<Entry, Error>> + 'a {
+    entries_impl(dict_data, blend_state, true)
+}
+
+fn entries_impl<'a>(
+    dict_data: &'a [u8],
     mut blend_state: Option<BlendState<'a>>,
+    unhinted_private: bool,
 ) -> impl Iterator<Item = Result<Entry, Error>> + 'a {
     let mut stack = Stack::new();
     let mut last_bcd_components = None;
@@ -301,84 +337,124 @@ pub fn entries<'a>(
         if cursor.remaining_bytes() == 0 {
             return None;
         }
-        let token = match parse_token(&mut cursor) {
-            Ok(token) => token,
-            Err(Error::InvalidDictOperator(_)) => {
-                // Some buggy fonts have invalid dict operators. Clear
-                // the stack and attempt to continue.
-                // FreeType only processes known fields:
-                // <https://gitlab.freedesktop.org/freetype/freetype/-/blob/80a507a6b8e3d2906ad2c8ba69329bd2fb2a85ef/src/cff/cffparse.c#L1328>
-                // And then clears the stack regardless:
-                // <https://gitlab.freedesktop.org/freetype/freetype/-/blob/80a507a6b8e3d2906ad2c8ba69329bd2fb2a85ef/src/cff/cffparse.c#L1469>
-                stack.clear();
-                continue;
-            }
-            Err(e) => return Some(Err(e)),
+        // Operands go straight onto the stack rather than through a `Token`:
+        // this loop is the hot part of subfont construction, and a token
+        // carries binary coded decimal state that only one operator reads.
+        const ESCAPE: u8 = 12;
+        let b0 = match cursor.read::<u8>() {
+            Ok(b0) => b0,
+            Err(e) => return Some(Err(e.into())),
         };
-        match token {
-            Token::Operand(number, bcd_components) => {
-                last_bcd_components = bcd_components;
-                match stack.push(number) {
+        let op = match b0 {
+            // See <https://learn.microsoft.com/en-us/typography/opentype/spec/cff2#table-3-operand-encoding>
+            28 | 29 | 32..=254 => {
+                last_bcd_components = None;
+                match num::parse_int(&mut cursor, b0).and_then(|number| stack.push(number)) {
                     Ok(_) => continue,
                     Err(e) => return Some(Err(e)),
                 }
             }
-            Token::Operator(op) => {
-                if op == Operator::Blend || op == Operator::VariationStoreIndex {
-                    let state = match blend_state.as_mut() {
-                        Some(state) => state,
-                        None => return Some(Err(Error::MissingBlendState)),
-                    };
-                    if op == Operator::VariationStoreIndex {
-                        match stack
-                            .get_i32(0)
-                            .and_then(|ix| state.set_store_index(ix as u16))
-                        {
-                            Ok(_) => {}
-                            Err(e) => return Some(Err(e)),
-                        }
-                    }
-                    if op == Operator::Blend {
-                        match stack.apply_blend(state) {
-                            Ok(_) => continue,
-                            Err(e) => return Some(Err(e)),
-                        }
-                    }
+            30 => {
+                let components = match BcdComponents::parse(&mut cursor) {
+                    Ok(components) => components,
+                    Err(e) => return Some(Err(e)),
+                };
+                let result = stack.push(components.value(false));
+                last_bcd_components = Some(components);
+                match result {
+                    Ok(_) => continue,
+                    Err(e) => return Some(Err(e)),
                 }
-                if op == Operator::BlueScale {
-                    // FreeType parses BlueScale using a scaling factor of
-                    // 1000, presumably to capture more precision in the
-                    // fractional part. We do the same.
-                    // See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/master/src/cff/cfftoken.h?ref_type=heads#L87>
-                    if let Some(bcd_components) = last_bcd_components.take() {
-                        // If the most recent numeric value was parsed as a
-                        // binary coded decimal then recompute the value using
-                        // the desired scaling and replace it on the stack
-                        stack.pop_fixed().ok()?;
-                        stack.push(bcd_components.value(true)).ok()?;
-                    }
-                }
-                if op == Operator::FontMatrix {
-                    // FontMatrix is also parsed specially... *sigh*
-                    // Redo the entire thing with special scaling factors
-                    // See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/f1cd6dbfa0c98f352b698448f40ac27e8fb3832e/src/cff/cffparse.c#L623>
-                    // Dump the current values
-                    stack.clear();
-                    last_bcd_components = None;
-                    // Now reparse with dynamic scaling
-                    let mut cursor = crate::FontData::new(dict_data).cursor();
-                    cursor.advance_by(cursor_pos);
-                    if let Some(matrix) = ScaledFontMatrix::parse(&mut cursor) {
-                        return Some(Ok(Entry::FontMatrix(matrix)));
-                    }
-                    continue;
-                }
-                last_bcd_components = None;
-                let entry = parse_entry(op, &mut stack);
-                stack.clear();
-                cursor_pos = cursor.position().unwrap_or_default();
-                return Some(entry);
             }
+            _ => {
+                let op = if b0 == ESCAPE {
+                    match cursor.read::<u8>() {
+                        Ok(b1) => Operator::from_extended_opcode(b1),
+                        Err(e) => return Some(Err(e.into())),
+                    }
+                } else {
+                    Operator::from_opcode(b0)
+                };
+                match op {
+                    Some(op) => op,
+                    None => {
+                        // Some buggy fonts have invalid dict operators. Clear
+                        // the stack and attempt to continue.
+                        // FreeType only processes known fields:
+                        // <https://gitlab.freedesktop.org/freetype/freetype/-/blob/80a507a6b8e3d2906ad2c8ba69329bd2fb2a85ef/src/cff/cffparse.c#L1328>
+                        // And then clears the stack regardless:
+                        // <https://gitlab.freedesktop.org/freetype/freetype/-/blob/80a507a6b8e3d2906ad2c8ba69329bd2fb2a85ef/src/cff/cffparse.c#L1469>
+                        stack.clear();
+                        continue;
+                    }
+                }
+            }
+        };
+        if op == Operator::Blend || op == Operator::VariationStoreIndex {
+            let state = match blend_state.as_mut() {
+                Some(state) => state,
+                None => return Some(Err(Error::MissingResource)),
+            };
+            if op == Operator::VariationStoreIndex {
+                match stack
+                    .get_i32(0)
+                    .and_then(|ix| state.set_store_index(ix as u16))
+                {
+                    Ok(_) => {}
+                    Err(e) => return Some(Err(e)),
+                }
+            }
+            if op == Operator::Blend {
+                match stack.apply_blend(state) {
+                    Ok(_) => continue,
+                    Err(e) => return Some(Err(e)),
+                }
+            }
+        }
+        let keep = !unhinted_private
+            || matches!(
+                op,
+                Operator::SubrsOffset
+                    | Operator::VariationStoreIndex
+                    | Operator::DefaultWidthX
+                    | Operator::NominalWidthX
+            );
+        if op == Operator::BlueScale {
+            // FreeType parses BlueScale using a scaling factor of
+            // 1000, presumably to capture more precision in the
+            // fractional part. We do the same.
+            // See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/master/src/cff/cfftoken.h?ref_type=heads#L87>
+            if let Some(bcd_components) = last_bcd_components.take() {
+                // If the most recent numeric value was parsed as a
+                // binary coded decimal then recompute the value using
+                // the desired scaling and replace it on the stack
+                stack.pop_fixed().ok()?;
+                stack.push(bcd_components.value(true)).ok()?;
+            }
+        }
+        if op == Operator::FontMatrix {
+            // FontMatrix is also parsed specially... *sigh*
+            // Redo the entire thing with special scaling factors
+            // See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/f1cd6dbfa0c98f352b698448f40ac27e8fb3832e/src/cff/cffparse.c#L623>
+            // Dump the current values
+            stack.clear();
+            last_bcd_components = None;
+            // Now reparse with dynamic scaling
+            let mut cursor = crate::FontData::new(dict_data).cursor();
+            cursor.advance_by(cursor_pos);
+            if let Some(matrix) = ScaledFontMatrix::parse(&mut cursor) {
+                if keep {
+                    return Some(Ok(Entry::FontMatrix(matrix)));
+                }
+            }
+            continue;
+        }
+        last_bcd_components = None;
+        let entry = keep.then(|| parse_entry(op, &mut stack));
+        stack.clear();
+        cursor_pos = cursor.position().unwrap_or_default();
+        if let Some(entry) = entry {
+            return Some(entry);
         }
     })
 }
@@ -401,7 +477,7 @@ fn parse_entry(op: Operator, stack: &mut Stack) -> Result<Entry, Error> {
         PrivateDictRange => {
             let len = stack.get_i32(0)? as usize;
             let start = stack.get_i32(1)? as usize;
-            let end = start.checked_add(len).ok_or(ReadError::OutOfBounds)?;
+            let end = start.checked_add(len).ok_or(Error::Malformed)?;
             Entry::PrivateDictRange(start..end)
         }
         VariationStoreOffset => Entry::VariationStoreOffset(stack.pop_i32()? as usize),
@@ -486,6 +562,31 @@ mod tests {
     };
     use font_test_data::bebuffer::BeBuffer;
 
+    /// An unknown operator is a token, not the end of the iteration.
+    ///
+    /// This is the whole point of reporting it that way: `entries` skips
+    /// unknown operators and clears the stack, as FreeType does, and a caller
+    /// working from the raw view has to be able to do the same. Refusing here
+    /// would end the walk at the first buggy font.
+    #[test]
+    fn unknown_operators_are_tokens() {
+        // a single byte operand encodes `b0 - 139`; 25 is not a one byte
+        // operator and 12/77 is not a two byte one
+        let dict = [139u8, 25, 139, 12, 77, 139, 17];
+        let tokens: Vec<_> = tokens(&dict).map(|tok| tok.unwrap()).collect();
+        assert_eq!(
+            &tokens,
+            &[
+                0.into(),
+                Token::InvalidOperator(25),
+                0.into(),
+                Token::InvalidTwoByteOperator(77),
+                0.into(),
+                Operator::CharstringsOffset.into(),
+            ]
+        );
+    }
+
     #[test]
     fn example_top_dict_tokens() {
         use Operator::*;
@@ -515,6 +616,63 @@ mod tests {
             VariationStoreOffset(16),
         ];
         assert_eq!(&entries, expected);
+    }
+
+    #[test]
+    fn unhinted_private_entries_preserve_blends() {
+        let data = &font_test_data::cff2::EXAMPLE[0x4f..=0xc0];
+        let store =
+            ItemVariationStore::read(FontData::new(&font_test_data::cff2::EXAMPLE[18..])).unwrap();
+        for coord in [-0.75, 0.0, 0.25, 0.75] {
+            let coords = [F2Dot14::from_f32(coord)];
+            let expected = entries(
+                data,
+                Some(BlendState::new(store.clone(), &coords, 0).unwrap()),
+            )
+            .filter_map(Result::ok)
+            .filter(|entry| {
+                matches!(
+                    entry,
+                    Entry::SubrsOffset(_)
+                        | Entry::VariationStoreIndex(_)
+                        | Entry::DefaultWidthX(_)
+                        | Entry::NominalWidthX(_)
+                )
+            })
+            .collect::<Vec<_>>();
+            let actual = unhinted_private_entries(
+                data,
+                Some(BlendState::new(store.clone(), &coords, 0).unwrap()),
+            )
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>();
+            assert_eq!(actual, expected);
+        }
+    }
+
+    #[test]
+    fn unhinted_private_entries_preserve_stack_and_special_operators() {
+        let data = [
+            142, 143, 6,  // ignored BlueValues
+            10, // ignored StdHW with a missing operand
+            30, 10, 0, 31, 12, 9, // BlueScale with its special BCD handling
+            28, 2, 88, 20, // default width 600
+            30, 10, 0, 31, 139, 139, 30, 10, 0, 31, 139, 139, 12, 7, // FontMatrix
+            140, 255, // unknown operator must clear its operand
+            159, 21, // nominal width 20
+            149, 19, // subrs offset 10
+        ];
+        let actual = unhinted_private_entries(&data, None)
+            .map(Result::unwrap)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            actual,
+            [
+                Entry::DefaultWidthX(Fixed::from_i32(600)),
+                Entry::NominalWidthX(Fixed::from_i32(20)),
+                Entry::SubrsOffset(10),
+            ]
+        );
     }
 
     #[test]

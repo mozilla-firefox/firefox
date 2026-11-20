@@ -24,7 +24,8 @@
 
 use read_fonts::{
     tables::{
-        glyf::Glyf, gvar::Gvar, hmtx::LongMetric, hvar::Hvar, loca::Loca, os2::SelectionFlags,
+        glyf::Glyf, gvar::SelectedGvar, hmtx::LongMetric, hvar::Hvar, loca::Loca,
+        os2::SelectionFlags,
     },
     types::{BigEndian, Fixed, GlyphId},
     FontRef, TableProvider,
@@ -58,7 +59,8 @@ pub struct Decoration {
 ///
 /// This metrics here are derived from the following tables:
 /// * [head](https://learn.microsoft.com/en-us/typography/opentype/spec/head): `units_per_em`, `bounds`
-/// * [maxp](https://learn.microsoft.com/en-us/typography/opentype/spec/maxp): `glyph_count`
+/// * [maxp](https://learn.microsoft.com/en-us/typography/opentype/spec/maxp): `glyph_count`, from `MAXP`
+///   when present (ISO/IEC 14496-22:2026)
 /// * [post](https://learn.microsoft.com/en-us/typography/opentype/spec/post): `is_monospace`, `italic_angle`, `underline`
 /// * [OS/2](https://learn.microsoft.com/en-us/typography/opentype/spec/os2): `average_width`, `cap_height`,
 ///   `x_height`, `strikeout`, as well as the line metrics: `ascent`, `descent`, `leading` if the `USE_TYPOGRAPHIC_METRICS`
@@ -73,15 +75,16 @@ pub struct Metrics {
     /// Number of font design units per em unit.
     pub units_per_em: u16,
     /// Number of glyphs in the font.
-    pub glyph_count: u16,
+    pub glyph_count: u32,
     /// True if the font is not proportionally spaced.
     pub is_monospace: bool,
     /// Italic angle in counter-clockwise degrees from the vertical. Zero for upright text,
     /// negative for text that leans to the right.
     pub italic_angle: f32,
-    /// Distance from the baseline to the top of the alignment box.
+    /// Height of the alignment box above the baseline. Never negative.
     pub ascent: f32,
-    /// Distance from the baseline to the bottom of the alignment box.
+    /// Depth of the alignment box below the baseline, as a negative value.
+    /// Never positive.
     pub descent: f32,
     /// Recommended additional spacing between lines.
     pub leading: f32,
@@ -121,7 +124,7 @@ impl Metrics {
                 y_max: head.y_max() as f32 * scale,
             });
         }
-        if let Ok(maxp) = font.maxp() {
+        if let Ok(maxp) = font.selected_maxp() {
             metrics.glyph_count = maxp.num_glyphs();
         }
         if let Ok(post) = font.post() {
@@ -132,7 +135,7 @@ impl Metrics {
                 thickness: post.underline_thickness().to_i16() as f32 * scale,
             });
         }
-        let hhea = font.hhea();
+        let hhea = font.selected_hhea();
         if let Ok(hhea) = &hhea {
             metrics.max_width = Some(hhea.advance_width_max().to_u16() as f32 * scale);
         }
@@ -169,7 +172,7 @@ impl Metrics {
             });
         }
         if !used_typo_metrics {
-            if let Ok(hhea) = font.hhea() {
+            if let Ok(hhea) = font.selected_hhea() {
                 metrics.ascent = hhea.ascender().to_i16() as f32 * scale;
                 metrics.descent = hhea.descender().to_i16() as f32 * scale;
                 metrics.leading = hhea.line_gap().to_i16() as f32 * scale;
@@ -211,6 +214,11 @@ impl Metrics {
                 strikeout.thickness += metric_delta(STRS);
             }
         }
+        // The ascent is above the baseline and the descent below it. Some
+        // fonts store a descender, or an ascender, with the other sign, so
+        // each is taken by its size alone.
+        metrics.ascent = metrics.ascent.abs();
+        metrics.descent = -metrics.descent.abs();
         metrics
     }
 }
@@ -226,7 +234,7 @@ pub struct GlyphMetrics<'a> {
     default_advance_width: u16,
     lsbs: &'a [BigEndian<i16>],
     hvar: Option<Hvar<'a>>,
-    gvar: Option<Gvar<'a>>,
+    gvar: Option<SelectedGvar<'a>>,
     loca_glyf: Option<(Loca<'a>, Glyf<'a>)>,
     coords: &'a [NormalizedCoord],
 }
@@ -236,8 +244,8 @@ impl<'a> GlyphMetrics<'a> {
     /// normalized variation space.
     pub fn new(font: &FontRef<'a>, size: Size, location: impl Into<LocationRef<'a>>) -> Self {
         let glyph_count = font
-            .maxp()
-            .map(|maxp| maxp.num_glyphs() as u32)
+            .selected_maxp()
+            .map(|maxp| maxp.num_glyphs())
             .unwrap_or_default();
         let upem = font
             .head()
@@ -246,21 +254,20 @@ impl<'a> GlyphMetrics<'a> {
         let fixed_scale = FixedScaleFactor(size.fixed_linear_scale(upem));
         let coords = location.into().effective_coords();
         let (h_metrics, default_advance_width, lsbs) = font
-            .hmtx()
+            .h_glyph_metric_records()
             .map(|hmtx| {
-                let h_metrics = hmtx.h_metrics();
+                let h_metrics = hmtx.long_metrics();
                 let default_advance_width = h_metrics.last().map(|m| m.advance.get()).unwrap_or(0);
-                let lsbs = hmtx.left_side_bearings();
+                let lsbs = hmtx.side_bearings();
                 (h_metrics, default_advance_width, lsbs)
             })
             .unwrap_or_default();
         let hvar = font.hvar().ok();
-        let gvar = font.gvar().ok();
-        let loca_glyf = if let (Ok(loca), Ok(glyf)) = (font.loca(None), font.glyf()) {
-            Some((loca, glyf))
-        } else {
-            None
-        };
+        let gvar = font.selected_gvar().ok();
+        let loca_glyf = font
+            .selected_glyf_loca(None)
+            .ok()
+            .map(|(glyf, loca)| (loca, glyf));
         Self {
             font: font.clone(),
             size,
@@ -285,6 +292,7 @@ impl<'a> GlyphMetrics<'a> {
     ///
     /// If normalized coordinates were provided when constructing glyph metrics and
     /// an `HVAR` table is present, applies the appropriate delta.
+    /// A varied advance below zero is clamped to zero before scaling.
     ///
     /// Returns `None` if `glyph_id >= self.glyph_count()` or the underlying font
     /// data is invalid.
@@ -299,15 +307,16 @@ impl<'a> GlyphMetrics<'a> {
             .unwrap_or(self.default_advance_width) as i32;
         if let Some(hvar) = &self.hvar {
             advance += hvar
-                .advance_width_delta(glyph_id, self.coords)
-                // FreeType truncates metric deltas...
+                .advance_delta(glyph_id, self.coords)
+                // The delta is exact, and this rounds it to a whole design
+                // unit before it is added.
                 // https://github.com/freetype/freetype/blob/7838c78f53f206ac5b8e9cefde548aa81cb00cf4/src/truetype/ttgxvar.c#L1027
-                .map(|delta| delta.to_f64() as i32)
+                .map(|delta| delta.to_i32())
                 .unwrap_or(0);
         } else if self.gvar.is_some() {
             advance += self.metric_deltas_from_gvar(glyph_id).unwrap_or_default()[1];
         }
-        Some(self.fixed_scale.apply(advance))
+        Some(self.fixed_scale.apply(advance.max(0)))
     }
 
     /// Returns the left side bearing for the specified glyph.
@@ -335,9 +344,10 @@ impl<'a> GlyphMetrics<'a> {
         if let Some(hvar) = &self.hvar {
             lsb += hvar
                 .lsb_delta(glyph_id, self.coords)
-                // FreeType truncates metric deltas...
+                // The delta is exact, and this rounds it to a whole design
+                // unit before it is added.
                 // https://github.com/freetype/freetype/blob/7838c78f53f206ac5b8e9cefde548aa81cb00cf4/src/truetype/ttgxvar.c#L1027
-                .map(|delta| delta.to_f64() as i32)
+                .map(|delta| delta.to_i32())
                 .unwrap_or(0);
         } else if self.gvar.is_some() {
             lsb += self.metric_deltas_from_gvar(glyph_id).unwrap_or_default()[0];
@@ -355,7 +365,7 @@ impl<'a> GlyphMetrics<'a> {
             return self.bounds_from_outline(glyph_id);
         }
         let (loca, glyf) = self.loca_glyf.as_ref()?;
-        Some(match loca.get_glyf(glyph_id, glyf).ok()? {
+        Some(match loca.get(glyph_id, glyf)?.glyph() {
             Some(glyph) => BoundingBox {
                 x_min: self.fixed_scale.apply(glyph.x_min() as i32),
                 y_min: self.fixed_scale.apply(glyph.y_min() as i32),
@@ -369,14 +379,19 @@ impl<'a> GlyphMetrics<'a> {
 }
 
 impl GlyphMetrics<'_> {
+    pub(crate) fn glyf_y_min(&self, glyph_id: GlyphId) -> Option<i16> {
+        let (loca, glyf) = self.loca_glyf.as_ref()?;
+        let entry = loca.get(glyph_id, glyf)?;
+        let glyph = entry.glyph()?;
+        (glyph.number_of_contours() != 0).then(|| glyph.y_min())
+    }
+
     fn metric_deltas_from_gvar(&self, glyph_id: GlyphId) -> Option<[i32; 2]> {
         let (loca, glyf) = self.loca_glyf.as_ref()?;
-        let mut deltas = self
-            .gvar
-            .as_ref()?
-            .phantom_point_deltas(glyf, loca, self.coords, glyph_id)
-            .ok()
-            .flatten()?;
+        let mut deltas =
+            self.gvar
+                .as_ref()?
+                .phantom_point_deltas(glyf, loca, self.coords, glyph_id)?;
         deltas[1] -= deltas[0];
         Some([deltas[0], deltas[1]].map(|delta| delta.x.to_i32()))
     }
@@ -412,6 +427,72 @@ mod tests {
     use super::*;
     use font_test_data::{NOTO_SANS_JP_CFF, SIMPLE_GLYF, VAZIRMATN_VAR};
     use read_fonts::FontRef;
+
+    /// Returns Tinos with the sign of its `hhea` descender flipped, as some
+    /// fonts store it.
+    fn positive_descender() -> Vec<u8> {
+        let mut data = font_test_data::TINOS_SUBSET.to_vec();
+        let font = FontRef::new(font_test_data::TINOS_SUBSET).unwrap();
+        let record = font
+            .table_directory()
+            .table_records()
+            .iter()
+            .find(|record| record.tag() == read_fonts::types::Tag::new(b"hhea"))
+            .unwrap();
+        // The descender follows the version and the ascender.
+        let at = record.offset() as usize + 6;
+        let descender = i16::from_be_bytes([data[at], data[at + 1]]);
+        assert!(descender < 0);
+        data[at..at + 2].copy_from_slice(&(-descender).to_be_bytes());
+        data
+    }
+
+    // A descender stored positive is read below the baseline.
+    #[test]
+    fn descenders_stored_positive_are_below_the_baseline() {
+        let flipped = positive_descender();
+        let original = FontRef::new(font_test_data::TINOS_SUBSET).unwrap();
+        let flipped = FontRef::new(&flipped).unwrap();
+        let size = Size::new(16.0);
+        let original = Metrics::new(&original, size, LocationRef::default());
+        let flipped = Metrics::new(&flipped, size, LocationRef::default());
+        assert!(flipped.descent < 0.0);
+        assert_eq!(
+            (flipped.ascent, flipped.descent, flipped.leading),
+            (original.ascent, original.descent, original.leading)
+        );
+    }
+
+    #[test]
+    fn extended_glyph_metrics_with_any_outline_tag() {
+        use font_test_data::extended::metrics_font;
+        for outline in [None, Some(*b"glyf"), Some(*b"GLYF")] {
+            for legacy in [false, true] {
+                let data = metrics_font(true, legacy, outline);
+                let font = FontRef::new(&data).unwrap();
+                let global = font.metrics(Size::unscaled(), LocationRef::default());
+                assert_eq!(global.glyph_count, 70002);
+                assert_eq!(global.ascent, 800.0);
+                assert_eq!(global.descent, -200.0);
+                let metrics = font.glyph_metrics(Size::unscaled(), LocationRef::default());
+                assert_eq!(metrics.glyph_count(), 70002);
+                for gid in [0, 65535, 65536, 69999] {
+                    let glyph = GlyphId::new(gid);
+                    assert_eq!(
+                        metrics.advance_width(glyph),
+                        Some((1000 + gid % 100) as f32)
+                    );
+                    assert_eq!(
+                        metrics.left_side_bearing(glyph),
+                        Some(-((gid % 300) as f32))
+                    );
+                }
+                assert_eq!(metrics.advance_width(GlyphId::new(70001)), Some(1099.0));
+                assert_eq!(metrics.left_side_bearing(GlyphId::new(70001)), Some(-11.0));
+                assert_eq!(metrics.advance_width(GlyphId::new(70002)), None);
+            }
+        }
+    }
 
     #[test]
     fn metrics() {
@@ -552,6 +633,36 @@ mod tests {
                 y_max: 1456.0
             }
         );
+    }
+
+    #[test]
+    fn negative_varied_advances_are_clamped_before_scaling() {
+        let font = FontRef::new(font_test_data::NEGATIVE_VAR_ADVANCES).unwrap();
+        for (coord, expected) in [
+            (0.0, [500.0, 500.0]),
+            // Skrifa rounds the delta before adding it to the base width.
+            (0.5, [200.0, 551.0]),
+            (1.0, [0.0, 601.0]),
+        ] {
+            let coords = [NormalizedCoord::from_f32(coord)];
+            for size in [
+                Size::unscaled(),
+                Size::new(-2000.0),
+                Size::new(0.0),
+                Size::new(500.0),
+                Size::new(2000.0),
+            ] {
+                let scale = size.linear_scale(1000);
+                let metrics = font.glyph_metrics(size, LocationRef::new(&coords));
+                let mut gvar_metrics = metrics.clone();
+                gvar_metrics.hvar = None;
+                for (i, gid) in [GlyphId::new(1), GlyphId::new(2)].into_iter().enumerate() {
+                    assert_eq!(metrics.advance_width(gid), Some(expected[i] * scale));
+                    assert_eq!(gvar_metrics.advance_width(gid), Some(expected[i] * scale));
+                }
+                assert_eq!(metrics.advance_width(GlyphId::new(3)), None);
+            }
+        }
     }
 
     #[test]

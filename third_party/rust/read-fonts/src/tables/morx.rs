@@ -1,6 +1,6 @@
 //! The [morx (Extended Glyph Metamorphosis)](https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6morx.html) table.
 
-use super::aat::{safe_read_array_to_end, ExtendedStateTable, LookupU16};
+use super::aat::{safe_read_array_to_end, ExtendedStateTable, LookupU16, StateTableParts};
 
 include!("../../generated/generated_morx.rs");
 
@@ -58,7 +58,7 @@ impl<'a> Subtable<'a> {
 
     /// Returns an enum representing the actual subtable data.
     pub fn kind(&self) -> Result<SubtableKind<'a>, ReadError> {
-        SubtableKind::read_with_args(FontData::new(self.data()), &self.coverage())
+        SubtableKind::read_with_args(FontData::new(self.data()), self.coverage())
     }
 }
 
@@ -76,10 +76,10 @@ impl ReadArgs for SubtableKind<'_> {
     type Args = u32;
 }
 
-impl<'a> FontReadWithArgs<'a> for SubtableKind<'a> {
-    fn read_with_args(data: FontData<'a>, args: &Self::Args) -> Result<Self, ReadError> {
+impl<'a> FontRead<'a> for SubtableKind<'a> {
+    fn read_with_args(data: FontData<'a>, args: Self::Args) -> Result<Self, ReadError> {
         // Format is low byte of coverage
-        let format = *args & 0xFF;
+        let format = args & 0xFF;
         match format {
             0 => Ok(Self::Rearrangement(ExtendedStateTable::read(data)?)),
             1 => Ok(Self::Contextual(ContextualSubtable::read(data)?)),
@@ -92,17 +92,116 @@ impl<'a> FontReadWithArgs<'a> for SubtableKind<'a> {
     }
 }
 
+/// Pre-resolved, lifetime-free description of a `morx` subtable's layout,
+/// captured once with [SubtableKind::parts] and replayed cheaply with
+/// [SubtableKind::from_parts] to avoid re-reading headers on every
+/// application.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct SubtableParts {
+    /// Low byte of coverage: the subtable format (0/1/2/4/5).
+    pub format: u8,
+    pub state: StateTableParts,
+    /// Format-dependent extra offsets read after the state table header:
+    /// contextual: [lookups_offset, 0, 0]; ligature: [lig_action, component,
+    /// ligature]; insertion: [glyphs_offset, 0, 0]; others unused.
+    pub extra: [u32; 3],
+}
+
+impl<'a> SubtableKind<'a> {
+    /// Captures the offsets needed to rebuild this subtable kind from the
+    /// same data with [SubtableKind::from_parts].
+    pub fn parts(data: FontData<'a>, coverage: u32) -> Result<SubtableParts, ReadError> {
+        let format = (coverage & 0xFF) as u8;
+        let mut parts = SubtableParts {
+            format,
+            ..Default::default()
+        };
+        if format == 4 {
+            // Non-contextual: a bare lookup table, no state header.
+            return Ok(parts);
+        }
+        parts.state = StateTableParts::read(data)?;
+        let mut cursor = data.cursor();
+        cursor.advance_by(ExtendedStateTable::<()>::HEADER_LEN);
+        match format {
+            1 | 5 => {
+                parts.extra[0] = cursor.read::<u32>()?;
+            }
+            2 => {
+                parts.extra[0] = cursor.read::<u32>()?;
+                parts.extra[1] = cursor.read::<u32>()?;
+                parts.extra[2] = cursor.read::<u32>()?;
+            }
+            _ => {}
+        }
+        Ok(parts)
+    }
+
+    /// Rebuilds the subtable kind from `data` and offsets previously
+    /// captured with [SubtableKind::parts] on the same data.
+    #[inline]
+    pub fn from_parts(data: FontData<'a>, parts: &SubtableParts) -> Result<Self, ReadError> {
+        match parts.format {
+            0 => Ok(Self::Rearrangement(ExtendedStateTable::from_parts(
+                data,
+                &parts.state,
+            )?)),
+            1 => {
+                let state_table = ExtendedStateTable::from_parts(data, &parts.state)?;
+                let offset = parts.extra[0] as usize;
+                let end = data.len();
+                let offsets_data = FontData::new(data.read_array(offset..end)?);
+                let raw_offsets: &[BigEndian<Offset32>] = safe_read_array_to_end(&offsets_data, 0)?;
+                Ok(Self::Contextual(ContextualSubtable {
+                    state_table,
+                    lookup_offsets: raw_offsets,
+                    lookup_data: offsets_data,
+                }))
+            }
+            2 => Ok(Self::Ligature(LigatureSubtable {
+                state_table: ExtendedStateTable::from_parts(data, &parts.state)?,
+                ligature_actions: safe_read_array_to_end(&data, parts.extra[0] as usize)?,
+                components: safe_read_array_to_end(&data, parts.extra[1] as usize)?,
+                ligatures: safe_read_array_to_end(&data, parts.extra[2] as usize)?,
+            })),
+            4 => Ok(Self::NonContextual(LookupU16::read(data)?)),
+            5 => Ok(Self::Insertion(InsertionSubtable {
+                state_table: ExtendedStateTable::from_parts(data, &parts.state)?,
+                glyphs: safe_read_array_to_end(&data, parts.extra[0] as usize)?,
+            })),
+            _ => Err(ReadError::InvalidFormat(parts.format as _)),
+        }
+    }
+}
+
 /// Contextual glyph substitution subtable.
 #[derive(Clone)]
 pub struct ContextualSubtable<'a> {
     pub state_table: ExtendedStateTable<'a, ContextualEntryData>,
-    /// List of lookups specifying substitutions. The index into this array
-    /// is specified by the action in the state table.
-    pub lookups: ArrayOfOffsets<'a, LookupU16<'a>, Offset32>,
+    // The lookups are kept as raw offsets so the subtable stays covariant
+    // over its lifetime.
+    lookup_offsets: &'a [BigEndian<Offset32>],
+    lookup_data: FontData<'a>,
+}
+
+impl<'a> ContextualSubtable<'a> {
+    /// Returns the substitution lookup at `index`, as selected by an action
+    /// in the state table, or `None` if it can't be read.
+    pub fn lookup(&self, index: usize) -> Option<LookupU16<'a>> {
+        self.lookup_offsets
+            .get(index)?
+            .get()
+            .resolve(self.lookup_data)
+            .ok()
+    }
+}
+
+impl ReadArgs for ContextualSubtable<'_> {
+    type Args = ();
 }
 
 impl<'a> FontRead<'a> for ContextualSubtable<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         let state_table = ExtendedStateTable::read(data)?;
         let mut cursor = data.cursor();
         cursor.advance_by(ExtendedStateTable::<()>::HEADER_LEN);
@@ -110,10 +209,10 @@ impl<'a> FontRead<'a> for ContextualSubtable<'a> {
         let end = data.len();
         let offsets_data = FontData::new(data.read_array(offset..end)?);
         let raw_offsets: &[BigEndian<Offset32>] = safe_read_array_to_end(&offsets_data, 0)?;
-        let lookups = ArrayOfOffsets::new(raw_offsets, offsets_data, ());
         Ok(Self {
             state_table,
-            lookups,
+            lookup_offsets: raw_offsets,
+            lookup_data: offsets_data,
         })
     }
 }
@@ -131,8 +230,12 @@ pub struct LigatureSubtable<'a> {
     pub ligatures: &'a [BigEndian<GlyphId16>],
 }
 
+impl ReadArgs for LigatureSubtable<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for LigatureSubtable<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         let state_table = ExtendedStateTable::read(data)?;
         let mut cursor = data.cursor();
         cursor.advance_by(ExtendedStateTable::<()>::HEADER_LEN);
@@ -162,8 +265,12 @@ pub struct InsertionSubtable<'a> {
     pub glyphs: &'a [BigEndian<GlyphId16>],
 }
 
+impl ReadArgs for InsertionSubtable<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for InsertionSubtable<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         let state_table = ExtendedStateTable::read(data)?;
         let mut cursor = data.cursor();
         cursor.advance_by(ExtendedStateTable::<()>::HEADER_LEN);
@@ -173,35 +280,6 @@ impl<'a> FontRead<'a> for InsertionSubtable<'a> {
             state_table,
             glyphs,
         })
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for Chain<'a> {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "Chain",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("default_flags", self.default_flags())),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for Subtable<'a> {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "Subtable",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("coverage", self.coverage())),
-                1usize => Some(Field::new("sub_feature_flags", self.sub_feature_flags())),
-                _ => None,
-            }),
-            data,
-        }
     }
 }
 
@@ -249,10 +327,20 @@ mod tests {
         let SubtableKind::Contextual(kind) = subtable.kind().unwrap() else {
             panic!("expected contextual subtable!");
         };
-        let lookup = kind.lookups.get(0).unwrap();
+        let lookup = kind.lookup(0).unwrap();
         let expected = [None, None, Some(7u16), Some(8), Some(9), Some(10), Some(11)];
         let values = (0..7).map(|gid| lookup.value(gid).ok()).collect::<Vec<_>>();
         assert_eq!(values, &expected);
+    }
+
+    /// Parsed subtables can be kept beside the data they borrow, which
+    /// needs them to be covariant.
+    #[test]
+    fn subtable_kind_is_covariant() {
+        fn shorten<'a>(kind: SubtableKind<'static>) -> SubtableKind<'a> {
+            kind
+        }
+        let _ = shorten;
     }
 
     #[test]

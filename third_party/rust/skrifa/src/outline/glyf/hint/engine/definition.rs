@@ -78,7 +78,7 @@ impl Engine<'_> {
         let f = self.value_stack.pop()?;
         let count = self.value_stack.pop()?;
         if count > 0 {
-            self.loop_budget.doing_loop_call(count as usize)?;
+            self.work_budget.doing_loop_call(count as usize)?;
             self.do_call(DefKind::Function, count as u32, f)
         } else {
             Ok(())
@@ -299,7 +299,7 @@ mod tests {
         use Opcode::*;
         let mut mock = MockEngine::new();
         let mut engine = mock.engine();
-        let limit = engine.loop_budget.limit;
+        let limit = engine.work_budget.loop_limit;
         #[rustfmt::skip]
         let font_code = [
             op(PUSHB001), 1, 0,

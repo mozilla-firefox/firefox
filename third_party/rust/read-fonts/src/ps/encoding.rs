@@ -127,12 +127,12 @@ pub(super) static ISO_LATIN1_ENCODING: [u16; 256] = [
      81,  82,  83,  84,  85,  86,  87,  88,  89,  90,  91,  92,  93,  94,  95,   0,
       0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
       0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      1, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172,  14, 173, 174,
-    175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190,
-    191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206,
-    207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222,
-    223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238,
-    239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254,
+      1,  96,  97,  98, 103, 100, 160, 102, 131, 170, 139, 106, 151,  14, 165, 128,
+    161, 156, 164, 169, 125, 152, 115, 114, 133, 150, 143, 120, 158, 155, 163, 123,
+    174, 171, 172, 176, 173, 175, 138, 177, 181, 178, 179, 180, 185, 182, 183, 184,
+    154, 186, 190, 187, 188, 191, 189, 168, 141, 196, 193, 194, 195, 197, 157, 149,
+    203, 200, 201, 205, 202, 204, 144, 206, 210, 207, 208, 209, 214, 211, 212, 213,
+    167, 215, 219, 216, 217, 220, 218, 159, 147, 225, 222, 223, 224, 226, 162, 227,
 ];
 
 #[cfg(test)]
@@ -259,18 +259,52 @@ mod tests {
             (125, "braceright"),
             (126, "asciitilde"),
             (160, "nonbreakingspace"),
-            (166, "minus"),
+            (166, "brokenbar"),
             (173, "softhyphen"),
-            (187, "Ntilde"),
-            (205, "aring"),
-            (226, "ugrave"),
-            (238, "twodotenleader"),
-            (239, "onedotenleader"),
-            (240, "zerooldstyle"),
-            (249, "nineoldstyle"),
-            (255, "bsuperior"),
+            (187, "guillemotright"),
+            (205, "Iacute"),
+            (226, "acircumflex"),
+            (238, "icircumflex"),
+            (239, "idieresis"),
+            (240, "eth"),
+            (249, "ugrave"),
+            (255, "ydieresis"),
         ];
         check_names(&pairs, PredefinedEncoding::IsoLatin1);
+    }
+
+    #[test]
+    fn iso_latin1_upper_range_names() {
+        // Glyph names for codes 0xA1..=0xFF per the PostScript language
+        // ISOLatin1Encoding vector, which agrees with the AGL names for
+        // U+00A1..=U+00FF over this range (0xAD is the special cased
+        // soft hyphen).
+        #[rustfmt::skip]
+        const EXPECTED: [&str; 95] = [
+            "exclamdown", "cent", "sterling", "currency", "yen",
+            "brokenbar", "section", "dieresis", "copyright", "ordfeminine",
+            "guillemotleft", "logicalnot", "softhyphen", "registered", "macron",
+            "degree", "plusminus", "twosuperior", "threesuperior", "acute",
+            "mu", "paragraph", "periodcentered", "cedilla", "onesuperior",
+            "ordmasculine", "guillemotright", "onequarter", "onehalf", "threequarters",
+            "questiondown", "Agrave", "Aacute", "Acircumflex", "Atilde",
+            "Adieresis", "Aring", "AE", "Ccedilla", "Egrave",
+            "Eacute", "Ecircumflex", "Edieresis", "Igrave", "Iacute",
+            "Icircumflex", "Idieresis", "Eth", "Ntilde", "Ograve",
+            "Oacute", "Ocircumflex", "Otilde", "Odieresis", "multiply",
+            "Oslash", "Ugrave", "Uacute", "Ucircumflex", "Udieresis",
+            "Yacute", "Thorn", "germandbls", "agrave", "aacute",
+            "acircumflex", "atilde", "adieresis", "aring", "ae",
+            "ccedilla", "egrave", "eacute", "ecircumflex", "edieresis",
+            "igrave", "iacute", "icircumflex", "idieresis", "eth",
+            "ntilde", "ograve", "oacute", "ocircumflex", "otilde",
+            "odieresis", "divide", "oslash", "ugrave", "uacute",
+            "ucircumflex", "udieresis", "yacute", "thorn", "ydieresis",
+        ];
+        for (code, expected) in (0xA1..=0xFF).zip(EXPECTED) {
+            let name = PredefinedEncoding::IsoLatin1.name(code);
+            assert_eq!(name, expected, "expected {expected}, got {name} for {code}");
+        }
     }
 
     #[track_caller]

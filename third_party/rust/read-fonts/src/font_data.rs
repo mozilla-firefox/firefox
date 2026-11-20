@@ -7,8 +7,7 @@ use bytemuck::AnyBitPattern;
 use types::{BigEndian, FixedSize, Scalar};
 
 use crate::array::ComputedArray;
-use crate::read::{ComputeSize, FontReadWithArgs, ReadError};
-use crate::FontRead;
+use crate::read::{ComputeSize, FontRead, FontReadAt, ReadArgs, ReadError};
 
 /// A reference to raw binary font data.
 ///
@@ -53,6 +52,14 @@ impl FontData<'static> {
     /// This is checked by an assert at compile time, and can be increased as needed.
     const NULL_POOL_SIZE: usize = 262;
 
+    // this is only used in const eval contexts, which are not visible to the
+    // dead_code lint https://github.com/rust-lang/rust/issues/101532
+    #[allow(dead_code)]
+    /// Return `true` if our default data can represent a table `n_bytes` long
+    pub(crate) const fn default_data_long_enough(n_bytes: usize) -> bool {
+        n_bytes <= Self::NULL_POOL_SIZE
+    }
+
     /// Return all zeroes suitable for the default impl of a table.
     pub(crate) fn default_table_data() -> Self {
         FontData::new(&EMPTY_TABLE_BYTES[2..])
@@ -68,11 +75,6 @@ impl FontData<'static> {
     /// of a format 1 table with u8 format.
     pub(crate) fn default_format_1_u8_table_data() -> Self {
         FontData::new(&EMPTY_TABLE_BYTES[1..])
-    }
-
-    /// Return `true` if our default data can represent a table `n_bytes` long
-    pub(crate) const fn default_data_long_enough(n_bytes: usize) -> bool {
-        n_bytes <= Self::NULL_POOL_SIZE
     }
 }
 
@@ -140,9 +142,9 @@ impl<'a> FontData<'a> {
             .ok_or(ReadError::OutOfBounds)
     }
 
-    pub fn read_with_args<T>(&self, range: Range<usize>, args: &T::Args) -> Result<T, ReadError>
+    pub fn read_with_args<T>(&self, range: Range<usize>, args: T::Args) -> Result<T, ReadError>
     where
-        T: FontReadWithArgs<'a>,
+        T: FontRead<'a>,
     {
         self.slice(range)
             .ok_or(ReadError::OutOfBounds)
@@ -272,13 +274,20 @@ impl<'a> Cursor<'a> {
         temp
     }
 
-    pub(crate) fn read_with_args<T>(&mut self, args: &T::Args) -> Result<T, ReadError>
+    /// Read an item positioned at the cursor and advance past it.
+    ///
+    /// The item is given the cursor's whole data plus its position,
+    /// rather than data sliced to it, so it can resolve offsets
+    /// relative to the enclosing table.
+    pub(crate) fn read_at_with_args<T>(&mut self, args: T::Args) -> Result<T, ReadError>
     where
-        T: FontReadWithArgs<'a> + ComputeSize,
+        T: FontReadAt<'a> + ComputeSize,
     {
         let len = T::compute_size(args)?;
+        // check the item actually fits before handing out a handle to it
         let range_end = self.pos.checked_add(len).ok_or(ReadError::OutOfBounds)?;
-        let temp = self.data.read_with_args(self.pos..range_end, args);
+        self.data.check_in_bounds(range_end)?;
+        let temp = T::read_at(self.data, self.pos, args);
         self.advance_by(len);
         temp
     }
@@ -287,20 +296,22 @@ impl<'a> Cursor<'a> {
     pub(crate) fn read_computed_array<T>(
         &mut self,
         len: usize,
-        args: &T::Args,
+        args: T::Args,
     ) -> Result<ComputedArray<'a, T>, ReadError>
     where
-        T: FontReadWithArgs<'a> + ComputeSize,
+        T: FontReadAt<'a> + ComputeSize,
     {
-        let len = len
+        let byte_len = len
             .checked_mul(T::compute_size(args)?)
             .ok_or(ReadError::OutOfBounds)?;
-        let range_end = self.pos.checked_add(len).ok_or(ReadError::OutOfBounds)?;
-        let temp = self.data.read_with_args(self.pos..range_end, args);
-        self.advance_by(len);
+        let range_end = self
+            .pos
+            .checked_add(byte_len)
+            .ok_or(ReadError::OutOfBounds)?;
+        let temp = ComputedArray::new(self.data, self.pos..range_end, args);
+        self.advance_by(byte_len);
         temp
     }
-
     pub(crate) fn read_array<T: AnyBitPattern + FixedSize>(
         &mut self,
         n_elem: usize,
@@ -335,8 +346,12 @@ impl<'a> Cursor<'a> {
 }
 
 // useful so we can have offsets that are just to data
+impl ReadArgs for FontData<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for FontData<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         Ok(data)
     }
 }

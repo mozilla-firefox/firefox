@@ -9,28 +9,18 @@ impl SignatureRecord {
     /// By calling its `offset_data` method.
     ///
     /// Only format 1 is recognised and read successfully.
-    pub fn signature_block<'a>(
-        &self,
-        data: FontData<'a>,
-    ) -> Result<SignatureBlockFormat1<'a>, ReadError> {
-        match self.format() {
-            1 => {
-                let signature = self
-                    .signature_block_offset()
-                    .resolve::<SignatureBlockFormat1>(data)?;
-
-                // Check that the inner block's size matches our length field.
-                let actual_len =
-                    u32::try_from(signature.compute_len()).map_err(|_| ReadError::OutOfBounds)?;
-
-                if self.length() == actual_len {
-                    Ok(signature)
-                } else {
-                    Err(ReadError::MalformedData("ambiguous DSIG signature length"))
-                }
-            }
-            unknown => Err(ReadError::InvalidFormat(unknown.into())),
+    pub fn signature_block<'a>(&self, data: FontData<'a>) -> Option<SignatureBlockFormat1<'a>> {
+        if self.format() != 1 {
+            return None;
         }
+        let signature = self
+            .signature_block_offset()
+            .resolve::<SignatureBlockFormat1>(data)
+            .ok()?;
+        // The inner block has to agree with the record's own length field.
+        // Where they disagree there is no saying which one to believe, so the
+        // block is not readable.
+        (self.length() == u32::try_from(signature.compute_len()).ok()?).then_some(signature)
     }
 }
 
@@ -47,7 +37,7 @@ mod tests {
     use font_test_data::bebuffer::BeBuffer;
 
     use super::{Dsig, PermissionFlags};
-    use crate::{FontData, FontRead, ReadError};
+    use crate::{FontData, FontRead};
 
     /// An empty, dummy DSIG, as inserted by fonttools.
     /// See <https://github.com/fonttools/fonttools/blob/ec716f11851f8d5a04e3f535b53219d97001482a/Lib/fontTools/fontBuilder.py#L823-L833>.
@@ -123,8 +113,7 @@ mod tests {
         // Assert that it is the unknown format '2', and that it fails to be read.
         assert_eq!(record.format(), 2);
 
-        let block_attempt = record.signature_block(data);
-        assert_eq!(block_attempt.err(), Some(ReadError::InvalidFormat(2)));
+        assert!(record.signature_block(data).is_none());
     }
 
     // A DSIG with a single entry, whose inner block has a different length to
@@ -152,12 +141,8 @@ mod tests {
         assert_eq!(dsig.signature_records().len(), 1);
         let record = dsig.signature_records()[0];
 
-        // Assert that we yield an error, because the inner length requires more
-        // bytes than the outer length prescribes.
-        let block_attempt = record.signature_block(data);
-        assert_eq!(
-            block_attempt.err(),
-            Some(ReadError::MalformedData("ambiguous DSIG signature length"))
-        );
+        // The inner length requires more bytes than the outer length
+        // prescribes, so the block cannot be read.
+        assert!(record.signature_block(data).is_none());
     }
 }

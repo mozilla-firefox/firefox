@@ -57,6 +57,23 @@ impl IntSet<u32> {
         bias: u32,
         max_value: u32,
     ) -> Result<(IntSet<u32>, &[u8]), DecodingError> {
+        Self::from_sparse_bit_set_bounded_with_max_set_size(data, bias, max_value, u32::MAX)
+    }
+
+    /// Populate this set with the values obtained from decoding the provided sparse bit set bytes.
+    ///
+    /// During decoding bias will be added to each decoded set members value. The final set will not contain
+    /// any values larger than max_value: any encoded values larger than max_value after the bias is applied
+    /// are ignored. If the decoded set size exceeds max_set_size, decoding returns [`DecodingError`].
+    ///
+    /// Sparse bit sets are a specialized, compact encoding of bit sets defined in the IFT specification:
+    /// <https://w3c.github.io/IFT/Overview.html#sparse-bit-set-decoding>
+    pub fn from_sparse_bit_set_bounded_with_max_set_size(
+        data: &[u8],
+        bias: u32,
+        max_value: u32,
+        max_set_size: u32,
+    ) -> Result<(IntSet<u32>, &[u8]), DecodingError> {
         // This is a direct port of the decoding algorithm from:
         // <https://w3c.github.io/IFT/Overview.html#sparse-bit-set-decoding>
         let Some((branch_factor, height)) = InputBitStream::<0>::decode_header(data) else {
@@ -71,16 +88,16 @@ impl IntSet<u32> {
 
         let result = match branch_factor {
             BranchFactor::Two => {
-                Self::decode_sparse_bit_set_nodes::<2>(data, height, bias, max_value)
+                Self::decode_sparse_bit_set_nodes::<2>(data, height, bias, max_value, max_set_size)
             }
             BranchFactor::Four => {
-                Self::decode_sparse_bit_set_nodes::<4>(data, height, bias, max_value)
+                Self::decode_sparse_bit_set_nodes::<4>(data, height, bias, max_value, max_set_size)
             }
             BranchFactor::Eight => {
-                Self::decode_sparse_bit_set_nodes::<8>(data, height, bias, max_value)
+                Self::decode_sparse_bit_set_nodes::<8>(data, height, bias, max_value, max_set_size)
             }
             BranchFactor::ThirtyTwo => {
-                Self::decode_sparse_bit_set_nodes::<32>(data, height, bias, max_value)
+                Self::decode_sparse_bit_set_nodes::<32>(data, height, bias, max_value, max_set_size)
             }
         };
 
@@ -92,6 +109,7 @@ impl IntSet<u32> {
         height: u8,
         bias: u32,
         max_value: u32,
+        max_set_size: u32,
     ) -> Result<(U32Set, &[u8]), DecodingError> {
         let mut out = U32Set::empty();
         if height == 0 {
@@ -127,6 +145,11 @@ impl IntSet<u32> {
                     .saturating_add(bias)
                     .min(max_value);
 
+                let count = (end as u64) - (start as u64) + 1;
+                if builder.set.len().saturating_add(count) > max_set_size as u64 {
+                    return Err(DecodingError);
+                }
+
                 // TODO(garretrieger): implement special insert_range on the builder as well.
                 builder.set.insert_range(start..=end);
                 continue;
@@ -157,6 +180,10 @@ impl IntSet<u32> {
                         // all future values. We can break early.
                         break 'outer;
                     };
+
+                    if builder.set.len() >= max_set_size as u64 {
+                        return Err(DecodingError);
+                    }
 
                     // TODO(garretrieger): further optimize by inserting entire nodes at once (as a bit field).
                     builder.insert(start);
@@ -703,6 +730,86 @@ mod test {
             .unwrap()
             .0;
         assert_eq!(set, IntSet::<u32>::empty());
+    }
+
+    #[test]
+    fn from_sparse_bit_set_bounded_with_max_set_size() {
+        // Case 1: Discrete set with non-continuous ranges (no fill nodes)
+        let non_fill_set: IntSet<u32> = [0, 2, 4, 6, 8, 10].into_iter().collect();
+        let non_fill_bytes = to_sparse_bit_set_with_bf::<4>(&non_fill_set);
+
+        assert!(
+            IntSet::<u32>::from_sparse_bit_set_bounded_with_max_set_size(
+                &non_fill_bytes,
+                0,
+                u32::MAX,
+                6
+            )
+            .is_ok()
+        );
+        assert!(
+            IntSet::<u32>::from_sparse_bit_set_bounded_with_max_set_size(
+                &non_fill_bytes,
+                0,
+                u32::MAX,
+                100
+            )
+            .is_ok()
+        );
+        assert_eq!(
+            IntSet::<u32>::from_sparse_bit_set_bounded_with_max_set_size(
+                &non_fill_bytes,
+                0,
+                u32::MAX,
+                5
+            ),
+            Err(DecodingError)
+        );
+        assert_eq!(
+            IntSet::<u32>::from_sparse_bit_set_bounded_with_max_set_size(
+                &non_fill_bytes,
+                0,
+                u32::MAX,
+                0
+            ),
+            Err(DecodingError)
+        );
+
+        // Case 2: Exact aligned continuous range (0..=63 for BF=8) to ensure fill nodes with no trailing members
+        let fill_set: IntSet<u32> = (0..=63).collect();
+        let fill_bytes = to_sparse_bit_set_with_bf::<8>(&fill_set);
+
+        assert!(
+            IntSet::<u32>::from_sparse_bit_set_bounded_with_max_set_size(
+                &fill_bytes,
+                0,
+                u32::MAX,
+                64
+            )
+            .is_ok()
+        );
+        assert_eq!(
+            IntSet::<u32>::from_sparse_bit_set_bounded_with_max_set_size(
+                &fill_bytes,
+                0,
+                u32::MAX,
+                63
+            ),
+            Err(DecodingError)
+        );
+
+        // Case 3: Empty set
+        let empty_set = IntSet::<u32>::empty();
+        let empty_bytes = to_sparse_bit_set_with_bf::<4>(&empty_set);
+        assert!(
+            IntSet::<u32>::from_sparse_bit_set_bounded_with_max_set_size(
+                &empty_bytes,
+                0,
+                u32::MAX,
+                0
+            )
+            .is_ok()
+        );
     }
 
     #[test]

@@ -2939,6 +2939,12 @@ who = "Emily McDonough <emcdonough@mozilla.com>"
 criteria = "safe-to-deploy"
 delta = "0.8.3 -> 0.12.1"
 
+[[audits.font-types]]
+who = "Emily McDonough <emcdonough@mozilla.com>"
+criteria = "safe-to-deploy"
+delta = "0.12.1 -> 0.12.7"
+notes = "One use of unsafe added. This is casting a byte buffer to a type. The appropriate properties are validated at compile time and runtime (AnyBitPattern, align-of, size-of)"
+
 [[audits.foreign-types]]
 who = "Teodor Tanasoaia <ttanasoaia@mozilla.com>"
 criteria = "safe-to-deploy"
@@ -6209,6 +6215,12 @@ who = "Emily McDonough <emcdonough@mozilla.com>"
 criteria = "safe-to-deploy"
 delta = "0.27.3 -> 0.41.0"
 
+[[audits.read-fonts]]
+who = "Emily McDonough <emcdonough@mozilla.com>"
+criteria = "safe-to-deploy"
+delta = "0.41.0 -> 0.47.0"
+notes = "No new unsafe or powerful/dangerous usage introduced."
+
 [[audits.redox_syscall]]
 who = "Mike Hommey <mh+mozilla@glandium.org>"
 criteria = "safe-to-deploy"
@@ -6887,6 +6899,12 @@ notes = "Only change to the crate source is adding documentation."
 who = "Emily McDonough <emcdonough@mozilla.com>"
 criteria = "safe-to-deploy"
 delta = "0.29.0 -> 0.44.0"
+
+[[audits.skrifa]]
+who = "Emily McDonough <emcdonough@mozilla.com>"
+criteria = "safe-to-deploy"
+delta = "0.44.0 -> 0.50.0"
+notes = "unsafe is forbidden. No powerful imports or usage introduced."
 
 [[audits.slab]]
 who = "Mike Hommey <mh+mozilla@glandium.org>"

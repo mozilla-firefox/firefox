@@ -11,11 +11,11 @@ pub fn floor(x: i32) -> i32 {
 }
 
 pub fn round(x: i32) -> i32 {
-    floor(x + 32)
+    floor(x.wrapping_add(32))
 }
 
 pub fn ceil(x: i32) -> i32 {
-    floor(x + 63)
+    floor(x.wrapping_add(63))
 }
 
 fn floor_pad(x: i32, n: i32) -> i32 {
@@ -23,7 +23,7 @@ fn floor_pad(x: i32, n: i32) -> i32 {
 }
 
 pub fn round_pad(x: i32, n: i32) -> i32 {
-    floor_pad(x + n / 2, n)
+    floor_pad(x.wrapping_add(n / 2), n)
 }
 
 #[inline(always)]
@@ -45,29 +45,32 @@ pub fn mul_div(a: i32, b: i32, c: i32) -> i32 {
 /// Fixed point multiply and divide without rounding: a * b / c
 ///
 /// Based on <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/base/ftcalc.c#L200>
-pub fn mul_div_no_round(mut a: i32, mut b: i32, mut c: i32) -> i32 {
-    let mut s = 1;
+pub fn mul_div_no_round(a: i32, b: i32, c: i32) -> i32 {
+    let mut sign = 1;
+    let mut au = a as u64;
+    let mut bu = b as u64;
+    let mut cu = c as u64;
     if a < 0 {
-        a = -a;
-        s = -1;
+        au = 0u64.wrapping_sub(au);
+        sign = -1;
     }
     if b < 0 {
-        b = -b;
-        s = -s;
+        bu = 0u64.wrapping_sub(bu);
+        sign = -sign;
     }
     if c < 0 {
-        c = -c;
-        s = -s;
+        cu = 0u64.wrapping_sub(cu);
+        sign = -sign;
     }
-    let d = if c > 0 {
-        ((a as i64) * (b as i64)) / c as i64
+    let result = if cu > 0 {
+        au.wrapping_mul(bu) / cu
     } else {
         0x7FFFFFFF
     };
-    if s < 0 {
-        -(d as i32)
+    if sign < 0 {
+        (result as i32).wrapping_neg()
     } else {
-        d as i32
+        result as i32
     }
 }
 
@@ -320,5 +323,20 @@ mod tests {
             let flen = (fx * fx + fy * fy).sqrt();
             assert!((flen - 1.0).abs() <= FLOAT_TOLERANCE);
         }
+    }
+
+    #[test]
+    fn wrapping_rounding_extremes() {
+        // Note: wrapping behavior is ugly but matches FreeType and no
+        // real font should produce values that trigger this.
+        assert_eq!(super::round(i32::MAX), i32::MIN);
+        assert_eq!(super::ceil(i32::MAX), i32::MIN);
+        assert_eq!(super::round_pad(i32::MAX, 32), i32::MIN);
+    }
+
+    #[test]
+    fn mul_div_no_round_handles_min_value() {
+        assert_eq!(super::mul_div_no_round(i32::MIN, 1, 1), i32::MIN);
+        assert_eq!(super::mul_div_no_round(i32::MIN, -1, 1), i32::MIN);
     }
 }

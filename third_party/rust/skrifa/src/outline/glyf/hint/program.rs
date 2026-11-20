@@ -5,23 +5,11 @@ use raw::tables::glyf::bytecode::Decoder;
 use super::{
     call_stack::{CallRecord, CallStack},
     definition::Definition,
-    error::HintErrorKind,
+    HintErrorKind,
 };
 
-/// Describes the source for a piece of bytecode.
-#[derive(Copy, Clone, PartialEq, Eq, Default, Debug)]
-#[repr(u8)]
-pub enum Program {
-    /// Program that initializes the function and instruction tables. Stored
-    /// in the `fpgm` table.
-    #[default]
-    Font = 0,
-    /// Program that initializes CVT and storage based on font size and other
-    /// parameters. Stored in the `prep` table.
-    ControlValue = 1,
-    /// Glyph specified program. Stored per-glyph in the `glyf` table.
-    Glyph = 2,
-}
+// The three programs are the font format's, not this interpreter's.
+pub(crate) use read_fonts::tables::glyf::bytecode::Program;
 
 /// State for managing active programs and decoding instructions.
 pub struct ProgramState<'a> {

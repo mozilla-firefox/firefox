@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Svg<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,40 @@ impl TopLevelTable for Svg<'_> {
     const TAG: Tag = Tag::new(b"SVG ");
 }
 
+impl ReadArgs for Svg<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Svg<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct SvgFixedHeader {
+    pub version: BigEndian<u16>,
+    pub svg_document_list_offset: BigEndian<Offset32>,
+    pub _reserved: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<SvgFixedHeader>() <= Svg::MIN_SIZE);
+
 /// The [SVG](https://learn.microsoft.com/en-us/typography/opentype/spec/svg) table
 #[derive(Clone)]
 pub struct Svg<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, SvgFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -43,38 +63,36 @@ impl<'a> Svg<'a> {
 
     /// Table version (starting at 0). Set to 0.
     pub fn version(&self) -> u16 {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// Offset to the SVGDocumentList, from the start of the SVG table.
     /// Must be non-zero.
     pub fn svg_document_list_offset(&self) -> Offset32 {
-        let range = self.svg_document_list_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().svg_document_list_offset.get()
     }
 
     /// Attempt to resolve [`svg_document_list_offset`][Self::svg_document_list_offset].
     pub fn svg_document_list(&self) -> Result<SVGDocumentList<'a>, ReadError> {
-        let data = self.data;
+        let data = self.offset_data();
         self.svg_document_list_offset().resolve(data)
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn svg_document_list_offset_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + Offset32::RAW_BYTE_LEN;
+        let end = start.saturating_add(Offset32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn _reserved_byte_range(&self) -> Range<usize> {
         let start = self.svg_document_list_offset_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 }
@@ -84,33 +102,9 @@ const _: () = assert!(FontData::default_data_long_enough(Svg::MIN_SIZE));
 impl Default for Svg<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Svg<'a> {
-    fn type_name(&self) -> &str {
-        "Svg"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new(
-                "svg_document_list_offset",
-                FieldType::offset(self.svg_document_list_offset(), self.svg_document_list()),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Svg<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -120,24 +114,43 @@ impl<'a> MinByteRange<'a> for SVGDocumentList<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for SVGDocumentList<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for SVGDocumentList<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct SVGDocumentListFixedHeader {
+    pub num_entries: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () =
+    assert!(std::mem::size_of::<SVGDocumentListFixedHeader>() <= SVGDocumentList::MIN_SIZE);
+
 /// [SVGDocumentList](https://learn.microsoft.com/en-us/typography/opentype/spec/svg)
 #[derive(Clone)]
 pub struct SVGDocumentList<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, SVGDocumentListFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -147,27 +160,30 @@ impl<'a> SVGDocumentList<'a> {
 
     /// Number of SVGDocumentRecords. Must be non-zero.
     pub fn num_entries(&self) -> u16 {
-        let range = self.num_entries_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().num_entries.get()
     }
 
     /// Array of SVGDocumentRecords.
     pub fn document_records(&self) -> &'a [SVGDocumentRecord] {
         let range = self.document_records_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn num_entries_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn document_records_byte_range(&self) -> Range<usize> {
         let num_entries = self.num_entries();
         let start = self.num_entries_byte_range().end;
-        let end = start
-            + (transforms::to_usize(num_entries)).saturating_mul(SVGDocumentRecord::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(num_entries)).saturating_mul(SVGDocumentRecord::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -179,37 +195,9 @@ const _: () = assert!(FontData::default_data_long_enough(
 impl Default for SVGDocumentList<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for SVGDocumentList<'a> {
-    fn type_name(&self) -> &str {
-        "SVGDocumentList"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("num_entries", self.num_entries())),
-            1usize => Some(Field::new(
-                "document_records",
-                traversal::FieldType::array_of_records(
-                    stringify!(SVGDocumentRecord),
-                    self.document_records(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for SVGDocumentList<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -255,21 +243,4 @@ impl SVGDocumentRecord {
 impl FixedSize for SVGDocumentRecord {
     const RAW_BYTE_LEN: usize =
         GlyphId16::RAW_BYTE_LEN + GlyphId16::RAW_BYTE_LEN + u32::RAW_BYTE_LEN + u32::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for SVGDocumentRecord {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "SVGDocumentRecord",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("start_glyph_id", self.start_glyph_id())),
-                1usize => Some(Field::new("end_glyph_id", self.end_glyph_id())),
-                2usize => Some(Field::new("svg_doc_offset", self.svg_doc_offset())),
-                3usize => Some(Field::new("svg_doc_length", self.svg_doc_length())),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }

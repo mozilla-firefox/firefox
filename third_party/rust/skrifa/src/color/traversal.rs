@@ -1,24 +1,27 @@
-use std::{cmp::Ordering, ops::Range};
+use std::ops::Range;
 
+use raw::tables::colr::Paint;
 use read_fonts::{
-    tables::colr::{CompositeMode, Extend},
-    types::{BoundingBox, GlyphId, Point},
+    tables::colr::CompositeMode,
+    types::{BoundingBox, GlyphId},
 };
 
 use super::{
-    instance::{
-        resolve_clip_box, resolve_paint, ColorStops, ColrInstance, ResolvedColorStop, ResolvedPaint,
-    },
-    Brush, ColorPainter, ColorStop, PaintCachedColorGlyph, PaintError, Transform,
+    instance::{resolve_clip_box, ColrInstance, MaybeBrush, ResolvedColorStop, ResolvedPaint},
+    Brush, ColorPainter, ColorStop, PaintCachedColorGlyph, PaintError,
 };
 
 use crate::decycler::{Decycler, DecyclerError};
+use read_fonts::limits::MAX_RECURSION_DEPTH;
 
 #[cfg(feature = "libm")]
 #[allow(unused_imports)]
 use core_maths::*;
 
-pub(crate) type PaintDecycler = Decycler<usize, MAX_TRAVERSAL_DEPTH>;
+// Bounds how deep a paint graph is followed, and detects cycles in it.
+// HarfBuzz bounds its own paint context the same way; see
+// <https://github.com/harfbuzz/harfbuzz/blob/724ef405f3a0a0b2792c7a575d1f3341b41ca950/src/OT/Color/COLR/COLR.hh#L74>.
+pub(crate) type PaintDecycler = Decycler<usize, MAX_RECURSION_DEPTH>;
 
 // Avoid heap allocations for any gradient with <= 32 color stops. This number
 // was chosen to keep stack size < 512 bytes.
@@ -31,7 +34,7 @@ pub(crate) type PaintDecycler = Decycler<usize, MAX_TRAVERSAL_DEPTH>;
 // <https://docs.google.com/document/d/1S47f3E--yqvFdG7lmmufxRoFi_wMzotC03v8UvS_p54/edit?tab=t.0#heading=h.bfj7urloz3oe>
 const MAX_INLINE_COLOR_STOPS: usize = 32;
 
-pub(crate) type ColorStopVec = crate::collections::SmallVec<ColorStop, MAX_INLINE_COLOR_STOPS>;
+pub(crate) type ColorStopVec = smallvec::SmallVec<[ColorStop; MAX_INLINE_COLOR_STOPS]>;
 
 impl From<DecyclerError> for PaintError {
     fn from(value: DecyclerError) -> Self {
@@ -42,21 +45,19 @@ impl From<DecyclerError> for PaintError {
     }
 }
 
-/// Depth at which we will stop traversing and return an error.
+/// Maximum number of nodes visited during a single traversal.
 ///
-/// Used to prevent stack overflows. Also allows us to avoid using a HashSet
-/// in no_std builds.
-///
-/// This limit matches the one used in HarfBuzz:
-/// HB_MAX_NESTING_LEVEL: <https://github.com/harfbuzz/harfbuzz/blob/c2f8f35a6cfce43b88552b3eb5c05062ac7007b2/src/hb-limits.hh#L53>
-/// hb_paint_context_t: <https://github.com/harfbuzz/harfbuzz/blob/c2f8f35a6cfce43b88552b3eb5c05062ac7007b2/src/OT/Color/COLR/COLR.hh#L74>
-const MAX_TRAVERSAL_DEPTH: usize = 64;
+/// Prevents excessive execution time on graphs with high fan-out. Set to the 16384 cap recommended
+/// by security analysis. Above HarfBuzz's limit of 2048
+/// (<https://github.com/harfbuzz/harfbuzz/blob/9f2f03173b7fee860cc00d999857d09fa4a362e2/src/hb-limits.hh#L96>)
+/// since we have seen some glyphs (Noto Emoji Color flags) use about ~6700 in practice.
+const MAX_NODES: u32 = 16384;
 
 pub(crate) fn get_clipbox_font_units(
     colr_instance: &ColrInstance,
     glyph_id: GlyphId,
 ) -> Option<BoundingBox<f32>> {
-    let maybe_clipbox = (*colr_instance).v1_clip_box(glyph_id).ok().flatten()?;
+    let maybe_clipbox = (*colr_instance).v1_clip_box(glyph_id)?;
     Some(resolve_clip_box(colr_instance, &maybe_clipbox))
 }
 
@@ -70,464 +71,139 @@ impl From<ResolvedColorStop> for ColorStop {
     }
 }
 
-fn make_sorted_resolved_stops(
-    stops: &ColorStops,
-    instance: &ColrInstance,
-    out_stops: &mut ColorStopVec,
-) {
-    let color_stop_iter = stops.resolve(instance).map(|stop| stop.into());
-    out_stops.clear();
-    for stop in color_stop_iter {
-        out_stops.push(stop);
-    }
-    out_stops.sort_by(|a, b| a.offset.partial_cmp(&b.offset).unwrap_or(Ordering::Equal));
+pub(crate) struct TraversalState<'a, P: ColorPainter> {
+    instance: ColrInstance<'a>,
+    painter: &'a mut P,
+    stops_buf: ColorStopVec,
+    nodes_left: u32,
 }
 
-struct CollectFillGlyphPainter<'a> {
-    brush_transform: Option<Transform>,
-    glyph_id: GlyphId,
-    parent_painter: &'a mut dyn ColorPainter,
-    pub optimization_success: bool,
-}
-
-impl<'a> CollectFillGlyphPainter<'a> {
-    fn new(parent_painter: &'a mut dyn ColorPainter, glyph_id: GlyphId) -> Self {
+impl<'a, P: ColorPainter> TraversalState<'a, P> {
+    pub(crate) fn new(instance: ColrInstance<'a>, painter: &'a mut P) -> Self {
         Self {
-            brush_transform: None,
-            glyph_id,
-            parent_painter,
-            optimization_success: true,
+            instance,
+            painter,
+            stops_buf: ColorStopVec::new(),
+            nodes_left: MAX_NODES,
         }
+    }
+
+    pub(crate) fn resolve_paint(
+        &mut self,
+        paint: &Paint<'a>,
+    ) -> Result<ResolvedPaint<'a>, PaintError> {
+        self.nodes_left = self
+            .nodes_left
+            .checked_sub(1)
+            .ok_or(PaintError::DepthLimitExceeded)?;
+        super::instance::resolve_paint(&self.instance, paint)
     }
 }
 
-impl ColorPainter for CollectFillGlyphPainter<'_> {
-    fn push_transform(&mut self, transform: Transform) {
-        if self.optimization_success {
-            match self.brush_transform {
-                None => {
-                    self.brush_transform = Some(transform);
-                }
-                Some(ref mut existing_transform) => {
-                    *existing_transform *= transform;
-                }
-            }
-        }
-    }
-
-    fn pop_transform(&mut self) {
-        // Since we only support fill and and transform operations, we need to
-        // ignore a popped transform, as this would be called after traversing
-        // the graph backup after a fill was performed, but we want to preserve
-        // the transform in order to be able to return it.
-    }
-
-    fn fill(&mut self, brush: Brush<'_>) {
-        if self.optimization_success {
-            self.parent_painter
-                .fill_glyph(self.glyph_id, self.brush_transform, brush);
-        }
-    }
-
-    fn push_clip_glyph(&mut self, _: GlyphId) {
-        self.optimization_success = false;
-    }
-
-    fn push_clip_box(&mut self, _: BoundingBox<f32>) {
-        self.optimization_success = false;
-    }
-
-    fn pop_clip(&mut self) {
-        self.optimization_success = false;
-    }
-
-    fn push_layer(&mut self, _: CompositeMode) {
-        self.optimization_success = false;
-    }
-
-    fn pop_layer(&mut self) {
-        self.optimization_success = false;
-    }
-}
-
-pub(crate) fn traverse_with_callbacks(
-    paint: &ResolvedPaint,
-    instance: &ColrInstance,
-    painter: &mut impl ColorPainter,
+pub(crate) fn traverse_with_callbacks<'a, P: ColorPainter>(
+    paint: &ResolvedPaint<'a>,
+    state: &mut TraversalState<'a, P>,
     decycler: &mut PaintDecycler,
-    resolved_stops: &mut ColorStopVec,
     recurse_depth: usize,
 ) -> Result<(), PaintError> {
-    if recurse_depth >= MAX_TRAVERSAL_DEPTH {
+    if recurse_depth >= MAX_RECURSION_DEPTH {
         return Err(PaintError::DepthLimitExceeded);
     }
     match paint {
         ResolvedPaint::ColrLayers { range } => {
             for layer_index in range.clone() {
                 // Perform cycle detection with paint id here, second part of the tuple.
-                let (layer_paint, paint_id) = (*instance).v1_layer(layer_index)?;
+                let (layer_paint, paint_id) = state
+                    .instance
+                    .v1_layer(layer_index)
+                    .ok_or(PaintError::Malformed)?;
                 let mut cycle_guard = decycler.enter(paint_id)?;
                 traverse_with_callbacks(
-                    &resolve_paint(instance, &layer_paint)?,
-                    instance,
-                    painter,
+                    &state.resolve_paint(&layer_paint)?,
+                    state,
                     &mut cycle_guard,
-                    resolved_stops,
                     recurse_depth + 1,
                 )?;
             }
             Ok(())
         }
-        ResolvedPaint::Solid {
-            palette_index,
-            alpha,
-        } => {
-            painter.fill(Brush::Solid {
-                palette_index: *palette_index,
-                alpha: *alpha,
-            });
-            Ok(())
-        }
-        ResolvedPaint::LinearGradient {
-            x0,
-            y0,
-            x1,
-            y1,
-            x2,
-            y2,
-            color_stops,
-            extend,
-        } => {
-            let mut p0 = Point::new(*x0, *y0);
-            let p1 = Point::new(*x1, *y1);
-            let p2 = Point::new(*x2, *y2);
-
-            let dot_product = |a: Point<f32>, b: Point<f32>| -> f32 { a.x * b.x + a.y * b.y };
-            let cross_product = |a: Point<f32>, b: Point<f32>| -> f32 { a.x * b.y - a.y * b.x };
-            let project_onto = |vector: Point<f32>, point: Point<f32>| -> Point<f32> {
-                let length = (point.x * point.x + point.y * point.y).sqrt();
-                if length == 0.0 {
-                    return Point::default();
-                }
-                let mut point_normalized = point / length;
-                point_normalized *= dot_product(vector, point) / length;
-                point_normalized
-            };
-
-            make_sorted_resolved_stops(color_stops, instance, resolved_stops);
-
-            // If p0p1 or p0p2 are degenerate probably nothing should be drawn.
-            // If p0p1 and p0p2 are parallel then one side is the first color and the other side is
-            // the last color, depending on the direction.
-            // For now, just use the first color.
-            if p1 == p0 || p2 == p0 || cross_product(p1 - p0, p2 - p0) == 0.0 {
-                if let Some(stop) = resolved_stops.first() {
-                    painter.fill(Brush::Solid {
-                        palette_index: stop.palette_index,
-                        alpha: stop.alpha,
-                    });
-                };
-                return Ok(());
-            }
-
-            // Follow implementation note in nanoemoji:
-            // https://github.com/googlefonts/nanoemoji/blob/0ac6e7bb4d8202db692574d8530a9b643f1b3b3c/src/nanoemoji/svg.py#L188
-            // to compute a new gradient end point P3 as the orthogonal
-            // projection of the vector from p0 to p1 onto a line perpendicular
-            // to line p0p2 and passing through p0.
-            let mut perpendicular_to_p2 = p2 - p0;
-            perpendicular_to_p2 = Point::new(perpendicular_to_p2.y, -perpendicular_to_p2.x);
-            let mut p3 = p0 + project_onto(p1 - p0, perpendicular_to_p2);
-
-            match (
-                resolved_stops.first().cloned(),
-                resolved_stops.last().cloned(),
-            ) {
-                (None, _) | (_, None) => {}
-                (Some(first_stop), Some(last_stop)) => {
-                    let mut color_stop_range = last_stop.offset - first_stop.offset;
-
-                    // Nothing can be drawn for this situation.
-                    if color_stop_range == 0.0 && extend != &Extend::Pad {
-                        return Ok(());
-                    }
-
-                    // In the Pad case, for providing normalized stops in the 0 to 1 range to the client,
-                    // insert a color stop at the end. Adding this stop will paint the equivalent gradient,
-                    // because: All font-specified color stops are in the same spot, mode is pad, so
-                    // everything before this spot is painted with the first color, everything after this spot
-                    // is painted with the last color. Not adding this stop would skip the projection below along
-                    // the p0-p3 axis and result in specifying non-normalized color stops to the shader.
-
-                    if color_stop_range == 0.0 && extend == &Extend::Pad {
-                        let mut extra_stop = last_stop;
-                        extra_stop.offset += 1.0;
-                        resolved_stops.push(extra_stop);
-
-                        color_stop_range = 1.0;
-                    }
-
-                    debug_assert!(color_stop_range != 0.0);
-
-                    if color_stop_range != 1.0 || first_stop.offset != 0.0 {
-                        let p0_p3 = p3 - p0;
-                        let p0_offset = p0_p3 * first_stop.offset;
-                        let p3_offset = p0_p3 * last_stop.offset;
-
-                        p3 = p0 + p3_offset;
-                        p0 += p0_offset;
-
-                        let scale_factor = 1.0 / color_stop_range;
-                        let start_offset = first_stop.offset;
-
-                        for stop in resolved_stops.iter_mut() {
-                            stop.offset = (stop.offset - start_offset) * scale_factor;
-                        }
-                    }
-
-                    painter.fill(Brush::LinearGradient {
-                        p0,
-                        p1: p3,
-                        color_stops: resolved_stops.as_slice(),
-                        extend: *extend,
-                    });
-                }
-            }
-
-            Ok(())
-        }
-        ResolvedPaint::RadialGradient {
-            x0,
-            y0,
-            radius0,
-            x1,
-            y1,
-            radius1,
-            color_stops,
-            extend,
-        } => {
-            let mut c0 = Point::new(*x0, *y0);
-            let mut c1 = Point::new(*x1, *y1);
-            let mut radius0 = *radius0;
-            let mut radius1 = *radius1;
-
-            make_sorted_resolved_stops(color_stops, instance, resolved_stops);
-
-            match (
-                resolved_stops.first().cloned(),
-                resolved_stops.last().cloned(),
-            ) {
-                (None, _) | (_, None) => {}
-                (Some(first_stop), Some(last_stop)) => {
-                    let mut color_stop_range = last_stop.offset - first_stop.offset;
-                    // Nothing can be drawn for this situation.
-                    if color_stop_range == 0.0 && extend != &Extend::Pad {
-                        return Ok(());
-                    }
-
-                    // In the Pad case, for providing normalized stops in the 0 to 1 range to the client,
-                    // insert a color stop at the end. See LinearGradient for more details.
-
-                    if color_stop_range == 0.0 && extend == &Extend::Pad {
-                        let mut extra_stop = last_stop;
-                        extra_stop.offset += 1.0;
-                        resolved_stops.push(extra_stop);
-                        color_stop_range = 1.0;
-                    }
-
-                    debug_assert!(color_stop_range != 0.0);
-
-                    // If the colorStopRange is 0 at this point, the default behavior of the shader is to
-                    // clamp to 1 color stops that are above 1, clamp to 0 for color stops that are below 0,
-                    // and repeat the outer color stops at 0 and 1 if the color stops are inside the
-                    // range. That will result in the correct rendering.
-                    if color_stop_range != 1.0 || first_stop.offset != 0.0 {
-                        let c0_to_c1 = c1 - c0;
-                        let radius_diff = radius1 - radius0;
-                        let scale_factor = 1.0 / color_stop_range;
-
-                        let c0_offset = c0_to_c1 * first_stop.offset;
-                        let c1_offset = c0_to_c1 * last_stop.offset;
-                        let stops_start_offset = first_stop.offset;
-
-                        // Order of reassignments is important to avoid shadowing variables.
-                        c1 = c0 + c1_offset;
-                        c0 += c0_offset;
-                        radius1 = radius0 + radius_diff * last_stop.offset;
-                        radius0 += radius_diff * first_stop.offset;
-
-                        for stop in resolved_stops.iter_mut() {
-                            stop.offset = (stop.offset - stops_start_offset) * scale_factor;
-                        }
-                    }
-
-                    painter.fill(Brush::RadialGradient {
-                        c0,
-                        r0: radius0,
-                        c1,
-                        r1: radius1,
-                        color_stops: resolved_stops.as_slice(),
-                        extend: *extend,
-                    });
-                }
+        ResolvedPaint::Solid { .. }
+        | ResolvedPaint::LinearGradient { .. }
+        | ResolvedPaint::RadialGradient { .. }
+        | ResolvedPaint::SweepGradient { .. } => {
+            if let MaybeBrush::Some(brush) =
+                paint.as_brush(&state.instance, &mut state.stops_buf)?
+            {
+                state.painter.fill(brush);
             }
             Ok(())
         }
-        ResolvedPaint::SweepGradient {
-            center_x,
-            center_y,
-            start_angle,
-            end_angle,
-            color_stops,
-            extend,
-        } => {
-            // OpenType 1.9.1 adds a shift to the angle to ease specification of a 0 to 360
-            // degree sweep.
-            let sweep_angle_to_degrees = |angle| angle * 180.0 + 180.0;
-
-            let start_angle = sweep_angle_to_degrees(start_angle);
-            let end_angle = sweep_angle_to_degrees(end_angle);
-
-            // Stop normalization for sweep:
-
-            let sector_angle = end_angle - start_angle;
-
-            make_sorted_resolved_stops(color_stops, instance, resolved_stops);
-            if resolved_stops.is_empty() {
-                return Ok(());
-            }
-
-            match (
-                resolved_stops.first().cloned(),
-                resolved_stops.last().cloned(),
-            ) {
-                (None, _) | (_, None) => {}
-                (Some(first_stop), Some(last_stop)) => {
-                    let mut color_stop_range = last_stop.offset - first_stop.offset;
-
-                    let mut start_angle_scaled = start_angle + sector_angle * first_stop.offset;
-                    let mut end_angle_scaled = start_angle + sector_angle * last_stop.offset;
-
-                    let start_offset = first_stop.offset;
-
-                    // Nothing can be drawn for this situation.
-                    if color_stop_range == 0.0 && extend != &Extend::Pad {
-                        return Ok(());
-                    }
-
-                    // In the Pad case, if the color_stop_range is 0 insert a color stop at the end before
-                    // normalizing. Adding this stop will paint the equivalent gradient, because: All font
-                    // specified color stops are in the same spot, mode is pad, so everything before this
-                    // spot is painted with the first color, everything after this spot is painted with
-                    // the last color. Not adding this stop will skip the projection and result in
-                    // specifying non-normalized color stops to the shader.
-                    if color_stop_range == 0.0 && extend == &Extend::Pad {
-                        let mut offset_last = last_stop;
-                        offset_last.offset += 1.0;
-                        resolved_stops.push(offset_last);
-                        color_stop_range = 1.0;
-                    }
-
-                    debug_assert!(color_stop_range != 0.0);
-
-                    let scale_factor = 1.0 / color_stop_range;
-
-                    for shift_stop in resolved_stops.iter_mut() {
-                        shift_stop.offset = (shift_stop.offset - start_offset) * scale_factor;
-                    }
-
-                    // /* https://docs.microsoft.com/en-us/typography/opentype/spec/colr#sweep-gradients
-                    //  * "The angles are expressed in counter-clockwise degrees from
-                    //  * the direction of the positive x-axis on the design
-                    //  * grid. [...]  The color line progresses from the start angle
-                    //  * to the end angle in the counter-clockwise direction;" -
-                    //  * Convert angles and stops from counter-clockwise to clockwise
-                    //  * for the shader if the gradient is not already reversed due to
-                    //  * start angle being larger than end angle. */
-                    start_angle_scaled = 360.0 - start_angle_scaled;
-                    end_angle_scaled = 360.0 - end_angle_scaled;
-
-                    if start_angle_scaled >= end_angle_scaled {
-                        (start_angle_scaled, end_angle_scaled) =
-                            (end_angle_scaled, start_angle_scaled);
-                        resolved_stops.reverse();
-                        for stop in resolved_stops.iter_mut() {
-                            stop.offset = 1.0 - stop.offset;
-                        }
-                    }
-
-                    // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#sweep-gradients
-                    // "If the color line's extend mode is reflect or repeat
-                    // and start and end angle are equal, nothing shall be drawn."
-                    if start_angle_scaled == end_angle_scaled && extend != &Extend::Pad {
-                        return Ok(());
-                    }
-
-                    painter.fill(Brush::SweepGradient {
-                        c0: Point::new(*center_x, *center_y),
-                        start_angle: start_angle_scaled,
-                        end_angle: end_angle_scaled,
-                        color_stops: resolved_stops.as_slice(),
-                        extend: *extend,
-                    });
-                }
-            }
-            Ok(())
-        }
-
         ResolvedPaint::Glyph { glyph_id, paint } => {
-            let glyph_id = (*glyph_id).into();
-            let mut optimizer = CollectFillGlyphPainter::new(painter, glyph_id);
-            let mut result = traverse_with_callbacks(
-                &resolve_paint(instance, paint)?,
-                instance,
-                &mut optimizer,
-                decycler,
-                resolved_stops,
-                recurse_depth + 1,
-            );
-
-            // In case the optimization was not successful, just push a clip, and continue unoptimized traversal.
-            if !optimizer.optimization_success {
-                painter.push_clip_glyph(glyph_id);
-                result = traverse_with_callbacks(
-                    &resolve_paint(instance, paint)?,
-                    instance,
-                    painter,
-                    decycler,
-                    resolved_stops,
-                    recurse_depth + 1,
-                );
-                painter.pop_clip();
+            let glyph_id = *glyph_id;
+            // Look for the pattern `(transform)* fill` and optimize it to a
+            // single paint call
+            let mut next_paint = state.resolve_paint(paint)?;
+            // Collect any chain of intermediate transforms
+            let mut intermediate_transform = None;
+            while let Some((transform, child_paint)) = next_paint.as_transform() {
+                intermediate_transform = Some(match intermediate_transform {
+                    Some(existing_transform) => existing_transform * transform,
+                    None => transform,
+                });
+                next_paint = state.resolve_paint(&child_paint)?;
             }
-
+            // If the next paint is a brush, we can optimize the traversal to a
+            // single fill_glyph call
+            match next_paint.as_brush(&state.instance, &mut state.stops_buf)? {
+                MaybeBrush::Some(brush) => {
+                    state
+                        .painter
+                        .fill_glyph(glyph_id, intermediate_transform, brush);
+                    return Ok(());
+                }
+                // Valid brush but doesn't produce any rendering, so we can
+                // skip the glyph entirely
+                MaybeBrush::NonRendering => {
+                    return Ok(());
+                }
+                // Not a brush, fall through to the unoptimized path
+                MaybeBrush::None => {}
+            }
+            // In case the optimization was not successful, just push a clip,
+            // and continue unoptimized traversal.
+            state.painter.push_clip_glyph(glyph_id);
+            if let Some(transform) = intermediate_transform {
+                state.painter.push_transform(transform);
+            }
+            let result = traverse_with_callbacks(&next_paint, state, decycler, recurse_depth + 1);
+            if intermediate_transform.is_some() {
+                state.painter.pop_transform();
+            }
+            state.painter.pop_clip();
             result
         }
         ResolvedPaint::ColrGlyph { glyph_id } => {
             let glyph_id = (*glyph_id).into();
-            match (*instance).v1_base_glyph(glyph_id)? {
+            match state.instance.v1_base_glyph(glyph_id) {
                 Some((base_glyph, base_glyph_paint_id)) => {
                     let mut cycle_guard = decycler.enter(base_glyph_paint_id)?;
-                    let draw_result = painter.paint_cached_color_glyph(glyph_id)?;
+                    let draw_result = state.painter.paint_cached_color_glyph(glyph_id)?;
                     match draw_result {
                         PaintCachedColorGlyph::Ok => Ok(()),
                         PaintCachedColorGlyph::Unimplemented => {
-                            let clipbox = get_clipbox_font_units(instance, glyph_id);
+                            let clipbox = get_clipbox_font_units(&state.instance, glyph_id);
 
                             if let Some(rect) = clipbox {
-                                painter.push_clip_box(rect);
+                                state.painter.push_clip_box(rect);
                             }
-
-                            let result = traverse_with_callbacks(
-                                &resolve_paint(instance, &base_glyph)?,
-                                instance,
-                                painter,
+                            let result = traverse_unresolved_paint(
+                                &base_glyph,
+                                state,
                                 &mut cycle_guard,
-                                resolved_stops,
                                 recurse_depth + 1,
                             );
                             if clipbox.is_some() {
-                                painter.pop_clip();
+                                state.painter.pop_clip();
                             }
                             result
                         }
@@ -551,16 +227,11 @@ pub(crate) fn traverse_with_callbacks(
         | ResolvedPaint::Skew {
             paint: next_paint, ..
         } => {
-            painter.push_transform(paint.try_into()?);
-            let result = traverse_with_callbacks(
-                &resolve_paint(instance, next_paint)?,
-                instance,
-                painter,
-                decycler,
-                resolved_stops,
-                recurse_depth + 1,
-            );
-            painter.pop_transform();
+            state
+                .painter
+                .push_transform(paint.as_transform().ok_or(PaintError::Malformed)?.0);
+            let result = traverse_unresolved_paint(next_paint, state, decycler, recurse_depth + 1);
+            state.painter.pop_transform();
             result
         }
         ResolvedPaint::Composite {
@@ -568,30 +239,30 @@ pub(crate) fn traverse_with_callbacks(
             mode,
             backdrop_paint,
         } => {
-            painter.push_layer(CompositeMode::SrcOver);
-            let mut result = traverse_with_callbacks(
-                &resolve_paint(instance, backdrop_paint)?,
-                instance,
-                painter,
-                decycler,
-                resolved_stops,
-                recurse_depth + 1,
-            );
-            result?;
-            painter.push_layer(*mode);
-            result = traverse_with_callbacks(
-                &resolve_paint(instance, source_paint)?,
-                instance,
-                painter,
-                decycler,
-                resolved_stops,
-                recurse_depth + 1,
-            );
-            painter.pop_layer_with_mode(*mode);
-            painter.pop_layer_with_mode(CompositeMode::SrcOver);
+            state.painter.push_layer(CompositeMode::SrcOver);
+            let mut result =
+                traverse_unresolved_paint(backdrop_paint, state, decycler, recurse_depth + 1);
+            if result.is_err() {
+                state.painter.pop_layer_with_mode(CompositeMode::SrcOver);
+                return result;
+            }
+            state.painter.push_layer(*mode);
+            result = traverse_unresolved_paint(source_paint, state, decycler, recurse_depth + 1);
+            state.painter.pop_layer_with_mode(*mode);
+            state.painter.pop_layer_with_mode(CompositeMode::SrcOver);
             result
         }
     }
+}
+
+fn traverse_unresolved_paint<'a, P: ColorPainter>(
+    paint: &Paint<'a>,
+    state: &mut TraversalState<'a, P>,
+    decycler: &mut PaintDecycler,
+    recurse_depth: usize,
+) -> Result<(), PaintError> {
+    let resolved_paint = state.resolve_paint(paint)?;
+    traverse_with_callbacks(&resolved_paint, state, decycler, recurse_depth)
 }
 
 pub(crate) fn traverse_v0_range(
@@ -600,7 +271,9 @@ pub(crate) fn traverse_v0_range(
     painter: &mut impl ColorPainter,
 ) -> Result<(), PaintError> {
     for layer_index in range.clone() {
-        let (layer_glyph, palette_index) = (*instance).v0_layer(layer_index)?;
+        let (layer_glyph, palette_index) = (*instance)
+            .v0_layer(layer_index)
+            .ok_or(PaintError::Malformed)?;
         painter.fill_glyph(
             layer_glyph.into(),
             None,
@@ -615,9 +288,7 @@ pub(crate) fn traverse_v0_range(
 
 #[cfg(test)]
 mod tests {
-    use raw::types::GlyphId;
-    use read_fonts::{types::BoundingBox, FontRef, TableProvider};
-
+    use super::*;
     use crate::{
         color::{
             instance::ColrInstance, traversal::get_clipbox_font_units,
@@ -626,6 +297,11 @@ mod tests {
         },
         prelude::LocationRef,
         MetadataProvider,
+    };
+    use raw::types::GlyphId;
+    use read_fonts::{
+        types::{BoundingBox, GlyphId16},
+        FontData, FontRead, FontRef, TableProvider,
     };
 
     #[test]
@@ -716,6 +392,190 @@ mod tests {
         }
     }
 
+    #[derive(Default)]
+    struct StackTrackingPainter {
+        transform_pushes: usize,
+        transform_pops: usize,
+        clip_pushes: usize,
+        clip_pops: usize,
+        layer_pushes: usize,
+        layer_pops: usize,
+        clip_glyphs: Vec<GlyphId>,
+        filled_glyphs: Vec<GlyphId>,
+        fills: usize,
+    }
+
+    impl ColorPainter for StackTrackingPainter {
+        fn push_transform(&mut self, _transform: Transform) {
+            self.transform_pushes += 1;
+        }
+
+        fn pop_transform(&mut self) {
+            self.transform_pops += 1;
+        }
+
+        fn push_clip_glyph(&mut self, glyph_id: GlyphId) {
+            self.clip_pushes += 1;
+            self.clip_glyphs.push(glyph_id);
+        }
+
+        fn push_clip_box(&mut self, _clip_box: BoundingBox<f32>) {
+            self.clip_pushes += 1;
+        }
+
+        fn pop_clip(&mut self) {
+            self.clip_pops += 1;
+        }
+
+        fn fill(&mut self, _brush: Brush<'_>) {
+            self.fills += 1;
+        }
+
+        fn fill_glyph(
+            &mut self,
+            glyph_id: GlyphId,
+            brush_transform: Option<Transform>,
+            brush: Brush<'_>,
+        ) {
+            self.filled_glyphs.push(glyph_id);
+            self.push_clip_glyph(glyph_id);
+            if let Some(transform) = brush_transform {
+                self.push_transform(transform);
+                self.fill(brush);
+                self.pop_transform();
+            } else {
+                self.fill(brush);
+            }
+            self.pop_clip();
+        }
+
+        fn push_layer(&mut self, _composite_mode: CompositeMode) {
+            self.layer_pushes += 1;
+        }
+
+        fn pop_layer(&mut self) {
+            self.layer_pops += 1;
+        }
+    }
+
+    #[test]
+    fn paint_glyph2_traversal_preserves_wide_ids_in_fill_and_clip() {
+        let colr_data = font_test_data::colr::paint_glyph2_colr();
+        let colr = raw::tables::colr::Colr::read(FontData::new(&colr_data)).unwrap();
+        let nested = [
+            33, 0, 0, 7, 0x12, 0x34, 0x56, // outer clip: glyph 0x123456
+            33, 0, 0, 7, 1, 0, 0, // inner fill: glyph 0x10000
+            2, 0, 7, 0x40, 0, // solid
+        ];
+        for (data, clips, fills) in [
+            (
+                font_test_data::colr::PAINT_GLYPH2,
+                &[0x123456][..],
+                &[0x123456][..],
+            ),
+            (&nested[..], &[0x123456, 0x10000][..], &[0x10000][..]),
+        ] {
+            let instance = ColrInstance::new(colr.clone(), &[]);
+            let paint = Paint::read(FontData::new(data)).unwrap();
+            let mut painter = StackTrackingPainter::default();
+            let mut state = TraversalState::new(instance, &mut painter);
+            let mut decycler = PaintDecycler::new();
+            let resolved = state.resolve_paint(&paint).unwrap();
+            traverse_with_callbacks(&resolved, &mut state, &mut decycler, 0).unwrap();
+            assert_eq!(
+                painter.clip_glyphs,
+                clips.iter().copied().map(GlyphId::new).collect::<Vec<_>>()
+            );
+            assert_eq!(
+                painter.filled_glyphs,
+                fills.iter().copied().map(GlyphId::new).collect::<Vec<_>>()
+            );
+            assert_eq!(painter.fills, 1);
+            assert_eq!(painter.clip_pushes, painter.clip_pops);
+        }
+    }
+
+    #[test]
+    fn paint_glyph2_traversal_rejects_missing_child() {
+        let colr_data = font_test_data::colr::paint_glyph2_colr();
+        let colr = raw::tables::colr::Colr::read(FontData::new(&colr_data)).unwrap();
+        let instance = ColrInstance::new(colr, &[]);
+        let paint = Paint::read(FontData::new(&font_test_data::colr::PAINT_GLYPH2[..7])).unwrap();
+        let mut painter = NopPainter;
+        let mut state = TraversalState::new(instance, &mut painter);
+        assert!(matches!(
+            state.resolve_paint(&paint),
+            Err(PaintError::Malformed)
+        ));
+    }
+
+    #[test]
+    fn transform_error_unwinds_transform_stack() {
+        let colr_font = font_test_data::COLRV0V1_VARIABLE;
+        let font = FontRef::new(colr_font).unwrap();
+        let glyph_id = font.charmap().map(CLIPBOX[0]).unwrap();
+        let mut painter = StackTrackingPainter::default();
+        let instance = ColrInstance::new(font.colr().unwrap(), &[]);
+        let inner_paint = instance.v1_base_glyph(glyph_id).unwrap().0;
+        let mut state = TraversalState::new(instance, &mut painter);
+        let mut decycler = PaintDecycler::new();
+        state.nodes_left = 0;
+        let paint = ResolvedPaint::Transform {
+            xx: 1.0,
+            yx: 0.0,
+            xy: 0.0,
+            yy: 1.0,
+            dx: 0.0,
+            dy: 0.0,
+            paint: inner_paint,
+        };
+        let result = traverse_with_callbacks(&paint, &mut state, &mut decycler, 0);
+        assert!(matches!(result, Err(PaintError::DepthLimitExceeded)));
+        assert_eq!(painter.transform_pushes, painter.transform_pops);
+        assert_ne!(painter.transform_pushes, 0);
+    }
+
+    #[test]
+    fn composite_error_unwinds_layer_stack() {
+        let colr_font = font_test_data::COLRV0V1_VARIABLE;
+        let font = FontRef::new(colr_font).unwrap();
+        let glyph_id = font.charmap().map(CLIPBOX[0]).unwrap();
+        let mut painter = StackTrackingPainter::default();
+        let instance = ColrInstance::new(font.colr().unwrap(), &[]);
+        let inner_paint = instance.v1_base_glyph(glyph_id).unwrap().0;
+        let mut state = TraversalState::new(instance, &mut painter);
+        let mut decycler = PaintDecycler::new();
+        state.nodes_left = 0;
+        let paint = ResolvedPaint::Composite {
+            source_paint: inner_paint.clone(),
+            mode: CompositeMode::SrcOver,
+            backdrop_paint: inner_paint,
+        };
+        let result = traverse_with_callbacks(&paint, &mut state, &mut decycler, 0);
+        assert!(matches!(result, Err(PaintError::DepthLimitExceeded)));
+        assert_eq!(painter.layer_pushes, painter.layer_pops);
+        assert_ne!(painter.layer_pushes, 0);
+    }
+
+    #[test]
+    fn clipbox_error_unwinds_clip_stack() {
+        let colr_font = font_test_data::COLRV0V1_VARIABLE;
+        let font = FontRef::new(colr_font).unwrap();
+        let glyph_id = font.charmap().map(CLIPBOX[0]).unwrap();
+        let mut painter = StackTrackingPainter::default();
+        let instance = ColrInstance::new(font.colr().unwrap(), &[]);
+        let mut state = TraversalState::new(instance, &mut painter);
+        let mut decycler = PaintDecycler::new();
+        state.nodes_left = 0;
+        let paint = ResolvedPaint::ColrGlyph {
+            glyph_id: GlyphId16::new(glyph_id.to_u32() as u16),
+        };
+        let result = traverse_with_callbacks(&paint, &mut state, &mut decycler, 0);
+        assert!(matches!(result, Err(PaintError::DepthLimitExceeded)));
+        assert_eq!(painter.clip_pushes, painter.clip_pops);
+        assert_ne!(painter.clip_pushes, 0);
+    }
+
     #[test]
     fn no_panic_on_empty_colorline() {
         // Minimized test case from <https://issues.oss-fuzz.com/issues/375768991>.
@@ -750,5 +610,29 @@ mod tests {
             .get_with_format(GlyphId::new(8447), ColorGlyphFormat::ColrV1)
             .unwrap();
         let _ = color_glyph.paint(LocationRef::default(), &mut NopPainter);
+    }
+
+    #[test]
+    fn visited_nodes_limit() {
+        let colr_font = font_test_data::COLRV0V1_VARIABLE;
+        let font = FontRef::new(colr_font).unwrap();
+        let gid = GlyphId::new(120);
+        let mut painter = NopPainter;
+        let mut traverse_with_limit = |limit| {
+            let instance = ColrInstance::new(font.colr().unwrap(), &[]);
+            let mut state = TraversalState::new(instance, &mut painter);
+            let mut decycler = PaintDecycler::new();
+            state.nodes_left = limit;
+            let paint = state
+                .resolve_paint(&state.instance.v1_base_glyph(gid).unwrap().0)
+                .unwrap();
+            traverse_with_callbacks(&paint, &mut state, &mut decycler, 0)
+                .map(|_| limit - state.nodes_left)
+        };
+        // Compute the actual number of nodes used by the glyph
+        let node_count = traverse_with_limit(MAX_NODES).unwrap();
+        // Now run with a reduced limit and verify that we get an error
+        let result = traverse_with_limit(node_count - 1);
+        assert!(matches!(result, Err(PaintError::DepthLimitExceeded)));
     }
 }

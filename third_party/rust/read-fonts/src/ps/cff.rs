@@ -6,7 +6,7 @@ pub mod dict;
 pub mod encoding;
 pub mod fd_select;
 pub mod index;
-pub mod stack;
+pub(crate) mod stack;
 pub mod v1;
 pub mod v2;
 

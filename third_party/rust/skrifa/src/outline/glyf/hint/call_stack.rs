@@ -1,6 +1,6 @@
 //! Tracking function call state.
 
-use super::{definition::Definition, error::HintErrorKind, program::Program};
+use super::{definition::Definition, program::Program, HintErrorKind};
 
 // FreeType provides a call stack with a depth of 32.
 // See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L502>

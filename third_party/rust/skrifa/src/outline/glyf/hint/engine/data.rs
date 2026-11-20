@@ -146,7 +146,7 @@ impl Engine<'_> {
         // <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttdriver.c#L392>
         // which is mul_div(ppem, 64 * 72, resolution) where resolution
         // is always 72 for our purposes (Skia), resulting in ppem * 64.
-        self.value_stack.push(self.graphics.ppem * 64)
+        self.value_stack.push(self.graphics.ppem.saturating_mul(64))
     }
 }
 
@@ -165,6 +165,15 @@ mod tests {
         assert_eq!(engine.value_stack.pop().unwrap(), ppem);
         engine.op_mps().unwrap();
         assert_eq!(engine.value_stack.pop().unwrap(), ppem * 64);
+    }
+
+    #[test]
+    fn mps_saturates_on_large_ppem() {
+        let mut mock = MockEngine::new();
+        let mut engine = mock.engine();
+        engine.graphics.ppem = i32::MAX;
+        engine.op_mps().unwrap();
+        assert_eq!(engine.value_stack.pop().unwrap(), i32::MAX);
     }
 
     #[test]

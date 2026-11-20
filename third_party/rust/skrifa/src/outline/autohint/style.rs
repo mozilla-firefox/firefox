@@ -139,7 +139,7 @@ impl GlyphStyleMap {
             // If we're processing lookups, allocate some temporary memory to
             // store the visited set
             let lookup_set_byte_size = lookup_count.div_ceil(8);
-            super::super::memory::with_temporary_memory(lookup_set_byte_size, |bytes| {
+            read_fonts::mem::with_scratch(lookup_set_byte_size, |bytes| {
                 Self::new_inner(glyph_count, shaper, VisitedLookupSet::new(bytes))
             })
         } else {
@@ -171,16 +171,16 @@ impl GlyphStyleMap {
         // cmap entries are sorted so we keep track of the most recent range to
         // avoid a binary search per character
         let mut last_range: Option<(usize, StyleRange)> = None;
-        for (ch, gid) in shaper.charmap().mappings() {
+        shaper.context().for_each_mapping(&mut |ch, gid| {
             let Some(style) = map.styles.get_mut(gid.to_u32() as usize) else {
-                continue;
+                return;
             };
             // Charmaps enumerate in order so we're likely to encounter at least
             // a few codepoints in the same range.
             if let Some(last) = last_range {
                 if last.1.contains(ch) {
                     style.maybe_assign(last.1.style);
-                    continue;
+                    return;
                 }
             }
             let ix = match STYLE_RANGES.binary_search_by(|x| x.first.cmp(&ch)) {
@@ -188,7 +188,7 @@ impl GlyphStyleMap {
                 Err(i) => i.saturating_sub(1),
             };
             let Some(range) = STYLE_RANGES.get(ix).copied() else {
-                continue;
+                return;
             };
             if range.contains(ch) {
                 style.maybe_assign(range.style);
@@ -197,7 +197,7 @@ impl GlyphStyleMap {
                 }
                 last_range = Some((ix, range));
             }
-        }
+        });
         // Step 3a: compute script based coverage
         // See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/autofit/afglobal.c#L239>
         for style in super::style::STYLE_CLASSES {
@@ -243,8 +243,8 @@ impl GlyphStyleMap {
         // <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/autofit/afglobal.c#L251>
         for digit_char in '0'..='9' {
             if let Some(style) = shaper
-                .charmap()
-                .map(digit_char)
+                .context()
+                .map(digit_char as u32)
                 .and_then(|gid| map.styles.get_mut(gid.to_u32() as usize))
             {
                 style.0 |= GlyphStyle::DIGIT;
@@ -413,6 +413,7 @@ include!("../../../generated/generated_autohint_styles.rs");
 #[cfg(test)]
 mod tests {
     use super::{super::shape::ShaperMode, *};
+    use crate::outline::autohint::context::FontRefContext;
     use crate::{raw::TableProvider, FontRef, MetadataProvider};
 
     /// Ensure that style mapping accurately applies the DIGIT bit to
@@ -420,7 +421,8 @@ mod tests {
     #[test]
     fn capture_digit_styles() {
         let font = FontRef::new(font_test_data::AHEM).unwrap();
-        let shaper = Shaper::new(&font, ShaperMode::Nominal);
+        let context = FontRefContext::new(&font, &[]);
+        let shaper = Shaper::new(&context, ShaperMode::Nominal);
         let num_glyphs = font.maxp().unwrap().num_glyphs() as u32;
         let style_map = GlyphStyleMap::new(num_glyphs, &shaper);
         let charmap = font.charmap();
@@ -571,7 +573,8 @@ mod tests {
 
     fn check_styles(font_data: &[u8], mode: ShaperMode, expected: &[(u32, Option<(&str, bool)>)]) {
         let font = FontRef::new(font_data).unwrap();
-        let shaper = Shaper::new(&font, mode);
+        let context = FontRefContext::new(&font, &[]);
+        let shaper = Shaper::new(&context, mode);
         let num_glyphs = font.maxp().unwrap().num_glyphs() as u32;
         let style_map = GlyphStyleMap::new(num_glyphs, &shaper);
         let results = style_map

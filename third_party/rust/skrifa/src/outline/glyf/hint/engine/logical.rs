@@ -126,11 +126,11 @@ impl Engine<'_> {
     /// even, zero, signifying FALSE is placed onto the stack.
     ///
     /// See <https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructions#odd>
-    /// and <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L2799>
+    /// and <https://gitlab.freedesktop.org/freetype/freetype/-/blob/47d80cf27b05d1062fbe5d3d368c1bac7ff1a20c/src/truetype/ttinterp.c#L2567>
     pub(super) fn op_odd(&mut self) -> OpResult {
         let round_state = self.graphics.round_state;
         self.value_stack.apply_unary(|e1| {
-            Ok((round_state.round(F26Dot6::from_bits(e1)).to_bits() & 127 == 64) as i32)
+            Ok((round_state.round(F26Dot6::from_bits(e1)).to_bits() & 64 == 64) as i32)
         })
     }
 
@@ -148,11 +148,11 @@ impl Engine<'_> {
     /// stack.
     ///
     /// See <https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructions#even>
-    /// and <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L2813>
+    /// and <https://gitlab.freedesktop.org/freetype/freetype/-/blob/47d80cf27b05d1062fbe5d3d368c1bac7ff1a20c/src/truetype/ttinterp.c#L2581>
     pub(super) fn op_even(&mut self) -> OpResult {
         let round_state = self.graphics.round_state;
         self.value_stack.apply_unary(|e1| {
-            Ok((round_state.round(F26Dot6::from_bits(e1)).to_bits() & 127 == 0) as i32)
+            Ok((round_state.round(F26Dot6::from_bits(e1)).to_bits() & 64 == 0) as i32)
         })
     }
 
@@ -214,6 +214,8 @@ impl Engine<'_> {
 
 #[cfg(test)]
 mod tests {
+    use crate::outline::glyf::hint::round::RoundMode;
+
     use super::super::MockEngine;
 
     #[test]
@@ -270,6 +272,24 @@ mod tests {
                 engine.op_odd().unwrap();
             });
         }
+    }
+
+    #[test]
+    fn parity_fractional_ops() {
+        let mut mock = MockEngine::new();
+        let mut engine = mock.engine();
+        engine.graphics.round_state.mode = RoundMode::HalfGrid;
+        // In half grid rounding, 0 rounds to 0.5
+        engine.test_exec(&[0], 32, |engine| {
+            engine.op_round().unwrap();
+        });
+        // Ensure we drop the fractional part before checking parity.
+        engine.test_exec(&[0], true, |engine| {
+            engine.op_even().unwrap();
+        });
+        engine.test_exec(&[0], false, |engine| {
+            engine.op_odd().unwrap();
+        });
     }
 
     #[test]

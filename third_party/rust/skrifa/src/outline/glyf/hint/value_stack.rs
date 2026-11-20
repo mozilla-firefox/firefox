@@ -3,7 +3,7 @@
 use raw::types::F26Dot6;
 use read_fonts::tables::glyf::bytecode::InlineOperands;
 
-use super::error::HintErrorKind;
+use super::HintErrorKind;
 
 use HintErrorKind::{ValueStackOverflow, ValueStackUnderflow};
 

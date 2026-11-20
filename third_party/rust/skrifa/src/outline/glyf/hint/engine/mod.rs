@@ -21,17 +21,22 @@ use read_fonts::{
 };
 
 use super::{
-    super::Outlines,
+    cleartype::ClearTypeState,
     cvt::Cvt,
     definition::DefinitionState,
-    error::{HintError, HintErrorKind},
     graphics::{GraphicsState, RetainedGraphicsState},
     math,
-    program::ProgramState,
+    program::{Program, ProgramState},
     storage::Storage,
     value_stack::ValueStack,
     zone::Zone,
+    {HintError, HintErrorKind},
 };
+
+/// Maximum number of instructions we will execute in `Engine::run()`. This
+/// is used to ensure termination of a hinting program.
+/// See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/include/freetype/config/ftoption.h#L744>
+const MAX_RUN_INSTRUCTIONS: usize = 1_000_000;
 
 pub type OpResult = Result<(), HintErrorKind>;
 
@@ -43,15 +48,16 @@ pub struct Engine<'a> {
     cvt: Cvt<'a>,
     storage: Storage<'a>,
     value_stack: ValueStack<'a>,
-    loop_budget: LoopBudget,
+    work_budget: WorkBudget,
     axis_count: u16,
     coords: &'a [F2Dot14],
+    cleartype: ClearTypeState,
 }
 
 impl<'a> Engine<'a> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        outlines: &Outlines,
+        cvt_len: usize,
         program: ProgramState<'a>,
         graphics: RetainedGraphicsState,
         definitions: DefinitionState<'a>,
@@ -63,6 +69,7 @@ impl<'a> Engine<'a> {
         axis_count: u16,
         coords: &'a [F2Dot14],
         is_composite: bool,
+        cleartype: ClearTypeState,
     ) -> Self {
         let point_count = if glyph.points.is_empty() {
             None
@@ -82,10 +89,29 @@ impl<'a> Engine<'a> {
             cvt: cvt.into(),
             storage: storage.into(),
             value_stack,
-            loop_budget: LoopBudget::new(outlines, point_count),
+            work_budget: WorkBudget::new(cvt_len, point_count),
             axis_count,
             coords,
+            cleartype,
         }
+    }
+
+    /// Returns true while a glyph program moves points along the horizontal
+    /// axis of native ClearType.
+    ///
+    /// ClearType has sixteen horizontal positions per pixel, and the
+    /// interpreter has one. The interpreter approximates the finer grid by
+    /// leaving the affected distances unrounded. This is computed on demand,
+    /// so changes to the projection and freedom vectors or to `INSTCTRL`
+    /// take effect immediately.
+    #[inline]
+    fn native_cleartype_x(&self) -> bool {
+        self.cleartype.is_native_enhanced()
+            && self.program.initial == Program::Glyph
+            && self.graphics.target.is_smooth()
+            && !self.graphics.backward_compatibility
+            && self.graphics.proj_vector.y == 0
+            && self.graphics.freedom_vector.y == 0
     }
 
     pub fn backward_compatibility(&self) -> bool {
@@ -97,23 +123,24 @@ impl<'a> Engine<'a> {
     }
 }
 
-/// Tracks budgets for loops to limit execution time.
-struct LoopBudget {
+/// Tracks budgets for control flow to limit execution time.
+struct WorkBudget {
     /// Maximum number of times we can do backward jumps or
     /// loop calls.
-    limit: usize,
+    loop_limit: usize,
     /// Current number of backward jumps executed.
     backward_jumps: usize,
     /// Current number of loop call iterations executed.
     loop_calls: usize,
+    /// Counts number of instructions skipped when handling if/else conditions.
+    skipped: usize,
 }
 
-impl LoopBudget {
-    fn new(outlines: &Outlines, point_count: Option<usize>) -> Self {
-        let cvt_len = outlines.cvt_len as usize;
+impl WorkBudget {
+    fn new(cvt_len: usize, point_count: Option<usize>) -> Self {
         // Compute limits for loop calls and backward jumps.
         // See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L6955>
-        let limit = if let Some(point_count) = point_count {
+        let loop_limit = if let Some(point_count) = point_count {
             (point_count * 10).max(50) + (cvt_len / 10).max(50)
         } else {
             300 + 22 * cvt_len
@@ -122,20 +149,22 @@ impl LoopBudget {
         // loopcall_counter_max but sets them to the same value so
         // we'll just use a single limit.
         Self {
-            limit,
+            loop_limit,
             backward_jumps: 0,
             loop_calls: 0,
+            skipped: 0,
         }
     }
 
     fn reset(&mut self) {
         self.backward_jumps = 0;
         self.loop_calls = 0;
+        self.skipped = 0;
     }
 
     fn doing_backward_jump(&mut self) -> Result<(), HintErrorKind> {
         self.backward_jumps += 1;
-        if self.backward_jumps > self.limit {
+        if self.backward_jumps > self.loop_limit {
             Err(HintErrorKind::ExceededExecutionBudget)
         } else {
             Ok(())
@@ -144,7 +173,16 @@ impl LoopBudget {
 
     fn doing_loop_call(&mut self, count: usize) -> Result<(), HintErrorKind> {
         self.loop_calls += count;
-        if self.loop_calls > self.limit {
+        if self.loop_calls > self.loop_limit {
+            Err(HintErrorKind::ExceededExecutionBudget)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn skipping_instruction(&mut self) -> Result<(), HintErrorKind> {
+        self.skipped += 1;
+        if self.skipped > MAX_RUN_INSTRUCTIONS {
             Err(HintErrorKind::ExceededExecutionBudget)
         } else {
             Ok(())
@@ -165,7 +203,7 @@ mod mock {
             zone::Zone,
             Point, PointFlags,
         },
-        Engine, F26Dot6, GraphicsState, LoopBudget, ValueStack,
+        Engine, F26Dot6, GraphicsState, ValueStack, WorkBudget,
     };
 
     /// Mock engine for testing.
@@ -232,14 +270,16 @@ mod mock {
                 storage: CowSlice::new_mut(storage).into(),
                 value_stack: ValueStack::new(&mut self.value_stack, false),
                 program: ProgramState::new(font_code, cv_code, glyph_code, Program::Font),
-                loop_budget: LoopBudget {
-                    limit: 10,
+                work_budget: WorkBudget {
+                    loop_limit: 10,
                     backward_jumps: 0,
                     loop_calls: 0,
+                    skipped: 0,
                 },
                 definitions: definition,
                 axis_count: 0,
                 coords: &[],
+                cleartype: Default::default(),
             }
         }
     }

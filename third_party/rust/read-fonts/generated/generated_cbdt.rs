@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Cbdt<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,39 @@ impl TopLevelTable for Cbdt<'_> {
     const TAG: Tag = Tag::new(b"CBDT");
 }
 
+impl ReadArgs for Cbdt<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Cbdt<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct CbdtFixedHeader {
+    pub major_version: BigEndian<u16>,
+    pub minor_version: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<CbdtFixedHeader>() <= Cbdt::MIN_SIZE);
+
 /// The [Color Bitmap Data](https://learn.microsoft.com/en-us/typography/opentype/spec/cbdt) table
 #[derive(Clone)]
 pub struct Cbdt<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, CbdtFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -43,25 +62,23 @@ impl<'a> Cbdt<'a> {
 
     /// Major version of the CBDT table, = 3.
     pub fn major_version(&self) -> u16 {
-        let range = self.major_version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().major_version.get()
     }
 
     /// Minor version of CBDT table, = 0.
     pub fn minor_version(&self) -> u16 {
-        let range = self.minor_version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().minor_version.get()
     }
 
     pub fn major_version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn minor_version_byte_range(&self) -> Range<usize> {
         let start = self.major_version_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 }
@@ -71,29 +88,8 @@ const _: () = assert!(FontData::default_data_long_enough(Cbdt::MIN_SIZE));
 impl Default for Cbdt<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Cbdt<'a> {
-    fn type_name(&self) -> &str {
-        "Cbdt"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("major_version", self.major_version())),
-            1usize => Some(Field::new("minor_version", self.minor_version())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Cbdt<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }

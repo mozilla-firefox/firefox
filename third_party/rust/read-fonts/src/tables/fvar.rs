@@ -6,11 +6,14 @@ include!("../../generated/generated_fvar.rs");
 mod instance_record;
 
 use super::{avar::Avar, variations::DeltaSetIndex};
-use alloc::vec::Vec;
+use smallvec::SmallVec;
 
 pub use instance_record::InstanceRecord;
 
 const MAX_INLINE_AVAR2_AXES: usize = 64;
+/// Maximum number of axes for which we will use a quadratic path to normalize user coordinates.
+const MAX_NORMALIZE_QUADRATIC_AXES: usize = 64;
+const MAX_INLINE_NORMALIZE_AXES: usize = 128;
 
 #[inline]
 fn round_f64_to_i32(value: f64) -> i32 {
@@ -32,24 +35,50 @@ fn apply_avar2_delta(coord: Fixed, delta_2dot14: f64) -> Fixed {
     )
 }
 
+#[inline(never)]
+fn sort_axis_order(axes: &[VariationAxisRecord], axis_order: &mut [u16]) {
+    axis_order.sort_unstable_by_key(|&i| axes[i as usize].axis_tag());
+}
+
 fn normalize_user_coords<T>(
     axes: &[VariationAxisRecord],
     user_coords: impl IntoIterator<Item = (Tag, Fixed)>,
     coords: &mut [T],
     convert: impl Fn(Fixed) -> T,
 ) {
-    for user_coord in user_coords {
-        // To permit non-linear interpolation, iterate over all axes to ensure we match
-        // multiple axes with the same tag:
-        // https://github.com/PeterConstable/OT_Drafts/blob/master/NLI/UnderstandingNLI.md
-        // We accept quadratic behavior here to avoid dynamic allocation and with the assumption
-        // that fonts contain a relatively small number of axes.
-        for (axis, coord) in axes
-            .iter()
-            .zip(coords.iter_mut())
-            .filter(|(axis, _)| axis.axis_tag() == user_coord.0)
-        {
-            *coord = convert(axis.normalize(user_coord.1));
+    let axis_count = axes.len().min(coords.len());
+    let axes = &axes[..axis_count];
+    let coords = &mut coords[..axis_count];
+    if axis_count <= MAX_NORMALIZE_QUADRATIC_AXES {
+        for (tag, user_coord) in user_coords {
+            // To permit non-linear interpolation, iterate over all axes to
+            // ensure we match multiple axes with the same tag:
+            // https://github.com/PeterConstable/OT_Drafts/blob/master/NLI/UnderstandingNLI.md
+            for (axis, coord) in axes
+                .iter()
+                .zip(coords.iter_mut())
+                .filter(|(axis, _)| axis.axis_tag() == tag)
+            {
+                *coord = convert(axis.normalize(user_coord));
+            }
+        }
+        return;
+    }
+    // Above MAX_NORMALIZE_QUADRATIC_AXES, use an indexed path to avoid O(n^2) behavior
+    let mut axis_order = SmallVec::<[u16; MAX_INLINE_NORMALIZE_AXES]>::from_elem(0, axis_count);
+    let axis_order = axis_order.as_mut_slice();
+    // Initialize axis_order with the identity mapping
+    for (i, axis_index) in axis_order.iter_mut().enumerate() {
+        *axis_index = i as u16;
+    }
+    // Then sort by tag to group axes with the same tag together, so we can use
+    // partition_point to find the range of axes for each tag
+    sort_axis_order(axes, axis_order);
+    for (tag, user_coord) in user_coords {
+        let start = axis_order.partition_point(|&i| axes[i as usize].axis_tag() < tag);
+        let end = axis_order.partition_point(|&i| axes[i as usize].axis_tag() <= tag);
+        for &i in &axis_order[start..end] {
+            coords[i as usize] = convert(axes[i as usize].normalize(user_coord));
         }
     }
 }
@@ -60,14 +89,11 @@ fn apply_avar_mappings<T>(
     to_fixed: impl Fn(&T) -> Fixed,
     from_fixed: impl Fn(Fixed) -> T,
 ) {
-    let avar_mappings = avar.map(|avar| avar.axis_segment_maps());
-    for (i, coord) in coords.iter_mut().enumerate() {
-        if let Some(mapping) = avar_mappings
-            .as_ref()
-            .and_then(|mappings| mappings.get(i).transpose().ok())
-            .flatten()
-        {
-            *coord = from_fixed(mapping.apply(to_fixed(coord)));
+    if let Some(maps) = avar.map(|avar| avar.axis_segment_maps()) {
+        for (coord, map) in coords.iter_mut().zip(maps.iter()) {
+            if let Ok(map) = map {
+                *coord = from_fixed(map.apply(to_fixed(coord)));
+            }
         }
     }
 }
@@ -120,14 +146,9 @@ impl<'a> Fvar<'a> {
         let actual_len = axes.len().min(normalized_coords.len());
         let normalized_coords = &mut normalized_coords[..actual_len];
 
-        let mut stack_fixed_coords = [Fixed::ZERO; MAX_INLINE_AVAR2_AXES];
-        let mut heap_fixed_coords = Vec::new();
-        let fixed_coords = if actual_len > MAX_INLINE_AVAR2_AXES {
-            heap_fixed_coords.resize(actual_len, Fixed::ZERO);
-            heap_fixed_coords.as_mut_slice()
-        } else {
-            &mut stack_fixed_coords[..actual_len]
-        };
+        let mut fixed_coords =
+            SmallVec::<[Fixed; MAX_INLINE_AVAR2_AXES]>::from_elem(Fixed::ZERO, actual_len);
+        let fixed_coords = fixed_coords.as_mut_slice();
         normalize_user_coords(axes, user_coords, fixed_coords, core::convert::identity);
         apply_avar_mappings(avar, fixed_coords, |coord| *coord, core::convert::identity);
 
@@ -143,14 +164,9 @@ impl<'a> Fvar<'a> {
         let var_store = avar.var_store();
         let var_index_map = avar.axis_index_map();
 
-        let mut stack_coords_2dot14 = [F2Dot14::ZERO; MAX_INLINE_AVAR2_AXES];
-        let mut heap_coords_2dot14 = Vec::new();
-        let coords_2dot14 = if actual_len > MAX_INLINE_AVAR2_AXES {
-            heap_coords_2dot14.resize(actual_len, F2Dot14::ZERO);
-            heap_coords_2dot14.as_mut_slice()
-        } else {
-            &mut stack_coords_2dot14[..actual_len]
-        };
+        let mut coords_2dot14 =
+            SmallVec::<[F2Dot14; MAX_INLINE_AVAR2_AXES]>::from_elem(F2Dot14::ZERO, actual_len);
+        let coords_2dot14 = coords_2dot14.as_mut_slice();
         for (coord_2dot14, coord) in coords_2dot14.iter_mut().zip(fixed_coords.iter()) {
             *coord_2dot14 = coord.to_f2dot14();
         }
@@ -168,7 +184,7 @@ impl<'a> Fvar<'a> {
                         inner: i as u16,
                     }
                 };
-                if let Ok(delta) = varstore.compute_float_delta(var_index, coords_2dot14) {
+                if let Some(delta) = varstore.compute_delta(var_index, coords_2dot14) {
                     *coord =
                         apply_avar2_delta(*coord, delta.to_f64()).clamp(Fixed::NEG_ONE, Fixed::ONE);
                 }
@@ -203,8 +219,9 @@ impl VariationAxisRecord {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::{FontRef, TableProvider};
-    use types::{F2Dot14, Fixed, NameId, Tag};
+    use types::{BigEndian, F2Dot14, Fixed, NameId, Tag};
 
     #[test]
     fn axes() {
@@ -276,6 +293,64 @@ mod tests {
             axis.normalize(Fixed::from_f64(0.0)),
             Fixed::from_f64(-0.2509765625)
         );
+    }
+
+    #[test]
+    fn normalize_user_coords_uses_indexed_path_for_large_axis_counts() {
+        let axis = VariationAxisRecord {
+            axis_tag: BigEndian::from(Tag::new(b"wght")),
+            min_value: BigEndian::from(Fixed::from_f64(-1.0)),
+            default_value: BigEndian::from(Fixed::ZERO),
+            max_value: BigEndian::from(Fixed::ONE),
+            flags: BigEndian::from(0),
+            axis_name_id: BigEndian::from(NameId::new(1)),
+        };
+        let axes = vec![axis; MAX_NORMALIZE_QUADRATIC_AXES + 1];
+        let mut coords = vec![Fixed::ZERO; axes.len()];
+        normalize_user_coords(
+            &axes,
+            [(Tag::new(b"wght"), Fixed::from_f64(0.5))],
+            &mut coords,
+            core::convert::identity,
+        );
+        assert!(coords.iter().all(|coord| *coord == Fixed::from_f64(0.5)));
+    }
+
+    #[test]
+    fn normalize_user_coords_handles_duplicate_tags_in_indexed_path() {
+        let wght_axis = VariationAxisRecord {
+            axis_tag: BigEndian::from(Tag::new(b"wght")),
+            min_value: BigEndian::from(Fixed::from_f64(-1.0)),
+            default_value: BigEndian::from(Fixed::ZERO),
+            max_value: BigEndian::from(Fixed::ONE),
+            flags: BigEndian::from(0),
+            axis_name_id: BigEndian::from(NameId::new(1)),
+        };
+        let wdth_axis = VariationAxisRecord {
+            axis_tag: BigEndian::from(Tag::new(b"wdth")),
+            min_value: BigEndian::from(Fixed::from_f64(-1.0)),
+            default_value: BigEndian::from(Fixed::ZERO),
+            max_value: BigEndian::from(Fixed::ONE),
+            flags: BigEndian::from(0),
+            axis_name_id: BigEndian::from(NameId::new(2)),
+        };
+        let axes = (0..(MAX_NORMALIZE_QUADRATIC_AXES + 2))
+            .map(|i| if i % 2 == 0 { wght_axis } else { wdth_axis })
+            .collect::<Vec<_>>();
+        let mut coords = vec![Fixed::ZERO; axes.len()];
+        normalize_user_coords(
+            &axes,
+            [(Tag::new(b"wght"), Fixed::from_f64(0.25))],
+            &mut coords,
+            core::convert::identity,
+        );
+        for (i, coord) in coords.iter().enumerate() {
+            if i % 2 == 0 {
+                assert_eq!(*coord, Fixed::from_f64(0.25));
+            } else {
+                assert_eq!(*coord, Fixed::ZERO);
+            }
+        }
     }
 
     #[test]

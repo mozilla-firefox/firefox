@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Cvar<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,40 @@ impl TopLevelTable for Cvar<'_> {
     const TAG: Tag = Tag::new(b"cvar");
 }
 
+impl ReadArgs for Cvar<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Cvar<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct CvarFixedHeader {
+    pub version: BigEndian<MajorMinor>,
+    pub tuple_variation_count: BigEndian<TupleVariationCount>,
+    pub data_offset: BigEndian<Offset16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<CvarFixedHeader>() <= Cvar::MIN_SIZE);
+
 /// The [cvar](https://learn.microsoft.com/en-us/typography/opentype/spec/cvar) table.
 #[derive(Clone)]
 pub struct Cvar<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, CvarFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -44,8 +64,7 @@ impl<'a> Cvar<'a> {
 
     /// Major/minor version number of the CVT variations table — set to (1,0).
     pub fn version(&self) -> MajorMinor {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// A packed field. The high 4 bits are flags, and the low 12 bits
@@ -53,52 +72,50 @@ impl<'a> Cvar<'a> {
     /// number of tuple variation tables can be any number between 1
     /// and 4095.
     pub fn tuple_variation_count(&self) -> TupleVariationCount {
-        let range = self.tuple_variation_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().tuple_variation_count.get()
     }
 
     /// Offset from the start of the 'cvar' table to the serialized data.
     pub fn data_offset(&self) -> Offset16 {
-        let range = self.data_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().data_offset.get()
     }
 
     /// Attempt to resolve [`data_offset`][Self::data_offset].
     pub fn data(&self) -> Result<FontData<'a>, ReadError> {
-        let data = self.data;
+        let data = self.offset_data();
         self.data_offset().resolve(data)
     }
 
     /// Array of tuple variation headers.
     pub fn tuple_variation_headers(&self) -> VarLenArray<'a, TupleVariationHeader<'a>> {
         let range = self.tuple_variation_headers_byte_range();
-        self.data
+        self.offset_data()
             .split_off(range.start)
             .and_then(|d| VarLenArray::read(d).ok())
             .unwrap_or_default()
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + MajorMinor::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(MajorMinor::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn tuple_variation_count_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + TupleVariationCount::RAW_BYTE_LEN;
+        let end = start.saturating_add(TupleVariationCount::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn data_offset_byte_range(&self) -> Range<usize> {
         let start = self.tuple_variation_count_byte_range().end;
-        let end = start + Offset16::RAW_BYTE_LEN;
+        let end = start.saturating_add(Offset16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn tuple_variation_headers_byte_range(&self) -> Range<usize> {
         let start = self.data_offset_byte_range().end;
-        let end = start + self.data.len().saturating_sub(start);
+        let end = start.saturating_add(self.offset_data().len().saturating_sub(start));
         start..end
     }
 }
@@ -108,37 +125,8 @@ const _: () = assert!(FontData::default_data_long_enough(Cvar::MIN_SIZE));
 impl Default for Cvar<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Cvar<'a> {
-    fn type_name(&self) -> &str {
-        "Cvar"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new(
-                "tuple_variation_count",
-                traversal::FieldType::Unknown,
-            )),
-            2usize => Some(Field::new("data_offset", traversal::FieldType::Unknown)),
-            3usize => Some(Field::new(
-                "tuple_variation_headers",
-                traversal::FieldType::Unknown,
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Cvar<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }

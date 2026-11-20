@@ -11,24 +11,45 @@ impl<'a> MinByteRange<'a> for CffHeader<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for CffHeader<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for CffHeader<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct CffHeaderFixedHeader {
+    pub major: u8,
+    pub minor: u8,
+    pub hdr_size: u8,
+    pub off_size: u8,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<CffHeaderFixedHeader>() <= CffHeader::MIN_SIZE);
+
 /// [Compact Font Format](https://learn.microsoft.com/en-us/typography/opentype/spec/cff) table header
 #[derive(Clone)]
 pub struct CffHeader<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, CffHeaderFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -39,76 +60,80 @@ impl<'a> CffHeader<'a> {
 
     /// Format major version (starting at 1).
     pub fn major(&self) -> u8 {
-        let range = self.major_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().major
     }
 
     /// Format minor version (starting at 0).
     pub fn minor(&self) -> u8 {
-        let range = self.minor_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().minor
     }
 
     /// Header size (bytes).
     pub fn hdr_size(&self) -> u8 {
-        let range = self.hdr_size_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().hdr_size
     }
 
     /// Absolute offset size.
     pub fn off_size(&self) -> u8 {
-        let range = self.off_size_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().off_size
     }
 
     /// Padding bytes before the start of the Name INDEX.
     pub fn _padding(&self) -> &'a [u8] {
         let range = self._padding_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// Remaining table data.
     pub fn trailing_data(&self) -> &'a [u8] {
         let range = self.trailing_data_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn major_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u8::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn minor_byte_range(&self) -> Range<usize> {
         let start = self.major_byte_range().end;
-        let end = start + u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn hdr_size_byte_range(&self) -> Range<usize> {
         let start = self.minor_byte_range().end;
-        let end = start + u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn off_size_byte_range(&self) -> Range<usize> {
         let start = self.hdr_size_byte_range().end;
-        let end = start + u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn _padding_byte_range(&self) -> Range<usize> {
         let hdr_size = self.hdr_size();
         let start = self.off_size_byte_range().end;
-        let end =
-            start + (transforms::subtract(hdr_size, 4_usize)).saturating_mul(u8::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::subtract(hdr_size, 4_usize)).saturating_mul(u8::RAW_BYTE_LEN),
+        );
         start..end
     }
 
     pub fn trailing_data_byte_range(&self) -> Range<usize> {
         let start = self._padding_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -118,34 +143,9 @@ const _: () = assert!(FontData::default_data_long_enough(CffHeader::MIN_SIZE));
 impl Default for CffHeader<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for CffHeader<'a> {
-    fn type_name(&self) -> &str {
-        "CffHeader"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("major", self.major())),
-            1usize => Some(Field::new("minor", self.minor())),
-            2usize => Some(Field::new("hdr_size", self.hdr_size())),
-            3usize => Some(Field::new("off_size", self.off_size())),
-            4usize => Some(Field::new("_padding", self._padding())),
-            5usize => Some(Field::new("trailing_data", self.trailing_data())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for CffHeader<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -155,24 +155,43 @@ impl<'a> MinByteRange<'a> for Index<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for Index<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Index<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct IndexFixedHeader {
+    pub count: BigEndian<u16>,
+    pub off_size: u8,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<IndexFixedHeader>() <= Index::MIN_SIZE);
+
 /// An array of variable-sized objects in a `CFF` table.
 #[derive(Clone)]
 pub struct Index<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, IndexFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -182,37 +201,41 @@ impl<'a> Index<'a> {
 
     /// Number of objects stored in INDEX.
     pub fn count(&self) -> u16 {
-        let range = self.count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().count.get()
     }
 
     /// Object array element size.
     pub fn off_size(&self) -> u8 {
-        let range = self.off_size_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().off_size
     }
 
     /// Bytes containing `count + 1` offsets each of `off_size`.
     pub fn offsets(&self) -> &'a [u8] {
         let range = self.offsets_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// Array containing the object data.
     pub fn data(&self) -> &'a [u8] {
         let range = self.data_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn count_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn off_size_byte_range(&self) -> Range<usize> {
         let start = self.count_byte_range().end;
-        let end = start + u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
@@ -220,15 +243,17 @@ impl<'a> Index<'a> {
         let count = self.count();
         let off_size = self.off_size();
         let start = self.off_size_byte_range().end;
-        let end = start
-            + (transforms::add_multiply(count, 1_usize, off_size)).saturating_mul(u8::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::add_multiply(count, 1_usize, off_size)).saturating_mul(u8::RAW_BYTE_LEN),
+        );
         start..end
     }
 
     pub fn data_byte_range(&self) -> Range<usize> {
         let start = self.offsets_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -238,32 +263,9 @@ const _: () = assert!(FontData::default_data_long_enough(Index::MIN_SIZE));
 impl Default for Index<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Index<'a> {
-    fn type_name(&self) -> &str {
-        "Index"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("count", self.count())),
-            1usize => Some(Field::new("off_size", self.off_size())),
-            2usize => Some(Field::new("offsets", self.offsets())),
-            3usize => Some(Field::new("data", self.data())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Index<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -301,8 +303,13 @@ impl<'a> FdSelect<'a> {
     }
 }
 
+impl ReadArgs for FdSelect<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for FdSelect<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    #[inline]
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         let format: u8 = data.read_at(0usize)?;
         match format {
             FdSelectFormat0::FORMAT => Ok(Self::Format0(FontRead::read(data)?)),
@@ -330,34 +337,6 @@ impl<'a> MinByteRange<'a> for FdSelect<'a> {
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> FdSelect<'a> {
-    fn dyn_inner<'b>(&'b self) -> &'b dyn SomeTable<'a> {
-        match self {
-            Self::Format0(table) => table,
-            Self::Format3(table) => table,
-            Self::Format4(table) => table,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl std::fmt::Debug for FdSelect<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.dyn_inner().fmt(f)
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for FdSelect<'a> {
-    fn type_name(&self) -> &str {
-        self.dyn_inner().type_name()
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        self.dyn_inner().get_field(idx)
-    }
-}
-
 impl Format<u8> for FdSelectFormat0<'_> {
     const FORMAT: u8 = 0;
 }
@@ -368,24 +347,43 @@ impl<'a> MinByteRange<'a> for FdSelectFormat0<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for FdSelectFormat0<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for FdSelectFormat0<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct FdSelectFormat0FixedHeader {
+    pub format: u8,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () =
+    assert!(std::mem::size_of::<FdSelectFormat0FixedHeader>() <= FdSelectFormat0::MIN_SIZE);
+
 /// FdSelect format 0.
 #[derive(Clone)]
 pub struct FdSelectFormat0<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, FdSelectFormat0FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -395,26 +393,29 @@ impl<'a> FdSelectFormat0<'a> {
 
     /// Format = 0.
     pub fn format(&self) -> u8 {
-        let range = self.format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().format
     }
 
     /// FD selector array (one entry for each glyph).
     pub fn fds(&self) -> &'a [u8] {
         let range = self.fds_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u8::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn fds_byte_range(&self) -> Range<usize> {
         let start = self.format_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -426,30 +427,9 @@ const _: () = assert!(FontData::default_data_long_enough(
 impl Default for FdSelectFormat0<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for FdSelectFormat0<'a> {
-    fn type_name(&self) -> &str {
-        "FdSelectFormat0"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format", self.format())),
-            1usize => Some(Field::new("fds", self.fds())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for FdSelectFormat0<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -463,24 +443,44 @@ impl<'a> MinByteRange<'a> for FdSelectFormat3<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for FdSelectFormat3<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for FdSelectFormat3<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct FdSelectFormat3FixedHeader {
+    pub format: u8,
+    pub n_ranges: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () =
+    assert!(std::mem::size_of::<FdSelectFormat3FixedHeader>() <= FdSelectFormat3::MIN_SIZE);
+
 /// FdSelect format 3.
 #[derive(Clone)]
 pub struct FdSelectFormat3<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, FdSelectFormat3FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -490,83 +490,57 @@ impl<'a> FdSelectFormat3<'a> {
 
     /// Format = 3.
     pub fn format(&self) -> u8 {
-        let range = self.format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().format
     }
 
     /// Number of ranges.
     pub fn n_ranges(&self) -> u16 {
-        let range = self.n_ranges_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().n_ranges.get()
     }
 
     /// Range3 array.
     pub fn ranges(&self) -> &'a [FdSelectRange3] {
         let range = self.ranges_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// Sentinel GID. Set equal to the number of glyphs in the font.
     pub fn sentinel(&self) -> u16 {
         let range = self.sentinel_byte_range();
-        self.data.read_at(range.start).ok().unwrap_or_default()
+        self.offset_data()
+            .read_at(range.start)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u8::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn n_ranges_byte_range(&self) -> Range<usize> {
         let start = self.format_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn ranges_byte_range(&self) -> Range<usize> {
         let n_ranges = self.n_ranges();
         let start = self.n_ranges_byte_range().end;
-        let end =
-            start + (transforms::to_usize(n_ranges)).saturating_mul(FdSelectRange3::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(n_ranges)).saturating_mul(FdSelectRange3::RAW_BYTE_LEN),
+        );
         start..end
     }
 
     pub fn sentinel_byte_range(&self) -> Range<usize> {
         let start = self.ranges_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for FdSelectFormat3<'a> {
-    fn type_name(&self) -> &str {
-        "FdSelectFormat3"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format", self.format())),
-            1usize => Some(Field::new("n_ranges", self.n_ranges())),
-            2usize => Some(Field::new(
-                "ranges",
-                traversal::FieldType::array_of_records(
-                    stringify!(FdSelectRange3),
-                    self.ranges(),
-                    self.offset_data(),
-                ),
-            )),
-            3usize => Some(Field::new("sentinel", self.sentinel())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for FdSelectFormat3<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -597,21 +571,6 @@ impl FixedSize for FdSelectRange3 {
     const RAW_BYTE_LEN: usize = u16::RAW_BYTE_LEN + u8::RAW_BYTE_LEN;
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for FdSelectRange3 {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "FdSelectRange3",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("first", self.first())),
-                1usize => Some(Field::new("fd", self.fd())),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
 impl Format<u8> for FdSelectFormat4<'_> {
     const FORMAT: u8 = 4;
 }
@@ -622,24 +581,44 @@ impl<'a> MinByteRange<'a> for FdSelectFormat4<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for FdSelectFormat4<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for FdSelectFormat4<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct FdSelectFormat4FixedHeader {
+    pub format: u8,
+    pub n_ranges: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () =
+    assert!(std::mem::size_of::<FdSelectFormat4FixedHeader>() <= FdSelectFormat4::MIN_SIZE);
+
 /// FdSelect format 4.
 #[derive(Clone)]
 pub struct FdSelectFormat4<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, FdSelectFormat4FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -649,83 +628,57 @@ impl<'a> FdSelectFormat4<'a> {
 
     /// Format = 4.
     pub fn format(&self) -> u8 {
-        let range = self.format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().format
     }
 
     /// Number of ranges.
     pub fn n_ranges(&self) -> u32 {
-        let range = self.n_ranges_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().n_ranges.get()
     }
 
     /// Range4 array.
     pub fn ranges(&self) -> &'a [FdSelectRange4] {
         let range = self.ranges_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// Sentinel GID. Set equal to the number of glyphs in the font.
     pub fn sentinel(&self) -> u32 {
         let range = self.sentinel_byte_range();
-        self.data.read_at(range.start).ok().unwrap_or_default()
+        self.offset_data()
+            .read_at(range.start)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u8::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn n_ranges_byte_range(&self) -> Range<usize> {
         let start = self.format_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn ranges_byte_range(&self) -> Range<usize> {
         let n_ranges = self.n_ranges();
         let start = self.n_ranges_byte_range().end;
-        let end =
-            start + (transforms::to_usize(n_ranges)).saturating_mul(FdSelectRange4::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(n_ranges)).saturating_mul(FdSelectRange4::RAW_BYTE_LEN),
+        );
         start..end
     }
 
     pub fn sentinel_byte_range(&self) -> Range<usize> {
         let start = self.ranges_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for FdSelectFormat4<'a> {
-    fn type_name(&self) -> &str {
-        "FdSelectFormat4"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format", self.format())),
-            1usize => Some(Field::new("n_ranges", self.n_ranges())),
-            2usize => Some(Field::new(
-                "ranges",
-                traversal::FieldType::array_of_records(
-                    stringify!(FdSelectRange4),
-                    self.ranges(),
-                    self.offset_data(),
-                ),
-            )),
-            3usize => Some(Field::new("sentinel", self.sentinel())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for FdSelectFormat4<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -754,21 +707,6 @@ impl FdSelectRange4 {
 
 impl FixedSize for FdSelectRange4 {
     const RAW_BYTE_LEN: usize = u32::RAW_BYTE_LEN + u16::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for FdSelectRange4 {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "FdSelectRange4",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("first", self.first())),
-                1usize => Some(Field::new("fd", self.fd())),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }
 
 /// Charset with custom glyph id to string id mappings.
@@ -805,8 +743,13 @@ impl<'a> CustomCharset<'a> {
     }
 }
 
+impl ReadArgs for CustomCharset<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for CustomCharset<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    #[inline]
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         let format: u8 = data.read_at(0usize)?;
         match format {
             CharsetFormat0::FORMAT => Ok(Self::Format0(FontRead::read(data)?)),
@@ -834,34 +777,6 @@ impl<'a> MinByteRange<'a> for CustomCharset<'a> {
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> CustomCharset<'a> {
-    fn dyn_inner<'b>(&'b self) -> &'b dyn SomeTable<'a> {
-        match self {
-            Self::Format0(table) => table,
-            Self::Format1(table) => table,
-            Self::Format2(table) => table,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl std::fmt::Debug for CustomCharset<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.dyn_inner().fmt(f)
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for CustomCharset<'a> {
-    fn type_name(&self) -> &str {
-        self.dyn_inner().type_name()
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        self.dyn_inner().get_field(idx)
-    }
-}
-
 impl Format<u8> for CharsetFormat0<'_> {
     const FORMAT: u8 = 0;
 }
@@ -872,24 +787,42 @@ impl<'a> MinByteRange<'a> for CharsetFormat0<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for CharsetFormat0<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for CharsetFormat0<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct CharsetFormat0FixedHeader {
+    pub format: u8,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<CharsetFormat0FixedHeader>() <= CharsetFormat0::MIN_SIZE);
+
 /// Charset format 0.
 #[derive(Clone)]
 pub struct CharsetFormat0<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, CharsetFormat0FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -899,26 +832,29 @@ impl<'a> CharsetFormat0<'a> {
 
     /// Format; =0
     pub fn format(&self) -> u8 {
-        let range = self.format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().format
     }
 
     /// Glyph name array.
     pub fn glyph(&self) -> &'a [BigEndian<u16>] {
         let range = self.glyph_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u8::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn glyph_byte_range(&self) -> Range<usize> {
         let start = self.format_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / u16::RAW_BYTE_LEN * u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u16::RAW_BYTE_LEN * u16::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -928,30 +864,9 @@ const _: () = assert!(FontData::default_data_long_enough(CharsetFormat0::MIN_SIZ
 impl Default for CharsetFormat0<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for CharsetFormat0<'a> {
-    fn type_name(&self) -> &str {
-        "CharsetFormat0"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format", self.format())),
-            1usize => Some(Field::new("glyph", self.glyph())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for CharsetFormat0<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -965,24 +880,42 @@ impl<'a> MinByteRange<'a> for CharsetFormat1<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for CharsetFormat1<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for CharsetFormat1<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct CharsetFormat1FixedHeader {
+    pub format: u8,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<CharsetFormat1FixedHeader>() <= CharsetFormat1::MIN_SIZE);
+
 /// Charset format 1.
 #[derive(Clone)]
 pub struct CharsetFormat1<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, CharsetFormat1FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -992,27 +925,30 @@ impl<'a> CharsetFormat1<'a> {
 
     /// Format; =1
     pub fn format(&self) -> u8 {
-        let range = self.format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().format
     }
 
     /// Range1 array.
     pub fn ranges(&self) -> &'a [CharsetRange1] {
         let range = self.ranges_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u8::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn ranges_byte_range(&self) -> Range<usize> {
         let start = self.format_byte_range().end;
-        let end = start
-            + self.data.len().saturating_sub(start) / CharsetRange1::RAW_BYTE_LEN
-                * CharsetRange1::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / CharsetRange1::RAW_BYTE_LEN
+                * CharsetRange1::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -1022,37 +958,9 @@ const _: () = assert!(FontData::default_data_long_enough(CharsetFormat1::MIN_SIZ
 impl Default for CharsetFormat1<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_format_1_u8_table_data(),
+            data: TableDataRef::new(FontData::default_format_1_u8_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for CharsetFormat1<'a> {
-    fn type_name(&self) -> &str {
-        "CharsetFormat1"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format", self.format())),
-            1usize => Some(Field::new(
-                "ranges",
-                traversal::FieldType::array_of_records(
-                    stringify!(CharsetRange1),
-                    self.ranges(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for CharsetFormat1<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -1083,21 +991,6 @@ impl FixedSize for CharsetRange1 {
     const RAW_BYTE_LEN: usize = u16::RAW_BYTE_LEN + u8::RAW_BYTE_LEN;
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for CharsetRange1 {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "CharsetRange1",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("first", self.first())),
-                1usize => Some(Field::new("n_left", self.n_left())),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
 impl Format<u8> for CharsetFormat2<'_> {
     const FORMAT: u8 = 2;
 }
@@ -1108,24 +1001,42 @@ impl<'a> MinByteRange<'a> for CharsetFormat2<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for CharsetFormat2<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for CharsetFormat2<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct CharsetFormat2FixedHeader {
+    pub format: u8,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<CharsetFormat2FixedHeader>() <= CharsetFormat2::MIN_SIZE);
+
 /// Charset format 2.
 #[derive(Clone)]
 pub struct CharsetFormat2<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, CharsetFormat2FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -1135,57 +1046,31 @@ impl<'a> CharsetFormat2<'a> {
 
     /// Format; =2
     pub fn format(&self) -> u8 {
-        let range = self.format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().format
     }
 
     /// Range2 array.
     pub fn ranges(&self) -> &'a [CharsetRange2] {
         let range = self.ranges_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u8::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn ranges_byte_range(&self) -> Range<usize> {
         let start = self.format_byte_range().end;
-        let end = start
-            + self.data.len().saturating_sub(start) / CharsetRange2::RAW_BYTE_LEN
-                * CharsetRange2::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / CharsetRange2::RAW_BYTE_LEN
+                * CharsetRange2::RAW_BYTE_LEN,
+        );
         start..end
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for CharsetFormat2<'a> {
-    fn type_name(&self) -> &str {
-        "CharsetFormat2"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format", self.format())),
-            1usize => Some(Field::new(
-                "ranges",
-                traversal::FieldType::array_of_records(
-                    stringify!(CharsetRange2),
-                    self.ranges(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for CharsetFormat2<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -1216,21 +1101,6 @@ impl FixedSize for CharsetRange2 {
     const RAW_BYTE_LEN: usize = u16::RAW_BYTE_LEN + u16::RAW_BYTE_LEN;
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for CharsetRange2 {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "CharsetRange2",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("first", self.first())),
-                1usize => Some(Field::new("n_left", self.n_left())),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
 /// Range struct for Encoding format 1.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Copy, bytemuck :: AnyBitPattern)]
 #[repr(C)]
@@ -1258,21 +1128,6 @@ impl FixedSize for EncodingRange1 {
     const RAW_BYTE_LEN: usize = u8::RAW_BYTE_LEN + u8::RAW_BYTE_LEN;
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for EncodingRange1 {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "EncodingRange1",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("first", self.first())),
-                1usize => Some(Field::new("n_left", self.n_left())),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
 /// Supplemental encoding record.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Copy, bytemuck :: AnyBitPattern)]
 #[repr(C)]
@@ -1298,19 +1153,4 @@ impl EncodingSupplement {
 
 impl FixedSize for EncodingSupplement {
     const RAW_BYTE_LEN: usize = u8::RAW_BYTE_LEN + u16::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for EncodingSupplement {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "EncodingSupplement",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("code", self.code())),
-                1usize => Some(Field::new("glyph", self.glyph())),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }

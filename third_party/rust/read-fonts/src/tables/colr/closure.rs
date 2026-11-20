@@ -1,13 +1,13 @@
 //! computing closure for the colr table
-use font_types::{GlyphId, GlyphId16};
+use font_types::GlyphId;
 
 use crate::{collections::IntSet, tables::variations::NO_VARIATION_INDEX, ResolveOffset};
 
 use super::{
     Clip, ClipBox, ClipBoxFormat2, ClipList, ColorLine, ColorStop, Colr, Paint, PaintColrGlyph,
-    PaintColrLayers, PaintComposite, PaintGlyph, PaintLinearGradient, PaintRadialGradient,
-    PaintRotate, PaintRotateAroundCenter, PaintScale, PaintScaleAroundCenter, PaintScaleUniform,
-    PaintScaleUniformAroundCenter, PaintSkew, PaintSkewAroundCenter, PaintSolid,
+    PaintColrLayers, PaintComposite, PaintGlyph, PaintGlyph2, PaintLinearGradient,
+    PaintRadialGradient, PaintRotate, PaintRotateAroundCenter, PaintScale, PaintScaleAroundCenter,
+    PaintScaleUniform, PaintScaleUniformAroundCenter, PaintSkew, PaintSkewAroundCenter, PaintSolid,
     PaintSweepGradient, PaintTransform, PaintTranslate, PaintVarLinearGradient,
     PaintVarRadialGradient, PaintVarRotate, PaintVarRotateAroundCenter, PaintVarScale,
     PaintVarScaleAroundCenter, PaintVarScaleUniform, PaintVarScaleUniformAroundCenter,
@@ -239,14 +239,15 @@ impl<'a> Colrv1ClosureContext<'a> {
         if num_vars == 0 || var_index_base == NO_VARIATION_INDEX {
             return;
         }
-
-        let last_var_index = var_index_base + num_vars as u32 - 1;
+        let Some(last_var_index) = compute_inclusive_end(var_index_base, num_vars as u32) else {
+            return;
+        };
         self.variation_indices
             .insert_range(var_index_base..=last_var_index);
     }
 
-    fn add_glyph_id(&mut self, gid: GlyphId16) {
-        self.glyph_set.insert(GlyphId::from(gid));
+    fn add_glyph_id(&mut self, gid: impl Into<GlyphId>) {
+        self.glyph_set.insert(gid.into());
     }
 }
 
@@ -292,6 +293,7 @@ impl Paint<'_> {
             Self::SweepGradient(item) => item.v1_closure(c),
             Self::VarSweepGradient(item) => item.v1_closure(c),
             Self::Glyph(item) => item.v1_closure(c),
+            Self::Glyph2(item) => item.v1_closure(c),
             Self::ColrGlyph(item) => item.v1_closure(c),
             Self::Transform(item) => item.v1_closure(c),
             Self::VarTransform(item) => item.v1_closure(c),
@@ -328,8 +330,12 @@ impl PaintColrLayers<'_> {
         let Some(Ok(layer_list)) = c.colr.layer_list() else {
             return;
         };
+
         let first_layer_index = self.first_layer_index();
-        let last_layer_index = first_layer_index + num_layers as u32 - 1;
+        let Some(last_layer_index) = compute_inclusive_end(first_layer_index, num_layers as u32)
+        else {
+            return;
+        };
 
         let offset_data = layer_list.offset_data();
         let paint_offsets = layer_list.paint_offsets();
@@ -410,6 +416,15 @@ impl PaintVarSweepGradient<'_> {
 }
 
 impl PaintGlyph<'_> {
+    fn v1_closure(&self, c: &mut Colrv1ClosureContext) {
+        if let Ok(paint) = self.paint() {
+            c.add_glyph_id(self.glyph_id());
+            c.dispatch(&paint);
+        }
+    }
+}
+
+impl PaintGlyph2<'_> {
     fn v1_closure(&self, c: &mut Colrv1ClosureContext) {
         if let Ok(paint) = self.paint() {
             c.add_glyph_id(self.glyph_id());
@@ -653,10 +668,38 @@ impl ClipBoxFormat2<'_> {
     }
 }
 
+/// Helper to compute the inclusive end of a range given a start and length,
+/// returning None if len == 0 or the computation would overflow.
+fn compute_inclusive_end(start: u32, len: u32) -> Option<u32> {
+    if len == 0 {
+        return None;
+    }
+    start.checked_add(len).and_then(|v| v.checked_sub(1))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{FontRef, GlyphId, TableProvider};
+    use crate::{FontData, FontRead, FontRef, GlyphId, TableProvider};
+
+    #[test]
+    fn paint_glyph2_closure_keeps_wide_outline_and_child_palette() {
+        let data = font_test_data::colr::paint_glyph2_colr();
+        let colr = Colr::read(FontData::new(&data)).unwrap();
+        let mut glyphs = IntSet::empty();
+        glyphs.insert(GlyphId::new(42));
+        let mut layers = IntSet::empty();
+        let mut palettes = IntSet::empty();
+        let mut variations = IntSet::empty();
+        colr.v1_closure(&mut glyphs, &mut layers, &mut palettes, &mut variations);
+        assert_eq!(
+            glyphs.iter().collect::<Vec<_>>(),
+            [GlyphId::new(42), GlyphId::new(0x123456)]
+        );
+        assert_eq!(palettes.iter().collect::<Vec<_>>(), [7]);
+        assert!(layers.is_empty());
+        assert!(variations.is_empty());
+    }
 
     #[test]
     fn test_colr_v0_closure() {
@@ -786,5 +829,18 @@ mod tests {
         assert!(variation_indices.contains(54));
         assert!(variation_indices.contains(55));
         assert!(variation_indices.contains(56));
+    }
+
+    #[test]
+    fn test_compute_inclusive_end() {
+        assert_eq!(compute_inclusive_end(0, 0), None);
+        assert_eq!(compute_inclusive_end(0, 1), Some(0));
+        assert_eq!(compute_inclusive_end(0, 2), Some(1));
+        assert_eq!(compute_inclusive_end(1, 1), Some(1));
+        assert_eq!(compute_inclusive_end(1, 2), Some(2));
+        assert_eq!(compute_inclusive_end(u32::MAX, 0), None);
+        assert_eq!(compute_inclusive_end(u32::MAX, 1), None);
+        assert_eq!(compute_inclusive_end(u32::MAX - 1, 1), Some(u32::MAX - 1));
+        assert_eq!(compute_inclusive_end(u32::MAX - 1, 3), None);
     }
 }

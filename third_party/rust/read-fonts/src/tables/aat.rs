@@ -23,6 +23,7 @@ impl Lookup0<'_> {
             .cursor()
             .read_array::<BigEndian<T>>(n_elems)
     }
+    #[inline]
     pub fn value<T: LookupValue>(&self, index: u16) -> Result<T, ReadError> {
         self.values::<T>()?
             .get(index as usize)
@@ -52,6 +53,7 @@ impl<T: LookupValue> FixedSize for LookupSegment2<T> {
 }
 
 impl Lookup2<'_> {
+    #[inline]
     pub fn value<T: LookupValue>(&self, index: u16) -> Result<T, ReadError> {
         let segments = self.segments::<T>()?;
         let ix = match segments.binary_search_by(|segment| segment.first_glyph.get().cmp(&index)) {
@@ -74,6 +76,7 @@ impl Lookup2<'_> {
 }
 
 impl Lookup4<'_> {
+    #[inline]
     pub fn value<T: LookupValue>(&self, index: u16) -> Result<T, ReadError> {
         let segments = self.segments();
         let ix = match segments.binary_search_by(|segment| segment.first_glyph.get().cmp(&index)) {
@@ -130,6 +133,7 @@ impl<T: LookupValue> FixedSize for LookupSingle<T> {
 }
 
 impl Lookup6<'_> {
+    #[inline]
     pub fn value<T: LookupValue>(&self, index: u16) -> Result<T, ReadError> {
         let entries = self.entries::<T>()?;
         if let Ok(ix) = entries.binary_search_by_key(&index, |entry| entry.glyph.get()) {
@@ -148,6 +152,7 @@ impl Lookup6<'_> {
 }
 
 impl Lookup8<'_> {
+    #[inline]
     pub fn value<T: LookupValue>(&self, index: u16) -> Result<T, ReadError> {
         index
             .checked_sub(self.first_glyph())
@@ -161,12 +166,13 @@ impl Lookup8<'_> {
 }
 
 impl Lookup10<'_> {
+    #[inline]
     pub fn value<T: LookupValue>(&self, index: u16) -> Result<T, ReadError> {
         let ix = index
             .checked_sub(self.first_glyph())
             .ok_or(ReadError::OutOfBounds)? as usize;
         let unit_size = self.unit_size() as usize;
-        let offset = ix * unit_size;
+        let offset = ix.wrapping_mul(unit_size);
         let mut cursor = FontData::new(self.values_data()).cursor();
         cursor.advance_by(offset);
         let val = match unit_size {
@@ -184,6 +190,7 @@ impl Lookup10<'_> {
 }
 
 impl Lookup<'_> {
+    #[inline]
     pub fn value<T: LookupValue>(&self, index: u16) -> Result<T, ReadError> {
         match self {
             Lookup::Format0(lookup) => lookup.value::<T>(index),
@@ -209,23 +216,16 @@ impl<T: LookupValue> TypedLookup<'_, T> {
     }
 }
 
+impl<T> ReadArgs for TypedLookup<'_, T> {
+    type Args = ();
+}
+
 impl<'a, T> FontRead<'a> for TypedLookup<'a, T> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         Ok(Self {
             lookup: Lookup::read(data)?,
             _marker: std::marker::PhantomData,
         })
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a, T> SomeTable<'a> for TypedLookup<'a, T> {
-    fn type_name(&self) -> &str {
-        "TypedLookup"
-    }
-
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        self.lookup.get_field(idx)
     }
 }
 
@@ -287,17 +287,28 @@ impl FixedSize for NoPayload {
 #[derive(Clone, Debug)]
 pub struct StateEntry<T = NoPayload> {
     /// Index of the next state.
-    pub new_state: u16,
+    ///
+    /// Signed because legacy ('kern'/'mort') state tables number the rows
+    /// before the initial state negatively (Apple's pre-initial-state
+    /// layout); extended tables only ever resolve to non-negative indices.
+    pub new_state: i32,
     /// Flag values are table specific.
     pub flags: u16,
     /// Payload is table specific.
     pub payload: T,
 }
 
+impl<T: bytemuck::AnyBitPattern + FixedSize> ReadArgs for StateEntry<T> {
+    type Args = ();
+}
+
 impl<'a, T: bytemuck::AnyBitPattern + FixedSize> FontRead<'a> for StateEntry<T> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         let mut cursor = data.cursor();
-        let new_state = cursor.read()?;
+        // The on-disk field is an unsigned 16-bit value (a byte offset for
+        // legacy tables, a state index for extended ones); entry() resolves
+        // it to the signed state index that consumers read.
+        let new_state = cursor.read::<u16>()? as i32;
         let flags = cursor.read()?;
         let remaining = cursor.remaining().ok_or(ReadError::OutOfBounds)?;
         let payload = *remaining.read_ref_at(0)?;
@@ -327,18 +338,27 @@ where
 /// See <https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6Tables.html#StateHeader>
 /// for more detail.
 #[derive(Clone)]
-pub struct StateTable<'a> {
+pub struct StateTable<'a, T = NoPayload> {
     pub header: StateHeader<'a>,
-    n_classes: usize,
+    pub n_classes: usize,
     class_first_glyph: u16,
     class_array: &'a [u8],
     state_array: &'a [u8],
     entry_table: &'a [u8],
+    /// floor(2^32 / n_classes) + 1: exact reciprocal for dividends < 2^16,
+    /// so the per-transition new-state conversion avoids a hardware divide.
+    n_classes_magic: u64,
+    _marker: std::marker::PhantomData<fn() -> T>,
 }
 
-impl StateTable<'_> {
+impl<T> StateTable<'_, T> {
     pub const HEADER_LEN: usize = u16::RAW_BYTE_LEN * 4;
+}
 
+impl<T> StateTable<'_, T>
+where
+    T: FixedSize + bytemuck::AnyBitPattern,
+{
     /// Returns the class table entry for the given glyph identifier.
     pub fn class(&self, glyph_id: GlyphId16) -> Result<u8, ReadError> {
         let glyph_id = glyph_id.to_u16();
@@ -351,42 +371,146 @@ impl StateTable<'_> {
             .ok_or(ReadError::OutOfBounds)
     }
 
+    /// Returns the first covered glyph and its consecutive class values.
+    pub fn class_mappings(&self) -> (u16, &'_ [u8]) {
+        (self.class_first_glyph, self.class_array)
+    }
+
     /// Returns the entry for the given state and class.
     #[inline(always)]
-    pub fn entry(&self, state: u16, class: u8) -> Result<StateEntry, ReadError> {
+    pub fn entry(&self, state: i32, class: u8) -> Result<StateEntry<T>, ReadError> {
         let mut class = class as usize;
         if class >= self.n_classes {
             class = class::OUT_OF_BOUNDS as usize;
         }
-        let entry_ix = self
-            .state_array
-            .get(state as usize * self.n_classes + class)
-            .copied()
-            .ok_or(ReadError::OutOfBounds)? as usize;
-        let entry_offset = entry_ix * 4;
+        // `state` may be negative: legacy state arrays number the rows before
+        // state_array_offset negatively (Apple's pre-initial-state layout).
+        // The non-negative rows live in the forward state_array slice (the hot
+        // path); negative rows are read from the table base so the bytes
+        // before the slice are reachable, still bounds-checked.
+        let entry_ix = if state >= 0 {
+            self.state_array
+                .get(state as usize * self.n_classes + class)
+                .copied()
+        } else {
+            let cell = self.header.state_array_offset().to_u32() as i64
+                + state as i64 * self.n_classes as i64
+                + class as i64;
+            usize::try_from(cell)
+                .ok()
+                .and_then(|i| self.header.offset_data().as_bytes().get(i).copied())
+        }
+        .ok_or(ReadError::OutOfBounds)? as usize;
+        let entry_offset = entry_ix.wrapping_mul(StateEntry::<T>::RAW_BYTE_LEN);
         let entry_data = self
             .entry_table
             .get(entry_offset..)
             .ok_or(ReadError::OutOfBounds)?;
         let mut entry = StateEntry::read(FontData::new(entry_data))?;
-        // For legacy state tables, the newState is a byte offset into
-        // the state array. Convert this to an index for consistency.
-        let new_state = (entry.new_state as i32)
-            .checked_sub(self.header.state_array_offset().to_u32() as i32)
-            .ok_or(ReadError::OutOfBounds)?
-            / self.n_classes as i32;
-        entry.new_state = new_state.try_into().map_err(|_| ReadError::OutOfBounds)?;
+        // For legacy state tables, the newState is a byte offset into the
+        // state array. Convert it to a (possibly negative) state index.
+        let offset = self.header.state_array_offset().to_u32() as i32;
+        let diff = entry.new_state - offset;
+        entry.new_state = if diff >= 0 {
+            // Multiply by the precomputed reciprocal instead of dividing;
+            // exact for all dividends below 2^16, and this is the per-
+            // transition hot path of legacy state machines.
+            ((diff as u64 * self.n_classes_magic) >> 32) as i32
+        } else {
+            diff / self.n_classes as i32
+        };
         Ok(entry)
     }
 
     /// Reads scalar values that are referenced from state table entries.
-    pub fn read_value<T: Scalar>(&self, offset: usize) -> Result<T, ReadError> {
-        self.header.offset_data().read_at::<T>(offset)
+    pub fn read_value<S: Scalar>(&self, offset: usize) -> Result<S, ReadError> {
+        self.header.offset_data().read_at::<S>(offset)
     }
 }
 
-impl<'a> FontRead<'a> for StateTable<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+/// Pre-resolved byte offsets of a legacy [StateTable]'s components, relative
+/// to the table start.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct LegacyStateTableParts {
+    pub n_classes: u16,
+    pub class_table_offset: u16,
+    pub state_array_offset: u16,
+    pub entry_table_offset: u16,
+}
+
+impl LegacyStateTableParts {
+    /// Reads the header of a legacy state table at the start of `data`.
+    pub fn read(data: FontData) -> Result<Self, ReadError> {
+        let header = StateHeader::read(data)?;
+        Ok(Self {
+            n_classes: header.state_size(),
+            class_table_offset: header.class_table_offset().to_u32() as u16,
+            state_array_offset: header.state_array_offset().to_u32() as u16,
+            entry_table_offset: header.entry_table_offset().to_u32() as u16,
+        })
+    }
+}
+
+impl<'a, T> StateTable<'a, T> {
+    /// Builds the state table from `data` and offsets previously captured
+    /// with [LegacyStateTableParts::read] on the same data.
+    #[inline]
+    pub fn from_parts(
+        data: FontData<'a>,
+        parts: &LegacyStateTableParts,
+    ) -> Result<Self, ReadError> {
+        let n_classes = parts.n_classes as usize;
+        if n_classes == 0 {
+            return Err(ReadError::MalformedData("empty AAT state table"));
+        }
+        let class_table = ClassSubtable::read(
+            data.split_off(parts.class_table_offset as usize)
+                .ok_or(ReadError::OutOfBounds)?,
+        )?;
+        let class_first_glyph = class_table.first_glyph();
+        let class_array = class_table.class_array();
+        let state_array = data
+            .as_bytes()
+            .get(parts.state_array_offset as usize..)
+            .ok_or(ReadError::OutOfBounds)?;
+        let entry_table = data
+            .as_bytes()
+            .get(parts.entry_table_offset as usize..)
+            .ok_or(ReadError::OutOfBounds)?;
+        Ok(Self {
+            header: StateHeader::read(data)?,
+            n_classes,
+            class_first_glyph,
+            class_array,
+            state_array,
+            entry_table,
+            n_classes_magic: (1u64 << 32) / n_classes as u64 + 1,
+            _marker: std::marker::PhantomData,
+        })
+    }
+}
+
+impl<'a> StateTable<'a, NoPayload> {
+    /// Reads a state table whose entries carry no payload.
+    ///
+    /// This exists so that `StateTable::read(data)` still resolves without
+    /// naming the payload type: a type parameter's default does not apply in a
+    /// path expression, only in type position. Without it, adding the payload
+    /// parameter would have broken every existing caller.
+    ///
+    /// Remove this at the next breaking release, so that callers name the
+    /// payload as they do for `ExtendedStateTable`.
+    pub fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+        <Self as FontRead<'a>>::read(data)
+    }
+}
+
+impl<T> ReadArgs for StateTable<'_, T> {
+    type Args = ();
+}
+
+impl<'a, T> FontRead<'a> for StateTable<'a, T> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         let header = StateHeader::read(data)?;
         // Each state has a 1-byte entry per class so state_size == n_classes
         let n_classes = header.state_size() as usize;
@@ -406,18 +530,9 @@ impl<'a> FontRead<'a> for StateTable<'a> {
             class_array,
             state_array,
             entry_table,
+            n_classes_magic: (1u64 << 32) / n_classes as u64 + 1,
+            _marker: std::marker::PhantomData,
         })
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for StateTable<'a> {
-    fn type_name(&self) -> &str {
-        "StateTable"
-    }
-
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        self.header.get_field(idx)
     }
 }
 
@@ -448,6 +563,7 @@ where
     T: FixedSize + bytemuck::AnyBitPattern,
 {
     /// Returns the class table entry for the given glyph identifier.
+    #[inline]
     pub fn class(&self, glyph_id: GlyphId) -> Result<u16, ReadError> {
         let glyph_id: u16 = glyph_id
             .to_u32()
@@ -460,19 +576,23 @@ where
     }
 
     /// Returns the entry for the given state and class.
-    pub fn entry(&self, state: u16, class: u16) -> Result<StateEntry<T>, ReadError> {
+    #[inline]
+    pub fn entry(&self, state: i32, class: u16) -> Result<StateEntry<T>, ReadError> {
         let mut class = class as usize;
         if class >= self.n_classes {
             class = class::OUT_OF_BOUNDS as usize;
         }
-        let state_ix = state as usize * self.n_classes + class;
+        // Extended tables never resolve to a negative state; a negative here
+        // is out of range rather than a pre-initial row.
+        let state = usize::try_from(state).map_err(|_| ReadError::OutOfBounds)?;
+        let state_ix = state.wrapping_mul(self.n_classes).wrapping_add(class);
         let entry_ix = self
             .state_array
             .get(state_ix)
             .copied()
             .ok_or(ReadError::OutOfBounds)?
             .get() as usize;
-        let entry_offset = entry_ix * StateEntry::<T>::RAW_BYTE_LEN;
+        let entry_offset = entry_ix.wrapping_mul(StateEntry::<T>::RAW_BYTE_LEN);
         let entry_data = self
             .entry_table
             .get(entry_offset..)
@@ -481,8 +601,61 @@ where
     }
 }
 
+/// Pre-resolved byte offsets of an [ExtendedStateTable]'s components,
+/// relative to the table start. Lifetime-free, so callers can cache it and
+/// rebuild the table with [ExtendedStateTable::from_parts] without re-reading
+/// and re-validating the header.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct StateTableParts {
+    pub n_classes: u32,
+    pub class_table_offset: u32,
+    pub state_array_offset: u32,
+    pub entry_table_offset: u32,
+}
+
+impl StateTableParts {
+    /// Reads the header of an extended state table at the start of `data`.
+    pub fn read(data: FontData) -> Result<Self, ReadError> {
+        let header = StxHeader::read(data)?;
+        Ok(StateTableParts {
+            n_classes: header.n_classes(),
+            class_table_offset: header.class_table_offset().to_u32(),
+            state_array_offset: header.state_array_offset().to_u32(),
+            entry_table_offset: header.entry_table_offset().to_u32(),
+        })
+    }
+}
+
+impl<'a, T> ExtendedStateTable<'a, T> {
+    /// Builds the state table from `data` and offsets previously captured
+    /// with [StateTableParts::read] on the same data.
+    #[inline]
+    pub fn from_parts(data: FontData<'a>, parts: &StateTableParts) -> Result<Self, ReadError> {
+        let class_table = LookupU16::read(
+            data.split_off(parts.class_table_offset as usize)
+                .ok_or(ReadError::OutOfBounds)?,
+        )?;
+        let state_array = safe_read_array_to_end(&data, parts.state_array_offset as usize)?;
+        let entry_table = data
+            .as_bytes()
+            .get(parts.entry_table_offset as usize..)
+            .ok_or(ReadError::OutOfBounds)?;
+        Ok(Self {
+            n_classes: parts.n_classes as usize,
+            class_table,
+            state_array,
+            entry_table,
+            _marker: std::marker::PhantomData,
+        })
+    }
+}
+
+impl<T> ReadArgs for ExtendedStateTable<'_, T> {
+    type Args = ();
+}
+
 impl<'a, T> FontRead<'a> for ExtendedStateTable<'a, T> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         let header = StxHeader::read(data)?;
         let n_classes = header.n_classes() as usize;
         let class_table = header.class_table()?;
@@ -495,17 +668,6 @@ impl<'a, T> FontRead<'a> for ExtendedStateTable<'a, T> {
             entry_table,
             _marker: std::marker::PhantomData,
         })
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a, T> SomeTable<'a> for ExtendedStateTable<'a, T> {
-    fn type_name(&self) -> &str {
-        "ExtendedStateTable"
-    }
-
-    fn get_field(&self, _idx: usize) -> Option<Field<'a>> {
-        None
     }
 }
 
@@ -805,7 +967,7 @@ mod tests {
             .extend(classes)
             .extend(state_array)
             .extend(entry_table);
-        let table = StateTable::read(buf.data().into()).unwrap();
+        let table = StateTable::<NoPayload>::read(buf.data().into()).unwrap();
         // check class lookups
         for i in 0..4u8 {
             assert_eq!(table.class(GlyphId16::from(i as u16 + 3)).unwrap(), i + 1);
@@ -830,5 +992,54 @@ mod tests {
                 entry.flags
             );
         }
+    }
+
+    // A legacy ('kern'/'mort') entry whose newState byte offset points before
+    // the state array resolves to a negative state index (Apple's
+    // pre-initial-state rows) and must be returned, not rejected.
+    #[test]
+    fn legacy_negative_new_state() {
+        #[rustfmt::skip]
+        let header = [
+            7_u16, // number of classes
+            10, // byte offset to class table
+            18, // byte offset to state array
+            40, // byte offset to entry array
+            64, // byte offset to value array (unused here)
+        ];
+        #[rustfmt::skip]
+        let class_table = [
+            3_u16, // first glyph
+            4, // number of glyphs
+        ];
+        let classes = [1u8, 2, 3, 4];
+        #[rustfmt::skip]
+        let state_array: [u8; 22] = [
+            2, 0, 0, 2, 1, 0, 0,
+            2, 0, 0, 2, 1, 0, 0,
+            2, 3, 3, 2, 3, 4, 5,
+            5, // state 3, class 0 -> entry index 5 (the negative entry below)
+        ];
+        #[rustfmt::skip]
+        let entry_table: [u16; 12] = [
+            18, 0x8112,
+            32, 0x8112,
+            18, 0x0000,
+            32, 0x8114,
+            18, 0x8116,
+            11, 0x0000, // newStateOffset 11 < stateArrayOffset 18: (11-18)/7 = -1
+        ];
+        let buf = BeBuffer::new()
+            .extend(header)
+            .extend(class_table)
+            .extend(classes)
+            .extend(state_array)
+            .extend(entry_table);
+        let table = StateTable::<NoPayload>::read(buf.data().into()).unwrap();
+        let entry = table.entry(3, 0).unwrap();
+        assert_eq!(
+            entry.new_state, -1,
+            "a newState offset before the state array must resolve to a negative state"
+        );
     }
 }

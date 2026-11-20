@@ -20,7 +20,7 @@ impl<'a> Get<'a> for Option<Result<Index2<'a>, ReadError>> {
     fn get(self, nth: usize) -> Result<&'a [u8], ReadError> {
         self.transpose()?
             .ok_or(ReadError::NullOffset)
-            .and_then(|index| index.get(nth).map_err(|_| ReadError::OutOfBounds))
+            .and_then(|index| index.get(nth).ok_or(ReadError::OutOfBounds))
     }
 }
 
@@ -48,7 +48,10 @@ impl SparseVariationRegion<'_> {
     /// specified normalized variation coordinates.
     pub fn compute_scalar_f32(&self, coords: &[F2Dot14]) -> f32 {
         let mut scalar = 1.0f32;
-        for axis in self.region_axes() {
+        for axis in self.axis_coordinates().iter() {
+            let Ok(axis) = axis else {
+                return 0.0;
+            };
             let peak = axis.peak();
             if peak == F2Dot14::ZERO {
                 continue;
@@ -441,17 +444,12 @@ impl DecomposedTransform {
 }
 
 impl<'a> MultiItemVariationData<'a> {
-    /// An [Index2] where each item is a [PackedDeltas]
-    pub fn delta_sets(&self) -> Result<Index2<'a>, ReadError> {
-        Index2::read(self.raw_delta_sets().into())
-    }
-
     /// Read a specific delta set.
     ///
     /// Equivalent to calling [Self::delta_sets], fetching item i, and parsing as [PackedDeltas]
     pub fn delta_set(&self, i: usize) -> Result<PackedDeltas<'a>, ReadError> {
         let index = self.delta_sets()?;
-        let raw_deltas = index.get(i).map_err(|_| ReadError::OutOfBounds)?;
+        let raw_deltas = index.get(i).ok_or(ReadError::OutOfBounds)?;
         Ok(PackedDeltas::consume_all(raw_deltas.into()))
     }
 }
@@ -461,10 +459,13 @@ mod tests {
     use types::GlyphId16;
 
     use crate::types::F2Dot14;
-    use crate::FontData;
+    use crate::{FontData, FontRead};
     use crate::{FontRef, ReadError, TableProvider};
 
-    use super::{Condition, DecomposedTransform, Varc};
+    use super::{
+        Condition, DecomposedTransform, MultiItemVariationData, SparseVariationRegion,
+        SparseVariationRegionList, Varc,
+    };
 
     impl Varc<'_> {
         fn conditions(&self) -> impl Iterator<Item = Condition<'_>> {
@@ -553,6 +554,65 @@ mod tests {
                 value as u8,
             ]
         }
+    }
+
+    #[test]
+    fn sparse_region_axis_offsets() {
+        let data = [
+            0, 0, 0, 2, 0, 0, 0, 12, 0, 0, 0, 18, 0, 1, 0, 0, 0, 16, 0, 2, 0, 0, 0, 10, 0, 0, 0,
+            18, 0, 0, 0, 0, 0x40, 0, 0x40, 0, 0, 1, 0xC0, 0, 0xC0, 0, 0, 0,
+        ];
+        let list = SparseVariationRegionList::read(data.as_slice().into()).unwrap();
+        let regions = list.regions();
+        let first = regions.get(0).unwrap();
+        let second = regions.get(1).unwrap();
+        assert_eq!(first.compute_scalar_f32(&[coord(0.5)]), 0.5);
+        assert_eq!(second.compute_scalar_f32(&[coord(0.5), coord(-1.0)]), 0.5);
+        assert_eq!(second.axis_coordinates().get(1).unwrap().axis_index(), 1);
+    }
+
+    #[test]
+    fn sparse_region_count_uint32() {
+        let count = 0x10000u32;
+        let offset = 4 + count * 4;
+        let mut bytes = count.to_be_bytes().to_vec();
+        for _ in 0..count {
+            bytes.extend(offset.to_be_bytes());
+        }
+        bytes.extend([0, 0]);
+        let list = SparseVariationRegionList::read(bytes.as_slice().into()).unwrap();
+        assert_eq!(list.region_count(), count);
+        assert_eq!(list.regions().get(0xFFFF).unwrap().region_axis_count(), 0);
+    }
+
+    #[test]
+    fn invalid_sparse_axis_offset() {
+        let data = [0, 1, 0xFF, 0xFF, 0xFF, 0xFF];
+        let region = SparseVariationRegion::read(data.as_slice().into()).unwrap();
+        assert_eq!(region.compute_scalar_f32(&[coord(1.0)]), 0.0);
+    }
+
+    #[test]
+    fn delta_set_index_offset() {
+        let data = [
+            1, 0, 2, 0, 0, 0, 1, 0, 0, 0, 19, 0xDE, 0xAD, 0xBE, 0xEF, 0xDE, 0xAD, 0xBE, 0xEF, 0, 0,
+            0, 2, 1, 1, 5, 5, 1, 1, 0xFE, 0x80,
+        ];
+        let table = MultiItemVariationData::read(data.as_slice().into()).unwrap();
+        assert_eq!(table.delta_sets_offset().to_u32(), 19);
+        assert_eq!(
+            table.delta_set(0).unwrap().iter().collect::<Vec<_>>(),
+            [1, -2, 0]
+        );
+        assert_eq!(table.delta_set(1).unwrap().iter().count(), 0);
+    }
+
+    #[test]
+    fn truncated_delta_set_index_offset() {
+        let data = [1, 0, 1, 0, 0, 0, 0];
+        let table = MultiItemVariationData::read(data.as_slice().into()).unwrap();
+        assert!(table.delta_sets_offset().is_null());
+        assert!(matches!(table.delta_sets(), Err(ReadError::NullOffset)));
     }
 
     #[test]
@@ -1376,9 +1436,10 @@ mod tests {
             .iter()
             .map(|r| {
                 r.unwrap()
-                    .region_axes()
+                    .axis_coordinates()
                     .iter()
                     .map(|a| {
+                        let a = a.unwrap();
                         (
                             a.axis_index(),
                             a.start().to_f32(),

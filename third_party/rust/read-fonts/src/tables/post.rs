@@ -2,7 +2,6 @@
 
 include!("../../generated/generated_post.rs");
 
-#[allow(clippy::needless_lifetimes)] // 'a is used with experimental_traverse feature below
 impl<'a> Post<'a> {
     /// The number of glyph names covered by this table
     pub fn num_names(&self) -> usize {
@@ -13,7 +12,13 @@ impl<'a> Post<'a> {
         }
     }
 
-    pub fn glyph_name(&self, glyph_id: GlyphId16) -> Option<&str> {
+    /// Returns the name for the given glyph.
+    ///
+    /// Note that this is a relatively expensive operation, as it may require
+    /// a linear scan through the string data to find the target name. If you
+    /// need to iterate over all glyph names or collect them into a map for
+    /// faster access, use [`Self::glyph_names`] instead.
+    pub fn glyph_name(&self, glyph_id: GlyphId16) -> Option<&'a str> {
         let glyph_id = glyph_id.to_u16() as usize;
         match self.version() {
             Version16Dot16::VERSION_1_0 => DEFAULT_GLYPH_NAMES.get(glyph_id).copied(),
@@ -29,12 +34,27 @@ impl<'a> Post<'a> {
         }
     }
 
+    /// Return an iterator over the glyph names in this table.
+    pub fn glyph_names(&self) -> GlyphNames<'a> {
+        let num_names = self.num_names() as u32;
+        let kind = match self.version() {
+            Version16Dot16::VERSION_1_0 => GlyphNameIterKind::V1(self.clone(), 0),
+            Version16Dot16::VERSION_2_0 => GlyphNameIterKind::V2 {
+                post: self.clone(),
+                idx: 0,
+                checkpoint_stride: (num_names as usize).div_ceil(NUM_CHECKPOINTS + 1).max(1),
+                checkpoints: [UNSET_CHECKPOINT; NUM_CHECKPOINTS],
+                last_actual_idx: None,
+                last_offset: 0,
+                strings_end: usize::MAX,
+            },
+            _ => GlyphNameIterKind::None,
+        };
+        GlyphNames { num_names, kind }
+    }
+
     //FIXME: how do we want to traverse this? I want to stop needing to
     // add special cases for things...
-    #[cfg(feature = "experimental_traverse")]
-    fn traverse_string_data(&self) -> FieldType<'a> {
-        FieldType::I8(-42) // meaningless value
-    }
 }
 
 /// A string in the post table.
@@ -63,8 +83,12 @@ impl PartialEq<&str> for PString<'_> {
     }
 }
 
+impl ReadArgs for PString<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for PString<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         let len: u8 = data.read_at(0)?;
         let pstring = data
             .as_bytes()
@@ -82,6 +106,167 @@ impl<'a> FontRead<'a> for PString<'a> {
 
 impl VarSize for PString<'_> {
     type Size = u8;
+}
+
+const NUM_CHECKPOINTS: usize = 16;
+const UNSET_CHECKPOINT: u32 = u32::MAX;
+
+/// Returns the array slot that holds the offset of `index`, if `index` is one
+/// of the checkpoints we keep.
+///
+/// Slot `n` is read back as the start of index `(n + 1) * stride`, so an index
+/// past the last checkpoint has to be dropped rather than clamped into it.
+fn checkpoint_slot(index: usize, stride: usize) -> Option<usize> {
+    (index % stride == 0)
+        .then(|| index / stride)
+        .filter(|slot| (1..=NUM_CHECKPOINTS).contains(slot))
+        .map(|slot| slot - 1)
+}
+
+/// Iterator over the glyph names in a post table.
+#[derive(Clone)]
+pub struct GlyphNames<'a> {
+    num_names: u32,
+    kind: GlyphNameIterKind<'a>,
+}
+
+#[derive(Clone)]
+enum GlyphNameIterKind<'a> {
+    None,
+    V1(Post<'a>, u32),
+    V2 {
+        post: Post<'a>,
+        idx: u32,
+        // The number of indices between checkpoints
+        checkpoint_stride: usize,
+        // The offset of each checkpoint; checkpoint 0 is implicit
+        checkpoints: [u32; NUM_CHECKPOINTS],
+        // The last actual index and that was scanned, for monotonic fast path
+        last_actual_idx: Option<usize>,
+        // The offset associated with the last scanned index
+        last_offset: usize,
+        // The first string index the data cannot reach. Strings are read in
+        // order, so no later one can be read either.
+        strings_end: usize,
+    },
+}
+
+impl<'a> Iterator for GlyphNames<'a> {
+    type Item = (GlyphId, &'a str);
+
+    /// Returns the next glyph that has a readable name.
+    ///
+    /// Glyphs whose names cannot be read are skipped, so the glyph ids can
+    /// have gaps.
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let (gid, name) = self.next_entry()?;
+            if let Some(name) = name {
+                return Some((gid.into(), name));
+            }
+        }
+    }
+}
+
+impl<'a> GlyphNames<'a> {
+    /// Returns the next glyph and its name, or `None` if there are no more
+    /// glyphs.
+    fn next_entry(&mut self) -> Option<(GlyphId16, Option<&'a str>)> {
+        match &mut self.kind {
+            GlyphNameIterKind::None => None,
+            GlyphNameIterKind::V1(post, idx) => {
+                if *idx >= self.num_names {
+                    return None;
+                }
+                let gid = GlyphId16::new(*idx as u16);
+                *idx += 1;
+                Some((gid, post.glyph_name(gid)))
+            }
+            GlyphNameIterKind::V2 {
+                post,
+                idx,
+                checkpoint_stride,
+                checkpoints,
+                last_actual_idx,
+                last_offset,
+                strings_end,
+            } => {
+                if *idx >= self.num_names {
+                    return None;
+                }
+                let stride = *checkpoint_stride;
+                let gid = GlyphId16::new(*idx as u16);
+                let index = *idx as usize;
+                *idx += 1;
+                let mut name = || -> Option<&'a str> {
+                    let mut actual_idx = post.glyph_name_index()?.get(index)?.get() as usize;
+                    Some(if actual_idx < DEFAULT_GLYPH_NAMES.len() {
+                        DEFAULT_GLYPH_NAMES.get(actual_idx).copied()?
+                    } else {
+                        actual_idx -= DEFAULT_GLYPH_NAMES.len();
+                        if actual_idx >= *strings_end {
+                            return None;
+                        }
+                        let string_data =
+                            post.offset_data().slice(post.string_data_byte_range())?;
+                        // Checkpoint 0 is implicit and always at offset 0; the
+                        // array stores logical checkpoints 1..=NUM_CHECKPOINTS.
+                        let target_slot = (actual_idx / stride).min(NUM_CHECKPOINTS);
+                        // Find the the starting location for our scan
+                        let (mut scan_idx, mut offset) = {
+                            // Search backward from the target slot to find the
+                            // nearest checkpoint that has been set
+                            let mut slot = target_slot;
+                            while slot > 0 && checkpoints[slot - 1] == UNSET_CHECKPOINT {
+                                slot -= 1;
+                            }
+                            if slot == 0 {
+                                // Fallback to implicit checkpoint 0
+                                (0, 0)
+                            } else {
+                                // Otherwise, start scanning from the nearest
+                                // checkpoint
+                                (slot * stride, checkpoints[slot - 1] as usize)
+                            }
+                        };
+                        // See if we can use the monotonic fast path.
+                        if let Some(last_idx) = *last_actual_idx {
+                            // Start scanning from the last index if that provides
+                            // a smaller search space than the nearest checkpoint
+                            if last_idx <= actual_idx && last_idx > scan_idx {
+                                scan_idx = last_idx;
+                                offset = *last_offset;
+                            }
+                        }
+                        // Now do the linear scan over the string data
+                        while scan_idx < actual_idx {
+                            let Some(next) = PString::read_len_at(string_data, offset)
+                                .and_then(|len| offset.checked_add(len))
+                            else {
+                                *strings_end = scan_idx;
+                                return None;
+                            };
+                            offset = next;
+                            scan_idx += 1;
+                            // If this index is a checkpoint, record the offset
+                            // for future scans
+                            if let Some(slot) = checkpoint_slot(scan_idx, stride) {
+                                checkpoints[slot] = u32::try_from(offset).ok()?;
+                            }
+                        }
+                        if let Some(slot) = checkpoint_slot(actual_idx, stride) {
+                            checkpoints[slot] = u32::try_from(offset).ok()?;
+                        }
+                        // Record the last index and offset for future scans
+                        *last_actual_idx = Some(actual_idx);
+                        *last_offset = offset;
+                        PString::read(string_data.split_off(offset)?).ok()?.0
+                    })
+                };
+                Some((gid, name()))
+            }
+        }
+    }
 }
 
 /// The 258 glyph names defined for Macintosh TrueType fonts
@@ -201,5 +386,110 @@ mod tests {
         let post = Post::read(buf.data().into()).unwrap();
         // Just don't panic
         assert_eq!(post.glyph_name(GlyphId16::new(0)), None);
+    }
+
+    #[test]
+    fn glyph_names_matches_naive_on_varied_synthetic_v2_data() {
+        let num_glyphs = 2_000u16;
+        let orders = [
+            test_data::GlyphNameOrder::Monotonic,
+            test_data::GlyphNameOrder::MostlyMonotonicWithBackrefs,
+            test_data::GlyphNameOrder::AllPointToLast,
+        ];
+        for order in orders {
+            let (bytes, expected_custom_names) =
+                test_data::v2_with_varied_glyph_names(num_glyphs, 63, order);
+            let post = Post::read(bytes.as_slice().into()).unwrap();
+            let from_naive: Vec<_> = (0..num_glyphs)
+                .map(|gid| post.glyph_name(GlyphId16::new(gid)).unwrap())
+                .collect();
+            let from_iter: Vec<_> = post.glyph_names().map(|(_, name)| name).collect();
+            assert_eq!(from_iter, from_naive);
+            for (name, expected) in from_iter.iter().zip(expected_custom_names.iter()) {
+                assert_eq!(*name, expected.as_str());
+            }
+        }
+    }
+
+    #[test]
+    fn glyph_names_skip_a_name_that_cannot_be_read() {
+        let mut buf = BeBuffer::new()
+            .push(Version16Dot16::VERSION_2_0)
+            .push(Fixed::from_i32(0))
+            .extend([FWord::new(0), FWord::new(0)])
+            .push(0u32)
+            .extend([0u32, 0, 0, 0])
+            .push(3u16);
+        // The second glyph names a string the table does not have.
+        for index in [258u16, 258 + 9, 3] {
+            buf = buf.push(index);
+        }
+        buf = buf.push(2u8).extend(*b"ok");
+        let post = Post::read(buf.data().into()).unwrap();
+        assert_eq!(post.glyph_name(GlyphId16::new(1)), None);
+        let names: Vec<_> = post.glyph_names().collect();
+        assert_eq!(names, [(GlyphId::new(0), "ok"), (GlyphId::new(2), "space")]);
+    }
+
+    // Glyphs whose names lie past the end of the string data fail at once,
+    // rather than each rescanning the strings that are there.
+    #[test]
+    fn glyph_names_past_the_string_data_stay_linear() {
+        let num_glyphs = u16::MAX;
+        let mut buf = BeBuffer::new()
+            .push(Version16Dot16::VERSION_2_0)
+            .push(Fixed::from_i32(0))
+            .extend([FWord::new(0), FWord::new(0)])
+            .push(0u32)
+            .extend([0u32, 0, 0, 0])
+            .push(num_glyphs);
+        // The first two glyphs have names; every other glyph names a string
+        // far past the end of the data.
+        for gid in 0..num_glyphs {
+            let index = if gid < 2 { 258 + gid } else { 258 + 60_000 };
+            buf = buf.push(index);
+        }
+        for _ in 0..3854 {
+            buf = buf.push(2u8).extend(*b"ab");
+        }
+        let post = Post::read(buf.data().into()).unwrap();
+        let start = std::time::Instant::now();
+        let names: Vec<_> = post.glyph_names().collect();
+        let elapsed = start.elapsed();
+        assert_eq!(names, [(GlyphId::new(0), "ab"), (GlyphId::new(1), "ab")]);
+        // Linear work is a few milliseconds even in a debug build.
+        assert!(elapsed.as_millis() < 2000, "{elapsed:?}");
+    }
+
+    /// A post table may hold more strings than it has glyphs, which puts a
+    /// name index past the last checkpoint the iterator keeps. Clamping such
+    /// an index into the final slot makes a later scan resume from the wrong
+    /// offset.
+    #[test]
+    fn glyph_names_matches_naive_past_the_last_checkpoint() {
+        // Two glyphs give a stride of one, so only the first NUM_CHECKPOINTS
+        // string indices get a checkpoint of their own. The higher index is
+        // read first, so the clamped slot is written before it is read back.
+        let indices = [258u16 + 50, 258 + 30];
+        let mut buf = BeBuffer::new()
+            .push(Version16Dot16::VERSION_2_0)
+            .push(Fixed::from_i32(0))
+            .extend([FWord::new(0), FWord::new(0)])
+            .push(0u32)
+            .extend([0u32, 0, 0, 0])
+            .push(indices.len() as u16);
+        for index in indices {
+            buf = buf.push(index);
+        }
+        for i in 0..70u8 {
+            buf = buf.push(2u8).extend([b'a' + i / 26, b'a' + i % 26]);
+        }
+        let post = Post::read(buf.data().into()).unwrap();
+        let from_naive: Vec<_> = (0..indices.len() as u16)
+            .map(|gid| post.glyph_name(GlyphId16::new(gid)).unwrap())
+            .collect();
+        assert_eq!(from_naive, ["by", "be"]);
+        let from_iter: Vec<_> = post.glyph_names().map(|(_, name)| name).collect();
+        assert_eq!(from_iter, from_naive);
     }
 }

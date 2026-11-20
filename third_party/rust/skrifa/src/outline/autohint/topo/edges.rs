@@ -396,6 +396,7 @@ mod tests {
         super::segments,
         *,
     };
+    use crate::outline::autohint::context::FontRefContext;
     use crate::{attribute::Style, MetadataProvider};
     use raw::{types::GlyphId, FontRef, TableProvider};
 
@@ -819,14 +820,11 @@ mod tests {
         expected_v_edges: &[Edge],
     ) {
         let font = FontRef::new(font_data).unwrap();
-        let shaper = Shaper::new(&font, ShaperMode::Nominal);
+        let context = FontRefContext::new(&font, &[]);
+        let shaper = Shaper::new(&context, ShaperMode::Nominal);
         let class = &style::STYLE_CLASSES[style_class];
-        let unscaled_metrics = metrics::compute_unscaled_style_metrics(
-            &shaper,
-            Default::default(),
-            class,
-            Default::default(),
-        );
+        let unscaled_metrics =
+            metrics::compute_unscaled_style_metrics(&shaper, class, Default::default());
         let scale = metrics::Scale::new(
             16.0,
             font.head().unwrap().units_per_em() as i32,

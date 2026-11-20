@@ -1,9 +1,7 @@
 //! Table validation, caching and access.
 
-use super::{super::once::Once, FontBlob, FontSource};
-use crate::{
-    tables, types::Tag, FontRead, FontReadWithArgs, ReadError, TableProvider, TopLevelTable,
-};
+use super::{super::once::Once, Blob, Source};
+use crate::{tables, types::Tag, FontRead, ReadError, TableProvider, TopLevelTable};
 use alloc::{boxed::Box, sync::Arc};
 use core::sync::atomic::{AtomicU8, Ordering};
 
@@ -20,7 +18,7 @@ struct BlobTableEntry {
 
 /// Blob and associated metadata for all tables.
 struct BlobTables {
-    blob: FontBlob,
+    blob: Blob,
     tables: Box<PerTableData<BlobTableEntry>>,
 }
 
@@ -42,19 +40,19 @@ impl<'a> TableDataProvider<'a> for &'a BlobTables {
 }
 
 /// Entry for a single table provided by a callback.
-type TableFunctionEntry = Once<Option<(AtomicU8, FontBlob)>>;
+type TableFunctionEntry = Once<Option<(AtomicU8, Blob)>>;
 
 /// Lazy, per table font data provided by a function.
 #[derive(Clone)]
-pub struct FontTableFunction {
-    table_fn: Arc<dyn Fn(Tag) -> Option<FontBlob> + Send + Sync>,
+pub struct TableFunction {
+    table_fn: Arc<dyn Fn(Tag) -> Option<Blob> + Send + Sync>,
     tables: Arc<PerTableData<TableFunctionEntry>>,
 }
 
-impl FontTableFunction {
+impl TableFunction {
     /// Creates a new font table function with the given callback that should
     /// return a blob containing the table data for the requested tag.
-    pub fn new(table_fn: Arc<dyn Fn(Tag) -> Option<FontBlob> + Send + Sync>) -> Self {
+    pub fn new(table_fn: Arc<dyn Fn(Tag) -> Option<Blob> + Send + Sync>) -> Self {
         Self {
             table_fn,
             tables: Arc::new(PerTableData::default()),
@@ -62,7 +60,7 @@ impl FontTableFunction {
     }
 }
 
-impl<'a> TableDataProvider<'a> for &'a FontTableFunction {
+impl<'a> TableDataProvider<'a> for &'a TableFunction {
     type Entry = TableFunctionEntry;
 
     fn tables(&self) -> &'a PerTableData<Self::Entry> {
@@ -84,7 +82,7 @@ impl<'a> TableDataProvider<'a> for &'a FontTableFunction {
 enum TableSource {
     None,
     Blob(BlobTables),
-    Function(FontTableFunction),
+    Function(TableFunction),
 }
 
 /// Reference to the validation flag and data for a table.
@@ -122,22 +120,36 @@ impl<'a> TableState<'a> {
 }
 
 /// Individual font table access.
-pub struct FontTables(TableSource);
+pub struct Tables(TableSource);
 
-impl FontTables {
+impl Tables {
     /// Creates a new set of font tables for the given source.
-    pub fn new(source: impl Into<FontSource>, index: u32) -> Result<Self, ReadError> {
+    ///
+    /// The index selects a font in a collection. Returns `None` if a blob
+    /// holds no SFNT font at that index.
+    pub fn new(source: impl Into<Source>, index: u32) -> Option<Self> {
         let source = source.into();
         match source {
-            FontSource::Blob(blob) => {
-                let font_ref = crate::FontRef::from_index(&blob, index)?;
+            Source::Blob(blob) => {
+                let font_ref = crate::FontRef::from_index(&blob, index).ok()?;
                 let mut tables = PerTableData::default();
-                let table_records = font_ref.table_directory().table_records();
+                let directory = font_ref.table_directory();
+                let table_records = directory.table_records();
+                // Some fonts leave the directory unsorted, which rules out a
+                // binary search.
+                let sorted = directory.is_sorted();
                 tables.init_all(|tag, entry: &mut BlobTableEntry| {
                     // Ensure missing entries report as a missing table rather
                     // than returning an empty slice
                     entry.start = u32::MAX;
-                    let Ok(idx) = table_records.binary_search_by_key(&tag, |rec| rec.tag()) else {
+                    let found = if sorted {
+                        table_records
+                            .binary_search_by_key(&tag, |rec| rec.tag())
+                            .ok()
+                    } else {
+                        table_records.iter().position(|rec| rec.tag() == tag)
+                    };
+                    let Some(idx) = found else {
                         return;
                     };
                     let record = &table_records[idx];
@@ -154,25 +166,25 @@ impl FontTables {
                         end,
                     };
                 });
-                Ok(Self(TableSource::Blob(BlobTables {
+                Some(Self(TableSource::Blob(BlobTables {
                     blob,
                     tables: Box::new(tables),
                 })))
             }
-            FontSource::TableFunction(func) => Ok(Self(TableSource::Function(func))),
+            Source::TableFunction(func) => Some(Self(TableSource::Function(func))),
         }
     }
 }
 
-impl FontTables {
-    fn load_table<'a, T: TopLevelTable + FontRead<'a>>(
+impl Tables {
+    fn load_table<'a, T: TopLevelTable + FontRead<'a, Args = ()>>(
         &'a self,
         state: Option<TableState<'a>>,
     ) -> Result<T, ReadError> {
         self.load_table_with_tag(state, T::TAG)
     }
 
-    fn load_table_with_tag<'a, T: FontRead<'a>>(
+    fn load_table_with_tag<'a, T: FontRead<'a, Args = ()>>(
         &'a self,
         state: Option<TableState<'a>>,
         tag: Tag,
@@ -184,22 +196,22 @@ impl FontTables {
         )
     }
 
-    fn load_table_with_args<'a, T: TopLevelTable + FontReadWithArgs<'a>>(
+    fn load_table_with_args<'a, T: TopLevelTable + FontRead<'a>>(
         &'a self,
         state: Option<TableState<'a>>,
-        args: &T::Args,
+        args: T::Args,
     ) -> Result<T, ReadError> {
         let state = state.ok_or(ReadError::TableIsMissing(T::TAG))?;
         state.try_load(
-            |data| FontReadWithArgs::read_with_args(data.into(), args),
-            |data| FontReadWithArgs::read_with_args(data.into(), args),
+            |data| FontRead::read_with_args(data.into(), args),
+            |data| FontRead::read_with_args(data.into(), args),
         )
     }
 }
 
-pub(super) static EMPTY_FONT_TABLES: FontTables = FontTables(TableSource::None);
+pub(super) static EMPTY_FONT_TABLES: Tables = Tables(TableSource::None);
 
-impl<'a> TableProvider<'a> for &'a FontTables {
+impl<'a> TableProvider<'a> for &'a Tables {
     fn data_for_tag(&self, _tag: Tag) -> Option<crate::FontData<'a>> {
         None
     }
@@ -220,21 +232,45 @@ impl<'a> TableProvider<'a> for &'a FontTables {
         self.load_table(self.vhea_state())
     }
 
+    fn hhea_extended(&self) -> Result<tables::hhea::HheaExtended<'a>, ReadError> {
+        self.load_table(self.hhea_extended_state())
+    }
+
+    fn vhea_extended(&self) -> Result<tables::vhea::VheaExtended<'a>, ReadError> {
+        self.load_table(self.vhea_extended_state())
+    }
+
     fn hmtx(&self) -> Result<tables::hmtx::Hmtx<'a>, ReadError> {
         //FIXME: should we make the user pass these in?
         let number_of_h_metrics = self.hhea().map(|hhea| hhea.number_of_h_metrics())?;
-        self.load_table_with_args(self.hmtx_state(), &number_of_h_metrics)
+        self.load_table_with_args(self.hmtx_state(), number_of_h_metrics)
+    }
+
+    fn hmtx_extended(&self) -> Result<tables::hmtx::HmtxExtended<'a>, ReadError> {
+        let state = self
+            .hmtx_extended_state()
+            .ok_or(ReadError::TableIsMissing(tables::hmtx::HmtxExtended::TAG))?;
+        let count = self.hhea_extended()?.number_of_h_metrics();
+        self.load_table_with_args(Some(state), count)
     }
 
     fn hdmx(&self) -> Result<tables::hdmx::Hdmx<'a>, ReadError> {
-        let num_glyphs = self.maxp().map(|maxp| maxp.num_glyphs())?;
-        self.load_table_with_args(self.hdmx_state(), &num_glyphs)
+        let num_glyphs = self.selected_maxp()?.num_glyphs();
+        self.load_table_with_args(self.hdmx_state(), num_glyphs)
     }
 
     fn vmtx(&self) -> Result<tables::vmtx::Vmtx<'a>, ReadError> {
         //FIXME: should we make the user pass these in?
         let number_of_v_metrics = self.vhea().map(|vhea| vhea.number_of_long_ver_metrics())?;
-        self.load_table_with_args(self.vmtx_state(), &number_of_v_metrics)
+        self.load_table_with_args(self.vmtx_state(), number_of_v_metrics)
+    }
+
+    fn vmtx_extended(&self) -> Result<tables::vmtx::VmtxExtended<'a>, ReadError> {
+        let state = self
+            .vmtx_extended_state()
+            .ok_or(ReadError::TableIsMissing(tables::vmtx::VmtxExtended::TAG))?;
+        let count = self.vhea_extended()?.number_of_long_ver_metrics();
+        self.load_table_with_args(Some(state), count)
     }
 
     fn vorg(&self) -> Result<tables::vorg::Vorg<'a>, ReadError> {
@@ -265,6 +301,10 @@ impl<'a> TableProvider<'a> for &'a FontTables {
         self.load_table(self.maxp_state())
     }
 
+    fn maxp_extended(&self) -> Result<tables::maxp::MaxpExtended<'a>, ReadError> {
+        self.load_table(self.maxp_extended_state())
+    }
+
     fn os2(&self) -> Result<tables::os2::Os2<'a>, ReadError> {
         self.load_table(self.os2_state())
     }
@@ -283,15 +323,37 @@ impl<'a> TableProvider<'a> for &'a FontTables {
             Some(val) => val,
             None => self.head()?.index_to_loc_format() == 1,
         };
-        self.load_table_with_args(self.loca_state(), &is_long)
+        self.load_table_with_args(self.loca_state(), is_long)
     }
 
     fn glyf(&self) -> Result<tables::glyf::Glyf<'a>, ReadError> {
         self.load_table(self.glyf_state())
     }
 
+    fn glyf_extended(&self) -> Result<tables::glyf::Glyf<'a>, ReadError> {
+        self.load_table_with_tag(self.glyf_extended_state(), Tag::new(b"GLYF"))
+    }
+
+    fn loca_extended(
+        &self,
+        is_long: impl Into<Option<bool>>,
+    ) -> Result<tables::loca::Loca<'a>, ReadError> {
+        let state = self
+            .loca_extended_state()
+            .ok_or(ReadError::TableIsMissing(Tag::new(b"LOCA")))?;
+        let is_long = match is_long.into() {
+            Some(val) => val,
+            None => self.head()?.index_to_loc_format() == 1,
+        };
+        self.load_table_with_args(Some(state), is_long)
+    }
+
     fn gvar(&self) -> Result<tables::gvar::Gvar<'a>, ReadError> {
         self.load_table(self.gvar_state())
+    }
+
+    fn gvar_extended(&self) -> Result<tables::gvar::GvarExtended<'a>, ReadError> {
+        self.load_table(self.gvar_extended_state())
     }
 
     /// Returns the array of entries for the control value table which is used
@@ -302,6 +364,16 @@ impl<'a> TableProvider<'a> for &'a FontTables {
                 .ok_or(ReadError::TableIsMissing(Tag::new(b"cvt ")))?,
         );
         table_data.read_array(0..table_data.len())
+    }
+
+    fn fpgm(&self) -> Result<&'a [u8], ReadError> {
+        self.fpgm_data()
+            .ok_or(ReadError::TableIsMissing(Tag::new(b"fpgm")))
+    }
+
+    fn prep(&self) -> Result<&'a [u8], ReadError> {
+        self.prep_data()
+            .ok_or(ReadError::TableIsMissing(Tag::new(b"prep")))
     }
 
     fn cvar(&self) -> Result<tables::cvar::Cvar<'a>, ReadError> {
@@ -318,6 +390,10 @@ impl<'a> TableProvider<'a> for &'a FontTables {
 
     fn cmap(&self) -> Result<tables::cmap::Cmap<'a>, ReadError> {
         self.load_table(self.cmap_state())
+    }
+
+    fn dmap(&self) -> Result<tables::cmap::Dmap<'a>, ReadError> {
+        self.load_table(self.dmap_state())
     }
 
     fn gdef(&self) -> Result<tables::gdef::Gdef<'a>, ReadError> {
@@ -350,6 +426,10 @@ impl<'a> TableProvider<'a> for &'a FontTables {
 
     fn morx(&self) -> Result<tables::morx::Morx<'a>, ReadError> {
         self.load_table(self.morx_state())
+    }
+
+    fn mort(&self) -> Result<tables::mort::Mort<'a>, ReadError> {
+        self.load_table(self.mort_state())
     }
 
     fn kerx(&self) -> Result<tables::kerx::Kerx<'a>, ReadError> {
@@ -386,8 +466,8 @@ impl<'a> TableProvider<'a> for &'a FontTables {
 
     fn sbix(&self) -> Result<tables::sbix::Sbix<'a>, ReadError> {
         // should we make the user pass this in?
-        let num_glyphs = self.maxp().map(|maxp| maxp.num_glyphs())?;
-        self.load_table_with_args(self.sbix_state(), &num_glyphs)
+        let num_glyphs = self.selected_maxp()?.num_glyphs();
+        self.load_table_with_args(self.sbix_state(), num_glyphs)
     }
 
     fn stat(&self) -> Result<tables::stat::Stat<'a>, ReadError> {
@@ -403,12 +483,12 @@ impl<'a> TableProvider<'a> for &'a FontTables {
     }
 
     #[cfg(feature = "ift")]
-    fn ift(&self) -> Result<tables::ift::Ift<'a>, ReadError> {
+    fn ift(&self) -> Result<tables::ift::IftPatchMap<'a>, ReadError> {
         self.load_table_with_tag(self.ift_state(), Tag::new(b"IFT "))
     }
 
     #[cfg(feature = "ift")]
-    fn iftx(&self) -> Result<tables::ift::Ift<'a>, ReadError> {
+    fn iftx(&self) -> Result<tables::ift::IftPatchMap<'a>, ReadError> {
         self.load_table_with_tag(self.iftx_state(), Tag::new(b"IFTX"))
     }
 
@@ -423,6 +503,10 @@ impl<'a> TableProvider<'a> for &'a FontTables {
     fn dsig(&self) -> Result<tables::dsig::Dsig<'a>, ReadError> {
         self.load_table(self.dsig_state())
     }
+
+    fn math(&self) -> Result<tables::math::Math<'a>, ReadError> {
+        self.load_table(self.math_state())
+    }
 }
 
 #[cfg(test)]
@@ -431,9 +515,34 @@ mod tests {
 
     use super::*;
 
+    // A font whose directory is out of order still finds its tables.
+    #[test]
+    fn unsorted_directory_finds_tables() {
+        let data = font_test_data::TINOS_SUBSET;
+        let count = u16::from_be_bytes([data[4], data[5]]) as usize;
+        let mut unsorted = data[..12].to_vec();
+        for record in data[12..12 + 16 * count].chunks_exact(16).rev() {
+            unsorted.extend_from_slice(record);
+        }
+        unsorted.extend_from_slice(&data[12 + 16 * count..]);
+        let font = FontRef::new(&unsorted).unwrap();
+        assert!(!font.table_directory().is_sorted());
+        let tables = &Tables::new(unsorted.clone(), 0).unwrap();
+        let bytes = |data: Option<crate::FontData>| data.map(|data| data.as_bytes().to_vec());
+        assert_eq!(
+            bytes(tables.head().ok().map(|t| t.offset_data())),
+            bytes(font.head().ok().map(|t| t.offset_data()))
+        );
+        assert!(tables.cmap().is_ok());
+        assert!(tables.hmtx().is_ok());
+        assert!(tables.name().is_ok());
+        assert!(tables.glyf().is_ok());
+        assert!(tables.loca(None).is_ok());
+    }
+
     #[test]
     fn missing_tables_are_missing() {
-        let tables = &FontTables::new(font_test_data::AHEM, 0).unwrap();
+        let tables = &Tables::new(font_test_data::AHEM, 0).unwrap();
         assert!(matches!(tables.cbdt(), Err(ReadError::TableIsMissing(_))));
         assert!(matches!(tables.cff(), Err(ReadError::TableIsMissing(_))));
         assert!(matches!(tables.dsig(), Err(ReadError::TableIsMissing(_))));
@@ -443,12 +552,12 @@ mod tests {
     fn table_function_matches_font_ref() {
         let font = FontRef::new(font_test_data::AHEM).unwrap();
         let font_copy = font.clone();
-        let table_fn = FontTableFunction::new(Arc::new(move |tag| {
+        let table_fn = TableFunction::new(Arc::new(move |tag| {
             font_copy
                 .data_for_tag(tag)
                 .map(|data| Vec::from(data.as_bytes()).into())
         }));
-        let tables = &FontTables::new(table_fn, 0).unwrap();
+        let tables = &Tables::new(table_fn, 0).unwrap();
         for (data, tag) in [
             (tables.gasp_data(), b"gasp"),
             (tables.glyf_data(), b"glyf"),

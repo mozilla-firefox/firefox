@@ -53,22 +53,24 @@ impl<'a> DeviceRecord<'a> {
     }
 }
 
+crate::impl_font_read_at!(DeviceRecord<'a>);
+
 impl ReadArgs for DeviceRecord<'_> {
-    type Args = (u16, u32);
+    type Args = (u32, u32);
 }
 
 impl ComputeSize for DeviceRecord<'_> {
-    fn compute_size(args: &(u16, u32)) -> Result<usize, ReadError> {
-        let (_num_glyphs, size_device_record) = *args;
+    fn compute_size(args: (u32, u32)) -> Result<usize, ReadError> {
+        let (_num_glyphs, size_device_record) = args;
         // Record size is explicitly defined in the parent hdmx table
         Ok(size_device_record as usize)
     }
 }
 
-impl<'a> FontReadWithArgs<'a> for DeviceRecord<'a> {
-    fn read_with_args(data: FontData<'a>, args: &(u16, u32)) -> Result<Self, ReadError> {
+impl<'a> FontRead<'a> for DeviceRecord<'a> {
+    fn read_with_args(data: FontData<'a>, args: (u32, u32)) -> Result<Self, ReadError> {
         let mut cursor = data.cursor();
-        let (num_glyphs, _size_device_record) = *args;
+        let (num_glyphs, _size_device_record) = args;
         Ok(Self {
             pixel_size: cursor.read()?,
             max_width: cursor.read()?,
@@ -85,27 +87,11 @@ impl<'a> DeviceRecord<'a> {
     /// parsed.
     pub fn read(
         data: FontData<'a>,
-        num_glyphs: u16,
+        num_glyphs: u32,
         size_device_record: u32,
     ) -> Result<Self, ReadError> {
         let args = (num_glyphs, size_device_record);
-        Self::read_with_args(data, &args)
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for DeviceRecord<'a> {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "DeviceRecord",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("pixel_size", self.pixel_size())),
-                1usize => Some(Field::new("max_width", self.max_width())),
-                2usize => Some(Field::new("widths", self.widths())),
-                _ => None,
-            }),
-            data,
-        }
+        Self::read_with_args(data, args)
     }
 }
 

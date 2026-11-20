@@ -16,9 +16,9 @@ impl<'a> Cvar<'a> {
     ///
     /// This table doesn't contain an axis count field so this must be provided
     /// by the user and can be read from the `fvar` table.
-    pub fn variation_data(&self, axis_count: u16) -> Result<CvtVariationData<'a>, ReadError> {
+    pub fn variation_data(&self, axis_count: u16) -> Option<CvtVariationData<'a>> {
         let count = self.tuple_variation_count();
-        let data = self.data()?;
+        let data = self.data().ok()?;
         let header_data = self.raw_tuple_header_data();
         // if there are shared point numbers, get them now
         let (shared_point_numbers, serialized_data) = if count.shared_point_numbers() {
@@ -27,7 +27,7 @@ impl<'a> Cvar<'a> {
         } else {
             (None, data)
         };
-        Ok(CvtVariationData {
+        Some(CvtVariationData {
             tuple_count: count,
             axis_count,
             shared_tuples: None,
@@ -47,12 +47,7 @@ impl<'a> Cvar<'a> {
     /// The `deltas` slice should have a length greater than or equal
     /// to the number of values in the `cvt` table. The values are
     /// computed in 16.16 format.
-    pub fn deltas(
-        &self,
-        axis_count: u16,
-        coords: &[F2Dot14],
-        deltas: &mut [i32],
-    ) -> Result<(), ReadError> {
+    pub fn deltas(&self, axis_count: u16, coords: &[F2Dot14], deltas: &mut [i32]) -> Option<()> {
         let var_data = self.variation_data(axis_count)?;
         for (tuple, scalar) in var_data.active_tuples_at(coords) {
             for delta in tuple.deltas() {
@@ -62,12 +57,12 @@ impl<'a> Cvar<'a> {
                 }
             }
         }
-        Ok(())
+        Some(())
     }
 
     fn raw_tuple_header_data(&self) -> FontData<'a> {
         let range = self.tuple_variation_headers_byte_range();
-        self.data.split_off(range.start).unwrap()
+        self.offset_data().split_off(range.start).unwrap()
     }
 }
 

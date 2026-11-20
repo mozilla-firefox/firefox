@@ -10,16 +10,16 @@ use read_fonts::{
         variations::NO_VARIATION_INDEX,
     },
     types::{F2Dot14, GlyphId, Matrix},
-    FontRef, ReadError, TableProvider,
+    FontRef, TableProvider,
 };
+use smallvec::SmallVec;
 
 use crate::{
-    collections::SmallVec,
     instance::Size,
     outline::{cff, glyf, metrics::GlyphHMetrics, pen::PathStyle, DrawError, OutlinePen},
     provider::MetadataProvider,
-    GLYF_COMPOSITE_RECURSION_LIMIT,
 };
+use read_fonts::limits::{MAX_COMPOSITE_EDGES, MAX_RECURSION_DEPTH};
 
 #[cfg(feature = "libm")]
 #[allow(unused_imports)]
@@ -27,18 +27,19 @@ use core_maths::CoreFloat;
 
 use super::OutlineKind;
 
-type GlyphStack = SmallVec<GlyphId, 8>;
-type CoordVec = SmallVec<F2Dot14, 64>;
-type AxisIndexVec = SmallVec<u16, 64>;
-type AxisValueVec = SmallVec<f32, 64>;
-type DeltaVec = SmallVec<f32, 64>;
-type ScalarCacheVec = SmallVec<f32, 128>;
+type GlyphStack = SmallVec<[GlyphId; 8]>;
+type CoordVec = SmallVec<[F2Dot14; 64]>;
+type AxisIndexVec = SmallVec<[u16; 64]>;
+type AxisValueVec = SmallVec<[f64; 64]>;
+type DeltaVec = SmallVec<[f64; 64]>;
+type ScalarCacheVec = SmallVec<[f32; 128]>;
 type Affine = Matrix<f32>;
 
 struct Scratchpad {
     deltas: DeltaVec,
     axis_indices: AxisIndexVec,
     axis_values: AxisValueVec,
+    edges_left: usize,
 }
 
 impl Scratchpad {
@@ -47,6 +48,7 @@ impl Scratchpad {
             deltas: DeltaVec::new(),
             axis_indices: AxisIndexVec::new(),
             axis_values: AxisValueVec::new(),
+            edges_left: MAX_COMPOSITE_EDGES,
         }
     }
 }
@@ -108,6 +110,13 @@ impl<'a> BaseOutlines<'a> {
             Self::Cff(..) => 0,
         }
     }
+
+    fn variation_axis_count(&self) -> usize {
+        match self {
+            Self::Glyf(glyf) => glyf.variation_axis_count(),
+            Self::Cff(cff) => cff.variation_axis_count(),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -125,7 +134,7 @@ pub(crate) struct Outlines<'a> {
 #[derive(Clone, Copy)]
 pub(crate) struct Outline {
     pub(crate) glyph_id: GlyphId,
-    pub(crate) coverage_index: u16,
+    pub(crate) coverage_index: u32,
     max_component_memory: usize,
 }
 
@@ -150,7 +159,9 @@ impl<'a> Outlines<'a> {
     fn from_base(font: &FontRef<'a>, varc: Varc<'a>, base: BaseOutlines<'a>) -> Option<Self> {
         let glyph_metrics = GlyphHMetrics::new(font)?;
         let units_per_em = font.head().ok()?.units_per_em();
-        let axis_count = font.axes().len();
+        // A static VARC font may omit fvar and use the axes retained in gvar
+        // or the CFF2 VariationStore for component-internal coordinates.
+        let axis_count = font.axes().len().max(base.variation_axis_count());
         let coverage = varc.coverage().ok()?;
         let var_store = varc.multi_var_store().transpose().ok()?;
         let regions = var_store
@@ -194,7 +205,7 @@ impl<'a> Outlines<'a> {
         self.base.base_outline_kind(glyph_id)
     }
 
-    pub fn outline(&self, glyph_id: GlyphId) -> Result<Option<Outline>, ReadError> {
+    pub fn outline(&self, glyph_id: GlyphId) -> Result<Option<Outline>, DrawError> {
         let Some(coverage_index) = self.coverage.get(glyph_id) else {
             return Ok(None);
         };
@@ -207,41 +218,57 @@ impl<'a> Outlines<'a> {
     }
 
     /// Lightweight coverage lookup without computing max_component_memory.
-    fn coverage_index(&self, glyph_id: GlyphId) -> Result<Option<u16>, ReadError> {
+    fn coverage_index(&self, glyph_id: GlyphId) -> Result<Option<u32>, DrawError> {
         Ok(self.coverage.get(glyph_id))
     }
 
     fn compute_max_component_memory(
         &self,
         glyph_id: GlyphId,
-        coverage_index: u16,
-    ) -> Result<usize, ReadError> {
+        coverage_index: u32,
+    ) -> Result<usize, DrawError> {
         let mut stack = GlyphStack::new();
-        self.max_component_memory_for_glyph(glyph_id, coverage_index, &mut stack)
+        let mut edges_left = MAX_COMPOSITE_EDGES;
+        self.max_component_memory_for_glyph(glyph_id, coverage_index, &mut stack, &mut edges_left)
     }
 
     fn max_component_memory_for_glyph(
         &self,
         glyph_id: GlyphId,
-        coverage_index: u16,
+        coverage_index: u32,
         stack: &mut GlyphStack,
-    ) -> Result<usize, ReadError> {
+        edges_left: &mut usize,
+    ) -> Result<usize, DrawError> {
         if stack.contains(&glyph_id) {
             return Ok(0);
         }
-        if stack.len() >= GLYF_COMPOSITE_RECURSION_LIMIT {
+        // HB returns success for both recursion and edge limits, so we do the same.
+        // See <https://github.com/harfbuzz/harfbuzz/blob/0fef675a5ea4973ce49d6dd00c02e70ec409eee3/src/OT/Var/VARC/VARC.cc#L386>
+        if stack.len() >= MAX_RECURSION_DEPTH {
             return Ok(0);
         }
+        if *edges_left == 0 {
+            return Ok(0);
+        }
+        *edges_left -= 1;
         stack.push(glyph_id);
         let mut max_memory = 0usize;
-        let glyph = self.varc.glyph(coverage_index as usize)?;
+        let glyph = self
+            .varc
+            .glyph(coverage_index as usize)
+            .map_err(|_| DrawError::Malformed)?;
         for component in glyph.components() {
-            let component = component?;
+            let component = component.map_err(|_| DrawError::Malformed)?;
             let component_gid = component.gid();
             let component_memory = if component_gid == glyph_id {
                 self.base.base_outline_memory(component_gid)
             } else if let Some(coverage_index) = self.coverage_index(component_gid)? {
-                self.max_component_memory_for_glyph(component_gid, coverage_index, stack)?
+                self.max_component_memory_for_glyph(
+                    component_gid,
+                    coverage_index,
+                    stack,
+                    edges_left,
+                )?
             } else {
                 self.base.base_outline_memory(component_gid)
             };
@@ -264,9 +291,7 @@ impl<'a> Outlines<'a> {
         expand_coords(&mut font_coords, self.axis_count, coords);
         let mut stack = GlyphStack::new();
         let pen: &mut dyn OutlinePen = pen;
-        let mut scalar_cache = self
-            .scalar_cache_from_store(self.var_store.as_ref())?
-            .unwrap();
+        let mut scalar_cache = self.scalar_cache_from_store(self.var_store.as_ref())?;
         let mut scratch = Scratchpad::new();
         let ctx = VarcSharedContext {
             font_coords: &font_coords,
@@ -306,7 +331,7 @@ impl<'a> Outlines<'a> {
     fn draw_glyph(
         &self,
         glyph_id: GlyphId,
-        coverage_index: u16,
+        coverage_index: u32,
         current_coords: &[F2Dot14],
         parent_matrix: Affine,
         ctx: &VarcSharedContext<'a, '_>,
@@ -316,17 +341,24 @@ impl<'a> Outlines<'a> {
         scalar_cache: &mut ScalarCache,
         scratch: &mut Scratchpad,
     ) -> Result<(), DrawError> {
-        if stack.len() >= GLYF_COMPOSITE_RECURSION_LIMIT {
+        if stack.len() >= MAX_RECURSION_DEPTH {
             return Err(DrawError::RecursionLimitExceeded(glyph_id));
         }
-        let glyph = self.varc.glyph(coverage_index as usize)?;
+        if scratch.edges_left == 0 {
+            return Err(DrawError::RecursionLimitExceeded(glyph_id));
+        }
+        scratch.edges_left -= 1;
+        let glyph = self
+            .varc
+            .glyph(coverage_index as usize)
+            .map_err(|_| DrawError::Malformed)?;
         stack.push(glyph_id);
         let coverage = ctx.coverage;
         let store_regions = ctx.store_regions;
         let mut component_coords_buffer = CoordVec::new();
         let mut child_scalar_cache: Option<ScalarCache> = None;
         for component in glyph.components() {
-            let component = component?;
+            let component = component.map_err(|_| DrawError::Malformed)?;
             if !self.component_condition_met(
                 &component,
                 current_coords,
@@ -389,7 +421,8 @@ impl<'a> Outlines<'a> {
                             if let Some(ref mut cache) = child_scalar_cache {
                                 cache.values.fill(ScalarCache::INVALID);
                             } else {
-                                child_scalar_cache = self.scalar_cache_from_store(ctx.var_store)?;
+                                child_scalar_cache =
+                                    Some(self.scalar_cache_from_store(ctx.var_store)?);
                             }
                             self.draw_glyph(
                                 component_gid,
@@ -464,25 +497,25 @@ impl<'a> Outlines<'a> {
             return Ok(());
         }
 
-        let axis_indices_index = component
-            .axis_indices_index()
-            .ok_or(ReadError::MalformedData("Missing axisIndicesIndex"))?;
+        let axis_indices_index = component.axis_indices_index().ok_or(DrawError::Malformed)?;
         let num_axes = self.axis_indices(axis_indices_index as usize, &mut scratch.axis_indices)?;
 
         self.axis_values(component, num_axes, &mut scratch.axis_values)?;
         if let Some(var_idx) = component.axis_values_var_index() {
-            let (store, regions) = store_regions.ok_or(ReadError::NullOffset)?;
-            compute_tuple_deltas(
-                store,
-                regions,
-                var_idx,
-                current_coords,
-                scratch.axis_indices.len(),
-                scalar_cache,
-                &mut scratch.deltas,
-            )?;
-            for (value, delta) in scratch.axis_values.iter_mut().zip(scratch.deltas.iter()) {
-                *value += *delta;
+            if var_idx != NO_VARIATION_INDEX && num_axes != 0 {
+                let (store, regions) = store_regions.ok_or(DrawError::Malformed)?;
+                compute_tuple_deltas(
+                    store,
+                    regions,
+                    var_idx,
+                    current_coords,
+                    scratch.axis_indices.len(),
+                    scalar_cache,
+                    &mut scratch.deltas,
+                )?;
+                for (value, delta) in scratch.axis_values.iter_mut().zip(scratch.deltas.iter()) {
+                    *value += *delta;
+                }
             }
         }
 
@@ -492,16 +525,19 @@ impl<'a> Outlines<'a> {
             .zip(scratch.axis_values.iter().copied())
         {
             let Some(slot) = coords.get_mut(*axis_index as usize) else {
-                return Err(DrawError::Read(ReadError::OutOfBounds));
+                return Err(DrawError::Malformed);
             };
-            let raw = value.round().clamp(i16::MIN as f32, i16::MAX as f32) as i16;
+            let raw = value.round().clamp(i16::MIN as f64, i16::MAX as f64) as i16;
             *slot = F2Dot14::from_bits(raw);
         }
         Ok(())
     }
 
     fn axis_indices(&self, nth: usize, out: &mut AxisIndexVec) -> Result<usize, DrawError> {
-        let packed = self.varc.axis_indices(nth)?;
+        let packed = self
+            .varc
+            .axis_indices(nth)
+            .map_err(|_| DrawError::Malformed)?;
         out.clear();
         for value in packed.iter() {
             out.push(value as u16);
@@ -519,9 +555,12 @@ impl<'a> Outlines<'a> {
             out.clear();
             return Ok(());
         };
-        out.resize_and_fill(count, 0.0);
+        // `packed` may yield fewer than `count` values, so every slot is set
+        // here rather than only the ones the loop below reaches.
+        out.clear();
+        out.resize(count, 0.0);
         for (slot, value) in out.iter_mut().zip(packed.iter().by_ref().take(count)) {
-            *slot = value as f32;
+            *slot = value as f64;
         }
         Ok(())
     }
@@ -554,11 +593,11 @@ impl<'a> Outlines<'a> {
                 | VarcFlags::HAVE_TCENTER_Y.bits(),
         );
         let field_count = (flags.bits() & TRANSFORM_MASK.bits()).count_ones() as usize;
-        if field_count == 0 {
+        if field_count == 0 || var_idx == NO_VARIATION_INDEX {
             return Ok(());
         }
 
-        let (store, regions) = store_regions.ok_or(ReadError::NullOffset)?;
+        let (store, regions) = store_regions.ok_or(DrawError::Malformed)?;
         compute_tuple_deltas(
             store,
             regions,
@@ -570,7 +609,7 @@ impl<'a> Outlines<'a> {
         )?;
 
         // Apply deltas in flag order, consuming from iterator
-        let mut delta_iter = scratch.deltas.iter().copied();
+        let mut delta_iter = scratch.deltas.iter().map(|&delta| delta as f32);
 
         if flags.contains(VarcFlags::HAVE_TRANSLATE_X) {
             let delta = delta_iter.next().unwrap_or(0.0);
@@ -635,99 +674,83 @@ impl<'a> Outlines<'a> {
             return Ok(true);
         };
         let Some(condition_list) = self.varc.condition_list() else {
-            return Err(DrawError::Read(ReadError::NullOffset));
+            return Err(DrawError::Malformed);
         };
-        let condition_list = condition_list?;
-        let condition = condition_list.conditions().get(condition_index as usize)?;
-        let (store, regions) = store_regions.ok_or(ReadError::NullOffset)?;
-        Self::eval_condition(&condition, coords, store, regions, scalar_cache, scratch)
+        let condition_list = condition_list.map_err(|_| DrawError::Malformed)?;
+        let offset = condition_list
+            .condition_offsets()
+            .get(condition_index as usize)
+            .ok_or(DrawError::Malformed)?;
+        // A null condition is unconditional; it is not a format-0 table.
+        if offset.get().is_null() {
+            return Ok(true);
+        }
+        let condition = condition_list
+            .conditions()
+            .get(condition_index as usize)
+            .map_err(|_| DrawError::Malformed)?;
+        Self::eval_condition(&condition, coords, store_regions, scalar_cache, scratch)
     }
 
     fn eval_condition(
         condition: &Condition<'a>,
         coords: &[F2Dot14],
-        var_store: &MultiItemVariationStore<'a>,
-        regions: &SparseVariationRegionList<'a>,
+        store_regions: Option<(&MultiItemVariationStore<'a>, &SparseVariationRegionList<'a>)>,
         scalar_cache: &mut ScalarCache,
         scratch: &mut Scratchpad,
     ) -> Result<bool, DrawError> {
-        match condition {
-            Condition::Format1AxisRange(condition) => {
-                let axis_index = condition.axis_index() as usize;
-                let coord = coords.get(axis_index).copied().unwrap_or(F2Dot14::ZERO);
-                Ok(coord >= condition.filter_range_min_value()
-                    && coord <= condition.filter_range_max_value())
-            }
-            Condition::Format2VariableValue(condition) => {
-                let default_value = condition.default_value() as f32;
-                let var_idx = condition.var_index();
-                compute_tuple_deltas(
-                    var_store,
-                    regions,
-                    var_idx,
-                    coords,
-                    1,
-                    scalar_cache,
-                    &mut scratch.deltas,
-                )?;
-                let delta = scratch.deltas.first().copied().unwrap_or(0.0);
-                Ok(default_value + delta > 0.0)
-            }
-            Condition::Format3And(condition) => {
-                for nested in condition.conditions().iter() {
-                    let nested = nested?;
-                    if !Self::eval_condition(
-                        &nested,
-                        coords,
-                        var_store,
-                        regions,
-                        scalar_cache,
-                        scratch,
-                    )? {
-                        return Ok(false);
+        // The evaluator reports only a kind, so a delta failure is kept here.
+        let mut delta_error = None;
+        condition
+            .evaluate(coords, |var_idx| {
+                let deltas =
+                    store_regions
+                        .ok_or(DrawError::Malformed)
+                        .and_then(|(var_store, regions)| {
+                            compute_tuple_deltas(
+                                var_store,
+                                regions,
+                                var_idx,
+                                coords,
+                                1,
+                                scalar_cache,
+                                &mut scratch.deltas,
+                            )
+                        });
+                match deltas {
+                    Ok(()) => Ok(scratch.deltas.first().copied().unwrap_or(0.0)),
+                    Err(error) => {
+                        delta_error = Some(error);
+                        Err(read_fonts::model::Error::Malformed)
                     }
                 }
-                Ok(true)
-            }
-            Condition::Format4Or(condition) => {
-                for nested in condition.conditions().iter() {
-                    let nested = nested?;
-                    if Self::eval_condition(
-                        &nested,
-                        coords,
-                        var_store,
-                        regions,
-                        scalar_cache,
-                        scratch,
-                    )? {
-                        return Ok(true);
-                    }
+            })
+            .map_err(|error| match delta_error.take() {
+                Some(error) => error,
+                None if error == read_fonts::model::Error::LimitExceeded => {
+                    DrawError::RecursionLimitExceeded(GlyphId::NOTDEF)
                 }
-                Ok(false)
-            }
-            Condition::Format5Negate(condition) => {
-                let nested = condition.condition()?;
-                Ok(!Self::eval_condition(
-                    &nested,
-                    coords,
-                    var_store,
-                    regions,
-                    scalar_cache,
-                    scratch,
-                )?)
-            }
-        }
+                None => DrawError::Malformed,
+            })
     }
 
     fn scalar_cache_from_store(
         &self,
         store: Option<&MultiItemVariationStore<'a>>,
-    ) -> Result<Option<ScalarCache>, DrawError> {
-        let Some(store) = store else {
-            return Ok(None);
+    ) -> Result<ScalarCache, DrawError> {
+        // The VARC `multiVarStore` offset is nullable, so a valid font may omit the
+        // store entirely. In that case there are no variation regions and an empty
+        // cache is correct: any component that references variation data will fail
+        // gracefully when it resolves the missing store, rather than us
+        // panicking here.
+        let region_count = match store {
+            Some(store) => store
+                .region_list()
+                .map_err(|_| DrawError::Malformed)?
+                .region_count() as usize,
+            None => 0,
         };
-        let region_count = store.region_list()?.region_count() as usize;
-        Ok(Some(ScalarCache::new(region_count)))
+        Ok(ScalarCache::new(region_count))
     }
 }
 
@@ -740,7 +763,7 @@ impl ScalarCache {
 
     fn new(count: usize) -> Self {
         Self {
-            values: ScalarCacheVec::with_len(count, Self::INVALID),
+            values: ScalarCacheVec::from_elem(Self::INVALID, count),
         }
     }
 
@@ -756,7 +779,10 @@ impl ScalarCache {
 }
 
 fn expand_coords(out: &mut CoordVec, axis_count: usize, coords: &[F2Dot14]) {
-    out.resize_and_fill(axis_count, F2Dot14::ZERO);
+    // `coords` may be shorter than `axis_count`, so the tail has to be zeroed
+    // rather than left holding whatever the last call put there.
+    out.clear();
+    out.resize(axis_count, F2Dot14::ZERO);
     for (slot, value) in out.iter_mut().zip(coords.iter().copied()) {
         *slot = value;
     }
@@ -770,8 +796,11 @@ fn compute_tuple_deltas(
     tuple_len: usize,
     cache: &mut ScalarCache,
     out: &mut DeltaVec,
-) -> Result<(), ReadError> {
-    out.resize_and_fill(tuple_len, 0.0);
+) -> Result<(), DrawError> {
+    // Deltas accumulate into this, and it is reused across calls, so it starts
+    // at zero rather than at the previous call's values.
+    out.clear();
+    out.resize(tuple_len, 0.0);
     if tuple_len == 0 || var_idx == NO_VARIATION_INDEX {
         return Ok(());
     }
@@ -780,9 +809,12 @@ fn compute_tuple_deltas(
     let data = store
         .variation_data()
         .get(outer)
-        .map_err(|_| ReadError::InvalidCollectionIndex(outer as _))?;
+        .map_err(|_| DrawError::Malformed)?;
     let region_indices = data.region_indices();
-    let mut deltas = data.delta_set(inner)?.fetcher();
+    let mut deltas = data
+        .delta_set(inner)
+        .map_err(|_| DrawError::Malformed)?
+        .fetcher();
     let regions = regions.regions();
     let out_slice = out.as_mut_slice();
 
@@ -791,7 +823,10 @@ fn compute_tuple_deltas(
         let region_idx = region_index.get() as usize;
         let mut scalar = cache.get(region_idx);
         if scalar >= 2.0 {
-            scalar = regions.get(region_idx)?.compute_scalar_f32(coords);
+            scalar = regions
+                .get(region_idx)
+                .map_err(|_| DrawError::Malformed)?
+                .compute_scalar_f32(coords);
             cache.set(region_idx, scalar);
         }
         // We skip lazily. Reduces work at the tail end.
@@ -799,10 +834,12 @@ fn compute_tuple_deltas(
             skip += out_slice.len();
         } else {
             if skip != 0 {
-                deltas.skip(skip)?;
+                deltas.skip(skip).map_err(|_| DrawError::Malformed)?;
                 skip = 0;
             }
-            deltas.add_to_f32_scaled(out_slice, scalar)?;
+            deltas
+                .add_to_f64_scaled(out_slice, scalar as f64)
+                .map_err(|_| DrawError::Malformed)?;
         }
     }
 
@@ -918,6 +955,33 @@ mod tests {
     }
 
     #[test]
+    fn draws_with_gvar_axes_without_fvar() {
+        let font = FontRef::new(font_test_data::varc::STATIC_GVAR).unwrap();
+        assert!(font.fvar().is_err());
+        assert_eq!(font.gvar().unwrap().axis_count(), 1);
+
+        let outlines = Outlines::new(&font).unwrap();
+        assert_eq!(outlines.axis_count, 1);
+        let outline = outlines.outline(GlyphId::new(1)).unwrap().unwrap();
+        let mut buf = vec![0; outline.required_buffer_size()];
+        let mut pen = Vec::<PathElement>::new();
+        outlines
+            .draw(
+                &outline,
+                &mut buf,
+                Size::unscaled(),
+                &[],
+                PathStyle::default(),
+                &mut pen,
+            )
+            .unwrap();
+        assert_eq!(
+            path_head_signature(&pen, 4),
+            ["M50.00,0.00", "L450.00,0.00", "L250.00,500.00", "Z"]
+        );
+    }
+
+    #[test]
     fn scale_matrix_only_scales_translation() {
         let matrix = Matrix::from_elements([1.0, 2.0, 3.0, 4.0, 5.0, -6.0]);
         assert_eq!(
@@ -972,7 +1036,9 @@ mod tests {
 
         let err = compute_tuple_deltas(&store, &regions, 0xFFFF_0000, &[], 1, &mut cache, &mut out)
             .unwrap_err();
-        assert!(matches!(err, ReadError::InvalidCollectionIndex(_)));
+        // an outer index past the end of the variation data is refused,
+        // rather than silently contributing zero deltas
+        assert!(matches!(err, DrawError::Malformed));
     }
 
     #[test]
@@ -1027,7 +1093,7 @@ mod tests {
                 .unwrap();
                 assert_eq!(actual.as_slice(), first.as_slice());
 
-                let mut expected = vec![0.0f32; tuple_len];
+                let mut expected = vec![0.0f64; tuple_len];
                 for (region_order, region_idx) in data.region_indices().iter().enumerate() {
                     let scalar = region_list
                         .get(region_idx.get() as usize)
@@ -1038,12 +1104,12 @@ mod tests {
                     }
                     let base = region_order * tuple_len;
                     for (i, slot) in expected.iter_mut().enumerate() {
-                        *slot += decoded[base + i] as f32 * scalar;
+                        *slot += decoded[base + i] as f64 * scalar as f64;
                     }
                 }
                 assert_eq!(actual.len(), expected.len());
                 for (a, e) in actual.iter().zip(expected.iter()) {
-                    assert_close(*a, *e);
+                    assert_eq!(*a, *e);
                 }
                 tried += 1;
             }
@@ -1080,8 +1146,8 @@ mod tests {
             return Ok(());
         }
 
-        let store = var_store.ok_or(ReadError::NullOffset)?;
-        let regions = regions.ok_or(ReadError::NullOffset)?;
+        let store = var_store.ok_or(DrawError::Malformed)?;
+        let regions = regions.ok_or(DrawError::Malformed)?;
         compute_tuple_deltas(
             store,
             regions,
@@ -1092,7 +1158,7 @@ mod tests {
             deltas,
         )?;
 
-        let mut delta_iter = deltas.iter().copied();
+        let mut delta_iter = deltas.iter().map(|&delta| delta as f32);
         if flags.contains(VarcFlags::HAVE_TRANSLATE_X) {
             transform.set_translate_x(transform.translate_x() + delta_iter.next().unwrap_or(0.0));
         }
@@ -1154,7 +1220,7 @@ mod tests {
             .unwrap_or(0);
 
         let mut coords = CoordVec::new();
-        coords.resize_and_fill(outlines.axis_count, F2Dot14::ZERO);
+        coords.resize(outlines.axis_count, F2Dot14::ZERO);
         for (i, c) in coords.iter_mut().enumerate() {
             *c = match i % 4 {
                 0 => coord(0.5),
@@ -1165,8 +1231,7 @@ mod tests {
         }
 
         let mut tested = 0usize;
-        for gid16 in coverage.iter() {
-            let gid: GlyphId = gid16.into();
+        for gid in coverage.iter() {
             let coverage_index = coverage.get(gid).unwrap() as usize;
             let glyph = outlines.varc.glyph(coverage_index).unwrap();
             for component in glyph.components() {
@@ -1258,5 +1323,408 @@ mod tests {
                 "Q704.43,783.31 717.03,804.56".to_string(),
             ]
         );
+    }
+
+    #[test]
+    fn large_deltas_preserve_conditions_transforms_and_axis_values() {
+        use crate::outline::pen::SvgPen;
+
+        let font = FontRef::new(font_test_data::varc::DELTA_PRECISION).unwrap();
+        let outlines = font.outline_glyphs();
+        let coords = [coord(1.0), coord(0.0)];
+        for (gid, expected) in [
+            (2, "M600,0 L800,0 L600,200 Z"),
+            (3, "M664,0 L864,0 L664,200 Z"),
+            (4, "M101,0 L201,0 L101,100 Z"),
+        ] {
+            let glyph = outlines.get(GlyphId::new(gid)).unwrap();
+            let mut pen = SvgPen::default();
+            glyph
+                .draw(
+                    crate::outline::DrawSettings::unhinted(Size::unscaled(), coords.as_slice()),
+                    &mut pen,
+                )
+                .unwrap();
+            assert_eq!(pen.as_ref(), expected);
+        }
+    }
+
+    // Build the store/regions needed by `eval_condition`'s signature. The
+    // conditions exercised below never touch the variation store, so any valid
+    // VARC store works here.
+    fn condition_eval_env() -> (
+        FontRef<'static>,
+        MultiItemVariationStore<'static>,
+        SparseVariationRegionList<'static>,
+    ) {
+        let font = FontRef::new(font_test_data::varc::CJK_6868).unwrap();
+        let varc = font.varc().unwrap();
+        let store = varc.multi_var_store().unwrap().unwrap();
+        let regions = store.region_list().unwrap();
+        (font, store, regions)
+    }
+
+    #[test]
+    fn component_conditions_without_variations_do_not_require_a_store() {
+        use read_fonts::{FontData, FontRead};
+
+        let leaf = vec![0, 1, 0, 0, 0xE0, 0, 0x20, 0]; // axis 0: [-0.5, 0.5]
+        let mut cases = vec![(leaf.clone(), false)];
+        for default in [-1i16, 0, 1] {
+            let mut bytes = vec![0, 2];
+            bytes.extend(default.to_be_bytes());
+            bytes.extend(NO_VARIATION_INDEX.to_be_bytes());
+            cases.push((bytes, default > 0));
+        }
+        for format in [3, 4] {
+            let mut bytes = vec![0, format, 1, 0, 0, 6];
+            bytes.extend_from_slice(&leaf);
+            cases.push((bytes, false));
+        }
+        let mut negate = vec![0, 5, 0, 0, 5];
+        negate.extend_from_slice(&leaf);
+        cases.push((negate, true));
+
+        for (condition, expected) in cases {
+            let mut bytes = vec![0u8; 24]; // VARC header
+            bytes[..4].copy_from_slice(&0x00010000u32.to_be_bytes());
+            bytes[12..16].copy_from_slice(&24u32.to_be_bytes()); // condition list
+            bytes.extend(1u32.to_be_bytes()); // one condition
+            bytes.extend(8u32.to_be_bytes()); // condition offset
+            bytes.extend_from_slice(&condition);
+            let glyphs_offset = bytes.len() as u32;
+            bytes[20..24].copy_from_slice(&glyphs_offset.to_be_bytes());
+            // One CFF2 INDEX entry: component with condition 0, gid 1.
+            bytes.extend([0, 0, 0, 1, 1, 1, 6, 0x80, 0x80, 0, 1, 0]);
+            let varc = Varc::read(FontData::new(&bytes)).unwrap();
+            let font = FontRef::new(font_test_data::varc::CJK_6868).unwrap();
+            let mut outlines = Outlines::new(&font).unwrap();
+            outlines.varc = varc;
+            let glyph = outlines.varc.glyph(0).unwrap();
+            let component = glyph.components().next().unwrap().unwrap();
+            assert_eq!(component.condition_index(), Some(0));
+            let result = outlines.component_condition_met(
+                &component,
+                &[coord(0.75)],
+                &mut ScalarCache::new(0),
+                &mut Scratchpad::new(),
+                None,
+            );
+            assert_eq!(result.unwrap(), expected, "condition bytes {condition:?}");
+        }
+    }
+
+    #[test]
+    fn component_zero_deltas_do_not_require_a_store() {
+        use read_fonts::{FontData, FontRead};
+
+        for (component_bytes, axis_indices, expected_coord, expected_translation) in [
+            // One explicit axis value with NO_VARIATION_INDEX.
+            (
+                vec![6, 0, 1, 0, 0x40, 0x10, 0, 0xF0, 0xFF, 0xFF, 0xFF, 0xFF],
+                vec![0, 0], // packed axis index 0
+                0.25,
+                0.0,
+            ),
+            // An empty axis tuple consumes no deltas, even with a real index.
+            (vec![6, 0, 1, 0, 0], vec![], 0.5, 0.0),
+            // A translated component with NO_VARIATION_INDEX.
+            (
+                vec![0x18, 0, 1, 0xF0, 0xFF, 0xFF, 0xFF, 0xFF, 0, 7],
+                vec![],
+                0.5,
+                7.0,
+            ),
+        ] {
+            let mut bytes = vec![0u8; 24];
+            bytes[..4].copy_from_slice(&0x00010000u32.to_be_bytes());
+            bytes[16..20].copy_from_slice(&24u32.to_be_bytes());
+            bytes.extend([0, 0, 0, 1, 1, 1, axis_indices.len() as u8 + 1]);
+            bytes.extend_from_slice(&axis_indices);
+            let glyphs_offset = bytes.len() as u32;
+            bytes[20..24].copy_from_slice(&glyphs_offset.to_be_bytes());
+            bytes.extend([0, 0, 0, 1, 1, 1, component_bytes.len() as u8 + 1]);
+            bytes.extend_from_slice(&component_bytes);
+            let font = FontRef::new(font_test_data::varc::CJK_6868).unwrap();
+            let mut outlines = Outlines::new(&font).unwrap();
+            outlines.varc = Varc::read(FontData::new(&bytes)).unwrap();
+            let glyph = outlines.varc.glyph(0).unwrap();
+            let component = glyph.components().next().unwrap().unwrap();
+            let mut coords = CoordVec::new();
+            let mut cache = ScalarCache::new(0);
+            let mut scratch = Scratchpad::new();
+            // A stale scratch delta must not leak into the zero-delta case.
+            scratch.deltas.push(100.0);
+            outlines
+                .component_coords(
+                    &component,
+                    &[coord(0.5)],
+                    &mut coords,
+                    &mut cache,
+                    &mut scratch,
+                    &[coord(0.5)],
+                    None,
+                )
+                .unwrap();
+            assert_eq!(coords.as_slice(), &[coord(expected_coord)]);
+            let mut transform = *component.transform();
+            outlines
+                .apply_transform_variations(
+                    &component,
+                    &[coord(0.5)],
+                    &mut transform,
+                    &mut cache,
+                    &mut scratch,
+                    None,
+                )
+                .unwrap();
+            assert_eq!(transform.translate_x(), expected_translation);
+        }
+    }
+
+    #[test]
+    fn null_condition_offsets_are_unconditional() {
+        use read_fonts::{FontData, FontRead};
+
+        let leaf = [0, 1, 0, 0, 0xE0, 0, 0x20, 0]; // false at 0.75
+        let mut cases = vec![
+            (None, true),
+            (Some(vec![0, 3, 1, 0, 0, 0]), true),
+            (Some(vec![0, 4, 1, 0, 0, 0]), true),
+            (Some(vec![0, 5, 0, 0, 0]), false),
+        ];
+        for format in [3, 4] {
+            for null_first in [false, true] {
+                let mut bytes = vec![0, format, 2];
+                bytes.extend_from_slice(if null_first {
+                    &[0, 0, 0, 0, 0, 9]
+                } else {
+                    &[0, 0, 9, 0, 0, 0]
+                });
+                bytes.extend_from_slice(&leaf);
+                cases.push((Some(bytes), format == 4));
+            }
+        }
+        for (condition, expected) in cases {
+            let mut bytes = vec![0u8; 24];
+            bytes[..4].copy_from_slice(&0x00010000u32.to_be_bytes());
+            bytes[12..16].copy_from_slice(&24u32.to_be_bytes());
+            bytes.extend(1u32.to_be_bytes());
+            bytes.extend(if condition.is_some() { 8u32 } else { 0 }.to_be_bytes());
+            if let Some(condition) = condition.as_ref() {
+                bytes.extend_from_slice(condition);
+            }
+            let glyphs_offset = bytes.len() as u32;
+            bytes[20..24].copy_from_slice(&glyphs_offset.to_be_bytes());
+            bytes.extend([0, 0, 0, 1, 1, 1, 6, 0x80, 0x80, 0, 1, 0]);
+            let font = FontRef::new(font_test_data::varc::CJK_6868).unwrap();
+            let mut outlines = Outlines::new(&font).unwrap();
+            outlines.varc = Varc::read(FontData::new(&bytes)).unwrap();
+            let glyph = outlines.varc.glyph(0).unwrap();
+            let component = glyph.components().next().unwrap().unwrap();
+            let result = outlines.component_condition_met(
+                &component,
+                &[coord(0.75)],
+                &mut ScalarCache::new(0),
+                &mut Scratchpad::new(),
+                None,
+            );
+            assert_eq!(result.unwrap(), expected, "condition {condition:?}");
+        }
+    }
+
+    // A deeply nested condition tree must return an error instead of overflowing
+    // the stack. Regression test for the unbounded recursion in `eval_condition`.
+    #[test]
+    fn eval_condition_bounds_recursion_depth() {
+        use read_fonts::{FontData, FontRead};
+        // Linear chain of Format5Negate tables: each is `format(u16 BE = 5)` +
+        // `condition_offset(Offset24 BE = 5)`, so every table points 5 bytes
+        // forward to the next -> an arbitrarily deep condition tree. `CHAIN_LEN`
+        // is far larger than the limit, proving evaluation bails out early rather
+        // than walking (and recursing into) the whole chain.
+        const CHAIN_LEN: usize = 4096;
+        let mut bytes = Vec::with_capacity(CHAIN_LEN * 5);
+        for _ in 0..CHAIN_LEN {
+            bytes.extend_from_slice(&[0x00, 0x05, 0x00, 0x00, 0x05]);
+        }
+        let cond = Condition::read(FontData::new(&bytes)).unwrap();
+
+        let (_font, store, regions) = condition_eval_env();
+        let mut cache = ScalarCache::new(regions.region_count() as usize);
+        let mut scratch = Scratchpad::new();
+
+        let result = Outlines::eval_condition(
+            &cond,
+            &[],
+            Some((&store, &regions)),
+            &mut cache,
+            &mut scratch,
+        );
+        assert!(
+            matches!(result, Err(DrawError::RecursionLimitExceeded(_))),
+            "expected RecursionLimitExceeded, got {result:?}"
+        );
+    }
+
+    // A normal (shallow) condition tree must still evaluate correctly.
+    #[test]
+    fn eval_condition_shallow_is_correct() {
+        use read_fonts::{FontData, FontRead};
+        let (_font, store, regions) = condition_eval_env();
+        let mut cache = ScalarCache::new(regions.region_count() as usize);
+        let mut scratch = Scratchpad::new();
+
+        // ConditionFormat1: axis 0, filter range [-1.0, 1.0].
+        let leaf: [u8; 8] = [0x00, 0x01, 0x00, 0x00, 0xC0, 0x00, 0x40, 0x00];
+        let cond = Condition::read(FontData::new(&leaf)).unwrap();
+        assert!(Outlines::eval_condition(
+            &cond,
+            &[coord(0.5)],
+            Some((&store, &regions)),
+            &mut cache,
+            &mut scratch,
+        )
+        .unwrap());
+        assert!(!Outlines::eval_condition(
+            &cond,
+            &[coord(1.5)],
+            Some((&store, &regions)),
+            &mut cache,
+            &mut scratch,
+        )
+        .unwrap());
+
+        // Format5Negate wrapping the same leaf must negate the result, proving a
+        // shallow nested tree still evaluates through the recursion guard.
+        let mut negate = vec![0x00, 0x05, 0x00, 0x00, 0x05];
+        negate.extend_from_slice(&leaf);
+        let cond = Condition::read(FontData::new(&negate)).unwrap();
+        assert!(!Outlines::eval_condition(
+            &cond,
+            &[coord(0.5)],
+            Some((&store, &regions)),
+            &mut cache,
+            &mut scratch,
+        )
+        .unwrap());
+    }
+
+    /// The `multi_var_store_offset` field of the VARC table is `#[nullable]`, so a
+    /// spec-valid font may omit the `MultiItemVariationStore`. Drawing such a glyph
+    /// must not panic. Regression test for the `.unwrap()` on the `Option` returned
+    /// by `scalar_cache_from_store`.
+    #[test]
+    fn draw_varc_with_null_var_store_does_not_panic() {
+        use crate::{instance::LocationRef, outline::DrawSettings, MetadataProvider};
+        use read_fonts::types::Tag;
+
+        let mut bytes = font_test_data::varc::CJK_6868.to_vec();
+        // Find the VARC table via the public table directory rather than parsing the
+        // sfnt header by hand.
+        let varc_off = {
+            let font = FontRef::new(&bytes).unwrap();
+            font.table_directory()
+                .table_records()
+                .iter()
+                .find(|rec| rec.tag() == Tag::new(b"VARC"))
+                .expect("VARC table present")
+                .offset() as usize
+        };
+        // VARC layout: version (4) + coverage_offset (4) + multi_var_store_offset (4) ...
+        // Null the (nullable) multi_var_store_offset so `multi_var_store()` -> None.
+        for b in &mut bytes[varc_off + 8..varc_off + 12] {
+            *b = 0;
+        }
+
+        let font = FontRef::new(&bytes).unwrap();
+        let outlines = font.outline_glyphs();
+        let gid = font.cmap().unwrap().map_codepoint(0x6868_u32).unwrap();
+        let glyph = outlines.get(gid).expect("covered VARC glyph");
+        let mut pen = Vec::<PathElement>::new();
+        // Must complete without panicking (Ok, or a graceful DrawError).
+        let _ = glyph.draw(
+            DrawSettings::unhinted(Size::unscaled(), LocationRef::default()),
+            &mut pen,
+        );
+    }
+
+    fn first_nested_varc_edge(outlines: &Outlines<'_>) -> Option<(GlyphId, u32)> {
+        for gid in outlines.coverage.iter() {
+            let coverage_index = outlines.coverage.get(gid)?;
+            let glyph = outlines.varc.glyph(coverage_index as usize).ok()?;
+            for component in glyph.components() {
+                let component = component.ok()?;
+                // Pick an unconditional child edge so the traversal always attempts
+                // to recurse for this component.
+                if component.condition_index().is_none()
+                    && component.gid() != gid
+                    && outlines.coverage.get(component.gid()).is_some()
+                {
+                    return Some((gid, coverage_index));
+                }
+            }
+        }
+        None
+    }
+
+    #[test]
+    fn draw_glyph_respects_total_edge_budget() {
+        let font = FontRef::new(font_test_data::varc::CJK_6868).unwrap();
+        let outlines = Outlines::new(&font).unwrap();
+        let (root_gid, root_cov_idx) = first_nested_varc_edge(&outlines)
+            .expect("expected at least one VARC->VARC component edge in fixture font");
+        let mut coords = CoordVec::new();
+        expand_coords(&mut coords, outlines.axis_count, &[]);
+        let ctx = VarcSharedContext {
+            font_coords: &coords,
+            size: Size::unscaled(),
+            path_style: PathStyle::default(),
+            coverage: &outlines.coverage,
+            var_store: outlines.var_store.as_ref(),
+            store_regions: outlines.var_store.as_ref().zip(outlines.regions.as_ref()),
+        };
+        let outline = outlines.outline(root_gid).unwrap().unwrap();
+        let mut memory = vec![0u8; outline.required_buffer_size()];
+        let mut pen = Vec::<PathElement>::new();
+        let mut stack = GlyphStack::new();
+        let mut scalar_cache = outlines
+            .scalar_cache_from_store(outlines.var_store.as_ref())
+            .unwrap();
+        let mut scratch = Scratchpad::new();
+        // Budget of one edge allows entering the root glyph only; any recursive
+        // component edge must be rejected as over budget.
+        scratch.edges_left = 1;
+        let result = outlines.draw_glyph(
+            root_gid,
+            root_cov_idx,
+            &coords,
+            Affine::IDENTITY,
+            &ctx,
+            &mut memory,
+            &mut pen,
+            &mut stack,
+            &mut scalar_cache,
+            &mut scratch,
+        );
+        assert!(
+            matches!(result, Err(DrawError::RecursionLimitExceeded(_))),
+            "expected RecursionLimitExceeded when edge budget is exhausted, got {result:?}"
+        );
+    }
+
+    #[test]
+    fn max_component_memory_respects_total_edge_budget() {
+        let font = FontRef::new(font_test_data::varc::CJK_6868).unwrap();
+        let outlines = Outlines::new(&font).unwrap();
+        let (root_gid, root_cov_idx) = first_nested_varc_edge(&outlines)
+            .expect("expected at least one VARC->VARC component edge in fixture font");
+        let mut stack = GlyphStack::new();
+        let mut edges_left = 0;
+        let memory = outlines
+            .max_component_memory_for_glyph(root_gid, root_cov_idx, &mut stack, &mut edges_left)
+            .unwrap();
+        assert_eq!(memory, 0);
+        assert_eq!(edges_left, 0);
     }
 }

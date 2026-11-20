@@ -1,28 +1,14 @@
 //! TrueType outline types.
 
-use std::mem::size_of;
-
-use super::super::{
-    path::{to_path, ToPathError},
-    pen::PathStyle,
-    DrawError, Hinting, OutlinePen,
-};
+use super::super::{pen::PathStyle, DrawError, Hinting, OutlinePen};
+use super::hint::DropoutControl;
+use crate::MAX_OUTLINE_POINTS;
 use raw::tables::glyf::PointCoord;
 use read_fonts::{
     tables::glyf::{Glyph, PointFlags},
     types::{F26Dot6, Fixed, GlyphId, Point},
 };
-
-/// Maximum number of points we support in a single outline including
-/// composites.
-///
-/// TrueType uses a 16 bit integer to store contour end points so
-/// we must keep the total count within this value.
-///
-/// The maxp <https://learn.microsoft.com/en-us/typography/opentype/spec/maxp>
-/// table encodes `maxCompositePoints` as a `uint16` so the spec enforces
-/// this limit.
-const MAX_POINTS: usize = u16::MAX as usize;
+use std::mem::size_of;
 
 /// Represents the information necessary to scale a glyph outline.
 ///
@@ -108,7 +94,7 @@ impl Outline<'_> {
     }
 
     pub(super) fn ensure_point_count_limit(&self) -> Result<(), DrawError> {
-        if self.points > MAX_POINTS {
+        if self.points > MAX_OUTLINE_POINTS {
             Err(DrawError::TooManyPoints(self.glyph_id))
         } else {
             Ok(())
@@ -126,6 +112,7 @@ where
     pub contours: &'a mut [u16],
     pub phantom_points: [Point<C>; 4],
     pub hdmx_width: Option<u8>,
+    pub dropout_control: DropoutControl,
 }
 
 impl<'a, C> ScaledOutline<'a, C>
@@ -138,6 +125,7 @@ where
         flags: &'a mut [PointFlags],
         contours: &'a mut [u16],
         hdmx_width: Option<u8>,
+        dropout_control: DropoutControl,
     ) -> Self {
         let x_shift = phantom_points[0].x;
         if x_shift != C::zeroed() {
@@ -151,6 +139,7 @@ where
             contours,
             phantom_points,
             hdmx_width,
+            dropout_control,
         }
     }
 
@@ -173,7 +162,15 @@ where
         &self,
         path_style: PathStyle,
         pen: &mut impl OutlinePen,
-    ) -> Result<(), ToPathError> {
-        to_path(self.points, self.flags, self.contours, path_style, pen)
+    ) -> Result<(), DrawError> {
+        read_fonts::tables::glyf::outline::outline_to_path(
+            self.points,
+            self.flags,
+            self.contours,
+            path_style.into(),
+            pen,
+        )
+        .then_some(())
+        .ok_or(DrawError::Malformed)
     }
 }

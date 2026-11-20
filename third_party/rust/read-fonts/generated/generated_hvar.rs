@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Hvar<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,42 @@ impl TopLevelTable for Hvar<'_> {
     const TAG: Tag = Tag::new(b"HVAR");
 }
 
+impl ReadArgs for Hvar<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Hvar<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct HvarFixedHeader {
+    pub version: BigEndian<MajorMinor>,
+    pub item_variation_store_offset: BigEndian<Offset32>,
+    pub advance_width_mapping_offset: BigEndian<Nullable<Offset32>>,
+    pub lsb_mapping_offset: BigEndian<Nullable<Offset32>>,
+    pub rsb_mapping_offset: BigEndian<Nullable<Offset32>>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<HvarFixedHeader>() <= Hvar::MIN_SIZE);
+
 /// The [HVAR (Horizontal Metrics Variations)](https://docs.microsoft.com/en-us/typography/opentype/spec/hvar) table
 #[derive(Clone)]
 pub struct Hvar<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, HvarFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -48,85 +70,80 @@ impl<'a> Hvar<'a> {
     /// Major version number of the horizontal metrics variations table — set to 1.
     /// Minor version number of the horizontal metrics variations table — set to 0.
     pub fn version(&self) -> MajorMinor {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// Offset in bytes from the start of this table to the item variation store table.
     pub fn item_variation_store_offset(&self) -> Offset32 {
-        let range = self.item_variation_store_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().item_variation_store_offset.get()
     }
 
     /// Attempt to resolve [`item_variation_store_offset`][Self::item_variation_store_offset].
     pub fn item_variation_store(&self) -> Result<ItemVariationStore<'a>, ReadError> {
-        let data = self.data;
+        let data = self.offset_data();
         self.item_variation_store_offset().resolve(data)
     }
 
     /// Offset in bytes from the start of this table to the delta-set index mapping for advance widths (may be NULL).
     pub fn advance_width_mapping_offset(&self) -> Nullable<Offset32> {
-        let range = self.advance_width_mapping_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().advance_width_mapping_offset.get()
     }
 
     /// Attempt to resolve [`advance_width_mapping_offset`][Self::advance_width_mapping_offset].
     pub fn advance_width_mapping(&self) -> Option<Result<DeltaSetIndexMap<'a>, ReadError>> {
-        let data = self.data;
+        let data = self.offset_data();
         self.advance_width_mapping_offset().resolve(data)
     }
 
     /// Offset in bytes from the start of this table to the delta-set index mapping for left side bearings (may be NULL).
     pub fn lsb_mapping_offset(&self) -> Nullable<Offset32> {
-        let range = self.lsb_mapping_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().lsb_mapping_offset.get()
     }
 
     /// Attempt to resolve [`lsb_mapping_offset`][Self::lsb_mapping_offset].
     pub fn lsb_mapping(&self) -> Option<Result<DeltaSetIndexMap<'a>, ReadError>> {
-        let data = self.data;
+        let data = self.offset_data();
         self.lsb_mapping_offset().resolve(data)
     }
 
     /// Offset in bytes from the start of this table to the delta-set index mapping for right side bearings (may be NULL).
     pub fn rsb_mapping_offset(&self) -> Nullable<Offset32> {
-        let range = self.rsb_mapping_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().rsb_mapping_offset.get()
     }
 
     /// Attempt to resolve [`rsb_mapping_offset`][Self::rsb_mapping_offset].
     pub fn rsb_mapping(&self) -> Option<Result<DeltaSetIndexMap<'a>, ReadError>> {
-        let data = self.data;
+        let data = self.offset_data();
         self.rsb_mapping_offset().resolve(data)
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + MajorMinor::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(MajorMinor::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn item_variation_store_offset_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + Offset32::RAW_BYTE_LEN;
+        let end = start.saturating_add(Offset32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn advance_width_mapping_offset_byte_range(&self) -> Range<usize> {
         let start = self.item_variation_store_offset_byte_range().end;
-        let end = start + Offset32::RAW_BYTE_LEN;
+        let end = start.saturating_add(Offset32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn lsb_mapping_offset_byte_range(&self) -> Range<usize> {
         let start = self.advance_width_mapping_offset_byte_range().end;
-        let end = start + Offset32::RAW_BYTE_LEN;
+        let end = start.saturating_add(Offset32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn rsb_mapping_offset_byte_range(&self) -> Range<usize> {
         let start = self.lsb_mapping_offset_byte_range().end;
-        let end = start + Offset32::RAW_BYTE_LEN;
+        let end = start.saturating_add(Offset32::RAW_BYTE_LEN);
         start..end
     }
 }
@@ -136,50 +153,8 @@ const _: () = assert!(FontData::default_data_long_enough(Hvar::MIN_SIZE));
 impl Default for Hvar<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Hvar<'a> {
-    fn type_name(&self) -> &str {
-        "Hvar"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new(
-                "item_variation_store_offset",
-                FieldType::offset(
-                    self.item_variation_store_offset(),
-                    self.item_variation_store(),
-                ),
-            )),
-            2usize => Some(Field::new(
-                "advance_width_mapping_offset",
-                FieldType::offset(
-                    self.advance_width_mapping_offset(),
-                    self.advance_width_mapping(),
-                ),
-            )),
-            3usize => Some(Field::new(
-                "lsb_mapping_offset",
-                FieldType::offset(self.lsb_mapping_offset(), self.lsb_mapping()),
-            )),
-            4usize => Some(Field::new(
-                "rsb_mapping_offset",
-                FieldType::offset(self.rsb_mapping_offset(), self.rsb_mapping()),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Hvar<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }

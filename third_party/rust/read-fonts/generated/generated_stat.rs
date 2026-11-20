@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Stat<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,43 @@ impl TopLevelTable for Stat<'_> {
     const TAG: Tag = Tag::new(b"STAT");
 }
 
+impl ReadArgs for Stat<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Stat<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct StatFixedHeader {
+    pub version: BigEndian<MajorMinor>,
+    pub design_axis_size: BigEndian<u16>,
+    pub design_axis_count: BigEndian<u16>,
+    pub design_axes_offset: BigEndian<Offset32>,
+    pub axis_value_count: BigEndian<u16>,
+    pub offset_to_axis_value_offsets: BigEndian<Nullable<Offset32>>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<StatFixedHeader>() <= Stat::MIN_SIZE);
+
 /// [STAT](https://docs.microsoft.com/en-us/typography/opentype/spec/stat) (Style Attributes Table)
 #[derive(Clone)]
 pub struct Stat<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, StatFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -48,14 +71,12 @@ impl<'a> Stat<'a> {
 
     /// Major/minor version number. Set to 1.2 for new fonts.
     pub fn version(&self) -> MajorMinor {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// The size in bytes of each axis record.
     pub fn design_axis_size(&self) -> u16 {
-        let range = self.design_axis_size_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().design_axis_size.get()
     }
 
     /// The number of axis records. In a font with an 'fvar' table,
@@ -63,8 +84,7 @@ impl<'a> Stat<'a> {
     /// in the 'fvar' table. In all fonts, must be greater than zero if
     /// axisValueCount is greater than zero.
     pub fn design_axis_count(&self) -> u16 {
-        let range = self.design_axis_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().design_axis_count.get()
     }
 
     /// Offset in bytes from the beginning of the STAT table to the
@@ -72,21 +92,19 @@ impl<'a> Stat<'a> {
     /// to zero; if designAxisCount is greater than zero, must be
     /// greater than zero.
     pub fn design_axes_offset(&self) -> Offset32 {
-        let range = self.design_axes_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().design_axes_offset.get()
     }
 
     /// Attempt to resolve [`design_axes_offset`][Self::design_axes_offset].
     pub fn design_axes(&self) -> Result<&'a [AxisRecord], ReadError> {
-        let data = self.data;
+        let data = self.offset_data();
         let args = self.design_axis_count();
-        self.design_axes_offset().resolve_with_args(data, &args)
+        self.design_axes_offset().resolve_with_args(data, args)
     }
 
     /// The number of axis value tables.
     pub fn axis_value_count(&self) -> u16 {
-        let range = self.axis_value_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().axis_value_count.get()
     }
 
     /// Offset in bytes from the beginning of the STAT table to the
@@ -94,16 +112,15 @@ impl<'a> Stat<'a> {
     /// is zero, set to zero; if axisValueCount is greater than zero,
     /// must be greater than zero.
     pub fn offset_to_axis_value_offsets(&self) -> Nullable<Offset32> {
-        let range = self.offset_to_axis_value_offsets_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().offset_to_axis_value_offsets.get()
     }
 
     /// Attempt to resolve [`offset_to_axis_value_offsets`][Self::offset_to_axis_value_offsets].
     pub fn offset_to_axis_values(&self) -> Option<Result<AxisValueArray<'a>, ReadError>> {
-        let data = self.data;
+        let data = self.offset_data();
         let args = self.axis_value_count();
         self.offset_to_axis_value_offsets()
-            .resolve_with_args(data, &args)
+            .resolve_with_args(data, args)
     }
 
     /// Name ID used as fallback when projection of names into a
@@ -112,50 +129,50 @@ impl<'a> Stat<'a> {
     pub fn elided_fallback_name_id(&self) -> Option<NameId> {
         let range = self.elided_fallback_name_id_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_at(range.start).ok())
+            .then(|| self.offset_data().read_at(range.start).ok())
             .flatten()
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + MajorMinor::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(MajorMinor::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn design_axis_size_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn design_axis_count_byte_range(&self) -> Range<usize> {
         let start = self.design_axis_size_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn design_axes_offset_byte_range(&self) -> Range<usize> {
         let start = self.design_axis_count_byte_range().end;
-        let end = start + Offset32::RAW_BYTE_LEN;
+        let end = start.saturating_add(Offset32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn axis_value_count_byte_range(&self) -> Range<usize> {
         let start = self.design_axes_offset_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn offset_to_axis_value_offsets_byte_range(&self) -> Range<usize> {
         let start = self.axis_value_count_byte_range().end;
-        let end = start + Offset32::RAW_BYTE_LEN;
+        let end = start.saturating_add(Offset32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn elided_fallback_name_id_byte_range(&self) -> Range<usize> {
         let start = self.offset_to_axis_value_offsets_byte_range().end;
         let end = if self.version().compatible((1u16, 1u16)) {
-            start + NameId::RAW_BYTE_LEN
+            start.saturating_add(NameId::RAW_BYTE_LEN)
         } else {
             start
         };
@@ -168,52 +185,9 @@ const _: () = assert!(FontData::default_data_long_enough(Stat::MIN_SIZE));
 impl Default for Stat<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Stat<'a> {
-    fn type_name(&self) -> &str {
-        "Stat"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new("design_axis_size", self.design_axis_size())),
-            2usize => Some(Field::new("design_axis_count", self.design_axis_count())),
-            3usize => Some(Field::new(
-                "design_axes_offset",
-                traversal::FieldType::offset_to_array_of_records(
-                    self.design_axes_offset(),
-                    self.design_axes(),
-                    stringify!(AxisRecord),
-                    self.offset_data(),
-                ),
-            )),
-            4usize => Some(Field::new("axis_value_count", self.axis_value_count())),
-            5usize => Some(Field::new(
-                "offset_to_axis_value_offsets",
-                FieldType::offset(
-                    self.offset_to_axis_value_offsets(),
-                    self.offset_to_axis_values(),
-                ),
-            )),
-            6usize if self.version().compatible((1u16, 1u16)) => Some(Field::new(
-                "elided_fallback_name_id",
-                self.elided_fallback_name_id().unwrap(),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Stat<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -257,29 +231,13 @@ impl FixedSize for AxisRecord {
     const RAW_BYTE_LEN: usize = Tag::RAW_BYTE_LEN + NameId::RAW_BYTE_LEN + u16::RAW_BYTE_LEN;
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for AxisRecord {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "AxisRecord",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("axis_tag", self.axis_tag())),
-                1usize => Some(Field::new("axis_name_id", self.axis_name_id())),
-                2usize => Some(Field::new("axis_ordering", self.axis_ordering())),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
 impl<'a> MinByteRange<'a> for AxisValueArray<'a> {
     fn min_byte_range(&self) -> Range<usize> {
         0..self.axis_value_offsets_byte_range().end
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -287,14 +245,17 @@ impl ReadArgs for AxisValueArray<'_> {
     type Args = u16;
 }
 
-impl<'a> FontReadWithArgs<'a> for AxisValueArray<'a> {
-    fn read_with_args(data: FontData<'a>, args: &u16) -> Result<Self, ReadError> {
-        let axis_value_count = *args;
+impl<'a> FontRead<'a> for AxisValueArray<'a> {
+    fn read_with_args(data: FontData<'a>, args: u16) -> Result<Self, ReadError> {
+        let axis_value_count = args;
 
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self {
             data,
             axis_value_count,
@@ -309,14 +270,23 @@ impl<'a> AxisValueArray<'a> {
     /// parsed.
     pub fn read(data: FontData<'a>, axis_value_count: u16) -> Result<Self, ReadError> {
         let args = axis_value_count;
-        Self::read_with_args(data, &args)
+        Self::read_with_args(data, args)
     }
 }
+
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct AxisValueArrayFixedHeader {}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<AxisValueArrayFixedHeader>() <= AxisValueArray::MIN_SIZE);
 
 /// An array of [AxisValue] tables.
 #[derive(Clone)]
 pub struct AxisValueArray<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, AxisValueArrayFixedHeader>,
     axis_value_count: u16,
 }
 
@@ -329,12 +299,15 @@ impl<'a> AxisValueArray<'a> {
     /// of the axis value offsets array.
     pub fn axis_value_offsets(&self) -> &'a [BigEndian<Offset16>] {
         let range = self.axis_value_offsets_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// A dynamically resolving wrapper for [`axis_value_offsets`][Self::axis_value_offsets].
     pub fn axis_values(&self) -> ArrayOfOffsets<'a, AxisValue<'a>, Offset16> {
-        let data = self.data;
+        let data = self.offset_data();
         let offsets = self.axis_value_offsets();
         ArrayOfOffsets::new(offsets, data, ())
     }
@@ -345,9 +318,10 @@ impl<'a> AxisValueArray<'a> {
 
     pub fn axis_value_offsets_byte_range(&self) -> Range<usize> {
         let axis_value_count = self.axis_value_count();
-        let start = 0;
-        let end =
-            start + (transforms::to_usize(axis_value_count)).saturating_mul(Offset16::RAW_BYTE_LEN);
+        let start = 0usize;
+        let end = start.saturating_add(
+            (transforms::to_usize(axis_value_count)).saturating_mul(Offset16::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -358,33 +332,10 @@ const _: () = assert!(FontData::default_data_long_enough(AxisValueArray::MIN_SIZ
 impl Default for AxisValueArray<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
             axis_value_count: Default::default(),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for AxisValueArray<'a> {
-    fn type_name(&self) -> &str {
-        "AxisValueArray"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new(
-                "axis_value_offsets",
-                FieldType::from(self.axis_values()),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for AxisValueArray<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -446,8 +397,13 @@ impl<'a> AxisValue<'a> {
     }
 }
 
+impl ReadArgs for AxisValue<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for AxisValue<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    #[inline]
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         let format: u16 = data.read_at(0usize)?;
         match format {
             AxisValueFormat1::FORMAT => Ok(Self::Format1(FontRead::read(data)?)),
@@ -478,35 +434,6 @@ impl<'a> MinByteRange<'a> for AxisValue<'a> {
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> AxisValue<'a> {
-    fn dyn_inner<'b>(&'b self) -> &'b dyn SomeTable<'a> {
-        match self {
-            Self::Format1(table) => table,
-            Self::Format2(table) => table,
-            Self::Format3(table) => table,
-            Self::Format4(table) => table,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl std::fmt::Debug for AxisValue<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.dyn_inner().fmt(f)
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for AxisValue<'a> {
-    fn type_name(&self) -> &str {
-        self.dyn_inner().type_name()
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        self.dyn_inner().get_field(idx)
-    }
-}
-
 impl Format<u16> for AxisValueFormat1<'_> {
     const FORMAT: u16 = 1;
 }
@@ -517,24 +444,47 @@ impl<'a> MinByteRange<'a> for AxisValueFormat1<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for AxisValueFormat1<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for AxisValueFormat1<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct AxisValueFormat1FixedHeader {
+    pub format: BigEndian<u16>,
+    pub axis_index: BigEndian<u16>,
+    pub flags: BigEndian<AxisValueTableFlags>,
+    pub value_name_id: BigEndian<NameId>,
+    pub value: BigEndian<Fixed>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () =
+    assert!(std::mem::size_of::<AxisValueFormat1FixedHeader>() <= AxisValueFormat1::MIN_SIZE);
+
 /// [Axis value table format 1](https://docs.microsoft.com/en-us/typography/opentype/spec/stat#axis-value-table-format-1)
 #[derive(Clone)]
 pub struct AxisValueFormat1<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, AxisValueFormat1FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -548,64 +498,59 @@ impl<'a> AxisValueFormat1<'a> {
 
     /// Format identifier — set to 1.
     pub fn format(&self) -> u16 {
-        let range = self.format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().format.get()
     }
 
     /// Zero-base index into the axis record array identifying the axis
     /// of design variation to which the axis value table applies. Must
     /// be less than designAxisCount.
     pub fn axis_index(&self) -> u16 {
-        let range = self.axis_index_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().axis_index.get()
     }
 
     /// Flags — see below for details.
     pub fn flags(&self) -> AxisValueTableFlags {
-        let range = self.flags_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().flags.get()
     }
 
     /// The name ID for entries in the 'name' table that provide a
     /// display string for this attribute value.
     pub fn value_name_id(&self) -> NameId {
-        let range = self.value_name_id_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().value_name_id.get()
     }
 
     /// A numeric value for this attribute value.
     pub fn value(&self) -> Fixed {
-        let range = self.value_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().value.get()
     }
 
     pub fn format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn axis_index_byte_range(&self) -> Range<usize> {
         let start = self.format_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn flags_byte_range(&self) -> Range<usize> {
         let start = self.axis_index_byte_range().end;
-        let end = start + AxisValueTableFlags::RAW_BYTE_LEN;
+        let end = start.saturating_add(AxisValueTableFlags::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn value_name_id_byte_range(&self) -> Range<usize> {
         let start = self.flags_byte_range().end;
-        let end = start + NameId::RAW_BYTE_LEN;
+        let end = start.saturating_add(NameId::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn value_byte_range(&self) -> Range<usize> {
         let start = self.value_name_id_byte_range().end;
-        let end = start + Fixed::RAW_BYTE_LEN;
+        let end = start.saturating_add(Fixed::RAW_BYTE_LEN);
         start..end
     }
 }
@@ -617,33 +562,9 @@ const _: () = assert!(FontData::default_data_long_enough(
 impl Default for AxisValueFormat1<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_format_1_u16_table_data(),
+            data: TableDataRef::new(FontData::default_format_1_u16_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for AxisValueFormat1<'a> {
-    fn type_name(&self) -> &str {
-        "AxisValueFormat1"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format", self.format())),
-            1usize => Some(Field::new("axis_index", self.axis_index())),
-            2usize => Some(Field::new("flags", self.flags())),
-            3usize => Some(Field::new("value_name_id", self.value_name_id())),
-            4usize => Some(Field::new("value", self.value())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for AxisValueFormat1<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -657,24 +578,49 @@ impl<'a> MinByteRange<'a> for AxisValueFormat2<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for AxisValueFormat2<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for AxisValueFormat2<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct AxisValueFormat2FixedHeader {
+    pub format: BigEndian<u16>,
+    pub axis_index: BigEndian<u16>,
+    pub flags: BigEndian<AxisValueTableFlags>,
+    pub value_name_id: BigEndian<NameId>,
+    pub nominal_value: BigEndian<Fixed>,
+    pub range_min_value: BigEndian<Fixed>,
+    pub range_max_value: BigEndian<Fixed>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () =
+    assert!(std::mem::size_of::<AxisValueFormat2FixedHeader>() <= AxisValueFormat2::MIN_SIZE);
+
 /// [Axis value table format 2](https://docs.microsoft.com/en-us/typography/opentype/spec/stat#axis-value-table-format-2)
 #[derive(Clone)]
 pub struct AxisValueFormat2<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, AxisValueFormat2FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -690,118 +636,84 @@ impl<'a> AxisValueFormat2<'a> {
 
     /// Format identifier — set to 2.
     pub fn format(&self) -> u16 {
-        let range = self.format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().format.get()
     }
 
     /// Zero-base index into the axis record array identifying the axis
     /// of design variation to which the axis value table applies. Must
     /// be less than designAxisCount.
     pub fn axis_index(&self) -> u16 {
-        let range = self.axis_index_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().axis_index.get()
     }
 
     /// Flags — see below for details.
     pub fn flags(&self) -> AxisValueTableFlags {
-        let range = self.flags_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().flags.get()
     }
 
     /// The name ID for entries in the 'name' table that provide a
     /// display string for this attribute value.
     pub fn value_name_id(&self) -> NameId {
-        let range = self.value_name_id_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().value_name_id.get()
     }
 
     /// A nominal numeric value for this attribute value.
     pub fn nominal_value(&self) -> Fixed {
-        let range = self.nominal_value_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().nominal_value.get()
     }
 
     /// The minimum value for a range associated with the specified
     /// name ID.
     pub fn range_min_value(&self) -> Fixed {
-        let range = self.range_min_value_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().range_min_value.get()
     }
 
     /// The maximum value for a range associated with the specified
     /// name ID.
     pub fn range_max_value(&self) -> Fixed {
-        let range = self.range_max_value_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().range_max_value.get()
     }
 
     pub fn format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn axis_index_byte_range(&self) -> Range<usize> {
         let start = self.format_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn flags_byte_range(&self) -> Range<usize> {
         let start = self.axis_index_byte_range().end;
-        let end = start + AxisValueTableFlags::RAW_BYTE_LEN;
+        let end = start.saturating_add(AxisValueTableFlags::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn value_name_id_byte_range(&self) -> Range<usize> {
         let start = self.flags_byte_range().end;
-        let end = start + NameId::RAW_BYTE_LEN;
+        let end = start.saturating_add(NameId::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn nominal_value_byte_range(&self) -> Range<usize> {
         let start = self.value_name_id_byte_range().end;
-        let end = start + Fixed::RAW_BYTE_LEN;
+        let end = start.saturating_add(Fixed::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn range_min_value_byte_range(&self) -> Range<usize> {
         let start = self.nominal_value_byte_range().end;
-        let end = start + Fixed::RAW_BYTE_LEN;
+        let end = start.saturating_add(Fixed::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn range_max_value_byte_range(&self) -> Range<usize> {
         let start = self.range_min_value_byte_range().end;
-        let end = start + Fixed::RAW_BYTE_LEN;
+        let end = start.saturating_add(Fixed::RAW_BYTE_LEN);
         start..end
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for AxisValueFormat2<'a> {
-    fn type_name(&self) -> &str {
-        "AxisValueFormat2"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format", self.format())),
-            1usize => Some(Field::new("axis_index", self.axis_index())),
-            2usize => Some(Field::new("flags", self.flags())),
-            3usize => Some(Field::new("value_name_id", self.value_name_id())),
-            4usize => Some(Field::new("nominal_value", self.nominal_value())),
-            5usize => Some(Field::new("range_min_value", self.range_min_value())),
-            6usize => Some(Field::new("range_max_value", self.range_max_value())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for AxisValueFormat2<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -815,24 +727,48 @@ impl<'a> MinByteRange<'a> for AxisValueFormat3<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for AxisValueFormat3<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for AxisValueFormat3<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct AxisValueFormat3FixedHeader {
+    pub format: BigEndian<u16>,
+    pub axis_index: BigEndian<u16>,
+    pub flags: BigEndian<AxisValueTableFlags>,
+    pub value_name_id: BigEndian<NameId>,
+    pub value: BigEndian<Fixed>,
+    pub linked_value: BigEndian<Fixed>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () =
+    assert!(std::mem::size_of::<AxisValueFormat3FixedHeader>() <= AxisValueFormat3::MIN_SIZE);
+
 /// [Axis value table format 3](https://docs.microsoft.com/en-us/typography/opentype/spec/stat#axis-value-table-format-3)
 #[derive(Clone)]
 pub struct AxisValueFormat3<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, AxisValueFormat3FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -847,103 +783,71 @@ impl<'a> AxisValueFormat3<'a> {
 
     /// Format identifier — set to 3.
     pub fn format(&self) -> u16 {
-        let range = self.format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().format.get()
     }
 
     /// Zero-base index into the axis record array identifying the axis
     /// of design variation to which the axis value table applies. Must
     /// be less than designAxisCount.
     pub fn axis_index(&self) -> u16 {
-        let range = self.axis_index_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().axis_index.get()
     }
 
     /// Flags — see below for details.
     pub fn flags(&self) -> AxisValueTableFlags {
-        let range = self.flags_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().flags.get()
     }
 
     /// The name ID for entries in the 'name' table that provide a
     /// display string for this attribute value.
     pub fn value_name_id(&self) -> NameId {
-        let range = self.value_name_id_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().value_name_id.get()
     }
 
     /// A numeric value for this attribute value.
     pub fn value(&self) -> Fixed {
-        let range = self.value_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().value.get()
     }
 
     /// The numeric value for a style-linked mapping from this value.
     pub fn linked_value(&self) -> Fixed {
-        let range = self.linked_value_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().linked_value.get()
     }
 
     pub fn format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn axis_index_byte_range(&self) -> Range<usize> {
         let start = self.format_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn flags_byte_range(&self) -> Range<usize> {
         let start = self.axis_index_byte_range().end;
-        let end = start + AxisValueTableFlags::RAW_BYTE_LEN;
+        let end = start.saturating_add(AxisValueTableFlags::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn value_name_id_byte_range(&self) -> Range<usize> {
         let start = self.flags_byte_range().end;
-        let end = start + NameId::RAW_BYTE_LEN;
+        let end = start.saturating_add(NameId::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn value_byte_range(&self) -> Range<usize> {
         let start = self.value_name_id_byte_range().end;
-        let end = start + Fixed::RAW_BYTE_LEN;
+        let end = start.saturating_add(Fixed::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn linked_value_byte_range(&self) -> Range<usize> {
         let start = self.value_byte_range().end;
-        let end = start + Fixed::RAW_BYTE_LEN;
+        let end = start.saturating_add(Fixed::RAW_BYTE_LEN);
         start..end
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for AxisValueFormat3<'a> {
-    fn type_name(&self) -> &str {
-        "AxisValueFormat3"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format", self.format())),
-            1usize => Some(Field::new("axis_index", self.axis_index())),
-            2usize => Some(Field::new("flags", self.flags())),
-            3usize => Some(Field::new("value_name_id", self.value_name_id())),
-            4usize => Some(Field::new("value", self.value())),
-            5usize => Some(Field::new("linked_value", self.linked_value())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for AxisValueFormat3<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -957,24 +861,46 @@ impl<'a> MinByteRange<'a> for AxisValueFormat4<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for AxisValueFormat4<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for AxisValueFormat4<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct AxisValueFormat4FixedHeader {
+    pub format: BigEndian<u16>,
+    pub axis_count: BigEndian<u16>,
+    pub flags: BigEndian<AxisValueTableFlags>,
+    pub value_name_id: BigEndian<NameId>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () =
+    assert!(std::mem::size_of::<AxisValueFormat4FixedHeader>() <= AxisValueFormat4::MIN_SIZE);
+
 /// [Axis value table format 4](https://docs.microsoft.com/en-us/typography/opentype/spec/stat#axis-value-table-format-4)
 #[derive(Clone)]
 pub struct AxisValueFormat4<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, AxisValueFormat4FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -987,99 +913,67 @@ impl<'a> AxisValueFormat4<'a> {
 
     /// Format identifier — set to 4.
     pub fn format(&self) -> u16 {
-        let range = self.format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().format.get()
     }
 
     /// The total number of axes contributing to this axis-values
     /// combination.
     pub fn axis_count(&self) -> u16 {
-        let range = self.axis_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().axis_count.get()
     }
 
     /// Flags — see below for details.
     pub fn flags(&self) -> AxisValueTableFlags {
-        let range = self.flags_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().flags.get()
     }
 
     /// The name ID for entries in the 'name' table that provide a
     /// display string for this combination of axis values.
     pub fn value_name_id(&self) -> NameId {
-        let range = self.value_name_id_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().value_name_id.get()
     }
 
     /// Array of AxisValue records that provide the combination of axis
     /// values, one for each contributing axis.
     pub fn axis_values(&self) -> &'a [AxisValueRecord] {
         let range = self.axis_values_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn axis_count_byte_range(&self) -> Range<usize> {
         let start = self.format_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn flags_byte_range(&self) -> Range<usize> {
         let start = self.axis_count_byte_range().end;
-        let end = start + AxisValueTableFlags::RAW_BYTE_LEN;
+        let end = start.saturating_add(AxisValueTableFlags::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn value_name_id_byte_range(&self) -> Range<usize> {
         let start = self.flags_byte_range().end;
-        let end = start + NameId::RAW_BYTE_LEN;
+        let end = start.saturating_add(NameId::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn axis_values_byte_range(&self) -> Range<usize> {
         let axis_count = self.axis_count();
         let start = self.value_name_id_byte_range().end;
-        let end = start
-            + (transforms::to_usize(axis_count)).saturating_mul(AxisValueRecord::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(axis_count)).saturating_mul(AxisValueRecord::RAW_BYTE_LEN),
+        );
         start..end
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for AxisValueFormat4<'a> {
-    fn type_name(&self) -> &str {
-        "AxisValueFormat4"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format", self.format())),
-            1usize => Some(Field::new("axis_count", self.axis_count())),
-            2usize => Some(Field::new("flags", self.flags())),
-            3usize => Some(Field::new("value_name_id", self.value_name_id())),
-            4usize => Some(Field::new(
-                "axis_values",
-                traversal::FieldType::array_of_records(
-                    stringify!(AxisValueRecord),
-                    self.axis_values(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for AxisValueFormat4<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -1110,21 +1004,6 @@ impl AxisValueRecord {
 
 impl FixedSize for AxisValueRecord {
     const RAW_BYTE_LEN: usize = u16::RAW_BYTE_LEN + Fixed::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for AxisValueRecord {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "AxisValueRecord",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("axis_index", self.axis_index())),
-                1usize => Some(Field::new("value", self.value())),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }
 
 /// [Axis value table flags](https://docs.microsoft.com/en-us/typography/opentype/spec/stat#flags).
@@ -1435,12 +1314,5 @@ impl font_types::Scalar for AxisValueTableFlags {
     fn from_raw(raw: Self::Raw) -> Self {
         let t = <u16>::from_raw(raw);
         Self::from_bits_truncate(t)
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> From<AxisValueTableFlags> for FieldType<'a> {
-    fn from(src: AxisValueTableFlags) -> FieldType<'a> {
-        src.bits().into()
     }
 }

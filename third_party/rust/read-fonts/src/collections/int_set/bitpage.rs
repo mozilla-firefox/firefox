@@ -52,12 +52,30 @@ impl BitPage {
 
     /// Returns true if this page has any members in common with `other`.
     pub(crate) fn intersects_set(&self, other: &BitPage) -> bool {
-        for (a, b) in self.storage.iter().zip(other.storage.iter()) {
-            if (*a & *b) != 0 {
-                return true;
-            }
+        self.storage
+            .iter()
+            .zip(other.storage.iter())
+            .any(|(a, b)| (*a & *b) != 0)
+    }
+
+    /// Returns true if this page is a subset of `other`.
+    pub(crate) fn is_subset(&self, other: &BitPage) -> bool {
+        if self.len() > other.len() {
+            return false;
         }
-        false
+        self.storage
+            .iter()
+            .zip(other.storage.iter())
+            .all(|(a, b)| (*a & *b) == *a)
+    }
+
+    /// Returns the number of members present in both `self` and `other`.
+    pub(crate) fn intersection_len(&self, other: &BitPage) -> u32 {
+        self.storage
+            .iter()
+            .zip(other.storage.iter())
+            .map(|(a, b)| (*a & *b).count_ones())
+            .sum()
     }
 
     // TODO(garretrieger): iterator that starts after some value (similar to next in hb).
@@ -105,7 +123,35 @@ impl BitPage {
         }
     }
 
+    /// Returns the smallest member of this page that is `>= (value % page width)`, if any.
+    pub(crate) fn first_from(&self, value: u32) -> Option<u32> {
+        self.first_set_bit_from(value, |elem| elem)
+    }
+
+    /// Returns the smallest value `>= (value % page width)` that is not a member of this page,
+    /// if any.
+    pub(crate) fn first_absent_from(&self, value: u32) -> Option<u32> {
+        self.first_set_bit_from(value, |elem| !elem)
+    }
+
+    /// Returns the index of the first set bit at or after `(value % page width)` in the
+    /// elements of this page transformed by `bits`.
+    fn first_set_bit_from(&self, value: u32, bits: impl Fn(Element) -> Element) -> Option<u32> {
+        let start_index = Self::element_index(value);
+        // Clears the bits below `value` in its element.
+        let mut mask = Element::MAX << (value & ELEM_MASK);
+        for (i, elem) in self.storage[start_index..].iter().enumerate() {
+            let masked = bits(*elem) & mask;
+            if masked != 0 {
+                return Some((start_index + i) as u32 * ELEM_BITS + masked.trailing_zeros());
+            }
+            mask = Element::MAX;
+        }
+        None
+    }
+
     /// Marks `(val % page width)` a member of this set and returns `true` if it is newly added.
+    #[inline(always)]
     pub(crate) fn insert(&mut self, val: u32) -> bool {
         let el_mut = self.element_mut(val);
         let mask = elem_index_bit_mask(val);
@@ -122,6 +168,7 @@ impl BitPage {
         let first_elem_idx = first / ELEM_BITS;
         let last_elem_idx = last / ELEM_BITS;
 
+        let mut added = 0;
         for elem_idx in first_elem_idx..=last_elem_idx {
             let elem_start = first.max(elem_idx * ELEM_BITS) & ELEM_MASK;
             let elem_last = last.min(((elem_idx + 1) * ELEM_BITS) - 1) & ELEM_MASK;
@@ -130,10 +177,12 @@ impl BitPage {
             let mask = u64::MAX << (elem_start + end_shift);
             let mask = mask >> end_shift;
 
-            self.storage[elem_idx as usize] |= mask;
+            let elem = &mut self.storage[elem_idx as usize];
+            added += (mask & !*elem).count_ones();
+            *elem |= mask;
         }
 
-        self.recompute_length();
+        self.length += added;
     }
 
     /// Marks all values `[first, last]` as not members of this set.
@@ -421,6 +470,57 @@ mod test {
 
         assert_eq!(Iter::new(Element::MAX).max(), Some(ELEM_BITS - 1));
         assert_eq!(Iter::new(Element::MAX).min(), Some(0));
+    }
+
+    #[test]
+    fn first_from() {
+        let page = BitPage::new_zeroes();
+        assert_eq!(page.first_from(0), None);
+        assert_eq!(page.first_from(511), None);
+
+        let page: BitPage = [3, 63, 64, 200, 511].into_iter().collect();
+        assert_eq!(page.first_from(0), Some(3));
+        assert_eq!(page.first_from(3), Some(3));
+        assert_eq!(page.first_from(4), Some(63));
+        assert_eq!(page.first_from(63), Some(63));
+        assert_eq!(page.first_from(64), Some(64));
+        assert_eq!(page.first_from(65), Some(200));
+        assert_eq!(page.first_from(201), Some(511));
+        assert_eq!(page.first_from(511), Some(511));
+        // values are taken modulo the page width
+        assert_eq!(page.first_from(512 + 4), Some(63));
+
+        let page = BitPage::new_ones();
+        for value in 0..PAGE_BITS {
+            assert_eq!(page.first_from(value), Some(value));
+        }
+    }
+
+    #[test]
+    fn first_absent_from() {
+        let page = BitPage::new_ones();
+        assert_eq!(page.first_absent_from(0), None);
+        assert_eq!(page.first_absent_from(511), None);
+
+        let mut page = BitPage::new_ones();
+        for v in [3, 63, 64, 200, 511] {
+            page.remove(v);
+        }
+        assert_eq!(page.first_absent_from(0), Some(3));
+        assert_eq!(page.first_absent_from(3), Some(3));
+        assert_eq!(page.first_absent_from(4), Some(63));
+        assert_eq!(page.first_absent_from(63), Some(63));
+        assert_eq!(page.first_absent_from(64), Some(64));
+        assert_eq!(page.first_absent_from(65), Some(200));
+        assert_eq!(page.first_absent_from(201), Some(511));
+        assert_eq!(page.first_absent_from(511), Some(511));
+        // values are taken modulo the page width
+        assert_eq!(page.first_absent_from(512 + 4), Some(63));
+
+        let page = BitPage::new_zeroes();
+        for value in 0..PAGE_BITS {
+            assert_eq!(page.first_absent_from(value), Some(value));
+        }
     }
 
     #[test]
@@ -861,5 +961,61 @@ mod test {
         assert_intersects!(b, d, false);
 
         assert_intersects!(c, d, false);
+    }
+
+    #[test]
+    fn is_subset() {
+        let a = BitPage::new_zeroes();
+        let b = BitPage::from_iter([32, 400]);
+        let c = BitPage::from_iter([32]);
+        let d = BitPage::from_iter([32, 200, 400]);
+        let e = BitPage::from_iter([32, 300]);
+        let f = BitPage::from_iter([32, 200, 300]);
+
+        assert!(a.is_subset(&a));
+        assert!(a.is_subset(&b));
+        assert!(a.is_subset(&c));
+        assert!(a.is_subset(&d));
+
+        // self subset check
+        assert!(b.is_subset(&b));
+        assert!(c.is_subset(&c));
+        assert!(d.is_subset(&d));
+        assert!(e.is_subset(&e));
+        assert!(f.is_subset(&f));
+
+        // is subset where len a < len b
+        assert!(c.is_subset(&b));
+        assert!(c.is_subset(&d));
+        assert!(b.is_subset(&d));
+
+        // Fails via len a > len b
+        assert!(!b.is_subset(&c));
+        assert!(!d.is_subset(&b));
+        assert!(!d.is_subset(&c));
+        assert!(!b.is_subset(&a));
+
+        // Fails via bitwise check (len a <= len b)
+        assert!(!b.is_subset(&e));
+        assert!(!e.is_subset(&b));
+        assert!(!b.is_subset(&f));
+    }
+
+    #[test]
+    fn intersection_len() {
+        let a = BitPage::new_zeroes();
+        let b = BitPage::from_iter([32, 400]);
+        let c = BitPage::from_iter([32, 200]);
+        let d = BitPage::from_iter([32]);
+
+        assert_eq!(a.intersection_len(&b), 0);
+        assert_eq!(b.intersection_len(&a), 0);
+
+        assert_eq!(b.intersection_len(&c), 1);
+        assert_eq!(c.intersection_len(&b), 1);
+        assert_eq!(b.intersection_len(&d), 1);
+        assert_eq!(d.intersection_len(&b), 1);
+
+        assert_eq!(b.intersection_len(&b), 2);
     }
 }

@@ -6,6 +6,7 @@
 //! Then applies a scaling factor to those metrics, computes a potentially
 //! modified scale, and tags active blue zones.
 
+use super::super::context::FontRefContext;
 use super::super::{
     metrics::{
         fixed_div, fixed_mul, fixed_mul_div, pix_round, BlueZones, Scale, ScaledAxisMetrics,
@@ -17,8 +18,7 @@ use super::super::{
     topo::Dimension,
     QuirksMode,
 };
-use crate::{instance::NormalizedCoord, prelude::Size, FontRef, MetadataProvider};
-use raw::types::F2Dot14;
+use crate::{instance::NormalizedCoord, FontRef};
 
 impl UnscaledStyleMetrics {
     /// Creates a set of metrics for the given font, normalized coordinates
@@ -29,8 +29,9 @@ impl UnscaledStyleMetrics {
         } else {
             ShaperMode::Nominal
         };
-        let shaper = Shaper::new(font, shaper_mode);
-        compute_unscaled_style_metrics(&shaper, coords, style, QuirksMode::Aot)
+        let context = FontRefContext::new(font, coords);
+        let shaper = Shaper::new(&context, shaper_mode);
+        compute_unscaled_style_metrics(&shaper, style, QuirksMode::Aot)
     }
 
     /// Applies the given scale to this set of style metrics.
@@ -44,15 +45,14 @@ impl UnscaledStyleMetrics {
 /// See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/autofit/aflatin.c#L1134>
 pub(crate) fn compute_unscaled_style_metrics(
     shaper: &Shaper,
-    coords: &[F2Dot14],
     style: &StyleClass,
     quirks: QuirksMode,
 ) -> UnscaledStyleMetrics {
-    let charmap = shaper.charmap();
+    let context = shaper.context();
     // We don't attempt to produce any metrics if we don't have a Unicode
     // cmap
     // See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/autofit/aflatin.c#L1146>
-    if charmap.is_symbol() {
+    if context.is_symbol() {
         return UnscaledStyleMetrics {
             class_ix: style.index as u16,
             axes: [
@@ -68,15 +68,14 @@ pub(crate) fn compute_unscaled_style_metrics(
             ..Default::default()
         };
     }
-    let [hwidths, vwidths] = super::widths::compute_widths(shaper, coords, style, quirks);
-    let [hblues, vblues] = super::blues::compute_unscaled_blues(shaper, coords, style);
-    let glyph_metrics = shaper.font().glyph_metrics(Size::unscaled(), coords);
+    let [hwidths, vwidths] = super::widths::compute_widths(shaper, style, quirks);
+    let [hblues, vblues] = super::blues::compute_unscaled_blues(shaper, style);
     let mut digit_advance = None;
     let mut digits_have_same_width = true;
     for ch in '0'..='9' {
-        if let Some(advance) = charmap
-            .map(ch)
-            .and_then(|gid| glyph_metrics.advance_width(gid))
+        if let Some(advance) = context
+            .map(ch as u32)
+            .and_then(|gid| context.advance_width(gid))
         {
             if digit_advance.is_some() && digit_advance != Some(advance) {
                 digits_have_same_width = false;
@@ -339,6 +338,7 @@ mod tests {
         *,
     };
     use crate::attribute::Style;
+    use crate::outline::autohint::context::FontRefContext;
     use raw::{FontRef, TableProvider};
 
     #[test]
@@ -415,13 +415,10 @@ mod tests {
     fn make_scaled_metrics(font_data: &[u8], style_class: usize) -> ScaledStyleMetrics {
         let font = FontRef::new(font_data).unwrap();
         let class = &style::STYLE_CLASSES[style_class];
-        let shaper = Shaper::new(&font, ShaperMode::Nominal);
-        let unscaled_metrics = compute_unscaled_style_metrics(
-            &shaper,
-            Default::default(),
-            class,
-            QuirksMode::default(),
-        );
+        let context = FontRefContext::new(&font, &[]);
+        let shaper = Shaper::new(&context, ShaperMode::Nominal);
+        let unscaled_metrics =
+            compute_unscaled_style_metrics(&shaper, class, QuirksMode::default());
         let scale = Scale::new(
             16.0,
             font.head().unwrap().units_per_em() as i32,

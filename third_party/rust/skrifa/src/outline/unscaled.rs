@@ -2,89 +2,88 @@
 
 #![allow(dead_code)]
 
-use super::DrawError;
-use crate::collections::SmallVec;
 use core::ops::Range;
-use raw::{
-    tables::glyf::PointFlags,
-    types::{F26Dot6, Point},
-};
+pub(super) use read_fonts::model::glyph::outline::UnscaledOutlineSink;
+use read_fonts::{model::glyph::outline::PathSink, tables::glyf::PointFlags};
+use smallvec::SmallVec;
 
+/// The largest coordinate magnitude, in font units, that the autohinter
+/// takes.
+///
+/// Its analysis subtracts points and scales the differences in `i32`, which
+/// overflows near `1 << 27`. Only a transformed component far outside the em
+/// reaches this bound.
+const MAX_COORD: i32 = 1 << 24;
+
+/// Clamps a coordinate in font units to the range the autohinter takes.
+pub(crate) fn clamp_coord(value: i32) -> i32 {
+    value.clamp(-MAX_COORD, MAX_COORD)
+}
+
+/// A point of an outline in font units, with a contour start flag.
 #[derive(Copy, Clone, Default, Debug)]
-pub(super) struct UnscaledPoint {
-    pub x: i16,
-    pub y: i16,
+pub(crate) struct UnscaledPoint {
+    pub x: i32,
+    pub y: i32,
     pub flags: PointFlags,
     pub is_contour_start: bool,
 }
 
 impl UnscaledPoint {
-    pub fn from_glyf_point(
-        point: Point<F26Dot6>,
-        flags: PointFlags,
-        is_contour_start: bool,
-    ) -> Self {
-        let point = point.map(|x| (x.to_bits() >> 6) as i16);
-        Self {
-            x: point.x,
-            y: point.y,
-            flags: flags.without_markers(),
-            is_contour_start,
-        }
-    }
-
     pub fn is_on_curve(self) -> bool {
         self.flags.is_on_curve()
     }
 }
 
-pub(super) trait UnscaledOutlineSink {
-    fn try_reserve(&mut self, additional: usize) -> Result<(), DrawError>;
-    fn push(&mut self, point: UnscaledPoint) -> Result<(), DrawError>;
-    fn extend(&mut self, points: impl IntoIterator<Item = UnscaledPoint>) -> Result<(), DrawError> {
-        for point in points.into_iter() {
-            self.push(point)?;
-        }
-        Ok(())
-    }
-}
-
 // please can I have smallvec?
-pub(super) struct UnscaledOutlineBuf<const INLINE_CAP: usize>(SmallVec<UnscaledPoint, INLINE_CAP>);
+pub(crate) struct UnscaledOutlineBuf<const INLINE_CAP: usize> {
+    points: SmallVec<[UnscaledPoint; INLINE_CAP]>,
+    /// True after a contour starts and before its first point is added.
+    starting: bool,
+}
 
 impl<const INLINE_CAP: usize> UnscaledOutlineBuf<INLINE_CAP> {
     pub fn new() -> Self {
-        Self(SmallVec::new())
+        Self {
+            points: SmallVec::new(),
+            starting: false,
+        }
     }
 
     pub fn clear(&mut self) {
-        self.0.clear();
+        self.points.clear();
+        self.starting = false;
     }
 
     pub fn as_ref(&self) -> UnscaledOutlineRef<'_> {
         UnscaledOutlineRef {
-            points: self.0.as_slice(),
+            points: self.points.as_slice(),
         }
     }
 }
 
 impl<const INLINE_CAP: usize> UnscaledOutlineSink for UnscaledOutlineBuf<INLINE_CAP> {
-    fn try_reserve(&mut self, additional: usize) -> Result<(), DrawError> {
-        if !self.0.try_reserve(additional) {
-            Err(DrawError::InsufficientMemory)
-        } else {
-            Ok(())
-        }
+    fn start_contour(&mut self) {
+        self.starting = true;
     }
 
-    fn push(&mut self, point: UnscaledPoint) -> Result<(), DrawError> {
-        self.0.push(point);
-        Ok(())
+    fn point(&mut self, x: i32, y: i32, flags: PointFlags) {
+        self.points.push(UnscaledPoint {
+            x: clamp_coord(x),
+            y: clamp_coord(y),
+            flags,
+            is_contour_start: self.starting,
+        });
+        self.starting = false;
+    }
+
+    fn end_contour(&mut self) {
+        self.starting = false;
     }
 }
 
 #[derive(Copy, Clone, Debug)]
-pub(super) struct UnscaledOutlineRef<'a> {
+pub(crate) struct UnscaledOutlineRef<'a> {
     pub points: &'a [UnscaledPoint],
 }
 
@@ -142,77 +141,83 @@ impl UnscaledOutlineRef<'_> {
 #[derive(Copy, Clone)]
 enum PendingElement {
     Line([f32; 2]),
+    Quad([f32; 4]),
     Cubic([f32; 6]),
 }
 
-/// Adapts an UnscaledOutlineSink to be fed from a pen while tracking
-/// memory allocation errors.
-pub(super) struct UnscaledPenAdapter<'a, T> {
-    sink: &'a mut T,
-    failed: bool,
+/// Converts a path drawn by this crate's CFF and VARC code into the points
+/// of an [`UnscaledOutlineSink`].
+///
+/// read-fonts does the same for its own outlines. This type handles the
+/// paths drawn from a [`FontRef`](crate::FontRef). A segment's end point is
+/// held until the next command, so a contour that closes on its start point
+/// does not repeat it. This matches how FreeType builds a TrueType outline
+/// from a charstring.
+pub(super) struct PointsFromPath<'a, S: ?Sized> {
+    sink: &'a mut S,
+    open: bool,
     last_start: Option<(f32, f32)>,
     pending: Option<PendingElement>,
 }
 
-impl<'a, T> UnscaledPenAdapter<'a, T> {
-    pub fn new(sink: &'a mut T) -> Self {
+impl<'a, S: ?Sized> PointsFromPath<'a, S> {
+    pub fn new(sink: &'a mut S) -> Self {
         Self {
             sink,
-            failed: false,
+            open: false,
             last_start: None,
             pending: None,
         }
     }
 }
 
-impl<T> UnscaledPenAdapter<'_, T>
-where
-    T: UnscaledOutlineSink,
-{
-    fn push(&mut self, x: f32, y: f32, flags: PointFlags, is_contour_start: bool) {
-        if self
-            .sink
-            .push(UnscaledPoint {
-                x: x as i16,
-                y: y as i16,
-                flags,
-                is_contour_start,
-            })
-            .is_err()
-        {
-            self.failed = true;
+impl<S: UnscaledOutlineSink + ?Sized> PointsFromPath<'_, S> {
+    fn push(&mut self, x: f32, y: f32, flags: PointFlags) {
+        if !self.open {
+            self.sink.start_contour();
+            self.open = true;
         }
+        self.sink.point(x as i32, y as i32, flags);
     }
 
     fn flush_pending(&mut self, for_close: bool) {
         if let Some(element) = self.pending.take() {
             let [x, y] = match element {
                 PendingElement::Line([x, y]) => [x, y],
+                PendingElement::Quad([x0, y0, x, y]) => {
+                    self.push(x0, y0, PointFlags::off_curve_quad());
+                    [x, y]
+                }
                 PendingElement::Cubic([x0, y0, x1, y1, x, y]) => {
-                    self.push(x0, y0, PointFlags::off_curve_cubic(), false);
-                    self.push(x1, y1, PointFlags::off_curve_cubic(), false);
+                    self.push(x0, y0, PointFlags::off_curve_cubic());
+                    self.push(x1, y1, PointFlags::off_curve_cubic());
                     [x, y]
                 }
             };
             if !for_close || self.last_start != Some((x, y)) {
-                self.push(x, y, PointFlags::on_curve(), false);
+                self.push(x, y, PointFlags::on_curve());
             }
         }
     }
 
-    pub fn finish(mut self) -> Result<(), DrawError> {
+    fn close_contour(&mut self) {
         self.flush_pending(true);
-        if self.failed {
-            Err(DrawError::InsufficientMemory)
-        } else {
-            Ok(())
+        if self.open {
+            self.sink.end_contour();
+            self.open = false;
         }
+    }
+
+    /// Closes the open contour, if any.
+    pub fn finish(mut self) {
+        self.close_contour();
     }
 }
 
-impl<T: UnscaledOutlineSink> super::OutlinePen for UnscaledPenAdapter<'_, T> {
+impl<S: UnscaledOutlineSink + ?Sized> PathSink for PointsFromPath<'_, S> {
     fn move_to(&mut self, x: f32, y: f32) {
-        self.push(x, y, PointFlags::on_curve(), true);
+        self.close_contour();
+        self.push(x, y, PointFlags::on_curve());
         self.last_start = Some((x, y));
     }
 
@@ -223,8 +228,7 @@ impl<T: UnscaledOutlineSink> super::OutlinePen for UnscaledPenAdapter<'_, T> {
 
     fn quad_to(&mut self, cx0: f32, cy0: f32, x: f32, y: f32) {
         self.flush_pending(false);
-        self.push(cx0, cy0, PointFlags::off_curve_quad(), false);
-        self.push(x, y, PointFlags::on_curve(), false);
+        self.pending = Some(PendingElement::Quad([cx0, cy0, x, y]));
     }
 
     fn curve_to(&mut self, cx0: f32, cy0: f32, cx1: f32, cy1: f32, x: f32, y: f32) {
@@ -233,25 +237,55 @@ impl<T: UnscaledOutlineSink> super::OutlinePen for UnscaledPenAdapter<'_, T> {
     }
 
     fn close(&mut self) {
-        self.flush_pending(true);
+        self.close_contour();
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{outline::OutlinePen, prelude::LocationRef, MetadataProvider};
+    use crate::{prelude::LocationRef, MetadataProvider};
     use raw::{types::GlyphId, FontRef};
 
-    #[test]
-    fn read_glyf_outline() {
-        let font = FontRef::new(font_test_data::MATERIAL_SYMBOLS_SUBSET).unwrap();
-        let glyph = font.outline_glyphs().get(GlyphId::new(5)).unwrap();
+    fn points_of(data: &[u8], glyph_id: u32) -> Vec<(i32, i32, u8)> {
+        let font = FontRef::new(data).unwrap();
+        let glyph = font.outline_glyphs().get(GlyphId::new(glyph_id)).unwrap();
         let mut outline = UnscaledOutlineBuf::<32>::new();
         glyph
             .draw_unscaled(LocationRef::default(), None, &mut outline)
             .unwrap();
-        let outline = outline.as_ref();
+        outline
+            .as_ref()
+            .points
+            .iter()
+            .map(|point| (point.x, point.y, point.flags.to_bits()))
+            .collect()
+    }
+
+    // A contour that closes with a quad does not repeat its start point.
+    #[test]
+    fn a_closing_quad_does_not_repeat_the_start() {
+        use crate::outline::pen::OutlinePen;
+        let mut outline = UnscaledOutlineBuf::<8>::new();
+        let mut pen = PointsFromPath::new(&mut outline);
+        pen.move_to(0.0, 0.0);
+        pen.line_to(10.0, 0.0);
+        pen.quad_to(10.0, 10.0, 0.0, 0.0);
+        pen.close();
+        pen.finish();
+        let points: Vec<_> = outline
+            .as_ref()
+            .points
+            .iter()
+            .map(|point| (point.x, point.y, point.flags.to_bits()))
+            .collect();
+        let on = PointFlags::on_curve().to_bits();
+        let off = PointFlags::off_curve_quad().to_bits();
+        assert_eq!(points, [(0, 0, on), (10, 0, on), (10, 10, off)]);
+    }
+
+    #[test]
+    fn read_glyf_outline() {
         let expected = [
             // contour 0
             (400, 80, 1),
@@ -282,24 +316,14 @@ mod tests {
             (560, 767, 0),
             (513, 720, 0),
         ];
-        let points = outline
-            .points
-            .iter()
-            .map(|point| (point.x, point.y, point.flags.to_bits()))
-            .collect::<Vec<_>>();
-        assert_eq!(points, expected);
+        assert_eq!(
+            points_of(font_test_data::MATERIAL_SYMBOLS_SUBSET, 5),
+            expected
+        );
     }
 
     #[test]
-    #[cfg(feature = "spec_next")]
     fn read_cubic_glyf_outline() {
-        let font = FontRef::new(font_test_data::CUBIC_GLYF).unwrap();
-        let glyph = font.outline_glyphs().get(GlyphId::new(2)).unwrap();
-        let mut outline = UnscaledOutlineBuf::<32>::new();
-        glyph
-            .draw_unscaled(LocationRef::default(), None, &mut outline)
-            .unwrap();
-        let outline = outline.as_ref();
         let expected = [
             // contour 0
             (278, 710, 1),
@@ -309,23 +333,11 @@ mod tests {
             (998, 470, 1),
             (998, 710, 1),
         ];
-        let points = outline
-            .points
-            .iter()
-            .map(|point| (point.x, point.y, point.flags.to_bits()))
-            .collect::<Vec<_>>();
-        assert_eq!(points, expected);
+        assert_eq!(points_of(font_test_data::CUBIC_GLYF, 2), expected);
     }
 
     #[test]
     fn read_cff_outline() {
-        let font = FontRef::new(font_test_data::CANTARELL_VF_TRIMMED).unwrap();
-        let glyph = font.outline_glyphs().get(GlyphId::new(2)).unwrap();
-        let mut outline = UnscaledOutlineBuf::<32>::new();
-        glyph
-            .draw_unscaled(LocationRef::default(), None, &mut outline)
-            .unwrap();
-        let outline = outline.as_ref();
         let expected = [
             // contour 0
             (83, 0, 1),
@@ -346,12 +358,7 @@ mod tests {
             (67, 616, 128),
             (88, 595, 128),
         ];
-        let points = outline
-            .points
-            .iter()
-            .map(|point| (point.x, point.y, point.flags.to_bits()))
-            .collect::<Vec<_>>();
-        assert_eq!(points, expected);
+        assert_eq!(points_of(font_test_data::CANTARELL_VF_TRIMMED, 2), expected);
     }
 
     #[test]
@@ -393,53 +400,5 @@ mod tests {
         assert_eq!(bottom_contour, 0..14);
         assert_eq!(bottom_point_ix, 0);
         assert_eq!(bottom_y, Some(80));
-    }
-
-    /// When a contour ends with a line or cubic whose end matches the start
-    /// point, omit the last on curve. This matches FreeType behavior when
-    /// constructing a TrueType style outline from a CFF font.
-    #[test]
-    fn omit_unnecessary_trailing_oncurves() {
-        let mut outline = UnscaledOutlineBuf::<64>::new();
-        let mut pen = UnscaledPenAdapter::new(&mut outline);
-        pen.move_to(0.5, 1.5);
-        pen.line_to(1.0, 2.0);
-        // matches start, omit last on curve
-        pen.line_to(0.5, 1.5);
-        pen.close();
-        pen.move_to(5.0, 6.0);
-        pen.curve_to(1.0, 1.0, 2.0, 2.0, 2.0, 3.0);
-        // matches start, omit last on curve
-        pen.curve_to(1.0, 1.0, 2.0, 2.0, 5.0, 6.0);
-        pen.close();
-        pen.move_to(5.0, 6.0);
-        // doesn't match start, keep on curve
-        pen.curve_to(1.0, 1.0, 2.0, 2.0, 2.0, 3.0);
-        pen.close();
-        pen.finish().unwrap();
-        // Collect a vec of bools where true means on curve
-        let on_curves = outline
-            .0
-            .iter()
-            .map(|point| point.flags.is_on_curve())
-            .collect::<Vec<_>>();
-        #[rustfmt::skip]
-        let expected_on_curves = [
-            true,  // move
-            true,  // line
-                   // trailing line omitted
-            true,  // move
-            false, // cubic 1 off curve 1
-            false, // cubic 1 off curve 2
-            true,  // cubic 1 on curve
-            false, // cubic 2 off curve 1
-            false, // cubic 2 off curve 2
-                   // trailing on curve omitted
-            true,  // move
-            false, // cubic 1 off curve 1
-            false, // cubic 1 off curve 2
-            true,  // trailing on curve retained
-        ];
-        assert_eq!(on_curves, expected_on_curves);
     }
 }

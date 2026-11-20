@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Dsig<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,40 @@ impl TopLevelTable for Dsig<'_> {
     const TAG: Tag = Tag::new(b"DSIG");
 }
 
+impl ReadArgs for Dsig<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Dsig<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct DsigFixedHeader {
+    pub version: BigEndian<u32>,
+    pub num_signatures: BigEndian<u16>,
+    pub flags: BigEndian<PermissionFlags>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<DsigFixedHeader>() <= Dsig::MIN_SIZE);
+
 /// [DSIG (Digital Signature Table)](https://docs.microsoft.com/en-us/typography/opentype/spec/dsig#table-structure) table
 #[derive(Clone)]
 pub struct Dsig<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, DsigFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -44,51 +64,52 @@ impl<'a> Dsig<'a> {
 
     /// Version number of the DSIG table (0x00000001)
     pub fn version(&self) -> u32 {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// Number of signatures in the table
     pub fn num_signatures(&self) -> u16 {
-        let range = self.num_signatures_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().num_signatures.get()
     }
 
     /// Permission flags
     pub fn flags(&self) -> PermissionFlags {
-        let range = self.flags_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().flags.get()
     }
 
     /// Array of signature records
     pub fn signature_records(&self) -> &'a [SignatureRecord] {
         let range = self.signature_records_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u32::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn num_signatures_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn flags_byte_range(&self) -> Range<usize> {
         let start = self.num_signatures_byte_range().end;
-        let end = start + PermissionFlags::RAW_BYTE_LEN;
+        let end = start.saturating_add(PermissionFlags::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn signature_records_byte_range(&self) -> Range<usize> {
         let num_signatures = self.num_signatures();
         let start = self.flags_byte_range().end;
-        let end = start
-            + (transforms::to_usize(num_signatures)).saturating_mul(SignatureRecord::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(num_signatures)).saturating_mul(SignatureRecord::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -98,39 +119,9 @@ const _: () = assert!(FontData::default_data_long_enough(Dsig::MIN_SIZE));
 impl Default for Dsig<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Dsig<'a> {
-    fn type_name(&self) -> &str {
-        "Dsig"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new("num_signatures", self.num_signatures())),
-            2usize => Some(Field::new("flags", self.flags())),
-            3usize => Some(Field::new(
-                "signature_records",
-                traversal::FieldType::array_of_records(
-                    stringify!(SignatureRecord),
-                    self.signature_records(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Dsig<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -431,13 +422,6 @@ impl font_types::Scalar for PermissionFlags {
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> From<PermissionFlags> for FieldType<'a> {
-    fn from(src: PermissionFlags) -> FieldType<'a> {
-        src.bits().into()
-    }
-}
-
 /// [Signature Record](https://learn.microsoft.com/en-us/typography/opentype/spec/dsig#table-structure)
 #[derive(Clone, Debug, Copy, bytemuck :: AnyBitPattern)]
 #[repr(C)]
@@ -472,49 +456,52 @@ impl FixedSize for SignatureRecord {
     const RAW_BYTE_LEN: usize = u32::RAW_BYTE_LEN + u32::RAW_BYTE_LEN + Offset32::RAW_BYTE_LEN;
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for SignatureRecord {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "SignatureRecord",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("format", self.format())),
-                1usize => Some(Field::new("length", self.length())),
-                2usize => Some(Field::new(
-                    "signature_block_offset",
-                    FieldType::offset(self.signature_block_offset(), self.signature_block(_data)),
-                )),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
 impl<'a> MinByteRange<'a> for SignatureBlockFormat1<'a> {
     fn min_byte_range(&self) -> Range<usize> {
         0..self.signature_byte_range().end
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for SignatureBlockFormat1<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for SignatureBlockFormat1<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct SignatureBlockFormat1FixedHeader {
+    pub _reserved1: BigEndian<u16>,
+    pub _reserved2: BigEndian<u16>,
+    pub signature_length: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(
+    std::mem::size_of::<SignatureBlockFormat1FixedHeader>() <= SignatureBlockFormat1::MIN_SIZE
+);
+
 /// [Signature Block Format 1](https://learn.microsoft.com/en-us/typography/opentype/spec/dsig#table-structure)
 #[derive(Clone)]
 pub struct SignatureBlockFormat1<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, SignatureBlockFormat1FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -524,38 +511,42 @@ impl<'a> SignatureBlockFormat1<'a> {
 
     /// Length (in bytes) of the PKCS#7 packet in the signature field.
     pub fn signature_length(&self) -> u32 {
-        let range = self.signature_length_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().signature_length.get()
     }
 
     /// PKCS#7 packet
     pub fn signature(&self) -> &'a [u8] {
         let range = self.signature_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn _reserved1_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn _reserved2_byte_range(&self) -> Range<usize> {
         let start = self._reserved1_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn signature_length_byte_range(&self) -> Range<usize> {
         let start = self._reserved2_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn signature_byte_range(&self) -> Range<usize> {
         let signature_length = self.signature_length();
         let start = self.signature_length_byte_range().end;
-        let end = start + (transforms::to_usize(signature_length)).saturating_mul(u8::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(signature_length)).saturating_mul(u8::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -567,29 +558,8 @@ const _: () = assert!(FontData::default_data_long_enough(
 impl Default for SignatureBlockFormat1<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for SignatureBlockFormat1<'a> {
-    fn type_name(&self) -> &str {
-        "SignatureBlockFormat1"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("signature_length", self.signature_length())),
-            1usize => Some(Field::new("signature", self.signature())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for SignatureBlockFormat1<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }

@@ -4,7 +4,6 @@ include!("../../../generated/generated_cff.rs");
 
 use crate::ps::{
     cff::{charset::Charset, dict},
-    error::Error,
     string::Sid,
 };
 
@@ -39,7 +38,7 @@ impl<'a> Cff<'a> {
     /// Returns the PostScript name for the font in the font set at the
     /// given index.
     pub fn name(&self, index: usize) -> Option<&'a [u8]> {
-        self.names.get(index).ok()
+        self.names.get(index)
     }
 
     /// Returns the top dict index.
@@ -70,7 +69,7 @@ impl<'a> Cff<'a> {
     pub fn string(&self, id: Sid) -> Option<&'a [u8]> {
         match id.resolve_standard() {
             Ok(name) => Some(name),
-            Err(ix) => self.strings.get(ix).ok(),
+            Err(ix) => self.strings.get(ix),
         }
     }
 
@@ -88,7 +87,7 @@ impl<'a> Cff<'a> {
     /// index.
     ///
     /// See "Charsets" at <https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf#page=21>
-    pub fn charset(&self, top_dict_index: usize) -> Result<Option<Charset<'a>>, Error> {
+    pub fn charset(&self, top_dict_index: usize) -> Option<Charset<'a>> {
         let top_dict = self.top_dicts().get(top_dict_index)?;
         let offset_data = self.offset_data();
         let mut charset_offset: Option<usize> = None;
@@ -99,30 +98,21 @@ impl<'a> Cff<'a> {
                     charset_offset = Some(offset);
                 }
                 Ok(dict::Entry::CharstringsOffset(offset)) => {
-                    num_glyphs = Some(
-                        Index::read(
-                            offset_data
-                                .split_off(offset)
-                                .ok_or(ReadError::OutOfBounds)?,
-                        )?
-                        .count() as u32,
-                    );
+                    num_glyphs =
+                        Some(Index::read(offset_data.split_off(offset)?).ok()?.count() as u32);
                 }
                 // The ROS operator signifies a CID-keyed font and the charset
                 // maps to CIDs rather than SIDs which we don't parse for
                 // glyph names.
                 // <https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf#page=28>
                 Ok(dict::Entry::Ros { .. }) => {
-                    return Ok(None);
+                    return None;
                 }
                 _ => {}
             }
         }
-        if let Some((charset_offset, num_glyphs)) = charset_offset.zip(num_glyphs) {
-            Ok(Some(Charset::new(offset_data, charset_offset, num_glyphs)?))
-        } else {
-            Ok(None)
-        }
+        let (offset, num_glyphs) = charset_offset.zip(num_glyphs)?;
+        Charset::new(offset_data, offset, num_glyphs)
     }
 }
 
@@ -130,21 +120,25 @@ impl TopLevelTable for Cff<'_> {
     const TAG: Tag = Tag::new(b"CFF ");
 }
 
+impl ReadArgs for Cff<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Cff<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         let header = CffHeader::read(data)?;
         let mut data = FontData::new(header.trailing_data());
         let names = Index::read(data)?;
         data = data
-            .split_off(names.size_in_bytes()?)
+            .split_off(names.size_in_bytes().ok_or(ReadError::OutOfBounds)?)
             .ok_or(ReadError::OutOfBounds)?;
         let top_dicts = Index::read(data)?;
         data = data
-            .split_off(top_dicts.size_in_bytes()?)
+            .split_off(top_dicts.size_in_bytes().ok_or(ReadError::OutOfBounds)?)
             .ok_or(ReadError::OutOfBounds)?;
         let strings = Index::read(data)?;
         data = data
-            .split_off(strings.size_in_bytes()?)
+            .split_off(strings.size_in_bytes().ok_or(ReadError::OutOfBounds)?)
             .ok_or(ReadError::OutOfBounds)?;
         let global_subrs = Index::read(data)?;
         Ok(Self {
@@ -211,7 +205,7 @@ mod tests {
     fn test_glyph_names(font_data: &[u8], expected_names: &[&str]) {
         let font = FontRef::new(font_data).unwrap();
         let cff = font.cff().unwrap();
-        let charset = cff.charset(0).unwrap().unwrap();
+        let charset = cff.charset(0).unwrap();
         let sid_to_string = |sid| std::str::from_utf8(cff.string(sid).unwrap()).unwrap();
         let names_by_lookup = (0..charset.num_glyphs())
             .map(|gid| sid_to_string(charset.string_id(GlyphId::new(gid)).unwrap()))

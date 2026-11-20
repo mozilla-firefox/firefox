@@ -1,6 +1,8 @@
 //! The Adobe glyph list.
 //!
-//! Handles mapping between glyph names and characters.
+//! Handles mapping between glyph names and characters. The names come from
+//! the Adobe Glyph List and the ITC Zapf Dingbats list, stored together in
+//! one table as FreeType stores them.
 
 use core::ops::Range;
 
@@ -15,8 +17,8 @@ pub fn split_variant(name: &str) -> (&str, Option<&str>) {
         .unwrap_or((name, None))
 }
 
-/// Returns the character for the given name, handling both AGL names and
-/// uXXXX/uniXXXXXX sequences.
+/// Returns the character for the given name, handling AGL and ITC Zapf
+/// Dingbats names along with uXXXX/uniXXXXXX sequences.
 ///
 /// If the name maps to multiple characters, this returns `None`.
 ///
@@ -28,9 +30,9 @@ pub fn name_to_char(name: &str) -> Option<char> {
         .or_else(|| uni_to_unicode(name, 1).and_then(|mut iter| iter.next()))
 }
 
-/// Returns the characters for the given name, handling both AGL names and
-/// uXXXX/uniXXXXXX sequences along with a series of components separated by
-/// underscores.
+/// Returns the characters for the given name, handling AGL and ITC Zapf
+/// Dingbats names and uXXXX/uniXXXXXX sequences along with a series of
+/// components separated by underscores.
 ///
 /// Variants such as the "alt" in "A.alt" will be ignored for lookup purposes.
 pub fn name_to_chars(name: &str) -> impl Iterator<Item = char> + '_ {
@@ -53,8 +55,9 @@ pub fn name_to_chars(name: &str) -> impl Iterator<Item = char> + '_ {
 ///
 /// A buffer of length [`MAX_NAME_LEN`] is sufficient to hold any name.
 ///
-/// Some codepoints may be mapped to multiple names. See
-/// [`char_to_nth_name`] to access all of them.
+/// Some codepoints may be mapped to multiple names. This returns the first
+/// in byte order, from either list: U+2192 is `a161` rather than
+/// `arrowright`. See [`char_to_nth_name`] to access all of them.
 pub fn char_to_name(ch: impl Into<u32>, dst: &mut [u8]) -> Option<&'_ str> {
     char_to_nth_name(ch, 0, dst)
 }
@@ -64,8 +67,9 @@ pub fn char_to_name(ch: impl Into<u32>, dst: &mut [u8]) -> Option<&'_ str> {
 ///
 /// A buffer of length [`MAX_NAME_LEN`] is sufficient to hold any name.
 ///
-/// Some codepoints may be mapped to multiple names. To collect them all, call
-/// this with increasing `n` values until the function returns `None`.
+/// Some codepoints may be mapped to multiple names, which are numbered in
+/// byte order. To collect them all, call this with increasing `n` values
+/// until the function returns `None`.
 pub fn char_to_nth_name(ch: impl Into<u32>, n: usize, dst: &mut [u8]) -> Option<&'_ str> {
     fn handle_node(
         node: &Node,
@@ -113,24 +117,24 @@ fn trim_variant(name: &str) -> &str {
     name.split_once('.').map(|(a, _)| a).unwrap_or(name)
 }
 
-fn lookup_char(name: &str) -> Option<char> {
+/// Returns the character of a name in the AGL or the ITC Zapf Dingbats
+/// list, spelled exactly as the list has it.
+pub(crate) fn lookup_char(name: &str) -> Option<char> {
     let mut cur = Node::new_root(&AGL_TRIE)?;
     let name = name.as_bytes();
     let mut name_idx = 0;
-    while let Some(child) = cur.child_for_char(*name.get(name_idx)?) {
-        if child.name_chars().eq(name
-            .get(name_idx..name_idx + child.num_name_chars())?
-            .iter()
-            .copied())
-        {
-            name_idx += child.num_name_chars();
+    loop {
+        let child = cur.child_for_char(*name.get(name_idx)?)?;
+        let letters = name.get(name_idx..name_idx + child.num_name_chars())?;
+        if !child.name_chars().eq(letters.iter().copied()) {
+            return None;
         }
-        if name_idx >= name.len() {
+        name_idx += letters.len();
+        if name_idx == name.len() {
             return child.value();
         }
         cur = child;
     }
-    None
 }
 
 fn lookup_multi_char(name: &str) -> Option<&'static [u16]> {
@@ -468,5 +472,62 @@ mod tests {
             }
             assert!(char_to_nth_name(ch, names.len(), &mut name_buf).is_none());
         }
+    }
+
+    // Every name in both lists maps to its character, and a name one edit
+    // away from a listed one maps only if it is listed itself.
+    #[test]
+    fn lookups_need_the_exact_spelling() {
+        let mut listed = std::collections::HashMap::new();
+        for text in [
+            include_str!("../../data/glyphlist.txt"),
+            include_str!("../../data/zapfdingbats.txt"),
+        ] {
+            for line in text
+                .lines()
+                .filter(|l| !l.is_empty() && !l.starts_with('#'))
+            {
+                let (name, value) = line.split_once(';').unwrap();
+                if !value.contains(' ') {
+                    let value = u32::from_str_radix(value, 16).unwrap();
+                    listed.insert(name.to_string(), char::from_u32(value).unwrap());
+                }
+            }
+        }
+        for (name, ch) in &listed {
+            assert_eq!(lookup_char(name), Some(*ch), "{name}");
+            let mut edits = vec![format!("{name}x")];
+            for i in 0..name.len() {
+                let mut removed = name.clone();
+                removed.remove(i);
+                edits.push(removed);
+                let mut inserted = name.clone();
+                inserted.insert(i, 'e');
+                edits.push(inserted);
+            }
+            for edit in edits {
+                assert_eq!(lookup_char(&edit), listed.get(&edit).copied(), "{edit}");
+            }
+        }
+        assert_eq!(name_to_char("eigujarati"), None);
+        assert_eq!(name_to_char("emacute"), None);
+    }
+
+    #[test]
+    fn zapf_dingbats_names() {
+        assert_eq!(name_to_char("a1"), Some('\u{2701}'));
+        assert_eq!(name_to_char("a191.alt"), Some('\u{27BE}'));
+        assert_eq!(
+            name_to_chars("a109_a110").collect::<String>(),
+            "\u{2660}\u{2665}"
+        );
+        // Characters map back to names from both lists, in byte order.
+        let mut name_buf = [0u8; MAX_NAME_LEN];
+        assert_eq!(char_to_name('\u{2701}', &mut name_buf), Some("a1"));
+        assert_eq!(char_to_name('\u{2192}', &mut name_buf), Some("a161"));
+        assert_eq!(
+            char_to_nth_name('\u{2192}', 1, &mut name_buf),
+            Some("arrowright")
+        );
     }
 }

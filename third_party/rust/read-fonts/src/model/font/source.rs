@@ -1,32 +1,32 @@
 //! Font data sources.
 
-use super::{FontBlob, FontTableFunction};
+use super::{Blob, TableFunction};
 use alloc::sync::Arc;
 use types::Tag;
 
 /// Source for font data.
 #[derive(Clone)]
-pub enum FontSource {
+pub enum Source {
     /// A nice flat buffer.
-    Blob(FontBlob),
+    Blob(Blob),
     /// Lazy loader with per-table data provided by a function.
-    TableFunction(FontTableFunction),
+    TableFunction(TableFunction),
 }
 
-impl<T: Into<FontBlob>> From<T> for FontSource {
+impl<T: Into<Blob>> From<T> for Source {
     fn from(value: T) -> Self {
         Self::Blob(value.into())
     }
 }
 
-impl From<Arc<dyn Fn(Tag) -> Option<FontBlob> + Send + Sync>> for FontSource {
-    fn from(value: Arc<dyn Fn(Tag) -> Option<FontBlob> + Send + Sync>) -> Self {
-        Self::TableFunction(FontTableFunction::new(value))
+impl From<Arc<dyn Fn(Tag) -> Option<Blob> + Send + Sync>> for Source {
+    fn from(value: Arc<dyn Fn(Tag) -> Option<Blob> + Send + Sync>) -> Self {
+        Self::TableFunction(TableFunction::new(value))
     }
 }
 
-impl From<FontTableFunction> for FontSource {
-    fn from(value: FontTableFunction) -> Self {
+impl From<TableFunction> for Source {
+    fn from(value: TableFunction) -> Self {
         Self::TableFunction(value)
     }
 }

@@ -23,15 +23,59 @@ impl Engine<'_> {
     /// See <https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructions#round-value>
     /// and <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L3143>
     pub(super) fn op_round(&mut self) -> OpResult {
+        // ClearType rounds to its own finer horizontal grid, which the
+        // interpreter approximates by not rounding at all.
+        let native_cleartype_x = self.native_cleartype_x();
         let n1 = self.value_stack.pop_f26dot6()?;
-        let n2 = self.graphics.round(n1);
+        let n2 = if native_cleartype_x {
+            n1
+        } else {
+            self.graphics.round(n1)
+        };
         self.value_stack.push(n2.to_bits())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::super::{super::round::RoundMode, MockEngine};
+    use super::super::{
+        super::{cleartype::ClearTypeState, program::Program, round::RoundMode},
+        MockEngine,
+    };
+    use crate::outline::glyf::hint::cleartype::ClearType;
+
+    // A glyph program that has opted out of backward compatibility measures
+    // and moves along the x axis lands between pixels, so ROUND leaves the
+    // value alone.
+    #[test]
+    fn round_is_suppressed_for_native_cleartype() {
+        let mut mock = MockEngine::new();
+        let mut engine = mock.engine();
+        engine.op_rtg().unwrap();
+        engine.program.reset(Program::Glyph);
+        engine.graphics.backward_compatibility = false;
+        engine.cleartype = ClearTypeState {
+            mode: ClearType::Enhanced,
+            ..Default::default()
+        };
+        for value in [32, 50, -32] {
+            engine.value_stack.push(value).unwrap();
+            engine.op_round().unwrap();
+            assert_eq!(engine.value_stack.pop().unwrap(), value);
+        }
+        // The same program still rounds while backward compatibility is on.
+        engine.graphics.backward_compatibility = true;
+        engine.value_stack.push(32).unwrap();
+        engine.op_round().unwrap();
+        assert_eq!(engine.value_stack.pop().unwrap(), 64);
+        // And a font that needs hinting to produce correct contours keeps the
+        // classic behavior.
+        engine.graphics.backward_compatibility = false;
+        engine.cleartype.is_hint_reliant = true;
+        engine.value_stack.push(32).unwrap();
+        engine.op_round().unwrap();
+        assert_eq!(engine.value_stack.pop().unwrap(), 64);
+    }
 
     #[test]
     fn round() {

@@ -1,7 +1,7 @@
 //! CFF charset support.
 
 use crate::ps::string::Sid;
-use crate::{FontData, FontRead, GlyphId, ReadError};
+use crate::{FontData, FontRead, GlyphId};
 
 #[doc(inline)]
 pub use super::v1::{
@@ -19,23 +19,17 @@ pub struct Charset<'a> {
 }
 
 impl<'a> Charset<'a> {
-    pub fn new(
-        cff_data: FontData<'a>,
-        charset_offset: usize,
-        num_glyphs: u32,
-    ) -> Result<Self, ReadError> {
+    pub fn new(cff_data: FontData<'a>, charset_offset: usize, num_glyphs: u32) -> Option<Self> {
         let kind = match charset_offset {
             0 => CharsetKind::IsoAdobe,
             1 => CharsetKind::Expert,
             2 => CharsetKind::ExpertSubset,
             _ => {
-                let data = cff_data
-                    .split_off(charset_offset)
-                    .ok_or(ReadError::OutOfBounds)?;
-                CharsetKind::Custom(CustomCharset::read(data)?)
+                let data = cff_data.split_off(charset_offset)?;
+                CharsetKind::Custom(CustomCharset::read(data).ok()?)
             }
         };
-        Ok(Self { kind, num_glyphs })
+        Some(Self { kind, num_glyphs })
     }
 
     pub fn kind(&self) -> &CharsetKind<'a> {
@@ -47,10 +41,10 @@ impl<'a> Charset<'a> {
     }
 
     /// Returns the string identifier for the given glyph identifier.
-    pub fn string_id(&self, glyph_id: GlyphId) -> Result<Sid, ReadError> {
+    pub fn string_id(&self, glyph_id: GlyphId) -> Option<Sid> {
         let gid = glyph_id.to_u32();
         if gid >= self.num_glyphs {
-            return Err(ReadError::OutOfBounds);
+            return None;
         }
         match &self.kind {
             CharsetKind::IsoAdobe => {
@@ -58,20 +52,15 @@ impl<'a> Charset<'a> {
                 // to 228 entries
                 // <https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf#page=45>
                 if gid <= 228 {
-                    Ok(Sid::new(gid as u16))
+                    Some(Sid::new(gid as u16))
                 } else {
-                    Err(ReadError::OutOfBounds)
+                    None
                 }
             }
-            CharsetKind::Expert => EXPERT_CHARSET
-                .get(gid as usize)
-                .copied()
-                .ok_or(ReadError::OutOfBounds)
-                .map(Sid::new),
+            CharsetKind::Expert => EXPERT_CHARSET.get(gid as usize).copied().map(Sid::new),
             CharsetKind::ExpertSubset => EXPERT_SUBSET_CHARSET
                 .get(gid as usize)
                 .copied()
-                .ok_or(ReadError::OutOfBounds)
                 .map(Sid::new),
             CharsetKind::Custom(custom) => match custom {
                 CustomCharset::Format0(fmt) => fmt.string_id(glyph_id),
@@ -82,7 +71,16 @@ impl<'a> Charset<'a> {
     }
 
     /// Returns the glyph identifier for the given string identifier.
-    pub fn glyph_id(&self, string_id: Sid) -> Result<GlyphId, ReadError> {
+    ///
+    /// Returns `None` if no glyph of the font has the string identifier.
+    pub fn glyph_id(&self, string_id: Sid) -> Option<GlyphId> {
+        // The charset only describes the font's glyphs, so data past them is
+        // not part of it.
+        self.glyph_id_unbounded(string_id)
+            .filter(|gid| gid.to_u32() < self.num_glyphs)
+    }
+
+    fn glyph_id_unbounded(&self, string_id: Sid) -> Option<GlyphId> {
         let sid = string_id.to_u16();
         match &self.kind {
             CharsetKind::IsoAdobe => {
@@ -90,23 +88,21 @@ impl<'a> Charset<'a> {
                 // to 228 entries
                 // <https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf#page=45>
                 if sid <= 228 {
-                    Ok(GlyphId::from(sid))
+                    Some(GlyphId::from(sid))
                 } else {
-                    Err(ReadError::OutOfBounds)
+                    None
                 }
             }
             CharsetKind::Expert => EXPERT_CHARSET
                 .iter()
                 .position(|n| *n == sid)
-                .map(|pos| GlyphId::new(pos as u32))
-                .ok_or(ReadError::OutOfBounds),
+                .map(|pos| GlyphId::new(pos as u32)),
             CharsetKind::ExpertSubset => EXPERT_SUBSET_CHARSET
                 .iter()
                 .position(|n| *n == sid)
-                .map(|pos| GlyphId::new(pos as u32))
-                .ok_or(ReadError::OutOfBounds),
+                .map(|pos| GlyphId::new(pos as u32)),
             CharsetKind::Custom(custom) => match custom {
-                CustomCharset::Format0(fmt) => fmt.glyph_id(string_id),
+                CustomCharset::Format0(fmt) => fmt.glyph_id(string_id, self.num_glyphs),
                 CustomCharset::Format1(fmt) => fmt.glyph_id(string_id),
                 CustomCharset::Format2(fmt) => fmt.glyph_id(string_id),
             },
@@ -143,59 +139,55 @@ pub enum CharsetKind<'a> {
 }
 
 impl Format0<'_> {
-    fn string_id(&self, glyph_id: GlyphId) -> Result<Sid, ReadError> {
+    fn string_id(&self, glyph_id: GlyphId) -> Option<Sid> {
         let gid = glyph_id.to_u32() as usize;
         if gid == 0 {
-            Ok(Sid::new(0))
+            Some(Sid::new(0))
         } else {
-            self.glyph()
-                .get(gid - 1)
-                .map(|id| Sid::new(id.get()))
-                .ok_or(ReadError::OutOfBounds)
+            self.glyph().get(gid - 1).map(|id| Sid::new(id.get()))
         }
     }
 
-    fn glyph_id(&self, string_id: Sid) -> Result<GlyphId, ReadError> {
+    fn glyph_id(&self, string_id: Sid, num_glyphs: u32) -> Option<GlyphId> {
         if string_id.to_u16() == 0 {
-            return Ok(GlyphId::NOTDEF);
+            return Some(GlyphId::NOTDEF);
         }
+        // The array holds one string id per glyph after notdef, and the data
+        // past them is the rest of the CFF.
         self.glyph()
             .iter()
+            .take(num_glyphs.saturating_sub(1) as usize)
             .position(|n| n.get() == string_id.to_u16())
-            .map(|n| GlyphId::from((n as u16).saturating_add(1)))
-            .ok_or(ReadError::OutOfBounds)
+            .map(|n| GlyphId::new(n as u32 + 1))
     }
 }
 
 impl Format1<'_> {
-    fn string_id(&self, glyph_id: GlyphId) -> Result<Sid, ReadError> {
+    fn string_id(&self, glyph_id: GlyphId) -> Option<Sid> {
         string_id_from_ranges(self.ranges(), glyph_id)
     }
 
-    fn glyph_id(&self, string_id: Sid) -> Result<GlyphId, ReadError> {
+    fn glyph_id(&self, string_id: Sid) -> Option<GlyphId> {
         glyph_id_from_ranges(self.ranges(), string_id)
     }
 }
 
 impl Format2<'_> {
-    fn string_id(&self, glyph_id: GlyphId) -> Result<Sid, ReadError> {
+    fn string_id(&self, glyph_id: GlyphId) -> Option<Sid> {
         string_id_from_ranges(self.ranges(), glyph_id)
     }
 
-    fn glyph_id(&self, string_id: Sid) -> Result<GlyphId, ReadError> {
+    fn glyph_id(&self, string_id: Sid) -> Option<GlyphId> {
         glyph_id_from_ranges(self.ranges(), string_id)
     }
 }
 
-fn string_id_from_ranges<T: CharsetRange>(
-    ranges: &[T],
-    glyph_id: GlyphId,
-) -> Result<Sid, ReadError> {
+fn string_id_from_ranges<T: CharsetRange>(ranges: &[T], glyph_id: GlyphId) -> Option<Sid> {
     let mut gid = glyph_id.to_u32();
     // The notdef glyph isn't explicitly mapped so we need to special case
     // it and add -1 and +1 at a few places when processing ranges
     if gid == 0 {
-        return Ok(Sid::new(0));
+        return Some(Sid::new(0));
     }
     gid -= 1;
     let mut end = 0u32;
@@ -204,41 +196,41 @@ fn string_id_from_ranges<T: CharsetRange>(
     // are cumulative, we must scan them all in order until we find
     // the range that contains our requested glyph.
     for range in ranges {
-        let next_end = end
-            .checked_add(range.n_left() + 1)
-            .ok_or(ReadError::OutOfBounds)?;
+        let next_end = range
+            .n_left()
+            .checked_add(1)
+            .and_then(|span| end.checked_add(span))?;
         if gid < next_end {
             return (gid - end)
                 .checked_add(range.first())
                 .and_then(|sid| sid.try_into().ok())
-                .ok_or(ReadError::OutOfBounds)
                 .map(Sid::new);
         }
         end = next_end;
     }
-    Err(ReadError::OutOfBounds)
+    None
 }
 
-fn glyph_id_from_ranges<T: CharsetRange>(
-    ranges: &[T],
-    string_id: Sid,
-) -> Result<GlyphId, ReadError> {
+fn glyph_id_from_ranges<T: CharsetRange>(ranges: &[T], string_id: Sid) -> Option<GlyphId> {
     let sid = string_id.to_u16() as u32;
     // notdef glyph is not explicitly mapped
     if sid == 0 {
-        return Ok(GlyphId::NOTDEF);
+        return Some(GlyphId::NOTDEF);
     }
     let mut gid = 1u32;
     for range in ranges {
         let first = range.first();
         let n_left = range.n_left();
-        if first <= sid && sid <= (first + n_left) {
-            gid += sid - first;
-            return Ok(GlyphId::new(gid));
+        let last = first.checked_add(n_left)?;
+        if first <= sid && sid <= last {
+            gid = gid.checked_add(sid - first)?;
+            return Some(GlyphId::new(gid));
         }
-        gid += n_left + 1;
+        gid = n_left
+            .checked_add(1)
+            .and_then(|span| gid.checked_add(span))?;
     }
-    Err(ReadError::OutOfBounds)
+    None
 }
 
 /// Trait that unifies ranges for formats 1 and 2 so that we can implement
@@ -279,7 +271,7 @@ impl Iterator for Iter<'_> {
         match &mut self.0 {
             IterKind::Simple(charset, cur) => {
                 let gid = GlyphId::new(*cur);
-                let sid = charset.string_id(gid).ok()?;
+                let sid = charset.string_id(gid)?;
                 *cur = cur.checked_add(1)?;
                 Some((gid, sid))
             }
@@ -357,9 +349,12 @@ where
 }
 
 fn next_range<T: CharsetRange>(ranges: &mut std::slice::Iter<T>) -> Option<(u32, u32)> {
-    ranges
-        .next()
-        .map(|range| (range.first(), range.n_left() + 1))
+    ranges.next().and_then(|range| {
+        range
+            .n_left()
+            .checked_add(1)
+            .map(|span| (range.first(), span))
+    })
 }
 
 /// See "Expert" charset at <https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf#page=47>
@@ -393,6 +388,22 @@ const EXPERT_SUBSET_CHARSET: &[u16] = &[
 mod tests {
     use super::*;
     use font_test_data::bebuffer::BeBuffer;
+
+    #[derive(Clone, Copy)]
+    struct TestRange {
+        first: u32,
+        n_left: u32,
+    }
+
+    impl CharsetRange for TestRange {
+        fn first(&self) -> u32 {
+            self.first
+        }
+
+        fn n_left(&self) -> u32 {
+            self.n_left
+        }
+    }
 
     #[test]
     fn iso_adobe_charset() {
@@ -447,7 +458,7 @@ mod tests {
         }
         // Don't map glyphs beyond num_glyphs
         for gid in num_glyphs..u16::MAX as u32 {
-            assert_eq!(charset.string_id(GlyphId::new(gid)).ok(), None);
+            assert_eq!(charset.string_id(GlyphId::new(gid)), None);
         }
     }
 
@@ -476,7 +487,7 @@ mod tests {
         assert_eq!(charset.iter().count() as u32, num_glyphs);
         // Test out of bounds glyphs
         for gid in num_glyphs..u16::MAX as u32 {
-            assert_eq!(charset.string_id(GlyphId::new(gid)).ok(), None);
+            assert_eq!(charset.string_id(GlyphId::new(gid)), None);
         }
     }
 
@@ -533,14 +544,85 @@ mod tests {
         assert_eq!(charset.iter().count() as u32, num_glyphs);
         // Test out of bounds glyphs
         for gid in num_glyphs..u16::MAX as u32 {
-            assert_eq!(charset.string_id(GlyphId::new(gid)).ok(), None);
+            assert_eq!(charset.string_id(GlyphId::new(gid)), None);
         }
         // Test reverse mapping
         for (gid, sid) in expected_sids.iter().enumerate() {
             assert_eq!(
                 charset.glyph_id(Sid::new(*sid as u16)),
-                Ok(GlyphId::new(gid as u32))
+                Some(GlyphId::new(gid as u32))
             );
         }
+    }
+
+    // A range may cover more string ids than the font has glyphs, and data
+    // after the last range the glyphs need is not part of the charset. No
+    // string id maps to a glyph past the end of the font.
+    #[test]
+    fn glyph_ids_stop_at_the_glyph_count() {
+        let mut buf = BeBuffer::new();
+        buf = buf.extend([0u8; 4]);
+        // format 1: sids 8..=10 cover glyphs 1 to 3, then a range past them
+        buf = buf.push(1u8);
+        buf = buf.push(8u16).push(5u8);
+        buf = buf.push(300u16).push(4u8);
+        let charset = Charset::new(FontData::new(buf.data()), 4, 4).unwrap();
+        assert_eq!(charset.glyph_id(Sid::new(10)), Some(GlyphId::new(3)));
+        assert_eq!(charset.glyph_id(Sid::new(11)), None);
+        assert_eq!(charset.glyph_id(Sid::new(300)), None);
+    }
+
+    // Format 0 holds one string id per glyph after notdef, and the data
+    // after them is the rest of the CFF. A match out there is not a glyph,
+    // not even where the array position wraps back into the glyph count.
+    #[test]
+    fn format0_glyph_id_stops_at_the_glyph_count() {
+        let mut data = vec![0u8; 4];
+        // format 0: glyph 1 has sid 1000
+        data.push(0u8);
+        data.extend_from_slice(&1000u16.to_be_bytes());
+        // sid 2000 at array position 65536, which truncates to glyph 1
+        data.resize(5 + 2 * 65536, 0);
+        data.extend_from_slice(&2000u16.to_be_bytes());
+        let charset = Charset::new(FontData::new(&data), 4, 2).unwrap();
+        assert_eq!(charset.glyph_id(Sid::new(1000)), Some(GlyphId::new(1)));
+        assert_eq!(charset.glyph_id(Sid::new(2000)), None);
+    }
+
+    #[test]
+    fn string_id_from_ranges_overflow_does_not_panic() {
+        // Don't panic on overflow!
+        let ranges = [TestRange {
+            first: 42,
+            n_left: u32::MAX,
+        }];
+        assert_eq!(string_id_from_ranges(&ranges, GlyphId::new(1)), None);
+    }
+
+    #[test]
+    fn glyph_id_from_ranges_overflow_does_not_panic() {
+        // Don't panic on overflow!
+        let ranges = [
+            TestRange {
+                first: 2,
+                n_left: 0,
+            },
+            TestRange {
+                first: 2,
+                n_left: u32::MAX - 2,
+            },
+        ];
+        assert_eq!(glyph_id_from_ranges(&ranges, Sid::new(1)), None);
+    }
+
+    #[test]
+    fn next_range_overflow_does_not_panic() {
+        // Don't panic on overflow!
+        let ranges = [TestRange {
+            first: 7,
+            n_left: u32::MAX,
+        }];
+        let mut iter = ranges.iter();
+        assert_eq!(next_range(&mut iter), None);
     }
 }

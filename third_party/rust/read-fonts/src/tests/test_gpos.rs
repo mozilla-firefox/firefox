@@ -9,7 +9,7 @@ fn singleposformat1() {
 
     let table = SinglePosFormat1::read(test_data::SINGLEPOSFORMAT1.into()).unwrap();
     assert_eq!(table.value_format(), ValueFormat::Y_PLACEMENT);
-    assert_eq!(table.value_record().y_placement.unwrap().get(), -80);
+    assert_eq!(table.value_record().y_placement().unwrap(), -80);
     let coverage = table.coverage().unwrap();
     assert_eq!(coverage.iter().count(), 10);
 }
@@ -75,13 +75,13 @@ fn pairposformat2() {
 
     let class2 = table.class_def2().unwrap();
     match class2 {
-        ClassDef::Format1(_) => panic!("expected format2"),
         ClassDef::Format2(cls) => {
             assert_eq!(
                 cls.class_range_records()[0].start_glyph_id.get(),
                 GlyphId16::new(0x6A)
             );
         }
+        _ => panic!("expected format2"),
     }
 }
 
@@ -210,11 +210,7 @@ fn valueformattable() {
     );
     let record = table.value_record();
     assert_eq!(record.y_advance(), Some(210));
-    let DeviceOrVariationIndex::Device(device) = record
-        .y_advance_device(table.offset_data())
-        .unwrap()
-        .unwrap()
-    else {
+    let DeviceOrVariationIndex::Device(device) = record.y_advance_device().unwrap().unwrap() else {
         panic!("not a device");
     };
 

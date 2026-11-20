@@ -388,6 +388,7 @@ mod tests {
         super::{EdgeMetrics, HintedMetrics},
         *,
     };
+    use crate::outline::autohint::context::FontRefContext;
     use crate::{attribute::Style, MetadataProvider};
     use raw::{
         types::{F2Dot14, GlyphId},
@@ -462,13 +463,13 @@ mod tests {
     #[test]
     fn recorder_collects_edge_and_point_actions() {
         let font = FontRef::new(font_test_data::NOTOSERIFHEBREW_AUTOHINT_METRICS).unwrap();
-        let shaper = Shaper::new(&font, ShaperMode::Nominal);
+        let context = FontRefContext::new(&font, &[]);
+        let shaper = Shaper::new(&context, ShaperMode::Nominal);
         let glyph = font.outline_glyphs().get(GlyphId::new(9)).unwrap();
         let mut outline = Outline::default();
         outline.fill(&glyph, &[], Default::default()).unwrap();
         let metrics = compute_unscaled_style_metrics(
             &shaper,
-            &[],
             &style::STYLE_CLASSES[style::StyleClass::HEBR],
             Default::default(),
         );
@@ -714,12 +715,13 @@ mod tests {
         gid: GlyphId,
         style: &style::StyleClass,
     ) -> (Outline, HintedMetrics) {
-        let shaper = Shaper::new(font, ShaperMode::Nominal);
+        let context = FontRefContext::new(font, coords);
+        let shaper = Shaper::new(&context, ShaperMode::Nominal);
         let glyphs = font.outline_glyphs();
         let glyph = glyphs.get(gid).unwrap();
         let mut outline = Outline::default();
         outline.fill(&glyph, coords, Default::default()).unwrap();
-        let metrics = compute_unscaled_style_metrics(&shaper, coords, style, Default::default());
+        let metrics = compute_unscaled_style_metrics(&shaper, style, Default::default());
         let scale = Scale::new(
             size,
             font.head().unwrap().units_per_em() as i32,

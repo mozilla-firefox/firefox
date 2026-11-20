@@ -2,7 +2,7 @@
 
 use core::ops::Range;
 
-use super::{error::HintErrorKind, program::Program};
+use super::{program::Program, HintErrorKind};
 
 /// Code range and properties for a function or instruction definition.
 // Note: this type is designed to support allocation from user memory

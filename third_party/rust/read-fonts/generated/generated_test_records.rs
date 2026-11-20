@@ -11,23 +11,41 @@ impl<'a> MinByteRange<'a> for BasicTable<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for BasicTable<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for BasicTable<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct BasicTableFixedHeader {
+    pub simple_count: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<BasicTableFixedHeader>() <= BasicTable::MIN_SIZE);
+
 #[derive(Clone)]
 pub struct BasicTable<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, BasicTableFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -36,66 +54,71 @@ impl<'a> BasicTable<'a> {
     basic_table_impls!(impl_the_methods);
 
     pub fn simple_count(&self) -> u16 {
-        let range = self.simple_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().simple_count.get()
     }
 
     pub fn simple_records(&self) -> &'a [SimpleRecord] {
         let range = self.simple_records_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn arrays_inner_count(&self) -> u16 {
         let range = self.arrays_inner_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap_or_default()
+        self.offset_data()
+            .read_at(range.start)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn array_records_count(&self) -> u32 {
         let range = self.array_records_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap_or_default()
+        self.offset_data()
+            .read_at(range.start)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn array_records(&self) -> ComputedArray<'a, ContainsArrays<'a>> {
         let range = self.array_records_byte_range();
-        self.data
-            .read_with_args(range, &self.arrays_inner_count())
-            .unwrap_or_default()
+        ComputedArray::new(self.offset_data(), range, self.arrays_inner_count()).unwrap_or_default()
     }
 
     pub fn simple_count_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn simple_records_byte_range(&self) -> Range<usize> {
         let simple_count = self.simple_count();
         let start = self.simple_count_byte_range().end;
-        let end =
-            start + (transforms::to_usize(simple_count)).saturating_mul(SimpleRecord::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(simple_count)).saturating_mul(SimpleRecord::RAW_BYTE_LEN),
+        );
         start..end
     }
 
     pub fn arrays_inner_count_byte_range(&self) -> Range<usize> {
         let start = self.simple_records_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn array_records_count_byte_range(&self) -> Range<usize> {
         let start = self.arrays_inner_count_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn array_records_byte_range(&self) -> Range<usize> {
         let array_records_count = self.array_records_count();
         let start = self.array_records_count_byte_range().end;
-        let end = start
-            + (transforms::to_usize(array_records_count)).saturating_mul(
-                <ContainsArrays as ComputeSize>::compute_size(&self.arrays_inner_count())
-                    .unwrap_or(0),
-            );
+        let end = start.saturating_add((transforms::to_usize(array_records_count)).saturating_mul(
+            <ContainsArrays as ComputeSize>::compute_size(self.arrays_inner_count()).unwrap_or(0),
+        ));
         start..end
     }
 }
@@ -105,50 +128,9 @@ const _: () = assert!(FontData::default_data_long_enough(BasicTable::MIN_SIZE));
 impl Default for BasicTable<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for BasicTable<'a> {
-    fn type_name(&self) -> &str {
-        "BasicTable"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("simple_count", self.simple_count())),
-            1usize => Some(Field::new(
-                "simple_records",
-                traversal::FieldType::array_of_records(
-                    stringify!(SimpleRecord),
-                    self.simple_records(),
-                    self.offset_data(),
-                ),
-            )),
-            2usize => Some(Field::new("arrays_inner_count", self.arrays_inner_count())),
-            3usize => Some(Field::new(
-                "array_records_count",
-                self.array_records_count(),
-            )),
-            4usize => Some(Field::new(
-                "array_records",
-                traversal::FieldType::computed_array(
-                    "ContainsArrays",
-                    self.array_records(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for BasicTable<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -174,21 +156,6 @@ impl FixedSize for SimpleRecord {
     const RAW_BYTE_LEN: usize = u16::RAW_BYTE_LEN + u32::RAW_BYTE_LEN;
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for SimpleRecord {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "SimpleRecord",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("val1", self.val1())),
-                1usize => Some(Field::new("va2", self.va2())),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ContainsArrays<'a> {
     pub scalars: &'a [BigEndian<u16>],
@@ -211,8 +178,8 @@ impl ReadArgs for ContainsArrays<'_> {
 
 impl ComputeSize for ContainsArrays<'_> {
     #[allow(clippy::needless_question_mark)]
-    fn compute_size(args: &u16) -> Result<usize, ReadError> {
-        let array_len = *args;
+    fn compute_size(args: u16) -> Result<usize, ReadError> {
+        let array_len = args;
         let mut result = 0usize;
         result = result
             .checked_add((transforms::to_usize(array_len)).saturating_mul(u16::RAW_BYTE_LEN))
@@ -226,16 +193,18 @@ impl ComputeSize for ContainsArrays<'_> {
     }
 }
 
-impl<'a> FontReadWithArgs<'a> for ContainsArrays<'a> {
-    fn read_with_args(data: FontData<'a>, args: &u16) -> Result<Self, ReadError> {
+impl<'a> FontRead<'a> for ContainsArrays<'a> {
+    fn read_with_args(data: FontData<'a>, args: u16) -> Result<Self, ReadError> {
         let mut cursor = data.cursor();
-        let array_len = *args;
+        let array_len = args;
         Ok(Self {
             scalars: cursor.read_array(transforms::to_usize(array_len))?,
             records: cursor.read_array(transforms::to_usize(array_len))?,
         })
     }
 }
+
+crate::impl_font_read_at!(ContainsArrays<'a>);
 
 #[allow(clippy::needless_lifetimes)]
 impl<'a> ContainsArrays<'a> {
@@ -245,29 +214,7 @@ impl<'a> ContainsArrays<'a> {
     /// parsed.
     pub fn read(data: FontData<'a>, array_len: u16) -> Result<Self, ReadError> {
         let args = array_len;
-        Self::read_with_args(data, &args)
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for ContainsArrays<'a> {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "ContainsArrays",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("scalars", self.scalars())),
-                1usize => Some(Field::new(
-                    "records",
-                    traversal::FieldType::array_of_records(
-                        stringify!(SimpleRecord),
-                        self.records(),
-                        _data,
-                    ),
-                )),
-                _ => None,
-            }),
-            data,
-        }
+        Self::read_with_args(data, args)
     }
 }
 
@@ -294,7 +241,7 @@ impl ContainsOffsets {
     /// By calling its `offset_data` method.
     pub fn array<'a>(&self, data: FontData<'a>) -> Result<&'a [SimpleRecord], ReadError> {
         let args = self.off_array_count();
-        self.array_offset().resolve_with_args(data, &args)
+        self.array_offset().resolve_with_args(data, args)
     }
 
     pub fn other_offset(&self) -> Offset32 {
@@ -313,56 +260,47 @@ impl FixedSize for ContainsOffsets {
     const RAW_BYTE_LEN: usize = u16::RAW_BYTE_LEN + Offset16::RAW_BYTE_LEN + Offset32::RAW_BYTE_LEN;
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for ContainsOffsets {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "ContainsOffsets",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("off_array_count", self.off_array_count())),
-                1usize => Some(Field::new(
-                    "array_offset",
-                    traversal::FieldType::offset_to_array_of_records(
-                        self.array_offset(),
-                        self.array(_data),
-                        stringify!(SimpleRecord),
-                        _data,
-                    ),
-                )),
-                2usize => Some(Field::new(
-                    "other_offset",
-                    FieldType::offset(self.other_offset(), self.other(_data)),
-                )),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
 impl<'a> MinByteRange<'a> for VarLenItem<'a> {
     fn min_byte_range(&self) -> Range<usize> {
         0..self.data_byte_range().end
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for VarLenItem<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for VarLenItem<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct VarLenItemFixedHeader {
+    pub length: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<VarLenItemFixedHeader>() <= VarLenItem::MIN_SIZE);
+
 #[derive(Clone)]
 pub struct VarLenItem<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, VarLenItemFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -371,25 +309,28 @@ impl<'a> VarLenItem<'a> {
     basic_table_impls!(impl_the_methods);
 
     pub fn length(&self) -> u32 {
-        let range = self.length_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().length.get()
     }
 
     pub fn data(&self) -> &'a [u8] {
         let range = self.data_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn length_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u32::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn data_byte_range(&self) -> Range<usize> {
         let start = self.length_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -399,29 +340,8 @@ const _: () = assert!(FontData::default_data_long_enough(VarLenItem::MIN_SIZE));
 impl Default for VarLenItem<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for VarLenItem<'a> {
-    fn type_name(&self) -> &str {
-        "VarLenItem"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("length", self.length())),
-            1usize => Some(Field::new("data", self.data())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for VarLenItem<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }

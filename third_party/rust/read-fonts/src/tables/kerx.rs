@@ -64,7 +64,7 @@ impl<'a> Subtable<'a> {
     pub fn kind(&self) -> Result<SubtableKind<'a>, ReadError> {
         SubtableKind::read_with_args(
             FontData::new(self.data()),
-            &(self.coverage(), self.tuple_count()),
+            (self.coverage(), self.tuple_count()),
         )
     }
 }
@@ -83,8 +83,8 @@ impl ReadArgs for SubtableKind<'_> {
     type Args = (u32, u32);
 }
 
-impl<'a> FontReadWithArgs<'a> for SubtableKind<'a> {
-    fn read_with_args(data: FontData<'a>, args: &Self::Args) -> Result<Self, ReadError> {
+impl<'a> FontRead<'a> for SubtableKind<'a> {
+    fn read_with_args(data: FontData<'a>, args: Self::Args) -> Result<Self, ReadError> {
         // Format is low byte of coverage
         let format = args.0 & 0xFF;
         let tuple_count = args.1;
@@ -95,10 +95,7 @@ impl<'a> FontReadWithArgs<'a> for SubtableKind<'a> {
             // No format 3
             4 => Ok(Self::Format4(Subtable4::read(data)?)),
             // No format 5
-            6 => Ok(Self::Format6(Subtable6::read_with_args(
-                data,
-                &tuple_count,
-            )?)),
+            6 => Ok(Self::Format6(Subtable6::read_with_args(data, tuple_count)?)),
             _ => Err(ReadError::InvalidFormat(format as _)),
         }
     }
@@ -133,8 +130,12 @@ pub struct Subtable1<'a> {
     pub values: &'a [BigEndian<i16>],
 }
 
+impl ReadArgs for Subtable1<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Subtable1<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         let state_table = ExtendedStateTable::read(data)?;
         let mut cursor = data.cursor();
         cursor.advance_by(ExtendedStateTable::<()>::HEADER_LEN);
@@ -159,8 +160,12 @@ pub struct Subtable2<'a> {
     pub array: &'a [BigEndian<i16>],
 }
 
+impl ReadArgs for Subtable2<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Subtable2<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         let mut cursor = data.cursor();
         // Skip rowWidth field
         cursor.advance_by(u32::RAW_BYTE_LEN);
@@ -195,10 +200,13 @@ impl Subtable2<'_> {
     pub fn kerning(&self, left: GlyphId, right: GlyphId) -> Option<i32> {
         let left: u16 = left.to_u32().try_into().ok()?;
         let right: u16 = right.to_u32().try_into().ok()?;
-        let left_idx = self.left_offset_table.value(left).unwrap_or(0) as usize;
-        let right_idx = self.right_offset_table.value(right).unwrap_or(0) as usize;
+        // The class values are byte offsets into the kerning array: the left
+        // values are pre-multiplied by the row width and the right values by
+        // the size of a kerning value (two).
+        let left_offset = self.left_offset_table.value(left).unwrap_or(0) as usize;
+        let right_offset = self.right_offset_table.value(right).unwrap_or(0) as usize;
         self.array
-            .get(left_idx + right_idx)
+            .get((left_offset + right_offset) / 2)
             .map(|value| value.get() as i32)
     }
 }
@@ -212,8 +220,12 @@ pub struct Subtable4<'a> {
     pub actions: Subtable4Actions<'a>,
 }
 
+impl ReadArgs for Subtable4<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Subtable4<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         let state_table = ExtendedStateTable::read(data)?;
         let mut cursor = data.cursor();
         cursor.advance_by(ExtendedStateTable::<()>::HEADER_LEN);
@@ -270,9 +282,9 @@ impl ReadArgs for Subtable6<'_> {
     type Args = u32;
 }
 
-impl<'a> FontReadWithArgs<'a> for Subtable6<'a> {
-    fn read_with_args(data: FontData<'a>, args: &Self::Args) -> Result<Self, ReadError> {
-        let tuple_count = *args;
+impl<'a> FontRead<'a> for Subtable6<'a> {
+    fn read_with_args(data: FontData<'a>, args: Self::Args) -> Result<Self, ReadError> {
+        let tuple_count = args;
         let mut cursor = data.cursor();
         let flags = cursor.read::<u32>()?;
         // Skip rowCount and columnCount
@@ -354,21 +366,6 @@ impl Subtable6<'_> {
                 let value = array.get(idx).map(|value| value.get())?;
                 tuple_kern(value, vector)
             }
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for Subtable<'a> {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "Subtable",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("coverage", self.coverage())),
-                1usize => Some(Field::new("tuple_count", self.tuple_count())),
-                _ => None,
-            }),
-            data,
         }
     }
 }
@@ -496,7 +493,7 @@ mod tests {
     #[test]
     fn parse_subtable6_short() {
         let data = FormatTwoSix::SixShort.build_subtable();
-        let subtable = Subtable6::read_with_args(FontData::new(&data), &0).unwrap();
+        let subtable = Subtable6::read_with_args(FontData::new(&data), 0).unwrap();
         let Subtable6::ShortValues(..) = &subtable else {
             panic!("expected short values in subtable 6");
         };
@@ -506,7 +503,7 @@ mod tests {
     #[test]
     fn parse_subtable6_long() {
         let data = FormatTwoSix::SixLong.build_subtable();
-        let subtable = Subtable6::read_with_args(FontData::new(&data), &0).unwrap();
+        let subtable = Subtable6::read_with_args(FontData::new(&data), 0).unwrap();
         let Subtable6::LongValues(..) = &subtable else {
             panic!("expected long values in subtable 6");
         };
@@ -516,7 +513,7 @@ mod tests {
     #[test]
     fn parse_subtable6_long_vector() {
         let data = FormatTwoSix::SixLongVector.build_subtable();
-        let subtable = Subtable6::read_with_args(FontData::new(&data), &1).unwrap();
+        let subtable = Subtable6::read_with_args(FontData::new(&data), 1).unwrap();
         let Subtable6::LongValues(..) = &subtable else {
             panic!("expected long values in subtable 6");
         };
@@ -672,26 +669,29 @@ mod tests {
                     .push(row_count as u16)
                     .push(column_count as u16);
             } else {
-                // rowWidth
-                buf = buf.push(row_count);
+                // rowWidth, in bytes
+                buf = buf.push(column_count * 2);
             }
             // Map 4 glyphs
             // 0 => row 0, column 0
             // 1 => row 2, column 1
             // 2 => row 1, column 2
             // 3 => row 2, column 0
-            // values in the row table are pre-multiplied by column count
+            // values in the row table are pre-multiplied by column count;
+            // format 2 stores both tables as byte offsets, so its values are
+            // also multiplied by the size of a kerning value
+            let value_size = if self.is_six() { 1 } else { 2 };
             #[allow(clippy::erasing_op, clippy::identity_op)]
             let row_table = build_lookup(
                 &[
-                    0 * column_count,
-                    2 * column_count,
-                    1 * column_count,
-                    2 * column_count,
+                    0 * column_count * value_size,
+                    2 * column_count * value_size,
+                    1 * column_count * value_size,
+                    2 * column_count * value_size,
                 ],
                 is_long,
             );
-            let column_table = build_lookup(&[0, 1, 2, 0], is_long);
+            let column_table = build_lookup(&[0, value_size, 2 * value_size, 0], is_long);
             // 3x3 kerning matrix
             let kerning_array = [0i32, 10, 20, 30, -10, -20, 8, 4, -2];
             let mut offset =

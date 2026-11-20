@@ -17,9 +17,9 @@ impl ReadArgs for Metadata<'_> {
     type Args = (Tag, u32);
 }
 
-impl<'a> FontReadWithArgs<'a> for Metadata<'a> {
-    fn read_with_args(data: FontData<'a>, args: &Self::Args) -> Result<Self, ReadError> {
-        let (tag, len) = *args;
+impl<'a> FontRead<'a> for Metadata<'a> {
+    fn read_with_args(data: FontData<'a>, args: Self::Args) -> Result<Self, ReadError> {
+        let (tag, len) = args;
         let data = data.slice(0..len as usize).ok_or(ReadError::OutOfBounds)?;
         if [DLNG, SLNG].contains(&tag) {
             VarLenArray::read(data).map(Metadata::ScriptLangTags)
@@ -69,8 +69,12 @@ impl VarSize for ScriptLangTag<'_> {
     }
 }
 
+impl ReadArgs for ScriptLangTag<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for ScriptLangTag<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         std::str::from_utf8(data.as_bytes())
             .map_err(|_| ReadError::MalformedData("LangScriptTag must be utf8"))
             .map(|s| ScriptLangTag(s.trim_matches(|c| c == ' ' || c == ',')))

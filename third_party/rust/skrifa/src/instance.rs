@@ -2,7 +2,7 @@
 
 use read_fonts::types::Fixed;
 
-use crate::collections::SmallVec;
+use smallvec::SmallVec;
 
 /// Type for a normalized variation coordinate.
 pub type NormalizedCoord = read_fonts::types::F2Dot14;
@@ -165,7 +165,7 @@ const MAX_INLINE_COORDS: usize = 8;
 /// type for more detail.
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Default)]
 pub struct Location {
-    coords: SmallVec<NormalizedCoord, MAX_INLINE_COORDS>,
+    coords: SmallVec<[NormalizedCoord; MAX_INLINE_COORDS]>,
 }
 
 impl Location {
@@ -174,7 +174,7 @@ impl Location {
     /// Each element will be initialized to the default value (0.0).
     pub fn new(len: usize) -> Self {
         Self {
-            coords: SmallVec::with_len(len, NormalizedCoord::default()),
+            coords: SmallVec::from_elem(NormalizedCoord::default(), len),
         }
     }
 

@@ -24,6 +24,7 @@ TABLES = [
     ("cmap", "Character to glyph mapping table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/cmap"),
     ("cvar", "CVT variations table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/cvar"),
     ("cvt ", "Control value table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/cvt"),
+    ("DMAP", "Delta character mapping table.", "https://www.iso.org/obp/ui/#iso:std:iso-iec:14496:-22:ed-5:v1:en"),
     ("DSIG", "Digital signature table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/dsig"),
     ("EBDT", "Embedded bitmap data table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/ebdt"),
     ("EBLC", "Embedded bitmap location data table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/eblc"),
@@ -38,13 +39,17 @@ TABLES = [
     ("GDEF", "Glyph definition table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/gdef"),
 #   ("gcid", "Glyph CID table.", "https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6gcid.html"),
     ("glyf", "TrueType glyph data table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/glyf"),
+    ("GLYF", "Extended glyph data table.", "ISO/IEC 14496-22:2026, 5.2.8"),
     ("GPOS", "Glyph positioning table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/gpos"),
     ("GSUB", "Glyph substitution table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/gsub"),
     ("gvar", "Glyph variation table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/gvar"),
+    ("GVAR", "Extended glyph variation table.", "ISO/IEC 14496-22:2026, 7.3.9"),
     ("hdmx", "Horizontal device metrics.", "https://learn.microsoft.com/en-us/typography/opentype/spec/hdmx"),
     ("head", "Font header table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/head"),
     ("hhea", "Horizontal header table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/hhea"),
+    ("HHEA", "Extended horizontal header table.", "ISO/IEC 14496-22:2026, 5.1.10"),
     ("hmtx", "Horizontal metrics table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/hmtx"),
+    ("HMTX", "Extended horizontal metrics table.", "ISO/IEC 14496-22:2026, 5.1.11"),
     ("HVAR", "Horizontal metrics variation table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/hvar"),
     ("IFT ", "Incremental font transfer table.", "https://www.w3.org/TR/IFT/#font-format-extensions"),
     ("IFTX", "Incremental font transfer table.", "https://www.w3.org/TR/IFT/#font-format-extensions"),
@@ -54,11 +59,13 @@ TABLES = [
     ("kerx", "Extended kerning table.", "https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6kerx.html"),
 #   ("lcar", "Ligature caret table.", "https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6lcar.html"),
     ("loca", "Index to location table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/loca"),
+    ("LOCA", "Extended index to location table.", "ISO/IEC 14496-22:2026, 5.2.9"),
     ("ltag", "Language tag table.", "https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6ltag.html"),
     ("MATH", "Mathematical typesetting table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/math"),
     ("maxp", "Maximum profile table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/maxp"),
+    ("MAXP", "Extended maximum profile table.", "ISO/IEC 14496-22:2026, 5.1.12"),
     ("meta", "Metadata table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/meta"),
-#   ("mort", "Metamorphosis table (deprecated).", "https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6mort.html"),
+    ("mort", "Metamorphosis table (deprecated).", "https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6mort.html"),
     ("morx", "Extended metamorphosis table.", "https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6morx.html"),
     ("MVAR", "Metrics variation table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/mvar"),
     ("name", "Naming table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/name"),
@@ -75,14 +82,19 @@ TABLES = [
 #   ("VDMX", "Vertical Device Metrics table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/vdmx"),
     ("VARC", "Variable composite/component table.", "https://github.com/harfbuzz/boring-expansion-spec/blob/main/VARC.md"),
     ("vhea", "Vertical header table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/vhea"),
+    ("VHEA", "Extended vertical header table.", "ISO/IEC 14496-22:2026, 5.6.13"),
     ("vmtx", "Vertical metrics table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/vmtx"),
+    ("VMTX", "Extended vertical metrics table.", "ISO/IEC 14496-22:2026, 5.6.14"),
     ("VORG", "Vertical origin table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/vorg"),
     ("VVAR", "Vertical metrics variation table.", "https://learn.microsoft.com/en-us/typography/opentype/spec/vvar"),
 #   ("Zapf", "Glyph reference table.", "https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6Zapf.html"),    
 ]
 
 def tag_to_name(tag: str):
-    return tag.lower().replace("/", "").removesuffix(" ")
+    name = tag.lower().replace("/", "").removesuffix(" ")
+    if tag in ("MAXP", "HHEA", "HMTX", "VHEA", "VMTX", "GLYF", "LOCA", "GVAR"):
+        name += "_extended"
+    return name
 
 def generate():
     buf = ""
@@ -119,8 +131,8 @@ def generate():
         buf += "    }\n\n"
     buf += "}\n\n"
 
-    # Per table accessors for FontTables
-    buf += "impl FontTables {\n"
+    # Per table accessors for Tables
+    buf += "impl Tables {\n"
     for table in TABLES:
         tag = table[0]
         trimmed_tag = tag.removesuffix(" ");
@@ -129,7 +141,10 @@ def generate():
         url = table[2]
         buf += "    /// {} data.\n".format(desc[:-1])
         buf += "    ///\n"
-        buf += "    /// See the [{}]({}) specification.\n".format(trimmed_tag, url)
+        if url.startswith("https://"):
+            buf += "    /// See the [{}]({}) specification.\n".format(trimmed_tag, url)
+        else:
+            buf += "    /// See {}.\n".format(url)
         buf += "    pub fn {}_data(&self) -> Option<&'_ [u8]> {{\n".format(name)
         buf += "        self.{}_state().map(|state| state.data)\n".format(name)
         buf += "    }\n\n"
@@ -145,4 +160,4 @@ def generate():
 
 if __name__ == "__main__":    
     data = generate()
-    Path(SCRIPT_DIR.joinpath("../data/generated/generated_tables.rs")).write_text(data, encoding="utf-8")
+    Path(SCRIPT_DIR.joinpath("../data/generated/generated_tables.rs")).write_text(data, encoding="utf-8", newline="\n")

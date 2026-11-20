@@ -17,16 +17,23 @@ impl<'a, T> MinByteRange<'a> for MyLookup<'a, T> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl<T> ReadArgs for MyLookup<'_, T> {
+    type Args = ();
+}
+
 impl<'a, T> FontRead<'a> for MyLookup<'a, T> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self {
             data,
             offset_type: std::marker::PhantomData,
@@ -45,10 +52,22 @@ impl<'a, T> MyLookup<'a, T> {
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct MyLookupFixedHeader {
+    pub lookup_type: BigEndian<u16>,
+    pub sub_table_count: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<MyLookupFixedHeader>() <= MyLookup::<()>::MIN_SIZE);
+
 /// A generic table parameterized by the type of its subtable offsets.
 #[derive(Clone)]
 pub struct MyLookup<'a, T = ()> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, MyLookupFixedHeader>,
     offset_type: std::marker::PhantomData<*const T>,
 }
 
@@ -59,49 +78,51 @@ impl<'a, T> MyLookup<'a, T> {
 
     /// Determines the concrete type of T
     pub fn lookup_type(&self) -> u16 {
-        let range = self.lookup_type_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().lookup_type.get()
     }
 
     /// Number of subtables
     pub fn sub_table_count(&self) -> u16 {
-        let range = self.sub_table_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().sub_table_count.get()
     }
 
     /// Offsets to subtables, from beginning of this table
     pub fn subtable_offsets(&self) -> &'a [BigEndian<Offset16>] {
         let range = self.subtable_offsets_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// A dynamically resolving wrapper for [`subtable_offsets`][Self::subtable_offsets].
     pub fn subtables(&self) -> ArrayOfOffsets<'a, T, Offset16>
     where
-        T: FontRead<'a>,
+        T: FontRead<'a, Args = ()>,
     {
-        let data = self.data;
+        let data = self.offset_data();
         let offsets = self.subtable_offsets();
         ArrayOfOffsets::new(offsets, data, ())
     }
 
     pub fn lookup_type_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn sub_table_count_byte_range(&self) -> Range<usize> {
         let start = self.lookup_type_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn subtable_offsets_byte_range(&self) -> Range<usize> {
         let sub_table_count = self.sub_table_count();
         let start = self.sub_table_count_byte_range().end;
-        let end =
-            start + (transforms::to_usize(sub_table_count)).saturating_mul(Offset16::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(sub_table_count)).saturating_mul(Offset16::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -111,35 +132,10 @@ const _: () = assert!(FontData::default_data_long_enough(MyLookup::<()>::MIN_SIZ
 impl<T> Default for MyLookup<'_, T> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
             offset_type: std::marker::PhantomData,
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a, T: FontRead<'a> + SomeTable<'a> + 'a> SomeTable<'a> for MyLookup<'a, T> {
-    fn type_name(&self) -> &str {
-        "MyLookup"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("lookup_type", self.lookup_type())),
-            1usize => Some(Field::new("sub_table_count", self.sub_table_count())),
-            2usize => Some(Field::new(
-                "subtable_offsets",
-                FieldType::from(self.subtables()),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a, T: FontRead<'a> + SomeTable<'a> + 'a> std::fmt::Debug for MyLookup<'a, T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -173,8 +169,13 @@ impl<'a> MySubtable<'a> {
     }
 }
 
+impl ReadArgs for MySubtable<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for MySubtable<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    #[inline]
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         let format: u16 = data.read_at(0usize)?;
         match format {
             MySubtableFormat1::FORMAT => Ok(Self::Format1(FontRead::read(data)?)),
@@ -199,33 +200,6 @@ impl<'a> MinByteRange<'a> for MySubtable<'a> {
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> MySubtable<'a> {
-    fn dyn_inner<'b>(&'b self) -> &'b dyn SomeTable<'a> {
-        match self {
-            Self::Format1(table) => table,
-            Self::Format2(table) => table,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl std::fmt::Debug for MySubtable<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.dyn_inner().fmt(f)
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for MySubtable<'a> {
-    fn type_name(&self) -> &str {
-        self.dyn_inner().type_name()
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        self.dyn_inner().get_field(idx)
-    }
-}
-
 impl Format<u16> for MySubtableFormat1<'_> {
     const FORMAT: u16 = 1;
 }
@@ -236,23 +210,43 @@ impl<'a> MinByteRange<'a> for MySubtableFormat1<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for MySubtableFormat1<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for MySubtableFormat1<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct MySubtableFormat1FixedHeader {
+    pub format: BigEndian<u16>,
+    pub value: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () =
+    assert!(std::mem::size_of::<MySubtableFormat1FixedHeader>() <= MySubtableFormat1::MIN_SIZE);
+
 #[derive(Clone)]
 pub struct MySubtableFormat1<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, MySubtableFormat1FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -261,24 +255,22 @@ impl<'a> MySubtableFormat1<'a> {
     basic_table_impls!(impl_the_methods);
 
     pub fn format(&self) -> u16 {
-        let range = self.format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().format.get()
     }
 
     pub fn value(&self) -> u16 {
-        let range = self.value_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().value.get()
     }
 
     pub fn format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn value_byte_range(&self) -> Range<usize> {
         let start = self.format_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 }
@@ -290,30 +282,9 @@ const _: () = assert!(FontData::default_data_long_enough(
 impl Default for MySubtableFormat1<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_format_1_u16_table_data(),
+            data: TableDataRef::new(FontData::default_format_1_u16_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for MySubtableFormat1<'a> {
-    fn type_name(&self) -> &str {
-        "MySubtableFormat1"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format", self.format())),
-            1usize => Some(Field::new("value", self.value())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for MySubtableFormat1<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -327,23 +298,43 @@ impl<'a> MinByteRange<'a> for MySubtableFormat2<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for MySubtableFormat2<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for MySubtableFormat2<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct MySubtableFormat2FixedHeader {
+    pub format: BigEndian<u16>,
+    pub count: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () =
+    assert!(std::mem::size_of::<MySubtableFormat2FixedHeader>() <= MySubtableFormat2::MIN_SIZE);
+
 #[derive(Clone)]
 pub struct MySubtableFormat2<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, MySubtableFormat2FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -352,60 +343,39 @@ impl<'a> MySubtableFormat2<'a> {
     basic_table_impls!(impl_the_methods);
 
     pub fn format(&self) -> u16 {
-        let range = self.format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().format.get()
     }
 
     pub fn count(&self) -> u16 {
-        let range = self.count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().count.get()
     }
 
     pub fn values(&self) -> &'a [BigEndian<u16>] {
         let range = self.values_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn count_byte_range(&self) -> Range<usize> {
         let start = self.format_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn values_byte_range(&self) -> Range<usize> {
         let count = self.count();
         let start = self.count_byte_range().end;
-        let end = start + (transforms::to_usize(count)).saturating_mul(u16::RAW_BYTE_LEN);
+        let end =
+            start.saturating_add((transforms::to_usize(count)).saturating_mul(u16::RAW_BYTE_LEN));
         start..end
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for MySubtableFormat2<'a> {
-    fn type_name(&self) -> &str {
-        "MySubtableFormat2"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format", self.format())),
-            1usize => Some(Field::new("count", self.count())),
-            2usize => Some(Field::new("values", self.values())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for MySubtableFormat2<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -421,8 +391,12 @@ impl Default for MyLookupGroup<'_> {
     }
 }
 
+impl ReadArgs for MyLookupGroup<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for MyLookupGroup<'a> {
-    fn read(bytes: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(bytes: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         let discriminant = MyLookup::read_discriminant(bytes)?;
         match discriminant {
             1 => Ok(MyLookupGroup::TypeOne(FontRead::read(bytes)?)),
@@ -445,56 +419,49 @@ impl<'a> MyLookupGroup<'a> {
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> MyLookupGroup<'a> {
-    fn dyn_inner(&self) -> &(dyn SomeTable<'a> + 'a) {
-        match self {
-            MyLookupGroup::TypeOne(table) => table,
-            MyLookupGroup::TypeTwo(table) => table,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for MyLookupGroup<'a> {
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        self.dyn_inner().get_field(idx)
-    }
-    fn type_name(&self) -> &str {
-        self.dyn_inner().type_name()
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl std::fmt::Debug for MyLookupGroup<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.dyn_inner().fmt(f)
-    }
-}
-
 impl<'a> MinByteRange<'a> for ContainsLookupGroup<'a> {
     fn min_byte_range(&self) -> Range<usize> {
         0..self.lookup_offset_byte_range().end
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for ContainsLookupGroup<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for ContainsLookupGroup<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct ContainsLookupGroupFixedHeader {
+    pub version: BigEndian<u16>,
+    pub lookup_offset: BigEndian<Offset16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () =
+    assert!(std::mem::size_of::<ContainsLookupGroupFixedHeader>() <= ContainsLookupGroup::MIN_SIZE);
+
 #[derive(Clone)]
 pub struct ContainsLookupGroup<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, ContainsLookupGroupFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -503,30 +470,28 @@ impl<'a> ContainsLookupGroup<'a> {
     basic_table_impls!(impl_the_methods);
 
     pub fn version(&self) -> u16 {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     pub fn lookup_offset(&self) -> Offset16 {
-        let range = self.lookup_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().lookup_offset.get()
     }
 
     /// Attempt to resolve [`lookup_offset`][Self::lookup_offset].
     pub fn lookup(&self) -> Result<MyLookupGroup<'a>, ReadError> {
-        let data = self.data;
+        let data = self.offset_data();
         self.lookup_offset().resolve(data)
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn lookup_offset_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + Offset16::RAW_BYTE_LEN;
+        let end = start.saturating_add(Offset16::RAW_BYTE_LEN);
         start..end
     }
 }
@@ -538,32 +503,8 @@ const _: () = assert!(FontData::default_data_long_enough(
 impl Default for ContainsLookupGroup<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for ContainsLookupGroup<'a> {
-    fn type_name(&self) -> &str {
-        "ContainsLookupGroup"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new(
-                "lookup_offset",
-                FieldType::offset(self.lookup_offset(), self.lookup()),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for ContainsLookupGroup<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }

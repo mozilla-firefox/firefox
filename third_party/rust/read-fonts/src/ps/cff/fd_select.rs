@@ -25,7 +25,11 @@ impl FdSelect<'_> {
                     Ok(ix) => ix,
                     Err(ix) => ix.saturating_sub(1),
                 };
-                Some(ranges.get(ix)?.fd() as u16)
+                let range = ranges.get(ix)?;
+                if !(range.first() as u32..fds.sentinel() as u32).contains(&gid) {
+                    return None;
+                }
+                Some(range.fd() as u16)
             }
             // See <https://learn.microsoft.com/en-us/typography/opentype/spec/cff2#table-14-fdselect-format-4>
             Self::Format4(fds) => {
@@ -35,7 +39,11 @@ impl FdSelect<'_> {
                     Ok(ix) => ix,
                     Err(ix) => ix.saturating_sub(1),
                 };
-                Some(ranges.get(ix)?.fd())
+                let range = ranges.get(ix)?;
+                if !(range.first()..fds.sentinel()).contains(&gid) {
+                    return None;
+                }
+                Some(range.fd())
             }
         }
     }
@@ -67,6 +75,19 @@ mod tests {
                         *font_index
                     )
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn select_font_index_out_of_bounds() {
+        let map = &[(3..10, 0), (10..20, 1)];
+        // Format 0 doesn't allow a range that doesn't start at 0, so we
+        // skip it here
+        for data in make_fd_selects(map).iter().skip(1) {
+            let fd_select = FdSelect::read(data.data().into()).unwrap();
+            for gid in [0, 1, 2, 20, 40] {
+                assert!(fd_select.font_index(GlyphId::new(gid)).is_none());
             }
         }
     }

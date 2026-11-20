@@ -1,6 +1,6 @@
 [package]
 name = "read-fonts"
-version = "0.41.0"
+version = "0.47.0"
 description = "Reading OpenType font files."
 readme = "README.md"
 categories = ["text-processing", "parsing", "graphics"]
@@ -12,43 +12,46 @@ repository.workspace = true
 
 [package.metadata.docs.rs]
 # To build locally:
-# RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --features libm,serde,std
-features = ["libm", "serde", "std"]
+# RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --features agl,libm,serde,std,type1
+features = ["agl", "libm", "serde", "std", "type1"]
 
 [features]
-std = ["font-types/std"]
+std = ["font-types/std", "dep:foldhash"]
 codegen_test = []
 scaler_test = []
 # experimental support for incremental font transfer (https://www.w3.org/TR/IFT/)
 # code behind this feature does not honor semver and may break at any time.
 ift = []
-# this feature is not stable, but provides untyped traversal of font tables.
-# we do not consider this feature public API for the purposes of semver.
-experimental_traverse = ["std"]
-# Enables experimental implementations of proposed changes to the spec
-# as discussed at https://github.com/harfbuzz/boring-expansion-spec
+# Does nothing. The cubic outlines it once enabled are now always read.
 spec_next = []
 # Enables support for a new font API, as proposed at
 # https://github.com/googlefonts/oxidize/pull/77
 experimental_font_api = []
+# Does nothing. Traversal was removed in #2087, but consumers still ask for
+# this feature -- fontconfig's fc-fontations does, without using any of it --
+# and cargo fails to resolve a feature that does not exist. Keeping it empty
+# lets them upgrade before they edit their manifests.
+experimental_traverse = []
 default = ["std"]
 serde = ["dep:serde", "font-types/serde"]
 libm = ["dep:core_maths"]
 # Support for mapping glyph names <-> unicode via the Adobe glyph list
 agl = []
+# Support for Adobe Type 1 fonts, including glyph-name Unicode mapping.
+type1 = ["agl"]
 
 [dependencies]
+foldhash = { workspace = true, optional = true }
+smallvec = { workspace = true }
 font-types = { workspace = true, features = ["bytemuck"] }
+yoke = { workspace = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
 core_maths = { workspace = true, optional = true }
 bytemuck = { workspace = true }
-once_cell = { version = "1.21.4", default-features = false, features = [
-    "alloc",
-    "race",
-] }
+once_cell = { workspace = true }
 
 [dev-dependencies]
-read-fonts = { path = ".", features = ["experimental_font_api"] }
+read-fonts = { path = "." }
 font-test-data = { workspace = true }
 criterion = { workspace = true }
 rand = { version = "0.10.1", features = ["thread_rng"] }
@@ -65,3 +68,21 @@ harness = false
 [[bench]]
 name = "table_lookup"
 harness = false
+
+[[bench]]
+name = "glyph_names"
+harness = false
+
+[[bench]]
+name = "type1"
+harness = false
+required-features = ["type1"]
+
+[[bench]]
+name = "charmap"
+harness = false
+
+[[bench]]
+name = "system_charmap"
+harness = false
+

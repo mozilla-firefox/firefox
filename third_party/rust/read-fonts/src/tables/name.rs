@@ -2,6 +2,9 @@
 
 include!("../../generated/generated_name.rs");
 
+mod language;
+
+pub use language::language_id_to_bcp47;
 pub use types::NameId;
 
 impl<'a> Name<'a> {
@@ -73,33 +76,6 @@ impl<'a> NameString<'a> {
             encoding: self.encoding,
             pos: 0,
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> traversal::SomeString<'a> for NameString<'a> {
-    fn iter_chars(&self) -> Box<dyn Iterator<Item = char> + 'a> {
-        Box::new(self.into_iter())
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl NameRecord {
-    fn traverse_string<'a>(&self, data: FontData<'a>) -> traversal::FieldType<'a> {
-        FieldType::StringOffset(traversal::StringOffset {
-            offset: self.string_offset().into(),
-            target: self.string(data).map(|s| Box::new(s) as _),
-        })
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl LangTagRecord {
-    fn traverse_lang_tag<'a>(&self, data: FontData<'a>) -> traversal::FieldType<'a> {
-        FieldType::StringOffset(traversal::StringOffset {
-            offset: self.lang_tag_offset().into(),
-            target: self.lang_tag(data).map(|s| Box::new(s) as _),
-        })
     }
 }
 

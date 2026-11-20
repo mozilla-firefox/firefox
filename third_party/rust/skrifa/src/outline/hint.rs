@@ -2,7 +2,7 @@
 
 use super::{
     autohint, cff,
-    glyf::{self, FreeTypeScaler},
+    glyf::{self, ClearTypeState, FreeTypeScaler},
     pen::PathStyle,
     AdjustedMetrics, DrawError, GlyphStyles, Hinting, LocationRef, NormalizedCoord,
     OutlineCollectionKind, OutlineGlyph, OutlineGlyphCollection, OutlineKind, OutlinePen, Size,
@@ -354,12 +354,15 @@ impl HintingInstance {
                     .to_bits()
                         + 32)
                         >> 6;
+                    // This instance keeps the classic ClearType behavior; the
+                    // scaler is where the newer one is chosen.
                     hint_instance.reconfigure(
-                        glyf,
+                        &glyf.hint_tables(),
                         scale,
                         rounded_ppem,
                         self.target,
                         &self.coords,
+                        ClearTypeState::default(),
                     )?;
                     self.kind = HinterKind::Glyf(hint_instance);
                 }
@@ -384,14 +387,8 @@ impl HintingInstance {
                 let Some(font) = outlines.font() else {
                     return Ok(());
                 };
-                let instance = autohint::Instance::new(
-                    font,
-                    outlines,
-                    &self.coords,
-                    self.target,
-                    styles,
-                    true,
-                );
+                let context = autohint::FontRefContext::with_outlines(font, outlines, &self.coords);
+                let instance = autohint::Instance::new(&context, self.target, styles, true);
                 self.kind = HinterKind::Auto(instance);
             }
             _ => {}
@@ -423,7 +420,8 @@ impl HintingInstance {
         let coords = self.coords.as_slice();
         match (&self.kind, &glyph.kind) {
             (HinterKind::Auto(instance), _) => {
-                instance.draw(self.size, coords, glyph, path_style, pen)
+                let context = autohint::FontRefContext::for_glyph(glyph, coords);
+                instance.draw(&context, self.size, glyph.glyph_id(), path_style, pen)
             }
             (HinterKind::Glyf(instance), OutlineKind::Glyf(glyf, outline)) => {
                 if matches!(path_style, PathStyle::HarfBuzz) {

@@ -115,40 +115,6 @@ impl FixedSize for BitmapSize {
         + BitmapFlags::RAW_BYTE_LEN;
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for BitmapSize {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "BitmapSize",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new(
-                    "index_subtable_list_offset",
-                    self.index_subtable_list_offset(),
-                )),
-                1usize => Some(Field::new(
-                    "index_subtable_list_size",
-                    self.index_subtable_list_size(),
-                )),
-                2usize => Some(Field::new(
-                    "number_of_index_subtables",
-                    self.number_of_index_subtables(),
-                )),
-                3usize => Some(Field::new("color_ref", self.color_ref())),
-                4usize => Some(Field::new("hori", self.hori().traversal_type(_data))),
-                5usize => Some(Field::new("vert", self.vert().traversal_type(_data))),
-                6usize => Some(Field::new("start_glyph_index", self.start_glyph_index())),
-                7usize => Some(Field::new("end_glyph_index", self.end_glyph_index())),
-                8usize => Some(Field::new("ppem_x", self.ppem_x())),
-                9usize => Some(Field::new("ppem_y", self.ppem_y())),
-                10usize => Some(Field::new("bit_depth", self.bit_depth())),
-                11usize => Some(Field::new("flags", self.flags())),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
 /// [SbitLineMetrics](https://learn.microsoft.com/en-us/typography/opentype/spec/eblc#sbitlinemetrics-record) record.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Copy, bytemuck :: AnyBitPattern)]
 #[repr(C)]
@@ -231,37 +197,6 @@ impl FixedSize for SbitLineMetrics {
         + i8::RAW_BYTE_LEN
         + i8::RAW_BYTE_LEN
         + i8::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for SbitLineMetrics {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "SbitLineMetrics",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("ascender", self.ascender())),
-                1usize => Some(Field::new("descender", self.descender())),
-                2usize => Some(Field::new("width_max", self.width_max())),
-                3usize => Some(Field::new(
-                    "caret_slope_numerator",
-                    self.caret_slope_numerator(),
-                )),
-                4usize => Some(Field::new(
-                    "caret_slope_denominator",
-                    self.caret_slope_denominator(),
-                )),
-                5usize => Some(Field::new("caret_offset", self.caret_offset())),
-                6usize => Some(Field::new("min_origin_sb", self.min_origin_sb())),
-                7usize => Some(Field::new("min_advance_sb", self.min_advance_sb())),
-                8usize => Some(Field::new("max_before_bl", self.max_before_bl())),
-                9usize => Some(Field::new("min_after_bl", self.min_after_bl())),
-                10usize => Some(Field::new("pad1", self.pad1())),
-                11usize => Some(Field::new("pad2", self.pad2())),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }
 
 /// [Bitmap flags](https://learn.microsoft.com/en-us/typography/opentype/spec/eblc#bitmap-flags).
@@ -565,13 +500,6 @@ impl font_types::Scalar for BitmapFlags {
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> From<BitmapFlags> for FieldType<'a> {
-    fn from(src: BitmapFlags) -> FieldType<'a> {
-        src.bits().into()
-    }
-}
-
 /// [BigGlyphMetrics](https://learn.microsoft.com/en-us/typography/opentype/spec/eblc#bigglyphmetrics) record.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Copy, bytemuck :: AnyBitPattern)]
 #[repr(C)]
@@ -648,27 +576,6 @@ impl FixedSize for BigGlyphMetrics {
         + u8::RAW_BYTE_LEN;
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for BigGlyphMetrics {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "BigGlyphMetrics",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("height", self.height())),
-                1usize => Some(Field::new("width", self.width())),
-                2usize => Some(Field::new("hori_bearing_x", self.hori_bearing_x())),
-                3usize => Some(Field::new("hori_bearing_y", self.hori_bearing_y())),
-                4usize => Some(Field::new("hori_advance", self.hori_advance())),
-                5usize => Some(Field::new("vert_bearing_x", self.vert_bearing_x())),
-                6usize => Some(Field::new("vert_bearing_y", self.vert_bearing_y())),
-                7usize => Some(Field::new("vert_advance", self.vert_advance())),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
 /// [SmallGlyphMetrics](https://learn.microsoft.com/en-us/typography/opentype/spec/eblc#smallglyphmetrics) record.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Copy, bytemuck :: AnyBitPattern)]
 #[repr(C)]
@@ -721,31 +628,13 @@ impl FixedSize for SmallGlyphMetrics {
         + u8::RAW_BYTE_LEN;
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for SmallGlyphMetrics {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "SmallGlyphMetrics",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("height", self.height())),
-                1usize => Some(Field::new("width", self.width())),
-                2usize => Some(Field::new("bearing_x", self.bearing_x())),
-                3usize => Some(Field::new("bearing_y", self.bearing_y())),
-                4usize => Some(Field::new("advance", self.advance())),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
 impl<'a> MinByteRange<'a> for IndexSubtableList<'a> {
     fn min_byte_range(&self) -> Range<usize> {
         0..self.index_subtable_records_byte_range().end
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -753,14 +642,17 @@ impl ReadArgs for IndexSubtableList<'_> {
     type Args = u32;
 }
 
-impl<'a> FontReadWithArgs<'a> for IndexSubtableList<'a> {
-    fn read_with_args(data: FontData<'a>, args: &u32) -> Result<Self, ReadError> {
-        let number_of_index_subtables = *args;
+impl<'a> FontRead<'a> for IndexSubtableList<'a> {
+    fn read_with_args(data: FontData<'a>, args: u32) -> Result<Self, ReadError> {
+        let number_of_index_subtables = args;
 
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self {
             data,
             number_of_index_subtables,
@@ -775,14 +667,24 @@ impl<'a> IndexSubtableList<'a> {
     /// parsed.
     pub fn read(data: FontData<'a>, number_of_index_subtables: u32) -> Result<Self, ReadError> {
         let args = number_of_index_subtables;
-        Self::read_with_args(data, &args)
+        Self::read_with_args(data, args)
     }
 }
+
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct IndexSubtableListFixedHeader {}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () =
+    assert!(std::mem::size_of::<IndexSubtableListFixedHeader>() <= IndexSubtableList::MIN_SIZE);
 
 /// [IndexSubtableList](https://learn.microsoft.com/en-us/typography/opentype/spec/eblc#indexsubtablelist) table.
 #[derive(Clone)]
 pub struct IndexSubtableList<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, IndexSubtableListFixedHeader>,
     number_of_index_subtables: u32,
 }
 
@@ -794,7 +696,10 @@ impl<'a> IndexSubtableList<'a> {
     /// Array of IndexSubtableRecords.
     pub fn index_subtable_records(&self) -> &'a [IndexSubtableRecord] {
         let range = self.index_subtable_records_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub(crate) fn number_of_index_subtables(&self) -> u32 {
@@ -803,10 +708,11 @@ impl<'a> IndexSubtableList<'a> {
 
     pub fn index_subtable_records_byte_range(&self) -> Range<usize> {
         let number_of_index_subtables = self.number_of_index_subtables();
-        let start = 0;
-        let end = start
-            + (transforms::to_usize(number_of_index_subtables))
-                .saturating_mul(IndexSubtableRecord::RAW_BYTE_LEN);
+        let start = 0usize;
+        let end = start.saturating_add(
+            (transforms::to_usize(number_of_index_subtables))
+                .saturating_mul(IndexSubtableRecord::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -819,37 +725,10 @@ const _: () = assert!(FontData::default_data_long_enough(
 impl Default for IndexSubtableList<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
             number_of_index_subtables: Default::default(),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for IndexSubtableList<'a> {
-    fn type_name(&self) -> &str {
-        "IndexSubtableList"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new(
-                "index_subtable_records",
-                traversal::FieldType::array_of_records(
-                    stringify!(IndexSubtableRecord),
-                    self.index_subtable_records(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for IndexSubtableList<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -887,32 +766,13 @@ impl IndexSubtableRecord {
     /// By calling its `offset_data` method.
     pub fn index_subtable<'a>(&self, data: FontData<'a>) -> Result<IndexSubtable<'a>, ReadError> {
         let args = (self.last_glyph_index(), self.first_glyph_index());
-        self.index_subtable_offset().resolve_with_args(data, &args)
+        self.index_subtable_offset().resolve_with_args(data, args)
     }
 }
 
 impl FixedSize for IndexSubtableRecord {
     const RAW_BYTE_LEN: usize =
         GlyphId16::RAW_BYTE_LEN + GlyphId16::RAW_BYTE_LEN + Offset32::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for IndexSubtableRecord {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "IndexSubtableRecord",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("first_glyph_index", self.first_glyph_index())),
-                1usize => Some(Field::new("last_glyph_index", self.last_glyph_index())),
-                2usize => Some(Field::new(
-                    "index_subtable_offset",
-                    FieldType::offset(self.index_subtable_offset(), self.index_subtable(_data)),
-                )),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }
 
 impl Format<u16> for IndexSubtable1<'_> {
@@ -925,7 +785,7 @@ impl<'a> MinByteRange<'a> for IndexSubtable1<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -933,17 +793,17 @@ impl ReadArgs for IndexSubtable1<'_> {
     type Args = (GlyphId16, GlyphId16);
 }
 
-impl<'a> FontReadWithArgs<'a> for IndexSubtable1<'a> {
-    fn read_with_args(
-        data: FontData<'a>,
-        args: &(GlyphId16, GlyphId16),
-    ) -> Result<Self, ReadError> {
-        let (last_glyph_index, first_glyph_index) = *args;
+impl<'a> FontRead<'a> for IndexSubtable1<'a> {
+    fn read_with_args(data: FontData<'a>, args: (GlyphId16, GlyphId16)) -> Result<Self, ReadError> {
+        let (last_glyph_index, first_glyph_index) = args;
 
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self {
             data,
             last_glyph_index,
@@ -963,14 +823,27 @@ impl<'a> IndexSubtable1<'a> {
         first_glyph_index: GlyphId16,
     ) -> Result<Self, ReadError> {
         let args = (last_glyph_index, first_glyph_index);
-        Self::read_with_args(data, &args)
+        Self::read_with_args(data, args)
     }
 }
+
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct IndexSubtable1FixedHeader {
+    pub index_format: BigEndian<u16>,
+    pub image_format: BigEndian<u16>,
+    pub image_data_offset: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<IndexSubtable1FixedHeader>() <= IndexSubtable1::MIN_SIZE);
 
 /// [IndexSubTable1](https://learn.microsoft.com/en-us/typography/opentype/spec/eblc#indexsubtable1-variable-metrics-glyphs-with-4-byte-offsets): variable-metrics glyphs with 4-byte offsets.
 #[derive(Clone)]
 pub struct IndexSubtable1<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, IndexSubtable1FixedHeader>,
     last_glyph_index: GlyphId16,
     first_glyph_index: GlyphId16,
 }
@@ -982,25 +855,25 @@ impl<'a> IndexSubtable1<'a> {
 
     /// Format of this IndexSubTable.
     pub fn index_format(&self) -> u16 {
-        let range = self.index_format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().index_format.get()
     }
 
     /// Format of EBDT image data.
     pub fn image_format(&self) -> u16 {
-        let range = self.image_format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().image_format.get()
     }
 
     /// Offset to image data in EBDT table.
     pub fn image_data_offset(&self) -> u32 {
-        let range = self.image_data_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().image_data_offset.get()
     }
 
     pub fn sbit_offsets(&self) -> &'a [BigEndian<u32>] {
         let range = self.sbit_offsets_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub(crate) fn last_glyph_index(&self) -> GlyphId16 {
@@ -1012,20 +885,20 @@ impl<'a> IndexSubtable1<'a> {
     }
 
     pub fn index_format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn image_format_byte_range(&self) -> Range<usize> {
         let start = self.index_format_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn image_data_offset_byte_range(&self) -> Range<usize> {
         let start = self.image_format_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
@@ -1033,9 +906,10 @@ impl<'a> IndexSubtable1<'a> {
         let last_glyph_index = self.last_glyph_index();
         let first_glyph_index = self.first_glyph_index();
         let start = self.image_data_offset_byte_range().end;
-        let end = start
-            + (transforms::subtract_add_two(last_glyph_index, first_glyph_index))
-                .saturating_mul(u32::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::subtract_add_two(last_glyph_index, first_glyph_index))
+                .saturating_mul(u32::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -1045,34 +919,11 @@ const _: () = assert!(FontData::default_data_long_enough(IndexSubtable1::MIN_SIZ
 impl Default for IndexSubtable1<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_format_1_u16_table_data(),
+            data: TableDataRef::new(FontData::default_format_1_u16_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
             last_glyph_index: Default::default(),
             first_glyph_index: Default::default(),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for IndexSubtable1<'a> {
-    fn type_name(&self) -> &str {
-        "IndexSubtable1"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("index_format", self.index_format())),
-            1usize => Some(Field::new("image_format", self.image_format())),
-            2usize => Some(Field::new("image_data_offset", self.image_data_offset())),
-            3usize => Some(Field::new("sbit_offsets", self.sbit_offsets())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for IndexSubtable1<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -1086,122 +937,110 @@ impl<'a> MinByteRange<'a> for IndexSubtable2<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for IndexSubtable2<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for IndexSubtable2<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct IndexSubtable2FixedHeader {
+    pub index_format: BigEndian<u16>,
+    pub image_format: BigEndian<u16>,
+    pub image_data_offset: BigEndian<u32>,
+    pub image_size: BigEndian<u32>,
+    pub big_metrics: BigGlyphMetrics,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<IndexSubtable2FixedHeader>() <= IndexSubtable2::MIN_SIZE);
+
 /// [IndexSubTable2](https://learn.microsoft.com/en-us/typography/opentype/spec/eblc#indexsubtable2-all-glyphs-have-identical-metrics): all glyphs have identical metrics.
 #[derive(Clone)]
 pub struct IndexSubtable2<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, IndexSubtable2FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
 impl<'a> IndexSubtable2<'a> {
-    pub const MIN_SIZE: usize =
-        (u16::RAW_BYTE_LEN + u16::RAW_BYTE_LEN + u32::RAW_BYTE_LEN + u32::RAW_BYTE_LEN);
+    pub const MIN_SIZE: usize = (u16::RAW_BYTE_LEN
+        + u16::RAW_BYTE_LEN
+        + u32::RAW_BYTE_LEN
+        + u32::RAW_BYTE_LEN
+        + BigGlyphMetrics::RAW_BYTE_LEN);
     basic_table_impls!(impl_the_methods);
 
     /// Format of this IndexSubTable.
     pub fn index_format(&self) -> u16 {
-        let range = self.index_format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().index_format.get()
     }
 
     /// Format of EBDT image data.
     pub fn image_format(&self) -> u16 {
-        let range = self.image_format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().image_format.get()
     }
 
     /// Offset to image data in EBDT table.
     pub fn image_data_offset(&self) -> u32 {
-        let range = self.image_data_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().image_data_offset.get()
     }
 
     /// All the glyphs are of the same size.
     pub fn image_size(&self) -> u32 {
-        let range = self.image_size_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().image_size.get()
     }
 
     /// All glyphs have the same metrics; glyph data may be compressed, byte-aligned, or bit-aligned.
-    pub fn big_metrics(&self) -> &'a [BigGlyphMetrics] {
-        let range = self.big_metrics_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+    pub fn big_metrics(&self) -> &'a BigGlyphMetrics {
+        &self.data.header().big_metrics
     }
 
     pub fn index_format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn image_format_byte_range(&self) -> Range<usize> {
         let start = self.index_format_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn image_data_offset_byte_range(&self) -> Range<usize> {
         let start = self.image_format_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn image_size_byte_range(&self) -> Range<usize> {
         let start = self.image_data_offset_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn big_metrics_byte_range(&self) -> Range<usize> {
         let start = self.image_size_byte_range().end;
-        let end = start + BigGlyphMetrics::RAW_BYTE_LEN;
+        let end = start.saturating_add(BigGlyphMetrics::RAW_BYTE_LEN);
         start..end
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for IndexSubtable2<'a> {
-    fn type_name(&self) -> &str {
-        "IndexSubtable2"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("index_format", self.index_format())),
-            1usize => Some(Field::new("image_format", self.image_format())),
-            2usize => Some(Field::new("image_data_offset", self.image_data_offset())),
-            3usize => Some(Field::new("image_size", self.image_size())),
-            4usize => Some(Field::new(
-                "big_metrics",
-                traversal::FieldType::array_of_records(
-                    stringify!(BigGlyphMetrics),
-                    self.big_metrics(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for IndexSubtable2<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -1215,7 +1054,7 @@ impl<'a> MinByteRange<'a> for IndexSubtable3<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -1223,17 +1062,17 @@ impl ReadArgs for IndexSubtable3<'_> {
     type Args = (GlyphId16, GlyphId16);
 }
 
-impl<'a> FontReadWithArgs<'a> for IndexSubtable3<'a> {
-    fn read_with_args(
-        data: FontData<'a>,
-        args: &(GlyphId16, GlyphId16),
-    ) -> Result<Self, ReadError> {
-        let (last_glyph_index, first_glyph_index) = *args;
+impl<'a> FontRead<'a> for IndexSubtable3<'a> {
+    fn read_with_args(data: FontData<'a>, args: (GlyphId16, GlyphId16)) -> Result<Self, ReadError> {
+        let (last_glyph_index, first_glyph_index) = args;
 
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self {
             data,
             last_glyph_index,
@@ -1253,14 +1092,27 @@ impl<'a> IndexSubtable3<'a> {
         first_glyph_index: GlyphId16,
     ) -> Result<Self, ReadError> {
         let args = (last_glyph_index, first_glyph_index);
-        Self::read_with_args(data, &args)
+        Self::read_with_args(data, args)
     }
 }
+
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct IndexSubtable3FixedHeader {
+    pub index_format: BigEndian<u16>,
+    pub image_format: BigEndian<u16>,
+    pub image_data_offset: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<IndexSubtable3FixedHeader>() <= IndexSubtable3::MIN_SIZE);
 
 /// [IndexSubTable3](https://learn.microsoft.com/en-us/typography/opentype/spec/eblc#indexsubtable3-variable-metrics-glyphs-with-2-byte-offsets): variable-metrics glyphs with 2-byte offsets.
 #[derive(Clone)]
 pub struct IndexSubtable3<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, IndexSubtable3FixedHeader>,
     last_glyph_index: GlyphId16,
     first_glyph_index: GlyphId16,
 }
@@ -1272,25 +1124,25 @@ impl<'a> IndexSubtable3<'a> {
 
     /// Format of this IndexSubTable.
     pub fn index_format(&self) -> u16 {
-        let range = self.index_format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().index_format.get()
     }
 
     /// Format of EBDT image data.
     pub fn image_format(&self) -> u16 {
-        let range = self.image_format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().image_format.get()
     }
 
     /// Offset to image data in EBDT table.
     pub fn image_data_offset(&self) -> u32 {
-        let range = self.image_data_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().image_data_offset.get()
     }
 
     pub fn sbit_offsets(&self) -> &'a [BigEndian<u16>] {
         let range = self.sbit_offsets_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub(crate) fn last_glyph_index(&self) -> GlyphId16 {
@@ -1302,20 +1154,20 @@ impl<'a> IndexSubtable3<'a> {
     }
 
     pub fn index_format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn image_format_byte_range(&self) -> Range<usize> {
         let start = self.index_format_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn image_data_offset_byte_range(&self) -> Range<usize> {
         let start = self.image_format_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
@@ -1323,34 +1175,11 @@ impl<'a> IndexSubtable3<'a> {
         let last_glyph_index = self.last_glyph_index();
         let first_glyph_index = self.first_glyph_index();
         let start = self.image_data_offset_byte_range().end;
-        let end = start
-            + (transforms::subtract_add_two(last_glyph_index, first_glyph_index))
-                .saturating_mul(u16::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::subtract_add_two(last_glyph_index, first_glyph_index))
+                .saturating_mul(u16::RAW_BYTE_LEN),
+        );
         start..end
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for IndexSubtable3<'a> {
-    fn type_name(&self) -> &str {
-        "IndexSubtable3"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("index_format", self.index_format())),
-            1usize => Some(Field::new("image_format", self.image_format())),
-            2usize => Some(Field::new("image_data_offset", self.image_data_offset())),
-            3usize => Some(Field::new("sbit_offsets", self.sbit_offsets())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for IndexSubtable3<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -1364,24 +1193,45 @@ impl<'a> MinByteRange<'a> for IndexSubtable4<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for IndexSubtable4<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for IndexSubtable4<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct IndexSubtable4FixedHeader {
+    pub index_format: BigEndian<u16>,
+    pub image_format: BigEndian<u16>,
+    pub image_data_offset: BigEndian<u32>,
+    pub num_glyphs: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<IndexSubtable4FixedHeader>() <= IndexSubtable4::MIN_SIZE);
+
 /// [IndexSubTable4](https://learn.microsoft.com/en-us/typography/opentype/spec/eblc#indexsubtable3-variable-metrics-glyphs-with-2-byte-offsets): variable-metrics glyphs with sparse glyph codes.
 #[derive(Clone)]
 pub struct IndexSubtable4<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, IndexSubtable4FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -1392,97 +1242,64 @@ impl<'a> IndexSubtable4<'a> {
 
     /// Format of this IndexSubTable.
     pub fn index_format(&self) -> u16 {
-        let range = self.index_format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().index_format.get()
     }
 
     /// Format of EBDT image data.
     pub fn image_format(&self) -> u16 {
-        let range = self.image_format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().image_format.get()
     }
 
     /// Offset to image data in EBDT table.
     pub fn image_data_offset(&self) -> u32 {
-        let range = self.image_data_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().image_data_offset.get()
     }
 
     /// Array length.
     pub fn num_glyphs(&self) -> u32 {
-        let range = self.num_glyphs_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().num_glyphs.get()
     }
 
     /// One per glyph.
     pub fn glyph_array(&self) -> &'a [GlyphIdOffsetPair] {
         let range = self.glyph_array_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn index_format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn image_format_byte_range(&self) -> Range<usize> {
         let start = self.index_format_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn image_data_offset_byte_range(&self) -> Range<usize> {
         let start = self.image_format_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn num_glyphs_byte_range(&self) -> Range<usize> {
         let start = self.image_data_offset_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn glyph_array_byte_range(&self) -> Range<usize> {
         let num_glyphs = self.num_glyphs();
         let start = self.num_glyphs_byte_range().end;
-        let end = start
-            + (transforms::add(num_glyphs, 1_usize))
-                .saturating_mul(GlyphIdOffsetPair::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::add(num_glyphs, 1_usize)).saturating_mul(GlyphIdOffsetPair::RAW_BYTE_LEN),
+        );
         start..end
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for IndexSubtable4<'a> {
-    fn type_name(&self) -> &str {
-        "IndexSubtable4"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("index_format", self.index_format())),
-            1usize => Some(Field::new("image_format", self.image_format())),
-            2usize => Some(Field::new("image_data_offset", self.image_data_offset())),
-            3usize => Some(Field::new("num_glyphs", self.num_glyphs())),
-            4usize => Some(Field::new(
-                "glyph_array",
-                traversal::FieldType::array_of_records(
-                    stringify!(GlyphIdOffsetPair),
-                    self.glyph_array(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for IndexSubtable4<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -1513,21 +1330,6 @@ impl FixedSize for GlyphIdOffsetPair {
     const RAW_BYTE_LEN: usize = GlyphId16::RAW_BYTE_LEN + u16::RAW_BYTE_LEN;
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for GlyphIdOffsetPair {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "GlyphIdOffsetPair",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("glyph_id", self.glyph_id())),
-                1usize => Some(Field::new("sbit_offset", self.sbit_offset())),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
 impl Format<u16> for IndexSubtable5<'_> {
     const FORMAT: u16 = 5;
 }
@@ -1538,24 +1340,47 @@ impl<'a> MinByteRange<'a> for IndexSubtable5<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for IndexSubtable5<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for IndexSubtable5<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct IndexSubtable5FixedHeader {
+    pub index_format: BigEndian<u16>,
+    pub image_format: BigEndian<u16>,
+    pub image_data_offset: BigEndian<u32>,
+    pub image_size: BigEndian<u32>,
+    pub big_metrics: BigGlyphMetrics,
+    pub num_glyphs: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<IndexSubtable5FixedHeader>() <= IndexSubtable5::MIN_SIZE);
+
 /// [IndexSubTable5](https://learn.microsoft.com/en-us/typography/opentype/spec/eblc#indexsubtable5-constant-metrics-glyphs-with-sparse-glyph-codes): constant-metrics glyphs with sparse glyph codes
 #[derive(Clone)]
 pub struct IndexSubtable5<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, IndexSubtable5FixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -1564,127 +1389,92 @@ impl<'a> IndexSubtable5<'a> {
         + u16::RAW_BYTE_LEN
         + u32::RAW_BYTE_LEN
         + u32::RAW_BYTE_LEN
+        + BigGlyphMetrics::RAW_BYTE_LEN
         + u32::RAW_BYTE_LEN);
     basic_table_impls!(impl_the_methods);
 
     /// Format of this IndexSubTable.
     pub fn index_format(&self) -> u16 {
-        let range = self.index_format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().index_format.get()
     }
 
     /// Format of EBDT image data.
     pub fn image_format(&self) -> u16 {
-        let range = self.image_format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().image_format.get()
     }
 
     /// Offset to image data in EBDT table.
     pub fn image_data_offset(&self) -> u32 {
-        let range = self.image_data_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().image_data_offset.get()
     }
 
     /// All glyphs have the same data size.
     pub fn image_size(&self) -> u32 {
-        let range = self.image_size_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().image_size.get()
     }
 
     /// All glyphs have the same metrics.
-    pub fn big_metrics(&self) -> &'a [BigGlyphMetrics] {
-        let range = self.big_metrics_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+    pub fn big_metrics(&self) -> &'a BigGlyphMetrics {
+        &self.data.header().big_metrics
     }
 
     /// Array length.
     pub fn num_glyphs(&self) -> u32 {
-        let range = self.num_glyphs_byte_range();
-        self.data.read_at(range.start).ok().unwrap_or_default()
+        self.data.header().num_glyphs.get()
     }
 
     /// One per glyph, sorted by glyhph ID.
     pub fn glyph_array(&self) -> &'a [BigEndian<GlyphId16>] {
         let range = self.glyph_array_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn index_format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn image_format_byte_range(&self) -> Range<usize> {
         let start = self.index_format_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn image_data_offset_byte_range(&self) -> Range<usize> {
         let start = self.image_format_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn image_size_byte_range(&self) -> Range<usize> {
         let start = self.image_data_offset_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn big_metrics_byte_range(&self) -> Range<usize> {
         let start = self.image_size_byte_range().end;
-        let end = start + BigGlyphMetrics::RAW_BYTE_LEN;
+        let end = start.saturating_add(BigGlyphMetrics::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn num_glyphs_byte_range(&self) -> Range<usize> {
         let start = self.big_metrics_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn glyph_array_byte_range(&self) -> Range<usize> {
         let num_glyphs = self.num_glyphs();
         let start = self.num_glyphs_byte_range().end;
-        let end =
-            start + (transforms::to_usize(num_glyphs)).saturating_mul(GlyphId16::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(num_glyphs)).saturating_mul(GlyphId16::RAW_BYTE_LEN),
+        );
         start..end
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for IndexSubtable5<'a> {
-    fn type_name(&self) -> &str {
-        "IndexSubtable5"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("index_format", self.index_format())),
-            1usize => Some(Field::new("image_format", self.image_format())),
-            2usize => Some(Field::new("image_data_offset", self.image_data_offset())),
-            3usize => Some(Field::new("image_size", self.image_size())),
-            4usize => Some(Field::new(
-                "big_metrics",
-                traversal::FieldType::array_of_records(
-                    stringify!(BigGlyphMetrics),
-                    self.big_metrics(),
-                    self.offset_data(),
-                ),
-            )),
-            5usize => Some(Field::new("num_glyphs", self.num_glyphs())),
-            6usize => Some(Field::new("glyph_array", self.glyph_array())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for IndexSubtable5<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -1720,20 +1510,4 @@ impl BdtComponent {
 
 impl FixedSize for BdtComponent {
     const RAW_BYTE_LEN: usize = GlyphId16::RAW_BYTE_LEN + i8::RAW_BYTE_LEN + i8::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for BdtComponent {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "BdtComponent",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("glyph_id", self.glyph_id())),
-                1usize => Some(Field::new("x_offset", self.x_offset())),
-                2usize => Some(Field::new("y_offset", self.y_offset())),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }

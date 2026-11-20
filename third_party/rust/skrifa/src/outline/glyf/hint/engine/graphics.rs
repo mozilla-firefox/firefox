@@ -833,7 +833,7 @@ fn line_vector(p1: Point<F26Dot6>, p2: Point<F26Dot6>, is_parallel: bool) -> Poi
         // perpendicular line.
         let c = b;
         b = a;
-        a = -c;
+        a = c.wrapping_neg();
     }
     math::normalize14(a, b)
 }
@@ -1116,6 +1116,17 @@ mod tests {
         engine.value_stack.push(3).unwrap();
         engine.op_instctrl().unwrap();
         assert!(engine.graphics.backward_compatibility);
+    }
+
+    #[test]
+    fn line_vector_avoid_overflow() {
+        let p1 = Point::new(F26Dot6::from_bits(0), F26Dot6::from_bits(0));
+        let p2 = Point::new(F26Dot6::from_bits(1), F26Dot6::from_bits(i32::MIN));
+        // The overflow occurred when the difference between the y coordinates
+        // is i32::MIN and the requested vector is perpendicular
+        assert_eq!((p1.y - p2.y).to_bits(), i32::MIN);
+        // Just don't panic with negation overflow
+        let _ = super::line_vector(p1, p2, false);
     }
 
     // Subtract with overflow caught by fuzzing when selector == 0

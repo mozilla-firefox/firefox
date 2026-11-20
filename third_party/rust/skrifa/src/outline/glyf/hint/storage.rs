@@ -1,6 +1,6 @@
 //! Storage area.
 
-use super::{cow_slice::CowSlice, error::HintErrorKind};
+use super::{cow_slice::CowSlice, HintErrorKind};
 
 /// Backing store for the storage area.
 ///

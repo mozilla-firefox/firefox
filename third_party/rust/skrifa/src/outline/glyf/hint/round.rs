@@ -74,13 +74,15 @@ impl RoundState {
         use super::math;
         use RoundMode::*;
         let distance = distance.to_bits();
+        let round_bias = self.threshold.wrapping_sub(self.phase);
+        let neg_distance = distance.wrapping_neg();
         let result = match self.mode {
             // <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L1958>
             HalfGrid => {
                 if distance >= 0 {
-                    (math::floor(distance) + 32).max(0)
+                    math::floor(distance).wrapping_add(32).max(0)
                 } else {
-                    (-(math::floor(-distance) + 32)).min(0)
+                    (math::floor(neg_distance).wrapping_add(32).wrapping_neg()).min(0)
                 }
             }
             // <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L1913>
@@ -88,7 +90,7 @@ impl RoundState {
                 if distance >= 0 {
                     math::round(distance).max(0)
                 } else {
-                    (-math::round(-distance)).min(0)
+                    (math::round(neg_distance).wrapping_neg()).min(0)
                 }
             }
             // <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L2094>
@@ -96,7 +98,7 @@ impl RoundState {
                 if distance >= 0 {
                     math::round_pad(distance, 32).max(0)
                 } else {
-                    (-math::round_pad(-distance, 32)).min(0)
+                    (math::round_pad(neg_distance, 32).wrapping_neg()).min(0)
                 }
             }
             // <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L2005>
@@ -104,7 +106,7 @@ impl RoundState {
                 if distance >= 0 {
                     math::floor(distance).max(0)
                 } else {
-                    (-math::floor(-distance)).min(0)
+                    (math::floor(neg_distance).wrapping_neg()).min(0)
                 }
             }
             // <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L2049>
@@ -112,24 +114,25 @@ impl RoundState {
                 if distance >= 0 {
                     math::ceil(distance).max(0)
                 } else {
-                    (-math::ceil(-distance)).min(0)
+                    (math::ceil(neg_distance).wrapping_neg()).min(0)
                 }
             }
             // <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L2145>
             Super => {
                 if distance >= 0 {
-                    let val =
-                        ((distance + (self.threshold - self.phase)) & -self.period) + self.phase;
+                    let val = (distance.wrapping_add(round_bias) & self.period.wrapping_neg())
+                        .wrapping_add(self.phase);
                     if val < 0 {
                         self.phase
                     } else {
                         val
                     }
                 } else {
-                    let val =
-                        -(((self.threshold - self.phase) - distance) & -self.period) - self.phase;
+                    let val = ((round_bias.wrapping_sub(distance)) & self.period.wrapping_neg())
+                        .wrapping_neg()
+                        .wrapping_sub(self.phase);
                     if val > 0 {
-                        -self.phase
+                        self.phase.wrapping_neg()
                     } else {
                         val
                     }
@@ -138,20 +141,25 @@ impl RoundState {
             // <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L2199>
             Super45 => {
                 if distance >= 0 {
-                    let val = (((distance + (self.threshold - self.phase)) / self.period)
-                        * self.period)
-                        + self.phase;
+                    let val = distance
+                        .wrapping_add(round_bias)
+                        .wrapping_div(self.period)
+                        .wrapping_mul(self.period)
+                        .wrapping_add(self.phase);
                     if val < 0 {
                         self.phase
                     } else {
                         val
                     }
                 } else {
-                    let val = -((((self.threshold - self.phase) - distance) / self.period)
-                        * self.period)
-                        - self.phase;
+                    let val = round_bias
+                        .wrapping_sub(distance)
+                        .wrapping_div(self.period)
+                        .wrapping_mul(self.period)
+                        .wrapping_neg()
+                        .wrapping_sub(self.phase);
                     if val > 0 {
-                        -self.phase
+                        self.phase.wrapping_neg()
                     } else {
                         val
                     }
@@ -220,6 +228,49 @@ mod tests {
             RoundMode::Off,
             &[(0, 0), (32, 32), (-32, -32), (64, 64), (50, 50)],
         );
+    }
+
+    #[test]
+    fn negative_min_value_does_not_panic_with_overflow() {
+        let value = F26Dot6::from_bits(i32::MIN);
+        for mode in [
+            RoundMode::Grid,
+            RoundMode::HalfGrid,
+            RoundMode::DoubleGrid,
+            RoundMode::DownToGrid,
+            RoundMode::UpToGrid,
+            RoundMode::Off,
+        ] {
+            let state = RoundState {
+                mode,
+                ..Default::default()
+            };
+            let _ = state.round(value);
+        }
+    }
+
+    #[test]
+    fn super_round_does_not_panic_with_extreme_values() {
+        let state = RoundState {
+            mode: RoundMode::Super,
+            threshold: i32::MAX,
+            phase: i32::MIN,
+            period: i32::MIN,
+        };
+        let _ = state.round(F26Dot6::from_bits(i32::MAX));
+        let _ = state.round(F26Dot6::from_bits(i32::MIN));
+    }
+
+    #[test]
+    fn super45_round_does_not_panic_with_extreme_values() {
+        let state = RoundState {
+            mode: RoundMode::Super45,
+            threshold: i32::MAX,
+            phase: i32::MIN,
+            period: -1,
+        };
+        let _ = state.round(F26Dot6::from_bits(i32::MAX));
+        let _ = state.round(F26Dot6::from_bits(i32::MIN));
     }
 
     fn round_cases(mode: RoundMode, cases: &[(i32, i32)]) {

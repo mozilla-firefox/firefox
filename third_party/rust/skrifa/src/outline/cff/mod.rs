@@ -3,17 +3,17 @@
 mod hint;
 
 use super::{GlyphHMetrics, OutlinePen};
-use hint::{HintParams, HintState, HintingSink};
+pub(crate) use hint::{HintParams, HintState, HintingSink};
 use read_fonts::{
+    model::Error,
     ps::{
         cff::{blend::BlendState, dict, fd_select::FdSelect, index::Index},
-        cs::{self, CommandSink, NopFilterSink, TransformSink},
-        error::Error,
-        transform::{self, FontMatrix, ScaledFontMatrix, Transform},
+        charstring::{self, CommandSink, NopFilterSink, TransformSink},
+        FontMatrix, ScaledFontMatrix, Transform,
     },
     tables::variations::ItemVariationStore,
     types::{F2Dot14, Fixed, GlyphId},
-    FontData, FontRead, FontRef, ReadError, TableProvider,
+    FontData, FontRead, FontRef, TableProvider,
 };
 use std::ops::Range;
 
@@ -63,7 +63,7 @@ impl<'a> Outlines<'a> {
         // So we always pass 0 for Top DICT index when reading from an
         // OpenType font.
         // <https://learn.microsoft.com/en-us/typography/opentype/spec/cff>
-        let top_dict_data = cff1.top_dicts().get(0).ok()?;
+        let top_dict_data = cff1.top_dicts().get(0)?;
         let top_dict = TopDict::new(cff1.offset_data().as_bytes(), top_dict_data, false).ok()?;
         Some(Self {
             font: font.clone(),
@@ -103,6 +103,15 @@ impl<'a> Outlines<'a> {
     /// Returns the number of available glyphs.
     pub fn glyph_count(&self) -> usize {
         self.top_dict.charstrings.count() as usize
+    }
+
+    pub(crate) fn variation_axis_count(&self) -> usize {
+        self.top_dict
+            .var_store
+            .as_ref()
+            .and_then(|store| store.variation_region_list().ok())
+            .map(|regions| regions.axis_count() as usize)
+            .unwrap_or_default()
     }
 
     /// Returns the number of available subfonts.
@@ -166,26 +175,7 @@ impl<'a> Outlines<'a> {
         let font_matrix = if let Some(top_matrix) = self.top_dict.font_matrix {
             // We have a top dict matrix. Now check for a font dict matrix.
             if let Some(sub_matrix) = font_dict.font_matrix {
-                let scaling = if top_matrix.scale > 1 && sub_matrix.scale > 1 {
-                    top_matrix.scale.min(sub_matrix.scale)
-                } else {
-                    1
-                };
-                // Concatenate and scale
-                let matrix =
-                    transform::combine_scaled(&top_matrix.matrix, &sub_matrix.matrix, scaling);
-                let upem = Fixed::from_bits(sub_matrix.scale).mul_div(
-                    Fixed::from_bits(top_matrix.scale),
-                    Fixed::from_bits(scaling),
-                );
-                // Then normalize
-                Some(
-                    ScaledFontMatrix {
-                        matrix,
-                        scale: upem.to_bits(),
-                    }
-                    .normalize(),
-                )
+                Some(top_matrix.combine(&sub_matrix))
             } else {
                 // Top matrix was already normalized on load
                 Some(top_matrix)
@@ -253,7 +243,9 @@ impl<'a> Outlines<'a> {
     ) -> Result<Option<f32>, Error> {
         let cff_data = self.offset_data.as_bytes();
         let charstrings = self.top_dict.charstrings.clone();
-        let charstring_data = charstrings.get(glyph_id.to_u32() as usize)?;
+        let charstring_data = charstrings
+            .get(glyph_id.to_u32() as usize)
+            .ok_or(Error::Malformed)?;
         let subrs = subfont.subrs(self)?;
         let blend_state = subfont.blend_state(self, coords)?;
         let cs_eval = CharstringEvaluator {
@@ -332,7 +324,11 @@ impl<'a> Outlines<'a> {
         if self.top_dict.font_dicts.count() != 0 {
             // If we have a font dict array, extract the private dict range
             // from the font dict at the given index.
-            let font_dict_data = self.top_dict.font_dicts.get(subfont_index as usize)?;
+            let font_dict_data = self
+                .top_dict
+                .font_dicts
+                .get(subfont_index as usize)
+                .ok_or(Error::Malformed)?;
             FontDict::new(font_dict_data)
         } else {
             // Use the private dict range from the top dict.
@@ -351,7 +347,7 @@ impl<'a> Outlines<'a> {
 /// When hinting, use a modified scale factor.
 ///
 /// See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/80a507a6b8e3d2906ad2c8ba69329bd2fb2a85ef/src/psaux/psft.c#L279>
-fn scale_for_hinting(scale: Option<Fixed>) -> Fixed {
+pub(crate) fn scale_for_hinting(scale: Option<Fixed>) -> Fixed {
     Fixed::from_bits((scale.unwrap_or(Fixed::ONE).to_bits().saturating_add(32)) / 64)
 }
 
@@ -368,7 +364,7 @@ impl CharstringEvaluator<'_> {
     fn evaluate(self, sink: &mut impl CommandSink) -> Result<Option<Fixed>, Error> {
         let subrs = self.subrs.unwrap_or_default();
         let ctx = (self.cff_data, &self.charstrings, &self.global_subrs, &subrs);
-        cs::evaluate(&ctx, self.blend_state, self.charstring_data, sink)
+        charstring::evaluate(&ctx, self.blend_state, self.charstring_data, sink)
     }
 }
 
@@ -457,12 +453,8 @@ impl PrivateDict {
                 LanguageGroup(group) => dict.hint_params.language_group = group,
                 // Subrs offset is relative to the private DICT
                 SubrsOffset(offset) => {
-                    dict.subrs_offset = Some(
-                        range
-                            .start
-                            .checked_add(offset)
-                            .ok_or(ReadError::OutOfBounds)?,
-                    )
+                    dict.subrs_offset =
+                        Some(range.start.checked_add(offset).ok_or(Error::Malformed)?)
                 }
                 VariationStoreIndex(index) => dict.store_index = index,
                 _ => {}
@@ -496,7 +488,7 @@ impl FontDict {
             }
         }
         Ok(Self {
-            private_dict_range: range.ok_or(Error::MissingPrivateDict)?,
+            private_dict_range: range.ok_or(Error::MissingResource)?,
             font_matrix,
         })
     }
@@ -543,7 +535,7 @@ impl<'a> TopDict<'a> {
                     // IVS is preceded by a 2 byte length, but ensure that
                     // we don't overflow
                     // See <https://github.com/googlefonts/fontations/issues/1223>
-                    let offset = offset.checked_add(2).ok_or(ReadError::OutOfBounds)?;
+                    let offset = offset.checked_add(2).ok_or(Error::Malformed)?;
                     items.var_store = Some(ItemVariationStore::read(FontData::new(
                         table_data.get(offset..).unwrap_or_default(),
                     ))?);
@@ -594,13 +586,13 @@ where
 }
 
 /// Command sink adapter that applies a transform to hinted coordinates.
-struct HintedTransformingSink<'a, S> {
+pub(crate) struct HintedTransformingSink<'a, S> {
     inner: &'a mut S,
     matrix: FontMatrix,
 }
 
 impl<'a, S> HintedTransformingSink<'a, S> {
-    fn new(sink: &'a mut S, matrix: FontMatrix) -> Self {
+    pub(crate) fn new(sink: &'a mut S, matrix: FontMatrix) -> Self {
         Self {
             inner: sink,
             matrix,
@@ -678,7 +670,7 @@ mod tests {
     };
     use font_test_data::bebuffer::BeBuffer;
     use raw::tables::cff2::Cff2;
-    use read_fonts::ps::hinting::Blues;
+    use read_fonts::ps::Blues;
     use read_fonts::FontRef;
 
     #[test]

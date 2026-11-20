@@ -4,9 +4,12 @@ use core::ops::Range;
 use raw::{
     ps::{
         cff::charset::{Charset, Iter as CharsetIter},
-        string::Sid,
+        Sid,
     },
-    tables::{cff::Cff, post::Post},
+    tables::{
+        cff::Cff,
+        post::{self, Post},
+    },
     types::GlyphId,
     FontRef, TableProvider,
 };
@@ -39,8 +42,8 @@ impl<'a> GlyphNames<'a> {
     /// Creates a new object for accessing glyph names from the given font.
     pub fn new(font: &FontRef<'a>) -> Self {
         let num_glyphs = font
-            .maxp()
-            .map(|maxp| maxp.num_glyphs() as u32)
+            .selected_maxp()
+            .map(|maxp| maxp.num_glyphs())
             .unwrap_or_default();
         if let Ok(post) = font.post() {
             if post.num_names() != 0 {
@@ -52,7 +55,7 @@ impl<'a> GlyphNames<'a> {
         if let Some((cff, charset)) = font
             .cff()
             .ok()
-            .and_then(|cff| Some((cff.clone(), cff.charset(0).ok()??)))
+            .and_then(|cff| Some((cff.clone(), cff.charset(0)?)))
         {
             return Self {
                 inner: Inner::Cff(cff, charset),
@@ -89,7 +92,6 @@ impl<'a> GlyphNames<'a> {
             Inner::Post(post, _) => GlyphName::from_post(post, glyph_id),
             Inner::Cff(cff, charset) => charset
                 .string_id(glyph_id)
-                .ok()
                 .and_then(|sid| GlyphName::from_cff_sid(cff, sid)),
             _ => None,
         };
@@ -104,7 +106,7 @@ impl<'a> GlyphNames<'a> {
     /// the font.
     pub fn iter(&self) -> impl Iterator<Item = (GlyphId, GlyphName)> + 'a + Clone {
         match &self.inner {
-            Inner::Post(post, n) => Iter::Post(0..*n, post.clone()),
+            Inner::Post(post, n) => Iter::Post(0..*n, post.glyph_names()),
             Inner::Cff(cff, charset) => Iter::Cff(cff.clone(), charset.iter()),
             Inner::Synthesized(n) => Iter::Synthesized(0..*n),
         }
@@ -244,7 +246,7 @@ impl core::fmt::Write for GlyphNameWrite<'_> {
 
 #[derive(Clone)]
 enum Iter<'a> {
-    Post(Range<u32>, Post<'a>),
+    Post(Range<u32>, post::GlyphNames<'a>),
     Cff(Cff<'a>, CharsetIter<'a>),
     Synthesized(Range<u32>),
 }
@@ -252,11 +254,11 @@ enum Iter<'a> {
 impl Iter<'_> {
     fn next_name(&mut self) -> Option<Result<(GlyphId, GlyphName), GlyphId>> {
         match self {
-            Self::Post(range, post) => {
+            Self::Post(range, iter) => {
                 let gid = GlyphId::new(range.next()?);
                 Some(
-                    GlyphName::from_post(post, gid)
-                        .map(|name| (gid, name))
+                    iter.next()
+                        .map(|(_, name)| (gid, GlyphName::from_bytes(name.as_bytes())))
                         .ok_or(gid),
                 )
             }

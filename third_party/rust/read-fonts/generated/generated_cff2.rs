@@ -11,24 +11,45 @@ impl<'a> MinByteRange<'a> for Cff2Header<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for Cff2Header<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Cff2Header<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct Cff2HeaderFixedHeader {
+    pub major_version: u8,
+    pub minor_version: u8,
+    pub header_size: u8,
+    pub top_dict_length: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<Cff2HeaderFixedHeader>() <= Cff2Header::MIN_SIZE);
+
 /// [Compact Font Format (CFF) version 2](https://learn.microsoft.com/en-us/typography/opentype/spec/cff2) table header
 #[derive(Clone)]
 pub struct Cff2Header<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, Cff2HeaderFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -39,89 +60,98 @@ impl<'a> Cff2Header<'a> {
 
     /// Format major version (set to 2).
     pub fn major_version(&self) -> u8 {
-        let range = self.major_version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().major_version
     }
 
     /// Format minor version (set to 0).
     pub fn minor_version(&self) -> u8 {
-        let range = self.minor_version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().minor_version
     }
 
     /// Header size (bytes).
     pub fn header_size(&self) -> u8 {
-        let range = self.header_size_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().header_size
     }
 
     /// Length of Top DICT structure in bytes.
     pub fn top_dict_length(&self) -> u16 {
-        let range = self.top_dict_length_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().top_dict_length.get()
     }
 
     /// Padding bytes before the start of the Top DICT.
     pub fn _padding(&self) -> &'a [u8] {
         let range = self._padding_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// Data containing the Top DICT.
     pub fn top_dict_data(&self) -> &'a [u8] {
         let range = self.top_dict_data_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// Remaining table data.
     pub fn trailing_data(&self) -> &'a [u8] {
         let range = self.trailing_data_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn major_version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u8::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn minor_version_byte_range(&self) -> Range<usize> {
         let start = self.major_version_byte_range().end;
-        let end = start + u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn header_size_byte_range(&self) -> Range<usize> {
         let start = self.minor_version_byte_range().end;
-        let end = start + u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn top_dict_length_byte_range(&self) -> Range<usize> {
         let start = self.header_size_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn _padding_byte_range(&self) -> Range<usize> {
         let header_size = self.header_size();
         let start = self.top_dict_length_byte_range().end;
-        let end =
-            start + (transforms::subtract(header_size, 5_usize)).saturating_mul(u8::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::subtract(header_size, 5_usize)).saturating_mul(u8::RAW_BYTE_LEN),
+        );
         start..end
     }
 
     pub fn top_dict_data_byte_range(&self) -> Range<usize> {
         let top_dict_length = self.top_dict_length();
         let start = self._padding_byte_range().end;
-        let end = start + (transforms::to_usize(top_dict_length)).saturating_mul(u8::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(top_dict_length)).saturating_mul(u8::RAW_BYTE_LEN),
+        );
         start..end
     }
 
     pub fn trailing_data_byte_range(&self) -> Range<usize> {
         let start = self.top_dict_data_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -131,35 +161,9 @@ const _: () = assert!(FontData::default_data_long_enough(Cff2Header::MIN_SIZE));
 impl Default for Cff2Header<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Cff2Header<'a> {
-    fn type_name(&self) -> &str {
-        "Cff2Header"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("major_version", self.major_version())),
-            1usize => Some(Field::new("minor_version", self.minor_version())),
-            2usize => Some(Field::new("header_size", self.header_size())),
-            3usize => Some(Field::new("top_dict_length", self.top_dict_length())),
-            4usize => Some(Field::new("_padding", self._padding())),
-            5usize => Some(Field::new("top_dict_data", self.top_dict_data())),
-            6usize => Some(Field::new("trailing_data", self.trailing_data())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Cff2Header<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -169,24 +173,43 @@ impl<'a> MinByteRange<'a> for Index<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for Index<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Index<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct IndexFixedHeader {
+    pub count: BigEndian<u32>,
+    pub off_size: u8,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<IndexFixedHeader>() <= Index::MIN_SIZE);
+
 /// An array of variable-sized objects in a `CFF2` table.
 #[derive(Clone)]
 pub struct Index<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, IndexFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -196,37 +219,41 @@ impl<'a> Index<'a> {
 
     /// Number of objects stored in INDEX.
     pub fn count(&self) -> u32 {
-        let range = self.count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().count.get()
     }
 
     /// Object array element size.
     pub fn off_size(&self) -> u8 {
-        let range = self.off_size_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().off_size
     }
 
     /// Bytes containing `count + 1` offsets each of `off_size`.
     pub fn offsets(&self) -> &'a [u8] {
         let range = self.offsets_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// Array containing the object data.
     pub fn data(&self) -> &'a [u8] {
         let range = self.data_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn count_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u32::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn off_size_byte_range(&self) -> Range<usize> {
         let start = self.count_byte_range().end;
-        let end = start + u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
@@ -234,15 +261,17 @@ impl<'a> Index<'a> {
         let count = self.count();
         let off_size = self.off_size();
         let start = self.off_size_byte_range().end;
-        let end = start
-            + (transforms::add_multiply(count, 1_usize, off_size)).saturating_mul(u8::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::add_multiply(count, 1_usize, off_size)).saturating_mul(u8::RAW_BYTE_LEN),
+        );
         start..end
     }
 
     pub fn data_byte_range(&self) -> Range<usize> {
         let start = self.offsets_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -252,31 +281,8 @@ const _: () = assert!(FontData::default_data_long_enough(Index::MIN_SIZE));
 impl Default for Index<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Index<'a> {
-    fn type_name(&self) -> &str {
-        "Index"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("count", self.count())),
-            1usize => Some(Field::new("off_size", self.off_size())),
-            2usize => Some(Field::new("offsets", self.offsets())),
-            3usize => Some(Field::new("data", self.data())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Index<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }

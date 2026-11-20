@@ -1,6 +1,6 @@
 [package]
 name = "skrifa"
-version = "0.44.0"
+version = "0.50.0"
 description = "Metadata reader and glyph scaler for OpenType fonts."
 readme = "README.md"
 categories = ["text-processing", "parsing", "graphics"]
@@ -18,20 +18,28 @@ all-features = true
 [features]
 default = ["std", "autohint_shaping"]
 std = ["read-fonts/std"]
-traversal = ["std", "read-fonts/experimental_traverse"]
 # Enables extended shaping support for the autohinter. Enabled by default.
 # This exists as a feature because shaping support is "best effort" and
 # we want the ability to disable it for testing against FreeType.
 autohint_shaping = []
-# Enables experimental implementations of proposed changes to the spec
-# as discussed at https://github.com/harfbuzz/boring-expansion-spec
+# Does nothing. The cubic outlines it once enabled are now always read.
 spec_next = ["read-fonts/spec_next"]
 libm = ["dep:core_maths", "read-fonts/libm"]
+# Maps characters to the glyphs of Type 1 and standalone CFF fonts through
+# their glyph names, as FreeType does, at the cost of the Adobe Glyph List's
+# size. Without it those fonts map no characters, so the automatic hinter
+# finds no blue zones in them.
+agl = ["read-fonts/agl"]
+# Support for Adobe Type 1 fonts, including glyph-name Unicode mapping.
+type1 = ["agl", "read-fonts/type1"]
 
 [dependencies]
+smallvec = { workspace = true }
 read-fonts = { workspace = true, default-features = false }
 core_maths = { workspace = true, optional = true }
 bytemuck = { workspace = true }
+yoke = { workspace = true }
+once_cell = { workspace = true }
 
 [dev-dependencies]
 font-test-data = { workspace = true }

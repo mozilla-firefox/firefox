@@ -305,10 +305,3 @@ impl font_types::Scalar for ValueFormat {
         Self::from_bits_truncate(t)
     }
 }
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> From<ValueFormat> for FieldType<'a> {
-    fn from(src: ValueFormat) -> FieldType<'a> {
-        src.bits().into()
-    }
-}

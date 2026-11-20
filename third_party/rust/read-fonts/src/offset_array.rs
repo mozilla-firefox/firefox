@@ -6,7 +6,7 @@
 use crate::offset::ResolveNullableOffset;
 use font_types::{BigEndian, Nullable, Offset16, Scalar};
 
-use crate::{FontData, FontReadWithArgs, Offset, ReadArgs, ReadError, ResolveOffset};
+use crate::{FontData, FontRead, Offset, ReadArgs, ReadError, ResolveOffset};
 
 /// An array of offsets that can be resolved on access.
 ///
@@ -49,7 +49,7 @@ where
 impl<'a, T, O> ArrayOfOffsets<'a, T, O>
 where
     O: Scalar + Offset,
-    T: ReadArgs + FontReadWithArgs<'a>,
+    T: FontRead<'a>,
     T::Args: Copy + 'static,
 {
     /// The number of offsets in the array
@@ -70,7 +70,7 @@ where
         self.offsets
             .get(idx)
             .ok_or(ReadError::InvalidCollectionIndex(idx as _))
-            .and_then(|o| o.get().resolve_with_args(self.data, &self.args))
+            .and_then(|o| o.get().resolve_with_args(self.data, self.args))
     }
 
     /// Iterate over all of the offset targets.
@@ -82,7 +82,7 @@ where
         let data = self.data;
         std::iter::from_fn(move || {
             iter.next()
-                .map(|off| off.get().resolve_with_args(data, &args))
+                .map(|off| off.get().resolve_with_args(data, args))
         })
     }
 
@@ -120,7 +120,7 @@ where
 impl<'a, T, O> ArrayOfNullableOffsets<'a, T, O>
 where
     O: Scalar + Offset,
-    T: ReadArgs + FontReadWithArgs<'a>,
+    T: FontRead<'a>,
     T::Args: Copy + 'static,
 {
     /// The number of offsets in the array
@@ -142,7 +142,7 @@ where
         let Some(offset) = self.offsets.get(idx) else {
             return Some(Err(ReadError::InvalidCollectionIndex(idx as _)));
         };
-        offset.get().resolve_with_args(self.data, &self.args)
+        offset.get().resolve_with_args(self.data, self.args)
     }
 
     /// Iterate over all of the offset targets.
@@ -154,55 +154,7 @@ where
         let data = self.data;
         std::iter::from_fn(move || {
             iter.next()
-                .map(|off| off.get().resolve_with_args(data, &args))
+                .map(|off| off.get().resolve_with_args(data, args))
         })
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a, T, O> crate::traversal::SomeArray<'a> for ArrayOfOffsets<'a, T, O>
-where
-    O: Scalar + Offset + Into<crate::traversal::OffsetType>,
-    T: ReadArgs + FontReadWithArgs<'a> + crate::traversal::SomeTable<'a> + 'a,
-    T::Args: Copy + 'static,
-{
-    fn type_name(&self) -> &str {
-        let full_name = std::any::type_name::<T>();
-        full_name.split("::").last().unwrap_or(full_name)
-    }
-
-    fn len(&self) -> usize {
-        self.offsets.len()
-    }
-
-    fn get(&self, idx: usize) -> Option<crate::traversal::FieldType<'a>> {
-        let off = self.offsets.get(idx)?;
-        let raw = off.get();
-        let result = raw.resolve_with_args::<T>(self.data, &self.args);
-        Some(crate::traversal::FieldType::offset(raw, result))
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a, T, O> crate::traversal::SomeArray<'a> for ArrayOfNullableOffsets<'a, T, O>
-where
-    O: Scalar + Offset + Into<crate::traversal::OffsetType> + Clone,
-    T: ReadArgs + FontReadWithArgs<'a> + crate::traversal::SomeTable<'a> + 'a,
-    T::Args: Copy + 'static,
-{
-    fn type_name(&self) -> &str {
-        let full_name = std::any::type_name::<T>();
-        full_name.split("::").last().unwrap_or(full_name)
-    }
-
-    fn len(&self) -> usize {
-        self.offsets.len()
-    }
-
-    fn get(&self, idx: usize) -> Option<crate::traversal::FieldType<'a>> {
-        let off = self.offsets.get(idx)?;
-        let raw = off.get();
-        let result = raw.resolve_with_args::<T>(self.data, &self.args);
-        Some(crate::traversal::FieldType::offset(raw, result))
     }
 }

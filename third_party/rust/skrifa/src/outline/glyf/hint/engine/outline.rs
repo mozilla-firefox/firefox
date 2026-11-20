@@ -12,6 +12,21 @@ use super::{
     math, Engine, F26Dot6, HintErrorKind, OpResult,
 };
 
+/// Scales the control value cut-in for the horizontal axis of native
+/// ClearType.
+///
+/// A ClearType pixel holds sixteen positions rather than one.
+fn native_cleartype_cutin(cutin: F26Dot6) -> F26Dot6 {
+    F26Dot6::from_bits(cutin.to_bits() >> 4)
+}
+
+/// Scales the minimum distance for the horizontal axis of native ClearType.
+///
+/// The smallest stem ClearType draws is half a pixel.
+fn native_cleartype_min_distance(min_distance: F26Dot6) -> F26Dot6 {
+    F26Dot6::from_bits(min_distance.to_bits() >> 1)
+}
+
 impl Engine<'_> {
     /// Flip point.
     ///
@@ -303,6 +318,7 @@ impl Engine<'_> {
     /// See <https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructions#move-direct-absolute-point>
     /// and <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L5487>
     pub(super) fn op_mdap(&mut self, opcode: u8) -> OpResult {
+        let native_cleartype_x = self.native_cleartype_x();
         let gs = &mut self.graphics;
         let p = self.value_stack.pop_usize()?;
         if !gs.is_pedantic && !gs.in_bounds([(gs.zp0, p)]) {
@@ -310,7 +326,7 @@ impl Engine<'_> {
             gs.rp1 = p;
             return Ok(());
         }
-        let distance = if (opcode & 1) != 0 {
+        let distance = if (opcode & 1) != 0 && !native_cleartype_x {
             let cur_dist = gs.project(gs.zp0().point(p)?, Default::default());
             gs.round(cur_dist) - cur_dist
         } else {
@@ -343,6 +359,7 @@ impl Engine<'_> {
     /// See <https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructions#move-indirect-absolute-point>
     /// and <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L5526>
     pub(super) fn op_miap(&mut self, opcode: u8) -> OpResult {
+        let native_cleartype_x = self.native_cleartype_x();
         let gs = &mut self.graphics;
         let cvt_entry = self.value_stack.pop_usize()?;
         let point_ix = self.value_stack.pop_usize()?;
@@ -359,11 +376,18 @@ impl Engine<'_> {
         }
         let original_distance = gs.project(gs.zp0().point(point_ix)?, Default::default());
         if (opcode & 1) != 0 {
+            let control_value_cutin = if native_cleartype_x {
+                native_cleartype_cutin(gs.control_value_cutin)
+            } else {
+                gs.control_value_cutin
+            };
             let delta = (distance.wrapping_sub(original_distance)).abs();
-            if delta > gs.control_value_cutin {
+            if delta > control_value_cutin {
                 distance = original_distance;
             }
-            distance = gs.round(distance);
+            if !native_cleartype_x {
+                distance = gs.round(distance);
+            }
         }
         gs.move_point(gs.zp0, point_ix, distance.wrapping_sub(original_distance))?;
         gs.rp0 = point_ix;
@@ -396,6 +420,7 @@ impl Engine<'_> {
     /// See <https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructions#move-direct-relative-point>
     /// and <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L5610>
     pub(super) fn op_mdrp(&mut self, opcode: u8) -> OpResult {
+        let native_cleartype_x = self.native_cleartype_x();
         let gs = &mut self.graphics;
         let p = self.value_stack.pop_usize()?;
         if !gs.is_pedantic && !gs.in_bounds([(gs.zp1, p), (gs.zp0, gs.rp0)]) {
@@ -427,14 +452,18 @@ impl Engine<'_> {
             };
         }
         // round flag
-        let mut distance = if (opcode & 4) != 0 {
+        let mut distance = if (opcode & 4) != 0 && !native_cleartype_x {
             gs.round(original_distance)
         } else {
             original_distance
         };
         // minimum distance flag
         if (opcode & 8) != 0 {
-            let min_distance = gs.min_distance;
+            let min_distance = if native_cleartype_x {
+                native_cleartype_min_distance(gs.min_distance)
+            } else {
+                gs.min_distance
+            };
             if original_distance >= F26Dot6::ZERO {
                 if distance < min_distance {
                     distance = min_distance;
@@ -487,8 +516,9 @@ impl Engine<'_> {
     /// See <https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructions#move-indirect-relative-point>
     /// and <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L5731>
     pub(super) fn op_mirp(&mut self, opcode: u8) -> OpResult {
+        let native_cleartype_x = self.native_cleartype_x();
         let gs = &mut self.graphics;
-        let n = (self.value_stack.pop()? + 1) as usize;
+        let n = (self.value_stack.pop()?.wrapping_add(1)) as usize;
         let p = self.value_stack.pop_usize()?;
         if !gs.is_pedantic
             && (!gs.in_bounds([(gs.zp1, p), (gs.zp0, gs.rp0)]) || (n > self.cvt.len()))
@@ -522,8 +552,8 @@ impl Engine<'_> {
                 let d = cvt_distance.to_bits();
                 let p2 = gs.zp0().original(gs.rp0)?;
                 let p1 = gs.zp1_mut().original_mut(p)?;
-                p1.x = p2.x + F26Dot6::from_bits(math::mul(d, fv.x));
-                p1.y = p2.y + F26Dot6::from_bits(math::mul(d, fv.y));
+                p1.x = p2.x + F26Dot6::from_bits(math::mul14(d, fv.x));
+                p1.y = p2.y + F26Dot6::from_bits(math::mul14(d, fv.y));
                 *p1
             };
             *gs.zp1_mut().point_mut(p)? = point;
@@ -537,18 +567,31 @@ impl Engine<'_> {
         // control value cutin and round
         let mut distance = if (opcode & 4) != 0 {
             if gs.zp0 == gs.zp1 {
+                let control_value_cutin = if native_cleartype_x {
+                    native_cleartype_cutin(gs.control_value_cutin)
+                } else {
+                    gs.control_value_cutin
+                };
                 delta = cvt_distance.wrapping_sub(original_distance).abs();
-                if delta > gs.control_value_cutin {
+                if delta > control_value_cutin {
                     cvt_distance = original_distance;
                 }
             }
-            gs.round(cvt_distance)
+            if native_cleartype_x {
+                cvt_distance
+            } else {
+                gs.round(cvt_distance)
+            }
         } else {
             cvt_distance
         };
         // minimum distance test
         if (opcode & 8) != 0 {
-            let min_distance = gs.min_distance;
+            let min_distance = if native_cleartype_x {
+                native_cleartype_min_distance(gs.min_distance)
+            } else {
+                gs.min_distance
+            };
             if original_distance >= F26Dot6::ZERO {
                 if distance < min_distance {
                     distance = min_distance
@@ -626,15 +669,15 @@ impl Engine<'_> {
             let z = gs.zp0();
             [z.point(b0)?, z.point(b1)?].map(|p| p.map(F26Dot6::to_bits))
         };
-        let dbx = pb1.x - pb0.x;
-        let dby = pb1.y - pb0.y;
-        let dax = pa1.x - pa0.x;
-        let day = pa1.y - pa0.y;
-        let dx = pb0.x - pa0.x;
-        let dy = pb0.y - pa0.y;
+        let dbx = pb1.x.wrapping_sub(pb0.x);
+        let dby = pb1.y.wrapping_sub(pb0.y);
+        let dax = pa1.x.wrapping_sub(pa0.x);
+        let day = pa1.y.wrapping_sub(pa0.y);
+        let dx = pb0.x.wrapping_sub(pa0.x);
+        let dy = pb0.y.wrapping_sub(pa0.y);
         use math::mul_div;
-        let discriminant = mul_div(dax, -dby, 0x40) + mul_div(day, dbx, 0x40);
-        let dotproduct = mul_div(dax, dbx, 0x40) + mul_div(day, dby, 0x40);
+        let discriminant = mul_div(dax, -dby, 0x40).wrapping_add(mul_div(day, dbx, 0x40));
+        let dotproduct = mul_div(dax, dbx, 0x40).wrapping_add(mul_div(day, dby, 0x40));
         // Useful context from FreeType:
         //
         // "The discriminant above is actually a cross product of vectors
@@ -647,17 +690,29 @@ impl Engine<'_> {
         // thresholding abs(tan(angle)) at 1/19, corresponding to 3 degrees."
         //
         // See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/truetype/ttinterp.c#L5986>
-        if discriminant.wrapping_abs().wrapping_mul(19) > dotproduct.abs() {
-            let v = mul_div(dx, -dby, 0x40) + mul_div(dy, dbx, 0x40);
+        if discriminant.wrapping_abs().wrapping_mul(19) > dotproduct.wrapping_abs() {
+            let v = mul_div(dx, -dby, 0x40).wrapping_add(mul_div(dy, dbx, 0x40));
             let x = mul_div(v, dax, discriminant);
             let y = mul_div(v, day, discriminant);
             let point = gs.zp2_mut().point_mut(point_ix)?;
-            point.x = F26Dot6::from_bits(pa0.x + x);
-            point.y = F26Dot6::from_bits(pa0.y + y);
+            point.x = F26Dot6::from_bits(pa0.x.wrapping_add(x));
+            point.y = F26Dot6::from_bits(pa0.y.wrapping_add(y));
         } else {
             let point = gs.zp2_mut().point_mut(point_ix)?;
-            point.x = F26Dot6::from_bits((pa0.x + pa1.x + pb0.x + pb1.x) / 4);
-            point.y = F26Dot6::from_bits((pa0.y + pa1.y + pb0.y + pb1.y) / 4);
+            point.x = F26Dot6::from_bits(
+                (pa0.x
+                    .wrapping_add(pa1.x)
+                    .wrapping_add(pb0.x)
+                    .wrapping_add(pb1.x))
+                    / 4,
+            );
+            point.y = F26Dot6::from_bits(
+                (pa0.y
+                    .wrapping_add(pa1.y)
+                    .wrapping_add(pb0.y)
+                    .wrapping_add(pb1.y))
+                    / 4,
+            );
         }
         gs.zp2_mut().touch(point_ix, CoordAxis::Both)?;
         Ok(())
@@ -1292,6 +1347,37 @@ mod tests {
         assert_eq!(point.map(F26Dot6::to_bits), Point::new(147, -223));
     }
 
+    /// MIRP into the twilight zone places the point's original position
+    /// at the CVT distance along the (2.14) freedom vector.
+    #[test]
+    fn mirp_twilight() {
+        let mut mock = MockEngine::new();
+        let mut engine = mock.engine();
+        engine.graphics.backward_compatibility = false;
+        engine.graphics.zp0 = ZonePointer::Twilight;
+        engine.graphics.zp1 = ZonePointer::Twilight;
+        engine.op_svtca(0).unwrap();
+        engine.cvt.set(1, F26Dot6::from_bits(128)).unwrap();
+        engine.op_rtg().unwrap();
+        engine.value_stack.push(1).unwrap();
+        engine.value_stack.push(1).unwrap();
+        engine.op_mirp(Opcode::MIRP00100 as _).unwrap();
+        let zone = &engine.graphics.zones[0];
+        let original = zone.original(1).unwrap();
+        assert_eq!(original.map(F26Dot6::to_bits), Point::new(0, 128));
+        let point = zone.point(1).unwrap();
+        assert_eq!(point.map(F26Dot6::to_bits), Point::new(0, 128));
+    }
+
+    #[test]
+    fn mirp_does_not_panic_with_overflow() {
+        let mut mock = MockEngine::new();
+        let mut engine = mock.engine();
+        engine.value_stack.push(i32::MAX).unwrap();
+        // Just don't panic on overflow
+        engine.op_mirp(Opcode::MIRP10000 as _).unwrap();
+    }
+
     #[test]
     fn alignrp() {
         let mut mock = MockEngine::new();
@@ -1330,6 +1416,25 @@ mod tests {
         engine.op_isect().unwrap();
         let point = engine.graphics.zones[1].point(4).unwrap();
         assert_eq!(point.map(F26Dot6::to_bits), Point::new(50, 50));
+    }
+
+    #[test]
+    fn isect_does_not_panic_with_extreme_coords() {
+        let mut mock = MockEngine::new();
+        let mut engine = mock.engine();
+        engine.graphics.zp0 = ZonePointer::Glyph;
+        engine.graphics.zp1 = ZonePointer::Glyph;
+        engine.graphics.zp2 = ZonePointer::Glyph;
+        // Set two lines with extreme coordinates to stress the wrapping math.
+        engine.set_point_f26dot6(1, 0, (i32::MIN, i32::MAX));
+        engine.set_point_f26dot6(1, 1, (i32::MAX, i32::MIN));
+        engine.set_point_f26dot6(1, 2, (i32::MAX, i32::MAX));
+        engine.set_point_f26dot6(1, 3, (i32::MIN, i32::MIN));
+        for ix in [4, 0, 1, 2, 3] {
+            engine.value_stack.push(ix).unwrap();
+        }
+        // Don't panic on overflow!
+        engine.op_isect().unwrap();
     }
 
     #[test]

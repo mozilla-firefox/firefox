@@ -9,8 +9,6 @@ use super::super::{
     topo::{compute_segments, link_segments, Axis, Dimension},
     QuirksMode,
 };
-use crate::MetadataProvider;
-use raw::{types::F2Dot14, TableProvider};
 
 /// Compute all stem widths and initialize standard width and height for the
 /// given script.
@@ -20,38 +18,30 @@ use raw::{types::F2Dot14, TableProvider};
 /// See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/autofit/aflatin.c#L54>
 pub(super) fn compute_widths(
     shaper: &Shaper,
-    coords: &[F2Dot14],
     style: &StyleClass,
     quirks: QuirksMode,
 ) -> [(WidthMetrics, UnscaledWidths); 2] {
     let mut result: [(WidthMetrics, UnscaledWidths); 2] = Default::default();
-    let font = shaper.font();
-    let glyphs = font.outline_glyphs();
-    let units_per_em = font
-        .head()
-        .map(|head| head.units_per_em() as i32)
-        .unwrap_or_default();
+    let context = shaper.context();
+    let units_per_em = context.units_per_em();
     let mut outline = Outline::default();
     let mut axis = Axis::default();
     let mut cluster_shaper = shaper.cluster_shaper(style);
     let mut shaped_cluster = ShapedCluster::default();
     // We take the first available glyph from the standard character set.
-    let glyph = style
-        .script
-        .std_chars
-        .split(' ')
-        .filter_map(|cluster| {
-            cluster_shaper.shape(cluster, &mut shaped_cluster);
-            // Reject input that maps to more than a single glyph
-            // See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/autofit/aflatin.c#L128>
-            match shaped_cluster.as_slice() {
-                [glyph] if glyph.id.to_u32() != 0 => glyphs.get(glyph.id),
-                _ => None,
+    let filled = style.script.std_chars.split(' ').find_map(|cluster| {
+        cluster_shaper.shape(cluster, &mut shaped_cluster);
+        // Reject input that maps to more than a single glyph
+        // See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/57617782464411201ce7bbc93b086c1b4d7d84a5/src/autofit/aflatin.c#L128>
+        match shaped_cluster.as_slice() {
+            [glyph] if glyph.id.to_u32() != 0 => {
+                context.fill_outline(glyph.id, &mut outline, quirks)
             }
-        })
-        .next();
-    if let Some(glyph) = glyph {
-        if outline.fill(&glyph, coords, quirks).is_ok() && !outline.points.is_empty() {
+            _ => None,
+        }
+    });
+    if let Some(Ok(_)) = filled {
+        if !outline.points.is_empty() {
             // Now process each dimension
             for (dim, (_metrics, widths)) in [Dimension::Horizontal, Dimension::Vertical]
                 .into_iter()
@@ -110,6 +100,7 @@ mod tests {
         super::super::{shape::ShaperMode, style},
         *,
     };
+    use crate::outline::autohint::context::FontRefContext;
     use raw::FontRef;
 
     #[test]
@@ -198,10 +189,11 @@ mod tests {
 
     fn check_widths(font_data: &[u8], style_class: usize, expected: [(WidthMetrics, &[i32]); 2]) {
         let font = FontRef::new(font_data).unwrap();
-        let shaper = Shaper::new(&font, ShaperMode::Nominal);
+        let context = FontRefContext::new(&font, &[]);
+        let shaper = Shaper::new(&context, ShaperMode::Nominal);
         let script = &style::STYLE_CLASSES[style_class];
         let [(hori_metrics, hori_widths), (vert_metrics, vert_widths)] =
-            compute_widths(&shaper, Default::default(), script, QuirksMode::default());
+            compute_widths(&shaper, script, QuirksMode::default());
         assert_eq!(hori_metrics, expected[0].0);
         assert_eq!(hori_widths.as_slice(), expected[0].1);
         assert_eq!(vert_metrics, expected[1].0);

@@ -3,10 +3,9 @@
 use core::fmt;
 use read_fonts::types::GlyphId;
 
-pub use read_fonts::{ps::error::Error as CffError, ReadError};
+pub use read_fonts::model::Error as CffError;
 
 pub use super::glyf::HintError;
-pub use super::path::ToPathError;
 
 /// Errors that may occur when drawing glyphs.
 #[derive(Clone, Debug)]
@@ -27,30 +26,40 @@ pub enum DrawError {
     InvalidAnchorPoint(GlyphId, u16),
     /// Error occurred while loading a PostScript (CFF/CFF2) glyph.
     PostScript(CffError),
-    /// Conversion from outline to path failed.
-    ToPath(ToPathError),
-    /// Error occurred when reading font data.
-    Read(ReadError),
+    /// The font data does not make sense: absent where it was required, too
+    /// short, or self-inconsistent.
+    ///
+    /// Carries nothing. A table that is missing, one that is truncated and one
+    /// whose offsets do not resolve are the same answer to "can this glyph be
+    /// drawn", and there is nothing a caller can do differently between them.
+    Malformed,
     /// HarfBuzz style drawing with hints is not supported
     // Error rather than silently returning unhinted per f2f discussion.
     HarfBuzzHintingUnsupported,
 }
 
+impl DrawError {
+    /// Converts an error from loading `glyph` through read-fonts.
+    ///
+    /// read-fonts errors do not include the glyph, since the caller already
+    /// has it. This adds the glyph to the error.
+    pub(crate) fn from_outline_error(error: read_fonts::model::Error, glyph: GlyphId) -> Self {
+        use read_fonts::model::Error;
+        match error {
+            Error::MissingResource => Self::GlyphNotFound(glyph),
+            Error::LimitExceeded => Self::RecursionLimitExceeded(glyph),
+            Error::InsufficientMemory => Self::InsufficientMemory,
+            // Only a charstring fails this way; a TrueType hinter reports its
+            // own error.
+            Error::InvalidOperation => Self::PostScript(error),
+            _ => Self::Malformed,
+        }
+    }
+}
+
 impl From<HintError> for DrawError {
     fn from(value: HintError) -> Self {
         Self::HintingFailed(value)
-    }
-}
-
-impl From<ToPathError> for DrawError {
-    fn from(e: ToPathError) -> Self {
-        Self::ToPath(e)
-    }
-}
-
-impl From<ReadError> for DrawError {
-    fn from(e: ReadError) -> Self {
-        Self::Read(e)
     }
 }
 
@@ -69,7 +78,7 @@ impl fmt::Display for DrawError {
             Self::RecursionLimitExceeded(gid) => write!(
                 f,
                 "Recursion limit ({}) exceeded when loading composite component {gid}",
-                super::GLYF_COMPOSITE_RECURSION_LIMIT,
+                read_fonts::limits::MAX_RECURSION_DEPTH,
             ),
             Self::TooManyPoints(gid) => write!(f, "Glyph {gid} contains more than 64k points"),
             Self::HintingFailed(e) => write!(f, "{e}"),
@@ -78,8 +87,7 @@ impl fmt::Display for DrawError {
                 "Invalid anchor point index ({index}) for composite glyph {gid}",
             ),
             Self::PostScript(e) => write!(f, "{e}"),
-            Self::ToPath(e) => write!(f, "{e}"),
-            Self::Read(e) => write!(f, "{e}"),
+            Self::Malformed => write!(f, "font data was absent or malformed"),
             Self::HarfBuzzHintingUnsupported => write!(
                 f,
                 "HarfBuzz style paths with hinting is not (yet?) supported"

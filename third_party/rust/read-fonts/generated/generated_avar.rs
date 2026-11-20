@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Avar<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,40 @@ impl TopLevelTable for Avar<'_> {
     const TAG: Tag = Tag::new(b"avar");
 }
 
+impl ReadArgs for Avar<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Avar<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct AvarFixedHeader {
+    pub version: BigEndian<MajorMinor>,
+    pub _reserved: BigEndian<u16>,
+    pub axis_count: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<AvarFixedHeader>() <= Avar::MIN_SIZE);
+
 /// The [avar (Axis Variations)](https://docs.microsoft.com/en-us/typography/opentype/spec/avar) table
 #[derive(Clone)]
 pub struct Avar<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, AvarFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -44,20 +64,18 @@ impl<'a> Avar<'a> {
     /// Major version number of the axis variations table — set to 1 or 2.
     /// Minor version number of the axis variations table — set to 0.
     pub fn version(&self) -> MajorMinor {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// The number of variation axes for this font. This must be the same number as axisCount in the 'fvar' table.
     pub fn axis_count(&self) -> u16 {
-        let range = self.axis_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().axis_count.get()
     }
 
     /// The segment maps array — one segment map for each axis, in the order of axes specified in the 'fvar' table.
     pub fn axis_segment_maps(&self) -> VarLenArray<'a, SegmentMaps<'a>> {
         let range = self.axis_segment_maps_byte_range();
-        self.data
+        self.offset_data()
             .split_off(range.start)
             .and_then(|d| VarLenArray::read(d).ok())
             .unwrap_or_default()
@@ -67,13 +85,13 @@ impl<'a> Avar<'a> {
     pub fn axis_index_map_offset(&self) -> Option<Nullable<Offset32>> {
         let range = self.axis_index_map_offset_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_at(range.start).ok())
+            .then(|| self.offset_data().read_at(range.start).ok())
             .flatten()
     }
 
     /// Attempt to resolve [`axis_index_map_offset`][Self::axis_index_map_offset].
     pub fn axis_index_map(&self) -> Option<Result<DeltaSetIndexMap<'a>, ReadError>> {
-        let data = self.data;
+        let data = self.offset_data();
         self.axis_index_map_offset().map(|x| x.resolve(data))?
     }
 
@@ -81,49 +99,49 @@ impl<'a> Avar<'a> {
     pub fn var_store_offset(&self) -> Option<Nullable<Offset32>> {
         let range = self.var_store_offset_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_at(range.start).ok())
+            .then(|| self.offset_data().read_at(range.start).ok())
             .flatten()
     }
 
     /// Attempt to resolve [`var_store_offset`][Self::var_store_offset].
     pub fn var_store(&self) -> Option<Result<ItemVariationStore<'a>, ReadError>> {
-        let data = self.data;
+        let data = self.offset_data();
         self.var_store_offset().map(|x| x.resolve(data))?
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + MajorMinor::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(MajorMinor::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn _reserved_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn axis_count_byte_range(&self) -> Range<usize> {
         let start = self._reserved_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn axis_segment_maps_byte_range(&self) -> Range<usize> {
         let axis_count = self.axis_count();
         let start = self.axis_count_byte_range().end;
-        let end = start + {
-            let data = self.data.split_off(start).unwrap_or_default();
+        let end = start.saturating_add({
+            let data = self.offset_data().split_off(start).unwrap_or_default();
             <SegmentMaps as VarSize>::total_len_for_count(data, transforms::to_usize(axis_count))
                 .unwrap_or(0)
-        };
+        });
         start..end
     }
 
     pub fn axis_index_map_offset_byte_range(&self) -> Range<usize> {
         let start = self.axis_segment_maps_byte_range().end;
         let end = if self.version().compatible((2u16, 0u16)) {
-            start + Offset32::RAW_BYTE_LEN
+            start.saturating_add(Offset32::RAW_BYTE_LEN)
         } else {
             start
         };
@@ -133,7 +151,7 @@ impl<'a> Avar<'a> {
     pub fn var_store_offset_byte_range(&self) -> Range<usize> {
         let start = self.axis_index_map_offset_byte_range().end;
         let end = if self.version().compatible((2u16, 0u16)) {
-            start + Offset32::RAW_BYTE_LEN
+            start.saturating_add(Offset32::RAW_BYTE_LEN)
         } else {
             start
         };
@@ -146,46 +164,9 @@ const _: () = assert!(FontData::default_data_long_enough(Avar::MIN_SIZE));
 impl Default for Avar<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Avar<'a> {
-    fn type_name(&self) -> &str {
-        "Avar"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new("axis_count", self.axis_count())),
-            2usize => Some(Field::new(
-                "axis_segment_maps",
-                traversal::FieldType::var_array(
-                    "SegmentMaps",
-                    self.axis_segment_maps(),
-                    self.offset_data(),
-                ),
-            )),
-            3usize if self.version().compatible((2u16, 0u16)) => Some(Field::new(
-                "axis_index_map_offset",
-                FieldType::offset(self.axis_index_map_offset().unwrap(), self.axis_index_map()),
-            )),
-            4usize if self.version().compatible((2u16, 0u16)) => Some(Field::new(
-                "var_store_offset",
-                FieldType::offset(self.var_store_offset().unwrap(), self.var_store()),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Avar<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -207,28 +188,6 @@ impl<'a> SegmentMaps<'a> {
     /// The array of axis value map records for this axis.
     pub fn axis_value_maps(&self) -> &'a [AxisValueMap] {
         self.axis_value_maps
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for SegmentMaps<'a> {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "SegmentMaps",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("position_map_count", self.position_map_count())),
-                1usize => Some(Field::new(
-                    "axis_value_maps",
-                    traversal::FieldType::array_of_records(
-                        stringify!(AxisValueMap),
-                        self.axis_value_maps(),
-                        _data,
-                    ),
-                )),
-                _ => None,
-            }),
-            data,
-        }
     }
 }
 
@@ -257,19 +216,4 @@ impl AxisValueMap {
 
 impl FixedSize for AxisValueMap {
     const RAW_BYTE_LEN: usize = F2Dot14::RAW_BYTE_LEN + F2Dot14::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for AxisValueMap {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "AxisValueMap",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("from_coordinate", self.from_coordinate())),
-                1usize => Some(Field::new("to_coordinate", self.to_coordinate())),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }

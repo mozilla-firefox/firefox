@@ -44,7 +44,7 @@ impl From<i32> for Sid {
 /// The PostScript standard string set.
 ///
 /// See "Appendix A - Standard Strings" in <https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf>
-pub const STANDARD_STRINGS: &[&str] = &[
+pub(crate) const STANDARD_STRINGS: &[&str] = &[
     ".notdef",
     "space",
     "exclam",

@@ -1,6 +1,10 @@
 //! Types for collecting the output when drawing a glyph outline.
 
-pub use read_fonts::model::pen::{ControlBoundsPen, NullPen, OutlinePen, PathElement, SvgPen};
+pub use read_fonts::model::glyph::outline::{
+    ControlBoundsSink as ControlBoundsPen, NullSink as NullPen, PathElement,
+    PathSink as OutlinePen, SvgSink as SvgPen,
+};
+use read_fonts::tables::glyf::outline::PathContourStart;
 
 /// Style for path conversion.
 ///
@@ -11,15 +15,24 @@ pub use read_fonts::model::pen::{ControlBoundsPen, NullPen, OutlinePen, PathElem
 /// **If you add a new one make sure to update the fuzzer.**
 #[derive(Debug, Default, Copy, Clone)]
 pub enum PathStyle {
-    /// If the first point is off-curve, check if the last is on-curve
+    /// If the first point is quadratic off-curve, check if the last is on-curve.
     /// If it is, start there. If it isn't, start at the implied midpoint
     /// between first and last.
     #[default]
     FreeType,
-    /// If the first point is off-curve, check if the second is on-curve.
+    /// If the first point is quadratic off-curve, check if the second is on-curve.
     /// If it is, start there. If it isn't, start at the implied midpoint
     /// between first and second.
     ///
     /// Matches hb-draw's interpretation of a point stream.
     HarfBuzz,
+}
+
+impl From<PathStyle> for PathContourStart {
+    fn from(style: PathStyle) -> Self {
+        match style {
+            PathStyle::FreeType => Self::ScanBackward,
+            PathStyle::HarfBuzz => Self::ScanForward,
+        }
+    }
 }

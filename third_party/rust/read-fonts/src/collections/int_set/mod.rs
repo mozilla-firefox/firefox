@@ -170,29 +170,54 @@ impl<T: Domain> IntSet<T> {
         self.range((Bound::Excluded(value), Bound::Unbounded))
     }
 
+    /// Returns the smallest member of this set that is after `value`, if any.
+    ///
+    /// Equivalent to `self.iter_after(value).next()`, but cheaper since it doesn't construct an
+    /// iterator. Inverted sets over a discontinuous domain are the exception: they still use
+    /// `iter_after`.
+    pub fn next_after(&self, value: T) -> Option<T> {
+        match &self.0 {
+            Membership::Inclusive(s) => s
+                .next_after(value.to_u32())
+                .map(|v| T::from_u32(InDomain(v))),
+            // In a continuous domain every u32 value between the domain's min and max is a
+            // member of the domain, so the next member is the next value missing from `s`,
+            // if it doesn't exceed the max.
+            Membership::Exclusive(s) if T::is_continuous() => {
+                let max = T::ordered_values().next_back()?;
+                s.next_absent_after(value.to_u32())
+                    .filter(|v| *v <= max)
+                    .map(|v| T::from_u32(InDomain(v)))
+            }
+            Membership::Exclusive(_) => self.iter_after(value).next(),
+        }
+    }
+
     /// Returns an iterator over members of this set that are in `range`.
     pub fn range<R: RangeBounds<T>>(&self, range: R) -> impl Iterator<Item = T> + '_ {
-        let mut it = match range.start_bound() {
-            Bound::Included(start) | Bound::Excluded(start) => {
-                self.iter_from_u32(*start).peekable()
+        let (first, it) = match range.start_bound() {
+            Bound::Included(start) => (None, self.iter_from_u32(*start)),
+            Bound::Excluded(start) => {
+                let mut it = self.iter_from_u32(*start);
+                let first = it.next().filter(|v| v != &start.to_u32());
+                (first, it)
             }
             Bound::Unbounded => {
                 let min = T::from_u32(InDomain(T::ordered_values().next().unwrap()));
-                self.iter_from_u32(min).peekable()
+                (None, self.iter_from_u32(min))
             }
         };
 
-        if let Bound::Excluded(start) = range.start_bound() {
-            it.next_if_eq(&start.to_u32());
-        }
-
         let range_end = range.end_bound().cloned();
-        it.take_while(move |v| match range_end {
-            Bound::Included(end) => *v <= end.to_u32(),
-            Bound::Excluded(end) => *v < end.to_u32(),
-            Bound::Unbounded => true,
-        })
-        .map(move |v| T::from_u32(InDomain(v)))
+        first
+            .into_iter()
+            .chain(it)
+            .take_while(move |v| match range_end {
+                Bound::Included(end) => *v <= end.to_u32(),
+                Bound::Excluded(end) => *v < end.to_u32(),
+                Bound::Unbounded => true,
+            })
+            .map(move |v| T::from_u32(InDomain(v)))
     }
 
     /// Returns an iterator over all disjoint ranges of values within the set in sorted ascending order.
@@ -392,6 +417,26 @@ impl<T: Domain> IntSet<T> {
             }
         }
         false
+    }
+
+    /// Returns `true` if this set is a subset of `other`.
+    pub fn is_subset(&self, other: &IntSet<T>) -> bool {
+        if self.len() > other.len() {
+            return false;
+        }
+
+        match (&self.0, &other.0) {
+            (Membership::Inclusive(a), Membership::Inclusive(b)) => a.is_subset(b),
+            (Membership::Inclusive(a), Membership::Exclusive(b)) => !a.intersects_set(b),
+            (Membership::Exclusive(a), Membership::Inclusive(b)) => {
+                // For this (A) to be a subset of other (B):
+                // - All members of the domain T must be in either A, B, or both
+                // - So we check that A U B = T, which we can do by checking |A U B| = |T|
+                // - |A U B| is given by |A| + |B| - |A n B| (inclusion exclusion principle)
+                a.len() + b.len() - a.intersection_len(b) == T::count()
+            }
+            (Membership::Exclusive(a), Membership::Exclusive(b)) => b.is_subset(a),
+        }
     }
 
     /// Returns first element in the set, if any. This element is always the minimum of all elements in the set.
@@ -636,13 +681,14 @@ where
     T: Domain + Display,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let mut ranges = self.iter_ranges().peekable();
         write!(f, "{{ ")?;
-        while let Some(range) = ranges.next() {
-            write!(f, "{}..={}", range.start(), range.end())?;
-            if ranges.peek().is_some() {
+        let mut first = true;
+        for range in self.iter_ranges() {
+            if !first {
                 write!(f, ", ")?;
             }
+            first = false;
+            write!(f, "{}..={}", range.start(), range.end())?;
         }
         write!(f, "}}")
     }
@@ -1942,6 +1988,93 @@ mod test {
     }
 
     #[test]
+    fn next_after() {
+        let mut set = IntSet::<u32>::empty();
+        assert_eq!(set.next_after(0), None);
+
+        set.extend([5, 7, 10, 1250, 1300, 3001]);
+        assert_eq!(set.next_after(0), Some(5));
+        assert_eq!(set.next_after(5), Some(7));
+        assert_eq!(set.next_after(700), Some(1250));
+        assert_eq!(set.next_after(3001), None);
+        assert_eq!(set.next_after(u32::MAX), None);
+
+        for value in (0..=3100).chain([u32::MAX - 1, u32::MAX]) {
+            assert_eq!(
+                set.next_after(value),
+                set.iter_after(value).next(),
+                "value {value}"
+            );
+        }
+    }
+
+    #[test]
+    fn next_after_exclusive() {
+        let mut set = IntSet::<u32>::empty();
+        set.extend([5, 7, 10, 1250, 1300, 3001]);
+        set.invert();
+
+        assert_eq!(set.next_after(3), Some(4));
+        assert_eq!(set.next_after(4), Some(6));
+        assert_eq!(set.next_after(9), Some(11));
+        assert_eq!(set.next_after(u32::MAX - 1), Some(u32::MAX));
+        assert_eq!(set.next_after(u32::MAX), None);
+
+        // Skips a run of excluded values that spans pages.
+        set.remove_range(4000..=5000);
+        assert_eq!(set.next_after(3999), Some(5001));
+
+        for value in (0..=5100).chain([u32::MAX - 1, u32::MAX]) {
+            assert_eq!(
+                set.next_after(value),
+                set.iter_after(value).next(),
+                "value {value}"
+            );
+        }
+
+        set.remove_range(u32::MAX - 600..=u32::MAX);
+        assert_eq!(set.next_after(u32::MAX - 602), Some(u32::MAX - 601));
+        assert_eq!(set.next_after(u32::MAX - 601), None);
+    }
+
+    #[test]
+    fn next_after_exclusive_respects_domain_max() {
+        // The excluded set doesn't reach the domain max of u16, but the u32 values above it
+        // aren't in the domain.
+        let mut set = IntSet::<u16>::all();
+        set.remove_range(u16::MAX - 600..=u16::MAX);
+        assert_eq!(set.next_after(u16::MAX - 602), Some(u16::MAX - 601));
+        assert_eq!(set.next_after(u16::MAX - 601), None);
+
+        let mut set = IntSet::<u8>::all();
+        assert_eq!(set.next_after(254), Some(255));
+        assert_eq!(set.next_after(255), None);
+        set.remove(255);
+        assert_eq!(set.next_after(254), None);
+        for value in 0..=u8::MAX {
+            assert_eq!(
+                set.next_after(value),
+                set.iter_after(value).next(),
+                "value {value}"
+            );
+        }
+    }
+
+    #[test]
+    fn next_after_discontinuous() {
+        let mut set = IntSet::<EvenInts>::empty();
+        set.extend([EvenInts(6), EvenInts(10)]);
+        assert_eq!(set.next_after(EvenInts(2)), Some(EvenInts(6)));
+        assert_eq!(set.next_after(EvenInts(6)), Some(EvenInts(10)));
+        assert_eq!(set.next_after(EvenInts(10)), None);
+
+        set.invert();
+        assert_eq!(set.next_after(EvenInts(2)), Some(EvenInts(4)));
+        assert_eq!(set.next_after(EvenInts(4)), Some(EvenInts(8)));
+        assert_eq!(set.next_after(EvenInts(u16::MAX - 1)), None);
+    }
+
+    #[test]
     #[allow(clippy::reversed_empty_ranges)]
     fn range() {
         let mut set = IntSet::<u32>::empty();
@@ -2519,6 +2652,83 @@ mod test {
         assert_intersects!(c, empty, false);
         assert_intersects!(d, empty, false);
         assert_intersects!(e, empty, false);
+    }
+
+    #[test]
+    fn is_subset() {
+        let empty = IntSet::<u32>::empty();
+        let a = IntSet::from([1u32, 5, 6, 7, 8, 12]);
+        let b = IntSet::from([1u32, 5, 6, 7, 8, 12, 15]);
+        let c = IntSet::from([1u32, 5, 6, 7, 8, 13]);
+
+        // Inclusive - Inclusive
+        assert!(empty.is_subset(&empty));
+        assert!(empty.is_subset(&a));
+        assert!(!a.is_subset(&empty));
+
+        assert!(a.is_subset(&a));
+
+        assert!(a.is_subset(&b));
+        assert!(!b.is_subset(&a)); // Rejection via length check (7 > 6)
+
+        assert!(!a.is_subset(&c)); // Rejection via member check (6 <= 6)
+        assert!(!c.is_subset(&a));
+
+        // Inclusive - Exclusive
+        let mut all_but_13 = IntSet::<u32>::all();
+        all_but_13.remove(13);
+
+        let mut all_but_5 = IntSet::<u32>::all();
+        all_but_5.remove(5);
+
+        assert!(a.is_subset(&all_but_13)); // a doesn't contain 13
+        assert!(!a.is_subset(&all_but_5)); // a contains 5 which is excluded in excl_5
+        assert!(empty.is_subset(&all_but_13));
+
+        // Exclusive - Inclusive
+        let mut all_but_1 = IntSet::<u8>::all();
+        all_but_1.remove(1u8);
+
+        let mut all_but_1_2 = IntSet::<u8>::all();
+        all_but_1_2.remove(1u8);
+        all_but_1_2.remove(2u8);
+
+        let mut incl_all_but_1 = IntSet::<u8>::empty();
+        incl_all_but_1.insert_range(0u8..=255);
+        incl_all_but_1.remove(1u8);
+
+        let mut incl_all_but_3 = IntSet::<u8>::empty();
+        incl_all_but_3.insert_range(0u8..=255);
+        incl_all_but_3.remove(3u8);
+
+        let mut incl_all = IntSet::<u8>::empty();
+        incl_all.insert_range(0u8..=255);
+
+        assert!(all_but_1.is_subset(&incl_all));
+        assert!(all_but_1.is_subset(&incl_all_but_1));
+        assert!(all_but_1_2.is_subset(&incl_all_but_1));
+        assert!(!all_but_1.is_subset(&IntSet::<u8>::from([0u8, 2, 3]))); // Rejection via length check (255 > 3)
+        assert!(!all_but_1_2.is_subset(&incl_all_but_3)); // Rejection via member check (254 <= 255)
+
+        // Exclusive - Exclusive
+        let mut all_but_2_3 = IntSet::<u8>::all();
+        all_but_2_3.remove(2u8);
+        all_but_2_3.remove(3u8);
+
+        assert!(all_but_1_2.is_subset(&all_but_1));
+        assert!(!all_but_1.is_subset(&all_but_1_2)); // Rejection via length check (255 > 254)
+        assert!(!all_but_1_2.is_subset(&all_but_2_3)); // Rejection via member (254 <= 254)
+        assert!(IntSet::<u32>::all().is_subset(&IntSet::<u32>::all()));
+
+        // Discontinuous Domain
+        let even_empty = IntSet::<EvenInts>::empty();
+        let even_a = IntSet::from([EvenInts(2), EvenInts(4)]);
+        let even_b = IntSet::from([EvenInts(2), EvenInts(4), EvenInts(6)]);
+        let even_c = IntSet::from([EvenInts(2), EvenInts(6)]);
+        assert!(even_empty.is_subset(&even_a));
+        assert!(even_a.is_subset(&even_b));
+        assert!(!even_b.is_subset(&even_a)); // Rejection via length check (3 > 2)
+        assert!(!even_c.is_subset(&even_a)); // Rejection via member check (2 <= 2)
     }
 
     #[test]

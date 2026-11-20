@@ -1,7 +1,8 @@
 //! Helper for loading (possibly variable) horizontal glyph metrics.
 
 use raw::{
-    tables::{hmtx::Hmtx, hvar::Hvar},
+    tables::hmtx::GlyphMetricRecords,
+    tables::hvar::Hvar,
     types::{F2Dot14, GlyphId},
     FontRef, TableProvider,
 };
@@ -9,14 +10,14 @@ use raw::{
 /// Access to horizontal glyph metrics.
 #[derive(Clone)]
 pub(crate) struct GlyphHMetrics<'a> {
-    pub hmtx: Hmtx<'a>,
+    pub hmtx: GlyphMetricRecords<'a>,
     pub hvar: Option<Hvar<'a>>,
 }
 
 impl<'a> GlyphHMetrics<'a> {
     pub fn new(font: &FontRef<'a>) -> Option<Self> {
         // Note: hmtx is required and HVAR is optional
-        let hmtx = font.hmtx().ok()?;
+        let hmtx = font.h_glyph_metric_records().ok()?;
         let hvar = font.hvar().ok();
         Some(Self { hmtx, hvar })
     }
@@ -28,7 +29,7 @@ impl<'a> GlyphHMetrics<'a> {
         let mut advance = self.hmtx.advance(gid).unwrap_or_default() as i32;
         if let (false, Some(hvar)) = (coords.is_empty(), &self.hvar) {
             advance += hvar
-                .advance_width_delta(gid, coords)
+                .advance_delta(gid, coords)
                 .map(|delta| delta.to_i32())
                 .unwrap_or(0);
         }

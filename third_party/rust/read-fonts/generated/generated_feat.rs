@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Feat<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,41 @@ impl TopLevelTable for Feat<'_> {
     const TAG: Tag = Tag::new(b"feat");
 }
 
+impl ReadArgs for Feat<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Feat<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct FeatFixedHeader {
+    pub version: BigEndian<MajorMinor>,
+    pub feature_name_count: BigEndian<u16>,
+    pub _reserved1: BigEndian<u16>,
+    pub _reserved2: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<FeatFixedHeader>() <= Feat::MIN_SIZE);
+
 /// The [feature name](https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6feat.html) table.
 #[derive(Clone)]
 pub struct Feat<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, FeatFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -45,51 +66,53 @@ impl<'a> Feat<'a> {
     /// Version number of the feature name table (0x00010000 for the current
     /// version).
     pub fn version(&self) -> MajorMinor {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// The number of entries in the feature name array.
     pub fn feature_name_count(&self) -> u16 {
-        let range = self.feature_name_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().feature_name_count.get()
     }
 
     /// The feature name array, sorted by feature type.
     pub fn names(&self) -> &'a [FeatureName] {
         let range = self.names_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + MajorMinor::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(MajorMinor::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn feature_name_count_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn _reserved1_byte_range(&self) -> Range<usize> {
         let start = self.feature_name_count_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn _reserved2_byte_range(&self) -> Range<usize> {
         let start = self._reserved1_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn names_byte_range(&self) -> Range<usize> {
         let feature_name_count = self.feature_name_count();
         let start = self._reserved2_byte_range().end;
-        let end = start
-            + (transforms::to_usize(feature_name_count)).saturating_mul(FeatureName::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(feature_name_count)).saturating_mul(FeatureName::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -99,38 +122,9 @@ const _: () = assert!(FontData::default_data_long_enough(Feat::MIN_SIZE));
 impl Default for Feat<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Feat<'a> {
-    fn type_name(&self) -> &str {
-        "Feat"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new("feature_name_count", self.feature_name_count())),
-            2usize => Some(Field::new(
-                "names",
-                traversal::FieldType::array_of_records(
-                    stringify!(FeatureName),
-                    self.names(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Feat<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -179,7 +173,7 @@ impl FeatureName {
     /// By calling its `offset_data` method.
     pub fn setting_table<'a>(&self, data: FontData<'a>) -> Result<SettingNameArray<'a>, ReadError> {
         let args = self.n_settings();
-        self.setting_table_offset().resolve_with_args(data, &args)
+        self.setting_table_offset().resolve_with_args(data, args)
     }
 
     /// Flags associated with the feature type.
@@ -201,34 +195,13 @@ impl FixedSize for FeatureName {
         + NameId::RAW_BYTE_LEN;
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for FeatureName {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "FeatureName",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("feature", self.feature())),
-                1usize => Some(Field::new("n_settings", self.n_settings())),
-                2usize => Some(Field::new(
-                    "setting_table_offset",
-                    FieldType::offset(self.setting_table_offset(), self.setting_table(_data)),
-                )),
-                3usize => Some(Field::new("feature_flags", self.feature_flags())),
-                4usize => Some(Field::new("name_index", self.name_index())),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
 impl<'a> MinByteRange<'a> for SettingNameArray<'a> {
     fn min_byte_range(&self) -> Range<usize> {
         0..self.settings_byte_range().end
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -236,14 +209,17 @@ impl ReadArgs for SettingNameArray<'_> {
     type Args = u16;
 }
 
-impl<'a> FontReadWithArgs<'a> for SettingNameArray<'a> {
-    fn read_with_args(data: FontData<'a>, args: &u16) -> Result<Self, ReadError> {
-        let n_settings = *args;
+impl<'a> FontRead<'a> for SettingNameArray<'a> {
+    fn read_with_args(data: FontData<'a>, args: u16) -> Result<Self, ReadError> {
+        let n_settings = args;
 
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data, n_settings })
     }
 }
@@ -255,13 +231,23 @@ impl<'a> SettingNameArray<'a> {
     /// parsed.
     pub fn read(data: FontData<'a>, n_settings: u16) -> Result<Self, ReadError> {
         let args = n_settings;
-        Self::read_with_args(data, &args)
+        Self::read_with_args(data, args)
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct SettingNameArrayFixedHeader {}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () =
+    assert!(std::mem::size_of::<SettingNameArrayFixedHeader>() <= SettingNameArray::MIN_SIZE);
+
 #[derive(Clone)]
 pub struct SettingNameArray<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, SettingNameArrayFixedHeader>,
     n_settings: u16,
 }
 
@@ -273,7 +259,10 @@ impl<'a> SettingNameArray<'a> {
     /// List of setting names for a feature.
     pub fn settings(&self) -> &'a [SettingName] {
         let range = self.settings_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub(crate) fn n_settings(&self) -> u16 {
@@ -282,9 +271,10 @@ impl<'a> SettingNameArray<'a> {
 
     pub fn settings_byte_range(&self) -> Range<usize> {
         let n_settings = self.n_settings();
-        let start = 0;
-        let end =
-            start + (transforms::to_usize(n_settings)).saturating_mul(SettingName::RAW_BYTE_LEN);
+        let start = 0usize;
+        let end = start.saturating_add(
+            (transforms::to_usize(n_settings)).saturating_mul(SettingName::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -297,37 +287,10 @@ const _: () = assert!(FontData::default_data_long_enough(
 impl Default for SettingNameArray<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
             n_settings: Default::default(),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for SettingNameArray<'a> {
-    fn type_name(&self) -> &str {
-        "SettingNameArray"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new(
-                "settings",
-                traversal::FieldType::array_of_records(
-                    stringify!(SettingName),
-                    self.settings(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for SettingNameArray<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -356,19 +319,4 @@ impl SettingName {
 
 impl FixedSize for SettingName {
     const RAW_BYTE_LEN: usize = u16::RAW_BYTE_LEN + NameId::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for SettingName {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "SettingName",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("setting", self.setting())),
-                1usize => Some(Field::new("name_index", self.name_index())),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }

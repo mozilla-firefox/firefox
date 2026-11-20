@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Cblc<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,40 @@ impl TopLevelTable for Cblc<'_> {
     const TAG: Tag = Tag::new(b"CBLC");
 }
 
+impl ReadArgs for Cblc<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Cblc<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct CblcFixedHeader {
+    pub major_version: BigEndian<u16>,
+    pub minor_version: BigEndian<u16>,
+    pub num_sizes: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<CblcFixedHeader>() <= Cblc::MIN_SIZE);
+
 /// The [Color Bitmap Location](https://learn.microsoft.com/en-us/typography/opentype/spec/cblc) table
 #[derive(Clone)]
 pub struct Cblc<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, CblcFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -43,51 +63,52 @@ impl<'a> Cblc<'a> {
 
     /// Major version of the CBLC table, = 3.
     pub fn major_version(&self) -> u16 {
-        let range = self.major_version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().major_version.get()
     }
 
     /// Minor version of CBLC table, = 0.
     pub fn minor_version(&self) -> u16 {
-        let range = self.minor_version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().minor_version.get()
     }
 
     /// Number of BitmapSize records.
     pub fn num_sizes(&self) -> u32 {
-        let range = self.num_sizes_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().num_sizes.get()
     }
 
     /// BitmapSize records array.
     pub fn bitmap_sizes(&self) -> &'a [BitmapSize] {
         let range = self.bitmap_sizes_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn major_version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn minor_version_byte_range(&self) -> Range<usize> {
         let start = self.major_version_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn num_sizes_byte_range(&self) -> Range<usize> {
         let start = self.minor_version_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn bitmap_sizes_byte_range(&self) -> Range<usize> {
         let num_sizes = self.num_sizes();
         let start = self.num_sizes_byte_range().end;
-        let end =
-            start + (transforms::to_usize(num_sizes)).saturating_mul(BitmapSize::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(num_sizes)).saturating_mul(BitmapSize::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -97,38 +118,8 @@ const _: () = assert!(FontData::default_data_long_enough(Cblc::MIN_SIZE));
 impl Default for Cblc<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Cblc<'a> {
-    fn type_name(&self) -> &str {
-        "Cblc"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("major_version", self.major_version())),
-            1usize => Some(Field::new("minor_version", self.minor_version())),
-            2usize => Some(Field::new("num_sizes", self.num_sizes())),
-            3usize => Some(Field::new(
-                "bitmap_sizes",
-                traversal::FieldType::array_of_records(
-                    stringify!(BitmapSize),
-                    self.bitmap_sizes(),
-                    self.offset_data(),
-                ),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Cblc<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }

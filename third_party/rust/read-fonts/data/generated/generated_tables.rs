@@ -29,6 +29,8 @@ struct PerTableData<T> {
     cvar: T,
     /// Control value table.
     cvt: T,
+    /// Delta character mapping table.
+    dmap: T,
     /// Digital signature table.
     dsig: T,
     /// Embedded bitmap data table.
@@ -47,20 +49,28 @@ struct PerTableData<T> {
     gdef: T,
     /// TrueType glyph data table.
     glyf: T,
+    /// Extended glyph data table.
+    glyf_extended: T,
     /// Glyph positioning table.
     gpos: T,
     /// Glyph substitution table.
     gsub: T,
     /// Glyph variation table.
     gvar: T,
+    /// Extended glyph variation table.
+    gvar_extended: T,
     /// Horizontal device metrics.
     hdmx: T,
     /// Font header table.
     head: T,
     /// Horizontal header table.
     hhea: T,
+    /// Extended horizontal header table.
+    hhea_extended: T,
     /// Horizontal metrics table.
     hmtx: T,
+    /// Extended horizontal metrics table.
+    hmtx_extended: T,
     /// Horizontal metrics variation table.
     hvar: T,
     /// Incremental font transfer table.
@@ -75,14 +85,20 @@ struct PerTableData<T> {
     kerx: T,
     /// Index to location table.
     loca: T,
+    /// Extended index to location table.
+    loca_extended: T,
     /// Language tag table.
     ltag: T,
     /// Mathematical typesetting table.
     math: T,
     /// Maximum profile table.
     maxp: T,
+    /// Extended maximum profile table.
+    maxp_extended: T,
     /// Metadata table.
     meta: T,
+    /// Metamorphosis table (deprecated).
+    mort: T,
     /// Extended metamorphosis table.
     morx: T,
     /// Metrics variation table.
@@ -107,8 +123,12 @@ struct PerTableData<T> {
     varc: T,
     /// Vertical header table.
     vhea: T,
+    /// Extended vertical header table.
+    vhea_extended: T,
     /// Vertical metrics table.
     vmtx: T,
+    /// Extended vertical metrics table.
+    vmtx_extended: T,
     /// Vertical origin table.
     vorg: T,
     /// Vertical metrics variation table.
@@ -130,6 +150,7 @@ impl<T> PerTableData<T> {
         f(Tag::new(b"cmap"), &mut self.cmap);
         f(Tag::new(b"cvar"), &mut self.cvar);
         f(Tag::new(b"cvt "), &mut self.cvt);
+        f(Tag::new(b"DMAP"), &mut self.dmap);
         f(Tag::new(b"DSIG"), &mut self.dsig);
         f(Tag::new(b"EBDT"), &mut self.ebdt);
         f(Tag::new(b"EBLC"), &mut self.eblc);
@@ -139,13 +160,17 @@ impl<T> PerTableData<T> {
         f(Tag::new(b"gasp"), &mut self.gasp);
         f(Tag::new(b"GDEF"), &mut self.gdef);
         f(Tag::new(b"glyf"), &mut self.glyf);
+        f(Tag::new(b"GLYF"), &mut self.glyf_extended);
         f(Tag::new(b"GPOS"), &mut self.gpos);
         f(Tag::new(b"GSUB"), &mut self.gsub);
         f(Tag::new(b"gvar"), &mut self.gvar);
+        f(Tag::new(b"GVAR"), &mut self.gvar_extended);
         f(Tag::new(b"hdmx"), &mut self.hdmx);
         f(Tag::new(b"head"), &mut self.head);
         f(Tag::new(b"hhea"), &mut self.hhea);
+        f(Tag::new(b"HHEA"), &mut self.hhea_extended);
         f(Tag::new(b"hmtx"), &mut self.hmtx);
+        f(Tag::new(b"HMTX"), &mut self.hmtx_extended);
         f(Tag::new(b"HVAR"), &mut self.hvar);
         f(Tag::new(b"IFT "), &mut self.ift);
         f(Tag::new(b"IFTX"), &mut self.iftx);
@@ -153,10 +178,13 @@ impl<T> PerTableData<T> {
         f(Tag::new(b"kern"), &mut self.kern);
         f(Tag::new(b"kerx"), &mut self.kerx);
         f(Tag::new(b"loca"), &mut self.loca);
+        f(Tag::new(b"LOCA"), &mut self.loca_extended);
         f(Tag::new(b"ltag"), &mut self.ltag);
         f(Tag::new(b"MATH"), &mut self.math);
         f(Tag::new(b"maxp"), &mut self.maxp);
+        f(Tag::new(b"MAXP"), &mut self.maxp_extended);
         f(Tag::new(b"meta"), &mut self.meta);
+        f(Tag::new(b"mort"), &mut self.mort);
         f(Tag::new(b"morx"), &mut self.morx);
         f(Tag::new(b"MVAR"), &mut self.mvar);
         f(Tag::new(b"name"), &mut self.name);
@@ -169,7 +197,9 @@ impl<T> PerTableData<T> {
         f(Tag::new(b"trak"), &mut self.trak);
         f(Tag::new(b"VARC"), &mut self.varc);
         f(Tag::new(b"vhea"), &mut self.vhea);
+        f(Tag::new(b"VHEA"), &mut self.vhea_extended);
         f(Tag::new(b"vmtx"), &mut self.vmtx);
+        f(Tag::new(b"VMTX"), &mut self.vmtx_extended);
         f(Tag::new(b"VORG"), &mut self.vorg);
         f(Tag::new(b"VVAR"), &mut self.vvar);
     }
@@ -229,6 +259,10 @@ trait TableDataProvider<'a> where Self: 'a {
         self.table_state(Tag::new(b"cvt "), &self.tables().cvt)
     }
 
+    fn dmap(&self) -> Option<TableState<'a>> {
+        self.table_state(Tag::new(b"DMAP"), &self.tables().dmap)
+    }
+
     fn dsig(&self) -> Option<TableState<'a>> {
         self.table_state(Tag::new(b"DSIG"), &self.tables().dsig)
     }
@@ -265,6 +299,10 @@ trait TableDataProvider<'a> where Self: 'a {
         self.table_state(Tag::new(b"glyf"), &self.tables().glyf)
     }
 
+    fn glyf_extended(&self) -> Option<TableState<'a>> {
+        self.table_state(Tag::new(b"GLYF"), &self.tables().glyf_extended)
+    }
+
     fn gpos(&self) -> Option<TableState<'a>> {
         self.table_state(Tag::new(b"GPOS"), &self.tables().gpos)
     }
@@ -275,6 +313,10 @@ trait TableDataProvider<'a> where Self: 'a {
 
     fn gvar(&self) -> Option<TableState<'a>> {
         self.table_state(Tag::new(b"gvar"), &self.tables().gvar)
+    }
+
+    fn gvar_extended(&self) -> Option<TableState<'a>> {
+        self.table_state(Tag::new(b"GVAR"), &self.tables().gvar_extended)
     }
 
     fn hdmx(&self) -> Option<TableState<'a>> {
@@ -289,8 +331,16 @@ trait TableDataProvider<'a> where Self: 'a {
         self.table_state(Tag::new(b"hhea"), &self.tables().hhea)
     }
 
+    fn hhea_extended(&self) -> Option<TableState<'a>> {
+        self.table_state(Tag::new(b"HHEA"), &self.tables().hhea_extended)
+    }
+
     fn hmtx(&self) -> Option<TableState<'a>> {
         self.table_state(Tag::new(b"hmtx"), &self.tables().hmtx)
+    }
+
+    fn hmtx_extended(&self) -> Option<TableState<'a>> {
+        self.table_state(Tag::new(b"HMTX"), &self.tables().hmtx_extended)
     }
 
     fn hvar(&self) -> Option<TableState<'a>> {
@@ -321,6 +371,10 @@ trait TableDataProvider<'a> where Self: 'a {
         self.table_state(Tag::new(b"loca"), &self.tables().loca)
     }
 
+    fn loca_extended(&self) -> Option<TableState<'a>> {
+        self.table_state(Tag::new(b"LOCA"), &self.tables().loca_extended)
+    }
+
     fn ltag(&self) -> Option<TableState<'a>> {
         self.table_state(Tag::new(b"ltag"), &self.tables().ltag)
     }
@@ -333,8 +387,16 @@ trait TableDataProvider<'a> where Self: 'a {
         self.table_state(Tag::new(b"maxp"), &self.tables().maxp)
     }
 
+    fn maxp_extended(&self) -> Option<TableState<'a>> {
+        self.table_state(Tag::new(b"MAXP"), &self.tables().maxp_extended)
+    }
+
     fn meta(&self) -> Option<TableState<'a>> {
         self.table_state(Tag::new(b"meta"), &self.tables().meta)
+    }
+
+    fn mort(&self) -> Option<TableState<'a>> {
+        self.table_state(Tag::new(b"mort"), &self.tables().mort)
     }
 
     fn morx(&self) -> Option<TableState<'a>> {
@@ -385,8 +447,16 @@ trait TableDataProvider<'a> where Self: 'a {
         self.table_state(Tag::new(b"vhea"), &self.tables().vhea)
     }
 
+    fn vhea_extended(&self) -> Option<TableState<'a>> {
+        self.table_state(Tag::new(b"VHEA"), &self.tables().vhea_extended)
+    }
+
     fn vmtx(&self) -> Option<TableState<'a>> {
         self.table_state(Tag::new(b"vmtx"), &self.tables().vmtx)
+    }
+
+    fn vmtx_extended(&self) -> Option<TableState<'a>> {
+        self.table_state(Tag::new(b"VMTX"), &self.tables().vmtx_extended)
     }
 
     fn vorg(&self) -> Option<TableState<'a>> {
@@ -399,7 +469,7 @@ trait TableDataProvider<'a> where Self: 'a {
 
 }
 
-impl FontTables {
+impl Tables {
     /// Anchor point table data.
     ///
     /// See the [ankr](https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6ankr.html) specification.
@@ -580,6 +650,21 @@ impl FontTables {
         }
     }
 
+    /// Delta character mapping table data.
+    ///
+    /// See the [DMAP](https://www.iso.org/obp/ui/#iso:std:iso-iec:14496:-22:ed-5:v1:en) specification.
+    pub fn dmap_data(&self) -> Option<&'_ [u8]> {
+        self.dmap_state().map(|state| state.data)
+    }
+
+    fn dmap_state(&self) -> Option<TableState<'_>> {
+        match &self.0 {
+            TableSource::None => None,
+            TableSource::Blob(blob) => blob.dmap(),
+            TableSource::Function(func) => func.dmap(),
+        }
+    }
+
     /// Digital signature table data.
     ///
     /// See the [DSIG](https://learn.microsoft.com/en-us/typography/opentype/spec/dsig) specification.
@@ -715,6 +800,21 @@ impl FontTables {
         }
     }
 
+    /// Extended glyph data table data.
+    ///
+    /// See ISO/IEC 14496-22:2026, 5.2.8.
+    pub fn glyf_extended_data(&self) -> Option<&'_ [u8]> {
+        self.glyf_extended_state().map(|state| state.data)
+    }
+
+    fn glyf_extended_state(&self) -> Option<TableState<'_>> {
+        match &self.0 {
+            TableSource::None => None,
+            TableSource::Blob(blob) => blob.glyf_extended(),
+            TableSource::Function(func) => func.glyf_extended(),
+        }
+    }
+
     /// Glyph positioning table data.
     ///
     /// See the [GPOS](https://learn.microsoft.com/en-us/typography/opentype/spec/gpos) specification.
@@ -757,6 +857,21 @@ impl FontTables {
             TableSource::None => None,
             TableSource::Blob(blob) => blob.gvar(),
             TableSource::Function(func) => func.gvar(),
+        }
+    }
+
+    /// Extended glyph variation table data.
+    ///
+    /// See ISO/IEC 14496-22:2026, 7.3.9.
+    pub fn gvar_extended_data(&self) -> Option<&'_ [u8]> {
+        self.gvar_extended_state().map(|state| state.data)
+    }
+
+    fn gvar_extended_state(&self) -> Option<TableState<'_>> {
+        match &self.0 {
+            TableSource::None => None,
+            TableSource::Blob(blob) => blob.gvar_extended(),
+            TableSource::Function(func) => func.gvar_extended(),
         }
     }
 
@@ -805,6 +920,21 @@ impl FontTables {
         }
     }
 
+    /// Extended horizontal header table data.
+    ///
+    /// See ISO/IEC 14496-22:2026, 5.1.10.
+    pub fn hhea_extended_data(&self) -> Option<&'_ [u8]> {
+        self.hhea_extended_state().map(|state| state.data)
+    }
+
+    fn hhea_extended_state(&self) -> Option<TableState<'_>> {
+        match &self.0 {
+            TableSource::None => None,
+            TableSource::Blob(blob) => blob.hhea_extended(),
+            TableSource::Function(func) => func.hhea_extended(),
+        }
+    }
+
     /// Horizontal metrics table data.
     ///
     /// See the [hmtx](https://learn.microsoft.com/en-us/typography/opentype/spec/hmtx) specification.
@@ -817,6 +947,21 @@ impl FontTables {
             TableSource::None => None,
             TableSource::Blob(blob) => blob.hmtx(),
             TableSource::Function(func) => func.hmtx(),
+        }
+    }
+
+    /// Extended horizontal metrics table data.
+    ///
+    /// See ISO/IEC 14496-22:2026, 5.1.11.
+    pub fn hmtx_extended_data(&self) -> Option<&'_ [u8]> {
+        self.hmtx_extended_state().map(|state| state.data)
+    }
+
+    fn hmtx_extended_state(&self) -> Option<TableState<'_>> {
+        match &self.0 {
+            TableSource::None => None,
+            TableSource::Blob(blob) => blob.hmtx_extended(),
+            TableSource::Function(func) => func.hmtx_extended(),
         }
     }
 
@@ -925,6 +1070,21 @@ impl FontTables {
         }
     }
 
+    /// Extended index to location table data.
+    ///
+    /// See ISO/IEC 14496-22:2026, 5.2.9.
+    pub fn loca_extended_data(&self) -> Option<&'_ [u8]> {
+        self.loca_extended_state().map(|state| state.data)
+    }
+
+    fn loca_extended_state(&self) -> Option<TableState<'_>> {
+        match &self.0 {
+            TableSource::None => None,
+            TableSource::Blob(blob) => blob.loca_extended(),
+            TableSource::Function(func) => func.loca_extended(),
+        }
+    }
+
     /// Language tag table data.
     ///
     /// See the [ltag](https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6ltag.html) specification.
@@ -970,6 +1130,21 @@ impl FontTables {
         }
     }
 
+    /// Extended maximum profile table data.
+    ///
+    /// See ISO/IEC 14496-22:2026, 5.1.12.
+    pub fn maxp_extended_data(&self) -> Option<&'_ [u8]> {
+        self.maxp_extended_state().map(|state| state.data)
+    }
+
+    fn maxp_extended_state(&self) -> Option<TableState<'_>> {
+        match &self.0 {
+            TableSource::None => None,
+            TableSource::Blob(blob) => blob.maxp_extended(),
+            TableSource::Function(func) => func.maxp_extended(),
+        }
+    }
+
     /// Metadata table data.
     ///
     /// See the [meta](https://learn.microsoft.com/en-us/typography/opentype/spec/meta) specification.
@@ -982,6 +1157,21 @@ impl FontTables {
             TableSource::None => None,
             TableSource::Blob(blob) => blob.meta(),
             TableSource::Function(func) => func.meta(),
+        }
+    }
+
+    /// Metamorphosis table (deprecated) data.
+    ///
+    /// See the [mort](https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6mort.html) specification.
+    pub fn mort_data(&self) -> Option<&'_ [u8]> {
+        self.mort_state().map(|state| state.data)
+    }
+
+    fn mort_state(&self) -> Option<TableState<'_>> {
+        match &self.0 {
+            TableSource::None => None,
+            TableSource::Blob(blob) => blob.mort(),
+            TableSource::Function(func) => func.mort(),
         }
     }
 
@@ -1165,6 +1355,21 @@ impl FontTables {
         }
     }
 
+    /// Extended vertical header table data.
+    ///
+    /// See ISO/IEC 14496-22:2026, 5.6.13.
+    pub fn vhea_extended_data(&self) -> Option<&'_ [u8]> {
+        self.vhea_extended_state().map(|state| state.data)
+    }
+
+    fn vhea_extended_state(&self) -> Option<TableState<'_>> {
+        match &self.0 {
+            TableSource::None => None,
+            TableSource::Blob(blob) => blob.vhea_extended(),
+            TableSource::Function(func) => func.vhea_extended(),
+        }
+    }
+
     /// Vertical metrics table data.
     ///
     /// See the [vmtx](https://learn.microsoft.com/en-us/typography/opentype/spec/vmtx) specification.
@@ -1177,6 +1382,21 @@ impl FontTables {
             TableSource::None => None,
             TableSource::Blob(blob) => blob.vmtx(),
             TableSource::Function(func) => func.vmtx(),
+        }
+    }
+
+    /// Extended vertical metrics table data.
+    ///
+    /// See ISO/IEC 14496-22:2026, 5.6.14.
+    pub fn vmtx_extended_data(&self) -> Option<&'_ [u8]> {
+        self.vmtx_extended_state().map(|state| state.data)
+    }
+
+    fn vmtx_extended_state(&self) -> Option<TableState<'_>> {
+        match &self.0 {
+            TableSource::None => None,
+            TableSource::Blob(blob) => blob.vmtx_extended(),
+            TableSource::Function(func) => func.vmtx_extended(),
         }
     }
 

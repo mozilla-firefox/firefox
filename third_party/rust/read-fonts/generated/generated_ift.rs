@@ -5,132 +5,6 @@
 #[allow(unused_imports)]
 use crate::codegen_prelude::*;
 
-#[derive(Clone)]
-pub enum Ift<'a> {
-    Format1(PatchMapFormat1<'a>),
-    Format2(PatchMapFormat2<'a>),
-}
-
-impl Default for Ift<'_> {
-    fn default() -> Self {
-        Self::Format1(Default::default())
-    }
-}
-
-impl<'a> Ift<'a> {
-    ///Return the `FontData` used to resolve offsets for this table.
-    pub fn offset_data(&self) -> FontData<'a> {
-        match self {
-            Self::Format1(item) => item.offset_data(),
-            Self::Format2(item) => item.offset_data(),
-        }
-    }
-
-    /// Format identifier: format = 1
-    pub fn format(&self) -> u8 {
-        match self {
-            Self::Format1(item) => item.format(),
-            Self::Format2(item) => item.format(),
-        }
-    }
-
-    pub fn field_flags(&self) -> PatchMapFieldPresenceFlags {
-        match self {
-            Self::Format1(item) => item.field_flags(),
-            Self::Format2(item) => item.field_flags(),
-        }
-    }
-
-    /// Unique ID that identifies compatible patches.
-    pub fn compatibility_id(&self) -> CompatibilityId {
-        match self {
-            Self::Format1(item) => item.compatibility_id(),
-            Self::Format2(item) => item.compatibility_id(),
-        }
-    }
-
-    pub fn url_template_length(&self) -> u16 {
-        match self {
-            Self::Format1(item) => item.url_template_length(),
-            Self::Format2(item) => item.url_template_length(),
-        }
-    }
-
-    pub fn url_template(&self) -> &'a [u8] {
-        match self {
-            Self::Format1(item) => item.url_template(),
-            Self::Format2(item) => item.url_template(),
-        }
-    }
-
-    pub fn cff_charstrings_offset(&self) -> Option<u32> {
-        match self {
-            Self::Format1(item) => item.cff_charstrings_offset(),
-            Self::Format2(item) => item.cff_charstrings_offset(),
-        }
-    }
-
-    pub fn cff2_charstrings_offset(&self) -> Option<u32> {
-        match self {
-            Self::Format1(item) => item.cff2_charstrings_offset(),
-            Self::Format2(item) => item.cff2_charstrings_offset(),
-        }
-    }
-}
-
-impl<'a> FontRead<'a> for Ift<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
-        let format: u8 = data.read_at(0usize)?;
-        match format {
-            PatchMapFormat1::FORMAT => Ok(Self::Format1(FontRead::read(data)?)),
-            PatchMapFormat2::FORMAT => Ok(Self::Format2(FontRead::read(data)?)),
-            other => Err(ReadError::InvalidFormat(other.into())),
-        }
-    }
-}
-
-impl<'a> MinByteRange<'a> for Ift<'a> {
-    fn min_byte_range(&self) -> Range<usize> {
-        match self {
-            Self::Format1(item) => item.min_byte_range(),
-            Self::Format2(item) => item.min_byte_range(),
-        }
-    }
-    fn min_table_bytes(&self) -> &'a [u8] {
-        match self {
-            Self::Format1(item) => item.min_table_bytes(),
-            Self::Format2(item) => item.min_table_bytes(),
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> Ift<'a> {
-    fn dyn_inner<'b>(&'b self) -> &'b dyn SomeTable<'a> {
-        match self {
-            Self::Format1(table) => table,
-            Self::Format2(table) => table,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl std::fmt::Debug for Ift<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.dyn_inner().fmt(f)
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Ift<'a> {
-    fn type_name(&self) -> &str {
-        self.dyn_inner().type_name()
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        self.dyn_inner().get_field(idx)
-    }
-}
-
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, bytemuck :: AnyBitPattern)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[repr(transparent)]
@@ -429,814 +303,62 @@ impl font_types::Scalar for PatchMapFieldPresenceFlags {
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> From<PatchMapFieldPresenceFlags> for FieldType<'a> {
-    fn from(src: PatchMapFieldPresenceFlags) -> FieldType<'a> {
-        src.bits().into()
-    }
-}
-
-impl Format<u8> for PatchMapFormat1<'_> {
-    const FORMAT: u8 = 1;
-}
-
-impl<'a> MinByteRange<'a> for PatchMapFormat1<'a> {
-    fn min_byte_range(&self) -> Range<usize> {
-        0..self.patch_format_byte_range().end
-    }
-    fn min_table_bytes(&self) -> &'a [u8] {
-        let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
-    }
-}
-
-impl<'a> FontRead<'a> for PatchMapFormat1<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
-        #[allow(clippy::absurd_extreme_comparisons)]
-        if data.len() < Self::MIN_SIZE {
-            return Err(ReadError::OutOfBounds);
-        }
-        Ok(Self { data })
-    }
-}
-
-/// [Patch Map Format Format 1](https://w3c.github.io/IFT/Overview.html#patch-map-format-1)
-#[derive(Clone)]
-pub struct PatchMapFormat1<'a> {
-    data: FontData<'a>,
-}
-
-#[allow(clippy::needless_lifetimes)]
-impl<'a> PatchMapFormat1<'a> {
-    pub const MIN_SIZE: usize = (u8::RAW_BYTE_LEN
-        + u8::RAW_BYTE_LEN
-        + u8::RAW_BYTE_LEN
-        + u8::RAW_BYTE_LEN
-        + PatchMapFieldPresenceFlags::RAW_BYTE_LEN
-        + CompatibilityId::RAW_BYTE_LEN
-        + u16::RAW_BYTE_LEN
-        + u16::RAW_BYTE_LEN
-        + Uint24::RAW_BYTE_LEN
-        + Offset32::RAW_BYTE_LEN
-        + Offset32::RAW_BYTE_LEN
-        + u16::RAW_BYTE_LEN
-        + u8::RAW_BYTE_LEN);
-    basic_table_impls!(impl_the_methods);
-
-    /// Format identifier: format = 1
-    pub fn format(&self) -> u8 {
-        let range = self.format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
-    }
-
-    pub fn field_flags(&self) -> PatchMapFieldPresenceFlags {
-        let range = self.field_flags_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
-    }
-
-    /// Unique ID that identifies compatible patches.
-    pub fn compatibility_id(&self) -> CompatibilityId {
-        let range = self.compatibility_id_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
-    }
-
-    /// Largest entry index which appears in either the glyph map or feature map.
-    pub fn max_entry_index(&self) -> u16 {
-        let range = self.max_entry_index_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
-    }
-
-    /// Largest entry index which appears in the glyph map.
-    pub fn max_glyph_map_entry_index(&self) -> u16 {
-        let range = self.max_glyph_map_entry_index_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
-    }
-
-    pub fn glyph_count(&self) -> Uint24 {
-        let range = self.glyph_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
-    }
-
-    /// Sub table that maps glyph ids to entry indices.
-    pub fn glyph_map_offset(&self) -> Offset32 {
-        let range = self.glyph_map_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
-    }
-
-    /// Attempt to resolve [`glyph_map_offset`][Self::glyph_map_offset].
-    pub fn glyph_map(&self) -> Result<GlyphMap<'a>, ReadError> {
-        let data = self.data;
-        let args = (self.glyph_count(), self.max_entry_index());
-        self.glyph_map_offset().resolve_with_args(data, &args)
-    }
-
-    /// Sub table that maps feature and glyph ids to entry indices.
-    pub fn feature_map_offset(&self) -> Nullable<Offset32> {
-        let range = self.feature_map_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
-    }
-
-    /// Attempt to resolve [`feature_map_offset`][Self::feature_map_offset].
-    pub fn feature_map(&self) -> Option<Result<FeatureMap<'a>, ReadError>> {
-        let data = self.data;
-        let args = self.max_entry_index();
-        self.feature_map_offset().resolve_with_args(data, &args)
-    }
-
-    pub fn applied_entries_bitmap(&self) -> &'a [u8] {
-        let range = self.applied_entries_bitmap_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
-    }
-
-    pub fn url_template_length(&self) -> u16 {
-        let range = self.url_template_length_byte_range();
-        self.data.read_at(range.start).ok().unwrap_or_default()
-    }
-
-    pub fn url_template(&self) -> &'a [u8] {
-        let range = self.url_template_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
-    }
-
-    /// Patch format number for patches referenced by this mapping.
-    pub fn patch_format(&self) -> u8 {
-        let range = self.patch_format_byte_range();
-        self.data.read_at(range.start).ok().unwrap_or_default()
-    }
-
-    pub fn cff_charstrings_offset(&self) -> Option<u32> {
-        let range = self.cff_charstrings_offset_byte_range();
-        (!range.is_empty())
-            .then(|| self.data.read_at(range.start).ok())
-            .flatten()
-    }
-
-    pub fn cff2_charstrings_offset(&self) -> Option<u32> {
-        let range = self.cff2_charstrings_offset_byte_range();
-        (!range.is_empty())
-            .then(|| self.data.read_at(range.start).ok())
-            .flatten()
-    }
-
-    pub fn format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u8::RAW_BYTE_LEN;
-        start..end
-    }
-
-    pub fn _reserved_0_byte_range(&self) -> Range<usize> {
-        let start = self.format_byte_range().end;
-        let end = start + u8::RAW_BYTE_LEN;
-        start..end
-    }
-
-    pub fn _reserved_1_byte_range(&self) -> Range<usize> {
-        let start = self._reserved_0_byte_range().end;
-        let end = start + u8::RAW_BYTE_LEN;
-        start..end
-    }
-
-    pub fn _reserved_2_byte_range(&self) -> Range<usize> {
-        let start = self._reserved_1_byte_range().end;
-        let end = start + u8::RAW_BYTE_LEN;
-        start..end
-    }
-
-    pub fn field_flags_byte_range(&self) -> Range<usize> {
-        let start = self._reserved_2_byte_range().end;
-        let end = start + PatchMapFieldPresenceFlags::RAW_BYTE_LEN;
-        start..end
-    }
-
-    pub fn compatibility_id_byte_range(&self) -> Range<usize> {
-        let start = self.field_flags_byte_range().end;
-        let end = start + CompatibilityId::RAW_BYTE_LEN;
-        start..end
-    }
-
-    pub fn max_entry_index_byte_range(&self) -> Range<usize> {
-        let start = self.compatibility_id_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
-        start..end
-    }
-
-    pub fn max_glyph_map_entry_index_byte_range(&self) -> Range<usize> {
-        let start = self.max_entry_index_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
-        start..end
-    }
-
-    pub fn glyph_count_byte_range(&self) -> Range<usize> {
-        let start = self.max_glyph_map_entry_index_byte_range().end;
-        let end = start + Uint24::RAW_BYTE_LEN;
-        start..end
-    }
-
-    pub fn glyph_map_offset_byte_range(&self) -> Range<usize> {
-        let start = self.glyph_count_byte_range().end;
-        let end = start + Offset32::RAW_BYTE_LEN;
-        start..end
-    }
-
-    pub fn feature_map_offset_byte_range(&self) -> Range<usize> {
-        let start = self.glyph_map_offset_byte_range().end;
-        let end = start + Offset32::RAW_BYTE_LEN;
-        start..end
-    }
-
-    pub fn applied_entries_bitmap_byte_range(&self) -> Range<usize> {
-        let max_entry_index = self.max_entry_index();
-        let start = self.feature_map_offset_byte_range().end;
-        let end = start
-            + (transforms::max_value_bitmap_len(max_entry_index)).saturating_mul(u8::RAW_BYTE_LEN);
-        start..end
-    }
-
-    pub fn url_template_length_byte_range(&self) -> Range<usize> {
-        let start = self.applied_entries_bitmap_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
-        start..end
-    }
-
-    pub fn url_template_byte_range(&self) -> Range<usize> {
-        let url_template_length = self.url_template_length();
-        let start = self.url_template_length_byte_range().end;
-        let end =
-            start + (transforms::to_usize(url_template_length)).saturating_mul(u8::RAW_BYTE_LEN);
-        start..end
-    }
-
-    pub fn patch_format_byte_range(&self) -> Range<usize> {
-        let start = self.url_template_byte_range().end;
-        let end = start + u8::RAW_BYTE_LEN;
-        start..end
-    }
-
-    pub fn cff_charstrings_offset_byte_range(&self) -> Range<usize> {
-        let start = self.patch_format_byte_range().end;
-        let end = if self
-            .field_flags()
-            .contains(PatchMapFieldPresenceFlags::CFF_CHARSTRINGS_OFFSET)
-        {
-            start + u32::RAW_BYTE_LEN
-        } else {
-            start
-        };
-        start..end
-    }
-
-    pub fn cff2_charstrings_offset_byte_range(&self) -> Range<usize> {
-        let start = self.cff_charstrings_offset_byte_range().end;
-        let end = if self
-            .field_flags()
-            .contains(PatchMapFieldPresenceFlags::CFF2_CHARSTRINGS_OFFSET)
-        {
-            start + u32::RAW_BYTE_LEN
-        } else {
-            start
-        };
-        start..end
-    }
-}
-
-const _: () = assert!(FontData::default_data_long_enough(
-    PatchMapFormat1::MIN_SIZE
-));
-
-impl Default for PatchMapFormat1<'_> {
-    fn default() -> Self {
-        Self {
-            data: FontData::default_format_1_u8_table_data(),
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for PatchMapFormat1<'a> {
-    fn type_name(&self) -> &str {
-        "PatchMapFormat1"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format", self.format())),
-            1usize => Some(Field::new("field_flags", self.field_flags())),
-            2usize => Some(Field::new(
-                "compatibility_id",
-                traversal::FieldType::Unknown,
-            )),
-            3usize => Some(Field::new("max_entry_index", self.max_entry_index())),
-            4usize => Some(Field::new(
-                "max_glyph_map_entry_index",
-                self.max_glyph_map_entry_index(),
-            )),
-            5usize => Some(Field::new("glyph_count", self.glyph_count())),
-            6usize => Some(Field::new(
-                "glyph_map_offset",
-                FieldType::offset(self.glyph_map_offset(), self.glyph_map()),
-            )),
-            7usize => Some(Field::new(
-                "feature_map_offset",
-                FieldType::offset(self.feature_map_offset(), self.feature_map()),
-            )),
-            8usize => Some(Field::new(
-                "applied_entries_bitmap",
-                self.applied_entries_bitmap(),
-            )),
-            9usize => Some(Field::new(
-                "url_template_length",
-                self.url_template_length(),
-            )),
-            10usize => Some(Field::new("url_template", self.url_template())),
-            11usize => Some(Field::new("patch_format", self.patch_format())),
-            12usize
-                if self
-                    .field_flags()
-                    .contains(PatchMapFieldPresenceFlags::CFF_CHARSTRINGS_OFFSET) =>
-            {
-                Some(Field::new(
-                    "cff_charstrings_offset",
-                    self.cff_charstrings_offset().unwrap(),
-                ))
-            }
-            13usize
-                if self
-                    .field_flags()
-                    .contains(PatchMapFieldPresenceFlags::CFF2_CHARSTRINGS_OFFSET) =>
-            {
-                Some(Field::new(
-                    "cff2_charstrings_offset",
-                    self.cff2_charstrings_offset().unwrap(),
-                ))
-            }
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for PatchMapFormat1<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
-    }
-}
-
-impl<'a> MinByteRange<'a> for GlyphMap<'a> {
-    fn min_byte_range(&self) -> Range<usize> {
-        0..self.entry_index_byte_range().end
-    }
-    fn min_table_bytes(&self) -> &'a [u8] {
-        let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
-    }
-}
-
-impl ReadArgs for GlyphMap<'_> {
-    type Args = (Uint24, u16);
-}
-
-impl<'a> FontReadWithArgs<'a> for GlyphMap<'a> {
-    fn read_with_args(data: FontData<'a>, args: &(Uint24, u16)) -> Result<Self, ReadError> {
-        let (glyph_count, max_entry_index) = *args;
-
-        #[allow(clippy::absurd_extreme_comparisons)]
-        if data.len() < Self::MIN_SIZE {
-            return Err(ReadError::OutOfBounds);
-        }
-        Ok(Self {
-            data,
-            glyph_count,
-            max_entry_index,
-        })
-    }
-}
-
-impl<'a> GlyphMap<'a> {
-    /// A constructor that requires additional arguments.
-    ///
-    /// This type requires some external state in order to be
-    /// parsed.
-    pub fn read(
-        data: FontData<'a>,
-        glyph_count: Uint24,
-        max_entry_index: u16,
-    ) -> Result<Self, ReadError> {
-        let args = (glyph_count, max_entry_index);
-        Self::read_with_args(data, &args)
-    }
-}
-
-#[derive(Clone)]
-pub struct GlyphMap<'a> {
-    data: FontData<'a>,
-    glyph_count: Uint24,
-    max_entry_index: u16,
-}
-
-#[allow(clippy::needless_lifetimes)]
-impl<'a> GlyphMap<'a> {
-    pub const MIN_SIZE: usize = u16::RAW_BYTE_LEN;
-    basic_table_impls!(impl_the_methods);
-
-    pub fn first_mapped_glyph(&self) -> u16 {
-        let range = self.first_mapped_glyph_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
-    }
-
-    pub fn entry_index(&self) -> ComputedArray<'a, U8Or16> {
-        let range = self.entry_index_byte_range();
-        self.data
-            .read_with_args(range, &self.max_entry_index())
-            .unwrap_or_default()
-    }
-
-    pub(crate) fn glyph_count(&self) -> Uint24 {
-        self.glyph_count
-    }
-
-    pub(crate) fn max_entry_index(&self) -> u16 {
-        self.max_entry_index
-    }
-
-    pub fn first_mapped_glyph_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
-        start..end
-    }
-
-    pub fn entry_index_byte_range(&self) -> Range<usize> {
-        let glyph_count = self.glyph_count();
-        let first_mapped_glyph = self.first_mapped_glyph();
-        let start = self.first_mapped_glyph_byte_range().end;
-        let end = start
-            + (transforms::subtract(glyph_count, first_mapped_glyph)).saturating_mul(
-                <U8Or16 as ComputeSize>::compute_size(&self.max_entry_index()).unwrap_or(0),
-            );
-        start..end
-    }
-}
-
-const _: () = assert!(FontData::default_data_long_enough(GlyphMap::MIN_SIZE));
-
-impl Default for GlyphMap<'_> {
-    fn default() -> Self {
-        Self {
-            data: FontData::default_table_data(),
-            glyph_count: Default::default(),
-            max_entry_index: Default::default(),
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for GlyphMap<'a> {
-    fn type_name(&self) -> &str {
-        "GlyphMap"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("first_mapped_glyph", self.first_mapped_glyph())),
-            1usize => Some(Field::new("entry_index", traversal::FieldType::Unknown)),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for GlyphMap<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
-    }
-}
-
-impl<'a> MinByteRange<'a> for FeatureMap<'a> {
-    fn min_byte_range(&self) -> Range<usize> {
-        0..self.entry_map_data_byte_range().end
-    }
-    fn min_table_bytes(&self) -> &'a [u8] {
-        let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
-    }
-}
-
-impl ReadArgs for FeatureMap<'_> {
-    type Args = u16;
-}
-
-impl<'a> FontReadWithArgs<'a> for FeatureMap<'a> {
-    fn read_with_args(data: FontData<'a>, args: &u16) -> Result<Self, ReadError> {
-        let max_entry_index = *args;
-
-        #[allow(clippy::absurd_extreme_comparisons)]
-        if data.len() < Self::MIN_SIZE {
-            return Err(ReadError::OutOfBounds);
-        }
-        Ok(Self {
-            data,
-            max_entry_index,
-        })
-    }
-}
-
-impl<'a> FeatureMap<'a> {
-    /// A constructor that requires additional arguments.
-    ///
-    /// This type requires some external state in order to be
-    /// parsed.
-    pub fn read(data: FontData<'a>, max_entry_index: u16) -> Result<Self, ReadError> {
-        let args = max_entry_index;
-        Self::read_with_args(data, &args)
-    }
-}
-
-#[derive(Clone)]
-pub struct FeatureMap<'a> {
-    data: FontData<'a>,
-    max_entry_index: u16,
-}
-
-#[allow(clippy::needless_lifetimes)]
-impl<'a> FeatureMap<'a> {
-    pub const MIN_SIZE: usize = u16::RAW_BYTE_LEN;
-    basic_table_impls!(impl_the_methods);
-
-    pub fn feature_count(&self) -> u16 {
-        let range = self.feature_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
-    }
-
-    pub fn feature_records(&self) -> ComputedArray<'a, FeatureRecord> {
-        let range = self.feature_records_byte_range();
-        self.data
-            .read_with_args(range, &self.max_entry_index())
-            .unwrap_or_default()
-    }
-
-    pub fn entry_map_data(&self) -> &'a [u8] {
-        let range = self.entry_map_data_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
-    }
-
-    pub(crate) fn max_entry_index(&self) -> u16 {
-        self.max_entry_index
-    }
-
-    pub fn feature_count_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
-        start..end
-    }
-
-    pub fn feature_records_byte_range(&self) -> Range<usize> {
-        let feature_count = self.feature_count();
-        let start = self.feature_count_byte_range().end;
-        let end = start
-            + (transforms::to_usize(feature_count)).saturating_mul(
-                <FeatureRecord as ComputeSize>::compute_size(&self.max_entry_index()).unwrap_or(0),
-            );
-        start..end
-    }
-
-    pub fn entry_map_data_byte_range(&self) -> Range<usize> {
-        let start = self.feature_records_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN;
-        start..end
-    }
-}
-
-const _: () = assert!(FontData::default_data_long_enough(FeatureMap::MIN_SIZE));
-
-impl Default for FeatureMap<'_> {
-    fn default() -> Self {
-        Self {
-            data: FontData::default_table_data(),
-            max_entry_index: Default::default(),
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for FeatureMap<'a> {
-    fn type_name(&self) -> &str {
-        "FeatureMap"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("feature_count", self.feature_count())),
-            1usize => Some(Field::new("feature_records", traversal::FieldType::Unknown)),
-            2usize => Some(Field::new("entry_map_data", self.entry_map_data())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for FeatureMap<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct FeatureRecord {
-    pub feature_tag: BigEndian<Tag>,
-    pub first_new_entry_index: U8Or16,
-    pub entry_map_count: U8Or16,
-}
-
-impl FeatureRecord {
-    pub fn feature_tag(&self) -> Tag {
-        self.feature_tag.get()
-    }
-
-    pub fn first_new_entry_index(&self) -> &U8Or16 {
-        &self.first_new_entry_index
-    }
-
-    pub fn entry_map_count(&self) -> &U8Or16 {
-        &self.entry_map_count
-    }
-}
-
-impl ReadArgs for FeatureRecord {
-    type Args = u16;
-}
-
-impl ComputeSize for FeatureRecord {
-    #[allow(clippy::needless_question_mark)]
-    fn compute_size(args: &u16) -> Result<usize, ReadError> {
-        let max_entry_index = *args;
-        let mut result = 0usize;
-        result = result
-            .checked_add(Tag::RAW_BYTE_LEN)
-            .ok_or(ReadError::OutOfBounds)?;
-        result = result
-            .checked_add(<U8Or16 as ComputeSize>::compute_size(&max_entry_index).unwrap_or(0))
-            .ok_or(ReadError::OutOfBounds)?;
-        result = result
-            .checked_add(<U8Or16 as ComputeSize>::compute_size(&max_entry_index).unwrap_or(0))
-            .ok_or(ReadError::OutOfBounds)?;
-        Ok(result)
-    }
-}
-
-impl<'a> FontReadWithArgs<'a> for FeatureRecord {
-    fn read_with_args(data: FontData<'a>, args: &u16) -> Result<Self, ReadError> {
-        let mut cursor = data.cursor();
-        let max_entry_index = *args;
-        Ok(Self {
-            feature_tag: cursor.read_be()?,
-            first_new_entry_index: cursor.read_with_args(&max_entry_index)?,
-            entry_map_count: cursor.read_with_args(&max_entry_index)?,
-        })
-    }
-}
-
-#[allow(clippy::needless_lifetimes)]
-impl<'a> FeatureRecord {
-    /// A constructor that requires additional arguments.
-    ///
-    /// This type requires some external state in order to be
-    /// parsed.
-    pub fn read(data: FontData<'a>, max_entry_index: u16) -> Result<Self, ReadError> {
-        let args = max_entry_index;
-        Self::read_with_args(data, &args)
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for FeatureRecord {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "FeatureRecord",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("feature_tag", self.feature_tag())),
-                1usize => Some(Field::new(
-                    "first_new_entry_index",
-                    traversal::FieldType::Unknown,
-                )),
-                2usize => Some(Field::new("entry_map_count", traversal::FieldType::Unknown)),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct EntryMapRecord {
-    pub first_entry_index: U8Or16,
-    pub last_entry_index: U8Or16,
-}
-
-impl EntryMapRecord {
-    pub fn first_entry_index(&self) -> &U8Or16 {
-        &self.first_entry_index
-    }
-
-    pub fn last_entry_index(&self) -> &U8Or16 {
-        &self.last_entry_index
-    }
-}
-
-impl ReadArgs for EntryMapRecord {
-    type Args = u16;
-}
-
-impl ComputeSize for EntryMapRecord {
-    #[allow(clippy::needless_question_mark)]
-    fn compute_size(args: &u16) -> Result<usize, ReadError> {
-        let max_entry_index = *args;
-        let mut result = 0usize;
-        result = result
-            .checked_add(<U8Or16 as ComputeSize>::compute_size(&max_entry_index).unwrap_or(0))
-            .ok_or(ReadError::OutOfBounds)?;
-        result = result
-            .checked_add(<U8Or16 as ComputeSize>::compute_size(&max_entry_index).unwrap_or(0))
-            .ok_or(ReadError::OutOfBounds)?;
-        Ok(result)
-    }
-}
-
-impl<'a> FontReadWithArgs<'a> for EntryMapRecord {
-    fn read_with_args(data: FontData<'a>, args: &u16) -> Result<Self, ReadError> {
-        let mut cursor = data.cursor();
-        let max_entry_index = *args;
-        Ok(Self {
-            first_entry_index: cursor.read_with_args(&max_entry_index)?,
-            last_entry_index: cursor.read_with_args(&max_entry_index)?,
-        })
-    }
-}
-
-#[allow(clippy::needless_lifetimes)]
-impl<'a> EntryMapRecord {
-    /// A constructor that requires additional arguments.
-    ///
-    /// This type requires some external state in order to be
-    /// parsed.
-    pub fn read(data: FontData<'a>, max_entry_index: u16) -> Result<Self, ReadError> {
-        let args = max_entry_index;
-        Self::read_with_args(data, &args)
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for EntryMapRecord {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "EntryMapRecord",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new(
-                    "first_entry_index",
-                    traversal::FieldType::Unknown,
-                )),
-                1usize => Some(Field::new(
-                    "last_entry_index",
-                    traversal::FieldType::Unknown,
-                )),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
-impl Format<u8> for PatchMapFormat2<'_> {
-    const FORMAT: u8 = 2;
-}
-
-impl<'a> MinByteRange<'a> for PatchMapFormat2<'a> {
+impl<'a> MinByteRange<'a> for IftPatchMap<'a> {
     fn min_byte_range(&self) -> Range<usize> {
         0..self.url_template_byte_range().end
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
-impl<'a> FontRead<'a> for PatchMapFormat2<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+impl ReadArgs for IftPatchMap<'_> {
+    type Args = ();
+}
+
+impl<'a> FontRead<'a> for IftPatchMap<'a> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
-/// [Patch Map Format Format 2](https://w3c.github.io/IFT/Overview.html#patch-map-format-2)
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct IftPatchMapFixedHeader {
+    pub format: u8,
+    pub _reserved_0: u8,
+    pub _reserved_1: u8,
+    pub _reserved_2: u8,
+    pub field_flags: BigEndian<PatchMapFieldPresenceFlags>,
+    pub compatibility_id: BigEndian<CompatibilityId>,
+    pub default_patch_format: u8,
+    pub entry_count: BigEndian<Uint24>,
+    pub entries_offset: BigEndian<Offset32>,
+    pub entry_id_string_data_offset: BigEndian<Nullable<Offset32>>,
+    pub url_template_length: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<IftPatchMapFixedHeader>() <= IftPatchMap::MIN_SIZE);
+
+/// [Patch Map Table](https://w3c.github.io/IFT/Overview.html#patch-map-table)
 #[derive(Clone)]
-pub struct PatchMapFormat2<'a> {
-    data: FontData<'a>,
+pub struct IftPatchMap<'a> {
+    data: TableDataRef<'a, IftPatchMapFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
-impl<'a> PatchMapFormat2<'a> {
+impl<'a> IftPatchMap<'a> {
     pub const MIN_SIZE: usize = (u8::RAW_BYTE_LEN
         + u8::RAW_BYTE_LEN
         + u8::RAW_BYTE_LEN
@@ -1252,149 +374,145 @@ impl<'a> PatchMapFormat2<'a> {
 
     /// Format identifier: format = 2
     pub fn format(&self) -> u8 {
-        let range = self.format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().format
     }
 
     pub fn field_flags(&self) -> PatchMapFieldPresenceFlags {
-        let range = self.field_flags_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().field_flags.get()
     }
 
     /// Unique ID that identifies compatible patches.
     pub fn compatibility_id(&self) -> CompatibilityId {
-        let range = self.compatibility_id_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().compatibility_id.get()
     }
 
     /// Patch format number for patches referenced by this mapping.
     pub fn default_patch_format(&self) -> u8 {
-        let range = self.default_patch_format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().default_patch_format
     }
 
     pub fn entry_count(&self) -> Uint24 {
-        let range = self.entry_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().entry_count.get()
     }
 
     pub fn entries_offset(&self) -> Offset32 {
-        let range = self.entries_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().entries_offset.get()
     }
 
     /// Attempt to resolve [`entries_offset`][Self::entries_offset].
     pub fn entries(&self) -> Result<MappingEntries<'a>, ReadError> {
-        let data = self.data;
+        let data = self.offset_data();
         self.entries_offset().resolve(data)
     }
 
     pub fn entry_id_string_data_offset(&self) -> Nullable<Offset32> {
-        let range = self.entry_id_string_data_offset_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().entry_id_string_data_offset.get()
     }
 
     /// Attempt to resolve [`entry_id_string_data_offset`][Self::entry_id_string_data_offset].
     pub fn entry_id_string_data(&self) -> Option<Result<IdStringData<'a>, ReadError>> {
-        let data = self.data;
+        let data = self.offset_data();
         self.entry_id_string_data_offset().resolve(data)
     }
 
     pub fn url_template_length(&self) -> u16 {
-        let range = self.url_template_length_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().url_template_length.get()
     }
 
     pub fn url_template(&self) -> &'a [u8] {
         let range = self.url_template_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn cff_charstrings_offset(&self) -> Option<u32> {
         let range = self.cff_charstrings_offset_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_at(range.start).ok())
+            .then(|| self.offset_data().read_at(range.start).ok())
             .flatten()
     }
 
     pub fn cff2_charstrings_offset(&self) -> Option<u32> {
         let range = self.cff2_charstrings_offset_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_at(range.start).ok())
+            .then(|| self.offset_data().read_at(range.start).ok())
             .flatten()
     }
 
     pub fn format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u8::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn _reserved_0_byte_range(&self) -> Range<usize> {
         let start = self.format_byte_range().end;
-        let end = start + u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn _reserved_1_byte_range(&self) -> Range<usize> {
         let start = self._reserved_0_byte_range().end;
-        let end = start + u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn _reserved_2_byte_range(&self) -> Range<usize> {
         let start = self._reserved_1_byte_range().end;
-        let end = start + u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn field_flags_byte_range(&self) -> Range<usize> {
         let start = self._reserved_2_byte_range().end;
-        let end = start + PatchMapFieldPresenceFlags::RAW_BYTE_LEN;
+        let end = start.saturating_add(PatchMapFieldPresenceFlags::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn compatibility_id_byte_range(&self) -> Range<usize> {
         let start = self.field_flags_byte_range().end;
-        let end = start + CompatibilityId::RAW_BYTE_LEN;
+        let end = start.saturating_add(CompatibilityId::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn default_patch_format_byte_range(&self) -> Range<usize> {
         let start = self.compatibility_id_byte_range().end;
-        let end = start + u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn entry_count_byte_range(&self) -> Range<usize> {
         let start = self.default_patch_format_byte_range().end;
-        let end = start + Uint24::RAW_BYTE_LEN;
+        let end = start.saturating_add(Uint24::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn entries_offset_byte_range(&self) -> Range<usize> {
         let start = self.entry_count_byte_range().end;
-        let end = start + Offset32::RAW_BYTE_LEN;
+        let end = start.saturating_add(Offset32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn entry_id_string_data_offset_byte_range(&self) -> Range<usize> {
         let start = self.entries_offset_byte_range().end;
-        let end = start + Offset32::RAW_BYTE_LEN;
+        let end = start.saturating_add(Offset32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn url_template_length_byte_range(&self) -> Range<usize> {
         let start = self.entry_id_string_data_offset_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn url_template_byte_range(&self) -> Range<usize> {
         let url_template_length = self.url_template_length();
         let start = self.url_template_length_byte_range().end;
-        let end =
-            start + (transforms::to_usize(url_template_length)).saturating_mul(u8::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(url_template_length)).saturating_mul(u8::RAW_BYTE_LEN),
+        );
         start..end
     }
 
@@ -1404,7 +522,7 @@ impl<'a> PatchMapFormat2<'a> {
             .field_flags()
             .contains(PatchMapFieldPresenceFlags::CFF_CHARSTRINGS_OFFSET)
         {
-            start + u32::RAW_BYTE_LEN
+            start.saturating_add(u32::RAW_BYTE_LEN)
         } else {
             start
         };
@@ -1417,7 +535,7 @@ impl<'a> PatchMapFormat2<'a> {
             .field_flags()
             .contains(PatchMapFieldPresenceFlags::CFF2_CHARSTRINGS_OFFSET)
         {
-            start + u32::RAW_BYTE_LEN
+            start.saturating_add(u32::RAW_BYTE_LEN)
         } else {
             start
         };
@@ -1425,70 +543,14 @@ impl<'a> PatchMapFormat2<'a> {
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for PatchMapFormat2<'a> {
-    fn type_name(&self) -> &str {
-        "PatchMapFormat2"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format", self.format())),
-            1usize => Some(Field::new("field_flags", self.field_flags())),
-            2usize => Some(Field::new(
-                "compatibility_id",
-                traversal::FieldType::Unknown,
-            )),
-            3usize => Some(Field::new(
-                "default_patch_format",
-                self.default_patch_format(),
-            )),
-            4usize => Some(Field::new("entry_count", self.entry_count())),
-            5usize => Some(Field::new(
-                "entries_offset",
-                FieldType::offset(self.entries_offset(), self.entries()),
-            )),
-            6usize => Some(Field::new(
-                "entry_id_string_data_offset",
-                FieldType::offset(
-                    self.entry_id_string_data_offset(),
-                    self.entry_id_string_data(),
-                ),
-            )),
-            7usize => Some(Field::new(
-                "url_template_length",
-                self.url_template_length(),
-            )),
-            8usize => Some(Field::new("url_template", self.url_template())),
-            9usize
-                if self
-                    .field_flags()
-                    .contains(PatchMapFieldPresenceFlags::CFF_CHARSTRINGS_OFFSET) =>
-            {
-                Some(Field::new(
-                    "cff_charstrings_offset",
-                    self.cff_charstrings_offset().unwrap(),
-                ))
-            }
-            10usize
-                if self
-                    .field_flags()
-                    .contains(PatchMapFieldPresenceFlags::CFF2_CHARSTRINGS_OFFSET) =>
-            {
-                Some(Field::new(
-                    "cff2_charstrings_offset",
-                    self.cff2_charstrings_offset().unwrap(),
-                ))
-            }
-            _ => None,
-        }
-    }
-}
+const _: () = assert!(FontData::default_data_long_enough(IftPatchMap::MIN_SIZE));
 
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for PatchMapFormat2<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
+impl Default for IftPatchMap<'_> {
+    fn default() -> Self {
+        Self {
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
+        }
     }
 }
 
@@ -1498,23 +560,39 @@ impl<'a> MinByteRange<'a> for MappingEntries<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for MappingEntries<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for MappingEntries<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct MappingEntriesFixedHeader {}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<MappingEntriesFixedHeader>() <= MappingEntries::MIN_SIZE);
+
 #[derive(Clone)]
 pub struct MappingEntries<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, MappingEntriesFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -1524,13 +602,17 @@ impl<'a> MappingEntries<'a> {
 
     pub fn entry_data(&self) -> &'a [u8] {
         let range = self.entry_data_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn entry_data_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end =
-            start + self.data.len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -1541,29 +623,9 @@ const _: () = assert!(FontData::default_data_long_enough(MappingEntries::MIN_SIZ
 impl Default for MappingEntries<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for MappingEntries<'a> {
-    fn type_name(&self) -> &str {
-        "MappingEntries"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("entry_data", self.entry_data())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for MappingEntries<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -1573,23 +635,41 @@ impl<'a> MinByteRange<'a> for EntryData<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for EntryData<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for EntryData<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct EntryDataFixedHeader {
+    pub format_flags: BigEndian<EntryFormatFlags>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<EntryDataFixedHeader>() <= EntryData::MIN_SIZE);
+
 #[derive(Clone)]
 pub struct EntryData<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, EntryDataFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -1598,55 +678,54 @@ impl<'a> EntryData<'a> {
     basic_table_impls!(impl_the_methods);
 
     pub fn format_flags(&self) -> EntryFormatFlags {
-        let range = self.format_flags_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().format_flags.get()
     }
 
     pub fn feature_count(&self) -> Option<u8> {
         let range = self.feature_count_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_at(range.start).ok())
+            .then(|| self.offset_data().read_at(range.start).ok())
             .flatten()
     }
 
     pub fn feature_tags(&self) -> Option<&'a [BigEndian<Tag>]> {
         let range = self.feature_tags_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_array(range).ok())
+            .then(|| self.offset_data().read_array(range).ok())
             .flatten()
     }
 
     pub fn design_space_count(&self) -> Option<u16> {
         let range = self.design_space_count_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_at(range.start).ok())
+            .then(|| self.offset_data().read_at(range.start).ok())
             .flatten()
     }
 
     pub fn design_space_segments(&self) -> Option<&'a [DesignSpaceSegment]> {
         let range = self.design_space_segments_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_array(range).ok())
+            .then(|| self.offset_data().read_array(range).ok())
             .flatten()
     }
 
     pub fn match_mode_and_count(&self) -> Option<MatchModeAndCount> {
         let range = self.match_mode_and_count_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_at(range.start).ok())
+            .then(|| self.offset_data().read_at(range.start).ok())
             .flatten()
     }
 
     pub fn child_indices(&self) -> Option<&'a [BigEndian<Uint24>]> {
         let range = self.child_indices_byte_range();
         (!range.is_empty())
-            .then(|| self.data.read_array(range).ok())
+            .then(|| self.offset_data().read_array(range).ok())
             .flatten()
     }
 
     pub fn format_flags_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + EntryFormatFlags::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(EntryFormatFlags::RAW_BYTE_LEN);
         start..end
     }
 
@@ -1656,7 +735,7 @@ impl<'a> EntryData<'a> {
             .format_flags()
             .contains(EntryFormatFlags::FEATURES_AND_DESIGN_SPACE)
         {
-            start + u8::RAW_BYTE_LEN
+            start.saturating_add(u8::RAW_BYTE_LEN)
         } else {
             start
         };
@@ -1670,7 +749,9 @@ impl<'a> EntryData<'a> {
             .format_flags()
             .contains(EntryFormatFlags::FEATURES_AND_DESIGN_SPACE)
         {
-            start + (transforms::to_usize(feature_count)).saturating_mul(Tag::RAW_BYTE_LEN)
+            start.saturating_add(
+                (transforms::to_usize(feature_count)).saturating_mul(Tag::RAW_BYTE_LEN),
+            )
         } else {
             start
         };
@@ -1683,7 +764,7 @@ impl<'a> EntryData<'a> {
             .format_flags()
             .contains(EntryFormatFlags::FEATURES_AND_DESIGN_SPACE)
         {
-            start + u16::RAW_BYTE_LEN
+            start.saturating_add(u16::RAW_BYTE_LEN)
         } else {
             start
         };
@@ -1697,9 +778,10 @@ impl<'a> EntryData<'a> {
             .format_flags()
             .contains(EntryFormatFlags::FEATURES_AND_DESIGN_SPACE)
         {
-            start
-                + (transforms::to_usize(design_space_count))
-                    .saturating_mul(DesignSpaceSegment::RAW_BYTE_LEN)
+            start.saturating_add(
+                (transforms::to_usize(design_space_count))
+                    .saturating_mul(DesignSpaceSegment::RAW_BYTE_LEN),
+            )
         } else {
             start
         };
@@ -1712,7 +794,7 @@ impl<'a> EntryData<'a> {
             .format_flags()
             .contains(EntryFormatFlags::CHILD_INDICES)
         {
-            start + MatchModeAndCount::RAW_BYTE_LEN
+            start.saturating_add(MatchModeAndCount::RAW_BYTE_LEN)
         } else {
             start
         };
@@ -1726,8 +808,9 @@ impl<'a> EntryData<'a> {
             .format_flags()
             .contains(EntryFormatFlags::CHILD_INDICES)
         {
-            start
-                + (transforms::to_usize(match_mode_and_count)).saturating_mul(Uint24::RAW_BYTE_LEN)
+            start.saturating_add(
+                (transforms::to_usize(match_mode_and_count)).saturating_mul(Uint24::RAW_BYTE_LEN),
+            )
         } else {
             start
         };
@@ -1736,8 +819,9 @@ impl<'a> EntryData<'a> {
 
     pub fn trailing_data_byte_range(&self) -> Range<usize> {
         let start = self.child_indices_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -1747,84 +831,9 @@ const _: () = assert!(FontData::default_data_long_enough(EntryData::MIN_SIZE));
 impl Default for EntryData<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for EntryData<'a> {
-    fn type_name(&self) -> &str {
-        "EntryData"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format_flags", self.format_flags())),
-            1usize
-                if self
-                    .format_flags()
-                    .contains(EntryFormatFlags::FEATURES_AND_DESIGN_SPACE) =>
-            {
-                Some(Field::new("feature_count", self.feature_count().unwrap()))
-            }
-            2usize
-                if self
-                    .format_flags()
-                    .contains(EntryFormatFlags::FEATURES_AND_DESIGN_SPACE) =>
-            {
-                Some(Field::new("feature_tags", self.feature_tags().unwrap()))
-            }
-            3usize
-                if self
-                    .format_flags()
-                    .contains(EntryFormatFlags::FEATURES_AND_DESIGN_SPACE) =>
-            {
-                Some(Field::new(
-                    "design_space_count",
-                    self.design_space_count().unwrap(),
-                ))
-            }
-            4usize
-                if self
-                    .format_flags()
-                    .contains(EntryFormatFlags::FEATURES_AND_DESIGN_SPACE) =>
-            {
-                Some(Field::new(
-                    "design_space_segments",
-                    traversal::FieldType::array_of_records(
-                        stringify!(DesignSpaceSegment),
-                        self.design_space_segments().unwrap(),
-                        self.offset_data(),
-                    ),
-                ))
-            }
-            5usize
-                if self
-                    .format_flags()
-                    .contains(EntryFormatFlags::CHILD_INDICES) =>
-            {
-                Some(Field::new(
-                    "match_mode_and_count",
-                    traversal::FieldType::Unknown,
-                ))
-            }
-            6usize
-                if self
-                    .format_flags()
-                    .contains(EntryFormatFlags::CHILD_INDICES) =>
-            {
-                Some(Field::new("child_indices", self.child_indices().unwrap()))
-            }
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for EntryData<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -2151,13 +1160,6 @@ impl font_types::Scalar for EntryFormatFlags {
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> From<EntryFormatFlags> for FieldType<'a> {
-    fn from(src: EntryFormatFlags) -> FieldType<'a> {
-        src.bits().into()
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Copy, bytemuck :: AnyBitPattern)]
 #[repr(C)]
 #[repr(packed)]
@@ -2185,45 +1187,45 @@ impl FixedSize for DesignSpaceSegment {
     const RAW_BYTE_LEN: usize = Tag::RAW_BYTE_LEN + Fixed::RAW_BYTE_LEN + Fixed::RAW_BYTE_LEN;
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for DesignSpaceSegment {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "DesignSpaceSegment",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("axis_tag", self.axis_tag())),
-                1usize => Some(Field::new("start", self.start())),
-                2usize => Some(Field::new("end", self.end())),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
 impl<'a> MinByteRange<'a> for IdStringData<'a> {
     fn min_byte_range(&self) -> Range<usize> {
         0..self.id_data_byte_range().end
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for IdStringData<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for IdStringData<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct IdStringDataFixedHeader {}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<IdStringDataFixedHeader>() <= IdStringData::MIN_SIZE);
+
 #[derive(Clone)]
 pub struct IdStringData<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, IdStringDataFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -2233,13 +1235,17 @@ impl<'a> IdStringData<'a> {
 
     pub fn id_data(&self) -> &'a [u8] {
         let range = self.id_data_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn id_data_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end =
-            start + self.data.len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -2250,29 +1256,9 @@ const _: () = assert!(FontData::default_data_long_enough(IdStringData::MIN_SIZE)
 impl Default for IdStringData<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for IdStringData<'a> {
-    fn type_name(&self) -> &str {
-        "IdStringData"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("id_data", self.id_data())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for IdStringData<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -2282,24 +1268,46 @@ impl<'a> MinByteRange<'a> for TableKeyedPatch<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for TableKeyedPatch<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for TableKeyedPatch<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct TableKeyedPatchFixedHeader {
+    pub format: BigEndian<Tag>,
+    pub _reserved: BigEndian<u32>,
+    pub compatibility_id: BigEndian<CompatibilityId>,
+    pub patches_count: BigEndian<u16>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () =
+    assert!(std::mem::size_of::<TableKeyedPatchFixedHeader>() <= TableKeyedPatch::MIN_SIZE);
+
 /// [Table Keyed Patch](https://w3c.github.io/IFT/Overview.html#table-keyed)
 #[derive(Clone)]
 pub struct TableKeyedPatch<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, TableKeyedPatchFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -2309,62 +1317,63 @@ impl<'a> TableKeyedPatch<'a> {
     basic_table_impls!(impl_the_methods);
 
     pub fn format(&self) -> Tag {
-        let range = self.format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().format.get()
     }
 
     /// Unique ID that identifies compatible patches.
     pub fn compatibility_id(&self) -> CompatibilityId {
-        let range = self.compatibility_id_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().compatibility_id.get()
     }
 
     pub fn patches_count(&self) -> u16 {
-        let range = self.patches_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().patches_count.get()
     }
 
     pub fn patch_offsets(&self) -> &'a [BigEndian<Offset32>] {
         let range = self.patch_offsets_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// A dynamically resolving wrapper for [`patch_offsets`][Self::patch_offsets].
     pub fn patches(&self) -> ArrayOfOffsets<'a, TablePatch<'a>, Offset32> {
-        let data = self.data;
+        let data = self.offset_data();
         let offsets = self.patch_offsets();
         ArrayOfOffsets::new(offsets, data, ())
     }
 
     pub fn format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + Tag::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(Tag::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn _reserved_byte_range(&self) -> Range<usize> {
         let start = self.format_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn compatibility_id_byte_range(&self) -> Range<usize> {
         let start = self._reserved_byte_range().end;
-        let end = start + CompatibilityId::RAW_BYTE_LEN;
+        let end = start.saturating_add(CompatibilityId::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn patches_count_byte_range(&self) -> Range<usize> {
         let start = self.compatibility_id_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn patch_offsets_byte_range(&self) -> Range<usize> {
         let patches_count = self.patches_count();
         let start = self.patches_count_byte_range().end;
-        let end = start
-            + (transforms::add(patches_count, 1_usize)).saturating_mul(Offset32::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::add(patches_count, 1_usize)).saturating_mul(Offset32::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -2376,35 +1385,9 @@ const _: () = assert!(FontData::default_data_long_enough(
 impl Default for TableKeyedPatch<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for TableKeyedPatch<'a> {
-    fn type_name(&self) -> &str {
-        "TableKeyedPatch"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format", self.format())),
-            1usize => Some(Field::new(
-                "compatibility_id",
-                traversal::FieldType::Unknown,
-            )),
-            2usize => Some(Field::new("patches_count", self.patches_count())),
-            3usize => Some(Field::new("patch_offsets", FieldType::from(self.patches()))),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for TableKeyedPatch<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -2414,24 +1397,44 @@ impl<'a> MinByteRange<'a> for TablePatch<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for TablePatch<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for TablePatch<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct TablePatchFixedHeader {
+    pub tag: BigEndian<Tag>,
+    pub flags: BigEndian<TablePatchFlags>,
+    pub max_uncompressed_length: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<TablePatchFixedHeader>() <= TablePatch::MIN_SIZE);
+
 /// [TablePatch](https://w3c.github.io/IFT/Overview.html#tablepatch)
 #[derive(Clone)]
 pub struct TablePatch<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, TablePatchFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -2441,47 +1444,48 @@ impl<'a> TablePatch<'a> {
     basic_table_impls!(impl_the_methods);
 
     pub fn tag(&self) -> Tag {
-        let range = self.tag_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().tag.get()
     }
 
     pub fn flags(&self) -> TablePatchFlags {
-        let range = self.flags_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().flags.get()
     }
 
     pub fn max_uncompressed_length(&self) -> u32 {
-        let range = self.max_uncompressed_length_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().max_uncompressed_length.get()
     }
 
     pub fn brotli_stream(&self) -> &'a [u8] {
         let range = self.brotli_stream_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn tag_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + Tag::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(Tag::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn flags_byte_range(&self) -> Range<usize> {
         let start = self.tag_byte_range().end;
-        let end = start + TablePatchFlags::RAW_BYTE_LEN;
+        let end = start.saturating_add(TablePatchFlags::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn max_uncompressed_length_byte_range(&self) -> Range<usize> {
         let start = self.flags_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn brotli_stream_byte_range(&self) -> Range<usize> {
         let start = self.max_uncompressed_length_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -2491,35 +1495,9 @@ const _: () = assert!(FontData::default_data_long_enough(TablePatch::MIN_SIZE));
 impl Default for TablePatch<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for TablePatch<'a> {
-    fn type_name(&self) -> &str {
-        "TablePatch"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("tag", self.tag())),
-            1usize => Some(Field::new("flags", self.flags())),
-            2usize => Some(Field::new(
-                "max_uncompressed_length",
-                self.max_uncompressed_length(),
-            )),
-            3usize => Some(Field::new("brotli_stream", self.brotli_stream())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for TablePatch<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -2821,37 +1799,53 @@ impl font_types::Scalar for TablePatchFlags {
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> From<TablePatchFlags> for FieldType<'a> {
-    fn from(src: TablePatchFlags) -> FieldType<'a> {
-        src.bits().into()
-    }
-}
-
 impl<'a> MinByteRange<'a> for GlyphKeyedPatch<'a> {
     fn min_byte_range(&self) -> Range<usize> {
         0..self.brotli_stream_byte_range().end
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for GlyphKeyedPatch<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for GlyphKeyedPatch<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct GlyphKeyedPatchFixedHeader {
+    pub format: BigEndian<Tag>,
+    pub _reserved: BigEndian<u32>,
+    pub flags: BigEndian<GlyphKeyedFlags>,
+    pub compatibility_id: BigEndian<CompatibilityId>,
+    pub max_uncompressed_length: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () =
+    assert!(std::mem::size_of::<GlyphKeyedPatchFixedHeader>() <= GlyphKeyedPatch::MIN_SIZE);
+
 /// [Glyph Keyed Patch](https://w3c.github.io/IFT/Overview.html#glyph-keyed)
 #[derive(Clone)]
 pub struct GlyphKeyedPatch<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, GlyphKeyedPatchFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -2864,64 +1858,64 @@ impl<'a> GlyphKeyedPatch<'a> {
     basic_table_impls!(impl_the_methods);
 
     pub fn format(&self) -> Tag {
-        let range = self.format_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().format.get()
     }
 
     pub fn flags(&self) -> GlyphKeyedFlags {
-        let range = self.flags_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().flags.get()
     }
 
     pub fn compatibility_id(&self) -> CompatibilityId {
-        let range = self.compatibility_id_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().compatibility_id.get()
     }
 
     pub fn max_uncompressed_length(&self) -> u32 {
-        let range = self.max_uncompressed_length_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().max_uncompressed_length.get()
     }
 
     pub fn brotli_stream(&self) -> &'a [u8] {
         let range = self.brotli_stream_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn format_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + Tag::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(Tag::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn _reserved_byte_range(&self) -> Range<usize> {
         let start = self.format_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn flags_byte_range(&self) -> Range<usize> {
         let start = self._reserved_byte_range().end;
-        let end = start + GlyphKeyedFlags::RAW_BYTE_LEN;
+        let end = start.saturating_add(GlyphKeyedFlags::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn compatibility_id_byte_range(&self) -> Range<usize> {
         let start = self.flags_byte_range().end;
-        let end = start + CompatibilityId::RAW_BYTE_LEN;
+        let end = start.saturating_add(CompatibilityId::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn max_uncompressed_length_byte_range(&self) -> Range<usize> {
         let start = self.compatibility_id_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn brotli_stream_byte_range(&self) -> Range<usize> {
         let start = self.max_uncompressed_length_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -2933,39 +1927,9 @@ const _: () = assert!(FontData::default_data_long_enough(
 impl Default for GlyphKeyedPatch<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for GlyphKeyedPatch<'a> {
-    fn type_name(&self) -> &str {
-        "GlyphKeyedPatch"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("format", self.format())),
-            1usize => Some(Field::new("flags", self.flags())),
-            2usize => Some(Field::new(
-                "compatibility_id",
-                traversal::FieldType::Unknown,
-            )),
-            3usize => Some(Field::new(
-                "max_uncompressed_length",
-                self.max_uncompressed_length(),
-            )),
-            4usize => Some(Field::new("brotli_stream", self.brotli_stream())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for GlyphKeyedPatch<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -3267,20 +2231,13 @@ impl font_types::Scalar for GlyphKeyedFlags {
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> From<GlyphKeyedFlags> for FieldType<'a> {
-    fn from(src: GlyphKeyedFlags) -> FieldType<'a> {
-        src.bits().into()
-    }
-}
-
 impl<'a> MinByteRange<'a> for GlyphPatches<'a> {
     fn min_byte_range(&self) -> Range<usize> {
         0..self.glyph_data_offsets_byte_range().end
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -3288,14 +2245,17 @@ impl ReadArgs for GlyphPatches<'_> {
     type Args = GlyphKeyedFlags;
 }
 
-impl<'a> FontReadWithArgs<'a> for GlyphPatches<'a> {
-    fn read_with_args(data: FontData<'a>, args: &GlyphKeyedFlags) -> Result<Self, ReadError> {
-        let flags = *args;
+impl<'a> FontRead<'a> for GlyphPatches<'a> {
+    fn read_with_args(data: FontData<'a>, args: GlyphKeyedFlags) -> Result<Self, ReadError> {
+        let flags = args;
 
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data, flags })
     }
 }
@@ -3307,14 +2267,26 @@ impl<'a> GlyphPatches<'a> {
     /// parsed.
     pub fn read(data: FontData<'a>, flags: GlyphKeyedFlags) -> Result<Self, ReadError> {
         let args = flags;
-        Self::read_with_args(data, &args)
+        Self::read_with_args(data, args)
     }
 }
+
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct GlyphPatchesFixedHeader {
+    pub glyph_count: BigEndian<u32>,
+    pub table_count: u8,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<GlyphPatchesFixedHeader>() <= GlyphPatches::MIN_SIZE);
 
 /// [GlyphPatches](https://w3c.github.io/IFT/Overview.html#glyphpatches)
 #[derive(Clone)]
 pub struct GlyphPatches<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, GlyphPatchesFixedHeader>,
     flags: GlyphKeyedFlags,
 }
 
@@ -3324,35 +2296,37 @@ impl<'a> GlyphPatches<'a> {
     basic_table_impls!(impl_the_methods);
 
     pub fn glyph_count(&self) -> u32 {
-        let range = self.glyph_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().glyph_count.get()
     }
 
     pub fn table_count(&self) -> u8 {
-        let range = self.table_count_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().table_count
     }
 
     pub fn glyph_ids(&self) -> ComputedArray<'a, U16Or24> {
         let range = self.glyph_ids_byte_range();
-        self.data
-            .read_with_args(range, &self.flags())
-            .unwrap_or_default()
+        ComputedArray::new(self.offset_data(), range, self.flags()).unwrap_or_default()
     }
 
     pub fn tables(&self) -> &'a [BigEndian<Tag>] {
         let range = self.tables_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn glyph_data_offsets(&self) -> &'a [BigEndian<Offset32>] {
         let range = self.glyph_data_offsets_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// A dynamically resolving wrapper for [`glyph_data_offsets`][Self::glyph_data_offsets].
     pub fn glyph_data(&self) -> ArrayOfOffsets<'a, GlyphData<'a>, Offset32> {
-        let data = self.data;
+        let data = self.offset_data();
         let offsets = self.glyph_data_offsets();
         ArrayOfOffsets::new(offsets, data, ())
     }
@@ -3362,30 +2336,32 @@ impl<'a> GlyphPatches<'a> {
     }
 
     pub fn glyph_count_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u32::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn table_count_byte_range(&self) -> Range<usize> {
         let start = self.glyph_count_byte_range().end;
-        let end = start + u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(u8::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn glyph_ids_byte_range(&self) -> Range<usize> {
         let glyph_count = self.glyph_count();
         let start = self.table_count_byte_range().end;
-        let end = start
-            + (transforms::to_usize(glyph_count))
-                .saturating_mul(<U16Or24 as ComputeSize>::compute_size(&self.flags()).unwrap_or(0));
+        let end = start.saturating_add(
+            (transforms::to_usize(glyph_count))
+                .saturating_mul(<U16Or24 as ComputeSize>::compute_size(self.flags()).unwrap_or(0)),
+        );
         start..end
     }
 
     pub fn tables_byte_range(&self) -> Range<usize> {
         let table_count = self.table_count();
         let start = self.glyph_ids_byte_range().end;
-        let end = start + (transforms::to_usize(table_count)).saturating_mul(Tag::RAW_BYTE_LEN);
+        let end = start
+            .saturating_add((transforms::to_usize(table_count)).saturating_mul(Tag::RAW_BYTE_LEN));
         start..end
     }
 
@@ -3393,9 +2369,10 @@ impl<'a> GlyphPatches<'a> {
         let glyph_count = self.glyph_count();
         let table_count = self.table_count();
         let start = self.tables_byte_range().end;
-        let end = start
-            + (transforms::multiply_add(glyph_count, table_count, 1_usize))
-                .saturating_mul(Offset32::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::multiply_add(glyph_count, table_count, 1_usize))
+                .saturating_mul(Offset32::RAW_BYTE_LEN),
+        );
         start..end
     }
 }
@@ -3405,37 +2382,10 @@ const _: () = assert!(FontData::default_data_long_enough(GlyphPatches::MIN_SIZE)
 impl Default for GlyphPatches<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
             flags: Default::default(),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for GlyphPatches<'a> {
-    fn type_name(&self) -> &str {
-        "GlyphPatches"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("glyph_count", self.glyph_count())),
-            1usize => Some(Field::new("table_count", self.table_count())),
-            2usize => Some(Field::new("glyph_ids", traversal::FieldType::Unknown)),
-            3usize => Some(Field::new("tables", self.tables())),
-            4usize => Some(Field::new(
-                "glyph_data_offsets",
-                FieldType::from(self.glyph_data()),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for GlyphPatches<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -3445,23 +2395,39 @@ impl<'a> MinByteRange<'a> for GlyphData<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for GlyphData<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for GlyphData<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct GlyphDataFixedHeader {}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<GlyphDataFixedHeader>() <= GlyphData::MIN_SIZE);
+
 #[derive(Clone)]
 pub struct GlyphData<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, GlyphDataFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -3471,13 +2437,17 @@ impl<'a> GlyphData<'a> {
 
     pub fn data(&self) -> &'a [u8] {
         let range = self.data_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn data_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end =
-            start + self.data.len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -3488,28 +2458,8 @@ const _: () = assert!(FontData::default_data_long_enough(GlyphData::MIN_SIZE));
 impl Default for GlyphData<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for GlyphData<'a> {
-    fn type_name(&self) -> &str {
-        "GlyphData"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("data", self.data())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for GlyphData<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }

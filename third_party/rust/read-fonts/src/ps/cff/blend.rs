@@ -2,7 +2,7 @@
 
 use font_types::{BigEndian, F2Dot14, Fixed};
 
-use crate::ps::error::Error;
+use crate::model::Error;
 use crate::tables::variations::{ItemVariationData, ItemVariationStore};
 
 /// The maximum number of region scalars that we precompute.
@@ -95,7 +95,7 @@ impl<'a> BlendState<'a> {
         let variation_data = store.item_variation_data();
         let data = variation_data
             .get(self.store_index as usize)
-            .ok_or(Error::InvalidVariationStoreIndex(self.store_index))??;
+            .ok_or(Error::Malformed)??;
         let region_indices = data.region_indexes();
         let regions = self.store.variation_region_list()?.variation_regions();
         // Precompute scalars for all regions up to MAX_PRECOMPUTED_SCALARS
@@ -120,7 +120,7 @@ impl<'a> BlendState<'a> {
             .variation_region_list()?
             .variation_regions()
             .get(index as usize)
-            .map_err(Error::Read)?
+            .map_err(|_| Error::Malformed)?
             .compute_scalar(self.coords))
     }
 }

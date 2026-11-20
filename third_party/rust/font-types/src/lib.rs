@@ -26,6 +26,8 @@ mod name_id;
 mod offset;
 mod point;
 mod raw;
+#[cfg(feature = "bytemuck")]
+mod table_data;
 mod tag;
 mod uint24;
 mod version;
@@ -34,7 +36,7 @@ mod version;
 mod serde_test;
 
 pub use bbox::BoundingBox;
-pub use fixed::{F26Dot6, F2Dot14, F4Dot12, F6Dot10, Fixed};
+pub use fixed::{F26Dot6, F2Dot14, F48Dot16, F4Dot12, F6Dot10, Fixed};
 pub use fword::{FWord, UfWord};
 pub use glyph_id::{GlyphId, GlyphId16, GlyphId24, TryFromGlyphIdError};
 pub use int24::Int24;
@@ -44,6 +46,8 @@ pub use name_id::NameId;
 pub use offset::{Nullable, Offset16, Offset24, Offset32};
 pub use point::Point;
 pub use raw::{BigEndian, FixedSize, Scalar};
+#[cfg(feature = "bytemuck")]
+pub use table_data::TableDataRef;
 pub use tag::{InvalidTag, Tag};
 pub use uint24::Uint24;
 pub use version::{Compatible, MajorMinor, Version16Dot16};

@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Morx<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -20,20 +20,40 @@ impl TopLevelTable for Morx<'_> {
     const TAG: Tag = Tag::new(b"morx");
 }
 
+impl ReadArgs for Morx<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Morx<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct MorxFixedHeader {
+    pub version: BigEndian<u16>,
+    pub unused: BigEndian<u16>,
+    pub n_chains: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<MorxFixedHeader>() <= Morx::MIN_SIZE);
+
 /// The [morx (Extended Glyph Metamorphosis)](https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6morx.html) table.
 #[derive(Clone)]
 pub struct Morx<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, MorxFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -43,50 +63,48 @@ impl<'a> Morx<'a> {
 
     /// Version number of the extended glyph metamorphosis table (either 2 or 3).
     pub fn version(&self) -> u16 {
-        let range = self.version_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().version.get()
     }
 
     /// Number of metamorphosis chains contained in this table.
     pub fn n_chains(&self) -> u32 {
-        let range = self.n_chains_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().n_chains.get()
     }
 
     pub fn chains(&self) -> VarLenArray<'a, Chain<'a>> {
         let range = self.chains_byte_range();
-        self.data
+        self.offset_data()
             .split_off(range.start)
             .and_then(|d| VarLenArray::read(d).ok())
             .unwrap_or_default()
     }
 
     pub fn version_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u16::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn unused_byte_range(&self) -> Range<usize> {
         let start = self.version_byte_range().end;
-        let end = start + u16::RAW_BYTE_LEN;
+        let end = start.saturating_add(u16::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn n_chains_byte_range(&self) -> Range<usize> {
         let start = self.unused_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn chains_byte_range(&self) -> Range<usize> {
         let n_chains = self.n_chains();
         let start = self.n_chains_byte_range().end;
-        let end = start + {
-            let data = self.data.split_off(start).unwrap_or_default();
+        let end = start.saturating_add({
+            let data = self.offset_data().split_off(start).unwrap_or_default();
             <Chain as VarSize>::total_len_for_count(data, transforms::to_usize(n_chains))
                 .unwrap_or(0)
-        };
+        });
         start..end
     }
 }
@@ -96,34 +114,9 @@ const _: () = assert!(FontData::default_data_long_enough(Morx::MIN_SIZE));
 impl Default for Morx<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Morx<'a> {
-    fn type_name(&self) -> &str {
-        "Morx"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("version", self.version())),
-            1usize => Some(Field::new("n_chains", self.n_chains())),
-            2usize => Some(Field::new(
-                "chains",
-                traversal::FieldType::var_array("Chain", self.chains(), self.offset_data()),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Morx<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -133,24 +126,45 @@ impl<'a> MinByteRange<'a> for Chain<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for Chain<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Chain<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct ChainFixedHeader {
+    pub default_flags: BigEndian<u32>,
+    pub chain_length: BigEndian<u32>,
+    pub n_feature_entries: BigEndian<u32>,
+    pub n_subtables: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<ChainFixedHeader>() <= Chain::MIN_SIZE);
+
 /// A chain in a `morx` table.
 #[derive(Clone)]
 pub struct Chain<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, ChainFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -161,83 +175,83 @@ impl<'a> Chain<'a> {
 
     /// The default specification for subtables.
     pub fn default_flags(&self) -> u32 {
-        let range = self.default_flags_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().default_flags.get()
     }
 
     /// Total byte count, including this header; must be a multiple of 4.
     pub fn chain_length(&self) -> u32 {
-        let range = self.chain_length_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().chain_length.get()
     }
 
     /// Number of feature subtable entries.
     pub fn n_feature_entries(&self) -> u32 {
-        let range = self.n_feature_entries_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().n_feature_entries.get()
     }
 
     /// The number of subtables in the chain.
     pub fn n_subtables(&self) -> u32 {
-        let range = self.n_subtables_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().n_subtables.get()
     }
 
     /// Feature entries for this chain.
     pub fn features(&self) -> &'a [Feature] {
         let range = self.features_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// Array of chain subtables.
     pub fn subtables(&self) -> VarLenArray<'a, Subtable<'a>> {
         let range = self.subtables_byte_range();
-        self.data
+        self.offset_data()
             .split_off(range.start)
             .and_then(|d| VarLenArray::read(d).ok())
             .unwrap_or_default()
     }
 
     pub fn default_flags_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u32::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn chain_length_byte_range(&self) -> Range<usize> {
         let start = self.default_flags_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn n_feature_entries_byte_range(&self) -> Range<usize> {
         let start = self.chain_length_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn n_subtables_byte_range(&self) -> Range<usize> {
         let start = self.n_feature_entries_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn features_byte_range(&self) -> Range<usize> {
         let n_feature_entries = self.n_feature_entries();
         let start = self.n_subtables_byte_range().end;
-        let end =
-            start + (transforms::to_usize(n_feature_entries)).saturating_mul(Feature::RAW_BYTE_LEN);
+        let end = start.saturating_add(
+            (transforms::to_usize(n_feature_entries)).saturating_mul(Feature::RAW_BYTE_LEN),
+        );
         start..end
     }
 
     pub fn subtables_byte_range(&self) -> Range<usize> {
         let n_subtables = self.n_subtables();
         let start = self.features_byte_range().end;
-        let end = start + {
-            let data = self.data.split_off(start).unwrap_or_default();
+        let end = start.saturating_add({
+            let data = self.offset_data().split_off(start).unwrap_or_default();
             <Subtable as VarSize>::total_len_for_count(data, transforms::to_usize(n_subtables))
                 .unwrap_or(0)
-        };
+        });
         start..end
     }
 }
@@ -247,44 +261,9 @@ const _: () = assert!(FontData::default_data_long_enough(Chain::MIN_SIZE));
 impl Default for Chain<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Chain<'a> {
-    fn type_name(&self) -> &str {
-        "Chain"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("default_flags", self.default_flags())),
-            1usize => Some(Field::new("chain_length", self.chain_length())),
-            2usize => Some(Field::new("n_feature_entries", self.n_feature_entries())),
-            3usize => Some(Field::new("n_subtables", self.n_subtables())),
-            4usize => Some(Field::new(
-                "features",
-                traversal::FieldType::array_of_records(
-                    stringify!(Feature),
-                    self.features(),
-                    self.offset_data(),
-                ),
-            )),
-            5usize => Some(Field::new(
-                "subtables",
-                traversal::FieldType::var_array("Subtable", self.subtables(), self.offset_data()),
-            )),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Chain<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -330,47 +309,50 @@ impl FixedSize for Feature {
         u16::RAW_BYTE_LEN + u16::RAW_BYTE_LEN + u32::RAW_BYTE_LEN + u32::RAW_BYTE_LEN;
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for Feature {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "Feature",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("feature_type", self.feature_type())),
-                1usize => Some(Field::new("feature_settings", self.feature_settings())),
-                2usize => Some(Field::new("enable_flags", self.enable_flags())),
-                3usize => Some(Field::new("disable_flags", self.disable_flags())),
-                _ => None,
-            }),
-            data,
-        }
-    }
-}
-
 impl<'a> MinByteRange<'a> for Subtable<'a> {
     fn min_byte_range(&self) -> Range<usize> {
         0..self.data_byte_range().end
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
+impl ReadArgs for Subtable<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Subtable<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self { data })
     }
 }
 
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct SubtableFixedHeader {
+    pub length: BigEndian<u32>,
+    pub coverage: BigEndian<u32>,
+    pub sub_feature_flags: BigEndian<u32>,
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<SubtableFixedHeader>() <= Subtable::MIN_SIZE);
+
 /// A subtable in a `morx` chain.
 #[derive(Clone)]
 pub struct Subtable<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, SubtableFixedHeader>,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -380,50 +362,51 @@ impl<'a> Subtable<'a> {
 
     /// Total subtable length, including this header.
     pub fn length(&self) -> u32 {
-        let range = self.length_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().length.get()
     }
 
     /// Coverage flags and subtable type.
     pub fn coverage(&self) -> u32 {
-        let range = self.coverage_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().coverage.get()
     }
 
     /// The 32-bit mask identifying which subtable this is (the subtable being executed if the AND of this value and the processed defaultFlags is nonzero).
     pub fn sub_feature_flags(&self) -> u32 {
-        let range = self.sub_feature_flags_byte_range();
-        self.data.read_at(range.start).ok().unwrap()
+        self.data.header().sub_feature_flags.get()
     }
 
     /// Data for specific subtable.
     pub fn data(&self) -> &'a [u8] {
         let range = self.data_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub fn length_byte_range(&self) -> Range<usize> {
-        let start = 0;
-        let end = start + u32::RAW_BYTE_LEN;
+        let start = 0usize;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn coverage_byte_range(&self) -> Range<usize> {
         let start = self.length_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn sub_feature_flags_byte_range(&self) -> Range<usize> {
         let start = self.coverage_byte_range().end;
-        let end = start + u32::RAW_BYTE_LEN;
+        let end = start.saturating_add(u32::RAW_BYTE_LEN);
         start..end
     }
 
     pub fn data_byte_range(&self) -> Range<usize> {
         let start = self.sub_feature_flags_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / u8::RAW_BYTE_LEN * u8::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -433,32 +416,9 @@ const _: () = assert!(FontData::default_data_long_enough(Subtable::MIN_SIZE));
 impl Default for Subtable<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
         }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Subtable<'a> {
-    fn type_name(&self) -> &str {
-        "Subtable"
-    }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new("length", self.length())),
-            1usize => Some(Field::new("coverage", self.coverage())),
-            2usize => Some(Field::new("sub_feature_flags", self.sub_feature_flags())),
-            3usize => Some(Field::new("data", self.data())),
-            _ => None,
-        }
-    }
-}
-
-#[cfg(feature = "experimental_traverse")]
-#[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Subtable<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
     }
 }
 
@@ -491,21 +451,6 @@ impl ContextualEntryData {
 
 impl FixedSize for ContextualEntryData {
     const RAW_BYTE_LEN: usize = u16::RAW_BYTE_LEN + u16::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for ContextualEntryData {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "ContextualEntryData",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new("mark_index", self.mark_index())),
-                1usize => Some(Field::new("current_index", self.current_index())),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }
 
 /// Entry payload in an insertion subtable state machine.
@@ -543,25 +488,4 @@ impl InsertionEntryData {
 
 impl FixedSize for InsertionEntryData {
     const RAW_BYTE_LEN: usize = u16::RAW_BYTE_LEN + u16::RAW_BYTE_LEN;
-}
-
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeRecord<'a> for InsertionEntryData {
-    fn traverse(self, data: FontData<'a>) -> RecordResolver<'a> {
-        RecordResolver {
-            name: "InsertionEntryData",
-            get_field: Box::new(move |idx, _data| match idx {
-                0usize => Some(Field::new(
-                    "current_insert_index",
-                    self.current_insert_index(),
-                )),
-                1usize => Some(Field::new(
-                    "marked_insert_index",
-                    self.marked_insert_index(),
-                )),
-                _ => None,
-            }),
-            data,
-        }
-    }
 }

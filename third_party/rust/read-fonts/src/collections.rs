@@ -6,3 +6,6 @@ pub use int_set::U32Set;
 
 mod range_set;
 pub use range_set::RangeSet;
+
+#[cfg(feature = "std")]
+pub(crate) type FastHashMap<K, V> = std::collections::HashMap<K, V, foldhash::fast::FixedState>;

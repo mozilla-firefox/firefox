@@ -16,8 +16,12 @@ impl TopLevelTable for Kern<'_> {
     const TAG: Tag = Tag::new(b"kern");
 }
 
+impl ReadArgs for Kern<'_> {
+    type Args = ();
+}
+
 impl<'a> FontRead<'a> for Kern<'a> {
-    fn read(data: FontData<'a>) -> Result<Self, ReadError> {
+    fn read_with_args(data: FontData<'a>, _: ()) -> Result<Self, ReadError> {
         // The Apple kern table has a 32-bit fixed version field set to
         // 1.0 while the OpenType kern table has a 16-bit version field
         // set to 0. Check the first 16-bit word to determine which
@@ -79,7 +83,7 @@ impl<'a> Iterator for Subtables<'a> {
             return None;
         }
         let data = self.data.take_up_to(len)?;
-        Some(Subtable::read_with_args(data, &self.is_aat))
+        Some(Subtable::read_with_args(data, self.is_aat))
     }
 }
 
@@ -105,9 +109,9 @@ impl ReadArgs for Subtable<'_> {
     type Args = bool;
 }
 
-impl<'a> FontReadWithArgs<'a> for Subtable<'a> {
-    fn read_with_args(data: FontData<'a>, args: &Self::Args) -> Result<Self, ReadError> {
-        let is_aat = *args;
+impl<'a> FontRead<'a> for Subtable<'a> {
+    fn read_with_args(data: FontData<'a>, args: Self::Args) -> Result<Self, ReadError> {
+        let is_aat = args;
         if is_aat {
             Ok(Self::Aat(AatSubtable::read(data)?))
         } else {
@@ -169,7 +173,7 @@ impl<'a> Subtable<'a> {
     pub fn kind(&self) -> Result<SubtableKind<'a>, ReadError> {
         let (data, format) = self.data_and_format();
         let is_aat = matches!(self, Self::Aat(_));
-        SubtableKind::read_with_args(FontData::new(data), &(format, is_aat))
+        SubtableKind::read_with_args(FontData::new(data), (format, is_aat))
     }
 
     fn data_and_format(&self) -> (&'a [u8], u8) {
@@ -193,9 +197,9 @@ impl ReadArgs for SubtableKind<'_> {
     type Args = (u8, bool);
 }
 
-impl<'a> FontReadWithArgs<'a> for SubtableKind<'a> {
-    fn read_with_args(data: FontData<'a>, args: &Self::Args) -> Result<Self, ReadError> {
-        let (format, is_aat) = *args;
+impl<'a> FontRead<'a> for SubtableKind<'a> {
+    fn read_with_args(data: FontData<'a>, args: Self::Args) -> Result<Self, ReadError> {
+        let (format, is_aat) = args;
         match format {
             0 => Ok(Self::Format0(Subtable0::read(data)?)),
             1 => Ok(Self::Format1(StateTable::read(data)?)),
@@ -205,7 +209,7 @@ impl<'a> FontReadWithArgs<'a> for SubtableKind<'a> {
                 } else {
                     OtSubtable::HEADER_LEN
                 };
-                Ok(Self::Format2(Subtable2::read_with_args(data, &header_len)?))
+                Ok(Self::Format2(Subtable2::read_with_args(data, header_len)?))
             }
             3 => Ok(Self::Format3(Subtable3::read(data)?)),
             _ => Err(ReadError::InvalidFormat(format as _)),
@@ -238,10 +242,10 @@ impl ReadArgs for Subtable2<'_> {
     type Args = usize;
 }
 
-impl<'a> FontReadWithArgs<'a> for Subtable2<'a> {
-    fn read_with_args(data: FontData<'a>, args: &Self::Args) -> Result<Self, ReadError> {
+impl<'a> FontRead<'a> for Subtable2<'a> {
+    fn read_with_args(data: FontData<'a>, args: Self::Args) -> Result<Self, ReadError> {
         let mut cursor = data.cursor();
-        let header_len = *args;
+        let header_len = args;
         // Skip rowWidth field
         cursor.advance_by(u16::RAW_BYTE_LEN);
         // The offsets here are from the beginning of the subtable and not

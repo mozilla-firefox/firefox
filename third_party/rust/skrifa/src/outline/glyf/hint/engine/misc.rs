@@ -64,6 +64,7 @@ impl Engine<'_> {
             // See <https://github.com/googlefonts/fontations/issues/1080>
             if (selector & SYMMETRICAL_SMOOTHING_SELECTOR_BIT) != 0
                 && self.graphics.target.symmetric_rendering()
+                && self.cleartype.symmetric_smoothing()
             {
                 result |= SYMMETRICAL_SMOOTHING_RESULT_BIT;
             }

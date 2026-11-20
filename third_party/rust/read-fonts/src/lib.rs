@@ -74,8 +74,13 @@ extern crate core as std;
 extern crate alloc;
 
 pub mod array;
+pub(crate) use array::impl_font_read_at;
+#[cfg(any(test, feature = "codegen_test"))]
+pub mod codegen_test;
 pub mod collections;
 mod font_data;
+pub mod limits;
+pub mod mem;
 pub mod model;
 mod offset;
 mod offset_array;
@@ -84,16 +89,11 @@ mod read;
 mod table_provider;
 mod table_ref;
 pub mod tables;
-#[cfg(feature = "experimental_traverse")]
-pub mod traversal;
-
-#[cfg(any(test, feature = "codegen_test"))]
-pub mod codegen_test;
 
 pub use font_data::FontData;
 pub use offset::{Offset, ResolveNullableOffset, ResolveOffset};
 pub use offset_array::{ArrayOfNullableOffsets, ArrayOfOffsets};
-pub use read::{ComputeSize, FontRead, FontReadWithArgs, ReadArgs, ReadError, VarSize};
+pub use read::{ComputeSize, FontRead, FontReadAt, ReadArgs, ReadError, VarSize};
 pub use table_provider::{TableProvider, TopLevelTable};
 pub use table_ref::MinByteRange;
 
@@ -107,18 +107,14 @@ pub(crate) mod codegen_prelude {
     pub use crate::font_data::{Cursor, FontData};
     pub use crate::offset::{Offset, ResolveNullableOffset, ResolveOffset};
     pub use crate::offset_array::{ArrayOfNullableOffsets, ArrayOfOffsets};
-    //pub(crate) use crate::read::sealed;
     pub use crate::read::{
-        ComputeSize, Discriminant, FontRead, FontReadWithArgs, Format, ReadArgs, ReadError, VarSize,
+        ComputeSize, Discriminant, FontRead, FontReadAt, Format, ReadArgs, ReadError, VarSize,
     };
     pub use crate::table_provider::TopLevelTable;
     pub use crate::table_ref::MinByteRange;
     pub use std::ops::Range;
 
     pub use types::*;
-
-    #[cfg(feature = "experimental_traverse")]
-    pub use crate::traversal::{self, Field, FieldType, RecordResolver, SomeRecord, SomeTable};
 
     /// named transforms used in 'count', e.g
     pub(crate) mod transforms {
@@ -141,12 +137,6 @@ pub(crate) mod codegen_prelude {
         #[allow(dead_code)]
         pub fn bitmap_len<T: TryInto<usize>>(count: T) -> usize {
             count.try_into().unwrap_or_default().div_ceil(8)
-        }
-
-        #[cfg(feature = "ift")]
-        pub fn max_value_bitmap_len<T: TryInto<usize>>(count: T) -> usize {
-            let count: usize = count.try_into().unwrap_or_default() + 1usize;
-            count.div_ceil(8)
         }
 
         pub fn add_multiply<T: TryInto<usize>, U: TryInto<usize>, V: TryInto<usize>>(
@@ -184,22 +174,22 @@ pub(crate) mod codegen_prelude {
         }
     }
 
-    #[macro_export]
     macro_rules! basic_table_impls {
         (impl_the_methods) => {
             /// Resolve the provided offset from the start of this table.
-            pub fn resolve_offset<O: Offset, R: FontRead<'a>>(
+            pub fn resolve_offset<O: Offset, R: FontRead<'a, Args = ()>>(
                 &self,
                 offset: O,
             ) -> Result<R, ReadError> {
-                offset.resolve(self.data)
+                offset.resolve(self.offset_data())
             }
 
             /// Return a reference to this table's raw data.
             ///
             /// We use this in the compile crate to resolve offsets.
+            #[inline(always)]
             pub fn offset_data(&self) -> FontData<'a> {
-                self.data
+                FontData::new(self.data.data())
             }
 
             /// Return a reference to the table's 'Shape' struct.
@@ -214,7 +204,7 @@ pub(crate) mod codegen_prelude {
         };
     }
 
-    pub(crate) use crate::basic_table_impls;
+    pub(crate) use basic_table_impls;
 }
 
 include!("../generated/font.rs");
@@ -252,7 +242,7 @@ impl<'a> FileRef<'a> {
 #[derive(Clone)]
 pub struct CollectionRef<'a> {
     data: FontData<'a>,
-    header: TTCHeader<'a>,
+    offsets: &'a [types::BigEndian<u32>],
 }
 
 impl<'a> CollectionRef<'a> {
@@ -263,13 +253,37 @@ impl<'a> CollectionRef<'a> {
         if header.ttc_tag() != TTC_HEADER_TAG {
             Err(ReadError::InvalidTtc(header.ttc_tag()))
         } else {
-            Ok(Self { data, header })
+            let legacy_end = usize::try_from(header.num_fonts())
+                .ok()
+                .and_then(|count| count.checked_mul(4))
+                .and_then(|size| size.checked_add(12))
+                .ok_or(ReadError::OutOfBounds)?;
+            let version = header.version();
+            let offsets = if matches!(version.major, 1 | 2) && version.minor >= 1 {
+                // ISO/IEC 14496-22:2026 places the extended directory list
+                // after the original list and, for version 2.1, the three DSIG
+                // fields.
+                let count_pos = legacy_end
+                    .checked_add(if version.major == 2 { 12 } else { 0 })
+                    .ok_or(ReadError::OutOfBounds)?;
+                let count = data.read_at::<u32>(count_pos)?;
+                let start = count_pos.checked_add(4).ok_or(ReadError::OutOfBounds)?;
+                let end = usize::try_from(count)
+                    .ok()
+                    .and_then(|count| count.checked_mul(4))
+                    .and_then(|size| start.checked_add(size))
+                    .ok_or(ReadError::OutOfBounds)?;
+                data.read_array(start..end)?
+            } else {
+                data.read_array(12..legacy_end)?
+            };
+            Ok(Self { data, offsets })
         }
     }
 
     /// Returns the number of fonts in the collection.
     pub fn len(&self) -> u32 {
-        self.header.table_directory_offsets().len() as u32
+        self.offsets.len() as u32
     }
 
     /// Returns true if the collection is empty.
@@ -280,8 +294,7 @@ impl<'a> CollectionRef<'a> {
     /// Returns the font in the collection at the specified index.
     pub fn get(&self, index: u32) -> Result<FontRef<'a>, ReadError> {
         let offset = self
-            .header
-            .table_directory_offsets()
+            .offsets
             .get(index as usize)
             .ok_or(ReadError::InvalidCollectionIndex(index))?
             .get() as usize;
@@ -479,6 +492,67 @@ mod tests {
         };
         assert_eq!(2, collection.len());
         assert!(!collection.is_empty());
+    }
+
+    #[test]
+    fn extended_ttc_directory_list_takes_precedence() {
+        for major in [1u16, 2] {
+            for legacy_count in [0u32, 1] {
+                let extended_start =
+                    12 + legacy_count as usize * 4 + if major == 2 { 12 } else { 0 };
+                let first_directory = extended_start + 12;
+                let second_directory = first_directory + 12;
+                let mut bytes = b"ttcf".to_vec();
+                bytes.extend_from_slice(&major.to_be_bytes());
+                bytes.extend_from_slice(&1u16.to_be_bytes());
+                bytes.extend_from_slice(&legacy_count.to_be_bytes());
+                if legacy_count != 0 {
+                    bytes.extend_from_slice(&(first_directory as u32).to_be_bytes());
+                }
+                if major == 2 {
+                    // Nonzero DSIG fields must not be confused with numFonts2.
+                    bytes.extend_from_slice(&0x44534947u32.to_be_bytes());
+                    bytes.extend_from_slice(&8u32.to_be_bytes());
+                    bytes.extend_from_slice(&((second_directory + 12) as u32).to_be_bytes());
+                }
+                bytes.extend_from_slice(&2u32.to_be_bytes());
+                bytes.extend_from_slice(&(second_directory as u32).to_be_bytes());
+                bytes.extend_from_slice(&(first_directory as u32).to_be_bytes());
+                bytes.extend_from_slice(&TT_SFNT_VERSION.to_be_bytes());
+                bytes.extend_from_slice(&[0; 8]);
+                bytes.extend_from_slice(&0x4F54544Fu32.to_be_bytes());
+                bytes.extend_from_slice(&[0; 8]);
+                bytes.extend_from_slice(&[0; 8]);
+                let collection = crate::CollectionRef::new(&bytes).unwrap();
+                assert_eq!(collection.len(), 2);
+                assert_eq!(
+                    collection.get(0).unwrap().table_directory().sfnt_version(),
+                    0x4F54544F
+                );
+                assert_eq!(
+                    collection.get(1).unwrap().table_directory().sfnt_version(),
+                    TT_SFNT_VERSION
+                );
+                assert_eq!(FontRef::fonts(&bytes).count(), 2);
+                assert_eq!(
+                    FontRef::from_index(&bytes, 0)
+                        .unwrap()
+                        .table_directory()
+                        .sfnt_version(),
+                    0x4F54544F
+                );
+                // A missing extended list is malformed, not a legacy fallback.
+                for len in extended_start..first_directory {
+                    assert!(crate::CollectionRef::new(&bytes[..len]).is_err());
+                }
+                let mut empty = bytes.clone();
+                empty[extended_start..extended_start + 4].copy_from_slice(&0u32.to_be_bytes());
+                assert!(crate::CollectionRef::new(&empty).unwrap().is_empty());
+                let mut huge = bytes.clone();
+                huge[extended_start..extended_start + 4].copy_from_slice(&u32::MAX.to_be_bytes());
+                assert!(crate::CollectionRef::new(&huge).is_err());
+            }
+        }
     }
 
     #[test]

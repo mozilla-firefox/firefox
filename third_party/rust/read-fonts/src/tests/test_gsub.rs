@@ -76,3 +76,13 @@ fn ligaturesubstformat1() {
 // - https://learn.microsoft.com/en-us/typography/opentype/spec/gsub#example-8-contextual-substitution-format-2
 // - https://learn.microsoft.com/en-us/typography/opentype/spec/gsub#example-9-contextual-substitution-format-3
 // - https://learn.microsoft.com/en-us/typography/opentype/spec/gsub#example-10-reversechainsinglesubstformat1-subtable
+
+#[test]
+fn major_version_2_reads_original_lists() {
+    // GSUB 2.0 has no extended offsets; its lists are empty here.
+    let bytes = [0, 2, 0, 0, 0, 10, 0, 12, 0, 14, 0, 0, 0, 0, 0, 0];
+    let gsub = Gsub::read(FontData::new(&bytes)).unwrap();
+    assert_eq!(gsub.script_list().unwrap().script_count(), 0);
+    assert_eq!(gsub.feature_list().unwrap().feature_count(), 0);
+    assert_eq!(gsub.lookup_list().unwrap().lookup_count(), 0);
+}

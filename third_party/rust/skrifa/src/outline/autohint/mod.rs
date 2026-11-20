@@ -1,5 +1,6 @@
 //! Runtime autohinting support.
 
+mod context;
 mod hint;
 mod instance;
 mod metrics;
@@ -10,7 +11,7 @@ mod style;
 mod topo;
 
 pub use instance::GlyphStyles;
-pub(crate) use instance::Instance;
+pub(crate) use instance::{Instance, LocatedState};
 pub use metrics::{
     BlueZones, Scale, ScaleFlags, ScaledAxisMetrics, ScaledBlue, ScaledStyleMetrics, ScaledWidth,
     UnscaledAxisMetrics, UnscaledBlue, UnscaledStyleMetrics, WidthMetrics,
@@ -22,13 +23,14 @@ pub use style::{SCRIPT_CLASSES, STYLE_CLASSES};
 pub use topo::{Axis, BlueProvenance, Dimension, Edge, Segment, TopoFlags};
 
 use crate::outline::{DrawError, Target};
-use crate::{FontRef, MetadataProvider};
+use crate::FontRef;
 use alloc::vec::Vec;
+pub(crate) use context::{AutohintContext, FontContext, FontRefContext};
 use raw::types::{F2Dot14, GlyphId};
 
 /// Controls quirks for the different autohinters.
 #[derive(Copy, Clone, PartialEq, Eq, Default, Debug)]
-enum QuirksMode {
+pub(crate) enum QuirksMode {
     /// Just in time hinter; matches FreeType.
     #[default]
     Jit,
@@ -56,27 +58,25 @@ impl HintPlan {
         let style_class = glyph_style
             .style_class()
             .ok_or(DrawError::GlyphNotFound(glyph_id))?;
-        let outline_glyph = font
-            .outline_glyphs()
-            .get(glyph_id)
-            .ok_or(DrawError::GlyphNotFound(glyph_id))?;
+        let context = context::FontRefContext::new(font, coords);
+        let mut outline = outline::Outline::default();
+        context
+            .fill_outline(glyph_id, &mut outline, QuirksMode::Aot)
+            .ok_or(DrawError::GlyphNotFound(glyph_id))??;
 
         let shaper_mode = if cfg!(feature = "autohint_shaping") {
             shape::ShaperMode::BestEffort
         } else {
             shape::ShaperMode::Nominal
         };
-        let shaper = shape::Shaper::new(font, shaper_mode);
+        let shaper = shape::Shaper::new(&context, shaper_mode);
         let metrics =
-            metrics::compute_unscaled_style_metrics(&shaper, coords, style_class, QuirksMode::Aot);
-
-        let mut outline = outline::Outline::default();
-        outline.fill(&outline_glyph, coords, QuirksMode::Aot)?;
+            metrics::compute_unscaled_style_metrics(&shaper, style_class, QuirksMode::Aot);
 
         let scale = metrics::Scale::new(
             ppem,
-            outline_glyph.units_per_em() as i32,
-            font.attributes().style,
+            outline.units_per_em,
+            context.style(),
             target,
             metrics.style_class().script.group,
         );

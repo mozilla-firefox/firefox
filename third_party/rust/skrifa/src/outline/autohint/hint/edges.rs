@@ -112,16 +112,15 @@ fn align_edges_to_blues(
             let Some(edge1_ix) = edge1_ix else {
                 continue;
             };
-            // Skip if edge1 was already positioned by a previous iteration
-            // (e.g. edge[i] has no blue but its linked-edge does, and that
-            // linked-edge was already processed when the loop visited it directly).
-            if edges[edge1_ix].flags.contains(TopoFlags::DONE) {
-                continue;
-            }
+            // An edge whose linked edge is on a blue zone reaches it again
+            // after the loop visited it directly. It is already on the zone,
+            // so only its own linked edge remains to align, as FreeType
+            // does, and the zone is not recorded twice.
             let edge1 = &mut edges[edge1_ix];
+            let edge1_was_done = edge1.flags.contains(TopoFlags::DONE);
             edge1.pos = blue.fitted;
             edge1.flags |= TopoFlags::DONE;
-            if let Some(recorder) = recorder.as_mut() {
+            if let Some(recorder) = recorder.as_mut().filter(|_| !edge1_was_done) {
                 let action = if anchor_ix.is_none() {
                     EdgeAction::BlueAnchor
                 } else {
@@ -1060,8 +1059,50 @@ mod tests {
         },
         *,
     };
+    use crate::outline::autohint::context::FontRefContext;
     use crate::{attribute::Style, MetadataProvider};
     use raw::{types::GlyphId, FontRef, TableProvider};
+
+    // Edge 0 is on a blue zone and linked to edge 1; edge 2 is linked to
+    // edge 0 too. When the loop reaches edge 2, edge 0 is already on its
+    // zone, and edge 2 is still aligned to it, as FreeType aligns it.
+    #[test]
+    fn edges_linked_to_a_placed_blue_edge_are_aligned() {
+        let edge = |opos: i32, link: u16| Edge {
+            opos,
+            pos: opos,
+            link_ix: Some(link),
+            ..Default::default()
+        };
+        let mut axis = Axis {
+            dim: Dimension::Vertical,
+            edges: [edge(10, 1), edge(40, 0), edge(54, 0)]
+                .into_iter()
+                .collect(),
+            ..Default::default()
+        };
+        axis.edges[0].blue_edge = Some(ScaledWidth {
+            scaled: 10,
+            fitted: 0,
+        });
+        let metrics = ScaledAxisMetrics {
+            dim: Dimension::Vertical,
+            ..Default::default()
+        };
+        // No stem adjustment, so linked edges keep their distance.
+        align_edges_to_blues(
+            &mut axis,
+            &metrics,
+            ScriptGroup::Default,
+            &Scale::default(),
+            None,
+        );
+        let edges = &axis.edges;
+        assert_eq!(edges[0].pos, 0);
+        assert_eq!(edges[1].pos, 30);
+        assert!(edges[2].flags.contains(TopoFlags::DONE));
+        assert_eq!(edges[2].pos, 44);
+    }
 
     #[test]
     fn edge_hinting_default() {
@@ -1127,10 +1168,11 @@ mod tests {
         expected_v_edges: &[(i32, TopoFlags)],
     ) {
         let font = FontRef::new(font_data).unwrap();
-        let shaper = Shaper::new(&font, ShaperMode::Nominal);
+        let context = FontRefContext::new(&font, &[]);
+        let shaper = Shaper::new(&context, ShaperMode::Nominal);
         let class = &style::STYLE_CLASSES[class];
         let unscaled_metrics =
-            metrics::compute_unscaled_style_metrics(&shaper, &[], class, Default::default());
+            metrics::compute_unscaled_style_metrics(&shaper, class, Default::default());
         let scale = metrics::Scale::new(
             16.0,
             font.head().unwrap().units_per_em() as i32,

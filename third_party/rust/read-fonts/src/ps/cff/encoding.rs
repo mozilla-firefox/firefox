@@ -8,7 +8,7 @@
 use super::charset::Charset;
 use crate::{
     ps::{encoding::PredefinedEncoding, string::Sid},
-    FontData, GlyphId, ReadError,
+    FontData, GlyphId,
 };
 
 #[doc(inline)]
@@ -28,19 +28,18 @@ impl<'a> Encoding<'a> {
     ///
     /// Special offsets 0 and 1 are parsed as the predefined standard and
     /// expert encodings, respectively.
-    pub fn new(data: &'a [u8], offset: usize) -> Result<Self, ReadError> {
+    pub fn new(data: &'a [u8], offset: usize) -> Option<Self> {
         match offset {
-            0 => Ok(Self::Predefined(PredefinedEncoding::Standard)),
-            1 => Ok(Self::Predefined(PredefinedEncoding::Expert)),
-            _ => CustomEncoding::new(data.get(offset..).ok_or(ReadError::OutOfBounds)?)
-                .map(Self::Custom),
+            0 => Some(Self::Predefined(PredefinedEncoding::Standard)),
+            1 => Some(Self::Predefined(PredefinedEncoding::Expert)),
+            _ => CustomEncoding::new(data.get(offset..)?).map(Self::Custom),
         }
     }
 
     /// Maps a character code to a glyph identifier.
     pub fn map(&self, charset: &Charset, code: u8) -> Option<GlyphId> {
         match self {
-            Self::Predefined(predefined) => charset.glyph_id(predefined.sid(code)?).ok(),
+            Self::Predefined(predefined) => charset.glyph_id(predefined.sid(code)?),
             Self::Custom(custom) => custom.map(charset, code),
         }
     }
@@ -58,16 +57,16 @@ pub enum CustomEncoding<'a> {
 
 impl<'a> CustomEncoding<'a> {
     /// Parses a custom encoding from the given data.
-    pub fn new(data: &'a [u8]) -> Result<Self, ReadError> {
+    pub fn new(data: &'a [u8]) -> Option<Self> {
         let mut cursor = FontData::new(data).cursor();
-        let header = cursor.read::<u8>()?;
+        let header = cursor.read::<u8>().ok()?;
         let has_supplement = header & 0x80 != 0;
         // Macro because a closure cannot borrow cursor mutably
         macro_rules! read_supplement {
             () => {
                 if has_supplement {
-                    let count = cursor.read::<u8>()?;
-                    cursor.read_array::<Supplement>(count as usize)?
+                    let count = cursor.read::<u8>().ok()?;
+                    cursor.read_array::<Supplement>(count as usize).ok()?
                 } else {
                     &[]
                 }
@@ -76,18 +75,19 @@ impl<'a> CustomEncoding<'a> {
         let format = header & 0x7F;
         match format {
             0 => {
-                let n_codes = cursor.read::<u8>()?;
-                let codes = cursor.read_array(n_codes as usize)?;
+                let n_codes = cursor.read::<u8>().ok()?;
+                let codes = cursor.read_array(n_codes as usize).ok()?;
                 let supp = read_supplement!();
-                Ok(Self::Format0(codes, supp))
+                Some(Self::Format0(codes, supp))
             }
             1 => {
-                let n_ranges = cursor.read::<u8>()?;
-                let ranges = cursor.read_array(n_ranges as usize)?;
+                let n_ranges = cursor.read::<u8>().ok()?;
+                let ranges = cursor.read_array(n_ranges as usize).ok()?;
                 let supp = read_supplement!();
-                Ok(Self::Format1(ranges, supp))
+                Some(Self::Format1(ranges, supp))
             }
-            _ => Err(ReadError::InvalidFormat(format as _)),
+            // the spec allows only 0 and 1
+            _ => None,
         }
     }
 
@@ -96,8 +96,10 @@ impl<'a> CustomEncoding<'a> {
         let read_sup = |sup: &[Supplement]| {
             sup.iter()
                 .find(|s| s.code == code)
-                .and_then(|s| charset.glyph_id(Sid::new(s.glyph.get())).ok())
+                .and_then(|s| charset.glyph_id(Sid::new(s.glyph.get())))
         };
+        // Codes past the font's glyphs are not mapped, as in FreeType.
+        let in_font = |gid: &GlyphId| gid.to_u32() < charset.num_glyphs();
         match self {
             Self::Format0(codes, sup) => read_sup(sup).or_else(|| {
                 codes
@@ -105,6 +107,7 @@ impl<'a> CustomEncoding<'a> {
                     .position(|c| *c == code)
                     // notdef is implicit so add one
                     .map(|gid| GlyphId::new(gid as u32 + 1))
+                    .filter(in_font)
             }),
             Self::Format1(ranges, sup) => read_sup(sup).or_else(|| {
                 let mut gid = 1u32;
@@ -112,7 +115,7 @@ impl<'a> CustomEncoding<'a> {
                     let end = range.first.saturating_add(range.n_left);
                     if (range.first..=end).contains(&code) {
                         gid += (code - range.first) as u32;
-                        return Some(GlyphId::new(gid));
+                        return Some(GlyphId::new(gid)).filter(in_font);
                     }
                     gid += range.n_left as u32 + 1;
                 }
@@ -183,6 +186,28 @@ mod tests {
             };
             assert_eq!(gid, expected.map(GlyphId::new));
         }
+    }
+
+    // An encoding may list more codes than the font has glyphs. FreeType
+    // only maps the codes whose glyphs exist.
+    #[test]
+    fn custom_codes_stop_at_the_glyph_count() {
+        let charset = Charset::new(Default::default(), 0, 3).unwrap();
+        let codes = [65, 66, 67, 68];
+        let encoding = Encoding::Custom(CustomEncoding::Format0(&codes, &[]));
+        assert_eq!(encoding.map(&charset, 65), Some(GlyphId::new(1)));
+        assert_eq!(encoding.map(&charset, 66), Some(GlyphId::new(2)));
+        assert_eq!(encoding.map(&charset, 67), None);
+        assert_eq!(encoding.map(&charset, 68), None);
+        let ranges = [Range1 {
+            first: 65,
+            n_left: 3,
+        }];
+        let encoding = Encoding::Custom(CustomEncoding::Format1(&ranges, &[]));
+        assert_eq!(encoding.map(&charset, 65), Some(GlyphId::new(1)));
+        assert_eq!(encoding.map(&charset, 66), Some(GlyphId::new(2)));
+        assert_eq!(encoding.map(&charset, 67), None);
+        assert_eq!(encoding.map(&charset, 68), None);
     }
 
     #[test]

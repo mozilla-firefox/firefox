@@ -11,7 +11,7 @@ impl<'a> MinByteRange<'a> for Vmtx<'a> {
     }
     fn min_table_bytes(&self) -> &'a [u8] {
         let range = self.min_byte_range();
-        self.data.as_bytes().get(range).unwrap_or_default()
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
@@ -24,14 +24,17 @@ impl ReadArgs for Vmtx<'_> {
     type Args = u16;
 }
 
-impl<'a> FontReadWithArgs<'a> for Vmtx<'a> {
-    fn read_with_args(data: FontData<'a>, args: &u16) -> Result<Self, ReadError> {
-        let number_of_long_ver_metrics = *args;
+impl<'a> FontRead<'a> for Vmtx<'a> {
+    fn read_with_args(data: FontData<'a>, args: u16) -> Result<Self, ReadError> {
+        let number_of_long_ver_metrics = args;
 
         #[allow(clippy::absurd_extreme_comparisons)]
         if data.len() < Self::MIN_SIZE {
             return Err(ReadError::OutOfBounds);
         }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
         Ok(Self {
             data,
             number_of_long_ver_metrics,
@@ -46,14 +49,23 @@ impl<'a> Vmtx<'a> {
     /// parsed.
     pub fn read(data: FontData<'a>, number_of_long_ver_metrics: u16) -> Result<Self, ReadError> {
         let args = number_of_long_ver_metrics;
-        Self::read_with_args(data, &args)
+        Self::read_with_args(data, args)
     }
 }
+
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct VmtxFixedHeader {}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<VmtxFixedHeader>() <= Vmtx::MIN_SIZE);
 
 /// The [vmtx (Vertical Metrics)](https://docs.microsoft.com/en-us/typography/opentype/spec/vmtx) table
 #[derive(Clone)]
 pub struct Vmtx<'a> {
-    data: FontData<'a>,
+    data: TableDataRef<'a, VmtxFixedHeader>,
     number_of_long_ver_metrics: u16,
 }
 
@@ -66,13 +78,19 @@ impl<'a> Vmtx<'a> {
     /// glyph. Records are indexed by glyph ID.
     pub fn v_metrics(&self) -> &'a [LongMetric] {
         let range = self.v_metrics_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     /// Top side bearings for glyph IDs greater than or equal to numberOfLongMetrics.
     pub fn top_side_bearings(&self) -> &'a [BigEndian<i16>] {
         let range = self.top_side_bearings_byte_range();
-        self.data.read_array(range).ok().unwrap_or_default()
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
     }
 
     pub(crate) fn number_of_long_ver_metrics(&self) -> u16 {
@@ -81,17 +99,19 @@ impl<'a> Vmtx<'a> {
 
     pub fn v_metrics_byte_range(&self) -> Range<usize> {
         let number_of_long_ver_metrics = self.number_of_long_ver_metrics();
-        let start = 0;
-        let end = start
-            + (transforms::to_usize(number_of_long_ver_metrics))
-                .saturating_mul(LongMetric::RAW_BYTE_LEN);
+        let start = 0usize;
+        let end = start.saturating_add(
+            (transforms::to_usize(number_of_long_ver_metrics))
+                .saturating_mul(LongMetric::RAW_BYTE_LEN),
+        );
         start..end
     }
 
     pub fn top_side_bearings_byte_range(&self) -> Range<usize> {
         let start = self.v_metrics_byte_range().end;
-        let end =
-            start + self.data.len().saturating_sub(start) / i16::RAW_BYTE_LEN * i16::RAW_BYTE_LEN;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / i16::RAW_BYTE_LEN * i16::RAW_BYTE_LEN,
+        );
         start..end
     }
 }
@@ -102,37 +122,130 @@ const _: () = assert!(FontData::default_data_long_enough(Vmtx::MIN_SIZE));
 impl Default for Vmtx<'_> {
     fn default() -> Self {
         Self {
-            data: FontData::default_table_data(),
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
             number_of_long_ver_metrics: Default::default(),
         }
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
-impl<'a> SomeTable<'a> for Vmtx<'a> {
-    fn type_name(&self) -> &str {
-        "Vmtx"
+impl<'a> MinByteRange<'a> for VmtxExtended<'a> {
+    fn min_byte_range(&self) -> Range<usize> {
+        0..self.top_side_bearings_byte_range().end
     }
-    fn get_field(&self, idx: usize) -> Option<Field<'a>> {
-        match idx {
-            0usize => Some(Field::new(
-                "v_metrics",
-                traversal::FieldType::array_of_records(
-                    stringify!(LongMetric),
-                    self.v_metrics(),
-                    self.offset_data(),
-                ),
-            )),
-            1usize => Some(Field::new("top_side_bearings", self.top_side_bearings())),
-            _ => None,
-        }
+    fn min_table_bytes(&self) -> &'a [u8] {
+        let range = self.min_byte_range();
+        self.offset_data().as_bytes().get(range).unwrap_or_default()
     }
 }
 
-#[cfg(feature = "experimental_traverse")]
+impl TopLevelTable for VmtxExtended<'_> {
+    /// `VMTX`
+    const TAG: Tag = Tag::new(b"VMTX");
+}
+
+impl ReadArgs for VmtxExtended<'_> {
+    type Args = u32;
+}
+
+impl<'a> FontRead<'a> for VmtxExtended<'a> {
+    fn read_with_args(data: FontData<'a>, args: u32) -> Result<Self, ReadError> {
+        let number_of_long_ver_metrics = args;
+
+        #[allow(clippy::absurd_extreme_comparisons)]
+        if data.len() < Self::MIN_SIZE {
+            return Err(ReadError::OutOfBounds);
+        }
+        let Some(data) = TableDataRef::new(data.as_bytes()) else {
+            return Err(ReadError::OutOfBounds);
+        };
+        Ok(Self {
+            data,
+            number_of_long_ver_metrics,
+        })
+    }
+}
+
+impl<'a> VmtxExtended<'a> {
+    /// A constructor that requires additional arguments.
+    ///
+    /// This type requires some external state in order to be
+    /// parsed.
+    pub fn read(data: FontData<'a>, number_of_long_ver_metrics: u32) -> Result<Self, ReadError> {
+        let args = number_of_long_ver_metrics;
+        Self::read_with_args(data, args)
+    }
+}
+
+/// The fields at the start of the table, which are read directly.
+#[derive(Clone, Copy, bytemuck :: AnyBitPattern)]
+#[repr(C, packed)]
+#[doc(hidden)]
+pub struct VmtxExtendedFixedHeader {}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(std::mem::size_of::<VmtxExtendedFixedHeader>() <= VmtxExtended::MIN_SIZE);
+
+/// VMTX vertical metrics (ISO/IEC 14496-22:2026, 5.6.14).
+#[derive(Clone)]
+pub struct VmtxExtended<'a> {
+    data: TableDataRef<'a, VmtxExtendedFixedHeader>,
+    number_of_long_ver_metrics: u32,
+}
+
 #[allow(clippy::needless_lifetimes)]
-impl<'a> std::fmt::Debug for Vmtx<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        (self as &dyn SomeTable<'a>).fmt(f)
+impl<'a> VmtxExtended<'a> {
+    pub const MIN_SIZE: usize = 0;
+    basic_table_impls!(impl_the_methods);
+
+    pub fn v_metrics(&self) -> &'a [LongMetric] {
+        let range = self.v_metrics_byte_range();
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
+    }
+
+    pub fn top_side_bearings(&self) -> &'a [BigEndian<i16>] {
+        let range = self.top_side_bearings_byte_range();
+        self.offset_data()
+            .read_array(range)
+            .ok()
+            .unwrap_or_default()
+    }
+
+    pub(crate) fn number_of_long_ver_metrics(&self) -> u32 {
+        self.number_of_long_ver_metrics
+    }
+
+    pub fn v_metrics_byte_range(&self) -> Range<usize> {
+        let number_of_long_ver_metrics = self.number_of_long_ver_metrics();
+        let start = 0usize;
+        let end = start.saturating_add(
+            (transforms::to_usize(number_of_long_ver_metrics))
+                .saturating_mul(LongMetric::RAW_BYTE_LEN),
+        );
+        start..end
+    }
+
+    pub fn top_side_bearings_byte_range(&self) -> Range<usize> {
+        let start = self.v_metrics_byte_range().end;
+        let end = start.saturating_add(
+            self.offset_data().len().saturating_sub(start) / i16::RAW_BYTE_LEN * i16::RAW_BYTE_LEN,
+        );
+        start..end
+    }
+}
+
+#[allow(clippy::absurd_extreme_comparisons)]
+const _: () = assert!(FontData::default_data_long_enough(VmtxExtended::MIN_SIZE));
+
+impl Default for VmtxExtended<'_> {
+    fn default() -> Self {
+        Self {
+            data: TableDataRef::new(FontData::default_table_data().as_bytes())
+                .unwrap_or_else(|| unreachable!("the default data covers MIN_SIZE")),
+            number_of_long_ver_metrics: Default::default(),
+        }
     }
 }

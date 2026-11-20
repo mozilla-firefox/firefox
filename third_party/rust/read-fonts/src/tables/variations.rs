@@ -154,11 +154,6 @@ impl types::Scalar for TupleVariationCount {
 }
 
 impl<'a> TupleVariationHeader<'a> {
-    #[cfg(feature = "experimental_traverse")]
-    fn traverse_tuple_index(&self) -> traversal::FieldType<'a> {
-        self.tuple_index().0.into()
-    }
-
     /// Peak tuple record for this tuple variation table — optional,
     /// determined by flags in the tupleIndex value.  Note that this
     /// must always be included in the 'cvar' table.
@@ -167,7 +162,7 @@ impl<'a> TupleVariationHeader<'a> {
         self.tuple_index().embedded_peak_tuple().then(|| {
             let range = self.peak_tuple_byte_range();
             Tuple {
-                values: self.data.read_array(range).unwrap(),
+                values: self.offset_data().read_array(range).unwrap(),
             }
         })
     }
@@ -179,7 +174,7 @@ impl<'a> TupleVariationHeader<'a> {
         self.tuple_index().intermediate_region().then(|| {
             let range = self.intermediate_start_tuple_byte_range();
             Tuple {
-                values: self.data.read_array(range).unwrap(),
+                values: self.offset_data().read_array(range).unwrap(),
             }
         })
     }
@@ -191,7 +186,7 @@ impl<'a> TupleVariationHeader<'a> {
         self.tuple_index().intermediate_region().then(|| {
             let range = self.intermediate_end_tuple_byte_range();
             Tuple {
-                values: self.data.read_array(range).unwrap(),
+                values: self.offset_data().read_array(range).unwrap(),
             }
         })
     }
@@ -205,10 +200,10 @@ impl<'a> TupleVariationHeader<'a> {
             let end_range = self.intermediate_end_tuple_byte_range();
             (
                 Tuple {
-                    values: self.data.read_array(start_range).unwrap(),
+                    values: self.offset_data().read_array(start_range).unwrap(),
                 },
                 Tuple {
-                    values: self.data.read_array(end_range).unwrap(),
+                    values: self.offset_data().read_array(end_range).unwrap(),
                 },
             )
         })
@@ -576,6 +571,23 @@ impl<'a> PackedDeltaFetcher<'a> {
     }
 
     pub fn add_to_f32_scaled(&mut self, out: &mut [f32], scale: f32) -> Result<(), ReadError> {
+        self.add_to_scaled(out, scale, |delta| delta as f32)
+    }
+
+    /// Adds packed deltas without losing precision from 32-bit integer values.
+    pub fn add_to_f64_scaled(&mut self, out: &mut [f64], scale: f64) -> Result<(), ReadError> {
+        self.add_to_scaled(out, scale, |delta| delta as f64)
+    }
+
+    fn add_to_scaled<T>(
+        &mut self,
+        out: &mut [T],
+        scale: T,
+        convert: impl Fn(i32) -> T,
+    ) -> Result<(), ReadError>
+    where
+        T: Copy + core::ops::AddAssign + core::ops::Mul<Output = T>,
+    {
         let mut remaining = out.len();
         if let Some(remaining_total) = self.remaining_total {
             if remaining > remaining_total {
@@ -595,7 +607,7 @@ impl<'a> PackedDeltaFetcher<'a> {
                 DeltaRunType::I8 => {
                     let bytes = &self.data[self.pos..self.pos + take];
                     for &b in bytes {
-                        out[idx] += b as i8 as f32 * scale;
+                        out[idx] += convert(b as i8 as i32) * scale;
                         idx += 1;
                     }
                     self.pos += take;
@@ -603,8 +615,8 @@ impl<'a> PackedDeltaFetcher<'a> {
                 DeltaRunType::I16 => {
                     let bytes = &self.data[self.pos..self.pos + take * 2];
                     for chunk in bytes.chunks_exact(2) {
-                        let delta = i16::from_be_bytes([chunk[0], chunk[1]]) as f32;
-                        out[idx] += delta * scale;
+                        let delta = i16::from_be_bytes([chunk[0], chunk[1]]) as i32;
+                        out[idx] += convert(delta) * scale;
                         idx += 1;
                     }
                     self.pos += take * 2;
@@ -612,9 +624,8 @@ impl<'a> PackedDeltaFetcher<'a> {
                 DeltaRunType::I32 => {
                     let bytes = &self.data[self.pos..self.pos + take * 4];
                     for chunk in bytes.chunks_exact(4) {
-                        let delta =
-                            i32::from_be_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]) as f32;
-                        out[idx] += delta * scale;
+                        let delta = i32::from_be_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
+                        out[idx] += convert(delta) * scale;
                         idx += 1;
                     }
                     self.pos += take * 4;
@@ -809,12 +820,37 @@ where
     /// Returns an iterator over all of the pairs of (variation tuple, scalar)
     /// for this glyph that are active for the given set of normalized
     /// coordinates.
-    pub fn active_tuples_at(
+    pub fn active_tuples_at<'b>(
         &self,
-        coords: &'a [F2Dot14],
-    ) -> impl Iterator<Item = (TupleVariation<'a, T>, Fixed)> + 'a {
+        coords: &'b [F2Dot14],
+    ) -> impl Iterator<Item = (TupleVariation<'a, T>, Fixed)> + 'b
+    where
+        'a: 'b,
+    {
+        self.active_tuples_at_with_scalars(coords, &[])
+    }
+
+    /// Returns an iterator over the tuples that apply at `coords`, reusing
+    /// `scalars`.
+    ///
+    /// `scalars` holds one entry per shared tuple, from
+    /// [`Gvar::compute_scalars`]. A tuple that names a shared peak and no
+    /// range of its own has the same scalar everywhere, so it is read from
+    /// there. A tuple with its own range, or one `scalars` does not reach, is
+    /// computed here.
+    ///
+    /// [`Gvar::compute_scalars`]: crate::tables::gvar::Gvar::compute_scalars
+    pub fn active_tuples_at_with_scalars<'b>(
+        &self,
+        coords: &'b [F2Dot14],
+        scalars: &'b [Fixed],
+    ) -> impl Iterator<Item = (TupleVariation<'a, T>, Fixed)> + 'b
+    where
+        'a: 'b,
+    {
         ActiveTupleVariationIter {
             coords,
+            scalars,
             parent: self.clone(),
             header_iter: TupleVariationHeaderIter::new(
                 self.header_data,
@@ -882,8 +918,9 @@ where
 
 /// An iterator over the active [`TupleVariation`]s for a specific glyph
 /// for a given set of coordinates.
-struct ActiveTupleVariationIter<'a, T> {
-    coords: &'a [F2Dot14],
+struct ActiveTupleVariationIter<'a, 'b, T> {
+    coords: &'b [F2Dot14],
+    scalars: &'b [Fixed],
     parent: TupleVariationData<'a, T>,
     header_iter: TupleVariationHeaderIter<'a>,
     serialized_data: FontData<'a>,
@@ -891,7 +928,7 @@ struct ActiveTupleVariationIter<'a, T> {
     _marker: std::marker::PhantomData<fn() -> T>,
 }
 
-impl<'a, T> Iterator for ActiveTupleVariationIter<'a, T>
+impl<'a, T> Iterator for ActiveTupleVariationIter<'a, '_, T>
 where
     T: TupleDelta,
 {
@@ -910,6 +947,7 @@ where
                 self.parent.axis_count as usize,
                 &self.parent.shared_tuples,
                 self.coords,
+                self.scalars,
             ) {
                 let var_data = self.serialized_data.slice(data_start..data_end)?;
                 return Some((
@@ -927,6 +965,16 @@ where
         }
     }
 }
+
+/// Marks a shared tuple scalar that was never computed.
+///
+/// A glyph names shared tuples by index and need not name them all, so a
+/// slice of scalars can carry gaps. Variation store regions are dense and
+/// need no such mark.
+///
+/// No computed scalar can equal this: a scalar is a product of ratios, each
+/// held between zero and one.
+pub const NOT_COMPUTED: Fixed = Fixed::MAX;
 
 /// A single set of tuple variation data
 #[derive(Clone)]
@@ -996,6 +1044,7 @@ where
             self.axis_count as usize,
             &self.shared_tuples,
             coords,
+            &[],
         )
     }
 
@@ -1287,10 +1336,21 @@ fn compute_scalar<'a>(
     axis_count: usize,
     shared_tuples: &Option<ComputedArray<'a, Tuple<'a>>>,
     coords: &[F2Dot14],
+    scalars: &[Fixed],
 ) -> Option<Fixed> {
-    let mut scalar = Fixed::ONE;
     let tuple_idx = header.tuple_index();
+    let intermediate = header.intermediate_tuples();
     let peak = if let Some(shared_index) = tuple_idx.tuple_records_index() {
+        // A shared peak with no range of its own has the same scalar
+        // wherever it is named, so a cached value applies.
+        if intermediate.is_none() {
+            match scalars.get(shared_index as usize) {
+                Some(scalar) if *scalar != NOT_COMPUTED => {
+                    return (*scalar != Fixed::ZERO).then_some(*scalar);
+                }
+                _ => {}
+            }
+        }
         shared_tuples.as_ref()?.get(shared_index as usize).ok()?
     } else {
         header.peak_tuple()?
@@ -1298,7 +1358,20 @@ fn compute_scalar<'a>(
     if peak.len() != axis_count {
         return None;
     }
-    let intermediate = header.intermediate_tuples();
+    scalar_for(&peak, intermediate, coords)
+}
+
+/// Computes the scalar for a peak at `coords`, interpolating over the tuple's
+/// range if it states one.
+///
+/// `None` where the tuple does not apply, which a scalar of zero also
+/// expresses.
+pub(crate) fn scalar_for(
+    peak: &Tuple,
+    intermediate: Option<(Tuple, Tuple)>,
+    coords: &[F2Dot14],
+) -> Option<Fixed> {
+    let mut scalar = Fixed::ONE;
     for (i, peak) in peak
         .values
         .iter()
@@ -1316,6 +1389,15 @@ fn compute_scalar<'a>(
         if let Some((inter_start, inter_end)) = &intermediate {
             let start = inter_start.get(i).unwrap_or_default();
             let end = inter_end.get(i).unwrap_or_default();
+            // A region that does not enclose its own peak, or that straddles
+            // the default, is invalid and contributes a factor of one. This
+            // mirrors the OpenType algorithm and the sibling scalar
+            // computations (`compute_scalar_f32`, `VariationRegion::compute_scalar`);
+            // without it a malformed region interpolates where it should be
+            // skipped.
+            if start > peak || peak > end || (start < F2Dot14::ZERO && end > F2Dot14::ZERO) {
+                continue;
+            }
             if coord <= start || coord >= end {
                 return None;
             }
@@ -1479,115 +1561,102 @@ impl DeltaSetIndexMap<'_> {
 }
 
 impl ItemVariationStore<'_> {
-    /// Computes the delta value for the specified index and set of normalized
-    /// variation coordinates.
-    pub fn compute_delta(
+    /// Computes the delta value for the specified index and set of
+    /// normalized variation coordinates.
+    ///
+    /// Each region's scalar is computed in 16.16 and multiplied by its raw
+    /// delta, and the products are summed exactly -- 48.16 holds the largest
+    /// possible sum with room to spare. Use [`F48Dot16::to_i32`] for the
+    /// classic integer delta, or apply the value unrounded to targets that
+    /// take fractional deltas.
+    pub fn compute_delta(&self, index: DeltaSetIndex, coords: &[F2Dot14]) -> Option<F48Dot16> {
+        self.compute_delta_with_scalars(index, coords, &[])
+    }
+
+    /// Computes the delta for `index` at `coords`, reusing `scalars`.
+    ///
+    /// `scalars` holds one entry per variation region, from
+    /// [`compute_scalars`](Self::compute_scalars). It may be empty or cover
+    /// only some of them; the rest are computed here.
+    pub fn compute_delta_with_scalars(
         &self,
         index: DeltaSetIndex,
         coords: &[F2Dot14],
-    ) -> Result<i32, ReadError> {
+        scalars: &[Fixed],
+    ) -> Option<F48Dot16> {
         if coords.is_empty() || index == DeltaSetIndex::NO_VARIATION_INDEX {
-            return Ok(0);
+            return Some(F48Dot16::ZERO);
         }
         let data = match self.item_variation_data().get(index.outer as usize) {
-            Some(data) => data?,
-            None => return Ok(0),
+            Some(data) => data.ok()?,
+            None => return Some(F48Dot16::ZERO),
         };
-        let regions = self.variation_region_list()?.variation_regions();
         let region_indices = data.region_indexes();
+        // Read only when a scalar has to be computed. A run that finds all
+        // of them in `scalars` never touches the region list.
+        let mut regions = None;
         // Compute deltas with 64-bit precision.
         // See <https://gitlab.freedesktop.org/freetype/freetype/-/blob/7ab541a2/src/truetype/ttgxvar.c#L1094>
-        let mut accum = 0i64;
-        for (i, region_delta) in data.delta_set(index.inner).enumerate() {
-            let region_index = region_indices
-                .get(i)
-                .ok_or(ReadError::MalformedData(
-                    "invalid delta sets in ItemVariationStore",
-                ))?
-                .get() as usize;
-            let region = regions.get(region_index)?;
-            let scalar = region.compute_scalar(coords);
-            accum += region_delta as i64 * scalar.to_bits() as i64;
+        let mut accum = F48Dot16::ZERO;
+        // The deltas and the region indices are parallel arrays sized by the
+        // same header field, so they are walked together.
+        for (region_index, region_delta) in region_indices.iter().zip(data.delta_set(index.inner)) {
+            let region_index = region_index.get() as usize;
+            let scalar = match scalars.get(region_index) {
+                Some(scalar) => *scalar,
+                None => {
+                    let regions = match &regions {
+                        Some(regions) => regions,
+                        None => {
+                            regions.insert(self.variation_region_list().ok()?.variation_regions())
+                        }
+                    };
+                    let region = regions.get(region_index).ok()?;
+                    // A zero delta cannot contribute at any location. Still
+                    // resolve its region so malformed indices fail as before.
+                    if region_delta == 0 {
+                        continue;
+                    }
+                    region.compute_scalar(coords)
+                }
+            };
+            // The sum cannot overflow, even for hostile data: a scalar is a
+            // product of ratios that the range guards keep at most one, so
+            // each term is under 2^47, and at most 2^16 - 1 regions bounds
+            // the total below 2^63.
+            accum += scalar.mul_i32(region_delta);
         }
-        Ok(((accum + 0x8000) >> 16) as i32)
+        Some(accum)
     }
 
-    /// Computes the delta value in floating point for the specified index and set
-    /// of normalized variation coordinates.
-    pub fn compute_float_delta(
-        &self,
-        index: DeltaSetIndex,
-        coords: &[F2Dot14],
-    ) -> Result<FloatItemDelta, ReadError> {
-        if coords.is_empty() {
-            return Ok(FloatItemDelta::ZERO);
-        }
-        let data = match self.item_variation_data().get(index.outer as usize) {
-            Some(data) => data?,
-            None => return Ok(FloatItemDelta::ZERO),
+    /// Computes the scalar for each variation region at `coords`, in store
+    /// order, and returns how many were written.
+    ///
+    /// A region that does not apply at `coords` is written as zero, which is
+    /// the value it contributes.
+    ///
+    /// `out` may be shorter than the store has regions, and an unreadable
+    /// store writes nothing.
+    /// [`compute_delta_with_scalars`](Self::compute_delta_with_scalars)
+    /// computes whatever is missing.
+    ///
+    /// Pass back only the entries this wrote. Regions are dense, so the
+    /// length of the slice is what identifies them.
+    pub fn compute_scalars(&self, coords: &[F2Dot14], out: &mut [Fixed]) -> usize {
+        let Ok(list) = self.variation_region_list() else {
+            return 0;
         };
-        let regions = self.variation_region_list()?.variation_regions();
-        let region_indices = data.region_indexes();
-        // Compute deltas in 64-bit floating point.
-        let mut accum = 0f64;
-        for (i, region_delta) in data.delta_set(index.inner).enumerate() {
-            let region_index = region_indices
-                .get(i)
-                .ok_or(ReadError::MalformedData(
-                    "invalid delta sets in ItemVariationStore",
-                ))?
-                .get() as usize;
-            let region = regions.get(region_index)?;
-            let scalar = region.compute_scalar_f32(coords);
-            accum += region_delta as f64 * scalar as f64;
+        let regions = list.variation_regions();
+        let count = out.len().min(regions.len());
+        for (i, out) in out[..count].iter_mut().enumerate() {
+            // An unreadable region ends the run. Entries already written
+            // stay valid; the caller computes the rest.
+            let Ok(region) = regions.get(i) else {
+                return i;
+            };
+            *out = region.compute_scalar(coords);
         }
-        Ok(FloatItemDelta(accum))
-    }
-}
-
-/// Floating point item delta computed by an item variation store.
-///
-/// These can be applied to types that implement [`FloatItemDeltaTarget`].
-#[derive(Copy, Clone, Default, Debug)]
-pub struct FloatItemDelta(f64);
-
-impl FloatItemDelta {
-    pub const ZERO: Self = Self(0.0);
-
-    /// Returns the (unrounded) delta value as a 64-bit float.
-    pub fn to_f64(self) -> f64 {
-        self.0
-    }
-}
-
-/// Trait for applying floating point item deltas to target values.
-pub trait FloatItemDeltaTarget {
-    fn apply_float_delta(&self, delta: FloatItemDelta) -> f32;
-}
-
-impl FloatItemDeltaTarget for Fixed {
-    fn apply_float_delta(&self, delta: FloatItemDelta) -> f32 {
-        const FIXED_TO_FLOAT: f64 = 1.0 / 65536.0;
-        self.to_f32() + (delta.0 * FIXED_TO_FLOAT) as f32
-    }
-}
-
-impl FloatItemDeltaTarget for FWord {
-    fn apply_float_delta(&self, delta: FloatItemDelta) -> f32 {
-        self.to_i16() as f32 + delta.0 as f32
-    }
-}
-
-impl FloatItemDeltaTarget for UfWord {
-    fn apply_float_delta(&self, delta: FloatItemDelta) -> f32 {
-        self.to_u16() as f32 + delta.0 as f32
-    }
-}
-
-impl FloatItemDeltaTarget for F2Dot14 {
-    fn apply_float_delta(&self, delta: FloatItemDelta) -> f32 {
-        const F2DOT14_TO_FLOAT: f64 = 1.0 / 16384.0;
-        self.to_f32() + (delta.0 * F2DOT14_TO_FLOAT) as f32
+        count
     }
 }
 
@@ -1598,46 +1667,29 @@ impl<'a> VariationRegion<'a> {
         const ZERO: Fixed = Fixed::ZERO;
         let mut scalar = Fixed::ONE;
         for (i, peak, axis_coords) in self.active_region_axes() {
+            // A coordinate pinned to the peak contributes a factor of one,
+            // whatever the rest of the axis says: if the axis is invalid or
+            // the peak sits at an edge, the outcome is `continue` on every
+            // path below. Checking it first, in raw 2.14, skips the start
+            // and end reads and their conversions for the common case of an
+            // instance sitting on a region's corner.
+            let raw_coord = coords.get(i).copied().unwrap_or_default();
+            if raw_coord == peak {
+                continue;
+            }
             let peak = peak.to_fixed();
             let start = axis_coords.start_coord.get().to_fixed();
             let end = axis_coords.end_coord.get().to_fixed();
             if start > peak || peak > end || start < ZERO && end > ZERO {
                 continue;
             }
-            let coord = coords.get(i).map(|coord| coord.to_fixed()).unwrap_or(ZERO);
+            let coord = raw_coord.to_fixed();
             if coord < start || coord > end {
                 return ZERO;
-            } else if coord == peak {
-                continue;
             } else if coord < peak {
                 scalar = scalar.mul_div(coord - start, peak - start);
             } else {
                 scalar = scalar.mul_div(end - coord, end - peak);
-            }
-        }
-        scalar
-    }
-
-    /// Computes a floating point scalar value for this region and the
-    /// specified normalized variation coordinates.
-    pub fn compute_scalar_f32(&self, coords: &[F2Dot14]) -> f32 {
-        let mut scalar = 1.0;
-        for (i, peak, axis_coords) in self.active_region_axes() {
-            let peak = peak.to_f32();
-            let start = axis_coords.start_coord.get().to_f32();
-            let end = axis_coords.end_coord.get().to_f32();
-            if start > peak || peak > end || start < 0.0 && end > 0.0 {
-                continue;
-            }
-            let coord = coords.get(i).map(|coord| coord.to_f32()).unwrap_or(0.0);
-            if coord < start || coord > end {
-                return 0.0;
-            } else if coord == peak {
-                continue;
-            } else if coord < peak {
-                scalar = (scalar * (coord - start)) / (peak - start);
-            } else {
-                scalar = (scalar * (end - coord)) / (end - peak);
             }
         }
         scalar
@@ -1672,10 +1724,7 @@ impl<'a> ItemVariationData<'a> {
 
         let offset = bytes_per_row * inner_index as usize;
         ItemDeltas {
-            cursor: FontData::new(self.delta_sets())
-                .slice(offset..)
-                .unwrap_or_default()
-                .cursor(),
+            bytes: self.delta_sets().get(offset..).unwrap_or_default().iter(),
             word_delta_count,
             long_words,
             len: region_count,
@@ -1712,7 +1761,7 @@ impl<'a> ItemVariationData<'a> {
 
 #[derive(Clone)]
 struct ItemDeltas<'a> {
-    cursor: Cursor<'a>,
+    bytes: core::slice::Iter<'a, u8>,
     word_delta_count: u16,
     long_words: bool,
     len: u16,
@@ -1728,50 +1777,64 @@ impl Iterator for ItemDeltas<'_> {
         }
         let pos = self.pos;
         self.pos += 1;
+        let mut byte = || self.bytes.next().copied();
         let value = match (pos >= self.word_delta_count, self.long_words) {
-            (true, true) | (false, false) => self.cursor.read::<i16>().ok()? as i32,
-            (true, false) => self.cursor.read::<i8>().ok()? as i32,
-            (false, true) => self.cursor.read::<i32>().ok()?,
+            (true, true) | (false, false) => i16::from_be_bytes([byte()?, byte()?]) as i32,
+            (true, false) => byte()? as i8 as i32,
+            (false, true) => i32::from_be_bytes([byte()?, byte()?, byte()?, byte()?]),
         };
         Some(value)
     }
 }
 
-pub(crate) fn advance_delta(
+/// The delta for a glyph's advance, reusing `scalars`.
+///
+/// Keeps every bit the variation store computed. Rounding it to a whole
+/// design unit is left to a caller, and implementations differ on how.
+pub(crate) fn advance_delta_with_scalars(
     dsim: Option<Result<DeltaSetIndexMap, ReadError>>,
     ivs: Result<ItemVariationStore, ReadError>,
     glyph_id: GlyphId,
     coords: &[F2Dot14],
-) -> Result<Fixed, ReadError> {
+    scalars: &[Fixed],
+) -> Option<F48Dot16> {
     if coords.is_empty() {
-        return Ok(Fixed::ZERO);
+        return Some(F48Dot16::ZERO);
     }
     let gid = glyph_id.to_u32();
     let ix = match dsim {
-        Some(Ok(dsim)) => dsim.get(gid)?,
+        Some(Ok(dsim)) => dsim.get(gid).ok()?,
+        // Implicit mappings use outer index zero; an oversized glyph ID
+        // cannot address an inner row and must not wrap to a different glyph.
+        _ if gid > u16::MAX as u32 => return Some(F48Dot16::ZERO),
         _ => DeltaSetIndex {
             outer: 0,
             inner: gid as _,
         },
     };
-    Ok(Fixed::from_i32(ivs?.compute_delta(ix, coords)?))
+    ivs.ok()?.compute_delta_with_scalars(ix, coords, scalars)
 }
 
-pub(crate) fn item_delta(
+/// The delta for an item, reusing `scalars`.
+///
+/// As [`advance_delta_with_scalars`], but for mappings that require an index
+/// map instead of falling back to the glyph id.
+pub(crate) fn item_delta_with_scalars(
     dsim: Option<Result<DeltaSetIndexMap, ReadError>>,
     ivs: Result<ItemVariationStore, ReadError>,
     glyph_id: GlyphId,
     coords: &[F2Dot14],
-) -> Result<Fixed, ReadError> {
+    scalars: &[Fixed],
+) -> Option<F48Dot16> {
     if coords.is_empty() {
-        return Ok(Fixed::ZERO);
+        return Some(F48Dot16::ZERO);
     }
     let gid = glyph_id.to_u32();
     let ix = match dsim {
-        Some(Ok(dsim)) => dsim.get(gid)?,
-        _ => return Err(ReadError::NullOffset),
+        Some(Ok(dsim)) => dsim.get(gid).ok()?,
+        _ => return None,
     };
-    Ok(Fixed::from_i32(ivs?.compute_delta(ix, coords)?))
+    ivs.ok()?.compute_delta_with_scalars(ix, coords, scalars)
 }
 
 #[cfg(test)]
@@ -1780,6 +1843,117 @@ mod tests {
 
     use super::*;
     use crate::{FontRef, TableProvider};
+
+    #[test]
+    fn zero_deltas_still_validate_their_regions() {
+        let store_bytes = |indices: [u16; 2]| {
+            BeBuffer::new()
+                .push(1u16) // ItemVariationStore format
+                .push(12u32) // region list offset
+                .push(1u16) // variation data count
+                .push(28u32) // variation data offset
+                .push(1u16) // axis count
+                .push(2u16) // region count
+                .extend([F2Dot14::ZERO, F2Dot14::ONE, F2Dot14::ONE])
+                .extend([F2Dot14::NEG_ONE, F2Dot14::NEG_ONE, F2Dot14::ZERO])
+                .push(2u16) // item count
+                .push(2u16) // word delta count
+                .push(2u16) // region index count
+                .extend(indices)
+                .extend([0i16, 120, -40, 0])
+        };
+        let bytes = store_bytes([0, 1]);
+        let store = ItemVariationStore::read(FontData::new(&bytes)).unwrap();
+        for coord in [-1.0, -0.25, 0.0, 0.25, 1.0] {
+            let coords = [F2Dot14::from_f32(coord)];
+            let mut scalars = [Fixed::ZERO; 2];
+            assert_eq!(store.compute_scalars(&coords, &mut scalars), 2);
+            for (inner, expected) in [120.0 * (-coord).max(0.0), -40.0 * coord.max(0.0)]
+                .into_iter()
+                .enumerate()
+            {
+                let index = DeltaSetIndex {
+                    outer: 0,
+                    inner: inner as u16,
+                };
+                let expected = Some(F48Dot16::from_f64(expected as f64));
+                assert_eq!(store.compute_delta(index, &coords), expected);
+                for count in 0..=2 {
+                    assert_eq!(
+                        store.compute_delta_with_scalars(index, &coords, &scalars[..count]),
+                        expected
+                    );
+                }
+            }
+        }
+        // Both the leading and trailing zero must reject an invalid region.
+        for (indices, inner) in [([2, 1], 0), ([0, 2], 1)] {
+            let bytes = store_bytes(indices);
+            let store = ItemVariationStore::read(FontData::new(&bytes)).unwrap();
+            assert_eq!(
+                store.compute_delta(DeltaSetIndex { outer: 0, inner }, &[F2Dot14::ONE]),
+                None
+            );
+        }
+    }
+
+    #[test]
+    fn implicit_advance_indices_do_not_truncate_glyph_ids() {
+        let bytes = BeBuffer::new()
+            .push(1u16) // ItemVariationStore format
+            .push(12u32) // region list offset
+            .push(1u16) // variation data count
+            .push(22u32) // variation data offset
+            .push(1u16) // axis count
+            .push(1u16) // region count
+            .extend([F2Dot14::ZERO, F2Dot14::ONE, F2Dot14::ONE])
+            .push(2u16) // item count
+            .push(1u16) // word delta count
+            .push(1u16) // region index count
+            .push(0u16) // region index
+            .extend([10i16, 100i16]);
+        let store = ItemVariationStore::read(FontData::new(&bytes)).unwrap();
+        let mapping = DeltaSetIndexMap::read(FontData::new(&[0, 0, 0, 1, 0])).unwrap();
+        let coords = [F2Dot14::from_f32(0.75)];
+        let mut scalars = [Fixed::ZERO; 32];
+        let scalar_count = store.compute_scalars(&coords, &mut scalars);
+        for scalars in [&[][..], &scalars[..scalar_count]] {
+            let delta = advance_delta_with_scalars(
+                None,
+                Ok(store.clone()),
+                GlyphId::new(1),
+                &coords,
+                scalars,
+            );
+            assert!(delta.is_some_and(|delta| delta != F48Dot16::ZERO));
+            for gid in [0xFFFF, 0x10000, 0x10001, 0xFFFF0001] {
+                assert_eq!(
+                    advance_delta_with_scalars(
+                        None,
+                        Ok(store.clone()),
+                        GlyphId::new(gid),
+                        &coords,
+                        scalars,
+                    ),
+                    Some(F48Dot16::ZERO),
+                    "implicit advance mapping wrapped glyph ID {gid}"
+                );
+            }
+            // Explicit mappings keep their last-entry repetition for high IDs.
+            for gid in [0x10000, 0x10001] {
+                assert_eq!(
+                    advance_delta_with_scalars(
+                        Some(Ok(mapping.clone())),
+                        Ok(store.clone()),
+                        GlyphId::new(gid),
+                        &coords,
+                        scalars,
+                    ),
+                    Some(F48Dot16::from_f64(7.5))
+                );
+            }
+        }
+    }
 
     #[test]
     fn ivs_regions() {
@@ -1813,6 +1987,70 @@ mod tests {
             })
             .collect::<Vec<_>>();
         assert_eq!(expected, &region_coords);
+    }
+
+    // A gvar/cvar intermediate region that does not enclose its own peak, or
+    // that straddles the default, must be ignored (contribute a factor of one)
+    // rather than interpolated. This matches the OpenType algorithm and the
+    // sibling `compute_scalar_f32` / `VariationRegion::compute_scalar`, which
+    // already apply the guard.
+    #[test]
+    fn scalar_for_ignores_invalid_intermediate_region() {
+        fn tuple(values: &[BigEndian<F2Dot14>]) -> Tuple<'_> {
+            Tuple { values }
+        }
+        let f = F2Dot14::from_f32;
+
+        // start > peak: the coord sits inside (start, end) but the region does
+        // not contain the peak, so the axis is skipped. Before the guard this
+        // interpolated to (end - coord) / (end - peak) = 0.2.
+        let peak: [BigEndian<F2Dot14>; 1] = [f(0.5).into()];
+        let start: [BigEndian<F2Dot14>; 1] = [f(0.8).into()];
+        let end: [BigEndian<F2Dot14>; 1] = [f(1.0).into()];
+        let coords = [f(0.9)];
+        assert_eq!(
+            scalar_for(&tuple(&peak), Some((tuple(&start), tuple(&end))), &coords),
+            Some(Fixed::ONE)
+        );
+
+        // peak > end.
+        let peak2: [BigEndian<F2Dot14>; 1] = [f(1.0).into()];
+        let start2: [BigEndian<F2Dot14>; 1] = [f(0.0).into()];
+        let end2: [BigEndian<F2Dot14>; 1] = [f(0.5).into()];
+        let coords2 = [f(0.25)];
+        assert_eq!(
+            scalar_for(
+                &tuple(&peak2),
+                Some((tuple(&start2), tuple(&end2))),
+                &coords2
+            ),
+            Some(Fixed::ONE)
+        );
+
+        // Region straddling the default (start < 0 < end).
+        let start3: [BigEndian<F2Dot14>; 1] = [f(-0.5).into()];
+        let end3: [BigEndian<F2Dot14>; 1] = [f(1.0).into()];
+        let coords3 = [f(0.25)];
+        assert_eq!(
+            scalar_for(
+                &tuple(&peak),
+                Some((tuple(&start3), tuple(&end3))),
+                &coords3
+            ),
+            Some(Fixed::ONE)
+        );
+
+        // A well-formed region (start <= peak <= end) still interpolates.
+        let start4: [BigEndian<F2Dot14>; 1] = [f(0.0).into()];
+        let end4: [BigEndian<F2Dot14>; 1] = [f(1.0).into()];
+        let coords4 = [f(0.25)];
+        let scalar = scalar_for(
+            &tuple(&peak),
+            Some((tuple(&start4), tuple(&end4))),
+            &coords4,
+        )
+        .unwrap();
+        assert!((scalar.to_f32() - 0.5).abs() < 1e-4);
     }
 
     // adapted from https://github.com/fonttools/fonttools/blob/f73220816264fc383b8a75f2146e8d69e455d398/Tests/ttLib/tables/TupleVariation_test.py#L492
@@ -1949,6 +2187,21 @@ mod tests {
         let mut extra = [0.0f32; 1];
         assert!(matches!(
             fetcher.add_to_f32_scaled(&mut extra, 1.0),
+            Err(ReadError::OutOfBounds)
+        ));
+    }
+
+    #[test]
+    fn packed_delta_fetcher_f64_preserves_i32_residuals() {
+        static INPUT: FontData =
+            FontData::new(&[0xC1, 0x01, 0x00, 0x00, 0x01, 0xFF, 0x00, 0x00, 0x00]);
+        let mut fetcher = PackedDeltas::new(INPUT, 2).fetcher();
+        let mut out = [0.0f64];
+        fetcher.add_to_f64_scaled(&mut out, 0.5).unwrap();
+        fetcher.add_to_f64_scaled(&mut out, 0.5).unwrap();
+        assert_eq!(out, [0.5]);
+        assert!(matches!(
+            fetcher.add_to_f64_scaled(&mut out, 1.0),
             Err(ReadError::OutOfBounds)
         ));
     }
@@ -2167,20 +2420,22 @@ mod tests {
                         inner: inner_ix,
                     };
                     // Check the deltas against all possible target values
-                    let orig_delta = ivs.compute_delta(delta_ix, &coords).unwrap();
-                    let float_delta = ivs.compute_float_delta(delta_ix, &coords).unwrap();
+                    let delta = ivs.compute_delta(delta_ix, &coords).unwrap();
+                    let orig_delta = delta.to_i32();
+                    let float_delta = delta.to_f64();
+
                     // For font unit types, we need to accept both rounding and
                     // truncation to account for the additional accumulation of
                     // fractional bits in floating point
                     assert!(
-                        orig_delta == float_delta.0.round() as i32
-                            || orig_delta == float_delta.0.trunc() as i32
+                        orig_delta == float_delta.round() as i32
+                            || orig_delta == float_delta.trunc() as i32
                     );
                     // For the fixed point types, check with an epsilon
                     const EPSILON: f32 = 1e12;
-                    let fixed_delta = Fixed::ZERO.apply_float_delta(float_delta);
+                    let fixed_delta = Fixed::ZERO.apply_delta(delta);
                     assert!((Fixed::from_bits(orig_delta).to_f32() - fixed_delta).abs() < EPSILON);
-                    let f2dot14_delta = F2Dot14::ZERO.apply_float_delta(float_delta);
+                    let f2dot14_delta = F2Dot14::ZERO.apply_delta(delta);
                     assert!(
                         (F2Dot14::from_bits(orig_delta as i16).to_f32() - f2dot14_delta).abs()
                             < EPSILON
