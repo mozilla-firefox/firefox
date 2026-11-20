@@ -144,6 +144,52 @@ promise_test(async t => {
 }, 'Every write() of a datagram burst that overruns the outgoing queue settles');
 
 promise_test(async t => {
+  const wt = new WebTransport(webtransport_url('echo.py'));
+  wt.closed.catch(() => {});
+  t.add_cleanup(() => wt.close());
+  await wt.ready;
+
+  // Large enough that outgoingMaxBufferedDatagrams does not pace the burst, and
+  // no expiry, so nothing may leave the queue except by being sent. The
+  // burst holds more bytes than an implementation is likely to buffer for a
+  // session, so it has to pace the writes instead of dropping datagrams.
+  const burst = 4000;
+  wt.datagrams.outgoingMaxBufferedDatagrams = burst * 2;
+  wt.datagrams.outgoingMaxAge = Infinity;
+  wt.datagrams.incomingMaxBufferedDatagrams = burst;
+
+  let received = 0;
+  const readLoop = (async () => {
+    for await (const value of wt.datagrams.readable) {
+      if (++received == burst) {
+        return;
+      }
+    }
+  })();
+
+  const writer = wt.datagrams.createWritable().getWriter();
+  const writes = [];
+  for (let i = 0; i < burst; i++) {
+    writes.push(writer.write(new Uint8Array(15).fill(i & 0xff)));
+  }
+  assert_array_equals(await Promise.all(writes), new Array(burst).fill(undefined),
+    'every write() should resolve with undefined');
+
+  // Datagrams are unreliable, so tolerate a little loss on the way, but not the
+  // dozens a queue evicting its oldest datagrams loses.
+  await Promise.race([readLoop, wait(5000)]);
+  assert_greater_than_equal(received, burst - 10,
+    'Datagrams written faster than they can be sent should not be dropped');
+
+  const stats = await wt.getStats();
+  assert_equals(stats.datagrams.expiredOutgoing, 0,
+    'Datagrams should not expire with an unlimited outgoingMaxAge');
+
+  await writer.ready;
+  await writer.write(new Uint8Array([0]));
+}, 'A burst of datagrams larger than the transport buffers is paced, not dropped');
+
+promise_test(async t => {
   // Establish a WebTransport session.
   const wt = new WebTransport(webtransport_url('echo.py'));
   wt.closed.catch(() => {});
