@@ -480,7 +480,7 @@ class ArenaCollection {
 
     MayPurgeAll(PurgeIfThreshold, __func__);
 
-    return aEnable;
+    return !aEnable;
   }
 
   bool IsDeferredPurgeEnabled() MOZ_REQUIRES(mLock) {

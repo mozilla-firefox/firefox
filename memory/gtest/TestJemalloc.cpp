@@ -910,6 +910,16 @@ void TestBaseAlloc(size_t size, unsigned& hits) {
   sBaseAlloc.free(ptr3);
 }
 
+TEST(Jemalloc, EnableDeferredPurge)
+{
+  bool wasDeferred = moz_enable_deferred_purge(true);
+  EXPECT_TRUE(moz_enable_deferred_purge(false));
+  EXPECT_FALSE(moz_enable_deferred_purge(false));
+  EXPECT_FALSE(moz_enable_deferred_purge(true));
+  EXPECT_TRUE(moz_enable_deferred_purge(true));
+  moz_enable_deferred_purge(wasDeferred);
+}
+
 TEST(Jemalloc, BaseAlloc)
 {
   // Used to calculate the free list hit rate, see the end of the test.
