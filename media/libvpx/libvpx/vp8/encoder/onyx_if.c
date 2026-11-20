@@ -1181,8 +1181,17 @@ void vp8_alloc_compressor_data(VP8_COMP *cpi) {
 #else
     unsigned int tokens = cm->mb_rows * cm->mb_cols * 24 * 16;
 #endif
-    CHECK_MEM_ERROR(&cpi->common.error, cpi->tok,
-                    vpx_calloc(tokens, sizeof(*cpi->tok)));
+    /* The token buffer is sized for the worst case, but only the
+     * [start, stop) range of each macroblock row that was written during
+     * tokenization is ever read back by the bitstream packer. Allocate it
+     * without zeroing so that the pages a frame does not use are never
+     * touched, which keeps them out of the resident set. */
+    const size_t tok_size = (size_t)tokens * sizeof(*cpi->tok);
+    if (tok_size / sizeof(*cpi->tok) != tokens) {
+      vpx_internal_error(&cpi->common.error, VPX_CODEC_MEM_ERROR,
+                         "Token buffer size overflow");
+    }
+    CHECK_MEM_ERROR(&cpi->common.error, cpi->tok, vpx_malloc(tok_size));
   }
 
   /* Data used for real time vc mode to see if gf needs refreshing */

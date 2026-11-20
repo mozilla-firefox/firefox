@@ -8,6 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include <assert.h>
 #include <immintrin.h>  // AVX2
 
 #include "./vpx_dsp_rtcd.h"
@@ -593,6 +594,11 @@ static INLINE int sub_pix_var32xh(const uint8_t *src, int src_stride,
   __m256i sse_reg = _mm256_setzero_si256();
   __m256i sse_reg_hi, res_cmp, sum_reg_lo, sum_reg_hi;
   int sum;
+  // sum_reg accumulates 2 * height signed diffs in [-255, 255] per int16_t
+  // lane, so height <= 64 keeps each lane within [-32640, 32640] < INT16_MAX.
+  assert(height >= 1 && height <= 64);
+  assert(x_offset >= 0 && x_offset < 8);
+  assert(y_offset >= 0 && y_offset < 8);
   // x_offset = 0 and y_offset = 0
   if (x_offset == 0) {
     if (y_offset == 0) {
@@ -656,6 +662,227 @@ static int sub_pixel_avg_variance32xh_avx2(const uint8_t *src, int src_stride,
                                            unsigned int *sse) {
   return sub_pix_var32xh(src, src_stride, x_offset, y_offset, dst, dst_stride,
                          second_pred, second_stride, 1, height, sse);
+}
+
+// Load two 16-byte rows into the low and high 128-bit lanes of a YMM register.
+static INLINE __m256i load_two_rows16(const uint8_t *src, int stride) {
+  const __m128i row0 = _mm_loadu_si128((const __m128i *)src);
+  const __m128i row1 = _mm_loadu_si128((const __m128i *)(src + stride));
+  return _mm256_inserti128_si256(_mm256_castsi128_si256(row0), row1, 1);
+}
+
+// Broadcast a 128-bit row into both lanes without relying on the
+// _mm256_broadcastsi128_si256 intrinsic on older toolchains.
+static INLINE __m256i dup_row16(const __m128i row) {
+  return _mm256_inserti128_si256(_mm256_castsi128_si256(row), row, 1);
+}
+
+// Bilinearly interpolate packed uint8_t pairs (src_a, src_b) using 16-scale
+// taps in *filter_ptr (t0 + t1 == 16; max maddubs = 255 * 16 = 4080).
+static INLINE __m256i bilin_filter16_avx2(const __m256i src_a,
+                                          const __m256i src_b,
+                                          const __m256i *const filter_ptr) {
+  const __m256i filter = *filter_ptr;
+  const __m256i round = _mm256_set1_epi16(8);
+  __m256i low =
+      _mm256_maddubs_epi16(_mm256_unpacklo_epi8(src_a, src_b), filter);
+  __m256i high =
+      _mm256_maddubs_epi16(_mm256_unpackhi_epi8(src_a, src_b), filter);
+  low = _mm256_srai_epi16(_mm256_add_epi16(low, round), 4);
+  high = _mm256_srai_epi16(_mm256_add_epi16(high, round), 4);
+  return _mm256_packus_epi16(low, high);
+}
+
+// Horizontally filter row 0 (16 bytes) and replicate it into both YMM lanes.
+// Takes x_offset instead of a __m256i parameter to avoid 32-bit MSVC C2719.
+static INLINE __m256i filter_row0_16_dup(const uint8_t *src, int x_offset) {
+  const __m128i filter = _mm_load_si128(
+      (const __m128i *)(bilinear_filters_avx2 + (x_offset << 5)));
+  const __m128i round = _mm_set1_epi16(8);
+  const __m128i src_a = _mm_loadu_si128((const __m128i *)src);
+  const __m128i src_b = _mm_loadu_si128((const __m128i *)(src + 1));
+  __m128i low = _mm_maddubs_epi16(_mm_unpacklo_epi8(src_a, src_b), filter);
+  __m128i high = _mm_maddubs_epi16(_mm_unpackhi_epi8(src_a, src_b), filter);
+  low = _mm_srai_epi16(_mm_add_epi16(low, round), 4);
+  high = _mm_srai_epi16(_mm_add_epi16(high, round), 4);
+  return dup_row16(_mm_packus_epi16(low, high));
+}
+
+// Optionally average two packed 16-byte predicted rows with `second_pred`
+// (contiguous 16xH layout) and accumulate into 8x uint32_t `sse` and 16x
+// int16_t `sum`.
+static INLINE void spv16_accum_avx2(const __m256i pred, const uint8_t *dst,
+                                    int dst_stride, const uint8_t *second_pred,
+                                    int do_sec, __m256i *const sse,
+                                    __m256i *const sum) {
+  const __m256i dst_reg = load_two_rows16(dst, dst_stride);
+  const __m256i final_pred =
+      do_sec ? _mm256_avg_epu8(pred,
+                               _mm256_loadu_si256((const __m256i *)second_pred))
+             : pred;
+  variance_kernel_avx2(final_pred, dst_reg, sse, sum);
+}
+
+// Compute sum and SSE for a 16xH block (even height in [2, 32]) by processing
+// two rows per YMM register and carrying the previous row across 128-bit lanes
+// so at most height + 1 rows of `src` are ever read.
+// Dynamic range for H <= 32:
+//   - per-pixel diff in [-255, 255]
+//   - `sum` has 16x int16_t lanes, each summing <= H diffs ([-8160, 8160]),
+//     reduced across 4 lanes in variance_final_from_16bit_sum_avx2 to
+//     [-32640, 32640] < INT16_MAX
+//   - `sse` has 8x uint32_t lanes, each summing <= 2 * H squared diffs
+//     (<= 4,161,600 << UINT32_MAX)
+static INLINE int sub_pix_var16xh_avx2(const uint8_t *src, int src_stride,
+                                       int x_offset, int y_offset,
+                                       const uint8_t *dst, int dst_stride,
+                                       const uint8_t *second_pred, int do_sec,
+                                       int height, uint32_t *sse) {
+  __m256i sse_reg = _mm256_setzero_si256();
+  __m256i sum_reg = _mm256_setzero_si256();
+  int i, sum;
+  assert(height >= 2 && (height & 1) == 0 && height <= 32);
+  assert(x_offset >= 0 && x_offset < 8);
+  assert(y_offset >= 0 && y_offset < 8);
+
+  if (y_offset == 0) {
+    if (x_offset == 0) {
+      for (i = 0; i < height; i += 2) {
+        const __m256i pred = load_two_rows16(src, src_stride);
+        spv16_accum_avx2(pred, dst, dst_stride, second_pred, do_sec, &sse_reg,
+                         &sum_reg);
+        src += 2 * src_stride;
+        dst += 2 * dst_stride;
+        if (do_sec) second_pred += 32;
+      }
+    } else if (x_offset == 4) {
+      for (i = 0; i < height; i += 2) {
+        const __m256i pred =
+            _mm256_avg_epu8(load_two_rows16(src, src_stride),
+                            load_two_rows16(src + 1, src_stride));
+        spv16_accum_avx2(pred, dst, dst_stride, second_pred, do_sec, &sse_reg,
+                         &sum_reg);
+        src += 2 * src_stride;
+        dst += 2 * dst_stride;
+        if (do_sec) second_pred += 32;
+      }
+    } else {
+      const __m256i xfilter = _mm256_load_si256(
+          (const __m256i *)(bilinear_filters_avx2 + (x_offset << 5)));
+      for (i = 0; i < height; i += 2) {
+        const __m256i pred =
+            bilin_filter16_avx2(load_two_rows16(src, src_stride),
+                                load_two_rows16(src + 1, src_stride), &xfilter);
+        spv16_accum_avx2(pred, dst, dst_stride, second_pred, do_sec, &sse_reg,
+                         &sum_reg);
+        src += 2 * src_stride;
+        dst += 2 * dst_stride;
+        if (do_sec) second_pred += 32;
+      }
+    }
+  } else if (y_offset == 4) {
+    if (x_offset == 0) {
+      __m256i prev = dup_row16(_mm_loadu_si128((const __m128i *)src));
+      src += src_stride;
+      for (i = 0; i < height; i += 2) {
+        const __m256i curr = load_two_rows16(src, src_stride);
+        const __m256i top = _mm256_permute2x128_si256(prev, curr, 0x21);
+        prev = curr;
+        spv16_accum_avx2(_mm256_avg_epu8(top, curr), dst, dst_stride,
+                         second_pred, do_sec, &sse_reg, &sum_reg);
+        src += 2 * src_stride;
+        dst += 2 * dst_stride;
+        if (do_sec) second_pred += 32;
+      }
+    } else if (x_offset == 4) {
+      __m256i prev =
+          dup_row16(_mm_avg_epu8(_mm_loadu_si128((const __m128i *)src),
+                                 _mm_loadu_si128((const __m128i *)(src + 1))));
+      src += src_stride;
+      for (i = 0; i < height; i += 2) {
+        const __m256i curr =
+            _mm256_avg_epu8(load_two_rows16(src, src_stride),
+                            load_two_rows16(src + 1, src_stride));
+        const __m256i top = _mm256_permute2x128_si256(prev, curr, 0x21);
+        prev = curr;
+        spv16_accum_avx2(_mm256_avg_epu8(top, curr), dst, dst_stride,
+                         second_pred, do_sec, &sse_reg, &sum_reg);
+        src += 2 * src_stride;
+        dst += 2 * dst_stride;
+        if (do_sec) second_pred += 32;
+      }
+    } else {
+      const __m256i xfilter = _mm256_load_si256(
+          (const __m256i *)(bilinear_filters_avx2 + (x_offset << 5)));
+      __m256i prev = filter_row0_16_dup(src, x_offset);
+      src += src_stride;
+      for (i = 0; i < height; i += 2) {
+        const __m256i curr =
+            bilin_filter16_avx2(load_two_rows16(src, src_stride),
+                                load_two_rows16(src + 1, src_stride), &xfilter);
+        const __m256i top = _mm256_permute2x128_si256(prev, curr, 0x21);
+        prev = curr;
+        spv16_accum_avx2(_mm256_avg_epu8(top, curr), dst, dst_stride,
+                         second_pred, do_sec, &sse_reg, &sum_reg);
+        src += 2 * src_stride;
+        dst += 2 * dst_stride;
+        if (do_sec) second_pred += 32;
+      }
+    }
+  } else {
+    const __m256i yfilter = _mm256_load_si256(
+        (const __m256i *)(bilinear_filters_avx2 + (y_offset << 5)));
+    if (x_offset == 0) {
+      __m256i prev = dup_row16(_mm_loadu_si128((const __m128i *)src));
+      src += src_stride;
+      for (i = 0; i < height; i += 2) {
+        const __m256i curr = load_two_rows16(src, src_stride);
+        const __m256i top = _mm256_permute2x128_si256(prev, curr, 0x21);
+        prev = curr;
+        spv16_accum_avx2(bilin_filter16_avx2(top, curr, &yfilter), dst,
+                         dst_stride, second_pred, do_sec, &sse_reg, &sum_reg);
+        src += 2 * src_stride;
+        dst += 2 * dst_stride;
+        if (do_sec) second_pred += 32;
+      }
+    } else if (x_offset == 4) {
+      __m256i prev =
+          dup_row16(_mm_avg_epu8(_mm_loadu_si128((const __m128i *)src),
+                                 _mm_loadu_si128((const __m128i *)(src + 1))));
+      src += src_stride;
+      for (i = 0; i < height; i += 2) {
+        const __m256i curr =
+            _mm256_avg_epu8(load_two_rows16(src, src_stride),
+                            load_two_rows16(src + 1, src_stride));
+        const __m256i top = _mm256_permute2x128_si256(prev, curr, 0x21);
+        prev = curr;
+        spv16_accum_avx2(bilin_filter16_avx2(top, curr, &yfilter), dst,
+                         dst_stride, second_pred, do_sec, &sse_reg, &sum_reg);
+        src += 2 * src_stride;
+        dst += 2 * dst_stride;
+        if (do_sec) second_pred += 32;
+      }
+    } else {
+      const __m256i xfilter = _mm256_load_si256(
+          (const __m256i *)(bilinear_filters_avx2 + (x_offset << 5)));
+      __m256i prev = filter_row0_16_dup(src, x_offset);
+      src += src_stride;
+      for (i = 0; i < height; i += 2) {
+        const __m256i curr =
+            bilin_filter16_avx2(load_two_rows16(src, src_stride),
+                                load_two_rows16(src + 1, src_stride), &xfilter);
+        const __m256i top = _mm256_permute2x128_si256(prev, curr, 0x21);
+        prev = curr;
+        spv16_accum_avx2(bilin_filter16_avx2(top, curr, &yfilter), dst,
+                         dst_stride, second_pred, do_sec, &sse_reg, &sum_reg);
+        src += 2 * src_stride;
+        dst += 2 * dst_stride;
+        if (do_sec) second_pred += 32;
+      }
+    }
+  }
+  variance_final_from_16bit_sum_avx2(sse_reg, sum_reg, sse, &sum);
+  return sum;
 }
 
 typedef void (*get_var_avx2)(const uint8_t *src_ptr, int src_stride,
@@ -869,4 +1096,122 @@ unsigned int vpx_sub_pixel_avg_variance32x32_avx2(
                                                  y_offset, ref_ptr, ref_stride,
                                                  second_pred, 32, 32, sse);
   return *sse - (uint32_t)(((int64_t)se * se) >> 10);
+}
+
+uint32_t vpx_sub_pixel_variance64x32_avx2(const uint8_t *src_ptr,
+                                          int src_stride, int x_offset,
+                                          int y_offset, const uint8_t *ref_ptr,
+                                          int ref_stride, uint32_t *sse) {
+  uint32_t sse1, sse2;
+  const int se1 = sub_pixel_variance32xh_avx2(
+      src_ptr, src_stride, x_offset, y_offset, ref_ptr, ref_stride, 32, &sse1);
+  const int se2 =
+      sub_pixel_variance32xh_avx2(src_ptr + 32, src_stride, x_offset, y_offset,
+                                  ref_ptr + 32, ref_stride, 32, &sse2);
+  const int se = se1 + se2;
+  *sse = sse1 + sse2;
+  return *sse - (uint32_t)(((int64_t)se * se) >> 11);
+}
+
+uint32_t vpx_sub_pixel_avg_variance64x32_avx2(const uint8_t *src_ptr,
+                                              int src_stride, int x_offset,
+                                              int y_offset,
+                                              const uint8_t *ref_ptr,
+                                              int ref_stride, uint32_t *sse,
+                                              const uint8_t *second_pred) {
+  uint32_t sse1, sse2;
+  const int se1 = sub_pixel_avg_variance32xh_avx2(src_ptr, src_stride, x_offset,
+                                                  y_offset, ref_ptr, ref_stride,
+                                                  second_pred, 64, 32, &sse1);
+  const int se2 = sub_pixel_avg_variance32xh_avx2(
+      src_ptr + 32, src_stride, x_offset, y_offset, ref_ptr + 32, ref_stride,
+      second_pred + 32, 64, 32, &sse2);
+  const int se = se1 + se2;
+  *sse = sse1 + sse2;
+  return *sse - (uint32_t)(((int64_t)se * se) >> 11);
+}
+
+#define SUB_PIX_VAR_32XH_AVX2(H, SHIFT)                                        \
+  uint32_t vpx_sub_pixel_variance32x##H##_avx2(                                \
+      const uint8_t *src_ptr, int src_stride, int x_offset, int y_offset,      \
+      const uint8_t *ref_ptr, int ref_stride, uint32_t *sse) {                 \
+    const int se = sub_pixel_variance32xh_avx2(                                \
+        src_ptr, src_stride, x_offset, y_offset, ref_ptr, ref_stride, H, sse); \
+    return *sse - (uint32_t)(((int64_t)se * se) >> (SHIFT));                   \
+  }                                                                            \
+  uint32_t vpx_sub_pixel_avg_variance32x##H##_avx2(                            \
+      const uint8_t *src_ptr, int src_stride, int x_offset, int y_offset,      \
+      const uint8_t *ref_ptr, int ref_stride, uint32_t *sse,                   \
+      const uint8_t *second_pred) {                                            \
+    const int se = sub_pixel_avg_variance32xh_avx2(                            \
+        src_ptr, src_stride, x_offset, y_offset, ref_ptr, ref_stride,          \
+        second_pred, 32, H, sse);                                              \
+    return *sse - (uint32_t)(((int64_t)se * se) >> (SHIFT));                   \
+  }
+
+SUB_PIX_VAR_32XH_AVX2(64, 11)
+SUB_PIX_VAR_32XH_AVX2(16, 9)
+#undef SUB_PIX_VAR_32XH_AVX2
+
+uint32_t vpx_sub_pixel_variance16x32_avx2(const uint8_t *src_ptr,
+                                          int src_stride, int x_offset,
+                                          int y_offset, const uint8_t *ref_ptr,
+                                          int ref_stride, uint32_t *sse) {
+  const int se = sub_pix_var16xh_avx2(src_ptr, src_stride, x_offset, y_offset,
+                                      ref_ptr, ref_stride, NULL, 0, 32, sse);
+  return *sse - (uint32_t)(((int64_t)se * se) >> 9);
+}
+
+uint32_t vpx_sub_pixel_avg_variance16x32_avx2(const uint8_t *src_ptr,
+                                              int src_stride, int x_offset,
+                                              int y_offset,
+                                              const uint8_t *ref_ptr,
+                                              int ref_stride, uint32_t *sse,
+                                              const uint8_t *second_pred) {
+  const int se =
+      sub_pix_var16xh_avx2(src_ptr, src_stride, x_offset, y_offset, ref_ptr,
+                           ref_stride, second_pred, 1, 32, sse);
+  return *sse - (uint32_t)(((int64_t)se * se) >> 9);
+}
+
+uint32_t vpx_sub_pixel_variance16x16_avx2(const uint8_t *src_ptr,
+                                          int src_stride, int x_offset,
+                                          int y_offset, const uint8_t *ref_ptr,
+                                          int ref_stride, uint32_t *sse) {
+  const int se = sub_pix_var16xh_avx2(src_ptr, src_stride, x_offset, y_offset,
+                                      ref_ptr, ref_stride, NULL, 0, 16, sse);
+  return *sse - (uint32_t)(((int64_t)se * se) >> 8);
+}
+
+uint32_t vpx_sub_pixel_avg_variance16x16_avx2(const uint8_t *src_ptr,
+                                              int src_stride, int x_offset,
+                                              int y_offset,
+                                              const uint8_t *ref_ptr,
+                                              int ref_stride, uint32_t *sse,
+                                              const uint8_t *second_pred) {
+  const int se =
+      sub_pix_var16xh_avx2(src_ptr, src_stride, x_offset, y_offset, ref_ptr,
+                           ref_stride, second_pred, 1, 16, sse);
+  return *sse - (uint32_t)(((int64_t)se * se) >> 8);
+}
+
+uint32_t vpx_sub_pixel_variance16x8_avx2(const uint8_t *src_ptr, int src_stride,
+                                         int x_offset, int y_offset,
+                                         const uint8_t *ref_ptr, int ref_stride,
+                                         uint32_t *sse) {
+  const int se = sub_pix_var16xh_avx2(src_ptr, src_stride, x_offset, y_offset,
+                                      ref_ptr, ref_stride, NULL, 0, 8, sse);
+  return *sse - (uint32_t)(((int64_t)se * se) >> 7);
+}
+
+uint32_t vpx_sub_pixel_avg_variance16x8_avx2(const uint8_t *src_ptr,
+                                             int src_stride, int x_offset,
+                                             int y_offset,
+                                             const uint8_t *ref_ptr,
+                                             int ref_stride, uint32_t *sse,
+                                             const uint8_t *second_pred) {
+  const int se =
+      sub_pix_var16xh_avx2(src_ptr, src_stride, x_offset, y_offset, ref_ptr,
+                           ref_stride, second_pred, 1, 8, sse);
+  return *sse - (uint32_t)(((int64_t)se * se) >> 7);
 }

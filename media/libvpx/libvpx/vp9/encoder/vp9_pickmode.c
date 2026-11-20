@@ -132,6 +132,9 @@ static int mv_refs_rt(VP9_COMP *cpi, const VP9_COMMON *cm, const MACROBLOCK *x,
     const int prev_layer = cpi->svc.spatial_layer_id - 1;
     const int index =
         (mi_col >> 1) + (mi_row >> 1) * cpi->svc.mi_cols[prev_layer];
+    assert(cm->prev_frame != NULL && cm->prev_frame->mvs != NULL);
+    assert(cpi->svc.mi_cols[prev_layer] <= cm->prev_frame->mi_cols &&
+           cpi->svc.mi_rows[prev_layer] <= cm->prev_frame->mi_rows);
     // prev_frame->mvs[] is allocated to size mi_cols * mi_rows corresponding
     // to the previous spatial layer, so the index check is against
     // svc.mi_col/rows[prev_layer].
@@ -1289,10 +1292,14 @@ static INLINE void find_predictors(
       vp9_find_mv_refs(cm, xd, xd->mi[0], ref_frame, candidates, mi_row, mi_col,
                        x->mbmi_ext->mode_context);
     } else {
+      // Only use base_mv when a lower spatial layer was encoded in this
+      // superframe.
       const_motion[ref_frame] =
           mv_refs_rt(cpi, cm, x, xd, tile_info, xd->mi[0], ref_frame,
                      candidates, &frame_mv[NEWMV][ref_frame], mi_row, mi_col,
-                     (int)(cpi->svc.use_base_mv && cpi->svc.spatial_layer_id));
+                     (int)(cpi->svc.use_base_mv &&
+                           cpi->svc.spatial_layer_id >
+                               cpi->svc.first_spatial_layer_to_encode));
     }
     vp9_find_best_ref_mvs(xd, cm->allow_high_precision_mv, candidates,
                           &frame_mv[NEARESTMV][ref_frame],
@@ -1626,7 +1633,9 @@ static int search_new_mv(VP9_COMP *cpi, MACROBLOCK *x,
         cpi->sf.mv.subpel_search_level, cond_cost_list(cpi, cost_list),
         x->nmvjointcost, x->mvcost, &dis, &x->pred_sse[ref_frame], NULL, 0, 0,
         cpi->sf.use_accurate_subpel_search);
-  } else if (svc->use_base_mv && svc->spatial_layer_id) {
+  } else if (svc->use_base_mv &&
+             svc->spatial_layer_id > svc->first_spatial_layer_to_encode) {
+    // Use base_mv from the lower spatial layer encoded in this superframe.
     if (frame_mv[NEWMV][ref_frame].as_int != INVALID_MV) {
       const int pre_stride = xd->plane[0].pre[0].stride;
       unsigned int base_mv_sse = UINT_MAX;

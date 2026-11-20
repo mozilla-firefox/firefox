@@ -870,6 +870,7 @@ static void setup_frame(VP9_COMP *cpi) {
 
 static void vp9_enc_setup_mi(VP9_COMMON *cm) {
   int i;
+  const int mi_grid_size = cm->mi_stride * calc_mi_size(cm->mi_rows);
   cm->mi = cm->mip + cm->mi_stride + 1;
   memset(cm->mip, 0, cm->mi_stride * (cm->mi_rows + 1) * sizeof(*cm->mip));
   cm->prev_mi = cm->prev_mip + cm->mi_stride + 1;
@@ -882,8 +883,9 @@ static void vp9_enc_setup_mi(VP9_COMMON *cm) {
   cm->mi_grid_visible = cm->mi_grid_base + cm->mi_stride + 1;
   cm->prev_mi_grid_visible = cm->prev_mi_grid_base + cm->mi_stride + 1;
 
-  memset(cm->mi_grid_base, 0,
-         cm->mi_stride * (cm->mi_rows + 1) * sizeof(*cm->mi_grid_base));
+  memset(cm->mi_grid_base, 0, mi_grid_size * sizeof(*cm->mi_grid_base));
+  memset(cm->prev_mi_grid_base, 0,
+         mi_grid_size * sizeof(*cm->prev_mi_grid_base));
 }
 
 static int vp9_enc_alloc_mi(VP9_COMMON *cm, int mi_size) {
@@ -1400,8 +1402,19 @@ static void alloc_compressor_data(VP9_COMP *cpi) {
           "Size of cpi->tile_tok[0][0] can't be represented in size_t");
     }
 #endif
-    CHECK_MEM_ERROR(&cm->error, cpi->tile_tok[0][0],
-                    vpx_calloc((size_t)tokens, sizeof(*cpi->tile_tok[0][0])));
+    // The token buffer is sized for the worst case, but only the
+    // [start, start + count) range of each superblock row that was written
+    // during tokenization is ever read back by the bitstream packer. Allocate
+    // it without zeroing so that the pages a frame does not use are never
+    // touched, which keeps them out of the resident set.
+    {
+      const size_t tok_size = (size_t)tokens * sizeof(*cpi->tile_tok[0][0]);
+      if (tok_size / sizeof(*cpi->tile_tok[0][0]) != (size_t)tokens) {
+        vpx_internal_error(&cm->error, VPX_CODEC_MEM_ERROR,
+                           "Size of cpi->tile_tok[0][0] overflows size_t");
+      }
+      CHECK_MEM_ERROR(&cm->error, cpi->tile_tok[0][0], vpx_malloc(tok_size));
+    }
   }
 
   sb_rows = mi_cols_aligned_to_sb(cm->mi_rows) >> MI_BLOCK_SIZE_LOG2;
@@ -2610,6 +2623,9 @@ VP9_COMP *vp9_create_compressor(const VP9EncoderConfig *oxcf,
   cpi->mi_ssim_rdmult_scaling_factors = NULL;
   cpi->mi_ssim_rdmult_scaling_factors_rows = 0;
   cpi->mi_ssim_rdmult_scaling_factors_cols = 0;
+  cpi->sb_mul_scale = NULL;
+  cpi->sb_mul_scale_rows = 0;
+  cpi->sb_mul_scale_cols = 0;
 
   vp9_set_speed_features_framesize_independent(cpi, oxcf->speed);
   vp9_set_speed_features_framesize_dependent(cpi, oxcf->speed);
@@ -5133,18 +5149,23 @@ static void init_mb_wiener_var_buffer(VP9_COMP *cpi) {
 static void init_sb_mul_scale_buffer(VP9_COMP *cpi) {
   VP9_COMMON *cm = &cpi->common;
 
-  if (cpi->mb_wiener_var_rows >= cm->mb_rows &&
-      cpi->mb_wiener_var_cols >= cm->mb_cols)
+  // Note: sb_mul_scale must use its own dimension tracking. It must not share
+  // mb_wiener_var_rows/cols with mb_wiener_variance, otherwise one of the two
+  // buffers may be left unallocated.
+  if (cpi->sb_mul_scale && cpi->sb_mul_scale_rows >= cm->mb_rows &&
+      cpi->sb_mul_scale_cols >= cm->mb_cols)
     return;
 
   vpx_free(cpi->sb_mul_scale);
   cpi->sb_mul_scale = NULL;
+  cpi->sb_mul_scale_rows = 0;
+  cpi->sb_mul_scale_cols = 0;
 
   CHECK_MEM_ERROR(
       &cm->error, cpi->sb_mul_scale,
       vpx_calloc(cm->mb_rows * cm->mb_cols, sizeof(*cpi->sb_mul_scale)));
-  cpi->mb_wiener_var_rows = cm->mb_rows;
-  cpi->mb_wiener_var_cols = cm->mb_cols;
+  cpi->sb_mul_scale_rows = cm->mb_rows;
+  cpi->sb_mul_scale_cols = cm->mb_cols;
 }
 
 static void set_mb_wiener_variance(VP9_COMP *cpi) {
@@ -6437,6 +6458,10 @@ int vp9_get_compressed_data(VP9_COMP *cpi, unsigned int *frame_flags,
   start_timing(cpi, setup_tpl_stats_time);
 #endif
   if (should_run_tpl(cpi, cpi->twopass.gf_group.index)) {
+    // vp9_estimate_tpl_qp_gop() may write to sb_mul_scale. TPL can run before
+    // the first call to encode_frame_to_data_rate(), e.g., on the key frame of
+    // a GOP without ARF, so make sure the buffer is allocated here.
+    init_sb_mul_scale_buffer(cpi);
     vp9_init_tpl_buffer(cpi);
     vp9_estimate_tpl_qp_gop(cpi);
     vp9_setup_tpl_stats(cpi);

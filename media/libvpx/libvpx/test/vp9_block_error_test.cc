@@ -193,11 +193,21 @@ INSTANTIATE_TEST_SUITE_P(SSE2, BlockErrorTest,
 #endif  // HAVE_SSE2
 
 #if HAVE_AVX2
-INSTANTIATE_TEST_SUITE_P(
-    AVX2, BlockErrorTest,
-    ::testing::Values(make_tuple(&BlockError8BitWrapper<vp9_block_error_avx2>,
-                                 &BlockError8BitWrapper<vp9_block_error_c>,
-                                 VPX_BITS_8)));
+const BlockErrorParam avx2_block_error_tests[] = {
+#if CONFIG_VP9_HIGHBITDEPTH
+  make_tuple(&vp9_highbd_block_error_avx2, &vp9_highbd_block_error_c,
+             VPX_BITS_10),
+  make_tuple(&vp9_highbd_block_error_avx2, &vp9_highbd_block_error_c,
+             VPX_BITS_12),
+  make_tuple(&vp9_highbd_block_error_avx2, &vp9_highbd_block_error_c,
+             VPX_BITS_8),
+#endif  // CONFIG_VP9_HIGHBITDEPTH
+  make_tuple(&BlockError8BitWrapper<vp9_block_error_avx2>,
+             &BlockError8BitWrapper<vp9_block_error_c>, VPX_BITS_8)
+};
+
+INSTANTIATE_TEST_SUITE_P(AVX2, BlockErrorTest,
+                         ::testing::ValuesIn(avx2_block_error_tests));
 #endif  // HAVE_AVX2
 
 #if HAVE_NEON

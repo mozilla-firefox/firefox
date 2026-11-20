@@ -668,6 +668,8 @@ typedef struct VP9_COMP {
   int mi_ssim_rdmult_scaling_factors_cols;
 
   int64_t *sb_mul_scale;
+  int sb_mul_scale_rows;
+  int sb_mul_scale_cols;
 
   YV12_BUFFER_CONFIG last_frame_uf;
 

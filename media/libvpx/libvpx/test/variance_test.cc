@@ -1545,13 +1545,25 @@ INSTANTIATE_TEST_SUITE_P(
     AVX2, VpxSubpelVarianceTest,
     ::testing::Values(
         SubpelVarianceParams(6, 6, &vpx_sub_pixel_variance64x64_avx2, 0),
-        SubpelVarianceParams(5, 5, &vpx_sub_pixel_variance32x32_avx2, 0)));
+        SubpelVarianceParams(6, 5, &vpx_sub_pixel_variance64x32_avx2, 0),
+        SubpelVarianceParams(5, 6, &vpx_sub_pixel_variance32x64_avx2, 0),
+        SubpelVarianceParams(5, 5, &vpx_sub_pixel_variance32x32_avx2, 0),
+        SubpelVarianceParams(5, 4, &vpx_sub_pixel_variance32x16_avx2, 0),
+        SubpelVarianceParams(4, 5, &vpx_sub_pixel_variance16x32_avx2, 0),
+        SubpelVarianceParams(4, 4, &vpx_sub_pixel_variance16x16_avx2, 0),
+        SubpelVarianceParams(4, 3, &vpx_sub_pixel_variance16x8_avx2, 0)));
 
 INSTANTIATE_TEST_SUITE_P(
     AVX2, VpxSubpelAvgVarianceTest,
     ::testing::Values(
         SubpelAvgVarianceParams(6, 6, &vpx_sub_pixel_avg_variance64x64_avx2, 0),
-        SubpelAvgVarianceParams(5, 5, &vpx_sub_pixel_avg_variance32x32_avx2,
+        SubpelAvgVarianceParams(6, 5, &vpx_sub_pixel_avg_variance64x32_avx2, 0),
+        SubpelAvgVarianceParams(5, 6, &vpx_sub_pixel_avg_variance32x64_avx2, 0),
+        SubpelAvgVarianceParams(5, 5, &vpx_sub_pixel_avg_variance32x32_avx2, 0),
+        SubpelAvgVarianceParams(5, 4, &vpx_sub_pixel_avg_variance32x16_avx2, 0),
+        SubpelAvgVarianceParams(4, 5, &vpx_sub_pixel_avg_variance16x32_avx2, 0),
+        SubpelAvgVarianceParams(4, 4, &vpx_sub_pixel_avg_variance16x16_avx2, 0),
+        SubpelAvgVarianceParams(4, 3, &vpx_sub_pixel_avg_variance16x8_avx2,
                                 0)));
 #endif  // HAVE_AVX2
 

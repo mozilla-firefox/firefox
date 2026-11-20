@@ -2296,8 +2296,18 @@ void vp9_rc_get_svc_params(VP9_COMP *cpi) {
   int target = rc->avg_frame_bandwidth;
   int layer = LAYER_IDS_TO_IDX(svc->spatial_layer_id, svc->temporal_layer_id,
                                svc->number_temporal_layers);
-  if (svc->first_spatial_layer_to_encode)
-    svc->layer_context[svc->temporal_layer_id].is_key_frame = 0;
+  // Clear is_key_frame on skipped lower spatial layers so stale keyframe state
+  // is not retained when first_spatial_layer_to_encode > 0.
+  if (svc->first_spatial_layer_to_encode > 0) {
+    int sl, tl;
+    for (sl = 0; sl < svc->first_spatial_layer_to_encode; ++sl) {
+      for (tl = 0; tl < svc->number_temporal_layers; ++tl) {
+        const int sl_layer =
+            LAYER_IDS_TO_IDX(sl, tl, svc->number_temporal_layers);
+        svc->layer_context[sl_layer].is_key_frame = 0;
+      }
+    }
+  }
   // Periodic key frames is based on the super-frame counter
   // (svc.current_superframe), also only base spatial layer is key frame.
   // Key frame is set for any of the following: very first frame, frame flags
@@ -2328,14 +2338,21 @@ void vp9_rc_get_svc_params(VP9_COMP *cpi) {
   } else {
     cm->frame_type = INTER_FRAME;
     if (is_one_pass_svc(cpi)) {
+      // Propagate is_key_frame from first_spatial_layer_to_encode (rather than
+      // spatial layer 0) so upper spatial layers inherit forced keyframes when
+      // lower spatial layers are disabled/skipped.
+      const int base_layer =
+          LAYER_IDS_TO_IDX(svc->first_spatial_layer_to_encode,
+                           svc->temporal_layer_id, svc->number_temporal_layers);
       LAYER_CONTEXT *lc = &svc->layer_context[layer];
       // Add condition current_video_frame > 0 for the case where first frame
       // is intra only followed by overlay/copy frame. In this case we don't
       // want to reset is_key_frame to 0 on overlay/copy frame.
       lc->is_key_frame =
-          (svc->spatial_layer_id == 0 && cm->current_video_frame > 0)
+          (svc->spatial_layer_id == svc->first_spatial_layer_to_encode &&
+           cm->current_video_frame > 0)
               ? 0
-              : svc->layer_context[svc->temporal_layer_id].is_key_frame;
+              : svc->layer_context[base_layer].is_key_frame;
       if (cpi->oxcf.rc_mode == VPX_CBR) {
         target = vp9_calc_pframe_target_size_one_pass_cbr(cpi);
       } else {

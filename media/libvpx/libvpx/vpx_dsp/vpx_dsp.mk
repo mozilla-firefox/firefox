@@ -387,6 +387,7 @@ DSP_SRCS-yes            += sum_squares.c
 DSP_SRCS-$(HAVE_NEON)   += arm/sum_squares_neon.c
 DSP_SRCS-$(HAVE_SVE)    += arm/sum_squares_sve.c
 DSP_SRCS-$(HAVE_SSE2)   += x86/sum_squares_sse2.c
+DSP_SRCS-$(HAVE_AVX2)   += x86/sum_squares_avx2.c
 DSP_SRCS-$(HAVE_MSA)    += mips/sum_squares_msa.c
 
 DSP_SRCS-$(HAVE_NEON)   += arm/sad4d_neon.c

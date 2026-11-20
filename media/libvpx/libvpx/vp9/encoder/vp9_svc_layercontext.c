@@ -928,10 +928,13 @@ int vp9_one_pass_svc_start_layer(VP9_COMP *const cpi) {
         break;
       }
     }
-    // For non-zero spatial layers: if the previous spatial layer was dropped
-    // disable the base_mv and partition_reuse features.
+    // For non-zero spatial layers: if the previous spatial layer was dropped,
+    // or if only the top spatial layer is encoded, disable the base_mv and
+    // partition_reuse features.
     if (svc->spatial_layer_id > 0 &&
-        svc->drop_spatial_layer[svc->spatial_layer_id - 1]) {
+        (svc->drop_spatial_layer[svc->spatial_layer_id - 1] ||
+         (svc->spatial_layer_id == svc->number_spatial_layers - 1 &&
+          svc->spatial_layer_id == svc->first_spatial_layer_to_encode))) {
       svc->use_base_mv = 0;
       svc->use_partition_reuse = 0;
     }

@@ -55,7 +55,7 @@ static void vp9_dec_setup_mi(VP9_COMMON *cm) {
   cm->mi = cm->mip + cm->mi_stride + 1;
   cm->mi_grid_visible = cm->mi_grid_base + cm->mi_stride + 1;
   memset(cm->mi_grid_base, 0,
-         cm->mi_stride * (cm->mi_rows + 1) * sizeof(*cm->mi_grid_base));
+         cm->mi_stride * calc_mi_size(cm->mi_rows) * sizeof(*cm->mi_grid_base));
 }
 
 void vp9_dec_alloc_row_mt_mem(RowMTWorkerData *row_mt_worker_data,

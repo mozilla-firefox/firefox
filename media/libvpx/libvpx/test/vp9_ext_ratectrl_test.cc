@@ -39,14 +39,30 @@ constexpr int kArfQp = 15;
 // Simple external rate controller for testing.
 class RateControllerForTest {
  public:
-  RateControllerForTest() : current_gop_(-1) {}
+  explicit RateControllerForTest(bool use_alt_ref)
+      : current_gop_(-1), use_alt_ref_(use_alt_ref) {}
   ~RateControllerForTest() {}
 
   void StartNextGop() { ++current_gop_; }
 
   vpx_rc_gop_decision_t GetCurrentGop() const {
     vpx_rc_gop_decision_t gop_decision;
-    if (current_gop_ == 0) {
+    if (current_gop_ == 0 && !use_alt_ref_) {
+      // A single GOP without ARF that covers all the frames.
+      gop_decision.use_key_frame = 1;
+      gop_decision.use_alt_ref = 0;
+      gop_decision.gop_coding_frames = kShowFrameCount;
+      // key frame
+      gop_decision.update_type[0] = VPX_RC_KF_UPDATE;
+      gop_decision.update_ref_index[0] = 0;
+      gop_decision.ref_frame_list[0] = get_kf_ref_frame();
+      // leafs
+      for (int i = 1; i < gop_decision.gop_coding_frames; ++i) {
+        gop_decision.update_type[i] = VPX_RC_LF_UPDATE;
+        gop_decision.update_ref_index[i] = 2;
+        gop_decision.ref_frame_list[i] = get_no_arf_leaf_ref_frame(i);
+      }
+    } else if (current_gop_ == 0) {
       gop_decision.use_key_frame = 1;
       gop_decision.use_alt_ref = 1;
       gop_decision.gop_coding_frames =
@@ -123,6 +139,17 @@ class RateControllerForTest {
         count > 2 ? VPX_RC_LAST_FRAME : VPX_RC_INVALID_REF_FRAME;
     return ref_frame;
   }
+  vpx_rc_ref_frame_t get_no_arf_leaf_ref_frame(int count) const {
+    vpx_rc_ref_frame_t ref_frame;
+    ref_frame.index[0] = 0;
+    ref_frame.index[1] = count > 1 ? 2 : -1;
+    ref_frame.index[2] = -1;
+    ref_frame.name[0] = VPX_RC_GOLDEN_FRAME;
+    ref_frame.name[1] =
+        count > 1 ? VPX_RC_LAST_FRAME : VPX_RC_INVALID_REF_FRAME;
+    ref_frame.name[2] = VPX_RC_INVALID_REF_FRAME;
+    return ref_frame;
+  }
   vpx_rc_ref_frame_t get_ovl_ref_frame() const {
     vpx_rc_ref_frame_t ref_frame;
     ref_frame.index[0] = 1;
@@ -135,14 +162,17 @@ class RateControllerForTest {
   }
 
   int current_gop_;
+  const bool use_alt_ref_;
 };
 
 // Callbacks used in this test.
+// |priv| points to a bool that indicates whether the first GOP uses ARF.
 vpx_rc_status_t rc_test_create_model(
-    void * /*priv*/, const vpx_rc_config_t * /*ratectrl_config*/,
+    void *priv, const vpx_rc_config_t * /*ratectrl_config*/,
     vpx_rc_model_t *rate_ctrl_model_ptr) {
+  const bool use_alt_ref = *static_cast<const bool *>(priv);
   std::unique_ptr<RateControllerForTest> test_controller(
-      new RateControllerForTest());
+      new RateControllerForTest(use_alt_ref));
   *rate_ctrl_model_ptr = test_controller.release();
   return VPX_RC_OK;
 }
@@ -200,8 +230,8 @@ class ExtRateCtrlTest : public ::libvpx_test::EncoderTest,
                         public ::testing::Test {
  protected:
   ExtRateCtrlTest()
-      : EncoderTest(&::libvpx_test::kVP9), received_show_frame_count_(0),
-        current_frame_qp_(0) {}
+      : EncoderTest(&::libvpx_test::kVP9), use_alt_ref_(true),
+        received_show_frame_count_(0), current_frame_qp_(0) {}
 
   ~ExtRateCtrlTest() override = default;
 
@@ -225,6 +255,7 @@ class ExtRateCtrlTest : public ::libvpx_test::EncoderTest,
       rc_funcs.get_gop_decision = rc_test_get_gop_decision;
       rc_funcs.get_encodeframe_decision = rc_test_get_encodeframe_decision;
       rc_funcs.delete_model = rc_delete_model;
+      rc_funcs.priv = &use_alt_ref_;
       encoder->Control(VP9E_SET_EXTERNAL_RATE_CONTROL, &rc_funcs);
     }
   }
@@ -250,6 +281,7 @@ class ExtRateCtrlTest : public ::libvpx_test::EncoderTest,
   }
 #endif  // CONFIG_VP9_DECODER
 
+  bool use_alt_ref_;
   int received_show_frame_count_;
   int current_frame_qp_;
 };
@@ -257,6 +289,26 @@ class ExtRateCtrlTest : public ::libvpx_test::EncoderTest,
 TEST_F(ExtRateCtrlTest, EncodeTest) {
   cfg_.rc_target_bitrate = 4000;
   cfg_.g_lag_in_frames = 25;
+
+  std::unique_ptr<libvpx_test::VideoSource> video;
+  video.reset(new (std::nothrow) libvpx_test::YUVVideoSource(
+      "bus_352x288_420_f20_b8.yuv", VPX_IMG_FMT_I420, 352, 288, 30, 1, 0,
+      kShowFrameCount));
+
+  ASSERT_NE(video, nullptr);
+  ASSERT_NO_FATAL_FAILURE(RunLoop(video.get()));
+#if CONFIG_VP9_DECODER
+  EXPECT_EQ(received_show_frame_count_, kShowFrameCount);
+#endif
+}
+
+// The first GOP has no ARF. In this case, TPL is run on the key frame, i.e.,
+// before any frame is encoded, which used to crash due to an unallocated
+// buffer.
+TEST_F(ExtRateCtrlTest, EncodeTestNoArf) {
+  cfg_.rc_target_bitrate = 4000;
+  cfg_.g_lag_in_frames = 25;
+  use_alt_ref_ = false;
 
   std::unique_ptr<libvpx_test::VideoSource> video;
   video.reset(new (std::nothrow) libvpx_test::YUVVideoSource(

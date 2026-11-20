@@ -1405,7 +1405,9 @@ static void mc_flow_dispenser(VP9_COMP *cpi, GF_PICTURE *gf_picture,
       this_frame->y_crop_width, this_frame->y_crop_height,
       cpi->common.use_highbitdepth);
 
-  if (xd->cur_buf->flags & YV12_FLAG_HIGHBITDEPTH)
+  // Note: xd->cur_buf is not set up yet at this point. It may even be NULL if
+  // TPL runs before any frame is encoded. Use this_frame instead.
+  if (this_frame->flags & YV12_FLAG_HIGHBITDEPTH)
     predictor = CONVERT_TO_BYTEPTR(predictor16);
   else
     predictor = predictor8;

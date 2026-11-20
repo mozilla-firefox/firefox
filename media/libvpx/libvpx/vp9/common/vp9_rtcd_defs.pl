@@ -149,7 +149,7 @@ if (vpx_config("CONFIG_VP9_HIGHBITDEPTH") eq "yes") {
   specialize qw/vp9_block_error neon sve avx2/, "$sse2_asm";
 
   add_proto qw/int64_t vp9_highbd_block_error/, "const tran_low_t *coeff, const tran_low_t *dqcoeff, intptr_t block_size, int64_t *ssz, int bd";
-  specialize qw/vp9_highbd_block_error neon sse2/;
+  specialize qw/vp9_highbd_block_error neon sse2 avx2/;
 } else {
   specialize qw/vp9_block_error neon sve avx2 msa sse2/;
 }

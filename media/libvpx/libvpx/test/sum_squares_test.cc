@@ -377,4 +377,5 @@ TestSSEFuncs sse_avx2[] = {
 INSTANTIATE_TEST_SUITE_P(AVX2, SSETest,
                          Combine(ValuesIn(sse_avx2), Range(4, 129, 4)));
 #endif  // HAVE_AVX2
+
 }  // namespace

@@ -125,6 +125,7 @@ VP9_CX_SRCS-$(HAVE_AVX2) += encoder/x86/vp9_quantize_avx2.c
 VP9_CX_SRCS-$(HAVE_NEON) += encoder/arm/neon/vp9_diamond_search_sad_neon.c
 ifeq ($(CONFIG_VP9_HIGHBITDEPTH),yes)
 VP9_CX_SRCS-$(HAVE_SSE2) += encoder/x86/vp9_highbd_block_error_intrin_sse2.c
+VP9_CX_SRCS-$(HAVE_AVX2) += encoder/x86/vp9_highbd_error_avx2.c
 VP9_CX_SRCS-$(HAVE_SSSE3) += encoder/x86/highbd_temporal_filter_ssse3.c
 VP9_CX_SRCS-$(HAVE_SSE4_1) += encoder/x86/highbd_temporal_filter_sse4.c
 VP9_CX_SRCS-$(HAVE_AVX2) += encoder/x86/highbd_temporal_filter_avx2.c

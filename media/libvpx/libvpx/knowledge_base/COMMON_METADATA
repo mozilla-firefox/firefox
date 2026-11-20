@@ -1,0 +1,155 @@
+# Copyright (c) 2026 The WebM project authors. All Rights Reserved.
+#
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file in the root of the source
+# tree. An additional intellectual property rights grant can be found
+# in the file PATENTS.  All contributing project authors may
+# be found in the AUTHORS file in the root of the source tree.
+
+agentic_review {
+  capability_groups {
+    path_expression: "(?:.*/)?[^/]*\\.(?:c|cc|cpp|h)"
+    path_expression: "vp8/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    path_expression: "vp9/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    path_expression: "vpx_dsp/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    rules: "knowledge_base/rules/general/assert-buffer-alignment-and-preconditions.md"
+    rules: "knowledge_base/rules/vpx_dsp/cast-squared-sum-to-uint32-before-shift.md"
+  }
+  capability_groups {
+    path_expression: "(?:.*/)?[^/]*\\.(?:c|cc|cpp|h)"
+    rules: "knowledge_base/rules/general/assert-documented-invariants-and-preconditions.md"
+  }
+  capability_groups {
+    path_expression: "vp8/common/arm/.*"
+    path_expression: "vp8/common/x86/.*"
+    path_expression: "vp9/common/arm/.*"
+    path_expression: "vp9/common/x86/.*"
+    path_expression: "vpx_dsp/.*"
+    rules: "knowledge_base/rules/general/match-simd-assembly-to-c-reference-semantics.md"
+  }
+  capability_groups {
+    path_expression: "(?:.*/)?[^/]*\\.(?:c|cc|cpp|h|hpp)"
+    rules: "knowledge_base/rules/general/named-constants-for-block-dimensions.md"
+  }
+  capability_groups {
+    path_expression: "(?:.*/)?[^/]*\\.(?:c|cc|cpp|h)"
+    path_expression: "(?:.*/)?[^/]*x86[^/]*/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    path_expression: "vp8/(?:.*/)?x86/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    path_expression: "vp9/(?:.*/)?x86/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    path_expression: "vpx_dsp/x86/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    rules: "knowledge_base/rules/general/pass-simd-vectors-by-pointer-for-abi-alignment.md"
+  }
+  capability_groups {
+    path_expression: "(?:.*/)?[^/]*\\.(?:c|h)"
+    rules: "knowledge_base/rules/general/prefer-flat-zero-initializer-for-aggregates.md"
+  }
+  capability_groups {
+    path_expression: "(?:.*/)?[^/]*\\.(?:c|cc|h)"
+    rules: "knowledge_base/rules/general/scope-internal-macros-to-source-files.md"
+  }
+  capability_groups {
+    path_expression: "vpx/.*"
+    rules: "knowledge_base/rules/general/validate-pointer-parameters-against-null-at-api-entry-points.md"
+    rules: "knowledge_base/rules/vpx/append-public-api-enum-entries-for-abi-compatibility.md"
+    rules: "knowledge_base/rules/vpx/document-codec-control-values-and-defaults.md"
+  }
+  capability_groups {
+    path_expression: "(?:.*/)?[^/]*\\.(?:c|h)"
+    path_expression: "vp8/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    path_expression: "vp9/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    path_expression: "vpx_dsp/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    rules: "knowledge_base/rules/general/when-declaring-c-function-parameters-for-fixed-size-arrays-u.md"
+  }
+  capability_groups {
+    path_expression: "vpx/(?:.*/)?[^/]*\\.h"
+    rules: "knowledge_base/rules/vpx/bump-abi-version-on-public-header-changes.md"
+    rules: "knowledge_base/rules/vpx/document-public-api-and-callbacks-with-doxygen.md"
+  }
+  capability_groups {
+    path_expression: "vpx/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    rules: "knowledge_base/rules/vpx/require-caller-allocation-or-library-deallocator.md"
+  }
+  capability_groups {
+    path_expression: "vpx_dsp/.*"
+    rules: "knowledge_base/rules/vpx_dsp/assume-even-block-dimensions-in-dsp-kernels.md"
+    rules: "knowledge_base/rules/vpx_dsp/descriptive-or-generic-simd-variable-names.md"
+    rules: "knowledge_base/rules/vpx_dsp/factor-block-dimension-dsp-kernels.md"
+    rules: "knowledge_base/rules/vpx_dsp/simd-signed-accumulation-overflow-limits.md"
+  }
+  capability_groups {
+    path_expression: "vp8/.*"
+    path_expression: "vp9/.*"
+    path_expression: "vpx_dsp/.*"
+    rules: "knowledge_base/rules/vpx_dsp/avoid-gratuitous-loop-unrolling-in-simd-dsp.md"
+    rules: "knowledge_base/rules/vpx_dsp/document-dsp-accumulator-dynamic-ranges.md"
+    rules: "knowledge_base/rules/vpx_dsp/extract-complex-simd-sequences-into-inline-helpers.md"
+    rules: "knowledge_base/rules/vpx_dsp/unroll-inner-row-loops-in-simd-dsp.md"
+    rules: "knowledge_base/rules/vpx_dsp/use-aligned-simd-for-aligned-buffers.md"
+  }
+  capability_groups {
+    path_expression: "(?:.*/)?[^/]*neon[^/]*\\.\\[ch\\]"
+    path_expression: "vp8/(?:.*/)?arm/.*"
+    path_expression: "vp9/(?:.*/)?arm/.*"
+    path_expression: "vpx_dsp/arm/.*"
+    rules: "knowledge_base/rules/vpx_dsp/avoid-wider-pointer-casts-for-simd-loads.md"
+    rules: "knowledge_base/rules/vpx_dsp/prefer-neon-memory-helpers-over-memcpy.md"
+  }
+  capability_groups {
+    path_expression: "(?:.*/)?[^/]*neon[^/]*"
+    path_expression: "(?:.*/)?[^/]*neon[^/]*\\.\\[ch\\]"
+    path_expression: "(?:.*/)?arm/.*"
+    path_expression: "vp8/(?:.*/)?arm/.*"
+    path_expression: "vp9/(?:.*/)?arm/.*"
+    path_expression: "vpx_dsp/arm/.*"
+    rules: "knowledge_base/rules/vpx_dsp/combine-neon-multiply-and-accumulate-or-subtract.md"
+  }
+  capability_groups {
+    path_expression: "vp8/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    path_expression: "vp9/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    path_expression: "vpx_dsp/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    rules: "knowledge_base/rules/vpx_dsp/consolidate-simd-helpers-into-shared-headers.md"
+  }
+  capability_groups {
+    path_expression: "(?:.*/)?[^/]*neon[^/]*\\.\\[ch\\]"
+    path_expression: "(?:.*/)?arm/(?:.*/)?[^/]*\\.(?:c|h)"
+    path_expression: "vp8/(?:.*/)?arm/.*"
+    path_expression: "vp9/(?:.*/)?arm/.*"
+    path_expression: "vpx_dsp/arm/.*"
+    rules: "knowledge_base/rules/vpx_dsp/keep-neon-intermediate-sums-in-16-bit.md"
+  }
+  capability_groups {
+    path_expression: "vp8/.*"
+    path_expression: "vp9/.*"
+    path_expression: "vpx_dsp/.*"
+    path_expression: "vpx_ports/.*"
+    path_expression: "vpx_util/.*"
+    rules: "knowledge_base/rules/vpx_dsp/pass-simd-vectors-by-value-or-const-pointer.md"
+  }
+  capability_groups {
+    path_expression: "vp8/(?:.*/)?x86/.*"
+    path_expression: "vp9/(?:.*/)?x86/.*"
+    path_expression: "vpx_dsp/x86/.*"
+    rules: "knowledge_base/rules/vpx_dsp/prefer-unpacklo-epi64-over-loadh-pi.md"
+  }
+  capability_groups {
+    path_expression: "vpx_dsp/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    rules: "knowledge_base/rules/vpx_dsp/unify-high-bitdepth-dsp-metric-functions.md"
+  }
+  capability_groups {
+    path_expression: "vp8/(?:.*/)?arm/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    path_expression: "vp9/(?:.*/)?arm/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    path_expression: "vpx_dsp/arm/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    rules: "knowledge_base/rules/vpx_dsp/use-mem-neon-load-store-helpers.md"
+  }
+  capability_groups {
+    path_expression: "vp8/(?:.*/)?[^/]*\\.(?:c|cc|cpp|h|hpp|mm)"
+    path_expression: "vp9/(?:.*/)?[^/]*\\.(?:c|cc|cpp|h|hpp|mm)"
+    path_expression: "vpx_dsp/(?:.*/)?[^/]*\\.(?:c|cc|cpp|h|hpp|mm)"
+    rules: "knowledge_base/rules/vpx_dsp/use-tran-coef-t-for-transform-constants.md"
+  }
+  capability_groups {
+    path_expression: "vp9/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    path_expression: "vpx_dsp/(?:.*/)?[^/]*\\.(?:cc|cpp|h|hpp|mm)"
+    rules: "knowledge_base/rules/vpx_dsp/use-transform-shift-constants-over-literals.md"
+  }
+}
