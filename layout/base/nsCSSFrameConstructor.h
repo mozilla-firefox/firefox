@@ -1878,30 +1878,47 @@ class nsCSSFrameConstructor final : public nsFrameManager {
                              bool aItemIsWithinSVGText,
                              bool aItemAllowsTextPathChild);
 
-  // Determine whether we need to wipe out aFrame (the insertion parent) and
-  // rebuild the entire subtree when we insert or append new content under
-  // aFrame.
-  //
-  // This is similar to WipeContainingBlock(), but is called
-  // before constructing any frame construction items. Any container frames
-  // which need reframing regardless of the content inserted or appended can add
-  // a check in this method.
-  //
-  // @return true if we reconstructed the insertion parent frame; false
-  // otherwise
-  bool WipeInsertionParent(nsContainerFrame* aFrame);
+  /**
+   * Reframes if content can't be inserted or appended under aInsertionParent
+   * incrementally, regardless of what that content is. Checks that depend on
+   * the new content belong in MaybeRecreateForInsertedChildren().
+   *
+   * @param aInsertionParent the frame that the frames for the new content
+   *     would be inserted or appended under.
+   * @return true if frames (of aInsertionParent or an ancestor) were destroyed
+   *     and their reconstruction scheduled, in which case the caller must not
+   *     construct frames for the new content.
+   */
+  bool MaybeRecreateForInsertionParent(nsContainerFrame* aInsertionParent);
 
-  // Determine whether we need to wipe out what we just did and start over
-  // because we're doing something like adding block kids to an inline frame
-  // (and therefore need an {ib} split).  aPrevSibling must be correct, even in
-  // aIsAppend cases.  Passing aIsAppend false even when an append is happening
-  // is ok in terms of correctness, but can lead to unnecessary reframing.
-  //
-  // @return true if we reconstructed the containing block, false otherwise.
-  bool WipeContainingBlock(nsFrameConstructorState& aState,
-                           nsIFrame* aContainingBlock, nsIFrame* aFrame,
-                           FrameConstructionItemList& aItems, bool aIsAppend,
-                           nsIFrame* aPrevSibling);
+  /**
+   * Reframes if the frames for aItems can't be inserted or appended under
+   * aInsertionParent incrementally.
+   *
+   * @param aState the frame constructor state.
+   * @param aContainingBlock if non-null, the frame at which the search for the
+   *     block to reframe starts when an {ib} split is involved. If null, the
+   *     search starts at aInsertionParent.
+   * @param aInsertionParent the frame that the frames for aItems would be
+   *     inserted or appended under.
+   * @param aItems the frame construction items for the new content. Whitespace
+   *     items that can be dropped may be removed from it.
+   * @param aIsAppend true if the frames would be appended at the very end of
+   *     aInsertionParent (no next sibling and no next continuation). Passing
+   *     false when an append is happening is ok in terms of correctness, but
+   *     can lead to unnecessary reframing.
+   * @param aPrevSibling the frame that the new frames would be inserted after,
+   *     or null if they would be aInsertionParent's first children. Must be
+   *     correct even if aIsAppend is true.
+   * @return true if frames (of aInsertionParent or an ancestor) were destroyed
+   *     and their reconstruction scheduled, in which case the caller must not
+   *     construct frames for the new content.
+   */
+  bool MaybeRecreateForInsertedChildren(nsFrameConstructorState& aState,
+                                        nsIFrame* aContainingBlock,
+                                        nsIFrame* aInsertionParent,
+                                        FrameConstructionItemList& aItems,
+                                        bool aIsAppend, nsIFrame* aPrevSibling);
 
   void ReframeContainingBlock(nsIFrame* aFrame);
 

@@ -5470,7 +5470,8 @@ void nsCSSFrameConstructor::AppendFramesToParent(
   MOZ_ASSERT(
       !aParentFrame->HasAnyStateBits(NS_FRAME_HAS_MULTI_COLUMN_ANCESTOR) ||
           !IsFramePartOfIBSplit(aParentFrame),
-      "We should have wiped aParentFrame in WipeContainingBlock() "
+      "We should have wiped aParentFrame in "
+      "MaybeRecreateForInsertedChildren() "
       "if it's part of an IB split!");
 
   nsIFrame* nextSibling = ::GetInsertNextSibling(aParentFrame, aPrevSibling);
@@ -5773,16 +5774,18 @@ nsIFrame* nsCSSFrameConstructor::GetInsertionPrevSibling(
       // inside those containers, so the anonymous item is unlikely to be the
       // right parent unless we're inserting a non-whitespace text-node.
       //
-      // If we guess wrong, we catch this in WipeContainingBlock, but with a
-      // performance penalty (and sometimes correctness too, see bug 2014986).
+      // If we guess wrong, we catch this in
+      // MaybeRecreateForInsertedChildren, but with a performance penalty
+      // (and sometimes correctness too, see bug 2014986).
       //
       // TODO(emilio): Are there other situations where this is worth doing
       // (some table anon boxes or something?). Seems hard to do at this stage
       // where we still don't _quite_ know the details of what aChild is (in or
-      // out of flow, display inside or outside...). Maybe WipeContainingBlock
-      // should be able to fix-up the insertion point at the last minute? But
-      // that seems more sketchy since some code does rely on looking at the
-      // insertion point to decide what to construct.
+      // out of flow, display inside or outside...). Maybe
+      // MaybeRecreateForInsertedChildren should be able to fix-up the
+      // insertion point at the last minute? But that seems more sketchy since
+      // some code does rely on looking at the insertion point to decide what to
+      // construct.
       AssertAnonymousFlexOrGridItemParent(aInsertion->mParentFrame);
       if (!prevSibling->GetNextSibling() &&
           (!aChild->IsText() || aChild->TextIsOnlyWhitespace())) {
@@ -6284,7 +6287,7 @@ void nsCSSFrameConstructor::ContentRangeInserted(
   }
 
   LAYOUT_PHASE_TEMP_EXIT();
-  if (WipeInsertionParent(insertion.mParentFrame)) {
+  if (MaybeRecreateForInsertionParent(insertion.mParentFrame)) {
     LAYOUT_PHASE_TEMP_REENTER();
     return;
   }
@@ -6405,8 +6408,8 @@ void nsCSSFrameConstructor::ContentRangeInserted(
       haveNoShadowDOM) {
     // If there's a text node in the normal content list just before the
     // new nodes, and it has no frame, make a frame construction item for
-    // it, because it might need a frame now.  No need to do this if our
-    // parent type is not block, though, since WipeContainingBlock
+    // it, because it might need a frame now.  No need to do this if our parent
+    // type is not block, though, since MaybeRecreateForInsertedChildren
     // already handles that situation.
     AddTextItemIfNeeded(state, *parentStyle, insertion,
                         aStartChild->GetPreviousSibling(), items);
@@ -6423,18 +6426,19 @@ void nsCSSFrameConstructor::ContentRangeInserted(
   if (aEndChild && parentType == eTypeBlock && haveNoShadowDOM) {
     // If there's a text node in the normal content list just after the
     // new nodes, and it has no frame, make a frame construction item for
-    // it, because it might need a frame now.  No need to do this if our
-    // parent type is not block, though, since WipeContainingBlock
+    // it, because it might need a frame now.  No need to do this if our parent
+    // type is not block, though, since MaybeRecreateForInsertedChildren
     // already handles that situation.
     AddTextItemIfNeeded(state, *parentStyle, insertion, aEndChild, items);
   }
 
   // Perform special check for diddling around with the frames in a special
   // inline frame. If we're appending before :after content, then we're not
-  // really appending, so let WipeContainingBlock know that.
+  // really appending, so let MaybeRecreateForInsertedChildren know that.
   LAYOUT_PHASE_TEMP_EXIT();
-  if (WipeContainingBlock(state, containingBlock, insertion.mParentFrame, items,
-                          isAppend, prevSibling)) {
+  if (MaybeRecreateForInsertedChildren(state, containingBlock,
+                                       insertion.mParentFrame, items, isAppend,
+                                       prevSibling)) {
     LAYOUT_PHASE_TEMP_REENTER();
     return;
   }
@@ -10353,7 +10357,7 @@ bool nsCSSFrameConstructor::MaybeRecreateForColumnSpan(
 
   MOZ_ASSERT(!IsFramePartOfIBSplit(aParentFrame),
              "We should have wiped aParentFrame in "
-             "WipeContainingBlock if it's part of IB split!");
+             "MaybeRecreateForInsertedChildren if it's part of IB split!");
 
   nsIFrame* nextSibling = ::GetInsertNextSibling(aParentFrame, aPrevSibling);
   if (!nextSibling && IsLastContinuationForColumnContent(aParentFrame)) {
@@ -10381,8 +10385,9 @@ bool nsCSSFrameConstructor::MaybeRecreateForColumnSpan(
     // We can only be here if none of the new inserted nsIContent* nodes (via
     // ContentAppended or ContentRangeInserted) have column-span:all style, yet
     // some of them have column-span:all descendants. Sadly, there's no way to
-    // detect this by checking FrameConstructionItems in WipeContainingBlock().
-    // Otherwise, we would have already wiped the multi-column containing block.
+    // detect this by checking FrameConstructionItems in
+    // MaybeRecreateForInsertedChildren(). Otherwise, we would have
+    // already wiped the multi-column containing block.
     PROFILER_MARKER("Reframe multi-column after constructing frame list",
                     LAYOUT, {}, Tracing, "Layout");
 
@@ -10718,15 +10723,16 @@ static bool IsSafeToAppendToIBSplitInline(nsIFrame* aParentFrame,
   return true;
 }
 
-bool nsCSSFrameConstructor::WipeInsertionParent(nsContainerFrame* aFrame) {
-#define TRACE(reason)                                                  \
-  PROFILER_MARKER("WipeInsertionParent: " reason, LAYOUT, {}, Tracing, \
-                  "Layout");
+bool nsCSSFrameConstructor::MaybeRecreateForInsertionParent(
+    nsContainerFrame* aInsertionParent) {
+#define TRACE(reason)                                                     \
+  PROFILER_MARKER("MaybeRecreateForInsertionParent: " reason, LAYOUT, {}, \
+                  Tracing, "Layout");
 
-  const LayoutFrameType frameType = aFrame->Type();
+  const LayoutFrameType frameType = aInsertionParent->Type();
 
-  if (aFrame->PresContext()->IsPaginated()) {
-    if (auto* table = GetNearestFragmentedTable(aFrame)) {
+  if (aInsertionParent->PresContext()->IsPaginated()) {
+    if (auto* table = GetNearestFragmentedTable(aInsertionParent)) {
       TRACE("Paginated fragmented table");
       RecreateFramesForContent(table->GetContent(), InsertionKind::Async);
       return true;
@@ -10735,9 +10741,10 @@ bool nsCSSFrameConstructor::WipeInsertionParent(nsContainerFrame* aFrame) {
 
   // FIXME(emilio): This looks terribly inefficient if you insert elements deep
   // in a MathML subtree.
-  if (aFrame->IsMathMLFrame()) {
+  if (aInsertionParent->IsMathMLFrame()) {
     TRACE("MathML");
-    RecreateFramesForContent(aFrame->GetContent(), InsertionKind::Async);
+    RecreateFramesForContent(aInsertionParent->GetContent(),
+                             InsertionKind::Async);
     return true;
   }
 
@@ -10751,21 +10758,23 @@ bool nsCSSFrameConstructor::WipeInsertionParent(nsContainerFrame* aFrame) {
   //    their sibling changes.
   // 2) The first effective child of a ruby frame must always be a ruby
   //    base container. It should be created or destroyed accordingly.
-  if (IsRubyPseudo(aFrame) || frameType == LayoutFrameType::Ruby ||
+  if (IsRubyPseudo(aInsertionParent) || frameType == LayoutFrameType::Ruby ||
       RubyUtils::IsRubyContainerBox(frameType)) {
     // We want to optimize it better, and avoid reframing as much as
     // possible. But given the cases above, and the fact that a ruby
     // usually won't be very large, it should be fine to reframe it.
     TRACE("Ruby");
-    RecreateFramesForContent(aFrame->GetContent(), InsertionKind::Async);
+    RecreateFramesForContent(aInsertionParent->GetContent(),
+                             InsertionKind::Async);
     return true;
   }
 
   // Reframe the multi-column container whenever elements insert/append
   // into it because we need to reconstruct column-span split.
-  if (aFrame->IsColumnSetWrapperFrame()) {
+  if (aInsertionParent->IsColumnSetWrapperFrame()) {
     TRACE("Multi-column");
-    RecreateFramesForContent(aFrame->GetContent(), InsertionKind::Async);
+    RecreateFramesForContent(aInsertionParent->GetContent(),
+                             InsertionKind::Async);
     return true;
   }
 
@@ -10774,13 +10783,13 @@ bool nsCSSFrameConstructor::WipeInsertionParent(nsContainerFrame* aFrame) {
 #undef TRACE
 }
 
-bool nsCSSFrameConstructor::WipeContainingBlock(
+bool nsCSSFrameConstructor::MaybeRecreateForInsertedChildren(
     nsFrameConstructorState& aState, nsIFrame* aContainingBlock,
-    nsIFrame* aFrame, FrameConstructionItemList& aItems, bool aIsAppend,
-    nsIFrame* aPrevSibling) {
-#define TRACE(reason)                                                  \
-  PROFILER_MARKER("WipeContainingBlock: " reason, LAYOUT, {}, Tracing, \
-                  "Layout");
+    nsIFrame* aInsertionParent, FrameConstructionItemList& aItems,
+    bool aIsAppend, nsIFrame* aPrevSibling) {
+#define TRACE(reason)                                                      \
+  PROFILER_MARKER("MaybeRecreateForInsertedChildren: " reason, LAYOUT, {}, \
+                  Tracing, "Layout");
 
   if (aItems.IsEmpty()) {
     return false;
@@ -10789,7 +10798,7 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
   // Before we go and append the frames, we must check for several
   // special situations.
 
-  if (aFrame->GetContent() == mDocument->GetRootElement()) {
+  if (aInsertionParent->GetContent() == mDocument->GetRootElement()) {
     // Situation #1 is when we insert content that becomes the canonical body
     // element, and its used WritingMode is different from the root element's
     // used WritingMode.
@@ -10804,7 +10813,7 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
     for (FCItemIterator iter(aItems); !iter.IsDone(); iter.Next()) {
       const WritingMode bodyWM(iter.item().mComputedStyle);
       if (iter.item().mContent == bodyElement &&
-          bodyWM != aFrame->GetWritingMode()) {
+          bodyWM != aInsertionParent->GetWritingMode()) {
         TRACE("Root");
         RecreateFramesForContent(mDocument->GetRootElement(),
                                  InsertionKind::Async);
@@ -10813,21 +10822,24 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
     }
   }
 
-  nsIFrame* nextSibling = ::GetInsertNextSibling(aFrame, aPrevSibling);
+  nsIFrame* nextSibling =
+      ::GetInsertNextSibling(aInsertionParent, aPrevSibling);
 
   // Situation #2 is a flex / grid  container frame into which we're inserting
   // new inline non-replaced children, adjacent to an existing anonymous flex or
   // grid item.
-  if (aFrame->IsFlexOrGridContainer()) {
+  if (aInsertionParent->IsFlexOrGridContainer()) {
     FCItemIterator iter(aItems);
 
     // Check if we're adding to-be-wrapped content right *after* an existing
     // anonymous flex or grid item (which would need to absorb this content).
-    const bool isLegacyWebKitBox = IsFlexContainerForLegacyWebKitBox(aFrame);
+    const bool isLegacyWebKitBox =
+        IsFlexContainerForLegacyWebKitBox(aInsertionParent);
     if (aPrevSibling && IsAnonymousItem(aPrevSibling) &&
         iter.item().NeedsAnonFlexOrGridItem(aState, isLegacyWebKitBox)) {
       TRACE("Inserting inline after anon flex or grid item");
-      RecreateFramesForContent(aFrame->GetContent(), InsertionKind::Async);
+      RecreateFramesForContent(aInsertionParent->GetContent(),
+                               InsertionKind::Async);
       return true;
     }
 
@@ -10839,7 +10851,8 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
       iter.Prev();
       if (iter.item().NeedsAnonFlexOrGridItem(aState, isLegacyWebKitBox)) {
         TRACE("Inserting inline before anon flex or grid item");
-        RecreateFramesForContent(aFrame->GetContent(), InsertionKind::Async);
+        RecreateFramesForContent(aInsertionParent->GetContent(),
+                                 InsertionKind::Async);
         return true;
       }
     }
@@ -10847,8 +10860,8 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
 
   // Situation #3 is an anonymous flex or grid item that's getting new children
   // who don't want to be wrapped.
-  if (IsAnonymousItem(aFrame)) {
-    AssertAnonymousFlexOrGridItemParent(aFrame);
+  if (IsAnonymousItem(aInsertionParent)) {
+    AssertAnonymousFlexOrGridItemParent(aInsertionParent);
 
     // We need to push a null float containing block to be sure that
     // "NeedsAnonFlexOrGridItem" will know we're not honoring floats for this
@@ -10862,7 +10875,7 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
     FCItemIterator iter(aItems);
     // Skip over things that _do_ need an anonymous flex item, because
     // they're perfectly happy to go here -- they won't cause a reframe.
-    nsIFrame* containerFrame = aFrame->GetParent();
+    nsIFrame* containerFrame = aInsertionParent->GetParent();
     const bool isLegacyWebKitBox =
         IsFlexContainerForLegacyWebKitBox(containerFrame);
     if (!iter.SkipItemsThatNeedAnonFlexOrGridItem(aState, isLegacyWebKitBox)) {
@@ -10879,18 +10892,20 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
   }
 
   // Situation #4 is a case when table pseudo-frames don't work out right
-  ParentType parentType = GetParentType(aFrame);
-  // If all the kids want a parent of the type that aFrame is, then we're all
-  // set to go.  Indeed, there won't be any table pseudo-frames created between
-  // aFrame and the kids, so those won't need to be merged with any table
-  // pseudo-frames that might already be kids of aFrame.  If aFrame itself is a
-  // table pseudo-frame, then all the kids in this list would have wanted a
-  // frame of that type wrapping them anyway, so putting them inside it is ok.
+  ParentType parentType = GetParentType(aInsertionParent);
+  // If all the kids want a parent of the type that aInsertionParent is, then
+  // we're all set to go.  Indeed, there won't be any table pseudo-frames
+  // created between aInsertionParent and the kids, so those won't need to be
+  // merged with any table pseudo-frames that might already be kids of
+  // aInsertionParent.  If aInsertionParent itself is a table pseudo-frame, then
+  // all the kids in this list would have wanted a frame of that type wrapping
+  // them anyway, so putting them inside it is ok.
   if (!aItems.AllWantParentType(parentType)) {
     // Don't give up yet.  If parentType is not eTypeBlock and the parent is
     // not a generated content frame, then try filtering whitespace out of the
     // list.
-    if (parentType != eTypeBlock && !aFrame->IsGeneratedContentFrame()) {
+    if (parentType != eTypeBlock &&
+        !aInsertionParent->IsGeneratedContentFrame()) {
       // For leading whitespace followed by a kid that wants our parent type,
       // there are four cases:
       // 1) We have a previous sibling which is not a table pseudo.  That means
@@ -10909,7 +10924,8 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
       // 4) We have no previous sibling and our parent frame is a table pseudo.
       //    Need to reframe.
       // All that is predicated on finding the correct previous sibling.  We
-      // might have to walk backwards along continuations from aFrame to do so.
+      // might have to walk backwards along continuations from aInsertionParent
+      // to do so.
       //
       // It's always OK to drop whitespace between any two items that want a
       // parent of type parentType.
@@ -10932,11 +10948,11 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
       // 4) We have no next sibling and our parent frame is a table pseudo.
       //    Need to reframe.
       // All that is predicated on finding the correct next sibling.  We might
-      // have to walk forward along continuations from aFrame to do so.  That
-      // said, in the case when nextSibling is null at this point and aIsAppend
-      // is true, we know we're in case 3.  Furthermore, in that case we don't
-      // even have to worry about the table pseudo situation; we know our
-      // parent is not a table pseudo there.
+      // have to walk forward along continuations from aInsertionParent to do
+      // so.  That said, in the case when nextSibling is null at this point and
+      // aIsAppend is true, we know we're in case 3.  Furthermore, in that case
+      // we don't even have to worry about the table pseudo situation; we know
+      // our parent is not a table pseudo there.
       FCItemIterator iter(aItems);
       FCItemIterator start(iter);
       do {
@@ -10952,11 +10968,11 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
 
         if (iter == start) {
           // Leading whitespace.  How to handle this depends on our
-          // previous sibling and aFrame.  See the long comment above.
+          // previous sibling and aInsertionParent.  See the long comment above.
           nsIFrame* prevSibling = aPrevSibling;
           if (!prevSibling) {
             // Try to find one after all
-            nsIFrame* parentPrevCont = aFrame->GetPrevContinuation();
+            nsIFrame* parentPrevCont = aInsertionParent->GetPrevContinuation();
             while (parentPrevCont) {
               prevSibling = parentPrevCont->PrincipalChildList().LastChild();
               if (prevSibling) {
@@ -10970,7 +10986,7 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
               // need to reframe
               break;
             }
-          } else if (IsTablePseudo(aFrame)) {
+          } else if (IsTablePseudo(aInsertionParent)) {
             // need to reframe
             break;
           }
@@ -10983,12 +10999,13 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
         bool okToDrop;
         if (trailingSpaces) {
           // Trailing whitespace.  How to handle this depeds on aIsAppend, our
-          // next sibling and aFrame.  See the long comment above.
+          // next sibling and aInsertionParent.  See the long comment above.
           okToDrop = aIsAppend && !nextSibling;
           if (!okToDrop) {
             if (!nextSibling) {
               // Try to find one after all
-              nsIFrame* parentNextCont = aFrame->GetNextContinuation();
+              nsIFrame* parentNextCont =
+                  aInsertionParent->GetNextContinuation();
               while (parentNextCont) {
                 nextSibling = parentNextCont->PrincipalChildList().FirstChild();
                 if (nextSibling) {
@@ -10999,9 +11016,10 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
             }
 
             okToDrop = (nextSibling && !IsTablePseudo(nextSibling)) ||
-                       (!nextSibling && !IsTablePseudo(aFrame));
+                       (!nextSibling && !IsTablePseudo(aInsertionParent));
           } else {
-            NS_ASSERTION(!IsTablePseudo(aFrame), "How did that happen?");
+            NS_ASSERTION(!IsTablePseudo(aInsertionParent),
+                         "How did that happen?");
           }
         } else {
           okToDrop = (spaceEndIter.item().DesiredParentType() == parentType);
@@ -11023,10 +11041,10 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
     // We might be able to figure out some sort of optimizations here, but they
     // would have to depend on having a correct aPrevSibling and a correct next
     // sibling.  For example, we can probably avoid reframing if none of
-    // aFrame, aPrevSibling, and next sibling are table pseudo-frames.  But it
-    // doesn't seem worth it to worry about that for now, especially since we
-    // in fact do not have a reliable aPrevSibling, nor any next sibling, in
-    // this method.
+    // aInsertionParent, aPrevSibling, and next sibling are table pseudo-frames.
+    // But it doesn't seem worth it to worry about that for now, especially
+    // since we in fact do not have a reliable aPrevSibling, nor any next
+    // sibling, in this method.
 
     // aItems might have changed, so recheck the parent type thing.  In fact,
     // it might be empty, so recheck that too.
@@ -11034,20 +11052,21 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
       return false;
     }
 
-    // If aFrame is empty, the insertion process will be able to take care of
-    // creating any needed pseudo-parents.
+    // If aInsertionParent is empty, the insertion process will be able to take
+    // care of creating any needed pseudo-parents.
     if (!aItems.AllWantParentType(parentType) &&
-        !SafeToInsertPseudoNeedingChildren(aFrame)) {
-      // Reframing aFrame->GetContent() is good enough, since the content of
-      // table pseudo-frames is the ancestor content.
+        !SafeToInsertPseudoNeedingChildren(aInsertionParent)) {
+      // Reframing aInsertionParent->GetContent() is good enough, since the
+      // content of table pseudo-frames is the ancestor content.
       TRACE("Pseudo-frames going wrong");
-      RecreateFramesForContent(aFrame->GetContent(), InsertionKind::Async);
+      RecreateFramesForContent(aInsertionParent->GetContent(),
+                               InsertionKind::Async);
       return true;
     }
   }
 
   // Situation #5 is a frame in multicol subtree that's getting new children.
-  if (aFrame->HasAnyStateBits(NS_FRAME_HAS_MULTI_COLUMN_ANCESTOR)) {
+  if (aInsertionParent->HasAnyStateBits(NS_FRAME_HAS_MULTI_COLUMN_ANCESTOR)) {
     bool anyColumnSpanItems = false;
     for (FCItemIterator iter(aItems); !iter.IsDone(); iter.Next()) {
       if (iter.item().mComputedStyle->StyleColumn()->IsColumnSpanStyle()) {
@@ -11060,18 +11079,18 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
         // 1. Insert / append any column-span children.
         anyColumnSpanItems ||
         // 2. GetInsertionPrevSibling() modifies insertion parent. If the prev
-        // sibling is a column-span, aFrame ends up being the
+        // sibling is a column-span, aInsertionParent ends up being the
         // column-span-wrapper.
-        aFrame->Style()->GetPseudoType() ==
+        aInsertionParent->Style()->GetPseudoType() ==
             PseudoStyleType::MozColumnSpanWrapper ||
         // 3. Append into {ib} split container. There might be room for
         // optimization, but let's reframe for correctness...
-        IsFramePartOfIBSplit(aFrame);
+        IsFramePartOfIBSplit(aInsertionParent);
 
     if (needsReframe) {
       TRACE("Multi-column");
       RecreateFramesForContent(
-          GetMultiColumnContainingBlockFor(aFrame)->GetContent(),
+          GetMultiColumnContainingBlockFor(aInsertionParent)->GetContent(),
           InsertionKind::Async);
       return true;
     }
@@ -11087,7 +11106,7 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
   // XXXmats we should be able to optimize this when the fieldset doesn't
   // currently have a rendered legend.  ContentRangeInserted needs to be fixed
   // to use the inner frame as the content insertion frame in that case.
-  if (const auto* fieldset = GetFieldSetFrameFor(aFrame)) {
+  if (const auto* fieldset = GetFieldSetFrameFor(aInsertionParent)) {
     // Check if any item is eligible to be a rendered legend.
     for (FCItemIterator iter(aItems); !iter.IsDone(); iter.Next()) {
       const auto& item = iter.item();
@@ -11108,13 +11127,13 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
   // Now we have several cases involving {ib} splits.  Put them all in a
   // do/while with breaks to take us to the "go and reconstruct" code.
   do {
-    if (IsInlineFrame(aFrame)) {
+    if (IsInlineFrame(aInsertionParent)) {
       if (aItems.AreAllItemsInline()) {
         // We can just put the kids in.
         return false;
       }
 
-      if (!IsFramePartOfIBSplit(aFrame)) {
+      if (!IsFramePartOfIBSplit(aInsertionParent)) {
         // Need to go ahead and reconstruct.
         break;
       }
@@ -11127,7 +11146,8 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
       // last part of their {ib} splits and we'd be adding to the end for all
       // of them), then AppendFrames will handle things for us.  Bail out in
       // that case.
-      if (aIsAppend && IsSafeToAppendToIBSplitInline(aFrame, nextSibling)) {
+      if (aIsAppend &&
+          IsSafeToAppendToIBSplitInline(aInsertionParent, nextSibling)) {
         return false;
       }
 
@@ -11137,7 +11157,7 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
 
     // Now we know we have a block parent.  If it's not part of an
     // ib-split, we're all set.
-    if (!IsFramePartOfIBSplit(aFrame)) {
+    if (!IsFramePartOfIBSplit(aInsertionParent)) {
       return false;
     }
 
@@ -11151,9 +11171,10 @@ bool nsCSSFrameConstructor::WipeContainingBlock(
     // loop and reconstruct.
   } while (false);
 
-  // If we don't have a containing block, start with aFrame and look for one.
+  // If we don't have a containing block, start with aInsertionParent and look
+  // for one.
   if (!aContainingBlock) {
-    aContainingBlock = aFrame;
+    aContainingBlock = aInsertionParent;
   }
 
   // To find the right block to reframe, just walk up the tree until we find a

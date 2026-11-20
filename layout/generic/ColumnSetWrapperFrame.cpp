@@ -50,9 +50,9 @@ nsContainerFrame* ColumnSetWrapperFrame::GetContentInsertionFrame() {
     return columnSet->GetContentInsertionFrame();
   }
 
-  // We have column-span descendants. Return ourselves as the insertion
-  // frame to let nsCSSFrameConstructor::WipeContainingBlock() figure out
-  // what to do.
+  // We have column-span descendants. Return ourselves as the insertion frame
+  // to let nsCSSFrameConstructor::MaybeRecreateForInsertedChildren()
+  // figure out what to do.
   return this;
 }
 
