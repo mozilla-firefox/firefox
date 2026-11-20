@@ -26,8 +26,7 @@ function makeChan() {
 }
 
 add_task(async function test_setup() {
-  let h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
+  let h2Port = (await create_h2_server()).port();
   let h3Port = Services.env.get("MOZHTTP3_PORT_NO_RESPONSE");
   Assert.notEqual(h3Port, null);
   Assert.notEqual(h3Port, "");
