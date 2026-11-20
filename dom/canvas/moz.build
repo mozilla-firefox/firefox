@@ -60,7 +60,6 @@ EXPORTS.mozilla.dom += [
     "ImageBitmapRenderingContext.h",
     "ImageBitmapSource.h",
     "ImageData.h",
-    "ImageUtils.h",
     "OffscreenCanvas.h",
     "OffscreenCanvasDisplayHelper.h",
     "OffscreenCanvasRenderingContext2D.h",
@@ -104,7 +103,6 @@ UNIFIED_SOURCES += [
 SOURCES += [
     "DrawTargetWebgl.cpp",  # Isolate Skia
     "FilterNodeWebgl.cpp",
-    "ImageUtils.cpp",
     "OffscreenCanvasDisplayHelper.cpp",  # See bug 1745384
     "OffscreenCanvasRenderingContext2D.cpp",  # See bug 1745384
     "SourceSurfaceWebgl.cpp",
