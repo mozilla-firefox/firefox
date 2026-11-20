@@ -1195,6 +1195,10 @@ nsRootPresContext* nsPresContext::GetRootPresContext() const {
   return pc->IsRoot() ? static_cast<nsRootPresContext*>(pc) : nullptr;
 }
 
+bool nsPresContext::IsInPrivateBrowsing() const {
+  return mDocument && mDocument->IsInPrivateBrowsing();
+}
+
 bool nsPresContext::UserInputEventsAllowed() {
   MOZ_ASSERT(IsRoot());
   if (mUserInputEventsAllowed) {

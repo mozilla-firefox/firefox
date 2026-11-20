@@ -456,6 +456,21 @@ struct InputContext final {
            false;
   }
 
+  /**
+   * Return true if aURI is equal to mURI.  aURI should be an exposable URI,
+   * see IMEStateManager::GetExposableURL().
+   */
+  bool HasSameURI(nsIURI* aURI) const;
+
+  /**
+   * Return true if aOther requests the same thing from native IME as this.
+   * mIMEState.mOpen is compared only when IME is editable.  The other members
+   * are always compared since the parent process uses them even when IME is
+   * disabled, e.g., the HTML attributes for the input scope on Windows and for
+   * nsIDOMWindowUtils.focusedInputType.
+   */
+  bool Equals(const InputContext& aOther) const;
+
   IMEState mIMEState;
 
   // The URI of the document which has the editable element.

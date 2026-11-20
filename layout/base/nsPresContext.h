@@ -257,6 +257,8 @@ class nsPresContext : public nsISupports,
     return mDocument;
   }
 
+  bool IsInPrivateBrowsing() const;
+
   inline mozilla::ServoStyleSet* StyleSet() const;
 
   bool HasPendingMediaQueryUpdates() const {

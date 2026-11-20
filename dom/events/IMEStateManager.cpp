@@ -876,26 +876,11 @@ nsresult IMEStateManager::OnChangeFocusInternal(nsPresContext* aPresContext,
   bool setIMEState = true;
 
   const auto CanSkipSettingContext = [&](const InputContext& aOldContext) {
-    const auto IsChangingBrowsingMode = [&]() {
-      const bool willBeInPrivateBrowsingMode =
-          aPresContext && aPresContext->Document() &&
-          aPresContext->Document()->IsInPrivateBrowsing();
-      return willBeInPrivateBrowsingMode != aOldContext.mInPrivateBrowsing;
-    };
-    const auto IsChangingURI = [&]() {
-      const nsCOMPtr<nsIURI> newURI =
-          IMEStateManager::GetExposableURL(aPresContext);
-      if (!newURI != !aOldContext.mURI) {
-        return true;  // One is not exposable URI.
-      }
-      if (!newURI) {
-        MOZ_ASSERT(!aOldContext.mURI);
-        return false;  // Moved in non-exposable URIs.
-      }
-      bool same = false;
-      return NS_FAILED(newURI->Equals(aOldContext.mURI, &same)) || !same;
-    };
-    return !IsChangingBrowsingMode() && !IsChangingURI();
+    const nsCOMPtr<nsIURI> newURI =
+        IMEStateManager::GetExposableURL(aPresContext);
+    return aOldContext.mInPrivateBrowsing ==
+               (aPresContext && aPresContext->IsInPrivateBrowsing()) &&
+           aOldContext.HasSameURI(newURI);
   };
 
   if (remoteHasFocus && XRE_IsParentProcess()) {
@@ -2174,8 +2159,8 @@ void IMEStateManager::SetIMEState(const IMEState& aState,
   context.mHasHandledUserInput =
       aPresContext && aPresContext->PresShell()->HasHandledUserInput();
 
-  context.mInPrivateBrowsing = aPresContext && aPresContext->Document() &&
-                               aPresContext->Document()->IsInPrivateBrowsing();
+  context.mInPrivateBrowsing =
+      aPresContext && aPresContext->IsInPrivateBrowsing();
 
   const RefPtr<Element> focusedElement =
       aElement ? Element::FromNodeOrNull(

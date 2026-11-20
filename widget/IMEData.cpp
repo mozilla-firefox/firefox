@@ -247,6 +247,32 @@ std::ostream& operator<<(std::ostream& aStream,
   return aStream;
 }
 
+bool InputContext::HasSameURI(nsIURI* aURI) const {
+  if (mURI == aURI) {
+    return true;
+  }
+  if (!mURI || !aURI) {
+    return false;
+  }
+  bool same = false;
+  return NS_SUCCEEDED(mURI->Equals(aURI, &same)) && same;
+}
+
+bool InputContext::Equals(const InputContext& aOther) const {
+  if (mIMEState.mEnabled != aOther.mIMEState.mEnabled ||
+      mOrigin != aOther.mOrigin ||
+      mInPrivateBrowsing != aOther.mInPrivateBrowsing ||
+      mHasHandledUserInput != aOther.mHasHandledUserInput ||
+      !HasSameURI(aOther.mURI) || mHTMLInputType != aOther.mHTMLInputType ||
+      mHTMLInputMode != aOther.mHTMLInputMode ||
+      mActionHint != aOther.mActionHint ||
+      mAutocapitalize != aOther.mAutocapitalize ||
+      mAutocorrect != aOther.mAutocorrect) {
+    return false;
+  }
+  return !mIMEState.IsEditable() || mIMEState.mOpen == aOther.mIMEState.mOpen;
+}
+
 std::ostream& operator<<(std::ostream& aStream, const InputContext& aContext) {
   aStream << "{ mIMEState=" << aContext.mIMEState
           << ", mOrigin=" << aContext.mOrigin << ", mHTMLInputType=\""

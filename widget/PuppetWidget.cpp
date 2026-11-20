@@ -628,12 +628,19 @@ nsRefreshDriver* PuppetWidget::GetTopLevelRefreshDriver() const {
 
 void PuppetWidget::SetInputContext(const InputContext& aContext,
                                    const InputContextAction& aAction) {
+  // If IME stays disabled with an equal context, e.g., when focus moves
+  // between non-editable elements, the parent process has nothing to update.
+  // The cache is invalidated when the parent stops our IME state management,
+  // so we still notify it when focus comes back to this process.
+  const bool parentHasEqualContext =
+      aContext.mIMEState.mEnabled == IMEEnabled::Disabled &&
+      HaveValidInputContextCache() && mInputContext.Equals(aContext);
   mInputContext = aContext;
   // Any widget instances cannot cache IME open state because IME open state
   // can be changed by user but native IME may not notify us of changing the
   // open state on some platforms.
   mInputContext.mIMEState.mOpen = IMEState::OPEN_STATE_NOT_SUPPORTED;
-  if (!mBrowserChild) {
+  if (!mBrowserChild || parentHasEqualContext) {
     return;
   }
   mBrowserChild->SendSetInputContext(aContext, aAction);
