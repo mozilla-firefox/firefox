@@ -918,7 +918,7 @@ class PromiseReactionObjectStorage : public PromiseJobObject {
   }
 
   // Initialize the slots which come from the spec's PromiseReaction record.
-  // [[Type]] is set later, see setTargetStateAndHandlerArg.
+  // [[Type]] is set later, see selectHandlerAndArgument.
   void initReaction(JSObject* resultPromise, const Value& onFulfilled,
                     const Value& onRejected, JSObject* resolve,
                     JSObject* reject,
@@ -1025,7 +1025,7 @@ class PromiseReaction : public Base {
     return flags & REACTION_FLAG_FULFILLED ? JS::PromiseState::Fulfilled
                                            : JS::PromiseState::Rejected;
   }
-  void setTargetStateAndHandlerArg(JS::PromiseState state, const Value& arg) {
+  void selectHandlerAndArgument(JS::PromiseState state, const Value& arg) {
     MOZ_ASSERT(targetState() == JS::PromiseState::Pending);
     MOZ_ASSERT(state != JS::PromiseState::Pending,
                "Can't revert a reaction to pending.");
@@ -1135,22 +1135,22 @@ class PromiseReaction : public Base {
     return flags & REACTION_FLAGS_WITH_SPECIALIZED_STATE;
   }
 
-  Value handler() {
+  Value selectedHandler() {
     MOZ_ASSERT(targetState() != JS::PromiseState::Pending);
     return targetState() == JS::PromiseState::Fulfilled ? this->onFulfilled()
                                                         : this->onRejected();
   }
 
   // Get the handler for a target state, before the state
-  // transition has happened in setTargetStateAndHandlerArg
-  Value targetStateHandler(JS::PromiseState targetState) {
+  // transition has happened in selectHandlerAndArgument
+  Value handlerForTargetState(JS::PromiseState targetState) {
     MOZ_ASSERT(this->targetState() == JS::PromiseState::Pending);
     MOZ_ASSERT(targetState != JS::PromiseState::Pending);
 
     return targetState == JS::PromiseState::Fulfilled ? this->onFulfilled()
                                                       : this->onRejected();
   }
-  Value handlerArg() {
+  Value handlerArgument() {
     MOZ_ASSERT(targetState() != JS::PromiseState::Pending);
     return targetState() == JS::PromiseState::Fulfilled ? this->onFulfilledArg()
                                                         : this->onRejectedArg();
@@ -1500,7 +1500,7 @@ class MOZ_STACK_CLASS StackPromiseReaction
     // The job must run in the handler's realm, which must be the current
     // realm. Like CanUseSameRealmEnqueue this mimics GetFunctionRealm, but
     // gives up on anything which could fail, such as wrappers and proxies.
-    Value targetHandler = targetStateHandler(targetState);
+    Value targetHandler = handlerForTargetState(targetState);
     if (targetHandler.isObject() &&
         GetFunctionRealmIfSimple(&targetHandler.toObject()) != currentRealm) {
       return false;
@@ -1523,7 +1523,7 @@ class MOZ_STACK_CLASS StackPromiseReaction
     return MicroTaskQueueElement::MakeMicroTask(
         MicroTaskQueueElement::Kind::InlinePromiseReaction, bits,
         ObjectValue(promise ? *promise : cx->global()->getObjectPrototype()),
-        handler(), handlerArg(), specializedReactionState(),
+        selectedHandler(), handlerArgument(), specializedReactionState(),
         getIncumbentGlobalRepresentative(), flowId);
   }
 };
@@ -2330,7 +2330,7 @@ static bool CanUseSameRealmEnqueue(JSContext* cx, HandleObject reactionObj,
     return false;
   }
 
-  Value targetHandler = reaction->targetStateHandler(targetState);
+  Value targetHandler = reaction->handlerForTargetState(targetState);
 
   // This mimics AutoFunctionOrCurrentRealm on handler, however we
   // don't handle anything but the simplest cases, returning false
@@ -2436,10 +2436,10 @@ static bool CanUseSameRealmEnqueue(JSContext* cx, HandleObject reactionObj,
   //       reaction object and capture it.
   //       Also, set reaction.[[Type]] is represented by targetState here.
   cx->check(handlerArg);
-  reaction->setTargetStateAndHandlerArg(targetState, handlerArg);
+  reaction->selectHandlerAndArgument(targetState, handlerArg);
 
   RootedField<Value, 2> reactionVal(roots, ObjectValue(*reaction));
-  RootedField<Value, 3> handler(roots, reaction->handler());
+  RootedField<Value, 3> handler(roots, reaction->selectedHandler());
 
   // NewPromiseReactionJob
   // Step 2. Let handlerRealm be null.
@@ -2600,7 +2600,7 @@ static bool CanUseSameRealmEnqueue(JSContext* cx, HandleObject reactionObj,
   //       reaction object and capture it.
   //       Also, set reaction.[[Type]] is represented by targetState here.
   cx->check(handlerArg);
-  reaction->setTargetStateAndHandlerArg(targetState, handlerArg);
+  reaction->selectHandlerAndArgument(targetState, handlerArg);
 
   // NewPromiseReactionJob
   // Checked in CanUseSameRealmEnqueue: the reaction's promise is either null
@@ -2641,7 +2641,7 @@ static bool CanUseSameRealmEnqueue(JSContext* cx, HandleObject reactionObj,
     JS::PromiseState targetState) {
   MOZ_ASSERT(cx->realm() == reaction->realm());
   cx->check(handlerArg);
-  reaction->setTargetStateAndHandlerArg(targetState, handlerArg);
+  reaction->selectHandlerAndArgument(targetState, handlerArg);
 
   uint64_t flowId = MarkEnqueueJobFlow(cx);
 
@@ -3190,7 +3190,7 @@ template <typename InlineOrObjectReaction>
   RootedField<Value, 1> handlerResult(roots, UndefinedValue());
   RootedField<SavedFrame*, 2> unwrappedRejectionStack(roots);
   if (promiseToResolve->state() == JS::PromiseState::Pending) {
-    RootedField<Value, 3> argument(roots, reaction->handlerArg());
+    RootedField<Value, 3> argument(roots, reaction->handlerArgument());
 
     // Step 1.e. Else, let handlerResult be
     //           Completion(HostCallJobCallback(handler, undefined,
@@ -3241,8 +3241,9 @@ template <typename InlineOrObjectReaction>
     JSContext* cx, const InlineOrObjectReaction& reaction) {
   MOZ_ASSERT(reaction->isAsyncFunction());
 
-  auto handler = static_cast<PromiseHandler>(reaction->handler().toInt32());
-  RootedValue argument(cx, reaction->handlerArg());
+  auto handler =
+      static_cast<PromiseHandler>(reaction->selectedHandler().toInt32());
+  RootedValue argument(cx, reaction->handlerArgument());
   Rooted<AsyncFunctionGeneratorObject*> generator(
       cx, reaction->asyncFunctionGenerator());
 
@@ -3327,10 +3328,11 @@ static bool RunPromiseReactionJob(JSContext* cx,
     return AsyncFunctionPromiseReactionJob(cx, reaction);
   }
   if (reaction->isAsyncGenerator()) {
-    RootedField<Value, 0> argument(roots, reaction->handlerArg());
+    RootedField<Value, 0> argument(roots, reaction->handlerArgument());
     RootedField<AsyncGeneratorObject*, 1> generator(roots,
                                                     reaction->asyncGenerator());
-    auto handler = static_cast<PromiseHandler>(reaction->handler().toInt32());
+    auto handler =
+        static_cast<PromiseHandler>(reaction->selectedHandler().toInt32());
     return AsyncGeneratorPromiseReactionJob(cx, handler, generator, argument);
   }
   if (reaction->isDebuggerDummy()) {
@@ -3341,9 +3343,9 @@ static bool RunPromiseReactionJob(JSContext* cx,
   // (implicit)
 
   // Step 1.c. Let handler be reaction.[[Handler]].
-  RootedField<Value, 0> handlerVal(roots, reaction->handler());
+  RootedField<Value, 0> handlerVal(roots, reaction->selectedHandler());
 
-  RootedField<Value, 2> argument(roots, reaction->handlerArg());
+  RootedField<Value, 2> argument(roots, reaction->handlerArgument());
 
   RootedField<Value, 3> handlerResult(roots);
   ResolutionMode resolutionMode = ResolveMode;
