@@ -1118,8 +1118,8 @@ void LabelsNodeList::ResetRoots() {
   // If the outermost labeled element or host is in a shadow tree, its
   // containing shadow root is already in newRoots.
   if (!labeledElementOrHostIsInShadowTree) {
-    // `labeledHost` is either `labeledElement`, or the shadow host which has
-    // `labeledElement` as its resolved reference target.
+    // `labeledElementOrHost` is either `labeledElement`, or the shadow host
+    // which has `labeledElement` as its resolved reference target.
     if (Document* doc = labeledElementOrHost->GetUncomposedDoc()) {
       newRoots.AppendElement(doc);
     } else if (newRoots.IsEmpty()) {
@@ -1166,7 +1166,7 @@ void LabelsNodeList::ResetRoots() {
 }
 
 nsINode* LabelsNodeList::GetNextNode(nsINode* aCurrent) {
-  auto* labeledElement = (nsGenericHTMLElement*)mData;
+  auto* labeledElement = static_cast<nsGenericHTMLElement*>(mData);
   MOZ_ASSERT(labeledElement, "Must have labeled element");
   MOZ_ASSERT(mRootNode, "Must have root node");
 

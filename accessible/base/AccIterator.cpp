@@ -237,19 +237,15 @@ LocalAccessible* HTMLLabelIterator::Next() {
     }
   }
 
-  // Ignore ancestor label on not widget accessible.
   if (mLabelFilter == eSkipAncestorLabel) {
     return nullptr;
   }
 
+  // Ignore ancestor label on not widget accessible, unless they correspond to
+  // a labelable element (e.g. <output>).
   if (!mAcc->IsWidget()) {
     nsIContent* content = mAcc->GetContent();
-    if (!content->IsElement()) {
-      return nullptr;
-    }
-    dom::Element* element = content->AsElement();
-    // <output> is not a widget but is labelable.
-    if (!element->IsLabelable()) {
+    if (!content->IsElement() || !content->AsElement()->IsLabelable()) {
       return nullptr;
     }
   }
