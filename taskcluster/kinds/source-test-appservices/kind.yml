@@ -35,3 +35,25 @@ tasks:
             extra:
                 treeherder:
                     tier: 3
+
+    appservices-in-tree-gradle-build:
+        duplicate:
+            kinds:
+                - source-test
+            suffix: -appservices-in-tree
+            treeherder-symbol-suffix: -as
+            include-labels:
+                - '^source-test-python-android-android-gradle-build-'
+        attributes:
+            run_on_projects: []
+            code-review: false
+        dependencies:
+            toolchain-linux64-android-gradle-dependencies:
+                toolchain-linux64-android-gradle-dependencies-appservices
+        task:
+            payload:
+                env:
+                    MOZ_APPSERVICES_IN_TREE: "1"
+            extra:
+                treeherder:
+                    tier: 3

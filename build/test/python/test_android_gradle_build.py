@@ -464,6 +464,15 @@ def test_fenix_build(objdir, mozconfig, run_mach):
     )
     assert_all_task_statuses(objdir, ["EXECUTED", "UP-TO-DATE", "SKIPPED"])
 
+    apks = list(
+        (objdir / "gradle/build/mobile/android/fenix/app/outputs/apk").rglob(
+            "*arm64-v8a*.apk"
+        )
+    )
+    assert apks
+    for apk in apks:
+        assert "lib/arm64-v8a/libmegazord.so" in JarReader(str(apk))
+
     assert_success(*run_mach(["gradle", "fenix:assembleDebug"]))
     assert_ordered_task_outcomes(
         objdir, [(":components:support-base:generateComponentEnum", "UP-TO-DATE")]
