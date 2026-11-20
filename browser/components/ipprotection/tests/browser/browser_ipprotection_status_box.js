@@ -548,3 +548,163 @@ add_task(async function test_generic_error_try_again_fails() {
   await IPPProxyManager.stop();
   cleanupService();
 });
+
+/**
+ * Tests that the generic error shows both Try again and Continue without VPN
+ * when the VPN is on.
+ */
+add_task(async function test_generic_error_with_vpn_on_shows_both_buttons() {
+  let content = await openPanel({
+    unauthenticated: false,
+    error: ERRORS.GENERIC,
+    isDefaultMode: true,
+  });
+
+  try {
+    let tryAgainButton = content.tryAgainButtonEl;
+    let continueButton = content.continueWithoutVpnButtonEl;
+    Assert.ok(tryAgainButton, "Try again button should be present");
+    Assert.ok(continueButton, "Continue without VPN button should be present");
+
+    Assert.ok(
+      tryAgainButton.compareDocumentPosition(continueButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      "Continue without VPN button should come after Try again"
+    );
+  } finally {
+    await closePanel();
+  }
+});
+
+/**
+ * Tests that the generic error doesn't show Continue without VPN when the VPN
+ * is off.
+ */
+add_task(async function test_generic_error_with_vpn_off_hides_continue() {
+  let content = await openPanel({
+    unauthenticated: false,
+    error: ERRORS.GENERIC,
+    isDefaultMode: false,
+  });
+
+  Assert.ok(content.tryAgainButtonEl, "Try again button should be present");
+  Assert.ok(
+    !content.continueWithoutVpnButtonEl,
+    "Continue without VPN button should not be present"
+  );
+
+  await closePanel();
+});
+
+/**
+ * Tests that the network and unavailable errors don't show either button.
+ */
+add_task(async function test_network_and_unavailable_errors_hide_buttons() {
+  for (let error of [ERRORS.NETWORK, ERRORS.VPN_UNAVAILABLE]) {
+    let content = await openPanel({
+      unauthenticated: false,
+      error,
+      isDefaultMode: true,
+    });
+
+    Assert.ok(
+      !content.tryAgainButtonEl,
+      `Try again button should not be present for ${error}`
+    );
+    Assert.ok(
+      !content.continueWithoutVpnButtonEl,
+      `Continue without VPN button should not be present for ${error}`
+    );
+
+    await closePanel();
+  }
+});
+
+/**
+ * Opens the panel on a catastrophic error with site inclusions enabled and
+ * checks that the error screen replaces the site rule UI.
+ *
+ * @param {object} options
+ * @param {boolean} options.isInclusion Whether the site is included, else excluded.
+ * @param {boolean} options.isProtectionEnabled Whether the VPN is on.
+ * @returns {Promise<IPProtectionContentElement>}
+ */
+async function openCatastrophicErrorOnSite({
+  isInclusion,
+  isProtectionEnabled,
+}) {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.ipProtection.features.siteInclusions", true]],
+  });
+  return await openPanel({
+    unauthenticated: false,
+    error: ERRORS.CATASTROPHIC,
+    isSiteInclusionsEnabled: true,
+    isActive: true,
+    isProtectionEnabled,
+    isDefaultMode: isProtectionEnabled,
+    siteData: {
+      host: "example.com",
+      isInclusion,
+      isExclusion: !isInclusion,
+      hasSiteRule: true,
+    },
+  });
+}
+
+/**
+ * Tests a catastrophic error on an included site while the VPN is off.
+ */
+add_task(async function test_catastrophic_error_included_site_vpn_off() {
+  let content = await openCatastrophicErrorOnSite({
+    isInclusion: true,
+    isProtectionEnabled: false,
+  });
+
+  Assert.ok(content.tryAgainButtonEl, "Try again button should be present");
+  Assert.ok(
+    !content.continueWithoutVpnButtonEl,
+    "Continue without VPN button should not be present"
+  );
+
+  await closePanel();
+  await SpecialPowers.popPrefEnv();
+});
+
+/**
+ * Tests a catastrophic error on an included site while the VPN is on.
+ */
+add_task(async function test_catastrophic_error_included_site_vpn_on() {
+  let content = await openCatastrophicErrorOnSite({
+    isInclusion: true,
+    isProtectionEnabled: true,
+  });
+
+  Assert.ok(content.tryAgainButtonEl, "Try again button should be present");
+  Assert.ok(
+    content.continueWithoutVpnButtonEl,
+    "Continue without VPN button should be present"
+  );
+
+  await closePanel();
+  await SpecialPowers.popPrefEnv();
+});
+
+/**
+ * Tests a catastrophic error on an excluded site while the VPN is on.
+ */
+add_task(async function test_catastrophic_error_excluded_site_vpn_on() {
+  let content = await openCatastrophicErrorOnSite({
+    isInclusion: false,
+    isProtectionEnabled: true,
+  });
+
+  Assert.ok(content.tryAgainButtonEl, "Try again button should be present");
+  Assert.ok(
+    content.continueWithoutVpnButtonEl,
+    "Continue without VPN button should be present"
+  );
+
+  await closePanel();
+  await SpecialPowers.popPrefEnv();
+});

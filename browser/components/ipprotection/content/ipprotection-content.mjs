@@ -58,6 +58,7 @@ export default class IPProtectionContentElement extends MozLitElement {
     supportLinkEl: "#vpn-support-link",
     statusBoxEl: "ipprotection-status-box",
     tryAgainButtonEl: "#try-again-button",
+    continueWithoutVpnButtonEl: "#continue-without-vpn-button",
     siteExclusionControlEl: "#site-exclusion-control",
     siteExclusionToggleEl: "#site-exclusion-toggle",
     siteExclusionDescriptionEl: '#site-exclusion-toggle > [slot="description"]',
@@ -168,6 +169,12 @@ export default class IPProtectionContentElement extends MozLitElement {
     );
   }
 
+  handleToggleOff() {
+    this.dispatchEvent(
+      new CustomEvent("IPProtection:UserDisable", { bubbles: true })
+    );
+  }
+
   focus() {
     if (this.state.unauthenticated) {
       this.unauthenticatedEl?.focus();
@@ -182,9 +189,7 @@ export default class IPProtectionContentElement extends MozLitElement {
         new CustomEvent("IPProtection:UserEnable", { bubbles: true })
       );
     } else if (event.type === "ipprotection-status-card:user-toggled-off") {
-      this.dispatchEvent(
-        new CustomEvent("IPProtection:UserDisable", { bubbles: true })
-      );
+      this.handleToggleOff();
     }
   }
 
@@ -527,14 +532,14 @@ export default class IPProtectionContentElement extends MozLitElement {
     let imageSrc =
       "chrome://browser/content/ipprotection/assets/states/ipprotection-error.svg";
     let supportSlug = null;
-    let showTryAgain = true;
+    let showButtons = true;
 
     if (isNetworkError) {
       headerL10nId = "ipprotection-connection-status-network-error-title-1";
       descriptionL10nId =
         "ipprotection-connection-status-network-error-description";
       errorType = ERRORS.NETWORK;
-      showTryAgain = false;
+      showButtons = false;
       imageSrc =
         "chrome://browser/content/ipprotection/assets/states/ipprotection-info.svg";
     } else if (isRestrictedGeoError) {
@@ -542,7 +547,7 @@ export default class IPProtectionContentElement extends MozLitElement {
       descriptionL10nId =
         "ipprotection-connection-status-blocked-error-description-1";
       errorType = ERRORS.VPN_UNAVAILABLE;
-      showTryAgain = false;
+      showButtons = false;
       imageSrc = null;
       supportSlug = LINKS.NO_ACCESS_SUPPORT_SLUG;
     }
@@ -564,7 +569,7 @@ export default class IPProtectionContentElement extends MozLitElement {
               />
             `
           : null}
-        ${showTryAgain
+        ${showButtons
           ? html`
               <moz-button
                 id="try-again-button"
@@ -572,6 +577,19 @@ export default class IPProtectionContentElement extends MozLitElement {
                 type="primary"
                 data-l10n-id="ipprotection-connection-status-try-again-button"
                 @click=${this.handleTryAgain}
+                closemenu="none"
+              ></moz-button>
+            `
+          : null}
+        ${showButtons && this.state.isDefaultMode
+          ? html`
+              <moz-button
+                id="continue-without-vpn-button"
+                slot="action"
+                type="secondary"
+                class="toolbarbutton"
+                data-l10n-id="ipprotection-connection-error-continue-without-vpn"
+                @click=${this.handleToggleOff}
                 closemenu="none"
               ></moz-button>
             `

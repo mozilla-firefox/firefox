@@ -330,3 +330,7 @@ ipprotection-message-bar.vpn-top-content {
     scale: -1 1;
   }
 }
+
+#continue-without-vpn-button {
+  margin-block-start: var(--space-small);
+}

@@ -132,6 +132,9 @@ export class IPProtectionPanel {
    * @typedef {object} State
    * @property {boolean} isProtectionEnabled
    *  The timestamp in milliseconds since IP Protection was enabled
+   * @property {boolean} isDefaultMode
+   *  True if the proxy connection uses the default mode (the mode a
+   *  user-started connection gets), even if it has since failed.
    * @property {string} location
    *  The location country code
    * @property {Array<{code: string, available: boolean}>} locationsList
@@ -470,6 +473,7 @@ export class IPProtectionPanel {
         lazy.IPProtectionService.state ===
         lazy.IPProtectionStates.UNAUTHENTICATED,
       isProtectionEnabled: lazy.IPPProxyManager.isDefaultModeActive,
+      isDefaultMode: lazy.IPPProxyManager.mode === lazy.IPPMode.getDefault(),
       location: lazy.EGRESS_LOCATION || null,
       locationsList: lazy.IPProtectionServerlist.countries,
       error: "",
@@ -1558,6 +1562,7 @@ export class IPProtectionPanel {
           lazy.IPProtectionService.state ===
           lazy.IPProtectionStates.UNAUTHENTICATED,
         isProtectionEnabled: lazy.IPPProxyManager.isDefaultModeActive,
+        isDefaultMode: lazy.IPPProxyManager.mode === lazy.IPPMode.getDefault(),
         hasUpgraded: lazy.IPProtectionService.authProvider.hasUpgraded,
         error: errorType,
         isActivating:
