@@ -91,7 +91,8 @@ BEGIN_TEST(testMicroTask_embedderTracedViaHook) {
 
   // Drain the task so it doesn't outlive the stack pointer we enqueued. A
   // PrivateValue is stored as a double; it round-trips unchanged.
-  JS::Rooted<mozilla::Maybe<MicroTask>> task(cx, JS::DequeueNextMicroTask(cx));
+  JS::Rooted<mozilla::Maybe<MicroTask>> task(cx);
+  JS::DequeueNextMicroTask(cx, &task);
   CHECK(task.isSome());
   CHECK(!task->isJS());
   CHECK(task->isEmbedder());
@@ -115,7 +116,9 @@ BEGIN_TEST(testMicroTask_rootedEmbedderTracedViaHook) {
   EmbedderTask embedderTask;
   CHECK(JS::EnqueueMicroTask(cx, MicroTask::FromEmbedderPtr(&embedderTask)));
 
-  JS::Rooted<mozilla::Maybe<MicroTask>> task(cx, JS::DequeueNextMicroTask(cx));
+  JS::Rooted<mozilla::Maybe<MicroTask>> task(cx);
+
+  JS::DequeueNextMicroTask(cx, &task);
   CHECK(task.isSome());
   CHECK(!JS::HasAnyMicroTasks(cx));
 
@@ -139,7 +142,8 @@ BEGIN_TEST(testMicroTask_emptyRootedTaskNotReported) {
   JS::SetJobQueue(cx, &queue);
 
   CHECK(!JS::HasAnyMicroTasks(cx));
-  JS::Rooted<mozilla::Maybe<MicroTask>> task(cx, JS::DequeueNextMicroTask(cx));
+  JS::Rooted<mozilla::Maybe<MicroTask>> task(cx);
+  JS::DequeueNextMicroTask(cx, &task);
   CHECK(task.isNothing());
 
   size_t before = queue.traceNonGCThingCalls;
@@ -186,7 +190,8 @@ BEGIN_TEST(testMicroTask_jsReactionJobTracedDirectly) {
   CHECK(queue.traceNonGCThingCalls == hookCallsBefore);
 
   // The surviving task is a live JS microtask.
-  JS::Rooted<mozilla::Maybe<MicroTask>> task(cx, JS::PeekNextMicroTask(cx));
+  JS::Rooted<mozilla::Maybe<MicroTask>> task(cx);
+  JS::PeekNextMicroTask(cx, &task);
   CHECK(task.isSome());
   CHECK(task->isJS());
   CHECK(task->asJS().executionGlobal());
@@ -280,12 +285,12 @@ BEGIN_TEST(testMicroTask_settledReactionSurvivesGC) {
       JS::RestoreMicroTaskQueue(cx, std::move(saved));
 
       for (size_t i = 0; i < 2; i++) {
-        JS::Rooted<mozilla::Maybe<MicroTask>> task(
-            cx, JS::DequeueNextMicroTask(cx));
+        JS::Rooted<mozilla::Maybe<MicroTask>> task(cx);
+        JS::DequeueNextMicroTask(cx, &task);
         CHECK(task.isSome());
         JS_GC(cx);
         CHECK(JS::PrependMicroTask(cx, *task));
-        task = JS::DequeueNextMicroTask(cx);
+        JS::DequeueNextMicroTask(cx, &task);
         CHECK(task.isSome());
         CHECK(task->isJS());
         CHECK(task->asJS().executionGlobal() == global);
@@ -371,8 +376,8 @@ BEGIN_TEST(testMicroTask_settledReactionFlowIdsWithProfiler) {
   JS::RestoreMicroTaskQueue(cx, std::move(saved));
 
   for (size_t i = 0; i < 2; i++) {
-    JS::Rooted<mozilla::Maybe<MicroTask>> task(cx,
-                                               JS::DequeueNextMicroTask(cx));
+    JS::Rooted<mozilla::Maybe<MicroTask>> task(cx);
+    JS::DequeueNextMicroTask(cx, &task);
     CHECK(task.isSome());
     uint64_t flowId;
     CHECK(task->asJS().getFlowId(&flowId));
@@ -422,7 +427,9 @@ BEGIN_TEST(testMicroTask_inlineThenableSurvivesGC) {
       JS_GC(cx);
       JS::RestoreMicroTaskQueue(cx, std::move(saved));
 
-      Rooted<mozilla::Maybe<MicroTask>> task(cx, JS::DequeueNextMicroTask(cx));
+      Rooted<mozilla::Maybe<MicroTask>> task(cx);
+
+      JS::DequeueNextMicroTask(cx, &task);
       CHECK(task.isSome());
       JS_GC(cx);
       CHECK(task->asJS().executionGlobal() == global);
@@ -445,7 +452,7 @@ BEGIN_TEST(testMicroTask_inlineThenableSurvivesGC) {
       size_t count = 0;
       while (JS::HasAnyMicroTasks(cx)) {
         CHECK(++count < 10);
-        task = JS::DequeueNextMicroTask(cx);
+        JS::DequeueNextMicroTask(cx, &task);
         JS_GC(cx);
         CHECK(JS::RunJSMicroTask(cx, task));
       }
@@ -460,3 +467,57 @@ BEGIN_TEST(testMicroTask_inlineThenableSurvivesGC) {
   return true;
 }
 END_TEST(testMicroTask_inlineThenableSurvivesGC)
+
+// The dequeue and peek functions overwrite whatever |out| held, including with
+// Nothing once their queue is empty. The generic forms check the debugger queue
+// before the regular one.
+BEGIN_TEST(testMicroTask_peekAndDequeueInPlace) {
+  TestJobQueue queue;
+  JS::SetJobQueue(cx, &queue);
+
+  EmbedderTask first, second, debug;
+  CHECK(JS::EnqueueMicroTask(cx, MicroTask::FromEmbedderPtr(&first)));
+  CHECK(JS::EnqueueMicroTask(cx, MicroTask::FromEmbedderPtr(&second)));
+  CHECK(JS::EnqueueDebugMicroTask(cx, MicroTask::FromEmbedderPtr(&debug)));
+
+  JS::Rooted<mozilla::Maybe<MicroTask>> task(
+      cx, mozilla::Some(MicroTask::FromEmbedderPtr(&second)));
+  JS::PeekNextMicroTask(cx, &task);
+  CHECK(task->embedderPtr() == &debug);
+  CHECK(JS::HasDebuggerMicroTasks(cx));
+
+  JS::DequeueNextMicroTask(cx, &task);
+  CHECK(task->embedderPtr() == &debug);
+  CHECK(!JS::HasDebuggerMicroTasks(cx));
+
+  JS::PeekNextMicroTask(cx, &task);
+  CHECK(task->embedderPtr() == &first);
+  CHECK(JS::GetRegularMicroTaskCount(cx) == 2);
+
+  JS::DequeueNextMicroTask(cx, &task);
+  CHECK(task->embedderPtr() == &first);
+  JS::DequeueNextMicroTask(cx, &task);
+  CHECK(task->embedderPtr() == &second);
+  CHECK(!JS::HasAnyMicroTasks(cx));
+
+  JS::PeekNextMicroTask(cx, &task);
+  CHECK(task.isNothing());
+  task = mozilla::Some(MicroTask::FromEmbedderPtr(&first));
+  JS::DequeueNextMicroTask(cx, &task);
+  CHECK(task.isNothing());
+
+  CHECK(JS::EnqueueMicroTask(cx, MicroTask::FromEmbedderPtr(&first)));
+  CHECK(JS::EnqueueDebugMicroTask(cx, MicroTask::FromEmbedderPtr(&debug)));
+  JS::DequeueNextRegularMicroTask(cx, &task);
+  CHECK(task->embedderPtr() == &first);
+  JS::DequeueNextRegularMicroTask(cx, &task);
+  CHECK(task.isNothing());
+  JS::DequeueNextDebuggerMicroTask(cx, &task);
+  CHECK(task->embedderPtr() == &debug);
+  JS::DequeueNextDebuggerMicroTask(cx, &task);
+  CHECK(task.isNothing());
+
+  JS::SetJobQueue(cx, nullptr);
+  return true;
+}
+END_TEST(testMicroTask_peekAndDequeueInPlace)

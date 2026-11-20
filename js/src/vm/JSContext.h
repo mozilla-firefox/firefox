@@ -267,9 +267,11 @@ struct MicroTaskQueueSet {
 
   bool prependRegularMicroTask(JSContext* cx, const JS::MicroTask&);
 
-  mozilla::Maybe<JS::MicroTask> popFront();
-  mozilla::Maybe<JS::MicroTask> popDebugFront();
-  mozilla::Maybe<JS::MicroTask> peekFront();
+  // Each of these writes the task, or Nothing if there isn't one, into |out|.
+  void popFront(JS::MutableHandle<mozilla::Maybe<JS::MicroTask>> out);
+  void popDebugFront(JS::MutableHandle<mozilla::Maybe<JS::MicroTask>> out);
+  void popRegularFront(JS::MutableHandle<mozilla::Maybe<JS::MicroTask>> out);
+  void peekFront(JS::MutableHandle<mozilla::Maybe<JS::MicroTask>> out);
 
   bool empty() { return microTaskQueue.empty() && debugMicroTaskQueue.empty(); }
 
@@ -285,6 +287,12 @@ struct MicroTaskQueueSet {
 
   MicroTaskQueue microTaskQueue;
   MicroTaskQueue debugMicroTaskQueue;
+
+ private:
+  // The queue the next task comes from: debugger tasks run first.
+  MicroTaskQueue& nextQueue() {
+    return debugMicroTaskQueue.empty() ? microTaskQueue : debugMicroTaskQueue;
+  }
 };
 
 } /* namespace js */

@@ -44,7 +44,8 @@ namespace JS {
 // be run by calling RunJSMicroTask, while in the realm specified by the global
 // returned by asJS().executionGlobal(), e.g
 //
-//    Rooted<mozilla::Maybe<MicroTask>> task(cx, JS::DequeueNextMicroTask(cx));
+//    Rooted<mozilla::Maybe<MicroTask>> task(cx);
+//    JS::DequeueNextMicroTask(cx, &task);
 //    if (task.isSome() && task->isJS()) {
 //      JSObject* global = task->asJS().executionGlobal();
 //      if (global) {
@@ -300,29 +301,36 @@ JS_PUBLIC_API bool EnqueueMicroTask(JSContext* cx, const MicroTask& entry);
 JS_PUBLIC_API bool EnqueueDebugMicroTask(JSContext* cx, const MicroTask& entry);
 JS_PUBLIC_API bool PrependMicroTask(JSContext* cx, const MicroTask& entry);
 
-// Dequeue the next MicroTask. If there are no MicroTasks of the appropriate
-// kind, each of the below API returns Nothing.
+// Dequeue the next MicroTask into |out|, which is overwritten with Nothing if
+// there are no MicroTasks of the appropriate kind. Writing into the caller's
+// rooted storage avoids copying the task through temporaries. These can't GC.
 //
 // The generic DequeueNext will always pull a debugger microtask first,
 // if one exists, then a regular microtask if one exists.
 // - DequeueNextDebuggerMicroTask only pulls from the debugger queue.
 // - DequeueNextRegularMicroTask only pulls from the regular queue.
 //
-// Internally, these basically do
-//
-//    if (HasXMicroTask()) { return Some(X.popFront()); } return Nothing()
-//
-// so checking for emptiness before calling these is not required, and is
-// very slightly less efficient.
+// Checking for emptiness before calling these is not required, and is very
+// slightly less efficient.
+JS_PUBLIC_API void DequeueNextMicroTask(
+    JSContext* cx, JS::MutableHandle<mozilla::Maybe<MicroTask>> out);
+JS_PUBLIC_API void DequeueNextDebuggerMicroTask(
+    JSContext* cx, JS::MutableHandle<mozilla::Maybe<MicroTask>> out);
+JS_PUBLIC_API void DequeueNextRegularMicroTask(
+    JSContext* cx, JS::MutableHandle<mozilla::Maybe<MicroTask>> out);
+
+// Peek at the next MicroTask without removing it from the queue, writing it
+// (or Nothing if there are no MicroTasks) into |out|.
+// Checks debugger queue first, then regular queue.
+JS_PUBLIC_API void PeekNextMicroTask(
+    JSContext* cx, JS::MutableHandle<mozilla::Maybe<MicroTask>> out);
+
+// Value-returning forms of the above, which copy the task.
 JS_PUBLIC_API mozilla::Maybe<MicroTask> DequeueNextMicroTask(JSContext* cx);
 JS_PUBLIC_API mozilla::Maybe<MicroTask> DequeueNextDebuggerMicroTask(
     JSContext* cx);
 JS_PUBLIC_API mozilla::Maybe<MicroTask> DequeueNextRegularMicroTask(
     JSContext* cx);
-
-// Peek at the next MicroTask without removing it from the queue.
-// Returns Nothing if there are no MicroTasks.
-// Checks debugger queue first, then regular queue.
 JS_PUBLIC_API mozilla::Maybe<MicroTask> PeekNextMicroTask(JSContext* cx);
 
 // Returns true if there are -any- microtasks pending in the queue.
