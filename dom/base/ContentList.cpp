@@ -1193,18 +1193,20 @@ nsINode* LabelsNodeList::GetNextNode(nsINode* aCurrent) {
   }
 
   // If we descended into a shadow tree, back out of it until we find an
-  // adjacent node, or hit a shadow root which doesn't have the current element
-  // as its reference target.
-  nsINode* cur = aCurrent;
-  while (!next) {
-    ShadowRoot* shadow = cur->GetContainingShadow();
-    if (!shadow || shadow->GetReferenceTargetElement() == cur) {
+  // adjacent node, or hit a shadow root which doesn't have labeledElement as
+  // its resolved reference target.
+  for (ShadowRoot* shadow = aCurrent->GetContainingShadow(); shadow;
+       shadow = shadow->Host()->GetContainingShadow()) {
+    Element* curElement = shadow->Host();
+    if (curElement->ResolveReferenceTarget() != labeledElement) {
       break;
     }
-    cur = shadow->Host();
-    next = cur->GetNextNode();
+    next = curElement->GetNextNode();
+    if (next) {
+      return next;
+    }
   }
-  return next;
+  return nullptr;
 }
 
 void LabelsNodeList::PopulateSelf(uint32_t aNeededLength) {
