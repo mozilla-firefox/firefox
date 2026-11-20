@@ -11,7 +11,7 @@ ChromeUtils.defineESModuleGetters(this, {
 
 SearchUITestUtils.init(this);
 
-const LABEL = "Seasonal searches";
+const LABEL = "Seasonal Searches";
 const QUERIES = ["q1", "q2", "q3", "q4", "q5", "q6", "q7"];
 const TOP_SITES = [
   "https://example-1.com/",
