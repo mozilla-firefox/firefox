@@ -137,11 +137,14 @@ class Http3WebTransportSession final : public WebTransportSessionBase,
   void SetDatagramMaxBufferedDatagrams(uint32_t aMaxBufferedDatagrams) override;
   void SetDatagramMaxAge(double aMaxAge) override;
 
+  // Not part of WebTransportSessionBase: reached only via
+  // GetHttp3WebTransportSession(), same as CloseSessionAndGetStats, since
+  // it queries neqo's HTTP/3-specific outgoing datagram queue.
   bool GetDatagramQueueCapacity(size_t* aRemainingBytes,
                                 size_t* aQueuedDatagrams,
-                                size_t* aMaxQueuedBytes) override;
+                                size_t* aMaxQueuedBytes);
   bool GetDatagramSessionStats(uint64_t* aSent, uint64_t* aExpired,
-                               uint64_t* aDropped) override;
+                               uint64_t* aDropped);
 
   nsresult ExportKeyingMaterial(const nsTArray<uint8_t>& aLabel,
                                 const nsTArray<uint8_t>& aContext,

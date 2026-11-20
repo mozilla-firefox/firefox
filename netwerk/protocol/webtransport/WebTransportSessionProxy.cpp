@@ -376,8 +376,11 @@ bool WebTransportSessionProxy::GetDatagramQueueCapacity(
     session = mWebTransportSession;
   }
 
-  return session->GetDatagramQueueCapacity(aRemainingBytes, aQueuedDatagrams,
-                                           aMaxQueuedBytes);
+  Http3WebTransportSession* http3Session =
+      session->GetHttp3WebTransportSession();
+  return http3Session &&
+         http3Session->GetDatagramQueueCapacity(
+             aRemainingBytes, aQueuedDatagrams, aMaxQueuedBytes);
 }
 
 bool WebTransportSessionProxy::GetDatagramSessionStats(uint64_t* aSent,
@@ -394,7 +397,10 @@ bool WebTransportSessionProxy::GetDatagramSessionStats(uint64_t* aSent,
     session = mWebTransportSession;
   }
 
-  return session->GetDatagramSessionStats(aSent, aExpired, aDropped);
+  Http3WebTransportSession* http3Session =
+      session->GetHttp3WebTransportSession();
+  return http3Session &&
+         http3Session->GetDatagramSessionStats(aSent, aExpired, aDropped);
 }
 
 NS_IMETHODIMP

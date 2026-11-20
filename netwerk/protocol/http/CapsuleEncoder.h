@@ -35,7 +35,6 @@ class CapsuleEncoder final {
   mozilla::Span<const uint8_t> GetBuffer();
 
   Maybe<StreamMetadata>& GetStreamMetadata() { return mStreamMetadata; }
-  Maybe<size_t> GetDatagramSize() const { return mDatagramSize; }
 
  private:
   RefPtr<NeqoEncoder> mEncoder;
@@ -57,8 +56,6 @@ class CapsuleEncoder final {
   // When this encoder contains a WT_STREAM capsule, this field tracks metadata
   // for the stream data being sent.
   Maybe<StreamMetadata> mStreamMetadata;
-  // When this encoder contains a DATAGRAM capsule, its payload size.
-  Maybe<size_t> mDatagramSize;
 };
 
 }  // namespace mozilla::net
