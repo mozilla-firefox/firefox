@@ -87,6 +87,9 @@ scale(*) == backdrop-filter-nested.yaml blank.yaml		# just don't crash
 == backdrop-filter-many-in-blurred-parent.yaml backdrop-filter-many-in-blurred-parent-ref.yaml
 platform(linux,mac) == backdrop-filter-transformed-filter.yaml backdrop-filter-transformed-filter.png
 == backdrop-filter-in-clip-surface.yaml backdrop-filter-in-clip-surface-ref.yaml
+== backdrop-filter-in-clip-surface-content.yaml backdrop-filter-in-clip-surface-content-ref.yaml
+== backdrop-filter-in-image-mask.yaml backdrop-filter-in-image-mask-ref.yaml
+== backdrop-filter-in-backface-hidden.yaml backdrop-filter-in-backface-hidden-ref.yaml
 skip_on(android,device) == filter-mix-blend-scaling.yaml filter-mix-blend-scaling-ref.yaml
 platform(linux) == blend-clipped-raster-root.yaml blend-clipped-raster-root.png
 scale(*) == drop-shadow-inverse-scale.yaml blank.yaml

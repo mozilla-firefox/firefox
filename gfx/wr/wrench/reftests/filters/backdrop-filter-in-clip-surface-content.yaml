@@ -1,0 +1,36 @@
+# Like backdrop-filter-in-clip-surface.yaml, but the wrapper also draws content
+# before the backdrop-filter. The backdrop must include both what the isolated
+# parent drew (blue) and what the wrapper drew (red), so the wrapper must not
+# get a surface of its own for the clip it inherits. See bug 2092494.
+---
+root:
+  items:
+    - type: clip
+      id: 2
+      complex:
+        - rect: [0, 0, 200, 200]
+          radius: 20
+    - type: clip-chain
+      id: 3
+      clips: [2]
+    - type: stacking-context
+      filters: [identity]
+      items:
+        - type: rect
+          bounds: [0, 0, 200, 200]
+          color: blue
+          clip-chain: 3
+        - type: reference-frame
+          bounds: [0, 0, 200, 200]
+          transform: translate(-10, 0)
+          items:
+            - type: stacking-context
+              clip-chain: 3
+              wraps-backdrop-filter: true
+              items:
+                - type: rect
+                  bounds: [10, 0, 100, 200]
+                  color: red
+                - type: backdrop-filter
+                  bounds: [60, 40, 100, 60]
+                  filters: invert(1)

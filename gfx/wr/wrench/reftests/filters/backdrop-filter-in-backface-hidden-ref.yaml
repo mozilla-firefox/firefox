@@ -1,0 +1,17 @@
+# Reference for backdrop-filter-in-backface-hidden.yaml - invert(1) of the red
+# and blue backdrop halves is exactly cyan and yellow.
+---
+root:
+  items:
+    - type: rect
+      bounds: [0, 0, 200, 200]
+      color: blue
+    - type: rect
+      bounds: [0, 0, 100, 200]
+      color: red
+    - type: rect
+      bounds: [50, 50, 50, 100]
+      color: cyan
+    - type: rect
+      bounds: [100, 50, 50, 100]
+      color: yellow

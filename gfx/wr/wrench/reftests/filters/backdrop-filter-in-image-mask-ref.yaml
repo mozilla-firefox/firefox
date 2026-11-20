@@ -1,0 +1,14 @@
+# Reference for backdrop-filter-in-image-mask.yaml - invert(1) of blue is
+# exactly yellow.
+---
+root:
+  items:
+    - type: rect
+      bounds: [0, 0, 400, 300]
+      color: blue
+    - type: rect
+      bounds: [0, 0, 300, 300]
+      color: yellow
+    - type: rect
+      bounds: [20, 20, 270, 270]
+      color: red

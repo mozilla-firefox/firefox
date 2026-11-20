@@ -1,0 +1,23 @@
+# A stacking context that is not backface-visible is never redundant, so it
+# always gets a picture, but without a surface of its own. Gecko marks a
+# transform's stacking context wraps-backdrop-filter since a transform is not a
+# backdrop root, yet the backdrop must include both what the ancestor drew and
+# what this pass-through stacking context drew before the backdrop-filter.
+# See bug 2092494.
+---
+root:
+  items:
+    - type: rect
+      bounds: [0, 0, 200, 200]
+      color: blue
+    - type: stacking-context
+      transform: translate(0, 0)
+      backface-visible: false
+      wraps-backdrop-filter: true
+      items:
+        - type: rect
+          bounds: [0, 0, 100, 200]
+          color: red
+        - type: backdrop-filter
+          bounds: [50, 50, 100, 100]
+          filters: invert(1)

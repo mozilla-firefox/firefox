@@ -1,8 +1,8 @@
-# The inner stacking context has a surface only because it inherits the outer
-# complex clip. Gecko marks such a stacking context wraps-backdrop-filter, since
-# a transform is not a backdrop root, and we must then resolve the backdrop from
-# the isolated parent surface rather than from that (otherwise empty) clip
-# surface. See bug 2066633.
+# The inner stacking context would have a surface only because it inherits the
+# outer complex clip. Gecko marks such a stacking context wraps-backdrop-filter,
+# since a transform is not a backdrop root, and we must then resolve the
+# backdrop from the isolated parent surface rather than from that (otherwise
+# empty) clip surface. See bug 2066633.
 ---
 root:
   items:

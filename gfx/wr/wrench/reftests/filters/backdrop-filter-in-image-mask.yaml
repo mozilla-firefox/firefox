@@ -1,0 +1,30 @@
+# Gecko marks the stacking context of a masked element wraps-backdrop-filter
+# when the element has a backdrop-filter. The image mask must still be applied
+# to that stacking context's surface rather than to each of its primitives,
+# which cannot take an image mask once large enough to be tiled.
+# See bug 2092494.
+---
+root:
+  items:
+    - type: rect
+      bounds: [0, 0, 400, 300]
+      color: blue
+    - type: clip
+      id: 2
+      image-mask:
+          image: solid-color(255,255,255,255,300,300)
+          rect: [0, 0, 300, 300]
+          repeat: false
+    - type: clip-chain
+      id: 3
+      clips: [2]
+    - type: stacking-context
+      clip-chain: 3
+      wraps-backdrop-filter: true
+      items:
+        - type: backdrop-filter
+          bounds: [0, 0, 400, 300]
+          filters: invert(1)
+        - type: rect
+          bounds: [20, 20, 270, 270]
+          color: red
