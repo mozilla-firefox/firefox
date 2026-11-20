@@ -130,3 +130,22 @@ add_task(async function test_shutdown_worker() {
     "Worker should have been terminated."
   );
 });
+
+// This test must remain the last task of this test file, because
+// shutdown phases cannot be reverted.
+add_task(async function test_no_worker_started_after_shutdown_began() {
+  Assert.ok(!RemoteSettingsWorker.worker, "Worker is not running.");
+  Services.startup.advanceShutdownPhase(
+    Ci.nsIAppStartup.SHUTDOWN_PHASE_APPSHUTDOWNCONFIRMED
+  );
+
+  await Assert.rejects(
+    RemoteSettingsWorker.importJSONDump("main", "language-dictionaries"),
+    /Remote Settings has shut down/,
+    "Should refuse new work once app shutdown has started."
+  );
+  Assert.ok(
+    !RemoteSettingsWorker.worker,
+    "Worker should not have been instantiated during shutdown."
+  );
+});
