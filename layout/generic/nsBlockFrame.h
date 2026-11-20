@@ -1220,6 +1220,11 @@ class nsBlockFrame : public nsContainerFrame {
   // ownership of all frames in the list.
   [[nodiscard]] nsFrameList* StealFloats();
 
+  // Return the last pushed float at the start of our floats list (not our
+  // pushed floats list), or nullptr if our floats list doesn't start with a
+  // pushed float.
+  nsIFrame* GetLastPushedFloat() const;
+
   // Return true if this frame has pushed floats.
   bool HasPushedFloats() const;
 
@@ -1243,6 +1248,11 @@ class nsBlockFrame : public nsContainerFrame {
 #ifdef DEBUG
   void VerifyLines(bool aFinalCheckOK);
   void VerifyOverflowSituation();
+
+  // Assert that pushed floats are at the start of our floats list, before any
+  // float whose placeholder is in this block.
+  void VerifyPushedFloatsAtStart() const;
+
   int32_t GetDepth() const;
 #endif
 
