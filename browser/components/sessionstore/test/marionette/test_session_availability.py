@@ -3,6 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import os
+import shutil
 import sys
 
 # add this directory to the path
@@ -82,6 +83,38 @@ class TestSessionAvailableAndWanted(SessionAvailabilityTestCase):
             as_bool(telemetry["startup_page_is_resume"]),
             "The user asked for the previous session to be restored.",
         )
+        self.assertEqual(int(telemetry["windows"]), 1, "The saved window is counted.")
+        self.assertEqual(
+            int(telemetry["tabs"]), 2, "The tabs in the saved window are counted."
+        )
+        self.assertIn("closed_windows", telemetry, "Closed windows are counted too.")
+
+
+class TestNoSessionFile(SessionAvailabilityTestCase):
+    def setUp(self):
+        super().setUp(
+            startup_page=3,
+            include_private=False,
+            restore_on_demand=False,
+            test_windows=TEST_WINDOWS,
+        )
+
+    def test_no_session_has_no_counts(self):
+        self.marionette.quit()
+        profile_dir = self.marionette.instance.profile.profile
+        os.remove(os.path.join(profile_dir, "sessionstore.jsonlz4"))
+        shutil.rmtree(
+            os.path.join(profile_dir, "sessionstore-backups"), ignore_errors=True
+        )
+        self.marionette.start_session()
+        self.marionette.set_context("chrome")
+
+        telemetry = self._read_availability_telemetry()
+        self.assertEqual(telemetry["origin"], "empty", "No session was loaded.")
+        for key in ("windows", "tabs", "closed_windows"):
+            self.assertNotIn(
+                key, telemetry, f"{key} is unset when no session was loaded."
+            )
 
 
 class TestOneOffResume(SessionAvailabilityTestCase):

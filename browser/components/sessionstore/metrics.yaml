@@ -65,8 +65,10 @@ session_restore:
       unusual I/O error counts as present.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=780014
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2094900
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=780014
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2094900
     notification_emails:
       - session-restore-telemetry-alerts@mozilla.com
     expires: never
@@ -131,6 +133,22 @@ session_restore:
           Whether a session resume was armed for an OS-initiated restart, as it
           was found at startup
         type: boolean
+      windows:
+        description: >
+          Number of open windows in the session that was loaded, as read from
+          the file. A window can be saved with no tabs. Unset if no session
+          could be loaded.
+        type: quantity
+      tabs:
+        description: >
+          Number of tabs in the open windows of the session that was loaded,
+          as read from the file. Unset if no session could be loaded.
+        type: quantity
+      closed_windows:
+        description: >
+          Number of closed windows in the session that was loaded, as read
+          from the file. Unset if no session could be loaded.
+        type: quantity
 
   startup_session_decision:
     type: event

@@ -502,7 +502,7 @@ export class SessionFile {
       return Promise.reject(new Error("SessionFile is closed"));
     }
 
-    let contents = SessionFile.#countContents(aData);
+    let contents = SessionFile.countContents(aData);
     let runState = SessionFile.#describeRunState();
 
     let isFinalWrite = false;
@@ -597,19 +597,25 @@ export class SessionFile {
   }
 
   /**
-   * @param {object} state The session state about to be written.
+   * Counts the open windows, their tabs and the closed windows in a session
+   * state, treating anything that isn't an array as empty so that a malformed
+   * state read from disk can be counted too.
+   *
+   * @param {object} state A session state, as written or as read from disk.
    * @returns {{ windows: number, tabs: number, closedWindows: number }}
    */
-  static #countContents(state) {
-    let windows = state.windows ?? [];
+  static countContents(state) {
+    let windows = Array.isArray(state?.windows) ? state.windows : [];
     let tabs = 0;
     for (let win of windows) {
-      tabs += win.tabs?.length ?? 0;
+      tabs += Array.isArray(win?.tabs) ? win.tabs.length : 0;
     }
     return {
       windows: windows.length,
       tabs,
-      closedWindows: state._closedWindows?.length ?? 0,
+      closedWindows: Array.isArray(state?._closedWindows)
+        ? state._closedWindows.length
+        : 0,
     };
   }
 

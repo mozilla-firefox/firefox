@@ -162,12 +162,14 @@ class _SessionStartup {
    * @param origin Which file we loaded from, or "empty" if none.
    * @param useOldExtension Whether |origin| used the legacy file format.
    * @param fileStates What we saw of each candidate file, see SessionFile.read.
+   * @param parsed The session state as read from |origin|, or null if none.
    */
-  #recordSessionAvailability({ origin, useOldExtension, fileStates }) {
+  #recordSessionAvailability({ origin, useOldExtension, fileStates, parsed }) {
     let format = "none";
     if (origin != "empty") {
       format = useOldExtension ? "js" : "jsonlz4";
     }
+    let contents = parsed ? lazy.SessionFile.countContents(parsed) : null;
     let availability = {
       origin,
       format,
@@ -186,6 +188,11 @@ class _SessionStartup {
       restarted_by_os: Services.appinfo.restartedByOS,
       resuming_after_os_restart: this.#resumingAfterOsRestart,
     };
+    if (contents) {
+      availability.windows = contents.windows;
+      availability.tabs = contents.tabs;
+      availability.closed_windows = contents.closedWindows;
+    }
     Glean.sessionRestore.startupSessionAvailability.record(availability);
     lazy.sessionStoreLogger.debug("Session availability", availability);
   }
@@ -204,7 +211,12 @@ class _SessionStartup {
     useOldExtension,
     fileStates,
   }) {
-    this.#recordSessionAvailability({ origin, useOldExtension, fileStates });
+    this.#recordSessionAvailability({
+      origin,
+      useOldExtension,
+      fileStates,
+      parsed,
+    });
     const crashReasons = {
       FINAL_STATE_WRITING_INCOMPLETE: "final-state-write-incomplete",
       SESSION_STATE_FLAG_MISSING:
