@@ -1193,7 +1193,8 @@ nsresult Database::InitSchema(bool* aDatabaseMigrated) {
   bool databaseInitialized = currentSchemaVersion > 0;
 
   if (databaseInitialized &&
-      currentSchemaVersion == nsINavHistoryService::DATABASE_SCHEMA_VERSION) {
+      currentSchemaVersion ==
+          static_cast<int32_t>(nsINavHistoryService::DATABASE_SCHEMA_VERSION)) {
     // The database is up to date and ready to go.
     return NS_OK;
   }
@@ -1217,7 +1218,8 @@ nsresult Database::InitSchema(bool* aDatabaseMigrated) {
     //       The only thing we will do for downgrades is setting back the schema
     //       version, so that next upgrades will run again the migration step.
 
-    if (currentSchemaVersion < nsINavHistoryService::DATABASE_SCHEMA_VERSION) {
+    if (currentSchemaVersion <
+        static_cast<int32_t>(nsINavHistoryService::DATABASE_SCHEMA_VERSION)) {
       *aDatabaseMigrated = true;
 
       if (currentSchemaVersion < 52) {
