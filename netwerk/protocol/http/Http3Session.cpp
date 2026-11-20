@@ -3331,9 +3331,10 @@ nsresult Http3Session::CreateWebTransportStream(
                                                     aStreamId);
 }
 
-void Http3Session::SendDatagram(Http3WebTransportSession* aSession,
-                                nsTArray<uint8_t>& aData, uint64_t aSendGroupId,
-                                int64_t aSendOrder, TimeStamp aTimestamp) {
+nsresult Http3Session::SendDatagram(Http3WebTransportSession* aSession,
+                                    nsTArray<uint8_t>& aData,
+                                    uint64_t aSendGroupId, int64_t aSendOrder,
+                                    TimeStamp aTimestamp) {
   // Taken as late as possible, so time spent getting here counts too.
   uint64_t ageUs = static_cast<uint64_t>(
       std::max(0.0, (TimeStamp::Now() - aTimestamp).ToMicroseconds()));
@@ -3345,6 +3346,7 @@ void Http3Session::SendDatagram(Http3WebTransportSession* aSession,
   LOG(("Http3Session::SendDatagram %p res=%" PRIx32 ", sendGroup=%" PRIu64
        ", sendOrder=%" PRId64,
        this, static_cast<uint32_t>(rv), aSendGroupId, aSendOrder));
+  return rv;
 }
 
 uint64_t Http3Session::MaxDatagramSize(uint64_t aSessionId) {
