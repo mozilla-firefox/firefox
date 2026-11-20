@@ -2124,7 +2124,7 @@ class Marionette:
         """
         return self._send_message("WebDriver:GetCookies")
 
-    def save_screenshot(self, fh, element=None, full=True, scroll=True):
+    def save_screenshot(self, fh, element=None, full=True, scroll=True, readback=False):
         """Takes a screenhot of a web element or the current frame and
         saves it in the filehandle.
 
@@ -2133,10 +2133,12 @@ class Marionette:
 
         The rest of the parameters are defined like in screenshot()
         """
-        data = self.screenshot(element, "binary", full, scroll)
+        data = self.screenshot(element, "binary", full, scroll, readback)
         fh.write(data)
 
-    def screenshot(self, element=None, format="base64", full=True, scroll=True):
+    def screenshot(
+        self, element=None, format="base64", full=True, scroll=True, readback=False
+    ):
         """Takes a screenshot of a web element or the current frame.
 
         The screen capture is returned as a lossless PNG image encoded
@@ -2160,12 +2162,27 @@ class Marionette:
         :param scroll: When `element` is provided, scroll to it before
             taking the screenshot (default).  Otherwise, avoid scrolling
             `element` into view.
+
+        :param readback: If True, capture the composited framebuffer via
+            drawWindow instead of re-rendering the document with drawSnapshot.
+            This matches what is actually rendered on screen (for example an
+            in-progress view transition), but only returns what is currently
+            composited (the foreground tab of the content area), so it is
+            ignored for element, full-document, and chrome-scope captures and
+            returns stale pixels for a background tab or an occluded window.
+            Defaults to False.
         """
 
         if element:
             element = element.id
 
-        body = {"id": element, "full": full, "hash": False, "scroll": scroll}
+        body = {
+            "id": element,
+            "full": full,
+            "hash": False,
+            "scroll": scroll,
+            "readback": readback,
+        }
         if format == "hash":
             body["hash"] = True
 

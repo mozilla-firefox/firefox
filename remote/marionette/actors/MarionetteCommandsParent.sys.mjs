@@ -334,7 +334,19 @@ export class MarionetteCommandsParent extends JSWindowActorParent {
     };
   }
 
-  async takeScreenshot(webEl, format, full, scroll) {
+  async takeScreenshot(webEl, format, full, scroll, readback = false) {
+    // Readback captures the whole content area (i.e. the whole viewport). So
+    // if the caller has requested a different area (e.g. an element or the full
+    // document), we behave as if the 'readback' param were 'false'. (Otherwise,
+    // our screenshot would silently crop to the visible content area.)
+    if (readback && (webEl || full)) {
+      lazy.logger.warn(
+        `Ignoring readback for ${webEl ? "an element" : "a full-document"} ` +
+          "screenshot; using drawSnapshot instead"
+      );
+      readback = false;
+    }
+
     const rect = await this.sendQuery(
       "MarionetteCommandsParent:getScreenshotRect",
       {
@@ -362,7 +374,8 @@ export class MarionetteCommandsParent extends JSWindowActorParent {
       rect.x,
       rect.y,
       rect.width,
-      rect.height
+      rect.height,
+      { readback }
     );
 
     switch (format) {

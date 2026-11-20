@@ -9,12 +9,13 @@ import sys
 import tempfile
 import unittest
 
+from unittest import mock
 from urllib.parse import quote
 
 import mozinfo
 
 from marionette_driver import By
-from marionette_driver.errors import NoSuchWindowException
+from marionette_driver.errors import InvalidArgumentException, NoSuchWindowException
 from marionette_harness import (
     MarionetteTestCase,
     skip,
@@ -261,6 +262,14 @@ class TestScreenCaptureContent(WindowManagerMixin, ScreenCaptureTestCase):
         self.assertAlmostEqual(height, expected_height, delta=2)
 
     @unittest.skipIf(sys.platform.startswith("darwin"), "Not supported on MacOS")
+    def test_readback_viewport_via_argument(self):
+        # Opting in with readback=True reads back the compositor, without the
+        # remote.screenshot.use_readback pref needing to have been enabled.
+        self.marionette.navigate(short)
+        screenshot = self.marionette.screenshot(full=False, readback=True)
+        self.assert_readback_viewport(screenshot)
+
+    @unittest.skipIf(sys.platform.startswith("darwin"), "Not supported on MacOS")
     def test_readback_viewport(self):
         self.marionette.navigate(short)
         with self.marionette.using_prefs({"remote.screenshot.use_readback": True}):
@@ -284,6 +293,41 @@ class TestScreenCaptureContent(WindowManagerMixin, ScreenCaptureTestCase):
             screenshot = self.marionette.screenshot(element=el)
         self.assert_readback_viewport(screenshot)
 
+    def test_readback_argument_ignored_for_full_document(self):
+        # Readback only returns the composited viewport, so a full-document
+        # capture must ignore the argument and still render the whole document
+        # with drawSnapshot (the scroll dimensions, not the viewport).
+        self.marionette.navigate(long)
+        screenshot = self.marionette.screenshot(full=True, readback=True)
+        self.assert_png(screenshot)
+        self.assertEqual(
+            self.scale(self.scroll_dimensions), self.get_image_dimensions(screenshot)
+        )
+
+    def test_readback_argument_ignored_for_element(self):
+        # Readback captures the whole content area, so an element capture must
+        # ignore the argument and still crop to the element via drawSnapshot.
+        self.marionette.navigate(box)
+        el = self.marionette.find_element(By.TAG_NAME, "div")
+        screenshot = self.marionette.screenshot(element=el, readback=True)
+        self.assert_png(screenshot)
+        self.assertEqual(
+            self.scale(self.get_element_dimensions(el)),
+            self.get_image_dimensions(screenshot),
+        )
+
+    def test_readback_argument_invalid_type(self):
+        # The readback param is a boolean, and WebDriver::TakeScreenshot should
+        # raise an exception if any other type is passed (e.g. the string-value
+        # "false").
+        self.marionette.navigate(short)
+        with self.assertRaises(InvalidArgumentException):
+            self.marionette._send_message(
+                "WebDriver:TakeScreenshot",
+                {"full": False, "readback": "false"},
+                key="value",
+            )
+
     def test_formats(self):
         self.marionette.navigate(box)
 
@@ -303,6 +347,26 @@ class TestScreenCaptureContent(WindowManagerMixin, ScreenCaptureTestCase):
             fh.seek(0)
             content = fh.read()
             self.assertEqual(expected, content)
+
+    @unittest.skipIf(sys.platform.startswith("darwin"), "Not supported on MacOS")
+    def test_save_screenshot_forwards_readback(self):
+        # The save_screenshot command should honor the readback parameter
+        # (checked here by watching whether the value is included in the
+        # underlying call to WebDriver:TakeScreenshot).
+        self.marionette.navigate(short)
+        sent = []
+        send_message = self.marionette._send_message
+
+        def record(name, params=None, *args, **kwargs):
+            sent.append((name, params))
+            return send_message(name, params, *args, **kwargs)
+
+        with mock.patch.object(self.marionette, "_send_message", side_effect=record):
+            with tempfile.TemporaryFile("w+b") as fh:
+                self.marionette.save_screenshot(fh, full=False, readback=True)
+        bodies = [params for name, params in sent if name == "WebDriver:TakeScreenshot"]
+        self.assertEqual(len(bodies), 1)
+        self.assertIs(bodies[0]["readback"], True)
 
     def test_scroll_default(self):
         self.marionette.navigate(long)

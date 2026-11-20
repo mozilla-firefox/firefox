@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-__version__ = "3.7.1"
+__version__ = "3.8.0"
 
 from marionette_driver import (
     addons,

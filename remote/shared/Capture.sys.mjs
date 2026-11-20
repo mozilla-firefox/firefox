@@ -2,13 +2,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   error: "chrome://remote/content/shared/webdriver/Errors.sys.mjs",
+  Log: "chrome://remote/content/shared/Log.sys.mjs",
 });
+
+ChromeUtils.defineLazyGetter(lazy, "logger", () => lazy.Log.get());
 
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
@@ -44,6 +48,42 @@ capture.Format = {
 };
 
 /**
+ * Determine whether capture.canvas will read back the compositor with
+ * drawWindow for the given browsing context, rather than re-render it with
+ * drawSnapshot.
+ *
+ * @param {BrowsingContext} browsingContext
+ *     The BrowsingContext from which the snapshot would be taken.
+ * @param {boolean} readback
+ *     Whether the caller explicitly requested readback.
+ *
+ * @returns {boolean}
+ *     True if capture.canvas will read back with drawWindow, false if it will
+ *     use drawSnapshot.
+ */
+capture.usesReadback = function (browsingContext, readback) {
+  // The remote.screenshot.use_readback pref (mirrored here in
+  // lazy.compositorReadback) needs to be able to query the embedderElement to
+  // find the content area; so the pref only actually turns on readback if we
+  // have an embedderElement.
+  let readbackEnabledViaPref =
+    lazy.compositorReadback && !!browsingContext.top.embedderElement;
+
+  if (!readback && !readbackEnabledViaPref) {
+    return false;
+  }
+  if (AppConstants.platform === "macosx" && !Cu.isInAutomation) {
+    // On macOS, the compositor runs in the GPU process, which honors
+    // a window readback request *only if we're in automation* (see
+    // NativeLayerRootRemoteMacParent::RecvRequestReadback) and otherwise
+    // crashes the process. To avoid this crash, we fall back to the
+    // drawSnapshot path for that configuration.
+    return false;
+  }
+  return true;
+};
+
+/**
  * Draw a rectangle off the framebuffer.
  *
  * @param {DOMWindow} win
@@ -76,7 +116,8 @@ capture.Format = {
  * @param {boolean=} options.readback
  *     If true, read back a snapshot of the pixel data currently in the
  *     compositor/window. Defaults to false, unless the
- *     `remote.screenshot.use_readback` preference is set.
+ *     `remote.screenshot.use_readback` preference is set (checked here via
+ *     lazy.compositorReadback).
  * @param {boolean=} options.drawView
  *     If true, the rectangle is relative to the visible viewport rather than to
  *     the page, and view level rendering such as the root scrollbars is
@@ -104,15 +145,22 @@ capture.canvas = async function (
     drawView = false,
   } = {}
 ) {
-  if (lazy.compositorReadback && !readback) {
+  const readbackRequested = readback;
+  readback = capture.usesReadback(browsingContext, readback);
+  if (readbackRequested && !readback) {
+    lazy.logger.warn(
+      "Ignoring readback, which is unavailable on macOS outside of " +
+        "automation; using drawSnapshot instead"
+    );
+  }
+  const browser = readback && browsingContext.top.embedderElement;
+  if (browser) {
     // Readback can only return the content area composited on screen, and its
     // coordinates are relative to the chrome window rather than the document,
-    // so any requested region degrades to the whole content area.
-    const browser = browsingContext.top.embedderElement;
-    if (browser) {
-      readback = true;
-      ({ left, top, width, height } = browser.getBoundingClientRect());
-    }
+    // so any requested region degrades to the whole content area. When the
+    // browsing context has no embedder element (such as the dedicated window
+    // used for WPT reftests), the caller-provided rectangle is used as-is.
+    ({ left, top, width, height } = browser.getBoundingClientRect());
   }
 
   // FIXME(bug 1761032): This looks a bit sketchy, overrideDPPX doesn't
