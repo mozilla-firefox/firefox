@@ -110,6 +110,7 @@ included_inclnames_to_ignore = set([
     "unicode/utypes.h",  # ICU
     "vtune/VTuneWrapper.h",  # VTune
     "wasm/WasmBuiltinModuleGenerated.h",  # generated in $OBJDIR"
+    "zmij/zmij.h",
     "zydis/ZydisAPI.h",  # Zydis
     "xsum/xsum.h",  # xsum
     "fmt/format.h",  # {fmt} main header

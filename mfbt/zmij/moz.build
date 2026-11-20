@@ -1,0 +1,26 @@
+# -*- Mode: python; indent-tabs-mode: nil; tab-width: 4 -*-
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+with Files('**'):
+    BUG_COMPONENT = ('Core', 'JavaScript Engine')
+
+FINAL_LIBRARY = "mfbt"
+
+# zmij.cc includes zmij.h, not zmij/zmij.h
+LOCAL_INCLUDES += ["!.", "."]
+
+# Suppress spurious warnings in third-party code
+CXXFLAGS += [
+    "-Wno-comma",
+    "-Wno-stringop-overflow",
+    "-Wno-unneeded-internal-declaration",
+    "-Wno-unused-function",
+    "-Wno-unused-variable",
+]
+
+UNIFIED_SOURCES += [
+    'zmij.cc',
+]

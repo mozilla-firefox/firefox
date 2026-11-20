@@ -162,6 +162,7 @@ media/openmax_il/.*
 media/webrtc/signaling/src/sdp/sipcc/.*
 media/webrtc/trunk/.*
 mfbt/double-conversion/double-conversion/.*
+mfbt/zmij/.*
 mobile/android/geckoview/src/thirdparty/.*
 modules/brotli/.*
 modules/fdlibm/.*
