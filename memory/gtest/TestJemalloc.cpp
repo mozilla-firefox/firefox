@@ -12,6 +12,9 @@
 
 #include "gtest/gtest.h"
 
+#include <chrono>
+#include <thread>
+
 #ifdef MOZ_PHC
 #  include "PHC.h"
 #endif
@@ -783,6 +786,258 @@ TEST(Jemalloc, DisposeArena)
   RESTORE_GDB_SLEEP_LOCAL();
 }
 
+// An arena that keeps reusing a dirty page never becomes eligible for a regular
+// deferred purge. A target purge must release the pages it does not reuse once
+// the maximum purge delay has passed.
+TEST(Jemalloc, DeferredPurgeOfBusyArena)
+{
+  jemalloc_free_dirty_pages();
+
+  jemalloc_stats_t stats;
+  jemalloc_stats(&stats);
+  const size_t pageSize = stats.page_size;
+
+  const size_t kMaxDirty = 64;
+  // A target purge that keeps a single reused page stops at half the
+  // allowance, where the regular purge stops.
+  const size_t kStopPages = kMaxDirty / 2;
+  arena_params_t params;
+  params.mMaxDirty = kMaxDirty;
+  arena_id_t arena = moz_create_arena_with_params(&params);
+  bool wasDeferred = moz_enable_deferred_purge(true);
+
+  // Dirty many more pages than the allowance, spread over several chunks.
+  // Keep every kPinEvery-th block, so that no chunk becomes empty and gets
+  // released right away as an excess spare chunk.
+  const size_t kPagesPerBlock = 4;
+  const size_t kBlocks = 16 * kMaxDirty / kPagesPerBlock;
+  const size_t kPinEvery = 8;
+  const size_t kDirtyPages = (kBlocks - kBlocks / kPinEvery) * kPagesPerBlock;
+  const size_t kBlockSize = kPagesPerBlock * pageSize;
+  ASSERT_GT(stats.chunksize / kBlockSize, kPinEvery);
+  void* blocks[kBlocks];
+  for (void*& block : blocks) {
+    block = moz_arena_malloc(arena, kBlockSize);
+  }
+  // jemalloc_stats() counts the dirty pages of all arenas (in bytes), the
+  // checks below leave some room for the other arenas to change: up to half of
+  // the freed pages for other arenas purging, and three times kStopPages for
+  // other arenas dirtying pages.
+  jemalloc_stats(&stats);
+  const size_t dirtyBefore = stats.pages_dirty;
+  for (size_t i = 0; i < kBlocks; i++) {
+    if (i % kPinEvery) {
+      moz_arena_free(arena, blocks[i]);
+    }
+  }
+  // Freeing does not purge while the purge is deferred.
+  jemalloc_stats(&stats);
+  ASSERT_GE(stats.pages_dirty - dirtyBefore, kDirtyPages / 2 * pageSize);
+
+  // Reuse one dirty page for many maximum purge delays and let the purge run
+  // in between like the main thread would. The minimum purge delay is never
+  // reached, as if the arena reused pages more often than that, so only a
+  // target purge can release pages.
+  const uint32_t kNeverMS = 60000;
+  const uint32_t kMaxDelayMS = 50;
+  auto reuseAndPurge = [&](uint32_t aMaxPurgeDelayMS) {
+    const auto deadline = std::chrono::steady_clock::now() +
+                          std::chrono::milliseconds(10 * kMaxDelayMS);
+    while (std::chrono::steady_clock::now() < deadline) {
+      void* page = moz_arena_malloc(arena, pageSize);
+      moz_arena_free(arena, page);
+      moz_may_purge_now(false, kNeverMS, aMaxPurgeDelayMS, nullptr, nullptr);
+      std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+  };
+
+  // Without a maximum purge delay nothing is purged.
+  reuseAndPurge(0);
+  jemalloc_stats(&stats);
+  EXPECT_GE(stats.pages_dirty - dirtyBefore, kDirtyPages / 2 * pageSize);
+
+  // With it, a target purge keeps only the reused page, so it stops at
+  // kStopPages. The bound adds the room of three times kStopPages for other
+  // arenas from above.
+  reuseAndPurge(kMaxDelayMS);
+  jemalloc_stats(&stats);
+  EXPECT_LE(stats.pages_dirty, dirtyBefore + 4 * kStopPages * pageSize);
+
+  for (size_t i = 0; i < kBlocks; i += kPinEvery) {
+    moz_arena_free(arena, blocks[i]);
+  }
+  moz_enable_deferred_purge(wasDeferred);
+  moz_dispose_arena(arena);
+}
+
+// A target purge only releases the dirty pages that were unused since the last
+// purge. If the arena reused more pages than its allowance, the target purge
+// stops above it without ending the purge. If the arena stops reusing pages
+// right after, the regular purge must still release them.
+TEST(Jemalloc, DeferredPurgeAfterTargetPurge)
+{
+  jemalloc_free_dirty_pages();
+
+  jemalloc_stats_t stats;
+  jemalloc_stats(&stats);
+  const size_t pageSize = stats.page_size;
+
+  const size_t kMaxDirty = 64;
+  // As above, the regular purge stops at half the allowance.
+  const size_t kStopPages = kMaxDirty / 2;
+  arena_params_t params;
+  params.mMaxDirty = kMaxDirty;
+  arena_id_t arena = moz_create_arena_with_params(&params);
+  bool wasDeferred = moz_enable_deferred_purge(true);
+
+  // As above, keep every kPinEvery-th block so that no chunk becomes empty.
+  const size_t kPagesPerBlock = 4;
+  const size_t kBlocks = 16 * kMaxDirty / kPagesPerBlock;
+  const size_t kPinEvery = 8;
+  const size_t kDirtyPages = (kBlocks - kBlocks / kPinEvery) * kPagesPerBlock;
+  const size_t kBlockSize = kPagesPerBlock * pageSize;
+  ASSERT_GT(stats.chunksize / kBlockSize, kPinEvery);
+  // Dirty pages that the working set below does not all reuse, the target
+  // purge releases those that stay unused.
+  void* blocks[kBlocks];
+  for (void*& block : blocks) {
+    block = moz_arena_malloc(arena, kBlockSize);
+  }
+  // As above, jemalloc_stats() counts the dirty pages of all arenas.
+  jemalloc_stats(&stats);
+  const size_t dirtyBefore = stats.pages_dirty;
+  for (size_t i = 0; i < kBlocks; i++) {
+    if (i % kPinEvery) {
+      moz_arena_free(arena, blocks[i]);
+    }
+  }
+
+  // Reuse a working set far above the allowance until a purge releases pages.
+  // How many pages stay unused between two purges depends on where the working
+  // set lands, so the first target purges may release nothing. The minimum
+  // purge delay is never reached, so this can only be a target purge.
+  const uint32_t kNeverMS = 60000;
+  const uint32_t kGraceMS = 100;
+  // The working set fits into the freed blocks, so that it stays in the pinned
+  // chunks.
+  const size_t kWorkingSetPages = kDirtyPages / 2;
+  void* workingSet[kWorkingSetPages];
+  bool targetPurged = false;
+  const auto deadline = std::chrono::steady_clock::now() +
+                        std::chrono::milliseconds(20 * kGraceMS);
+  while (!targetPurged && std::chrono::steady_clock::now() < deadline) {
+    for (void*& page : workingSet) {
+      page = moz_arena_malloc(arena, pageSize);
+    }
+    for (void* page : workingSet) {
+      moz_arena_free(arena, page);
+    }
+    jemalloc_stats(&stats);
+    const size_t dirtyFreed = stats.pages_dirty;
+    moz_may_purge_now(false, kNeverMS, kGraceMS, nullptr, nullptr);
+    jemalloc_stats(&stats);
+    targetPurged = stats.pages_dirty < dirtyFreed;
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  }
+  ASSERT_TRUE(targetPurged);
+  // It kept the reused working set. A quarter of it leaves room for the other
+  // arenas and is still far above the allowance, so the purge did not end.
+  static_assert(kWorkingSetPages / 4 > kMaxDirty);
+  ASSERT_GT(stats.pages_dirty, dirtyBefore + kWorkingSetPages / 4 * pageSize);
+
+  // Now the arena is quiet and the regular purge can run. Give it a few
+  // minimum purge delays, other arenas may be queued, too.
+  const int kQuietPurges = 5;
+  for (int i = 0; i < kQuietPurges; i++) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(kGraceMS));
+    moz_may_purge_now(false, kGraceMS, kGraceMS, nullptr, nullptr);
+  }
+
+  // As above, with room for the other arenas.
+  jemalloc_stats(&stats);
+  EXPECT_LE(stats.pages_dirty, dirtyBefore + 4 * kStopPages * pageSize);
+
+  for (size_t i = 0; i < kBlocks; i += kPinEvery) {
+    moz_arena_free(arena, blocks[i]);
+  }
+  moz_enable_deferred_purge(wasDeferred);
+  moz_dispose_arena(arena);
+}
+
+// An arena that reused all its dirty pages since its last purge has none to
+// release in a target purge. If the arena is within its allowance, the target
+// purge also ends its purge, so the arena is no longer queued.
+TEST(Jemalloc, TargetPurgeWithinAllowanceEndsPurge)
+{
+  jemalloc_free_dirty_pages();
+
+  jemalloc_stats_t stats;
+  jemalloc_stats(&stats);
+  const size_t pageSize = stats.page_size;
+
+  const size_t kMaxDirty = 64;
+  arena_params_t params;
+  params.mMaxDirty = kMaxDirty;
+  arena_id_t arena = moz_create_arena_with_params(&params);
+  bool wasDeferred = moz_enable_deferred_purge(true);
+
+  // Keep the chunk in use, so that it does not become a spare chunk that a
+  // purge releases as a whole.
+  void* pin = moz_arena_malloc(arena, pageSize);
+
+  // Queue the arena with more dirty pages than its allowance, then reuse them
+  // until it is within its allowance again. Leave more than half of the
+  // allowance dirty, where a regular purge would stop, so that only a target
+  // purge releases nothing.
+  const size_t kPagesPerBlock = 16;
+  const size_t kBlocks = 3 * kMaxDirty / kPagesPerBlock;
+  const size_t kKeptBlocks = 3 * kMaxDirty / 4 / kPagesPerBlock;
+  const size_t kReused = kBlocks - kKeptBlocks;
+  static_assert(kBlocks * kPagesPerBlock > kMaxDirty);
+  static_assert(kKeptBlocks * kPagesPerBlock <= kMaxDirty);
+  static_assert(kKeptBlocks * kPagesPerBlock > kMaxDirty / 2);
+  const size_t kBlockSize = kPagesPerBlock * pageSize;
+  void* blocks[kBlocks];
+  for (void*& block : blocks) {
+    block = moz_arena_malloc(arena, kBlockSize);
+  }
+  for (void* block : blocks) {
+    moz_arena_free(arena, block);
+  }
+  for (size_t i = 0; i < kReused; i++) {
+    blocks[i] = moz_arena_malloc(arena, kBlockSize);
+  }
+
+  // The minimum purge delay is never reached, so this can only be a target
+  // purge. Purge until no arena is queued, other arenas may be queued, too.
+  const uint32_t kNeverMS = 60000;
+  const uint32_t kMaxDelayMS = 50;
+  const int kMaxPurgeSteps = 16;
+  std::this_thread::sleep_for(std::chrono::milliseconds(2 * kMaxDelayMS));
+  jemalloc_stats(&stats);
+  const size_t dirtyBefore = stats.pages_dirty;
+  for (int i = 0; i < kMaxPurgeSteps; i++) {
+    if (moz_may_purge_now(false, kNeverMS, kMaxDelayMS, nullptr, nullptr) !=
+        may_purge_now_result_t::NeedsMore) {
+      break;
+    }
+  }
+  // Nothing was released. A regular purge would have released the dirty pages
+  // above half of the allowance, the slack for other arenas is half of that.
+  const size_t kSlackPages = (kKeptBlocks * kPagesPerBlock - kMaxDirty / 2) / 2;
+  jemalloc_stats(&stats);
+  EXPECT_GE(stats.pages_dirty + kSlackPages * pageSize, dirtyBefore);
+  EXPECT_EQ(moz_may_purge_now(true, kNeverMS, kMaxDelayMS, nullptr, nullptr),
+            may_purge_now_result_t::Done);
+
+  for (size_t i = 0; i < kReused; i++) {
+    moz_arena_free(arena, blocks[i]);
+  }
+  moz_arena_free(arena, pin);
+  moz_enable_deferred_purge(wasDeferred);
+  moz_dispose_arena(arena);
+}
+
 static void CheckPtr(void* ptr, size_t size) {
   EXPECT_TRUE(ptr);
   jemalloc_ptr_info_t info;
@@ -840,8 +1095,6 @@ TEST(Jemalloc, DisposeArenaWhilePurging)
   jemalloc_stats(&stats);
   const size_t pageSize = stats.page_size;
 
-  // Without a reuse grace, every queued arena can be purged right away.
-  const uint32_t kNoGraceMS = 0;
   // Enough steps for the purge of any arenas that are queued.
   const int kMaxPurgeSteps = 100;
 
@@ -885,7 +1138,8 @@ TEST(Jemalloc, DisposeArenaWhilePurging)
   // After the first step, empty the arena and dispose of it.
   DisposeWhilePurgingClosure closure{arena, pins, kRuns, false};
   for (int i = 0; i < kMaxPurgeSteps; i++) {
-    if (moz_may_purge_now(false, kNoGraceMS, DisposeWhilePurging, &closure) !=
+    // Purge the arena immediately, no target purge.
+    if (moz_may_purge_now(false, 0, 0, DisposeWhilePurging, &closure) !=
         may_purge_now_result_t::NeedsMore) {
       break;
     }
