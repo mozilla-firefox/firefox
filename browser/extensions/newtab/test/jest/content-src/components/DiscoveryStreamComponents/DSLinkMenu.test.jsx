@@ -104,26 +104,33 @@ describe("<DSLinkMenu>", () => {
       expect(optionCount()).toBe(3);
     });
 
+    const stateWithReporting = {
+      ...INITIAL_STATE,
+      Prefs: {
+        ...INITIAL_STATE.Prefs,
+        values: {
+          ...INITIAL_STATE.Prefs.values,
+          "discoverystream.reportAds.enabled": true,
+        },
+      },
+    };
+    const reportAdProps = {
+      ...ValidDSLinkMenuProps,
+      card_type: "spoc",
+      shim: { report: {} },
+    };
+
     it("should add ReportAd for SPOCs when ad reporting is enabled", () => {
-      const stateWithReporting = {
-        ...INITIAL_STATE,
-        Prefs: {
-          ...INITIAL_STATE.Prefs,
-          values: {
-            ...INITIAL_STATE.Prefs.values,
-            "discoverystream.reportAds.enabled": true,
-          },
-        },
-      };
-      renderMenu(
-        {
-          ...ValidDSLinkMenuProps,
-          card_type: "spoc",
-          shim: { report: {} },
-        },
-        stateWithReporting
-      );
+      renderMenu(reportAdProps, stateWithReporting);
       expect(optionCount()).toBe(4);
+    });
+
+    it("should mark ReportAd as opening a dialog", () => {
+      renderMenu(reportAdProps, stateWithReporting);
+      const reportAd = PanelListItems.mock.calls
+        .at(-1)[0]
+        .options.find(o => o.id === "newtab-menu-report-this-ad");
+      expect(reportAd).toHaveProperty("ariaHasPopup", "dialog");
     });
   });
 

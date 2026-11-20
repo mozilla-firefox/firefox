@@ -473,6 +473,7 @@ export const LinkMenuOptions = {
   ReportAd: site => {
     return {
       id: "newtab-menu-report-this-ad",
+      ariaHasPopup: "dialog",
       action: ac.AlsoToMain({
         type: at.REPORT_AD_OPEN,
         data: {
