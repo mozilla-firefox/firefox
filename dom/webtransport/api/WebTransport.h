@@ -180,6 +180,12 @@ class WebTransport final : public nsISupports, public nsWrapperCache {
   // (when called during "connecting").
   void SendGetStatsRequest(Promise* aPromise);
 
+  // Issues the IPC ExportKeyingMaterial request and wires the response to
+  // aPromise; deferred like SendGetStatsRequest() while "connecting".
+  void SendExportKeyingMaterial(const nsTArray<uint8_t>& aLabel,
+                                const nsTArray<uint8_t>& aContext,
+                                uint32_t aOutputLength, Promise* aPromise);
+
   nsCOMPtr<nsIGlobalObject> mGlobal;
   // We are the owner of WebTransportChild.  We must call Shutdown() on it
   // before we're destroyed.
