@@ -325,8 +325,8 @@ void Http3TunnelStreamBase::TransactionIsDone(nsresult aResult) {
 // Http3WebTransportSession
 //-----------------------------------------------------------------------------
 
-Http3WebTransportSession::Http3WebTransportSession(nsAHttpTransaction* trans,
-                                                   Http3Session* aHttp3Session)
+Http3WebTransportSession::Http3WebTransportSession(
+    nsAHttpTransaction* trans, Http3SessionBase* aHttp3Session)
     : Http3TunnelStreamBase(trans, aHttp3Session) {
   LOG(("Http3WebTransportSession ctor %p", this));
 }

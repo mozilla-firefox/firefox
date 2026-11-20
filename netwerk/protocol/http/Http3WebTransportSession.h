@@ -90,7 +90,7 @@ class Http3WebTransportSession final : public WebTransportSessionBase,
  public:
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(Http3WebTransportSession, override)
 
-  Http3WebTransportSession(nsAHttpTransaction*, Http3Session*);
+  Http3WebTransportSession(nsAHttpTransaction*, Http3SessionBase*);
 
   Http3WebTransportSession* GetHttp3WebTransportSession() override {
     return this;
