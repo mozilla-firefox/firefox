@@ -1300,6 +1300,26 @@ class Preferences {
   }
 
   /**
+   * Returns whether a change to the given pref changes the results a search
+   * shows.
+   *
+   * @param {string} pref
+   *   The name of the pref, relative to `browser.urlbar.` if the pref is in
+   *   that branch.
+   * @returns {boolean}
+   */
+  affectsResults(pref) {
+    return (
+      pref.startsWith("suggest.") ||
+      pref == "browser.search.suggest.enabled" ||
+      pref == "browser.search.suggest.enabled.private" ||
+      pref == "showSearchSuggestionsFirst" ||
+      pref == "smartbar.showSearchSuggestionsFirst" ||
+      pref == "quicksuggest.online.enabled"
+    );
+  }
+
+  /**
    * Gets a pref but allows the `scotchBonnet.enableOverride` pref to
    * short circuit them so one pref can be used to enable multiple
    * features.

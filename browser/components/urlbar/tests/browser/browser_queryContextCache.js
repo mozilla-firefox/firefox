@@ -76,6 +76,46 @@ add_task(async function search() {
   });
 });
 
+add_task(async function search_suggestPrefChanged() {
+  for (let pref of [
+    "browser.urlbar.suggest.history",
+    "browser.urlbar.showSearchSuggestionsFirst",
+    "browser.search.suggest.enabled",
+  ]) {
+    info("Changing pref: " + pref);
+    await withNewBrowserWindow(async win => {
+      await UrlbarTestUtils.promiseAutocompleteResultPopup({
+        window: win,
+        value: SEARCH_STRING,
+      });
+      await UrlbarTestUtils.promisePopupClose(win);
+
+      // Changing a pref that affects results should invalidate both the cached context and
+      // the rows from the previous search, so the view should *not* open
+      // synchronously.
+      Services.prefs.setBoolPref(pref, !Services.prefs.getBoolPref(pref));
+      await openViewAndAssertCached({
+        win,
+        searchString: SEARCH_STRING,
+        cached: false,
+      });
+
+      Services.prefs.clearUserPref(pref);
+      await openViewAndAssertCached({
+        win,
+        searchString: SEARCH_STRING,
+        cached: false,
+      });
+
+      await openViewAndAssertCached({
+        win,
+        searchString: SEARCH_STRING,
+        cached: true,
+      });
+    });
+  }
+});
+
 add_task(async function topSites_simple() {
   await withNewBrowserWindow(async win => {
     // Open the view to show top sites and then close it.

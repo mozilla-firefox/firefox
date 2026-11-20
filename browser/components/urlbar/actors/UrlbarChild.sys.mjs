@@ -214,6 +214,9 @@ export class UrlbarChild extends JSWindowActorChild {
           lazy.UrlbarPrefs
         ),
       hasPrefUserValue: lazy.UrlbarPrefs.hasUserValue.bind(lazy.UrlbarPrefs),
+      prefAffectsResults: lazy.UrlbarPrefs.affectsResults.bind(
+        lazy.UrlbarPrefs
+      ),
     };
   }
 
