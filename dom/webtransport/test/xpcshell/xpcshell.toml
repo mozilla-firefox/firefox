@@ -40,7 +40,7 @@ skip-if = [
   "os == 'android' && os_version == '14' && arch == 'x86_64' && ccov", # Bug 1982953
 ]
 
-["test_new_features.js"]
+["test_session_api.js"]
 run-sequentially = ["true"] # http3server
 skip-if = [
   "os == 'android' && os_version == '14' && arch == 'x86_64' && debug", # Bug 1982953
