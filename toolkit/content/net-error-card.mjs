@@ -1240,6 +1240,10 @@ export class NetErrorCard extends MozLitElement {
 
   handleTryAgain(e) {
     this.handleTelemetryClick(e);
+    if (this.resolvedErrorId === "vpnFailure") {
+      RPMSendAsyncMessage("IPP:TryAgain");
+      return;
+    }
     retryThis(e);
   }
 

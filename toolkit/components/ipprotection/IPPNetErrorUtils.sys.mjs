@@ -5,12 +5,18 @@
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
+  IPPAutoActivation:
+    "moz-src:///toolkit/components/ipprotection/IPPAutoActivation.sys.mjs",
   IPPMode:
     "moz-src:///toolkit/components/ipprotection/IPPChannelFilter.sys.mjs",
   IPPPrincipalRules:
     "moz-src:///toolkit/components/ipprotection/IPPSiteRuleManager.sys.mjs",
   IPPProxyManager:
     "moz-src:///toolkit/components/ipprotection/IPPProxyManager.sys.mjs",
+  IPPProxyStates:
+    "moz-src:///toolkit/components/ipprotection/IPPProxyManager.sys.mjs",
+  IPProtectionServerlist:
+    "moz-src:///toolkit/components/ipprotection/IPProtectionServerlist.sys.mjs",
   IPPSiteRuleManager:
     "moz-src:///toolkit/components/ipprotection/IPPSiteRuleManager.sys.mjs",
 });
@@ -34,7 +40,7 @@ function principalForDocumentLoad(browsingContext) {
 }
 
 /**
- * Helpers for the network error page to explain IP Protection failures.
+ * Helpers for the VPN failure page in about:neterror.
  */
 export const IPPNetErrorUtils = {
   /**
@@ -66,5 +72,30 @@ export const IPPNetErrorUtils = {
       default:
         return false;
     }
+  },
+
+  /**
+   * Retries the failed connection in the mode it had, and reloads the failed
+   * page once it is up. A failed retry leaves the error page as it is.
+   *
+   * @param {BrowsingContext} browsingContext - context showing the error page
+   */
+  async reconnectAndReload(browsingContext) {
+    if (lazy.IPPProxyManager.state !== lazy.IPPProxyStates.ERROR) {
+      browsingContext.reload(Ci.nsIWebNavigation.LOAD_FLAGS_NONE);
+      return;
+    }
+    const { started } = await lazy.IPPProxyManager.start(
+      true,
+      browsingContext.usePrivateBrowsing,
+      lazy.IPProtectionServerlist.resolveEgressCountry(
+        lazy.IPPAutoActivation.isPremium
+      ),
+      lazy.IPPProxyManager.mode
+    );
+    if (!started || browsingContext.isDiscarded) {
+      return;
+    }
+    browsingContext.reload(Ci.nsIWebNavigation.LOAD_FLAGS_NONE);
   },
 };

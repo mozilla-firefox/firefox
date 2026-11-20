@@ -118,6 +118,7 @@ export let RemotePageAccessManager = {
         "Browser:PrimeMitm",
         "Browser:ResetEnterpriseRootsPref",
         "DisplayOfflineSupportPage",
+        "IPP:TryAgain",
         "OpenTRRPreferences",
         "SearchCTA:Search",
         "SearchCTA:SearchAborted",

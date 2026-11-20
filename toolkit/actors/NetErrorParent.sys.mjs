@@ -681,6 +681,9 @@ export class NetErrorParent extends EscapablePageParent {
         return this.getSearchCTAInfo(message.data.url);
       case "IPP:IsVPNError":
         return lazy.IPPNetErrorUtils.isVPNError(this.browsingContext);
+      case "IPP:TryAgain":
+        lazy.IPPNetErrorUtils.reconnectAndReload(this.browsingContext);
+        break;
       case "SearchCTA:Search":
         this.performSearchCTASearch(message.data.query);
         break;

@@ -421,6 +421,36 @@ add_task(async function test_add_inclusion_while_offline() {
 });
 
 /**
+ * Waits for the error page in a browser and returns its title l10n id. Call
+ * it before the load that ends on the error page.
+ *
+ * @param {MozBrowser} browser
+ * @returns {Promise<string>}
+ */
+async function waitForErrorPageTitle(browser) {
+  await BrowserTestUtils.waitForErrorPage(browser);
+  return SpecialPowers.spawn(browser, [], async () => {
+    const card = await ContentTaskUtils.waitForCondition(
+      () => content.document.querySelector("net-error-card")?.wrappedJSObject,
+      "net-error-card should be present"
+    );
+    await card.getUpdateComplete();
+    return card.shadowRoot
+      .querySelector("#error-title")
+      .getAttribute("data-l10n-id");
+  });
+}
+
+function clickCardButton(tab, id) {
+  return SpecialPowers.spawn(tab.linkedBrowser, [id], buttonId => {
+    content.document
+      .querySelector("net-error-card")
+      .shadowRoot.getElementById(buttonId)
+      .click();
+  });
+}
+
+/**
  * Sets up the service for a VPN error page test. Everything it changes, and
  * every tab opened through it, is undone on dispose:
  *   await using test = await setupVPNErrorTest();
@@ -477,23 +507,7 @@ async function setupVPNErrorTest({
     async openErrorPage(url) {
       const tab = BrowserTestUtils.addTab(gBrowser, url);
       tabs.push(tab);
-      await BrowserTestUtils.waitForErrorPage(tab.linkedBrowser);
-      const title = await SpecialPowers.spawn(
-        tab.linkedBrowser,
-        [],
-        async () => {
-          const card = await ContentTaskUtils.waitForCondition(
-            () =>
-              content.document.querySelector("net-error-card")?.wrappedJSObject,
-            "net-error-card should be present"
-          );
-          await card.getUpdateComplete();
-          return card.shadowRoot
-            .querySelector("#error-title")
-            .getAttribute("data-l10n-id");
-        }
-      );
-      return { tab, title };
+      return { tab, title: await waitForErrorPageTitle(tab.linkedBrowser) };
     },
 
     async [Symbol.asyncDispose]() {
@@ -550,6 +564,60 @@ add_task(async function test_error_state_shows_vpn_error_page() {
     title,
     "fp-neterror-vpn-error-title",
     "The VPN error page should be shown"
+  );
+});
+
+/**
+ * Tests that trying again restarts the failed connection in its mode.
+ */
+add_task(async function test_try_again_restarts_connection_in_its_mode() {
+  await using test = await setupVPNErrorTest({
+    failingPass: true,
+    includedSites: ["https://example.com"],
+  });
+  const { tab, title } = await test.openErrorPage("https://example.com/");
+  Assert.equal(
+    title,
+    "fp-neterror-vpn-error-title",
+    "The VPN error page should be shown"
+  );
+
+  setupService({
+    isReady: true,
+    proxyPass: { status: 200, error: undefined, pass: makePass() },
+  });
+  const active = waitForProxyState(IPPProxyStates.ACTIVE);
+  await clickCardButton(tab, "tryAgainButton");
+  await active;
+  Assert.equal(
+    IPPProxyManager.mode,
+    IPPMode.MODE_INCLUSION,
+    "The retry should keep the inclusion mode"
+  );
+});
+
+/**
+ * Tests that trying again while the VPN still fails keeps the traffic held
+ * and the VPN error page shown.
+ */
+add_task(async function test_failed_try_again_keeps_error_page() {
+  await using test = await setupVPNErrorTest({
+    failingPass: true,
+    includedSites: ["https://example.com"],
+  });
+  const { tab } = await test.openErrorPage("https://example.com/");
+
+  const activating = waitForProxyState(IPPProxyStates.ACTIVATING);
+  const failed = activating.then(() => waitForProxyState(IPPProxyStates.ERROR));
+  await clickCardButton(tab, "tryAgainButton");
+  await failed;
+
+  const reloaded = waitForErrorPageTitle(tab.linkedBrowser);
+  tab.linkedBrowser.reload();
+  Assert.equal(
+    await reloaded,
+    "fp-neterror-vpn-error-title",
+    "The site should still not load without the VPN"
   );
 });
 
