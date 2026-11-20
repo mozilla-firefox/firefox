@@ -319,6 +319,24 @@ def test_install_extra_extensions_flattens_csv(ConcretePerftest):
     assert perftest.profile.addons.addon_details.call_count == 3
 
 
+@mock.patch("perftest.Perftest.build_browser_profile", new=mock.MagicMock())
+def test_perfherder_extra_option_reaches_extra_options(ConcretePerftest):
+    parser = create_parser()
+    args = parser.parse_args([
+        "--test",
+        "test-page-1",
+        "--binary",
+        "invalid/path",
+        "--perfherder-extra-option",
+        "ab-base",
+        "--perfherder-extra-option",
+        "other",
+    ])
+    perftest = ConcretePerftest(**vars(args))
+    extra_options = perftest.results_handler.build_extra_options()
+    assert extra_options[-2:] == ["ab-base", "other"]
+
+
 @pytest.mark.parametrize(
     "args, expected_failure",
     [

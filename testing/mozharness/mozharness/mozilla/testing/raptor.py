@@ -625,6 +625,19 @@ class Raptor(TestingMixin, MercurialScript, CodeCoverageMixin, AndroidMixin):
                 },
             ],
             [
+                ["--perfherder-extra-option"],
+                {
+                    "action": "append",
+                    "metavar": "OPTION",
+                    "dest": "perfherder_extra_options",
+                    "default": [],
+                    "help": (
+                        "Add an extra option to the Perfherder data, which puts "
+                        "the results in a separate series."
+                    ),
+                },
+            ],
+            [
                 ["--benchmark-repository"],
                 {
                     "dest": "benchmark_repository",
@@ -1196,6 +1209,11 @@ class Raptor(TestingMixin, MercurialScript, CodeCoverageMixin, AndroidMixin):
             options.extend([
                 f"--extra-summary-methods={method}"
                 for method in self.config.get("extra_summary_methods")
+            ])
+        if self.config.get("perfherder_extra_options"):
+            options.extend([
+                f"--perfherder-extra-option={option}"
+                for option in self.config.get("perfherder_extra_options")
             ])
         if self.config.get("page_timeout"):
             options.extend([f"--page-timeout={self.page_timeout}"])

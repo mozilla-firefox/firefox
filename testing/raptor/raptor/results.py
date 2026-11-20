@@ -56,6 +56,7 @@ class PerftestResultsHandler(metaclass=ABCMeta):
         samply_profile=False,
         perf_profile=False,
         extra_summary_methods=[],
+        perfherder_extra_options=[],
         **kwargs,
     ):
         self.gecko_profile = gecko_profile
@@ -80,6 +81,7 @@ class PerftestResultsHandler(metaclass=ABCMeta):
         self.existing_results = None
         self.extra_summary_methods = extra_summary_methods
         self.xtreme_regressions = []
+        self.perfherder_extra_options = perfherder_extra_options
 
     @abstractmethod
     def add(self, new_result_json):
@@ -130,6 +132,7 @@ class PerftestResultsHandler(metaclass=ABCMeta):
                     raise Exception(
                         f"Unknown test modifier {name} was provided as an extra option"
                     )
+        extra_options.extend(self.perfherder_extra_options)
 
         # Bug 1770225: Make this more dynamic, this will fail us again in the future
         self._clean_up_browser_options(extra_options=extra_options)

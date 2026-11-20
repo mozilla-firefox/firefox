@@ -600,6 +600,15 @@ def create_parser(mach_interface=False):
         "Options: median.",
     )
     add_arg(
+        "--perfherder-extra-option",
+        dest="perfherder_extra_options",
+        action="append",
+        default=[],
+        metavar="OPTION",
+        help="Add an extra option to the Perfherder data, which puts the results "
+        "in a separate series. Can be given more than once.",
+    )
+    add_arg(
         "--benchmark-repository",
         dest="benchmark_repository",
         default=None,

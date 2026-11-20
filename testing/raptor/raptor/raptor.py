@@ -124,6 +124,7 @@ def main(args=sys.argv[1:]):
             verbose=args.verbose,
             fission=args.fission,
             extra_summary_methods=args.extra_summary_methods,
+            perfherder_extra_options=args.perfherder_extra_options,
             benchmark_repository=args.benchmark_repository,
             benchmark_revision=args.benchmark_revision,
             benchmark_branch=args.benchmark_branch,
