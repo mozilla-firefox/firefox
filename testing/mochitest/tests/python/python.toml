@@ -11,3 +11,5 @@ subsuite = "mochitest"
 
 ["test_mochitest_integration.py"]
 sequential = true
+
+["test_verify_tests.py"]

@@ -3700,6 +3700,17 @@ toolbar#nav-bar {
                 httpsTests.append(test)
         return {"http": httpTests, "https": httpsTests}
 
+    def getVerifiedTestPath(self, options):
+        """Returns the source path of the test to verify. test-verify tasks
+        verify one test per harness run, but a local run can verify several,
+        e.g. a whole directory, and its verification steps then run them
+        together: this returns None then."""
+        if isinstance(options.manifestFile, TestManifest):
+            paths = [t.get("srcdir_relpath") for t in options.manifestFile.tests]
+        else:
+            paths = options.test_paths or []
+        return paths[0] if len(paths) == 1 else None
+
     def verifyTests(self, options):
         """
         Support --verify mode: Run test(s) many times in a variety of
@@ -3817,6 +3828,10 @@ toolbar#nav-bar {
 
         startTime = datetime.now()
         maxTime = timedelta(seconds=options.verify_max_time)
+        testPath = self.getVerifiedTestPath(options)
+        testGroup = f"{testPath} --verify" if testPath else None
+        if testGroup:
+            self.log.group_start(name=testGroup)
         finalResult = "PASSED"
         for descr, step in steps:
             if (datetime.now() - startTime) > maxTime:
@@ -3849,6 +3864,8 @@ toolbar#nav-bar {
         self.log.info(":::")
         self.log.info(f"::: Test verification {finalResult}")
         self.log.info(":::")
+        if testGroup:
+            self.log.group_end(name=testGroup)
 
         return 0
 
