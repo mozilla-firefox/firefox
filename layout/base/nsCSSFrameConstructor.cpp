@@ -6932,14 +6932,6 @@ bool nsCSSFrameConstructor::ContentWillBeRemoved(nsIContent* aChild,
 
   InvalidateCanvasIfNeeded(mPresShell, aChild);
 
-  // See whether we need to remove more than just childFrame
-  LAYOUT_PHASE_TEMP_EXIT();
-  if (MaybeRecreateContainerForFrameRemoval(childFrame)) {
-    LAYOUT_PHASE_TEMP_REENTER();
-    return true;
-  }
-  LAYOUT_PHASE_TEMP_REENTER();
-
   // Get the childFrame's parent frame
   nsIFrame* parentFrame = childFrame->GetParent();
   LayoutFrameType parentType = parentFrame->Type();
@@ -6965,14 +6957,6 @@ bool nsCSSFrameConstructor::ContentWillBeRemoved(nsIContent* aChild,
     LAYOUT_PHASE_TEMP_REENTER();
     return true;
   }
-
-#ifdef ACCESSIBILITY
-  if (aKind != RemovalKind::ForReconstruction) {
-    if (nsAccessibilityService* accService = GetAccService()) {
-      accService->ContentRemoved(mPresShell, aChild);
-    }
-  }
-#endif
 
   // Examine the containing-block for the removed content and see if
   // :first-letter style applies.
@@ -7020,6 +7004,22 @@ bool nsCSSFrameConstructor::ContentWillBeRemoved(nsIContent* aChild,
     printf("\n");
 #endif
   }
+
+  // See whether we need to remove more than just childFrame
+  LAYOUT_PHASE_TEMP_EXIT();
+  if (MaybeRecreateContainerForFrameRemoval(childFrame)) {
+    LAYOUT_PHASE_TEMP_REENTER();
+    return true;
+  }
+  LAYOUT_PHASE_TEMP_REENTER();
+
+#ifdef ACCESSIBILITY
+  if (aKind != RemovalKind::ForReconstruction) {
+    if (nsAccessibilityService* accService = GetAccService()) {
+      accService->ContentRemoved(mPresShell, aChild);
+    }
+  }
+#endif
 
 #ifdef DEBUG
   if (gReallyNoisyContentUpdates) {
