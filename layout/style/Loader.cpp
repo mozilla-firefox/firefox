@@ -2318,7 +2318,10 @@ void Loader::Stop() {
   }
 }
 
-bool Loader::HasPendingLoads() { return mOngoingLoadCount; }
+bool Loader::HasPendingNonDeferredLoads() const {
+  MOZ_ASSERT(mOngoingLoadCount >= mPendingLoadCount);
+  return mOngoingLoadCount - mPendingLoadCount > 0;
+}
 
 void Loader::AddObserver(nsICSSLoaderObserver* aObserver) {
   MOZ_ASSERT(aObserver, "Must have observer");
