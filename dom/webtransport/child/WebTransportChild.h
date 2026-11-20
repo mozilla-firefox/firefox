@@ -46,8 +46,8 @@ class WebTransportChild : public PWebTransportChild {
       const uint64_t& aStreamId,
       const RefPtr<mozilla::ipc::DataPipeReceiver>& aStream);
 
-  ::mozilla::ipc::IPCResult RecvIncomingDatagram(
-      nsTArray<uint8_t>&& aData, const TimeStamp& aRecvTimeStamp);
+  ::mozilla::ipc::IPCResult RecvIncomingDatagrams(
+      nsTArray<IncomingDatagram>&& aDatagrams);
 
   ::mozilla::ipc::IPCResult RecvDatagramCapacity(
       const uint64_t& aCumulativeDatagrams, const uint64_t& aCumulativeBytes,

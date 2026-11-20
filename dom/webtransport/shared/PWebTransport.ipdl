@@ -27,6 +27,13 @@ struct BidirectionalStream {
   nullable DataPipeSender outStream;
 };
 
+struct IncomingDatagram {
+  uint8_t[] data;
+  // When the parent received this datagram. Per-datagram rather than
+  // per-message because incomingMaxAge is applied to each one individually.
+  TimeStamp receivedTime;
+};
+
 struct OutgoingDatagram {
   uint8_t[] data;
   // When the content process created this datagram (for outgoingMaxAge
@@ -172,11 +179,16 @@ async protocol PWebTransport
   async IncomingBidirectionalStream(uint64_t streamId, nullable DataPipeReceiver receive, nullable DataPipeSender send);
 
   /**
-  * IPC for receiving webtransport datagrams
-  * @param receivedTime is the time at which the parent received the datagram
-  * @param data is the datagram received
+  * IPC for receiving webtransport datagrams.
+  *
+  * Datagrams are batched because a burst arrives entirely within one
+  * socket-thread turn, and one message each costs far more than the batching
+  * delays the first of them. The child must still hand them to the DOM one
+  * task at a time; see RecvIncomingDatagrams().
+  *
+  * @param datagrams are the datagrams received, oldest first
   */
-  async IncomingDatagram(uint8_t[] data, TimeStamp receivedTime);
+  async IncomingDatagrams(IncomingDatagram[] datagrams);
 
   /**
   * Aggregated outgoing-datagram feedback, sent after the parent forwards a

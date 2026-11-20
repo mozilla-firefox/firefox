@@ -178,6 +178,12 @@ interface WebTransportSessionEventListener : nsISupports {
   // When a new datagram has been received.
   void onDatagramReceived(in Array<uint8_t> aData);
 
+  // No further datagram will be received until the backend returns to its
+  // event loop, so a listener holding datagrams back to deliver them together
+  // should deliver what it has. Called after a run of onDatagramReceived()
+  // calls, never on its own.
+  void onDatagramsFlush();
+
   // neqo's outgoing datagram queue has dropped back below its high water
   // mark. A listener that withheld capacity from its own consumer while the
   // queue was full should re-sample it; this is the only signal that arrives
@@ -202,6 +208,9 @@ interface WebTransportSessionEventListenerInternal : nsISupports {
 
   // This is used internally to pass the datagram to WebTransportSessionProxy.
   void onDatagramReceivedInternal(in Datagram aData);
+
+  // This is used internally to forward onDatagramsFlush() to the listener.
+  void onDatagramsFlushInternal();
 
   // This is used internally to forward onOutgoingDatagramSpaceAvailable() to
   // the listener.
