@@ -29,6 +29,20 @@ declare namespace BrowserWindow {
   function isElementVisible(aElement: Element | null): boolean;
   function isInitialPage(url: string | nsIURI): boolean;
   function CreateContainerTabMenu(event: Event): void;
+  function createUserContextMenu(
+    event: Event,
+    options?: {
+      target?: Element | null;
+      isContextMenu?: boolean;
+      isPanelList?: boolean;
+      excludeUserContextId?: number | string | null;
+      showDefaultTab?: boolean;
+      showAddContainer?: boolean;
+      showManageContainers?: boolean;
+      containerSource?: string;
+    }
+  ): void;
+  function showFullScreenViewContextMenuItems(popup: Element): void;
   function UpdatePopupNotificationsVisibility(): void;
   function openPreferences(
     paneID?: string,
@@ -69,6 +83,14 @@ declare namespace BrowserWindow {
     getUIState(): SidebarStateProps;
     markSessionRestoreStateReceived(): void;
     updateUIState(state?: SidebarStateProps): Promise<void>;
+  };
+
+  // browser-sync.js
+  var gSync: {
+    updateTabContextMenu(
+      aPopupMenu: XULPopupElement,
+      aTargetTab: MozTabbrowserTab
+    ): void;
   };
 
   // browser-webrtc.js
