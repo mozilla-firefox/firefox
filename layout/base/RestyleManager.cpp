@@ -1056,10 +1056,9 @@ static nsIFrame* ContainingBlockForFrame(nsIFrame* aFrame) {
     return insertionFrame;
   }
   // Generally frames with a different insertion frame are hard to deal with,
-  // but scrollframes are easy because the containing block is just the
-  // insertion frame.
-  if (aFrame->IsScrollFrame()) {
-    return insertionFrame;
+  // but scrollframes use the scrolled frame.
+  if (nsIScrollableFrame* sf = do_QueryFrame(aFrame)) {
+    return sf->GetScrolledFrame();
   }
   // Combobox frames are easy as well because they can't have positioned
   // children anyways.
