@@ -1362,7 +1362,7 @@ ${
     if (
       !result &&
       this._resultForCurrentValue?.type == UrlbarShared.RESULT_TYPE.URL &&
-      UrlbarShared.navigationInSearchModeEnabled(this.#sapName, this.searchMode)
+      UrlbarShared.navigationInSearchModeEnabled(this.#sapName)
     ) {
       return null;
     }
@@ -1597,15 +1597,11 @@ ${
       return;
     }
 
-    // When the user hits enter in a local search mode where navigation isn't
-    // enabled and there's no selected result or one-off, don't do anything.
+    // When the user hits enter in a local search mode and there's no selected
+    // result or one-off, don't do anything.
     if (
       this.searchMode &&
       !this.searchMode.engineName &&
-      !UrlbarShared.navigationInSearchModeEnabled(
-        this.#sapName,
-        this.searchMode
-      ) &&
       !result &&
       !oneOffParams
     ) {

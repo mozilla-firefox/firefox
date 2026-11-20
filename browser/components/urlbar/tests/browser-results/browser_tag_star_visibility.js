@@ -111,12 +111,14 @@ add_task(async function () {
       );
     }
 
-    await UrlbarTestUtils.promiseAutocompleteResultPopup({
+    let context = await UrlbarTestUtils.promiseAutocompleteResultPopup({
       window,
       value: testcase.input,
     });
 
-    let resultIndex = 1;
+    // If testcase.input triggers local search mode, there won't be a heuristic.
+    let resultIndex =
+      context.searchMode && !context.searchMode.engineName ? 0 : 1;
 
     Assert.greaterOrEqual(
       UrlbarTestUtils.getResultCount(window),
