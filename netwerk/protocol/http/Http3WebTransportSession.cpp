@@ -585,7 +585,11 @@ void Http3WebTransportSession::SendDatagram(nsTArray<uint8_t>&& aData,
   //
   // This means the datagram is actually transmitted after one event loop
   // cycle (the async dispatch in ForceSend/MaybeForceSendIO).
-  mSession->SendDatagram(this, aData, aSendGroupId, aSendOrder, aTimestamp);
+  if (NS_FAILED(mSession->SendDatagram(this, aData, aSendGroupId, aSendOrder,
+                                       aTimestamp))) {
+    mFailedOutgoingDatagrams++;
+    return;
+  }
   mSession->StreamHasDataToWrite(this);
 }
 
@@ -670,8 +674,12 @@ bool Http3WebTransportSession::GetDatagramSessionStats(uint64_t* aSent,
     return false;
   }
 
-  return mSession->GetDatagramSessionStats(mStreamId, aSent, aExpired,
-                                           aDropped);
+  if (!mSession->GetDatagramSessionStats(mStreamId, aSent, aExpired,
+                                         aDropped)) {
+    return false;
+  }
+  *aDropped += mFailedOutgoingDatagrams;
+  return true;
 }
 
 void Http3WebTransportSession::GetStats() {

@@ -182,6 +182,12 @@ class Http3WebTransportSession final : public WebTransportSessionBase,
 
   // Cached stats for passing to OnSessionClosed
   mozilla::dom::WebTransportStatsData mCachedStats;
+
+  // Outgoing datagrams neqo refused to enqueue at all, so never counted by
+  // its own sent/expired/dropped stats.  Folded into
+  // GetDatagramSessionStats()'s dropped count, since content counts every
+  // datagram it hands over as in flight until that aggregate retires it.
+  uint64_t mFailedOutgoingDatagrams{0};
 };
 
 }  // namespace mozilla::net
