@@ -4335,7 +4335,8 @@ PermissionManager::CommonPrepareToTestPermission(
     (void)mDefaultPrefBranch->GetIntPref(PromiseFlatCString(aType).get(),
                                          &defaultPermission);
     if (defaultPermission < 0 ||
-        defaultPermission > nsIPermissionManager::MAX_VALID_ACTION) {
+        defaultPermission >
+            static_cast<int32_t>(nsIPermissionManager::MAX_VALID_ACTION)) {
       defaultPermission = nsIPermissionManager::UNKNOWN_ACTION;
     }
   }
