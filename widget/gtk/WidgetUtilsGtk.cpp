@@ -428,7 +428,7 @@ static const struct xdg_activation_token_v1_listener token_listener = {
 };
 #endif
 
-RefPtr<FocusRequestPromise> RequestWaylandFocusPromise() {
+RefPtr<FocusRequestPromise> RequestWaylandFocusPromise(bool aUseFocusSource) {
 #ifdef MOZ_WAYLAND
   if (!GdkIsWaylandDisplay() || !WaylandDisplayGet()->GetSeat()) {
     LOGW("RequestWaylandFocusPromise() failed.");
@@ -454,7 +454,10 @@ RefPtr<FocusRequestPromise> RequestWaylandFocusPromise() {
   // no focused source window; we still commit a bare token (no serial/surface)
   // so Mutter places the new window on the current workspace rather than a
   // stale or phantom output.
-  RefPtr<nsWindow> sourceWindow = nsWindow::GetFocusedWindow();
+  // aUseFocusSource = false always gives a bare token, so activation only
+  // flags the window as demanding attention.
+  RefPtr<nsWindow> sourceWindow =
+      aUseFocusSource ? nsWindow::GetFocusedWindow() : nullptr;
   if (sourceWindow && !sourceWindow->IsDestroyed()) {
     GdkWindow* gdkWindow = sourceWindow->GetToplevelGdkWindow();
     wl_surface* surface =

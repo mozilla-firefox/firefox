@@ -5181,7 +5181,19 @@ void nsWindow::SetUrgencyHint(GtkWidget* top_window, bool state) {
   if (!window) {
     return;
   }
-  // TODO: Use xdg-activation on Wayland?
+#ifdef MOZ_WAYLAND
+  // GTK3 has no urgency hint on Wayland (gdk_window_set_urgency_hint() is a
+  // no-op there), so use xdg-activation. The compositor clears the attention
+  // state itself once the window is activated, so there is nothing to undo.
+  if (GdkIsWaylandDisplay()) {
+    if (state) {
+      if (auto* toplevel = AsWaylandToplevel()) {
+        toplevel->RequestAttention();
+      }
+    }
+    return;
+  }
+#endif
   gdk_window_set_urgency_hint(window, state);
 }
 

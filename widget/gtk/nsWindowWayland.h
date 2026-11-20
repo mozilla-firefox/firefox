@@ -91,6 +91,9 @@ class nsWindowWaylandToplevel : public nsWindowWayland {
 
   // Use xdg-activation protocol to transfer focus from gFocusWindow.
   void TransferFocusTo();
+  // Ask the compositor to flag this window as demanding attention (taskbar
+  // highlight) without raising it or taking focus.
+  void RequestAttention();
   virtual void FocusWaylandWindow(const char* aTokenID) = 0;
 
   void GetWorkspaceID(nsAString& aWorkspaceID) override;

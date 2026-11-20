@@ -452,6 +452,28 @@ void nsWindowWaylandToplevel::TransferFocusTo() {
       });
 }
 
+void nsWindowWaylandToplevel::RequestAttention() {
+  LOG("nsWindowWaylandToplevel::RequestAttention()");
+  // Mutter ignores tokens it did not issue, so ask for a real one even though
+  // it can't take focus.
+  auto promise =
+      mozilla::widget::RequestWaylandFocusPromise(/* aUseFocusSource */ false);
+  if (NS_WARN_IF(!promise)) {
+    LOG("  quit, failed to create token promise");
+    return;
+  }
+  promise->Then(
+      GetMainThreadSerialEventTarget(), __func__,
+      /* resolve */
+      [window = RefPtr{this}](nsCString token) {
+        window->FocusWaylandWindow(token.get());
+      },
+      /* reject */
+      [window = RefPtr{this}](bool state) {
+        LOGW("RequestAttention [%p] failed", window.get());
+      });
+}
+
 void nsWindowWaylandToplevel::CreateCompositorVsyncDispatcher() {
   LOG_VSYNC("nsWindowWaylandToplevel::CreateCompositorVsyncDispatcher()");
   if (!mWaylandVsyncSource) {

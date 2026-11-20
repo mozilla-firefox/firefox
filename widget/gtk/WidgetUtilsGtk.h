@@ -83,7 +83,13 @@ bool IsKdeDesktopEnvironment();
 nsTArray<nsCString> ParseTextURIList(const nsACString& data);
 
 using FocusRequestPromise = MozPromise<nsCString, bool, false>;
-RefPtr<FocusRequestPromise> RequestWaylandFocusPromise();
+// Ask the compositor for an xdg-activation token.
+//
+// By default the token can move focus to the activated window. With
+// aUseFocusSource = false it can't, and activating with it only requests
+// attention for that window.
+RefPtr<FocusRequestPromise> RequestWaylandFocusPromise(
+    bool aUseFocusSource = true);
 
 bool IsCancelledGError(GError* aGError);
 
