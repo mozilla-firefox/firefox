@@ -387,7 +387,8 @@ std::shared_ptr<EglDisplay> GLLibraryEGL::CreateDisplayForWebRenderAndroidGLES(
     nsACString* const out_failureId) {
   StaticMutexAutoLock lock(sMutex);
   // Get() may return system EGL after failing to initialize bundled ANGLE.
-  if (!IsANGLE() || !IsGlANGLE()) {
+  if (!IsANGLE() ||
+      !IsExtensionSupported(EGLLibExtension::ANGLE_platform_angle_opengl)) {
     *out_failureId = "FEATURE_FAILURE_WR_ANGLE_GL_UNSUPPORTED"_ns;
     return nullptr;
   }
@@ -805,11 +806,6 @@ bool GLLibraryEGL::Init(LibraryType type, nsACString* const out_failureId) {
 
   // Check the ANGLE support the system has
   mIsANGLE = IsExtensionSupported(EGLLibExtension::ANGLE_platform_angle);
-  mIsD3DANGLE = IsExtensionSupported(EGLLibExtension::ANGLE_platform_angle_d3d);
-  mIsMetalANGLE =
-      IsExtensionSupported(EGLLibExtension::ANGLE_platform_angle_metal);
-  mIsGlANGLE =
-      IsExtensionSupported(EGLLibExtension::ANGLE_platform_angle_opengl);
 
 #ifdef MOZ_WIDGET_ANDROID
   if (useANGLE && !mIsANGLE) {
