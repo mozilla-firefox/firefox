@@ -1861,13 +1861,13 @@ void GeckoMediaPluginServiceParent::ClearRecentHistoryOnGMPThread(
   GMP_LOG_DEBUG("{}::{}: since={}", __CLASS__, __FUNCTION__, (int64_t)aSince);
 
   struct MTimeFilter : public DirectoryFilter {
-    explicit MTimeFilter(PRTime aSince) : mSinceMs(aSince / PR_USEC_PER_MSEC) {}
+    explicit MTimeFilter(PRTime aSince) : mSince(aSince) {}
 
-    // Return true if any files under aPath is modified after |mSinceMs|.
+    // Return true if any files under aPath is modified after |mSince|.
     bool IsModifiedAfter(nsIFile* aPath) {
-      int64_t lastModifiedMs;
-      nsresult rv = aPath->GetLastModifiedTime(&lastModifiedMs);
-      if (NS_SUCCEEDED(rv) && lastModifiedMs >= mSinceMs) {
+      PRTime lastModified;
+      nsresult rv = aPath->GetLastModifiedTime(&lastModified);
+      if (NS_SUCCEEDED(rv) && lastModified >= mSince) {
         return true;
       }
       DirectoryEnumerator iter(aPath, DirectoryEnumerator::FilesAndDirs);
@@ -1910,7 +1910,7 @@ void GeckoMediaPluginServiceParent::ClearRecentHistoryOnGMPThread(
     }
 
    private:
-    const int64_t mSinceMs;
+    const PRTime mSince;
   } filter(aSince);
 
   ClearNodeIdAndPlugin(filter);
