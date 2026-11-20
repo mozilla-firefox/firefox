@@ -34,6 +34,8 @@ body {
 
   h2 {
     margin: 0;
+    padding-inline: calc(var(--size-item-large) + var(--space-small));
+    text-wrap: balance;
     font-size: var(--font-size-xxlarge);
     font-weight: var(--font-weight-semibold);
     text-align: center;
@@ -57,6 +59,10 @@ body {
   &[hidden] {
     display: none !important;
   }
+}
+
+#actions[hidden] {
+  display: none;
 }
 
 #qrcode-image {

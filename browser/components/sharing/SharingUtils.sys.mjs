@@ -151,7 +151,15 @@ class SharingUtilsCls {
     }
   }
 
-  async showQRCodePanel(win, browser, url) {
+  /**
+   * @param {Window} win
+   * @param {MozBrowser} browser
+   * @param {string} url
+   * @param {object} [options]
+   * @param {string} [options.titleL10nId] Fluent ID overriding the dialog heading.
+   * @param {boolean} [options.hideActions] Hides the Save and Copy buttons.
+   */
+  async showQRCodePanel(win, browser, url, options = {}) {
     let tab = win.gBrowser.getTabForBrowser(browser);
     if (tab && win.gBrowser.selectedTab !== tab) {
       let wait = null;
@@ -184,6 +192,8 @@ class SharingUtilsCls {
     let params = {
       url,
       qrCodeDataURI,
+      titleL10nId: options.titleL10nId,
+      hideActions: !!options.hideActions,
     };
 
     let { closedPromise, dialog } = win.gBrowser

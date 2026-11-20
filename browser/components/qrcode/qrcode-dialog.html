@@ -10,12 +10,13 @@
       http-equiv="Content-Security-Policy"
       content="default-src chrome:; object-src 'none'; style-src chrome:; script-src chrome:; img-src chrome: data:;"
     />
-    <title data-l10n-id="qrcode-window-title"></title>
+    <title id="window-title" data-l10n-id="qrcode-window-title"></title>
     <link rel="stylesheet" href="chrome://global/skin/global.css" />
     <link
       rel="stylesheet"
       href="chrome://browser/content/qrcode/qrcode-dialog.css"
     />
+    <link rel="localization" href="branding/brand.ftl" />
     <link rel="localization" href="browser/browser.ftl" />
     <script src="chrome://browser/content/contentTheme.js"></script>
     <script
@@ -35,7 +36,7 @@
   <body>
     <div id="qrcode-dialog-content">
       <div id="dialog-header">
-        <h2 data-l10n-id="qrcode-dialog-title"></h2>
+        <h2 id="dialog-title" data-l10n-id="qrcode-dialog-title"></h2>
         <moz-button
           type="icon ghost"
           iconsrc="chrome://global/skin/icons/close.svg"
@@ -48,7 +49,7 @@
         <img id="qrcode-image" data-l10n-id="qrcode-image" />
         <p id="qrcode-url" dir="ltr"></p>
 
-        <moz-button-group>
+        <moz-button-group id="actions">
           <moz-button
             id="save-button"
             data-l10n-id="qrcode-save-button"

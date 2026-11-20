@@ -944,7 +944,11 @@ export const SpecialMessageActions = {
           gBrowser.getTabForBrowser(browser)
             ? browser
             : gBrowser.selectedBrowser,
-          Services.urlFormatter.formatURL(action.data.args)
+          Services.urlFormatter.formatURL(action.data.args),
+          {
+            titleL10nId: action.data.title,
+            hideActions: action.data.hideActions,
+          }
         );
         break;
       }

@@ -24,6 +24,8 @@ XPCOMUtils.defineLazyServiceGetter(
 const QRCodeDialog = {
   _url: null,
   _qrCodeDataURI: null,
+  _hideActions: false,
+  _titleL10nId: null,
 
   /** Initializes the dialog from window arguments. */
   init() {
@@ -31,13 +33,19 @@ const QRCodeDialog = {
       const params = window.arguments[0];
       this._url = params.url;
       this._qrCodeDataURI = params.qrCodeDataURI;
+      this._hideActions = params.hideActions;
+      this._titleL10nId = params.titleL10nId;
     }
 
     document.mozSubdialogReady = this.setupDialog();
 
     const copyButton = document.getElementById("copy-button");
+    document.getElementById("actions").hidden = this._hideActions;
 
-    document.subDialogSetDefaultFocus = () => copyButton.focus();
+    document.subDialogSetDefaultFocus = () =>
+      this._hideActions
+        ? document.getElementById("close-button").focus()
+        : copyButton.focus();
 
     copyButton.addEventListener("click", () => this.copyImage());
     document
@@ -47,16 +55,18 @@ const QRCodeDialog = {
       .getElementById("close-button")
       .addEventListener("click", () => window.close());
 
-    document.addEventListener("keydown", event => {
-      if (
-        event.key === "Enter" &&
-        !event.defaultPrevented &&
-        !event.target.closest("moz-button")
-      ) {
-        event.preventDefault();
-        this.copyImage();
-      }
-    });
+    if (!this._hideActions) {
+      document.addEventListener("keydown", event => {
+        if (
+          event.key === "Enter" &&
+          !event.defaultPrevented &&
+          !event.target.closest("moz-button")
+        ) {
+          event.preventDefault();
+          this.copyImage();
+        }
+      });
+    }
   },
 
   /**
@@ -65,6 +75,14 @@ const QRCodeDialog = {
    */
   async setupDialog() {
     const successContainer = document.getElementById("success-container");
+
+    if (this._titleL10nId) {
+      const dialogTitle = document.getElementById("dialog-title");
+      const windowTitle = document.getElementById("window-title");
+      document.l10n.setAttributes(dialogTitle, this._titleL10nId);
+      document.l10n.setAttributes(windowTitle, this._titleL10nId);
+      await document.l10n.translateElements([dialogTitle, windowTitle]);
+    }
 
     if (!this._qrCodeDataURI) {
       this.showFeedback("error", "qrcode-panel-error");

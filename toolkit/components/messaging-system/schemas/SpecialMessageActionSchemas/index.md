@@ -200,6 +200,8 @@ window or tab closed before sign-in could be completed.
 ### `SHOW_QR_CODE`
 
 * args: `string` (a url)
+* title (optional): `string` Fluent ID from `browser.ftl` to use as the dialog heading
+* hideActions (optional): `boolean` hides the Save and Copy buttons
 
 Shows a QR code for the given url in a dialog over the current tab. Resolves once the dialog is closed.
 

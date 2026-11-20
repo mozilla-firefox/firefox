@@ -360,6 +360,14 @@
                 "args": {
                   "type": "string",
                   "description": "URL to encode in the QR code"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Fluent ID from browser.ftl to use for the dialog heading instead of the default"
+                },
+                "hideActions": {
+                  "type": "boolean",
+                  "description": "Hide the Save and Copy buttons"
                 }
               },
               "required": ["args"],
