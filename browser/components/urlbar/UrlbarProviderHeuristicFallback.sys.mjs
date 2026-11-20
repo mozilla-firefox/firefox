@@ -132,8 +132,7 @@ export class UrlbarProviderHeuristicFallback extends UrlbarProvider {
     // The user may have typed something like "word?" to run a search.  We
     // should not convert that to a URL.  We should also never convert actual
     // URLs into URL results when a search mode restriction token was typed, or
-    // when search mode is active, unless it's an engine search mode and
-    // navigation is enabled in search mode.
+    // when search mode is active, unless navigation is enabled in search mode.
     if (
       lazy.UrlbarShared.SEARCH_MODE_RESTRICT.has(
         queryContext.restrictToken?.value
@@ -141,15 +140,11 @@ export class UrlbarProviderHeuristicFallback extends UrlbarProvider {
     ) {
       return null;
     }
-    if (queryContext.searchMode) {
-      if (
-        !queryContext.searchMode.engineName ||
-        !queryContext.navigationInSearchModeEnabled
-      ) {
-        return null;
-      }
-    } else if (
-      queryContext.restrictSource == lazy.UrlbarShared.RESULT_SOURCE.SEARCH
+    if (
+      (queryContext.searchMode &&
+        !queryContext.navigationInSearchModeEnabled) ||
+      (!queryContext.searchMode &&
+        queryContext.restrictSource == lazy.UrlbarShared.RESULT_SOURCE.SEARCH)
     ) {
       return null;
     }

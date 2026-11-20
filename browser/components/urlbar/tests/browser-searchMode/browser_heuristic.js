@@ -36,73 +36,132 @@ add_setup(async function () {
   });
 });
 
-// Enters search mode with no results.
+// Enters a local search mode (bookmarks) with a search string that doesn't
+// match any bookmark. A default engine search heuristic should be present.
 add_task(async function noResults() {
-  // Do a search that doesn't match our bookmark and enter bookmark search mode.
-  await UrlbarTestUtils.promiseAutocompleteResultPopup({
-    window,
-    value: "doesn't match anything",
+  await BrowserTestUtils.withNewTab("about:blank", async () => {
+    // Do a search that doesn't match our bookmark and enter bookmark search
+    // mode.
+    let value = "doesn't match anything";
+    await UrlbarTestUtils.promiseAutocompleteResultPopup({
+      window,
+      value,
+    });
+    await UrlbarTestUtils.enterSearchMode(window, {
+      source: UrlbarShared.RESULT_SOURCE.BOOKMARKS,
+    });
+
+    Assert.equal(
+      UrlbarTestUtils.getResultCount(window),
+      1,
+      "Only the heuristic since no bookmark matches"
+    );
+    await assertSearchHeuristic(0, value);
+
+    // Press enter. The default engine's SERP should load.
+    await assertEnterLoadsSERP(value);
   });
-  await UrlbarTestUtils.enterSearchMode(window, {
-    source: UrlbarShared.RESULT_SOURCE.BOOKMARKS,
-  });
-
-  Assert.equal(
-    UrlbarTestUtils.getResultCount(window),
-    0,
-    "Zero results since no bookmark matches"
-  );
-
-  // Press enter.  Nothing should happen.
-  let promise = waitForLoadStartOrTimeout();
-  EventUtils.synthesizeKey("KEY_Enter");
-  await Assert.rejects(promise, /timed out/, "Nothing should have loaded");
-
-  await UrlbarTestUtils.promisePopupClose(window);
 });
 
-// Enters a local search mode (bookmarks) with a matching result.  No heuristic
-// should be present.
-add_task(async function localNoHeuristic() {
-  // Do a search that matches our bookmark and enter bookmarks search mode.
-  await UrlbarTestUtils.promiseAutocompleteResultPopup({
-    window,
-    value: "bookmark",
+// Enters a local search mode (bookmarks) with a matching result. A default
+// engine search heuristic should be present before the bookmark.
+add_task(async function localSearchHeuristic() {
+  await BrowserTestUtils.withNewTab("about:blank", async () => {
+    // Do a search that matches our bookmark and enter bookmarks search mode.
+    let value = "bookmark";
+    await UrlbarTestUtils.promiseAutocompleteResultPopup({
+      window,
+      value,
+    });
+    await UrlbarTestUtils.enterSearchMode(window, {
+      source: UrlbarShared.RESULT_SOURCE.BOOKMARKS,
+    });
+
+    Assert.equal(
+      UrlbarTestUtils.getResultCount(window),
+      2,
+      "There should be two results"
+    );
+    await assertSearchHeuristic(0, value);
+
+    let result = await UrlbarTestUtils.getDetailsOfResultAt(window, 1);
+    Assert.equal(
+      result.source,
+      UrlbarShared.RESULT_SOURCE.BOOKMARKS,
+      "Result source should be BOOKMARKS"
+    );
+    Assert.equal(
+      result.type,
+      UrlbarShared.RESULT_TYPE.URL,
+      "Result type should be URL"
+    );
+    Assert.equal(
+      result.url,
+      "https://example.com/bookmark",
+      "Result URL is our bookmark URL"
+    );
+    Assert.ok(!result.heuristic, "Result should not be heuristic");
+
+    // Press enter. The default engine's SERP should load.
+    await assertEnterLoadsSERP(value);
   });
-  await UrlbarTestUtils.enterSearchMode(window, {
-    source: UrlbarShared.RESULT_SOURCE.BOOKMARKS,
-  });
+});
 
-  Assert.equal(
-    UrlbarTestUtils.getResultCount(window),
-    1,
-    "There should be one result"
-  );
+// Enters a local search mode (bookmarks) with a URL that doesn't match any
+// bookmark, like an edited bookmark URL. The heuristic should visit it.
+add_task(async function localUrlHeuristic() {
+  for (let closeView of [false, true]) {
+    info(`Pressing Enter with the view ${closeView ? "closed" : "open"}`);
+    await BrowserTestUtils.withNewTab("about:blank", async () => {
+      await UrlbarTestUtils.promiseAutocompleteResultPopup({
+        window,
+        value: "example.com/edited",
+      });
+      await UrlbarTestUtils.enterSearchMode(window, {
+        source: UrlbarShared.RESULT_SOURCE.BOOKMARKS,
+      });
 
-  let result = await UrlbarTestUtils.getDetailsOfResultAt(window, 0);
-  Assert.equal(
-    result.source,
-    UrlbarShared.RESULT_SOURCE.BOOKMARKS,
-    "Result source should be BOOKMARKS"
-  );
-  Assert.equal(
-    result.type,
-    UrlbarShared.RESULT_TYPE.URL,
-    "Result type should be URL"
-  );
-  Assert.equal(
-    result.url,
-    "https://example.com/bookmark",
-    "Result URL is our bookmark URL"
-  );
-  Assert.ok(!result.heuristic, "Result should not be heuristic");
+      Assert.equal(
+        UrlbarTestUtils.getResultCount(window),
+        1,
+        "Only the heuristic since no bookmark matches"
+      );
+      let result = await UrlbarTestUtils.getDetailsOfResultAt(window, 0);
+      Assert.equal(
+        result.type,
+        UrlbarShared.RESULT_TYPE.URL,
+        "Result type should be URL"
+      );
+      Assert.equal(
+        result.url,
+        // eslint-disable-next-line sdl/no-insecure-url
+        "http://example.com/edited",
+        "Result URL is the typed URL"
+      );
+      Assert.ok(result.heuristic, "Result should be heuristic");
 
-  // Press enter.  Nothing should happen.
-  let promise = waitForLoadStartOrTimeout();
-  EventUtils.synthesizeKey("KEY_Enter");
-  await Assert.rejects(promise, /timed out/, "Nothing should have loaded");
+      if (closeView) {
+        await UrlbarTestUtils.promisePopupClose(window);
+      }
 
-  await UrlbarTestUtils.promisePopupClose(window);
+      // Schemeless HTTPS-First may upgrade the load, so don't check the scheme.
+      let loadPromise = BrowserTestUtils.browserLoaded(
+        gBrowser.selectedBrowser
+      );
+      EventUtils.synthesizeKey("KEY_Enter");
+      await loadPromise;
+      Assert.equal(
+        gBrowser.currentURI.host,
+        "example.com",
+        "The typed URL's host should have loaded"
+      );
+      Assert.equal(
+        gBrowser.currentURI.filePath,
+        "/edited",
+        "The typed URL's path should have loaded"
+      );
+    });
+  }
 });
 
 // Enters a local search mode (bookmarks) with a matching autofill result.  The
@@ -340,3 +399,40 @@ add_task(async function remoteUrlNavigationEnabled() {
 
   await SpecialPowers.popPrefEnv();
 });
+
+async function assertSearchHeuristic(index, query) {
+  let result = await UrlbarTestUtils.getDetailsOfResultAt(window, index);
+  Assert.equal(
+    result.type,
+    UrlbarShared.RESULT_TYPE.SEARCH,
+    "Result type should be SEARCH"
+  );
+  Assert.ok(result.heuristic, "Result should be heuristic");
+  Assert.equal(
+    result.searchParams.engine,
+    "Test",
+    "searchParams.engine should be the default engine"
+  );
+  Assert.equal(
+    result.searchParams.query,
+    query,
+    "searchParams.query should be our query"
+  );
+}
+
+async function assertEnterLoadsSERP(query) {
+  let loadPromise = BrowserTestUtils.browserLoaded(gBrowser.selectedBrowser);
+  EventUtils.synthesizeKey("KEY_Enter");
+  await loadPromise;
+  let url = new URL(gBrowser.currentURI.spec);
+  Assert.equal(
+    url.origin + url.pathname,
+    "https://example.com/",
+    "The default engine's SERP should have loaded"
+  );
+  Assert.equal(
+    url.searchParams.get("q"),
+    query,
+    "The SERP should be for our query"
+  );
+}

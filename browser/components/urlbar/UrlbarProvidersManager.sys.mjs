@@ -931,12 +931,15 @@ export class Query {
     // In search mode, don't allow heuristic results in the following cases
     // since they don't make sense:
     //   * When the search string is empty, or
-    //   * In local search mode, except for autofill results
+    //   * In a local search mode where navigation isn't enabled, except for
+    //     autofill results
     if (
       result.heuristic &&
       this.context.searchMode &&
       (!this.context.trimmedSearchString ||
-        (!this.context.searchMode.engineName && !result.autofill))
+        (!this.context.searchMode.engineName &&
+          !this.context.navigationInSearchModeEnabled &&
+          !result.autofill))
     ) {
       return;
     }
