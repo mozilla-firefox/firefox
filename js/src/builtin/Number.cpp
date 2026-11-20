@@ -1641,24 +1641,12 @@ static size_t FracNumberToCString(ToCStringBuf* cbuf, double d) {
   }
 #endif
 
-  /*
-   * This is V8's implementation of the algorithm described in the
-   * following paper:
-   *
-   *   Printing floating-point numbers quickly and accurately with integers.
-   *   Florian Loitsch, PLDI 2010.
-   */
-  const double_conversion::DoubleToStringConverter& converter =
-      double_conversion::DoubleToStringConverter::EcmaScriptConverter();
-  double_conversion::StringBuilder builder(cbuf->sbuf, std::size(cbuf->sbuf));
-  MOZ_ALWAYS_TRUE(converter.ToShortest(d, &builder));
-
-  size_t len = builder.position();
-#ifdef DEBUG
-  char* result =
-#endif
-      builder.Finalize();
-  MOZ_ASSERT(cbuf->sbuf == result);
+  char* end = zmij::write_ecmascript(cbuf->sbuf, sizeof cbuf->sbuf, d);
+  size_t len = end - cbuf->sbuf;
+  // This is safe, because sizeof ToCStringBuf::sbuf includes scratch bytes, so
+  // there's always space left over for the terminator.
+  MOZ_ASSERT(len < JS::MaximumNumberToStringLength);
+  *end = '\0';
   return len;
 }
 
@@ -1685,20 +1673,9 @@ static bool AppendFracNumberToStringBuilder(StringBuilder& sb, double d) {
   char* end = reinterpret_cast<char*>(sb.end<Latin1Char>());
   char* appendPtr = end - maxSize;
 
-  const double_conversion::DoubleToStringConverter& converter =
-      double_conversion::DoubleToStringConverter::EcmaScriptConverter();
-  double_conversion::StringBuilder builder(appendPtr, maxSize);
-  MOZ_ALWAYS_TRUE(converter.ToShortest(d, &builder));
-
-  size_t len = builder.position();
-
-  // Unnecessarily adds a zero termination byte, which can't be avoided because
-  // builder's destructor will add it if we don't add it here. This byte is
-  // accounted for in JS::MaximumNumberToStringLength
-  mozilla::DebugOnly<char*> result = builder.Finalize();
-  MOZ_ASSERT(appendPtr == result);
-
-  sb.shrinkBy(maxSize - len);
+  char* written = zmij::write_ecmascript(appendPtr, maxSize, d);
+  MOZ_ASSERT(size_t(written - appendPtr) < maxSize);
+  sb.shrinkBy(maxSize - (written - appendPtr));
   return true;
 }
 
