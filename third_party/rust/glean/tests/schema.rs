@@ -15,6 +15,7 @@ use serde_json::Value;
 use glean::net::{CapablePingUploadRequest, UploadResult};
 use glean::private::*;
 use glean::AttributionMetrics;
+use glean::LabeledMetricData;
 use glean::{
     traits, ClientInfoMetrics, CommonMetricData, ConfigurationBuilder, HistogramType, MemoryUnit,
     TimeUnit,
@@ -174,6 +175,38 @@ fn validate_against_schema() {
 
     let text_metric = TextMetric::new(common("text"));
     text_metric.set("loooooong text".repeat(100));
+
+    let labeled_bool = LabeledMetric::<BooleanMetric>::new(
+        LabeledMetricData::Common {
+            cmd: common("labeled_bool"),
+        },
+        None,
+    );
+    labeled_bool.get("label1").set(true);
+
+    let labeled_counter = LabeledMetric::<CounterMetric>::new(
+        LabeledMetricData::Common {
+            cmd: common("labeled_counter"),
+        },
+        None,
+    );
+    labeled_counter.get("label1").add(1);
+    // empty labels are fine
+    labeled_counter.get("").add(42);
+
+    let labeled_custom_dist = LabeledMetric::<CustomDistributionMetric>::new(
+        LabeledMetricData::CustomDistribution {
+            cmd: common("labeled_custom_dist"),
+            range_min: 0,
+            range_max: 100,
+            bucket_count: 100,
+            histogram_type: HistogramType::Linear,
+        },
+        None,
+    );
+    labeled_custom_dist
+        .get("label1")
+        .accumulate_single_sample(1);
 
     // string JUST outside the limits, forcing this to record an error.
     let term = "a".repeat(255) + "b";

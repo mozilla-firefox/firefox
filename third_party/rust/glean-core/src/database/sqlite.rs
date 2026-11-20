@@ -3,12 +3,14 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use std::cell::Cell;
+use std::collections::{btree_map::Entry, BTreeMap};
 use std::fmt::{self, Display};
 use std::fs;
 use std::num::NonZeroU64;
 use std::path::Path;
 use std::str;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::RwLock;
 use std::time::{Duration, Instant};
 
 use chrono::{DateTime, Utc};
@@ -25,7 +27,6 @@ pub use schema::SchemaError;
 
 use crate::common_metric_data::CommonMetricDataInternal;
 use crate::database::migration::{self, MigrationState};
-use crate::database::sqlite::schema::create_in_memory_table;
 use crate::metrics::dual_labeled_counter::RECORD_SEPARATOR;
 use crate::metrics::Metric;
 use crate::Lifetime;
@@ -36,22 +37,6 @@ use super::{ConnExt, StoredSubmittedPingHandler, EMPTY_LABEL};
 
 mod connection;
 mod schema;
-
-const DEFAULT_TABLE: &str = "telemetry";
-const IN_MEMORY_DATABASE: &str = "lifetime_ping";
-const IN_MEMORY_TABLE: &str = "lifetime_ping.telemetry";
-
-#[test]
-fn consts_are_correct() {
-    assert_eq!(
-        IN_MEMORY_DATABASE,
-        &IN_MEMORY_TABLE[0..IN_MEMORY_DATABASE.len()]
-    );
-    assert_eq!(
-        DEFAULT_TABLE,
-        &IN_MEMORY_TABLE[(IN_MEMORY_TABLE.len() - DEFAULT_TABLE.len())..]
-    );
-}
 
 // Database-conformant label:
 // * empty string if no label given
@@ -100,6 +85,8 @@ pub struct Database {
     /// we will save metrics with 'ping' lifetime data in memory only,
     /// and persist them to disk in bulk on demand.
     delay_ping_lifetime_io: bool,
+
+    ping_lifetime_data: RwLock<BTreeMap<String, Metric>>,
 
     /// A count of how many database writes have been done since the last ping-lifetime flush.
     ///
@@ -321,9 +308,7 @@ impl Database {
         let store_path = path.join(DEFAULT_DATABASE_FILE_NAME);
         let (conn, load_state) = sqlite_open(&store_path)?;
 
-        if delay_ping_lifetime_io {
-            conn.write(|tx| create_in_memory_table(tx, IN_MEMORY_DATABASE))?;
-        }
+        let ping_lifetime_data = RwLock::new(Default::default());
 
         let now = Instant::now();
         let mut db = Self {
@@ -333,6 +318,7 @@ impl Database {
             migration_state: None,
             migration_error: MigrationResult::Unknown,
             delay_ping_lifetime_io,
+            ping_lifetime_data,
             ping_lifetime_count: AtomicUsize::new(0),
             ping_lifetime_threshold,
             ping_lifetime_store_ts: Cell::new(now),
@@ -441,14 +427,44 @@ impl Database {
             return;
         };
 
-        let copy_sql =
-            "INSERT INTO lifetime_ping.telemetry SELECT * FROM telemetry WHERE lifetime = 'ping'";
-        let res = self.conn.write(|tx| tx.execute_one(copy_sql));
-        if let Err(err) = res {
-            log::error!(
-                "Could not load ping lifetime data into memory: {err:?}. Disabling ping lifetime IO delay."
-            );
-            self.delay_ping_lifetime_io = false;
+        let load_sql = "SELECT ping, id, labels, value FROM telemetry WHERE lifetime = 'ping'";
+        let conn = self.conn.lock();
+        let mut stmt = match conn.prepare_cached(load_sql) {
+            Ok(stmt) => stmt,
+            Err(err) => {
+                log::error!("Could not load ping lifetime data into memory: {err:?}. Disabling ping lifetime IO delay.");
+                self.delay_ping_lifetime_io = false;
+                return;
+            }
+        };
+
+        let rows = stmt.query_map(params![], |row| {
+            let ping: String = row.get(0)?;
+            let id: String = row.get(1)?;
+            let labels: String = row.get(2)?;
+            let blob: Vec<u8> = row.get(3)?;
+            let blob: Metric =
+                rmp_serde::from_slice(&blob).map_err(|_| FromSqlError::InvalidType)?;
+            Ok((ping, id, labels, blob))
+        });
+
+        let rows = match rows {
+            Err(err) => {
+                log::error!("Could not load ping lifetime data into memory: {err:?}. Disabling ping lifetime IO delay.");
+                self.delay_ping_lifetime_io = false;
+                return;
+            }
+            Ok(rows) => rows,
+        };
+
+        let mut map = self.ping_lifetime_data.write().unwrap();
+        for row in rows {
+            let Ok((ping, metric_id, labels, metric)) = row else {
+                continue;
+            };
+
+            let key = [ping, metric_id, labels].join("|");
+            map.insert(key, metric);
         }
     }
 
@@ -477,23 +493,48 @@ impl Database {
     where
         F: FnMut(&[u8], &[&str], &Metric),
     {
-        let table = self.table_for_lifetime(lifetime);
+        if lifetime == Lifetime::Ping && self.delay_ping_lifetime_io {
+            let map = self.ping_lifetime_data.read().unwrap();
 
-        let iter_sql = format!(
-            "
+            for (key, value) in map.iter() {
+                let mut split = key.splitn(3, '|');
+                let Some(ping) = split.next() else { continue };
+                if ping != storage_name {
+                    continue;
+                }
+
+                let Some(key) = split.next() else { continue };
+                let Some(labels_str) = split.next() else {
+                    continue;
+                };
+
+                let labels: &[&str] = if labels_str.is_empty() {
+                    &[]
+                } else if labels_str.contains(RECORD_SEPARATOR) {
+                    let (key, category) = labels_str.split_once(RECORD_SEPARATOR).unwrap();
+                    &[key, category]
+                } else {
+                    &[labels_str]
+                };
+                transaction_fn(key.as_bytes(), labels, value);
+            }
+
+            return Ok(());
+        }
+
+        let iter_sql = "
             SELECT
                 id,
                 value,
                 labels
-            FROM {table}
+            FROM telemetry
             WHERE
                 lifetime = ?1
                 AND ping = ?2
-            "
-        );
+        ";
 
         self.conn.read(|conn| {
-            let mut stmt = conn.prepare_cached(&iter_sql)?;
+            let mut stmt = conn.prepare_cached(iter_sql)?;
             let rows = stmt.query_map(
                 params![lifetime.as_str().to_string(), storage_name],
                 |row| {
@@ -532,21 +573,27 @@ impl Database {
         data: &CommonMetricDataInternal,
         storage_name: &str,
     ) -> Option<Metric> {
-        let table = self.table_for_lifetime(data.inner.lifetime);
+        if data.inner.lifetime == Lifetime::Ping && self.delay_ping_lifetime_io {
+            let map = self.ping_lifetime_data.read().unwrap();
+
+            let name = data.base_identifier();
+            let labels = data.check_labels_in_memory(&map);
+            let label = database_label(labels.label());
+            let key = [storage_name, &name, label].join("|");
+            return map.get(&key).cloned();
+        }
 
         // TODO(bug 2048194): Remove the `LIMIT 1` and error out when more than 1 row is returned.
-        let get_metric_sql = format!(
-            "
+        let get_metric_sql = "
             SELECT
                 value
-            FROM {table}
+            FROM telemetry
             WHERE
                 id = ?1
                 AND ping = ?2
                 AND labels = ?3
             LIMIT 1
-            "
-        );
+        ";
 
         let metric_identifier = &data.base_identifier();
 
@@ -554,7 +601,7 @@ impl Database {
             .read(|tx| {
                 let labels = data.check_labels(tx);
 
-                let mut stmt = tx.prepare_cached(&get_metric_sql)?;
+                let mut stmt = tx.prepare_cached(get_metric_sql)?;
                 let label = database_label(labels.label());
                 stmt.query_one([metric_identifier, storage_name, label], |row| {
                     let blob: Vec<u8> = row.get(0)?;
@@ -567,56 +614,49 @@ impl Database {
             .unwrap_or(None) // TODO(bug 2047617): Should we handle the error here properly?
     }
 
-    /// Determines if the storage has the given metric.
-    ///
-    /// If data cannot be read it is assumed that the storage does not have the metric.
-    ///
-    /// # Arguments
-    ///
-    /// * `lifetime` - The lifetime of the metric.
-    /// * `storage_name` - The storage name to look in.
-    /// * `metric_identifier` - The metric identifier.
-    ///
-    /// # Panics
-    ///
-    /// This function will **not** panic on database errors.
-    pub fn has_metric(
-        &self,
-        lifetime: Lifetime,
-        storage_name: &str,
-        metric_identifier: &str,
-    ) -> bool {
-        let table = self.table_for_lifetime(lifetime);
-
-        let has_metric_sql = format!(
-            "
-            SELECT id
-            FROM {table}
-            WHERE
-                lifetime = ?1
-                AND ping = ?2
-                AND id = ?3
-            "
-        );
-
-        self.conn
-            .read(|conn| {
-                let Ok(mut stmt) = conn.prepare_cached(&has_metric_sql) else {
-                    return Ok(false);
-                };
-                let Ok(mut metric_iter) =
-                    stmt.query([lifetime.as_str(), storage_name, metric_identifier])
-                else {
-                    return Ok(false);
-                };
-
-                Result::<bool, ()>::Ok(metric_iter.next().map(|m| m.is_some()).unwrap_or(false))
-            })
-            .unwrap_or(false)
-    }
-
     /// Records a metric in the underlying storage system.
     pub fn record(&self, glean: &Glean, data: &CommonMetricDataInternal, value: &Metric) {
+        if data.inner.lifetime == Lifetime::Ping && self.delay_ping_lifetime_io {
+            let map = self.ping_lifetime_data.read().unwrap();
+
+            let name = data.base_identifier();
+            let labels = data.check_labels_in_memory(&map);
+
+            // Release the map so that error recording can work
+            drop(map);
+            labels.record_error_metric(glean, data);
+
+            let mut map = self.ping_lifetime_data.write().unwrap();
+
+            for ping_name in data.storage_names() {
+                if glean.is_ping_enabled(ping_name) {
+                    if let Err(e) = self.record_ping_lifetime_with(
+                        &mut map,
+                        ping_name,
+                        &name,
+                        database_label(labels.label()),
+                        |_metric| value.clone(),
+                    ) {
+                        log::error!(
+                            "Failed to record metric '{}' into {}: {:?}",
+                            data.base_identifier(),
+                            ping_name,
+                            e
+                        );
+                    }
+                }
+            }
+
+            // Ensure map is unlocked.
+            drop(map);
+
+            if let Err(err) = self.persist_ping_lifetime_data_if_full(None) {
+                log::error!("Can't flush ping lifetime data: {err:?}");
+            };
+
+            return;
+        }
+
         let name = data.base_identifier();
 
         _ = self.conn.write(|tx| {
@@ -667,22 +707,18 @@ impl Database {
         labels: &str,
         metric: &Metric,
     ) -> Result<()> {
-        let table = self.table_for_lifetime(lifetime);
-
-        let insert_sql = format!(
-            "
+        let insert_sql = "
             INSERT INTO
-                {table} (id, ping, lifetime, labels, value)
+                telemetry (id, ping, lifetime, labels, value)
             VALUES
                 (?1, ?2, ?3, ?4,  ?5)
             ON CONFLICT(id, ping, labels) DO UPDATE SET
                 lifetime = excluded.lifetime,
                 value = excluded.value
-            "
-        );
+        ";
 
         {
-            let mut stmt = tx.prepare_cached(&insert_sql)?;
+            let mut stmt = tx.prepare_cached(insert_sql)?;
             let encoded =
                 rmp_serde::to_vec(&metric).expect("IMPOSSIBLE: Serializing metric failed");
             stmt.execute(params![
@@ -695,7 +731,7 @@ impl Database {
         }
 
         if lifetime == Lifetime::Ping && self.delay_ping_lifetime_io {
-            if let Err(err) = self.persist_ping_lifetime_data_if_full(tx) {
+            if let Err(err) = self.persist_ping_lifetime_data_if_full(Some(tx)) {
                 log::error!("Can't flush ping lifetime data: {err:?}");
             };
             return Ok(());
@@ -704,15 +740,101 @@ impl Database {
         Ok(())
     }
 
-    /// Records the provided value, with the given lifetime,
-    /// after applying a transformation function.
-    pub fn record_with<F>(&self, glean: &Glean, data: &CommonMetricDataInternal, transform: F)
+    /// Record a metric to the in-memory storage if necessary.
+    ///
+    /// Returns `true` if it recorded, `false` otherwise.
+    pub fn record_in_memory<F>(
+        &self,
+        glean: &Glean,
+        data: &CommonMetricDataInternal,
+        tx: Option<&mut Transaction>,
+        mut transform: F,
+    ) -> bool
     where
         F: FnMut(Option<Metric>) -> Metric,
     {
+        if data.inner.lifetime == Lifetime::Ping && self.delay_ping_lifetime_io {
+            let map = self.ping_lifetime_data.read().unwrap();
+
+            let name = data.base_identifier();
+            let labels = data.check_labels_in_memory(&map);
+
+            // Release the map so that error recording can work
+            drop(map);
+            labels.record_error_metric(glean, data);
+
+            let mut map = self.ping_lifetime_data.write().unwrap();
+
+            for ping_name in data.storage_names() {
+                if glean.is_ping_enabled(ping_name) {
+                    if let Err(e) = self.record_ping_lifetime_with(
+                        &mut map,
+                        ping_name,
+                        &name,
+                        database_label(labels.label()),
+                        &mut transform,
+                    ) {
+                        log::error!(
+                            "Failed to record metric '{}' into {}: {:?}",
+                            data.base_identifier(),
+                            ping_name,
+                            e
+                        );
+                    }
+                }
+            }
+
+            // Ensure map is unlocked.
+            drop(map);
+
+            if let Err(err) = self.persist_ping_lifetime_data_if_full(tx) {
+                log::error!("Can't flush ping lifetime data: {err:?}");
+            };
+
+            return true;
+        }
+
+        false
+    }
+
+    /// Records the provided value, with the given lifetime,
+    /// after applying a transformation function.
+    pub fn record_with<F>(&self, glean: &Glean, data: &CommonMetricDataInternal, mut transform: F)
+    where
+        F: FnMut(Option<Metric>) -> Metric,
+    {
+        if self.record_in_memory(glean, data, None, &mut transform) {
+            return;
+        }
+
         _ = self
             .conn
             .write(|tx| self.record_with_transaction(glean, tx, data, transform));
+    }
+
+    fn record_ping_lifetime_with<F>(
+        &self,
+        map: &mut BTreeMap<String, Metric>,
+        storage_name: &str,
+        key: &str,
+        labels: &str,
+        mut transform: F,
+    ) -> Result<()>
+    where
+        F: FnMut(Option<Metric>) -> Metric,
+    {
+        let key = [storage_name, key, labels].join("|");
+
+        match map.entry(key) {
+            Entry::Vacant(entry) => {
+                entry.insert(transform(None));
+            }
+            Entry::Occupied(mut entry) => {
+                let old_value = entry.get().clone();
+                entry.insert(transform(Some(old_value)));
+            }
+        }
+        Ok(())
     }
 
     pub fn record_with_transaction<F>(
@@ -725,6 +847,13 @@ impl Database {
     where
         F: FnMut(Option<Metric>) -> Metric,
     {
+        // We still need to check if we need to record in-memory.
+        // Usually caught higher up the chain by `record_with`,
+        // but some parts might already have a transaction and will call this function directly.
+        if self.record_in_memory(glean, data, Some(tx), &mut transform) {
+            return Ok(());
+        }
+
         let name = data.base_identifier();
 
         let labels = data.check_labels(tx);
@@ -777,24 +906,20 @@ impl Database {
     where
         F: FnMut(Option<Metric>) -> Metric,
     {
-        let table = self.table_for_lifetime(lifetime);
-
         // TODO(bug 2048194): Remove the `LIMIT 1` and error out when more than 1 row is returned.
-        let value_sql = format!(
-            "
+        let value_sql = "
             SELECT value
-            FROM {table}
+            FROM telemetry
             WHERE
                 id = ?1
                 AND ping = ?2
                 AND lifetime = ?3
                 AND labels = ?4
             LIMIT 1
-            "
-        );
+        ";
 
         let new_value = {
-            let mut stmt = tx.prepare_cached(&value_sql)?;
+            let mut stmt = tx.prepare_cached(value_sql)?;
             let mut rows = stmt.query(params![
                 key,
                 storage_name,
@@ -811,20 +936,18 @@ impl Database {
             }
         };
 
-        let insert_sql = format!(
-            "
+        let insert_sql = "
             INSERT INTO
-                {table} (id, ping, lifetime, labels, value)
+                telemetry (id, ping, lifetime, labels, value)
             VALUES
                 (?1, ?2, ?3, ?4, ?5)
             ON CONFLICT(id, ping, labels) DO UPDATE SET
                 lifetime = excluded.lifetime,
                 value = excluded.value
-            "
-        );
+        ";
 
         {
-            let mut stmt = tx.prepare_cached(&insert_sql)?;
+            let mut stmt = tx.prepare_cached(insert_sql)?;
             let encoded =
                 rmp_serde::to_vec(&new_value).expect("IMPOSSIBLE: Serializing metric failed");
             stmt.execute(params![
@@ -837,7 +960,7 @@ impl Database {
         }
 
         if lifetime == Lifetime::Ping && self.delay_ping_lifetime_io {
-            if let Err(err) = self.persist_ping_lifetime_data_if_full(tx) {
+            if let Err(err) = self.persist_ping_lifetime_data_if_full(Some(tx)) {
                 log::error!("Can't flush ping lifetime data: {err:?}");
             };
             return Ok(());
@@ -860,17 +983,18 @@ impl Database {
     ///
     /// This function will **not** panic on database errors.
     pub fn clear_ping_lifetime_storage(&self, storage_name: &str) -> Result<()> {
+        if self.delay_ping_lifetime_io {
+            let ping = [storage_name, "|"].concat();
+            self.ping_lifetime_data
+                .write()
+                .expect("Can't access ping lifetime data as writable")
+                .retain(|metric_id, _| !metric_id.starts_with(&ping));
+        }
+
         self.conn.write(|tx| {
             let clear_sql = "DELETE FROM telemetry WHERE lifetime = 'ping' AND ping = ?1";
             let mut stmt = tx.prepare_cached(clear_sql)?;
             stmt.execute([storage_name])?;
-
-            if self.delay_ping_lifetime_io {
-                let clear_sql =
-                    "DELETE FROM lifetime_ping.telemetry WHERE lifetime = 'ping' AND ping = ?1";
-                let mut stmt = tx.prepare_cached(clear_sql)?;
-                stmt.execute([storage_name])?;
-            }
 
             Ok(())
         })
@@ -915,9 +1039,14 @@ impl Database {
             stmt.execute([lifetime.as_str(), storage_name, metric_id])?;
 
             if lifetime == Lifetime::Ping && self.delay_ping_lifetime_io {
-                let clear_sql = "DELETE FROM lifetime_ping.telemetry WHERE lifetime = ?1 AND ping = ?2 AND id = ?3";
-                let mut stmt = tx.prepare_cached(clear_sql)?;
-                stmt.execute([lifetime.as_str(), storage_name, metric_id])?;
+                let mut map = self.ping_lifetime_data.write().unwrap();
+                let mut key = String::with_capacity(storage_name.len() + metric_id.len());
+                key.push_str(storage_name);
+                key.push('|');
+                key.push_str(metric_id);
+                key.push('|');
+
+                map.retain(|metric_id, _| !metric_id.starts_with(&key))
             }
             Ok(())
         })
@@ -943,13 +1072,10 @@ impl Database {
             // Lifetime::Ping data is not persisted to disk if
             // Glean has `delay_ping_lifetime_io` set to true
             if lifetime == Lifetime::Ping && self.delay_ping_lifetime_io {
-                let clear_sql = "DELETE FROM lifetime_ping.telemetry WHERE lifetime = ?1";
-                let mut stmt = tx.prepare_cached(clear_sql)?;
-                let res = stmt.execute([lifetime.as_str()]);
-
-                if let Err(e) = res {
-                    log::warn!("Could not clear store for lifetime {:?}: {:?}", lifetime, e);
-                }
+                self.ping_lifetime_data
+                    .write()
+                    .expect("Can't access ping lifetime data as writable")
+                    .clear();
             }
 
             Ok::<(), rusqlite::Error>(())
@@ -971,39 +1097,22 @@ impl Database {
         ];
         let clear_sql =
             "DELETE FROM telemetry WHERE lifetime = ?1 OR lifetime = ?2 OR lifetime = ?3";
-        _ = self.conn.write(|tx| {
+        let res = self.conn.write(|tx| {
             let mut stmt = tx.prepare_cached(clear_sql)?;
-            let res = stmt.execute(lifetimes);
-
-            if let Err(e) = res {
-                log::warn!("Could not clear store for all lifetimes: {:?}", e);
-            }
-
-            if self.delay_ping_lifetime_io {
-                let clear_sql = "DELETE FROM lifetime_ping.telemetry";
-
-                let mut stmt = tx.prepare_cached(clear_sql)?;
-                let res = stmt.execute([]);
-
-                if let Err(e) = res {
-                    log::warn!("Could not clear store for all lifetimes: {:?}", e);
-                }
-            }
+            stmt.execute(lifetimes)?;
 
             Ok::<(), rusqlite::Error>(())
         });
-    }
 
-    /// Return the table to query for this lifetime.
-    ///
-    /// `Lifetime::Ping` data is not immediately persisted to disk if
-    /// `delay_ping_lifetime_io` is set to true.
-    /// In that case we use an in-memory database in an attached database.
-    fn table_for_lifetime(&self, lifetime: Lifetime) -> &'static str {
-        if lifetime == Lifetime::Ping && self.delay_ping_lifetime_io {
-            IN_MEMORY_TABLE
-        } else {
-            DEFAULT_TABLE
+        if let Err(err) = res {
+            log::warn!("Could not clear store for all lifetimes: {err:?}");
+        }
+
+        if self.delay_ping_lifetime_io {
+            self.ping_lifetime_data
+                .write()
+                .expect("Can't access ping lifetime data as writable")
+                .clear();
         }
     }
 
@@ -1021,13 +1130,37 @@ impl Database {
 
     fn persist_ping_lifetime_data_inner(&self, tx: &mut Transaction) -> Result<()> {
         if self.delay_ping_lifetime_io {
-            let persist_sql = "
-                INSERT INTO telemetry SELECT * FROM lifetime_ping.telemetry WHERE true
+            let insert_sql = r#"
+                INSERT INTO
+                    telemetry (id, ping, lifetime, labels, value)
+                VALUES
+                    (?1, ?2, ?3, ?4, ?5)
                 ON CONFLICT(id, ping, labels) DO UPDATE SET
-                  lifetime = excluded.lifetime,
-                  value = excluded.value
-            ";
-            tx.execute_one(persist_sql)?;
+                    lifetime = excluded.lifetime,
+                    value = excluded.value
+            "#;
+
+            let mut stmt = tx.prepare_cached(insert_sql)?;
+            let map = self.ping_lifetime_data.read().unwrap();
+
+            for (key, value) in map.iter() {
+                let mut split = key.splitn(3, '|');
+                let Some(storage_name) = split.next() else {
+                    continue;
+                };
+                let Some(key) = split.next() else { continue };
+                let Some(labels) = split.next() else { continue };
+
+                let encoded =
+                    rmp_serde::to_vec(&value).expect("IMPOSSIBLE: Serializing metric failed");
+                stmt.execute(params![
+                    key,
+                    storage_name,
+                    Lifetime::Ping.as_str(),
+                    labels,
+                    encoded
+                ])?;
+            }
 
             // We can reset the write-counter. Current data has been persisted.
             self.ping_lifetime_count.store(0, Ordering::Release);
@@ -1036,7 +1169,7 @@ impl Database {
         Ok(())
     }
 
-    fn persist_ping_lifetime_data_if_full(&self, tx: &mut Transaction) -> Result<()> {
+    fn persist_ping_lifetime_data_if_full(&self, tx: Option<&mut Transaction>) -> Result<()> {
         if self.ping_lifetime_threshold == 0 && self.ping_lifetime_max_time.is_zero() {
             return Ok(());
         }
@@ -1070,7 +1203,12 @@ impl Database {
             );
         }
 
-        self.persist_ping_lifetime_data_inner(tx)?;
+        match tx {
+            Some(tx) => self.persist_ping_lifetime_data_inner(tx)?,
+            None => self
+                .conn
+                .write(|tx| self.persist_ping_lifetime_data_inner(tx))?,
+        }
 
         self.ping_lifetime_count.store(0, Ordering::Release);
         self.ping_lifetime_store_ts.replace(Instant::now());

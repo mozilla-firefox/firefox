@@ -1,6 +1,6 @@
 [package]
 name = "glean"
-version = "71.0.0"
+version = "71.1.0"
 authors = ["Jan-Erik Rediger <jrediger@mozilla.com>", "The Glean Team <glean-team@mozilla.com>"]
 description = "Glean SDK Rust language bindings"
 repository = "https://github.com/mozilla/glean"
@@ -23,7 +23,7 @@ maintenance = { status = "actively-developed" }
 
 [dependencies.glean-core]
 path = ".."
-version = "71.0.0"
+version = "71.1.0"
 
 [dependencies]
 crossbeam-channel = "0.5"

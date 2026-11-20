@@ -86,6 +86,41 @@ pub fn new_glean_with_upload(
     (glean, dir)
 }
 
+pub fn new_glean_delayed_io() -> (Glean, tempfile::TempDir) {
+    let dir = tempfile::tempdir().unwrap();
+
+    let cfg = glean_core::InternalConfiguration {
+        data_path: dir.path().display().to_string(),
+        application_id: GLOBAL_APPLICATION_ID.into(),
+        language_binding_name: "Rust".into(),
+        upload_enabled: true,
+        max_events: None,
+        delay_ping_lifetime_io: true, // Differs from `new_glean`
+        app_build: "Unknown".into(),
+        use_core_mps: false,
+        trim_data_to_registered_pings: false,
+        log_level: None,
+        rate_limit: None,
+        enable_event_timestamps: false,
+        experimentation_id: None,
+        enable_internal_pings: true,
+        ping_schedule: Default::default(),
+        ping_lifetime_threshold: 0,
+        ping_lifetime_max_time: 0,
+        max_pending_pings_count: None,
+        max_pending_pings_directory_size: None,
+        session_mode: glean_core::SessionMode::Auto,
+        session_sample_rate: 1.0,
+        session_inactivity_timeout_ms: 1_800_000,
+        events_ping_acceleration_factor: None,
+        enable_store_submitted_pings: false,
+    };
+    let mut glean = Glean::new(cfg).unwrap();
+    _ = new_test_ping(&mut glean, "store1");
+
+    (glean, dir)
+}
+
 /// Creates a new instance of Glean with a temporary directory.
 ///
 /// We need to keep the `TempDir` alive, so that it's not deleted before we stop using it.

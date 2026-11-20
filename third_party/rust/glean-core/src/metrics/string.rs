@@ -74,11 +74,21 @@ impl StringMetric {
     /// Sets to the specified value synchronously.
     #[doc(hidden)]
     pub fn set_sync<S: Into<String>>(&self, glean: &Glean, value: S) {
+        self.set_sync_with_max_length(glean, value, MAX_LENGTH_VALUE)
+    }
+
+    /// Sets the value synchronously with a custom byte limit for internal metrics.
+    pub(crate) fn set_sync_with_max_length<S: Into<String>>(
+        &self,
+        glean: &Glean,
+        value: S,
+        max_length: usize,
+    ) {
         if !self.should_record(glean) {
             return;
         }
 
-        let s = truncate_string_at_boundary_with_error(glean, &self.meta, value, MAX_LENGTH_VALUE);
+        let s = truncate_string_at_boundary_with_error(glean, &self.meta, value, max_length);
 
         let value = Metric::String(s);
         glean.storage().record(glean, &self.meta, &value)
@@ -120,9 +130,12 @@ impl StringMetric {
     pub fn test_get_num_recorded_errors(&self, error: ErrorType) -> i32 {
         crate::block_on_dispatcher();
 
-        crate::core::with_glean(|glean| {
-            test_get_num_recorded_errors(glean, self.meta(), error).unwrap_or(0)
-        })
+        crate::core::with_glean(|glean| self.test_get_num_recorded_errors_sync(glean, error))
+    }
+
+    /// Gets the number of recorded errors synchronously for the given Glean instance.
+    pub(crate) fn test_get_num_recorded_errors_sync(&self, glean: &Glean, error: ErrorType) -> i32 {
+        test_get_num_recorded_errors(glean, self.meta(), error).unwrap_or(0)
     }
 }
 

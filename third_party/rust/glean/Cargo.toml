@@ -13,7 +13,7 @@
 edition = "2021"
 rust-version = "1.90"
 name = "glean"
-version = "71.0.0"
+version = "71.1.0"
 authors = [
     "Jan-Erik Rediger <jrediger@mozilla.com>",
     "The Glean Team <glean-team@mozilla.com>",
@@ -125,6 +125,10 @@ name = "schema"
 path = "tests/schema.rs"
 
 [[test]]
+name = "schema_missing_first_run_date"
+path = "tests/schema_missing_first_run_date.rs"
+
+[[test]]
 name = "signaling_done"
 path = "tests/signaling_done.rs"
 
@@ -152,7 +156,7 @@ path = "tests/uploader_capabilities.rs"
 version = "0.5"
 
 [dependencies.glean-core]
-version = "71.0.0"
+version = "71.1.0"
 
 [dependencies.inherent]
 version = "1"

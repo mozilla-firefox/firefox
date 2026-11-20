@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#[cfg(feature = "sqlite")]
+use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::sync::atomic::{AtomicU8, Ordering};
 
@@ -12,11 +14,15 @@ use rusqlite::Transaction;
 
 use crate::error::{Error, ErrorKind};
 #[cfg(feature = "sqlite")]
-use crate::error_recording::record_error_sqlite;
+use crate::error_recording::{record_error, record_error_sqlite};
 
 #[cfg(feature = "sqlite")]
+use crate::metrics::Metric;
+#[cfg(feature = "sqlite")]
 use crate::metrics::{
-    dual_labeled_counter::validate_dual_label_sqlite, labeled::validate_dynamic_label_sqlite,
+    dual_labeled_counter::validate_dual_label_in_memory,
+    dual_labeled_counter::validate_dual_label_sqlite, labeled::validate_dynamic_label_in_memory,
+    labeled::validate_dynamic_label_sqlite,
 };
 
 #[cfg(not(feature = "sqlite"))]
@@ -207,9 +213,20 @@ impl LabelCheck {
             ErrorType::InvalidLabel,
             *count,
         );
+    }
 
-        #[cfg(not(feature = "sqlite"))]
-        todo!()
+    pub fn record_error_metric(&self, glean: &Glean, meta: &CommonMetricDataInternal) {
+        let LabelCheck::Error(_, count) = self else {
+            return;
+        };
+
+        record_error(
+            glean,
+            meta,
+            ErrorType::InvalidLabel,
+            "invalid label",
+            *count,
+        );
     }
 
     /// Maps a `LabelCheck` by applying a function to the contained label (if any).
@@ -319,6 +336,33 @@ impl CommonMetricDataInternal {
                 }
                 MetricLabel::KeyAndCategory(key, category) => {
                     validate_dual_label_sqlite(tx, &base_identifier, key, category)
+                }
+            }
+        } else {
+            LabelCheck::NoLabel
+        }
+    }
+
+    #[cfg(feature = "sqlite")]
+    pub(crate) fn check_labels_in_memory(&self, map: &BTreeMap<String, Metric>) -> LabelCheck {
+        let base_identifier = self.base_identifier();
+
+        if let Some(label) = &self.inner.label {
+            match label {
+                MetricLabel::Static(label) => LabelCheck::Label(label.to_string()),
+                MetricLabel::Label(label) => {
+                    validate_dynamic_label_in_memory(map, self, &base_identifier, label)
+                }
+                MetricLabel::KeyOnly(key, static_category) => {
+                    validate_dual_label_in_memory(map, self, &base_identifier, key, "")
+                        .map(|key| format!("{key}{static_category}"))
+                }
+                MetricLabel::CategoryOnly(static_key, category) => {
+                    validate_dual_label_in_memory(map, self, &base_identifier, "", category)
+                        .map(|category| format!("{static_key}{category}"))
+                }
+                MetricLabel::KeyAndCategory(key, category) => {
+                    validate_dual_label_in_memory(map, self, &base_identifier, key, category)
                 }
             }
         } else {

@@ -419,12 +419,13 @@ fn attribution_and_distribution_are_correctly_stored() {
         glean.test_get_distribution()
     );
 
+    // All five attribution fields accept up to 512 bytes, including multibyte UTF-8.
     let mut attribution = AttributionMetrics {
-        source: Some("source".into()),
-        medium: Some("medium".into()),
-        campaign: Some("campaign".into()),
-        term: Some("term".into()),
-        content: Some("content".into()),
+        source: Some("s".repeat(512)),
+        medium: Some("m".repeat(512)),
+        campaign: Some("c".repeat(512)),
+        term: Some("t".repeat(512)),
+        content: Some("é".repeat(512 / "é".len())), // Each `é` is two bytes in UTF-8.
     };
     let distribution = DistributionMetrics {
         name: Some("name".into()),
@@ -453,6 +454,33 @@ fn attribution_and_distribution_are_correctly_stored() {
     attribution.campaign = Some("new campaign".into());
     assert_eq!(attribution, glean.test_get_attribution());
     assert_eq!(distribution_update, glean.test_get_distribution());
+
+    // Truncate oversized values at a UTF-8 boundary and record one error per field.
+    let truncated = "x".repeat(511);
+    let oversized = format!("{truncated}é");
+    glean.update_attribution(AttributionMetrics {
+        source: Some(oversized.clone()),
+        medium: Some(oversized.clone()),
+        campaign: Some(oversized.clone()),
+        term: Some(oversized.clone()),
+        content: Some(oversized),
+    });
+    for metric in [
+        &glean.core_metrics.attribution_source,
+        &glean.core_metrics.attribution_medium,
+        &glean.core_metrics.attribution_campaign,
+        &glean.core_metrics.attribution_term,
+        &glean.core_metrics.attribution_content,
+    ] {
+        assert_eq!(
+            Some(truncated.clone()),
+            metric.get_value(&glean, "glean_client_info")
+        );
+        assert_eq!(
+            1,
+            metric.test_get_num_recorded_errors_sync(&glean, ErrorType::InvalidOverflow)
+        );
+    }
 
     // Now, clear 'em.
     glean.clear_attribution();

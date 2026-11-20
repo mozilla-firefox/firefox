@@ -59,7 +59,7 @@ pth:xpcom/geckoprocesstypes_generator
 pth:xpcom/idl-parser
 # glean-sdk may not be installable if a wheel isn't available
 # and it has to be built from source.
-pypi-optional:glean-sdk==71.0.0:telemetry will not be collected
+pypi-optional:glean-sdk==71.1.0:telemetry will not be collected
 pypi-optional:orjson>=3.10:json operations will be slower in various tools
 # Mach gracefully handles the case where `psutil` is unavailable.
 # We aren't (yet) able to pin packages in automation, so we have to

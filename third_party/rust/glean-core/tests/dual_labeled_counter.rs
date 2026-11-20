@@ -718,3 +718,84 @@ fn empty_dual_labels() {
         snapshot
     );
 }
+
+#[cfg(not(feature = "sqlite"))]
+#[test]
+fn invalid_labels_in_the_database_dont_break_recording() {
+    // Injecting an invalid key for the sake of testing
+    let temp = {
+        use rkv::Rkv;
+        use rkv::StoreOptions;
+
+        let (glean, temp) = new_glean(None);
+        let path = temp.path().join("db");
+        let rkv = Rkv::new::<rkv::backend::SafeMode>(&path).unwrap();
+        let user_store = rkv.open_single("ping", StoreOptions::create()).unwrap();
+
+        let mut writer = rkv.write().unwrap();
+
+        // Broken dual labels: multiple record separators
+        let key = "store1#telemetry.dual_labeled_counter/key1\x1Ecat1\x1Einvalid";
+        let encoded = bincode::serialize(&Metric::Counter(3)).unwrap();
+        let blob = rkv::Value::Blob(&encoded);
+        user_store.put(&mut writer, key, &blob).unwrap();
+
+        // Invalid dual label metric: only one label
+        let key = "store1#telemetry.dual_labeled_counter/key1";
+        let encoded = bincode::serialize(&Metric::Counter(4)).unwrap();
+        let blob = rkv::Value::Blob(&encoded);
+        user_store.put(&mut writer, key, &blob).unwrap();
+
+        writer.commit().unwrap();
+
+        drop(glean);
+        temp
+    };
+
+    let (glean, _temp) = new_glean(Some(temp));
+
+    let dual_labeled_counter = DualLabeledCounterMetric::new(
+        CommonMetricData {
+            name: "dual_labeled_counter".into(),
+            category: "telemetry".into(),
+            send_in_pings: vec!["store1".into()],
+            disabled: false,
+            lifetime: Lifetime::Ping,
+            ..Default::default()
+        },
+        None,
+        None,
+    );
+
+    let metric = dual_labeled_counter.get("key1", "category1");
+    metric.add_sync(&glean, 1);
+
+    let snapshot = StorageManager
+        .snapshot_as_json(glean.storage(), "store1", true)
+        .unwrap();
+
+    assert_eq!(
+        json!({
+            "dual_labeled_counter": {
+                "telemetry.dual_labeled_counter": {
+                    "key1": {
+                        "cat1\x1Einvalid": 3,
+                        "category1": 1,
+                    }
+                }
+            },
+            "labeled_counter": {
+                "glean.error.invalid_label": {
+                    "telemetry.dual_labeled_counter": 1,
+                },
+                // NOTE: This metric ends up in the wrong category.
+                // This can't happen under actual use
+                // except for the edge case when a metric's type is changed.
+                "telemetry.dual_labeled_counter": {
+                    "key1": 4
+                },
+            }
+        }),
+        snapshot
+    );
+}

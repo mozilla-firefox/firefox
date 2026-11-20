@@ -3188,9 +3188,9 @@ dependencies = [
 
 [[package]]
 name = "glean"
-version = "71.0.0"
+version = "71.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2b6420e497e5cf99b9cfeb2c0018cdfc7960398a476092e7bf440fbf6bde4cd"
+checksum = "c54614a57e80192a2139bb2ae80e0cc47f95d5b9ae0f1fe0b88678aba952ce43"
 dependencies = [
  "crossbeam-channel",
  "glean-core",
@@ -3211,9 +3211,9 @@ dependencies = [
 
 [[package]]
 name = "glean-core"
-version = "71.0.0"
+version = "71.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e1896d62a48b2d1a2c4146e5bf12f3b85f5b4a7fb99ce6aba84f52770d1b68e"
+checksum = "80187e60efc6f2f4c933c3e3ed69fe3d9671fb4d4d965cc1f8faab94f6f62ebc"
 dependencies = [
  "android_logger",
  "bincode",
@@ -3226,7 +3226,6 @@ dependencies = [
  "once_cell",
  "oslog",
  "rkv",
- "rmp-serde",
  "serde",
  "serde_json",
  "thiserror 2.0.12",
@@ -7160,25 +7159,6 @@ dependencies = [
  "url",
  "uuid",
  "wr_malloc_size_of",
-]
-
-[[package]]
-name = "rmp"
-version = "0.8.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ba8be72d372b2c9b35542551678538b562e7cf86c3315773cae48dfbfe7790c"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
-name = "rmp-serde"
-version = "1.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72f81bee8c8ef9b577d1681a70ebbc962c232461e397b22c208c43c04b67a155"
-dependencies = [
- "rmp",
- "serde",
 ]
 
 [[package]]

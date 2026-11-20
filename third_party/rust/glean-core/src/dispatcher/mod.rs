@@ -10,7 +10,7 @@
 //!
 //! ```rust,ignore
 //! // Ensure the dispatcher queue is being worked on.
-//! dispatcher::flush_init();
+//! dispatcher::flush_init(|_| {});
 //!
 //! dispatcher::launch(|| {
 //!     println!("Executing expensive task");
@@ -133,7 +133,7 @@ impl DispatchGuard {
     pub fn shutdown(&mut self) -> Result<(), DispatchError> {
         // Need to flush in order for the thread to actually process anything,
         // including the shutdown command.
-        self.flush_init().ok();
+        self.flush_init(|_| {}).ok();
         self.send(Command::Shutdown)
     }
 
@@ -209,13 +209,19 @@ impl DispatchGuard {
         Ok(())
     }
 
-    /// Flushes the pre-init buffer.
+    /// Flushes the pre-init buffer, running `final_task` as the last pre-init task.
     ///
     /// This function blocks until tasks queued prior to this call are finished.
     /// Once the initial queue is empty the dispatcher will wait for new tasks to be launched.
     ///
+    /// `final_task` is passed the number of tasks that overflowed the pre-init buffer.
+    /// It is queued regardless of the maximum queue size, so it runs even if the buffer is full.
+    ///
     /// Returns an error if called multiple times.
-    fn flush_init(&mut self) -> Result<usize, DispatchError> {
+    fn flush_init(
+        &mut self,
+        final_task: impl FnOnce(usize) + Send + 'static,
+    ) -> Result<usize, DispatchError> {
         // We immediately stop queueing in the pre-init buffer.
         let old_val = self.queue_preinit.swap(false, Ordering::SeqCst);
         if !old_val {
@@ -224,6 +230,13 @@ impl DispatchGuard {
 
         // Unblock the worker thread exactly once.
         self.block_sender.send(Blocked::Continue)?;
+
+        // Queue the final task behind all other pre-init tasks.
+        // We explicitly don't use `self.launch` here, which would discard it if the buffer is full.
+        let overflow_count = self.overflow_count.load(Ordering::SeqCst);
+        self.preinit_sender
+            .send(Command::Task(Box::new(move || final_task(overflow_count))))
+            .map_err(|_| DispatchError::SendError)?;
 
         // Single-use channel to communicate with the worker thread.
         let (swap_sender, swap_receiver) = bounded(0);
@@ -392,7 +405,7 @@ mod test {
         // Force the Dispatcher out of the pre-init queue mode.
         dispatcher
             .guard()
-            .flush_init()
+            .flush_init(|_| {})
             .expect("Failed to get out of preinit queue mode");
 
         let canary_clone = thread_canary.clone();
@@ -441,7 +454,7 @@ mod test {
         // Flush the queue and wait for the tasks to complete.
         dispatcher
             .guard()
-            .flush_init()
+            .flush_init(|_| {})
             .expect("Failed to get out of preinit queue mode");
         // Validate that we have the expected canary value.
         assert_eq!(3, thread_canary.load(Ordering::SeqCst));
@@ -465,7 +478,7 @@ mod test {
         }
 
         result.lock().unwrap().push(0);
-        dispatcher.guard().flush_init().unwrap();
+        dispatcher.guard().flush_init(|_| {}).unwrap();
         for i in 6..=10 {
             let result = Arc::clone(&result);
             dispatcher
@@ -493,7 +506,7 @@ mod test {
 
         let result = Arc::new(Mutex::new(vec![]));
 
-        dispatcher.guard().flush_init().unwrap();
+        dispatcher.guard().flush_init(|_| {}).unwrap();
 
         dispatcher.guard().shutdown().unwrap();
         {
@@ -537,7 +550,7 @@ mod test {
             assert_eq!(Err(DispatchError::QueueFull), err);
         }
 
-        dispatcher.guard().flush_init().unwrap();
+        dispatcher.guard().flush_init(|_| {}).unwrap();
 
         {
             let result = Arc::clone(&result);
@@ -552,6 +565,60 @@ mod test {
         dispatcher.guard().block_on_queue();
 
         assert_eq!(&*result.lock().unwrap(), &[1, 2, 3, 4, 5, 20]);
+    }
+
+    #[test]
+    fn flush_init_runs_final_task_after_full_preinit_buffer() {
+        enable_test_logging();
+
+        let dispatcher = Dispatcher::new(5);
+
+        let result = Arc::new(Mutex::new(vec![]));
+
+        for i in 1..=5 {
+            let result = Arc::clone(&result);
+            dispatcher
+                .guard()
+                .launch(move || {
+                    result.lock().unwrap().push(i);
+                })
+                .unwrap();
+        }
+
+        {
+            let result = Arc::clone(&result);
+            let err = dispatcher.guard().launch(move || {
+                result.lock().unwrap().push(10);
+            });
+            assert_eq!(Err(DispatchError::QueueFull), err);
+        }
+
+        {
+            let result = Arc::clone(&result);
+            let overflow_count = dispatcher
+                .guard()
+                .flush_init(move |overflow_count| {
+                    assert_eq!(1, overflow_count);
+                    result.lock().unwrap().push(100);
+                })
+                .unwrap();
+            assert_eq!(1, overflow_count);
+        }
+
+        {
+            let result = Arc::clone(&result);
+            dispatcher
+                .guard()
+                .launch(move || {
+                    result.lock().unwrap().push(20);
+                })
+                .unwrap();
+        }
+
+        dispatcher.guard().block_on_queue();
+
+        // The final task runs despite the full buffer, after all preinit tasks and before any later ones.
+        assert_eq!(&*result.lock().unwrap(), &[1, 2, 3, 4, 5, 100, 20]);
     }
 
     #[test]
@@ -576,7 +643,7 @@ mod test {
                 .unwrap();
         }
 
-        dispatcher.guard().flush_init().unwrap();
+        dispatcher.guard().flush_init(|_| {}).unwrap();
 
         // Queue more than 5 tasks,
         // Each one is slow to process, so we should be faster in queueing

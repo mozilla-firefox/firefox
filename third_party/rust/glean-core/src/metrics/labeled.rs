@@ -4,7 +4,8 @@
 
 use std::any::Any;
 use std::borrow::Cow;
-#[cfg(not(feature = "sqlite"))]
+#[cfg(feature = "sqlite")]
+use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::collections::{hash_map::Entry, HashMap};
 use std::mem;
@@ -16,7 +17,7 @@ use rusqlite::params;
 
 #[cfg(feature = "sqlite")]
 use crate::common_metric_data::LabelCheck;
-use crate::common_metric_data::{CommonMetricData, MetricLabel};
+use crate::common_metric_data::{CommonMetricData, CommonMetricDataInternal, MetricLabel};
 use crate::database::EMPTY_LABEL;
 use crate::error_recording::{test_get_num_recorded_errors, ErrorType};
 use crate::histogram::HistogramType;
@@ -27,10 +28,7 @@ use crate::metrics::{
 };
 use crate::storage::StorageManager;
 #[cfg(not(feature = "sqlite"))]
-use crate::{
-    common_metric_data::CommonMetricDataInternal, error_recording::record_error, metrics::Metric,
-    Glean,
-};
+use crate::{error_recording::record_error, metrics::Metric, Glean};
 
 const MAX_LABELS: usize = 16;
 const OTHER_LABEL: &str = "__other__";
@@ -449,6 +447,64 @@ pub fn validate_dynamic_label_sqlite(
             base_identifier,
         );
         LabelCheck::Error(String::from(OTHER_LABEL), 1)
+    } else {
+        LabelCheck::Label(label.to_string())
+    }
+}
+
+/// Validates a dynamic label, changing it to `OTHER_LABEL` if it's invalid.
+///
+/// Checks the requested label against limitations, such as the label length and allowed
+/// characters.
+///
+/// # Returns
+///
+/// Returns the corrected label.
+/// The errors are logged.
+#[cfg(feature = "sqlite")]
+pub fn validate_dynamic_label_in_memory(
+    map: &BTreeMap<String, crate::metrics::Metric>,
+    meta: &CommonMetricDataInternal,
+    base_identifier: &str,
+    mut label: &str,
+) -> LabelCheck {
+    for store in &meta.inner.send_in_pings {
+        let key = [store, base_identifier, label].join("|");
+        if map.contains_key(&key) {
+            return LabelCheck::Label(label.to_string());
+        }
+    }
+
+    let mut labels = HashSet::new();
+    for store in &meta.inner.send_in_pings {
+        let prefix_key = [store, base_identifier, ""].join("|");
+
+        for (key, _) in map
+            .range(prefix_key.clone()..)
+            .take_while(|(k, _)| k.starts_with(&prefix_key))
+        {
+            let mut parts = key.splitn(3, '|');
+            let Some(_store) = parts.next() else { continue };
+            let Some(_name) = parts.next() else { continue };
+            let Some(label) = parts.next() else { continue };
+            labels.insert(label);
+        }
+    }
+
+    let label_count = labels.len();
+    let error = if label_count >= MAX_LABELS {
+        // When there's too many labels no error is recorded,
+        // but the `__other__` label is still used!`
+        label = OTHER_LABEL;
+        false
+    } else if label.len() > MAX_LABEL_LENGTH {
+        true
+    } else {
+        false
+    };
+
+    if error {
+        LabelCheck::Error(OTHER_LABEL.to_string(), 1)
     } else {
         LabelCheck::Label(label.to_string())
     }

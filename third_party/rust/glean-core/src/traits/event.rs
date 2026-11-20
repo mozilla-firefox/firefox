@@ -52,22 +52,6 @@ pub enum EventRecordingError {
     InvalidExtraKey,
 }
 
-impl TryFrom<i32> for NoExtraKeys {
-    type Error = EventRecordingError;
-
-    fn try_from(_value: i32) -> Result<Self, Self::Error> {
-        Err(EventRecordingError::InvalidExtraKey)
-    }
-}
-
-impl TryFrom<&str> for NoExtraKeys {
-    type Error = EventRecordingError;
-
-    fn try_from(_value: &str) -> Result<Self, Self::Error> {
-        Err(EventRecordingError::InvalidExtraKey)
-    }
-}
-
 /// A description for the [`EventMetric`](crate::metrics::EventMetric) type.
 ///
 /// When changing this trait, make sure all the operations are

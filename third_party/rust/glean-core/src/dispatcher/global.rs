@@ -80,17 +80,21 @@ pub fn block_on_queue_timeout(timeout: Duration) -> Result<(), RecvTimeoutError>
     guard().block_on_queue_timeout(timeout)
 }
 
-/// Starts processing queued tasks in the global dispatch queue.
+/// Starts processing queued tasks in the global dispatch queue,
+/// running `final_task` as the last pre-init task.
 ///
 /// This function blocks until queued tasks prior to this call are finished.
 /// Once the initial queue is empty the dispatcher will wait for new tasks to be launched.
+///
+/// `final_task` is passed the number of tasks that overflowed the pre-init queue.
+/// It runs even if the pre-init queue is full, and before any task launched after this call.
 ///
 /// # Returns
 ///
 /// Returns the total number of items that were added to the queue before being flushed,
 /// or an error if the queue couldn't be flushed.
-pub fn flush_init() -> Result<usize, DispatchError> {
-    guard().flush_init()
+pub fn flush_init(final_task: impl FnOnce(usize) + Send + 'static) -> Result<usize, DispatchError> {
+    guard().flush_init(final_task)
 }
 
 fn join_dispatcher_thread() -> Result<(), DispatchError> {
@@ -173,7 +177,7 @@ mod test {
             });
         }
 
-        flush_init().unwrap();
+        flush_init(|_| {}).unwrap();
 
         {
             let result = Arc::clone(&result);
@@ -203,7 +207,7 @@ mod test {
             });
         }
 
-        flush_init().unwrap();
+        flush_init(|_| {}).unwrap();
 
         {
             let result = Arc::clone(&result);

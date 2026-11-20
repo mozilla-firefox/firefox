@@ -143,7 +143,7 @@ pub fn record_error<O: Into<Option<i32>>>(
 ) {
     let metric = get_error_metric_for_metric(meta, error);
 
-    log::warn!("{}: {})", meta.base_identifier(), message);
+    log::warn!("{}: {}", meta.base_identifier(), message);
     let to_report = num_errors.into().unwrap_or(1);
     debug_assert!(to_report > 0);
     metric.add_sync(glean, to_report);

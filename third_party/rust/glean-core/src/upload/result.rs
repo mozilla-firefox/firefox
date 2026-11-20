@@ -60,6 +60,8 @@ impl UploadResult {
     pub fn get_label(&self) -> Option<&str> {
         match self {
             UploadResult::HttpStatus { code: 200..=299 } => None,
+            UploadResult::HttpStatus { code: 408 } => Some("status_code_408"),
+            UploadResult::HttpStatus { code: 429 } => Some("status_code_429"),
             UploadResult::HttpStatus { code: 400..=499 } => Some("status_code_4xx"),
             UploadResult::HttpStatus { code: 500..=599 } => Some("status_code_5xx"),
             UploadResult::HttpStatus { .. } => Some("status_code_unknown"),

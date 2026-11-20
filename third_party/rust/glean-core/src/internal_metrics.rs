@@ -253,6 +253,8 @@ impl UploadMetrics {
                 },
                 Some(vec![
                     Cow::from("status_code_4xx"),
+                    Cow::from("status_code_408"),
+                    Cow::from("status_code_429"),
                     Cow::from("status_code_5xx"),
                     Cow::from("status_code_unknown"),
                     Cow::from("unrecoverable"),

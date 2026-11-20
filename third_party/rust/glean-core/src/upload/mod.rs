@@ -740,8 +740,13 @@ impl PingUploadManager {
     ///   _Known 2XX status:_
     ///   * 200 - OK. Request accepted into the pipeline.
     ///
+    /// * **408 Request timeout - Recoverable error**
+    ///   The endpoint might be currently timing out. A later request might succeed again.
+    /// * **429 Too Many Requests - Recoverable error**
+    ///   A client might have sent too many requests and the endpoint is rejecting requests
+    ///   for the moment.
     /// * **400 - 499 Unrecoverable error**
-    ///   Any status on the 4XX range means something our client did is not correct.
+    ///   Any other status on the 4XX range means something our client did is not correct.
     ///   It is unlikely that the client is going to recover from this by retrying,
     ///   so in this case the corresponding ping file can also be deleted.
     ///   _Known 4XX status:_
@@ -791,6 +796,23 @@ impl PingUploadManager {
             self.upload_metrics.missing_send_ids.add_sync(glean, 1);
         }
 
+        let recoverable = || {
+            log::warn!(
+                    "Recoverable upload failure while attempting to send ping {}, will retry. Error was {:?}",
+                    document_id,
+                    status
+                );
+            if let Some((success_id, failure_id)) = send_ids {
+                self.upload_metrics.send_success.cancel_sync(success_id);
+                self.upload_metrics
+                    .send_failure
+                    .set_stop_and_accumulate(glean, failure_id, stop_time);
+            }
+            self.enqueue_ping_from_file(glean, document_id);
+            self.recoverable_failure_count
+                .fetch_add(1, Ordering::SeqCst);
+        };
+
         match status {
             HttpStatus { code } if (200..=299).contains(&code) => {
                 log::info!("Ping {} successfully sent {}.", document_id, code);
@@ -806,6 +828,15 @@ impl PingUploadManager {
                         .mark_ping_as_uploaded(document_id, Utc::now());
                 }
                 self.directory_manager.delete_file(document_id);
+            }
+
+            RecoverableFailure { .. } => {
+                recoverable();
+            }
+
+            // Special-casing 408 - Request timeout, and 429 - Too Many Requests
+            HttpStatus { code: 408 } | HttpStatus { code: 429 } => {
+                recoverable();
             }
 
             UnrecoverableFailure { .. } | HttpStatus { code: 400..=499 } | Incapable { .. } => {
@@ -826,21 +857,9 @@ impl PingUploadManager {
                 self.directory_manager.delete_file(document_id);
             }
 
-            RecoverableFailure { .. } | HttpStatus { .. } => {
-                log::warn!(
-                    "Recoverable upload failure while attempting to send ping {}, will retry. Error was {:?}",
-                    document_id,
-                    status
-                );
-                if let Some((success_id, failure_id)) = send_ids {
-                    self.upload_metrics.send_success.cancel_sync(success_id);
-                    self.upload_metrics
-                        .send_failure
-                        .set_stop_and_accumulate(glean, failure_id, stop_time);
-                }
-                self.enqueue_ping_from_file(glean, document_id);
-                self.recoverable_failure_count
-                    .fetch_add(1, Ordering::SeqCst);
+            // All other HTTP status codes are treated recoverable.
+            HttpStatus { .. } => {
+                recoverable();
             }
 
             Done { .. } => {

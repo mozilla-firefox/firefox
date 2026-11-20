@@ -4,6 +4,8 @@
 
 use std::borrow::Cow;
 use std::char;
+#[cfg(feature = "sqlite")]
+use std::collections::BTreeMap;
 use std::collections::{HashMap, HashSet};
 use std::mem;
 use std::sync::{Arc, Mutex};
@@ -329,6 +331,82 @@ pub fn validate_dual_label_sqlite(
 }
 
 #[cfg(feature = "sqlite")]
+pub fn validate_dual_label_in_memory(
+    map: &BTreeMap<String, crate::metrics::Metric>,
+    meta: &CommonMetricDataInternal,
+    base_identifier: &str,
+    key: &str,
+    category: &str,
+) -> LabelCheck {
+    // TODO(bug 2048193): We can now detect if _either_ key or category contains `RECORD_SEPARATOR` and thus keep
+    // the other potentially valid label.
+    // This needs adjustement of the test `labels_containing_a_record_separator_record_an_error`.
+    if key.contains(RECORD_SEPARATOR) || category.contains(RECORD_SEPARATOR) {
+        log::warn!(
+            "Metric {base_identifier:?}: Label cannot contain the ASCII record separator character (0x1E)"
+        );
+        return LabelCheck::Error(format!("{OTHER_LABEL}{RECORD_SEPARATOR}{OTHER_LABEL}"), 1);
+    }
+
+    let mut existing_keys = HashSet::new();
+    let mut existing_categories = HashSet::new();
+    for store in &meta.inner.send_in_pings {
+        let prefix_key = [store, base_identifier, ""].join("|");
+
+        for key in map.keys() {
+            if key.starts_with(&prefix_key) {
+                let mut parts = key.splitn(3, '|');
+                let Some(_store) = parts.next() else { continue };
+                let Some(_name) = parts.next() else { continue };
+                let Some(existing_labels) = parts.next() else {
+                    continue;
+                };
+
+                let Some((existing_key, existing_category)) =
+                    existing_labels.split_once(RECORD_SEPARATOR)
+                else {
+                    // TODO(bug 2048195): Instrument this.
+                    log::debug!(
+                        "Metric {base_identifier:?}: Database contains invalid dual-label: {existing_labels:?}"
+                    );
+                    continue;
+                };
+
+                existing_keys.insert(existing_key.to_string());
+                existing_categories.insert(existing_category.to_string());
+            }
+        }
+    }
+
+    let mut errors = 0;
+    let new_key = if (existing_keys.contains(key) || existing_keys.len() < MAX_LABELS)
+        && label_is_valid(key, base_identifier)
+    {
+        key
+    } else {
+        errors += 1;
+        OTHER_LABEL
+    };
+
+    let new_category = if (existing_categories.contains(category)
+        || existing_categories.len() < MAX_LABELS)
+        && label_is_valid(category, base_identifier)
+    {
+        category
+    } else {
+        errors += 1;
+        OTHER_LABEL
+    };
+
+    let label = format!("{new_key}{RECORD_SEPARATOR}{new_category}");
+    if errors == 0 {
+        LabelCheck::Label(label)
+    } else {
+        LabelCheck::Error(label, errors)
+    }
+}
+
+#[cfg(feature = "sqlite")]
 fn label_is_valid(label: &str, metric_id: &str) -> bool {
     if label.len() > MAX_LABEL_LENGTH {
         log::warn!(
@@ -494,12 +572,12 @@ fn combine_labels(key: &str, category: &str) -> String {
 
 #[cfg(not(feature = "sqlite"))]
 pub fn combine_base_identifier_and_labels(
-    base_identifer: &str,
+    base_identifier: &str,
     key: &str,
     category: &str,
 ) -> String {
     format!(
         "{}{}{}{}{}",
-        base_identifer, RECORD_SEPARATOR, key, RECORD_SEPARATOR, category
+        base_identifier, RECORD_SEPARATOR, key, RECORD_SEPARATOR, category
     )
 }
