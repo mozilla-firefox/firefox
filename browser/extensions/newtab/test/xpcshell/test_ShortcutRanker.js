@@ -3434,3 +3434,256 @@ add_task(async function test_fetchShortcutInteractions_database() {
 
   await PlacesUtils.history.clear();
 });
+
+add_task(function test_median() {
+  const Ranker = ChromeUtils.importESModule(
+    "resource://newtab/lib/SmartShortcutsRanker/RankShortcuts.mjs"
+  );
+  const input = [3, 1, 2];
+  Assert.equal(Ranker.median(input), 2, "Odd count returns the middle value");
+  Assert.deepEqual(input, [3, 1, 2], "Input is not sorted in place");
+  Assert.equal(
+    Ranker.median([4, 1, 3, 2]),
+    2.5,
+    "Even count averages the two middle values"
+  );
+  Assert.equal(Ranker.median([7]), 7, "Single value");
+  Assert.equal(Ranker.median([10, 9, 100]), 10, "Sorts numerically");
+});
+
+add_task(async function test_computeCtr2_default_priors() {
+  const Ranker = ChromeUtils.importESModule(
+    "resource://newtab/lib/SmartShortcutsRanker/RankShortcuts.mjs"
+  );
+  const { NewTabUtils } = ChromeUtils.importESModule(
+    "resource://gre/modules/NewTabUtils.sys.mjs"
+  );
+  const sandbox = sinon.createSandbox();
+  const stub = sandbox
+    .stub(NewTabUtils.activityStreamProvider, "executePlacesQuery")
+    .resolves([["g1", 2, 10]]);
+  const topsites = [{ guid: "g1" }, { guid: "g2" }];
+
+  const out = await Ranker.computeCtr2(topsites, "t", "p", {
+    ctr2_positive_prior: 1,
+    ctr2_negative_prior: 9,
+  });
+  Assert.less(Math.abs(out[0] - 0.15), 1e-12, "(2+1)/(10+1+9)");
+  Assert.less(Math.abs(out[1] - 0.1), 1e-12, "No interactions gives prior");
+  Assert.equal(stub.callCount, 1, "Only the ctr2 query runs");
+
+  const fallback = await Ranker.computeCtr2(topsites, "t", "p");
+  Assert.less(
+    Math.abs(fallback[1] - 1 / 1001),
+    1e-12,
+    "Missing config uses the default priors"
+  );
+
+  Assert.deepEqual(
+    await Ranker.computeCtr2([], "t", "p"),
+    [],
+    "Empty topsites"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_computeCtr2_empirical_priors() {
+  const Ranker = ChromeUtils.importESModule(
+    "resource://newtab/lib/SmartShortcutsRanker/RankShortcuts.mjs"
+  );
+  const { NewTabUtils } = ChromeUtils.importESModule(
+    "resource://gre/modules/NewTabUtils.sys.mjs"
+  );
+  const sandbox = sinon.createSandbox();
+  const stub = sandbox.stub(
+    NewTabUtils.activityStreamProvider,
+    "executePlacesQuery"
+  );
+  // Clicked candidates: median ctr of [0.25, 0.3, 0.25] is 0.25, median
+  // imps 10, total clicks 9. g1 has no interactions so it scores the prior mean.
+  const clicked = [
+    ["a", 1, 4],
+    ["b", 3, 10],
+    ["c", 5, 20],
+  ];
+  const topsites = [
+    { guid: "g1" },
+    { guid: "a" },
+    { guid: "b" },
+    { guid: "c" },
+  ];
+  stub.resolves(clicked);
+  const cfg = {
+    ctr2_empirical_priors: true,
+    ctr2_decay: 0.1,
+    ctr2_positive_prior: 1,
+    ctr2_negative_prior: 9,
+    ctr2_prior_full_clicks: 9,
+  };
+
+  const out = await Ranker.computeCtr2(topsites, "t", "p", cfg);
+  Assert.less(
+    Math.abs(out[0] - 0.25),
+    1e-12,
+    "At full_clicks the prior mean is the median ctr"
+  );
+  Assert.equal(stub.callCount, 1, "One query feeds priors and counts");
+  Assert.equal(stub.firstCall.args[1].params.decay, 0.1, "Passes decay");
+
+  stub.resolves([...clicked, ["g1", 0, 10]]);
+  const half = await Ranker.computeCtr2(
+    [...topsites, { guid: "g2" }],
+    "t",
+    "p",
+    { ...cfg, ctr2_prior_full_clicks: 18 }
+  );
+  // w = 9 / 18: mean 0.5 * 0.25 + 0.5 * 0.1, strength 10
+  Assert.less(
+    Math.abs(half[4] - 0.175),
+    1e-12,
+    "Blends the prior means equally at half of full_clicks"
+  );
+  Assert.less(
+    Math.abs(half[0] - 1.75 / (10 + 10)),
+    1e-12,
+    "Unclicked candidates don't count toward the prior"
+  );
+
+  stub.resolves([]);
+  const empty = await Ranker.computeCtr2([{ guid: "g1" }], "t", "p", cfg);
+  Assert.less(
+    Math.abs(empty[0] - 0.1),
+    1e-12,
+    "No clicked candidates keeps the configured priors"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_computeCtr2_cold_start_blend() {
+  const Ranker = ChromeUtils.importESModule(
+    "resource://newtab/lib/SmartShortcutsRanker/RankShortcuts.mjs"
+  );
+  const { NewTabUtils } = ChromeUtils.importESModule(
+    "resource://gre/modules/NewTabUtils.sys.mjs"
+  );
+  const sandbox = sinon.createSandbox();
+  const stub = sandbox.stub(
+    NewTabUtils.activityStreamProvider,
+    "executePlacesQuery"
+  );
+  stub.resolves([["a", 1, 1]]);
+
+  const [unseen] = await Ranker.computeCtr2(
+    [{ guid: "g1" }, { guid: "a" }],
+    "t",
+    "p",
+    {
+      ctr2_empirical_priors: true,
+      ctr2_positive_prior: 1,
+      ctr2_negative_prior: 999,
+      ctr2_prior_full_clicks: 10,
+    }
+  );
+  // One click on one impression: w = 0.1, mean 0.1 * 1 + 0.9 * 0.001
+  Assert.less(
+    Math.abs(unseen - 0.1009),
+    1e-12,
+    "A single click only moves the prior a little toward the empirical ctr"
+  );
+  sandbox.restore();
+});
+
+add_task(async function test_computeCtr2_floor_and_fallback() {
+  const Ranker = ChromeUtils.importESModule(
+    "resource://newtab/lib/SmartShortcutsRanker/RankShortcuts.mjs"
+  );
+  const { NewTabUtils } = ChromeUtils.importESModule(
+    "resource://gre/modules/NewTabUtils.sys.mjs"
+  );
+  const sandbox = sinon.createSandbox();
+  const stub = sandbox.stub(
+    NewTabUtils.activityStreamProvider,
+    "executePlacesQuery"
+  );
+  const cfg = {
+    ctr2_empirical_priors: true,
+    ctr2_positive_prior: 1,
+    ctr2_negative_prior: 9,
+  };
+
+  stub.resolves([
+    ["a", 0, 0],
+    ["b", 0, 0],
+  ]);
+  const [underflow] = await Ranker.computeCtr2([{ guid: "g1" }], "t", "p", cfg);
+  Assert.less(
+    Math.abs(underflow - 0.1),
+    1e-12,
+    "Underflowed counts fall back to configured priors"
+  );
+
+  stub.resolves([["a", 1, 0]]);
+  const [noImps] = await Ranker.computeCtr2([{ guid: "g1" }], "t", "p", cfg);
+  Assert.less(
+    Math.abs(noImps - 0.1),
+    1e-12,
+    "Clicks without impressions fall back to configured priors"
+  );
+
+  stub.resolves([]);
+  const floored = await Ranker.computeCtr2([{ guid: "g1" }], "t", "p", {
+    ctr2_positive_prior: 0,
+    ctr2_negative_prior: -5,
+  });
+  Assert.ok(Number.isFinite(floored[0]), "Floored priors stay finite");
+  Assert.less(Math.abs(floored[0] - 0.5), 1e-12, "Both priors are floored");
+  sandbox.restore();
+});
+
+add_task(async function test_computeCtr2_decay_sql() {
+  const Ranker = ChromeUtils.importESModule(
+    "resource://newtab/lib/SmartShortcutsRanker/RankShortcuts.mjs"
+  );
+  await PlacesUtils.history.clear();
+  await PlacesTestUtils.addVisits("https://decay.example.com/");
+  const place = await PlacesUtils.history.fetch("https://decay.example.com/");
+
+  const nowS = Math.floor(Date.now() / 1000);
+  const day = 86400;
+  await PlacesUtils.withConnectionWrapper("test_computeCtr2", async db => {
+    for (const ts of [nowS, nowS - 14 * day, nowS - 70 * day]) {
+      await db.execute(
+        `INSERT INTO moz_newtab_shortcuts_interaction
+           (place_id, event_type, timestamp_s, pinned, tile_position)
+         SELECT id, 1, :ts, 0, 0 FROM moz_places WHERE guid = :guid`,
+        { ts, guid: place.guid }
+      );
+    }
+  });
+
+  const run = decay =>
+    Ranker.computeCtr2(
+      [{ guid: place.guid }],
+      "moz_newtab_shortcuts_interaction",
+      "moz_places",
+      { ctr2_decay: decay, ctr2_positive_prior: 0, ctr2_negative_prior: 1 }
+    );
+  // Floored alpha is 1e-3, no impressions: ctr2 = (clicks + 1e-3) / 1.001
+  const ctrFor = clicks => (clicks + 1e-3) / 1.001;
+
+  const [decayed] = await run(0.05);
+  Assert.less(
+    Math.abs(decayed - ctrFor(1 + Math.exp(-0.7))),
+    1e-4,
+    "Clicks decay per day and events past the lookback are excluded"
+  );
+
+  const [undecayed] = await run(0);
+  Assert.less(
+    Math.abs(undecayed - ctrFor(2)),
+    1e-4,
+    "Zero decay counts each recent click once"
+  );
+
+  await PlacesUtils.history.clear();
+});

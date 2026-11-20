@@ -346,6 +346,7 @@ export async function weightedSampleTopSites(input) {
     freq: () => _projectByGuid(input.guid, input.freq_scores),
     refre: () => _projectByGuid(input.guid, input.refre_scores),
     unid: () => _projectByGuid(input.guid, input.unid_scores),
+    ctr2: () => input.ctr2_scores,
   };
 
   // 1) Simple vector features

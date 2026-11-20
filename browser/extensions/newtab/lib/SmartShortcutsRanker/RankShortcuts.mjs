@@ -34,6 +34,15 @@ These prefs can be accessed at prefValues.trainhopConfig.smartShortcuts
 * open_weight: weight of is_open. divided by 100
 * unid_weight: weight of unique days visited. divided by 100
 * ctr_weight: weight of ctr. divided by 100
+* ctr2_weight: weight of ctr2. divided by 100
+* ctr2_decay: ctr2 per-day exponential decay rate for clicks and impressions
+* ctr2_positive_prior: ctr2 alpha
+* ctr2_negative_prior: ctr2 beta
+* ctr2_empirical_priors: derive ctr2 alpha/beta from the median decayed ctr
+*          and impressions of the current shortcut candidates with at least
+*          one click
+* ctr2_prior_full_clicks: decayed clicks at which the ctr2 prior is fully
+*          empirical; below this it blends linearly from the default prior
 * bias_weight: weight of bias. divided by 100
 
 */
@@ -60,6 +69,7 @@ const FEATURE_META = {
   open: { pref: "open_weight", def: 0 },
   unid: { pref: "unid_weight", def: 0 },
   ctr: { pref: "ctr_weight", def: 954 },
+  ctr2: { pref: "ctr2_weight", def: 954 },
   bias: { pref: "bias_weight", def: 0 },
 };
 
@@ -84,6 +94,12 @@ const SCORE_KEYS = ["training", "ranking"];
 const SHORTCUT_POSITIVE_PRIOR = 1;
 const SHORTCUT_NEGATIVE_PRIOR = 1000;
 const SHORTCUT_TAU = 100;
+const CTR2_DECAY = 0.05;
+const CTR2_POSITIVE_PRIOR = 1;
+const CTR2_NEGATIVE_PRIOR = 1000;
+const CTR2_EMPIRICAL_PRIORS = false;
+const CTR2_MIN_PRIOR = 1e-3;
+const CTR2_PRIOR_FULL_CLICKS = 100;
 const SMART_SHORTCUTS_TICK_INTERVAL = 0;
 const SMART_TELEM = false;
 const MIN_EXP_IMPRESSIONS = 1000;
@@ -848,6 +864,113 @@ export async function pruneShortcutInteractions(now) {
   }
 }
 
+export function median(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/**
+ * CTR with clicks and impressions exponentially decayed by age in days
+ *
+ * @param {object[]} topsites Array of topsites objects
+ * @param {string} table Table for shortcuts interactions
+ * @param {string} placeTable moz_places table
+ * @param {object} [cfg] trainhopConfig.smartShortcuts, for ctr2_decay,
+ *   ctr2_positive_prior, ctr2_negative_prior, ctr2_empirical_priors and
+ *   ctr2_prior_full_clicks
+ * @returns {Promise<number[]>} ctr2 for each site in topsites
+ */
+export async function computeCtr2(topsites, table, placeTable, cfg = {}) {
+  if (!topsites.length) {
+    return [];
+  }
+  const decay = cfg.ctr2_decay ?? CTR2_DECAY;
+  let alpha = Math.max(
+    cfg.ctr2_positive_prior ?? CTR2_POSITIVE_PRIOR,
+    CTR2_MIN_PRIOR
+  );
+  let beta = Math.max(
+    cfg.ctr2_negative_prior ?? CTR2_NEGATIVE_PRIOR,
+    CTR2_MIN_PRIOR
+  );
+  const guidList = topsites.map(site => site.guid);
+  const now = Date.now();
+
+  // the exponential decay is applied in the query
+  const sql = `
+    WITH input_keys(guid) AS (
+      SELECT value FROM json_each(:guids)
+    ),
+    place_ids AS (
+      SELECT input_keys.guid, ${placeTable}.id AS place_id
+      FROM input_keys
+      JOIN ${placeTable} ON ${placeTable}.guid = input_keys.guid
+    ),
+    decayed AS (
+      SELECT place_ids.guid AS guid, ${table}.event_type AS event_type,
+        exp(-:decay * (:now_s - ${table}.timestamp_s) / ${SECONDS_PER_DAY}.0) AS w
+      FROM place_ids
+      LEFT JOIN ${table} ON ${table}.place_id = place_ids.place_id
+        AND ${table}.timestamp_s >= :cutoff
+    )
+    SELECT
+      guid,
+      COALESCE(SUM(event_type * w), 0) AS clicks,
+      COALESCE(SUM((1 - event_type) * w), 0) AS impressions
+    FROM decayed
+    GROUP BY guid;
+  `;
+
+  const { activityStreamProvider } = lazy.NewTabUtils;
+  const rows = await activityStreamProvider.executePlacesQuery(sql, {
+    params: {
+      decay,
+      now_s: Math.round(now / 1000),
+      cutoff: interactionCutoffS(now),
+      guids: JSON.stringify(guidList),
+    },
+  });
+  const counts = new Map(rows.map(([guid, c, i]) => [guid, [c, i]]));
+
+  if (cfg.ctr2_empirical_priors ?? CTR2_EMPIRICAL_PRIORS) {
+    // empirical prior from the current candidates the user has clicked on:
+    // mean is their median ctr, strength is their median impressions
+    const clicked = [...counts.values()].filter(([c]) => c > 0);
+    const ctrs = clicked
+      .filter(([, i]) => i > 0)
+      .map(([c, i]) => Math.min(c / i, 1));
+    const strength = clicked.length ? median(clicked.map(([, i]) => i)) : 0;
+    if (ctrs.length && strength >= CTR2_MIN_PRIOR) {
+      // trust the empirical prior more as decayed clicks accumulate, blending
+      // mean and strength separately so the stronger prior doesn't swamp the
+      // mean
+      const clicks = clicked.reduce((sum, [c]) => sum + c, 0);
+      // at fullClicks, we only use empirical, before that, its a blend
+      const fullClicks = cfg.ctr2_prior_full_clicks ?? CTR2_PRIOR_FULL_CLICKS;
+      // weight on the blend between empirical and constant prior
+      const w = fullClicks > 0 ? Math.min(clicks / fullClicks, 1) : 1;
+      // mean of the beta distribution, this is a blend
+      const mean = w * median(ctrs) + (1 - w) * (alpha / (alpha + beta));
+      // strength of the prior in the CTR calc
+      const blendedStrength = w * strength + (1 - w) * (alpha + beta);
+      // the final priors
+      alpha = mean * blendedStrength;
+      beta = (1 - mean) * blendedStrength;
+    }
+  }
+  // guard against negatives and tiny values
+  alpha = Math.max(alpha, CTR2_MIN_PRIOR);
+  beta = Math.max(beta, CTR2_MIN_PRIOR);
+
+  return guidList.map(guid => {
+    const [c, i] = counts.get(guid) ?? [0, 0];
+    // apply prior
+    const ctr = (c + alpha) / (i + alpha + beta);
+    return Number.isFinite(ctr) ? ctr : 0;
+  });
+}
+
 export class RankShortcutsProvider {
   constructor() {
     this.sc_obj = new lazy.PersistentCache("shortcut_cache", true);
@@ -1197,6 +1320,9 @@ export class RankShortcutsProvider {
     const daily_seasonality = allFeatures.has("daily")
       ? await this.getDailySeasonalityData(withGuid, sc_cache, options)
       : null;
+    const ctr2_scores = allFeatures.has("ctr2")
+      ? await computeCtr2(withGuid, SHORTCUT_TABLE, PLACES_TABLE, config)
+      : null;
     const bmark_scores = allFeatures.has("bmark")
       ? await fetchBookmarkedFlags(withGuid, BOOKMARK_TABLE, PLACES_TABLE)
       : null;
@@ -1244,6 +1370,7 @@ export class RankShortcutsProvider {
           freq_scores: refrec_scores?.freq,
           refre_scores: refrec_scores?.refre,
           unid_scores: refrec_scores?.unid,
+          ctr2_scores,
         },
       ]
     );
