@@ -4,7 +4,6 @@
 
 package org.mozilla.fenix.home.toolbar
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -53,7 +52,6 @@ fun BrowserSimpleToolbar(
 ) {
     val uiState by store.observeAsComposableState { it }
 
-    val pageOrigin = uiState.displayState.pageOrigin
     val browserActionsStart = uiState.displayState.browserActionsStart
     val browserActionsEnd = uiState.displayState.browserActionsEnd
     val onInteraction: (BrowserToolbarEvent) -> Unit = { store.dispatch(it) }
@@ -81,10 +79,7 @@ fun BrowserSimpleToolbar(
                 )
             }
 
-            Spacer(
-                modifier =
-                    Modifier.clickable { onInteraction(requireNotNull(pageOrigin.onClick)) }.height(64.dp).weight(1f)
-            )
+            Spacer(modifier = Modifier.height(64.dp).weight(1f))
 
             if (browserActionsEnd.isNotEmpty()) {
                 ActionContainer(
