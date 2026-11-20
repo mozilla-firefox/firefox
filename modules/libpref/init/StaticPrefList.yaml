@@ -5874,12 +5874,6 @@
   value: 5000
   mirror: always
 
-# Whether to treat the clicks on scrollbars as user interaction with web content.
-- name: dom.user_activation.ignore_scrollbars
-  type: bool
-  value: true
-  mirror: always
-
 # Whether to shim a Components object on untrusted windows.
 - name: dom.use_components_shim
   type: bool

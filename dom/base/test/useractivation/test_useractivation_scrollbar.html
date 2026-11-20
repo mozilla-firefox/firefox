@@ -49,11 +49,7 @@ if (!opener) {
     });
   });
 
-  async function testOnNewWindow(aPrefValue) {
-    await SpecialPowers.pushPrefEnv({
-      set: [["dom.user_activation.ignore_scrollbars", aPrefValue]],
-    });
-
+  add_task(async function test() {
     let win = window.open(location);
     // wait for message
     await new Promise((aResolve) => {
@@ -65,14 +61,6 @@ if (!opener) {
       });
     });
     win.close();
-  }
-
-  add_task(async function test_pref_on() {
-    await testOnNewWindow(true);
-  });
-
-  add_task(async function test_pref_off() {
-    await testOnNewWindow(false);
   });
 } else {
   SimpleTest.waitForFocus(async function() {
@@ -84,8 +72,6 @@ if (!opener) {
       });
     }
 
-    let ignoreScrollbars = SpecialPowers.getBoolPref("dom.user_activation.ignore_scrollbars");
-
     SpecialPowers.wrap(document).clearUserGestureActivation();
     let textarea = document.querySelector("textarea");
     var rect = textarea.getBoundingClientRect();
@@ -95,10 +81,14 @@ if (!opener) {
     synthesizeMouse(textarea, rect.width - 5, rect.height / 2, {});
     await promise;
 
-    opener.is(SpecialPowers.wrap(document).hasBeenUserGestureActivated,
-              !ignoreScrollbars, "check has-been-user-activated");
-    opener.is(SpecialPowers.wrap(document).hasValidTransientUserGestureActivation,
-              !ignoreScrollbars, "check has-valid-transient-user-activation");
+    opener.ok(
+      !SpecialPowers.wrap(document).hasBeenUserGestureActivated,
+      "check has-been-user-activated"
+    );
+    opener.ok(
+      !SpecialPowers.wrap(document).hasValidTransientUserGestureActivation,
+      "check has-valid-transient-user-activation"
+    );
 
     SpecialPowers.wrap(document).clearUserGestureActivation();
     let div = document.querySelector("div[id=target]");
@@ -109,10 +99,13 @@ if (!opener) {
     synthesizeMouse(div, rect.width - 5, rect.height / 2, {});
     await promise;
 
-    opener.is(SpecialPowers.wrap(document).hasBeenUserGestureActivated,
-              !ignoreScrollbars, "check has-been-user-activated");
-    opener.is(SpecialPowers.wrap(document).hasValidTransientUserGestureActivation,
-              !ignoreScrollbars, "check has-valid-transient-user-activation");
+    opener.ok(
+      !SpecialPowers.wrap(document).hasBeenUserGestureActivated,
+      "check has-been-user-activated"
+    );
+    opener.ok(!SpecialPowers.wrap(document).hasValidTransientUserGestureActivation,
+      "check has-valid-transient-user-activation"
+    );
 
     SpecialPowers.wrap(document).clearUserGestureActivation();
     let body = document.querySelector("body");
@@ -122,10 +115,13 @@ if (!opener) {
     synthesizeMouse(body, innerWidth - 10, innerHeight / 2, {});
     await promise;
 
-    opener.is(SpecialPowers.wrap(document).hasBeenUserGestureActivated,
-              !ignoreScrollbars, "check has-been-user-activated");
-    opener.is(SpecialPowers.wrap(document).hasValidTransientUserGestureActivation,
-              !ignoreScrollbars, "check has-valid-transient-user-activation");
+    opener.ok(
+      !SpecialPowers.wrap(document).hasBeenUserGestureActivated,
+      "check has-been-user-activated");
+    opener.ok(
+      !SpecialPowers.wrap(document).hasValidTransientUserGestureActivation,
+      "check has-valid-transient-user-activation"
+    );
 
     opener.postMessage("done", "*");
   }, window);
