@@ -10,6 +10,9 @@ import org.junit.Test
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppState
+import org.mozilla.fenix.tabstray.data.TabsTrayItem
+import org.mozilla.fenix.tabstray.data.createTab
+import org.mozilla.fenix.tabstray.data.createTabGroup
 import org.mozilla.fenix.tabstray.redux.action.TabGroupAction
 import org.mozilla.fenix.tabstray.redux.state.TabGroupFormState
 
@@ -36,12 +39,68 @@ class TabGroupFlowSnackBarMiddlewareTest {
         val store = createStore(entryPoint = TabGroupFlowEntryPoint.MoveTabToGroup(tabId = TAB_ID))
 
         store.dispatch(
-            TabGroupAction.TabMovedToExistingTabGroup(tabId = TAB_ID, groupId = GROUP_ID, groupTitle = GROUP_TITLE)
+            TabGroupAction.ExistingGroupSelectedForMove(tabId = TAB_ID, groupId = GROUP_ID, groupTitle = GROUP_TITLE)
         )
 
         appStoreActions.assertLastAction(AppAction.TabMovedToGroup::class) {
             assertEquals(AppAction.TabMovedToGroup(groupTitle = GROUP_TITLE, groupId = GROUP_ID), it)
         }
+    }
+
+    @Test
+    fun `GIVEN group strip disabled WHEN moving the last tab and deleting its group is confirmed THEN the moved to group snackbar is shown`() {
+        val store = createStore(entryPoint = TabGroupFlowEntryPoint.MoveTabToGroup(tabId = TAB_ID))
+
+        store.dispatch(
+            TabGroupAction.MoveTabAndDeleteGroupConfirmed(
+                sourceGroupId = SOURCE_GROUP_ID,
+                destinationGroupId = GROUP_ID,
+                destinationGroupTitle = GROUP_TITLE,
+            )
+        )
+
+        appStoreActions.assertLastAction(AppAction.TabMovedToGroup::class) {
+            assertEquals(AppAction.TabMovedToGroup(groupTitle = GROUP_TITLE, groupId = GROUP_ID), it)
+        }
+    }
+
+    @Test
+    fun `GIVEN group strip disabled AND the tab is the last in its group WHEN an existing group is selected or the dialog canceled THEN no snackbar is shown`() {
+        val store =
+            createStore(
+                entryPoint = TabGroupFlowEntryPoint.MoveTabToGroup(tabId = TAB_ID),
+                groups =
+                    listOf(
+                        createTabGroup(
+                            id = SOURCE_GROUP_ID,
+                            title = SOURCE_GROUP_TITLE,
+                            tabs = listOf(createTab("mozilla.org", id = TAB_ID)),
+                        )
+                    ),
+            )
+
+        store.dispatch(
+            TabGroupAction.ExistingGroupSelectedForMove(tabId = TAB_ID, groupId = GROUP_ID, groupTitle = GROUP_TITLE)
+        )
+        store.dispatch(TabGroupAction.MoveTabAndDeleteGroupCanceled)
+
+        appStoreActions.assertNoActionDispatched()
+    }
+
+    @Test
+    fun `GIVEN group strip enabled WHEN moving the last tab and deleting its group is confirmed THEN no snackbar is shown`() {
+        val store =
+            createStore(entryPoint = TabGroupFlowEntryPoint.MoveTabToGroup(tabId = TAB_ID), tabGroupStripEnabled = true)
+
+        store.dispatch(
+            TabGroupAction.MoveTabAndDeleteGroupConfirmed(
+                sourceGroupId = SOURCE_GROUP_ID,
+                destinationGroupId = GROUP_ID,
+                destinationGroupTitle = GROUP_TITLE,
+            )
+        )
+
+        appStoreActions.assertNoActionDispatched()
     }
 
     @Test
@@ -61,7 +120,7 @@ class TabGroupFlowSnackBarMiddlewareTest {
             createStore(entryPoint = TabGroupFlowEntryPoint.MoveTabToGroup(tabId = TAB_ID), tabGroupStripEnabled = true)
 
         store.dispatch(
-            TabGroupAction.TabMovedToExistingTabGroup(tabId = TAB_ID, groupId = GROUP_ID, groupTitle = GROUP_TITLE)
+            TabGroupAction.ExistingGroupSelectedForMove(tabId = TAB_ID, groupId = GROUP_ID, groupTitle = GROUP_TITLE)
         )
 
         appStoreActions.assertNoActionDispatched()
@@ -128,9 +187,10 @@ class TabGroupFlowSnackBarMiddlewareTest {
         entryPoint: TabGroupFlowEntryPoint = TabGroupFlowEntryPoint.AddTabToGroup(tabId = TAB_ID),
         formState: TabGroupFormState? = null,
         tabGroupStripEnabled: Boolean = false,
+        groups: List<TabsTrayItem.TabGroup> = emptyList(),
     ) =
         TabGroupFlowStore(
-            initialState = TabGroupFlowState(entryPoint = entryPoint, formState = formState),
+            initialState = TabGroupFlowState(entryPoint = entryPoint, formState = formState, groups = groups),
             middlewares =
                 listOf(
                     TabGroupFlowSnackBarMiddleware(appStore = appStore, tabGroupStripEnabled = tabGroupStripEnabled)
@@ -141,6 +201,8 @@ class TabGroupFlowSnackBarMiddlewareTest {
         const val TAB_ID = "tab-1"
         const val GROUP_ID = "group-1"
         const val GROUP_TITLE = "Work"
+        const val SOURCE_GROUP_ID = "group-0"
+        const val SOURCE_GROUP_TITLE = "Errands"
         const val NEW_GROUP_ID = "new-group"
         const val NEW_GROUP_TITLE = "Groceries"
     }

@@ -48,8 +48,20 @@ class TabGroupFlowSnackBarMiddleware(private val appStore: AppStore, private val
             is TabGroupAction.TabAddedToExistingTabGroup -> {
                 appStore.dispatch(AppAction.TabAddedToGroup(groupTitle = action.groupTitle, groupId = action.groupId))
             }
-            is TabGroupAction.TabMovedToExistingTabGroup -> {
-                appStore.dispatch(AppAction.TabMovedToGroup(groupTitle = action.groupTitle, groupId = action.groupId))
+            is TabGroupAction.ExistingGroupSelectedForMove -> {
+                if (store.state.groupEmptiedByMoving(action.tabId) == null) {
+                    appStore.dispatch(
+                        AppAction.TabMovedToGroup(groupTitle = action.groupTitle, groupId = action.groupId)
+                    )
+                }
+            }
+            is TabGroupAction.MoveTabAndDeleteGroupConfirmed -> {
+                appStore.dispatch(
+                    AppAction.TabMovedToGroup(
+                        groupTitle = action.destinationGroupTitle,
+                        groupId = action.destinationGroupId,
+                    )
+                )
             }
             else -> {}
         }

@@ -18,6 +18,8 @@ import org.mozilla.fenix.tabstray.redux.state.newTabGroupForm
  * @property formState The state of the tab group edit form, for creating or updating a group.
  * @property config Tracks user configuration options impacting the flow.
  * @property tabPendingNewGroup A tab id that is pending addition to a newly created TabGroup. May be null.
+ * @property groupPendingDeletion A group id that is pending deletion when its last tab may be moved out of it. May be
+ *   null. Deleted after the new group for tabPendingNewGroup is created on save.
  */
 @Immutable
 data class TabGroupFlowState(
@@ -27,6 +29,7 @@ data class TabGroupFlowState(
     override val formState: TabGroupFormState? = null,
     val config: Config = Config(),
     val tabPendingNewGroup: String? = null,
+    val groupPendingDeletion: String? = null,
 ) : State, TabGroupTelemetry.TabGroupTelemetryContext {
     /** Drops the last entry of [TabsTrayState.backStack]. If [backStack] only has one entry, no changes occur. */
     internal fun popBackStack(): List<TabGroupFlowDestination> =
@@ -58,3 +61,12 @@ fun TabGroupFlowState.initializeTabGroupForm(isStarterTabGroup: Boolean = false)
 fun TabGroupFlowState.moveTargetGroups(tabId: String): List<TabsTrayItem.TabGroup> = groups.filter { group ->
     group.tabs.none { it.id == tabId }
 }
+
+/** Returns the group [tabId] is in, if any. */
+fun TabGroupFlowState.groupContaining(tabId: String): TabsTrayItem.TabGroup? = groups.firstOrNull { group ->
+    group.tabs.any { it.id == tabId }
+}
+
+/** Returns the group [tabId] is in if it is the only tab in that group, so moving it out would leave it empty. */
+fun TabGroupFlowState.groupEmptiedByMoving(tabId: String): TabsTrayItem.TabGroup? =
+    groupContaining(tabId)?.takeIf { it.tabs.size == 1 }

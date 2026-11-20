@@ -151,7 +151,8 @@ class TabStorageMiddleware(
             }
 
             // Only dispatched by the tab group flow
-            is TabGroupAction.TabMovedToExistingTabGroup -> {}
+            is TabGroupAction.ExistingGroupSelectedForMove,
+            is TabGroupAction.MoveTabAndDeleteGroupConfirmed -> {}
         }
     }
 

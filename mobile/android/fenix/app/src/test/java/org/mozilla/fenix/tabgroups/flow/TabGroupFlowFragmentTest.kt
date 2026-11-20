@@ -9,6 +9,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.navigation3.scene.DialogSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import androidx.test.core.app.ApplicationProvider
 import kotlin.test.Test
@@ -25,9 +26,12 @@ import org.junit.runner.RunWith
 import org.mozilla.fenix.compose.navigation.BottomSheetSceneStrategy
 import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.helpers.MockkRetryTestRule
+import org.mozilla.fenix.tabgroups.TabGroupsTestTag
 import org.mozilla.fenix.tabstray.TabsTrayTestTag
 import org.mozilla.fenix.tabstray.TabsTrayTestTag.BOTTOM_SHEET_COLOR_LIST
 import org.mozilla.fenix.tabstray.data.TabGroupTheme
+import org.mozilla.fenix.tabstray.data.TabsTrayItem
+import org.mozilla.fenix.tabstray.data.createTab
 import org.mozilla.fenix.tabstray.data.createTabGroup
 import org.mozilla.fenix.tabstray.redux.action.TabGroupAction
 import org.mozilla.fenix.tabstray.redux.state.TabGroupFormState
@@ -203,13 +207,74 @@ class TabGroupFlowFragmentTest {
         composeTestRule.onNodeWithText("Add to").assertExists()
         composeTestRule.onNodeWithTag("${TabsTrayTestTag.TAB_GROUP_ROOT}.${group.id}").performClick()
 
-        captureMiddleware.assertLastAction(TabGroupAction.TabMovedToExistingTabGroup::class) {
+        captureMiddleware.assertLastAction(TabGroupAction.ExistingGroupSelectedForMove::class) {
             assertEquals(
-                TabGroupAction.TabMovedToExistingTabGroup(tabId = "123", groupId = "group-1", groupTitle = "Work"),
+                TabGroupAction.ExistingGroupSelectedForMove(tabId = "123", groupId = "group-1", groupTitle = "Work"),
                 it,
             )
         }
         captureMiddleware.assertNotDispatched(TabGroupAction.TabAddedToExistingTabGroup::class)
+    }
+
+    @Test
+    fun `GIVEN the tab is the last tab in its group WHEN an existing group is picked, THEN the selection is dispatched for the store to decide`() {
+        val sourceGroup =
+            createTabGroup(id = "source", title = "Errands", tabs = listOf(createTab("mozilla.org", id = "123")))
+        val destinationGroup = createTabGroup(id = "destination", title = "Work")
+        val captureMiddleware = renderMoveToTabGroup(tabId = "123", groups = listOf(sourceGroup, destinationGroup))
+
+        composeTestRule.onNodeWithTag("${TabsTrayTestTag.TAB_GROUP_ROOT}.${destinationGroup.id}").performClick()
+
+        captureMiddleware.assertLastAction(TabGroupAction.ExistingGroupSelectedForMove::class) {
+            assertEquals(
+                TabGroupAction.ExistingGroupSelectedForMove(
+                    tabId = "123",
+                    groupId = "destination",
+                    groupTitle = "Work",
+                ),
+                it,
+            )
+        }
+    }
+
+    @Test
+    fun `GIVEN the tab is the last tab in its group WHEN new group is picked, THEN TabAddedToNewTabGroup is dispatched`() {
+        val sourceGroup =
+            createTabGroup(id = "source", title = "Errands", tabs = listOf(createTab("mozilla.org", id = "123")))
+        val captureMiddleware = renderMoveToTabGroup(tabId = "123", groups = listOf(sourceGroup))
+
+        composeTestRule.onNodeWithTag(TabsTrayTestTag.ADD_TO_NEW_TAB_GROUP).performClick()
+
+        captureMiddleware.assertLastAction(TabGroupAction.TabAddedToNewTabGroup::class) {
+            assertEquals(TabGroupAction.TabAddedToNewTabGroup(tabId = "123"), it)
+        }
+    }
+
+    fun `WHEN the move last tab dialog is confirmed, THEN MoveTabAndDeleteGroupConfirmed is dispatched with its args`() {
+        val captureMiddleware = renderMoveLastTabDialog()
+
+        composeTestRule.onNodeWithTag(TabGroupsTestTag.MOVE_LAST_TAB_AND_DELETE_DIALOG_CONFIRM_BUTTON).performClick()
+
+        captureMiddleware.assertLastAction(TabGroupAction.MoveTabAndDeleteGroupConfirmed::class) {
+            assertEquals(
+                TabGroupAction.MoveTabAndDeleteGroupConfirmed(
+                    sourceGroupId = "source",
+                    destinationGroupId = "destination",
+                    destinationGroupTitle = "Work",
+                ),
+                it,
+            )
+        }
+    }
+
+    @Test
+    fun `WHEN the move last tab dialog is canceled, THEN MoveTabAndDeleteGroupCanceled is dispatched`() {
+        val captureMiddleware = renderMoveLastTabDialog()
+
+        composeTestRule.onNodeWithTag(TabGroupsTestTag.MOVE_LAST_TAB_AND_DELETE_DIALOG_CANCEL_BUTTON).performClick()
+
+        captureMiddleware.assertLastAction(TabGroupAction.MoveTabAndDeleteGroupCanceled::class)
+        captureMiddleware.assertNotDispatched(TabGroupAction.MoveTabAndDeleteGroupConfirmed::class)
     }
 
     @Test
@@ -278,5 +343,44 @@ class TabGroupFlowFragmentTest {
             )
 
         assertFalse(state.config.displayTabsInGrid)
+    }
+
+    private fun renderMoveToTabGroup(
+        tabId: String,
+        groups: List<TabsTrayItem.TabGroup>,
+    ): CaptureActionsMiddleware<TabGroupFlowState, TabGroupAction> =
+        render(
+            state =
+                TabGroupFlowState(entryPoint = TabGroupFlowEntryPoint.MoveTabToGroup(tabId = tabId), groups = groups),
+            top = TabGroupFlowDestination.MoveToTabGroup(tabId = tabId),
+        )
+
+    private fun renderMoveLastTabDialog(): CaptureActionsMiddleware<TabGroupFlowState, TabGroupAction> =
+        render(
+            state = TabGroupFlowState(entryPoint = TabGroupFlowEntryPoint.MoveTabToGroup(tabId = "123")),
+            top =
+                TabGroupFlowDestination.MoveLastTabAndDeleteGroupDialog(
+                    sourceGroupId = "source",
+                    destinationGroupId = "destination",
+                    sourceGroupTitle = "Errands",
+                    destinationGroupTitle = "Work",
+                ),
+        )
+
+    private fun render(
+        state: TabGroupFlowState,
+        top: TabGroupFlowDestination,
+    ): CaptureActionsMiddleware<TabGroupFlowState, TabGroupAction> {
+        val captureMiddleware = CaptureActionsMiddleware<TabGroupFlowState, TabGroupAction>()
+        fragment.store = TabGroupFlowStore(initialState = state, middlewares = listOf(captureMiddleware))
+        composeTestRule.setContent {
+            NavDisplay(
+                backStack = listOf(TabGroupFlowDestination.Root, top),
+                onBack = {},
+                sceneStrategies = listOf(BottomSheetSceneStrategy(), DialogSceneStrategy()),
+                entryProvider = fragment.getEntryProvider(state = state, windowSize = AcornWindowSize.Small),
+            )
+        }
+        return captureMiddleware
     }
 }
