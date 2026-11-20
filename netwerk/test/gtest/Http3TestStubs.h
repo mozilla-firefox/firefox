@@ -91,14 +91,9 @@ class Http3SessionStub final : public Http3SessionBase {
   void SetWebTransportAnticipatedConcurrentIncomingBidirectionalStreams(
       uint64_t aSessionId, uint16_t aValue) override {}
 
-  nsresult SendDatagram(Http3WebTransportSession* aSession,
-                        nsTArray<uint8_t>& aData, uint64_t aSendGroupId,
-                        int64_t aSendOrder, TimeStamp aTimestamp) override {
-    if (NS_SUCCEEDED(mSendDatagramResult)) {
-      mDatagramsEnqueued++;
-    }
-    return mSendDatagramResult;
-  }
+  void SendDatagram(Http3WebTransportSession* aSession,
+                    nsTArray<uint8_t>& aData, uint64_t aSendGroupId,
+                    int64_t aSendOrder, TimeStamp aTimestamp) override {}
 
   bool GetDatagramQueueCapacity(uint64_t aSessionId, size_t* aRemainingBytes,
                                 size_t* aQueuedDatagrams,
@@ -109,10 +104,7 @@ class Http3SessionStub final : public Http3SessionBase {
   bool GetDatagramSessionStats(uint64_t aSessionId, uint64_t* aSent,
                                uint64_t* aExpired,
                                uint64_t* aDropped) override {
-    *aSent = mDatagramsSent;
-    *aExpired = mDatagramsExpired;
-    *aDropped = mDatagramsDropped;
-    return true;
+    return false;
   }
 
   uint64_t MaxDatagramSize(uint64_t aSessionId) override { return 0; }
@@ -167,14 +159,6 @@ class Http3SessionStub final : public Http3SessionBase {
 
   const nsCString& PathHeader() { return mPathHeader; }
   const nsCString& AuthHeader() { return mAuthHeader; }
-
-  // What SendDatagram() returns, standing in for neqo's enqueue result.
-  nsresult mSendDatagramResult = NS_OK;
-  uint32_t mDatagramsEnqueued = 0;
-  // Reported by GetDatagramSessionStats(), standing in for neqo's own counts.
-  uint64_t mDatagramsSent = 0;
-  uint64_t mDatagramsExpired = 0;
-  uint64_t mDatagramsDropped = 0;
 
  private:
   ~Http3SessionStub() = default;

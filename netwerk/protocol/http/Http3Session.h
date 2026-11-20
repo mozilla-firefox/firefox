@@ -152,9 +152,9 @@ class Http3SessionBase {
   virtual bool CloseWebTransport(
       uint64_t aSessionId, uint32_t aError, const nsACString& aMessage,
       mozilla::dom::WebTransportStatsData& aStats) = 0;
-  virtual nsresult SendDatagram(Http3WebTransportSession* aSession,
-                                nsTArray<uint8_t>& aData, uint64_t aSendGroupId,
-                                int64_t aSendOrder, TimeStamp aTimestamp) = 0;
+  virtual void SendDatagram(Http3WebTransportSession* aSession,
+                            nsTArray<uint8_t>& aData, uint64_t aSendGroupId,
+                            int64_t aSendOrder, TimeStamp aTimestamp) = 0;
   virtual uint64_t MaxDatagramSize(uint64_t aSessionId) = 0;
   virtual nsresult ExportWebTransportKeyingMaterial(
       uint64_t aSessionId, const nsTArray<uint8_t>& aLabel,
@@ -328,9 +328,9 @@ class Http3Session final : public Http3SessionBase,
   void StreamStopSending(Http3WebTransportStream* aStream,
                          uint64_t aErrorCode) override;
 
-  nsresult SendDatagram(Http3WebTransportSession* aSession,
-                        nsTArray<uint8_t>& aData, uint64_t aSendGroupId,
-                        int64_t aSendOrder, TimeStamp aTimestamp) override;
+  void SendDatagram(Http3WebTransportSession* aSession,
+                    nsTArray<uint8_t>& aData, uint64_t aSendGroupId,
+                    int64_t aSendOrder, TimeStamp aTimestamp) override;
   void SendHTTPDatagram(uint64_t aStreamId, nsTArray<uint8_t>& aData,
                         uint64_t aTrackingId) override;
 
