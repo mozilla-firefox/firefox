@@ -1155,29 +1155,31 @@ static void ReleaseImage(void* aImageGrip, const void* aDataPtr,
 CVPixelBufferRef AppleVTEncoder::CreateCVPixelBuffer(Image* aSource) {
   AssertOnTaskQueue();
 
-  auto sfr = EncoderConfig::SampleFormat::FromImage(aSource);
-  if (sfr.isErr()) {
-    MediaResult err = sfr.unwrapErr();
-    LOGE("{}", err.Description().get());
-    return nullptr;
-  }
-  const EncoderConfig::SampleFormat sf = sfr.unwrap();
-
-  if (sf != mConfig.mFormat) {
-    LOGV(
-        "Input image in format {} but encoder configured with "
-        "format {}. "
-        "Fingers crossed",
-        sf.ToString().get(), mConfig.mFormat.ToString().get());
-    // Bug 1955153: If the encoder encounters a
-    // kVTPixelTransferNotSupportedErr error due to an unsupported
-    // image format, it must be re-initialized. Additionally, any
-    // changes to the color space also require re-initializing the
-    // encoder.
-  }
-
+  // Only planar input is wrapped in place and needs a SampleFormat. Any other
+  // image is read back as RGB below.
   if (aSource->GetFormat() == ImageFormat::PLANAR_YCBCR ||
       aSource->GetFormat() == ImageFormat::NV_IMAGE) {
+    auto sfr = EncoderConfig::SampleFormat::FromImage(aSource);
+    if (sfr.isErr()) {
+      MediaResult err = sfr.unwrapErr();
+      LOGE("{}", err.Description().get());
+      return nullptr;
+    }
+    const EncoderConfig::SampleFormat sf = sfr.unwrap();
+
+    if (sf != mConfig.mFormat) {
+      LOGV(
+          "Input image in format {} but encoder configured with "
+          "format {}. "
+          "Fingers crossed",
+          sf.ToString().get(), mConfig.mFormat.ToString().get());
+      // Bug 1955153: If the encoder encounters a
+      // kVTPixelTransferNotSupportedErr error due to an unsupported
+      // image format, it must be re-initialized. Additionally, any
+      // changes to the color space also require re-initializing the
+      // encoder.
+    }
+
     const PlanarYCbCrData* yuv = nullptr;
     if (PlanarYCbCrImage* image = aSource->AsPlanarYCbCrImage()) {
       yuv = image->GetData();
@@ -1256,6 +1258,7 @@ CVPixelBufferRef AppleVTEncoder::CreateCVPixelBuffer(Image* aSource) {
     return nullptr;
   }
 
+  // TODO(bug 2063701): Wrap MacIOSurfaceImage input instead of reading it back.
   RefPtr<gfx::SourceSurface> surface = aSource->GetAsSourceSurface();
   if (!surface) {
     LOGE("Failed to get SourceSurface");
