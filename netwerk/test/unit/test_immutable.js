@@ -5,12 +5,60 @@ var http2pref;
 var origin;
 
 function run_test() {
-  var h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
-
-  // Set to allow the cert presented by our H2 server
   do_get_profile();
+  do_test_pending();
+  startServer().then(h2Port => {
+    setup(h2Port);
+    do_test_finished();
+  });
+}
+
+async function startServer() {
+  let server = await create_h2_server({
+    "/immutable-test-without-attribute": (req, res) => {
+      res.setHeader("Cache-Control", "max-age=100000");
+      res.setHeader("Etag", "1");
+      if (req.headers["if-none-match"]) {
+        res.setHeader("x-conditional", "true");
+      }
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.end("ok");
+    },
+    "/immutable-test-with-attribute": (req, res) => {
+      res.setHeader("Cache-Control", "max-age=100000, immutable");
+      res.setHeader("Etag", "2");
+      if (req.headers["if-none-match"]) {
+        res.setHeader("x-conditional", "true");
+      }
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.end("ok");
+    },
+    "/immutable-test-expired-with-Expires-header": (req, res) => {
+      res.setHeader("Cache-Control", "immutable");
+      res.setHeader("Expires", "Mon, 01 Jan 1990 00:00:00 GMT");
+      res.setHeader("Etag", "3");
+      if (req.headers["if-none-match"]) {
+        res.setHeader("x-conditional", "true");
+      }
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.end("ok");
+    },
+    "/immutable-test-expired-with-last-modified-header": (req, res) => {
+      res.setHeader("Cache-Control", "public, max-age=3600, immutable");
+      res.setHeader("Date", "Mon, 01 Jan 1990 00:00:00 GMT");
+      res.setHeader("Last-modified", "Mon, 01 Jan 1990 00:00:00 GMT");
+      res.setHeader("Etag", "4");
+      if (req.headers["if-none-match"]) {
+        res.setHeader("x-conditional", "true");
+      }
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.end("ok");
+    },
+  });
+  return server.port();
+}
+
+function setup(h2Port) {
   prefs = Services.prefs;
 
   http2pref = prefs.getBoolPref("network.http.http2.enabled");
@@ -20,13 +68,6 @@ function run_test() {
     "network.dns.localDomains",
     "foo.example.com, bar.example.com"
   );
-
-  // The moz-http2 cert is for foo.example.com and is signed by http2-ca.pem
-  // so add that cert to the trust list as a signing cert.  // the foo.example.com domain name.
-  let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
-    Ci.nsIX509CertDB
-  );
-  addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
 
   origin = "https://foo.example.com:" + h2Port;
   dump("origin - " + origin + "\n");
