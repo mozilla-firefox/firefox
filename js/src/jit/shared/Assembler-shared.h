@@ -556,6 +556,11 @@ enum class TargetKind {
 #endif
 };
 
+// The size in bytes of the landing pad emitted by indirectTarget(kind). This is
+// the distance from the returned target offset to the next instruction emitted
+// after it. Any code indirectTarget emits before the target isn't included.
+constexpr uint32_t IndirectTargetLandingPadSize(TargetKind kind) { return 0; }
+
 }  // namespace jit
 
 namespace wasm {

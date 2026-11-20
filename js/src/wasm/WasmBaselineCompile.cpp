@@ -4762,7 +4762,7 @@ bool BaseCompiler::emitBrTable() {
 
   for (uint32_t depth : depths) {
     stubs.infallibleEmplaceBack(NonAssertingLabel());
-    masm.bind(&stubs.back());
+    masm.bindIndirectTarget(&stubs.back(), TargetKind::Jump);
     shuffleStackResultsBeforeBranch(resultsBase, controlItem(depth).stackHeight,
                                     branchParams);
     controlItem(depth).bceSafeOnExit &= bceSafe_;
@@ -4858,7 +4858,7 @@ bool BaseCompiler::emitTryTable() {
   masm.jump(&skipLandingPad);
 
   StackHeight prePadHeight = fr.stackHeight();
-  uint32_t padOffset = masm.currentOffset();
+  uint32_t padOffset = masm.indirectTarget(TargetKind::Jump).offset();
   uint32_t padStackHeight = masm.framePushed();
 
   // InstanceReg is live and contains this function's instance by the exception
@@ -5354,7 +5354,8 @@ bool BaseCompiler::endTryCatch(ResultType type) {
   // The landing pad begins at this point
   TryNoteVector& tryNotes = masm.tryNotes();
   TryNote& tryNote = tryNotes[controlItem().tryNoteIndex];
-  tryNote.setLandingPad(masm.currentOffset(), masm.framePushed());
+  tryNote.setLandingPad(masm.indirectTarget(TargetKind::Jump).offset(),
+                        masm.framePushed());
 
   // Store the Instance that was left in InstanceReg by the exception
   // handling mechanism, that is this frame's Instance but with the exception

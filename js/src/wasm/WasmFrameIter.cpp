@@ -662,9 +662,10 @@ void WasmFrameIter::unwindShadowStackEntry(const void* returnAddress) {
 // prologue/epilogue. The offsets are dynamically asserted during code
 // generation.
 #if defined(JS_CODEGEN_X64)
-static const unsigned PushedRetAddr = 0;
-static const unsigned PushedFP = 1;
-static const unsigned SetFP = 4;
+static const unsigned PushedRetAddr =
+    IndirectTargetLandingPadSize(TargetKind::Call);
+static const unsigned PushedFP = PushedRetAddr + 1;
+static const unsigned SetFP = PushedRetAddr + 4;
 static const unsigned PoppedFP = 0;
 static const unsigned PoppedFPJitEntry = 0;
 #elif defined(JS_CODEGEN_X86)
@@ -686,9 +687,10 @@ static const unsigned PoppedFPJitEntry = 0;
 // PushedRetAddr and PushedFP are used in some restricted contexts
 // and must be superficially meaningful.
 static const unsigned BeforePushRetAddr = 0;
-static const unsigned PushedRetAddr = 4;
-static const unsigned PushedFP = 4;
-static const unsigned SetFP = 8;
+static const unsigned PushedRetAddr =
+    IndirectTargetLandingPadSize(TargetKind::Call) + 4;
+static const unsigned PushedFP = PushedRetAddr;
+static const unsigned SetFP = PushedRetAddr + 4;
 static const unsigned PoppedFP = 4;
 static const unsigned PoppedFPJitEntry = 4;
 static_assert(BeforePushRetAddr == 0, "Required by StartUnwinding");
@@ -805,7 +807,7 @@ void wasm::GenerateEnterWasmFPEnvironment(MacroAssembler& masm,
 #ifndef JS_CODEGEN_ARM64
 static void GenerateCommonPrologue(MacroAssembler& masm, uint32_t* entry) {
 #  if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64)
-  *entry = masm.currentOffset();
+  *entry = masm.indirectTarget(TargetKind::Call).offset();
 
   // The x86/x64 call instruction pushes the return address.
   MOZ_ASSERT_IF(!masm.oom(), PushedRetAddr == masm.currentOffset() - *entry);
@@ -893,9 +895,9 @@ static void GenerateCallablePrologue(MacroAssembler& masm, uint32_t* entry) {
     masm.SetStackPointer64(vixl::sp);
 
     AutoForbidPoolsAndNops afp(&masm,
-                               /* number of instructions in scope = */ 2);
+                               /* number of instructions in scope = */ 3);
 
-    *entry = masm.currentOffset();
+    *entry = masm.indirectTarget(TargetKind::Call).offset();
 
     static_assert(Frame::callerFPOffset() == 0 &&
                   Frame::returnAddressOffset() == 8);
@@ -1073,10 +1075,10 @@ void wasm::GenerateFunctionPrologue(MacroAssembler& masm,
     // Generate checked call entry. The BytecodeOffset of the trap is fixed up
     // to be the bytecode offset of the callsite by
     // JitActivation::startWasmTrap.
-    MOZ_ASSERT_IF(!masm.oom(), masm.currentOffset() - offsets->begin ==
+    uint32_t checkedCallEntry;
+    GenerateCallablePrologue(masm, &checkedCallEntry);
+    MOZ_ASSERT_IF(!masm.oom(), checkedCallEntry - offsets->begin ==
                                    WasmCheckedCallEntryOffset);
-    uint32_t dummy;
-    GenerateCallablePrologue(masm, &dummy);
 
     switch (callIndirectId.kind()) {
       case CallIndirectIdKind::Global: {
@@ -1206,7 +1208,7 @@ void wasm::GenerateFunctionPrologue(MacroAssembler& masm,
     masm.jump(Address(scratch, *tier1FuncIndex * sizeof(uintptr_t)));
   }
 
-  offsets->tierEntry = masm.currentOffset();
+  offsets->tierEntry = masm.indirectTarget(TargetKind::Jump).offset();
 
   MOZ_ASSERT(masm.framePushed() == 0);
 }
@@ -1629,9 +1631,9 @@ void wasm::GenerateJitExitPrologue(MacroAssembler& masm,
   {
 #  if defined(JS_CODEGEN_ARM64)
     AutoForbidPoolsAndNops afp(&masm,
-                               /* number of instructions in scope = */ 3);
+                               /* number of instructions in scope = */ 4);
 #  endif
-    offsets->begin = masm.currentOffset();
+    offsets->begin = masm.indirectTarget(TargetKind::Call).offset();
     Label fallback;
     masm.bind(&fallback, BufferOffset(fallbackOffset));
 
@@ -1683,7 +1685,7 @@ void wasm::GenerateJitEntryPrologue(MacroAssembler& masm,
     // Push the return address.
     AutoForbidPoolsAndNops afp(&masm,
                                /* number of instructions in scope = */ 3);
-    offsets->begin = masm.currentOffset();
+    offsets->begin = masm.indirectTarget(TargetKind::Call).offset();
 
     static_assert(BeforePushRetAddr == 0);
     static_assert(JitFrameLayout::offsetOfCallerFramePtr() == 0);
@@ -2137,9 +2139,9 @@ bool js::wasm::StartUnwinding(const RegisterState& registers,
         AssertMatchesCallSite(fixedPC, fixedFP);
       } else
 #endif
-          if (offsetFromEntry == PushedRetAddr || codeRange->isThunk()) {
+          if (offsetFromEntry <= PushedRetAddr || codeRange->isThunk()) {
         // The return address has been pushed on the stack but fp still
-        // points to the caller's fp.
+        // points to the caller's fp. This includes the entry's landing pad.
         fixedPC = sp[0];
         fixedFP = fp;
         AssertMatchesCallSite(fixedPC, fixedFP);

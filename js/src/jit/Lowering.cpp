@@ -7471,6 +7471,8 @@ void LIRGenerator::visitWasmReturnCall(MWasmReturnCall* ins) {
 }
 
 void LIRGenerator::visitWasmCallLandingPrePad(MWasmCallLandingPrePad* ins) {
+  // Exception handling jumps indirectly to the start of this block.
+  ins->block()->lir()->setIsIndirectJumpTarget();
   add(new (alloc()) LWasmCallLandingPrePad, ins);
 }
 

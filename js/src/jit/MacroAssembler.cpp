@@ -6337,15 +6337,20 @@ FaultingCodeRange MacroAssembler::wasmTrap(
   MOZ_ASSERT_IF(!oom(),
                 currentOffset() - fcr.get() == WasmTrapInstructionLength);
 
-#if defined(JS_CODEGEN_X64) || defined(JS_CODEGEN_X86)
-  // Resumable traps use an indirect jump with a resumePC operand on the stack
-  // to avoid clobbering any registers and require cleaning up the stack slot.
-  // See comment at the end of GenerateTrapExit for a description of how trap
-  // resumption works.
   if (wasm::TrapMightResume(trap)) {
+    // Resumable traps use an indirect jump to the instruction immediately
+    // following the trap. See comment at the end of GenerateTrapExit for a
+    // description of how trap resumption works.
+    mozilla::DebugOnly<uint32_t> resumeOffset =
+        indirectTarget(TargetKind::Jump).offset();
+    MOZ_ASSERT_IF(!oom(), resumeOffset == fcr.resumeOffset());
+
+#if defined(JS_CODEGEN_X64) || defined(JS_CODEGEN_X86)
+    // The resumePC operand used for the indirect jump is on the stack to avoid
+    // clobbering any registers and needs to be cleaned up.
     addToStackPtr(Imm32(sizeof(uintptr_t)));
-  }
 #endif
+  }
 
   appendAndVerify(trap, wasm::TrapMachineInsn::OfficialUD, fcr, trapSiteDesc);
   return fcr;

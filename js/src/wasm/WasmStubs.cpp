@@ -642,7 +642,7 @@ static bool GenerateInterpEntry(MacroAssembler& masm, const FuncExport& fe,
   static_assert(CodeAlignment >= sizeof(uintptr_t));
   MOZ_ASSERT_IF(!masm.oom(), masm.currentOffset() >= sizeof(uintptr_t));
 
-  offsets->begin = masm.currentOffset();
+  offsets->begin = masm.indirectTarget(TargetKind::Call).offset();
 
   // Save the return address if it wasn't already saved by the call insn.
 #ifdef JS_USE_LINK_REGISTER
@@ -2916,7 +2916,7 @@ bool wasm::GenerateContBaseFrameStub(jit::MacroAssembler& masm,
   masm.haltingAlign(CodeAlignment);
   masm.setFramePushed(0);
 
-  offsets->begin = masm.currentOffset();
+  offsets->begin = masm.indirectTarget(TargetKind::Jump).offset();
 
   Register scratch1 = ABINonArgReg0;
   Register scratch2 = ABINonArgReg1;
@@ -3704,7 +3704,7 @@ bool wasm::GenerateProvisionalLazyJitEntryStub(MacroAssembler& masm,
                                                Offsets* offsets) {
   AssertExpectedSP(masm);
   masm.setFramePushed(0);
-  offsets->begin = masm.currentOffset();
+  offsets->begin = masm.indirectTarget(TargetKind::Call).offset();
 
 #ifdef JS_CODEGEN_ARM64
   // Unaligned ABI calls require SP+PSP, but our mode here is SP-only
