@@ -71,6 +71,8 @@ export default {
     markdownStories.indexer,
   ],
   staticDirs: [
+    `${projectRoot}/toolkit/themes/shared/design-system/src/`,
+    `${projectRoot}/toolkit/themes/shared/design-system/dist/web/`,
     `${projectRoot}/toolkit/themes/shared/design-system/docs/`,
     // This allows static images to be correctly served when placed in
     // a folder outside of the design-system/docs/ folder
