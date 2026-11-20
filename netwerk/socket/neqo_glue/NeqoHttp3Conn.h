@@ -29,8 +29,7 @@ class NeqoHttp3Conn final {
         aMaxBlockedStreams, aMaxData, aMaxStreamData, aVersionNegotiation,
         aWebTransport, aWtInitialMaxData, aWtInitialMaxStreamsUni,
         aWtInitialMaxStreamsBidi, &aQlogDir, aIdleTimeout, aFastPto,
-        aPacingEnabled,
-        (const mozilla::net::NeqoHttp3Conn**)aConn);
+        aPacingEnabled, (const mozilla::net::NeqoHttp3Conn**)aConn);
   }
 
   static nsresult Init(const nsACString& aOrigin, const nsACString& aAlpn,
