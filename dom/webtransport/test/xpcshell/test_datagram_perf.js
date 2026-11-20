@@ -90,6 +90,12 @@ function collectGarbage() {
   Cu.forceCC();
 }
 
+// The default outgoingMaxAge is short enough for a loaded test machine to
+// exceed, which would count scheduling delay as loss and leave no echo to time.
+function disableOutgoingDatagramExpiry(wt) {
+  wt.datagrams.outgoingMaxAge = Infinity;
+}
+
 function percentile(sorted, fraction) {
   return sorted[
     Math.min(sorted.length - 1, Math.floor(sorted.length * fraction))
@@ -142,6 +148,7 @@ async function runDatagramBenchmark(label, sizeFor) {
   collectGarbage();
   const wt = newWebTransport(`https://${host}/echo_datagrams`);
   await wt.ready;
+  disableOutgoingDatagramExpiry(wt);
 
   const size = sizeFor(wt);
   Assert.greaterOrEqual(size, 4, "datagram size");
@@ -254,6 +261,7 @@ async function runPingPongBenchmark(label, sizeFor) {
   collectGarbage();
   const wt = newWebTransport(`https://${host}/echo_datagrams`);
   await wt.ready;
+  disableOutgoingDatagramExpiry(wt);
 
   const size = sizeFor(wt);
   Assert.greaterOrEqual(size, 4, "datagram size");

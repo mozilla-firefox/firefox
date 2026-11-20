@@ -24,6 +24,7 @@ promise_test(async t => {
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
   await wt.ready;
+  wt.datagrams.outgoingMaxAge = Infinity;
 
   const N = 5;
   wt.datagrams.incomingMaxBufferedDatagrams = N;
@@ -84,6 +85,7 @@ promise_test(async t => {
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
   await wt.ready;
+  wt.datagrams.outgoingMaxAge = Infinity;
 
   const N = 5;
   wt.datagrams.incomingMaxBufferedDatagrams = N;
@@ -148,12 +150,12 @@ promise_test(async t => {
   await wt.ready;
 
   // Large enough that outgoingMaxBufferedDatagrams does not pace the burst, and
-  // outgoingMaxAge left at its default of Infinity, so nothing may leave the
-  // queue except by being sent. The burst holds more bytes than an
-  // implementation is likely to buffer for a session, so it has to pace the
-  // writes instead of dropping datagrams.
+  // no expiry, so nothing may leave the queue except by being sent. The
+  // burst holds more bytes than an implementation is likely to buffer for a
+  // session, so it has to pace the writes instead of dropping datagrams.
   const burst = 4000;
   wt.datagrams.outgoingMaxBufferedDatagrams = burst * 2;
+  wt.datagrams.outgoingMaxAge = Infinity;
   wt.datagrams.incomingMaxBufferedDatagrams = burst;
 
   let received = 0;
