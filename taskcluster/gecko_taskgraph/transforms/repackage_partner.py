@@ -132,12 +132,13 @@ def make_job_description(config, jobs):
         dependencies = {dep_job.attributes.get("kind"): dep_job.label}
         dependencies.update(dep_job.dependencies)
 
-        signing_task = None
-        for dependency in dependencies.keys():
-            if build_platform.startswith("macosx") and dependency.endswith("signing"):
-                signing_task = dependency
-            elif build_platform.startswith("win") and dependency.endswith("repack"):
-                signing_task = dependency
+        package_dependency = None
+        if build_platform.startswith("macosx"):
+            package_dependency = dep_job.kind
+        elif build_platform.startswith("win"):
+            for dependency in dependencies:
+                if dependency.endswith("repack"):
+                    package_dependency = dependency
 
         attributes["repackage_type"] = "repackage"
 
@@ -220,7 +221,7 @@ def make_job_description(config, jobs):
             "fetches": _generate_download_config(
                 dep_job,
                 build_platform,
-                signing_task,
+                package_dependency,
                 partner=repack_id,
                 project=config.params["project"],
                 repack_stub_installer=repack_stub_installer,
@@ -246,7 +247,7 @@ def make_job_description(config, jobs):
 def _generate_download_config(
     task,
     build_platform,
-    signing_task,
+    package_dependency,
     partner=None,
     project=None,
     repack_stub_installer=False,
@@ -255,7 +256,7 @@ def _generate_download_config(
 
     if build_platform.startswith("macosx"):
         return {
-            signing_task: [
+            package_dependency: [
                 {
                     "artifact": f"{locale_path}target.tar.gz",
                     "extract": False,
@@ -278,7 +279,7 @@ def _generate_download_config(
                 },
                 f"{locale_path}setup-stub.exe",
             ])
-        return {signing_task: download_config}
+        return {package_dependency: download_config}
 
     raise NotImplementedError(f'Unsupported build_platform: "{build_platform}"')
 
