@@ -1457,6 +1457,14 @@ export class TranslationsParent extends JSWindowActorParent {
   static #translationModelRecords = null;
 
   /**
+   * The records from #translationModelRecords, grouped by their exact source
+   * language tag and then by their exact target language tag.
+   *
+   * @type {WeakMap<Map<string, TranslationModelRecord>, Map<string, Map<string, TranslationModelRecord[]>>>}
+   */
+  static #translationModelRecordsByLanguage = new WeakMap();
+
+  /**
    * The RemoteSettingsClient that downloads the translation models.
    *
    * @type {RemoteSettingsClient | null}
@@ -4159,6 +4167,41 @@ export class TranslationsParent extends JSWindowActorParent {
   }
 
   /**
+   * Groups the records by their exact source and target language tags, so that
+   * language matching only needs to run once per distinct tag. The result is
+   * cached for the lifetime of the records map.
+   *
+   * @param {Map<string, TranslationModelRecord>} records
+   * @returns {Map<string, Map<string, TranslationModelRecord[]>>}
+   */
+  static #getTranslationModelRecordsByLanguage(records) {
+    let bySource =
+      TranslationsParent.#translationModelRecordsByLanguage.get(records);
+    if (bySource) {
+      return bySource;
+    }
+    bySource = new Map();
+    for (const record of records.values()) {
+      let byTarget = bySource.get(record.sourceLanguage);
+      if (!byTarget) {
+        byTarget = new Map();
+        bySource.set(record.sourceLanguage, byTarget);
+      }
+      let pairRecords = byTarget.get(record.targetLanguage);
+      if (!pairRecords) {
+        pairRecords = [];
+        byTarget.set(record.targetLanguage, pairRecords);
+      }
+      pairRecords.push(record);
+    }
+    TranslationsParent.#translationModelRecordsByLanguage.set(
+      records,
+      bySource
+    );
+    return bySource;
+  }
+
+  /**
    * Get the necessary files for translating between two given languages.
    * This may require the files for a pivot language translation
    * if there is no language model for a direct translation.
@@ -4179,6 +4222,8 @@ export class TranslationsParent extends JSWindowActorParent {
     includePivotRecords
   ) {
     const records = await TranslationsParent.#getTranslationModelRecords();
+    const recordsByLanguage =
+      TranslationsParent.#getTranslationModelRecordsByLanguage(records);
 
     let matchedRecords = new Set();
 
@@ -4189,19 +4234,27 @@ export class TranslationsParent extends JSWindowActorParent {
 
     const addLanguagePair = (sourceLanguage, targetLanguage) => {
       let matchFound = false;
-      for (const record of records.values()) {
+      for (const [recordSourceLanguage, byTarget] of recordsByLanguage) {
         if (
-          lazy.TranslationsUtils.langTagsMatch(
-            record.sourceLanguage,
+          !lazy.TranslationsUtils.langTagsMatch(
+            recordSourceLanguage,
             sourceLanguage
-          ) &&
-          lazy.TranslationsUtils.langTagsMatch(
-            record.targetLanguage,
-            targetLanguage
           )
         ) {
-          matchedRecords.add(record);
-          matchFound = true;
+          continue;
+        }
+        for (const [recordTargetLanguage, pairRecords] of byTarget) {
+          if (
+            lazy.TranslationsUtils.langTagsMatch(
+              recordTargetLanguage,
+              targetLanguage
+            )
+          ) {
+            for (const record of pairRecords) {
+              matchedRecords.add(record);
+            }
+            matchFound = true;
+          }
         }
       }
       return matchFound;
