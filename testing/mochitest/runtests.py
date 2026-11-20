@@ -3081,7 +3081,11 @@ toolbar#nav-bar {
                 restartAfterFailure=restartAfterFailure,
             )
 
+            timed_out = False
+
             def timeoutHandler():
+                nonlocal timed_out
+                timed_out = True
                 browserProcessId = outputHandler.browserProcessId
                 self.handleTimeout(
                     timeout,
@@ -3204,6 +3208,7 @@ toolbar#nav-bar {
                 )
                 # must report an integer to process_exit()
                 status = 0
+            exit_code = status
             self.log.process_exit("Main app process", status)
             runner.process_handler = None
 
@@ -3237,7 +3242,7 @@ toolbar#nav-bar {
                 # no need to keep return code 137, 245, etc.
                 status = 1
                 self.message_logger.dump_buffered()
-                msg = f"application terminated with exit code {status}"
+                msg = f"application terminated with exit code {exit_code}"
                 # self.message_logger.is_test_running indicates we need to send a test_end
                 if crashAsPass and self.message_logger.is_test_running:
                     # this works for browser-chrome, mochitest-plain has status=0
@@ -3297,9 +3302,17 @@ toolbar#nav-bar {
                     # this works for browser-chrome, mochitest-plain has status=0
                     expected = "CRASH"
                 status = 0
-            elif crash_count or zombieProcesses:
+            elif crash_count or zombieProcesses or status:
                 if self.message_logger.is_test_running:
                     expected = "PASS"
+                elif status and not crash_count and not timed_out:
+                    # No minidump reported the abnormal exit, e.g. a sanitizer
+                    # abort in a build without a crash reporter. A harness
+                    # timeout has already reported the test it killed.
+                    self.log.error(
+                        f"TEST-UNEXPECTED-FAIL | {self.lastTestSeen} | "
+                        f"application terminated with exit code {exit_code}"
+                    )
                 status = 1
 
             if expected:
@@ -3313,7 +3326,7 @@ toolbar#nav-bar {
                     "source": "mochitest",
                     "time": int(time.time() * 1000),
                     "test": self.lastTestSeen,
-                    "message": f"application terminated with exit code {status}",
+                    "message": f"application terminated with exit code {exit_code}",
                 }
 
                 # for looping scenarios (like --restartAfterFailure), document the test
@@ -3562,6 +3575,7 @@ toolbar#nav-bar {
         bisect = bisection.Bisect(self)
         finished = False
         status = 0
+        result = 0
         bisection_log = 0
 
         # Retry-on-failure relies on counters populated by the desktop
@@ -3592,13 +3606,14 @@ toolbar#nav-bar {
 
             self.tests_started = set()
             if options.restartBetweenTests:
-                result = self.doTests(options, testsToRun[:1], manifestToFilter)
+                res = self.doTests(options, testsToRun[:1], manifestToFilter)
             else:
-                result = self.doTests(options, testsToRun, manifestToFilter)
-            if result == TBPL_RETRY:  # terminate task
-                return result
-            if result == -1:  # interrupted
-                return result
+                res = self.doTests(options, testsToRun, manifestToFilter)
+            if res == TBPL_RETRY:  # terminate task
+                return res
+            if res == -1:  # interrupted
+                return res
+            result = result or res
 
             if options.bisectChunk:
                 status = bisect.post_test(options, self.expectedError, self.result)

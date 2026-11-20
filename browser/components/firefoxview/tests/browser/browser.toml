@@ -76,6 +76,9 @@ fail-if = [
 ["browser_reload_firefoxview.js"]
 
 ["browser_syncedtabs_errors_firefoxview.js"]
+skip-if = [
+  "tsan", # Bug 2080357
+]
 
 ["browser_syncedtabs_firefoxview.js"]
 
