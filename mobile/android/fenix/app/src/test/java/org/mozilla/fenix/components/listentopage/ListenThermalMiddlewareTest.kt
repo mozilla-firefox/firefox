@@ -42,7 +42,7 @@ class ListenThermalMiddlewareTest {
         monitor.report(ThermalStatus.Severe)
         monitor.report(ThermalStatus.Light)
 
-        store.dispatch(ListenAction.Session.StopRequested())
+        store.dispatch(ListenAction.User.Session.StopRequested())
 
         assertEquals(1, ListenToPage.sessionMaxThermalStatus["severe"].testGetValue())
         assertNull(ListenToPage.sessionMaxThermalStatus["light"].testGetValue())
@@ -52,7 +52,7 @@ class ListenThermalMiddlewareTest {
     fun `WHEN the device stays cool THEN the session is counted as none`() {
         startReading()
 
-        store.dispatch(ListenAction.Session.StopRequested())
+        store.dispatch(ListenAction.User.Session.StopRequested())
 
         assertEquals(1, ListenToPage.sessionMaxThermalStatus["none"].testGetValue())
         assertNull(ListenToPage.thermalThrottlingEntered.testGetValue())
@@ -66,7 +66,7 @@ class ListenThermalMiddlewareTest {
         monitor.report(ThermalStatus.Light)
         monitor.report(ThermalStatus.Moderate)
 
-        store.dispatch(ListenAction.Session.StopRequested())
+        store.dispatch(ListenAction.User.Session.StopRequested())
 
         assertEquals(2, ListenToPage.thermalThrottlingEntered.testGetValue())
     }
@@ -77,7 +77,7 @@ class ListenThermalMiddlewareTest {
         startReading()
         monitor.report(ThermalStatus.Moderate)
 
-        store.dispatch(ListenAction.Session.StopRequested())
+        store.dispatch(ListenAction.User.Session.StopRequested())
 
         assertEquals(1, ListenToPage.sessionMaxThermalStatus["moderate"].testGetValue())
         assertNull(ListenToPage.thermalThrottlingEntered.testGetValue())
@@ -88,7 +88,7 @@ class ListenThermalMiddlewareTest {
         monitor.supported = false
         startReading()
 
-        store.dispatch(ListenAction.Session.StopRequested())
+        store.dispatch(ListenAction.User.Session.StopRequested())
 
         assertFalse(monitor.observing)
         assertNull(ListenToPage.sessionMaxThermalStatus["none"].testGetValue())
@@ -99,7 +99,7 @@ class ListenThermalMiddlewareTest {
         monitor.currentStatus = ThermalStatus.Unknown
         startReading()
 
-        store.dispatch(ListenAction.Session.StopRequested())
+        store.dispatch(ListenAction.User.Session.StopRequested())
 
         assertFalse(monitor.observing)
         listOf("none", "light", "moderate", "severe", "critical", "emergency", "shutdown").forEach {
@@ -114,7 +114,7 @@ class ListenThermalMiddlewareTest {
         monitor.report(ThermalStatus.Unknown)
         monitor.report(ThermalStatus.Moderate)
 
-        store.dispatch(ListenAction.Session.StopRequested())
+        store.dispatch(ListenAction.User.Session.StopRequested())
 
         assertEquals(1, ListenToPage.sessionMaxThermalStatus["moderate"].testGetValue())
         assertEquals(1, ListenToPage.thermalThrottlingEntered.testGetValue())
@@ -122,9 +122,9 @@ class ListenThermalMiddlewareTest {
 
     @Test
     fun `WHEN a session stops before any audio plays THEN nothing is observed or recorded`() {
-        store.dispatch(ListenAction.Session.ListenRequested(tabId = "tab", url = "https://example.com"))
+        store.dispatch(ListenAction.User.Session.ListenRequested(tabId = "tab", url = "https://example.com"))
 
-        store.dispatch(ListenAction.Session.StopRequested())
+        store.dispatch(ListenAction.User.Session.StopRequested())
 
         assertEquals(0, monitor.supportChecks)
         assertNull(ListenToPage.sessionMaxThermalStatus["none"].testGetValue())
@@ -134,8 +134,8 @@ class ListenThermalMiddlewareTest {
     fun `WHEN later chunks play THEN support is only checked once per session`() {
         startReading()
 
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 1), positionMs = 0))
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 2), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 1), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 2), positionMs = 0))
 
         assertEquals(1, monitor.supportChecks)
     }
@@ -145,7 +145,7 @@ class ListenThermalMiddlewareTest {
         monitor.supported = false
         startReading()
 
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 1), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 1), positionMs = 0))
 
         assertEquals(1, monitor.supportChecks)
     }
@@ -153,7 +153,7 @@ class ListenThermalMiddlewareTest {
     @Test
     fun `WHEN a session stops THEN observing stops and later reports are ignored`() {
         startReading()
-        store.dispatch(ListenAction.Session.StopRequested())
+        store.dispatch(ListenAction.User.Session.StopRequested())
 
         assertFalse(monitor.observing)
         monitor.report(ThermalStatus.Severe)
@@ -165,7 +165,7 @@ class ListenThermalMiddlewareTest {
         startReading()
         monitor.report(ThermalStatus.Severe)
 
-        store.dispatch(ListenAction.Session.ListenRequested(tabId = "other", url = "https://example.org"))
+        store.dispatch(ListenAction.User.Session.ListenRequested(tabId = "other", url = "https://example.org"))
 
         assertEquals(1, ListenToPage.sessionMaxThermalStatus["severe"].testGetValue())
     }
@@ -175,7 +175,7 @@ class ListenThermalMiddlewareTest {
         startReading()
         monitor.report(ThermalStatus.Severe)
 
-        store.dispatch(ListenAction.Playback.PlaybackEnded)
+        store.dispatch(ListenAction.System.Playback.PlaybackEnded)
 
         assertEquals(1, ListenToPage.sessionMaxThermalStatus["severe"].testGetValue())
         assertFalse(monitor.observing)
@@ -186,7 +186,7 @@ class ListenThermalMiddlewareTest {
         startReading()
         monitor.report(ThermalStatus.Severe)
 
-        store.dispatch(ListenAction.Playback.PlaybackFailed)
+        store.dispatch(ListenAction.System.Playback.PlaybackFailed)
 
         assertEquals(1, ListenToPage.sessionMaxThermalStatus["severe"].testGetValue())
         assertFalse(monitor.observing)
@@ -196,13 +196,13 @@ class ListenThermalMiddlewareTest {
     fun `WHEN the audio is paused THEN the status is not observed until it plays again`() {
         startReading()
 
-        store.dispatch(ListenAction.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Paused)))
+        store.dispatch(ListenAction.System.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Paused)))
         assertFalse(monitor.observing)
         monitor.report(ThermalStatus.Severe)
         monitor.report(ThermalStatus.None)
-        store.dispatch(ListenAction.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Playing)))
+        store.dispatch(ListenAction.System.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Playing)))
         assertTrue(monitor.observing)
-        store.dispatch(ListenAction.Session.StopRequested())
+        store.dispatch(ListenAction.User.Session.StopRequested())
 
         assertEquals(1, ListenToPage.sessionMaxThermalStatus["none"].testGetValue())
         assertNull(ListenToPage.sessionMaxThermalStatus["severe"].testGetValue())
@@ -212,18 +212,18 @@ class ListenThermalMiddlewareTest {
     @Test
     fun `WHEN an article that ended is played again THEN a new session is recorded`() {
         startReading()
-        store.dispatch(ListenAction.Playback.PlaybackEnded)
+        store.dispatch(ListenAction.System.Playback.PlaybackEnded)
 
-        store.dispatch(ListenAction.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Playing)))
+        store.dispatch(ListenAction.System.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Playing)))
         assertTrue(monitor.observing)
-        store.dispatch(ListenAction.Session.StopRequested())
+        store.dispatch(ListenAction.User.Session.StopRequested())
 
         assertEquals(2, ListenToPage.sessionMaxThermalStatus["none"].testGetValue())
     }
 
     private fun startReading() {
-        store.dispatch(ListenAction.Session.ListenRequested(tabId = "tab", url = "https://example.com"))
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
+        store.dispatch(ListenAction.User.Session.ListenRequested(tabId = "tab", url = "https://example.com"))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
         assertTrue(!monitor.supported || monitor.currentStatus == ThermalStatus.Unknown || monitor.observing)
     }
 

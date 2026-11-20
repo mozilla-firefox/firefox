@@ -81,7 +81,7 @@ private val ContentExit =
  * @param speed How fast the article is being read out, shown on the expanded player's speed control.
  * @param voiceState The voices the expanded player offers to read the article in, and the one it is read in.
  * @param expanded Whether to show the full player. `false` shows the compact one.
- * @param onAction Invoked to pass upwards a [ListenAction] in response to a UI event.
+ * @param onAction Invoked to pass upwards a [ListenAction.User] in response to a UI event.
  * @param modifier Optional modifier for further customisation of this player.
  */
 @Composable
@@ -91,7 +91,7 @@ fun ListenSheet(
     playbackPhase: PlaybackPhase,
     speed: PlaybackSpeed,
     voiceState: VoiceState,
-    onAction: (ListenAction) -> Unit,
+    onAction: (ListenAction.User) -> Unit,
     modifier: Modifier = Modifier,
     error: ListenError? = null,
     expanded: Boolean = true,

@@ -48,7 +48,7 @@ class ListenToPageBindingTest {
         error: ListenError? = null,
     ) {
         nextState = ListenState(tabId = tabId, playbackState = PlaybackState(phase = phase), error = error)
-        listenStore.dispatch(ListenAction.Controls.PlayPauseClicked)
+        listenStore.dispatch(ListenAction.User.Controls.PlayPauseClicked)
         testDispatcher.scheduler.advanceUntilIdle()
     }
 

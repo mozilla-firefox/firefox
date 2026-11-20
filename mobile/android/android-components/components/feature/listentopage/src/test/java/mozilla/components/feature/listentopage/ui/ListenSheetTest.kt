@@ -143,7 +143,7 @@ class ListenSheetTest {
 
         composeTestRule.onNodeWithText(TITLE).performClick()
 
-        assertEquals(listOf(ListenAction.ModeChanged(PlayerMode.Expanded)), actions)
+        assertEquals(listOf(ListenAction.User.ModeChanged(PlayerMode.Expanded)), actions)
     }
 
     // Play button tests
@@ -316,7 +316,7 @@ class ListenSheetTest {
 
         dragThumbPastEnd(release = true)
 
-        val seek = actions.single() as ListenAction.Playback.SeekRequested
+        val seek = actions.single() as ListenAction.User.Controls.SeekRequested
         assertEquals(1f, seek.fraction, 0.01f)
     }
 
@@ -369,7 +369,7 @@ class ListenSheetTest {
             .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress))
             .performSemanticsAction(SemanticsActions.SetProgress) { assertTrue(it(0.5f)) }
 
-        assertEquals(listOf(ListenAction.Playback.SeekRequested(0.5f)), actions)
+        assertEquals(listOf(ListenAction.User.Controls.SeekRequested(0.5f)), actions)
     }
 
     @Test

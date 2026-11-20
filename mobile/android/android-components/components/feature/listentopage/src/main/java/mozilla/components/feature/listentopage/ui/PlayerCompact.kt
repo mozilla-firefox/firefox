@@ -42,7 +42,7 @@ internal fun PlayerCompact(
     article: ArticleDetails,
     articleProgressState: State<ArticleProgress>,
     playbackUiState: PlaybackUiState,
-    onAction: (ListenAction) -> Unit,
+    onAction: (ListenAction.User) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -56,7 +56,7 @@ internal fun PlayerCompact(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(
-                onClick = { onAction(ListenAction.Session.StopRequested()) },
+                onClick = { onAction(ListenAction.User.Session.StopRequested()) },
                 colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.surface),
                 contentDescription = stringResource(R.string.mozac_feature_listentopage_close),
             ) {
@@ -74,7 +74,7 @@ internal fun PlayerCompact(
                         .clickable(
                             onClickLabel = stringResource(R.string.mozac_feature_listentopage_expand_player),
                             role = Role.Button,
-                            onClick = { onAction(ListenAction.ModeChanged(PlayerMode.Expanded)) },
+                            onClick = { onAction(ListenAction.User.ModeChanged(PlayerMode.Expanded)) },
                         ),
                 shouldScrollTitle =
                     playbackUiState is PlaybackUiState.Playing || playbackUiState is PlaybackUiState.Buffering,
@@ -88,7 +88,7 @@ internal fun PlayerCompact(
             )
             PlayPauseButton(
                 playbackUiState = playbackUiState,
-                onButtonClicked = { onAction(ListenAction.Controls.PlayPauseClicked) },
+                onButtonClicked = { onAction(ListenAction.User.Controls.PlayPauseClicked) },
             )
         }
         // Reserves the space the progress bar occupies, since the bar itself is drawn as

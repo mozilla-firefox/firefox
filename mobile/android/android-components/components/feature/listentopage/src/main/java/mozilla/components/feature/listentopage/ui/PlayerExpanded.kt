@@ -60,7 +60,7 @@ internal fun PlayerExpanded(
     playbackUiState: PlaybackUiState,
     speed: PlaybackSpeed,
     voiceState: VoiceState,
-    onAction: (ListenAction) -> Unit,
+    onAction: (ListenAction.User) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -75,7 +75,7 @@ internal fun PlayerExpanded(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(
-                onClick = { onAction(ListenAction.Session.StopRequested()) },
+                onClick = { onAction(ListenAction.User.Session.StopRequested()) },
                 contentDescription = stringResource(R.string.mozac_feature_listentopage_close),
             ) {
                 Icon(
@@ -102,7 +102,7 @@ internal fun PlayerExpanded(
         val speedState =
             remember(speed, locale, labelPattern, onAction) {
                 speed.toSpeedState(locale, labelPattern) {
-                    onAction(ListenAction.Controls.PlaybackSpeedSelected(it))
+                    onAction(ListenAction.User.Controls.PlaybackSpeedSelected(it))
                 }
             }
         PlaybackControls(
@@ -119,7 +119,7 @@ internal fun PlayerExpanded(
 private fun AudioProgress(
     articleProgressState: State<ArticleProgress>,
     isEnabled: Boolean,
-    onAction: (ListenAction) -> Unit,
+    onAction: (ListenAction.User) -> Unit,
 ) {
     // Reading articleProgressState here instead of inside the lambda would defeat the point of hoisting it as a State.
     val progress = { articleProgressState.value.fraction }
@@ -156,7 +156,7 @@ private fun AudioProgress(
                 type = AudioProgressBarType.Full,
                 onSeek = {
                     scrubFraction = null
-                    onAction(ListenAction.Playback.SeekRequested(it))
+                    onAction(ListenAction.User.Controls.SeekRequested(it))
                 },
                 modifier =
                     Modifier.extendTrackLength(thumbWidth = AcornTheme.layout.size.static200).semantics {

@@ -46,7 +46,7 @@ class ListenPerformanceMiddlewareTest {
 
         store.dispatch(LISTEN_REQUESTED)
         now += 250
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
 
         assertEquals(
             listOf(Marker(TIME_TO_FIRST_AUDIO, startTime = 0.0, endTime = 250.0, text = null)),
@@ -60,7 +60,7 @@ class ListenPerformanceMiddlewareTest {
         val store = createStore()
 
         store.dispatch(LISTEN_REQUESTED)
-        store.dispatch(ListenAction.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Playing)))
+        store.dispatch(ListenAction.System.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Playing)))
 
         assertEquals(TIME_TO_FIRST_AUDIO, profiler.markers.single().name)
     }
@@ -73,7 +73,7 @@ class ListenPerformanceMiddlewareTest {
         now += 100
         store.dispatch(LISTEN_REQUESTED)
         now += 100
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
 
         assertEquals(100.0, profiler.markers.single().startTime)
     }
@@ -83,8 +83,8 @@ class ListenPerformanceMiddlewareTest {
         val store = createStore()
 
         store.dispatch(LISTEN_REQUESTED)
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 1), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 1), positionMs = 0))
 
         assertEquals(1, profiler.markers.size)
         assertEquals(1L, ListenToPage.timeToFirstAudio.testGetValue()?.count)
@@ -94,8 +94,8 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN play is pressed THEN time to first audio is not started`() {
         val store = createStore()
 
-        store.dispatch(ListenAction.Controls.PlayPauseClicked)
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
+        store.dispatch(ListenAction.User.Controls.PlayPauseClicked)
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
 
         assertTrue(profiler.markers.isEmpty())
         assertNull(ListenToPage.timeToFirstAudio.testGetValue())
@@ -107,7 +107,7 @@ class ListenPerformanceMiddlewareTest {
 
         store.dispatch(LISTEN_REQUESTED)
         now += 300
-        store.dispatch(ListenAction.Synthesis.SynthesisFailed)
+        store.dispatch(ListenAction.System.Synthesis.SynthesisFailed)
 
         assertEquals(
             Marker(
@@ -126,8 +126,8 @@ class ListenPerformanceMiddlewareTest {
         val store = createStore()
 
         store.dispatch(LISTEN_REQUESTED)
-        store.dispatch(ListenAction.Session.StopRequested())
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
+        store.dispatch(ListenAction.User.Session.StopRequested())
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
 
         assertTrue(profiler.markers.isEmpty())
         assertNull(ListenToPage.timeToFirstAudio.testGetValue())
@@ -139,7 +139,7 @@ class ListenPerformanceMiddlewareTest {
         val store = createStore()
 
         store.dispatch(LISTEN_REQUESTED)
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
 
         assertTrue(profiler.markers.isEmpty())
         assertEquals(1L, ListenToPage.timeToFirstAudio.testGetValue()?.count)
@@ -149,9 +149,9 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN the player runs out of audio THEN a chunk gap is recorded until the next chunk plays`() {
         val store = createStore(playing)
 
-        store.dispatch(ListenAction.Playback.PlaybackWaiting)
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
         now += 800
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
 
         assertEquals(
             listOf(Marker(CHUNK_GAP, startTime = 0.0, endTime = 800.0, text = "cause=waiting")),
@@ -164,8 +164,8 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN the player waits for the opening THEN no chunk gap is recorded`() {
         val store = createStore()
 
-        store.dispatch(ListenAction.Playback.PlaybackWaiting)
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
 
         assertTrue(profiler.markers.isEmpty())
         assertNull(ListenToPage.chunkGapDuration.testGetValue())
@@ -175,8 +175,8 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN an article that ended is played again THEN no chunk gap is recorded`() {
         val store = createStore(ListenState(playbackState = PlaybackState(phase = PlaybackPhase.Ended)))
 
-        store.dispatch(ListenAction.Playback.PlaybackWaiting)
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
 
         assertTrue(profiler.markers.isEmpty())
         assertNull(ListenToPage.chunkGapDuration.testGetValue())
@@ -186,9 +186,9 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN the player buffers while playing THEN a chunk gap is recorded until it plays again`() {
         val store = createStore(playing)
 
-        store.dispatch(ListenAction.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Buffering)))
+        store.dispatch(ListenAction.System.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Buffering)))
         now += 50
-        store.dispatch(ListenAction.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Playing)))
+        store.dispatch(ListenAction.System.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Playing)))
 
         assertEquals(
             listOf(Marker(CHUNK_GAP, startTime = 0.0, endTime = 50.0, text = "cause=buffering")),
@@ -200,8 +200,8 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN the player buffers before it has played THEN no chunk gap is recorded`() {
         val store = createStore()
 
-        store.dispatch(ListenAction.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Buffering)))
-        store.dispatch(ListenAction.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Playing)))
+        store.dispatch(ListenAction.System.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Buffering)))
+        store.dispatch(ListenAction.System.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Playing)))
 
         assertTrue(profiler.markers.isEmpty())
     }
@@ -210,18 +210,18 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN the player waits after a seek or voice change THEN no chunk gap is recorded`() {
         val requests =
             listOf(
-                ListenAction.Playback.SeekRequested(fraction = 0.5f),
-                ListenAction.Controls.RewindClicked,
-                ListenAction.Controls.ForwardClicked,
-                ListenAction.Voices.VoiceSelected(Voice("en-gb", Locale.UK)),
+                ListenAction.User.Controls.SeekRequested(fraction = 0.5f),
+                ListenAction.User.Controls.RewindClicked,
+                ListenAction.User.Controls.ForwardClicked,
+                ListenAction.User.Voices.VoiceSelected(Voice("en-gb", Locale.UK)),
             )
 
         requests.forEach { request ->
             val store = createStore(playing)
 
             store.dispatch(request)
-            store.dispatch(ListenAction.Playback.PlaybackWaiting)
-            store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
+            store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
+            store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
 
             assertTrue("Gap recorded after $request", profiler.markers.none { it.name == CHUNK_GAP })
         }
@@ -230,12 +230,12 @@ class ListenPerformanceMiddlewareTest {
     @Test
     fun `WHEN audio plays after a seek THEN later chunk gaps are recorded again`() {
         val store = createStore(playing)
-        store.dispatch(ListenAction.Playback.SeekRequested(fraction = 0.5f))
-        store.dispatch(ListenAction.Playback.PlaybackWaiting)
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
+        store.dispatch(ListenAction.User.Controls.SeekRequested(fraction = 0.5f))
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
 
-        store.dispatch(ListenAction.Playback.PlaybackWaiting)
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 4), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 4), positionMs = 0))
 
         assertEquals(1, profiler.markers.count { it.name == CHUNK_GAP })
     }
@@ -243,13 +243,13 @@ class ListenPerformanceMiddlewareTest {
     @Test
     fun `WHEN a session stops during a seek THEN the next session records chunk gaps`() {
         val store = createStore(playing)
-        store.dispatch(ListenAction.Playback.SeekRequested(fraction = 0.5f))
-        store.dispatch(ListenAction.Session.StopRequested())
+        store.dispatch(ListenAction.User.Controls.SeekRequested(fraction = 0.5f))
+        store.dispatch(ListenAction.User.Session.StopRequested())
 
         store.dispatch(LISTEN_REQUESTED)
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
-        store.dispatch(ListenAction.Playback.PlaybackWaiting)
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 1), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 1), positionMs = 0))
 
         assertEquals(CHUNK_GAP, profiler.markers.last().name)
     }
@@ -258,16 +258,16 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN playback is paused during a chunk gap THEN the gap is not recorded`() {
         val pauses =
             listOf(
-                ListenAction.Controls.PlayPauseClicked,
-                ListenAction.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Paused)),
+                ListenAction.User.Controls.PlayPauseClicked,
+                ListenAction.System.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Paused)),
             )
 
         pauses.forEach { pause ->
             val store = createStore(playing)
 
-            store.dispatch(ListenAction.Playback.PlaybackWaiting)
+            store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
             store.dispatch(pause)
-            store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
+            store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
 
             assertTrue("Gap recorded after $pause", profiler.markers.isEmpty())
         }
@@ -278,9 +278,9 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN playback fails during a chunk gap THEN a failed chunk gap marker is recorded`() {
         val store = createStore(playing)
 
-        store.dispatch(ListenAction.Playback.PlaybackWaiting)
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
         now += 1200
-        store.dispatch(ListenAction.Playback.PlaybackFailed)
+        store.dispatch(ListenAction.System.Playback.PlaybackFailed)
 
         assertEquals(
             listOf(
@@ -300,9 +300,9 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN a seek finds its chunk queued THEN its latency is recorded as queued`() {
         val store = createStore(playing)
 
-        store.dispatch(ListenAction.Playback.SeekRequested(fraction = 0.5f))
+        store.dispatch(ListenAction.User.Controls.SeekRequested(fraction = 0.5f))
         now += 40
-        store.dispatch(ListenAction.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Playing)))
+        store.dispatch(ListenAction.System.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Playing)))
 
         assertEquals(
             listOf(Marker(SEEK_LATENCY, startTime = 0.0, endTime = 40.0, text = "path=queued")),
@@ -316,10 +316,10 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN a seek has to remake its chunk THEN its latency is recorded as remade`() {
         val store = createStore(playing)
 
-        store.dispatch(ListenAction.Playback.SeekRequested(fraction = 0.5f))
-        store.dispatch(ListenAction.Playback.PlaybackWaiting)
+        store.dispatch(ListenAction.User.Controls.SeekRequested(fraction = 0.5f))
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
         now += 900
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
 
         assertEquals(
             listOf(Marker(SEEK_LATENCY, startTime = 0.0, endTime = 900.0, text = "path=remade")),
@@ -331,12 +331,12 @@ class ListenPerformanceMiddlewareTest {
 
     @Test
     fun `WHEN the reader skips forward or back THEN the seek latency is recorded`() {
-        listOf(ListenAction.Controls.RewindClicked, ListenAction.Controls.ForwardClicked).forEach { skip ->
+        listOf(ListenAction.User.Controls.RewindClicked, ListenAction.User.Controls.ForwardClicked).forEach { skip ->
             profiler.markers.clear()
             val store = createStore(playing)
 
             store.dispatch(skip)
-            store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
+            store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
 
             assertEquals("No latency after $skip", SEEK_LATENCY, profiler.markers.single().name)
         }
@@ -346,11 +346,11 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN a seek is interrupted by another seek THEN only the later one is recorded`() {
         val store = createStore(playing)
 
-        store.dispatch(ListenAction.Playback.SeekRequested(fraction = 0.5f))
+        store.dispatch(ListenAction.User.Controls.SeekRequested(fraction = 0.5f))
         now = 100
-        store.dispatch(ListenAction.Controls.RewindClicked)
+        store.dispatch(ListenAction.User.Controls.RewindClicked)
         now = 300
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
 
         assertEquals(
             listOf(Marker(SEEK_LATENCY, startTime = 100.0, endTime = 300.0, text = "path=queued")),
@@ -363,9 +363,9 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN a seek is interrupted by a voice change THEN it is not recorded`() {
         val store = createStore(playing)
 
-        store.dispatch(ListenAction.Playback.SeekRequested(fraction = 0.5f))
-        store.dispatch(ListenAction.Voices.VoiceSelected(Voice("en-gb", Locale.UK)))
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
+        store.dispatch(ListenAction.User.Controls.SeekRequested(fraction = 0.5f))
+        store.dispatch(ListenAction.User.Voices.VoiceSelected(Voice("en-gb", Locale.UK)))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
 
         assertTrue(profiler.markers.none { it.name.startsWith(SEEK_LATENCY) })
         assertNull(ListenToPage.seekLatencyQueued.testGetValue())
@@ -375,16 +375,16 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN playback is paused during a seek THEN it is not recorded`() {
         val pauses =
             listOf(
-                ListenAction.Controls.PlayPauseClicked,
-                ListenAction.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Paused)),
+                ListenAction.User.Controls.PlayPauseClicked,
+                ListenAction.System.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Paused)),
             )
 
         pauses.forEach { pause ->
             val store = createStore(playing)
 
-            store.dispatch(ListenAction.Playback.SeekRequested(fraction = 0.5f))
+            store.dispatch(ListenAction.User.Controls.SeekRequested(fraction = 0.5f))
             store.dispatch(pause)
-            store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
+            store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
 
             assertTrue("Latency recorded after $pause", profiler.markers.none { it.name.startsWith(SEEK_LATENCY) })
         }
@@ -394,8 +394,8 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN the reader seeks while paused THEN no latency is recorded`() {
         val store = createStore(ListenState(playbackState = PlaybackState(phase = PlaybackPhase.Paused)))
 
-        store.dispatch(ListenAction.Playback.SeekRequested(fraction = 0.5f))
-        store.dispatch(ListenAction.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Playing)))
+        store.dispatch(ListenAction.User.Controls.SeekRequested(fraction = 0.5f))
+        store.dispatch(ListenAction.System.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Playing)))
 
         assertTrue(profiler.markers.none { it.name.startsWith(SEEK_LATENCY) })
     }
@@ -404,9 +404,9 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN playback fails during a seek THEN a failed seek latency marker is recorded`() {
         val store = createStore(playing)
 
-        store.dispatch(ListenAction.Playback.SeekRequested(fraction = 0.5f))
-        store.dispatch(ListenAction.Playback.PlaybackWaiting)
-        store.dispatch(ListenAction.Synthesis.SynthesisFailed)
+        store.dispatch(ListenAction.User.Controls.SeekRequested(fraction = 0.5f))
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
+        store.dispatch(ListenAction.System.Synthesis.SynthesisFailed)
 
         assertTrue(profiler.markers.any { it.name == "$SEEK_LATENCY.Failed" })
         assertNull(ListenToPage.seekLatency.testGetValue())
@@ -416,7 +416,7 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN the player runs out of audio THEN it is counted`() {
         val store = createStore(playing)
 
-        store.dispatch(ListenAction.Playback.PlaybackWaiting)
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
 
         assertEquals(1, ListenToPage.audioRanOut.testGetValue())
     }
@@ -425,8 +425,8 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN running out is reported more than once before audio plays THEN it is only counted once`() {
         val store = createStore(playing)
 
-        store.dispatch(ListenAction.Playback.PlaybackWaiting)
-        store.dispatch(ListenAction.Playback.PlaybackWaiting)
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
 
         assertEquals(1, ListenToPage.audioRanOut.testGetValue())
     }
@@ -435,9 +435,9 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN the player runs out of audio twice THEN both are counted`() {
         val store = createStore(playing)
 
-        store.dispatch(ListenAction.Playback.PlaybackWaiting)
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
-        store.dispatch(ListenAction.Playback.PlaybackWaiting)
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 3), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
 
         assertEquals(2, ListenToPage.audioRanOut.testGetValue())
     }
@@ -447,8 +447,8 @@ class ListenPerformanceMiddlewareTest {
         val store = createStore()
 
         store.dispatch(LISTEN_REQUESTED)
-        store.dispatch(ListenAction.Playback.PlaybackWaiting)
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
 
         assertNull(ListenToPage.audioRanOut.testGetValue())
     }
@@ -457,8 +457,8 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN the player is waiting after a seek THEN it is not counted as audio running out`() {
         val store = createStore(playing)
 
-        store.dispatch(ListenAction.Playback.SeekRequested(fraction = 0.5f))
-        store.dispatch(ListenAction.Playback.PlaybackWaiting)
+        store.dispatch(ListenAction.User.Controls.SeekRequested(fraction = 0.5f))
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
 
         assertNull(ListenToPage.audioRanOut.testGetValue())
     }
@@ -467,7 +467,7 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN the player buffers between queued chunks THEN it is not counted as audio running out`() {
         val store = createStore(playing)
 
-        store.dispatch(ListenAction.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Buffering)))
+        store.dispatch(ListenAction.System.Playback.StateChangeObserved(PlaybackState(phase = PlaybackPhase.Buffering)))
 
         assertNull(ListenToPage.audioRanOut.testGetValue())
     }
@@ -478,13 +478,13 @@ class ListenPerformanceMiddlewareTest {
 
         store.dispatch(LISTEN_REQUESTED)
         now = 100
-        store.dispatch(ListenAction.Content.ContentReady(languageTag = "en-US"))
+        store.dispatch(ListenAction.System.Content.ContentReady(languageTag = "en-US"))
         now = 150
         middleware.process(openingSynthesisStartedFact())
         now = 400
         middleware.process(chunkSynthesizedFact(index = 0))
         now = 500
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
 
         assertEquals(
             listOf(
@@ -508,10 +508,10 @@ class ListenPerformanceMiddlewareTest {
         val store = createStore()
         store.dispatch(LISTEN_REQUESTED)
         now = 100
-        store.dispatch(ListenAction.Content.ContentReady(languageTag = "en-US"))
+        store.dispatch(ListenAction.System.Content.ContentReady(languageTag = "en-US"))
 
         now = 5_000
-        store.dispatch(ListenAction.Controls.PlayPauseClicked)
+        store.dispatch(ListenAction.User.Controls.PlayPauseClicked)
         now = 5_050
         middleware.process(openingSynthesisStartedFact())
 
@@ -522,11 +522,11 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN a phase fails THEN no phase sum is recorded`() {
         val store = createStore()
         store.dispatch(LISTEN_REQUESTED)
-        store.dispatch(ListenAction.Content.ContentReady(languageTag = "en-US"))
+        store.dispatch(ListenAction.System.Content.ContentReady(languageTag = "en-US"))
         middleware.process(openingSynthesisStartedFact())
-        store.dispatch(ListenAction.Synthesis.SynthesisFailed)
+        store.dispatch(ListenAction.System.Synthesis.SynthesisFailed)
 
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
 
         assertTrue(profiler.markers.none { it.name == PHASE_SUM })
     }
@@ -536,19 +536,19 @@ class ListenPerformanceMiddlewareTest {
         val store = createStore()
         store.dispatch(LISTEN_REQUESTED)
         now = 1_000
-        store.dispatch(ListenAction.Content.ContentReady(languageTag = "en-US"))
-        store.dispatch(ListenAction.Session.StopRequested())
+        store.dispatch(ListenAction.System.Content.ContentReady(languageTag = "en-US"))
+        store.dispatch(ListenAction.User.Session.StopRequested())
 
         now = 2_000
         store.dispatch(LISTEN_REQUESTED)
         now = 2_100
-        store.dispatch(ListenAction.Content.ContentReady(languageTag = "en-US"))
+        store.dispatch(ListenAction.System.Content.ContentReady(languageTag = "en-US"))
         now = 2_150
         middleware.process(openingSynthesisStartedFact())
         now = 2_400
         middleware.process(chunkSynthesizedFact(index = 0))
         now = 2_500
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
 
         assertEquals(PHASE_SUM_TEXT, profiler.markers.single { it.name == PHASE_SUM }.text)
     }
@@ -559,7 +559,7 @@ class ListenPerformanceMiddlewareTest {
 
         middleware.process(openingSynthesisStartedFact())
         middleware.process(chunkSynthesizedFact(index = 0))
-        store.dispatch(ListenAction.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
 
         assertTrue(phaseMarkers().isEmpty())
     }
@@ -568,7 +568,7 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN the opening chunk is synthesized THEN it ends the opening phase without a chunk sample`() {
         val store = createStore()
         store.dispatch(LISTEN_REQUESTED)
-        store.dispatch(ListenAction.Content.ContentReady(languageTag = "en-US"))
+        store.dispatch(ListenAction.System.Content.ContentReady(languageTag = "en-US"))
         middleware.process(openingSynthesisStartedFact())
 
         middleware.process(chunkSynthesizedFact(index = 0))
@@ -582,7 +582,7 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN a later chunk is synthesized during the opening THEN the opening phase continues`() {
         val store = createStore()
         store.dispatch(LISTEN_REQUESTED)
-        store.dispatch(ListenAction.Content.ContentReady(languageTag = "en-US"))
+        store.dispatch(ListenAction.System.Content.ContentReady(languageTag = "en-US"))
         middleware.process(openingSynthesisStartedFact())
 
         middleware.process(chunkSynthesizedFact(index = 1))
@@ -594,10 +594,10 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN synthesis fails during the opening THEN the opening phase is recorded as failed`() {
         val store = createStore()
         store.dispatch(LISTEN_REQUESTED)
-        store.dispatch(ListenAction.Content.ContentReady(languageTag = "en-US"))
+        store.dispatch(ListenAction.System.Content.ContentReady(languageTag = "en-US"))
         middleware.process(openingSynthesisStartedFact())
 
-        store.dispatch(ListenAction.Synthesis.SynthesisFailed)
+        store.dispatch(ListenAction.System.Synthesis.SynthesisFailed)
 
         assertTrue(profiler.markers.any { it.name == "$OPENING_SYNTHESIS.Failed" })
         assertNull(ListenToPage.openingSynthesisDuration.testGetValue())
@@ -608,7 +608,7 @@ class ListenPerformanceMiddlewareTest {
         val store = createStore()
         store.dispatch(LISTEN_REQUESTED)
 
-        store.dispatch(ListenAction.Content.ContentUnavailable)
+        store.dispatch(ListenAction.System.Content.ContentUnavailable)
 
         assertEquals(listOf("$TIME_TO_FIRST_AUDIO.Failed", "$EXTRACTION.Failed"), profiler.markers.map { it.name })
         assertNull(ListenToPage.extractionDuration.testGetValue())
@@ -618,7 +618,7 @@ class ListenPerformanceMiddlewareTest {
     fun `WHEN an opening fact comes from another component THEN preparation does not end`() {
         val store = createStore()
         store.dispatch(LISTEN_REQUESTED)
-        store.dispatch(ListenAction.Content.ContentReady(languageTag = "en-US"))
+        store.dispatch(ListenAction.System.Content.ContentReady(languageTag = "en-US"))
 
         middleware.process(openingSynthesisStartedFact().copy(component = Component.FEATURE_DOWNLOADS))
 
@@ -805,7 +805,7 @@ class ListenPerformanceMiddlewareTest {
 
     private companion object {
         const val TIME_TO_FIRST_AUDIO = "ListenToPage.TimeToFirstAudio"
-        val LISTEN_REQUESTED = ListenAction.Session.ListenRequested(tabId = "tab", url = "https://example.com")
+        val LISTEN_REQUESTED = ListenAction.User.Session.ListenRequested(tabId = "tab", url = "https://example.com")
         const val CHUNK_GAP = "ListenToPage.ChunkGap"
         const val SEEK_LATENCY = "ListenToPage.SeekLatency"
         const val EXTRACTION = "$TIME_TO_FIRST_AUDIO.Extraction"

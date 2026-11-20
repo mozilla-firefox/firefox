@@ -225,7 +225,9 @@ private fun ListenSheetContent(
                 PlayerMode.Compact -> isArticleAtTop
             }
         }
-        onAction(ListenAction.ModeChanged(if (mode == PlayerMode.Expanded) PlayerMode.Compact else PlayerMode.Expanded))
+        onAction(
+            ListenAction.User.ModeChanged(if (mode == PlayerMode.Expanded) PlayerMode.Compact else PlayerMode.Expanded)
+        )
     }
 
     val cardContentDescription = stringResource(R.string.reader_mode_panel_media_player_content_description)

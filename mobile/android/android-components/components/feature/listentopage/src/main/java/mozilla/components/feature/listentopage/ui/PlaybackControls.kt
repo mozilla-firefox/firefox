@@ -49,7 +49,7 @@ internal fun PlaybackControls(
     playbackUiState: PlaybackUiState,
     voiceState: VoiceState,
     speedState: SpeedState,
-    onAction: (ListenAction) -> Unit,
+    onAction: (ListenAction.User) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var voicesExpanded by remember { mutableStateOf(false) }
@@ -73,16 +73,16 @@ internal fun PlaybackControls(
             voicesExpanded = voicesExpanded,
             enabled = buttonsEnabled,
             onClick = {
-                onAction(ListenAction.Controls.VoicesClicked)
+                onAction(ListenAction.User.Voices.VoicesClicked)
                 voicesExpanded = true
             },
             onVoiceClick = {
                 voicesExpanded = false
-                onAction(ListenAction.Voices.VoiceSelected(it))
+                onAction(ListenAction.User.Voices.VoiceSelected(it))
             },
             onDismiss = {
                 voicesExpanded = false
-                onAction(ListenAction.Controls.VoicesDismissed)
+                onAction(ListenAction.User.Voices.VoicesDismissed)
             },
         )
 
@@ -101,12 +101,12 @@ internal fun PlaybackControls(
             speedsExpanded = speedsExpanded,
             enabled = buttonsEnabled,
             onClick = {
-                onAction(ListenAction.Controls.PlaybackSpeedClicked)
+                onAction(ListenAction.User.Controls.PlaybackSpeedClicked)
                 speedsExpanded = true
             },
             onDismiss = {
                 speedsExpanded = false
-                onAction(ListenAction.Controls.PlaybackSpeedDismissed)
+                onAction(ListenAction.User.Controls.PlaybackSpeedDismissed)
             },
         )
     }
@@ -191,7 +191,7 @@ private fun VoiceControls(
 private fun CenterControls(
     articleProgressState: State<ArticleProgress>,
     playbackUiState: PlaybackUiState,
-    onAction: (ListenAction) -> Unit,
+    onAction: (ListenAction.User) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -208,13 +208,13 @@ private fun CenterControls(
         // Play/Pause
         PlayPauseButton(
             playbackUiState = playbackUiState,
-            onButtonClicked = { onAction(ListenAction.Controls.PlayPauseClicked) },
+            onButtonClicked = { onAction(ListenAction.User.Controls.PlayPauseClicked) },
             modifier = Modifier.size(AcornTheme.layout.size.static800),
         )
         // Forward
         IconButton(
             enabled = enabled,
-            onClick = { onAction(ListenAction.Controls.ForwardClicked) },
+            onClick = { onAction(ListenAction.User.Controls.ForwardClicked) },
             contentDescription = stringResource(R.string.mozac_feature_listentopage_forward_30_sec),
         ) {
             // Speed icon hardcoded as of now
@@ -229,7 +229,7 @@ private fun CenterControls(
 @Composable
 internal fun RewindButton(
     articleProgressState: State<ArticleProgress>,
-    onAction: (ListenAction) -> Unit,
+    onAction: (ListenAction.User) -> Unit,
     enabled: Boolean,
 ) {
     val hasPlayed by remember {
@@ -240,7 +240,7 @@ internal fun RewindButton(
     val displayAsEnabled = enabled && hasPlayed
     IconButton(
         enabled = displayAsEnabled,
-        onClick = { onAction(ListenAction.Controls.RewindClicked) },
+        onClick = { onAction(ListenAction.User.Controls.RewindClicked) },
         contentDescription = stringResource(R.string.mozac_feature_listentopage_back_10_sec),
     ) {
         Icon(

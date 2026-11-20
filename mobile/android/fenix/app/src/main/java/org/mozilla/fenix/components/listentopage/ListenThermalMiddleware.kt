@@ -32,39 +32,39 @@ class ListenThermalMiddleware(private val monitor: ThermalStatusMonitor) : Middl
         next(action)
 
         when (action) {
-            is ListenAction.Session.ListenRequested,
-            is ListenAction.Session.StopRequested,
-            ListenAction.Playback.PlaybackEnded,
-            ListenAction.Playback.PlaybackFailed,
-            ListenAction.Synthesis.SynthesisFailed -> endSession()
+            is ListenAction.User.Session.ListenRequested,
+            is ListenAction.User.Session.StopRequested,
+            ListenAction.System.Playback.PlaybackEnded,
+            ListenAction.System.Playback.PlaybackFailed,
+            ListenAction.System.Synthesis.SynthesisFailed -> endSession()
 
-            is ListenAction.Playback.PlaybackStarted -> onPlaying()
+            is ListenAction.System.Playback.PlaybackStarted -> onPlaying()
 
-            is ListenAction.Playback.StateChangeObserved ->
+            is ListenAction.System.Playback.StateChangeObserved ->
                 when (action.playbackState.phase) {
                     PlaybackPhase.Playing -> onPlaying()
                     PlaybackPhase.Paused -> onPaused()
                     else -> Unit
                 }
 
-            ListenAction.Content.ContentUnavailable,
-            is ListenAction.Content.ContentReady,
-            is ListenAction.Voices.VoiceSelected,
-            is ListenAction.Voices.AvailableVoicesLoaded,
-            ListenAction.Voices.NoOfflineVoicesAvailable,
-            ListenAction.Controls.PlayPauseClicked,
-            ListenAction.Controls.RewindClicked,
-            ListenAction.Controls.ForwardClicked,
-            ListenAction.Controls.VoicesClicked,
-            ListenAction.Controls.VoicesDismissed,
-            ListenAction.Controls.PlaybackSpeedClicked,
-            ListenAction.Controls.PlaybackSpeedDismissed,
-            is ListenAction.Controls.PlaybackSpeedSelected,
-            is ListenAction.Playback.ArticleProgressReverted,
-            is ListenAction.Playback.SeekRequested,
-            ListenAction.Playback.PlaybackWaiting,
-            is ListenAction.ModeChanged,
-            ListenAction.ErrorDismissed -> Unit
+            ListenAction.System.Content.ContentUnavailable,
+            is ListenAction.System.Content.ContentReady,
+            is ListenAction.User.Voices.VoiceSelected,
+            is ListenAction.System.Voices.AvailableVoicesLoaded,
+            ListenAction.System.Voices.NoOfflineVoicesAvailable,
+            ListenAction.User.Controls.PlayPauseClicked,
+            ListenAction.User.Controls.RewindClicked,
+            ListenAction.User.Controls.ForwardClicked,
+            ListenAction.User.Voices.VoicesClicked,
+            ListenAction.User.Voices.VoicesDismissed,
+            ListenAction.User.Controls.PlaybackSpeedClicked,
+            ListenAction.User.Controls.PlaybackSpeedDismissed,
+            is ListenAction.User.Controls.PlaybackSpeedSelected,
+            is ListenAction.System.Playback.ArticleProgressReverted,
+            is ListenAction.User.Controls.SeekRequested,
+            ListenAction.System.Playback.PlaybackWaiting,
+            is ListenAction.User.ModeChanged,
+            ListenAction.User.ErrorDismissed -> Unit
 
             // The session's own actions, which are internal to it.
             else -> Unit

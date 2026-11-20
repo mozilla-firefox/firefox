@@ -38,38 +38,40 @@ internal class ListenToPageTelemetryMiddleware : Middleware<ListenState, ListenA
 
     private fun handleListenToPageAction(store: Store<ListenState, ListenAction>, action: ListenAction) {
         when (action) {
-            is ListenAction.Session -> handleSession(action)
-            is ListenAction.Content -> handleContent(action)
-            is ListenAction.Playback -> handlePlayback(store, action)
-            is ListenAction.Controls -> handleControls(store, action)
-            is ListenAction.Voices -> handleVoices(store, action)
-            is ListenAction.Synthesis.SynthesisFailed -> ListenToPage.synthesisFailed.record(NoExtras())
+            is ListenAction.User.Session -> handleSession(action)
+            is ListenAction.System.Content -> handleContent(action)
+            is ListenAction.System.Playback -> handlePlayback(action)
+            is ListenAction.User.Controls -> handleControls(store, action)
+            is ListenAction.User.Voices -> handleUserVoices(store, action)
+            is ListenAction.System.Voices -> handleSystemVoices(store, action)
+            is ListenAction.System.Synthesis.SynthesisFailed -> ListenToPage.synthesisFailed.record(NoExtras())
             else -> Unit
         }
     }
 
-    private fun handleSession(action: ListenAction.Session) {
+    private fun handleSession(action: ListenAction.User.Session) {
         playbackStartedRecorded = false
         playbackEndedRecorded = false
         when (action) {
-            is ListenAction.Session.ListenRequested -> ListenToPage.requested.record(NoExtras())
-            is ListenAction.Session.StopRequested -> {
+            is ListenAction.User.Session.ListenRequested -> ListenToPage.requested.record(NoExtras())
+            is ListenAction.User.Session.StopRequested -> {
                 val source =
                     when (action.source) {
-                        ListenAction.Session.StopSource.CloseButton -> CLOSE_BUTTON
-                        ListenAction.Session.StopSource.TabClosed -> TAB_CLOSED
-                        ListenAction.Session.StopSource.ReaderModeClosed -> READER_MODE_CLOSED
-                        ListenAction.Session.StopSource.MediaSessionEndedOutsideApp -> MEDIA_SESSION_ENDED_OUTSIDE_APP
-                        ListenAction.Session.StopSource.FeatureDisabled -> FEATURE_DISABLED
+                        ListenAction.User.Session.StopSource.CloseButton -> CLOSE_BUTTON
+                        ListenAction.User.Session.StopSource.TabClosed -> TAB_CLOSED
+                        ListenAction.User.Session.StopSource.ReaderModeClosed -> READER_MODE_CLOSED
+                        ListenAction.User.Session.StopSource.MediaSessionEndedOutsideApp ->
+                            MEDIA_SESSION_ENDED_OUTSIDE_APP
+                        ListenAction.User.Session.StopSource.FeatureDisabled -> FEATURE_DISABLED
                     }
                 ListenToPage.stopped.record(ListenToPage.StoppedExtra(source = source))
             }
         }
     }
 
-    private fun handleContent(action: ListenAction.Content) {
+    private fun handleContent(action: ListenAction.System.Content) {
         when (action) {
-            is ListenAction.Content.ContentReady -> {
+            is ListenAction.System.Content.ContentReady -> {
                 val languageSource =
                     when (action.languageSource) {
                         LanguageSource.Page -> PAGE
@@ -80,81 +82,86 @@ internal class ListenToPageTelemetryMiddleware : Middleware<ListenState, ListenA
                 )
             }
 
-            ListenAction.Content.ContentUnavailable -> ListenToPage.contentUnavailable.record(NoExtras())
+            ListenAction.System.Content.ContentUnavailable -> ListenToPage.contentUnavailable.record(NoExtras())
         }
     }
 
-    private fun handlePlayback(store: Store<ListenState, ListenAction>, action: ListenAction.Playback) {
+    private fun handlePlayback(action: ListenAction.System.Playback) {
         when (action) {
-            is ListenAction.Playback.PlaybackStarted ->
+            is ListenAction.System.Playback.PlaybackStarted ->
                 if (!playbackStartedRecorded) {
                     playbackStartedRecorded = true
                     ListenToPage.playbackStarted.record(NoExtras())
                 }
 
-            ListenAction.Playback.PlaybackEnded ->
+            ListenAction.System.Playback.PlaybackEnded ->
                 if (!playbackEndedRecorded) {
                     playbackEndedRecorded = true
                     ListenToPage.playbackEnded.record(NoExtras())
                 }
 
-            ListenAction.Playback.PlaybackFailed -> ListenToPage.playbackFailed.record(NoExtras())
-            is ListenAction.Playback.SeekRequested -> {
-                val direction = if (action.fraction >= store.state.articleProgress.fraction) FORWARD else BACKWARD
-                ListenToPage.seekPerformed.record(ListenToPage.SeekPerformedExtra(direction = direction))
-            }
+            ListenAction.System.Playback.PlaybackFailed -> ListenToPage.playbackFailed.record(NoExtras())
 
             else -> Unit
         }
     }
 
-    private fun handleControls(store: Store<ListenState, ListenAction>, action: ListenAction.Controls) {
+    private fun handleControls(store: Store<ListenState, ListenAction>, action: ListenAction.User.Controls) {
         when (action) {
-            ListenAction.Controls.PlayPauseClicked ->
+            ListenAction.User.Controls.PlayPauseClicked ->
                 if (store.state.playbackState.isPlayingOrBuffering) {
                     ListenToPage.pausePressed.record(ListenToPage.PausePressedExtra(source = IN_APP))
                 } else {
                     ListenToPage.playPressed.record(ListenToPage.PlayPressedExtra(source = IN_APP))
                 }
 
-            ListenAction.Controls.RewindClicked ->
+            ListenAction.User.Controls.RewindClicked ->
                 ListenToPage.skipBackPressed.record(ListenToPage.SkipBackPressedExtra(source = IN_APP))
-            ListenAction.Controls.ForwardClicked ->
+            ListenAction.User.Controls.ForwardClicked ->
                 ListenToPage.skipForwardPressed.record(ListenToPage.SkipForwardPressedExtra(source = IN_APP))
-            ListenAction.Controls.VoicesClicked -> ListenToPage.voiceListOpened.record(NoExtras())
-            ListenAction.Controls.VoicesDismissed -> ListenToPage.voiceListDismissed.record(NoExtras())
-            ListenAction.Controls.PlaybackSpeedClicked -> ListenToPage.speedListOpened.record(NoExtras())
-            ListenAction.Controls.PlaybackSpeedDismissed -> ListenToPage.speedListDismissed.record(NoExtras())
-            is ListenAction.Controls.PlaybackSpeedSelected ->
+            ListenAction.User.Controls.PlaybackSpeedClicked -> ListenToPage.speedListOpened.record(NoExtras())
+            ListenAction.User.Controls.PlaybackSpeedDismissed -> ListenToPage.speedListDismissed.record(NoExtras())
+            is ListenAction.User.Controls.PlaybackSpeedSelected ->
                 ListenToPage.speedSelected.record(
                     ListenToPage.SpeedSelectedExtra(
                         speed = action.playbackSpeed.multiplier.toString(),
                         source = IN_APP,
                     )
                 )
+            is ListenAction.User.Controls.SeekRequested -> {
+                val direction = if (action.fraction >= store.state.articleProgress.fraction) FORWARD else BACKWARD
+                ListenToPage.seekPerformed.record(ListenToPage.SeekPerformedExtra(direction = direction))
+            }
         }
     }
 
-    private fun handleVoices(store: Store<ListenState, ListenAction>, action: ListenAction.Voices) {
+    private fun handleUserVoices(store: Store<ListenState, ListenAction>, action: ListenAction.User.Voices) {
         when (action) {
-            is ListenAction.Voices.VoiceSelected -> {
+            is ListenAction.User.Voices.VoiceSelected -> {
                 val isDefault = action.voice == store.state.voiceState.availableVoices.firstOrNull()
                 val source =
                     when (action.source) {
-                        ListenAction.Voices.VoiceSource.UserSelected -> USER_SELECTED
-                        ListenAction.Voices.VoiceSource.Fallback -> FALLBACK
+                        ListenAction.User.Voices.VoiceSource.UserSelected -> USER_SELECTED
+                        ListenAction.User.Voices.VoiceSource.Fallback -> FALLBACK
                     }
                 ListenToPage.voiceSelected.record(
                     ListenToPage.VoiceSelectedExtra(isDefault = isDefault, source = source)
                 )
             }
 
-            ListenAction.Voices.NoOfflineVoicesAvailable -> {
+            ListenAction.User.Voices.VoicesClicked -> ListenToPage.voiceListOpened.record(NoExtras())
+            ListenAction.User.Voices.VoicesDismissed -> ListenToPage.voiceListDismissed.record(NoExtras())
+        }
+    }
+
+    private fun handleSystemVoices(store: Store<ListenState, ListenAction>, action: ListenAction.System.Voices) {
+        when (action) {
+            ListenAction.System.Voices.NoOfflineVoicesAvailable -> {
                 val language = store.state.languageTag.orEmpty()
                 ListenToPage.noOfflineVoice.record(ListenToPage.NoOfflineVoiceExtra(language = language))
             }
 
-            is ListenAction.Voices.AvailableVoicesLoaded -> Unit
+            is ListenAction.System.Voices.AvailableVoicesLoaded -> Unit
         }
     }
 

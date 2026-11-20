@@ -67,7 +67,7 @@ class ListenPerformanceMiddleware(
 
         when (action) {
             // Reading starts as soon as the reader asks to listen, so that is when the wait for audio starts.
-            is ListenAction.Session.ListenRequested -> {
+            is ListenAction.User.Session.ListenRequested -> {
                 seekOrVoiceChangePending = false
                 cancelAll(action)
                 start(
@@ -77,52 +77,52 @@ class ListenPerformanceMiddleware(
                 startPhase(EXTRACTION, ListenToPage.extractionDuration)
             }
 
-            is ListenAction.Session.StopRequested -> {
+            is ListenAction.User.Session.StopRequested -> {
                 seekOrVoiceChangePending = false
                 cancelAll(action)
             }
 
-            is ListenAction.Content.ContentReady -> {
+            is ListenAction.System.Content.ContentReady -> {
                 end(EXTRACTION)
                 if (TIME_TO_FIRST_AUDIO in spans) startPreparation()
             }
 
-            ListenAction.Content.ContentUnavailable,
-            ListenAction.Voices.NoOfflineVoicesAvailable,
-            ListenAction.Synthesis.SynthesisFailed,
-            ListenAction.Playback.PlaybackFailed -> failAll(action)
+            ListenAction.System.Content.ContentUnavailable,
+            ListenAction.System.Voices.NoOfflineVoicesAvailable,
+            ListenAction.System.Synthesis.SynthesisFailed,
+            ListenAction.System.Playback.PlaybackFailed -> failAll(action)
 
             // Reading starts without a press, so this pauses or resumes it.
-            ListenAction.Controls.PlayPauseClicked -> {
+            ListenAction.User.Controls.PlayPauseClicked -> {
                 cancel(CHUNK_GAP, action)
                 cancel(SEEK_LATENCY, action)
             }
 
-            is ListenAction.Voices.VoiceSelected,
-            is ListenAction.Playback.SeekRequested,
-            ListenAction.Controls.RewindClicked,
-            ListenAction.Controls.ForwardClicked -> onPlaybackMoved(action, previous.playbackState.phase)
+            is ListenAction.User.Voices.VoiceSelected,
+            is ListenAction.User.Controls.SeekRequested,
+            ListenAction.User.Controls.RewindClicked,
+            ListenAction.User.Controls.ForwardClicked -> onPlaybackMoved(action, previous.playbackState.phase)
 
-            ListenAction.Playback.PlaybackWaiting -> {
+            ListenAction.System.Playback.PlaybackWaiting -> {
                 if (SEEK_LATENCY in spans) seekRemade = true
                 // Only a wait after audio has played is a gap. The waits for the opening and for a replay are not.
                 if (previous.playbackState.phase == PlaybackPhase.Playing) startChunkGap(ChunkGapCause.Waiting)
             }
 
-            is ListenAction.Playback.PlaybackStarted -> onPlaying()
+            is ListenAction.System.Playback.PlaybackStarted -> onPlaying()
 
-            is ListenAction.Playback.StateChangeObserved -> action.handleStateChange(previous)
+            is ListenAction.System.Playback.StateChangeObserved -> action.handleStateChange(previous)
 
-            is ListenAction.Voices.AvailableVoicesLoaded,
-            ListenAction.Controls.VoicesClicked,
-            ListenAction.Controls.VoicesDismissed,
-            ListenAction.Controls.PlaybackSpeedClicked,
-            ListenAction.Controls.PlaybackSpeedDismissed,
-            is ListenAction.Controls.PlaybackSpeedSelected,
-            is ListenAction.Playback.ArticleProgressReverted,
-            ListenAction.Playback.PlaybackEnded,
-            is ListenAction.ModeChanged,
-            ListenAction.ErrorDismissed -> Unit
+            is ListenAction.System.Voices.AvailableVoicesLoaded,
+            ListenAction.User.Voices.VoicesClicked,
+            ListenAction.User.Voices.VoicesDismissed,
+            ListenAction.User.Controls.PlaybackSpeedClicked,
+            ListenAction.User.Controls.PlaybackSpeedDismissed,
+            is ListenAction.User.Controls.PlaybackSpeedSelected,
+            is ListenAction.System.Playback.ArticleProgressReverted,
+            ListenAction.System.Playback.PlaybackEnded,
+            is ListenAction.User.ModeChanged,
+            ListenAction.User.ErrorDismissed -> Unit
 
             // The session's own actions, which are internal to it.
             else -> Unit
@@ -165,7 +165,7 @@ class ListenPerformanceMiddleware(
         cancel(CHUNK_GAP, action)
         cancel(SEEK_LATENCY, action)
 
-        val isSeek = action !is ListenAction.Voices.VoiceSelected
+        val isSeek = action !is ListenAction.User.Voices.VoiceSelected
         if (isSeek && (phase == PlaybackPhase.Playing || phase == PlaybackPhase.Buffering)) {
             seekRemade = false
             start(
@@ -262,7 +262,7 @@ class ListenPerformanceMiddleware(
         phaseDurationsMs = emptyMap()
     }
 
-    private fun ListenAction.Playback.StateChangeObserved.handleStateChange(prevState: ListenState) =
+    private fun ListenAction.System.Playback.StateChangeObserved.handleStateChange(prevState: ListenState) =
         when (playbackState.phase) {
             PlaybackPhase.Playing -> onPlaying()
             PlaybackPhase.Paused -> {

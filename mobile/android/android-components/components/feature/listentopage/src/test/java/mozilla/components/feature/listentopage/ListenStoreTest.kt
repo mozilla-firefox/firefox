@@ -16,10 +16,10 @@ class ListenStoreTest {
 
         assertEquals(ListenState(), store.state)
 
-        store.dispatch(ListenAction.Session.ListenRequested("tab-1", "https://example.org/article"))
+        store.dispatch(ListenAction.User.Session.ListenRequested("tab-1", "https://example.org/article"))
         assertEquals("tab-1", store.state.tabId)
 
-        store.dispatch(ListenAction.Session.StopRequested())
+        store.dispatch(ListenAction.User.Session.StopRequested())
         assertNull(store.state.tabId)
     }
 
@@ -31,7 +31,7 @@ class ListenStoreTest {
                 reducer = ::listenReducer,
             )
 
-        store.dispatch(ListenAction.ErrorDismissed)
+        store.dispatch(ListenAction.User.ErrorDismissed)
 
         assertNull(store.state.error)
         assertEquals("tab-1", store.state.tabId)
@@ -46,13 +46,13 @@ class ListenStoreTest {
         }
         val store = ListenStore(initialState = ListenState(), reducer = ::listenReducer, middleware = listOf(recorder))
 
-        store.dispatch(ListenAction.Session.ListenRequested("tab-1", "https://example.org/article"))
-        store.dispatch(ListenAction.ErrorDismissed)
+        store.dispatch(ListenAction.User.Session.ListenRequested("tab-1", "https://example.org/article"))
+        store.dispatch(ListenAction.User.ErrorDismissed)
 
         assertEquals(
             listOf(
-                ListenAction.Session.ListenRequested("tab-1", "https://example.org/article"),
-                ListenAction.ErrorDismissed,
+                ListenAction.User.Session.ListenRequested("tab-1", "https://example.org/article"),
+                ListenAction.User.ErrorDismissed,
             ),
             seen,
         )

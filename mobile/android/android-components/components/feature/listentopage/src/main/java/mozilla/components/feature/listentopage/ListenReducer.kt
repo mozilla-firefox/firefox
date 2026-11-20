@@ -17,43 +17,68 @@ import mozilla.components.feature.listentopage.playback.PlaybackPhase
  */
 fun listenReducer(state: ListenState, action: ListenAction): ListenState =
     when (action) {
-        is ListenAction.Session -> reduceSession(state, action)
-        is ListenAction.Content -> reduceContent(state, action)
-        is ListenAction.Voices -> reduceVoices(state, action)
-        is ListenAction.Controls -> reduceControls(state, action)
-        is ListenAction.Playback -> reducePlayback(state, action)
-        is ListenAction.Synthesis -> reduceSynthesis(state, action)
-        is PlaylistAction -> reducePlaylistAction(state, action)
-        is ListenAction.ModeChanged -> state.copy(mode = action.mode)
-        ListenAction.ErrorDismissed -> state.copy(error = null)
+        is ListenAction.User -> reduceUser(state, action)
+        is ListenAction.System -> reduceSystem(state, action)
     }
 
-private fun reduceControls(state: ListenState, action: ListenAction.Controls): ListenState =
+private fun reduceUser(state: ListenState, action: ListenAction.User): ListenState =
     when (action) {
-        is ListenAction.Controls.PlaybackSpeedSelected ->
+        is ListenAction.User.Session -> reduceSession(state, action)
+        is ListenAction.User.Voices -> reduceUserVoices(state, action)
+        is ListenAction.User.Controls -> reduceControls(state, action)
+        is ListenAction.User.ModeChanged -> state.copy(mode = action.mode)
+        ListenAction.User.ErrorDismissed -> state.copy(error = null)
+    }
+
+private fun reduceSystem(state: ListenState, action: ListenAction.System): ListenState =
+    when (action) {
+        is ListenAction.System.Content -> reduceContent(state, action)
+        is ListenAction.System.Voices -> reduceSystemVoices(state, action)
+        is ListenAction.System.Playback -> reducePlayback(state, action)
+        is ListenAction.System.Synthesis -> reduceSynthesis(state, action)
+        is PlaylistAction -> reducePlaylistAction(state, action)
+    }
+
+private fun reduceControls(state: ListenState, action: ListenAction.User.Controls): ListenState =
+    when (action) {
+        is ListenAction.User.Controls.PlaybackSpeedSelected ->
             state.copy(playbackState = state.playbackState.copy(speed = action.playbackSpeed))
 
-        ListenAction.Controls.PlayPauseClicked,
-        ListenAction.Controls.RewindClicked,
-        ListenAction.Controls.ForwardClicked,
-        ListenAction.Controls.VoicesClicked,
-        ListenAction.Controls.VoicesDismissed,
-        ListenAction.Controls.PlaybackSpeedClicked,
-        ListenAction.Controls.PlaybackSpeedDismissed -> state
+        is ListenAction.User.Controls.SeekRequested -> {
+            val durationMs = state.articleProgress.durationMs
+            val fraction = action.fraction.coerceIn(0f, 1f)
+            if (durationMs <= 0) {
+                state
+            } else {
+                state.copy(
+                    articleProgress =
+                        state.articleProgress.copy(
+                            positionMs = (durationMs * fraction).roundToLong(),
+                            barPosition = fraction,
+                        )
+                )
+            }
+        }
+
+        ListenAction.User.Controls.PlayPauseClicked,
+        ListenAction.User.Controls.RewindClicked,
+        ListenAction.User.Controls.ForwardClicked,
+        ListenAction.User.Controls.PlaybackSpeedClicked,
+        ListenAction.User.Controls.PlaybackSpeedDismissed -> state
     }
 
-private fun reduceSession(state: ListenState, action: ListenAction.Session): ListenState =
+private fun reduceSession(state: ListenState, action: ListenAction.User.Session): ListenState =
     when (action) {
-        is ListenAction.Session.ListenRequested -> ListenState(tabId = action.tabId, url = action.url)
+        is ListenAction.User.Session.ListenRequested -> ListenState(tabId = action.tabId, url = action.url)
 
-        is ListenAction.Session.StopRequested -> {
+        is ListenAction.User.Session.StopRequested -> {
             ListenState(tabId = null, url = null, voiceState = state.voiceState.copy())
         }
     }
 
-private fun reduceContent(state: ListenState, action: ListenAction.Content): ListenState =
+private fun reduceContent(state: ListenState, action: ListenAction.System.Content): ListenState =
     when (action) {
-        is ListenAction.Content.ContentReady -> {
+        is ListenAction.System.Content.ContentReady -> {
             val described = state.copy(title = action.title, site = action.site)
             if (action.languageTag == state.languageTag) {
                 described
@@ -62,14 +87,14 @@ private fun reduceContent(state: ListenState, action: ListenAction.Content): Lis
             }
         }
 
-        ListenAction.Content.ContentUnavailable -> state.copy(error = ListenError.ContentUnavailable)
+        ListenAction.System.Content.ContentUnavailable -> state.copy(error = ListenError.ContentUnavailable)
     }
 
-private fun reducePlayback(state: ListenState, action: ListenAction.Playback): ListenState =
+private fun reducePlayback(state: ListenState, action: ListenAction.System.Playback): ListenState =
     when (action) {
-        is ListenAction.Playback.StateChangeObserved -> state.copy(playbackState = action.playbackState)
+        is ListenAction.System.Playback.StateChangeObserved -> state.copy(playbackState = action.playbackState)
 
-        is ListenAction.Playback.PlaybackStarted ->
+        is ListenAction.System.Playback.PlaybackStarted ->
             state.copy(
                 playbackState =
                     state.playbackState.copy(
@@ -97,40 +122,25 @@ private fun reducePlayback(state: ListenState, action: ListenAction.Playback): L
 
         is VoiceChangeStarted -> state.copy(articleProgress = state.progressAtTextPosition(action.positionInArticle))
 
-        ListenAction.Playback.PlaybackWaiting ->
+        ListenAction.System.Playback.PlaybackWaiting ->
             if (state.playbackState.phase == PlaybackPhase.Paused) {
                 state
             } else {
                 state.copy(playbackState = state.playbackState.copy(phase = PlaybackPhase.Buffering))
             }
 
-        ListenAction.Playback.PlaybackEnded ->
+        ListenAction.System.Playback.PlaybackEnded ->
             state.copy(
                 playbackState = state.playbackState.copy(phase = PlaybackPhase.Ended),
                 articleProgress = state.articleProgress.atEnd(),
             )
 
-        ListenAction.Playback.PlaybackFailed ->
+        ListenAction.System.Playback.PlaybackFailed ->
             state.copy(
                 playbackState = state.playbackState.copy(phase = PlaybackPhase.Failed),
                 error = ListenError.PlaybackFailed,
             )
-        is ListenAction.Playback.SeekRequested -> {
-            val durationMs = state.articleProgress.durationMs
-            val fraction = action.fraction.coerceIn(0f, 1f)
-            if (durationMs <= 0) {
-                state
-            } else {
-                state.copy(
-                    articleProgress =
-                        state.articleProgress.copy(
-                            positionMs = (durationMs * fraction).roundToLong(),
-                            barPosition = fraction,
-                        )
-                )
-            }
-        }
-        is ListenAction.Playback.ArticleProgressReverted ->
+        is ListenAction.System.Playback.ArticleProgressReverted ->
             state.copy(
                 articleProgress =
                     ArticleProgress(
@@ -198,19 +208,25 @@ private fun reducePlaylist(playlist: Playlist, action: PlaylistAction): Playlist
             playlist.restarted(action.chunkIndex, action.chunkDurationsBeforePlaylistMs, action.startMs)
     }
 
-private fun reduceSynthesis(state: ListenState, action: ListenAction.Synthesis): ListenState =
+private fun reduceSynthesis(state: ListenState, action: ListenAction.System.Synthesis): ListenState =
     when (action) {
-        ListenAction.Synthesis.SynthesisFailed -> state.copy(error = ListenError.SynthesisFailed)
+        ListenAction.System.Synthesis.SynthesisFailed -> state.copy(error = ListenError.SynthesisFailed)
         is MeasurementAction ->
             state.copy(articleMeasurements = reduceArticleMeasurements(state.articleMeasurements, action))
     }
 
-private fun reduceVoices(state: ListenState, action: ListenAction.Voices): ListenState =
+private fun reduceUserVoices(state: ListenState, action: ListenAction.User.Voices): ListenState =
     when (action) {
-        is ListenAction.Voices.VoiceSelected ->
+        is ListenAction.User.Voices.VoiceSelected ->
             state.copy(voiceState = state.voiceState.copy(selectedVoice = action.voice))
 
-        is ListenAction.Voices.AvailableVoicesLoaded ->
+        ListenAction.User.Voices.VoicesClicked,
+        ListenAction.User.Voices.VoicesDismissed -> state
+    }
+
+private fun reduceSystemVoices(state: ListenState, action: ListenAction.System.Voices): ListenState =
+    when (action) {
+        is ListenAction.System.Voices.AvailableVoicesLoaded ->
             state.copy(
                 voiceState =
                     state.voiceState.copy(
@@ -222,7 +238,7 @@ private fun reduceVoices(state: ListenState, action: ListenAction.Voices): Liste
 
         // The empty list is the answer, not the absence of one: the engine has been asked and has nothing offline for
         // this language.
-        ListenAction.Voices.NoOfflineVoicesAvailable ->
+        ListenAction.System.Voices.NoOfflineVoicesAvailable ->
             state.copy(
                 voiceState = VoiceState(loadState = VoiceLoadState.Loaded),
                 error = ListenError.NoOfflineVoice,
