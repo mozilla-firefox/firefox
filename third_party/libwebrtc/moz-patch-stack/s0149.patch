@@ -1,26 +1,138 @@
-From: Byron Campen <docfaraday@gmail.com>
-Date: Thu, 29 Oct 2026 14:46:00 -0500
-Subject: Bug 2086269 - (fix-f00ee0bdfc) Revert f00ee0bdfc, which introduced a
- dependency on an in-tree python executable.
+From: Ryan VanderMeulen <rvandermeulen@mozilla.com>
+Date: Mon, 9 Nov 2026 21:08:00 +0000
+Subject: Bug 2091076 - Suppress the deprecation javac lint in WebRTC's Android
+ Java. r=webrtc-reviewers,mjf
 
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/d5803eca60b77e33d4769a2d5e49acec5ac8b8a2
+Differential Revision: https://phabricator.services.mozilla.com/D341063
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/a7a0fea72bed57bb89a310efe6a3450a8a22a36c
 ---
- .gn | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ sdk/android/api/org/webrtc/EglRenderer.java                 | 1 +
+ sdk/android/api/org/webrtc/SurfaceTextureHelper.java        | 1 +
+ sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java    | 1 +
+ sdk/android/src/java/org/webrtc/Camera2Session.java         | 2 ++
+ sdk/android/src/java/org/webrtc/CameraSession.java          | 1 +
+ sdk/android/src/java/org/webrtc/HardwareVideoEncoder.java   | 2 ++
+ sdk/android/src/java/org/webrtc/RefCountDelegate.java       | 1 +
+ sdk/android/src/java/org/webrtc/audio/WebRtcAudioUtils.java | 2 ++
+ 8 files changed, 11 insertions(+)
 
-diff --git a/.gn b/.gn
-index fb1ddfa62c..41d0ada2cf 100644
---- a/.gn
-+++ b/.gn
-@@ -11,8 +11,9 @@ import("//chromium/build/dotfile_settings.gni")
- # The location of the build configuration file.
- buildconfig = "//chromium/build/config/BUILDCONFIG.gn"
+diff --git a/sdk/android/api/org/webrtc/EglRenderer.java b/sdk/android/api/org/webrtc/EglRenderer.java
+index f8bcd57b78..ab9614aaca 100644
+--- a/sdk/android/api/org/webrtc/EglRenderer.java
++++ b/sdk/android/api/org/webrtc/EglRenderer.java
+@@ -633,6 +633,7 @@ public class EglRenderer implements VideoSink {
+     }
+   }
  
--# The hermetic Python interpreter to use by default.
--script_executable = "//third_party/cpython3/host/bin/python3"
-+# The python interpreter to use by default. On Windows, this will look
-+# for python3.exe and python3.bat.
-+script_executable = "python3"
++  @SuppressWarnings("deprecation")
+   private void swapBuffersOnRenderThread(final VideoFrame frame, long swapBuffersStartTimeNs) {
+     synchronized (threadLock) {
+       if (eglThread == null) {
+diff --git a/sdk/android/api/org/webrtc/SurfaceTextureHelper.java b/sdk/android/api/org/webrtc/SurfaceTextureHelper.java
+index 8735ed2a70..147a0186b3 100644
+--- a/sdk/android/api/org/webrtc/SurfaceTextureHelper.java
++++ b/sdk/android/api/org/webrtc/SurfaceTextureHelper.java
+@@ -174,6 +174,7 @@ public class SurfaceTextureHelper {
+     }
+   };
  
- # The secondary source root is a parallel directory tree where
- # GN build files are placed when they can not be placed directly
++  @SuppressWarnings("deprecation")
+   private SurfaceTextureHelper(Context sharedContext, Handler handler, boolean alignTimestamps,
+       YuvConverter yuvConverter, FrameRefMonitor frameRefMonitor) {
+     if (handler.getLooper().getThread() != Thread.currentThread()) {
+diff --git a/sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java b/sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java
+index 3dc3fef5f1..4edfe8b30b 100644
+--- a/sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java
++++ b/sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java
+@@ -461,6 +461,7 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
+     callback.onDecodedFrame(frameWithModifiedTimeStamp, decodeTimeMs, null /* qp */);
+   }
+ 
++  @SuppressWarnings("deprecation")
+   private void deliverByteFrame(
+       int index, MediaCodec.BufferInfo info, int rotation, Integer decodeTimeMs) {
+     // Load dimensions from shared memory under the dimension lock.
+diff --git a/sdk/android/src/java/org/webrtc/Camera2Session.java b/sdk/android/src/java/org/webrtc/Camera2Session.java
+index d5ee80c73e..b58221ebc4 100644
+--- a/sdk/android/src/java/org/webrtc/Camera2Session.java
++++ b/sdk/android/src/java/org/webrtc/Camera2Session.java
+@@ -112,6 +112,7 @@ class Camera2Session implements CameraSession {
+     }
+ 
+     @Override
++    @SuppressWarnings("deprecation")
+     public void onOpened(CameraDevice camera) {
+       checkIsOnCameraThread();
+ 
+@@ -276,6 +277,7 @@ class Camera2Session implements CameraSession {
+         cameraId, width, height, framerate);
+   }
+ 
++  @SuppressWarnings("deprecation")
+   private Camera2Session(CreateSessionCallback callback, Events events, Context applicationContext,
+       CameraManager cameraManager, SurfaceTextureHelper surfaceTextureHelper, String cameraId,
+       int width, int height, int framerate) {
+diff --git a/sdk/android/src/java/org/webrtc/CameraSession.java b/sdk/android/src/java/org/webrtc/CameraSession.java
+index 8d137854d8..146cf21542 100644
+--- a/sdk/android/src/java/org/webrtc/CameraSession.java
++++ b/sdk/android/src/java/org/webrtc/CameraSession.java
+@@ -39,6 +39,7 @@ interface CameraSession {
+    */
+   void stop();
+ 
++  @SuppressWarnings("deprecation")
+   static int getDeviceOrientation(Context context) {
+     final WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+     switch (wm.getDefaultDisplay().getRotation()) {
+diff --git a/sdk/android/src/java/org/webrtc/HardwareVideoEncoder.java b/sdk/android/src/java/org/webrtc/HardwareVideoEncoder.java
+index 9664020288..848ca83ae4 100644
+--- a/sdk/android/src/java/org/webrtc/HardwareVideoEncoder.java
++++ b/sdk/android/src/java/org/webrtc/HardwareVideoEncoder.java
+@@ -595,6 +595,7 @@ class HardwareVideoEncoder implements VideoEncoder {
+   }
+ 
+   // Visible for testing.
++  @SuppressWarnings("deprecation")
+   protected void deliverEncodedImage() {
+     outputThreadChecker.checkIsOnValidThread();
+     try {
+@@ -800,6 +801,7 @@ class HardwareVideoEncoder implements VideoEncoder {
+     i420.release();
+   }
+ 
++  @SuppressWarnings("deprecation")
+   protected boolean isSemiPlanar(int colorFormat) {
+     switch (colorFormat) {
+       case MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar:
+diff --git a/sdk/android/src/java/org/webrtc/RefCountDelegate.java b/sdk/android/src/java/org/webrtc/RefCountDelegate.java
+index b9210d26a4..0fdaf4df4a 100644
+--- a/sdk/android/src/java/org/webrtc/RefCountDelegate.java
++++ b/sdk/android/src/java/org/webrtc/RefCountDelegate.java
+@@ -50,6 +50,7 @@ class RefCountDelegate implements RefCounted {
+    * Tries to retain the object. Can be used in scenarios where it is unknown if the object has
+    * already been released. Returns true if successful or false if the object was already released.
+    */
++  @SuppressWarnings("deprecation")
+   boolean safeRetain() {
+     int currentRefCount = refCount.get();
+     while (currentRefCount != 0) {
+diff --git a/sdk/android/src/java/org/webrtc/audio/WebRtcAudioUtils.java b/sdk/android/src/java/org/webrtc/audio/WebRtcAudioUtils.java
+index 2d9e30902c..5ce70a826f 100644
+--- a/sdk/android/src/java/org/webrtc/audio/WebRtcAudioUtils.java
++++ b/sdk/android/src/java/org/webrtc/audio/WebRtcAudioUtils.java
+@@ -32,6 +32,7 @@ public final class WebRtcAudioUtils {
+   private static final String TAG = "WebRtcAudioUtilsExternal";
+ 
+   /** Helper method for building a string of thread information. */
++  @SuppressWarnings("deprecation")
+   public static String getThreadInfo() {
+     Thread current = Thread.currentThread();
+     return "@[name=" + current.getName() + ", id=" + current.getId() + "]";
+@@ -208,6 +209,7 @@ public final class WebRtcAudioUtils {
+   }
+ 
+   /** Reports basic audio statistics. */
++  @SuppressWarnings("deprecation")
+   private static void logAudioStateBasic(String tag, Context context, AudioManager audioManager) {
+     Logging.d(
+         tag,

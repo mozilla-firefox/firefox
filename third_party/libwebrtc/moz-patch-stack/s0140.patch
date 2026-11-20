@@ -1,0 +1,51 @@
+From: Michael Froman <mfroman@mozilla.com>
+Date: Fri, 21 Aug 2026 11:59:00 -0500
+Subject: Bug 2064200 - (fix-ce3d64be6a) support
+ AudioReceiveStreamInterface::Config.Copy()
+
+Mirrors VideoReceiveStreamInterface::Config.Copy().
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/af2661e1040fbe7653b8133a8a9c7ce887791c0b
+---
+ call/audio_receive_stream.cc |  1 +
+ call/audio_receive_stream.h  | 10 +++++++++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/call/audio_receive_stream.cc b/call/audio_receive_stream.cc
+index f2e80eef92..c8e818a1d0 100644
+--- a/call/audio_receive_stream.cc
++++ b/call/audio_receive_stream.cc
+@@ -16,6 +16,7 @@ AudioReceiveStreamInterface::Stats::Stats() = default;
+ AudioReceiveStreamInterface::Stats::~Stats() = default;
+ 
+ AudioReceiveStreamInterface::Config::Config() = default;
++AudioReceiveStreamInterface::Config::Config(const Config&) = default;
+ AudioReceiveStreamInterface::Config::Config(Config&&) = default;
+ AudioReceiveStreamInterface::Config&
+ AudioReceiveStreamInterface::Config::operator=(Config&&) = default;
+diff --git a/call/audio_receive_stream.h b/call/audio_receive_stream.h
+index 7d4ceaa20f..757ea3be88 100644
+--- a/call/audio_receive_stream.h
++++ b/call/audio_receive_stream.h
+@@ -121,13 +121,21 @@ class AudioReceiveStreamInterface : public MediaReceiveStreamInterface {
+     int round_trip_time_measurements = 0;
+   };
+   struct Config {
++   private:
++    // Access to the copy constructor is private to force use of the Copy()
++    // method for those exceptional cases where we do use it.
++    Config(const Config&);
++
++   public:
+     Config();
+-    Config(const Config&) = delete;
+     Config& operator=(const Config&) = delete;
+     Config(Config&&);
+     Config& operator=(Config&&);
+     ~Config();
+ 
++    // Mostly used by tests.  Avoid creating copies if you can.
++    Config Copy() const { return Config(*this); }
++
+     std::string ToString() const;
+ 
+     // Receive-stream specific RTP settings.

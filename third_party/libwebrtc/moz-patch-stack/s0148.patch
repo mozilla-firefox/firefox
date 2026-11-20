@@ -1,32 +1,47 @@
-From: Michael Froman <mfroman@mozilla.com>
-Date: Tue, 15 Sep 2026 20:40:00 +0000
-Subject: Bug 1996020 - use I420Buffer::CreateOrNull in
- VideoFrameBufferPool::CreateI420Buffer. r=bwc
+From: Ryan VanderMeulen <rvandermeulen@mozilla.com>
+Date: Mon, 9 Nov 2026 14:55:00 +0000
+Subject: Bug 1914741 - Suppress the this-escape and serial javac lints in
+ libwebrtc's Android Java. r=webrtc-reviewers,ahochheiden,mjf
 
-Looking at the crash reports, even after converting DesktopCaptureImpl::OnCaptureResult
-to use the VideoFrameBufferPool, we're still seeing occasional crashes
-in AlignedMalloc so use CreateOrNull so we don't crash in OOM situations.
+GeckoView compiles these sources in the same javac invocation as its own Java, so they get its -Werror, which
+javac can't turn off for individual source paths. Later commits turn on both lints.
 
-Differential Revision: https://phabricator.services.mozilla.com/D326269
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/93cb056a0c8220b5b364f9cd1204ac34bb0d163d
+Differential Revision: https://phabricator.services.mozilla.com/D340812
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/6d213db7dd1bd51a0d77d53e4c97a003ebe60bfb
 ---
- common_video/video_frame_buffer_pool.cc | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ sdk/android/api/org/webrtc/GlUtil.java              | 1 +
+ sdk/android/api/org/webrtc/SurfaceViewRenderer.java | 2 ++
+ 2 files changed, 3 insertions(+)
 
-diff --git a/common_video/video_frame_buffer_pool.cc b/common_video/video_frame_buffer_pool.cc
-index 7f65f87302..df349a2d5f 100644
---- a/common_video/video_frame_buffer_pool.cc
-+++ b/common_video/video_frame_buffer_pool.cc
-@@ -139,8 +139,10 @@ scoped_refptr<I420Buffer> VideoFrameBufferPool::CreateI420Buffer(int width,
-   if (buffers_.size() >= max_number_of_buffers_)
-     return nullptr;
-   // Allocate new buffer.
--  scoped_refptr<I420Buffer> buffer =
--      make_ref_counted<I420Buffer>(width, height);
-+  scoped_refptr<I420Buffer> buffer = I420Buffer::CreateOrNull(width, height);
-+  if (!buffer) {
-+    return nullptr;
-+  }
+diff --git a/sdk/android/api/org/webrtc/GlUtil.java b/sdk/android/api/org/webrtc/GlUtil.java
+index e2dd0c56d6..ce81ba03dd 100644
+--- a/sdk/android/api/org/webrtc/GlUtil.java
++++ b/sdk/android/api/org/webrtc/GlUtil.java
+@@ -22,6 +22,7 @@ import java.nio.FloatBuffer;
+ public class GlUtil {
+   private GlUtil() {}
  
-   if (zero_initialize_)
-     buffer->InitializeData();
++  @SuppressWarnings("serial")
+   public static class GlOutOfMemoryException extends GLException {
+     public GlOutOfMemoryException(int error, String msg) {
+       super(error, msg);
+diff --git a/sdk/android/api/org/webrtc/SurfaceViewRenderer.java b/sdk/android/api/org/webrtc/SurfaceViewRenderer.java
+index 6c9140abbd..bf312e6166 100644
+--- a/sdk/android/api/org/webrtc/SurfaceViewRenderer.java
++++ b/sdk/android/api/org/webrtc/SurfaceViewRenderer.java
+@@ -44,6 +44,7 @@ public class SurfaceViewRenderer extends SurfaceView
+   /**
+    * Standard View constructor. In order to render something, you must first call init().
+    */
++  @SuppressWarnings("this-escape")
+   public SurfaceViewRenderer(Context context) {
+     super(context);
+     this.resourceName = getResourceName();
+@@ -55,6 +56,7 @@ public class SurfaceViewRenderer extends SurfaceView
+   /**
+    * Standard View constructor. In order to render something, you must first call init().
+    */
++  @SuppressWarnings("this-escape")
+   public SurfaceViewRenderer(Context context, AttributeSet attrs) {
+     super(context, attrs);
+     this.resourceName = getResourceName();
