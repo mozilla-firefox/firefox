@@ -22,6 +22,7 @@
 
 /* import-globals-from head_channels.js */
 /* import-globals-from head_trr.js */
+/* import-globals-from head_http3.js */
 
 const { NodeHTTP2ProxyServer } = ChromeUtils.importESModule(
   "resource://testing-common/NodeServer.sys.mjs"
@@ -124,9 +125,15 @@ async function checkOriginReachedThroughH2Proxy(path) {
 add_setup(async function setup() {
   trr_test_setup();
 
-  h2OriginPort = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2OriginPort, null);
-  Assert.notEqual(h2OriginPort, "");
+  const youWin = (req, res) => {
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end("You Win!");
+  };
+  let originServer = await create_h2_server({
+    "/https-proxy-rr": youWin,
+    "/https-proxy-rr-h3-refused": youWin,
+  });
+  h2OriginPort = originServer.port();
 
   h3NoResponsePort = Services.env.get("MOZHTTP3_PORT_NO_RESPONSE");
   Assert.notEqual(h3NoResponsePort, null);
@@ -135,7 +142,6 @@ add_setup(async function setup() {
   let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
     Ci.nsIX509CertDB
   );
-  addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
   addCertFromFile(certdb, "proxy-ca.pem", "CTu,u,u");
 
   Services.prefs.setBoolPref("network.proxy.allow_hijacking_localhost", true);
