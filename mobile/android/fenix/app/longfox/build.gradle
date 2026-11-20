@@ -65,7 +65,6 @@ dependencies {
 ext {
     gleanExpireByVersion = Config.majorVersion(project)
     gleanNamespace = "mozilla.telemetry.glean"
-    gleanPythonEnvDir = gradle.mozconfig.substs.GRADLE_GLEAN_PARSER_VENV
     gleanYamlFiles = [
             "${project.projectDir}/metrics.yaml",
     ]

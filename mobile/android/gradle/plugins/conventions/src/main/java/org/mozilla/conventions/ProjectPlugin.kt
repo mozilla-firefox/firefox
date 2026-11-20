@@ -89,6 +89,7 @@ class ProjectPlugin : Plugin<Project> {
         configureAndroidBuildToolsVersion(project, substs)
         configureAppServicesSubstitution(project, extraProperties, substs)
         configureGleanSubstitution(project, extraProperties)
+        configureGleanPythonEnvDir(project, substs)
         configureGleanVersionResolution(project)
         configureKtfmt(project, mozilla)
         configureDetekt(project, mozilla)
@@ -172,6 +173,10 @@ class ProjectPlugin : Plugin<Project> {
         if (extraProperties.has("localProperties.autoPublish.glean.dir")) {
             substituteWithMavenLocal(project, "local-glean", GLEAN_GROUPS)
         }
+    }
+
+    private fun configureGleanPythonEnvDir(project: Project, substs: Map<*, *>) {
+        project.extensions.extraProperties["gleanPythonEnvDir"] = substs["GRADLE_GLEAN_PARSER_VENV"] as String
     }
 
     // Extract native libs from libsForTests JARs so transitive .so dependencies
