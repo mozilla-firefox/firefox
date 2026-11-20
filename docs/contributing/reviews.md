@@ -144,6 +144,8 @@ For more information about the review process, see the {doc}`Code_Review_FAQ`.
 
 ## Review groups
 
+A group ending in `-rotation` assigns the review to one of its members in turn.
+
 ```{eval-rst}
 .. list-table::
    :header-rows: 1
@@ -166,9 +168,6 @@ For more information about the review process, see the {doc}`Code_Review_FAQ`.
    * - #cubeb-reviewers
      - cubeb, Gecko's audio input/output library and associated projects (audioipc, cubeb-rs, rust cubeb backends)
      - `Member list <https://phabricator.services.mozilla.com/project/profile/129/>`__
-   * - #desktop-theme-reviewers
-     - `User interface CSS </mots/index.html#desktop-theme>`__
-     - `Member list <https://phabricator.services.mozilla.com/project/members/141/>`__
    * - #devtools-reviewers
      - `Firefox DevTools </mots/index.html#devtools>`__
      - `Member list <https://phabricator.services.mozilla.com/project/members/153/>`__
@@ -274,6 +273,9 @@ For more information about the review process, see the {doc}`Code_Review_FAQ`.
    * - #search-reviewers
      - `Search </mots/index.html#search>`__
      - `Member list <https://phabricator.services.mozilla.com/project/members/169/>`__
+   * - #search-reviewers-rotation
+     - `Search </mots/index.html#search>`__
+     - `Member list <https://phabricator.services.mozilla.com/project/members/267/>`__
    * - #sessionstore or #sessionstore-reviewers
      - `Firefox: Session Restore </mots/index.html#session-restore>`__
      - `Member list <https://phabricator.services.mozilla.com/project/members/179/>`__
@@ -292,9 +294,15 @@ For more information about the review process, see the {doc}`Code_Review_FAQ`.
    * - #tabbrowser or #tabbrowser-reviewers
      - `Firefox: Tabbed Browser </mots/index.html#tabbed-browser>`__
      - `Member list <https://phabricator.services.mozilla.com/project/members/180/>`__
+   * - #tabbrowser-reviewers-rotation
+     - `Firefox: Tabbed Browser </mots/index.html#tabbed-browser>`__
+     - `Member list <https://phabricator.services.mozilla.com/project/members/247/>`__
    * - #theme or #desktop-theme-reviewers
      - `Firefox: Theme and Toolkit: Themes </mots/index.html#desktop-theme>`__
      - `Member list <https://phabricator.services.mozilla.com/project/members/141/>`__
+   * - #desktop-theme-reviewers-rotation
+     - `Firefox: Theme and Toolkit: Themes </mots/index.html#desktop-theme>`__
+     - `Member list <https://phabricator.services.mozilla.com/project/members/250/>`__
    * - #toolkit-telemetry-reviewers-rotation
      - `Toolkit :: Telemetry </mots/index.html#telemetry>`__
      - `Member list <https://phabricator.services.mozilla.com/project/members/229/>`__
@@ -304,6 +312,9 @@ For more information about the review process, see the {doc}`Code_Review_FAQ`.
    * - #urlbar-reviewers
      - `Urlbar (Address Bar) </mots/index.html#address-bar>`__
      - `Member list <https://phabricator.services.mozilla.com/project/members/211/>`__
+   * - #urlbar-reviewers-rotation
+     - `Urlbar (Address Bar) </mots/index.html#address-bar>`__
+     - `Member list <https://phabricator.services.mozilla.com/project/members/270/>`__
    * - #view-transitions-reviewers or #view-transitions or #vt
      - View Transitions (dom/view-transitions, and the relevant style / layout / gfx code).
      - `Member list <https://phabricator.services.mozilla.com/project/members/217/>`__
