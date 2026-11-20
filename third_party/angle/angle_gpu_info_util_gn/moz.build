@@ -54,8 +54,13 @@ if CONFIG["OS_TARGET"] == "Android":
 
     DEFINES["ANDROID"] = True
     DEFINES["ANDROID_NDK_VERSION_ROLL"] = "r27_1"
+    DEFINES["ANGLE_ENABLE_CONTEXT_MUTEX_RECURSION"] = "1"
+    DEFINES["ANGLE_ENABLE_CRC_FOR_PIPELINE_CACHE"] = True
     DEFINES["ANGLE_ENABLE_GLOBAL_MUTEX_LOAD_TIME_ALLOCATE"] = "1"
+    DEFINES["ANGLE_ENABLE_GLOBAL_MUTEX_RECURSION"] = "1"
     DEFINES["ANGLE_ENABLE_OPENGL"] = True
+    DEFINES["ANGLE_ENABLE_VULKAN"] = True
+    DEFINES["ANGLE_SHARED_LIBVULKAN"] = "1"
     DEFINES["ANGLE_USE_ANDROID_TLS_SLOT"] = "1"
     DEFINES["HAVE_SYS_UIO_H"] = True
     DEFINES["VK_USE_PLATFORM_ANDROID_KHR"] = True
@@ -66,6 +71,7 @@ if CONFIG["OS_TARGET"] == "Android":
 
     LOCAL_INCLUDES += [
         "/third_party/angle/src/third_party/khronos/",
+        "/third_party/angle/src/third_party/volk/src/",
         "/third_party/angle/third_party/vulkan-headers/src/include/"
     ]
 

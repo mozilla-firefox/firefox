@@ -171,7 +171,10 @@ if CONFIG["OS_TARGET"] == "Android":
 
     DEFINES["ANDROID"] = True
     DEFINES["ANDROID_NDK_VERSION_ROLL"] = "r27_1"
+    DEFINES["ANGLE_ENABLE_CONTEXT_MUTEX_RECURSION"] = "1"
     DEFINES["ANGLE_ENABLE_GLOBAL_MUTEX_LOAD_TIME_ALLOCATE"] = "1"
+    DEFINES["ANGLE_ENABLE_GLOBAL_MUTEX_RECURSION"] = "1"
+    DEFINES["ANGLE_ENABLE_VULKAN"] = True
     DEFINES["ANGLE_USE_ANDROID_TLS_SLOT"] = "1"
     DEFINES["EGL_NO_X11"] = True
     DEFINES["HAVE_SYS_UIO_H"] = True
@@ -180,9 +183,41 @@ if CONFIG["OS_TARGET"] == "Android":
     DEFINES["__STDC_CONSTANT_MACROS"] = True
     DEFINES["__STDC_FORMAT_MACROS"] = True
 
+    LOCAL_INCLUDES += [
+        "/third_party/angle/third_party/spirv-headers/src/include/",
+        "/third_party/angle/third_party/spirv-tools/src/include/"
+    ]
+
     OS_LIBS += [
         "log",
         "nativewindow"
+    ]
+
+    SOURCES += [
+        "/third_party/angle/src/compiler/translator/tree_ops/spirv/RewriteSamplerExternalTexelFetch.cpp"
+    ]
+
+    UNIFIED_SOURCES += [
+        "/third_party/angle/src/compiler/translator/spirv/BuildSPIRV.cpp",
+        "/third_party/angle/src/compiler/translator/spirv/BuiltinsWorkaround.cpp",
+        "/third_party/angle/src/compiler/translator/spirv/OutputSPIRV.cpp",
+        "/third_party/angle/src/compiler/translator/spirv/TranslatorSPIRV.cpp",
+        "/third_party/angle/src/compiler/translator/tree_ops/spirv/ClampGLLayer.cpp",
+        "/third_party/angle/src/compiler/translator/tree_ops/spirv/EmulateAdvancedBlendEquations.cpp",
+        "/third_party/angle/src/compiler/translator/tree_ops/spirv/EmulateFragColorData.cpp",
+        "/third_party/angle/src/compiler/translator/tree_ops/spirv/EmulateFramebufferFetch.cpp",
+        "/third_party/angle/src/compiler/translator/tree_ops/spirv/EmulateYUVBuiltIns.cpp",
+        "/third_party/angle/src/compiler/translator/tree_ops/spirv/ReswizzleYUVOps.cpp",
+        "/third_party/angle/src/compiler/translator/tree_ops/spirv/RewriteInterpolateAtOffset.cpp",
+        "/third_party/angle/src/compiler/translator/tree_ops/spirv/RewriteR32fImages.cpp"
+    ]
+
+    USE_LIBS += [
+        "angle_spirv_base_gn",
+        "angle_spirv_builder_gn",
+        "spv_headers_gn",
+        "spvtools_headers_gn",
+        "spvtools_val_gn"
     ]
 
 if CONFIG["OS_TARGET"] == "Darwin":

@@ -1,0 +1,118 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+
+  ### This moz.build was AUTOMATICALLY GENERATED from a GN config,  ###
+  ### DO NOT edit it by hand.                                       ###
+
+COMPILE_FLAGS["OS_INCLUDES"] = []
+AllowCompilerWarnings()
+
+DEFINES["ANDROID"] = True
+DEFINES["ANDROID_NDK_VERSION_ROLL"] = "r27_1"
+DEFINES["ANGLE_ENABLE_DEBUG_ANNOTATIONS"] = False
+DEFINES["ANGLE_ENABLE_KEYEDMUTEX"] = True
+DEFINES["ANGLE_PLATFORM_EXPORT"] = ""
+DEFINES["ANGLE_SKIP_DXGI_1_2_CHECK"] = True
+DEFINES["HAVE_SYS_UIO_H"] = True
+DEFINES["_GNU_SOURCE"] = True
+DEFINES["__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__"] = True
+DEFINES["__STDC_CONSTANT_MACROS"] = True
+DEFINES["__STDC_FORMAT_MACROS"] = True
+
+LOCAL_INCLUDES += [
+    "!/ipc/ipdl/_ipdlheaders",
+    "!/third_party/angle/gen",
+    "!/third_party/angle/gen/third_party/spirv-tools/src",
+    "/ipc/chromium/src",
+    "/third_party/angle/",
+    "/third_party/angle/third_party/spirv-headers/src/include/",
+    "/third_party/angle/third_party/spirv-tools/src/",
+    "/third_party/angle/third_party/spirv-tools/src/include/",
+    "/tools/profiler/public"
+]
+
+NO_EXPAND_LIBS = True
+
+
+SOURCES += [
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_ray_tracing_reorder.cpp"
+]
+
+UNIFIED_SOURCES += [
+    "/third_party/angle/third_party/spirv-tools/src/source/val/basic_block.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/construct.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/function.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/instruction.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_adjacency.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_annotation.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_arithmetics.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_atomics.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_barriers.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_bitwise.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_builtins.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_capability.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_cfg.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_composites.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_constants.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_conversion.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_debug.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_decorations.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_derivatives.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_dot_product.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_execution_limitations.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_explicit_layout.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_extensions.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_function.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_graph.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_group.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_id.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_image.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_instruction.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_interfaces.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_invalid_type.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_layout.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_literals.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_logical_pointers.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_logicals.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_memory.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_memory_semantics.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_mesh_shading.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_misc.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_mode_setting.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_non_uniform.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_pipe.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_primitives.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_ray_query.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_ray_tracing.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_scopes.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_small_type_uses.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_tensor.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_tensor_layout.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validate_type.cpp",
+    "/third_party/angle/third_party/spirv-tools/src/source/val/validation_state.cpp"
+]
+
+USE_LIBS += [
+    "spvtools_gn",
+    "spvtools_headers_gn"
+]
+
+if not CONFIG["MOZ_DEBUG"]:
+
+    DEFINES["DYNAMIC_ANNOTATIONS_ENABLED"] = "0"
+    DEFINES["NDEBUG"] = True
+    DEFINES["NVALGRIND"] = True
+
+if CONFIG["MOZ_DEBUG"] == "1":
+
+    DEFINES["DYNAMIC_ANNOTATIONS_ENABLED"] = "1"
+    DEFINES["_DEBUG"] = True
+
+if CONFIG["TARGET_CPU"] == "aarch64":
+
+    DEFINES["__ARM_NEON__"] = "1"
+
+Library("spvtools_val_gn")

@@ -1,0 +1,152 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+
+  ### This moz.build was AUTOMATICALLY GENERATED from a GN config,  ###
+  ### DO NOT edit it by hand.                                       ###
+
+COMPILE_FLAGS["OS_INCLUDES"] = []
+AllowCompilerWarnings()
+
+DEFINES["ANDROID"] = True
+DEFINES["ANDROID_NDK_VERSION_ROLL"] = "r27_1"
+DEFINES["ANGLE_DISABLE_POOL_ALLOC"] = True
+DEFINES["ANGLE_ENABLE_CONTEXT_MUTEX"] = "1"
+DEFINES["ANGLE_ENABLE_CONTEXT_MUTEX_RECURSION"] = "1"
+DEFINES["ANGLE_ENABLE_CRC_FOR_PIPELINE_CACHE"] = True
+DEFINES["ANGLE_ENABLE_DEBUG_ANNOTATIONS"] = False
+DEFINES["ANGLE_ENABLE_GLOBAL_MUTEX_LOAD_TIME_ALLOCATE"] = "1"
+DEFINES["ANGLE_ENABLE_GLOBAL_MUTEX_RECURSION"] = "1"
+DEFINES["ANGLE_ENABLE_KEYEDMUTEX"] = True
+DEFINES["ANGLE_ENABLE_OPENGL"] = True
+DEFINES["ANGLE_ENABLE_SHARE_CONTEXT_LOCK"] = "1"
+DEFINES["ANGLE_ENABLE_VULKAN"] = True
+DEFINES["ANGLE_PLATFORM_EXPORT"] = ""
+DEFINES["ANGLE_SHARED_LIBVULKAN"] = "1"
+DEFINES["ANGLE_SKIP_DXGI_1_2_CHECK"] = True
+DEFINES["ANGLE_USE_ANDROID_TLS_SLOT"] = "1"
+DEFINES["ANGLE_USE_CUSTOM_VULKAN_OUTSIDE_RENDER_PASS_CMD_BUFFERS"] = "1"
+DEFINES["ANGLE_USE_CUSTOM_VULKAN_RENDER_PASS_CMD_BUFFERS"] = "1"
+DEFINES["ANGLE_VULKAN_API_PERF_COUNTERS_MODE"] = "0"
+DEFINES["EGL_NO_X11"] = True
+DEFINES["HAVE_SYS_UIO_H"] = True
+DEFINES["LIBANGLE_IMPLEMENTATION"] = True
+DEFINES["VK_USE_PLATFORM_ANDROID_KHR"] = True
+DEFINES["_GNU_SOURCE"] = True
+DEFINES["__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__"] = True
+DEFINES["__STDC_CONSTANT_MACROS"] = True
+DEFINES["__STDC_FORMAT_MACROS"] = True
+
+LOCAL_INCLUDES += [
+    "!/ipc/ipdl/_ipdlheaders",
+    "/ipc/chromium/src",
+    "/third_party/angle/include/",
+    "/third_party/angle/src/",
+    "/third_party/angle/src/common/base/",
+    "/third_party/angle/src/common/third_party/xxhash/src/",
+    "/third_party/angle/src/third_party/khronos/",
+    "/third_party/angle/src/third_party/volk/src/",
+    "/third_party/angle/third_party/spirv-headers/src/include/",
+    "/third_party/angle/third_party/vulkan-headers/src/include/",
+    "/third_party/angle/third_party/zlib/google/",
+    "/tools/profiler/public"
+]
+
+OS_LIBS += [
+    "log",
+    "nativewindow"
+]
+
+UNIFIED_SOURCES += [
+    "/third_party/angle/src/libANGLE/renderer/vulkan/AllocatorHelperPool.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/android/AHBFunctions.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/android/DisplayVkAndroid.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/android/HardwareBufferImageSiblingVkAndroid.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/android/vk_android_utils.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/android/WindowSurfaceVkAndroid.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/BufferVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/CommandQueue.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/CompilerVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/ContextVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/DebugAnnotatorVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/DeviceVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/DisplayVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/FenceNVVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/FramebufferVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/ImageVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/MemoryObjectVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/MemoryTracking.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/PersistentCommandPool.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/ProgramExecutableVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/ProgramPipelineVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/ProgramVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/QueryVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/RenderbufferVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/RenderTargetVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/SamplerVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/SecondaryCommandBuffer.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/SecondaryCommandPool.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/SemaphoreVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/ShaderInterfaceVariableInfoMap.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/ShaderVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/ShareGroupVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/spv_utils.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/Suballocation.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/SurfaceVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/SyncVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/TextureVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/TransformFeedbackVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/UtilsVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/vk_api_perf_counters.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/vk_barrier_data.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/vk_cache_utils.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/vk_caps_utils.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/vk_format_table_autogen.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/vk_format_utils.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/vk_helpers.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/vk_internal_shaders_autogen.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/vk_mandatory_format_support_table_autogen.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/vk_ref_counted_event.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/vk_renderer.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/vk_resource.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/vk_utils.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/VkImageImageSiblingVk.cpp",
+    "/third_party/angle/src/libANGLE/renderer/vulkan/VulkanSecondaryCommandBuffer.cpp"
+]
+
+USE_LIBS += [
+    "angle_gpu_info_util_gn",
+    "ANGLE_headers_gn",
+    "angle_image_util_gn",
+    "angle_libvulkan_loader_gn",
+    "angle_spirv_base_gn",
+    "angle_spirv_builder_gn",
+    "angle_spirv_headers_gn",
+    "angle_spirv_parser_gn",
+    "angle_version_info_gn",
+    "angle_vk_mem_alloc_wrapper_gn",
+    "angle_vulkan_headers_gn",
+    "compression_utils_portable_gn",
+    "spv_headers_gn",
+    "vulkan_gn"
+]
+
+if not CONFIG["MOZ_DEBUG"]:
+
+    DEFINES["DYNAMIC_ANNOTATIONS_ENABLED"] = "0"
+    DEFINES["NDEBUG"] = True
+    DEFINES["NVALGRIND"] = True
+
+if CONFIG["MOZ_DEBUG"] == "1":
+
+    DEFINES["ANGLE_DEBUG_LAYERS_ENABLED"] = True
+    DEFINES["DYNAMIC_ANNOTATIONS_ENABLED"] = "1"
+    DEFINES["_DEBUG"] = True
+
+if CONFIG["TARGET_CPU"] == "aarch64":
+
+    DEFINES["__ARM_NEON__"] = "1"
+
+Library("angle_vulkan_backend_gn")

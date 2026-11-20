@@ -1,0 +1,38 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+
+  ### This moz.build was AUTOMATICALLY GENERATED from a GN config,  ###
+  ### DO NOT edit it by hand.                                       ###
+
+COMPILE_FLAGS["OS_INCLUDES"] = []
+AllowCompilerWarnings()
+
+DEFINES["ANGLE_ENABLE_DEBUG_ANNOTATIONS"] = False
+DEFINES["ANGLE_ENABLE_KEYEDMUTEX"] = True
+DEFINES["ANGLE_PLATFORM_EXPORT"] = ""
+DEFINES["ANGLE_SKIP_DXGI_1_2_CHECK"] = True
+
+GeneratedFile(
+    "/third_party/angle/gen/third_party/spirv-tools/src/generators.inc",
+    entry_point="action",
+    extra_deps=['/third_party/angle/third_party/spirv-headers/src/include/spirv/spir-v.xml'],
+    flags=[
+        "/third_party/angle/third_party/spirv-tools/src/utils/generate_registry_tables.py",
+        "/third_party/angle/",
+        "--xml",
+        f"{TOPSRCDIR}/third_party/angle/third_party/spirv-headers/src/include/spirv/spir-v.xml",
+        "--generator",
+        "gen/third_party/spirv-tools/src/generators.inc"
+    ],
+    script="/python/mozbuild/mozbuild/action/file_generate_wrapper.py",
+)
+
+LOCAL_INCLUDES += [
+    "!/ipc/ipdl/_ipdlheaders",
+    "/ipc/chromium/src",
+    "/tools/profiler/public"
+]
+
+Library("spvtools_generators_inc_gn")
