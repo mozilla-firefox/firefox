@@ -32,7 +32,6 @@ struct ParamTraits;
 namespace mozilla {
 namespace dom {
 
-class Document;
 struct LoadingSessionHistoryInfo;
 class SessionHistoryEntry;
 class SHEntrySharedParentState;
@@ -284,15 +283,9 @@ class PreviousSessionHistoryInfo {
   // Prepare a session history info that is validated to be a previous entry for
   // a Navigation API navigation.
   static Maybe<PreviousSessionHistoryInfo> CreateValidatedPreviousEntry(
-      SessionHistoryEntry* aCurrentEntry,
-      SessionHistoryEntry* aPreviousEntryForActivation,
-      Maybe<NavigationType> aNavigationType,
-      nsIPrincipal* aPreviousDocumentPrincipal);
-
-  // Prepare the previous entry for a replacement between two live documents.
-  static Maybe<PreviousSessionHistoryInfo> CreateValidatedPreviousEntry(
-      const Document& aCurrentDocument, const Document& aPreviousDocument,
-      const SessionHistoryInfo* aPreviousEntryForActivation);
+      const SessionHistoryInfo& aCurrentEntry,
+      const Maybe<SessionHistoryInfo>& aPreviousEntryForActivation,
+      Maybe<NavigationType> aNavigationType);
 
   Maybe<SessionHistoryInfo> mSameOriginSessionHistoryInfo;
 };
@@ -300,7 +293,7 @@ class PreviousSessionHistoryInfo {
 struct LoadingSessionHistoryInfo {
   LoadingSessionHistoryInfo() = default;
   explicit LoadingSessionHistoryInfo(SessionHistoryEntry* aEntry);
-  // Initializes mInfo using aEntry and copies load metadata from aInfo.
+  // Initializes mInfo using aEntry and otherwise copies the values from aInfo.
   LoadingSessionHistoryInfo(SessionHistoryEntry* aEntry,
                             const LoadingSessionHistoryInfo* aInfo);
   // For about:blank only.

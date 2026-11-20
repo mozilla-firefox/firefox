@@ -1374,11 +1374,6 @@ static void FinishRestore(CanonicalBrowsingContext* aBrowsingContext,
       do_QueryInterface(aBrowsingContext->GetEmbedderElement());
   if (frameLoaderOwner && aFrameLoader->GetMaybePendingBrowsingContext() &&
       CanRestoreFrameLoader(aFrameLoader) && indexOfHistoryLoad >= 0) {
-    WindowGlobalParent* previousWindowGlobal =
-        aBrowsingContext->GetCurrentWindowGlobal();
-    nsCOMPtr<nsIPrincipal> previousDocumentPrincipal =
-        previousWindowGlobal ? previousWindowGlobal->DocumentPrincipal()
-                             : nullptr;
     RefPtr<BrowsingContextWebProgress> webProgress =
         aBrowsingContext->GetWebProgress();
     if (webProgress) {
@@ -1488,8 +1483,7 @@ static void FinishRestore(CanonicalBrowsingContext* aBrowsingContext,
       currentFrameLoader->Destroy();
     }
 
-    loadingBC->ReactivateDocuments(aEntry, currentSHEntry,
-                                   previousDocumentPrincipal);
+    loadingBC->ReactivateDocuments(aEntry, currentSHEntry);
 
     if (bounceTrackingState) {
       DebugOnly<nsresult> rv = bounceTrackingState->OnBFCacheRestored();

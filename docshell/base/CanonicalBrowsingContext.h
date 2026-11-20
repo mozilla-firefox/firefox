@@ -375,8 +375,7 @@ class CanonicalBrowsingContext final : public BrowsingContext {
 
   MOZ_CAN_RUN_SCRIPT
   void ReactivateDocuments(SessionHistoryEntry* aEntry,
-                           SessionHistoryEntry* aPreviousEntryForActivation,
-                           nsIPrincipal* aPreviousDocumentPrincipal);
+                           SessionHistoryEntry* aPreviousEntryForActivation);
 
   void SynchronizeLayoutHistoryState();
 

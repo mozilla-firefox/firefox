@@ -712,12 +712,12 @@ CanonicalBrowsingContext::CreateLoadingSessionHistoryEntryForLoad(
       return loadingInfo;
     }
 
-    WindowGlobalParent* previousWindowGlobal = GetCurrentWindowGlobal();
     loadingInfo->mPreviousEntry =
         PreviousSessionHistoryInfo::CreateValidatedPreviousEntry(
-            entry, mActiveEntry, navigationType,
-            previousWindowGlobal ? previousWindowGlobal->DocumentPrincipal()
-                                 : nullptr);
+            entry->Info(), ToMaybeRef(mActiveEntry.get()).map([](auto& aValue) {
+              return aValue.Info();
+            }),
+            navigationType);
 
     MOZ_LOG_FMT(
         gNavigationAPILog, LogLevel::Verbose, "Previous entry was {}.",
@@ -818,14 +818,6 @@ CanonicalBrowsingContext::ReplaceLoadingSessionHistoryEntryForLoad(
                     ToMaybeRef(result->mInfo.GetURI())
                         .map(std::mem_fn(&nsIURI::GetSpecOrDefault))
                         .valueOr("(null URI)."_ns));
-        WindowGlobalParent* previousWindowGlobal = GetCurrentWindowGlobal();
-        result->mPreviousEntry =
-            PreviousSessionHistoryInfo::CreateValidatedPreviousEntry(
-                loadingEntry, mActiveEntry,
-                NavigationUtils::NavigationTypeFromLoadType(
-                    result->mInfo.LoadType()),
-                previousWindowGlobal ? previousWindowGlobal->DocumentPrincipal()
-                                     : nullptr);
         GetContiguousEntriesForLoad(*result, loadingEntry);
       }
       return result;
@@ -3178,8 +3170,7 @@ void CanonicalBrowsingContext::DeactivateDocuments(
 
 void CanonicalBrowsingContext::ReactivateDocuments(
     SessionHistoryEntry* aEntry,
-    SessionHistoryEntry* aPreviousEntryForActivation,
-    nsIPrincipal* aPreviousDocumentPrincipal) {
+    SessionHistoryEntry* aPreviousEntryForActivation) {
   nsTArray<NavigationReactivationData> reactivationData;
 
   if (Navigation::IsAPIEnabled()) {
@@ -3206,8 +3197,11 @@ void CanonicalBrowsingContext::ReactivateDocuments(
 
   Maybe previousEntryForActivation =
       PreviousSessionHistoryInfo::CreateValidatedPreviousEntry(
-          mActiveEntry, aPreviousEntryForActivation,
-          Some(NavigationType::Traverse), aPreviousDocumentPrincipal);
+          mActiveEntry->Info(),
+          ToMaybeRef(aPreviousEntryForActivation).map([](auto& aValue) {
+            return aValue.Info();
+          }),
+          Some(NavigationType::Traverse));
   if (IsInProcess()) {
     BrowsingContext::ReactivateDocuments(reactivationData,
                                          previousEntryForActivation);

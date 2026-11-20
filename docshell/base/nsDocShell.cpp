@@ -1332,9 +1332,14 @@ static LoadingSessionHistoryInfo CreateLoadingEntryForJavascriptURL(
   loadingEntry.mTriggeringNavigationType = Some(NavigationType::Replace);
   loadingEntry.mReplacesActiveEntry = !!aActiveEntry;
 
+  // https://html.spec.whatwg.org/#update-document-for-history-step-application
+  // The replaced entry is the previous entry for the new document's
+  // activation, unless it belonged to the initial about:blank document.
   loadingEntry.mPreviousEntry =
-      PreviousSessionHistoryInfo::CreateValidatedPreviousEntry(
-          aNewDocument, aOldDocument, aActiveEntry);
+      aOldDocument.IsInitialDocument() || !aActiveEntry
+          ? Some(PreviousSessionHistoryInfo{})
+          : PreviousSessionHistoryInfo::CreateValidatedPreviousEntry(
+                info, Some(*aActiveEntry), Some(NavigationType::Replace));
 
   // The old document might not have entries, in which case the new entry gets
   // appended.
