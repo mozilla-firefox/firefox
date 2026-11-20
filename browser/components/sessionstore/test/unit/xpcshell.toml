@@ -16,6 +16,8 @@ skip-if = [
   "condprof", # Bug 1769154
 ]
 
+["test_empty_session_write.js"]
+
 ["test_encryption.js"]
 skip-if = [
   "condprof",

@@ -1390,6 +1390,7 @@ interface GleanImpl {
     collectData: GleanTimingDistribution;
     collectSessionHistory: GleanTimingDistribution;
     corruptFile: Record<"false"|"true", GleanCounter>;
+    emptySessionWrite: GleanEventWithExtras<{ closed_windows?: string|number, is_final_write?: string|boolean, prev_size_bytes?: string|number, prev_tabs?: string|number, prev_windows?: string|number, run_state?: string, size_bytes?: string|number, windows?: string|number }>;
     fileSizeBytes: GleanMemoryDistribution;
     manualRestoreDurationUntilEagerTabsRestored: GleanTimingDistribution;
     newTabOnRestoreEnabled: GleanBoolean;

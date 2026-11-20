@@ -168,6 +168,10 @@ export class SessionFile {
   // write failing the same way repeatedly is only reported once.
   static #lastWriteOutcome = null;
 
+  // What the last successful write since the session file was read contained,
+  // as { windows, tabs, closedWindows, sizeBytes }, or null if there was none.
+  static #lastWriteContents = null;
+
   // `true` once we have initialized SessionWriter.
   static #initialized = false;
 
@@ -449,6 +453,7 @@ export class SessionFile {
       };
     }
     SessionFile.#readOrigin = result.origin;
+    SessionFile.#lastWriteContents = null;
 
     return { ...result, noFilesFound, fileStates };
   }
@@ -497,6 +502,9 @@ export class SessionFile {
       return Promise.reject(new Error("SessionFile is closed"));
     }
 
+    let contents = SessionFile.#countContents(aData);
+    let runState = SessionFile.#describeRunState();
+
     let isFinalWrite = false;
     if (lazy.RunState.isClosing) {
       // If shutdown has started, we will want to stop receiving
@@ -532,6 +540,12 @@ export class SessionFile {
 
         SessionFile.#successes++;
         SessionFile.#recordWriteSuccess();
+        SessionFile.#recordWriteContents(
+          contents,
+          msg.telemetry.fileSizeBytes,
+          isFinalWrite,
+          runState
+        );
         if (msg.result.upgradeBackup) {
           // We have just completed a backup-on-upgrade, store the information
           // in preferences.
@@ -580,6 +594,68 @@ export class SessionFile {
         );
       }
     });
+  }
+
+  /**
+   * @param {object} state The session state about to be written.
+   * @returns {{ windows: number, tabs: number, closedWindows: number }}
+   */
+  static #countContents(state) {
+    let windows = state.windows ?? [];
+    let tabs = 0;
+    for (let win of windows) {
+      tabs += win.tabs?.length ?? 0;
+    }
+    return {
+      windows: windows.length,
+      tabs,
+      closedWindows: state._closedWindows?.length ?? 0,
+    };
+  }
+
+  static #describeRunState() {
+    if (lazy.RunState.isClosing) {
+      return "closing";
+    }
+    if (lazy.RunState.isQuitting) {
+      return "quitting";
+    }
+    return lazy.RunState.isRunning ? "running" : "stopped";
+  }
+
+  /**
+   * Remembers what a successful write contained and records an
+   * empty_session_write event if it was empty and the previous write was not,
+   * there was no previous write since the session file was read, or this is
+   * the final write.
+   *
+   * @param {{ windows: number, tabs: number, closedWindows: number }} contents
+   * @param {number} sizeBytes
+   * @param {boolean} isFinalWrite
+   * @param {string} runState
+   */
+  static #recordWriteContents(contents, sizeBytes, isFinalWrite, runState) {
+    let previous = SessionFile.#lastWriteContents;
+    SessionFile.#lastWriteContents = { ...contents, sizeBytes };
+
+    if (contents.tabs || (previous && !previous.tabs && !isFinalWrite)) {
+      return;
+    }
+
+    let extra = {
+      windows: contents.windows,
+      closed_windows: contents.closedWindows,
+      size_bytes: sizeBytes,
+      is_final_write: isFinalWrite,
+      run_state: runState,
+    };
+    if (previous) {
+      extra.prev_windows = previous.windows;
+      extra.prev_tabs = previous.tabs;
+      extra.prev_size_bytes = previous.sizeBytes;
+    }
+    lazy.sessionStoreLogger.debug("Wrote a session with no tabs", extra);
+    Glean.sessionRestore.emptySessionWrite.record(extra);
   }
 
   static #recordWriteSuccess() {

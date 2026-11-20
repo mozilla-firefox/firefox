@@ -518,6 +518,69 @@ session_restore:
           Whether this was the final write at shutdown
         type: boolean
 
+  empty_session_write:
+    type: event
+    description: >
+      Recorded when a session file is written successfully with no tabs in
+      it, so we can tell when a session lost its tabs. To avoid recording the
+      same empty session every write interval, it is only recorded when the
+      previous write in this session had tabs, when this is the first write
+      since the session file was read, or when this is the final write at
+      shutdown. Tabs not worth saving, such as blank new tabs, and tabs in
+      private windows are not counted, as they are not written.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2094900
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2094900
+    notification_emails:
+      - session-restore-telemetry-alerts@mozilla.com
+    expires: never
+    extra_keys:
+      windows:
+        description: >
+          Number of open windows in the written session. A window can be
+          written with no tabs.
+        type: quantity
+      closed_windows:
+        description: >
+          Number of closed windows in the written session, which can be
+          reopened from Recently Closed Windows
+        type: quantity
+      size_bytes:
+        description: Size of the written session file, in bytes
+        type: quantity
+      prev_windows:
+        description: >
+          Number of open windows in the previous successful write in this
+          session. Unset if this is the first write since the session file
+          was read.
+        type: quantity
+      prev_tabs:
+        description: >
+          Number of tabs in the previous successful write in this session.
+          Unset if this is the first write since the session file was read.
+        type: quantity
+      prev_size_bytes:
+        description: >
+          Size in bytes of the session file written by the previous
+          successful write in this session. Unset if this is the first write
+          since the session file was read.
+        type: quantity
+      is_final_write:
+        description: >
+          Whether this was the final write at shutdown, to
+          sessionstore.jsonlz4, rather than a write to recovery.jsonlz4
+        type: boolean
+      run_state:
+        description: >
+          Where the browser was in its lifecycle at the time of the write,
+          one of "stopped" (before the first window finished loading),
+          "running", "quitting" (shutdown has been granted but Session Restore
+          has not yet shut down) or "closing" (the final write)
+        type: string
+    data_sensitivity:
+      - technical
+
   corrupt_file:
     type: labeled_counter
     description: >
