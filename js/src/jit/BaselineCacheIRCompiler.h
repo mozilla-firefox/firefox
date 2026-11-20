@@ -60,8 +60,6 @@ ICAttachResult AttachBaselineCacheIRStubLocked(
 // BaselineCacheIRCompiler compiles CacheIR to BaselineIC native code.
 class MOZ_RAII BaselineCacheIRCompiler : public CacheIRCompiler {
   struct CreateThisData {
-    uint32_t numFixedSlots;
-    uint32_t numDynamicSlots;
     gc::AllocKind allocKind;
     uint32_t thisShapeOffset;
     uint32_t allocSiteOffset;

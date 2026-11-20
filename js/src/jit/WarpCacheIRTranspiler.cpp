@@ -7201,13 +7201,12 @@ bool WarpCacheIRTranspiler::emitCallNativeSetter(ObjOperandId receiverId,
                         nargsAndFlagsOffset);
 }
 
-bool WarpCacheIRTranspiler::emitMetaCreateThis(uint32_t numFixedSlots,
-                                               uint32_t numDynamicSlots,
-                                               gc::AllocKind allocKind,
+bool WarpCacheIRTranspiler::emitMetaCreateThis(gc::AllocKind allocKind,
                                                uint32_t thisShapeOffset,
                                                uint32_t siteOffset) {
   SharedShape* shape = &shapeStubField(thisShapeOffset)->asShared();
   MOZ_ASSERT(shape->getObjectClass() == &PlainObject::class_);
+  MOZ_ASSERT(shape->slotSpan() == 0);
 
   MConstant* shapeConst = MConstant::NewShape(alloc(), shape);
   add(shapeConst);
@@ -7218,8 +7217,11 @@ bool WarpCacheIRTranspiler::emitMetaCreateThis(uint32_t numFixedSlots,
              gc::FinalizeKind::None);
   MOZ_ASSERT(!IsFinalizedKind(allocKind));
 
-  auto* createThis = MNewPlainObject::New(alloc(), shapeConst, numFixedSlots,
-                                          numDynamicSlots, allocKind, heap);
+  // The shape is empty, so there are no slots to initialize.
+  auto* createThis =
+      MNewPlainObject::New(alloc(), shapeConst,
+                           /* numFixedSlots = */ 0,
+                           /* numDynamicSlots = */ 0, allocKind, heap);
   add(createThis);
 
   callInfo_->thisArg()->setImplicitlyUsedUnchecked();

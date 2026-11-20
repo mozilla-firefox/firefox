@@ -3154,14 +3154,11 @@ bool BaselineCacheIRCompiler::emitCallClassHook(ObjOperandId calleeId,
 }
 
 // This op generates no code. It caches metadata for eventual use in createThis.
-bool BaselineCacheIRCompiler::emitMetaCreateThis(uint32_t numFixedSlots,
-                                                 uint32_t numDynamicSlots,
-                                                 gc::AllocKind allocKind,
+bool BaselineCacheIRCompiler::emitMetaCreateThis(gc::AllocKind allocKind,
                                                  uint32_t thisShapeOffset,
                                                  uint32_t siteOffset) {
   MOZ_ASSERT(createThisData_.isNothing());
-  createThisData_.emplace(numFixedSlots, numDynamicSlots, allocKind,
-                          thisShapeOffset, siteOffset);
+  createThisData_.emplace(allocKind, thisShapeOffset, siteOffset);
   return true;
 }
 
@@ -3227,12 +3224,14 @@ void BaselineCacheIRCompiler::createThis(Register argcReg, Register calleeReg,
     // more. We spill calleeReg and reload it in the success and failure paths.
     Register temp = calleeReg;
 
-    // Try to allocate inline.
+    // Try to allocate inline. The shape is empty, so there are no slots to
+    // initialize.
     masm.push(calleeReg);
-    masm.createPlainGCObject(
-        result, shape, temp, shape, createThisData_->numFixedSlots,
-        createThisData_->numDynamicSlots, createThisData_->allocKind,
-        gc::Heap::Default, &fail, AllocSiteInput(site));
+    masm.createPlainGCObject(result, shape, temp, shape,
+                             /* numFixedSlots = */ 0,
+                             /* numDynamicSlots = */ 0,
+                             createThisData_->allocKind, gc::Heap::Default,
+                             &fail, AllocSiteInput(site));
     masm.pop(calleeReg);
     masm.Push(TypedOrValueRegister(MIRType::Object, AnyRegister(result)));
 

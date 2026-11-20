@@ -14063,11 +14063,9 @@ void CallIRGenerator::emitCallScriptedGuards(
       // Call metaCreateThis before emitting the call, so that Warp can use the
       // shape/site to create the |this| object before transpiling the call.
       MOZ_ASSERT(maybeAllocSite);
-      uint32_t numFixedSlots = thisShape->numFixedSlots();
-      uint32_t numDynamicSlots = NativeObject::calculateDynamicSlots(thisShape);
-      gc::AllocKind allocKind = gc::GetGCObjectKind(numFixedSlots);
-      writer.metaCreateThis(numFixedSlots, numDynamicSlots, allocKind,
-                            thisShape, maybeAllocSite);
+      MOZ_ASSERT(thisShape->slotSpan() == 0);
+      gc::AllocKind allocKind = gc::GetGCObjectKind(thisShape->numFixedSlots());
+      writer.metaCreateThis(allocKind, thisShape, maybeAllocSite);
     }
   } else {
     // Guard that object is a scripted function without too many formals
