@@ -57,15 +57,23 @@ let http2Port;
 
 add_task(async function setup() {
   Services.prefs.setCharPref("network.dns.localDomains", "foo.example.com");
-  http2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(http2Port, null);
-  Assert.notEqual(http2Port, "");
-
   do_get_profile();
-  let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
-    Ci.nsIX509CertDB
-  );
-  addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
+
+  let server = await create_h2_server({
+    [earlyhintspath]: (req, res) => {
+      let hints = { ":status": 103, something: "something" };
+      let link = req.headers["link-to-set"];
+      if (link) {
+        hints.link = link;
+      }
+      res.stream.additionalHeaders(hints);
+      const body = "data reached";
+      res.setHeader("Content-Length", body.length);
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end(body);
+    },
+  });
+  http2Port = server.port();
 });
 
 registerCleanupFunction(async () => {

@@ -576,20 +576,6 @@ function handleRequestImpl(req, res) {
     });
     res.end();
     return;
-  } else if (u.pathname === "/103_response") {
-    let link_val = req.headers["link-to-set"];
-    if (link_val) {
-      res.setHeader("link", link_val);
-    }
-    res.setHeader("something", "something");
-    res.writeHead(103);
-
-    res.setHeader("Content-Type", "text/plain");
-    res.setHeader("Content-Length", "12");
-    res.writeHead(200);
-    res.write("data reached");
-    res.end();
-    return;
   } else if (u.pathname.startsWith("/invalid_response_header/")) {
     // response headers with invalid characters in the name / value (RFC7540 Sec 10.3)
     let kind = u.pathname.slice("/invalid_response_header/".length);
