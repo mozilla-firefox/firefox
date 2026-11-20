@@ -135,7 +135,6 @@ import org.mozilla.fenix.home.collections.migration.CollectionsMigrationCardMidd
 import org.mozilla.fenix.home.collections.migration.CollectionsMigrationCardState
 import org.mozilla.fenix.home.collections.migration.CollectionsMigrationCardStore
 import org.mozilla.fenix.home.ext.showWallpaperOnboardingDialog
-import org.mozilla.fenix.home.logo.LogoController
 import org.mozilla.fenix.home.logo.TrackingProtectionController
 import org.mozilla.fenix.home.pocket.controller.DefaultPocketStoriesController
 import org.mozilla.fenix.home.privatebrowsing.controller.DefaultPrivateBrowsingController
@@ -1733,12 +1732,6 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                     TrackingProtectionController(
                         navController = findNavController(),
                         currentSessionId = requireComponents.core.store.state.selectedTabId,
-                    ),
-                logoController =
-                    LogoController(
-                        longFoxFeature = requireComponents.core.longFoxFeature,
-                        context = requireActivity(),
-                        longFoxEnabled = requireComponents.settings.longfoxEnabled,
                     ),
             )
     }

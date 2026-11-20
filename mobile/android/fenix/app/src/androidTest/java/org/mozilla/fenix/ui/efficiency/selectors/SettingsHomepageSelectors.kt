@@ -99,16 +99,11 @@ object SettingsHomepageSelectors : SelectorContainer {
             groups = setOf(Group.HOMEPAGE_SETTINGS),
         )
 
-    // The row's label depends on the longfox flag: "Help catch trackers" when it is on (developer/debug builds),
-    // "Privacy report" otherwise (nightly/beta/release). See HomeSettingsFragment. The caller passes the label that
-    // matches the running build so this locator works on every channel; the switch itself is always
-    // pref_key_privacy_report.
-    @Suppress("FunctionName")
-    fun PRIVACY_REPORT_SWITCH(label: String) =
+    val PRIVACY_REPORT_SWITCH =
         Selector(
             strategy = SelectorStrategy.ESPRESSO_BY_TEXT,
-            value = label,
-            description = "the Privacy report / Help catch trackers switch row",
+            value = getStringResource(R.string.customize_toggle_privacy_report),
+            description = "the Privacy report switch row",
             groups = setOf(Group.HOMEPAGE_SETTINGS),
         )
 

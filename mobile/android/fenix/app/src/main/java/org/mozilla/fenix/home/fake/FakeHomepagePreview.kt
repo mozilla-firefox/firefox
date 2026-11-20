@@ -109,14 +109,6 @@ internal object FakeHomepagePreview {
                 override fun onPrivacyReportTapped() {
                     /* no op */
                 }
-
-                override fun onLongfoxEntryPointClicked() {
-                    /* no op */
-                }
-
-                override fun onLongfoxEntryPointShown() {
-                    /* no op */
-                }
             }
 
     internal val storiesInteractor

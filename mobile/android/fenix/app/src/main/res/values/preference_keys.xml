@@ -656,11 +656,6 @@
     <!-- Native Share Sheet -->
     <string name="pref_key_native_share_sheet" translatable="false">pref_key_native_share_sheet</string>
 
-    <!-- Longfox -->
-    <string name="pref_key_enable_longfox" translatable="false">pref_key_enable_longfox</string>
-    <string name="pref_key_app_launch_count" translatable="false">pref_key_app_launch_count</string>
-    <string name="pref_key_longfox_peek_animation_shown_count" translatable="false">pref_key_longfox_peek_animation_shown_count</string>
-
     <!-- Google Lens Integration -->
     <string name="pref_key_google_lens_integration" translatable="false">pref_key_google_lens_integration</string>
     <string name="pref_key_google_lens_integration_user_enabled" translatable="false">pref_key_google_lens_integration_user_enabled</string>

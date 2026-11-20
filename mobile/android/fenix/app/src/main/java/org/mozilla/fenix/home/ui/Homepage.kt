@@ -65,7 +65,6 @@ import org.mozilla.fenix.GleanMetrics.History
 import org.mozilla.fenix.GleanMetrics.HomeBookmarks
 import org.mozilla.fenix.GleanMetrics.RecentlyVisitedHomepage
 import org.mozilla.fenix.R
-import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppAction.ShortcutAction
 import org.mozilla.fenix.components.appstate.setup.checklist.SetupChecklistState
 import org.mozilla.fenix.components.components
@@ -242,22 +241,6 @@ internal fun Homepage(
                         is HomepageState.Normal -> {
                             val context = LocalContext.current
 
-                            LaunchedEffect(showLongfoxAnimation) {
-                                if (showLongfoxAnimation) {
-                                    with(context.components) {
-                                        settings.longfoxPeekAnimationShownCount++
-                                        appStore.dispatch(AppAction.UpdateShowFoxPeekAnimation(false))
-                                    }
-                                }
-                            }
-
-                            val longfoxEntryPointShown = longfoxEnabled && showPrivacyReport
-                            LaunchedEffect(longfoxEntryPointShown) {
-                                if (longfoxEntryPointShown) {
-                                    interactor.onLongfoxEntryPointShown()
-                                }
-                            }
-
                             if (middleSearchState.isShown) {
                                 MiddleSearchBar(
                                     pinState = middleSearchPinState,
@@ -289,10 +272,7 @@ internal fun Homepage(
                                 TrackersBlockedCard(
                                     trackersBlockedCount = trackersBlockedCount,
                                     onPrivacyReportTapped = interactor::onPrivacyReportTapped,
-                                    onLongfoxEntryPointClicked = interactor::onLongfoxEntryPointClicked,
                                     modifier = Modifier.padding(top = 16.dp),
-                                    longfoxEnabled = longfoxEnabled,
-                                    showLongfoxAnimation = showLongfoxAnimation,
                                 )
                             }
 
@@ -309,7 +289,6 @@ internal fun Homepage(
                                 RecentTabsSection(
                                     interactor = interactor,
                                     recentTabs = recentTabs,
-                                    reducedTopSpacing = showPrivacyReport && showLongfoxAnimation,
                                 )
 
                                 when (val syncedTabState = recentSyncedTabSectionState) {
@@ -543,10 +522,8 @@ private fun TopSitesSection(
 private fun RecentTabsSection(
     interactor: RecentTabInteractor,
     recentTabs: List<RecentTab>,
-    reducedTopSpacing: Boolean = false,
 ) {
-    val topSpacing = if (reducedTopSpacing) 16.dp else 40.dp
-    Spacer(modifier = Modifier.height(topSpacing))
+    Spacer(modifier = Modifier.height(40.dp))
 
     Column(modifier = Modifier.padding(horizontal = horizontalMargin)) {
         HomeSectionHeader(headerText = stringResource(R.string.recent_tabs_header_2))
@@ -738,8 +715,6 @@ private fun HomepagePreview() {
                         recentlyVisited = FakeHomepagePreview.recentHistory(),
                         collectionsState = CollectionsState.Gone,
                         showPrivacyReport = true,
-                        longfoxEnabled = false,
-                        showLongfoxAnimation = false,
                         trackersBlockedCount = 754,
                         headerState = HeaderState(showStoriesButton = true),
                         middleSearchState = MiddleSearchState(searchBarVisible = true, searchBarEnabled = false),
@@ -781,8 +756,6 @@ private fun HomepageBannerPreview() {
                         recentlyVisited = FakeHomepagePreview.recentHistory(),
                         collectionsState = CollectionsState.Gone,
                         showPrivacyReport = true,
-                        longfoxEnabled = false,
-                        showLongfoxAnimation = false,
                         trackersBlockedCount = 754,
                         headerState = HeaderState(showStoriesButton = true),
                         middleSearchState = MiddleSearchState(searchBarVisible = true, searchBarEnabled = false),
@@ -815,8 +788,6 @@ private fun HomepagePreviewCollections() {
                         recentlyVisited = FakeHomepagePreview.recentHistory(),
                         collectionsState = FakeHomepagePreview.collectionState(),
                         showPrivacyReport = true,
-                        longfoxEnabled = false,
-                        showLongfoxAnimation = false,
                         trackersBlockedCount = 754,
                         headerState = HeaderState(showStoriesButton = true),
                         middleSearchState = MiddleSearchState(searchBarVisible = true, searchBarEnabled = false),
@@ -849,8 +820,6 @@ private fun HomepageCollectionsMigrationCardPreview() {
                         recentlyVisited = FakeHomepagePreview.recentHistory(),
                         collectionsState = CollectionsState.MigrationCard,
                         showPrivacyReport = true,
-                        longfoxEnabled = false,
-                        showLongfoxAnimation = false,
                         trackersBlockedCount = 754,
                         headerState = HeaderState(showStoriesButton = true),
                         middleSearchState = MiddleSearchState(searchBarVisible = true, searchBarEnabled = false),
@@ -887,8 +856,6 @@ private fun MinimalHomepagePreview() {
                             ),
                         collectionsState = CollectionsState.Gone,
                         showPrivacyReport = true,
-                        longfoxEnabled = false,
-                        showLongfoxAnimation = false,
                         trackersBlockedCount = 754,
                         headerState = HeaderState(showStoriesButton = true),
                         firstFrameDrawn = true,

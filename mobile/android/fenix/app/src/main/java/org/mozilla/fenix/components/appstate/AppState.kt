@@ -88,7 +88,6 @@ import org.mozilla.fenix.wallpapers.WallpaperState
  * @property voiceSearchState The [VoiceSearchState] representing the current state of voice search functionality.
  * @property isDefaultBrowser Whether Firefox is the default browser or not.
  * @property blockedTrackersState The [BlockedTrackersState] with data about blocked trackers.
- * @property longfoxEntryPointReady Whether the fox peek animation should play on the next homepage view.
  * @property isTabsTrayVisible Whether TabsTray is shown.
  * @property sportsWidgetState The [SportsWidgetState] of the Wrexham widget on the homepage.
  */
@@ -132,7 +131,6 @@ data class AppState(
     val voiceSearchState: VoiceSearchState = VoiceSearchState(),
     val isDefaultBrowser: Boolean = false,
     val blockedTrackersState: BlockedTrackersState = BlockedTrackersState(),
-    val longfoxEntryPointReady: Boolean = false,
     val isTabsTrayVisible: Boolean = false,
     val sportsWidgetState: SportsWidgetState = SportsWidgetState(),
 ) : State

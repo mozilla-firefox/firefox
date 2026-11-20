@@ -418,12 +418,6 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
 
     override fun onStart() {
         super.onStart()
-        val context = requireContext()
-
-        if (context.components.appStore.state.longfoxEntryPointReady) {
-            context.components.appStore.dispatch(AppAction.UpdateShowFoxPeekAnimation(false))
-        }
-
         subscribeToTabCollections()
         updateLastBrowseActivity()
 

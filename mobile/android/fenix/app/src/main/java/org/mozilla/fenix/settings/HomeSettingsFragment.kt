@@ -81,7 +81,6 @@ class HomeSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragm
         }
 
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_privacy_report).apply {
-            if (fenixSettings.longfoxEnabled) title = resources.getString(R.string.help_catch_trackers)
             isChecked = fenixSettings.showPrivacyReportFeature
             onPreferenceChangeListener =
                 createMetricPreferenceChangeListener(

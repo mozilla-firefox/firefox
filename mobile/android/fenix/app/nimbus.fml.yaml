@@ -1272,21 +1272,6 @@ features:
         value:
           enabled: true
 
-  longfox:
-    description: Flag to enable Longfox for users on Firefox Android.
-    variables:
-      enabled:
-        description: If true, users will see a CTA for launching Longfox on the home screen.
-        type: Boolean
-        default: false
-    defaults:
-      - channel: nightly
-        value:
-          enabled: false
-      - channel: developer
-        value:
-          enabled: true
-
   uninstall-survey:
     description: Feature that controls the visibility and handling of the uninstall survey app shortcut.
     variables:

@@ -65,9 +65,6 @@ sealed class AppAction : Action {
     /** Updates whether the first frame of the homescreen has been [drawn]. */
     data class UpdateFirstFrameDrawn(val drawn: Boolean) : AppAction()
 
-    /** Updates whether the fox peek animation should play on the next homepage view. */
-    data class UpdateShowFoxPeekAnimation(val ready: Boolean) : AppAction()
-
     data class AddNonFatalCrash(val crash: NativeCodeCrash) : AppAction()
 
     data class RemoveNonFatalCrash(val crash: NativeCodeCrash) : AppAction()

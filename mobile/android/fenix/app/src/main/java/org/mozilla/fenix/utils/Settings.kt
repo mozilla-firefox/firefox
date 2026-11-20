@@ -112,9 +112,6 @@ class Settings(
         private const val ALLOWED_INT = 2
         private const val INACTIVE_TAB_MINIMUM_TO_SHOW_AUTO_CLOSE_DIALOG = 20
 
-        const val LONGFOX_PEEK_ANIMATION_MAX_SHOWS = 5
-        const val LONGFOX_PEEK_ANIMATION_LAUNCH_INTERVAL = 3
-
         const val THIRTY_SECONDS_MS = 30 * 1000L
         const val FOUR_HOURS_MS = 60 * 60 * 4 * 1000L
         const val ONE_MINUTE_MS = 60 * 1000L
@@ -3495,43 +3492,6 @@ class Settings(
             key = appContext.getPreferenceKey(R.string.pref_key_enable_menu_customization_screen),
             default = { false },
         )
-
-    /** Whether Longfox is enabled. */
-    var longfoxEnabled by
-        booleanPreference(
-            key = appContext.getPreferenceKey(R.string.pref_key_enable_longfox),
-            default = { FxNimbus.features.longfox.value().enabled },
-        )
-
-    /**
-     * Number of times the app has been foregrounded (cold start or returned from background). Used to gate the longfox
-     * peek animation.
-     */
-    var appLaunchCount by
-        intPreference(
-            key = appContext.getPreferenceKey(R.string.pref_key_app_launch_count),
-            default = 0,
-        )
-
-    /**
-     * Number of times the longfox peek animation has been shown on the homepage. Capped at
-     * [LONGFOX_PEEK_ANIMATION_MAX_SHOWS]; once reached the animation is no longer shown.
-     */
-    var longfoxPeekAnimationShownCount by
-        intPreference(
-            key = appContext.getPreferenceKey(R.string.pref_key_longfox_peek_animation_shown_count),
-            default = 0,
-        )
-
-    /**
-     * Returns true when the longfox peek animation should be armed for the current app foreground: feature enabled, not
-     * yet reached the show cap, and on every Nth launch.
-     */
-    fun shouldShowLongfoxPeekAnimationThisTime(): Boolean =
-        longfoxEnabled &&
-            longfoxPeekAnimationShownCount < LONGFOX_PEEK_ANIMATION_MAX_SHOWS &&
-            appLaunchCount > 0 &&
-            appLaunchCount % LONGFOX_PEEK_ANIMATION_LAUNCH_INTERVAL == 0
 
     /** Indicates whether the app should automatically clean up downloaded files. */
     fun shouldCleanUpDownloadsAutomatically(): Boolean {

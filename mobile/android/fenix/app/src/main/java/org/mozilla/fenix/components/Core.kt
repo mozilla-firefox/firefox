@@ -131,7 +131,6 @@ import org.mozilla.fenix.historymetadata.DefaultHistoryMetadataService
 import org.mozilla.fenix.historymetadata.HistoryMetadataMiddleware
 import org.mozilla.fenix.historymetadata.HistoryMetadataService
 import org.mozilla.fenix.home.topsites.FenixDefaultTopSitesProvider
-import org.mozilla.fenix.longfox.LongFoxFeature
 import org.mozilla.fenix.media.MediaSessionService
 import org.mozilla.fenix.nimbus.BaselineFpp
 import org.mozilla.fenix.nimbus.FingerprintingProtection
@@ -724,8 +723,6 @@ class Core(
     val summarizationEligibilityChecker: SummarizationEligibilityChecker by lazy {
         DefaultSummarizationEligibilityChecker()
     }
-
-    val longFoxFeature by lazy { LongFoxFeature() }
 
     /**
      * Regular Shared Preferences. Any values previously encrypted by [SecureAbove22Preferences] are migrated on first

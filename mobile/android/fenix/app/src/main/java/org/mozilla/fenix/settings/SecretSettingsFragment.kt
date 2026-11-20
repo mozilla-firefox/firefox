@@ -610,11 +610,6 @@ class SecretSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFra
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
 
-        requirePreference<SwitchPreferenceCompat>(R.string.pref_key_enable_longfox).apply {
-            isChecked = settings.longfoxEnabled
-            onPreferenceChangeListener = SharedPreferenceUpdater()
-        }
-
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_google_lens_integration).apply {
             isVisible = Config.channel.isNightlyOrDebug || Config.channel.isBeta
             isChecked = settings.googleLensIntegrationEnabled
