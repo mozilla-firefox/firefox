@@ -12,6 +12,7 @@ import datetime
 import json
 import os
 import sys
+import types
 
 import mozunit
 
@@ -202,19 +203,53 @@ def _make_row(os_name, os_version, arch, app_build, hangs_reports, hangs_modules
     }
 
 
-def _install_fake_client(monkeypatch, rows):
-    # _query_bigquery is the single BigQuery touchpoint; stub it to return our
-    # fake rows so the tests stay offline and don't need google-cloud-bigquery.
-    monkeypatch.setattr(
-        bhr_collection, "_query_bigquery", lambda sql, billing_project: iter(rows)
-    )
+def _install_fake_bigquery(monkeypatch, rows=()):
+    """Stand in for google-cloud-bigquery, so the tests stay offline and run
+    without it installed. Every table reads back as `rows`.
+
+    Returns a record of the projects clients are made for, the queries run and
+    the tables read.
+    """
+    bq = types.SimpleNamespace(projects=[], queries=[], read=[])
+
+    class Client:
+        def __init__(self, project):
+            bq.projects.append(project)
+
+        def query(self, sql):
+            bq.queries.append(sql)
+            return types.SimpleNamespace(job_id="job", result=lambda: None)
+
+        def list_rows(self, table_id):
+            bq.read.append(table_id)
+            return iter(rows)
+
+    modules = {
+        name: types.ModuleType(name)
+        for name in ("google", "google.cloud", "google.cloud.bigquery")
+    }
+    modules["google"].cloud = modules["google.cloud"]
+    modules["google.cloud"].bigquery = modules["google.cloud.bigquery"]
+    modules["google.cloud.bigquery"].Client = Client
+    for name, module in modules.items():
+        monkeypatch.setitem(sys.modules, name, module)
+    return bq
+
+
+def test_query_bigquery_reads_back_the_table_its_query_creates(monkeypatch):
+    bq = _install_fake_bigquery(monkeypatch)
+    bhr_collection._query_bigquery("SELECT 1", "test-project")
+    (create,) = bq.queries
+    assert create.endswith("AS\nSELECT 1")
+    assert len(bq.read) == 1
+    assert f"TABLE `{bq.read[0]}`" in create
 
 
 def test_get_data_yields_ping_for_valid_row_in_build_window(monkeypatch):
     rows = [
         _make_row("Linux", "5.10", "x86_64", "20260501123456", "[]"),
     ]
-    _install_fake_client(monkeypatch, rows)
+    _install_fake_bigquery(monkeypatch, rows)
 
     pings = list(
         bhr_collection.get_data(
@@ -235,7 +270,7 @@ def test_get_data_drops_rows_with_missing_required_fields(monkeypatch):
         # OS missing — should be dropped.
         _make_row(None, "5.10", "x86_64", "20260501123456", "[]"),
     ]
-    _install_fake_client(monkeypatch, rows)
+    _install_fake_bigquery(monkeypatch, rows)
 
     pings = list(
         bhr_collection.get_data(
@@ -247,26 +282,10 @@ def test_get_data_drops_rows_with_missing_required_fields(monkeypatch):
     assert len(pings) == 1
 
 
-def _capture_sql(monkeypatch):
-    """Stub _query_bigquery, recording the SQL it's handed (returns no rows).
-
-    Build-date filtering lives only in the SQL, so get_data's date handling is
-    verified by checking the query it builds rather than by filtering rows.
-    """
-    captured = {}
-
-    def fake_query(sql, billing_project):
-        captured["sql"] = sql
-        return iter([])
-
-    monkeypatch.setattr(bhr_collection, "_query_bigquery", fake_query)
-    return captured
-
-
 def test_get_data_default_end_date_is_same_as_start(monkeypatch):
     # When end_date isn't passed, the build window collapses to one day, which
     # is what the SQL build-date filter should use.
-    captured = _capture_sql(monkeypatch)
+    bq = _install_fake_bigquery(monkeypatch)
 
     list(
         bhr_collection.get_data(
@@ -277,12 +296,12 @@ def test_get_data_default_end_date_is_same_as_start(monkeypatch):
     )
     assert (
         "SUBSTR(client_info.app_build, 1, 8) BETWEEN '20260501' AND '20260501'"
-        in captured["sql"]
+        in bq.queries[0]
     )
 
 
 def test_get_data_explicit_end_date_widens_window(monkeypatch):
-    captured = _capture_sql(monkeypatch)
+    bq = _install_fake_bigquery(monkeypatch)
 
     list(
         bhr_collection.get_data(
@@ -294,7 +313,7 @@ def test_get_data_explicit_end_date_widens_window(monkeypatch):
     )
     assert (
         "SUBSTR(client_info.app_build, 1, 8) BETWEEN '20260501' AND '20260502'"
-        in captured["sql"]
+        in bq.queries[0]
     )
 
 
@@ -313,7 +332,7 @@ def test_get_data_exclude_modules_omits_hangs_modules_property(monkeypatch):
             "metrics": {"object": {"hangs_reports": "[]", "hangs_modules": None}},
         },
     ]
-    _install_fake_client(monkeypatch, rows)
+    _install_fake_bigquery(monkeypatch, rows)
 
     pings = list(
         bhr_collection.get_data(
@@ -328,13 +347,7 @@ def test_get_data_exclude_modules_omits_hangs_modules_property(monkeypatch):
 
 
 def test_get_data_passes_billing_project_to_query(monkeypatch):
-    captured = {}
-
-    def fake_query(sql, billing_project):
-        captured["billing_project"] = billing_project
-        return iter([])
-
-    monkeypatch.setattr(bhr_collection, "_query_bigquery", fake_query)
+    bq = _install_fake_bigquery(monkeypatch)
 
     list(
         bhr_collection.get_data(
@@ -343,7 +356,7 @@ def test_get_data_passes_billing_project_to_query(monkeypatch):
             billing_project="my-bill-here",
         )
     )
-    assert captured["billing_project"] == "my-bill-here"
+    assert bq.projects == ["my-bill-here"]
 
 
 def test_get_data_is_lazy_generator(monkeypatch):
@@ -358,9 +371,7 @@ def test_get_data_is_lazy_generator(monkeypatch):
             rows_seen.append(row)
             yield row
 
-    monkeypatch.setattr(
-        bhr_collection, "_query_bigquery", lambda sql, billing_project: make_iterator()
-    )
+    _install_fake_bigquery(monkeypatch, make_iterator())
 
     gen = bhr_collection.get_data(
         date=datetime.date(2026, 5, 1),
@@ -820,7 +831,7 @@ def test_aggregate_end_to_end_offline(monkeypatch, tmp_path):
         json.dumps([hang]),
         json.dumps([["xul.pdb", "ABC"], ["kernel32.pdb", "XYZ"]]),
     )
-    _install_fake_client(monkeypatch, [row])
+    _install_fake_bigquery(monkeypatch, [row])
     monkeypatch.setattr(symbolication, "fetch_url", lambda _url: (False, ""))
 
     profile = bhr_collection.aggregate(
