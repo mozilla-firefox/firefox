@@ -141,6 +141,10 @@ class WebTransportParent : public PWebTransportParent,
   // called on the socket thread after mWebTransport has been retargeted there.
   void CloseSessionForDestroyedActor();
 
+  // Adds the expiries counted in mParentExpiredOutgoing to aStats, which only
+  // carries neqo's own count.  Must be called on the socket thread.
+  void AddParentExpiredOutgoing(WebTransportStatsData& aStats) const;
+
   using ResolveType =
       std::tuple<const nsresult&, const uint8_t&, const uint64_t&>;
 
