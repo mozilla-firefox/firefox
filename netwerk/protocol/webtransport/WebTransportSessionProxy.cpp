@@ -397,6 +397,21 @@ bool WebTransportSessionProxy::GetDatagramSessionStats(uint64_t* aSent,
   return session->GetDatagramSessionStats(aSent, aExpired, aDropped);
 }
 
+void WebTransportSessionProxy::RequestOutgoingDatagramProgress() {
+  MOZ_ASSERT(OnSocketThread());
+  RefPtr<WebTransportSessionBase> session;
+  {
+    MutexAutoLock lock(mMutex);
+    if (mState != WebTransportSessionProxyState::ACTIVE ||
+        !mWebTransportSession) {
+      return;
+    }
+    session = mWebTransportSession;
+  }
+
+  session->RequestOutgoingDatagramProgress();
+}
+
 NS_IMETHODIMP
 WebTransportSessionProxy::GetStats() {
   RefPtr<WebTransportSessionBase> session;

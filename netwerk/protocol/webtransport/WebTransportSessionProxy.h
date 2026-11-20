@@ -156,6 +156,8 @@ class WebTransportSessionProxy final
   bool GetDatagramSessionStats(uint64_t* aSent, uint64_t* aExpired,
                                uint64_t* aDropped);
 
+  void RequestOutgoingDatagramProgress();
+
  private:
   ~WebTransportSessionProxy();
 

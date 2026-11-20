@@ -79,6 +79,7 @@ class Http3SessionStub final : public Http3SessionBase {
       uint64_t aSessionId, uint32_t aMaxBufferedDatagrams) override {}
 
   void SetDatagramMaxAge(uint64_t aSessionId, double aMaxAge) override {}
+  void RequestOutgoingDatagramProgress() override {}
   bool GetWebTransportSessionStats(
       uint64_t aSessionId,
       mozilla::dom::WebTransportStatsData& aStats) override {

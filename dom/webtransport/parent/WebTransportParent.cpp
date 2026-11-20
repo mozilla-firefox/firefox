@@ -1275,6 +1275,13 @@ void WebTransportParent::MaybeSendDatagramCapacity() {
                                update->mExpiredDelta, update->mDroppedDelta,
                                mDatagramCreditGranter.DatagramPrefixBytes());
   }
+
+  // Nothing else samples the queue again once the child has used up its
+  // credit without neqo rejecting anything, so have the next output pass do
+  // it while datagrams are still queued.
+  if (queuedDatagrams > 0 && mDatagramCreditGranter.CreditExhausted()) {
+    proxy->RequestOutgoingDatagramProgress();
+  }
 }
 
 ::mozilla::ipc::IPCResult WebTransportParent::RecvUpdateDatagramQueueParams(
