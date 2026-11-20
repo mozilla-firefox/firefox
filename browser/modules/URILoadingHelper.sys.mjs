@@ -77,6 +77,8 @@ function openInWindow(url, params, sourceWindow) {
     chromeless,
     width,
     height,
+    miniWindow,
+    resolveOnNewWindowCreated,
   } = params;
   const chromelessDimensions =
     chromeless && width && height ? `,width=${width},height=${height}` : "";
@@ -104,6 +106,9 @@ function openInWindow(url, params, sourceWindow) {
     );
   } else if (forceNonPrivate) {
     features += ",non-private";
+  }
+  if (params.features) {
+    features += `,${params.features}`;
   }
 
   // This propagates to window.arguments.
@@ -170,6 +175,9 @@ function openInWindow(url, params, sourceWindow) {
   }
   if (params.aswebauth) {
     extraOptions.setPropertyAsBool("aswebauth", true);
+  }
+  if (miniWindow) {
+    extraOptions.setPropertyAsBool("mini-window", true);
   }
 
   var allowThirdPartyFixupSupports = Cc[
@@ -260,6 +268,8 @@ function openInWindow(url, params, sourceWindow) {
     features,
     sa
   );
+
+  resolveOnNewWindowCreated?.(win);
 }
 
 function openInCurrentTab(targetBrowser, url, uriObj, params) {
@@ -481,10 +491,19 @@ export const URILoadingHelper = {
    *                  Marks a new window as an ASWebAuthenticationSession auth
    *                  window so that it is not tracked by session restore. Only
    *                  used when where == "window" or "chromeless".
+   * @param {boolean} [params.miniWindow]
+   *                  Marks the new window as a mini window. Only used when
+   *                  where == "window".
+   * @param {string}  [params.features]
+   *                  Window features appended to the defaults when opening a
+   *                  new window. Only used when where == "window".
    * @param {Function} [params.resolveOnNewTabCreated]
    *                   This callback will be called when a new tab is created.
    * @param {Function} [params.resolveOnContentBrowserCreated]
    *                   This callback will be called with the content browser once it's created.
+   * @param {Function} [params.resolveOnNewWindowCreated]
+   *                   This callback will be called with the new window as soon as it's
+   *                   opened, before it has loaded.
    * @param {object}   [params.globalHistoryOptions]
    *                   Used by places to keep track of search related metadata for loads.
    * @param {number}   [params.frameID]
@@ -726,6 +745,7 @@ export const URILoadingHelper = {
       const target = this.getTargetWindow(win, {
         skipPopups: true,
         skipTaskbarTabs: true,
+        skipMiniWindows: true,
         forceNonPrivate,
       });
       if (win.top !== target) {
@@ -745,12 +765,13 @@ export const URILoadingHelper = {
    * @param {object} params - Parameters for selecting the window.
    * @param {boolean} params.skipPopups - Require a non-popup window.
    * @param {boolean} params.skipTaskbarTabs - Require a non-taskbartab window.
+   * @param {boolean} params.skipMiniWindows - Require a non-mini window.
    * @param {boolean} params.forceNonPrivate - Require a non-private window.
    * @returns {Window | null} A matching browser window or null if none matched.
    */
   getTargetWindow(
     window,
-    { skipPopups, skipTaskbarTabs, forceNonPrivate } = {}
+    { skipPopups, skipTaskbarTabs, skipMiniWindows, forceNonPrivate } = {}
   ) {
     let { top } = window;
     // If this is called in a browser window, use that window regardless of
@@ -759,7 +780,8 @@ export const URILoadingHelper = {
     if (
       top.document.documentElement.getAttribute("windowtype") ==
         "navigator:browser" &&
-      !top.document.documentElement.hasAttribute("mini-window") &&
+      (!skipMiniWindows ||
+        !top.document.documentElement.hasAttribute("mini-window")) &&
       (!skipPopups || top.toolbar.visible) &&
       (!skipTaskbarTabs ||
         !top.document.documentElement.hasAttribute("taskbartab")) &&
