@@ -3032,6 +3032,7 @@ inline void GCRuntime::forEachDelayedMarkingArena(F&& f) {
 }
 
 #ifdef DEBUG
+
 void GCMarker::checkZone(Cell* cell) {
   MOZ_ASSERT(state != NotActive);
   if (cell->isTenured()) {
@@ -3040,6 +3041,27 @@ void GCMarker::checkZone(Cell* cell) {
                zone->isAtomsZone());
   }
 }
+
+static void ForEachMarkStackCell(const MarkStack& stack,
+                                 mozilla::FunctionRef<void(Cell*)> f) {
+  // MarkStackIter allows mutation so we have to cast away constness. We don't
+  // mutate the stack.
+  for (MarkStackIter iter(const_cast<MarkStack&>(stack)); !iter.done();
+       iter.next()) {
+    if (iter.isSlotsOrElementsRange()) {
+      f(iter.slotsOrElementsRange().ptr().asRangeObject());
+    } else {
+      f(iter.peekPtr().ptr());
+    }
+  }
+}
+
+void GCMarker::forEachMarkStackCell(
+    mozilla::FunctionRef<void(gc::Cell*)> f) const {
+  ForEachMarkStackCell(stack, f);
+  ForEachMarkStackCell(otherStack, f);
+}
+
 #endif
 
 size_t GCMarker::sizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf) const {

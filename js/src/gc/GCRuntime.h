@@ -967,8 +967,10 @@ class GCRuntime {
 
 #ifdef DEBUG
   void assertNoMarkingWork() const;
+  void assertNoMarkingWorkInSweepingZones() const;
 #else
   void assertNoMarkingWork() const {}
+  void assertNoMarkingWorkInSweepingZones() const {}
 #endif
 
   void markDelayedChildren(gc::Arena* arena, MarkColor color);

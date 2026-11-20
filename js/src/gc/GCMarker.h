@@ -5,6 +5,7 @@
 #ifndef gc_GCMarker_h
 #define gc_GCMarker_h
 
+#include "mozilla/FunctionRef.h"
 #include "mozilla/Variant.h"
 #include "mozilla/XorShift128PlusRNG.h"
 
@@ -131,8 +132,6 @@ class MarkStack {
   class TaggedPtr {
     uintptr_t bits;
 
-    Cell* ptr() const;
-
     explicit TaggedPtr(uintptr_t bits);
 
    public:
@@ -141,6 +140,7 @@ class MarkStack {
 
     uintptr_t asBits() const;
     Tag tag() const;
+    Cell* ptr() const;
     template <typename T>
     T* as() const;
 
@@ -592,6 +592,8 @@ class GCMarker {
   void markOneObjectForTest(JSObject* obj);
 
   bool isRootMarking() const { return state == RootMarking; }
+
+  void forEachMarkStackCell(mozilla::FunctionRef<void(gc::Cell*)> f) const;
 #endif
 
   bool markCurrentColorInParallel(gc::ParallelMarkTask* task,

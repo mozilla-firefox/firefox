@@ -1238,7 +1238,7 @@ IncrementalProgress GCRuntime::beginMarkingSweepGroup(JS::GCContext* gcx,
                                                       SliceBudget& budget) {
 #ifdef DEBUG
   MOZ_ASSERT(!markOnBackgroundThreadDuringSweeping);
-  assertNoMarkingWork();
+  assertNoMarkingWorkInSweepingZones();
   for (auto& marker : markers) {
     MOZ_ASSERT(marker->markColor() == MarkColor::Black);
   }
@@ -1703,6 +1703,8 @@ IncrementalProgress GCRuntime::beginSweepingSweepGroup(JS::GCContext* gcx,
 
   using namespace gcstats;
 
+  assertNoMarkingWork();
+
   AutoSCC scc(stats(), sweepGroupIndex);
   finishMarkingDuringSweeping = false;
 
@@ -1877,7 +1879,7 @@ IncrementalProgress GCRuntime::endSweepingSweepGroup(JS::GCContext* gcx,
     return NotFinished;
   }
 
-  assertNoMarkingWork();
+  assertNoMarkingWorkInSweepingZones();
 
   // Disable background marking during sweeping until we start sweeping the next
   // zone group.
