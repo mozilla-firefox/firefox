@@ -15,6 +15,8 @@ kind-dependencies:
     - fetch
 
 task-defaults:
+    optimization:
+        skip-unless-backstop: null
     from-deps:
         kinds: [build]
         copy-attributes: true
