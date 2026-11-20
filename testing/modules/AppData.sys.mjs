@@ -61,10 +61,7 @@ export var makeFakeAppDir = function () {
         return appD.clone();
       }
 
-      throw Components.Exception(
-        "failed to get file: " + prop,
-        Cr.NS_ERROR_FAILURE
-      );
+      return null;
     },
 
     QueryInterace(iid) {
