@@ -812,6 +812,96 @@ static void CheckStats(const char* operation, unsigned iteration,
   }
 }
 
+struct DisposeWhilePurgingClosure {
+  arena_id_t mArena;
+  void** mPins;
+  size_t mNumPins;
+  bool mDisposed;
+};
+
+// Called by the purge between two steps, without any lock held.
+static bool DisposeWhilePurging(void* aClosure) {
+  auto* closure = static_cast<DisposeWhilePurgingClosure*>(aClosure);
+  if (!closure->mDisposed) {
+    for (size_t i = 0; i < closure->mNumPins; i++) {
+      moz_arena_free(closure->mArena, closure->mPins[i]);
+    }
+    moz_dispose_arena(closure->mArena);
+    closure->mDisposed = true;
+  }
+  return true;
+}
+
+// An arena disposed of while a purge is working on one of its chunks is
+// deleted by that purge. The chunk must still be released.
+TEST(Jemalloc, DisposeArenaWhilePurging)
+{
+  jemalloc_stats_t stats;
+  jemalloc_stats(&stats);
+  const size_t pageSize = stats.page_size;
+
+  // Without a reuse grace, every queued arena can be purged right away.
+  const uint32_t kNoGraceMS = 0;
+  // Enough steps for the purge of any arenas that are queued.
+  const int kMaxPurgeSteps = 100;
+
+  // Finish any pending purge, so that the purge below works on our arena. If
+  // another arena was still queued, the callback could dispose of our arena
+  // while that one is purged, and this test would not reach the case it is
+  // about. Disabling deferred purge runs all pending purges right away.
+  bool wasDeferred = moz_enable_deferred_purge(true);
+  moz_enable_deferred_purge(false);
+  moz_enable_deferred_purge(true);
+
+  // Free runs of dirty pages, separated by pins so that they stay separate
+  // runs in the same chunk. The purge then releases one run per step. When the
+  // arena is disposed of after the first step, the purge must still want to
+  // continue: the chunk has dirty pages left, and the arena is above the
+  // target of half its allowance. That is the case where the purge has to
+  // finish the chunk before it returns.
+  const size_t kMaxDirty = 8;
+  const size_t kRuns = 8;
+  const size_t kRunPages = 4;
+  static_assert(kRuns * kRunPages > kMaxDirty, "freeing must queue the arena");
+  static_assert((kRuns - 1) * kRunPages > kMaxDirty / 2,
+                "the first step must not reach the target");
+  ASSERT_LT(kRuns * (kRunPages + 1) * pageSize, stats.chunksize);
+
+  arena_params_t params;
+  params.mMaxDirty = kMaxDirty;
+  arena_id_t arena = moz_create_arena_with_params(&params);
+
+  void* runs[kRuns];
+  void* pins[kRuns];
+  for (size_t i = 0; i < kRuns; i++) {
+    runs[i] = moz_arena_malloc(arena, kRunPages * pageSize);
+    pins[i] = moz_arena_malloc(arena, pageSize);
+  }
+  void* inChunk = runs[0];
+  for (void* run : runs) {
+    moz_arena_free(arena, run);
+  }
+
+  // After the first step, empty the arena and dispose of it.
+  DisposeWhilePurgingClosure closure{arena, pins, kRuns, false};
+  for (int i = 0; i < kMaxPurgeSteps; i++) {
+    if (moz_may_purge_now(false, kNoGraceMS, DisposeWhilePurging, &closure) !=
+        may_purge_now_result_t::NeedsMore) {
+      break;
+    }
+  }
+  moz_enable_deferred_purge(wasDeferred);
+  ASSERT_TRUE(closure.mDisposed);
+
+  // The chunk is no longer known to the allocator. If it was leaked,
+  // jemalloc_ptr_info() finds it with its deleted arena: with diagnostic
+  // asserts it crashes on the arena's magic number, without them it reports
+  // the chunk's pages rather than TagUnknown, so the check below fails.
+  jemalloc_ptr_info_t info;
+  jemalloc_ptr_info(inChunk, &info);
+  EXPECT_EQ(info.tag, TagUnknown);
+}
+
 TEST(Jemalloc, StatsLite)
 {
   // Disable PHC allocations for this test, because even a single PHC
