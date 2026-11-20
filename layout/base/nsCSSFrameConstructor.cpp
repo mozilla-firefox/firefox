@@ -3254,8 +3254,7 @@ nsIFrame* nsCSSFrameConstructor::ConstructBlockRubyFrame(
   nsFrameConstructorSaveState absoluteSaveState;
   blockFrame->AddStateBits(NS_FRAME_CAN_HAVE_ABSPOS_CHILDREN);
   if (newFrame->IsAbsPosContainingBlock()) {
-    aState.PushAbsoluteContainingBlock(blockFrame, blockFrame,
-                                       absoluteSaveState);
+    aState.PushAbsoluteContainingBlock(blockFrame, newFrame, absoluteSaveState);
   }
   nsFrameConstructorSaveState floatSaveState;
   aState.MaybePushFloatContainingBlock(blockFrame, floatSaveState);
