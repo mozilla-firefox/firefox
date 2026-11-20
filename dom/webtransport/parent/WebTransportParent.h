@@ -164,8 +164,6 @@ class WebTransportParent : public PWebTransportParent,
   double mDatagramMaxAge{std::numeric_limits<double>::infinity()};
   // Latest write timestamp handed to neqo; see RecvOutgoingDatagram().
   TimeStamp mLastOutgoingDatagramTimestamp;
-  // When OnSessionReady() ran; the earliest a datagram could have been sent.
-  TimeStamp mSessionReadyTime;
   // Resolvers for in-flight GetStats() requests; only one gather runs at a
   // time, so concurrent calls share it. Socket thread only; drained via
   // ResolvePendingGetStats().
