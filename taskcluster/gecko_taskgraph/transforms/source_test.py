@@ -65,7 +65,7 @@ class SourceTestDescriptionSchema(Schema, forbid_unknown_fields=False, kw_only=T
     # run command and the files-changed patterns are built from this list, in
     # vendor_verify_members below.
     members: Optional[list[str]] = None
-    # Name of an environment variable to set, on git only, to the space
+    # Name of an environment variable to set to the space
     # separated changed files that match `when.files-changed`. The variable
     # is empty when the list exceeds the environment size limit.
     changed_files_env: Optional[str] = None
@@ -345,7 +345,7 @@ def set_changed_files_env(config, jobs):
     """
     for job in jobs:
         name = job.pop("changed-files-env", None)
-        if name and config.params["repository_type"] == "git":
+        if name:
             patterns = (job.get("when") or {}).get("files-changed", [])
             files = " ".join(
                 sorted(

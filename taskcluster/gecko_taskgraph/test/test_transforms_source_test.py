@@ -41,33 +41,15 @@ def test_set_changed_files_env(run_transform, files_changed, expected):
         "when": {"files-changed": ["**/*.cpp"]},
         "worker": {},
     }
-    params = FakeParameters({"files_changed": files_changed, "repository_type": "git"})
+    params = FakeParameters({"files_changed": files_changed})
     (result,) = run_transform(set_changed_files_env, job, params=params)
     assert result["worker"]["env"] == {"CHANGED_FILES": expected}
     assert "changed-files-env" not in result
 
 
-@pytest.mark.parametrize(
-    "job,repository_type",
-    [
-        pytest.param({"name": "other", "worker": {}}, "git", id="not-requested"),
-        pytest.param(
-            {
-                "name": "clang",
-                "changed-files-env": "CHANGED_FILES",
-                "when": {"files-changed": ["**/*.cpp"]},
-                "worker": {},
-            },
-            "hg",
-            id="hg",
-        ),
-    ],
-)
-def test_set_changed_files_env_unset(run_transform, job, repository_type):
-    params = FakeParameters({
-        "files_changed": ["a.cpp"],
-        "repository_type": repository_type,
-    })
+def test_set_changed_files_env_unset(run_transform):
+    job = {"name": "other", "worker": {}}
+    params = FakeParameters({"files_changed": ["a.cpp"]})
     (result,) = run_transform(set_changed_files_env, job, params=params)
     assert "env" not in result["worker"]
     assert "changed-files-env" not in result

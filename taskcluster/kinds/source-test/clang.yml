@@ -47,9 +47,7 @@ tidy:
         cwd: '{checkout}'
         command: >-
             source taskcluster/scripts/misc/source-test-clang-setup.sh &&
-            if [ -z "${CHANGED_FILES+set}" ]; then
-            ./mach --log-no-times static-analysis check --outgoing --output $HOME/clang-tidy.json --format json;
-            elif [ -n "$CHANGED_FILES" ]; then
+            if [ -n "$CHANGED_FILES" ]; then
             ./mach --log-no-times static-analysis check $CHANGED_FILES --output $HOME/clang-tidy.json --format json;
             else echo 'No changed files were passed, skipping clang-tidy' && echo '{"files": {}}' > $HOME/clang-tidy.json; fi
     fetches:
@@ -90,9 +88,7 @@ external:
         cwd: '{checkout}'
         command: >-
             source taskcluster/scripts/misc/source-test-clang-setup.sh &&
-            if [ -z "${CHANGED_FILES+set}" ]; then
-            ./mach --log-no-times static-analysis check --checks="-*,mozilla-civet-*" --outgoing --output $HOME/clang-tidy.json --format json;
-            elif [ -n "$CHANGED_FILES" ]; then
+            if [ -n "$CHANGED_FILES" ]; then
             ./mach --log-no-times static-analysis check --checks="-*,mozilla-civet-*" $CHANGED_FILES --output $HOME/clang-tidy.json --format json;
             else echo 'No changed files were passed, skipping clang-tidy' && echo '{"files": {}}' > $HOME/clang-tidy.json; fi
     fetches:
