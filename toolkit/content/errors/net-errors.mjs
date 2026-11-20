@@ -863,6 +863,7 @@ export const NET_ERRORS = [
 
     buttons: {
       showTryAgain: true,
+      showContinueWithoutVPN: true,
     },
     customNetError: {
       titleL10nId: "fp-neterror-vpn-error-title",

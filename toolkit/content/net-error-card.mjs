@@ -889,6 +889,7 @@ export class NetErrorCard extends MozLitElement {
       buttons: {
         tryAgain: config.buttons?.showTryAgain,
         goBack: config.buttons?.showGoBack && window.self === window.top,
+        continueWithoutVPN: config.buttons?.showContinueWithoutVPN,
       },
       useAdvancedSection: config.buttons?.showAdvanced,
     };
@@ -917,6 +918,15 @@ export class NetErrorCard extends MozLitElement {
       data-telemetry-id="return_button_adv"
       id="returnButton"
       @click=${this.handleGoBackClick}
+    ></moz-button>`;
+  }
+
+  continueWithoutVPNButtonTemplate() {
+    return html`<moz-button
+      id="continueWithoutVPNButton"
+      data-l10n-id="fp-neterror-vpn-error-continue-button"
+      data-l10n-attrs="accesskey"
+      @click=${this.handleContinueWithoutVPNClick}
     ></moz-button>`;
   }
 
@@ -1039,7 +1049,11 @@ export class NetErrorCard extends MozLitElement {
       useAdvancedSection,
     } = params;
 
-    const { goBack = false, tryAgain = false } = buttons;
+    const {
+      goBack = false,
+      tryAgain = false,
+      continueWithoutVPN = false,
+    } = buttons;
 
     // Format the learn more link with base URL if it's a SUMO slug
     let learnMoreHref = learnMoreSupportPage;
@@ -1116,9 +1130,12 @@ export class NetErrorCard extends MozLitElement {
             data-l10n-args=${JSON.stringify({ error: errorCode })}
           ></p>`
         : null}
-      ${tryAgain
+      ${tryAgain || continueWithoutVPN
         ? html`<moz-button-group>
-            ${this.tryAgainButtonTemplate()}
+            ${tryAgain ? this.tryAgainButtonTemplate() : null}
+            ${continueWithoutVPN
+              ? this.continueWithoutVPNButtonTemplate()
+              : null}
             ${this.showTrrSettingsButton
               ? html`<moz-button
                   id="trrSettingsButton"
@@ -1223,6 +1240,10 @@ export class NetErrorCard extends MozLitElement {
   handleGoBackClick(e) {
     this.handleTelemetryClick(e);
     RPMSendAsyncMessage("Browser:SSLErrorGoBack");
+  }
+
+  handleContinueWithoutVPNClick() {
+    RPMSendAsyncMessage("IPP:ContinueWithoutVPN");
   }
 
   handleProceedToUrlClick(e) {

@@ -568,6 +568,52 @@ add_task(async function test_error_state_shows_vpn_error_page() {
 });
 
 /**
+ * Tests that continuing loads the failed site without the VPN, only for that
+ * site, only in that tab, and only until the tab leaves the site.
+ */
+add_task(async function test_continue_skips_vpn_for_site_in_tab() {
+  const site = "https://example.com/";
+  const otherSite = "https://example.org/";
+  await using test = await setupVPNErrorTest({
+    failingPass: true,
+    includedSites: ["https://example.com", "https://example.org"],
+  });
+
+  const { tab } = await test.openErrorPage(site);
+  const loaded = BrowserTestUtils.browserLoaded(tab.linkedBrowser, false, site);
+  await clickCardButton(tab, "continueWithoutVPNButton");
+  await loaded;
+  Assert.equal(
+    tab.linkedBrowser.documentURI.spec,
+    site,
+    "The site should load in the tab it was continued in"
+  );
+
+  const otherSiteError = waitForErrorPageTitle(tab.linkedBrowser);
+  BrowserTestUtils.startLoadingURIString(tab.linkedBrowser, otherSite);
+  Assert.equal(
+    await otherSiteError,
+    "fp-neterror-vpn-error-title",
+    "Another site in the tab should still need the VPN"
+  );
+
+  const backOnSiteError = waitForErrorPageTitle(tab.linkedBrowser);
+  BrowserTestUtils.startLoadingURIString(tab.linkedBrowser, site);
+  Assert.equal(
+    await backOnSiteError,
+    "fp-neterror-vpn-error-title",
+    "Leaving the site should end skipping the VPN for it"
+  );
+
+  const { title } = await test.openErrorPage(site);
+  Assert.equal(
+    title,
+    "fp-neterror-vpn-error-title",
+    "Another tab should still need the VPN for the site"
+  );
+});
+
+/**
  * Tests that trying again restarts the failed connection in its mode.
  */
 add_task(async function test_try_again_restarts_connection_in_its_mode() {

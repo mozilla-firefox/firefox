@@ -19,6 +19,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///toolkit/components/ipprotection/IPProtectionServerlist.sys.mjs",
   IPPSiteRuleManager:
     "moz-src:///toolkit/components/ipprotection/IPPSiteRuleManager.sys.mjs",
+  IPPTabRules:
+    "moz-src:///toolkit/components/ipprotection/IPPSiteRuleManager.sys.mjs",
 });
 
 /**
@@ -72,6 +74,24 @@ export const IPPNetErrorUtils = {
       default:
         return false;
     }
+  },
+
+  /**
+   * Skips the VPN for the failed site in this tab until the tab leaves it,
+   * and reloads the failed page.
+   *
+   * @param {BrowsingContext} browsingContext - context showing the error page
+   */
+  continueWithoutVPN(browsingContext) {
+    lazy.IPPTabRules.setTabRule(
+      lazy.IPPPrincipalRules.EXCLUDED,
+      browsingContext.top.browserId,
+      {
+        principal: principalForDocumentLoad(browsingContext),
+        removeOnLeave: true,
+      }
+    );
+    browsingContext.reload(Ci.nsIWebNavigation.LOAD_FLAGS_NONE);
   },
 
   /**
