@@ -172,6 +172,9 @@ interface nsIURI : nsISupports
      * URI equivalence test (not a strict string comparison).
      *
      * eg. http://foo.com:80/ == http://foo.com/
+     *
+     * This never touches the file system: file:, jar: and other URIs that
+     * point to the same file through different specs are not equal.
      */
     boolean equals(in nsIURI other);
 
@@ -234,6 +237,8 @@ interface nsIURI : nsISupports
      *
      * eg. http://foo.com/# == http://foo.com/
      *     http://foo.com/#aaa == http://foo.com/#bbb
+     *
+     * Like equals(), this never touches the file system.
      */
     boolean equalsExceptRef(in nsIURI other);
 
