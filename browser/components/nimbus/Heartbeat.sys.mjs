@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { AsyncShutdown } from "resource://gre/modules/AsyncShutdown.sys.mjs";
-import { TelemetryController } from "resource://gre/modules/TelemetryController.sys.mjs";
 import { clearTimeout, setTimeout } from "resource://gre/modules/Timer.sys.mjs";
 import { EventEmitter } from "resource://gre/modules/EventEmitter.sys.mjs";
 
@@ -61,10 +60,6 @@ AsyncShutdown.appShutdownConfirmed.addBlocker(
  *        will be shown if this is an invalid URL.
  * @param {string} [options.surveyId]
  *        An ID for the survey, reflected in the Telemetry ping.
- * @param {number} [options.surveyVersion]
- *        Survey's version number, reflected in the Telemetry ping.
- * @param {boolean} [options.testing]
- *        Whether this is a test survey, reflected in the Telemetry ping.
  * @param {string} [options.postAnswerURL=null]
  *        The url to visit after the user answers the question.
  */
@@ -283,25 +278,14 @@ export var Heartbeat = class {
     this.eventEmitter.emit(name, data);
 
     if (sendPing) {
-      // Send the ping to Telemetry
-      const payload = Object.assign({ version: 1 }, this.surveyResults);
-      for (const meta of ["surveyId", "surveyVersion", "testing"]) {
-        if (this.options.hasOwnProperty(meta)) {
-          payload[meta] = this.options[meta];
-        }
+      const payload = { ...this.surveyResults };
+      if (this.options.hasOwnProperty("surveyId")) {
+        payload.surveyId = this.options.surveyId;
       }
 
       lazy.log.debug("Sending telemetry");
-      TelemetryController.submitExternalPing("heartbeat", payload, {
-        addClientId: true,
-        addEnvironment: true,
-      });
 
-      const gleanOmittedFields = ["version", "surveyVersion", "testing"];
       for (const [k, v] of Object.entries(payload)) {
-        if (gleanOmittedFields.includes(k)) {
-          continue;
-        }
         const metricName = k.endsWith("TS") ? k.slice(0, -2) : k;
         Glean.heartbeat[metricName].set(v);
       }

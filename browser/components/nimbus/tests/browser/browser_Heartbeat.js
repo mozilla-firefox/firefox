@@ -122,7 +122,6 @@ add_task(async function () {
 
   const preCount = notificationBox.allNotifications.length;
   const hb = new Heartbeat(targetWindow, {
-    testing: true,
     flowId: "test",
     message: "test",
     engagementButtonLabel: undefined,
@@ -208,7 +207,6 @@ add_task(async function () {
   const targetWindow = Services.wm.getMostRecentWindow("navigator:browser");
   const notificationBox = targetWindow.gNotificationBox;
   const hb = new Heartbeat(targetWindow, {
-    testing: true,
     flowId: "test",
     message: "test",
     engagementButtonLabel: "Click me!",
@@ -273,7 +271,6 @@ add_task(async function () {
   const targetWindow = await BrowserTestUtils.openNewBrowserWindow();
 
   const hb = new Heartbeat(targetWindow, {
-    testing: true,
     flowId: "test",
     message: "test",
   });

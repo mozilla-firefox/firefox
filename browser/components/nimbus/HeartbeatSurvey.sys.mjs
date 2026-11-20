@@ -71,7 +71,6 @@ export class HeartbeatSurvey {
       learnMoreUrl,
       postAnswerUrl: await this.generatePostAnswerURL(recipe),
       flowId: Services.uuid.generateUUID().toString().slice(1, -1),
-      surveyVersion: "1", // Required for the Heartbeat telemetry ping.
     });
 
     heartbeat.eventEmitter.once(

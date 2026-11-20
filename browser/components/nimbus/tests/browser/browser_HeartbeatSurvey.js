@@ -58,7 +58,6 @@ decorate_task(
             learnMoreUrl: recipe.arguments.learnMoreUrl,
             postAnswerUrl: options.postAnswerUrl,
             flowId: options.flowId,
-            surveyVersion: recipe.revision_id,
           },
         ],
       ],

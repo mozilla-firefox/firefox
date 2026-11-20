@@ -1,4 +1,4 @@
-# "heartbeat" ping
+# "heartbeat" ping (obsolete)
 
 This ping is submitted after a Firefox Heartbeat survey. Even if the user exits
 the browser, closes the survey window, or ignores the survey, Heartbeat will
@@ -58,4 +58,4 @@ Notes:
 - The surveyId/surveyVersion fields identify a specific survey (like a "1040EZ" tax paper form). The flowID is a UUID that uniquely identifies a single user's interaction with the survey. Think of it as a session token.
 - The self-support page cannot include additional data in this payload. Only the the 4 flowId/surveyId/surveyVersion/testing fields are under the self-support page's control.
 
-See also: {doc}`common ping fields <common-ping>`
+See also: {doc}`common ping fields <../../data/common-ping>`
