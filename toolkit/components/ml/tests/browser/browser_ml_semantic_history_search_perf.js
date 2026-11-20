@@ -25,7 +25,7 @@ const perfMetadata = {
         },
         {
           name: "memory",
-          unit: "MB",
+          unit: "MiB",
           shouldAlert: true,
         },
       ],
@@ -272,9 +272,11 @@ async function prepareSemanticSearchTest({
   );
 
   if (!semanticManager.qualifiedForSemanticSearch) {
-    info("Skipping test due to insufficient hardware.");
-    Assert.ok(true);
-    return { skip: true };
+    await cleanup();
+    throw new Error(
+      "Semantic history search is unavailable on this machine (not enough " +
+        "memory or CPU cores), so there is nothing to measure"
+    );
   }
 
   // Skip featureGate, Region and other non critical checks.
@@ -306,11 +308,11 @@ async function prepareSemanticSearchTest({
     conn,
     vecDBFileSize,
     cleanup,
-    skip: false,
   };
 }
 
 async function runInferenceAndCollectMetrics({
+  prefix,
   semanticManager,
   numIterations,
   searchQuery,
@@ -319,7 +321,6 @@ async function runInferenceAndCollectMetrics({
   tag,
   concurrentInferenceFlag = false,
 }) {
-  const prefix = "SEMANTIC";
   // Use a single searchQuery or alternate through a list of queries in searchQueries
   // Ideally numIterations is a multiple of the length of searchQueries
   let numQueries = searchQueries && searchQueries.length;
@@ -410,20 +411,16 @@ async function runShortAndLongQueryPerfTest(
   const mode = concurrentInferenceFlag ? "CONCURRENT" : "SEQUENTIAL";
   info(`Running ${mode} inference performance test...`);
 
-  const setupResult = await prepareSemanticSearchTest({
-    rowLimit,
-    backend,
-    concurrentInferenceFlag,
-  });
-
-  if (setupResult.skip) {
-    return;
-  }
-
-  const { semanticManager, conn, vecDBFileSize, cleanup } = setupResult;
+  const { semanticManager, conn, vecDBFileSize, cleanup } =
+    await prepareSemanticSearchTest({
+      rowLimit,
+      backend,
+      concurrentInferenceFlag,
+    });
 
   try {
     await measureSemanticSearch({
+      prefix: concurrentInferenceFlag ? "SEMANTIC-CONCURRENT" : "SEMANTIC",
       semanticManager,
       conn,
       cleanup,
@@ -441,6 +438,7 @@ async function runShortAndLongQueryPerfTest(
 }
 
 async function measureSemanticSearch({
+  prefix,
   semanticManager,
   conn,
   cleanup,
@@ -451,6 +449,7 @@ async function measureSemanticSearch({
 }) {
   const journalShort = {};
   await runInferenceAndCollectMetrics({
+    prefix,
     semanticManager,
     numIterations,
     searchQuery: "health tips",
@@ -462,12 +461,17 @@ async function measureSemanticSearch({
   const journalShortPrefixed = Object.fromEntries(
     Object.entries(journalShort).map(([k, v]) => [`SHORT-${k}`, v])
   );
-  journalShortPrefixed[`SEMANTIC-VECTOR_DB_DISK_SIZE-${tag}`] = [vecDBFileSize];
+  if (!concurrentInferenceFlag) {
+    journalShortPrefixed[`${prefix}-${VECTOR_DB_DISK_SIZE}-${tag}`] = [
+      vecDBFileSize,
+    ];
+  }
   info(`Short query journal = ${JSON.stringify(journalShortPrefixed)}`);
   reportMetrics(journalShortPrefixed);
 
   const journalLongMultiple = {};
   await runInferenceAndCollectMetrics({
+    prefix,
     semanticManager,
     numIterations,
     searchQueries: [
@@ -496,6 +500,7 @@ async function measureSemanticSearch({
 
   const journalLong = {};
   await runInferenceAndCollectMetrics({
+    prefix,
     semanticManager,
     numIterations,
     searchQuery: "best recipe with nutritional value and taste that kids like",
@@ -511,12 +516,11 @@ async function measureSemanticSearch({
   const journalLongPrefixed = Object.fromEntries(
     Object.entries(journalLong).map(([k, v]) => [`LONG-${k}`, v])
   );
-  journalLongPrefixed[`LONG-SEMANTIC-UPDATE_TASK_LATENCY-${tag}`] = [
-    updateTime,
-  ];
-  journalLongPrefixed[`LONG-SEMANTIC-VECTOR_DB_DISK_SIZE-${tag}`] = [
-    vecDBFileSize,
-  ];
+  if (!concurrentInferenceFlag) {
+    journalLongPrefixed[`${prefix}-${UPDATE_TASK_LATENCY}-${tag}`] = [
+      updateTime,
+    ];
+  }
   info(`Long query journal = ${JSON.stringify(journalLongPrefixed)}`);
   reportMetrics(journalLongPrefixed);
 }
