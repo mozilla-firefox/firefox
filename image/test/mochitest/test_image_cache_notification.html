@@ -2,6 +2,7 @@
 <html>
   <head>
     <script src="/tests/SimpleTest/SimpleTest.js"></script>
+    <script src="imgutils.js"></script>
   </head>
   <body>
     <button>Add Image</button>
@@ -28,8 +29,14 @@
         imageCacheCallbackRunCount += 1;
       });
       SpecialPowers.addObserver(cb, "http-on-resource-cache-response");
+      SimpleTest.registerCleanupFunction(() => {
+        SpecialPowers.removeObserver(cb, "http-on-resource-cache-response");
+      });
 
       async function runTest() {
+        // The notification is sent once per image cache entry, so the entry
+        // for over.png must not be left over from an earlier load.
+        clearImageCache();
         await addImage();
         SimpleTest.ok(imageCacheCallbackRunCount == 0, "first load of over.png shouldn't be cached");
         await addImage();
