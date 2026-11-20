@@ -2899,15 +2899,12 @@ pub extern "C" fn neqo_http3conn_webtransport_set_datagram_max_age(
     session_id: u64,
     max_age: f64,
 ) -> nsresult {
-    // A non-finite value is how the DOM layer spells "outgoingMaxAge is null".
-    // neqo substitutes its own implementation-defined default for None; the
-    // attribute keeps reporting null to script either way. A finite value too
-    // large for a `Duration` saturates instead of panicking, and saturates to
-    // "no limit" rather than to None, which would shed datagrams at neqo's
-    // default when script asked for the opposite.  The setter rejects negative
-    // values, but this comes from the content process, so a negative one is
-    // clamped to the shortest age rather than falling into that saturation.
-    let max_age = max_age.is_finite().then(|| {
+    // NaN means outgoingMaxAge is null (the setter rejects a real NaN), so neqo
+    // uses its default.  Infinity, or anything too big for a Duration, means no
+    // limit.  The setter also rejects negative values, but this comes from the
+    // content process, so a negative one is clamped to the shortest age rather
+    // than falling into that saturation.
+    let max_age = (!max_age.is_nan()).then(|| {
         Duration::try_from_secs_f64(max_age.max(0.0) / 1000.0).unwrap_or(Duration::MAX)
     });
     conn.conn
