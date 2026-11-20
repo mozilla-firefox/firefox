@@ -800,7 +800,7 @@ template <typename Float> auto to_decimal(Float value) noexcept -> dec_fp<>;
 template <typename Float>
 auto to_decimal_big(Float value) noexcept -> dec_fp<uint128_t>;
 
-template <typename Float>
+template <typename Float, bool ecmascript = false>
 auto write(char* buffer, Float value) noexcept -> char*;
 
 // Writes the shortest decimal representation of `value`, correctly rounded
@@ -1134,6 +1134,18 @@ inline ZMIJ_CONSTEXPR20 auto write_inf_nan(char* buffer, bool is_nan) noexcept
     return zmij::detail::copy_n(buffer, is_nan ? "nan" : "inf", 3);
   memcpy(buffer, is_nan ? "nan" : "inf", 4);
   return buffer + 3;
+}
+
+// Buffer must hold 4 bytes in the "NaN" case or 8 in the "Infinity" case.
+// Writing 4 bytes is faster than writing 3 bytes so we copy a junk 0 byte.
+inline auto write_inf_nan_ecmascript(char* buffer, bool is_nan) noexcept
+    -> char* {
+  if (is_nan) {
+    memcpy(buffer, "NaN", 4);
+    return buffer + 3;
+  }
+  memcpy(buffer, "Infinity", 8);
+  return buffer + 8;
 }
 
 // Writes the binary exponent as 'p', a sign and at least one digit (e.g. p+3).
@@ -1577,6 +1589,30 @@ inline auto write_hex(char* out, size_t n, long_double value) noexcept
   char buffer[buffer_sizes<long_double>::hex];
   if (n >= sizeof(buffer)) return detail::write_hex(out, value);
   return detail::copy_clamped(out, n, buffer, detail::write_hex(buffer, value));
+}
+
+// Fixed-notation writes 16 scratch bytes starting at max_fixed_dec_exp + 2
+// after the sign char.
+enum {
+    ecmascript_min_fixed_dec_exp = -6,
+    ecmascript_max_fixed_dec_exp = 20,
+    ecmascript_buffer_size = 1 + (ecmascript_max_fixed_dec_exp + 2) + 16,
+};
+
+/// Writes the ECMAScript decimal representation of `value` to `out`, without a
+/// null terminator. Differences with write() are single-digit exponents without
+/// a leading 0, fixed notation for decimal exponents -6 through 20, "NaN",
+/// "Infinity", and no sign for -0 and -NaN.
+///
+/// Returns a pointer past the last character written; if the representation
+/// exceeds `n` characters, only the first `n` are written. Copies unless the
+/// buffer is at least `ecmascript_buffer_size` chars.
+inline auto write_ecmascript(char* out, size_t n, double value) noexcept
+    -> char* {
+  char buffer[ecmascript_buffer_size];
+  if (n >= sizeof(buffer)) return detail::write<double, true>(out, value);
+  return detail::copy_clamped(
+      out, n, buffer, detail::write<double, true>(buffer, value));
 }
 
 }  // namespace zmij
