@@ -783,6 +783,11 @@ TEST(Moz2D, SwizzleData)
       0, 254, 253, 255, 255, 0,   0, 255, 0,   0,
       0, 255, 3,   2,   1,   255, 9, 0,   127, 255,
   };
+  // check opaquifying into alpha-first order
+  const uint8_t check_xrgb[5 * 4] = {
+      255, 0, 254, 253, 255, 255, 0,   0, 255, 0,
+      0,   0, 255, 3,   2,   1,   255, 9, 0,   127,
+  };
   // check packing
   uint8_t out24[5 * 3];
   const uint8_t check_bgr[5 * 3] = {253, 254, 0, 0, 0,   255, 0, 0,
@@ -815,6 +820,14 @@ TEST(Moz2D, SwizzleData)
   SwizzleData(in_bgra, sizeof(in_bgra), SurfaceFormat::B8G8R8A8, out,
               sizeof(out), SurfaceFormat::R8G8B8X8, IntSize(5, 1));
   EXPECT_TRUE(ArrayEqual(out, check_rgbx));
+
+  SwizzleData(check_rgba, sizeof(check_rgba), SurfaceFormat::R8G8B8X8, out,
+              sizeof(out), SurfaceFormat::A8R8G8B8, IntSize(5, 1));
+  EXPECT_TRUE(ArrayEqual(out, check_xrgb));
+
+  SwizzleData(check_rgba, sizeof(check_rgba), SurfaceFormat::R8G8B8A8, out,
+              sizeof(out), SurfaceFormat::X8R8G8B8, IntSize(5, 1));
+  EXPECT_TRUE(ArrayEqual(out, check_xrgb));
 
   SwizzleData(in_bgra, sizeof(in_bgra), SurfaceFormat::B8G8R8A8, out24,
               sizeof(out24), SurfaceFormat::B8G8R8, IntSize(5, 1));
@@ -916,6 +929,11 @@ TEST(Moz2D, SwizzleRow)
       0, 254, 253, 255, 255, 0,   0, 255, 0,   0,
       0, 255, 3,   2,   1,   255, 9, 0,   127, 255,
   };
+  // check opaquifying into alpha-first order
+  const uint8_t check_xrgb[5 * 4] = {
+      255, 0, 254, 253, 255, 255, 0,   0, 255, 0,
+      0,   0, 255, 3,   2,   1,   255, 9, 0,   127,
+  };
   // check packing
   uint8_t out24[5 * 3];
   const uint8_t check_bgr[5 * 3] = {253, 254, 0, 0, 0,   255, 0, 0,
@@ -965,6 +983,26 @@ TEST(Moz2D, SwizzleRow)
     if (func) {
       func(in_bgra, out, 5);
       EXPECT_TRUE(ArrayEqual(out, check_rgbx));
+    } else {
+      EXPECT_NE(arch, SwizzleArch::eAny);
+      EXPECT_NE(arch, SwizzleArch::eFallback);
+    }
+
+    func = RowFnFor(SwizzleOp::Copy, SurfaceFormat::R8G8B8X8,
+                    SurfaceFormat::A8R8G8B8, arch);
+    if (func) {
+      func(check_rgba, out, 5);
+      EXPECT_TRUE(ArrayEqual(out, check_xrgb));
+    } else {
+      EXPECT_NE(arch, SwizzleArch::eAny);
+      EXPECT_NE(arch, SwizzleArch::eFallback);
+    }
+
+    func = RowFnFor(SwizzleOp::Copy, SurfaceFormat::R8G8B8A8,
+                    SurfaceFormat::X8R8G8B8, arch);
+    if (func) {
+      func(check_rgba, out, 5);
+      EXPECT_TRUE(ArrayEqual(out, check_xrgb));
     } else {
       EXPECT_NE(arch, SwizzleArch::eAny);
       EXPECT_NE(arch, SwizzleArch::eFallback);
