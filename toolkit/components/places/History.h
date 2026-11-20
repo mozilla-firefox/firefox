@@ -25,6 +25,7 @@ namespace mozilla::places {
 
 struct VisitData;
 class VisitedQuery;
+class HistoryClearedListener;
 
 // Initial size of mRecentlyVisitedURIs.
 #define RECENTLY_VISITED_URIS_SIZE 64
@@ -120,6 +121,16 @@ class History final : public BaseHistory,
     return mDB->GetStatement(aQuery);
   }
 
+  uint32_t HistoryClearedCount() const {
+    MOZ_ASSERT(NS_IsMainThread());
+    return mHistoryClearedCount;
+  }
+  void OnHistoryCleared() {
+    MOZ_ASSERT(NS_IsMainThread());
+    ++mHistoryClearedCount;
+    NotifyHistoryCleared();
+  }
+
   bool IsShuttingDown() {
     MutexAutoLock lockedScope(mShuttingDownMutex);
     return mShuttingDown;
@@ -157,6 +168,9 @@ class History final : public BaseHistory,
    * invoke GetDBConn() before.
    */
   RefPtr<mozilla::places::Database> mDB;
+
+  RefPtr<HistoryClearedListener> mHistoryClearedListener;
+  uint32_t mHistoryClearedCount = 0;
 
   /**
    * Remove any memory references to tasks and do not take on any more.

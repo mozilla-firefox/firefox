@@ -99,6 +99,8 @@ support-files = [
 
 ["browser_visited_notfound.js"]
 
+["browser_visited_status_after_history_clear.js"]
+
 ["browser_visituri.js"]
 https_first_disabled = true
 support-files = [
@@ -128,9 +130,6 @@ support-files = [
 ["browser_visituri_restriction.js"]
 
 ["browser_visituri_restriction_origin.js"]
-skip-if = [
-  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && debug && verify-standalone",
-]
 
 ["browser_visituri_userContextId.js"]
 support-files = ["empty_page.html"]

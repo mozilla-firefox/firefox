@@ -94,6 +94,12 @@ class IHistory : public nsISupports {
   virtual void NotifyVisited(nsIURI*, VisitedStatus,
                              const ContentParentSet* = nullptr) = 0;
 
+  /**
+   * Notifies that all history was removed, so every URI is now unvisited. In
+   * the parent process, this is broadcasted to all child processes.
+   */
+  virtual void NotifyHistoryCleared() = 0;
+
   enum VisitFlags {
     /**
      * Indicates whether the URI was loaded in a top-level window.

@@ -53,6 +53,7 @@
 #include "mozilla/dom/PlacesVisitTitle.h"
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/glean/PlacesMetrics.h"
+#include "mozilla/places/INativePlacesEventCallback.h"
 
 #include "nsIBrowserWindowTracker.h"
 #include "nsImportModule.h"
@@ -396,6 +397,30 @@ nsresult GetJSObjectFromArray(JSContext* aCtx, JS::Handle<JSObject*> aArray,
 
 }  // namespace
 
+class HistoryClearedListener final : public INativePlacesEventCallback {
+ public:
+  NS_INLINE_DECL_REFCOUNTING(HistoryClearedListener, override)
+
+  HistoryClearedListener() {
+    AutoTArray<PlacesEventType, 1> events;
+    events.AppendElement(PlacesEventType::History_cleared);
+    PlacesObservers::AddListener(events, this);
+  }
+
+  void HandlePlacesEvent(const PlacesEventSequence& aEvents) override {
+    for (const auto& event : aEvents) {
+      if (event->Type() == PlacesEventType::History_cleared) {
+        // The History service owns this listener, so it is still alive.
+        History::GetService()->OnHistoryCleared();
+        return;
+      }
+    }
+  }
+
+ private:
+  ~HistoryClearedListener() = default;
+};
+
 class VisitedQuery final : public PendingStatementCallback {
  public:
   NS_DECL_ISUPPORTS_INHERITED
@@ -433,7 +458,7 @@ class VisitedQuery final : public PendingStatementCallback {
         urls.InsertOrUpdate(spec, std::move(info));
       }
     }
-    RefPtr<VisitedQuery> query = new VisitedQuery(std::move(urls));
+    RefPtr<VisitedQuery> query = new VisitedQuery(history, std::move(urls));
     return history->QueueVisitedStatement(std::move(query));
   }
 
@@ -457,7 +482,8 @@ class VisitedQuery final : public PendingStatementCallback {
           VisitedUrlInfo(std::move(uri), History::ContentParentSet());
       urls.InsertOrUpdate(spec, std::move(info));
     }
-    RefPtr<VisitedQuery> query = new VisitedQuery(std::move(urls), callback);
+    RefPtr<VisitedQuery> query =
+        new VisitedQuery(history, std::move(urls), callback);
     return history->QueueVisitedStatement(std::move(query));
   }
 
@@ -484,9 +510,21 @@ class VisitedQuery final : public PendingStatementCallback {
   }
 
   NS_IMETHOD HandleCompletion(uint16_t aReason) override {
-    if (aReason == mozIStorageStatementCallback::REASON_FINISHED) {
-      NotifyVisitedStatus();
+    if (aReason != mozIStorageStatementCallback::REASON_FINISHED) {
+      return NS_OK;
     }
+    History* history = History::GetService();
+    if (history && history->HistoryClearedCount() != mHistoryClearedCount) {
+      // History was cleared while this query ran, its results may be stale.
+      for (auto& entry : mUrlsToContentParentSet) {
+        entry.GetModifiableData()->mIsVisited = false;
+      }
+      RefPtr<VisitedQuery> query = new VisitedQuery(
+          history, std::move(mUrlsToContentParentSet), mCallback);
+      (void)history->QueueVisitedStatement(std::move(query));
+      return NS_OK;
+    }
+    NotifyVisitedStatus();
     return NS_OK;
   }
 
@@ -527,16 +565,19 @@ class VisitedQuery final : public PendingStatementCallback {
   }
 
  private:
-  explicit VisitedQuery(VisitedUrlsToContentParentSet&& aUrlsToContentParentSet,
-                        const nsMainThreadPtrHandle<mozIVisitedStatusCallback>&
-                            aCallback = nullptr)
+  VisitedQuery(History* aHistory,
+               VisitedUrlsToContentParentSet&& aUrlsToContentParentSet,
+               const nsMainThreadPtrHandle<mozIVisitedStatusCallback>&
+                   aCallback = nullptr)
       : mUrlsToContentParentSet(std::move(aUrlsToContentParentSet)),
-        mCallback(aCallback) {}
+        mCallback(aCallback),
+        mHistoryClearedCount(aHistory->HistoryClearedCount()) {}
 
   ~VisitedQuery() = default;
 
   VisitedUrlsToContentParentSet mUrlsToContentParentSet;
   nsMainThreadPtrHandle<mozIVisitedStatusCallback> mCallback;
+  uint32_t mHistoryClearedCount;
 };
 
 NS_IMPL_ISUPPORTS_INHERITED0(VisitedQuery, PendingStatementCallback)
@@ -1533,6 +1574,10 @@ History::History()
   NS_WARNING_ASSERTION(os, "Observer service was not found!");
   if (os) {
     (void)os->AddObserver(this, TOPIC_PLACES_SHUTDOWN, false);
+  }
+
+  if (XRE_IsParentProcess()) {
+    mHistoryClearedListener = new HistoryClearedListener();
   }
 }
 

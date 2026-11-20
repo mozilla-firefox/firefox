@@ -304,6 +304,7 @@ class ContentChild final : public PContentChild,
                                                  const bool& haveBidiKeyboards);
 
   mozilla::ipc::IPCResult RecvNotifyVisited(nsTArray<VisitedQueryResult>&&);
+  mozilla::ipc::IPCResult RecvNotifyGlobalHistoryCleared();
 
   mozilla::ipc::IPCResult RecvThemeChanged(FullLookAndFeel&&,
                                            widget::ThemeChangeKind);

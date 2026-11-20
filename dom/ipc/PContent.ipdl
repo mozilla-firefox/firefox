@@ -730,6 +730,11 @@ child:
     async SetTRRMode(ResolverMode aMode, ResolverMode aModeFromPref);
 
     async NotifyVisited(VisitedQueryResult[] uri);
+    /**
+     * Tell the child that all global history was removed, so the
+     * links it tracks must become unvisited.
+     */
+    async NotifyGlobalHistoryCleared();
 
     /**
      * Tell the child that the system theme has changed, and that a repaint is

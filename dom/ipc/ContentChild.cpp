@@ -2341,6 +2341,13 @@ mozilla::ipc::IPCResult ContentChild::RecvNotifyVisited(
   return IPC_OK();
 }
 
+mozilla::ipc::IPCResult ContentChild::RecvNotifyGlobalHistoryCleared() {
+  if (nsCOMPtr<IHistory> history = components::History::Service()) {
+    history->NotifyHistoryCleared();
+  }
+  return IPC_OK();
+}
+
 mozilla::ipc::IPCResult ContentChild::RecvThemeChanged(
     FullLookAndFeel&& aLookAndFeelData, widget::ThemeChangeKind aKind) {
   LookAndFeel::SetData(std::move(aLookAndFeelData));

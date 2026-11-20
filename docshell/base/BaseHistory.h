@@ -20,6 +20,7 @@ class BaseHistory : public IHistory {
   void UnregisterVisitedCallback(nsIURI*, dom::Link*) final;
   void NotifyVisited(nsIURI*, VisitedStatus,
                      const ContentParentSet* = nullptr) final;
+  void NotifyHistoryCleared() final;
 
   // Some URIs like data-uris are never going to be stored in history, so we can
   // avoid doing IPC roundtrips for them or what not.
