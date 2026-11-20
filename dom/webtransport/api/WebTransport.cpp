@@ -838,8 +838,8 @@ void WebTransport::SendGetStatsRequest(Promise* aPromise) {
         self->mCachedStats = Some(*aStats);
         self->mCachedDroppedIncoming =
             self->mDatagrams ? self->mDatagrams->GetDroppedIncoming() : 0;
-        // The queue doesn't count expiry until bug 2023587 adds it.
-        self->mCachedExpiredIncoming = 0;
+        self->mCachedExpiredIncoming =
+            self->mDatagrams ? self->mDatagrams->GetExpiredIncoming() : 0;
 
         WebTransportConnectionStats stats;
         PopulateConnectionStats(stats, *aStats, self->mCachedDroppedIncoming,
@@ -1058,6 +1058,7 @@ void WebTransport::RemoteClosed(bool aCleanly, const uint32_t& aCode,
     LOG(("Caching stats from RemoteClosed"));
     mCachedStats = Some(*aStats);
     mCachedDroppedIncoming = mDatagrams ? mDatagrams->GetDroppedIncoming() : 0;
+    mCachedExpiredIncoming = mDatagrams ? mDatagrams->GetExpiredIncoming() : 0;
   }
 
   // Step 2 of https://w3c.github.io/webtransport/#web-transport-termination
@@ -1221,8 +1222,8 @@ void WebTransport::Close(const WebTransportCloseInfo& aOptions,
           self->mCachedStats = Some(*aStats);
           self->mCachedDroppedIncoming =
               self->mDatagrams ? self->mDatagrams->GetDroppedIncoming() : 0;
-          // The queue doesn't count expiry until bug 2023587 adds it.
-          self->mCachedExpiredIncoming = 0;
+          self->mCachedExpiredIncoming =
+              self->mDatagrams ? self->mDatagrams->GetExpiredIncoming() : 0;
         } else {
           LOG(("No stats returned from close"));
           self->mCachedStats = Nothing();
