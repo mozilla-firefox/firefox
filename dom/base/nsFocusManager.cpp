@@ -403,6 +403,12 @@ nsFocusManager::GetFocusedContentBrowsingContext(
 }
 
 NS_IMETHODIMP
+nsFocusManager::GetReservedFocusActionIdCount(uint64_t* aCount) {
+  *aCount = sFocusActionCounter;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 nsFocusManager::GetActiveContentBrowsingContext(
     BrowsingContext** aBrowsingContext) {
   MOZ_DIAGNOSTIC_ASSERT(

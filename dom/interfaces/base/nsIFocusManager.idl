@@ -93,6 +93,13 @@ interface nsIFocusManager : nsISupports
   readonly attribute Element focusedElement;
 
   /**
+   * The number of focus action ids this process has reserved so far. Each
+   * one is queued in the parent until a newer focus action supersedes it.
+   * Only for tests.
+   */
+  readonly attribute unsigned long long reservedFocusActionIdCount;
+
+  /**
    * Returns the method that was used to focus the element in window. This
    * will either be 0, FLAG_BYMOUSE or FLAG_BYKEY. If window is null, then
    * the current focusedWindow will be used by default. This has the result

@@ -102,6 +102,8 @@ support-files = ["file_bug1703472.html"]
 
 ["browser_event_source_reconnect_after_disconnect.js"]
 
+["browser_focus_many_window_focus_calls.js"]
+
 ["browser_force_process_selector.js"]
 
 ["browser_form_validity_popup_submit.js"]
