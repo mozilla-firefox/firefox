@@ -160,6 +160,7 @@ media:
         - media/libvorbis/moz.yaml
         - media/libvpx/moz.yaml
         - media/libyuv/moz.yaml
+        - third_party/jni_zero/moz.yaml
         - third_party/libsrtp/moz.yaml
         - third_party/pipewire/moz.yaml
 

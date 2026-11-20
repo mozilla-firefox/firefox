@@ -103,6 +103,7 @@ android {
                     srcDir "${topsrcdir}/third_party/libwebrtc/sdk/android/api"
                     srcDir "${topsrcdir}/third_party/libwebrtc/sdk/android/src"
                     srcDir "${topsrcdir}/third_party/libwebrtc/rtc_base/java"
+                    srcDir "${topsrcdir}/third_party/jni_zero/java/src"
                 }
 
                 srcDir "${topobjdir}/mobile/android/geckoview/src/main/java"
